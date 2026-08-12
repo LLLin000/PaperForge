@@ -13,7 +13,7 @@
  * this controller.
  */
 import { spawn, type ChildProcess } from "child_process";
-import { processProgressChunk, type ProgressEvent } from "./progress-parser";
+import { processProgressChunk, type NdjsonEvent } from "./progress-parser";
 
 export type OcrMode = "run" | "rebuild" | "redo";
 
@@ -211,29 +211,32 @@ export class OcrProcessController {
   }
 
   private _handleEvent(
-    event: ProgressEvent,
+    event: NdjsonEvent,
     callbacks: OcrProcessCallbacks,
     successKeys: string[],
     failedKeys: string[],
     skippedKeys: OcrSkippedKey[]
   ): void {
     switch (event.event) {
-      case "PROGRESS":
+      case "progress":
         callbacks.onProgress?.(
           event.current ?? 0,
           event.total ?? 1,
-          event.key ?? ""
+          event.item_id ?? ""
         );
         break;
-      case "RESULT":
-        if (event.resultStatus === "ok") {
-          successKeys.push(event.key ?? "");
-        } else if (event.resultStatus === "failed") {
-          failedKeys.push(event.key ?? "");
-        } else if (event.resultStatus === "skipped") {
-          skippedKeys.push({ key: event.key ?? "", reason: "backend_skip" });
+      case "item_result":
+        if (event.status === "ok") {
+          successKeys.push(event.item_id ?? "");
+        } else if (event.status === "failed") {
+          failedKeys.push(event.item_id ?? "");
+        } else if (event.status === "skipped") {
+          skippedKeys.push({
+            key: event.item_id ?? "",
+            reason: "backend_skip",
+          });
         }
-        callbacks.onResult?.(event.key ?? "", event.resultStatus ?? "");
+        callbacks.onResult?.(event.item_id ?? "", event.status ?? "");
         break;
       default:
         break;

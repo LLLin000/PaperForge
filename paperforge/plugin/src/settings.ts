@@ -1314,8 +1314,16 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           const value = this._agentPlatformDraft ?? current;
           this.plugin.settings.agent_platform = value;
           // #142 / C0: mutation through the typed config command.
-          void configSet(this._getVaultBasePath(), "agent_platform", value, this.plugin.settings).catch(
-            (e) => new Notice(`PaperForge: config set agent_platform failed: ${String(e)}`)
+          void configSet(
+            this._getVaultBasePath(),
+            "agent_platform",
+            value,
+            this.plugin.settings
+          ).catch(
+            (e) =>
+              new Notice(
+                `PaperForge: config set agent_platform failed: ${String(e)}`
+              )
           );
           this.plugin.saveSettings();
           this._agentPlatformDraft = null;
@@ -1526,8 +1534,16 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     bi.value = this.plugin.settings.vector_db_api_base || "";
     bi.addEventListener("change", () => {
       this.plugin.settings.vector_db_api_base = bi.value;
-      void configSet(this._getVaultBasePath(), "vector_db_api_base", bi.value, this.plugin.settings).catch(
-        (e) => new Notice(`PaperForge: config set vector_db_api_base failed: ${String(e)}`)
+      void configSet(
+        this._getVaultBasePath(),
+        "vector_db_api_base",
+        bi.value,
+        this.plugin.settings
+      ).catch(
+        (e) =>
+          new Notice(
+            `PaperForge: config set vector_db_api_base failed: ${String(e)}`
+          )
       );
       this._refreshVectorDbCredentialStatus();
     });
@@ -1546,8 +1562,16 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this.plugin.settings.vector_db_api_model || "text-embedding-3-small";
     mi.addEventListener("change", () => {
       this.plugin.settings.vector_db_api_model = mi.value;
-      void configSet(this._getVaultBasePath(), "vector_db_api_model", mi.value, this.plugin.settings).catch(
-        (e) => new Notice(`PaperForge: config set vector_db_api_model failed: ${String(e)}`)
+      void configSet(
+        this._getVaultBasePath(),
+        "vector_db_api_model",
+        mi.value,
+        this.plugin.settings
+      ).catch(
+        (e) =>
+          new Notice(
+            `PaperForge: config set vector_db_api_model failed: ${String(e)}`
+          )
       );
       this._refreshVectorDbCredentialStatus();
     });
@@ -1614,21 +1638,25 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     // #161/R: detail rows come from the typed read-model queries — the
     // plugin never reads snapshot files.
     if (vp) {
-      void queryMemoryDetail(vp, this.plugin.settings).then((d) => {
-        setRow("FTS5 Papers", String(d?.paper_count_db ?? "?"));
-        setRow("FTS5 Fresh", d?.fresh ? "Yes" : "Stale");
-        setRow("Needs Rebuild", d?.needs_rebuild ? "Yes" : "No");
-      }).catch(() => undefined);
-      void queryEmbedStatus(vp, this.plugin.settings).then((d) => {
-        setRow("Vector Model", String(d?.model ?? "-"));
-        setRow("Vector Mode", String(d?.mode ?? "-"));
-        setRow("Body Chunks", String(d?.body_chunk_count ?? 0));
-        setRow("Object Chunks", String(d?.object_chunk_count ?? 0));
-        setRow("Total Chunks", String(d?.total_chunks ?? 0));
-        const bs = d?.build_state ?? undefined;
-        setRow("Build Status", String(bs?.status ?? "-"));
-        setRow("Build Progress", `${bs?.current ?? "?"}/${bs?.total ?? "?"}`);
-      }).catch(() => undefined);
+      void queryMemoryDetail(vp, this.plugin.settings)
+        .then((d) => {
+          setRow("FTS5 Papers", String(d?.paper_count_db ?? "?"));
+          setRow("FTS5 Fresh", d?.fresh ? "Yes" : "Stale");
+          setRow("Needs Rebuild", d?.needs_rebuild ? "Yes" : "No");
+        })
+        .catch(() => undefined);
+      void queryEmbedStatus(vp, this.plugin.settings)
+        .then((d) => {
+          setRow("Vector Model", String(d?.model ?? "-"));
+          setRow("Vector Mode", String(d?.mode ?? "-"));
+          setRow("Body Chunks", String(d?.body_chunk_count ?? 0));
+          setRow("Object Chunks", String(d?.object_chunk_count ?? 0));
+          setRow("Total Chunks", String(d?.total_chunks ?? 0));
+          const bs = d?.build_state ?? undefined;
+          setRow("Build Status", String(bs?.status ?? "-"));
+          setRow("Build Progress", `${bs?.current ?? "?"}/${bs?.total ?? "?"}`);
+        })
+        .catch(() => undefined);
     }
     setRow("", ""); // spacer
     setRow("Capability State", env.capability_state);
@@ -2578,8 +2606,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         this._refreshPending = false;
         const memEnv = this._capabilityState?.["memory"];
         const embedEnv = this._capabilityState?.["embed"];
-        this._memoryStatusText = memEnv ? (memEnv as { reason?: { text?: string } }).reason?.text ?? null : null;
-        this._embedStatusText = embedEnv ? (embedEnv as { reason?: { text?: string } }).reason?.text ?? null : null;
+        this._memoryStatusText = memEnv
+          ? ((memEnv as { reason?: { text?: string } }).reason?.text ?? null)
+          : null;
+        this._embedStatusText = embedEnv
+          ? ((embedEnv as { reason?: { text?: string } }).reason?.text ?? null)
+          : null;
         this.display();
       }
     );
@@ -2659,16 +2691,18 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       return;
     }
     if (this._vectorDepsOk === null && vp) {
-      void queryEmbedStatus(vp, this.plugin.settings).then((d) => {
-        this._vectorDepsOk = d ? Boolean(d.deps_installed) : false;
-        if (this._vectorDepsOk) {
-          this._embedStatusText = String(d?.mode ?? "");
-        }
-        this.display();
-      }).catch(() => {
-        this._vectorDepsOk = false;
-        this.display();
-      });
+      void queryEmbedStatus(vp, this.plugin.settings)
+        .then((d) => {
+          this._vectorDepsOk = d ? Boolean(d.deps_installed) : false;
+          if (this._vectorDepsOk) {
+            this._embedStatusText = String(d?.mode ?? "");
+          }
+          this.display();
+        })
+        .catch(() => {
+          this._vectorDepsOk = false;
+          this.display();
+        });
       return;
     }
   }
@@ -2710,8 +2744,16 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           .setValue(this.plugin.settings.vector_db_api_base || "")
           .onChange((value) => {
             this.plugin.settings.vector_db_api_base = value;
-            void configSet(this._getVaultBasePath(), "vector_db_api_base", value, this.plugin.settings).catch(
-              (e) => new Notice(`PaperForge: config set vector_db_api_base failed: ${String(e)}`)
+            void configSet(
+              this._getVaultBasePath(),
+              "vector_db_api_base",
+              value,
+              this.plugin.settings
+            ).catch(
+              (e) =>
+                new Notice(
+                  `PaperForge: config set vector_db_api_base failed: ${String(e)}`
+                )
             );
             this._refreshVectorDbCredentialStatus();
           });
@@ -2727,8 +2769,16 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           )
           .onChange((value) => {
             this.plugin.settings.vector_db_api_model = value;
-            void configSet(this._getVaultBasePath(), "vector_db_api_model", value, this.plugin.settings).catch(
-              (e) => new Notice(`PaperForge: config set vector_db_api_model failed: ${String(e)}`)
+            void configSet(
+              this._getVaultBasePath(),
+              "vector_db_api_model",
+              value,
+              this.plugin.settings
+            ).catch(
+              (e) =>
+                new Notice(
+                  `PaperForge: config set vector_db_api_model failed: ${String(e)}`
+                )
             );
             this._refreshVectorDbCredentialStatus();
           });
@@ -2784,7 +2834,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
               notice.hide();
               new Notice(t("feat_install_done"));
               this._vectorDepsOk = true;
-              this._embedStatusText = t("feat_deps_installed") || "Dependencies installed";
+              this._embedStatusText =
+                t("feat_deps_installed") || "Dependencies installed";
               this.display();
             } catch (e: any) {
               notice.hide();
@@ -2802,7 +2853,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const statusEl = containerEl.createEl("div", {
       cls: "paperforge-desc-box",
     });
-    statusEl.setText(this._embedStatusText ?? (t("feat_vector_ready") || "Vector index ready"));
+    statusEl.setText(
+      this._embedStatusText ?? (t("feat_vector_ready") || "Vector index ready")
+    );
 
     this._renderApiConfig(containerEl);
 
@@ -2859,11 +2912,17 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
       // #161/R: chunk counts from the cached read model.
       const bodyChunkCount =
-        typeof statusCache.body_chunk_count === "number" ? statusCache.body_chunk_count : 0;
+        typeof statusCache.body_chunk_count === "number"
+          ? statusCache.body_chunk_count
+          : 0;
       const objectChunkCount =
-        typeof statusCache.object_chunk_count === "number" ? statusCache.object_chunk_count : 0;
+        typeof statusCache.object_chunk_count === "number"
+          ? statusCache.object_chunk_count
+          : 0;
       const chunkCount =
-        typeof statusCache.chunk_count === "number" ? statusCache.chunk_count : 0;
+        typeof statusCache.chunk_count === "number"
+          ? statusCache.chunk_count
+          : 0;
       const totalChunks = chunkCount + bodyChunkCount + objectChunkCount;
       const hasChunks = totalChunks > 0;
       const isCorrupted =
@@ -2873,7 +2932,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         !this.plugin._embedProcess && buildState.status === "running";
       // deps_installed from the read model (#161/R)
       const depsInstalled =
-        statusCache.deps_installed !== undefined ? !!statusCache.deps_installed : true;
+        statusCache.deps_installed !== undefined
+          ? !!statusCache.deps_installed
+          : true;
 
       const status =
         typeof buildState.status === "string" ? buildState.status : "";
@@ -2930,12 +2991,17 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             );
             this.plugin._embedBuffer = buffer;
             for (const ev of events) {
-              if (ev.event === "START") {
+              // #137 NDJSON events (colon-token shapes retired).
+              if (ev.event === "start") {
                 this.plugin._embedProgress!.total = ev.total || 0;
-              } else if (ev.event === "PROGRESS") {
+              } else if (ev.event === "progress") {
                 this.plugin._embedProgress!.current = ev.current || 0;
-                this.plugin._embedProgress!.key = ev.key || "";
-              } else if (ev.event === "DONE") {
+                this.plugin._embedProgress!.key = ev.item_id || "";
+              } else if (
+                ev.event === "result" ||
+                ev.event === "error" ||
+                ev.event === "cancelled"
+              ) {
                 this.plugin._embedProcess = null;
                 this.plugin._embedProgress!.current =
                   this.plugin._embedProgress!.total;
@@ -2960,7 +3026,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
               this.plugin._embedProgress!.current =
                 this.plugin._embedProgress!.total;
               this.plugin.saveSettings();
-              this._embedStatusText = t("feat_build_complete") || "Embedding build complete";
+              this._embedStatusText =
+                t("feat_build_complete") || "Embedding build complete";
               new Notice(t("feat_build_complete"));
             } else {
               this._embedStatusText = null;
@@ -4326,8 +4393,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
    */
   _refreshAllReadModels(lastLibraryExitCode?: number): void {
     invalidateAll();
-    const vp = (this.app.vault.adapter as unknown as { basePath?: string })
-      .basePath ?? "";
+    const vp =
+      (this.app.vault.adapter as unknown as { basePath?: string }).basePath ??
+      "";
     if (!vp) {
       this._probing.clear();
       return;
@@ -4761,24 +4829,29 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   /** #173 corrective: explicit, user-mediated SecretStorage → keyring
    *  migration.  Reads each known legacy id once, stores via `auth set
    *  --stdin`, verifies, then clears the old value. */
-  private async _migrateLegacyCredentials(btn: HTMLButtonElement): Promise<void> {
+  private async _migrateLegacyCredentials(
+    btn: HTMLButtonElement
+  ): Promise<void> {
     const vaultPath = this._getVaultBasePath();
     const py = this._resolveRuntimeCommand(vaultPath);
     if (!py || !vaultPath) {
       new Notice("Runtime not ready — cannot migrate credentials");
       return;
     }
-    const { migrateLegacySecret, isAllowlistedCommand: _unused } = await import(
-      "./services/secret-storage"
-    );
+    const { migrateLegacySecret, isAllowlistedCommand: _unused } =
+      await import("./services/secret-storage");
     void _unused;
     const deps = {
       spawn: (
         command: string,
         args: string[],
-        opts: { cwd: string; env: Record<string, string | undefined>; windowsHide: boolean; stdio: string[] }
-      ) =>
-        spawn(command, args, opts as never),
+        opts: {
+          cwd: string;
+          env: Record<string, string | undefined>;
+          windowsHide: boolean;
+          stdio: string[];
+        }
+      ) => spawn(command, args, opts as never),
       pythonPath: py.path,
       pythonArgs: py.args,
       vaultPath,
@@ -4789,7 +4862,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     for (const kind of ["ocr", "embedding"] as const) {
       const r = await migrateLegacySecret(
         kind,
-        (this.app as unknown as { secretStorage?: { getSecret(id: string): Promise<string | null>; setSecret(id: string, s: string): Promise<void> } }).secretStorage,
+        (
+          this.app as unknown as {
+            secretStorage?: {
+              getSecret(id: string): Promise<string | null>;
+              setSecret(id: string, s: string): Promise<void>;
+            };
+          }
+        ).secretStorage,
         deps,
         // #173 corrective: real old embedding secrets live under the
         // profile-hashed v2 id computed from the current endpoint/model.
@@ -5082,8 +5162,16 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         select.addEventListener("change", () => {
           this.plugin.settings.agent_platform = select.value;
           // #142 / C0: mutation through the typed config command.
-          void configSet(this._getVaultBasePath(), "agent_platform", select.value, this.plugin.settings).catch(
-            (e) => new Notice(`PaperForge: config set agent_platform failed: ${String(e)}`)
+          void configSet(
+            this._getVaultBasePath(),
+            "agent_platform",
+            select.value,
+            this.plugin.settings
+          ).catch(
+            (e) =>
+              new Notice(
+                `PaperForge: config set agent_platform failed: ${String(e)}`
+              )
           );
           void this.plugin.saveSettings();
           status.setText(t("setup_optional_saved"));

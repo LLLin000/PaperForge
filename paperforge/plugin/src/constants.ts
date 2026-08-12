@@ -12,7 +12,9 @@ export interface ActionDef {
   title: string;
   desc?: string;
   icon?: string;
-  cmd: string;
+  /** T8 (#169): `cmd` renamed — the field is a dashboard tool command id,
+   * never an action-policy table (registry owns action dispatch). */
+  commandId: string;
   args?: string[];
   needsKey?: boolean;
   needsFilter?: boolean;
@@ -34,7 +36,7 @@ export const ACTIONS: ActionDef[] = [
     title: "Sync Library",
     desc: "Pull new references from Zotero and generate literature notes",
     icon: "\u21BB",
-    cmd: "sync",
+    commandId: "sync",
     okMsg: "Sync complete",
   },
   {
@@ -42,7 +44,7 @@ export const ACTIONS: ActionDef[] = [
     title: "Run OCR",
     desc: "Extract full text and figures from PDFs via PaddleOCR",
     icon: "\u229E",
-    cmd: "ocr",
+    commandId: "ocr",
     okMsg: "OCR started",
     // One full poll cycle runs up to 15 minutes (60 x 15s); per-paper
     // timeouts are enforced inside run_ocr, so the spawn timeout must cover
@@ -54,7 +56,7 @@ export const ACTIONS: ActionDef[] = [
     title: "Run Doctor",
     desc: "Verify PaperForge setup \u2014 check configs, Zotero, paths, and index health",
     icon: "\u2695",
-    cmd: "doctor",
+    commandId: "doctor",
     okMsg: "Doctor complete",
   },
   {
@@ -62,7 +64,7 @@ export const ACTIONS: ActionDef[] = [
     title: "Repair Issues",
     desc: "Fix three-way state divergence, path errors, and rebuild index",
     icon: "\u21BA",
-    cmd: "repair",
+    commandId: "repair",
     args: ["--fix", "--fix-paths"],
     okMsg: "Repair complete",
   },
@@ -71,7 +73,7 @@ export const ACTIONS: ActionDef[] = [
     title: "Redo OCR",
     desc: "Re-run OCR for papers marked ocr_redo: true",
     icon: "\u21BA",
-    cmd: "ocr",
+    commandId: "ocr",
     args: ["redo"],
     okMsg: "OCR redo started",
   },
@@ -97,6 +99,8 @@ export interface PaperForgeSettings {
   vector_db_api_model: string;
   last_seen_version: string;
   capabilityState: Record<string, ProbeEnvelope>;
+  autoSyncEnabled?: boolean;
+  autoSyncIntervalSeconds?: number;
   _python_path_stale?: boolean;
   _migrated_keys?: string[];
   _migration_warnings?: string[];
@@ -128,6 +132,8 @@ export const DEFAULT_SETTINGS: PaperForgeSettings = {
   last_seen_version: "",
   _migrated_keys: [],
   _migration_warnings: [],
+  autoSyncEnabled: true,
+  autoSyncIntervalSeconds: 120,
   _paddleocr_configured: false,
   _vector_db_configured: false,
   _setup_complete: false,

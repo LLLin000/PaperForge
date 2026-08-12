@@ -19,6 +19,7 @@ import { t } from "../i18n";
 import { resolveVaultPaths } from "../services/runtime-paths";
 import { resolveRuntimeCommand } from "../services/managed-runtime";
 import type { OcrProcessOutcome } from "../services/ocr-process-controller";
+import { runAction, type ActionRunResult } from "../services/python-bridge";
 
 /* ── OcrPaper interface ── */
 
@@ -827,42 +828,68 @@ export class OcrWorkspaceView extends ItemView {
   }
 
   private _runRebuild(keys: string[]): void {
-    const controller = this.plugin?.ocrProcessController;
-    if (!controller) {
-      new Notice("Runtime not ready");
+    // T8 (#169): the rebuild path is the ACTION client —
+    // `action run ocr.rebuild_derived --follow auto`.  The Python chain
+    // runner derives the local memory.build inline and leaves embed.resume
+    // pending (confirmed from the descriptor, never auto-dispatched).
+    const pyCmd = this._resolvePython();
+    const vp = (this.app.vault.adapter as any).basePath as string;
+    if (!pyCmd?.path) {
+      new Notice("Runtime not ready for rebuild");
       return;
     }
     this.running = true;
     this.progress = { current: 0, total: keys.length, paperKey: "" };
     this._render();
-    controller
-      .start("rebuild", {
-        keys,
-        callbacks: {
-          onProgress: (current: number, total: number, key: string) => {
-            this.progress = { current, total, paperKey: key };
-            this._refreshTable();
-          },
-        },
-      })
-      .then((outcome: OcrProcessOutcome) => {
+
+    const scope = keys.length > 0 ? { kind: "papers", keys } : { kind: "all" };
+    runAction(
+      pyCmd.path,
+      pyCmd.args,
+      vp,
+      "ocr.rebuild_derived",
+      scope,
+      undefined,
+      300000
+    )
+      .then((res: ActionRunResult) => {
         this.running = false;
-        if (outcome.ok) {
-          new Notice(t("ocr_rebuild_complete") || "Rebuild completed");
-        } else if (outcome.stopped) {
-          new Notice(t("ocr_stopped_notice") || "Rebuild stopped");
-        } else {
-          const failed = outcome.failedKeys.join(", ");
+        const data = (res.payload?.data ?? {}) as Record<string, unknown>;
+        const rebuilt = Array.isArray(data.rebuilt) ? data.rebuilt : [];
+        const failed = Array.isArray(data.failed) ? data.failed : [];
+        if (res.ok) {
+          new Notice(
+            (t("ocr_rebuild_complete") || "Rebuild completed") +
+              (rebuilt.length ? ` (${rebuilt.length})` : "")
+          );
+        } else if (failed.length > 0) {
           new Notice(
             (t("ocr_rebuild_partial") || "Rebuild finished with failures") +
-              (failed ? ": " + failed : ""),
+              ": " +
+              failed.join(", "),
+            8000
+          );
+        } else {
+          new Notice(
+            (t("ocr_error_notice") || "OCR error") +
+              ": " +
+              String(
+                (res.payload?.error as Record<string, unknown> | null)
+                  ?.message ?? "rebuild failed"
+              ),
             8000
           );
         }
-        // #126: index refresh chain — successful papers (even under partial
-        // failure or stop) get a local memory build, then a confirmed embed.
-        if (outcome.successKeys.length > 0) {
-          this._runIndexRefreshChain(outcome.successKeys.length);
+        // Pending follow-ups (embed.resume) are rendered from descriptors —
+        // confirmation happens via the next-actions bridge, never here.
+        const pending = res.payload?.next_actions as
+          | Array<{ action_id: string; reason?: string }>
+          | undefined;
+        if (pending && pending.some((p) => p.action_id === "embed.resume")) {
+          new Notice(
+            t("ocr_ws_embed_confirm") || "向量嵌入待确认 — 运行后可重建向量",
+            8000
+          );
         }
         this._loadPapers().then(() => this._render());
       })
@@ -875,82 +902,6 @@ export class OcrWorkspaceView extends ItemView {
         );
         this._render();
       });
-  }
-
-  /**
-   * #126: after any rebuild with successful papers — local memory build
-   * (never implicit API cost), then a user-confirmed embed resume.
-   */
-  private _runIndexRefreshChain(successCount: number): void {
-    const pyCmd = this._resolvePython();
-    const vp = (this.app.vault.adapter as any).basePath as string;
-    if (!pyCmd) {
-      new Notice("Runtime not ready for memory refresh");
-      return;
-    }
-    const memoryLabel =
-      t("ocr_ws_memory_refresh") || "Updating local text index…";
-    new Notice(memoryLabel);
-    execFile(
-      pyCmd.path,
-      [...pyCmd.args, "-m", "paperforge", "memory", "build"],
-      { cwd: vp, timeout: 120000, windowsHide: true },
-      (err: any) => {
-        if (err) {
-          // #126: a failed memory build blocks the embed prompt and is
-          // retryable — never claim the index was updated.
-          new Notice(
-            (t("ocr_ws_memory_refresh_failed") || "检索刷新失败，可稍后重试") +
-              ": " +
-              (err?.message || String(err)),
-            8000
-          );
-          return;
-        }
-        new Notice(
-          (t("ocr_ws_index_updated") || "正文索引已更新，语义索引需要刷新") +
-            ` (${successCount} paper(s))`
-        );
-        // Embed resume requires explicit confirmation — remote API cost.
-        const embedLabel = t("ocr_ws_embed_confirm") || "确认向量嵌入";
-        const embedBody =
-          t("ocr_ws_embed_confirm_body") ||
-          "为变更论文重建向量可能调用付费 API，是否继续？";
-        const modal = new Modal(this.app);
-        modal.contentEl.createEl("h2", { text: embedLabel });
-        modal.contentEl.createEl("div", { text: embedBody });
-        const row = modal.contentEl.createDiv({
-          cls: "pf-ocr-ws-detail-actions",
-        });
-        const later = row.createEl("button", {
-          cls: "pf-btn pf-btn-secondary",
-          text: t("next_action_cancel") || "Later",
-        });
-        later.addEventListener("click", () => modal.close());
-        const run = row.createEl("button", {
-          cls: "mod-warning",
-          text: t("next_action_confirm") || "Run",
-        });
-        run.addEventListener("click", () => {
-          modal.close();
-          execFile(
-            pyCmd.path,
-            [...pyCmd.args, "-m", "paperforge", "embed", "build", "--resume"],
-            { cwd: vp, timeout: 600000, windowsHide: true },
-            (embedErr: any) => {
-              new Notice(
-                embedErr
-                  ? (t("ocr_error_notice") || "Embed failed") +
-                      ": " +
-                      (embedErr?.message || String(embedErr))
-                  : t("ocr_ws_embed_done") || "向量嵌入完成"
-              );
-            }
-          );
-        });
-        modal.open();
-      }
-    );
   }
 
   private _stopBuild(): void {

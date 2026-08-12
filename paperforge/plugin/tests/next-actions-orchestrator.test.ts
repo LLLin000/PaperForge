@@ -1,16 +1,22 @@
 /**
- * Vitest tests for next-actions-orchestrator.ts — parsing, allowlist
- * enforcement, dedupe, loop guard, and confirmation flow (#127 PR C).
+ * Vitest tests for next-actions-orchestrator.ts (T8 #169).
+ *
+ * Policy authority is the Python registry — the wire carries
+ * automatic/cost/impact/confirmation.  TS derives execution argv from the
+ * wire (`action run <id> --scope ...`) and NEVER owns an allowlist.
  */
 import { describe, expect, it, beforeEach } from "vitest";
 import {
-  ALLOWED_ACTIONS,
   orchestrateNextActions,
+  buildActionArgv,
+  actionDedupeKey,
+} from "../src/services/next-actions-orchestrator";
+import {
   parseNextActions,
   resetNextActionTracker,
   type NextAction,
   type OrchestratorDeps,
-} from "../src/services/next-actions-orchestrator";
+} from "../src/services/next-actions-types";
 
 beforeEach(() => resetNextActionTracker());
 
@@ -24,7 +30,6 @@ function action(overrides: Partial<NextAction> = {}): NextAction {
     impact: "mutating",
     confirmation: "none",
     reason: "library index changed",
-    dedupe_key: "memory.build",
     ...overrides,
   };
 }
@@ -47,6 +52,11 @@ function deps(overrides: Partial<OrchestratorDeps> = {}): OrchestratorDeps & {
       return true;
     },
     notify: (m) => notices.push(m),
+    isInFlight: () => false,
+    hasExecuted: () => false,
+    markInFlight: () => {},
+    clearInFlight: () => {},
+    markExecuted: () => {},
     ran,
     notices,
     confirmed,
@@ -60,16 +70,14 @@ describe("parseNextActions", () => {
       ok: true,
       command: "sync",
       version: "1.0.0",
-      next_actions: [action().schema_version && { ...action() }],
+      next_actions: [{ ...action() }],
     });
     const parsed = parseNextActions(stdout);
     expect(parsed).toHaveLength(1);
     expect(parsed[0].action_id).toBe("memory.build");
   });
 
-  it("consumes the real backend sync --json contract shape (#127 PR D)", async () => {
-    // This document mirrors what paperforge/commands/sync.py emits today:
-    // schema_version 1, scope {kind}, dedupe_key = action_id.
+  it("consumes the real backend sync --json contract shape", async () => {
     const stdout = JSON.stringify({
       ok: true,
       command: "sync",
@@ -85,7 +93,6 @@ describe("parseNextActions", () => {
           impact: "mutating",
           confirmation: "none",
           reason: "library index changed after sync",
-          dedupe_key: "memory.build",
         },
         {
           schema_version: 1,
@@ -96,16 +103,17 @@ describe("parseNextActions", () => {
           impact: "mutating",
           confirmation: "required",
           reason: "changed papers need vector embeddings",
-          dedupe_key: "embed.resume",
         },
       ],
     });
     const d = deps();
     const started = await orchestrateNextActions(parseNextActions(stdout), d);
     expect(started).toBe(2);
+    // T8: argv is derived from the wire — `action run <id> --scope ...`,
+    // never a plugin-side (verb, command) table.
     expect(d.ran).toEqual([
-      ["memory", "build"],
-      ["embed", "build", "--resume"],
+      ["action", "run", "memory.build", "--scope", "all"],
+      ["action", "run", "embed.resume", "--scope", "all"],
     ]);
     expect(d.confirmed.map((a) => a.action_id)).toEqual(["embed.resume"]);
   });
@@ -117,25 +125,70 @@ describe("parseNextActions", () => {
   });
 });
 
-describe("allowlist enforcement", () => {
-  it("defines the two canonical actions only", () => {
-    expect(Object.keys(ALLOWED_ACTIONS).sort()).toEqual([
-      "embed.resume",
+describe("argv derivation", () => {
+  it("builds papers-scope argv with keys", () => {
+    const argv = buildActionArgv(
+      action({ scope: { kind: "papers", keys: ["B", "A"] } })
+    );
+    expect(argv).toEqual([
+      "action",
+      "run",
       "memory.build",
-    ]);
-    expect(ALLOWED_ACTIONS["embed.resume"].argv).toEqual([
-      "embed",
-      "build",
-      "--resume",
+      "--scope",
+      "papers",
+      "--key",
+      "B",
+      "A",
     ]);
   });
 
-  it("refuses unknown action ids (fail closed)", async () => {
+  it("dedupes by normalized scope keys", () => {
+    expect(
+      actionDedupeKey(
+        action({ scope: { kind: "papers", keys: ["B", "A", "B"] } })
+      )
+    ).toBe("memory.build:papers:A,B");
+    expect(
+      actionDedupeKey(action({ scope: { kind: "papers", keys: ["A", "B"] } }))
+    ).toBe("memory.build:papers:A,B");
+  });
+});
+
+describe("execution policy", () => {
+  it("runs automatic local actions without confirmation", async () => {
     const d = deps();
-    const started = await orchestrateNextActions(
-      [{ ...action(), action_id: "shell.exec" }],
-      d
-    );
+    const started = await orchestrateNextActions([action()], d);
+    expect(started).toBe(1);
+    expect(d.ran).toEqual([
+      ["action", "run", "memory.build", "--scope", "all"],
+    ]);
+    expect(d.confirmed).toEqual([]);
+  });
+
+  it("confirms non-automatic actions before running", async () => {
+    const d = deps();
+    const embed = action({
+      action_id: "embed.resume",
+      automatic: false,
+      cost: "remote_possible",
+      confirmation: "required",
+    });
+    const started = await orchestrateNextActions([embed], d);
+    expect(started).toBe(1);
+    expect(d.confirmed).toEqual([embed]);
+    expect(d.ran).toEqual([
+      ["action", "run", "embed.resume", "--scope", "all"],
+    ]);
+  });
+
+  it("records refusal when the user declines", async () => {
+    const d = deps({ confirm: async () => false });
+    const embed = action({
+      action_id: "embed.resume",
+      automatic: false,
+      confirmation: "required",
+    });
+    const started = await orchestrateNextActions([embed], d);
     expect(started).toBe(0);
     expect(d.ran).toEqual([]);
     expect(d.notices.some((m) => m.includes("refused"))).toBe(true);
@@ -150,86 +203,31 @@ describe("allowlist enforcement", () => {
     expect(started).toBe(0);
     expect(d.ran).toEqual([]);
   });
-});
 
-describe("execution policy", () => {
-  it("runs automatic local actions without confirmation", async () => {
-    const d = deps();
-    const started = await orchestrateNextActions([action()], d);
-    expect(started).toBe(1);
-    expect(d.ran).toEqual([["memory", "build"]]);
-    expect(d.confirmed).toEqual([]);
-  });
-
-  it("confirms remote actions before running", async () => {
+  it("skips non-automatic follow-ups beyond depth 0 (loop guard)", async () => {
     const d = deps();
     const embed = action({
       action_id: "embed.resume",
       automatic: false,
-      cost: "remote_possible",
-      confirmation: "required",
-    });
-    const started = await orchestrateNextActions([embed], d);
-    expect(started).toBe(1);
-    expect(d.confirmed).toEqual([embed]);
-    expect(d.ran).toEqual([["embed", "build", "--resume"]]);
-  });
-
-  it("records refusal when the user declines", async () => {
-    const d = deps({
-      confirm: async () => false,
-    });
-    const embed = action({
-      action_id: "embed.resume",
-      automatic: false,
-      cost: "remote_possible",
-      confirmation: "required",
-    });
-    const started = await orchestrateNextActions([embed], d);
-    expect(started).toBe(0);
-    expect(d.ran).toEqual([]);
-    expect(d.notices.some((m) => m.includes("refused by user"))).toBe(true);
-  });
-
-  it("dedupes by dedupe_key while in flight", async () => {
-    const d = deps({
-      runAction: (argv) => {
-        d.ran.push(argv);
-        // simulate a second delivery while the first is still running
-        void orchestrateNextActions([action()], d);
-        return true;
-      },
-    });
-    const started = await orchestrateNextActions([action(), action()], d);
-    expect(started).toBe(1);
-    expect(d.ran).toHaveLength(1);
-  });
-
-  it("does not mark actions executed when nothing started (retry allowed)", async () => {
-    const d = deps({
-      runAction: () => false, // runtime unavailable
-    });
-    const first = await orchestrateNextActions([action()], d);
-    expect(first).toBe(0);
-    expect(d.ran).toEqual([]);
-    // a later delivery with the runtime now available must still run
-    const d2 = deps();
-    const second = await orchestrateNextActions([action()], d2);
-    expect(second).toBe(1);
-    expect(d2.ran).toEqual([["memory", "build"]]);
-  });
-
-  it("loop guard: depth > 0 skips confirmed follow-ups", async () => {
-    const d = deps();
-    const embed = action({
-      action_id: "embed.resume",
-      automatic: false,
-      cost: "remote_possible",
       confirmation: "required",
     });
     const started = await orchestrateNextActions([embed], d, 1);
     expect(started).toBe(0);
-    expect(d.ran).toEqual([]);
-    expect(d.notices.some((m) => m.includes("depth exceeded"))).toBe(true);
+    expect(d.confirmed).toEqual([]);
+    expect(d.notices.some((m) => m.includes("depth"))).toBe(true);
+  });
+
+  it("dedupes an already-executed action", async () => {
+    let executed = false;
+    const d = deps({
+      hasExecuted: () => executed,
+      markExecuted: () => {
+        executed = true;
+      },
+    });
+    const started = await orchestrateNextActions([action(), action()], d);
+    // First runs and is marked; the duplicate is skipped.
+    expect(started).toBe(1);
+    expect(d.ran).toHaveLength(1);
   });
 });

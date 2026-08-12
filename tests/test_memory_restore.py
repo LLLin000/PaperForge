@@ -202,7 +202,7 @@ class TestMemoryRestoreProbe:
         assert data["capability_state"] == "unavailable"
         assert data["reason"]["code"] == "memory.db_corrupt"
         assert data["action"]["primary"]["verb"] == "restore_backup"
-        assert data["action"]["primary"]["command"] == "paperforge memory restore-backup"
+        assert "command" not in data["action"]["primary"]  # T8 retired
         assert data["action"]["primary"]["safety_class"] == "destructive"
         assert data["action"]["primary"]["confirmation_required"] is True
 
@@ -222,4 +222,4 @@ class TestMemoryRestoreProbe:
         assert data["capability_state"] == "unavailable"
         assert data["reason"]["code"] == "memory.db_corrupt"
         assert data["action"]["primary"]["verb"] == "run"
-        assert data["action"]["primary"]["command"] == "paperforge memory build"
+        assert "command" not in data["action"]["primary"]  # T8 retired

@@ -673,3 +673,163 @@ export function scanBbtUnderProfiles(profilesDir: string): boolean {
   } catch (_) {}
   return false;
 }
+
+// ── #137/#144 action client cutover (T8 #169) ──────────────────────────────
+
+/** Single-result mode: `paperforge action run ... --json` → one PFResult. */
+export interface ActionRunResult {
+  ok: boolean;
+  payload: Record<string, unknown> | null;
+  exitCode: number;
+}
+
+/**
+ * Explicit single-result mode (#137 §0): stdout is EXACTLY ONE PFResult JSON.
+ * Never mixes with the streaming mode.
+ */
+export function runAction(
+  pythonExe: string,
+  extraArgs: string[],
+  vaultPath: string,
+  actionId: string,
+  scope: { kind: string; keys?: string[] },
+  env?: Record<string, string | undefined>,
+  timeout = 120000
+): Promise<ActionRunResult> {
+  const args = [
+    ...extraArgs,
+    "-m",
+    "paperforge",
+    "--vault",
+    vaultPath,
+    "action",
+    "run",
+    actionId,
+    "--scope",
+    scope.kind,
+    ...(scope.kind === "papers" ? (scope.keys ?? []) : []),
+    "--json",
+  ];
+  return runSubprocess(
+    pythonExe,
+    args,
+    vaultPath,
+    timeout,
+    undefined,
+    env
+  ).then((res) => {
+    try {
+      const payload = JSON.parse(res.stdout) as Record<string, unknown>;
+      return {
+        ok: payload.ok === true,
+        payload,
+        exitCode: res.exitCode,
+      };
+    } catch {
+      return { ok: false, payload: null, exitCode: res.exitCode };
+    }
+  });
+}
+
+/** Structured-stream mode (#137 §0): NDJSON events + exactly-one terminal. */
+export interface LongTaskEvent {
+  schema_version: number;
+  event: string;
+  operation: string;
+  [key: string]: unknown;
+}
+
+export interface LongTaskOutcome {
+  ok: boolean;
+  exitCode: number | null;
+  cancelled: boolean;
+  events: LongTaskEvent[];
+  protocolFailure?: string;
+}
+
+export interface LongTaskHandle {
+  /** Cooperative stop: stdin `PAPERFORGE_STOP\n` (#137 controller path). */
+  stop: () => void;
+  promise: Promise<LongTaskOutcome>;
+}
+
+/**
+ * Explicit structured-stream mode: spawn with shell:false, pipe stdin for
+ * the cooperative stop token, parse stdout as NDJSON (protocol-fail closed).
+ */
+export function runLongTask(
+  pythonExe: string,
+  extraArgs: string[],
+  vaultPath: string,
+  argv: string[],
+  env?: Record<string, string | undefined>
+): LongTaskHandle {
+  const child = spawn(
+    pythonExe,
+    [...extraArgs, "-m", "paperforge", "--vault", vaultPath, ...argv],
+    {
+      cwd: vaultPath,
+      shell: false,
+      windowsHide: true,
+      env: { ...process.env, ...(env ?? {}) },
+      stdio: ["pipe", "pipe", "pipe"],
+    }
+  );
+
+  const events: LongTaskEvent[] = [];
+  let buffer = "";
+  let protocolFailure: string | undefined;
+
+  child.stdout?.setEncoding("utf-8");
+  child.stdout?.on("data", (chunk: string) => {
+    const full = buffer + chunk;
+    const lines = full.split("\n");
+    buffer = lines.pop() ?? "";
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      if (protocolFailure) continue;
+      try {
+        const ev = JSON.parse(line) as LongTaskEvent;
+        if (ev.schema_version !== 1 || !ev.event) {
+          protocolFailure = `schema_version/event violation: ${line.slice(0, 80)}`;
+          continue;
+        }
+        events.push(ev);
+      } catch {
+        protocolFailure = `non-JSON stdout line: ${line.slice(0, 80)}`;
+      }
+    }
+  });
+
+  const outcome = new Promise<LongTaskOutcome>((resolve) => {
+    child.on("close", (code: number | null) => {
+      resolve({
+        ok: !protocolFailure && code === 0,
+        exitCode: code,
+        cancelled: code === 130,
+        events,
+        protocolFailure,
+      });
+    });
+    child.on("error", (err: Error) => {
+      resolve({
+        ok: false,
+        exitCode: -1,
+        cancelled: false,
+        events,
+        protocolFailure: `spawn error: ${err.message}`,
+      });
+    });
+  });
+
+  return {
+    stop: () => {
+      try {
+        child.stdin?.write("PAPERFORGE_STOP\n");
+      } catch {
+        // stdin closed — the exit path still settles.
+      }
+    },
+    promise: outcome,
+  };
+}

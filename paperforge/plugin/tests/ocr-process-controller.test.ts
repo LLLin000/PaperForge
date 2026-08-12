@@ -75,10 +75,18 @@ describe("OcrProcessController", () => {
     expect(spawnedArgs[0]).toContain("ocr");
     expect(spawnedArgs[0]).toContain("rebuild");
     expect(spawnedArgs[0]).toContain("A");
-    child.emitStdout("OCR_REBUILD_START:2\n");
-    child.emitStdout("OCR_REBUILD_RESULT:A:ok\n");
-    child.emitStdout("OCR_REBUILD_RESULT:B:ok\n");
-    child.emitStdout("OCR_REBUILD_DONE:2:0:0\n");
+    child.emitStdout(
+      '{"schema_version":1,"event":"start","operation":"ocr.rebuild","total":2}\n'
+    );
+    child.emitStdout(
+      '{"schema_version":1,"event":"item_result","operation":"ocr.rebuild","item_id":"A","status":"ok"}\n'
+    );
+    child.emitStdout(
+      '{"schema_version":1,"event":"item_result","operation":"ocr.rebuild","item_id":"B","status":"ok"}\n'
+    );
+    child.emitStdout(
+      '{"schema_version":1,"event":"result","operation":"ocr.rebuild","result":{"ok":true}}\n'
+    );
     child.emitClose(0);
     const outcome = await promise;
     expect(outcome.ok).toBe(true);
@@ -99,9 +107,15 @@ describe("OcrProcessController", () => {
   it("aggregates mixed outcomes and reports non-ok", async () => {
     const { ctrl, child } = makeController();
     const promise = ctrl.start("rebuild", { keys: ["A", "B", "C"] });
-    child.emitStdout("OCR_REBUILD_RESULT:A:ok\n");
-    child.emitStdout("OCR_REBUILD_RESULT:B:failed\n");
-    child.emitStdout("OCR_REBUILD_RESULT:C:skipped\n");
+    child.emitStdout(
+      '{"schema_version":1,"event":"item_result","operation":"ocr.rebuild","item_id":"A","status":"ok"}\n'
+    );
+    child.emitStdout(
+      '{"schema_version":1,"event":"item_result","operation":"ocr.rebuild","item_id":"B","status":"failed"}\n'
+    );
+    child.emitStdout(
+      '{"schema_version":1,"event":"item_result","operation":"ocr.rebuild","item_id":"C","status":"skipped"}\n'
+    );
     child.emitClose(1);
     const outcome = await promise;
     expect(outcome.ok).toBe(false);

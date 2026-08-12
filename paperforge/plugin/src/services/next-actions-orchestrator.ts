@@ -1,99 +1,55 @@
 /**
- * Next-action orchestrator (#127 PR C).
+ * Next-action orchestrator (T8 #169).
  *
- * Consumes the `next_actions` payload of a PFResult (produced by the backend
- * command core) and executes follow-ups under a fixed allowlist. The backend
- * never ships command strings; the plugin maps `action_id` → argv here.
+ * The backend (registry + reconcile) is the SINGLE policy authority: the
+ * wire carries `action_id`, `scope`, `automatic`, `cost`, `impact`,
+ * `confirmation`.  This module has NO action-policy tables — no
+ * ALLOWED_ACTIONS, no (verb, command) dispatch, no isAutomaticLocal /
+ * requiresConfirmation reimplementation.  Execution argv is derived from
+ * the wire: `action run <id> --scope <kind> [--key ...]`.
  *
  * Policy:
- * - automatic + local + non-destructive → run inline
- * - remote-possible or destructive or confirmation=required → ask first
- * - unknown action_id / schema → refuse (fail closed)
- * - dedupe by `dedupe_key` while in flight
- * - follow-up depth guard (an action's result must not re-enqueue itself)
+ * - automatic intents (registry invariant: local, non-destructive, no
+ *   confirmation) run inline
+ * - everything else needs the user's confirmation (rendered from the
+ *   descriptor fields on the wire)
+ * - unknown action_id / schema → refuse (fail closed — but never via a
+ *   plugin-side allowlist; the registry already resolved the id)
+ * - dedupe by canonical (action_id, normalized scope) while in flight
+ * - follow-up depth guard: deeper layers only run automatic intents
  */
-export interface NextActionScope {
-  kind: string;
-  keys?: string[];
-}
+import type { OrchestratorDeps, NextAction } from "./next-actions-types";
 
-export interface NextAction {
-  schema_version: number;
-  action_id: string;
-  scope: NextActionScope;
-  automatic: boolean;
-  cost: string;
-  impact: string;
-  confirmation: string;
-  reason: string;
-  dedupe_key?: string;
-}
-
-export interface OrchestratorDeps {
-  /** Launch a follow-up; must return true only when it actually started. */
-  runAction: (argv: string[]) => boolean;
-  confirm: (action: NextAction) => Promise<boolean>;
-  notify: (message: string) => void;
-}
+export { resetNextActionTracker } from "./next-actions-types";
 
 export const NEXT_ACTIONS_SCHEMA_VERSION = 1;
 
-/** Fixed plugin-side allowlist: action_id → argv. Unknown ids are refused. */
-export const ALLOWED_ACTIONS: Record<
-  string,
-  { argv: string[]; description: string }
-> = {
-  "memory.build": {
-    argv: ["memory", "build"],
-    description: "Rebuild the local memory index",
-  },
-  "embed.resume": {
-    argv: ["embed", "build", "--resume"],
-    description:
-      "Resume vector embedding for changed papers (may call a paid API)",
-  },
-};
-
-const _inFlight = new Set<string>();
-const _executed = new Set<string>();
-
-/** Test hook: clear in-flight/executed tracking between scenarios. */
-export function resetNextActionTracker(): void {
-  _inFlight.clear();
-  _executed.clear();
+/** Derive the canonical dedupe key: action_id + normalized scope. */
+export function actionDedupeKey(action: NextAction): string {
+  const keys = action.scope?.kind === "papers" ? (action.scope.keys ?? []) : [];
+  const norm = [...new Set(keys)].sort().join(",");
+  return `${action.action_id}:${action.scope?.kind ?? "all"}:${norm}`;
 }
 
-/** Parse `next_actions` from a PFResult JSON document; malformed → []. */
-export function parseNextActions(stdout: string): NextAction[] {
-  try {
-    const payload = JSON.parse(stdout);
-    const actions = payload?.next_actions;
-    return Array.isArray(actions) ? (actions as NextAction[]) : [];
-  } catch {
-    return [];
+/** Build the CLI argv for one action from the wire (never a policy table). */
+export function buildActionArgv(action: NextAction): string[] {
+  const argv = [
+    "action",
+    "run",
+    action.action_id,
+    "--scope",
+    action.scope?.kind ?? "all",
+  ];
+  if (action.scope?.kind === "papers" && (action.scope.keys ?? []).length > 0) {
+    argv.push("--key", ...(action.scope.keys as string[]));
   }
-}
-
-function isAutomaticLocal(action: NextAction): boolean {
-  return (
-    action.automatic === true &&
-    action.cost === "local" &&
-    action.impact !== "destructive"
-  );
-}
-
-function requiresConfirmation(action: NextAction): boolean {
-  return (
-    action.confirmation === "required" ||
-    action.cost === "remote_possible" ||
-    action.impact === "destructive"
-  );
+  return argv;
 }
 
 /**
  * Execute a batch of next actions. Returns the number of actions that were
- * started (automatic local + confirmed). Depth > 0 refuses everything except
- * automatic-local (loop guard: remote/confirmed follow-ups must not chain).
+ * started (automatic + confirmed). Depth > 0 refuses everything except
+ * automatic intents (loop guard: confirmed follow-ups must not chain).
  */
 export async function orchestrateNextActions(
   actions: NextAction[],
@@ -108,25 +64,24 @@ export async function orchestrateNextActions(
       );
       continue;
     }
-    const spec = ALLOWED_ACTIONS[action.action_id];
-    if (!spec) {
-      deps.notify(`Unknown next action '${action.action_id}'; refused`);
+    if (!action.action_id) {
+      deps.notify("Next action without action_id; refused");
       continue;
     }
-    const key = action.dedupe_key || action.action_id;
-    if (_inFlight.has(key)) continue;
-    if (_executed.has(key)) continue;
+    const key = action.dedupe_key || actionDedupeKey(action);
+    if (deps.isInFlight(key)) continue;
+    if (deps.hasExecuted(key)) continue;
 
-    if (isAutomaticLocal(action)) {
-      _inFlight.add(key);
+    if (action.automatic === true) {
+      deps.markInFlight(key);
       let startedNow = false;
       try {
-        startedNow = deps.runAction([...spec.argv]) === true;
+        startedNow = deps.runAction(buildActionArgv(action), action) === true;
       } finally {
-        _inFlight.delete(key);
+        deps.clearInFlight(key);
       }
       if (startedNow) {
-        _executed.add(key);
+        deps.markExecuted(key);
         started += 1;
       }
       continue;
@@ -138,23 +93,21 @@ export async function orchestrateNextActions(
       );
       continue;
     }
-    if (requiresConfirmation(action)) {
-      const ok = await deps.confirm(action);
-      if (!ok) {
-        deps.notify(`Follow-up '${action.action_id}' refused by user`);
-        continue;
-      }
-      _inFlight.add(key);
-      let startedNow = false;
-      try {
-        startedNow = deps.runAction([...spec.argv]) === true;
-      } finally {
-        _inFlight.delete(key);
-      }
-      if (startedNow) {
-        _executed.add(key);
-        started += 1;
-      }
+    const ok = await deps.confirm(action);
+    if (!ok) {
+      deps.notify(`Follow-up '${action.action_id}' refused by user`);
+      continue;
+    }
+    deps.markInFlight(key);
+    let startedNow = false;
+    try {
+      startedNow = deps.runAction(buildActionArgv(action), action) === true;
+    } finally {
+      deps.clearInFlight(key);
+    }
+    if (startedNow) {
+      deps.markExecuted(key);
+      started += 1;
     }
   }
   return started;

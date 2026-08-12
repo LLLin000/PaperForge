@@ -50,8 +50,16 @@ import {
   buildTargetedEnv,
 } from "./services/python-bridge";
 import { resolveVaultPaths } from "./services/runtime-paths";
-import { setPathConfigSource, isConfigHydrated } from "./services/runtime-paths";
-import { configList, configMigrate, configValidate, queryEmbedStatus } from "./services/config-client";
+import {
+  setPathConfigSource,
+  isConfigHydrated,
+} from "./services/runtime-paths";
+import {
+  configList,
+  configMigrate,
+  configValidate,
+  queryEmbedStatus,
+} from "./services/config-client";
 import {
   ManagedRuntime,
   resolveRuntimeCommand,
@@ -65,8 +73,6 @@ export default class PaperForgePlugin extends Plugin {
   _embedStatusCache: Record<string, unknown> = {};
 
   settings!: PaperForgeSettings;
-  private _lastExportMtime = 0;
-  private _lastOcrMtimes: Record<string, number> = {};
   private _autoSyncRunning = false;
   private _lastSyncTime: string | null = null;
   private _pollTimer: ReturnType<typeof setInterval> | null = null;
@@ -169,7 +175,7 @@ export default class PaperForgePlugin extends Plugin {
             return;
           }
           const vp = (this.app.vault.adapter as any).basePath as string;
-          new Notice(`PaperForge: running ${a.cmd}...`);
+          new Notice(`PaperForge: running ${a.commandId}...`);
           const pyCmd = this._getPythonCommand();
           if (!pyCmd) {
             new Notice("Runtime not ready");
@@ -178,15 +184,15 @@ export default class PaperForgePlugin extends Plugin {
           const { path: cmdPythonExe, args: cmdExtra = [] } = pyCmd;
           const cmdArgs = Array.isArray(a.args) ? [...a.args] : [];
           // #173/C1: credentials are resolved by Python; the env is redacted.
-          const env = await buildTargetedEnv(null, a.cmd);
+          const env = await buildTargetedEnv(null, a.commandId);
           execFile(
             cmdPythonExe,
-            [...cmdExtra, "-m", "paperforge", a.cmd, ...cmdArgs],
+            [...cmdExtra, "-m", "paperforge", a.commandId, ...cmdArgs],
             { cwd: vp, timeout: 300000, env },
             (err, stdout, stderr) => {
               if (err) {
                 new Notice(
-                  `[!!] ${a.cmd} failed: ${(stderr || err.message).slice(0, 120)}`,
+                  `[!!] ${a.commandId} failed: ${(stderr || err.message).slice(0, 120)}`,
                   8000
                 );
                 return;
@@ -206,24 +212,30 @@ export default class PaperForgePlugin extends Plugin {
       callback: () => this._runLegacyConfigMigration(),
     });
 
-    this._startFilePolling();
+    this._startConvergenceTimer();
     this._checkReleaseNotes();
 
     // #142/C0: one-time plugin-assisted config migration — detect legacy
     // vaults and surface an explicit migrate command.
-    const vaultBase = (this.app.vault.adapter as unknown as { basePath?: string }).basePath;
+    const vaultBase = (
+      this.app.vault.adapter as unknown as { basePath?: string }
+    ).basePath;
     if (vaultBase) {
-      void configValidate(vaultBase, this.settings).then((validation) => {
-        if (validation.state === "migration_required") {
-          this._needsConfigMigration = true;
-        }
-      }).catch(() => undefined);
+      void configValidate(vaultBase, this.settings)
+        .then((validation) => {
+          if (validation.state === "migration_required") {
+            this._needsConfigMigration = true;
+          }
+        })
+        .catch(() => undefined);
       // #161/R: embed status read model for the vector UI.
-      void queryEmbedStatus(vaultBase, this.settings).then((d) => {
-        if (d) {
-          this._embedStatusCache = d as unknown as Record<string, unknown>;
-        }
-      }).catch(() => undefined);
+      void queryEmbedStatus(vaultBase, this.settings)
+        .then((d) => {
+          if (d) {
+            this._embedStatusCache = d as unknown as Record<string, unknown>;
+          }
+        })
+        .catch(() => undefined);
     }
   }
 
@@ -232,94 +244,80 @@ export default class PaperForgePlugin extends Plugin {
   /** Thin plugin-assisted migration (#142 §12): dry-run -> confirm -> migrate
    * -> re-hydrate -> purge legacy domain values from data.json. */
   private _runLegacyConfigMigration(): void {
-    const vaultPath = (this.app.vault.adapter as unknown as { basePath?: string }).basePath;
+    const vaultPath = (
+      this.app.vault.adapter as unknown as { basePath?: string }
+    ).basePath;
     if (!vaultPath) return;
     void (async () => {
-      const dry = await configMigrate(vaultPath, true, this.settings).catch((e) => null);
-      const summary = dry && dry.warnings?.length
-        ? dry.warnings.join("\n")
-        : "No conflicts; legacy path keys will move under vault_config.";
-      new ConfirmMigrationModal(
-        this.app,
-        summary,
-        async () => {
-          await configMigrate(vaultPath, false, this.settings).catch((e) => {
-            new Notice(`PaperForge: config migrate failed: ${String(e)}`);
-            return;
+      const dry = await configMigrate(vaultPath, true, this.settings).catch(
+        (e) => null
+      );
+      const summary =
+        dry && dry.warnings?.length
+          ? dry.warnings.join("\n")
+          : "No conflicts; legacy path keys will move under vault_config.";
+      new ConfirmMigrationModal(this.app, summary, async () => {
+        await configMigrate(vaultPath, false, this.settings).catch((e) => {
+          new Notice(`PaperForge: config migrate failed: ${String(e)}`);
+          return;
+        });
+        // Re-hydrate mirrors from the canonical config, then purge the
+        // legacy domain values from data.json (#142 §12 step 4/5).
+        try {
+          const list = await configList(vaultPath, this.settings);
+          const pick = (key: string) =>
+            list.fields.find((f) => f.key === key)?.value;
+          const systemDir = String(pick("system_dir") ?? "");
+          const resourcesDir = String(pick("resources_dir") ?? "");
+          const literatureDir = String(pick("literature_dir") ?? "");
+          const baseDir = String(pick("base_dir") ?? "");
+          const zoteroDir = String(pick("zotero_data_dir") ?? "");
+          const apiBase = String(pick("vector_db_api_base") ?? "");
+          const apiModel = String(pick("vector_db_api_model") ?? "");
+          const agentPlatform = String(pick("agent_platform") ?? "");
+          if (systemDir) this.settings.system_dir = systemDir;
+          if (resourcesDir) this.settings.resources_dir = resourcesDir;
+          if (literatureDir) this.settings.literature_dir = literatureDir;
+          if (baseDir) this.settings.base_dir = baseDir;
+          if (zoteroDir) this.settings.zotero_data_dir = zoteroDir;
+          if (apiBase) this.settings.vector_db_api_base = apiBase;
+          if (apiModel) this.settings.vector_db_api_model = apiModel;
+          if (agentPlatform) this.settings.agent_platform = agentPlatform;
+          setPathConfigSource({
+            system_dir: systemDir || "System",
+            resources_dir: resourcesDir || "Resources",
+            literature_dir: literatureDir || "Literature",
+            base_dir: baseDir || "Bases",
+            _warning: null,
           });
-          // Re-hydrate mirrors from the canonical config, then purge the
-          // legacy domain values from data.json (#142 §12 step 4/5).
-          try {
-            const list = await configList(vaultPath, this.settings);
-            const pick = (key: string) =>
-              list.fields.find((f) => f.key === key)?.value;
-            const systemDir = String(pick("system_dir") ?? "");
-            const resourcesDir = String(pick("resources_dir") ?? "");
-            const literatureDir = String(pick("literature_dir") ?? "");
-            const baseDir = String(pick("base_dir") ?? "");
-            const zoteroDir = String(pick("zotero_data_dir") ?? "");
-            const apiBase = String(pick("vector_db_api_base") ?? "");
-            const apiModel = String(pick("vector_db_api_model") ?? "");
-            const agentPlatform = String(pick("agent_platform") ?? "");
-            if (systemDir) this.settings.system_dir = systemDir;
-            if (resourcesDir) this.settings.resources_dir = resourcesDir;
-            if (literatureDir) this.settings.literature_dir = literatureDir;
-            if (baseDir) this.settings.base_dir = baseDir;
-            if (zoteroDir) this.settings.zotero_data_dir = zoteroDir;
-            if (apiBase) this.settings.vector_db_api_base = apiBase;
-            if (apiModel) this.settings.vector_db_api_model = apiModel;
-            if (agentPlatform) this.settings.agent_platform = agentPlatform;
-            setPathConfigSource({
-              system_dir: systemDir || "System",
-              resources_dir: resourcesDir || "Resources",
-              literature_dir: literatureDir || "Literature",
-              base_dir: baseDir || "Bases",
-              _warning: null,
-            });
-          } catch {
-            /* mirrors keep prior values; canonical file is authoritative */
-          }
-          this._needsConfigMigration = false;
-          await this.saveSettings();
-          new Notice("PaperForge: configuration migrated");
+        } catch {
+          /* mirrors keep prior values; canonical file is authoritative */
         }
-      ).open();
+        this._needsConfigMigration = false;
+        await this.saveSettings();
+        new Notice("PaperForge: configuration migrated");
+      }).open();
     })();
   }
 
-  private _startFilePolling() {
+  private _startConvergenceTimer() {
+    // T8 (#169) convergence tick (#158): fires `paperforge sync` only, on a
+    // cadence from data.json (autoSyncIntervalSeconds, default 120).  The
+    // mtime scanner and canonical path/state scanning are DELETED — the
+    // Python side derives state from reconcile(all).
     const vaultPath = (this.app.vault.adapter as any).basePath as string;
+    const cadenceMs =
+      Math.max(30, this.settings.autoSyncIntervalSeconds ?? 120) * 1000;
 
+    // Vault-open tick + cadence interval.
+    this._autoSync(vaultPath);
     this._pollTimer = setInterval(() => {
-      // #142/C0: no semantic scanning on guessed paths — the config authority
-      // must be hydrated first (else actions stay disabled per #144).
       if (!isConfigHydrated()) return;
-      this._checkExports(vaultPath);
-      this._checkOcr(vaultPath);
-    }, 120000);
-  }
-
-  private _checkExports(vaultPath: string) {
-    if (this._autoSyncRunning) return;
-    const exportsDir = resolveVaultPaths(vaultPath).exportsDir;
-    if (!fs.existsSync(exportsDir)) return;
-
-    let newestMtime = 0;
-    try {
-      fs.readdirSync(exportsDir).forEach((f) => {
-        if (!f.endsWith(".json")) return;
-        const stat = fs.statSync(path.join(exportsDir, f));
-        if (stat.mtimeMs > newestMtime) newestMtime = stat.mtimeMs;
-      });
-    } catch (e) {
-      return;
-    }
-
-    if (newestMtime > this._lastExportMtime) {
-      this._lastExportMtime = newestMtime;
       this._autoSync(vaultPath);
-    }
+    }, cadenceMs);
   }
+
+  // T8: mtime scanner deleted — the convergence tick fires sync directly.
 
   private _autoSync(vaultPath: string) {
     if (this._autoSyncRunning) return;
@@ -348,61 +346,19 @@ export default class PaperForgePlugin extends Plugin {
         this._memoryStatusText = null;
         if (!err) {
           this._lastSyncTime = new Date().toLocaleTimeString();
-          // #127: consume next_actions instead of hidden fire-and-forget work.
+          // #127/#169: consume next_actions — the Python registry is the
+          // policy authority; the plugin executes via the action client.
           void orchestrateFromSync(stdout, {
             app: this.app,
             vaultPath,
             resolveCommand: (v) => this._getPythonCommand(),
           });
         }
-        try {
-          const exportsDir = resolveVaultPaths(vaultPath).exportsDir;
-          let newest = 0;
-          fs.readdirSync(exportsDir).forEach((f) => {
-            if (!f.endsWith(".json")) return;
-            newest = Math.max(
-              newest,
-              fs.statSync(path.join(exportsDir, f)).mtimeMs
-            );
-          });
-          this._lastExportMtime = newest;
-        } catch {}
       }
     );
   }
 
-  private _checkOcr(vaultPath: string) {
-    if (this._autoSyncRunning) return;
-    const ocrDir = resolveVaultPaths(vaultPath).ocrDir;
-    if (!fs.existsSync(ocrDir)) return;
-
-    try {
-      fs.readdirSync(ocrDir, { withFileTypes: true }).forEach((entry) => {
-        if (!entry.isDirectory()) return;
-        const metaPath = path.join(ocrDir, entry.name, "meta.json");
-        if (!fs.existsSync(metaPath)) return;
-        const stat = fs.statSync(metaPath);
-        const prevMtime = this._lastOcrMtimes[entry.name] || 0;
-        if (stat.mtimeMs <= prevMtime) return;
-
-        this._lastOcrMtimes[entry.name] = stat.mtimeMs;
-        if (this._autoSyncRunning) return;
-        this._autoSyncRunning = true;
-
-        const pyCmd = this._getPythonCommand();
-        if (!pyCmd) {
-          this._autoSyncRunning = false;
-          return;
-        }
-
-        const cmd = `"${pyCmd.path}" ${pyCmd.args.join(" ")} -m paperforge --vault "${vaultPath}" sync`;
-        exec(cmd, { timeout: 30000, encoding: "utf-8" }, () => {
-          this._autoSyncRunning = false;
-          this._memoryStatusText = null;
-        });
-      });
-    } catch (_e) {}
-  }
+  // T8: OCR mtime scanning deleted — the convergence tick fires sync only.
 
   readPaperforgeJson(): Record<string, string> {
     // #142 / C0: removed — the plugin never parses paperforge.json. Values
@@ -483,7 +439,9 @@ export default class PaperForgePlugin extends Plugin {
         if (apiModel) this.settings.vector_db_api_model = apiModel;
         if (agentPlatform) this.settings.agent_platform = agentPlatform;
         // agent_platform choices come from Python's config list (#142).
-        const platformField = list.fields.find((f) => f.key === "agent_platform");
+        const platformField = list.fields.find(
+          (f) => f.key === "agent_platform"
+        );
         this.agentPlatformChoices = platformField?.choices ?? [];
         setPathConfigSource({
           system_dir: systemDir || "System",
