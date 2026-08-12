@@ -160,18 +160,20 @@ class TestGlobalFirst:
         vault = _lineage_vault(tmp_path)
         _set_ocr_stale(vault, "KEY1")
         result = reconcile(vault)
-        assert _intent_ids(result) == ["ocr.run"]
+        assert _intent_ids(result) == ["ocr.rebuild_derived"]
         assert result.data["global"]["vector_substrate_ok"] is True
 
 
 # ── minimal repair frontier + unknown fails closed ────────────────────────
 
 class TestMinimalFrontier:
-    def test_ocr_stale_emits_ocr_run(self, tmp_path: Path) -> None:
+    def test_ocr_stale_emits_rebuild_derived(self, tmp_path: Path) -> None:
+        """#168 P0-1: DERIVED staleness (artifacts changed after publish)
+        is the LOCAL ocr.rebuild_derived, not the remote ocr.run."""
         vault = _lineage_vault(tmp_path)
         _set_ocr_stale(vault, "KEY1")
         result = reconcile(vault)
-        assert [i["action_id"] for i in result.next_actions] == ["ocr.run"]
+        assert [i["action_id"] for i in result.next_actions] == ["ocr.rebuild_derived"]
         assert result.next_actions[0]["scope"] == {"kind": "papers", "keys": ["KEY1"]}
 
     def test_retrieval_stale_emits_memory_build_only_when_ocr_current(self, tmp_path: Path) -> None:
@@ -187,7 +189,7 @@ class TestMinimalFrontier:
         _set_ocr_stale(vault, "KEY1")
         _set_retrieval_stale(vault, ("KEY1",))
         result = reconcile(vault)
-        assert [i["action_id"] for i in result.next_actions] == ["ocr.run"]
+        assert [i["action_id"] for i in result.next_actions] == ["ocr.rebuild_derived"]
 
     def test_unknown_retrieval_emits_no_intent(self, tmp_path: Path) -> None:
         """Unknown per-paper lineage alone -> NO per-paper repair intent
@@ -337,14 +339,14 @@ class TestOperationPolicySeparation:
         real_emit = reconcile_mod.emit_next_action
 
         def broken_emit(intent):
-            if intent.action_id == "ocr.run":
+            if intent.action_id == "ocr.rebuild_derived":
                 raise KeyError(intent.action_id)
             return real_emit(intent)
 
         monkeypatch.setattr(reconcile_mod, "emit_next_action", broken_emit)
         result = reconcile(vault)
         assert result.next_actions == []
-        assert "reconcile.action_unregistered:ocr.run" in result.data["diagnostics"]
+        assert "reconcile.action_unregistered:ocr.rebuild_derived" in result.data["diagnostics"]
 
     def test_cli_emits_next_actions_channel(self, tmp_path: Path) -> None:
         """P1-1: the CLI surfaces intents ONLY on next_actions; data carries

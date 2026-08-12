@@ -248,49 +248,11 @@ def _get_run_ocr():
 
 
 def _make_cooperative_stop() -> tuple[Callable[[], bool], Callable[[], None]]:
-    """Install cooperative stop mechanisms: SIGINT handler + stdin reader.
+    """#137 unified cooperative stop: one token fed by stdin
+    PAPERFORGE_STOP + SIGINT + SIGTERM (shared core.cancellation)."""
+    from paperforge.core.cancellation import make_cancellation_token
 
-    SIGINT (POSIX/terminal): sets flag.
-    Stdin line "PAPERFORGE_STOP": daemon reader thread sets flag
-      (reliable on Windows where SIGINT can't be caught in subprocesses).
-
-    Returns (is_stopped, restore):
-        is_stopped(): returns True if stop was requested
-        restore(): restores original SIGINT handler
-    """
-    import threading as _threading
-
-    _flag: list[bool] = [False]
-    _reader_active: list[bool] = [True]
-
-    # ── SIGINT handler (POSIX/terminal) ──
-    def _handler(_signum: int, _frame: object) -> None:
-        _flag[0] = True
-
-    _old = signal.signal(signal.SIGINT, _handler)
-
-    # ── Stdin reader daemon thread (Windows-reliable) ──
-    def _stdin_reader() -> None:
-        import sys as _sys
-        try:
-            while _reader_active[0]:
-                line = _sys.stdin.readline()
-                if not line:  # EOF (pipe closed)
-                    break
-                if line.strip() == "PAPERFORGE_STOP":
-                    _flag[0] = True
-                    break
-        except (OSError, ValueError, AttributeError, RuntimeError):
-            pass  # stdin unavailable in testing/headless
-
-    _reader_thread = _threading.Thread(target=_stdin_reader, daemon=True)
-    _reader_thread.start()
-
-    def _restore() -> None:
-        _reader_active[0] = False
-        signal.signal(signal.SIGINT, _old)
-
-    return (lambda: _flag[0], _restore)
+    return make_cancellation_token()
 
 
 
@@ -326,7 +288,9 @@ def _run_ocr_redo(vault: Path, keys: list[str] | None = None, dry_run: bool = Fa
 
 
     total = len(keys)
-    batch = total > 1 and not dry_run
+    # #168 T7 P0-5: a single paper's remote OCR is still a long task — every
+    # non-dry-run keyed redo uses the same NDJSON stream.
+    batch = not dry_run
 
     if batch:
         from paperforge.core.ndjson import emit_start
@@ -363,39 +327,51 @@ def _run_ocr_redo(vault: Path, keys: list[str] | None = None, dry_run: bool = Fa
             progress_callback=_progress_callback if batch else None,
             stop_check=_stop_check if batch else None,
         )
-
-        success_keys = result.get("success_keys", [])
-        failed_keys = result.get("failed_keys", [])
-        worker_exit_code = result.get("exit_code", 0)
-        # #137: human logs → stderr; stdout carries machine output only.
-        if success_keys:
-            print(f"Redo OCR done={len(success_keys)}: {', '.join(success_keys)}",
-                  file=sys.stderr, flush=True)
-        if failed_keys:
-            print(f"Redo OCR pending/failed={len(failed_keys)}: {', '.join(failed_keys)}",
-                  file=sys.stderr, flush=True)
-
-        _real_stop = batch and _is_stopped() and _current[0] < total
-        if _real_stop:
-            print(f"Batch stopped (SIGINT) after {_current[0]} paper(s).", file=sys.stderr)
+    except Exception as exc:  # noqa: BLE001 — exactly-one error terminal
+        from paperforge.core.ndjson import emit_terminal
+        from paperforge import __version__ as _PFV
+        from paperforge.core.result import PFResult, PFError
+        from paperforge.core.errors import ErrorCode as _EC
 
         if batch:
-            from paperforge.core.ndjson import emit_terminal
-            from paperforge import __version__ as _PFV
-            from paperforge.core.result import PFResult
-
-            if _real_stop:
-                emit_terminal("cancelled", "ocr.redo",
-                              PFResult(ok=False, command="ocr redo", version=_PFV))
-            else:
-                emit_terminal("result", "ocr.redo", PFResult(
-                    ok=not failed_keys,
-                    command="ocr redo",
-                    version=_PFV,
-                    data={"done": len(success_keys), "failed": len(failed_keys)},
-                ))
-    finally:
+            emit_terminal("error", "ocr.redo", PFResult(
+                ok=False, command="ocr redo", version=_PFV,
+                error=PFError(code=_EC.INTERNAL_ERROR, message=str(exc)),
+            ))
         _restore_signal()
+        return 1
+
+    success_keys = result.get("success_keys", [])
+    failed_keys = result.get("failed_keys", [])
+    worker_exit_code = result.get("exit_code", 0)
+    # #137: human logs → stderr; stdout carries machine output only.
+    if success_keys:
+        print(f"Redo OCR done={len(success_keys)}: {', '.join(success_keys)}",
+              file=sys.stderr, flush=True)
+    if failed_keys:
+        print(f"Redo OCR pending/failed={len(failed_keys)}: {', '.join(failed_keys)}",
+              file=sys.stderr, flush=True)
+
+    _real_stop = batch and _is_stopped() and _current[0] < total
+    if _real_stop:
+        print(f"Batch stopped (SIGINT) after {_current[0]} paper(s).", file=sys.stderr)
+
+    if batch:
+        from paperforge.core.ndjson import emit_terminal
+        from paperforge import __version__ as _PFV
+        from paperforge.core.result import PFResult
+
+        if _real_stop:
+            emit_terminal("cancelled", "ocr.redo",
+                          PFResult(ok=False, command="ocr redo", version=_PFV))
+        else:
+            emit_terminal("result", "ocr.redo", PFResult(
+                ok=not failed_keys,
+                command="ocr redo",
+                version=_PFV,
+                data={"done": len(success_keys), "failed": len(failed_keys)},
+            ))
+    _restore_signal()
 
     if batch and _is_stopped() and _current[0] < total:
         return 130
@@ -613,6 +589,19 @@ def _run_ocr_rebuild(
                 file=sys.stderr,
                 flush=True,
             )
+        if keys:
+            # #137: stream chosen → exactly-one terminal (error), then EOF.
+            from paperforge.core.ndjson import emit_terminal
+            from paperforge import __version__ as _PFV
+            from paperforge.core.result import PFResult
+
+            emit_terminal("error", "ocr.rebuild", PFResult(
+                ok=False, command="ocr rebuild", version=_PFV,
+                error=__import__("paperforge").core.errors.PFError(
+                    __import__("paperforge").core.errors.ErrorCode.ACTION_UNAVAILABLE,
+                    "No papers matched for rebuild",
+                ),
+            ))
         # #126: an explicit key list that cannot enter rebuild is a failure.
         return 1 if keys else 0
 
@@ -666,35 +655,47 @@ def _run_ocr_rebuild(
             on_progress=_on_progress,
             stop_check=_stop_check,
         )
-        # #126: merge dropped explicit keys into skipped so the outcome is
-        # complete and rc is non-zero.
-        result["skipped"] = [*result["skipped"], *dropped]
-        result["results"] = [
-            *result["results"],
-            *[{"key": d["key"], "status": "skipped", "reason": d["reason"]} for d in dropped],
-        ]
-        success_count = len(result["success_keys"])
-        failed_count = len(result["failed_keys"])
-        skipped_count = len(result["skipped"])
-        print(f"Done. Rebuilt {success_count} paper(s).", file=sys.stderr, flush=True)
-        _real_stop = _is_stopped() and _count < total
+    except Exception as exc:  # noqa: BLE001 — exactly-one error terminal
         from paperforge.core.ndjson import emit_terminal
         from paperforge import __version__ as _PFV
-        from paperforge.core.result import PFResult
+        from paperforge.core.result import PFResult, PFError
+        from paperforge.core.errors import ErrorCode as _EC
 
-        _terminal = (
-            ("cancelled", PFResult(ok=False, command="ocr rebuild", version=_PFV))
-            if _real_stop
-            else ("result", PFResult(
-                ok=not (failed_count or skipped_count),
-                command="ocr rebuild",
-                version=_PFV,
-                data={"rebuilt": success_count, "failed": failed_count, "skipped": skipped_count},
-            ))
-        )
-        emit_terminal(_terminal[0], "ocr.rebuild", _terminal[1])
-    finally:
+        emit_terminal("error", "ocr.rebuild", PFResult(
+            ok=False, command="ocr rebuild", version=_PFV,
+            error=PFError(code=_EC.INTERNAL_ERROR, message=str(exc)),
+        ))
         _restore_signal()
+        return 1
+
+    # #126: merge dropped explicit keys into skipped so the outcome is
+    # complete and rc is non-zero.
+    result["skipped"] = [*result["skipped"], *dropped]
+    result["results"] = [
+        *result["results"],
+        *[{"key": d["key"], "status": "skipped", "reason": d["reason"]} for d in dropped],
+    ]
+    success_count = len(result["success_keys"])
+    failed_count = len(result["failed_keys"])
+    skipped_count = len(result["skipped"])
+    print(f"Done. Rebuilt {success_count} paper(s).", file=sys.stderr, flush=True)
+    _real_stop = _is_stopped() and _count < total
+    from paperforge.core.ndjson import emit_terminal
+    from paperforge import __version__ as _PFV
+    from paperforge.core.result import PFResult
+
+    _terminal = (
+        ("cancelled", PFResult(ok=False, command="ocr rebuild", version=_PFV))
+        if _real_stop
+        else ("result", PFResult(
+            ok=not (failed_count or skipped_count),
+            command="ocr rebuild",
+            version=_PFV,
+            data={"rebuilt": success_count, "failed": failed_count, "skipped": skipped_count},
+        ))
+    )
+    emit_terminal(_terminal[0], "ocr.rebuild", _terminal[1])
+    _restore_signal()
 
     if _real_stop:
         return 130

@@ -106,6 +106,61 @@ def _memory_build_handler(ctx: ActionContext, request: ActionRequest) -> PFResul
     )
 
 
+def _ocr_rebuild_derived_preflight(ctx: ActionContext, request: ActionRequest) -> PreflightResult:
+    """ocr.rebuild_derived availability: canonical config + OCR root — a
+    LOCAL derived-layer rebuild (no remote API), so it is automatic."""
+    if not ctx.config:
+        return PreflightResult(
+            availability="unavailable",
+            availability_reason_code="action.config_missing",
+            availability_reason="Canonical configuration is missing — run `paperforge config init`",
+        )
+    return PreflightResult(
+        availability="available",
+        availability_reason_code="action.available",
+        availability_reason="Derived artifacts can be rebuilt locally",
+        preservation_facts=("Raw OCR blocks stay untouched",),
+        replacement_facts=("Derived artifacts are regenerated from raw blocks",),
+    )
+
+
+def _ocr_rebuild_derived_handler(ctx: ActionContext, request: ActionRequest) -> PFResult:
+    """#168/T7 P0-1: ocr.rebuild_derived — the LOCAL derived-layer rebuild
+    (structured blocks/metadata/figure+table inventories/objects/render/
+    health) from stored raw blocks, per-key outcomes."""
+    from paperforge import __version__ as PF_VERSION
+    from paperforge.core.errors import ErrorCode
+    from paperforge.core.result import PFError, PFResult
+    from paperforge.worker.ocr_rebuild import run_derived_rebuild_for_keys
+
+    keys = None if request.scope.kind == "all" else list(request.scope.keys)
+    try:
+        result = run_derived_rebuild_for_keys(
+            ctx.vault, keys or [], parallel=0,
+        )
+    except Exception as exc:  # noqa: BLE001 — structured boundary
+        return PFResult(
+            ok=False,
+            command="action run",
+            version=PF_VERSION,
+            error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(exc)),
+        )
+    failed = result.get("failed_keys", [])
+    skipped = result.get("skipped", [])
+    success = result.get("success_keys", [])
+    return PFResult(
+        ok=not failed and not skipped,
+        command="action run",
+        version=PF_VERSION,
+        data={
+            "rebuilt": success,
+            "failed": failed,
+            "skipped": [s.get("key") for s in skipped],
+        },
+        successful_keys=success or None,
+    )
+
+
 def _ocr_run_preflight(ctx: ActionContext, request: ActionRequest) -> PreflightResult:
     """ocr.run availability: OCR credential available (C1 seam)."""
     from paperforge.credentials import CredentialKey, status as credential_status
@@ -451,6 +506,19 @@ _SPECS: tuple[ActionSpec, ...] = (
         impact="mutating",
         confirmation="required",
         automatic=False,
+        interruptible=True,
+    ),
+    ActionSpec(
+        action_id="ocr.rebuild_derived",
+        label_code="action.ocr.rebuild_derived",
+        description_code="action.ocr.rebuild_derived.description",
+        handler=_ocr_rebuild_derived_handler,
+        preflight=_ocr_rebuild_derived_preflight,
+        scope_kinds=("all", "papers"),
+        cost="local",
+        impact="mutating",
+        confirmation="none",
+        automatic=True,
         interruptible=True,
     ),
 )

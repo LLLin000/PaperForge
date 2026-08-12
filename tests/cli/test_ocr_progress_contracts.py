@@ -157,8 +157,9 @@ class TestOcrRedoProgressTokens:
         assert terminal["result"]["ok"] is True
         assert "Redo OCR done" in err
 
-    def test_redo_single_key_no_tokens(self, capsys, tmp_path, monkeypatch):
-        """Single redo key emits no progress tokens."""
+    def test_redo_single_key_streams(self, capsys, tmp_path, monkeypatch):
+        """#168 T7 P0-5: a single paper's remote OCR is still a long task —
+        one key, non-dry-run, uses the SAME NDJSON stream as a batch."""
         _mock_run_ocr(monkeypatch)
         _mock_validate_ocr_meta(monkeypatch)
         vault = _make_minimal_vault(tmp_path)
@@ -170,8 +171,13 @@ class TestOcrRedoProgressTokens:
 
         assert rc == 0
         out, err = capsys.readouterr()
-        # Single key is not a batch → no NDJSON stream at all.
-        assert all(not l.startswith('{"schema_version"') for l in out.splitlines())
+        events = _events(out)
+        assert events[0]["event"] == "start"
+        assert events[0]["operation"] == "ocr.redo"
+        assert events[0]["total"] == 1
+        terminal = _terminal_event(events)
+        assert terminal["event"] == "result"
+        assert terminal["result"]["ok"] is True
         assert "Redo OCR done=1" in err
 
     def test_redo_dry_run_no_tokens(self, capsys, tmp_path, monkeypatch):

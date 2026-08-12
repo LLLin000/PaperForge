@@ -229,6 +229,12 @@ def _run_body_unit_discovery(
                 (fts_query, limit),
             ).fetchall()
             results = [dict(r) for r in rows]
+            # #159 §6 / #168 T7 P0-3: body_units_fts is RETRIEVAL
+            # materialization — gate on the retrieval lineage (no vector
+            # requirement for this arm).
+            from paperforge.reader_gate import filter_readable
+
+            results = filter_readable(vault, results, require_vector=False)
             coverage = _get_body_coverage(conn)
             if not results:
                 return PFResult(

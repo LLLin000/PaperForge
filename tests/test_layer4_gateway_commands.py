@@ -275,7 +275,21 @@ def test_paper_lookup_fails_gracefully_without_db(tmp_path):
 # ---------------------------------------------------------------------------
 
 
-def test_content_discovery_prefers_body_units_fts_when_present(tmp_path):
+def _mock_current_lineage(monkeypatch):
+    """The reader gate (#159 §6) needs an observable CURRENT lineage chain —
+    the fixture DB carries retrieval content without the lineage tables, so
+    the gate would drop every hit.  Declare TST001 current."""
+    monkeypatch.setattr(
+        "paperforge.lineage.probe_lineage",
+        lambda vault: {
+            "capability_state": "ok",
+            "papers": {"TST001": {"ocr": "current", "retrieval": "current", "vector": "current"}},
+        },
+    )
+
+
+def test_content_discovery_prefers_body_units_fts_when_present(tmp_path, monkeypatch):
+    _mock_current_lineage(monkeypatch)
     _make_populated_db(tmp_path)
     result = route_gateway(
         tmp_path, "content-discovery", "delirium prevention", json_mode=True, limit=5
@@ -299,7 +313,8 @@ def test_paper_navigation_reads_structure_tree_when_present(tmp_path):
     assert result.data["route_explanation"]["fallback"] is False
 
 
-def test_content_discovery_returns_body_unit_matches(tmp_path):
+def test_content_discovery_returns_body_unit_matches(tmp_path, monkeypatch):
+    _mock_current_lineage(monkeypatch)
     _make_populated_db(tmp_path)
     result = route_gateway(
         tmp_path, "content-discovery", "delirium", json_mode=True, limit=5
