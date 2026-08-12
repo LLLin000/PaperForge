@@ -207,7 +207,15 @@ def build_parser() -> argparse.ArgumentParser:
     p_df.add_argument("--json", action="store_true", help="Output as PFResult JSON")
 
     # repair
-    p_repair = sub.add_parser("repair", help="Repair divergent literature notes")
+    p_repair = sub.add_parser(
+        "repair",
+        help="Repair divergent literature notes (or the runtime with --runtime)",
+    )
+    p_repair.add_argument(
+        "--runtime",
+        action="store_true",
+        help="Runtime lifecycle repair (#143) — re-ensure deps + re-publish the pointer",
+    )
     p_repair.add_argument("--fix", action="store_true", help="Actually apply repairs instead of dry-run")
     p_repair.add_argument("--fix-paths", action="store_true", help="Re-resolve PDF paths for items with path_error")
     p_repair.add_argument("--json", action="store_true", help="Output result as JSON (PFResult envelope)")
@@ -417,7 +425,12 @@ def build_parser() -> argparse.ArgumentParser:
     doctor_p.add_argument("--json", action="store_true", help="Output JSON")
 
     # update
-    sub.add_parser("update", help="Update PaperForge to the latest version")
+    p_update = sub.add_parser("update", help="Update PaperForge to the latest version")
+    p_update.add_argument(
+        "--json",
+        action="store_true",
+        help="Emit the #137 NDJSON machine stream with cooperative cancellation",
+    )
 
     # setup wizard
     p_setup = sub.add_parser("setup", help="Set up PaperForge in a vault (use --headless for non-interactive)")
@@ -769,6 +782,16 @@ def main(argv: list[str] | None = None) -> int:
         return context.run(args)
 
     if args.command == "repair":
+        if getattr(args, "runtime", False):
+            # #174 / #143: runtime lifecycle repair is a DIFFERENT
+            # operation from literature repair.  NDJSON + cancel when
+            # --json is set; otherwise human result.
+            from paperforge.worker.runtime_repair import perform_runtime_repair
+
+            result = perform_runtime_repair(ndjson=getattr(args, "json", False))
+            if result.get("cancelled"):
+                return 130
+            return 0 if result["ok"] else 1
         from paperforge.commands import repair
 
         return repair.run(args)
@@ -894,6 +917,16 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "update":
         from paperforge.worker.update import run_update
+
+        if getattr(args, "json", False):
+            # #174 P0-4: perform_update emits the full #137 stream
+            # (start/phase/exactly-one terminal); the CLI maps rc only.
+            from paperforge.worker.update import perform_update
+
+            result = perform_update(vault, ndjson=True)
+            if result.get("cancelled"):
+                return 130
+            return 0 if result["ok"] else 1
 
         return run_update(vault)
 

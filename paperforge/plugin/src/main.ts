@@ -62,7 +62,7 @@ import {
   queryEmbedStatus,
 } from "./services/config-client";
 import {
-  ManagedRuntime,
+  RuntimeBootstrap,
   resolveRuntimeCommand,
 } from "./services/managed-runtime";
 
@@ -86,29 +86,24 @@ export default class PaperForgePlugin extends Plugin {
   /** #126 PR B: the single OCR process controller shared by Settings and Workspace. */
   ocrProcessController!: OcrProcessController;
   _memoryStatusText: string | null = null;
-  private _managedRuntime: ManagedRuntime | null = null;
+  private _managedRuntime: RuntimeBootstrap | null = null;
 
-  getManagedRuntime(): ManagedRuntime {
+  getManagedRuntime(): RuntimeBootstrap {
     if (!this._managedRuntime) {
-      this._managedRuntime = new ManagedRuntime({
-        version: this.manifest.version,
-      });
+      this._managedRuntime = new RuntimeBootstrap();
     }
     return this._managedRuntime;
   }
 
   _getPythonCommand(): { path: string; args: string[] } | null {
-    const run = resolveRuntimeCommand(this.getManagedRuntime().current());
+    // #174: pointer publication is the ONLY runtime truth — the plugin
+    // never uses an installed-but-unpublished runtime.
+    const run = resolveRuntimeCommand(this.getManagedRuntime().readPointer());
     return run ? { path: run.command, args: [...run.args] } : null;
   }
   async onload() {
     await this.loadSettings();
     await this.saveSettings();
-    try {
-      await this.getManagedRuntime().status();
-    } catch {
-      // Runtime UI exposes repair/install actions; plugin loading must continue.
-    }
     setLanguage(this.app, this.settings.language);
 
     // #126 PR B: one OCR process controller for Settings and Workspace —

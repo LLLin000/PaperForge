@@ -76,7 +76,7 @@ export class PaperForgeStatusView extends ItemView {
     // 2. Fall back to managed runtime
     const mr = plugin?.getManagedRuntime?.();
     if (!mr) return null;
-    const run = resolveRuntimeCommand(mr.current());
+    const run = resolveRuntimeCommand(mr.readPointer());
     if (!run) return null;
     return { path: run.command, args: [...run.args] };
   }

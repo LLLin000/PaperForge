@@ -11,7 +11,7 @@ import {
   paperforgeEnrichedEnv,
 } from "../services/python-bridge";
 import {
-  ManagedRuntime,
+  RuntimeBootstrap,
   resolveRuntimeCommand,
 } from "../services/managed-runtime";
 import type { PythonResult } from "../services/python-bridge";
@@ -312,18 +312,9 @@ export class PaperForgeSetupModal extends Modal {
     if (customPath && fs.existsSync(customPath)) {
       return { path: customPath, args: [] };
     }
-    // 2. Fall back to managed runtime detection
-    const vp = this.plugin.settings.vault_path?.trim() || ".";
-    const rt = new ManagedRuntime({
-      runtimeDir: path.join(vp, ".paperforge-test-venv"),
-      pluginVersion: this.plugin.manifest.version,
-      osPlatform: process.platform,
-      osArch: process.arch,
-      fs: fs as any,
-      execFile: execFile as any,
-      execFileSync: require("child_process").execFileSync as any,
-    });
-    const run = resolveRuntimeCommand(rt.current());
+    // 2. Fall back to the published pointer (#174): the plugin never uses
+    // an installed-but-unpublished runtime.
+    const run = resolveRuntimeCommand(new RuntimeBootstrap().readPointer());
     return run
       ? { path: run.command, args: [...run.args] }
       : { path: "python", args: [] };
@@ -331,7 +322,9 @@ export class PaperForgeSetupModal extends Modal {
 
   /** #173/C1: `paperforge auth set ocr --stdin` — secret via child stdin only. */
   private _authSetOcrSecret(value: string): Promise<boolean> {
-    const vaultPath = (this.app.vault.adapter as unknown as { basePath?: string }).basePath ?? "";
+    const vaultPath =
+      (this.app.vault.adapter as unknown as { basePath?: string }).basePath ??
+      "";
     const run = this._resolvePython();
     if (!run || !value || !vaultPath) return Promise.resolve(false);
     return new Promise((resolvePromise) => {

@@ -918,9 +918,17 @@ describe("production-seam runtime dispatch", () => {
     });
   });
 
-  function setManagedHealth(health: Record<string, unknown>): void {
+  function setManagedHealth(health: Record<string, unknown> | null): void {
+    // #174: the runtime is read through the published pointer only.
     (tab as any)._managedRuntime = {
-      current: () => health,
+      readPointer: () =>
+        health
+          ? {
+              pythonPath: health.pythonPath,
+              environmentRoot: "/env",
+              paperforgeVersion: "1.0.0",
+            }
+          : null,
     };
   }
 
@@ -1050,16 +1058,8 @@ describe("production-seam runtime dispatch", () => {
     expect(mockExecFile.mock.calls[0][3]).toBeInstanceOf(Function);
   });
 
-  it("fails closed when managed runtime is cold/stale — no legacy fallback", () => {
-    setManagedHealth({
-      state: "unknown",
-      pythonPath: null,
-      version: null,
-      source: "none",
-      error: null,
-      lastVerifiedAt: null,
-      stale: true,
-    });
+  it("fails closed when no pointer is published — no legacy fallback", () => {
+    setManagedHealth(null);
     mockResolveRuntimeCommand.mockReturnValue(null);
     mockGetCachedPython.mockReturnValue({
       path: "/legacy/python",
