@@ -249,8 +249,27 @@ function main() {
                 version: spec.version,
               });
               const ev = evidence(node, spec.confidence || "exact");
+              // #170 closure: a read wrapper declares the units it CAN
+              // serve — a call is attributed to EXACTLY the unit its actual
+              // path resolves to, never to every declared unit.  An
+              // unresolvable path is unresolved evidence, not multi-emit.
+              const actualUnit = readUnitForCall(node, sf, pathVars);
               for (const f of spec.facts) {
                 if (f.kind === "read") {
+                  if (actualUnit === null) {
+                    addFact({
+                      kind: "unresolved",
+                      unresolved_id: `unresolved:${rel}:${sf.getLineAndCharacterOfPosition(node.getStart(sf, false)).line + 1}`,
+                      expression: node.expression ? node.expression.getText(sf).slice(0, 120) : "",
+                      reason: "canonical read via unresolvable path",
+                      possible_effects: ["disposable_snapshot"],
+                      evidence: ev,
+                      epistemic_status: "unresolved",
+                    });
+                    matched = true;
+                    break;
+                  }
+                  if (f.unit_id !== actualUnit) continue;
                   addFact({
                     kind: "filesystem_read",
                     operation_id: operationId(rel, symbol),
@@ -391,6 +410,22 @@ function main() {
     if (/paperforge\.db/.test(p)) return "memory_db";
     if (/runtime(-|_|\/)state|runtime-health/.test(p)) return "runtime_state.snapshot";
     return "fs_read";
+  }
+
+  // Exact-unit attribution for a wrapped canonical read: prefer a literal
+  // path argument, then the traced path-var; null = cannot resolve.
+  function readUnitForCall(node, sf, pathVars) {
+    const lit = firstStringArg(node, sf);
+    if (lit) {
+      const u = canonicalUnitForPath(lit);
+      if (u !== "fs_read") return u;
+    }
+    const firstArg = node.arguments && node.arguments[0];
+    if (firstArg && ts.isIdentifier(firstArg)) {
+      const traced = pathVars.get(firstArg.text);
+      if (traced) return traced;
+    }
+    return null;
   }
 
   function operationId(rel, symbol) {

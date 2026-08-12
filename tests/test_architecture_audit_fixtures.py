@@ -187,3 +187,20 @@ class TestGoldenEvidenceVerification:
             aggregate = "\n".join(f"{file}\n{digest}" for file, digest in sorted(pairs))
             expected = "sha256:" + hashlib.sha256(aggregate.encode("utf-8")).hexdigest()
             assert payload["survey"]["source_digest"] == expected, name
+
+class TestCanonicalReadGolden:
+    def test_golden_170_wrapped_read_satisfies(self) -> None:
+        """#170 closure: the reviewed golden records a formal_library read
+        through the contract-declared client_cache.read adapter → SATISFIED,
+        completing the promotion evidence ladder (synthetic → golden →
+        real-repo)."""
+        from paperforge.architecture_audit import RuleStatus
+
+        contract, survey = load_fixture("golden_170_canonical_read")
+        audit = reconcile(contract, survey)
+        status = next(
+            c for c in audit.content.rule_coverage
+            if c.rule_id == "client_read.formal_library"
+        ).status
+        assert status is RuleStatus.SATISFIED
+        assert len(audit.content.findings) == 0

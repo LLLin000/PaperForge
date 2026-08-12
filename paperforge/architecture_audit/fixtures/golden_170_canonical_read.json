@@ -1,0 +1,96 @@
+{
+ "contract": {
+  "schema_version": 1,
+  "asset_groups": [
+   "library",
+   "ocr_derived",
+   "retrieval",
+   "vectors"
+  ],
+  "publication_units": [],
+  "operations": [
+   "sync",
+   "probe_status",
+   "ocr_redo",
+   {
+    "operation_id": "client_cache.read",
+    "authorities": [
+     {
+      "role": "adapter",
+      "authority_id": "plugin.cache"
+     }
+    ]
+   }
+  ],
+  "rules": [
+   {
+    "rule_id": "client_read.formal_library",
+    "kind": "canonical_read",
+    "subject": "formal_library",
+    "lifecycle": "active",
+    "enforcement": "advisory",
+    "description": "reads of formal-library.json go through a contract-declared adapter wrapper",
+    "effective_after": {
+     "issue": "#170"
+    },
+    "known_gap": {
+     "issue": "#170",
+     "rationale": "canonical-read collector + wrapper attribution landed with T9; advisory enforcement pending soak"
+    }
+   }
+  ],
+  "exceptions": [],
+  "required_extractors": [
+   "python_ast",
+   "typescript_compiler"
+  ]
+ },
+ "survey": {
+  "schema_version": 1,
+  "scope": "paperforge",
+  "coverage": [
+   {
+    "extractor": "python_ast",
+    "status": "complete",
+    "required": true
+   },
+   {
+    "extractor": "typescript_compiler",
+    "status": "complete",
+    "required": true
+   }
+  ],
+  "facts": [
+   {
+    "kind": "filesystem_read",
+    "operation_id": "read_formal_library",
+    "unit_id": "formal_library",
+    "wrapper_id": "client_cache.read",
+    "path_expression": "path.join(vp, systemDir, \"PaperForge\", \"indexes\", \"formal-library.json\")",
+    "evidence": {
+     "file": "plugin/src/views/dashboard.ts",
+     "file_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+     "symbol": "dashboard",
+     "line_start": 333,
+     "line_end": 335,
+     "extractor": "typescript_compiler",
+     "epistemic_status": "observed_static",
+     "confidence": "exact"
+    }
+   }
+  ],
+  "source_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+  "parse_errors": [],
+  "excluded_roots": [],
+  "run_metadata": {
+   "repository_revision": "26f058a6",
+   "repository_dirty": false,
+   "tool_version": "1.0.0",
+   "extractor_versions": {
+    "python_ast": "1",
+    "typescript_compiler": "1"
+   },
+   "generated_at": "2026-08-11T00:00:00Z"
+  }
+ }
+}

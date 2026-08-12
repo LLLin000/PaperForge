@@ -732,3 +732,44 @@ class TestCanonicalReadClosure:
         # (gate stays eligible); blocking unresolved would be incomplete.
         assert finding.rule_status.value == "unresolved"
         assert audit.content.assessment.status.value == "findings"
+
+
+    def test_wrapped_read_emits_exactly_one_matching_unit(self, tmp_path) -> None:
+        """#170 closure: a generic read wrapper declaring several units emits
+        EXACTLY the fact whose unit matches the actual path — never one fact
+        per declared unit."""
+        import subprocess
+        import sys
+
+        repo = tmp_path / "repo"
+        (repo / "src").mkdir(parents=True)
+        (repo / "src" / "runtime_paths.ts").write_text(
+            'import * as fs from "fs";\n'
+            "export function readCanonicalPath(p: string): string {\n"
+            '  return fs.readFileSync(p, "utf-8");\n'
+            "}\n",
+            encoding="utf-8",
+        )
+        (repo / "src" / "app.ts").write_text(
+            'import { readCanonicalPath } from "./runtime_paths";\n'
+            'const data = readCanonicalPath("/vault/indexes/formal-library.json");\n',
+            encoding="utf-8",
+        )
+        from paperforge.architecture_audit.collectors.common import DEFAULT_PYTHON_REGISTRY
+
+        reg_file = tmp_path / "registry.json"
+        reg_file.write_text(
+            json.dumps([w.to_dict() for w in DEFAULT_PYTHON_REGISTRY]), encoding="utf-8"
+        )
+        proc = subprocess.run(
+            ["node", "paperforge/architecture_audit/collectors/ts_collect.js",
+             str(repo / "src"), str(reg_file)],
+            capture_output=True, text=True, timeout=60,
+        )
+        assert proc.returncode == 0, proc.stderr
+        data = json.loads(proc.stdout)
+        wrapped = [f for f in data.get("facts", [])
+                   if f.get("kind") == "filesystem_read" and f.get("wrapper_id")]
+        assert len(wrapped) == 1, f"expected exactly 1 wrapped read, got {len(wrapped)}: {wrapped}"
+        assert wrapped[0]["unit_id"] == "formal_library"
+        assert wrapped[0]["wrapper_id"] == "client_cache.read"
