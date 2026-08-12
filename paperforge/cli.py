@@ -711,7 +711,12 @@ def main(argv: list[str] | None = None) -> int:
                     suggestions=suggestions,
                 ),
             )
-            print(result.to_json() if getattr(args, "json", False) else message, file=sys.stderr)
+            # #137: stdout carries MACHINE output only - a JSON-mode caller
+            # must receive the structured PFResult on stdout, never stderr.
+            if getattr(args, "json", False):
+                print(result.to_json())
+            else:
+                print(message, file=sys.stderr)
             return 1
 
     # Configure logging before command dispatch
