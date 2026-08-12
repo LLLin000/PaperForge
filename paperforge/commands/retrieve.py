@@ -124,6 +124,10 @@ def run(args: argparse.Namespace) -> int:
     if deep:
         try:
             raw_chunks = hybrid_search(vault, query, limit=limit, paper_id=paper_key)
+            # #159 §6 reader gate: never serve a mismatched/unknown chain.
+            from paperforge.reader_gate import filter_readable
+
+            raw_chunks = filter_readable(vault, raw_chunks, require_vector=True)
         except Exception as e:
             result = PFResult(
                 ok=False,
@@ -174,6 +178,10 @@ def run(args: argparse.Namespace) -> int:
 
     try:
         chunks = merge_retrieve(vault, query, limit=limit, expand=args.expand, paper_id=paper_key)
+        # #159 §6 reader gate: never serve a mismatched/unknown chain.
+        from paperforge.reader_gate import filter_readable
+
+        chunks = filter_readable(vault, chunks, require_vector=True)
     except Exception as e:
         result = PFResult(
             ok=False,

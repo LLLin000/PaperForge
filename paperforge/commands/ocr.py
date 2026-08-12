@@ -1,6 +1,7 @@
 """OCR command — unifies OCR run and diagnose."""
 
 import argparse
+import sys
 import json
 import signal
 from collections.abc import Callable
@@ -328,7 +329,9 @@ def _run_ocr_redo(vault: Path, keys: list[str] | None = None, dry_run: bool = Fa
     batch = total > 1 and not dry_run
 
     if batch:
-        print(f"OCR_REDO_START:{total}", flush=True)
+        from paperforge.core.ndjson import emit_start
+
+        emit_start("ocr.redo", total=total)
         _is_stopped, _restore_signal = _make_cooperative_stop()
     else:
         _is_stopped = lambda: False
@@ -339,8 +342,6 @@ def _run_ocr_redo(vault: Path, keys: list[str] | None = None, dry_run: bool = Fa
         for k in keys:
             print(f"  - {k}: would delete artifacts and re-run OCR")
         print("Dry-run: no changes made. Run without --dry-run to execute.")
-        if batch:
-            print(f"OCR_REDO_DONE", flush=True)
         return 0
 
     # Track current for progress token
@@ -348,7 +349,9 @@ def _run_ocr_redo(vault: Path, keys: list[str] | None = None, dry_run: bool = Fa
 
     def _progress_callback(key: str) -> None:
         _current[0] += 1
-        print(f"OCR_REDO_PROGRESS:{_current[0]}:{total}:{key}", flush=True)
+        from paperforge.core.ndjson import emit_progress
+
+        emit_progress("ocr.redo", _current[0], total, item_id=key)
 
     def _stop_check() -> bool:
         return _is_stopped()
@@ -364,17 +367,33 @@ def _run_ocr_redo(vault: Path, keys: list[str] | None = None, dry_run: bool = Fa
         success_keys = result.get("success_keys", [])
         failed_keys = result.get("failed_keys", [])
         worker_exit_code = result.get("exit_code", 0)
+        # #137: human logs → stderr; stdout carries machine output only.
         if success_keys:
-            print(f"Redo OCR done={len(success_keys)}: {', '.join(success_keys)}", flush=True)
+            print(f"Redo OCR done={len(success_keys)}: {', '.join(success_keys)}",
+                  file=sys.stderr, flush=True)
         if failed_keys:
-            print(f"Redo OCR pending/failed={len(failed_keys)}: {', '.join(failed_keys)}", flush=True)
+            print(f"Redo OCR pending/failed={len(failed_keys)}: {', '.join(failed_keys)}",
+                  file=sys.stderr, flush=True)
 
         _real_stop = batch and _is_stopped() and _current[0] < total
         if _real_stop:
-            print(f"Batch stopped (SIGINT) after {_current[0]} paper(s).")
+            print(f"Batch stopped (SIGINT) after {_current[0]} paper(s).", file=sys.stderr)
 
         if batch:
-            print(f"OCR_REDO_DONE", flush=True)
+            from paperforge.core.ndjson import emit_terminal
+            from paperforge import __version__ as _PFV
+            from paperforge.core.result import PFResult
+
+            if _real_stop:
+                emit_terminal("cancelled", "ocr.redo",
+                              PFResult(ok=False, command="ocr redo", version=_PFV))
+            else:
+                emit_terminal("result", "ocr.redo", PFResult(
+                    ok=not failed_keys,
+                    command="ocr redo",
+                    version=_PFV,
+                    data={"done": len(success_keys), "failed": len(failed_keys)},
+                ))
     finally:
         _restore_signal()
 
@@ -586,11 +605,12 @@ def _run_ocr_rebuild(
         ]
 
     if not selected:
-        print("No papers matched for rebuild.")
+        print("No papers matched for rebuild.", file=sys.stderr)
         if dropped:
             print(
                 "Skipped requested key(s) not rebuildable: "
                 + ", ".join(item["key"] for item in dropped),
+                file=sys.stderr,
                 flush=True,
             )
         # #126: an explicit key list that cannot enter rebuild is a failure.
@@ -600,11 +620,13 @@ def _run_ocr_rebuild(
         print(
             "Skipped requested key(s) not rebuildable: "
             + ", ".join(item["key"] for item in dropped),
+            file=sys.stderr,
             flush=True,
         )
 
     if resume:
-        print("Note: OCR rebuild resume is now version/artifact based; .done markers are ignored.")
+        print("Note: OCR rebuild resume is now version/artifact based; .done markers are ignored.",
+              file=sys.stderr)
 
     total = len(selected)
 
@@ -616,16 +638,17 @@ def _run_ocr_rebuild(
         return 0
 
     from paperforge.worker._progress import progress_bar
+    from paperforge.core.ndjson import emit_item_result, emit_progress, emit_start
 
-    print(f"OCR_REBUILD_START:{total}", flush=True)
+    emit_start("ocr.rebuild", total=total)
     _count = 0
 
     def _on_progress(key: str, result: dict) -> None:
         nonlocal _count
         _count += 1
         status = result.get("status", "unknown")
-        print(f"OCR_REBUILD_PROGRESS:{_count}:{total}:{key}", flush=True)
-        print(f"OCR_REBUILD_RESULT:{key}:{status}", flush=True)
+        emit_progress("ocr.rebuild", _count, total, item_id=key)
+        emit_item_result("ocr.rebuild", key, status)
 
     # Force sequential for cooperative stop; the parallel path now stops
     # between chunks (#126 G5), but serial remains the CLI default.
@@ -653,15 +676,26 @@ def _run_ocr_rebuild(
         success_count = len(result["success_keys"])
         failed_count = len(result["failed_keys"])
         skipped_count = len(result["skipped"])
-        print(f"Done. Rebuilt {success_count} paper(s).", flush=True)
-        print(
-            f"OCR_REBUILD_DONE:{success_count}:{failed_count}:{skipped_count}",
-            flush=True,
+        print(f"Done. Rebuilt {success_count} paper(s).", file=sys.stderr, flush=True)
+        _real_stop = _is_stopped() and _count < total
+        from paperforge.core.ndjson import emit_terminal
+        from paperforge import __version__ as _PFV
+        from paperforge.core.result import PFResult
+
+        _terminal = (
+            ("cancelled", PFResult(ok=False, command="ocr rebuild", version=_PFV))
+            if _real_stop
+            else ("result", PFResult(
+                ok=not (failed_count or skipped_count),
+                command="ocr rebuild",
+                version=_PFV,
+                data={"rebuilt": success_count, "failed": failed_count, "skipped": skipped_count},
+            ))
         )
+        emit_terminal(_terminal[0], "ocr.rebuild", _terminal[1])
     finally:
         _restore_signal()
 
-    _real_stop = _is_stopped() and _count < total
     if _real_stop:
         return 130
     if failed_count or skipped_count:

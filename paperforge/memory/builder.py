@@ -381,17 +381,35 @@ def _build_from_index_locked(vault: Path, keys: list[str] | None = None) -> dict
             for key in diff["deleted"]:
                 _delete_paper(conn, vault, key)
 
-        # 4b. Upsert changed / added papers
+        # 4b. Upsert changed / added papers — per-key outcomes (#167 P0-5 /
+        # T7 O1): each paper builds in its own savepoint; a failure rolls
+        # back ONLY that paper and is reported in ``failed``, never aborting
+        # siblings.  ``successful_keys`` = the keys actually published, the
+        # follow-up chain's post-publish reconcile scope.
         now_utc = datetime.now(timezone.utc).isoformat()
         changed_count = 0
+        successful_keys: list[str] = []
+        failed_keys: list[str] = []
         for entry in items:
             key = entry.get("zotero_key", "")
             if not key:
                 continue
             if key in diff["added"] | diff["changed"]:
-                m_entry = materialize_paper_entry(entry)
-                upsert_paper_state(conn, vault=vault, entry=m_entry, generated_at=now_utc)
-                changed_count += 1
+                try:
+                    conn.execute("SAVEPOINT pf_paper")
+                    m_entry = materialize_paper_entry(entry)
+                    upsert_paper_state(conn, vault=vault, entry=m_entry, generated_at=now_utc)
+                    conn.execute("RELEASE pf_paper")
+                    changed_count += 1
+                    successful_keys.append(key)
+                except Exception as exc:  # noqa: BLE001 — per-paper isolation
+                    try:
+                        conn.execute("ROLLBACK TO pf_paper")
+                        conn.execute("RELEASE pf_paper")
+                    except Exception:  # noqa: BLE001
+                        pass
+                    failed_keys.append(key)
+                    logger.warning("paper %s build failed and was rolled back: %s", key, exc)
 
         # 4c. Import corrections + hydrate reading log for new keys.
         #     Reading/project logs are bulk-imported in _full_rebuild() only;
@@ -446,6 +464,10 @@ def _build_from_index_locked(vault: Path, keys: list[str] | None = None) -> dict
             # Scoped builds never delete; the diff would report every
             # non-requested key as deleted against the filtered item set.
             "deleted": [] if keys is not None else list(diff["deleted"]),
+            # T7 O1: per-key outcomes — successful_keys drives the chain's
+            # post-publish reconcile scope; failed papers stay untouched.
+            "successful_keys": successful_keys,
+            "failed": failed_keys,
         }
     except Exception:
         conn.rollback()

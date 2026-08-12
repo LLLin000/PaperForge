@@ -621,7 +621,10 @@ def build_index(vault: Path, verbose: bool = False, force_rebuild: bool = False)
     index_path = paths["index"]
     envelope = build_envelope(index_rows, export_hash)
     atomic_write_index(index_path, envelope)
-    print(f"index-refresh: wrote {len(index_rows)} index rows")
+    # #137: human logs → stderr; stdout carries machine output only.
+    import sys as _sys
+
+    print(f"index-refresh: wrote {len(index_rows)} index rows", file=_sys.stderr)
     return len(index_rows)
 
 

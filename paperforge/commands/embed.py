@@ -353,7 +353,11 @@ def run_build(
     _db_path = get_memory_db_path(vault)
 
     total = len(candidates)
-    print(f"EMBED_START:{total}", flush=True)
+    if not json:
+        # #137: structured-stream mode — stdout carries NDJSON events only.
+        from paperforge.core.ndjson import emit_start
+
+        emit_start("embed.build", total=total)
 
     import gc as _gc
     import os as _os
@@ -663,7 +667,11 @@ def run_build(
                         if _coll_key:
                             _expected_counts[_coll_key] += len(_p.ids)
 
-                    print(f"EMBED_PROGRESS:{processed_count}:{total}:{bundle.paper_id}", flush=True)
+                    if not json:
+                        from paperforge.core.ndjson import emit_progress
+
+                        emit_progress("embed.build", processed_count, total,
+                                      item_id=bundle.paper_id)
                     mark_vector_build_state(
                         vault,
                         current=processed_count,
@@ -763,7 +771,8 @@ def run_build(
                         if has_files and not has_body:
                             print(
                                 f"Skip {key}: has structured blocks but no body_units in DB. "
-                                f"Run `paperforge memory build` first."
+                                f"Run `paperforge memory build` first.",
+                                file=sys.stderr,
                             )
                             continue
 
@@ -877,7 +886,12 @@ def run_build(
                 logger.info("Restored paperforge.db from pre-rebuild backup after cancellation")
             if _write_lock:
                 _write_lock.__exit__(None, None, None)
-            print("EMBED_DONE", flush=True)
+            if not json:
+                from paperforge.core.ndjson import emit_terminal
+                from paperforge.actions.runner import cancelled_result as _cr
+
+                emit_terminal("cancelled", "embed.build",
+                              _cr("embed build", "Build cancelled"))
             return 0
 
         # #162/T1: write vector lineage rows — into the candidate BEFORE the
@@ -1005,8 +1019,6 @@ def run_build(
             _total_chunks = 0
 
 
-        print("EMBED_DONE", flush=True)
-
         data = {
             "papers_embedded": papers_embedded,
             "papers_skipped": papers_skipped,
@@ -1015,11 +1027,18 @@ def run_build(
             "mode": get_embed_status(vault)["mode"],
         }
         result = PFResult(ok=True, command="embed build", version=PF_VERSION, data=data)
+        if not json:
+            # #137: exactly one terminal event, then EOF.
+            from paperforge.core.ndjson import emit_terminal
+
+            emit_terminal("result", "embed.build", result)
         if json:
             print(result.to_json())
         else:
             skipped = f" ({papers_skipped} skipped)" if papers_skipped else ""
-            print(f"Embedded {papers_embedded} papers ({chunks_embedded} chunks){skipped}")
+            # #137: stdout carries machine output only — human summary → stderr.
+            print(f"Embedded {papers_embedded} papers ({chunks_embedded} chunks){skipped}",
+                  file=sys.stderr)
         # Build succeeded: delete pre-rebuild backup (in-place strategy only)
         if _rebuild_backup_path and _rebuild_backup_path.exists():
             _rebuild_backup_path.unlink()
@@ -1080,8 +1099,13 @@ def run_build(
             version=PF_VERSION,
             error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(e)),
         )
-        print(result.to_json() if json else result.error.message,
-              file=sys.stderr if not json else sys.stdout)
+        if json:
+            print(result.to_json())
+        else:
+            from paperforge.core.ndjson import emit_terminal
+
+            emit_terminal("error", "embed.build", result)
+            print(result.error.message, file=sys.stderr)
         return 1
     finally:
         if _write_lock:
