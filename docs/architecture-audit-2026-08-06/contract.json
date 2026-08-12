@@ -355,7 +355,7 @@
       "rule_id": "client_read.formal_library",
       "kind": "canonical_read",
       "subject": "formal_library",
-      "lifecycle": "planned",
+      "lifecycle": "active",
       "enforcement": "advisory",
       "description": "reads of formal_library go through a registered wrapper (advisory; #149)",
       "effective_after": {
@@ -370,7 +370,7 @@
       "rule_id": "client_read.paperforge_config",
       "kind": "canonical_read",
       "subject": "paperforge_config",
-      "lifecycle": "planned",
+      "lifecycle": "active",
       "enforcement": "advisory",
       "description": "reads of paperforge_config go through a registered wrapper (advisory; #149)",
       "effective_after": {
@@ -385,7 +385,7 @@
       "rule_id": "client_read.ocr_state",
       "kind": "canonical_read",
       "subject": "ocr_state",
-      "lifecycle": "planned",
+      "lifecycle": "active",
       "enforcement": "advisory",
       "description": "reads of ocr_state go through a registered wrapper (advisory; #149)",
       "effective_after": {
@@ -400,7 +400,7 @@
       "rule_id": "client_read.memory_db",
       "kind": "canonical_read",
       "subject": "memory_db",
-      "lifecycle": "planned",
+      "lifecycle": "active",
       "enforcement": "advisory",
       "description": "reads of memory_db go through a registered wrapper (advisory; #149)",
       "effective_after": {
