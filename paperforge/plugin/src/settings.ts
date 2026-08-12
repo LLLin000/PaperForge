@@ -463,22 +463,25 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     // #174: the Setup Journey no longer runs its own pip — the ONLY
     // bootstrap install path is RuntimeBootstrap.installOnce into
     // ~/.paperforge/runtime/venv (ONE pinned paperforge[vector] install,
-    // never --user).  After install, handshake → `paperforge setup`
-    // publishes the pointer (Python is the only writer).
+    // never --user).  After install, handshake → `paperforge setup --json`
+    // (the #137 NDJSON machine stream) publishes the pointer — Python is
+    // the only writer.
     void (async () => {
       try {
+        const vaultPath = this._getVaultBasePath();
         const bootstrap = this._ensureManagedRuntime();
         const installed = await bootstrap.installOnce(
           this.plugin.manifest.version
         );
         const hs = await bootstrap.handshake(this.plugin.manifest.version, {
           pythonPath: installed.pythonPath,
+          vaultPath,
         });
         if (!hs.ok) {
           throw new Error(hs.reason ?? "handshake failed");
         }
-        // Post-runtime setup (config/vault/deps/agent) + pointer publication.
-        const vaultPath = this._getVaultBasePath();
+        // Post-runtime setup (config/vault/deps/agent) + pointer publication,
+        // through the #137 NDJSON stream (setup --json).
         const s = this.plugin.settings;
         const setupArgs = [
           "-m",
@@ -487,6 +490,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           vaultPath,
           "setup",
           "--modular",
+          "--json",
           "--system-dir",
           s.system_dir?.trim() || "System",
           "--resources-dir",

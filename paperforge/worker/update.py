@@ -332,6 +332,7 @@ def perform_update(vault: Path, *, ndjson: bool = False) -> dict:
                 ),
             )
             emit_terminal(event, "foundation.update", pf)
+            _restore()
         return result
 
     try:

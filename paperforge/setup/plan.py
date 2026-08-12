@@ -128,6 +128,8 @@ class SetupPlan:
                 )
 
         if cancelled:
+            if ndjson:
+                _restore()
             return self._emit_ndjson_terminal("cancelled", results, ok=False, rc=130)
 
         # Step 6 (#143 / #174): pointer publication — Python is the ONLY
@@ -141,6 +143,7 @@ class SetupPlan:
             self._log("Runtime pointer published")
 
         if ndjson:
+            _restore()
             return self._emit_ndjson_terminal(
                 "result" if ok else "error", results, ok=ok, rc=0 if ok else 1
             )
