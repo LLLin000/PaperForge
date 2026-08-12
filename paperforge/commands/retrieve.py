@@ -166,7 +166,8 @@ def run(args: argparse.Namespace) -> int:
                 message=f"Vector index is {state}. {'Rebuild vectors before retrieving.' if state == 'not_built' else 'Rebuild required.'}",
             ),
             data={
-                "next_action": "paperforge embed build" if state == "not_built" else "paperforge embed build --force",
+                # T9 (#170): registered action id, never a command string.
+                "next_action_id": "embed.build",
                 "vector_state": state,
             },
         )
@@ -255,7 +256,8 @@ def _build_result(query: str, data: dict, matches: list[dict], vault: Path) -> P
     if not matches:
         if not is_scoped:
             warnings.append("Retrieval returned no results for the query.")
-            next_actions.append({"command": "paperforge query-plan", "reason": "Review fallback modes."})
+            # T9 (#170): diagnostic, not a command-string action wire.
+            data["diagnostics"] = data.get("diagnostics", []) + ["retrieval.no_results_query_plan_available"]
     else:
         if _is_low_confidence_semantic_result(matches):
             warnings.append("Low-confidence hits — verify with fulltext grep before treating as evidence.")

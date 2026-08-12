@@ -470,3 +470,50 @@ class TestCancelledRc130:
         terminals = [e for e in events if e["event"] in ("result", "error", "cancelled")]
         assert len(terminals) == 1
         assert terminals[0]["event"] == "cancelled"
+
+
+# ── T9 (#170): single-producer parity ─────────────────────────────────────
+
+class TestSingleProducer:
+    def test_no_action_wire_contains_command_text(self) -> None:
+        """#170: no action wire carries a command string — next_actions only
+        reference registered action ids (parity grep)."""
+        import glob
+        import re
+
+        command_wires = []
+        for path in glob.glob("paperforge/**/*.py", recursive=True):
+            if "architecture_audit" in path or "test" in path or "sandbox" in path:
+                continue
+            src = open(path, encoding="utf-8").read()
+            # A next_actions literal that carries a command string.
+            if re.search(
+                r"next_actions\s*=\s*\[[^\]]*['\"]command['\"]\s*:",
+                src,
+                re.S,
+            ):
+                command_wires.append(path)
+            if re.search(r'"next_action"\s*:\s*"paperforge', src):
+                command_wires.append(path)
+        assert command_wires == [], f"command-string action wires: {command_wires}"
+
+    def test_every_emitted_action_resolves_to_registered_handler(self, tmp_path: Path) -> None:
+        """#170: every reconcile-emitted action_id resolves to a registered
+        handler (parity) — including the global and per-paper paths."""
+        from paperforge.actions.registry import ACTION_REGISTRY
+        from paperforge.actions.registry import emit_next_action
+        from paperforge.reconcile import reconcile
+        from tests.test_reconcile import _set_vector_missing
+
+        vault = _lineage_vault(tmp_path)
+        _set_retrieval_stale(vault, ("KEY1",))
+        _set_vector_missing(vault, "KEY1")
+        result = reconcile(vault)
+        for wire in result.next_actions:
+            assert wire["action_id"] in ACTION_REGISTRY, wire["action_id"]
+            # Hydration must not fail for any emitted intent.
+            from paperforge.actions.types import ActionIntent, scope_from_dict
+
+            intent = ActionIntent(wire["action_id"], scope_from_dict(wire["scope"]), "parity", "parity")
+            hydrated = emit_next_action(intent)
+            assert hydrated.action_id == wire["action_id"]

@@ -114,7 +114,7 @@ def test_retrieve_stale_returns_vector_error(monkeypatch, tmp_path: Path, capsys
     assert payload["ok"] is False
     assert payload["error"]["code"] == "INTERNAL_ERROR"
     assert payload["data"]["vector_state"] == "stale"
-    assert payload["data"]["next_action"] == "paperforge embed build --force"
+    assert payload["data"]["next_action_id"] == "embed.build"
     assert "stale" in payload["error"]["message"].lower()
 
 
@@ -131,7 +131,7 @@ def test_retrieve_not_built_returns_vector_error(monkeypatch, tmp_path: Path, ca
     payload = json.loads(capsys.readouterr().out)
     assert payload["ok"] is False
     assert payload["data"]["vector_state"] == "not_built"
-    assert payload["data"]["next_action"] == "paperforge embed build"
+    assert payload["data"]["next_action_id"] == "embed.build"
 
 
 def test_retrieve_paper_scoped_zero_has_no_warnings(monkeypatch, tmp_path: Path, capsys) -> None:
