@@ -16,13 +16,50 @@ ProgressCallback = Callable[[str], None]
 
 
 class SetupPlan:
-    """Orchestrate the setup lifecycle: check -> config -> vault -> install -> agent."""
+    """Orchestrate the setup lifecycle: check -> config -> vault -> deps -> agent."""
+
+    def _emit_ndjson(self, results: list[SetupStepResult], ok: bool) -> int:
+        """#137 machine stream: start/phase/item_result per step, then
+        EXACTLY one terminal (result|error) carrying the PFResult."""
+        from paperforge import __version__ as PF_VERSION
+        from paperforge.core.errors import ErrorCode
+        from paperforge.core.ndjson import (
+            emit_item_result,
+            emit_phase,
+            emit_start,
+            emit_terminal,
+        )
+        from paperforge.core.result import PFError, PFResult
+
+        emit_start("foundation.setup")
+        for r in results:
+            emit_phase("foundation.setup", phase=r.step)
+            emit_item_result(
+                "foundation.setup",
+                item_id=r.step,
+                status="ok" if r.ok else "error",
+            )
+        pf = PFResult(
+            ok=ok,
+            command="setup",
+            version=PF_VERSION,
+            data={"steps": [r.to_dict() for r in results]},
+            error=(
+                PFError(
+                    code=ErrorCode.INTERNAL_ERROR,
+                    message="setup failed",
+                )
+                if not ok
+                else None
+            ),
+        )
+        emit_terminal("result" if ok else "error", "foundation.setup", pf)
+        return 0 if ok else 1
 
     def __init__(
         self,
         vault: Path,
         config: dict | None = None,
-        env_values: dict[str, str] | None = None,
         zotero_path: str | None = None,
         agent_type: str = "opencode",
         version: str | None = None,
@@ -31,7 +68,6 @@ class SetupPlan:
     ):
         self.vault = vault
         self.config = config or {}
-        self.env_values = env_values or {}
         self.zotero_path = zotero_path
         self.agent_type = agent_type
         self.version = version
@@ -42,12 +78,17 @@ class SetupPlan:
         if self.progress_callback:
             self.progress_callback(message)
 
-    def execute(self, json_output: bool = False) -> list[SetupStepResult] | int:
+    def execute(
+        self, json_output: bool = False, ndjson: bool = False
+    ) -> list[SetupStepResult] | int:
         """Run all setup steps in sequence.
 
         Args:
-            json_output: If True, return results list as JSON string.
-                        If False, return exit code (0 = success, 1 = failure).
+            json_output: If True, return results list as JSON dict list.
+            ndjson: If True, emit the #137 structured stream (start/phase/
+                item_result/…/result|error + exactly-one terminal) and
+                return the exit code.
+            Else: return exit code (0 = success, 1 = failure).
         """
         results: list[SetupStepResult] = []
 
@@ -67,15 +108,17 @@ class SetupPlan:
         vault_init = VaultInitializer(self.vault, self.config)
         results.append(vault_init.create_directories())
         results.append(vault_init.create_zotero_junction(self.zotero_path))
-        results.append(vault_init.merge_env(self.env_values))
 
-        # Step 4: #174 / #143 — NO RuntimeInstaller here. The runtime is
-        # installed exactly once by the plugin (plugin-first: consent → venv
-        # → ONE pinned pip install → handshake) or by pip (python-first).
-        # `paperforge setup` after cutover is POST-runtime setup only:
-        # config / vault / agent integration / pointer publication.  A
-        # duplicate pip install here would reinstall the just-verified
-        # runtime and violate "one consent = one bootstrap install attempt".
+        # Step 4: #174 / #143 — dependency extras only. The runtime package
+        # is installed EXACTLY once by the bootstrap (plugin venv + ONE
+        # pinned install, or pip). Setup only ENSURES the [vector] extras
+        # the core features require; already present → no-op.  A duplicate
+        # package install here would reinstall the just-verified runtime
+        # and violate "one consent = one bootstrap install attempt".
+        from paperforge.setup.runtime import ensure_runtime_dependencies
+
+        self._log("Ensuring runtime dependencies...")
+        results.append(ensure_runtime_dependencies())
 
         # Step 5: Agent installer
         self._log("Deploying agent config...")
@@ -92,6 +135,9 @@ class SetupPlan:
 
             publish_pointer()
             self._log("Runtime pointer published")
+
+        if ndjson:
+            return self._emit_ndjson(results, ok)
 
         if json_output:
             output = [r.to_dict() for r in results]

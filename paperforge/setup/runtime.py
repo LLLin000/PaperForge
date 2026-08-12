@@ -1,108 +1,112 @@
-"""RuntimeInstaller -- pip install with version pinning."""
+"""Runtime dependency extras (#174 / #143 python-first journey).
+
+The runtime package itself is installed EXACTLY once by the bootstrap
+(plugin venv + ONE pinned install, or `pip install paperforge`).
+`paperforge setup` after cutover only ENSURES the [vector] extras the core
+features require are importable in the CURRENT runtime:
+
+- already present  → no-op (plugin-first pinned `paperforge[vector]`
+  install satisfies this; the dependency step must not reinstall anything)
+- missing          → install `paperforge[vector]==<running version>` into
+  the CURRENT interpreter, then fresh-child verify
+
+Never reinstalls the package, never touches credentials (C1 boundary),
+and the pointer is published only after this step passes.
+"""
 
 from __future__ import annotations
 
+import importlib.util
 import subprocess
 import sys
-from collections.abc import Callable
-from pathlib import Path
 
+from paperforge import __version__
 from paperforge.core.errors import ErrorCode
 from paperforge.setup import SetupStepResult
 
-ProgressCallback = Callable[[str], None]
+# The vector extras are the runtime requirements for embed build/retrieve
+# (#119: a bare install looks healthy but crashes on the first Build Index
+# click).
+VECTOR_CAPABILITY_IMPORTS = ("openai", "chromadb", "sqlite_vec")
 
 
-class RuntimeInstaller:
-    """Install PaperForge Python package with version pinning."""
-
-    def __init__(
-        self,
-        vault: Path,
-        version: str | None = None,
-        progress_callback: ProgressCallback | None = None,
-    ):
-        self.vault = vault
-        self.version = version
-        self.progress_callback = progress_callback
-
-    def _log(self, message: str) -> None:
-        if self.progress_callback:
-            self.progress_callback(message)
-
-    def _pip_install(self, package_spec: str) -> tuple[bool, str, str]:
-        """Run pip install and return (ok, stdout, stderr)."""
-        try:
-            result = subprocess.run(
-                [sys.executable, "-m", "pip", "install", package_spec],
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-                timeout=120,
-            )
-            return (result.returncode == 0, result.stdout, result.stderr)
-        except subprocess.TimeoutExpired:
-            return (False, "", "pip install timed out after 120s")
-        except Exception as e:
-            return (False, "", str(e))
-
-    def install(self) -> SetupStepResult:
-        """Install paperforge via pip with optional version pin."""
-        self._log("Installing PaperForge...")
-
-        if self.version:
-            tag = self.version.removeprefix("v") if self.version else self.version
-            # #120-fix (review): vector extras are required for Smart
-            # Retrieval — bare paperforge leaves Build Index broken, and
-            # fragment extras (#extras=vector) is not pip's direct-reference
-            # syntax; the PEP 508 form is name[extra] @ git+url.
-            pypi_spec = f"paperforge[vector]=={self.version}"
-            git_spec = f"paperforge[vector] @ git+https://github.com/LLLin000/PaperForge.git@{tag}"
-        else:
-            pypi_spec = "paperforge[vector]"
-            git_spec = "paperforge[vector] @ git+https://github.com/LLLin000/PaperForge.git"
-
-        ok, stdout, stderr = self._pip_install(pypi_spec)
-        if not ok:
-            self._log(f"PyPI install failed, falling back to git... ({stderr[:200]})")
-            ok, stdout, stderr = self._pip_install(git_spec)
-
-        if ok:
-            return SetupStepResult(
-                step="runtime_installer",
-                ok=True,
-                message=(f"PaperForge installed successfully{(' (' + self.version + ')') if self.version else ''}"),
-                details={"version": self.version or "latest", "stdout": stdout[:500]},
-            )
-        else:
-            error_code = ErrorCode.INTERNAL_ERROR
-            if "pip" in stderr.lower() or "connection" in stderr.lower() or "timeout" in stderr.lower():
-                error_code = ErrorCode.INTERNAL_ERROR
-
-            return SetupStepResult(
-                step="runtime_installer",
-                ok=False,
-                message="Failed to install PaperForge",
-                error=f"[{error_code.value}] {stderr[:500]}",
-                details={"version": self.version or "latest", "stderr": stderr[:500]},
-            )
-
-    def check_installed(self) -> bool:
-        """Check if paperforge is already installed."""
-        try:
-            result = subprocess.run(
-                [
-                    sys.executable,
-                    "-c",
-                    "from paperforge import __version__; print(__version__)",
-                ],
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-                timeout=10,
-            )
-            return result.returncode == 0 and bool(result.stdout.strip())
-        except Exception:
+def vector_extras_present() -> bool:
+    """True when every vector extra capability is importable in the CURRENT
+    interpreter."""
+    for module in VECTOR_CAPABILITY_IMPORTS:
+        if importlib.util.find_spec(module) is None:
             return False
+    return True
+
+
+def _fresh_child_verify() -> tuple[bool, str]:
+    """Fresh interpreter verification: imports + observed version.  Never
+    trusts the running process's module cache."""
+    probe = (
+        "import paperforge, openai, chromadb, sqlite_vec;"
+        " print(paperforge.__version__)"
+    )
+    try:
+        r = subprocess.run(
+            [sys.executable, "-I", "-c", probe],
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        version = r.stdout.strip()
+        return r.returncode == 0 and bool(version), version
+    except Exception:
+        return False, ""
+
+
+def ensure_runtime_dependencies() -> SetupStepResult:
+    """Ensure vector extras in the CURRENT runtime; no-op when present.
+
+    Returns a SetupStepResult; the pointer MUST NOT be published unless
+    this step is ok."""
+    if vector_extras_present():
+        return SetupStepResult(
+            step="runtime_dependencies",
+            ok=True,
+            message="Vector extras already present (no-op)",
+        )
+
+    spec = f"paperforge[vector]=={__version__}"
+    try:
+        pip = subprocess.run(
+            [sys.executable, "-m", "pip", "install", spec],
+            capture_output=True,
+            text=True,
+            timeout=300,
+        )
+    except Exception as exc:  # noqa: BLE001 — structured error boundary
+        return SetupStepResult(
+            step="runtime_dependencies",
+            ok=False,
+            message=f"pip install failed: {exc}",
+            error=ErrorCode.INTERNAL_ERROR,
+        )
+    if pip.returncode != 0:
+        return SetupStepResult(
+            step="runtime_dependencies",
+            ok=False,
+            message=f"pip install failed: {pip.stderr[:300]}",
+            error=ErrorCode.INTERNAL_ERROR,
+        )
+
+    verified, observed = _fresh_child_verify()
+    if not verified or observed != __version__:
+        return SetupStepResult(
+            step="runtime_dependencies",
+            ok=False,
+            message=(
+                f"fresh-child verify failed after extras install "
+                f"(observed {observed!r} != running {__version__!r})"
+            ),
+            error=ErrorCode.INTERNAL_ERROR,
+        )
+    return SetupStepResult(
+        step="runtime_dependencies",
+        ok=True,
+        message=f"Installed {spec}; verified in fresh interpreter",
+    )

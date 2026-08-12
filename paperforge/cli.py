@@ -434,17 +434,6 @@ def build_parser() -> argparse.ArgumentParser:
         help="AI Agent platform (default: opencode)",
     )
     p_setup.add_argument(
-        "--paddleocr-key",
-        metavar="KEY",
-        help="PaddleOCR API Key",
-    )
-    p_setup.add_argument(
-        "--paddleocr-url",
-        metavar="URL",
-        default="https://paddleocr.aistudio-app.com/api/v2/ocr/jobs",
-        help="PaddleOCR API URL",
-    )
-    p_setup.add_argument(
         "--system-dir",
         metavar="NAME",
         help="System directory name (default: System)",
@@ -473,6 +462,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--skip-checks",
         action="store_true",
         help="Skip environment checks (for testing/CI)",
+    )
+    p_setup.add_argument(
+        "--json",
+        action="store_true",
+        help="Emit the #137 NDJSON machine stream (start/phase/item_result/terminal)",
     )
     p_setup.add_argument(
         "--modular",
@@ -932,7 +926,10 @@ def main(argv: list[str] | None = None) -> int:
             agent_type=_agent,
             skip_checks=_skip,
         )
-        return plan.execute(json_output=getattr(args, "json_output", False))
+        return plan.execute(
+            json_output=getattr(args, "json_output", False),
+            ndjson=getattr(args, "json", False),
+        )
 
     if args.command == "probe":
         from paperforge.commands.probe import run as run_probe

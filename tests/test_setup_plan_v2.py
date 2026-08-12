@@ -740,3 +740,48 @@ class TestSetupPlan174Semantics:
             rc = plan.execute()
         assert rc == 1
         assert read_pointer(home=tmp_path) is None
+
+
+class TestSetupNdjson174:
+    """#174 P0-3: the machine contract is a #137 NDJSON stream with exactly
+    one terminal — this is what the plugin LongTaskClient consumes, not
+    human stdout."""
+
+    def test_ndjson_stream_shape_and_terminal(self, tmp_path: Path) -> None:
+        import contextlib as _cl
+        import io as _io
+        import json as _json
+
+        from paperforge.setup.plan import SetupPlan
+
+        plan = SetupPlan(tmp_path, config={"system_dir": "System"})
+        buf = _io.StringIO()
+        with _cl.redirect_stdout(buf):
+            rc = plan.execute(ndjson=True)
+        assert rc == 0
+        events = [_json.loads(l)["event"]
+                  for l in buf.getvalue().splitlines() if l.strip()]
+        assert events[0] == "start"
+        assert events.count("result") + events.count("error") == 1
+        assert events[-1] == "result"
+        for line in buf.getvalue().splitlines():
+            d = _json.loads(line)
+            assert d["schema_version"] == 1
+            assert d["operation"] == "foundation.setup"
+
+    def test_ndjson_failure_is_rc1_terminal_error(self, tmp_path: Path) -> None:
+        import contextlib as _cl
+        import io as _io
+        import json as _json
+
+        from paperforge.setup.plan import SetupPlan
+
+        (tmp_path / "paperforge.json").write_text("{corrupt", encoding="utf-8")
+        plan = SetupPlan(tmp_path, config={"system_dir": "System"})
+        buf = _io.StringIO()
+        with _cl.redirect_stdout(buf):
+            rc = plan.execute(ndjson=True)
+        assert rc == 1
+        lines = [_json.loads(l) for l in buf.getvalue().splitlines() if l.strip()]
+        assert lines[-1]["event"] == "error"
+        assert lines[-1]["result"]["ok"] is False
