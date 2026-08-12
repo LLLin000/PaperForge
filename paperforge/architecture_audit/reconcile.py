@@ -31,8 +31,8 @@ from paperforge.architecture_audit.layers import (
     AssessmentStatus,
     AuditContent,
     AuthorityRole,
-    CanonicalReadFact,
     CanonicalWriteFact,
+    FilesystemReadFact,
     CoverageEntry,
     CoverageStatus,
     DeterministicAudit,
@@ -179,13 +179,15 @@ def _unit_facts(rule: Rule, survey: ArchitectureSurvey) -> list[UnitAuthorityFac
     return [fact for fact in _facts_of(survey, UnitAuthorityFact) if fact.unit_id == rule.subject]
 
 
-def _read_facts(rule: Rule, survey: ArchitectureSurvey) -> list[CanonicalReadFact]:
-    """Observed reads of a canonical materialization (CANONICAL_READ)."""
-    facts = _facts_of(survey, CanonicalReadFact)
-    if not rule.scope:
-        return facts
-    scoped = {rule.subject, *rule.scope}
-    return [f for f in facts if f.unit_id in scoped]
+def _read_facts(rule: Rule, survey: ArchitectureSurvey) -> list[FilesystemReadFact]:
+    """Observed reads of a canonical materialization (CANONICAL_READ).
+    Scope is ALWAYS unit-bound — a rule without scope must not evaluate the
+    whole repository's reads (#170 corrective)."""
+    units = {rule.subject, *rule.scope}
+    return [
+        f for f in _facts_of(survey, FilesystemReadFact)
+        if f.unit_id in units
+    ]
 
 
 def _write_facts(rule: Rule, survey: ArchitectureSurvey) -> list[CanonicalWriteFact]:
@@ -221,6 +223,10 @@ def _unresolved_facts(rule: Rule, survey: ArchitectureSurvey) -> list[Unresolved
         relevant = {EffectKind.REMOTE_OPERATION}
     elif rule.kind in (RuleKind.CANONICAL_WRITER, RuleKind.PUBLICATION_MARKER):
         relevant = {EffectKind.BUSINESS_MUTATION, EffectKind.MATERIALIZATION_BUILD}
+    elif rule.kind is RuleKind.CANONICAL_READ:
+        # #149: dynamic/unclassifiable canonical-path reads are unresolved
+        # evidence — a partial enumeration must not conclude satisfied.
+        relevant = {EffectKind.DISPOSABLE_SNAPSHOT}
     else:
         return []
     out: list[UnresolvedFact] = []
@@ -325,6 +331,13 @@ def _has_static_violation(rule: Rule, survey: ArchitectureSurvey) -> bool:
         return any(
             not fact.via_publication_protocol
             for fact in _write_facts(rule, survey)
+        )
+    if rule.kind is RuleKind.CANONICAL_READ:
+        # A bare canonical read (no wrapper attribution) is determinate —
+        # VIOLATED wins over unresolved dynamic-path evidence.
+        return any(
+            fact.wrapper_id is None
+            for fact in _read_facts(rule, survey)
         )
     return False
 
@@ -526,20 +539,15 @@ def _evaluate_rule(
             if _absence_is_observed(contract, survey):
                 return RuleStatus.SATISFIED, "no canonical reads observed", []
             return RuleStatus.UNRESOLVED, "no canonical-read facts and coverage incomplete", []
-        allowed = set(rule.allowed_read_wrappers)
-        bypass: list[CanonicalReadFact] = []
-        messages: list[str] = []
-        for fact in reads:
-            if not fact.via_wrapper:
-                bypass.append(fact)
-                messages.append(f"{fact.unit_id} read without a wrapper")
-            elif allowed and fact.wrapper_id not in allowed:
-                bypass.append(fact)
-                messages.append(
-                    f"{fact.unit_id} read via unregistered wrapper {fact.wrapper_id!r}"
-                )
+        # #149 authority: wrapper MEANING is collector knowledge — a fact
+        # carrying a wrapper_id went through a registered wrapper (the
+        # collector filled it); a bare read (wrapper_id None) is a
+        # determinate violation.  No rule-level wrapper allowlist.
+        bypass = [fact for fact in reads if fact.wrapper_id is None]
         if bypass:
-            return RuleStatus.VIOLATED, "; ".join(sorted(set(messages))), [
+            return RuleStatus.VIOLATED, "; ".join(sorted(
+                {f"{fact.unit_id} read without a wrapper" for fact in bypass}
+            )), [
                 e for fact in bypass for e in _evidence_of(fact)
             ]
         return RuleStatus.SATISFIED, "all canonical reads go through registered wrappers", [

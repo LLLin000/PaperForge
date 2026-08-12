@@ -31,6 +31,16 @@ const FS_WRITE = new Set([
   "renameSync", "rename", "copyFileSync", "copyFile", "rmSync", "rm",
   "unlinkSync", "unlink",
 ]);
+// #149/T9: canonical filesystem READ sinks — bare reads become
+// filesystem_read facts (no wrapper attribution).
+const FS_READ = new Set([
+  "readFileSync", "readFile", "openSync", "open", "readSync", "read",
+  "existsSync", "statSync", "readdirSync", "readdir",
+]);
+const CANONICAL_READ_WRAPPERS = new Set([
+  "readRuntimePointer", "readCanonicalFile", "cachedRead", "readCanonical",
+  "readFormalLibrary",
+]);
 const FS_MODULES = new Set(["fs", "fs/promises", "node:fs", "node:fs/promises"]);
 const SPAWN = new Set([
   "execSync", "exec", "spawn", "spawnSync", "fork", "execFileSync",
@@ -176,6 +186,28 @@ function main() {
     const sf = ts.createSourceFile(rel, source, ts.ScriptTarget.Latest, true);
     const index = buildIndex(source, ts);
     const symbol = rel.replace(/\//g, ".").replace(/\.ts$/, "");
+    // #149/T9: trace `const X = path.join(..., "formal-library.json")`
+    // so `fs.readFileSync(X)` classifies to the canonical unit.
+    const pathVars = new Map();
+    ts.forEachChild(sf, function collectPathVars(n) {
+      if (
+        ts.isVariableDeclaration(n) && n.initializer &&
+        ts.isCallExpression(n.initializer) && n.name && ts.isIdentifier(n.name)
+      ) {
+        const init = n.initializer;
+        const fn = init.expression;
+        const fnName =
+          fn && fn.name ? fn.name.text : fn && fn.expression && fn.expression.name ? fn.expression.name.text : "";
+        if (fnName === "join") {
+          const joined = init.arguments
+            .map((a) => (ts.isStringLiteral(a) || ts.isNoSubstitutionTemplateLiteral(a) ? a.text : ""))
+            .join("/");
+          const unit = canonicalUnitForPath(joined);
+          if (unit !== "fs_read") pathVars.set(n.name.text, unit);
+        }
+      }
+      ts.forEachChild(n, collectPathVars);
+    });
 
     function evidence(node, confidence, extractor) {
       const start = node.getStart(sf, false);
@@ -216,7 +248,16 @@ function main() {
               });
               const ev = evidence(node, spec.confidence || "exact");
               for (const f of spec.facts) {
-                if (f.kind === "effect") {
+                if (f.kind === "read") {
+                  addFact({
+                    kind: "filesystem_read",
+                    operation_id: operationId(rel, symbol),
+                    unit_id: f.unit_id,
+                    wrapper_id: f.wrapper_id,
+                    path_expression: node.expression ? node.expression.getText(sf).slice(0, 160) : "",
+                    evidence: ev,
+                  });
+                } else if (f.kind === "effect") {
                   addFact({
                     kind: "effect",
                     operation_id: operationId(rel, symbol),
@@ -268,6 +309,36 @@ function main() {
                 effect_kind: "business_mutation",
                 evidence: evidence(node),
               });
+            } else if (FS_MODULES.has(head) && FS_READ.has(tail)) {
+              // #149/T9: classify a bare filesystem read by its path — the
+              // canonical-unit mapping is collector knowledge.
+              const pathText = firstStringArg(node, sf);
+              // Variable-indirect reads trace through the path-var map.
+              let varUnit = null;
+              const firstArg = node.arguments && node.arguments[0];
+              if (firstArg && ts.isIdentifier(firstArg)) {
+                varUnit = pathVars.get(firstArg.text) || null;
+              }
+              addFact({
+                kind: "filesystem_read",
+                operation_id: operationId(rel, symbol),
+                unit_id: varUnit || canonicalUnitForPath(pathText),
+                wrapper_id: null,
+                path_expression: pathText || (node.expression ? node.expression.getText(sf).slice(0, 160) : ""),
+                evidence: evidence(node),
+              });
+            } else if (CANONICAL_READ_WRAPPERS.has(tail)) {
+              // Registered canonical-read helper: wrapper attribution is
+              // collector knowledge — a dynamic path is unresolved evidence.
+              addFact({
+                kind: "unresolved",
+                unresolved_id: `unresolved:${rel}:${sf.getLineAndCharacterOfPosition(node.getStart(sf, false)).line + 1}`,
+                expression: qualified,
+                reason: "canonical read via dynamic path",
+                possible_effects: ["disposable_snapshot"],
+                evidence: evidence(node, "low"),
+                epistemic_status: "unresolved",
+              });
             }
           }
         } else {
@@ -296,6 +367,28 @@ function main() {
       ts.forEachChild(node, visit);
     }
     visit(sf);
+  }
+
+  function firstStringArg(node, sf) {
+    for (const arg of node.arguments || []) {
+      if (ts.isStringLiteral(arg) || ts.isNoSubstitutionTemplateLiteral(arg)) {
+        return arg.text.slice(0, 200);
+      }
+    }
+    return "";
+  }
+
+  // Canonical materialization classification from a path expression —
+  // collector knowledge (#149).  Unknown paths classify as fs_read (the
+  // generic sink) and only match rules scoped to it.
+  function canonicalUnitForPath(pathText) {
+    const p = String(pathText || "");
+    if (/formal-library\.json/.test(p)) return "formal_library";
+    if (/paperforge\.json/.test(p) || /\.paperforge/.test(p)) return "paperforge_config";
+    if (/(^|[\/])ocr($|[\/])/.test(p) || /meta\.json/.test(p)) return "ocr_state";
+    if (/paperforge\.db/.test(p)) return "memory_db";
+    if (/runtime(-|_|\/)state|runtime-health/.test(p)) return "runtime_snapshots";
+    return "fs_read";
   }
 
   function operationId(rel, symbol) {

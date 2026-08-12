@@ -179,10 +179,19 @@ class SignalSpec:
 
 
 @dataclass(frozen=True)
+class ReadSpec:
+    """#149: a wrapper that READS a canonical materialization.  Wrapper
+    meaning is collector knowledge — the collector attributes reads through
+    registered wrappers; bare reads are left unattributed."""
+    unit_id: str
+    wrapper_id: str
+
+
+@dataclass(frozen=True)
 class WrapperSpec:
     wrapper_id: str
     qualified_name: str  # `module.func` tail-matched against callsites
-    facts: tuple[EffectSpec | WriteSpec | SignalSpec, ...]
+    facts: tuple[EffectSpec | WriteSpec | SignalSpec | ReadSpec, ...]
     confidence: Confidence = Confidence.EXACT
     version: int = 1
     argument_roles: tuple[ArgumentRole, ...] = ()
@@ -251,6 +260,13 @@ def load_wrapper_registry(payload: list[dict[str, Any]]) -> tuple[WrapperSpec, .
                         writer_id=spec["writer_id"],
                         publication_authority=spec["publication_authority"],
                         actor_kind=spec.get("actor_kind", "backend"),
+                    )
+                )
+            elif kind == "read":
+                facts.append(
+                    ReadSpec(
+                        unit_id=spec["unit_id"],
+                        wrapper_id=spec.get("wrapper_id", wrapper_id),
                     )
                 )
             elif kind == "signal":
@@ -338,6 +354,44 @@ DEFAULT_PYTHON_REGISTRY: tuple[WrapperSpec, ...] = (
             EffectSpec(
                 effect_kind=EffectKind.BUSINESS_MUTATION,
             ),
+        ),
+        confidence=Confidence.EXACT,
+    ),
+    # #149/T9: canonical-READ wrappers — wrapper meaning is collector
+    # knowledge; reads through these carry wrapper attribution, bare fs
+    # reads do not.
+    WrapperSpec(
+        wrapper_id="bootstrap.pointer.read",
+        qualified_name="bootstrap.read_runtime_pointer",
+        facts=(
+            ReadSpec(unit_id="paperforge_config", wrapper_id="bootstrap.pointer.read"),
+            ReadSpec(unit_id="formal_library", wrapper_id="bootstrap.pointer.read"),
+        ),
+        confidence=Confidence.EXACT,
+    ),
+    WrapperSpec(
+        wrapper_id="client_cache.read",
+        qualified_name="runtime_paths.readCanonicalPath",
+        facts=(
+            ReadSpec(unit_id="memory_db", wrapper_id="client_cache.read"),
+            ReadSpec(unit_id="formal_library", wrapper_id="client_cache.read"),
+            ReadSpec(unit_id="runtime_snapshots", wrapper_id="client_cache.read"),
+        ),
+        confidence=Confidence.EXACT,
+    ),
+    WrapperSpec(
+        wrapper_id="navigation.open",
+        qualified_name="ocr_workspace.openFulltext",
+        facts=(
+            ReadSpec(unit_id="ocr_state", wrapper_id="navigation.open"),
+        ),
+        confidence=Confidence.EXACT,
+    ),
+    WrapperSpec(
+        wrapper_id="workspace.context",
+        qualified_name="ocr_workspace.readOcrContext",
+        facts=(
+            ReadSpec(unit_id="ocr_state", wrapper_id="workspace.context"),
         ),
         confidence=Confidence.EXACT,
     ),
