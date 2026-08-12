@@ -84,7 +84,9 @@ function buildIndex(source, ts) {
   function visit(node) {
     if (ts.isImportDeclaration(node)) {
       const mod = node.moduleSpecifier.text;
-      if (!mod.startsWith(".")) {
+      // #170: relative imports are indexed too (module-qualified), so a
+      // locally-defined read helper resolves for wrapper attribution.
+      {
         const names = [];
         for (const clause of node.importClause ? [node.importClause] : []) {
           if (clause.name) names.push({ imported: "default", local: clause.name.text });
@@ -387,7 +389,7 @@ function main() {
     if (/paperforge\.json/.test(p) || /\.paperforge/.test(p)) return "paperforge_config";
     if (/(^|[\/])ocr($|[\/])/.test(p) || /meta\.json/.test(p)) return "ocr_state";
     if (/paperforge\.db/.test(p)) return "memory_db";
-    if (/runtime(-|_|\/)state|runtime-health/.test(p)) return "runtime_snapshots";
+    if (/runtime(-|_|\/)state|runtime-health/.test(p)) return "runtime_state.snapshot";
     return "fs_read";
   }
 

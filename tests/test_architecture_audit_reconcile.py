@@ -1223,10 +1223,19 @@ class TestCanonicalRead:
         assert finding.rule_id == "client_read.formal_library"
         assert finding.rule_status is RuleStatus.VIOLATED
         assert finding.severity == "advisory"
-        assert "without a wrapper" in finding.message
+        assert "without a declared adapter wrapper" in finding.message
 
     def test_wrapped_read_satisfies(self) -> None:
-        contract = _contract([self._read_rule()])
+        # #170 P0-2: a wrapper-attributed read satisfies ONLY when the
+        # Contract declares the semantic adapter operation.
+        contract = _contract(
+            [self._read_rule()],
+            operations=(
+                "sync",
+                {"operation_id": "client_cache.read",
+                 "authorities": [{"role": "adapter", "authority_id": "plugin.cache"}]},
+            ),
+        )
         survey = _survey(facts=(
             self._read_fact(wrapper_id="client_cache.read"),
         ))
@@ -1300,3 +1309,73 @@ class TestCanonicalRead:
         # Contract rules carry no wrapper field.
         contract = _contract([self._read_rule()])
         assert "allowed_read_wrappers" not in contract.rules[0].to_dict()
+
+
+# ── T9 (#170) closure — adapter declaration + runtime snapshot unit ───────
+
+class TestCanonicalReadClosure:
+    def _read_rule(self, rule_id: str, subject: str) -> dict:
+        return {
+            "rule_id": rule_id,
+            "kind": "canonical_read",
+            "subject": subject,
+            "lifecycle": "active",
+            "enforcement": "advisory",
+        }
+
+    def _read_fact(self, unit_id: str, wrapper_id: str | None = None) -> dict:
+        return {
+            "kind": "filesystem_read",
+            "operation_id": "read_canonical",
+            "unit_id": unit_id,
+            "wrapper_id": wrapper_id,
+            "path_expression": 'vault + "/indexes/formal-library.json"',
+            "evidence": _evidence("app", 12),
+        }
+
+    def test_registered_in_collector_but_not_declared_in_contract_violates(self) -> None:
+        """#170 P0-2: the collector registry can attribute a read to a
+        wrapper, but WITHOUT a contract-declared adapter operation the read
+        is STILL a violation — authority lives in the Contract."""
+        rule = self._read_rule("client_read.formal_library", "formal_library")
+        # Contract operations declare NO read adapters.
+        contract = _contract([rule], operations=("sync", "probe_status"))
+        survey = _survey(facts=(self._read_fact("formal_library", "client_cache.read"),))
+        audit = reconcile(contract, survey)
+        finding = next(f for f in audit.content.findings)
+        assert finding.rule_status is RuleStatus.VIOLATED
+        assert "adapter" in finding.message
+
+    def test_declared_adapter_satisfies(self) -> None:
+        """#149: declaring the semantic adapter operation in the Contract
+        (role=adapter) makes the wrapper-attributed read legal."""
+        rule = self._read_rule("client_read.formal_library", "formal_library")
+        contract = _contract(
+            [rule],
+            operations=(
+                "sync",
+                {"operation_id": "client_cache.read",
+                 "authorities": [{"role": "adapter", "authority_id": "plugin.cache"}]},
+            ),
+        )
+        survey = _survey(facts=(self._read_fact("formal_library", "client_cache.read"),))
+        audit = reconcile(contract, survey)
+        assert len(audit.content.findings) == 0
+        status = next(
+            c for c in audit.content.rule_coverage
+            if c.rule_id == "client_read.formal_library"
+        ).status
+        assert status is RuleStatus.SATISFIED
+
+    def test_runtime_snapshot_direct_read_seen_by_its_rule(self) -> None:
+        """#170 P1: the collector unit id (runtime_state.snapshot) matches
+        the tracked contract subject — client_read.runtime_snapshots must
+        actually see the direct read."""
+        rule = self._read_rule("client_read.runtime_snapshots", "runtime_state.snapshot")
+        contract = _contract([rule])
+        survey = _survey(facts=(self._read_fact("runtime_state.snapshot"),))
+        audit = reconcile(contract, survey)
+        finding = next(f for f in audit.content.findings)
+        assert finding.rule_id == "client_read.runtime_snapshots"
+        assert finding.rule_status is RuleStatus.VIOLATED
+        assert "without a" in finding.message

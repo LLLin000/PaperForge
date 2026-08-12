@@ -233,6 +233,13 @@ def _unresolved_facts(rule: Rule, survey: ArchitectureSurvey) -> list[Unresolved
     for fact in _facts_of(survey, UnresolvedFact):
         if not (set(fact.possible_effects) & relevant):
             continue
+        if rule.kind is RuleKind.CANONICAL_READ:
+            # #170 P0-3: a dynamic/unclassifiable canonical path is unit-
+            # agnostic — the collector does not know which canonical unit it
+            # may target.  Fail INCOMPLETE for every canonical-read rule
+            # rather than guessing (no module-scope for read rules).
+            out.append(fact)
+            continue
         # Scope by source module: an unresolved call inside `sync.py` must
         # not shadow a rule about `probe_status`.
         file = (fact.evidence.file if fact.evidence else "") or ""
@@ -539,18 +546,29 @@ def _evaluate_rule(
             if _absence_is_observed(contract, survey):
                 return RuleStatus.SATISFIED, "no canonical reads observed", []
             return RuleStatus.UNRESOLVED, "no canonical-read facts and coverage incomplete", []
-        # #149 authority: wrapper MEANING is collector knowledge — a fact
-        # carrying a wrapper_id went through a registered wrapper (the
-        # collector filled it); a bare read (wrapper_id None) is a
-        # determinate violation.  No rule-level wrapper allowlist.
-        bypass = [fact for fact in reads if fact.wrapper_id is None]
+        # #149 authority split (#170 P0-2): the collector registry says
+        # WHAT a call is (a read via a semantic wrapper); the CONTRACT says
+        # whether that adapter is ALLOWED.  A read is a violation when it
+        # has no wrapper attribution OR its wrapper is not a contract-
+        # declared adapter operation.
+        declared_adapters = {
+            op.operation_id
+            for op in contract.operations
+            if any(decl.role is AuthorityRole.ADAPTER for decl in op.authorities)
+        }
+        bypass = [
+            fact for fact in reads
+            if fact.wrapper_id is None or fact.wrapper_id not in declared_adapters
+        ]
         if bypass:
-            return RuleStatus.VIOLATED, "; ".join(sorted(
-                {f"{fact.unit_id} read without a wrapper" for fact in bypass}
-            )), [
+            messages = sorted({
+                f"{fact.unit_id} read without a declared adapter wrapper"
+                for fact in bypass
+            })
+            return RuleStatus.VIOLATED, "; ".join(messages), [
                 e for fact in bypass for e in _evidence_of(fact)
             ]
-        return RuleStatus.SATISFIED, "all canonical reads go through registered wrappers", [
+        return RuleStatus.SATISFIED, "all canonical reads go through contract-declared adapter wrappers", [
             e for fact in reads for e in _evidence_of(fact)
         ]
 
