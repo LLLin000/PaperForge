@@ -562,8 +562,6 @@ describe("runtime action verb dispatch", () => {
       warnings: [],
       lastVerifiedAt: null,
       stale: false,
-      previousVersion: null,
-      previousPythonPath: null,
     };
     const actions = runtimeActionsForHealth(health, "1.0.0", true);
     expect(actions).toHaveLength(1);
@@ -580,14 +578,12 @@ describe("runtime action verb dispatch", () => {
       warnings: [],
       lastVerifiedAt: null,
       stale: false,
-      previousVersion: null,
-      previousPythonPath: null,
     };
     const actions = runtimeActionsForHealth(health, "1.0.0", false);
     expect(actions.some((a) => a.verb === "install")).toBe(true);
   });
 
-  it("runtimeActionsForHealth includes rollback when previousVersion is set", () => {
+  it("runtimeActionsForHealth never offers rollback (#174)", () => {
     const health = {
       state: "ready" as const,
       version: "1.0.0",
@@ -597,11 +593,11 @@ describe("runtime action verb dispatch", () => {
       warnings: [],
       lastVerifiedAt: new Date().toISOString(),
       stale: false,
-      previousVersion: "0.9.0",
-      previousPythonPath: "/old/python",
     };
+    // #174: rollback semantics deleted — no action offers it.
     const actions = runtimeActionsForHealth(health, "1.0.0", false);
-    expect(actions.some((a) => a.verb === "rollback")).toBe(true);
+    expect(actions.some((a) => a.verb === "rollback")).toBe(false);
+    expect(actions.map((a) => a.verb)).toEqual(["status", "update"]);
   });
 });
 
@@ -647,7 +643,7 @@ describe("runtime action button rendering", () => {
     btn.className = "pf-runtime-action-btn";
     btn.textContent = "Install";
     btn.setAttribute("data-verb", "install");
-    // Production must disable install/repair/update/retry/rollback when busy
+    // Production must disable install/repair/update/retry when busy
     btn.disabled = true;
     actionRow.appendChild(btn);
     root.appendChild(actionRow);
@@ -668,7 +664,6 @@ describe("runtime action button rendering", () => {
       "update",
       "retry",
       "stop",
-      "rollback",
     ];
     const dom = new JSDOM("<!DOCTYPE html><div id=root></div>");
     const doc = dom.window.document;
@@ -696,36 +691,6 @@ describe("runtime action button rendering", () => {
     });
   });
 
-  it("rollback ensure call passes version without force", () => {
-    // Test that the rollback action handler would call ensure with version option,
-    // not with force:true as the current broken code does.
-    const health = {
-      state: "ready" as const,
-      version: "1.0.0",
-      pythonPath: "/usr/bin/python3",
-      source: "venv" as const,
-      error: null,
-      warnings: [],
-      lastVerifiedAt: new Date().toISOString(),
-      stale: false,
-      previousVersion: "0.9.0",
-      previousPythonPath: "/old/python",
-    };
-
-    // The correct ensure call for rollback should be:
-    // await rt.ensure({ signal: ac.signal, version: health.previousVersion })
-    // NOT await rt.ensure({ signal: ac.signal, force: true })
-    const correctOptions = {
-      signal: new AbortController().signal,
-      version: health.previousVersion,
-    };
-    // The options must NOT have force: true (would trigger rebuild)
-    expect("version" in correctOptions).toBe(true);
-    expect(correctOptions.version).toBe("0.9.0");
-    // Check that force is NOT how rollback options are shaped
-    expect(Object.hasOwn(correctOptions, "force")).toBe(false);
-  });
-
   it("stop verb is included in rendered actions when running is true (defect regression)", () => {
     const health = {
       state: "ready" as const,
@@ -736,8 +701,6 @@ describe("runtime action button rendering", () => {
       warnings: [],
       lastVerifiedAt: new Date().toISOString(),
       stale: false,
-      previousVersion: null,
-      previousPythonPath: null,
     };
     // Pass running=true → should only return stop
     const actions = runtimeActionsForHealth(health, "1.1.0", true);
@@ -759,8 +722,6 @@ describe("runtime action button rendering", () => {
       warnings: [],
       lastVerifiedAt: null,
       stale: false,
-      previousVersion: null,
-      previousPythonPath: null,
     };
     const actions = runtimeActionsForHealth(health, "1.0.0", false);
     // Should NOT include stop when not running
@@ -1007,77 +968,6 @@ describe("_ensureManagedRuntime canonical root delegation (Defect 1)", () => {
 
     // Verify singleton caching works
     expect(tab._ensureManagedRuntime()).toBe(rt);
-  });
-});
-
-// ── 16. Issue #77 Defect 2: Rollback passes version without force ──
-//   Tests that the actual rollback dispatch in renderRuntimeActions calls
-//   ensure({signal, version}) and does NOT pass force:true.
-
-describe("rollback dispatch calls ensure with version not force (Defect 2)", () => {
-  it("rollback handler invokes ensure with version, not force", async () => {
-    const app: Record<string, unknown> = {
-      vault: { adapter: { basePath: "/test/vault" } },
-    };
-    const plugin: Record<string, unknown> = {
-      settings: {},
-      manifest: { version: "2.1.0" },
-      saveSettings: vi.fn(),
-      loadSettings: vi.fn(),
-      readPaperforgeJson: () => ({}),
-      savePaperforgeJson: vi.fn(),
-    };
-    const tab = new PaperForgeSettingTab(
-      app as unknown as import("obsidian").App,
-      plugin
-    );
-
-    const ensureMock = vi.fn(async () => ({
-      state: "ready",
-      version: "0.9.0",
-      pythonPath: "/old/python",
-      source: "venv",
-      error: null,
-      warnings: [],
-      lastVerifiedAt: null,
-      stale: false,
-      previousVersion: "1.0.0",
-      previousPythonPath: "/new/python",
-    }));
-    tab._managedRuntime = {
-      current: () => ({
-        state: "ready",
-        version: "1.0.0",
-        pythonPath: "/usr/bin/python3",
-        source: "venv",
-        error: null,
-        warnings: [],
-        lastVerifiedAt: new Date().toISOString(),
-        stale: false,
-        previousVersion: "0.9.0",
-        previousPythonPath: "/old/python",
-      }),
-      ensure: ensureMock,
-      status: vi.fn(),
-    } as unknown as ManagedRuntime;
-
-    // Simulate what the Stop button handler does before install/rollback:
-    // ac = new AbortController(); this._runtimeAbortController = ac; ...
-    const ac = new AbortController();
-    tab._runtimeAbortController = ac;
-
-    // Simulate the rollback button click (production code at settings.ts:453-454)
-    const health = tab._managedRuntime.current();
-    await tab._managedRuntime.ensure({
-      signal: ac.signal,
-      version: health.previousVersion ?? undefined,
-    });
-
-    // Verify ensure was called with the correct options
-    const callArgs = ensureMock.mock.calls[0][0];
-    expect(callArgs).toBeDefined();
-    expect(callArgs).toHaveProperty("version", "0.9.0");
-    expect(Object.hasOwn(callArgs, "force")).toBe(false);
   });
 });
 

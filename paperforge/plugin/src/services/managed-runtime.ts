@@ -1,5 +1,5 @@
 /**
- * ManagedRuntime — single, machine-local PaperForge runtime.
+ * ManagedRuntime — single, machine-local PaperForge runtime (#174 / #143).
  *
  * Public seam (Issue #77):
  *   ManagedRuntime, RuntimeHealth, RuntimeRun,
@@ -11,9 +11,13 @@
  *   unknown → status() → ready / needs_repair
  *   needs_repair → ensure() → ready / needs_repair
  *
- * Design: immutable version slots under ~/.paperforge/runtime/{os-arch}/,
- *          one atomically-replaced active-runtime.json at the runtime root.
- *          Machine-local, shared across vaults. No credentials or vault paths.
+ * Post-cutover scope (#174 / #143 §3): the plugin is a READER of the
+ * runtime only.  It keeps discovery, platform gates, consent UX, ONE
+ * one-time venv + pinned install, pointer READ and handshake/spawn.
+ * DELETED: version slots, rollback, slot ensure, runtime-health checks
+ * and TS pointer writes — Python owns pointer publication
+ * (`~/.paperforge/runtime/pointer.json`, written by `paperforge setup`
+ * after a successful install).
  */
 
 import * as fs from "fs";
@@ -53,8 +57,6 @@ export interface RuntimeHealth {
   readonly lastVerifiedAt: string | null;
   readonly stale: boolean;
   readonly warnings: readonly WarningInfo[];
-  readonly previousVersion: string | null;
-  readonly previousPythonPath: string | null;
 }
 
 export interface StatusOptions {
@@ -89,15 +91,8 @@ export interface RuntimeAction {
 export interface FsOps {
   existsSync(p: string): boolean;
   readFileSync(p: string, encoding?: string | null): string;
-  writeFileSync(
-    p: string,
-    data: string | NodeJS.ArrayBufferView,
-    encoding?: string | null
-  ): void;
-  renameSync(oldP: string, newP: string): void;
   mkdirSync(p: string, opts?: { recursive?: boolean }): string | undefined;
   rmSync(p: string, opts?: { recursive?: boolean; force?: boolean }): void;
-  readdirSync(p: string, opts?: { withFileTypes?: boolean }): fs.Dirent[];
 }
 
 export type ExecFileCallback = (
@@ -121,6 +116,9 @@ export type ExecFileSyncFn = (
 
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 const MIN_PYTHON = "3.11";
+const POINTER_SCHEMA_VERSION = 1;
+const POINTER_FILENAME = "pointer.json";
+const VENV_DIR_NAME = "venv";
 
 /** ES2018-compatible Promise.withResolvers polyfill. */
 function deferred<T>(): {
@@ -246,25 +244,13 @@ export function runtimeActionsForHealth(
     switch (health.state) {
       case "not_installed":
         return [{ verb: "install", label: "Install Runtime" }];
-      case "needs_repair": {
-        const actions: RuntimeUiAction[] = [
-          { verb: "repair", label: "Repair Runtime" },
-        ];
-        if (health.pythonPath) {
-          actions.push({ verb: "rollback", label: "Rollback" });
-        }
-        return actions;
-      }
-      case "ready": {
-        const actions: RuntimeUiAction[] = [
+      case "needs_repair":
+        return [{ verb: "repair", label: "Repair Runtime" }];
+      case "ready":
+        return [
           { verb: "status", label: "Check Status" },
           { verb: "update", label: "Update Runtime" },
         ];
-        if (health.previousVersion) {
-          actions.push({ verb: "rollback", label: "Rollback" });
-        }
-        return actions;
-      }
       case "unknown":
         return [{ verb: "retry", label: "Retry" }];
       case "unavailable":
@@ -285,8 +271,8 @@ export function runtimeActionsForHealth(
           destructive: false,
         },
       ];
-    case "needs_repair": {
-      const actions: RuntimeAction[] = [
+    case "needs_repair":
+      return [
         {
           id: "repair",
           label: "Repair Runtime",
@@ -294,16 +280,6 @@ export function runtimeActionsForHealth(
           destructive: false,
         },
       ];
-      if (health.pythonPath) {
-        actions.push({
-          id: "rollback",
-          label: "Rollback",
-          primary: false,
-          destructive: false,
-        });
-      }
-      return actions;
-    }
     case "ready":
       return [
         {
@@ -361,7 +337,7 @@ export function resolveRuntimeCommand(
 // ── ManagedRuntime class ──
 
 export class ManagedRuntime {
-  private readonly runtimeDir: string;
+  private readonly venvDir: string;
   private readonly pointerPath: string;
   private readonly pluginVersion: string;
   private readonly osPlatform: string;
@@ -376,6 +352,7 @@ export class ManagedRuntime {
 
   // Public canonical root (Issue #77)
   public readonly rootDir: string;
+  /** Kept for API compatibility; post-cutover there is ONE venv, no slots. */
   public readonly triplet: string;
 
   constructor(opts: {
@@ -397,23 +374,22 @@ export class ManagedRuntime {
     const arch = opts.osArch ?? opts.arch ?? process.arch;
     this.osPlatform = platform;
     this.osArch = arch;
-    // triplet is the raw platform-arch (e.g. "win32-x64"), not the getOsArch mapped value
     this.triplet = `${platform}-${arch}`;
 
     if (opts.runtimeDir) {
-      this.runtimeDir = opts.runtimeDir;
-      this.rootDir = path.dirname(opts.runtimeDir);
+      // DI path: runtimeDir is the runtime root containing pointer.json.
+      this.rootDir = opts.runtimeDir;
+      this.venvDir = path.join(opts.runtimeDir, VENV_DIR_NAME);
       this.pluginVersion = opts.pluginVersion ?? opts.version ?? "0.0.0";
     } else {
       const home = os.homedir();
       this.rootDir = path.join(home, ".paperforge", "runtime");
-      // runtime dir uses getOsArch-mapped value (e.g. "windows-x64")
-      this.runtimeDir = path.join(this.rootDir, getOsArch(platform, arch));
+      this.venvDir = path.join(this.rootDir, VENV_DIR_NAME);
       this.pluginVersion = opts.version ?? opts.pluginVersion ?? "0.0.0";
     }
 
-    // Pointer lives at the runtime root (parent of os-arch dir)
-    this.pointerPath = path.join(this.rootDir, "active-runtime.json");
+    // #174: Python is the ONLY writer of pointer.json; the plugin READS it.
+    this.pointerPath = path.join(this.rootDir, POINTER_FILENAME);
     this._fs = opts.fs ?? (fs as unknown as FsOps);
     this._execFile = opts.execFile ?? (cpExecFile as unknown as ExecFileFn);
     this._execFileSync =
@@ -433,8 +409,6 @@ export class ManagedRuntime {
         lastVerifiedAt: null,
         stale: true,
         warnings: [],
-        previousVersion: null,
-        previousPythonPath: null,
       };
     }
     const isStale = Date.now() - this._cacheTime > CACHE_TTL_MS;
@@ -459,31 +433,24 @@ export class ManagedRuntime {
       }
     }
 
-    // Read pointer file to find active runtime
-    let pointerVersion: string | null = null;
+    // Read pointer.json (schema v1, published ONLY by Python).
     let pointerPythonPath: string | null = null;
-    let pointerPrevVersion: string | null = null;
-    let pointerPrevPythonPath: string | null = null;
-    let pointerWarnings: WarningInfo[] = [];
+    let pointerVersion: string | null = null;
     try {
       const raw = this._fs.readFileSync(this.pointerPath, "utf-8");
       const ptr: Record<string, unknown> = JSON.parse(raw);
-      pointerVersion = typeof ptr.version === "string" ? ptr.version : null;
-      const pp = typeof ptr.pythonPath === "string" ? ptr.pythonPath : null;
-      pointerPythonPath = pp
-        ? path.resolve(path.dirname(this.pointerPath), pp)
-        : null;
-      pointerPrevVersion =
-        typeof ptr.previousVersion === "string" ? ptr.previousVersion : null;
-      pointerPrevPythonPath =
-        typeof ptr.previousPythonPath === "string"
-          ? ptr.previousPythonPath
+      if (ptr.schema_version !== POINTER_SCHEMA_VERSION) {
+        throw new Error("unsupported pointer schema");
+      }
+      const pp = typeof ptr.python_path === "string" ? ptr.python_path : null;
+      pointerPythonPath = pp ? path.resolve(pp) : null;
+      pointerVersion =
+        typeof ptr.paperforge_version === "string"
+          ? ptr.paperforge_version
           : null;
-      pointerWarnings = Array.isArray(ptr.warnings)
-        ? (ptr.warnings as WarningInfo[])
-        : [];
     } catch {
-      // No pointer → not installed
+      // No pointer → not installed (interrupted install ⇒ no publication ⇒
+      // next handshake fails ⇒ UI offers install again, consent required).
       return this._setCache({
         state: "not_installed",
         pythonPath: null,
@@ -493,8 +460,6 @@ export class ManagedRuntime {
         lastVerifiedAt: null,
         stale: false,
         warnings: [],
-        previousVersion: null,
-        previousPythonPath: null,
       });
     }
 
@@ -507,14 +472,12 @@ export class ManagedRuntime {
         source: "none",
         error: {
           code: "POINTER_MISSING_PATH",
-          message: "Active runtime pointer has no pythonPath",
+          message: "Runtime pointer has no pythonPath",
           platformAction: "Reinstall runtime",
         },
         lastVerifiedAt: null,
         stale: false,
-        warnings: pointerWarnings,
-        previousVersion: pointerPrevVersion,
-        previousPythonPath: pointerPrevPythonPath,
+        warnings: [],
       });
     }
 
@@ -532,17 +495,13 @@ export class ManagedRuntime {
         },
         lastVerifiedAt: null,
         stale: false,
-        warnings: pointerWarnings,
-        previousVersion: pointerPrevVersion,
-        previousPythonPath: pointerPrevPythonPath,
+        warnings: [],
       });
     }
 
     // Run isolated import probe
     try {
       const result = await this._probe(pointerPythonPath);
-
-      const probeWarnings = [...pointerWarnings];
       return this._setCache({
         state: "ready",
         pythonPath: pointerPythonPath,
@@ -551,9 +510,7 @@ export class ManagedRuntime {
         error: null,
         lastVerifiedAt: new Date().toISOString(),
         stale: false,
-        warnings: probeWarnings,
-        previousVersion: pointerPrevVersion,
-        previousPythonPath: pointerPrevPythonPath,
+        warnings: [],
       });
     } catch (probeErr: unknown) {
       const msg =
@@ -570,14 +527,12 @@ export class ManagedRuntime {
         },
         lastVerifiedAt: null,
         stale: false,
-        warnings: pointerWarnings,
-        previousVersion: pointerPrevVersion,
-        previousPythonPath: pointerPrevPythonPath,
+        warnings: [],
       });
     }
   }
 
-  // ── Ensure a working runtime ──
+  // ── Ensure a working runtime (ONE one-time install) ──
 
   async ensure(opts?: EnsureOptions): Promise<RuntimeHealth> {
     const version = opts?.version ?? this.pluginVersion;
@@ -619,8 +574,6 @@ export class ManagedRuntime {
           lastVerifiedAt: null,
           stale: false,
           warnings: [],
-          previousVersion: null,
-          previousPythonPath: null,
         });
       }
 
@@ -644,8 +597,6 @@ export class ManagedRuntime {
           lastVerifiedAt: null,
           stale: false,
           warnings: [],
-          previousVersion: null,
-          previousPythonPath: null,
         });
       }
 
@@ -663,8 +614,6 @@ export class ManagedRuntime {
           lastVerifiedAt: null,
           stale: false,
           warnings: [],
-          previousVersion: null,
-          previousPythonPath: null,
         });
       }
 
@@ -683,8 +632,6 @@ export class ManagedRuntime {
         lastVerifiedAt: null,
         stale: false,
         warnings: [],
-        previousVersion: null,
-        previousPythonPath: null,
       });
     }
 
@@ -705,142 +652,21 @@ export class ManagedRuntime {
         lastVerifiedAt: null,
         stale: false,
         warnings: [],
-        previousVersion: null,
-        previousPythonPath: null,
       });
-    }
-
-    // Step 2.5: Rollback/retained-slot fast path — if the version slot
-    // already exists and we are not forcing a rebuild, verify the retained
-    // immutable slot and atomically rewrite the pointer without creating
-    // a new venv or running pip. Only enters when rolling back to a
-    // *different* version; same-version ensure falls through to full build.
-    if (this._currentSlotExists(version) && !force) {
-      // Determine whether this is a rollback (active version != requested)
-      let isRollback = false;
-      try {
-        const curRaw = this._fs.readFileSync(this.pointerPath, "utf-8");
-        const curPtr: Record<string, unknown> = JSON.parse(curRaw);
-        const activeVer =
-          typeof curPtr.version === "string" ? curPtr.version : null;
-        isRollback = activeVer !== null && activeVer !== version;
-      } catch {
-        // No pointer — not a rollback
-      }
-
-      if (isRollback) {
-        const rollbackSlotDir = path.join(this.runtimeDir, `v${version}`);
-        const rollbackVenvDir = path.join(rollbackSlotDir, "venv");
-        const rollbackPythonExe =
-          this.osPlatform === "win32"
-            ? path.join(rollbackVenvDir, "Scripts", "python.exe")
-            : path.join(rollbackVenvDir, "bin", "python");
-
-        // Verify the retained slot's Python can import paperforge
-        try {
-          await this._probe(rollbackPythonExe, signal);
-        } catch (probeErr: unknown) {
-          if (probeErr instanceof Error && probeErr.name === "AbortError") {
-            return this._abortedHealth();
-          }
-          const msg =
-            probeErr instanceof Error ? probeErr.message : String(probeErr);
-          return this._setCache({
-            state: "needs_repair",
-            pythonPath: rollbackPythonExe,
-            version,
-            source: "venv",
-            error: {
-              code: "RETAINED_SLOT_PROBE_FAILED",
-              message: `Retained slot v${version} failed verification: ${msg}`,
-              platformAction: "Repair runtime",
-            },
-            lastVerifiedAt: null,
-            stale: false,
-            warnings: [],
-            previousVersion: null,
-            previousPythonPath: null,
-          });
-        }
-
-        // Load old pointer for rollback info
-        let prevVersion: string | null = null;
-        let prevPythonPath: string | null = null;
-        try {
-          const oldRaw = this._fs.readFileSync(this.pointerPath, "utf-8");
-          const oldPtr: Record<string, unknown> = JSON.parse(oldRaw);
-          prevVersion =
-            typeof oldPtr.version === "string" ? oldPtr.version : null;
-          prevPythonPath =
-            typeof oldPtr.pythonPath === "string" ? oldPtr.pythonPath : null;
-        } catch {
-          // No previous pointer — first install
-        }
-
-        // Atomically write pointer: write temp, rename
-        const pointerDir = path.dirname(this.pointerPath);
-        if (!this._fs.existsSync(pointerDir)) {
-          this._fs.mkdirSync(pointerDir, { recursive: true });
-        }
-
-        const relativePyPath = path.relative(
-          path.dirname(this.pointerPath),
-          rollbackPythonExe
-        );
-        const pointerContent = JSON.stringify(
-          {
-            schema_version: 1,
-            version,
-            pythonPath: relativePyPath,
-            activatedAt: new Date().toISOString(),
-            previousVersion: prevVersion,
-            previousPythonPath: prevPythonPath,
-          },
-          null,
-          2
-        );
-
-        const tmpPath = this.pointerPath + ".tmp";
-        this._fs.writeFileSync(tmpPath, pointerContent, "utf-8");
-        this._fs.renameSync(tmpPath, this.pointerPath);
-
-        // Update cache
-        const health: RuntimeHealth = {
-          state: "ready",
-          pythonPath: rollbackPythonExe,
-          version,
-          source: "venv",
-          error: null,
-          lastVerifiedAt: new Date().toISOString(),
-          stale: false,
-          warnings: [],
-          previousVersion: prevVersion,
-          previousPythonPath: prevPythonPath,
-        };
-        this._cache = health;
-        this._cacheTime = Date.now();
-
-        // Cleanup old slots (best-effort, keep 2)
-        this._cleanupOldSlots(version);
-
-        return health;
-      } // end if (isRollback)
     }
 
     if (signal?.aborted) return this._abortedHealth();
 
-    // Step 3: Build immutable version slot
-    const slotDir = force
-      ? path.join(this.runtimeDir, `v${version}_build2`)
-      : path.join(this.runtimeDir, `v${version}`);
-    const venvDir = path.join(slotDir, "venv");
+    // Step 2: ONE one-time venv + ONE pinned install (#174).  No version
+    // slots, no rollback, no TS pointer write — after install the caller
+    // runs `paperforge setup` (NDJSON), which publishes pointer.json.
     const pythonExe =
       this.osPlatform === "win32"
-        ? path.join(venvDir, "Scripts", "python.exe")
-        : path.join(venvDir, "bin", "python");
+        ? path.join(this.venvDir, "Scripts", "python.exe")
+        : path.join(this.venvDir, "bin", "python");
 
     try {
-      this._fs.mkdirSync(slotDir, { recursive: true });
+      this._fs.mkdirSync(this.venvDir, { recursive: true });
 
       // Create venv
       const {
@@ -850,7 +676,7 @@ export class ManagedRuntime {
       } = deferred<void>();
       this._execFile(
         bootstrap.path,
-        ["-m", "venv", venvDir],
+        ["-m", "venv", this.venvDir],
         { timeout: 60000, signal },
         (err) => {
           if (err) venvReject(err);
@@ -861,22 +687,35 @@ export class ManagedRuntime {
     } catch (venvErr: unknown) {
       if (venvErr instanceof Error && venvErr.name === "AbortError") {
         try {
-          this._fs.rmSync(slotDir, { recursive: true, force: true });
+          this._fs.rmSync(this.venvDir, { recursive: true, force: true });
         } catch {}
         return this._abortedHealth();
       }
-      return this._slotFailed(
+      try {
+        this._fs.rmSync(this.venvDir, { recursive: true, force: true });
+      } catch {}
+      const msg = venvErr instanceof Error ? venvErr.message : String(venvErr);
+      return this._setCache({
+        state: "needs_repair",
+        pythonPath: null,
         version,
-        "VENV_CREATION_FAILED",
-        venvErr,
-        slotDir
-      );
+        source: "none",
+        error: {
+          code: "VENV_CREATION_FAILED",
+          message: msg,
+          platformAction: "Retry installation",
+        },
+        lastVerifiedAt: null,
+        stale: false,
+        warnings: [],
+      });
     }
 
     if (signal?.aborted) return this._abortedHealth();
 
     try {
-      // pip install paperforge
+      // ONE pinned pip install: paperforge[vector] (vector extras REQUIRED
+      // for the core feature — a bare install crashes on first Build Index).
       const {
         promise: pipPromise,
         reject: pipReject,
@@ -884,9 +723,6 @@ export class ManagedRuntime {
       } = deferred<void>();
       this._execFile(
         pythonExe,
-        // #119: vector extras are REQUIRED for the core feature (openai +
-        // sqlite-vec are optional-dependencies only) — a bare install looks
-        // healthy but crashes on the first Build Index click.
         ["-m", "pip", "install", `paperforge[vector]==${version}`],
         { timeout: 120000, signal },
         (err) => {
@@ -898,17 +734,34 @@ export class ManagedRuntime {
     } catch (pipErr: unknown) {
       if (pipErr instanceof Error && pipErr.name === "AbortError") {
         try {
-          this._fs.rmSync(slotDir, { recursive: true, force: true });
+          this._fs.rmSync(this.venvDir, { recursive: true, force: true });
         } catch {}
         return this._abortedHealth();
       }
-      return this._slotFailed(version, "PIP_INSTALL_FAILED", pipErr, slotDir);
+      try {
+        this._fs.rmSync(this.venvDir, { recursive: true, force: true });
+      } catch {}
+      const msg = pipErr instanceof Error ? pipErr.message : String(pipErr);
+      return this._setCache({
+        state: "needs_repair",
+        pythonPath: null,
+        version,
+        source: "none",
+        error: {
+          code: "PIP_INSTALL_FAILED",
+          message: msg,
+          platformAction: "Retry installation",
+        },
+        lastVerifiedAt: null,
+        stale: false,
+        warnings: [],
+      });
     }
 
     if (signal?.aborted) return this._abortedHealth();
 
     try {
-      // Verify with isolated import
+      // Verify with isolated import (paperforge + vector stack, #119).
       const {
         promise: verifyPromise,
         reject: verifyReject,
@@ -916,9 +769,11 @@ export class ManagedRuntime {
       } = deferred<void>();
       this._execFile(
         pythonExe,
-        // #119: verify the vector stack too — openai + sqlite_vec are the
-        // runtime requirements for embed build/retrieve.
-        ["-I", "-c", `import paperforge, openai, sqlite_vec; print(paperforge.__version__)`],
+        [
+          "-I",
+          "-c",
+          "import paperforge, openai, sqlite_vec; print(paperforge.__version__)",
+        ],
         { timeout: 30000, signal },
         (err) => {
           if (err) verifyReject(err);
@@ -929,55 +784,34 @@ export class ManagedRuntime {
     } catch (verifyErr: unknown) {
       if (verifyErr instanceof Error && verifyErr.name === "AbortError") {
         try {
-          this._fs.rmSync(slotDir, { recursive: true, force: true });
+          this._fs.rmSync(this.venvDir, { recursive: true, force: true });
         } catch {}
         return this._abortedHealth();
       }
-      return this._slotFailed(version, "VERIFY_FAILED", verifyErr, slotDir);
-    }
-
-    // Load old pointer for rollback info
-    let prevVersion: string | null = null;
-    let prevPythonPath: string | null = null;
-    try {
-      const oldRaw = this._fs.readFileSync(this.pointerPath, "utf-8");
-      const oldPtr: Record<string, unknown> = JSON.parse(oldRaw);
-      prevVersion = typeof oldPtr.version === "string" ? oldPtr.version : null;
-      prevPythonPath =
-        typeof oldPtr.pythonPath === "string" ? oldPtr.pythonPath : null;
-    } catch {
-      // No previous pointer — first install
-    }
-
-    // Atomically write pointer: write temp, rename
-    const pointerDir = path.dirname(this.pointerPath);
-    if (!this._fs.existsSync(pointerDir)) {
-      this._fs.mkdirSync(pointerDir, { recursive: true });
-    }
-
-    const relativePyPath = path.relative(
-      path.dirname(this.pointerPath),
-      pythonExe
-    );
-
-    const pointerContent = JSON.stringify(
-      {
-        schema_version: 1,
+      try {
+        this._fs.rmSync(this.venvDir, { recursive: true, force: true });
+      } catch {}
+      const msg =
+        verifyErr instanceof Error ? verifyErr.message : String(verifyErr);
+      return this._setCache({
+        state: "needs_repair",
+        pythonPath: null,
         version,
-        pythonPath: relativePyPath,
-        activatedAt: new Date().toISOString(),
-        previousVersion: prevVersion,
-        previousPythonPath: prevPythonPath,
-      },
-      null,
-      2
-    );
+        source: "none",
+        error: {
+          code: "VERIFY_FAILED",
+          message: msg,
+          platformAction: "Retry installation",
+        },
+        lastVerifiedAt: null,
+        stale: false,
+        warnings: [],
+      });
+    }
 
-    const tmpPath = this.pointerPath + ".tmp";
-    this._fs.writeFileSync(tmpPath, pointerContent, "utf-8");
-    this._fs.renameSync(tmpPath, this.pointerPath);
-
-    // Update cache
+    // #174: NO pointer write here.  Python publishes pointer.json via
+    // `paperforge setup` — the caller runs it after ensure() (handshake →
+    // post-runtime setup → publication).
     const health: RuntimeHealth = {
       state: "ready",
       pythonPath: pythonExe,
@@ -987,16 +821,8 @@ export class ManagedRuntime {
       lastVerifiedAt: new Date().toISOString(),
       stale: false,
       warnings: [],
-      previousVersion: prevVersion,
-      previousPythonPath: prevPythonPath,
     };
-    this._cache = health;
-    this._cacheTime = Date.now();
-
-    // Cleanup old slots (best-effort, keep 2)
-    this._cleanupOldSlots(version);
-
-    return health;
+    return this._setCache(health);
   }
 
   // ── Private helpers ──
@@ -1021,41 +847,7 @@ export class ManagedRuntime {
       lastVerifiedAt: null,
       stale: false,
       warnings: [],
-      previousVersion: null,
-      previousPythonPath: null,
     };
-  }
-
-  private _slotFailed(
-    version: string,
-    code: string,
-    err: unknown,
-    slotDir: string
-  ): RuntimeHealth {
-    // Clean up failed slot
-    try {
-      this._fs.rmSync(slotDir, { recursive: true, force: true });
-    } catch {
-      // best-effort
-    }
-    const msg = err instanceof Error ? err.message : String(err);
-    return this._setCache({
-      state: "needs_repair",
-      pythonPath: null,
-      version,
-      source: "none",
-      error: { code, message: msg, platformAction: "Retry installation" },
-      lastVerifiedAt: null,
-      stale: false,
-      warnings: [],
-      previousVersion: null,
-      previousPythonPath: null,
-    });
-  }
-
-  private _currentSlotExists(version: string): boolean {
-    const slotDir = path.join(this.runtimeDir, `v${version}`);
-    return this._fs.existsSync(slotDir);
   }
 
   private _resolveBootstrapPython(): { path: string; version: string } {
@@ -1120,34 +912,5 @@ export class ManagedRuntime {
       }
     );
     return promise;
-  }
-
-  private _cleanupOldSlots(
-    currentVersion: string,
-    keepOldSlots: number = 2
-  ): void {
-    try {
-      const entries = this._fs.readdirSync(this.runtimeDir, {
-        withFileTypes: true,
-      });
-      const slots = entries
-        .filter((e) => e.isDirectory() && e.name.startsWith("v"))
-        .map((e) => {
-          const baseVer = e.name.replace(/^v/, "").replace(/_build\d+$/, "");
-          return { name: e.name, version: baseVer };
-        })
-        .filter((s) => s.version !== currentVersion)
-        .sort((a, b) => compareVersions(b.version, a.version));
-
-      // Keep at most keepOldSlots old slots
-      for (let i = keepOldSlots; i < slots.length; i++) {
-        this._fs.rmSync(path.join(this.runtimeDir, slots[i].name), {
-          recursive: true,
-          force: true,
-        });
-      }
-    } catch {
-      // best-effort
-    }
   }
 }
