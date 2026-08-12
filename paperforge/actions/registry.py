@@ -463,6 +463,17 @@ def _foundation_update_handler(ctx: ActionContext, request: ActionRequest) -> PF
 
 
 def _foundation_update_preflight(ctx: ActionContext, request: ActionRequest) -> PreflightResult:
+    # #174: update is a POST-bootstrap lifecycle operation — no published
+    # pointer means the runtime was never set up, so install/setup is the
+    # correct next action, not update (symmetric with foundation.repair).
+    from paperforge.runtime_pointer import read_pointer
+
+    if read_pointer() is None:
+        return PreflightResult(
+            availability="unavailable",
+            availability_reason_code="pointer.missing",
+            availability_reason="No runtime pointer published — run bootstrap install + paperforge setup",
+        )
     return PreflightResult(
         availability="available",
         availability_reason_code="ok",
