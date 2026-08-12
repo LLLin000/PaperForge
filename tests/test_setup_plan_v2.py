@@ -785,3 +785,38 @@ class TestSetupNdjson174:
         lines = [_json.loads(l) for l in buf.getvalue().splitlines() if l.strip()]
         assert lines[-1]["event"] == "error"
         assert lines[-1]["result"]["ok"] is False
+
+
+class TestSetupCancellation174:
+    """#174 P0-4: the NDJSON setup stream is cooperative-cancellable —
+    stdin PAPERFORGE_STOP produces a `cancelled` terminal and rc 130
+    (the LongTaskClient contract), never a result/error terminal."""
+
+    def test_stdin_stop_yields_cancelled_terminal_rc130(self, tmp_path: Path) -> None:
+        import json as _json
+        import subprocess as _sp
+        import sys as _sys
+
+        env = dict(_sys.modules["os"].environ)
+        env["PYTHONPATH"] = str(
+            _sys.modules["os"].path.abspath(".")
+        )
+        proc = _sp.Popen(
+            [_sys.executable, "-m", "paperforge", "--vault", str(tmp_path),
+             "setup", "--json", "--skip-checks"],
+            stdin=_sp.PIPE,
+            stdout=_sp.PIPE,
+            stderr=_sp.PIPE,
+            text=True,
+            encoding="utf-8",
+            env=env,
+        )
+        assert proc.stdin is not None
+        proc.stdin.write("PAPERFORGE_STOP\n")
+        proc.stdin.flush()
+        stdout, _stderr = proc.communicate(timeout=60)
+        assert proc.returncode == 130, (proc.returncode, stdout[-500:])
+        events = [_json.loads(l)["event"]
+                  for l in stdout.splitlines() if l.strip()]
+        assert events[-1] == "cancelled", events
+        assert events.count("result") + events.count("error") == 0

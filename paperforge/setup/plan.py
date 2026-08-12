@@ -18,44 +18,6 @@ ProgressCallback = Callable[[str], None]
 class SetupPlan:
     """Orchestrate the setup lifecycle: check -> config -> vault -> deps -> agent."""
 
-    def _emit_ndjson(self, results: list[SetupStepResult], ok: bool) -> int:
-        """#137 machine stream: start/phase/item_result per step, then
-        EXACTLY one terminal (result|error) carrying the PFResult."""
-        from paperforge import __version__ as PF_VERSION
-        from paperforge.core.errors import ErrorCode
-        from paperforge.core.ndjson import (
-            emit_item_result,
-            emit_phase,
-            emit_start,
-            emit_terminal,
-        )
-        from paperforge.core.result import PFError, PFResult
-
-        emit_start("foundation.setup")
-        for r in results:
-            emit_phase("foundation.setup", phase=r.step)
-            emit_item_result(
-                "foundation.setup",
-                item_id=r.step,
-                status="ok" if r.ok else "error",
-            )
-        pf = PFResult(
-            ok=ok,
-            command="setup",
-            version=PF_VERSION,
-            data={"steps": [r.to_dict() for r in results]},
-            error=(
-                PFError(
-                    code=ErrorCode.INTERNAL_ERROR,
-                    message="setup failed",
-                )
-                if not ok
-                else None
-            ),
-        )
-        emit_terminal("result" if ok else "error", "foundation.setup", pf)
-        return 0 if ok else 1
-
     def __init__(
         self,
         vault: Path,
@@ -85,29 +47,59 @@ class SetupPlan:
 
         Args:
             json_output: If True, return results list as JSON dict list.
-            ndjson: If True, emit the #137 structured stream (start/phase/
-                item_result/…/result|error + exactly-one terminal) and
-                return the exit code.
+            ndjson: If True, emit the #137 structured stream — start, then
+                phase/item_result per step AS IT HAPPENS (not after the
+                fact), cooperative cancellation (stdin PAPERFORGE_STOP /
+                SIGINT / SIGTERM → exactly-one `cancelled` terminal, rc
+                130), then exactly-one result|error terminal.
             Else: return exit code (0 = success, 1 = failure).
         """
         results: list[SetupStepResult] = []
+        cancelled = False
+
+        if ndjson:
+            from paperforge.core.cancellation import make_cancellation_token
+            from paperforge.core.ndjson import emit_start
+
+            emit_start("foundation.setup")
+            _is_stopped, _restore = make_cancellation_token()
+        else:
+            _is_stopped, _restore = (lambda: False), (lambda: None)
+
+        def _run_step(
+            step_id: str, fn: Callable[[], SetupStepResult]
+        ) -> SetupStepResult | None:
+            nonlocal cancelled
+            if _is_stopped():
+                cancelled = True
+                return None
+            result = fn()
+            results.append(result)
+            if ndjson:
+                from paperforge.core.ndjson import emit_item_result, emit_phase
+
+                emit_phase("foundation.setup", phase=step_id)
+                emit_item_result(
+                    "foundation.setup",
+                    item_id=step_id,
+                    status="ok" if result.ok else "error",
+                )
+            return result
 
         # Step 1: Checker (skip if flag set)
         if not self.skip_checks:
             self._log("Checking preconditions...")
-            checker = SetupChecker(self.vault)
-            results.append(checker.run())
+            _run_step("checker", lambda: SetupChecker(self.vault).run())
 
         # Step 2: Config writer
         self._log("Writing config...")
-        writer = ConfigWriter(self.vault)
-        results.append(writer.write(self.config))
+        _run_step("config_writer", lambda: ConfigWriter(self.vault).write(self.config))
 
         # Step 3: Vault initializer
         self._log("Initializing vault structure...")
         vault_init = VaultInitializer(self.vault, self.config)
-        results.append(vault_init.create_directories())
-        results.append(vault_init.create_zotero_junction(self.zotero_path))
+        _run_step("vault_initializer", vault_init.create_directories)
+        _run_step("vault_initializer", lambda: vault_init.create_zotero_junction(self.zotero_path))
 
         # Step 4: #174 / #143 — dependency extras only. The runtime package
         # is installed EXACTLY once by the bootstrap (plugin venv + ONE
@@ -118,13 +110,25 @@ class SetupPlan:
         from paperforge.setup.runtime import ensure_runtime_dependencies
 
         self._log("Ensuring runtime dependencies...")
-        results.append(ensure_runtime_dependencies())
+        _run_step("runtime_dependencies", ensure_runtime_dependencies)
 
         # Step 5: Agent installer
         self._log("Deploying agent config...")
         agent = AgentInstaller(self.vault, agent_type=self.agent_type)
-        agent_results = agent.run_all()
-        results.extend(agent_results)
+        for agent_result in agent.run_all():
+            results.append(agent_result)
+            if ndjson:
+                from paperforge.core.ndjson import emit_item_result, emit_phase
+
+                emit_phase("foundation.setup", phase=agent_result.step)
+                emit_item_result(
+                    "foundation.setup",
+                    item_id=agent_result.step,
+                    status="ok" if agent_result.ok else "error",
+                )
+
+        if cancelled:
+            return self._emit_ndjson_terminal("cancelled", results, ok=False, rc=130)
 
         # Step 6 (#143 / #174): pointer publication — Python is the ONLY
         # writer; publication is part of lifecycle success and MUST happen
@@ -137,7 +141,9 @@ class SetupPlan:
             self._log("Runtime pointer published")
 
         if ndjson:
-            return self._emit_ndjson(results, ok)
+            return self._emit_ndjson_terminal(
+                "result" if ok else "error", results, ok=ok, rc=0 if ok else 1
+            )
 
         if json_output:
             output = [r.to_dict() for r in results]
@@ -155,3 +161,29 @@ class SetupPlan:
                 print(f"         Error: {r.error}")
 
         return 0 if ok else 1
+
+    def _emit_ndjson_terminal(
+        self, event: str, results: list[SetupStepResult], ok: bool, rc: int
+    ) -> int:
+        """Exactly-one #137 terminal (result | error | cancelled)."""
+        from paperforge import __version__ as PF_VERSION
+        from paperforge.core.errors import ErrorCode
+        from paperforge.core.ndjson import emit_terminal
+        from paperforge.core.result import PFError, PFResult
+
+        pf = PFResult(
+            ok=ok,
+            command="setup",
+            version=PF_VERSION,
+            data={"steps": [r.to_dict() for r in results]},
+            error=(
+                PFError(
+                    code=ErrorCode.INTERNAL_ERROR,
+                    message="setup failed" if event == "error" else "setup cancelled",
+                )
+                if event != "result"
+                else None
+            ),
+        )
+        emit_terminal(event, "foundation.setup", pf)
+        return rc

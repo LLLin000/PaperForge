@@ -165,8 +165,8 @@ import {
 import { t, setLanguage } from "../src/i18n";
 import { PaperForgeSettingTab } from "../src/settings";
 import {
-  runtimeActionsForHealth,
-  ManagedRuntime,
+  RuntimeBootstrap,
+  resolveRuntimeCommand,
 } from "../src/services/managed-runtime";
 import { App } from "obsidian";
 import { JSDOM } from "jsdom";
@@ -541,66 +541,6 @@ describe("back button", () => {
 
 // ── 9. Runtime action dispatch: verb-based (Issue #77) ──
 
-describe("runtime action verb dispatch", () => {
-  it("RuntimeUiAction interface uses verb not id", () => {
-    const action: RuntimeUiAction = { verb: "install", label: "Install" };
-    expect(action.verb).toBe("install");
-    expect((action as Record<string, unknown>).id).toBeUndefined();
-  });
-
-  it("runtimeActionsForHealth expects 3 parameters (health, targetVersion, running)", () => {
-    expect(runtimeActionsForHealth.length).toBe(3);
-  });
-
-  it("runtimeActionsForHealth returns stop verb when running is true", () => {
-    const health = {
-      state: "not_installed" as const,
-      version: null,
-      pythonPath: null,
-      source: "none" as const,
-      error: null,
-      warnings: [],
-      lastVerifiedAt: null,
-      stale: false,
-    };
-    const actions = runtimeActionsForHealth(health, "1.0.0", true);
-    expect(actions).toHaveLength(1);
-    expect(actions[0].verb).toBe("stop");
-  });
-
-  it("runtimeActionsForHealth returns install verb for not_installed state", () => {
-    const health = {
-      state: "not_installed" as const,
-      version: null,
-      pythonPath: null,
-      source: "none" as const,
-      error: null,
-      warnings: [],
-      lastVerifiedAt: null,
-      stale: false,
-    };
-    const actions = runtimeActionsForHealth(health, "1.0.0", false);
-    expect(actions.some((a) => a.verb === "install")).toBe(true);
-  });
-
-  it("runtimeActionsForHealth never offers rollback (#174)", () => {
-    const health = {
-      state: "ready" as const,
-      version: "1.0.0",
-      pythonPath: "/usr/bin/python3",
-      source: "venv" as const,
-      error: null,
-      warnings: [],
-      lastVerifiedAt: new Date().toISOString(),
-      stale: false,
-    };
-    // #174: rollback semantics deleted — no action offers it.
-    const actions = runtimeActionsForHealth(health, "1.0.0", false);
-    expect(actions.some((a) => a.verb === "rollback")).toBe(false);
-    expect(actions.map((a) => a.verb)).toEqual(["status", "update"]);
-  });
-});
-
 // ── 10. Runtime action button rendering (Issue #77) ──
 //   Tests that rendered action buttons dispatch on verb and stop is reachable when busy.
 
@@ -690,45 +630,8 @@ describe("runtime action button rendering", () => {
       expect(btn.getAttribute("data-id")).toBeNull();
     });
   });
-
-  it("stop verb is included in rendered actions when running is true (defect regression)", () => {
-    const health = {
-      state: "ready" as const,
-      version: "1.0.0",
-      pythonPath: "/usr/bin/python3",
-      source: "venv" as const,
-      error: null,
-      warnings: [],
-      lastVerifiedAt: new Date().toISOString(),
-      stale: false,
-    };
-    // Pass running=true → should only return stop
-    const actions = runtimeActionsForHealth(health, "1.1.0", true);
-    expect(actions).toHaveLength(1);
-    expect(actions[0].verb).toBe("stop");
-    // Verify stop is NOT returned alongside other verbs when running=true
-    for (const a of actions) {
-      expect(a.verb).toBe("stop");
-    }
-  });
-
-  it("runtimeActionsForHealth returns regular actions (not stop) when running is false", () => {
-    const health = {
-      state: "not_installed" as const,
-      version: null,
-      pythonPath: null,
-      source: "none" as const,
-      error: null,
-      warnings: [],
-      lastVerifiedAt: null,
-      stale: false,
-    };
-    const actions = runtimeActionsForHealth(health, "1.0.0", false);
-    // Should NOT include stop when not running
-    expect(actions.some((a) => a.verb === "stop")).toBe(false);
-    expect(actions.some((a) => a.verb === "install")).toBe(true);
-  });
 });
+
 // ── 11. Production integration via PaperForgeSettingTab (Issue #77) ──
 //   Instantiates PaperForgeSettingTab with mocks, calls _renderInstallationDetail,
 //   then verifies DOM/behavior reflect the correct action dispatch.
@@ -827,20 +730,11 @@ beforeEach(() => {
 
 // ── 12. Issue #77 Finding 1: Canonical ManagedRuntime root ──
 
-describe("canonical ManagedRuntime root (Finding 1)", () => {
+describe("canonical RuntimeBootstrap root (Finding 1)", () => {
   it("uses ~/.paperforge/runtime without triplet suffix", () => {
-    const rt = new ManagedRuntime({ version: "1.0.0" });
+    const rt = new RuntimeBootstrap();
     // The mocked os.homedir() returns "/home/user", so the canonical root is:
     expect(rt.rootDir).toBe("/home/user/.paperforge/runtime");
-  });
-
-  it("ManagedRuntime appends triplet internally", () => {
-    const rt = new ManagedRuntime({
-      version: "1.0.0",
-      platform: "win32",
-      arch: "x64",
-    });
-    expect(rt.triplet).toBe("win32-x64");
   });
 });
 
@@ -964,7 +858,6 @@ describe("_ensureManagedRuntime canonical root delegation (Defect 1)", () => {
     // process, not the os module) — assert dynamically so this passes on any
     // runner (Linux CI failed with hardcoded win32-x64).
     expect(rt.rootDir).toBe("/home/user/.paperforge/runtime");
-    expect(rt.triplet).toBe(`${process.platform}-${process.arch}`);
 
     // Verify singleton caching works
     expect(tab._ensureManagedRuntime()).toBe(rt);
@@ -1152,12 +1045,10 @@ describe("Issue #77: Back button focus restoration in real DOM", () => {
     globalThis.document.body.appendChild(containerEl);
     tab.containerEl = containerEl;
 
-    // Provide a mock ManagedRuntime
+    // Provide a mock RuntimeBootstrap (#174: pointer-only read)
     tab._managedRuntime = {
-      current: () => ({ state: "not_installed" }),
-      ensure: vi.fn(),
-      status: vi.fn(),
-    } as unknown as ManagedRuntime;
+      readPointer: () => null,
+    } as unknown as RuntimeBootstrap;
 
     // Provide capability envelopes so the control-center cards render
     const envelope = {

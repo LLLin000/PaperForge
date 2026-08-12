@@ -55,13 +55,14 @@ vi.mock("obsidian", () => {
 
 import { PaperForgeStatusView } from "../src/views/dashboard";
 
-/** Mock health representing a ready runtime. */
-function readyHealth(pythonPath: string) {
-  return { state: "ready" as const, pythonPath };
+/** Mock pointer representing a published runtime (schema v1). */
+function readyPointer(pythonPath: string) {
+  return {
+    pythonPath,
+    environmentRoot: "/env",
+    paperforgeVersion: "1.3.0",
+  };
 }
-
-/** Mock health for any non-ready state. */
-const notReadyHealth = { state: "needs_repair" as const, pythonPath: null };
 
 describe("PaperForgeStatusView._resolvePython", () => {
   let leaf: any;
@@ -89,8 +90,8 @@ describe("PaperForgeStatusView._resolvePython", () => {
     expect((view as any)._resolvePython()).toBeNull();
   });
 
-  it("returns null when the managed runtime is not ready", () => {
-    const mockRuntime = { current: () => notReadyHealth };
+  it("returns null when no pointer is published (installed-but-unpublished is NOT usable)", () => {
+    const mockRuntime = { readPointer: () => null };
     app.plugins.plugins["paperforge"] = {
       getManagedRuntime: () => mockRuntime,
     };
@@ -99,9 +100,9 @@ describe("PaperForgeStatusView._resolvePython", () => {
     expect((view as any)._resolvePython()).toBeNull();
   });
 
-  it("returns the singleton command when the managed runtime is ready", () => {
+  it("returns the singleton command when a pointer is published", () => {
     const mockRuntime = {
-      current: () => readyHealth("/opt/paperforge/venv/bin/python3"),
+      readPointer: () => readyPointer("/opt/paperforge/venv/bin/python3"),
     };
     app.plugins.plugins["paperforge"] = {
       getManagedRuntime: () => mockRuntime,
@@ -131,7 +132,7 @@ describe("PaperForgeStatusView._resolvePython", () => {
     // resolveRuntimeCommand always returns args: [] currently,
     // but test the contract so it survives future changes
     const mockRuntime = {
-      current: () => readyHealth("/usr/bin/python3.11"),
+      readPointer: () => readyPointer("/usr/bin/python3.11"),
     };
     app.plugins.plugins["paperforge"] = {
       getManagedRuntime: () => mockRuntime,

@@ -1,23 +1,17 @@
 /**
- * ManagedRuntime — single, machine-local PaperForge runtime (#174 / #143).
+ * RuntimeBootstrap — PRE-runtime bootstrap adapter (#174 / #143 §7).
  *
- * Public seam (Issue #77):
- *   ManagedRuntime, RuntimeHealth, RuntimeRun,
- *   resolveRuntimeCommand, runtimeActionsForHealth
+ * Post-cutover the plugin holds NO runtime state machine.  The only
+ * runtime truths are:
+ *   - the pointer (`~/.paperforge/runtime/pointer.json`), published SOLELY
+ *     by Python after a successful `paperforge setup`; and
+ *   - Python's own installation probe (probe installation --json).
  *
- * Lifecycle states:
- *   not_installed → ensure() → needs_repair / ready
- *   ready → stale cache → unknown
- *   unknown → status() → ready / needs_repair
- *   needs_repair → ensure() → ready / needs_repair
- *
- * Post-cutover scope (#174 / #143 §3): the plugin is a READER of the
- * runtime only.  It keeps discovery, platform gates, consent UX, ONE
- * one-time venv + pinned install, pointer READ and handshake/spawn.
- * DELETED: version slots, rollback, slot ensure, runtime-health checks
- * and TS pointer writes — Python owns pointer publication
- * (`~/.paperforge/runtime/pointer.json`, written by `paperforge setup`
- * after a successful install).
+ * TS keeps exactly: interpreter discovery, platform gates, consent UX,
+ * ONE one-time venv + ONE pinned install (installOnce), handshake, pointer
+ * READ and spawn.  DELETED: RuntimeHealth FSM / TTL cache / current() /
+ * status() / ensure() / runtimeActionsForHealth policy / automatic
+ * mismatch repair / any pointer write.
  */
 
 import * as fs from "fs";
@@ -30,43 +24,13 @@ import * as os from "os";
 
 // ── Public types ──
 
-export type RuntimeState =
-  | "ready"
-  | "not_installed"
-  | "needs_repair"
-  | "unknown"
-  | "unavailable";
-
-export interface ErrorInfo {
-  readonly code: string;
-  readonly message: string;
-  readonly platformAction: string;
-}
-export interface WarningInfo {
-  readonly code: string;
-  readonly message: string;
-  readonly platformAction?: string;
-}
-
-export interface RuntimeHealth {
-  readonly state: RuntimeState;
-  readonly pythonPath: string | null;
-  readonly version: string | null;
-  readonly source: "venv" | "system" | "manual" | "none";
-  readonly error: ErrorInfo | null;
-  readonly lastVerifiedAt: string | null;
-  readonly stale: boolean;
-  readonly warnings: readonly WarningInfo[];
-}
-
-export interface StatusOptions {
-  readonly allowStale?: boolean;
-}
-
-export interface EnsureOptions {
-  readonly version?: string;
-  readonly force?: boolean;
-  readonly signal?: AbortSignal;
+export interface PointerInfo {
+  /** Absolute path to the runtime interpreter (schema v1). */
+  readonly pythonPath: string;
+  /** Absolute generic environment root (schema v1). */
+  readonly environmentRoot: string;
+  /** Installed PaperForge version (schema v1). */
+  readonly paperforgeVersion: string;
 }
 
 export interface RuntimeRun {
@@ -74,17 +38,19 @@ export interface RuntimeRun {
   readonly args: readonly string[];
 }
 
-export interface RuntimeUiAction {
-  readonly verb: string;
-  readonly label: string;
+export interface DiscoveredInterpreter {
+  readonly path: string;
+  readonly version: string;
 }
 
-export interface RuntimeAction {
-  readonly id: string;
-  readonly label: string;
-  readonly primary: boolean;
-  readonly destructive: boolean;
+export interface GateFailure {
+  readonly ok: false;
+  readonly code: string;
+  readonly message: string;
+  readonly platformAction: string;
 }
+
+export type PlatformGate = { readonly ok: true } | GateFailure;
 
 // ── Internal DI types ──
 
@@ -114,7 +80,6 @@ export type ExecFileSyncFn = (
 
 // ── Constants ──
 
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 const MIN_PYTHON = "3.11";
 const POINTER_SCHEMA_VERSION = 1;
 const POINTER_FILENAME = "pointer.json";
@@ -219,661 +184,80 @@ export function isSnapEnv(): boolean {
   return detectSnap();
 }
 
-// ── Canonical actions per health state ──
-
-/** Return internal actions with id/primary/destructive. Used by DI tests. */
-export function runtimeActionsForHealth(
-  health: RuntimeHealth
-): readonly RuntimeAction[];
-/** Return UI actions with verb/label. Used by settings rendering. */
-export function runtimeActionsForHealth(
-  health: RuntimeHealth,
-  targetVersion: string,
-  running: boolean
-): readonly RuntimeUiAction[];
-export function runtimeActionsForHealth(
-  health: RuntimeHealth,
-  targetVersion?: string,
-  running?: boolean
-): readonly RuntimeAction[] | readonly RuntimeUiAction[] {
-  // 3-param UI path (settings rendering)
-  if (targetVersion !== undefined || running !== undefined) {
-    if (running) {
-      return [{ verb: "stop", label: "Stop" }];
-    }
-    switch (health.state) {
-      case "not_installed":
-        return [{ verb: "install", label: "Install Runtime" }];
-      case "needs_repair":
-        return [{ verb: "repair", label: "Repair Runtime" }];
-      case "ready":
-        return [
-          { verb: "status", label: "Check Status" },
-          { verb: "update", label: "Update Runtime" },
-        ];
-      case "unknown":
-        return [{ verb: "retry", label: "Retry" }];
-      case "unavailable":
-        return [{ verb: "setup", label: "Manual Setup" }];
-      default:
-        return [{ verb: "retry", label: "Retry" }];
-    }
-  }
-
-  // 1-param internal path (unchanged, for DI tests)
-  switch (health.state) {
-    case "not_installed":
-      return [
-        {
-          id: "install",
-          label: "Install Runtime",
-          primary: true,
-          destructive: false,
-        },
-      ];
-    case "needs_repair":
-      return [
-        {
-          id: "repair",
-          label: "Repair Runtime",
-          primary: true,
-          destructive: false,
-        },
-      ];
-    case "ready":
-      return [
-        {
-          id: "status",
-          label: "Check Status",
-          primary: false,
-          destructive: false,
-        },
-        {
-          id: "update",
-          label: "Update Runtime",
-          primary: false,
-          destructive: false,
-        },
-      ];
-    case "unknown":
-      return [
-        {
-          id: "probe",
-          label: "Refresh Status",
-          primary: true,
-          destructive: false,
-        },
-      ];
-    case "unavailable":
-      return [
-        {
-          id: "setup",
-          label: "Manual Setup",
-          primary: true,
-          destructive: false,
-        },
-      ];
-    default:
-      return [
-        {
-          id: "probe",
-          label: "Refresh Status",
-          primary: true,
-          destructive: false,
-        },
-      ];
-  }
-}
-
-// ── Resolve runtime command from health ──
+// ── Resolve runtime command from the pointer ──
 
 export function resolveRuntimeCommand(
-  health: RuntimeHealth
+  ptr: PointerInfo | null
 ): RuntimeRun | null {
-  if (health.state !== "ready" || !health.pythonPath) return null;
-  return { command: health.pythonPath, args: [] };
+  if (!ptr) return null;
+  return { command: ptr.pythonPath, args: [] };
 }
 
-// ── ManagedRuntime class ──
+// ── RuntimeBootstrap class ──
 
-export class ManagedRuntime {
-  private readonly venvDir: string;
-  private readonly pointerPath: string;
-  private readonly pluginVersion: string;
+export class RuntimeBootstrap {
   private readonly osPlatform: string;
   private readonly osArch: string;
-  private _cache: RuntimeHealth | null = null;
-  private _cacheTime: number = 0;
 
   // DI: injectable fs, execFile, execFileSync for testing
   private readonly _fs: FsOps;
   private readonly _execFile: ExecFileFn;
   private readonly _execFileSync: ExecFileSyncFn;
 
-  // Public canonical root (Issue #77)
+  /** Canonical runtime root: ~/.paperforge/runtime. */
   public readonly rootDir: string;
-  /** Kept for API compatibility; post-cutover there is ONE venv, no slots. */
-  public readonly triplet: string;
 
-  constructor(opts: {
-    // Old path — DI-first, full control
+  constructor(opts?: {
     runtimeDir?: string;
-    pluginVersion?: string;
-    // New path — auto-compute canonical root (Issue #77)
-    version?: string;
-    platform?: string;
-    arch?: string;
-    // Common overrides
     osPlatform?: string;
     osArch?: string;
     fs?: FsOps;
     execFile?: ExecFileFn;
     execFileSync?: ExecFileSyncFn;
   }) {
-    const platform = opts.osPlatform ?? opts.platform ?? process.platform;
-    const arch = opts.osArch ?? opts.arch ?? process.arch;
-    this.osPlatform = platform;
-    this.osArch = arch;
-    this.triplet = `${platform}-${arch}`;
-
-    if (opts.runtimeDir) {
-      // DI path: runtimeDir is the runtime root containing pointer.json.
-      this.rootDir = opts.runtimeDir;
-      this.venvDir = path.join(opts.runtimeDir, VENV_DIR_NAME);
-      this.pluginVersion = opts.pluginVersion ?? opts.version ?? "0.0.0";
-    } else {
-      const home = os.homedir();
-      this.rootDir = path.join(home, ".paperforge", "runtime");
-      this.venvDir = path.join(this.rootDir, VENV_DIR_NAME);
-      this.pluginVersion = opts.version ?? opts.pluginVersion ?? "0.0.0";
-    }
-
-    // #174: Python is the ONLY writer of pointer.json; the plugin READS it.
-    this.pointerPath = path.join(this.rootDir, POINTER_FILENAME);
-    this._fs = opts.fs ?? (fs as unknown as FsOps);
-    this._execFile = opts.execFile ?? (cpExecFile as unknown as ExecFileFn);
+    this.osPlatform = opts?.osPlatform ?? process.platform;
+    this.osArch = opts?.osArch ?? process.arch;
+    this.rootDir =
+      opts?.runtimeDir ?? path.join(os.homedir(), ".paperforge", "runtime");
+    this._fs = opts?.fs ?? (fs as unknown as FsOps);
+    this._execFile = opts?.execFile ?? (cpExecFile as unknown as ExecFileFn);
     this._execFileSync =
-      opts.execFileSync ?? (cpExecFileSync as unknown as ExecFileSyncFn);
+      opts?.execFileSync ?? (cpExecFileSync as unknown as ExecFileSyncFn);
   }
 
-  // ── Sync: fails closed on cold/stale cache ──
-
-  current(): RuntimeHealth {
-    if (!this._cache) {
-      return {
-        state: "unknown",
-        pythonPath: null,
-        version: null,
-        source: "none",
-        error: null,
-        lastVerifiedAt: null,
-        stale: true,
-        warnings: [],
-      };
-    }
-    const isStale = Date.now() - this._cacheTime > CACHE_TTL_MS;
-    if (isStale) {
-      // Never return 'ready' from stale cache — fail closed
-      return { ...this._cache, state: "unknown", stale: true };
-    }
-    return { ...this._cache, stale: false };
+  private get venvDir(): string {
+    return path.join(this.rootDir, VENV_DIR_NAME);
   }
 
-  // ── Async probe ──
-
-  async status(opts?: StatusOptions): Promise<RuntimeHealth> {
-    // Fresh cache fast-path
-    if (this._cache) {
-      const isStale = Date.now() - this._cacheTime > CACHE_TTL_MS;
-      if (!isStale && this._cache.state === "ready") {
-        return { ...this._cache, stale: false };
-      }
-      if (isStale && opts?.allowStale) {
-        return { ...this._cache, stale: true };
-      }
-    }
-
-    // Read pointer.json (schema v1, published ONLY by Python).
-    let pointerPythonPath: string | null = null;
-    let pointerVersion: string | null = null;
-    try {
-      const raw = this._fs.readFileSync(this.pointerPath, "utf-8");
-      const ptr: Record<string, unknown> = JSON.parse(raw);
-      if (ptr.schema_version !== POINTER_SCHEMA_VERSION) {
-        throw new Error("unsupported pointer schema");
-      }
-      const pp = typeof ptr.python_path === "string" ? ptr.python_path : null;
-      pointerPythonPath = pp ? path.resolve(pp) : null;
-      pointerVersion =
-        typeof ptr.paperforge_version === "string"
-          ? ptr.paperforge_version
-          : null;
-    } catch {
-      // No pointer → not installed (interrupted install ⇒ no publication ⇒
-      // next handshake fails ⇒ UI offers install again, consent required).
-      return this._setCache({
-        state: "not_installed",
-        pythonPath: null,
-        version: null,
-        source: "none",
-        error: null,
-        lastVerifiedAt: null,
-        stale: false,
-        warnings: [],
-      });
-    }
-
-    // Pointer exists but missing pythonPath
-    if (!pointerPythonPath) {
-      return this._setCache({
-        state: "needs_repair",
-        pythonPath: null,
-        version: pointerVersion,
-        source: "none",
-        error: {
-          code: "POINTER_MISSING_PATH",
-          message: "Runtime pointer has no pythonPath",
-          platformAction: "Reinstall runtime",
-        },
-        lastVerifiedAt: null,
-        stale: false,
-        warnings: [],
-      });
-    }
-
-    // Interpreter file missing
-    if (!this._fs.existsSync(pointerPythonPath)) {
-      return this._setCache({
-        state: "needs_repair",
-        pythonPath: pointerPythonPath,
-        version: pointerVersion,
-        source: "none",
-        error: {
-          code: "PYTHON_NOT_FOUND",
-          message: "Python executable not found at pointer path",
-          platformAction: "Reinstall runtime",
-        },
-        lastVerifiedAt: null,
-        stale: false,
-        warnings: [],
-      });
-    }
-
-    // Run isolated import probe
-    try {
-      const result = await this._probe(pointerPythonPath);
-      return this._setCache({
-        state: "ready",
-        pythonPath: pointerPythonPath,
-        version: result.version ?? pointerVersion,
-        source: "venv",
-        error: null,
-        lastVerifiedAt: new Date().toISOString(),
-        stale: false,
-        warnings: [],
-      });
-    } catch (probeErr: unknown) {
-      const msg =
-        probeErr instanceof Error ? probeErr.message : String(probeErr);
-      return this._setCache({
-        state: "needs_repair",
-        pythonPath: pointerPythonPath,
-        version: pointerVersion,
-        source: "venv",
-        error: {
-          code: "PROBE_FAILED",
-          message: msg,
-          platformAction: "Repair runtime",
-        },
-        lastVerifiedAt: null,
-        stale: false,
-        warnings: [],
-      });
-    }
+  /** ONE canonical venv interpreter path (Windows vs POSIX). */
+  private pythonExeFor(venvDir: string): string {
+    return this.osPlatform === "win32"
+      ? path.join(venvDir, "Scripts", "python.exe")
+      : path.join(venvDir, "bin", "python");
   }
 
-  // ── Ensure a working runtime (ONE one-time install) ──
+  // ── 1. Interpreter discovery (#143 §3 chain; >=3.11 required) ──
 
-  async ensure(opts?: EnsureOptions): Promise<RuntimeHealth> {
-    const version = opts?.version ?? this.pluginVersion;
-    const force = opts?.force ?? false;
-    const signal = opts?.signal;
-
-    if (signal?.aborted) return this._abortedHealth();
-
-    // Quick path: if already ready and not forced, just re-probe
-    if (!force) {
-      const cur = this.current();
-      if (cur.state === "ready" && !cur.stale) {
-        const probeResult = await this.status();
-        if (probeResult.state === "ready") return probeResult;
-      }
-    }
-
-    if (signal?.aborted) return this._abortedHealth();
-
-    // Step 1: Resolve bootstrap Python
-    let bootstrap: { path: string; version: string };
-    try {
-      bootstrap = this._resolveBootstrapPython();
-    } catch {
-      // No Python found — check for containerised environments
-      if (detectFlatpak() || detectSnap()) {
-        return this._setCache({
-          state: "unavailable",
-          pythonPath: null,
-          version: null,
-          source: "none",
-          error: {
-            code: "FLATPAK_SNAP_UNSUPPORTED",
-            message:
-              "Flatpak and Snap are not supported. Install Python 3.11+ natively.",
-            platformAction:
-              "Install Python 3.11+ from python.org or package manager",
-          },
-          lastVerifiedAt: null,
-          stale: false,
-          warnings: [],
-        });
-      }
-
-      const osArchStr = getOsArch(this.osPlatform, this.osArch);
-      const isMac = this.osPlatform === "darwin";
-      const macTriplets = ["macos-x64", "macos-arm64"];
-      const validatedTriplets = ["windows-x64", "linux-x64"];
-
-      if (isMac && macTriplets.includes(osArchStr)) {
-        return this._setCache({
-          state: "unavailable",
-          pythonPath: null,
-          version: null,
-          source: "none",
-          error: {
-            code: "NO_PYTHON",
-            message:
-              "No Python 3.11+ found. macOS auto-download disabled until signed/notarized artifacts exist.",
-            platformAction: "Install Python 3.11+ from python.org or Homebrew",
-          },
-          lastVerifiedAt: null,
-          stale: false,
-          warnings: [],
-        });
-      }
-
-      if (validatedTriplets.includes(osArchStr)) {
-        return this._setCache({
-          state: "unavailable",
-          pythonPath: null,
-          version: null,
-          source: "none",
-          error: {
-            code: "NO_PYTHON",
-            message: "No Python 3.11+ found and automatic download failed.",
-            platformAction: "Install Python 3.11+ manually",
-          },
-          lastVerifiedAt: null,
-          stale: false,
-          warnings: [],
-        });
-      }
-
-      // Unsupported triplet
-      return this._setCache({
-        state: "unavailable",
-        pythonPath: null,
-        version: null,
-        source: "none",
-        error: {
-          code: "FALLBACK_UNAVAILABLE",
-          message:
-            "No Python found and this platform has no validated fallback.",
-          platformAction: "Install Python 3.11+ manually from python.org",
-        },
-        lastVerifiedAt: null,
-        stale: false,
-        warnings: [],
-      });
-    }
-
-    if (signal?.aborted) return this._abortedHealth();
-
-    // All installations require 3.11+
-    if (!isAtLeast(bootstrap.version, MIN_PYTHON)) {
-      return this._setCache({
-        state: "unavailable",
-        pythonPath: null,
-        version: bootstrap.version,
-        source: "none",
-        error: {
-          code: "PYTHON_TOO_OLD",
-          message: `Python ${bootstrap.version} is too old. Python 3.11+ required.`,
-          platformAction: "Install Python 3.11+",
-        },
-        lastVerifiedAt: null,
-        stale: false,
-        warnings: [],
-      });
-    }
-
-    if (signal?.aborted) return this._abortedHealth();
-
-    // Step 2: ONE one-time venv + ONE pinned install (#174).  No version
-    // slots, no rollback, no TS pointer write — after install the caller
-    // runs `paperforge setup` (NDJSON), which publishes pointer.json.
-    const pythonExe =
+  /** Discover a system interpreter: py launcher latest, then python3.
+   * Returns only a Python >= MIN_PYTHON (a py -3.x hit that is too old
+   * must NOT block trying the newer py -3 / python3 candidates). */
+  discoverInterpreter(): DiscoveredInterpreter | null {
+    const candidates: { path: string; args: readonly string[] }[] =
       this.osPlatform === "win32"
-        ? path.join(this.venvDir, "Scripts", "python.exe")
-        : path.join(this.venvDir, "bin", "python");
-
-    try {
-      this._fs.mkdirSync(this.venvDir, { recursive: true });
-
-      // Create venv
-      const {
-        promise: venvPromise,
-        reject: venvReject,
-        resolve: venvResolve,
-      } = deferred<void>();
-      this._execFile(
-        bootstrap.path,
-        ["-m", "venv", this.venvDir],
-        { timeout: 60000, signal },
-        (err) => {
-          if (err) venvReject(err);
-          else venvResolve();
-        }
-      );
-      await venvPromise;
-    } catch (venvErr: unknown) {
-      if (venvErr instanceof Error && venvErr.name === "AbortError") {
-        try {
-          this._fs.rmSync(this.venvDir, { recursive: true, force: true });
-        } catch {}
-        return this._abortedHealth();
-      }
-      try {
-        this._fs.rmSync(this.venvDir, { recursive: true, force: true });
-      } catch {}
-      const msg = venvErr instanceof Error ? venvErr.message : String(venvErr);
-      return this._setCache({
-        state: "needs_repair",
-        pythonPath: null,
-        version,
-        source: "none",
-        error: {
-          code: "VENV_CREATION_FAILED",
-          message: msg,
-          platformAction: "Retry installation",
-        },
-        lastVerifiedAt: null,
-        stale: false,
-        warnings: [],
-      });
-    }
-
-    if (signal?.aborted) return this._abortedHealth();
-
-    try {
-      // ONE pinned pip install: paperforge[vector] (vector extras REQUIRED
-      // for the core feature — a bare install crashes on first Build Index).
-      const {
-        promise: pipPromise,
-        reject: pipReject,
-        resolve: pipResolve,
-      } = deferred<void>();
-      this._execFile(
-        pythonExe,
-        ["-m", "pip", "install", `paperforge[vector]==${version}`],
-        { timeout: 120000, signal },
-        (err) => {
-          if (err) pipReject(err);
-          else pipResolve();
-        }
-      );
-      await pipPromise;
-    } catch (pipErr: unknown) {
-      if (pipErr instanceof Error && pipErr.name === "AbortError") {
-        try {
-          this._fs.rmSync(this.venvDir, { recursive: true, force: true });
-        } catch {}
-        return this._abortedHealth();
-      }
-      try {
-        this._fs.rmSync(this.venvDir, { recursive: true, force: true });
-      } catch {}
-      const msg = pipErr instanceof Error ? pipErr.message : String(pipErr);
-      return this._setCache({
-        state: "needs_repair",
-        pythonPath: null,
-        version,
-        source: "none",
-        error: {
-          code: "PIP_INSTALL_FAILED",
-          message: msg,
-          platformAction: "Retry installation",
-        },
-        lastVerifiedAt: null,
-        stale: false,
-        warnings: [],
-      });
-    }
-
-    if (signal?.aborted) return this._abortedHealth();
-
-    try {
-      // Verify with isolated import (paperforge + vector stack, #119).
-      const {
-        promise: verifyPromise,
-        reject: verifyReject,
-        resolve: verifyResolve,
-      } = deferred<void>();
-      this._execFile(
-        pythonExe,
-        [
-          "-I",
-          "-c",
-          "import paperforge, openai, sqlite_vec; print(paperforge.__version__)",
-        ],
-        { timeout: 30000, signal },
-        (err) => {
-          if (err) verifyReject(err);
-          else verifyResolve();
-        }
-      );
-      await verifyPromise;
-    } catch (verifyErr: unknown) {
-      if (verifyErr instanceof Error && verifyErr.name === "AbortError") {
-        try {
-          this._fs.rmSync(this.venvDir, { recursive: true, force: true });
-        } catch {}
-        return this._abortedHealth();
-      }
-      try {
-        this._fs.rmSync(this.venvDir, { recursive: true, force: true });
-      } catch {}
-      const msg =
-        verifyErr instanceof Error ? verifyErr.message : String(verifyErr);
-      return this._setCache({
-        state: "needs_repair",
-        pythonPath: null,
-        version,
-        source: "none",
-        error: {
-          code: "VERIFY_FAILED",
-          message: msg,
-          platformAction: "Retry installation",
-        },
-        lastVerifiedAt: null,
-        stale: false,
-        warnings: [],
-      });
-    }
-
-    // #174: NO pointer write here.  Python publishes pointer.json via
-    // `paperforge setup` — the caller runs it after ensure() (handshake →
-    // post-runtime setup → publication).
-    const health: RuntimeHealth = {
-      state: "ready",
-      pythonPath: pythonExe,
-      version,
-      source: "venv",
-      error: null,
-      lastVerifiedAt: new Date().toISOString(),
-      stale: false,
-      warnings: [],
-    };
-    return this._setCache(health);
-  }
-
-  // ── Private helpers ──
-
-  private _setCache(h: RuntimeHealth): RuntimeHealth {
-    this._cache = h;
-    this._cacheTime = Date.now();
-    return h;
-  }
-
-  private _abortedHealth(): RuntimeHealth {
-    return {
-      state: "needs_repair",
-      pythonPath: null,
-      version: null,
-      source: "none",
-      error: {
-        code: "ABORTED",
-        message: "Operation was cancelled",
-        platformAction: "Retry operation",
-      },
-      lastVerifiedAt: null,
-      stale: false,
-      warnings: [],
-    };
-  }
-
-  private _resolveBootstrapPython(): { path: string; version: string } {
-    const candidates: { path: string; args: readonly string[] }[] = [];
-
-    if (this.osPlatform === "win32") {
-      candidates.push(
-        { path: "py", args: ["-3.11"] },
-        { path: "py", args: ["-3.10"] },
-        { path: "py", args: ["-3"] },
-        { path: "python", args: [] }
-      );
-    } else if (this.osPlatform === "darwin") {
-      candidates.push(
-        { path: "/usr/bin/python3", args: [] },
-        { path: "python3", args: [] },
-        { path: "python", args: [] }
-      );
-    } else {
-      // Linux
-      candidates.push(
-        { path: "/usr/bin/python3", args: [] },
-        { path: "python3", args: [] },
-        { path: "python", args: [] }
-      );
-    }
+        ? [
+            { path: "py", args: ["-3"] },
+            { path: "py", args: ["-3.11"] },
+            { path: "python", args: [] },
+          ]
+        : this.osPlatform === "darwin"
+          ? [
+              { path: "/usr/bin/python3", args: [] },
+              { path: "python3", args: [] },
+            ]
+          : [
+              { path: "/usr/bin/python3", args: [] },
+              { path: "python3", args: [] },
+            ];
 
     for (const c of candidates) {
       try {
@@ -882,22 +266,224 @@ export class ManagedRuntime {
           timeout: 5000,
         });
         const ver = parsePythonVersion(output);
-        if (ver) {
+        if (ver && isAtLeast(ver, MIN_PYTHON)) {
           return { path: c.path, version: ver };
         }
       } catch {
         // try next candidate
       }
     }
-
-    throw new Error("No Python 3.11+ found on system");
+    return null;
   }
 
-  private _probe(
+  // ── 2. Platform gates ──
+
+  /** Platform/container gates: Flatpak/Snap unsupported, macOS no
+   * auto-download, interpreter discovery must have succeeded. */
+  platformGate(): PlatformGate {
+    if (detectFlatpak() || detectSnap()) {
+      return {
+        ok: false,
+        code: "FLATPAK_SNAP_UNSUPPORTED",
+        message:
+          "Flatpak and Snap are not supported. Install Python 3.11+ natively.",
+        platformAction:
+          "Install Python 3.11+ from python.org or package manager",
+      };
+    }
+    const osArchStr = getOsArch(this.osPlatform, this.osArch);
+    const isMac = this.osPlatform === "darwin";
+    if (isMac && ["macos-x64", "macos-arm64"].includes(osArchStr)) {
+      return {
+        ok: false,
+        code: "NO_PYTHON",
+        message:
+          "No Python 3.11+ found. macOS auto-download disabled until signed/notarized artifacts exist.",
+        platformAction: "Install Python 3.11+ from python.org or Homebrew",
+      };
+    }
+    if (["windows-x64", "linux-x64"].includes(osArchStr)) {
+      return {
+        ok: false,
+        code: "NO_PYTHON",
+        message: "No Python 3.11+ found and automatic download failed.",
+        platformAction: "Install Python 3.11+ manually",
+      };
+    }
+    return {
+      ok: false,
+      code: "FALLBACK_UNAVAILABLE",
+      message: "No Python found and this platform has no validated fallback.",
+      platformAction: "Install Python 3.11+ manually from python.org",
+    };
+  }
+
+  // ── 3. ONE one-time install ──
+
+  /**
+   * ONE consented one-time install into ~/.paperforge/runtime/venv:
+   * venv + ONE pinned `paperforge[vector]==<expectedVersion>` + fresh-child
+   * verify that the OBSERVED version equals the requested version.
+   * NEVER writes the pointer (Python owns publication) and returns only an
+   * ephemeral result — nothing is cached, nothing is usable until the
+   * caller's handshake + `paperforge setup` succeed.
+   */
+  async installOnce(
+    expectedVersion: string,
+    signal?: AbortSignal
+  ): Promise<{ pythonPath: string; observedVersion: string }> {
+    if (signal?.aborted) throw new AbortError("Operation was cancelled");
+
+    const discovered = this.discoverInterpreter();
+    if (!discovered) {
+      const gate = this.platformGate();
+      throw new Error(
+        `No Python ${MIN_PYTHON}+ found (${gate.ok ? "no interpreter" : gate.message})`
+      );
+    }
+
+    if (signal?.aborted) throw new AbortError("Operation was cancelled");
+
+    const pythonExe = this.pythonExeFor(this.venvDir);
+    try {
+      this._fs.mkdirSync(this.venvDir, { recursive: true });
+      await this._exec(
+        discovered.path,
+        ["-m", "venv", this.venvDir],
+        { timeout: 60000, signal },
+        "venv creation"
+      );
+      if (signal?.aborted) throw new AbortError("Operation was cancelled");
+      await this._exec(
+        pythonExe,
+        ["-m", "pip", "install", `paperforge[vector]==${expectedVersion}`],
+        { timeout: 120000, signal },
+        "pip install"
+      );
+      if (signal?.aborted) throw new AbortError("Operation was cancelled");
+      const observed = await this._probeVersion(pythonExe, signal);
+      if (observed !== expectedVersion) {
+        throw new Error(
+          `installed version mismatch: observed ${observed!} != requested ${expectedVersion}`
+        );
+      }
+    } catch (err) {
+      // Clean the half-installed venv; nothing is published, nothing kept.
+      try {
+        this._fs.rmSync(this.venvDir, { recursive: true, force: true });
+      } catch {}
+      throw err;
+    }
+    return { pythonPath: pythonExe, observedVersion: expectedVersion };
+  }
+
+  // ── 4. Handshake ──
+
+  /**
+   * Handshake after installOnce: the fresh interpreter reports the
+   * expected version AND Python's installation probe reports ready.
+   * No runtime is usable until both hold — pointer publication is a
+   * separate later step owned by Python (`paperforge setup`).
+   */
+  async handshake(
+    expectedVersion: string,
+    opts?: { pythonPath?: string; signal?: AbortSignal }
+  ): Promise<{ ok: boolean; observedVersion: string | null; reason?: string }> {
+    const pythonPath = opts?.pythonPath ?? this.pythonExeFor(this.venvDir);
+    if (!this._fs.existsSync(pythonPath)) {
+      return {
+        ok: false,
+        observedVersion: null,
+        reason: "interpreter missing",
+      };
+    }
+    try {
+      const observed = await this._probeVersion(pythonPath, opts?.signal);
+      if (observed !== expectedVersion) {
+        return {
+          ok: false,
+          observedVersion: observed,
+          reason: `version mismatch: observed ${observed!} != expected ${expectedVersion}`,
+        };
+      }
+    } catch (err) {
+      return {
+        ok: false,
+        observedVersion: null,
+        reason: err instanceof Error ? err.message : String(err),
+      };
+    }
+    return { ok: true, observedVersion: expectedVersion };
+  }
+
+  // ── 5. Pointer READ (Python is the ONLY writer) ──
+
+  /** Full schema-v1 validation — four fields, typed, absolute paths.
+   * Returns null when absent or invalid (fail-closed; never guesses). */
+  readPointer(): PointerInfo | null {
+    const pointerPath = path.join(this.rootDir, POINTER_FILENAME);
+    let raw: string;
+    try {
+      raw = this._fs.readFileSync(pointerPath, "utf-8");
+    } catch {
+      return null;
+    }
+    let ptr: Record<string, unknown>;
+    try {
+      ptr = JSON.parse(raw) as Record<string, unknown>;
+    } catch {
+      return null;
+    }
+    if (ptr.schema_version !== POINTER_SCHEMA_VERSION) return null;
+    const {
+      python_path: pp,
+      environment_root: er,
+      paperforge_version: pv,
+    } = ptr;
+    if (
+      typeof pp !== "string" ||
+      !pp ||
+      typeof er !== "string" ||
+      !er ||
+      typeof pv !== "string" ||
+      !pv
+    ) {
+      return null;
+    }
+    if (!path.isAbsolute(pp) || !path.isAbsolute(er)) return null;
+    return {
+      pythonPath: pp,
+      environmentRoot: er,
+      paperforgeVersion: pv,
+    };
+  }
+
+  // ── Private helpers ──
+
+  private _exec(
+    command: string,
+    args: readonly string[],
+    opts: { timeout?: number; signal?: AbortSignal },
+    label: string
+  ): Promise<void> {
+    const { promise, resolve, reject } = deferred<void>();
+    this._execFile(command, args, { ...opts, encoding: "utf-8" }, (err) => {
+      if (err) {
+        reject(new Error(`${label} failed: ${err.message}`));
+      } else {
+        resolve();
+      }
+    });
+    return promise;
+  }
+
+  /** Fresh-child probe: read and RETURN the observed version (never trust
+   * the current process's module cache). */
+  private _probeVersion(
     pythonPath: string,
     signal?: AbortSignal
-  ): Promise<{ version: string | null }> {
-    const { promise, resolve, reject } = deferred<{ version: string | null }>();
+  ): Promise<string | null> {
+    const { promise, resolve, reject } = deferred<string | null>();
     this._execFile(
       pythonPath,
       ["-I", "-c", "import paperforge; print(paperforge.__version__)"],
@@ -907,10 +493,18 @@ export class ManagedRuntime {
           reject(err);
         } else {
           const version = (stdout ?? "").trim() || null;
-          resolve({ version });
+          resolve(version);
         }
       }
     );
     return promise;
+  }
+}
+
+/** Minimal AbortError so callers can distinguish cancellation. */
+export class AbortError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "AbortError";
   }
 }

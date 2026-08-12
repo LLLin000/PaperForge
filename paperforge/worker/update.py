@@ -276,7 +276,7 @@ def _fresh_installed_version() -> str | None:
         return None
 
 
-def perform_update(vault: Path) -> dict:
+def perform_update(vault: Path, *, ndjson: bool = False) -> dict:
     """Non-interactive lifecycle update (#174).
 
     Pure service contract: no prompts, no stdout printing, no UI
@@ -285,17 +285,68 @@ def perform_update(vault: Path) -> dict:
     child interpreter; ONLY then is the pointer published, with the
     OBSERVED version — publication is part of lifecycle success and must
     precede any success return.
+
+    ndjson: emit the #137 stream (start / phase / exactly-one result|error
+    terminal) with cooperative cancellation (stdin PAPERFORGE_STOP / SIGINT
+    / SIGTERM → `cancelled` terminal, rc 130 at the CLI).
     """
+    if ndjson:
+        from paperforge.core.cancellation import make_cancellation_token
+        from paperforge.core.ndjson import emit_phase, emit_start
+
+        emit_start("foundation.update")
+        _is_stopped, _restore = make_cancellation_token()
+    else:
+        _is_stopped, _restore = (lambda: False), (lambda: None)
+
+    def _phase(label: str) -> bool:
+        """Emit a phase; returns True when cancelled."""
+        if ndjson:
+            emit_phase("foundation.update", phase=label)
+        return _is_stopped()
+    def _finish(result: dict) -> dict:
+        """Emit exactly-one #137 terminal; publication already happened
+        before any success return, and cancellation returns rc 130 at the
+        CLI."""
+        if ndjson:
+            from paperforge import __version__ as PF_VERSION
+            from paperforge.core.errors import ErrorCode
+            from paperforge.core.ndjson import emit_terminal
+            from paperforge.core.result import PFError, PFResult
+
+            event = "cancelled" if result.get("cancelled") else (
+                "result" if result["ok"] else "error"
+            )
+            pf = PFResult(
+                ok=result["ok"],
+                command="update",
+                version=PF_VERSION,
+                data={k: v for k, v in result.items() if k not in ("ok", "cancelled")},
+                error=(
+                    PFError(
+                        code=ErrorCode.INTERNAL_ERROR,
+                        message=result.get("error", "update failed"),
+                    )
+                    if event != "result"
+                    else None
+                ),
+            )
+            emit_terminal(event, "foundation.update", pf)
+        return result
+
     try:
         import paperforge
 
         local = paperforge.__version__
     except Exception:
         local = "unknown"
+    if _phase("check") or _is_stopped():
+        return _finish({"ok": False, "updated": False, "local_version": local,
+                "cancelled": True})
     remote = _remote_version()
     if not remote:
-        return {"ok": False, "updated": False, "local_version": local,
-                "remote_version": None, "error": "cannot resolve remote version"}
+        return _finish({"ok": False, "updated": False, "local_version": local,
+                "remote_version": None, "error": "cannot resolve remote version"})
     try:
         needs = tuple(int(x) for x in remote.split(".") if x.isdigit()) > tuple(
             int(x) for x in local.split(".") if x.isdigit()
@@ -306,10 +357,13 @@ def perform_update(vault: Path) -> dict:
     if not needs:
         _sync_obsidian_plugin(vault)
         _deploy_all_skills(vault)
-        return {"ok": True, "updated": False, "local_version": local,
-                "remote_version": remote, "installed_version": local}
+        return _finish({"ok": True, "updated": False, "local_version": local,
+                "remote_version": remote, "installed_version": local})
 
     # Auto-detect installation method
+    if _phase("install") or _is_stopped():
+        return _finish({"ok": False, "updated": False, "local_version": local,
+                "cancelled": True})
     method, path = _detect_install_method()
     if method == "pip":
         success = _update_via_pip(editable=False)
@@ -335,15 +389,27 @@ def perform_update(vault: Path) -> dict:
         success = _update_via_zip(vault)
 
     if not success:
-        return {"ok": False, "updated": False, "local_version": local,
-                "remote_version": remote, "error": "install failed"}
+        return _finish({"ok": False, "updated": False, "local_version": local,
+                "remote_version": remote, "error": "install failed"})
 
     # Fresh-child verify BEFORE any success is returned.
+    if _phase("verify") or _is_stopped():
+        return _finish({"ok": False, "updated": False, "local_version": local,
+                "cancelled": True})
     observed = _fresh_installed_version()
     if not observed or observed != remote:
-        return {"ok": False, "updated": True, "local_version": local,
-                "remote_version": remote, "installed_version": observed,
-                "error": f"installed version {observed!r} != intended {remote!r}"}
+        return _finish(
+            {
+                "ok": False,
+                "updated": True,
+                "local_version": local,
+                "remote_version": remote,
+                "installed_version": observed,
+                "error": (
+                    f"installed version {observed!r} != intended {remote!r}"
+                ),
+            }
+        )
 
     _sync_obsidian_plugin(vault)
     _deploy_all_skills(vault)
@@ -351,8 +417,8 @@ def perform_update(vault: Path) -> dict:
     from paperforge.runtime_pointer import publish_pointer
 
     publish_pointer(paperforge_version=observed)
-    return {"ok": True, "updated": True, "local_version": local,
-            "remote_version": remote, "installed_version": observed}
+    return _finish({"ok": True, "updated": True, "local_version": local,
+            "remote_version": remote, "installed_version": observed})
 
 
 def run_update(vault: Path) -> int:

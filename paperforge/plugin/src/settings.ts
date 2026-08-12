@@ -72,11 +72,8 @@ import {
   checkOrphanState,
 } from "./views/modals";
 import {
-  ManagedRuntime,
-  runtimeActionsForHealth,
+  RuntimeBootstrap,
   resolveRuntimeCommand,
-  type RuntimeHealth,
-  type RuntimeUiAction,
 } from "./services/managed-runtime";
 import { getDisclosureState, toggleDisclosureState } from "./utils/disclosure";
 import { stripCredentialEnv } from "./services/secret-storage";
@@ -91,7 +88,7 @@ interface ISettingPlugin {
   saveSettings(): Promise<void>;
   loadSettings(): Promise<void>;
   manifest: { version: string };
-  getManagedRuntime(): ManagedRuntime | null;
+  getManagedRuntime(): RuntimeBootstrap | null;
   [key: string]: any;
 }
 
@@ -151,8 +148,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   _focusTargetId: string | null = null;
   /** AbortController for in-flight runtime ensure/install. */
   private _runtimeAbortController: AbortController | null = null;
-  /** Cached ManagedRuntime singleton (rebuilt per display() on path change). */
-  private _managedRuntime: ManagedRuntime | null = null;
+  /** Cached RuntimeBootstrap singleton (rebuilt per display() on path change). */
+  private _managedRuntime: RuntimeBootstrap | null = null;
   /** True while a runtime operation is in flight. */
   private _runtimeBusy: boolean = false;
   /** True while a library sync or memory build is in flight. */
@@ -463,36 +460,49 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     this._setupFeedback = null;
     this.display();
 
-    const installPackage = async () => {
-      const args = ["-m", "pip", "install", "--upgrade"];
-      if (process.platform !== "win32") args.push("--user");
-      try {
-        // #120-fix (P0-2): Setup Journey must install the same vector
-        // extras as ManagedRuntime — a bare paperforge install makes the
-        // first Build Index fail with missing openai/sqlite_vec.
-        await this._runSetupPython([
-          ...args,
-          `paperforge[vector]==${this.plugin.manifest.version}`,
-        ]);
-      } catch {
-        await this._runSetupPython([
-          ...args,
-          `paperforge[vector] @ git+https://github.com/LLLin000/PaperForge.git@v${this.plugin.manifest.version}`,
-        ]);
-      }
-    };
-
+    // #174: the Setup Journey no longer runs its own pip — the ONLY
+    // bootstrap install path is RuntimeBootstrap.installOnce into
+    // ~/.paperforge/runtime/venv (ONE pinned paperforge[vector] install,
+    // never --user).  After install, handshake → `paperforge setup`
+    // publishes the pointer (Python is the only writer).
     void (async () => {
       try {
-        if (forceInstall) {
-          await installPackage();
-        } else {
-          try {
-            await this._runSetupPython(["-c", "import paperforge"]);
-          } catch {
-            await installPackage();
-          }
+        const bootstrap = this._ensureManagedRuntime();
+        const installed = await bootstrap.installOnce(
+          this.plugin.manifest.version
+        );
+        const hs = await bootstrap.handshake(this.plugin.manifest.version, {
+          pythonPath: installed.pythonPath,
+        });
+        if (!hs.ok) {
+          throw new Error(hs.reason ?? "handshake failed");
         }
+        // Post-runtime setup (config/vault/deps/agent) + pointer publication.
+        const vaultPath = this._getVaultBasePath();
+        const s = this.plugin.settings;
+        const setupArgs = [
+          "-m",
+          "paperforge",
+          "--vault",
+          vaultPath,
+          "setup",
+          "--modular",
+          "--system-dir",
+          s.system_dir?.trim() || "System",
+          "--resources-dir",
+          s.resources_dir?.trim() || "Resources",
+          "--literature-dir",
+          s.literature_dir?.trim() || "Literature",
+          "--base-dir",
+          s.base_dir?.trim() || "Bases",
+          "--agent",
+          s.agent_platform || "opencode",
+        ];
+        if (s.zotero_data_dir?.trim()) {
+          setupArgs.push("--zotero-data", s.zotero_data_dir.trim());
+        }
+        await this.plugin.saveSettings();
+        await this._runSetupPython(setupArgs, installed.pythonPath);
         this._setupOperation = "idle";
         this._setupReinstallRequested = false;
         this._setupFeedback = t("setup_install_complete");
@@ -622,12 +632,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     return "";
   }
 
-  /** Ensure ManagedRuntime singleton is initialized for the current machine. */
-  private _ensureManagedRuntime(): ManagedRuntime {
+  /** Ensure RuntimeBootstrap singleton is initialized for the current machine. */
+  private _ensureManagedRuntime(): RuntimeBootstrap {
     if (this._managedRuntime) return this._managedRuntime;
     this._managedRuntime =
-      this.plugin.getManagedRuntime?.() ??
-      new ManagedRuntime({ version: this.plugin.manifest.version });
+      this.plugin.getManagedRuntime?.() ?? new RuntimeBootstrap();
     return this._managedRuntime;
   }
 
@@ -643,8 +652,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     if (customPath && fs.existsSync(customPath)) {
       return { path: customPath, args: [] };
     }
-    // 2. Fall back to managed runtime detection
-    const run = resolveRuntimeCommand(this._ensureManagedRuntime().current());
+    // 2. Fall back to the published pointer (#174): only a pointer-backed
+    // runtime is usable — never an installed-but-unpublished one.
+    const run = resolveRuntimeCommand(
+      this._ensureManagedRuntime().readPointer()
+    );
     if (run) {
       return { path: run.command, args: [...run.args] };
     }
@@ -3767,80 +3779,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           // Backend JSON passed through unchanged after strict validation
           if (isValidEnvelope(parsed, mod)) {
             const envelope = parsed as ProbeEnvelope;
-            // Auto-sync: version mismatch → trigger runtime sync instead of showing error
-            if (
-              mod === "installation" &&
-              envelope.reason.code === "installation.version_mismatch"
-            ) {
-              const syncEnvelope: ProbeEnvelope = {
-                schema_version: 2,
-                module: "installation",
-                capability_state: "unknown",
-                activity_state: "running",
-                activity_label: t("runtime_health_syncing"),
-                activity_progress: null,
-                severity: "unknown",
-                reason: {
-                  code: "installation.syncing",
-                  text: t("runtime_health_syncing"),
-                },
-                action: { primary: null },
-                notices: [],
-                user_state: "checking",
-                capability_kind: "required",
-                maintenance_eligible: false,
-                user_visible_failure: false,
-                user_impact: null,
-                updated_at: new Date().toISOString(),
-                ttl_seconds: 300,
-              };
-              this._updateCapabilityEnvelope(mod, syncEnvelope);
-              this._ensureManagedRuntime()
-                .ensure({ version: this.plugin.manifest.version })
-                .then((health) => {
-                  // #174: the plugin installs the runtime but NEVER writes
-                  // the pointer — after ensure, `paperforge setup` (Python,
-                  // the only writer) publishes pointer.json.  Run it with
-                  // the freshly-installed interpreter, not the stale
-                  // settings.python_path.
-                  const vaultPath = this._getVaultBasePath();
-                  const s = this.plugin.settings;
-                  const setupArgs = [
-                    "-m",
-                    "paperforge",
-                    "--vault",
-                    vaultPath,
-                    "setup",
-                    "--modular",
-                    "--system-dir",
-                    s.system_dir?.trim() || "System",
-                    "--resources-dir",
-                    s.resources_dir?.trim() || "Resources",
-                    "--literature-dir",
-                    s.literature_dir?.trim() || "Literature",
-                    "--base-dir",
-                    s.base_dir?.trim() || "Bases",
-                    "--agent",
-                    s.agent_platform || "opencode",
-                  ];
-                  return this._runSetupPython(
-                    setupArgs,
-                    health.pythonPath ?? undefined
-                  ).catch((e) => {
-                    console.error(
-                      "PaperForge: post-install setup (pointer publication) failed",
-                      e
-                    );
-                  });
-                })
-                .then(() => {
-                  this._refreshAllReadModels();
-                })
-                .catch(() => {
-                  this._updateCapabilityEnvelope(mod, envelope);
-                });
-              return;
-            }
+            // #174 / #143 §8: version mismatch is NEVER auto-repaired —
+            // bootstrap consent authorizes ONE initial install only; later
+            // update/reinstall must go through the user's explicit action
+            // (Install/Reinstall button → _installFoundation → the sole
+            // bootstrap installer).  Zero pip calls before user action.
             this._updateCapabilityEnvelope(mod, envelope);
           } else {
             console.warn(
