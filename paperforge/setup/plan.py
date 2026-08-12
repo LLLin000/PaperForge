@@ -99,7 +99,7 @@ class SetupPlan:
         self._log("Initializing vault structure...")
         vault_init = VaultInitializer(self.vault, self.config)
         _run_step("vault_initializer", vault_init.create_directories)
-        _run_step("vault_initializer", lambda: vault_init.create_zotero_junction(self.zotero_path))
+        _run_step("vault_initializer.zotero_junction", lambda: vault_init.create_zotero_junction(self.zotero_path))
 
         # Step 4: #174 / #143 — dependency extras only. The runtime package
         # is installed EXACTLY once by the bootstrap (plugin venv + ONE
