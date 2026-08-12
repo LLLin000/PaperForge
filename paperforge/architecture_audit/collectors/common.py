@@ -307,9 +307,11 @@ DEFAULT_PYTHON_REGISTRY: tuple[WrapperSpec, ...] = (
         ),
         confidence=Confidence.EXACT,
     ),
+    # T6 (#167): the hardcoded terminal follow-up dispatcher was replaced by
+    # the shared chain runner — wrapper specs track the CURRENT functions.
     WrapperSpec(
-        wrapper_id="sync.attach_next_actions",
-        qualified_name="sync._attach_next_actions",
+        wrapper_id="sync.reconcile_and_attach",
+        qualified_name="sync._reconcile_and_attach",
         facts=(
             EffectSpec(
                 effect_kind=EffectKind.DISPOSABLE_SNAPSHOT,
@@ -319,8 +321,8 @@ DEFAULT_PYTHON_REGISTRY: tuple[WrapperSpec, ...] = (
         confidence=Confidence.EXACT,
     ),
     WrapperSpec(
-        wrapper_id="sync.run_terminal_followups",
-        qualified_name="sync._run_terminal_followups",
+        wrapper_id="chain.run_chain",
+        qualified_name="actions.chain.run_chain",
         facts=(
             EffectSpec(
                 effect_kind=EffectKind.MATERIALIZATION_BUILD,

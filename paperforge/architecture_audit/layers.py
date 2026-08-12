@@ -454,6 +454,9 @@ class Rule:
     allowed_query_effects: tuple[EffectKind, ...] = ()
     accepted_intent_modes: tuple[IntentMode, ...] = ()
     required_consumer_kinds: tuple[SignalConsumerKind, ...] = ()
+    # T9 (#170): CANONICAL_READ wrapper registry — reads of a canonical
+    # materialization must go through one of these wrappers.
+    allowed_read_wrappers: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         out: dict[str, Any] = {
@@ -479,6 +482,8 @@ class Rule:
             out["accepted_intent_modes"] = [m.value for m in self.accepted_intent_modes]
         if self.required_consumer_kinds:
             out["required_consumer_kinds"] = [k.value for k in self.required_consumer_kinds]
+        if self.allowed_read_wrappers:
+            out["allowed_read_wrappers"] = list(self.allowed_read_wrappers)
         return out
 
     @classmethod
@@ -508,6 +513,7 @@ class Rule:
             authority_role=authority_role,
             allowed_query_effects=tuple(EffectKind(e) for e in data.get("allowed_query_effects", [])),
             accepted_intent_modes=tuple(IntentMode(m) for m in data.get("accepted_intent_modes", [])),
+            allowed_read_wrappers=tuple(data.get("allowed_read_wrappers", [])),
             required_consumer_kinds=tuple(
                 SignalConsumerKind(k) for k in data.get("required_consumer_kinds", [])
             ),
@@ -784,6 +790,39 @@ class RoleAuthorityFact:
 
 
 @dataclass(frozen=True)
+class CanonicalReadFact:
+    """T9 (#170): an observed read of a canonical materialization."""
+    unit_id: str
+    reader_kind: str  # "client" | "navigation" | "workspace" | "worker" | ...
+    via_wrapper: bool
+    wrapper_id: str | None = None
+    evidence: Evidence | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        out: dict[str, Any] = {
+            "kind": "canonical_read",
+            "unit_id": self.unit_id,
+            "reader_kind": self.reader_kind,
+            "via_wrapper": self.via_wrapper,
+        }
+        if self.wrapper_id is not None:
+            out["wrapper_id"] = self.wrapper_id
+        if self.evidence is not None:
+            out["evidence"] = self.evidence.to_dict()
+        return out
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> CanonicalReadFact:
+        return cls(
+            unit_id=data["unit_id"],
+            reader_kind=data["reader_kind"],
+            via_wrapper=data.get("via_wrapper", False),
+            wrapper_id=data.get("wrapper_id"),
+            evidence=Evidence.from_dict(data["evidence"]) if data.get("evidence") else None,
+        )
+
+
+@dataclass(frozen=True)
 class CanonicalWriteFact:
     unit_id: str
     actor_kind: str  # "ui" | "backend" | "worker" | "cli" | ...
@@ -981,6 +1020,7 @@ FACT_KINDS = {
     "role_authority": RoleAuthorityFact,
     "canonical_write": CanonicalWriteFact,
     "unresolved": UnresolvedFact,
+    "canonical_read": CanonicalReadFact,
     "candidate": CandidateFact,
     "interface": InterfaceFact,
     "trace": TraceFact,

@@ -58,6 +58,10 @@ def _infer_fact_kind(fact: dict) -> str:
         return "unit_authority"
     if "role" in fact:
         return "role_authority"
+    if "unresolved_id" in fact:
+        return "unresolved"
+    if "via_wrapper" in fact:
+        return "canonical_read"
     raise AssertionError(f"cannot infer fact kind from {sorted(fact)}")
 
 
@@ -1088,3 +1092,179 @@ class TestLayerValidation:
         )
         with pytest.raises(ArchitectureError, match="adjudicates unknown finding"):
             validate_report_view(tampered)
+
+# ── T9 (#170) UNRESOLVED semantics ────────────────────────────────────────
+
+class TestUnresolvedSemantics:
+    def _blocking_query_rule(self) -> dict:
+        return {
+            "rule_id": "query.side_effect_free",
+            "kind": "query_side_effect",
+            "subject": "probe_status",
+            "lifecycle": "active",
+            "enforcement": "blocking",
+            "description": "status queries must not mutate",
+        }
+
+    def test_blocking_unresolved_is_incomplete_gate_not_green(self) -> None:
+        """#170: blocking + UNRESOLVED = INCOMPLETE, gate_eligible=False —
+        the gate cannot prove compliance from a partial enumeration."""
+        contract = _contract([self._blocking_query_rule()])
+        survey = _survey(facts=(
+            # Unresolved dynamic callsite overlapping the rule's effect domain.
+            {
+                "kind": "unresolved",
+                "unresolved_id": "u1",
+                "expression": "self._run(verb)",
+                "reason": "dynamic verb dispatch",
+                "possible_effects": ["business_mutation"],
+                "evidence": {
+                    "file": "commands/probe_status.py",
+                    "file_digest": "sha256:" + "0" * 64,
+                    "symbol": "probe_status",
+                    "line_start": 10,
+                    "line_end": 12,
+                    "extractor": "python_ast",
+                    "epistemic_status": "observed_static",
+                    "confidence": "exact",
+                },
+            },
+        ))
+        audit = reconcile(contract, survey)
+        unresolved = next(
+            f for f in audit.content.findings
+            if f.rule_status is RuleStatus.UNRESOLVED
+        )
+        assert unresolved.severity == "blocking"
+        assert audit.content.assessment.status is AssessmentStatus.INCOMPLETE
+        assert audit.content.assessment.gate_eligible is False
+        assert "rule.unresolved:query.side_effect_free" in audit.content.assessment.reasons
+
+    def test_static_violation_is_violated_not_unresolved(self) -> None:
+        """#170: an OBSERVED static violation stays VIOLATED — unresolved
+        dynamic-callsite evidence must not downgrade a determinate finding."""
+        contract = _contract([self._blocking_query_rule()])
+        survey = _survey(facts=(
+            # Both an observed mutation AND an unresolved callsite.
+            {
+                "kind": "effect",
+                "operation_id": "probe_status",
+                "effect_kind": "business_mutation",
+            },
+            {
+                "kind": "unresolved",
+                "unresolved_id": "u1",
+                "expression": "self._run(verb)",
+                "reason": "dynamic verb dispatch",
+                "possible_effects": ["business_mutation"],
+                "evidence": {
+                    "file": "commands/probe_status.py",
+                    "file_digest": "sha256:" + "0" * 64,
+                    "symbol": "probe_status",
+                    "line_start": 10,
+                    "line_end": 12,
+                    "extractor": "python_ast",
+                    "epistemic_status": "observed_static",
+                    "confidence": "exact",
+                },
+            },
+        ))
+        audit = reconcile(contract, survey)
+        rule_findings = [
+            f for f in audit.content.findings
+            if f.rule_id == "query.side_effect_free"
+        ]
+        assert rule_findings, "expected a finding"
+        assert rule_findings[0].rule_status is RuleStatus.VIOLATED, (
+            "static violation must win over unresolved evidence"
+        )
+        # Blocking VIOLATED findings are FINDINGS, not INCOMPLETE — the
+        # violation is determinate and actionable.
+        assert audit.content.assessment.status is AssessmentStatus.FINDINGS
+
+
+# ── T9 (#170) CANONICAL_READ advisory rules ──────────────────────────────
+
+class TestCanonicalRead:
+    def _read_rule(self, wrappers: tuple[str, ...] = ()) -> dict:
+        rule = {
+            "rule_id": "client_read.formal_library",
+            "kind": "canonical_read",
+            "subject": "formal_library",
+            "scope": ["formal_library"],
+            "lifecycle": "active",
+            "enforcement": "advisory",
+            "description": "reads of formal-library.json go through a registered wrapper",
+        }
+        if wrappers:
+            rule["allowed_read_wrappers"] = list(wrappers)
+        return rule
+
+    def _read_fact(self, *, via_wrapper: bool, wrapper_id: str | None = None) -> dict:
+        return {
+            "kind": "canonical_read",
+            "unit_id": "formal_library",
+            "reader_kind": "client",
+            "via_wrapper": via_wrapper,
+            "wrapper_id": wrapper_id,
+            "evidence": _evidence("read_index", 12),
+        }
+
+    def test_bare_read_violates_advisory_rule(self) -> None:
+        """#170: a client reading formal-library.json WITHOUT a wrapper is a
+        VIOLATED canonical_read (advisory severity) — never silently ok."""
+        contract = _contract([self._read_rule(wrappers=("client_cache.read",))])
+        survey = _survey(facts=(self._read_fact(via_wrapper=False),))
+        audit = reconcile(contract, survey)
+        finding = next(f for f in audit.content.findings)
+        assert finding.rule_id == "client_read.formal_library"
+        assert finding.rule_status is RuleStatus.VIOLATED
+        assert finding.severity == "advisory"
+        assert "without a wrapper" in finding.message
+
+    def test_unregistered_wrapper_violates(self) -> None:
+        contract = _contract([self._read_rule(wrappers=("client_cache.read",))])
+        survey = _survey(facts=(self._read_fact(via_wrapper=True, wrapper_id="raw.fs.read"),))
+        audit = reconcile(contract, survey)
+        finding = next(f for f in audit.content.findings)
+        assert finding.rule_status is RuleStatus.VIOLATED
+        assert "unregistered wrapper" in finding.message
+
+    def test_registered_wrapper_satisfies(self) -> None:
+        contract = _contract([self._read_rule(wrappers=("client_cache.read",))])
+        survey = _survey(facts=(self._read_fact(via_wrapper=True, wrapper_id="client_cache.read"),))
+        audit = reconcile(contract, survey)
+        assert len(audit.content.findings) == 0
+        status = next(
+            c for c in audit.content.rule_coverage
+            if c.rule_id == "client_read.formal_library"
+        ).status
+        assert status is RuleStatus.SATISFIED
+
+    def test_wrapper_registry_present_in_contract(self) -> None:
+        """#170: the advisory rules carry the wrapper registry
+        (bootstrap.pointer.read / client_cache.read / navigation.open /
+        workspace.context) for the canonical-read surface."""
+        rules = [
+            ("client_read.formal_library", ("bootstrap.pointer.read", "client_cache.read")),
+            ("client_read.paperforge_config", ("bootstrap.pointer.read",)),
+            ("client_read.ocr_state", ("workspace.context", "navigation.open")),
+            ("client_read.memory_db", ("client_cache.read",)),
+            ("client_read.runtime_snapshots", ("client_cache.read",)),
+        ]
+        contract = _contract([
+            {
+                "rule_id": rule_id,
+                "kind": "canonical_read",
+                "subject": rule_id.removeprefix("client_read."),
+                "lifecycle": "active",
+                "enforcement": "advisory",
+                "allowed_read_wrappers": list(wrappers),
+            }
+            for rule_id, wrappers in rules
+        ])
+        # Contract round-trips the wrapper registry.
+        rt = ArchitectureContract.from_dict(contract.to_dict())
+        for rule in rt.rules:
+            assert rule.allowed_read_wrappers, rule.rule_id
+        assert rt.rules[0].allowed_read_wrappers == ("bootstrap.pointer.read", "client_cache.read")
