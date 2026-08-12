@@ -34,6 +34,7 @@ FIXTURE_NAMES = (
     "golden_126_ocr_rebuild",
     "golden_127_sync_embed",
     "golden_129_display_restore",
+    "golden_170_canonical_read",
 )
 
 
