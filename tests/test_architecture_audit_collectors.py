@@ -650,3 +650,85 @@ class TestCanonicalReadCollection:
         assert all(f.get("wrapper_id") is None for f in formal), (
             "bare reads carry no wrapper attribution (#149 collector knowledge)"
         )
+
+
+# ── T9 (#170) closure — default TS registry + adapter operations ─────────
+
+class TestCanonicalReadClosure:
+    def test_default_ts_collector_attributes_registered_read_wrapper(self, tmp_path) -> None:
+        """#170 P0-1: the DEFAULT orchestrator must pass the wrapper registry
+        to the TS collector — a call to a registered read helper carries the
+        semantic wrapper_id in the collected fact."""
+        import subprocess
+        import sys
+
+        repo = tmp_path / "repo"
+        (repo / "src").mkdir(parents=True)
+        (repo / "src" / "runtime_paths.ts").write_text(
+            'import * as fs from "fs";\n'
+            "export function readCanonicalPath(p: string): string {\n"
+            '  return fs.readFileSync(p, "utf-8");\n'
+            "}\n",
+            encoding="utf-8",
+        )
+        (repo / "src" / "app.ts").write_text(
+            'import { readCanonicalPath } from "./runtime_paths";\n'
+            'const data = readCanonicalPath("/vault/indexes/formal-library.json");\n',
+            encoding="utf-8",
+        )
+        out = tmp_path / "out"
+        repo_root = Path(__file__).resolve().parents[1]
+        proc = subprocess.run(
+            [
+                sys.executable, "-m",
+                "paperforge.architecture_audit.collectors.orchestrator",
+                "--root", str(repo),
+                "--ts-roots", "src",
+                "--contract", str(repo_root / "docs/architecture-audit-2026-08-06/contract.json"),
+                "--out", str(out),
+            ],
+            capture_output=True, text=True, timeout=600,
+        )
+        assert proc.returncode == 0, proc.stderr[-800:]
+        survey = json.loads((out / "survey.json").read_text(encoding="utf-8"))
+        reads = [f for f in survey.get("facts", []) if f.get("kind") == "filesystem_read"]
+        wrapped = [f for f in reads if f.get("wrapper_id") is not None]
+        assert wrapped, f"registered read helper must carry wrapper attribution, reads={reads}"
+        assert wrapped[0]["wrapper_id"] == "client_cache.read"
+
+    def test_dynamic_only_canonical_read_is_unresolved(self) -> None:
+        """#170 P0-3: an ACTIVE canonical-read rule with NO classified reads
+        and only a dynamic canonical path → UNRESOLVED (fail incomplete, do
+        not guess satisfied)."""
+        from tests.test_architecture_audit_reconcile import _contract, _evidence, _survey
+
+        rule = {
+            "rule_id": "client_read.formal_library",
+            "kind": "canonical_read",
+            "subject": "formal_library",
+            "lifecycle": "active",
+            "enforcement": "advisory",
+        }
+        contract = _contract([rule])
+        survey = _survey(facts=(
+            {
+                "kind": "unresolved",
+                "unresolved_id": "u-dyn",
+                "expression": "readPath(expr)",
+                "reason": "dynamic canonical path",
+                "possible_effects": ["disposable_snapshot"],
+                "evidence": _evidence("ocr_workspace", 40),
+            },
+        ))
+        from paperforge.architecture_audit import reconcile
+
+        audit = reconcile(contract, survey)
+        finding = next(
+            f for f in audit.content.findings
+            if f.rule_id == "client_read.formal_library"
+        )
+        # #170 P0-3: dynamic canonical path → UNRESOLVED (never guessed
+        # satisfied).  Advisory unresolved is a FINDINGS-level assessment
+        # (gate stays eligible); blocking unresolved would be incomplete.
+        assert finding.rule_status.value == "unresolved"
+        assert audit.content.assessment.status.value == "findings"

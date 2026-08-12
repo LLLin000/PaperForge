@@ -153,6 +153,42 @@
           "authority_id": "plugin.embed_build_controller"
         }
       ]
+    },
+    {
+      "operation_id": "bootstrap.pointer.read",
+      "authorities": [
+        {
+          "role": "adapter",
+          "authority_id": "plugin.bootstrap"
+        }
+      ]
+    },
+    {
+      "operation_id": "client_cache.read",
+      "authorities": [
+        {
+          "role": "adapter",
+          "authority_id": "plugin.cache"
+        }
+      ]
+    },
+    {
+      "operation_id": "navigation.open",
+      "authorities": [
+        {
+          "role": "adapter",
+          "authority_id": "plugin.navigation"
+        }
+      ]
+    },
+    {
+      "operation_id": "workspace.context",
+      "authorities": [
+        {
+          "role": "adapter",
+          "authority_id": "plugin.workspace"
+        }
+      ]
     }
   ],
   "required_extractors": [

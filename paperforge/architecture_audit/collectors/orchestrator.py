@@ -163,7 +163,10 @@ def collect(
     registry = (
         python_registry if python_registry is not None else load_default_python_registry()
     )
-    ts_registry = ts_registry if ts_registry is not None else ()
+    # #170 P0-1: the TS collector must receive the SAME default wrapper
+    # registry as Python — read wrappers (bootstrap.pointer.read / …) are
+    # collector knowledge, not an opt-in.
+    ts_registry = ts_registry if ts_registry is not None else load_default_python_registry()
     known_operations = frozenset(op.operation_id for op in contract.operations)
 
     # ---- Python side

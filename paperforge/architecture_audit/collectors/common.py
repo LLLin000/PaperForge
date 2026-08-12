@@ -207,7 +207,9 @@ class WrapperSpec:
         }
 
 
-def _spec_dict(spec: EffectSpec | WriteSpec | SignalSpec) -> dict[str, Any]:
+def _spec_dict(spec: EffectSpec | WriteSpec | SignalSpec | ReadSpec) -> dict[str, Any]:
+    if isinstance(spec, ReadSpec):
+        return {"kind": "read", "unit_id": spec.unit_id, "wrapper_id": spec.wrapper_id}
     if isinstance(spec, EffectSpec):
         out: dict[str, Any] = {"kind": "effect", "effect_kind": spec.effect_kind.value}
         if spec.intent_mode is not None:
@@ -375,7 +377,7 @@ DEFAULT_PYTHON_REGISTRY: tuple[WrapperSpec, ...] = (
         facts=(
             ReadSpec(unit_id="memory_db", wrapper_id="client_cache.read"),
             ReadSpec(unit_id="formal_library", wrapper_id="client_cache.read"),
-            ReadSpec(unit_id="runtime_snapshots", wrapper_id="client_cache.read"),
+            ReadSpec(unit_id="runtime_state.snapshot", wrapper_id="client_cache.read"),
         ),
         confidence=Confidence.EXACT,
     ),
