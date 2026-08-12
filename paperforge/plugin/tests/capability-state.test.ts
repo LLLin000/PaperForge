@@ -407,7 +407,8 @@ describe("probeAction", () => {
     expect(a.verb).toBe("probe");
     expect(a.label).toBe("Retry");
     expect(a.action_id).toBe("installation.probe");
-    expect(a.command).toBe("probe installation");
+    // T8 (#169): command field retired.
+    expect("command" in a).toBe(false);
     expect(a.scope).toBe("installation");
     expect(a.scope_count).toBe(1);
   });

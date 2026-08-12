@@ -12,8 +12,8 @@ export interface ActionDef {
   title: string;
   desc?: string;
   icon?: string;
-  /** T8 (#169): `cmd` renamed — the field is a dashboard tool command id,
-   * never an action-policy table (registry owns action dispatch). */
+  /** T8 (#169): dashboard tool command id — the argv is derived by the
+   * typed `toolArgvFor`; no generic dispatch table exists. */
   commandId: string;
   args?: string[];
   needsKey?: boolean;
@@ -78,6 +78,28 @@ export const ACTIONS: ActionDef[] = [
     okMsg: "OCR redo started",
   },
 ];
+
+/**
+ * T8 (#169): TYPED tool argv — one explicit branch per dashboard tool.
+ * These are NOT registry actions (sync/doctor/repair/ocr are standalone
+ * commands); action surfaces route through the ActionClient instead.
+ */
+export function toolArgvFor(id: string): string[] | null {
+  switch (id) {
+    case "paperforge-sync":
+      return ["sync"];
+    case "paperforge-ocr":
+      return ["ocr", "run"];
+    case "paperforge-doctor":
+      return ["doctor"];
+    case "paperforge-repair":
+      return ["repair", "--fix", "--fix-paths"];
+    case "paperforge-ocr-redo":
+      return ["ocr", "redo"];
+    default:
+      return null;
+  }
+}
 
 // ── Settings ──
 
@@ -236,7 +258,7 @@ export interface ActionPrimary {
   interruptible: boolean;
   confirmation_required: boolean;
   confirmation_prompt: string | null;
-  command: string;
+  // T8 (#169): `command` DELETED — no backend command strings.
   scope: string;
   scope_count: number;
 }
@@ -344,7 +366,6 @@ function isValidActionPrimary(p: unknown): p is ActionPrimary {
     typeof a.confirmation_prompt !== "string"
   )
     return false;
-  if (typeof a.command !== "string") return false;
   if (typeof a.scope !== "string") return false;
   if (typeof a.scope_count !== "number") return false;
   return true;
@@ -362,7 +383,6 @@ export function probeAction(module: string): ActionPrimary {
     interruptible: true,
     confirmation_required: false,
     confirmation_prompt: null,
-    command: "probe " + module,
     scope: module,
     scope_count: 1,
   };
@@ -380,7 +400,6 @@ export function setupAction(): ActionPrimary {
     interruptible: true,
     confirmation_required: false,
     confirmation_prompt: null,
-    command: "setup",
     scope: "installation",
     scope_count: 1,
   };

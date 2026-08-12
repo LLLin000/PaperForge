@@ -38,6 +38,7 @@ import {
   ACTIONS,
   DEFAULT_SETTINGS,
   PaperForgeSettings,
+  toolArgvFor,
 } from "./constants";
 import { t, setLanguage } from "./i18n";
 import { PaperForgeSettingTab } from "./settings";
@@ -185,9 +186,11 @@ export default class PaperForgePlugin extends Plugin {
           const cmdArgs = Array.isArray(a.args) ? [...a.args] : [];
           // #173/C1: credentials are resolved by Python; the env is redacted.
           const env = await buildTargetedEnv(null, a.commandId);
+          // T8 (#169): typed tool argv — never a generic dispatch table.
+          const toolArgv = toolArgvFor(a.id) ?? [];
           execFile(
             cmdPythonExe,
-            [...cmdExtra, "-m", "paperforge", a.commandId, ...cmdArgs],
+            [...cmdExtra, "-m", "paperforge", ...toolArgv, ...cmdArgs],
             { cwd: vp, timeout: 300000, env },
             (err, stdout, stderr) => {
               if (err) {
@@ -309,6 +312,9 @@ export default class PaperForgePlugin extends Plugin {
     const cadenceMs =
       Math.max(30, this.settings.autoSyncIntervalSeconds ?? 120) * 1000;
 
+    if (this.settings.autoSyncEnabled === false) {
+      return;
+    }
     // Vault-open tick + cadence interval.
     this._autoSync(vaultPath);
     this._pollTimer = setInterval(() => {
@@ -329,6 +335,9 @@ export default class PaperForgePlugin extends Plugin {
       return;
     }
 
+    // #173/C1: the desktop child env is the redacted
+    // paperforgeEnrichedEnv() — never the bare process env.
+    const env = paperforgeEnrichedEnv();
     execFile(
       pyCmd.path,
       [
@@ -340,7 +349,13 @@ export default class PaperForgePlugin extends Plugin {
         "sync",
         "--json",
       ],
-      { timeout: 120000, encoding: "utf-8", cwd: vaultPath, windowsHide: true },
+      {
+        timeout: 120000,
+        encoding: "utf-8",
+        cwd: vaultPath,
+        windowsHide: true,
+        env,
+      },
       (err, stdout, _stderr) => {
         this._autoSyncRunning = false;
         this._memoryStatusText = null;

@@ -16,6 +16,7 @@ import { t, setLanguage, langFromApp } from "./i18n";
 import {
   PaperForgeSettings,
   ProbeEnvelope,
+  ActionPrimary,
   CapabilityModule,
   CAPABILITY_MODULES,
   createUnknownEnvelope,
@@ -1671,7 +1672,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       return;
     }
     const verb = primary.verb;
-    const cmd = primary.command ?? "";
 
     // Destructive confirmation -> accessible modal (Issue #80)
     if (primary.safety_class !== "safe" && primary.confirmation_required) {
@@ -1685,31 +1685,26 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             "Proceed?",
         },
         () => {
-          this._runAllowedDispatch(
-            mod,
-            primary.verb,
-            primary.command ?? "",
-            env
-          );
+          this._runAllowedDispatch(mod, primary, env);
         }
       ).open();
       return;
     }
 
-    this._runAllowedDispatch(mod, primary.verb, primary.command ?? "", env);
+    this._runAllowedDispatch(mod, primary, env);
   }
 
   private _runAllowedDispatch(
     mod: CapabilityModule,
-    verb: string,
-    cmd: string,
+    primary: ActionPrimary,
     env: ProbeEnvelope
   ): void {
-    // Setup/set_config verbs → exact command allowlist
-    if (
-      (verb === "setup" || verb === "set_config") &&
-      cmd === "paperforge setup"
-    ) {
+    // T8 (#169): dispatch is TYPED by action_id/verb — the backend
+    // `command` string is retired; no (verb, command) table exists.
+    const verb = primary.verb;
+    const actionId = primary.action_id;
+
+    if (verb === "setup" || verb === "set_config") {
       if (mod === "library") {
         this._startSetupJourney(2);
       } else {
@@ -1724,92 +1719,56 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       return;
     }
 
-    // Probe verb → exact command match, directly re-probe without Notice
-    if (verb === "probe" && cmd === "probe " + mod) {
+    if (verb === "probe") {
       this._probeModule(mod);
       return;
     }
 
-    // Exact (verb, command) allowlist per module
-    if (mod === "installation") {
-      // setup/set_config handled above
-    } else if (mod === "library") {
-      if (verb === "sync" && cmd === "paperforge sync") {
+    if (mod === "library") {
+      if (verb === "sync" || actionId === "library.sync") {
         this._runManualSync();
         return;
       }
-      // setup/set_config handled above
     } else if (mod === "ocr") {
-      if (verb === "run" && cmd === "paperforge ocr run") {
+      if (verb === "run" || actionId === "ocr.run") {
         this._dispatchOcrAction("run");
         return;
       }
-      if (
-        verb === "rebuild_derived" &&
-        cmd === "paperforge ocr rebuild --all"
-      ) {
+      if (verb === "rebuild_derived" || actionId === "ocr.rebuild_derived") {
         this._dispatchOcrAction("rebuild");
         return;
       }
-      if (verb === "redo" && cmd === "paperforge ocr redo") {
+      if (verb === "redo" || actionId === "ocr.redo") {
         this._dispatchOcrAction("redo");
         return;
       }
       if (verb === "investigate") {
-        if (cmd === "paperforge ocr issue-draft") {
-          const vp = this._getVaultBasePath();
-          const draft = buildRedactedDraft(
-            env.reason.code,
-            env.reason.text,
-            env.action?.primary?.scope_count ?? 0,
-            vp
-          );
-          new PaperForgeIssueDraftModal(
-            this.app,
-            draft,
-            "https://github.com/LLLin000/PaperForge/issues/new"
-          ).open();
-          return;
-        }
-        if (cmd === "paperforge ocr doctor") {
-          this._callPython(["ocr", "doctor"], {
-            timeout: 30000,
-            onClose: () => {
-              this._refreshAllReadModels();
-            },
-          });
-          return;
-        }
-        if (cmd === "paperforge ocr list --json") {
-          this._callPython(["ocr", "list", "--json"], {
-            timeout: 30000,
-            onClose: () => {
-              this._refreshAllReadModels();
-            },
-          });
-          return;
-        }
+        const vp = this._getVaultBasePath();
+        const draft = buildRedactedDraft(
+          env.reason.code,
+          env.reason.text,
+          env.action?.primary?.scope_count ?? 0,
+          vp
+        );
+        new PaperForgeIssueDraftModal(
+          this.app,
+          draft,
+          "https://github.com/LLLin000/PaperForge/issues/new"
+        ).open();
+        return;
       }
-      // setup/set_config handled above
     } else if (mod === "memory") {
-      if (
-        (verb === "run" || verb === "rebuild_index") &&
-        cmd === "paperforge memory build"
-      ) {
-        this._dispatchMemoryBuild("build");
+      if (verb === "run" || verb === "rebuild_index") {
+        // memory.rebuild_vector (probe: stale vector index) → the embed
+        // rebuild; memory.build / memory.rebuild → the local memory build.
+        if (actionId === "memory.rebuild_vector") {
+          this._dispatchMemoryBuild("embed");
+        } else {
+          this._dispatchMemoryBuild("build");
+        }
         return;
       }
-      if (
-        verb === "rebuild_index" &&
-        cmd === "paperforge embed build --force"
-      ) {
-        this._dispatchMemoryBuild("embed");
-        return;
-      }
-      if (
-        verb === "restore_backup" &&
-        cmd === "paperforge memory restore-backup"
-      ) {
+      if (verb === "restore_backup" || actionId === "memory.restore_backup") {
         this._callPython(["memory", "restore-backup"], {
           timeout: 30000,
           onClose: () => {

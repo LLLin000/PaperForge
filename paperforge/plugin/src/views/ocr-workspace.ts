@@ -827,6 +827,8 @@ export class OcrWorkspaceView extends ItemView {
     return { path: run.command, args: [...run.args] };
   }
 
+  private _runningMode: "run" | "rebuild" | "redo" | null = null;
+
   private _runRebuild(keys: string[]): void {
     // T8 (#169): the rebuild path is the ACTION client —
     // `action run ocr.rebuild_derived --follow auto`.  The Python chain
@@ -838,6 +840,7 @@ export class OcrWorkspaceView extends ItemView {
       new Notice("Runtime not ready for rebuild");
       return;
     }
+    this._runningMode = "rebuild";
     this.running = true;
     this.progress = { current: 0, total: keys.length, paperKey: "" };
     this._render();
@@ -853,6 +856,7 @@ export class OcrWorkspaceView extends ItemView {
       300000
     )
       .then((res: ActionRunResult) => {
+        this._runningMode = null;
         this.running = false;
         const data = (res.payload?.data ?? {}) as Record<string, unknown>;
         const rebuilt = Array.isArray(data.rebuilt) ? data.rebuilt : [];
@@ -905,7 +909,17 @@ export class OcrWorkspaceView extends ItemView {
   }
 
   private _stopBuild(): void {
-    // #126: Stop must reach the real child via the shared controller.
+    // #169 corrective: rebuild runs through the ActionClient (single-result
+    // mode — no plugin-owned child to stop; the Python runner handles its
+    // own cooperative stop).  run/redo go through the shared controller,
+    // which owns its child and stops via the stdin token.
+    if (this._runningMode === "rebuild") {
+      new Notice(
+        t("ocr_stopped_notice") || "Rebuild is not stoppable from here",
+        4000
+      );
+      return;
+    }
     this.plugin?.ocrProcessController?.stop();
     this.running = false;
     this._render();

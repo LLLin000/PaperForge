@@ -133,10 +133,17 @@ def _ocr_rebuild_derived_handler(ctx: ActionContext, request: ActionRequest) -> 
     from paperforge.core.result import PFError, PFResult
     from paperforge.worker.ocr_rebuild import run_derived_rebuild_for_keys
 
-    keys = None if request.scope.kind == "all" else list(request.scope.keys)
+    if request.scope.kind == "all":
+        # #169 corrective: all-scope must resolve the rebuildable keys —
+        # passing [] would silently rebuild zero papers.
+        from paperforge.worker.ocr_maintenance import collect_maintenance_rows
+
+        keys = [r.key for r in collect_maintenance_rows(ctx.vault) if r.can_rebuild]
+    else:
+        keys = list(request.scope.keys)
     try:
         result = run_derived_rebuild_for_keys(
-            ctx.vault, keys or [], parallel=0,
+            ctx.vault, keys, parallel=0,
         )
     except Exception as exc:  # noqa: BLE001 — structured boundary
         return PFResult(

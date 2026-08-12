@@ -1065,16 +1065,15 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
     }
   });
 
-  it("setup verb with wrong command falls through to Notice", () => {
+  it("memory rebuild_index dispatches the local memory build", () => {
     const tab = makeTab();
-    noticeCalls.length = 0;
     const env = {
-      ...createUnknownEnvelope("library"),
+      ...createUnknownEnvelope("memory"),
       action: {
         primary: {
-          verb: "setup",
-          label: "Setup",
-          command: "paperforge sync",
+          action_id: "memory.build",
+          verb: "rebuild_index",
+          label: "Rebuild",
           availability: "available",
           safety_class: "safe",
           preservation_facts: [],
@@ -1087,36 +1086,13 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
         },
       },
     } as any;
-    (tab as any)._dispatchModuleAction("library", env);
-    const msgs = noticeCalls.map((c: { msg: string }) => c.msg).join(" ");
-    expect(msgs.toLowerCase()).toMatch(/unknown|setup/);
-  });
-
-  it("probe verb with wrong command falls through to Notice", () => {
-    const tab = makeTab();
-    noticeCalls.length = 0;
-    const env = {
-      ...createUnknownEnvelope("ocr"),
-      action: {
-        primary: {
-          verb: "probe",
-          label: "Probe",
-          command: "probe installation",
-          availability: "available",
-          safety_class: "safe",
-          preservation_facts: [],
-          replacement_facts: [],
-          interruptible: true,
-          confirmation_required: false,
-          confirmation_prompt: null,
-          scope: "module",
-          scope_count: 1,
-        },
-      },
-    } as any;
-    (tab as any)._dispatchModuleAction("ocr", env);
-    const msgs = noticeCalls.map((c: { msg: string }) => c.msg).join(" ");
-    expect(msgs.toLowerCase()).toMatch(/unknown|probe/);
+    execFileCalls.length = 0;
+    (tab as any)._dispatchModuleAction("memory", env);
+    const es = execFileCalls.find((p: { args: string[] }) =>
+      p.args.includes("memory")
+    );
+    expect(es).toBeDefined();
+    expect(es?.args.join(" ")).toContain("memory build");
   });
 });
 
