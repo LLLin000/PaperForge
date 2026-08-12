@@ -40,6 +40,9 @@ def test_ndjson_stream_and_republication(tmp_path, monkeypatch, capsys) -> None:
     monkeypatch.setattr("paperforge.setup.runtime.vector_extras_present",
                         lambda: True)
 
+    monkeypatch.setattr("subprocess.run",
+                        lambda *a, **k: _FakeCompleted())
+
     def fake_publish(**kw):
         published.update(kw)
 
@@ -76,6 +79,8 @@ def test_missing_extras_reen_ensure_republicates(tmp_path, monkeypatch) -> None:
         "paperforge.setup.runtime.ensure_runtime_dependencies",
         lambda: _OkResult(),
     )
+    monkeypatch.setattr("subprocess.run",
+                        lambda *a, **k: _FakeCompleted())
     published = {}
     monkeypatch.setattr("paperforge.runtime_pointer.publish_pointer",
                         lambda **kw: published.update(kw))
@@ -84,6 +89,11 @@ def test_missing_extras_reen_ensure_republicates(tmp_path, monkeypatch) -> None:
         result = perform_runtime_repair(ndjson=True)
     assert result["ok"] is True
     assert published["paperforge_version"] == "1.5.15"
+
+
+class _FakeCompleted:
+    returncode = 0
+    stdout = "1.5.15"
 
 
 class _OkResult:

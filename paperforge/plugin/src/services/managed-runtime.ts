@@ -380,14 +380,22 @@ export class RuntimeBootstrap {
   // ── 4. Handshake ──
 
   /**
-   * Handshake after installOnce: the fresh interpreter reports the
-   * expected version AND Python's installation probe reports ready.
-   * No runtime is usable until both hold — pointer publication is a
-   * separate later step owned by Python (`paperforge setup`).
+   * Handshake after installOnce (#143 §7): TWO checks —
+   *   1. the fresh interpreter reports the expected version, AND
+   *   2. Python's OWN installation probe (`paperforge probe installation
+   *      --json`) runs and does NOT report a version mismatch (the probe is
+   *      the authoritative version check in a fresh process).
+   * Config-missing/corrupt states are legitimate BEFORE `paperforge setup`
+   * and are resolved by that later step; a version mismatch is not.
+   * No runtime is usable until the caller's setup publishes the pointer.
    */
   async handshake(
     expectedVersion: string,
-    opts?: { pythonPath?: string; signal?: AbortSignal }
+    opts?: {
+      pythonPath?: string;
+      signal?: AbortSignal;
+      vaultPath?: string;
+    }
   ): Promise<{ ok: boolean; observedVersion: string | null; reason?: string }> {
     const pythonPath = opts?.pythonPath ?? this.pythonExeFor(this.venvDir);
     if (!this._fs.existsSync(pythonPath)) {
@@ -405,6 +413,22 @@ export class RuntimeBootstrap {
           observedVersion: observed,
           reason: `version mismatch: observed ${observed!} != expected ${expectedVersion}`,
         };
+      }
+      // Check 2: Python's installation probe (fresh process, authoritative).
+      if (opts?.vaultPath) {
+        const probe = await this._probeInstallation(
+          pythonPath,
+          opts.vaultPath,
+          expectedVersion,
+          opts.signal
+        );
+        if (probe && probe === "installation.version_mismatch") {
+          return {
+            ok: false,
+            observedVersion: observed,
+            reason: "installation probe reports version mismatch",
+          };
+        }
       }
     } catch (err) {
       return {
@@ -494,6 +518,49 @@ export class RuntimeBootstrap {
         } else {
           const version = (stdout ?? "").trim() || null;
           resolve(version);
+        }
+      }
+    );
+    return promise;
+  }
+
+  /** Fresh-child `paperforge probe installation --json`; returns the reason
+   * code when parseable, else null (probe unavailable). */
+  private _probeInstallation(
+    pythonPath: string,
+    vaultPath: string,
+    expectedVersion: string,
+    signal?: AbortSignal
+  ): Promise<string | null> {
+    const { promise, resolve, reject } = deferred<string | null>();
+    this._execFile(
+      pythonPath,
+      [
+        "-m",
+        "paperforge",
+        "--vault",
+        vaultPath,
+        "probe",
+        "installation",
+        "--json",
+        "--expected-version",
+        expectedVersion,
+      ],
+      { timeout: 30000, signal },
+      (err, stdout) => {
+        if (err) {
+          // Probe unavailable is not itself a handshake failure — the
+          // version check already ran; fail only on a parsed mismatch.
+          resolve(null);
+          return;
+        }
+        try {
+          const envelope = JSON.parse(stdout) as {
+            reason?: { code?: string };
+          };
+          resolve(envelope.reason?.code ?? null);
+        } catch {
+          resolve(null);
         }
       }
     );

@@ -60,6 +60,7 @@ def perform_runtime_repair(*, ndjson: bool = False) -> dict[str, object]:
                 ),
             )
             emit_terminal(event, "foundation.repair", pf)
+            _restore()
         return result
 
     if _phase("check") or _is_stopped():
@@ -93,15 +94,52 @@ def perform_runtime_repair(*, ndjson: bool = False) -> dict[str, object]:
     if _phase("verify") or _is_stopped():
         return _finish({"ok": False, "cancelled": True})
 
+    # Fresh-child verification of the POINTED interpreter before any
+    # success: the pointer may be stale/broken even when the current
+    # interpreter has extras — never republish an unusable pointer.
+    import subprocess
+    import sys
+
+    probe = (
+        "import paperforge, openai, chromadb, sqlite_vec;"
+        " print(paperforge.__version__)"
+    )
+    try:
+        check = subprocess.run(
+            [ptr["python_path"], "-I", "-c", probe],
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        observed = check.stdout.strip()
+    except Exception as exc:  # noqa: BLE001 — structured error boundary
+        return _finish({
+            "ok": False,
+            "pointer": ptr["paperforge_version"],
+            "error": f"pointed interpreter failed probe: {exc}",
+        })
+    if check.returncode != 0 or not observed:
+        return _finish({
+            "ok": False,
+            "pointer": ptr["paperforge_version"],
+            "error": "pointed interpreter cannot import the runtime stack",
+        })
+    if observed != ptr["paperforge_version"]:
+        return _finish({
+            "ok": False,
+            "pointer": ptr["paperforge_version"],
+            "error": f"pointed interpreter version {observed!r} != pointer {ptr['paperforge_version']!r}",
+        })
+
     from paperforge.runtime_pointer import publish_pointer
 
     publish_pointer(
         python_path=ptr["python_path"],
         environment_root=ptr["environment_root"],
-        paperforge_version=ptr["paperforge_version"],
+        paperforge_version=observed,
     )
     return _finish({
         "ok": True,
-        "pointer": ptr["paperforge_version"],
+        "pointer": observed,
         "repaired": True,
     })

@@ -425,6 +425,96 @@ def _embed_resume_handler(ctx: ActionContext, request: ActionRequest) -> PFResul
 
 # ── the registry ───────────────────────────────────────────────────────────
 
+def _foundation_update_handler(ctx: ActionContext, request: ActionRequest) -> PFResult:
+    """foundation.update (#174): refresh the installed distribution via the
+    pure lifecycle service (no prompts, no stdout, fresh-child verified,
+    pointer published with the OBSERVED version).  Zero arbitrary args."""
+    from paperforge import __version__ as PF_VERSION
+    from paperforge.core.errors import ErrorCode
+    from paperforge.core.result import PFError
+    from paperforge.worker.update import perform_update
+
+    result = perform_update(ctx.vault)
+    if result.get("cancelled"):
+        return PFResult(
+            ok=False,
+            command="action run",
+            version=PF_VERSION,
+            data={"cancelled": True},
+            error=PFError(
+                code=ErrorCode.ACTION_CANCELLED,
+                message="update cancelled",
+            ),
+        )
+    return PFResult(
+        ok=result["ok"],
+        command="action run",
+        version=PF_VERSION,
+        data={k: v for k, v in result.items() if k != "ok"},
+        error=(
+            PFError(
+                code=ErrorCode.INTERNAL_ERROR,
+                message=result.get("error", "update failed"),
+            )
+            if not result["ok"]
+            else None
+        ),
+    )
+
+
+def _foundation_update_preflight(ctx: ActionContext, request: ActionRequest) -> PreflightResult:
+    return PreflightResult(
+        availability="available",
+        availability_reason_code="ok",
+        availability_reason="Update is available on demand",
+    )
+
+
+def _foundation_repair_handler(ctx: ActionContext, request: ActionRequest) -> PFResult:
+    """foundation.repair (#174): runtime LIFECYCLE repair — re-ensure deps
+    and re-publish the pointer after fresh-child verification.  Distinct
+    from the literature/OCR repair; zero arbitrary args."""
+    from paperforge import __version__ as PF_VERSION
+    from paperforge.core.errors import ErrorCode
+    from paperforge.core.result import PFError
+    from paperforge.worker.runtime_repair import perform_runtime_repair
+
+    result = perform_runtime_repair()
+    if result.get("cancelled"):
+        return PFResult(
+            ok=False,
+            command="action run",
+            version=PF_VERSION,
+            data={"cancelled": True},
+            error=PFError(
+                code=ErrorCode.ACTION_CANCELLED,
+                message="runtime repair cancelled",
+            ),
+        )
+    return PFResult(
+        ok=result["ok"],
+        command="action run",
+        version=PF_VERSION,
+        data={k: v for k, v in result.items() if k != "ok"},
+        error=(
+            PFError(
+                code=ErrorCode.INTERNAL_ERROR,
+                message=result.get("error", "runtime repair failed"),
+            )
+            if not result["ok"]
+            else None
+        ),
+    )
+
+
+def _foundation_repair_preflight(ctx: ActionContext, request: ActionRequest) -> PreflightResult:
+    return PreflightResult(
+        availability="available",
+        availability_reason_code="ok",
+        availability_reason="Runtime repair is safe to run",
+    )
+
+
 def validate_registry(registry: Mapping[str, ActionSpec] | None = None) -> list[str]:
     """Registry invariant audit; empty list = valid."""
     problems: list[str] = []
@@ -463,6 +553,32 @@ def validate_registry(registry: Mapping[str, ActionSpec] | None = None) -> list[
 
 
 _SPECS: tuple[ActionSpec, ...] = (
+    ActionSpec(
+        action_id="foundation.update",
+        label_code="action.foundation.update",
+        description_code="action.foundation.update.description",
+        handler=_foundation_update_handler,
+        preflight=_foundation_update_preflight,
+        scope_kinds=("all",),
+        cost="remote_possible",
+        impact="mutating",
+        confirmation="required",
+        automatic=False,
+        interruptible=True,
+    ),
+    ActionSpec(
+        action_id="foundation.repair",
+        label_code="action.foundation.repair",
+        description_code="action.foundation.repair.description",
+        handler=_foundation_repair_handler,
+        preflight=_foundation_repair_preflight,
+        scope_kinds=("all",),
+        cost="local",
+        impact="read_only",
+        confirmation="none",
+        automatic=True,
+        interruptible=True,
+    ),
     ActionSpec(
         action_id="memory.build",
         label_code="action.memory.build",
