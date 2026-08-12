@@ -46,3 +46,33 @@ def test_read_pointer_absent_or_corrupt(tmp_path) -> None:
     assert read_pointer(home=tmp_path) is None
     pointer_path(home=tmp_path).write_text(json.dumps({"schema_version": 99}), encoding="utf-8")
     assert read_pointer(home=tmp_path) is None
+
+
+def test_read_pointer_requires_full_schema(tmp_path) -> None:
+    """Schema v1 requires ALL four fields, typed, non-empty, absolute paths
+    for python_path/environment_root; partial pointers are invalid → None."""
+    d = pointer_path(home=tmp_path)
+    d.parent.mkdir(parents=True, exist_ok=True)
+    import os
+
+    base = {
+        "schema_version": 1,
+        "python_path": os.path.abspath(str(tmp_path / "python.exe")),
+        "environment_root": os.path.abspath(str(tmp_path / "env")),
+        "paperforge_version": "1.0.0",
+    }
+    d.write_text(json.dumps(base), encoding="utf-8")
+    assert read_pointer(home=tmp_path) is not None
+    # missing / wrong-typed / empty field
+    for key in ("python_path", "environment_root", "paperforge_version"):
+        partial = dict(base)
+        del partial[key]
+        d.write_text(json.dumps(partial), encoding="utf-8")
+        assert read_pointer(home=tmp_path) is None, key
+    empty = dict(base, paperforge_version="")
+    d.write_text(json.dumps(empty), encoding="utf-8")
+    assert read_pointer(home=tmp_path) is None
+    # relative path
+    rel = dict(base, python_path="relative/python.exe")
+    d.write_text(json.dumps(rel), encoding="utf-8")
+    assert read_pointer(home=tmp_path) is None

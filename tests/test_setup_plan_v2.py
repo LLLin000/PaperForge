@@ -678,3 +678,65 @@ class TestCliHeadlessViaSetupPlan:
         assert isinstance(code, int)
         pf = vault / "paperforge.json"
         assert pf.exists(), "paperforge.json must exist after headless --skip-checks"
+
+
+class TestSetupPlan174Semantics:
+    """#174 corrective: machine and human paths share ONE success semantics —
+    pointer publication happens before terminal success and only when every
+    step passed; failure is rc 1 in BOTH modes."""
+
+    def test_json_failure_returns_nonzero(self, tmp_path: Path) -> None:
+        """json_output mode must NOT swallow failures (was rc 0 before the
+        corrective — machine paths could never see a failed setup)."""
+        import contextlib as _cl
+        import io as _io
+
+        from paperforge.setup.plan import SetupPlan
+
+        (tmp_path / "paperforge.json").write_text("{corrupt", encoding="utf-8")
+        plan = SetupPlan(tmp_path, config={"system_dir": "System"})
+        buf = _io.StringIO()
+        with _cl.redirect_stdout(buf):
+            rc = plan.execute(json_output=True)
+        assert rc == 1, f"json failure must be rc 1, got {rc}"
+
+    def test_pointer_published_only_on_full_success(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        """Publication is part of lifecycle success: present after an all-ok
+        run, absent when any step fails (both modes)."""
+        import contextlib as _cl
+        import io as _io
+
+        from paperforge.setup.plan import SetupPlan
+        from paperforge.runtime_pointer import read_pointer
+
+        plan = SetupPlan(tmp_path, config={"system_dir": "System"})
+        buf = _io.StringIO()
+        with _cl.redirect_stdout(buf):
+            assert plan.execute() == 0
+        assert read_pointer(home=tmp_path) is None  # pointer lives under real home
+        # full success through a real home captured via monkeypatch
+        monkeypatch.setattr("paperforge.runtime_pointer.Path.home",
+                            lambda: tmp_path)
+        with _cl.redirect_stdout(buf):
+            assert plan.execute() == 0
+        assert read_pointer(home=tmp_path) is not None
+
+    def test_pointer_absent_on_failure(self, tmp_path: Path, monkeypatch) -> None:
+        """A failing step must NOT publish even though some steps passed."""
+        import contextlib as _cl
+        import io as _io
+
+        from paperforge.setup.plan import SetupPlan
+        from paperforge.runtime_pointer import read_pointer
+
+        monkeypatch.setattr("paperforge.runtime_pointer.Path.home",
+                            lambda: tmp_path)
+        (tmp_path / "paperforge.json").write_text("{corrupt", encoding="utf-8")
+        plan = SetupPlan(tmp_path, config={"system_dir": "System"})
+        buf = _io.StringIO()
+        with _cl.redirect_stdout(buf):
+            rc = plan.execute()
+        assert rc == 1
+        assert read_pointer(home=tmp_path) is None

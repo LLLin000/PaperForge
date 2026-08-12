@@ -10,7 +10,6 @@ from paperforge.setup import SetupStepResult
 from paperforge.setup.agent import AgentInstaller
 from paperforge.setup.checker import SetupChecker
 from paperforge.setup.config_writer import ConfigWriter
-from paperforge.setup.runtime import RuntimeInstaller
 from paperforge.setup.vault import VaultInitializer
 
 ProgressCallback = Callable[[str], None]
@@ -70,10 +69,13 @@ class SetupPlan:
         results.append(vault_init.create_zotero_junction(self.zotero_path))
         results.append(vault_init.merge_env(self.env_values))
 
-        # Step 4: Runtime installer
-        self._log("Installing runtime...")
-        installer = RuntimeInstaller(self.vault, version=self.version, progress_callback=self._log)
-        results.append(installer.install())
+        # Step 4: #174 / #143 — NO RuntimeInstaller here. The runtime is
+        # installed exactly once by the plugin (plugin-first: consent → venv
+        # → ONE pinned pip install → handshake) or by pip (python-first).
+        # `paperforge setup` after cutover is POST-runtime setup only:
+        # config / vault / agent integration / pointer publication.  A
+        # duplicate pip install here would reinstall the just-verified
+        # runtime and violate "one consent = one bootstrap install attempt".
 
         # Step 5: Agent installer
         self._log("Deploying agent config...")
@@ -81,18 +83,20 @@ class SetupPlan:
         agent_results = agent.run_all()
         results.extend(agent_results)
 
-        if json_output:
-            output = [r.to_dict() for r in results]
-            print(json.dumps(output, indent=2, ensure_ascii=False))
-            return 0
-
         # Step 6 (#143 / #174): pointer publication — Python is the ONLY
-        # writer; publish only when every setup step passed.
-        if all(r.ok for r in results):
+        # writer; publication is part of lifecycle success and MUST happen
+        # before any terminal success is emitted (human or machine).
+        ok = all(r.ok for r in results)
+        if ok:
             from paperforge.runtime_pointer import publish_pointer
 
             publish_pointer()
             self._log("Runtime pointer published")
+
+        if json_output:
+            output = [r.to_dict() for r in results]
+            print(json.dumps(output, indent=2, ensure_ascii=False))
+            return 0 if ok else 1
 
         # Print summary
         ok_count = sum(1 for r in results if r.ok)
@@ -104,4 +108,4 @@ class SetupPlan:
             if not r.ok and r.error:
                 print(f"         Error: {r.error}")
 
-        return 0 if all(r.ok for r in results) else 1
+        return 0 if ok else 1

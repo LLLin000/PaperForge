@@ -88,11 +88,6 @@ def run(args: argparse.Namespace) -> int:
 
     if json_output:
         print(pf.to_json())
-        if pf.ok:
-            # #143 / #174: pointer refresh after a successful repair.
-            from paperforge.runtime_pointer import publish_pointer
-
-            publish_pointer()
         return 0 if pf.ok else 1
 
     # Human-readable output
