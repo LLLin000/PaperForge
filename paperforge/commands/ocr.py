@@ -785,12 +785,64 @@ def _run_ocr_dispatch(args, vault, json_output, ocr_action, keys, diagnose_only)
 
     run_ocr = _get_run_ocr()
     selected_keys: set | None = set(keys) if keys else None
-    exit_code = run_ocr(
-        vault,
-        verbose=getattr(args, "verbose", False),
-        no_progress=getattr(args, "no_progress", False),
-        selected_keys=selected_keys,
-    )
+
+    # #174 RC: whole-queue ocr.run is a long task — the TS controller parses
+    # the #137 NDJSON stream.  Without this stream the controller's
+    # fail-closed parser reports "EOF without terminal event" even on a
+    # successful run (contract break).  json mode keeps the single PFResult.
+    _stream = not json_output and ocr_action in (None, "run") and not diagnose_only
+    if _stream:
+        from paperforge.core.cancellation import make_cancellation_token
+        from paperforge.core.ndjson import emit_progress, emit_start, emit_terminal
+
+        emit_start("ocr.run")
+        _is_stopped, _restore = make_cancellation_token()
+        _current = [0]
+
+        def _progress(key: str) -> None:
+            _current[0] += 1
+            emit_progress("ocr.run", _current[0], len(selected_keys or ()), item_id=key)
+    else:
+        _is_stopped, _restore = (lambda: False), (lambda: None)
+        _progress = None
+
+    def _finish_stream(exit_code: int) -> None:
+        if not _stream:
+            return
+        _restore()
+        if exit_code == 130:
+            emit_terminal("cancelled", "ocr.run", PFResult(ok=False, command="ocr run", version=__version__))
+        else:
+            emit_terminal(
+                "result" if exit_code == 0 else "error",
+                "ocr.run",
+                PFResult(ok=exit_code == 0, command="ocr run", version=__version__),
+            )
+
+    try:
+        exit_code = run_ocr(
+            vault,
+            verbose=getattr(args, "verbose", False),
+            no_progress=getattr(args, "no_progress", False),
+            selected_keys=selected_keys,
+            stop_check=_is_stopped,
+            progress_callback=_progress,
+        )
+    except Exception as exc:  # noqa: BLE001 — exactly-one error terminal
+        if _stream:
+            _restore()
+            emit_terminal(
+                "error",
+                "ocr.run",
+                PFResult(
+                    ok=False,
+                    command="ocr run",
+                    version=__version__,
+                    error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(exc)),
+                ),
+            )
+        return 1
+    _finish_stream(exit_code)
 
     if json_output:
         queue_data = _collect_ocr_queue_data(vault)
@@ -802,6 +854,9 @@ def _run_ocr_dispatch(args, vault, json_output, ocr_action, keys, diagnose_only)
         )
         print(pf.to_json())
         return 0 if pf.ok else 1
+
+    if exit_code == 130:
+        return 130
 
     # Auto-diagnose after successful run (new unified behavior)
     if exit_code == 0 and ocr_action is None and not diagnose_only and not keys:
