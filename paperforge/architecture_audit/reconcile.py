@@ -31,6 +31,7 @@ from paperforge.architecture_audit.layers import (
     AssessmentStatus,
     AuditContent,
     AuthorityRole,
+    CanonicalReadFact,
     CanonicalWriteFact,
     CoverageEntry,
     CoverageStatus,
@@ -178,6 +179,15 @@ def _unit_facts(rule: Rule, survey: ArchitectureSurvey) -> list[UnitAuthorityFac
     return [fact for fact in _facts_of(survey, UnitAuthorityFact) if fact.unit_id == rule.subject]
 
 
+def _read_facts(rule: Rule, survey: ArchitectureSurvey) -> list[CanonicalReadFact]:
+    """Observed reads of a canonical materialization (CANONICAL_READ)."""
+    facts = _facts_of(survey, CanonicalReadFact)
+    if not rule.scope:
+        return facts
+    scoped = {rule.subject, *rule.scope}
+    return [f for f in facts if f.unit_id in scoped]
+
+
 def _write_facts(rule: Rule, survey: ArchitectureSurvey) -> list[CanonicalWriteFact]:
     return [fact for fact in _facts_of(survey, CanonicalWriteFact) if fact.unit_id == rule.subject]
 
@@ -297,6 +307,28 @@ def _required_coverage_complete(contract: ArchitectureContract, survey: Architec
     return bool(coverage) and all(entry.status is CoverageStatus.COMPLETE for entry in coverage)
 
 
+def _has_static_violation(rule: Rule, survey: ArchitectureSurvey) -> bool:
+    """#170 (T9): determinate static violations for the rule kinds that can
+    also carry unresolved dynamic-callsite evidence.  VIOLATED beats
+    UNRESOLVED — partial enumeration must not mask an observed breach."""
+    if rule.kind is RuleKind.QUERY_SIDE_EFFECT:
+        violations, _ = _forbidden_query_effects(rule, survey)
+        return bool(violations)
+    if rule.kind is RuleKind.REMOTE_INTENT:
+        accepted = set(rule.accepted_intent_modes or DEFAULT_ACCEPTED_INTENT_MODES)
+        return any(
+            fact.intent_mode not in accepted
+            for fact in _remote_facts(rule, survey)
+        )
+    if rule.kind in (RuleKind.CANONICAL_WRITER, RuleKind.PUBLICATION_MARKER):
+        # A write bypassing the publication protocol is a determinate breach.
+        return any(
+            not fact.via_publication_protocol
+            for fact in _write_facts(rule, survey)
+        )
+    return False
+
+
 def _evaluate_rule(
     rule: Rule,
     contract: ArchitectureContract,
@@ -308,7 +340,10 @@ def _evaluate_rule(
         return RuleStatus.UNRESOLVED, "coverage incomplete: cannot enumerate all callsites", []
 
     unresolved = _unresolved_facts(rule, survey)
-    if unresolved:
+    if unresolved and not _has_static_violation(rule, survey):
+        # #170 (T9): an OBSERVED static violation is determinate — VIOLATED
+        # wins over unresolved dynamic-callsite evidence.  UNRESOLVED only
+        # applies when no determinate violation is observable.
         first = unresolved[0]
         return (
             RuleStatus.UNRESOLVED,
@@ -485,6 +520,32 @@ def _evaluate_rule(
             e for fact in writes for e in _evidence_of(fact)
         ]
 
+    if rule.kind is RuleKind.CANONICAL_READ:
+        reads = _read_facts(rule, survey)
+        if not reads:
+            if _absence_is_observed(contract, survey):
+                return RuleStatus.SATISFIED, "no canonical reads observed", []
+            return RuleStatus.UNRESOLVED, "no canonical-read facts and coverage incomplete", []
+        allowed = set(rule.allowed_read_wrappers)
+        bypass: list[CanonicalReadFact] = []
+        messages: list[str] = []
+        for fact in reads:
+            if not fact.via_wrapper:
+                bypass.append(fact)
+                messages.append(f"{fact.unit_id} read without a wrapper")
+            elif allowed and fact.wrapper_id not in allowed:
+                bypass.append(fact)
+                messages.append(
+                    f"{fact.unit_id} read via unregistered wrapper {fact.wrapper_id!r}"
+                )
+        if bypass:
+            return RuleStatus.VIOLATED, "; ".join(sorted(set(messages))), [
+                e for fact in bypass for e in _evidence_of(fact)
+            ]
+        return RuleStatus.SATISFIED, "all canonical reads go through registered wrappers", [
+            e for fact in reads for e in _evidence_of(fact)
+        ]
+
     if rule.kind is RuleKind.PUBLICATION_MARKER:
         writes = _write_facts(rule, survey)
         if not writes:
@@ -564,6 +625,25 @@ def _assess(
             reasons=tuple(sorted({f"{entry.extractor}_coverage_{entry.status.value}" for entry in incomplete})),
         )
     if findings:
+        # #170 (T9) UNRESOLVED semantics: a BLOCKING rule whose conclusion is
+        # UNRESOLVED (unresolved dynamic callsites / incomplete enumeration)
+        # means the gate cannot prove compliance — INCOMPLETE, gate not green.
+        # Static VIOLATED findings still yield FINDINGS (gate-eligible when
+        # non-blocking) below.
+        blocking_unresolved = [
+            f
+            for f in findings
+            if f.rule_status is RuleStatus.UNRESOLVED and f.severity == "blocking"
+        ]
+        if blocking_unresolved:
+            return Assessment(
+                status=AssessmentStatus.INCOMPLETE,
+                gate_eligible=False,
+                reasons=tuple(sorted(
+                    {f"rule.unresolved:{f.rule_id}" for f in blocking_unresolved}
+                    | {f"{entry.extractor}_coverage_{entry.status.value}" for entry in incomplete}
+                )),
+            )
         return Assessment(status=AssessmentStatus.FINDINGS, gate_eligible=True)
     return Assessment(status=AssessmentStatus.CLEAN, gate_eligible=True)
 

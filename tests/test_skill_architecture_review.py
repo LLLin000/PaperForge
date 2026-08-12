@@ -89,7 +89,10 @@ class TestValidatedInputFirst:
         summary = rh.audit_summary(audit)
         assert summary["audit_digest"] == audit.semantic_digest
         assert summary["reconciler_version"] == audit.content.reconciler_version
-        assert summary["assessment"]["status"] == "findings"
+        # T9 (#170): publication.authority is blocking + UNRESOLVED →
+        # INCOMPLETE, gate not green (unresolved dynamic callsites).
+        assert summary["assessment"]["status"] == "incomplete"
+        assert summary["assessment"]["gate_eligible"] is False
         assert "ocr_derived.generation" in summary["scope"]
         assert len(summary["must_adjudicate"]) == 1  # publication.authority unresolved
 
