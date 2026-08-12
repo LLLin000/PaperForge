@@ -242,7 +242,7 @@ def probe_installation(vault: Path, expected_version: str | None = None) -> dict
             reason_text=f"PaperForge {PAPERFORGE_VERSION} does not match plugin {expected_version}",
             user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_REQUIRED,
             action_primary=build_action_primary(
-                action_id="foundation.setup", verb="setup", label="Update PaperForge",
+                action_id="foundation.update", verb="update", label="Update PaperForge",
 
             ),
             ttl_seconds=TTL_INSTALLATION,

@@ -305,6 +305,9 @@ class TestInstallationProbe:
         assert data["capability_state"] == "needs_action"
         assert data["user_state"] == "action_required"
         assert data["reason"]["code"] == "installation.version_mismatch"
+        # #174: the mismatch action points at the REGISTERED foundation.update.
+        assert data["action"]["primary"]["action_id"] == "foundation.update"
+        assert data["action"]["primary"]["verb"] == "update"
         # T8 (#169): command field deleted.
         assert "command" not in data["action"]["primary"]
 
