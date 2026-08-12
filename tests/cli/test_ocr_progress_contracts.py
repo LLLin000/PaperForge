@@ -1,16 +1,9 @@
-"""CLI contract tests for OCR rebuild/redo progress tokens.
+"""CLI contract tests for OCR rebuild/redo #137 NDJSON streams.
 
-Tests the streaming progress token contract defined in issue #64:
-- OCR_REBUILD_START:{total}
-- OCR_REBUILD_PROGRESS:{current}:{total}:{key}
-- OCR_REBUILD_RESULT:{key}:ok|failed|skipped
-- OCR_REBUILD_DONE:{success}:{failed}:{skipped}
-- OCR_REDO_START:{total}
-- OCR_REDO_PROGRESS:{current}:{total}:{key}
-- OCR_REDO_DONE
-
-#126: every non-dry-run rebuild, including a single explicit key, emits the
-full token sequence. Dry-run must not emit progress tokens.
+#137 retired the colon-token family (OCR_REBUILD_*, OCR_REDO_*): stdout now
+carries NDJSON events (start/progress/item_result) with EXACTLY ONE terminal
+(result | cancelled | error) then EOF.  #126 semantics (full sequence for a
+single key, dropped keys counted) carry over to the NDJSON contract.
 """
 
 from __future__ import annotations
@@ -19,6 +12,19 @@ import json
 from pathlib import Path
 
 import pytest
+
+
+def _events(captured: str) -> list[dict]:
+    """Parse NDJSON stream lines into events."""
+    return [json.loads(l) for l in captured.split("\n") if l.strip()]
+
+
+def _terminal_event(events: list[dict]) -> dict:
+    """The terminal event — must be exactly one, and last."""
+    terminals = [e for e in events if e["event"] in ("result", "error", "cancelled")]
+    assert len(terminals) == 1, f"exactly one terminal expected, got {len(terminals)}"
+    assert events[-1] is terminals[0], "terminal must be the last event"
+    return terminals[0]
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────
@@ -136,18 +142,20 @@ class TestOcrRedoProgressTokens:
         rc = _run_ocr_redo(vault, keys=[self._K1, self._K2, self._K3])
 
         assert rc == 0
-        captured = capsys.readouterr().out
-        lines = [l for l in captured.split("\n") if l.strip()]
+        out, err = capsys.readouterr()
+        lines = [l for l in out.split("\n") if l.strip()]
 
-        # Token order: START, then PROGRESS per key, summary, DONE
-        assert lines[0] == "OCR_REDO_START:3"
-        progress_lines = [l for l in lines if l.startswith("OCR_REDO_PROGRESS")]
-        assert len(progress_lines) == 3
-        assert progress_lines[0] == "OCR_REDO_PROGRESS:1:3:KEY00001"
-        assert progress_lines[1] == "OCR_REDO_PROGRESS:2:3:KEY00002"
-        assert progress_lines[2] == "OCR_REDO_PROGRESS:3:3:KEY00003"
-        assert "Redo OCR done" in captured
-        assert "OCR_REDO_DONE" in captured
+        # #137 NDJSON: start, PROGRESS per key, exactly-one result terminal
+        events = _events(out)
+        assert events[0]["event"] == "start"
+        assert events[0]["operation"] == "ocr.redo"
+        assert events[0]["total"] == 3
+        progress = [e for e in events if e["event"] == "progress"]
+        assert [e["item_id"] for e in progress] == ["KEY00001", "KEY00002", "KEY00003"]
+        terminal = _terminal_event(events)
+        assert terminal["event"] == "result"
+        assert terminal["result"]["ok"] is True
+        assert "Redo OCR done" in err
 
     def test_redo_single_key_no_tokens(self, capsys, tmp_path, monkeypatch):
         """Single redo key emits no progress tokens."""
@@ -161,11 +169,10 @@ class TestOcrRedoProgressTokens:
         rc = _run_ocr_redo(vault, keys=[self._K1])
 
         assert rc == 0
-        captured = capsys.readouterr().out
-        assert "OCR_REDO_START" not in captured
-        assert "OCR_REDO_PROGRESS" not in captured
-        assert "OCR_REDO_DONE" not in captured
-        assert "Redo OCR done=1" in captured
+        out, err = capsys.readouterr()
+        # Single key is not a batch → no NDJSON stream at all.
+        assert all(not l.startswith('{"schema_version"') for l in out.splitlines())
+        assert "Redo OCR done=1" in err
 
     def test_redo_dry_run_no_tokens(self, capsys, tmp_path, monkeypatch):
         """Dry-run redo emits no progress tokens."""
@@ -182,9 +189,7 @@ class TestOcrRedoProgressTokens:
         assert rc == 0
         captured = capsys.readouterr().out
         # Multi-key dry-run is not batch (batch = total > 1 and not dry_run)
-        assert "OCR_REDO_START" not in captured
-        assert "OCR_REDO_PROGRESS" not in captured
-        assert "OCR_REDO_DONE" not in captured
+        assert all(not l.startswith('{"schema_version"') for l in captured.splitlines())
         assert "Would redo" in captured
 
 
@@ -200,11 +205,9 @@ class TestOcrRedoProgressTokens:
 
         _run_ocr_redo(vault, keys=[self._K1, self._K2, self._K3])
         captured = capsys.readouterr().out
-
-        assert "OCR_REDO_START" in captured
-        assert "OCR_REDO_PROGRESS" in captured
-        assert "OCR_REDO_DONE" in captured
-        assert "OCR_REBUILD_START" not in captured
+        events = _events(captured)
+        assert events[0]["operation"] == "ocr.redo"
+        assert all(e["operation"] == "ocr.redo" for e in events)
 
 
 
@@ -281,19 +284,19 @@ class TestOcrRebuildProgressTokens:
         captured = capsys.readouterr().out
         lines = [l for l in captured.split("\n") if l.strip()]
 
-        assert lines[0] == "OCR_REBUILD_START:3", f"First token: {lines}"
-        progress_lines = [l for l in lines if "OCR_REBUILD_PROGRESS" in l]
-        assert len(progress_lines) == 3
-        assert progress_lines[0] == "OCR_REBUILD_PROGRESS:1:3:KEY001"
-        assert progress_lines[1] == "OCR_REBUILD_PROGRESS:2:3:KEY002"
-        assert progress_lines[2] == "OCR_REBUILD_PROGRESS:3:3:KEY003"
-        assert lines[-1] == "OCR_REBUILD_DONE:3:0:0", f"Last token: {lines}"
-        result_lines = [l for l in lines if "OCR_REBUILD_RESULT" in l]
-        assert result_lines == [
-            "OCR_REBUILD_RESULT:KEY001:ok",
-            "OCR_REBUILD_RESULT:KEY002:ok",
-            "OCR_REBUILD_RESULT:KEY003:ok",
+        events = _events(captured)
+        assert events[0]["event"] == "start"
+        assert events[0]["operation"] == "ocr.rebuild"
+        assert events[0]["total"] == 3
+        progress = [e for e in events if e["event"] == "progress"]
+        assert [e["item_id"] for e in progress] == ["KEY001", "KEY002", "KEY003"]
+        results = [e for e in events if e["event"] == "item_result"]
+        assert [(e["item_id"], e["status"]) for e in results] == [
+            ("KEY001", "ok"), ("KEY002", "ok"), ("KEY003", "ok"),
         ]
+        terminal = _terminal_event(events)
+        assert terminal["event"] == "result"
+        assert terminal["result"]["data"] == {"rebuilt": 3, "failed": 0, "skipped": 0}
 
     def test_rebuild_single_key_emits_full_contract(self, capsys, monkeypatch, tmp_path):
         """#126: a single explicit rebuild key emits the full token sequence."""
@@ -308,10 +311,14 @@ class TestOcrRebuildProgressTokens:
         assert rc == 0
         captured = capsys.readouterr().out
         lines = [l for l in captured.split("\n") if l.strip()]
-        assert lines[0] == "OCR_REBUILD_START:1"
-        assert "OCR_REBUILD_PROGRESS:1:1:KEY001" in lines
-        assert "OCR_REBUILD_RESULT:KEY001:ok" in lines
-        assert lines[-1] == "OCR_REBUILD_DONE:1:0:0"
+        events = _events(captured)
+        assert events[0]["event"] == "start"
+        assert events[0]["total"] == 1
+        assert any(e["event"] == "progress" and e["item_id"] == "KEY001" for e in events)
+        assert any(e["event"] == "item_result" and e["item_id"] == "KEY001" for e in events)
+        terminal = _terminal_event(events)
+        assert terminal["event"] == "result"
+        assert terminal["result"]["data"]["rebuilt"] == 1
     def test_explicit_dropped_keys_count_as_skipped(self, capsys, monkeypatch, tmp_path):
         """#126 review: `ocr rebuild GOOD MISSING` must report MISSING as
         skipped and return 1 — never claim full success."""
@@ -350,10 +357,14 @@ class TestOcrRebuildProgressTokens:
         from paperforge.commands.ocr import _run_ocr_rebuild
 
         rc = _run_ocr_rebuild(tmp_path, keys=["GOOD", "MISSING"])
-        captured = capsys.readouterr().out
+        out, err = capsys.readouterr()
         assert rc == 1
-        assert "OCR_REBUILD_DONE:1:0:1" in captured
-        assert "MISSING" in captured
+        events = _events(out)
+        terminal = _terminal_event(events)
+        assert terminal["event"] == "result"
+        assert terminal["result"]["ok"] is False
+        assert terminal["result"]["data"] == {"rebuilt": 1, "failed": 0, "skipped": 1}
+        assert "MISSING" in err
 
 
     def test_rebuild_dry_run_no_tokens(self, capsys, monkeypatch, tmp_path):
@@ -367,9 +378,7 @@ class TestOcrRebuildProgressTokens:
 
         assert rc == 0
         captured = capsys.readouterr().out
-        assert "OCR_REBUILD_START" not in captured
-        assert "OCR_REBUILD_PROGRESS" not in captured
-        assert "OCR_REBUILD_DONE" not in captured
+        assert all(not l.startswith('{"schema_version"') for l in captured.splitlines())
         assert "Would rebuild" in captured
 
     def test_rebuild_prefix_uses_ocr_rebuild_not_redo(
@@ -384,11 +393,9 @@ class TestOcrRebuildProgressTokens:
 
         _run_ocr_rebuild(vault, keys=keys)
         captured = capsys.readouterr().out
-
-        assert "OCR_REBUILD_START" in captured
-        assert "OCR_REBUILD_PROGRESS" in captured
-        assert "OCR_REBUILD_DONE" in captured
-        assert "OCR_REDO_START" not in captured
+        events = _events(captured)
+        assert events[0]["operation"] == "ocr.rebuild"
+        assert all(e["operation"] == "ocr.rebuild" for e in events)
 
 class TestCooperativeStop:
     """Cooperative stop tests for batch OCR operations."""
@@ -502,14 +509,14 @@ class TestCooperativeStop:
         rc = _run_ocr_redo(vault, keys=["KEY00001", "KEY00002", "KEY00003"])
 
         assert rc == 130, f"Expected exit code 130 for stopped batch, got {rc}"
-        captured = capsys.readouterr().out
-        lines = [l for l in captured.split("\n") if l.strip()]
-
-        assert lines[0] == "OCR_REDO_START:3"
-        assert "OCR_REDO_PROGRESS:1:3:KEY00001" in captured
-        assert "OCR_REDO_PROGRESS:2:3:KEY00002" not in captured
-        assert "OCR_REDO_DONE" in captured
-        assert "Batch stopped" in captured
+        out, err = capsys.readouterr()
+        events = _events(out)
+        assert events[0]["event"] == "start"
+        assert events[0]["total"] == 3
+        assert [e["item_id"] for e in events if e["event"] == "progress"] == ["KEY00001"]
+        terminal = _terminal_event(events)
+        assert terminal["event"] == "cancelled", "stopped batch must emit cancelled terminal"
+        assert "Batch stopped" in err
 
 
     # On Windows os.kill(pid, SIGINT) does not trigger Python signal
@@ -606,7 +613,9 @@ class TestCooperativeStop:
         assert rc == 0, f"Expected 0 (all done), got {rc}"
         captured = capsys.readouterr().out
         assert "Batch stopped" not in captured
-        assert "OCR_REDO_DONE" in captured
+        terminal = _terminal_event(_events(captured))
+        assert terminal["event"] == "result"
+        assert terminal["result"]["ok"] is True
 
     def test_rebuild_stop_flag_but_all_complete_returns_normal(self, capsys, monkeypatch, tmp_path):
         """Rebuild stop flag after all done: normal exit, no 'stopped'."""
@@ -639,8 +648,10 @@ class TestCooperativeStop:
 
         assert rc == 0, f"Expected 0 (all done), got {rc}"
         captured = capsys.readouterr().out
-        assert "OCR_REBUILD_DONE" in captured
         assert "Batch stopped" not in captured
+        terminal = _terminal_event(_events(captured))
+        assert terminal["event"] == "result"
+        assert terminal["result"]["ok"] is True
 
 class TestOcrListNeedsRebuild:
     """OCR list --json includes needs_derived_rebuild."""

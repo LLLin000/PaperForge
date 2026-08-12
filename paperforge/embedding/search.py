@@ -153,7 +153,8 @@ def enrich_retrieval_hit(conn, *, paper_id: str, source_kind: str, unit_id: str)
 
 
 def merge_retrieve(vault: Path, query: str, limit: int = 5, expand: bool = True, paper_id: str | None = None) -> list[dict]:
-    """Query vec0 tables, enrich with structural coordinates, dedup by unit_id."""
+    """Query vec0 tables, enrich with structural coordinates, dedup by unit_id.
+    #159 §6: results pass the reader gate (vector lineage current only)."""
     provider = OpenAICompatibleProvider(vault)
     q_emb = provider.encode_single(query)
     n = limit * 2 if expand else limit

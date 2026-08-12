@@ -95,8 +95,15 @@ def _memory_build_handler(ctx: ActionContext, request: ActionRequest) -> PFResul
         )
     # #167 P0-3: handlers never hardcode follow-ups — reconcile is the
     # SINGLE producer.  The follow-up chain derives the next layer via
-    # post-publish reconcile(successful_keys).
-    return PFResult(ok=True, command="action run", version=PF_VERSION, data=counts)
+    # post-publish reconcile(successful_keys).  T7 O1: per-key outcomes
+    # flow from the builder; successful_keys drives the reconcile scope.
+    return PFResult(
+        ok=True,
+        command="action run",
+        version=PF_VERSION,
+        data=counts,
+        successful_keys=counts.get("successful_keys"),
+    )
 
 
 def _ocr_run_preflight(ctx: ActionContext, request: ActionRequest) -> PreflightResult:
