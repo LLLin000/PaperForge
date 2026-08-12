@@ -197,12 +197,9 @@ def run(args: argparse.Namespace) -> int:
                     code=ErrorCode.PATH_NOT_FOUND,
                     message="Canonical index not found. Run paperforge sync --rebuild-index.",
                 ),
-                next_actions=[
-                    {
-                        "command": "paperforge sync --rebuild-index",
-                        "reason": "Generate formal-library.json first",
-                    }
-                ],
+                # T9 (#170): no command strings in the action wire — this is
+                # diagnostic data (index generation is not a registry action).
+                data={"diagnostics": ["action.sync_rebuild_index_required"]},
             )
         except ValueError as exc:
             # #164/T3: unknown paper keys = invalid scope, exit 2.

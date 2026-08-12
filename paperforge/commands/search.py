@@ -107,14 +107,12 @@ def run(args: argparse.Namespace) -> int:
                     "recommended_fallback": plan.get("fallback"),
                 }
             if plan.get("primary", {}).get("command") != "search":
-                next_actions.append(
-                    {
-                        "command": f"paperforge {plan['primary']['command']}",
-                        "reason": "The planning layer recommends a different first command for this query.",
-                    }
+                # T9 (#170): diagnostic, never a command-string action wire.
+                data["query_diagnostic"]["recommended_command_id"] = (
+                    plan.get("primary", {}).get("command")
                 )
         result = PFResult(
-            ok=True, command="search", version=PF_VERSION, data=data, warnings=warnings, next_actions=next_actions
+            ok=True, command="search", version=PF_VERSION, data=data, warnings=warnings
         )
     except Exception as exc:
         result = PFResult(
