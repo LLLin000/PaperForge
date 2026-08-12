@@ -637,3 +637,40 @@ do_ocr: true
 
     rc = ocr_worker.run_ocr(vault, verbose=False, no_progress=True, selected_keys={"BLOCK001"})
     assert rc == 1, f"blocked-only run must exit non-zero, got {rc}"
+
+
+class TestOcrRunNdjson174:
+    """#174 RC: whole-queue `ocr run` speaks #137 NDJSON — the TS
+    OcrProcessController parses the stream with a fail-closed parser, so a
+    successful run MUST carry start + exactly-one terminal (a bare exit
+    code used to look like 'EOF without terminal event')."""
+
+    def test_run_emits_start_and_terminal(self, tmp_path: Path) -> None:
+        import io as _io
+        import contextlib as _cl
+        import json as _json
+        import os as _os
+        import subprocess as _sp
+        import sys as _sys
+
+        env = dict(_os.environ)
+        env["PYTHONPATH"] = _os.path.abspath(".")
+        _sp.run(
+            [_sys.executable, "-m", "paperforge", "--vault", str(tmp_path), "setup", "--json", "--skip-checks"],
+            capture_output=True, text=True, timeout=300, env=env,
+        )
+        r = _sp.run(
+            [_sys.executable, "-m", "paperforge", "--vault", str(tmp_path), "ocr", "run"],
+            capture_output=True, text=True, timeout=180, env=env,
+        )
+        events = [
+            _json.loads(l)
+            for l in r.stdout.splitlines()
+            if l.strip() and l.strip().startswith("{")
+        ]
+        assert events, "ocr run produced no NDJSON"
+        assert events[0]["event"] == "start"
+        assert events[0]["operation"] == "ocr.run"
+        assert events[-1]["event"] in ("result", "error", "cancelled")
+        names = [e["event"] for e in events]
+        assert names.count("result") + names.count("error") + names.count("cancelled") == 1

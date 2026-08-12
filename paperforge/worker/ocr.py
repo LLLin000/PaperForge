@@ -2514,8 +2514,16 @@ def ocr_redo_papers(vault: Path, dry_run: bool = False, verbose: bool = False, n
 
 
 def run_ocr(
-    vault: Path, verbose: bool = False, no_progress: bool = False, selected_keys: set[str] | None = None
+    vault: Path,
+    verbose: bool = False,
+    no_progress: bool = False,
+    selected_keys: set[str] | None = None,
+    stop_check: Callable[[], bool] | None = None,
+    progress_callback: Callable[[str], None] | None = None,
 ) -> int:
+    """#174 RC: cooperative stop at paper boundaries + per-paper progress —
+    the #137 NDJSON stream (ocr.run) needs both.  Returns 130 when stopped."""
+    _stopped = False
     from paperforge.pdf_resolver import resolve_pdf_path
 
     paths = pipeline_paths(vault)
@@ -2637,6 +2645,9 @@ def run_ocr(
         return resp
 
     for queue_row in progress_bar(ocr_queue, desc="Processing OCR", disable=no_progress):
+        if stop_check is not None and stop_check():
+            _stopped = True
+            break
         key = queue_row["zotero_key"]
         meta = ensure_ocr_meta(vault, queue_row)
         status = str(meta.get("ocr_status", "pending") or "pending").strip().lower()
@@ -2769,6 +2780,8 @@ def run_ocr(
                 active_submitted = max(0, active_submitted - 1)
             write_json(paths["ocr"] / key / "meta.json", meta)
             changed += 1
+            if progress_callback is not None:
+                progress_callback(key)
 
     # Upload pending items in batches until none remain (processes all do_ocr items, not just max_items)
     def _do_upload(token_val: str, pdf_path: Path) -> requests.Response:
@@ -2792,6 +2805,9 @@ def run_ocr(
     _failed_count = 0
     _token_warned = False
     for _cycle in range(max_poll_cycles):
+        if stop_check is not None and stop_check():
+            _stopped = True
+            break
         remaining = [r for r in ocr_queue if r.get("queue_status", "") not in OCR_SETTLED_STATUSES]
         if not remaining:
             break
@@ -2981,6 +2997,8 @@ def run_ocr(
                     queue_row["queue_status"] = meta["ocr_status"]
             write_json(paths["ocr"] / key / "meta.json", meta)
             changed += 1
+            if progress_callback is not None:
+                progress_callback(key)
         if any(r.get("queue_status") in ("queued", "running") for r in ocr_queue):
             _time.sleep(poll_interval)
     # Collect completed OCR keys for incremental index refresh (before filtering)
@@ -3030,4 +3048,6 @@ def run_ocr(
     print(f"ocr: updated {changed} records")
     # Fail closed: blocked (e.g. invalid/missing API token) and error items
     # are NOT a successful run — the frontend shows "OCR complete" on rc 0.
+    if _stopped:
+        return 130
     return 1 if (pending_keys or failed_count) else 0
