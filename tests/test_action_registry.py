@@ -561,6 +561,18 @@ class TestFoundationRepairPolicy174:
         assert data["cost"] == "remote_possible"
         assert data["impact"] == "mutating"
 
+    def test_foundation_update_unavailable_without_pointer(self, tmp_path: Path, monkeypatch) -> None:
+        """#174 pass-2: update is post-bootstrap — no pointer → unavailable,
+        symmetric with repair."""
+        monkeypatch.setattr(
+            "paperforge.runtime_pointer.read_pointer", lambda: None
+        )
+        rc, payload = _run_cli(
+            "--vault", str(tmp_path), "action", "run", "foundation.update", "--json"
+        )
+        assert rc == 1
+        assert payload["data"]["availability_reason_code"] == "pointer.missing"
+
     def test_foundation_repair_unavailable_without_pointer(self, tmp_path: Path, monkeypatch) -> None:
         """Preflight fails closed: no published pointer → the handler cannot
         succeed → unavailable (not a green light for a doomed run)."""
