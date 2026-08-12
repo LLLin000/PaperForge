@@ -425,6 +425,84 @@ def _embed_resume_handler(ctx: ActionContext, request: ActionRequest) -> PFResul
 
 # ── the registry ───────────────────────────────────────────────────────────
 
+def _foundation_update_handler(ctx: ActionContext, request: ActionRequest) -> PFResult:
+    """foundation.update: refresh the installed PaperForge distribution
+    (#174).  Zero arbitrary args — vault comes from the action context."""
+    from paperforge import __version__ as PF_VERSION
+    from paperforge.core.errors import ErrorCode
+    from paperforge.core.result import PFError
+    from paperforge.worker.update import run_update
+
+    rc = run_update(ctx.vault)
+    if rc == 0:
+        return PFResult(
+            ok=True,
+            command="action run",
+            version=PF_VERSION,
+            data={"updated": True},
+        )
+    return PFResult(
+        ok=False,
+        command="action run",
+        version=PF_VERSION,
+        data={"updated": False},
+        error=PFError(
+            code=ErrorCode.INTERNAL_ERROR,
+            message="paperforge update failed",
+        ),
+    )
+
+
+def _foundation_update_preflight(ctx: ActionContext, request: ActionRequest) -> PreflightResult:
+    return PreflightResult(
+        availability="available",
+        availability_reason_code="ok",
+        availability_reason="Update is available on demand",
+    )
+
+
+def _foundation_repair_handler(ctx: ActionContext, request: ActionRequest) -> PFResult:
+    """foundation.repair: detect (and report) literature pipeline
+    divergences over the canonical paths (#174).  Zero arbitrary args."""
+    from paperforge import __version__ as PF_VERSION
+    from paperforge.core.errors import ErrorCode
+    from paperforge.core.result import PFError
+    from paperforge.worker.repair import run_repair
+
+    result = run_repair(ctx.vault, ctx.paths)
+    divergent = result.get("divergent", [])
+    path_errors = result.get("path_errors", {})
+    has_issues = len(divergent) > 0 or path_errors.get("total", 0) > 0
+    return PFResult(
+        ok=not has_issues,
+        command="action run",
+        version=PF_VERSION,
+        data={
+            "scanned": result.get("scanned", 0),
+            "divergent": divergent,
+            "fixed": result.get("fixed", 0),
+            "errors": result.get("errors", []),
+            "path_errors": path_errors,
+        },
+        error=(
+            PFError(
+                code=ErrorCode.VALIDATION_ERROR,
+                message=f"Repair found {len(divergent)} divergences and {path_errors.get('total', 0)} path errors",
+            )
+            if has_issues
+            else None
+        ),
+    )
+
+
+def _foundation_repair_preflight(ctx: ActionContext, request: ActionRequest) -> PreflightResult:
+    return PreflightResult(
+        availability="available",
+        availability_reason_code="ok",
+        availability_reason="Repair is safe to run",
+    )
+
+
 def validate_registry(registry: Mapping[str, ActionSpec] | None = None) -> list[str]:
     """Registry invariant audit; empty list = valid."""
     problems: list[str] = []
@@ -463,6 +541,32 @@ def validate_registry(registry: Mapping[str, ActionSpec] | None = None) -> list[
 
 
 _SPECS: tuple[ActionSpec, ...] = (
+    ActionSpec(
+        action_id="foundation.update",
+        label_code="action.foundation.update",
+        description_code="action.foundation.update.description",
+        handler=_foundation_update_handler,
+        preflight=_foundation_update_preflight,
+        scope_kinds=("all",),
+        cost="remote_possible",
+        impact="mutating",
+        confirmation="required",
+        automatic=False,
+        interruptible=True,
+    ),
+    ActionSpec(
+        action_id="foundation.repair",
+        label_code="action.foundation.repair",
+        description_code="action.foundation.repair.description",
+        handler=_foundation_repair_handler,
+        preflight=_foundation_repair_preflight,
+        scope_kinds=("all",),
+        cost="local",
+        impact="read_only",
+        confirmation="none",
+        automatic=True,
+        interruptible=True,
+    ),
     ActionSpec(
         action_id="memory.build",
         label_code="action.memory.build",
