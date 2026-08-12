@@ -285,17 +285,147 @@ describe("RuntimeBootstrap", () => {
   });
 
   // ── handshake ──
-  describe("handshake()", () => {
-    it("ok when fresh version matches", async () => {
+  describe("handshake() (#143 two mandatory probes, fail-closed)", () => {
+    const VAULT = "/test/vault";
+
+    /** execFile that replies with a probe version first, then an
+     * installation-probe envelope (or fails / malformed). */
+    function makeExec(
+      probeVersion: string,
+      installOutcome:
+        | { kind: "envelope"; code: string }
+        | { kind: "exec-fail" }
+        | { kind: "malformed" }
+    ): MockExecFile {
+      const fn = vi.fn<(...args: unknown[]) => void>();
+      fn.mockImplementation(
+        (
+          _cmd: unknown,
+          args: unknown,
+          _opts: unknown,
+          cb: (err: Error | null, stdout: string, stderr: string) => void
+        ) => {
+          const a = args as readonly string[];
+          if (a[0] === "-I") {
+            cb(null, probeVersion, "");
+            return;
+          }
+          if (installOutcome.kind === "exec-fail") {
+            cb(new Error("probe failed"), "", "boom");
+            return;
+          }
+          if (installOutcome.kind === "malformed") {
+            cb(null, "{not json", "");
+            return;
+          }
+          cb(
+            null,
+            JSON.stringify({ reason: { code: installOutcome.code } }),
+            ""
+          );
+        }
+      );
+      return fn;
+    }
+
+    it("ok on version match + installation.ready", async () => {
       const fsMock = createMockFs();
       fsMock.existsSync.mockReturnValue(true);
       const rt = makeBootstrap({
         fs: fsMock,
-        execFile: createMockExecFile("1.3.0"),
+        execFile: makeExec("1.3.0", {
+          kind: "envelope",
+          code: "installation.ready",
+        }),
       });
-      const hs = await rt.handshake("1.3.0", { pythonPath: pythonPathFor() });
+      const hs = await rt.handshake("1.3.0", {
+        pythonPath: pythonPathFor(),
+        vaultPath: VAULT,
+      });
       expect(hs.ok).toBe(true);
-      expect(hs.observedVersion).toBe("1.3.0");
+    });
+
+    it("ok on version match + installation.config_missing (pre-setup exception)", async () => {
+      const fsMock = createMockFs();
+      fsMock.existsSync.mockReturnValue(true);
+      const rt = makeBootstrap({
+        fs: fsMock,
+        execFile: makeExec("1.3.0", {
+          kind: "envelope",
+          code: "installation.config_missing",
+        }),
+      });
+      const hs = await rt.handshake("1.3.0", {
+        pythonPath: pythonPathFor(),
+        vaultPath: VAULT,
+      });
+      expect(hs.ok).toBe(true);
+    });
+
+    it("fails on version match + installation.version_mismatch", async () => {
+      const fsMock = createMockFs();
+      fsMock.existsSync.mockReturnValue(true);
+      const rt = makeBootstrap({
+        fs: fsMock,
+        execFile: makeExec("1.3.0", {
+          kind: "envelope",
+          code: "installation.version_mismatch",
+        }),
+      });
+      const hs = await rt.handshake("1.3.0", {
+        pythonPath: pythonPathFor(),
+        vaultPath: VAULT,
+      });
+      expect(hs.ok).toBe(false);
+      expect(hs.reason).toContain("version mismatch");
+    });
+
+    it("fails closed on probe exec failure", async () => {
+      const fsMock = createMockFs();
+      fsMock.existsSync.mockReturnValue(true);
+      const rt = makeBootstrap({
+        fs: fsMock,
+        execFile: makeExec("1.3.0", { kind: "exec-fail" }),
+      });
+      const hs = await rt.handshake("1.3.0", {
+        pythonPath: pythonPathFor(),
+        vaultPath: VAULT,
+      });
+      expect(hs.ok).toBe(false);
+      expect(hs.reason).toContain("probe failed");
+    });
+
+    it("fails closed on malformed envelope", async () => {
+      const fsMock = createMockFs();
+      fsMock.existsSync.mockReturnValue(true);
+      const rt = makeBootstrap({
+        fs: fsMock,
+        execFile: makeExec("1.3.0", { kind: "malformed" }),
+      });
+      const hs = await rt.handshake("1.3.0", {
+        pythonPath: pythonPathFor(),
+        vaultPath: VAULT,
+      });
+      expect(hs.ok).toBe(false);
+      expect(hs.reason).toContain("unparseable");
+    });
+
+    it("fails on an unexpected probe state", async () => {
+      const fsMock = createMockFs();
+      fsMock.existsSync.mockReturnValue(true);
+      const rt = makeBootstrap({
+        fs: fsMock,
+        execFile: makeExec("1.3.0", {
+          kind: "envelope",
+          code: "installation.weird",
+        }),
+      });
+      const hs = await rt.handshake("1.3.0", {
+        pythonPath: pythonPathFor(),
+        vaultPath: VAULT,
+      });
+      expect(hs.ok).toBe(false);
+      expect(hs.reason).toContain("unexpected installation probe state");
     });
 
     it("fails when fresh version differs", async () => {
@@ -303,9 +433,15 @@ describe("RuntimeBootstrap", () => {
       fsMock.existsSync.mockReturnValue(true);
       const rt = makeBootstrap({
         fs: fsMock,
-        execFile: createMockExecFile("1.2.0"),
+        execFile: makeExec("1.2.0", {
+          kind: "envelope",
+          code: "installation.ready",
+        }),
       });
-      const hs = await rt.handshake("1.3.0", { pythonPath: pythonPathFor() });
+      const hs = await rt.handshake("1.3.0", {
+        pythonPath: pythonPathFor(),
+        vaultPath: VAULT,
+      });
       expect(hs.ok).toBe(false);
       expect(hs.reason).toContain("version mismatch");
     });
@@ -314,7 +450,10 @@ describe("RuntimeBootstrap", () => {
       const fsMock = createMockFs();
       fsMock.existsSync.mockReturnValue(false);
       const rt = makeBootstrap({ fs: fsMock });
-      const hs = await rt.handshake("1.3.0", { pythonPath: pythonPathFor() });
+      const hs = await rt.handshake("1.3.0", {
+        pythonPath: pythonPathFor(),
+        vaultPath: VAULT,
+      });
       expect(hs.ok).toBe(false);
       expect(hs.reason).toBe("interpreter missing");
     });

@@ -508,10 +508,18 @@ def _foundation_repair_handler(ctx: ActionContext, request: ActionRequest) -> PF
 
 
 def _foundation_repair_preflight(ctx: ActionContext, request: ActionRequest) -> PreflightResult:
+    from paperforge.runtime_pointer import read_pointer
+
+    if read_pointer() is None:
+        return PreflightResult(
+            availability="unavailable",
+            availability_reason_code="pointer.missing",
+            availability_reason="No runtime pointer published — run bootstrap install + paperforge setup",
+        )
     return PreflightResult(
         availability="available",
         availability_reason_code="ok",
-        availability_reason="Runtime repair is safe to run",
+        availability_reason="Runtime repair can verify and re-publish the pointer",
     )
 
 
@@ -573,10 +581,10 @@ _SPECS: tuple[ActionSpec, ...] = (
         handler=_foundation_repair_handler,
         preflight=_foundation_repair_preflight,
         scope_kinds=("all",),
-        cost="local",
-        impact="read_only",
-        confirmation="none",
-        automatic=True,
+        cost="remote_possible",
+        impact="mutating",
+        confirmation="required",
+        automatic=False,
         interruptible=True,
     ),
     ActionSpec(

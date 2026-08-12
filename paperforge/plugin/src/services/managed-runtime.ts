@@ -380,24 +380,27 @@ export class RuntimeBootstrap {
   // ── 4. Handshake ──
 
   /**
-   * Handshake after installOnce (#143 §7): TWO checks —
+   * Handshake after installOnce (#143 §7): TWO mandatory checks —
    *   1. the fresh interpreter reports the expected version, AND
    *   2. Python's OWN installation probe (`paperforge probe installation
-   *      --json`) runs and does NOT report a version mismatch (the probe is
-   *      the authoritative version check in a fresh process).
-   * Config-missing/corrupt states are legitimate BEFORE `paperforge setup`
-   * and are resolved by that later step; a version mismatch is not.
-   * No runtime is usable until the caller's setup publishes the pointer.
+   *      --json`) in a fresh process returns a KNOWN state.
+   * Fail-closed: version mismatch, probe process failure, malformed JSON,
+   * or an unexpected reason all FAIL the handshake.  Explicit pre-setup
+   * exceptions that PASS: installation.ready, installation.config_missing
+   * and installation.config_corrupt (the later `paperforge setup` step
+   * resolves config states; a version mismatch is not a pre-setup state).
+   * vaultPath is REQUIRED — a handshake without the capability probe is
+   * not a handshake.
    */
   async handshake(
     expectedVersion: string,
-    opts?: {
+    opts: {
       pythonPath?: string;
       signal?: AbortSignal;
-      vaultPath?: string;
+      vaultPath: string;
     }
   ): Promise<{ ok: boolean; observedVersion: string | null; reason?: string }> {
-    const pythonPath = opts?.pythonPath ?? this.pythonExeFor(this.venvDir);
+    const pythonPath = opts.pythonPath ?? this.pythonExeFor(this.venvDir);
     if (!this._fs.existsSync(pythonPath)) {
       return {
         ok: false,
@@ -406,7 +409,7 @@ export class RuntimeBootstrap {
       };
     }
     try {
-      const observed = await this._probeVersion(pythonPath, opts?.signal);
+      const observed = await this._probeVersion(pythonPath, opts.signal);
       if (observed !== expectedVersion) {
         return {
           ok: false,
@@ -414,21 +417,39 @@ export class RuntimeBootstrap {
           reason: `version mismatch: observed ${observed!} != expected ${expectedVersion}`,
         };
       }
-      // Check 2: Python's installation probe (fresh process, authoritative).
-      if (opts?.vaultPath) {
-        const probe = await this._probeInstallation(
-          pythonPath,
-          opts.vaultPath,
-          expectedVersion,
-          opts.signal
-        );
-        if (probe && probe === "installation.version_mismatch") {
-          return {
-            ok: false,
-            observedVersion: observed,
-            reason: "installation probe reports version mismatch",
-          };
-        }
+      // Check 2 (mandatory): Python's installation probe in a fresh
+      // process.  Null (probe failure / malformed JSON) FAILS closed.
+      const probe = await this._probeInstallation(
+        pythonPath,
+        opts.vaultPath,
+        expectedVersion,
+        opts.signal
+      );
+      if (probe === null) {
+        return {
+          ok: false,
+          observedVersion: observed,
+          reason:
+            "installation probe failed or returned an unparseable envelope",
+        };
+      }
+      if (probe === "installation.version_mismatch") {
+        return {
+          ok: false,
+          observedVersion: observed,
+          reason: "installation probe reports version mismatch",
+        };
+      }
+      if (
+        probe !== "installation.ready" &&
+        probe !== "installation.config_missing" &&
+        probe !== "installation.config_corrupt"
+      ) {
+        return {
+          ok: false,
+          observedVersion: observed,
+          reason: `unexpected installation probe state: ${probe}`,
+        };
       }
     } catch (err) {
       return {
