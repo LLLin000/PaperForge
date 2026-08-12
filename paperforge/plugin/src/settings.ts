@@ -428,9 +428,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     void this.plugin.saveSettings().then(() => this.display());
   }
 
-  private _runSetupPython(args: string[]): Promise<void> {
+  private _runSetupPython(
+    args: string[],
+    pythonOverride?: string
+  ): Promise<void> {
     const child = spawn(
-      this.plugin.settings.python_path?.trim() || "python",
+      pythonOverride?.trim() ||
+        this.plugin.settings.python_path?.trim() ||
+        "python",
       args,
       {
         cwd: this._getVaultBasePath(),
@@ -3792,6 +3797,42 @@ export class PaperForgeSettingTab extends PluginSettingTab {
               this._updateCapabilityEnvelope(mod, syncEnvelope);
               this._ensureManagedRuntime()
                 .ensure({ version: this.plugin.manifest.version })
+                .then((health) => {
+                  // #174: the plugin installs the runtime but NEVER writes
+                  // the pointer — after ensure, `paperforge setup` (Python,
+                  // the only writer) publishes pointer.json.  Run it with
+                  // the freshly-installed interpreter, not the stale
+                  // settings.python_path.
+                  const vaultPath = this._getVaultBasePath();
+                  const s = this.plugin.settings;
+                  const setupArgs = [
+                    "-m",
+                    "paperforge",
+                    "--vault",
+                    vaultPath,
+                    "setup",
+                    "--modular",
+                    "--system-dir",
+                    s.system_dir?.trim() || "System",
+                    "--resources-dir",
+                    s.resources_dir?.trim() || "Resources",
+                    "--literature-dir",
+                    s.literature_dir?.trim() || "Literature",
+                    "--base-dir",
+                    s.base_dir?.trim() || "Bases",
+                    "--agent",
+                    s.agent_platform || "opencode",
+                  ];
+                  return this._runSetupPython(
+                    setupArgs,
+                    health.pythonPath ?? undefined
+                  ).catch((e) => {
+                    console.error(
+                      "PaperForge: post-install setup (pointer publication) failed",
+                      e
+                    );
+                  });
+                })
                 .then(() => {
                   this._refreshAllReadModels();
                 })

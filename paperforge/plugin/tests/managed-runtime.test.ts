@@ -31,15 +31,8 @@ import type {
 } from "../src/services/managed-runtime";
 
 // ── OS-independent path constants ──
-const RUNTIME_DIR = path.join(
-  "home",
-  "user",
-  ".paperforge",
-  "runtime",
-  "windows-x64"
-);
-const RUNTIME_PARENT = path.dirname(RUNTIME_DIR);
-const POINTER_PATH = path.join(RUNTIME_PARENT, "active-runtime.json");
+const RUNTIME_DIR = path.join("home", "user", ".paperforge", "runtime");
+const POINTER_PATH = path.join(RUNTIME_DIR, "pointer.json");
 const PLUGIN_VER = "1.3.0";
 
 // ── Mock helper types (not exported, only used in tests) ──
@@ -49,16 +42,6 @@ interface MockFs extends FsOps {
   readFileSync: ReturnType<
     typeof vi.fn<(p: string, encoding?: string | null) => string>
   >;
-  writeFileSync: ReturnType<
-    typeof vi.fn<
-      (
-        p: string,
-        data: string | NodeJS.ArrayBufferView,
-        encoding?: string | null
-      ) => void
-    >
-  >;
-  renameSync: ReturnType<typeof vi.fn<(oldP: string, newP: string) => void>>;
   mkdirSync: ReturnType<
     typeof vi.fn<
       (p: string, opts?: { recursive?: boolean }) => string | undefined
@@ -69,9 +52,6 @@ interface MockFs extends FsOps {
       (p: string, opts?: { recursive?: boolean; force?: boolean }) => void
     >
   >;
-  readdirSync: ReturnType<
-    typeof vi.fn<(p: string, opts?: { withFileTypes?: boolean }) => Dirent[]>
-  >;
 }
 
 /** Create a mock FsOps with full mock-control access. */
@@ -79,15 +59,6 @@ function createMockFs(): MockFs {
   return {
     existsSync: vi.fn<(p: string) => boolean>(),
     readFileSync: vi.fn<(p: string, encoding?: string | null) => string>(),
-    writeFileSync:
-      vi.fn<
-        (
-          p: string,
-          data: string | NodeJS.ArrayBufferView,
-          encoding?: string | null
-        ) => void
-      >(),
-    renameSync: vi.fn<(oldP: string, newP: string) => void>(),
     mkdirSync:
       vi.fn<
         (p: string, opts?: { recursive?: boolean }) => string | undefined
@@ -96,8 +67,6 @@ function createMockFs(): MockFs {
       vi.fn<
         (p: string, opts?: { recursive?: boolean; force?: boolean }) => void
       >(),
-    readdirSync:
-      vi.fn<(p: string, opts?: { withFileTypes?: boolean }) => Dirent[]>(),
   };
 }
 
@@ -172,22 +141,18 @@ function mkDirent(name: string, isDir = true): Dirent {
   } as unknown as Dirent;
 }
 
-/** Build a canonical relative pythonPath from version (forward-slash for JSON). */
-function relPythonPath(version: string): string {
-  return path
-    .join("windows-x64", `v${version}`, "venv", "Scripts", "python.exe")
-    .replace(/\\/g, "/");
+/** Canonical single-venv python path (absolute, schema v1). */
+function pythonPathFor(version: string): string {
+  return path.join(RUNTIME_DIR, "venv", "Scripts", "python.exe");
 }
 
-/** Default active-runtime.json content. pythonPath is relative to pointer parent dir. */
+/** Default pointer.json content (#174 schema v1, published by Python). */
 function defaultPointer(version = "1.3.0"): string {
   return JSON.stringify({
     schema_version: 1,
-    version,
-    pythonPath: relPythonPath(version),
-    activatedAt: "2026-07-15T00:00:00Z",
-    previousVersion: null,
-    previousPythonPath: null,
+    python_path: pythonPathFor(version),
+    environment_root: path.join(RUNTIME_DIR, "venv"),
+    paperforge_version: version,
   });
 }
 
@@ -362,7 +327,7 @@ describe("ManagedRuntime", () => {
       const fs = createMockFs();
       setupDefaultMockFs(fs, "1.3.0");
       // Override — python exe doesn't exist
-      const resolvedPy = path.resolve(RUNTIME_PARENT, relPythonPath("1.3.0"));
+      const resolvedPy = path.resolve(pythonPathFor("1.3.0"));
       fs.existsSync.mockImplementation((p: string) => {
         if (normalisePath(p) === normalisePath(resolvedPy)) return false;
         return true;
@@ -444,18 +409,19 @@ describe("ManagedRuntime", () => {
 
   // ── ensure(): build, verify, activate ──
   describe("ensure()", () => {
-    it("builds a new immutable slot, verifies, and atomically activates", async () => {
+    it("creates ONE venv, ONE pinned install, verifies, and does NOT write the pointer", async () => {
       const fs = createMockFs();
       fs.existsSync.mockReturnValue(true);
       fs.readFileSync.mockReturnValue(""); // no existing pointer
 
+      const execFile = createMockExecFile("1.3.0");
       const rt = new ManagedRuntime({
         runtimeDir: RUNTIME_DIR,
         pluginVersion: "1.3.0",
         osPlatform: "win32",
         osArch: "x64",
         fs: fs as unknown as FsOps,
-        execFile: createMockExecFile("1.3.0") as unknown as ExecFileFn,
+        execFile: execFile as unknown as ExecFileFn,
         execFileSync: createMockExecFileSync(
           "3.11.0"
         ) as unknown as ExecFileSyncFn,
@@ -467,15 +433,20 @@ describe("ManagedRuntime", () => {
       expect(h.source).toBe("venv");
       expect(h.error).toBeNull();
 
-      expect(fs.mkdirSync).toHaveBeenCalled();
-      expect(fs.renameSync).toHaveBeenCalled();
-      const writeCalls = fs.writeFileSync.mock.calls;
-      expect(writeCalls.length).toBeGreaterThanOrEqual(1);
-      const lastWrite = writeCalls[writeCalls.length - 1][0] as string;
-      expect(lastWrite).toContain(".tmp");
+      // #174: the plugin never writes the pointer — Python publishes it.
+      expect(fs.mkdirSync).toHaveBeenCalledWith(
+        expect.stringContaining("venv"),
+        expect.anything()
+      );
+      // venv + pip install + verify = 3 execFile calls
+      const cmds = execFile.mock.calls.map((c) => c[0] as string);
+      expect(cmds.length).toBe(3);
+      expect(cmds[1]).toContain("python.exe");
+      const pipArgs = execFile.mock.calls[1][1] as string[];
+      expect(pipArgs.join(" ")).toContain("paperforge[vector]==1.3.0");
     });
 
-    it("cancellation preserves old pointer and returns needs_repair", async () => {
+    it("cancellation returns needs_repair", async () => {
       const ac = new AbortController();
       ac.abort();
 
@@ -499,7 +470,7 @@ describe("ManagedRuntime", () => {
       expect(h.error?.code).toBe("ABORTED");
     });
 
-    it("forces rebuild with disambiguated slot name", async () => {
+    it("forces a reinstall into the SAME single venv", async () => {
       const fs = createMockFs();
       fs.existsSync.mockReturnValue(true);
       fs.readFileSync.mockImplementation((p: string) => {
@@ -524,7 +495,7 @@ describe("ManagedRuntime", () => {
       expect(h.state).toBe("ready");
     });
 
-    it("slot creation failure cleans up and returns needs_repair", async () => {
+    it("venv creation failure cleans up and returns needs_repair", async () => {
       const fs = createMockFs();
       fs.existsSync.mockReturnValue(true);
       fs.readFileSync.mockImplementation((p: string) => {
@@ -532,7 +503,6 @@ describe("ManagedRuntime", () => {
           return defaultPointer();
         return "";
       });
-      fs.readdirSync.mockReturnValue([mkDirent("v1.3.0")]);
 
       const execFile = vi.fn<(...args: unknown[]) => void>();
       execFile.mockImplementation(
@@ -568,7 +538,6 @@ describe("ManagedRuntime", () => {
       const fs = createMockFs();
       fs.existsSync.mockReturnValue(true);
       fs.readFileSync.mockReturnValue("");
-      fs.readdirSync.mockReturnValue([]);
 
       const callLog: Array<{ cmd: string; args: readonly string[] }> = [];
       const execFile = vi.fn<(...args: unknown[]) => void>();
@@ -609,402 +578,6 @@ describe("ManagedRuntime", () => {
       expect(fs.rmSync).toHaveBeenCalled();
     });
 
-    it("rollback: writes pointer with previousVersion/previousPythonPath tracking", async () => {
-      const fs = createMockFs();
-      fs.readFileSync.mockImplementation((p: string) => {
-        if (normalisePath(p) === normalisePath(POINTER_PATH)) {
-          return JSON.stringify({
-            schema_version: 1,
-            version: "1.4.0",
-            pythonPath: relPythonPath("1.4.0"),
-            activatedAt: "2026-07-15T01:00:00Z",
-            previousVersion: "1.3.0",
-            previousPythonPath: relPythonPath("1.3.0"),
-          });
-        }
-        return "";
-      });
-      fs.existsSync.mockReturnValue(true);
-      fs.readdirSync.mockReturnValue([mkDirent("v1.3.0"), mkDirent("v1.4.0")]);
-
-      let writtenPointer = "";
-      fs.writeFileSync = vi.fn<
-        (
-          p: string,
-          data: string | NodeJS.ArrayBufferView,
-          encoding?: string | null
-        ) => void
-      >((p: string, data: string | NodeJS.ArrayBufferView) => {
-        if (typeof p === "string" && p.endsWith(".tmp")) {
-          writtenPointer = typeof data === "string" ? data : String(data);
-        }
-      });
-
-      const execFile = vi.fn<(...args: unknown[]) => void>();
-      execFile.mockImplementation(
-        (
-          cmd: unknown,
-          args: unknown,
-          _opts: unknown,
-          cb: (err: Error | null, stdout: string, stderr: string) => void
-        ) => {
-          const a = args as readonly string[];
-          // venv + pip succeed
-          if (a[0] === "-m") {
-            cb(null, "", "");
-          } else if (a[0] === "-I") {
-            cb(null, "1.3.0", "");
-          } else {
-            cb(null, "", "");
-          }
-        }
-      );
-
-      const rt = new ManagedRuntime({
-        runtimeDir: RUNTIME_DIR,
-        pluginVersion: "1.3.0",
-        osPlatform: "win32",
-        osArch: "x64",
-        fs: fs as unknown as FsOps,
-        execFile: execFile as unknown as ExecFileFn,
-        execFileSync: createMockExecFileSync(
-          "3.11.0"
-        ) as unknown as ExecFileSyncFn,
-      });
-
-      const h = await rt.ensure({ version: "1.3.0" });
-      expect(h.state).toBe("ready");
-      expect(h.version).toBe("1.3.0");
-
-      const ptr = JSON.parse(writtenPointer);
-      expect(ptr.previousVersion).toBe("1.4.0");
-      expect(ptr.previousPythonPath).toBeTruthy();
-      expect(ptr.version).toBe("1.3.0");
-    });
-
-    it("RED Gap 1: rollback verifies retained immutable slot without creating venv or running pip", async () => {
-      const fs = createMockFs();
-      // Existing pointer: v1.4.0 is current active
-      fs.readFileSync.mockImplementation((p: string) => {
-        if (normalisePath(p) === normalisePath(POINTER_PATH)) {
-          return JSON.stringify({
-            schema_version: 1,
-            version: "1.4.0",
-            pythonPath: relPythonPath("1.4.0"),
-            activatedAt: "2026-07-15T01:00:00Z",
-            previousVersion: "1.3.0",
-            previousPythonPath: relPythonPath("1.3.0"),
-          });
-        }
-        return "";
-      });
-      // Slot for v1.3.0 exists (retained)
-      fs.existsSync.mockImplementation((p: string) => {
-        if (
-          typeof p === "string" &&
-          p.includes("v1.3.0") &&
-          !p.includes("v1.4.0")
-        )
-          return true;
-        return true;
-      });
-      fs.readdirSync.mockReturnValue([mkDirent("v1.3.0"), mkDirent("v1.4.0")]);
-
-      // Track execFile calls to assert no venv/pip
-      const execCalls: Array<{ cmd: string; args: readonly string[] }> = [];
-      const execFile = vi.fn<(...args: unknown[]) => void>();
-      execFile.mockImplementation(
-        (
-          cmd: unknown,
-          args: unknown,
-          _opts: unknown,
-          cb: (err: Error | null, stdout: string, stderr: string) => void
-        ) => {
-          const a = args as readonly string[];
-          execCalls.push({ cmd: cmd as string, args: a });
-          // Only the import probe should succeed
-          if (a[0] === "-I") {
-            cb(null, "1.3.0", "");
-          } else {
-            cb(new Error("unexpected call"), "", "unexpected");
-          }
-        }
-      );
-
-      let writtenContent = "";
-      fs.writeFileSync = vi.fn<
-        (p: string, data: string | NodeJS.ArrayBufferView) => void
-      >((p: string, data: string | NodeJS.ArrayBufferView) => {
-        if (typeof p === "string" && p.endsWith(".tmp")) {
-          writtenContent = typeof data === "string" ? data : String(data);
-        }
-      });
-
-      const rt = new ManagedRuntime({
-        runtimeDir: RUNTIME_DIR,
-        pluginVersion: "1.4.0",
-        osPlatform: "win32",
-        osArch: "x64",
-        fs: fs as unknown as FsOps,
-        execFile: execFile as unknown as ExecFileFn,
-        execFileSync: createMockExecFileSync(
-          "3.11.0"
-        ) as unknown as ExecFileSyncFn,
-      });
-
-      const h = await rt.ensure({ version: "1.3.0" });
-      expect(h.state).toBe("ready");
-      expect(h.version).toBe("1.3.0");
-
-      // Assert: NO venv creation (no "-m venv" call)
-      const venvCalls = execCalls.filter(
-        (c) => c.args[0] === "-m" && c.args[1] === "venv"
-      );
-      expect(venvCalls).toHaveLength(0);
-
-      // Assert: NO pip install (no "-m pip" call)
-      const pipCalls = execCalls.filter(
-        (c) => c.args[0] === "-m" && c.args[1] === "pip"
-      );
-      expect(pipCalls).toHaveLength(0);
-
-      // Assert: retained slot was verified via import probe
-      const probeCalls = execCalls.filter((c) => c.args[0] === "-I");
-      expect(probeCalls.length).toBeGreaterThanOrEqual(1);
-
-      // Assert: pointer atomically rewritten (tmp write + rename)
-      expect(writtenContent).toBeTruthy();
-      const ptr = JSON.parse(writtenContent);
-      expect(ptr.version).toBe("1.3.0");
-      expect(ptr.previousVersion).toBe("1.4.0");
-      expect(ptr.pythonPath).toBeTruthy();
-      expect(fs.renameSync).toHaveBeenCalled();
-    });
-  });
-
-  // ── Issue #77 Contract 2 RED: AbortSignal pass-through to child processes ──
-  describe("Issue #77 RED: AbortSignal pass-through", () => {
-    it("RED: ensure passes AbortSignal to venv execFile call", async () => {
-      const fs = createMockFs();
-      fs.existsSync.mockReturnValue(true);
-      fs.readFileSync.mockReturnValue("");
-
-      const capturedOpts: Array<Record<string, unknown>> = [];
-      const execFile = vi.fn<(...args: unknown[]) => void>();
-      execFile.mockImplementation(
-        (
-          _cmd: unknown,
-          _args: unknown,
-          opts: unknown,
-          cb: (err: Error | null, stdout: string, stderr: string) => void
-        ) => {
-          capturedOpts.push(opts as Record<string, unknown>);
-          cb(null, "", "");
-        }
-      );
-
-      const rt = new ManagedRuntime({
-        runtimeDir: RUNTIME_DIR,
-        pluginVersion: "1.3.0",
-        osPlatform: "win32",
-        osArch: "x64",
-        fs: fs as unknown as FsOps,
-        execFile: execFile as unknown as ExecFileFn,
-        execFileSync: createMockExecFileSync(
-          "3.11.0"
-        ) as unknown as ExecFileSyncFn,
-      });
-
-      const ac = new AbortController();
-      await rt.ensure({ signal: ac.signal });
-
-      // The venv call (first execFile call) must receive the signal
-      expect(capturedOpts.length).toBeGreaterThanOrEqual(3); // venv + pip + verify
-      const venvOpts = capturedOpts[0];
-      expect(venvOpts.signal).toBe(ac.signal);
-    });
-
-    it("RED: ensure passes AbortSignal to pip execFile call", async () => {
-      const fs = createMockFs();
-      fs.existsSync.mockReturnValue(true);
-      fs.readFileSync.mockReturnValue("");
-
-      const capturedOpts: Array<Record<string, unknown>> = [];
-      const execFile = vi.fn<(...args: unknown[]) => void>();
-      execFile.mockImplementation(
-        (
-          _cmd: unknown,
-          _args: unknown,
-          opts: unknown,
-          cb: (err: Error | null, stdout: string, stderr: string) => void
-        ) => {
-          capturedOpts.push(opts as Record<string, unknown>);
-          cb(null, "", "");
-        }
-      );
-
-      const rt = new ManagedRuntime({
-        runtimeDir: RUNTIME_DIR,
-        pluginVersion: "1.3.0",
-        osPlatform: "win32",
-        osArch: "x64",
-        fs: fs as unknown as FsOps,
-        execFile: execFile as unknown as ExecFileFn,
-        execFileSync: createMockExecFileSync(
-          "3.11.0"
-        ) as unknown as ExecFileSyncFn,
-      });
-
-      const ac = new AbortController();
-      await rt.ensure({ signal: ac.signal });
-
-      // pip is the second execFile call (after venv)
-      const pipOpts = capturedOpts[1];
-      expect(pipOpts.signal).toBe(ac.signal);
-    });
-
-    it("RED: ensure passes AbortSignal to verify execFile call", async () => {
-      const fs = createMockFs();
-      fs.existsSync.mockReturnValue(true);
-      fs.readFileSync.mockReturnValue("");
-
-      const capturedOpts: Array<Record<string, unknown>> = [];
-      const execFile = vi.fn<(...args: unknown[]) => void>();
-      execFile.mockImplementation(
-        (
-          _cmd: unknown,
-          _args: unknown,
-          opts: unknown,
-          cb: (err: Error | null, stdout: string, stderr: string) => void
-        ) => {
-          capturedOpts.push(opts as Record<string, unknown>);
-          cb(null, "", "");
-        }
-      );
-
-      const rt = new ManagedRuntime({
-        runtimeDir: RUNTIME_DIR,
-        pluginVersion: "1.3.0",
-        osPlatform: "win32",
-        osArch: "x64",
-        fs: fs as unknown as FsOps,
-        execFile: execFile as unknown as ExecFileFn,
-        execFileSync: createMockExecFileSync(
-          "3.11.0"
-        ) as unknown as ExecFileSyncFn,
-      });
-
-      const ac = new AbortController();
-      await rt.ensure({ signal: ac.signal });
-
-      // verify is the third execFile call (after venv and pip)
-      const verifyOpts = capturedOpts[2];
-      expect(verifyOpts.signal).toBe(ac.signal);
-    });
-
-    it("RED: aborted signal during venv kills child, cleans slot, returns aborted health", async () => {
-      const fs = createMockFs();
-      fs.existsSync.mockReturnValue(true);
-      fs.readFileSync.mockReturnValue("");
-
-      const abortError = new Error("The operation was aborted");
-      abortError.name = "AbortError";
-
-      const execFile = vi.fn<(...args: unknown[]) => void>();
-      execFile.mockImplementation(
-        (
-          _cmd: unknown,
-          _args: unknown,
-          _opts: unknown,
-          cb: (err: Error | null, stdout: string, stderr: string) => void
-        ) => {
-          // Simulate child killed by abort signal
-          cb(abortError, "", "");
-        }
-      );
-
-      const rt = new ManagedRuntime({
-        runtimeDir: RUNTIME_DIR,
-        pluginVersion: "1.3.0",
-        osPlatform: "win32",
-        osArch: "x64",
-        fs: fs as unknown as FsOps,
-        execFile: execFile as unknown as ExecFileFn,
-        execFileSync: createMockExecFileSync(
-          "3.11.0"
-        ) as unknown as ExecFileSyncFn,
-      });
-
-      const h = await rt.ensure();
-
-      // AbortError from child process → slot cleaned + aborted health
-      expect(h.state).toBe("needs_repair");
-      expect(h.error?.code).toBe("ABORTED");
-      // Slot must be cleaned up
-      expect(fs.rmSync).toHaveBeenCalled();
-      // Pointer must NOT be written
-      expect(fs.writeFileSync).not.toHaveBeenCalled();
-      expect(fs.renameSync).not.toHaveBeenCalled();
-    });
-
-    it("RED: aborted signal during retained-slot probe prevents pointer write", async () => {
-      const fs = createMockFs();
-      // Pointer points to v1.4.0, so v1.3.0 is a rollback target with retained slot
-      fs.readFileSync.mockImplementation((p: string) => {
-        if (normalisePath(p) === normalisePath(POINTER_PATH)) {
-          return JSON.stringify({
-            schema_version: 1,
-            version: "1.4.0",
-            pythonPath: relPythonPath("1.4.0"),
-            activatedAt: "2026-07-15T01:00:00Z",
-          });
-        }
-        return "";
-      });
-      fs.existsSync.mockReturnValue(true);
-      fs.readdirSync.mockReturnValue([mkDirent("v1.3.0"), mkDirent("v1.4.0")]);
-
-      const abortError = new Error("The operation was aborted");
-      abortError.name = "AbortError";
-
-      const execFile = vi.fn<(...args: unknown[]) => void>();
-      execFile.mockImplementation(
-        (
-          _cmd: unknown,
-          _args: unknown,
-          _opts: unknown,
-          cb: (err: Error | null, stdout: string, stderr: string) => void
-        ) => {
-          cb(abortError, "", "");
-        }
-      );
-
-      const rt = new ManagedRuntime({
-        runtimeDir: RUNTIME_DIR,
-        pluginVersion: "1.4.0",
-        osPlatform: "win32",
-        osArch: "x64",
-        fs: fs as unknown as FsOps,
-        execFile: execFile as unknown as ExecFileFn,
-        execFileSync: createMockExecFileSync(
-          "3.11.0"
-        ) as unknown as ExecFileSyncFn,
-      });
-
-      const h = await rt.ensure({ version: "1.3.0" });
-
-      // Retained slot probe failed with AbortError → no pointer write
-      // Must NOT report RETAINED_SLOT_PROBE_FAILED — abort is not a probe failure
-      expect(h.state).toBe("needs_repair");
-      expect(h.error?.code).toBe("ABORTED");
-      // Pointer must NOT be written (no .tmp write, no rename)
-      expect(fs.writeFileSync).not.toHaveBeenCalled();
-      expect(fs.renameSync).not.toHaveBeenCalled();
-    });
-  });
-
-  // ── Python version gating ──
-  describe("Python version gating", () => {
     it("status() returns ready for valid existing install regardless of Python 3.x version", async () => {
       // status() checks the installed runtime, not bootstrap version;
       // version gating is enforced by ensure() at build/repair time.
@@ -1015,7 +588,6 @@ describe("ManagedRuntime", () => {
           return defaultPointer("1.2.3");
         return "";
       });
-      fs.readdirSync.mockReturnValue([mkDirent("v1.2.3"), mkDirent("v1.3.0")]);
 
       const rt = new ManagedRuntime({
         runtimeDir: RUNTIME_DIR,
@@ -1038,7 +610,7 @@ describe("ManagedRuntime", () => {
       const fs = createMockFs();
       fs.existsSync.mockImplementation((p: string) => {
         if (normalisePath(p) === normalisePath(POINTER_PATH)) return true;
-        if (p.includes("v1.3.0")) return false;
+        if (p.includes(path.join("venv"))) return false;
         return true;
       });
       fs.readFileSync.mockReturnValue("");
@@ -1064,7 +636,7 @@ describe("ManagedRuntime", () => {
       const fs = createMockFs();
       fs.existsSync.mockImplementation((p: string) => {
         if (normalisePath(p) === normalisePath(POINTER_PATH)) return true;
-        if (p.includes("v1.3.0")) return false;
+        if (p.includes(path.join("venv"))) return false;
         return true;
       });
       fs.readFileSync.mockReturnValue("");
@@ -1361,29 +933,14 @@ describe("ManagedRuntime", () => {
 
   // ── Pointer content ──
   describe("Pointer content", () => {
-    it("contains only runtime metadata and machine-local interpreter paths — no credentials or vault paths", async () => {
+    it("reads ONLY the Python-published schema v1 — machine-local interpreter paths, no credentials or vault paths", async () => {
       const fs = createMockFs();
-      let writtenContent = "";
-
       fs.existsSync.mockReturnValue(true);
       fs.readFileSync.mockImplementation((p: string) => {
         if (normalisePath(p) === normalisePath(POINTER_PATH))
           return defaultPointer();
         return "";
       });
-      fs.writeFileSync = vi.fn<
-        (
-          p: string,
-          data: string | NodeJS.ArrayBufferView,
-          encoding?: string | null
-        ) => void
-      >((p: string, data: string | NodeJS.ArrayBufferView) => {
-        if (typeof p === "string" && p.endsWith(".tmp")) {
-          writtenContent = typeof data === "string" ? data : String(data);
-        }
-      });
-      fs.readdirSync =
-        vi.fn<(p: string, opts?: { withFileTypes?: boolean }) => Dirent[]>();
 
       const rt = new ManagedRuntime({
         runtimeDir: RUNTIME_DIR,
@@ -1397,48 +954,21 @@ describe("ManagedRuntime", () => {
         ) as unknown as ExecFileSyncFn,
       });
 
-      await rt.ensure();
-
-      const ptr = JSON.parse(writtenContent);
-      expect(ptr.schema_version).toBe(1);
-      expect(ptr.version).toBe("1.3.0");
-      expect(typeof ptr.pythonPath).toBe("string");
-      expect(ptr.pythonPath).not.toContain("vault");
-      expect(ptr.pythonPath).not.toContain("credentials");
-      expect(ptr.pythonPath).not.toContain("secret");
-      expect(ptr.pythonPath).not.toContain("token");
-      expect(Object.keys(ptr)).not.toContain("bootstrapPath");
-      expect(Object.keys(ptr)).not.toContain("bootstrap");
-      expect(Object.keys(ptr)).not.toContain("vaultPath");
-      expect(Object.keys(ptr)).not.toContain("vault");
-      expect(Object.keys(ptr)).not.toContain("credential");
-      expect(typeof ptr.activatedAt).toBe("string");
+      const h = await rt.status();
+      expect(h.state).toBe("ready");
+      expect(h.pythonPath).toBe(path.resolve(pythonPathFor("1.3.0")));
+      expect(h.version).toBe("1.3.0");
+      expect(h.pythonPath).not.toContain("vault");
+      expect(h.pythonPath).not.toContain("credential");
+      expect(h.pythonPath).not.toContain("secret");
     });
 
-    it("pointer atomicity: write-temp-file then rename preserves old pointer on interrupted write", async () => {
+    it("rejects an unsupported pointer schema as not_installed (fail-closed)", async () => {
       const fs = createMockFs();
-      let writtenContent = "";
-      const originalContent = defaultPointer("1.2.3");
-
       fs.existsSync.mockReturnValue(true);
-      fs.readFileSync.mockImplementation((p: string) => {
-        if (normalisePath(p) === normalisePath(POINTER_PATH))
-          return originalContent;
-        if (p.endsWith(".tmp")) return writtenContent;
-        return "";
-      });
-      fs.writeFileSync = vi.fn<
-        (
-          p: string,
-          data: string | NodeJS.ArrayBufferView,
-          encoding?: string | null
-        ) => void
-      >((p: string, data: string | NodeJS.ArrayBufferView) => {
-        if (typeof p === "string" && p.endsWith(".tmp")) {
-          writtenContent = typeof data === "string" ? data : String(data);
-        }
-      });
-      fs.renameSync = vi.fn<(oldP: string, newP: string) => void>();
+      fs.readFileSync.mockReturnValue(
+        JSON.stringify({ schema_version: 99, python_path: "/x" })
+      );
 
       const rt = new ManagedRuntime({
         runtimeDir: RUNTIME_DIR,
@@ -1452,11 +982,8 @@ describe("ManagedRuntime", () => {
         ) as unknown as ExecFileSyncFn,
       });
 
-      await rt.ensure();
-
-      expect(fs.renameSync.mock.calls.length).toBeGreaterThanOrEqual(1);
-      // Old pointer content preserved
-      expect(fs.readFileSync(POINTER_PATH)).toBe(originalContent);
+      const h = await rt.status();
+      expect(h.state).toBe("not_installed");
     });
   });
 
@@ -1503,15 +1030,13 @@ describe("ManagedRuntime", () => {
       expect(acts[0].destructive).toBe(false);
     });
 
-    it("needs_repair with pythonPath → repair (primary) + rollback", () => {
+    it("needs_repair with pythonPath → repair only (rollback deleted, #174)", () => {
       const acts = runtimeActionsForHealth(
         health({ state: "needs_repair", pythonPath: "/usr/bin/python" })
       );
-      expect(acts).toHaveLength(2);
+      expect(acts).toHaveLength(1);
       expect(acts[0].id).toBe("repair");
       expect(acts[0].primary).toBe(true);
-      expect(acts[1].id).toBe("rollback");
-      expect(acts[1].primary).toBe(false);
     });
 
     it("needs_repair without pythonPath → repair only", () => {
@@ -1599,70 +1124,20 @@ describe("ManagedRuntime", () => {
 // ── Real filesystem slot retention tests ──
 
 /** Create a slot directory structure for real-FS tests. */
-function createSlotDir(
-  baseDir: string,
-  version: string,
-  build2 = false
-): string {
-  const name = build2 ? `v${version}_build2` : `v${version}`;
-  const slotDir = path.join(baseDir, name);
-  const venvDir = path.join(slotDir, "venv", "Scripts");
-  fs.mkdirSync(venvDir, { recursive: true });
-  fs.writeFileSync(path.join(venvDir, "python.exe"), ""); // marker
-  return slotDir;
-}
-
-/** Create a pointer file on the real filesystem. */
-function createRealPointer(
-  pointerDir: string,
-  runtimeDirName: string,
-  version: string
-): void {
-  const ptr = {
-    schema_version: 1,
-    version,
-    pythonPath: `${runtimeDirName}/v${version}/venv/Scripts/python.exe`,
-    activatedAt: new Date().toISOString(),
-    previousVersion: null,
-    previousPythonPath: null,
-  };
-  fs.writeFileSync(
-    path.join(pointerDir, "active-runtime.json"),
-    JSON.stringify(ptr, null, 2)
-  );
-}
-
-/** List slot directory names under a runtime directory (sorted). */
-function listSlotDirs(runtimeDir: string): string[] {
-  return fs
-    .readdirSync(runtimeDir, { withFileTypes: true })
-    .filter((e) => e.isDirectory() && e.name.startsWith("v"))
-    .map((e) => e.name)
-    .sort();
-}
-
-describe("Real filesystem slot retention", () => {
+describe("Real filesystem single venv (#174)", () => {
   let tmpDir: string;
-  const RUNTIME_DIR_NAME = "windows-x64";
 
   beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "mr-retention-"));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "mr-single-venv-"));
   });
 
   afterEach(() => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  it("same-version ensure prunes old slots to keepOldSlots=2", async () => {
-    const runtimeDir = path.join(tmpDir, RUNTIME_DIR_NAME);
-    createSlotDir(runtimeDir, "1.0.0");
-    createSlotDir(runtimeDir, "1.1.0");
-    createSlotDir(runtimeDir, "1.2.0");
-    createSlotDir(runtimeDir, "1.3.0");
-    createRealPointer(tmpDir, RUNTIME_DIR_NAME, "1.3.0");
-
+  it("ensure() creates ONE venv and never writes a pointer (Python owns publication)", async () => {
     const rt = new ManagedRuntime({
-      runtimeDir,
+      runtimeDir: tmpDir,
       pluginVersion: "1.4.0",
       osPlatform: "win32",
       osArch: "x64",
@@ -1676,118 +1151,10 @@ describe("Real filesystem slot retention", () => {
     expect(h.state).toBe("ready");
     expect(h.version).toBe("1.4.0");
 
-    const remaining = listSlotDirs(runtimeDir);
-    // 1 current (v1.4.0) + at most 2 old (v1.3.0, v1.2.0) = max 3
-    expect(remaining).toContain("v1.4.0");
-    expect(remaining).toContain("v1.3.0");
-    expect(remaining).toContain("v1.2.0");
-    expect(remaining).not.toContain("v1.1.0");
-    expect(remaining).not.toContain("v1.0.0");
-    expect(remaining.length).toBeLessThanOrEqual(3);
-  });
-
-  it("rollback retains previous active within keepOldSlots=2", async () => {
-    const runtimeDir = path.join(tmpDir, RUNTIME_DIR_NAME);
-    createSlotDir(runtimeDir, "1.0.0");
-    createSlotDir(runtimeDir, "1.1.0");
-    createSlotDir(runtimeDir, "1.2.0");
-    createSlotDir(runtimeDir, "1.3.0");
-    createRealPointer(tmpDir, RUNTIME_DIR_NAME, "1.3.0");
-
-    const execFile = createMockExecFile("1.1.0");
-    const rt = new ManagedRuntime({
-      runtimeDir,
-      pluginVersion: "1.4.0",
-      osPlatform: "win32",
-      osArch: "x64",
-      execFile: execFile as unknown as ExecFileFn,
-      execFileSync: createMockExecFileSync(
-        "3.11.0"
-      ) as unknown as ExecFileSyncFn,
-    });
-
-    const h = await rt.ensure({ version: "1.1.0" });
-    expect(h.state).toBe("ready");
-    expect(h.version).toBe("1.1.0");
-
-    const remaining = listSlotDirs(runtimeDir);
-    // Current v1.1.0, previous v1.3.0 (counts toward 2), v1.2.0 (2nd old)
-    expect(remaining).toContain("v1.1.0");
-    expect(remaining).toContain("v1.3.0");
-    expect(remaining).toContain("v1.2.0");
-    expect(remaining).not.toContain("v1.0.0");
-    expect(remaining.length).toBeLessThanOrEqual(3);
-  });
-
-  it("cleanup failure after pointer activation cannot delete active slot", async () => {
-    const runtimeDir = path.join(tmpDir, RUNTIME_DIR_NAME);
-    createSlotDir(runtimeDir, "1.0.0");
-    createSlotDir(runtimeDir, "1.1.0");
-    createSlotDir(runtimeDir, "1.2.0");
-    createSlotDir(runtimeDir, "1.3.0");
-    createRealPointer(tmpDir, RUNTIME_DIR_NAME, "1.3.0");
-
-    // Custom FsOps: real fs for everything, but rmSync throws (simulates cleanup failure)
-    const failingFs: FsOps = {
-      existsSync: (p: string) => fs.existsSync(p),
-      readFileSync: (p: string, encoding?: string | null): string | Buffer => {
-        return fs.readFileSync(
-          p,
-          encoding ? { encoding: encoding as BufferEncoding } : undefined
-        );
-      },
-      writeFileSync: (
-        p: string,
-        data: string | NodeJS.ArrayBufferView,
-        encoding?: string | null
-      ): void => {
-        fs.writeFileSync(
-          p,
-          data,
-          encoding ? { encoding: encoding as BufferEncoding } : undefined
-        );
-      },
-      renameSync: (oldP: string, newP: string) => fs.renameSync(oldP, newP),
-      mkdirSync: (p: string, opts?: { recursive?: boolean }) =>
-        fs.mkdirSync(p, opts),
-      rmSync: () => {
-        throw new Error("Simulated cleanup failure");
-      },
-      readdirSync: (p: string, opts?: { withFileTypes?: boolean }) =>
-        fs.readdirSync(p, opts) as Dirent[],
-    };
-
-    const rt = new ManagedRuntime({
-      runtimeDir,
-      pluginVersion: "1.4.0",
-      osPlatform: "win32",
-      osArch: "x64",
-      fs: failingFs as unknown as FsOps,
-      execFile: createMockExecFile("1.4.0") as unknown as ExecFileFn,
-      execFileSync: createMockExecFileSync(
-        "3.11.0"
-      ) as unknown as ExecFileSyncFn,
-    });
-
-    const h = await rt.ensure({ version: "1.4.0" });
-    expect(h.state).toBe("ready");
-    expect(h.version).toBe("1.4.0");
-
-    // Pointer must point to the new version
-    const ptrRaw = fs.readFileSync(
-      path.join(tmpDir, "active-runtime.json"),
-      "utf-8"
-    );
-    const ptr = JSON.parse(ptrRaw);
-    expect(ptr.version).toBe("1.4.0");
-    // Active slot directory must exist — cleanup failure cannot delete it
-    expect(fs.existsSync(path.join(runtimeDir, "v1.4.0"))).toBe(true);
-    // Pointer resolves to the active slot (relative pythonPath must form a path we can resolve)
-    const resolvedPy = path.resolve(
-      path.dirname(path.join(tmpDir, "active-runtime.json")),
-      ptr.pythonPath
-    );
-    expect(resolvedPy).toContain("v1.4.0");
+    // ONE venv dir, no version-slot dirs, no pointer.json (TS never writes).
+    expect(fs.existsSync(path.join(tmpDir, "venv"))).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, "pointer.json"))).toBe(false);
+    expect(fs.readdirSync(tmpDir).some((n) => /^v\\d/.test(n))).toBe(false);
   });
 });
 
