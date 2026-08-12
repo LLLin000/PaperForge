@@ -523,3 +523,52 @@ class TestCliExitCodes:
         with mock.patch("paperforge.commands.action.run_dispatch", side_effect=KeyboardInterrupt("cancelled")):
             rc = action_run(args)  # type: ignore[arg-type]
         assert rc == 130
+
+
+class TestFoundationRepairPolicy174:
+    """#174 P1-1: foundation.repair's registry policy must match its REAL
+    side effects (may pip install vector extras + republish the pointer)
+    — remote_possible/mutating/required, never local/read_only/automatic."""
+
+    def test_foundation_repair_descriptor_is_truthful(self) -> None:
+        from paperforge.actions.registry import ACTION_REGISTRY
+
+        spec = ACTION_REGISTRY["foundation.repair"]
+        assert spec.cost == "remote_possible"
+        assert spec.impact == "mutating"
+        assert spec.confirmation == "required"
+        assert spec.automatic is False
+
+    def test_foundation_repair_requires_confirmation_exit_3(self, tmp_path: Path, monkeypatch) -> None:
+        """Without --confirm a confirmation-required action exits 3 with the
+        CURRENT descriptor — the caller must explicitly authorize a pip
+        install + pointer republish."""
+        monkeypatch.setattr(
+            "paperforge.runtime_pointer.read_pointer",
+            lambda: {
+                "python_path": "C:/Python/python.exe",
+                "environment_root": "C:/Python",
+                "paperforge_version": "1.5.15",
+            },
+        )
+        rc, payload = _run_cli(
+            "--vault", str(tmp_path), "action", "run", "foundation.repair", "--json"
+        )
+        assert rc == 3
+        assert payload["error"]["code"] == "action.confirmation_required"
+        data = payload["data"]
+        assert data["action_id"] == "foundation.repair"
+        assert data["cost"] == "remote_possible"
+        assert data["impact"] == "mutating"
+
+    def test_foundation_repair_unavailable_without_pointer(self, tmp_path: Path, monkeypatch) -> None:
+        """Preflight fails closed: no published pointer → the handler cannot
+        succeed → unavailable (not a green light for a doomed run)."""
+        monkeypatch.setattr(
+            "paperforge.runtime_pointer.read_pointer", lambda: None
+        )
+        rc, payload = _run_cli(
+            "--vault", str(tmp_path), "action", "run", "foundation.repair", "--json"
+        )
+        assert rc == 1
+        assert payload["data"]["availability_reason_code"] == "pointer.missing"
