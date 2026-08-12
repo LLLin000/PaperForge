@@ -86,6 +86,14 @@ class SetupPlan:
             print(json.dumps(output, indent=2, ensure_ascii=False))
             return 0
 
+        # Step 6 (#143 / #174): pointer publication — Python is the ONLY
+        # writer; publish only when every setup step passed.
+        if all(r.ok for r in results):
+            from paperforge.runtime_pointer import publish_pointer
+
+            publish_pointer()
+            self._log("Runtime pointer published")
+
         # Print summary
         ok_count = sum(1 for r in results if r.ok)
         total = len(results)

@@ -333,6 +333,11 @@ def run_update(vault: Path) -> int:
     if success:
         _sync_obsidian_plugin(vault)
         _deploy_all_skills(vault)
+        # #143 / #174: pointer publication after a successful update — the
+        # installed version changed, so the pointer must be refreshed.
+        from paperforge.runtime_pointer import publish_pointer
+
+        publish_pointer()
         logger.info("更新完成！请重启 Obsidian")
     return 0 if success else 1
 
