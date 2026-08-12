@@ -9,11 +9,12 @@
 import { App, Notice } from "obsidian";
 import { execFile } from "child_process";
 import { t } from "../i18n";
+import { orchestrateNextActions } from "./next-actions-orchestrator";
 import {
-  orchestrateNextActions,
   parseNextActions,
+  trackerDeps,
   type NextAction,
-} from "./next-actions-orchestrator";
+} from "./next-actions-types";
 import { NextActionConfirmModal } from "../views/modals";
 
 export interface NextActionBridgeContext {
@@ -76,5 +77,6 @@ export async function orchestrateFromSync(
         ).open();
       }),
     notify: (message) => new Notice(message),
+    ...trackerDeps,
   });
 }

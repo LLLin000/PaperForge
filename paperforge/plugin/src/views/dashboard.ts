@@ -1058,12 +1058,14 @@ export class PaperForgeStatusView extends ItemView {
       tokenOk ? "configured" : "missing",
       tokenOk ? "Configured" : "Not set"
     );
-    const vp2 = (this.app.vault.adapter as unknown as { basePath?: string }).basePath ?? "";
+    const vp2 =
+      (this.app.vault.adapter as unknown as { basePath?: string }).basePath ??
+      "";
     // #161/R: the memory row is derived from the memory probe envelope — the
     // snapshot health reader is retired.
-    const memEnv = (plugin?.settings?.capabilityState as
-      | Record<string, unknown>
-      | undefined)?.["memory"] as
+    const memEnv = (
+      plugin?.settings?.capabilityState as Record<string, unknown> | undefined
+    )?.["memory"] as
       | { capability_state?: string; reason?: { text?: string } }
       | undefined;
     const memOk = memEnv?.capability_state === "ready";
@@ -1734,42 +1736,42 @@ export class PaperForgeStatusView extends ItemView {
     const nextStep = entry.next_step || "ready";
     const stepInfo: Record<
       string,
-      { label: string; text: string; cmd: string | null; icon: string }
+      { label: string; text: string; actionId: string | null; icon: string }
     > = {
       sync: {
         label: "Sync Needed",
         text: "This paper needs to be synced from Zotero. Click to run sync.",
-        cmd: "sync",
+        actionId: "paperforge-sync",
         icon: "\u21BB",
       },
       ocr: {
         label: "OCR Needed",
         text: "Fulltext is missing but PDF is present. Click to run OCR.",
-        cmd: "ocr",
+        actionId: "paperforge-ocr",
         icon: "\u229E",
       },
       repair: {
         label: "Repair Needed",
         text: "State divergence or path errors detected. Click to repair.",
-        cmd: "repair",
+        actionId: "paperforge-repair",
         icon: "\u21BA",
       },
       "rebuild index": {
         label: "Rebuild Needed",
         text: "Index may be stale. Click to run sync to rebuild.",
-        cmd: "sync",
+        actionId: "paperforge-sync",
         icon: "\u21BB",
       },
       "/pf-deep": {
         label: "Ready for Deep Reading",
         text: "Fulltext is ready. Copy /pf-deep command and run in your agent.",
-        cmd: null,
+        actionId: null,
         icon: "\uD83D\uDD0D",
       },
       ready: {
         label: "All Set",
         text: "This paper is fully processed and ready for use.",
-        cmd: "ready",
+        actionId: "ready",
         icon: "\u2713",
       },
     };
@@ -1783,13 +1785,13 @@ export class PaperForgeStatusView extends ItemView {
       text: "Recommended Next Step",
     });
     card.createEl("div", { cls: "paperforge-next-step-text", text: info.text });
-    if (info.cmd && info.cmd !== "ready") {
+    if (info.actionId && info.actionId !== "ready") {
       const trigger = card.createEl("button", {
         cls: "paperforge-next-step-trigger",
       });
       trigger.createEl("span", { text: info.icon + "  " + info.label });
       trigger.addEventListener("click", () => {
-        const action = ACTIONS.find((a) => a.cmd === info.cmd);
+        const action = ACTIONS.find((a) => a.id === info.actionId);
         if (action) this._runAction(action, trigger);
       });
     } else if (nextStep === "/pf-deep") {
@@ -3114,10 +3116,10 @@ export class PaperForgeStatusView extends ItemView {
     }
     const { path: pythonExe, args: pyExtra = [] } = py;
     // Issue #79: resolve credentials for allowlisted command types immediately before launch
-    const actionEnv = await buildTargetedEnv(null, a.cmd);
+    const actionEnv = await buildTargetedEnv(null, a.commandId);
     const child = spawn(
       pythonExe,
-      [...pyExtra, "-m", "paperforge", a.cmd, ...extraArgs],
+      [...pyExtra, "-m", "paperforge", a.commandId, ...extraArgs],
       { cwd: vp, timeout: cmdTimeout, env: actionEnv }
     );
     const log: string[] = [];
@@ -3151,13 +3153,13 @@ export class PaperForgeStatusView extends ItemView {
       const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
       if (code !== 0) {
         const last = log.slice(-3).join(" | ") || "exit code " + code;
-        if ((a.cmd === "repair" || a.cmd === "ocr") && code === 1) {
+        if ((a.commandId === "repair" || a.commandId === "ocr") && code === 1) {
           this._showMessage("[WARN] " + last, "running");
-          new Notice("[WARN] " + a.cmd + " partial: " + last, 8000);
+          new Notice("[WARN] " + a.commandId + " partial: " + last, 8000);
           this._fetchStats(true);
         } else {
           this._showMessage("[!!] " + last, "error");
-          new Notice("[!!] " + a.cmd + " failed: " + last, 8000);
+          new Notice("[!!] " + a.commandId + " failed: " + last, 8000);
         }
       } else if (a.needsKey || a.needsFilter) {
         const output = log.join("\n");
@@ -3208,8 +3210,8 @@ export class PaperForgeStatusView extends ItemView {
         } catch (e) {
           console.log("[PF] fetchStats error:", e);
         }
-        console.log("[PF] close cmd=" + a.cmd + " id=" + a.id);
-        if (a.cmd === "sync")
+        console.log("[PF] close cmd=" + a.commandId + " id=" + a.id);
+        if (a.commandId === "sync")
           checkOrphanState(
             this.app,
             ((this.app as any).plugins.plugins as any)["paperforge"],

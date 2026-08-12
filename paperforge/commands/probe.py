@@ -70,7 +70,7 @@ def _utcnow_z() -> str:
 
 
 def build_action_primary(
-    *, action_id: str, verb: str, label: str, command: str,
+    *, action_id: str, verb: str, label: str,
     availability: str = "available",
     safety_class: str = SAFETY_SAFE,
     preservation_facts: list[str] | None = None,
@@ -97,7 +97,9 @@ def build_action_primary(
         "interruptible": interruptible,
         "confirmation_required": confirmation_required,
         "confirmation_prompt": confirmation_prompt,
-        "command": command, "scope": scope, "scope_count": scope_count,
+        # T8 (#169): `command` is DELETED — the plugin never consumes a
+        # backend command string; action dispatch is the action client.
+        "scope": scope, "scope_count": scope_count,
     }
 
 
@@ -186,8 +188,7 @@ def probe_installation(vault: Path, expected_version: str | None = None) -> dict
             reason_text="paperforge.json not found in vault",
             user_state=USER_STATE_SETUP_REQUIRED, capability_kind=CAPABILITY_REQUIRED,
             action_primary=build_action_primary(
-                action_id="foundation.setup",
-                verb="setup", label="Install PaperForge", command="paperforge setup",
+                action_id="foundation.setup", verb="setup", label="Install PaperForge",
             ),
             ttl_seconds=TTL_INSTALLATION,
         )
@@ -202,8 +203,7 @@ def probe_installation(vault: Path, expected_version: str | None = None) -> dict
             user_state=USER_STATE_SETUP_REQUIRED, capability_kind=CAPABILITY_REQUIRED,
             maintenance_eligible=True,
             action_primary=build_action_primary(
-                action_id="foundation.setup",
-                verb="setup", label="Repair Installation", command="paperforge setup",
+                action_id="foundation.setup", verb="setup", label="Repair Installation",
             ),
             ttl_seconds=TTL_INSTALLATION,
         )
@@ -216,8 +216,7 @@ def probe_installation(vault: Path, expected_version: str | None = None) -> dict
             user_state=USER_STATE_SETUP_REQUIRED, capability_kind=CAPABILITY_REQUIRED,
             maintenance_eligible=True,
             action_primary=build_action_primary(
-                action_id="foundation.setup",
-                verb="setup", label="Repair Installation", command="paperforge setup",
+                action_id="foundation.setup", verb="setup", label="Repair Installation",
             ),
             ttl_seconds=TTL_INSTALLATION,
         )
@@ -231,8 +230,7 @@ def probe_installation(vault: Path, expected_version: str | None = None) -> dict
             user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_REQUIRED,
             user_impact="OCR and processing will not work with this Python version",
             action_primary=build_action_primary(
-                action_id="foundation.update_python",
-                verb="update", label="Update Python", command="",
+                action_id="foundation.update_python", verb="update", label="Update Python",
             ),
             ttl_seconds=TTL_INSTALLATION,
         )
@@ -245,7 +243,7 @@ def probe_installation(vault: Path, expected_version: str | None = None) -> dict
             user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_REQUIRED,
             action_primary=build_action_primary(
                 action_id="foundation.setup", verb="setup", label="Update PaperForge",
-                command="paperforge setup",
+
             ),
             ttl_seconds=TTL_INSTALLATION,
         )
@@ -276,7 +274,7 @@ def probe_help(vault: Path) -> dict[str, Any]:  # noqa: ARG001
         user_state=USER_STATE_DETECTION_FAILED, capability_kind=CAPABILITY_OPTIONAL,
         action_primary=build_action_primary(
             action_id="help.restore",
-            verb="setup", label="Restore help", command="paperforge setup",
+            verb="setup", label="Restore help",
         ),
         ttl_seconds=TTL_HELP,
     )
@@ -298,7 +296,7 @@ def probe_library(vault: Path, last_operation_exit_code: int | None = None) -> d
                 user_state=USER_STATE_SETUP_REQUIRED, capability_kind=CAPABILITY_REQUIRED,
                 maintenance_eligible=True,
                 action_primary=build_action_primary(
-                    action_id="library.setup", verb="setup", label="Setup", command="paperforge setup",
+                    action_id="library.setup", verb="setup", label="Setup",
                 ),
                 ttl_seconds=TTL_LIBRARY,
             )
@@ -308,7 +306,7 @@ def probe_library(vault: Path, last_operation_exit_code: int | None = None) -> d
             reason_text="paperforge.json not found — cannot check library configuration",
             user_state=USER_STATE_SETUP_REQUIRED, capability_kind=CAPABILITY_REQUIRED,
             action_primary=build_action_primary(
-                action_id="library.setup", verb="set_config", label="Set config", command="paperforge setup",
+                action_id="library.setup", verb="set_config", label="Set config",
             ),
             ttl_seconds=TTL_LIBRARY,
         )
@@ -325,7 +323,7 @@ def probe_library(vault: Path, last_operation_exit_code: int | None = None) -> d
             user_state=USER_STATE_SETUP_REQUIRED, capability_kind=CAPABILITY_REQUIRED,
             action_primary=build_action_primary(
                 action_id="library.configure", verb="set_config", label="Configure Zotero",
-                command="paperforge setup",
+
             ),
             ttl_seconds=TTL_LIBRARY,
         )
@@ -342,7 +340,7 @@ def probe_library(vault: Path, last_operation_exit_code: int | None = None) -> d
             maintenance_eligible=True,
             action_primary=build_action_primary(
                 action_id="library.configure", verb="set_config", label="Configure Zotero",
-                command="paperforge setup",
+
             ),
             ttl_seconds=TTL_LIBRARY,
         )
@@ -356,7 +354,7 @@ def probe_library(vault: Path, last_operation_exit_code: int | None = None) -> d
             user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_REQUIRED,
             maintenance_eligible=True,
             action_primary=build_action_primary(
-                action_id="library.sync", verb="sync", label="Sync library", command="paperforge sync",
+                action_id="library.sync", verb="sync", label="Sync library",
             ),
             ttl_seconds=TTL_LIBRARY,
         )
@@ -373,7 +371,7 @@ def probe_library(vault: Path, last_operation_exit_code: int | None = None) -> d
             reason_code="library.index_missing", reason_text="Canonical index has not been built — run sync",
             user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_REQUIRED,
             action_primary=build_action_primary(
-                action_id="library.sync", verb="sync", label="Sync library", command="paperforge sync",
+                action_id="library.sync", verb="sync", label="Sync library",
             ),
             ttl_seconds=TTL_LIBRARY,
         )
@@ -395,7 +393,7 @@ def probe_library(vault: Path, last_operation_exit_code: int | None = None) -> d
                     reason_text=f"Library index is stale ({paper_count} papers — export files changed since last sync)",
                     user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_REQUIRED,
                     action_primary=build_action_primary(
-                        action_id="library.sync", verb="sync", label="Sync library", command="paperforge sync",
+                        action_id="library.sync", verb="sync", label="Sync library",
                     ),
                     ttl_seconds=TTL_LIBRARY,
                 )
@@ -434,7 +432,7 @@ def probe_library(vault: Path, last_operation_exit_code: int | None = None) -> d
                 user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_REQUIRED,
                 maintenance_eligible=True,
                 action_primary=build_action_primary(
-                    action_id="library.sync", verb="sync", label="Sync library", command="paperforge sync",
+                    action_id="library.sync", verb="sync", label="Sync library",
                 ),
                 ttl_seconds=TTL_LIBRARY,
             )
@@ -444,7 +442,7 @@ def probe_library(vault: Path, last_operation_exit_code: int | None = None) -> d
                 reason_code="library.index_missing", reason_text="Canonical index is empty — run sync",
                 user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_REQUIRED,
                 action_primary=build_action_primary(
-                    action_id="library.sync", verb="sync", label="Sync library", command="paperforge sync",
+                    action_id="library.sync", verb="sync", label="Sync library",
                 ),
                 ttl_seconds=TTL_LIBRARY,
             )
@@ -456,7 +454,7 @@ def probe_library(vault: Path, last_operation_exit_code: int | None = None) -> d
             reason_text="Library index validation failed — probe to retry",
             user_state=USER_STATE_DETECTION_FAILED, capability_kind=CAPABILITY_REQUIRED,
             action_primary=build_action_primary(
-                action_id="library.probe", verb="probe", label="Retry", command="probe library",
+                action_id="library.probe", verb="probe", label="Retry",
             ),
             ttl_seconds=TTL_LIBRARY,
         )
@@ -473,14 +471,14 @@ def probe_ocr(vault: Path) -> dict[str, Any]:
             user_state=USER_STATE_SETUP_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
             maintenance_eligible=True,
             action_primary=build_action_primary(
-                action_id="ocr.setup", verb="setup", label="Setup", command="paperforge setup",
+                action_id="ocr.setup", verb="setup", label="Setup",
             ), ttl_seconds=TTL_OCR, pipeline_version=OCR_PIPELINE_VERSION)
         return build_envelope(module="ocr", capability_state="missing_input", severity="warning",
         reason_code="ocr.config_missing",
         reason_text="paperforge.json not found — cannot check OCR configuration",
         user_state=USER_STATE_NOT_ENABLED, capability_kind=CAPABILITY_OPTIONAL,
         action_primary=build_action_primary(
-            action_id="ocr.enable", verb="set_config", label="Enable OCR", command="paperforge setup",
+            action_id="ocr.enable", verb="set_config", label="Enable OCR",
         ), ttl_seconds=TTL_OCR, pipeline_version=OCR_PIPELINE_VERSION)
 
     # ── Provider reachability (notices only; readiness verdict is LAST,
@@ -507,7 +505,7 @@ def probe_ocr(vault: Path) -> dict[str, Any]:
         reason_code="ocr.probe_failed", reason_text="OCR maintenance check failed — probe to retry",
         user_state=USER_STATE_DETECTION_FAILED, capability_kind=CAPABILITY_OPTIONAL,
         action_primary=build_action_primary(
-            action_id="ocr.probe", verb="probe", label="Retry", command="probe ocr",
+            action_id="ocr.probe", verb="probe", label="Retry",
         ),
         notices=notices, ttl_seconds=TTL_OCR, pipeline_version=OCR_PIPELINE_VERSION)
 
@@ -530,7 +528,7 @@ def probe_ocr(vault: Path) -> dict[str, Any]:
         reason_text="No OCR output found — run OCR to process papers",
         user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
         action_primary=build_action_primary(
-            action_id="ocr.run", verb="run", label="Run OCR", command="paperforge ocr run",
+            action_id="ocr.run", verb="run", label="Run OCR",
         ),
         notices=notices, ttl_seconds=TTL_OCR, pipeline_version=OCR_PIPELINE_VERSION)
 
@@ -612,7 +610,7 @@ def probe_ocr(vault: Path) -> dict[str, Any]:
         user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
         action_primary=build_action_primary(
             action_id="ocr.run",
-            verb="run", label="Run OCR", command="paperforge ocr run",
+            verb="run", label="Run OCR",
         ),
         activity_state=act_state, activity_label=act_label, activity_progress=act_progress,
         notices=notices, ttl_seconds=TTL_OCR, pipeline_version=OCR_PIPELINE_VERSION)
@@ -626,7 +624,6 @@ def probe_ocr(vault: Path) -> dict[str, Any]:
         action_primary=build_action_primary(
             action_id="ocr.rebuild_derived",
             verb="rebuild_derived", label="Rebuild derived artifacts",
-            command="paperforge ocr rebuild --all",
         ),
         activity_state=act_state, activity_label=act_label, activity_progress=act_progress,
         notices=notices, ttl_seconds=TTL_OCR, pipeline_version=OCR_PIPELINE_VERSION)
@@ -639,7 +636,7 @@ def probe_ocr(vault: Path) -> dict[str, Any]:
         user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
         action_primary=build_action_primary(
             action_id="ocr.diagnose",
-            verb="investigate", label="Run diagnostics", command="paperforge ocr doctor",
+            verb="investigate", label="Run diagnostics",
         ),
         activity_state=act_state, activity_label=act_label, activity_progress=act_progress,
         notices=notices, ttl_seconds=TTL_OCR, pipeline_version=OCR_PIPELINE_VERSION)
@@ -663,7 +660,7 @@ def probe_ocr(vault: Path) -> dict[str, Any]:
         user_impact=f"{dead_count} paper(s) have unusable OCR output with no automated recovery",
         action_primary=build_action_primary(
             action_id="ocr.report_issue",
-            verb="investigate", label="Report OCR issue", command="paperforge ocr issue-draft",
+            verb="investigate", label="Report OCR issue",
             safety_class=SAFETY_SAFE, scope="selection", scope_count=dead_count,
         ),
         activity_state=act_state, activity_label=act_label, activity_progress=act_progress,
@@ -683,7 +680,6 @@ def probe_ocr(vault: Path) -> dict[str, Any]:
         user_state=USER_STATE_NOT_ENABLED, capability_kind=CAPABILITY_OPTIONAL,
         action_primary=build_action_primary(
             action_id="ocr.configure", verb="set_config", label="Configure API key",
-            command="paperforge setup",
         ), ttl_seconds=TTL_OCR, pipeline_version=OCR_PIPELINE_VERSION)
 
     if not provider_reachable:
@@ -693,7 +689,7 @@ def probe_ocr(vault: Path) -> dict[str, Any]:
         user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
         action_primary=build_action_primary(
             action_id="ocr.diagnose",
-            verb="investigate", label="Run diagnostics", command="paperforge ocr doctor",
+            verb="investigate", label="Run diagnostics",
         ),
         activity_state=act_state, activity_label=act_label, activity_progress=act_progress,
         notices=notices, ttl_seconds=TTL_OCR, pipeline_version=OCR_PIPELINE_VERSION)
@@ -780,7 +776,7 @@ def probe_memory(vault: Path) -> dict[str, Any]:
             user_state=USER_STATE_SETUP_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
             action_primary=build_action_primary(
                 action_id="foundation.setup", verb="setup",
-                label="Setup PaperForge", command="paperforge setup",
+                label="Setup PaperForge",
             ),
             ttl_seconds=TTL_MEMORY,
         )
@@ -796,7 +792,7 @@ def probe_memory(vault: Path) -> dict[str, Any]:
             reason_code="memory.probe_failed", reason_text="Memory status check failed — probe to retry",
             user_state=USER_STATE_DETECTION_FAILED, capability_kind=CAPABILITY_OPTIONAL,
             action_primary=build_action_primary(
-                action_id="memory.probe", verb="probe", label="Retry", command="probe memory",
+                action_id="memory.probe", verb="probe", label="Retry",
             ),
             ttl_seconds=TTL_MEMORY,
         )
@@ -814,7 +810,6 @@ def probe_memory(vault: Path) -> dict[str, Any]:
             user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
             action_primary=build_action_primary(
                 action_id="memory.build", verb="run", label="Build memory",
-                command="paperforge memory build",
             ),
             ttl_seconds=TTL_MEMORY,
         )
@@ -831,7 +826,7 @@ def probe_memory(vault: Path) -> dict[str, Any]:
                 maintenance_eligible=True,
                 action_primary=build_action_primary(
                     action_id="memory.rebuild",
-                    verb="rebuild_index", label="Rebuild database", command="paperforge memory build",
+                    verb="rebuild_index", label="Rebuild database",
                 ),
                 ttl_seconds=TTL_MEMORY,
             )
@@ -851,7 +846,6 @@ def probe_memory(vault: Path) -> dict[str, Any]:
                 action_primary=build_action_primary(
                     action_id="memory.restore_backup",
                     verb="restore_backup", label="Restore from backup",
-                    command="paperforge memory restore-backup",
                     safety_class=SAFETY_DESTRUCTIVE,
                     replacement_facts=["Current corrupted database"],
                     preservation_facts=["Corrupted database saved as timestamped snapshot"],
@@ -869,7 +863,7 @@ def probe_memory(vault: Path) -> dict[str, Any]:
             user_impact="Search and retrieval are unavailable until the database is rebuilt",
             action_primary=build_action_primary(
                 action_id="memory.rebuild",
-                verb="run", label="Rebuild memory", command="paperforge memory build",
+                verb="run", label="Rebuild memory",
             ),
             notices=notices, ttl_seconds=TTL_MEMORY,
         )
@@ -883,7 +877,7 @@ def probe_memory(vault: Path) -> dict[str, Any]:
             user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
             action_primary=build_action_primary(
                 action_id="memory.rebuild",
-                verb="rebuild_index", label="Rebuild index", command="paperforge memory build",
+                verb="rebuild_index", label="Rebuild index",
             ),
             ttl_seconds=TTL_MEMORY,
         )
@@ -920,7 +914,7 @@ def probe_memory(vault: Path) -> dict[str, Any]:
                     action_primary=build_action_primary(
                         action_id="memory.install_vector_deps", verb="install",
                         label="Install Smart Retrieval dependencies",
-                        command="paperforge setup",
+        
                     ),
                     ttl_seconds=TTL_MEMORY,
                 )
@@ -968,7 +962,6 @@ def probe_memory(vault: Path) -> dict[str, Any]:
                 action_primary=build_action_primary(
                     action_id="memory.rebuild_vector",
                     verb="rebuild_index", label="Rebuild vector index",
-                    command="paperforge embed build --force",
                 ),
                 notices=notices, ttl_seconds=TTL_MEMORY,
             )
@@ -1011,7 +1004,6 @@ def probe_memory(vault: Path) -> dict[str, Any]:
                 action_primary=build_action_primary(
                     action_id="memory.upgrade_backend",
                     verb="rebuild_index", label="Rebuild index",
-                    command="paperforge embed build --force",
                     safety_class=SAFETY_DESTRUCTIVE,
                     confirmation_required=True,
                     confirmation_prompt=(
@@ -1044,7 +1036,6 @@ def probe_memory(vault: Path) -> dict[str, Any]:
             action_primary=build_action_primary(
                 action_id="memory.rebuild_vector",
                 verb="rebuild_index", label="Build vector index",
-                command="paperforge embed build --force",
             ),
             notices=notices, ttl_seconds=TTL_MEMORY,
         )
@@ -1056,7 +1047,7 @@ def probe_memory(vault: Path) -> dict[str, Any]:
             reason_text="Vector index health check failed — probe to retry",
             user_state=USER_STATE_DETECTION_FAILED, capability_kind=CAPABILITY_OPTIONAL,
             action_primary=build_action_primary(
-                action_id="memory.probe", verb="probe", label="Retry", command="probe memory",
+                action_id="memory.probe", verb="probe", label="Retry",
             ),
             notices=notices, ttl_seconds=TTL_MEMORY,
         )
@@ -1098,7 +1089,7 @@ def _probe_base_modules(vault: Path) -> dict[str, dict[str, Any]]:
                 user_state=USER_STATE_DETECTION_FAILED, capability_kind=CAPABILITY_REQUIRED,
                 action_primary=build_action_primary(
                     action_id=f"{mod_name}.probe",
-                    verb="probe", label="Retry", command=f"probe {mod_name}",
+                    verb="probe", label="Retry",
                 ),
                 ttl_seconds=60,
             )

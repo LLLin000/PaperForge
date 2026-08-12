@@ -44,8 +44,14 @@ REQUIRED_ACTION_PRIMARY_FIELDS = {
     "preservation_facts", "replacement_facts",
     "interruptible",
     "confirmation_required", "confirmation_prompt",
-    "command", "scope", "scope_count",
+    # T8 (#169): `command` DELETED — no backend command strings.
+    "scope", "scope_count",
 }
+
+def _assert_no_command(action_primary: dict | None) -> None:
+    """T8 (#169): action.primary.command must be gone."""
+    if action_primary is not None:
+        assert "command" not in action_primary, "command field retired"
 
 VALID_STATES = {"unknown", "unavailable", "missing_input", "needs_action", "limited", "ready"}
 VALID_SEVERITIES = {"ok", "warning", "error", "unknown"}
@@ -126,7 +132,8 @@ def _assert_action_primary_shape(action_primary: dict | None) -> None:
     assert isinstance(action_primary["confirmation_required"], bool)
     assert isinstance(action_primary["scope"], str), f"scope must be str, got {type(action_primary['scope']).__name__}"
     assert isinstance(action_primary["scope_count"], int), f"scope_count must be int, got {type(action_primary['scope_count']).__name__}"
-    assert isinstance(action_primary["command"], str)
+    # T8 (#169): action_primary.command DELETED — no backend command strings.
+    assert "command" not in action_primary
 
 
 # ---------------------------------------------------------------------------
@@ -298,7 +305,8 @@ class TestInstallationProbe:
         assert data["capability_state"] == "needs_action"
         assert data["user_state"] == "action_required"
         assert data["reason"]["code"] == "installation.version_mismatch"
-        assert data["action"]["primary"]["command"] == "paperforge setup"
+        # T8 (#169): command field deleted.
+        assert "command" not in data["action"]["primary"]
 
 
 # ---------------------------------------------------------------------------
@@ -453,7 +461,7 @@ class TestLibraryProbe:
         assert data['reason']['code'] == 'library.sync_failed'
         assert 'exit code 7' in data['reason']['text']
         assert data['action']['primary']['verb'] == 'sync'
-        assert data['action']['primary']['command'] == 'paperforge sync'
+        _assert_no_command(data['action']['primary'])
 
     def test_sync_success_zero_exit_code_normal(self, tmp_path: Path) -> None:
         """Zero last_operation_exit_code -> normal probe, not sync_failed."""
@@ -559,7 +567,7 @@ class TestMemoryProbe:
         action = data["action"]["primary"]
         _assert_action_primary_shape(action)
         assert action["verb"] == "run"
-        assert action["command"] == "paperforge memory build"
+        assert "command" not in action
 
 
 # ---------------------------------------------------------------------------
@@ -985,7 +993,7 @@ class TestOcrQualityUnacceptable:
         assert data["severity"] == "warning"
         assert data["action"]["primary"]["verb"] == "investigate"
         assert data["action"]["primary"]["label"] == "Report OCR issue"
-        assert data["action"]["primary"]["command"] == "paperforge ocr issue-draft"
+        _assert_no_command(data["action"]["primary"])
         assert data["action"]["primary"]["safety_class"] == "safe"
 
     def test_failed_rows_emit_no_redo_primary(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
@@ -1101,7 +1109,7 @@ def _needs_action_env(mod: str, verb: str = "rebuild_derived", label: str = "Reb
         reason_code=f"{mod}.artifacts_stale", reason_text=f"{mod} needs action",
         user_state=USER_STATE_ACTION_REQUIRED,
         maintenance_eligible=True,
-        action_primary=build_action_primary(action_id=f"{mod}.rebuild", verb=verb, label=label, command=f"paperforge {mod} {verb}"),
+        action_primary=build_action_primary(action_id=f"{mod}.rebuild", verb=verb, label=label),
         ttl_seconds=TTL_MAINTENANCE,
     )
 
@@ -1112,7 +1120,7 @@ def _error_env(mod: str, code: str = "unavailable") -> dict:
         reason_code=f"{mod}.{code}", reason_text=f"{mod} broken",
         user_state=USER_STATE_ACTION_REQUIRED,
         maintenance_eligible=True,
-        action_primary=build_action_primary(action_id=f"{mod}.restore", verb="restore_backup", label="Restore", command=f"paperforge {mod} restore-backup"),
+        action_primary=build_action_primary(action_id=f"{mod}.restore", verb="restore_backup", label="Restore"),
         ttl_seconds=TTL_MAINTENANCE,
     )
 
@@ -1135,7 +1143,7 @@ def _unknown_env(mod: str) -> dict:
         reason_code=f"{mod}.probe_failed", reason_text=f"{mod} probe failed",
         user_state=USER_STATE_DETECTION_FAILED,
         maintenance_eligible=False,
-        action_primary=build_action_primary(action_id=f"{mod}.probe", verb="probe", label="Retry", command=f"probe {mod}"),
+        action_primary=build_action_primary(action_id=f"{mod}.probe", verb="probe", label="Retry"),
         ttl_seconds=TTL_MAINTENANCE,
     )
 
@@ -1303,8 +1311,7 @@ class TestMaintenanceProjection:
                     user_visible_failure=True,
                     action_primary=build_action_primary(
                         action_id="ocr.report_issue",
-                        verb="investigate", label="Report OCR issue",
-                        command="paperforge ocr issue-draft", safety_class='safe'),
+                        verb="investigate", label="Report OCR issue", safety_class='safe'),
                     ttl_seconds=TTL_MAINTENANCE,
                 )
                 monkeypatch.setattr(
@@ -1318,6 +1325,6 @@ class TestMaintenanceProjection:
         ocr_item = next(it for it in data["items"] if it["module"] == "ocr")
         assert ocr_item["action"]["verb"] == "investigate"
         assert ocr_item["action"]["label"] == "Report OCR issue"
-        assert ocr_item["action"]["command"] == "paperforge ocr issue-draft"
+        assert "command" not in ocr_item["action"]
         assert ocr_item["reason_code"] == "ocr.quality_unacceptable"
         assert data['module'] == 'maintenance'

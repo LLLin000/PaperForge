@@ -301,23 +301,14 @@ vi.mock("../src/services/progress-parser", () => ({
       event: string;
       current?: number;
       total?: number;
-      key?: string;
+      item_id?: string;
     }> = [];
     for (const line of chunk.split("\n")) {
-      const m = line.match(/^(\S+)\s+START\s+(\d+)/);
+      const m = line.match(/"event":"(start|progress|result)"/);
       if (m) {
-        events.push({ event: "START", total: parseInt(m[2]) });
-        continue;
-      }
-      const m2 = line.match(/^(\S+)\s+PROGRESS\s+(\d+)\s+(\d+)(?:\s+(\S+))?/);
-      if (m2) {
-        events.push({
-          event: "PROGRESS",
-          current: parseInt(m2[2]),
-          total: parseInt(m2[3]),
-          key: m2[4] || "",
-        });
-        continue;
+        const current = Number(line.match(/"current":(\d+)/)?.[1] ?? 0);
+        const total = Number(line.match(/"total":(\d+)/)?.[1] ?? 0);
+        events.push({ event: m[1], current, total });
       }
     }
     return { events, buffer: "" };
@@ -1312,7 +1303,9 @@ describe("_dispatchMemoryBuild (Issue #78)", () => {
     await Promise.resolve();
     spawnedProcesses
       .find((p: { args: string[] }) => p.args.includes("embed"))
-      ?.onData?.("MEMORY_EMBED PROGRESS 100 500\n");
+      ?.onData?.(
+        '{"schema_version":1,"event":"progress","operation":"embed.build","current":100,"total":500}\n'
+      );
     expect((tab.plugin as any)._embedProgress.current).toBe(100);
   });
 });

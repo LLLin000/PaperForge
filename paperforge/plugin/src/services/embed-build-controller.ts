@@ -131,17 +131,25 @@ export class EmbedBuildController {
       const { events, buffer } = processProgressChunk(text, this._buffer);
       this._buffer = buffer;
       for (const ev of events) {
-        if (ev.event === "START") {
+        // #137 NDJSON events (colon-token shapes retired).
+        if (ev.event === "start") {
           this._progress.total = ev.total || 0;
-        } else if (ev.event === "PROGRESS") {
+        } else if (ev.event === "progress") {
           this._progress.current = ev.current || 0;
-          this._progress.key = ev.key || "";
-        } else if (ev.event === "DONE") {
+          this._progress.key = ev.item_id || "";
+        } else if (ev.event === "result") {
           this._progress.current = this._progress.total;
-        } else if (ev.event === "NOTICE" && ev.notice) {
-          // #120-fix (P1-1): backend EMBED_NOTICE tokens (published with
-          // warning etc.) must reach the UI, not vanish in the stream.
-          this._warning = ev.notice;
+          const res = ev.result as Record<string, unknown> | null;
+          const warnings = res?.warnings as string[] | undefined;
+          if (warnings && warnings.length > 0) {
+            this._warning = String(warnings[0]);
+          }
+        } else if (ev.event === "error") {
+          const err = (ev.result as Record<string, unknown> | null)
+            ?.error as Record<string, unknown> | null;
+          if (err && typeof err.message === "string") {
+            this._warning = err.message;
+          }
         }
       }
       this._emit();

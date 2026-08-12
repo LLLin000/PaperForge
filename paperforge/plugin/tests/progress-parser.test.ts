@@ -1,351 +1,123 @@
 /**
- * Vitest tests for progress-parser.ts — chunk boundary safety,
- * prefix matching for EMBED / OCR_REBUILD / OCR_REDO.
+ * #137 NDJSON structured-stream parser tests (T8 #169).
+ *
+ * The colon-token family is RETIRED — no token + NDJSON dual parsing.
  */
 import { describe, expect, it } from "vitest";
 import {
   processProgressChunk,
   parseProgressLine,
+  isTerminalEvent,
 } from "../src/services/progress-parser";
 
-// ── processProgressChunk ──
-
 describe("processProgressChunk", () => {
-  it("parses OCR_REBUILD_START:total", () => {
-    const { events, buffer } = processProgressChunk(
-      "OCR_REBUILD_START:5\n",
+  it("parses a start event", () => {
+    const { events, buffer, protocolFailure } = processProgressChunk(
+      '{"schema_version":1,"event":"start","operation":"ocr.rebuild","total":3}\n',
       ""
     );
+    expect(protocolFailure).toBeUndefined();
+    expect(buffer).toBe("");
     expect(events).toHaveLength(1);
-    expect(events[0]).toEqual({
-      prefix: "OCR_REBUILD",
-      event: "START",
-      total: 5,
-    });
-    expect(buffer).toBe("");
+    expect(events[0].event).toBe("start");
+    expect(events[0].operation).toBe("ocr.rebuild");
+    expect(events[0].total).toBe(3);
   });
 
-  it("parses OCR_REBUILD_PROGRESS:current:total:key", () => {
-    const { events, buffer } = processProgressChunk(
-      "OCR_REBUILD_PROGRESS:1:5:some-key\n",
-      ""
-    );
-    expect(events).toHaveLength(1);
-    expect(events[0]).toEqual({
-      prefix: "OCR_REBUILD",
-      event: "PROGRESS",
-      current: 1,
-      total: 5,
-      key: "some-key",
-    });
-    expect(buffer).toBe("");
+  it("parses progress and item_result events", () => {
+    const stream = [
+      '{"schema_version":1,"event":"start","operation":"ocr.rebuild","total":2}\n',
+      '{"schema_version":1,"event":"progress","operation":"ocr.rebuild","current":1,"total":2,"item_id":"KEY001"}\n',
+      '{"schema_version":1,"event":"item_result","operation":"ocr.rebuild","item_id":"KEY001","status":"ok"}\n',
+    ].join("");
+    const { events, protocolFailure } = processProgressChunk(stream, "");
+    expect(protocolFailure).toBeUndefined();
+    const kinds = events.map((e) => e.event);
+    expect(kinds).toEqual(["start", "progress", "item_result"]);
+    const progress = events[1];
+    expect(progress.item_id).toBe("KEY001");
+    expect(progress.current).toBe(1);
   });
 
-  it("parses OCR_REBUILD_DONE exact match", () => {
-    const { events } = processProgressChunk("OCR_REBUILD_DONE\n", "");
-    expect(events).toHaveLength(1);
-    expect(events[0]).toEqual({
-      prefix: "OCR_REBUILD",
-      event: "DONE",
-      success: 0,
-      failed: 0,
-      skipped: 0,
-    });
-  });
-
-  it("parses multiple OCR_REDO tokens from one chunk", () => {
-    const chunk =
-      "OCR_REDO_START:3\nOCR_REDO_PROGRESS:1:3:key-1\nOCR_REDO_DONE\n";
-    const { events, buffer } = processProgressChunk(chunk, "");
-    expect(events).toHaveLength(3);
-    expect(events[0]).toEqual({
-      prefix: "OCR_REDO",
-      event: "START",
-      total: 3,
-    });
-    expect(events[1]).toEqual({
-      prefix: "OCR_REDO",
-      event: "PROGRESS",
-      current: 1,
-      total: 3,
-      key: "key-1",
-    });
-    expect(events[2]).toEqual({
-      prefix: "OCR_REDO",
-      event: "DONE",
-      success: 0,
-      failed: 0,
-      skipped: 0,
-    });
-    expect(buffer).toBe("");
-  });
-
-  it("parses EMBED tokens for backward compatibility", () => {
-    const chunk = "EMBED_START:10\nEMBED_PROGRESS:2:10:paper-abc\nEMBED_DONE\n";
-    const { events, buffer } = processProgressChunk(chunk, "");
-    expect(events).toHaveLength(3);
-    expect(events[0]).toEqual({ prefix: "EMBED", event: "START", total: 10 });
-    expect(events[1]).toEqual({
-      prefix: "EMBED",
-      event: "PROGRESS",
-      current: 2,
-      total: 10,
-      key: "paper-abc",
-    });
-    expect(events[2]).toEqual({
-      prefix: "EMBED",
-      event: "DONE",
-      success: 0,
-      failed: 0,
-      skipped: 0,
-    });
-    expect(buffer).toBe("");
-  });
-
-  it("buffers an incomplete last line", () => {
-    const { events, buffer } = processProgressChunk(
-      "OCR_REBUILD_PROGRESS:1:5:",
-      ""
-    );
-    expect(events).toHaveLength(0);
-    expect(buffer).toBe("OCR_REBUILD_PROGRESS:1:5:");
-  });
-
-  it("resumes from buffer on the next chunk", () => {
-    const first = processProgressChunk("OCR_REBUILD_PROGRESS:1:", "");
+  it("buffers an incomplete trailing line across chunks", () => {
+    const first = processProgressChunk('{"schema_version":1,"event":"sta', "");
     expect(first.events).toHaveLength(0);
-    expect(first.buffer).toBe("OCR_REBUILD_PROGRESS:1:");
-
-    const second = processProgressChunk("5:paper-key\n", first.buffer);
-    expect(second.events).toHaveLength(1);
-    expect(second.events[0]).toEqual({
-      prefix: "OCR_REBUILD",
-      event: "PROGRESS",
-      current: 1,
-      total: 5,
-      key: "paper-key",
-    });
-    expect(second.buffer).toBe("");
-  });
-
-  it("passes through non-token lines silently and keeps buffer", () => {
-    const { events, buffer } = processProgressChunk(
-      "normal stdout line\nanother\n",
-      ""
-    );
-    expect(events).toHaveLength(0);
-    expect(buffer).toBe("");
-  });
-
-  it("handles interleaved normal output and tokens", () => {
-    const chunk =
-      "info: starting\nOCR_REBUILD_START:2\nsome log\nOCR_REBUILD_PROGRESS:1:2:k1\nmore output\nOCR_REBUILD_DONE\ndone\n";
-    const { events, buffer } = processProgressChunk(chunk, "");
-    expect(events).toHaveLength(3);
-    expect(events[0]).toEqual({
-      prefix: "OCR_REBUILD",
-      event: "START",
-      total: 2,
-    });
-    expect(events[1]).toEqual({
-      prefix: "OCR_REBUILD",
-      event: "PROGRESS",
-      current: 1,
-      total: 2,
-      key: "k1",
-    });
-    expect(events[2]).toEqual({
-      prefix: "OCR_REBUILD",
-      event: "DONE",
-      success: 0,
-      failed: 0,
-      skipped: 0,
-    });
-    expect(buffer).toBe("");
-  });
-
-  it("handles empty chunk gracefully", () => {
-    const { events, buffer } = processProgressChunk("", "existing-buffer");
-    expect(events).toHaveLength(0);
-    expect(buffer).toBe("existing-buffer");
-  });
-
-  it("uses empty buffer on first call when omitted", () => {
-    // With empty string buffer
-    const { events, buffer } = processProgressChunk("EMBED_DONE\n", "");
-    expect(events).toHaveLength(1);
-    expect(buffer).toBe("");
-  });
-
-  it("parses EMBED_START split at prefix boundary", () => {
-    // First chunk has partial prefix
-    const first = processProgressChunk("EM", "");
-    expect(first.events).toHaveLength(0);
-    expect(first.buffer).toBe("EM");
-
-    // Second chunk completes the token
-    const second = processProgressChunk("BED_START:3\n", first.buffer);
-    expect(second.events).toHaveLength(1);
-    expect(second.events[0]).toEqual({
-      prefix: "EMBED",
-      event: "START",
-      total: 3,
-    });
-    expect(second.buffer).toBe("");
-  });
-
-  it("parses OCR_REBUILD_START split across chunks", () => {
-    const first = processProgressChunk("OCR_REB", "");
-    expect(first.events).toHaveLength(0);
-    expect(first.buffer).toBe("OCR_REB");
-
-    const second = processProgressChunk("UILD_START:5\n", first.buffer);
-    expect(second.events).toHaveLength(1);
-    expect(second.events[0]).toEqual({
-      prefix: "OCR_REBUILD",
-      event: "START",
-      total: 5,
-    });
-    expect(second.buffer).toBe("");
-  });
-
-  it("parses EMBED_PROGRESS split between prefix and colon", () => {
-    const first = processProgressChunk("EMBED_PROGRESS", "");
-    expect(first.events).toHaveLength(0);
-    expect(first.buffer).toBe("EMBED_PROGRESS");
-
-    const second = processProgressChunk(":2:5:my-key\n", first.buffer);
-    expect(second.events).toHaveLength(1);
-    expect(second.events[0]).toEqual({
-      prefix: "EMBED",
-      event: "PROGRESS",
-      current: 2,
-      total: 5,
-      key: "my-key",
-    });
-    expect(second.buffer).toBe("");
-  });
-
-  it("parses EMBED_DONE across two chunks", () => {
-    const first = processProgressChunk("EMBED_D", "");
-    expect(first.events).toHaveLength(0);
-    expect(first.buffer).toBe("EMBED_D");
-
-    const second = processProgressChunk("ONE\n", first.buffer);
-    expect(second.events).toHaveLength(1);
-    expect(second.events[0]).toEqual({
-      prefix: "EMBED",
-      event: "DONE",
-      success: 0,
-      failed: 0,
-      skipped: 0,
-    });
-    expect(second.buffer).toBe("");
-  });
-  it("parses EMBED tokens with interleaved normal output across chunks", () => {
-    // First chunk: START is complete, PROGRESS line is split without trailing \n
-    const first = processProgressChunk(
-      "log line\nEMBED_START:2\nmore log\nEMBED_PROGRESS:1:2:",
-      ""
-    );
-    expect(first.events).toHaveLength(1);
-    expect(first.events[0]).toEqual({
-      prefix: "EMBED",
-      event: "START",
-      total: 2,
-    });
-    // Buffer holds only the last incomplete fragment
-    expect(first.buffer).toBe("EMBED_PROGRESS:1:2:");
-
-    // Second chunk completes the PROGRESS line and has complete DONE
-    const second = processProgressChunk("k1\nEMBED_DONE\n", first.buffer);
-    expect(second.events).toHaveLength(2);
-    expect(second.events[0]).toEqual({
-      prefix: "EMBED",
-      event: "PROGRESS",
-      current: 1,
-      total: 2,
-      key: "k1",
-    });
-    expect(second.events[1]).toEqual({
-      prefix: "EMBED",
-      event: "DONE",
-      success: 0,
-      failed: 0,
-      skipped: 0,
-    });
-    expect(second.buffer).toBe("");
-  });
-
-  it("parses all EMBED tokens across chunk boundaries", () => {
-    const first = processProgressChunk("EMBED_START:2\nEMBED_PR", "");
-    expect(first.events).toHaveLength(1);
-    expect(first.events[0]).toEqual({
-      prefix: "EMBED",
-      event: "START",
-      total: 2,
-    });
-    expect(first.buffer).toBe("EMBED_PR");
-
+    expect(first.buffer).toContain('"event":"sta');
     const second = processProgressChunk(
-      "OGRESS:1:2:k1\nEMBED_DONE\n",
+      'rt","operation":"ocr.redo","total":1}\n',
       first.buffer
     );
-    expect(second.events).toHaveLength(2);
-    expect(second.events[0]).toEqual({
-      prefix: "EMBED",
-      event: "PROGRESS",
-      current: 1,
-      total: 2,
-      key: "k1",
-    });
-    expect(second.events[1]).toEqual({
-      prefix: "EMBED",
-      event: "DONE",
-      success: 0,
-      failed: 0,
-      skipped: 0,
-    });
-    expect(second.buffer).toBe("");
+    expect(second.events).toHaveLength(1);
+    expect(second.events[0].event).toBe("start");
+  });
+
+  it("exactly-one terminal: result is last", () => {
+    const stream = [
+      '{"schema_version":1,"event":"start","operation":"embed.build","total":1}\n',
+      '{"schema_version":1,"event":"result","operation":"embed.build","result":{"ok":true}}\n',
+    ].join("");
+    const { events, protocolFailure } = processProgressChunk(stream, "");
+    expect(protocolFailure).toBeUndefined();
+    expect(events).toHaveLength(2);
+    expect(events[1].event).toBe("result");
+    expect(isTerminalEvent(events[1].event as never)).toBe(true);
+  });
+
+  it("reports a protocol failure on non-JSON lines (fail closed)", () => {
+    const { events, protocolFailure } = processProgressChunk(
+      "OCR_REDO_START:3\n",
+      ""
+    );
+    expect(events).toHaveLength(0);
+    expect(protocolFailure).toContain("non-JSON");
+  });
+
+  it("reports a protocol failure on bad schema_version", () => {
+    const { protocolFailure } = processProgressChunk(
+      '{"schema_version":2,"event":"start","operation":"x"}\n',
+      ""
+    );
+    expect(protocolFailure).toContain("schema_version");
+  });
+
+  it("reports a protocol failure on a missing event discriminator", () => {
+    const { protocolFailure } = processProgressChunk(
+      '{"schema_version":1,"total":3}\n',
+      ""
+    );
+    expect(protocolFailure).toContain("event");
+  });
+
+  it("ignores blank lines", () => {
+    const { events, protocolFailure } = processProgressChunk("\n\n", "");
+    expect(events).toHaveLength(0);
+    expect(protocolFailure).toBeUndefined();
   });
 });
 
-// ── parseProgressLine ──
-
 describe("parseProgressLine", () => {
-  it("returns START for OCR_REBUILD_START:5", () => {
-    expect(parseProgressLine("OCR_REBUILD_START:5")).toEqual({
-      prefix: "OCR_REBUILD",
-      event: "START",
-      total: 5,
-    });
+  it("parses a single NDJSON line", () => {
+    const ev = parseProgressLine(
+      '{"schema_version":1,"event":"progress","operation":"ocr.rebuild","current":1,"total":2,"item_id":"K"}'
+    );
+    expect(ev).not.toBeNull();
+    expect(ev?.event).toBe("progress");
   });
 
-  it("returns PROGRESS for full token", () => {
-    expect(parseProgressLine("OCR_REDO_PROGRESS:3:10:paper-z")).toEqual({
-      prefix: "OCR_REDO",
-      event: "PROGRESS",
-      current: 3,
-      total: 10,
-      key: "paper-z",
-    });
+  it("throws on protocol violations", () => {
+    expect(() => parseProgressLine("not json")).toThrow();
+    expect(() =>
+      parseProgressLine('{"schema_version":9,"event":"start"}')
+    ).toThrow(/schema_version/);
   });
+});
 
-  it("returns DONE for exact match", () => {
-    expect(parseProgressLine("EMBED_DONE")).toEqual({
-      prefix: "EMBED",
-      event: "DONE",
-      success: 0,
-      failed: 0,
-      skipped: 0,
-    });
-  });
-
-  it("returns null for non-token line", () => {
-    expect(parseProgressLine("hello world")).toBeNull();
-  });
-
-  it("returns null for empty string", () => {
-    expect(parseProgressLine("")).toBeNull();
+describe("terminal semantics", () => {
+  it("recognizes result/error/cancelled as terminals", () => {
+    expect(isTerminalEvent("result" as never)).toBe(true);
+    expect(isTerminalEvent("error" as never)).toBe(true);
+    expect(isTerminalEvent("cancelled" as never)).toBe(true);
+    expect(isTerminalEvent("start" as never)).toBe(false);
+    expect(isTerminalEvent("progress" as never)).toBe(false);
   });
 });

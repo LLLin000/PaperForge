@@ -1,191 +1,152 @@
 /**
- * Shared progress token parser — handles EMBED, OCR_REBUILD, OCR_REDO
- * tokens across arbitrary stdout chunks.
+ * #137 structured-stream parser — NDJSON events from long-task commands.
  *
- * Token formats:
- *   {PREFIX}_START:{total}
- *   {PREFIX}_PROGRESS:{current}:{total}:{key}
- *   {PREFIX}_DONE
+ * stdout is machine output only: one JSON object per line, `schema_version: 1`,
+ * `event` discriminator required, EXACTLY ONE terminal (result | error |
+ * cancelled) then EOF.  The colon-token family (EMBED_*, OCR_REBUILD_*,
+ * OCR_REDO_*) and tolerant "ignore unknown lines" parsing are RETIRED — no
+ * token + NDJSON dual parsing.
  *
- * PREFIX in: EMBED, OCR_REBUILD, OCR_REDO
- *
- * This is the stable plugin boundary contract from the CLI backend.
+ * Protocol failures (per #137 §5) are surfaced, never guessed:
+ * non-JSON line, bad schema_version, EOF without terminal, second terminal,
+ * events after the terminal, unknown event type.
  */
 
-export type ProgressEventType =
-  | "START"
-  | "PROGRESS"
-  | "RESULT"
-  | "DONE"
-  | "PHASE"
-  | "NOTICE";
+export type NdjsonEventType =
+  | "start"
+  | "phase"
+  | "progress"
+  | "item_result"
+  | "result"
+  | "error"
+  | "cancelled";
 
-export interface ProgressEvent {
-  prefix: string;
-  event: ProgressEventType;
+export interface NdjsonEvent {
+  schema_version: number;
+  event: NdjsonEventType;
+  operation: string;
   total?: number;
-  current?: number;
-  key?: string;
-  /** #126: OCR_REBUILD_RESULT:<key>:ok|failed|skipped */
-  resultStatus?: string;
-  /** #126: OCR_REBUILD_DONE:<success>:<failed>:<skipped> */
-  success?: number;
-  failed?: number;
-  skipped?: number;
+  scope?: unknown;
   phase?: string;
-  notice?: string;
+  current?: number;
+  item_id?: string;
+  status?: string;
+  result?: Record<string, unknown> | null;
+  [key: string]: unknown;
 }
 
-const KNOWN_PREFIXES = ["EMBED", "OCR_REBUILD", "OCR_REDO"];
+export interface ParseChunkResult {
+  events: NdjsonEvent[];
+  buffer: string;
+  protocolFailure?: string;
+}
+
+const TERMINAL_EVENTS: ReadonlySet<string> = new Set([
+  "result",
+  "error",
+  "cancelled",
+]);
 
 /**
- * Parse an arbitrarily chunked stdout stream for progress tokens.
+ * Parse an arbitrarily chunked NDJSON stream.
  *
  * @param chunk  Raw text from the latest stdout data event.
- * @param buffer Accumulated incomplete line from a previous call (empty string initially).
- * @returns Parsed events and any leftover line fragment to pass to the next call.
+ * @param buffer Accumulated incomplete line from a previous call.
+ * @returns Parsed events, leftover fragment, and any protocol failure.
+ *          A protocol failure is sticky: once reported, the caller should
+ *          stop feeding chunks (the stream is unparseable by contract).
  */
 export function processProgressChunk(
   chunk: string,
   buffer: string
-): { events: ProgressEvent[]; buffer: string } {
+): ParseChunkResult {
   const full = buffer + chunk;
   const lines = full.split("\n");
-  // The last element may be an incomplete line — hold for next chunk.
   const incomplete = lines.pop() ?? "";
 
-  const events: ProgressEvent[] = [];
+  const events: NdjsonEvent[] = [];
+  let protocolFailure: string | undefined;
 
   for (const line of lines) {
-    for (const prefix of KNOWN_PREFIXES) {
-      const pLen = prefix.length;
-
-      if (line.startsWith(prefix + "_START:")) {
-        const total =
-          parseInt(line.slice(pLen + 7) /* "_START:".length */, 10) || 0;
-        events.push({ prefix, event: "START", total });
+    if (!line.trim()) continue;
+    if (protocolFailure) break;
+    try {
+      const parsed = JSON.parse(line) as NdjsonEvent;
+      if (parsed.schema_version !== 1) {
+        protocolFailure = `schema_version ${parsed.schema_version} != 1`;
         break;
       }
-
-      if (line.startsWith(prefix + "_PROGRESS:")) {
-        const rest = line.slice(pLen + 10); /* "_PROGRESS:".length */
-        const parts = rest.split(":");
-        events.push({
-          prefix,
-          event: "PROGRESS",
-          current: parseInt(parts[0], 10) || 0,
-          total: parseInt(parts[1], 10) || 0,
-          key: parts[2] ?? "",
-        });
+      if (typeof parsed.event !== "string" || !parsed.event) {
+        protocolFailure = "event discriminator required";
         break;
       }
-
-      if (line.startsWith(prefix + "_RESULT:")) {
-        // #126: {PREFIX}_RESULT:<key>:ok|failed|skipped — key never contains
-        // the protocol separator; status is the final field.
-        const rest = line.slice(pLen + 8); /* "_RESULT:".length */
-        const parts = rest.split(":");
-        events.push({
-          prefix,
-          event: "RESULT",
-          key: parts[0] ?? "",
-          resultStatus: parts[1] ?? "",
-        });
+      if (TERMINAL_EVENTS.has(parsed.event) && !("result" in parsed)) {
+        protocolFailure = `terminal ${parsed.event} missing result payload`;
         break;
       }
-
-      if (line === prefix + "_DONE" || line.startsWith(prefix + "_DONE:")) {
-        const rest = line.slice(pLen + 6); /* "_DONE:".length */
-        const parts = rest.split(":");
-        events.push({
-          prefix,
-          event: "DONE",
-          success: parseInt(parts[0], 10) || 0,
-          failed: parseInt(parts[1], 10) || 0,
-          skipped: parseInt(parts[2], 10) || 0,
-        });
-        break;
-      }
-
-      // #120 forward-compat: EMBED_PHASE:<phase> and EMBED_NOTICE:<text>.
-      // The backend does not emit these yet — parsing is additive.
-      if (line.startsWith(prefix + "_PHASE:")) {
-        events.push({
-          prefix,
-          event: "PHASE",
-          phase: line.slice(pLen + 7) /* "_PHASE:".length */,
-        });
-        break;
-      }
-
-      if (line.startsWith(prefix + "_NOTICE:")) {
-        events.push({
-          prefix,
-          event: "NOTICE",
-          notice: line.slice(pLen + 8) /* "_NOTICE:".length */,
-        });
-        break;
-      }
+      events.push(parsed);
+    } catch {
+      protocolFailure = `non-JSON stdout line: ${line.slice(0, 80)}`;
+      break;
     }
   }
 
-  return { events, buffer: incomplete };
+  return { events, buffer: incomplete, protocolFailure };
 }
 
 /**
- * Parse a single complete line for a progress token.
- * Useful when text is already newline-aligned (e.g. execFile stdout).
+ * Parse a single complete NDJSON line (newline-aligned stdout, e.g.
+ * execFile output).  Returns the event or null for blank lines; throws a
+ * descriptive error on protocol violations.
  */
-export function parseProgressLine(line: string): ProgressEvent | null {
-  for (const prefix of KNOWN_PREFIXES) {
-    const pLen = prefix.length;
-
-    if (line.startsWith(prefix + "_START:")) {
-      const total = parseInt(line.slice(pLen + 7), 10) || 0;
-      return { prefix, event: "START", total };
-    }
-
-    if (line.startsWith(prefix + "_PROGRESS:")) {
-      const rest = line.slice(pLen + 10);
-      const parts = rest.split(":");
-      return {
-        prefix,
-        event: "PROGRESS",
-        current: parseInt(parts[0], 10) || 0,
-        total: parseInt(parts[1], 10) || 0,
-        key: parts[2] ?? "",
-      };
-    }
-
-    if (line.startsWith(prefix + "_RESULT:")) {
-      const parts = line.slice(pLen + 8).split(":");
-      return {
-        prefix,
-        event: "RESULT",
-        key: parts[0] ?? "",
-        resultStatus: parts[1] ?? "",
-      };
-    }
-
-    if (line === prefix + "_DONE" || line.startsWith(prefix + "_DONE:")) {
-      const parts = line.slice(pLen + 6).split(":");
-      return {
-        prefix,
-        event: "DONE",
-        success: parseInt(parts[0], 10) || 0,
-        failed: parseInt(parts[1], 10) || 0,
-        skipped: parseInt(parts[2], 10) || 0,
-      };
-    }
-
-    if (line.startsWith(prefix + "_PHASE:")) {
-      return { prefix, event: "PHASE", phase: line.slice(pLen + 7) };
-    }
-
-    if (line.startsWith(prefix + "_NOTICE:")) {
-      return { prefix, event: "NOTICE", notice: line.slice(pLen + 8) };
-    }
+export function parseProgressLine(line: string): NdjsonEvent | null {
+  if (!line.trim()) return null;
+  const parsed = JSON.parse(line) as NdjsonEvent;
+  if (parsed.schema_version !== 1) {
+    throw new Error(
+      `protocol failure: schema_version ${parsed.schema_version} != 1`
+    );
   }
+  if (typeof parsed.event !== "string" || !parsed.event) {
+    throw new Error("protocol failure: event discriminator required");
+  }
+  return parsed;
+}
 
+/** True when the event terminates the stream. */
+export function isTerminalEvent(event: NdjsonEventType): boolean {
+  return TERMINAL_EVENTS.has(event);
+}
+
+/** Project a start/progress event onto the old ProgressEvent-ish shape used
+ * by UI renderers (additive adapter; the wire stays NDJSON). */
+export function toLegacyProgressShape(event: NdjsonEvent): {
+  prefix: string;
+  event: string;
+  total?: number;
+  current?: number;
+  key?: string;
+  resultStatus?: string;
+} | null {
+  if (event.event === "start") {
+    return { prefix: event.operation, event: "START", total: event.total };
+  }
+  if (event.event === "progress") {
+    return {
+      prefix: event.operation,
+      event: "PROGRESS",
+      current: event.current,
+      total: event.total,
+      key: event.item_id,
+    };
+  }
+  if (event.event === "item_result") {
+    return {
+      prefix: event.operation,
+      event: "RESULT",
+      key: event.item_id,
+      resultStatus: event.status,
+    };
+  }
   return null;
 }
