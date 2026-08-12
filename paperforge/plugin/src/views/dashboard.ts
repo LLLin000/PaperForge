@@ -17,6 +17,7 @@ import {
   PF_ICON_ID,
   overlayEntryWorkflowState,
   patchEntryWorkflowState,
+  toolArgvFor,
 } from "../constants";
 import { t } from "../i18n";
 import { resolveVaultPaths } from "../services/runtime-paths";
@@ -3117,9 +3118,11 @@ export class PaperForgeStatusView extends ItemView {
     const { path: pythonExe, args: pyExtra = [] } = py;
     // Issue #79: resolve credentials for allowlisted command types immediately before launch
     const actionEnv = await buildTargetedEnv(null, a.commandId);
+    // T8 (#169): typed tool argv — never a generic dispatch table.
+    const toolArgv = toolArgvFor(a.id) ?? [];
     const child = spawn(
       pythonExe,
-      [...pyExtra, "-m", "paperforge", a.commandId, ...extraArgs],
+      [...pyExtra, "-m", "paperforge", ...toolArgv, ...extraArgs],
       { cwd: vp, timeout: cmdTimeout, env: actionEnv }
     );
     const log: string[] = [];

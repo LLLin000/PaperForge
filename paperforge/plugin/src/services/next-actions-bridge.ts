@@ -1,13 +1,9 @@
 /**
- * Next-action bridge (#127 PR C): wires the pure orchestrator to Obsidian.
- *
- * Both manual sync (settings.ts) and auto sync (main.ts) feed the PFResult
- * stdout of `sync --json` here; this module assembles the executor deps
- * (allowlisted argv via execFile, confirmation modal, Notices) and runs the
- * orchestration policy.
+ * Next-action bridge (T8 closure #169): wires the pure orchestrator to
+ * Obsidian through the ONE ActionClient.  Executes with the redacted
+ * desktop env (never the bare process env).
  */
 import { App, Notice } from "obsidian";
-import { execFile } from "child_process";
 import { t } from "../i18n";
 import { orchestrateNextActions } from "./next-actions-orchestrator";
 import {
@@ -15,6 +11,7 @@ import {
   trackerDeps,
   type NextAction,
 } from "./next-actions-types";
+import { runActionRequest, type ActionRequest } from "./action-client";
 import { NextActionConfirmModal } from "../views/modals";
 
 export interface NextActionBridgeContext {
@@ -45,21 +42,20 @@ export async function orchestrateFromSync(
   const actions = parseNextActions(stdout);
   if (actions.length === 0) return 0;
   return orchestrateNextActions(actions, {
-    runAction: (argv) => {
+    runAction: (req: ActionRequest): boolean => {
       const py = ctx.resolveCommand(ctx.vaultPath);
       if (!py?.path) {
         new Notice("PaperForge runtime unavailable; follow-up not started");
         return false;
       }
-      execFile(
-        py.path,
-        [...py.args, "-m", "paperforge", ...argv],
-        { cwd: ctx.vaultPath, timeout: 120000, windowsHide: true },
-        (err) => {
-          if (err) {
-            new Notice(`Follow-up failed: ${err.message || String(err)}`);
-          } else {
+      void runActionRequest(py.path, py.args, ctx.vaultPath, req).then(
+        (res) => {
+          if (res.ok) {
             new Notice(t("next_action_done") || "Follow-up completed");
+          } else {
+            const err = (res.payload?.error as Record<string, unknown> | null)
+              ?.message;
+            new Notice(`Follow-up failed: ${String(err ?? "unknown error")}`);
           }
         }
       );

@@ -13,7 +13,7 @@
  * this controller.
  */
 import { spawn, type ChildProcess } from "child_process";
-import { processProgressChunk, type NdjsonEvent } from "./progress-parser";
+import { NdjsonStreamParser, type NdjsonEvent } from "./long-task-client";
 
 export type OcrMode = "run" | "rebuild" | "redo";
 
@@ -29,6 +29,8 @@ export interface OcrProcessOutcome {
   successKeys: string[];
   failedKeys: string[];
   skippedKeys: OcrSkippedKey[];
+  /** #137 protocol failure (non-JSON line, bad event, EOF w/o terminal). */
+  protocolFailure?: string;
 }
 
 export interface OcrProcessCallbacks {
@@ -72,7 +74,7 @@ function modeToArgs(mode: OcrMode, opts: OcrProcessStartOptions): string[] {
 export class OcrProcessController {
   private _child: ChildProcess | null = null;
   private _stopRequested = false;
-  private _buffer = "";
+  private _parser = new NdjsonStreamParser();
   private _stderr = "";
 
   constructor(private readonly _opts: OcrProcessControllerOptions) {}
@@ -132,7 +134,7 @@ export class OcrProcessController {
   ): Promise<OcrProcessOutcome> {
     const callbacks = opts.callbacks ?? {};
     this._stopRequested = false;
-    this._buffer = "";
+    this._parser = new NdjsonStreamParser();
     this._stderr = "";
 
     const spawnFn = this._opts.spawnFn ?? spawn;
@@ -155,7 +157,12 @@ export class OcrProcessController {
 
     const settleOnce = (() => {
       let settled = false;
-      return (exitCode: number | null, stopped: boolean, ok: boolean): void => {
+      return (
+        exitCode: number | null,
+        stopped: boolean,
+        ok: boolean,
+        protocolFailure?: string
+      ): void => {
         if (settled) return;
         settled = true;
         this._child = null;
@@ -169,6 +176,7 @@ export class OcrProcessController {
           successKeys,
           failedKeys,
           skippedKeys,
+          protocolFailure,
         });
       };
     })();
@@ -180,8 +188,7 @@ export class OcrProcessController {
 
     child.stdout?.setEncoding("utf-8");
     child.stdout?.on("data", (chunk: string) => {
-      const { events, buffer } = processProgressChunk(chunk, this._buffer);
-      this._buffer = buffer;
+      const events = this._parser.feed(chunk);
       for (const event of events) {
         this._handleEvent(
           event,
@@ -201,10 +208,16 @@ export class OcrProcessController {
       settleOnce(null, this._stopRequested, false);
     });
     child.on("close", (code: number | null) => {
+      this._parser.finishEOF();
+      const protocolFailure = this._parser.protocolFailure;
+      if (protocolFailure) {
+        callbacks.onNotice?.(`OCR stream protocol failure: ${protocolFailure}`);
+      }
       const stopped = this._stopRequested || code === 130;
-      const failed = failedKeys.length > 0 || skippedKeys.length > 0;
+      const failed =
+        failedKeys.length > 0 || skippedKeys.length > 0 || !!protocolFailure;
       const ok = !stopped && !failed && (code === 0 || code === null);
-      settleOnce(code, stopped, ok);
+      settleOnce(code, stopped, ok, protocolFailure);
     });
 
     return promise;

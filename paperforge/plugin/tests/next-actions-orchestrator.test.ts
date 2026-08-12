@@ -6,16 +6,13 @@
  * wire (`action run <id> --scope ...`) and NEVER owns an allowlist.
  */
 import { describe, expect, it, beforeEach } from "vitest";
-import {
-  orchestrateNextActions,
-  buildActionArgv,
-  actionDedupeKey,
-} from "../src/services/next-actions-orchestrator";
+import type { ActionRequest } from "../src/services/action-client";
+import { orchestrateNextActions } from "../src/services/next-actions-orchestrator";
+import { buildActionArgv } from "../src/services/action-client";
 import {
   parseNextActions,
   resetNextActionTracker,
   type NextAction,
-  type OrchestratorDeps,
 } from "../src/services/next-actions-types";
 
 beforeEach(() => resetNextActionTracker());
@@ -34,17 +31,32 @@ function action(overrides: Partial<NextAction> = {}): NextAction {
   };
 }
 
-function deps(overrides: Partial<OrchestratorDeps> = {}): OrchestratorDeps & {
-  ran: string[][];
+function deps(
+  overrides: Partial<{
+    runAction: (req: ActionRequest) => boolean;
+    confirm: (a: NextAction) => Promise<boolean>;
+    notify: (m: string) => void;
+    isInFlight: (k: string) => boolean;
+    markInFlight: (k: string) => void;
+    clearInFlight: (k: string) => void;
+  }> = {}
+): {
+  ran: ActionRequest[];
   notices: string[];
   confirmed: NextAction[];
+  runAction: (req: ActionRequest) => boolean;
+  confirm: (a: NextAction) => Promise<boolean>;
+  notify: (m: string) => void;
+  isInFlight: (k: string) => boolean;
+  markInFlight: (k: string) => void;
+  clearInFlight: (k: string) => void;
 } {
-  const ran: string[][] = [];
+  const ran: ActionRequest[] = [];
   const notices: string[] = [];
   const confirmed: NextAction[] = [];
   return {
-    runAction: (argv) => {
-      ran.push(argv);
+    runAction: (req) => {
+      ran.push(req);
       return true;
     },
     confirm: async (a) => {
@@ -53,14 +65,12 @@ function deps(overrides: Partial<OrchestratorDeps> = {}): OrchestratorDeps & {
     },
     notify: (m) => notices.push(m),
     isInFlight: () => false,
-    hasExecuted: () => false,
     markInFlight: () => {},
     clearInFlight: () => {},
-    markExecuted: () => {},
+    ...overrides,
     ran,
     notices,
     confirmed,
-    ...overrides,
   };
 }
 
@@ -109,12 +119,14 @@ describe("parseNextActions", () => {
     const d = deps();
     const started = await orchestrateNextActions(parseNextActions(stdout), d);
     expect(started).toBe(2);
-    // T8: argv is derived from the wire — `action run <id> --scope ...`,
-    // never a plugin-side (verb, command) table.
-    expect(d.ran).toEqual([
-      ["action", "run", "memory.build", "--scope", "all"],
-      ["action", "run", "embed.resume", "--scope", "all"],
+    // T8: the orchestrator hands the ActionClient a typed request — argv
+    // construction lives in ONE builder, never a plugin-side table.
+    expect(d.ran.map((r) => r.action_id)).toEqual([
+      "memory.build",
+      "embed.resume",
     ]);
+    expect(d.ran[0].confirm).toBeUndefined();
+    expect(d.ran[1].confirm).toBe("embed.resume"); // user confirmed it
     expect(d.confirmed.map((a) => a.action_id)).toEqual(["embed.resume"]);
   });
 
@@ -126,10 +138,11 @@ describe("parseNextActions", () => {
 });
 
 describe("argv derivation", () => {
-  it("builds papers-scope argv with keys", () => {
-    const argv = buildActionArgv(
-      action({ scope: { kind: "papers", keys: ["B", "A"] } })
-    );
+  it("builds papers-scope argv with REPEATED --key flags", () => {
+    const argv = buildActionArgv({
+      action_id: "memory.build",
+      scope: { kind: "papers", keys: ["B", "A"] },
+    });
     expect(argv).toEqual([
       "action",
       "run",
@@ -138,19 +151,37 @@ describe("argv derivation", () => {
       "papers",
       "--key",
       "B",
+      "--key",
       "A",
+      "--json",
     ]);
   });
 
-  it("dedupes by normalized scope keys", () => {
-    expect(
-      actionDedupeKey(
-        action({ scope: { kind: "papers", keys: ["B", "A", "B"] } })
-      )
-    ).toBe("memory.build:papers:A,B");
-    expect(
-      actionDedupeKey(action({ scope: { kind: "papers", keys: ["A", "B"] } }))
-    ).toBe("memory.build:papers:A,B");
+  it("includes --confirm and --follow auto when given", () => {
+    const argv = buildActionArgv({
+      action_id: "embed.resume",
+      scope: { kind: "all" },
+      confirm: "embed.resume",
+      follow: "auto",
+    });
+    expect(argv).toContain("--confirm");
+    expect(argv).toContain("embed.resume");
+    expect(argv).toContain("--follow");
+    expect(argv).toContain("auto");
+    expect(argv[argv.length - 1]).toBe("--json");
+  });
+
+  it("suppresses a second batch while the first is in flight", async () => {
+    const inFlight = new Set<string>();
+    const d = deps({
+      isInFlight: (k) => inFlight.has(k),
+      markInFlight: (k) => inFlight.add(k),
+      clearInFlight: (k) => inFlight.delete(k),
+    });
+    inFlight.add("memory.build:all"); // a previous batch is still running
+    const started = await orchestrateNextActions([action()], d);
+    expect(started).toBe(0);
+    expect(d.ran).toHaveLength(0);
   });
 });
 
@@ -159,9 +190,9 @@ describe("execution policy", () => {
     const d = deps();
     const started = await orchestrateNextActions([action()], d);
     expect(started).toBe(1);
-    expect(d.ran).toEqual([
-      ["action", "run", "memory.build", "--scope", "all"],
-    ]);
+    expect(d.ran).toHaveLength(1);
+    expect(d.ran[0].action_id).toBe("memory.build");
+    expect(d.ran[0].confirm).toBeUndefined();
     expect(d.confirmed).toEqual([]);
   });
 
@@ -176,9 +207,9 @@ describe("execution policy", () => {
     const started = await orchestrateNextActions([embed], d);
     expect(started).toBe(1);
     expect(d.confirmed).toEqual([embed]);
-    expect(d.ran).toEqual([
-      ["action", "run", "embed.resume", "--scope", "all"],
-    ]);
+    expect(d.ran).toHaveLength(1);
+    expect(d.ran[0].action_id).toBe("embed.resume");
+    expect(d.ran[0].confirm).toBe("embed.resume");
   });
 
   it("records refusal when the user declines", async () => {
@@ -217,17 +248,15 @@ describe("execution policy", () => {
     expect(d.notices.some((m) => m.includes("depth"))).toBe(true);
   });
 
-  it("dedupes an already-executed action", async () => {
-    let executed = false;
-    const d = deps({
-      hasExecuted: () => executed,
-      markExecuted: () => {
-        executed = true;
-      },
-    });
-    const started = await orchestrateNextActions([action(), action()], d);
-    // First runs and is marked; the duplicate is skipped.
-    expect(started).toBe(1);
-    expect(d.ran).toHaveLength(1);
+  it("never suppresses a LATER re-repair of the same scope (#169 P0-2)", async () => {
+    // No `_executed` set exists: a later legitimate re-repair (new OCR →
+    // stale → Python re-emits memory.build[A]) must run again.  Only the
+    // in-flight guard applies, and it is cleared when the action settles.
+    const d = deps();
+    const first = await orchestrateNextActions([action()], d);
+    expect(first).toBe(1);
+    const second = await orchestrateNextActions([action()], d);
+    expect(second).toBe(1);
+    expect(d.ran).toHaveLength(2);
   });
 });

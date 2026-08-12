@@ -14,7 +14,7 @@
  */
 import { spawn } from "child_process";
 
-import { processProgressChunk } from "./progress-parser";
+import { NdjsonStreamParser } from "./long-task-client";
 
 export type EmbedBuildState =
   | "idle"
@@ -63,7 +63,8 @@ export class EmbedBuildController {
   private _warning: string | null = null;
   private _stopResult: string | null = null;
   private _stderr = "";
-  private _buffer = "";
+  private _parser = new NdjsonStreamParser();
+  private _graceTimer: ReturnType<typeof setTimeout> | null = null;
   private _disposed = false;
 
   constructor(private readonly _opts: EmbedBuildControllerOptions) {}
@@ -99,7 +100,7 @@ export class EmbedBuildController {
     this._warning = null;
     this._stopResult = null;
     this._stderr = "";
-    this._buffer = "";
+    this._parser = new NdjsonStreamParser();
     this._progress = { current: 0, total: 0, key: "" };
 
     let env: Record<string, string | undefined>;
@@ -128,8 +129,7 @@ export class EmbedBuildController {
           : Buffer.isBuffer(data)
             ? data.toString("utf-8")
             : String(data);
-      const { events, buffer } = processProgressChunk(text, this._buffer);
-      this._buffer = buffer;
+      const events = this._parser.feed(text);
       for (const ev of events) {
         // #137 NDJSON events (colon-token shapes retired).
         if (ev.event === "start") {
@@ -167,6 +167,8 @@ export class EmbedBuildController {
     });
 
     child.on("close", (code: number | null) => {
+      this._parser.finishEOF();
+      if (this._graceTimer) clearTimeout(this._graceTimer);
       this._child = null;
       this._stopPoll();
       this._progress.current = this._progress.total;
@@ -192,40 +194,46 @@ export class EmbedBuildController {
   }
 
   /**
-   * Request a cooperative stop via the backend `embed stop` command
-   * (control-sidecar protocol). Renders stopped vs completed_before_stop.
+   * #137 cooperative stop (T8 closure #169): stdin `PAPERFORGE_STOP\n`,
+   * then a grace window, then hard escalation (Windows taskkill /T /F,
+   * POSIX process-group SIGKILL).  The backend `embed stop` control plane
+   * is retired — this controller owns its child.
    */
   async stop(): Promise<void> {
     if (this._state !== "running" || this._disposed) return;
     this._setState("stopping");
+    this._stopResult = "stopped";
+    const child = this._child;
     try {
-      const { code, stdout } = await this._opts.runShort(
-        ["embed", "stop", "--json"],
-        45000
-      );
-      if (code === 0) {
-        try {
-          const payload = JSON.parse(stdout) as {
-            data?: { state?: string };
-          };
-          this._stopResult = payload?.data?.state ?? "stopped";
-        } catch {
-          this._stopResult = "stopped";
+      child?.stdin?.write("PAPERFORGE_STOP\n");
+    } catch {
+      // stdin closed — the exit path still settles.
+    }
+    if (this._graceTimer) return;
+    const graceMs = 5000;
+    this._graceTimer = setTimeout(() => {
+      if (child && child.exitCode === null && !child.killed) {
+        if (process.platform === "win32") {
+          try {
+            const pid = child.pid;
+            if (!pid) return;
+            spawn("taskkill", ["/T", "/F", "/PID", String(pid)], {
+              stdio: "ignore",
+            });
+          } catch {
+            child.kill("SIGKILL");
+          }
+        } else {
+          try {
+            const pid = child.pid;
+            if (pid) process.kill(-pid, "SIGKILL");
+          } catch {
+            child.kill("SIGKILL");
+          }
         }
-      } else {
-        this._stopResult = null;
-        this._warning = "Stop request failed (build may still be running).";
+        this._warning = "Build stopped after grace window (hard kill).";
       }
-    } catch (err) {
-      this._stopResult = null;
-      this._warning = `Stop request failed: ${String(err)}`;
-    }
-    // The child close event settles the terminal state (success/failed);
-    // if the build survived (backend rc=1 keeps the sidecar alive), drop
-    // back to running so the UI can retry stop.
-    if (this._child) {
-      this._setState("running");
-    }
+    }, graceMs);
   }
 
   /** Plugin unload: kill our own child, clear the poll. Bounded wait. */
