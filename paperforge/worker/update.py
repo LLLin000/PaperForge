@@ -169,8 +169,6 @@ def _update_via_pip(editable: bool = False) -> bool:
             logger.error("pip 更新失败: %s", r.stderr)
             return False
     logger.info("pip 更新成功")
-    if r.stdout.strip():
-        print(r.stdout)
     return True
 
 
@@ -198,8 +196,6 @@ def _update_via_git(vault: Path) -> bool:
         logger.error("git pull 失败: %s", r.stderr)
         return False
     logger.info("git pull 成功")
-    if r.stdout.strip():
-        print(r.stdout)
     return True
 
 
@@ -258,11 +254,113 @@ def _deploy_all_skills(vault: Path) -> None:
         logger.warning("Skill 部署失败（非致命）: %s", e)
 
 
-def run_update(vault: Path) -> int:
-    """运行更新检查与安装"""
+def _fresh_installed_version() -> str | None:
+    """Verify the ACTUALLY installed version with a fresh child interpreter
+    (#174): the running process's paperforge module may be a stale import
+    cache — never trust it for the post-update pointer."""
+    try:
+        r = subprocess.run(
+            [
+                sys.executable,
+                "-I",
+                "-c",
+                "import paperforge; print(paperforge.__version__)",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        version = r.stdout.strip()
+        return version if r.returncode == 0 and version else None
+    except Exception:  # noqa: BLE001 — verification failure means no publish
+        return None
+
+
+def perform_update(vault: Path) -> dict:
+    """Non-interactive lifecycle update (#174).
+
+    Pure service contract: no prompts, no stdout printing, no UI
+    confirmation (the #145 action runner / CLI UX owns confirmation).
+    On a successful install the installed version is verified with a fresh
+    child interpreter; ONLY then is the pointer published, with the
+    OBSERVED version — publication is part of lifecycle success and must
+    precede any success return.
+    """
     try:
         import paperforge
 
+        local = paperforge.__version__
+    except Exception:
+        local = "unknown"
+    remote = _remote_version()
+    if not remote:
+        return {"ok": False, "updated": False, "local_version": local,
+                "remote_version": None, "error": "cannot resolve remote version"}
+    try:
+        needs = tuple(int(x) for x in remote.split(".") if x.isdigit()) > tuple(
+            int(x) for x in local.split(".") if x.isdigit()
+        )
+    except ValueError:
+        needs = remote != local
+
+    if not needs:
+        _sync_obsidian_plugin(vault)
+        _deploy_all_skills(vault)
+        return {"ok": True, "updated": False, "local_version": local,
+                "remote_version": remote, "installed_version": local}
+
+    # Auto-detect installation method
+    method, path = _detect_install_method()
+    if method == "pip":
+        success = _update_via_pip(editable=False)
+        if not success:
+            success = _update_via_zip(vault)
+    elif method == "pip-editable":
+        if path and (path / ".git").exists():
+            success = _update_via_git(path)
+            if success:
+                os.chdir(path)
+                success = _update_via_pip(editable=True)
+            if not success:
+                success = _update_via_zip(vault)
+        else:
+            success = _update_via_pip(editable=False)
+            if not success:
+                success = _update_via_zip(vault)
+    elif method == "git":
+        success = _update_via_git(vault)
+        if not success:
+            success = _update_via_zip(vault)
+    else:
+        success = _update_via_zip(vault)
+
+    if not success:
+        return {"ok": False, "updated": False, "local_version": local,
+                "remote_version": remote, "error": "install failed"}
+
+    # Fresh-child verify BEFORE any success is returned.
+    observed = _fresh_installed_version()
+    if not observed or observed != remote:
+        return {"ok": False, "updated": True, "local_version": local,
+                "remote_version": remote, "installed_version": observed,
+                "error": f"installed version {observed!r} != intended {remote!r}"}
+
+    _sync_obsidian_plugin(vault)
+    _deploy_all_skills(vault)
+
+    from paperforge.runtime_pointer import publish_pointer
+
+    publish_pointer(paperforge_version=observed)
+    return {"ok": True, "updated": True, "local_version": local,
+            "remote_version": remote, "installed_version": observed}
+
+
+def run_update(vault: Path) -> int:
+    """CLI UX over perform_update: adds the interactive confirmation prompt
+    and human logging; no lifecycle logic lives here."""
+    import paperforge
+
+    try:
         local = paperforge.__version__
     except Exception:
         local = "unknown"
@@ -275,13 +373,9 @@ def run_update(vault: Path) -> int:
     if not remote:
         logger.error("无法获取远程版本")
         return 1
-    try:
-        needs = tuple(int(x) for x in remote.split(".") if x.isdigit()) > tuple(
-            int(x) for x in local.split(".") if x.isdigit()
-        )
-    except ValueError:
-        needs = remote != local
-    if not needs:
+    if not tuple(int(x) for x in remote.split(".") if x.isdigit()) > tuple(
+        int(x) for x in local.split(".") if x.isdigit()
+    ):
         _sync_obsidian_plugin(vault)
         _deploy_all_skills(vault)
         logger.info("当前已是最新版本")
@@ -292,54 +386,12 @@ def run_update(vault: Path) -> int:
     if ans not in ("y", "yes"):
         logger.info("已取消")
         return 0
-
-    # Auto-detect installation method
-    method, path = _detect_install_method()
-    logger.info("安装方式: %s", method)
-
-    if method == "pip":
-        logger.info("通过 pip 更新...")
-        success = _update_via_pip(editable=False)
-        if not success:
-            logger.warning("pip 更新失败（可能需要 git），尝试 zip 下载...")
-            success = _update_via_zip(vault)
-    elif method == "pip-editable":
-        logger.info("通过 pip editable 模式更新...")
-        # For editable install, need to git pull first then reinstall
-        if path and (path / ".git").exists():
-            success = _update_via_git(path)
-            if success:
-                logger.info("重新安装 editable 模式...")
-                os.chdir(path)
-                success = _update_via_pip(editable=True)
-            if not success:
-                logger.warning("editable 更新失败，尝试 zip 下载...")
-                success = _update_via_zip(vault)
-        else:
-            logger.warning("无法找到 git 仓库，尝试 pip 更新...")
-            success = _update_via_pip(editable=False)
-            if not success:
-                logger.warning("pip 更新失败，尝试 zip 下载...")
-                success = _update_via_zip(vault)
-    elif method == "git":
-        success = _update_via_git(vault)
-        if not success:
-            logger.warning("git 更新失败，尝试 zip 下载...")
-            success = _update_via_zip(vault)
-    else:
-        logger.warning("未检测到标准安装方式，尝试 zip 下载...")
-        success = _update_via_zip(vault)
-
-    if success:
-        _sync_obsidian_plugin(vault)
-        _deploy_all_skills(vault)
-        # #143 / #174: pointer publication after a successful update — the
-        # installed version changed, so the pointer must be refreshed.
-        from paperforge.runtime_pointer import publish_pointer
-
-        publish_pointer()
+    result = perform_update(vault)
+    if result["ok"]:
         logger.info("更新完成！请重启 Obsidian")
-    return 0 if success else 1
+        return 0
+    logger.error("更新失败: %s", result.get("error"))
+    return 1
 
 
 # =============================================================================

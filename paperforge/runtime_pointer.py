@@ -44,8 +44,12 @@ def pointer_path(home: Path | None = None) -> Path:
 
 
 def read_pointer(home: Path | None = None) -> dict | None:
-    """Read the published pointer; None when absent or corrupt (reader
-    never crashes on a half-written pointer — the writer is atomic)."""
+    """Read the published pointer; None when absent or invalid (reader
+    never crashes on a half-written pointer — the writer is atomic).
+
+    Schema v1 requires ALL four fields, typed, non-empty, with absolute
+    paths for python_path and environment_root; unknown additive fields
+    are ignored."""
     path = pointer_path(home)
     if not path.exists():
         return None
@@ -55,7 +59,13 @@ def read_pointer(home: Path | None = None) -> dict | None:
         return None
     if not isinstance(raw, dict) or raw.get("schema_version") != POINTER_SCHEMA_VERSION:
         return None
-    if not isinstance(raw.get("python_path"), str) or not raw["python_path"]:
+    for key in ("python_path", "environment_root", "paperforge_version"):
+        value = raw.get(key)
+        if not isinstance(value, str) or not value:
+            return None
+    if not Path(raw["python_path"]).is_absolute():
+        return None
+    if not Path(raw["environment_root"]).is_absolute():
         return None
     return raw
 
