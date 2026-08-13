@@ -76,6 +76,40 @@ class ShadowBuild:
         self._require(self.NEW, "prepare")
         self.state = self.PREPARED
 
+    def recover(self) -> None:
+        """Resume an interrupted shadow build FROM the existing candidate.
+
+        RC UX Seam: a crash/kill mid-shadow-build leaves the candidate file
+        with real vector rows, but the old resume gates only looked at the
+        LIVE db (empty until publish), reset progress, and cleanup_stale()
+        deleted the candidate.  recover() enters BUILDING directly against
+        the surviving candidate — no snapshot, no table clear — so the
+        resume hash-skip logic continues exactly where the dead process
+        stopped and publish() swaps the completed candidate.
+        """
+        self._require(self.NEW, "recover")
+        if not self.target.vector_path.exists():
+            raise BuildTargetError(
+                f"recover: candidate missing at {self.target.vector_path}"
+            )
+        conn = self.candidate_conn()
+        try:
+            from paperforge.embedding.substrate import _has_any_rows
+
+            try:
+                from paperforge.memory.db import ensure_vec_extension
+
+                ensure_vec_extension(conn)
+            except Exception:  # noqa: BLE001
+                pass
+            if not _has_any_rows(conn):
+                raise BuildTargetError(
+                    f"recover: candidate has no vector rows at {self.target.vector_path}"
+                )
+        finally:
+            self.close_candidate_conn()
+        self.state = self.BUILDING
+
     def building(self) -> None:
         self._require(self.PREPARED, "building")
         self.state = self.BUILDING

@@ -1228,3 +1228,71 @@ def test_ensure_vec_tables_returns_dimension(tmp_path: Path) -> None:
         dim = dim_detect.ensure_vec_tables(conn, vault, allow_recreate=True)
     assert dim == 1536, f"expected 1536, got {dim}"
     conn.close()
+
+
+# ── 6. RC UX Seam: interrupted/failed shadow resume ────────────────────────
+
+def test_recover_continues_surviving_candidate(tmp_path: Path) -> None:
+    """A crashed shadow build's candidate with rows must be resumable —
+    recover() enters BUILDING against it without wiping the rows."""
+    from paperforge.embedding.build_target import BuildTarget, ShadowBuild
+
+    vault = _make_vault(tmp_path)
+    live = _seed_live_db(vault, vec_rows=5)
+    target = BuildTarget(source_path=live, vector_path=live.with_suffix(".db.build"))
+
+    # Simulate an interrupted build: prepare + write rows into candidate.
+    shadow = ShadowBuild(target)
+    shadow.prepare()
+    conn = shadow.candidate_conn()
+    from paperforge.memory.db import ensure_vec_extension
+
+    ensure_vec_extension(conn)
+    conn.execute("CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT)")
+    conn.execute("CREATE TABLE papers (zotero_key TEXT PRIMARY KEY, title TEXT)")
+    conn.execute("INSERT INTO papers VALUES ('A', 'Paper A')")
+    conn.execute("CREATE VIRTUAL TABLE vec_fulltext USING vec0(embedding float[3])")
+    conn.execute("CREATE TABLE vec_fulltext_meta (rowid INTEGER PRIMARY KEY, paper_id TEXT, unit_id TEXT)")
+    conn.execute("CREATE VIRTUAL TABLE vec_body USING vec0(embedding float[3])")
+    conn.execute("CREATE TABLE vec_body_meta (rowid INTEGER PRIMARY KEY, paper_id TEXT, unit_id TEXT)")
+    conn.execute("CREATE VIRTUAL TABLE vec_objects USING vec0(embedding float[3])")
+    conn.execute("CREATE TABLE vec_objects_meta (rowid INTEGER PRIMARY KEY, paper_id TEXT, unit_id TEXT)")
+    cur = conn.execute("INSERT INTO vec_body(embedding) VALUES (?)",
+                       [json.dumps([0.1, 0.2, 0.3])])
+    conn.execute("INSERT INTO vec_body_meta(rowid, paper_id, unit_id) VALUES (?, 'A', 'u0')",
+                 (cur.lastrowid,))
+    conn.commit()
+    shadow.close_candidate_conn()
+    # Crash: candidate survives, state never advanced past prepared/building.
+
+    # New process resumes: recover() validates rows and enters BUILDING.
+    shadow2 = ShadowBuild(target)
+    shadow2.recover()
+    assert shadow2.state == shadow2.BUILDING
+    conn2 = shadow2.candidate_conn()
+    from paperforge.embedding.substrate import _has_any_rows
+
+    assert _has_any_rows(conn2), "candidate rows must survive recover"
+    shadow2.close_candidate_conn()
+    shadow2.abort()
+
+
+def test_recover_rejects_empty_candidate(tmp_path: Path) -> None:
+    """recover() must fail closed on a candidate with no vector rows — an
+    empty leftover must not be treated as a resumable build."""
+    from paperforge.embedding.build_target import BuildTarget, ShadowBuild
+
+    vault = _make_vault(tmp_path)
+    live = _seed_live_db(vault)
+    target = BuildTarget(source_path=live, vector_path=live.with_suffix(".db.build"))
+    # Candidate exists but has no vector tables/rows.
+    shadow = ShadowBuild(target)
+    shadow.prepare()
+    conn = shadow.candidate_conn()
+    conn.execute("CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT)")
+    conn.commit()
+    shadow.close_candidate_conn()
+
+    shadow2 = ShadowBuild(target)
+    with pytest.raises(Exception, match="no vector rows"):
+        shadow2.recover()
