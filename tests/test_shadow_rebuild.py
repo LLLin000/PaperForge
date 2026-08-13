@@ -1296,3 +1296,98 @@ def test_recover_rejects_empty_candidate(tmp_path: Path) -> None:
     shadow2 = ShadowBuild(target)
     with pytest.raises(Exception, match="no vector rows"):
         shadow2.recover()
+
+
+def test_detect_dim_ignores_ddl_when_identity_mismatched(tmp_path: Path, monkeypatch) -> None:
+    """RC UX Seam: after a model/endpoint switch the old vec table's DDL dim
+    must NOT be trusted — detect_embedding_dim falls through to the provider
+    so the table gets recreated at the new model's dimension."""
+    from paperforge.embedding import dim_detect
+
+    vault = _make_vault(tmp_path)
+    live = _seed_live_db(vault)  # vec_body at dim 3
+    conn = sqlite3.connect(str(live))
+    # build_state table is part of the vec schema contract; create it
+    # minimally (ensure_schema would require the full papers table).
+    conn.execute("CREATE TABLE IF NOT EXISTS build_state (key TEXT PRIMARY KEY, value TEXT)")
+    # Seed build_state with an OLD identity (text-embedding-3-small@openai).
+    conn.execute("DELETE FROM build_state")
+    rows = {
+        "model": "text-embedding-3-small",
+        "vector_provider_endpoint": "https://api.openai.com/v1",
+        "vector_identity_version": "0",
+        "status": "completed",
+    }
+    for k, v in rows.items():
+        conn.execute("INSERT OR REPLACE INTO build_state(key, value) VALUES (?, ?)", (k, v))
+    conn.commit()
+    conn.close()
+
+    # Config now points at a DIFFERENT model (Qwen@siliconflow) → the DDL
+    # dim 3 must be ignored; the provider probe returns the real dim.
+    monkeypatch.setattr(
+        "paperforge.embedding._config.get_api_model",
+        lambda vault: "Qwen/Qwen3-Embedding-4B",
+    )
+    monkeypatch.setattr(
+        "paperforge.embedding._config.get_effective_api_base_url",
+        lambda vault: "https://api.siliconflow.cn/v1",
+    )
+    monkeypatch.setattr(
+        "paperforge.embedding.dim_detect.OpenAICompatibleProvider",
+        lambda vault: type(
+            "FakeProvider",
+            (),
+            {"encode_single": lambda self, text: [0.0] * 2560},
+        )(),
+    )
+
+    dim_detect.reset_dim_cache()
+    conn = sqlite3.connect(str(live))
+    conn.enable_load_extension(True)
+    import sqlite_vec
+
+    sqlite_vec.load(conn)
+    dim = dim_detect.detect_embedding_dim(vault, conn=conn)
+    conn.close()
+    assert dim == 2560, f"must use provider dim (2560), got {dim}"
+
+
+def test_detect_dim_trusts_ddl_when_identity_matches(tmp_path: Path, monkeypatch) -> None:
+    """Same identity → DDL dim is honored (no API call needed)."""
+    from paperforge.embedding import dim_detect
+
+    vault = _make_vault(tmp_path)
+    live = _seed_live_db(vault)  # vec_body at dim 3
+    conn = sqlite3.connect(str(live))
+    conn.execute("CREATE TABLE IF NOT EXISTS build_state (key TEXT PRIMARY KEY, value TEXT)")
+    conn.execute("DELETE FROM build_state")
+    rows = {
+        "model": "text-embedding-3-small",
+        "vector_provider_endpoint": "https://api.openai.com/v1",
+        "vector_identity_version": "0",
+        "status": "completed",
+    }
+    for k, v in rows.items():
+        conn.execute("INSERT OR REPLACE INTO build_state(key, value) VALUES (?, ?)", (k, v))
+    conn.commit()
+    conn.close()
+
+    monkeypatch.setattr(
+        "paperforge.embedding._config.get_api_model",
+        lambda vault: "text-embedding-3-small",
+    )
+    monkeypatch.setattr(
+        "paperforge.embedding._config.get_effective_api_base_url",
+        lambda vault: "https://api.openai.com/v1",
+    )
+
+    dim_detect.reset_dim_cache()
+    conn = sqlite3.connect(str(live))
+    conn.enable_load_extension(True)
+    import sqlite_vec
+
+    sqlite_vec.load(conn)
+    dim = dim_detect.detect_embedding_dim(vault, conn=conn)
+    conn.close()
+    assert dim == 3, f"DDL dim (3) must be trusted, got {dim}"

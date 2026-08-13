@@ -53,21 +53,60 @@ def detect_embedding_dim(vault: Path, conn: sqlite3.Connection | None = None) ->
     if _DETECTED_DIM is not None and _DETECTED_DIM_KEY == key:
         return _DETECTED_DIM
 
-    # Try reading from existing vec0 table DDL first — no API call needed
+    # Try reading from existing vec0 table DDL first — no API call needed.
+    # RC UX Seam: the DDL dimension is ONLY trustworthy when the table was
+    # built under the CURRENT embedding identity.  After a model/endpoint
+    # switch the old table still says its old dim (e.g. 1536), so trusting
+    # it would make ensure_vec_tables think the layout is compatible and
+    # never recreate — then the new model's API returns 2560 and every
+    # insert fails with Dimension mismatch.  Identity check (build_state
+    # model/endpoint vs config) before honoring the DDL.
     if conn is not None:
+        _ddl_identity_ok = False
         try:
-            row = conn.execute("SELECT sql FROM sqlite_master WHERE name='vec_body' AND type='table'").fetchone()
-            if row:
-                import re
-                m = re.search(r"float\[(\d+)\]", row[0])
-                if m:
-                    dim = int(m.group(1))
-                    _DETECTED_DIM = dim
-                    _DETECTED_DIM_KEY = key
-                    logger.info("Detected embedding dimension: %d (from vec0 DDL)", dim)
-                    return dim
-        except Exception:
-            pass
+            from paperforge.embedding._config import (
+                get_api_model as _cfg_model,
+                get_effective_api_base_url as _cfg_base,
+            )
+
+            _stored_model = ""
+            _stored_endpoint = ""
+            try:
+                _row = conn.execute(
+                    "SELECT value FROM build_state WHERE key='model'"
+                ).fetchone()
+                if _row:
+                    _stored_model = str(_row[0] or "")
+                _row = conn.execute(
+                    "SELECT value FROM build_state WHERE key='vector_provider_endpoint'"
+                ).fetchone()
+                if _row:
+                    _stored_endpoint = str(_row[0] or "")
+            except Exception:
+                pass
+            # Identity matches only when BOTH model and endpoint agree.
+            _ddl_identity_ok = bool(
+                _stored_model
+                and _stored_model == _cfg_model(vault)
+                and _stored_endpoint
+                and _stored_endpoint == _cfg_base(vault)
+            )
+        except Exception:  # noqa: BLE001
+            _ddl_identity_ok = False
+        if _ddl_identity_ok:
+            try:
+                row = conn.execute("SELECT sql FROM sqlite_master WHERE name='vec_body' AND type='table'").fetchone()
+                if row:
+                    import re
+                    m = re.search(r"float\[(\d+)\]", row[0])
+                    if m:
+                        dim = int(m.group(1))
+                        _DETECTED_DIM = dim
+                        _DETECTED_DIM_KEY = key
+                        logger.info("Detected embedding dimension: %d (from vec0 DDL)", dim)
+                        return dim
+            except Exception:
+                pass
 
     provider = OpenAICompatibleProvider(vault)
     test_vec = provider.encode_single("dimension detection probe")

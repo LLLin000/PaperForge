@@ -108,7 +108,25 @@ def get_embed_status_for_path(vault: Path, db_path: Path, *, probe: bool = False
 
     model = get_api_model(vault)
     raw_total = body_chunk_count + object_chunk_count  # exclude legacy vec_fulltext_meta
-    if total_valid > 0:
+
+    # RC UX Seam: `vector_state` must reflect the PUBLISHED identity, not
+    # just row counts.  A live DB holding vectors built under an OLD
+    # model/endpoint (e.g. before a config switch to Qwen@siliconflow) is
+    # NOT searchable with the current config — reporting ready there made
+    # the vector UI claim "已建立索引并可搜索" while reconcile/probe said
+    # the substrate is incompatible.  Both sources must agree.
+    identity_mismatch = False
+    try:
+        from paperforge.embedding.substrate import assess_vector_substrate
+
+        substrate = assess_vector_substrate(vault, db_path=db_path)
+        identity_mismatch = substrate.identity_changed
+    except Exception:  # noqa: BLE001
+        identity_mismatch = False
+
+    if identity_mismatch:
+        vector_state = "stale"
+    elif total_valid > 0:
         vector_state = "ready"
     elif raw_total > 0:
         vector_state = "stale"
@@ -131,4 +149,5 @@ def get_embed_status_for_path(vault: Path, db_path: Path, *, probe: bool = False
         "valid_object_chunk_count": valid_object,
         "valid_total_chunks": total_valid,
         "vector_state": vector_state,
+        "identity_changed": identity_mismatch,
     }
