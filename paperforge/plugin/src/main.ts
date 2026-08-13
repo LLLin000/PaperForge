@@ -436,6 +436,10 @@ export default class PaperForgePlugin extends Plugin {
             vaultPath,
             resolveCommand: (v) => this._getPythonCommand(),
           });
+          // RC UX Seam: sync settled — refresh the read model so the
+          // Smart Retrieval card durably shows the pending embed CTA
+          // instead of relying on the 8s Notice + convergence tick.
+          this._settingTab?._refreshAllReadModels();
         }
       }
     );
