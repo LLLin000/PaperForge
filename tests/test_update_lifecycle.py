@@ -8,6 +8,13 @@ from unittest.mock import patch
 from paperforge.worker import update as update_mod
 
 
+def test_remote_version_has_urllib_request() -> None:
+    """RC gap smoke: `_remote_version` calls urllib.request, which is NOT
+    reachable through `import urllib.parse` alone. Guard the import pair so
+    the remote version check can never die with AttributeError."""
+    assert hasattr(update_mod.urllib, "request")
+
+
 def test_perform_update_up_to_date_no_pointer_write(tmp_path, monkeypatch) -> None:
     """Already-latest: ok, updated=False, no pointer publication."""
     monkeypatch.setattr(update_mod, "_remote_version", lambda: "1.0.0")

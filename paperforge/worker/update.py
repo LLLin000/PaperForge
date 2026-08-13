@@ -10,6 +10,7 @@ import subprocess
 import sys
 import tempfile
 import urllib.parse
+import urllib.request
 import zipfile
 from datetime import datetime
 from pathlib import Path
