@@ -42,6 +42,15 @@ if str(REPO_ROOT) not in sys.path:
 
 
 def _read_plugin_version() -> str:
+    # Deployed location first: the skill runs inside the vault
+    # (.opencode/skills/paperforge/scripts/), where parents[4] is the vault,
+    # not the source tree. The installed package is the ground truth.
+    try:
+        import paperforge  # noqa: PLC0415 - import after sys.path setup
+
+        return getattr(paperforge, "__version__", "unknown")
+    except Exception:
+        pass
     init_py = REPO_ROOT / "paperforge" / "__init__.py"
     if not init_py.exists():
         return "unknown"
@@ -290,6 +299,22 @@ def main() -> None:
         result["python_candidate"] = "python"
         result["python_verified"] = False
 
+    # plugin_version is the INSTALLED package version on the discovered
+    # runtime, not the source-tree constant (the skill is deployed into the
+    # vault, so REPO_ROOT is not the repo).
+    plugin_version = PLUGIN_VERSION
+    if py_verified and py_candidate:
+        try:
+            ver_proc = subprocess.run(
+                [py_candidate, "-c", "import paperforge; print(paperforge.__version__)"],
+                capture_output=True, text=True, timeout=15,
+                encoding="utf-8", errors="replace",
+            )
+            if ver_proc.returncode == 0 and ver_proc.stdout.strip():
+                plugin_version = ver_proc.stdout.strip()
+        except Exception:
+            pass
+
     # --- 7. Memory layer state ---
     memory_layer = {"available": False, "paper_count": 0, "fts_search": False, "vector_search": False}
     idx_path = Path(paths["index_path"])
@@ -309,10 +334,12 @@ def main() -> None:
         try:
             with open(dc_json, encoding="utf-8") as f:
                 plugin_data = json.load(f)
-            vector_enabled = plugin_data.get("features", {}).get("vector_db", False)
-            memory_layer["vector_search"] = vector_enabled
         except:
             pass
+    # memory_layer.vector_search must be BACKEND truth, not the plugin
+    # settings toggle (which can say enabled while the index is empty or
+    # failed). It is refined below once the runtime embed status is known.
+    memory_layer["vector_search"] = False
     result["memory_layer"] = memory_layer
 
     # --- 8. Scan methodology archive ---
@@ -332,16 +359,37 @@ def main() -> None:
 
     semantic_enabled = plugin_data.get("features", {}).get("vector_db", False) if plugin_data else False
 
+    # semantic_ready must reflect the BACKEND truth (embed status), not the
+    # plugin settings toggle — a stale "enabled" flag with an empty/failed
+    # vector index is a false green that sends the agent into retrieve.
+    semantic_ready = False
+    if py_verified and py_candidate:
+        try:
+            st_proc = subprocess.run(
+                [py_candidate, "-m", "paperforge", "--vault", str(vault),
+                 "embed", "status", "--json"],
+                capture_output=True, text=True, timeout=60,
+                encoding="utf-8", errors="replace",
+            )
+            if st_proc.returncode == 0:
+                st = json.loads(st_proc.stdout)
+                st_data = st.get("data", {}) if isinstance(st, dict) else {}
+                semantic_ready = bool(
+                    st_data.get("vector_state") == "ready"
+                    and st_data.get("valid_total_chunks", 0) > 0
+                )
+                memory_layer["vector_search"] = semantic_ready
+                result["memory_layer"] = memory_layer
+        except Exception:
+            pass
+
     result["capabilities"] = {
         "rg": rg_available,
         "metadata_search": True,
         "paper_context": True,
-        # Duplicates memory_layer.vector_search by design — bootstrap provides
-        # convenience capabilities without the indirection. runtime-health is authoritative.
+        # Convenience projection; runtime-health is authoritative.
         "semantic_enabled": semantic_enabled,
-        # Placeholder: same as semantic_enabled until a separate readiness probe
-        # (e.g. runtime-health ping) is implemented.
-        "semantic_ready": semantic_enabled,
+        "semantic_ready": semantic_ready,
     }
 
     result["ok"] = True
