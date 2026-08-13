@@ -285,7 +285,17 @@ export class OcrWorkspaceView extends ItemView {
       cls: "pf-btn pf-btn-ghost",
       text: t("ocr_ws_stop"),
     });
-    stopBtn.addEventListener("click", () => this._stopBuild());
+    if (this._runningMode === "rebuild") {
+      // RC UX Seam: rebuild runs through the ActionClient (single-result
+      // mode) — there is no plugin-owned child to stop, so a live Stop
+      // button would be a false affordance. Disable it and say why.
+      stopBtn.disabled = true;
+      stopBtn.title =
+        t("ocr_ws_stop_unavailable_rebuild") ||
+        "Rebuild is not stoppable from here";
+    } else {
+      stopBtn.addEventListener("click", () => this._stopBuild());
+    }
 
     const track = act.createDiv({ cls: "pf-ocr-ws-progress-track" });
     const fill = track.createDiv({ cls: "pf-ocr-ws-progress-fill" });
@@ -818,11 +828,12 @@ export class OcrWorkspaceView extends ItemView {
     if (customPath && require("fs").existsSync(customPath)) {
       return { path: customPath, args: [] };
     }
-    // 2. Fall back to managed runtime
+    // 2. Fall back to managed runtime pointer (post-#174: RuntimeBootstrap
+    // exposes readPointer() only — current() was deleted with the FSM).
     if (!plugin || typeof plugin.getManagedRuntime !== "function") return null;
     const mr = plugin.getManagedRuntime();
     if (!mr) return null;
-    const run = resolveRuntimeCommand(mr.current());
+    const run = resolveRuntimeCommand(mr.readPointer());
     if (!run) return null;
     return { path: run.command, args: [...run.args] };
   }
@@ -891,6 +902,17 @@ export class OcrWorkspaceView extends ItemView {
           | undefined;
         if (pending && pending.some((p) => p.action_id === "embed.resume")) {
           new Notice(t("next_action_pending"), 8000);
+        }
+        // RC UX Seam: a settled rebuild mutates canonical state (OCR derived
+        // artifacts + local memory).  Invalidate all + probe all so the
+        // Smart Retrieval card immediately shows the fresh stale/ready truth
+        // instead of waiting for the 120 s convergence tick.
+        const settingsTab = (this.plugin as any)?._settingTab;
+        if (
+          settingsTab &&
+          typeof settingsTab._refreshAllReadModels === "function"
+        ) {
+          settingsTab._refreshAllReadModels();
         }
         this._loadPapers().then(() => this._render());
       })

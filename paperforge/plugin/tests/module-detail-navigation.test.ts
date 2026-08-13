@@ -1269,6 +1269,10 @@ describe("_dispatchMemoryBuild (Issue #78)", () => {
   it("shows the command's terminal diagnostic when an embed build fails", async () => {
     const tab = makeTab();
     noticeCalls.length = 0;
+    let refreshes = 0;
+    (tab as any)._refreshAllReadModels = () => {
+      refreshes += 1;
+    };
     (tab as any)._capabilityState = { memory: createUnknownEnvelope("memory") };
     (tab as any)._dispatchMemoryBuild("embed");
     // #120: force rebuild requires confirmation — simulate the user
@@ -1285,6 +1289,10 @@ describe("_dispatchMemoryBuild (Issue #78)", () => {
 
     const messages = noticeCalls.map((c: { msg: string }) => c.msg).join(" ");
     expect(messages).toContain("UnboundLocalError: vec0 unavailable");
+    // RC UX Seam P1: a settled embed terminal must invalidate all + probe
+    // all so the envelope reflects Python truth instead of the stale
+    // pre-build needs_action state.
+    expect(refreshes).toBe(1);
   });
 
   it("injects the current secure credential profile into embed builds", async () => {
@@ -1686,5 +1694,96 @@ describe("_dispatchOcrAction fail-closed (release review)", () => {
     (tab as any)._capabilityState = { ocr: createUnknownEnvelope("ocr") };
     (tab as any)._dispatchOcrAction("run");
     expect(start).not.toHaveBeenCalled();
+  });
+});
+
+// ════════════════════════════════ RC UX Seam: Setup Stage 1 ══════════════
+describe("Setup Stage 1 exit/cancel semantics (RC UX Seam Pass)", () => {
+  function renderStage1(
+    tab: any,
+    overrides: Record<string, unknown> = {}
+  ): HTMLDivElement {
+    const el = dom.window.document.createElement("div");
+    Object.assign(tab, {
+      _setupOperation: "idle",
+      _setupFeedback: null,
+      _setupReinstallRequested: false,
+      _runtimeAbortController: null,
+      activeTab: "overview",
+      ...overrides,
+    });
+    (tab as any)._capabilityState = {
+      installation: {
+        ...createUnknownEnvelope("installation"),
+        user_state: "setup_required",
+        reason: { code: "installation.config_missing", text: "Not set up" },
+      },
+    };
+    (tab as any)._renderSetupStageFoundation(el);
+    return el;
+  }
+
+  function buttonByText(
+    el: HTMLElement,
+    text: string
+  ): HTMLButtonElement | undefined {
+    return [...el.querySelectorAll("button")].find(
+      (b) => b.textContent?.trim() === text
+    ) as HTMLButtonElement | undefined;
+  }
+
+  it("idle stage shows Later (exit) + disabled Continue, no Cancel", () => {
+    const tab = makeTab();
+    const el = renderStage1(tab);
+    expect(buttonByText(el, "Later")).toBeDefined();
+    expect(buttonByText(el, "Cancel")).toBeUndefined();
+    const cont = buttonByText(el, "Continue");
+    expect(cont).toBeDefined();
+    expect(cont?.disabled).toBe(true);
+  });
+
+  it("Later exits the wizard back to the overview; _setup_complete stays false (resume)", () => {
+    const tab = makeTab();
+    const el = renderStage1(tab);
+    (tab.plugin as any).settings._setup_complete = false;
+    buttonByText(el, "Later")?.click();
+    expect(tab.activeTab).toBe("overview");
+    expect((tab.plugin as any).settings._setup_complete).toBe(false);
+  });
+
+  it("running stage shows Cancel that aborts the runtime AbortController", () => {
+    const tab = makeTab();
+    const abort = vi.fn();
+    const el = renderStage1(tab, {
+      _setupOperation: "running",
+      _runtimeAbortController: { abort },
+    });
+    expect(buttonByText(el, "Cancel")).toBeDefined();
+    expect(buttonByText(el, "Later")).toBeUndefined();
+    buttonByText(el, "Cancel")?.click();
+    expect(abort).toHaveBeenCalledTimes(1);
+  });
+
+  it("cancelled install settles to idle, keeps the wizard, and never flips _setup_complete", async () => {
+    const tab = makeTab();
+    (tab.plugin as any).settings._setup_complete = false;
+    (tab as any)._ensureManagedRuntime = () => ({
+      installOnce: () =>
+        Promise.reject(
+          new DOMException("Operation was cancelled", "AbortError")
+        ),
+      handshake: () => Promise.resolve({ ok: true }),
+    });
+    (tab as any)._getVaultBasePath = () => "/vault";
+    (tab as any)._runSetupPython = () => Promise.resolve();
+    (tab as any)._installFoundation(false);
+    await Promise.resolve();
+    await Promise.resolve();
+    // Abort settled: operation back to idle, wizard retained (stage 1),
+    // completion flag untouched, no failure message.
+    expect((tab as any)._setupOperation).toBe("idle");
+    expect((tab as any)._setupStage).toBe(1);
+    expect((tab as any)._setupFeedback).toContain("cancelled");
+    expect((tab.plugin as any).settings._setup_complete).toBe(false);
   });
 });
