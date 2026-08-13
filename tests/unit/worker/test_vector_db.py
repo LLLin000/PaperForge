@@ -6,8 +6,8 @@ from paperforge.embedding.status import get_embed_status
 from paperforge.memory.db import get_memory_db_path
 
 
-def test_get_embed_status_reports_corruption_when_count_fails(tmp_path):
-    """Count query failure (missing meta table) → healthy=False, corrupted=True."""
+def test_get_embed_status_treats_absent_vector_schema_as_not_built(tmp_path):
+    """A memory DB with no vector tables is pristine, not corrupted."""
     vault = tmp_path / "vault"
     vault.mkdir(parents=True, exist_ok=True)
     from tests.conftest import canonical_test_config
@@ -15,7 +15,6 @@ def test_get_embed_status_reports_corruption_when_count_fails(tmp_path):
     canonical_test_config(vault)
     db_path = get_memory_db_path(vault)
     db_path.parent.mkdir(parents=True, exist_ok=True)
-    # DB exists but vec tables are absent — the count query raises.
     conn = sqlite3.connect(str(db_path))
     conn.execute("CREATE TABLE unrelated (x TEXT)")
     conn.commit()
@@ -24,9 +23,10 @@ def test_get_embed_status_reports_corruption_when_count_fails(tmp_path):
     status = get_embed_status(vault)
 
     assert status["db_exists"] is True
-    assert status["healthy"] is False
-    assert status["corrupted"] is True
-    assert status["error"]
+    assert status["vector_state"] == "not_built"
+    assert status["healthy"] is True
+    assert status["corrupted"] is False
+    assert status["error"] == ""
 
 
 def test_get_embed_status_uses_indexes_vectors_path_from_config(tmp_path):

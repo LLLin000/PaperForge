@@ -884,16 +884,13 @@ export class OcrWorkspaceView extends ItemView {
             8000
           );
         }
-        // Pending follow-ups (embed.resume) are rendered from descriptors —
-        // confirmation happens via the next-actions bridge, never here.
+        // Remote embedding stays pending in the canonical read model. The
+        // Smart Retrieval card is the durable review/consent surface.
         const pending = res.payload?.next_actions as
           | Array<{ action_id: string; reason?: string }>
           | undefined;
         if (pending && pending.some((p) => p.action_id === "embed.resume")) {
-          new Notice(
-            t("ocr_ws_embed_confirm") || "向量嵌入待确认 — 运行后可重建向量",
-            8000
-          );
+          new Notice(t("next_action_pending"), 8000);
         }
         this._loadPapers().then(() => this._render());
       })

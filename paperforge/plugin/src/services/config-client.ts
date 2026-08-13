@@ -114,7 +114,7 @@ function invokePaperForge<T>(
     execFile(
       py.path,
       argv,
-      { encoding: "utf-8", timeout: 30000, windowsHide: true },
+      { encoding: "utf-8", timeout: 60000, windowsHide: true },
       (err, stdout) => {
         // #137 machine contract: --json emits exactly one PFResult JSON on
         // stdout (success OR failure); stderr is diagnostics only.
@@ -279,6 +279,20 @@ export function queryEmbeddingCredentialStatus(
   );
 }
 
+export function queryOcrCredentialStatus(
+  vaultPath: string,
+  settings?: PaperForgeSettings | null
+): Promise<boolean> {
+  return invokePaperForge<{ credentials?: Array<{ state?: string }> }>(
+    vaultPath,
+    ["auth", "status", "ocr", "--json"],
+    settings
+  ).then(
+    (data) =>
+      (data.credentials ?? []).some((c) => c.state === "available") ?? false
+  );
+}
+
 export function probeAll(
   vaultPath: string,
   settings?: PaperForgeSettings | null
@@ -311,7 +325,7 @@ export function probeAll(
     execFile(
       py.path,
       argv,
-      { encoding: "utf-8", timeout: 30000, windowsHide: true },
+      { encoding: "utf-8", timeout: 60000, windowsHide: true },
       (err, stdout) => {
         try {
           const parsed = JSON.parse(stdout) as ProbeAllData;

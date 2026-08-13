@@ -10,7 +10,7 @@
  * the active path.
  *
  * States: idle → resolving_credentials → running → stopping
- *              → success | success_with_warning | failed
+ *              → success | success_with_warning | cancelled | failed
  */
 import { spawn } from "child_process";
 
@@ -23,6 +23,7 @@ export type EmbedBuildState =
   | "stopping"
   | "success"
   | "success_with_warning"
+  | "cancelled"
   | "failed";
 
 export interface EmbedBuildProgress {
@@ -172,10 +173,13 @@ export class EmbedBuildController {
       this._child = null;
       this._stopPoll();
       this._progress.current = this._progress.total;
-      if (code === 0) {
+      if (this._stopResult === "stopped" || code === 130) {
+        this._warning = null;
+        this._setState("cancelled");
+      } else if (code === 0) {
         // The backend reports post-publish bookkeeping failures as rc=0
-        // with the warning on stderr (non-JSON mode) or via EMBED_NOTICE —
-        // surface them instead of silently showing a clean success.
+        // with the warning on stderr — surface them instead of silently
+        // showing a clean success.
         const stderrTail = (this._stderr || "").trim().slice(0, 300);
         if (!this._warning && stderrTail) {
           this._warning = stderrTail;

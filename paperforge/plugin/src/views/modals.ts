@@ -40,49 +40,6 @@ interface OrphanItem {
   year?: string;
 }
 
-/* ── OCR Privacy Modal ── */
-
-export class PaperForgeOcrPrivacyModal extends Modal {
-  private _onConfirm: (() => void) | undefined;
-
-  constructor(app: App, onConfirm?: () => void) {
-    super(app);
-    this._onConfirm = onConfirm;
-  }
-
-  onOpen() {
-    const { contentEl } = this;
-    contentEl.addClass("paperforge-modal");
-    contentEl.addClass("paperforge-ocr-privacy-modal");
-
-    // Title
-    contentEl.createEl("h2", { text: t("ocr_privacy_title") });
-
-    // Warning text
-    const warningEl = contentEl.createEl("div", {
-      cls: "paperforge-ocr-privacy-warning",
-    });
-    warningEl.createEl("p", { text: t("ocr_privacy_warning") });
-
-    // "I Understand" button
-    const btnRow = contentEl.createEl("div", {
-      cls: "paperforge-ocr-privacy-actions",
-    });
-    const confirmBtn = btnRow.createEl("button", {
-      cls: "paperforge-step-btn mod-cta",
-      text: t("ocr_understand"),
-    });
-    confirmBtn.addEventListener("click", () => {
-      this.close();
-      if (this._onConfirm) this._onConfirm();
-    });
-  }
-
-  onClose() {
-    this.contentEl.empty();
-  }
-}
-
 /* ── Orphan Paper Cleanup Modal ── */
 
 export class PaperForgeOrphanModal extends Modal {
@@ -1407,7 +1364,7 @@ export class PaperForgeConfirmModal extends Modal {
     });
     effect.createEl("span", {
       cls: "paperforge-confirm-effect-label",
-      text: "Effect: ",
+      text: t("confirm_effect_label") + ": ",
     });
     effect.createEl("span", { text: this._config.effectLabel });
 
@@ -1453,75 +1410,6 @@ export class PaperForgeConfirmModal extends Modal {
         this._returnFocusEl.focus();
       } catch {}
     }
-  }
-}
-
-/* ── Next Action Confirm Modal (#127 PR C) ── */
-
-export class NextActionConfirmModal extends Modal {
-  private _actionTitle: string;
-  private _actionBody: string;
-  private _resolve: (ok: boolean) => void;
-  private _settled = false;
-  private _boundKeydown!: (e: KeyboardEvent) => void;
-
-  constructor(
-    app: App,
-    actionTitle: string,
-    actionBody: string,
-    resolve: (ok: boolean) => void
-  ) {
-    super(app);
-    this._actionTitle = actionTitle;
-    this._actionBody = actionBody;
-    this._resolve = resolve;
-  }
-
-  private _settle(ok: boolean): void {
-    if (this._settled) return;
-    this._settled = true;
-    this._resolve(ok);
-  }
-
-  onOpen() {
-    const { contentEl } = this;
-    contentEl.addClass("paperforge-modal");
-    contentEl.addClass("paperforge-confirm-modal");
-    contentEl.setAttr("role", "alertdialog");
-    contentEl.setAttr("aria-modal", "true");
-
-    contentEl.createEl("h2", { text: this._actionTitle });
-    contentEl.createEl("div", {
-      cls: "paperforge-confirm-effect",
-      text: this._actionBody,
-    });
-
-    const btnRow = contentEl.createEl("div", {
-      cls: "paperforge-confirm-actions",
-    });
-    const cancelBtn = btnRow.createEl("button", {
-      text: t("next_action_cancel") || "Later",
-    });
-    cancelBtn.addEventListener("click", () => this.close());
-
-    const confirmBtn = btnRow.createEl("button", {
-      cls: "mod-warning",
-      text: t("next_action_confirm") || "Run",
-    });
-    confirmBtn.addEventListener("click", () => {
-      this._settle(true);
-      this.close();
-    });
-
-    this._boundKeydown = (e: KeyboardEvent) =>
-      _trapFocus(contentEl as unknown as HTMLElement, e);
-    contentEl.addEventListener("keydown", this._boundKeydown);
-    cancelBtn.focus();
-  }
-
-  onClose() {
-    this._settle(false);
-    this.contentEl.empty();
   }
 }
 

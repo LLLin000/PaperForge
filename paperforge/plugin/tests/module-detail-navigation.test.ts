@@ -568,133 +568,32 @@ describe("Library module detail (Issue #78)", () => {
 
 // ════════════════════════════════ 2. OCR Detail ════════════════════════
 describe("OCR module detail (Issue #78)", () => {
-  it("renders stop only when _ocrProcess exists", () => {
+  const runningEnvelope = {
+    ...createUnknownEnvelope("ocr"),
+    capability_state: "needs_action",
+    activity_state: "running",
+    severity: "warning",
+    reason: { code: "ocr.pending", text: "Pending" },
+  } as any;
+
+  it("renders stop only while the shared controller is running", () => {
+    const stop = vi.fn();
     const tab = makeTab({
-      _ocrProcess: { stdin: { write: () => true }, kill: () => {} },
       _ocrProgress: { current: 3, total: 10, key: "TEST" },
+      ocrProcessController: { isRunning: true, start: vi.fn(), stop },
     });
-    const ocrEnv = {
-      ...createUnknownEnvelope("ocr"),
-      capability_state: "needs_action",
-      activity_state: "running",
-      severity: "warning",
-      reason: { code: "ocr.artifacts_stale", text: "Stale" },
-      action: {
-        primary: {
-          action_id: "ocr.rebuild_derived",
-          verb: "rebuild_derived",
-          label: "Rebuild",
-          command: "paperforge ocr rebuild --all",
-          availability: "available",
-          safety_class: "safe",
-          preservation_facts: [],
-          replacement_facts: [],
-          interruptible: true,
-          confirmation_required: false,
-          confirmation_prompt: null,
-          scope: "module",
-          scope_count: 1,
-        },
-      },
-    } as any;
-    (tab as any)._capabilityState = { ocr: ocrEnv };
+    (tab as any)._capabilityState = { ocr: runningEnvelope };
     const el = dom.window.document.createElement("div");
     (tab as any)._renderOcrDetail(el);
-    expect(el.querySelector(".mod-warning")).not.toBeNull();
     expect(el.textContent).toContain("3/10");
+    (el.querySelector(".mod-warning") as HTMLButtonElement).click();
+    expect(stop).toHaveBeenCalledOnce();
 
-    const tab2 = makeTab({ _ocrProcess: null });
-    (tab2 as any)._capabilityState = { ocr: ocrEnv };
-    const el2 = dom.window.document.createElement("div");
-    (tab2 as any)._renderOcrDetail(el2);
-    expect(el2.querySelector(".mod-warning")).toBeNull();
-  });
-
-  it("stop sends PAPERFORGE_STOP\n via stdin", () => {
-    let written = "";
-    const tab = makeTab({
-      _ocrProcess: {
-        stdin: {
-          write: (s: string) => {
-            written = s;
-            return true;
-          },
-        },
-        kill: () => {},
-      },
-    });
-    (tab as any)._capabilityState = {
-      ocr: {
-        ...createUnknownEnvelope("ocr"),
-        activity_state: "running",
-        capability_state: "needs_action",
-        severity: "warning",
-        reason: { code: "x", text: "x" },
-        action: {
-          primary: {
-            action_id: "ocr.rebuild_derived",
-            verb: "rebuild_derived",
-            label: "Rebuild",
-            command: "paperforge ocr rebuild --all",
-            availability: "available",
-            safety_class: "safe",
-            preservation_facts: [],
-            replacement_facts: [],
-            interruptible: true,
-            confirmation_required: false,
-            confirmation_prompt: null,
-            scope: "module",
-            scope_count: 1,
-          },
-        },
-      },
-    };
-    const el = dom.window.document.createElement("div");
-    (tab as any)._renderOcrDetail(el);
-    (el.querySelector(".mod-warning") as HTMLButtonElement)?.click();
-    expect(written).toBe("PAPERFORGE_STOP\n");
-    expect((tab.plugin as any)._ocrWasStopped).toBe(true);
-  });
-
-  it("stop falls back to SIGINT when stdin unavailable", () => {
-    let killed = "";
-    const tab = makeTab({
-      _ocrProcess: {
-        kill: (sig: string) => {
-          killed = sig;
-        },
-      },
-    });
-    (tab as any)._capabilityState = {
-      ocr: {
-        ...createUnknownEnvelope("ocr"),
-        activity_state: "running",
-        capability_state: "needs_action",
-        severity: "warning",
-        reason: { code: "x", text: "x" },
-        action: {
-          primary: {
-            action_id: "ocr.rebuild_derived",
-            verb: "rebuild_derived",
-            label: "Rebuild",
-            command: "paperforge ocr rebuild --all",
-            availability: "available",
-            safety_class: "safe",
-            preservation_facts: [],
-            replacement_facts: [],
-            interruptible: true,
-            confirmation_required: false,
-            confirmation_prompt: null,
-            scope: "module",
-            scope_count: 1,
-          },
-        },
-      },
-    };
-    const el = dom.window.document.createElement("div");
-    (tab as any)._renderOcrDetail(el);
-    (el.querySelector(".mod-warning") as HTMLButtonElement)?.click();
-    expect(killed).toBe("SIGINT");
+    const idle = makeTab();
+    (idle as any)._capabilityState = { ocr: runningEnvelope };
+    const idleEl = dom.window.document.createElement("div");
+    (idle as any)._renderOcrDetail(idleEl);
+    expect(idleEl.querySelector(".mod-warning")).toBeNull();
   });
 });
 
@@ -743,16 +642,15 @@ describe("Memory module detail (Issue #78)", () => {
         reason: { code: "memory.index_stale", text: "Index stale" },
         action: {
           primary: {
-            action_id: "memory.rebuild_vector",
-            verb: "rebuild_index",
+            action_id: "embed.build",
+            verb: "run",
             label: "Build vector index",
-            command: "paperforge embed build --force",
             availability: "available",
-            safety_class: "safe",
+            safety_class: "destructive",
             preservation_facts: [],
             replacement_facts: [],
             interruptible: true,
-            confirmation_required: false,
+            confirmation_required: true,
             confirmation_prompt: null,
             scope: "module",
             scope_count: 1,
@@ -767,11 +665,10 @@ describe("Memory module detail (Issue #78)", () => {
     ) as HTMLButtonElement | undefined;
     expect(button).toBeDefined();
     spawnedProcesses.length = 0;
+    modalOpens.length = 0;
     button?.click();
-    // #120: force rebuild requires confirmation — confirm the modal the
-    // click opened, then let the controller's env resolution settle.
-    await Promise.resolve();
-    modalOpens.at(-1)?.onConfirm?.();
+    expect(modalOpens).toHaveLength(1);
+    modalOpens[0].onConfirm?.();
     await Promise.resolve();
     expect(
       spawnedProcesses.some((process) =>
@@ -797,6 +694,27 @@ describe("Memory module detail (Issue #78)", () => {
 
     expect(el.querySelector(".pf-sr-impact-box")).toBeNull();
     expect(el.querySelectorAll(".pf-sr-cfg-input")).toHaveLength(3);
+  });
+
+  it("renders a visible stop action for the active embed controller", () => {
+    const stop = vi.fn();
+    const tab = makeTab({
+      _embedController: { busy: true, state: "running", warning: null, stop },
+    });
+    (tab as any)._capabilityState = {
+      memory: {
+        ...createUnknownEnvelope("memory"),
+        capability_state: "needs_action",
+        reason: { code: "memory.db_missing", text: "Not built" },
+      },
+    };
+    const el = dom.window.document.createElement("div");
+    (tab as any)._renderMemoryDetail(el);
+    const button = [...el.querySelectorAll("button")].find(
+      (node) => node.textContent === "Stop"
+    ) as HTMLButtonElement;
+    button.click();
+    expect(stop).toHaveBeenCalledOnce();
   });
 });
 
@@ -1067,24 +985,25 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
       ...createUnknownEnvelope("memory"),
       action: {
         primary: {
-          action_id: "memory.rebuild_vector",
-          verb: "rebuild_index",
+          action_id: "embed.build",
+          verb: "run",
           label: "Embed",
-          command: "paperforge embed build --force",
           availability: "available",
-          safety_class: "safe",
+          safety_class: "destructive",
           preservation_facts: [],
           replacement_facts: [],
           interruptible: true,
-          confirmation_required: false,
+          confirmation_required: true,
           confirmation_prompt: null,
           scope: "module",
           scope_count: 1,
         },
       },
     } as any;
+    modalOpens.length = 0;
     (tab as any)._dispatchModuleAction("memory", env);
-    modalOpens.at(-1)?.onConfirm?.();
+    expect(modalOpens).toHaveLength(1);
+    modalOpens[0].onConfirm?.();
     await Promise.resolve();
     const es = spawnedProcesses.find((p: { args: string[] }) =>
       p.args.includes("embed")
@@ -1204,6 +1123,18 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
 
 // ════════════════════════════════ 5. _dispatchOcrAction ══════════════
 describe("_dispatchOcrAction lifecycle (Issue #78/#126)", () => {
+  it("routes OCR run through the plugin dispatcher after confirmation", () => {
+    const requestOcrRun = vi.fn();
+    const tab = makeTab({ requestOcrRun });
+
+    (tab as any)._dispatchOcrAction("run");
+
+    expect(requestOcrRun).toHaveBeenCalledWith(true);
+    expect(
+      (tab.plugin as any).ocrProcessController.start
+    ).not.toHaveBeenCalled();
+  });
+
   it("delegates to the shared ocrProcessController and sets activity overlay", async () => {
     const tab = makeTab();
     (tab as any)._capabilityState = { ocr: createUnknownEnvelope("ocr") };
@@ -1325,9 +1256,6 @@ describe("_dispatchMemoryBuild (Issue #78)", () => {
     const tab = makeTab();
     (tab as any)._capabilityState = { memory: createUnknownEnvelope("memory") };
     (tab as any)._dispatchMemoryBuild("embed");
-    // #120: force rebuild requires confirmation — simulate the user
-    // confirming so the controller actually spawns.
-    modalOpens.at(-1)?.onConfirm?.();
     await Promise.resolve();
     expect(
       ((tab as any)._capabilityState as any)?.memory?.activity_label

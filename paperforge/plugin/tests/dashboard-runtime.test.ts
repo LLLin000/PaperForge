@@ -145,3 +145,20 @@ describe("PaperForgeStatusView._resolvePython", () => {
     expect(Array.isArray(result!.args)).toBe(true);
   });
 });
+
+describe("PaperForgeStatusView OCR dispatch", () => {
+  it("routes dashboard OCR through the plugin's shared dispatcher", async () => {
+    const requestOcrRun = vi.fn();
+    const view = new (PaperForgeStatusView as any)({});
+    (view as any).app = {
+      plugins: { plugins: { paperforge: { requestOcrRun } } },
+    };
+
+    await (view as any)._runAction(
+      { id: "paperforge-ocr", commandId: "ocr" },
+      document.createElement("button")
+    );
+
+    expect(requestOcrRun).toHaveBeenCalledOnce();
+  });
+});
