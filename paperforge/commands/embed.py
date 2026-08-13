@@ -289,6 +289,27 @@ def run_build(
         # the gates saved the already-downgraded value, silently restoring
         # the in-place degradation the #165 corrective was meant to kill.
         requested_resume = resume
+        # RC UX Seam: an interrupted shadow build leaves the candidate file
+        # with real vector rows while the LIVE db is still empty (shadow
+        # publishes only on completion).  Detect that surviving candidate so
+        # the resume gates below can continue it instead of wiping it.
+        _candidate_path = _db_path.with_suffix(".db.build")
+        _recover_candidate = False
+        if resume and _candidate_path.exists():
+            try:
+                import sqlite3 as _rc_sqlite3
+
+                _rc_conn = _rc_sqlite3.connect(
+                    f"file:{_candidate_path.as_posix()}?mode=ro", uri=True
+                )
+                try:
+                    from paperforge.embedding.substrate import _has_any_rows as _rc_has_rows
+
+                    _recover_candidate = _rc_has_rows(_rc_conn)
+                finally:
+                    _rc_conn.close()
+            except Exception:
+                _recover_candidate = False
         # Substrate observation (single source of truth, shared with
         # reconcile T5 + embed.resume preflight): desired embedding identity
         # (config) vs published substrate (build_state + vec0 layout).
@@ -297,6 +318,27 @@ def run_build(
         _stored_dim = _substrate.stored_dimension
         if resume:
             build_state = read_vector_build_state(vault)
+
+            # 门零 (RC UX Seam): a FAILED build whose candidate survived is
+            # resumable — the failure (e.g. transient API 402/network) must
+            # not force a full rebuild.  Mark interrupted so the probe shows
+            # the resume path and progress starts at the failed position.
+            if (
+                _recover_candidate
+                and build_state.get("status") == "failed"
+            ):
+                msg = (
+                    "Previous build failed but its candidate survived. "
+                    "Resuming from the surviving candidate."
+                )
+                if not json:
+                    print(msg)
+                mark_vector_build_state(
+                    vault,
+                    status="interrupted",
+                    message="Previous build failed; resuming from candidate",
+                    pid=0,
+                )
 
             # 门一：stale running state 检测
             if build_state.get("status") == "running":
@@ -316,17 +358,41 @@ def run_build(
                         except Exception:
                             pass
                 if stale:
-                    msg = "Previous build appears stale (crashed?). Recovering and rebuilding from scratch."
-                    print(msg)
-                    mark_vector_build_state(vault, status="idle", current=0, pid=0)
-                    resume = False
+                    if _recover_candidate:
+                        # RC UX Seam: the previous process died but its
+                        # candidate survived — keep progress, mark
+                        # interrupted so the probe shows a resume path, and
+                        # continue the shadow build below.
+                        msg = (
+                            "Previous build was interrupted (process gone). "
+                            "Resuming from the surviving candidate."
+                        )
+                        if not json:
+                            print(msg)
+                        mark_vector_build_state(
+                            vault,
+                            status="interrupted",
+                            message="Previous process exited; resuming from candidate",
+                            pid=0,
+                        )
+                    else:
+                        msg = "Previous build appears stale (crashed?). Recovering and rebuilding from scratch."
+                        if not json:
+                            print(msg)
+                        mark_vector_build_state(vault, status="idle", current=0, pid=0)
+                        resume = False
             # 门二：no vec0 rows → fresh build（不是 error）。#167 P0-4:
             # pristine (no rows AND no published vector identity) is a
             # per-paper missing deficit — a scoped resume may INITIALIZE the
             # empty substrate (embed only the requested keys).  Rows lost
             # after a published identity (identity_version > 0) is data
-            # loss → full rebuild.
-            if not _substrate.has_any_rows and _substrate.identity_version > 0:
+            # loss → full rebuild.  RC UX Seam: a surviving candidate with
+            # rows counts as "has rows" for the interrupted-shadow case.
+            if (
+                not _substrate.has_any_rows
+                and _substrate.identity_version > 0
+                and not _recover_candidate
+            ):
                 resume = False
             else:
                 # 门三：过三道门后，正常 model check
@@ -398,7 +464,10 @@ def run_build(
         # resume hash-skips would leave those papers' vectors missing from the
         # published DB (chunks_embedded=0, verifier passes, empty library
         # published).  Shadow ⇒ resume off, for every trigger, not just force.
-        if requires_shadow:
+        # RC UX Seam EXCEPTION: an interrupted shadow build whose candidate
+        # survived keeps resume=True — recover() continues that candidate
+        # instead of clearing it.
+        if requires_shadow and not _recover_candidate:
             resume = False
 
         if requires_shadow:
@@ -413,40 +482,51 @@ def run_build(
                 vector_path=_db_path.with_suffix(".db.build"),
             )
             _shadow = ShadowBuild(_target)
-            # D6: unconditional stale-candidate cleanup (no build_state dependency)
-            _shadow.cleanup_stale()
-            _shadow.prepare()
-            _candidate_conn = _shadow.candidate_conn()
-            try:
-                # 1. Consistent snapshot: live → candidate via online backup API
-                import sqlite3 as _sqlite3
-                _src_conn = _sqlite3.connect(str(_db_path))
-                _dst_conn = _sqlite3.connect(str(_target.vector_path))
-                try:
-                    _src_conn.backup(_dst_conn, pages=64)
-                finally:
-                    _src_conn.close()
-                    _dst_conn.close()
-
-                # 2. Clear vec tables in candidate; recreate at model dim
+            if _recover_candidate:
+                # RC UX Seam: resume the surviving candidate — no cleanup,
+                # no snapshot, no table clear.  recover() validates it has
+                # rows and enters BUILDING directly.
+                _shadow.recover()
+                _candidate_conn = _shadow.candidate_conn()
                 ensure_vec_extension(_candidate_conn)
-                for _t in ("vec_fulltext_meta", "vec_body_meta", "vec_objects_meta",
-                           "vec_fulltext", "vec_body", "vec_objects"):
-                    _candidate_conn.execute(f'DROP TABLE IF EXISTS "{_t}"')
                 ensure_schema(_candidate_conn)
-                # P1-2: the dimension comes FROM the model detection that
-                # actually built the tables — never re-derive it from the
-                # candidate DDL later (that would be self-verification).
-                _expected_dim = ensure_vec_tables(
-                    _candidate_conn, vault, allow_recreate=True
-                )
-                _candidate_conn.commit()
+                _expected_dim = _stored_dim or _substrate.stored_dimension
                 _shadow.building()
-            except Exception:
-                _shadow.abort()
-                if _write_lock:
-                    _write_lock.__exit__(None, None, None)
-                raise
+            else:
+                # D6: unconditional stale-candidate cleanup (no build_state dependency)
+                _shadow.cleanup_stale()
+                _shadow.prepare()
+                _candidate_conn = _shadow.candidate_conn()
+                try:
+                    # 1. Consistent snapshot: live → candidate via online backup API
+                    import sqlite3 as _sqlite3
+                    _src_conn = _sqlite3.connect(str(_db_path))
+                    _dst_conn = _sqlite3.connect(str(_target.vector_path))
+                    try:
+                        _src_conn.backup(_dst_conn, pages=64)
+                    finally:
+                        _src_conn.close()
+                        _dst_conn.close()
+
+                    # 2. Clear vec tables in candidate; recreate at model dim
+                    ensure_vec_extension(_candidate_conn)
+                    for _t in ("vec_fulltext_meta", "vec_body_meta", "vec_objects_meta",
+                               "vec_fulltext", "vec_body", "vec_objects"):
+                        _candidate_conn.execute(f'DROP TABLE IF EXISTS "{_t}"')
+                    ensure_schema(_candidate_conn)
+                    # P1-2: the dimension comes FROM the model detection that
+                    # actually built the tables — never re-derive it from the
+                    # candidate DDL later (that would be self-verification).
+                    _expected_dim = ensure_vec_tables(
+                        _candidate_conn, vault, allow_recreate=True
+                    )
+                    _candidate_conn.commit()
+                    _shadow.building()
+                except Exception:
+                    _shadow.abort()
+                    if _write_lock:
+                        _write_lock.__exit__(None, None, None)
+                    raise
         elif _force_rebuild:
             # Conservative in-place rebuild with restorable backup (fallback).
             # (Shadow build is the default; this is the "inplace" strategy.)
@@ -479,18 +559,33 @@ def run_build(
                 raise
             _conn.close()
 
+        # RC UX Seam: an interrupted-shadow resume starts progress at the
+        # interrupted position (build_state.current) instead of 0, and keeps
+        # the identity it was building with — the candidate already holds
+        # that many papers' vectors.
+        if _recover_candidate:
+            _resume_base = int(build_state.get("current", 0) or 0)
+            _resume_model = str(build_state.get("model", "") or _current_model)
+            _resume_endpoint = str(
+                build_state.get("vector_provider_endpoint", "") or _current_endpoint
+            )
+        else:
+            _resume_base = 0
+            _resume_model = _current_model
+            _resume_endpoint = _current_endpoint
+
         mark_vector_build_state(
             vault,
             status="running",
-            current=0,
+            current=_resume_base,
             total=total,
             paper_id="",
             started_at=_now(),
             finished_at="",
             message="",
             pid=_os.getpid(),
-            model=_current_model,
-            vector_provider_endpoint=_current_endpoint,
+            model=_resume_model,
+            vector_provider_endpoint=_resume_endpoint,
             vector_identity_version=VECTOR_IDENTITY_VERSION,
             mode=get_embed_status(vault)["mode"],
         )
@@ -499,7 +594,7 @@ def run_build(
             max_workers = PR9B_MAX_WORKERS
             window_size = max_workers * 4
 
-            processed_count = 0
+            processed_count = _resume_base
             papers_embedded = 0
             papers_skipped = 0
             chunks_embedded = 0
@@ -596,8 +691,11 @@ def run_build(
                             if body_units:
                                 try:
 
-                                    db_path = get_memory_db_path(vault)
-                                    conn = get_connection(db_path)
+                                    if _candidate_conn is not None:
+                                        conn = _candidate_conn
+                                    else:
+                                        db_path = get_memory_db_path(vault)
+                                        conn = get_connection(db_path)
                                     try:
                                         ensure_vec_extension(conn)
                                         ensure_schema(conn)
@@ -612,15 +710,19 @@ def run_build(
                                                 and row["retrieval_policy_version"] == RETRIEVAL_POLICY_VERSION
                                             )
                                     finally:
-                                        conn.close()
+                                        if _candidate_conn is None:
+                                            conn.close()
                                 except Exception as exc:
                                     logger.warning("Resume body_units check failed for %s: %s", key, exc)
 
                             if object_units:
                                 try:
 
-                                    db_path = get_memory_db_path(vault)
-                                    conn = get_connection(db_path)
+                                    if _candidate_conn is not None:
+                                        conn = _candidate_conn
+                                    else:
+                                        db_path = get_memory_db_path(vault)
+                                        conn = get_connection(db_path)
                                     try:
                                         ensure_vec_extension(conn)
                                         ensure_schema(conn)
@@ -635,7 +737,8 @@ def run_build(
                                                 and row["retrieval_policy_version"] == RETRIEVAL_POLICY_VERSION
                                             )
                                     finally:
-                                        conn.close()
+                                        if _candidate_conn is None:
+                                            conn.close()
                                 except Exception as exc:
                                     logger.warning("Resume object_units check failed for %s: %s", key, exc)
 
@@ -668,8 +771,11 @@ def run_build(
                         if resume:
                             try:
 
-                                db_path = get_memory_db_path(vault)
-                                conn = get_connection(db_path)
+                                if _candidate_conn is not None:
+                                    conn = _candidate_conn
+                                else:
+                                    db_path = get_memory_db_path(vault)
+                                    conn = get_connection(db_path)
                                 try:
                                     ensure_vec_extension(conn)
                                     ensure_schema(conn)
@@ -685,7 +791,8 @@ def run_build(
                                         )
                                         continue
                                 finally:
-                                    conn.close()
+                                    if _candidate_conn is None:
+                                        conn.close()
                             except Exception as exc:
                                 logger.warning("Resume fulltext check failed for %s: %s", key, exc)
 
@@ -724,8 +831,13 @@ def run_build(
             result = _cred_error_result("embed build", exc)
             print(result.to_json() if json else result.error.message, file=sys.stderr if not json else sys.stdout)
             if _shadow is not None:
-                _shadow.abort()
-                logger.info("Shadow build aborted on credential fault; live DB untouched")
+                try:
+                    _shadow.close_candidate_conn()
+                except Exception:  # noqa: BLE001
+                    pass
+                logger.info(
+                    "Shadow build failed on credential fault; candidate retained for resume; live DB untouched"
+                )
             if _write_lock:
                 _write_lock.__exit__(None, None, None)
             return 1
@@ -751,10 +863,20 @@ def run_build(
                 error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(e)),
             )
             print(result.to_json() if json else result.error.message, file=sys.stderr if not json else sys.stdout)
-            # Shadow: abort candidate, live untouched. In-place: restore backup.
+            # Shadow: keep the candidate so `--resume` can continue from the
+            # surviving rows (RC UX Seam) — live stays untouched either way.
+            # The candidate is a shadow file; the writer lock was held, no
+            # other process can be mid-publish on it.  A failed candidate is
+            # never published automatically; only an explicit resume (or a
+            # force rebuild that wipes it) touches it again.
             if _shadow is not None:
-                _shadow.abort()
-                logger.info("Shadow build aborted; live DB untouched")
+                try:
+                    _shadow.close_candidate_conn()
+                except Exception:  # noqa: BLE001
+                    pass
+                logger.info(
+                    "Shadow build failed; candidate retained for resume; live DB untouched"
+                )
             elif _rebuild_backup_path and _rebuild_backup_path.exists():
                 _os.replace(str(_rebuild_backup_path), str(get_memory_db_path(vault)))
                 logger.info("Restored paperforge.db from pre-rebuild backup after failed build")
