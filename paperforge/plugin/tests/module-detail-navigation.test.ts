@@ -189,8 +189,14 @@ vi.mock("child_process", () => {
       // completes instead of rejecting on "{}".
       if (cb) {
         const isProbeAll = args.includes("probe") && args.includes("all");
+        // probe all emits a BARE envelope (module "all", top-level modules)
         const stdout = isProbeAll
-          ? JSON.stringify({ ok: true, data: { modules: {} }, error: null })
+          ? JSON.stringify({
+              schema_version: 2,
+              module: "all",
+              updated_at: "2026-01-01T00:00:00Z",
+              modules: {},
+            })
           : "{}";
         setTimeout(() => cb(null, stdout, ""), 0);
       }
