@@ -652,8 +652,15 @@ def run_doctor(vault: Path, verbose: bool = False, json_output: bool = False) ->
                 spec = importlib.util.spec_from_file_location("pf_deep", pf_deep_script)
                 if spec and spec.loader:
                     mod = importlib.util.module_from_spec(spec)
-                    spec.loader.exec_module(mod)
-                    pf_deep_import_ok = True
+                    # module_from_spec does NOT register the module; dataclass
+                    # processing reads sys.modules[cls.__module__] and dies
+                    # with AttributeError otherwise (RC audit 2026-08-13).
+                    sys.modules[spec.name] = mod
+                    try:
+                        spec.loader.exec_module(mod)
+                        pf_deep_import_ok = True
+                    finally:
+                        sys.modules.pop(spec.name, None)
             except Exception as e:
                 import_error = str(e)
         if pf_deep_import_ok:
