@@ -141,6 +141,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   private _setupReinstallRequested = false;
   private _setupOperation: "idle" | "running" | "failed" = "idle";
   private _setupFeedback: string | null = null;
+  /** RC UX Seam P1: user chose "Later" — pure session flag; reset on hide(). */
+  private _setupJourneyDismissedForSession = false;
   /** Currently selected module in the detail view. */
   _selectedDetailModule: string = "";
   /** Focus target id after re-render. */
@@ -211,7 +213,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     // #87: Show Setup Journey on first open (never reverse once complete)
     // #87: Only show Setup Journey for first-time users (explicitly false).
     // Existing installations (undefined) skip the journey.
-    if (this.plugin.settings._setup_complete === false) {
+    // RC UX Seam P1: "Later" sets a pure session flag so the Overview is
+    // reachable even while _setup_complete stays false — but the flag is
+    // reset when Settings closes, so reopening resumes the Journey at the
+    // exact stage the user left.
+    if (
+      this.plugin.settings._setup_complete === false &&
+      !this._setupJourneyDismissedForSession
+    ) {
       this._renderSetupJourney(containerEl);
       this._displayInProgress = false;
       return;
@@ -429,34 +438,55 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     pythonOverride?: string,
     signal?: AbortSignal
   ): Promise<void> {
-    const child = spawn(
-      pythonOverride?.trim() ||
-        this.plugin.settings.python_path?.trim() ||
-        "python",
-      args,
-      {
-        cwd: this._getVaultBasePath(),
-        env: paperforgeEnrichedEnv(),
-        windowsHide: true,
-        signal,
-      }
-    );
+    // RC UX Seam P0: after Stage 1 publishes the managed pointer, every
+    // later setup step MUST run on that runtime — never ambient `python`.
+    // pythonOverride is used ONLY by Stage 1 pre-publication (the bootstrap
+    // candidate); every other caller resolves the managed pointer and fails
+    // closed when it is missing.
+    let pythonExe = pythonOverride?.trim();
+    if (!pythonExe) {
+      const resolved = this._resolveRuntimeCommand(this._getVaultBasePath());
+      pythonExe = resolved?.path ?? "";
+    }
+    if (!pythonExe) {
+      return Promise.reject(new Error("no managed runtime pointer"));
+    }
+    const child = spawn(pythonExe, args, {
+      cwd: this._getVaultBasePath(),
+      env: paperforgeEnrichedEnv(),
+      windowsHide: true,
+      signal,
+    });
     return new Promise<void>((resolve, reject) => {
       let stderr = "";
+      let closed = false;
+      let pendingAbort = false;
+      const settle = (err: Error | null) => {
+        if (closed) return;
+        closed = true;
+        err ? reject(err) : resolve();
+      };
       child.stderr?.on("data", (chunk: Buffer) => {
         stderr += chunk.toString("utf-8");
       });
       child.once("error", (err: Error) => {
         if (signal?.aborted || err.name === "AbortError") {
-          reject(new DOMException("Operation was cancelled", "AbortError"));
+          // RC UX Seam P0: abort is cooperative (SIGTERM sets a Python
+          // flag, the child cleans up and exits by itself). Record the
+          // cancellation but DO NOT settle until close() fires, so the UI
+          // never returns to idle while the old setup child is still
+          // running (which would allow an immediate Retry racing it).
+          pendingAbort = true;
         } else {
-          reject(err);
+          settle(err);
         }
       });
       child.once("close", (code) => {
-        code === 0
-          ? resolve()
-          : reject(new Error(stderr || `exit code ${code}`));
+        if (pendingAbort || signal?.aborted || code === null) {
+          settle(new DOMException("Operation was cancelled", "AbortError"));
+        } else {
+          settle(code === 0 ? null : new Error(stderr || `exit code ${code}`));
+        }
       });
     });
   }
@@ -589,6 +619,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         vaultPath,
         "setup",
         "--modular",
+        "--json",
         "--system-dir",
         settings.system_dir?.trim() || "System",
         "--resources-dir",
@@ -3552,6 +3583,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           this._setupFeedback = null;
           this._setupStage = 1;
           this.activeTab = "overview";
+          // RC UX Seam P1: without this the display() gate
+          // (_setup_complete === false) would immediately re-render the
+          // journey and the user could never leave Stage 1.
+          this._setupJourneyDismissedForSession = true;
           this.display();
         },
       });
@@ -4269,5 +4304,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         this._setupView = "overview";
       }
     }
+  }
+
+  /** RC UX Seam P1: closing Settings ends the session — the next open must
+   * resume the Setup Journey at the stage the user left. */
+  hide(): void {
+    this._setupJourneyDismissedForSession = false;
+    super.hide();
   }
 }

@@ -80,6 +80,12 @@ class AgentInstaller:
                 error=str(e),
             )
 
+    def steps(self):
+        """Yield one callable per deployment sub-step so the caller can
+        check cancellation BETWEEN steps (RC UX Seam P0)."""
+        yield self.deploy_skills
+        yield self.deploy_agent_config
+
     def run_all(self) -> list[SetupStepResult]:
         """Run all deployment steps."""
         return [self.deploy_skills(), self.deploy_agent_config()]
