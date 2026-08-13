@@ -8797,10 +8797,10 @@ var Ae = class extends z.ItemView {
     let n = e.length > 0 ? { kind: "papers", keys: e } : { kind: "all" };
     pr(t.path, t.args, r, "ocr.rebuild_derived", n, void 0, 3e5)
       .then((s) => {
-        var _, u, h, g, m, v, x;
+        var u, h, g, m, v, x, E;
         ((this._runningMode = null), (this.running = !1));
         let i =
-            (u = (_ = s.payload) == null ? void 0 : _.data) != null ? u : {},
+            (h = (u = s.payload) == null ? void 0 : u.data) != null ? h : {},
           o = Array.isArray(i.rebuilt) ? i.rebuilt : [],
           c = Array.isArray(i.failed) ? i.failed : [];
         s.ok
@@ -8819,23 +8819,26 @@ var Ae = class extends z.ItemView {
                 (a("ocr_error_notice") || "OCR error") +
                   ": " +
                   String(
-                    (m =
-                      (g = (h = s.payload) == null ? void 0 : h.error) == null
+                    (v =
+                      (m = (g = s.payload) == null ? void 0 : g.error) == null
                         ? void 0
-                        : g.message) != null
-                      ? m
+                        : m.message) != null
+                      ? v
                       : "rebuild failed"
                   ),
                 8e3
               );
-        let p = (v = s.payload) == null ? void 0 : v.next_actions;
+        let p = (x = s.payload) == null ? void 0 : x.next_actions;
         p &&
-          p.some((E) => E.action_id === "embed.resume") &&
+          p.some(
+            (b) =>
+              b.action_id === "embed.resume" || b.action_id === "embed.build"
+          ) &&
           new z.Notice(a("next_action_pending"), 8e3);
-        let f = (x = this.plugin) == null ? void 0 : x._settingTab;
-        (f &&
-          typeof f._refreshAllReadModels == "function" &&
-          f._refreshAllReadModels(),
+        let _ = (E = this.plugin) == null ? void 0 : E._settingTab;
+        (_ &&
+          typeof _._refreshAllReadModels == "function" &&
+          _._refreshAllReadModels(),
           this._loadPapers().then(() => this._render()));
       })
       .catch((s) => {
@@ -12258,14 +12261,16 @@ var Nt = class extends K.Modal {
         [...t.args, "-m", "paperforge", "--vault", e, "sync", "--json"],
         { timeout: 12e4, encoding: "utf-8", cwd: e, windowsHide: !0, env: r },
         (n, s, i) => {
+          var o;
           ((this._autoSyncRunning = !1),
             (this._memoryStatusText = null),
             n ||
               ((this._lastSyncTime = new Date().toLocaleTimeString()),
               rt(s, {
                 vaultPath: e,
-                resolveCommand: (o) => this._getPythonCommand(),
-              })));
+                resolveCommand: (c) => this._getPythonCommand(),
+              }),
+              (o = this._settingTab) == null || o._refreshAllReadModels()));
         }
       );
     }

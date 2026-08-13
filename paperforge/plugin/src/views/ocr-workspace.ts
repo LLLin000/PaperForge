@@ -900,7 +900,13 @@ export class OcrWorkspaceView extends ItemView {
         const pending = res.payload?.next_actions as
           | Array<{ action_id: string; reason?: string }>
           | undefined;
-        if (pending && pending.some((p) => p.action_id === "embed.resume")) {
+        const embedPending =
+          pending &&
+          pending.some(
+            (p) =>
+              p.action_id === "embed.resume" || p.action_id === "embed.build"
+          );
+        if (embedPending) {
           new Notice(t("next_action_pending"), 8000);
         }
         // RC UX Seam: a settled rebuild mutates canonical state (OCR derived
