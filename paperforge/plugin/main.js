@@ -7453,6 +7453,7 @@ var Te = class Te extends A.PluginSettingTab {
                 "set",
                 e,
                 "--stdin",
+                "--replace",
                 "--json",
               ],
               {

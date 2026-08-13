@@ -218,7 +218,7 @@ vi.mock("child_process", () => {
             self.onStderr = cb;
           },
         },
-        stdin: { write: (_s: string) => true },
+        stdin: { write: (_s: string) => true, end: () => {} },
         kill: (_sig: string) => {},
         onData: undefined as ((data: unknown) => void) | undefined,
         onStderr: undefined as ((data: unknown) => void) | undefined,
@@ -238,7 +238,7 @@ vi.mock("child_process", () => {
             self.onStderr = cb;
           },
         },
-        stdin: { write: (_s: string) => true },
+        stdin: { write: (_s: string) => true, end: () => {} },
         kill: (_sig: string) => {},
         on: (ev: string, cb: (arg: unknown) => void) => {
           if (ev === "error") self.onError = cb as (err: Error) => void;
@@ -1855,5 +1855,34 @@ describe("Setup Stage 1 exit/cancel semantics (RC UX Seam Pass)", () => {
     expect((tab as any)._setupStage).toBe(1);
     expect((tab as any)._setupFeedback).toContain("cancelled");
     expect((tab.plugin as any).settings._setup_complete).toBe(false);
+  });
+});
+
+// ═══════════ RC UX Seam: credential save replaces stale keyring values ═════
+describe("_storeVectorDbCredential replace semantics (RC UX Seam)", () => {
+  it("auth set carries --replace so a stale keyring value cannot block saving", async () => {
+    const tab = makeTab();
+    (tab as any)._getVaultBasePath = () => "/vault";
+    (tab as any)._resolveRuntimeCommand = () => ({
+      path: "/usr/bin/python3",
+      args: [],
+    });
+    spawnedProcesses.length = 0;
+    const saved = (tab as any)._storeVectorDbCredential("sk-new-key-123");
+    // spawn captured the argv before the promise settles
+    await Promise.resolve();
+    await Promise.resolve();
+    const authCall = spawnedProcesses.find((p: { args: string[] }) =>
+      p.args.includes("auth")
+    );
+    expect(authCall).toBeDefined();
+    expect(authCall?.args).toContain("--replace");
+    expect(authCall?.args).toContain("--stdin");
+    expect(authCall?.args.join(" ")).not.toContain("sk-new-key-123");
+    // settle the promise
+    authCall?.onData?.(JSON.stringify({ ok: true }));
+    authCall?.onClose?.(0);
+    const result = await saved;
+    expect(result).toBe(true);
   });
 });
