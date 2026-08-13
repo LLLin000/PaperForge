@@ -3976,6 +3976,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           "set",
           kind,
           "--stdin",
+          "--replace",
           "--json",
         ],
         {
