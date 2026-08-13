@@ -31,8 +31,28 @@ vi.mock("../src/services/python-bridge", () => ({
 
 const { mockExecFile } = vi.hoisted(() => ({
   mockExecFile: vi.fn(
-    (_path: string, argv: string[], _opts: unknown, cb: (err: null, stdout: string) => void) => {
-      cb(null, JSON.stringify({ ok: true, command: argv.join(" "), data: { hi: "there" }, error: null }));
+    (
+      _path: string,
+      argv: string[],
+      _opts: unknown,
+      cb: (err: null, stdout: string) => void
+    ) => {
+      const isProbeAll = argv.includes("probe") && argv.includes("all");
+      // probe all emits a BARE envelope; other typed methods emit PFResult.
+      const payload = isProbeAll
+        ? {
+            schema_version: 2,
+            module: "all",
+            updated_at: "2026-01-01T00:00:00Z",
+            modules: { installation: { module: "installation" } },
+          }
+        : {
+            ok: true,
+            command: argv.join(" "),
+            data: { hi: "there" },
+            error: null,
+          };
+      cb(null, JSON.stringify(payload));
     }
   ),
 }));
@@ -69,43 +89,102 @@ describe("read-model client argv contract (#161/R)", () => {
 
   it("probeAll emits `paperforge probe all --json`", async () => {
     await probeAll("/vault", null);
-    expect(lastArgv()).toEqual(["-m", "paperforge", "--vault", "/vault", "probe", "all", "--json"]);
+    expect(lastArgv()).toEqual([
+      "-m",
+      "paperforge",
+      "--vault",
+      "/vault",
+      "probe",
+      "all",
+      "--json",
+    ]);
   });
 
   it("queryMemoryDetail emits `paperforge memory status --json`", async () => {
     await queryMemoryDetail("/vault", null);
-    expect(lastArgv()).toEqual(["-m", "paperforge", "--vault", "/vault", "memory", "status", "--json"]);
+    expect(lastArgv()).toEqual([
+      "-m",
+      "paperforge",
+      "--vault",
+      "/vault",
+      "memory",
+      "status",
+      "--json",
+    ]);
   });
 
   it("queryEmbedStatus emits `paperforge embed status --json`", async () => {
     await queryEmbedStatus("/vault", null);
-    expect(lastArgv()).toEqual(["-m", "paperforge", "--vault", "/vault", "embed", "status", "--json"]);
+    expect(lastArgv()).toEqual([
+      "-m",
+      "paperforge",
+      "--vault",
+      "/vault",
+      "embed",
+      "status",
+      "--json",
+    ]);
   });
 
   it("queryOcrPapers emits `paperforge ocr list --json`", async () => {
     await queryOcrPapers("/vault", null);
-    expect(lastArgv()).toEqual(["-m", "paperforge", "--vault", "/vault", "ocr", "list", "--json"]);
+    expect(lastArgv()).toEqual([
+      "-m",
+      "paperforge",
+      "--vault",
+      "/vault",
+      "ocr",
+      "list",
+      "--json",
+    ]);
   });
 
   it("paperContext emits `paperforge paper-context <key> --json`", async () => {
     await paperContext("/vault", "KEY1", null);
-    expect(lastArgv()).toEqual(["-m", "paperforge", "--vault", "/vault", "paper-context", "KEY1", "--json"]);
+    expect(lastArgv()).toEqual([
+      "-m",
+      "paperforge",
+      "--vault",
+      "/vault",
+      "paper-context",
+      "KEY1",
+      "--json",
+    ]);
   });
 
   it("config methods still route through the config subcommand (C0)", async () => {
     await configList("/vault", null);
-    expect(lastArgv()).toEqual(["-m", "paperforge", "--vault", "/vault", "config", "list", "--json"]);
+    expect(lastArgv()).toEqual([
+      "-m",
+      "paperforge",
+      "--vault",
+      "/vault",
+      "config",
+      "list",
+      "--json",
+    ]);
   });
 
-  it("typed methods return the PFResult data payload directly (no .data)", async () => {
-    const data = await probeAll("/vault", null);
+  it("typed methods return the PFResult data payload directly (no .data); probeAll returns the bare envelope", async () => {
+    const data = await configList("/vault", null);
     expect(data).toEqual({ hi: "there" });
     expect((data as { data?: unknown }).data).toBeUndefined();
+    const all = await probeAll("/vault", null);
+    expect(all.module).toBe("all");
+    expect(all.modules).toEqual({ installation: { module: "installation" } });
   });
 
   it("refreshAll invalidates then re-probes; invalidateAll clears the cache", async () => {
     await refreshAll("/vault", null);
-    expect(lastArgv()).toEqual(["-m", "paperforge", "--vault", "/vault", "probe", "all", "--json"]);
+    expect(lastArgv()).toEqual([
+      "-m",
+      "paperforge",
+      "--vault",
+      "/vault",
+      "probe",
+      "all",
+      "--json",
+    ]);
     invalidateAll();
     // invalidateAll is synchronous cache clearing; a subsequent probeAll
     // must not be short-circuited by any stale cache.
@@ -122,6 +201,15 @@ describe("resolvePythonExecutable passthrough", () => {
       extraArgs: ["--flag"],
     });
     await queryEmbedStatus("/vault", null);
-    expect(lastArgv()).toEqual(["--flag", "-m", "paperforge", "--vault", "/vault", "embed", "status", "--json"]);
+    expect(lastArgv()).toEqual([
+      "--flag",
+      "-m",
+      "paperforge",
+      "--vault",
+      "/vault",
+      "embed",
+      "status",
+      "--json",
+    ]);
   });
 });

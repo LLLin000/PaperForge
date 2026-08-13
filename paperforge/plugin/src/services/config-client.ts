@@ -59,14 +59,22 @@ interface PfResult<T> {
   ok: boolean;
   command: string;
   data: T | null;
-  error: { code: string; message: string; details: Record<string, unknown> } | null;
+  error: {
+    code: string;
+    message: string;
+    details: Record<string, unknown>;
+  } | null;
 }
 
 export class ConfigClientError extends Error {
   readonly configCode: string;
   readonly details: Record<string, unknown>;
 
-  constructor(configCode: string, details: Record<string, unknown>, message?: string) {
+  constructor(
+    configCode: string,
+    details: Record<string, unknown>,
+    message?: string
+  ) {
     super(message ?? configCode);
     this.configCode = configCode;
     this.details = details;
@@ -84,7 +92,12 @@ function invokePaperForge<T>(
   settings: PaperForgeSettings | null | undefined
 ): Promise<T> {
   return new Promise<T>((resolve, reject) => {
-    const py = resolvePythonExecutable(vaultPath, settings, require("fs"), require("child_process").execFileSync);
+    const py = resolvePythonExecutable(
+      vaultPath,
+      settings,
+      require("fs"),
+      require("child_process").execFileSync
+    );
     if (!py) {
       reject(new ConfigClientError("config.python_unresolved", {}));
       return;
@@ -111,7 +124,8 @@ function invokePaperForge<T>(
             resolve(parsed.data);
             return;
           }
-          const code = parsed.error?.message || parsed.error?.code || "config.error";
+          const code =
+            parsed.error?.message || parsed.error?.code || "config.error";
           reject(
             new ConfigClientError(
               code,
@@ -125,7 +139,10 @@ function invokePaperForge<T>(
           reject(
             new ConfigClientError(
               "config.invalid_response",
-              { stdout: stdout?.slice(0, 200) ?? "", stderr: diag?.slice(0, 200) ?? "" },
+              {
+                stdout: stdout?.slice(0, 200) ?? "",
+                stderr: diag?.slice(0, 200) ?? "",
+              },
               `Invalid config response: ${String(parseError)}`
             )
           );
@@ -139,7 +156,11 @@ export function configList(
   vaultPath: string,
   settings?: PaperForgeSettings | null
 ): Promise<ConfigListData> {
-  return invokePaperForge<ConfigListData>(vaultPath, ["config", "list"], settings);
+  return invokePaperForge<ConfigListData>(
+    vaultPath,
+    ["config", "list"],
+    settings
+  );
 }
 
 export function configGet(
@@ -147,7 +168,11 @@ export function configGet(
   key: string,
   settings?: PaperForgeSettings | null
 ): Promise<ConfigField> {
-  return invokePaperForge<{ field: ConfigField }>(vaultPath, ["config", "get", key], settings).then((d) => d.field);
+  return invokePaperForge<{ field: ConfigField }>(
+    vaultPath,
+    ["config", "get", key],
+    settings
+  ).then((d) => d.field);
 }
 
 export function configSet(
@@ -156,7 +181,11 @@ export function configSet(
   value: string | boolean,
   settings?: PaperForgeSettings | null
 ): Promise<ConfigMutationData> {
-  return invokePaperForge<ConfigMutationData>(vaultPath, ["config", "set", key, String(value)], settings);
+  return invokePaperForge<ConfigMutationData>(
+    vaultPath,
+    ["config", "set", key, String(value)],
+    settings
+  );
 }
 
 export function configUnset(
@@ -164,21 +193,33 @@ export function configUnset(
   key: string,
   settings?: PaperForgeSettings | null
 ): Promise<ConfigMutationData> {
-  return invokePaperForge<ConfigMutationData>(vaultPath, ["config", "unset", key], settings);
+  return invokePaperForge<ConfigMutationData>(
+    vaultPath,
+    ["config", "unset", key],
+    settings
+  );
 }
 
 export function configPaths(
   vaultPath: string,
   settings?: PaperForgeSettings | null
 ): Promise<ConfigPathsData> {
-  return invokePaperForge<ConfigPathsData>(vaultPath, ["config", "paths"], settings);
+  return invokePaperForge<ConfigPathsData>(
+    vaultPath,
+    ["config", "paths"],
+    settings
+  );
 }
 
 export function configValidate(
   vaultPath: string,
   settings?: PaperForgeSettings | null
 ): Promise<ConfigValidateData> {
-  return invokePaperForge<ConfigValidateData>(vaultPath, ["config", "validate"], settings);
+  return invokePaperForge<ConfigValidateData>(
+    vaultPath,
+    ["config", "validate"],
+    settings
+  );
 }
 
 export function configMigrate(
@@ -242,28 +283,97 @@ export function probeAll(
   vaultPath: string,
   settings?: PaperForgeSettings | null
 ): Promise<ProbeAllData> {
-  return invokePaperForge<ProbeAllData>(vaultPath, ["probe", "all"], settings);
+  // probe is a QUERY, not an action: `probe all --json` emits a BARE
+  // envelope (module: "all", top-level `modules`), NOT a PFResult
+  // {ok, data}.  Parse directly — routing it through invokePaperForge
+  // (which requires parsed.ok) made every refresh reject.
+  return new Promise<ProbeAllData>((resolve, reject) => {
+    const py = resolvePythonExecutable(
+      vaultPath,
+      settings,
+      require("fs"),
+      require("child_process").execFileSync
+    );
+    if (!py) {
+      reject(new ConfigClientError("config.python_unresolved", {}));
+      return;
+    }
+    const argv = [
+      ...py.extraArgs,
+      "-m",
+      "paperforge",
+      "--vault",
+      vaultPath,
+      "probe",
+      "all",
+      "--json",
+    ];
+    execFile(
+      py.path,
+      argv,
+      { encoding: "utf-8", timeout: 30000, windowsHide: true },
+      (err, stdout) => {
+        try {
+          const parsed = JSON.parse(stdout) as ProbeAllData;
+          if (parsed.module === "all" && parsed.modules) {
+            resolve(parsed);
+            return;
+          }
+          reject(
+            new ConfigClientError(
+              "probe.invalid_envelope",
+              { stdout: stdout?.slice(0, 200) ?? "" },
+              "probe all returned an invalid envelope"
+            )
+          );
+        } catch (parseError) {
+          reject(
+            new ConfigClientError(
+              "config.invalid_response",
+              {
+                stdout: stdout?.slice(0, 200) ?? "",
+                stderr: err?.message ?? "",
+              },
+              `Invalid probe response: ${String(parseError)}`
+            )
+          );
+        }
+      }
+    );
+  });
 }
 
 export function queryMemoryDetail(
   vaultPath: string,
   settings?: PaperForgeSettings | null
 ): Promise<MemoryDetailData> {
-  return invokePaperForge<MemoryDetailData>(vaultPath, ["memory", "status"], settings);
+  return invokePaperForge<MemoryDetailData>(
+    vaultPath,
+    ["memory", "status"],
+    settings
+  );
 }
 
 export function queryEmbedStatus(
   vaultPath: string,
   settings?: PaperForgeSettings | null
 ): Promise<EmbedStatusData> {
-  return invokePaperForge<EmbedStatusData>(vaultPath, ["embed", "status"], settings);
+  return invokePaperForge<EmbedStatusData>(
+    vaultPath,
+    ["embed", "status"],
+    settings
+  );
 }
 
 export function queryOcrPapers(
   vaultPath: string,
   settings?: PaperForgeSettings | null
 ): Promise<Record<string, unknown>> {
-  return invokePaperForge<Record<string, unknown>>(vaultPath, ["ocr", "list"], settings);
+  return invokePaperForge<Record<string, unknown>>(
+    vaultPath,
+    ["ocr", "list"],
+    settings
+  );
 }
 
 export function paperContext(
@@ -271,7 +381,11 @@ export function paperContext(
   key: string,
   settings?: PaperForgeSettings | null
 ): Promise<Record<string, unknown>> {
-  return invokePaperForge<Record<string, unknown>>(vaultPath, ["paper-context", key], settings);
+  return invokePaperForge<Record<string, unknown>>(
+    vaultPath,
+    ["paper-context", key],
+    settings
+  );
 }
 
 // ── Read-model cache invalidation (#161 acceptance) ─────────────────────
