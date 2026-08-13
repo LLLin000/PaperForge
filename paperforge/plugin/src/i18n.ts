@@ -58,24 +58,16 @@ const LANG: Record<string, Record<string, string>> = {
     feat_api_model: "API Model",
     feat_api_model_desc: "Embedding model name for this endpoint.",
     feat_build_btn: "Build",
-    feat_build_complete: "Vector build complete.",
-    feat_build_failed: "Build failed. See terminal output.",
+
     feat_building: "Building...",
     feat_cache_remove_failed: "Failed: {0}",
     feat_cache_removed: "Model cache removed.",
     feat_checking: "Checking...",
     feat_checking_btn: "Checking...",
-    feat_deps_checking: "Checking dependencies...",
+
     feat_deps_missing:
       "Dependencies not installed. Required: chromadb, openai.",
-    feat_enter_key: "Enter a valid OpenAI API key.",
-    feat_install_btn: "Install",
-    feat_install_deps: "Install Dependencies",
-    feat_install_deps_desc: "pip install chromadb openai (~35MB).",
-    feat_install_done: "Dependencies installed. Building vectors...",
-    feat_install_failed: "Install failed: ",
-    feat_installing: "Installing...",
-    feat_installing_pkgs: "Installing {pkgs}...",
+
     feat_key_rejected: "API key rejected.",
     feat_memory_desc:
       "The Memory Layer is the core data engine of PaperForge, powered by SQLite. It integrates literature metadata (papers, assets, aliases, reading events), provides FTS5 metadata search across titles, abstracts, authors, domains, and collections, and powers agent-context and paper-status. Always active — no toggle needed.",
@@ -87,7 +79,7 @@ const LANG: Record<string, Record<string, string>> = {
     feat_model_changed_warn:
       "Model changed ({0} -> {1}). Existing vectors are incompatible — rebuild required.",
     feat_network_error: "Network error: ",
-    feat_no_python: "No Python found. Check Installation tab.",
+
     feat_not_cached: "Not cached",
     feat_openai_key: "OpenAI API Key",
     feat_openai_key_desc:
@@ -100,7 +92,7 @@ const LANG: Record<string, Record<string, string>> = {
     feat_rebuild_vectors_desc:
       "Rebuild all OCR fulltext vectors. Required after model or mode change.",
     feat_removing: "Removing...",
-    feat_retry_btn: "Retry",
+
     feat_skills_desc:
       "Manage and enable/disable agent skills installed in your vault. Each row corresponds to a SKILL.md file — toggle off to prevent the agent from auto-invoking that skill.",
     feat_skills_system:
@@ -109,16 +101,7 @@ const LANG: Record<string, Record<string, string>> = {
       "User Skills are custom skills you install from community or create yourself.",
     feat_uninstall_btn: "Uninstall",
     feat_valid_key: "API key valid.",
-    feat_vector_config_label: "Vector Settings",
-    feat_vector_corrupted: "Vector index corrupted — needs force rebuild.",
-    feat_vector_desc:
-      "Vector Database enables semantic search across OCR-extracted fulltext via API embedding. Documents are split into chunks, embedded via OpenAI-compatible API, and stored in ChromaDB.",
-    feat_vector_enable: "Enable Vector Retrieval",
-    feat_vector_enable_desc:
-      "Semantic search across OCR fulltext. Requires: pip install openai chromadb (~35MB).",
-    feat_vector_rebuild_force_btn: "Force Rebuild",
-    feat_verify: "Verify",
-    feat_verify_btn: "Verify",
+
     field_paddleocr: "PaddleOCR API Key",
     field_python_custom: "Custom Path",
     field_python_interp: "Python Interpreter",
@@ -329,10 +312,10 @@ const LANG: Record<string, Record<string, string>> = {
     retrieval_build_stopping: "Stopping...",
     retrieval_build_stopped: "Build stopped ({n}/{t} papers)",
     retrieval_build_failed: "Build failed",
-    retrieval_build_stale: "Vectors are stale — rebuild recommended",
+
     retrieval_build_deps_missing:
       "Dependencies missing. Install chromadb and openai.",
-    retrieval_build_runtime_mismatch: "Python runtime version mismatch.",
+
     retrieval_stop: "Stop",
     retrieval_no_python: "Python not found",
     retrieval_internal_error: "An internal error occurred",
@@ -574,6 +557,9 @@ const LANG: Record<string, Record<string, string>> = {
     setup_nav_continue: "Continue",
     setup_nav_skip: "Skip for now",
     setup_nav_back: "Back",
+    setup_nav_cancel: "Cancel",
+    setup_nav_later: "Later",
+    setup_install_cancelled: "Installation cancelled. Nothing was installed.",
     setup_nav_complete: "Complete Setup",
     help_title: "Help",
     help_eyebrow: "help",
@@ -610,10 +596,9 @@ const LANG: Record<string, Record<string, string>> = {
     // ── Control Center (Issue #76) ──
     foundation_git: "Git",
     foundation_git_missing: "Not installed — install Git for version control",
-    foundation_obsidian: "Obsidian Version",
-    foundation_obsidian_old: "Version too old — update Obsidian",
+
     foundation_python_packages: "Python Packages",
-    foundation_python_packages_checking: "Checking installed packages...",
+
     foundation_paddle_key: "PaddleOCR API Key",
     foundation_paddle_missing: "Not configured — required for OCR extraction",
     foundation_openai_key: "OpenAI API Key",
@@ -874,6 +859,7 @@ const LANG: Record<string, Record<string, string>> = {
       "View and manage OCR extraction for your literature collection.",
     ocr_ws_processing: "Processing\u2026",
     ocr_ws_stop: "Stop",
+    ocr_ws_stop_unavailable_rebuild: "Rebuild is not stoppable from here",
     ocr_ws_btn_refresh: "Refresh",
     ocr_ws_showing: "<strong>{count}</strong> of {total} papers",
     ocr_ws_filter_status: "Filter by status",
@@ -999,7 +985,7 @@ const LANG: Record<string, Record<string, string>> = {
     feat_checking: "检测中…",
     feat_checking_btn: "检测中…",
     feat_deps_checking: "正在检测依赖…",
-    feat_deps_missing: "依赖未安装。需要：chromadb, openai。",
+
     feat_enter_key: "请输入有效的 OpenAI API Key。",
     feat_install_btn: "安装",
     feat_install_deps: "安装依赖",
@@ -1037,16 +1023,8 @@ const LANG: Record<string, Record<string, string>> = {
     feat_skills_user: "用户技能是你自行安装或创建的自定义技能。",
     feat_uninstall_btn: "卸载",
     feat_valid_key: "API Key 有效。",
-    feat_vector_config_label: "向量库配置",
+
     feat_vector_corrupted: "向量索引已损坏 — 需要强制重建。",
-    feat_vector_desc:
-      "向量数据库通过嵌入模型实现 OCR 全文的语义搜索。文档被切分为文本块（chunk），编码为向量存入 ChromaDB。支持本地模型（免费，CPU 运行）或 OpenAI API（付费，更快速）。",
-    feat_vector_enable: "启用向量检索",
-    feat_vector_enable_desc:
-      "对 OCR 全文进行语义搜索。需安装: pip install chromadb sentence-transformers openai (~500MB)。",
-    feat_vector_rebuild_force_btn: "强制重建",
-    feat_verify: "验证",
-    feat_verify_btn: "验证",
     field_paddleocr: "PaddleOCR API 密钥",
     field_python_custom: "自定义 Python 路径",
     field_python_interp: "当前 Python 解释器",
@@ -1453,6 +1431,9 @@ const LANG: Record<string, Record<string, string>> = {
     setup_nav_continue: "继续",
     setup_nav_skip: "暂时跳过",
     setup_nav_back: "返回",
+    setup_nav_cancel: "取消",
+    setup_nav_later: "稍后",
+    setup_install_cancelled: "安装已取消，未安装任何内容。",
     setup_nav_complete: "完成设置",
     help_title: "帮助",
     help_lede: "打开相关模块，或复制诊断信息寻求支持。",
@@ -1490,7 +1471,7 @@ const LANG: Record<string, Record<string, string>> = {
     retrieval_build_stopped: "构建已停止（{n}/{t} 篇）",
     retrieval_build_failed: "构建失败",
     retrieval_build_stale: "向量已过期 — 建议重建",
-    retrieval_build_deps_missing: "依赖缺失。请安装 chromadb 和 openai。",
+
     retrieval_build_runtime_mismatch: "Python 运行时版本不匹配。",
     retrieval_stop: "停止",
     retrieval_no_python: "未找到 Python",
@@ -1745,6 +1726,7 @@ const LANG: Record<string, Record<string, string>> = {
     ocr_ws_lede: "查看和管理文献集合的 OCR 提取。",
     ocr_ws_processing: "处理中\u2026",
     ocr_ws_stop: "停止",
+    ocr_ws_stop_unavailable_rebuild: "重建操作无法在此停止",
     ocr_ws_btn_refresh: "刷新",
     ocr_ws_search_placeholder: "按标题、作者、年份搜索论文...",
     ocr_ws_showing: "共 {total} 篇，显示 <strong>{count}</strong> 篇",

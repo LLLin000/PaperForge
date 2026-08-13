@@ -426,7 +426,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
   private _runSetupPython(
     args: string[],
-    pythonOverride?: string
+    pythonOverride?: string,
+    signal?: AbortSignal
   ): Promise<void> {
     const child = spawn(
       pythonOverride?.trim() ||
@@ -437,6 +438,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         cwd: this._getVaultBasePath(),
         env: paperforgeEnrichedEnv(),
         windowsHide: true,
+        signal,
       }
     );
     return new Promise<void>((resolve, reject) => {
@@ -444,7 +446,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       child.stderr?.on("data", (chunk: Buffer) => {
         stderr += chunk.toString("utf-8");
       });
-      child.once("error", reject);
+      child.once("error", (err: Error) => {
+        if (signal?.aborted || err.name === "AbortError") {
+          reject(new DOMException("Operation was cancelled", "AbortError"));
+        } else {
+          reject(err);
+        }
+      });
       child.once("close", (code) => {
         code === 0
           ? resolve()
@@ -465,16 +473,24 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     // never --user).  After install, handshake → `paperforge setup --json`
     // (the #137 NDJSON machine stream) publishes the pointer — Python is
     // the only writer.
+    // RC UX Seam: the whole chain (install → handshake → setup) is
+    // cancellable through one AbortController; installOnce deletes the
+    // half-installed venv on abort, and a cancelled install must NOT
+    // republish the pointer or flip _setup_complete.
+    this._runtimeAbortController = new AbortController();
+    const signal = this._runtimeAbortController.signal;
     void (async () => {
       try {
         const vaultPath = this._getVaultBasePath();
         const bootstrap = this._ensureManagedRuntime();
         const installed = await bootstrap.installOnce(
-          this.plugin.manifest.version
+          this.plugin.manifest.version,
+          signal
         );
         const hs = await bootstrap.handshake(this.plugin.manifest.version, {
           pythonPath: installed.pythonPath,
           vaultPath,
+          signal,
         });
         if (!hs.ok) {
           throw new Error(hs.reason ?? "handshake failed");
@@ -505,7 +521,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           setupArgs.push("--zotero-data", s.zotero_data_dir.trim());
         }
         await this.plugin.saveSettings();
-        await this._runSetupPython(setupArgs, installed.pythonPath);
+        await this._runSetupPython(setupArgs, installed.pythonPath, signal);
         this._setupOperation = "idle";
         this._setupReinstallRequested = false;
         this._setupFeedback = t("setup_install_complete");
@@ -513,10 +529,26 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         this._probeModule("help");
         this.display();
       } catch (error) {
+        const isAbort =
+          signal.aborted ||
+          (typeof error === "object" &&
+            error !== null &&
+            (error as { name?: unknown }).name === "AbortError");
+        if (isAbort) {
+          // User cancelled: keep the wizard in place, show a neutral
+          // message.  Never flip _setup_complete, never treat it as a
+          // failure state.
+          this._setupOperation = "idle";
+          this._setupFeedback = t("setup_install_cancelled");
+          this.display();
+          return;
+        }
         console.error("PaperForge runtime installation failed:", error);
         this._setupOperation = "failed";
         this._setupFeedback = t("setup_install_failed");
         this.display();
+      } finally {
+        this._runtimeAbortController = null;
       }
     })();
   }
@@ -710,12 +742,20 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       "pf-status-ok"
     );
 
-    // Python check
-    const pythonPath = this.plugin.settings.python_path || "python";
-    addCheck(t("foundation_python"), "—", pythonPath, "pf-status-checking");
+    // Python check — project the resolved runtime command (managed pointer
+    // first, then the explicit override), not a bare settings fallback.
+    const vp = (this.app.vault.adapter as any).basePath as string;
+    const pythonPath =
+      this._resolveRuntimeCommand(vp)?.path ??
+      (this.plugin.settings.python_path || "python");
+    addCheck(
+      t("foundation_python"),
+      env.user_state === "ready" ? "✓" : "—",
+      pythonPath,
+      env.user_state === "ready" ? "pf-status-ok" : "pf-status-checking"
+    );
 
     // Vault structure
-    const vp = (this.app.vault.adapter as any).basePath as string;
     const systemDir = path.join(
       vp,
       this.plugin.settings.system_dir || "System"
@@ -775,58 +815,23 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       "One-time migration of Obsidian SecretStorage values into the keyring (auth set)";
     migrateBtn.onclick = () => this._migrateLegacyCredentials(migrateBtn);
 
-    // Obsidian version check
-    const minVersion = "1.11.4";
-    const currentVersion = "1.11.4";
-    const obsidianOk = true; // Simplified check
-    addCheck(
-      t("foundation_obsidian"),
-      obsidianOk ? "✓" : "✗",
-      obsidianOk ? `≥${minVersion}` : t("foundation_obsidian_old"),
-      obsidianOk ? "pf-status-ok" : "pf-status-error"
-    );
+    // Obsidian version check removed (RC UX Seam): the previous block
+    // hardcoded `obsidianOk = true` — a false green. Obsidian compatibility
+    // is enforced by the manifest's minAppVersion at plugin load; Python-side
+    // truth lives in the probe envelope, not a presentation-side constant.
 
-    // Python packages
+    // Python packages: projected from the probe envelope — the backend owns
+    // dependency truth (probe memory / embed status deps_installed).  The
+    // retired `import openai; import sqlite3` exec check ran against
+    // settings.python_path instead of the managed runtime and duplicated
+    // backend authority, so it is gone.
     addCheck(
       t("foundation_python_packages"),
-      "—",
-      t("foundation_python_packages_checking"),
-      "pf-status-checking"
-    );
-
-    // Python version check
-    const { exec } = require("child_process");
-    exec(`"${pythonPath}" --version`, { timeout: 5000 }, (err: any) => {
-      const row = checks.children[1] as HTMLElement;
-      if (row) {
-        const statusEl = row.querySelector(".pf-status-checking");
-        if (statusEl) {
-          statusEl.textContent = err ? "✗" : "✓";
-          statusEl.className = err ? "pf-status-error" : "pf-status-ok";
-        }
-      }
-    });
-
-    // Python packages async check — import test using the configured Python
-    exec(
-      `"${pythonPath}" -c "import openai; import sqlite3; print('ok')"`,
-      { timeout: 10000 },
-      (err: any) => {
-        const row = checks.children[checks.children.length - 1] as HTMLElement;
-        if (row) {
-          const statusEl = row.querySelector(".pf-status-checking");
-          if (statusEl) {
-            statusEl.textContent = err ? "✗" : "✓";
-            statusEl.className = err ? "pf-status-error" : "pf-status-ok";
-            const valueEl = row.querySelector(".pf-config-value");
-            if (valueEl) {
-              valueEl.textContent = err
-                ? t("foundation_packages_missing") || "Missing packages"
-                : t("check_bbt_ok") || "Ready";
-            }
-          }
-        }
-      }
+      env.user_state === "ready" ? "✓" : "—",
+      env.user_state === "ready"
+        ? t("check_bbt_ok") || "Ready"
+        : (env.reason?.text ?? "—"),
+      env.user_state === "ready" ? "pf-status-ok" : "pf-status-checking"
     );
 
     // Action buttons
@@ -2103,9 +2108,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
                   envelopes["memory"].activity_progress = null;
                 }
               }
+              let terminal = false;
               if (state === "success") {
+                terminal = true;
                 new Notice(t("embed_build_complete"));
               } else if (state === "success_with_warning") {
+                terminal = true;
                 new Notice(
                   t("embed_build_warning").replace(
                     "{detail}",
@@ -2114,6 +2122,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
                   8000
                 );
               } else if (state === "failed") {
+                terminal = true;
                 new Notice(
                   t("sr_build_failed_notice").replace(
                     "{detail}",
@@ -2122,7 +2131,15 @@ export class PaperForgeSettingTab extends PluginSettingTab {
                   8000
                 );
               } else if (state === "cancelled") {
+                terminal = true;
                 new Notice(t("embed_build_stopped"), 8000);
+              }
+              if (terminal) {
+                // RC UX Seam P1: mutation settled → invalidate all + probe
+                // all. Without this the envelope keeps the pre-build
+                // needs_action truth until the next convergence tick, so the
+                // card would keep offering "Build" right after a success.
+                this._refreshAllReadModels();
               }
               this.display();
             },
@@ -2393,68 +2410,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       });
   }
 
-  _execMemoryStatus(
-    pythonPath: string,
-    vp: string,
-    callback: (text: string) => void
-  ) {
-    const _menv = paperforgeEnrichedEnv();
-    exec(
-      `"${pythonPath}" -m paperforge --vault "${vp}" memory status --json`,
-      { encoding: "utf-8", timeout: 15000, env: _menv },
-      (err, stdout) => {
-        if (err) {
-          callback("Status unavailable");
-          return;
-        }
-        try {
-          const data = JSON.parse(stdout);
-          if (data.ok) {
-            const s = data.data;
-            const freshness = s.fresh ? "fresh" : "stale";
-            callback(
-              `Papers: ${s.paper_count_db} | ${freshness}${s.needs_rebuild ? " - needs rebuild" : ""}`
-            );
-          } else {
-            callback("DB not found. Run paperforge memory build.");
-          }
-        } catch (e) {
-          callback("Could not parse status.");
-        }
-      }
-    );
-  }
-
-  _execEmbedStatus(
-    pythonPath: string,
-    vp: string,
-    callback: (text: string) => void
-  ) {
-    const _eenv = paperforgeEnrichedEnv();
-    exec(
-      `"${pythonPath}" -m paperforge --vault "${vp}" embed status --json`,
-      { encoding: "utf-8", timeout: 15000, env: _eenv },
-      (err, stdout) => {
-        if (err) {
-          callback("Status unavailable");
-          return;
-        }
-        try {
-          const data = JSON.parse(stdout);
-          if (data.ok) {
-            callback(
-              `Chunks: ${data.data.chunk_count} | ${data.data.model} | ${data.data.mode}`
-            );
-          } else {
-            callback("Could not parse status.");
-          }
-        } catch (e) {
-          callback("Could not parse status.");
-        }
-      }
-    );
-  }
-
   _callPython(command: string[], opts?: any) {
     const vp = (this.app.vault.adapter as any).basePath as string;
     const resolved = this._resolveRuntimeCommand(vp);
@@ -2518,80 +2473,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     execChild(env);
     return null;
   }
-  _renderMemoryStatusText(
-    el: HTMLElement,
-    text: string,
-    extraInfo: string | null | undefined
-  ) {
-    el.innerHTML = "";
-    el.createEl("span", { text: text, cls: "paperforge-memory-text" });
-
-    if (extraInfo === "syncing") {
-      el.createEl("span", {
-        text: "Syncing...",
-        cls: "paperforge-sync-status",
-      });
-    } else if (extraInfo) {
-      el.createEl("span", { text: extraInfo, cls: "paperforge-sync-status" });
-    }
-
-    const rebuildBtn = el.createEl("button", {
-      cls: "paperforge-rebuild-btn",
-      text: t("feat_memory_rebuild_btn"),
-    });
-    rebuildBtn.title = "Rebuild memory database";
-    rebuildBtn.onclick = () => {
-      const vp = (this.app.vault.adapter as any).basePath as string;
-      const py = this._resolveRuntimeCommand(vp);
-      if (!py?.path) {
-        new Notice(t("feat_no_python"));
-        return;
-      }
-      console.log("[PaperForge] Rebuilding memory:", py.path);
-      rebuildBtn.setText(t("feat_memory_rebuilding"));
-      rebuildBtn.setAttr("disabled", "");
-      this._callPython(["memory", "build"], {
-        timeout: 60000,
-        onClose: (code: number | null, stdout: string, stderr: string) => {
-          console.log(
-            "[PaperForge] memory build exit:",
-            code ? "FAIL:" + code : "OK",
-            (stdout || "").slice(0, 200),
-            (stderr || "").slice(0, 200)
-          );
-          rebuildBtn.setText(t("feat_memory_rebuild_btn"));
-          rebuildBtn.removeAttribute("disabled");
-          if (code === 0) {
-            new Notice(t("feat_memory_rebuild_done"));
-          } else {
-            new Notice(
-              t("feat_memory_rebuild_failed") +
-                (stderr ? " " + stderr.slice(0, 80) : "")
-            );
-          }
-          this._memoryStatusText = t("feat_memory_rebuild_done");
-          this._refreshAllReadModels();
-        },
-      });
-    };
-
-    const refreshBtn = el.createEl("button", {
-      cls: "paperforge-refresh-btn",
-      text: "\u21BB",
-    });
-    refreshBtn.title = "Sync now";
-    refreshBtn.onclick = () => {
-      this._memoryStatusText = null;
-      this._runManualSync();
-    };
-  }
-
-  _getBuildCommand(settings: PaperForgeSettings): string | null {
-    const vp = (this.app.vault.adapter as any).basePath as string;
-    const resolved = this._resolveRuntimeCommand(vp);
-    if (!resolved) return null;
-    return `"${resolved.path}" -m paperforge --vault "${vp}" sync`;
-  }
 
   _runManualSync() {
     const vp = (this.app.vault.adapter as any).basePath as string;
@@ -2607,11 +2488,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
     const statusRow = document.querySelector(".paperforge-memory-status");
     if (statusRow) {
-      this._renderMemoryStatusText(
-        statusRow as HTMLElement,
-        "Checking...",
-        "syncing"
-      );
+      // RC UX Seam: legacy status row retired with the old Smart Retrieval
+      // UI — the read model owns activity truth now.
+      (statusRow as HTMLElement).setText("Checking...");
     }
 
     this.plugin._autoSyncRunning = true;
@@ -2683,967 +2562,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     );
   }
 
-  _renderVectorSection(containerEl: HTMLElement) {
-    // --- Vector Database ---
-    containerEl.createEl("h4", { text: "Smart Retrieval" });
-
-    if (!this.plugin.settings.features) {
-      this.plugin.settings.features = { memory_layer: true, vector_db: false };
-    }
-
-    const vecDescEl = containerEl.createEl("div", {
-      cls: "paperforge-desc-box",
-    });
-    vecDescEl.setText(t("feat_vector_desc"));
-
-    new Setting(containerEl)
-      .setName(t("feat_vector_enable"))
-      .setDesc(t("feat_vector_enable_desc"))
-      .addToggle((toggle) => {
-        toggle
-          .setValue(!!this.plugin.settings.features.vector_db)
-          .onChange((value) => {
-            this.plugin.settings.features.vector_db = value;
-            this.plugin.saveSettings();
-            this._vectorDepsOk = null;
-            this._embedStatusText = null;
-            this.display();
-          });
-      });
-
-    if (!this.plugin.settings.features.vector_db) return;
-
-    const vp = (this.app.vault.adapter as any).basePath as string;
-
-    const vecConfigHeader = containerEl.createEl("div", {
-      cls: "paperforge-vec-header",
-    });
-    const vecArrow = vecConfigHeader.createEl("span", {
-      text: "\u25BC",
-      cls: "paperforge-skills-arrow",
-    });
-    vecConfigHeader.createEl("span", {
-      cls: "paperforge-vec-header-label",
-      text: t("feat_vector_config_label"),
-    });
-    const vecConfigContent = containerEl.createEl("div", {
-      cls: "paperforge-vector-config",
-    });
-
-    const applyVectorConfigDisclosure = (collapsed: boolean) => {
-      vecConfigContent.style.display = collapsed ? "none" : "";
-      vecArrow.style.transform = collapsed ? "rotate(-90deg)" : "rotate(0deg)";
-    };
-
-    applyVectorConfigDisclosure(
-      getDisclosureState(this._featurePanelsCollapsed, "vectorConfig", false)
-    );
-
-    vecConfigHeader.addEventListener("click", () => {
-      const collapsed = toggleDisclosureState(
-        this._featurePanelsCollapsed,
-        "vectorConfig",
-        false
-      );
-      applyVectorConfigDisclosure(collapsed);
-    });
-
-    if (this._vectorDepsOk === true) {
-      this._renderVectorReady(vecConfigContent, vp);
-      return;
-    }
-    if (this._vectorDepsOk === false) {
-      this._renderVectorNoDeps(vecConfigContent);
-      return;
-    }
-    if (this._vectorDepsOk === null && vp) {
-      void queryEmbedStatus(vp, this.plugin.settings)
-        .then((d) => {
-          this._vectorDepsOk = d ? Boolean(d.deps_installed) : false;
-          if (this._vectorDepsOk) {
-            this._embedStatusText = String(d?.mode ?? "");
-          }
-          this.display();
-        })
-        .catch(() => {
-          this._vectorDepsOk = false;
-          this.display();
-        });
-      return;
-    }
-  }
-
-  _renderApiConfig(containerEl: HTMLElement) {
-    const configured = this.plugin.settings._vector_db_configured || false;
-    // Issue #79: settings persist only boolean status; raw value goes to SecretStorage.
-    // The placeholder reflects stored/not-configured state without repopulating the input.
-    const keyPlaceholder = configured ? "••••••••" : "sk-...";
-
-    let storeTimer: ReturnType<typeof setTimeout> | null = null;
-
-    new Setting(containerEl)
-      .setName(t("feat_openai_key"))
-      .setDesc(t("feat_openai_key_desc"))
-      .addText((text) => {
-        text.inputEl.type = "password";
-        text
-          .setPlaceholder(keyPlaceholder)
-          .setValue("")
-          .onChange((value) => {
-            if (!value) return;
-            // ponytail: debounce per-keystroke SecretStorage writes
-            if (storeTimer) clearTimeout(storeTimer);
-            storeTimer = setTimeout(async () => {
-              if (await this._storeVectorDbCredential(value)) {
-                text.setValue("");
-              }
-              storeTimer = null;
-            }, 600);
-          });
-      });
-    new Setting(containerEl)
-      .setName(t("feat_api_base_url"))
-      .setDesc(t("feat_api_base_url_desc"))
-      .addText((text) => {
-        text
-          .setPlaceholder("https://api.openai.com/v1")
-          .setValue(this.plugin.settings.vector_db_api_base || "")
-          .onChange((value) => {
-            this.plugin.settings.vector_db_api_base = value;
-            void configSet(
-              this._getVaultBasePath(),
-              "vector_db_api_base",
-              value,
-              this.plugin.settings
-            ).catch(
-              (e) =>
-                new Notice(
-                  `PaperForge: config set vector_db_api_base failed: ${String(e)}`
-                )
-            );
-            this._refreshVectorDbCredentialStatus();
-          });
-      });
-    new Setting(containerEl)
-      .setName(t("feat_api_model"))
-      .setDesc(t("feat_api_model_desc"))
-      .addText((text) => {
-        text
-          .setPlaceholder("text-embedding-3-small")
-          .setValue(
-            this.plugin.settings.vector_db_api_model || "text-embedding-3-small"
-          )
-          .onChange((value) => {
-            this.plugin.settings.vector_db_api_model = value;
-            void configSet(
-              this._getVaultBasePath(),
-              "vector_db_api_model",
-              value,
-              this.plugin.settings
-            ).catch(
-              (e) =>
-                new Notice(
-                  `PaperForge: config set vector_db_api_model failed: ${String(e)}`
-                )
-            );
-            this._refreshVectorDbCredentialStatus();
-          });
-      });
-  }
-
-  _renderVectorNoDeps(containerEl: HTMLElement) {
-    const box = containerEl.createEl("div", { cls: "paperforge-desc-box" });
-    box.setText(t("feat_deps_missing"));
-
-    new Setting(containerEl)
-      .setName(t("feat_install_deps"))
-      .setDesc(t("feat_install_deps_desc"))
-      .addButton((button) => {
-        button
-          .setButtonText(t("feat_install_btn"))
-          .setCta()
-          .onClick(async () => {
-            const vp = (this.app.vault.adapter as any).basePath as string;
-            const pyResult = this._resolveRuntimeCommand(vp);
-            if (!pyResult?.path) {
-              new Notice(t("feat_no_python"));
-              return;
-            }
-            button.setButtonText(t("feat_installing"));
-            button.setDisabled(true);
-            const pkgs = "chromadb openai";
-            const notice = new Notice(
-              t("feat_installing_pkgs").replace("{pkgs}", pkgs),
-              0
-            );
-            try {
-              const env = Object.assign(paperforgeEnrichedEnv(), {
-                PYTHONIOENCODING: "utf-8",
-                PYTHONUTF8: "1",
-              });
-              const pkgsArg = pkgs.split(" ");
-              await new Promise<void>((resolve, reject) => {
-                execFile(
-                  pyResult.path,
-                  [...pyResult.args, "-m", "pip", "install", ...pkgsArg],
-                  {
-                    cwd: vp,
-                    timeout: 300000,
-                    env: env,
-                    windowsHide: true,
-                  },
-                  (error) => {
-                    error ? reject(error) : resolve();
-                  }
-                );
-              });
-              notice.hide();
-              new Notice(t("feat_install_done"));
-              this._vectorDepsOk = true;
-              this._embedStatusText =
-                t("feat_deps_installed") || "Dependencies installed";
-              this.display();
-            } catch (e: any) {
-              notice.hide();
-              new Notice(
-                t("feat_install_failed") + (e.stderr || e.message || e)
-              );
-              button.setButtonText(t("feat_retry_btn"));
-              button.setDisabled(false);
-            }
-          });
-      });
-  }
-
-  _renderVectorReady(containerEl: HTMLElement, vp: string) {
-    const statusEl = containerEl.createEl("div", {
-      cls: "paperforge-desc-box",
-    });
-    statusEl.setText(
-      this._embedStatusText ?? (t("feat_vector_ready") || "Vector index ready")
-    );
-
-    this._renderApiConfig(containerEl);
-
-    const embedSection = containerEl.createEl("div", {
-      cls: "paperforge-embed-section",
-    });
-
-    const embedHeader = embedSection.createEl("div", {
-      cls: "paperforge-embed-header",
-    });
-    embedHeader.createEl("span", {
-      text: t("retrieval_rebuild_vectors"),
-      cls: "setting-item-name",
-    });
-
-    const embedControls = embedSection.createEl("div", {
-      cls: "paperforge-embed-controls",
-    });
-
-    const embedStatusText = embedSection.createEl("div", {
-      cls: "paperforge-embed-status-text",
-      attr: { "aria-live": "polite" },
-    });
-
-    const renderEmbedUI = () => {
-      embedControls.empty();
-      embedStatusText.empty();
-
-      // #161/R: embed status comes from the read model (`embed status --json`),
-      // cached on the plugin; the snapshot reader is retired.
-      const statusCache = this.plugin._embedStatusCache ?? {};
-      const bsRaw = statusCache.build_state;
-      const buildState: Record<string, unknown> =
-        bsRaw && typeof bsRaw === "object" && !Array.isArray(bsRaw)
-          ? (bsRaw as Record<string, unknown>)
-          : {};
-      this.plugin._embedProgress = this.plugin._embedProgress || {
-        current: 0,
-        total: 0,
-        key: "",
-      };
-
-      if (!this.plugin._embedProcess && buildState.status === "running") {
-        this.plugin._embedProgress = {
-          current:
-            typeof buildState.current === "number" ? buildState.current : 0,
-          total: typeof buildState.total === "number" ? buildState.total : 1,
-          key:
-            typeof buildState.paper_id === "string" ? buildState.paper_id : "",
-        };
-      }
-
-      const { current, total, key } = this.plugin._embedProgress;
-
-      // #161/R: chunk counts from the cached read model.
-      const bodyChunkCount =
-        typeof statusCache.body_chunk_count === "number"
-          ? statusCache.body_chunk_count
-          : 0;
-      const objectChunkCount =
-        typeof statusCache.object_chunk_count === "number"
-          ? statusCache.object_chunk_count
-          : 0;
-      const chunkCount =
-        typeof statusCache.chunk_count === "number"
-          ? statusCache.chunk_count
-          : 0;
-      const totalChunks = chunkCount + bodyChunkCount + objectChunkCount;
-      const hasChunks = totalChunks > 0;
-      const isCorrupted =
-        typeof statusCache.corrupted === "boolean" && statusCache.corrupted;
-      const isBuilding = !!this.plugin._embedProcess;
-      const isStale =
-        !this.plugin._embedProcess && buildState.status === "running";
-      // deps_installed from the read model (#161/R)
-      const depsInstalled =
-        statusCache.deps_installed !== undefined
-          ? !!statusCache.deps_installed
-          : true;
-
-      const status =
-        typeof buildState.status === "string" ? buildState.status : "";
-      const buildMessage =
-        typeof buildState.message === "string" ? buildState.message : "";
-
-      const startBuild = async (flag: string) => {
-        // ── Destructive warnings ──
-        if (flag === "--resume" && hasChunks && !isCorrupted) {
-          const msg = t("retrieval_rebuild_warning").replace(
-            "{n}",
-            String(totalChunks)
-          );
-          if (!confirm(msg)) return;
-        }
-        if (flag === "--force" && hasChunks && !isCorrupted) {
-          const msg =
-            "Force rebuild will replace " +
-            totalChunks +
-            " existing chunk(s). Continue?";
-          if (!confirm(msg)) return;
-        }
-
-        const py = this._resolveRuntimeCommand(vp);
-        if (!py?.path) {
-          new Notice(t("retrieval_no_python"));
-          return;
-        }
-        // Issue #79: resolve credentials immediately before embed build launch
-        const env = await buildTargetedEnv(null, "embed");
-        // Merge non-credential embed settings that aren't secret-managed
-        env.PYTHONIOENCODING = "utf-8";
-        env.PYTHONUTF8 = "1";
-        env.VECTOR_DB_API_BASE = this.plugin.settings.vector_db_api_base || "";
-        env.VECTOR_DB_API_MODEL =
-          this.plugin.settings.vector_db_api_model || "";
-        this.plugin._embedStderr = "";
-        this.plugin._embedProgress = { current: 0, total: 0, key: "" };
-        this.plugin._embedProcess = this._callPython(["embed", "build", flag], {
-          stream: true,
-          env: env,
-          onData: (data: unknown) => {
-            // Node stream emits Buffer; data can also be string
-            const text =
-              typeof data === "string"
-                ? data
-                : Buffer.isBuffer(data)
-                  ? data.toString("utf-8")
-                  : String(data);
-            // Use shared parser — inline buffer reset on each build
-            const { events, buffer } = processProgressChunk(
-              text,
-              this.plugin._embedBuffer ?? ""
-            );
-            this.plugin._embedBuffer = buffer;
-            for (const ev of events) {
-              // #137 NDJSON events (colon-token shapes retired).
-              if (ev.event === "start") {
-                this.plugin._embedProgress!.total = ev.total || 0;
-              } else if (ev.event === "progress") {
-                this.plugin._embedProgress!.current = ev.current || 0;
-                this.plugin._embedProgress!.key = ev.item_id || "";
-              } else if (
-                ev.event === "result" ||
-                ev.event === "error" ||
-                ev.event === "cancelled"
-              ) {
-                this.plugin._embedProcess = null;
-                this.plugin._embedProgress!.current =
-                  this.plugin._embedProgress!.total;
-              }
-            }
-            this.display();
-          },
-          onStderr: (data: unknown) => {
-            if (!this.plugin._embedStderr) this.plugin._embedStderr = "";
-            this.plugin._embedStderr += String(data);
-          },
-          onError: (err: Error) => {
-            this.plugin._embedProcess = null;
-            new Notice(t("feat_build_failed") + ": " + (err.message || err));
-            this.display();
-          },
-          onClose: (code: number | null) => {
-            clearInterval(this.plugin._embedPollInterval ?? undefined);
-            this.plugin._embedPollInterval = null;
-            this.plugin._embedProcess = null;
-            if (code === 0) {
-              this.plugin._embedProgress!.current =
-                this.plugin._embedProgress!.total;
-              this.plugin.saveSettings();
-              this._embedStatusText =
-                t("feat_build_complete") || "Embedding build complete";
-              new Notice(t("feat_build_complete"));
-            } else {
-              this._embedStatusText = null;
-              const errMsg = (this.plugin._embedStderr || "").slice(0, 200);
-              new Notice(
-                t("feat_build_failed") + (errMsg ? ": " + errMsg : ""),
-                8000
-              );
-            }
-            this.plugin._embedStderr = "";
-            this.display();
-            this._refreshSnapshots(vp);
-          },
-        });
-
-        // Poll embed status every 2s during build for live state
-        clearInterval(this.plugin._embedPollInterval ?? undefined);
-        this.plugin._embedPollInterval = setInterval(() => {
-          if (this.plugin._embedPolling) return;
-          this.plugin._embedPolling = true;
-          this._callPython(["embed", "status", "--json"], {
-            timeout: 5000,
-            onClose: (_code: number | null, stdout: string) => {
-              this.plugin._embedPolling = false;
-              if (_code === 0 && stdout) {
-                try {
-                  const result = JSON.parse(stdout);
-                  const data = result.data;
-                  if (data && data.build_state) {
-                    const bs = data.build_state;
-                    if (bs.status === "stopping" || bs.status === "idle") {
-                      if (this.plugin._embedProcess) {
-                        this.plugin._embedProcess = null;
-                        clearInterval(
-                          this.plugin._embedPollInterval ?? undefined
-                        );
-                        this.plugin._embedPollInterval = null;
-                        this.display();
-                      }
-                    }
-                    if (bs.current !== undefined && bs.total !== undefined) {
-                      this.plugin._embedProgress!.current = bs.current;
-                      this.plugin._embedProgress!.total = bs.total || 1;
-                      this.plugin._embedProgress!.key = bs.paper_id || "";
-                    }
-                  }
-                } catch {}
-              }
-            },
-          });
-        }, 2000);
-
-        this.display();
-      };
-
-      // #161/R: version-mismatch detection moved to the installation probe
-      // envelope; no snapshot health read.
-      let runtimeMismatch = false;
-
-      // ── State determination (priority order) ──
-      let uiState: string;
-      if (!depsInstalled) {
-        uiState = "deps-missing";
-      } else if (runtimeMismatch) {
-        uiState = "runtime-mismatch";
-      } else if (status === "stopping") {
-        uiState = "stopping";
-      } else if (isBuilding && status === "running") {
-        uiState = "building";
-      } else if (status === "failed") {
-        uiState = "failed";
-      } else if (status === "stopped") {
-        uiState = "stopped";
-      } else if (isStale) {
-        uiState = "stale";
-      } else if (isCorrupted) {
-        uiState = "corrupted";
-      } else if (hasChunks) {
-        uiState = "ready";
-      } else {
-        uiState = "idle";
-      }
-
-      // ── State rendering ──
-      switch (uiState) {
-        case "building": {
-          const track = embedControls.createEl("div", {
-            cls: "paperforge-progress-track",
-          });
-          track.style.cssText = "flex:1;";
-          const pct = total > 0 ? ((current / total) * 100).toFixed(1) : "0";
-          const doneSeg = track.createEl("div", {
-            cls: "paperforge-progress-seg done",
-          });
-          doneSeg.style.cssText = `width:${pct}%; min-width:${current > 0 ? "2px" : "0"};`;
-          if (current < total) {
-            const pendingSeg = track.createEl("div", {
-              cls: "paperforge-progress-seg pending",
-            });
-            pendingSeg.style.cssText = `width:${(100 - parseFloat(pct)).toFixed(1)}%;`;
-          }
-          embedStatusText.createEl("span", {
-            cls: "paperforge-embed-progress-text",
-            text: `${current}/${total} papers`,
-          });
-          if (key) {
-            embedStatusText.createEl("span", {
-              cls: "paperforge-embed-progress-key",
-              text: ` (${key})`,
-            });
-          }
-          // Warning button: Stop
-          const stopBtn = embedControls.createEl("button");
-          stopBtn.setText(t("retrieval_stop"));
-          stopBtn.className = "mod-warning";
-          stopBtn.addEventListener("click", () => {
-            this._callPython(["embed", "stop", "--json"], {
-              timeout: 8000,
-            });
-            this.display();
-          });
-          break;
-        }
-
-        case "stopping": {
-          const track = embedControls.createEl("div", {
-            cls: "paperforge-progress-track",
-          });
-          track.style.cssText = "flex:1; opacity:0.5;";
-          const pct = total > 0 ? ((current / total) * 100).toFixed(1) : "0";
-          const doneSeg = track.createEl("div", {
-            cls: "paperforge-progress-seg done",
-          });
-          doneSeg.style.cssText = `width:${pct}%; min-width:${current > 0 ? "2px" : "0"};`;
-          if (current < total) {
-            const pendingSeg = track.createEl("div", {
-              cls: "paperforge-progress-seg pending",
-            });
-            pendingSeg.style.cssText = `width:${(100 - parseFloat(pct)).toFixed(1)}%;`;
-          }
-          embedStatusText.createEl("span", {
-            text: t("retrieval_build_stopping"),
-          });
-          const stopBtn = embedControls.createEl("button");
-          stopBtn.setText(t("retrieval_stop"));
-          stopBtn.className = "mod-warning";
-          stopBtn.setAttr("disabled", "");
-          break;
-        }
-
-        case "failed": {
-          embedStatusText.createEl("div", {
-            cls: "paperforge-desc-box",
-            text:
-              t("retrieval_build_failed") +
-              (buildMessage ? ": " + buildMessage : ""),
-            attr: { style: "color:var(--text-error);" },
-          });
-          // Primary CTA: Retry
-          const retryBtn = embedControls.createEl("button");
-          retryBtn.setText(t("retrieval_retry"));
-          retryBtn.className = "mod-cta";
-          retryBtn.addEventListener("click", () => startBuild("--resume"));
-          // Secondary: Force Rebuild
-          const forceBtn = embedControls.createEl("button");
-          forceBtn.setText(t("retrieval_force_rebuild"));
-          forceBtn.style.marginLeft = "6px";
-          forceBtn.addEventListener("click", () => startBuild("--force"));
-          break;
-        }
-
-        case "stopped": {
-          embedStatusText.setText(t("retrieval_build_stopped"));
-          // Primary CTA: Resume
-          const resumeBtn = embedControls.createEl("button");
-          resumeBtn.setText(t("retrieval_retry"));
-          resumeBtn.className = "mod-cta";
-          resumeBtn.addEventListener("click", () => startBuild("--resume"));
-          break;
-        }
-
-        case "corrupted": {
-          embedStatusText.createEl("div", {
-            cls: "paperforge-desc-box",
-            text: t("feat_vector_corrupted"),
-            attr: {
-              style: "background:var(--background-modifier-warning);",
-            },
-          });
-          // Primary CTA: Force Rebuild (no destructive warning on corrupted)
-          const forceBtn = embedControls.createEl("button");
-          forceBtn.setText(t("retrieval_force_rebuild"));
-          forceBtn.className = "mod-cta";
-          forceBtn.addEventListener("click", () => startBuild("--force"));
-          break;
-        }
-
-        case "stale": {
-          embedStatusText.createEl("div", {
-            cls: "paperforge-desc-box",
-            text: t("retrieval_build_stale"),
-            attr: { style: "color:var(--text-warning);" },
-          });
-          // Primary CTA: Rebuild
-          const rebuildBtn = embedControls.createEl("button");
-          rebuildBtn.setText(t("retrieval_rebuild_vectors"));
-          rebuildBtn.className = "mod-cta";
-          rebuildBtn.addEventListener("click", () => startBuild("--resume"));
-          break;
-        }
-
-        case "ready": {
-          embedControls.createEl("span", {
-            text: totalChunks + " chunks embedded",
-            cls: "setting-item-description",
-          });
-          // Primary CTA: Rebuild Vectors
-          const rebuildBtn = embedControls.createEl("button");
-          rebuildBtn.setText(t("retrieval_rebuild_vectors"));
-          rebuildBtn.className = "mod-cta";
-          rebuildBtn.addEventListener("click", () => startBuild("--resume"));
-          // Secondary: Force Rebuild
-          const forceBtn = embedControls.createEl("button");
-          forceBtn.setText(t("retrieval_force_rebuild"));
-          forceBtn.style.marginLeft = "6px";
-          forceBtn.addEventListener("click", () => startBuild("--force"));
-          break;
-        }
-
-        case "deps-missing": {
-          embedStatusText.setText(t("retrieval_build_deps_missing"));
-          // Link-style: Install Dependencies redirects to full settings display
-          const installBtn = embedControls.createEl("a");
-          installBtn.setText(t("feat_install_deps"));
-          installBtn.style.cssText =
-            "cursor:pointer; text-decoration:underline;";
-          installBtn.addEventListener("click", () => {
-            this.display();
-          });
-          break;
-        }
-
-        case "runtime-mismatch": {
-          embedStatusText.createEl("div", {
-            cls: "paperforge-desc-box",
-            text: t("retrieval_build_runtime_mismatch"),
-            attr: { style: "color:var(--text-warning);" },
-          });
-          // Link-style: Sync Runtime navigates to Runtime Health section
-          const syncLink = embedControls.createEl("a");
-          syncLink.setText(t("runtime_health_sync"));
-          syncLink.style.cssText = "cursor:pointer; text-decoration:underline;";
-          syncLink.addEventListener("click", () => {
-            this.display();
-          });
-          break;
-        }
-
-        case "idle":
-        default: {
-          embedStatusText.setText(t("retrieval_build_idle"));
-          // Primary CTA: Build
-          const buildBtn = embedControls.createEl("button");
-          buildBtn.setText(t("feat_build_btn"));
-          buildBtn.className = "mod-cta";
-          buildBtn.addEventListener("click", () => startBuild("--resume"));
-          break;
-        }
-      }
-    };
-
-    renderEmbedUI();
-  }
-
-  _getCurrentModelKey(): string {
-    return this.plugin.settings.vector_db_api_model || "text-embedding-3-small";
-  }
-
-  _parseEmbedStatus(text: string): Record<string, any> {
-    const info: Record<string, any> = {};
-    if (!text) return info;
-    text.split("\n").forEach((line) => {
-      const m = line.match(/^\s*([^:]+):\s*(.*)/);
-      if (m) info[m[1].trim()] = m[2].trim();
-    });
-    if (info.db_exists !== undefined)
-      info.db_exists = info.db_exists === "True";
-    if (info.chunk_count !== undefined)
-      info.chunk_count = parseInt(info.chunk_count, 10) || 0;
-    return info;
-  }
-
-  _getPythonDesc(pyPath: string, source: string): string {
-    if (source === "stale") {
-      return `[!!] ${pyPath} (stale \u2014 path no longer exists, update or clear the override below)`;
-    }
-    if (source === "manual") {
-      return `${pyPath} (manual)`;
-    }
-    return `${pyPath} (auto-detected)`;
-  }
-
-  _refreshPythonInterpDesc(pyPath: string, source: string) {
-    const desc = this._pythonInterpDescEl;
-    if (desc) {
-      if (source === "stale") {
-        desc.textContent = `[!!] ${pyPath} (stale \u2014 path no longer exists, update or clear the override below)`;
-      } else if (source === "manual") {
-        desc.textContent = `${pyPath} (manual)`;
-      } else {
-        desc.textContent = `${pyPath} (auto-detected)`;
-      }
-    }
-  }
-
-  _validatePythonOverride() {
-    const customPath = this.plugin.settings.python_path
-      ? this.plugin.settings.python_path.trim()
-      : "";
-    const desc = this._customPathDescEl;
-
-    if (!customPath) {
-      const msg = "\u8BF7\u8F93\u5165\u8DEF\u5F84 / Enter a path first";
-      if (desc)
-        desc.innerHTML = `<span style="color:var(--text-error)">\u2717 ${msg}</span>`;
-      new Notice(msg);
-      return;
-    }
-
-    if (!fs.existsSync(customPath)) {
-      const msg = "\u8DEF\u5F84\u4E0D\u5B58\u5728 / Path does not exist";
-      if (desc)
-        desc.innerHTML = `<span style="color:var(--text-error)">\u2717 ${msg}</span>`;
-      new Notice(msg, 4000);
-      return;
-    }
-
-    try {
-      fs.accessSync(customPath, fs.constants.X_OK);
-    } catch {
-      const msg = "\u4E0D\u53EF\u6267\u884C / Not executable";
-      if (desc)
-        desc.innerHTML = `<span style="color:var(--text-error)">\u2717 ${msg}</span>`;
-      new Notice(msg, 4000);
-      return;
-    }
-
-    execFile(customPath, ["--version"], { timeout: 8000 }, (verErr, verOut) => {
-      if (verErr || !verOut) {
-        const msg = "\u65E0\u6CD5\u8FD0\u884C / Cannot run";
-        if (desc)
-          desc.innerHTML = `<span style="color:var(--text-error)">\u2717 ${msg}</span>`;
-        new Notice(msg, 4000);
-        return;
-      }
-
-      const match = verOut.match(/Python (\d+)\.(\d+)/);
-      if (!match) {
-        const msg =
-          "\u65E0\u6CD5\u89E3\u6790\u7248\u672C / Cannot parse version";
-        if (desc)
-          desc.innerHTML = `<span style="color:var(--text-error)">\u2717 ${msg}</span>`;
-        new Notice(msg, 4000);
-        return;
-      }
-
-      const major = parseInt(match[1], 10);
-      const minor = parseInt(match[2], 10);
-
-      if (major < 3 || (major === 3 && minor < 11)) {
-        const msg =
-          "Python \u7248\u672C\u8FC7\u4F4E\uFF0C\u9700\u8981 3.11+ / Python version too low, need 3.11+";
-        if (desc)
-          desc.innerHTML = `<span style="color:var(--text-error)">\u2717 ${msg}</span>`;
-        new Notice(msg, 4000);
-        return;
-      }
-
-      execFile(
-        customPath,
-        ["-m", "pip", "--version"],
-        { timeout: 8000 },
-        (pipErr) => {
-          if (pipErr) {
-            const warnMsg = `\u2713 Python ${major}.${minor} \u6709\u6548\uFF0C\u4F46\u672A\u68C0\u6D4B\u5230 pip / Valid, but pip not found`;
-            if (desc)
-              desc.innerHTML = `<span style="color:var(--text-warning)">\u26A0 ${warnMsg}</span>`;
-            new Notice(warnMsg, 4000);
-          } else {
-            const okMsg = `\u2713 Python ${major}.${minor} \u6709\u6548 / Valid`;
-            if (desc)
-              desc.innerHTML = `<span style="color:var(--text-accent)">${okMsg}</span>`;
-            new Notice(okMsg, 4000);
-          }
-        }
-      );
-    });
-  }
-
   _debouncedSave() {
     clearTimeout(this._saveTimeout!);
     this._saveTimeout = setTimeout(() => this.plugin.saveSettings(), 500);
-  }
-
-  _preCheck(onPass: () => void) {
-    const vaultPath = (this.app.vault.adapter as any).basePath as string;
-    const resolved = this._resolveRuntimeCommand(vaultPath);
-    if (!resolved) {
-      onPass(); // runtime not ready, skip pre-check
-      return;
-    }
-    execFile(
-      resolved.path,
-      [...resolved.args, "--version"],
-      { timeout: 8000 },
-      (pyErr, pyOut) => {
-        const results: { label: string; ok: boolean; detail: string }[] = [];
-
-        /* Python */
-        results.push({
-          label: "environment",
-          ok: !pyErr,
-          detail: pyErr ? t("check_python_fail") : pyOut.trim(),
-        });
-
-        /* Zotero */
-        let zotOk = false;
-        const home =
-          process.env.HOME || process.env.USERPROFILE || os.homedir() || "";
-        if (process.platform === "darwin") {
-          const macZot = [
-            "/Applications/Zotero.app",
-            path.join(home, "Applications", "Zotero.app"),
-          ];
-          zotOk = macZot.some((d) => {
-            try {
-              return fs.existsSync(d);
-            } catch {
-              return false;
-            }
-          });
-        } else if (process.platform === "win32") {
-          const progFiles = process.env.ProgramFiles || "";
-          const localAppData = process.env.LOCALAPPDATA || "";
-          const zotInstallDirs = [
-            path.join(progFiles, "Zotero"),
-            path.join(progFiles, "(x86)", "Zotero"),
-            path.join(localAppData, "Programs", "Zotero"),
-            path.join(localAppData, "Zotero"),
-            path.join(home, "AppData", "Local", "Programs", "Zotero"),
-          ].filter(Boolean);
-          zotOk = zotInstallDirs.some((d) => {
-            try {
-              return fs.existsSync(d);
-            } catch {
-              return false;
-            }
-          });
-        } else {
-          const linuxPaths = [
-            path.join(home, ".local", "share", "zotero", "zotero"),
-            "/usr/bin/zotero",
-            "/usr/local/bin/zotero",
-          ];
-          zotOk = linuxPaths.some((d) => {
-            try {
-              return fs.existsSync(d);
-            } catch {
-              return false;
-            }
-          });
-        }
-        const zotDataDir = this.plugin.settings.zotero_data_dir;
-        if (!zotOk && zotDataDir) {
-          try {
-            zotOk = fs.existsSync(zotDataDir);
-          } catch {}
-        }
-        results.push({
-          label: "Zotero",
-          ok: zotOk,
-          detail: zotOk ? t("check_zotero_ok") : t("check_zotero_fail"),
-        });
-
-        /* Better BibTeX */
-        let bbtOk = false;
-        const appData = process.env.APPDATA || "";
-        if (process.platform === "win32" && appData) {
-          bbtOk = scanBbtUnderProfiles(
-            path.join(appData, "Zotero", "Zotero", "Profiles")
-          );
-        }
-        if (!bbtOk && process.platform === "darwin" && home) {
-          bbtOk = scanBbtUnderProfiles(
-            path.join(
-              home,
-              "Library",
-              "Application Support",
-              "Zotero",
-              "Profiles"
-            )
-          );
-        }
-        if (
-          !bbtOk &&
-          process.platform !== "win32" &&
-          process.platform !== "darwin" &&
-          home
-        ) {
-          bbtOk = scanBbtUnderProfiles(
-            path.join(home, ".zotero", "zotero", "Profiles")
-          );
-        }
-        if (!bbtOk && zotDataDir && String(zotDataDir).trim()) {
-          bbtOk = scanBbtDirectChildren(zotDataDir.trim());
-        }
-        if (!bbtOk && home) {
-          bbtOk = scanBbtDirectChildren(path.join(home, "Zotero"));
-        }
-        results.push({
-          label: "Better BibTeX",
-          ok: bbtOk,
-          detail: bbtOk ? t("check_bbt_ok") : t("check_bbt_fail"),
-        });
-
-        /* Render */
-        const marks: Record<string, string> = {
-          true: "\u2713",
-          false: "\u2717",
-        };
-        if (this._checkEl) {
-          this._checkEl.setText(
-            results
-              .map((r) => `${marks[String(r.ok)]} ${r.label}: ${r.detail}`)
-              .join("\n")
-          );
-          const anyFail = results.some((r) => !r.ok);
-          this._checkEl.className = `paperforge-message msg-${anyFail ? "error" : "ok"}`;
-        }
-        const bad = results.filter((r) => !r.ok);
-        if (bad.length > 0) {
-          new Notice(
-            `[!!] \u672A\u901A\u8FC7: ${bad.map((r) => r.label).join(", ")}`,
-            6000
-          );
-        }
-
-        onPass();
-      }
-    );
   }
 
   _renderReleaseNotesTab(containerEl: HTMLElement) {
@@ -4609,6 +3530,32 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       }
     }
     const nav = containerEl.createDiv({ cls: "pf-setup-nav" });
+    // RC UX Seam: Stage 1 must never trap the user.
+    //  - running: a real Cancel aborts installOnce/handshake/setup through
+    //    the AbortController (installOnce deletes the half-installed venv).
+    //  - idle/failed: "Later" exits the wizard; _setup_complete stays false
+    //    so reopening Settings resumes at this exact stage.
+    if (this._setupOperation === "running") {
+      renderActionButton(nav, {
+        label: t("setup_nav_cancel"),
+        onClick: () => {
+          this._runtimeAbortController?.abort();
+          // The install chain's catch(finally) handles UI settle; keep the
+          // button live so repeated clicks are harmless.
+        },
+      });
+    } else {
+      renderActionButton(nav, {
+        label: t("setup_nav_later"),
+        onClick: () => {
+          this._setupOperation = "idle";
+          this._setupFeedback = null;
+          this._setupStage = 1;
+          this.activeTab = "overview";
+          this.display();
+        },
+      });
+    }
     renderActionButton(nav, {
       label: t("setup_nav_continue"),
       disabled: env.user_state !== "ready",

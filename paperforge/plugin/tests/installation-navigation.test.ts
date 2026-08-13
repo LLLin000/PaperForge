@@ -996,9 +996,7 @@ describe("Issue #77: single Skills owner under Installation", () => {
     const plugin = makeMockPlugin();
     const tab = new PaperForgeSettingTab(app as unknown as App, plugin);
     tab._managedRuntime = {
-      current: () => ({ state: "not_installed" }),
-      ensure: vi.fn(),
-      status: vi.fn(),
+      readPointer: () => null,
     } as unknown as ManagedRuntime;
     tab._capabilityState = {};
     const container = document.createElement("div");
@@ -1010,6 +1008,30 @@ describe("Issue #77: single Skills owner under Installation", () => {
       (h) => h.textContent === "Skills"
     );
     expect(skillsHeading).toBeFalsy();
+  });
+
+  it("RC UX Seam: Foundation detail has no hardcoded obsidian false-green row", () => {
+    const app = makeMockApp();
+    const plugin = makeMockPlugin();
+    const tab = new PaperForgeSettingTab(app as unknown as App, plugin);
+    tab._managedRuntime = {
+      readPointer: () => null,
+    } as unknown as ManagedRuntime;
+    tab._capabilityState = {
+      installation: {
+        ...createUnknownEnvelope("installation"),
+        user_state: "ready",
+        reason: { code: "installation.ready", text: "Ready" },
+      },
+    };
+    const container = document.createElement("div");
+    tab._renderInstallationDetail(container);
+    const text = container.textContent ?? "";
+    // The retired block hardcoded obsidianOk = true and rendered a
+    // "≥1.11.4 ✓" row even when the probe said broken. It must be gone.
+    expect(text).not.toContain("≥1.11.4");
+    // Dependency truth now projects the probe envelope, not an exec import.
+    expect(text).not.toContain("import openai");
   });
 });
 
