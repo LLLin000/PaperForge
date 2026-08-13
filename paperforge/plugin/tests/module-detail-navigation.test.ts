@@ -206,6 +206,7 @@ vi.mock("child_process", () => {
     spawn: (_path: string, args: string[], opts: Record<string, unknown>) => {
       const self = {
         args: [...args],
+        path: _path,
         env: (opts?.env ?? {}) as Record<string, string | undefined>,
         stdout: {
           on: (_ev: string, cb: (data: unknown) => void) => {
@@ -240,6 +241,11 @@ vi.mock("child_process", () => {
         stdin: { write: (_s: string) => true },
         kill: (_sig: string) => {},
         on: (ev: string, cb: (arg: unknown) => void) => {
+          if (ev === "error") self.onError = cb as (err: Error) => void;
+          if (ev === "close")
+            self.onClose = cb as (code: number | null) => void;
+        },
+        once: (ev: string, cb: (arg: unknown) => void) => {
           if (ev === "error") self.onError = cb as (err: Error) => void;
           if (ev === "close")
             self.onClose = cb as (code: number | null) => void;
@@ -1748,7 +1754,71 @@ describe("Setup Stage 1 exit/cancel semantics (RC UX Seam Pass)", () => {
     (tab.plugin as any).settings._setup_complete = false;
     buttonByText(el, "Later")?.click();
     expect(tab.activeTab).toBe("overview");
+    expect((tab as any)._setupJourneyDismissedForSession).toBe(true);
     expect((tab.plugin as any).settings._setup_complete).toBe(false);
+  });
+
+  it("with the session flag set, a real display() renders the Overview, not the journey", () => {
+    const tab = makeTab();
+    (tab.plugin as any).settings._setup_complete = false;
+    (tab as any)._setupJourneyDismissedForSession = true;
+    // Restore the REAL display() so the setup gate is exercised, not
+    // bypassed by the makeTab no-op.
+    const containerEl = dom.window.document.createElement("div");
+    (tab as any).containerEl = containerEl;
+    delete (tab as any).display;
+    const realDisplay = PaperForgeSettingTab.prototype.display;
+    (tab as any).display = realDisplay;
+    (tab as any)._displayInProgress = false;
+    (tab as any)._initialDisplay = false;
+    (tab as any)._initCapabilityState = () => {};
+    (tab as any)._refreshPfConfig = () => {};
+    (tab as any)._renderOverviewTab = (c: HTMLElement) => {
+      c.createEl("h2", { text: "OVERVIEW-SENTINEL" });
+    };
+    (tab as any).display();
+    expect(containerEl.textContent ?? "").toContain("OVERVIEW-SENTINEL");
+    // And without the flag the same state re-renders the journey (resume).
+    (tab as any)._setupJourneyDismissedForSession = false;
+    containerEl.empty();
+    (tab as any).display();
+    expect(containerEl.textContent ?? "").not.toContain("OVERVIEW-SENTINEL");
+  });
+
+  it("Stage 2 Verify runs on the managed pointer, never ambient python (RC UX Seam P0)", async () => {
+    const tab = makeTab();
+    spawnedProcesses.length = 0;
+    (tab as any)._resolveRuntimeCommand = () => ({
+      path: "C:/managed/runtime/python.exe",
+      args: [],
+    });
+    (tab.plugin as any).settings.python_path = ""; // no custom override
+    (tab as any)._getVaultBasePath = () => "/vault";
+    (tab as any)._runSetupPython = undefined as unknown; // force real impl
+    const real = PaperForgeSettingTab.prototype._runSetupPython;
+    (tab as any)._runSetupPython = function (
+      this: any,
+      args: string[],
+      pythonOverride?: string,
+      signal?: AbortSignal
+    ) {
+      return real.call(this, args, pythonOverride, signal);
+    };
+    (tab as any)._applyLibraryConfiguration();
+    // configSet writes are async; settle a few microtasks.
+    for (let i = 0; i < 5; i++) await Promise.resolve();
+    const setup = spawnedProcesses.find((p: { args: string[] }) =>
+      p.args.includes("setup")
+    );
+    expect(setup).toBeDefined();
+    // The spawned executable must be the managed pointer, not "python".
+    expect((setup as any)?.path).toBe("C:/managed/runtime/python.exe");
+    expect(spawnedProcesses[0]?.args).toContain("setup");
+    // The command args include --json (machine stream).
+    expect(spawnedProcesses[0]?.args.join(" ")).toContain("--json");
+    // Cleanup: let the promise settle.
+    spawnedProcesses[0]?.onClose?.(0);
+    await Promise.resolve();
   });
 
   it("running stage shows Cancel that aborts the runtime AbortController", () => {

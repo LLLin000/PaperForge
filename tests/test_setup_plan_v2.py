@@ -820,3 +820,51 @@ class TestSetupCancellation174:
                   for l in stdout.splitlines() if l.strip()]
         assert events[-1] == "cancelled", events
         assert events.count("result") + events.count("error") == 0
+
+
+class TestSetupAgentPhaseCancellation174:
+    """RC UX Seam P0: cancellation arriving DURING the agent phase must
+    yield a `cancelled` terminal (rc 130) and MUST NOT publish the runtime
+    pointer — even though SIGTERM only sets a cooperative flag and the
+    agent loop is between steps."""
+
+    def test_cancellation_during_agent_phase_never_publishes(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        import paperforge.setup.plan as plan_mod
+        import paperforge.setup.agent as agent_mod
+
+        published: list[dict] = []
+        monkeypatch.setattr(
+            "paperforge.runtime_pointer.publish_pointer",
+            lambda **kw: published.append(kw),
+        )
+
+        # Cooperative token: flag flips to True while the FIRST agent step
+        # is executing — exactly the window that used to slip through
+        # (agent loop had no _is_stopped() check and publish had no gate).
+        stop = {"flag": False}
+        monkeypatch.setattr(
+            "paperforge.core.cancellation.make_cancellation_token",
+            lambda: (lambda: stop["flag"], lambda: None),
+        )
+
+        real_deploy_skills = agent_mod.AgentInstaller.deploy_skills
+
+        def _slow_deploy_skills(self):
+            result = real_deploy_skills(self)
+            stop["flag"] = True  # cancellation arrives mid-agent-phase
+            return result
+
+        monkeypatch.setattr(
+            agent_mod.AgentInstaller, "deploy_skills", _slow_deploy_skills
+        )
+
+        plan = plan_mod.SetupPlan(
+            tmp_path,
+            config={"system_dir": "System", "resources_dir": "Resources"},
+            skip_checks=True,
+        )
+        rc = plan.execute(ndjson=True)
+        assert rc == 130, f"agent-phase cancellation must exit 130, got {rc}"
+        assert published == [], "cancelled setup must never publish the pointer"

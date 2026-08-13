@@ -115,7 +115,15 @@ class SetupPlan:
         # Step 5: Agent installer
         self._log("Deploying agent config...")
         agent = AgentInstaller(self.vault, agent_type=self.agent_type)
-        for agent_result in agent.run_all():
+        for agent_step in agent.steps():
+            # RC UX Seam P0: cooperative cancellation must be checked
+            # BETWEEN agent sub-steps — a SIGTERM during agent deployment
+            # only sets the flag; without this gate the loop would finish
+            # and publish the pointer anyway.
+            if _is_stopped():
+                cancelled = True
+                break
+            agent_result = agent_step()
             results.append(agent_result)
             if ndjson:
                 from paperforge.core.ndjson import emit_item_result, emit_phase
@@ -127,7 +135,11 @@ class SetupPlan:
                     status="ok" if agent_result.ok else "error",
                 )
 
-        if cancelled:
+        if cancelled or _is_stopped():
+            # The last gate: even if cancellation arrived after the agent
+            # loop finished (or mid publish), never publish the pointer on
+            # a cancelled setup.
+            cancelled = True
             if ndjson:
                 _restore()
             return self._emit_ndjson_terminal("cancelled", results, ok=False, rc=130)
