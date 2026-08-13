@@ -19,7 +19,7 @@ import sys
 from pathlib import Path
 
 import pytest
-from paperforge.commands.probe import MAINTENANCE_CONSTITUENT_MODULES
+from paperforge.commands.probe import MAINTENANCE_CONSTITUENT_MODULES, build_action_primary
 
 from tests.conftest import canonical_test_config
 
@@ -52,6 +52,26 @@ def _assert_no_command(action_primary: dict | None) -> None:
     """T8 (#169): action.primary.command must be gone."""
     if action_primary is not None:
         assert "command" not in action_primary, "command field retired"
+
+def test_registered_action_projects_registry_policy() -> None:
+    action = build_action_primary(
+        action_id="ocr.run",
+        verb="run",
+        label="Run OCR",
+    )
+    assert action["safety_class"] == "destructive"
+    assert action["confirmation_required"] is True
+    assert action["interruptible"] is True
+
+def test_embed_build_projects_remote_confirmation_policy() -> None:
+    action = build_action_primary(
+        action_id="embed.build",
+        verb="run",
+        label="Build vector index",
+    )
+    assert action["safety_class"] == "destructive"
+    assert action["confirmation_required"] is True
+    assert action["interruptible"] is True
 
 VALID_STATES = {"unknown", "unavailable", "missing_input", "needs_action", "limited", "ready"}
 VALID_SEVERITIES = {"ok", "warning", "error", "unknown"}

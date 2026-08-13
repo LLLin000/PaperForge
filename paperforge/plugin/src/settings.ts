@@ -65,7 +65,6 @@ import {
   invalidateAll,
 } from "./services/config-client";
 import {
-  PaperForgeOcrPrivacyModal,
   PaperForgeConfirmModal,
   PaperForgeIssueDraftModal,
   buildRedactedDraft,
@@ -1160,24 +1159,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           },
         });
       }
-      // Stop button (ghost style)
-      const process = this.plugin._ocrProcess as {
-        stdin?: { write: (_: string) => boolean };
-        kill?: (_: string) => void;
-      } | null;
-      if (process) {
+      const controller = this.plugin.ocrProcessController;
+      if (controller.isRunning) {
         const stop = card.createEl("button", {
           cls: "pf-action-btn mod-warning",
           text: t("ocr_stop_batch"),
         });
-        stop.addEventListener("click", () => {
-          if (process.stdin?.write) {
-            process.stdin.write("PAPERFORGE_STOP\n");
-            this.plugin._ocrWasStopped = true;
-          } else {
-            process.kill?.("SIGINT");
-          }
-        });
+        stop.addEventListener("click", () => void controller.stop());
       }
     } else if (updateAvailable) {
       // ── State: Update Available ──
@@ -1256,6 +1244,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           ),
         });
       }
+    }
+    if (!isRunning) {
+      renderActionButton(body, {
+        label: t("ocr_configure_credential"),
+        onClick: () => this._startSetupJourney(3),
+      });
     }
   }
   /** Render the Memory detail view (Issue #78). */
@@ -1383,15 +1377,22 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this._capabilityState?.memory ?? createUnknownEnvelope("memory");
     const body = containerEl.createDiv({ cls: "pf-module-body" });
     const reasonCode = env.reason?.code ?? "";
-    const isRunning = env.activity_state === "running";
+    const embedController = this.plugin._embedController;
+    const isRunning =
+      env.activity_state === "running" || Boolean(embedController?.busy);
+    const liveFailure =
+      embedController?.state === "failed" ? embedController.warning : null;
 
-    // The shared summary owns the module state. The body only adds the
-    // consequence needed for the next action.
+    // The shared summary owns persistent state. The controller owns the
+    // current attempt, so its running/error truth takes precedence.
     let statusText: string | null = null;
     let statusClass = "setting-item-description";
-    if (isRunning && env.user_state === "ready") {
+    if (isRunning) {
       statusText = env.activity_label ?? t("cc_activity_running");
       statusClass = "pf-status-ok";
+    } else if (liveFailure) {
+      statusText = `${t("retrieval_build_failed")}: ${liveFailure}`;
+      statusClass = "pf-status-error";
     } else if (reasonCode === "memory.disabled") {
       statusText = t("sr_state_disabled");
     } else if (reasonCode === "memory.db_missing") {
@@ -1411,7 +1412,17 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
 
     // ── Primary action button ──
-    if (reasonCode === "memory.disabled") {
+    if (isRunning && embedController) {
+      renderActionButton(body, {
+        label: t("retrieval_stop"),
+        onClick: () => void embedController.stop(),
+      });
+    } else if (liveFailure) {
+      renderActionButton(body, {
+        label: t("retrieval_retry"),
+        onClick: () => this._dispatchModuleAction("memory", env),
+      });
+    } else if (reasonCode === "memory.disabled") {
       renderActionButton(body, {
         label: t("sr_action_enable") || "Enable Smart Retrieval",
         onClick: () => {
@@ -1440,11 +1451,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       });
     } else if (
       reasonCode === "memory.vector_build_failed" ||
-      reasonCode === "memory.schema_stale"
+      reasonCode === "memory.vector_build_interrupted"
     ) {
       renderActionButton(body, {
         label: t("cc_action_rebuild_derived") || "Rebuild Index",
-        onClick: () => this._dispatchMemoryBuild("embed"),
+        onClick: () => this._dispatchModuleAction("memory", env),
       });
     } else if (
       env.action?.primary &&
@@ -1692,22 +1703,27 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this._probeModule(mod);
       return;
     }
-    const verb = primary.verb;
 
     // Destructive confirmation -> accessible modal (Issue #80)
+    // Policy comes from Python; this switch only localizes presentation for
+    // the two remote media actions.
     if (primary.safety_class !== "safe" && primary.confirmation_required) {
-      new PaperForgeConfirmModal(
-        this.app,
-        {
-          title: primary.label,
-          effectLabel:
-            ((primary.replacement_facts || []).join("; ") ||
-              primary.confirmation_prompt) ??
-            "Proceed?",
-        },
-        () => {
-          this._runAllowedDispatch(mod, primary, env);
-        }
+      const title =
+        primary.action_id === "ocr.run"
+          ? t("ocr_run_confirm_title")
+          : primary.action_id === "embed.build"
+            ? t("embed_rebuild_title")
+            : primary.label;
+      const effectLabel =
+        primary.action_id === "ocr.run"
+          ? t("ocr_run_confirm_body")
+          : primary.action_id === "embed.build"
+            ? t("embed_rebuild_body")
+            : (((primary.replacement_facts || []).join("; ") ||
+                primary.confirmation_prompt) ??
+              t("confirmation_default_effect"));
+      new PaperForgeConfirmModal(this.app, { title, effectLabel }, () =>
+        this._runAllowedDispatch(mod, primary, env)
       ).open();
       return;
     }
@@ -1804,10 +1820,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       }
     } else if (mod === "memory") {
       if (verb === "run" || verb === "rebuild_index") {
-        // memory.rebuild_vector (probe: stale vector index) → the embed
+        // embed.build (probe: missing/failed vector index) → remote embed
         // rebuild; memory.upgrade_backend → ChromaDB→sqlite-vec migration;
         // memory.build / memory.rebuild → the local memory build.
-        if (actionId === "memory.rebuild_vector") {
+        if (actionId === "embed.build") {
           this._dispatchMemoryBuild("embed");
         } else if (actionId === "memory.upgrade_backend") {
           this._runBackendMigration();
@@ -1897,22 +1913,28 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
   _dispatchOcrAction(mode: "run" | "rebuild" | "redo"): void {
     const controller = this.plugin.ocrProcessController;
+    if (mode === "run" && typeof this.plugin.requestOcrRun === "function") {
+      // The probe-owned confirmation already ran in _dispatchModuleAction.
+      this.plugin.requestOcrRun(true);
+      return;
+    }
     if (controller.isRunning) {
-      new Notice("OCR is already running.");
+      new Notice(t("ocr_already_running"));
       return;
     }
 
     const labelMap: Record<string, string> = {
-      run: "Running OCR…",
-      rebuild: "Rebuilding OCR derived artifacts…",
-      redo: "Running OCR redo…",
+      run: t("ocr_activity_run"),
+      rebuild: t("ocr_activity_rebuild"),
+      redo: t("ocr_activity_redo"),
     };
 
     // Set envelope activity overlay without changing capability/severity/reason
     const envelopes = this._capabilityState ?? {};
     if (envelopes["ocr"]) {
       envelopes["ocr"].activity_state = "running";
-      envelopes["ocr"].activity_label = labelMap[mode] || "Running…";
+      envelopes["ocr"].activity_label =
+        labelMap[mode] || t("cc_activity_running");
       envelopes["ocr"].activity_progress = { current: 0, total: 1 };
     }
     this.plugin._ocrBuffer = "";
@@ -1997,14 +2019,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
     const cliArgs =
       kind === "embed" ? ["embed", "build", "--force"] : ["memory", "build"];
-    const label = kind === "embed" ? "Vector index" : "Memory";
 
     if (kind === "embed") {
       // #120-fix (P1-2): never stack a second controller while one is
       // mid-flight — the busy getter is per-instance, so the guard lives
       // here, at the only creation site.
       if (this.plugin._embedController?.busy) {
-        new Notice("Vector build already in progress.");
+        new Notice(t("embed_already_running"));
         return;
       }
       // #120: embed lifecycle is owned by EmbedBuildController — the old
@@ -2055,7 +2076,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             return promise;
           },
           callbacks: {
-            onStateChange: (state, progress, warning, stopResult) => {
+            onStateChange: (state, progress, warning, _stopResult) => {
               this.plugin._embedProgress = {
                 current: progress.current,
                 total: progress.total,
@@ -2070,8 +2091,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
                   envelopes["memory"].activity_state = "running";
                   envelopes["memory"].activity_label =
                     state === "stopping"
-                      ? "Stopping vector build…"
-                      : "Building vector index…";
+                      ? t("embed_activity_stopping")
+                      : t("embed_activity_building");
                   envelopes["memory"].activity_progress = {
                     current: progress.current,
                     total: progress.total || 1,
@@ -2083,12 +2104,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
                 }
               }
               if (state === "success") {
-                new Notice(label + " build complete.");
+                new Notice(t("embed_build_complete"));
               } else if (state === "success_with_warning") {
                 new Notice(
-                  label +
-                    " published with warning: " +
-                    (warning || "bookkeeping incomplete"),
+                  t("embed_build_warning").replace(
+                    "{detail}",
+                    warning || t("embed_bookkeeping_incomplete")
+                  ),
                   8000
                 );
               } else if (state === "failed") {
@@ -2099,34 +2121,15 @@ export class PaperForgeSettingTab extends PluginSettingTab {
                   ),
                   8000
                 );
-              } else if (state === "idle" && stopResult) {
-                new Notice(
-                  stopResult === "completed_before_stop"
-                    ? "Build already completed before stop request."
-                    : "Build stopped."
-                );
+              } else if (state === "cancelled") {
+                new Notice(t("embed_build_stopped"), 8000);
               }
               this.display();
             },
           },
         });
         this.plugin._embedController = controller;
-        // #120: force rebuild requires confirmation (API cost + rebuild
-        // semantics) before the controller starts.
-        const confirmAndStart = () => {
-          new PaperForgeConfirmModal(
-            this.app,
-            {
-              title: "Rebuild vector index",
-              effectLabel:
-                "Force rebuild will call the embedding API (may incur cost) and rebuild all vectors. The current index stays usable until the new one is verified. PDFs, notes and OCR are NOT deleted. You can safely stop the build.",
-              confirmLabel: t("config_confirm"),
-              cancelLabel: t("config_cancel"),
-            },
-            () => void controller.start("--force")
-          ).open();
-        };
-        confirmAndStart();
+        void controller.start("--force");
       };
       startEmbed();
     } else {
@@ -2139,12 +2142,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             envelopes["memory"].activity_label = null;
           }
           if (code === 0) {
-            new Notice(label + " rebuild complete");
+            new Notice(t("feat_memory_rebuild_done"));
           } else {
             new Notice(
-              label +
-                " build failed" +
-                (stderr ? ": " + stderr.slice(0, 120) : ""),
+              t("feat_memory_rebuild_failed") +
+                (stderr ? " " + stderr.slice(0, 120) : ""),
               8000
             );
           }
@@ -2629,10 +2631,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         if (code === 0) {
           this._lastSyncTime = new Date().toLocaleTimeString();
           this.plugin._lastSyncTime = this._lastSyncTime;
-          // #127: consume the backend's next_actions (memory.build automatic,
-          // embed.resume confirmed) instead of hidden fire-and-forget work.
+          // #127: consume backend next_actions. Automatic local work starts
+          // now; consent-required work remains visible in the module card.
           void orchestrateFromSync(stdout, {
-            app: this.app,
             vaultPath: vp,
             resolveCommand: (v) => this._resolveRuntimeCommand(v),
           });

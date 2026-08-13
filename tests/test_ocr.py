@@ -582,9 +582,9 @@ def test_postprocess_writes_role_index(tmp_path: Path) -> None:
     assert (ocr_dir / "index" / "role-index.json").exists()
 
 
-def test_ocr_run_all_blocked_returns_nonzero(tmp_path, monkeypatch):
-    """Release review P0-1: invalid/missing token marks papers blocked —
-    the CLI must exit non-zero so the frontend never shows success."""
+def test_explicit_ocr_scope_ignores_stale_selection_and_fails_closed(tmp_path, monkeypatch):
+    """Explicit keys run even when do_ocr is false; blocked provider work
+    must still exit non-zero so the frontend never shows success."""
     from paperforge.worker import ocr as ocr_worker
 
     vault = tmp_path / "vault"
@@ -594,6 +594,21 @@ def test_ocr_run_all_blocked_returns_nonzero(tmp_path, monkeypatch):
     lit.mkdir(parents=True)
     ocr_root = vault / "System" / "PaperForge" / "ocr"
     ocr_root.mkdir(parents=True)
+    exports = vault / "System" / "PaperForge" / "exports"
+    exports.mkdir(parents=True)
+    (exports / "test.json").write_text("[]", encoding="utf-8")
+    monkeypatch.setattr(
+        ocr_worker,
+        "load_export_rows",
+        lambda _path: [
+            {
+                "key": "BLOCK001",
+                "attachments": [
+                    {"contentType": "application/pdf", "path": "C:/fake/BLOCK001.pdf"}
+                ],
+            }
+        ],
+    )
 
     note = lit / "BLOCK001.md"
     note.write_text(
@@ -601,7 +616,7 @@ def test_ocr_run_all_blocked_returns_nonzero(tmp_path, monkeypatch):
 zotero_key: "BLOCK001"
 title: "T"
 ocr_status: "pending"
-do_ocr: true
+do_ocr: false
 ---
 """,
         encoding="utf-8",
@@ -663,11 +678,8 @@ class TestOcrRunNdjson174:
             [_sys.executable, "-m", "paperforge", "--vault", str(tmp_path), "ocr", "run"],
             capture_output=True, text=True, timeout=180, env=env,
         )
-        events = [
-            _json.loads(l)
-            for l in r.stdout.splitlines()
-            if l.strip() and l.strip().startswith("{")
-        ]
+        lines = [line for line in r.stdout.splitlines() if line.strip()]
+        events = [_json.loads(line) for line in lines]
         assert events, "ocr run produced no NDJSON"
         assert events[0]["event"] == "start"
         assert events[0]["operation"] == "ocr.run"

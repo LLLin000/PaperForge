@@ -89,6 +89,20 @@ def build_action_primary(
     replacement_facts: what derived output will be replaced.
     interruptible: whether the action can be safely stopped.
     """
+    # Registered actions project safety and confirmation from the registry.
+    # Probe decides *why* an action is shown; the registry alone decides
+    # whether it mutates, requires consent, and can be interrupted.
+    from paperforge.actions.registry import ACTION_REGISTRY
+
+    spec = ACTION_REGISTRY.get(action_id)
+    if spec is not None:
+        safety_class = (
+            SAFETY_DESTRUCTIVE
+            if spec.impact == "destructive" or spec.confirmation == "required"
+            else SAFETY_SAFE
+        )
+        interruptible = spec.interruptible
+        confirmation_required = spec.confirmation == "required"
     return {
         "action_id": action_id, "verb": verb, "label": label,
         "availability": availability, "safety_class": safety_class,
@@ -971,8 +985,8 @@ def probe_memory(vault: Path) -> dict[str, Any]:
                 reason_text=f"Last vector build failed: {msg}. Existing vectors are still usable.",
                 user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
                 action_primary=build_action_primary(
-                    action_id="memory.rebuild_vector",
-                    verb="rebuild_index", label="Rebuild vector index",
+                    action_id="embed.build",
+                    verb="run", label="Rebuild vector index",
                 ),
                 notices=notices, ttl_seconds=TTL_MEMORY,
             )
@@ -1045,8 +1059,8 @@ def probe_memory(vault: Path) -> dict[str, Any]:
             reason_text="Vector index has not been built — rebuild to enable semantic search",
             user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
             action_primary=build_action_primary(
-                action_id="memory.rebuild_vector",
-                verb="rebuild_index", label="Build vector index",
+                action_id="embed.build",
+                verb="run", label="Build vector index",
             ),
             notices=notices, ttl_seconds=TTL_MEMORY,
         )

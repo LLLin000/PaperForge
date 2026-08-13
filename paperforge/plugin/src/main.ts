@@ -43,9 +43,13 @@ import {
 import { t, setLanguage } from "./i18n";
 import { PaperForgeSettingTab } from "./settings";
 import { orchestrateFromSync } from "./services/next-actions-bridge";
-import { OcrProcessController } from "./services/ocr-process-controller";
+import {
+  OcrProcessController,
+  type OcrProcessOutcome,
+} from "./services/ocr-process-controller";
 import { PaperForgeStatusView } from "./views/dashboard";
 import { OcrWorkspaceView } from "./views/ocr-workspace";
+import { PaperForgeConfirmModal } from "./views/modals";
 import {
   paperforgeEnrichedEnv,
   buildTargetedEnv,
@@ -86,6 +90,8 @@ export default class PaperForgePlugin extends Plugin {
   /** #126 PR B: the single OCR process controller shared by Settings and Workspace. */
   ocrProcessController!: OcrProcessController;
   _memoryStatusText: string | null = null;
+  _ocrProgress = { current: 0, total: 1, key: "" };
+  private _settingTab: PaperForgeSettingTab | null = null;
   private _managedRuntime: RuntimeBootstrap | null = null;
 
   getManagedRuntime(): RuntimeBootstrap {
@@ -100,6 +106,69 @@ export default class PaperForgePlugin extends Plugin {
     // never uses an installed-but-unpublished runtime.
     const run = resolveRuntimeCommand(this.getManagedRuntime().readPointer());
     return run ? { path: run.command, args: [...run.args] } : null;
+  }
+
+  /** One user-facing OCR run path for Settings, Dashboard, and commands. */
+  requestOcrRun(confirmed = false): void {
+    if (this.ocrProcessController.isRunning) {
+      new Notice(t("ocr_already_running"));
+      return;
+    }
+
+    const start = () => {
+      this._ocrProgress = { current: 0, total: 1, key: "" };
+      this._settingTab?.display();
+      void this.ocrProcessController
+        .start("run", {
+          callbacks: {
+            onProgress: (current, total, key) => {
+              this._ocrProgress = { current, total, key };
+              this._settingTab?.display();
+            },
+            onNotice: (message) => new Notice(message, 8000),
+          },
+        })
+        .then((outcome: OcrProcessOutcome) => {
+          if (outcome.ok) {
+            new Notice(t("ocr_run_complete"));
+          } else if (outcome.stopped) {
+            new Notice(t("ocr_stopped_notice"));
+          } else {
+            const detail = outcome.failedKeys.join(", ");
+            new Notice(
+              t("ocr_failed_notice") + (detail ? ": " + detail : ""),
+              8000
+            );
+          }
+          this._settingTab?.display();
+          const vaultPath = (this.app.vault.adapter as any).basePath as string;
+          this._autoSync(vaultPath);
+        })
+        .catch((error: Error) => {
+          new Notice(
+            t("ocr_failed_notice") +
+              ": " +
+              (error.message || t("ocr_error_notice")),
+            8000
+          );
+          this._settingTab?.display();
+        });
+    };
+
+    if (confirmed) {
+      start();
+      return;
+    }
+    new PaperForgeConfirmModal(
+      this.app,
+      {
+        title: t("ocr_run_confirm_title"),
+        effectLabel: t("ocr_run_confirm_body"),
+        confirmLabel: t("maintenance_confirm_ok"),
+        cancelLabel: t("maintenance_confirm_cancel"),
+      },
+      start
+    ).open();
   }
   async onload() {
     await this.loadSettings();
@@ -143,7 +212,8 @@ export default class PaperForgePlugin extends Plugin {
 
     // #99 (owner decision): redo is an internal maintenance command, NOT
     // exposed to users. No ribbon, no command — the CLI keeps it.
-    this.addSettingTab(new PaperForgeSettingTab(this.app, this as any));
+    this._settingTab = new PaperForgeSettingTab(this.app, this as any);
+    this.addSettingTab(this._settingTab);
 
     this.addCommand({
       id: "paperforge-status-panel",
@@ -163,6 +233,10 @@ export default class PaperForgePlugin extends Plugin {
         id: a.id,
         name: a.title,
         callback: async () => {
+          if (a.id === "paperforge-ocr") {
+            this.requestOcrRun();
+            return;
+          }
           if (a.disabled) {
             new Notice(
               `[i] ${a.disabledMsg || "This action is not yet available."}`,
@@ -359,7 +433,6 @@ export default class PaperForgePlugin extends Plugin {
           // #127/#169: consume next_actions — the Python registry is the
           // policy authority; the plugin executes via the action client.
           void orchestrateFromSync(stdout, {
-            app: this.app,
             vaultPath,
             resolveCommand: (v) => this._getPythonCommand(),
           });

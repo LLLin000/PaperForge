@@ -2040,37 +2040,6 @@
 }
 
 /* ==========================================================================
-   SECTION 38 — DASH-03: OCR Privacy Warning Modal
-   ========================================================================== */
-.paperforge-ocr-privacy-modal h2 {
-  margin-top: 8px;
-  margin-bottom: 16px;
-  font-size: var(--font-ui-large);
-  font-weight: var(--font-semibold);
-}
-
-.paperforge-ocr-privacy-warning {
-  background: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: var(--radius-m);
-  padding: 16px;
-  margin-bottom: 20px;
-  line-height: 1.6;
-}
-
-.paperforge-ocr-privacy-warning p {
-  margin: 0;
-  color: var(--text-normal);
-  font-size: var(--font-ui-small);
-}
-
-.paperforge-ocr-privacy-actions {
-  display: flex;
-  justify-content: flex-end;
-  padding-top: 8px;
-}
-
-/* ==========================================================================
    SECTION 39 — Dashboard Visual System
    ========================================================================== */
 
@@ -7252,7 +7221,7 @@ input.pf-ocr-ws-search-input::placeholder {
   font-size: var(--font-ui-smaller);
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: .5px;
+  letter-spacing: 0.5px;
   color: var(--text-muted);
   margin-bottom: var(--size-4-3);
 }
@@ -7260,7 +7229,7 @@ input.pf-ocr-ws-search-input::placeholder {
   position: relative;
 }
 .pf-vr-timeline::before {
-  content: '';
+  content: "";
   position: absolute;
   left: 8px;
   top: 8px;
@@ -7276,10 +7245,14 @@ input.pf-ocr-ws-search-input::placeholder {
   font-size: var(--font-ui-smaller);
   margin-bottom: 2px;
 }
-.pf-vr-entry:hover { background: var(--background-modifier-hover); }
-.pf-vr-entry--active { background: color-mix(in srgb, var(--interactive-accent) 10%, transparent); }
+.pf-vr-entry:hover {
+  background: var(--background-modifier-hover);
+}
+.pf-vr-entry--active {
+  background: color-mix(in srgb, var(--interactive-accent) 10%, transparent);
+}
 .pf-vr-entry::before {
-  content: '';
+  content: "";
   position: absolute;
   left: 4px;
   top: 50%;
@@ -7296,8 +7269,16 @@ input.pf-ocr-ws-search-input::placeholder {
   height: 12px;
   left: 3px;
 }
-.pf-vr-entry-label { display: block; font-weight: 600; }
-.pf-vr-entry-date { display: block; color: var(--text-muted); margin-top: 1px; font-size: 11px; }
+.pf-vr-entry-label {
+  display: block;
+  font-weight: 600;
+}
+.pf-vr-entry-date {
+  display: block;
+  color: var(--text-muted);
+  margin-top: 1px;
+  font-size: 11px;
+}
 .pf-vr-entry-badge {
   display: inline-block;
   font-size: 10px;
@@ -7324,8 +7305,14 @@ input.pf-ocr-ws-search-input::placeholder {
   margin-bottom: var(--size-4-3);
   flex-shrink: 0;
 }
-.pf-vr-info { font-size: var(--font-ui-smaller); line-height: 1.5; }
-.pf-vr-info-meta { color: var(--text-muted); font-size: var(--font-ui-smaller); }
+.pf-vr-info {
+  font-size: var(--font-ui-smaller);
+  line-height: 1.5;
+}
+.pf-vr-info-meta {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
 .pf-vr-current-tag {
   display: inline-block;
   font-size: 10px;
@@ -7335,7 +7322,11 @@ input.pf-ocr-ws-search-input::placeholder {
   color: var(--text-success);
   vertical-align: middle;
 }
-.pf-vr-actions { display: flex; gap: var(--size-4-2); flex-shrink: 0; }
+.pf-vr-actions {
+  display: flex;
+  gap: var(--size-4-2);
+  flex-shrink: 0;
+}
 .pf-vr-btn {
   padding: 5px 14px;
   border-radius: var(--radius-s);
@@ -7343,10 +7334,21 @@ input.pf-ocr-ws-search-input::placeholder {
   cursor: pointer;
   border: none;
 }
-.btn-primary.pf-vr-btn { background: var(--interactive-accent); color: var(--text-on-accent); }
-.btn-primary.pf-vr-btn:hover { filter: brightness(1.1); }
-.btn-secondary.pf-vr-btn { background: var(--interactive-normal); color: var(--text-normal); border: 1px solid var(--background-modifier-border); }
-.btn-secondary.pf-vr-btn:hover { background: var(--interactive-hover); }
+.btn-primary.pf-vr-btn {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+.btn-primary.pf-vr-btn:hover {
+  filter: brightness(1.1);
+}
+.btn-secondary.pf-vr-btn {
+  background: var(--interactive-normal);
+  color: var(--text-normal);
+  border: 1px solid var(--background-modifier-border);
+}
+.btn-secondary.pf-vr-btn:hover {
+  background: var(--interactive-hover);
+}
 
 .pf-vr-content {
   flex: 1;
@@ -7373,18 +7375,37 @@ input.pf-ocr-ws-search-input::placeholder {
   margin-bottom: var(--size-4-2);
   border-bottom: 1px solid var(--background-modifier-border);
 }
-.pf-vr-diff-body { flex: 1; }
+.pf-vr-diff-body {
+  flex: 1;
+}
 .pf-vr-diff-line {
   padding: 2px 0;
   font-family: var(--font-monospace);
   font-size: var(--font-ui-smaller);
   line-height: 1.5;
 }
-.pf-vr-diff-added { background: #d4edda; color: #155724; border-radius: 2px; }
-.pf-vr-diff-removed { background: #f8d7da; color: #721c24; border-radius: 2px; }
-.pf-vr-diff-prefix { user-select: none; margin-right: 4px; }
-.pf-vr-diff-text { white-space: pre-wrap; }
-.pf-vr-diff-empty { color: var(--text-muted); font-style: italic; padding: var(--size-4-3); }
+.pf-vr-diff-added {
+  background: #d4edda;
+  color: #155724;
+  border-radius: 2px;
+}
+.pf-vr-diff-removed {
+  background: #f8d7da;
+  color: #721c24;
+  border-radius: 2px;
+}
+.pf-vr-diff-prefix {
+  user-select: none;
+  margin-right: 4px;
+}
+.pf-vr-diff-text {
+  white-space: pre-wrap;
+}
+.pf-vr-diff-empty {
+  color: var(--text-muted);
+  font-style: italic;
+  padding: var(--size-4-3);
+}
 .paperforge-modal.pf-vr-modal {
   padding: 0;
   overflow: hidden;

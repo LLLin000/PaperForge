@@ -2561,12 +2561,15 @@ def run_ocr(
     control_actions = load_control_actions(paths)
     target_keys = {key for key, action in control_actions.items() if action.get("do_ocr", False)}
     if selected_keys is not None:
-        target_keys &= set(selected_keys)
+        # An explicit action scope is authoritative; it must not be erased
+        # by stale or absent do_ocr projection flags.
+        target_keys = set(selected_keys)
+    process_all = selected_keys is None and not target_keys
 
     target_rows = []
     for export_path in sorted(paths["exports"].glob("*.json")):
         for item in load_export_rows(export_path):
-            if item["key"] not in target_keys:
+            if not process_all and item["key"] not in target_keys:
                 continue
             pdf_attachments = [a for a in item.get("attachments", []) if a.get("contentType") == "application/pdf"]
             target_rows.append(
@@ -2615,14 +2618,14 @@ def run_ocr(
             meta["retry_count"] = 0
             write_json(paths["ocr"] / key / "meta.json", meta)
     ocr_queue = sync_ocr_queue(paths, target_rows)
-    print(
-        f"DEBUG: target_keys count={len(target_keys)}, target_rows count={len(target_rows)}, queue count={len(ocr_queue)}",
-        flush=True,
+    logger.debug(
+        "OCR queue prepared: target_keys=%d target_rows=%d queue=%d first=%s status=%s",
+        len(target_keys),
+        len(target_rows),
+        len(ocr_queue),
+        ocr_queue[0].get("zotero_key") if ocr_queue else None,
+        ocr_queue[0].get("queue_status") if ocr_queue else None,
     )
-    if ocr_queue:
-        print(
-            f"DEBUG: first item={ocr_queue[0].get('zotero_key')} status={ocr_queue[0].get('queue_status')}", flush=True
-        )
     max_items_raw = os.environ.get("PADDLEOCR_MAX_ITEMS", "").strip()
     max_items = 3
     if max_items_raw:
@@ -3027,25 +3030,32 @@ def run_ocr(
         summary_parts.append(f"failed={failed_count}")
     if pending_count:
         summary_parts.append(f"pending={pending_count} ({', '.join(pending_keys)})")
-    print(f"OCR: {' '.join(summary_parts) if summary_parts else 'no items processed'}", flush=True)
-    if pending_keys:
-        print("OCR: re-run to continue polling incomplete items", flush=True)
+    summary = f"OCR: {' '.join(summary_parts) if summary_parts else 'no items processed'}"
+    if progress_callback is None:
+        print(summary, flush=True)
+        if pending_keys:
+            print("OCR: re-run to continue polling incomplete items", flush=True)
+    else:
+        logger.info(summary)
 
     try:
-        _sync.run_selection_sync(vault)
+        _sync.run_selection_sync(vault, json_output=progress_callback is not None)
         if _done_ocr_keys:
             done_keys = [k for k in _done_ocr_keys if k]
             for ocr_key in done_keys:
                 refresh_index_entry(vault, ocr_key)
-            if verbose:
+            if verbose and progress_callback is None:
                 print(f"ocr: refreshed {len(done_keys)} index entries incrementally")
         else:
-            _sync.run_index_refresh(vault)
+            _sync.run_index_refresh(vault, json_output=progress_callback is not None)
     except ImportError:
-        _sync.run_index_refresh(vault)
+        _sync.run_index_refresh(vault, json_output=progress_callback is not None)
     except Exception as e:
         logger.error("Post-OCR index refresh failed: %s", e)
-    print(f"ocr: updated {changed} records")
+    if progress_callback is None:
+        print(f"ocr: updated {changed} records")
+    else:
+        logger.info("ocr: updated %d records", changed)
     # Fail closed: blocked (e.g. invalid/missing API token) and error items
     # are NOT a successful run — the frontend shows "OCR complete" on rc 0.
     if _stopped:

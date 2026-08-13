@@ -1,21 +1,14 @@
 # OCR-v2 Active Queue
-> Status: OCR-v2 is stable; real `D:\L\Med\test` visual audit repairs are deployed, including a complete four-stage Setup Journey with in-flow Foundation, Library, and optional-capability configuration. Release remains explicitly deferred pending owner acceptance.
-> Last updated: 2026-08-05
+> Status: Wayfinder #135/#174 is owner-accepted and closed. A disposable production-shaped vault completed the RC real-Obsidian audit on 2026-08-13; all 9 observed UI/authority defects are repaired. Release remains explicitly deferred to the owner-controlled #81 gate.
+> Last updated: 2026-08-13
 
-## 2026-08-05: Mandatory triage checkpoint (per #130)
+## 2026-08-13: RC audit checkpoint
 
-Architecture Audit Slices A+B (#131/#132) accepted and closed; #125 administratively closed; all open issues re-read and classified. Resulting queue:
-
-- **#127 — sole `ready-for-agent`** (system-wide `PFResult.next_actions` cost/follow-up policy). This is the next implementation work.
-- **#126** — blocked by #127 (OCR Workspace closure consumes the `next_actions` contract; 4 PRs).
-- **#129** — blocked by #126 (display restore vs structural restore via #126 publication-marker protocol).
-- **#99** — owner decision (redo-safety path reconfirmation after #129); stays blocked.
-- **#81** — owner decision (release gate; N+1 code verified, no release authorized).
-- **#82** — deferred (N+2 deletion needs a probe-capable N+1 package + support window).
-- **#94–#105 (Wayfinder)** — frozen; children deferred post-release (#95 workspace surface owned by #126, verified at #126 acceptance; **#101 superseded→#126** progress contract; **#102 superseded→#99** backup strategy). No child agent-ready.
-- **#63** — deferred (parent of closed #64; resume only as a new issue).
-- **#133/#134** — deferred post-RC (architecture collectors/HTML+CI gate).
-
+- Wayfinder #135 and final authority cutover #174 are complete, owner-accepted, and closed.
+- Real Obsidian exercised setup/config, Python-owned credentials, sync/reconcile, OCR run/rebuild/redo/cancel, embed confirmation/build/cancel/retry, memory automatic actions, runtime recovery, navigation, and restart persistence.
+- All 9 observed defects are repaired: stale credential truth, 30s probe timeout, missing credential remediation, hidden/incorrect cancellation state, stale embed failure/corruption projection, registry-policy drift, dashboard reopen/setup dead ends, raw i18n keys, and OCR NDJSON stdout/scope faults.
+- Audit evidence is in the disposable vault at `System/PaperForge/audits/ui-e2e-findings.json` and `operation-timing.json`; source vault data was not mutated.
+- Only #81 remains on the release path: owner-controlled 1.6.0 version sync, wheel metadata/smoke, candidate promotion, PyPI/GitHub release, and plugin manifest publication.
 ## Current checkpoint
 
 - Retrieval recovery is merged to `master`; the real Literature-hub vault has a healthy 2560-dimensional vec0 index and working M / @ search paths.

@@ -30,6 +30,7 @@ import {
 } from "../services/python-bridge";
 import { resolveRuntimeCommand } from "../services/managed-runtime";
 import { stripCredentialEnv } from "../services/secret-storage";
+import { queryOcrCredentialStatus } from "../services/config-client";
 import { getDisclosureState, toggleDisclosureState } from "../utils/disclosure";
 import { extractZoteroKeyFromPath } from "../utils/zotero-path";
 import { checkOrphanState } from "./modals";
@@ -1050,14 +1051,27 @@ export class PaperForgeStatusView extends ItemView {
       exportOk ? "healthy" : "missing",
       exportDetail
     );
-    // Issue #79: check configured flag; getSecret is async so use boolean status
     const pfPlugin = (this.app as any).plugins?.plugins?.["paperforge"];
-    const tokenOk = !!pfPlugin?.settings?._paddleocr_configured;
-    this._renderSystemStatusRow(
+    const tokenRow = this._renderSystemStatusRow(
       statusGrid,
       "OCR Token",
-      tokenOk ? "configured" : "missing",
-      tokenOk ? "Configured" : "Not set"
+      "checking",
+      "Checking…"
+    );
+    void queryOcrCredentialStatus(vp, pfPlugin?.settings).then(
+      (available) => {
+        if (!tokenRow.isConnected) return;
+        const dot = tokenRow.querySelector(".paperforge-status-dot");
+        dot?.classList.toggle("ok", available);
+        dot?.classList.toggle("fail", !available);
+        const detail = tokenRow.querySelector(".paperforge-status-detail");
+        if (detail) detail.textContent = available ? "Configured" : "Not set";
+      },
+      () => {
+        if (!tokenRow.isConnected) return;
+        const detail = tokenRow.querySelector(".paperforge-status-detail");
+        if (detail) detail.textContent = "Status unavailable";
+      }
     );
     const vp2 =
       (this.app.vault.adapter as unknown as { basePath?: string }).basePath ??
@@ -1077,7 +1091,7 @@ export class PaperForgeStatusView extends ItemView {
       memOk ? "healthy" : "fail",
       memDetail
     );
-    const hasIssues = !indexOk || !exportOk || !tokenOk;
+    const hasIssues = !indexOk || !exportOk;
     if (hasIssues) {
       const issueSection = view.createEl("div", {
         cls: "paperforge-issue-summary",
@@ -1098,11 +1112,6 @@ export class PaperForgeStatusView extends ItemView {
         issueList.createEl("div", {
           cls: "paperforge-issue-item",
           text: "No Zotero export found",
-        });
-      if (!tokenOk)
-        issueList.createEl("div", {
-          cls: "paperforge-issue-item",
-          text: "PaddleOCR API key not configured",
         });
       const issueActions = issueSection.createEl("div", {
         cls: "paperforge-issue-actions",
@@ -1205,6 +1214,7 @@ export class PaperForgeStatusView extends ItemView {
       cls: "paperforge-status-detail",
       text: detail || "",
     });
+    return row;
   }
 
   /* ── Per-Paper Mode Render: Reading Companion ── */
@@ -3054,6 +3064,13 @@ export class PaperForgeStatusView extends ItemView {
       );
       return;
     }
+    if (a.id === "paperforge-ocr") {
+      const plugin = (this.app as any).plugins?.plugins?.paperforge;
+      if (typeof plugin?.requestOcrRun === "function") {
+        plugin.requestOcrRun();
+        return;
+      }
+    }
     if (card.classList.contains("running")) {
       return;
     }
@@ -3110,8 +3127,14 @@ export class PaperForgeStatusView extends ItemView {
       a.timeoutMs ?? (a.needsFilter ? 60000 : a.needsKey ? 30000 : 600000);
     const py = this._resolvePython();
     if (!py) {
-      this._showMessage("[!!] Runtime not available", "error");
-      new Notice("[!!] PaperForge runtime is not ready. Check settings.", 6000);
+      this._showMessage(
+        "[!!] Runtime not available — open PaperForge Setup",
+        "error"
+      );
+      new Notice("PaperForge runtime is not ready. Opening Setup…", 6000);
+      const setting = (this.app as any).setting;
+      setting?.open();
+      setting?.openTabById?.("paperforge");
       card.removeClass("running");
       return;
     }
@@ -3324,7 +3347,7 @@ export class PaperForgeStatusView extends ItemView {
   static async open(plugin: IPluginRef) {
     const leaves = plugin.app.workspace.getLeavesOfType(VIEW_TYPE_PAPERFORGE);
     if (leaves.length > 0) {
-      plugin.app.workspace.revealLeaf(leaves[0]);
+      await plugin.app.workspace.revealLeaf(leaves[0]);
       return;
     }
     const leaf = plugin.app.workspace.getRightLeaf(false) as WorkspaceLeaf;
@@ -3333,7 +3356,7 @@ export class PaperForgeStatusView extends ItemView {
         type: VIEW_TYPE_PAPERFORGE,
         active: true,
       } as any);
-      plugin.app.workspace.revealLeaf(leaf);
+      await plugin.app.workspace.revealLeaf(leaf);
     }
   }
 }

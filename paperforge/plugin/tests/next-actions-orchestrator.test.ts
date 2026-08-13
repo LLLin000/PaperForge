@@ -6,6 +6,17 @@
  * wire (`action run <id> --scope ...`) and NEVER owns an allowlist.
  */
 import { describe, expect, it, beforeEach } from "vitest";
+const { runActionRequestMock } = vi.hoisted(() => ({
+  runActionRequestMock: vi.fn(),
+}));
+
+vi.mock("../src/services/action-client", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("../src/services/action-client")>();
+  return { ...actual, runActionRequest: runActionRequestMock };
+});
+
+vi.mock("obsidian", () => ({ Notice: vi.fn() }));
 import type { ActionRequest } from "../src/services/action-client";
 import { orchestrateNextActions } from "../src/services/next-actions-orchestrator";
 import { buildActionArgv } from "../src/services/action-client";
@@ -14,6 +25,7 @@ import {
   resetNextActionTracker,
   type NextAction,
 } from "../src/services/next-actions-types";
+import { orchestrateFromSync } from "../src/services/next-actions-bridge";
 
 beforeEach(() => resetNextActionTracker());
 
@@ -258,5 +270,41 @@ describe("execution policy", () => {
     const second = await orchestrateNextActions([action()], d);
     expect(second).toBe(1);
     expect(d.ran).toHaveLength(2);
+  });
+});
+
+describe("sync bridge consent boundary", () => {
+  it("runs automatic work and leaves consent-required work pending", async () => {
+    runActionRequestMock.mockResolvedValue({
+      ok: true,
+      payload: { ok: true },
+      exitCode: 0,
+    });
+    const stdout = JSON.stringify({
+      ok: true,
+      command: "sync",
+      version: "1.5.16",
+      next_actions: [
+        action(),
+        action({
+          action_id: "embed.resume",
+          automatic: false,
+          cost: "remote_possible",
+          confirmation: "required",
+        }),
+      ],
+    });
+
+    const started = await orchestrateFromSync(stdout, {
+      vaultPath: "/vault",
+      resolveCommand: () => ({ path: "python", args: [] }),
+    });
+
+    expect(started).toBe(1);
+    expect(runActionRequestMock).toHaveBeenCalledOnce();
+    expect(runActionRequestMock.mock.calls[0][3]).toMatchObject({
+      action_id: "memory.build",
+      confirm: undefined,
+    });
   });
 });

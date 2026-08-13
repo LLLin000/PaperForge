@@ -35,52 +35,63 @@ def get_embed_status_for_path(vault: Path, db_path: Path, *, probe: bool = False
 
             reader = open_live_reader(vault, db_path)
             conn = reader.__enter__()
-            try:
-                ensure_vec_extension(conn)
-            except Exception:
-                pass
-            row_ft = conn.execute("SELECT COUNT(*) AS cnt FROM vec_fulltext_meta").fetchone()
-            chunk_count = row_ft["cnt"] if row_ft else 0
-            row_body = conn.execute("SELECT COUNT(*) AS cnt FROM vec_body_meta").fetchone()
-            body_chunk_count = row_body["cnt"] if row_body else 0
-            row_obj = conn.execute("SELECT COUNT(*) AS cnt FROM vec_objects_meta").fetchone()
-            object_chunk_count = row_obj["cnt"] if row_obj else 0
-            row_vb = conn.execute("SELECT COUNT(*) FROM vec_body_meta WHERE unit_id <> ''").fetchone()
-            valid_body = row_vb[0] if row_vb else 0
-            row_vo = conn.execute("SELECT COUNT(*) FROM vec_objects_meta WHERE unit_id <> ''").fetchone()
-            valid_object = row_vo[0] if row_vo else 0
+            vec_tables = {"vec_fulltext", "vec_body", "vec_objects"}
+            meta_tables = {
+                "vec_fulltext_meta",
+                "vec_body_meta",
+                "vec_objects_meta",
+            }
+            present_tables = {
+                row[0]
+                for row in conn.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table'"
+                ).fetchall()
+            }
+            meta_rows = sum(
+                conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+                for table in meta_tables & present_tables
+            )
+            if vec_tables & present_tables or meta_rows:
+                row_ft = conn.execute("SELECT COUNT(*) AS cnt FROM vec_fulltext_meta").fetchone()
+                chunk_count = row_ft["cnt"] if row_ft else 0
+                row_body = conn.execute("SELECT COUNT(*) AS cnt FROM vec_body_meta").fetchone()
+                body_chunk_count = row_body["cnt"] if row_body else 0
+                row_obj = conn.execute("SELECT COUNT(*) AS cnt FROM vec_objects_meta").fetchone()
+                object_chunk_count = row_obj["cnt"] if row_obj else 0
+                row_vb = conn.execute("SELECT COUNT(*) FROM vec_body_meta WHERE unit_id <> ''").fetchone()
+                valid_body = row_vb[0] if row_vb else 0
+                row_vo = conn.execute("SELECT COUNT(*) FROM vec_objects_meta WHERE unit_id <> ''").fetchone()
+                valid_object = row_vo[0] if row_vo else 0
 
-            # Layout contract (shared with shadow routing / verifier): a vec
-            # table dropped while its meta rows remain is an orphan state —
-            # report unhealthy instead of pretending the counts are fine.
-            from paperforge.embedding.dim_detect import inspect_vector_layout
+                # A partially present vector layout is damaged. A memory DB
+                # with no vector tables is simply not built yet.
+                from paperforge.embedding.dim_detect import inspect_vector_layout
 
-            _layout = inspect_vector_layout(conn)
-            if not _layout.compatible or not _layout.tables_complete:
-                healthy = False
-                if not error:
-                    error = _layout.reason
+                layout = inspect_vector_layout(conn)
+                if not layout.compatible or not layout.tables_complete:
+                    healthy = False
+                    error = layout.reason
 
-            # Read dimension from vec0 table DDL
-            try:
-                row = conn.execute("SELECT sql FROM sqlite_master WHERE name='vec_body' AND type='table'").fetchone()
-                if row:
-                    import re
-                    m = re.search(r"float\[(\d+)\]", row[0])
-                    if m:
-                        dimension = int(m.group(1))
-            except Exception:
-                pass
+                try:
+                    row = conn.execute(
+                        "SELECT sql FROM sqlite_master WHERE name='vec_body' AND type='table'"
+                    ).fetchone()
+                    if row:
+                        import re
 
-            # -- vec0 k-NN health probe (only when explicitly requested) --
-            total_valid = valid_body + valid_object
-            if probe and total_valid > 0 and dimension > 0:
-                zero_vec = [0.0] * dimension
-                zero_json = _json.dumps(zero_vec)
-                conn.execute(
-                    "SELECT 1 FROM vec_body WHERE embedding MATCH ? AND k = 1",
-                    (zero_json,),
-                )
+                        match = re.search(r"float\[(\d+)\]", row[0])
+                        if match:
+                            dimension = int(match.group(1))
+                except Exception:
+                    pass
+
+                total_valid = valid_body + valid_object
+                if probe and total_valid > 0 and dimension > 0:
+                    zero_json = _json.dumps([0.0] * dimension)
+                    conn.execute(
+                        "SELECT 1 FROM vec_body WHERE embedding MATCH ? AND k = 1",
+                        (zero_json,),
+                    )
         except Exception as exc:
             healthy = False
             error = str(exc)
