@@ -1745,6 +1745,30 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       return;
     }
 
+    if (verb === "update") {
+      if (actionId === "foundation.update") {
+        // Registered remote action (#174) — the confirm modal already ran
+        // (safety_class destructive + confirmation_required).  Dispatch
+        // through the action runner so Python policy stays the authority.
+        this._runUpdateAction();
+        return;
+      }
+      // foundation.update_python: interpreter upgrade has NO automated path.
+      new Notice(
+        t("update_python_manual") ||
+          "Python 3.11+ upgrade requires a manual install (python.org or your package manager)."
+      );
+      this._probeModule(mod);
+      return;
+    }
+
+    if (verb === "install" && actionId === "memory.install_vector_deps") {
+      // Smart Retrieval deps missing -> setup journey re-ensures
+      // paperforge[vector] in the runtime (ensure_runtime_dependencies).
+      this._startSetupJourney(3);
+      return;
+    }
+
     if (mod === "library") {
       if (verb === "sync" || actionId === "library.sync") {
         this._runManualSync();
@@ -1781,9 +1805,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     } else if (mod === "memory") {
       if (verb === "run" || verb === "rebuild_index") {
         // memory.rebuild_vector (probe: stale vector index) → the embed
-        // rebuild; memory.build / memory.rebuild → the local memory build.
+        // rebuild; memory.upgrade_backend → ChromaDB→sqlite-vec migration;
+        // memory.build / memory.rebuild → the local memory build.
         if (actionId === "memory.rebuild_vector") {
           this._dispatchMemoryBuild("embed");
+        } else if (actionId === "memory.upgrade_backend") {
+          this._runBackendMigration();
         } else {
           this._dispatchMemoryBuild("build");
         }
@@ -1810,6 +1837,64 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     );
     this._probeModule(mod);
   } /** Dispatch OCR action through the shared OcrProcessController (#126 PR B). */
+  /** #174 RC: dispatch foundation.update through the action runner.
+   * The confirm modal already ran (destructive + confirmation_required);
+   * Python's perform_update owns policy + fresh-child verification. */
+  _runUpdateAction(): void {
+    const vp = this._getVaultBasePath();
+    const resolved = this._resolveRuntimeCommand(vp);
+    if (!resolved) {
+      new Notice(t("retrieval_no_python") || "No Python runtime available");
+      return;
+    }
+    execFile(
+      resolved.path,
+      [
+        ...resolved.args,
+        "-m",
+        "paperforge",
+        "--vault",
+        vp,
+        "action",
+        "run",
+        "foundation.update",
+        "--confirm",
+        "foundation.update",
+        "--json",
+      ],
+      { cwd: vp, timeout: 600000, env: paperforgeEnrichedEnv() },
+      (err, _stdout, stderr) => {
+        if (err) {
+          new Notice(
+            t("update_failed") ||
+              `Update failed: ${stderr?.trim() || err.message}`
+          );
+        } else {
+          new Notice(t("update_done") || "PaperForge updated");
+        }
+        this._refreshAllReadModels();
+      }
+    );
+  }
+
+  /** #174 RC: ChromaDB -> sqlite-vec backend migration (embed migrate). */
+  _runBackendMigration(): void {
+    this._callPython(["embed", "migrate", "--json"], {
+      timeout: 600000,
+      onClose: (code: number, _stdout: string, stderr: string) => {
+        if (code === 0) {
+          new Notice(t("migrate_done") || "Backend migrated to sqlite-vec");
+        } else {
+          new Notice(
+            t("migrate_failed") ||
+              `Backend migration failed: ${stderr?.trim() || "unknown error"}`
+          );
+        }
+        this._refreshAllReadModels();
+      },
+    });
+  }
+
   _dispatchOcrAction(mode: "run" | "rebuild" | "redo"): void {
     const controller = this.plugin.ocrProcessController;
     if (controller.isRunning) {

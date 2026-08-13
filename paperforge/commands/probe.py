@@ -230,7 +230,10 @@ def probe_installation(vault: Path, expected_version: str | None = None) -> dict
             user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_REQUIRED,
             user_impact="OCR and processing will not work with this Python version",
             action_primary=build_action_primary(
-                action_id="foundation.update_python", verb="update", label="Update Python",
+                action_id="foundation.update_python",
+                verb="update",
+                label="Update Python",
+                confirmation_required=False,
             ),
             ttl_seconds=TTL_INSTALLATION,
         )
@@ -242,8 +245,16 @@ def probe_installation(vault: Path, expected_version: str | None = None) -> dict
             reason_text=f"PaperForge {PAPERFORGE_VERSION} does not match plugin {expected_version}",
             user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_REQUIRED,
             action_primary=build_action_primary(
-                action_id="foundation.update", verb="update", label="Update PaperForge",
-
+                action_id="foundation.update",
+                verb="update",
+                label="Update PaperForge",
+                safety_class=SAFETY_DESTRUCTIVE,
+                confirmation_required=True,
+                confirmation_prompt=(
+                    "Update PaperForge\n\n"
+                    "Download and install the latest PaperForge version. "
+                    "This changes the installed runtime."
+                ),
             ),
             ttl_seconds=TTL_INSTALLATION,
         )

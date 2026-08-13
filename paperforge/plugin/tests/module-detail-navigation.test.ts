@@ -830,6 +830,106 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
     expect(msgs.toLowerCase()).toMatch(/unknown|bogus/);
   });
 
+  it("foundation.update -> action run with --confirm", () => {
+    const tab = makeTab();
+    (tab as any)._capabilityState = {
+      installation: createUnknownEnvelope("installation"),
+    };
+    execFileCalls.length = 0;
+    const primary = {
+      action_id: "foundation.update",
+      verb: "update",
+      label: "Update PaperForge",
+      command: "",
+      availability: "available",
+      safety_class: "destructive",
+      preservation_facts: [],
+      replacement_facts: [],
+      interruptible: true,
+      confirmation_required: true,
+      confirmation_prompt: "Download and install",
+      scope: "module",
+      scope_count: 1,
+    } as any;
+    (tab as any)._runAllowedDispatch("installation", primary, {} as any);
+    const run = execFileCalls.find((c) => c.args.includes("foundation.update"));
+    expect(run).toBeTruthy();
+    expect(run!.args).toContain("--confirm");
+    expect(run!.args).toContain("action");
+  });
+
+  it("foundation.update_python -> manual-install Notice (no automated path)", () => {
+    const tab = makeTab();
+    noticeCalls.length = 0;
+    const primary = {
+      action_id: "foundation.update_python",
+      verb: "update",
+      label: "Update Python",
+      command: "",
+      availability: "available",
+      safety_class: "safe",
+      preservation_facts: [],
+      replacement_facts: [],
+      interruptible: true,
+      confirmation_required: false,
+      confirmation_prompt: null,
+      scope: "module",
+      scope_count: 1,
+    } as any;
+    (tab as any)._runAllowedDispatch("installation", primary, {} as any);
+    expect(
+      execFileCalls.some((c) => c.args.includes("foundation.update_python"))
+    ).toBe(false);
+    expect(noticeCalls.length).toBeGreaterThan(0);
+  });
+
+  it("memory.install_vector_deps -> setup journey stage 3", () => {
+    const tab = makeTab();
+    (tab as any)._startSetupJourney = vi.fn();
+    const primary = {
+      action_id: "memory.install_vector_deps",
+      verb: "install",
+      label: "Install Smart Retrieval dependencies",
+      command: "",
+      availability: "available",
+      safety_class: "safe",
+      preservation_facts: [],
+      replacement_facts: [],
+      interruptible: true,
+      confirmation_required: false,
+      confirmation_prompt: null,
+      scope: "module",
+      scope_count: 1,
+    } as any;
+    (tab as any)._runAllowedDispatch("memory", primary, {} as any);
+    expect((tab as any)._startSetupJourney).toHaveBeenCalledWith(3);
+  });
+
+  it("memory.upgrade_backend -> embed migrate (not local build)", () => {
+    const tab = makeTab();
+    (tab as any)._callPython = vi.fn();
+    const primary = {
+      action_id: "memory.upgrade_backend",
+      verb: "rebuild_index",
+      label: "Rebuild index",
+      command: "",
+      availability: "available",
+      safety_class: "destructive",
+      preservation_facts: [],
+      replacement_facts: [],
+      interruptible: true,
+      confirmation_required: true,
+      confirmation_prompt: "Backend upgrade",
+      scope: "module",
+      scope_count: 1,
+    } as any;
+    (tab as any)._runAllowedDispatch("memory", primary, {} as any);
+    expect((tab as any)._callPython).toHaveBeenCalledWith(
+      ["embed", "migrate", "--json"],
+      expect.anything()
+    );
+  });
+
   it("run + paperforge ocr run -> spawns ['ocr', 'run']", async () => {
     const tab = makeTab();
     (tab as any)._capabilityState = { ocr: createUnknownEnvelope("ocr") };
