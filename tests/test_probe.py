@@ -811,6 +811,60 @@ class TestMemoryConcreteFixes:
         assert data["reason"]["code"] == "memory.probe_failed"
         assert data["action"]["primary"]["verb"] == "probe"
 
+    def test_interrupted_build_state_surfaces_resume(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """RC UX Seam: an explicit interrupted build_state must be needs_action
+        with a resume action, never a false ready."""
+        from paperforge.commands import probe as probe_mod
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
+
+        monkeypatch.setattr(
+            "paperforge.memory.query.get_memory_status",
+            lambda v: {"db_exists": True, "schema_ok": True, "fresh": True,
+                        "hash_match": True, "count_match": True,
+                        "paper_count_db": 1, "paper_count_index": 1,
+                        "needs_rebuild": False, "schema_version": 7},
+        )
+        monkeypatch.setattr(
+            "paperforge.embedding.build_state.read_vector_build_state",
+            lambda v: {"status": "interrupted", "current": 690, "total": 811,
+                        "pid": 0, "message": "Build cancelled by user"},
+        )
+
+        data = probe_mod.probe_memory(tmp_path)
+        assert data["capability_state"] == "needs_action"
+        assert data["reason"]["code"] == "memory.vector_build_interrupted"
+        assert data["action"]["primary"]["action_id"] == "embed.build"
+        assert "Resume" in data["action"]["primary"]["label"]
+
+    def test_zombie_running_state_surfaces_resume(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """RC UX Seam: build_state stuck at running with a DEAD pid (crash /
+        kill / Obsidian restart) must be needs_action + resume, not ready."""
+        from paperforge.commands import probe as probe_mod
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
+
+        monkeypatch.setattr(
+            "paperforge.memory.query.get_memory_status",
+            lambda v: {"db_exists": True, "schema_ok": True, "fresh": True,
+                        "hash_match": True, "count_match": True,
+                        "paper_count_db": 1, "paper_count_index": 1,
+                        "needs_rebuild": False, "schema_version": 7},
+        )
+        monkeypatch.setattr(
+            "paperforge.embedding.build_state.read_vector_build_state",
+            lambda v: {"status": "running", "current": 690, "total": 811,
+                        "pid": 999999, "started_at": "2026-08-13T00:00:00+00:00"},
+        )
+        monkeypatch.setattr(
+            "paperforge.commands.embed._pid_alive", lambda pid: False)
+
+        data = probe_mod.probe_memory(tmp_path)
+        assert data["capability_state"] == "needs_action"
+        assert data["reason"]["code"] == "memory.vector_build_interrupted"
+        assert data["action"]["primary"]["action_id"] == "embed.build"
+        assert data["action"]["primary"]["availability"] == "available"
+
 
 class TestOcrPriorityOrdering:
     """OCR probe priority: redo > run > rebuild > investigate (Issue #78 repair)."""
