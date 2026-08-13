@@ -82,3 +82,48 @@ def test_bootstrap_capabilities_contract(tmp_path: Path) -> None:
 
     sav = output.get("skill_api_version")
     assert sav is None or isinstance(sav, int), f"skill_api_version invalid: {sav}"
+
+
+def test_semantic_ready_reflects_backend_not_switch(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """RC UX Seam: semantic_ready must mirror the backend embed status, not
+    the plugin settings toggle. A vault with no vector index reports
+    semantic_ready=false even when data.json says vector_db enabled."""
+    import paperforge.skills.paperforge.scripts.pf_bootstrap as boot
+
+    vault = tmp_path / "SemVault"
+    vault.mkdir()
+    canonical_test_config(
+        vault,
+        system_dir="99_System",
+        resources_dir="03_Resources",
+        literature_dir="Literature",
+    )
+    (vault / "99_System" / "PaperForge" / "indexes").mkdir(parents=True)
+    (vault / "99_System" / "PaperForge" / "ocr").mkdir(parents=True)
+    (vault / "99_System" / "PaperForge" / "exports").mkdir(parents=True)
+    (vault / "03_Resources" / "Literature").mkdir(parents=True)
+    # Plugin settings toggle says enabled — the old false-green source.
+    data_dir = vault / ".obsidian" / "plugins" / "paperforge"
+    data_dir.mkdir(parents=True)
+    (data_dir / "data.json").write_text(
+        json.dumps({"features": {"vector_db": True}}), encoding="utf-8"
+    )
+
+    # The subprocess embed-status call must observe an empty index. In this
+    # hermetic vault there is no paperforge.db at all, so the real command
+    # reports not_built — semantic_ready stays false.
+    result = subprocess.run(
+        [sys.executable, str(BOOTSTRAP), "--vault", str(vault)],
+        capture_output=True,
+        text=True,
+        timeout=30,
+        encoding="utf-8",
+        errors="replace",
+    )
+    assert result.returncode == 0, result.stderr
+    output = json.loads(result.stdout)
+    assert output["capabilities"]["semantic_enabled"] is True
+    assert output["capabilities"]["semantic_ready"] is False
+    assert output["memory_layer"]["vector_search"] is False

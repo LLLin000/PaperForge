@@ -696,9 +696,26 @@ def _migrate_transform(data: dict[str, Any]) -> tuple[bool, dict[str, Any], tupl
         del candidate[key]
 
     agent_key = candidate.pop("agent_key", None)
-    if agent_key is not None and "agent_platform" not in candidate:
-        candidate["agent_platform"] = agent_key
-        migrated.append("agent_key")
+    if agent_key is not None:
+        if "agent_platform" not in candidate:
+            candidate["agent_platform"] = agent_key
+            migrated.append("agent_key")
+        else:
+            # RC: legacy writers may have stored a case-mismatched value
+            # (e.g. "OpenCode") while agent_key holds the canonical spelling.
+            # Normalize rather than letting the invalid value block migration.
+            stored = candidate["agent_platform"]
+            normalized = (
+                str(stored).strip().lower()
+                if isinstance(stored, str)
+                else stored
+            )
+            if normalized != stored:
+                candidate["agent_platform"] = normalized
+                migrated.append("agent_platform.normalize")
+            if str(agent_key).strip().lower() != str(normalized).strip().lower():
+                candidate["agent_platform"] = agent_key
+                migrated.append("agent_platform.from_agent_key")
 
     for derived in _DERIVED_LEGACY_FIELDS:
         if derived in candidate:
