@@ -766,9 +766,20 @@ def run_build(
 
         # Check if we stopped or were cancelled — exit cleanly without
         # marking completed.  #137: cancelled is a terminal outcome with
-        # exit code 130, never a folded rc0.
+        # exit code 130, never a folded rc0.  RC UX Seam: write an explicit
+        # interrupted state so the probe can surface a resume path instead
+        # of a zombie "running" that reads as ready.
         if _is_stopped():
             logger.info("Build stopped, exiting cleanly")
+            try:
+                mark_vector_build_state(
+                    vault,
+                    status="interrupted",
+                    message="Build cancelled by user",
+                    pid=0,
+                )
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Failed to mark interrupted state: %s", exc)
             if _shadow is not None:
                 _shadow.abort()
                 logger.info("Shadow build aborted on cancellation; live DB untouched")

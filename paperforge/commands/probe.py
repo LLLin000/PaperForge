@@ -961,6 +961,35 @@ def probe_memory(vault: Path) -> dict[str, Any]:
 
         # Gate 5b: running → ready + activity
         if bs_status == "running":
+            # RC UX Seam: a build_state stuck at "running" whose pid is dead
+            # (crash / kill / Obsidian restart) is a zombie — the previous
+            # process can never write a terminal state.  Reporting ready
+            # leaves the user with no way to recover.  Treat it as an
+            # interrupted build: needs_action with the resume path.
+            pid = build_state.get("pid", 0)
+            pid_alive = False
+            try:
+                from paperforge.commands.embed import _pid_alive
+
+                pid_alive = _pid_alive(int(pid)) if pid else False
+            except Exception:
+                pid_alive = False
+            if not pid_alive:
+                return build_envelope(
+                    module="memory", capability_state="needs_action", severity="warning",
+                    reason_code="memory.vector_build_interrupted",
+                    reason_text=(
+                        f"Last vector build was interrupted at "
+                        f"{build_state.get('current', 0)}/{build_state.get('total', 0)} "
+                        f"papers (the process is no longer running). Resume to finish it."
+                    ),
+                    user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
+                    action_primary=build_action_primary(
+                        action_id="embed.build",
+                        verb="run", label="Resume vector build",
+                    ),
+                    notices=notices, ttl_seconds=TTL_MEMORY,
+                )
             act_label = f"Building vector index ({build_state.get('current', 0)}/{build_state.get('total', 0)})"
             act_progress = {
                 "current": build_state.get("current", 0),
@@ -976,7 +1005,26 @@ def probe_memory(vault: Path) -> dict[str, Any]:
                 notices=notices, action_primary=None, ttl_seconds=TTL_MEMORY,
             )
 
-        # Gate 5c: failed → rebuild
+        # Gate 5c: interrupted (explicit stop) → resume
+        if bs_status == "interrupted":
+            msg = build_state.get("message", "build was interrupted")
+            return build_envelope(
+                module="memory", capability_state="needs_action", severity="warning",
+                reason_code="memory.vector_build_interrupted",
+                reason_text=(
+                    f"Vector build interrupted at "
+                    f"{build_state.get('current', 0)}/{build_state.get('total', 0)} "
+                    f"papers ({msg}). Resume to finish it."
+                ),
+                user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
+                action_primary=build_action_primary(
+                    action_id="embed.build",
+                    verb="run", label="Resume vector build",
+                ),
+                notices=notices, ttl_seconds=TTL_MEMORY,
+            )
+
+        # Gate 5d: failed → rebuild
         if bs_status == "failed":
             msg = build_state.get("message", "unknown error")
             return build_envelope(
