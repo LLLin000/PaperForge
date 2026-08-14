@@ -146,7 +146,37 @@ def mark_vector_build_state(vault: Path, **fields) -> dict:
         state.update(fields)
         write_vector_build_state(vault, state)
         return state
+
+    ``_target_db`` (optional) forces the read+write to a SPECIFIC file —
+    the shadow build passes the candidate path so in-flight progress lands
+    where every observer reads it (effective_vector_db), not the stale live
+    snapshot.  Without it, the effective carrier is used.
     """
+    target = fields.pop("_target_db", None)
+    if target is not None:
+        # Targeted read/write: read from target, merge, write back to target.
+        try:
+            conn = get_connection(target, read_only=False)
+            try:
+                ensure_schema(conn)
+                from paperforge.embedding.build_state import _build_state_to_dict
+
+                state = _build_state_to_dict(conn) or _default_state()
+            finally:
+                conn.close()
+        except Exception:  # noqa: BLE001
+            state = _default_state()
+        state.update(fields)
+        try:
+            conn = get_connection(target, read_only=False)
+            try:
+                ensure_schema(conn)
+                _dict_to_build_state(conn, state)
+            finally:
+                conn.close()
+        except Exception:  # noqa: BLE001 — best-effort mirror
+            pass
+        return state
     state = read_vector_build_state(vault)
     state.update(fields)
     write_vector_build_state(vault, state)

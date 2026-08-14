@@ -1489,8 +1489,15 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       reasonCode === "memory.vector_build_failed" ||
       reasonCode === "memory.vector_build_interrupted"
     ) {
+      // RC UX Seam: the label comes from the backend action primary — a
+      // resumable candidate says "Resume vector build", a full rebuild
+      // says "Rebuild vector index".  Never hardcode which operation this
+      // is; the backend owns it.
       renderActionButton(body, {
-        label: t("cc_action_rebuild_derived") || "Rebuild Index",
+        label:
+          env.action?.primary?.label ||
+          t("cc_action_rebuild_derived") ||
+          "Rebuild Index",
         onClick: () => this._dispatchModuleAction("memory", env),
       });
     } else if (
@@ -1856,11 +1863,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       }
     } else if (mod === "memory") {
       if (verb === "run" || verb === "rebuild_index") {
-        // embed.build (probe: missing/failed vector index) → remote embed
-        // rebuild; memory.upgrade_backend → ChromaDB→sqlite-vec migration;
-        // memory.build / memory.rebuild → the local memory build.
+        // embed.build / embed.resume (probe: missing/failed/interrupted
+        // vector index) → remote embed rebuild/resume; memory.upgrade_backend
+        // → ChromaDB→sqlite-vec migration; memory.build / memory.rebuild →
+        // the local memory build.
         if (actionId === "embed.build") {
-          this._dispatchMemoryBuild("embed");
+          this._dispatchMemoryBuild("embed", "force");
+        } else if (actionId === "embed.resume") {
+          this._dispatchMemoryBuild("embed", "resume");
         } else if (actionId === "memory.upgrade_backend") {
           this._runBackendMigration();
         } else {
@@ -2041,7 +2051,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         this.display();
       });
   } /** Dispatch memory build: distinct build vs embed modes, overlay activity, terminal re-probe (Issue #78). */
-  _dispatchMemoryBuild(kind: "build" | "embed"): void {
+  /** RC UX Seam: `embedMode` distinguishes a full rebuild (--force) from a
+   * resume (--resume).  The backend action (embed.build vs embed.resume)
+   * decides which flag; the frontend never guesses. */
+  _dispatchMemoryBuild(
+    kind: "build" | "embed",
+    embedMode?: "force" | "resume"
+  ): void {
     const vp = (this.app.vault.adapter as any).basePath as string;
     // Set activity overlay on Memory — the embed branch defers this to the
     // controller's onStateChange so a cancelled confirmation modal never
@@ -2053,8 +2069,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
     this.display();
 
+    const embedFlag = embedMode === "resume" ? "--resume" : "--force";
     const cliArgs =
-      kind === "embed" ? ["embed", "build", "--force"] : ["memory", "build"];
+      kind === "embed" ? ["embed", "build", embedFlag] : ["memory", "build"];
 
     if (kind === "embed") {
       // #120-fix (P1-2): never stack a second controller while one is
@@ -2177,7 +2194,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           },
         });
         this.plugin._embedController = controller;
-        void controller.start("--force");
+        void controller.start(embedFlag);
       };
       startEmbed();
     } else {
