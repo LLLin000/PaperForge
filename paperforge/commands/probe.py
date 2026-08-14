@@ -861,6 +861,21 @@ def probe_memory(vault: Path) -> dict[str, Any]:
             ttl_seconds=TTL_MEMORY,
         )
 
+    # Reader-barrier timeout / DB busy is TRANSIENT — never corruption.  The
+    # plugin's polling can pile up readers on the mutex barrier; reporting a
+    # healthy DB as corrupted sent users to restore-from-backup for nothing.
+    if status.get("locked"):
+        return build_envelope(
+            module="memory", capability_state="unknown", severity="warning",
+            reason_code="memory.db_busy",
+            reason_text="Memory database is busy (another PaperForge operation is running) — retry shortly",
+            user_state=USER_STATE_DETECTION_FAILED, capability_kind=CAPABILITY_OPTIONAL,
+            action_primary=build_action_primary(
+                action_id="memory.probe", verb="probe", label="Retry",
+            ),
+            ttl_seconds=60,
+        )
+
     # Schema check failed
     if not schema_ok:
         if paper_count_db > 0:

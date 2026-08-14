@@ -15,11 +15,26 @@ from paperforge.query_planning import classify_signals
 logger = logging.getLogger(__name__)
 
 
+def _is_lock_failure(exc: BaseException) -> bool:
+    """Distinguish a transient DB-busy condition (reader barrier timeout,
+    SQLite 'database is locked') from real corruption.  The barrier uses a
+    mutex file lock with a 10s timeout; under reader pile-up (plugin
+    polling) that timeout fires while the DB is perfectly healthy."""
+    text = f"{type(exc).__name__}: {exc}"
+    return (
+        "Timeout" in text
+        or "locked" in text.lower()
+        or "busy" in text.lower()
+    )
+
+
 def get_memory_status(vault: Path) -> dict:
     """Check paperforge.db health and staleness.
 
     Returns a dict with: db_exists, schema_ok, fresh, count_match,
-    paper_count_db, paper_count_index, needs_rebuild.
+    paper_count_db, paper_count_index, needs_rebuild, locked.
+    ``locked`` is set when the reader barrier timed out or the DB was
+    busy — a transient state, never corruption.
     """
     db_path = get_memory_db_path(vault)
     result = {
@@ -45,7 +60,15 @@ def get_memory_status(vault: Path) -> dict:
                 "SELECT value FROM meta WHERE key = 'canonical_index_hash'"
             ).fetchone()
             stored_hash = stored_hash_row["value"] if stored_hash_row else ""
-    except Exception:
+    except Exception as exc:  # noqa: BLE001
+        # A reader-barrier timeout or SQLite lock is a TRANSIENT busy state
+        # (another publish/reader holds the DB), never corruption.  Surface
+        # it as `locked` so the probe reports a retryable busy — reporting
+        # schema_ok=False here previously cascaded into a false
+        # memory.db_corrupt ("retrieval index corrupted") while the DB was
+        # perfectly healthy.
+        if _is_lock_failure(exc):
+            result["locked"] = True
         return result
 
     envelope = read_index(vault)
