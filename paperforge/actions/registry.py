@@ -106,6 +106,75 @@ def _memory_build_handler(ctx: ActionContext, request: ActionRequest) -> PFResul
     )
 
 
+def _library_prune_preflight(ctx: ActionContext, request: ActionRequest) -> PreflightResult:
+    """library.prune availability: canonical config + orphans actually
+    exist (the state machine reports them via probe lineage's orphan
+    field).  Destructive (deletes workspace/OCR/vector files), so it is
+    confirmation-required and never automatic."""
+    if not ctx.config:
+        return PreflightResult(
+            availability="unavailable",
+            availability_reason_code="action.config_missing",
+            availability_reason="Canonical configuration is missing — run `paperforge config init`",
+        )
+    try:
+        from paperforge.lineage import _detect_orphans
+
+        orphans = _detect_orphans(ctx.vault)
+        if orphans.get("count", 0) == 0:
+            return PreflightResult(
+                availability="unavailable",
+                availability_reason_code="library.no_orphans",
+                availability_reason="No orphan papers found",
+            )
+    except Exception:  # noqa: BLE001
+        pass
+    return PreflightResult(
+        availability="available",
+        availability_reason_code="action.available",
+        availability_reason="Orphan papers can be removed",
+        preservation_facts=("Orphaned workspace/OCR/vector files will be deleted",),
+        replacement_facts=(),
+    )
+
+
+def _library_prune_handler(ctx: ActionContext, request: ActionRequest) -> PFResult:
+    """library.prune: delete orphan paper artifacts (workspace/OCR/vectors)
+    whose keys are absent from the canonical index.  Destructive —
+    confirmation is enforced by the registry policy; never automatic."""
+    import argparse
+
+    from paperforge import __version__ as PF_VERSION
+    from paperforge.core.result import PFResult
+    from paperforge.worker.asset_index import read_index
+    from paperforge.worker.prune import prune_orphan_papers
+
+    try:
+        fresh_index = read_index(ctx.vault)
+        result_data = prune_orphan_papers(
+            ctx.vault,
+            fresh_index=fresh_index,
+            dry_run=False,
+        )
+    except Exception as exc:  # noqa: BLE001 — structured error boundary
+        from paperforge.core.errors import ErrorCode
+        from paperforge.core.result import PFError
+
+        return PFResult(
+            ok=False,
+            command="action run",
+            version=PF_VERSION,
+            error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(exc)),
+        )
+    deleted = result_data.get("deleted", [])
+    return PFResult(
+        ok=True,
+        command="action run",
+        version=PF_VERSION,
+        data={"deleted": deleted, "count": len(deleted)},
+    )
+
+
 def _ocr_rebuild_derived_preflight(ctx: ActionContext, request: ActionRequest) -> PreflightResult:
     """ocr.rebuild_derived availability: canonical config + OCR root — a
     LOCAL derived-layer rebuild (no remote API), so it is automatic."""
@@ -609,6 +678,19 @@ _SPECS: tuple[ActionSpec, ...] = (
         impact="mutating",
         confirmation="none",
         automatic=True,
+        interruptible=True,
+    ),
+    ActionSpec(
+        action_id="library.prune",
+        label_code="action.library.prune",
+        description_code="action.library.prune.description",
+        handler=_library_prune_handler,
+        preflight=_library_prune_preflight,
+        scope_kinds=("all",),
+        cost="local",
+        impact="mutating",
+        confirmation="required",
+        automatic=False,
         interruptible=True,
     ),
     ActionSpec(

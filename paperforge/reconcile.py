@@ -119,6 +119,8 @@ class ReconcileObservation:
     global_state: GlobalObservation
     papers: tuple[PaperObservation, ...] = ()
     vault: Path | None = None
+    orphan_count: int = 0
+    orphan_keys: tuple[str, ...] = ()
 
     def by_key(self) -> dict[str, PaperObservation]:
         return {p.key: p for p in self.papers}
@@ -180,8 +182,14 @@ def observe_global(vault: Path) -> GlobalObservation:
     )
 
 
-def observe_papers(vault: Path, keys: list[str] | None = None) -> tuple[PaperObservation, ...]:
-    """Per-paper lineage facets + identities (T1 probe read model)."""
+def observe_papers(
+    vault: Path, keys: list[str] | None = None
+) -> tuple[tuple[PaperObservation, ...], dict[str, object]]:
+    """Per-paper lineage facets + identities (T1 probe read model).
+
+    Also returns the library-level orphan state from the SAME probe call
+    (统一出统一回): workspace papers absent from the canonical index are a
+    first-class state — reconcile turns them into a library.prune intent."""
     from paperforge.lineage import probe_lineage
 
     payload = probe_lineage(vault)
@@ -200,14 +208,21 @@ def observe_papers(vault: Path, keys: list[str] | None = None) -> tuple[PaperObs
             identities=dict(identities.get(key, {})),
             details=states.get("details"),
         ))
-    return tuple(sorted(out, key=lambda p: p.key))
+    orphan = payload.get("orphan", {}) or {}
+    return (
+        tuple(sorted(out, key=lambda p: p.key)),
+        {"count": int(orphan.get("count", 0) or 0), "keys": tuple(orphan.get("keys", []) or [])},
+    )
 
 
 def observe(vault: Path, keys: list[str] | None = None) -> ReconcileObservation:
+    papers, orphan = observe_papers(vault, keys)
     return ReconcileObservation(
         global_state=observe_global(vault),
-        papers=observe_papers(vault, keys),
+        papers=papers,
         vault=vault,
+        orphan_count=int(orphan["count"]),
+        orphan_keys=orphan["keys"],
     )
 
 
@@ -507,6 +522,21 @@ def reconcile(vault: Path, keys: list[str] | None = None) -> PFResult:
             if _w2_gate(obs, intent, last_attempts, diagnostics):
                 continue
             intents.append(intent)
+
+    # Library orphans — a first-class state, independent of the per-paper
+    # frontier: workspace papers absent from the canonical index (removed
+    # from Zotero, files remain).  Destructive → confirmation-required;
+    # never automatic.
+    if obs.orphan_count > 0:
+        intents.append(ActionIntent(
+            action_id="library.prune",
+            scope=AllScope(),
+            trigger_reason_code="library.orphans_present",
+            trigger_reason=(
+                f"{obs.orphan_count} orphan paper(s) no longer in Zotero "
+                f"(e.g. {obs.orphan_keys[0]}) — workspace/OCR/vector files can be removed"
+            ),
+        ))
 
     # Project internal ActionIntents onto the single next_actions channel.
     wire: list[dict[str, Any]] = []
