@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -8,6 +9,16 @@ from paperforge.worker.ocr_document import DocumentStructure
 from paperforge.worker.ocr_families import discover_body_family_anchor
 from paperforge.worker.ocr_roles import assign_block_role
 from paperforge.worker.ocr_signatures import build_block_signatures
+
+logger = logging.getLogger(__name__)
+
+# Diagnostic artifact ceiling.  document_structure.json is a human-inspection
+# dump (no production reader); a healthy paper lands in the 100s of KB
+# (median ~450 KB across a 730-paper library).  A payload far above the
+# ceiling means the in-memory blocks/page state was abnormal (2026-07-06:
+# 39 papers emitted up to 1.6 GB from bloated block_indices) — writing it
+# would fill the disk for zero value.  Skip the write, log the anomaly.
+DOC_STRUCTURE_MAX_BYTES = 5 * 1024 * 1024
 
 _CANDIDATE_ROLES = frozenset(
     {
@@ -435,8 +446,19 @@ def _write_document_structure_json(doc_structure, output_dir: str | Path, rows: 
     data["zones"] = data.get("region_bus") or {}
     output_path = Path(output_dir) / "document_structure.json"
     output_path.parent.mkdir(parents=True, exist_ok=True)
+    payload = json.dumps(data, indent=2, ensure_ascii=False)
+    if len(payload.encode("utf-8")) > DOC_STRUCTURE_MAX_BYTES:
+        # Abnormal in-memory state (e.g. bloated block_indices) — the dump
+        # has no production reader, so skip it rather than fill the disk.
+        logger.warning(
+            "document_structure.json would be %d MB (ceiling %d MB); "
+            "skipping write — abnormal blocks/zone state?",
+            len(payload.encode("utf-8")) // (1024 * 1024),
+            DOC_STRUCTURE_MAX_BYTES // (1024 * 1024),
+        )
+        return
     with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
+        f.write(payload)
 
 
 def write_structured_blocks_jsonl(path: Path, rows: list[dict]) -> None:
