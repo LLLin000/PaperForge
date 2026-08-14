@@ -1583,3 +1583,38 @@ def test_force_overrides_recover_candidate(tmp_path: Path, monkeypatch) -> None:
     rc = run_build(vault, [], keys=None, force=True, resume=False, json=True)
     assert "recover" not in calls, f"force must not recover, calls={calls}"
     assert rc == 0
+
+
+def test_inspect_layout_detects_orphans_via_max_boundary(tmp_path: Path) -> None:
+    """Orphan detection uses the O(1) MAX(rowid) boundary (meta rows beyond
+    the vec0 max are provably orphaned) — a rebuilt/cleared vec table leaves
+    stale meta rowids that MUST be caught.  Regression: the old full LEFT
+    JOIN against vec0 took 48-117 s at library scale (sqlite-vec #37/#196)
+    and hung every reader."""
+    from paperforge.embedding.dim_detect import inspect_vector_layout
+
+    live = tmp_path / "paperforge.db"
+    c = sqlite3.connect(str(live))
+    c.enable_load_extension(True)
+    import sqlite_vec
+    sqlite_vec.load(c)
+    # vec table with 2 rows, meta aligned (rowids 1,2)
+    c.execute("CREATE VIRTUAL TABLE vec_body USING vec0(embedding float[3])")
+    c.execute("CREATE TABLE vec_body_meta (rowid INTEGER PRIMARY KEY, paper_id TEXT)")
+    for i in range(2):
+        cur = c.execute("INSERT INTO vec_body(embedding) VALUES (?)", [json.dumps([0.1, 0.2, 0.3])])
+        c.execute("INSERT INTO vec_body_meta(rowid, paper_id) VALUES (?, ?)", (cur.lastrowid, f"P{i}"))
+    c.commit()
+    # Simulate a dropped+recreated vec table (rowids restart at 1, only 1 row)
+    c.execute("DROP TABLE vec_body")
+    c.execute("CREATE VIRTUAL TABLE vec_body USING vec0(embedding float[3])")
+    c.execute("INSERT INTO vec_body(embedding) VALUES (?)", [json.dumps([0.4, 0.5, 0.6])])
+    c.commit()
+
+    conn = sqlite3.connect(str(live))
+    conn.enable_load_extension(True)
+    sqlite_vec.load(conn)
+    layout = inspect_vector_layout(conn, 3)
+    assert not layout.compatible, "stale meta rowids beyond the rebuilt vec0 max must be flagged"
+    assert any("beyond vec0 max" in r for r in layout.reason.split(";")), layout.reason
+    conn.close()
