@@ -440,6 +440,12 @@ def run_build(
             or _embedding_identity_changed
             or _vec_layout_incompatible
             or _legacy_identity
+            # RC UX Seam: resume with a surviving candidate MUST route
+            # through shadow-recover.  Substrate is compatible when read via
+            # effective_vector_db (it sees the candidate's rows), so without
+            # this the resume would go in-place and hash-skip against the
+            # EMPTY live table — re-embedding everything from 1.
+            or _recover_candidate
         ) and _substrate.db_exists
         # #165/T4: a papers-scoped request must never route through a shadow
         # rebuild — the candidate's vec tables are cleared and EVERY done
@@ -584,12 +590,26 @@ def run_build(
         # RC UX Seam: shadow builds write in-flight state to the CANDIDATE
         # (the file every observer reads via effective_vector_db), so the
         # probe/status show real progress instead of the stale live table.
+        # The candidate is written through the SAME _candidate_conn the
+        # build writes vectors with — a second connection would contend on
+        # the WAL and silently fail.
         _mark_target = (
             _target.vector_path if (_shadow is not None) else None
         )
 
         def _mark(**fields) -> None:
-            mark_vector_build_state(vault, _target_db=_mark_target, **fields)
+            if _candidate_conn is not None:
+                from paperforge.embedding.build_state import _build_state_to_dict, _dict_to_build_state, _default_state
+
+                state = _build_state_to_dict(_candidate_conn) or _default_state()
+                state.update(fields)
+                _dict_to_build_state(_candidate_conn, state)
+                try:
+                    _candidate_conn.commit()
+                except Exception:  # noqa: BLE001
+                    pass
+            else:
+                mark_vector_build_state(vault, **fields)
 
         _mark(
             status="running",
@@ -1030,9 +1050,14 @@ def run_build(
             logger.info("Shadow build published: %s → %s",
                         _shadow.target.vector_path, _shadow.target.source_path)
             # RC UX Seam: after publish the candidate path no longer exists
-            # (os.replace moved it onto live).  All subsequent marks target
-            # LIVE — writing to the stale candidate path would recreate an
-            # empty .build file.
+            # (os.replace moved it onto live).  Close the candidate handle so
+            # the completed mark writes LIVE (the post-swap truth), never a
+            # stale inode or a recreated empty .build file.
+            try:
+                _shadow.close_candidate_conn()
+            except Exception:  # noqa: BLE001
+                pass
+            _candidate_conn = None
             _mark_target = None
 
         _mark(
