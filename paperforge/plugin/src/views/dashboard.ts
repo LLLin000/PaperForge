@@ -5,6 +5,7 @@ import {
   MarkdownRenderer,
   App,
   TFile,
+  Platform,
 } from "obsidian";
 import * as fs from "fs";
 import * as path from "path";
@@ -1312,6 +1313,15 @@ export class PaperForgeStatusView extends ItemView {
         const file = this.app.vault.getAbstractFileByPath(targetPath);
         if (file) {
           this.app.workspace.openLinkText(targetPath, "");
+          return;
+        }
+        // Junction-inside-vault paths (System/Zotero → outside storage) are
+        // valid on the OS but invisible to Obsidian's VFS — open with the
+        // system default app instead of failing.
+        const base = (this.app.vault.adapter as any).getBasePath?.() ?? "";
+        const openPdf = (Platform as any).openPath;
+        if (base && typeof openPdf === "function") {
+          openPdf.call(Platform, path.join(base, targetPath));
         } else {
           new Notice("[!!] PDF not found: " + targetPath, 6000);
         }

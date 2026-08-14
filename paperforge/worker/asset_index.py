@@ -289,6 +289,14 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
     key = item["key"]
     collection_meta = collection_fields(item.get("collections", []))
     pdf_attachments = [a for a in item.get("attachments", []) if a.get("contentType") == "application/pdf"]
+    # #135: the canonical index must pick the SAME main PDF as the paper DB —
+    # identify_main_pdf (title=="PDF" > largest > shortest > first), never
+    # blindly attachments[0] (a paper with two PDFs would surface a
+    # different one in the dashboard than in paper-status).
+    from paperforge.adapters.bbt import identify_main_pdf
+
+    main_pdf, _supplementary = identify_main_pdf(pdf_attachments)
+    main_pdf_path = main_pdf["path"] if main_pdf else (pdf_attachments[0]["path"] if pdf_attachments else "")
     meta_path = paths["ocr"] / key / "meta.json"
     meta = read_json(meta_path) if meta_path.exists() else {}
     if meta:
@@ -441,7 +449,7 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
         "do_ocr": do_ocr_value,
         "analyze": analyze_value,
         "pdf_path": (
-            obsidian_wikilink_for_pdf(pdf_attachments[0]["path"], vault, zotero_dir) if pdf_attachments else ""
+            obsidian_wikilink_for_pdf(main_pdf_path, vault, zotero_dir) if main_pdf_path else ""
         ),
         "ocr_status": meta.get("ocr_status", "pending"),
         "ocr_job_id": meta.get("ocr_job_id", ""),
