@@ -190,6 +190,18 @@ Smart Retrieval now preserves the backend’s `memory.index_stale → rebuild_in
 ### Layer 4: Downstream Tools
 `chunker.py` uses hardcoded section regex + fixed 3-paragraph groups. OCR has rich structured output (sections, headings, figures, tables with captions) — chunker should consume this structure directly. Figures/tables should support separate embedding (text + future vision).
 
+### Layer 5: Embed/Vector Pipeline — 2026-08-14 findings (need investigation/optimization)
+
+Verified full library embedded (811 papers, 16000 body + 6725 object chunks, lineage 810, probe ready, deep retrieval returns real matches). Issues found during partial-publish/resume work, all open:
+
+1. **embed build process hangs after publish** — `embed build --resume` completed the shadow publish (DB fully updated, build_state=completed/811/811) but the process never exited (13+ min uptime, ~0 CPU, ~5MB RAM); killed with taskkill. Hang location unidentified; suspect post-publish bookkeeping (`_mark` to live, result emit, or pty/stdin under supervised launch).
+2. **Zombie `status=running` downgrades resume to full rebuild** — after a kill, build_state stays `running` with dead pid; next `--resume` with no surviving candidate hits gate-1 (stale running) → `resume=False` → full shadow rebuild re-embeds ALL 811 (correct, wasteful). Writer of the `running` state after manual `interrupted` fix unknown.
+3. **Reader `.read.lock` is a mutex, not shared** — plugin polling pile-up (8+ stale processes) queues on it; 10s timeout cascaded into false `memory.db_corrupt`. Fixed at ffb9540a (`_is_lock_failure`, `memory.db_busy`), but mutex-reader contention itself needs optimization (shared read lock or fewer plugin spawns).
+4. **Old plugin main.js spawns many short-lived probe/sync processes** that pile up when one hangs; new main.js deployed Aug 14 — pile-up behavior needs observation.
+5. **Scoped build false-completed** — fixed c9e4ee69 (`_scoped_global_progress`).
+
+
+
 Remaining legacy OCR issues (carried forward):
 - **Architecture Audit #131/#132:** **accepted and closed** (commits `73a782cf`, `078dd8a7`, `963cc59a`, `79b96d3d`, `5f03051e`, `d6c9afb0`).
 - **#125 canonical abstract island:** **closed** via triage closeout (implemented at `687b3fea`/`1f02281b`, verification recorded, corpus differential 11/398 stable).
