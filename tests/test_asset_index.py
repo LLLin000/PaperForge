@@ -439,3 +439,60 @@ def _ensure_domain_config(vault: Path) -> None:
         ),
         encoding="utf-8",
     )
+
+
+class TestMainPdfSelection:
+    """#135: the canonical index must pick the SAME main PDF as the paper DB —
+    identify_main_pdf (title == "PDF" > largest > shortest > first), never
+    blindly attachments[0].  A paper with two PDFs would otherwise surface a
+    different one in the dashboard than in paper-status."""
+
+    def _write_export_with_two_pdfs(self, vault: Path) -> None:
+        _ensure_domain_config(vault)
+        exports_dir = vault / "99_System" / "PaperForge" / "exports"
+        exports_dir.mkdir(parents=True, exist_ok=True)
+        (exports_dir / "library.json").write_text(
+            json.dumps(
+                [
+                    {
+                        "key": "ABC12345",
+                        "title": "Paper A",
+                        "creators": [],
+                        "collections": [],
+                        "attachments": [
+                            {
+                                "title": "PaperA_main_old.pdf",
+                                "contentType": "application/pdf",
+                                "path": "storage:KEY1/PaperA_main_old.pdf",
+                                "size": 0,
+                            },
+                            {
+                                "title": "PDF",  # main per priority 1
+                                "contentType": "application/pdf",
+                                "path": "storage:KEY2/PaperA_main.pdf",
+                                "size": 0,
+                            },
+                        ],
+                        "doi": "",
+                        "pmid": "",
+                        "date": "",
+                        "extra": "",
+                        "abstractNote": "",
+                        "publicationTitle": "",
+                        "itemType": "journalArticle",
+                    }
+                ]
+            ),
+            encoding="utf-8",
+        )
+
+    def test_two_pdfs_uses_identify_main_pdf_not_first(self, tmp_path: Path) -> None:
+        """With two PDF attachments the index surfaces the main PDF
+        (title == "PDF"), not the first attachment in the list."""
+        vault = _minimal_vault(tmp_path)
+        self._write_export_with_two_pdfs(vault)
+        build_index(vault, verbose=False)
+        index = json.loads(get_index_path(vault).read_text(encoding="utf-8"))
+        hit = next(i for i in index["items"] if i["zotero_key"] == "ABC12345")
+        assert "KEY2" in hit["pdf_path"], hit["pdf_path"]
+        assert "KEY1" not in hit["pdf_path"], hit["pdf_path"]

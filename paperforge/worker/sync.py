@@ -218,7 +218,16 @@ def run_selection_sync(vault: Path, verbose: bool = False, json_output: bool = F
         for item in load_export_rows(export_path):
             pdf_attachments = [a for a in item.get("attachments", []) if a.get("contentType") == "application/pdf"]
             has_pdf = bool(pdf_attachments)
-            raw_pdf_path = pdf_attachments[0].get("path", "") if pdf_attachments else ""
+            # #135: same main-PDF rule as asset_index + paper DB —
+            # identify_main_pdf (title=="PDF" > largest > shortest > first),
+            # never attachments[0]: a paper with two PDF attachments would
+            # get a different main PDF here than in the canonical index.
+            from paperforge.adapters.bbt import identify_main_pdf
+
+            main_pdf, _supplementary = identify_main_pdf(pdf_attachments)
+            raw_pdf_path = (
+                main_pdf.get("path", "") if main_pdf else (pdf_attachments[0].get("path", "") if pdf_attachments else "")
+            )
             from paperforge.pdf_resolver import resolve_pdf_path
 
             cfg = load_vault_config(vault)
