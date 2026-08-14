@@ -35,6 +35,13 @@ EMBEDDING_PROVIDER = "openai_compatible"
 
 LINEAGE_LAYER_VECTOR = "vector"
 
+# Stable marker for vectors migrated from the legacy ChromaDB full-text
+# collection (1.5.x-era products, no structure tree / manifest).  The
+# derived_from column carries this sentinel instead of a retrieval identity;
+# the probe treats it as the legacy-fulltext path (identity match ⇒ same
+# embedding config ⇒ searchable; mismatch ⇒ model/config changed ⇒ rebuild).
+LEGACY_FULLTEXT_RETRIEVAL_ID = "legacy-fulltext-v1"
+
 LINEAGE_TABLE = """
 CREATE TABLE IF NOT EXISTS lineage (
     paper_id            TEXT NOT NULL,
@@ -199,6 +206,76 @@ def write_vector_lineage(
                 LINEAGE_LAYER_VECTOR,
                 identity,
                 retrieval_identity,
+                embedding_identity,
+                stamp,
+            ),
+        )
+        written += 1
+    return written
+
+
+def write_legacy_fulltext_lineage(
+    conn: sqlite3.Connection,
+    vault: Path,
+    *,
+    endpoint: str,
+    model: str,
+    dimension: int,
+    updated_at: str | None = None,
+    paper_ids: set[str] | None = None,
+) -> int:
+    """Write lineage rows for vectors migrated from the legacy ChromaDB
+    full-text collection (1.5.x-era products without structure trees).
+
+    The embedding_identity uses the CURRENT config's endpoint/model with the
+    MIGRATED vectors' dimension — so the probe's identity comparison answers
+    the real compatibility question: the migrated vectors are searchable
+    exactly when the embedding config is unchanged (same model → same
+    dimension → same semantic space → the query encodes into the same
+    space).  A config change flips the identity → stale → rebuild.
+
+    Papers that already carry a REAL lineage row (never downgrade a proper
+    chain) are skipped.  Returns rows written.
+    """
+    if not dimension:
+        return 0
+    if not conn.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='lineage'"
+    ).fetchone():
+        conn.execute(LINEAGE_TABLE)
+    embedding_identity = compute_embedding_identity(
+        endpoint=endpoint, model=model, dimension=dimension
+    )
+    stamp = updated_at or datetime.now(timezone.utc).isoformat()
+    try:
+        candidates = [r[0] for r in conn.execute(
+            "SELECT DISTINCT paper_id FROM vec_fulltext_meta"
+        ).fetchall()]
+    except sqlite3.OperationalError:
+        return 0
+    if paper_ids is not None:
+        candidates = [p for p in candidates if p in paper_ids]
+    written = 0
+    for paper_id in candidates:
+        row = conn.execute(
+            "SELECT 1 FROM lineage WHERE paper_id = ? AND layer = ?",
+            (paper_id, LINEAGE_LAYER_VECTOR),
+        ).fetchone()
+        if row:
+            continue  # a real chain exists — never downgrade it
+        identity = compute_vector_identity(
+            retrieval_identity=LEGACY_FULLTEXT_RETRIEVAL_ID,
+            embedding_identity=embedding_identity,
+        )
+        conn.execute(
+            "INSERT OR REPLACE INTO lineage "
+            "(paper_id, layer, identity, derived_from, embedding_identity, updated_at) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (
+                paper_id,
+                LINEAGE_LAYER_VECTOR,
+                identity,
+                LEGACY_FULLTEXT_RETRIEVAL_ID,
                 embedding_identity,
                 stamp,
             ),
@@ -530,6 +607,18 @@ def _probe_vector_state(
         # Vectors exist but no lineage row (legacy build) → unknown.
         return "unknown"
     stored_identity, derived_from, stored_embedding = row
+    if derived_from == LEGACY_FULLTEXT_RETRIEVAL_ID:
+        # Legacy full-text vectors (migrated ChromaDB, 1.5.x-era products):
+        # no manifest/retrieval layer by design.  The ONLY compatibility
+        # question is the embedding config: identity match means the query
+        # model still matches the stored vectors (searchable, gate passes);
+        # mismatch means model/config changed → stale (rebuild required —
+        # a query under the new config would dimension-mismatch anyway).
+        if not embedding_identity:
+            return "unknown"
+        if stored_embedding != embedding_identity:
+            return "stale"
+        return "current"
     if retrieval_state != "current":
         return "unknown" if retrieval_state == "unknown" else "stale"
     if not embedding_identity or not current_retrieval_identity:

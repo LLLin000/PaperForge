@@ -249,3 +249,116 @@ def _get_chroma_dir(vault: Path) -> Path:
     from paperforge.embedding._chroma import get_vector_db_path
 
     return get_vector_db_path(vault)
+
+
+def test_migrate_skips_dimension_mismatch(tmp_path):
+    """Vectors from a different embedding model (dimension != vec0 DDL) must
+    be SKIPPED with a warning — vec0 rejects mismatched inserts and a lucky
+    dimension collision would search in a meaningless semantic space."""
+    vault = _make_minimal_vault(tmp_path)
+    _seed_chromadb(
+        vault,
+        [
+            {
+                "collection": "paperforge_fulltext",
+                "ids": ["paperforge_fulltext:OLD_0"],
+                "embeddings": [[0.1] * 1024],  # old model, 1024-dim
+                "documents": ["old chunk"],
+                "metadatas": [{"paper_id": "OLD", "chunk_index": 0}],
+            },
+        ],
+    )
+    from paperforge.embedding._chroma import migrate_chroma_to_vec0
+
+    count = migrate_chroma_to_vec0(vault)
+    assert count == 0, "dimension-mismatched vectors must not migrate"
+    assert _count_meta_rows(vault, "vec_fulltext_meta") == 0
+    # No legacy lineage written for a skipped paper.
+    from paperforge.memory.db import get_connection, get_memory_db_path
+
+    conn = get_connection(get_memory_db_path(vault))
+    row = conn.execute(
+        "SELECT 1 FROM lineage WHERE paper_id='OLD' AND layer='vector'"
+    ).fetchone()
+    conn.close()
+    assert row is None
+
+
+def test_migrated_legacy_fulltext_is_current_when_identity_matches(tmp_path):
+    """Migrated full-text vectors get legacy lineage; the probe reports the
+    paper's vector state as CURRENT when the embedding config is unchanged
+    (same model/dimension ⇒ query encodes into the same space ⇒ searchable)."""
+    vault = _make_minimal_vault(tmp_path)
+    _seed_chromadb(
+        vault,
+        [
+            {
+                "collection": "paperforge_fulltext",
+                "ids": ["paperforge_fulltext:LEGACY_0"],
+                "embeddings": [[0.1] * 1536],
+                "documents": ["legacy chunk"],
+                "metadatas": [{"paper_id": "LEGACY", "chunk_index": 0}],
+            },
+        ],
+    )
+    from paperforge.embedding._chroma import migrate_chroma_to_vec0
+    from paperforge.lineage import probe_lineage
+
+    # Register LEGACY in the probe's paper universe (no index in this
+    # minimal vault — an OCR dir suffices for _paper_keys).
+    (vault / '99_System' / 'PaperForge' / 'ocr' / 'LEGACY').mkdir(parents=True, exist_ok=True)
+
+    count = migrate_chroma_to_vec0(vault)
+    assert count == 1
+    payload = probe_lineage(vault)
+    assert payload["papers"]["LEGACY"]["vector"] == "current", (
+        "legacy fulltext + unchanged config must be searchable (gate passes)"
+    )
+    assert payload["papers"]["LEGACY"]["retrieval"] == "missing", (
+        "legacy products have no manifest — retrieval layer intentionally absent"
+    )
+    assert payload["papers"]["LEGACY"]["ocr"] == "missing"
+
+
+def test_migrated_legacy_fulltext_stale_after_config_change(tmp_path):
+    """If the embedding config changes after migration (model/dim), the
+    migrated vectors are STALE — a query under the new config would run in a
+    different semantic space (or dimension-mismatch).  Probe must say stale
+    so the reader gate drops them and the UI offers a rebuild."""
+    vault = _make_minimal_vault(tmp_path)
+    _seed_chromadb(
+        vault,
+        [
+            {
+                "collection": "paperforge_fulltext",
+                "ids": ["paperforge_fulltext:LEG2_0"],
+                "embeddings": [[0.1] * 1536],
+                "documents": ["legacy chunk"],
+                "metadatas": [{"paper_id": "LEG2", "chunk_index": 0}],
+            },
+        ],
+    )
+    (vault / "99_System" / "PaperForge" / "ocr" / "LEG2").mkdir(parents=True, exist_ok=True)
+    from paperforge.embedding._chroma import migrate_chroma_to_vec0
+    from paperforge.lineage import probe_lineage
+
+    assert migrate_chroma_to_vec0(vault) == 1
+    assert probe_lineage(vault)["papers"]["LEG2"]["vector"] == "current"
+
+    # Simulate an embedding-config change: the DDL is rebuilt at a different
+    # dimension (as a new model's build would do).
+    from paperforge.memory.db import get_connection, get_memory_db_path, ensure_vec_extension
+
+    conn = get_connection(get_memory_db_path(vault))
+    ensure_vec_extension(conn)
+    # Rebuild ALL vec tables at the new dimension, as a new-model build would.
+    for t in ("vec_fulltext", "vec_body", "vec_objects"):
+        conn.execute(f"DROP TABLE IF EXISTS {t}")
+        conn.execute(f"CREATE VIRTUAL TABLE {t} USING vec0(embedding float[1024])")
+    conn.commit()
+    conn.close()
+
+    payload = probe_lineage(vault)
+    assert payload["papers"]["LEG2"]["vector"] == "stale", (
+        "migrated legacy vectors must go stale when the embedding config changes"
+    )

@@ -157,6 +157,22 @@ def _migrate_chroma_to_vec0_locked(vault: Path) -> int:
     ensure_vec_extension(conn)
     ensure_schema(conn)
 
+    # vec0 tables declare their dimension in the DDL (current model's).
+    # Migrated vectors must match it exactly — anything else is a different
+    # embedding model (skip + report, never force into a mismatched table).
+    try:
+        ddl = conn.execute(
+            "SELECT sql FROM sqlite_master WHERE type='table' AND name='vec_fulltext'"
+        ).fetchone()
+        import re as _re
+
+        _m = _re.search(r"float\[(\d+)\]", ddl[0] or "") if ddl and ddl[0] else None
+        vec_dimension = int(_m.group(1)) if _m else 0
+    except Exception:  # noqa: BLE001
+        vec_dimension = 0
+
+    _migrated_fulltext_papers: set[str] = set()
+
     total = 0
     for chroma_name, (vec_table, meta_table) in _VEC_TABLE_MAP.items():
         try:
@@ -210,10 +226,29 @@ def _migrate_chroma_to_vec0_locked(vault: Path) -> int:
             if existing:
                 continue
 
+            # Dimension guard: vec0 tables declare a fixed dimension (the
+            # current model's).  A migrated vector from a DIFFERENT
+            # embedding model would be rejected by vec0 (Dimension mismatch)
+            # or — if the dimensions collided by luck — would match in a
+            # meaningless semantic space.  Skip those papers and report
+            # them; they need a rebuild, not a copy.
+            skipped_dim: list[str] = []
+            insertable = []
             for entry in entries:
                 emb = entry["embedding"]
                 if hasattr(emb, "tolist"):
                     emb = emb.tolist()
+                if len(emb) != vec_dimension:
+                    skipped_dim.append(paper_id)
+                    continue
+                insertable.append((emb, entry))
+            if skipped_dim:
+                logger.warning(
+                    "migrate: %s paper(s) have vectors with dimension != %d "
+                    "(different embedding model) — skipped, rebuild required",
+                    len(set(skipped_dim)), vec_dimension,
+                )
+            for emb, entry in insertable:
                 embedding_json = json.dumps(emb)
                 cur = conn.execute(f"INSERT INTO {vec_table}(embedding) VALUES (?)", [embedding_json])
                 rowid = cur.lastrowid
@@ -221,8 +256,36 @@ def _migrate_chroma_to_vec0_locked(vault: Path) -> int:
                     f"INSERT INTO {meta_table}(rowid, paper_id, chunk_index, text) VALUES (?, ?, ?, ?)",
                     [rowid, entry["paper_id"], entry["chunk_index"], entry["text"]],
                 )
-            conn.commit()
-            total += len(entries)
+            if insertable:
+                conn.commit()
+                total += len(insertable)
+                if vec_table == "vec_fulltext":
+                    _migrated_fulltext_papers.update(
+                        p for _, e in insertable if (p := e["paper_id"])
+                    )
+
+    # Legacy lineage: migrated full-text vectors are searchable ONLY while
+    # the embedding config is unchanged (identity match — same model/dim →
+    # the query encodes into the same space).  Writing the row with the
+    # CURRENT endpoint/model + the MIGRATED dimension makes probe's identity
+    # comparison the compatibility oracle: match ⇒ gate passes, change ⇒
+    # stale ⇒ rebuild.
+    if _migrated_fulltext_papers:
+        from paperforge.embedding._config import (
+            get_api_model,
+            get_effective_api_base_url,
+        )
+        from paperforge.lineage import write_legacy_fulltext_lineage
+
+        write_legacy_fulltext_lineage(
+            conn,
+            vault,
+            endpoint=get_effective_api_base_url(vault),
+            model=get_api_model(vault),
+            dimension=vec_dimension,
+            paper_ids=_migrated_fulltext_papers,
+        )
+        conn.commit()
 
     conn.close()
     return total
