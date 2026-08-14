@@ -215,6 +215,24 @@ def run(args: argparse.Namespace) -> int:
     )
 
 
+def _resolve_lineage_dimension(
+    conn, expected_dim: int, stored_dim: int
+) -> int:
+    """Lineage identity needs the substrate's ACTUAL dimension.  Incremental
+    resume builds never recreate vec tables (expected_dim stays 0) and may
+    lack build_state.vector_dimension (stored_dim 0) — the vec0 DDL is the
+    authoritative self-declaration (same principle as lineage probe)."""
+    dim = expected_dim or stored_dim or 0
+    if not dim and conn is not None:
+        try:
+            from paperforge.lineage import _vec_dimension_from_ddl
+
+            dim = _vec_dimension_from_ddl(conn) or 0
+        except Exception:  # noqa: BLE001
+            dim = 0
+    return dim
+
+
 def run_build(
     vault: Path,
     items: list[dict],
@@ -939,12 +957,70 @@ def run_build(
                 # continue from where it stopped.  Wiping it here would
                 # discard real progress (like the old abort did).  A full
                 # rebuild remains available via --force / embed.build.
+                #
+                # Checkpoint publish: papers whose vectors were fully
+                # embedded this run get lineage rows and the candidate is
+                # COPIED (not moved) onto live — they become retrievable
+                # now, while the candidate survives for resume.  The copied
+                # build_state also carries model/endpoint/dimension/identity,
+                # so a later incremental resume no longer needs shadow.
+                _partial_published = False
+                try:
+                    # Partial publish whenever the candidate holds vector
+                    # rows — not just when THIS run embedded new papers.  A
+                    # stop that lands before any new embedding must still
+                    # publish what earlier interrupted runs already built.
+                    _has_candidate_rows = False
+                    if _candidate_conn is not None:
+                        from paperforge.embedding.substrate import _has_any_rows
+
+                        _has_candidate_rows = _has_any_rows(_candidate_conn)
+                    if _candidate_conn is not None and _has_candidate_rows:
+                        from paperforge.lineage import write_vector_lineage
+                        from paperforge.embedding.build_target import (
+                            partial_publish_shadow,
+                        )
+
+                        _lineage_dim = _resolve_lineage_dimension(
+                            _candidate_conn, _expected_dim, int(_stored_dim or 0)
+                        )
+                        # Partial publish writes lineage for EVERY paper with
+                        # vectors in the candidate — not just this run's
+                        # regenerated set.  Earlier interrupted runs embedded
+                        # papers whose lineage was never written (it is
+                        # written at final completion only); without rows they
+                        # would probe unknown and the reader gate would drop
+                        # them.  paper_ids=None = all papers with vectors.
+                        write_vector_lineage(
+                            _candidate_conn,
+                            vault,
+                            endpoint=_current_endpoint,
+                            model=_current_model,
+                            dimension=_lineage_dim,
+                        )
+                        _candidate_conn.commit()
+                        partial_publish_shadow(
+                            _shadow.target.vector_path,
+                            _shadow.target.source_path,
+                        )
+                        _partial_published = True
+                        logger.info(
+                            "Partial publish: candidate vectors copied to live; "
+                            "candidate retained for resume",
+                        )
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning(
+                        "Partial publish skipped (%s); candidate retained for resume, "
+                        "live untouched",
+                        exc,
+                    )
                 try:
                     _shadow.close_candidate_conn()
                 except Exception:  # noqa: BLE001
                     pass
                 logger.info(
-                    "Shadow build stopped; candidate retained for resume; live DB untouched"
+                    "Shadow build stopped; candidate retained for resume; live DB %s",
+                    "partially updated" if _partial_published else "untouched",
                 )
             elif _rebuild_backup_path and _rebuild_backup_path.exists():
                 _os.replace(str(_rebuild_backup_path), str(get_memory_db_path(vault)))
@@ -974,8 +1050,11 @@ def run_build(
             _lineage_conn = None
         try:
             # #165/T4: incremental resume builds never recreate vec tables,
-            # so _expected_dim stays 0 — fall back to the stored dimension.
-            _lineage_dim = _expected_dim or int(_stored_dim or 0)
+            # so _expected_dim stays 0 — fall back to the stored dimension,
+            # then to the vec0 DDL self-declaration.
+            _lineage_dim = _resolve_lineage_dimension(
+                _lineage_conn, _expected_dim, int(_stored_dim or 0)
+            )
             write_vector_lineage(
                 _lineage_conn,
                 vault,

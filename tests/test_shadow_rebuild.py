@@ -126,6 +126,75 @@ def test_shadow_publish_reader_contract(tmp_path: Path) -> None:
     assert not Path(str(target.vector_path) + "-wal").exists()
 
 
+def test_partial_publish_copies_and_keeps_candidate(tmp_path: Path) -> None:
+    """Partial publish: candidate rows land on live via COPY while the
+    candidate survives intact for resume — unlike publish(), which moves."""
+    from paperforge.embedding.build_target import (
+        BuildTarget,
+        ShadowBuild,
+        partial_publish_shadow,
+    )
+
+    vault = _make_vault(tmp_path)
+    live = _seed_live_db(vault)
+    target = BuildTarget(source_path=live, vector_path=live.with_suffix(".db.build"))
+
+    shadow = ShadowBuild(target)  # manual lifecycle, like embed.py's run_build
+    shadow.prepare()
+    import sqlite_vec
+
+    src = sqlite3.connect(str(live))
+    src.enable_load_extension(True)
+    sqlite_vec.load(src)
+    dst = sqlite3.connect(str(target.vector_path))
+    dst.enable_load_extension(True)
+    sqlite_vec.load(dst)
+    src.backup(dst)
+    src.close()
+    dst.close()
+    shadow.building()
+
+    # Candidate gains a new paper (simulating an embedded paper)
+    cand = sqlite3.connect(str(target.vector_path))
+    cand.enable_load_extension(True)
+    sqlite_vec.load(cand)
+    cur = cand.execute("INSERT INTO vec_body(embedding) VALUES (?)",
+                       [json.dumps([0.5, 0.5, 0.5])])
+    cand.execute(
+        "INSERT INTO vec_body_meta(rowid, paper_id, unit_id) VALUES (?, 'NEW', 'u-new')",
+        (cur.lastrowid,),
+    )
+    cand.commit()
+    cand.close()
+
+    # Partial publish: copy, not move
+    partial_publish_shadow(target.vector_path, live)
+
+    # Live now carries the new paper
+    reader = sqlite3.connect(str(live))
+    reader.enable_load_extension(True)
+    sqlite_vec.load(reader)
+    assert reader.execute(
+        "SELECT COUNT(*) FROM vec_body_meta WHERE paper_id = 'NEW'"
+    ).fetchone()[0] == 1
+    reader.close()
+
+    # Candidate STILL exists with the new paper (resume can continue)
+    assert target.vector_path.exists(), "candidate must survive partial publish"
+    cand2 = sqlite3.connect(str(target.vector_path))
+    cand2.enable_load_extension(True)
+    sqlite_vec.load(cand2)
+    assert cand2.execute(
+        "SELECT COUNT(*) FROM vec_body_meta WHERE paper_id = 'NEW'"
+    ).fetchone()[0] == 1
+    cand2.close()
+    # Interrupted stop keeps the candidate for resume (embed.py returns 130
+    # without aborting); clean up explicitly at the end.
+    shadow.close_candidate_conn()
+    shadow.abort()
+    assert not target.vector_path.exists()
+
+
 # ── 2. Worker failure → shadow deleted, live untouched ────────────────────
 
 

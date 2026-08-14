@@ -382,3 +382,64 @@ def _reader_barrier(live_path: Path):
     from filelock import FileLock
 
     return FileLock(str(live_path) + ".read.lock", timeout=10)
+
+
+def partial_publish_shadow(vector_path: Path, live_path: Path) -> None:
+    """Checkpoint publish of a PARTIAL shadow candidate: copy (not move) the
+    candidate onto live so the papers embedded so far become retrievable,
+    while the candidate survives for resume.
+
+    Unlike ``ShadowBuild.publish()`` (irreversible os.replace), this is a
+    repeatable checkpoint: the candidate keeps its rows and the next resume
+    continues from it, then the FINAL publish replaces live wholesale.
+
+    Both DBs are checkpointed under the reader barrier; the copy goes to a
+    temp file and is swapped with os.replace so readers never observe a
+    half-copied file.  On failure the candidate is untouched and live keeps
+    its previous state — the caller may retry or fall back to resume.
+    """
+    import shutil
+
+    if vector_path == live_path:
+        return
+    if not vector_path.exists():
+        raise BuildTargetError(
+            f"partial publish: candidate missing at {vector_path}"
+        )
+    # Freeze the candidate: merge its WAL into the main file so the copy
+    # carries every written row.
+    conn = sqlite3.connect(str(vector_path))
+    try:
+        _checkpoint_truncate(conn, "candidate-partial")
+    finally:
+        conn.close()
+    barrier = _reader_barrier(live_path)
+    with barrier:
+        # Checkpoint the old live first so it stays self-contained if the
+        # copy fails mid-way (recoverable previous state).
+        conn = sqlite3.connect(str(live_path))
+        try:
+            _checkpoint_truncate(conn, "live-partial")
+        finally:
+            conn.close()
+        tmp = live_path.with_name(live_path.name + ".partial")
+        try:
+            shutil.copy2(vector_path, tmp)
+            os.replace(str(tmp), str(live_path))
+        except OSError as exc:
+            raise BuildTargetError(
+                f"partial publish copy failed: {exc}"
+            ) from exc
+        finally:
+            if tmp.exists():
+                try:
+                    tmp.unlink()
+                except OSError:
+                    pass
+        for suffix in ("-wal", "-shm"):
+            p = Path(str(live_path) + suffix)
+            try:
+                if p.exists():
+                    p.unlink()
+            except OSError:
+                logger.warning("partial publish: could not delete %s", p)
