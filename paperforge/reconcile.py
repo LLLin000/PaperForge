@@ -107,10 +107,11 @@ class GlobalObservation:
 @dataclass(frozen=True)
 class PaperObservation:
     key: str
-    ocr: str  # current | stale | missing | running | unknown | incomplete
+    ocr: str  # current | stale | missing | running | unknown | incomplete | failed
     retrieval: str  # current | stale | missing | unknown | incomplete
     vector: str  # current | stale | missing | not_required | unknown | incomplete
     identities: dict[str, str | None]  # internal digest material (W2)
+    details: dict[str, str | None] | None = None  # fine-grained per-layer WHY
 
 
 @dataclass(frozen=True)
@@ -197,6 +198,7 @@ def observe_papers(vault: Path, keys: list[str] | None = None) -> tuple[PaperObs
             retrieval=str(states.get("retrieval", "unknown")),
             vector=str(states.get("vector", "unknown")),
             identities=dict(identities.get(key, {})),
+            details=states.get("details"),
         ))
     return tuple(sorted(out, key=lambda p: p.key))
 
@@ -233,12 +235,42 @@ def _per_paper_intents(paper: PaperObservation) -> list[ActionIntent]:
     # (#168 T7 P0-1, frozen #159 deficit table): raw/missing OCR output
     # needs the remote ocr.run; DERIVED-artifact staleness (raw blocks
     # unchanged, derived rebuild pending) is the LOCAL ocr.rebuild_derived.
+    # The fine-grained state machine (probe lineage details) distinguishes
+    # never-ran / queued / failed / no-pdf / ran-empty / incomplete so the
+    # emitted reason names the exact meaning.
+    ocr_detail = (paper.details or {}).get("ocr") if paper.details else None
     if paper.ocr == "missing":
+        if ocr_detail == "queued":
+            return intents  # in flight — nothing to dispatch
+        if ocr_detail == "no_pdf":
+            # No source PDF — ocr.run cannot succeed; report via the
+            # generic missing action so the UI surfaces it, reason names why.
+            intents.append(ActionIntent(
+                action_id="ocr.run",
+                scope=scope,
+                trigger_reason_code="lineage.ocr_no_pdf",
+                trigger_reason=f"OCR for {paper.key} has no PDF source",
+            ))
+        elif ocr_detail == "ran_but_empty":
+            intents.append(ActionIntent(
+                action_id="ocr.run",
+                scope=scope,
+                trigger_reason_code="lineage.ocr_ran_but_empty",
+                trigger_reason=f"OCR for {paper.key} produced no content — re-run",
+            ))
+        else:
+            intents.append(ActionIntent(
+                action_id="ocr.run",
+                scope=scope,
+                trigger_reason_code="lineage.ocr_missing",
+                trigger_reason=f"OCR output for {paper.key} is missing",
+            ))
+    elif paper.ocr == "failed":
         intents.append(ActionIntent(
             action_id="ocr.run",
             scope=scope,
-            trigger_reason_code="lineage.ocr_missing",
-            trigger_reason=f"OCR output for {paper.key} is missing",
+            trigger_reason_code="lineage.ocr_failed",
+            trigger_reason=f"OCR for {paper.key} failed — re-run",
         ))
     elif paper.ocr == "stale":
         intents.append(ActionIntent(
@@ -251,11 +283,20 @@ def _per_paper_intents(paper: PaperObservation) -> list[ActionIntent]:
         # OCR ran but the structure tree is missing/empty — an INCOMPLETE
         # product, distinct from a quality problem.  The fix is a LOCAL
         # derived rebuild (ocr rebuild), never ocr.run (no quality defect).
+        reason_code = (
+            "lineage.ocr_tree_missing"
+            if ocr_detail == "tree_missing"
+            else "lineage.ocr_tree_empty"
+        )
         intents.append(ActionIntent(
             action_id="ocr.rebuild_derived",
             scope=scope,
-            trigger_reason_code="lineage.ocr_incomplete",
-            trigger_reason=f"OCR structure tree for {paper.key} is missing or empty",
+            trigger_reason_code=reason_code,
+            trigger_reason=(
+                f"OCR structure tree for {paper.key} is missing"
+                if ocr_detail == "tree_missing"
+                else f"OCR structure tree for {paper.key} is empty"
+            ),
         ))
     # Retrieval depends on OCR being current.
     if paper.retrieval in ("stale", "missing") and paper.ocr == "current":
