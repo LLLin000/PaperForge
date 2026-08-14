@@ -161,3 +161,53 @@ def test_document_structure_json_includes_compatibility_anchor_artifacts(tmp_pat
     assert payload["anchors"]["reference_family_anchor"]["status"] == "ACCEPT"
     assert payload["zones"]["body_zone"]["status"] == "ACCEPT"
     assert payload["zones"]["reference_zone"]["status"] == "ACCEPT"
+
+
+def test_document_structure_write_skipped_when_oversized(tmp_path: Path, monkeypatch) -> None:
+    """2026-07-06 incident guard: an abnormally large document_structure
+    payload (up to 1.6 GB from bloated block_indices) must NOT be written —
+    the dump has no production reader, so skip it and log instead of filling
+    the disk."""
+    import dataclasses
+
+    from paperforge.worker import ocr_blocks
+
+    @dataclasses.dataclass
+    class _Dummy:
+        body_end_page: int = 10
+        zones: list = dataclasses.field(default_factory=list)
+
+    monkeypatch.setattr(ocr_blocks, "DOC_STRUCTURE_MAX_BYTES", 64)
+    out = tmp_path / "structure"
+    ocr_blocks._write_document_structure_json(_Dummy(), out)
+    assert not (out / "document_structure.json").exists()
+
+
+def test_document_structure_write_happens_when_normal(tmp_path: Path) -> None:
+    """Normal payloads still write (the guard must not break healthy runs)."""
+    import dataclasses
+
+    from paperforge.worker import ocr_blocks
+
+    @dataclasses.dataclass
+    class _Dummy:
+        body_end_page: int = 10
+        zones: list = dataclasses.field(default_factory=list)
+
+    out = tmp_path / "structure"
+    ocr_blocks._write_document_structure_json(_Dummy(), out)
+    payload = json.loads((out / "document_structure.json").read_text(encoding="utf-8"))
+    assert payload["body_end_page"] == 10
+
+
+def test_reference_zones_degrades_on_abnormal_block_count(tmp_path: Path, monkeypatch) -> None:
+    """Zone indices are bounded by the blocks list; an abnormally huge list
+    (corrupted input) must yield NO zones rather than ballooned arrays."""
+    from paperforge.worker import ocr_document
+
+    monkeypatch.setattr(ocr_document, "_MAX_BLOCKS_FOR_ZONES", 10)
+    blocks = [{"role": "reference_heading", "page": 1, "bbox": [0, 0, 100, 100]}] + [
+        {"role": "reference_item", "page": 1, "bbox": [0, 110, 100, 200]}
+    ] * 20
+    zones = ocr_document._detect_reference_zones(blocks, {})
+    assert zones == []

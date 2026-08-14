@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
+import logging
 import re
 from collections import namedtuple
 from dataclasses import dataclass, field
@@ -29,6 +30,14 @@ from paperforge.worker.ocr_tail_settlement import (
     promote_backmatter_heading_candidates,
     restore_numbered_body_from_tail_hold,
 )
+
+logger = logging.getLogger(__name__)
+
+# Plausible upper bound for a paper's block list (healthy library median is
+# ~200; the 2026-07-06 incident reached ~95M from a corrupted run).  Zone
+# detection degrades gracefully above this — no downstream consumer should
+# ever see a zone/segment whose indices exceed the block universe.
+_MAX_BLOCKS_FOR_ZONES = 100_000
 
 _TAIL_ROLES = frozenset(
     {
@@ -1942,7 +1951,21 @@ def _detect_reference_zones(
     For each page with a ``reference_heading``, creates a ``ReferenceZone``
     scoped to that heading's column.  Only blocks in the same column and
     below the heading's bottom y are included in the zone.
+
+    Defensive cap: zone indices are bounded by ``len(blocks)`` structurally,
+    but an abnormally large in-memory blocks list (2026-07-06 incident:
+    ~95M entries from a corrupted run) would balloon every zone.  A blocks
+    list beyond any plausible paper's size is treated as corrupt input —
+    return no zones and log, so downstream consumers never see huge arrays.
     """
+    if len(blocks) > _MAX_BLOCKS_FOR_ZONES:
+        logger.warning(
+            "_detect_reference_zones: %d blocks (cap %d) — treating input as "
+            "corrupt; returning no zones",
+            len(blocks),
+            _MAX_BLOCKS_FOR_ZONES,
+        )
+        return []
     zones: list[ReferenceZone] = []
     for block in blocks:
         if block.get("role") != "reference_heading":
