@@ -325,6 +325,28 @@ def test_verify_zero_count_valid(tmp_path: Path) -> None:
     assert report["ok"], report  # empty DB + expected 0 → valid
 
 
+def test_verify_none_expected_count_skips_count_check(tmp_path: Path) -> None:
+    """Scoped (papers) builds embed a subset on top of an existing candidate —
+    the verifier must skip count comparison (None) while still running the
+    layout/orphan/KNN checks (partial-publish incremental contract)."""
+    from paperforge.embedding.build_target import verify_candidate
+
+    vault = _make_vault(tmp_path)
+    live = _seed_live_db(vault)
+    build = live.with_suffix(".db.build")
+    src = sqlite3.connect(str(live))
+    dst = sqlite3.connect(str(build))
+    src.backup(dst)
+    src.close()
+    dst.close()
+
+    # Candidate holds 5 rows; None expected skips the count arm entirely.
+    report = verify_candidate(
+        build, dimension=3, expected_count=None, expected_counts=None
+    )
+    assert report["ok"], report
+
+
 
 def _seed_complete_vec_schema(db_path: Path, *, dim: int = 3) -> None:
     """Create all six vec/meta tables at *dim* with ZERO rows (empty-but-complete
