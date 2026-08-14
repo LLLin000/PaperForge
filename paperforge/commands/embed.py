@@ -485,13 +485,13 @@ def run_build(
             if _recover_candidate:
                 # RC UX Seam: resume the surviving candidate — no cleanup,
                 # no snapshot, no table clear.  recover() validates it has
-                # rows and enters BUILDING directly.
+                # rows and enters BUILDING directly (a second building()
+                # call here would raise invalid transition).
                 _shadow.recover()
                 _candidate_conn = _shadow.candidate_conn()
                 ensure_vec_extension(_candidate_conn)
                 ensure_schema(_candidate_conn)
                 _expected_dim = _stored_dim or _substrate.stored_dimension
-                _shadow.building()
             else:
                 # D6: unconditional stale-candidate cleanup (no build_state dependency)
                 _shadow.cleanup_stale()
