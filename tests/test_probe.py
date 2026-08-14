@@ -841,6 +841,72 @@ class TestMemoryConcreteFixes:
         assert data["action"]["primary"]["action_id"] == "embed.build"
         assert "Rebuild" in data["action"]["primary"]["label"]
 
+
+    def test_completed_with_identity_change_reports_identity_changed(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """A completed build under a DIFFERENT embedding identity must be
+        reported as configuration-changed (distinct code/text from a failed
+        build and from a partially built index) and demand a rebuild."""
+        from paperforge.commands import probe as probe_mod
+        from paperforge.memory.db import get_memory_db_path
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
+        db_path = get_memory_db_path(tmp_path)
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        conn = sqlite3.connect(str(db_path))
+        try:
+            from paperforge.memory.db import ensure_vec_extension
+            from paperforge.memory.schema import ensure_schema
+
+            ensure_vec_extension(conn)
+            ensure_schema(conn)
+            import json as _json
+
+            cur = conn.execute(
+                "INSERT INTO vec_body(embedding) VALUES (?)",
+                (_json.dumps([0.0] * 1536),),
+            )
+            conn.execute(
+                "INSERT INTO vec_body_meta(rowid, paper_id) VALUES (?, 'KEY1')",
+                (cur.lastrowid,),
+            )
+            # identity_version recorded but model/endpoint deliberately
+            # MISMATCH the current config -> identity_changed.
+            conn.execute(
+                "INSERT OR REPLACE INTO build_state (key, value) VALUES ('vector_identity_version', '1')"
+            )
+            conn.execute(
+                "INSERT OR REPLACE INTO build_state (key, value) VALUES ('model', 'some-other-model')"
+            )
+            conn.execute(
+                "INSERT OR REPLACE INTO build_state (key, value) VALUES ('vector_provider_endpoint', 'https://other.example/v1')"
+            )
+            conn.execute(
+                "INSERT OR REPLACE INTO build_state (key, value) VALUES ('vector_dimension', '1536')"
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+        monkeypatch.setattr(
+            "paperforge.memory.query.get_memory_status",
+            lambda v: {"db_exists": True, "schema_ok": True, "fresh": True,
+                        "hash_match": True, "count_match": True,
+                        "paper_count_db": 1, "paper_count_index": 1,
+                        "needs_rebuild": False, "schema_version": 7},
+        )
+        monkeypatch.setattr(
+            "paperforge.embedding.build_state.read_vector_build_state",
+            lambda v: {"status": "completed", "current": 1, "total": 1,
+                        "pid": 0, "message": ""},
+        )
+
+        data = probe_mod.probe_memory(tmp_path)
+        assert data["capability_state"] == "needs_action"
+        assert data["reason"]["code"] == "memory.vector_identity_changed"
+        assert "configuration changed" in data["reason"]["text"]
+        assert data["action"]["primary"]["action_id"] == "embed.build"
+        assert "Rebuild" in data["action"]["primary"]["label"]
+
     def test_interrupted_build_with_candidate_offers_resume(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """Partial publish keeps the candidate for resume — an interrupted
         build WITH a surviving candidate must offer embed.resume (incremental

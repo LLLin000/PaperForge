@@ -1426,6 +1426,10 @@ var yt = {
       sr_state_upgrade_available:
         "Your vector index uses the old ChromaDB backend",
       sr_state_build_failed: "The last vector build failed",
+      sr_state_build_interrupted:
+        "Vector index is partially built \u2014 resume to embed the remaining papers",
+      sr_state_identity_changed:
+        "Embedding configuration changed \u2014 existing vectors need a rebuild",
       sr_build_failed_notice: "Vector index build failed: {detail}",
       sr_action_build: "Build Index",
       sr_action_rebuild: "Rebuild Index",
@@ -2454,6 +2458,10 @@ var yt = {
       sr_state_upgrade_available:
         "\u5411\u91CF\u7D22\u5F15\u4F7F\u7528\u65E7\u7248 ChromaDB \u540E\u7AEF",
       sr_state_build_failed: "\u4E0A\u6B21\u5411\u91CF\u6784\u5EFA\u5931\u8D25",
+      sr_state_build_interrupted:
+        "\u5411\u91CF\u7D22\u5F15\u90E8\u5206\u6784\u5EFA\u4E2D\u2014\u2014\u7EE7\u7EED\u5D4C\u5165\u5269\u4F59\u8BBA\u6587",
+      sr_state_identity_changed:
+        "\u5D4C\u5165\u914D\u7F6E\u5DF2\u53D8\u5316\u2014\u2014\u73B0\u6709\u5411\u91CF\u9700\u91CD\u5EFA",
       sr_build_failed_notice:
         "\u5411\u91CF\u7D22\u5F15\u6784\u5EFA\u5931\u8D25\uFF1A{detail}",
       sr_action_build: "\u6784\u5EFA\u7D22\u5F15",
@@ -5462,10 +5470,14 @@ var De = class De extends A.PluginSettingTab {
                 ? (c = a("sr_state_upgrade_available"))
                 : n === "memory.vector_build_failed"
                   ? (c = a("sr_state_build_failed"))
-                  : n === "memory.schema_stale"
-                    ? (c = t.reason.text)
-                    : t.user_state === "ready" &&
-                      ((c = a("md_retrieval_ready")), (p = "pf-status-ok")),
+                  : n === "memory.vector_build_interrupted"
+                    ? (c = a("sr_state_build_interrupted"))
+                    : n === "memory.vector_identity_changed"
+                      ? (c = a("sr_state_identity_changed"))
+                      : n === "memory.schema_stale"
+                        ? (c = t.reason.text)
+                        : t.user_state === "ready" &&
+                          ((c = a("md_retrieval_ready")), (p = "pf-status-ok")),
       c && r.createEl("p", { text: c, cls: p }),
       i && s)
     )

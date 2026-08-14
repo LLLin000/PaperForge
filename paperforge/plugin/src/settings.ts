@@ -1437,6 +1437,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       statusText = t("sr_state_upgrade_available");
     } else if (reasonCode === "memory.vector_build_failed") {
       statusText = t("sr_state_build_failed");
+    } else if (reasonCode === "memory.vector_build_interrupted") {
+      // Partially built index — distinct from a failed build or a changed
+      // embedding configuration; the user must see that some papers are
+      // embedded and the rest can be resumed.
+      statusText = t("sr_state_build_interrupted");
+    } else if (reasonCode === "memory.vector_identity_changed") {
+      statusText = t("sr_state_identity_changed");
     } else if (reasonCode === "memory.schema_stale") {
       statusText = env.reason.text;
     } else if (env.user_state === "ready") {
