@@ -242,16 +242,12 @@ def _per_paper_intents(paper: PaperObservation) -> list[ActionIntent]:
     if paper.ocr == "missing":
         if ocr_detail == "queued":
             return intents  # in flight — nothing to dispatch
-        if ocr_detail == "no_pdf":
-            # No source PDF — ocr.run cannot succeed; report via the
-            # generic missing action so the UI surfaces it, reason names why.
-            intents.append(ActionIntent(
-                action_id="ocr.run",
-                scope=scope,
-                trigger_reason_code="lineage.ocr_no_pdf",
-                trigger_reason=f"OCR for {paper.key} has no PDF source",
-            ))
-        elif ocr_detail in ("blocks_missing", "blocks_empty", "blocks_invalid"):
+        if ocr_detail in ("no_pdf", "blocked"):
+            # No executable OCR intent: no PDF / precondition missing.  The
+            # state machine says WHY via the probe; emitting ocr.run here
+            # would tell the user to run OCR that cannot succeed.
+            return intents
+        if ocr_detail in ("blocks_missing", "blocks_empty", "blocks_invalid"):
             intents.append(ActionIntent(
                 action_id="ocr.run",
                 scope=scope,
@@ -266,11 +262,14 @@ def _per_paper_intents(paper: PaperObservation) -> list[ActionIntent]:
                 trigger_reason=f"OCR output for {paper.key} is missing",
             ))
     elif paper.ocr == "failed":
+        # Every failure detail keeps its own reason code (failed_legacy /
+        # retryable_error / fatal_error / queued_interrupted).
+        detail = ocr_detail or "failed"
         intents.append(ActionIntent(
             action_id="ocr.run",
             scope=scope,
-            trigger_reason_code="lineage.ocr_failed",
-            trigger_reason=f"OCR for {paper.key} failed — re-run",
+            trigger_reason_code="lineage.ocr_" + detail,
+            trigger_reason=f"OCR for {paper.key} failed ({detail}) — re-run",
         ))
     elif paper.ocr == "stale":
         intents.append(ActionIntent(
@@ -280,23 +279,23 @@ def _per_paper_intents(paper: PaperObservation) -> list[ActionIntent]:
             trigger_reason=f"Derived OCR artifacts for {paper.key} are stale",
         ))
     elif paper.ocr == "incomplete":
-        # OCR ran but the structure tree is missing/empty — an INCOMPLETE
-        # product, distinct from a quality problem.  The fix is a LOCAL
-        # derived rebuild (ocr rebuild), never ocr.run (no quality defect).
-        reason_code = (
-            "lineage.ocr_tree_missing"
-            if ocr_detail == "tree_missing"
-            else "lineage.ocr_tree_empty"
-        )
+        # OCR ran but the derived structure is missing/invalid — an
+        # INCOMPLETE product, distinct from a quality problem.  The fix is
+        # a LOCAL derived rebuild (ocr rebuild).  Every detail keeps its
+        # own reason code.
+        _rc = {
+            "tree_missing": "lineage.ocr_tree_missing",
+            "tree_empty": "lineage.ocr_tree_empty",
+            "tree_invalid": "lineage.ocr_tree_invalid",
+            "role_index_missing": "lineage.ocr_role_index_missing",
+            "role_index_invalid": "lineage.ocr_role_index_invalid",
+            "publish_pending_stale": "lineage.ocr_publish_pending_stale",
+        }.get(ocr_detail, "lineage.ocr_incomplete")
         intents.append(ActionIntent(
             action_id="ocr.rebuild_derived",
             scope=scope,
-            trigger_reason_code=reason_code,
-            trigger_reason=(
-                f"OCR structure tree for {paper.key} is missing"
-                if ocr_detail == "tree_missing"
-                else f"OCR structure tree for {paper.key} is empty"
-            ),
+            trigger_reason_code=_rc,
+            trigger_reason=f"OCR derived artifacts for {paper.key} are incomplete ({ocr_detail or 'unknown'})",
         ))
     # Retrieval depends on OCR being current.
     if paper.retrieval in ("stale", "missing") and paper.ocr == "current":

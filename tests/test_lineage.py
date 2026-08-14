@@ -8,9 +8,13 @@ no auto-rebuild path.
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 import subprocess
 import sys
+import time
+
+import pytest
 from pathlib import Path
 from typing import Any
 
@@ -40,7 +44,7 @@ def _write_ocr_paper(vault: Path, key: str, *, pending: bool = False) -> None:
     (ocr_dir / "structure").mkdir(parents=True, exist_ok=True)
     (ocr_dir / "index").mkdir(parents=True, exist_ok=True)
     (ocr_dir / "structure" / "blocks.structured.jsonl").write_text(
-        json.dumps({"blocks": [key]}), encoding="utf-8"
+        json.dumps({"block_id": key, "page": 1, "role": "body_paragraph"}), encoding="utf-8"
     )
     (ocr_dir / "index" / "structure-tree.json").write_text(
         # A complete tree carries a non-empty nodes list; an empty/missing
@@ -391,7 +395,7 @@ class TestProbeLineage:
         # Touch the OCR artifact AFTER publish — published hash now differs.
         ocr_dir = vault / "99_System" / "PaperForge" / "ocr" / "KEY1"
         (ocr_dir / "structure" / "blocks.structured.jsonl").write_text(
-            json.dumps({"blocks": ["KEY1", "changed"]}), encoding="utf-8"
+            json.dumps({"block_id": "KEY1", "page": 1, "role": "body_paragraph", "changed": True}), encoding="utf-8"
         )
         payload = probe_lineage(vault)
         assert payload["papers"]["KEY1"]["ocr"] == "stale"
@@ -441,7 +445,7 @@ class TestProbeLineage:
 
         # Normal publish: rewrite the artifact AND publish the new hash.
         (ocr_dir / "structure" / "blocks.structured.jsonl").write_text(
-            json.dumps({"blocks": ["KEY1", "new"]}), encoding="utf-8"
+            json.dumps({"block_id": "KEY1", "page": 1, "role": "body_paragraph", "changed": True}), encoding="utf-8"
         )
         publish_ocr_result_hash(ocr_dir)
         payload = probe_lineage(vault)
@@ -519,7 +523,7 @@ class TestIncompleteOcrState:
         (ocr_dir / "structure").mkdir(parents=True, exist_ok=True)
         (ocr_dir / "index").mkdir(parents=True, exist_ok=True)
         (ocr_dir / "structure" / "blocks.structured.jsonl").write_text(
-            json.dumps({"blocks": [key]}), encoding="utf-8"
+            json.dumps({"block_id": key, "page": 1, "role": "body_paragraph"}), encoding="utf-8"
         )
         (ocr_dir / "index" / "structure-tree.json").write_text(
             json.dumps({"root": key, "nodes": []}), encoding="utf-8"
@@ -579,3 +583,121 @@ class TestIncompleteOcrState:
         (vault / "99_System" / "PaperForge" / "ocr" / "KEY1" / "index" / "structure-tree.json").unlink()
         paper_dir = vault / "99_System" / "PaperForge" / "ocr" / "KEY1"
         assert _ocr_artifact_detail(paper_dir) == "tree_missing"
+
+
+# ── 2026-08-14 audit: the OCR state machine, probe→action end to end ─────
+
+_GOOD_BLOCKS = b'{"block_id": "K1", "page": 1, "role": "body_paragraph"}\n{"block_id": "K2", "page": 1, "role": "section_heading"}\n'
+_GOOD_TREE = '{"nodes": [{"id": "n1", "depth": 0}]}'
+_GOOD_ROLE = '{"body": [], "captions": []}'
+
+
+def _state_paper(root: Path, key: str, status: str = "done") -> Path:
+    """A paper with all 3 canonical artifacts valid, then mutated by the
+    caller.  meta lifecycle set by *status*."""
+    d = root / "99_System" / "PaperForge" / "ocr" / key
+    (d / "structure").mkdir(parents=True, exist_ok=True)
+    (d / "index").mkdir(parents=True, exist_ok=True)
+    (d / "structure" / "blocks.structured.jsonl").write_bytes(_GOOD_BLOCKS)
+    (d / "index" / "structure-tree.json").write_text(_GOOD_TREE, encoding="utf-8")
+    (d / "index" / "role-index.json").write_text(_GOOD_ROLE, encoding="utf-8")
+    (d / "meta.json").write_text(json.dumps({"ocr_status": status}), encoding="utf-8")
+    return d
+
+
+_STATE_CASES = [
+    # (meta_status, mutation, expected_state, expected_detail, expected_action)
+    ("pending", None, "missing", "not_started", "ocr.run"),
+    ("queued", None, "missing", "queued", None),
+    ("running", None, "missing", "queued", None),
+    ("retryable_error", None, "failed", "retryable_error", "ocr.run"),
+    ("fatal_error", None, "failed", "fatal_error", "ocr.run"),
+    ("failed", None, "failed", "failed_legacy", "ocr.run"),  # P0-1 regression
+    ("blocked", None, "missing", "blocked", None),  # P1-1 no ocr.run
+    ("nopdf", None, "missing", "no_pdf", None),  # P1-1 no ocr.run
+    ("done", "blocks_empty", "missing", "blocks_empty", "ocr.run"),
+    ("done", "blocks_missing", "missing", "blocks_missing", "ocr.run"),
+    ("done", "blocks_invalid", "missing", "blocks_invalid", "ocr.run"),
+    ("done", "tree_missing", "incomplete", "tree_missing", "ocr.rebuild_derived"),
+    ("done", "tree_empty", "incomplete", "tree_empty", "ocr.rebuild_derived"),
+    ("done", "tree_invalid", "incomplete", "tree_invalid", "ocr.rebuild_derived"),
+    ("done", "role_missing", "incomplete", "role_index_missing", "ocr.rebuild_derived"),
+    ("done", "role_invalid", "incomplete", "role_index_invalid", "ocr.rebuild_derived"),
+    ("done", "publish_recent", "unknown", "publish_pending_recent", None),
+    ("done", "publish_stale", "incomplete", "publish_pending_stale", "ocr.rebuild_derived"),
+    ("done", None, "current", None, None),
+]
+
+
+def _apply_mutation(d: Path, mutation: str | None, key: str) -> None:
+    if mutation is None:
+        return
+    if mutation == "blocks_empty":
+        (d / "structure" / "blocks.structured.jsonl").write_bytes(b"")
+    elif mutation == "blocks_missing":
+        (d / "structure" / "blocks.structured.jsonl").unlink()
+    elif mutation == "blocks_invalid":
+        (d / "structure" / "blocks.structured.jsonl").write_bytes(b'["not a block"]\n')
+    elif mutation == "tree_missing":
+        (d / "index" / "structure-tree.json").unlink()
+    elif mutation == "tree_empty":
+        (d / "index" / "structure-tree.json").write_text('{"nodes": []}', encoding="utf-8")
+    elif mutation == "tree_invalid":
+        (d / "index" / "structure-tree.json").write_text('{"nodes": "hello"}', encoding="utf-8")
+    elif mutation == "role_missing":
+        (d / "index" / "role-index.json").unlink()
+    elif mutation == "role_invalid":
+        (d / "index" / "role-index.json").write_text("123", encoding="utf-8")
+    elif mutation == "publish_recent":
+        p = d / "index" / "result-hash.pending"
+        p.write_text("pending", encoding="utf-8")
+        os.utime(p, (time.time() - 60, time.time() - 60))
+    elif mutation == "publish_stale":
+        p = d / "index" / "result-hash.pending"
+        p.write_text("pending", encoding="utf-8")
+        os.utime(p, (time.time() - 7200, time.time() - 7200))
+
+
+@pytest.mark.parametrize(
+    "meta_status, mutation, exp_state, exp_detail, exp_action",
+    _STATE_CASES,
+    ids=[f"{m or 'ok'}-{s}" for s, m, *_ in _STATE_CASES],
+)
+def test_ocr_state_machine_probe_to_action(
+    tmp_path: Path, meta_status: str, mutation: str | None,
+    exp_state: str, exp_detail: str, exp_action: str | None,
+) -> None:
+    """The full seam: probe state + detail AND reconcile's next action stay
+    consistent for every OCR state machine branch (2026-08-14 audit)."""
+    import os as _os
+    import time as _time
+
+    root = tmp_path / "vault"
+    root.mkdir(parents=True, exist_ok=True)
+    canonical_test_config(root, system_dir="99_System")
+    key = "STATE1"
+    d = _state_paper(root, key, status=meta_status)
+    _apply_mutation(d, mutation, key)
+
+    from paperforge.lineage import _ocr_detail, _probe_ocr_state
+    from paperforge.reconcile import PaperObservation, _per_paper_intents
+
+    state, _ = _probe_ocr_state(d)
+    detail = _ocr_detail(d)
+    assert state == exp_state, f"state {state} != {exp_state} ({detail})"
+    assert detail == exp_detail, f"detail {detail} != {exp_detail}"
+
+    obs = PaperObservation(
+        key=key,
+        ocr=state,
+        retrieval="current" if state == "current" else "missing",
+        vector="current" if state == "current" else "missing",
+        identities={},
+        details={"ocr": detail},
+    )
+    intents = _per_paper_intents(obs)
+    actions = [i.action_id for i in intents]
+    if exp_action is None:
+        assert not actions, f"expected NO action, got {actions}"
+    else:
+        assert exp_action in actions, f"expected {exp_action} in {actions}"
