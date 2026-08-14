@@ -1272,6 +1272,77 @@ describe("_dispatchMemoryBuild (Issue #78)", () => {
     expect(es?.args).toContain("--force");
   });
 
+  it("embed.resume action dispatches --resume, never --force (RC UX Seam)", async () => {
+    const tab = makeTab();
+    spawnedProcesses.length = 0;
+    (tab as any)._capabilityState = { memory: createUnknownEnvelope("memory") };
+    const env = {
+      ...createUnknownEnvelope("memory"),
+      action: {
+        primary: {
+          action_id: "embed.resume",
+          verb: "run",
+          label: "Resume vector build",
+          availability: "available",
+          safety_class: "destructive",
+          preservation_facts: [],
+          replacement_facts: [],
+          interruptible: true,
+          confirmation_required: true,
+          confirmation_prompt: null,
+          scope: "module",
+          scope_count: 1,
+        },
+      },
+    } as any;
+    modalOpens.length = 0;
+    (tab as any)._dispatchModuleAction("memory", env);
+    expect(modalOpens).toHaveLength(1);
+    modalOpens[0].onConfirm?.();
+    await Promise.resolve();
+    const es = spawnedProcesses.find((p: { args: string[] }) =>
+      p.args.includes("embed")
+    );
+    expect(es).toBeDefined();
+    expect(es?.args).toContain("--resume");
+    expect(es?.args).not.toContain("--force");
+  });
+
+  it("embed.build action dispatches --force (RC UX Seam)", async () => {
+    const tab = makeTab();
+    spawnedProcesses.length = 0;
+    modalOpens.length = 0;
+    (tab as any)._capabilityState = { memory: createUnknownEnvelope("memory") };
+    const env = {
+      ...createUnknownEnvelope("memory"),
+      action: {
+        primary: {
+          action_id: "embed.build",
+          verb: "run",
+          label: "Rebuild vector index",
+          availability: "available",
+          safety_class: "destructive",
+          preservation_facts: [],
+          replacement_facts: [],
+          interruptible: true,
+          confirmation_required: true,
+          confirmation_prompt: null,
+          scope: "module",
+          scope_count: 1,
+        },
+      },
+    } as any;
+    (tab as any)._dispatchModuleAction("memory", env);
+    modalOpens[0]?.onConfirm?.();
+    await Promise.resolve();
+    const es = spawnedProcesses.find((p: { args: string[] }) =>
+      p.args.includes("embed")
+    );
+    expect(es).toBeDefined();
+    expect(es?.args).toContain("--force");
+    expect(es?.args).not.toContain("--resume");
+  });
+
   it("shows the command's terminal diagnostic when an embed build fails", async () => {
     const tab = makeTab();
     noticeCalls.length = 0;

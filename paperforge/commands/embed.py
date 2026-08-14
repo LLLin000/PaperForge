@@ -335,6 +335,7 @@ def run_build(
                     print(msg)
                 mark_vector_build_state(
                     vault,
+                    _target_db=_candidate_path if _recover_candidate else None,
                     status="interrupted",
                     message="Previous build failed; resuming from candidate",
                     pid=0,
@@ -371,6 +372,7 @@ def run_build(
                             print(msg)
                         mark_vector_build_state(
                             vault,
+                            _target_db=_candidate_path if _recover_candidate else None,
                             status="interrupted",
                             message="Previous process exited; resuming from candidate",
                             pid=0,
@@ -579,8 +581,17 @@ def run_build(
             _resume_model = _current_model
             _resume_endpoint = _current_endpoint
 
-        mark_vector_build_state(
-            vault,
+        # RC UX Seam: shadow builds write in-flight state to the CANDIDATE
+        # (the file every observer reads via effective_vector_db), so the
+        # probe/status show real progress instead of the stale live table.
+        _mark_target = (
+            _target.vector_path if (_shadow is not None) else None
+        )
+
+        def _mark(**fields) -> None:
+            mark_vector_build_state(vault, _target_db=_mark_target, **fields)
+
+        _mark(
             status="running",
             current=_resume_base,
             total=total,
@@ -622,8 +633,7 @@ def run_build(
                     try:
                         bundle = fut.result()
                     except Exception as exc:
-                        mark_vector_build_state(
-                            vault,
+                        _mark(
                             status="failed",
                             message=str(exc),
                             paper_id=job.paper_id,
@@ -661,8 +671,7 @@ def run_build(
 
                         emit_progress("embed.build", processed_count, total,
                                       item_id=bundle.paper_id)
-                    mark_vector_build_state(
-                        vault,
+                    _mark(
                         current=processed_count,
                         paper_id=bundle.paper_id,
                         last_update=_now(),
@@ -751,7 +760,7 @@ def run_build(
                                 processed_count += 1
                                 papers_skipped += 1
                                 print(f"EMBED_PROGRESS:{processed_count}:{total}:{key}", flush=True)
-                                mark_vector_build_state(vault, current=processed_count, paper_id=key, last_update=_now())
+                                _mark(current=processed_count, paper_id=key, last_update=_now())
                                 continue
 
                         payloads = prepare_payloads_for_entry(vault, key, has_body, has_object, body_units, object_units)
@@ -791,8 +800,8 @@ def run_build(
                                         processed_count += 1
                                         papers_skipped += 1
                                         print(f"EMBED_PROGRESS:{processed_count}:{total}:{key}", flush=True)
-                                        mark_vector_build_state(
-                                            vault, current=processed_count, paper_id=key, last_update=_now()
+                                        _mark(
+                                            current=processed_count, paper_id=key, last_update=_now()
                                         )
                                         continue
                                 finally:
@@ -808,7 +817,7 @@ def run_build(
                     if not payloads:
                         processed_count += 1
                         print(f"EMBED_PROGRESS:{processed_count}:{total}:{key}", flush=True)
-                        mark_vector_build_state(vault, current=processed_count, paper_id=key, last_update=_now())
+                        _mark(current=processed_count, paper_id=key, last_update=_now())
                         continue
 
                     job = PaperEmbeddingJob(paper_id=key, payloads=payloads)
@@ -855,8 +864,7 @@ def run_build(
                 _actual = chunks_embedded
                 _mode = ""
                 _model = ""
-            mark_vector_build_state(
-                vault,
+            _mark(
                 status="failed",
                 message=str(e),
                 pid=0,
@@ -899,8 +907,7 @@ def run_build(
         if _is_stopped():
             logger.info("Build stopped, exiting cleanly")
             try:
-                mark_vector_build_state(
-                    vault,
+                _mark(
                     status="interrupted",
                     message="Build cancelled by user",
                     pid=0,
@@ -1022,9 +1029,13 @@ def run_build(
             _shadow.publish()
             logger.info("Shadow build published: %s → %s",
                         _shadow.target.vector_path, _shadow.target.source_path)
+            # RC UX Seam: after publish the candidate path no longer exists
+            # (os.replace moved it onto live).  All subsequent marks target
+            # LIVE — writing to the stale candidate path would recreate an
+            # empty .build file.
+            _mark_target = None
 
-        mark_vector_build_state(
-            vault,
+        _mark(
             status="completed",
             current=total,
             total=total,
@@ -1128,7 +1139,7 @@ def run_build(
         elif _rebuild_backup_path:
             _rebuild_backup_path.unlink(missing_ok=True)
         try:
-            mark_vector_build_state(vault, status="failed", message=str(e), pid=0)
+            _mark(status="failed", message=str(e), pid=0)
         except Exception:
             pass
         result = PFResult(

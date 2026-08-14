@@ -138,7 +138,22 @@ def get_embed_status_for_path(vault: Path, db_path: Path, *, probe: bool = False
     elif raw_total > 0:
         vector_state = "stale"
     else:
-        vector_state = "not_built"
+        # RC UX Seam (single source): `vector_state` must reflect the
+        # build_state LIFECYCLE, not just row counts.  A running/interrupted/
+        # failed build has few-or-zero published rows yet is NOT "not_built"
+        # (that would say "no index, build from scratch" while the user is
+        # mid-resume).  Only a genuine idle/absent claim yields not_built.
+        try:
+            from paperforge.embedding.build_state import read_vector_build_state
+
+            _bs = read_vector_build_state(vault)
+            _bs_status = _bs.get("status", "idle")
+        except Exception:  # noqa: BLE001
+            _bs_status = "idle"
+        if _bs_status in ("running", "interrupted", "failed", "completed"):
+            vector_state = "stale" if _bs_status != "completed" else "ready"
+        else:
+            vector_state = "not_built"
 
     return {
         "db_exists": exists,

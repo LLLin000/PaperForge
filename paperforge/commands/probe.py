@@ -917,6 +917,38 @@ def probe_memory(vault: Path) -> dict[str, Any]:
 
         # Gate 5a: completed → ready
         if bs_status == "completed":
+            # RC UX Seam (single source): completed alone is NOT ready.  The
+            # published identity must match config — a completed build under
+            # an OLD model/endpoint is not searchable with the current one
+            # (substrate says identity_changed) and must surface a rebuild,
+            # agreeing with embed status and reconcile.
+            try:
+                from paperforge.embedding.substrate import assess_vector_substrate
+
+                _sub = assess_vector_substrate(vault)
+                _substrate_mismatch = bool(_sub.identity_changed or _sub.layout_incompatible)
+                _substrate_reason = next(
+                    (c for c in _sub.reason_codes if c.startswith("vector.")), ""
+                )
+            except Exception:  # noqa: BLE001
+                _substrate_mismatch = False
+                _substrate_reason = ""
+            if _substrate_mismatch:
+                return build_envelope(
+                    module="memory", capability_state="needs_action", severity="warning",
+                    reason_code="memory.vector_build_failed",
+                    reason_text=(
+                        f"Vector index was built under a different embedding identity "
+                        f"({_substrate_reason or 'mismatch'}). Rebuild to match the "
+                        f"current configuration."
+                    ),
+                    user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
+                    action_primary=build_action_primary(
+                        action_id="embed.build",
+                        verb="run", label="Rebuild vector index",
+                    ),
+                    ttl_seconds=TTL_MEMORY,
+                )
             # #119: the vector stack (openai + sqlite-vec) is a hard runtime
             # requirement for Build Index / Retrieve — a healthy-looking DB
             # with missing deps must NOT report ready.
@@ -1027,14 +1059,29 @@ def probe_memory(vault: Path) -> dict[str, Any]:
         # Gate 5d: failed → rebuild
         if bs_status == "failed":
             msg = build_state.get("message", "unknown error")
+            # RC UX Seam: a failed build whose shadow candidate survived is
+            # RESUMABLE (transient API/network faults) — offer resume, not a
+            # forced full rebuild, agreeing with reconcile's embed.resume.
+            try:
+                from paperforge.embedding.substrate import effective_vector_db
+
+                _eff = effective_vector_db(vault)
+                _can_resume = _eff != get_memory_db_path(vault)
+            except Exception:  # noqa: BLE001
+                _can_resume = False
             return build_envelope(
                 module="memory", capability_state="needs_action", severity="warning",
                 reason_code="memory.vector_build_failed",
                 reason_text=f"Last vector build failed: {msg}. Existing vectors are still usable.",
                 user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
                 action_primary=build_action_primary(
-                    action_id="embed.build",
-                    verb="run", label="Rebuild vector index",
+                    action_id="embed.build" if not _can_resume else "embed.resume",
+                    verb="run",
+                    label=(
+                        "Resume vector build"
+                        if _can_resume
+                        else "Rebuild vector index"
+                    ),
                 ),
                 notices=notices, ttl_seconds=TTL_MEMORY,
             )
