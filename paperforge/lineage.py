@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
@@ -357,11 +358,14 @@ def _paper_keys(vault: Path, db_path: Path) -> list[str]:
 
 
 def _probe_ocr_state(paper_dir: Path | None) -> tuple[str, str | None]:
-    """(state, published_ocr_identity) — current | stale | missing | unknown.
+    """(state, ocr_identity) — current | stale | missing | unknown.
 
-    Pending publication marker → unknown (#126 semantics).  Published
-    result-hash equals the artifact hash → current; differs → stale.  The
-    identity is the published result hash whenever readable.
+    DAG principle: the OCR *artifacts* are the authority for the identity;
+    ``result-hash.txt`` is a publish snapshot (cache) used only as a cheap
+    stale detector.  A missing snapshot degrades to recomputing from the
+    artifacts — never ``unknown`` while the artifacts are intact.  The
+    caller (_probe_retrieval_state) cross-checks the recomputed identity
+    against the manifest's recorded ``ocr_result_hash`` edge.
     """
     if paper_dir is None or not paper_dir.exists():
         return "missing", None
@@ -369,19 +373,20 @@ def _probe_ocr_state(paper_dir: Path | None) -> tuple[str, str | None]:
         return "missing", None
     if has_result_hash_pending(paper_dir):
         return "unknown", None
-    hash_file = paper_dir / "index" / "result-hash.txt"
-    if not hash_file.exists():
-        return "unknown", None
-    try:
-        stored = hash_file.read_text(encoding="utf-8").strip()
-    except OSError:
-        return "unknown", None
     current = compute_ocr_result_hash(paper_dir)
     if current is None:
         return "unknown", None
-    if stored != current:
-        return "stale", stored
-    return "current", stored
+    hash_file = paper_dir / "index" / "result-hash.txt"
+    if hash_file.exists():
+        try:
+            stored = hash_file.read_text(encoding="utf-8").strip()
+        except OSError:
+            stored = None
+        if stored is not None and stored != current:
+            # Artifacts changed since the snapshot was published → the
+            # derived layers built on the old identity are stale.
+            return "stale", stored
+    return "current", current
 
 
 def _probe_retrieval_state(
@@ -437,12 +442,33 @@ def _probe_retrieval_state(
     return "current", recomputed
 
 
+def _vec_dimension_from_ddl(conn: sqlite3.Connection) -> int | None:
+    """Vector dimension from the vec0 table's own DDL — the substrate's
+    self-declaration, authoritative and never external.  Reads any vec
+    table; they all share the dimension."""
+    try:
+        row = conn.execute(
+            "SELECT sql FROM sqlite_master "
+            "WHERE type = 'table' AND name = 'vec_body'"
+        ).fetchone()
+    except sqlite3.OperationalError:
+        return None
+    if not row or not row[0]:
+        return None
+    m = re.search(r"float\[(\d+)\]", row[0])
+    return int(m.group(1)) if m else None
+
+
 def _current_embedding_identity(
     conn: sqlite3.Connection, vault: Path
 ) -> str | None:
     """The embedding identity the live substrate currently serves, from
-    config (endpoint/model) + the published build's dimension.  None when
-    unobservable."""
+    config (endpoint/model) + the substrate's declared dimension.
+
+    DAG principle: the dimension comes from the vec0 DDL (the artifact's own
+    declaration), not from build_state — external keys must never gate the
+    identity chain.  build_state.vector_dimension is a legacy fallback only.
+    None when unobservable."""
     from paperforge.embedding._config import (
         get_api_model,
         get_effective_api_base_url,
@@ -450,17 +476,17 @@ def _current_embedding_identity(
 
     endpoint = get_effective_api_base_url(vault)
     model = get_api_model(vault)
-    # Build state lives in the build_state table (key/value), written by the
-    # vector builder; the dimension there is the published substrate's.
-    row = conn.execute(
-        "SELECT value FROM build_state WHERE key = 'vector_dimension'"
-    ).fetchone()
-    dimension = None
-    if row:
-        try:
-            dimension = json.loads(row[0])
-        except (TypeError, ValueError):
-            pass
+    dimension = _vec_dimension_from_ddl(conn)
+    if not dimension:
+        # Legacy fallback: published build state still carries the dim.
+        row = conn.execute(
+            "SELECT value FROM build_state WHERE key = 'vector_dimension'"
+        ).fetchone()
+        if row:
+            try:
+                dimension = json.loads(row[0])
+            except (TypeError, ValueError):
+                pass
     if not dimension:
         return None
     return compute_embedding_identity(

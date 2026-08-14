@@ -101,8 +101,10 @@ def _make_vault(tmp_path: Path, keys=("KEY1",)) -> Path:
     db = indexes / "paperforge.db"
     conn = sqlite3.connect(str(db))
     try:
+        from paperforge.memory.db import ensure_vec_extension
         from paperforge.memory.schema import ensure_schema
 
+        ensure_vec_extension(conn)
         ensure_schema(conn)
         for key in keys:
             ocr_hash = _published_ocr_hash(vault, key)
@@ -293,6 +295,35 @@ class TestProbeLineage:
         assert payload["papers"]["KEY1"] == {
             "ocr": "current", "retrieval": "current", "vector": "current",
         }
+
+    def test_ocr_snapshot_missing_recomputes_from_artifacts(self, tmp_path: Path) -> None:
+        """DAG principle: artifacts are the authority, result-hash.txt is a
+        publish snapshot (cache).  A missing snapshot must degrade to
+        recompute — never unknown while artifacts are intact."""
+        vault = _make_vault(tmp_path)
+        snapshot = (
+            vault / "99_System" / "PaperForge" / "ocr" / "KEY1" / "index" / "result-hash.txt"
+        )
+        assert snapshot.exists()
+        snapshot.unlink()
+        payload = probe_lineage(vault)
+        assert payload["papers"]["KEY1"]["ocr"] == "current"
+        assert payload["papers"]["KEY1"]["vector"] == "current"
+
+    def test_embedding_identity_reads_dim_from_vec_ddl(self, tmp_path: Path) -> None:
+        """DAG principle: the dimension comes from the vec0 DDL (the
+        artifact's own declaration), never from an external build_state key.
+        Clearing build_state.vector_dimension must not break the chain."""
+        vault = _make_vault(tmp_path)
+        indexes = vault / "99_System" / "PaperForge" / "indexes"
+        conn = sqlite3.connect(str(indexes / "paperforge.db"))
+        try:
+            conn.execute("DELETE FROM build_state WHERE key = 'vector_dimension'")
+            conn.commit()
+        finally:
+            conn.close()
+        payload = probe_lineage(vault)
+        assert payload["papers"]["KEY1"]["vector"] == "current"
 
     def test_ocr_pending_marker_is_unknown(self, tmp_path: Path) -> None:
         vault = tmp_path / "vault"
