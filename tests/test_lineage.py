@@ -301,9 +301,9 @@ class TestProbeLineage:
         vault = _make_vault(tmp_path)
         payload = probe_lineage(vault)
         assert payload["capability_state"] == "ok"
-        assert payload["papers"]["KEY1"] == {
-            "ocr": "current", "retrieval": "current", "vector": "current",
-        }
+        assert payload["papers"]["KEY1"]["ocr"] == "current"
+        assert payload["papers"]["KEY1"]["retrieval"] == "current"
+        assert payload["papers"]["KEY1"]["vector"] == "current"
 
     def test_ocr_snapshot_missing_recomputes_from_artifacts(self, tmp_path: Path) -> None:
         """DAG principle: artifacts are the authority, result-hash.txt is a
@@ -394,9 +394,9 @@ class TestProbeLineage:
             json.dumps({"blocks": ["KEY1", "changed"]}), encoding="utf-8"
         )
         payload = probe_lineage(vault)
-        assert payload["papers"]["KEY1"] == {
-            "ocr": "stale", "retrieval": "stale", "vector": "stale",
-        }
+        assert payload["papers"]["KEY1"]["ocr"] == "stale"
+        assert payload["papers"]["KEY1"]["retrieval"] == "stale"
+        assert payload["papers"]["KEY1"]["vector"] == "stale"
 
     def test_model_change_marks_vector_stale(self, tmp_path: Path) -> None:
         vault = _make_vault(tmp_path)
@@ -445,9 +445,9 @@ class TestProbeLineage:
         )
         publish_ocr_result_hash(ocr_dir)
         payload = probe_lineage(vault)
-        assert payload["papers"]["KEY1"] == {
-            "ocr": "current", "retrieval": "stale", "vector": "stale",
-        }
+        assert payload["papers"]["KEY1"]["ocr"] == "current"
+        assert payload["papers"]["KEY1"]["retrieval"] == "stale"
+        assert payload["papers"]["KEY1"]["vector"] == "stale"
 
     def test_new_retrieval_publish_marks_old_vector_stale(self, tmp_path: Path) -> None:
         """#162 P0-2: after memory publishes a new retrieval identity, old

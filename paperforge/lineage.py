@@ -302,6 +302,50 @@ def _papers_with_vectors(conn: sqlite3.Connection) -> list[str]:
 
 # ── probe read model ──────────────────────────────────────────────────────
 
+def _ocr_detail(paper_dir: Path | None) -> str | None:
+    """Fine-grained reason behind a paper's ocr state — the state machine
+    captures WHY, not just WHAT, so the next-step decision and the UI can
+    distinguish every distinct meaning:
+
+    - not_started      OCR never ran (meta pending / no artifacts)
+    - queued           OCR queued or in flight (meta processing/running)
+    - failed           OCR run failed (meta ocr_status=failed)
+    - no_pdf           No PDF source — OCR cannot run at all
+    - ran_but_empty    OCR ran but produced zero blocks
+    - tree_missing     OCR done, structure tree file absent
+    - tree_empty       OCR done, structure tree has no nodes
+    - version_old      Produced by an older OCR pipeline version
+    - None             complete and current
+    """
+    if paper_dir is None or not paper_dir.exists():
+        return "not_started"
+    meta = _read_ocr_meta(paper_dir)
+    meta_status = str(meta.get("ocr_status", "") or "") if meta else ""
+    if meta_status == "failed":
+        return "failed"
+    if meta_status == "pending":
+        return "not_started"
+    if meta_status in ("processing", "running", "queued"):
+        return "queued"
+    if meta_status == "nopdf":
+        return "no_pdf"
+    blocks = paper_dir / "structure" / "blocks.structured.jsonl"
+    if not blocks.exists():
+        return "not_started"
+    try:
+        if blocks.stat().st_size == 0:
+            return "ran_but_empty"
+    except OSError:
+        return "unreadable"
+    if _is_structure_tree_incomplete(paper_dir):
+        if not (paper_dir / "index" / "structure-tree.json").exists():
+            return "tree_missing"
+        return "tree_empty"
+    if _is_old_pipeline(paper_dir):
+        return "version_old"
+    return None
+
+
 def probe_lineage(vault: Path) -> dict[str, Any]:
     """Per-paper {ocr, retrieval, vector} lineage states.
 
@@ -363,6 +407,21 @@ def probe_lineage(vault: Path) -> dict[str, Any]:
                 "ocr": ocr_state,
                 "retrieval": retrieval_state,
                 "vector": vector_state,
+                # Fine-grained WHY for each layer — the state machine keeps
+                # the detail so next-step decisions and UI can distinguish
+                # not_started / ran_but_empty / tree_missing / tree_empty.
+                "details": {
+                    "ocr": _ocr_detail(
+                        (ocr_root / key) if ocr_root is not None else None
+                    ),
+                    "retrieval": (
+                        "manifest_missing"
+                        if retrieval_state in ("missing", "incomplete")
+                        and ocr_state == "current"
+                        else None
+                    ),
+                    "vector": None,
+                },
             }
             papers[key] = state
             for layer_state in (ocr_state, retrieval_state, vector_state):
@@ -434,6 +493,31 @@ def _paper_keys(vault: Path, db_path: Path) -> list[str]:
     return sorted(keys)
 
 
+def _read_ocr_meta(paper_dir: Path) -> dict | None:
+    """Read meta.json (the OCR lifecycle authority) defensively."""
+    try:
+        import json as _json
+
+        return _json.loads((paper_dir / "meta.json").read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _is_old_pipeline(paper_dir: Path) -> bool:
+    """True when the paper was produced by an older OCR pipeline version
+    than the current one — the product may be structurally fine (current)
+    or incomplete, but the version fact is part of the state machine."""
+    try:
+        from paperforge.worker.ocr_versions import OCR_PIPELINE_VERSION
+    except Exception:  # noqa: BLE001
+        return False
+    meta = _read_ocr_meta(paper_dir)
+    if not meta:
+        return False
+    v = str(meta.get("ocr_pipeline_version", "") or "")
+    return bool(v) and v != OCR_PIPELINE_VERSION
+
+
 def _is_structure_tree_incomplete(paper_dir: Path) -> bool:
     """OCR completed but the structure tree is missing, unreadable, or EMPTY
     (``nodes: []``).  Without a tree the derived layers (body units,
@@ -474,10 +558,35 @@ def _probe_ocr_state(paper_dir: Path | None) -> tuple[str, str | None]:
     """
     if paper_dir is None or not paper_dir.exists():
         return "missing", None
-    if not (paper_dir / "structure" / "blocks.structured.jsonl").exists():
+    # meta.json is the OCR LIFECYCLE authority — it distinguishes "never
+    # ran" (pending), "running" (queued), "failed", "no PDF" from the
+    # artifact-integrity checks below.  Distinct semantics, never conflated.
+    meta_status = None
+    meta = _read_ocr_meta(paper_dir)
+    if meta:
+        meta_status = str(meta.get("ocr_status", "") or "")
+    if meta_status == "failed":
+        return "failed", None
+    if meta_status in ("pending", "queued"):
+        return "missing", None  # detail: not_started / queued
+    if meta_status == "nopdf":
+        return "missing", None  # detail: no_pdf — OCR cannot run
+    if meta_status in ("processing", "running"):
+        return "missing", None  # detail: queued (in flight)
+    blocks_path = paper_dir / "structure" / "blocks.structured.jsonl"
+    if not blocks_path.exists():
         return "missing", None
     if has_result_hash_pending(paper_dir):
         return "unknown", None
+    # The structured blocks file exists but is EMPTY (0 bytes): the OCR run
+    # never materialized any content.  That is an UNFINISHED OCR — the fix
+    # is `ocr.run` (re-run OCR), NOT a derived rebuild.  Distinct from the
+    # incomplete case below (blocks exist, tree does not).
+    try:
+        if blocks_path.stat().st_size == 0:
+            return "missing", None
+    except OSError:  # noqa: BLE001
+        pass
     if _is_structure_tree_incomplete(paper_dir):
         return "incomplete", None
     current = compute_ocr_result_hash(paper_dir)
