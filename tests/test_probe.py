@@ -13,6 +13,7 @@ Tests cover:
 from __future__ import annotations
 
 import json
+import sqlite3
 import subprocess
 import os
 import sys
@@ -813,7 +814,9 @@ class TestMemoryConcreteFixes:
 
     def test_interrupted_build_state_surfaces_resume(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """RC UX Seam: an explicit interrupted build_state must be needs_action
-        with a resume action, never a false ready."""
+        with a resume action, never a false ready.  Without a surviving
+        candidate there is nothing to resume — the honest action is a full
+        rebuild; with one, embed.resume is offered."""
         from paperforge.commands import probe as probe_mod
         tmp_path.mkdir(parents=True, exist_ok=True)
         canonical_test_config(tmp_path, system_dir="99_System")
@@ -831,10 +834,55 @@ class TestMemoryConcreteFixes:
                         "pid": 0, "message": "Build cancelled by user"},
         )
 
+        # No candidate survived → rebuild is the only honest path.
         data = probe_mod.probe_memory(tmp_path)
         assert data["capability_state"] == "needs_action"
         assert data["reason"]["code"] == "memory.vector_build_interrupted"
         assert data["action"]["primary"]["action_id"] == "embed.build"
+        assert "Rebuild" in data["action"]["primary"]["label"]
+
+    def test_interrupted_build_with_candidate_offers_resume(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Partial publish keeps the candidate for resume — an interrupted
+        build WITH a surviving candidate must offer embed.resume (incremental
+        resume), never a forced full rebuild."""
+        from paperforge.commands import probe as probe_mod
+        from paperforge.memory.db import get_memory_db_path
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
+        # Seed a candidate with vector rows so effective_vector_db prefers it.
+        db_path = get_memory_db_path(tmp_path)
+        candidate = db_path.with_suffix(".db.build")
+        candidate.parent.mkdir(parents=True, exist_ok=True)
+        conn = sqlite3.connect(str(candidate))
+        try:
+            from paperforge.memory.db import ensure_vec_extension
+            from paperforge.memory.schema import ensure_schema
+
+            ensure_vec_extension(conn)
+            ensure_schema(conn)
+            conn.execute(
+                "INSERT INTO vec_body_meta(rowid, paper_id) VALUES (1, 'KEY1')"
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+        monkeypatch.setattr(
+            "paperforge.memory.query.get_memory_status",
+            lambda v: {"db_exists": True, "schema_ok": True, "fresh": True,
+                        "hash_match": True, "count_match": True,
+                        "paper_count_db": 1, "paper_count_index": 1,
+                        "needs_rebuild": False, "schema_version": 7},
+        )
+        monkeypatch.setattr(
+            "paperforge.embedding.build_state.read_vector_build_state",
+            lambda v: {"status": "interrupted", "current": 690, "total": 811,
+                        "pid": 0, "message": "Build cancelled by user"},
+        )
+
+        data = probe_mod.probe_memory(tmp_path)
+        assert data["capability_state"] == "needs_action"
+        assert data["action"]["primary"]["action_id"] == "embed.resume"
         assert "Resume" in data["action"]["primary"]["label"]
 
     def test_zombie_running_state_surfaces_resume(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

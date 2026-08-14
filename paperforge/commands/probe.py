@@ -1007,6 +1007,14 @@ def probe_memory(vault: Path) -> dict[str, Any]:
             except Exception:
                 pid_alive = False
             if not pid_alive:
+                try:
+                    from paperforge.embedding.substrate import effective_vector_db
+                    from paperforge.memory.db import get_memory_db_path
+
+                    _eff = effective_vector_db(vault)
+                    _can_resume = _eff != get_memory_db_path(vault)
+                except Exception:  # noqa: BLE001
+                    _can_resume = False
                 return build_envelope(
                     module="memory", capability_state="needs_action", severity="warning",
                     reason_code="memory.vector_build_interrupted",
@@ -1017,8 +1025,13 @@ def probe_memory(vault: Path) -> dict[str, Any]:
                     ),
                     user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
                     action_primary=build_action_primary(
-                        action_id="embed.build",
-                        verb="run", label="Resume vector build",
+                        action_id="embed.build" if not _can_resume else "embed.resume",
+                        verb="run",
+                        label=(
+                            "Resume vector build"
+                            if _can_resume
+                            else "Rebuild vector index"
+                        ),
                     ),
                     notices=notices, ttl_seconds=TTL_MEMORY,
                 )
@@ -1040,6 +1053,14 @@ def probe_memory(vault: Path) -> dict[str, Any]:
         # Gate 5c: interrupted (explicit stop) → resume
         if bs_status == "interrupted":
             msg = build_state.get("message", "build was interrupted")
+            try:
+                from paperforge.embedding.substrate import effective_vector_db
+                from paperforge.memory.db import get_memory_db_path
+
+                _eff = effective_vector_db(vault)
+                _can_resume = _eff != get_memory_db_path(vault)
+            except Exception:  # noqa: BLE001
+                _can_resume = False
             return build_envelope(
                 module="memory", capability_state="needs_action", severity="warning",
                 reason_code="memory.vector_build_interrupted",
@@ -1050,8 +1071,13 @@ def probe_memory(vault: Path) -> dict[str, Any]:
                 ),
                 user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
                 action_primary=build_action_primary(
-                    action_id="embed.build",
-                    verb="run", label="Resume vector build",
+                    action_id="embed.build" if not _can_resume else "embed.resume",
+                    verb="run",
+                    label=(
+                        "Resume vector build"
+                        if _can_resume
+                        else "Rebuild vector index"
+                    ),
                 ),
                 notices=notices, ttl_seconds=TTL_MEMORY,
             )

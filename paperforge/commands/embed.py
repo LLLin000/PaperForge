@@ -465,10 +465,15 @@ def run_build(
             # EMPTY live table — re-embedding everything from 1.
             or _recover_candidate
         ) and _substrate.db_exists
-        # #165/T4: a papers-scoped request must never route through a shadow
-        # rebuild — the candidate's vec tables are cleared and EVERY done
-        # paper re-embedded, violating affected ⊆ requested.  Fail fast.
-        if keys is not None and (requires_shadow or _force_rebuild):
+        # #165/T4: a papers-scoped request must never route through a FRESH
+        # shadow rebuild — prepare() clears the candidate's vec tables and
+        # EVERY done paper would be re-embedded, violating affected ⊆
+        # requested.  RC UX Seam EXCEPTION: a SURVIVING candidate (recover)
+        # is never cleared — recover() continues it, so a scoped resume only
+        # ADDS the requested keys' vectors.  This is the incremental-publish
+        # path: candidate keeps existing rows, embeds the scoped papers, and
+        # the checkpoint/final publish merges them into live.
+        if keys is not None and (requires_shadow or _force_rebuild) and not _recover_candidate:
             from paperforge.core.errors import ErrorCode as _EC
 
             result = PFResult(
@@ -522,7 +527,12 @@ def run_build(
                 _candidate_conn = _shadow.candidate_conn()
                 ensure_vec_extension(_candidate_conn)
                 ensure_schema(_candidate_conn)
-                _expected_dim = _stored_dim or _substrate.stored_dimension
+                # The candidate may lack build_state.vector_dimension (only
+                # written at final completion) — fall back to the vec0 DDL
+                # self-declaration so verify() and lineage get the real dim.
+                _expected_dim = _resolve_lineage_dimension(
+                    _candidate_conn, _stored_dim, _substrate.stored_dimension
+                )
             else:
                 # D6: unconditional stale-candidate cleanup (no build_state dependency)
                 _shadow.cleanup_stale()
@@ -1099,13 +1109,19 @@ def run_build(
             # verifying — verify_candidate must inspect exactly the file that
             # publish() will swap, not the WAL-backed logical view.
             _shadow.seal()
+            # Scoped (papers) builds embed only the requested subset — the
+            # candidate already holds other papers' rows, so a per-collection
+            # count match against THIS run's accumulators is meaningless.
+            # Pass None to skip count comparison; layout/orphan/KNN checks
+            # still run.
+            _scoped_expected = None if keys is not None else dict(_expected_counts)
             report = verify_candidate(
                 _shadow.target.vector_path,
                 # P1-2: expected dimension comes from the model detection that
                 # built the tables — never re-read from the candidate DDL.
                 dimension=_expected_dim,
-                expected_count=sum(_expected_counts.values()),
-                expected_counts=dict(_expected_counts),
+                expected_count=None if keys is not None else sum(_expected_counts.values()),
+                expected_counts=_scoped_expected,
             )
             if not report["ok"]:
                 _shadow.abort()

@@ -113,9 +113,15 @@ def _make_vault(tmp_path: Path, keys=("KEY1",)) -> Path:
                 "INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)",
                 (f"manifest:{key}", json.dumps(manifest)),
             )
+            # vec0 row first, meta aligned via lastrowid — the layout check
+            # rejects orphan meta rows (meta without a matching vec row).
+            cur = conn.execute(
+                "INSERT INTO vec_fulltext(embedding) VALUES (?)",
+                (json.dumps([0.0] * DIMENSION),),
+            )
             conn.execute(
-                "INSERT OR REPLACE INTO vec_fulltext_meta (paper_id, chunk_index, text) VALUES (?, ?, ?)",
-                (key, 0, f"{key}-ft1"),
+                "INSERT OR REPLACE INTO vec_fulltext_meta (rowid, paper_id, chunk_index, text) VALUES (?, ?, ?, ?)",
+                (cur.lastrowid, key, 0, f"{key}-ft1"),
             )
             identity = compute_vector_identity(
                 retrieval_identity=manifest["retrieval_identity"],

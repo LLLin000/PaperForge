@@ -326,7 +326,7 @@ def verify_candidate(
                     return _fail(
                         f"{coll} count {layout.counts[vec_table][1]} != expected {want}"
                     )
-        elif total != expected_count:
+        elif expected_count is not None and total != expected_count:
             return _fail(f"vector count {total} != expected {expected_count}")
         # 6. KNN probe on the FIRST non-empty collection (not vec_body)
         if total > 0:
