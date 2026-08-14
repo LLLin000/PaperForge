@@ -429,11 +429,28 @@ def run_build(
                             pid=0,
                         )
                     else:
-                        msg = "Previous build appears stale (crashed?). Recovering and rebuilding from scratch."
+                        # Zombie `running` without a candidate: the previous
+                        # process died mid-build.  Old code forced resume=False
+                        # here -> full rebuild that re-embeds EVERY paper even
+                        # when vectors already exist (measured waste on the
+                        # 2026-08-14 full resume: 83 already-embedded papers
+                        # re-embedded).  Keep resume=True and let 门二
+                        # (no rows -> fresh build) / 门三 (model/identity
+                        # changed -> full rebuild) decide: existing vectors +
+                        # matching identity route through in-place
+                        # incremental, only embedding the missing papers.
+                        msg = (
+                            "Previous build appears stale (crashed?). "
+                            "Recovering; resuming from existing vectors."
+                        )
                         if not json:
                             print(msg)
-                        mark_vector_build_state(vault, status="idle", current=0, pid=0)
-                        resume = False
+                        mark_vector_build_state(
+                            vault,
+                            status="interrupted",
+                            message="Previous process exited (crashed); resuming",
+                            pid=0,
+                        )
             # 门二：no vec0 rows → fresh build（不是 error）。#167 P0-4:
             # pristine (no rows AND no published vector identity) is a
             # per-paper missing deficit — a scoped resume may INITIALIZE the
