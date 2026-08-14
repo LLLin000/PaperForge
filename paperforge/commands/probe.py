@@ -773,6 +773,28 @@ def paper_pipeline_versions(vault: Path, rows) -> list[dict[str, Any]]:
     return per_paper
 
 
+def _resume_feasible(vault: Path) -> bool:
+    """Resume is feasible when:
+    - a surviving shadow candidate exists → shadow-recover continues it
+      regardless of substrate state; or
+    - no candidate, but the substrate is compatible (identity established) →
+      in-place incremental embedding works.
+    Only a GLOBAL substrate defect with no candidate forces embed.build."""
+    try:
+        from paperforge.embedding.substrate import (
+            assess_vector_substrate,
+            effective_vector_db,
+        )
+        from paperforge.memory.db import get_memory_db_path
+
+        if effective_vector_db(vault) != get_memory_db_path(vault):
+            return True  # surviving candidate → recover
+        sub = assess_vector_substrate(vault)
+        return bool(sub.db_exists and sub.compatible)
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def probe_memory(vault: Path) -> dict[str, Any]:
     """Probe the Memory module.
 
@@ -1008,11 +1030,7 @@ def probe_memory(vault: Path) -> dict[str, Any]:
                 pid_alive = False
             if not pid_alive:
                 try:
-                    from paperforge.embedding.substrate import effective_vector_db
-                    from paperforge.memory.db import get_memory_db_path
-
-                    _eff = effective_vector_db(vault)
-                    _can_resume = _eff != get_memory_db_path(vault)
+                    _can_resume = _resume_feasible(vault)
                 except Exception:  # noqa: BLE001
                     _can_resume = False
                 return build_envelope(
@@ -1054,11 +1072,7 @@ def probe_memory(vault: Path) -> dict[str, Any]:
         if bs_status == "interrupted":
             msg = build_state.get("message", "build was interrupted")
             try:
-                from paperforge.embedding.substrate import effective_vector_db
-                from paperforge.memory.db import get_memory_db_path
-
-                _eff = effective_vector_db(vault)
-                _can_resume = _eff != get_memory_db_path(vault)
+                _can_resume = _resume_feasible(vault)
             except Exception:  # noqa: BLE001
                 _can_resume = False
             return build_envelope(
@@ -1085,14 +1099,11 @@ def probe_memory(vault: Path) -> dict[str, Any]:
         # Gate 5d: failed → rebuild
         if bs_status == "failed":
             msg = build_state.get("message", "unknown error")
-            # RC UX Seam: a failed build whose shadow candidate survived is
-            # RESUMABLE (transient API/network faults) — offer resume, not a
-            # forced full rebuild, agreeing with reconcile's embed.resume.
+            # Resume is feasible unless the substrate itself is incompatible
+            # (identity change / legacy layout) — either a surviving shadow
+            # candidate or in-place incremental works.
             try:
-                from paperforge.embedding.substrate import effective_vector_db
-
-                _eff = effective_vector_db(vault)
-                _can_resume = _eff != get_memory_db_path(vault)
+                _can_resume = _resume_feasible(vault)
             except Exception:  # noqa: BLE001
                 _can_resume = False
             return build_envelope(

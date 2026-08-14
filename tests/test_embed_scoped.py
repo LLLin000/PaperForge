@@ -259,6 +259,45 @@ class TestLineageDimensionResolution:
         finally:
             conn.close()
 
+    def test_scoped_global_progress_reports_interrupted_while_missing(self, tmp_path: Path) -> None:
+        """A scoped build that finishes must NOT claim a global completed —
+        its own total is just the requested subset.  Report interrupted with
+        global progress so the probe surfaces the resume action."""
+        from paperforge.commands.embed import _scoped_global_progress
+        from paperforge.memory.db import ensure_vec_extension
+        from paperforge.memory.schema import ensure_schema
+
+        db_path = tmp_path / "paperforge.db"
+        conn = sqlite3.connect(str(db_path))
+        try:
+            ensure_vec_extension(conn)
+            ensure_schema(conn)
+            conn.execute(
+                "INSERT INTO vec_body_meta(rowid, paper_id) VALUES (1, 'A')"
+            )
+            conn.commit()
+        finally:
+            conn.close()
+        items = [
+            {"zotero_key": "A", "ocr_status": "done"},
+            {"zotero_key": "B", "ocr_status": "done"},
+            {"zotero_key": "C", "ocr_status": "done"},
+            {"zotero_key": "D", "ocr_status": "pending"},
+        ]
+        status, current, total, message = _scoped_global_progress(tmp_path, items, db_path)
+        assert status == "interrupted"
+        assert (current, total) == (1, 3)
+        assert "1/3" in message
+        # All done embedded -> completed
+        conn = sqlite3.connect(str(db_path))
+        conn.execute("INSERT INTO vec_body_meta(rowid, paper_id) VALUES (2, 'B')")
+        conn.execute("INSERT INTO vec_body_meta(rowid, paper_id) VALUES (3, 'C')")
+        conn.commit()
+        conn.close()
+        status2, current2, total2, _ = _scoped_global_progress(tmp_path, items, db_path)
+        assert status2 == "completed"
+        assert (current2, total2) == (3, 3)
+
 
 class TestLineagePreservation:
     def test_resume_skipped_papers_keep_lineage_rows_byte_identical(self, tmp_path: Path) -> None:

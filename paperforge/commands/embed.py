@@ -233,6 +233,39 @@ def _resolve_lineage_dimension(
     return dim
 
 
+def _scoped_global_progress(
+    vault: Path, items: list[dict], db_path: Path
+) -> tuple[str, int, int, str]:
+    """Honest post-scoped-build state: a scoped (papers) build's own total is
+    the requested subset, so marking ``completed`` with it would claim the
+    whole library is embedded while hundreds of papers still lack vectors —
+    the probe then shows a false ready with no resume action.  Recompute the
+    GLOBAL progress (distinct papers with vectors vs done papers) and report
+    ``interrupted`` while papers are missing, so the probe surfaces the
+    resume action."""
+    try:
+        import sqlite3 as _sq
+
+        conn = _sq.connect(f"file:{db_path.as_posix()}?mode=ro", uri=True)
+        try:
+            embedded = conn.execute(
+                "SELECT COUNT(DISTINCT paper_id) FROM vec_body_meta"
+            ).fetchone()[0]
+        finally:
+            conn.close()
+        done = sum(1 for e in items if e.get("ocr_status") == "done")
+        if embedded < done:
+            return (
+                "interrupted",
+                embedded,
+                done,
+                f"Embedded {embedded}/{done} papers (scoped build finished)",
+            )
+        return "completed", embedded, done, ""
+    except Exception:  # noqa: BLE001 — fall back to the scoped total
+        return "completed", 0, 0, ""
+
+
 def run_build(
     vault: Path,
     items: list[dict],
@@ -1087,10 +1120,22 @@ def run_build(
             # independent of any post-publish bookkeeping that might fail.
             from paperforge.embedding.build_state import _dict_to_build_state
 
+            # Scoped builds must not claim global completed (see the final
+            # _mark below); compute the honest state once here so the
+            # swapped-in live carries it even if post-publish bookkeeping
+            # fails.  Reuses the same computation as the final mark.
+            if keys is not None:
+                _cand_status, _cand_current, _cand_total, _cand_message = (
+                    _scoped_global_progress(vault, items, _db_path)
+                )
+            else:
+                _cand_status, _cand_current, _cand_total, _cand_message = (
+                    "completed", total, total, ""
+                )
             _cand_state = {
-                "status": "completed",
-                "current": total,
-                "total": total,
+                "status": _cand_status,
+                "current": _cand_current,
+                "total": _cand_total,
                 "model": _current_model,
                 "vector_provider_endpoint": _current_endpoint,
                 "vector_dimension": _expected_dim,
@@ -1099,7 +1144,7 @@ def run_build(
                 "vector_expected_body": _expected_counts["body"],
                 "vector_expected_objects": _expected_counts["objects"],
                 "finished_at": _now(),
-                "message": "",
+                "message": _cand_message,
                 "pid": 0,
                 "mode": "api",
             }
@@ -1155,12 +1200,25 @@ def run_build(
             _candidate_conn = None
             _mark_target = None
 
+        # Final state: full builds report completed with their own totals; a
+        # scoped (papers) build must report GLOBAL progress — its own total
+        # is just the requested subset, and claiming completed would hide
+        # the remaining missing papers (false ready, no resume action).
+        if keys is not None:
+            _final_status, _final_current, _final_total, _final_message = (
+                _scoped_global_progress(vault, items, _db_path)
+            )
+        else:
+            _final_status, _final_current, _final_total, _final_message = (
+                "completed", total, total, ""
+            )
+
         _mark(
-            status="completed",
-            current=total,
-            total=total,
+            status=_final_status,
+            current=_final_current,
+            total=_final_total,
             finished_at=_now(),
-            message="",
+            message=_final_message,
             pid=0,
             # Shadow publish swaps live for a candidate whose build_state table
             # holds pre-build defaults (the live mark above was written before
