@@ -370,11 +370,19 @@ class TestOrphanStateMachine:
     drive a library.prune intent (confirmation-required, never automatic)."""
 
     def _seed_orphan(self, vault: Path, key: str) -> None:
+        """Simulate the state file sync writes after a Zotero-driven orphan
+        scan (workspace key absent from the live Zotero export)."""
         from paperforge.config import paperforge_paths
 
         paths = paperforge_paths(vault)
-        lit = paths.get("literature")
-        (lit / "骨科" / f"{key} - Orphan Title").mkdir(parents=True, exist_ok=True)
+        state = paths.get("paperforge") / "indexes" / "sync-orphan-state.json"
+        state.parent.mkdir(parents=True, exist_ok=True)
+        state.write_text(
+            json.dumps(
+                {"orphans": [{"key": key, "title": "Orphan Title"}], "count": 1}
+            ),
+            encoding="utf-8",
+        )
 
     def test_orphan_detected_in_probe_and_reconcile(self, tmp_path: Path) -> None:
         from paperforge.lineage import probe_lineage

@@ -419,38 +419,37 @@ def probe_lineage(vault: Path) -> dict[str, Any]:
 
 
 def _detect_orphans(vault: Path) -> dict[str, Any]:
-    """Workspace papers absent from the canonical index.  Reuses the prune
-    scanner; cheap (~0.5s directory walk)."""
+    """Library orphan state — **Zotero is the authority**.
+
+    The only accurate orphan detection happens at SYNC time, when the live
+    Zotero export is available: an orphan is a workspace paper whose key is
+    absent from Zotero.  The probe cannot see Zotero, so it reads the state
+    file sync wrote (sync-orphan-state.json).  A missing file means no
+    known orphans; we NEVER re-derive orphans from the index snapshot here
+    (a freshly added Zotero paper not yet synced would be falsely orphaned
+    by an index comparison)."""
     try:
         from paperforge.config import paperforge_paths
-        from paperforge.worker.asset_index import read_index
-        from paperforge.worker.prune import _collect_orphan_candidates
 
-        index = read_index(vault)
-        items = index.get("items", []) if isinstance(index, dict) else index
-        fresh_keys = {
-            str(it.get("zotero_key", ""))
-            for it in (items or [])
-            if it.get("zotero_key")
-        }
         paths = paperforge_paths(vault)
-        lit_dir = paths.get("literature")
-        if not lit_dir or not lit_dir.exists():
+        state_path = paths.get("paperforge") / "indexes" / "sync-orphan-state.json"
+        if not state_path.exists():
             return {"count": 0, "keys": []}
-        candidates = _collect_orphan_candidates(lit_dir, fresh_keys)
+        import json as _json
+
+        data = _json.loads(state_path.read_text(encoding="utf-8"))
+        orphans = data.get("orphans", []) or []
+        keys = sorted(o.get("key", "") for o in orphans if o.get("key"))
         return {
-            "count": len(candidates),
-            "keys": sorted(c["key"] for c in candidates),
+            "count": len(keys),
+            "keys": keys,
             "orphans": [
                 {
-                    "key": c["key"],
-                    "title": (
-                        c["workspace_dir"].name.split(" - ", 1)[1]
-                        if " - " in c["workspace_dir"].name
-                        else ""
-                    ),
+                    "key": o.get("key", ""),
+                    "title": o.get("title", ""),
                 }
-                for c in sorted(candidates, key=lambda x: x["key"])
+                for o in orphans
+                if o.get("key")
             ],
         }
     except Exception:  # noqa: BLE001 — unobservable orphans = none reported

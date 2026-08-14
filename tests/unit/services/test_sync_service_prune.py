@@ -43,17 +43,22 @@ class TestSyncServicePruneMethod:
         _, kwargs = mock_fn.call_args
         assert kwargs.get("dry_run") is True
 
-    def test_prune_auto_reads_index(self, tmp_path: Path) -> None:
+    def test_prune_passes_zotero_keys(self, tmp_path: Path) -> None:
+        """Zotero is the authority: the caller passes the LIVE export key
+        set (fresh_keys); prune never re-reads the index snapshot (which
+        would falsely orphan a freshly added Zotero paper)."""
         svc = SyncService(tmp_path)
-        fake_index = {"schema_version": "3", "items": []}
+        fake_keys = {"KEY1", "KEY2"}
 
-        with patch("paperforge.worker.asset_index.read_index", return_value=fake_index) as mock_read:
+        with patch("paperforge.worker.asset_index.read_index") as mock_read:
             with patch("paperforge.worker.prune.prune_orphan_papers") as mock_fn:
                 mock_fn.return_value = {"preview": [], "deleted": [], "counts": {}}
-                svc.prune({}, fresh_index=None, dry_run=True)
+                svc.prune({}, fresh_index=None, fresh_keys=fake_keys, dry_run=True)
 
-        mock_read.assert_called_once()
+        mock_read.assert_not_called()
         mock_fn.assert_called_once()
+        _, kwargs = mock_fn.call_args
+        assert kwargs.get("fresh_keys") == fake_keys
 
 
 class TestSyncServiceRunPrune:
