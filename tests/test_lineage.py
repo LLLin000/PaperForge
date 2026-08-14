@@ -43,7 +43,10 @@ def _write_ocr_paper(vault: Path, key: str, *, pending: bool = False) -> None:
         json.dumps({"blocks": [key]}), encoding="utf-8"
     )
     (ocr_dir / "index" / "structure-tree.json").write_text(
-        json.dumps({"root": key}), encoding="utf-8"
+        # A complete tree carries a non-empty nodes list; an empty/missing
+        # nodes list is the INCOMPLETE product state (probe reports it).
+        json.dumps({"root": key, "nodes": [{"id": "root", "depth": 0}]}),
+        encoding="utf-8",
     )
     (ocr_dir / "index" / "role-index.json").write_text(
         json.dumps({"roles": [key]}), encoding="utf-8"
@@ -505,3 +508,74 @@ class TestProbeLineage:
         assert payload["papers"]["KEY1"]["vector"] == "current"
         # probe must never write: no new files under the vault
         assert not (vault / "99_System" / "PaperForge" / "ocr" / "KEY1" / "index" / "result-hash.pending").exists()
+
+
+class TestIncompleteOcrState:
+    """2026-08-14: OCR products with a missing/EMPTY structure tree are an
+    INCOMPLETE product — distinct from quality problems, never `current`."""
+
+    def _write_empty_tree_paper(self, vault: Path, key: str) -> None:
+        ocr_dir = vault / "99_System" / "PaperForge" / "ocr" / key
+        (ocr_dir / "structure").mkdir(parents=True, exist_ok=True)
+        (ocr_dir / "index").mkdir(parents=True, exist_ok=True)
+        (ocr_dir / "structure" / "blocks.structured.jsonl").write_text(
+            json.dumps({"blocks": [key]}), encoding="utf-8"
+        )
+        (ocr_dir / "index" / "structure-tree.json").write_text(
+            json.dumps({"root": key, "nodes": []}), encoding="utf-8"
+        )
+        (ocr_dir / "index" / "role-index.json").write_text(
+            json.dumps({"roles": [key]}), encoding="utf-8"
+        )
+        from paperforge.worker.ocr_hash import publish_ocr_result_hash
+
+        publish_ocr_result_hash(ocr_dir)
+
+    def test_empty_structure_tree_is_incomplete(self, tmp_path: Path) -> None:
+        from paperforge.commands import probe as probe_mod
+
+        vault = tmp_path / "vault"
+        vault.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(vault, system_dir="99_System")
+        self._write_empty_tree_paper(vault, "KEY1")
+        indexes = vault / "99_System" / "PaperForge" / "indexes"
+        indexes.mkdir(parents=True)
+        conn = sqlite3.connect(str(indexes / "paperforge.db"))
+        try:
+            from paperforge.memory.schema import ensure_schema
+
+            ensure_schema(conn)
+            # A real (if structurally incomplete) vector row exists — the
+            # probe must report the vector as incomplete (not missing).
+            conn.execute(
+                "INSERT INTO vec_fulltext_meta(rowid, paper_id) VALUES (1, 'KEY1')"
+            )
+            conn.commit()
+        finally:
+            conn.close()
+        payload = probe_lineage(vault)
+        assert payload["papers"]["KEY1"]["ocr"] == "incomplete"
+        assert payload["papers"]["KEY1"]["retrieval"] == "incomplete"
+        assert payload["papers"]["KEY1"]["vector"] == "incomplete"
+        # The reader gate must NOT drop already-materialized incomplete
+        # vectors (they are real data), while missing-structure stays out.
+        from paperforge.reader_gate import filter_readable
+
+        allowed = filter_readable(
+            vault,
+            [{"paper_id": "KEY1", "text": "hit"}],
+            require_vector=True,
+        )
+        assert len(allowed) == 1
+
+    def test_missing_tree_file_is_incomplete(self, tmp_path: Path) -> None:
+        from paperforge.lineage import _is_structure_tree_incomplete
+
+        vault = tmp_path / "vault"
+        vault.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(vault, system_dir="99_System")
+        self._write_empty_tree_paper(vault, "KEY1")
+        # remove the tree file entirely
+        (vault / "99_System" / "PaperForge" / "ocr" / "KEY1" / "index" / "structure-tree.json").unlink()
+        paper_dir = vault / "99_System" / "PaperForge" / "ocr" / "KEY1"
+        assert _is_structure_tree_incomplete(paper_dir) is True
