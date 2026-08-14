@@ -821,6 +821,10 @@ const LANG: Record<string, Record<string, string>> = {
     sr_state_upgrade_available:
       "Your vector index uses the old ChromaDB backend",
     sr_state_build_failed: "The last vector build failed",
+    sr_state_build_interrupted:
+      "Vector index is partially built — resume to embed the remaining papers",
+    sr_state_identity_changed:
+      "Embedding configuration changed — existing vectors need a rebuild",
     sr_build_failed_notice: "Vector index build failed: {detail}",
     sr_action_build: "Build Index",
     sr_action_rebuild: "Rebuild Index",
@@ -1676,6 +1680,8 @@ const LANG: Record<string, Record<string, string>> = {
     sr_state_db_missing: "记忆数据库尚未构建",
     sr_state_upgrade_available: "向量索引使用旧版 ChromaDB 后端",
     sr_state_build_failed: "上次向量构建失败",
+    sr_state_build_interrupted: "向量索引部分构建中——继续嵌入剩余论文",
+    sr_state_identity_changed: "嵌入配置已变化——现有向量需重建",
     sr_build_failed_notice: "向量索引构建失败：{detail}",
     sr_action_build: "构建索引",
     sr_action_rebuild: "重建索引",

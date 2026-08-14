@@ -958,11 +958,12 @@ def probe_memory(vault: Path) -> dict[str, Any]:
             if _substrate_mismatch:
                 return build_envelope(
                     module="memory", capability_state="needs_action", severity="warning",
-                    reason_code="memory.vector_build_failed",
+                    reason_code="memory.vector_identity_changed",
                     reason_text=(
-                        f"Vector index was built under a different embedding identity "
-                        f"({_substrate_reason or 'mismatch'}). Rebuild to match the "
-                        f"current configuration."
+                        f"Embedding configuration changed (model or endpoint "
+                        f"{_substrate_reason or 'mismatch'}); existing vectors were "
+                        f"built under the previous configuration. Rebuild to match "
+                        f"the current one."
                     ),
                     user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
                     action_primary=build_action_primary(
@@ -1033,13 +1034,16 @@ def probe_memory(vault: Path) -> dict[str, Any]:
                     _can_resume = _resume_feasible(vault)
                 except Exception:  # noqa: BLE001
                     _can_resume = False
+                _bs_current = int(build_state.get("current", 0) or 0)
+                _bs_total = int(build_state.get("total", 0) or 0)
                 return build_envelope(
                     module="memory", capability_state="needs_action", severity="warning",
                     reason_code="memory.vector_build_interrupted",
                     reason_text=(
-                        f"Last vector build was interrupted at "
-                        f"{build_state.get('current', 0)}/{build_state.get('total', 0)} "
-                        f"papers (the process is no longer running). Resume to finish it."
+                        f"Vector index is partially built: {_bs_current}/{_bs_total} "
+                        f"papers embedded (the previous build process is no longer "
+                        f"running). Resume to embed the remaining "
+                        f"{max(_bs_total - _bs_current, 0)} papers."
                     ),
                     user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
                     action_primary=build_action_primary(
@@ -1070,18 +1074,19 @@ def probe_memory(vault: Path) -> dict[str, Any]:
 
         # Gate 5c: interrupted (explicit stop) → resume
         if bs_status == "interrupted":
-            msg = build_state.get("message", "build was interrupted")
             try:
                 _can_resume = _resume_feasible(vault)
             except Exception:  # noqa: BLE001
                 _can_resume = False
+            _bs_current = int(build_state.get("current", 0) or 0)
+            _bs_total = int(build_state.get("total", 0) or 0)
             return build_envelope(
                 module="memory", capability_state="needs_action", severity="warning",
                 reason_code="memory.vector_build_interrupted",
                 reason_text=(
-                    f"Vector build interrupted at "
-                    f"{build_state.get('current', 0)}/{build_state.get('total', 0)} "
-                    f"papers ({msg}). Resume to finish it."
+                    f"Vector index is partially built: {_bs_current}/{_bs_total} "
+                    f"papers embedded. Resume to embed the remaining "
+                    f"{max(_bs_total - _bs_current, 0)} papers."
                 ),
                 user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
                 action_primary=build_action_primary(
@@ -1109,7 +1114,10 @@ def probe_memory(vault: Path) -> dict[str, Any]:
             return build_envelope(
                 module="memory", capability_state="needs_action", severity="warning",
                 reason_code="memory.vector_build_failed",
-                reason_text=f"Last vector build failed: {msg}. Existing vectors are still usable.",
+                reason_text=(
+                    f"Last embedding attempt failed: {msg}. Papers embedded "
+                    f"so far remain searchable — resume to continue or retry."
+                ),
                 user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
                 action_primary=build_action_primary(
                     action_id="embed.build" if not _can_resume else "embed.resume",
