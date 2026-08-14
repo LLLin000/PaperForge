@@ -813,6 +813,48 @@ def run_doctor(vault: Path, verbose: bool = False, json_output: bool = False) ->
     else:
         add_check("Index Health", "info", "No canonical index -- run `paperforge sync` to generate")
 
+    # Vector index integrity — FULL orphan scan (meta ⋈ vec0 LEFT JOIN).
+    # Deliberately slow (48–117 s at library scale on sqlite-vec rowid
+    # lookups) so it lives ONLY here as a manual maintenance command; the
+    # hot paths (status/probe/verify) use the O(1) MAX(rowid) boundary
+    # check in inspect_vector_layout instead.
+    try:
+        from paperforge.memory.db import get_memory_db_path, open_live_reader
+
+        _vdb = get_memory_db_path(vault)
+        if _vdb.exists():
+            with open_live_reader(vault, _vdb) as _vconn:
+                _vtotal = 0
+                _vorphans = 0
+                for _vvec, _vmeta in (
+                    ("vec_fulltext", "vec_fulltext_meta"),
+                    ("vec_body", "vec_body_meta"),
+                    ("vec_objects", "vec_objects_meta"),
+                ):
+                    _vtotal += _vconn.execute(
+                        f"SELECT COUNT(*) FROM {_vmeta}"
+                    ).fetchone()[0]
+                    _vorphans += _vconn.execute(
+                        f"SELECT COUNT(*) FROM {_vmeta} m "
+                        f"LEFT JOIN {_vvec} v ON v.rowid = m.rowid "
+                        f"WHERE v.rowid IS NULL"
+                    ).fetchone()[0]
+            if _vorphans:
+                add_check(
+                    "Index Health",
+                    "fail",
+                    f"{_vorphans} orphan vector row(s) across {_vtotal} total",
+                    "Run `paperforge embed build --force` to rebuild the vector index",
+                )
+            elif _vtotal:
+                add_check(
+                    "Index Health",
+                    "pass",
+                    f"Vector index integrity: {_vtotal} rows, 0 orphans (full scan)",
+                )
+    except Exception:
+        pass
+
     if json_output:
         checklist_data = [{"category": cat, "status": st, "message": msg, "fix": fx} for cat, st, msg, fx in checks]
         status_counts: dict[str, int] = {}

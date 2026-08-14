@@ -310,12 +310,10 @@ def verify_candidate(
         for vec_table, meta_table in VEC_PAIRS:
             vc, mc = layout.counts[vec_table]
             total += mc
-            orphan = conn.execute(
-                f"SELECT COUNT(*) FROM {meta_table} m "
-                f"LEFT JOIN {vec_table} v ON v.rowid = m.rowid WHERE v.rowid IS NULL"
-            ).fetchone()[0]
-            if orphan:
-                return _fail(f"{meta_table} has {orphan} orphan rowids")
+            # Orphan detection already ran inside inspect_vector_layout
+            # (MAX(rowid) boundary — O(1); the full LEFT JOIN against vec0
+            # is 48–117 s at library scale, see dim_detect.py).  Do not
+            # repeat the slow scan here.
         # 5. expected counts (0 legal, but only with complete schema)
         if expected_counts is not None:
             for coll, (vec_table, _meta_table) in zip(

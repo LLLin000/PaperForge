@@ -217,13 +217,29 @@ def inspect_vector_layout(conn, required_dim: int | None = None) -> VectorLayout
         # raw count comparison is meaningless on sqlite-vec.  The reliable
         # integrity signal is ORPHAN META: a meta row whose vec row is
         # missing means real corruption (dropped vec table, lost rows).
+        #
+        # The full orphan check (LEFT JOIN meta ⋈ vec0) is O(rows × vec0)
+        # on sqlite-vec — measured 48–117 s at 16k/6.7k rows because vec0
+        # rowid lookups are slow (asg017/sqlite-vec #37/#196).  It ran on
+        # every probe/status call, so a fully built library made every
+        # reader hang for minutes (2026-08-14: process pile-up, false
+        # 'database is locked', embed build appearing to hang after
+        # publish).  Replacement: meta rows whose rowid exceeds the vec0
+        # max are provably orphaned — vec0 rowids are handed out by
+        # INSERT (lastrowid) and only grow, so a table rebuilt/dropped
+        # leaves every stale meta rowid above the new max.  This is O(1)
+        # (3 ms) and catches the only realistic corruption mode (vec table
+        # dropped/recreated).  A full 100% scan stays available as a
+        # manual maintenance command.
         try:
+            vec_max = conn.execute(
+                f"SELECT COALESCE(MAX(rowid), 0) FROM {vec}"
+            ).fetchone()[0]
             orphan = conn.execute(
-                f"SELECT COUNT(*) FROM {meta} m "
-                f"LEFT JOIN {vec} v ON v.rowid = m.rowid WHERE v.rowid IS NULL"
+                f"SELECT COUNT(*) FROM {meta} WHERE rowid > ?", (vec_max,)
             ).fetchone()[0]
             if orphan:
-                reasons.append(f"{meta} has {orphan} orphan rowids")
+                reasons.append(f"{meta} has {orphan} rowids beyond vec0 max {vec_max}")
         except Exception as exc:  # noqa: BLE001
             unreadable.append(meta)
             reasons.append(f"{meta} orphan check unreadable: {exc}")
