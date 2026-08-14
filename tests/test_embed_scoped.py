@@ -675,3 +675,128 @@ class TestRecordingEmbeddingProvider:
         src = Path(builder_mod.__file__).read_text(encoding="utf-8")
         assert "PAPERFORGE_EMBED_PROVIDER" not in src
         assert "EMBED_PROVIDER=mock" not in src
+
+
+class TestZombieRunningIncremental:
+    """C (2026-08-14): a zombie `running` build_state (dead pid, no
+    candidate) must NOT force a full rebuild when vectors exist and the
+    identity matches — resume stays incremental (in-place), only embedding
+    missing papers.  Old code downgraded resume to a full shadow rebuild."""
+
+    def _zombie_state_with_identity(self, tmp_path: Path) -> None:
+        from paperforge.embedding._config import (
+            get_api_model,
+            get_effective_api_base_url,
+        )
+        from paperforge.memory.db import get_memory_db_path
+
+        conn = sqlite3.connect(str(get_memory_db_path(tmp_path)))
+        try:
+            # Match _dict_to_build_state's encoding: strings stored bare,
+            # non-strings JSON-serialised.
+            bs = [
+                ("status", "running"),
+                ("pid", "99999999"),
+                ("vector_identity_version", "1"),
+                ("model", get_api_model(tmp_path)),
+                ("vector_provider_endpoint", get_effective_api_base_url(tmp_path)),
+                ("vector_dimension", "1536"),
+            ]
+            for k, v in bs:
+                if not isinstance(v, str):
+                    v = json.dumps(v)
+                conn.execute(
+                    "INSERT OR REPLACE INTO build_state (key, value) VALUES (?, ?)",
+                    (k, v),
+                )
+            conn.commit()
+        finally:
+            conn.close()
+
+    def _real_encode(self, vault, job):
+        """Return a real encoded bundle so _mark's build_state serialization
+        works (a bare MagicMock breaks json.dumps)."""
+        from tests.test_pr9c_streaming_embed import (
+            EncodedPayload,
+            PaperEncodedBundle,
+            _make_bundle,
+        )
+
+        bundle = _make_bundle(job.paper_id, n_chunks=1)
+        return PaperEncodedBundle(
+            paper_id=bundle.paper_id,
+            payloads=[
+                EncodedPayload(
+                    collection_name=p.collection_name,
+                    texts=p.texts,
+                    ids=p.ids,
+                    metadatas=p.metadatas,
+                    embeddings=[[0.1] * 1536 for _ in p.embeddings],
+                )
+                for p in bundle.payloads
+            ],
+            chunk_count=bundle.chunk_count,
+        )
+
+    def test_zombie_running_with_identity_resumes_incrementally(self, tmp_path: Path) -> None:
+        """Vectors exist + identity matches → resume must NOT route through
+        shadow (no table clear, no re-embed of existing papers)."""
+        canonical_test_config(tmp_path, system_dir="System")
+        _seed_resume_db(tmp_path, ("A",))
+        self._zombie_state_with_identity(tmp_path)
+
+        # _seed_resume_db inserts meta rows without matching vec0 rows; the
+        # MAX(rowid) orphan check would flag them and force shadow.  Align
+        # vec0 rows so the layout is genuinely healthy (mirrors production).
+        from paperforge.memory.db import get_memory_db_path, ensure_vec_extension
+
+        conn = sqlite3.connect(str(get_memory_db_path(tmp_path)))
+        ensure_vec_extension(conn)
+        for vec, meta in (
+            ("vec_fulltext", "vec_fulltext_meta"),
+            ("vec_body", "vec_body_meta"),
+            ("vec_objects", "vec_objects_meta"),
+        ):
+            for (rid,) in conn.execute(f"SELECT rowid FROM {meta}").fetchall():
+                conn.execute(
+                    f"INSERT OR REPLACE INTO {vec}(rowid, embedding) VALUES (?, ?)",
+                    (rid, json.dumps([0.0] * 1536)),
+                )
+        conn.commit()
+        conn.close()
+
+        from unittest.mock import patch
+
+        shadow_prepared: list[str] = []
+
+        from paperforge.embedding.build_target import ShadowBuild
+
+        orig_prepare = ShadowBuild.prepare
+
+        def spy_prepare(self):
+            shadow_prepared.append("prepare")
+            return orig_prepare(self)
+
+        ShadowBuild.prepare = spy_prepare
+        try:
+            with patch("paperforge.commands.embed._pid_alive", return_value=False), \
+                 patch("paperforge.commands.embed.encode_paper_job", side_effect=self._real_encode) as enc, \
+                 patch("paperforge.commands.embed.prepare_payloads_for_entry",
+                       side_effect=lambda vault, key, *a, **k: _payloads_for(key)), \
+                 patch("paperforge.commands.embed.delete_paper_vectors"), \
+                 patch("paperforge.commands.embed.write_encoded_payload"):
+                rc = run_build(tmp_path, _papers(("A", "B")), keys=None, resume=True)
+        finally:
+            ShadowBuild.prepare = orig_prepare
+
+        assert rc == 0
+        assert shadow_prepared == [], (
+            "zombie running + vectors + matching identity must resume in-place, "
+            "never clear tables via shadow"
+        )
+        # The resumed in-place build completes normally (zombie takeover mark
+        # interrupted at start, then the completed mark overwrites it).
+        from paperforge.embedding.build_state import read_vector_build_state
+
+        state = read_vector_build_state(tmp_path)
+        assert state.get("status") == "completed"
