@@ -219,6 +219,47 @@ class TestSubsetSemantics:
 
 # ── lineage preservation (#165 comment) ───────────────────────────────────
 
+class TestLineageDimensionResolution:
+    def test_expected_dim_wins(self, tmp_path: Path) -> None:
+        from paperforge.commands.embed import _resolve_lineage_dimension
+
+        assert _resolve_lineage_dimension(None, expected_dim=2560, stored_dim=3) == 2560
+
+    def test_stored_dim_fallback(self, tmp_path: Path) -> None:
+        from paperforge.commands.embed import _resolve_lineage_dimension
+
+        assert _resolve_lineage_dimension(None, expected_dim=0, stored_dim=3) == 3
+
+    def test_vec_ddl_is_authoritative_fallback(self, tmp_path: Path) -> None:
+        """Incremental resumes never recreate vec tables (expected_dim=0) and
+        may lack build_state.vector_dimension (stored_dim=0) — the vec0 DDL
+        self-declaration must supply the dimension, or lineage writes are
+        silently skipped (regression: resume-completed builds published with
+        empty lineage -> reader gate dropped everything)."""
+        from paperforge.commands.embed import _resolve_lineage_dimension
+        from paperforge.memory.db import ensure_vec_extension
+        from paperforge.memory.schema import ensure_schema
+
+        db_path = tmp_path / "t.db"
+        conn = sqlite3.connect(str(db_path))
+        try:
+            ensure_vec_extension(conn)
+            ensure_schema(conn)
+            dim = _resolve_lineage_dimension(conn, expected_dim=0, stored_dim=0)
+            assert dim == 1536  # schema default; the DDL is the source
+        finally:
+            conn.close()
+
+    def test_no_source_returns_zero(self, tmp_path: Path) -> None:
+        from paperforge.commands.embed import _resolve_lineage_dimension
+
+        conn = sqlite3.connect(str(tmp_path / "empty.db"))
+        try:
+            assert _resolve_lineage_dimension(conn, expected_dim=0, stored_dim=0) == 0
+        finally:
+            conn.close()
+
+
 class TestLineagePreservation:
     def test_resume_skipped_papers_keep_lineage_rows_byte_identical(self, tmp_path: Path) -> None:
         canonical_test_config(tmp_path, system_dir="System")
