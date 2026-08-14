@@ -80,6 +80,36 @@ def _has_any_rows(conn: sqlite3.Connection) -> bool:
     return False
 
 
+def effective_vector_db(vault: Path) -> Path:
+    """Return the DB that holds the CURRENT vector truth.
+
+    RC UX Seam (single source): a shadow build writes ONLY to the candidate
+    (.db.build) until publish swaps it into live — so during an
+    interrupted/failed/in-flight shadow, the candidate is the ONLY place
+    with real rows and a real build_state.  Every observer (substrate,
+    build_state reads, embed status, probe) must look at the SAME file:
+    candidate when it has rows, else live.
+
+    Returns the candidate path when it exists AND has vector rows; live
+    otherwise.  Never guesses — an empty/absent candidate falls back to live.
+    """
+    from paperforge.memory.db import get_memory_db_path
+
+    live = get_memory_db_path(vault)
+    candidate = live.with_suffix(".db.build")
+    if candidate.exists():
+        try:
+            conn = sqlite3.connect(f"file:{candidate.as_posix()}?mode=ro", uri=True)
+            try:
+                if _has_any_rows(conn):
+                    return candidate
+            finally:
+                conn.close()
+        except Exception:  # noqa: BLE001 — unreadable candidate falls back
+            pass
+    return live
+
+
 def assess_vector_substrate(vault: Path, *, db_path: Path | None = None) -> VectorSubstrate:
     """Pure observation of desired-vs-published embedding substrate.
 
@@ -94,7 +124,10 @@ def assess_vector_substrate(vault: Path, *, db_path: Path | None = None) -> Vect
 
     from paperforge.memory.db import get_memory_db_path
 
-    db_path = db_path or get_memory_db_path(vault)
+    # RC UX Seam: observe the EFFECTIVE carrier (candidate-with-rows first,
+    # else live) so an interrupted shadow is seen as the truth it is, not as
+    # the stale live snapshot behind it.
+    db_path = db_path or effective_vector_db(vault)
     db_exists = db_path.exists()
     reason_codes: list[str] = []
 

@@ -89,9 +89,15 @@ def read_vector_build_state(vault: Path) -> dict:
     Returns :func:`_default_state` when the database file or table does not
     exist yet.  Merges persisted values on top of the defaults so that any
     missing keys are still present in the returned dict.
+
+    RC UX Seam (single source): reads the EFFECTIVE carrier — the shadow
+    candidate when it holds rows, else live — so an interrupted/failed
+    shadow's own build_state is what every consumer sees.
     """
     try:
-        db_path = get_memory_db_path(vault)
+        from paperforge.embedding.substrate import effective_vector_db
+
+        db_path = effective_vector_db(vault)
         if not db_path.exists():
             return _default_state()
         with open_live_reader(vault, db_path) as conn:
