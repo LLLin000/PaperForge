@@ -15,6 +15,7 @@ exists anywhere in this module.
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import json
 import re
@@ -23,10 +24,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from paperforge.worker.ocr_hash import (
-    compute_ocr_result_hash,
-    has_result_hash_pending,
-)
+from paperforge.worker.ocr_hash import compute_ocr_result_hash
 
 # The embedding provider is the openai-compatible provider seam; its endpoint
 # is semantically identity-bearing (different endpoints → different embedding
@@ -302,55 +300,6 @@ def _papers_with_vectors(conn: sqlite3.Connection) -> list[str]:
 
 # ── probe read model ──────────────────────────────────────────────────────
 
-def _ocr_detail(paper_dir: Path | None) -> str | None:
-    """Fine-grained reason behind a paper's ocr state — the state machine
-    captures WHY, not just WHAT, so the next-step decision and the UI can
-    distinguish every distinct meaning:
-
-    - not_started      OCR never ran (meta pending / no artifacts)
-    - queued           OCR queued or in flight (meta processing/running)
-    - failed           OCR run failed (meta ocr_status=failed)
-    - no_pdf           No PDF source — OCR cannot run at all
-    - ran_but_empty    OCR ran but produced zero blocks
-    - tree_missing     OCR done, structure tree file absent
-    - tree_empty       OCR done, structure tree has no nodes
-    - version_old      Produced by an older OCR pipeline version
-    - None             complete and current
-    """
-    if paper_dir is None or not paper_dir.exists():
-        return "not_started"
-    meta = _read_ocr_meta(paper_dir)
-    meta_status = str(meta.get("ocr_status", "") or "") if meta else ""
-    if meta_status == "failed":
-        return "failed"
-    if meta_status == "pending":
-        return "not_started"
-    if meta_status in ("processing", "running", "queued"):
-        return "queued"
-    if meta_status == "nopdf":
-        return "no_pdf"
-    blocks = paper_dir / "structure" / "blocks.structured.jsonl"
-    if not blocks.exists():
-        # meta says the OCR finished but no blocks file materialized — the
-        # run produced nothing (failed to write output); that is
-        # ran_but_empty (re-run), NOT not_started (never ran).
-        if meta_status in ("done", "done_incomplete"):
-            return "ran_but_empty"
-        return "not_started"
-    try:
-        if blocks.stat().st_size == 0:
-            return "ran_but_empty"
-    except OSError:
-        return "unreadable"
-    if _is_structure_tree_incomplete(paper_dir):
-        if not (paper_dir / "index" / "structure-tree.json").exists():
-            return "tree_missing"
-        return "tree_empty"
-    if _is_old_pipeline(paper_dir):
-        return "version_old"
-    return None
-
-
 def probe_lineage(vault: Path) -> dict[str, Any]:
     """Per-paper {ocr, retrieval, vector} lineage states.
 
@@ -507,8 +456,10 @@ def _paper_keys(vault: Path, db_path: Path) -> list[str]:
 # lifecycle  → top-level missing / failed
 OCR_DETAIL_NOT_STARTED = "not_started"          # none/pending — never ran → ocr.run
 OCR_DETAIL_QUEUED = "queued"                    # queued/running/processing → wait
+OCR_DETAIL_QUEUED_INTERRUPTED = "queued_interrupted"  # queued but past zombie timeout → failed → ocr.run
 OCR_DETAIL_RETRYABLE_ERROR = "retryable_error"  # → failed → ocr.run
 OCR_DETAIL_FATAL_ERROR = "fatal_error"          # → failed → ocr.run / diagnose
+OCR_DETAIL_FAILED_LEGACY = "failed_legacy"      # legacy meta "failed" → failed → ocr.run
 OCR_DETAIL_BLOCKED = "blocked"                  # → missing → fix precondition
 OCR_DETAIL_NO_PDF = "no_pdf"                    # → missing → user action
 #
@@ -523,8 +474,8 @@ OCR_DETAIL_ROLE_INDEX_MISSING = "role_index_missing"   # → incomplete → rebu
 OCR_DETAIL_ROLE_INDEX_INVALID = "role_index_invalid"   # → incomplete → rebuild_derived
 #
 # publish marker (crash-surviving) → top-level unknown / incomplete
-OCR_DETAIL_PUBLISH_IN_PROGRESS = "publish_in_progress"    # producer alive → wait
-OCR_DETAIL_PUBLISH_INTERRUPTED = "publish_interrupted"    # producer dead → rebuild_derived
+OCR_DETAIL_PUBLISH_PENDING_RECENT = "publish_pending_recent"  # marker fresh → wait grace period
+OCR_DETAIL_PUBLISH_PENDING_STALE = "publish_pending_stale"    # marker stale → rebuild_derived
 #
 # version → top-level current
 OCR_DETAIL_VERSION_OLD = "version_old"          # usable, optional upgrade
@@ -544,12 +495,39 @@ def _read_ocr_meta(paper_dir: Path) -> dict | None:
         return None
 
 
+def _queued_is_zombie(paper_dir: Path, meta: dict | None) -> bool:
+    """A queued/running paper past the worker's zombie timeout (default 30
+    minutes, PAPERFORGE_ZOMBIE_TIMEOUT_MINUTES) is an orphaned run: the
+    worker's own zombie-reset only fires on the NEXT ocr.run, so the probe
+    must surface it as interrupted (→ ocr.run) instead of waiting forever."""
+    if not meta:
+        return False
+    started = str(meta.get("ocr_started_at", "") or "")
+    if not started:
+        return False
+    try:
+        import os as _os
+        from datetime import datetime, timezone
+
+        timeout_min = int(_os.environ.get("PAPERFORGE_ZOMBIE_TIMEOUT_MINUTES", "30"))
+        started_dt = datetime.fromisoformat(started)
+        if started_dt.tzinfo is None:
+            started_dt = started_dt.replace(tzinfo=timezone.utc)
+        age = (datetime.now(timezone.utc) - started_dt).total_seconds()
+        return age > timeout_min * 60
+    except Exception:  # noqa: BLE001 — unparseable start → treat as fresh
+        return False
+
+
 def _ocr_meta_lifecycle(paper_dir: Path) -> tuple[str | None, str | None]:
     """meta.json ocr_status → (detail, top-level state).
 
     Covers the REAL worker lifecycle enum, not a subset: none/pending,
-    queued/running/processing, retryable_error, fatal_error/error, blocked,
-    nopdf.  done* values fall through to artifact checks."""
+    queued/running/processing (with zombie timeout), retryable_error,
+    fatal_error/error, blocked, nopdf, AND the legacy "failed" value that
+    older metas still carry (→ failed/failed_legacy, never dropped through
+    to artifact checks where complete old artifacts would look current).
+    done* values fall through to artifact checks."""
     meta = _read_ocr_meta(paper_dir)
     if not meta:
         return None, None
@@ -557,11 +535,16 @@ def _ocr_meta_lifecycle(paper_dir: Path) -> tuple[str | None, str | None]:
     if st in ("none", "pending", ""):
         return OCR_DETAIL_NOT_STARTED, "missing"
     if st in ("queued", "running", "processing"):
+        if _queued_is_zombie(paper_dir, meta):
+            return OCR_DETAIL_QUEUED_INTERRUPTED, "failed"
         return OCR_DETAIL_QUEUED, "missing"
     if st == "retryable_error":
         return OCR_DETAIL_RETRYABLE_ERROR, "failed"
     if st in ("fatal_error", "error"):
         return OCR_DETAIL_FATAL_ERROR, "failed"
+    if st == "failed":
+        # Legacy meta value — the run failed; never guess retryable/fatal.
+        return OCR_DETAIL_FAILED_LEGACY, "failed"
     if st == "blocked":
         return OCR_DETAIL_BLOCKED, "missing"
     if st == "nopdf":
@@ -594,27 +577,65 @@ def _is_old_pipeline(paper_dir: Path) -> bool:
     return bool(v) and v != OCR_PIPELINE_VERSION
 
 
-def _jsonl_valid(path: Path) -> bool:
-    """A non-empty JSONL file is valid when its first non-blank line parses
-    as JSON (spot check — cheap and catches real corruption)."""
+def _json_valid(path: Path) -> bool:
     try:
+        import json as _json
+
+        _json.loads(path.read_text(encoding="utf-8"))
+        return True
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def _blocks_valid(path: Path) -> bool:
+    """Fast probe: first non-blank line must parse as JSON AND be a block
+    object (dict with a basic block identity field).  Syntax alone is not
+    enough — `["not a block"]` or a bare number must count as invalid."""
+    try:
+        import json as _json
+
         with path.open(encoding="utf-8") as fh:
             for line in fh:
                 if line.strip():
-                    import json as _json
-
-                    _json.loads(line)
-                    return True
+                    obj = _json.loads(line)
+                    if not isinstance(obj, dict):
+                        return False
+                    return any(
+                        k in obj for k in ("block_id", "page", "role", "raw_order")
+                    )
         return False
     except Exception:  # noqa: BLE001
         return False
 
 
+def _tree_shape(tree: object) -> bool:
+    """Root must be a dict and nodes must be a LIST of dicts.  An EMPTY
+    list is a valid shape (the caller distinguishes tree_empty); a non-dict
+    root, a non-list nodes, or non-dict entries are structurally invalid."""
+    if not isinstance(tree, dict):
+        return False
+    nodes = tree.get("nodes")
+    if not isinstance(nodes, list):
+        return False
+    return all(isinstance(n, dict) for n in nodes[:5])
+
+
+def _role_index_shape(role: object) -> bool:
+    """Root must be a dict carrying at least one collection list (the real
+    producer emits body/captions/tables/metadata/references collections)."""
+    if not isinstance(role, dict):
+        return False
+    return any(isinstance(v, list) for v in role.values())
+
+
 def _ocr_artifact_detail(paper_dir: Path) -> str | None:
     """Inspect the 3 canonical artifacts in dependency order:
     blocks → tree → role-index.  Returns the FIRST broken detail, or None
-    when all three are present AND semantically valid (file-exists is not
-    file-valid — JSON/JSONL content is spot-checked)."""
+    when all three are present AND semantically valid.
+
+    Fast probe = syntax + basic SHAPE validation (a JSON file that parses
+    but has the wrong structure is invalid — e.g. `[]` for a tree, `123`
+    for a role-index).  Exhaustive per-line validation stays in doctor."""
     blocks = paper_dir / "structure" / "blocks.structured.jsonl"
     tree = paper_dir / "index" / "structure-tree.json"
     role = paper_dir / "index" / "role-index.json"
@@ -626,26 +647,31 @@ def _ocr_artifact_detail(paper_dir: Path) -> str | None:
             return OCR_DETAIL_BLOCKS_EMPTY
     except OSError:
         return OCR_DETAIL_BLOCKS_INVALID
-    if not _jsonl_valid(blocks):
+    if not _blocks_valid(blocks):
         return OCR_DETAIL_BLOCKS_INVALID
     # tree
     if not tree.exists():
         return OCR_DETAIL_TREE_MISSING
-    if not _json_valid(tree):
-        return OCR_DETAIL_TREE_INVALID
     try:
         import json as _json
 
         t = _json.loads(tree.read_text(encoding="utf-8"))
-        nodes = t.get("nodes", []) if isinstance(t, dict) else []
-        if not nodes:
-            return OCR_DETAIL_TREE_EMPTY
     except Exception:  # noqa: BLE001
         return OCR_DETAIL_TREE_INVALID
+    if not _tree_shape(t):
+        return OCR_DETAIL_TREE_INVALID
+    if not t.get("nodes"):
+        return OCR_DETAIL_TREE_EMPTY
     # role-index
     if not role.exists():
         return OCR_DETAIL_ROLE_INDEX_MISSING
-    if not _json_valid(role):
+    try:
+        import json as _json
+
+        r = _json.loads(role.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        return OCR_DETAIL_ROLE_INDEX_INVALID
+    if not _role_index_shape(r):
         return OCR_DETAIL_ROLE_INDEX_INVALID
     return None
 
@@ -662,10 +688,10 @@ def _publish_state(paper_dir: Path) -> tuple[str | None, str | None]:
 
         age = _time.time() - marker.stat().st_mtime
         if age < OCR_PUBLISH_STALE_SECONDS:
-            return OCR_DETAIL_PUBLISH_IN_PROGRESS, "unknown"
+            return OCR_DETAIL_PUBLISH_PENDING_RECENT, "unknown"
     except OSError:
         pass
-    return OCR_DETAIL_PUBLISH_INTERRUPTED, "incomplete"
+    return OCR_DETAIL_PUBLISH_PENDING_STALE, "incomplete"
 
 
 def _probe_ocr_state(paper_dir: Path | None) -> tuple[str, str | None]:
@@ -829,10 +855,8 @@ def _current_embedding_identity(
             "SELECT value FROM build_state WHERE key = 'vector_dimension'"
         ).fetchone()
         if row:
-            try:
+            with contextlib.suppress(TypeError, ValueError):
                 dimension = json.loads(row[0])
-            except (TypeError, ValueError):
-                pass
     if not dimension:
         return None
     return compute_embedding_identity(

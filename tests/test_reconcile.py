@@ -79,7 +79,8 @@ def _set_ocr_stale(vault: Path, key: str) -> None:
     """Touch the OCR artifact after publish so probe reports ocr stale."""
     ocr_dir = vault / "99_System" / "PaperForge" / "ocr" / key
     (ocr_dir / "structure" / "blocks.structured.jsonl").write_text(
-        json.dumps({"blocks": [key, "changed"]}), encoding="utf-8"
+        json.dumps({"block_id": key, "page": 1, "role": "body_paragraph", "stale": True}),
+        encoding="utf-8",
     )
 
 
