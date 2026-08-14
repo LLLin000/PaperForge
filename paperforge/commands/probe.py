@@ -571,6 +571,94 @@ def probe_ocr(vault: Path) -> dict[str, Any]:
         act_label = None
         act_progress = None
 
+    # ── Unified state machine (统一出统一回) ──
+    # The lineage probe is the AUTHORITY for per-paper OCR state.  The old
+    # maintenance health/display_action flags below are demoted to a
+    # quality-only overlay: they must never conflate "OCR not finished"
+    # (blocks_empty / not_started) with "OCR quality failed" — those are
+    # different meanings with different next actions.
+    from collections import Counter as _Counter
+
+    _lin_states: _Counter = _Counter()
+    _lin_details: _Counter = _Counter()
+    try:
+        from paperforge.lineage import probe_lineage as _pl
+
+        _lin = _pl(vault)
+        for _s in _lin.get("papers", {}).values():
+            _lin_states[str(_s.get("ocr", "unknown"))] += 1
+            _lin_details[(str((_s.get("details") or {}).get("ocr") or "none"))] += 1
+    except Exception:  # noqa: BLE001 — lineage unobservable → fall back to maintenance
+        pass
+
+    _n_failed = int(_lin_states.get("failed", 0))
+    _n_incomplete = int(_lin_states.get("incomplete", 0))
+    _n_blocks = int(
+        _lin_details.get("blocks_missing", 0)
+        + _lin_details.get("blocks_empty", 0)
+        + _lin_details.get("blocks_invalid", 0)
+    )
+    _n_pending = int(_lin_details.get("not_started", 0))
+    _n_nopdf = int(_lin_details.get("no_pdf", 0))
+
+    if _n_failed:
+        return _wrap(module="ocr", capability_state="needs_action", severity="warning",
+        reason_code="ocr.failed",
+        reason_text=f"OCR failed for {_n_failed} paper(s) — re-run to process",
+        user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
+        maintenance_eligible=True, user_visible_failure=True,
+        user_impact="Failed OCR papers cannot be read or searched until reprocessed",
+        action_primary=build_action_primary(
+            action_id="ocr.run", verb="run", label="Run OCR",
+        ),
+        activity_state=act_state, activity_label=act_label, activity_progress=act_progress,
+        notices=notices, ttl_seconds=TTL_OCR, pipeline_version=OCR_PIPELINE_VERSION)
+
+    if _n_incomplete:
+        return _wrap(module="ocr", capability_state="needs_action", severity="warning",
+        reason_code="ocr.incomplete",
+        reason_text=f"OCR structure incomplete for {_n_incomplete} paper(s) — rebuild derived artifacts",
+        user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
+        maintenance_eligible=True,
+        user_impact="Incomplete OCR papers lack structural search (no body units) until derived artifacts are rebuilt",
+        action_primary=build_action_primary(
+            action_id="ocr.rebuild_derived", verb="run", label="Rebuild OCR derived",
+        ),
+        activity_state=act_state, activity_label=act_label, activity_progress=act_progress,
+        notices=notices, ttl_seconds=TTL_OCR, pipeline_version=OCR_PIPELINE_VERSION)
+
+    if _n_blocks:
+        return _wrap(module="ocr", capability_state="needs_action", severity="warning",
+        reason_code="ocr.blocks_missing",
+        reason_text=f"OCR produced no usable content for {_n_blocks} paper(s) — re-run OCR",
+        user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
+        maintenance_eligible=True,
+        action_primary=build_action_primary(
+            action_id="ocr.run", verb="run", label="Run OCR",
+        ),
+        activity_state=act_state, activity_label=act_label, activity_progress=act_progress,
+        notices=notices, ttl_seconds=TTL_OCR, pipeline_version=OCR_PIPELINE_VERSION)
+
+    if _n_pending:
+        return _wrap(module="ocr", capability_state="needs_action", severity="warning",
+        reason_code="ocr.pending",
+        reason_text=f"OCR is pending for {_n_pending} papers — run to process",
+        user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
+        action_primary=build_action_primary(
+            action_id="ocr.run",
+            verb="run", label="Run OCR",
+        ),
+        activity_state=act_state, activity_label=act_label, activity_progress=act_progress,
+        notices=notices, ttl_seconds=TTL_OCR, pipeline_version=OCR_PIPELINE_VERSION)
+
+    if _n_nopdf:
+        return _wrap(module="ocr", capability_state="needs_action", severity="warning",
+        reason_code="ocr.no_pdf",
+        reason_text=f"{_n_nopdf} paper(s) have no PDF source — add the file to run OCR",
+        user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
+        notices=notices, ttl_seconds=TTL_OCR, pipeline_version=OCR_PIPELINE_VERSION)
+
+
     KNOWN_ACTIONS = frozenset({'retry_ocr', 'upgrade_legacy', 'rebuild_result', 'run_ocr', 'none'})
 
     has_failed = any(
