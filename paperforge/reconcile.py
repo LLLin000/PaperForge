@@ -107,9 +107,9 @@ class GlobalObservation:
 @dataclass(frozen=True)
 class PaperObservation:
     key: str
-    ocr: str  # current | stale | missing | running | unknown
-    retrieval: str  # current | stale | missing | unknown
-    vector: str  # current | stale | missing | not_required | unknown
+    ocr: str  # current | stale | missing | running | unknown | incomplete
+    retrieval: str  # current | stale | missing | unknown | incomplete
+    vector: str  # current | stale | missing | not_required | unknown | incomplete
     identities: dict[str, str | None]  # internal digest material (W2)
 
 
@@ -246,6 +246,16 @@ def _per_paper_intents(paper: PaperObservation) -> list[ActionIntent]:
             scope=scope,
             trigger_reason_code="lineage.ocr_derived_stale",
             trigger_reason=f"Derived OCR artifacts for {paper.key} are stale",
+        ))
+    elif paper.ocr == "incomplete":
+        # OCR ran but the structure tree is missing/empty — an INCOMPLETE
+        # product, distinct from a quality problem.  The fix is a LOCAL
+        # derived rebuild (ocr rebuild), never ocr.run (no quality defect).
+        intents.append(ActionIntent(
+            action_id="ocr.rebuild_derived",
+            scope=scope,
+            trigger_reason_code="lineage.ocr_incomplete",
+            trigger_reason=f"OCR structure tree for {paper.key} is missing or empty",
         ))
     # Retrieval depends on OCR being current.
     if paper.retrieval in ("stale", "missing") and paper.ocr == "current":

@@ -434,8 +434,31 @@ def _paper_keys(vault: Path, db_path: Path) -> list[str]:
     return sorted(keys)
 
 
+def _is_structure_tree_incomplete(paper_dir: Path) -> bool:
+    """OCR completed but the structure tree is missing, unreadable, or EMPTY
+    (``nodes: []``).  Without a tree the derived layers (body units,
+    structural coordinates) cannot be built — the paper has NO searchable
+    structure.
+
+    This is an INCOMPLETE OCR product, semantically distinct from a QUALITY
+    problem: the fix is a derived rebuild (`ocr rebuild`), not a quality
+    re-run, and the state must never masquerade as ``current``.
+    """
+    tree_path = paper_dir / "index" / "structure-tree.json"
+    if not tree_path.exists():
+        return True
+    try:
+        import json as _json
+
+        tree = _json.loads(tree_path.read_text(encoding="utf-8"))
+        nodes = tree.get("nodes", []) if isinstance(tree, dict) else []
+        return not nodes
+    except Exception:  # noqa: BLE001 — unreadable tree = incomplete, never current
+        return True
+
+
 def _probe_ocr_state(paper_dir: Path | None) -> tuple[str, str | None]:
-    """(state, ocr_identity) — current | stale | missing | unknown.
+    """(state, ocr_identity) — current | stale | missing | unknown | incomplete.
 
     DAG principle: the OCR *artifacts* are the authority for the identity;
     ``result-hash.txt`` is a publish snapshot (cache) used only as a cheap
@@ -443,6 +466,11 @@ def _probe_ocr_state(paper_dir: Path | None) -> tuple[str, str | None]:
     artifacts — never ``unknown`` while the artifacts are intact.  The
     caller (_probe_retrieval_state) cross-checks the recomputed identity
     against the manifest's recorded ``ocr_result_hash`` edge.
+
+    ``incomplete``: artifacts exist but the structure tree is missing or
+    empty — the OCR ran but its derived structure was never produced (or is
+    unbuildable from the source content).  This is NOT a quality problem;
+    it is an incomplete product and is reported distinctly.
     """
     if paper_dir is None or not paper_dir.exists():
         return "missing", None
@@ -450,6 +478,8 @@ def _probe_ocr_state(paper_dir: Path | None) -> tuple[str, str | None]:
         return "missing", None
     if has_result_hash_pending(paper_dir):
         return "unknown", None
+    if _is_structure_tree_incomplete(paper_dir):
+        return "incomplete", None
     current = compute_ocr_result_hash(paper_dir)
     if current is None:
         return "unknown", None
@@ -483,6 +513,10 @@ def _probe_retrieval_state(
     """
     if ocr_state == "missing":
         return "missing", None
+    if ocr_state == "incomplete":
+        # Structure tree absent/empty → the derived materialization cannot
+        # exist; report incomplete (distinct from quality), never stale.
+        return "incomplete", None
     if ocr_state == "unknown":
         return "unknown", None
     if ocr_state == "stale":
@@ -598,6 +632,11 @@ def _probe_vector_state(
         return "missing"
     if not has_lineage_table:
         return "unknown"
+    if retrieval_state == "incomplete":
+        # The paper is an incomplete OCR product (missing/empty structure
+        # tree): any vectors that exist are part of that incomplete
+        # materialization — report incomplete, regardless of a lineage row.
+        return "incomplete"
     row = conn.execute(
         "SELECT identity, derived_from, embedding_identity FROM lineage "
         "WHERE paper_id = ? AND layer = ?",
@@ -619,6 +658,10 @@ def _probe_vector_state(
         if stored_embedding != embedding_identity:
             return "stale"
         return "current"
+    if retrieval_state == "incomplete":
+        # Derived layers cannot exist without a structure tree — the paper
+        # is an incomplete OCR product; vectors (if any) are not structural.
+        return "incomplete"
     if retrieval_state != "current":
         return "unknown" if retrieval_state == "unknown" else "stale"
     if not embedding_identity or not current_retrieval_identity:

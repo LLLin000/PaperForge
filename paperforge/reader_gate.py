@@ -19,7 +19,14 @@ def filter_readable(vault: Path, hits: list[dict[str, Any]], *, require_vector: 
 
     - paper absent from the lineage probe → unknown → dropped
     - retrieval != current → the text materialization is stale → dropped
-    - require_vector and vector != current → stale vectors → dropped
+    - require_vector and vector not in (current, incomplete) → dropped
+
+    ``incomplete`` vectors are ALLOWED: they are real embeddings produced
+    from an incomplete OCR product (missing/empty structure tree, so no
+    body units — but any object vectors that exist are genuine data).
+    The state is still surfaced honestly by the probe/reconcile (rebuild
+    derived), but already-materialized vectors keep serving instead of
+    silently regressing.
 
     ``require_vector=False`` is for readers that only consume text
     materialization (retrieval units), never vectors.
@@ -44,9 +51,9 @@ def filter_readable(vault: Path, hits: list[dict[str, Any]], *, require_vector: 
         state = papers.get(paper_id)
         if state is None:
             continue  # unknown paper → never serve
-        if state.get("retrieval") != "current":
+        if state.get("retrieval") not in ("current", "incomplete"):
             continue  # mismatched retrieval chain → never serve
-        if require_vector and state.get("vector") != "current":
+        if require_vector and state.get("vector") not in ("current", "incomplete"):
             continue  # mismatched vector chain → never serve
         out.append(hit)
     return out
