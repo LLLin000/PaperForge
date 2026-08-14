@@ -13,8 +13,15 @@ logger = logging.getLogger(__name__)
 
 
 def get_embed_status(vault: Path, *, probe: bool = False) -> dict:
-    """Get vector DB status from sqlite-vec companion tables (live DB)."""
-    return get_embed_status_for_path(vault, get_memory_db_path(vault), probe=probe)
+    """Get vector DB status from sqlite-vec companion tables.
+
+    RC UX Seam (single source): observes the EFFECTIVE carrier (shadow
+    candidate when it holds rows, else live) so status agrees with
+    substrate/reconcile during an interrupted or in-flight shadow build.
+    """
+    from paperforge.embedding.substrate import effective_vector_db
+
+    return get_embed_status_for_path(vault, effective_vector_db(vault), probe=probe)
 
 
 def get_embed_status_for_path(vault: Path, db_path: Path, *, probe: bool = False) -> dict:

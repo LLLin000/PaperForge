@@ -466,8 +466,13 @@ def run_build(
         # published).  Shadow ⇒ resume off, for every trigger, not just force.
         # RC UX Seam EXCEPTION: an interrupted shadow build whose candidate
         # survived keeps resume=True — recover() continues that candidate
-        # instead of clearing it.
-        if requires_shadow and not _recover_candidate:
+        # instead of clearing it.  --force / embed.build explicitly OVERRIDES
+        # the exception: the user asked for a full rebuild, so the surviving
+        # candidate is wiped and rebuilt from scratch.
+        if force:
+            _recover_candidate = False
+            resume = False
+        elif requires_shadow and not _recover_candidate:
             resume = False
 
         if requires_shadow:
@@ -903,8 +908,17 @@ def run_build(
             except Exception as exc:  # noqa: BLE001
                 logger.warning("Failed to mark interrupted state: %s", exc)
             if _shadow is not None:
-                _shadow.abort()
-                logger.info("Shadow build aborted on cancellation; live DB untouched")
+                # RC UX Seam: user stop KEEPS the candidate so resume can
+                # continue from where it stopped.  Wiping it here would
+                # discard real progress (like the old abort did).  A full
+                # rebuild remains available via --force / embed.build.
+                try:
+                    _shadow.close_candidate_conn()
+                except Exception:  # noqa: BLE001
+                    pass
+                logger.info(
+                    "Shadow build stopped; candidate retained for resume; live DB untouched"
+                )
             elif _rebuild_backup_path and _rebuild_backup_path.exists():
                 _os.replace(str(_rebuild_backup_path), str(get_memory_db_path(vault)))
                 logger.info("Restored paperforge.db from pre-rebuild backup after cancellation")

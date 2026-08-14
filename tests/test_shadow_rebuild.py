@@ -1391,3 +1391,104 @@ def test_detect_dim_trusts_ddl_when_identity_matches(tmp_path: Path, monkeypatch
     dim = dim_detect.detect_embedding_dim(vault, conn=conn)
     conn.close()
     assert dim == 3, f"DDL dim (3) must be trusted, got {dim}"
+
+
+def test_effective_vector_db_prefers_candidate_with_rows(tmp_path: Path) -> None:
+    """RC UX Seam: every observer reads the EFFECTIVE carrier — the shadow
+    candidate when it holds rows, live otherwise."""
+    from paperforge.embedding.substrate import effective_vector_db
+
+    vault = _make_vault(tmp_path)
+    live = _seed_live_db(vault, vec_rows=2)
+    assert effective_vector_db(vault) == live
+
+    # Candidate with rows → effective is the candidate.
+    cand = live.with_suffix(".db.build")
+    _seed_complete_vec_schema(cand, dim=3)
+    conn = sqlite3.connect(str(cand))
+    conn.enable_load_extension(True)
+    import sqlite_vec
+
+    sqlite_vec.load(conn)
+    cur = conn.execute("INSERT INTO vec_body(embedding) VALUES (?)",
+                       [json.dumps([0.1, 0.2, 0.3])])
+    conn.execute("INSERT INTO vec_body_meta(rowid, paper_id, unit_id) VALUES (?, 'B', 'u0')",
+                 (cur.lastrowid,))
+    conn.commit()
+    conn.close()
+    assert effective_vector_db(vault) == cand
+
+    # Candidate without rows → falls back to live.
+    empty = live.with_suffix(".db.build")
+    empty.unlink()
+    _seed_complete_vec_schema(empty, dim=3)  # tables but no rows
+    assert effective_vector_db(vault) == live
+
+
+def test_force_overrides_recover_candidate(tmp_path: Path, monkeypatch) -> None:
+    """RC UX Seam: --force / embed.build wipes a surviving candidate and
+    rebuilds from scratch; resume keeps it.  The recover path must be
+    unreachable when force=True."""
+    from paperforge.commands.embed import run_build
+    from paperforge.embedding.build_target import ShadowBuild
+
+    monkeypatch.setenv("PAPERFORGE_CREDENTIAL_EMBEDDING__DEFAULT", "sk-test-fake-key")
+    # Avoid a real embedding API probe during dimension detection.
+    monkeypatch.setattr(
+        "paperforge.embedding.dim_detect.detect_embedding_dim", lambda vault, conn=None: 3
+    )
+
+    from paperforge.memory.db import get_memory_db_path
+
+    vault = _make_vault(tmp_path)
+    # Full-schema live (papers table etc.) so the shadow snapshot succeeds.
+    live = get_memory_db_path(vault)
+    conn = sqlite3.connect(str(live))
+    conn.enable_load_extension(True)
+    import sqlite_vec
+
+    sqlite_vec.load(conn)
+    from paperforge.memory.schema import ensure_schema
+
+    ensure_schema(conn)
+    conn.execute("INSERT OR IGNORE INTO papers(zotero_key, title) VALUES ('A', 'Paper A')")
+    conn.commit()
+    conn.close()
+
+    # Build a candidate with one row so recover would normally trigger.
+    cand = live.with_suffix(".db.build")
+    _seed_complete_vec_schema(cand, dim=3)
+    conn = sqlite3.connect(str(cand))
+    conn.enable_load_extension(True)
+    sqlite_vec.load(conn)
+    cur = conn.execute("INSERT INTO vec_body(embedding) VALUES (?)",
+                       [json.dumps([0.1, 0.2, 0.3])])
+    conn.execute("INSERT INTO vec_body_meta(rowid, paper_id, unit_id) VALUES (?, 'B', 'u0')",
+                 (cur.lastrowid,))
+    conn.commit()
+    conn.close()
+
+    # run_build with force=True must NOT call ShadowBuild.recover — it goes
+    # through cleanup_stale + prepare instead.
+    calls: list[str] = []
+    real_recover = ShadowBuild.recover
+
+    def spy_recover(self):
+        calls.append("recover")
+        return real_recover(self)
+
+    monkeypatch.setattr(ShadowBuild, "recover", spy_recover)
+
+    monkeypatch.setattr(
+        "paperforge.embedding._config.get_api_model",
+        lambda vault: "text-embedding-3-small",
+    )
+    monkeypatch.setattr(
+        "paperforge.embedding._config.get_effective_api_base_url",
+        lambda vault: "https://api.openai.com/v1",
+    )
+
+    # force=True, resume=False → full rebuild; recover must not be called.
+    rc = run_build(vault, [], keys=None, force=True, resume=False, json=True)
+    assert "recover" not in calls, f"force must not recover, calls={calls}"
+    assert rc == 0
