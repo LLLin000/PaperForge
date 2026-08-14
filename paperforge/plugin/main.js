@@ -1,21 +1,21 @@
 "use strict";
 var Gr = Object.create;
-var Ye = Object.defineProperty;
+var Xe = Object.defineProperty;
 var Yr = Object.getOwnPropertyDescriptor;
 var Xr = Object.getOwnPropertyNames;
 var Qr = Object.getPrototypeOf,
   en = Object.prototype.hasOwnProperty;
 var Zt = (d, l) => () => (d && (l = d((d = 0))), l);
 var tn = (d, l) => () => (l || d((l = { exports: {} }).exports, l), l.exports),
-  ft = (d, l) => {
-    for (var e in l) Ye(d, e, { get: l[e], enumerable: !0 });
+  gt = (d, l) => {
+    for (var e in l) Xe(d, e, { get: l[e], enumerable: !0 });
   },
   Jt = (d, l, e, t) => {
     if ((l && typeof l == "object") || typeof l == "function")
       for (let r of Xr(l))
         !en.call(d, r) &&
           r !== e &&
-          Ye(d, r, {
+          Xe(d, r, {
             get: () => l[r],
             enumerable: !(t = Yr(l, r)) || t.enumerable,
           });
@@ -25,20 +25,20 @@ var $ = (d, l, e) => (
     (e = d != null ? Gr(Qr(d)) : {}),
     Jt(
       l || !d || !d.__esModule
-        ? Ye(e, "default", { value: d, enumerable: !0 })
+        ? Xe(e, "default", { value: d, enumerable: !0 })
         : e,
       d
     )
   ),
-  Gt = (d) => Jt(Ye({}, "__esModule", { value: !0 }), d);
+  Gt = (d) => Jt(Xe({}, "__esModule", { value: !0 }), d);
 var lr = {};
-ft(lr, {
+gt(lr, {
   isAllowlistedCommand: () => ln,
   legacyEmbeddingSecretIds: () => or,
   migrateLegacySecret: () => dn,
-  stripCredentialEnv: () => xt,
+  stripCredentialEnv: () => Et,
 });
-function xt(d) {
+function Et(d) {
   let l = {};
   for (let [e, t] of Object.entries(d))
     an.some((r) => e.startsWith(r)) || (l[e] = t);
@@ -141,13 +141,13 @@ var an,
   on,
   cn,
   pn,
-  Et = Zt(() => {
+  wt = Zt(() => {
     "use strict";
     an = ["PAPERFORGE_CREDENTIAL_", "PADDLEOCR_", "VECTOR_DB_", "OPENAI_"];
     on = new Set(["ocr", "memory", "embed"]);
     ((cn = "paddleocr-api-key"), (pn = "vector-db-api-key"));
   });
-var Tt = tn((Zn, fn) => {
+var At = tn((Zn, fn) => {
   fn.exports = {
     versions: [
       {
@@ -181,16 +181,16 @@ var Tt = tn((Zn, fn) => {
   };
 });
 var Or = {};
-ft(Or, {
-  isConfigHydrated: () => Ot,
+gt(Or, {
+  isConfigHydrated: () => Lt,
   readPathConfig: () => Dr,
   resolveVaultPaths: () => Y,
-  setPathConfigSource: () => at,
+  setPathConfigSource: () => it,
 });
-function at(d) {
+function it(d) {
   $e = d;
 }
-function Ot() {
+function Lt() {
   return $e !== null;
 }
 function Dr(d, l) {
@@ -228,7 +228,7 @@ var ge,
     ((ge = $(require("path"))), ($e = null));
   });
 var zn = {};
-ft(zn, { default: () => _t });
+gt(zn, { default: () => ft });
 module.exports = Gt(zn);
 var K = require("obsidian"),
   Jr = $(require("fs")),
@@ -283,7 +283,7 @@ var me = "paperforge-status",
       okMsg: "OCR redo started",
     },
   ];
-function Xe(d) {
+function Qe(d) {
   switch (d) {
     case "paperforge-sync":
       return ["sync"];
@@ -343,10 +343,10 @@ function tr(d, l) {
     Object.prototype.hasOwnProperty.call(r, s) && (n[s] = r[s]);
   return n;
 }
-function gt(d, l) {
+function ht(d, l) {
   return d && { ...d, ...l };
 }
-var Qe = 2,
+var et = 2,
   Pe = ["installation", "library", "ocr", "memory", "maintenance", "help"],
   rn = new Set([
     "checking",
@@ -420,11 +420,11 @@ function rr() {
     scope_count: 1,
   };
 }
-function et(d, l) {
+function tt(d, l) {
   if (!d || typeof d != "object") return !1;
   let e = d;
   if (
-    e.schema_version !== Qe ||
+    e.schema_version !== et ||
     typeof e.module != "string" ||
     !e.module ||
     !Pe.includes(e.module) ||
@@ -500,7 +500,7 @@ function et(d, l) {
 }
 function J(d) {
   return {
-    schema_version: Qe,
+    schema_version: et,
     module: d,
     capability_state: "unknown",
     activity_state: "idle",
@@ -519,9 +519,9 @@ function J(d) {
     ttl_seconds: 0,
   };
 }
-function ht(d) {
+function mt(d) {
   return {
-    schema_version: Qe,
+    schema_version: et,
     module: d,
     capability_state: "unknown",
     activity_state: "idle",
@@ -545,7 +545,7 @@ function ht(d) {
 }
 function Re(d) {
   return {
-    schema_version: Qe,
+    schema_version: et,
     module: d,
     capability_state: "unknown",
     activity_state: "idle",
@@ -567,7 +567,7 @@ function Re(d) {
     ttl_seconds: 0,
   };
 }
-function mt(d) {
+function yt(d) {
   if (d.activity_state === "running") return !1;
   if (d.ttl_seconds <= 0) return !0;
   let l = new Date(d.updated_at).getTime();
@@ -595,19 +595,19 @@ function ar(d, l) {
       e[t] = J(t);
       continue;
     }
-    if (!et(r, t)) {
+    if (!tt(r, t)) {
       e[t] = Re(t);
       continue;
     }
-    if (mt(r)) {
-      e[t] = ht(t);
+    if (yt(r)) {
+      e[t] = mt(t);
       continue;
     }
     e[t] = r;
   }
   return e;
 }
-var yt = {
+var bt = {
     en: {
       action_running: "Running ",
       api_key_missing: "Missing",
@@ -2602,8 +2602,8 @@ var yt = {
       ocr_ws_status_pending: "\u5F85\u5904\u7406",
     },
   },
-  bt = null;
-function vt(d) {
+  vt = null;
+function xt(d) {
   try {
     let l = d.vault;
     if (typeof l.getConfig == "function") {
@@ -2624,25 +2624,25 @@ function vt(d) {
   return "en";
 }
 function ir(d, l = "") {
-  bt = (l || vt(d)).startsWith("zh") ? yt.zh : yt.en;
+  vt = (l || xt(d)).startsWith("zh") ? bt.zh : bt.en;
 }
 function a(d) {
-  return (bt && bt[d]) || yt.en[d] || d;
+  return (vt && vt[d]) || bt.en[d] || d;
 }
 var A = require("obsidian"),
   j = $(require("fs")),
   Ee = $(require("path")),
   X = require("child_process");
-var Pt = require("child_process");
-var tt = $(require("fs")),
+var Rt = require("child_process");
+var rt = $(require("fs")),
   se = $(require("path")),
   pr = $(require("os")),
   pe = require("child_process");
-Et();
-var wt = null,
+wt();
+var kt = null,
   cr = !1;
-function kt(d, l, e, t) {
-  let r = e || tt,
+function St(d, l, e, t) {
+  let r = e || rt,
     n = t || pe.execFileSync;
   if (l && l.python_path && l.python_path.trim()) {
     let o = l.python_path.trim();
@@ -2679,7 +2679,7 @@ function kt(d, l, e, t) {
     } catch (c) {}
   return { path: "python", source: "auto-detected", extraArgs: [] };
 }
-function St(d) {
+function Ct(d) {
   let l = String(d),
     t = {
       ENOENT: {
@@ -2771,7 +2771,7 @@ function St(d) {
     ? { ...t }
     : { type: "unknown", message: String(d), recoverable: !1 };
 }
-function Ct(d, l, e, t, r, n) {
+function Pt(d, l, e, t, r, n) {
   let s = r || pe.spawn;
   return new Promise((i) => {
     let o = Date.now(),
@@ -2809,7 +2809,7 @@ function Ct(d, l, e, t, r, n) {
   });
 }
 function dr() {
-  if (cr) return wt;
+  if (cr) return kt;
   cr = !0;
   try {
     let d;
@@ -2832,10 +2832,10 @@ function dr() {
 `
         )[0]
         .trim();
-      l && (wt = se.dirname(l));
+      l && (kt = se.dirname(l));
     }
   } catch (d) {}
-  return wt;
+  return kt;
 }
 function W() {
   let d = { ...process.env },
@@ -2854,7 +2854,7 @@ function W() {
       : l === "linux" &&
         t.push("/usr/local/bin", "/usr/bin", `${e}/.local/bin`));
   let n = d.PATH || "";
-  return ((d.PATH = [...t, n].filter(Boolean).join(se.delimiter)), xt(d));
+  return ((d.PATH = [...t, n].filter(Boolean).join(se.delimiter)), Et(d));
 }
 async function ae(d, l) {
   return W();
@@ -2875,7 +2875,7 @@ function ur(d, l, e, t, r, n, s = 12e4) {
     ...(r.kind === "papers" ? ((o = r.keys) != null ? o : []) : []),
     "--json",
   ];
-  return Ct(d, i, e, s, void 0, n).then((c) => {
+  return Pt(d, i, e, s, void 0, n).then((c) => {
     try {
       let p = JSON.parse(c.stdout);
       return { ok: p.ok === !0, payload: p, exitCode: c.exitCode };
@@ -2891,13 +2891,13 @@ var de = class extends Error {
 };
 function ue(d, l, e) {
   return new Promise((t, r) => {
-    let n = kt(d, e, require("fs"), require("child_process").execFileSync);
+    let n = St(d, e, require("fs"), require("child_process").execFileSync);
     if (!n) {
       r(new de("config.python_unresolved", {}));
       return;
     }
     let s = [...n.extraArgs, "-m", "paperforge", "--vault", d, ...l, "--json"];
-    (0, Pt.execFile)(
+    (0, Rt.execFile)(
       n.path,
       s,
       { encoding: "utf-8", timeout: 6e4, windowsHide: !0 },
@@ -2940,7 +2940,7 @@ function ue(d, l, e) {
     );
   });
 }
-function Rt(d, l) {
+function Ft(d, l) {
   return ue(d, ["config", "list"], l);
 }
 function Fe(d, l, e, t) {
@@ -2949,7 +2949,7 @@ function Fe(d, l, e, t) {
 function _r(d, l) {
   return ue(d, ["config", "validate"], l);
 }
-function Ft(d, l, e) {
+function Tt(d, l, e) {
   return ue(
     d,
     l ? ["config", "migrate", "--dry-run"] : ["config", "migrate"],
@@ -2978,7 +2978,7 @@ function gr(d, l) {
 }
 function hr(d, l) {
   return new Promise((e, t) => {
-    let r = kt(d, l, require("fs"), require("child_process").execFileSync);
+    let r = St(d, l, require("fs"), require("child_process").execFileSync);
     if (!r) {
       t(new de("config.python_unresolved", {}));
       return;
@@ -2993,7 +2993,7 @@ function hr(d, l) {
       "all",
       "--json",
     ];
-    (0, Pt.execFile)(
+    (0, Rt.execFile)(
       r.path,
       n,
       { encoding: "utf-8", timeout: 6e4, windowsHide: !0 },
@@ -3035,14 +3035,14 @@ function hr(d, l) {
 function mr(d, l) {
   return ue(d, ["memory", "status"], l);
 }
-function rt(d, l) {
+function nt(d, l) {
   return ue(d, ["embed", "status"], l);
 }
 var _n = null;
 function yr() {
   _n = null;
 }
-var Nr = $(Tt());
+var Nr = $(At());
 var gn = {
     checking: "pf-badge pf-badge--checking",
     ready: "pf-badge pf-badge--ready",
@@ -3244,7 +3244,7 @@ function Cr(d, l) {
   }
   return e;
 }
-var At = require("child_process");
+var Dt = require("child_process");
 var mn = require("child_process");
 var yn = new Set([
     "start",
@@ -3305,7 +3305,7 @@ var yn = new Set([
         (this._protocolFailure = "EOF without terminal event");
     }
   };
-var nt = class {
+var st = class {
   constructor(l) {
     this._opts = l;
     this._state = "idle";
@@ -3352,7 +3352,7 @@ var nt = class {
       return;
     }
     ((e.PYTHONIOENCODING = "utf-8"), (e.PYTHONUTF8 = "1"));
-    let t = (0, At.spawn)(
+    let t = (0, Dt.spawn)(
       this._opts.pythonPath,
       [...this._opts.pythonArgs, "embed", "build", l],
       { cwd: this._opts.vaultPath, env: e, windowsHide: !0 }
@@ -3433,7 +3433,7 @@ var nt = class {
           try {
             let r = l.pid;
             if (!r) return;
-            (0, At.spawn)("taskkill", ["/T", "/F", "/PID", String(r)], {
+            (0, Dt.spawn)("taskkill", ["/T", "/F", "/PID", String(r)], {
               stdio: "ignore",
             });
           } catch (r) {
@@ -3518,11 +3518,11 @@ function Rr(d) {
     return [];
   }
 }
-var Dt = new Set();
+var Ot = new Set();
 var Fr = {
-  isInFlight: (d) => Dt.has(d),
-  markInFlight: (d) => Dt.add(d),
-  clearInFlight: (d) => Dt.delete(d),
+  isInFlight: (d) => Ot.has(d),
+  markInFlight: (d) => Ot.add(d),
+  clearInFlight: (d) => Ot.delete(d),
 };
 var vn = 1;
 function xn(d, l) {
@@ -3587,7 +3587,7 @@ function En(d) {
 }
 function Ar(d, l, e, t, r = 12e4) {
   let n = [...l, "-m", "paperforge", "--vault", e, ...En(t)];
-  return Ct(d, n, e, r, void 0, W()).then((s) => {
+  return Pt(d, n, e, r, void 0, W()).then((s) => {
     try {
       let i = JSON.parse(s.stdout);
       return { ok: i.ok === !0, payload: i, exitCode: s.exitCode };
@@ -3596,7 +3596,7 @@ function Ar(d, l, e, t, r = 12e4) {
     }
   });
 }
-async function st(d, l) {
+async function at(d, l) {
   let e = Rr(d);
   if (e.length === 0) return 0;
   let t = e.filter((r) =>
@@ -3638,15 +3638,15 @@ var ne = require("obsidian"),
   On = $(require("https")),
   It = require("child_process");
 ye();
-var Bt = $(require("fs")),
+var Mt = $(require("fs")),
   ie = $(require("path")),
-  it = require("child_process"),
+  ot = require("child_process"),
   Br = $(require("os")),
   Lr = "3.11",
   wn = 1,
   kn = "pointer.json",
   Sn = "venv";
-function Lt() {
+function Bt() {
   let d, l;
   return {
     promise: new Promise((t, r) => {
@@ -3705,13 +3705,13 @@ var be = class {
           (r = l == null ? void 0 : l.runtimeDir) != null
             ? r
             : ie.join(Br.homedir(), ".paperforge", "runtime")),
-        (this._fs = (n = l == null ? void 0 : l.fs) != null ? n : Bt),
+        (this._fs = (n = l == null ? void 0 : l.fs) != null ? n : Mt),
         (this._execFile =
-          (s = l == null ? void 0 : l.execFile) != null ? s : it.execFile),
+          (s = l == null ? void 0 : l.execFile) != null ? s : ot.execFile),
         (this._execFileSync =
           (i = l == null ? void 0 : l.execFileSync) != null
             ? i
-            : it.execFileSync));
+            : ot.execFileSync));
     }
     get venvDir() {
       return ie.join(this.rootDir, Sn);
@@ -3904,7 +3904,7 @@ var be = class {
         : { pythonPath: r, environmentRoot: n, paperforgeVersion: s };
     }
     _exec(l, e, t, r) {
-      let { promise: n, resolve: s, reject: i } = Lt();
+      let { promise: n, resolve: s, reject: i } = Bt();
       return (
         this._execFile(l, e, { ...t, encoding: "utf-8" }, (o) => {
           o ? i(new Error(`${r} failed: ${o.message}`)) : s();
@@ -3913,7 +3913,7 @@ var be = class {
       );
     }
     _probeVersion(l, e) {
-      let { promise: t, resolve: r, reject: n } = Lt();
+      let { promise: t, resolve: r, reject: n } = Bt();
       return (
         this._execFile(
           l,
@@ -3931,7 +3931,7 @@ var be = class {
       );
     }
     _probeInstallation(l, e, t, r) {
-      let { promise: n, resolve: s, reject: i } = Lt();
+      let { promise: n, resolve: s, reject: i } = Bt();
       return (
         this._execFile(
           l,
@@ -3974,7 +3974,7 @@ var be = class {
       (super(l), (this.name = "AbortError"));
     }
   };
-var Mt = class extends ne.Modal {
+var qe = class extends ne.Modal {
   constructor(e, t, r, n) {
     super(e);
     this._rowEls = [];
@@ -4115,7 +4115,7 @@ var Mt = class extends ne.Modal {
     this.contentEl.empty();
   }
 };
-function lt(d, l, e) {
+function ct(d, l, e) {
   console.log("[PF] checkOrphanState called");
   try {
     let r = Y(e).orphanStatePath;
@@ -4128,7 +4128,7 @@ function lt(d, l, e) {
       i = JSON.parse(n),
       o = { path: "python", extraArgs: [], source: "auto-detected" };
     (console.log("[PF] py.path:", o ? o.path : "null"),
-      new Mt(d, i, e, o).open(),
+      new qe(d, i, e, o).open(),
       xe.unlinkSync(r),
       console.log("[PF] orphan file cleaned"));
   } catch (t) {
@@ -4290,7 +4290,7 @@ function Ir(d, l, e, t) {
 `);
   return { title: r, body: n, labels: ["ocr", "quality", "auto-generated"] };
 }
-var ot = class extends ne.Modal {
+var lt = class extends ne.Modal {
   constructor(e, t, r) {
     super(e);
     this._returnFocusEl = null;
@@ -4421,6 +4421,7 @@ var De = class De extends A.PluginSettingTab {
     this._navMemory = { destination: "overview" };
     this._initialDisplay = !0;
     this._probing = new Set();
+    this._lastOrphanCount = 0;
     this._attemptedProbes = new Set();
     this._setupView = "overview";
     this._setupStage = 1;
@@ -5692,15 +5693,15 @@ var De = class De extends A.PluginSettingTab {
     });
     let U = L.createDiv({ cls: "pf-sr-diagnostics-body" }),
       ee = this._getVaultBasePath(),
-      Ze = this.plugin.settings.vector_db_api_base || "-",
-      Je = U.createEl("table", { cls: "pf-diag-table" }),
+      Je = this.plugin.settings.vector_db_api_base || "-",
+      Ge = U.createEl("table", { cls: "pf-diag-table" }),
       ke = new Map(),
       M = (R, z) => {
         if (!ke.has(R)) {
-          let Se = Je.createEl("tr");
+          let Se = Ge.createEl("tr");
           Se.createEl("td", { cls: "pf-diag-label", text: R });
-          let Ge = Se.createEl("td", { cls: "pf-diag-value" });
-          (ke.set(R, Se), (Ge.textContent = z));
+          let Ye = Se.createEl("td", { cls: "pf-diag-value" });
+          (ke.set(R, Se), (Ye.textContent = z));
           return;
         }
         let he = ke.get(R).children[1];
@@ -5714,7 +5715,7 @@ var De = class De extends A.PluginSettingTab {
       M("Vector Model", "\u2026"),
       M("Vector Mode", "\u2026"),
       M("Vector Dimension", "\u2026"),
-      M("Base URL", Ze),
+      M("Base URL", Je),
       ee &&
         (mr(ee, this.plugin.settings)
           .then((R) => {
@@ -5729,9 +5730,9 @@ var De = class De extends A.PluginSettingTab {
               M("Needs Rebuild", R != null && R.needs_rebuild ? "Yes" : "No"));
           })
           .catch(() => {}),
-        rt(ee, this.plugin.settings)
+        nt(ee, this.plugin.settings)
           .then((R) => {
-            var he, Se, Ge, Vt, $t, jt, qt, Ut, Wt;
+            var he, Se, Ye, Vt, $t, jt, qt, Ut, Wt;
             (M(
               "Vector Model",
               String((he = R == null ? void 0 : R.model) != null ? he : "-")
@@ -5743,8 +5744,8 @@ var De = class De extends A.PluginSettingTab {
               M(
                 "Body Chunks",
                 String(
-                  (Ge = R == null ? void 0 : R.body_chunk_count) != null
-                    ? Ge
+                  (Ye = R == null ? void 0 : R.body_chunk_count) != null
+                    ? Ye
                     : 0
                 )
               ),
@@ -5875,7 +5876,7 @@ var De = class De extends A.PluginSettingTab {
               : 0,
             p
           );
-        new ot(
+        new lt(
           this.app,
           f,
           "https://github.com/LLLin000/PaperForge/issues/new"
@@ -6062,7 +6063,7 @@ var De = class De extends A.PluginSettingTab {
       }
       (() => {
         let _ = [...p.args, "-m", "paperforge", "--vault", r],
-          u = new nt({
+          u = new st({
             vaultPath: r,
             pythonPath: p.path,
             pythonArgs: _,
@@ -6293,7 +6294,7 @@ var De = class De extends A.PluginSettingTab {
         cls: "pf-help-loading",
         text: "Loading help content\u2026",
       }),
-      r = vt(this.app),
+      r = xt(this.app),
       n = "https://api.github.com/repos/LLLin000/PaperForge/contents/docs/help",
       s = ["guide", "faq", "support"],
       i = this;
@@ -6405,13 +6406,13 @@ var De = class De extends A.PluginSettingTab {
             i === 0 &&
               ((this._lastSyncTime = new Date().toLocaleTimeString()),
               (this.plugin._lastSyncTime = this._lastSyncTime),
-              st(o, {
+              at(o, {
                 vaultPath: e,
                 resolveCommand: (c) => this._resolveRuntimeCommand(c),
               })),
             this._refreshAllReadModels(i != null ? i : 1),
             this._refreshSnapshots(e),
-            lt(this.app, this.plugin, e));
+            ct(this.app, this.plugin, e));
         },
       }));
   }
@@ -6609,7 +6610,7 @@ var De = class De extends A.PluginSettingTab {
         }
         try {
           let y = JSON.parse(h);
-          if (et(y, e)) {
+          if (tt(y, e)) {
             let v = y;
             this._updateCapabilityEnvelope(e, v);
           } else
@@ -7012,7 +7013,7 @@ var De = class De extends A.PluginSettingTab {
     let e = !1;
     for (let t of Pe) {
       let r = this._capabilityState[t];
-      r && mt(r) && ((this._capabilityState[t] = ht(t)), (e = !0));
+      r && yt(r) && ((this._capabilityState[t] = mt(t)), (e = !0));
     }
     e && this._persistCapabilityState();
   }
@@ -7031,15 +7032,34 @@ var De = class De extends A.PluginSettingTab {
     for (let n of Pe) this._probing.add(n);
     hr(t, this.plugin.settings)
       .then((n) => {
-        var s;
+        var c, p, f, _, u;
         this._probing.clear();
-        for (let [i, o] of Object.entries((s = n.modules) != null ? s : {}))
-          et(o, i) && this._updateCapabilityEnvelope(i, o);
+        for (let [h, g] of Object.entries((c = n.modules) != null ? c : {}))
+          tt(g, h) && this._updateCapabilityEnvelope(h, g);
         e != null && e !== 0 && this._probeModule("library", e);
+        let s = ((p = n.modules) != null ? p : {}).maintenance,
+          i = (f = s == null ? void 0 : s.orphan) != null ? f : {},
+          o = (_ = i.count) != null ? _ : 0;
+        (o > 0 &&
+          !this._lastOrphanCount &&
+          this._openOrphanModal((u = i.orphans) != null ? u : []),
+          (this._lastOrphanCount = o));
       })
       .catch(() => {
         (this._probing.clear(), this.display());
       });
+  }
+  _openOrphanModal(e) {
+    var s;
+    let t = (s = this.app.vault.adapter) == null ? void 0 : s.basePath;
+    if (!t) return;
+    let r = this._resolveRuntimeCommand(t);
+    if (!r) {
+      new A.Notice(a("next_action_runtime_unavailable"));
+      return;
+    }
+    let n = { path: r.path, extraArgs: [...r.args], source: "auto-detected" };
+    new qe(this.app, e, t, n).open();
   }
   _buildAndCopyDiagnostic() {
     var s, i, o;
@@ -7393,7 +7413,7 @@ var De = class De extends A.PluginSettingTab {
       return;
     }
     let { migrateLegacySecret: n, isAllowlistedCommand: s } =
-        await Promise.resolve().then(() => (Et(), lr)),
+        await Promise.resolve().then(() => (wt(), lr)),
       i = {
         spawn: (f, _, u) => (0, X.spawn)(f, _, u),
         pythonPath: r.path,
@@ -7778,7 +7798,7 @@ var De = class De extends A.PluginSettingTab {
     "memory",
     "help",
   ])));
-var ct = De;
+var pt = De;
 var zr = require("child_process");
 var Bn = `PAPERFORGE_STOP
 `,
@@ -7790,7 +7810,7 @@ function Mn(d, l) {
   let e = (n = l.keys) != null ? n : [];
   return e.length > 0 ? ["ocr", "rebuild", ...e] : ["ocr", "rebuild", "--all"];
 }
-var pt = class {
+var dt = class {
   constructor(l) {
     this._opts = l;
     this._child = null;
@@ -7946,16 +7966,16 @@ var O = require("obsidian"),
   Le = $(require("path")),
   ce = require("child_process");
 ye();
-var qe = $(require("path"));
+var Ue = $(require("path"));
 function Kr(d) {
   if (!d) return null;
-  let l = qe.dirname(d);
+  let l = Ue.dirname(d);
   for (;;) {
-    let e = qe.basename(l);
+    let e = Ue.basename(l);
     if (!e || e === ".") break;
     let t = e.match(/^([A-Z0-9]{8})(?:\s*-\s*.*)?$/i);
     if (t) return t[1];
-    let r = qe.dirname(l);
+    let r = Ue.dirname(l);
     if (r === l) break;
     l = r;
   }
@@ -7964,11 +7984,11 @@ function Kr(d) {
 var N = $(require("fs")),
   le = $(require("path"));
 ye();
-function Ue(d) {
+function We(d) {
   return Y(d).ocrDir;
 }
 function $r(d, l) {
-  let e = le.join(Ue(d), l, "versions", "manifest.json");
+  let e = le.join(We(d), l, "versions", "manifest.json");
   try {
     if (!N.existsSync(e)) return null;
     let t = N.readFileSync(e, "utf-8"),
@@ -7986,7 +8006,7 @@ function $r(d, l) {
   }
 }
 function In(d) {
-  let l = Ue(d);
+  let l = We(d);
   try {
     return N.existsSync(l)
       ? N.readdirSync(l, { withFileTypes: !0 })
@@ -7997,7 +8017,7 @@ function In(d) {
     return [];
   }
 }
-function We(d, l) {
+function Ze(d, l) {
   let e = $r(d, l);
   return e ? { versions: e.versions, currentLabel: e.current.label } : null;
 }
@@ -8010,7 +8030,7 @@ function Nt(d) {
     let n = r.versions.map((i) => i.label),
       s = 0;
     for (let i of n) {
-      let o = le.join(Ue(d), t, "versions", i, "fulltext.md");
+      let o = le.join(We(d), t, "versions", i, "fulltext.md");
       try {
         N.existsSync(o) && (s += N.statSync(o).size);
       } catch (c) {}
@@ -8025,8 +8045,8 @@ function Nt(d) {
   }
   return (e.sort((t, r) => t.title.localeCompare(r.title)), e);
 }
-function dt(d, l, e, t = "") {
-  let r = Ue(d),
+function ut(d, l, e, t = "") {
+  let r = We(d),
     n = le.join(r, l, "versions", e, "fulltext.md"),
     s = le.join(r, l, "render"),
     i = le.join(s, "fulltext.md");
@@ -8055,7 +8075,7 @@ function Ht(d, l, e) {
 }
 function jr(d, l, e, t) {
   var u;
-  let r = Ue(d),
+  let r = We(d),
     n = le.join(r, l, "versions", e, "fulltext.md"),
     s = le.join(r, l, "versions", t, "fulltext.md"),
     i = "",
@@ -8137,7 +8157,7 @@ var H = require("obsidian"),
   q = $(require("path")),
   Zr = require("child_process");
 ye();
-var ut = 100;
+var _t = 100;
 var Oe = class extends H.ItemView {
   constructor(e, t) {
     super(e);
@@ -8467,13 +8487,13 @@ var Oe = class extends H.ItemView {
     return e;
   }
   _currentPagePapers(e) {
-    let t = Math.max(1, Math.ceil(e.length / ut));
+    let t = Math.max(1, Math.ceil(e.length / _t));
     (this._page > t && (this._page = t), this._page < 1 && (this._page = 1));
-    let r = (this._page - 1) * ut;
-    return e.slice(r, r + ut);
+    let r = (this._page - 1) * _t;
+    return e.slice(r, r + _t);
   }
   _renderPagination(e, t) {
-    let r = Math.max(1, Math.ceil(t.length / ut));
+    let r = Math.max(1, Math.ceil(t.length / _t));
     if (r <= 1) return;
     let n = e.createDiv({ cls: "pf-ocr-ws-pagination" }),
       s = n.createEl("button", {
@@ -8678,7 +8698,7 @@ var Oe = class extends H.ItemView {
       g = t.key,
       y = (() => {
         try {
-          let b = We(u, t.key);
+          let b = Ze(u, t.key);
           return b && b.versions.length > 0;
         } catch (b) {
           return !1;
@@ -8701,7 +8721,7 @@ var Oe = class extends H.ItemView {
         (_.title =
           a("ocr_ws_restore_unavailable") || "No backup versions available")),
       _.addEventListener("click", () => {
-        let b = We(u, t.key);
+        let b = Ze(u, t.key);
         if (b && b.versions.length > 0) {
           new we(
             this.app,
@@ -9206,7 +9226,7 @@ var we = class extends H.Modal {
       } catch (o) {
         console.warn("[PaperForge] Restore backup failed:", o);
       }
-    } else t = dt(this.vaultPath, this.paperKey, e.label, e.created_at);
+    } else t = ut(this.vaultPath, this.paperKey, e.label, e.created_at);
     if (t) {
       new H.Notice(a("ocr_ws_detail_restore_done").replace("{label}", e.label));
       let n = new Date(e.created_at).getTime(),
@@ -9617,7 +9637,7 @@ Make sure paperforge is installed and in your PATH.`,
   _patchCachedEntry(e, t) {
     if (!e || !this._cachedItems) return;
     let r = this._cachedItems.findIndex((n) => n.zotero_key === e);
-    r !== -1 && (this._cachedItems[r] = gt(this._cachedItems[r], t));
+    r !== -1 && (this._cachedItems[r] = ht(this._cachedItems[r], t));
   }
   _filterByDomain(e) {
     return e ? this._getCachedIndex().filter((t) => t.domain === e) : [];
@@ -9973,7 +9993,7 @@ Make sure paperforge is installed and in your PATH.`,
       }
   }
   _renderGlobalMode() {
-    var Ze, Je, ke, M, Me, Ie, Ne, He;
+    var Je, Ge, ke, M, Me, Ie, Ne, He;
     if (!this._contentEl) return;
     let e = this._contentEl.createEl("div", { cls: "paperforge-global-view" }),
       t = this._getCachedIndex(),
@@ -10024,9 +10044,9 @@ Make sure paperforge is installed and in your PATH.`,
       g ? h.items.length + " entries" : "formal-library.json not found"
     );
     let y =
-        ((Ze = u == null ? void 0 : u.settings) == null
+        ((Je = u == null ? void 0 : u.settings) == null
           ? void 0
-          : Ze.system_dir) || "System",
+          : Je.system_dir) || "System",
       v = this.app.vault.adapter.basePath,
       x = !1,
       E = "No exports found";
@@ -10045,7 +10065,7 @@ Make sure paperforge is installed and in your PATH.`,
       E
     );
     let b =
-        (ke = (Je = this.app.plugins) == null ? void 0 : Je.plugins) == null
+        (ke = (Ge = this.app.plugins) == null ? void 0 : Ge.plugins) == null
           ? void 0
           : ke.paperforge,
       m = this._renderSystemStatusRow(
@@ -10284,7 +10304,7 @@ Make sure paperforge is installed and in your PATH.`,
         let u = t,
           h = this.app.vault.adapter.basePath,
           g = Y(h),
-          y = We(h, u);
+          y = Ze(h, u);
         if (y && y.versions.length > 0) {
           new we(
             this.app,
@@ -10596,7 +10616,7 @@ Make sure paperforge is installed and in your PATH.`,
             x[u.key] = v;
           }),
             this._patchCachedEntry(r, { [u.key]: v }),
-            (this._currentPaperEntry = gt(this._currentPaperEntry, {
+            (this._currentPaperEntry = ht(this._currentPaperEntry, {
               [u.key]: v,
             })));
         }));
@@ -11040,7 +11060,7 @@ Make sure paperforge is installed and in your PATH.`,
             cls: "pf-btn-primary",
             text: a("version_restore_btn"),
           }).addEventListener("click", () => {
-            dt(n, x.key, m.label)
+            ut(n, x.key, m.label)
               ? new O.Notice(
                   a("version_restore_done").replace("{label}", m.label)
                 )
@@ -11468,7 +11488,7 @@ Make sure paperforge is installed and in your PATH.`,
       u.stderr.on("data", () => {}),
       u.on("close", (g) => {
         if (g !== 0) {
-          let b = St(String(g));
+          let b = Ct(String(g));
           ((this._searchState = this._mapErrorToSearchState(b.type)),
             this._renderSearchState());
           return;
@@ -11508,7 +11528,7 @@ Make sure paperforge is installed and in your PATH.`,
       u.on("error", (g) => {
         let y = g.code;
         if (typeof y == "string") {
-          let v = St(y);
+          let v = Ct(y);
           this._searchState = this._mapErrorToSearchState(v.type);
         } else this._searchState = "backend-unavailable";
         this._renderSearchState();
@@ -11772,7 +11792,7 @@ Make sure paperforge is installed and in your PATH.`,
     }
     let { path: o, args: c = [] } = i,
       p = await ae(null, e.commandId),
-      f = (b = Xe(e.id)) != null ? b : [],
+      f = (b = Qe(e.id)) != null ? b : [],
       _ = (0, ce.spawn)(o, [...c, "-m", "paperforge", ...f, ...n], {
         cwd: r,
         timeout: s,
@@ -11886,7 +11906,7 @@ Make sure paperforge is installed and in your PATH.`,
           }
           (console.log("[PF] close cmd=" + e.commandId + " id=" + e.id),
             e.commandId === "sync" &&
-              lt(this.app, this.app.plugins.plugins.paperforge, r));
+              ct(this.app, this.app.plugins.plugins.paperforge, r));
         }
       }),
       _.on("error", (m) => {
@@ -12006,7 +12026,7 @@ var zt = class extends K.Modal {
           }));
     }
   },
-  _t = class extends K.Plugin {
+  ft = class extends K.Plugin {
     constructor() {
       super(...arguments);
       this.agentPlatformChoices = [];
@@ -12096,7 +12116,7 @@ var zt = class extends K.Modal {
       (await this.loadSettings(),
         await this.saveSettings(),
         ir(this.app, this.settings.language),
-        (this.ocrProcessController = new pt({
+        (this.ocrProcessController = new dt({
           vaultPath: this.app.vault.adapter.basePath,
           resolveCommand: () => this._getPythonCommand(),
           resolveEnv: async () => await ae(null, "ocr"),
@@ -12111,7 +12131,7 @@ var zt = class extends K.Modal {
         this.addRibbonIcon("scan-text", "PaperForge OCR Workspace", () =>
           Oe.open(this)
         ),
-        (this._settingTab = new ct(this.app, this)),
+        (this._settingTab = new pt(this.app, this)),
         this.addSettingTab(this._settingTab),
         this.addCommand({
           id: "paperforge-status-panel",
@@ -12151,7 +12171,7 @@ var zt = class extends K.Modal {
               let { path: s, args: i = [] } = n,
                 o = Array.isArray(t.args) ? [...t.args] : [],
                 c = await ae(null, t.commandId),
-                p = (f = Xe(t.id)) != null ? f : [];
+                p = (f = Qe(t.id)) != null ? f : [];
               (0, Kt.execFile)(
                 s,
                 [...i, "-m", "paperforge", ...p, ...o],
@@ -12195,7 +12215,7 @@ var zt = class extends K.Modal {
               (this._needsConfigMigration = !0);
           })
           .catch(() => {}),
-        rt(e, this.settings)
+        nt(e, this.settings)
           .then((t) => {
             t && (this._embedStatusCache = t);
           })
@@ -12206,7 +12226,7 @@ var zt = class extends K.Modal {
       e &&
         (async () => {
           var n;
-          let t = await Ft(e, !0, this.settings).catch((s) => null),
+          let t = await Tt(e, !0, this.settings).catch((s) => null),
             r =
               t && (n = t.warnings) != null && n.length
                 ? t.warnings.join(`
@@ -12214,11 +12234,11 @@ var zt = class extends K.Modal {
                 : "No conflicts; legacy path keys will move under vault_config.";
           new zt(this.app, r, async () => {
             var s, i, o, c, p, f, _, u;
-            await Ft(e, !1, this.settings).catch((h) => {
+            await Tt(e, !1, this.settings).catch((h) => {
               new K.Notice(`PaperForge: config migrate failed: ${String(h)}`);
             });
             try {
-              let h = await Rt(e, this.settings),
+              let h = await Ft(e, this.settings),
                 g = (k) => {
                   var C;
                   return (C = h.fields.find((P) => P.key === k)) == null
@@ -12241,7 +12261,7 @@ var zt = class extends K.Modal {
                 m && (this.settings.vector_db_api_base = m),
                 w && (this.settings.vector_db_api_model = w),
                 S && (this.settings.agent_platform = S),
-                at({
+                it({
                   system_dir: y || "System",
                   resources_dir: v || "Resources",
                   literature_dir: x || "Literature",
@@ -12266,7 +12286,7 @@ var zt = class extends K.Modal {
       this.settings.autoSyncEnabled !== !1 &&
         (this._autoSync(e),
         (this._pollTimer = setInterval(() => {
-          Ot() && this._autoSync(e);
+          Lt() && this._autoSync(e);
         }, t)));
     }
     _autoSync(e) {
@@ -12288,7 +12308,7 @@ var zt = class extends K.Modal {
             (this._memoryStatusText = null),
             n ||
               ((this._lastSyncTime = new Date().toLocaleTimeString()),
-              st(s, {
+              at(s, {
                 vaultPath: e,
                 resolveCommand: (c) => this._getPythonCommand(),
               }),
@@ -12331,7 +12351,7 @@ var zt = class extends K.Modal {
       let r = this.app.vault.adapter.basePath;
       if (r)
         try {
-          let g = await Rt(r, this.settings),
+          let g = await Ft(r, this.settings),
             y = (P) => {
               var F;
               return (F = g.fields.find((T) => T.key === P)) == null
@@ -12357,7 +12377,7 @@ var zt = class extends K.Modal {
           let C = g.fields.find((P) => P.key === "agent_platform");
           ((this.agentPlatformChoices =
             (h = C == null ? void 0 : C.choices) != null ? h : []),
-            at({
+            it({
               system_dir: v || "System",
               resources_dir: x || "Resources",
               literature_dir: E || "Literature",
@@ -12379,7 +12399,7 @@ var zt = class extends K.Modal {
     _checkReleaseNotes() {
       let e = this.manifest.version;
       if (this.settings.last_seen_version === e) return;
-      let s = (Tt().versions || []).find((o) => o.version === e);
+      let s = (At().versions || []).find((o) => o.version === e);
       class i extends K.Modal {
         constructor(c, p) {
           (super(c), (this._entry = p));

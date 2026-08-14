@@ -395,6 +395,7 @@ def probe_lineage(vault: Path) -> dict[str, Any]:
                     ).fetchone() or (None,)
                 )[0],
             }
+        _orphan = _detect_orphans(vault)
     finally:
         conn.close()
 
@@ -407,7 +408,53 @@ def probe_lineage(vault: Path) -> dict[str, Any]:
         "papers": papers,
         "identities": identities,
         "summary": summary,
+        # Library-level orphan state — papers whose workspace exists but
+        # whose key is absent from the canonical index (removed from Zotero,
+        # files still on disk).  Part of the SAME state machine: reconcile
+        # turns it into a library.prune intent and the frontend surfaces it
+        # (new orphans pop the modal once, persistent ones show on the
+        # module card).
+        "orphan": _orphan,
     }
+
+
+def _detect_orphans(vault: Path) -> dict[str, Any]:
+    """Workspace papers absent from the canonical index.  Reuses the prune
+    scanner; cheap (~0.5s directory walk)."""
+    try:
+        from paperforge.config import paperforge_paths
+        from paperforge.worker.asset_index import read_index
+        from paperforge.worker.prune import _collect_orphan_candidates
+
+        index = read_index(vault)
+        items = index.get("items", []) if isinstance(index, dict) else index
+        fresh_keys = {
+            str(it.get("zotero_key", ""))
+            for it in (items or [])
+            if it.get("zotero_key")
+        }
+        paths = paperforge_paths(vault)
+        lit_dir = paths.get("literature")
+        if not lit_dir or not lit_dir.exists():
+            return {"count": 0, "keys": []}
+        candidates = _collect_orphan_candidates(lit_dir, fresh_keys)
+        return {
+            "count": len(candidates),
+            "keys": sorted(c["key"] for c in candidates),
+            "orphans": [
+                {
+                    "key": c["key"],
+                    "title": (
+                        c["workspace_dir"].name.split(" - ", 1)[1]
+                        if " - " in c["workspace_dir"].name
+                        else ""
+                    ),
+                }
+                for c in sorted(candidates, key=lambda x: x["key"])
+            ],
+        }
+    except Exception:  # noqa: BLE001 — unobservable orphans = none reported
+        return {"count": 0, "keys": []}
 
 
 def _paper_keys(vault: Path, db_path: Path) -> list[str]:

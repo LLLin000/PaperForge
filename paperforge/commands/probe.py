@@ -12,11 +12,11 @@ maintenance_eligible, user_visible_failure, user_impact to envelopes.
 from __future__ import annotations
 
 import json
-import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
 from paperforge import __version__ as PAPERFORGE_VERSION
 from paperforge.worker.ocr_versions import OCR_PIPELINE_VERSION
 
@@ -252,7 +252,7 @@ def probe_installation(vault: Path, expected_version: str | None = None) -> dict
             ttl_seconds=TTL_INSTALLATION,
         )
 
-    if expected_version and PAPERFORGE_VERSION != expected_version:
+    if expected_version and expected_version != PAPERFORGE_VERSION:
         return build_envelope(
             module="installation", capability_state="needs_action", severity="warning",
             reason_code="installation.version_mismatch",
@@ -404,7 +404,7 @@ def probe_library(vault: Path, last_operation_exit_code: int | None = None) -> d
     # ── Index freshness: canonical export hash (Issue #78) ──
     notices: list[dict[str, Any]] = []
     try:
-        from paperforge.worker.asset_index import read_index, _compute_export_hash
+        from paperforge.worker.asset_index import _compute_export_hash, read_index
         envelope = read_index(vault)
         if envelope is not None and isinstance(envelope, dict):
             stored_hash = envelope.get("export_hash", "")
@@ -425,7 +425,6 @@ def probe_library(vault: Path, last_operation_exit_code: int | None = None) -> d
 
             # Cross-validate DB canonical_index_hash
             try:
-                import sqlite3 as _sqlite3
                 items = envelope.get("items", [])
                 from paperforge.memory.builder import compute_hash
                 index_hash = compute_hash(items)
@@ -784,7 +783,8 @@ def probe_ocr(vault: Path) -> dict[str, Any]:
     #    local materialization defect (failed/redo/pending/degraded rows). ──
     # #173/C1: presence comes from the credential authority's status — the
     # probe never retrieves the value.
-    from paperforge.credentials import CredentialKey, status as credential_status
+    from paperforge.credentials import CredentialKey
+    from paperforge.credentials import status as credential_status
 
     if credential_status(CredentialKey("ocr")).state != "available":
         return _wrap(module="ocr", capability_state="missing_input", severity="warning",
@@ -919,7 +919,6 @@ def probe_memory(vault: Path) -> dict[str, Any]:
     # ── Gates 1-4: DB-based checks ────────────────────────────────────
     try:
         from paperforge.memory.query import get_memory_status
-        from paperforge.memory.schema import CURRENT_SCHEMA_VERSION as _CURRENT_SCHEMA
         status = get_memory_status(vault)
     except Exception:
         return build_envelope(
@@ -1102,7 +1101,8 @@ def probe_memory(vault: Path) -> dict[str, Any]:
                     ttl_seconds=TTL_MEMORY,
                 )
             # Quick credential presence check (#173/C1: auth status, no value)
-            from paperforge.credentials import CredentialKey, status as credential_status
+            from paperforge.credentials import CredentialKey
+            from paperforge.credentials import status as credential_status
 
             if credential_status(CredentialKey("embedding")).state != "available":
                 notices.append({
@@ -1236,7 +1236,7 @@ def probe_memory(vault: Path) -> dict[str, Any]:
 
         # Gate 5d: build_state absent (idle / never built / 1.5.15)
         # Check if vec0 already has data (build_state may have been lost)
-        from paperforge.memory.db import ensure_vec_extension, get_connection, get_memory_db_path, open_live_reader
+        from paperforge.memory.db import ensure_vec_extension, get_memory_db_path, open_live_reader
 
         db_path = get_memory_db_path(vault)
         vec0_has_data = False
@@ -1364,7 +1364,9 @@ def _probe_base_modules(vault: Path) -> dict[str, dict[str, Any]]:
     return modules
 
 
-def derive_maintenance(modules: dict[str, dict[str, Any]]) -> dict[str, Any]:
+def derive_maintenance(
+    modules: dict[str, dict[str, Any]], vault: Path | None = None
+) -> dict[str, Any]:
     """#140: pure projection of the base envelopes — maintenance NEVER
     re-probes canonical sources. Only backend-owned maintenance_eligible
     envelopes enter; optional not-enabled capabilities are excluded."""
@@ -1392,10 +1394,12 @@ def derive_maintenance(modules: dict[str, dict[str, Any]]) -> dict[str, Any]:
             "maintenance_eligible": True,
         })
 
-    return _derive_maintenance_tail(items)
+    return _derive_maintenance_tail(items, vault)
 
 
-def _derive_maintenance_tail(items: list[dict[str, Any]]) -> dict[str, Any]:
+def _derive_maintenance_tail(
+    items: list[dict[str, Any]], vault: Path | None = None
+) -> dict[str, Any]:
     """Envelope construction shared by the pure projection and the
     standalone `probe maintenance` fan-out."""
     if len(items) == 0:
@@ -1407,29 +1411,35 @@ def _derive_maintenance_tail(items: list[dict[str, Any]]) -> dict[str, Any]:
             action_primary=None, ttl_seconds=TTL_MAINTENANCE,
         )
         envelope["items"] = []
-        return envelope
+    else:
+        severities = [item["severity"] for item in items]
+        worst = _worst_severity(severities)
+        item_count = len(items)
 
-    severities = [item["severity"] for item in items]
-    worst = _worst_severity(severities)
-    item_count = len(items)
+        envelope = build_envelope(
+            module="maintenance", capability_state="needs_action", severity=worst,
+            reason_code="maintenance.items_present",
+            reason_text=f"{item_count} module(s) need attention",
+            user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_REQUIRED,
+            maintenance_eligible=True,
+            user_impact=f"{item_count} problem(s) require action to restore full PaperForge functionality",
+            action_primary=None, ttl_seconds=TTL_MAINTENANCE,
+        )
+        envelope["items"] = items
+    if vault is not None:
+        try:
+            from paperforge.lineage import _detect_orphans
 
-    envelope = build_envelope(
-        module="maintenance", capability_state="needs_action", severity=worst,
-        reason_code="maintenance.items_present",
-        reason_text=f"{item_count} module(s) need attention",
-        user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_REQUIRED,
-        maintenance_eligible=True,
-        user_impact=f"{item_count} problem(s) require action to restore full PaperForge functionality",
-        action_primary=None, ttl_seconds=TTL_MAINTENANCE,
-    )
-    envelope["items"] = items
+            envelope["orphan"] = _detect_orphans(vault)
+        except Exception:  # noqa: BLE001
+            envelope["orphan"] = {"count": 0, "keys": []}
     return envelope
 
 
 def probe_maintenance(vault: Path) -> dict[str, Any]:
     """Standalone maintenance probe — same fan-out and projection as
     probe_all (#140): five base readers, then the pure projection."""
-    return derive_maintenance(_probe_base_modules(vault))
+    return derive_maintenance(_probe_base_modules(vault), vault)
 
 
 # ---------------------------------------------------------------------------
@@ -1444,7 +1454,7 @@ def _run_probe_all(vault: Path, *, json_output: bool) -> int:
     import json as _json
 
     modules = _probe_base_modules(vault)
-    modules["maintenance"] = derive_maintenance(modules)
+    modules["maintenance"] = derive_maintenance(modules, vault)
     aggregate = {
         "schema_version": SCHEMA_VERSION,
         "module": "all",

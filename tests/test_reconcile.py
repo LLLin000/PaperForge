@@ -362,3 +362,41 @@ class TestOperationPolicySeparation:
         assert payload["data"]["global"]["memory_substrate_ok"] is False
         assert "intents" not in payload["data"]
         assert [i["action_id"] for i in payload["next_actions"]] == ["memory.build"]
+
+
+class TestOrphanStateMachine:
+    """Library orphans are a first-class state (统一出统一回): workspace
+    papers absent from the canonical index surface in the lineage probe and
+    drive a library.prune intent (confirmation-required, never automatic)."""
+
+    def _seed_orphan(self, vault: Path, key: str) -> None:
+        from paperforge.config import paperforge_paths
+
+        paths = paperforge_paths(vault)
+        lit = paths.get("literature")
+        (lit / "骨科" / f"{key} - Orphan Title").mkdir(parents=True, exist_ok=True)
+
+    def test_orphan_detected_in_probe_and_reconcile(self, tmp_path: Path) -> None:
+        from paperforge.lineage import probe_lineage
+
+        vault = _lineage_vault(tmp_path)
+        # KEY1/KEY2 are in the index; create a workspace dir NOT in it.
+        self._seed_orphan(vault, "ORPHAN1")
+        payload = probe_lineage(vault)
+        assert payload["orphan"]["count"] == 1
+        assert payload["orphan"]["keys"] == ["ORPHAN1"]
+
+        result = reconcile(vault)
+        actions = [a["action_id"] for a in result.next_actions]
+        assert "library.prune" in actions
+        prune = [a for a in result.next_actions if a["action_id"] == "library.prune"]
+        assert len(prune) == 1
+        assert prune[0]["scope"]["kind"] == "all"
+
+    def test_no_orphan_emits_no_prune(self, tmp_path: Path) -> None:
+        from paperforge.lineage import probe_lineage
+
+        vault = _lineage_vault(tmp_path)
+        assert probe_lineage(vault)["orphan"]["count"] == 0
+        result = reconcile(vault)
+        assert "library.prune" not in [a["action_id"] for a in result.next_actions]

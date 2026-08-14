@@ -54,6 +54,7 @@ import {
   scanBbtDirectChildren,
   runSubprocess,
 } from "./services/python-bridge";
+import type { PythonResult } from "./services/python-bridge";
 import { EmbedBuildController } from "./services/embed-build-controller";
 import { deferred } from "./services/deferred";
 import { orchestrateFromSync } from "./services/next-actions-bridge";
@@ -68,7 +69,9 @@ import {
   PaperForgeConfirmModal,
   PaperForgeIssueDraftModal,
   buildRedactedDraft,
+  PaperForgeOrphanModal,
   checkOrphanState,
+  type OrphanItem,
 } from "./views/modals";
 import {
   RuntimeBootstrap,
@@ -125,6 +128,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   private _initialDisplay: boolean = true;
   /** Tracks which modules are currently being probed. */
   private _probing: Set<string> = new Set();
+  private _lastOrphanCount: number = 0;
   /** Modules that have already been auto-probed (prevents endless re-probe). */
   private _attemptedProbes: Set<string> = new Set();
   /** Currently active sub-view within the Setup tab. */
@@ -3429,11 +3433,52 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         if (lastLibraryExitCode != null && lastLibraryExitCode !== 0) {
           this._probeModule("library", lastLibraryExitCode);
         }
+        // State-machine driven orphan modal (统一出统一回): the maintenance
+        // envelope carries the orphan state from the lineage probe.  NEW
+        // orphans (none before, some now) pop the confirmation modal once;
+        // persistent orphans just stay visible on the module card — never
+        // re-pop on every 120s tick.
+        const maint = (data.modules ?? {})["maintenance"] as
+          | Record<string, unknown>
+          | undefined;
+        const orphanInfo = (maint?.orphan ?? {}) as {
+          count?: number;
+          orphans?: { key: string; title?: string }[];
+        };
+        const orphanCount = orphanInfo.count ?? 0;
+        if (orphanCount > 0 && !this._lastOrphanCount) {
+          this._openOrphanModal(orphanInfo.orphans ?? []);
+        }
+        this._lastOrphanCount = orphanCount;
       })
       .catch(() => {
         this._probing.clear();
         this.display();
       });
+  }
+
+  /** Open the orphan cleanup modal with the plugin-resolved python runtime
+   * (never a hardcoded "python" — the real interpreter may be a venv). */
+  private _openOrphanModal(orphans: { key: string; title?: string }[]): void {
+    const vp = (this.app.vault.adapter as unknown as { basePath?: string })
+      ?.basePath;
+    if (!vp) return;
+    const run = this._resolveRuntimeCommand(vp);
+    if (!run) {
+      new Notice(t("next_action_runtime_unavailable"));
+      return;
+    }
+    const py: PythonResult = {
+      path: run.path,
+      extraArgs: [...run.args],
+      source: "auto-detected",
+    };
+    new PaperForgeOrphanModal(
+      this.app,
+      orphans as unknown as OrphanItem[],
+      vp,
+      py
+    ).open();
   }
 
   /** #85: Build and copy privacy-safe Support Diagnostic. */

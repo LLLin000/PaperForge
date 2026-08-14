@@ -30,7 +30,7 @@ export interface ISettingTab {
   display(): void;
 }
 
-interface OrphanItem {
+export interface OrphanItem {
   citation_key?: string;
   key: string;
   has_pdf?: boolean;
