@@ -885,6 +885,77 @@ class TestMemoryConcreteFixes:
         assert data["action"]["primary"]["action_id"] == "embed.resume"
         assert "Resume" in data["action"]["primary"]["label"]
 
+    def test_interrupted_without_candidate_but_compatible_offers_resume(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """No surviving candidate, but the substrate is compatible (identity
+        established) — resume still works via in-place incremental embedding.
+        Only a global substrate defect forces embed.build."""
+        from paperforge.commands import probe as probe_mod
+        from paperforge.memory.db import get_memory_db_path
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
+        # A live DB with vectors and identity recorded (compatible substrate),
+        # NO candidate file.
+        db_path = get_memory_db_path(tmp_path)
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        conn = sqlite3.connect(str(db_path))
+        try:
+            from paperforge.memory.db import ensure_vec_extension
+            from paperforge.memory.schema import ensure_schema
+
+            ensure_vec_extension(conn)
+            ensure_schema(conn)
+            # vec0 row first, meta aligned via lastrowid (no orphan rows).
+            import json as _json
+
+            cur = conn.execute(
+                "INSERT INTO vec_body(embedding) VALUES (?)",
+                (_json.dumps([0.0] * 1536),),
+            )
+            conn.execute(
+                "INSERT INTO vec_body_meta(rowid, paper_id) VALUES (?, 'KEY1')",
+                (cur.lastrowid,),
+            )
+            conn.execute(
+                "INSERT OR REPLACE INTO build_state (key, value) VALUES ('vector_identity_version', '1')"
+            )
+            from paperforge.embedding._config import (
+                get_api_model,
+                get_effective_api_base_url,
+            )
+
+            conn.execute(
+                "INSERT OR REPLACE INTO build_state (key, value) VALUES ('model', ?)",
+                (get_api_model(tmp_path),),
+            )
+            conn.execute(
+                "INSERT OR REPLACE INTO build_state (key, value) VALUES ('vector_provider_endpoint', ?)",
+                (get_effective_api_base_url(tmp_path),),
+            )
+            conn.execute(
+                "INSERT OR REPLACE INTO build_state (key, value) VALUES ('vector_dimension', '1536')"
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+        monkeypatch.setattr(
+            "paperforge.memory.query.get_memory_status",
+            lambda v: {"db_exists": True, "schema_ok": True, "fresh": True,
+                        "hash_match": True, "count_match": True,
+                        "paper_count_db": 1, "paper_count_index": 1,
+                        "needs_rebuild": False, "schema_version": 7},
+        )
+        monkeypatch.setattr(
+            "paperforge.embedding.build_state.read_vector_build_state",
+            lambda v: {"status": "interrupted", "current": 690, "total": 811,
+                        "pid": 0, "message": "Build cancelled by user"},
+        )
+
+        data = probe_mod.probe_memory(tmp_path)
+        assert data["capability_state"] == "needs_action"
+        assert data["action"]["primary"]["action_id"] == "embed.resume"
+        assert "Resume" in data["action"]["primary"]["label"]
+
     def test_zombie_running_state_surfaces_resume(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """RC UX Seam: build_state stuck at running with a DEAD pid (crash /
         kill / Obsidian restart) must be needs_action + resume, not ready."""
