@@ -94,17 +94,29 @@ def _enrich_orphan_preview(vault: Path, candidates: list[dict]) -> list[dict]:
 def prune_orphan_papers(
     vault: Path,
     *,
-    fresh_index: dict,
+    fresh_index: dict | None = None,
+    fresh_keys: set[str] | None = None,
     dry_run: bool = True,
     enrich: bool = True,
     _candidates: list[dict] | None = None,
 ) -> dict:
+    """Orphan cleanup.  **Zotero is the authority** (2026-08-14): pass
+    ``fresh_keys`` = the Zotero key set (from the live export at sync time)
+    so an orphan is a workspace paper whose key is ABSENT from Zotero.
+    ``fresh_index`` is a legacy fallback (index snapshot) for callers that
+    only have the index; it risks false orphans when Zotero gained papers
+    that were not synced yet."""
     cfg = paperforge_paths(vault)
     lit_dir = cfg.get("literature")
     if not lit_dir:
         return {"preview": [], "deleted": [], "counts": {}}
 
-    fresh_keys = {item["zotero_key"] for item in fresh_index.get("items", []) if item.get("zotero_key")}
+    if fresh_keys is None:
+        fresh_keys = {
+            item["zotero_key"]
+            for item in (fresh_index or {}).get("items", [])
+            if item.get("zotero_key")
+        }
 
     if _candidates is not None:
         candidates = _candidates

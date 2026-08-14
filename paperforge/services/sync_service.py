@@ -391,9 +391,20 @@ class SyncService:
             # ── Phase 4: Prune orphans ──
             prune_data = None
             try:
-                prune_data = self.prune(paths, fresh_index=None, dry_run=True)
+                # Zotero is the authority (2026-08-14): orphans = workspace
+                # papers absent from the LIVE export.  The index snapshot
+                # may lag a freshly added Zotero paper and falsely orphan
+                # its workspace — never compare against the index here.
+                _zotero_keys = {
+                    k for _domain in exports.values() for k in _domain
+                }
+                prune_data = self.prune(
+                    paths, fresh_keys=_zotero_keys, dry_run=True
+                )
                 if prune_force:
-                    prune_data = self.prune(paths, fresh_index=None, dry_run=False)
+                    prune_data = self.prune(
+                        paths, fresh_keys=_zotero_keys, dry_run=False
+                    )
             except Exception as exc:
                 logger.warning("prune skipped: %s", exc)
                 prune_data = {"preview": [], "deleted": [], "counts": {"workspace": 0, "ocr": 0, "vectors": 0, "failed": 0}}
@@ -530,13 +541,24 @@ class SyncService:
 
         return result
 
-    def prune(self, paths: dict, fresh_index: dict | None = None, *, dry_run: bool = True) -> dict:
-        """Run orphan paper cleanup. Default dry_run=True (preview only)."""
-        if fresh_index is None:
-            from paperforge.worker.asset_index import read_index
-            fresh_index = read_index(self.vault)
+    def prune(
+        self,
+        paths: dict,
+        fresh_index: dict | None = None,
+        *,
+        fresh_keys: set[str] | None = None,
+        dry_run: bool = True,
+    ) -> dict:
+        """Run orphan paper cleanup. Default dry_run=True (preview only).
+
+        Zotero is the authority: pass ``fresh_keys`` = the live export key
+        set so an orphan is a workspace paper absent from Zotero (the index
+        snapshot can lag a fresh Zotero addition and falsely orphan it)."""
         from paperforge.worker.prune import prune_orphan_papers
-        return prune_orphan_papers(self.vault, fresh_index=fresh_index, dry_run=dry_run)
+
+        return prune_orphan_papers(
+            self.vault, fresh_index=fresh_index, fresh_keys=fresh_keys, dry_run=dry_run
+        )
 
     # ── Legacy passthrough (backward-compat for commands/sync.py) ──
 
