@@ -331,6 +331,11 @@ def _ocr_detail(paper_dir: Path | None) -> str | None:
         return "no_pdf"
     blocks = paper_dir / "structure" / "blocks.structured.jsonl"
     if not blocks.exists():
+        # meta says the OCR finished but no blocks file materialized — the
+        # run produced nothing (failed to write output); that is
+        # ran_but_empty (re-run), NOT not_started (never ran).
+        if meta_status in ("done", "done_incomplete"):
+            return "ran_but_empty"
         return "not_started"
     try:
         if blocks.stat().st_size == 0:
@@ -493,6 +498,42 @@ def _paper_keys(vault: Path, db_path: Path) -> list[str]:
     return sorted(keys)
 
 
+# ── OCR state semantics (2026-08-14 audit) ────────────────────────────────
+# One detail namespace, each value = ONE meaning + ONE next action.  The
+# top-level state stays coarse (missing|failed|incomplete|current|stale|
+# unknown); the detail says WHY.  quality is a SEPARATE dimension and never
+# flows through these.
+#
+# lifecycle  → top-level missing / failed
+OCR_DETAIL_NOT_STARTED = "not_started"          # none/pending — never ran → ocr.run
+OCR_DETAIL_QUEUED = "queued"                    # queued/running/processing → wait
+OCR_DETAIL_RETRYABLE_ERROR = "retryable_error"  # → failed → ocr.run
+OCR_DETAIL_FATAL_ERROR = "fatal_error"          # → failed → ocr.run / diagnose
+OCR_DETAIL_BLOCKED = "blocked"                  # → missing → fix precondition
+OCR_DETAIL_NO_PDF = "no_pdf"                    # → missing → user action
+#
+# artifacts (the 3 canonical OCR files) → top-level incomplete / missing
+OCR_DETAIL_BLOCKS_MISSING = "blocks_missing"    # → missing → ocr.run
+OCR_DETAIL_BLOCKS_EMPTY = "blocks_empty"        # → missing → ocr.run
+OCR_DETAIL_BLOCKS_INVALID = "blocks_invalid"    # → missing → ocr.run
+OCR_DETAIL_TREE_MISSING = "tree_missing"        # → incomplete → rebuild_derived
+OCR_DETAIL_TREE_EMPTY = "tree_empty"            # → incomplete → rebuild_derived
+OCR_DETAIL_TREE_INVALID = "tree_invalid"        # → incomplete → rebuild_derived
+OCR_DETAIL_ROLE_INDEX_MISSING = "role_index_missing"   # → incomplete → rebuild_derived
+OCR_DETAIL_ROLE_INDEX_INVALID = "role_index_invalid"   # → incomplete → rebuild_derived
+#
+# publish marker (crash-surviving) → top-level unknown / incomplete
+OCR_DETAIL_PUBLISH_IN_PROGRESS = "publish_in_progress"    # producer alive → wait
+OCR_DETAIL_PUBLISH_INTERRUPTED = "publish_interrupted"    # producer dead → rebuild_derived
+#
+# version → top-level current
+OCR_DETAIL_VERSION_OLD = "version_old"          # usable, optional upgrade
+
+# A pending publication marker older than this is ORPHANED (the producer
+# crashed mid-publish) — rebuild, never wait forever.
+OCR_PUBLISH_STALE_SECONDS = 3600
+
+
 def _read_ocr_meta(paper_dir: Path) -> dict | None:
     """Read meta.json (the OCR lifecycle authority) defensively."""
     try:
@@ -501,6 +542,41 @@ def _read_ocr_meta(paper_dir: Path) -> dict | None:
         return _json.loads((paper_dir / "meta.json").read_text(encoding="utf-8"))
     except Exception:  # noqa: BLE001
         return None
+
+
+def _ocr_meta_lifecycle(paper_dir: Path) -> tuple[str | None, str | None]:
+    """meta.json ocr_status → (detail, top-level state).
+
+    Covers the REAL worker lifecycle enum, not a subset: none/pending,
+    queued/running/processing, retryable_error, fatal_error/error, blocked,
+    nopdf.  done* values fall through to artifact checks."""
+    meta = _read_ocr_meta(paper_dir)
+    if not meta:
+        return None, None
+    st = str(meta.get("ocr_status", "") or "")
+    if st in ("none", "pending", ""):
+        return OCR_DETAIL_NOT_STARTED, "missing"
+    if st in ("queued", "running", "processing"):
+        return OCR_DETAIL_QUEUED, "missing"
+    if st == "retryable_error":
+        return OCR_DETAIL_RETRYABLE_ERROR, "failed"
+    if st in ("fatal_error", "error"):
+        return OCR_DETAIL_FATAL_ERROR, "failed"
+    if st == "blocked":
+        return OCR_DETAIL_BLOCKED, "missing"
+    if st == "nopdf":
+        return OCR_DETAIL_NO_PDF, "missing"
+    return None, None  # done / done_incomplete / done_degraded → artifacts
+
+
+def _json_valid(path: Path) -> bool:
+    try:
+        import json as _json
+
+        _json.loads(path.read_text(encoding="utf-8"))
+        return True
+    except Exception:  # noqa: BLE001
+        return False
 
 
 def _is_old_pipeline(paper_dir: Path) -> bool:
@@ -518,77 +594,109 @@ def _is_old_pipeline(paper_dir: Path) -> bool:
     return bool(v) and v != OCR_PIPELINE_VERSION
 
 
-def _is_structure_tree_incomplete(paper_dir: Path) -> bool:
-    """OCR completed but the structure tree is missing, unreadable, or EMPTY
-    (``nodes: []``).  Without a tree the derived layers (body units,
-    structural coordinates) cannot be built — the paper has NO searchable
-    structure.
+def _jsonl_valid(path: Path) -> bool:
+    """A non-empty JSONL file is valid when its first non-blank line parses
+    as JSON (spot check — cheap and catches real corruption)."""
+    try:
+        with path.open(encoding="utf-8") as fh:
+            for line in fh:
+                if line.strip():
+                    import json as _json
 
-    This is an INCOMPLETE OCR product, semantically distinct from a QUALITY
-    problem: the fix is a derived rebuild (`ocr rebuild`), not a quality
-    re-run, and the state must never masquerade as ``current``.
-    """
-    tree_path = paper_dir / "index" / "structure-tree.json"
-    if not tree_path.exists():
-        return True
+                    _json.loads(line)
+                    return True
+        return False
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def _ocr_artifact_detail(paper_dir: Path) -> str | None:
+    """Inspect the 3 canonical artifacts in dependency order:
+    blocks → tree → role-index.  Returns the FIRST broken detail, or None
+    when all three are present AND semantically valid (file-exists is not
+    file-valid — JSON/JSONL content is spot-checked)."""
+    blocks = paper_dir / "structure" / "blocks.structured.jsonl"
+    tree = paper_dir / "index" / "structure-tree.json"
+    role = paper_dir / "index" / "role-index.json"
+    # blocks
+    if not blocks.exists():
+        return OCR_DETAIL_BLOCKS_MISSING
+    try:
+        if blocks.stat().st_size == 0:
+            return OCR_DETAIL_BLOCKS_EMPTY
+    except OSError:
+        return OCR_DETAIL_BLOCKS_INVALID
+    if not _jsonl_valid(blocks):
+        return OCR_DETAIL_BLOCKS_INVALID
+    # tree
+    if not tree.exists():
+        return OCR_DETAIL_TREE_MISSING
+    if not _json_valid(tree):
+        return OCR_DETAIL_TREE_INVALID
     try:
         import json as _json
 
-        tree = _json.loads(tree_path.read_text(encoding="utf-8"))
-        nodes = tree.get("nodes", []) if isinstance(tree, dict) else []
-        return not nodes
-    except Exception:  # noqa: BLE001 — unreadable tree = incomplete, never current
-        return True
+        t = _json.loads(tree.read_text(encoding="utf-8"))
+        nodes = t.get("nodes", []) if isinstance(t, dict) else []
+        if not nodes:
+            return OCR_DETAIL_TREE_EMPTY
+    except Exception:  # noqa: BLE001
+        return OCR_DETAIL_TREE_INVALID
+    # role-index
+    if not role.exists():
+        return OCR_DETAIL_ROLE_INDEX_MISSING
+    if not _json_valid(role):
+        return OCR_DETAIL_ROLE_INDEX_INVALID
+    return None
+
+
+def _publish_state(paper_dir: Path) -> tuple[str | None, str | None]:
+    """result-hash.pending (crash-surviving publication marker): fresh ⇒
+    the producer is actively publishing → unknown/wait; stale ⇒ the producer
+    crashed mid-publish → incomplete/rebuild (never wait forever)."""
+    marker = paper_dir / "index" / "result-hash.pending"
+    if not marker.exists():
+        return None, None
+    try:
+        import time as _time
+
+        age = _time.time() - marker.stat().st_mtime
+        if age < OCR_PUBLISH_STALE_SECONDS:
+            return OCR_DETAIL_PUBLISH_IN_PROGRESS, "unknown"
+    except OSError:
+        pass
+    return OCR_DETAIL_PUBLISH_INTERRUPTED, "incomplete"
 
 
 def _probe_ocr_state(paper_dir: Path | None) -> tuple[str, str | None]:
-    """(state, ocr_identity) — current | stale | missing | unknown | incomplete.
+    """(state, ocr_identity) — current | stale | missing | unknown |
+    incomplete | failed.
 
-    DAG principle: the OCR *artifacts* are the authority for the identity;
-    ``result-hash.txt`` is a publish snapshot (cache) used only as a cheap
-    stale detector.  A missing snapshot degrades to recomputing from the
-    artifacts — never ``unknown`` while the artifacts are intact.  The
-    caller (_probe_retrieval_state) cross-checks the recomputed identity
-    against the manifest's recorded ``ocr_result_hash`` edge.
-
-    ``incomplete``: artifacts exist but the structure tree is missing or
-    empty — the OCR ran but its derived structure was never produced (or is
-    unbuildable from the source content).  This is NOT a quality problem;
-    it is an incomplete product and is reported distinctly.
-    """
+    Decision order: lifecycle (meta) → publish marker → artifacts → hash.
+    Each layer has ONE meaning; nothing falls through silently."""
     if paper_dir is None or not paper_dir.exists():
         return "missing", None
-    # meta.json is the OCR LIFECYCLE authority — it distinguishes "never
-    # ran" (pending), "running" (queued), "failed", "no PDF" from the
-    # artifact-integrity checks below.  Distinct semantics, never conflated.
-    meta_status = None
-    meta = _read_ocr_meta(paper_dir)
-    if meta:
-        meta_status = str(meta.get("ocr_status", "") or "")
-    if meta_status == "failed":
-        return "failed", None
-    if meta_status in ("pending", "queued"):
-        return "missing", None  # detail: not_started / queued
-    if meta_status == "nopdf":
-        return "missing", None  # detail: no_pdf — OCR cannot run
-    if meta_status in ("processing", "running"):
-        return "missing", None  # detail: queued (in flight)
-    blocks_path = paper_dir / "structure" / "blocks.structured.jsonl"
-    if not blocks_path.exists():
-        return "missing", None
-    if has_result_hash_pending(paper_dir):
-        return "unknown", None
-    # The structured blocks file exists but is EMPTY (0 bytes): the OCR run
-    # never materialized any content.  That is an UNFINISHED OCR — the fix
-    # is `ocr.run` (re-run OCR), NOT a derived rebuild.  Distinct from the
-    # incomplete case below (blocks exist, tree does not).
-    try:
-        if blocks_path.stat().st_size == 0:
+    # 1. lifecycle — the worker's own record of what happened
+    _lc_detail, lc_state = _ocr_meta_lifecycle(paper_dir)
+    if lc_state is not None:
+        return lc_state, None
+    # 2. publish marker — crash-surviving; fresh vs orphaned
+    _pub_detail, pub_state = _publish_state(paper_dir)
+    if pub_state is not None:
+        return pub_state, None
+    # 3. artifacts — the 3 canonical files, semantically validated
+    art_detail = _ocr_artifact_detail(paper_dir)
+    if art_detail is not None:
+        # blocks problems = the OCR run never materialized content → re-run;
+        # tree/role-index problems = derived structure unbuilt → rebuild.
+        if art_detail in (
+            OCR_DETAIL_BLOCKS_MISSING,
+            OCR_DETAIL_BLOCKS_EMPTY,
+            OCR_DETAIL_BLOCKS_INVALID,
+        ):
             return "missing", None
-    except OSError:  # noqa: BLE001
-        pass
-    if _is_structure_tree_incomplete(paper_dir):
         return "incomplete", None
+    # 4. hash — recomputed vs published snapshot
     current = compute_ocr_result_hash(paper_dir)
     if current is None:
         return "unknown", None
@@ -599,10 +707,28 @@ def _probe_ocr_state(paper_dir: Path | None) -> tuple[str, str | None]:
         except OSError:
             stored = None
         if stored is not None and stored != current:
-            # Artifacts changed since the snapshot was published → the
-            # derived layers built on the old identity are stale.
-            return "stale", stored
+            return "stale", None
     return "current", current
+
+
+def _ocr_detail(paper_dir: Path | None) -> str | None:
+    """Fine-grained WHY for the ocr state — one namespace, each value one
+    meaning (see the OCR_DETAIL_* constants)."""
+    if paper_dir is None or not paper_dir.exists():
+        return OCR_DETAIL_NOT_STARTED
+    lc_detail, _ = _ocr_meta_lifecycle(paper_dir)
+    if lc_detail is not None:
+        return lc_detail
+    pub_detail, _ = _publish_state(paper_dir)
+    if pub_detail is not None:
+        return pub_detail
+    art_detail = _ocr_artifact_detail(paper_dir)
+    if art_detail is not None:
+        return art_detail
+    # artifacts all valid → version fact
+    if _is_old_pipeline(paper_dir):
+        return OCR_DETAIL_VERSION_OLD
+    return None
 
 
 def _probe_retrieval_state(

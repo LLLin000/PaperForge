@@ -251,12 +251,12 @@ def _per_paper_intents(paper: PaperObservation) -> list[ActionIntent]:
                 trigger_reason_code="lineage.ocr_no_pdf",
                 trigger_reason=f"OCR for {paper.key} has no PDF source",
             ))
-        elif ocr_detail == "ran_but_empty":
+        elif ocr_detail in ("blocks_missing", "blocks_empty", "blocks_invalid"):
             intents.append(ActionIntent(
                 action_id="ocr.run",
                 scope=scope,
-                trigger_reason_code="lineage.ocr_ran_but_empty",
-                trigger_reason=f"OCR for {paper.key} produced no content — re-run",
+                trigger_reason_code="lineage.ocr_blocks_" + ocr_detail.split("_", 1)[1],
+                trigger_reason=f"OCR for {paper.key} produced no usable blocks ({ocr_detail}) — re-run",
             ))
         else:
             intents.append(ActionIntent(

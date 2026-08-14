@@ -569,7 +569,7 @@ class TestIncompleteOcrState:
         assert len(allowed) == 1
 
     def test_missing_tree_file_is_incomplete(self, tmp_path: Path) -> None:
-        from paperforge.lineage import _is_structure_tree_incomplete
+        from paperforge.lineage import _ocr_artifact_detail
 
         vault = tmp_path / "vault"
         vault.mkdir(parents=True, exist_ok=True)
@@ -578,4 +578,4 @@ class TestIncompleteOcrState:
         # remove the tree file entirely
         (vault / "99_System" / "PaperForge" / "ocr" / "KEY1" / "index" / "structure-tree.json").unlink()
         paper_dir = vault / "99_System" / "PaperForge" / "ocr" / "KEY1"
-        assert _is_structure_tree_incomplete(paper_dir) is True
+        assert _ocr_artifact_detail(paper_dir) == "tree_missing"
