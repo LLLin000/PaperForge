@@ -604,6 +604,49 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
     # publication marker (commit point). Missing artifacts leave the marker.
     if publish_ocr_result_hash(paper_root) is not None:
         clear_result_hash_pending(paper_root)
+
+    # 2026-08-16: rebuild is an OCR-subsystem repair — it must also bring a
+    # LEGACY meta's version payload up to date (pdf_fingerprint + the
+    # P0-B raw_blocks_hash), otherwise provenance stays unknown forever and
+    # a perfectly intact restored snapshot never becomes searchable.
+    try:
+        import json as _json
+        from pathlib import Path as _P
+
+        meta_path = paper_root / "meta.json"
+        if meta_path.exists():
+            meta = _json.loads(meta_path.read_text(encoding="utf-8"))
+            rv = meta.get("raw_version") or {}
+            raw = paper_root / "canonical" / "blocks.raw.jsonl"
+            if raw.exists():
+                import hashlib as _hashlib
+
+                rv["raw_blocks_hash"] = (
+                    "sha256:" + _hashlib.sha256(raw.read_bytes()).hexdigest()
+                )
+            if ocr_meta and ocr_meta.get("source_pdf"):
+                from paperforge.worker.ocr_artifacts import compute_pdf_fingerprint
+
+                src = str(ocr_meta.get("source_pdf", ""))
+                if src.startswith("storage:"):
+                    from paperforge.pdf_resolver import resolve_pdf_path
+                    from paperforge.config import load_vault_config
+
+                    vc = load_vault_config(vault)
+                    zd = str(vc.get("zotero_data_dir", "") or "")
+                    resolved = resolve_pdf_path(
+                        src, True, vault, _P(zd) if zd else None
+                    )
+                    if resolved:
+                        src = resolved
+                src_path = _P(src)
+                fp = compute_pdf_fingerprint(src_path) if src_path.exists() else "unknown"
+                if fp != "unknown":
+                    rv["pdf_fingerprint"] = fp
+            meta["raw_version"] = rv
+            meta_path.write_text(_json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception:  # noqa: BLE001 — version-payload repair is best-effort
+        pass
     return {"key": key, "status": "ok"}
 def _run_parallel_rebuild(
     vault: Path, keys: list[str], workers: int,
