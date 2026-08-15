@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import json
 import logging
-from dataclasses import dataclass
 import sqlite3
+from dataclasses import dataclass
 from pathlib import Path
 
 from paperforge.embedding.dim_detect import ensure_vec_tables
 from paperforge.embedding.providers.openai_compatible import OpenAICompatibleProvider
-from paperforge.memory.db import open_live_reader, ensure_vec_extension, get_connection, get_memory_db_path
+from paperforge.memory.db import ensure_vec_extension, get_connection, get_memory_db_path, open_live_reader
 from paperforge.memory.schema import ensure_schema
 from paperforge.retrieval.manifest import RETRIEVAL_POLICY_VERSION, compute_body_units_hash, compute_object_units_hash
 
@@ -135,12 +135,39 @@ def prepare_object_payload(zotero_key: str, object_units: list[dict]) -> Embeddi
     )
 
 
+def _validate_embeddings(embeddings: list, texts: list) -> None:
+    """P0-C write-boundary gate (ADR-0002 §7 P0-C): corruption is refused
+    at birth, not hunted per-probe.
+
+    - shape: one embedding per text
+    - values: numeric and finite (NaN/Inf would silently poison retrieval)
+    Dimension mismatch is rejected by the vec0 DDL itself at insert time,
+    so it needs no check here."""
+    import math
+
+    if not isinstance(embeddings, list) or len(embeddings) != len(texts):
+        raise ValueError(
+            f"embedding count {len(embeddings) if isinstance(embeddings, list) else type(embeddings).__name__} "
+            f"!= text count {len(texts)}"
+        )
+    for i, vec in enumerate(embeddings):
+        if not isinstance(vec, (list, tuple)) or not vec:
+            raise ValueError(f"embedding {i} is not a non-empty list")
+        if not all(
+            isinstance(x, (int, float)) and not isinstance(x, bool) for x in vec
+        ):
+            raise ValueError(f"embedding {i} contains non-numeric values")
+        if not all(math.isfinite(float(x)) for x in vec):
+            raise ValueError(f"embedding {i} contains NaN/Inf values")
+
+
 def encode_payload(
     vault: Path, payload: EmbeddingPayload, provider: OpenAICompatibleProvider | None = None
 ) -> EncodedPayload:
     if provider is None:
         provider = OpenAICompatibleProvider(vault)
     embeddings = provider.encode(payload.texts)
+    _validate_embeddings(embeddings, payload.texts)
     return EncodedPayload(
         collection_name=payload.collection_name,
         texts=payload.texts,

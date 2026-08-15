@@ -22,22 +22,24 @@ def _canonical_vault_config(tmp_path: Path) -> None:
 
 import paperforge.config
 from paperforge.worker._utils import pipeline_paths as _pp
+
 EMBEDDING_DIM = 1536  # must match vec0 schema
 
 paperforge.config.pipeline_paths = _pp
 
+from paperforge.embedding._chroma import delete_paper_vectors
 from paperforge.embedding.builder import (
     PaperEmbeddingJob,
-    encode_payload,
     encode_paper_job,
-    write_encoded_payload,
-    prepare_payloads_for_entry,
-    prepare_legacy_payload,
+    encode_payload,
     prepare_body_payload,
+    prepare_legacy_payload,
     prepare_object_payload,
+    prepare_payloads_for_entry,
+    write_encoded_payload,
 )
 from paperforge.embedding.search import merge_retrieve
-from paperforge.embedding._chroma import delete_paper_vectors
+
 
 def _api_key_available() -> bool:
     """True when a real embedding API key is reachable (env)."""
@@ -275,10 +277,10 @@ class TestForceRebuildBackup:
     def test_force_rebuild_creates_backup(self, tmp_path: Path) -> None:
         """Force rebuild copies paperforge.db before clearing vec0 tables."""
         import shutil
-        import sqlite3
-        from paperforge.memory.db import get_memory_db_path, get_connection
-        from paperforge.memory.schema import ensure_schema
+
         from paperforge.embedding.dim_detect import ensure_vec_tables
+        from paperforge.memory.db import get_connection, get_memory_db_path
+        from paperforge.memory.schema import ensure_schema
 
         vault = tmp_path / "vault"
         vault.mkdir()
@@ -388,9 +390,9 @@ def test_paper_state_hash_covers_deep_reading_status() -> None:
 
 def test_diff_paper_state_added_and_unchanged(tmp_path: Path) -> None:
     """Papers in index but not in DB → added. Papers matching hash → unchanged."""
+    from paperforge.memory.builder import _diff_paper_state
     from paperforge.memory.db import get_connection
     from paperforge.memory.schema import ensure_schema
-    from paperforge.memory.builder import _diff_paper_state
 
     db = tmp_path / "test.db"
     conn = get_connection(db)
@@ -411,10 +413,10 @@ def test_diff_paper_state_added_and_unchanged(tmp_path: Path) -> None:
 
 def test_diff_paper_state_deleted(tmp_path: Path) -> None:
     """Papers in DB but not in index → deleted."""
-    from paperforge.memory.db import get_connection
-    from paperforge.memory.schema import ensure_schema
     from paperforge.memory.builder import _diff_paper_state
+    from paperforge.memory.db import get_connection
     from paperforge.memory.paper_state import upsert_paper_state
+    from paperforge.memory.schema import ensure_schema
 
     db = tmp_path / "test.db"
     conn = get_connection(db)
@@ -436,10 +438,10 @@ def test_diff_paper_state_deleted(tmp_path: Path) -> None:
 
 def test_diff_paper_state_changed(tmp_path: Path) -> None:
     """Papers whose row hash differs → changed."""
-    from paperforge.memory.db import get_connection
-    from paperforge.memory.schema import ensure_schema
     from paperforge.memory.builder import _diff_paper_state
+    from paperforge.memory.db import get_connection
     from paperforge.memory.paper_state import upsert_paper_state
+    from paperforge.memory.schema import ensure_schema
 
     db = tmp_path / "test.db"
     conn = get_connection(db)
@@ -459,10 +461,10 @@ def test_diff_paper_state_changed(tmp_path: Path) -> None:
 
 def test_delete_paper_removes_all_state(tmp_path: Path) -> None:
     """_delete_paper removes vectors, aliases, assets, events, papers row."""
-    from paperforge.memory.db import get_connection
-    from paperforge.memory.schema import ensure_schema
     from paperforge.memory.builder import _delete_paper
+    from paperforge.memory.db import get_connection
     from paperforge.memory.paper_state import upsert_paper_state
+    from paperforge.memory.schema import ensure_schema
 
     db = tmp_path / "test.db"
     conn = get_connection(db)
@@ -489,10 +491,10 @@ def test_delete_paper_removes_all_state(tmp_path: Path) -> None:
 
 def test_import_reading_log_skips_orphans(tmp_path: Path) -> None:
     """Orphan reading log entries (paper_id not in valid_keys) are skipped."""
-    from paperforge.memory.events import write_reading_note
-    from paperforge.memory.db import get_connection
-    from paperforge.memory.schema import ensure_schema
     from paperforge.memory.builder import _import_reading_log
+    from paperforge.memory.db import get_connection
+    from paperforge.memory.events import write_reading_note
+    from paperforge.memory.schema import ensure_schema
 
     db = tmp_path / "test.db"
     conn = get_connection(db)
@@ -514,7 +516,6 @@ def test_build_from_index_two_runs_incremental(tmp_path: Path) -> None:
     """Second build with one paper's title changed should only update that paper."""
     from paperforge.memory.builder import build_from_index
     from paperforge.memory.db import get_connection, get_memory_db_path
-    from paperforge.memory.schema import ensure_schema
     from paperforge.worker.asset_index import atomic_write_index, get_index_path
 
     vault = tmp_path / "vault"
@@ -563,3 +564,42 @@ def test_build_from_index_two_runs_incremental(tmp_path: Path) -> None:
     assert b_title == "Paper Beta", "B title unchanged"
     assert r2.get("hash_match") is not True, "second build should advance hash"
     conn.close()
+
+class TestEmbeddingWriteGate:
+    """P0-C (ADR-0002): corruption is refused at the write boundary —
+    NaN/Inf and shape mismatches never reach the DB."""
+
+    def test_nan_embedding_rejected(self) -> None:
+        from paperforge.embedding.builder import _validate_embeddings
+
+        with pytest.raises(ValueError, match="NaN/Inf"):
+            _validate_embeddings([[0.1, float("nan")]], ["text"])
+
+    def test_inf_embedding_rejected(self) -> None:
+        from paperforge.embedding.builder import _validate_embeddings
+
+        with pytest.raises(ValueError, match="NaN/Inf"):
+            _validate_embeddings([[0.1, float("inf")]], ["text"])
+
+    def test_shape_mismatch_rejected(self) -> None:
+        from paperforge.embedding.builder import _validate_embeddings
+
+        with pytest.raises(ValueError, match="count"):
+            _validate_embeddings([[0.1, 0.2]], ["a", "b"])
+
+    def test_non_numeric_rejected(self) -> None:
+        from paperforge.embedding.builder import _validate_embeddings
+
+        with pytest.raises(ValueError, match="non-numeric"):
+            _validate_embeddings([["x", "y"]], ["text"])
+
+    def test_empty_embedding_rejected(self) -> None:
+        from paperforge.embedding.builder import _validate_embeddings
+
+        with pytest.raises(ValueError, match="non-empty"):
+            _validate_embeddings([[]], ["text"])
+
+    def test_valid_embedding_passes(self) -> None:
+        from paperforge.embedding.builder import _validate_embeddings
+
+        _validate_embeddings([[0.1, -0.2, 3.0]], ["text"])  # no raise
