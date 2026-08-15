@@ -331,6 +331,7 @@ def probe_lineage(vault: Path) -> dict[str, Any]:
     summary = {"current": 0, "stale": 0, "missing": 0, "unknown": 0}
 
     conn = sqlite3.connect(f"file:{db_path.as_posix()}?mode=ro", uri=True)
+    conn.row_factory = sqlite3.Row  # P1-D: dict(row) must work for integrity judging
     try:
         has_lineage_table = (
             conn.execute(
@@ -380,7 +381,7 @@ def probe_lineage(vault: Path) -> dict[str, Any]:
                 # policy currency, lineage trust (ADR-0002 §6).  A verified
                 # old snapshot is NOT corrupt.
                 "integrity": _retrieval_integrity_facts(
-                    conn, key, retrieval_state, ocr_state
+                    conn, key, retrieval_state, ocr_state, retrieval_identity
                 ),
                 # Flags are non-failure facts (ADR-0002): a pipeline version
                 # difference is not a materialization defect.
@@ -778,7 +779,11 @@ def _resolve_canonical_pdf(vault: Path, paper_dir: Path | None) -> Path | None:
 
 
 def _retrieval_integrity_facts(
-    conn: sqlite3.Connection, key: str, retrieval_state: str, ocr_state: str
+    conn: sqlite3.Connection,
+    key: str,
+    retrieval_state: str,
+    ocr_state: str,
+    retrieval_identity: str | None = None,
 ) -> dict[str, str]:
     """P1-D orthogonal retrieval facts: snapshot integrity, policy
     currency, lineage trust — independent of the flat current/stale state.
@@ -830,9 +835,7 @@ def _retrieval_integrity_facts(
         body_count=body_count, object_count=object_count,
     )
     facts["policy_currency"] = policy_currency(manifest)
-    facts["lineage_trust"] = lineage_trust(
-        manifest, retrieval_state if retrieval_state == "current" else None
-    )
+    facts["lineage_trust"] = lineage_trust(manifest, retrieval_identity)
     return facts
 
 

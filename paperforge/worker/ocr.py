@@ -1840,7 +1840,17 @@ def render_page_blocks(
     return [part for part in rendered if part]
 
 
-def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tuple[int, str, str, str]:
+def postprocess_ocr_result(
+    vault: Path, key: str, all_results: list[dict], meta: dict | None = None
+) -> tuple[int, str, str, str, dict]:
+    """Post-process OCR results into derived artifacts + version payloads.
+
+    Single-source-of-truth contract (2026-08-16): the caller passes its
+    meta object (the one it will write back) so the raw_version /
+    derived_version / pipeline_version payloads written here land in the
+    SAME object that gets persisted — no second read_json that would fork
+    the truth and lose fields on the final write.  Returns
+    (page_num, markdown_path, json_path, fulltext_md_path, meta)."""
     from paperforge.worker.ocr_hash import (
         clear_result_hash_pending,
         create_result_hash_pending,
@@ -1860,7 +1870,8 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     # leaves it so the memory layer never consumes half-built artifacts.
     create_result_hash_pending(ocr_root)
     page_num = 0
-    meta = read_json(meta_path) if meta_path.exists() else {}
+    if meta is None:
+        meta = read_json(meta_path) if meta_path.exists() else {}
     from paperforge.worker.ocr_versions import OCR_PIPELINE_VERSION
     meta["ocr_pipeline_version"] = OCR_PIPELINE_VERSION
     source_pdf = Path(meta.get("source_pdf", "")) if meta.get("source_pdf") else None
@@ -1882,6 +1893,34 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
 
     # raw_meta.json
     source_pdf_path = Path(meta.get("source_pdf", "")) if meta.get("source_pdf") else None
+    # storage:KEY/... locator → real file (junction-resolved) so the
+    # fingerprint is the ACTUAL PDF identity, never the placeholder.  The
+    # path is a locator; bytes are the identity (ADR-0002 §5 #1).
+    if source_pdf_path is not None and str(source_pdf_path).startswith("storage:"):
+        try:
+            from paperforge.pdf_resolver import resolve_pdf_path
+
+            _zotero_dir = None
+            _cfg = {}
+            try:
+                _cfg = read_json(vault / "paperforge.json") if (vault / "paperforge.json").exists() else {}
+            except Exception:
+                pass
+            _zd = _cfg.get("zotero_data_dir", "") or _cfg.get("zotero_link", "")
+            if _zd:
+                _zotero_dir = Path(_zd)
+            resolved = resolve_pdf_path(str(source_pdf_path), True, vault, _zotero_dir)
+            if not resolved and _zotero_dir is not None and str(source_pdf_path).startswith("storage:"):
+                storage_key = str(source_pdf_path)[len("storage:") :].split("/")[0].strip()
+                storage_dir = (_zotero_dir / "storage" / storage_key).resolve()
+                if storage_dir.exists():
+                    pdfs = [f for f in storage_dir.iterdir() if f.suffix.lower() == ".pdf"]
+                    if pdfs:
+                        resolved = str(pdfs[0])
+            if resolved:
+                source_pdf_path = Path(resolved)
+        except Exception:  # noqa: BLE001 — keep locator; fp degrades to unknown
+            pass
     pdf_fingerprint = (
         compute_pdf_fingerprint(source_pdf_path) if source_pdf_path and source_pdf_path.exists() else "unknown"
     )
@@ -2162,7 +2201,7 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
     # publication marker (commit point). Missing artifacts leave the marker.
     if publish_ocr_result_hash(ocr_root) is not None:
         clear_result_hash_pending(ocr_root)
-    return (page_num, markdown_path, json_path, fulltext_md_path)
+    return (page_num, markdown_path, json_path, fulltext_md_path, meta)
 
 
 def _workspace_fulltext_candidates(lit_root: Path, zotero_key: str) -> list[Path]:
@@ -2735,8 +2774,8 @@ def run_ocr(
                     for line in lines:
                         page_payload = json.loads(line)["result"]
                         all_results.append(page_payload)
-                    page_num, markdown_path, json_path, fulltext_md_path = postprocess_ocr_result(
-                        vault, key, all_results
+                    page_num, markdown_path, json_path, fulltext_md_path, meta = postprocess_ocr_result(
+                        vault, key, all_results, meta=meta
                     )
                 except (KeyboardInterrupt, SystemExit):
                     raise
@@ -2966,7 +3005,9 @@ def run_ocr(
                     result_response.raise_for_status()
                     lines = [l.strip() for l in result_response.text.splitlines() if l.strip()]
                     results = [json.loads(l)["result"] for l in lines]
-                    page_num, md_path, json_path, fulltext_md_path = postprocess_ocr_result(vault, key, results)
+                    page_num, md_path, json_path, fulltext_md_path, meta = postprocess_ocr_result(
+                        vault, key, results, meta=meta
+                    )
                 except (KeyboardInterrupt, SystemExit):
                     raise
                 except (OCRPDFResolveError, OCRArtifactIntegrityError, OCRPostprocessError) as exc:
