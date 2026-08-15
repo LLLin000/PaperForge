@@ -829,6 +829,11 @@ const LANG: Record<string, Record<string, string>> = {
     sr_action_build: "Build Index",
     sr_action_rebuild: "Rebuild Index",
     sr_action_upgrade: "Upgrade to vec0",
+    sr_db_building: "Building",
+    sr_db_partial: "Partially built",
+    sr_db_failed: "Build failed",
+    sr_db_corrupt: "Corrupted",
+    sr_db_stale: "Index stale",
     sr_upgrade_modal_title: "Upgrade Vector Index",
     sr_upgrade_modal_description:
       "This will rebuild your entire vector index using the new vec0 backend.",
@@ -1696,6 +1701,11 @@ const LANG: Record<string, Record<string, string>> = {
     sr_api_key: "API Key",
     sr_db_exists: "已激活",
     sr_db_missing: "未构建",
+    sr_db_building: "构建中",
+    sr_db_partial: "部分构建",
+    sr_db_failed: "构建失败",
+    sr_db_corrupt: "已损坏",
+    sr_db_stale: "索引过期",
     sr_impact_db_missing:
       "智能检索需要 OpenAI API Key 和向量索引。点击构建索引开始设置。",
     sr_impact_upgrade: "新的向量后端可用。升级可提升搜索质量。",

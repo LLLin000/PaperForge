@@ -322,6 +322,14 @@ export interface ProbeEnvelope {
   last_pipeline_version?: string;
   pipeline_version_summary?: { stale?: number };
   items?: MaintenanceItem[];
+  /* #135: structured module facts for the settings panel — the single
+     source of truth for info-card rows (api key, db, build progress). */
+  details?: {
+    api_key_configured?: boolean;
+    paper_count_db?: number;
+    paper_count_index?: number;
+    build_state?: { status?: string; current?: number; total?: number };
+  };
 }
 
 const _VALID_CAPABILITY_STATES = new Set<string>([

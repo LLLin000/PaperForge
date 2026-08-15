@@ -1410,6 +1410,25 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     this._renderSkillsList(body);
   }
 
+  /**
+   * Database row of the Smart Retrieval info card — derived from the same
+   * backend state machine (env.reason.code) and build progress
+   * (env.details.build_state.status) that drive the status paragraph, so
+   * the card can never contradict it.
+   */
+  _memoryDbStatusText(env: ProbeEnvelope, bsStatus: string): string {
+    const rc = env.reason?.code ?? "";
+    if (env.user_state === "ready") return t("sr_db_exists") || "Active";
+    if (bsStatus === "running") return t("sr_db_building") || "Building";
+    if (bsStatus === "interrupted")
+      return t("sr_db_partial") || "Partially built";
+    if (bsStatus === "failed") return t("sr_db_failed") || "Build failed";
+    if (rc === "memory.db_missing") return t("sr_db_missing") || "Not built";
+    if (rc === "memory.db_corrupt") return t("sr_db_corrupt") || "Corrupted";
+    if (rc === "memory.index_stale") return t("sr_db_stale") || "Index stale";
+    return t("sr_db_missing") || "Not built";
+  }
+
   /** Render the Memory detail view matching prototype layout. */
   _renderMemoryDetail(containerEl: HTMLElement): void {
     this._renderModuleDetailShell(containerEl, "memory", false);
@@ -1423,8 +1442,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const liveFailure =
       embedController?.state === "failed" ? embedController.warning : null;
 
-    // The shared summary owns persistent state. The controller owns the
-    // current attempt, so its running/error truth takes precedence.
+    // ── Status text: single source of truth ──
+    // The backend state machine owns every status's meaning and wording
+    // (env.reason.text); the panel only special-cases the three live
+    // controller states (running / controller-failure) and the ready
+    // banner.  No per-reason-code branches — a new backend state shows up
+    // here automatically instead of silently rendering nothing.
     let statusText: string | null = null;
     let statusClass = "setting-item-description";
     if (isRunning) {
@@ -1433,32 +1456,21 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     } else if (liveFailure) {
       statusText = `${t("retrieval_build_failed")}: ${liveFailure}`;
       statusClass = "pf-status-error";
-    } else if (reasonCode === "memory.disabled") {
-      statusText = t("sr_state_disabled");
-    } else if (reasonCode === "memory.db_missing") {
-      statusText = t("sr_state_db_missing");
-    } else if (reasonCode === "memory.backend_upgrade_available") {
-      statusText = t("sr_state_upgrade_available");
-    } else if (reasonCode === "memory.vector_build_failed") {
-      statusText = t("sr_state_build_failed");
-    } else if (reasonCode === "memory.vector_build_interrupted") {
-      // Partially built index — distinct from a failed build or a changed
-      // embedding configuration; the user must see that some papers are
-      // embedded and the rest can be resumed.
-      statusText = t("sr_state_build_interrupted");
-    } else if (reasonCode === "memory.vector_identity_changed") {
-      statusText = t("sr_state_identity_changed");
-    } else if (reasonCode === "memory.schema_stale") {
-      statusText = env.reason.text;
     } else if (env.user_state === "ready") {
       statusText = t("md_retrieval_ready");
       statusClass = "pf-status-ok";
+    } else {
+      statusText = env.reason?.text ?? null;
+      statusClass = "pf-status-warn";
     }
     if (statusText) {
       body.createEl("p", { text: statusText, cls: statusClass });
     }
 
     // ── Primary action button ──
+    // ── Primary action button: single source of truth ──
+    // Label and intent come from env.action.primary (backend state machine);
+    // only the two live controller states (Stop / Retry) bypass it.
     if (isRunning && embedController) {
       renderActionButton(body, {
         label: t("retrieval_stop"),
@@ -1469,80 +1481,37 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         label: t("retrieval_retry"),
         onClick: () => this._dispatchModuleAction("memory", env),
       });
-    } else if (reasonCode === "memory.disabled") {
-      renderActionButton(body, {
-        label: t("sr_action_enable") || "Enable Smart Retrieval",
-        onClick: () => {
-          if (!this.plugin.settings.features) {
-            this.plugin.settings.features = {
-              memory_layer: true,
-              vector_db: false,
-            };
-          }
-          this.plugin.settings.features.vector_db = true;
-          this.plugin.saveSettings().then(() => this._refreshAllReadModels());
-        },
-      });
-    } else if (
-      reasonCode === "memory.db_missing" ||
-      reasonCode === "memory.index_stale"
-    ) {
-      renderActionButton(body, {
-        label: t("sr_action_build") || "Build Index",
-        onClick: () => this._dispatchModuleAction("memory", env),
-      });
-    } else if (reasonCode === "memory.backend_upgrade_available") {
-      renderActionButton(body, {
-        label: t("sr_action_upgrade") || "Upgrade",
-        onClick: () => this._dispatchModuleAction("memory", env),
-      });
-    } else if (
-      reasonCode === "memory.vector_build_failed" ||
-      reasonCode === "memory.vector_build_interrupted"
-    ) {
-      // RC UX Seam: the label comes from the backend action primary — a
-      // resumable candidate says "Resume vector build", a full rebuild
-      // says "Rebuild vector index".  Never hardcode which operation this
-      // is; the backend owns it.
-      renderActionButton(body, {
-        label:
-          env.action?.primary?.label ||
-          t("cc_action_rebuild_derived") ||
-          "Rebuild Index",
-        onClick: () => this._dispatchModuleAction("memory", env),
-      });
     } else if (
       env.action?.primary &&
       env.user_state !== "ready" &&
       env.user_state !== "not_enabled"
     ) {
+      const primary = env.action.primary;
       const actionKey =
-        "action_" +
-        (env.action.primary.action_id ?? env.action.primary.verb).replace(
-          /[.-]/g,
-          "_"
-        );
+        "action_" + (primary.action_id ?? primary.verb).replace(/[.-]/g, "_");
       const actionLabel =
-        t(actionKey) !== actionKey
+        primary.label ||
+        (t(actionKey) !== actionKey
           ? t(actionKey)
-          : t("cc_action_" + env.action.primary.verb) !==
-              "cc_action_" + env.action.primary.verb
-            ? t("cc_action_" + env.action.primary.verb)
-            : t("cc_action_probe");
+          : t("cc_action_" + primary.verb) !== "cc_action_" + primary.verb
+            ? t("cc_action_" + primary.verb)
+            : t("cc_action_probe"));
       renderActionButton(body, {
         label: actionLabel,
         onClick: () => this._dispatchModuleAction("memory", env),
       });
     }
 
-    // ── Info card (read-only status) ──
-    const dbStatus =
-      env.user_state === "ready"
-        ? t("sr_db_exists") || "Active"
-        : t("sr_db_missing") || "Not built";
+    // ── Info card (read-only status): details-driven ──
+    // Every row comes from env.details (backend authority, same probe that
+    // produced the status text) — never from plugin caches that can lag or
+    // contradict the state machine (e.g. 811/811 built but "API Key not
+    // configured").
+    const panelDetails = env.details ?? {};
+    const bsStatus = (panelDetails.build_state?.status as string) ?? "idle";
+    const dbStatus = this._memoryDbStatusText(env, bsStatus);
     const backend = "vec0";
-    const apiKeyConfigured =
-      this.plugin.settings._vector_db_configured || false;
+    const apiKeyConfigured = Boolean(panelDetails.api_key_configured);
     const apiKeyStatus = apiKeyConfigured
       ? t("api_key_set") || "Configured"
       : t("api_key_missing") || "Not configured";
@@ -1664,29 +1633,23 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     });
 
     // ── Impact box (when action needed) ──
+    // Same wording as the status paragraph — the backend reason is the
+    // single explanation; no per-reasonCode copy that can drift (e.g.
+    // "schema outdated" shown for a corrupt DB or a changed embedding
+    // config).
     if (
       env.capability_state === "needs_action" &&
-      reasonCode !== "memory.disabled"
+      env.user_state !== "not_enabled"
     ) {
       const impact = body.createDiv({ cls: "pf-sr-impact-box" });
       impact.createEl("strong", {
         text: t("cc_badge_action_required") || "Action Required",
       });
-      impact.createEl("p", {
-        text:
-          reasonCode === "memory.db_missing" ||
-          reasonCode === "memory.index_stale"
-            ? t("sr_impact_db_missing") ||
-              "Smart Retrieval needs an OpenAI API key and vector index. Click Build Index to get started."
-            : reasonCode === "memory.backend_upgrade_available"
-              ? t("sr_impact_upgrade") ||
-                "A new vector backend is available. Upgrade to improve search quality."
-              : reasonCode === "memory.vector_build_failed"
-                ? t("sr_impact_build_failed") ||
-                  "The last build failed. Check your API key and try again."
-                : t("sr_impact_schema_stale") ||
-                  "The vector schema is outdated. Rebuild to match the current library.",
-      });
+      const impactText =
+        env.reason?.text ||
+        t("sr_impact_db_missing") ||
+        "Smart Retrieval needs an API key and vector index.";
+      impact.createEl("p", { text: impactText });
     }
     // ── Advanced Status (collapsible, detailed diagnostics) ──
     const details = body.createEl("details", { cls: "pf-sr-diagnostics" });
