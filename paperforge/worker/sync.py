@@ -235,19 +235,40 @@ def run_selection_sync(vault: Path, verbose: bool = False, json_output: bool = F
             resolved_pdf = resolve_pdf_path(raw_pdf_path, has_pdf, vault, zotero_dir)
             collection_meta = collection_fields(item.get("collections", []))
             meta_path = paths["ocr"] / item["key"] / "meta.json"
-            meta = read_json(meta_path) if meta_path.exists() else {}
-            validated_ocr_status, validated_error = validate_ocr_meta(paths, meta) if meta else ("pending", "")
+            # SSOT boundary (2026-08-16): OCR meta.json's only writer is the
+            # OCR subsystem.  Selection sync is a READ-ONLY consumer:
+            # unreadable meta (restore corruption) → unobservable, continue;
+            # validated status is used locally, never written back.
+            meta = None
+            _meta_unreadable = False
+            if meta_path.exists():
+                try:
+                    meta = read_json(meta_path)
+                except Exception:  # noqa: BLE001
+                    meta = None
+                    _meta_unreadable = True
             if meta:
-                meta["ocr_status"] = validated_ocr_status
-                if validated_error:
-                    meta["error"] = validated_error
-                    write_json(meta_path, meta)
-            note_path = paths["literature"] / domain / f"{item['key']}.md"
-            note_text = note_path.read_text(encoding="utf-8") if note_path.exists() else ""
-            fulltext_md_path = obsidian_wikilink_for_path(
-                vault, meta.get("fulltext_md_path", "") or meta.get("markdown_path", "")
+                validated_ocr_status, validated_error = validate_ocr_meta(paths, meta)
+            else:
+                validated_ocr_status = "pending"
+            ocr_status_effective = (
+                validated_ocr_status
+                if meta is not None
+                else ("unknown" if _meta_unreadable else "pending")
             )
-            ocr_status = meta.get("ocr_status", "pending")
+            note_path = paths["literature"] / domain / f"{item['key']}.md"
+            note_text = ""
+            if note_path.exists():
+                try:
+                    note_text = note_path.read_text(encoding="utf-8")
+                except Exception:  # noqa: BLE001 — corrupt restored note
+                    note_text = ""
+            fulltext_md_path = obsidian_wikilink_for_path(
+                vault,
+                (meta or {}).get("fulltext_md_path", "")
+                or (meta or {}).get("markdown_path", ""),
+            )
+            ocr_status = ocr_status_effective
             record_ocr_status = "nopdf" if not has_pdf or not resolved_pdf else ocr_status
             creators = item.get("creators", [])
             first_author = ""

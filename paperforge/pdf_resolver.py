@@ -63,6 +63,22 @@ def resolve_pdf_path(
         storage_candidate = (zotero_dir / "storage" / storage_rel.replace("/", os.sep)).resolve()
         if is_valid_pdf(storage_candidate):
             return str(storage_candidate)
+        # 2026-08-16: the recorded filename may be stale (renamed /
+        # restore-shuffled) while the storage KEY directory holds the PDF.
+        # Fall back to the first PDF in that directory — the storage key
+        # is the identity anchor, the filename is only a label.
+        storage_key = storage_rel.split("/")[0].strip()
+        if storage_key:
+            storage_dir = (zotero_dir / "storage" / storage_key).resolve()
+            if storage_dir.exists():
+                pdfs = [
+                    f
+                    for f in storage_dir.iterdir()
+                    if f.is_file() and f.suffix.lower() == ".pdf"
+                ]
+                if pdfs:
+                    return str(pdfs[0])
+        return ""
 
     logger.error(f"PDF path could not be resolved: {raw}")
     return ""
