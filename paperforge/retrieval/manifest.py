@@ -15,8 +15,15 @@ import json
 RETRIEVAL_POLICY_VERSION = "l4.body.v3"
 
 
-def compute_body_units_hash(units: list[dict]) -> str:
-    """Compute a canonical hash for body units to detect changes."""
+def compute_body_units_hash(
+    units: list[dict], retrieval_policy_version: str = RETRIEVAL_POLICY_VERSION
+) -> str:
+    """Compute a canonical hash for body units to detect changes.
+
+    P1-D: the policy version is part of the hash material and must be the
+    version the MANIFEST was built under — historical snapshots hash with
+    their recorded policy, so "old but intact" is distinguishable from
+    "actually corrupted"."""
     raw = json.dumps(
         [
             {
@@ -29,7 +36,7 @@ def compute_body_units_hash(units: list[dict]) -> str:
                 "unit_kind": u.get("unit_kind", "body"),
                 "part_ordinal": u.get("part_ordinal", 0),
                 "unit_text": u["unit_text"],
-                "retrieval_policy_version": RETRIEVAL_POLICY_VERSION,
+                "retrieval_policy_version": retrieval_policy_version,
             }
             for u in units
         ],
@@ -39,8 +46,13 @@ def compute_body_units_hash(units: list[dict]) -> str:
     return sha256(raw.encode()).hexdigest()
 
 
-def compute_object_units_hash(units: list[dict]) -> str:
-    """Compute a canonical hash for object units to detect changes."""
+def compute_object_units_hash(
+    units: list[dict], retrieval_policy_version: str = RETRIEVAL_POLICY_VERSION
+) -> str:
+    """Compute a canonical hash for object units to detect changes.
+
+    P1-D: hash with the MANIFEST's recorded policy, not the current one —
+    otherwise an intact old snapshot looks corrupt after a policy bump."""
     raw = json.dumps(
         [
             {
@@ -53,7 +65,7 @@ def compute_object_units_hash(units: list[dict]) -> str:
                 "object_label": u.get("object_label", ""),
                 "caption_text": u.get("caption_text", ""),
                 "nearby_body_text": u.get("nearby_body_text", ""),
-                "retrieval_policy_version": RETRIEVAL_POLICY_VERSION,
+                "retrieval_policy_version": retrieval_policy_version,
             }
             for u in units
         ],
