@@ -387,7 +387,10 @@ def cleanup_blocked_ocr_dirs(paths: dict[str, Path]) -> None:
         )
         if has_payload:
             continue
-        shutil.rmtree(ocr_dir, ignore_errors=True)
+        try:
+            shutil.rmtree(ocr_dir)
+        except OSError as exc:
+            logger.warning("ocr: failed to remove %s: %s", ocr_dir, exc)
 
 
 def normalize_obsidian_markdown(text: str) -> str:
@@ -2240,7 +2243,10 @@ def recover_redo_orphans(vault: Path) -> int:
                 "Redo orphan recovered for %s from %s (status=%s)",
                 key, snap, status or "missing",
             )
-        shutil.rmtree(snap, ignore_errors=True)
+        try:
+            shutil.rmtree(snap)
+        except OSError as exc:
+            logger.warning("ocr: failed to remove snapshot %s: %s", snap, exc)
         cleaned += 1
     if restored or cleaned:
         logger.info("Redo orphans: %d restored, %d cleaned", restored, cleaned)
@@ -2321,7 +2327,10 @@ def _redo_one_paper_transaction(
 
     def _drop_snapshot() -> None:
         if snap_dir is not None and snap_dir.exists():
-            shutil.rmtree(snap_dir, ignore_errors=True)
+            try:
+                shutil.rmtree(snap_dir)
+            except OSError as exc:
+                logger.warning("ocr: failed to drop snapshot %s: %s", snap_dir, exc)
 
     # ---- 2. Mutate ----
     try:

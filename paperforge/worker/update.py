@@ -233,7 +233,10 @@ def update_via_zip(vault: Path) -> bool:
         logger.error("下载失败: %s", e)
         return False
     finally:
-        shutil.rmtree(tmp, ignore_errors=True)
+        try:
+            shutil.rmtree(tmp)
+        except OSError as exc:
+            logger.warning("update: failed to clean temp %s: %s", tmp, exc)
 
 
 def _deploy_all_skills(vault: Path) -> None:

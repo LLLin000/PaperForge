@@ -7,7 +7,6 @@ from pathlib import Path
 
 from paperforge import __version__
 from paperforge.core.result import PFResult
-from paperforge.worker.asset_index import read_index
 
 logger = logging.getLogger(__name__)
 
@@ -59,23 +58,28 @@ def run(args: argparse.Namespace) -> int:
     json_output = getattr(args, "json", False)
     keys_filter = getattr(args, "keys", None) or []
 
-    try:
-        fresh_index = read_index(vault)
-    except Exception as e:
-        logger.error("prune: failed to read canonical index: %s", e)
-        if json_output:
-            result = PFResult(
-                ok=False, command="prune", version=__version__,
-                data={"error": f"cannot read index: {e}"},
-            )
-            print(result.to_json())
-        else:
-            print(f"[FAIL] Cannot read canonical index: {e}")
-        return 1
-
+    from paperforge.lineage import _detect_residuals
     from paperforge.worker.prune import prune_orphan_papers
 
-    result_data = prune_orphan_papers(vault, fresh_index=fresh_index, dry_run=True)
+    # Unified residual detection (Zotero = authority): an OCR-only or
+    # full-text-only residual has no workspace dir, so a workspace scan
+    # would miss it.
+    residuals = _detect_residuals(vault)
+    if residuals.get("count", 0) == 0:
+        if json_output:
+            print(PFResult(
+                ok=True, command="prune", version=__version__,
+                data={"deleted": [], "counts": {}},
+            ).to_json())
+        else:
+            print("[OK] No residual papers found.")
+        return 0
+
+    candidates = [
+        {"key": k, "domain": "", "workspace_dir": Path()}
+        for k in residuals.get("keys", [])
+    ]
+    result_data = prune_orphan_papers(vault, _candidates=candidates, dry_run=True)
 
     preview = result_data.get("preview", [])
     if keys_filter:
@@ -101,7 +105,7 @@ def run(args: argparse.Namespace) -> int:
             }
             for p in preview
         ]
-        result_data = prune_orphan_papers(vault, fresh_index=fresh_index, dry_run=False, _candidates=candidates)
+        result_data = prune_orphan_papers(vault, _candidates=candidates, dry_run=False)
         result = PFResult(ok=True, command="prune", version=__version__, data=result_data)
         print(result.to_json())
         return 0
@@ -140,7 +144,7 @@ def run(args: argparse.Namespace) -> int:
         for i in selected_indices
     ]
 
-    result_data = prune_orphan_papers(vault, fresh_index=fresh_index, dry_run=False, _candidates=candidates)
+    result_data = prune_orphan_papers(vault, _candidates=candidates, dry_run=False)
 
     counts = result_data.get("counts", {})
     print(f"\n[PRUNE] Deleted {len(result_data.get('deleted', []))} paper(s)")
