@@ -85,8 +85,8 @@ class TestRegistryInvariants:
     def test_builtin_registry_is_valid(self) -> None:
         assert validate_registry() == []
         assert set(ACTION_REGISTRY) == {
-            "memory.build", "embed.resume", "embed.build", "ocr.run", "ocr.rebuild_derived",
-            "foundation.update", "foundation.repair",
+            "memory.build", "memory.rebuild", "embed.resume", "embed.build", "ocr.run",
+            "ocr.rebuild_derived", "foundation.update", "foundation.repair", "library.prune",
         }
 
     def test_id_contract_enforced(self) -> None:
@@ -370,7 +370,7 @@ class TestCliExitCodes:
         assert rc == 0
         ids = [a["action_id"] for a in payload["data"]["actions"]]
         assert ids == ["embed.build", "embed.resume", "foundation.repair", "foundation.update",
-                "memory.build", "ocr.rebuild_derived", "ocr.run"]
+                "library.prune", "memory.build", "memory.rebuild", "ocr.rebuild_derived", "ocr.run"]
 
     def test_describe_unknown_is_exit_2(self, tmp_path: Path) -> None:
         rc, payload = _run_cli("--vault", str(tmp_path), "action", "describe", "nope.nope", "--json")

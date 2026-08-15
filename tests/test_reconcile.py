@@ -370,25 +370,50 @@ class TestOrphanStateMachine:
     drive a library.prune intent (confirmation-required, never automatic)."""
 
     def _seed_orphan(self, vault: Path, key: str) -> None:
-        """Simulate the state file sync writes after a Zotero-driven orphan
-        scan (workspace key absent from the live Zotero export)."""
+        """Create a REAL residual: a workspace paper directory whose key is
+        absent from the live Zotero export (the canonical authority)."""
         from paperforge.config import paperforge_paths
 
         paths = paperforge_paths(vault)
-        state = paths.get("paperforge") / "indexes" / "sync-orphan-state.json"
-        state.parent.mkdir(parents=True, exist_ok=True)
-        state.write_text(
-            json.dumps(
-                {"orphans": [{"key": key, "title": "Orphan Title"}], "count": 1}
-            ),
-            encoding="utf-8",
+        lit = paths.get("literature")
+        domain = "骨科"
+        (lit / domain).mkdir(parents=True, exist_ok=True)
+        (lit / domain / f"{key} - Orphan Title").mkdir(parents=True, exist_ok=True)
+
+    def _seed_zotero_exports(self, vault: Path, keys: tuple[str, ...]) -> None:
+        """Authoritative Zotero export: ONLY these keys exist in Zotero."""
+        from paperforge.config import paperforge_paths
+
+        paths = paperforge_paths(vault)
+        exports_dir = paths["exports"]
+        exports_dir.mkdir(parents=True, exist_ok=True)
+        items = [
+            {
+                "key": k,
+                "itemType": "journalArticle",
+                "title": f"Paper {k}",
+                "creators": [],
+                "attachments": [],
+                "collections": [],
+                "doi": "",
+                "pmid": "",
+                "date": "",
+                "extra": "",
+                "abstractNote": "",
+                "publicationTitle": "",
+            }
+            for k in keys
+        ]
+        (exports_dir / "library.json").write_text(
+            json.dumps({"items": items}), encoding="utf-8"
         )
 
     def test_orphan_detected_in_probe_and_reconcile(self, tmp_path: Path) -> None:
         from paperforge.lineage import probe_lineage
 
         vault = _lineage_vault(tmp_path)
-        # KEY1/KEY2 are in the index; create a workspace dir NOT in it.
+        # KEY1 exists in Zotero (export); ORPHAN1 is a workspace residual.
+        self._seed_zotero_exports(vault, ("KEY1",))
         self._seed_orphan(vault, "ORPHAN1")
         payload = probe_lineage(vault)
         assert payload["orphan"]["count"] == 1

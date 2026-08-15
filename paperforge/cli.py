@@ -337,6 +337,16 @@ def build_parser() -> argparse.ArgumentParser:
     p_prune.add_argument("--json", action="store_true", help="Output as JSON")
     p_prune.add_argument("keys", nargs="*", metavar="KEY", help="Only process these zotero keys")
 
+    # trash (recoverable deletion — nothing is physically removed)
+    p_trash = sub.add_parser("trash", help="Manage recoverable-deletion trash")
+    p_trash_sp = p_trash.add_subparsers(dest="trash_subcommand", required=True)
+    p_trash_list = p_trash_sp.add_parser("list", help="List trashed items")
+    p_trash_restore = p_trash_sp.add_parser("restore", help="Restore a trashed item")
+    p_trash_restore.add_argument("trash_id", help="Trash record id (from `paperforge trash list`)")
+    p_trash_purge = p_trash_sp.add_parser("purge", help="Physically purge the trash (only trash-root paths)")
+    p_trash_purge.add_argument("--older-than", type=int, default=None, metavar="DAYS",
+                               help="Only purge items trashed more than DAYS ago")
+
     # Memory Layer commands
     p_memory = sub.add_parser("memory", help="Manage the Memory Layer")
     p_memory_sp = p_memory.add_subparsers(dest="memory_subcommand", required=True)
@@ -828,6 +838,11 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "prune":
         from paperforge.commands.prune import run
+
+        return run(args)
+
+    if args.command == "trash":
+        from paperforge.commands.trash import run
 
         return run(args)
 

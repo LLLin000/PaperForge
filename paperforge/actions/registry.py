@@ -107,9 +107,9 @@ def _memory_build_handler(ctx: ActionContext, request: ActionRequest) -> PFResul
 
 
 def _library_prune_preflight(ctx: ActionContext, request: ActionRequest) -> PreflightResult:
-    """library.prune availability: canonical config + orphans actually
-    exist (the state machine reports them via probe lineage's orphan
-    field).  Destructive (deletes workspace/OCR/vector files), so it is
+    """library.prune availability: canonical config + residual papers
+    actually exist (the unified residual report — Zotero is the authority).
+    Destructive (deletes workspace/OCR/vector/full-text records), so it is
     confirmation-required and never automatic."""
     if not ctx.config:
         return PreflightResult(
@@ -118,42 +118,67 @@ def _library_prune_preflight(ctx: ActionContext, request: ActionRequest) -> Pref
             availability_reason="Canonical configuration is missing — run `paperforge config init`",
         )
     try:
-        from paperforge.lineage import _detect_orphans
+        from paperforge.lineage import _detect_residuals
 
-        orphans = _detect_orphans(ctx.vault)
-        if orphans.get("count", 0) == 0:
+        residuals = _detect_residuals(ctx.vault)
+        if residuals.get("count", 0) == 0:
             return PreflightResult(
                 availability="unavailable",
                 availability_reason_code="library.no_orphans",
-                availability_reason="No orphan papers found",
+                availability_reason="No residual papers found",
             )
     except Exception:  # noqa: BLE001
         pass
     return PreflightResult(
         availability="available",
         availability_reason_code="action.available",
-        availability_reason="Orphan papers can be removed",
-        preservation_facts=("Orphaned workspace/OCR/vector files will be deleted",),
+        availability_reason="Residual papers can be removed",
+        preservation_facts=("Residual workspace/OCR/vector/full-text records will be deleted",),
         replacement_facts=(),
     )
 
 
 def _library_prune_handler(ctx: ActionContext, request: ActionRequest) -> PFResult:
-    """library.prune: delete orphan paper artifacts (workspace/OCR/vectors)
-    whose keys are absent from the canonical index.  Destructive —
-    confirmation is enforced by the registry policy; never automatic."""
+    """library.prune: delete ALL residual artifacts for papers absent from
+    Zotero (workspace dir / OCR data / vectors / full-text rows / retrieval
+    units / lineage records).  Candidates come from the unified residual
+    detection (Zotero exports = authority), never from a workspace scan —
+    an OCR-only or FTS-only residual has no workspace dir to scan.  The
+    prune re-verifies each key against the current residual report before
+    deleting anything.  Destructive — confirmation is enforced by the
+    registry policy; never automatic."""
     import argparse
+
+    from pathlib import Path
 
     from paperforge import __version__ as PF_VERSION
     from paperforge.core.result import PFResult
-    from paperforge.worker.asset_index import read_index
+    from paperforge.lineage import _detect_residuals
     from paperforge.worker.prune import prune_orphan_papers
 
     try:
-        fresh_index = read_index(ctx.vault)
+        residuals = _detect_residuals(ctx.vault)
+        if residuals.get("count", 0) == 0:
+            return PFResult(
+                ok=True,
+                command="action run",
+                version=PF_VERSION,
+                data={"deleted": [], "count": 0},
+            )
+        # Safety: candidates are the CURRENT residual report keys — a key
+        # that stopped being residual (e.g. re-added to Zotero between the
+        # probe and this run) is never touched.
+        candidates = [
+            {
+                "key": k,
+                "domain": "",
+                "workspace_dir": Path(),
+            }
+            for k in residuals.get("keys", [])
+        ]
         result_data = prune_orphan_papers(
             ctx.vault,
-            fresh_index=fresh_index,
+            _candidates=candidates,
             dry_run=False,
         )
     except Exception as exc:  # noqa: BLE001 — structured error boundary
@@ -167,11 +192,12 @@ def _library_prune_handler(ctx: ActionContext, request: ActionRequest) -> PFResu
             error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(exc)),
         )
     deleted = result_data.get("deleted", [])
+    counts = result_data.get("counts", {})
     return PFResult(
         ok=True,
         command="action run",
         version=PF_VERSION,
-        data={"deleted": deleted, "count": len(deleted)},
+        data={"deleted": deleted, "count": len(deleted), "counts": counts},
     )
 
 
@@ -674,6 +700,24 @@ _SPECS: tuple[ActionSpec, ...] = (
         handler=_memory_build_handler,
         preflight=_memory_build_preflight,
         scope_kinds=("all", "papers"),
+        cost="local",
+        impact="mutating",
+        confirmation="none",
+        automatic=True,
+        interruptible=True,
+    ),
+    ActionSpec(
+        # #135: full-text (paperforge.db papers/FTS) index realignment —
+        # the DB's own "prune": rebuilds the papers table from the canonical
+        # library so rows for papers removed/merged in Zotero disappear.
+        # NEVER touches vectors (remote API cost) and never deletes files;
+        # safe to run automatically via reconcile.
+        action_id="memory.rebuild",
+        label_code="action.memory.rebuild",
+        description_code="action.memory.rebuild.description",
+        handler=_memory_build_handler,
+        preflight=_memory_build_preflight,
+        scope_kinds=("all",),
         cost="local",
         impact="mutating",
         confirmation="none",
