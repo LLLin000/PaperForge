@@ -886,6 +886,63 @@ def _resume_feasible(vault: Path) -> bool:
 def probe_memory(vault: Path) -> dict[str, Any]:
     """Probe the Memory module.
 
+    Wraps the decision tree with a structured ``details`` block (single
+    source of truth for the settings panel's info card): the frontend
+    renders API-key / database / build-progress rows from these fields —
+    never from its own caches or snapshot files.
+    """
+    env = _probe_memory_impl(vault)
+    env["details"] = _memory_panel_details(vault)
+    return env
+
+
+def _memory_panel_details(vault: Path) -> dict[str, Any]:
+    """Structured memory facts for the Smart Retrieval settings panel.
+
+    Each field is computed from the SAME authority the probe decision tree
+    uses, so the panel's text can never contradict the state machine:
+    credential presence from ``auth status``, DB counts from the live DB
+    status, build progress from build_state.  Any single failure degrades
+    to a conservative value — never an exception.
+    """
+    try:
+        from paperforge.credentials import CredentialKey
+        from paperforge.credentials import status as credential_status
+
+        api_key_configured = credential_status(CredentialKey("embedding")).state == "available"
+    except Exception:  # noqa: BLE001
+        api_key_configured = False
+    try:
+        from paperforge.memory.query import get_memory_status
+
+        _st = get_memory_status(vault)
+        paper_count_db = int(_st.get("paper_count_db", 0) or 0)
+        paper_count_index = int(_st.get("paper_count_index", 0) or 0)
+    except Exception:  # noqa: BLE001
+        paper_count_db = 0
+        paper_count_index = 0
+    try:
+        from paperforge.embedding.build_state import read_vector_build_state
+
+        _bs = read_vector_build_state(vault)
+        build_state = {
+            "status": _bs.get("status", "idle"),
+            "current": int(_bs.get("current", 0) or 0),
+            "total": int(_bs.get("total", 0) or 0),
+        }
+    except Exception:  # noqa: BLE001
+        build_state = {"status": "unknown", "current": 0, "total": 0}
+    return {
+        "api_key_configured": api_key_configured,
+        "paper_count_db": paper_count_db,
+        "paper_count_index": paper_count_index,
+        "build_state": build_state,
+    }
+
+
+def _probe_memory_impl(vault: Path) -> dict[str, Any]:
+    """Probe the Memory module.
+
     Decision tree (resolved by grilling 2026-07-23):
     1. Module disabled → not_enabled
     2. No paperforge.db → build memory

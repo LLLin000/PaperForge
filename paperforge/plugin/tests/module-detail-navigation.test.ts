@@ -666,8 +666,10 @@ describe("Memory module detail (Issue #78)", () => {
     };
     const el = dom.window.document.createElement("div");
     (tab as any)._renderMemoryDetail(el);
+    // #135: the button label comes from the backend action primary (the
+    // state machine owns the wording), not a frontend hardcode.
     const button = [...el.querySelectorAll("button")].find(
-      (node) => node.textContent === "Build Index"
+      (node) => node.textContent === "Build vector index"
     ) as HTMLButtonElement | undefined;
     expect(button).toBeDefined();
     spawnedProcesses.length = 0;
