@@ -38,7 +38,7 @@ def write_paper_meta(
     if meta_path.exists():
         try:
             existing = json.loads(meta_path.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError):
+        except (json.JSONDecodeError, OSError, UnicodeDecodeError):
             pass
 
     now = datetime.now(BEIJING).isoformat()
