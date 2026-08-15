@@ -585,7 +585,7 @@ class TestIncompleteOcrState:
         assert len(allowed) == 1
 
     def test_missing_tree_file_is_incomplete(self, tmp_path: Path) -> None:
-        from paperforge.lineage import _ocr_artifact_detail
+        from paperforge.lineage import _ocr_detail
 
         vault = tmp_path / "vault"
         vault.mkdir(parents=True, exist_ok=True)
@@ -594,7 +594,7 @@ class TestIncompleteOcrState:
         # remove the tree file entirely
         (vault / "99_System" / "PaperForge" / "ocr" / "KEY1" / "index" / "structure-tree.json").unlink()
         paper_dir = vault / "99_System" / "PaperForge" / "ocr" / "KEY1"
-        assert _ocr_artifact_detail(paper_dir) == "tree_missing"
+        assert _ocr_detail(paper_dir) == "tree_missing"
 
 
 # ── 2026-08-14 audit: the OCR state machine, probe→action end to end ─────
@@ -638,10 +638,12 @@ _STATE_CASES = [
     ("done", "raw_missing", "missing", "raw_missing", "ocr.run"),
     ("done", "raw_unreadable", "missing", "raw_unreadable", "ocr.run"),
     ("done", "raw_empty", "missing", "raw_empty", "ocr.run"),
+    ("done", "raw_partial", "missing", "raw_partial", "ocr.run"),
     # Derived defects with HEALTHY raw → local rebuild, never remote OCR.
     ("done", "blocks_empty", "incomplete", "blocks_empty", "ocr.rebuild_derived"),
     ("done", "blocks_missing", "incomplete", "blocks_missing", "ocr.rebuild_derived"),
     ("done", "blocks_invalid", "incomplete", "blocks_invalid", "ocr.rebuild_derived"),
+    ("done", "blocks_partial", "incomplete", "blocks_partial", "ocr.rebuild_derived"),
     ("done", "tree_missing", "incomplete", "tree_missing", "ocr.rebuild_derived"),
     ("done", "tree_empty", "incomplete", "tree_empty", "ocr.rebuild_derived"),
     ("done", "tree_invalid", "incomplete", "tree_invalid", "ocr.rebuild_derived"),
@@ -662,6 +664,14 @@ def _apply_mutation(d: Path, mutation: str | None, key: str) -> None:
         (d / "canonical" / "blocks.raw.jsonl").write_bytes(b"\x83\x04g\xa9\xcb")
     elif mutation == "raw_empty":
         (d / "canonical" / "blocks.raw.jsonl").write_bytes(b"")
+    elif mutation == "raw_partial":
+        (d / "canonical" / "blocks.raw.jsonl").write_bytes(
+            b'{"block_id": "ok", "page": 1}\n{"block_id": "truncated"'
+        )
+    elif mutation == "blocks_partial":
+        (d / "structure" / "blocks.structured.jsonl").write_bytes(
+            b'{"block_id": "ok", "page": 1}\n{"block_id": "truncated"'
+        )
     elif mutation == "blocks_empty":
         (d / "structure" / "blocks.structured.jsonl").write_bytes(b"")
     elif mutation == "blocks_missing":
@@ -729,3 +739,36 @@ def test_ocr_state_machine_probe_to_action(
         assert not actions, f"expected NO action, got {actions}"
     else:
         assert exp_action in actions, f"expected {exp_action} in {actions}"
+
+class TestMaterializationCorrective:
+    """P0-A corrective (2026-08-15 review): partial really detected,
+    version_old is a flag not a failure detail, permission states emit."""
+
+    def test_version_old_is_flag_not_detail(self, tmp_path: Path) -> None:
+        from paperforge.lineage import _ocr_detail, _ocr_version_old
+
+        vault = tmp_path / "vault"
+        vault.mkdir(parents=True)
+        canonical_test_config(vault, system_dir="99_System")
+        d = _state_paper(vault, "KEY1")
+        # simulate an old pipeline version in meta
+        meta = json.loads((d / "meta.json").read_text(encoding="utf-8"))
+        meta["ocr_pipeline_version"] = "0.0.0"
+        (d / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
+        assert _ocr_version_old(d) is True
+        assert _ocr_detail(d) is None  # NOT version_old — no failure reason
+
+    def test_tree_permission_emits_permission_state(self, tmp_path: Path, monkeypatch) -> None:
+        from paperforge.materialization.ocr import TREE_PERMISSION, _tree_state
+
+        vault = tmp_path / "vault"
+        vault.mkdir(parents=True)
+        canonical_test_config(vault, system_dir="99_System")
+        d = _state_paper(vault, "KEY1")
+        tree = d / "index" / "structure-tree.json"
+
+        def _deny(*args, **kwargs):
+            raise PermissionError("denied")
+
+        monkeypatch.setattr("paperforge.materialization.ocr.Path.read_text", _deny)
+        assert _tree_state(d) == TREE_PERMISSION

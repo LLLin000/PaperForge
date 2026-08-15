@@ -36,12 +36,14 @@ TREE_MISSING = "tree_missing"          # derived → rebuild_derived
 TREE_EMPTY = "tree_empty"
 TREE_UNREADABLE = "tree_unreadable"
 TREE_INVALID = "tree_invalid"
-TREE_PARTIAL = "tree_partial"
 TREE_NOT_FILE = "tree_not_file"
+TREE_PERMISSION = "tree_permission"
 
 ROLE_INDEX_MISSING = "role_index_missing"
 ROLE_INDEX_INVALID = "role_index_invalid"
 ROLE_INDEX_NOT_FILE = "role_index_not_file"
+ROLE_INDEX_UNREADABLE = "role_index_unreadable"
+ROLE_INDEX_PERMISSION = "role_index_permission"
 
 PUBLISH_PENDING_RECENT = "publish_pending_recent"  # publishing → wait
 PUBLISH_PENDING_STALE = "publish_pending_stale"    # interrupted publish → rebuild_derived
@@ -163,43 +165,47 @@ def top_state(paper_dir: Path | None) -> str | None:
     or None when the chain is fully materialized (caller does the hash
     comparison to decide current vs stale).
 
-    Order: [1] lifecycle → [5] publish marker → [3] raw → [4] derived.
+    Order: [1] lifecycle → [3] RAW → [5] publish marker → [4] derived →
+    [5] published hash.  A pending marker must never shadow a broken raw
+    layer (raw is publish's upstream).
     """
     if paper_dir is None or not paper_dir.exists():
         return "missing"
     _lc_detail, lc_state = meta_lifecycle(paper_dir)
     if lc_state is not None:
         return lc_state
+    raw = raw_state(paper_dir)
+    if raw is not None:
+        return "missing"  # raw_* → ocr.run
     _pub_detail, pub_state = publish_marker_state(paper_dir)
     if pub_state is not None:
         return pub_state
     art_detail = ocr_artifact_detail(paper_dir)
     if art_detail is not None:
-        # raw_* = the OCR run never materialized content → missing → ocr.run.
-        # derived_* with healthy raw = unbuilt derived chain → incomplete →
-        # local ocr.rebuild_derived (no remote call).
-        if art_detail.startswith("raw_"):
-            return "missing"
+        # raw_* already handled above; remaining are derived_*/publish_* →
+        # incomplete → local ocr.rebuild_derived.
         return "incomplete"
     return None  # materialized — caller compares hash → current/stale
 
 
 def detail(paper_dir: Path | None) -> str | None:
     """Fine-grained WHY for the ocr state — one namespace, each value one
-    meaning (see the constants)."""
+    meaning (see the constants).  A version fact is a FLAG, never a
+    failure reason occupying this slot."""
     if paper_dir is None or not paper_dir.exists():
         return NOT_STARTED
     lc_detail, _ = meta_lifecycle(paper_dir)
     if lc_detail is not None:
         return lc_detail
+    raw = raw_state(paper_dir)
+    if raw is not None:
+        return raw
     pub_detail, _ = publish_marker_state(paper_dir)
     if pub_detail is not None:
         return pub_detail
     art_detail = ocr_artifact_detail(paper_dir)
     if art_detail is not None:
         return art_detail
-    if is_old_pipeline(paper_dir):
-        return VERSION_OLD
     return None
 
 RAW_DEFECTS = frozenset({
@@ -209,8 +215,10 @@ RAW_DEFECTS = frozenset({
 DERIVED_DEFECTS = frozenset({
     BLOCKS_MISSING, BLOCKS_EMPTY, BLOCKS_UNREADABLE, BLOCKS_INVALID,
     BLOCKS_PARTIAL, BLOCKS_NOT_FILE, BLOCKS_PERMISSION,
-    TREE_MISSING, TREE_EMPTY, TREE_UNREADABLE, TREE_INVALID, TREE_PARTIAL,
-    TREE_NOT_FILE, ROLE_INDEX_MISSING, ROLE_INDEX_INVALID, ROLE_INDEX_NOT_FILE,
+    TREE_MISSING, TREE_EMPTY, TREE_UNREADABLE, TREE_INVALID,
+    TREE_NOT_FILE, TREE_PERMISSION,
+    ROLE_INDEX_MISSING, ROLE_INDEX_INVALID, ROLE_INDEX_NOT_FILE,
+    ROLE_INDEX_UNREADABLE, ROLE_INDEX_PERMISSION,
     PUBLISH_PENDING_STALE, PUBLISH_METADATA_MISSING,
 })
 
@@ -218,12 +226,14 @@ DERIVED_DEFECTS = frozenset({
 # ── low-level file condition helpers ───────────────────────────────────────
 
 def _file_condition(path: Path) -> str | None:
-    """Return the condition suffix for *path* or None when it is valid.
+    """Return the condition suffix for a JSONL artifact or None when valid.
 
-    Order: missing → not_file → empty → unreadable → invalid → partial.
-    `partial` detection (some rows valid then broken) is a whole-file
-    streaming check; the fast path validates the first row and defers full
-    per-row validation to doctor.
+    Order: missing → not_file → empty → unreadable → permission →
+    invalid → partial.  Whole-file streaming: every non-blank line must
+    parse; a line that fails AFTER earlier lines parsed is `partial`
+    (interrupted write).  Used for raw/blocks (JSONL).  Single-JSON files
+    (tree/role-index) use their own checks where a truncated JSON is
+    simply invalid (no partial state).
     """
     if not path.exists():
         return "missing"
@@ -232,21 +242,25 @@ def _file_condition(path: Path) -> str | None:
     try:
         if path.stat().st_size == 0:
             return "empty"
-    except OSError:
-        return "permission"
-    try:
-        with path.open(encoding="utf-8") as fh:
-            first = next((ln for ln in fh if ln.strip()), None)
-            if first is None:
-                return "empty"
-            json.loads(first)
+        text = path.read_text(encoding="utf-8")
     except UnicodeDecodeError:
         return "unreadable"
     except OSError:
         return "permission"
-    except json.JSONDecodeError:
-        return "invalid"
-    return None  # valid enough for the fast probe
+    parsed = 0
+    for line in text.splitlines():
+        if not line.strip():
+            continue
+        try:
+            json.loads(line)
+            parsed += 1
+        except json.JSONDecodeError:
+            if parsed > 0:
+                return "partial"
+            return "invalid"
+    if parsed == 0:
+        return "empty"
+    return None  # every row parsed
 
 
 def raw_state(paper_dir: Path) -> str | None:
@@ -306,12 +320,18 @@ def _tree_state(paper_dir: Path) -> str | None:
     if tree.is_dir():
         return TREE_NOT_FILE
     try:
-        import json as _json
-
-        data = _json.loads(tree.read_text(encoding="utf-8"))
+        data = json.loads(tree.read_text(encoding="utf-8"))
+    except PermissionError:
+        return TREE_PERMISSION
+    except OSError:
+        return TREE_PERMISSION
     except UnicodeDecodeError:
         return TREE_UNREADABLE
-    except Exception:  # noqa: BLE001 — parse or structure
+    except json.JSONDecodeError:
+        # Truncated/partial JSON is INVALID for a single-JSON file — there
+        # is no meaningful "partial" state (see contract §5 #6).
+        return TREE_INVALID
+    except Exception:  # noqa: BLE001 — structure
         return TREE_INVALID
     # shape: root dict + nodes list of dicts; empty list is valid shape
     if not isinstance(data, dict):
@@ -333,9 +353,15 @@ def _role_index_state(paper_dir: Path) -> str | None:
     if role.is_dir():
         return ROLE_INDEX_NOT_FILE
     try:
-        import json as _json
-
-        data = _json.loads(role.read_text(encoding="utf-8"))
+        data = json.loads(role.read_text(encoding="utf-8"))
+    except PermissionError:
+        return ROLE_INDEX_PERMISSION
+    except OSError:
+        return ROLE_INDEX_PERMISSION
+    except UnicodeDecodeError:
+        return ROLE_INDEX_UNREADABLE
+    except json.JSONDecodeError:
+        return ROLE_INDEX_INVALID
     except Exception:  # noqa: BLE001
         return ROLE_INDEX_INVALID
     if not isinstance(data, dict) or not any(isinstance(v, list) for v in data.values()):
@@ -344,29 +370,15 @@ def _role_index_state(paper_dir: Path) -> str | None:
 
 
 def _published_state(paper_dir: Path) -> str | None:
-    """[5] OCR publication identity — result-hash marker.
+    """[5] OCR publication identity — result-hash presence.
 
-    `index/result-hash.pending` recent → publishing (wait); stale →
-    interrupted publish.  `index/result-hash.txt` missing →
-    publish_metadata_missing (local repair), NOT silent current.
-    Stored-vs-recomputed hash comparison is the caller's job (it needs
-    the artifact hashes)."""
-    pending = paper_dir / "index" / "result-hash.pending"
-    if pending.exists():
-        try:
-            import datetime as _dt
-
-            age = _dt.datetime.now(_dt.timezone.utc) - _dt.datetime.fromtimestamp(
-                pending.stat().st_mtime, _dt.timezone.utc
-            )
-            if age.total_seconds() < 300:
-                return PUBLISH_PENDING_RECENT
-        except Exception:  # noqa: BLE001
-            pass
-        return PUBLISH_PENDING_STALE
-    if not (paper_dir / "index" / "result-hash.txt").exists():
-        return PUBLISH_METADATA_MISSING
-    return None
+    Marker AGE is judged ONLY by publish_marker_state() (single threshold);
+    this function only checks whether the published hash file exists —
+    missing → publish_metadata_missing (local repair), never silent
+    current.  Stored-vs-recomputed hash comparison is the caller's job."""
+    if (paper_dir / "index" / "result-hash.txt").exists():
+        return None
+    return PUBLISH_METADATA_MISSING
 
 
 def ocr_artifact_detail(paper_dir: Path) -> str | None:
