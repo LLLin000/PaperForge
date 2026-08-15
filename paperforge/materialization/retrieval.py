@@ -71,6 +71,7 @@ def snapshot_integrity(
         return SNAPSHOT_UNKNOWN  # legacy manifest without hashes — cannot verify
     if body_count != exp_body or object_count != exp_obj:
         return SNAPSHOT_CORRUPT
+    algo_version = str(manifest.get("hash_algo_version", "") or "")
     if body_units is not None and man_body_hash:
         if _has_duplicate_unit_ids(body_units):
             return SNAPSHOT_CORRUPT
@@ -81,7 +82,12 @@ def snapshot_integrity(
         except Exception:  # noqa: BLE001 — unverifiable rows
             return SNAPSHOT_UNKNOWN
         if recomputed != man_body_hash:
-            return SNAPSHOT_CORRUPT
+            # P1-D: a hash mismatch on a manifest WITHOUT hash_algo_version
+            # is algorithm drift, not provable corruption — the old snapshot
+            # used an older field set we cannot reproduce.
+            if algo_version:
+                return SNAPSHOT_CORRUPT
+            return SNAPSHOT_UNKNOWN
     if object_units is not None and man_obj_hash:
         if _has_duplicate_unit_ids(object_units):
             return SNAPSHOT_CORRUPT
@@ -92,7 +98,9 @@ def snapshot_integrity(
         except Exception:  # noqa: BLE001
             return SNAPSHOT_UNKNOWN
         if recomputed != man_obj_hash:
-            return SNAPSHOT_CORRUPT
+            if algo_version:
+                return SNAPSHOT_CORRUPT
+            return SNAPSHOT_UNKNOWN
     return SNAPSHOT_VERIFIED
 
 
