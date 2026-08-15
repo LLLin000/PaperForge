@@ -396,6 +396,7 @@ def probe_lineage(vault: Path) -> dict[str, Any]:
                 )[0],
             }
         _orphan = _detect_orphans(vault)
+        _residuals = _detect_residuals(vault)
     finally:
         conn.close()
 
@@ -408,52 +409,226 @@ def probe_lineage(vault: Path) -> dict[str, Any]:
         "papers": papers,
         "identities": identities,
         "summary": summary,
-        # Library-level orphan state — papers whose workspace exists but
-        # whose key is absent from the canonical index (removed from Zotero,
-        # files still on disk).  Part of the SAME state machine: reconcile
-        # turns it into a library.prune intent and the frontend surfaces it
-        # (new orphans pop the modal once, persistent ones show on the
-        # module card).
+        # Library-level residual state — a paper absent from Zotero but
+        # present in ANY carrier (workspace / full-text index / vectors /
+        # OCR).  Part of the SAME state machine: reconcile turns it into a
+        # single library.prune intent (one pass clears every carrier) and
+        # the frontend pops the modal once (0→N) showing what is left.
+        "residuals": _residuals,
+        # Legacy workspace-only view, kept for compatibility.
         "orphan": _orphan,
     }
 
 
 def _detect_orphans(vault: Path) -> dict[str, Any]:
-    """Library orphan state — **Zotero is the authority**.
+    """Legacy workspace-orphan view — kept for compatibility.
 
-    The only accurate orphan detection happens at SYNC time, when the live
-    Zotero export is available: an orphan is a workspace paper whose key is
-    absent from Zotero.  The probe cannot see Zotero, so it reads the state
-    file sync wrote (sync-orphan-state.json).  A missing file means no
-    known orphans; we NEVER re-derive orphans from the index snapshot here
-    (a freshly added Zotero paper not yet synced would be falsely orphaned
-    by an index comparison)."""
+    Returns the workspace-carrier subset of the unified residual report
+    (papers with a workspace directory but absent from Zotero)."""
+    res = _detect_residuals(vault)
+    ws = [p for p in res["papers"] if p["workspace"]]
+    return {
+        "count": len(ws),
+        "keys": [p["key"] for p in ws],
+        "orphans": [{"key": p["key"], "title": p["title"]} for p in ws],
+    }
+
+
+def _detect_residuals(vault: Path) -> dict[str, Any]:
+    """Unified residual detection — **Zotero is the authority**.
+
+    A paper is residual when its key is ABSENT from Zotero but PRESENT in
+    ANY carrier: workspace directory, papers table (full-text index),
+    vector meta (vec_body/vec_objects/vec_fulltext), or OCR data.  Carriers
+    are probed independently, so a removed paper is found even when its
+    workspace directory is already gone (pure FTS/vector residuals).  The
+    report is paper-level: one entry per residual paper with per-carrier
+    flags — the frontend modal shows what is left, reconcile emits a single
+    library.prune, and the prune clears every carrier in one pass.
+
+    Safety (fail-closed, never a false deletion):
+    - Zotero key set comes from the LIVE exports; when exports are
+      unreadable we fall back to the sync-CONFIRMED missing keys (the
+      orphan state file) and only inspect those — a paper we cannot prove
+      is absent from Zotero is NEVER reported residual.
+    - No authoritative baseline at all → report nothing.
+    """
+    ws_keys = _workspace_paper_keys(vault)
+    db_keys = _db_paper_keys(vault)
+    vec_keys = _vec_paper_keys(vault)
+    ocr_keys = _ocr_paper_keys(vault)
+    carrier_union = ws_keys | db_keys | vec_keys | ocr_keys
+
+    zotero_keys = _zotero_keys_from_exports(vault)
+    if zotero_keys:
+        candidates = sorted(carrier_union - zotero_keys)
+    else:
+        confirmed_missing = _confirmed_missing_keys(vault)
+        if not confirmed_missing:
+            return {"count": 0, "keys": [], "papers": []}
+        # Fail-closed: only keys Zotero is CONFIRMED not to have.
+        candidates = sorted(carrier_union & confirmed_missing)
+
+    papers = [
+        {
+            "key": k,
+            "title": _residual_title(vault, k),
+            "workspace": k in ws_keys,
+            "fts": k in db_keys,
+            "vectors": k in vec_keys,
+            "ocr": k in ocr_keys,
+        }
+        for k in candidates
+    ]
+    return {
+        "count": len(papers),
+        "keys": [p["key"] for p in papers],
+        "papers": papers,
+    }
+
+
+def _zotero_keys_from_exports(vault: Path) -> set[str]:
+    """Authoritative Zotero key set — read from the LIVE BBT exports.
+
+    Never derives from the index snapshot (a freshly added Zotero paper not
+    yet synced would be falsely residual)."""
+    try:
+        from paperforge.config import paperforge_paths
+        from paperforge.worker.sync import load_domain_config, load_export_rows
+
+        paths = paperforge_paths(vault)
+        config = load_domain_config(paths)
+        domain_lookup = {e["export_file"]: e["domain"] for e in config["domains"]}
+        keys: set[str] = set()
+        exports_dir = paths.get("exports")
+        if exports_dir and exports_dir.exists():
+            for export_path in sorted(exports_dir.glob("*.json")):
+                for row in load_export_rows(export_path):
+                    if row.get("key"):
+                        keys.add(row["key"])
+        return keys
+    except Exception:  # noqa: BLE001 — unreadable exports = no authority
+        return set()
+
+
+def _confirmed_missing_keys(vault: Path) -> set[str]:
+    """Keys Zotero is CONFIRMED not to have (sync's orphan state file)."""
     try:
         from paperforge.config import paperforge_paths
 
         paths = paperforge_paths(vault)
         state_path = paths.get("paperforge") / "indexes" / "sync-orphan-state.json"
-        if not state_path.exists():
-            return {"count": 0, "keys": []}
-        import json as _json
+        if state_path.exists():
+            import json as _json
 
-        data = _json.loads(state_path.read_text(encoding="utf-8"))
-        orphans = data.get("orphans", []) or []
-        keys = sorted(o.get("key", "") for o in orphans if o.get("key"))
-        return {
-            "count": len(keys),
-            "keys": keys,
-            "orphans": [
-                {
-                    "key": o.get("key", ""),
-                    "title": o.get("title", ""),
-                }
-                for o in orphans
-                if o.get("key")
-            ],
-        }
-    except Exception:  # noqa: BLE001 — unobservable orphans = none reported
-        return {"count": 0, "keys": []}
+            data = _json.loads(state_path.read_text(encoding="utf-8"))
+            return {
+                o.get("key", "") for o in (data.get("orphans", []) or []) if o.get("key")
+            }
+    except Exception:  # noqa: BLE001
+        pass
+    return set()
+
+
+def _workspace_paper_keys(vault: Path) -> set[str]:
+    """Keys of workspace paper directories (all, not just orphans)."""
+    try:
+        from paperforge.config import paperforge_paths
+
+        paths = paperforge_paths(vault)
+        lit_dir = paths.get("literature")
+        if not lit_dir or not lit_dir.exists():
+            return set()
+        keys: set[str] = set()
+        for domain_dir in lit_dir.iterdir():
+            if not domain_dir.is_dir():
+                continue
+            for entry in domain_dir.iterdir():
+                if entry.is_dir() and " - " in entry.name:
+                    keys.add(entry.name.split(" - ", 1)[0].strip())
+        return keys
+    except Exception:  # noqa: BLE001
+        return set()
+
+
+def _db_paper_keys(vault: Path) -> set[str]:
+    try:
+        from paperforge.memory.db import get_memory_db_path, open_live_reader
+
+        db_path = get_memory_db_path(vault)
+        if not db_path.exists():
+            return set()
+        with open_live_reader(vault, db_path) as conn:
+            rows = conn.execute("SELECT zotero_key FROM papers").fetchall()
+            return {r["zotero_key"] for r in rows}
+    except Exception:  # noqa: BLE001
+        return set()
+
+
+def _vec_paper_keys(vault: Path) -> set[str]:
+    try:
+        from paperforge.memory.db import get_memory_db_path, open_live_reader
+
+        db_path = get_memory_db_path(vault)
+        if not db_path.exists():
+            return set()
+        with open_live_reader(vault, db_path) as conn:
+            keys: set[str] = set()
+            for table in ("vec_body_meta", "vec_objects_meta", "vec_fulltext_meta"):
+                try:
+                    rows = conn.execute(
+                        f"SELECT DISTINCT paper_id FROM {table}"
+                    ).fetchall()
+                    keys.update(r["paper_id"] for r in rows)
+                except Exception:  # noqa: BLE001
+                    continue
+            return keys
+    except Exception:  # noqa: BLE001
+        return set()
+
+
+def _ocr_paper_keys(vault: Path) -> set[str]:
+    try:
+        from paperforge.config import paperforge_paths
+
+        paths = paperforge_paths(vault)
+        ocr_dir = paths.get("ocr")
+        if not ocr_dir or not ocr_dir.exists():
+            return set()
+        return {d.name for d in ocr_dir.iterdir() if d.is_dir()}
+    except Exception:  # noqa: BLE001
+        return set()
+
+
+def _residual_title(vault: Path, key: str) -> str:
+    try:
+        from paperforge.memory.db import get_memory_db_path, open_live_reader
+
+        db_path = get_memory_db_path(vault)
+        if db_path.exists():
+            with open_live_reader(vault, db_path) as conn:
+                row = conn.execute(
+                    "SELECT title FROM papers WHERE zotero_key = ?", (key,)
+                ).fetchone()
+                if row and row["title"]:
+                    return str(row["title"])
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        from paperforge.config import paperforge_paths
+
+        paths = paperforge_paths(vault)
+        lit_dir = paths.get("literature")
+        if lit_dir and lit_dir.exists():
+            for domain_dir in lit_dir.iterdir():
+                if not domain_dir.is_dir():
+                    continue
+                for entry in domain_dir.iterdir():
+                    if entry.is_dir() and entry.name.startswith(key + " - "):
+                        return entry.name.split(" - ", 1)[1].strip()
+    except Exception:  # noqa: BLE001
+        pass
+    return ""
 
 
 def _paper_keys(vault: Path, db_path: Path) -> list[str]:

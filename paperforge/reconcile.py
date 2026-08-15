@@ -121,6 +121,8 @@ class ReconcileObservation:
     vault: Path | None = None
     orphan_count: int = 0
     orphan_keys: tuple[str, ...] = ()
+    residual_count: int = 0
+    residual_keys: tuple[str, ...] = ()
 
     def by_key(self) -> dict[str, PaperObservation]:
         return {p.key: p for p in self.papers}
@@ -209,20 +211,30 @@ def observe_papers(
             details=states.get("details"),
         ))
     orphan = payload.get("orphan", {}) or {}
+    residuals = payload.get("residuals", {}) or {}
     return (
         tuple(sorted(out, key=lambda p: p.key)),
-        {"count": int(orphan.get("count", 0) or 0), "keys": tuple(orphan.get("keys", []) or [])},
+        {
+            "count": int(orphan.get("count", 0) or 0),
+            "keys": tuple(orphan.get("keys", []) or []),
+        },
+        {
+            "count": int(residuals.get("count", 0) or 0),
+            "keys": tuple(residuals.get("keys", []) or []),
+        },
     )
 
 
 def observe(vault: Path, keys: list[str] | None = None) -> ReconcileObservation:
-    papers, orphan = observe_papers(vault, keys)
+    papers, orphan, residuals = observe_papers(vault, keys)
     return ReconcileObservation(
         global_state=observe_global(vault),
         papers=papers,
         vault=vault,
         orphan_count=int(orphan["count"]),
         orphan_keys=orphan["keys"],
+        residual_count=int(residuals["count"]),
+        residual_keys=residuals["keys"],
     )
 
 
@@ -523,11 +535,26 @@ def reconcile(vault: Path, keys: list[str] | None = None) -> PFResult:
                 continue
             intents.append(intent)
 
-    # Library orphans — a first-class state, independent of the per-paper
-    # frontier: workspace papers absent from the canonical index (removed
-    # from Zotero, files remain).  Destructive → confirmation-required;
-    # never automatic.
-    if obs.orphan_count > 0:
+    # Library residuals — a first-class state, independent of the per-paper
+    # frontier: papers absent from Zotero but present in ANY carrier
+    # (workspace / full-text index / vectors / OCR).  One library.prune
+    # clears every carrier for every residual paper.  Destructive →
+    # confirmation-required; never automatic.
+    if obs.residual_count > 0:
+        intents.append(ActionIntent(
+            action_id="library.prune",
+            scope=AllScope(),
+            trigger_reason_code="library.orphans_present",
+            trigger_reason=(
+                f"{obs.residual_count} residual paper(s) no longer in Zotero "
+                f"(e.g. {obs.residual_keys[0]}) — workspace/OCR/vector/full-text "
+                f"records can be removed"
+            ),
+        ))
+
+    # Library orphans — legacy alias of the workspace carrier, kept for
+    # compatibility with callers that still read orphan_count.
+    if obs.orphan_count > 0 and obs.residual_count == 0:
         intents.append(ActionIntent(
             action_id="library.prune",
             scope=AllScope(),
