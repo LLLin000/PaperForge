@@ -737,33 +737,37 @@ def _ocr_version_old(paper_dir: Path | None) -> bool:
 
 
 def _resolve_canonical_pdf(vault: Path, paper_dir: Path | None) -> Path | None:
-    """Resolve the canonical PDF for provenance checking ([2b]).
+    """Resolve the CANONICAL main PDF for provenance checking ([2b]).
 
-    Source of truth: meta.source_pdf (a wikilink or vault-relative path to
-    the PDF OCR consumed).  Resolved against the vault root (junction
-    paths like System/Zotero/... resolve through the junction).  The path
-    is a LOCATOR; identity is the fingerprint bytes (ADR-0002 §5 #1)."""
+    Authority = the current canonical library (formal-library.json main
+    pdf_path) — NEVER meta.source_pdf, which is only a HISTORICAL locator
+    and cannot prove the OCR's own claim (P0-B corrective: verifying OCR
+    with OCR's own meta is fail-open).  The path is a LOCATOR; identity is
+    the fingerprint bytes (ADR-0002 §5 #1)."""
     if paper_dir is None:
         return None
+    key = paper_dir.name
     try:
-        import json as _json
         import re as _re
 
-        meta_path = paper_dir / "meta.json"
-        if not meta_path.exists():
+        from paperforge.worker.asset_index import read_index
+
+        envelope = read_index(vault)
+        items = envelope.get("items") if isinstance(envelope, dict) else (envelope or [])
+        hit = next((i for i in items or [] if i.get("zotero_key") == key), None)
+        if not hit:
             return None
-        meta = _json.loads(meta_path.read_text(encoding="utf-8"))
-        src = str(meta.get("source_pdf", "") or "")
-        if not src:
+        pdf = str(hit.get("pdf_path", "") or "")
+        if not pdf:
             return None
-        m = _re.match(r"\[\[([^\]]+)\]\]", src)
-        rel = m.group(1) if m else src
+        m = _re.match(r"\[\[([^\]]+)\]\]", pdf)
+        rel = m.group(1) if m else pdf
         candidate = Path(rel)
         if candidate.is_absolute():
             return candidate if candidate.exists() else None
         resolved = vault / candidate
         return resolved if resolved.exists() else None
-    except Exception:  # noqa: BLE001 — unreadable meta → no evidence
+    except Exception:  # noqa: BLE001 — unreadable index → no evidence
         return None
 
 

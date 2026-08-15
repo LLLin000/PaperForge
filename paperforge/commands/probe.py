@@ -1099,24 +1099,25 @@ def _probe_memory_impl(vault: Path) -> dict[str, Any]:
         # Gate 5a: completed → ready
         if bs_status == "completed":
             # ADR-0002 P0-D: SERVING truth = the LIVE db (the retrieval
-            # gateway reads live, never the candidate).  A completed
-            # build_state with an unpublished live is publish_pending —
-            # never "ready".  Candidate = build carrier; live = serving
-            # carrier; they are separate facts.
-            from paperforge.embedding.substrate import assess_vector_substrate
+            # gateway reads live, never the candidate).  publish_pending is
+            # decided by the CANDIDATE ALONE (exists + rows + completed,
+            # never published) — independent of whether live is empty or
+            # holds old vectors.  probe and reconcile share this SSOT.
+            from paperforge.embedding.substrate import (
+                assess_vector_publication,
+                assess_vector_substrate,
+            )
             from paperforge.memory.db import get_memory_db_path
 
-            _live_sub = assess_vector_substrate(
-                vault, db_path=get_memory_db_path(vault)
-            )
-            if not _live_sub.has_any_rows:
+            _publication = assess_vector_publication(vault)
+            if _publication["publish_pending"]:
                 return build_envelope(
                     module="memory", capability_state="needs_action", severity="warning",
                     reason_code="memory.vector_publish_pending",
                     reason_text=(
-                        "Vector index is built but not yet published — the "
-                        "serving (live) database still has no vectors. "
-                        "Resume to publish the completed build."
+                        "A completed vector build exists but has not been "
+                        "published — the serving (live) database is still "
+                        "serving the old state. Resume to publish it."
                     ),
                     user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
                     action_primary=build_action_primary(
@@ -1129,6 +1130,9 @@ def _probe_memory_impl(vault: Path) -> dict[str, Any]:
             # under an OLD model/endpoint is not searchable with the
             # current one (substrate says identity_changed) and must
             # surface a rebuild, agreeing with embed status and reconcile.
+            _live_sub = assess_vector_substrate(
+                vault, db_path=get_memory_db_path(vault)
+            )
             _substrate_mismatch = bool(_live_sub.identity_changed or _live_sub.layout_incompatible)
             _substrate_reason = next(
                 (c for c in _live_sub.reason_codes if c.startswith("vector.")), ""

@@ -65,12 +65,19 @@ def provenance_state(paper_dir: Path, canonical_pdf: Path | None) -> str | None:
 
     Chain (P0-B, owner review 2026-08-15):
         expected key == meta.zotero_key
-        fingerprint(canonical PDF) == meta.raw_version.pdf_fingerprint
+        fingerprint(canonical library main PDF) == meta.raw_version.pdf_fingerprint
         sha256(canonical/blocks.raw.jsonl) == meta.raw_version.raw_blocks_hash
 
-    Returns None when provenance matches, a PROVENANCE_* defect otherwise.
-    Missing fingerprint AND raw hash (legacy OCR) → PROVENANCE_UNKNOWN —
-    no auto-repair (we cannot prove anything, so we destroy nothing).
+    FAIL-CLOSED (P0-B corrective): a claim that cannot be VERIFIED is
+    unknown, never passed.
+    - missing EITHER strong evidence (fingerprint OR raw hash) → UNKNOWN
+      (a legacy fp without a raw hash cannot prove the current raw is the
+      original raw);
+    - canonical PDF unresolvable/unreadable → UNKNOWN (cannot disprove,
+      but also cannot prove);
+    - raw file missing/unreadable → UNKNOWN;
+    - verified mismatch → the specific PROVENANCE_* defect;
+    - everything verified matching → None (current).
     PDF path is a LOCATOR, never an identity — bytes are the identity.
     """
     meta = read_meta(paper_dir)
@@ -81,28 +88,32 @@ def provenance_state(paper_dir: Path, canonical_pdf: Path | None) -> str | None:
     raw_version = meta.get("raw_version") or {}
     recorded_fp = str(raw_version.get("pdf_fingerprint", "") or "")
     recorded_raw_hash = str(raw_version.get("raw_blocks_hash", "") or "")
-    if not recorded_fp and not recorded_raw_hash:
+    # Fail-closed: missing either strong evidence → cannot prove → unknown.
+    if not recorded_fp or not recorded_raw_hash:
         return PROVENANCE_UNKNOWN
-    if recorded_fp and canonical_pdf is not None and canonical_pdf.exists():
-        try:
-            import hashlib as _hashlib
+    # PDF verification against the CANONICAL library main PDF.
+    if canonical_pdf is None or not canonical_pdf.exists():
+        return PROVENANCE_UNKNOWN  # unresolvable canonical PDF
+    try:
+        import hashlib as _hashlib
 
-            current_fp = "sha256:" + _hashlib.sha256(canonical_pdf.read_bytes()).hexdigest()
-            if current_fp != recorded_fp:
-                return PROVENANCE_PDF_CHANGED
-        except OSError:
-            pass  # unreadable canonical PDF — cannot disprove; fall through
-    if recorded_raw_hash:
-        raw = paper_dir / "canonical" / "blocks.raw.jsonl"
-        if raw.exists():
-            try:
-                import hashlib as _hashlib
+        current_fp = "sha256:" + _hashlib.sha256(canonical_pdf.read_bytes()).hexdigest()
+    except OSError:
+        return PROVENANCE_UNKNOWN  # unreadable canonical PDF
+    if current_fp != recorded_fp:
+        return PROVENANCE_PDF_CHANGED
+    # Raw content verification.
+    raw = paper_dir / "canonical" / "blocks.raw.jsonl"
+    if not raw.exists():
+        return PROVENANCE_UNKNOWN  # raw missing — cannot verify
+    try:
+        import hashlib as _hashlib
 
-                current_raw = "sha256:" + _hashlib.sha256(raw.read_bytes()).hexdigest()
-                if current_raw != recorded_raw_hash:
-                    return PROVENANCE_RAW_MISMATCH
-            except OSError:
-                pass
+        current_raw = "sha256:" + _hashlib.sha256(raw.read_bytes()).hexdigest()
+    except OSError:
+        return PROVENANCE_UNKNOWN  # raw unreadable — cannot verify
+    if current_raw != recorded_raw_hash:
+        return PROVENANCE_RAW_MISMATCH
     return None
 PUBLISH_PENDING_STALE = "publish_pending_stale"    # interrupted publish → rebuild_derived
 PUBLISH_METADATA_MISSING = "publish_metadata_missing"  # result-hash missing → local repair

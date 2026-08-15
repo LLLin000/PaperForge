@@ -1647,3 +1647,67 @@ class TestMaintenanceProjection:
         assert data["reason"]["code"] == "memory.vector_publish_pending"
         assert data["capability_state"] == "needs_action"
         assert data["action"]["primary"]["action_id"] == "embed.resume"
+
+    def test_candidate_completed_live_has_old_vectors_is_publish_pending(self, tmp_path: Path) -> None:
+        """P0-D corrective: publish_pending is decided by the CANDIDATE
+        alone — live holding OLD vectors must NOT hide a completed
+        unpublished build (shadow rebuild scenario)."""
+        import sqlite3
+
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
+        indexes = tmp_path / "99_System" / "PaperForge" / "indexes"
+        indexes.mkdir(parents=True, exist_ok=True)
+        (indexes / "formal-library.json").write_text(json.dumps({
+            "schema_version": "3", "items": [], "paper_count": 0,
+        }), encoding="utf-8")
+
+        from paperforge.memory.builder import compute_hash
+        from paperforge.memory.db import ensure_vec_extension, get_memory_db_path
+        from paperforge.memory.schema import ensure_schema
+
+        # live: OLD vectors present (serving an older build)
+        live = get_memory_db_path(tmp_path)
+        conn = sqlite3.connect(str(live))
+        ensure_vec_extension(conn)
+        ensure_schema(conn)
+        conn.execute(
+            "INSERT INTO meta(key, value) VALUES ('canonical_index_hash', ?)",
+            (compute_hash([]),),
+        )
+        cur = conn.execute(
+            "INSERT INTO vec_fulltext(embedding) VALUES (?)",
+            ("[" + ",".join(["0.0"] * 1536) + "]",),
+        )
+        conn.execute(
+            "INSERT INTO vec_fulltext_meta(rowid, paper_id, chunk_index, text) "
+            "VALUES (?, 'OLDPAPER', 0, 'old')",
+            (cur.lastrowid,),
+        )
+        conn.commit()
+        conn.close()
+
+        # candidate: completed with rows, never published
+        cand = live.with_suffix(".db.build")
+        cconn = sqlite3.connect(str(cand))
+        ensure_vec_extension(cconn)
+        ensure_schema(cconn)
+        for key, val in (("status", "completed"), ("current", "10"), ("total", "10")):
+            cconn.execute(
+                "INSERT OR REPLACE INTO build_state(key, value) VALUES (?, ?)", (key, val)
+            )
+        cur = cconn.execute(
+            "INSERT INTO vec_fulltext(embedding) VALUES (?)",
+            ("[" + ",".join(["0.0"] * 1536) + "]",),
+        )
+        cconn.execute(
+            "INSERT INTO vec_fulltext_meta(rowid, paper_id, chunk_index, text) "
+            "VALUES (?, 'NEWPAPER', 0, 'new')",
+            (cur.lastrowid,),
+        )
+        cconn.commit()
+        cconn.close()
+
+        data = _run_probe("memory", tmp_path)
+        assert data["reason"]["code"] == "memory.vector_publish_pending"
+        assert data["action"]["primary"]["action_id"] == "embed.resume"
