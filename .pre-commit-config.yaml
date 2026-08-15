@@ -8,3 +8,20 @@ repos:
       - id: ruff
         args: [--fix]
       - id: ruff-format
+  # 2026-08-14 incident guard: runtime code must never physically delete
+  # user data outside the trash layer (worker/trash.py).
+  - repo: local
+    hooks:
+      - id: no-destructive-delete
+        name: no destructive delete in runtime code
+        entry: python scripts/check_no_destructive_delete.py
+        language: system
+        files: ^paperforge/.*\.py$
+        pass_filenames: false
+      # legacy hook preserved: committed main.js must be valid JS
+      - id: mainjs-syntax
+        name: main.js syntax check
+        entry: node -e "try{new Function(require('fs').readFileSync('paperforge/plugin/main.js','utf-8'))}catch(e){console.error('PRE-COMMIT BLOCKED: main.js syntax error —',e.message.split('\n')[0]);process.exit(1)}"
+        language: system
+        files: ^paperforge/plugin/main\.js$
+        pass_filenames: false

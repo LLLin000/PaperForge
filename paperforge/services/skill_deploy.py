@@ -6,8 +6,11 @@ All deployments are vault-local only.
 
 from __future__ import annotations
 
+import logging
 import shutil
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 # ── Agent platform → vault-local skill directory ──
 AGENT_SKILL_DIRS: dict[str, str] = {
@@ -59,7 +62,10 @@ def deploy_skills(
             dst_skill = vault / skill_dir_name / "paperforge"
             try:
                 if overwrite and dst_skill.exists():
-                    shutil.rmtree(dst_skill, ignore_errors=True)
+                    try:
+                        shutil.rmtree(dst_skill)
+                    except OSError as exc:
+                        logger.warning("skill_deploy: failed to remove %s: %s", dst_skill, exc)
                 dst_skill.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copytree(src_skill, dst_skill, dirs_exist_ok=True)
                 skill_deployed = True
