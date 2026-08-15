@@ -662,39 +662,12 @@ def _full_rebuild(
     }
 
 def _resolve_ocr_result_hash(paper_dir: Path) -> str:
-    """Resolve OCR result hash with 3-level fallback.
+    """OCR publication identity — delegated to the single source of truth
+    (materialization/ocr.py [5] layer, ADR-0002).  Memory must never
+    re-implement OCR hash resolution."""
+    from paperforge.materialization.ocr import published_identity_hash
 
-    1. index/result-hash.txt (fastest, preferred)
-    2. SHA-256 of structured artifacts (structure/blocks.structured.jsonl,
-       index/structure-tree.json, index/role-index.json)
-    3. meta.json derived_version hash
-
-    #126: while `index/result-hash.pending` exists, neither the stale Level-1
-    file nor the paper's half-built artifacts may be trusted — the reader
-    returns "" so the memory layer skips the paper entirely.
-    """
-    from paperforge.worker.ocr_hash import compute_ocr_result_hash, has_result_hash_pending
-
-    # #126: publication marker supersedes both stale Level 1 and Level 2.
-    if has_result_hash_pending(paper_dir):
-        return ""
-    # Level 1: explicit result-hash.txt
-    rp = paper_dir / "index" / "result-hash.txt"
-    if rp.exists():
-        return rp.read_text(encoding="utf-8").strip()
-    # Level 2: canonical hash of structured artifacts (missing artifact → None)
-    canonical = compute_ocr_result_hash(paper_dir)
-    if canonical is not None:
-        return canonical
-    # Level 3: meta.json derived_version
-    meta_p = paper_dir / "meta.json"
-    if meta_p.exists():
-        try:
-            dv = json.loads(meta_p.read_bytes()).get("derived_version", {})
-            return hashlib.sha256(json.dumps(dv, sort_keys=True).encode()).hexdigest()
-        except Exception:
-            pass
-    return ""
+    return published_identity_hash(paper_dir)
 
 
 def _upsert_body_units(conn: sqlite3.Connection, body_units: list[dict]) -> None:

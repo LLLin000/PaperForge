@@ -533,3 +533,83 @@ def ocr_artifact_detail(paper_dir: Path) -> str | None:
     if role is not None:
         return role
     return _published_state(paper_dir)
+
+def published_identity_hash(paper_dir: Path) -> str:
+    """[5] OCR publication identity — the CURRENT canonical OCR result hash
+    (single source of truth; memory/retrieval consumers call THIS, never
+    re-implement hash resolution).
+
+    Three-level fallback (moved from memory/builder._resolve_ocr_result_hash,
+    ADR-0002: materialization owns the judgment):
+    1. index/result-hash.txt (fastest, preferred)
+    2. canonical hash of the structured artifacts
+    3. meta.json derived_version hash
+
+    While ``index/result-hash.pending`` exists, neither the stale Level-1
+    file nor half-built artifacts may be trusted — return "" so consumers
+    skip the paper entirely.
+    """
+    try:
+        from paperforge.worker.ocr_hash import (
+            compute_ocr_result_hash,
+            has_result_hash_pending,
+        )
+    except Exception:  # noqa: BLE001
+        return ""
+    if has_result_hash_pending(paper_dir):
+        return ""
+    rp = paper_dir / "index" / "result-hash.txt"
+    if rp.exists():
+        try:
+            return rp.read_text(encoding="utf-8").strip()
+        except OSError:
+            return ""
+    canonical = compute_ocr_result_hash(paper_dir)
+    if canonical is not None:
+        return canonical
+    meta_p = paper_dir / "meta.json"
+    if meta_p.exists():
+        try:
+            import json as _json
+
+            dv = _json.loads(meta_p.read_bytes()).get("derived_version", {})
+            return hashlib.sha256(_json.dumps(dv, sort_keys=True).encode()).hexdigest()
+        except Exception:  # noqa: BLE001
+            pass
+    return ""
+
+def identity_state(paper_dir: Path) -> tuple[str | None, str | None]:
+    """[5] OCR publication identity state — (state, hash): current | stale
+    | (None, None) when unverifiable.
+
+    Compares the PUBLISHED hash (index/result-hash.txt) against the
+    recomputed canonical artifact hash.  Single source of truth — probe,
+    reconcile, and memory all consume this; nobody re-implements the
+    comparison.  Missing published hash → (None, None) (publish_metadata
+    missing is judged by the artifact chain, not here)."""
+    try:
+        from paperforge.worker.ocr_hash import (
+            compute_ocr_result_hash,
+            has_result_hash_pending,
+        )
+    except Exception:  # noqa: BLE001
+        return None, None
+    if has_result_hash_pending(paper_dir):
+        return None, None  # publishing in flight — unverifiable
+    stored = None
+    rp = paper_dir / "index" / "result-hash.txt"
+    if rp.exists():
+        try:
+            stored = rp.read_text(encoding="utf-8").strip()
+        except OSError:
+            stored = None
+    recomputed = compute_ocr_result_hash(paper_dir)
+    if recomputed is None:
+        return None, None
+    if stored is None:
+        # published metadata missing — the artifact chain reports
+        # publish_metadata_missing; identity itself is unverifiable here.
+        return None, None
+    if stored != recomputed:
+        return "stale", recomputed
+    return "current", recomputed
