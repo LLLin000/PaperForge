@@ -38,6 +38,29 @@ from tests.conftest import canonical_test_config
 DIMENSION = 1536
 
 
+def _seed_canonical_pdf(vault: Path, key: str) -> bytes:
+    """Canonical library main PDF + formal-library entry with pdf_path
+    (P0-B: provenance's canonical PDF must come from the library, never
+    from meta.source_pdf).  Returns the PDF bytes so callers can record
+    the real fingerprint."""
+    pdf = vault / "99_System" / "Zotero" / "storage" / key / "paper.pdf"
+    pdf.parent.mkdir(parents=True, exist_ok=True)
+    payload = f"paper-{key}".encode()
+    pdf.write_bytes(payload)
+    idx = vault / "99_System" / "PaperForge" / "indexes" / "formal-library.json"
+    idx.parent.mkdir(parents=True, exist_ok=True)
+    if idx.exists():
+        _data = json.loads(idx.read_text(encoding="utf-8"))
+        _items = [i for i in _data.get("items", []) if i.get("zotero_key") != key]
+    else:
+        _data = {"schema_version": "3"}
+        _items = []
+    _items.append({"zotero_key": key, "pdf_path": f"[[99_System/Zotero/storage/{key}/paper.pdf]]"})
+    _data["items"] = _items
+    idx.write_text(json.dumps(_data), encoding="utf-8")
+    return payload
+
+
 def _write_ocr_paper(vault: Path, key: str, *, pending: bool = False) -> None:
     """Create a canonical OCR paper dir: raw + derived artifacts + hash."""
     ocr_dir = vault / "99_System" / "PaperForge" / "ocr" / key
@@ -65,10 +88,17 @@ def _write_ocr_paper(vault: Path, key: str, *, pending: bool = False) -> None:
         # marker (recent → unknown/wait).
         (ocr_dir / "index" / "result-hash.pending").write_text("pending", encoding="utf-8")
     else:
+        import hashlib as _hl
+
+        _pdf_bytes = _seed_canonical_pdf(vault, key)
+        _raw = json.dumps({"block_id": key, "page": 1, "role": "body_paragraph"})
         (ocr_dir / "meta.json").write_text(json.dumps({
             "ocr_status": "done",
             "zotero_key": key,
-            "raw_version": {"pdf_fingerprint": "sha256:test-fingerprint"},
+            "raw_version": {
+                "pdf_fingerprint": "sha256:" + _hl.sha256(_pdf_bytes).hexdigest(),
+                "raw_blocks_hash": "sha256:" + _hl.sha256(_raw.encode("utf-8")).hexdigest(),
+            },
         }), encoding="utf-8")
         from paperforge.worker.ocr_hash import publish_ocr_result_hash
 
@@ -430,7 +460,9 @@ class TestProbeLineage:
 
     def test_missing_paper_dirs_and_no_manifest(self, tmp_path: Path) -> None:
         vault = _make_vault(tmp_path, keys=("KEY1",))
-        # KEY2 has a manifest but no OCR; KEY3 has neither.
+        # KEY2 has a manifest but no OCR; KEY3 has neither.  KEY2 joins the
+        # canonical universe (formal-library) so the probe reports it.
+        _seed_canonical_pdf(vault, "KEY2")
         indexes = vault / "99_System" / "PaperForge" / "indexes"
         conn = sqlite3.connect(str(indexes / "paperforge.db"))
         try:
@@ -623,10 +655,17 @@ def _state_paper(root: Path, key: str, status: str = "done") -> Path:
     (d / "structure" / "blocks.structured.jsonl").write_bytes(_GOOD_BLOCKS)
     (d / "index" / "structure-tree.json").write_text(_GOOD_TREE, encoding="utf-8")
     (d / "index" / "role-index.json").write_text(_GOOD_ROLE, encoding="utf-8")
+    import hashlib as _hl
+
+    _pdf_bytes = _seed_canonical_pdf(root, key)
+    _raw_hash = "sha256:" + _hl.sha256(_GOOD_BLOCKS).hexdigest()
     (d / "meta.json").write_text(json.dumps({
         "ocr_status": status,
         "zotero_key": key,
-        "raw_version": {"pdf_fingerprint": "sha256:test-fingerprint"},
+        "raw_version": {
+            "pdf_fingerprint": "sha256:" + _hl.sha256(_pdf_bytes).hexdigest(),
+            "raw_blocks_hash": _raw_hash,
+        },
     }), encoding="utf-8")
     if status == "done":
         from paperforge.worker.ocr_hash import publish_ocr_result_hash
@@ -728,11 +767,16 @@ def test_ocr_state_machine_probe_to_action(
     d = _state_paper(root, key, status=meta_status)
     _apply_mutation(d, mutation, key)
 
-    from paperforge.lineage import _ocr_detail, _probe_ocr_state
+    from paperforge.lineage import (
+        _ocr_detail,
+        _probe_ocr_state,
+        _resolve_canonical_pdf,
+    )
     from paperforge.reconcile import PaperObservation, _per_paper_intents
 
-    state, _ = _probe_ocr_state(d)
-    detail = _ocr_detail(d)
+    _pdf = _resolve_canonical_pdf(root, d)
+    state, _ = _probe_ocr_state(d, canonical_pdf=_pdf)
+    detail = _ocr_detail(d, _pdf)
     assert state == exp_state, f"state {state} != {exp_state} ({detail})"
     assert detail == exp_detail, f"detail {detail} != {exp_detail}"
 
@@ -756,7 +800,7 @@ class TestMaterializationCorrective:
     version_old is a flag not a failure detail, permission states emit."""
 
     def test_version_old_is_flag_not_detail(self, tmp_path: Path) -> None:
-        from paperforge.lineage import _ocr_detail, _ocr_version_old
+        from paperforge.lineage import _ocr_detail, _ocr_version_old, _resolve_canonical_pdf
 
         vault = tmp_path / "vault"
         vault.mkdir(parents=True)
@@ -766,8 +810,9 @@ class TestMaterializationCorrective:
         meta = json.loads((d / "meta.json").read_text(encoding="utf-8"))
         meta["ocr_pipeline_version"] = "0.0.0"
         (d / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
+        pdf = _resolve_canonical_pdf(vault, d)
         assert _ocr_version_old(d) is True
-        assert _ocr_detail(d) is None  # NOT version_old — no failure reason
+        assert _ocr_detail(d, pdf) is None  # NOT version_old — no failure reason
 
     def test_tree_permission_emits_permission_state(self, tmp_path: Path, monkeypatch) -> None:
         from paperforge.materialization.ocr import TREE_PERMISSION, _tree_state
@@ -847,5 +892,23 @@ class TestProvenance:
         d = _state_paper(vault, "KEY1")
         meta = json.loads((d / "meta.json").read_text(encoding="utf-8"))
         meta.pop("raw_version", None)  # legacy OCR — no fingerprint/hash
+        (d / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
+        assert provenance_state(d, None) == PROVENANCE_UNKNOWN
+
+    def test_legacy_fp_without_raw_hash_is_unknown(self, tmp_path: Path) -> None:
+        """P0-B corrective: a legacy pdf_fingerprint WITHOUT raw_blocks_hash
+        cannot prove the current raw is the original raw — fail-closed to
+        unknown, never pass."""
+        from paperforge.materialization.ocr import (
+            PROVENANCE_UNKNOWN,
+            provenance_state,
+        )
+
+        vault = tmp_path / "vault"
+        vault.mkdir(parents=True)
+        canonical_test_config(vault, system_dir="99_System")
+        d = _state_paper(vault, "KEY1")
+        meta = json.loads((d / "meta.json").read_text(encoding="utf-8"))
+        meta["raw_version"].pop("raw_blocks_hash", None)  # pre-P0-B OCR
         (d / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
         assert provenance_state(d, None) == PROVENANCE_UNKNOWN

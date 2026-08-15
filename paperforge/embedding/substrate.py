@@ -229,3 +229,51 @@ def assess_vector_substrate(vault: Path, *, db_path: Path | None = None) -> Vect
         stored_dimension=stored_dimension,
         identity_version=identity_version,
     )
+
+# ── publication assessment (P0-D corrective, ADR-0002) ────────────────────
+
+
+def assess_vector_publication(vault: Path) -> dict:
+    """Single source of truth for candidate→live publication state.
+
+    P0-D corrective: publish_pending is decided by the CANDIDATE alone —
+    candidate exists, holds rows, build_state completed, and was never
+    published (still present) — INDEPENDENT of whether live is empty or
+    holds old vectors.  probe and reconcile both use this; they must never
+    re-implement candidate probing.
+
+    Returns:
+        candidate_exists, candidate_has_rows, candidate_status,
+        publish_pending, serving_path (live), build_path (candidate or
+        None when absent).
+    """
+    from paperforge.memory.db import get_memory_db_path
+
+    live = get_memory_db_path(vault)
+    candidate = live.with_suffix(".db.build")
+    out = {
+        "candidate_exists": False,
+        "candidate_has_rows": False,
+        "candidate_status": "idle",
+        "publish_pending": False,
+        "serving_path": live,
+        "build_path": None,
+    }
+    if not candidate.exists():
+        return out
+    out["candidate_exists"] = True
+    out["build_path"] = candidate
+    try:
+        conn = sqlite3.connect(f"file:{candidate.as_posix()}?mode=ro", uri=True)
+        try:
+            out["candidate_has_rows"] = _has_any_rows(conn)
+            bs = _read_build_state_ro(conn)
+            out["candidate_status"] = str(bs.get("status", "idle") or "idle")
+        finally:
+            conn.close()
+    except Exception:  # noqa: BLE001 — unreadable candidate → no publication
+        return out
+    out["publish_pending"] = bool(
+        out["candidate_has_rows"] and out["candidate_status"] == "completed"
+    )
+    return out
