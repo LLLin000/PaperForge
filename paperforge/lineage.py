@@ -343,8 +343,10 @@ def probe_lineage(vault: Path) -> dict[str, Any]:
             # #162 corrective: each layer observes (state, identity) so the
             # NEXT layer can detect a freshly published upstream identity —
             # enum-only propagation misses the normal publish transitions.
+            _ocr_dir = (ocr_root / key) if ocr_root is not None else None
+            _canonical_pdf = _resolve_canonical_pdf(vault, _ocr_dir)
             ocr_state, ocr_identity = _probe_ocr_state(
-                (ocr_root / key) if ocr_root is not None else None
+                _ocr_dir, canonical_pdf=_canonical_pdf
             )
             retrieval_state, retrieval_identity = _probe_retrieval_state(
                 conn, key, ocr_state, ocr_identity
@@ -365,9 +367,7 @@ def probe_lineage(vault: Path) -> dict[str, Any]:
                 # the detail so next-step decisions and UI can distinguish
                 # not_started / ran_but_empty / tree_missing / tree_empty.
                 "details": {
-                    "ocr": _ocr_detail(
-                        (ocr_root / key) if ocr_root is not None else None
-                    ),
+                    "ocr": _ocr_detail(_ocr_dir, canonical_pdf=_canonical_pdf),
                     "retrieval": (
                         "manifest_missing"
                         if retrieval_state in ("missing", "incomplete")
@@ -679,19 +679,31 @@ def _paper_keys(vault: Path, db_path: Path) -> list[str]:
 # the tests keep working; the hash-identity step (current vs stale) stays
 # here because it depends on compute_ocr_result_hash.
 
-def _probe_ocr_state(paper_dir: Path | None) -> tuple[str, str | None]:
+def _probe_ocr_state(
+    paper_dir: Path | None, canonical_pdf: Path | None = None
+) -> tuple[str, str | None]:
     """(state, ocr_identity) — current | stale | missing | unknown |
     incomplete | failed.
 
-    State judging delegates to materialization.ocr.top_state; the hash
-    identity (current vs stale) is computed here."""
-    from paperforge.materialization.ocr import top_state
+    State judging delegates to materialization.ocr.top_state; provenance
+    ([2]) is checked when the chain is materialized; the hash identity
+    (current vs stale) is computed here."""
+    from paperforge.materialization.ocr import (
+        PROVENANCE_UNKNOWN,
+        provenance_state,
+        top_state,
+    )
 
     state = top_state(paper_dir)
     if state is not None:
         return state, None
     if paper_dir is None:
         return "missing", None
+    prov = provenance_state(paper_dir, canonical_pdf)
+    if prov is not None:
+        if prov == PROVENANCE_UNKNOWN:
+            return "unknown", None
+        return "stale", None
     current = compute_ocr_result_hash(paper_dir)
     if current is None:
         return "unknown", None
@@ -706,12 +718,12 @@ def _probe_ocr_state(paper_dir: Path | None) -> tuple[str, str | None]:
     return "current", current
 
 
-def _ocr_detail(paper_dir: Path | None) -> str | None:
+def _ocr_detail(paper_dir: Path | None, canonical_pdf: Path | None = None) -> str | None:
     """Fine-grained WHY for the ocr state — one namespace, each value one
     meaning (see materialization/ocr.py constants)."""
     from paperforge.materialization.ocr import detail
 
-    return detail(paper_dir)
+    return detail(paper_dir, canonical_pdf)
 
 
 def _ocr_version_old(paper_dir: Path | None) -> bool:
@@ -722,6 +734,37 @@ def _ocr_version_old(paper_dir: Path | None) -> bool:
     from paperforge.materialization.ocr import is_old_pipeline
 
     return is_old_pipeline(paper_dir)
+
+
+def _resolve_canonical_pdf(vault: Path, paper_dir: Path | None) -> Path | None:
+    """Resolve the canonical PDF for provenance checking ([2b]).
+
+    Source of truth: meta.source_pdf (a wikilink or vault-relative path to
+    the PDF OCR consumed).  Resolved against the vault root (junction
+    paths like System/Zotero/... resolve through the junction).  The path
+    is a LOCATOR; identity is the fingerprint bytes (ADR-0002 §5 #1)."""
+    if paper_dir is None:
+        return None
+    try:
+        import json as _json
+        import re as _re
+
+        meta_path = paper_dir / "meta.json"
+        if not meta_path.exists():
+            return None
+        meta = _json.loads(meta_path.read_text(encoding="utf-8"))
+        src = str(meta.get("source_pdf", "") or "")
+        if not src:
+            return None
+        m = _re.match(r"\[\[([^\]]+)\]\]", src)
+        rel = m.group(1) if m else src
+        candidate = Path(rel)
+        if candidate.is_absolute():
+            return candidate if candidate.exists() else None
+        resolved = vault / candidate
+        return resolved if resolved.exists() else None
+    except Exception:  # noqa: BLE001 — unreadable meta → no evidence
+        return None
 
 
 def _probe_retrieval_state(
