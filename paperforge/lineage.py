@@ -376,6 +376,12 @@ def probe_lineage(vault: Path) -> dict[str, Any]:
                     ),
                     "vector": None,
                 },
+                # P1-D: orthogonal facts per carrier — snapshot integrity,
+                # policy currency, lineage trust (ADR-0002 §6).  A verified
+                # old snapshot is NOT corrupt.
+                "integrity": _retrieval_integrity_facts(
+                    conn, key, retrieval_state, ocr_state
+                ),
                 # Flags are non-failure facts (ADR-0002): a pipeline version
                 # difference is not a materialization defect.
                 "flags": {
@@ -769,6 +775,65 @@ def _resolve_canonical_pdf(vault: Path, paper_dir: Path | None) -> Path | None:
         return resolved if resolved.exists() else None
     except Exception:  # noqa: BLE001 — unreadable index → no evidence
         return None
+
+
+def _retrieval_integrity_facts(
+    conn: sqlite3.Connection, key: str, retrieval_state: str, ocr_state: str
+) -> dict[str, str]:
+    """P1-D orthogonal retrieval facts: snapshot integrity, policy
+    currency, lineage trust — independent of the flat current/stale state.
+
+    Queries the DB per paper (counts + rows, cheap at paper scale) and
+    judges via materialization/retrieval.py."""
+    from paperforge.materialization.retrieval import (
+        lineage_trust,
+        policy_currency,
+        snapshot_integrity,
+    )
+
+    facts: dict[str, str] = {
+        "snapshot_integrity": "unknown",
+        "policy_currency": "unknown",
+        "lineage_trust": "unverified",
+    }
+    if ocr_state not in ("current",):
+        return facts  # upstream not current — integrity of an old carrier
+        # is still worth reporting, but the caller gates on OCR currency.
+    row = conn.execute(
+        "SELECT value FROM meta WHERE key = ?", (f"manifest:{key}",)
+    ).fetchone()
+    manifest = None
+    if row:
+        try:
+            manifest = json.loads(row[0])
+        except (TypeError, ValueError):
+            manifest = None
+    try:
+        body_units = [
+            dict(r) for r in conn.execute(
+                "SELECT * FROM body_units WHERE paper_id = ?", (key,)
+            )
+        ]
+        object_units = [
+            dict(r) for r in conn.execute(
+                "SELECT * FROM object_units WHERE paper_id = ?", (key,)
+            )
+        ]
+        body_count = len(body_units)
+        object_count = len(object_units)
+    except Exception:  # noqa: BLE001
+        body_units = None
+        object_units = None
+        body_count = object_count = -1
+    facts["snapshot_integrity"] = snapshot_integrity(
+        manifest, body_units, object_units,
+        body_count=body_count, object_count=object_count,
+    )
+    facts["policy_currency"] = policy_currency(manifest)
+    facts["lineage_trust"] = lineage_trust(
+        manifest, retrieval_state if retrieval_state == "current" else None
+    )
+    return facts
 
 
 def _probe_retrieval_state(
