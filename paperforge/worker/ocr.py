@@ -183,6 +183,26 @@ def _extract_hard_degraded_reasons(health_report: dict) -> list[str]:
     ]
 
 
+def _resolve_zotero_data_dir(vault: Path) -> Path | None:
+    """Zotero data directory from the canonical config (zotero_data_dir,
+    else system/Zotero).  Needed to resolve storage:KEY/... locators to
+    real PDFs (2026-08-16: uploads were silently failing because paths
+    never carried a zotero_dir key)."""
+    try:
+        from paperforge.config import load_vault_config
+
+        vc = load_vault_config(vault)
+        zd = str(vc.get("zotero_data_dir", "") or "")
+        if zd:
+            p = Path(zd)
+            return p if p.is_absolute() else (vault / p).resolve()
+        system_dir = str(vc.get("system_dir", "System") or "System")
+        p = vault / system_dir / "Zotero"
+        return p.resolve() if p.exists() else p
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def apply_ocr_error_state(row: dict, meta: dict, error_state: dict) -> None:
     status = error_state["status"]
     row["queue_status"] = status
@@ -2888,7 +2908,7 @@ def run_ocr(
                     queue_row.get("pdf_path", ""),
                     queue_row.get("has_pdf", False),
                     vault,
-                    paths.get("zotero_dir") if "zotero_dir" in paths else None,
+                    _resolve_zotero_data_dir(vault),
                 )
                 if not resolved_pdf:
                     meta["ocr_status"] = "nopdf"
