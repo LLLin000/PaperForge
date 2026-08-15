@@ -158,24 +158,59 @@ def prune_orphan_papers(
 def _prune_orphan_papers_locked(
     vault: Path, candidates: list[dict], preview: list[dict]
 ) -> dict:
-    """Locked body: caller owns the WriterLock."""
+    """Locked body: caller owns the WriterLock.
+
+    Safety (2026-08-14 incident → trash architecture): NO user data is
+    ever physically deleted here.  Workspace/OCR directories are MOVED
+    into ``.paperforge/trash/<ts>/<id>/`` with a manifest (recoverable via
+    ``paperforge trash restore``), behind a fail-closed capability check
+    (empty paths, ``.``, vault root, and anything outside the literature/
+    OCR roots are refused).  Vectors and DB rows are transactional DB
+    deletes (rowid-verified), not filesystem deletes."""
+    from paperforge.config import paperforge_paths as _pp
+    from paperforge.worker.trash import DangerousPathError, trash_remove
+
+    _paths = _pp(vault)
+    _lit_root = (_paths.get("literature") or Path()).resolve()
+    _ocr_root = (_paths.get("ocr") or Path()).resolve()
+
     deleted: list[str] = []
     counts = {"workspace": 0, "ocr": 0, "vectors": 0, "failed": 0}
 
     for c in candidates:
         key = c["key"]
         try:
-            ocr = c["ocr_dir"]
+            ocr = c.get("ocr_dir")
             if ocr and ocr.exists():
-                shutil.rmtree(ocr, ignore_errors=True)
-                if not ocr.exists():
-                    counts["ocr"] += 1
+                try:
+                    rec = trash_remove(
+                        ocr,
+                        vault=vault,
+                        allowed_root=_ocr_root,
+                        operation="library.prune",
+                        paper_key=key,
+                    )
+                    if rec is not None:
+                        counts["ocr"] += 1
+                except DangerousPathError as exc:
+                    logger.warning("prune: refuse to trash OCR %s: %s", ocr, exc)
+                    counts["failed"] += 1
 
-            ws = c["workspace_dir"]
-            if ws.exists():
-                shutil.rmtree(ws, ignore_errors=True)
-                if not ws.exists():
-                    counts["workspace"] += 1
+            ws = c.get("workspace_dir")
+            if ws and ws.exists():
+                try:
+                    rec = trash_remove(
+                        ws,
+                        vault=vault,
+                        allowed_root=_lit_root,
+                        operation="library.prune",
+                        paper_key=key,
+                    )
+                    if rec is not None:
+                        counts["workspace"] += 1
+                except DangerousPathError as exc:
+                    logger.warning("prune: refuse to trash workspace %s: %s", ws, exc)
+                    counts["failed"] += 1
 
             try:
                 from paperforge.embedding._chroma import _delete_paper_vectors_locked
@@ -184,6 +219,52 @@ def _prune_orphan_papers_locked(
                     counts["vectors"] += n
             except Exception as vec_err:
                 logger.warning("prune: failed to delete vectors for %s: %s", key, vec_err)
+                counts["failed"] += 1
+
+            # #135: unified residual cleanup — the full-text index rows,
+            # OCR retrieval units, and lineage/alias/event records for the
+            # same paper.  Same WriterLock, same transaction family; the
+            # papers AFTER-DELETE trigger keeps paper_fts in sync.
+            try:
+                from paperforge.memory.db import (
+                    ensure_vec_extension,
+                    get_connection,
+                    get_memory_db_path,
+                )
+
+                db_path = get_memory_db_path(vault)
+                if db_path.exists():
+                    conn = get_connection(db_path)
+                    ensure_vec_extension(conn)
+                    try:
+                        # external-content FTS5: body_units_fts has NO
+                        # trigger — sync the delete manually before removing
+                        # the content rows.  Production only indexes
+                        # indexable=1 rows (see _upsert_body_units), so only
+                        # those have FTS rows; deleting an absent FTS row
+                        # raises SQLITE_CORRUPT_VTAB.
+                        body_rows = conn.execute(
+                            "SELECT rowid, unit_id FROM body_units "
+                            "WHERE paper_id = ? AND indexable = 1",
+                            (key,),
+                        ).fetchall()
+                        for br in body_rows:
+                            conn.execute(
+                                "INSERT INTO body_units_fts(body_units_fts, rowid, unit_id) "
+                                "VALUES('delete', ?, ?)",
+                                (br["rowid"], br["unit_id"]),
+                            )
+                        conn.execute("DELETE FROM body_units WHERE paper_id = ?", (key,))
+                        conn.execute("DELETE FROM object_units WHERE paper_id = ?", (key,))
+                        for table in ("lineage", "paper_aliases", "paper_assets", "paper_events"):
+                            conn.execute(f"DELETE FROM {table} WHERE paper_id = ?", (key,))
+                        # papers AFTER-DELETE trigger clears paper_fts rows.
+                        conn.execute("DELETE FROM papers WHERE zotero_key = ?", (key,))
+                        conn.commit()
+                    finally:
+                        conn.close()
+            except Exception as db_err:
+                logger.warning("prune: failed to clean DB records for %s: %s", key, db_err)
                 counts["failed"] += 1
 
             deleted.append(key)
