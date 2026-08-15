@@ -170,9 +170,16 @@ def observe_global(vault: Path) -> GlobalObservation:
         vector_ok = False
         reasons.append("vector.blocked_by_memory")
     else:
+        # ADR-0002 P0-D: SERVING truth = the live db.  A candidate exists
+        # separately (build carrier); a completed candidate with an
+        # unpublished live is publish_pending — per-paper embed.resume
+        # publishes it, never a global rebuild.
         from paperforge.embedding.substrate import assess_vector_substrate
+        from paperforge.memory.db import get_memory_db_path
 
-        substrate = assess_vector_substrate(vault)
+        substrate = assess_vector_substrate(
+            vault, db_path=get_memory_db_path(vault)
+        )
         vector_ok = substrate.compatible
         if not vector_ok:
             reasons.extend(r for r in substrate.reason_codes if r.startswith("vector."))

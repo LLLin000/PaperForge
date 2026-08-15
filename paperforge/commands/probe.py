@@ -1098,22 +1098,41 @@ def _probe_memory_impl(vault: Path) -> dict[str, Any]:
 
         # Gate 5a: completed → ready
         if bs_status == "completed":
-            # RC UX Seam (single source): completed alone is NOT ready.  The
-            # published identity must match config — a completed build under
-            # an OLD model/endpoint is not searchable with the current one
-            # (substrate says identity_changed) and must surface a rebuild,
-            # agreeing with embed status and reconcile.
-            try:
-                from paperforge.embedding.substrate import assess_vector_substrate
+            # ADR-0002 P0-D: SERVING truth = the LIVE db (the retrieval
+            # gateway reads live, never the candidate).  A completed
+            # build_state with an unpublished live is publish_pending —
+            # never "ready".  Candidate = build carrier; live = serving
+            # carrier; they are separate facts.
+            from paperforge.embedding.substrate import assess_vector_substrate
+            from paperforge.memory.db import get_memory_db_path
 
-                _sub = assess_vector_substrate(vault)
-                _substrate_mismatch = bool(_sub.identity_changed or _sub.layout_incompatible)
-                _substrate_reason = next(
-                    (c for c in _sub.reason_codes if c.startswith("vector.")), ""
+            _live_sub = assess_vector_substrate(
+                vault, db_path=get_memory_db_path(vault)
+            )
+            if not _live_sub.has_any_rows:
+                return build_envelope(
+                    module="memory", capability_state="needs_action", severity="warning",
+                    reason_code="memory.vector_publish_pending",
+                    reason_text=(
+                        "Vector index is built but not yet published — the "
+                        "serving (live) database still has no vectors. "
+                        "Resume to publish the completed build."
+                    ),
+                    user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
+                    action_primary=build_action_primary(
+                        action_id="embed.resume",
+                        verb="run", label="Publish vector build",
+                    ),
+                    ttl_seconds=TTL_MEMORY,
                 )
-            except Exception:  # noqa: BLE001
-                _substrate_mismatch = False
-                _substrate_reason = ""
+            # The published identity must match config — a completed build
+            # under an OLD model/endpoint is not searchable with the
+            # current one (substrate says identity_changed) and must
+            # surface a rebuild, agreeing with embed status and reconcile.
+            _substrate_mismatch = bool(_live_sub.identity_changed or _live_sub.layout_incompatible)
+            _substrate_reason = next(
+                (c for c in _live_sub.reason_codes if c.startswith("vector.")), ""
+            )
             if _substrate_mismatch:
                 return build_envelope(
                     module="memory", capability_state="needs_action", severity="warning",
