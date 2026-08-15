@@ -431,13 +431,15 @@ def _build_from_index_locked(vault: Path, keys: list[str] | None = None) -> dict
             )
         correction_result = _import_correction_log(conn, vault, valid_keys)
         _hydrate_reading_log_for_keys(conn, vault, diff["added"])
-        # 4d. OCR unit rebuilds (per-paper hash comparison) — ONLY the
-        #     successful papers; a failed paper's units must stay untouched
-        #     (#168 T7 P0-2: "B failed → B memory/vector untouched").
+        # 4d. OCR unit rebuilds (per-paper hash comparison) — ALL papers in
+        #     scope EXCEPT the failed ones: units are an independent
+        #     dimension from paper_state_hash (a re-OCRed paper can have
+        #     unchanged metadata but a changed OCR hash; _incremental_units_only
+        #     compares manifest vs current OCR hash and decides itself).
         _units_items = (
             items
             if keys is None
-            else [e for e in items if e.get("zotero_key") in successful_set]
+            else [e for e in items if e.get("zotero_key") not in failed_keys]
         )
         _incremental_units_only(conn, _units_items, ocr_root, vault=vault)
 
