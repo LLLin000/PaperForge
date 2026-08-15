@@ -858,11 +858,14 @@ def backfill_from_result(vault: Path, key: str) -> dict:
         except Exception:
             pass
 
-        _, _, _, _ = postprocess_ocr_result(vault, key, all_results)
+        # Single-source-of-truth: pass the meta we will persist so the
+        # version payloads written inside postprocess land in the SAME
+        # object written back below (no second read that loses fields).
+        meta = read_json(paper_dir / "meta.json") if (paper_dir / "meta.json").exists() else {}
+        _, _, _, _, meta = postprocess_ocr_result(vault, key, all_results, meta=meta)
 
         # Add backfill metadata
         meta_path = paper_dir / "meta.json"
-        meta = read_json(meta_path) if meta_path.exists() else {}
         meta["is_backfilled"] = True
         meta["backfilled_at"] = __import__("datetime").datetime.now().isoformat()
         meta["ocr_status"] = "done"

@@ -20,7 +20,7 @@ for key in papers:
     json_path = ocr_root / "json" / "result.json"
     all_results = json.loads(json_path.read_text(encoding="utf-8"))
 
-    page_count, _, _, error = postprocess_ocr_result(VAULT, key, all_results)
+    page_count, _, _, error, _meta = postprocess_ocr_result(VAULT, key, all_results)
 
     text = (ocr_root / "fulltext.md").read_text(encoding="utf-8")
     lines = text.splitlines()

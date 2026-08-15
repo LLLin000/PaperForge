@@ -281,7 +281,7 @@ def test_postprocess_preserves_compatibility_outputs(tmp_path: Path) -> None:
     ocr_dir.mkdir()
     (ocr_dir / "meta.json").write_text('{"zotero_key":"COMPAT1","ocr_status":"done"}', encoding="utf-8")
 
-    page_num, md_path, json_path, fulltext_md_path = postprocess_ocr_result(vault, "COMPAT1", [])
+    page_num, md_path, json_path, fulltext_md_path, _meta = postprocess_ocr_result(vault, "COMPAT1", [])
 
     assert page_num == 0
     assert (ocr_dir / "fulltext.md").exists()
@@ -311,7 +311,7 @@ def test_postprocess_writes_phase1_artifacts(tmp_path: Path) -> None:
         encoding="utf-8",
     )
 
-    page_num, _, _, _ = postprocess_ocr_result(vault, "ABCD1234", [])
+    page_num, _, _, _, _m = postprocess_ocr_result(vault, "ABCD1234", [])
     assert page_num == 0
     assert (ocr_dir / "raw" / "raw_meta.json").exists()
     assert (ocr_dir / "raw" / "source_metadata.json").exists()
@@ -349,7 +349,7 @@ def test_postprocess_meta_json_preserves_original_fields(tmp_path: Path) -> None
         encoding="utf-8",
     )
 
-    _, _, _, _ = postprocess_ocr_result(vault, "METAORIG", [])
+    _, _, _, _, _m = postprocess_ocr_result(vault, "METAORIG", [])
 
     meta = json.loads((ocr_dir / "meta.json").read_text(encoding="utf-8"))
     assert meta.get("zotero_key") == "METAORIG"
@@ -379,7 +379,7 @@ def test_postprocess_writes_resolved_metadata(tmp_path: Path) -> None:
         encoding="utf-8",
     )
 
-    _, _, _, _ = postprocess_ocr_result(vault, "META001", [])
+    _, _, _, _, _m = postprocess_ocr_result(vault, "META001", [])
 
     assert (ocr_dir / "raw" / "raw_meta.json").exists()
     assert (ocr_dir / "raw" / "source_metadata.json").exists()
@@ -408,7 +408,7 @@ def test_postprocess_writes_figure_inventory(tmp_path: Path) -> None:
         encoding="utf-8",
     )
 
-    _, _, _, _ = postprocess_ocr_result(vault, "FIG001", [])
+    _, _, _, _, _m = postprocess_ocr_result(vault, "FIG001", [])
 
     # Phase 2: figure_inventory.json does not exist yet -- test will fail
     assert (ocr_dir / "structure" / "figure_inventory.json").exists()
@@ -434,7 +434,7 @@ def test_postprocess_writes_table_inventory(tmp_path: Path) -> None:
         encoding="utf-8",
     )
 
-    _, _, _, _ = postprocess_ocr_result(vault, "TBL001", [])
+    _, _, _, _, _m = postprocess_ocr_result(vault, "TBL001", [])
 
     # Phase 2: table_inventory.json does not exist yet -- will fail
     assert (ocr_dir / "structure" / "table_inventory.json").exists()
@@ -461,7 +461,7 @@ def test_postprocess_creates_object_directories(tmp_path: Path) -> None:
         encoding="utf-8",
     )
 
-    _, _, _, _ = postprocess_ocr_result(vault, "OBJ001", [])
+    _, _, _, _, _m = postprocess_ocr_result(vault, "OBJ001", [])
 
     # Phase 2: object artifact directories are created during postprocess
     assert (ocr_dir / "render" / "figures").exists()
@@ -491,7 +491,7 @@ def test_postprocess_writes_render_fulltext(tmp_path: Path) -> None:
         encoding="utf-8",
     )
 
-    _, _, _, _ = postprocess_ocr_result(vault, "RNDR001", [])
+    _, _, _, _, _m = postprocess_ocr_result(vault, "RNDR001", [])
 
     # Phase 3: render/fulltext.md does not exist yet -- this test will fail
     assert (ocr_dir / "render" / "fulltext.md").exists()
@@ -517,7 +517,7 @@ def test_postprocess_writes_ocr_health(tmp_path: Path) -> None:
         encoding="utf-8",
     )
 
-    _, _, _, _ = postprocess_ocr_result(vault, "HLTH001", [])
+    _, _, _, _, _m = postprocess_ocr_result(vault, "HLTH001", [])
 
     # Phase 3: health/ocr_health.json does not exist yet -- this test will fail
     assert (ocr_dir / "health" / "ocr_health.json").exists()
@@ -543,7 +543,7 @@ def test_version_state_classifiable_from_meta_json(tmp_path: Path) -> None:
         encoding="utf-8",
     )
 
-    _, _, _, _ = postprocess_ocr_result(vault, "VST001", [])
+    _, _, _, _, _m = postprocess_ocr_result(vault, "VST001", [])
 
     meta = json.loads((ocr_dir / "meta.json").read_text(encoding="utf-8"))
     from paperforge.worker.ocr_versions import classify_version_state
@@ -577,7 +577,7 @@ def test_postprocess_writes_role_index(tmp_path: Path) -> None:
         encoding="utf-8",
     )
 
-    _, _, _, _ = postprocess_ocr_result(vault, "IDX001", [])
+    _, _, _, _, _m = postprocess_ocr_result(vault, "IDX001", [])
 
     assert (ocr_dir / "index" / "role-index.json").exists()
 
