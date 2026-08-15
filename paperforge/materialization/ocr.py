@@ -38,6 +38,7 @@ TREE_UNREADABLE = "tree_unreadable"
 TREE_INVALID = "tree_invalid"
 TREE_NOT_FILE = "tree_not_file"
 TREE_PERMISSION = "tree_permission"
+TREE_INCONSISTENT = "tree_inconsistent"  # dangling block refs (P1-C)
 
 ROLE_INDEX_MISSING = "role_index_missing"
 ROLE_INDEX_INVALID = "role_index_invalid"
@@ -289,7 +290,7 @@ DERIVED_DEFECTS = frozenset({
     BLOCKS_MISSING, BLOCKS_EMPTY, BLOCKS_UNREADABLE, BLOCKS_INVALID,
     BLOCKS_PARTIAL, BLOCKS_NOT_FILE, BLOCKS_PERMISSION,
     TREE_MISSING, TREE_EMPTY, TREE_UNREADABLE, TREE_INVALID,
-    TREE_NOT_FILE, TREE_PERMISSION,
+    TREE_NOT_FILE, TREE_PERMISSION, TREE_INCONSISTENT,
     ROLE_INDEX_MISSING, ROLE_INDEX_INVALID, ROLE_INDEX_NOT_FILE,
     ROLE_INDEX_UNREADABLE, ROLE_INDEX_PERMISSION,
     PUBLISH_PENDING_STALE, PUBLISH_METADATA_MISSING,
@@ -386,6 +387,57 @@ def _blocks_state(paper_dir: Path) -> str | None:
     return None
 
 
+def _tree_block_refs(tree: dict) -> set[str]:
+    """Every block reference the tree makes, normalized to pN:id form."""
+    refs: set[str] = set()
+    for n in tree.get("nodes", []) or []:
+        if not isinstance(n, dict):
+            continue
+        page = n.get("page")
+        bid = n.get("block_id")
+        if page is not None and bid is not None:
+            refs.add(f"p{page}:{bid}")
+        for key in ("own_block_ids", "subtree_block_ids"):
+            for r in (n.get(key, []) or []):
+                if isinstance(r, str):
+                    refs.add(r)
+    return refs
+
+
+def tree_blocks_consistency(paper_dir: Path) -> str | None:
+    """P1-C: every block reference in the tree must resolve to a block in
+    blocks.structured.jsonl.  Dangling refs → TREE_INCONSISTENT (stale or
+    foreign tree), never silently accepted.  None = consistent."""
+    blocks = paper_dir / "structure" / "blocks.structured.jsonl"
+    if not blocks.exists():
+        return None  # blocks state is judged separately
+    block_ids: set[str] = set()
+    try:
+        for line in blocks.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            obj = json.loads(line)
+            page = obj.get("page")
+            bid = obj.get("block_id")
+            if page is not None and bid is not None:
+                block_ids.add(f"p{page}:{bid}")
+    except Exception:  # noqa: BLE001 — unreadable blocks judged separately
+        return None
+    tree = paper_dir / "index" / "structure-tree.json"
+    if not tree.exists():
+        return None
+    try:
+        data = json.loads(tree.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001 — tree state judged separately
+        return None
+    if not isinstance(data, dict):
+        return None
+    dangling = _tree_block_refs(data) - block_ids
+    if dangling:
+        return TREE_INCONSISTENT
+    return None
+
+
 def _tree_state(paper_dir: Path) -> str | None:
     tree = paper_dir / "index" / "structure-tree.json"
     if not tree.exists():
@@ -474,6 +526,9 @@ def ocr_artifact_detail(paper_dir: Path) -> str | None:
     tree = _tree_state(paper_dir)
     if tree is not None:
         return tree
+    consistency = tree_blocks_consistency(paper_dir)
+    if consistency is not None:
+        return consistency
     role = _role_index_state(paper_dir)
     if role is not None:
         return role

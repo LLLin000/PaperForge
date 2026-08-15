@@ -928,3 +928,45 @@ class TestProvenance:
         d = _state_paper(vault, "KEY1")
         (d / "meta.json").write_bytes(b"\x83\x04g\xa9\xcb\x7c")  # random bytes
         assert provenance_state(d, None) == PROVENANCE_UNKNOWN
+
+    def test_tree_dangling_block_ref_is_inconsistent(self, tmp_path: Path) -> None:
+        """P1-C: a tree referencing blocks that do not exist in
+        blocks.structured.jsonl is TREE_INCONSISTENT, never accepted."""
+        from paperforge.materialization.ocr import (
+            TREE_INCONSISTENT,
+            ocr_artifact_detail,
+        )
+
+        vault = tmp_path / "vault"
+        vault.mkdir(parents=True)
+        canonical_test_config(vault, system_dir="99_System")
+        d = _state_paper(vault, "KEY1")
+        # blocks only have p1:block_id for the fixture rows; tree references
+        # a page:block pair that cannot exist → dangling.
+        tree = d / "index" / "structure-tree.json"
+        tree.write_text(json.dumps({
+            "nodes": [{
+                "node_id": "n1", "page": 999, "block_id": 12345,
+                "own_block_ids": ["p999:12345"],
+            }],
+        }), encoding="utf-8")
+        assert ocr_artifact_detail(d) == TREE_INCONSISTENT
+
+    def test_tree_consistent_refs_pass(self, tmp_path: Path) -> None:
+        """P1-C: tree refs that resolve to real blocks are consistent."""
+        from paperforge.materialization.ocr import ocr_artifact_detail
+
+        vault = tmp_path / "vault"
+        vault.mkdir(parents=True)
+        canonical_test_config(vault, system_dir="99_System")
+        d = _state_paper(vault, "KEY1")
+        # fixture blocks: {"block_id": key, "page": 1} — tree referencing
+        # p1:KEY1 is consistent.
+        tree = d / "index" / "structure-tree.json"
+        tree.write_text(json.dumps({
+            "nodes": [{
+                "node_id": "n1", "page": 1, "block_id": "KEY1",
+                "own_block_ids": ["p1:KEY1"],
+            }],
+        }), encoding="utf-8")
+        assert ocr_artifact_detail(d) is not None  # may hit role/publish next
