@@ -45,7 +45,65 @@ ROLE_INDEX_NOT_FILE = "role_index_not_file"
 ROLE_INDEX_UNREADABLE = "role_index_unreadable"
 ROLE_INDEX_PERMISSION = "role_index_permission"
 
+PROVENANCE_KEY_MISMATCH = "provenance_key_mismatch"
+PROVENANCE_PDF_CHANGED = "provenance_pdf_changed"
+PROVENANCE_RAW_MISMATCH = "provenance_raw_mismatch"
+PROVENANCE_UNKNOWN = "provenance_unknown"
+
+PROVENANCE_DEFECTS = frozenset({
+    PROVENANCE_KEY_MISMATCH,
+    PROVENANCE_PDF_CHANGED,
+    PROVENANCE_RAW_MISMATCH,
+})
+
 PUBLISH_PENDING_RECENT = "publish_pending_recent"  # publishing → wait
+
+
+def provenance_state(paper_dir: Path, canonical_pdf: Path | None) -> str | None:
+    """[2] OCR ownership / source provenance — is this raw OCR actually
+    this paper's, from THIS PDF?
+
+    Chain (P0-B, owner review 2026-08-15):
+        expected key == meta.zotero_key
+        fingerprint(canonical PDF) == meta.raw_version.pdf_fingerprint
+        sha256(canonical/blocks.raw.jsonl) == meta.raw_version.raw_blocks_hash
+
+    Returns None when provenance matches, a PROVENANCE_* defect otherwise.
+    Missing fingerprint AND raw hash (legacy OCR) → PROVENANCE_UNKNOWN —
+    no auto-repair (we cannot prove anything, so we destroy nothing).
+    PDF path is a LOCATOR, never an identity — bytes are the identity.
+    """
+    meta = read_meta(paper_dir)
+    if not meta:
+        return None  # lifecycle owns the meta-missing case
+    if str(meta.get("zotero_key", "") or "") != paper_dir.name:
+        return PROVENANCE_KEY_MISMATCH
+    raw_version = meta.get("raw_version") or {}
+    recorded_fp = str(raw_version.get("pdf_fingerprint", "") or "")
+    recorded_raw_hash = str(raw_version.get("raw_blocks_hash", "") or "")
+    if not recorded_fp and not recorded_raw_hash:
+        return PROVENANCE_UNKNOWN
+    if recorded_fp and canonical_pdf is not None and canonical_pdf.exists():
+        try:
+            import hashlib as _hashlib
+
+            current_fp = "sha256:" + _hashlib.sha256(canonical_pdf.read_bytes()).hexdigest()
+            if current_fp != recorded_fp:
+                return PROVENANCE_PDF_CHANGED
+        except OSError:
+            pass  # unreadable canonical PDF — cannot disprove; fall through
+    if recorded_raw_hash:
+        raw = paper_dir / "canonical" / "blocks.raw.jsonl"
+        if raw.exists():
+            try:
+                import hashlib as _hashlib
+
+                current_raw = "sha256:" + _hashlib.sha256(raw.read_bytes()).hexdigest()
+                if current_raw != recorded_raw_hash:
+                    return PROVENANCE_RAW_MISMATCH
+            except OSError:
+                pass
+    return None
 PUBLISH_PENDING_STALE = "publish_pending_stale"    # interrupted publish → rebuild_derived
 PUBLISH_METADATA_MISSING = "publish_metadata_missing"  # result-hash missing → local repair
 PUBLISH_STALE_SECONDS = 3600
@@ -188,7 +246,7 @@ def top_state(paper_dir: Path | None) -> str | None:
     return None  # materialized — caller compares hash → current/stale
 
 
-def detail(paper_dir: Path | None) -> str | None:
+def detail(paper_dir: Path | None, canonical_pdf: Path | None = None) -> str | None:
     """Fine-grained WHY for the ocr state — one namespace, each value one
     meaning (see the constants).  A version fact is a FLAG, never a
     failure reason occupying this slot."""
@@ -206,7 +264,7 @@ def detail(paper_dir: Path | None) -> str | None:
     art_detail = ocr_artifact_detail(paper_dir)
     if art_detail is not None:
         return art_detail
-    return None
+    return provenance_state(paper_dir, canonical_pdf)
 
 RAW_DEFECTS = frozenset({
     RAW_MISSING, RAW_EMPTY, RAW_UNREADABLE, RAW_INVALID,

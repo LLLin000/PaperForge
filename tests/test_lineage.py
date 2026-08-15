@@ -61,8 +61,15 @@ def _write_ocr_paper(vault: Path, key: str, *, pending: bool = False) -> None:
         json.dumps({"roles": [key]}), encoding="utf-8"
     )
     if pending:
+        # no meta.json at all — lifecycle falls through to the publish
+        # marker (recent → unknown/wait).
         (ocr_dir / "index" / "result-hash.pending").write_text("pending", encoding="utf-8")
     else:
+        (ocr_dir / "meta.json").write_text(json.dumps({
+            "ocr_status": "done",
+            "zotero_key": key,
+            "raw_version": {"pdf_fingerprint": "sha256:test-fingerprint"},
+        }), encoding="utf-8")
         from paperforge.worker.ocr_hash import publish_ocr_result_hash
 
         publish_ocr_result_hash(ocr_dir)
@@ -616,7 +623,11 @@ def _state_paper(root: Path, key: str, status: str = "done") -> Path:
     (d / "structure" / "blocks.structured.jsonl").write_bytes(_GOOD_BLOCKS)
     (d / "index" / "structure-tree.json").write_text(_GOOD_TREE, encoding="utf-8")
     (d / "index" / "role-index.json").write_text(_GOOD_ROLE, encoding="utf-8")
-    (d / "meta.json").write_text(json.dumps({"ocr_status": status}), encoding="utf-8")
+    (d / "meta.json").write_text(json.dumps({
+        "ocr_status": status,
+        "zotero_key": key,
+        "raw_version": {"pdf_fingerprint": "sha256:test-fingerprint"},
+    }), encoding="utf-8")
     if status == "done":
         from paperforge.worker.ocr_hash import publish_ocr_result_hash
 
@@ -772,3 +783,69 @@ class TestMaterializationCorrective:
 
         monkeypatch.setattr("paperforge.materialization.ocr.Path.read_text", _deny)
         assert _tree_state(d) == TREE_PERMISSION
+
+class TestProvenance:
+    """P0-B: OCR ownership — key binding, PDF fingerprint, raw content hash.
+    PDF path is a locator; bytes are the identity (ADR-0002 §5 #1)."""
+
+    def test_key_mismatch_is_stale(self, tmp_path: Path) -> None:
+        from paperforge.materialization.ocr import (
+            PROVENANCE_KEY_MISMATCH,
+            provenance_state,
+        )
+
+        vault = tmp_path / "vault"
+        vault.mkdir(parents=True)
+        canonical_test_config(vault, system_dir="99_System")
+        d = _state_paper(vault, "KEY1")
+        meta = json.loads((d / "meta.json").read_text(encoding="utf-8"))
+        meta["zotero_key"] = "OTHERKEY"
+        (d / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
+        assert provenance_state(d, None) == PROVENANCE_KEY_MISMATCH
+
+    def test_pdf_changed_is_stale(self, tmp_path: Path) -> None:
+        from paperforge.materialization.ocr import (
+            PROVENANCE_PDF_CHANGED,
+            provenance_state,
+        )
+
+        vault = tmp_path / "vault"
+        vault.mkdir(parents=True)
+        canonical_test_config(vault, system_dir="99_System")
+        d = _state_paper(vault, "KEY1")
+        pdf = tmp_path / "canonical.pdf"
+        pdf.write_bytes(b"new pdf bytes")
+        assert provenance_state(d, pdf) == PROVENANCE_PDF_CHANGED
+
+    def test_pdf_match_passes(self, tmp_path: Path) -> None:
+        from paperforge.materialization.ocr import provenance_state
+
+        vault = tmp_path / "vault"
+        vault.mkdir(parents=True)
+        canonical_test_config(vault, system_dir="99_System")
+        d = _state_paper(vault, "KEY1")
+        pdf = tmp_path / "canonical.pdf"
+        pdf.write_bytes(b"same bytes")
+        meta = json.loads((d / "meta.json").read_text(encoding="utf-8"))
+        import hashlib
+
+        meta["raw_version"]["pdf_fingerprint"] = (
+            "sha256:" + hashlib.sha256(b"same bytes").hexdigest()
+        )
+        (d / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
+        assert provenance_state(d, pdf) is None
+
+    def test_legacy_unknown_no_autorepair(self, tmp_path: Path) -> None:
+        from paperforge.materialization.ocr import (
+            PROVENANCE_UNKNOWN,
+            provenance_state,
+        )
+
+        vault = tmp_path / "vault"
+        vault.mkdir(parents=True)
+        canonical_test_config(vault, system_dir="99_System")
+        d = _state_paper(vault, "KEY1")
+        meta = json.loads((d / "meta.json").read_text(encoding="utf-8"))
+        meta.pop("raw_version", None)  # legacy OCR — no fingerprint/hash
+        (d / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
+        assert provenance_state(d, None) == PROVENANCE_UNKNOWN

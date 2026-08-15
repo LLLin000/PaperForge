@@ -311,12 +311,24 @@ def _per_paper_intents(paper: PaperObservation) -> list[ActionIntent]:
             trigger_reason=f"OCR for {paper.key} failed ({detail}) — re-run",
         ))
     elif paper.ocr == "stale":
-        intents.append(ActionIntent(
-            action_id="ocr.rebuild_derived",
-            scope=scope,
-            trigger_reason_code="lineage.ocr_derived_stale",
-            trigger_reason=f"Derived OCR artifacts for {paper.key} are stale",
-        ))
+        # P0-B: provenance defects (key/PDF/raw mismatch) are UNTRUSTED
+        # materialization — re-run OCR to rebuild correct provenance.
+        # Derived staleness (hash drift) is a local rebuild.
+        if ocr_detail in ("provenance_key_mismatch", "provenance_pdf_changed",
+                          "provenance_raw_mismatch"):
+            intents.append(ActionIntent(
+                action_id="ocr.run",
+                scope=scope,
+                trigger_reason_code="lineage.ocr_provenance_defect",
+                trigger_reason=f"OCR provenance for {paper.key} is broken ({ocr_detail}) — re-run",
+            ))
+        else:
+            intents.append(ActionIntent(
+                action_id="ocr.rebuild_derived",
+                scope=scope,
+                trigger_reason_code="lineage.ocr_derived_stale",
+                trigger_reason=f"Derived OCR artifacts for {paper.key} are stale",
+            ))
     elif paper.ocr == "incomplete":
         # OCR ran but the derived structure is missing/invalid — an
         # INCOMPLETE product, distinct from a quality problem.  The fix is

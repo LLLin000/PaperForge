@@ -3,9 +3,8 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass
-from typing import Any
-
 from pathlib import Path
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -45,6 +44,7 @@ def build_version_payload(
     pdf_fingerprint: str,
     result_json_hash: str,
     ocr_model: str,
+    raw_blocks_hash: str = "",
 ) -> dict:
     from paperforge.worker.ocr_versions import OCR_PIPELINE_VERSION, expected_derived_payload, expected_raw_payload
     return {
@@ -53,6 +53,7 @@ def build_version_payload(
             **expected_raw_payload(ocr_model=ocr_model),
             "pdf_fingerprint": pdf_fingerprint,
             "result_json_hash": result_json_hash,
+            "raw_blocks_hash": raw_blocks_hash,
         },
         "derived_version": {
             **expected_derived_payload(),

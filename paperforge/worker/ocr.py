@@ -2114,10 +2114,20 @@ def postprocess_ocr_result(vault: Path, key: str, all_results: list[dict]) -> tu
 
     # Update meta.json with version payloads
     ocr_model = meta.get("ocr_model", meta.get("ocr_provider", "PaddleOCR"))
+    raw_blocks_hash = ""
+    try:
+        import hashlib as _hashlib
+
+        _raw_path = ocr_root / "canonical" / "blocks.raw.jsonl"
+        if _raw_path.exists():
+            raw_blocks_hash = "sha256:" + _hashlib.sha256(_raw_path.read_bytes()).hexdigest()
+    except OSError:
+        pass
     version_payload = build_version_payload(
         pdf_fingerprint=pdf_fingerprint,
         result_json_hash=result_hash,
         ocr_model=ocr_model,
+        raw_blocks_hash=raw_blocks_hash,
     )
     meta["raw_version"] = version_payload["raw_version"]
     meta["derived_version"] = version_payload["derived_version"]

@@ -44,9 +44,11 @@ def test_lineage_has_no_ocr_judgment_implementation() -> None:
 
 def test_lineage_wrappers_delegate_to_materialization() -> None:
     src = LINEAGE.read_text(encoding="utf-8")
-    # _probe_ocr_state must call materialization.ocr.top_state; _ocr_detail
-    # must call materialization.ocr.detail — never re-derive locally.
-    assert "from paperforge.materialization.ocr import top_state" in src
+    # _probe_ocr_state / _ocr_detail must import their judging from
+    # materialization.ocr — never re-derive locally.
+    assert "from paperforge.materialization.ocr import" in src
+    assert "top_state" in src
+    assert "provenance_state" in src
     assert "from paperforge.materialization.ocr import detail" in src
 
 
