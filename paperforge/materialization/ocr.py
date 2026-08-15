@@ -82,7 +82,11 @@ def provenance_state(paper_dir: Path, canonical_pdf: Path | None) -> str | None:
     """
     meta = read_meta(paper_dir)
     if not meta:
-        return None  # lifecycle owns the meta-missing case
+        # Meta missing OR unreadable (restore corruption) — NO provenance
+        # claim can be verified.  Fail-closed: unknown, never pass.  (The
+        # lifecycle owns the never-ran case; here we are post-materialization
+        # and meta is still unreadable → cannot prove anything.)
+        return PROVENANCE_UNKNOWN
     if str(meta.get("zotero_key", "") or "") != paper_dir.name:
         return PROVENANCE_KEY_MISMATCH
     raw_version = meta.get("raw_version") or {}

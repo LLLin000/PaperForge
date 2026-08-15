@@ -912,3 +912,19 @@ class TestProvenance:
         meta["raw_version"].pop("raw_blocks_hash", None)  # pre-P0-B OCR
         (d / "meta.json").write_text(json.dumps(meta), encoding="utf-8")
         assert provenance_state(d, None) == PROVENANCE_UNKNOWN
+
+    def test_meta_unreadable_is_provenance_unknown(self, tmp_path: Path) -> None:
+        """P0-B corrective: an UNREADABLE meta.json (restore corruption)
+        cannot prove provenance — fail-closed to unknown, never a pass
+        (raw-healthy + meta-corrupt is the case that matters)."""
+        from paperforge.materialization.ocr import (
+            PROVENANCE_UNKNOWN,
+            provenance_state,
+        )
+
+        vault = tmp_path / "vault"
+        vault.mkdir(parents=True)
+        canonical_test_config(vault, system_dir="99_System")
+        d = _state_paper(vault, "KEY1")
+        (d / "meta.json").write_bytes(b"\x83\x04g\xa9\xcb\x7c")  # random bytes
+        assert provenance_state(d, None) == PROVENANCE_UNKNOWN
