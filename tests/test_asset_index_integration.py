@@ -481,3 +481,23 @@ class TestDerivedStateFields:
         next_step = read_index(vault)["items"][0]["next_step"]
         valid = {"sync", "ocr", "repair", "/pf-deep", "rebuild index", "ready"}
         assert next_step in valid, f"got {next_step}"
+
+    def test_refresh_tolerates_corrupt_ocr_meta_without_rewrite(self, tmp_path: Path) -> None:
+        """2026-08-16: refresh must tolerate an UNREADABLE OCR meta.json
+        (restore corruption) — continue, mark OCR unobservable, and NEVER
+        write a repaired/empty meta back over the OCR subsystem's file."""
+        vault = _setup_incremental_vault(tmp_path, [
+            {"key": "AAA", "title": "Paper A"},
+        ])
+        _write_index(vault, [])
+        meta_path = vault / "99_System" / "PaperForge" / "ocr" / "AAA" / "meta.json"
+        meta_path.parent.mkdir(parents=True, exist_ok=True)
+        meta_path.write_bytes(b"\x83\x04g\xa9\xcb")  # random bytes
+
+        from paperforge.worker.asset_index import read_index, refresh_index_entry
+
+        assert refresh_index_entry(vault, "AAA") is True
+        entry = next(e for e in read_index(vault)["items"] if e["zotero_key"] == "AAA")
+        assert entry["ocr_status"] == "unknown"  # unobservable, not thrown
+        # the OCR meta file must be untouched (still the corrupt bytes)
+        assert meta_path.read_bytes() == b"\x83\x04g\xa9\xcb"

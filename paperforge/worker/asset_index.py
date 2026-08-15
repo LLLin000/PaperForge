@@ -270,7 +270,7 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
 
     from paperforge import __version__ as PAPERFORGE_VERSION
     from paperforge.adapters.obsidian_frontmatter import has_deep_reading_content
-    from paperforge.worker._utils import lookup_impact_factor, read_json, slugify_filename, write_json, yaml_quote
+    from paperforge.worker._utils import lookup_impact_factor, read_json, slugify_filename, yaml_quote
     from paperforge.worker.asset_state import (
         compute_health,
         compute_lifecycle,
@@ -298,16 +298,28 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
     main_pdf, _supplementary = identify_main_pdf(pdf_attachments)
     main_pdf_path = main_pdf["path"] if main_pdf else (pdf_attachments[0]["path"] if pdf_attachments else "")
     meta_path = paths["ocr"] / key / "meta.json"
-    meta = read_json(meta_path) if meta_path.exists() else {}
+    # SSOT boundary (2026-08-16): OCR meta.json's ONLY writer is the OCR
+    # subsystem.  The index builder is a READ-ONLY consumer:
+    # - meta unreadable (restore corruption) → treat OCR state as
+    #   UNOBSERVABLE — continue the refresh, never throw, never "repair"
+    #   the file by writing an empty/derived meta back over it;
+    # - validated errors are consumed into the index entry, not written
+    #   back into the OCR meta.
+    meta = None
+    _meta_unreadable = False
+    if meta_path.exists():
+        try:
+            meta = read_json(meta_path)
+        except Exception:  # noqa: BLE001 — unreadable meta = unobservable
+            meta = None
+            _meta_unreadable = True
+    validated_ocr_status = "pending"
     if meta:
-        if meta.get("ocr_status") == "nopdf" and pdf_attachments:
-            meta["ocr_status"] = "pending"
-            meta["error"] = ""
         validated_ocr_status, validated_error = validate_ocr_meta(paths, meta)
-        meta["ocr_status"] = validated_ocr_status
-        if validated_error:
-            meta["error"] = validated_error
-            write_json(meta_path, meta)
+        # NOTE: validated_error is carried on the index entry only; the
+        # OCR meta file is never written here.
+    # absent meta = never ran → pending; unreadable meta = unobservable.
+    ocr_status_field = validated_ocr_status if meta is not None else ("unknown" if _meta_unreadable else "pending")
     title_slug = slugify_filename(item["title"])
     note_path = paths["literature"] / domain / f"{key}.md"
 
@@ -409,11 +421,13 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
 
     do_ocr_value = note_do_ocr if note_do_ocr is not None else legacy_do_ocr
     if do_ocr_value is None:
-        do_ocr_value = meta.get("do_ocr") is True or meta.get("ocr_status") == "done"
+        _m = meta or {}
+        do_ocr_value = _m.get("do_ocr") is True or ocr_status_field == "done"
 
     analyze_value = note_analyze if note_analyze is not None else legacy_analyze
     if analyze_value is None:
-        analyze_value = meta.get("analyze") is True or meta.get("deep_reading_status") == "done"
+        _m = meta or {}
+        analyze_value = _m.get("analyze") is True or _m.get("deep_reading_status") == "done"
 
     # Compute deep reading status once, reusing cached text when possible.
     # main_note_path is canonical -- don't fall back to note_path when it exists.
@@ -451,13 +465,13 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
         "pdf_path": (
             obsidian_wikilink_for_pdf(main_pdf_path, vault, zotero_dir) if main_pdf_path else ""
         ),
-        "ocr_status": meta.get("ocr_status", "pending"),
-        "ocr_job_id": meta.get("ocr_job_id", ""),
-        "ocr_md_path": obsidian_wikilink_for_path(vault, meta.get("markdown_path", "")),
-        "ocr_json_path": meta.get("json_path", ""),
+        "ocr_status": ocr_status_field,
+        "ocr_job_id": (meta or {}).get("ocr_job_id", ""),
+        "ocr_md_path": obsidian_wikilink_for_path(vault, (meta or {}).get("markdown_path", "")),
+        "ocr_json_path": (meta or {}).get("json_path", ""),
         "deep_reading_status": _dr_status,
         "ocr_redo": note_ocr_redo,
-        "ocr_time": meta.get("ocr_finished_at", ""),
+        "ocr_time": (meta or {}).get("ocr_finished_at", ""),
         "note_path": str((main_note_path if main_note_path.exists() else note_path).relative_to(vault)).replace(
             "\\", "/"
         ),
@@ -484,20 +498,24 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
 
     # Slug already frozen above -- for existing notes, update frontmatter only (preserve body)
     if main_note_path.exists():
-        text = fm_cached_text if fm_was_main else main_note_path.read_text(encoding="utf-8")
-        fm_close = text.find("---\n", 4)  # closing --- after opening ---
-        if fm_close != -1:
-            body = text[fm_close + 4 :]  # everything after frontmatter
-            preserved_tags = extract_preserved_tags(text)
-            new_full = frontmatter_note(entry, text, preserved_tags=preserved_tags)
-            new_fm_close = new_full.find("---\n", 4)
-            if new_fm_close != -1:
-                new_fm = new_full[: new_fm_close + 4]  # new frontmatter block with closing ---\n
-                main_note_path.write_text(new_fm + body, encoding="utf-8")
+        try:
+            text = fm_cached_text if fm_was_main else main_note_path.read_text(encoding="utf-8")
+        except Exception:  # noqa: BLE001 — corrupt restored note: skip rewrite
+            text = None
+        if text is not None:
+            fm_close = text.find("---\n", 4)  # closing --- after opening ---
+            if fm_close != -1:
+                body = text[fm_close + 4 :]  # everything after frontmatter
+                preserved_tags = extract_preserved_tags(text)
+                new_full = frontmatter_note(entry, text, preserved_tags=preserved_tags)
+                new_fm_close = new_full.find("---\n", 4)
+                if new_fm_close != -1:
+                    new_fm = new_full[: new_fm_close + 4]  # new frontmatter block with closing ---\n
+                    main_note_path.write_text(new_fm + body, encoding="utf-8")
+                else:
+                    main_note_path.write_text(new_full, encoding="utf-8")
             else:
-                main_note_path.write_text(new_full, encoding="utf-8")
-        else:
-            main_note_path.write_text(frontmatter_note(entry, text), encoding="utf-8")
+                main_note_path.write_text(frontmatter_note(entry, text), encoding="utf-8")
     else:
         existing_text = fm_cached_text if not fm_was_main and fm_cached_text else (
             note_path.read_text(encoding="utf-8") if note_path.exists() else ""
