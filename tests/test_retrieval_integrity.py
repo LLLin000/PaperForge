@@ -34,6 +34,7 @@ def _manifest(**overrides: Any) -> dict[str, Any]:
         "body_units_hash": compute_body_units_hash(_BODY),
         "object_units_hash": compute_object_units_hash(_OBJ),
         "retrieval_policy_version": RETRIEVAL_POLICY_VERSION,
+        "hash_algo_version": "1",
         "retrieval_identity": "id1",
     }
     m.update(overrides)
@@ -90,3 +91,11 @@ class TestPolicyAndLineage:
 
     def test_lineage_unverified_without_identity(self) -> None:
         assert lineage_trust(_manifest(retrieval_identity=""), "id1") == "unverified"
+
+    def test_hash_mismatch_without_algo_version_is_unverifiable(self) -> None:
+        """P1-D: a hash mismatch on a manifest WITHOUT hash_algo_version is
+        algorithm drift (old field set), not provable corruption."""
+        m = _manifest()
+        m.pop("hash_algo_version", None)
+        bad_body = [{"unit_id": "u1", "section_path": ["s"], "unit_text": "DIFFERENT"}]
+        assert snapshot_integrity(m, bad_body, _OBJ, body_count=1, object_count=1) == SNAPSHOT_UNKNOWN

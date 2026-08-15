@@ -7,12 +7,18 @@ used, and counts of the produced units.
 
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
 from hashlib import sha256
 from typing import Any
-import json
 
 RETRIEVAL_POLICY_VERSION = "l4.body.v3"
+
+# P1-D: the units-hash field set can evolve (adding fields changes the
+# digest).  Record the algorithm version so a historical snapshot that
+# fails today's hash is UNVERIFIABLE (algorithm drift), never falsely
+# CORRUPT.
+HASH_ALGO_VERSION = "1"
 
 
 def compute_body_units_hash(
@@ -101,6 +107,7 @@ def build_paper_manifest(
         "ocr_result_hash": ocr_result_hash,
         "structure_tree_hash": structure_tree_hash,
         "retrieval_policy_version": retrieval_policy_version,
+        "hash_algo_version": HASH_ALGO_VERSION,
         "body_unit_count": len(body_units),
         "body_units_hash": body_units_hash,
         "object_unit_count": len(object_units),
