@@ -711,18 +711,13 @@ def _probe_ocr_state(
         if prov == PROVENANCE_UNKNOWN:
             return "unknown", None
         return "stale", None
-    current = compute_ocr_result_hash(paper_dir)
-    if current is None:
+    # [5] published identity vs recomputed — judged by materialization.
+    from paperforge.materialization.ocr import identity_state
+
+    istate, ihash = identity_state(paper_dir)
+    if istate is None:
         return "unknown", None
-    hash_file = paper_dir / "index" / "result-hash.txt"
-    if hash_file.exists():
-        try:
-            stored = hash_file.read_text(encoding="utf-8").strip()
-        except OSError:
-            stored = None
-        if stored is not None and stored != current:
-            return "stale", None
-    return "current", current
+    return istate, ihash
 
 
 def _ocr_detail(paper_dir: Path | None, canonical_pdf: Path | None = None) -> str | None:
