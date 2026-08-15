@@ -494,11 +494,9 @@ def _zotero_keys_from_exports(vault: Path) -> set[str]:
     yet synced would be falsely residual)."""
     try:
         from paperforge.config import paperforge_paths
-        from paperforge.worker.sync import load_domain_config, load_export_rows
+        from paperforge.worker.sync import load_export_rows
 
         paths = paperforge_paths(vault)
-        config = load_domain_config(paths)
-        domain_lookup = {e["export_file"]: e["domain"] for e in config["domains"]}
         keys: set[str] = set()
         exports_dir = paths.get("exports")
         if exports_dir and exports_dir.exists():
@@ -629,6 +627,84 @@ def _residual_title(vault: Path, key: str) -> str:
     except Exception:  # noqa: BLE001
         pass
     return ""
+
+
+def _paper_keys(vault: Path, db_path: Path) -> list[str]:
+    """Paper universe: the canonical library index; falls back to the union
+    of memory manifests and OCR dirs when the index is unavailable."""
+    from paperforge.worker.asset_index import read_index
+
+    try:
+        index = read_index(vault)
+        items = index.get("items") if isinstance(index, dict) else index
+        keys = [
+            it.get("zotero_key", "")
+            for it in items or []
+            if it.get("zotero_key")
+        ]
+        if keys:
+            return sorted(set(keys))
+    except Exception:
+        pass
+    keys: set[str] = set()
+    conn = sqlite3.connect(f"file:{db_path.as_posix()}?mode=ro", uri=True)
+    try:
+        for (key,) in conn.execute(
+            "SELECT key FROM meta WHERE key LIKE 'manifest:%'"
+        ).fetchall():
+            keys.add(key.removeprefix("manifest:"))
+    finally:
+        conn.close()
+    # OCR-only papers (memory not built yet) are part of the universe too.
+    from paperforge.config import paperforge_paths
+
+    ocr_root = paperforge_paths(vault).get("ocr")
+    if ocr_root is not None and ocr_root.exists():
+        for child in ocr_root.iterdir():
+            if child.is_dir():
+                keys.add(child.name)
+    return sorted(keys)
+
+
+# ── OCR state semantics — delegated to the materialization contract ──────
+# The judging functions live in paperforge/materialization/ocr.py (ADR-0002
+# unified DAG).  This module keeps thin wrappers so per-paper assembly and
+# the tests keep working; the hash-identity step (current vs stale) stays
+# here because it depends on compute_ocr_result_hash.
+
+def _probe_ocr_state(paper_dir: Path | None) -> tuple[str, str | None]:
+    """(state, ocr_identity) — current | stale | missing | unknown |
+    incomplete | failed.
+
+    State judging delegates to materialization.ocr.top_state; the hash
+    identity (current vs stale) is computed here."""
+    from paperforge.materialization.ocr import top_state
+
+    state = top_state(paper_dir)
+    if state is not None:
+        return state, None
+    if paper_dir is None:
+        return "missing", None
+    current = compute_ocr_result_hash(paper_dir)
+    if current is None:
+        return "unknown", None
+    hash_file = paper_dir / "index" / "result-hash.txt"
+    if hash_file.exists():
+        try:
+            stored = hash_file.read_text(encoding="utf-8").strip()
+        except OSError:
+            stored = None
+        if stored is not None and stored != current:
+            return "stale", None
+    return "current", current
+
+
+def _ocr_detail(paper_dir: Path | None) -> str | None:
+    """Fine-grained WHY for the ocr state — one namespace, each value one
+    meaning (see materialization/ocr.py constants)."""
+    from paperforge.materialization.ocr import detail
+
+    return detail(paper_dir)
 
 
 def _paper_keys(vault: Path, db_path: Path) -> list[str]:
@@ -850,51 +926,16 @@ def _role_index_shape(role: object) -> bool:
 
 
 def _ocr_artifact_detail(paper_dir: Path) -> str | None:
-    """Inspect the 3 canonical artifacts in dependency order:
-    blocks → tree → role-index.  Returns the FIRST broken detail, or None
-    when all three are present AND semantically valid.
+    """First-broken frontier across [3] raw → [4] derived → [5] published
+    (materialization contract, ADR-0002).
 
-    Fast probe = syntax + basic SHAPE validation (a JSON file that parses
-    but has the wrong structure is invalid — e.g. `[]` for a tree, `123`
-    for a role-index).  Exhaustive per-line validation stays in doctor."""
-    blocks = paper_dir / "structure" / "blocks.structured.jsonl"
-    tree = paper_dir / "index" / "structure-tree.json"
-    role = paper_dir / "index" / "role-index.json"
-    # blocks
-    if not blocks.exists():
-        return OCR_DETAIL_BLOCKS_MISSING
-    try:
-        if blocks.stat().st_size == 0:
-            return OCR_DETAIL_BLOCKS_EMPTY
-    except OSError:
-        return OCR_DETAIL_BLOCKS_INVALID
-    if not _blocks_valid(blocks):
-        return OCR_DETAIL_BLOCKS_INVALID
-    # tree
-    if not tree.exists():
-        return OCR_DETAIL_TREE_MISSING
-    try:
-        import json as _json
+    Raw defects (raw_*) mean the OCR run never materialized content → the
+    probe routes them to ocr.run.  Derived defects (blocks_*/tree_*/role_
+    index_*/publish_*) with healthy raw mean the derived chain is unbuilt →
+    ocr.rebuild_derived (local, no remote OCR call)."""
+    from paperforge.materialization.ocr import ocr_artifact_detail
 
-        t = _json.loads(tree.read_text(encoding="utf-8"))
-    except Exception:  # noqa: BLE001
-        return OCR_DETAIL_TREE_INVALID
-    if not _tree_shape(t):
-        return OCR_DETAIL_TREE_INVALID
-    if not t.get("nodes"):
-        return OCR_DETAIL_TREE_EMPTY
-    # role-index
-    if not role.exists():
-        return OCR_DETAIL_ROLE_INDEX_MISSING
-    try:
-        import json as _json
-
-        r = _json.loads(role.read_text(encoding="utf-8"))
-    except Exception:  # noqa: BLE001
-        return OCR_DETAIL_ROLE_INDEX_INVALID
-    if not _role_index_shape(r):
-        return OCR_DETAIL_ROLE_INDEX_INVALID
-    return None
+    return ocr_artifact_detail(paper_dir)
 
 
 def _publish_state(paper_dir: Path) -> tuple[str | None, str | None]:
@@ -931,16 +972,14 @@ def _probe_ocr_state(paper_dir: Path | None) -> tuple[str, str | None]:
     _pub_detail, pub_state = _publish_state(paper_dir)
     if pub_state is not None:
         return pub_state, None
-    # 3. artifacts — the 3 canonical files, semantically validated
+    # 3. artifacts — the DAG frontier [3] raw → [4] derived → [5] published
     art_detail = _ocr_artifact_detail(paper_dir)
     if art_detail is not None:
-        # blocks problems = the OCR run never materialized content → re-run;
-        # tree/role-index problems = derived structure unbuilt → rebuild.
-        if art_detail in (
-            OCR_DETAIL_BLOCKS_MISSING,
-            OCR_DETAIL_BLOCKS_EMPTY,
-            OCR_DETAIL_BLOCKS_INVALID,
-        ):
+        # raw defects (raw_*) = the OCR run never materialized content →
+        # missing → re-run remote OCR.  Derived defects (blocks_*/tree_*/
+        # role_index_*/publish_*) with healthy raw = unbuilt derived chain
+        # → incomplete → local ocr.rebuild_derived (no remote call).
+        if art_detail.startswith("raw_"):
             return "missing", None
         return "incomplete", None
     # 4. hash — recomputed vs published snapshot

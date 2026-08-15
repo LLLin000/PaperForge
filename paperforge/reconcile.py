@@ -269,17 +269,29 @@ def _per_paper_intents(paper: PaperObservation) -> list[ActionIntent]:
     if paper.ocr == "missing":
         if ocr_detail == "queued":
             return intents  # in flight — nothing to dispatch
-        if ocr_detail in ("no_pdf", "blocked"):
-            # No executable OCR intent: no PDF / precondition missing.  The
-            # state machine says WHY via the probe; emitting ocr.run here
-            # would tell the user to run OCR that cannot succeed.
+        # ADR-0002 §5 #7/#8: not-a-file / permission are ENVIRONMENT
+        # defects — re-running OCR cannot fix a directory sitting where a
+        # file belongs, nor an ACL problem.  No executable intent; the
+        # probe says WHY (user fixes the filesystem).
+        if ocr_detail in ("no_pdf", "blocked", "raw_not_file", "raw_permission"):
             return intents
-        if ocr_detail in ("blocks_missing", "blocks_empty", "blocks_invalid"):
+        # raw_* = the raw OCR truth is broken → remote ocr.run is the ONLY
+        # fix.  blocks_* can only appear with healthy raw (the probe checks
+        # raw first) → derived defect → LOCAL ocr.rebuild_derived.
+        if ocr_detail and str(ocr_detail).startswith("raw_"):
             intents.append(ActionIntent(
                 action_id="ocr.run",
                 scope=scope,
-                trigger_reason_code="lineage.ocr_blocks_" + ocr_detail.split("_", 1)[1],
-                trigger_reason=f"OCR for {paper.key} produced no usable blocks ({ocr_detail}) — re-run",
+                trigger_reason_code="lineage.ocr_raw_defect",
+                trigger_reason=f"OCR raw truth for {paper.key} is broken ({ocr_detail}) — re-run",
+            ))
+        elif ocr_detail in ("blocks_missing", "blocks_empty", "blocks_invalid",
+                            "blocks_unreadable", "blocks_partial"):
+            intents.append(ActionIntent(
+                action_id="ocr.rebuild_derived",
+                scope=scope,
+                trigger_reason_code="lineage.ocr_blocks_defect",
+                trigger_reason=f"Derived OCR artifacts for {paper.key} are broken ({ocr_detail}) — rebuild from raw",
             ))
         else:
             intents.append(ActionIntent(
@@ -309,7 +321,12 @@ def _per_paper_intents(paper: PaperObservation) -> list[ActionIntent]:
         # OCR ran but the derived structure is missing/invalid — an
         # INCOMPLETE product, distinct from a quality problem.  The fix is
         # a LOCAL derived rebuild (ocr rebuild).  Every detail keeps its
-        # own reason code.
+        # own reason code.  not-a-file / permission are environment
+        # defects (ADR-0002 §5 #7/#8) — rebuild cannot fix them.
+        if ocr_detail in ("blocks_not_file", "blocks_permission",
+                          "tree_not_file", "tree_permission",
+                          "role_index_not_file", "role_index_permission"):
+            return intents  # user fixes the filesystem, no executable intent
         _rc = {
             "tree_missing": "lineage.ocr_tree_missing",
             "tree_empty": "lineage.ocr_tree_empty",

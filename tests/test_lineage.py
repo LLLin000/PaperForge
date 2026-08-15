@@ -13,10 +13,10 @@ import sqlite3
 import subprocess
 import sys
 import time
-
-import pytest
 from pathlib import Path
 from typing import Any
+
+import pytest
 
 from paperforge.embedding._config import (
     get_api_model,
@@ -39,10 +39,15 @@ DIMENSION = 1536
 
 
 def _write_ocr_paper(vault: Path, key: str, *, pending: bool = False) -> None:
-    """Create a canonical OCR paper dir with three artifacts + published hash."""
+    """Create a canonical OCR paper dir: raw + derived artifacts + hash."""
     ocr_dir = vault / "99_System" / "PaperForge" / "ocr" / key
     (ocr_dir / "structure").mkdir(parents=True, exist_ok=True)
     (ocr_dir / "index").mkdir(parents=True, exist_ok=True)
+    (ocr_dir / "canonical").mkdir(parents=True, exist_ok=True)
+    # [3] RAW OCR truth — the production source (ADR-0002 raw-first check).
+    (ocr_dir / "canonical" / "blocks.raw.jsonl").write_text(
+        json.dumps({"block_id": key, "page": 1, "role": "body_paragraph"}), encoding="utf-8"
+    )
     (ocr_dir / "structure" / "blocks.structured.jsonl").write_text(
         json.dumps({"block_id": key, "page": 1, "role": "body_paragraph"}), encoding="utf-8"
     )
@@ -309,10 +314,11 @@ class TestProbeLineage:
         assert payload["papers"]["KEY1"]["retrieval"] == "current"
         assert payload["papers"]["KEY1"]["vector"] == "current"
 
-    def test_ocr_snapshot_missing_recomputes_from_artifacts(self, tmp_path: Path) -> None:
-        """DAG principle: artifacts are the authority, result-hash.txt is a
-        publish snapshot (cache).  A missing snapshot must degrade to
-        recompute — never unknown while artifacts are intact."""
+    def test_ocr_snapshot_missing_is_publish_metadata_missing(self, tmp_path: Path) -> None:
+        """ADR-0002 (contract §5.3): result-hash.txt is the PUBLISHED
+        canonical identity, not a disposable cache.  Missing → 
+        publish_metadata_missing → incomplete, never a silent current —
+        artifacts being intact does not prove publication happened."""
         vault = _make_vault(tmp_path)
         snapshot = (
             vault / "99_System" / "PaperForge" / "ocr" / "KEY1" / "index" / "result-hash.txt"
@@ -320,8 +326,11 @@ class TestProbeLineage:
         assert snapshot.exists()
         snapshot.unlink()
         payload = probe_lineage(vault)
-        assert payload["papers"]["KEY1"]["ocr"] == "current"
-        assert payload["papers"]["KEY1"]["vector"] == "current"
+        assert payload["papers"]["KEY1"]["ocr"] == "incomplete"
+        assert (
+            payload["papers"]["KEY1"].get("details", {}).get("ocr")
+            == "publish_metadata_missing"
+        )
 
     def test_embedding_identity_reads_dim_from_vec_ddl(self, tmp_path: Path) -> None:
         """DAG principle: the dimension comes from the vec0 DDL (the
@@ -522,6 +531,10 @@ class TestIncompleteOcrState:
         ocr_dir = vault / "99_System" / "PaperForge" / "ocr" / key
         (ocr_dir / "structure").mkdir(parents=True, exist_ok=True)
         (ocr_dir / "index").mkdir(parents=True, exist_ok=True)
+        (ocr_dir / "canonical").mkdir(parents=True, exist_ok=True)
+        (ocr_dir / "canonical" / "blocks.raw.jsonl").write_text(
+            json.dumps({"block_id": key, "page": 1, "role": "body_paragraph"}), encoding="utf-8"
+        )
         (ocr_dir / "structure" / "blocks.structured.jsonl").write_text(
             json.dumps({"block_id": key, "page": 1, "role": "body_paragraph"}), encoding="utf-8"
         )
@@ -536,7 +549,6 @@ class TestIncompleteOcrState:
         publish_ocr_result_hash(ocr_dir)
 
     def test_empty_structure_tree_is_incomplete(self, tmp_path: Path) -> None:
-        from paperforge.commands import probe as probe_mod
 
         vault = tmp_path / "vault"
         vault.mkdir(parents=True, exist_ok=True)
@@ -593,15 +605,22 @@ _GOOD_ROLE = '{"body": [], "captions": []}'
 
 
 def _state_paper(root: Path, key: str, status: str = "done") -> Path:
-    """A paper with all 3 canonical artifacts valid, then mutated by the
-    caller.  meta lifecycle set by *status*."""
+    """A paper with raw + all derived artifacts valid, then mutated by the
+    caller.  meta lifecycle set by *status*.  ADR-0002: raw is checked
+    FIRST, so derived defects only surface with healthy raw."""
     d = root / "99_System" / "PaperForge" / "ocr" / key
     (d / "structure").mkdir(parents=True, exist_ok=True)
     (d / "index").mkdir(parents=True, exist_ok=True)
+    (d / "canonical").mkdir(parents=True, exist_ok=True)
+    (d / "canonical" / "blocks.raw.jsonl").write_bytes(_GOOD_BLOCKS)
     (d / "structure" / "blocks.structured.jsonl").write_bytes(_GOOD_BLOCKS)
     (d / "index" / "structure-tree.json").write_text(_GOOD_TREE, encoding="utf-8")
     (d / "index" / "role-index.json").write_text(_GOOD_ROLE, encoding="utf-8")
     (d / "meta.json").write_text(json.dumps({"ocr_status": status}), encoding="utf-8")
+    if status == "done":
+        from paperforge.worker.ocr_hash import publish_ocr_result_hash
+
+        publish_ocr_result_hash(d)
     return d
 
 
@@ -615,9 +634,14 @@ _STATE_CASES = [
     ("failed", None, "failed", "failed_legacy", "ocr.run"),  # P0-1 regression
     ("blocked", None, "missing", "blocked", None),  # P1-1 no ocr.run
     ("nopdf", None, "missing", "no_pdf", None),  # P1-1 no ocr.run
-    ("done", "blocks_empty", "missing", "blocks_empty", "ocr.run"),
-    ("done", "blocks_missing", "missing", "blocks_missing", "ocr.run"),
-    ("done", "blocks_invalid", "missing", "blocks_invalid", "ocr.run"),
+    # ADR-0002: raw is the deepest frontier.  raw broken → ocr.run.
+    ("done", "raw_missing", "missing", "raw_missing", "ocr.run"),
+    ("done", "raw_unreadable", "missing", "raw_unreadable", "ocr.run"),
+    ("done", "raw_empty", "missing", "raw_empty", "ocr.run"),
+    # Derived defects with HEALTHY raw → local rebuild, never remote OCR.
+    ("done", "blocks_empty", "incomplete", "blocks_empty", "ocr.rebuild_derived"),
+    ("done", "blocks_missing", "incomplete", "blocks_missing", "ocr.rebuild_derived"),
+    ("done", "blocks_invalid", "incomplete", "blocks_invalid", "ocr.rebuild_derived"),
     ("done", "tree_missing", "incomplete", "tree_missing", "ocr.rebuild_derived"),
     ("done", "tree_empty", "incomplete", "tree_empty", "ocr.rebuild_derived"),
     ("done", "tree_invalid", "incomplete", "tree_invalid", "ocr.rebuild_derived"),
@@ -632,7 +656,13 @@ _STATE_CASES = [
 def _apply_mutation(d: Path, mutation: str | None, key: str) -> None:
     if mutation is None:
         return
-    if mutation == "blocks_empty":
+    if mutation == "raw_missing":
+        (d / "canonical" / "blocks.raw.jsonl").unlink()
+    elif mutation == "raw_unreadable":
+        (d / "canonical" / "blocks.raw.jsonl").write_bytes(b"\x83\x04g\xa9\xcb")
+    elif mutation == "raw_empty":
+        (d / "canonical" / "blocks.raw.jsonl").write_bytes(b"")
+    elif mutation == "blocks_empty":
         (d / "structure" / "blocks.structured.jsonl").write_bytes(b"")
     elif mutation == "blocks_missing":
         (d / "structure" / "blocks.structured.jsonl").unlink()
@@ -669,8 +699,6 @@ def test_ocr_state_machine_probe_to_action(
 ) -> None:
     """The full seam: probe state + detail AND reconcile's next action stay
     consistent for every OCR state machine branch (2026-08-14 audit)."""
-    import os as _os
-    import time as _time
 
     root = tmp_path / "vault"
     root.mkdir(parents=True, exist_ok=True)
