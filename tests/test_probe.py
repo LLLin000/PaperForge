@@ -1590,3 +1590,60 @@ class TestMaintenanceProjection:
         assert "command" not in ocr_item["action"]
         assert ocr_item["reason_code"] == "ocr.quality_unacceptable"
         assert data['module'] == 'maintenance'
+
+    def test_candidate_completed_live_empty_is_publish_pending(self, tmp_path: Path) -> None:
+        """ADR-0002 P0-D: a completed build in the CANDIDATE with an empty
+        LIVE db is publish_pending, never ready — serving truth is live."""
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
+        indexes = tmp_path / "99_System" / "PaperForge" / "indexes"
+        indexes.mkdir(parents=True, exist_ok=True)
+
+        from paperforge.memory.db import ensure_vec_extension, get_memory_db_path
+        from paperforge.memory.schema import ensure_schema
+
+        # empty canonical index so live is fresh
+        (indexes / "formal-library.json").write_text(json.dumps({
+            "schema_version": "3", "items": [], "paper_count": 0,
+        }), encoding="utf-8")
+        # live: empty (no vectors), fresh against the (empty) canonical index
+        from paperforge.memory.builder import compute_hash
+
+        live = get_memory_db_path(tmp_path)
+        conn = __import__("sqlite3").connect(str(live))
+        ensure_vec_extension(conn)
+        ensure_schema(conn)
+        conn.execute(
+            "INSERT INTO meta(key, value) VALUES ('canonical_index_hash', ?)",
+            (compute_hash([]),),
+        )
+        conn.commit()
+        conn.close()
+
+        # candidate: build_state completed
+        cand = live.with_suffix(".db.build")
+        cconn = __import__("sqlite3").connect(str(cand))
+        ensure_vec_extension(cconn)
+        ensure_schema(cconn)
+        for key, val in (("status", "completed"), ("current", "10"), ("total", "10")):
+            cconn.execute(
+                "INSERT OR REPLACE INTO build_state(key, value) VALUES (?, ?)", (key, val)
+            )
+        # a vector row + aligned meta row makes effective_vector_db pick the
+        # candidate (_has_any_rows checks the meta tables)
+        cur = cconn.execute(
+            "INSERT INTO vec_fulltext(embedding) VALUES (?)",
+            ("[" + ",".join(["0.0"] * 1536) + "]",),
+        )
+        cconn.execute(
+            "INSERT INTO vec_fulltext_meta(rowid, paper_id, chunk_index, text) "
+            "VALUES (?, 'KEY1', 0, 'x')",
+            (cur.lastrowid,),
+        )
+        cconn.commit()
+        cconn.close()
+
+        data = _run_probe("memory", tmp_path)
+        assert data["reason"]["code"] == "memory.vector_publish_pending"
+        assert data["capability_state"] == "needs_action"
+        assert data["action"]["primary"]["action_id"] == "embed.resume"
