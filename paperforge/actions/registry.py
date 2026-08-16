@@ -423,23 +423,37 @@ def _embed_build_handler(ctx: ActionContext, request: ActionRequest) -> PFResult
                 version=PF_VERSION,
                 error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(exc)),
             )
-    for line in reversed(buf.getvalue().splitlines()):
-        stripped = line.strip()
-        if stripped.startswith("{") and stripped.endswith("}"):
-            try:
-                payload = json.loads(stripped)
-                return PFResult(
-                    ok=bool(payload.get("ok", rc == 0)),
-                    command="action run",
-                    version=PF_VERSION,
-                    data=payload.get("data"),
-                    error=(PFError(code=ErrorCode.INTERNAL_ERROR, message=str(payload["error"].get("message", "")))
-                           if payload.get("error") else None),
-                    warnings=payload.get("warnings", []),
-                    next_actions=payload.get("next_actions", []),
-                )
-            except (ValueError, KeyError):
+    # PFResult.to_json() is multi-line (indent=2); a line-by-line '{...}'
+    # match never fires, so EVERY embed failure surfaced as a bare
+    # 'embed run produced no PFResult' and the real error (e.g. 401
+    # invalid embedding key) was swallowed.  Parse the whole buffer.
+    text = buf.getvalue().strip()
+    payload = None
+    if text.startswith("{") and text.endswith("}"):
+        try:
+            payload = json.loads(text)
+        except (ValueError, KeyError):
+            payload = None
+    if payload is None:
+        for line in reversed(text.splitlines()):
+            stripped = line.strip()
+            if stripped.startswith("{") and stripped.endswith("}"):
+                try:
+                    payload = json.loads(stripped)
+                except (ValueError, KeyError):
+                    payload = None
                 break
+    if payload is not None:
+        return PFResult(
+            ok=bool(payload.get("ok", rc == 0)),
+            command="action run",
+            version=PF_VERSION,
+            data=payload.get("data"),
+            error=(PFError(code=ErrorCode.INTERNAL_ERROR, message=str(payload["error"].get("message", "")))
+                   if payload.get("error") else None),
+            warnings=payload.get("warnings", []),
+            next_actions=payload.get("next_actions", []),
+        )
     return PFResult(
         ok=rc == 0,
         command="action run",
