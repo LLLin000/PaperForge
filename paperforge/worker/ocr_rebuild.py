@@ -628,6 +628,11 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
                 from paperforge.worker.ocr_artifacts import compute_pdf_fingerprint
 
                 src = str(ocr_meta.get("source_pdf", ""))
+                if src.startswith("[[") and src.endswith("]]"):
+                    _rel = src[2:-2]
+                    _p = vault / _rel.replace("/", "\\")
+                    if _p.exists():
+                        src = str(_p)
                 if src.startswith("storage:"):
                     from paperforge.pdf_resolver import resolve_pdf_path
                     from paperforge.config import load_vault_config
