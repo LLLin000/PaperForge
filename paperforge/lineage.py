@@ -563,6 +563,30 @@ def _workspace_paper_keys(vault: Path) -> set[str]:
         return set()
 
 
+def _workspace_dir_for_key(vault: Path, key: str) -> Path | None:
+    """Resolve a paper's workspace directory (Literature/<domain>/<key> - ...)
+    for a key, or None when it does not exist.  Used by library.prune so a
+    residual's workspace carrier is trashed with its real path — passing
+    Path() would trip the fail-closed empty-path guard and silently skip
+    every workspace delete."""
+    try:
+        from paperforge.config import paperforge_paths
+
+        paths = paperforge_paths(vault)
+        lit_dir = paths.get("literature")
+        if not lit_dir or not lit_dir.exists():
+            return None
+        for domain_dir in lit_dir.iterdir():
+            if not domain_dir.is_dir():
+                continue
+            for entry in domain_dir.iterdir():
+                if entry.is_dir() and entry.name.startswith(key + " - "):
+                    return entry
+    except Exception:  # noqa: BLE001
+        pass
+    return None
+
+
 def _db_paper_keys(vault: Path) -> set[str]:
     try:
         from paperforge.memory.db import get_memory_db_path, open_live_reader

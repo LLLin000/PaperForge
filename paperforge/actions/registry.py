@@ -168,14 +168,26 @@ def _library_prune_handler(ctx: ActionContext, request: ActionRequest) -> PFResu
         # Safety: candidates are the CURRENT residual report keys — a key
         # that stopped being residual (e.g. re-added to Zotero between the
         # probe and this run) is never touched.
-        candidates = [
-            {
-                "key": k,
-                "domain": "",
-                "workspace_dir": Path(),
-            }
-            for k in residuals.get("keys", [])
-        ]
+        try:
+            from paperforge.lineage import _workspace_dir_for_key
+
+            candidates = [
+                {
+                    "key": k,
+                    "domain": "",
+                    "workspace_dir": _workspace_dir_for_key(ctx.vault, k) or Path(),
+                }
+                for k in residuals.get("keys", [])
+            ]
+        except Exception:  # noqa: BLE001 — path resolution is best-effort
+            candidates = [
+                {
+                    "key": k,
+                    "domain": "",
+                    "workspace_dir": Path(),
+                }
+                for k in residuals.get("keys", [])
+            ]
         result_data = prune_orphan_papers(
             ctx.vault,
             _candidates=candidates,
