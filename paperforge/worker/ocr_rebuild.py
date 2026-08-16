@@ -628,22 +628,17 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
                 from paperforge.worker.ocr_artifacts import compute_pdf_fingerprint
 
                 src = str(ocr_meta.get("source_pdf", ""))
-                if src.startswith("[[") and src.endswith("]]"):
-                    _rel = src[2:-2]
-                    _p = vault / _rel.replace("/", "\\")
-                    if _p.exists():
-                        src = str(_p)
-                if src.startswith("storage:"):
-                    from paperforge.pdf_resolver import resolve_pdf_path
-                    from paperforge.config import load_vault_config
+                # Unified locator resolution: wikilink / vault-relative /
+                # storage: / storage-KEY-dir fallback — a renamed or
+                # restore-shuffled filename must not leave fp unknown.
+                from paperforge.pdf_resolver import resolve_pdf_path
+                from paperforge.config import load_vault_config
 
-                    vc = load_vault_config(vault)
-                    zd = str(vc.get("zotero_data_dir", "") or "")
-                    resolved = resolve_pdf_path(
-                        src, True, vault, _P(zd) if zd else None
-                    )
-                    if resolved:
-                        src = resolved
+                vc = load_vault_config(vault)
+                zd = str(vc.get("zotero_data_dir", "") or "")
+                resolved = resolve_pdf_path(src, True, vault, _P(zd) if zd else None)
+                if resolved:
+                    src = resolved
                 src_path = _P(src)
                 fp = compute_pdf_fingerprint(src_path) if src_path.exists() else "unknown"
                 if fp != "unknown":
