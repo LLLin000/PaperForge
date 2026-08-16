@@ -39,7 +39,6 @@ def _read_dotenv(vault: Path, key: str) -> str:
 
 def _resolve_paddleocr_token(vault: Path) -> str:
     """Resolve the OCR token from the #138 credential authority (#173/C1).
-
     Precedence: explicit canonical env → keyring.  Legacy sources (.env,
     HKCU, legacy env names) are migration input only and never consulted.
     Returns empty string when the credential is missing.
@@ -72,7 +71,9 @@ def _paper_timeout_minutes(meta: dict | None = None) -> int:
         pass
     if meta:
         try:
-            pages = int(meta.get("page_count") or 0)
+            # source_page_count is captured BEFORE submit (input fact);
+            # page_count is the post-OCR output fact. Prefer the source.
+            pages = int(meta.get("source_page_count") or meta.get("page_count") or 0)
             if pages > 0:
                 return base + max(0, pages // 2)
         except (TypeError, ValueError):
@@ -167,6 +168,13 @@ OCR_QUEUE_STATUSES = {
 # nopdf at the head of the queue starves every pending row behind it (the
 # upload slots are consumed by rows that can never succeed).
 OCR_SETTLED_STATUSES = {"done", "done_degraded", "fatal_error", "blocked", "nopdf", "error"}
+
+# P0-1 (owner review 2026-08-16): a terminal PROVIDER failure (state
+# error/failed) is a dead job — polling it again can never succeed.  The
+# paper resubmits with a fresh job up to MAX_OCR_JOB_ATTEMPTS, then fails
+# closed (fatal_error).  This is distinct from retry_count (transport /
+# upload retries), which never consumes a job attempt.
+MAX_OCR_JOB_ATTEMPTS = 3
 
 
 
@@ -2671,11 +2679,30 @@ def run_ocr(
         meta = ensure_ocr_meta(vault, row)
         current = str(meta.get("ocr_status", "") or "").strip().lower()
         if current == "error":
-            meta["ocr_status"] = "pending"
-            meta["ocr_job_id"] = ""
-            meta["ocr_started_at"] = ""
-            meta["ocr_finished_at"] = ""
-            meta["retry_count"] = 0
+            stage = str(meta.get("error_stage", "") or "")
+            if stage == "provider":
+                # P0-1: a PROVIDER-terminal failure is a dead job — bounded
+                # resubmit counts job_attempt (job lives), NOT transport
+                # retries.  Past the cap it fails closed.
+                attempt = int(meta.get("job_attempt", 0) or 0) + 1
+                meta["job_attempt"] = attempt
+                if attempt < MAX_OCR_JOB_ATTEMPTS:
+                    meta["ocr_status"] = "pending"
+                    meta["ocr_job_id"] = ""
+                    meta["ocr_started_at"] = ""
+                    meta["ocr_finished_at"] = ""
+                    meta["retry_count"] = 0
+                else:
+                    meta["ocr_status"] = "fatal_error"
+                    meta["error"] = meta.get("last_error", "Max OCR job attempts exceeded")
+            else:
+                # upload/transport/postprocess error — retryable transport
+                # path, never consumes a job attempt (P0-1 boundary).
+                meta["ocr_status"] = "pending"
+                meta["ocr_job_id"] = ""
+                meta["ocr_started_at"] = ""
+                meta["ocr_finished_at"] = ""
+                meta["retry_count"] = 0
             write_json(paths["ocr"] / key / "meta.json", meta)
         elif current == "retryable_error":
             retry_count = int(meta.get("retry_count", 0)) + 1
@@ -2865,6 +2892,8 @@ def run_ocr(
             else:
                 meta["ocr_status"] = "error"
                 meta["error"] = payload.get("errorMsg", "Unknown OCR failure")
+                meta["error_stage"] = "provider"
+                meta["last_error"] = meta["error"]
                 meta["library_record"] = key
                 queue_row["queue_status"] = "error"
                 active_submitted = max(0, active_submitted - 1)
@@ -2936,6 +2965,19 @@ def run_ocr(
                         _token_warned = True
                     continue
                 upload_pdf = resolved_pdf
+                # P0-2 (owner review): capture the SOURCE page count BEFORE
+                # submitting — meta.page_count is only written after
+                # postprocess, so a first-time run had no pages to size the
+                # per-paper timeout with (a 34-page paper got the flat
+                # 10-minute base and timed out mid-run).  The timeout then
+                # uses source_page_count (input fact) instead of page_count
+                # (output fact).
+                try:
+                    _src_doc = pymupdf.open(str(resolved_pdf))
+                    meta["source_page_count"] = _src_doc.page_count
+                    _src_doc.close()
+                except Exception:  # noqa: BLE001 — page count is best-effort
+                    meta.setdefault("source_page_count", 0)
                 if meta.get("needs_sanitize"):
                     try:
                         import tempfile
@@ -2949,9 +2991,13 @@ def run_ocr(
                     except Exception:
                         pass
                 if int(meta.get("retry_count", 0)) >= 3:
-                    meta["ocr_status"] = "error"
+                    # upload exhaustion is TRANSPORT terminal — fail closed
+                    # instead of writing a bare 'error' that the next run's
+                    # reset would silently loop forever (P0-1 boundary).
+                    meta["ocr_status"] = "fatal_error"
+                    meta["error_stage"] = "upload"
                     meta["error"] = meta.get("error", "") or "Upload failed after 3 retries"
-                    queue_row["queue_status"] = "error"
+                    queue_row["queue_status"] = "fatal_error"
                     write_json(paths["ocr"] / key / "meta.json", meta)
                     changed += 1
                     continue
@@ -3072,10 +3118,33 @@ def run_ocr(
                 print(f"OCR: {key} completed ({page_num} pages)", flush=True)
             elif state in ("error", "failed"):
                 meta["error"] = payload.get("errorMsg", "Unknown OCR failure")
-                meta["ocr_status"] = "queued"
-                queue_row["queue_status"] = "queued"
+                # P0-1 (owner review): a terminal PROVIDER failure must NOT
+                # stay 'queued' — the next poll cycle would keep polling the
+                # same dead job forever (observed as infinite queued in the
+                # 709-paper recovery; manual reset → resubmit always fixed
+                # it).  Release the slot, clear the job id, bump the job
+                # attempt, and either resubmit (bounded) or fail closed.
+                # Transport/HTTP retries stay on retry_count and never
+                # consume a job attempt.
+                meta["ocr_job_id"] = ""
+                meta["ocr_started_at"] = ""
+                meta["error_stage"] = "provider"
+                active_submitted = max(0, active_submitted - 1)
+                attempt = int(meta.get("job_attempt", 0) or 0) + 1
+                meta["job_attempt"] = attempt
+                meta["last_error"] = meta["error"]
+                if attempt < MAX_OCR_JOB_ATTEMPTS:
+                    meta["ocr_status"] = "pending"
+                    queue_row["queue_status"] = "pending"
+                    print(
+                        f"OCR: {key} provider failed (attempt {attempt}/{MAX_OCR_JOB_ATTEMPTS}) — will resubmit: {meta['error']}",
+                        flush=True,
+                    )
+                else:
+                    meta["ocr_status"] = "fatal_error"
+                    queue_row["queue_status"] = "fatal_error"
+                    print(f"OCR: {key} fatal after {attempt} attempts: {meta['error']}", flush=True)
                 _failed_count += 1
-                print(f"OCR: {key} failed: {meta['error']}", flush=True)
             else:
                 if _paper_timed_out(meta):
                     meta["ocr_status"] = "retryable_error"
