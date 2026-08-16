@@ -15,7 +15,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from paperforge.commands.embed import run_build
+from paperforge.services.embedding import run_embedding_build as run_build
 
 from tests.conftest import canonical_test_config
 from tests.test_pr9c_streaming_embed import _call_run, _make_bundle
@@ -165,12 +165,12 @@ class TestSubsetSemantics:
 
         from unittest.mock import patch
 
-        with patch("paperforge.commands.embed.encode_paper_job", side_effect=encode), \
-             patch("paperforge.commands.embed.prepare_payloads_for_entry",
+        with patch("paperforge.services.embedding.encode_paper_job", side_effect=encode), \
+             patch("paperforge.services.embedding.prepare_payloads_for_entry",
                    side_effect=lambda vault, key, *a, **k: _payloads_for(key)), \
-             patch("paperforge.commands.embed.delete_paper_vectors",
+             patch("paperforge.services.embedding.delete_paper_vectors",
                    side_effect=lambda vault, key: delete_calls.append(key)), \
-             patch("paperforge.commands.embed.write_encoded_payload",
+             patch("paperforge.services.embedding.write_encoded_payload",
                    side_effect=lambda vault, payload: write_calls.append(payload.collection_name)):
             rc = run_build(tmp_path, _papers(("A", "B", "C")), keys=["A"])
 
@@ -189,12 +189,12 @@ class TestSubsetSemantics:
 
         from unittest.mock import patch
 
-        with patch("paperforge.commands.embed.encode_paper_job", side_effect=encode), \
-             patch("paperforge.commands.embed.prepare_payloads_for_entry",
+        with patch("paperforge.services.embedding.encode_paper_job", side_effect=encode), \
+             patch("paperforge.services.embedding.prepare_payloads_for_entry",
                    side_effect=lambda vault, key, *a, **k: _payloads_for(key)), \
-             patch("paperforge.commands.embed.ensure_vec_tables", return_value=3), \
-             patch("paperforge.commands.embed.delete_paper_vectors"), \
-             patch("paperforge.commands.embed.write_encoded_payload"):
+             patch("paperforge.services.embedding.ensure_vec_tables", return_value=3), \
+             patch("paperforge.services.embedding.delete_paper_vectors"), \
+             patch("paperforge.services.embedding.write_encoded_payload"):
             rc = run_build(tmp_path, _papers(("A", "B")), keys=None)
 
         assert rc == 0
@@ -211,7 +211,7 @@ class TestSubsetSemantics:
 
         from unittest.mock import patch
 
-        with patch("paperforge.commands.embed.encode_paper_job") as enc:
+        with patch("paperforge.services.embedding.encode_paper_job") as enc:
             rc = run_build(tmp_path, _papers(("A",)), keys=["A"], force=True)
         assert rc == 1
         enc.assert_not_called()
@@ -221,12 +221,12 @@ class TestSubsetSemantics:
 
 class TestLineageDimensionResolution:
     def test_expected_dim_wins(self, tmp_path: Path) -> None:
-        from paperforge.commands.embed import _resolve_lineage_dimension
+        from paperforge.services.embedding import _resolve_lineage_dimension
 
         assert _resolve_lineage_dimension(None, expected_dim=2560, stored_dim=3) == 2560
 
     def test_stored_dim_fallback(self, tmp_path: Path) -> None:
-        from paperforge.commands.embed import _resolve_lineage_dimension
+        from paperforge.services.embedding import _resolve_lineage_dimension
 
         assert _resolve_lineage_dimension(None, expected_dim=0, stored_dim=3) == 3
 
@@ -236,7 +236,7 @@ class TestLineageDimensionResolution:
         self-declaration must supply the dimension, or lineage writes are
         silently skipped (regression: resume-completed builds published with
         empty lineage -> reader gate dropped everything)."""
-        from paperforge.commands.embed import _resolve_lineage_dimension
+        from paperforge.services.embedding import _resolve_lineage_dimension
         from paperforge.memory.db import ensure_vec_extension
         from paperforge.memory.schema import ensure_schema
 
@@ -251,7 +251,7 @@ class TestLineageDimensionResolution:
             conn.close()
 
     def test_no_source_returns_zero(self, tmp_path: Path) -> None:
-        from paperforge.commands.embed import _resolve_lineage_dimension
+        from paperforge.services.embedding import _resolve_lineage_dimension
 
         conn = sqlite3.connect(str(tmp_path / "empty.db"))
         try:
@@ -263,7 +263,7 @@ class TestLineageDimensionResolution:
         """A scoped build that finishes must NOT claim a global completed —
         its own total is just the requested subset.  Report interrupted with
         global progress so the probe surfaces the resume action."""
-        from paperforge.commands.embed import _scoped_global_progress
+        from paperforge.services.embedding import _scoped_global_progress
         from paperforge.memory.db import ensure_vec_extension
         from paperforge.memory.schema import ensure_schema
 
@@ -324,22 +324,22 @@ class TestLineagePreservation:
             # hash_v1 for B/C (match -> skip), anything else for A (re-embed)
             return "hash_v1" if units and units[0]["key"] != "A" else "hash_v2"
 
-        with patch("paperforge.commands.embed.encode_paper_job", side_effect=encode), \
+        with patch("paperforge.services.embedding.encode_paper_job", side_effect=encode), \
              patch("paperforge.embedding.dim_detect.inspect_vector_layout",
                    return_value=type("L", (), {
                        "compatible": True, "missing": (), "dimensions": {},
                    })()), \
-             patch("paperforge.commands.embed.ensure_vec_tables", return_value=3), \
-             patch("paperforge.commands.embed.delete_paper_vectors"), \
-             patch("paperforge.commands.embed.write_encoded_payload"), \
-             patch("paperforge.commands.embed.compute_body_units_hash", side_effect=hash_for), \
-             patch("paperforge.commands.embed.compute_object_units_hash", side_effect=hash_for), \
-             patch("paperforge.commands.embed.RETRIEVAL_POLICY_VERSION", "v1"), \
-             patch("paperforge.commands.embed.get_body_units_for_embedding", side_effect=body_units_for), \
-             patch("paperforge.commands.embed.get_object_units_for_embedding", side_effect=body_units_for), \
-             patch("paperforge.commands.embed._has_body_units_in_db", return_value=True), \
-             patch("paperforge.commands.embed._has_object_units_in_db", return_value=True), \
-             patch("paperforge.commands.embed.prepare_payloads_for_entry",
+             patch("paperforge.services.embedding.ensure_vec_tables", return_value=3), \
+             patch("paperforge.services.embedding.delete_paper_vectors"), \
+             patch("paperforge.services.embedding.write_encoded_payload"), \
+             patch("paperforge.services.embedding.compute_body_units_hash", side_effect=hash_for), \
+             patch("paperforge.services.embedding.compute_object_units_hash", side_effect=hash_for), \
+             patch("paperforge.services.embedding.RETRIEVAL_POLICY_VERSION", "v1"), \
+             patch("paperforge.services.embedding.get_body_units_for_embedding", side_effect=body_units_for), \
+             patch("paperforge.services.embedding.get_object_units_for_embedding", side_effect=body_units_for), \
+             patch("paperforge.services.embedding._has_body_units_in_db", return_value=True), \
+             patch("paperforge.services.embedding._has_object_units_in_db", return_value=True), \
+             patch("paperforge.services.embedding.prepare_payloads_for_entry",
                    side_effect=lambda vault, key, *a, **k: _payloads_for(key) if key == "A" else []):
             rc = run_build(tmp_path, _papers(("A", "B", "C")), keys=["A"], resume=True)
 
@@ -446,13 +446,13 @@ class TestResumeResetRouting:
                 chunk_count=bundle.chunk_count,
             )
 
-        with patch("paperforge.commands.embed.encode_paper_job", side_effect=encode), \
-             patch("paperforge.commands.embed.prepare_payloads_for_entry",
+        with patch("paperforge.services.embedding.encode_paper_job", side_effect=encode), \
+             patch("paperforge.services.embedding.prepare_payloads_for_entry",
                    side_effect=lambda vault, key, *a, **k: _payloads_for(key)), \
-             patch("paperforge.commands.embed.ensure_vec_tables", return_value=1536), \
-             patch("paperforge.commands.embed.delete_paper_vectors"), \
-             patch("paperforge.commands.embed.write_encoded_payload"), \
-             patch("paperforge.commands.embed._pid_alive", return_value=False):
+             patch("paperforge.services.embedding.ensure_vec_tables", return_value=1536), \
+             patch("paperforge.services.embedding.delete_paper_vectors"), \
+             patch("paperforge.services.embedding.write_encoded_payload"), \
+             patch("paperforge.services.embedding._pid_alive", return_value=False):
             from paperforge.embedding.build_target import ShadowBuild
             orig_prepare = ShadowBuild.prepare
 
@@ -478,8 +478,8 @@ class TestResumeResetRouting:
 
         from unittest.mock import patch
 
-        with patch("paperforge.commands.embed.encode_paper_job") as enc, \
-             patch("paperforge.commands.embed._pid_alive", return_value=False):
+        with patch("paperforge.services.embedding.encode_paper_job") as enc, \
+             patch("paperforge.services.embedding._pid_alive", return_value=False):
             rc = run_build(tmp_path, _papers(("A",)), keys=["A"], resume=True)
         assert rc == 1
         enc.assert_not_called()
@@ -539,12 +539,12 @@ class TestResumeResetRouting:
                 chunk_count=bundle.chunk_count,
             )
 
-        with patch("paperforge.commands.embed.encode_paper_job", side_effect=encode), \
-             patch("paperforge.commands.embed.prepare_payloads_for_entry",
+        with patch("paperforge.services.embedding.encode_paper_job", side_effect=encode), \
+             patch("paperforge.services.embedding.prepare_payloads_for_entry",
                    side_effect=lambda vault, key, *a, **k: _payloads_for(key)), \
-             patch("paperforge.commands.embed.ensure_vec_tables", return_value=1536), \
-             patch("paperforge.commands.embed.delete_paper_vectors"), \
-             patch("paperforge.commands.embed.write_encoded_payload"):
+             patch("paperforge.services.embedding.ensure_vec_tables", return_value=1536), \
+             patch("paperforge.services.embedding.delete_paper_vectors"), \
+             patch("paperforge.services.embedding.write_encoded_payload"):
             from paperforge.embedding.build_target import ShadowBuild
             orig_prepare = ShadowBuild.prepare
 
@@ -572,10 +572,10 @@ class TestResumeResetRouting:
 
         from unittest.mock import patch
 
-        with patch("paperforge.commands.embed.encode_paper_job") as enc, \
-             patch("paperforge.commands.embed.ensure_vec_tables", return_value=3), \
-             patch("paperforge.commands.embed.delete_paper_vectors"), \
-             patch("paperforge.commands.embed.write_encoded_payload"):
+        with patch("paperforge.services.embedding.encode_paper_job") as enc, \
+             patch("paperforge.services.embedding.ensure_vec_tables", return_value=3), \
+             patch("paperforge.services.embedding.delete_paper_vectors"), \
+             patch("paperforge.services.embedding.write_encoded_payload"):
             rc = run_build(tmp_path, _papers(("A",)), keys=["A"], resume=True)
         assert rc == 1
         enc.assert_not_called()
@@ -618,12 +618,12 @@ class TestResumeResetRouting:
                 chunk_count=bundle.chunk_count,
             )
 
-        with patch("paperforge.commands.embed.encode_paper_job", side_effect=encode), \
-             patch("paperforge.commands.embed.prepare_payloads_for_entry",
+        with patch("paperforge.services.embedding.encode_paper_job", side_effect=encode), \
+             patch("paperforge.services.embedding.prepare_payloads_for_entry",
                    side_effect=lambda vault, key, *a, **k: _payloads_for(key)), \
-             patch("paperforge.commands.embed.ensure_vec_tables", return_value=1536), \
-             patch("paperforge.commands.embed.delete_paper_vectors"), \
-             patch("paperforge.commands.embed.write_encoded_payload"):
+             patch("paperforge.services.embedding.ensure_vec_tables", return_value=1536), \
+             patch("paperforge.services.embedding.delete_paper_vectors"), \
+             patch("paperforge.services.embedding.write_encoded_payload"):
             rc = run_build(tmp_path, _papers(("A",)), keys=["A"], resume=True)
         assert rc == 0, "pristine scoped resume must initialize and succeed"
 
@@ -655,9 +655,9 @@ class TestRecordingEmbeddingProvider:
 
         from unittest.mock import patch
 
-        with patch("paperforge.commands.embed.ensure_vec_tables", return_value=3), \
-             patch("paperforge.commands.embed.delete_paper_vectors"), \
-             patch("paperforge.commands.embed.write_encoded_payload"):
+        with patch("paperforge.services.embedding.ensure_vec_tables", return_value=3), \
+             patch("paperforge.services.embedding.delete_paper_vectors"), \
+             patch("paperforge.services.embedding.write_encoded_payload"):
             rc = run_build(
                 tmp_path,
                 [{"zotero_key": "A", "ocr_status": "done", "fulltext_path": "A.pdf"}],
@@ -779,12 +779,12 @@ class TestZombieRunningIncremental:
 
         ShadowBuild.prepare = spy_prepare
         try:
-            with patch("paperforge.commands.embed._pid_alive", return_value=False), \
-                 patch("paperforge.commands.embed.encode_paper_job", side_effect=self._real_encode) as enc, \
-                 patch("paperforge.commands.embed.prepare_payloads_for_entry",
+            with patch("paperforge.services.embedding._pid_alive", return_value=False), \
+                 patch("paperforge.services.embedding.encode_paper_job", side_effect=self._real_encode) as enc, \
+                 patch("paperforge.services.embedding.prepare_payloads_for_entry",
                        side_effect=lambda vault, key, *a, **k: _payloads_for(key)), \
-                 patch("paperforge.commands.embed.delete_paper_vectors"), \
-                 patch("paperforge.commands.embed.write_encoded_payload"):
+                 patch("paperforge.services.embedding.delete_paper_vectors"), \
+                 patch("paperforge.services.embedding.write_encoded_payload"):
                 rc = run_build(tmp_path, _papers(("A", "B")), keys=None, resume=True)
         finally:
             ShadowBuild.prepare = orig_prepare

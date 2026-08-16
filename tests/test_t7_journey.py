@@ -141,15 +141,15 @@ class TestO3:
         def body_units_for(vault, key):
             return [{"unit_id": f"{key}-u1", "key": key}]
 
-        with patch("paperforge.commands.embed.ensure_vec_tables", return_value=3), \
-             patch("paperforge.commands.embed.delete_paper_vectors"), \
-             patch("paperforge.commands.embed.write_encoded_payload"), \
-             patch("paperforge.commands.embed._has_body_units_in_db", return_value=True), \
-             patch("paperforge.commands.embed._has_object_units_in_db", return_value=False), \
-             patch("paperforge.commands.embed.get_body_units_for_embedding", side_effect=body_units_for), \
-             patch("paperforge.commands.embed.prepare_payloads_for_entry",
+        with patch("paperforge.services.embedding.ensure_vec_tables", return_value=3), \
+             patch("paperforge.services.embedding.delete_paper_vectors"), \
+             patch("paperforge.services.embedding.write_encoded_payload"), \
+             patch("paperforge.services.embedding._has_body_units_in_db", return_value=True), \
+             patch("paperforge.services.embedding._has_object_units_in_db", return_value=False), \
+             patch("paperforge.services.embedding.get_body_units_for_embedding", side_effect=body_units_for), \
+             patch("paperforge.services.embedding.prepare_payloads_for_entry",
                    side_effect=lambda vault, key, *a, **k: _payloads_for(key)):
-            from paperforge.commands.embed import run_build
+            from paperforge.services.embedding import run_embedding_build as run_build
 
             # The REAL encode path runs — the RecordingProvider logs exactly
             # which texts are embedded.  (encode_paper_job is NOT mocked, so
@@ -260,17 +260,17 @@ class TestNdjson:
         def body_units_for(vault, key):
             return [{"unit_id": f"{key}-u1", "key": key}]
 
-        with patch("paperforge.commands.embed.encode_paper_job",
+        with patch("paperforge.services.embedding.encode_paper_job",
                    side_effect=lambda vault, job: _make_bundle(job.paper_id, n_chunks=1)), \
-             patch("paperforge.commands.embed.prepare_payloads_for_entry",
+             patch("paperforge.services.embedding.prepare_payloads_for_entry",
                    side_effect=lambda vault, key, *a, **k: _payloads_for(key)), \
-             patch("paperforge.commands.embed._has_body_units_in_db", return_value=True), \
-             patch("paperforge.commands.embed._has_object_units_in_db", return_value=False), \
-             patch("paperforge.commands.embed.get_body_units_for_embedding", side_effect=body_units_for), \
-             patch("paperforge.commands.embed.ensure_vec_tables", return_value=1536), \
-             patch("paperforge.commands.embed.delete_paper_vectors"), \
-             patch("paperforge.commands.embed.write_encoded_payload"):
-            from paperforge.commands.embed import run_build
+             patch("paperforge.services.embedding._has_body_units_in_db", return_value=True), \
+             patch("paperforge.services.embedding._has_object_units_in_db", return_value=False), \
+             patch("paperforge.services.embedding.get_body_units_for_embedding", side_effect=body_units_for), \
+             patch("paperforge.services.embedding.ensure_vec_tables", return_value=1536), \
+             patch("paperforge.services.embedding.delete_paper_vectors"), \
+             patch("paperforge.services.embedding.write_encoded_payload"):
+            from paperforge.services.embedding import run_embedding_build as run_build
 
             rc = run_build(vault, [{"zotero_key": "A", "ocr_status": "done",
                                     "fulltext_path": "A.pdf"}],
@@ -372,13 +372,13 @@ class TestO3Vertical:
         with patch("paperforge.commands.embed.read_index",
                    return_value={"items": [{"zotero_key": "A", "ocr_status": "done",
                                             "fulltext_path": "A.pdf"}]}), \
-             patch("paperforge.commands.embed.ensure_vec_tables", return_value=3), \
-             patch("paperforge.commands.embed.delete_paper_vectors"), \
-             patch("paperforge.commands.embed.write_encoded_payload"), \
-             patch("paperforge.commands.embed._has_body_units_in_db", return_value=True), \
-             patch("paperforge.commands.embed._has_object_units_in_db", return_value=False), \
-             patch("paperforge.commands.embed.get_body_units_for_embedding", side_effect=body_units_for), \
-             patch("paperforge.commands.embed.prepare_payloads_for_entry",
+             patch("paperforge.services.embedding.ensure_vec_tables", return_value=3), \
+             patch("paperforge.services.embedding.delete_paper_vectors"), \
+             patch("paperforge.services.embedding.write_encoded_payload"), \
+             patch("paperforge.services.embedding._has_body_units_in_db", return_value=True), \
+             patch("paperforge.services.embedding._has_object_units_in_db", return_value=False), \
+             patch("paperforge.services.embedding.get_body_units_for_embedding", side_effect=body_units_for), \
+             patch("paperforge.services.embedding.prepare_payloads_for_entry",
                    side_effect=lambda vault, key, *a, **k: _payloads_for(key)):
             # Pending state: nothing dispatched → provider untouched.
             assert calls == []
@@ -442,19 +442,19 @@ class TestCancelledRc130:
         def body_units_for(vault, key):
             return [{"unit_id": f"{key}-u1", "key": key}]
 
-        with patch("paperforge.commands.embed.encode_paper_job",
+        with patch("paperforge.services.embedding.encode_paper_job",
                    side_effect=lambda vault, job: _make_bundle(job.paper_id, n_chunks=1)), \
-             patch("paperforge.commands.embed.prepare_payloads_for_entry",
+             patch("paperforge.services.embedding.prepare_payloads_for_entry",
                    side_effect=lambda vault, key, *a, **k: _payloads_for(key)), \
-             patch("paperforge.commands.embed._has_body_units_in_db", return_value=True), \
-             patch("paperforge.commands.embed._has_object_units_in_db", return_value=False), \
-             patch("paperforge.commands.embed.get_body_units_for_embedding", side_effect=body_units_for), \
-             patch("paperforge.commands.embed.ensure_vec_tables", return_value=1536), \
-             patch("paperforge.commands.embed.delete_paper_vectors"), \
-             patch("paperforge.commands.embed.write_encoded_payload"):
+             patch("paperforge.services.embedding._has_body_units_in_db", return_value=True), \
+             patch("paperforge.services.embedding._has_object_units_in_db", return_value=False), \
+             patch("paperforge.services.embedding.get_body_units_for_embedding", side_effect=body_units_for), \
+             patch("paperforge.services.embedding.ensure_vec_tables", return_value=1536), \
+             patch("paperforge.services.embedding.delete_paper_vectors"), \
+             patch("paperforge.services.embedding.write_encoded_payload"):
             import io as _io
             import sys as _sys
-            from paperforge.commands.embed import run_build
+            from paperforge.services.embedding import run_embedding_build as run_build
 
             old_out = _sys.stdout
             buf = _io.StringIO()
