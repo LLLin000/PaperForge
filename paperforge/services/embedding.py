@@ -101,6 +101,53 @@ def assess_embedding_preconditions(vault: Path) -> dict:
     return {"ok": True}
 
 
+def select_embedding_candidates(vault: Path, keys: list[str] | None = None) -> dict:
+    """M3-B: embed eligibility from the DIRECT parent truth (retrieval
+    materialization) — NEVER ocr_status == 'done'.  The DAG is
+    OCR → Retrieval → Vector, so Vector asks its parent:
+
+        retrieval current (probe lineage SSOT)
+        AND indexable unit count > 0
+
+    Returns {"eligible": [...], "no_content": [...], "not_ready": [...]}
+    — mutually exclusive; no_content is a satisfied terminal (M1.1), and
+    not_ready papers must NOT be embedded."""
+    from paperforge.lineage import probe_lineage
+    from paperforge.memory.db import get_memory_db_path, open_live_reader
+
+    try:
+        envelope = probe_lineage(vault)
+        papers = envelope.get("papers", {})
+    except Exception:  # noqa: BLE001 — unobservable library: nothing eligible
+        papers = {}
+    db = get_memory_db_path(vault)
+
+    def _units(key: str) -> int:
+        try:
+            with open_live_reader(vault, db) as conn:
+                row = conn.execute(
+                    "SELECT (SELECT COUNT(*) FROM body_units WHERE paper_id=? AND indexable=1) "
+                    "+ (SELECT COUNT(*) FROM object_units WHERE paper_id=? AND indexable=1)",
+                    (key, key),
+                ).fetchone()
+                return int(row[0]) if row else 0
+        except Exception:  # noqa: BLE001 — no DB / no rows → no content
+            return 0
+
+    eligible: list[str] = []
+    no_content: list[str] = []
+    not_ready: list[str] = []
+    for key in keys if keys is not None else sorted(papers):
+        state = papers.get(key, {})
+        if state.get("retrieval") != "current":
+            not_ready.append(key)
+        elif _units(key) == 0:
+            no_content.append(key)
+        else:
+            eligible.append(key)
+    return {"eligible": eligible, "no_content": no_content, "not_ready": not_ready}
+
+
 def run_embedding_build(
     vault: Path,
     items: list[dict],
@@ -233,16 +280,16 @@ def run_embedding_build(
     resume: bool = False,
     json: bool = False,
 ) -> int:
-    """#165/T4: the embed build core.  keys=None -> whole-library behavior;
-    keys given -> candidates = done_papers ∩ keys (subset semantics)."""
+    """M3-B: the embed build core.  Candidates come from the DIRECT parent
+    truth — retrieval materialization via select_embedding_candidates
+    (current + indexable content); ocr_status == 'done' is NEVER consulted
+    (no_content = satisfied terminal, not_ready must not be embedded)."""
 
-    done_papers = [e for e in items if e.get("ocr_status") == "done"]
-    # #165/T4: papers-scope filter — candidates = done_papers ∩ keys.
-    candidates = (
-        [e for e in done_papers if e.get("zotero_key") in set(keys)]
-        if keys is not None
-        else done_papers
+    _cand = select_embedding_candidates(
+        vault, keys or [e.get("zotero_key") for e in items if e.get("zotero_key")]
     )
+    _eligible = set(_cand["eligible"])
+    candidates = [e for e in items if e.get("zotero_key") in _eligible]
 
     # Resolve DB path unconditionally — shadow/force paths need it even when
     # resume is False (regression: was only assigned inside `if resume:`).

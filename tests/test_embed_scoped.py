@@ -37,6 +37,35 @@ def _papers(keys: tuple[str, ...], *, status: str = "done") -> list[dict]:
     ]
 
 
+@pytest.fixture(autouse=True)
+def _mock_eligibility(monkeypatch):
+    """M3-B: retrieval-truth eligibility is covered by
+    test_embed_eligibility.py; these pipeline tests mock the selector so
+    every requested key is eligible (they exercise the build flow, not
+    eligibility)."""
+
+    def fake_select(vault, keys=None):
+        if keys is not None:
+            return {"eligible": list(keys), "no_content": [], "not_ready": []}
+        try:
+            from paperforge.worker.asset_index import read_index
+
+            env = read_index(vault)
+            items = env.get("items") if isinstance(env, dict) else (env or [])
+            return {
+                "eligible": [i["zotero_key"] for i in items if i.get("zotero_key")],
+                "no_content": [],
+                "not_ready": [],
+            }
+        except Exception:
+            return {"eligible": [], "no_content": [], "not_ready": []}
+
+    monkeypatch.setattr(
+        "paperforge.services.embedding.select_embedding_candidates", fake_select
+    )
+
+
+
 def _seed_resume_db(tmp_path: Path, keys: tuple[str, ...]) -> None:
     """Seed paperforge.db so resume hash-skips B/C while A is re-embedded."""
     from paperforge.memory.db import get_connection, get_memory_db_path, ensure_vec_extension
