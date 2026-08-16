@@ -97,6 +97,25 @@ def test_empty_heading_events():
     assert tree["nodes"] == []
 
 
+def test_no_headings_with_content_emits_synthetic_root():
+    """R5: a section-less document with indexable blocks gets a synthetic
+    root instead of an empty tree — 'no section' is legal structure,
+    'no tree' is not a legal materialization."""
+    structured = [
+        {"paper_id": "8LZUYXMH", "block_id": "p1:b0"},
+        {"paper_id": "8LZUYXMH", "block_id": "p1:b1"},
+        {"paper_id": "8LZUYXMH", "block_id": "p1:b2"},
+    ]
+    tree = build_structure_tree([], [], structured)
+    assert tree["paper_id"] == "8LZUYXMH"
+    assert len(tree["nodes"]) == 1
+    n = tree["nodes"][0]
+    assert n["synthetic"] is True
+    assert n["node_id"] == "root"
+    assert n["own_block_ids"] == ["p1:b0", "p1:b1", "p1:b2"]
+    assert n["subtree_block_ids"] == ["p1:b0", "p1:b1", "p1:b2"]
+
+
 def test_write_structure_tree_creates_file(tmp_path):
     tree = {"paper_id": "X", "nodes": []}
     write_structure_tree(tmp_path, tree)
