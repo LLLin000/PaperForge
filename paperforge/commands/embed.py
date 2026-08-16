@@ -91,20 +91,12 @@ def run(args: argparse.Namespace) -> int:
             print(f"Migrated {count} vectors from ChromaDB to vec0")
         return 0
 
-    # Build
+    # Build — M3-B: canonical preconditions from the SERVICE (package +
+    # credential authority).  Obsidian plugin settings are a caller, not
+    # configuration authority — never read here.
+    from paperforge.services.embedding import assess_embedding_preconditions
 
-    # Read plugin settings for preflight
-    settings: dict = {}
-    dc_json = vault / ".obsidian" / "plugins" / "paperforge" / "data.json"
-    if dc_json.exists():
-        try:
-            import json
-
-            settings = json.loads(dc_json.read_text(encoding="utf-8"))
-        except Exception:
-            pass
-
-    preflight = _preflight_check(vault, settings)
+    preflight = assess_embedding_preconditions(vault)
     if not preflight["ok"]:
         result = PFResult(
             ok=False,

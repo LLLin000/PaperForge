@@ -758,7 +758,7 @@ def test_plain_build_model_change_routes_to_shadow(tmp_path: Path) -> None:
     with patch("paperforge.embedding._config.get_api_model", return_value="new-model"), \
          patch.object(embed_service, "get_embed_status", return_value=fake_status), \
          patch.object(embed, "read_index", return_value={"items": []}), \
-         patch.object(embed, "_preflight_check", return_value={"ok": True}), \
+         patch.object(embed_service, "assess_embedding_preconditions", return_value={"ok": True}), \
          patch.object(embed_service, "ensure_vec_tables", return_value=None):
         rc = embed.run(args)
     # Empty index: build completes trivially; the point is no crash and the
@@ -940,7 +940,7 @@ def test_post_publish_writes_no_legacy_snapshot(tmp_path: Path) -> None:
     with patch("paperforge.embedding._config.get_api_model", return_value="m"), \
          patch.object(embed_service, "get_embed_status", return_value=fake_status), \
          patch.object(embed, "read_index", return_value={"items": []}), \
-         patch.object(embed, "_preflight_check", return_value={"ok": True}), \
+         patch.object(embed_service, "assess_embedding_preconditions", return_value={"ok": True}), \
          patch.object(embed_service, "ensure_vec_tables", return_value=None):
         rc = embed.run(args)
     assert rc == 0, f"published build failed, rc={rc}"
@@ -1070,7 +1070,7 @@ def test_resume_endpoint_change_no_hash_skip(tmp_path: Path) -> None:
          patch("paperforge.embedding._config.get_api_base_url", return_value="https://new.example/v1"), \
          patch.object(embed_service, "get_embed_status", return_value=fake_status), \
          patch.object(embed, "read_index", return_value={"items": []}), \
-         patch.object(embed, "_preflight_check", return_value={"ok": True}), \
+         patch.object(embed_service, "assess_embedding_preconditions", return_value={"ok": True}), \
          patch.object(embed_service, "ensure_vec_tables", return_value=None):
         rc = embed.run(args)
     assert rc == 0, f"endpoint-change shadow must succeed, rc={rc}"
@@ -1106,7 +1106,7 @@ def test_post_publish_nonjson_bookkeeping_failure(tmp_path: Path) -> None:
     with patch("paperforge.embedding._config.get_api_model", return_value="m"), \
          patch.object(embed_service, "get_embed_status", return_value=fake_status), \
          patch.object(embed, "read_index", return_value={"items": []}), \
-         patch.object(embed, "_preflight_check", return_value={"ok": True}), \
+         patch.object(embed_service, "assess_embedding_preconditions", return_value={"ok": True}), \
          patch.object(embed_service, "ensure_vec_tables", return_value=None):
         rc = embed.run(args)
     assert rc == 0, f"published non-json failure must return 0, rc={rc}"
@@ -1223,7 +1223,7 @@ def test_default_to_custom_endpoint_triggers_shadow(tmp_path: Path) -> None:
                return_value="https://custom.example/v1"), \
          patch.object(embed_service, "get_embed_status", return_value=fake_status), \
          patch.object(embed, "read_index", return_value={"items": []}), \
-         patch.object(embed, "_preflight_check", return_value={"ok": True}), \
+         patch.object(embed_service, "assess_embedding_preconditions", return_value={"ok": True}), \
          patch("paperforge.embedding.dim_detect.detect_embedding_dim", return_value=3):
         rc = embed.run(args)
     assert rc == 0, f"default→custom endpoint shadow must succeed, rc={rc}"
