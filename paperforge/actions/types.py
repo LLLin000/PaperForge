@@ -16,6 +16,7 @@ Cost = Literal["local", "remote_possible"]
 Impact = Literal["read_only", "mutating", "destructive"]
 Confirmation = Literal["none", "required"]
 Availability = Literal["available", "unavailable", "busy"]
+Applicability = Literal["needed", "noop", "blocked", "not_applicable"]
 
 
 @dataclass(frozen=True)
@@ -50,12 +51,39 @@ class ActionContext:
 
 
 @dataclass(frozen=True)
+class PaperPreflight:
+    """M2 (Control Plane Closure): per-paper applicability projection.
+
+    Strictly orthogonal to Availability: availability asks 'can the system
+    run this action NOW'; applicability asks 'for THIS paper's current
+    state, SHOULD it run'.  Projected from observation/frontier truth
+    (probe lineage + reconcile), never a second materialization judgment.
+    """
+
+    key: str
+    applicability: Applicability
+    reason_code: str
+    reason: str
+    recommended_action_id: str | None = None
+    execution_id: str | None = None
+
+
+@dataclass(frozen=True)
 class PreflightResult:
     availability: Availability
     availability_reason_code: str
     availability_reason: str
+    per_key: tuple[PaperPreflight, ...] = ()
     preservation_facts: tuple[str, ...] = ()
     replacement_facts: tuple[str, ...] = ()
+
+    def summary(self) -> dict[str, int]:
+        """Per-paper applicability counts — DERIVED from per_key, never a
+        second truth.  Empty per_key (all-scope action) → empty summary."""
+        counts: dict[str, int] = {"needed": 0, "noop": 0, "blocked": 0, "not_applicable": 0}
+        for p in self.per_key:
+            counts[p.applicability] = counts.get(p.applicability, 0) + 1
+        return counts
 
 
 @dataclass(frozen=True)

@@ -114,6 +114,70 @@ def _parse_scope(args: argparse.Namespace) -> ActionScope:
     return AllScope()
 
 
+def run_preflight(args: argparse.Namespace) -> int:
+    """M2-C (Control Plane Closure): `action preflight` — observe whether an
+    action CAN run (availability) and SHOULD run per paper (applicability),
+    WITHOUT executing anything.  Read-only: no meta mutation, no provider
+    calls, no build."""
+    import json as _json
+
+    from paperforge.actions.registry import ACTION_REGISTRY
+    from paperforge.actions.runner import build_context, validate_scope
+    from paperforge.actions.types import ActionRequest, scope_to_dict
+
+    context = build_context(args.vault_path)
+    spec = ACTION_REGISTRY.get(args.action_id)
+    if spec is None:
+        print(f"Error: unknown action {args.action_id}", file=sys.stderr)
+        return 2
+    scope = _parse_scope(args)
+    try:
+        validate_scope(spec, scope)
+    except ValueError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 2
+    result = spec.preflight(context, ActionRequest(action_id=args.action_id, scope=scope))
+
+    if getattr(args, "json", False):
+        payload = {
+            "schema_version": 1,
+            "action_id": args.action_id,
+            "scope": scope_to_dict(scope),
+            "availability": result.availability,
+            "availability_reason_code": result.availability_reason_code,
+            "availability_reason": result.availability_reason,
+            "summary": result.summary(),
+            "per_key": {
+                p.key: {
+                    "applicability": p.applicability,
+                    "reason_code": p.reason_code,
+                    "reason": p.reason,
+                    "recommended_action_id": p.recommended_action_id,
+                }
+                for p in result.per_key
+            },
+        }
+        print(_json.dumps(payload, ensure_ascii=False, indent=2))
+        return 0
+
+    print(f"Action: {args.action_id}")
+    print(f"Availability: {result.availability} ({result.availability_reason_code})")
+    print(f"  {result.availability_reason}")
+    if result.per_key:
+        print()
+        print(f"{'Paper':12s} {'Applicability':16s} Reason")
+        print("-" * 60)
+        for p in result.per_key:
+            rec = f" → {p.recommended_action_id}" if p.recommended_action_id else ""
+            print(f"{p.key:12s} {p.applicability:16s} {p.reason}{rec}")
+        s = result.summary()
+        print(
+            f"\nNeeded {s['needed']} | No-op {s['noop']} | Blocked {s['blocked']} | "
+            f"N/A {s['not_applicable']}"
+        )
+    return 0
+
+
 def run_dispatch(args: argparse.Namespace) -> int:
     """`action run` — the #145 §6 pipeline with exit-code mapping.
 
@@ -217,5 +281,7 @@ def run(args: argparse.Namespace) -> int:
             else:
                 print("cancelled", file=sys.stderr)
             return EXIT_CANCELLED
+    if verb == "preflight":
+        return run_preflight(args)
     print(f"Error: unsupported action verb '{verb}'", file=sys.stderr)
     return EXIT_INVALID_REQUEST

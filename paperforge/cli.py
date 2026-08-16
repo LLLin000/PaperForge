@@ -577,6 +577,17 @@ def build_parser() -> argparse.ArgumentParser:
     p_action_run.add_argument("--follow", choices=["none", "auto"], default="none",
                               help="Follow-up mode: auto runs automatic-local descendants inline")
     p_action_run.add_argument("--json", action="store_true", help="Output as JSON")
+    p_action_preflight = action_sub.add_parser(
+        "preflight", help="Observe availability + per-paper applicability WITHOUT executing (M2-C)"
+    )
+    p_action_preflight.add_argument("action_id", help="Registered action id")
+    p_action_preflight.add_argument("--scope", choices=["all", "papers"], default="all",
+                                    help="Request scope kind (papers needs --key)")
+    p_action_preflight.add_argument("--key", action="append", default=[], metavar="KEY",
+                                    help="Paper key (papers scope; repeatable)")
+    p_action_preflight.add_argument("--keys-file", default=None, metavar="PATH",
+                                    help="File of paper keys (CRLF/BOM tolerated, deduped)")
+    p_action_preflight.add_argument("--json", action="store_true", help="Output as JSON")
 
     # ── auth family (#173 / C1) ──
     p_auth = sub.add_parser("auth", help="Credential authority (keyring + canonical env)")
