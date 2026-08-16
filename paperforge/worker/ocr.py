@@ -242,10 +242,20 @@ def ensure_ocr_meta(vault: Path, row: dict) -> dict:
     key = row["zotero_key"]
     meta_path = paths["ocr"] / key / "meta.json"
     meta_path.parent.mkdir(parents=True, exist_ok=True)
-    try:
-        meta = read_json(meta_path) if meta_path.exists() else {}
-    except Exception:
-        meta = {}
+    meta: dict = {}
+    corrupt = False
+    if meta_path.exists():
+        try:
+            meta = read_json(meta_path)
+        except Exception:  # noqa: BLE001 — restore-damaged / half-written meta
+            # P1-1 (owner review): an unreadable meta is unrecoverable —
+            # rebuild the minimal meta from the canonical authority and
+            # persist it NOW (this is OCR's own writer path; read stays a
+            # pure observation elsewhere).  recovery_reason keeps the
+            # incident traceable without inventing provenance for existing
+            # raw artifacts.
+            corrupt = True
+            meta = {}
     meta.setdefault("zotero_key", key)
     meta.setdefault("source_pdf", row.get("pdf_path", ""))
     meta.setdefault("ocr_provider", "PaddleOCR-VL-1.6")
@@ -267,6 +277,12 @@ def ensure_ocr_meta(vault: Path, row: dict) -> dict:
     meta.setdefault("retry_count", 0)
     meta.setdefault("last_error", None)
     meta.setdefault("last_attempt_at", None)
+    if corrupt:
+        from datetime import datetime as _dt
+
+        meta["recovery_reason"] = "meta_unreadable"
+        meta["recovery_at"] = _dt.now(timezone.utc).isoformat()
+        write_json(meta_path, meta)
     return meta
 
 
@@ -2971,6 +2987,14 @@ def run_ocr(
                         _token_warned = True
                     continue
                 upload_pdf = resolved_pdf
+                # P1-3 (owner review): the canonical locator is the
+                # authority — a replaced attachment must re-OCR against the
+                # CURRENT PDF, and the recorded locator must follow, so
+                # provenance_pdf_changed self-heals on the next run instead
+                # of needing a manual source_pdf edit.
+                canonical_locator = str(queue_row.get("pdf_path", "") or "")
+                if canonical_locator and str(meta.get("source_pdf", "")) != canonical_locator:
+                    meta["source_pdf"] = canonical_locator
                 # P0-2 (owner review): capture the SOURCE page count BEFORE
                 # submitting — meta.page_count is only written after
                 # postprocess, so a first-time run had no pages to size the
