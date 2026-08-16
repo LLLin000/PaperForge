@@ -786,13 +786,16 @@ def _resolve_canonical_pdf(vault: Path, paper_dir: Path | None) -> Path | None:
         pdf = str(hit.get("pdf_path", "") or "")
         if not pdf:
             return None
-        m = _re.match(r"\[\[([^\]]+)\]\]", pdf)
-        rel = m.group(1) if m else pdf
-        candidate = Path(rel)
-        if candidate.is_absolute():
-            return candidate if candidate.exists() else None
-        resolved = vault / candidate
-        return resolved if resolved.exists() else None
+        # 2026-08-16: route through the shared locator resolver (wikilink /
+        # vault-relative / storage: / storage-KEY-dir fallback). The path is
+        # a LOCATOR; identity is the fingerprint bytes (ADR-0002 §5 #1) —
+        # a renamed/restore-shuffled filename must not break provenance.
+        from paperforge.pdf_resolver import resolve_pdf_path
+
+        resolved = resolve_pdf_path(pdf, True, vault)
+        if resolved:
+            return Path(resolved)
+        return None
     except Exception:  # noqa: BLE001 — unreadable index → no evidence
         return None
 

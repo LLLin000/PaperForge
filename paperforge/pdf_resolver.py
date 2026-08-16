@@ -8,9 +8,21 @@ from __future__ import annotations
 import ctypes
 import logging
 import os
+import re
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
+
+
+def _first_pdf_in_storage_dir(storage_key: str, zotero_dir: Path | None) -> str:
+    """First PDF inside a Zotero storage KEY directory, or ''."""
+    if not storage_key or zotero_dir is None:
+        return ""
+    storage_dir = (zotero_dir / "storage" / storage_key).resolve()
+    if not storage_dir.exists():
+        return ""
+    pdfs = [f for f in storage_dir.iterdir() if f.is_file() and f.suffix.lower() == ".pdf"]
+    return str(pdfs[0]) if pdfs else ""
 
 
 def resolve_pdf_path(
@@ -39,13 +51,21 @@ def resolve_pdf_path(
     if not raw:
         return ""
 
+    # 2026-08-16: formal-library pdf_path may be a [[wikilink]] locator —
+    # strip it so the vault-relative / storage branches below can resolve.
+    if raw.startswith("[[") and raw.endswith("]]"):
+        raw = raw[2:-2]
+
     # Try absolute first
     candidate = Path(raw)
     if candidate.is_absolute():
         resolved = resolve_junction(candidate)
         if is_valid_pdf(resolved):
             return str(resolved)
-        return ""
+        # absolute + exact-name miss → storage KEY dir fallback
+        m = re.search(r"storage[/\\]([A-Z0-9]{8})", raw)
+        if m:
+            return _first_pdf_in_storage_dir(m.group(1), zotero_dir)
 
     # Try vault-relative
     vault_candidate = (vault_root / raw.replace("/", os.sep)).resolve()
@@ -56,6 +76,21 @@ def resolve_pdf_path(
     vault_resolved = resolve_junction(vault_candidate)
     if is_valid_pdf(vault_resolved):
         return str(vault_resolved)
+
+    # vault-relative exact-name miss → the storage KEY directory may hold
+    # the PDF under a renamed/restore-shuffled filename (the storage key is
+    # the identity anchor, the filename is only a label).
+    m = re.search(r"storage[/\\]([A-Z0-9]{8})", raw)
+    if m:
+        storage_dir = (vault_root / "System" / "Zotero" / "storage" / m.group(1)).resolve()
+        if storage_dir.exists():
+            pdfs = [f for f in storage_dir.iterdir() if f.is_file() and f.suffix.lower() == ".pdf"]
+            if pdfs:
+                return str(pdfs[0])
+        # junction-resolved Zotero storage (outside vault)
+        fallback = _first_pdf_in_storage_dir(m.group(1), zotero_dir)
+        if fallback:
+            return fallback
 
     # Try Zotero storage-relative (format: "storage:XXXX/item.pdf")
     if raw.startswith("storage:") and zotero_dir is not None:
@@ -69,15 +104,7 @@ def resolve_pdf_path(
         # is the identity anchor, the filename is only a label.
         storage_key = storage_rel.split("/")[0].strip()
         if storage_key:
-            storage_dir = (zotero_dir / "storage" / storage_key).resolve()
-            if storage_dir.exists():
-                pdfs = [
-                    f
-                    for f in storage_dir.iterdir()
-                    if f.is_file() and f.suffix.lower() == ".pdf"
-                ]
-                if pdfs:
-                    return str(pdfs[0])
+            return _first_pdf_in_storage_dir(storage_key, zotero_dir)
         return ""
 
     logger.error(f"PDF path could not be resolved: {raw}")

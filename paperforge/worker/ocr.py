@@ -1913,16 +1913,11 @@ def postprocess_ocr_result(
 
     # raw_meta.json
     source_pdf_path = Path(meta.get("source_pdf", "")) if meta.get("source_pdf") else None
-    # formal-library pdf_path may be a [[wikilink]] locator (vault-relative)
-    if source_pdf_path is not None and str(source_pdf_path).startswith("[[") and str(source_pdf_path).endswith("]]"):
-        _rel = str(source_pdf_path)[2:-2]
-        _p = vault / _rel.replace("/", os.sep)
-        if _p.exists():
-            source_pdf_path = _p
-    # storage:KEY/... locator → real file (junction-resolved) so the
-    # fingerprint is the ACTUAL PDF identity, never the placeholder.  The
-    # path is a locator; bytes are the identity (ADR-0002 §5 #1).
-    if source_pdf_path is not None and str(source_pdf_path).startswith("storage:"):
+    # Locator → real file (wikilink / vault-relative / storage: /
+    # storage-KEY-dir fallback) so the fingerprint is the ACTUAL PDF
+    # identity, never the placeholder.  The path is a locator; bytes are
+    # the identity (ADR-0002 §5 #1).
+    if source_pdf_path is not None:
         try:
             from paperforge.pdf_resolver import resolve_pdf_path
 
@@ -1936,13 +1931,6 @@ def postprocess_ocr_result(
             if _zd:
                 _zotero_dir = Path(_zd)
             resolved = resolve_pdf_path(str(source_pdf_path), True, vault, _zotero_dir)
-            if not resolved and _zotero_dir is not None and str(source_pdf_path).startswith("storage:"):
-                storage_key = str(source_pdf_path)[len("storage:") :].split("/")[0].strip()
-                storage_dir = (_zotero_dir / "storage" / storage_key).resolve()
-                if storage_dir.exists():
-                    pdfs = [f for f in storage_dir.iterdir() if f.suffix.lower() == ".pdf"]
-                    if pdfs:
-                        resolved = str(pdfs[0])
             if resolved:
                 source_pdf_path = Path(resolved)
         except Exception:  # noqa: BLE001 — keep locator; fp degrades to unknown
