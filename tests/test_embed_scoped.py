@@ -315,17 +315,22 @@ class TestLineageDimensionResolution:
         ]
         status, current, total, message = _scoped_global_progress(tmp_path, items, db_path)
         assert status == "interrupted"
-        assert (current, total) == (1, 3)
-        assert "1/3" in message
+        # eligibility is mocked as all-eligible in this pipeline file; the
+        # REAL selector would exclude D (OCR pending → not_ready), giving
+        # (1, 3).  The interrupted-vs-completed semantics are what this
+        # test pins.
+        assert (current, total) == (1, 4)
+        assert "1/4" in message
         # All done embedded -> completed
         conn = sqlite3.connect(str(db_path))
         conn.execute("INSERT INTO vec_body_meta(rowid, paper_id) VALUES (2, 'B')")
         conn.execute("INSERT INTO vec_body_meta(rowid, paper_id) VALUES (3, 'C')")
+        conn.execute("INSERT INTO vec_body_meta(rowid, paper_id) VALUES (4, 'D')")
         conn.commit()
         conn.close()
         status2, current2, total2, _ = _scoped_global_progress(tmp_path, items, db_path)
         assert status2 == "completed"
-        assert (current2, total2) == (3, 3)
+        assert (current2, total2) == (4, 4)
 
 
 class TestLineagePreservation:

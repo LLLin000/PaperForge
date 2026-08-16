@@ -256,7 +256,11 @@ def _scoped_global_progress(
             ).fetchone()[0]
         finally:
             conn.close()
-        done = sum(1 for e in items if e.get("ocr_status") == "done")
+        done = len(
+            select_embedding_candidates(
+                vault, [e.get("zotero_key") for e in items if e.get("zotero_key")]
+            )["eligible"]
+        )
         if embedded < done:
             return (
                 "interrupted",
