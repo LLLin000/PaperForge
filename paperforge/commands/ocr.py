@@ -381,6 +381,108 @@ def _run_ocr_redo(vault: Path, keys: list[str] | None = None, dry_run: bool = Fa
 
 
 
+def _run_ocr_status(vault: Path, json_output: bool = False) -> int:
+    """Live per-paper OCR job status (owner request 2026-08-16): show every
+    active provider job — key, provider state, elapsed, job id — by querying
+    the provider directly, WITHOUT running the OCR loop.  Lets an operator
+    watch a batch's real-time progress and decide when to re-run the poll.
+
+    Reads only meta.json (OCR-subsystem writer owns it); never mutates."""
+    import json as _json
+
+    from pathlib import Path as _Path
+
+    from paperforge.worker._utils import pipeline_paths
+    from paperforge.worker.ocr import _resolve_paddleocr_token
+
+    paths = pipeline_paths(vault)
+    ocr_root = paths.get("ocr")
+    jobs: list[dict] = []
+    if ocr_root and ocr_root.exists():
+        for meta_dir in sorted(ocr_root.iterdir()):
+            meta_path = meta_dir / "meta.json"
+            if not meta_path.exists():
+                continue
+            try:
+                meta = _json.loads(meta_path.read_text(encoding="utf-8"))
+            except Exception:  # noqa: BLE001 — corrupt meta has no active job
+                continue
+            status = str(meta.get("ocr_status", "") or "").strip().lower()
+            job_id = str(meta.get("ocr_job_id", "") or "")
+            # Show every unsettled paper: active provider jobs (queued/
+            # running) AND local pending/not-yet-submitted rows — the
+            # operator wants per-paper state, not just in-flight jobs.
+            if status in ("queued", "running", "pending"):
+                jobs.append(
+                    {
+                        "key": meta_dir.name,
+                        "job_id": job_id,
+                        "status": status,
+                        "started_at": str(meta.get("ocr_started_at", "") or ""),
+                        "source_pdf": str(meta.get("source_pdf", "") or "")[:48],
+                    }
+                )
+    if not jobs:
+        if json_output:
+            print(_json.dumps({"count": 0, "jobs": []}, ensure_ascii=False))
+        else:
+            print("No active OCR jobs.")
+        return 0
+
+    import os as _os
+    import time as _time
+
+    import requests as _requests
+
+    token = _resolve_paddleocr_token(vault)
+    job_url = _os.environ.get(
+        "PADDLEOCR_JOB_URL", "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs"
+    ).strip()
+    now = _time.time()
+    rows = []
+    for j in jobs:
+        provider_state = "?"
+        if j["job_id"]:
+            try:
+                if token:
+                    resp = _requests.get(
+                        f"{job_url}/{j['job_id']}",
+                        headers={"Authorization": f"bearer {token}"},
+                        timeout=60,
+                    )
+                    if resp.status_code == 200:
+                        provider_state = str(resp.json()["data"]["state"])
+                    else:
+                        provider_state = f"http_{resp.status_code}"
+            except Exception as exc:  # noqa: BLE001 — status query is best-effort
+                provider_state = f"err:{type(exc).__name__}"
+        else:
+            provider_state = "-"  # not yet submitted to the provider
+        elapsed = ""
+        if j["started_at"]:
+            try:
+                from datetime import datetime as _dt
+
+                started = _dt.fromisoformat(j["started_at"])
+                elapsed = f"{max(0, int(now - started.timestamp()))}s"
+            except Exception:
+                pass
+        rows.append({**j, "provider_state": provider_state, "elapsed": elapsed})
+    if json_output:
+        print(_json.dumps({"count": len(rows), "jobs": rows}, ensure_ascii=False, default=str))
+        return 0
+    print(f"Active OCR jobs: {len(rows)}")
+    header = f"{'Key':12s} {'Provider':10s} {'Local':9s} {'Elapsed':8s} {'Job ID':16s} {'Source'}"
+    print(header)
+    print("-" * len(header))
+    for r in rows:
+        print(
+            f"{r['key']:12s} {r['provider_state']:10s} {r['status']:9s} {r['elapsed']:8s} "
+            f"{r['job_id'][:14]:16s} {r['source_pdf']}"
+        )
+    return 0
+
+
 def _run_ocr_list(vault: Path, json_output: bool = False, output_file: str | None = None,
                    manifest: bool = False, keys: list[str] | None = None) -> int:
     """List all papers with OCR maintenance status."""
@@ -772,6 +874,9 @@ def _run_ocr_dispatch(args, vault, json_output, ocr_action, keys, diagnose_only)
 
     if ocr_action == "pipeline-versions":
         return _run_ocr_pipeline_versions(vault, json_output=json_output)
+
+    if ocr_action == "status":
+        return _run_ocr_status(vault, json_output=json_output)
 
     if ocr_action == "list":
         return _run_ocr_list(

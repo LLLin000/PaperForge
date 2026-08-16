@@ -242,6 +242,8 @@ def build_parser() -> argparse.ArgumentParser:
         "pipeline-versions", help="Per-paper OCR pipeline versions (detail surface, #148)"
     )
     p_ocr_versions.add_argument("--json", action="store_true")
+    p_ocr_status = ocr_sub.add_parser("status", help="Live provider status of active OCR jobs (no OCR loop)")
+    p_ocr_status.add_argument("--json", action="store_true")
     run_parser = ocr_sub.add_parser("run", help="Run OCR queue")
     run_parser.add_argument("keys", nargs="*", metavar="KEY", help="Paper keys to process (default: entire queue)")
     run_parser.add_argument("--keys-file", default=None, metavar="PATH",
