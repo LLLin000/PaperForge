@@ -144,6 +144,17 @@ def _call_run(
     # layer where it lives.
     cli_refs = {k: v for k, v in mock_refs.items() if k == "read_index"}
     service_refs = {k: v for k, v in mock_refs.items() if k != "read_index"}
+    if "select_embedding_candidates" not in mock_refs:
+        def _fake_select(vault, keys=None):
+            if keys is not None:
+                return {"eligible": list(keys), "no_content": [], "not_ready": []}
+            try:
+                env = mock_refs["read_index"].return_value
+                items = env.get("items") if isinstance(env, dict) else (env or [])
+                return {"eligible": [i["zotero_key"] for i in items], "no_content": [], "not_ready": []}
+            except Exception:
+                return {"eligible": [], "no_content": [], "not_ready": []}
+        service_refs["select_embedding_candidates"] = MagicMock(side_effect=_fake_select)
 
     patcher = patch.multiple("paperforge.services.embedding", **service_refs)
     patcher.start()

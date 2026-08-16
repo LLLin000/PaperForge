@@ -22,6 +22,27 @@ from paperforge.actions.types import ActionSpec, PreflightResult
 from paperforge.actions.registry import ACTION_REGISTRY
 from paperforge.core.result import PFResult
 
+
+@pytest.fixture(autouse=True)
+def _mock_eligibility(monkeypatch):
+    """M3-B: pipeline tests mock the retrieval-truth selector (covered by
+    test_embed_eligibility.py); requested keys are eligible here."""
+
+    def fake_select(vault, keys=None):
+        if keys is not None:
+            return {"eligible": list(keys), "no_content": [], "not_ready": []}
+        try:
+            from paperforge.worker.asset_index import read_index
+
+            env = read_index(vault)
+            items = env.get("items") if isinstance(env, dict) else (env or [])
+            return {"eligible": [i["zotero_key"] for i in items], "no_content": [], "not_ready": []}
+        except Exception:
+            return {"eligible": [], "no_content": [], "not_ready": []}
+
+    monkeypatch.setattr("paperforge.services.embedding.select_embedding_candidates", fake_select)
+
+
 from tests.conftest import canonical_test_config
 from tests.test_lineage import _make_vault as _lineage_vault
 
