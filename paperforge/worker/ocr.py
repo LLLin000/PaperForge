@@ -1913,6 +1913,12 @@ def postprocess_ocr_result(
 
     # raw_meta.json
     source_pdf_path = Path(meta.get("source_pdf", "")) if meta.get("source_pdf") else None
+    # formal-library pdf_path may be a [[wikilink]] locator (vault-relative)
+    if source_pdf_path is not None and str(source_pdf_path).startswith("[[") and str(source_pdf_path).endswith("]]"):
+        _rel = str(source_pdf_path)[2:-2]
+        _p = vault / _rel.replace("/", os.sep)
+        if _p.exists():
+            source_pdf_path = _p
     # storage:KEY/... locator → real file (junction-resolved) so the
     # fingerprint is the ACTUAL PDF identity, never the placeholder.  The
     # path is a locator; bytes are the identity (ADR-0002 §5 #1).
