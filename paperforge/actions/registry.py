@@ -317,7 +317,29 @@ def _ocr_run_handler(ctx: ActionContext, request: ActionRequest) -> PFResult:
             version=PF_VERSION,
             error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(exc)),
         )
-    return PFResult(ok=rc == 0, command="action run", version=PF_VERSION, data={"exit_code": rc})
+    if rc == 0:
+        return PFResult(ok=True, command="action run", version=PF_VERSION, data={"exit_code": rc})
+    if rc == 130:
+        return PFResult(
+            ok=False,
+            command="action run",
+            version=PF_VERSION,
+            error=PFError(code=ErrorCode.ACTION_CANCELLED, message="OCR cancelled"),
+            data={"exit_code": rc},
+        )
+    # rc == 1: some items are pending (server still processing — poll
+    # window ended) or failed.  Pending is NOT an error, it means re-run
+    # to continue polling; surface that instead of a bare 'unknown'.
+    return PFResult(
+        ok=False,
+        command="action run",
+        version=PF_VERSION,
+        error=PFError(
+            code=ErrorCode.OCR_POLL_TIMEOUT,
+            message="OCR: some items still processing on the server or failed — re-run to continue polling",
+        ),
+        data={"exit_code": rc},
+    )
 
 
 def _embed_build_preflight(ctx: ActionContext, request: ActionRequest) -> PreflightResult:
