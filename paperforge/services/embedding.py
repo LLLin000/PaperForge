@@ -864,10 +864,26 @@ def run_embedding_build(
         except CredentialError as exc:
             # #173 corrective: backend credential faults (locked/unavailable/
             # denied) fail loud with the credential code — never reported as
-            # a generic missing-key or INTERNAL_ERROR.
-            from paperforge.commands.auth import _error_result as _cred_error_result
+            # a generic missing-key or INTERNAL_ERROR.  Inlined here so the
+            # service never imports paperforge.commands.* (M2-F boundary).
+            from paperforge.core.errors import ErrorCode as _EC
+            from paperforge.core.result import PFError as _PFError
 
-            result = _cred_error_result("embed build", exc)
+            _code_map = {
+                "locked": "credential.locked",
+                "unavailable": "credential.backend_unavailable",
+                "denied": "credential.backend_denied",
+            }
+            result = PFResult(
+                ok=False,
+                command="embed build",
+                version=PF_VERSION,
+                error=_PFError(
+                    code=_code_map.get(str(getattr(exc, "code", "")) or "", _EC.INTERNAL_ERROR),
+                    message=str(exc),
+                    details=getattr(exc, "details", None),
+                ),
+            )
             print(result.to_json() if json else result.error.message, file=sys.stderr if not json else sys.stdout)
             if _shadow is not None:
                 try:
