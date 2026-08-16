@@ -381,6 +381,35 @@ def _run_ocr_redo(vault: Path, keys: list[str] | None = None, dry_run: bool = Fa
 
 
 
+def _collect_batch_unsettled(vault: Path, batch_id: str) -> list[str]:
+    """G1: keys of papers whose meta.provider_batch_id == batch_id and are
+    NOT settled — the exact set ocr resume re-attaches.  Settled papers of
+    the batch are never re-OCR'd."""
+    import json as _json
+
+    from paperforge.worker.ocr import OCR_SETTLED_STATUSES
+
+    ocr_root = vault / "System" / "PaperForge" / "ocr"
+    if not ocr_root.exists():
+        return []
+    keys: list[str] = []
+    for meta_dir in sorted(ocr_root.iterdir()):
+        meta_path = meta_dir / "meta.json"
+        if not meta_path.exists():
+            continue
+        try:
+            meta = _json.loads(meta_path.read_text(encoding="utf-8"))
+        except Exception:  # noqa: BLE001 — corrupt meta has no batch
+            continue
+        if str(meta.get("provider_batch_id", "") or "") != batch_id:
+            continue
+        status = str(meta.get("ocr_status", "") or "").strip().lower()
+        if status in OCR_SETTLED_STATUSES:
+            continue
+        keys.append(meta_dir.name)
+    return keys
+
+
 def _run_ocr_resume(vault: Path, batch_id: str, json_output: bool = False) -> int:
     """G1 (Control Plane Closure): re-attach an EXISTING OCR execution.
 
@@ -392,27 +421,9 @@ def _run_ocr_resume(vault: Path, batch_id: str, json_output: bool = False) -> in
     frontier: it never re-OCRs a settled paper."""
     import json as _json
 
-    from paperforge.worker._utils import pipeline_paths
-    from paperforge.worker.ocr import OCR_SETTLED_STATUSES, run_ocr
+    from paperforge.worker.ocr import run_ocr
 
-    paths = pipeline_paths(vault)
-    ocr_root = paths.get("ocr")
-    keys: list[str] = []
-    if ocr_root and ocr_root.exists():
-        for meta_dir in sorted(ocr_root.iterdir()):
-            meta_path = meta_dir / "meta.json"
-            if not meta_path.exists():
-                continue
-            try:
-                meta = _json.loads(meta_path.read_text(encoding="utf-8"))
-            except Exception:  # noqa: BLE001 — corrupt meta has no batch
-                continue
-            if str(meta.get("provider_batch_id", "") or "") != batch_id:
-                continue
-            status = str(meta.get("ocr_status", "") or "").strip().lower()
-            if status in OCR_SETTLED_STATUSES:
-                continue
-            keys.append(meta_dir.name)
+    keys = _collect_batch_unsettled(vault, batch_id)
     if not keys:
         if json_output:
             print(

@@ -37,6 +37,28 @@ def _read_dotenv(vault: Path, key: str) -> str:
     return ""
 
 
+def _acquire_controller_lock(lock: Path) -> bool:
+    """F4: acquire the single-mutating-controller lock (O_EXCL), recovering
+    a stale (30s) lock left by a crashed controller.  Returns True when
+    this process holds the lock."""
+    import time as _time
+
+    try:
+        fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        os.close(fd)
+        return True
+    except FileExistsError:
+        try:
+            if _time.time() - lock.stat().st_mtime > 30:
+                lock.unlink()
+                fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+                os.close(fd)
+                return True
+        except OSError:
+            pass
+        return False
+
+
 def _resolve_paddleocr_token(vault: Path) -> str:
     """Resolve the OCR token from the #138 credential authority (#173/C1).
     Precedence: explicit canonical env → keyring.  Legacy sources (.env,
@@ -3064,21 +3086,9 @@ def run_ocr(
     # covered the write instant).  Read-only observers (ocr status, probe)
     # never take this lock.
     _controller_lock = paths["ocr"] / "controller.lock"
-    try:
-        _fd = os.open(_controller_lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-        os.close(_fd)
-    except FileExistsError:
-        try:
-            if (datetime.now(timezone.utc).timestamp() - _controller_lock.stat().st_mtime) > 30:
-                _controller_lock.unlink()  # stale — crashed holder
-                _fd = os.open(_controller_lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-                os.close(_fd)
-            else:
-                print("OCR: another controller is running — re-run later", file=sys.stderr)
-                return 1
-        except FileExistsError:
-            print("OCR: another controller is running — re-run later", file=sys.stderr)
-            return 1
+    if not _acquire_controller_lock(_controller_lock):
+        print("OCR: another controller is running — re-run later", file=sys.stderr)
+        return 1
 
     # Combined upload + poll loop: process all items in batches up to max_items concurrency
     import time as _time
