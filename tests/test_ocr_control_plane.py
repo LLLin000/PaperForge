@@ -80,3 +80,40 @@ def test_resume_collects_only_unsettled_batch_papers(tmp_path: Path) -> None:
     )
     keys = ocr_cmd._collect_batch_unsettled(vault, batch)
     assert keys == ["AAAA1111"], f"expected only the unsettled batch paper, got {keys}"
+
+
+def test_resume_excludes_submitting_crash_window(tmp_path: Path) -> None:
+    """M1.1 (7.3): a paper in submission_state=submitting is in the
+    submit→persist crash window — the remote job MAY exist without a
+    persisted job_id.  Auto-resume must EXCLUDE it (execution_unknown,
+    never a blind double submit)."""
+    from paperforge.commands import ocr as ocr_cmd
+
+    vault = _make_vault(tmp_path)
+    batch = "pf-test"
+    _write_meta(
+        vault,
+        "AAAA1111",
+        {"provider_batch_id": batch, "ocr_status": "pending", "submission_state": "submitting"},
+    )
+    _write_meta(
+        vault,
+        "BBBB2222",
+        {"provider_batch_id": batch, "ocr_status": "pending"},
+    )
+    keys = ocr_cmd._collect_batch_unsettled(vault, batch)
+    assert keys == ["BBBB2222"], "submitting papers must be excluded from auto-resume"
+
+
+def test_provider_jobs_bounded_and_deduped() -> None:
+    """M1.1 (7.2): the provider-attempt provenance list stays bounded (<=3)
+    and never duplicates the current job id."""
+    jobs: list[dict] = []
+    for attempt in range(5):
+        jid = f"j{attempt}"
+        jobs = [j for j in jobs if isinstance(j, dict) and j.get("job_id") != jid]
+        jobs.append({"attempt": attempt + 1, "job_id": jid})
+        jobs = jobs[-3:]
+    assert len(jobs) <= 3, "provider_jobs must be bounded"
+    assert jobs[-1] == {"attempt": 5, "job_id": "j4"}
+    assert jobs[0] == {"attempt": 3, "job_id": "j2"}

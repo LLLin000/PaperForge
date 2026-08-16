@@ -404,6 +404,13 @@ def _collect_batch_unsettled(vault: Path, batch_id: str) -> list[str]:
         if str(meta.get("provider_batch_id", "") or "") != batch_id:
             continue
         status = str(meta.get("ocr_status", "") or "").strip().lower()
+        # M1.1 (owner review): a paper in submission_state=submitting is in
+        # the crash window — the remote job MAY exist without a persisted
+        # job_id.  Blindly re-submitting risks a double remote job, so
+        # auto-resume EXCLUDES it (execution_unknown — operator inspects
+        # via ocr status, which exposes submission_state).
+        if str(meta.get("submission_state", "") or "") == "submitting":
+            continue
         if status in OCR_SETTLED_STATUSES:
             continue
         keys.append(meta_dir.name)
