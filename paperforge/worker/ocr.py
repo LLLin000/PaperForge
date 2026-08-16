@@ -3197,10 +3197,33 @@ def run_ocr(
                     changed += 1
                     continue
                 print(f"OCR: {key} uploading to PaddleOCR...", flush=True)
+                # M1.1 write-ahead (owner review): persist the SUBMISSION
+                # INTENT before the remote POST — a crash between 'provider
+                # accepted' and 'job_id persisted' would otherwise leave an
+                # orphan remote job that looks like a fresh pending paper
+                # (double-submit risk).  submission_state=submitting marks
+                # the window; recovery (ocr resume) treats it conservatively.
+                _attempt = int(meta.get("job_attempt", 0) or 0)
+                meta["submission_state"] = "submitting"
+                meta["provider_batch_id"] = batch_id  # F2: execution identity
+                meta["job_attempt"] = _attempt
+                meta["ocr_job_id"] = meta.get("ocr_job_id", "") or ""
+                write_json(paths["ocr"] / key / "meta.json", meta)
                 try:
                     response = retry_with_meta(_do_upload, paths["ocr"] / key / "meta.json", token, upload_pdf)
-                    meta["ocr_job_id"] = response.json()["data"]["jobId"]
-                    meta["provider_batch_id"] = batch_id  # F2: execution identity
+                    _job_id = str(response.json()["data"]["jobId"])
+                    meta["ocr_job_id"] = _job_id
+                    meta["submission_state"] = "submitted"
+                    # bounded provider-attempt provenance (M1.1): one key may
+                    # have several provider jobs across attempts; keep the
+                    # mapping so recovery can tell claimed vs orphan jobs.
+                    _jobs = meta.get("provider_jobs") or []
+                    if not isinstance(_jobs, list):
+                        _jobs = []
+                    _jobs = [j for j in _jobs if isinstance(j, dict) and j.get("job_id") != _job_id]
+                    _jobs.append({"attempt": _attempt + 1, "job_id": _job_id})
+                    meta["provider_jobs"] = _jobs[-3:]  # bounded history
+                    write_json(paths["ocr"] / key / "meta.json", meta)
                 except Exception as e:
                     if _sanitized_temp is not None and _sanitized_temp.exists():
                         _sanitized_temp.unlink(missing_ok=True)

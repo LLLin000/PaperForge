@@ -764,6 +764,7 @@ def _ocr_execution_detail(paper_dir: Path | None) -> dict | None:
         return None  # settled — no execution in flight
     return {
         "local_status": status,
+        "submission_state": meta.get("submission_state"),
         "job_id": str(meta.get("ocr_job_id", "") or "")[:12] or None,
         "job_attempt": meta.get("job_attempt"),
         "provider_error_status": meta.get("provider_error_status"),
