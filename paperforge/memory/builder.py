@@ -756,6 +756,7 @@ def _incremental_units_only(conn: sqlite3.Connection, items: list[dict], ocr_roo
     """
     built_count = 0
     cleared_count = 0
+    skipped_corrupt = 0
     for entry in items:
         key = entry.get("zotero_key", "")
         if not key:
@@ -803,8 +804,16 @@ def _incremental_units_only(conn: sqlite3.Connection, items: list[dict], ocr_roo
             if (stored_manifest.get("ocr_result_hash") == current_hash
                 and stored_manifest.get("retrieval_policy_version") == RETRIEVAL_POLICY_VERSION):
                 continue
-        _rebuild_paper_units(conn, key, paper_dir, tree_path, blocks_path, vault=vault)
-        built_count += 1
+        try:
+            _rebuild_paper_units(conn, key, paper_dir, tree_path, blocks_path, vault=vault)
+            built_count += 1
+        except Exception as exc:  # noqa: BLE001 — restore-damaged artifacts (corrupt
+            # tree/blocks) must not kill the whole batch: skip the paper,
+            # leave the manifest unwritten so the next build retries it.
+            logger.warning("memory.build: skip %s (corrupt artifacts: %s)", key, exc)
+            skipped_corrupt += 1
+    if skipped_corrupt:
+        logger.info("Incremental units: %d skipped (corrupt artifacts)", skipped_corrupt)
     if built_count or cleared_count:
         logger.info("Incremental units: %d rebuilt, %d cleared (artifacts gone)", built_count, cleared_count)
     else:
