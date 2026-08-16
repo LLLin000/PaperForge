@@ -3071,11 +3071,23 @@ def run_ocr(
                     _resolve_zotero_data_dir(vault),
                 )
                 if not resolved_pdf:
-                    meta["ocr_status"] = "nopdf"
-                    queue_row["queue_status"] = "nopdf"
+                    if queue_row.get("has_pdf"):
+                        # authority (Zotero) EXPECTS a PDF but the file is
+                        # gone (restore loss / never downloaded) — an
+                        # environment defect, NOT the legitimate no-pdf
+                        # terminal state.  blocked keeps it out of every
+                        # eligible set; error names the defect.
+                        meta["ocr_status"] = "blocked"
+                        meta["error"] = "canonical PDF missing (has_pdf expected)"
+                        meta["error_stage"] = "source"
+                        queue_row["queue_status"] = "blocked"
+                        print(f"OCR: {key} blocked (PDF file missing)", flush=True)
+                    else:
+                        meta["ocr_status"] = "nopdf"
+                        queue_row["queue_status"] = "nopdf"
+                        print(f"OCR: {key} skipped (no PDF attachment)", flush=True)
                     write_json(paths["ocr"] / key / "meta.json", meta)
                     changed += 1
-                    print(f"OCR: {key} skipped (PDF not found)", flush=True)
                     continue
                 if not token:
                     meta["ocr_status"] = "blocked"
