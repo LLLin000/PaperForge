@@ -2726,6 +2726,7 @@ def run_ocr(
     process_all = selected_keys is None and not target_keys
 
     target_rows = []
+    skipped_no_pdf: list[str] = []
     # P1-3: the CANONICAL library (formal-library → asset_index) is the
     # authority for the main PDF locator — BBT exports may lag an
     # attachment replacement, and uploads must target the CURRENT PDF, not
@@ -2757,6 +2758,19 @@ def run_ocr(
                     "pdf_path": pdf_path,
                 }
             )
+    for row in target_rows:
+        if not row["has_pdf"]:
+            skipped_no_pdf.append(row["zotero_key"])
+    if skipped_no_pdf:
+        # Report skips UP FRONT (owner: 'why does nothing show status?' —
+        # no-PDF papers are correctly not queued, but silent skips read as
+        # a stall).
+        print(
+            f"OCR: skipped {len(skipped_no_pdf)} papers (no PDF attachment): "
+            + ", ".join(skipped_no_pdf[:8])
+            + ("..." if len(skipped_no_pdf) > 8 else ""),
+            flush=True,
+        )
     for row in target_rows:
         key = row["zotero_key"]
         meta = ensure_ocr_meta(vault, row)
@@ -3297,6 +3311,17 @@ def run_ocr(
             if progress_callback is not None:
                 progress_callback(key)
         if any(r.get("queue_status") in ("queued", "running") for r in ocr_queue):
+            # Periodic live summary (owner: 'no status while waiting is
+            # painful') — one compact line per poll interval showing the
+            # batch's active/done counts instead of silence.
+            if progress_callback is None:
+                _active = sum(1 for r in ocr_queue if r.get("queue_status") in ("queued", "running"))
+                _done_now = sum(1 for r in ocr_queue if r.get("queue_status") == "done")
+                print(
+                    f"  [{datetime.now(timezone.utc).strftime('%H:%M:%S')}] "
+                    f"active={_active} done={_done_now} total={len(ocr_queue)}",
+                    flush=True,
+                )
             _time.sleep(poll_interval)
     # Collect completed OCR keys for incremental index refresh (before filtering)
     _done_ocr_keys = (
