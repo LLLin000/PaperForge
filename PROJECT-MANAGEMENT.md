@@ -1,4 +1,4 @@
-> **Branch:** `master` | **Last Updated:** 2026-08-15
+> **Branch:** `master` | **Last Updated:** 2026-08-16
 >
 > **Active work:** Post-incident hardening on `master`: 2026-08-14 prune `rmtree` incident (production vault root deleted by `shutil.rmtree(Path(), ignore_errors=True)`) fully contained and fixed — trash architecture (`worker/trash.py`, delete = move + manifest + restore), unified residual detection (Zotero authority across workspace/FTS/vector/OCR carriers), Smart Retrieval panel rendered single-source from the probe envelope, pre-commit + CI reject the accident patterns. Literature-hub production vault is being recovered (DiskGenius + exports copy + intact paperforge.db + Zotero outside vault); do NOT run destructive PaperForge operations against it until the owner confirms restoration. Release remains owner-gated by #81.
 >
@@ -160,6 +160,24 @@ raw observations → structural signatures → stable anchors/families → zone 
 | 47 | — | Smart Retrieval's live “构建索引” first crashed on function-local vector imports, then surfaced only an exit code; after transport recovery it falsely reported failure although indexing completed; a ready page retained a warning impact box | Local imports shadowed module helpers; stderr was discarded; `write_vector_runtime` referenced `object_chunk_count` without accepting it; the impact renderer treated every non-`"ready"` reason string as action-required | Hoist vector helpers, display final stderr diagnostic, declare SOCKS transport for proxy-backed OpenAI SDKs, add `object_chunk_count` to the snapshot contract, and render impact only for `needs_action` | — |
 | 48 | — | OCR workspace table width not adapting; action column (预览) invisible; old flex-based `.pf-ocr-ws-table` CSS conflicted with real `<table>` layout; command names had duplicate "PaperForge:" prefix; ribbon icon and ctrl+p command both existed but one command name was malformed | Old section 1 flex CSS (.pf-ocr-ws-table { display: flex }) overrode section 2 table-layout: fixed; `.pf-ocr-ws-col-date` lacked nowrap/muted styling; command names hardcoded "PaperForge:" prefix causing Obsidian double-prefix | Remove conflicting old flex-based table CSS, add `min-width: 0` on title column, add nowrap/muted styling on date column, fix all command name prefixes | — |
 | 49 | — | Disposable-vault real UI audit found stale credential truth, 30s probe deadline, missing credential remediation, hidden/incorrect cancellation state, stale embed failure/corruption truth, action-policy drift, dashboard reopen/setup dead ends, raw i18n keys, and OCR NDJSON stdout contamination/scope loss | Multiple projection seams bypassed their owners: dashboard cached flags, probe-owned policy metadata, legacy process fields, and worker human stdout leaked into machine streams | Route dashboard credential status through Python auth; project registered action policy in probe; strict-clean OCR NDJSON and explicit scope; controller-owned Stop/cancel/error truth; pristine vector DB = not-built; 60s probe deadline; awaited dashboard reveal; direct Setup/OCR remediation; complete translations. Evidence: `System/PaperForge/audits/ui-e2e-findings.json` in disposable audit vault. | — |
+### 2.4 Recovery Issues Log (2026-08-14 incident follow-up — unified check 2026-08-16)
+
+Full-library census (2026-08-16, probe lineage, 948 papers): **current 238 / missing 709 / incomplete 1 / stale 0**.
+Every non-missing paper is OCR current + retrieval current + integrity verified. Remaining work = the 709 missing (unrecovered restore-damaged OCR) + 1 known exception.
+
+| # | Issue | Root cause | Fix | Impact (re-OCR / rebuild / embed + old users) |
+|---|-------|-----------|-----|-----------------------------------------------|
+| R1 | 128 papers `publish_metadata_missing` (result-hash.txt lost) | Restore damage deleted `index/result-hash.txt` for previously-good OCR (8-12), not just damaged papers | `ocr.rebuild_derived` re-publishes the hash; 117 files-ok papers rebuilt in 3 batches (the 1 empty-dir pair `2BKLX9I4`/`2C5VZJXN` were never OCR'd, not restore damage) | **No re-OCR needed** (files intact; local rebuild only). Old users with missing hash: one local rebuild per paper, no remote cost |
+| R2 | Rebuilt legacy papers stayed `provenance_unknown` forever | `rebuild_derived` published the hash but did not rebuild `meta.raw_version`; pre-P0-B OCR has no `raw_blocks_hash` → fail-closed provenance_unknown | `rebuild_derived` now also repairs `raw_version` (raw_blocks_hash + pdf_fingerprint) from the canonical PDF | **No re-OCR / no re-embed**. Old users: one local rebuild turns a legacy paper current; new OCR unaffected. Commit `c023c89c` |
+| R3 | 3 papers permanently `provenance_pdf_changed` (stale) even after re-OCR | Postprocess (and rebuild repair) computed `compute_pdf_fingerprint(Path(source_pdf))` directly; formal-library `pdf_path` is a `[[wikilink]]` → path never resolves → fp=unknown | Strip `[[ ]]` and resolve vault-relative before fingerprinting (both postprocess + rebuild repair) | **No re-OCR needed** — rebuild_derived backfills the real fp. Old users with fp=unknown: one rebuild per paper → current. New OCR computes correct fp. Commit `9a037a36` |
+| R4 | `7KGJMJXU` meta.json was binary garbage (2858 B random bytes) | Restore damage (one of the 682 unreadable metas) — OCR files intact but meta unrecoverable | Reset minimal meta (pending + pdf_path from index) → re-OCR (21 pages) | **Re-OCR required** (meta is OCR-subsystem-owned; no meta-rebuild path exists). Old users with corrupt meta: same path — reset + re-OCR |
+| R5 | `8LZUYXMH` `tree_empty` (incomplete) | Supplementary-only PDF (3 tables + 2 text pages, **no section headings**) — tree construction correctly yields 0 nodes; not a code defect | **Known exception, open decision**: accept tree_empty as valid for section-less documents (relax contract) vs leave incomplete (blocks embed). 1 paper only | No re-OCR value (re-OCR returns the same 10 blocks). Decision needed before final embed |
+| R6 | 30-key `rebuild_derived` batch returned `error: unknown` with no per-key detail | Action reports overall failure if ANY key fails; empty-dir / never-OCR'd keys fail rebuild but the batch has no per-key breakdown in the error surface | Worked around by classifying files first (files-ok subset). **Not fixed**: action error should carry per-key outcomes | n/a (CLI ergonomics) |
+| R7 | Key list from file picked up `\r` (CRLF) → `unknown paper keys` | Windows line endings in the generated key list | `tr -d '\r'` when generating lists | n/a (one-off scripting) |
+| R8 | post-OCR refresh degraded warning: OCR version scan skipped (0xa2 meta) | One legacy meta contains 0xa2 bytes (mojibake); version scan skips it | Tolerated (refresh proceeds; warning only). Final cleanup deferred | No re-OCR needed; cosmetic |
+| R9 | 15 papers not-in-index (index entry but no Zotero item?) | To be confirmed separately | Not yet resolved | Awaiting confirmation |
+| R10 | 709 papers `missing` (unrecovered OCR) | Restore damage — the remaining unrecovered batch | Batch recovery in progress (25→50→100 per batch, then final global embed) | Re-OCR required for these (remote); then memory.build (local); then ONE global embed at the end |
+
 ## 3. Remaining Issues — Release-Readiness Layers
 
 ### Layer 1: OCR Truth Coverage — Layout-Category Audit
@@ -352,6 +370,9 @@ Remaining legacy OCR issues (carried forward):
 
 | Date | Decision | Rationale |
 |------|----------|-----------|
+| 2026-08-16 | Every code change must annotate re-run requirements + old-user impact | During recovery, un-annotated changes forced repeated remote OCR/embed runs ("白费力气" — owner). Commit bodies now carry `Impact: re-OCR / rebuild / embed: none|keys|all` + `old users:` so the operator batches or skips re-runs correctly. Recorded §7.3.1. |
+| 2026-08-16 | Two-tier tool surface: stable CLI + deep dev API, never per-task `python -c` | Recovery diagnostics repeatedly re-invoked internal functions via ad-hoc `python -c` (read_index / _resolve_canonical_pdf / compute_ocr_result_hash / provenance_state) — works but is not a stable surface. Product/plugin/agent face the frozen `paperforge <cmd>` CLI (registry actions + probe; fixed args, JSON/NDJSON schemas); developer/advanced-user diagnostics may stay deeper but must be reachable through a FIXED script or dev command, not per-task inline code. Implement post-recovery (owner: "不急"). |
+| 2026-08-16 | Goal/ensure orchestrator: agreed direction, deferred post-recovery (attachment review) | External review of the post-incident architecture: actions stay atomic primitives; a thin `ensure <goal>` layer (ocr.current / retrieval.current / vector.current / serving.ready) plans from observation and re-observes after each action (the chain.py pattern generalized); reconcile must stop giving global substrate unconditional priority (embed.build was once the only frontier while 684 OCR were broken); read paths never auto-repair. Direction correct — the 70% substrate already exists (lineage observe + reconcile plan + chain execute). Deferred: recovery batches + RC must finish first; no new orchestration during data repair. |
 | 2026-08-15 | Deleting = moving to trash; raw filesystem deletes are forbidden | 2026-08-14 incident: `shutil.rmtree(Path(), ignore_errors=True)` deleted the production vault root (Path() = cwd; ignore_errors swallowed everything). PaperForge now deletes user data ONLY via `worker/trash.py` — a move into `.paperforge/trash/<ts>/<id>/` + manifest, restorable (`paperforge trash restore`); `validate_target` fails closed on empty paths, `.`, the allowed root, and escapes (junctions resolved first); `purge_trash` is the only true delete, restricted to the trash root. "An agent may decide an OBJECT should be deleted, but never which filesystem PATH is recursively deleted — that goes through capability validation + quarantine." |
 | 2026-08-15 | Pre-commit + CI reject accident patterns, not all deletes | Guard scope matters: banning every rmtree/unlink would break existing legit cleanup (ocr temp dirs, update tmp, test helpers) and limit development. The pre-commit check (`scripts/check_no_destructive_delete.py`) targets exactly the accident patterns: `rmtree(...ignore_errors=True)` and `rmtree(Path())`/`rmtree("")`/`rmtree(".")`. Ordinary explicit-path deletes stay allowed. Same check runs in pytest (CI) so both gates always agree. |
 | 2026-08-15 | Unified residual signal: Zotero is the authority across ALL carriers | A paper removed from Zotero may leave residuals in workspace dir, papers FTS rows, vector meta, or OCR data. Detection is paper-level: key absent from Zotero exports + present in ANY carrier = residual (with per-carrier flags). One `library.prune` clears every carrier; execute per-carrier (files→trash, DB/vectors→transactional rowid-verified deletes) because FTS rebuild is free but vector rebuild is paid. |
@@ -529,8 +550,35 @@ at milestones only. project/archive/ gets moved-to (not deleted) when stale.
 3. Understand what the tests currently expect
 4. Work one repair at a time; verify before moving on
 
-### 7.4 Test Commands
+### 7.3.1 Mandatory Change-Impact Annotation (owner directive 2026-08-16)
 
+Every code change MUST state, in the commit message (and in the PR/issue
+when one exists):
+
+1. **Re-run required?** — whether the change forces `ocr.run` (remote),
+   `ocr.rebuild_derived` (local), `memory.build` (local), or `embed.build`
+   (remote) on existing papers, and for WHICH papers (all / affected-only /
+   none).
+2. **Old-user impact** — what existing installations / existing OCR data
+   see after the change (e.g. "legacy metas without raw_blocks_hash stay
+   unknown until one local rebuild"; "fingerprint now resolves wikilinks,
+   no re-OCR needed").
+
+Rationale: silent re-run requirements wasted remote OCR/embed runs during
+2026-08-15/16 recovery. A change that needs a re-run MUST say so explicitly
+so the operator can batch it; a change that does NOT need one MUST say so,
+so nobody re-runs needlessly.
+
+Format (append to commit body):
+
+```
+Impact: re-OCR: none | affected keys | all | <condition>
+        rebuild: none | affected keys | all | <condition>
+        embed:   none | affected keys | all | <condition>
+        old users: <what existing data/installs observe>
+```
+
+### 7.4 Test Commands
 ```bash
 # Full OCR test suite
 python -m pytest tests/test_ocr_*.py -v --tb=short
@@ -566,6 +614,7 @@ python -m ruff check paperforge/worker/ocr_*.py
 
 | Date | Session | Key Results | Detailed Archive |
 |------|---------|-------------|------------------|
+| 2026-08-16 | **Recovery governance: unified check + legacy provenance repair** | Full-library census (948): **current 238 / missing 709 / incomplete 1 / stale 0** — every non-missing paper OCR current + retrieval current + integrity verified. Unified issues log (§2.4, R1–R10). Fixed in this session: ① 128 restore-damaged `result-hash.txt` losses re-published via `ocr.rebuild_derived` (117 files-ok + 16 pre-fix batch); ② `rebuild_derived` now repairs a legacy meta's `raw_version` (raw_blocks_hash + pdf_fingerprint) so pre-P0-B OCR becomes current after ONE local rebuild (was provenance_unknown forever) — `c023c89c`; ③ fingerprint computation resolves `[[wikilink]]` locators (formal-library pdf_path never resolved → fp=unknown → 3 papers permanently provenance_pdf_changed even after re-OCR) — fixed in postprocess + rebuild repair, 3 stale papers backfilled fp via one rebuild each — `9a037a36`; ④ `7KGJMJXU` binary-garbage meta reset + re-OCR; ⑤ `8LZUYXMH` tree_empty = supplementary-only PDF (no sections), known exception awaiting owner decision. Owner directives recorded: mandatory change-impact annotation (§7.3.1), two-tier tool surface (stable CLI + deep dev API, not per-task `python -c`), goal/ensure orchestrator evaluation (attachment review, deferred post-recovery). | §2.4, §6, §7.3.1 |
 | 2026-08-15 | **INCIDENT + safety layer** | **2026-08-14 23:00 production prune run deleted `D:\L\OB\Literature-hub` root** (`rmtree(Path(), ignore_errors=True)` — empty path = cwd = vault root, silent full recursive delete). Survived: paperforge.db (962 FTS + 22.7k vectors + retrieval units), Zotero (1338 PDFs, outside vault), exports copy, Project (partial), Med/Research (137,923 files, separate vault). Recovered via DiskGenius. Root cause fixed with a 3-layer safety net: ① trash architecture (`worker/trash.py` — delete = move + manifest + restore; `validate_target` fails closed on empty/`.`/root/escape; purge restricted to trash root; no ignore_errors anywhere), ② prune moves files to trash + transactional rowid-verified vector/DB deletes, ③ pre-commit + CI (`check_no_destructive_delete.py`) reject `rmtree+ignore_errors` and empty-path rmtree; legacy ignore_errors sites converted to explicit try/except. Commit `a0fdfcb6`. | §2.1, §2.3, §6 |
 | 2026-08-15 | Unified residual detection | Zotero-authority residual report across workspace/FTS/vector/OCR carriers; paper-level `residuals` in probe lineage (per-carrier flags); reconcile emits one `library.prune`; prune handler/command + `memory.rebuild` registered; vector delete rowid-verified with rollback on partial rowcount. Found real residual 9RZU5ZBE (empty OCR dir, invisible to old workspace scan). Commit `0a4a81c4`. | §2.3, §6 |
 | 2026-08-15 | Smart Retrieval panel single-source render | Panel status/button/info-card/impact all from probe envelope (reason.text + action.primary + details); probe memory injects structured details from same authorities as state machine; dead branches removed. Commit `e63445ae`. | §2.3, §6 |
