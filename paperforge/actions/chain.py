@@ -226,9 +226,15 @@ def _execute(
     # failure) so a periodic trigger never blind-retries identical input.
     _settle_w2(context, intent, result)
     if not result.ok:
-        # O2: no successful publish → no post-publish reconcile → no
-        # children.  Sibling intents in the same layer stay independent.
-        return []
+        # P0-3 (owner review): a batch with a successful subset must NOT
+        # stall the whole pipeline — 24/25 done + 1 pending/failed still
+        # advances the 24.  Only the non-succeeded keys are excluded; with
+        # no successes this stays O2 (no publish → no children).
+        successful = _successful_keys(scope, result)
+        if not successful:
+            return []
+        children = _derive_children(context, successful)
+        return [(depth + 1, child) for child in children]
 
     successful = _successful_keys(scope, result)
     children = _derive_children(context, successful)

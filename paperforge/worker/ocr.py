@@ -2615,9 +2615,15 @@ def run_ocr(
     selected_keys: set[str] | None = None,
     stop_check: Callable[[], bool] | None = None,
     progress_callback: Callable[[str], None] | None = None,
+    result_sink: dict | None = None,
 ) -> int:
     """#174 RC: cooperative stop at paper boundaries + per-paper progress —
-    the #137 NDJSON stream (ocr.run) needs both.  Returns 130 when stopped."""
+    the #137 NDJSON stream (ocr.run) needs both.  Returns 130 when stopped.
+
+    P0-3 (owner review): ``result_sink`` (optional dict) receives per-key
+    settlement — {"per_key": {key: final_status}, "pending_keys": [...],
+    "failed_keys": [...]} — so the action layer can report a successful
+    subset even when the batch overall ends pending/failed."""
     _stopped = False
     from paperforge.pdf_resolver import resolve_pdf_path
 
@@ -3166,6 +3172,10 @@ def run_ocr(
     _done_ocr_keys = (
         [r.get("zotero_key", "") for r in ocr_queue if r.get("queue_status") == "done"] if queue_changed else []
     )
+    # P0-3: snapshot per-key settlement BEFORE dropping done rows below —
+    # final_statuses is built from the filtered queue and would miss every
+    # successful key, leaving successful_keys empty even after completions.
+    settled_snapshot = {r.get("zotero_key", ""): r.get("queue_status", "?") for r in ocr_queue}
     if queue_changed:
         ocr_queue = [row for row in ocr_queue if str(row.get("queue_status", "")).lower() != "done"]
     write_ocr_queue(paths, ocr_queue)
@@ -3214,6 +3224,14 @@ def run_ocr(
         print(f"ocr: updated {changed} records")
     else:
         logger.info("ocr: updated %d records", changed)
+    # P0-3: expose per-key settlement (successful subset survives a batch
+    # that overall ended pending/failed).
+    if result_sink is not None:
+        result_sink["per_key"] = settled_snapshot
+        result_sink["pending_keys"] = pending_keys
+        result_sink["failed_keys"] = [
+            k for k, s in settled_snapshot.items() if s in ("error", "fatal_error", "blocked")
+        ]
     # Fail closed: blocked (e.g. invalid/missing API token) and error items
     # are NOT a successful run — the frontend shows "OCR complete" on rc 0.
     if _stopped:

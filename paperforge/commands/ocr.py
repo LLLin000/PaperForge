@@ -724,6 +724,20 @@ def run(args: argparse.Namespace) -> int:
     json_output = getattr(args, "json", False)
     keys: list[str] = getattr(args, "keys", None) or []
 
+    # P0-4: canonical key normalization — CRLF / BOM / duplicates from
+    # Windows scripts must not silently drop keys (recovery repeatedly hit
+    # '\r'-suffixed keys that never matched).
+    keys_file = getattr(args, "keys_file", None)
+    if keys_file:
+        try:
+            keys.append(Path(keys_file).read_text(encoding="utf-8-sig"))
+        except Exception as exc:  # noqa: BLE001
+            print(f"Error: cannot read keys file {keys_file}: {exc}", file=sys.stderr)
+            return 1
+    from paperforge.core.keys import normalize_paper_keys
+
+    keys = normalize_paper_keys(keys)
+
     # Backward compat: if subcommand was "doctor", diagnose
     ocr_action = getattr(args, "ocr_action", None)
     if ocr_action == "doctor" or diagnose_only:
