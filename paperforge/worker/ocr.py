@@ -57,12 +57,27 @@ def _resolve_paddleocr_token(vault: Path) -> str:
         raise
 
 
-def _paper_timeout_minutes() -> int:
-    """Per-paper OCR job timeout in minutes (default 10)."""
+def _paper_timeout_minutes(meta: dict | None = None) -> int:
+    """Per-paper OCR job timeout in minutes.
+
+    Base 10; a known long paper gets headroom (~30s per page beyond the
+    base).  A fixed 10-minute cap forced a pending→re-run round trip on
+    every batch containing a >10-minute server job (18-34 page papers),
+    which read as 'every batch has problems'.  Env
+    PAPERFORGE_PAPER_TIMEOUT_MINUTES overrides the base."""
+    base = 10
     try:
-        return max(1, int(os.environ.get("PAPERFORGE_PAPER_TIMEOUT_MINUTES", "10")))
+        base = max(1, int(os.environ.get("PAPERFORGE_PAPER_TIMEOUT_MINUTES", "10")))
     except ValueError:
-        return 10
+        pass
+    if meta:
+        try:
+            pages = int(meta.get("page_count") or 0)
+            if pages > 0:
+                return base + max(0, pages // 2)
+        except (TypeError, ValueError):
+            pass
+    return base
 
 
 def _paper_timed_out(meta: dict) -> bool:
@@ -77,7 +92,7 @@ def _paper_timed_out(meta: dict) -> bool:
         return False
     try:
         started_dt = datetime.fromisoformat(started)
-        return (datetime.now(timezone.utc) - started_dt).total_seconds() > _paper_timeout_minutes() * 60
+        return (datetime.now(timezone.utc) - started_dt).total_seconds() > _paper_timeout_minutes(meta) * 60
     except (TypeError, ValueError):
         return False
 
@@ -2765,7 +2780,7 @@ def run_ocr(
             if state in {"pending", "running"}:
                 if _paper_timed_out(meta):
                     meta["ocr_status"] = "retryable_error"
-                    meta["error"] = f"OCR job exceeded per-paper timeout ({_paper_timeout_minutes()} min)"
+                    meta["error"] = f"OCR job exceeded per-paper timeout ({_paper_timeout_minutes(meta)} min)"
                     queue_row["queue_status"] = "retryable_error"
                     active_submitted = max(0, active_submitted - 1)
                 else:
@@ -3064,7 +3079,7 @@ def run_ocr(
             else:
                 if _paper_timed_out(meta):
                     meta["ocr_status"] = "retryable_error"
-                    meta["error"] = f"OCR job exceeded per-paper timeout ({_paper_timeout_minutes()} min)"
+                    meta["error"] = f"OCR job exceeded per-paper timeout ({_paper_timeout_minutes(meta)} min)"
                     queue_row["queue_status"] = "retryable_error"
                     active_submitted = max(0, active_submitted - 1)
                 else:
