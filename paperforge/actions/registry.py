@@ -54,10 +54,16 @@ def _memory_build_preflight(ctx: ActionContext, request: ActionRequest) -> Prefl
                 f"unknown paper keys: {unknown}",
                 exit_code=2,
             )
+    per_key: tuple = ()
+    if request.scope.kind == "papers":
+        from paperforge.actions.preflight_projection import project_applicability
+
+        per_key = tuple(project_applicability(ctx.vault, "memory.build", list(request.scope.keys)))
     return PreflightResult(
         availability="available",
         availability_reason_code="action.available",
         availability_reason="Memory index can be rebuilt from the canonical library",
+        per_key=per_key,
         preservation_facts=("Existing paperforge.db remains readable during the build",),
         replacement_facts=("paperforge.db is replaced after the build",),
     )
@@ -222,10 +228,18 @@ def _ocr_rebuild_derived_preflight(ctx: ActionContext, request: ActionRequest) -
             availability_reason_code="action.config_missing",
             availability_reason="Canonical configuration is missing — run `paperforge config init`",
         )
+    per_key: tuple = ()
+    if request.scope.kind == "papers":
+        from paperforge.actions.preflight_projection import project_applicability
+
+        per_key = tuple(
+            project_applicability(ctx.vault, "ocr.rebuild_derived", list(request.scope.keys))
+        )
     return PreflightResult(
         availability="available",
         availability_reason_code="action.available",
         availability_reason="Derived artifacts can be rebuilt locally",
+        per_key=per_key,
         preservation_facts=("Raw OCR blocks stay untouched",),
         replacement_facts=("Derived artifacts are regenerated from raw blocks",),
     )
@@ -276,7 +290,8 @@ def _ocr_rebuild_derived_handler(ctx: ActionContext, request: ActionRequest) -> 
 
 
 def _ocr_run_preflight(ctx: ActionContext, request: ActionRequest) -> PreflightResult:
-    """ocr.run availability: OCR credential available (C1 seam)."""
+    """ocr.run availability: OCR credential available (C1 seam) + per-key
+    applicability projected from observation truth (M2-B)."""
     from paperforge.credentials import CredentialKey, status as credential_status
 
     cred = credential_status(CredentialKey("ocr"))
@@ -292,10 +307,16 @@ def _ocr_run_preflight(ctx: ActionContext, request: ActionRequest) -> PreflightR
             availability_reason_code=f"credential.{cred.state}",
             availability_reason="OCR credential unavailable — run `paperforge auth status ocr`",
         )
+    per_key: tuple = ()
+    if request.scope.kind == "papers":
+        from paperforge.actions.preflight_projection import project_applicability
+
+        per_key = tuple(project_applicability(ctx.vault, "ocr.run", list(request.scope.keys)))
     return PreflightResult(
         availability="available",
         availability_reason_code="action.available",
         availability_reason="OCR can run",
+        per_key=per_key,
         preservation_facts=("Existing OCR output remains available until replacement",),
         replacement_facts=("OCR provider calls may incur remote cost",),
     )
@@ -508,10 +529,16 @@ def _embed_resume_preflight(ctx: ActionContext, request: ActionRequest) -> Prefl
                 availability_reason_code="vector.substrate_incompatible",
                 availability_reason="Vector substrate requires a global rebuild — run `paperforge action run embed.build` first",
             )
+    per_key: tuple = ()
+    if request.scope.kind == "papers":
+        from paperforge.actions.preflight_projection import project_applicability
+
+        per_key = tuple(project_applicability(ctx.vault, "embed.resume", list(request.scope.keys)))
     return PreflightResult(
         availability="available",
         availability_reason_code="action.available",
         availability_reason="Vector embedding can resume",
+        per_key=per_key,
         preservation_facts=("Existing vector rows remain available until replacement commit",),
         replacement_facts=("Embedding provider calls may incur remote cost",),
     )
