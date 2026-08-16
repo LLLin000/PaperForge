@@ -376,7 +376,7 @@ def probe_lineage(vault: Path) -> dict[str, Any]:
                         and ocr_state == "current"
                         else None
                     ),
-                    "vector": None,
+                    "vector": _vector_detail(conn, key, retrieval_state),
                 },
                 # P1-D: orthogonal facts per carrier — snapshot integrity,
                 # policy currency, lineage trust (ADR-0002 §6).  A verified
@@ -994,6 +994,48 @@ def _current_embedding_identity(
     return compute_embedding_identity(
         endpoint=endpoint, model=model, dimension=int(dimension)
     )
+
+
+def _vector_detail(conn: sqlite3.Connection, key: str, retrieval_state: str) -> str | None:
+    """Why a paper has no usable vectors (owner: vector 'missing' conflates
+    distinct semantics — never built / no indexable content / not yet
+    embedded).  Layer detail only; the top-level enum stays
+    current/stale/missing/unknown."""
+    try:
+        rows = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name IN "
+            "('vec_fulltext_meta', 'vec_body_meta', 'vec_objects_meta')"
+        ).fetchall()
+        has_vec_tables = bool(rows)
+    except sqlite3.OperationalError:
+        has_vec_tables = False
+    if not has_vec_tables:
+        return "vector_never_built"  # substrate absent — full embed.build
+    has_vectors = (
+        conn.execute(
+            "SELECT 1 FROM vec_fulltext_meta WHERE paper_id = ? "
+            "UNION SELECT 1 FROM vec_body_meta WHERE paper_id = ? "
+            "UNION SELECT 1 FROM vec_objects_meta WHERE paper_id = ? "
+            "LIMIT 1",
+            (key, key, key),
+        ).fetchone()
+        is not None
+    )
+    if has_vectors:
+        return None  # top-level current/stale/unknown already explains it
+    # No vectors — distinguish no-content (legal terminal) from
+    # not-yet-embedded (actionable).
+    try:
+        units = conn.execute(
+            "SELECT (SELECT COUNT(*) FROM body_units WHERE paper_id=?) "
+            "+ (SELECT COUNT(*) FROM object_units WHERE paper_id=?)",
+            (key, key),
+        ).fetchone()[0]
+    except sqlite3.OperationalError:
+        units = 0
+    if units == 0:
+        return "vector_no_content"  # pure image/table PDF — cannot embed
+    return "vector_not_embedded"  # has content, needs embed.resume
 
 
 def _probe_vector_state(
