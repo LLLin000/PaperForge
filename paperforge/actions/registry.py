@@ -340,15 +340,30 @@ def _ocr_run_handler(ctx: ActionContext, request: ActionRequest) -> PFResult:
             error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(exc)),
         )
     per_key = sink.get("per_key", {})
-    successful = sorted(
-        k for k, s in per_key.items() if s in ("done", "done_degraded")
-    )
+    # M2-D: standardized settlement — outcome vocabulary + summary +
+    # successful_keys derived from per_key (single truth).
+    from paperforge.core.settlement import settlement_payload
+
+    outcomes = {
+        k: (
+            "succeeded"
+            if s in ("done", "done_degraded")
+            else "pending"
+            if s in ("queued", "running", "pending")
+            else "blocked"
+            if s in ("blocked", "nopdf")
+            else "failed"
+        )
+        for k, s in per_key.items()
+    }
+    settlement = settlement_payload(outcomes)
+    successful = settlement["successful_keys"]
     if rc == 0:
         return PFResult(
             ok=True,
             command="action run",
             version=PF_VERSION,
-            data={"exit_code": rc, "per_key": per_key},
+            data={"exit_code": rc, **settlement},
             successful_keys=successful,
         )
     if rc == 130:
@@ -357,7 +372,7 @@ def _ocr_run_handler(ctx: ActionContext, request: ActionRequest) -> PFResult:
             command="action run",
             version=PF_VERSION,
             error=PFError(code=ErrorCode.ACTION_CANCELLED, message="OCR cancelled"),
-            data={"exit_code": rc, "per_key": per_key},
+            data={"exit_code": rc, **settlement},
             successful_keys=successful,
         )
     # rc == 1: some items are pending (server still processing — poll
@@ -374,7 +389,7 @@ def _ocr_run_handler(ctx: ActionContext, request: ActionRequest) -> PFResult:
         ),
         data={
             "exit_code": rc,
-            "per_key": per_key,
+            **settlement,
             "pending_keys": sink.get("pending_keys", []),
             "failed_keys": sink.get("failed_keys", []),
         },
