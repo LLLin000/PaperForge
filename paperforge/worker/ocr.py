@@ -3086,6 +3086,11 @@ def run_ocr(
 
                     if isinstance(e, _requests.exceptions.HTTPError):
                         _status = getattr(getattr(e, "response", None), "status_code", 0)
+                        _body = ""
+                        try:
+                            _body = str(getattr(e.response, "text", ""))[:500]
+                        except Exception:  # noqa: BLE001
+                            pass
                         if _status == 401:
                             meta["ocr_status"] = "blocked"
                             meta["error"] = "PaddleOCR token invalid"
@@ -3094,6 +3099,21 @@ def run_ocr(
                             write_json(paths["ocr"] / key / "meta.json", meta)
                             changed += 1
                             print(f"OCR: {key} blocked (invalid API token)", flush=True)
+                            continue
+                        if _status in (400, 429):
+                            # 400: provider error codes 10001-10008 (empty /
+                            # size / format / pages / params); 429: quota or
+                            # rate limit.  Persist the body so the failure is
+                            # diagnosable without re-running (recovery hit
+                            # batch-wide 400s with no error detail).
+                            meta["error_stage"] = "upload"
+                            meta["error"] = f"upload rejected ({_status}): {_body[:200]}"
+                            meta["provider_error"] = _body
+                            meta["provider_error_status"] = _status
+                            queue_row["queue_status"] = str(meta.get("ocr_status", "error") or "error")
+                            write_json(paths["ocr"] / key / "meta.json", meta)
+                            changed += 1
+                            print(f"OCR: {key} upload rejected ({_status}): {_body[:120]}", flush=True)
                             continue
                     if isinstance(e, FileNotFoundError):
                         meta["ocr_status"] = "nopdf"
