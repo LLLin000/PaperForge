@@ -2674,6 +2674,7 @@ def run_ocr(
     stop_check: Callable[[], bool] | None = None,
     progress_callback: Callable[[str], None] | None = None,
     result_sink: dict | None = None,
+    batch_id: str | None = None,
 ) -> int:
     """#174 RC: cooperative stop at paper boundaries + per-paper progress —
     the #137 NDJSON stream (ocr.run) needs both.  Returns 130 when stopped.
@@ -2681,7 +2682,11 @@ def run_ocr(
     P0-3 (owner review): ``result_sink`` (optional dict) receives per-key
     settlement — {"per_key": {key: final_status}, "pending_keys": [...],
     "failed_keys": [...]} — so the action layer can report a successful
-    subset even when the batch overall ends pending/failed."""
+    subset even when the batch overall ends pending/failed.
+
+    G1 (Control Plane Closure): ``batch_id`` re-attaches an EXISTING
+    logical execution (ocr resume --batch) — jobs submitted by this run
+    join that batch instead of creating a new one."""
     _stopped = False
     from paperforge.pdf_resolver import resolve_pdf_path
 
@@ -3041,14 +3046,17 @@ def run_ocr(
         resp.raise_for_status()
         return resp
 
-    # F2 (Control Plane Closure): this ocr.run is ONE logical execution —
-    # every job it submits (including bounded resubmits) shares one batch
-    # id, persisted per-paper as provider_batch_id.
+    # F2/G1 (Control Plane Closure): one logical OCR execution = one batch.
+    # resume re-attaches the existing batch; a fresh run creates one.
     import secrets as _secrets
 
-    batch_id = (
-        f"pf-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}-{_secrets.token_hex(3)}"
-    )
+    if batch_id:
+        _exec_batch_id = batch_id
+    else:
+        _exec_batch_id = (
+            f"pf-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}-{_secrets.token_hex(3)}"
+        )
+    batch_id = _exec_batch_id
 
     # F4 (Control Plane Closure): ONE mutating OCR controller at a time —
     # the provider already parallelizes jobs; PaperForge never needs two
@@ -3466,5 +3474,13 @@ def run_ocr(
     except OSError:
         pass
     if _stopped:
+        # H1 (Control Plane Closure): Ctrl+C / PAPERFORGE_STOP detaches the
+        # LOCAL watcher — provider jobs keep running remotely.  meta stays
+        # queued/running; rc 130 keeps the existing cancellation contract.
+        print("", file=sys.stderr)
+        print(f"Detached from OCR batch {batch_id}.", file=sys.stderr)
+        print("Remote OCR jobs continue.", file=sys.stderr)
+        print(f"Status: paperforge ocr status --batch {batch_id}", file=sys.stderr)
+        print(f"Resume: paperforge ocr resume --batch {batch_id}", file=sys.stderr)
         return 130
     return 1 if (pending_keys or failed_count) else 0

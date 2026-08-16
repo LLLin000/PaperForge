@@ -381,13 +381,68 @@ def _run_ocr_redo(vault: Path, keys: list[str] | None = None, dry_run: bool = Fa
 
 
 
-def _run_ocr_status(vault: Path, json_output: bool = False) -> int:
+def _run_ocr_resume(vault: Path, batch_id: str, json_output: bool = False) -> int:
+    """G1 (Control Plane Closure): re-attach an EXISTING OCR execution.
+
+    Finds every paper whose meta.provider_batch_id == batch_id and is not
+    settled, then runs the normal controller over exactly those keys with
+    the SAME batch id — provider-done papers get fetched/settled,
+    queued/running continue polling, failed papers resubmit (bounded,
+    same logical batch).  This is the 'provider result fetched' recovery
+    frontier: it never re-OCRs a settled paper."""
+    import json as _json
+
+    from paperforge.worker._utils import pipeline_paths
+    from paperforge.worker.ocr import OCR_SETTLED_STATUSES, run_ocr
+
+    paths = pipeline_paths(vault)
+    ocr_root = paths.get("ocr")
+    keys: list[str] = []
+    if ocr_root and ocr_root.exists():
+        for meta_dir in sorted(ocr_root.iterdir()):
+            meta_path = meta_dir / "meta.json"
+            if not meta_path.exists():
+                continue
+            try:
+                meta = _json.loads(meta_path.read_text(encoding="utf-8"))
+            except Exception:  # noqa: BLE001 — corrupt meta has no batch
+                continue
+            if str(meta.get("provider_batch_id", "") or "") != batch_id:
+                continue
+            status = str(meta.get("ocr_status", "") or "").strip().lower()
+            if status in OCR_SETTLED_STATUSES:
+                continue
+            keys.append(meta_dir.name)
+    if not keys:
+        if json_output:
+            print(
+                _json.dumps(
+                    {"batch": batch_id, "papers": [], "message": "no unfinished papers"},
+                    ensure_ascii=False,
+                )
+            )
+        else:
+            print(f"No unfinished papers in batch {batch_id}.")
+        return 0
+    if json_output:
+        print(
+            _json.dumps(
+                {"batch": batch_id, "papers": len(keys), "resuming": True},
+                ensure_ascii=False,
+            )
+        )
+    rc = run_ocr(vault, selected_keys=set(keys), batch_id=batch_id)
+    return rc
+
+
+def _run_ocr_status(vault: Path, json_output: bool = False, batch: str | None = None) -> int:
     """Live per-paper OCR job status (owner request 2026-08-16): show every
     active provider job — key, provider state, elapsed, job id — by querying
     the provider directly, WITHOUT running the OCR loop.  Lets an operator
     watch a batch's real-time progress and decide when to re-run the poll.
 
-    Reads only meta.json (OCR-subsystem writer owns it); never mutates."""
+    Reads only meta.json (OCR-subsystem writer owns it); never mutates.
+    ``batch`` filters to one logical execution (provider_batch_id)."""
     import json as _json
 
     from pathlib import Path as _Path
@@ -409,6 +464,8 @@ def _run_ocr_status(vault: Path, json_output: bool = False) -> int:
                 continue
             status = str(meta.get("ocr_status", "") or "").strip().lower()
             job_id = str(meta.get("ocr_job_id", "") or "")
+            if batch and str(meta.get("provider_batch_id", "") or "") != batch:
+                continue
             # Show every unsettled paper: active provider jobs (queued/
             # running) AND local pending/not-yet-submitted rows — the
             # operator wants per-paper state, not just in-flight jobs.
@@ -876,7 +933,14 @@ def _run_ocr_dispatch(args, vault, json_output, ocr_action, keys, diagnose_only)
         return _run_ocr_pipeline_versions(vault, json_output=json_output)
 
     if ocr_action == "status":
-        return _run_ocr_status(vault, json_output=json_output)
+        return _run_ocr_status(vault, json_output=json_output, batch=getattr(args, "batch", None))
+
+    if ocr_action == "resume":
+        batch_id = getattr(args, "batch", None)
+        if not batch_id:
+            print("Error: ocr resume requires --batch <id>", file=sys.stderr)
+            return 2
+        return _run_ocr_resume(vault, batch_id, json_output=json_output)
 
     if ocr_action == "list":
         return _run_ocr_list(
