@@ -368,8 +368,16 @@ def _per_paper_intents(paper: PaperObservation) -> list[ActionIntent]:
             trigger_reason_code="lineage.retrieval_defect",
             trigger_reason=f"Retrieval units for {paper.key} are {paper.retrieval}",
         ))
-    # Vector depends on retrieval being current.
-    if paper.vector in ("stale", "missing") and paper.retrieval == "current":
+    # Vector depends on retrieval being current.  M1.1 (owner review):
+    # vector_no_content (0 body/object units — a pure-image PDF) is a
+    # SATISFIED terminal — NEVER emit embed.resume for it, or reconcile
+    # loops missing→embed.resume→no_content forever.
+    vector_detail = (paper.details or {}).get("vector")
+    if (
+        paper.vector in ("stale", "missing")
+        and paper.retrieval == "current"
+        and vector_detail != "vector_no_content"
+    ):
         intents.append(ActionIntent(
             action_id="embed.resume",
             scope=scope,

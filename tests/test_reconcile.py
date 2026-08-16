@@ -216,6 +216,18 @@ class TestMinimalFrontier:
         (keys), NOT a global build (P0-1 classification)."""
         vault = _lineage_vault(tmp_path)
         _set_vector_missing(vault, "KEY1")
+        # M1.1: give KEY1 content so probe sees vector_not_embedded, not
+        # vector_no_content (the satisfied terminal that suppresses resume).
+        conn = _db(vault)
+        try:
+            conn.execute(
+                "INSERT INTO body_units (unit_id, paper_id, section_path, unit_text, "
+                "page_span_json, block_span_json, token_estimate, indexable, veto_reason, quality_hints_json) "
+                "VALUES ('KEY1-u1', 'KEY1', '/', 'content', '[]', '[]', 1, 1, '', '{}')"
+            )
+            conn.commit()
+        finally:
+            conn.close()
         result = reconcile(vault)
         assert [i["action_id"] for i in result.next_actions] == ["embed.resume"]
         assert result.next_actions[0]["scope"]["keys"] == ["KEY1"]
@@ -230,6 +242,13 @@ class TestMinimalFrontier:
             for table in ("vec_fulltext_meta", "vec_body_meta", "vec_objects_meta"):
                 conn.execute(f"DELETE FROM {table}")
             conn.execute("DELETE FROM build_state")
+            # M1.1: content so the deficit is not_embedded (not the
+            # no_content terminal).
+            conn.execute(
+                "INSERT INTO body_units (unit_id, paper_id, section_path, unit_text, "
+                "page_span_json, block_span_json, token_estimate, indexable, veto_reason, quality_hints_json) "
+                "VALUES ('KEY1-u1', 'KEY1', '/', 'content', '[]', '[]', 1, 1, '', '{}')"
+            )
             conn.commit()
         finally:
             conn.close()
@@ -237,6 +256,40 @@ class TestMinimalFrontier:
         assert [i["action_id"] for i in result.next_actions] == ["embed.resume"]
         assert result.data["global"]["vector_substrate_ok"] is True
         assert result.data["global"]["reasons"] == []  # no substrate defect
+
+    # M1.1 (owner review): vector_no_content is a SATISFIED terminal — the
+    # planner must NEVER emit embed.resume for it (infinite
+    # missing→embed.resume→no_content loop).
+    @staticmethod
+    def _vector_obs(vector: str, vector_detail: str | None) -> PaperObservation:
+        from paperforge.reconcile import PaperObservation
+
+        return PaperObservation(
+            key="KEY1",
+            ocr="current",
+            retrieval="current",
+            vector=vector,
+            identities={},
+            details={"vector": vector_detail} if vector_detail else None,
+        )
+
+    def test_vector_no_content_is_terminal(self, tmp_path: Path) -> None:
+        from paperforge.reconcile import _per_paper_intents
+
+        intents = _per_paper_intents(self._vector_obs("missing", "vector_no_content"))
+        assert intents == []
+
+    def test_vector_not_embedded_emits_resume(self, tmp_path: Path) -> None:
+        from paperforge.reconcile import _per_paper_intents
+
+        intents = _per_paper_intents(self._vector_obs("missing", "vector_not_embedded"))
+        assert [i.action_id for i in intents] == ["embed.resume"]
+
+    def test_vector_stale_emits_resume(self, tmp_path: Path) -> None:
+        from paperforge.reconcile import _per_paper_intents
+
+        intents = _per_paper_intents(self._vector_obs("stale", None))
+        assert [i.action_id for i in intents] == ["embed.resume"]
 
 
 # ── scope merging ─────────────────────────────────────────────────────────
