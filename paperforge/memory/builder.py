@@ -807,9 +807,11 @@ def _incremental_units_only(conn: sqlite3.Connection, items: list[dict], ocr_roo
         try:
             _rebuild_paper_units(conn, key, paper_dir, tree_path, blocks_path, vault=vault)
             built_count += 1
-        except Exception as exc:  # noqa: BLE001 — restore-damaged artifacts (corrupt
-            # tree/blocks) must not kill the whole batch: skip the paper,
-            # leave the manifest unwritten so the next build retries it.
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            # restore-damaged artifacts (corrupt tree/blocks) must not kill
+            # the whole batch: skip the paper, leave the manifest unwritten
+            # so the next build retries it. Any OTHER exception still
+            # propagates (rollback + caller handles — test contract).
             logger.warning("memory.build: skip %s (corrupt artifacts: %s)", key, exc)
             skipped_corrupt += 1
     if skipped_corrupt:
