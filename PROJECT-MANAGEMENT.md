@@ -178,6 +178,28 @@ Every non-missing paper is OCR current + retrieval current + integrity verified.
 | R9 | 15 papers not-in-index (index entry but no Zotero item?) | To be confirmed separately | Not yet resolved | Awaiting confirmation |
 | R10 | 709 papers `missing` (unrecovered OCR) | Restore damage — the remaining unrecovered batch | Batch recovery in progress (25→50→100 per batch, then final global embed) | Re-OCR required for these (remote); then memory.build (local); then ONE global embed at the end |
 
+### 2.5 Embed State Surface (2026-08-16 — recovery final gate audit)
+
+| Layer | State | CLI control | Gap vs OCR |
+|-------|-------|-------------|------------|
+| credential | embedding key valid/invalid | `auth status embedding` ✅ | — |
+| substrate | vec0 layout / dim compatibility | `embed status` (build_state) ✅ | — |
+| shadow build | candidate building / done | `embed status` ✅ | — |
+| provider | per-paper embedding API calls | **no per-key live view** | like OCR: needs batch identity |
+| publish | shadow → live | `embed status` (published flag) ✅ | — |
+| per-paper vector | current / stale / missing | `probe lineage` (vector) ✅ | — |
+| serving | reader gate | `probe lineage` (vector current) ✅ | — |
+
+Recovery final gate findings:
+- **embed.build handler swallowed real errors** (multi-line PFResult JSON vs
+  single-line parser) — every failure showed `embed run produced no PFResult`;
+  fixed `2861adf3`; the true 401 (invalid embedding key) now surfaces.
+- **embedding API key is currently INVALID (401)** — final global embed gate
+  is blocked on a valid key (owner action: `paperforge auth set embedding --stdin`).
+- Planned (post-recovery, mirrors OCR): provider batch identity + per-key
+  embed settlement + `embed resume` re-attach semantics; keep probe as pure
+  local observation (never calls the embedding provider).
+
 ## 3. Remaining Issues — Release-Readiness Layers
 
 ### Layer 1: OCR Truth Coverage — Layout-Category Audit
