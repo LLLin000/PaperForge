@@ -2684,22 +2684,66 @@ def run_ocr(
     process_all = selected_keys is None and not target_keys
 
     target_rows = []
+    # P1-3: the CANONICAL library (formal-library → asset_index) is the
+    # authority for the main PDF locator — BBT exports may lag an
+    # attachment replacement, and uploads must target the CURRENT PDF, not
+    # the stale export locator.
+    try:
+        from paperforge.worker.asset_index import read_index as _read_index
+
+        _env = _read_index(vault)
+        _idx_items = {
+            i.get("zotero_key"): i
+            for i in (_env.get("items") if isinstance(_env, dict) else (_env or []))
+            if i.get("zotero_key")
+        }
+    except Exception:  # noqa: BLE001 — fall back to export locators
+        _idx_items = {}
     for export_path in sorted(paths["exports"].glob("*.json")):
         for item in load_export_rows(export_path):
             if not process_all and item["key"] not in target_keys:
                 continue
-            pdf_attachments = [a for a in item.get("attachments", []) if a.get("contentType") == "application/pdf"]
+            canonical_row = _idx_items.get(item["key"], {})
+            pdf_path = str(canonical_row.get("pdf_path", "") or "")
+            if not pdf_path:
+                pdf_attachments = [a for a in item.get("attachments", []) if a.get("contentType") == "application/pdf"]
+                pdf_path = pdf_attachments[0]["path"] if pdf_attachments else ""
             target_rows.append(
                 {
                     "zotero_key": item["key"],
-                    "has_pdf": bool(pdf_attachments),
-                    "pdf_path": pdf_attachments[0]["path"] if pdf_attachments else "",
+                    "has_pdf": bool(pdf_path),
+                    "pdf_path": pdf_path,
                 }
             )
     for row in target_rows:
         key = row["zotero_key"]
         meta = ensure_ocr_meta(vault, row)
         current = str(meta.get("ocr_status", "") or "").strip().lower()
+        # P1-3 trigger (owner review): a replaced attachment leaves the OCR
+        # stale (provenance_pdf_changed) even though meta says done — the
+        # queue would skip it as settled.  Detect it here and re-run against
+        # the current canonical PDF automatically, so attachment
+        # replacements self-heal through plain `ocr.run` with no manual
+        # source_pdf edit.
+        if current in ("done", "done_degraded"):
+            try:
+                from paperforge.lineage import _resolve_canonical_pdf
+                from paperforge.materialization.ocr import (
+                    PROVENANCE_PDF_CHANGED,
+                    provenance_state,
+                )
+
+                _canon = _resolve_canonical_pdf(vault, paths["ocr"] / key)
+                if provenance_state(paths["ocr"] / key, _canon) == PROVENANCE_PDF_CHANGED:
+                    meta["ocr_status"] = "pending"
+                    meta["ocr_job_id"] = ""
+                    meta["ocr_started_at"] = ""
+                    meta["ocr_finished_at"] = ""
+                    meta["recovery_reason"] = "pdf_replaced"
+                    write_json(paths["ocr"] / key / "meta.json", meta)
+            except Exception:  # noqa: BLE001 — provenance probe is best-effort
+                pass
+            current = str(meta.get("ocr_status", "") or "").strip().lower()
         if current == "error":
             stage = str(meta.get("error_stage", "") or "")
             if stage == "provider":
