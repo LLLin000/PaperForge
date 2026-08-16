@@ -70,6 +70,37 @@ class EmbeddingBuildRequest:
     force: bool = False
 
 
+def assess_embedding_preconditions(vault: Path) -> dict:
+    """M3-B: canonical embedding preconditions — package + credential
+    authority ONLY.  Obsidian plugin settings are NOT configuration
+    authority and are never read (the old CLI preflight read
+    .obsidian/plugins/paperforge/data.json).  Returns {ok, error, fix}."""
+    try:
+        import openai  # noqa: F401
+    except ImportError:
+        return {
+            "ok": False,
+            "error": "openai is not installed",
+            "fix": 'Run: pip install "paperforge[vector]"',
+        }
+    from paperforge.credentials import CredentialKey, status as credential_status
+
+    cred_state = credential_status(CredentialKey("embedding")).state
+    if cred_state == "missing":
+        return {
+            "ok": False,
+            "error": "API key not configured",
+            "fix": "Run `paperforge auth set embedding --stdin` or supply PAPERFORGE_CREDENTIAL_EMBEDDING__DEFAULT",
+        }
+    if cred_state != "available":
+        return {
+            "ok": False,
+            "error": f"Embedding credential unavailable ({cred_state})",
+            "fix": "Run `paperforge auth status embedding` for remediation",
+        }
+    return {"ok": True}
+
+
 def run_embedding_build(
     vault: Path,
     items: list[dict],

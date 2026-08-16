@@ -95,7 +95,7 @@ def _call_run(
     mock_refs: dict = {
         # Index & preflight
         "read_index": MagicMock(return_value=papers),
-        "_preflight_check": MagicMock(return_value={"ok": True}),
+        "assess_embedding_preconditions": MagicMock(return_value={"ok": True}),
         # Per-entry helpers (default: legacy fulltext path)
         "_has_body_units_in_db": MagicMock(return_value=False),
         "_has_object_units_in_db": MagicMock(return_value=False),
@@ -142,8 +142,8 @@ def _call_run(
     # M3-A: the build core moved to the embedding SERVICE; run() (CLI)
     # owns read_index + the Obsidian preflight until M3-B.  Mock each
     # layer where it lives.
-    cli_refs = {k: v for k, v in mock_refs.items() if k in ("_preflight_check", "read_index")}
-    service_refs = {k: v for k, v in mock_refs.items() if k not in ("_preflight_check", "read_index")}
+    cli_refs = {k: v for k, v in mock_refs.items() if k == "read_index"}
+    service_refs = {k: v for k, v in mock_refs.items() if k != "read_index"}
 
     patcher = patch.multiple("paperforge.services.embedding", **service_refs)
     patcher.start()
