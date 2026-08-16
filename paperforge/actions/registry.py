@@ -308,8 +308,9 @@ def _ocr_run_handler(ctx: ActionContext, request: ActionRequest) -> PFResult:
     from paperforge.worker.ocr import run_ocr
 
     keys = None if request.scope.kind == "all" else list(request.scope.keys)
+    sink: dict = {}
     try:
-        rc = run_ocr(ctx.vault, selected_keys=set(keys) if keys else None)
+        rc = run_ocr(ctx.vault, selected_keys=set(keys) if keys else None, result_sink=sink)
     except Exception as exc:  # noqa: BLE001 — structured boundary
         return PFResult(
             ok=False,
@@ -317,19 +318,31 @@ def _ocr_run_handler(ctx: ActionContext, request: ActionRequest) -> PFResult:
             version=PF_VERSION,
             error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(exc)),
         )
+    per_key = sink.get("per_key", {})
+    successful = sorted(
+        k for k, s in per_key.items() if s in ("done", "done_degraded")
+    )
     if rc == 0:
-        return PFResult(ok=True, command="action run", version=PF_VERSION, data={"exit_code": rc})
+        return PFResult(
+            ok=True,
+            command="action run",
+            version=PF_VERSION,
+            data={"exit_code": rc, "per_key": per_key},
+            successful_keys=successful,
+        )
     if rc == 130:
         return PFResult(
             ok=False,
             command="action run",
             version=PF_VERSION,
             error=PFError(code=ErrorCode.ACTION_CANCELLED, message="OCR cancelled"),
-            data={"exit_code": rc},
+            data={"exit_code": rc, "per_key": per_key},
+            successful_keys=successful,
         )
     # rc == 1: some items are pending (server still processing — poll
     # window ended) or failed.  Pending is NOT an error, it means re-run
-    # to continue polling; surface that instead of a bare 'unknown'.
+    # to continue polling; surface that instead of a bare 'unknown'.  The
+    # successful subset still propagates for downstream follow-ups (P0-3).
     return PFResult(
         ok=False,
         command="action run",
@@ -338,7 +351,13 @@ def _ocr_run_handler(ctx: ActionContext, request: ActionRequest) -> PFResult:
             code=ErrorCode.OCR_POLL_TIMEOUT,
             message="OCR: some items still processing on the server or failed — re-run to continue polling",
         ),
-        data={"exit_code": rc},
+        data={
+            "exit_code": rc,
+            "per_key": per_key,
+            "pending_keys": sink.get("pending_keys", []),
+            "failed_keys": sink.get("failed_keys", []),
+        },
+        successful_keys=successful,
     )
 
 

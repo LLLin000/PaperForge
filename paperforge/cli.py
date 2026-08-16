@@ -244,6 +244,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_ocr_versions.add_argument("--json", action="store_true")
     run_parser = ocr_sub.add_parser("run", help="Run OCR queue")
     run_parser.add_argument("keys", nargs="*", metavar="KEY", help="Paper keys to process (default: entire queue)")
+    run_parser.add_argument("--keys-file", default=None, metavar="PATH",
+                            help="File of paper keys (CRLF/BOM tolerated, deduped — P0-4)")
     doctor_parser = ocr_sub.add_parser("doctor", help="Diagnose OCR configuration and connectivity")
     doctor_parser.add_argument("--live", action="store_true", help="Run live PDF test (L4)")
     redo_parser = ocr_sub.add_parser("redo", help="Re-run OCR for papers marked ocr_redo: true")
@@ -561,6 +563,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_action_run.add_argument("action_id", help="Registered action id")
     p_action_run.add_argument("--scope", choices=["all", "papers"], default="all", help="Request scope kind (papers needs --key)")
     p_action_run.add_argument("--key", action="append", default=[], metavar="KEY", help="Paper key (papers scope; repeatable)")
+    p_action_run.add_argument("--keys-file", default=None, metavar="PATH",
+                              help="File of paper keys (one per line / whitespace / comma separated; CRLF and BOM tolerated — P0-4)")
     p_action_run.add_argument("--confirm", default=None, help="Exact action id to confirm (confirmation-required actions)")
     # T2 shipped --follow none; T6 (#167) adds auto: automatic-local
     # descendants run inline, remote/destructive stay pending.
