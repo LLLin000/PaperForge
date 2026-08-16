@@ -363,7 +363,41 @@ def read_ocr_queue(paths: dict[str, Path]) -> list[dict]:
         return deduped
 
 
+def _ocr_queue_lock(paths: dict[str, Path]):
+    """Exclusive advisory lock for ocr_queue.json (O_EXCL + stale
+    detection).  Concurrent ocr.run processes share the queue file; an
+    unlocked read-modify-write clobbers other processes' pending rows and
+    produced batch-wide '0 items processed' runs during recovery."""
+    import time as _time
+
+    lock = paths["ocr_queue"].with_name("ocr_queue.lock")
+    for _ in range(200):
+        try:
+            fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            os.close(fd)
+            return lock
+        except FileExistsError:
+            try:
+                if _time.time() - lock.stat().st_mtime > 30:
+                    lock.unlink()
+                    continue
+            except OSError:
+                pass
+            _time.sleep(0.05)
+    raise TimeoutError("ocr_queue.lock busy (concurrent writers)")
+
+
+def _ocr_queue_unlock(lock) -> None:
+    try:
+        lock.unlink()
+    except OSError:
+        pass
+
+
 def write_ocr_queue(paths: dict[str, Path], queue_rows: list[dict]) -> None:
+    """Merge-write the queue under a short lock: existing rows are kept and
+    updated, never wholesale-replaced, so a concurrent ocr.run cannot
+    clobber another process's pending rows."""
     deduped = []
     seen = set()
     for row in queue_rows:
@@ -372,7 +406,15 @@ def write_ocr_queue(paths: dict[str, Path], queue_rows: list[dict]) -> None:
             continue
         seen.add(key)
         deduped.append(row)
-    write_json(paths["ocr_queue"], deduped)
+    lock = _ocr_queue_lock(paths)
+    try:
+        existing = read_ocr_queue(paths)
+        merged = {r.get("zotero_key"): r for r in existing if r.get("zotero_key")}
+        for row in deduped:
+            merged[row["zotero_key"]] = row
+        write_json(paths["ocr_queue"], list(merged.values()))
+    finally:
+        _ocr_queue_unlock(lock)
 
 
 def sync_ocr_queue(paths: dict[str, Path], target_rows: list[dict]) -> list[dict]:
