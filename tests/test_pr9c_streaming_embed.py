@@ -139,11 +139,20 @@ def _call_run(
     if overrides:
         mock_refs.update(overrides)
 
-    patcher = patch.multiple("paperforge.commands.embed", **mock_refs)
+    # M3-A: the build core moved to the embedding SERVICE; run() (CLI)
+    # owns read_index + the Obsidian preflight until M3-B.  Mock each
+    # layer where it lives.
+    cli_refs = {k: v for k, v in mock_refs.items() if k in ("_preflight_check", "read_index")}
+    service_refs = {k: v for k, v in mock_refs.items() if k not in ("_preflight_check", "read_index")}
+
+    patcher = patch.multiple("paperforge.services.embedding", **service_refs)
     patcher.start()
+    cli_patcher = patch.multiple("paperforge.commands.embed", **cli_refs)
+    cli_patcher.start()
     try:
         rc = run(args)
     finally:
+        cli_patcher.stop()
         patcher.stop()
 
     return rc, mock_refs

@@ -722,6 +722,7 @@ def test_plain_build_model_change_routes_to_shadow(tmp_path: Path) -> None:
     from unittest.mock import patch
 
     from paperforge.commands import embed
+    from paperforge.services import embedding as embed_service
 
     vault = _make_vault(tmp_path)
     from paperforge.memory.db import get_memory_db_path
@@ -755,10 +756,10 @@ def test_plain_build_model_change_routes_to_shadow(tmp_path: Path) -> None:
         "dimension": 3, "corrupted": False, "error": "", "vector_state": "ready",
     }
     with patch("paperforge.embedding._config.get_api_model", return_value="new-model"), \
-         patch.object(embed, "get_embed_status", return_value=fake_status), \
+         patch.object(embed_service, "get_embed_status", return_value=fake_status), \
          patch.object(embed, "read_index", return_value={"items": []}), \
          patch.object(embed, "_preflight_check", return_value={"ok": True}), \
-         patch.object(embed, "ensure_vec_tables", return_value=None):
+         patch.object(embed_service, "ensure_vec_tables", return_value=None):
         rc = embed.run(args)
     # Empty index: build completes trivially; the point is no crash and the
     # requires_shadow decision is exercised (force path with shadow prepare
@@ -914,6 +915,7 @@ def test_post_publish_writes_no_legacy_snapshot(tmp_path: Path) -> None:
     from unittest.mock import patch
 
     from paperforge.commands import embed
+    from paperforge.services import embedding as embed_service
 
     vault = _make_vault(tmp_path)
     from paperforge.memory.db import get_memory_db_path
@@ -936,10 +938,10 @@ def test_post_publish_writes_no_legacy_snapshot(tmp_path: Path) -> None:
         "dimension": 3, "corrupted": False, "error": "", "vector_state": "ready",
     }
     with patch("paperforge.embedding._config.get_api_model", return_value="m"), \
-         patch.object(embed, "get_embed_status", return_value=fake_status), \
+         patch.object(embed_service, "get_embed_status", return_value=fake_status), \
          patch.object(embed, "read_index", return_value={"items": []}), \
          patch.object(embed, "_preflight_check", return_value={"ok": True}), \
-         patch.object(embed, "ensure_vec_tables", return_value=None):
+         patch.object(embed_service, "ensure_vec_tables", return_value=None):
         rc = embed.run(args)
     assert rc == 0, f"published build failed, rc={rc}"
     # new live is in place
@@ -1036,6 +1038,7 @@ def test_resume_endpoint_change_no_hash_skip(tmp_path: Path) -> None:
     from unittest.mock import patch
 
     from paperforge.commands import embed
+    from paperforge.services import embedding as embed_service
 
     vault = _make_vault(tmp_path)
     from paperforge.memory.db import get_memory_db_path
@@ -1065,10 +1068,10 @@ def test_resume_endpoint_change_no_hash_skip(tmp_path: Path) -> None:
     }
     with patch("paperforge.embedding._config.get_api_model", return_value="m"), \
          patch("paperforge.embedding._config.get_api_base_url", return_value="https://new.example/v1"), \
-         patch.object(embed, "get_embed_status", return_value=fake_status), \
+         patch.object(embed_service, "get_embed_status", return_value=fake_status), \
          patch.object(embed, "read_index", return_value={"items": []}), \
          patch.object(embed, "_preflight_check", return_value={"ok": True}), \
-         patch.object(embed, "ensure_vec_tables", return_value=None):
+         patch.object(embed_service, "ensure_vec_tables", return_value=None):
         rc = embed.run(args)
     assert rc == 0, f"endpoint-change shadow must succeed, rc={rc}"
     # Shadow ran: live was replaced by the candidate (no .build leftover).
@@ -1085,6 +1088,7 @@ def test_post_publish_nonjson_bookkeeping_failure(tmp_path: Path) -> None:
     from unittest.mock import patch
 
     from paperforge.commands import embed
+    from paperforge.services import embedding as embed_service
 
     vault = _make_vault(tmp_path)
     from paperforge.memory.db import get_memory_db_path
@@ -1100,10 +1104,10 @@ def test_post_publish_nonjson_bookkeeping_failure(tmp_path: Path) -> None:
         "dimension": 3, "corrupted": False, "error": "", "vector_state": "ready",
     }
     with patch("paperforge.embedding._config.get_api_model", return_value="m"), \
-         patch.object(embed, "get_embed_status", return_value=fake_status), \
+         patch.object(embed_service, "get_embed_status", return_value=fake_status), \
          patch.object(embed, "read_index", return_value={"items": []}), \
          patch.object(embed, "_preflight_check", return_value={"ok": True}), \
-         patch.object(embed, "ensure_vec_tables", return_value=None):
+         patch.object(embed_service, "ensure_vec_tables", return_value=None):
         rc = embed.run(args)
     assert rc == 0, f"published non-json failure must return 0, rc={rc}"
     assert Path(str(live)).exists()
@@ -1187,6 +1191,7 @@ def test_default_to_custom_endpoint_triggers_shadow(tmp_path: Path) -> None:
     from unittest.mock import patch
 
     from paperforge.commands import embed
+    from paperforge.services import embedding as embed_service
 
     vault = _make_vault(tmp_path)
     from paperforge.memory.db import get_memory_db_path
@@ -1216,7 +1221,7 @@ def test_default_to_custom_endpoint_triggers_shadow(tmp_path: Path) -> None:
     with patch("paperforge.embedding._config.get_api_model", return_value="m"), \
          patch("paperforge.embedding._config.get_effective_api_base_url",
                return_value="https://custom.example/v1"), \
-         patch.object(embed, "get_embed_status", return_value=fake_status), \
+         patch.object(embed_service, "get_embed_status", return_value=fake_status), \
          patch.object(embed, "read_index", return_value={"items": []}), \
          patch.object(embed, "_preflight_check", return_value={"ok": True}), \
          patch("paperforge.embedding.dim_detect.detect_embedding_dim", return_value=3):
@@ -1520,7 +1525,7 @@ def test_force_overrides_recover_candidate(tmp_path: Path, monkeypatch) -> None:
     """RC UX Seam: --force / embed.build wipes a surviving candidate and
     rebuilds from scratch; resume keeps it.  The recover path must be
     unreachable when force=True."""
-    from paperforge.commands.embed import run_build
+    from paperforge.services.embedding import run_embedding_build as run_build
     from paperforge.embedding.build_target import ShadowBuild
 
     monkeypatch.setenv("PAPERFORGE_CREDENTIAL_EMBEDDING__DEFAULT", "sk-test-fake-key")

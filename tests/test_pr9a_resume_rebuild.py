@@ -16,7 +16,7 @@ from paperforge.worker._utils import pipeline_paths as _pipeline_paths_impl
 paperforge.config.pipeline_paths = _pipeline_paths_impl
 
 from paperforge.commands.ocr import _needs_derived_rebuild, _select_rebuild_keys
-from paperforge.commands.embed import _pid_alive
+from paperforge.services.embedding import _pid_alive
 from paperforge.worker.ocr_rebuild import _apply_post_rebuild_version_flags
 
 # ---------------------------------------------------------------------------

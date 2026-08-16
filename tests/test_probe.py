@@ -1042,7 +1042,7 @@ class TestMemoryConcreteFixes:
                         "pid": 999999, "started_at": "2026-08-13T00:00:00+00:00"},
         )
         monkeypatch.setattr(
-            "paperforge.commands.embed._pid_alive", lambda pid: False)
+            "paperforge.services.embedding._pid_alive", lambda pid: False)
 
         data = probe_mod.probe_memory(tmp_path)
         assert data["capability_state"] == "needs_action"
