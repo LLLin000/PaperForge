@@ -3030,12 +3030,47 @@ def run_ocr(
             resp = requests.post(
                 job_url,
                 headers={"Authorization": f"bearer {token_val}"},
-                data={"model": model, "optionalPayload": json.dumps(optional_payload)},
+                data={
+                    "model": model,
+                    "optionalPayload": json.dumps(optional_payload),
+                    "batchId": batch_id,  # F2: one logical execution = one batch
+                },
                 files={"file": file_handle},
                 timeout=120,
             )
         resp.raise_for_status()
         return resp
+
+    # F2 (Control Plane Closure): this ocr.run is ONE logical execution —
+    # every job it submits (including bounded resubmits) shares one batch
+    # id, persisted per-paper as provider_batch_id.
+    import secrets as _secrets
+
+    batch_id = (
+        f"pf-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}-{_secrets.token_hex(3)}"
+    )
+
+    # F4 (Control Plane Closure): ONE mutating OCR controller at a time —
+    # the provider already parallelizes jobs; PaperForge never needs two
+    # concurrent ocr.run/resume controllers (the queue-file merge lock only
+    # covered the write instant).  Read-only observers (ocr status, probe)
+    # never take this lock.
+    _controller_lock = paths["ocr"] / "controller.lock"
+    try:
+        _fd = os.open(_controller_lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        os.close(_fd)
+    except FileExistsError:
+        try:
+            if (datetime.now(timezone.utc).timestamp() - _controller_lock.stat().st_mtime) > 30:
+                _controller_lock.unlink()  # stale — crashed holder
+                _fd = os.open(_controller_lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+                os.close(_fd)
+            else:
+                print("OCR: another controller is running — re-run later", file=sys.stderr)
+                return 1
+        except FileExistsError:
+            print("OCR: another controller is running — re-run later", file=sys.stderr)
+            return 1
 
     # Combined upload + poll loop: process all items in batches up to max_items concurrency
     import time as _time
@@ -3147,6 +3182,7 @@ def run_ocr(
                 try:
                     response = retry_with_meta(_do_upload, paths["ocr"] / key / "meta.json", token, upload_pdf)
                     meta["ocr_job_id"] = response.json()["data"]["jobId"]
+                    meta["provider_batch_id"] = batch_id  # F2: execution identity
                 except Exception as e:
                     if _sanitized_temp is not None and _sanitized_temp.exists():
                         _sanitized_temp.unlink(missing_ok=True)
@@ -3211,18 +3247,42 @@ def run_ocr(
             if _sanitized_temp is not None and _sanitized_temp.exists():
                 _sanitized_temp.unlink(missing_ok=True)
         poll_items = [r for r in remaining if r.get("queue_status") in ("queued", "running")]
+        # F3 (Control Plane Closure): batch observer — ONE provider request
+        # per cycle for the whole logical batch; per-paper settle below is
+        # unchanged.  If the batch endpoint is unavailable, or a done job's
+        # payload lacks the result URL, that job falls back to the existing
+        # per-job poll (never a single point of failure).
+        _batch_states: dict[str, tuple[str, dict]] = {}
+        try:
+            from paperforge.providers.paddleocr import PaddleOCRProvider
+
+            _prov = PaddleOCRProvider(token, job_url, model, optional_payload)
+            for _jid, (_st, _pl) in _prov.get_batch_status(batch_id).items():
+                _s = _st.value
+                if _s == "done" and not (
+                    isinstance(_pl.get("resultUrl"), dict) and _pl["resultUrl"].get("jsonUrl")
+                ):
+                    continue  # no result URL in batch payload → per-job fetch
+                _batch_states[_jid] = (_s, _pl)
+        except Exception:  # noqa: BLE001 — batch observer degrades to per-job
+            _batch_states = {}
         for queue_row in poll_items:
             key = queue_row["zotero_key"]
             meta = ensure_ocr_meta(vault, queue_row)
             job_id = meta.get("ocr_job_id", "")
             if not job_id:
                 continue
-            try:
-                response = retry_with_meta(_do_poll, paths["ocr"] / key / "meta.json", job_id, token)
-                payload = response.json()["data"]
-                state = payload["state"]
-            except Exception:
-                continue
+            _bh = _batch_states.get(str(job_id))
+            if _bh is not None:
+                state = _bh[0]
+                payload = _bh[1]
+            else:
+                try:
+                    response = retry_with_meta(_do_poll, paths["ocr"] / key / "meta.json", job_id, token)
+                    payload = response.json()["data"]
+                    state = payload["state"]
+                except Exception:
+                    continue
             if state == "done":
                 try:
                     result_url = payload["resultUrl"]["jsonUrl"]
@@ -3401,6 +3461,10 @@ def run_ocr(
         ]
     # Fail closed: blocked (e.g. invalid/missing API token) and error items
     # are NOT a successful run — the frontend shows "OCR complete" on rc 0.
+    try:
+        _controller_lock.unlink()  # F4: release the mutating controller
+    except OSError:
+        pass
     if _stopped:
         return 130
     return 1 if (pending_keys or failed_count) else 0
