@@ -18,6 +18,33 @@ def build_structure_tree(
     """
     if not heading_events:
         paper_id = structured_blocks[0].get("paper_id", "") if structured_blocks else ""
+        # 2026-08-16 (owner R5): a section-less document (letter, editorial,
+        # supplement) is a LEGAL document structure, but an empty tree is
+        # not a legal materialization — it would fail the "tree must exist"
+        # invariant while the document clearly has indexable content.
+        # Emit a synthetic root carrying the unowned blocks; a genuinely
+        # empty document (no blocks at all) still yields an empty tree and
+        # stays incomplete. This keeps the state contract strict with NO
+        # tree_empty exception.
+        block_ids = [b.get("block_id") for b in structured_blocks if b.get("block_id")]
+        if block_ids:
+            return {
+                "paper_id": paper_id,
+                "nodes": [
+                    {
+                        "node_id": "root",
+                        "title": "",
+                        "section_title": "",
+                        "section_level": 0,
+                        "level": 0,
+                        "kind": "section",
+                        "children": [],
+                        "synthetic": True,
+                        "own_block_ids": block_ids,
+                        "subtree_block_ids": block_ids,
+                    }
+                ],
+            }
         return {"paper_id": paper_id, "nodes": []}
 
     heading_events = sorted(heading_events, key=lambda h: h["emitted_order"])
