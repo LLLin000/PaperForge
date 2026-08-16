@@ -369,6 +369,7 @@ def probe_lineage(vault: Path) -> dict[str, Any]:
                 # not_started / ran_but_empty / tree_missing / tree_empty.
                 "details": {
                     "ocr": _ocr_detail(_ocr_dir, canonical_pdf=_canonical_pdf),
+                    "ocr_execution": _ocr_execution_detail(_ocr_dir),
                     "retrieval": (
                         "manifest_missing"
                         if retrieval_state in ("missing", "incomplete")
@@ -742,6 +743,33 @@ def _probe_ocr_state(
     if istate is None:
         return "unknown", None
     return istate, ihash
+
+
+def _ocr_execution_detail(paper_dir: Path | None) -> dict | None:
+    """Provider-execution snapshot persisted in meta (the OCR subsystem is
+    its writer).  Distinguishes 'never submitted' from 'submitted, provider
+    processing' from 'provider rejected' at probe time WITHOUT querying the
+    provider — real-time provider state belongs to `ocr status`, a
+    read-only explicit command.  This is observation of the local truth,
+    never a mutation."""
+    if paper_dir is None or not paper_dir.exists():
+        return None
+    from paperforge.materialization.ocr import read_meta
+
+    meta = read_meta(paper_dir)
+    if not meta:
+        return None
+    status = str(meta.get("ocr_status", "") or "").strip().lower()
+    if status not in ("queued", "running", "pending"):
+        return None  # settled — no execution in flight
+    return {
+        "local_status": status,
+        "job_id": str(meta.get("ocr_job_id", "") or "")[:12] or None,
+        "job_attempt": meta.get("job_attempt"),
+        "provider_error_status": meta.get("provider_error_status"),
+        "started_at": str(meta.get("ocr_started_at", "") or "") or None,
+        "recovery_reason": meta.get("recovery_reason"),
+    }
 
 
 def _ocr_detail(paper_dir: Path | None, canonical_pdf: Path | None = None) -> str | None:
