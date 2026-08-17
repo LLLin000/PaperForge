@@ -1,10 +1,10 @@
-> **Branch:** `master` | **Last Updated:** 2026-08-16
+> **Branch:** `master` | **Last Updated:** 2026-08-17
 >
-> **Active work:** Post-incident hardening on `master`: 2026-08-14 prune `rmtree` incident (production vault root deleted by `shutil.rmtree(Path(), ignore_errors=True)`) fully contained and fixed — trash architecture (`worker/trash.py`, delete = move + manifest + restore), unified residual detection (Zotero authority across workspace/FTS/vector/OCR carriers), Smart Retrieval panel rendered single-source from the probe envelope, pre-commit + CI reject the accident patterns. Literature-hub production vault is being recovered (DiskGenius + exports copy + intact paperforge.db + Zotero outside vault); do NOT run destructive PaperForge operations against it until the owner confirms restoration. Release remains owner-gated by #81.
+> **Active work:** 2026-08-14 recovery incident **CLOSED**. Final production census is frozen at **958 = 938 OCR/retrieval current + 19 `nopdf` + 1 `pdf_missing` (4VPYIVAS)**; vector serving is revalidated at **935 current + 3 `no_content`**. Release is now in the M4 RC owner-gate phase (`#81`); no release/tag/package publication is authorized.
 >
 > ---
 >
-> **Current state:** Release-hardening series on `master`: shadow vector rebuild with commit-point `os.replace` publish, per-DB re-entrant WriterLock + reader barrier, unified vector identity (VECTOR_IDENTITY_VERSION=1), stop control-plane sidecar with honest rc, six-table layout verifier; runtime deps closure (paperforge[vector], sqlite_vec gate in embed status + probe memory); frontend EmbedBuildController (real child handle, confirm modal, cooperative stop, dispose-on-unload); single tag-release workflow with version/tag gate + one GitHub Release + checksums; alls-green now a real gate. CI-red baseline faults fixed: missing versions.json 1.5.14/1.5.15 rows, `.[test]` lacking vector extras, 12 undefined-name F821s (incl. one #119 typo), 3 pre-existing plugin test faults.
+> **Current state:** Recovery materialization and serving are revalidated. Control Plane Closure is complete: M1 OCR Execution Control, M1.1 execution invariants, M2 CLI/Action Contract, and M3 Embed Closure are closed. Architecture hardening is frozen; the remaining non-blocking debt is the EmbeddingService stdout relay, to be removed after RC and before the Goal/Ensure kernel. Active work is the RC gate matrix, static/integration/live validation, and owner release decision.
 ## 1. Architecture
 
 ### 1.1 The problem (pre-v2)
@@ -53,6 +53,7 @@ raw observations → structural signatures → stable anchors/families → zone 
 | Full OCR regression suite | **1278 passed, 8 pre-existing failures, 275 skipped** ✅ |
 | Focused merge suite (v3 + tail settlement + writeback + appendix numbering + rendering) | **105 passed, 0 failed** ✅ |
 | Layer 2 quality + feedback tests | **22 passed, 0 failed** ✅ (17 quality + 5 feedback) |
+| Control Plane Closure (M1–M3, 2026-08-17) | **147 passed, 7 skipped** across embed eligibility/scoped/resume, action registry, T7 journey, architecture boundaries, shadow rebuild, and integration gates; M3-C architecture exemption allowlist is empty; final M3-E/F gate passed after the last mutation ✅ |
 | Full vault corpus diff: legacy vs v3 (555 papers) | **547/555 no diff, 5/555 v3 improvement** ✅ |
 | 86-paper pre-merge corpus diff | **86/86 no diff** ✅ |
 | 6 fixture-backed v3 parity gates | **6/6 pass** ✅ |
@@ -160,47 +161,43 @@ raw observations → structural signatures → stable anchors/families → zone 
 | 47 | — | Smart Retrieval's live “构建索引” first crashed on function-local vector imports, then surfaced only an exit code; after transport recovery it falsely reported failure although indexing completed; a ready page retained a warning impact box | Local imports shadowed module helpers; stderr was discarded; `write_vector_runtime` referenced `object_chunk_count` without accepting it; the impact renderer treated every non-`"ready"` reason string as action-required | Hoist vector helpers, display final stderr diagnostic, declare SOCKS transport for proxy-backed OpenAI SDKs, add `object_chunk_count` to the snapshot contract, and render impact only for `needs_action` | — |
 | 48 | — | OCR workspace table width not adapting; action column (预览) invisible; old flex-based `.pf-ocr-ws-table` CSS conflicted with real `<table>` layout; command names had duplicate "PaperForge:" prefix; ribbon icon and ctrl+p command both existed but one command name was malformed | Old section 1 flex CSS (.pf-ocr-ws-table { display: flex }) overrode section 2 table-layout: fixed; `.pf-ocr-ws-col-date` lacked nowrap/muted styling; command names hardcoded "PaperForge:" prefix causing Obsidian double-prefix | Remove conflicting old flex-based table CSS, add `min-width: 0` on title column, add nowrap/muted styling on date column, fix all command name prefixes | — |
 | 49 | — | Disposable-vault real UI audit found stale credential truth, 30s probe deadline, missing credential remediation, hidden/incorrect cancellation state, stale embed failure/corruption truth, action-policy drift, dashboard reopen/setup dead ends, raw i18n keys, and OCR NDJSON stdout contamination/scope loss | Multiple projection seams bypassed their owners: dashboard cached flags, probe-owned policy metadata, legacy process fields, and worker human stdout leaked into machine streams | Route dashboard credential status through Python auth; project registered action policy in probe; strict-clean OCR NDJSON and explicit scope; controller-owned Stop/cancel/error truth; pristine vector DB = not-built; 60s probe deadline; awaited dashboard reveal; direct Setup/OCR remediation; complete translations. Evidence: `System/PaperForge/audits/ui-e2e-findings.json` in disposable audit vault. | — |
-### 2.4 Recovery Issues Log (2026-08-14 incident follow-up — unified check 2026-08-16)
+### 2.4 Recovery Incident (2026-08-14 — **CLOSED** 2026-08-16)
 
-Full-library census (2026-08-16, probe lineage, 948 papers): **current 238 / missing 709 / incomplete 1 / stale 0**.
-Every non-missing paper is OCR current + retrieval current + integrity verified. Remaining work = the 709 missing (unrecovered restore-damaged OCR) + 1 known exception.
+The recovery event is closed. The final mutually exclusive census is frozen in `indexes/recovery-census-final.json`:
 
-| # | Issue | Root cause | Fix | Impact (re-OCR / rebuild / embed + old users) |
-|---|-------|-----------|-----|-----------------------------------------------|
-| R1 | 128 papers `publish_metadata_missing` (result-hash.txt lost) | Restore damage deleted `index/result-hash.txt` for previously-good OCR (8-12), not just damaged papers | `ocr.rebuild_derived` re-publishes the hash; 117 files-ok papers rebuilt in 3 batches (the 1 empty-dir pair `2BKLX9I4`/`2C5VZJXN` were never OCR'd, not restore damage) | **No re-OCR needed** (files intact; local rebuild only). Old users with missing hash: one local rebuild per paper, no remote cost |
-| R2 | Rebuilt legacy papers stayed `provenance_unknown` forever | `rebuild_derived` published the hash but did not rebuild `meta.raw_version`; pre-P0-B OCR has no `raw_blocks_hash` → fail-closed provenance_unknown | `rebuild_derived` now also repairs `raw_version` (raw_blocks_hash + pdf_fingerprint) from the canonical PDF | **No re-OCR / no re-embed**. Old users: one local rebuild turns a legacy paper current; new OCR unaffected. Commit `c023c89c` |
-| R3 | 3 papers permanently `provenance_pdf_changed` (stale) even after re-OCR | Postprocess (and rebuild repair) computed `compute_pdf_fingerprint(Path(source_pdf))` directly; formal-library `pdf_path` is a `[[wikilink]]` → path never resolves → fp=unknown | Strip `[[ ]]` and resolve vault-relative before fingerprinting (both postprocess + rebuild repair) | **No re-OCR needed** — rebuild_derived backfills the real fp. Old users with fp=unknown: one rebuild per paper → current. New OCR computes correct fp. Commit `9a037a36` |
-| R4 | `7KGJMJXU` meta.json was binary garbage (2858 B random bytes) | Restore damage (one of the 682 unreadable metas) — OCR files intact but meta unrecoverable | Reset minimal meta (pending + pdf_path from index) → re-OCR (21 pages) | **Re-OCR required** (meta is OCR-subsystem-owned; no meta-rebuild path exists). Old users with corrupt meta: same path — reset + re-OCR |
-| R5 | `8LZUYXMH` `tree_empty` (incomplete) | Supplementary-only PDF (3 tables + 2 text pages, **no section headings**) — tree construction correctly yields 0 nodes; not a code defect | **Known exception, open decision**: accept tree_empty as valid for section-less documents (relax contract) vs leave incomplete (blocks embed). 1 paper only | No re-OCR value (re-OCR returns the same 10 blocks). Decision needed before final embed |
-| R6 | 30-key `rebuild_derived` batch returned `error: unknown` with no per-key detail | Action reports overall failure if ANY key fails; empty-dir / never-OCR'd keys fail rebuild but the batch has no per-key breakdown in the error surface | Worked around by classifying files first (files-ok subset). **Not fixed**: action error should carry per-key outcomes | n/a (CLI ergonomics) |
-| R7 | Key list from file picked up `\r` (CRLF) → `unknown paper keys` | Windows line endings in the generated key list | `tr -d '\r'` when generating lists | n/a (one-off scripting) |
-| R8 | post-OCR refresh degraded warning: OCR version scan skipped (0xa2 meta) | One legacy meta contains 0xa2 bytes (mojibake); version scan skips it | Tolerated (refresh proceeds; warning only). Final cleanup deferred | No re-OCR needed; cosmetic |
-| R9 | 15 papers not-in-index (index entry but no Zotero item?) | To be confirmed separately | Not yet resolved | Awaiting confirmation |
-| R10 | 709 papers `missing` (unrecovered OCR) | Restore damage — the remaining unrecovered batch | Batch recovery in progress (25→50→100 per batch, then final global embed) | Re-OCR required for these (remote); then memory.build (local); then ONE global embed at the end |
+| Authority | Final state |
+|-----------|-------------|
+| Library census | **958 total = 938 OCR/retrieval current + 19 `nopdf` + 1 `pdf_missing` (`4VPYIVAS`)** |
+| Integrity | **938 current papers verified** across OCR, retrieval, and materialization integrity |
+| Vector substrate | **935 vector-current + 3 `no_content`**; `nopdf`/`pdf_missing` excluded by eligibility |
+| Serving | **Smoke verified**: `retrieve "cartilage repair"` returns real hits |
 
-### 2.5 Embed State Surface (2026-08-16 — recovery final gate audit)
+`nopdf` is a valid terminal state for URL-only entries. `4VPYIVAS` is a blocked source state because its index claims a PDF but the file is missing; it is not `nopdf`. This is a user-side recovery item and does not block the RC code freeze.
 
-| Layer | State | CLI control | Gap vs OCR |
-|-------|-------|-------------|------------|
-| credential | embedding key valid/invalid | `auth status embedding` ✅ | — |
-| substrate | vec0 layout / dim compatibility | `embed status` (build_state) ✅ | — |
-| shadow build | candidate building / done | `embed status` ✅ | — |
-| provider | per-paper embedding API calls | **no per-key live view** | like OCR: needs batch identity |
-| publish | shadow → live | `embed status` (published flag) ✅ | — |
-| per-paper vector | current / stale / missing | `probe lineage` (vector) ✅ | — |
-| serving | reader gate | `probe lineage` (vector current) ✅ | — |
+**Impact:** documentation-only closure record. No re-OCR, rebuild, or embed is required; existing users see no behavior change.
 
-Recovery final gate findings:
-- **embed.build handler swallowed real errors** (multi-line PFResult JSON vs
-  single-line parser) — every failure showed `embed run produced no PFResult`;
-  fixed `2861adf3`; the true 401 (invalid embedding key) now surfaces.
-- **embedding API key is currently INVALID (401)** — final global embed gate
-  is blocked on a valid key (owner action: `paperforge auth set embedding --stdin`).
-- Planned (post-recovery, mirrors OCR): provider batch identity + per-key
-  embed settlement + `embed resume` re-attach semantics; keep probe as pure
-  local observation (never calls the embedding provider).
+### 2.5 Control Plane Closure (2026-08-17 — **CLOSED**)
 
+| Milestone | Closed contract | Evidence / commits |
+|-----------|-----------------|--------------------|
+| M1 | OCR execution control: `batch_id`, provider observer, lock recovery, resume, Ctrl+C detach | `cac9b611`, `9178d654`, `bb76e3f0` |
+| M1.1 | `no_content` is terminal-satisfied; write-ahead submission marker; bounded provider jobs; submitting state visible | `b6bf4e17`, `9889b973` |
+| M2 | Orthogonal availability × applicability preflight, derived settlement, six-event NDJSON contract, architecture boundaries | `1a7430b5`, `744d73cf`, `13f8d544` |
+| M3 | EmbeddingService boundary, canonical retrieval-truth eligibility, direct Action→Service handlers, thin CLI adapter, `paper_settled`, build/resume selector parity | `3891da12`, `033a7fee`, `1b43faef`, `f6e5db35`, `30cbfc65`, `cbc66579`, `fd75deaf` |
+
+Known deferred debt: **EmbeddingService stdout relay**. It is a presentation-channel debt, not an ownership, materialization, recovery, or release-contract defect: Actions do not call CLI handlers, Services do not import `paperforge.commands`, structured PFResult remains execution truth, and the relay does not participate in business decisions. Remove it after RC and before Goal/Ensure.
+
+**Impact:** closure record only. M1–M3 changes do not require re-OCR, rebuild, or embed for existing users; M3 adds one standard `paper_settled` NDJSON event for stream consumers.
 ## 3. Remaining Issues — Release-Readiness Layers
+
+### M4 RC Gate Policy
+
+M4 is a validation and release-decision phase, not a feature-development phase. The candidate is frozen after the closure commit; only a verified release blocker may change it.
+
+- **BLOCKER:** data corruption or loss, wrong owner/authority, silent fallback, false state, unrecoverable execution, install/upgrade/rollback failure, or broken CLI/machine contract. Fix it, then rerun the affected gate.
+- **NON-BLOCKER:** cosmetic, ergonomic, optimization, or post-RC architecture debt. Record it in the RC matrix and do not change the candidate.
+- The unique acceptance source is `project/current/2026-08-17-rc-gate-matrix.md`. Every test and live smoke result must attach evidence to a row.
+- RC priority is: CLI behavior in success/failure/cancel/offline/invalid-input cases; complete user-to-screen call chains; one authoritative state machine per domain; and complete preflight/postcondition/re-observation checks.
 
 ### Layer 1: OCR Truth Coverage — Layout-Category Audit
 **Workstream X complete.** 11 papers audited across 6 layout classes, verified via vision subagents. 6 real bug patterns identified. Full report: `docs/superpowers/analysis/2026-07-05-layout-truth-audit-findings.md`
@@ -253,7 +250,7 @@ Remaining legacy OCR issues (carried forward):
 
 ## 4. Active Queue
 
-0. 🟡 **[#135 Wayfinder — Return PaperForge product authority to Python](https://github.com/LLLin000/PaperForge/issues/135)** — map **complete** (9 frozen decisions #137/#143/#144/#145/#146/#148/#149/#158/#159; 13 ready-for-agent issues #161–#174 with verified DAG; re-closed after handoff). **C0 (#172) merged** (#176) and **R (#161) merged** (#175, review closure `f14285cd`, CI all green incl. J-Matrix 3-OS). **T1 (#162) complete** (merged #177 + corrective #178) and **T2 (#163) complete** (action registry + runner + CLI, #181-suffixed corrective #185): digest lineage publish + probe lineage — `paperforge/lineage.py` (content-addressed identities, `write_vector_lineage` atomic with shadow publish, fail-closed probe); corrective threaded `(state, identity)` through the probe chain (normal OCR publish / policy bump → retrieval stale; new retrieval publish → old vectors stale) and canonicalized collector digests CRLF/LF (P1). Python 2958 passed / 296 skipped; CI 14/14. **C1 (#173) complete** (merged #179 + #180 + final #181): credential authority (keyring>=25) — `paperforge/credentials.py` (env→keyring→missing, no plaintext fallback), `auth status/set/delete/migrate` (stdin-only secrets), consumers migrated; correctives: store() full-path rollback, SecretStorage migration-only bridge incl. **profile-hashed legacy embedding id** (migration knowledge only), desktop canonical-env redaction, fail-loud backend faults, preflight pure status read model. Python 2989 passed / 296 skipped, vitest 426/426, tsc/ruff clean. **T2 (#163) implemented this session** — `paperforge/actions/` (types/registry/runner): ACTION_REGISTRY (memory.build/embed.resume, all-scope only), invariant validation (unique ids, one handler+preflight, remote_possible/destructive ⇒ confirmation, no command/argv), runner pipeline (lookup fail-closed → scope validation → preflight → confirmation gate → handler → PFResult), `action list/describe/run` CLI (exit 2/3/1/0/130, SIGINT→cancelled), follow-up chain (MAX_DEPTH=4, dedupe, --follow none/auto, pending/executed/skipped), preflight consumes C0 config + C1 credential status. Python 3047 passed / 296 skipped. **T2 closed** (#182+#183), **T3 closed** (#184 + corrective #186: early key validation, no scoped substrate init, global hash all-scope-only), **T4 closed** (#185 + corrective #187: lineage paper_ids filter fixed, requested_resume routing). **Frontier: T5 (#166 reconcile).**
+0. 🔒 **M4 Release Candidate validation** — Control Plane Closure is complete and the code candidate is frozen. Run the unique RC gate matrix covering #81's ten acceptance criteria, recovery/materialization invariants, CLI call chains, state-machine authority, and pre/post checks. **#81 remains open + `ready-for-human`; no release/tag/package publication.**
 1. ✅ **[Architecture Audit #131/#132](https://github.com/LLLin000/PaperForge/issues/131)** — **accepted and closed** (Slices A+B; commits `73a782cf`–`d6c9afb0`). Audit report hardened v1→v4 (`e94895a1`→`7567dd2c`), third external review BLOCKER fixed: `repository_state` now semantic Survey content, Audit single gate authority.
 1. ✅ **[Product lane #127/#126/#129/#99](https://github.com/LLLin000/PaperForge/issues/127)** — all four **accepted and closed** (next_actions policy, OCR Workspace closure, restore semantics, redo internal-only). Product lane complete.
 2. ✅ **[#133 Deterministic collectors](https://github.com/LLLin000/PaperForge/issues/133)** — **ACCEPTED and closed** (owner acceptance 2026-08-07). Python AST + TS compiler collectors + orchestrator → Survey → #131 `reconcile()`; three-tier extraction, fail-closed coverage, unresolved-evidence seam. `collectors.deterministic` Contract lifecycle promoted planned→active at `3eb17ae9`.
@@ -270,6 +267,17 @@ Remaining legacy OCR issues (carried forward):
 14. 🟡 **Downstream tooling** — section-aware chunking and separate figure/table handling (**deferred**).
 15. ⏳ **Compatibility naming cleanup** — deferred post-release.
 ### 4.1 Immediate Next Steps
+
+**M4 sequence:**
+- [x] Close the recovery incident and Control Plane Closure in the ledger.
+- [ ] Freeze the RC snapshot: candidate SHA, version, Python/plugin bundle, schema/identity versions, and production census.
+- [ ] Run the static release gate: Python, plugin, typecheck/build, architecture boundaries, destructive-delete guard, registry invariants, workflow/checksum/version gates.
+- [ ] Run fresh-install, upgrade, rollback, offline, credential, schema-v2, and managed-runtime gates.
+- [ ] Run fresh-vault and existing-vault end-to-end CLI/user-chain smoke, including interruption/resume and failure surfaces.
+- [ ] Re-run only gates affected by any verified blocker; record non-blockers as post-RC debt.
+- [ ] Owner decides release version, publication, and support window; keep #81 open until that decision.
+
+Unique matrix: `project/current/2026-08-17-rc-gate-matrix.md`.
 
 - [x] OCR rebuild streaming protocol
 - [x] Canonical All/Recommended maintenance filters
@@ -392,6 +400,7 @@ Remaining legacy OCR issues (carried forward):
 
 | Date | Decision | Rationale |
 |------|----------|-----------|
+| 2026-08-17 | Recovery + Control Plane Closure | Recovery CLOSED: frozen 958-paper census, 938 OCR/retrieval current, 935 vector-current + 3 `no_content`, serving smoke verified. M1/M1.1/M2/M3 CLOSED; architecture frozen; M4 RC gate matrix and owner decision are now the only active work. | §2.4–§4 |
 | 2026-08-16 | Every code change must annotate re-run requirements + old-user impact | During recovery, un-annotated changes forced repeated remote OCR/embed runs ("白费力气" — owner). Commit bodies now carry `Impact: re-OCR / rebuild / embed: none|keys|all` + `old users:` so the operator batches or skips re-runs correctly. Recorded §7.3.1. |
 | 2026-08-16 | Two-tier tool surface: stable CLI + deep dev API, never per-task `python -c` | Recovery diagnostics repeatedly re-invoked internal functions via ad-hoc `python -c` (read_index / _resolve_canonical_pdf / compute_ocr_result_hash / provenance_state) — works but is not a stable surface. Product/plugin/agent face the frozen `paperforge <cmd>` CLI (registry actions + probe; fixed args, JSON/NDJSON schemas); developer/advanced-user diagnostics may stay deeper but must be reachable through a FIXED script or dev command, not per-task inline code. Implement post-recovery (owner: "不急"). |
 | 2026-08-16 | Goal/ensure orchestrator: agreed direction, deferred post-recovery (attachment review) | External review of the post-incident architecture: actions stay atomic primitives; a thin `ensure <goal>` layer (ocr.current / retrieval.current / vector.current / serving.ready) plans from observation and re-observes after each action (the chain.py pattern generalized); reconcile must stop giving global substrate unconditional priority (embed.build was once the only frontier while 684 OCR were broken); read paths never auto-repair. Direction correct — the 70% substrate already exists (lineage observe + reconcile plan + chain execute). Deferred: recovery batches + RC must finish first; no new orchestration during data repair. |
@@ -636,7 +645,7 @@ python -m ruff check paperforge/worker/ocr_*.py
 
 | Date | Session | Key Results | Detailed Archive |
 |------|---------|-------------|------------------|
-| 2026-08-16 | **Recovery governance: unified check + legacy provenance repair** | Full-library census (948): **current 238 / missing 709 / incomplete 1 / stale 0** — every non-missing paper OCR current + retrieval current + integrity verified. Unified issues log (§2.4, R1–R10). Fixed in this session: ① 128 restore-damaged `result-hash.txt` losses re-published via `ocr.rebuild_derived` (117 files-ok + 16 pre-fix batch); ② `rebuild_derived` now repairs a legacy meta's `raw_version` (raw_blocks_hash + pdf_fingerprint) so pre-P0-B OCR becomes current after ONE local rebuild (was provenance_unknown forever) — `c023c89c`; ③ fingerprint computation resolves `[[wikilink]]` locators (formal-library pdf_path never resolved → fp=unknown → 3 papers permanently provenance_pdf_changed even after re-OCR) — fixed in postprocess + rebuild repair, 3 stale papers backfilled fp via one rebuild each — `9a037a36`; ④ `7KGJMJXU` binary-garbage meta reset + re-OCR; ⑤ `8LZUYXMH` tree_empty = supplementary-only PDF (no sections), known exception awaiting owner decision. Owner directives recorded: mandatory change-impact annotation (§7.3.1), two-tier tool surface (stable CLI + deep dev API, not per-task `python -c`), goal/ensure orchestrator evaluation (attachment review, deferred post-recovery). | §2.4, §6, §7.3.1 |
+| 2026-08-17 | **Recovery + Control Plane Closure; M4 RC start** | Closed the stale recovery status in the ledger and recorded the final census: **958 = 938 OCR/retrieval current + 19 `nopdf` + 1 `pdf_missing`**; vectors **935 current + 3 `no_content`**; serving smoke verified. M1/M1.1/M2/M3 are closed. Candidate is frozen; M4 validation is CLI/call-chain/state-authority/pre-post-check focused; #81 remains open `ready-for-human`. | §2.4–§4 |
 | 2026-08-15 | **INCIDENT + safety layer** | **2026-08-14 23:00 production prune run deleted `D:\L\OB\Literature-hub` root** (`rmtree(Path(), ignore_errors=True)` — empty path = cwd = vault root, silent full recursive delete). Survived: paperforge.db (962 FTS + 22.7k vectors + retrieval units), Zotero (1338 PDFs, outside vault), exports copy, Project (partial), Med/Research (137,923 files, separate vault). Recovered via DiskGenius. Root cause fixed with a 3-layer safety net: ① trash architecture (`worker/trash.py` — delete = move + manifest + restore; `validate_target` fails closed on empty/`.`/root/escape; purge restricted to trash root; no ignore_errors anywhere), ② prune moves files to trash + transactional rowid-verified vector/DB deletes, ③ pre-commit + CI (`check_no_destructive_delete.py`) reject `rmtree+ignore_errors` and empty-path rmtree; legacy ignore_errors sites converted to explicit try/except. Commit `a0fdfcb6`. | §2.1, §2.3, §6 |
 | 2026-08-15 | Unified residual detection | Zotero-authority residual report across workspace/FTS/vector/OCR carriers; paper-level `residuals` in probe lineage (per-carrier flags); reconcile emits one `library.prune`; prune handler/command + `memory.rebuild` registered; vector delete rowid-verified with rollback on partial rowcount. Found real residual 9RZU5ZBE (empty OCR dir, invisible to old workspace scan). Commit `0a4a81c4`. | §2.3, §6 |
 | 2026-08-15 | Smart Retrieval panel single-source render | Panel status/button/info-card/impact all from probe envelope (reason.text + action.primary + details); probe memory injects structured details from same authorities as state machine; dead branches removed. Commit `e63445ae`. | §2.3, §6 |
