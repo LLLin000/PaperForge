@@ -177,57 +177,74 @@ Zotero / canonical index
 | 13 | symlink/junction | Probe reports path provenance; all destructive/write actions go through resolve + allowed-root safety (trash layer) | P2 |
 | 14 | candidate exists, live stale | **P0 semantics**: candidate = build truth, live = serving truth; `serving = stale`, `publication = pending` | P0-D |
 
-## 6. Known Code Gaps (2026-08-15 audit)
+## 6. Current implementation status (2026-08-17)
 
-### OCR side — implemented
-- lifecycle: pending/queued/running/processing/retryable_error/fatal_error/failed_legacy/blocked/nopdf + zombie timeout
-- tree missing/empty/invalid; role-index missing/invalid; publish pending recent/stale
+The decision tree is the active contract, not a historical design sketch.
+The following branches are implemented and are the only branches that may
+drive RC decisions:
 
-### OCR side — gaps
-1. `blocks_partial` undetected: `_blocks_valid()` returns True after the
-   FIRST valid line — a file with 1000 good lines + a truncated line 1001
-   is judged valid. Need whole-file streaming validation (P1-A).
-2. unreadable/permission/malformed/directory all fold into
-   `blocks_invalid`; need the fine-grained set (P1-A).
-3. File misbinding (restore/recovery shuffle) undetected; use
-   zotero_key + PDF fingerprint (P0-B).
-4. `result-hash.txt` missing currently returns `current` when all three
-   artifacts are healthy — but `ocr_hash.py` defines it as the published
-   canonical identity. Should be `publish_metadata_missing` (P1-B).
-5. Reconcile routes blocks.structured missing/empty/invalid → `ocr.run`;
-   with a healthy `canonical/blocks.raw.jsonl` it should be
-   `ocr.rebuild_derived` (no remote API call) (P0-A).
+### Closed branches
 
-### Embed side — gaps
-6. Per-paper probe checks only "any vector row + lineage + identities";
-   no count completeness, no value integrity (P1-D).
-7. "no rows + identity_version > 0" misuses the GLOBAL substrate version
-   as per-paper evidence; use the lineage table (P1-D).
-8. rowid orphan check covers only out-of-range
-   (`meta.rowid > MAX(vec.rowid)`); in-range semantic misbinding is NOT
-   covered — document honestly (P2 deep).
-9. NaN/Inf and dimension are not validated at write time (P0-C).
-10. candidate/live collapse: `effective_vector_db()` picks candidate when
-    it has rows, but the retrieval gateway serves live. Split
-    build_carrier vs serving_carrier (P0-D).
+- **Source and lifecycle:** missing/unreadable PDF, `nopdf`, `blocked`,
+  pending, queued/running, zombie, retryable/fatal failure, and legacy
+  failure remain distinct. `nopdf` is a valid URL-only terminal state;
+  `pdf_missing` is a blocked source state.
+- **Provenance:** the canonical key, canonical PDF fingerprint, and raw-block
+  fingerprint are checked fail-closed. Unverifiable provenance is `unknown`,
+  never `current`.
+- **Raw and derived OCR:** raw-layer defects route to `ocr.run`; a healthy
+  raw layer with broken derived artifacts routes to
+  `ocr.rebuild_derived`. The raw validator distinguishes missing, empty,
+  unreadable, malformed, partial, not-a-file, and permission states.
+- **Publication identity:** `result-hash.pending`, missing publication
+  metadata, stale hashes, and matching hashes are separate states. A matching
+  artifact without its publication identity is not silently current.
+- **Retrieval:** retrieval currency is decided from the manifest, units,
+  hashes, policy, and OCR identity. `ocr_status == done` is not a retrieval
+  authority.
+- **Embedding eligibility:** build and resume share one selector. A paper is
+  eligible only when retrieval is current and it has indexable content;
+  no-content is a satisfied terminal outcome and is not an embed deficit.
+- **Vector substrate and serving:** model/endpoint/dimension/identity and
+  layout are global substrate facts. Candidate/build state is distinct from
+  live/serving state; a candidate never makes stale live serving current.
+- **Action ownership:** probe observes only. `reconcile` emits the minimal
+  first-frontier intent. Preflight, confirmation, execution settlement, and
+  post-action re-observation belong to the action runner.
 
-## 7. Implementation Priority
+### Deferred deep-audit items
+
+These do not change the RC decision tree or justify product-source mutation:
+
+1. in-range semantic rowid misbinding and full vector checksum auditing;
+2. oversized-block suspicion policy and symlink/junction provenance review;
+3. removal of the remaining EmbeddingService stdout relay before the
+   post-RC Goal/Ensure kernel.
+
+The third item is presentation-channel debt only: Action already calls the
+embedding service directly, service code does not import `paperforge.commands`,
+and structured execution results remain the truth surface.
+
+## 7. Implementation priority
+
+The priority list below records the contract's completed closure and the
+remaining post-RC audit, rather than reopening already-closed materialization
+work:
 
 ```
-P0-A  unified DAG repair frontier
-      raw blocks valid + structured bad → ocr.rebuild_derived (no remote OCR)
-P0-B  OCR provenance: zotero_key + source_pdf + pdf_fingerprint
-P0-C  vector write validation: length / dimension / finite (ingest gate)
-P0-D  publication truth: candidate != live; serving readiness always live
-P1-A  blocks whole-file streaming validation
-      partial / invalid / not_file / unreadable / permission
-P1-B  result-hash missing → publish_metadata_missing
-P1-C  tree ↔ blocks consistency (reference closure)
-P1-D  per-paper vector integrity
-      expected count / distinct unit_id / unit hash / policy
-P2    oversized suspicious / symlink path provenance /
-      deep rowid + vector checksum (doctor)
+CLOSED  unified first-broken-frontier decision tree
+CLOSED  OCR lifecycle, provenance, raw/derived validation, publication hash
+CLOSED  retrieval identity and no-content terminal semantics
+CLOSED  vector substrate identity and candidate/live serving split
+CLOSED  shared embedding eligibility for build and resume
+POST-RC  in-range rowid semantic binding / deep vector checksum audit
+POST-RC  oversized suspicious blocks / symlink path provenance
+POST-RC  structured EmbeddingService return/event sink (remove stdout relay)
 ```
+
+No item in the POST-RC list requires re-OCR, retrieval rebuild, or re-embed
+for existing users unless a future audit proves a materialization defect.
+Validation-only edits to this contract are `none / none / none`.
 
 ## 8. Relationship to Existing Code
 
@@ -257,3 +274,63 @@ fine-grained per-layer states are the toolset that makes such a state
 reported honestly (OCR unreadable ≠ retrieval materialized ≠ serving
 current) and repaired minimally (only the 37 papers with corrupt blocks
 AND no DB units need re-OCR; 645 with DB units do not).
+
+## 10. Decision procedure for an observed paper
+
+This is the operational decision tree used by `probe` and `reconcile`.
+Observation never mutates the vault. Execution is a separate, confirmed
+action followed by a fresh probe.
+
+```
+observe paper + global substrate
+│
+├─ canonical paper absent, but any carrier remains
+│    └─ residual → library.prune (destructive confirmation required)
+│
+├─ source missing/unreadable or URL-only nopdf
+│    └─ blocked/no-pdf → user action; emit no OCR or embed intent
+│
+├─ OCR lifecycle/provenance/raw is not current
+│    ├─ pending/zombie/failed/raw defect
+│    │    └─ ocr.run
+│    ├─ raw current, derived/tree/role-index defect
+│    │    └─ ocr.rebuild_derived
+│    └─ publication identity defect
+│         └─ local repair or ocr.rebuild_derived
+│
+├─ retrieval is not current
+│    └─ memory.build for the successful OCR scope
+│
+├─ retrieval current but global vector substrate is incompatible
+│    └─ embed.build(all, shadow) → verify candidate → publish live
+│
+├─ retrieval current and indexable content exists
+│    ├─ paper vectors missing/partial/stale
+│    │    └─ embed.resume(paper)
+│    └─ paper vectors current
+│         └─ inspect candidate/live publication state
+│
+├─ retrieval current but no indexable content exists
+│    └─ vector_no_content → satisfied terminal; no embed action
+│
+└─ all identities and carriers current
+     └─ serving current; no action
+```
+
+For every emitted intent the required control path is:
+
+```
+probe observation
+  → reconcile first frontier
+  → action preflight (availability × applicability)
+  → confirmation gate
+  → handler/service execution
+  → PFResult settlement
+  → materialization commit
+  → fresh probe
+  → UI/read projection
+```
+
+The old-user impact of this document-only closure is zero: no
+re-OCR/rebuild/embed is required, no production vault is touched, and the
+existing materialization authority is unchanged.
