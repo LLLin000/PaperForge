@@ -1,6 +1,21 @@
 # OCR-v2 Active Queue
-> Status: Wayfinder #135/#174 is owner-accepted and closed. A disposable production-shaped vault completed the RC real-Obsidian audit on 2026-08-13; all 9 observed UI/authority defects are repaired. Release remains explicitly deferred to the owner-controlled #81 gate.
-> Last updated: 2026-08-13
+> Status: Recovery incident and Control Plane Closure (M1–M3) are closed. M4 RC candidate `6ef0dfe9` is currently blocked by retrieval-integrity and preflight-frontier findings reproduced on 2026-08-17; repair commit `46c4ddaf` is on `master` but awaits a new candidate SHA and dependent gate reruns.
+> Last updated: 2026-08-17
+
+## 2026-08-17: M4 blocker checkpoint
+
+- Frozen candidate `6ef0dfe9` reported retrieval `current` over a corrupt
+  published carrier after a body-unit mutation; repair commit `46c4ddaf` maps
+  this to retrieval/vector `stale` and `memory.build`.
+- Preflight and reconcile disagreed on the canonical per-paper first frontier;
+  repair commit `46c4ddaf` makes preflight project reconcile's intent.
+- Focused regression gate: **126 passed, 1 warning** across lineage, reconcile,
+  embedding eligibility, and action registry.
+- No re-OCR/rebuild/embed is required for valid existing materializations.
+  Corrupt retrieval carriers require `memory.build`; embed follows only after
+  retrieval becomes eligible.
+- Next: build a new RC candidate, rerun REC-02/M2/M3 and dependent rows, then
+  resume owner-gated #81 release review. No release/tag/package publication.
 
 ## 2026-08-13: RC audit checkpoint
 
@@ -8,7 +23,11 @@
 - Real Obsidian exercised setup/config, Python-owned credentials, sync/reconcile, OCR run/rebuild/redo/cancel, embed confirmation/build/cancel/retry, memory automatic actions, runtime recovery, navigation, and restart persistence.
 - All 9 observed defects are repaired: stale credential truth, 30s probe timeout, missing credential remediation, hidden/incorrect cancellation state, stale embed failure/corruption projection, registry-policy drift, dashboard reopen/setup dead ends, raw i18n keys, and OCR NDJSON stdout/scope faults.
 - Audit evidence is in the disposable vault at `System/PaperForge/audits/ui-e2e-findings.json` and `operation-timing.json`; source vault data was not mutated.
-- Only #81 remains on the release path: owner-controlled 1.6.0 version sync, wheel metadata/smoke, candidate promotion, PyPI/GitHub release, and plugin manifest publication.
+- Only #81 remains on the release path, but the frozen candidate is currently
+  blocked by the M4 findings above. Owner-controlled version sync, candidate
+  promotion, PyPI/GitHub release, and plugin manifest publication resume only
+  after the repaired candidate passes the dependent gates.
+
 ## Current checkpoint
 
 - Retrieval recovery is merged to `master`; the real Literature-hub vault has a healthy 2560-dimensional vec0 index and working M / @ search paths.

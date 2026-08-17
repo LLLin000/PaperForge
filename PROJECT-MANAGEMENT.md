@@ -1,10 +1,10 @@
 > **Branch:** `master` | **Last Updated:** 2026-08-17
 >
-> **Active work:** 2026-08-14 recovery incident **CLOSED**. Final production census is frozen at **958 = 938 OCR/retrieval current + 19 `nopdf` + 1 `pdf_missing` (4VPYIVAS)**; vector serving is revalidated at **935 current + 3 `no_content`**. Release is now in the M4 RC owner-gate phase (`#81`); no release/tag/package publication is authorized.
+> **Active work:** 2026-08-14 recovery incident **CLOSED**. Final production census is frozen at **958 = 938 OCR/retrieval current + 19 `nopdf` + 1 `pdf_missing` (4VPYIVAS)**; vector serving is revalidated at **935 current + 3 `no_content`**. M4 RC validation found two post-freeze state-authority blockers on candidate `6ef0dfe9`; repair commit `46c4ddaf` is on `master` but not in the frozen candidate. Release remains owner-gated under `#81`; no release/tag/package publication is authorized.
 >
 > ---
 >
-> **Current state:** Recovery materialization and serving are revalidated. Control Plane Closure is complete: M1 OCR Execution Control, M1.1 execution invariants, M2 CLI/Action Contract, and M3 Embed Closure are closed. M4 product source tree is frozen at `6ef0dfe9`; checkout/CI-only repairs (`c463ffaf`, `a2fa6216`, `14899168`) do not touch OCR, retrieval, vector, or plugin product source. RC matrix evidence now covers modular fresh setup, existing-vault migration/rollback fail-closed behavior, offline failure, stale-state gates, candidate plugin static checks, safety scanning, and hosted CI **14/14 green** at validation ref `14899168`. The deterministic collector has complete Python/TypeScript coverage but remains `incomplete` on six unresolved active rules and two advisory adapter-wrapper findings; #134's skip policy records these as post-RC architecture-tooling debt. Managed-runtime/UI/cancel/scoped-embed/real Release-N rollback and owner decision remain pending. The EmbeddingService stdout relay remains non-blocking debt for post-RC/pre-Goal/Ensure.
+> **Current state:** Recovery materialization and serving are revalidated. Control Plane Closure is complete: M1 OCR Execution Control, M1.1 execution invariants, M2 CLI/Action Contract, and M3 Embed Closure are closed. Candidate `6ef0dfe9` remains frozen but is blocked by the retrieval-integrity and preflight-frontier findings recorded in `project/current/2026-08-17-rc-gate-matrix.md`; repaired code is not a candidate until a new SHA is built and affected gates rerun. Existing hosted CI evidence remains **14/14 green** at validation ref `14899168`; no release decision has been made.
 ## 1. Architecture
 
 ### 1.1 The problem (pre-v2)
@@ -189,6 +189,29 @@ The recovery event is closed. The final mutually exclusive census is frozen in `
 Known deferred debt: **EmbeddingService stdout relay**. It is a presentation-channel debt, not an ownership, materialization, recovery, or release-contract defect: Actions do not call CLI handlers, Services do not import `paperforge.commands`, structured PFResult remains execution truth, and the relay does not participate in business decisions. Remove it after RC and before Goal/Ensure.
 
 **Impact:** closure record only. M1–M3 changes do not require re-OCR, rebuild, or embed for existing users; M3 adds one standard `paper_settled` NDJSON event for stream consumers.
+
+### 2.6 M4 post-freeze audit (2026-08-17 — **CANDIDATE BLOCKED**)
+
+The first shared-state audit against the frozen candidate reproduced two blockers:
+
+1. **Retrieval integrity:** mutating a published `body_units.unit_text` without
+   changing its manifest left the candidate reporting `retrieval=current` while
+   the carrier snapshot was corrupt. Repair commit `46c4ddaf` maps this to
+   `retrieval=stale`, `vector=stale`, and `memory.build`.
+2. **Frontier parity:** action preflight could classify a per-paper action as
+   `needed` when `reconcile()` emitted no intent or a different first frontier.
+   Repair commit `46c4ddaf` projects `needed` from reconcile's canonical intent.
+
+Focused verification after the repairs: **126 passed, 1 warning** across
+lineage, reconcile, embedding eligibility, and action-registry tests. These
+repairs invalidate candidate `6ef0dfe9` until a new candidate is built and
+REC-02, M2, M3, and dependent RC rows are rerun.
+
+**Impact:** no re-OCR/rebuild/embed is required for valid existing
+materializations. Corrupt retrieval carriers require `memory.build`; embedding
+is needed only if the repaired retrieval state becomes eligible. Existing users
+with valid carriers are unchanged; affected users now receive explicit repair
+instead of a false-current state.
 ## 3. Remaining Issues — Release-Readiness Layers
 
 ### M4 RC Gate Policy
@@ -251,7 +274,7 @@ Remaining legacy OCR issues (carried forward):
 
 ## 4. Active Queue
 
-0. 🔒 **M4 Release Candidate validation** — Control Plane Closure is complete and the code candidate is frozen. Run the unique RC gate matrix covering #81's ten acceptance criteria, recovery/materialization invariants, CLI call chains, state-machine authority, and pre/post checks. **#81 remains open + `ready-for-human`; no release/tag/package publication.**
+0. 🔒 **M4 Release Candidate validation** — Control Plane Closure is complete, but the frozen candidate `6ef0dfe9` is blocked by retrieval-integrity and preflight-frontier findings. Repair only those blockers, build a new candidate, rerun REC-02/M2/M3 and dependent rows, then resume owner gates. **#81 remains open + `ready-for-human`; no release/tag/package publication.**
 1. ✅ **[Architecture Audit #131/#132](https://github.com/LLLin000/PaperForge/issues/131)** — **accepted and closed** (Slices A+B; commits `73a782cf`–`d6c9afb0`). Audit report hardened v1→v4 (`e94895a1`→`7567dd2c`), third external review BLOCKER fixed: `repository_state` now semantic Survey content, Audit single gate authority.
 1. ✅ **[Product lane #127/#126/#129/#99](https://github.com/LLLin000/PaperForge/issues/127)** — all four **accepted and closed** (next_actions policy, OCR Workspace closure, restore semantics, redo internal-only). Product lane complete.
 2. ✅ **[#133 Deterministic collectors](https://github.com/LLLin000/PaperForge/issues/133)** — **ACCEPTED and closed** (owner acceptance 2026-08-07). Python AST + TS compiler collectors + orchestrator → Survey → #131 `reconcile()`; three-tier extraction, fail-closed coverage, unresolved-evidence seam. `collectors.deterministic` Contract lifecycle promoted planned→active at `3eb17ae9`.
@@ -274,6 +297,8 @@ Remaining legacy OCR issues (carried forward):
 - [x] Freeze the RC snapshot: candidate SHA, version, Python/plugin bundle, schema/identity versions, and production census.
 - [x] Run the local static release gate: Python, candidate plugin vitest/typecheck/build, architecture-boundary unit tests, destructive-delete guard, registry invariants, and version contract.
 - [x] Close hosted CI evidence: validation ref `14899168` passed all 14 jobs, including macOS unit/J-matrix and `All Checks Passed`.
+- [x] Repair the retrieval-integrity and frontier-parity blockers in commit `46c4ddaf`; focused lineage/reconcile/embed/action checks **126 passed / 1 warning**; no re-OCR/rebuild/embed for valid materializations.
+- [ ] Build a new RC candidate SHA and rerun REC-02, M2, M3, and dependent matrix rows before owner review.
 - [ ] Review the deterministic collector's six unresolved active rules and two advisory wrapper findings as post-RC architecture-tooling debt; do not mutate the frozen product source without an owner-approved blocker.
 - [x] Run disposable fresh-install, existing-vault migration, config rollback fail-closed, offline, credential, and schema-v2 gates.
 - [x] Run fresh-vault and existing-vault end-to-end CLI/user-chain smoke; interruption/cancel and true scoped-embed paths remain pending.
@@ -533,6 +558,7 @@ Unique matrix: `project/current/2026-08-17-rc-gate-matrix.md`.
 | 2026-08-04 | F821 gate over F401 backlog | 12 undefined names are real NameError classes (one was #119's own typo, would crash on the deps-missing path); the 50 F401 unused imports are pre-existing style debt — keep them out of the release gate. |
 | 2026-08-04 | CI ruff/version gates enforce the whole repo | allowed-skips removed; a broken TS build, missing versions.json row, undefined name, or shadow regression can no longer merge. |
 | 2026-08-05 | Architecture audit is five immutable layers with one pure reconciler owned by #131 | Deterministic observation (Survey), deterministic policy results (Audit), and Agent/Human judgment (Review) must never mix; Review binds Contract+Survey+Audit digests and reconciler version; collectors (#133) call #131's reconciler and never reimplement rules. |
+| 2026-08-17 | Frozen candidate blocked by shared-state audit | The frozen candidate `6ef0dfe9` reproduced retrieval `current` over a corrupt carrier and a preflight/reconcile first-frontier divergence. Repair commit `46c4ddaf` is on `master` but not in the frozen candidate; build a new candidate and rerun REC-02/M2/M3/dependent RC rows before any owner release decision. No re-OCR/rebuild/embed for valid users; corrupt carriers require `memory.build`. |
 | 2026-08-05 | Enforce one `ready-for-agent` issue; downstream issues stay `blocked` until the prerequisite is accepted | Closing a prerequisite does not auto-unblock; the next issue is manually promoted. This prevents a sprawling epic (#130) from becoming a single agent task and keeps the product lane (#127\u2192#126\u2192#129\u2192#99) ahead of architecture tooling (#133/#134). |
 | 2026-08-05 | Assessment precedence is failed > incomplete > findings > clean; gate_eligible marks coverage-complete audits only | #134 consumes one authoritative top-level outcome instead of reinterpreting coverage; planned gaps never block, deterministic violations do when blocking + active. |
 | 2026-08-05 | Golden evidence is repository-relative and source-complete | Every cited evidence file now carries the `paperforge/` prefix, golden source digests aggregate all cited file/digest pairs, and tests verify file hashes, symbols, and line ranges. |
@@ -651,6 +677,7 @@ python -m ruff check paperforge/worker/ocr_*.py
 |------|---------|-------------|------------------|
 | 2026-08-17 | **Recovery + Control Plane Closure; M4 RC start** | Closed the stale recovery status in the ledger and recorded the final census: **958 = 938 OCR/retrieval current + 19 `nopdf` + 1 `pdf_missing`**; vectors **935 current + 3 `no_content`**; serving smoke verified. M1/M1.1/M2/M3 are closed. Candidate is frozen; M4 validation is CLI/call-chain/state-authority/pre-post-check focused; #81 remains open `ready-for-human`. | §2.4–§4 |
 | 2026-08-17 | **M4 lifecycle and owner-gate evidence** | Product source tree `6ef0dfe9`: fresh modular setup/repeat and existing-vault migration/rollback fail-closed smoke passed; OCR → memory → global embed → retrieve → restart remained current; stale-state **113/1**, setup/runtime **129**, focused RC **216/1**, candidate Python jobs, safety gate, and plugin **408/408 + typecheck/build** passed. Hosted CI **#32040776725** at `14899168` passed **14/14**, including macOS unit/J-matrix and `All Checks Passed`, after checkout and macOS SQLite-runtime CI repairs. Deterministic collector coverage is complete but remains ineligible on six active unresolved rules plus two advisory wrapper findings; #81 stays open `ready-for-human`; managed runtime/UI/cancel/scoped embed/real Release-N rollback, post-RC architecture review, and owner decision remain gated. | `project/current/2026-08-17-rc-gate-matrix.md` |
+| 2026-08-17 | **M4 post-freeze blocker audit** | Reproduced retrieval-integrity and frontier-parity defects against candidate `6ef0dfe9`; repair commit `46c4ddaf` landed on `master` and focused regressions passed (**126 passed, 1 warning**). Candidate remains blocked and release stays owner-gated; no release/tag/package publication. | §2.6, §3 |
 | 2026-08-15 | **INCIDENT + safety layer** | **2026-08-14 23:00 production prune run deleted `D:\L\OB\Literature-hub` root** (`rmtree(Path(), ignore_errors=True)` — empty path = cwd = vault root, silent full recursive delete). Survived: paperforge.db (962 FTS + 22.7k vectors + retrieval units), Zotero (1338 PDFs, outside vault), exports copy, Project (partial), Med/Research (137,923 files, separate vault). Recovered via DiskGenius. Root cause fixed with a 3-layer safety net: ① trash architecture (`worker/trash.py` — delete = move + manifest + restore; `validate_target` fails closed on empty/`.`/root/escape; purge restricted to trash root; no ignore_errors anywhere), ② prune moves files to trash + transactional rowid-verified vector/DB deletes, ③ pre-commit + CI (`check_no_destructive_delete.py`) reject `rmtree+ignore_errors` and empty-path rmtree; legacy ignore_errors sites converted to explicit try/except. Commit `a0fdfcb6`. | §2.1, §2.3, §6 |
 | 2026-08-15 | Unified residual detection | Zotero-authority residual report across workspace/FTS/vector/OCR carriers; paper-level `residuals` in probe lineage (per-carrier flags); reconcile emits one `library.prune`; prune handler/command + `memory.rebuild` registered; vector delete rowid-verified with rollback on partial rowcount. Found real residual 9RZU5ZBE (empty OCR dir, invisible to old workspace scan). Commit `0a4a81c4`. | §2.3, §6 |
 | 2026-08-15 | Smart Retrieval panel single-source render | Panel status/button/info-card/impact all from probe envelope (reason.text + action.primary + details); probe memory injects structured details from same authorities as state machine; dead branches removed. Commit `e63445ae`. | §2.3, §6 |
