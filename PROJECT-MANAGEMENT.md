@@ -207,11 +207,20 @@ lineage, reconcile, embedding eligibility, and action-registry tests. These
 repairs invalidate candidate `6ef0dfe9` until a new candidate is built and
 REC-02, M2, M3, and dependent RC rows are rerun.
 
-**Impact:** no re-OCR/rebuild/embed is required for valid existing
-materializations. Corrupt retrieval carriers require `memory.build`; embedding
-is needed only if the repaired retrieval state becomes eligible. Existing users
-with valid carriers are unchanged; affected users now receive explicit repair
-instead of a false-current state.
+Subsequent read-only validation against the 2026-08-17 canonical
+`formal-library.json` observed 964 papers (944 OCR/retrieval current, 20
+retrieval-missing, 944 integrity-verified, 933 vector-current) plus one
+workspace residual. This does not match the frozen 958-paper census and is a
+separate release-evidence blocker; classify each state before any repair.
+
+**Impact:** validation only; no production materialization changed. Re-OCR,
+rebuild, and embed requirements are **undetermined until classification**.
+
+**Impact for the repaired-state cases:** no re-OCR/rebuild/embed is required
+for valid existing materializations. Corrupt retrieval carriers require
+`memory.build`; embedding is needed only if the repaired retrieval state becomes
+eligible. Existing users with valid carriers are unchanged; affected users now
+receive explicit repair instead of a false-current state.
 ## 3. Remaining Issues — Release-Readiness Layers
 
 ### M4 RC Gate Policy
@@ -678,6 +687,7 @@ python -m ruff check paperforge/worker/ocr_*.py
 | 2026-08-17 | **Recovery + Control Plane Closure; M4 RC start** | Closed the stale recovery status in the ledger and recorded the final census: **958 = 938 OCR/retrieval current + 19 `nopdf` + 1 `pdf_missing`**; vectors **935 current + 3 `no_content`**; serving smoke verified. M1/M1.1/M2/M3 are closed. Candidate is frozen; M4 validation is CLI/call-chain/state-authority/pre-post-check focused; #81 remains open `ready-for-human`. | §2.4–§4 |
 | 2026-08-17 | **M4 lifecycle and owner-gate evidence** | Product source tree `6ef0dfe9`: fresh modular setup/repeat and existing-vault migration/rollback fail-closed smoke passed; OCR → memory → global embed → retrieve → restart remained current; stale-state **113/1**, setup/runtime **129**, focused RC **216/1**, candidate Python jobs, safety gate, and plugin **408/408 + typecheck/build** passed. Hosted CI **#32040776725** at `14899168` passed **14/14**, including macOS unit/J-matrix and `All Checks Passed`, after checkout and macOS SQLite-runtime CI repairs. Deterministic collector coverage is complete but remains ineligible on six active unresolved rules plus two advisory wrapper findings; #81 stays open `ready-for-human`; managed runtime/UI/cancel/scoped embed/real Release-N rollback, post-RC architecture review, and owner decision remain gated. | `project/current/2026-08-17-rc-gate-matrix.md` |
 | 2026-08-17 | **M4 post-freeze blocker audit** | Reproduced retrieval-integrity and frontier-parity defects against candidate `6ef0dfe9`; repair commit `46c4ddaf` landed on `master` and focused regressions passed (**126 passed, 1 warning**). Candidate remains blocked and release stays owner-gated; no release/tag/package publication. | §2.6, §3 |
+| 2026-08-17 | **Live formal-library census divergence** | Read-only post-repair probe observed 964 formal papers: 944 OCR/retrieval current, 20 retrieval-missing, 944 integrity-verified, 933 vector-current; broader workspace probe reported one residual `R2PSFXY4`. Frozen 958-paper recovery census is not promoted; classify scope/state before candidate rebuild. | §2.6, RC matrix finding log |
 | 2026-08-15 | **INCIDENT + safety layer** | **2026-08-14 23:00 production prune run deleted `D:\L\OB\Literature-hub` root** (`rmtree(Path(), ignore_errors=True)` — empty path = cwd = vault root, silent full recursive delete). Survived: paperforge.db (962 FTS + 22.7k vectors + retrieval units), Zotero (1338 PDFs, outside vault), exports copy, Project (partial), Med/Research (137,923 files, separate vault). Recovered via DiskGenius. Root cause fixed with a 3-layer safety net: ① trash architecture (`worker/trash.py` — delete = move + manifest + restore; `validate_target` fails closed on empty/`.`/root/escape; purge restricted to trash root; no ignore_errors anywhere), ② prune moves files to trash + transactional rowid-verified vector/DB deletes, ③ pre-commit + CI (`check_no_destructive_delete.py`) reject `rmtree+ignore_errors` and empty-path rmtree; legacy ignore_errors sites converted to explicit try/except. Commit `a0fdfcb6`. | §2.1, §2.3, §6 |
 | 2026-08-15 | Unified residual detection | Zotero-authority residual report across workspace/FTS/vector/OCR carriers; paper-level `residuals` in probe lineage (per-carrier flags); reconcile emits one `library.prune`; prune handler/command + `memory.rebuild` registered; vector delete rowid-verified with rollback on partial rowcount. Found real residual 9RZU5ZBE (empty OCR dir, invisible to old workspace scan). Commit `0a4a81c4`. | §2.3, §6 |
 | 2026-08-15 | Smart Retrieval panel single-source render | Panel status/button/info-card/impact all from probe envelope (reason.text + action.primary + details); probe memory injects structured details from same authorities as state machine; dead branches removed. Commit `e63445ae`. | §2.3, §6 |
