@@ -12,6 +12,18 @@
     "implementation": "CPython",
     "requirement": ">=3.11"
   },
+  "execution_runtimes": [
+    {
+      "purpose": "static_and_cli_tests",
+      "python": "3.14.0",
+      "venv": "D:/L/OB/Literature-hub/.venv"
+    },
+    {
+      "purpose": "live_provider_smoke",
+      "python": "3.12.10",
+      "venv": "D:/L/OB/PaperForge-e2e-audit/.venv"
+    }
+  ],
   "node": {
     "version": "24.11.1",
     "publish_workflow_requirement": "22.x"
@@ -26,11 +38,12 @@
     "vector_identity_version": 1
   },
   "release_issue": "#81",
-  "evidence_document_head": "c34a30470eea2ba31263dd8ddd22072d58ee5197",
+  "evidence_document_base_sha": "c34a30470eea2ba31263dd8ddd22072d58ee5197",
   "tested_at": "2026-08-17T13:35:33.036671+00:00",
   "notes": [
     "Candidate worktree is isolated from unrelated dirty files in the main checkout.",
     "Evidence/documentation commits are not candidate code and must not replace candidate_code_sha.",
-    "Node 24.11.1 is the observed local runtime; publish workflow contract is Node 22.x."
+    "Node 24.11.1 is the observed local runtime; publish workflow contract is Node 22.x.",
+    "Live provider smoke used the verified audit venv because the main venv keyring package contains a corrupted null-byte source file; no candidate files were changed."
   ]
 }
