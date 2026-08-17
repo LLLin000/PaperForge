@@ -1,0 +1,36 @@
+{
+  "manifest_version": 1,
+  "candidate_code_sha": "6ef0dfe99bf8ad3017b4fd3c4dc396a2034a9c11",
+  "candidate_code_sha_short": "6ef0dfe9",
+  "candidate_worktree": "D:/L/Med/Research/99_System/LiteraturePipeline/github-release/.worktrees/rc-candidate-6ef0dfe9",
+  "candidate_worktree_dirty": false,
+  "branch": "detached",
+  "package_version": "1.5.15",
+  "plugin_version": "1.5.15",
+  "python": {
+    "version": "3.14.0",
+    "implementation": "CPython",
+    "requirement": ">=3.11"
+  },
+  "node": {
+    "version": "24.11.1",
+    "publish_workflow_requirement": "22.x"
+  },
+  "platform": {
+    "system": "Windows-11-10.0.26200-SP0",
+    "architecture": "AMD64"
+  },
+  "schema": {
+    "probe_schema_version": 2,
+    "config_schema_version": 2,
+    "vector_identity_version": 1
+  },
+  "release_issue": "#81",
+  "evidence_document_head": "c34a30470eea2ba31263dd8ddd22072d58ee5197",
+  "tested_at": "2026-08-17T13:35:33.036671+00:00",
+  "notes": [
+    "Candidate worktree is isolated from unrelated dirty files in the main checkout.",
+    "Evidence/documentation commits are not candidate code and must not replace candidate_code_sha.",
+    "Node 24.11.1 is the observed local runtime; publish workflow contract is Node 22.x."
+  ]
+}
