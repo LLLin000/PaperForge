@@ -76,7 +76,7 @@ This is the single M4 acceptance matrix. Every RC claim must attach a command, a
 ## Required evidence bundle before owner decision
 
 1. **CLI evidence:** disposable-vault command transcript for RC-01, including rc/stdout/stderr/terminal event and post-probe state for every situation.
-2. **Call-chain evidence:** one trace each for setup, OCR, action/runner, embed, and retrieve; identify the authority at every boundary.
+2. **Call-chain evidence:** one trace each for setup, OCR, action/runner, embed, and retrieve; identify the authority at every boundary. The authoritative per-paper frontier and post-action chain are defined in [`docs/research/2026-08-15-artifact-materialization-state-contract.md`](../../docs/research/2026-08-15-artifact-materialization-state-contract.md) §10.
 3. **State-authority evidence:** probe lineage/build-state/credential/runtime reads and all writers; prove no stale cache or legacy writer wins.
 4. **Pre/post evidence:** preflight result, execution settlement, commit point, fresh observation, and UI/read projection for each mutating path.
 5. **Static evidence:** reproducible local RC-04 commands plus hosted CI `All Checks Passed` on validation ref `148991688692e21aaefd75090e431e93a068eb17` (run `#32040776725`); the deterministic collector is complete-coverage but ineligible under #134's unresolved-evidence policy and remains recorded as post-RC debt.
