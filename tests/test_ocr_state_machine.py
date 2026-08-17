@@ -714,13 +714,18 @@ do_ocr: true
                 encoding="utf-8",
             )
 
-        # Smoke test: ensure no state raises an unhandled exception
+        # Smoke test: ensure no state raises an unhandled exception.  The
+        # fixture paths are intentionally injected because canonical_test_config
+        # places the production tree under System/PaperForge.
         from paperforge.worker.ocr import run_ocr
 
-        try:
-            run_ocr(vault)
-        except Exception as e:
-            pytest.fail(f"run_ocr raised {type(e).__name__}: {e}")
+        with patch("paperforge.worker.ocr.pipeline_paths", return_value=_mock_paths(
+            vault, ocr_root, exports, library_records
+        )):
+            try:
+                run_ocr(vault)
+            except Exception as e:
+                pytest.fail(f"run_ocr raised {type(e).__name__}: {e}")
 
 
 class TestOcrStateMachineLifecycle:
@@ -796,7 +801,7 @@ do_ocr: true
         assert pending_calls, f"Expected done_incomplete reset to pending, got {[c[0][1].get('ocr_status') for c in meta_calls]}"
         assert pending_calls[0].get("retry_count") == 0
 
-    def test_retry_exhaustion_becomes_error(self, tmp_path: Path) -> None:
+    def test_retry_exhaustion_becomes_fatal_error(self, tmp_path: Path) -> None:
         vault, ocr_root, exports, library_records = _make_vault(tmp_path)
         paths = _mock_paths(vault, ocr_root, exports, library_records)
 
@@ -867,7 +872,7 @@ do_ocr: true
         ]
         assert meta_calls, "No meta write for retry limit item"
         final_meta = meta_calls[-1][0][1]
-        assert final_meta.get("ocr_status") == "error"
+        assert final_meta.get("ocr_status") == "fatal_error"
 
     def test_error_state_is_reset_to_pending_on_new_run(self, tmp_path: Path) -> None:
         vault, ocr_root, exports, library_records = _make_vault(tmp_path)
