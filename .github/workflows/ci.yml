@@ -61,6 +61,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Use Homebrew Python with loadable SQLite extensions
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          brew install python@3.11
+          echo "$(brew --prefix python@3.11)/bin" >> "$GITHUB_PATH"
       - name: Install package with test deps
         run: pip install -e ".[test,vector]"
       - name: Run unit tests
@@ -88,6 +94,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Use Homebrew Python with loadable SQLite extensions
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          brew install python@3.11
+          echo "$(brew --prefix python@3.11)/bin" >> "$GITHUB_PATH"
       - name: Install package with test deps
         run: pip install -e ".[test,vector]"
       - name: J1 — machine contract fixtures
