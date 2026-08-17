@@ -390,7 +390,7 @@ class TestO3Vertical:
                 _sys.stdout = old_out
             return rc, json.loads(buf.getvalue())
 
-        with patch("paperforge.commands.embed.read_index",
+        with patch("paperforge.worker.asset_index.read_index",
                    return_value={"items": [{"zotero_key": "A", "ocr_status": "done",
                                             "fulltext_path": "A.pdf"}]}), \
              patch("paperforge.services.embedding.ensure_vec_tables", return_value=3), \
