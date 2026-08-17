@@ -15,14 +15,9 @@ ROOT = Path(__file__).resolve().parents[1] / "paperforge"
 
 FORBIDDEN_LAYERS = ("actions", "services", "materialization")
 
-# Known pre-migration exemptions: file -> set of exact import lines.
-# Each entry must carry the migration milestone in a comment.
-KNOWN_EXEMPTIONS: dict[str, set[str]] = {
-    # M3-A/B/C migrates the embed handler to EmbeddingService; until then
-    # it calls the CLI entry.  The M2-E result-contract fix already makes
-    # errors surface correctly.
-    "actions/registry.py": {"from paperforge.commands.embed import run as embed_run"},
-}
+# M3-C: the embed action handlers now call the embedding SERVICE directly;
+# there are ZERO known exemptions — the allowlist is empty.
+KNOWN_EXEMPTIONS: dict[str, set[str]] = {}
 
 
 def test_core_layers_never_import_commands() -> None:

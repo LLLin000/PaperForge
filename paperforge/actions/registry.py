@@ -426,8 +426,9 @@ def _embed_build_preflight(ctx: ActionContext, request: ActionRequest) -> Prefli
 
 def _embed_build_handler(ctx: ActionContext, request: ActionRequest) -> PFResult:
     """embed.build: the GLOBAL substrate operation — always all-scope, full
-    rebuild over the canonical library."""
-    import argparse
+    rebuild over the canonical library.  M3-C: calls the embedding SERVICE
+    directly (no Action→CLI→stdout→parse chain; the stdout capture below
+    only relays the service's own json-mode PFResult)."""
     import contextlib
     import io
     import json
@@ -435,23 +436,17 @@ def _embed_build_handler(ctx: ActionContext, request: ActionRequest) -> PFResult
     from paperforge import __version__ as PF_VERSION
     from paperforge.core.errors import ErrorCode
     from paperforge.core.result import PFError, PFResult
+    from paperforge.services.embedding import run_embedding_build
     from paperforge.worker.asset_index import read_index
 
-    read_index(ctx.vault)
-    args = argparse.Namespace(
-        vault_path=ctx.vault,
-        embed_subcommand="build",
-        json=True,
-        force=True,
-        resume=False,
-        keys=None,
-    )
+    envelope = read_index(ctx.vault)
+    items = envelope.get("items") if isinstance(envelope, dict) else (envelope or [])
     buf = io.StringIO()
-    from paperforge.commands.embed import run as embed_run
-
     with contextlib.redirect_stdout(buf):
         try:
-            rc = embed_run(args)
+            rc = run_embedding_build(
+                ctx.vault, items, keys=None, force=True, resume=False, json=True
+            )
         except Exception as exc:  # noqa: BLE001
             return PFResult(
                 ok=False,
@@ -459,10 +454,6 @@ def _embed_build_handler(ctx: ActionContext, request: ActionRequest) -> PFResult
                 version=PF_VERSION,
                 error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(exc)),
             )
-    # PFResult.to_json() is multi-line (indent=2); a line-by-line '{...}'
-    # match never fires, so EVERY embed failure surfaced as a bare
-    # 'embed run produced no PFResult' and the real error (e.g. 401
-    # invalid embedding key) was swallowed.  Parse the whole buffer.
     text = buf.getvalue().strip()
     payload = None
     if text.startswith("{") and text.endswith("}"):
@@ -470,15 +461,6 @@ def _embed_build_handler(ctx: ActionContext, request: ActionRequest) -> PFResult
             payload = json.loads(text)
         except (ValueError, KeyError):
             payload = None
-    if payload is None:
-        for line in reversed(text.splitlines()):
-            stripped = line.strip()
-            if stripped.startswith("{") and stripped.endswith("}"):
-                try:
-                    payload = json.loads(stripped)
-                except (ValueError, KeyError):
-                    payload = None
-                break
     if payload is not None:
         return PFResult(
             ok=bool(payload.get("ok", rc == 0)),
@@ -568,21 +550,18 @@ def _embed_resume_handler(ctx: ActionContext, request: ActionRequest) -> PFResul
     from paperforge import __version__ as PF_VERSION
     from paperforge.core.errors import ErrorCode
     from paperforge.core.result import PFError, PFResult
+    from paperforge.services.embedding import run_embedding_build
+    from paperforge.worker.asset_index import read_index
 
-    args = argparse.Namespace(
-        vault_path=ctx.vault,
-        embed_subcommand="build",
-        json=True,
-        force=False,
-        resume=True,
-        keys=list(request.scope.keys) if request.scope.kind == "papers" else None,
-    )
+    envelope = read_index(ctx.vault)
+    items = envelope.get("items") if isinstance(envelope, dict) else (envelope or [])
+    keys = list(request.scope.keys) if request.scope.kind == "papers" else None
     buf = io.StringIO()
-    from paperforge.commands.embed import run as embed_run
-
     with contextlib.redirect_stdout(buf):
         try:
-            rc = embed_run(args)
+            rc = run_embedding_build(
+                ctx.vault, items, keys=keys, force=False, resume=True, json=True
+            )
         except Exception as exc:  # noqa: BLE001 — structured error boundary
             return PFResult(
                 ok=False,
@@ -590,34 +569,35 @@ def _embed_resume_handler(ctx: ActionContext, request: ActionRequest) -> PFResul
                 version=PF_VERSION,
                 error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(exc)),
             )
-    # embed_run emits exactly one PFResult JSON (json mode, #137 contract).
-    for line in reversed(buf.getvalue().splitlines()):
-        stripped = line.strip()
-        if stripped.startswith("{") and stripped.endswith("}"):
+    # the service's json mode emits exactly one PFResult JSON.
+    text = buf.getvalue().strip()
+    payload = None
+    if text.startswith("{") and text.endswith("}"):
+        try:
+            payload = json.loads(text)
+        except (ValueError, KeyError):
+            payload = None
+    if payload is not None:
+        error = None
+        if payload.get("error"):
+            code = str(payload["error"].get("code", "INTERNAL_ERROR"))
             try:
-                payload = json.loads(stripped)
-                error = None
-                if payload.get("error"):
-                    code = str(payload["error"].get("code", "INTERNAL_ERROR"))
-                    try:
-                        code_enum = ErrorCode(code)
-                    except ValueError:
-                        code_enum = ErrorCode.INTERNAL_ERROR
-                    error = PFError(
-                        code=code_enum,
-                        message=str(payload["error"].get("message", "")),
-                    )
-                return PFResult(
-                    ok=bool(payload.get("ok", rc == 0)),
-                    command="action run",
-                    version=PF_VERSION,
-                    data=payload.get("data"),
-                    error=error,
-                    warnings=payload.get("warnings", []),
-                    next_actions=payload.get("next_actions", []),
-                )
-            except (ValueError, KeyError):
-                break
+                code_enum = ErrorCode(code)
+            except ValueError:
+                code_enum = ErrorCode.INTERNAL_ERROR
+            error = PFError(
+                code=code_enum,
+                message=str(payload["error"].get("message", "")),
+            )
+        return PFResult(
+            ok=bool(payload.get("ok", rc == 0)),
+            command="action run",
+            version=PF_VERSION,
+            data=payload.get("data"),
+            error=error,
+            warnings=payload.get("warnings", []),
+            next_actions=payload.get("next_actions", []),
+        )
     return PFResult(
         ok=rc == 0,
         command="action run",
