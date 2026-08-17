@@ -11,6 +11,7 @@ Moved from `paperforge/lineage.py::_ocr_artifact_detail` and extended:
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
