@@ -8,5 +8,5 @@
 #
 # MCP server configured in .omp/mcp.json
 
-.open-design/source
-.open-design/deploy/.env
+/source/
+/deploy/.env
