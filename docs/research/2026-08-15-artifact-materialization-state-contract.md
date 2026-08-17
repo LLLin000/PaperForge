@@ -56,8 +56,9 @@ Zotero / canonical index
      │
      ▼
 [0] Canonical source identity
-     ├─ 无 PDF                        → blocked.no_pdf → user action
-     ├─ PDF 不可读                    → blocked.source_unreadable → user action
+     ├─ authority says no PDF              → nopdf → not_applicable → satisfied terminal
+     ├─ authority expects PDF, file absent → pdf_missing → blocked → user action
+     ├─ PDF unreadable                    → blocked.source_unreadable → user action
      └─ PDF 有效
           ▼
 [1] OCR lifecycle / provenance (meta.json)
@@ -71,6 +72,14 @@ Zotero / canonical index
      ├─ retryable/fatal/legacy failed → failed → ocr.run
      ├─ nopdf / blocked               → blocked → user action
      └─ done*
+ [1b] OCR execution control (batch/provider state; orthogonal to materialization)
+      ├─ queued/running/processing        → execution_in_flight → wait or `ocr status`
+      ├─ submitting                       → execution_unknown → inspect before retry
+      ├─ retryable/fatal/legacy failed    → failed → `ocr resume` / explicit retry
+      ├─ done                             → execution_settled → continue to provenance
+      └─ detached/cancelled               → execution_detached → provider may continue;
+                                              resume/status must use the recorded batch
+      (This layer never rewrites `meta.json`; OCR is its sole writer.)
           ▼
 [2] OCR ownership / source provenance
      ├─ meta.zotero_key != dir/canonical key            → source_misbound
@@ -185,10 +194,14 @@ drive RC decisions:
 
 ### Closed branches
 
-- **Source and lifecycle:** missing/unreadable PDF, `nopdf`, `blocked`,
-  pending, queued/running, zombie, retryable/fatal failure, and legacy
-  failure remain distinct. `nopdf` is a valid URL-only terminal state;
+- **Source and lifecycle:** missing/unreadable PDF, `nopdf`, `pdf_missing`,
+  `blocked`, pending, queued/running, zombie, retryable/fatal failure, and
+  legacy failure remain distinct. `nopdf` is a valid URL-only terminal state;
   `pdf_missing` is a blocked source state.
+- **OCR execution control:** provider batch identity, submission marker,
+  queued/running/submitting/failed/detached state, and local materialization
+  state are separate facts. `meta.json` has one writer (OCR); status/resume
+  observes the recorded batch and never repairs metadata as a side effect.
 - **Provenance:** the canonical key, canonical PDF fingerprint, and raw-block
   fingerprint are checked fail-closed. Unverifiable provenance is `unknown`,
   never `current`.
@@ -199,18 +212,20 @@ drive RC decisions:
 - **Publication identity:** `result-hash.pending`, missing publication
   metadata, stale hashes, and matching hashes are separate states. A matching
   artifact without its publication identity is not silently current.
-- **Retrieval:** retrieval currency is decided from the manifest, units,
-  hashes, policy, and OCR identity. `ocr_status == done` is not a retrieval
-  authority.
+- **Retrieval:** retrieval currency requires manifest identity, current policy,
+  and a verified carrier snapshot. Count/hash/duplicate corruption maps to
+  `stale` and `memory.build`; unverifiable integrity maps to `unknown`, never
+  `current`. `ocr_status == done` is not a retrieval authority.
 - **Embedding eligibility:** build and resume share one selector. A paper is
   eligible only when retrieval is current and it has indexable content;
   no-content is a satisfied terminal outcome and is not an embed deficit.
 - **Vector substrate and serving:** model/endpoint/dimension/identity and
   layout are global substrate facts. Candidate/build state is distinct from
   live/serving state; a candidate never makes stale live serving current.
-- **Action ownership:** probe observes only. `reconcile` emits the minimal
-  first-frontier intent. Preflight, confirmation, execution settlement, and
-  post-action re-observation belong to the action runner.
+- **Action ownership:** probe observes only. `reconcile` owns the minimal
+  first-frontier intent; preflight projects that same intent and must not
+  independently mark a downstream action `needed`. Confirmation, execution
+  settlement, and post-action re-observation belong to the action runner.
 
 ### Deferred deep-audit items
 
