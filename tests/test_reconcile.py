@@ -216,18 +216,8 @@ class TestMinimalFrontier:
         (keys), NOT a global build (P0-1 classification)."""
         vault = _lineage_vault(tmp_path)
         _set_vector_missing(vault, "KEY1")
-        # M1.1: give KEY1 content so probe sees vector_not_embedded, not
-        # vector_no_content (the satisfied terminal that suppresses resume).
-        conn = _db(vault)
-        try:
-            conn.execute(
-                "INSERT INTO body_units (unit_id, paper_id, section_path, unit_text, "
-                "page_span_json, block_span_json, token_estimate, indexable, veto_reason, quality_hints_json) "
-                "VALUES ('KEY1-u1', 'KEY1', '/', 'content', '[]', '[]', 1, 1, '', '{}')"
-            )
-            conn.commit()
-        finally:
-            conn.close()
+        # The lineage fixture carries indexable content; deleting vectors is
+        # sufficient to exercise vector_not_embedded.
         result = reconcile(vault)
         assert [i["action_id"] for i in result.next_actions] == ["embed.resume"]
         assert result.next_actions[0]["scope"]["keys"] == ["KEY1"]
@@ -242,13 +232,8 @@ class TestMinimalFrontier:
             for table in ("vec_fulltext_meta", "vec_body_meta", "vec_objects_meta"):
                 conn.execute(f"DELETE FROM {table}")
             conn.execute("DELETE FROM build_state")
-            # M1.1: content so the deficit is not_embedded (not the
-            # no_content terminal).
-            conn.execute(
-                "INSERT INTO body_units (unit_id, paper_id, section_path, unit_text, "
-                "page_span_json, block_span_json, token_estimate, indexable, veto_reason, quality_hints_json) "
-                "VALUES ('KEY1-u1', 'KEY1', '/', 'content', '[]', '[]', 1, 1, '', '{}')"
-            )
+            # The lineage fixture carries indexable content; only the vector
+            # substrate is reset for this test.
             conn.commit()
         finally:
             conn.close()

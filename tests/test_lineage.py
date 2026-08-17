@@ -31,7 +31,11 @@ from paperforge.lineage import (
     retrieval_identity_from_manifest,
     write_vector_lineage,
 )
-from paperforge.retrieval.manifest import RETRIEVAL_POLICY_VERSION, build_paper_manifest
+from paperforge.retrieval.manifest import (
+    RETRIEVAL_POLICY_VERSION,
+    build_paper_manifest,
+    compute_body_units_hash,
+)
 from tests.conftest import canonical_test_config
 
 # Same defaults the embed build uses so identities line up in fixtures.
@@ -115,8 +119,9 @@ def _manifest_for(key: str, ocr_result_hash: str, **overrides: Any) -> dict[str,
         body_units=[
             {
                 "unit_id": f"{key}-b1",
+                "section_path": "s",
+                "section_path_json": json.dumps(["s"]),
                 "node_id": "n1",
-                "section_path": ["s"],
                 "unit_text": "body text",
             }
         ],
@@ -124,8 +129,9 @@ def _manifest_for(key: str, ocr_result_hash: str, **overrides: Any) -> dict[str,
             {
                 "unit_id": f"{key}-o1",
                 "paper_id": key,
+                "section_path": "s",
                 "node_id": "n2",
-                "section_path": ["s"],
+                "section_path_json": json.dumps(["s"]),
                 "object_kind": "figure",
                 "object_label": "Fig 1",
                 "caption_text": "caption",
@@ -161,6 +167,30 @@ def _make_vault(tmp_path: Path, keys=("KEY1",)) -> Path:
             conn.execute(
                 "INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)",
                 (f"manifest:{key}", json.dumps(manifest)),
+            )
+            conn.execute(
+                """INSERT INTO body_units (
+                    unit_id, paper_id, section_path, section_path_json,
+                    section_level, section_title, node_id, unit_text,
+                    unit_kind, part_ordinal, page_span_json, block_span_json,
+                    token_estimate, indexable, veto_reason, quality_hints_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    f"{key}-b1", key, "s", json.dumps(["s"]), 0, "", "n1",
+                    "body text", "body", 0, "[]", "[]", 2, 1, "", "[]",
+                ),
+            )
+            conn.execute(
+                """INSERT INTO object_units (
+                    unit_id, paper_id, section_path, node_id, section_path_json,
+                    object_kind, object_label, caption_text, nearby_body_text,
+                    page_span_json, block_span_json, token_estimate, indexable,
+                    veto_reason, quality_hints_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    f"{key}-o1", key, "s", "n2", json.dumps(["s"]), "figure",
+                    "Fig 1", "caption", "nearby", "[]", "[]", 2, 1, "", "[]",
+                ),
             )
             # vec0 row first, meta aligned via lastrowid — the layout check
             # rejects orphan meta rows (meta without a matching vec row).
@@ -512,9 +542,23 @@ class TestProbeLineage:
             manifest = json.loads(
                 conn.execute("SELECT value FROM meta WHERE key='manifest:KEY1'").fetchone()[0]
             )
-            # Simulate a memory publish: unit digests changed → new identity,
-            # stored consistently in the manifest (retrieval stays current).
-            manifest["body_units_hash"] = "f" * 64
+            # Simulate a real memory publish: the carrier and manifest change
+            # together, so retrieval remains current while old vectors stale.
+            conn.execute(
+                "UPDATE body_units SET unit_text = ? WHERE paper_id = ?",
+                ("new body after publish", "KEY1"),
+            )
+            manifest["body_units_hash"] = compute_body_units_hash([{
+                "unit_id": "KEY1-b1",
+                "node_id": "n1",
+                "section_path": "s",
+                "section_path_json": json.dumps(["s"]),
+                "section_level": 0,
+                "section_title": "",
+                "unit_kind": "body",
+                "part_ordinal": 0,
+                "unit_text": "new body after publish",
+            }])
             manifest["retrieval_identity"] = compute_retrieval_identity(
                 ocr_result_hash=manifest["ocr_result_hash"],
                 retrieval_policy_version=manifest["retrieval_policy_version"],
@@ -546,6 +590,26 @@ class TestProbeLineage:
         assert payload["papers"]["KEY1"]["ocr"] == "current"
         assert payload["papers"]["KEY1"]["retrieval"] == "stale"
         assert payload["papers"]["KEY1"]["vector"] == "stale"
+
+    def test_mutated_retrieval_carrier_is_not_current(self, tmp_path: Path) -> None:
+        """A post-publish unit mutation must fail the retrieval state closed."""
+        vault = _make_vault(tmp_path)
+        db_path = vault / "99_System" / "PaperForge" / "indexes" / "paperforge.db"
+        conn = sqlite3.connect(str(db_path))
+        try:
+            conn.execute(
+                "UPDATE body_units SET unit_text = ? WHERE paper_id = ?",
+                ("BROKEN AFTER PUBLISH", "KEY1"),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+        state = probe_lineage(vault)["papers"]["KEY1"]
+        assert state["retrieval"] == "stale"
+        assert state["vector"] == "stale"
+        assert state["integrity"]["snapshot_integrity"] == "corrupt"
+
 
     def test_cli_output_shape_and_no_autorebuild(self, tmp_path: Path) -> None:
         vault = _make_vault(tmp_path)
@@ -794,6 +858,53 @@ def test_ocr_state_machine_probe_to_action(
         assert not actions, f"expected NO action, got {actions}"
     else:
         assert exp_action in actions, f"expected {exp_action} in {actions}"
+
+def test_preflight_matches_reconcile_first_frontier() -> None:
+    """Preflight and reconcile must agree on the action that is needed."""
+    from paperforge.actions.preflight_projection import _rule
+    from paperforge.reconcile import PaperObservation, _per_paper_intents
+
+    cases = [
+        (
+            {"ocr": "stale", "retrieval": "current", "vector": "current",
+             "details": {"ocr": "provenance_pdf_changed"}},
+            {"ocr.run"},
+        ),
+        (
+            {"ocr": "incomplete", "retrieval": "missing", "vector": "missing",
+             "details": {"ocr": "tree_missing"}},
+            {"ocr.rebuild_derived"},
+        ),
+        (
+            {"ocr": "current", "retrieval": "stale", "vector": "current",
+             "details": {}},
+            {"memory.build"},
+        ),
+        (
+            {"ocr": "current", "retrieval": "current", "vector": "missing",
+             "details": {"vector": "vector_not_embedded"}},
+            {"embed.resume"},
+        ),
+        (
+            {"ocr": "current", "retrieval": "current", "vector": "missing",
+             "details": {"vector": "vector_no_content"}},
+            set(),
+        ),
+    ]
+    for index, (state, expected) in enumerate(cases):
+        paper = PaperObservation(
+            key=f"PARITY{index}",
+            ocr=str(state["ocr"]),
+            retrieval=str(state["retrieval"]),
+            vector=str(state["vector"]),
+            identities={},
+            details=dict(state["details"]),
+        )
+        actual = {intent.action_id for intent in _per_paper_intents(paper)}
+        assert actual == expected
+        for action_id in ("ocr.run", "ocr.rebuild_derived", "memory.build", "embed.resume"):
+            applicability, *_ = _rule(action_id, state, key=paper.key)
+            assert (applicability == "needed") is (action_id in expected)
 
 class TestMaterializationCorrective:
     """P0-A corrective (2026-08-15 review): partial really detected,
