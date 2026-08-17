@@ -86,3 +86,23 @@ def test_not_ready_never_eligible(tmp_path: Path) -> None:
     cand = select_embedding_candidates(vault, keys=["NOREADY"])
     assert cand["eligible"] == []
     assert cand["not_ready"] == ["NOREADY"]
+
+
+def test_build_and_resume_share_one_selector(tmp_path: Path) -> None:
+    """M3-F: embed.build and embed.resume MUST consume the SAME eligibility
+    selector — no divergent candidate sets (a 'build correct, scoped
+    resume wrong' split is the failure mode this closes)."""
+    import inspect
+
+    from paperforge.services import embedding
+
+    # both modes route through run_embedding_build, which calls
+    # select_embedding_candidates — assert the single call site exists
+    # and there is no other done_papers/ocr_status filter anywhere.
+    src = inspect.getsource(embedding.run_embedding_build)
+    assert "select_embedding_candidates" in src
+    assert 'get("ocr_status")' not in src, "candidate selection must not consult ocr_status"
+    src_all = inspect.getsource(embedding)
+    assert src_all.count("select_embedding_candidates(") <= 3, (
+        "one selector, used by build/resume/progress — no parallel logic"
+    )

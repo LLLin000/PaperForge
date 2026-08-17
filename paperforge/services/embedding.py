@@ -774,8 +774,9 @@ def run_embedding_build(
                             _expected_counts[_coll_key] += len(_p.ids)
 
                     if not json:
-                        from paperforge.core.ndjson import emit_progress
+                        from paperforge.core.ndjson import emit_paper_settled, emit_progress
 
+                        emit_paper_settled("embed.build", bundle.paper_id, "succeeded")
                         emit_progress("embed.build", processed_count, total,
                                       item_id=bundle.paper_id)
                     _mark(
