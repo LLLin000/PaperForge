@@ -20,6 +20,7 @@ This is the single M4 acceptance matrix. Every RC claim must attach a command, a
 | Field | Value | Evidence | Status |
 |---|---|---|---|
 | Candidate commit | `6ef0dfe9` | `git log -1`; M4 blocker repairs `2c5f9147` + `6ef0dfe9`, now frozen | FROZEN |
+| RC manifest | `project/current/rc-manifests/2026-08-17-6ef0dfe9.json` | Machine-readable environment snapshot; candidate worktree clean at full SHA | PASS — recorded |
 | Python package version | `1.5.15` | `paperforge/__init__.py`; `pyproject.toml` | OBSERVED |
 | Python requirement | `>=3.11` | `pyproject.toml` | OBSERVED |
 | Plugin manifest | `1.5.15`, Obsidian `>=1.11.4` | `paperforge/plugin/manifest.json` | OBSERVED |
