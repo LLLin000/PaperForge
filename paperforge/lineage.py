@@ -944,6 +944,16 @@ def _probe_retrieval_state(
         return "stale", recomputed
     if stored != recomputed:
         return "stale", None
+    # Identity agreement is necessary but not sufficient: the carrier can
+    # be mutated after publication.  A corrupt snapshot is actionable stale;
+    # an unverifiable one fails closed as unknown.
+    integrity = _retrieval_integrity_facts(
+        conn, key, "current", ocr_state, recomputed
+    )["snapshot_integrity"]
+    if integrity == "corrupt":
+        return "stale", recomputed
+    if integrity != "verified":
+        return "unknown", None
     return "current", recomputed
 
 

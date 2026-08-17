@@ -35,6 +35,51 @@ def _seed_units(vault: Path, keys: tuple[str, ...]) -> None:
     finally:
         conn.close()
 
+def _drop_units(vault: Path, keys: tuple[str, ...]) -> None:
+    import json
+
+    from paperforge.lineage import compute_retrieval_identity
+    from paperforge.memory.db import get_connection, get_memory_db_path
+    from paperforge.retrieval.manifest import (
+        compute_body_units_hash,
+        compute_object_units_hash,
+    )
+
+    conn = get_connection(get_memory_db_path(vault))
+    try:
+        conn.executemany("DELETE FROM body_units WHERE paper_id = ?", ((key,) for key in keys))
+        conn.execute(
+            "DELETE FROM object_units WHERE paper_id IN ({})".format(
+                ",".join("?" for _ in keys)
+            ),
+            keys,
+        )
+        for key in keys:
+            row = conn.execute(
+                "SELECT value FROM meta WHERE key = ?", (f"manifest:{key}",)
+            ).fetchone()
+            if not row:
+                continue
+            manifest = json.loads(row[0])
+            manifest["body_unit_count"] = 0
+            manifest["body_units_hash"] = compute_body_units_hash([])
+            manifest["object_unit_count"] = 0
+            manifest["object_units_hash"] = compute_object_units_hash([])
+            manifest["retrieval_identity"] = compute_retrieval_identity(
+                ocr_result_hash=manifest["ocr_result_hash"],
+                retrieval_policy_version=manifest["retrieval_policy_version"],
+                structure_tree_hash=manifest["structure_tree_hash"],
+                body_units_hash=manifest["body_units_hash"],
+                object_units_hash=manifest["object_units_hash"],
+            )
+            conn.execute(
+                "UPDATE meta SET value = ? WHERE key = ?",
+                (json.dumps(manifest), f"manifest:{key}"),
+            )
+        conn.commit()
+    finally:
+        conn.close()
+
 
 def _drop_manifest(vault: Path, key: str) -> None:
     """Remove the retrieval manifest so probe reports retrieval missing."""
@@ -54,9 +99,8 @@ def test_eligible_no_content_not_ready_partition(tmp_path: Path) -> None:
     gets content (eligible), KEY2 stays contentless (no_content), KEY3's
     manifest is dropped (not_ready)."""
     from paperforge.services.embedding import select_embedding_candidates
-
     vault = _make_vault(tmp_path, keys=("KEY1", "KEY2", "KEY3"))
-    _seed_units(vault, ("KEY1",))
+    _drop_units(vault, ("KEY2",))
     _drop_manifest(vault, "KEY3")
 
     cand = select_embedding_candidates(vault, keys=["KEY1", "KEY2", "KEY3"])
@@ -71,6 +115,7 @@ def test_no_content_never_eligible(tmp_path: Path) -> None:
     from paperforge.services.embedding import select_embedding_candidates
 
     vault = _make_vault(tmp_path, keys=("PURE",))
+    _drop_units(vault, ("PURE",))
     cand = select_embedding_candidates(vault, keys=["PURE"])
     assert cand["eligible"] == []
     assert cand["no_content"] == ["PURE"]

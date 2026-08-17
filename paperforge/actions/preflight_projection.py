@@ -14,10 +14,39 @@ from pathlib import Path
 from paperforge.actions.types import Applicability, PaperPreflight
 
 
-def _rule(action_id: str, state: dict[str, object]) -> tuple[Applicability, str, str, str | None]:
-    """Map one paper's OBSERVED state to (applicability, reason_code,
-    reason, recommended_action_id).  State keys come from probe lineage
-    (ocr/retrieval/vector + details.*), which is the materialization SSOT.
+def _canonical_intent(action_id: str, state: dict[str, object], key: str):
+    """Return the reconcile frontier intent for a per-paper action.
+
+    Reconcile owns the first-frontier decision.  Preflight only projects that
+    decision into the availability/applicability wire contract.
+    """
+    if action_id not in {"ocr.run", "ocr.rebuild_derived", "memory.build", "embed.resume"}:
+        return None
+    from paperforge.reconcile import PaperObservation, _per_paper_intents
+
+    raw_details = state.get("details")
+    details = raw_details if isinstance(raw_details, dict) else {}
+    paper = PaperObservation(
+        key=key,
+        ocr=str(state.get("ocr") or ""),
+        retrieval=str(state.get("retrieval") or ""),
+        vector=str(state.get("vector") or ""),
+        identities={},
+        details={str(k): (str(v) if v is not None else None) for k, v in details.items()},
+    )
+    return next(
+        (intent for intent in _per_paper_intents(paper) if intent.action_id == action_id),
+        None,
+    )
+
+
+def _rule(
+    action_id: str, state: dict[str, object], *, key: str = "<paper>"
+) -> tuple[Applicability, str, str, str | None]:
+    """Map one paper's observed state to the action applicability contract.
+
+    The first-frontier ``needed`` decision is delegated to reconcile; this
+    function only classifies states where that action is not the frontier.
     """
     ocr = str(state.get("ocr") or "")
     retrieval = str(state.get("retrieval") or "")
@@ -27,46 +56,62 @@ def _rule(action_id: str, state: dict[str, object]) -> tuple[Applicability, str,
     ocr_detail = str(details.get("ocr") or "") or None
     vector_detail = str(details.get("vector") or "") or None
 
+    intent = _canonical_intent(action_id, state, key)
+    if intent is not None:
+        return "needed", intent.trigger_reason_code, intent.trigger_reason, None
+
     if action_id == "ocr.run":
         if ocr_detail in ("no_pdf", "nopdf"):
             return "not_applicable", "ocr.no_pdf", "No PDF attachment — not an OCR target", None
+        if ocr_detail in ("blocked", "raw_not_file", "raw_permission"):
+            return "blocked", "ocr.blocked", "OCR blocked by source or filesystem state", None
         if ocr == "current":
             return "noop", "ocr.current", "OCR already current", None
-        if ocr_detail == "provenance_pdf_changed":
-            return "needed", "lineage.ocr_pdf_changed", "Attachment replaced — re-OCR against current PDF", None
-        if ocr_detail == "blocked":
-            return "blocked", "ocr.blocked", "OCR blocked (e.g. canonical PDF missing)", None
-        if ocr in ("missing", "failed", "incomplete", "stale"):
-            return "needed", "lineage.ocr_defect", f"OCR is {ocr} ({ocr_detail or 'unknown'})", None
+        if ocr in ("incomplete", "stale"):
+            return (
+                "not_applicable",
+                "lineage.ocr_derived_defect",
+                f"OCR requires derived rebuild ({ocr_detail or ocr})",
+                "ocr.rebuild_derived",
+            )
+        if ocr_detail == "queued":
+            return "blocked", "ocr.execution_in_flight", "OCR execution is already in flight", None
         return "noop", "ocr.noop", f"OCR is {ocr}", None
 
     if action_id == "ocr.rebuild_derived":
-        if ocr == "incomplete":
-            return "needed", "lineage.ocr_incomplete", f"Derived artifacts incomplete ({ocr_detail})", None
         if ocr == "current":
             return "noop", "ocr.current", "OCR already current", None
-        if ocr in ("missing", "failed"):
+        if ocr_detail in (
+            "blocked",
+            "raw_not_file",
+            "raw_permission",
+            "blocks_not_file",
+            "blocks_permission",
+            "tree_not_file",
+            "tree_permission",
+            "role_index_not_file",
+            "role_index_permission",
+        ):
+            return "blocked", "ocr.blocked", "OCR rebuild blocked by filesystem state", None
+        if ocr in ("missing", "failed") or ocr_detail in (
+            "provenance_key_mismatch",
+            "provenance_pdf_changed",
+            "provenance_raw_mismatch",
+        ):
             return (
                 "not_applicable",
                 "lineage.ocr_raw_defect",
-                f"Raw OCR defective ({ocr}) — ocr.run, not rebuild",
+                f"OCR requires remote rerun ({ocr_detail or ocr})",
                 "ocr.run",
             )
         return "noop", "ocr.noop", f"OCR is {ocr}", None
 
     if action_id == "memory.build":
-        if retrieval in ("missing", "stale") and ocr == "current":
-            return "needed", "lineage.retrieval_defect", f"Retrieval units are {retrieval}", None
         if retrieval == "current":
             return "noop", "retrieval.current", "Retrieval already current", None
         if ocr != "current":
-            return (
-                "blocked",
-                "lineage.ocr_prereq",
-                f"OCR is {ocr} — retrieval cannot build",
-                None,
-            )
-        return "noop", "retrieval.noop", f"Retrieval is {retrieval}", None
+            return "blocked", "lineage.ocr_prereq", f"OCR is {ocr} — retrieval cannot build", None
+        return "blocked", "lineage.retrieval_unobservable", f"Retrieval is {retrieval}", None
 
     if action_id == "embed.resume":
         if vector == "current":
@@ -85,19 +130,12 @@ def _rule(action_id: str, state: dict[str, object]) -> tuple[Applicability, str,
                 f"Retrieval is {retrieval} — vectors need retrieval first",
                 None,
             )
-        if vector in ("missing", "stale"):
-            return (
-                "needed",
-                "lineage.vector_defect",
-                f"Vectors are {vector} ({vector_detail or 'unknown'})",
-                None,
-            )
-        return "noop", "vector.noop", f"Vectors are {vector}", None
+        return "blocked", "lineage.vector_unobservable", f"Vectors are {vector}", None
 
     if action_id == "embed.build":
-        # global substrate action — per-key projection still useful to
-        # report which papers actually need embedding.
-        if vector in ("stale", "missing") and vector_detail != "vector_no_content":
+        if vector_detail == "vector_no_content":
+            return "not_applicable", "vector.no_content", "No indexable content — legal terminal", None
+        if vector in ("stale", "missing"):
             return "needed", "lineage.vector_defect", f"Vectors are {vector}", None
         if vector == "current":
             return "noop", "vector.current", "Vectors already current", None
@@ -126,7 +164,7 @@ def project_applicability(vault: Path, action_id: str, keys: list[str]) -> list[
                 )
             )
             continue
-        app, rc, reason, rec = _rule(action_id, state)
+        app, rc, reason, rec = _rule(action_id, state, key=key)
         out.append(
             PaperPreflight(
                 key=key,
