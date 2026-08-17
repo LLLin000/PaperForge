@@ -39,8 +39,8 @@
   },
   "release_issue": "#81",
   "evidence_document_base_sha": "c34a30470eea2ba31263dd8ddd22072d58ee5197",
-  "evidence_document_head": "f42e4c67",
-  "tested_at": "2026-08-17T14:04:08+00:00",
+  "evidence_document_head": "9a4d659c",
+  "tested_at": "2026-08-17T14:07:58+00:00",
   "notes": [
     "Candidate worktree is isolated from unrelated dirty files in the main checkout.",
     "Evidence/documentation commits are not candidate code and must not replace candidate_code_sha.",
