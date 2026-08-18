@@ -112,11 +112,15 @@ def select_embedding_candidates(vault: Path, keys: list[str] | None = None) -> d
     Returns {"eligible": [...], "no_content": [...], "not_ready": [...]}
     — mutually exclusive; no_content is a satisfied terminal (M1.1), and
     not_ready papers must NOT be embedded."""
-    from paperforge.lineage import probe_lineage
+    from paperforge.lineage import observe_lineage_papers, probe_lineage
     from paperforge.memory.db import get_memory_db_path, open_live_reader
 
     try:
-        envelope = probe_lineage(vault)
+        envelope = (
+            observe_lineage_papers(vault, keys)
+            if keys is not None
+            else probe_lineage(vault)
+        )
         papers = envelope.get("papers", {})
     except Exception:  # noqa: BLE001 — unobservable library: nothing eligible
         papers = {}

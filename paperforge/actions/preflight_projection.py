@@ -146,10 +146,11 @@ def _rule(
 
 def project_applicability(vault: Path, action_id: str, keys: list[str]) -> list[PaperPreflight]:
     """Per-paper applicability for one action over explicit keys, projected
-    from probe lineage (read-only; never mutates meta or the provider)."""
-    from paperforge.lineage import probe_lineage
+    from the scoped lineage read model (read-only; never mutates meta or the
+    provider)."""
+    from paperforge.lineage import observe_lineage_papers
 
-    envelope = probe_lineage(vault)
+    envelope = observe_lineage_papers(vault, keys)
     papers = envelope.get("papers", {})
     out: list[PaperPreflight] = []
     for key in keys:

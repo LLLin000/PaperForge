@@ -119,10 +119,10 @@ class ReconcileObservation:
     global_state: GlobalObservation
     papers: tuple[PaperObservation, ...] = ()
     vault: Path | None = None
-    orphan_count: int = 0
-    orphan_keys: tuple[str, ...] = ()
-    residual_count: int = 0
-    residual_keys: tuple[str, ...] = ()
+    orphan_count: int | None = None
+    orphan_keys: tuple[str, ...] | None = None
+    residual_count: int | None = None
+    residual_keys: tuple[str, ...] | None = None
 
     def by_key(self) -> dict[str, PaperObservation]:
         return {p.key: p for p in self.papers}
@@ -193,15 +193,24 @@ def observe_global(vault: Path) -> GlobalObservation:
 
 def observe_papers(
     vault: Path, keys: list[str] | None = None
-) -> tuple[tuple[PaperObservation, ...], dict[str, object]]:
-    """Per-paper lineage facets + identities (T1 probe read model).
+) -> tuple[
+    tuple[PaperObservation, ...],
+    dict[str, object] | None,
+    dict[str, object] | None,
+]:
+    """Observe per-paper lineage, optionally without library-level scans.
 
-    Also returns the library-level orphan state from the SAME probe call
-    (统一出统一回): workspace papers absent from the canonical index are a
-    first-class state — reconcile turns them into a library.prune intent."""
-    from paperforge.lineage import probe_lineage
+    A paper-scoped observation never returns residual/orphan defaults: those
+    are library facts and remain ``None`` until a full observation is made.
+    """
+    from paperforge.lineage import observe_lineage_papers, probe_lineage
 
-    payload = probe_lineage(vault)
+    scoped = keys is not None
+    payload = (
+        observe_lineage_papers(vault, keys)
+        if scoped
+        else probe_lineage(vault)
+    )
     papers = payload.get("papers", {})
     identities = payload.get("identities", {})
     wanted = set(keys) if keys is not None else None
@@ -217,6 +226,8 @@ def observe_papers(
             identities=dict(identities.get(key, {})),
             details=states.get("details"),
         ))
+    if scoped:
+        return tuple(sorted(out, key=lambda p: p.key)), None, None
     orphan = payload.get("orphan", {}) or {}
     residuals = payload.get("residuals", {}) or {}
     return (
@@ -238,11 +249,21 @@ def observe(vault: Path, keys: list[str] | None = None) -> ReconcileObservation:
         global_state=observe_global(vault),
         papers=papers,
         vault=vault,
-        orphan_count=int(orphan["count"]),
-        orphan_keys=orphan["keys"],
-        residual_count=int(residuals["count"]),
-        residual_keys=residuals["keys"],
+        orphan_count=(
+            None if orphan is None else int(orphan["count"])
+        ),
+        orphan_keys=(
+            None if orphan is None else orphan["keys"]
+        ),
+        residual_count=(
+            None if residuals is None else int(residuals["count"])
+        ),
+        residual_keys=(
+            None if residuals is None else residuals["keys"]
+        ),
     )
+
+
 
 
 def _facet_summary(obs: ReconcileObservation) -> dict[str, int]:
@@ -584,7 +605,7 @@ def reconcile(vault: Path, keys: list[str] | None = None) -> PFResult:
     # (workspace / full-text index / vectors / OCR).  One library.prune
     # clears every carrier for every residual paper.  Destructive →
     # confirmation-required; never automatic.
-    if obs.residual_count > 0:
+    if obs.residual_count is not None and obs.residual_count > 0:
         intents.append(ActionIntent(
             action_id="library.prune",
             scope=AllScope(),
@@ -598,7 +619,11 @@ def reconcile(vault: Path, keys: list[str] | None = None) -> PFResult:
 
     # Library orphans — legacy alias of the workspace carrier, kept for
     # compatibility with callers that still read orphan_count.
-    if obs.orphan_count > 0 and obs.residual_count == 0:
+    if (
+        obs.orphan_count is not None
+        and obs.orphan_count > 0
+        and obs.residual_count == 0
+    ):
         intents.append(ActionIntent(
             action_id="library.prune",
             scope=AllScope(),

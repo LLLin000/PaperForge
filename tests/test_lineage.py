@@ -27,6 +27,7 @@ from paperforge.lineage import (
     compute_embedding_identity,
     compute_retrieval_identity,
     compute_vector_identity,
+    observe_lineage_papers,
     probe_lineage,
     retrieval_identity_from_manifest,
     write_vector_lineage,
@@ -380,6 +381,24 @@ class TestProbeLineage:
         assert payload["papers"]["KEY1"]["ocr"] == "current"
         assert payload["papers"]["KEY1"]["retrieval"] == "current"
         assert payload["papers"]["KEY1"]["vector"] == "current"
+    def test_scoped_observation_matches_paper_facts_without_library_scan(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        vault = _make_vault(tmp_path, keys=("KEY1", "KEY2"))
+        full = probe_lineage(vault)
+
+        def fail_library_scan(_vault: Path) -> dict:
+            raise AssertionError("scoped observation must not scan library carriers")
+
+        monkeypatch.setattr("paperforge.lineage._detect_residuals", fail_library_scan)
+        scoped = observe_lineage_papers(vault, ("KEY2", "UNKNOWN"))
+
+        assert scoped["papers"]["KEY2"] == full["papers"]["KEY2"]
+        assert scoped["identities"]["KEY2"] == full["identities"]["KEY2"]
+        assert "UNKNOWN" not in scoped["papers"]
+        assert "residuals" not in scoped
+        assert "orphan" not in scoped
+
 
     def test_ocr_snapshot_missing_is_publish_metadata_missing(self, tmp_path: Path) -> None:
         """ADR-0002 (contract §5.3): result-hash.txt is the PUBLISHED
