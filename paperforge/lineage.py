@@ -22,7 +22,7 @@ import re
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Collection
 
 from paperforge.worker.ocr_hash import compute_ocr_result_hash
 
@@ -300,11 +300,17 @@ def _papers_with_vectors(conn: sqlite3.Connection) -> list[str]:
 
 # ── probe read model ──────────────────────────────────────────────────────
 
-def probe_lineage(vault: Path) -> dict[str, Any]:
-    """Per-paper {ocr, retrieval, vector} lineage states.
+def _probe_lineage(
+    vault: Path,
+    *,
+    requested_keys: Collection[str] | None = None,
+    include_library: bool = True,
+) -> dict[str, Any]:
+    """Build the lineage read model for all or an explicit paper scope.
 
-    Fails closed: no memory DB → an ``unknown`` envelope response (never an
-    exception); missing/legacy identities report ``unknown``, never ``stale``.
+    ``requested_keys`` is validated against the canonical paper universe
+    before any per-paper materialization is inspected.  Library residuals and
+    orphan scans are included only for the full-library observation.
     """
     from paperforge.config import paperforge_paths
 
@@ -325,7 +331,15 @@ def probe_lineage(vault: Path) -> dict[str, Any]:
             "papers": {},
         }
 
-    keys = _paper_keys(vault, db_path)
+    authority_keys = _paper_keys(vault, db_path)
+    if requested_keys is None:
+        keys = authority_keys
+    else:
+        authority = set(authority_keys)
+        keys = [
+            key for key in dict.fromkeys(str(key) for key in requested_keys)
+            if key in authority
+        ]
     papers: dict[str, dict[str, str]] = {}
     identities: dict[str, dict[str, str | None]] = {}
     summary = {"current": 0, "stale": 0, "missing": 0, "unknown": 0}
@@ -410,12 +424,13 @@ def probe_lineage(vault: Path) -> dict[str, Any]:
                     ).fetchone() or (None,)
                 )[0],
             }
-        _orphan = _detect_orphans(vault)
-        _residuals = _detect_residuals(vault)
+        if include_library:
+            _orphan = _detect_orphans(vault)
+            _residuals = _detect_residuals(vault)
     finally:
         conn.close()
 
-    return {
+    payload = {
         "schema_version": 2,
         "module": "lineage",
         "capability_state": "ok",
@@ -424,15 +439,40 @@ def probe_lineage(vault: Path) -> dict[str, Any]:
         "papers": papers,
         "identities": identities,
         "summary": summary,
+    }
+    if include_library:
         # Library-level residual state — a paper absent from Zotero but
         # present in ANY carrier (workspace / full-text index / vectors /
         # OCR).  Part of the SAME state machine: reconcile turns it into a
         # single library.prune intent (one pass clears every carrier) and
         # the frontend pops the modal once (0→N) showing what is left.
-        "residuals": _residuals,
+        payload["residuals"] = _residuals
         # Legacy workspace-only view, kept for compatibility.
-        "orphan": _orphan,
-    }
+        payload["orphan"] = _orphan
+    else:
+        payload["scope"] = {
+            "kind": "papers",
+            "keys": list(dict.fromkeys(str(key) for key in requested_keys or ())),
+        }
+    return payload
+
+
+def probe_lineage(vault: Path) -> dict[str, Any]:
+    """Full-library lineage observation, including residual carriers."""
+    return _probe_lineage(vault)
+
+
+def observe_lineage_papers(
+    vault: Path, keys: Collection[str]
+) -> dict[str, Any]:
+    """Observe only requested canonical papers.
+
+    This is the scoped read model for per-paper actions.  It never performs
+    library residual/orphan scans and never returns library-level facts.
+    Unknown keys are absent from ``papers`` so callers can classify them as
+    ``paper.not_found`` without fabricating lineage state.
+    """
+    return _probe_lineage(vault, requested_keys=keys, include_library=False)
 
 
 def _detect_orphans(vault: Path) -> dict[str, Any]:
