@@ -36,10 +36,18 @@ def filter_readable(vault: Path, hits: list[dict[str, Any]], *, require_vector: 
     hits pass through (compat for pre-convergence/test environments).  The
     gate binds the moment a chain is observable.
     """
-    from paperforge.lineage import probe_lineage
+    # Scope fidelity: a paper-scoped reader (e.g. `retrieve --paper KEY`)
+    # must NOT pay for — or be polluted by — full-library observation.
+    # Observe only the hit papers' lineage; fall back to the full probe
+    # only when hits carry no paper_id at all.
+    from paperforge.lineage import observe_lineage_papers, probe_lineage
 
+    paper_ids = sorted({str(h.get("paper_id", "")) for h in hits if h.get("paper_id")})
     try:
-        probe = probe_lineage(vault)
+        if paper_ids:
+            probe = observe_lineage_papers(vault, paper_ids)
+        else:
+            probe = probe_lineage(vault)
     except Exception:  # noqa: BLE001 — unobservable lineage FAILS CLOSED:
         # never serve derived materialization we cannot prove compatible.
         return []

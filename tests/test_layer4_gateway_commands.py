@@ -278,14 +278,17 @@ def test_paper_lookup_fails_gracefully_without_db(tmp_path):
 def _mock_current_lineage(monkeypatch):
     """The reader gate (#159 §6) needs an observable CURRENT lineage chain —
     the fixture DB carries retrieval content without the lineage tables, so
-    the gate would drop every hit.  Declare TST001 current."""
-    monkeypatch.setattr(
-        "paperforge.lineage.probe_lineage",
-        lambda vault: {
+    the gate would drop every hit.  Declare TST001 current.  The gate now
+    observes scoped hits (observe_lineage_papers) instead of the full
+    library, so both entry points are mocked."""
+    def _envelope(vault, keys=None):
+        return {
             "capability_state": "ok",
             "papers": {"TST001": {"ocr": "current", "retrieval": "current", "vector": "current"}},
-        },
-    )
+        }
+
+    monkeypatch.setattr("paperforge.lineage.probe_lineage", _envelope)
+    monkeypatch.setattr("paperforge.lineage.observe_lineage_papers", _envelope)
 
 
 def test_content_discovery_prefers_body_units_fts_when_present(tmp_path, monkeypatch):
