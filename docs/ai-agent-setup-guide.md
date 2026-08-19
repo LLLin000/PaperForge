@@ -88,10 +88,10 @@ Explain each directory and ask user to confirm or change, one by one:
 
 | Parameter | Default | Purpose |
 |-----------|---------|---------|
-| System dir | `99_System` | PaperForge internal files (plugin, OCR results, export JSON) |
-| Resources dir | `03_Resources` | Literature notes and state tracking |
+| System dir | `System` (default) | PaperForge internal files (OCR results, export JSON) |
+| Resources dir | `Resources` (default) | Literature notes; `Literature` + `LiteratureControl` nest under it |
 | Literature dir | `Literature` | Formal literature note cards |
-| Base dir | `05_Bases` | Obsidian Base view files (tabular queue browser) |
+| Base dir | `Bases` (default) | Base view files (tabular queue browser) |
 
 Final vault structure:
 ```
@@ -104,10 +104,10 @@ Final vault structure:
 ```
 
 Ask:
-> 1. System directory, default `99_System`. Keep or change?
-> 2. Resources directory, default `03_Resources`?
+> 1. System directory, default `System`. Keep or change?
+> 2. Resources directory, default `Resources`?
 > 3. Literature directory, default `Literature`?
-> 4. Base directory, default `05_Bases`?
+> 4. Base directory, default `Bases`?
 
 Use defaults for any the user doesn't change.
 
@@ -181,15 +181,13 @@ Important safety rule: this setup flow is additive. If the target vault or selec
 Assemble one command from all Step 0 values:
 
 ```bash
-paperforge setup --modular \
-  --vault "<vault_path>" \
+paperforge --vault "<vault_path>" setup --modular \
   --agent "<agent_key>" \
   --zotero-data "<zotero_data_dir>" \
   --system-dir "<system_dir>" \
   --resources-dir "<resources_dir>" \
   --literature-dir "<literature_dir>" \
   --base-dir "<base_dir>" \
-  --auth-ocr-token-set \
   --skip-checks
 ```
 
@@ -200,7 +198,7 @@ paperforge setup --modular \
 
 **Example (Windows, all defaults):**
 ```bash
-paperforge setup --modular --vault "D:\Documents\MyVault" --agent opencode --zotero-data "C:\Users\name\Zotero" --system-dir "99_System" --resources-dir "03_Resources" --literature-dir "Literature" --base-dir "05_Bases" --auth-ocr-token-set --skip-checks
+paperforge --vault "D:\Documents\MyVault" setup --modular --agent opencode --zotero-data "C:\Users\name\Zotero" --system-dir "99_System" --resources-dir "03_Resources" --literature-dir "Literature" --base-dir "05_Bases" --skip-checks
 ```
 
 **Expected output:**
@@ -282,5 +280,5 @@ pip install --user paperforge
 
 Skip Steps 0-1. Run:
 ```bash
-paperforge setup --modular --vault "<path>" --agent "<key>" --skip-checks
+paperforge --vault "<path>" setup --modular --agent "<key>" --skip-checks
 ```

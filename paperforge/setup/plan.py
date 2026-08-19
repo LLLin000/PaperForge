@@ -108,7 +108,10 @@ class SetupPlan:
         # Step 1: Checker (skip if flag set)
         if not self.skip_checks:
             self._log("Checking preconditions...")
-            _run_step("checker", lambda: SetupChecker(self.vault).run())
+            check_result = _run_step("checker", lambda: SetupChecker(self.vault).run())
+            _gate = self._step_outcome(check_result, results, ndjson=ndjson, json_output=json_output)
+            if _gate is not None:
+                return _gate
 
         # Step 2: Config writer
         self._log("Writing config...")
@@ -161,9 +164,18 @@ class SetupPlan:
         if _gate is not None:
             return _gate
 
-        # Step 5: Agent installer
+        # Step 5: Agent installer — platform comes from the canonical config
+        # (written above), never from a CLI default; omitted --agent keeps
+        # the existing platform and deploys to ITS skill dir.
         self._log("Deploying agent config...")
-        agent = AgentInstaller(self.vault, agent_type=self.agent_type)
+        from paperforge.config import load_config
+
+        try:
+            _snap = load_config(self.vault)
+            _effective_agent = str(_snap.values["agent_platform"].value)
+        except Exception:  # noqa: BLE001 — fail closed to the explicit value
+            _effective_agent = self.agent_type or "opencode"
+        agent = AgentInstaller(self.vault, agent_type=_effective_agent)
         for agent_step in agent.steps():
             # RC UX Seam P0: cooperative cancellation must be checked
             # BETWEEN agent sub-steps — a SIGTERM during agent deployment
@@ -183,6 +195,11 @@ class SetupPlan:
                     item_id=agent_result.step,
                     status="ok" if agent_result.ok else "error",
                 )
+            # Fail fast between agent sub-steps: a failed sub-step stops the
+            # remaining deployment (zero further mutation).
+            _gate = self._step_outcome(agent_result, results, ndjson=ndjson, json_output=json_output)
+            if _gate is not None:
+                return _gate
 
         if cancelled or _is_stopped():
             # The last gate: even if cancellation arrived after the agent
