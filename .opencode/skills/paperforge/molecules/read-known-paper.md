@@ -8,49 +8,16 @@
 
 交互式文献问答。分为两个阶段：**A. 定位论文** → **B. 论文内 Q&A**。
 
-> 检索决策由 `atoms/retrieval-routing.md` 决定。session 状态规则也定义在该 atom 中。
+> 定位与读文协议由 `molecules/pre-read.md` 决定(线性,命令写死)。
+> 检索路由由 `atoms/retrieval-routing.md` 决定。session 状态规则定义在本 molecule。
 
 ---
 
 ## 阶段 A：定位论文
 
-用户可能给 zotero_key、DOI、标题关键词、作者+年份。
-
-### Step A1: 调用 planner
-
-```bash
-$PYTHON -m paperforge --vault "$VAULT" \
-  query-plan "<identifier>" \
-  --intent locate --json
-```
-
-打开 `atoms/retrieval-routing.md`，按 **Planner Protocol**（§2）执行 `data.primary`。
-
-### Step A2: 安全执行 primary
-
-按 **Safe Executor**（§3）渲染 CLI。
-
-#### 如果 primary 是 paper-context
-
-直接复用 primary 的 response，**不再调用第二次 paper-context**。从 response 中记录：
-```
-paper_key              — session 生命周期复用
-title, first_author, year, journal, domain — 不重复调用
-fulltext_path          — 有全文时记录
-note_path              — formal note 路径
-prior_notes            — 存在时记录 recheck_targets
-```
-
-#### 如果 primary 是 search
-
-用户从候选中选择后，再调用一次 paper-context 获取完整信息：
-```bash
-$PYTHON -m paperforge --vault "$VAULT" paper-context <KEY> --json
-```
-
-#### 无结果时
-
-告知用户"未找到匹配论文"。
+打开 `molecules/pre-read.md`,按 Step 1(Locate)→ Step 2(Context)执行,
+得到 `paper_key`、`data.paper.title`、`data.paper.fulltext_path`、
+`data.paper.pdf_path`。不重复调用 paper-context,不调用 query-plan。
 
 ### Step A3: 初始化 Q&A Session
 
@@ -78,10 +45,9 @@ StructureTree: available / unavailable
 
 如"用了多少 Hz"、"样本量是多少"、"用的什么材料"、"随访多久"：
 
-```bash
-$PYTHON -m paperforge --vault "$VAULT" \
-  retrieve "<question>" --paper <KEY> --json
-```
+打开 `molecules/pre-read.md` Step 3：先在 `data.paper.fulltext_path`
+里词面搜索；无果或句子不完整 → canonical PDF(PyMuPDF,命令写死)；仍无果
+且是语义概念 → 一次 `retrieve --paper KEY`。
 
 - 不重新调用 query-plan
 - 不加载整篇 fulltext.md

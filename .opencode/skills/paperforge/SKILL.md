@@ -6,7 +6,7 @@ description: >
   Trigger on pf-paper, pf-deep, pf-sync, pf-ocr, pf-status, "找文献",
   "读一下", "精读", "找证据", "记录阅读", "记录工作", or "记一下".
 source: paperforge
-skill_version: 2026-08-17.2
+skill_version: 2026-08-19.1
 skill_api_version: 2
 ---
 # PaperForge — thin research-memory router
@@ -61,9 +61,23 @@ ambiguous. If the user asks to save after another workflow, route to
 ## Retrieval
 
 When a workflow searches or retrieves, open `atoms/retrieval-routing.md`.
-That file is the single retrieval protocol: planner first, one primary command,
-at most one declared fallback, and no library fallback for a paper-scoped
-question. Do not reproduce its command matrix in another workflow.
+That file is the single retrieval protocol: three linear routes (known
+paper / known-paper passage / cross-library), at most one fallback per
+stage, and never a fourth retrieval strategy. `query-plan` is an optional
+diagnostic only — it is NOT part of any route and never a first step. Do
+not reproduce the route table in another workflow.
+
+## Agent constraints
+
+The agent must not choose among equivalent PaperForge workflows when the
+protocol can choose deterministically. The agent must not:
+
+- render CLI arguments from a parameter object — copy the full command the
+  protocol gives;
+- infer JSON field nesting — read only the field each step names;
+- discover canonical files manually — use only paths PaperForge returns;
+- invent fallback tools — run the exact fallback the protocol names;
+- repeat fallback branches — at most one fallback per stage, then report.
 
 ## Source and write safety
 
