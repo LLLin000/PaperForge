@@ -89,7 +89,8 @@ for i, page in enumerate(doc):
 " 2>&1
 ```
 
-`<data.paper.pdf_path>` 替换为 Step 2 读到的确切值。命中 → 用提取文本回答。
+`<data.paper.pdf_path>` 替换为 Step 2 读到的确切值。**若该值形如
+`[[...]]`(wikilink),替换前去掉最外层 `[[` 和 `]]`。** 命中 → 用提取文本回答。
 零命中 → 该词可能确实不在本文;进入 3c 或报告。
 
 ### 3c. 两者都没有 / 都没有结果
