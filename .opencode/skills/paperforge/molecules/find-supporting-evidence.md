@@ -30,25 +30,16 @@ expanding to other papers.
 
 ### Step 3: Paper scope
 
-当 scope=paper 时（planner 返回 `paper_key` 且有值）：
+当问题限定单篇论文时,打开 `molecules/pre-read.md` Step 3:
 
-```bash
-$PYTHON -m paperforge --vault "$VAULT" \
-  retrieve "<question>" --paper <KEY> --json
-```
-
-- 只查该论文
-- `fallback=null`（paper scope 不执行 fallback）
-- 无全文 → 报告"本文无可用正文"
-- 零结果 → 报告"本文未检索到相关内容"
-- 不能再 search 其他论文
-
-单事实问题（"用了多少 Hz"、"样本量多少"）直接用 `retrieve --paper KEY`。
-不需要加载整篇 fulltext.md，不需要 StructureTree。
+- fulltext 词面搜索优先(`data.paper.fulltext_path` + grep)
+- fulltext 命中但截断 / 不可读 → canonical PDF 一次(PyMuPDF,命令写死)
+- fulltext 词面零命中且是语义概念 → `retrieve --paper KEY` 一次
+- 不再 search 其他论文;不重复 fallback
 
 ### Step 4: 展示证据
 
-**正文证据区块**（来自 retrieve primary）：
+**正文证据区块**(来自 fulltext 词面命中 / retrieve 命中):
 
 ```text
 找到 N 条与 "<论点>" 相关的正文证据：
@@ -59,13 +50,13 @@ $PYTHON -m paperforge --vault "$VAULT" \
     "…electrical stimulation parameters included 75 Hz frequency…"
 ```
 
-**object / 图表证据**（来自 retrieve primary）：
+**object / 图表证据**:
 
 打开 `atoms/retrieval-routing.md` §6 的 **Object evidence** 协议。
 判断 caption 是否直接回答用户问题。如果需要作者解释或正文论证，执行一次
 contextual retrieve，合并展示。
 
-**元数据候选区块**（来自 search --evidence fallback）：
+**元数据候选区块**(来自 Route C 的 search,仅跨库场景):
 
 ```text
 evidence_status: metadata_only
@@ -76,3 +67,4 @@ fulltext_verified: false
 ```
 
 两个区块不混合。metadata candidate 不显示章节位置，不显示正文摘要。
+retrieve 命中必须标记 "semantic match",非精确词面。

@@ -63,7 +63,7 @@ retrieve fallback 只展示命中章节/片段/score,不虚构 title/author/year
 
 **object hit（图表结果）：** 作为"该论文命中了相关图表"的候选信号。
 不展开 object 的正文引用——discover 只返回候选，图表上下文由 `read-known-paper` 或
-`find-supporting-evidence` 中的 Object Context Resolution Protocol 处理。
+`find-supporting-evidence` 中的 Object evidence 协议处理。
 
 用户选中某篇后，由 `read-known-paper` 获取完整 metadata。
 只有用户选中某篇后，才进入 `read-known-paper` 并调用 paper-context。
