@@ -14,12 +14,14 @@
 
 ## Step 1 — Locate(定位)
 
-**用户给了 Zotero key?** 直接跳到 Step 2,不做任何 search。
+**用户给了 exact identifier(zotero key / DOI / citation key)?** 直接
+`paper-context <IDENTIFIER>`,不做任何 search(identifier 禁止经过
+search/retrieve)。
 
-**只有 title / DOI / author+year:** 跑 exact search:
+**只有 title / author+year:** 跑 exact search:
 
 ```bash
-$PYTHON -m paperforge --vault "$VAULT" search "<标题/作者/DOI关键词>" --limit 5 --json
+$PYTHON -m paperforge --vault "$VAULT" search "<标题/作者关键词>" --limit 5 --json
 ```
 
 READ ONLY THIS FIELD:

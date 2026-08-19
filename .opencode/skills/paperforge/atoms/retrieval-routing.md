@@ -41,10 +41,10 @@ Route C — 模糊问题 / 不知道哪篇 / 跨库找证据
 固定命令链,线性执行:
 
 ```text
-1. 用户给了 Zotero key?
-   YES → 跳到 step 3(paper-context),不做任何 search
+1. 用户给了 exact identifier(zotero key / DOI / citation key)?
+   YES → 直接 paper-context(见 step 3),不做任何 search
 
-2. 只有 title / DOI / author+year:
+2. 只有 title / author+year:
    跑 exact search(命令见下)
 
    matches 非空 → 取第一个 → step 3
@@ -54,14 +54,18 @@ Route C — 模糊问题 / 不知道哪篇 / 跨库找证据
      → 否则 STOP,报告 "paper not found"
 ```
 
-**禁止:** title search 0 结果 → retrieve。semantic retrieve 不能承担
-identity resolution。
+**硬规则:exact identifier(zotero key / DOI / citation key)禁止经过
+search/retrieve** — `paper-context` 直接解析(与 zotero key 同级)。
+title search 0 结果 → retrieve 同样禁止(semantic retrieve 不承担
+identity resolution)。
 
 ```bash
-$PYTHON -m paperforge --vault "$VAULT" search "<标题/作者/DOI关键词>" --limit 5 --json
+$PYTHON -m paperforge --vault "$VAULT" paper-context <IDENTIFIER> --json
 ```
 
-READ ONLY:`data.matches[0].zotero_key`
+READ ONLY:`data.paper.zotero_key` / `data.paper.title`
+
+只有 title / author+year 才用 search:
 
 3. 取上下文:
 

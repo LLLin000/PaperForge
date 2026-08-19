@@ -6,7 +6,7 @@ description: >
   Trigger on pf-paper, pf-deep, pf-sync, pf-ocr, pf-status, "找文献",
   "读一下", "精读", "找证据", "记录阅读", "记录工作", or "记一下".
 source: paperforge
-skill_version: 2026-08-19.1
+skill_version: 2026-08-19.2
 skill_api_version: 2
 ---
 # PaperForge — thin research-memory router
@@ -53,6 +53,34 @@ For natural-language requests choose one workflow:
 | find evidence for a claim, parameter, or term | `find-supporting-evidence.md` |
 | perform a full structured read | `deep-analyze-paper.md` |
 | save a note, reading record, project log, or method card | `capture-project-knowledge.md` |
+| maintain / inspect the library (status, health, OCR, actions) | Maintenance router below |
+
+## Maintenance router
+
+Maintenance requests are deterministic: map the intent to the fixed
+read-only command, execute it, report what it returns. NEVER use search or
+retrieve for maintenance; NEVER infer system state from literature content;
+NEVER claim healthy/current/completed unless a PaperForge state command
+returned it.
+
+| 用户意图 | 固定命令 |
+|---|---|
+| 整个库现在怎么样 / 状态 | `paperforge status --json` |
+| PaperForge 安装/配置有没有问题 | `paperforge doctor --json` |
+| memory/vector 能不能安全读写构建 | `paperforge runtime-health --json` |
+| 这篇论文现在什么状态 | `paperforge paper-status <ID> --json` |
+| OCR 任务跑到哪了 | `paperforge ocr status --json` |
+| 系统有哪些维护动作(能力清单) | `paperforge action list --json` |
+| 现在实际需要修什么(next-actions) | `paperforge reconcile --json` |
+| 动作 X 现在能不能执行 | `paperforge action preflight <ACTION> ... --json` |
+| 预览残留 | `paperforge prune --json`(prune 默认 dry-run,无 --dry-run 参数;`--force` 才删除,Agent 不得自行 --force) |
+
+命令区分:`doctor` = 安装/配置验证;`runtime-health` = memory/runtime
+层的 safe read/write/build/vector。`action list` = 能力清单;`reconcile`
+= 只读 next-actions。互不替换。
+
+命令返回 `ok: false` 或无法回答时,报告 "unknown/error",禁止编造状态。
+Mutation 类动作只到 preflight/确认边界为止,不跨确认。
 
 Use `atoms/clarify-user-intent.md` only when two intents are genuinely
 ambiguous. If the user asks to save after another workflow, route to
