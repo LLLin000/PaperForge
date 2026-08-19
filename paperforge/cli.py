@@ -985,18 +985,28 @@ def main(argv: list[str] | None = None) -> int:
         return run_update(vault)
 
     if args.command == "setup":
-        # Shared config builder
-        _cfg = {
-            "system_dir": getattr(args, "system_dir", None) or "System",
-            "resources_dir": getattr(args, "resources_dir", None) or "Resources",
-            "literature_dir": getattr(args, "literature_dir", None) or "Literature",
-            "base_dir": getattr(args, "base_dir", None) or "Bases",
-            "control_dir": getattr(args, "control_dir", None) or "LiteratureControl",
-            "skill_dir": getattr(args, "skill_dir", None) or ".opencode/skills",
-            "command_dir": getattr(args, "command_dir", None) or ".opencode/command",
-        }
+        # Shared config builder: only EXPLICIT CLI args are written.  An
+        # omitted flag stays None -> existing config keeps its value; a
+        # fresh vault gets defaults from the canonical FIELD_SPECS (via
+        # bootstrap_config).  Never fill defaults here (unspecified !=
+        # default) — rerun must not clobber a custom layout.
+        _cfg: dict = {}
+        for _key in (
+            "system_dir", "resources_dir", "literature_dir", "base_dir",
+            "control_dir", "skill_dir", "command_dir",
+        ):
+            _val = getattr(args, _key, None)
+            if _val is not None:
+                _cfg[_key] = _val
         _zotero = getattr(args, "zotero_data", None)
-        _agent = getattr(args, "agent", "opencode")
+        if _zotero is not None:
+            # Persist the external locator in canonical config so probe and
+            # library checks see it (junction alone is not authority).
+            _cfg["zotero_data_dir"] = _zotero
+        _agent = getattr(args, "agent", "opencode") or "opencode"
+        # Persist the client platform in canonical config (single source;
+        # AgentInstaller derives paths from it consistently).
+        _cfg["agent_platform"] = _agent
         _skip = getattr(args, "skip_checks", False)
 
         if getattr(args, "headless", False):

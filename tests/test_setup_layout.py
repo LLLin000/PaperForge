@@ -1,0 +1,112 @@
+"""Setup authority closure regressions (#190 review, 2026-08-19).
+
+Layout authority: ALL setup paths come from the single resolver
+(``paperforge.config.resolve_paths``); setup modules carry no path
+defaults; rerun never clobbers an existing custom layout; fresh installs
+create exactly the resolved layout (nested resources/literature, base,
+control) with no stray vault-level dirs.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+from paperforge.config import load_config, resolve_paths, set_config
+from paperforge.setup.config_writer import ConfigWriter
+from paperforge.setup.vault import VaultInitializer
+from tests.conftest import canonical_test_config
+
+
+def _vault(tmp_path: Path) -> Path:
+    vault = tmp_path / "vault"
+    vault.mkdir(parents=True, exist_ok=True)
+    return vault
+
+
+# ── A. Layout authority ───────────────────────────────────────────────────
+
+def test_setup_modules_have_no_path_defaults() -> None:
+    """A1: active setup modules must not carry their own directory defaults
+    or legacy 99_System/03_Resources constants."""
+    src = Path("paperforge/setup/vault.py").read_text(encoding="utf-8")
+    assert "DEFAULT_DIRS" not in src
+    assert "99_System" not in src
+    assert "03_Resources" not in src
+    assert "vault / \"System\"" not in src and "vault / 'System'" not in src
+    checker_src = Path("paperforge/setup/checker.py").read_text(encoding="utf-8")
+    assert "99_System" not in checker_src
+
+
+def test_fresh_default_layout_created_exactly(tmp_path: Path) -> None:
+    """A3/A5/A6: fresh default setup creates exactly the resolved layout —
+    resources/literature nested, control + bases present, no stray
+    vault-level dirs."""
+    vault = _vault(tmp_path)
+    canonical_test_config(vault)
+    layout = resolve_paths(vault)
+    vi = VaultInitializer(vault, layout)
+    result = vi.create_directories()
+    assert result.ok
+    for d in ("paperforge", "resources", "literature", "control", "bases"):
+        assert layout[d].exists(), f"resolved {d} not created: {layout[d]}"
+    assert layout["literature"].parent == layout["resources"], "literature must nest under resources"
+    assert layout["control"].parent == layout["resources"], "control must nest under resources"
+    # No stray top-level dirs beyond the resolved ones.
+    created_top = {p.name for p in vault.iterdir() if p.is_dir()}
+    expected_top = {layout["system"].name, layout["resources"].name, layout["bases"].name}
+    assert created_top <= expected_top, f"stray top-level dirs: {created_top - expected_top}"
+
+
+def test_custom_layout_created_exactly(tmp_path: Path) -> None:
+    """A4: custom dirs flow through resolve_paths into exact creation."""
+    vault = _vault(tmp_path)
+    canonical_test_config(vault)
+    set_config(vault, "system_dir", "99_System")
+    set_config(vault, "resources_dir", "03_Resources")
+    layout = resolve_paths(vault)
+    assert layout["literature"].parent == layout["resources"]
+    vi = VaultInitializer(vault, layout)
+    assert vi.create_directories().ok
+    assert layout["literature"].exists()
+    assert (vault / "Literature").exists() is False, "stray vault/Literature must not exist"
+
+
+# ── B. Rerun semantics ────────────────────────────────────────────────────
+
+def test_rerun_with_empty_config_preserves_custom_values(tmp_path: Path) -> None:
+    """B2/B3: `setup` with no explicit dir args writes nothing -> existing
+    custom layout is preserved."""
+    vault = _vault(tmp_path)
+    canonical_test_config(vault)
+    set_config(vault, "system_dir", "99_System")
+    set_config(vault, "resources_dir", "03_Resources")
+
+    # Rerun with an empty config (unspecified args) must not clobber.
+    assert ConfigWriter(vault).write({}).ok
+    snap = load_config(vault)
+    assert snap.values["system_dir"].value == "99_System"
+    assert snap.values["resources_dir"].value == "03_Resources"
+
+
+def test_explicit_override_changes_only_that_field(tmp_path: Path) -> None:
+    """B4: one explicit field changes only that field."""
+    vault = _vault(tmp_path)
+    canonical_test_config(vault)
+    set_config(vault, "system_dir", "99_System")
+    ConfigWriter(vault).write({"literature_dir": "MyLit"})
+    snap = load_config(vault)
+    assert snap.values["literature_dir"].value == "MyLit"
+    assert snap.values["system_dir"].value == "99_System", "unrelated field must not change"
+
+
+def test_fresh_bootstrap_uses_canonical_defaults(tmp_path: Path) -> None:
+    """B1: fresh config defaults come from FIELD_SPECS (System/Resources/
+    LiteratureControl/Bases), never setup-module constants."""
+    vault = _vault(tmp_path)
+    assert ConfigWriter(vault).write({}).ok
+    snap = load_config(vault)
+    assert snap.values["system_dir"].value == "System"
+    assert snap.values["resources_dir"].value == "Resources"
+    assert snap.values["literature_dir"].value == "Literature"
+    assert snap.values["control_dir"].value == "LiteratureControl"
+    assert snap.values["base_dir"].value == "Bases"
