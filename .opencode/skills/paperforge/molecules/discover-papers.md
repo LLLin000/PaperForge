@@ -9,27 +9,30 @@
 
 ## 步骤
 
-### Step 1: 解析搜索意图 + 调用 planner
+### Step 1: 解析搜索意图
 
 提取用户搜索意图中的要素（缺什么就问用户）：
 - **搜索词**：关键词、作者名、年份
 - **范围**：domain（如"骨科"）、不指定 = 全库
 - **过滤**：年份范围、OCR 状态
 
+discover 属于 Route C(模糊/跨库),直接跑 search,不调用 query-plan:
+
 ```bash
 $PYTHON -m paperforge --vault "$VAULT" \
-  query-plan "<user_query>" \
-  --intent discover --json
+  search "<关键词>" [--domain <domain>] [--year-from <Y>] [--year-to <Y>] --limit 10 --json
 ```
 
-打开 `atoms/retrieval-routing.md`，按 **Planner Protocol**（§2）和 **Safe Executor**（§3）执行 `data.primary`。
+READ ONLY:`data.matches[]`(每项 `zotero_key` / `first_author` / `year` /
+`title` / `domain` / `fulltext_available` / `ocr_status`)。
 
-通常 primary 是 `search`。search 已直接返回 `fulltext_available`、`body_units_count`、`ocr_status`——不需要额外调用 paper-context 做 enrichment。
+matches 空 → 按 `atoms/retrieval-routing.md` §4 跑一次 retrieve 后停止,不二次
+fallback。
 
-### Step 2: Execute the plan
+### Step 2: 去重展示
 
-Open `atoms/retrieval-routing.md` and execute the planner-selected primary,
-then its single declared fallback if the protocol permits it.
+按 `atoms/retrieval-routing.md` §4 结果处理:search 命中展示元数据候选;
+retrieve fallback 只展示命中章节/片段/score,不虚构 title/author/year。
 
 ### Step 3: 按 zotero_key 去重
 **primary 来自 search 时：**

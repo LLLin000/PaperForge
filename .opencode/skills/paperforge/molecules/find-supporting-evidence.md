@@ -9,24 +9,22 @@
 
 ## 步骤
 
-### Step 1: 解析证据需求 + 调用 planner
+### Step 1: 解析证据需求 + 选择路由
 
 提取：
 - **论点/问题**：需要支持的具体主张
 - **范围**：是否限定特定论文、domain、作者
 - **证据类型**：统计结果、方法引用、临床发现、机制解释
 
-```bash
-$PYTHON -m paperforge --vault "$VAULT" \
-  query-plan "<user_query>" \
-  --intent content --json
-```
+打开 `atoms/retrieval-routing.md` 按三分支选路由：
 
-打开 `atoms/retrieval-routing.md`，按 **Planner Protocol**（§2）和 **Safe Executor**（§3）执行 `data.primary`。
+- 范围限定已知论文 → Route B(`pre-read.md` Step 3:fulltext 词面优先)
+- 范围是模糊/跨库 → Route C(search → 无果 → retrieve 一次)
+- 不调用 query-plan
 
 ### Step 2: Execute and assess
 
-Use `atoms/retrieval-routing.md` for primary execution and the single fallback.
+执行所选路由的命令(命令在 `atoms/retrieval-routing.md` 中写死)。
 Keep `scope=paper` isolated; report zero results or no direct answer without
 expanding to other papers.
 
@@ -63,7 +61,7 @@ $PYTHON -m paperforge --vault "$VAULT" \
 
 **object / 图表证据**（来自 retrieve primary）：
 
-打开 `atoms/retrieval-routing.md` §5 的 **Object Context Resolution Protocol**。
+打开 `atoms/retrieval-routing.md` §6 的 **Object evidence** 协议。
 判断 caption 是否直接回答用户问题。如果需要作者解释或正文论证，执行一次
 contextual retrieve，合并展示。
 
