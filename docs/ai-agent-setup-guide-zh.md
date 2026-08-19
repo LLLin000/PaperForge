@@ -88,10 +88,10 @@ python -c "from pathlib import Path; d = Path.home() / 'Zotero'; print(str(d) if
 
 | 参数 | 默认值 | 用途 |
 |------|--------|------|
-| 系统目录 | `99_System` | 存放 PaperForge 自身文件（插件、OCR 结果、导出 JSON） |
-| 资源目录 | `03_Resources` | 存放文献笔记和状态跟踪文件 |
+| 系统目录 | `System`(默认) | 存放 PaperForge 自身文件（OCR 结果、导出 JSON） |
+| 资源目录 | `Resources`(默认) | 存放文献笔记；`Literature` 与 `LiteratureControl` 嵌套其下 |
 | 文献目录 | `Literature` | 存放正式文献卡片（你的笔记） |
-| Base 目录 | `05_Bases` | 存放 Obsidian Base 视图文件（表格化浏览文献队列） |
+| Base 目录 | `Bases`(默认) | 存放 Base 视图文件（表格化浏览文献队列） |
 
 Vault 最终结构：
 ```
@@ -104,10 +104,10 @@ Vault 最终结构：
 ```
 
 逐一确认：
-> 1. 系统目录，默认 `99_System`，你用这个还是改？
-> 2. 资源目录，默认 `03_Resources`？
+> 1. 系统目录，默认 `System`，你用这个还是改？
+> 2. 资源目录，默认 `Resources`？
 > 3. 文献目录，默认 `Literature`？
-> 4. Base 目录，默认 `05_Bases`？
+> 4. Base 目录，默认 `Bases`？
 
 用户改了的记下来，没改的用默认值。
 
@@ -181,15 +181,13 @@ python -c "from paperforge.setup_wizard import EnvChecker; from pathlib import P
 把 Step 0 收集到的所有信息拼成一条命令：
 
 ```bash
-paperforge setup --modular \
-  --vault "<vault_path>" \
+paperforge --vault "<vault_path>" setup --modular \
   --agent "<agent_key>" \
   --zotero-data "<zotero_data_dir>" \
   --system-dir "<system_dir>" \
   --resources-dir "<resources_dir>" \
   --literature-dir "<literature_dir>" \
   --base-dir "<base_dir>" \
-  --auth-ocr-token-set \
   --skip-checks
 ```
 
@@ -200,7 +198,7 @@ paperforge setup --modular \
 
 **示例（Windows，全部默认值）：**
 ```bash
-paperforge setup --modular --vault "D:\Documents\MyVault" --agent opencode --zotero-data "C:\Users\name\Zotero" --system-dir "99_System" --resources-dir "03_Resources" --literature-dir "Literature" --base-dir "05_Bases" --auth-ocr-token-set --skip-checks
+paperforge --vault "D:\Documents\MyVault" setup --modular --agent opencode --zotero-data "C:\Users\name\Zotero" --system-dir "99_System" --resources-dir "03_Resources" --literature-dir "Literature" --base-dir "05_Bases" --skip-checks
 ```
 
 **期望输出：**
@@ -282,5 +280,5 @@ pip install --user paperforge
 
 跳过 Step 0-1，直接：
 ```bash
-paperforge setup --modular --vault "<path>" --agent "<key>" --skip-checks
+paperforge --vault "<path>" setup --modular --agent "<key>" --skip-checks
 ```

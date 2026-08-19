@@ -347,6 +347,35 @@ workflows. No re-OCR, rebuild, or embed required. M4 note: `read` is new
 Python code outside frozen candidate `6ef0dfe9`; release head and candidate
 rebind remain owner decision.
 
+### 2.11 Agent skill deployment: shared .agents + agent-chosen target (2026-08-19)
+
+Research (2026-08): `.agents/skills` is the widely adopted cross-client
+convention for the Agent Skills (SKILL.md) format, natively read by
+Claude Code (>= v2.1.121),
+Codex, OpenCode, Cursor, Gemini CLI, Kilo, Crush, Kimi-cli, and Oh My Pi/Pi.
+GitHub Copilot (`.github/skills`), Cline (`.clinerules`), Windsurf
+(`.windsurf/skills`) and augment/trae keep explicit dirs.
+
+Decision: PaperForge no longer routes skill deployment per platform. The
+per-platform path table was removed from the code; the agent chooses the
+target (it knows its own harness, e.g. `.omp/skills`) and runs the new
+read-only-free, deterministic primitive:
+
+```bash
+paperforge skill deploy --to <vault-relative-dir> [--overwrite] [--json]
+```
+
+Default target is the shared `.agents/skills`. Setup deploys there too;
+`agent_platform` remains a canonical identity record (CLI choices + config
+enum derive from the single `AGENT_PLATFORM_IDS` registry). Platforms added:
+`kilo`, `pi`, `omp`, `crush`, `kimi`. This removes the per-platform path
+maintenance burden and keeps the weak-model contract (one command, no path
+synthesis).
+
+**Impact:** re-OCR: none; rebuild: none; embed: none; old users: skill
+deployment target may change from a per-platform dir to `.agents/skills`
+(shared standard; most agents read both).
+
 ## 3. Remaining Issues — Release-Readiness Layers
 
 ### M4 RC Gate Policy

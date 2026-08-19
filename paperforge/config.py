@@ -49,11 +49,12 @@ _SECRET_KEY_PARTS = ("api_key", "api_token", "token", "password", "secret")
 # which harness they run in, e.g. .omp/skills, .agents/skills).  The shared
 # cross-agent dir is the default target.
 #
-# Research (2026-08-19): .agents/skills is the agentskills.io/AAIF open
-# standard, natively read by Claude Code (>= v2.1.121), Codex, OpenCode,
-# Cursor, Gemini CLI, Kilo, Crush, Kimi-cli, and Oh My Pi/Pi.  Platforms
-# with their own dirs (GitHub Copilot, Cline, Windsurf) or harness-native
-# dirs (.omp/skills) simply pass --to.
+# Research (2026-08-19): .agents/skills is the widely adopted cross-client
+# convention for the Agent Skills (SKILL.md) format, natively read by
+# Claude Code (>= v2.1.121), Codex, OpenCode, Cursor, Gemini CLI, Kilo,
+# Crush, Kimi-cli, and Oh My Pi/Pi.  Platforms with their own dirs
+# (GitHub Copilot, Cline, Windsurf) or harness-native dirs (.omp/skills)
+# simply pass --to.
 AGENT_SHARED_SKILL_DIR = ".agents/skills"
 AGENT_PLATFORM_IDS = (
     "opencode", "claude", "codex", "cursor", "gemini", "kilo",
