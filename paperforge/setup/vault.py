@@ -1,4 +1,10 @@
-"""VaultInitializer -- creates vault directory structure and env config."""
+"""VaultInitializer -- creates vault directory structure and Zotero junction.
+
+Layout authority: ALL paths come from ``paperforge.config.resolve_paths``
+(the single resolver).  This module holds NO path defaults and never
+constructs paths from raw config keys — the resolved layout is the only
+input.  ``paperforge.json`` is written by ConfigWriter, never here.
+"""
 
 from __future__ import annotations
 
@@ -10,41 +16,39 @@ from paperforge.setup import SetupStepResult
 
 
 class VaultInitializer:
-    """Create vault directory structure, Zotero junction, and .env file."""
+    """Create vault directory structure and Zotero junction from a resolved
+    layout (``resolve_paths`` output)."""
 
-    DEFAULT_DIRS = {
-        "system_dir": "99_System",
-        "resources_dir": "03_Resources",
-        "literature_dir": "Literature",
-        # control_dir 已淘汰 (v2.1+ workspace 架构)
-    }
-
-    def __init__(self, vault: Path, config: dict):
-        self.vault = vault
-        self.config = config
+    def __init__(self, vault: Path, layout: dict):
+        self.vault = Path(vault).resolve()
+        self.layout = layout
 
     def create_directories(self) -> SetupStepResult:
-        """Create all required vault directories."""
-        dirs_to_create = [
-            self.vault / "paperforge.json",
+        """Create exactly the resolved layout directories: paperforge root,
+        resources, literature (nested under resources), control (nested
+        under resources), and bases.  No file writes — config owns the
+        config file."""
+        dirs = [
+            self.layout["paperforge"],
+            self.layout["resources"],
+            self.layout["literature"],
+            self.layout["control"],
+            self.layout["bases"],
         ]
-
-        for key in ("system_dir", "resources_dir", "literature_dir"):
-            rel = self.config.get(key, self.DEFAULT_DIRS.get(key, ""))
-            if rel:
-                dirs_to_create.append(self.vault / rel)
-
         created = []
         existing = []
-        for d in dirs_to_create:
-            if d.suffix:
-                d.parent.mkdir(parents=True, exist_ok=True)
-                continue
+        for d in dirs:
             if not d.exists():
                 d.mkdir(parents=True, exist_ok=True)
-                created.append(str(d.relative_to(self.vault)))
+                try:
+                    created.append(str(d.relative_to(self.vault)))
+                except ValueError:
+                    created.append(str(d))
             else:
-                existing.append(str(d.relative_to(self.vault)))
+                try:
+                    existing.append(str(d.relative_to(self.vault)))
+                except ValueError:
+                    existing.append(str(d))
 
         return SetupStepResult(
             step="vault_initializer",
@@ -54,9 +58,10 @@ class VaultInitializer:
         )
 
     def create_zotero_junction(self, zotero_path: str | None = None) -> SetupStepResult:
-        """Create Zotero junction/symlink to vault."""
-        system_dir = self.vault / self.config.get("system_dir", self.DEFAULT_DIRS["system_dir"])
-        zotero_link = system_dir / "Zotero"
+        """Create Zotero junction/symlink to vault at the resolved system
+        dir's Zotero link point."""
+        system = Path(self.layout["system"])
+        zotero_link = system / "Zotero"
 
         if zotero_link.exists() or zotero_link.is_symlink():
             return SetupStepResult(
@@ -100,51 +105,45 @@ class VaultInitializer:
                 message=f"Zotero junction created: {zotero_link} -> {zotero_path}",
                 details={"source": str(zotero_link), "target": zotero_path},
             )
-        except Exception as e:
+        except OSError as exc:
             return SetupStepResult(
                 step="vault_initializer",
                 ok=False,
                 message="Failed to create Zotero junction",
-                error=str(e),
+                error=str(exc),
             )
 
     def merge_env(self, env_values: dict[str, str]) -> SetupStepResult:
         """Merge values into .env file."""
         env_path = self.vault / ".env"
-
-        existing = {}
-        if env_path.exists():
-            try:
-                for line in env_path.read_text(encoding="utf-8").splitlines():
-                    line = line.strip()
-                    if line and not line.startswith("#") and "=" in line:
-                        key, _, val = line.partition("=")
-                        existing[key.strip()] = val.strip()
-            except Exception:
-                pass
-
-        updated = dict(existing)
-        updated.update(env_values)
-
         try:
-            lines = [f"{k}={v}\n" for k, v in updated.items()]
-            env_path.write_text("".join(lines), encoding="utf-8")
-
-            added = [k for k in env_values if k not in existing]
+            existing_text = env_path.read_text(encoding="utf-8") if env_path.exists() else ""
+        except OSError as exc:
             return SetupStepResult(
                 step="vault_initializer",
-                ok=True,
-                message=f"Created .env with {len(updated)} entries ({len(added)} new)",
-                details={
-                    "path": str(env_path),
-                    "total_keys": len(updated),
-                    "new_keys": added,
-                },
+                ok=False,
+                message="Failed to read .env",
+                error=str(exc),
             )
-        except Exception as e:
+        lines = [line for line in existing_text.splitlines() if line.strip()]
+        existing_keys = {line.split("=", 1)[0] for line in lines if "=" in line}
+        for key, value in env_values.items():
+            if key in existing_keys:
+                lines = [key + "=" + value if line.startswith(key + "=") else line for line in lines]
+            else:
+                lines.append(f"{key}={value}")
+        try:
+            env_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        except OSError as exc:
             return SetupStepResult(
                 step="vault_initializer",
                 ok=False,
                 message="Failed to write .env",
-                error=str(e),
+                error=str(exc),
             )
+        return SetupStepResult(
+            step="vault_initializer",
+            ok=True,
+            message=f".env updated at {env_path}",
+            details={"path": str(env_path), "keys": list(env_values.keys())},
+        )

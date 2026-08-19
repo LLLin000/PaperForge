@@ -119,10 +119,10 @@ Use defaults for any the user doesn't change.
 python --version
 ```
 
-- Python >= 3.10 → proceed to Step 2
-- Python < 3.10 or missing → **STOP**.
+- Python >= 3.11 → proceed to Step 2
+- Python < 3.11 or missing → **STOP**.
 
-> PaperForge requires Python 3.10+. Please install from https://python.org (check "Add Python to PATH"), then tell me when done.
+> PaperForge requires Python 3.11+. Please install from https://python.org (check "Add Python to PATH"), then tell me when done.
 
 **Wait for user before continuing.**
 
@@ -181,7 +181,7 @@ Important safety rule: this setup flow is additive. If the target vault or selec
 Assemble one command from all Step 0 values:
 
 ```bash
-paperforge setup --headless \
+paperforge setup --modular \
   --vault "<vault_path>" \
   --agent "<agent_key>" \
   --zotero-data "<zotero_data_dir>" \
@@ -189,18 +189,18 @@ paperforge setup --headless \
   --resources-dir "<resources_dir>" \
   --literature-dir "<literature_dir>" \
   --base-dir "<base_dir>" \
-  --paddleocr-key "<api_key>" \
+  --auth-ocr-token-set \
   --skip-checks
 ```
 
 - Replace each `<...>` with the actual value from Step 0
-- If user skipped PaddleOCR in Q4, remove `--paddleocr-key` line
+- If the user skipped OCR in Q4, just skip `paperforge auth set ocr` (OCR is an optional capability)
 - If any directory kept the default, use the default value
 - `--skip-checks` because Steps 1-4 already verified everything
 
 **Example (Windows, all defaults):**
 ```bash
-paperforge setup --headless --vault "D:\Documents\MyVault" --agent opencode --zotero-data "C:\Users\name\Zotero" --system-dir "99_System" --resources-dir "03_Resources" --literature-dir "Literature" --base-dir "05_Bases" --paddleocr-key "sk-xxx" --skip-checks
+paperforge setup --modular --vault "D:\Documents\MyVault" --agent opencode --zotero-data "C:\Users\name\Zotero" --system-dir "99_System" --resources-dir "03_Resources" --literature-dir "Literature" --base-dir "05_Bases" --auth-ocr-token-set --skip-checks
 ```
 
 **Expected output:**
@@ -282,5 +282,5 @@ pip install --user paperforge
 
 Skip Steps 0-1. Run:
 ```bash
-paperforge setup --headless --vault "<path>" --agent "<key>" --skip-checks
+paperforge setup --modular --vault "<path>" --agent "<key>" --skip-checks
 ```

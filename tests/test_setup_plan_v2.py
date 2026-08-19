@@ -523,8 +523,11 @@ class TestZoteroPathForwarding:
         vault = tmp_path / "zotero_flow"
         vault.mkdir()
 
-        config = {"system_dir": "Sys", "resources_dir": "Res", "literature_dir": "Lit"}
-        vi = VaultInitializer(vault, config)
+        layout = {
+            "system": vault / "Sys",
+            "paperforge": vault / "Sys" / "PaperForge",
+        }
+        vi = VaultInitializer(vault, layout)
         result = vi.create_zotero_junction(r"D:\Zotero")
         # Result may fail (path doesn't exist) — that's fine
         # What matters is the zotero_path was forwarded and not silently dropped

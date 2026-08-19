@@ -51,10 +51,19 @@ class SetupChecker:
         zotero_path = shutil.which("zotero") or shutil.which("zotero.exe")
         details["zotero_found"] = zotero_path is not None
 
-        # Check Better BibTeX exports
-        system_dir = self.vault / "99_System"
-        exports_dir = system_dir / "PaperForge" / "exports"
-        bbt_exists = exports_dir.exists() and len(list(exports_dir.glob("*.json"))) > 0
+        # Check Better BibTeX exports — via the canonical resolver, and
+        # only when a config exists (a fresh vault has no exports yet and
+        # must not fail the foundation checks on that account).
+        from paperforge.config import ConfigError, load_config, resolve_paths
+
+        try:
+            load_config(self.vault)
+            exports_dir = resolve_paths(self.vault)["exports"]
+            bbt_exists = exports_dir.exists() and len(list(exports_dir.glob("*.json"))) > 0
+        except (ConfigError, KeyError):
+            # No canonical config yet = fresh vault: BBT exports are a
+            # later (library) stage, not a foundation precondition.
+            bbt_exists = True
         details["bbt_exports_found"] = bbt_exists
 
         if issues:

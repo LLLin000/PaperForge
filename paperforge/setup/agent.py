@@ -65,6 +65,14 @@ class AgentInstaller:
 
         try:
             target = self.vault / "AGENTS.md"
+            if target.exists():
+                # Never clobber user-authored AGENTS.md on (re)setup.
+                return SetupStepResult(
+                    step="agent_installer",
+                    ok=True,
+                    message=f"AGENTS.md already exists, preserved at {target}",
+                    details={"preserved": True, "target": str(target)},
+                )
             shutil.copy2(source_agents, target)
             return SetupStepResult(
                 step="agent_installer",

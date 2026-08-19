@@ -119,10 +119,10 @@ Vault 最终结构：
 python --version
 ```
 
-- Python >= 3.10 → 继续 Step 2
-- Python < 3.10 或不存在 → **停止**。
+- Python >= 3.11 → 继续 Step 2
+- Python < 3.11 或不存在 → **停止**。
 
-> PaperForge 需要 Python 3.10 或更高版本。请从 https://python.org 下载安装（勾选 "Add Python to PATH"），装好后告诉我。
+> PaperForge 需要 Python 3.11 或更高版本。请从 https://python.org 下载安装（勾选 "Add Python to PATH"），装好后告诉我。
 
 **等用户确认后再继续。**
 
@@ -181,7 +181,7 @@ python -c "from paperforge.setup_wizard import EnvChecker; from pathlib import P
 把 Step 0 收集到的所有信息拼成一条命令：
 
 ```bash
-paperforge setup --headless \
+paperforge setup --modular \
   --vault "<vault_path>" \
   --agent "<agent_key>" \
   --zotero-data "<zotero_data_dir>" \
@@ -189,18 +189,18 @@ paperforge setup --headless \
   --resources-dir "<resources_dir>" \
   --literature-dir "<literature_dir>" \
   --base-dir "<base_dir>" \
-  --paddleocr-key "<api_key>" \
+  --auth-ocr-token-set \
   --skip-checks
 ```
 
 - 用 Step 0 收集到的实际值替换每个 `<...>`
-- 如果用户在 Q4 跳过了 PaddleOCR，去掉 `--paddleocr-key` 那一行
+- 如果用户在 Q4 跳过了 OCR，跳过 `paperforge auth set ocr` 即可（OCR 是 optional capability）
 - 如果用户某个目录用了默认值，就写默认值
 - `--skip-checks` 因为 Step 1-4 已经逐项检测过了
 
 **示例（Windows，全部默认值）：**
 ```bash
-paperforge setup --headless --vault "D:\Documents\MyVault" --agent opencode --zotero-data "C:\Users\name\Zotero" --system-dir "99_System" --resources-dir "03_Resources" --literature-dir "Literature" --base-dir "05_Bases" --paddleocr-key "sk-xxx" --skip-checks
+paperforge setup --modular --vault "D:\Documents\MyVault" --agent opencode --zotero-data "C:\Users\name\Zotero" --system-dir "99_System" --resources-dir "03_Resources" --literature-dir "Literature" --base-dir "05_Bases" --auth-ocr-token-set --skip-checks
 ```
 
 **期望输出：**
@@ -282,5 +282,5 @@ pip install --user paperforge
 
 跳过 Step 0-1，直接：
 ```bash
-paperforge setup --headless --vault "<path>" --agent "<key>" --skip-checks
+paperforge setup --modular --vault "<path>" --agent "<key>" --skip-checks
 ```

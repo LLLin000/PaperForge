@@ -459,6 +459,45 @@ def headless_setup(
     Returns:
         int: 0 on success, non-zero on failure.
     """
+    # Deprecated legacy entry (no product callers): delegate to SetupPlan so
+    # paperforge.json is written ONLY through the canonical seam.  The old
+    # direct write_text/env/junction body below is dead and must not run.
+    import warnings
+
+    warnings.warn(
+        "headless_setup is deprecated — use `paperforge setup --modular`",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    from paperforge.setup.plan import SetupPlan
+
+    _cfg = {
+        "system_dir": system_dir,
+        "resources_dir": resources_dir,
+        "literature_dir": literature_dir,
+        "base_dir": base_dir,
+    }
+    if paddleocr_key:
+        # #173: secrets NEVER enter .env or config — the credential
+        # authority is the only secret store.
+        from paperforge.credentials import CredentialKey, store
+
+        try:
+            store(CredentialKey("ocr"), paddleocr_key)
+        except Exception as exc:  # noqa: BLE001 — report, do not abort setup
+            print(f"    [WARN] failed to store OCR credential: {exc}", file=sys.stderr)
+    return SetupPlan(
+        vault=Path(vault),
+        config=_cfg,
+        zotero_path=zotero_data,
+        agent_type=agent_key,
+        skip_checks=skip_checks,
+    ).execute()
+
+    # ------------------------------------------------------------------
+    # DEAD LEGACY BODY (replaced by the SetupPlan delegation above).
+    # Kept only as reference until the next cleanup removes this function.
+    # ------------------------------------------------------------------
     vault = Path(vault).expanduser().resolve()
 
     # Determine repo_root (where paperforge package sources live)

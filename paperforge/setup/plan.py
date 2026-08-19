@@ -40,6 +40,25 @@ class SetupPlan:
         if self.progress_callback:
             self.progress_callback(message)
 
+    def _step_outcome(
+        self,
+        r: SetupStepResult | None,
+        results: list[SetupStepResult],
+        *,
+        ndjson: bool,
+        json_output: bool,
+    ) -> int | None:
+        """Uniform step gate: None -> cancelled (rc130); not ok -> fail fast
+        (rc1, zero further mutation, no pointer publish).  Returns None to
+        continue."""
+        if r is None:  # cooperative cancellation observed
+            if ndjson:
+                return self._emit_ndjson_terminal("cancelled", results, ok=False, rc=130)
+            return 130
+        if not r.ok:
+            return self._finish(results, False, ndjson=ndjson, json_output=json_output)
+        return None
+
     def execute(
         self, json_output: bool = False, ndjson: bool = False
     ) -> list[SetupStepResult] | int:
@@ -93,13 +112,40 @@ class SetupPlan:
 
         # Step 2: Config writer
         self._log("Writing config...")
-        _run_step("config_writer", lambda: ConfigWriter(self.vault).write(self.config))
+        cfg_result = _run_step("config_writer", lambda: ConfigWriter(self.vault).write(self.config))
+        _gate = self._step_outcome(cfg_result, results, ndjson=ndjson, json_output=json_output)
+        if _gate is not None:
+            return _gate
 
-        # Step 3: Vault initializer
+        # Step 3: Vault initializer — layout comes from the SINGLE resolver
+        # (resolve_paths), never from per-module defaults.
         self._log("Initializing vault structure...")
-        vault_init = VaultInitializer(self.vault, self.config)
-        _run_step("vault_initializer", vault_init.create_directories)
-        _run_step("vault_initializer.zotero_junction", lambda: vault_init.create_zotero_junction(self.zotero_path))
+        from paperforge.config import resolve_paths
+
+        try:
+            _layout = resolve_paths(self.vault)
+        except Exception as exc:  # noqa: BLE001 — fail closed, no mutation
+            results.append(
+                SetupStepResult(
+                    step="vault_initializer",
+                    ok=False,
+                    message="Cannot resolve canonical layout",
+                    error=str(exc),
+                )
+            )
+            return self._finish(results, False, ndjson=ndjson, json_output=json_output)
+        vault_init = VaultInitializer(self.vault, _layout)
+        v_result = _run_step("vault_initializer", vault_init.create_directories)
+        _gate = self._step_outcome(v_result, results, ndjson=ndjson, json_output=json_output)
+        if _gate is not None:
+            return _gate
+        z_result = _run_step(
+            "vault_initializer.zotero_junction",
+            lambda: vault_init.create_zotero_junction(self.zotero_path),
+        )
+        _gate = self._step_outcome(z_result, results, ndjson=ndjson, json_output=json_output)
+        if _gate is not None:
+            return _gate
 
         # Step 4: #174 / #143 — dependency extras only. The runtime package
         # is installed EXACTLY once by the bootstrap (plugin venv + ONE
@@ -110,7 +156,10 @@ class SetupPlan:
         from paperforge.setup.runtime import ensure_runtime_dependencies
 
         self._log("Ensuring runtime dependencies...")
-        _run_step("runtime_dependencies", ensure_runtime_dependencies)
+        dep_result = _run_step("runtime_dependencies", ensure_runtime_dependencies)
+        _gate = self._step_outcome(dep_result, results, ndjson=ndjson, json_output=json_output)
+        if _gate is not None:
+            return _gate
 
         # Step 5: Agent installer
         self._log("Deploying agent config...")
@@ -144,10 +193,22 @@ class SetupPlan:
                 _restore()
             return self._emit_ndjson_terminal("cancelled", results, ok=False, rc=130)
 
+        return self._finish(results, cancelled, ndjson=ndjson, json_output=json_output)
+
+    def _finish(
+        self,
+        results: list[SetupStepResult],
+        cancelled: bool,
+        *,
+        ndjson: bool,
+        json_output: bool,
+    ) -> int:
+        """Shared terminal: publish pointer only when every executed step
+        passed, then emit the single result/error terminal."""
         # Step 6 (#143 / #174): pointer publication — Python is the ONLY
         # writer; publication is part of lifecycle success and MUST happen
         # before any terminal success is emitted (human or machine).
-        ok = all(r.ok for r in results)
+        ok = all(r.ok for r in results) and not cancelled
         if ok:
             from paperforge.runtime_pointer import publish_pointer
 
@@ -155,7 +216,6 @@ class SetupPlan:
             self._log("Runtime pointer published")
 
         if ndjson:
-            _restore()
             return self._emit_ndjson_terminal(
                 "result" if ok else "error", results, ok=ok, rc=0 if ok else 1
             )
