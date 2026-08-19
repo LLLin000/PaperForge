@@ -83,8 +83,9 @@ class TestOcrPreflight:
         calls = mock_write.call_args_list
         assert any(call[0][1].get("ocr_status") == "nopdf" for call in calls if isinstance(call[0][1], dict))
 
-    def test_missing_pdf_file_sets_nopdf(self, tmp_path: Path) -> None:
-        """has_pdf=True but file missing -> ocr_status: nopdf."""
+    def test_missing_pdf_file_sets_blocked(self, tmp_path: Path) -> None:
+        """has_pdf=True but file missing -> ocr_status: blocked (error_stage source),
+        matching the pdf_missing terminal (4VPYIVAS census), not nopdf."""
         vault = self._make_vault(tmp_path)
         mock_paths = self._mock_paths(vault)
         mock_paths["exports"].mkdir()
@@ -139,7 +140,11 @@ class TestOcrPreflight:
             run_ocr(vault)
 
         calls = mock_write.call_args_list
-        assert any(call[0][1].get("ocr_status") == "nopdf" for call in calls if isinstance(call[0][1], dict))
+        assert any(call[0][1].get("ocr_status") == "blocked" for call in calls if isinstance(call[0][1], dict))
+        assert any(
+            isinstance(call[0][1], dict) and call[0][1].get("error_stage") == "source"
+            for call in calls
+        )
 
     def test_valid_pdf_proceeds(self, tmp_path: Path) -> None:
         """Valid resolved PDF -> proceeds to API submission with resolved path."""
@@ -207,9 +212,10 @@ class TestOcrPreflight:
 
                     run_ocr(vault)
 
-        mock_open.assert_called_once()
-        opened_path = mock_open.call_args[0][0]
-        assert Path(opened_path).resolve() == pdf.resolve()
+        mock_open.assert_called()
+        opened_paths = [c[0][0] for c in mock_open.call_args_list]
+        assert opened_paths, "pymupdf.open never called"
+        assert all(Path(p).resolve() == pdf.resolve() for p in opened_paths)
 
     def test_junction_path_resolved(self, tmp_path: Path) -> None:
         """Junction path is resolved before open() call."""
@@ -281,6 +287,7 @@ class TestOcrPreflight:
 
                     run_ocr(vault)
 
-        mock_open.assert_called_once()
-        opened_path = mock_open.call_args[0][0]
-        assert Path(opened_path).resolve() == target.resolve()
+        mock_open.assert_called()
+        opened_paths = [c[0][0] for c in mock_open.call_args_list]
+        assert opened_paths, "pymupdf.open never called"
+        assert all(Path(p).resolve() == target.resolve() for p in opened_paths)

@@ -88,10 +88,10 @@
     "has_code_consumer": true,
     "evidence": {
      "file": "paperforge/worker/ocr_maintenance.py",
-     "file_digest": "sha256:247140308c2146ee7fd3ce9d57a05f14cc5277c259e3dc8f115ab4ab0632764b",
+     "file_digest": "sha256:914cbdcb5b4b0660b2ab360c174df5bbd11b734270895c1b5010833ab60327d2",
      "symbol": "fulltext_drift_state",
-     "line_start": 452,
-     "line_end": 458,
+     "line_start": 44,
+     "line_end": 50,
      "extractor": "python_ast",
      "epistemic_status": "observed_static",
      "confidence": "exact"
@@ -110,7 +110,7 @@
     ]
    }
   ],
-  "source_digest": "sha256:3f3a5ab9543d420c0a7f796aaac20e80cbcad4a62a8178748bf735e751a07af3",
+  "source_digest": "sha256:4955618c41c3ec5747f4107ce49256c648a40ab5258585510c2c8ac7dfde5132",
   "parse_errors": [],
   "excluded_roots": [],
   "run_metadata": {
