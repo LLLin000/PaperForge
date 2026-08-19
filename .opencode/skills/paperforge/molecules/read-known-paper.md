@@ -21,21 +21,22 @@
 
 ### Step A3: 初始化 Q&A Session
 
-展示论文信息，不加载全文：
+只展示已点名的字段,不翻 JSON 找其他字段:
 
 ```
-已定位: <title> (<year>, <journal>)
-作者: <authors> | Key: <KEY> | 领域: <domain>
-正文可用: yes / no
-StructureTree: available / unavailable
+已定位: <data.paper.title>
+Key: <KEY>
+fulltext available: yes / no (fulltext_path 是否有效)
+PDF available: yes / no (pdf_path 是否有效)
 
 请问有什么问题？
 ```
 
-如果 StructureTree 不可用，在后续章节级问答中：
+StructureTree 只在真正运行 `paper-context <KEY> --structure` 之后才报告
+available/unavailable;初始不展示。若后续章节级问答发现 structure 不可用:
 - 不缓存 structure.nodes
 - 报告"章节导航暂不可用"
-- 仍可继续 scoped retrieve / fulltext 分析
+- 仍可继续 fulltext 分析
 - 回答中不声称章节位置已确认
 ## 阶段 B：论文内 Q&A
 
@@ -75,7 +76,7 @@ $PYTHON -m paperforge --vault "$VAULT" \
 #### 图表相关问题
 
 先用同一条 paper-scoped `retrieve`。收到 `source_kind=object` 后，按
-`atoms/retrieval-routing.md` 的 Object Context Resolution Protocol 决定是否
+`atoms/retrieval-routing.md` §6 的 Object evidence 协议决定是否
 补一次 contextual retrieve；caption 已回答时不补查。
 #### 总结型 / 整篇问题
 

@@ -69,9 +69,9 @@ grep -n -i "<关键词>" "<data.paper.fulltext_path>"
 
 命中 → 读命中行及前后文段落,回答。完成。
 
-### 3b. fulltext 不足 / 句子被截断 → canonical PDF
+### 3b. fulltext 不足 → canonical PDF(互斥分支 A)
 
-仅当 fulltext 词面无果、或命中句子不完整时,用 canonical PDF 提取。
+仅当 **fulltext 命中但句子被截断 / fulltext 不可读** 时用 canonical PDF。
 **extractor 由协议固定为 PyMuPDF,Agent 不选择工具、不做 storage
 discovery**:
 
@@ -90,25 +90,35 @@ for i, page in enumerate(doc):
 ```
 
 `<data.paper.pdf_path>` 替换为 Step 2 读到的确切值。**若该值形如
-`[[...]]`(wikilink),替换前去掉最外层 `[[` 和 `]]`。** 命中 → 用提取文本回答。
-零命中 → 该词可能确实不在本文;进入 3c 或报告。
+`[[...]]`(wikilink),替换前去掉最外层 `[[` 和 `]]`。**
+命中 → 用提取文本回答。零命中 → 该词可能确实不在本文,**STOP**。
+此分支后不再尝试 retrieve。
 
-### 3c. 两者都没有 / 都没有结果
+### 3c. fulltext 词面零命中 → 二选一,互斥(分支 B)
 
-- fulltext 与 pdf 都无效 → **STOP**,报告 "no readable source"。
-- 语义概念问题(原文可能不用该词)→ 允许一次 Route B 的 retrieve:
+**找的是明确原文术语**(如 "RFE"、"sample size")→ 用 3b 的 PyMuPDF 命令
+对 canonical PDF 做一次词面搜索,然后 **STOP**(不再 retrieve)。
+
+**问的是语义概念**(原文可能完全不用该词,如 "这篇的模型怎么避免过拟合")
+→ `retrieve` 一次:
 
 ```bash
 $PYTHON -m paperforge --vault "$VAULT" retrieve "<问题>" --paper <KEY> --json
 ```
 
-之后无论结果如何都停止,不二次 fallback。
+之后无论结果如何都 **STOP**,不二次 fallback。
+
+**两条互斥:一次 Step 3 最多执行一个 fallback(PDF 或 retrieve),不串联。**
+
+### 3d. 两者都没有 → STOP
+
+fulltext 与 pdf 都无效 → **STOP**,报告 "no readable source"。
 
 ---
 
 ## 完成时报告
 
-- 已定位:title / year / journal / key
+- 已定位:title(来自 `data.paper.title`)· key
 - 证据来源:fulltext 段落 | canonical PDF(page N)| retrieve 命中(标记
   "semantic match")
 - 论文未提及的内容明确说明 "论文中未提及"
