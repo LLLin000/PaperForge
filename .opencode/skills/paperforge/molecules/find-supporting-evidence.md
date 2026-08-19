@@ -59,12 +59,10 @@ contextual retrieve，合并展示。
 **元数据候选区块**(来自 Route C 的 search,仅跨库场景):
 
 ```text
-evidence_status: metadata_only
-fulltext_verified: false
-
 [1] ABC12345 | Smith 2024 | 论文标题
 [2] DEF67890 | Jones 2023 | 论文标题
 ```
 
-两个区块不混合。metadata candidate 不显示章节位置，不显示正文摘要。
+直接展示 `data.matches[]` 项(`zotero_key` / `first_author` / `year` /
+`title`)。两个区块不混合。metadata candidate 不显示章节位置，不显示正文摘要。
 retrieve 命中必须标记 "semantic match",非精确词面。
