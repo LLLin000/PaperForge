@@ -65,6 +65,36 @@ def _seed_canonical_pdf(vault: Path, key: str) -> bytes:
     idx.write_text(json.dumps(_data), encoding="utf-8")
     return payload
 
+def test_canonical_pdf_map_reads_index_once(tmp_path: Path, monkeypatch) -> None:
+    """A lineage scan resolves the canonical index once per observation."""
+    from paperforge.lineage import _canonical_pdf_map
+    from paperforge.worker import asset_index
+
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    canonical_test_config(vault, system_dir="99_System")
+    calls = 0
+    resolved_pdf = vault / "paper.pdf"
+
+    def fake_read_index(_vault: Path) -> dict:
+        nonlocal calls
+        calls += 1
+        return {
+            "items": [
+                {"zotero_key": "KEY1", "pdf_path": "paper.pdf"},
+                {"zotero_key": "KEY2", "pdf_path": "paper-2.pdf"},
+            ]
+        }
+
+    monkeypatch.setattr(asset_index, "read_index", fake_read_index)
+    monkeypatch.setattr(
+        "paperforge.pdf_resolver.resolve_pdf_path",
+        lambda *_args, **_kwargs: str(resolved_pdf),
+    )
+
+    assert _canonical_pdf_map(vault, ["KEY1"]) == {"KEY1": resolved_pdf}
+    assert calls == 1
+
 
 def _write_ocr_paper(vault: Path, key: str, *, pending: bool = False) -> None:
     """Create a canonical OCR paper dir: raw + derived artifacts + hash."""
@@ -381,6 +411,55 @@ class TestProbeLineage:
         assert payload["papers"]["KEY1"]["ocr"] == "current"
         assert payload["papers"]["KEY1"]["retrieval"] == "current"
         assert payload["papers"]["KEY1"]["vector"] == "current"
+
+    def test_meta_read_once_per_paper_per_observation(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Probe reads meta.json exactly ONCE per paper — lifecycle, detail,
+        version, and execution all consume the injected copy.  Re-reading is
+        the O(n×I/O) cost the canonical-PDF fix did not remove."""
+        import paperforge.materialization.ocr as ocr_mat
+
+        vault = _make_vault(tmp_path, keys=("KEY1", "KEY2"))
+        calls = 0
+        real_read_meta = ocr_mat.read_meta
+
+        def counting_read_meta(paper_dir):
+            nonlocal calls
+            calls += 1
+            return real_read_meta(paper_dir)
+
+        monkeypatch.setattr(ocr_mat, "read_meta", counting_read_meta)
+        payload = probe_lineage(vault)
+        assert payload["papers"]["KEY1"]["ocr"] == "current"
+        assert calls == 2, f"meta.json read {calls} times for 2 papers — must be 1 each"
+
+    def test_current_paper_skips_detail_recompute(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A `current` paper's WHY is provably None (current requires a
+        verified provenance) — probe must NOT re-run the artifact chain and
+        PDF/raw hash just to produce that None.  provenance_state runs once
+        inside the state probe, never a second time from detail."""
+        import paperforge.materialization.ocr as ocr_mat
+
+        vault = _make_vault(tmp_path)
+        prov_calls = 0
+        real_prov = ocr_mat.provenance_state
+
+        def counting_prov(paper_dir, canonical_pdf, meta=None):
+            nonlocal prov_calls
+            prov_calls += 1
+            return real_prov(paper_dir, canonical_pdf, meta=meta)
+
+        monkeypatch.setattr(ocr_mat, "provenance_state", counting_prov)
+        payload = probe_lineage(vault)
+        assert payload["papers"]["KEY1"]["ocr"] == "current"
+        assert payload["papers"]["KEY1"]["details"]["ocr"] is None
+        assert prov_calls == 1, (
+            f"provenance_state called {prov_calls} times for one current paper "
+            "— detail must be skipped, not recomputed"
+        )
     def test_scoped_observation_matches_paper_facts_without_library_scan(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:

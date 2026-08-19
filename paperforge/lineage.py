@@ -300,6 +300,38 @@ def _papers_with_vectors(conn: sqlite3.Connection) -> list[str]:
 
 # ── probe read model ──────────────────────────────────────────────────────
 
+def _canonical_pdf_map(
+    vault: Path, keys: Collection[str] | None = None
+) -> dict[str, Path]:
+    """Resolve canonical PDFs once for a lineage observation.
+
+    The lineage loop inspects every paper, so reading and parsing the
+    multi-megabyte canonical index inside ``_resolve_canonical_pdf`` turns a
+    read-only sync into an O(papers × index-size) operation.
+    """
+    from paperforge.pdf_resolver import resolve_pdf_path
+    from paperforge.worker.asset_index import read_index
+
+    wanted = set(keys) if keys is not None else None
+    try:
+        envelope = read_index(vault)
+        items = envelope.get("items") if isinstance(envelope, dict) else (envelope or [])
+        resolved: dict[str, Path] = {}
+        for item in items or []:
+            key = str(item.get("zotero_key", "") or "")
+            if not key or (wanted is not None and key not in wanted):
+                continue
+            pdf = str(item.get("pdf_path", "") or "")
+            if not pdf:
+                continue
+            path = resolve_pdf_path(pdf, True, vault)
+            if path:
+                resolved[key] = Path(path)
+        return resolved
+    except Exception:  # noqa: BLE001 — unreadable index → no evidence
+        return {}
+
+
 def _probe_lineage(
     vault: Path,
     *,
@@ -340,6 +372,8 @@ def _probe_lineage(
             key for key in dict.fromkeys(str(key) for key in requested_keys)
             if key in authority
         ]
+    canonical_pdfs = _canonical_pdf_map(vault, keys)
+
     papers: dict[str, dict[str, str]] = {}
     identities: dict[str, dict[str, str | None]] = {}
     summary = {"current": 0, "stale": 0, "missing": 0, "unknown": 0}
@@ -354,14 +388,34 @@ def _probe_lineage(
             is not None
         )
         embedding_identity = _current_embedding_identity(conn, vault)
+        # Batch the lineage vector identities ONCE per observation — the
+        # per-paper single-row query is 964 round-trips for the same table.
+        _vec_identity_map: dict[str, str | None] = {}
+        if has_lineage_table:
+            try:
+                for _row in conn.execute(
+                    "SELECT paper_id, identity FROM lineage WHERE layer = ?",
+                    (LINEAGE_LAYER_VECTOR,),
+                ):
+                    _vec_identity_map[_row[0]] = _row[1]
+            except sqlite3.Error:
+                _vec_identity_map = {}
         for key in keys:
             # #162 corrective: each layer observes (state, identity) so the
             # NEXT layer can detect a freshly published upstream identity —
             # enum-only propagation misses the normal publish transitions.
             _ocr_dir = (ocr_root / key) if ocr_root is not None else None
-            _canonical_pdf = _resolve_canonical_pdf(vault, _ocr_dir)
+            _canonical_pdf = canonical_pdfs.get(key)
+            # meta.json is read ONCE per paper for the whole observation —
+            # lifecycle, detail, version, and execution all consume it.
+            if _ocr_dir is not None:
+                from paperforge.materialization.ocr import read_meta
+
+                _meta = read_meta(_ocr_dir)
+            else:
+                _meta = None
             ocr_state, ocr_identity = _probe_ocr_state(
-                _ocr_dir, canonical_pdf=_canonical_pdf
+                _ocr_dir, canonical_pdf=_canonical_pdf, meta=_meta
             )
             retrieval_state, retrieval_identity = _probe_retrieval_state(
                 conn, key, ocr_state, ocr_identity
@@ -374,6 +428,16 @@ def _probe_lineage(
                 embedding_identity,
                 has_lineage_table,
             )
+            # A `current` paper's fine-grained WHY is provably None: current
+            # requires a verified provenance, and detail() returns exactly
+            # the provenance verdict last.  Skipping avoids re-reading the
+            # artifact chain AND re-hashing the canonical PDF/raw for every
+            # current paper (the dominant probe cost on a full library).
+            _ocr_detail_val = (
+                None
+                if ocr_state == "current"
+                else _ocr_detail(_ocr_dir, canonical_pdf=_canonical_pdf, meta=_meta)
+            )
             state = {
                 "ocr": ocr_state,
                 "retrieval": retrieval_state,
@@ -382,8 +446,8 @@ def _probe_lineage(
                 # the detail so next-step decisions and UI can distinguish
                 # not_started / ran_but_empty / tree_missing / tree_empty.
                 "details": {
-                    "ocr": _ocr_detail(_ocr_dir, canonical_pdf=_canonical_pdf),
-                    "ocr_execution": _ocr_execution_detail(_ocr_dir),
+                    "ocr": _ocr_detail_val,
+                    "ocr_execution": _ocr_execution_detail(_ocr_dir, meta=_meta),
                     "retrieval": (
                         "manifest_missing"
                         if retrieval_state in ("missing", "incomplete")
@@ -401,9 +465,7 @@ def _probe_lineage(
                 # Flags are non-failure facts (ADR-0002): a pipeline version
                 # difference is not a materialization defect.
                 "flags": {
-                    "version_old": bool(
-                        _ocr_version_old((ocr_root / key) if ocr_root is not None else None)
-                    ),
+                    "version_old": bool(_ocr_version_old(_ocr_dir, meta=_meta)),
                 },
             }
             papers[key] = state
@@ -416,13 +478,7 @@ def _probe_lineage(
             identities[key] = {
                 "ocr": ocr_identity,
                 "retrieval": retrieval_identity,
-                "vector": (
-                    conn.execute(
-                        "SELECT identity FROM lineage "
-                        "WHERE paper_id = ? AND layer = ?",
-                        (key, LINEAGE_LAYER_VECTOR),
-                    ).fetchone() or (None,)
-                )[0],
+                "vector": _vec_identity_map.get(key),
             }
         if include_library:
             _orphan = _detect_orphans(vault)
@@ -752,26 +808,29 @@ def _paper_keys(vault: Path, db_path: Path) -> list[str]:
 # here because it depends on compute_ocr_result_hash.
 
 def _probe_ocr_state(
-    paper_dir: Path | None, canonical_pdf: Path | None = None
+    paper_dir: Path | None,
+    canonical_pdf: Path | None = None,
+    meta: dict | None = None,
 ) -> tuple[str, str | None]:
     """(state, ocr_identity) — current | stale | missing | unknown |
     incomplete | failed.
 
     State judging delegates to materialization.ocr.top_state; provenance
     ([2]) is checked when the chain is materialized; the hash identity
-    (current vs stale) is computed here."""
+    (current vs stale) is computed here.  ``meta`` is injected by the
+    caller's single per-paper read (never re-read inside)."""
     from paperforge.materialization.ocr import (
         PROVENANCE_UNKNOWN,
         provenance_state,
         top_state,
     )
 
-    state = top_state(paper_dir)
+    state = top_state(paper_dir, meta=meta)
     if state is not None:
         return state, None
     if paper_dir is None:
         return "missing", None
-    prov = provenance_state(paper_dir, canonical_pdf)
+    prov = provenance_state(paper_dir, canonical_pdf, meta=meta)
     if prov is not None:
         if prov == PROVENANCE_UNKNOWN:
             return "unknown", None
@@ -785,18 +844,22 @@ def _probe_ocr_state(
     return istate, ihash
 
 
-def _ocr_execution_detail(paper_dir: Path | None) -> dict | None:
+def _ocr_execution_detail(
+    paper_dir: Path | None, meta: dict | None = None
+) -> dict | None:
     """Provider-execution snapshot persisted in meta (the OCR subsystem is
     its writer).  Distinguishes 'never submitted' from 'submitted, provider
     processing' from 'provider rejected' at probe time WITHOUT querying the
     provider — real-time provider state belongs to `ocr status`, a
     read-only explicit command.  This is observation of the local truth,
-    never a mutation."""
+    never a mutation.  ``meta`` is injected by the caller's single
+    per-paper read (never re-read inside)."""
     if paper_dir is None or not paper_dir.exists():
         return None
-    from paperforge.materialization.ocr import read_meta
+    if meta is None:
+        from paperforge.materialization.ocr import read_meta
 
-    meta = read_meta(paper_dir)
+        meta = read_meta(paper_dir)
     if not meta:
         return None
     status = str(meta.get("ocr_status", "") or "").strip().lower()
@@ -813,22 +876,28 @@ def _ocr_execution_detail(paper_dir: Path | None) -> dict | None:
     }
 
 
-def _ocr_detail(paper_dir: Path | None, canonical_pdf: Path | None = None) -> str | None:
+def _ocr_detail(
+    paper_dir: Path | None,
+    canonical_pdf: Path | None = None,
+    meta: dict | None = None,
+) -> str | None:
     """Fine-grained WHY for the ocr state — one namespace, each value one
-    meaning (see materialization/ocr.py constants)."""
+    meaning (see materialization/ocr.py constants).  ``meta`` is injected
+    by the caller's single per-paper read (never re-read inside)."""
     from paperforge.materialization.ocr import detail
 
-    return detail(paper_dir, canonical_pdf)
+    return detail(paper_dir, canonical_pdf, meta=meta)
 
 
-def _ocr_version_old(paper_dir: Path | None) -> bool:
+def _ocr_version_old(paper_dir: Path | None, meta: dict | None = None) -> bool:
     """Non-failure flag: the paper was produced by an older OCR pipeline
-    version than current.  Not a materialization defect (ADR-0002)."""
+    version than current.  Not a materialization defect (ADR-0002).
+    ``meta`` is injected by the caller's single per-paper read."""
     if paper_dir is None:
         return False
     from paperforge.materialization.ocr import is_old_pipeline
 
-    return is_old_pipeline(paper_dir)
+    return is_old_pipeline(paper_dir, meta=meta)
 
 
 def _resolve_canonical_pdf(vault: Path, paper_dir: Path | None) -> Path | None:
