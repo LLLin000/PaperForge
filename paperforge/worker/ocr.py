@@ -191,6 +191,20 @@ OCR_QUEUE_STATUSES = {
 # nopdf at the head of the queue starves every pending row behind it (the
 # upload slots are consumed by rows that can never succeed).
 OCR_SETTLED_STATUSES = {"done", "done_degraded", "fatal_error", "blocked", "nopdf", "error"}
+def _emit_settlement_progress(
+    progress_callback: Callable[[str], None] | None,
+    reported_keys: set[str],
+    queue_row: dict,
+) -> None:
+    """Emit at most one progress event after a paper reaches a terminal state."""
+    if progress_callback is None:
+        return
+    key = str(queue_row.get("zotero_key", "") or "")
+    status = str(queue_row.get("queue_status", "") or "").strip().lower()
+    if key and status in OCR_SETTLED_STATUSES and key not in reported_keys:
+        reported_keys.add(key)
+        progress_callback(key)
+
 
 # P0-1 (owner review 2026-08-16): a terminal PROVIDER failure (state
 # error/failed) is a dead job — polling it again can never succeed.  The
@@ -2905,11 +2919,11 @@ def run_ocr(
     active_submitted = 0
     queue_changed = False
     _submitted: set[str] = set()  # keys newly uploaded in this run
-
     def _do_poll(job_id: str, token_val: str) -> requests.Response:
         resp = requests.get(f"{job_url}/{job_id}", headers={"Authorization": f"bearer {token_val}"}, timeout=60)
         resp.raise_for_status()
         return resp
+    _reported_progress_keys: set[str] = set()
 
     for queue_row in progress_bar(ocr_queue, desc="Processing OCR", disable=no_progress):
         if stop_check is not None and stop_check():
@@ -2919,7 +2933,7 @@ def run_ocr(
         meta = ensure_ocr_meta(vault, queue_row)
         status = str(meta.get("ocr_status", "pending") or "pending").strip().lower()
         queue_row["queue_status"] = status
-        if status == "done":
+        if status in {"done", "done_degraded"}:
             queue_changed = True
             continue
         if status in {"queued", "running"} and meta.get("ocr_job_id"):
@@ -3049,8 +3063,7 @@ def run_ocr(
                 active_submitted = max(0, active_submitted - 1)
             write_json(paths["ocr"] / key / "meta.json", meta)
             changed += 1
-            if progress_callback is not None:
-                progress_callback(key)
+            _emit_settlement_progress(progress_callback, _reported_progress_keys, queue_row)
 
     # Upload pending items in batches until none remain (processes all do_ocr items, not just max_items)
     def _do_upload(token_val: str, pdf_path: Path) -> requests.Response:
@@ -3102,11 +3115,11 @@ def run_ocr(
     for _cycle in range(max_poll_cycles):
         if stop_check is not None and stop_check():
             _stopped = True
-            break
         remaining = [r for r in ocr_queue if r.get("queue_status", "") not in OCR_SETTLED_STATUSES]
         if not remaining:
             break
         available_slots = max(0, max_items - active_submitted)
+        _sanitized_temp = None
         if available_slots > 0:
             upload_items = [r for r in remaining if r.get("queue_status", "") not in ("queued", "running")][
                 :available_slots
@@ -3116,7 +3129,7 @@ def run_ocr(
                 meta = ensure_ocr_meta(vault, queue_row)
                 _sanitized_temp = None
                 status = str(meta.get("ocr_status", "pending") or "pending").strip().lower()
-                if status in {"done", "queued", "running"}:
+                if status in {"done", "done_degraded", "queued", "running"}:
                     continue
                 resolved_pdf = resolve_pdf_path(
                     queue_row.get("pdf_path", ""),
@@ -3404,10 +3417,6 @@ def run_ocr(
                         f"OCR: {key} provider failed (attempt {attempt}/{MAX_OCR_JOB_ATTEMPTS}) — will resubmit: {meta['error']}",
                         flush=True,
                     )
-                else:
-                    meta["ocr_status"] = "fatal_error"
-                    queue_row["queue_status"] = "fatal_error"
-                    print(f"OCR: {key} fatal after {attempt} attempts: {meta['error']}", flush=True)
                 _failed_count += 1
             else:
                 if _paper_timed_out(meta):
@@ -3422,15 +3431,16 @@ def run_ocr(
                     queue_row["queue_status"] = meta["ocr_status"]
             write_json(paths["ocr"] / key / "meta.json", meta)
             changed += 1
-            if progress_callback is not None:
-                progress_callback(key)
+            _emit_settlement_progress(progress_callback, _reported_progress_keys, queue_row)
         if any(r.get("queue_status") in ("queued", "running") for r in ocr_queue):
             # Periodic live summary (owner: 'no status while waiting is
             # painful') — one compact line per poll interval showing the
             # batch's active/done counts instead of silence.
             if progress_callback is None:
                 _active = sum(1 for r in ocr_queue if r.get("queue_status") in ("queued", "running"))
-                _done_now = sum(1 for r in ocr_queue if r.get("queue_status") == "done")
+                _done_now = sum(
+                    1 for r in ocr_queue if r.get("queue_status") in ("done", "done_degraded")
+                )
                 print(
                     f"  [{datetime.now(timezone.utc).strftime('%H:%M:%S')}] "
                     f"active={_active} done={_done_now} total={len(ocr_queue)}",
@@ -3439,25 +3449,61 @@ def run_ocr(
             _time.sleep(poll_interval)
     # Collect completed OCR keys for incremental index refresh (before filtering)
     _done_ocr_keys = (
-        [r.get("zotero_key", "") for r in ocr_queue if r.get("queue_status") == "done"] if queue_changed else []
+        [
+            r.get("zotero_key", "")
+            for r in ocr_queue
+            if r.get("queue_status") in ("done", "done_degraded")
+        ]
+        if queue_changed
+        else []
     )
-    # P0-3: snapshot per-key settlement BEFORE dropping done rows below —
-    # final_statuses is built from the filtered queue and would miss every
-    # successful key, leaving successful_keys empty even after completions.
-    settled_snapshot = {r.get("zotero_key", ""): r.get("queue_status", "?") for r in ocr_queue}
+    # P0-3: snapshot every requested paper's terminal state before dropping
+    # completed queue rows. Settled rows are normally absent from the queue,
+    # so read their OCR meta to make no-work runs report honestly.
+    queued_keys = {str(r.get("zotero_key", "") or "") for r in ocr_queue}
+    settled_snapshot = {
+        str(row.get("zotero_key", "") or ""): str(
+            _read_meta_or_empty(
+                paths["ocr"] / str(row.get("zotero_key", "")) / "meta.json"
+            ).get("ocr_status", "?")
+            or "?"
+        ).strip().lower()
+        for row in target_rows
+        if str(row.get("zotero_key", "") or "") not in queued_keys
+        and str(
+            _read_meta_or_empty(
+                paths["ocr"] / str(row.get("zotero_key", "")) / "meta.json"
+            ).get("ocr_status", "")
+            or ""
+        ).strip().lower()
+        in OCR_SETTLED_STATUSES
+    }
+    settled_snapshot.update(
+        {r.get("zotero_key", ""): r.get("queue_status", "?") for r in ocr_queue}
+    )
     if queue_changed:
-        ocr_queue = [row for row in ocr_queue if str(row.get("queue_status", "")).lower() != "done"]
+        ocr_queue = [
+            row
+            for row in ocr_queue
+            if str(row.get("queue_status", "")).lower() not in OCR_SETTLED_STATUSES
+        ]
     write_ocr_queue(paths, ocr_queue)
-    # Determine exit code: 0 = all settled, 1 = some items still pending
+    # Determine exit code: 0 = all settled, 1 = some items still pending.
     final_remaining = [
         r
         for r in ocr_queue
-        if r.get("queue_status", "") not in ("done", "done_degraded", "fatal_error", "nopdf", "blocked", "error")
+        if r.get("queue_status", "") not in OCR_SETTLED_STATUSES
     ]
     pending_keys = [r["zotero_key"] for r in final_remaining]
-    final_statuses = {r["zotero_key"]: r.get("queue_status", "?") for r in ocr_queue}
-    done_count = sum(1 for s in final_statuses.values() if s == "done")
-    failed_count = sum(1 for s in final_statuses.values() if s in ("error", "blocked"))
+    done_count = sum(
+        1 for s in settled_snapshot.values() if s in ("done", "done_degraded")
+    )
+    failed_count = sum(
+        1
+        for s in settled_snapshot.values()
+        if s in ("error", "fatal_error", "blocked")
+    )
+    skipped_count = sum(1 for s in settled_snapshot.values() if s == "nopdf")
     pending_count = len(final_remaining)
 
     summary_parts = []
@@ -3465,6 +3511,8 @@ def run_ocr(
         summary_parts.append(f"done={done_count}")
     if failed_count:
         summary_parts.append(f"failed={failed_count}")
+    if skipped_count:
+        summary_parts.append(f"skipped={skipped_count}")
     if pending_count:
         summary_parts.append(f"pending={pending_count} ({', '.join(pending_keys)})")
     summary = f"OCR: {' '.join(summary_parts) if summary_parts else 'no items processed'}"

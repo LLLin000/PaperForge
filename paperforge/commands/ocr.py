@@ -481,27 +481,29 @@ def _run_ocr_status(vault: Path, json_output: bool = False, batch: str | None = 
             except Exception:  # noqa: BLE001 — corrupt meta has no active job
                 continue
             status = str(meta.get("ocr_status", "") or "").strip().lower()
+            submission_state = str(meta.get("submission_state", "") or "").strip().lower()
             job_id = str(meta.get("ocr_job_id", "") or "")
             if batch and str(meta.get("provider_batch_id", "") or "") != batch:
                 continue
-            # Show every unsettled paper: active provider jobs (queued/
-            # running) AND local pending/not-yet-submitted rows — the
-            # operator wants per-paper state, not just in-flight jobs.
-            if status in ("queued", "running", "pending"):
+            # Include the write-ahead submit window: a remote job may exist
+            # without a persisted job id, so it is execution-unknown rather
+            # than complete.
+            if status in ("queued", "running", "pending") or submission_state == "submitting":
                 jobs.append(
                     {
                         "key": meta_dir.name,
                         "job_id": job_id,
-                        "status": status,
+                        "status": "submitting" if submission_state == "submitting" else status,
+                        "submission_state": submission_state,
                         "started_at": str(meta.get("ocr_started_at", "") or ""),
                         "source_pdf": str(meta.get("source_pdf", "") or "")[:48],
                     }
                 )
     if not jobs:
         if json_output:
-            print(_json.dumps({"count": 0, "jobs": []}, ensure_ascii=False))
+            print(_json.dumps({"status": "complete", "count": 0, "jobs": []}, ensure_ascii=False))
         else:
-            print("No active OCR jobs.")
+            print("OCR status: complete (no unfinished papers).")
         return 0
 
     import os as _os
@@ -544,16 +546,22 @@ def _run_ocr_status(vault: Path, json_output: bool = False, batch: str | None = 
                 pass
         rows.append({**j, "provider_state": provider_state, "elapsed": elapsed})
     if json_output:
-        print(_json.dumps({"count": len(rows), "jobs": rows}, ensure_ascii=False, default=str))
+        print(
+            _json.dumps(
+                {"status": "incomplete", "count": len(rows), "jobs": rows},
+                ensure_ascii=False,
+                default=str,
+            )
+        )
         return 0
-    print(f"Active OCR jobs: {len(rows)}")
-    header = f"{'Key':12s} {'Provider':10s} {'Local':9s} {'Elapsed':8s} {'Job ID':16s} {'Source'}"
+    print(f"OCR status: incomplete ({len(rows)} unfinished paper(s))")
+    header = f"{'Key':12s} {'Provider':10s} {'Local':11s} {'Elapsed':8s} {'Job ID':16s} {'Source'}"
     print(header)
     print("-" * len(header))
     for r in rows:
         print(
-            f"{r['key']:12s} {r['provider_state']:10s} {r['status']:9s} {r['elapsed']:8s} "
-            f"{r['job_id'][:14]:16s} {r['source_pdf']}"
+            f"{r['key']:12s} {r['provider_state']:10s} {r['status']:11s} "
+            f"{r['elapsed']:8s} {r['job_id'][:14]:16s} {r['source_pdf']}"
         )
     return 0
 
