@@ -5,7 +5,7 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 
-from paperforge.services.skill_deploy import AGENT_SKILL_DIRS
+from paperforge.config import AGENT_SHARED_SKILL_DIR
 from paperforge.setup import SetupStepResult
 
 
@@ -19,7 +19,10 @@ class AgentInstaller:
 
     def _get_skills_dir(self) -> Path:
         """Get the vault-local target skills directory."""
-        skill_dir_name = AGENT_SKILL_DIRS.get(self.agent_type, ".agents/skills")
+        # Agents choose their own skill target; setup uses the shared
+        # cross-agent dir (they can re-deploy with `paperforge skill
+        # deploy --to <dir>` for a harness-native location).
+        skill_dir_name = AGENT_SHARED_SKILL_DIR
         return self.vault / skill_dir_name
 
     def deploy_skills(self) -> SetupStepResult:

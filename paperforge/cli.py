@@ -20,6 +20,7 @@ from pathlib import Path
 
 # Config / resolver
 from paperforge.config import (
+    AGENT_PLATFORM_IDS,
     ConfigError,
     load_config,
     load_vault_config,
@@ -467,9 +468,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_setup.add_argument(
         "--agent",
         metavar="AGENT",
-        default="opencode",
-        choices=["opencode", "cursor", "claude", "codex", "windsurf", "github_copilot", "gemini", "cline", "augment", "trae"],
-        help="AI Agent platform (default: opencode)",
+        default=None,
+        choices=list(AGENT_PLATFORM_IDS),
+        help="AI Agent platform (default: canonical agent_platform)",
     )
     p_setup.add_argument(
         "--system-dir",
@@ -510,6 +511,27 @@ def build_parser() -> argparse.ArgumentParser:
         "--modular",
         action="store_true",
         help="Use modular setup components (v2.1+)",
+    )
+
+    p_skill = sub.add_parser("skill", help="Manage the PaperForge agent skill")
+    p_skill_sp = p_skill.add_subparsers(dest="skill_action", required=True)
+    p_skill_deploy = p_skill_sp.add_parser("deploy", help="Deploy the paperforge skill into the vault")
+    p_skill_deploy.add_argument(
+        "--to",
+        metavar="DIR",
+        default=".agents/skills",
+        help="Vault-relative skill directory to deploy into (default: .agents/skills). "
+        "Agents choose their harness-native dir, e.g. --to .omp/skills",
+    )
+    p_skill_deploy.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Replace an existing paperforge skill dir (used by update)",
+    )
+    p_skill_deploy.add_argument(
+        "--json",
+        action="store_true",
+        help="Output as JSON",
     )
 
     # Layer 4 gateway commands
@@ -718,7 +740,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # Fail-closed config loading: domain commands never operate on guessed
     # paths.  config/setup/probe handle their own missing-config states.
-    config_tolerant_commands = frozenset({"config", "setup", "probe", "auth", "action"})
+    config_tolerant_commands = frozenset({"config", "setup", "probe", "auth", "action", "skill"})
     try:
         snapshot = load_config(vault)
         args.cfg = {key: str(cv.value).lower() if isinstance(cv.value, bool) else str(cv.value)
@@ -890,6 +912,9 @@ def main(argv: list[str] | None = None) -> int:
 
         return run(args)
 
+    if args.command == "skill":
+        return _run_skill(args)
+
     if args.command == "paper-lookup":
         from paperforge.commands import paper_lookup
 
@@ -1003,10 +1028,14 @@ def main(argv: list[str] | None = None) -> int:
             # Persist the external locator in canonical config so probe and
             # library checks see it (junction alone is not authority).
             _cfg["zotero_data_dir"] = _zotero
-        _agent = getattr(args, "agent", "opencode") or "opencode"
-        # Persist the client platform in canonical config (single source;
-        # AgentInstaller derives paths from it consistently).
-        _cfg["agent_platform"] = _agent
+        _agent = getattr(args, "agent", None)
+        if _agent is not None:
+            # Explicit --agent: record the platform identity in canonical
+            # config.  Skill TARGET is NOT routed per platform anymore —
+            # the agent deploys the skill itself with `paperforge skill
+            # deploy --to <dir>` (it knows its harness); setup uses the
+            # shared default only.
+            _cfg["agent_platform"] = _agent
         _skip = getattr(args, "skip_checks", False)
 
         if getattr(args, "headless", False):
@@ -1040,6 +1069,29 @@ def main(argv: list[str] | None = None) -> int:
 # ---------------------------------------------------------------------------
 # paths command
 # ---------------------------------------------------------------------------
+def _run_skill(args: argparse.Namespace) -> int:
+    """Handle `paperforge skill deploy [--to DIR]`."""
+    vault = args.vault_path
+    if getattr(args, "skill_action", None) != "deploy":
+        print(f"Error: unknown skill action {getattr(args, 'skill_action', None)}", file=sys.stderr)
+        return 2
+    from paperforge.services.skill_deploy import deploy_skills
+
+    result = deploy_skills(
+        vault,
+        overwrite=getattr(args, "overwrite", False),
+        target_dir=getattr(args, "to", None),
+    )
+    if getattr(args, "json", False):
+        print(json.dumps({"ok": not result["errors"], **result}, ensure_ascii=False))
+    else:
+        status = "ok" if not result["errors"] else "failed"
+        print(f"skill deploy: {status} -> {vault / result['target_dir'] / 'paperforge'}")
+        for err in result["errors"]:
+            print(f"  error: {err}", file=sys.stderr)
+    return 0 if not result["errors"] else 1
+
+
 def _cmd_paths(vault: Path, args: argparse.Namespace) -> int:
     """Handle `paperforge paths` and `paperforge paths --json`."""
     cfg = load_vault_config(vault)

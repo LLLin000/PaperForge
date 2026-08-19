@@ -24,7 +24,10 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 # Import standalone functions and classes (not Textual-dependent)
-from paperforge.services.skill_deploy import AGENT_SKILL_DIRS
+from paperforge.config import (
+    AGENT_PLATFORM_IDS,
+    AGENT_SHARED_SKILL_DIR,
+)
 from paperforge.setup_wizard import CheckResult, EnvChecker, _find_vault
 
 from tests.conftest import canonical_test_config
@@ -34,32 +37,20 @@ from tests.conftest import canonical_test_config
 # ===================================================================
 
 
-class TestAgentSkillDirs:
-    """Agent platform skill directory completeness."""
+class TestAgentPlatformRegistry:
+    """Agent platform vocabulary: ids only — skill target is agent-chosen
+    (`paperforge skill deploy --to <dir>`), never routed per platform."""
 
     def test_has_all_expected_agents(self) -> None:
         expected_agents = {
-            "opencode", "claude", "codex", "cursor", "windsurf",
-            "github_copilot", "cline", "augment", "trae", "gemini",
+            "opencode", "claude", "codex", "cursor", "gemini", "kilo",
+            "pi", "omp", "crush", "kimi", "github_copilot", "cline",
+            "windsurf", "augment", "trae",
         }
-        assert set(AGENT_SKILL_DIRS.keys()) == expected_agents
+        assert set(AGENT_PLATFORM_IDS) == expected_agents
 
-    def test_each_agent_has_non_empty_skill_dir(self) -> None:
-        for key, skill_dir in AGENT_SKILL_DIRS.items():
-            assert isinstance(skill_dir, str) and skill_dir, f"{key} has empty skill_dir"
-            # Must be a relative path (no leading /)
-            assert not skill_dir.startswith("/"), f"{key} path starts with /: {skill_dir}"
-
-    def test_core_agent_skill_dirs(self) -> None:
-        assert AGENT_SKILL_DIRS["opencode"] == ".opencode/skills"
-        assert AGENT_SKILL_DIRS["cursor"] == ".cursor/skills"
-        assert AGENT_SKILL_DIRS["claude"] == ".claude/skills"
-        assert AGENT_SKILL_DIRS["codex"] == ".codex/skills"
-        assert AGENT_SKILL_DIRS["cline"] == ".clinerules"
-
-    def test_all_paths_start_with_dot(self) -> None:
-        for key, skill_dir in AGENT_SKILL_DIRS.items():
-            assert skill_dir.startswith("."), f"{key} dir does not start with dot: {skill_dir}"
+    def test_shared_default_is_agents_skills(self) -> None:
+        assert AGENT_SHARED_SKILL_DIR == ".agents/skills"
 
 
 # ===================================================================
@@ -288,7 +279,7 @@ class TestEnvCheckerCheckJson:
 
 
 def test_headless_setup_claude_skill_directory(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Claude Code uses skill_directory format — creates .claude/skills/pf-deep/SKILL.md etc."""
+    """Setup deploys the paperforge skill into the shared .agents/skills dir."""
     import paperforge.setup_wizard as sw
     from paperforge.setup_wizard import headless_setup
 
@@ -311,7 +302,7 @@ def test_headless_setup_claude_skill_directory(tmp_path: Path, monkeypatch: pyte
     )
 
     assert rv == 0, f"claude install failed with code {rv}"
-    skill_dir = tmp_path / ".claude" / "skills" / "paperforge"
+    skill_dir = tmp_path / ".agents" / "skills" / "paperforge"
     assert skill_dir.exists(), f"paperforge skill dir not created: {skill_dir}"
     assert (skill_dir / "SKILL.md").exists(), "SKILL.md not created"
     assert (skill_dir / "atoms" / "chart-reading" / "INDEX.md").exists(), "chart INDEX.md not created"
@@ -320,7 +311,7 @@ def test_headless_setup_claude_skill_directory(tmp_path: Path, monkeypatch: pyte
 
 
 def test_headless_setup_opencode_flat_command(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """OpenCode deploys paperforge skill to skills dir; flat commands are bundled in SKILL.md."""
+    """OpenCode setup deploys the paperforge skill into the shared .agents/skills dir."""
     import paperforge.setup_wizard as sw
     from paperforge.setup_wizard import headless_setup
 
@@ -343,13 +334,13 @@ def test_headless_setup_opencode_flat_command(tmp_path: Path, monkeypatch: pytes
     )
 
     assert rv == 0, f"opencode install failed with code {rv}"
-    skill_dir = tmp_path / ".opencode" / "skills" / "paperforge"
+    skill_dir = tmp_path / ".agents" / "skills" / "paperforge"
     assert skill_dir.exists(), f"paperforge skill dir not created: {skill_dir}"
     assert (skill_dir / "SKILL.md").exists(), "SKILL.md not created"
 
 
 def test_headless_setup_codex_skill_directory(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Codex deploys paperforge skill under .codex/skills."""
+    """Codex setup deploys the paperforge skill into the shared .agents/skills dir."""
     import paperforge.setup_wizard as sw
     from paperforge.setup_wizard import headless_setup
 
@@ -372,13 +363,13 @@ def test_headless_setup_codex_skill_directory(tmp_path: Path, monkeypatch: pytes
     )
 
     assert rv == 0, f"codex install failed with code {rv}"
-    skill_dir = tmp_path / ".codex" / "skills" / "paperforge"
+    skill_dir = tmp_path / ".agents" / "skills" / "paperforge"
     assert skill_dir.exists(), f"paperforge skill dir not created: {skill_dir}"
     assert (skill_dir / "SKILL.md").exists(), "SKILL.md not created"
 
 
 def test_headless_setup_cline_rules_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Cline deploys paperforge skill under .clinerules."""
+    """Cline setup deploys the paperforge skill into the shared .agents/skills dir."""
     import paperforge.setup_wizard as sw
     from paperforge.setup_wizard import headless_setup
 
@@ -401,10 +392,8 @@ def test_headless_setup_cline_rules_file(tmp_path: Path, monkeypatch: pytest.Mon
     )
 
     assert rv == 0, f"cline install failed with code {rv}"
-    clinerules = tmp_path / ".clinerules"
-    assert clinerules.exists(), f".clinerules dir not created: {clinerules}"
-    skill_dir = clinerules / "paperforge"
-    assert skill_dir.exists(), "paperforge subdir not created under .clinerules"
+    skill_dir = tmp_path / ".agents" / "skills" / "paperforge"
+    assert skill_dir.exists(), "paperforge skill dir not created under shared .agents/skills"
     assert (skill_dir / "workflows" / "project-engineering.md").exists(), "project-engineering.md not created"
 
 
