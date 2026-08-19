@@ -87,26 +87,22 @@ data.paper.pdf_path
 先定位论文(Route A),然后:
 
 ```text
-1. 读 fulltext(data.paper.fulltext_path),词面搜索:
-   grep -n -i "RFE\|recursive feature\|feature selection" <fulltext_path>
+1. 本地读文(一个命令,协议处理路径):
+   paperforge --vault "$VAULT" read <KEY> --find "<词>" --json
 
-   命中 → 读命中行及上下文段落 → 完成,不触发 retrieve
+   data.status:
+   - matched → 用 data.matches[] 回答(source + line/page),完成
+   - no_match + 语义概念问题 → retrieve 一次(见下)
+   - no_match + 明确术语 → 报告未检索到,停止
+   - no_readable_source → 报告 no readable source,停止
 
-2. 词面无果,或命中句子被截断/不完整:
-   → 用 canonical PDF 提取(data.paper.pdf_path,固定 PyMuPDF 命令,
-     见 pre-read.md Step 3)
-
-3. 用户问的是语义概念,原文可能完全不用该术语:
-   → retrieve 一次(见下)
-
-4. 仍无 → 报告 limitation
+2. retrieve 仅用于"原文可能不用该术语"的语义概念:
+   paperforge --vault "$VAULT" retrieve "<问题>" --paper <KEY> --json
+   之后 STOP,不二次 fallback。
 ```
 
-```bash
-$PYTHON -m paperforge --vault "$VAULT" retrieve "<问题>" --paper <KEY> --json
-```
-
-`retrieve` 是 semantic fallback,不是默认 reader。fulltext 词面搜索永远优先。
+`read --find` 是本地读文的唯一入口(fulltext + canonical PDF,auto)。
+`retrieve` 是 semantic fallback,不是默认 reader。
 
 ## 4. Route C — 模糊 / 跨库
 
@@ -129,8 +125,9 @@ $PYTHON -m paperforge --vault "$VAULT" retrieve "<问题>" --paper <KEY> --json
 ## 5. 冻结规则
 
 - **每阶段最多 1 次 fallback**,fallback 后即停止,不再换策略。
-- **禁止第四条检索策略**:除 search / paper-context / retrieve / fulltext
-  读取(PyMuPDF 提取)之外,不得发明新工具或新命令。
+- **禁止第四条检索策略**:除 search / paper-context / retrieve / `read --find`
+  之外,不得发明新工具或新命令(不手写 grep、不手写 PyMuPDF、不做 storage
+  discovery)。
 - `scope=paper`(Route B)时**永远不扩大到 library**。
 - `query-plan` 仅在用户明确要求诊断/推荐时才运行,其结果不改变以上路由。
 
@@ -152,5 +149,5 @@ $PYTHON -m paperforge --vault "$VAULT" retrieve "<问题>" --paper <KEY> --json
 |------|------|--------|
 | `search "<词>" --limit N --json` | 元数据定位 | Route A step 2 / Route C step 1 |
 | `paper-context <KEY> --json` | canonical 上下文 | Route A step 3 / pre-read Step 2 |
-| `retrieve "<问题>" [--paper KEY] --json` | 语义检索 | Route B step 3 / Route C step 2 |
-| fulltext grep + PyMuPDF 提取 | 本地读文 | Route B step 1-2 / pre-read Step 3 |
+| `read <KEY> --find "<词>" --json` | 本地读文(fulltext+PDF) | Route B / pre-read Step 3 |
+| `retrieve "<问题>" [--paper KEY] --json` | 语义检索 | Route B 语义兜底 / Route C step 2 |

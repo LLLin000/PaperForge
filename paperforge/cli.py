@@ -376,6 +376,13 @@ def build_parser() -> argparse.ArgumentParser:
     p_pc.add_argument("--json", action="store_true", help="Output as JSON")
     p_pc.add_argument("--structure", action="store_true", help="Include compact document tree from OCR structure")
 
+    p_read = sub.add_parser("read", help="Canonical local literal read of a paper (fulltext/PDF, no path handling)")
+    p_read.add_argument("key", help="Paper identifier (zotero key, DOI, or citation key)")
+    p_read.add_argument("--find", required=True, help="Literal term to search (case-insensitive substring, not regex)")
+    p_read.add_argument("--source", choices=("auto", "fulltext", "pdf"), default="auto",
+                        help="Source to search (default auto = fulltext + canonical PDF)")
+    p_read.add_argument("--json", action="store_true", help="Output as JSON")
+
     p_rl = sub.add_parser("reading-log", help="Record or export reading notes")
     p_rl.add_argument("--write", dest="paper_id", help="Write note for this zotero_key")
     p_rl.add_argument("--section", help="Section (e.g. Discussion P12)")
@@ -690,6 +697,7 @@ def main(argv: list[str] | None = None) -> int:
         "query-plan", "prune", "paper-status", "paper-context", "reading-log",
         "project-log", "search", "agent-context", "runtime-health", "doctor",
         "update", "setup", "selection-sync", "index-refresh", "base-refresh",
+        "read",
         "paper-lookup", "content-discovery", "paper-navigation", "scoped-fetch",
         "probe",
     }
@@ -874,6 +882,11 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "paper-context":
         from paperforge.commands.paper_context import run
+
+        return run(args)
+
+    if args.command == "read":
+        from paperforge.commands.read import run
 
         return run(args)
 
