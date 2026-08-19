@@ -51,68 +51,34 @@ data.paper.pdf_path
 
 不读 `data.title`。不要构造或猜测任何其他路径。
 
-## Step 3 — Read(读文,三态)
-
-### 3a. fulltext 存在
-
-检查路径有效:
+## Step 3 — Read(读文)
 
 ```bash
-test -f "<data.paper.fulltext_path>" && echo EXISTS
+paperforge --vault "$VAULT" read <KEY> --find "<关键词>" --json
 ```
 
-`EXISTS` → 读该文件;找段落用词面搜索:
+READ ONLY THESE FIELDS:
 
-```bash
-grep -n -i "<关键词>" "<data.paper.fulltext_path>"
+```text
+data.status             — "matched" | "no_match" | "no_readable_source"
+data.matches[]          — 每项:source("fulltext"|"pdf")、text、line 或 page
 ```
 
-命中 → 读命中行及前后文段落,回答。完成。
+判定(三态):
 
-### 3b. fulltext 不足 → canonical PDF(互斥分支 A)
+- **matched** → 用 `data.matches[]` 回答,引用 source + line/page。完成。
+- **no_match**(源可读但无命中):
+  - 问题本身是语义概念(原文可能不用该词)→ `retrieve` 一次:
+    ```bash
+    paperforge --vault "$VAULT" retrieve "<问题>" --paper <KEY> --json
+    ```
+    之后无论结果如何都 STOP,不二次 fallback。
+  - 找的是明确原文术语 → 报告 "论文中未检索到该词",STOP。
+- **no_readable_source** → **STOP**,报告 "no readable source"。
 
-仅当 **fulltext 命中但句子被截断 / fulltext 不可读** 时用 canonical PDF。
-**extractor 由协议固定为 PyMuPDF,Agent 不选择工具、不做 storage
-discovery**:
-
-```bash
-$PYTHON -c "
-import fitz
-doc = fitz.open(r'<data.paper.pdf_path>')
-for i, page in enumerate(doc):
-    text = page.get_text()
-    import re
-    for m in re.finditer(r'<关键词>', text, re.I):
-        s = max(0, m.start()-400); e = min(len(text), m.end()+900)
-        print(f'=== page {i+1} ===')
-        print(text[s:e].replace(chr(10), ' '))
-" 2>&1
-```
-
-`<data.paper.pdf_path>` 替换为 Step 2 读到的确切值。**若该值形如
-`[[...]]`(wikilink),替换前去掉最外层 `[[` 和 `]]`。**
-命中 → 用提取文本回答。零命中 → 该词可能确实不在本文,**STOP**。
-此分支后不再尝试 retrieve。
-
-### 3c. fulltext 词面零命中 → 二选一,互斥(分支 B)
-
-**找的是明确原文术语**(如 "RFE"、"sample size")→ 用 3b 的 PyMuPDF 命令
-对 canonical PDF 做一次词面搜索,然后 **STOP**(不再 retrieve)。
-
-**问的是语义概念**(原文可能完全不用该词,如 "这篇的模型怎么避免过拟合")
-→ `retrieve` 一次:
-
-```bash
-$PYTHON -m paperforge --vault "$VAULT" retrieve "<问题>" --paper <KEY> --json
-```
-
-之后无论结果如何都 **STOP**,不二次 fallback。
-
-**两条互斥:一次 Step 3 最多执行一个 fallback(PDF 或 retrieve),不串联。**
-
-### 3d. 两者都没有 → STOP
-
-fulltext 与 pdf 都无效 → **STOP**,报告 "no readable source"。
+协议负责 fulltext/PDF 路径解析、wikilink 剥离与提取;Agent 不接触路径、不构造
+grep/PyMuPDF 命令。一次 Step 3 最多一个 fallback(read 之外最多再执行一次
+retrieve)。
 
 ---
 
