@@ -61,7 +61,9 @@ PROVENANCE_DEFECTS = frozenset({
 PUBLISH_PENDING_RECENT = "publish_pending_recent"  # publishing → wait
 
 
-def provenance_state(paper_dir: Path, canonical_pdf: Path | None) -> str | None:
+def provenance_state(
+    paper_dir: Path, canonical_pdf: Path | None, meta: dict | None = None
+) -> str | None:
     """[2] OCR ownership / source provenance — is this raw OCR actually
     this paper's, from THIS PDF?
 
@@ -81,8 +83,12 @@ def provenance_state(paper_dir: Path, canonical_pdf: Path | None) -> str | None:
     - verified mismatch → the specific PROVENANCE_* defect;
     - everything verified matching → None (current).
     PDF path is a LOCATOR, never an identity — bytes are the identity.
+
+    ``meta`` may be injected by a caller that already read meta.json once
+    for the same observation (probe reads it a single time per paper).
     """
-    meta = read_meta(paper_dir)
+    if meta is None:
+        meta = read_meta(paper_dir)
     if not meta:
         # Meta missing OR unreadable (restore corruption) — NO provenance
         # claim can be verified.  Fail-closed: unknown, never pass.  (The
@@ -168,7 +174,7 @@ def queued_is_zombie(paper_dir: Path, meta: dict | None) -> bool:
         return False
 
 
-def meta_lifecycle(paper_dir: Path) -> tuple[str | None, str | None]:
+def meta_lifecycle(paper_dir: Path, meta: dict | None = None) -> tuple[str | None, str | None]:
     """[1] meta.json ocr_status → (detail, top-level state).
 
     Covers the REAL worker lifecycle enum, not a subset: none/pending,
@@ -176,8 +182,13 @@ def meta_lifecycle(paper_dir: Path) -> tuple[str | None, str | None]:
     fatal_error/error, blocked, nopdf, AND the legacy "failed" value that
     older metas still carry (→ failed/failed_legacy, never dropped through
     to artifact checks where complete old artifacts would look current).
-    done* values fall through to artifact checks."""
-    meta = read_meta(paper_dir)
+    done* values fall through to artifact checks.
+
+    ``meta`` may be injected by a caller that already read meta.json once
+    (probe reads it a single time per paper).
+    """
+    if meta is None:
+        meta = read_meta(paper_dir)
     if not meta:
         return None, None
     st = str(meta.get("ocr_status", "") or "")
@@ -219,7 +230,7 @@ def publish_marker_state(paper_dir: Path) -> tuple[str | None, str | None]:
     return PUBLISH_PENDING_STALE, "incomplete"
 
 
-def is_old_pipeline(paper_dir: Path) -> bool:
+def is_old_pipeline(paper_dir: Path, meta: dict | None = None) -> bool:
     """True when the paper was produced by an older OCR pipeline version
     than the current one — the product may be structurally fine (current)
     or incomplete, but the version fact is part of the state machine."""
@@ -227,14 +238,15 @@ def is_old_pipeline(paper_dir: Path) -> bool:
         from paperforge.worker.ocr_versions import OCR_PIPELINE_VERSION
     except Exception:  # noqa: BLE001
         return False
-    meta = read_meta(paper_dir)
+    if meta is None:
+        meta = read_meta(paper_dir)
     if not meta:
         return False
     v = str(meta.get("ocr_pipeline_version", "") or "")
     return bool(v) and v != OCR_PIPELINE_VERSION
 
 
-def top_state(paper_dir: Path | None) -> str | None:
+def top_state(paper_dir: Path | None, meta: dict | None = None) -> str | None:
     """The top-level OCR state (judging only, no hash identity):
     not_started / running / failed / blocked / missing / incomplete —
     or None when the chain is fully materialized (caller does the hash
@@ -243,10 +255,13 @@ def top_state(paper_dir: Path | None) -> str | None:
     Order: [1] lifecycle → [3] RAW → [5] publish marker → [4] derived →
     [5] published hash.  A pending marker must never shadow a broken raw
     layer (raw is publish's upstream).
+
+    ``meta`` may be injected by a caller that already read meta.json once
+    (probe reads it a single time per paper).
     """
     if paper_dir is None or not paper_dir.exists():
         return "missing"
-    _lc_detail, lc_state = meta_lifecycle(paper_dir)
+    _lc_detail, lc_state = meta_lifecycle(paper_dir, meta)
     if lc_state is not None:
         return lc_state
     raw = raw_state(paper_dir)
@@ -263,13 +278,21 @@ def top_state(paper_dir: Path | None) -> str | None:
     return None  # materialized — caller compares hash → current/stale
 
 
-def detail(paper_dir: Path | None, canonical_pdf: Path | None = None) -> str | None:
+def detail(
+    paper_dir: Path | None,
+    canonical_pdf: Path | None = None,
+    meta: dict | None = None,
+) -> str | None:
     """Fine-grained WHY for the ocr state — one namespace, each value one
     meaning (see the constants).  A version fact is a FLAG, never a
-    failure reason occupying this slot."""
+    failure reason occupying this slot.
+
+    ``meta`` may be injected by a caller that already read meta.json once
+    (probe reads it a single time per paper).
+    """
     if paper_dir is None or not paper_dir.exists():
         return NOT_STARTED
-    lc_detail, _ = meta_lifecycle(paper_dir)
+    lc_detail, _ = meta_lifecycle(paper_dir, meta)
     if lc_detail is not None:
         return lc_detail
     raw = raw_state(paper_dir)
@@ -281,7 +304,7 @@ def detail(paper_dir: Path | None, canonical_pdf: Path | None = None) -> str | N
     art_detail = ocr_artifact_detail(paper_dir)
     if art_detail is not None:
         return art_detail
-    return provenance_state(paper_dir, canonical_pdf)
+    return provenance_state(paper_dir, canonical_pdf, meta=meta)
 
 RAW_DEFECTS = frozenset({
     RAW_MISSING, RAW_EMPTY, RAW_UNREADABLE, RAW_INVALID,
