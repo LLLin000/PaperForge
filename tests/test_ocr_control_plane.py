@@ -212,3 +212,248 @@ def test_ocr_run_reports_terminal_only_scope_as_done(
 
     assert ocr_mod.run_ocr(vault, selected_keys={"AAAA1111"}) == 0
     assert "OCR: done=1" in capsys.readouterr().out
+
+
+# ── Control-plane corrective (#190 review, 2026-08-19): stop semantics,
+# ── provider max-attempt settlement, TOCTOU upload classification ────────
+
+
+def _run_ocr_harness(
+    tmp_path: Path,
+    monkeypatch,
+    *,
+    rows: list[dict],
+    meta_for: dict[str, dict],
+    token: str = "tok",
+) -> tuple:
+    """Run-ocr harness: queue prepared from rows; per-key meta from
+    meta_for.  Rows carry both ``key`` (export locator) and ``zotero_key``
+    (queue identity).  Returns (vault, ocr_mod, paths)."""
+    from paperforge.worker import ocr as ocr_mod
+
+    vault = tmp_path / "vault"
+    ocr_root = vault / "System" / "PaperForge" / "ocr"
+    exports = vault / "System" / "PaperForge" / "exports"
+    ocr_root.mkdir(parents=True)
+    exports.mkdir(parents=True)
+    (exports / "library.json").write_text("[]", encoding="utf-8")
+    rows = [
+        dict(
+            r,
+            key=r.get("key", r["zotero_key"]),
+            queue_status=r.get("queue_status")
+            or meta_for.get(r["zotero_key"], {}).get("ocr_status", "pending"),
+        )
+        for r in rows
+    ]
+    for row in rows:
+        key = row["zotero_key"]
+        (ocr_root / key).mkdir(parents=True, exist_ok=True)
+        (ocr_root / key / "meta.json").write_text(
+            json.dumps(meta_for.get(key, {"zotero_key": key, "ocr_status": "pending"})),
+            encoding="utf-8",
+        )
+    paths = {"ocr": ocr_root, "exports": exports, "ocr_queue": ocr_root / "ocr_queue.json"}
+    monkeypatch.setattr(ocr_mod, "pipeline_paths", lambda _v: paths)
+    monkeypatch.setattr(ocr_mod, "load_export_rows", lambda _p: rows)
+    monkeypatch.setattr(
+        "paperforge.worker.asset_index.read_index",
+        lambda _v: {"items": rows},
+    )
+    monkeypatch.setattr(ocr_mod, "sync_ocr_queue", lambda _paths, _target_rows: rows)
+    monkeypatch.setattr(ocr_mod, "validate_ocr_meta", lambda *_a: ("queued", ""))
+    monkeypatch.setattr(ocr_mod, "_resolve_paddleocr_token", lambda _v: token)
+    monkeypatch.setattr(ocr_mod._sync, "run_index_refresh", lambda *_a, **_k: None)
+    monkeypatch.setattr(ocr_mod, "_acquire_controller_lock", lambda _p: True)
+    monkeypatch.setenv("PAPERFORGE_POLL_MAX_CYCLES", "3")
+    monkeypatch.setenv("PAPERFORGE_POLL_INTERVAL", "0")
+    return vault, ocr_mod, paths
+
+
+def _read_meta(vault, key: str) -> dict:
+    import json as _json
+
+    return _json.loads(
+        (vault / "System" / "PaperForge" / "ocr" / key / "meta.json").read_text(encoding="utf-8")
+    )
+
+
+def test_stop_detaches_immediately_no_poll_no_sleep(tmp_path, monkeypatch) -> None:
+    """P0: stop observed at cycle start -> NO polling, NO sleep, rc130."""
+    rows = [{"zotero_key": "AAAA1111", "has_pdf": True, "pdf_path": "x.pdf"}]
+    vault, ocr_mod, _ = _run_ocr_harness(
+        tmp_path, monkeypatch, rows=rows,
+        meta_for={"AAAA1111": {"zotero_key": "AAAA1111", "ocr_status": "queued", "ocr_job_id": "j1"}},
+    )
+    polled = []
+    monkeypatch.setattr(
+        ocr_mod.requests, "get",
+        lambda *a, **k: polled.append(a) or _raise(),
+    )
+
+    def _raise():
+        raise AssertionError("must not poll after stop")
+
+    slept = []
+    import time as _time_mod
+
+    real_sleep = _time_mod.sleep
+    monkeypatch.setattr(_time_mod, "sleep", lambda *a: slept.append(a))
+
+    rc = ocr_mod.run_ocr(vault, stop_check=lambda: True)
+    assert rc == 130, "stop must return 130"
+    assert polled == [], "no provider poll allowed after stop"
+    assert slept == [], "no sleep allowed after stop"
+
+
+def test_stop_preserves_remote_jobs_in_meta(tmp_path, monkeypatch) -> None:
+    """P0: detach keeps queued/running meta (remote jobs keep running)."""
+    rows = [{"zotero_key": "AAAA1111", "has_pdf": True, "pdf_path": "x.pdf"}]
+    vault, ocr_mod, _ = _run_ocr_harness(
+        tmp_path, monkeypatch, rows=rows,
+        meta_for={"AAAA1111": {"zotero_key": "AAAA1111", "ocr_status": "running", "ocr_job_id": "j9"}},
+    )
+    monkeypatch.setattr(
+        ocr_mod.requests, "get",
+        lambda *a, **k: (_ for _ in ()).throw(AssertionError("no poll after stop")),
+    )
+    rc = ocr_mod.run_ocr(vault, stop_check=lambda: True)
+    assert rc == 130
+    meta = _read_meta(vault, "AAAA1111")
+    assert meta["ocr_status"] == "running", "detach must not mutate remote job state"
+    assert meta["ocr_job_id"] == "j9"
+
+
+def test_provider_final_attempt_settles_fatal(tmp_path, monkeypatch) -> None:
+    """P0: provider failure on the LAST allowed attempt -> fatal_error
+    terminal with empty job id — never a hanging queued row."""
+    from paperforge.providers.paddleocr import ProviderStatus
+
+    from paperforge.worker import ocr as ocr_mod
+
+    rows = [{"zotero_key": "AAAA1111", "has_pdf": True, "pdf_path": "x.pdf"}]
+    vault, _ocr_mod, _ = _run_ocr_harness(
+        tmp_path, monkeypatch, rows=rows,
+        meta_for={
+            "AAAA1111": {
+                "zotero_key": "AAAA1111", "ocr_status": "queued",
+                "ocr_job_id": "j1", "job_attempt": ocr_mod.MAX_OCR_JOB_ATTEMPTS - 1,
+            }
+        },
+    )
+    # The pre-poll loop polls queued jobs directly (no batch observer) —
+    # keep it "running" there so the MAIN loop's batch observer drives the
+    # terminal provider failure.
+    monkeypatch.setattr(
+        ocr_mod.requests, "get",
+        lambda *a, **k: _resp({"data": {"state": "running"}}),
+    )
+    monkeypatch.setattr(
+        "paperforge.providers.paddleocr.PaddleOCRProvider.get_batch_status",
+        lambda self, batch: {"j1": (ProviderStatus.FAILED, {"state": "failed", "errorMsg": "boom"})},
+    )
+    rc = ocr_mod.run_ocr(vault)
+    meta = _read_meta(vault, "AAAA1111")
+    assert meta["ocr_status"] == "fatal_error", meta
+    assert meta["ocr_job_id"] == "", meta
+    assert meta["job_attempt"] == ocr_mod.MAX_OCR_JOB_ATTEMPTS, meta
+    assert rc == 1, "fatal_error is a settled FAILURE terminal -> rc 1"
+
+
+def test_unexpected_postprocess_exception_persists_and_releases(tmp_path, monkeypatch) -> None:
+    """P1: a generic postprocess crash must persist an error state and
+    release the active slot (no hanging queued row, resumable)."""
+    from paperforge.providers.paddleocr import ProviderStatus
+
+    rows = [{"zotero_key": "AAAA1111", "has_pdf": True, "pdf_path": "x.pdf"}]
+    vault, ocr_mod, _ = _run_ocr_harness(
+        tmp_path, monkeypatch, rows=rows,
+        meta_for={"AAAA1111": {"zotero_key": "AAAA1111", "ocr_status": "running", "ocr_job_id": "j1"}},
+    )
+
+    def boom(*a, **k):
+        raise RuntimeError("postprocess exploded")
+
+    monkeypatch.setattr(
+        "paperforge.providers.paddleocr.PaddleOCRProvider.get_batch_status",
+        lambda self, batch: {
+            "j1": (
+                ProviderStatus.DONE,
+                {"state": "done", "resultUrl": {"jsonUrl": "http://x/result"}},
+            )
+        },
+    )
+    monkeypatch.setattr(ocr_mod, "postprocess_ocr_result", boom)
+    monkeypatch.setattr(
+        ocr_mod.requests, "get",
+        lambda *a, **k: _resp({"data": {"state": "done", "resultUrl": {"jsonUrl": "http://x/result"}}})
+        if "jobs" in a[0] else _text_resp("{}"),
+    )
+    # "{}" is a result line without ["result"] key -> generic exception path.
+    rc = ocr_mod.run_ocr(vault)
+    meta = _read_meta(vault, "AAAA1111")
+    assert meta["ocr_status"] not in ("queued", "running"), meta
+    assert meta["error_stage"] == "postprocess", meta
+
+
+def _resp(payload):
+    class _R:
+        def json(self):
+            return payload
+
+        def raise_for_status(self):
+            return None
+
+        @property
+        def status_code(self):
+            return 200
+
+        @property
+        def text(self):
+            return ""
+
+    return _R()
+
+
+def _text_resp(text):
+    class _R:
+        def json(self):
+            return {}
+
+        def raise_for_status(self):
+            return None
+
+        @property
+        def status_code(self):
+            return 200
+
+        @property
+        def text(self):
+            return text
+
+    return _R()
+
+
+def test_upload_file_disappears_is_blocked_not_nopdf(tmp_path, monkeypatch) -> None:
+    """P1: PDF resolved then vanishing at upload -> blocked + error_stage
+    source (repair frontier), never a legal nopdf terminal."""
+    rows = [{"zotero_key": "AAAA1111", "has_pdf": True, "pdf_path": "x.pdf"}]
+    vault, ocr_mod, _ = _run_ocr_harness(
+        tmp_path, monkeypatch, rows=rows,
+        meta_for={"AAAA1111": {"zotero_key": "AAAA1111", "ocr_status": "pending"}},
+    )
+    monkeypatch.setattr(
+        "paperforge.pdf_resolver.resolve_pdf_path",
+        lambda *a, **k: str(tmp_path / "x.pdf"),
+    )
+
+    def boom(*a, **k):
+        raise FileNotFoundError("gone")
+
+    monkeypatch.setattr(ocr_mod.requests, "post", boom)
+    monkeypatch.setattr(ocr_mod, "_resolve_zotero_data_dir", lambda _v: None)
+    rc = ocr_mod.run_ocr(vault)
+    meta = _read_meta(vault, "AAAA1111")
+    assert meta["ocr_status"] == "blocked", meta
+    assert meta["error_stage"] == "source", meta
+    assert rc == 1, "blocked is a settled FAILURE terminal -> rc 1"

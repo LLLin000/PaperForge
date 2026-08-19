@@ -3114,7 +3114,12 @@ def run_ocr(
     _token_warned = False
     for _cycle in range(max_poll_cycles):
         if stop_check is not None and stop_check():
+            # Ctrl+C / PAPERFORGE_STOP detaches the LOCAL watcher
+            # immediately: no new uploads, no further polling, no sleep.
+            # Remote provider jobs keep running (meta stays queued/running);
+            # rc 130 + lock release happen after the loop.
             _stopped = True
+            break
         remaining = [r for r in ocr_queue if r.get("queue_status", "") not in OCR_SETTLED_STATUSES]
         if not remaining:
             break
@@ -3275,9 +3280,15 @@ def run_ocr(
                             print(f"OCR: {key} upload rejected ({_status}): {_body[:120]}", flush=True)
                             continue
                     if isinstance(e, FileNotFoundError):
-                        meta["ocr_status"] = "nopdf"
+                        # The canonical PDF resolved earlier but disappeared
+                        # before upload (TOCTOU) — this is NOT a legal nopdf
+                        # terminal (authority expects the file); it is a
+                        # source defect that must stay on the repair
+                        # frontier: blocked + error_stage=source.
+                        meta["ocr_status"] = "blocked"
                         meta["error"] = "PDF not found"
-                        queue_row["queue_status"] = "nopdf"
+                        meta["error_stage"] = "source"
+                        queue_row["queue_status"] = "blocked"
                         write_json(paths["ocr"] / key / "meta.json", meta)
                         changed += 1
                         continue
@@ -3415,6 +3426,17 @@ def run_ocr(
                     queue_row["queue_status"] = "pending"
                     print(
                         f"OCR: {key} provider failed (attempt {attempt}/{MAX_OCR_JOB_ATTEMPTS}) — will resubmit: {meta['error']}",
+                        flush=True,
+                    )
+                else:
+                    # Fail closed on the final allowed attempt: the row MUST
+                    # settle terminal.  Leaving it queued/running with an
+                    # empty job id would hang it forever — no upload (status
+                    # queued/running), no poll (no job id), no settlement.
+                    meta["ocr_status"] = "fatal_error"
+                    queue_row["queue_status"] = "fatal_error"
+                    print(
+                        f"OCR: {key} fatal after {attempt} attempts: {meta['error']}",
                         flush=True,
                     )
                 _failed_count += 1
