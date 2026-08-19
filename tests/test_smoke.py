@@ -109,8 +109,8 @@ class TestLdDeepImport:
         """Verify deployed pf_deep.py is importable without PYTHONPATH."""
         from paperforge.services.skill_deploy import deploy_skills
 
-        deploy_skills(test_vault, agent_key="opencode", overwrite=True)
-        skill_dir = test_vault / ".opencode" / "skills" / "paperforge" / "scripts"
+        deploy_skills(test_vault, overwrite=True)
+        skill_dir = test_vault / ".agents" / "skills" / "paperforge" / "scripts"
         ld_deep_path = skill_dir / "pf_deep.py"
         assert ld_deep_path.exists(), "pf_deep.py should be deployed"
 

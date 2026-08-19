@@ -41,7 +41,26 @@ LOCK_TIMEOUT_SECONDS = 5.0
 PAPERFORGE_VAULT_ENV = "PAPERFORGE_VAULT"
 
 _SECRET_KEY_PARTS = ("api_key", "api_token", "token", "password", "secret")
-_VALID_AGENT_PLATFORMS = ("opencode", "claude", "codex", "cursor", "windsurf", "github_copilot", "gemini")
+
+# Single source of truth for the agent-platform vocabulary.  Only the ID
+# list is code-owned (CLI choices, canonical config choices).  The skill
+# TARGET directory is NOT routed per platform anymore: agents deploy the
+# skill themselves with `paperforge skill deploy --to <dir>` (they know
+# which harness they run in, e.g. .omp/skills, .agents/skills).  The shared
+# cross-agent dir is the default target.
+#
+# Research (2026-08-19): .agents/skills is the agentskills.io/AAIF open
+# standard, natively read by Claude Code (>= v2.1.121), Codex, OpenCode,
+# Cursor, Gemini CLI, Kilo, Crush, Kimi-cli, and Oh My Pi/Pi.  Platforms
+# with their own dirs (GitHub Copilot, Cline, Windsurf) or harness-native
+# dirs (.omp/skills) simply pass --to.
+AGENT_SHARED_SKILL_DIR = ".agents/skills"
+AGENT_PLATFORM_IDS = (
+    "opencode", "claude", "codex", "cursor", "gemini", "kilo",
+    "pi", "omp", "crush", "kimi", "github_copilot", "cline",
+    "windsurf", "augment", "trae",
+)
+_VALID_AGENT_PLATFORMS = AGENT_PLATFORM_IDS
 _VALID_PROVIDER_TYPES = ("openai_sdk", "requests")
 
 LEGACY_PATH_KEYS = (
@@ -82,7 +101,7 @@ FIELD_SPECS: tuple[FieldSpec, ...] = (
               env="PAPERFORGE_CONTROL_DIR", vault_relative=True),
     FieldSpec("base_dir", ("vault_config", "base_dir"), "path", "Bases",
               env="PAPERFORGE_BASE_DIR", vault_relative=True),
-    FieldSpec("skill_dir", ("vault_config", "skill_dir"), "path", ".opencode/skills",
+    FieldSpec("skill_dir", ("vault_config", "skill_dir"), "path", ".agents/skills",
               env="PAPERFORGE_SKILL_DIR", vault_relative=True),
     FieldSpec("command_dir", ("vault_config", "command_dir"), "path", ".opencode/command",
               env="PAPERFORGE_COMMAND_DIR", vault_relative=True),

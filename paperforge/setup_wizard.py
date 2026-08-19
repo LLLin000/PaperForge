@@ -34,8 +34,6 @@ else:
 # Agent Platform Configurations
 # =============================================================================
 
-from paperforge.services.skill_deploy import AGENT_SKILL_DIRS
-
 AGENT_NAMES = {
     "opencode":       "OpenCode",
     "claude":         "Claude Code",
