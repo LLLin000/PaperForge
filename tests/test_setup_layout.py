@@ -211,3 +211,23 @@ def test_skill_deploy_overwrite_contract(tmp_path) -> None:
     r4 = deploy_skills(vault, overwrite=True)
     assert r4["skill_deployed"] and not r4["already_exists"] and not r4["errors"], r4
     assert (dst / "SKILL.md").read_text(encoding="utf-8") != "DIFFERENT CONTENT"
+
+
+def test_skill_deploy_whole_tree_identity(tmp_path) -> None:
+    """A change in a non-SKILL.md managed file must NOT be a noop (whole
+    tree digest, not just SKILL.md)."""
+    from paperforge.services.skill_deploy import deploy_skills
+
+    vault = _vault(tmp_path)
+    dst = vault / ".agents" / "skills" / "paperforge"
+    assert deploy_skills(vault)["skill_deployed"]
+    # Same tree -> noop
+    assert deploy_skills(vault)["noop"]
+    # Touch a managed non-SKILL.md file (scripts/…) -> differs, no overwrite
+    scripts = dst / "scripts"
+    if scripts.exists():
+        (scripts / "marker.txt").write_text("changed", encoding="utf-8")
+    else:
+        (dst / "atoms" / "marker.txt").write_text("changed", encoding="utf-8")
+    r = deploy_skills(vault)
+    assert r["already_exists"] and not r["noop"], r
