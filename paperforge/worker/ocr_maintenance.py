@@ -377,11 +377,17 @@ def collect_maintenance_rows(vault: Path) -> list[OCRMaintenanceRow]:
 
         meta: dict = {}
         if meta_path.exists():
-            meta = read_json(meta_path)
+            try:
+                meta = read_json(meta_path)
+            except Exception:  # noqa: BLE001 — restore-damaged meta is unreadable, not a crash
+                meta = {}  # row renders with empty state; OCR recovery re-creates it
 
         health: dict = {}
         if health_path.exists():
-            health = read_json(health_path)
+            try:
+                health = read_json(health_path)
+            except Exception:  # noqa: BLE001
+                health = {}
 
         has_raw = artifacts.blocks_raw.exists()
         has_source_meta = artifacts.source_metadata.exists()
@@ -408,8 +414,11 @@ def collect_maintenance_rows(vault: Path) -> list[OCRMaintenanceRow]:
         # Resolve title: meta.json -> source_metadata -> canonical index -> key
         title = meta.get("title")
         if not title and has_source_meta:
-            sm = read_json(artifacts.source_metadata) if artifacts.source_metadata.exists() else {}
-            title = sm.get("title", "")
+            try:
+                sm = read_json(artifacts.source_metadata) if artifacts.source_metadata.exists() else {}
+                title = sm.get("title", "")
+            except Exception:  # noqa: BLE001 — restore-damaged source metadata
+                title = ""
         if not title:
             title = title_by_key.get(key, key)
         row = OCRMaintenanceRow(
