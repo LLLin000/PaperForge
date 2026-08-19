@@ -10,10 +10,7 @@ filtering.
 from __future__ import annotations
 
 import json
-import sqlite3
 from pathlib import Path
-
-import pytest
 
 from paperforge.memory.db import get_connection, get_memory_db_path
 from paperforge.memory.schema import ensure_schema
