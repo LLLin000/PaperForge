@@ -72,12 +72,12 @@ def deploy_skills(
     if src_skill.exists():
         dst_skill = target / "paperforge"
         if dst_skill.exists():
-            src_meta = src_skill / "SKILL.md"
-            dst_meta = dst_skill / "SKILL.md"
+            # Whole package-owned tree identity: relative path + content
+            # hash of EVERY managed file.  A references/ or scripts/ change
+            # with an unchanged SKILL.md must NOT be a noop.
             identical = (
-                src_meta.exists()
-                and dst_meta.exists()
-                and src_meta.read_bytes() == dst_meta.read_bytes()
+                dst_skill.exists()
+                and _skill_tree_digest(src_skill) == _skill_tree_digest(dst_skill)
             )
             if identical:
                 noop = True
@@ -140,3 +140,19 @@ def _validate_target(vault: Path, target_dir: str) -> Path | None:
     if not str(resolved).startswith(str(vault_r) + _os.sep):
         return None
     return resolved
+
+
+def _skill_tree_digest(root: Path) -> str:
+    """Deterministic digest over every managed file: relative path + bytes,
+    sorted, CRLF-normalized (platform checkout variance must not matter)."""
+    import hashlib
+
+    h = hashlib.sha256()
+    for path in sorted(root.rglob("*")):
+        if not path.is_file():
+            continue
+        rel = path.relative_to(root).as_posix()
+        h.update(rel.encode("utf-8"))
+        h.update(b"\x00")
+        h.update(path.read_bytes().replace(b"\r\n", b"\n"))
+    return h.hexdigest()

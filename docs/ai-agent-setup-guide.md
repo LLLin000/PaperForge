@@ -198,7 +198,7 @@ paperforge --vault "<vault_path>" setup --modular \
 
 **Example (Windows, all defaults):**
 ```bash
-paperforge --vault "D:\Documents\MyVault" setup --modular --agent opencode --zotero-data "C:\Users\name\Zotero" --system-dir "99_System" --resources-dir "03_Resources" --literature-dir "Literature" --base-dir "05_Bases" --skip-checks
+paperforge --vault "D:\Documents\MyVault" setup --modular --agent opencode --zotero-data "C:\Users\name\Zotero" --system-dir "System" --resources-dir "Resources" --literature-dir "Literature" --base-dir "Bases" --skip-checks
 ```
 
 **Expected output:**
