@@ -1,10 +1,10 @@
-> **Branch:** `master` | **Last Updated:** 2026-08-17
+> **Branch:** `master` | **Last Updated:** 2026-08-18
 >
-> **Active work:** 2026-08-14 recovery incident **CLOSED**. Final production census is frozen at **958 = 938 OCR/retrieval current + 19 `nopdf` + 1 `pdf_missing` (4VPYIVAS)**; vector serving is revalidated at **935 current + 3 `no_content`**. M4 RC validation found two post-freeze state-authority blockers on candidate `6ef0dfe9`; repair commit `46c4ddaf` is on `master` but not in the frozen candidate. Release remains owner-gated under `#81`; no release/tag/package publication is authorized.
+> **Active work:** 2026-08-14 recovery incident **CLOSED**. The live authority/materialization reconciliation is now **EXPLAINED and CLOSED**: **964 Authority = 944 OCR/retrieval current + 19 `nopdf` terminal + 1 `pdf_missing` (4VPYIVAS)**; vector state is **933 current + 3 `no_content` terminal + 8 `not_embedded` actionable**. `R2PSFXY4` is one confirmed residual outside Authority. M4 remains owner-gated under `#81`; no release/tag/package publication is authorized.
 >
 > ---
 >
-> **Current state:** Recovery materialization and serving are revalidated. Control Plane Closure is complete: M1 OCR Execution Control, M1.1 execution invariants, M2 CLI/Action Contract, and M3 Embed Closure are closed. Candidate `6ef0dfe9` remains frozen but is blocked by the retrieval-integrity and preflight-frontier findings recorded in `project/current/2026-08-17-rc-gate-matrix.md`; repaired code is not a candidate until a new SHA is built and affected gates rerun. Existing hosted CI evidence remains **14/14 green** at validation ref `14899168`; no release decision has been made.
+> **Current state:** Recovery materialization and serving are revalidated. Control Plane Closure is complete: M1 OCR Execution Control, M1.1 execution invariants, M2 CLI/Action Contract, and M3 Embed Closure are closed. Candidate `6ef0dfe9` remains frozen; census divergence is explained without a candidate rebuild. The repaired retrieval-integrity and preflight-frontier code remains on `master` outside the candidate and still requires the normal candidate/dependent-gate decision. Remaining M4 work is release evidence: scoped embed, residual serving evidence, exact-candidate frontend/hosted gates, and rollback/support-window owner acceptance. Existing hosted CI evidence remains **14/14 green** at validation ref `14899168`; no release decision has been made.
 ## 1. Architecture
 
 ### 1.1 The problem (pre-v2)
@@ -190,9 +190,10 @@ Known deferred debt: **EmbeddingService stdout relay**. It is a presentation-cha
 
 **Impact:** closure record only. M1–M3 changes do not require re-OCR, rebuild, or embed for existing users; M3 adds one standard `paper_settled` NDJSON event for stream consumers.
 
-### 2.6 M4 post-freeze audit (2026-08-17 — **CANDIDATE BLOCKED**)
+### 2.6 M4 post-freeze audit and live census closure (2026-08-17–18 — **EVIDENCE OPEN**)
 
-The first shared-state audit against the frozen candidate reproduced two blockers:
+The first shared-state audit against the frozen candidate reproduced two
+candidate/code findings:
 
 1. **Retrieval integrity:** mutating a published `body_units.unit_text` without
    changing its manifest left the candidate reporting `retrieval=current` while
@@ -201,26 +202,151 @@ The first shared-state audit against the frozen candidate reproduced two blocker
 2. **Frontier parity:** action preflight could classify a per-paper action as
    `needed` when `reconcile()` emitted no intent or a different first frontier.
    Repair commit `46c4ddaf` projects `needed` from reconcile's canonical intent.
+3. **Scope leakage:** per-paper preflight, reconcile, and embedding
+   eligibility were still calling the full-library lineage probe. On the
+   production vault this made an eight-key preflight pay for library residual
+   scans and violated the papers-scope contract. Repair `b66fde53` adds the
+   canonical-authority-filtered `observe_lineage_papers(keys)` read model;
+   scoped consumers now inspect only requested paper carriers and return no
+   library residual/orphan facts. Focused scope/parity/action tests pass
+   (**87 passed, 1 warning**); the exact eight-key production preflight now
+   returns `needed=8` in **3.17 s**. The eight-key execution remains
+   owner-confirmed and was not run.
+
+**Impact:** read-only observation and action-projection repair. No production
+materialization changed; no re-OCR, rebuild, or embed is required for valid
+existing papers. Existing users receive bounded per-paper preflight instead
+of a full-library observation.
 
 Focused verification after the repairs: **126 passed, 1 warning** across
-lineage, reconcile, embedding eligibility, and action-registry tests. These
-repairs invalidate candidate `6ef0dfe9` until a new candidate is built and
-REC-02, M2, M3, and dependent RC rows are rerun.
+lineage, reconcile, embedding eligibility, and action-registry tests. The
+repairs remain on `master`, outside frozen candidate `6ef0dfe9`; the normal
+candidate/dependent-gate decision remains separate from the census closure.
 
-Subsequent read-only validation against the 2026-08-17 canonical
-`formal-library.json` observed 964 papers (944 OCR/retrieval current, 20
-retrieval-missing, 944 integrity-verified, 933 vector-current) plus one
-workspace residual. This does not match the frozen 958-paper census and is a
-separate release-evidence blocker; classify each state before any repair.
+The **958 → 964 live authority/materialization divergence is explained and
+closed** by `project/current/rc-live-census-reconcile.json`:
 
-**Impact:** validation only; no production materialization changed. Re-OCR,
-rebuild, and embed requirements are **undetermined until classification**.
+- frozen recovery scope `R=958`; current formal/live-export scope `F=964`;
+  `F-R` contains 7 normal Authority additions and `R-F` contains the one
+  confirmed residual `R2PSFXY4`;
+- `944` papers are OCR/retrieval current; the remaining 20 are 19 legitimate
+  `nopdf` terminals plus blocked `4VPYIVAS` (`pdf_missing`);
+- `944 = 933 vector_current + 3 vector_no_content + 8 vector_not_embedded`;
+  there are no stale/unknown vector states and no `memory.build` candidate;
+- `R2PSFXY4` is outside Authority with all carriers remaining. The canonical
+  reader gate excludes it by contract; targeted live serving evidence remains
+  open, so no prune was run.
 
-**Impact for the repaired-state cases:** no re-OCR/rebuild/embed is required
-for valid existing materializations. Corrupt retrieval carriers require
-`memory.build`; embedding is needed only if the repaired retrieval state becomes
-eligible. Existing users with valid carriers are unchanged; affected users now
-receive explicit repair instead of a false-current state.
+**Impact:** read-only reconciliation only; no production materialization
+changed. No re-OCR, rebuild, or memory build is required from the census
+divergence. Eight retrieval-current papers remain a known scoped
+`embed.resume` evidence action; three `vector_no_content` papers are terminal.
+
+Remaining M4 evidence is release-gate work: true scoped embed with fresh
+re-observation, residual serving smoke, exact-candidate frontend/hosted gates,
+and rollback/support-window owner acceptance.
+
+### 2.7 Sync latency diagnosis (2026-08-18)
+
+The long `sync --json` path was dominated by the full read-only reconcile
+that runs after selection/index phases. Its lineage loop reparsed the
+multi-megabyte `formal-library.json` once per paper through
+`_resolve_canonical_pdf`, turning canonical-PDF lookup into
+O(papers × index-size). On the production vault, full reconcile measured
+144.61 s before the optimization and 48.38 s after it; selection sync was
+20.90 s and the unchanged-index fast path was 0.53 s. The remaining
+non-fatal PDF resolver warning is the known malformed `TPJLQNXR` locator.
+
+The working-tree fix builds one canonical-PDF map per lineage observation;
+the existing per-paper resolver remains unchanged for other callers.
+Focused disposable-cache, lineage/reconcile, architecture, and sync tests
+pass (**167 passed, 1 warning**).
+
+**Impact:** read-only lineage optimization only. No production materialization
+changed; no re-OCR, rebuild, or embed is required. A full production `sync`
+rerun was not used as verification to avoid concurrent mutation; the
+production reconcile measurement and disposable sync suite cover the changed
+path.
+
+### 2.8 OCR settlement and scoped-memory regression closure (2026-08-18)
+
+The OCR worker now counts `done_degraded` as a terminal success, emits
+per-paper progress only once at settlement, preserves the completed queue
+state during upload/poll transitions, and reports terminal-only/no-work runs
+as `done` instead of `no items processed`. The status command also exposes the
+write-ahead `submitting` window as incomplete execution-unknown state.
+
+The scoped memory build path remains scope-faithful: requested keys are
+validated before writable DB access, fresh/destructive DBs fail closed with
+`global_rebuild_required`, and existing DB builds do not delete or materialize
+non-requested papers. Focused regression coverage is **174 passed, 1 warning**,
+including OCR control/state, memory scope, action, lineage, and sync suites;
+CLI help, read-only action preflight, and Python syntax checks also passed.
+
+**Impact:** local state/accounting and read-only scope-contract fixes only.
+No production vault mutation, re-OCR, rebuild, or embed was performed or is
+required for existing valid materializations. Existing users see corrected
+terminal counts/progress and bounded scoped-memory behavior; remote provider
+jobs and stored OCR artifacts are unchanged.
+
+### 2.9 Lineage probe observation optimization (2026-08-18)
+
+The read-only lineage observation (the dominant `sync --json` / probe /
+preflight cost) was tightened without changing any state semantics:
+
+- `meta.json` is read **once per paper per observation** and injected into
+  lifecycle / detail / version / execution judging (`materialization/ocr.py`
+  functions gained an optional `meta` parameter; old callers unchanged).
+- A `current` paper's fine-grained WHY is provably `None` (current requires
+  a verified provenance), so probe skips the detail recompute — cutting
+  `provenance_state` from 2 to 1 calls per paper (one PDF + raw sha256 per
+  paper saved).
+- Lineage vector identities are batched into one `IN (layer)` query instead
+  of one round-trip per paper.
+
+Focused regression: **189 passed, 1 warning** across lineage, reconcile,
+materialization SSOT, embed eligibility, action registry, sync, OCR control,
+and scoped-memory suites. Production scoped 8-key `embed.resume` preflight
+measured **2.49 s** (previous baseline 3.17 s). A production profiler run
+shows the remaining probe time is dominated by the OCR artifact-chain
+re-validation (`top_state` must re-parse raw/blocks/tree to prove
+`materialized` — 985k line-level JSON parses on the full library); that is
+judgment semantics, not waste, and is the target of the deferred observation
+cache (post-RC, with the Goal/Ensure kernel).
+
+**Impact:** read-only observation only. No production materialization
+changed; no re-OCR, rebuild, or embed is required. Existing users see the
+same state outputs at lower cost.
+
+### 2.10 Weak-model Agent protocol closure (#188/#189 — COMPLETE, 2026-08-19)
+
+The PaperForge agent skill was linearized and the last decision class
+removed from the model:
+
+- Skill protocol: three linear routes (known paper / known-paper passage /
+  cross-library), `query-plan` demoted to optional diagnostic, `retrieve`
+  demoted to semantic fallback, agent-constraint rules ("must not render
+  CLI args, infer JSON nesting, discover files manually, invent fallback
+  tools, repeat fallback branches").
+- New canonical local-read primitive `paperforge read <KEY> --find <TERM>`
+  (#189): KEY + literal query in, structured `matched / no_match /
+  no_readable_source` out; canonical lookup via `memory.query.lookup_paper`
+  (no `commands.*` import), fulltext + canonical PDF (wikilink handled by
+  pdf_resolver, PyMuPDF), literal case-insensitive substring, read-only.
+  Skill no longer carries grep/PyMuPDF/path extraction.
+- Qwen3-4B-Instruct fresh-session behavior seam: A/B/C/D all PASS (before
+  the primitive, A/B reproducibly bypassed fulltext and called retrieve).
+  The retest is the causal control: same prompts, only the protocol
+  changed. This seam is now an **Agent compatibility gate** for RC.
+- Design principle validated: if an agent needs to extract a locator from
+  structured state and synthesize shell/Python to perform a stable product
+  action, that action is not yet a PaperForge capability.
+
+**Impact:** additive `read` CLI command; skill protocol only for existing
+workflows. No re-OCR, rebuild, or embed required. M4 note: `read` is new
+Python code outside frozen candidate `6ef0dfe9`; release head and candidate
+rebind remain owner decision.
+
 ## 3. Remaining Issues — Release-Readiness Layers
 
 ### M4 RC Gate Policy
@@ -439,6 +565,8 @@ Unique matrix: `project/current/2026-08-17-rc-gate-matrix.md`.
 |------|----------|-----------|
 | 2026-08-17 | Recovery + Control Plane Closure | Recovery CLOSED: frozen 958-paper census, 938 OCR/retrieval current, 935 vector-current + 3 `no_content`, serving smoke verified. M1/M1.1/M2/M3 CLOSED; architecture frozen; M4 RC gate matrix and owner decision are now the only active work. | §2.4–§4 |
 | 2026-08-17 | M4 lifecycle evidence and non-blocker classification | Disposable fresh/existing chains, schema migration, fail-closed config rollback, offline failure, stale-state tests, plugin static checks, and safety scan passed. The remaining stdout relay, managed-runtime/UI, cancellation, scoped-embed, CI/checksum, and real Release-N reinstall items remain RC evidence/owner gates; no candidate code or materialization change is justified. | RC matrix |
+| 2026-08-18 | Cache canonical PDF lookup per lineage observation | Full sync was reparsing the 4 MB canonical index once per paper inside the lineage loop. Build one observation-scoped PDF map instead; preserve per-paper semantics while reducing the measured full reconcile from 144.61 s to 48.38 s. No materialization rerun is required. |
+
 | 2026-08-16 | Every code change must annotate re-run requirements + old-user impact | During recovery, un-annotated changes forced repeated remote OCR/embed runs ("白费力气" — owner). Commit bodies now carry `Impact: re-OCR / rebuild / embed: none|keys|all` + `old users:` so the operator batches or skips re-runs correctly. Recorded §7.3.1. |
 | 2026-08-16 | Two-tier tool surface: stable CLI + deep dev API, never per-task `python -c` | Recovery diagnostics repeatedly re-invoked internal functions via ad-hoc `python -c` (read_index / _resolve_canonical_pdf / compute_ocr_result_hash / provenance_state) — works but is not a stable surface. Product/plugin/agent face the frozen `paperforge <cmd>` CLI (registry actions + probe; fixed args, JSON/NDJSON schemas); developer/advanced-user diagnostics may stay deeper but must be reachable through a FIXED script or dev command, not per-task inline code. Implement post-recovery (owner: "不急"). |
 | 2026-08-16 | Goal/ensure orchestrator: agreed direction, deferred post-recovery (attachment review) | External review of the post-incident architecture: actions stay atomic primitives; a thin `ensure <goal>` layer (ocr.current / retrieval.current / vector.current / serving.ready) plans from observation and re-observes after each action (the chain.py pattern generalized); reconcile must stop giving global substrate unconditional priority (embed.build was once the only frontier while 684 OCR were broken); read paths never auto-repair. Direction correct — the 70% substrate already exists (lineage observe + reconcile plan + chain execute). Deferred: recovery batches + RC must finish first; no new orchestration during data repair. |
@@ -687,7 +815,9 @@ python -m ruff check paperforge/worker/ocr_*.py
 | 2026-08-17 | **Recovery + Control Plane Closure; M4 RC start** | Closed the stale recovery status in the ledger and recorded the final census: **958 = 938 OCR/retrieval current + 19 `nopdf` + 1 `pdf_missing`**; vectors **935 current + 3 `no_content`**; serving smoke verified. M1/M1.1/M2/M3 are closed. Candidate is frozen; M4 validation is CLI/call-chain/state-authority/pre-post-check focused; #81 remains open `ready-for-human`. | §2.4–§4 |
 | 2026-08-17 | **M4 lifecycle and owner-gate evidence** | Product source tree `6ef0dfe9`: fresh modular setup/repeat and existing-vault migration/rollback fail-closed smoke passed; OCR → memory → global embed → retrieve → restart remained current; stale-state **113/1**, setup/runtime **129**, focused RC **216/1**, candidate Python jobs, safety gate, and plugin **408/408 + typecheck/build** passed. Hosted CI **#32040776725** at `14899168` passed **14/14**, including macOS unit/J-matrix and `All Checks Passed`, after checkout and macOS SQLite-runtime CI repairs. Deterministic collector coverage is complete but remains ineligible on six active unresolved rules plus two advisory wrapper findings; #81 stays open `ready-for-human`; managed runtime/UI/cancel/scoped embed/real Release-N rollback, post-RC architecture review, and owner decision remain gated. | `project/current/2026-08-17-rc-gate-matrix.md` |
 | 2026-08-17 | **M4 post-freeze blocker audit** | Reproduced retrieval-integrity and frontier-parity defects against candidate `6ef0dfe9`; repair commit `46c4ddaf` landed on `master` and focused regressions passed (**126 passed, 1 warning**). Candidate remains blocked and release stays owner-gated; no release/tag/package publication. | §2.6, §3 |
-| 2026-08-17 | **Live formal-library census divergence** | Read-only post-repair probe observed 964 formal papers: 944 OCR/retrieval current, 20 retrieval-missing, 944 integrity-verified, 933 vector-current; broader workspace probe reported one residual `R2PSFXY4`. Frozen 958-paper recovery census is not promoted; classify scope/state before candidate rebuild. | §2.6, RC matrix finding log |
+| 2026-08-17 | **Live formal-library census divergence** | Read-only reconciliation explained the apparent delta: frozen `R=958`, current `F=964`, stable `957`, added `7`, removed `1` (`R2PSFXY4`). Current state is `944 OCR/retrieval current + 19 nopdf + 1 pdf_missing`; vector state is `933 current + 3 no_content + 8 not_embedded`. | **CLOSED as census divergence**; remaining scoped embed and residual-serving evidence are separate M4 gates. | §2.6, RC matrix finding log |
+| 2026-08-18 | **M4 census closure projection** | Promoted the read-only reconciliation to the release records. No candidate rebuild, re-OCR, memory build, vector embed, or prune ran. Remaining M4 evidence: 8-paper scoped embed, residual serving smoke, exact-candidate frontend/hosted gates, and rollback/support-window owner acceptance. | `project/current/rc-live-census-reconcile.json`; RC remains owner-gated | §2.6, §3, RC matrix |
+| 2026-08-18 | **Sync latency diagnosis and read-only fix** | Full reconcile was the dominant sync cost: repeated canonical-index parsing inside per-paper PDF lookup. One observation-scoped PDF map reduced measured production reconcile from **144.61 s to 48.38 s**; selection was **20.90 s**, unchanged index **0.53 s**. Disposable sync + lineage/reconcile regressions passed **167/167** with one warning. No production sync rerun or materialization mutation was performed. | §2.7, §6 |
 | 2026-08-15 | **INCIDENT + safety layer** | **2026-08-14 23:00 production prune run deleted `D:\L\OB\Literature-hub` root** (`rmtree(Path(), ignore_errors=True)` — empty path = cwd = vault root, silent full recursive delete). Survived: paperforge.db (962 FTS + 22.7k vectors + retrieval units), Zotero (1338 PDFs, outside vault), exports copy, Project (partial), Med/Research (137,923 files, separate vault). Recovered via DiskGenius. Root cause fixed with a 3-layer safety net: ① trash architecture (`worker/trash.py` — delete = move + manifest + restore; `validate_target` fails closed on empty/`.`/root/escape; purge restricted to trash root; no ignore_errors anywhere), ② prune moves files to trash + transactional rowid-verified vector/DB deletes, ③ pre-commit + CI (`check_no_destructive_delete.py`) reject `rmtree+ignore_errors` and empty-path rmtree; legacy ignore_errors sites converted to explicit try/except. Commit `a0fdfcb6`. | §2.1, §2.3, §6 |
 | 2026-08-15 | Unified residual detection | Zotero-authority residual report across workspace/FTS/vector/OCR carriers; paper-level `residuals` in probe lineage (per-carrier flags); reconcile emits one `library.prune`; prune handler/command + `memory.rebuild` registered; vector delete rowid-verified with rollback on partial rowcount. Found real residual 9RZU5ZBE (empty OCR dir, invisible to old workspace scan). Commit `0a4a81c4`. | §2.3, §6 |
 | 2026-08-15 | Smart Retrieval panel single-source render | Panel status/button/info-card/impact all from probe envelope (reason.text + action.primary + details); probe memory injects structured details from same authorities as state machine; dead branches removed. Commit `e63445ae`. | §2.3, §6 |

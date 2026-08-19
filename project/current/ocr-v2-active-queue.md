@@ -1,6 +1,36 @@
 # OCR-v2 Active Queue
-> Status: Recovery incident and Control Plane Closure (M1–M3) are closed. M4 RC candidate `6ef0dfe9` is currently blocked by retrieval-integrity and preflight-frontier findings reproduced on 2026-08-17; repair commit `46c4ddaf` is on `master` but awaits a new candidate SHA and dependent gate reruns.
-> Last updated: 2026-08-17
+> Status: Recovery incident and Control Plane Closure (M1–M3) are closed. The live 958→964 Authority/materialization census divergence is explained and closed. M4 RC candidate `6ef0dfe9` remains frozen and release remains owner-gated because repaired candidate/code findings and remaining release evidence gates are still open.
+> Last updated: 2026-08-18
+
+## 2026-08-18: Census closure and remaining RC gates
+
+- Frozen recovery scope `R=958`; current formal/live-export scope `F=964`:
+  seven normal Authority additions and one confirmed residual removal.
+- Current production state is frozen as **964 Authority = 944
+  OCR/retrieval current + 19 `nopdf` terminal + 1 `pdf_missing`**.
+- Vector state is **933 current + 3 `no_content` terminal + 8
+  `not_embedded` actionable**. No retrieval-current paper is stale/unknown and
+  no `memory.build` candidate exists.
+- The eight vector deficits are the exact scoped `embed.resume` evidence set:
+  owner-approved preflight → explicit confirmation → settlement → fresh probe.
+  No production mutation was run.
+- `R2PSFXY4` is a sync-confirmed residual outside Authority. Reader-gate
+  exclusion is contract-proven; targeted live serving evidence remains open.
+  Do not prune solely for census presentation.
+- Next: complete the scoped embed gate, residual serving smoke, exact-candidate
+  frontend/hosted evidence, and rollback/support-window owner decision. No
+  release/tag/package publication.
+
+## 2026-08-18: Sync latency diagnosis
+
+- Full `sync --json` latency was dominated by full reconcile, not the
+  unchanged-index path: per-paper lineage lookup reparsed the canonical
+  `formal-library.json`.
+- Working-tree fix builds one canonical-PDF map per lineage observation.
+  Production read-only reconcile measured **144.61 s → 48.38 s**; no
+  re-OCR, rebuild, embed, prune, or production sync rerun was performed.
+- Disposable sync plus lineage/reconcile regressions: **167 passed, 1
+  warning**.
 
 ## 2026-08-17: M4 blocker checkpoint
 
@@ -14,8 +44,8 @@
 - No re-OCR/rebuild/embed is required for valid existing materializations.
   Corrupt retrieval carriers require `memory.build`; embed follows only after
   retrieval becomes eligible.
-- Next: build a new RC candidate, rerun REC-02/M2/M3 and dependent rows, then
-  resume owner-gated #81 release review. No release/tag/package publication.
+- The census divergence is now closed separately; repaired code remains outside
+  the frozen candidate and follows the normal candidate/dependent-gate path.
 
 ## 2026-08-13: RC audit checkpoint
 

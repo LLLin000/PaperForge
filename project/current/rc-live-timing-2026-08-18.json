@@ -1,0 +1,123 @@
+{
+  "report": "rc-live-timing-2026-08-18",
+  "generated_at": "2026-08-18",
+  "read_only": true,
+  "production_mutations_run": [],
+  "decision": "Scoped embed.resume was not executed because the required action preflight did not return within 300 seconds. Do not bypass preflight or confirmation.",
+  "timed_commands": [
+    {
+      "command": "python -m paperforge --vault D:/L/OB/Literature-hub action preflight embed.resume --scope papers --key 4AGGTJE9 --key 5ZWS434Y --key 747ASBC8 --key 8PLQZKGN --key HTB6CVAQ --key JEWY76JH --key W7D3845H --key Z828Y6T9 --json",
+      "purpose": "Required read-only preflight for the exact eight vector_not_embedded papers",
+      "duration_seconds": 300.008,
+      "result": "timeout",
+      "return_code": null,
+      "stdout": "",
+      "stderr": "",
+      "state_changed": false,
+      "classification": "ABNORMAL — preflight depends on full lineage projection and exceeds the 300-second evidence bound"
+    },
+    {
+      "command": "python -m paperforge --vault D:/L/OB/Literature-hub probe lineage --json",
+      "purpose": "Full production lineage re-observation",
+      "duration_seconds": ">900",
+      "result": "timeout",
+      "return_code": null,
+      "state_changed": false,
+      "classification": "ABNORMAL — full probe performance/evidence gap"
+    },
+    {
+      "command": "python -m paperforge --vault D:/L/OB/Literature-hub retrieve ebastine --paper R2PSFXY4 --limit 5 --json",
+      "purpose": "Targeted residual serving smoke",
+      "duration_seconds": ">60",
+      "result": "timeout",
+      "return_code": null,
+      "state_changed": false,
+      "classification": "ABNORMAL — targeted serving evidence not established"
+    },
+    {
+      "command": "python -m paperforge --vault D:/L/OB/Literature-hub retrieve 'bactericidal anti-biofilm ebastine' --json",
+      "purpose": "Broad residual serving smoke",
+      "duration_seconds": ">180",
+      "result": "timeout",
+      "return_code": null,
+      "state_changed": false,
+      "classification": "ABNORMAL — broad serving evidence not established"
+    },
+    {
+      "command": "python -m paperforge --vault D:/L/OB/Literature-hub retrieve --help",
+      "purpose": "CLI help baseline",
+      "duration_seconds": 0.24,
+      "result": "pass",
+      "return_code": 0,
+      "state_changed": false,
+      "classification": "NORMAL"
+    },
+    {
+      "command": "pytest tests/test_lineage.py tests/test_reconcile.py tests/test_embed_eligibility.py tests/test_action_registry.py -q --disable-warnings",
+      "purpose": "Focused control-plane regression baseline",
+      "duration_seconds": 17.93,
+      "result": "pass",
+      "return_code": 0,
+      "summary": "126 passed, 1 warning",
+      "state_changed": false,
+      "classification": "NORMAL"
+    },
+    {
+      "command": "python -c 'open current paperforge.db read-only and run pragma/index query-plan diagnostics'",
+      "purpose": "Isolate whether the full-probe delay is caused by opening/querying the 990 MB memory DB",
+      "duration_seconds": ">60",
+      "result": "timeout",
+      "return_code": null,
+      "state_changed": false,
+      "classification": "ABNORMAL — even read-only SQLite diagnostic did not return within 60 seconds"
+    }
+  ],
+  "previous_read_only_baselines": [
+    {
+      "command": "pf_bootstrap.py --vault D:/L/OB/Literature-hub",
+      "duration_seconds": 0.49,
+      "result": "pass"
+    },
+    {
+      "command": "report consistency check",
+      "duration_seconds": 0.15,
+      "result": "pass"
+    }
+  ],
+  "safe_next_step": "The exact eight-key preflight now passes; execution still remains unstarted until the owner explicitly confirms the action.",
+  "diagnosis": {
+    "confirmed_cause": "Scoped embed.resume preflight calls project_applicability(), which calls the full probe_lineage(vault) and evaluates all 964 canonical papers before returning eight per-key rows.",
+    "not_the_cause": [
+      "SQLite open/schema access is fast: 0.006s connect and 0.008s schema query.",
+      "Credential status is fast: 0.322s.",
+      "Action context, vector build-state, and substrate checks are fast: 0.076s, 0.038s, and 0.086s."
+    ],
+    "measured_path": [
+      {
+        "command": "project_applicability(vault, 'embed.resume', eight_keys)",
+        "duration_seconds": 67.889,
+        "result": "pass",
+        "summary": "8 rows; all needed"
+      },
+      {
+        "command": "python -m paperforge --vault D:/L/OB/Literature-hub probe lineage --json",
+        "duration_seconds": 70.02,
+        "result": "pass",
+        "summary": "capability_state=ok; residual R2PSFXY4"
+      },
+      {
+        "command": "python -m paperforge --vault D:/L/OB/Literature-hub action preflight embed.resume --scope papers --key 4AGGTJE9 --key 5ZWS434Y --key 747ASBC8 --key 8PLQZKGN --key HTB6CVAQ --key JEWY76JH --key W7D3845H --key Z828Y6T9 --json",
+        "duration_seconds": 66.18,
+        "result": "pass",
+        "summary": "availability=available; needed=8; blocked=0; noop=0; not_applicable=0"
+      }
+    ],
+    "transient_timeout_interpretation": "The earlier >300s preflight and >900s probe were not reproduced. They indicate transient cold-cache, host I/O, or process contention during that run; they do not establish a deadlock or provider/network hang.",
+    "separate_data_warning": "Every full probe logs one unresolved PDF path for 4VPYIVAS (the known pdf_missing paper). It is noisy but not the runtime bottleneck."
+  },
+  "no_claims": [
+    "No scoped embed settlement is claimed; only preflight passed.",
+    "No residual serving visibility result is claimed from the earlier timed-out retrieve commands.",
+    "Timeouts are not treated as successful commands."
+  ]
+}

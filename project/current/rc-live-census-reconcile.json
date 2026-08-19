@@ -1,0 +1,242 @@
+{
+  "report": "rc-live-census-reconcile",
+  "generated_at": "2026-08-18",
+  "read_only": true,
+  "census_divergence_status": "explained_closed",
+  "release_status": "M4 remains open and owner-gated; remaining gates are scoped embed, residual serving evidence, exact-candidate frontend/hosted evidence, and rollback/support-window acceptance.",
+  "mutations_run": [],
+  "conclusion": "The 958 -> 964 delta is +7 live-authority additions and -1 confirmed authority removal, not six unexplained additions. The 20 retrieval-missing papers are all upstream terminal/source cases: 19 nopdf and 1 pdf_missing. There are zero memory.build candidates. The 11 retrieval-current vector gaps split into 8 actionable vector_not_embedded and 3 satisfied vector_no_content. R2PSFXY4 is a confirmed residual with all materialization carriers present, but the canonical reader gate excludes it because it is absent from formal-library.json.",
+  "sources": {
+    "frozen_recovery_counts": "D:/L/OB/Literature-hub/System/PaperForge/indexes/recovery-census-final.json",
+    "frozen_authority_keys": "D:/L/OB/Literature-hub/System/PaperForge/indexes/paperforge.db.bak-recovery-20260816-234827 (read-only papers table, 958 rows)",
+    "current_formal_library": "D:/L/OB/Literature-hub/System/PaperForge/indexes/formal-library.json",
+    "current_live_exports": "D:/L/OB/Literature-hub/System/PaperForge/exports/*.json",
+    "current_memory_db": "D:/L/OB/Literature-hub/System/PaperForge/indexes/paperforge.db",
+    "confirmed_residual_state": "D:/L/OB/Literature-hub/System/PaperForge/indexes/sync-orphan-state.json",
+    "serving_gate_contract": "paperforge/reader_gate.py and paperforge/lineage.py"
+  },
+  "authority_scope_diff": {
+    "frozen_scope_R": 958,
+    "current_scope_F": 964,
+    "stable_intersection": 957,
+    "added_count": 7,
+    "removed_count": 1,
+    "net_delta": 6,
+    "equation_check": "7 - 1 = 6",
+    "current_formal_equals_live_exports": true,
+    "added_keys": [
+      "5ZWS434Y",
+      "747ASBC8",
+      "8PLQZKGN",
+      "HTB6CVAQ",
+      "JEWY76JH",
+      "W7D3845H",
+      "Z828Y6T9"
+    ],
+    "removed_keys": ["R2PSFXY4"],
+    "added_key_classification": {
+      "count": 7,
+      "all_live_zotero": true,
+      "all_formal": true,
+      "all_pdf_resolved": true,
+      "all_workspace_carrier": true,
+      "all_ocr_current": true,
+      "all_retrieval_current": true,
+      "all_vector_state": "vector_not_embedded",
+      "interpretation": "Normal authority/materialization additions after the frozen recovery scope; not formal-library drift. They need vector completion only, not OCR or memory rebuild.",
+      "recommended_action": "embed.resume",
+      "keys": [
+        "5ZWS434Y",
+        "747ASBC8",
+        "8PLQZKGN",
+        "HTB6CVAQ",
+        "JEWY76JH",
+        "W7D3845H",
+        "Z828Y6T9"
+      ]
+    },
+    "removed_key_classification": {
+      "key": "R2PSFXY4",
+      "title": "Bactericidal and anti-biofilm activity of ebastine against staphylococcus aureus",
+      "live_zotero_export": false,
+      "formal_library": false,
+      "sync_confirmed_orphan": true,
+      "workspace_carrier": true,
+      "papers_fts_carrier": true,
+      "ocr_carrier": true,
+      "retrieval_manifest_carrier": true,
+      "vector_carrier": true,
+      "classification": "confirmed_residual",
+      "recommended_action": "library.prune only after owner-approved maintenance confirmation; no prune was run"
+    }
+  },
+  "retrieval_frontier": {
+    "formal_scope": 964,
+    "retrieval_current": 944,
+    "retrieval_missing": 20,
+    "partitions": {
+      "ocr_current_plus_retrieval_missing": {
+        "count": 0,
+        "keys": [],
+        "action": "none; memory.build has no eligible candidate in this census"
+      },
+      "ocr_not_current_or_source_unavailable": {
+        "count": 20,
+        "keys": [
+          "4VPYIVAS",
+          "6DE9NJNU",
+          "86GU99S8",
+          "8VQG8TM5",
+          "8WFTB3VC",
+          "CJXJLH42",
+          "E7AEA4HU",
+          "FTEQKYS9",
+          "GE6T6U6L",
+          "IDTIECFE",
+          "IRG2IX2H",
+          "ML2BJ8HS",
+          "MRPF9JEE",
+          "MSPFYW46",
+          "N33NHDSG",
+          "NV4R8PKJ",
+          "SFFKDLK8",
+          "TAB4XYC2",
+          "WRRHXNPC",
+          "XHIMIRE6"
+        ],
+        "observed_ocr_status": "pending",
+        "action": "do not run memory.build; classify source/OCR first"
+      },
+      "nopdf": {
+        "count": 19,
+        "keys": [
+          "6DE9NJNU",
+          "86GU99S8",
+          "8VQG8TM5",
+          "8WFTB3VC",
+          "CJXJLH42",
+          "E7AEA4HU",
+          "FTEQKYS9",
+          "GE6T6U6L",
+          "IDTIECFE",
+          "IRG2IX2H",
+          "ML2BJ8HS",
+          "MRPF9JEE",
+          "MSPFYW46",
+          "N33NHDSG",
+          "NV4R8PKJ",
+          "SFFKDLK8",
+          "TAB4XYC2",
+          "WRRHXNPC",
+          "XHIMIRE6"
+        ],
+        "classification": "legitimate_terminal",
+        "action": "none"
+      },
+      "pdf_missing": {
+        "count": 1,
+        "keys": ["4VPYIVAS"],
+        "has_pdf_authority": true,
+        "source_path_resolved": false,
+        "classification": "blocked_source_repair",
+        "action": "user/source repair; no OCR or memory action"
+      },
+      "incomplete_or_derived_ocr_defect": {
+        "count": 0,
+        "keys": [],
+        "action": "none"
+      },
+      "provenance_stale": {
+        "count": 0,
+        "keys": [],
+        "action": "none"
+      },
+      "unknown": {
+        "count": 0,
+        "keys": [],
+        "action": "fail closed; none observed"
+      }
+    },
+    "memory_build_candidates": 0
+  },
+  "vector_frontier": {
+    "retrieval_current": 944,
+    "vector_current": 933,
+    "vector_gap": 11,
+    "partitions": {
+      "vector_no_content": {
+        "count": 3,
+        "keys": ["63EYTG95", "QJAKWMHE", "ZARNGKY7"],
+        "classification": "satisfied_terminal",
+        "action": "none"
+      },
+      "vector_not_embedded": {
+        "count": 8,
+        "keys": [
+          "4AGGTJE9",
+          "5ZWS434Y",
+          "747ASBC8",
+          "8PLQZKGN",
+          "HTB6CVAQ",
+          "JEWY76JH",
+          "W7D3845H",
+          "Z828Y6T9"
+        ],
+        "classification": "actionable_vector_deficit",
+        "action": "embed.resume only after owner-approved RC evidence action; no action run"
+      },
+      "vector_stale": {
+        "count": 0,
+        "keys": [],
+        "action": "none"
+      },
+      "vector_unknown": {
+        "count": 0,
+        "keys": [],
+        "action": "none"
+      }
+    },
+    "actionable_vector_deficit": 8,
+    "unknown_vector": 0,
+    "closure_equation": "944 = 933 vector_current + 3 vector_no_content + 8 vector_not_embedded"
+  },
+  "residual_audit": {
+    "key": "R2PSFXY4",
+    "authority": {
+      "live_zotero_export": false,
+      "formal_library": false,
+      "sync_orphan_state": "confirmed"
+    },
+    "carriers": {
+      "workspace": true,
+      "papers_fts": true,
+      "ocr": true,
+      "retrieval": true,
+      "vectors": true
+    },
+    "classification": "confirmed_residual_actionable_but_not_serving_visible_by_contract",
+    "serving_visibility": {
+      "result": "excluded_by_reader_gate_by_contract",
+      "reason": "lineage._paper_keys() uses formal-library.json as the canonical paper universe; R2PSFXY4 is absent. reader_gate.filter_readable() drops hits whose paper is absent from the probe papers map.",
+      "live_cli_smoke": "not established",
+      "smoke_attempts": ["retrieve ebastine --paper R2PSFXY4 timed out at 60s", "broad residual query timed out at 180s"],
+      "implication": "Do not prune solely to make the census pretty. It is maintenance residue unless a future serving-path test proves exposure."
+    },
+    "recommended_next_step": "Keep as confirmed residual in the report; defer library.prune until owner-approved maintenance confirmation."
+  },
+  "release_decision": {
+    "candidate_code": "6ef0dfe9 remains frozen",
+    "acceptance": "blocked by live authority/materialization census evidence, not by a demonstrated candidate-code defect",
+    "new_candidate_sha_required_now": false,
+    "re_ocr": "none from this reconciliation",
+    "memory_build": "none; zero eligible retrieval candidates",
+    "embed_resume": "8 classified candidates, not executed",
+    "prune": "none; R2PSFXY4 is confirmed residual but not shown serving-visible",
+    "owner_gate": "remains required"
+  },
+  "evidence_limits": [
+    "recovery-census-final.json stores counts but not keys; frozen R was reconstructed from the read-only recovery DB backup papers table with exactly 958 rows",
+    "full probe lineage rerun exceeded 900 seconds; the 944/933 layer totals use the prior successful canonical probe plus targeted direct carrier classification",
+    "no production source, OCR, retrieval, vector, authority, or orphan state was changed"
+  ]
+}
