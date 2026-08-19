@@ -319,7 +319,7 @@ def test_postprocess_writes_compat_fulltext_at_top_level(tmp_path) -> None:
         encoding="utf-8",
     )
 
-    page_num, markdown_path, json_path, fulltext_md_path = postprocess_ocr_result(vault, "COMP001", [])
+    page_num, markdown_path, json_path, fulltext_md_path, meta = postprocess_ocr_result(vault, "COMP001", [])
 
     # Top-level fulltext.md must exist
     assert (ocr_dir / "fulltext.md").exists(), "top-level fulltext.md missing"
