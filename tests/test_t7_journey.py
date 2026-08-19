@@ -232,6 +232,33 @@ class TestReaderGate:
         hits = [{"paper_id": "NO_SUCH_PAPER", "unit_id": "u1", "text": "x"}]
         assert filter_readable(vault, hits) == []
 
+    def test_scoped_hits_observe_only_those_papers(self, tmp_path: Path, monkeypatch) -> None:
+        """Scope fidelity: a paper-scoped reader must observe ONLY the hit
+        papers' lineage — never the full library (a broken locator in an
+        unrelated paper must not pollute or slow this read)."""
+        vault = _lineage_vault(tmp_path)
+        hits = [{"paper_id": "KEY1", "unit_id": "u1", "text": "x"}]
+
+        observed: list[list[str]] = []
+
+        def fake_observe(vault, keys):
+            observed.append(list(keys))
+            from paperforge.lineage import _probe_lineage
+
+            return _probe_lineage(vault, requested_keys=keys, include_library=False)
+
+        def boom(vault):
+            raise AssertionError("full-library probe must not run for scoped hits")
+
+        monkeypatch.setattr("paperforge.lineage.probe_lineage", boom)
+        monkeypatch.setattr("paperforge.lineage.observe_lineage_papers", fake_observe)
+
+        from paperforge.reader_gate import filter_readable
+
+        readable = filter_readable(vault, hits)
+        assert [h["paper_id"] for h in readable] == ["KEY1"]
+        assert observed == [["KEY1"]], f"expected scoped observation of KEY1, got {observed}"
+
 
 # ── NDJSON stream ─────────────────────────────────────────────────────────
 

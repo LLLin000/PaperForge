@@ -82,13 +82,15 @@ def test_retrieve_low_confidence_hits_emit_warning(monkeypatch, tmp_path: Path, 
     ])
     # The reader gate (#159 §6) needs an observable lineage chain — the
     # fixture paper is current, so the low-confidence warning still fires.
-    monkeypatch.setattr(
-        "paperforge.lineage.probe_lineage",
-        lambda vault: {
+    # The gate observes scoped hits now, so both entry points are mocked.
+    def _envelope(vault, keys=None):
+        return {
             "capability_state": "ok",
             "papers": {"AAA11111": {"ocr": "current", "retrieval": "current", "vector": "current"}},
-        },
-    )
+        }
+
+    monkeypatch.setattr("paperforge.lineage.probe_lineage", _envelope)
+    monkeypatch.setattr("paperforge.lineage.observe_lineage_papers", _envelope)
 
     args = _Args(tmp_path)
     args.query = "unlikelynonexistenttermxyz"
