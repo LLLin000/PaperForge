@@ -1,0 +1,114 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+from paperforge.render_audit import audit_paper
+
+
+def _write_fixture(root: Path, *, mismatch: bool = False, dangling: bool = False) -> Path:
+    key = "TESTFIG1"
+    paper = root / key
+    structure = paper / "structure"
+    figures = paper / "render" / "figures"
+    tables = paper / "render" / "tables"
+    assets = paper / "assets" / "figures"
+    structure.mkdir(parents=True)
+    figures.mkdir(parents=True)
+    tables.mkdir(parents=True)
+    assets.mkdir(parents=True)
+    (structure / "blocks.structured.jsonl").write_text('{"block_id": "asset-1"}\n', encoding="utf-8")
+    (structure / "figure_inventory.json").write_text(
+        json.dumps(
+            {
+                "matched_figures": [
+                    {
+                        "figure_id": "figure_001",
+                        "figure_number": 1,
+                        "page": 2,
+                        "matched_assets": [{"block_id": "asset-1", "page": 2}],
+                    }
+                ],
+                "unmatched_captions": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+    (structure / "table_inventory.json").write_text(
+        json.dumps(
+            {
+                "tables": [
+                    {
+                        "table_id": "table_001",
+                        "table_number": 1,
+                        "page": 3,
+                        "matched_assets": [{"block_id": "table-1", "page": 3}],
+                    }
+                ],
+                "held_tables": [],
+                "unmatched_captions": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+    (assets / "figure_001.jpg").write_bytes(b"fixture-image")
+    header = "5" if mismatch else "1"
+    legend = "2" if mismatch else "1"
+    image = "missing.jpg" if dangling else "../../assets/figures/figure_001.jpg"
+    (figures / "figure_001.md").write_text(
+        f"# Figure {header}\n\n![]( {image})\n\n## Legend\nFig. {legend} fixture\n\n*Page 2*\n",
+        encoding="utf-8",
+    )
+    (tables / "table_001.md").write_text(
+        "# Table 1\n\n## Legend\nTable 1 fixture\n\n*Page 3*\n",
+        encoding="utf-8",
+    )
+    return root
+
+
+def test_audit_clean_fixture_writes_snapshot_and_report(tmp_path: Path) -> None:
+    ocr_root = _write_fixture(tmp_path / "ocr")
+
+    result = audit_paper(ocr_root, "TESTFIG1")
+
+    assert result["state"] == "CLEAN"
+    assert result["summary"]["issues_found"] == 0
+    assert result["input_snapshot"]["figure_inventory_hash"]
+    assert result["input_snapshot"]["render_hash"]
+    report = ocr_root / "TESTFIG1" / "render" / "render.consistency.json"
+    assert report.exists()
+    assert json.loads(report.read_text(encoding="utf-8"))["state"] == "CLEAN"
+
+
+def test_audit_reports_caption_mismatch_and_dangling_asset(tmp_path: Path) -> None:
+    ocr_root = _write_fixture(tmp_path / "ocr", mismatch=True, dangling=True)
+
+    result = audit_paper(ocr_root, "TESTFIG1", write_report=False)
+    issue_types = {issue["type"] for issue in result["issues"]}
+    assert result["state"] == "DEGRADED"
+    assert "render_caption_mismatch" in issue_types
+    assert "render_dangling_asset_reference" in issue_types
+    assert result["summary"]["issues_repaired"] == 0
+    mismatch_issue = next(issue for issue in result["issues"] if issue["type"] == "render_caption_mismatch")
+    assert "canonical_candidates" in mismatch_issue["evidence"]
+    assert "diagnosis" in mismatch_issue["evidence"]
+
+
+def test_missing_figure_image_is_upstream_caption_without_asset(tmp_path: Path) -> None:
+    ocr_root = _write_fixture(tmp_path / "ocr")
+    figure = ocr_root / "TESTFIG1" / "render" / "figures" / "figure_001.md"
+    figure.write_text("# Figure 1\n\n## Legend\nFig. 1 fixture\n\n*Page 2*\n", encoding="utf-8")
+
+    result = audit_paper(ocr_root, "TESTFIG1", write_report=False)
+
+    assert {issue["type"] for issue in result["issues"]} == {"caption_without_asset"}
+
+
+def test_audit_does_not_modify_source_or_inventory(tmp_path: Path) -> None:
+    ocr_root = _write_fixture(tmp_path / "ocr")
+    inventory = ocr_root / "TESTFIG1" / "structure" / "figure_inventory.json"
+    before = inventory.read_bytes()
+
+    audit_paper(ocr_root, "TESTFIG1")
+
+    assert inventory.read_bytes() == before

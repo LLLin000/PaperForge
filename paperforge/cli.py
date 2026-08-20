@@ -339,6 +339,13 @@ def build_parser() -> argparse.ArgumentParser:
     p_retrieve.add_argument("--expand", action="store_true", default=True)
     p_retrieve.add_argument("--paper", help="Scope retrieval to a single paper by zotero key")
 
+    # Render-layer consistency audit (read-only V1)
+    p_render = sub.add_parser("render", help="Audit rendered paper artifacts")
+    p_render_sp = p_render.add_subparsers(dest="render_subcommand", required=True)
+    p_render_audit = p_render_sp.add_parser("audit", help="Run read-only render consistency audit")
+    p_render_audit.add_argument("keys", nargs="*", metavar="KEY", help="Paper keys (default: all OCR papers)")
+    p_render_audit.add_argument("--json", action="store_true", help="Output JSON")
+
 
     # prune
     p_prune = sub.add_parser("prune", help="Delete orphan paper artifacts (dry-run by default)")
@@ -874,6 +881,11 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "embed":
         from paperforge.commands.embed import run
+
+        return run(args)
+
+    if args.command == "render":
+        from paperforge.commands.render import run
 
         return run(args)
 
