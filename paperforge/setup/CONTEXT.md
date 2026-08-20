@@ -28,23 +28,21 @@ client failure (e.g. AgentInstaller) is NOT a PaperForge installation
 failure.  _Avoid_: treating client deploy as a Foundation step.
 
 **Onboarding protocol** (backend-owned):
-`inspect → requirements → questions[] → plan → apply → verify`.
-- `inspect` = read-only facts
-- `requirements` = derived missing inputs
-- `questions` = backend-owned question schema (Agent renders, never
-  invents)
+`inspect → plan → apply → verify` where inspect bundles facts + requirements + questions.
+- `inspect` = read-only facts + derived requirements + questions (single call, no extra round-trip)
+- `questions` = backend-owned schema (Agent renders, never invents)
 - `plan` = read-only mutation preview
 - `apply` = mutation
 - `verify` = fresh observation
 _Avoid_: Agent deciding what to ask or inventing product state.
 
-**Secret contract**:
+**Secret contract** (external-action only):
 Secret values NEVER enter questions response, argv, LLM context, or
-paperforge.json.  Backend reports `credential.ocr = missing` with
+paperforge.json.  Backend reports `id: credential.ocr, kind: external_action, state: missing, input_mode: secure_external` with
 `input_mode = secure_external`; the Agent points the user at
 `paperforge auth set ocr`.  _Avoid_: keys in chat/argv/config.
 
-**Relocation**:
+**Relocation** (stale-plan + verified-switch):
 Fresh install: layout fields selectable directly. Installed vault with
 materialization: direct `config set <path>` is rejected; only
 `relocate plan → preflight → confirmation → move → verify → commit`, and
@@ -64,13 +62,30 @@ _Avoid_: `agent_platform`/`skill_dir`/`command_dir` as Core truth.
 2. Retire `skill_dir` / `command_dir` / `agent_platform` from Core
    canonical config (migration-only), replaced by client deployment
    observation (`skill status --json` sees installed copies).
-3. Backend-owned onboarding protocol: `inspect → requirements →
-   questions[] → plan → apply → verify` with strict read-only/mutation
-   semantics.
-4. Secret input contract (secure_external, never in questions/argv/context/
-   config).
-5. Path relocation lifecycle separate from first-time configuration.
-6. S1–S8 certification as PRD acceptance (below).
+3. Backend-owned onboarding protocol: single `setup inspect --json`
+   returns read-only facts + derived requirements + `questions[]`
+   (internal `requirements` stays diagnosis-only).  Flow: `inspect (facts
+   + requirements + questions) → plan+answers → apply → verify`, with
+   strict read-only/mutation semantics.
+4. External-action/secret contract: credential question kind is
+   `external_action`/`secure_external`, never `secret`; secret values
+   NEVER enter questions/answers/argv/LLM context/paperforge.json. Backend
+   reports `id: credential.ocr, kind: external_action, input_mode:
+   secure_external, interaction: {type: secure_cli, argv: [paperforge,
+   auth, set, ocr]}`; the Agent points the user there.  _Avoid_: secret
+   values in any machine-readable questions surface.
+5. Path relocation lifecycle separate from first-time configuration:
+   `relocate plan` must bind `observation_fingerprint` and
+   `plan_hash`; `apply` fresh re-plans — hash mismatch →
+   `setup.plan_stale`, zero mutation.  Fail closed, no orphaned split.
+6. Config invariant: canonical config MUST NOT point to the destination
+   until destination verification succeeds (same-volume rename/stage →
+   verify → switch; cross-volume copy → fsync/hash verify → switch →
+   old carrier to recoverable trash).
+7. Unified Core READY gate (below): Foundation READY
+   independently, covers Library/OCR/Vector without requiring optional
+   capabilities; release does not bundle optional invariant.
+8. S1–S8 certification as PRD acceptance (below).
 
 ## Principle
 
@@ -98,6 +113,14 @@ Neither Agent nor frontend may invent product state or lifecycle decisions.
 - S8 Multi-client neutrality: Core setup installs NO client; then attach
   Agent / DSH / Obsidian separately; Core state identical — clients are
   adapters, not the host.
+
+- **Triage rule (PRD acceptance):** during the S1–S6 current-system
+  certification that follows, only failures of currently frozen
+  invariants/acceptance become RC blockers; failures that are gaps in
+  the must-be-certified future state are recorded as census items for
+  this same protocol's implementation.
+- **Config-destination invariant:** canonical config must not point to
+  a relocation destination until that destination is verified.
 
 ## Relationships
 
