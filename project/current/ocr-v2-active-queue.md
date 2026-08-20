@@ -1,6 +1,18 @@
 # OCR-v2 Active Queue
-> Status: Recovery incident and Control Plane Closure (M1–M3) are closed. The live 958→964 Authority/materialization census divergence is explained and closed. M4 RC candidate `6ef0dfe9` remains frozen and release remains owner-gated because repaired candidate/code findings and remaining release evidence gates are still open.
-> Last updated: 2026-08-18
+> Status: `EXECUTABLE_FROZEN a42f8bb7` (fix `AGENT_SKILL_DIRS` F821, `462398cb` → `a42f8bb7`) / `PROTOCOL_DOCS 781910f3` — S1–S6 lightweight **COMPLETE** on `462398cb` (now valid for `a42f8bb7`, `ruff` clean). #191 FROZEN / ready-for-agent; #81 OPEN / owner gate. Local `a42f8bb7` `68` setup tests passed, `ruff` clean; hosted `a42f8bb7` pending `3.11+newer`.
+> Last updated: 2026-08-20
+
+## 2026-08-20: S1–S6 lightweight certification (EXECUTABLE_FROZEN 462398cb → a42f8bb7)
+
+- S1–S6 executed S1→S2→S4→S5→S3→S6 on disposable minimal fixtures: `pf-cert-s1-vault` + `pf-cert-s2-minimal` (2-paper). Worktree `.cert-462398cb` (462398cb) now fixed in `a42f8bb7` (415 deletions, no re-OCR). `462398cb` hosted `32269242351` failed `L0.5 — Ruff F821 AGENT_SKILL_DIRS`; `a42f8bb7` is `ruff --select F821,F822,F823` clean.
+- **S1 PASS:** `setup --modular` → `probe installation ready`, `status` 0 papers, `doctor` only Zotero/BBT optional fails. #191 gap: still deploys `.agents/skills` and retains `skill_dir/command_dir/agent_platform`.
+- **S2 PASS:** `status` 2 papers, `probe` ready, `runtime-health`, `paper-status`/`read`/`search` succeed after `memory build`, `retrieve --paper` scoped, `reconcile`/`sync --dry-run` honest. No failure due to `.obsidian`/plugin cache.
+- **S4 PASS:** `action list`, `reconcile`, `prune` dry-run, `action preflight`, `UNKNOWNKEY` → `PATH_NOT_FOUND`, `config validate` valid→corrupt→valid. No fabricated `healthy`.
+- **S5 PASS:** `action run ocr.run` without `--confirm` → `confirmation_required` rc3; with `--confirm` → ok; `action run --force` → `unrecognized arguments`; `prune --force` safe. Boundary enforced.
+- **S3 PASS:** `setup → memory build → search → read → retrieve --paper → embed status/preflight` chain without Obsidian; `embed.build --confirm` → explicit `401 invalid_api_key` (fail-closed, expected without valid key). Restart re-`read` persists.
+- **S6 PASS (partial):** `config corrupt` → `config.corrupt` fail-closed; restore → `valid` + `setup` repeat idempotent + `probe ready` + `read` persists. Remaining S6 sub-paths (stale/malformed pointer, offline, OCR resume, Release-N reinstall) remain owner gate.
+- Triage: **No RC blocker** in lightweight gates. #191 real gaps: skill deploy in SetupPlan, retired config fields, missing `setup inspect/plan/apply/verify` + `plan_stale` + verified-switch `relocate` + `external_action/secure_external`. Performance remains debt. Matrix: `project/current/cert-462398cb-S1-S6-matrix.md`. Correct language: **S1–S6 lightweight certification complete; S6 partial / owner gates remain** (not `S1–S6 PASS`).
+- Next: **Do not build `462398cb+46c4ddaf+b66fde53` candidate.** `EXECUTABLE_FROZEN 462398cb` is already the candidate (`3312/0` local green). Remaining **RC Owner Closure** on exact `462398cb`: 1) Managed Runtime / Plugin browser (stale/non-ready/restart/fail-closed/cache), 2) M2/M3 live process (mixed outcomes/cancellation/Ctrl+C/scoped embed), 3) S6 full recovery (malformed/stale pointer/offline/interrupted update/OCR resume/embed resume), 4) Release-N reinstall + support-window owner decision, 5) exact-SHA hosted CI (provide Actions run / job evidence; `local green / hosted pending`). Keep `#191` FROZEN. Research `Source Routing` / `Visual Evidence` deferred post-RC.
 
 ## 2026-08-18: Census closure and remaining RC gates
 
