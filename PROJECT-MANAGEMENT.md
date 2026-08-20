@@ -1,10 +1,10 @@
 > **Branch:** `master` | **Last Updated:** 2026-08-20
 >
-> **Active work:** `EXECUTABLE_FROZEN a42f8bb7` (fix `AGENT_SKILL_DIRS` F821, `462398cb` → `a42f8bb7`) / `PROTOCOL_DOCS 781910f3` — S1–S6 lightweight **COMPLETE** on `462398cb` (now valid for `a42f8bb7`, no re-OCR). `462398cb` hosted `32269242351` was `failure` on `L0.5 — Ruff`; `a42f8bb7` unblocks `ruff --select F821,F822,F823` (`setup_wizard` 68 passed). **#191 FROZEN / ready-for-agent** ; **#81 OPEN / owner gate** . Local `a42f8bb7` `3312/0` pending hosted `a42f8bb7` `3.11+newer`.
+> **Active work:** `EXECUTABLE_FROZEN a42f8bb7` (fix `AGENT_SKILL_DIRS` F821, `462398cb` → `a42f8bb7`) / `PROTOCOL_DOCS 781910f3` — S1–S6 lightweight **COMPLETE** on `462398cb` (valid for `a42f8bb7`, no re-OCR). Hosted CI run `32353318123` for docs-only descendant `a2e18fa4` is **14/14 + All Checks Passed green**, including `3.11` Ubuntu/macOS/Windows, J-Matrix, Ruff, plugin, OCR, E2E; executable tree is unchanged from `a42f8bb7`. **#191 FROZEN / ready-for-agent** ; **#81 OPEN / owner gate**. Local `a42f8bb7` `3312/0` and hosted candidate tree green.
 >
 > ---
 >
-> **Current state:** Recovery closed, M1–M3 closed, S1–S6 lightweight gates pass on `462398cb` fixtures (see §2.12, now valid for `a42f8bb7` — no re-OCR/rebuild/embed, only dead code removed). `EXECUTABLE_FROZEN a42f8bb7` fixes `462398cb`'s `AGENT_SKILL_DIRS` F821 (hosted `32269242351` failure); `PROTOCOL_DOCS 781910f3` docs-only. Full RC 5 owner bands remain (see §4.1). **Do not claim `14899168` as exact `a42f8bb7` evidence; hosted `a42f8bb7` pending.**
+> **Current state:** Recovery closed, M1–M3 closed, S1–S6 lightweight gates pass on `462398cb` fixtures (see §2.12, valid for `a42f8bb7` — no re-OCR/rebuild/embed, only dead code removed). `EXECUTABLE_FROZEN a42f8bb7` fixes the former F821; `PROTOCOL_DOCS 781910f3` docs-only. Hosted CI `32353318123` is green on `a2e18fa4`, whose only change after `a42f8bb7` is release bookkeeping/docs. Full RC 5 owner bands remain (see §4.1). Remaining work is live browser/Ctrl+C/recovery evidence and Release-N support-window owner decision; no architecture changes.
 
 ### 1.1 The problem (pre-v2)
 
