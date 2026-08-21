@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any
 
 SCHEMA_VERSION = 1
-ALGORITHM_VERSION = 1
+ALGORITHM_VERSION = 2
 _LABEL_RE = re.compile(r"\b(?:fig(?:ure)?s?\.?|table|tab\.?|图|scheme)\s*([A-Z]?\d+)", re.IGNORECASE)
 _HEADER_RE = re.compile(r"^#\s+(Figure|Table)\s+(.+?)\s*$", re.IGNORECASE | re.MULTILINE)
 _PAGE_RE = re.compile(r"\*Page\s+([0-9]+)\*", re.IGNORECASE)
@@ -141,22 +141,99 @@ def _canonical_view(row: dict[str, Any], kind: str) -> dict[str, Any]:
     }
 
 
+
 def _candidates(rows: list[dict[str, Any]], labels: set[str | None], kind: str) -> list[dict[str, Any]]:
     return [_canonical_view(row, kind) for row in rows if row.get("normalized_label") in labels]
 
 
-def _issue(issue_type: str, severity: str, message: str, **evidence: Any) -> dict[str, Any]:
-    return {"type": issue_type, "severity": severity, "message": message, "evidence": evidence}
+_DIAGNOSIS_DOMAIN = {
+    "render_label_mismatch": "render_layer",
+    "render_header_missing": "render_layer",
+    "render_image_materialization_missing": "render_layer",
+    "render_artifact_empty": "render_layer",
+    "dangling_render_asset": "render_layer",
+    "render_artifact_missing": "render_layer",
+    "canonical_identity_ambiguous": "inventory_layer",
+    "upstream_asset_missing_or_reserved": "asset_layer",
+}
 
 
-def _audit_kind(root: Path, kind: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
+def _issue(
+    issue_type: str,
+    severity: str,
+    message: str,
+    *,
+    diagnosis: str | None = None,
+    recommended_action: str = "inspect",
+    **evidence: Any,
+) -> dict[str, Any]:
+    issue = {
+        "type": issue_type,
+        "severity": severity,
+        "message": message,
+        "domain": _DIAGNOSIS_DOMAIN.get(diagnosis or "", "unknown"),
+        "recommended_action": recommended_action,
+        "evidence": evidence,
+    }
+    if diagnosis:
+        issue["diagnosis"] = diagnosis
+    return issue
+
+
+def _read_materialization_provenance(root: Path) -> dict[str, Any]:
+    relative_path = "render/materialization.provenance.json"
+    path = root / relative_path
+    if not path.is_file():
+        return {
+            "path": relative_path,
+            "state": "missing",
+            "records_by_render_path": {},
+        }
+    try:
+        payload = _read_json(path)
+    except (OSError, TypeError, ValueError):
+        return {
+            "path": relative_path,
+            "state": "unreadable",
+            "records_by_render_path": {},
+        }
+    records = payload.get("objects") if isinstance(payload, dict) else None
+    records = records if isinstance(records, list) else []
+    return {
+        "path": relative_path,
+        "state": "available",
+        "schema_version": payload.get("schema_version") if isinstance(payload, dict) else None,
+        "summary": payload.get("summary") if isinstance(payload, dict) else {},
+        "records_by_render_path": {
+            str(record.get("render_path")): record
+            for record in records
+            if isinstance(record, dict) and record.get("render_path")
+        },
+    }
+
+
+def _materialization_provenance_view(provenance: dict[str, Any]) -> dict[str, Any]:
+    return {
+        key: provenance[key]
+        for key in ("path", "state", "schema_version", "summary")
+        if key in provenance
+    }
+
+
+def _audit_kind(
+    root: Path,
+    kind: str,
+    materialization_provenance: dict[str, Any] | None = None,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
     inventory = root / "structure" / f"{kind}_inventory.json"
     rows = _inventory_rows(inventory, kind)
     artifacts = _render_artifacts(root / "render" / ("figures" if kind == "figure" else "tables"), kind)
+
     issues: list[dict[str, Any]] = []
     for artifact in artifacts:
         labels = {artifact.get("header_label"), artifact.get("legend_label")} - {None}
         candidates = _candidates(rows, labels, kind)
+        asset_candidates = [candidate for candidate in candidates if candidate.get("asset_block_ids")]
         artifact_evidence = {
             "file": artifact["file"],
             "page": artifact["page"],
@@ -166,12 +243,20 @@ def _audit_kind(root: Path, kind: str) -> tuple[list[dict[str, Any]], list[dict[
             "image_exists": artifact["image_exists"],
             "canonical_candidates": candidates,
         }
+        if materialization_provenance:
+            materialization = materialization_provenance.get("records_by_render_path", {}).get(
+                f"render/{'figures' if kind == 'figure' else 'tables'}/{artifact['file']}"
+            )
+            if materialization:
+                artifact_evidence["materialization"] = materialization
         if artifact["header_label"] is None:
             issues.append(
                 _issue(
                     "render_artifact_integrity",
                     "P1",
                     "render artifact has no canonical header label",
+                    diagnosis="render_header_missing",
+                    recommended_action="inspect_render",
                     **artifact_evidence,
                 )
             )
@@ -185,9 +270,10 @@ def _audit_kind(root: Path, kind: str) -> tuple[list[dict[str, Any]], list[dict[
                     "render_caption_mismatch",
                     "P1",
                     "render header and legend labels disagree",
+                    diagnosis="render_label_mismatch" if len(candidates) == 1 else "canonical_identity_ambiguous",
+                    recommended_action="rerender" if len(candidates) == 1 else "inspect_inventory",
                     legend_source=artifact["legend_source"],
                     legend_confidence=artifact["legend_confidence"],
-                    diagnosis="render_label_mismatch" if len(candidates) == 1 else "canonical_identity_ambiguous",
                     **artifact_evidence,
                 )
             )
@@ -197,17 +283,37 @@ def _audit_kind(root: Path, kind: str) -> tuple[list[dict[str, Any]], list[dict[
                     "render_dangling_asset_reference",
                     "P0",
                     "render artifact references a missing image",
+                    diagnosis="dangling_render_asset",
+                    recommended_action="rerender",
                     **artifact_evidence,
                 )
             )
         if not artifact["image_ref"] and kind == "figure":
-            issue_type = "caption_without_asset" if artifact["legend_label"] else "render_artifact_integrity"
-            message = (
-                "caption/legend has no rendered image asset"
-                if issue_type == "caption_without_asset"
-                else "figure render artifact has no image or legend"
+            if asset_candidates:
+                issue_type = "render_artifact_integrity"
+                message = "canonical asset exists but render image materialization is missing"
+                diagnosis = "render_image_materialization_missing"
+                action = "rerender"
+            elif artifact["legend_label"]:
+                issue_type = "caption_without_asset"
+                message = "caption/legend has no rendered image asset"
+                diagnosis = "upstream_asset_missing_or_reserved"
+                action = "inspect_asset_matching"
+            else:
+                issue_type = "render_artifact_integrity"
+                message = "figure render artifact has no image or legend"
+                diagnosis = "render_artifact_empty"
+                action = "inspect_render"
+            issues.append(
+                _issue(
+                    issue_type,
+                    "P1",
+                    message,
+                    diagnosis=diagnosis,
+                    recommended_action=action,
+                    **artifact_evidence,
+                )
             )
-            issues.append(_issue(issue_type, "P1", message, **artifact_evidence))
 
     canonical_labels = {row["normalized_label"] for row in rows if row.get("normalized_label")}
     rendered_labels = {a["header_label"] for a in artifacts if a.get("header_label")}
@@ -220,6 +326,8 @@ def _audit_kind(root: Path, kind: str) -> tuple[list[dict[str, Any]], list[dict[
                     "missing_render_materialization",
                     "P1",
                     "canonical object has assets but no matching render header",
+                    diagnosis="render_artifact_missing",
+                    recommended_action="rerender",
                     kind=kind,
                     label=label,
                     canonical_candidates=[_canonical_view(row, kind) for row in matching],
@@ -253,9 +361,18 @@ def audit_paper(ocr_root: Path, paper_key: str, *, write_report: bool = True) ->
         }
 
     issues: list[dict[str, Any]] = []
+    materialization_provenance = _read_materialization_provenance(root)
     try:
-        figure_rows, figure_artifacts, figure_issues = _audit_kind(root, "figure")
-        table_rows, table_artifacts, table_issues = _audit_kind(root, "table")
+        figure_rows, figure_artifacts, figure_issues = _audit_kind(
+            root,
+            "figure",
+            materialization_provenance,
+        )
+        table_rows, table_artifacts, table_issues = _audit_kind(
+            root,
+            "table",
+            materialization_provenance,
+        )
         issues.extend(figure_issues)
         issues.extend(table_issues)
         state = "CLEAN" if not issues else "DEGRADED"
@@ -271,6 +388,7 @@ def audit_paper(ocr_root: Path, paper_key: str, *, write_report: bool = True) ->
                 "tables": [_canonical_view(row, "table") for row in table_rows],
             },
             "render_artifacts": {"figures": figure_artifacts, "tables": table_artifacts},
+            "materialization_provenance": _materialization_provenance_view(materialization_provenance),
             "summary": {
                 "figure_inventory_objects": len(figure_rows),
                 "table_inventory_objects": len(table_rows),
@@ -292,6 +410,7 @@ def audit_paper(ocr_root: Path, paper_key: str, *, write_report: bool = True) ->
             "state": "FAILED",
             "evidence_mode": "mixed",
             "input_snapshot": _snapshot(root),
+            "materialization_provenance": _materialization_provenance_view(materialization_provenance),
             "issues": [_issue("audit_execution_failure", "P0", str(exc), paper_key=paper_key)],
             "audit_0": {"state": "FAILED"},
             "audit_1": None,

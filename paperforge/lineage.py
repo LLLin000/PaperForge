@@ -20,11 +20,10 @@ import hashlib
 import json
 import re
 import sqlite3
+from collections.abc import Collection
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Collection
-
-from paperforge.worker.ocr_hash import compute_ocr_result_hash
+from typing import Any
 
 # The embedding provider is the openai-compatible provider seam; its endpoint
 # is semantically identity-bearing (different endpoints → different embedding
@@ -455,6 +454,7 @@ def _probe_lineage(
                         else None
                     ),
                     "vector": _vector_detail(conn, key, retrieval_state),
+                    "render_consistency": _render_consistency_detail(_ocr_dir),
                 },
                 # P1-D: orthogonal facts per carrier — snapshot integrity,
                 # policy currency, lineage trust (ADR-0002 §6).  A verified
@@ -876,6 +876,49 @@ def _ocr_execution_detail(
     }
 
 
+def _render_consistency_detail(paper_dir: Path | None) -> dict[str, Any] | None:
+    """Project the existing render audit report into the unified probe.
+
+    The audit report is the render-consistency authority.  This function only
+    reads and projects its persisted state; it never recomputes render issues
+    or inspects a second set of render inputs.
+    """
+    if paper_dir is None:
+        return None
+    report_path = paper_dir / "render" / "render.consistency.json"
+    relative_path = "render/render.consistency.json"
+    if not report_path.is_file():
+        return {
+            "state": "NOT_RUN",
+            "report_path": relative_path,
+            "issues_found": 0,
+            "issues_repaired": 0,
+            "issues_remaining": 0,
+        }
+    try:
+        report = json.loads(report_path.read_text(encoding="utf-8"))
+    except (OSError, TypeError, ValueError):
+        return {
+            "state": "UNKNOWN",
+            "report_path": relative_path,
+            "reason": "render_consistency_report_unreadable",
+        }
+    summary = report.get("summary")
+    summary = summary if isinstance(summary, dict) else {}
+    state = report.get("state")
+    if state not in {"NOT_RUN", "CLEAN", "REPAIRED", "DEGRADED", "FAILED", "UNKNOWN"}:
+        state = "UNKNOWN"
+    return {
+        "state": state,
+        "report_path": relative_path,
+        "audit_algorithm_version": report.get("audit_algorithm_version"),
+        "render_consistency_schema_version": report.get("render_consistency_schema_version"),
+        "input_snapshot": report.get("input_snapshot"),
+        "summary": summary,
+        "materialization_provenance": report.get("materialization_provenance"),
+    }
+
+
 def _ocr_detail(
     paper_dir: Path | None,
     canonical_pdf: Path | None = None,
@@ -912,7 +955,6 @@ def _resolve_canonical_pdf(vault: Path, paper_dir: Path | None) -> Path | None:
         return None
     key = paper_dir.name
     try:
-        import re as _re
 
         from paperforge.worker.asset_index import read_index
 

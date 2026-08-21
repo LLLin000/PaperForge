@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import pytest
 
 from pathlib import Path
@@ -926,3 +927,77 @@ def test_extract_and_write_objects_with_use_disk_page_cache_false_and_valid_pdf(
 
     asset_path = tmp_path / "assets" / "figures" / "figure_001.jpg"
     assert asset_path.exists(), "Asset should exist from in-memory render"
+    provenance = json.loads(
+        (tmp_path / "render" / "materialization.provenance.json").read_text(encoding="utf-8")
+    )
+    record = provenance["objects"][0]
+    assert record["status"] == "materialized"
+    assert record["stage"] == "materialize"
+    assert record["reason"] == "success"
+
+
+def test_crop_failure_result_preserves_bool_contract(tmp_path: Path) -> None:
+    from paperforge.worker.ocr_objects import _crop_asset_from_pdf
+
+    result = _crop_asset_from_pdf(
+        tmp_path / "missing.pdf",
+        1,
+        [50, 50, 100, 100],
+        tmp_path / "crop.jpg",
+        return_result=True,
+    )
+
+    assert result.success is False
+    assert result.stage == "pdf_open"
+    assert result.reason == "pdf_not_found"
+    assert _crop_asset_from_pdf(
+        tmp_path / "missing.pdf",
+        1,
+        [50, 50, 100, 100],
+        tmp_path / "crop.jpg",
+    ) is False
+
+
+def test_object_materialization_writes_failure_provenance_without_output_change(tmp_path: Path) -> None:
+    from paperforge.worker.ocr_objects import extract_and_write_objects
+
+    figure_inventory: dict[str, Any] = {
+        "matched_figures": [
+            {
+                "figure_id": "figure_001",
+                "text": "Figure 1.",
+                "page": 1,
+                "cluster_bbox": [50, 50, 150, 150],
+                "matched_assets": [],
+            }
+        ],
+        "unmatched_assets": [],
+        "rejected_legends": [],
+        "figure_legends": [],
+        "figure_assets": [],
+        "official_figure_count": 1,
+        "unresolved_clusters": [],
+    }
+    render_root = tmp_path / "render"
+
+    extract_and_write_objects(
+        pdf_path=None,
+        figure_inventory=figure_inventory,
+        table_inventory={"tables": [], "unmatched_assets": []},
+        asset_root=tmp_path / "assets",
+        render_root=render_root,
+        page_dimensions_by_page={1: (600, 800)},
+        use_disk_page_cache=False,
+    )
+
+    provenance = json.loads(
+        (render_root / "materialization.provenance.json").read_text(encoding="utf-8")
+    )
+    record = provenance["objects"][0]
+    markdown = (render_root / "figures" / "figure_001.md").read_text(encoding="utf-8")
+
+    assert record["status"] == "failed"
+    assert record["stage"] == "pdf_open"
+    assert record["reason"] == "pdf_not_available"
+    assert record["pdf_input"] == "missing"
+    assert "![](../../assets/figures/figure_001.jpg)" not in markdown

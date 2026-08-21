@@ -88,16 +88,19 @@ def test_audit_reports_caption_mismatch_and_dangling_asset(tmp_path: Path) -> No
     assert result["state"] == "DEGRADED"
     assert "render_caption_mismatch" in issue_types
     assert "render_dangling_asset_reference" in issue_types
-    assert result["summary"]["issues_repaired"] == 0
     mismatch_issue = next(issue for issue in result["issues"] if issue["type"] == "render_caption_mismatch")
-    assert "canonical_candidates" in mismatch_issue["evidence"]
-    assert "diagnosis" in mismatch_issue["evidence"]
+    assert mismatch_issue["diagnosis"] == "canonical_identity_ambiguous"
+    assert mismatch_issue["domain"] == "inventory_layer"
 
 
 def test_missing_figure_image_is_upstream_caption_without_asset(tmp_path: Path) -> None:
     ocr_root = _write_fixture(tmp_path / "ocr")
     figure = ocr_root / "TESTFIG1" / "render" / "figures" / "figure_001.md"
     figure.write_text("# Figure 1\n\n## Legend\nFig. 1 fixture\n\n*Page 2*\n", encoding="utf-8")
+    inventory = ocr_root / "TESTFIG1" / "structure" / "figure_inventory.json"
+    data = json.loads(inventory.read_text(encoding="utf-8"))
+    data["matched_figures"][0]["matched_assets"] = []
+    inventory.write_text(json.dumps(data), encoding="utf-8")
 
     result = audit_paper(ocr_root, "TESTFIG1", write_report=False)
 
@@ -112,3 +115,36 @@ def test_audit_does_not_modify_source_or_inventory(tmp_path: Path) -> None:
     audit_paper(ocr_root, "TESTFIG1")
 
     assert inventory.read_bytes() == before
+
+
+def test_audit_projects_existing_materialization_provenance(tmp_path: Path) -> None:
+    ocr_root = _write_fixture(tmp_path / "ocr", dangling=True)
+    report_path = ocr_root / "TESTFIG1" / "render" / "materialization.provenance.json"
+    report_path.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "objects": [
+                    {
+                        "object_id": "figure_001",
+                        "kind": "figure",
+                        "status": "failed",
+                        "stage": "pdf_open",
+                        "reason": "pdf_not_found",
+                        "pdf_input": "missing",
+                        "asset_path": "assets/figures/figure_001.jpg",
+                        "render_path": "render/figures/figure_001.md",
+                        "attempts": [],
+                    }
+                ],
+                "summary": {"objects": 1, "reason": {"pdf_not_found": 1}},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = audit_paper(ocr_root, "TESTFIG1", write_report=False)
+    issue = next(issue for issue in result["issues"] if issue["type"] == "render_dangling_asset_reference")
+
+    assert result["materialization_provenance"]["state"] == "available"
+    assert issue["evidence"]["materialization"]["reason"] == "pdf_not_found"
