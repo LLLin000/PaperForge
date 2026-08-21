@@ -150,11 +150,12 @@ Semantics:
 - `UNKNOWN`: state cannot be observed.
 
 `render.consistency.json` is the provenance authority for this audit, not `meta.json`.
+The unified `probe lineage --json` surface projects this existing report under `details.render_consistency`; it does not recompute render findings or create a second state authority.
 
 ```json
 {
   "render_consistency_schema_version": 1,
-  "audit_algorithm_version": 1,
+  "audit_algorithm_version": 2,
   "input_snapshot": {
     "blocks_hash": "...",
     "figure_inventory_hash": "...",
@@ -168,7 +169,20 @@ Semantics:
 }
 ```
 
+Each issue also reports:
+
+```json
+{
+  "domain": "render_layer|inventory_layer|asset_layer|ocr_layer|unknown",
+  "diagnosis": "render_image_materialization_missing",
+  "recommended_action": "rerender|inspect_inventory|inspect_asset_matching|inspect_render"
+}
+```
+
+`type` describes what was observed; `domain` describes the likely failure layer; `diagnosis` describes the likely cause; `recommended_action` is guidance only and never executes repair. Initial corpus evidence is diagnostic, not a repair authorization.
+
 `audit_algorithm_version` and `render_consistency_schema_version` are separate. The input snapshot records source and render changes, not only renderer version.
+The existing object materializer may write `render/materialization.provenance.json` as an additive result sidecar. It records object status, stage, reason, PDF-input availability, asset/render paths, and crop attempts. The audit reads this sidecar when present and attaches the matching record to issue evidence; it never recomputes or replaces the materializer's result.
 
 ## Authority boundary
 
@@ -177,6 +191,7 @@ Future `paperforge render reconcile` may update only:
 - render-layer markdown artifacts;
 - render-layer image materialization through the existing renderer;
 - `render/render.consistency.json`.
+- `render/materialization.provenance.json`.
 
 It must not mutate:
 

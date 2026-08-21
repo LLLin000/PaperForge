@@ -1,17 +1,19 @@
 from __future__ import annotations
 
 import contextlib
+import json
 import os
 import re
 import threading
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
 from PIL import Image
 
 from paperforge.worker.ocr_math import normalize_ocr_math_text
-
 
 _RENDER_LOCKS: dict[tuple[str, int], threading.Lock] = {}
 _RENDER_LOCKS_LOCK = threading.Lock()
@@ -175,6 +177,25 @@ class PageRenderContext:
             except Exception:
                 return None
 
+@dataclass(frozen=True)
+class CropResult:
+    """Structured crop outcome; bool callers retain the old success contract."""
+
+    success: bool
+    stage: str
+    reason: str
+
+    def __bool__(self) -> bool:
+        return self.success
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "success": self.success,
+            "stage": self.stage,
+            "reason": self.reason,
+        }
+
+
 
 def _crop_asset_from_pdf(
     pdf_path: Path | None,
@@ -190,13 +211,24 @@ def _crop_asset_from_pdf(
     rotation_deg: int = 0,
     page_render_context: PageRenderContext | None = None,
     use_disk_page_cache: bool = True,
-) -> bool:
-    """Crop asset from PDF, with in-memory or disk-cache or direct path.
-    Priority:
-        1. In-memory PageRenderContext (when dims valid, no rotation)
-        2. Disk page cache (when use_disk_page_cache=True, has cache, no rotation)
-        3. Direct PDF clip + render fallback
+    return_result: bool = False,
+) -> bool | CropResult:
+    """Crop an asset while retaining the legacy bool return by default.
+
+    ``return_result=True`` is used by object materialization to persist the
+    existing seam's failure stage/reason without changing crop behavior.
     """
+
+    def finish(result: CropResult) -> bool | CropResult:
+        return result if return_result else result.success
+
+    try:
+        numeric_bbox = tuple(int(value) for value in bbox[:4])
+    except (TypeError, ValueError):
+        return finish(CropResult(False, "input", "bbox_invalid"))
+    if len(numeric_bbox) != 4 or numeric_bbox[2] <= numeric_bbox[0] or numeric_bbox[3] <= numeric_bbox[1]:
+        return finish(CropResult(False, "input", "bbox_invalid"))
+
     if dst.exists():
         with contextlib.suppress(Exception):
             dst.unlink()
@@ -211,16 +243,13 @@ def _crop_asset_from_pdf(
         img = page_render_context.get_page_image(page_num, page_width, page_height)
         if img is not None:
             try:
-                x1, y1, x2, y2 = (int(v) for v in bbox)
-                if x2 <= x1 or y2 <= y1:
-                    return False
-                crop = img.crop((x1, y1, x2, y2))
+                crop = img.crop(numeric_bbox)
                 dst.parent.mkdir(parents=True, exist_ok=True)
                 crop.save(dst)
-                return True
+                return finish(CropResult(True, "materialize", "success"))
             except Exception:
-                return False
-        # fall through if render failed
+                return finish(CropResult(False, "crop", "crop_write_failed"))
+        # fall through if page rendering failed
 
     # ── 2. Disk page cache path (only when use_disk_page_cache=True) ──
     if use_disk_page_cache and page_cache_dir is not None and not rotation_deg:
@@ -229,31 +258,38 @@ def _crop_asset_from_pdf(
             try:
                 from paperforge.worker.ocr import crop_block_asset
             except ImportError:
-                return False
-            ok = crop_block_asset(cached_page_image, [int(v) for v in bbox], dst)
-            return ok
+                return finish(CropResult(False, "crop", "crop_dependency_missing"))
+            try:
+                ok = crop_block_asset(cached_page_image, list(numeric_bbox), dst)
+            except Exception:
+                return finish(CropResult(False, "crop", "crop_failed"))
+            return finish(
+                CropResult(bool(ok), "materialize" if ok else "crop", "success" if ok else "crop_failed")
+            )
 
     # ── 3. Direct PDF clip + render fallback ──
     created_doc = None
     doc = pdf_doc
     if doc is None and pdf_doc_provider is not None:
-        doc = pdf_doc_provider()
+        try:
+            doc = pdf_doc_provider()
+        except Exception:
+            return finish(CropResult(False, "pdf_open", "pdf_provider_failed"))
         if doc is None:
-            return False
+            return finish(CropResult(False, "pdf_open", "pdf_not_available"))
     if doc is None:
-        if pdf_path is None or not pdf_path.exists():
-            return False
+        if pdf_path is None:
+            return finish(CropResult(False, "pdf_open", "pdf_not_available"))
+        if not pdf_path.exists():
+            return finish(CropResult(False, "pdf_open", "pdf_not_found"))
         try:
             import pymupdf
         except ImportError:
-            return False
+            return finish(CropResult(False, "pdf_open", "pdf_dependency_missing"))
         try:
             created_doc = pymupdf.open(str(pdf_path))
         except Exception:
-            # #118: unreadable/corrupt PDF must not kill the whole redo/rebuild
-            # batch — degrade to a cropless object note (was_cropped=False)
-            # and let the caller's failed_keys bookkeeping report the paper.
-            return False
+            return finish(CropResult(False, "pdf_open", "pdf_open_failed"))
         doc = created_doc
 
     try:
@@ -272,55 +308,103 @@ def _crop_asset_from_pdf(
                     try:
                         from paperforge.worker.ocr import crop_block_asset
                     except ImportError:
-                        return False
-                    ok = crop_block_asset(cached_page_image, [int(v) for v in bbox], dst)
-                    return ok
+                        return finish(CropResult(False, "crop", "crop_dependency_missing"))
+                    try:
+                        ok = crop_block_asset(cached_page_image, list(numeric_bbox), dst)
+                    except Exception:
+                        return finish(CropResult(False, "crop", "crop_failed"))
+                    return finish(
+                        CropResult(bool(ok), "materialize" if ok else "crop", "success" if ok else "crop_failed")
+                    )
                 try:
                     from paperforge.worker.ocr import crop_block_asset, render_pdf_page_cached
                 except ImportError:
-                    return False
+                    return finish(CropResult(False, "page_render", "page_render_dependency_missing"))
                 try:
                     page_image_path = page_cache_dir / f"page_{page_num:03d}.jpg"
                     rendered = render_pdf_page_cached(
-                        doc, page_num,
-                        target_width=page_width, target_height=page_height,
+                        doc,
+                        page_num,
+                        target_width=page_width,
+                        target_height=page_height,
                         destination=page_image_path,
                     )
                     if not rendered:
-                        return False
-                    ok = crop_block_asset(rendered, [int(v) for v in bbox], dst)
-                    return ok
+                        return finish(CropResult(False, "page_render", "page_render_failed"))
+                    ok = crop_block_asset(rendered, list(numeric_bbox), dst)
+                    return finish(
+                        CropResult(bool(ok), "materialize" if ok else "crop", "success" if ok else "crop_failed")
+                    )
                 except Exception:
-                    return False
+                    return finish(CropResult(False, "page_render", "page_render_failed"))
 
         try:
             import pymupdf
         except ImportError:
-            return False
+            return finish(CropResult(False, "crop", "crop_dependency_missing"))
         try:
+            if page_num < 1 or page_num > len(doc):
+                return finish(CropResult(False, "crop", "page_out_of_range"))
             page = doc[page_num - 1]
             pdf_rect = page.rect
             sx = max(1.0, page_width / pdf_rect.width) if page_width > 0 else 2.0
             sy = max(1.0, page_height / pdf_rect.height) if page_height > 0 else 2.0
-            rect = pymupdf.Rect(bbox[0] / sx, bbox[1] / sy, bbox[2] / sx, bbox[3] / sy)
+            rect = pymupdf.Rect(
+                numeric_bbox[0] / sx,
+                numeric_bbox[1] / sy,
+                numeric_bbox[2] / sx,
+                numeric_bbox[3] / sy,
+            )
             zoom = 4.0
             mat = pymupdf.Matrix(zoom, zoom)
             pix = page.get_pixmap(matrix=mat, clip=rect)
             dst.parent.mkdir(parents=True, exist_ok=True)
             if rotation_deg:
-                from PIL import Image as PILImage
                 import io
+
+                from PIL import Image as PILImage
+
                 img = PILImage.open(io.BytesIO(pix.tobytes("png")))
                 img = img.rotate(rotation_deg, expand=True, resample=PILImage.Resampling.LANCZOS)
                 img.save(str(dst))
             else:
                 pix.save(str(dst))
-            return True
+            return finish(CropResult(True, "materialize", "success"))
         except Exception:
-            return False
+            return finish(CropResult(False, "crop", "crop_failed"))
     finally:
         if created_doc is not None:
             doc.close()
+
+
+def _coerce_crop_result(value: bool | CropResult) -> CropResult:
+    if isinstance(value, CropResult):
+        return value
+    return CropResult(bool(value), "materialize" if value else "crop", "success" if value else "unknown")
+
+
+def _materialization_record(
+    *,
+    kind: str,
+    object_id: str,
+    asset_path: str,
+    render_path: str,
+    pdf_path: Path | None,
+    attempts: list[CropResult],
+    no_attempt_reason: str,
+) -> dict[str, Any]:
+    result = attempts[-1] if attempts else CropResult(False, "input", no_attempt_reason)
+    return {
+        "object_id": object_id,
+        "kind": kind,
+        "status": "materialized" if result.success else "failed",
+        "stage": result.stage,
+        "reason": result.reason,
+        "pdf_input": "available" if pdf_path is not None and pdf_path.is_file() else "missing",
+        "asset_path": asset_path,
+        "render_path": render_path,
+        "attempts": [attempt.to_dict() for attempt in attempts],
+    }
 
 
 def _write_figure_object_task(
@@ -332,7 +416,7 @@ def _write_figure_object_task(
     use_disk_page_cache: bool = False,
     asset_dir: Path,
     render_dir: Path,
-) -> None:
+) -> dict[str, Any]:
     """Extract crop and write markdown for one figure/cluster object."""
     fig_id = data["fig_id"]
     page = data["page"]
@@ -343,34 +427,38 @@ def _write_figure_object_task(
     caption = data.get("caption", "")
     asset_path_rel = data["asset_path_rel"]
     asset_path_abs = asset_dir / f"{fig_id}.jpg"
-
+    attempts: list[CropResult] = []
     was_cropped = False
-    if crop_bbox and all(v > 0 for v in crop_bbox):
-        was_cropped = _crop_asset_from_pdf(
-            pdf_path, page, crop_bbox, asset_path_abs,
-            page_width=page_width, page_height=page_height,
-            page_cache_dir=page_cache_dir,
-            pdf_doc=None, pdf_doc_provider=None,
-            rotation_deg=rotation_deg,
-            page_render_context=page_render_context,
-            use_disk_page_cache=use_disk_page_cache,
-        )
 
-    if not was_cropped:
+    def attempt(bbox: list[float]) -> bool:
+        nonlocal was_cropped
+        if not bbox or not all(value > 0 for value in bbox):
+            return False
+        result = _coerce_crop_result(
+            _crop_asset_from_pdf(
+                pdf_path,
+                page,
+                bbox,
+                asset_path_abs,
+                page_width=page_width,
+                page_height=page_height,
+                page_cache_dir=page_cache_dir,
+                pdf_doc=None,
+                pdf_doc_provider=None,
+                rotation_deg=rotation_deg,
+                page_render_context=page_render_context,
+                use_disk_page_cache=use_disk_page_cache,
+                return_result=True,
+            )
+        )
+        attempts.append(result)
+        was_cropped = result.success
+        return was_cropped
+
+    if not attempt(crop_bbox):
         for asset_info in data.get("matched_assets", []):
-            bbox = asset_info.get("bbox", [0, 0, 0, 0])
-            if pdf_path and bbox and all(v > 0 for v in bbox):
-                if _crop_asset_from_pdf(
-                    pdf_path, page, bbox, asset_path_abs,
-                    page_width=page_width, page_height=page_height,
-                    page_cache_dir=page_cache_dir,
-                    pdf_doc=None, pdf_doc_provider=None,
-                    rotation_deg=rotation_deg,
-                    page_render_context=page_render_context,
-                    use_disk_page_cache=use_disk_page_cache,
-                ):
-                    was_cropped = True
-                    break
+            if attempt(asset_info.get("bbox", [0, 0, 0, 0])):
+                break
 
     md = render_figure_object_markdown({
         "figure_id": fig_id,
@@ -380,8 +468,16 @@ def _write_figure_object_task(
         "confidence": data.get("confidence", 0.5),
         "was_cropped": was_cropped,
     })
-
     _write_object_markdown(md, render_dir / f"{fig_id}.md")
+    return _materialization_record(
+        kind="figure",
+        object_id=fig_id,
+        asset_path=asset_path_rel,
+        render_path=f"render/figures/{fig_id}.md",
+        pdf_path=pdf_path,
+        attempts=attempts,
+        no_attempt_reason="bbox_missing",
+    )
 def _write_table_object_task(
     data: dict[str, Any],
     *,
@@ -391,7 +487,7 @@ def _write_table_object_task(
     use_disk_page_cache: bool = False,
     asset_dir: Path,
     render_dir: Path,
-) -> None:
+) -> dict[str, Any]:
     """Extract crop and write markdown for one table object."""
     tbl_id = data["tbl_id"]
     page = data["page"]
@@ -402,18 +498,29 @@ def _write_table_object_task(
     caption = data.get("caption", "")
     asset_path_rel = data["asset_path_rel"]
     asset_path_abs = asset_dir / f"{tbl_id}.jpg"
-
+    attempts: list[CropResult] = []
     was_cropped = False
-    if data.get("has_asset") and pdf_path and crop_bbox and all(v > 0 for v in crop_bbox):
-        was_cropped = _crop_asset_from_pdf(
-            pdf_path, page, crop_bbox, asset_path_abs,
-            page_width=page_width, page_height=page_height,
-            page_cache_dir=page_cache_dir,
-            pdf_doc=None, pdf_doc_provider=None,
-            rotation_deg=rotation_deg,
-            page_render_context=page_render_context,
-            use_disk_page_cache=use_disk_page_cache,
+
+    if data.get("has_asset") and crop_bbox and all(value > 0 for value in crop_bbox):
+        result = _coerce_crop_result(
+            _crop_asset_from_pdf(
+                pdf_path,
+                page,
+                crop_bbox,
+                asset_path_abs,
+                page_width=page_width,
+                page_height=page_height,
+                page_cache_dir=page_cache_dir,
+                pdf_doc=None,
+                pdf_doc_provider=None,
+                rotation_deg=rotation_deg,
+                page_render_context=page_render_context,
+                use_disk_page_cache=use_disk_page_cache,
+                return_result=True,
+            )
         )
+        attempts.append(result)
+        was_cropped = result.success
 
     md = render_table_object_markdown({
         "table_id": tbl_id,
@@ -426,6 +533,15 @@ def _write_table_object_task(
         "note_match_reason": data.get("note_match_reason", ""),
     })
     _write_object_markdown(md, render_dir / f"{tbl_id}.md")
+    return _materialization_record(
+        kind="table",
+        object_id=tbl_id,
+        asset_path=asset_path_rel,
+        render_path=f"render/tables/{tbl_id}.md",
+        pdf_path=pdf_path,
+        attempts=attempts,
+        no_attempt_reason="source_asset_unavailable",
+    )
 
 
 def _write_orphan_object_task(
@@ -437,7 +553,7 @@ def _write_orphan_object_task(
     use_disk_page_cache: bool = False,
     asset_dir: Path,
     render_dir: Path,
-) -> None:
+) -> dict[str, Any]:
     """Extract crop and write markdown for one orphan object."""
     orphan_id = data["orphan_id"]
     page = data["page"]
@@ -446,15 +562,26 @@ def _write_orphan_object_task(
     bbox = data["bbox"]
     asset_path_rel = data["asset_path_rel"]
     asset_path_abs = asset_dir / f"{orphan_id}.jpg"
+    attempts: list[CropResult] = []
 
-    if pdf_path and bbox and all(v > 0 for v in bbox):
-        _crop_asset_from_pdf(
-            pdf_path, page, bbox, asset_path_abs,
-            page_width=page_width, page_height=page_height,
-            page_cache_dir=page_cache_dir,
-            pdf_doc=None, pdf_doc_provider=None,
-            page_render_context=page_render_context,
-            use_disk_page_cache=use_disk_page_cache,
+    if bbox and all(value > 0 for value in bbox):
+        attempts.append(
+            _coerce_crop_result(
+                _crop_asset_from_pdf(
+                    pdf_path,
+                    page,
+                    bbox,
+                    asset_path_abs,
+                    page_width=page_width,
+                    page_height=page_height,
+                    page_cache_dir=page_cache_dir,
+                    pdf_doc=None,
+                    pdf_doc_provider=None,
+                    page_render_context=page_render_context,
+                    use_disk_page_cache=use_disk_page_cache,
+                    return_result=True,
+                )
+            )
         )
 
     md = render_figure_object_markdown({
@@ -465,6 +592,48 @@ def _write_orphan_object_task(
         "confidence": 0.3,
     })
     _write_object_markdown(md, render_dir / f"{orphan_id}.md")
+    return _materialization_record(
+        kind="orphan",
+        object_id=orphan_id,
+        asset_path=asset_path_rel,
+        render_path=f"render/figures/{orphan_id}.md",
+        pdf_path=pdf_path,
+        attempts=attempts,
+        no_attempt_reason="bbox_missing",
+    )
+
+def _write_materialization_provenance(render_root: Path, records: list[dict[str, Any]]) -> None:
+    status_counts: dict[str, int] = {}
+    stage_counts: dict[str, int] = {}
+    reason_counts: dict[str, int] = {}
+    for record in records:
+        for field, counts in (
+            ("status", status_counts),
+            ("stage", stage_counts),
+            ("reason", reason_counts),
+        ):
+            value = str(record.get(field) or "unknown")
+            counts[value] = counts.get(value, 0) + 1
+    payload = {
+        "schema_version": 1,
+        "objects": sorted(records, key=lambda item: (item.get("kind", ""), item.get("object_id", ""))),
+        "summary": {
+            "objects": len(records),
+            "status": status_counts,
+            "stage": stage_counts,
+            "reason": reason_counts,
+        },
+    }
+    try:
+        (render_root / "materialization.provenance.json").write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+    except OSError:
+        # Provenance is additive; preserve the existing render behavior if
+        # the diagnostic sidecar cannot be written.
+        pass
+
 
 
 def extract_and_write_objects(
@@ -513,6 +682,8 @@ def extract_and_write_objects(
         for stale in stale_dir.glob(pattern):
             with contextlib.suppress(Exception):
                 stale.unlink()
+    with contextlib.suppress(Exception):
+        (render_root / "materialization.provenance.json").unlink()
 
     if page_dimensions_by_page is None:
         page_dimensions_by_page = {}
@@ -603,9 +774,7 @@ def extract_and_write_objects(
             },
         ))
 
-    # Pre-allocate orphan IDs (stable ordering across figure + table orphans)
-    num_figure_orphans = len(figure_inventory.get("unmatched_assets", []))
-    num_table_orphans = len(table_inventory.get("unmatched_assets", []))
+# Allocate stable orphan IDs across figure + table orphans.
     orphan_index = 0
 
     # Figure unmatched assets as orphans
@@ -677,7 +846,6 @@ def extract_and_write_objects(
         ))
 
     # ---- Parallel phase: dispatch crops and markdown writes ----
-    from PIL import Image as PILImage
 
     doc = None
     page_render_ctx = None
@@ -690,6 +858,7 @@ def extract_and_write_objects(
             pass
 
     max_workers = min(2, os.cpu_count() or 4)
+    records: list[dict[str, Any]] = []
     try:
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = []
@@ -729,10 +898,14 @@ def extract_and_write_objects(
                     ))
 
             for future in as_completed(futures):
-                future.result()
+                record = future.result()
+                if isinstance(record, dict):
+                    records.append(record)
     finally:
         if doc is not None:
             try:
                 doc.close()
             except Exception:
                 pass
+
+    _write_materialization_provenance(render_root, records)
