@@ -439,7 +439,24 @@ class TestProbeLineage:
             ),
             encoding="utf-8",
         )
+        (report_path.parent / "reconciliation.proposals.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "algorithm_version": 1,
+                    "summary": {
+                        "exact_repairs": 0,
+                        "proposals": 2,
+                        "blocked": 5,
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
 
+        reconciliation = probe_lineage(vault)["papers"]["KEY1"]["details"]["render_reconciliation"]
+        assert reconciliation["state"] == "PROPOSAL_ONLY"
+        assert reconciliation["summary"]["proposals"] == 2
         detail = probe_lineage(vault)["papers"]["KEY1"]["details"]["render_consistency"]
         assert detail["materialization_provenance"]["state"] == "available"
 

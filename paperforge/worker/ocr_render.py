@@ -2107,4 +2107,20 @@ def write_render_outputs(
     if rebuild_increment:
         meta["rebuild_count"] = int(meta.get("rebuild_count") or 0) + 1
         meta["rebuild_finished_at"] = now_utc.isoformat()
+    # The audit is a read-only projection of the artifacts just committed.
+    # Keep it on the shared render-output boundary so initial OCR and rebuild
+    # paths publish the same report without a second detector.
+    try:
+        from paperforge.render_audit import audit_paper
+
+        paper_root = render_root.parent
+        audit_paper(paper_root.parent, paper_root.name, write_report=True)
+    except Exception:  # noqa: BLE001 — diagnostics must not fail rendering
+        import logging
+
+        logging.getLogger(__name__).warning(
+            "render consistency audit unavailable for %s",
+            render_root,
+            exc_info=True,
+        )
     return meta
