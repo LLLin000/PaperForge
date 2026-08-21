@@ -86,6 +86,44 @@ def _inventory_rows(path: Path, kind: str) -> list[dict[str, Any]]:
             row["normalized_label"] = _label(row.get("text") or row.get("caption") or row.get("raw_label"))
         result.append(row)
     return result
+def _enrich_inventory_positions(root: Path, rows: list[dict[str, Any]], kind: str) -> None:
+    if kind != "figure":
+        return
+    blocks_path = root / "structure" / "blocks.structured.jsonl"
+    if not blocks_path.is_file():
+        return
+    blocks: list[dict[str, Any]] = []
+    for line in blocks_path.read_text(encoding="utf-8", errors="replace").splitlines():
+        try:
+            block = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(block, dict):
+            blocks.append(block)
+    for row in rows:
+        if row.get("legend_page") is not None:
+            continue
+        label = _label(row.get("figure_number")) or _label(row.get("text"))
+        if label is None:
+            continue
+        candidates = [
+            block
+            for block in blocks
+            if _label(block.get("text")) == label
+            and (
+                "caption" in str(block.get("role") or "").lower()
+                or str(block.get("raw_label") or "").lower() == "figure_title"
+            )
+        ]
+        row_page = _page_number(row.get("page"))
+        if row_page is not None:
+            page_candidates = [block for block in candidates if _page_number(block.get("page")) == row_page]
+            candidates = page_candidates or candidates
+        if candidates:
+            row["legend_page"] = candidates[0].get("page")
+            row["legend_block_id"] = candidates[0].get("block_id")
+
+
 
 
 def _render_artifacts(render_root: Path, kind: str) -> list[dict[str, Any]]:
@@ -125,6 +163,91 @@ def _render_artifacts(render_root: Path, kind: str) -> list[dict[str, Any]]:
     return rows
 
 
+def _page_number(value: Any) -> int | None:
+    try:
+        return int(value) if value is not None else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _position_view(row: dict[str, Any]) -> dict[str, Any]:
+    assets = row.get("matched_assets") or []
+    asset_pages = sorted(
+        {
+            page
+            for asset in assets
+            if isinstance(asset, dict)
+            for page in [_page_number(asset.get("page"))]
+            if page is not None
+        }
+    )
+    legend_page = _page_number(row.get("legend_page"))
+    object_page = _page_number(row.get("page"))
+    reference_page = legend_page or object_page
+    anchor_pages = [page for page in (legend_page, object_page) if page is not None]
+    page_range = sorted(set(anchor_pages + asset_pages)) or None
+    same_page = bool(
+        reference_page is not None and asset_pages and all(page == reference_page for page in asset_pages)
+    )
+    cross_page = bool(
+        reference_page is not None and asset_pages and any(page != reference_page for page in asset_pages)
+    )
+    if not asset_pages:
+        relation = "no_asset"
+        ordering = "no_asset"
+    elif same_page:
+        relation = "same_page"
+        ordering = "same_page"
+    elif legend_page is not None and max(asset_pages) < legend_page:
+        relation = "asset_before_legend"
+        ordering = "asset_before_legend"
+    elif legend_page is not None and min(asset_pages) > legend_page:
+        relation = "legend_before_asset"
+        ordering = "legend_before_asset"
+    else:
+        relation = "cross_page"
+        ordering = "unknown"
+    return {
+        "legend_page": legend_page,
+        "object_page": object_page,
+        "asset_pages": asset_pages,
+        "page_range": page_range,
+        "same_page": same_page,
+        "cross_page": cross_page,
+        "ordering": ordering,
+        "relation": relation,
+        "legend_block_id": row.get("legend_block_id"),
+        "asset_bboxes": [
+            {
+                "block_id": asset.get("block_id"),
+                "page": asset.get("page"),
+                "bbox": asset.get("bbox"),
+            }
+            for asset in assets
+            if isinstance(asset, dict)
+        ],
+    }
+
+def _render_position_view(artifact: dict[str, Any], candidates: list[dict[str, Any]]) -> dict[str, Any]:
+    return {
+        "render_page": artifact.get("page"),
+        "canonical": [
+            {
+                "canonical_object_id": candidate.get("canonical_object_id"),
+                "legend_page": (candidate.get("position") or {}).get("legend_page"),
+                "object_page": (candidate.get("position") or {}).get("object_page"),
+                "asset_pages": (candidate.get("position") or {}).get("asset_pages", []),
+                "page_range": (candidate.get("position") or {}).get("page_range"),
+                "same_page": (candidate.get("position") or {}).get("same_page", False),
+                "cross_page": (candidate.get("position") or {}).get("cross_page", False),
+                "ordering": (candidate.get("position") or {}).get("ordering"),
+                "relation": (candidate.get("position") or {}).get("relation"),
+            }
+            for candidate in candidates
+        ],
+    }
+
+
 def _canonical_view(row: dict[str, Any], kind: str) -> dict[str, Any]:
     assets = row.get("matched_assets") or []
     return {
@@ -138,6 +261,7 @@ def _canonical_view(row: dict[str, Any], kind: str) -> dict[str, Any]:
         "asset_pages": [a.get("page") for a in assets if isinstance(a, dict) and a.get("page") is not None],
         "settlement_type": row.get("settlement_type"),
         "kind": kind,
+        "position": _position_view(row),
     }
 
 
@@ -227,6 +351,7 @@ def _audit_kind(
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
     inventory = root / "structure" / f"{kind}_inventory.json"
     rows = _inventory_rows(inventory, kind)
+    _enrich_inventory_positions(root, rows, kind)
     artifacts = _render_artifacts(root / "render" / ("figures" if kind == "figure" else "tables"), kind)
 
     issues: list[dict[str, Any]] = []
@@ -243,6 +368,7 @@ def _audit_kind(
             "image_exists": artifact["image_exists"],
             "canonical_candidates": candidates,
         }
+        artifact_evidence["position"] = _render_position_view(artifact, candidates)
         if materialization_provenance:
             materialization = materialization_provenance.get("records_by_render_path", {}).get(
                 f"render/{'figures' if kind == 'figure' else 'tables'}/{artifact['file']}"

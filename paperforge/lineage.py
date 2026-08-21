@@ -455,6 +455,7 @@ def _probe_lineage(
                     ),
                     "vector": _vector_detail(conn, key, retrieval_state),
                     "render_consistency": _render_consistency_detail(_ocr_dir),
+                    "render_reconciliation": _render_reconciliation_detail(_ocr_dir),
                 },
                 # P1-D: orthogonal facts per carrier — snapshot integrity,
                 # policy currency, lineage trust (ADR-0002 §6).  A verified
@@ -916,6 +917,48 @@ def _render_consistency_detail(paper_dir: Path | None) -> dict[str, Any] | None:
         "input_snapshot": report.get("input_snapshot"),
         "summary": summary,
         "materialization_provenance": report.get("materialization_provenance"),
+    }
+def _render_reconciliation_detail(paper_dir: Path | None) -> dict[str, Any] | None:
+    """Project the persisted reconciliation proposal report."""
+    if paper_dir is None:
+        return None
+    report_path = paper_dir / "render" / "reconciliation.proposals.json"
+    relative_path = "render/reconciliation.proposals.json"
+    if not report_path.is_file():
+        return {
+            "state": "NOT_RUN",
+            "report_path": relative_path,
+            "summary": {
+                "exact_repairs": 0,
+                "proposals": 0,
+                "blocked": 0,
+            },
+        }
+    try:
+        report = json.loads(report_path.read_text(encoding="utf-8"))
+    except (OSError, TypeError, ValueError):
+        return {
+            "state": "UNKNOWN",
+            "report_path": relative_path,
+            "reason": "reconciliation_report_unreadable",
+        }
+    summary = report.get("summary")
+    summary = summary if isinstance(summary, dict) else {}
+    if summary.get("exact_repairs", 0):
+        state = "READY"
+    elif summary.get("proposals", 0):
+        state = "PROPOSAL_ONLY"
+    elif summary.get("blocked", 0):
+        state = "BLOCKED"
+    else:
+        state = "CLEAN"
+    return {
+        "state": state,
+        "report_path": relative_path,
+        "schema_version": report.get("schema_version"),
+        "algorithm_version": report.get("algorithm_version"),
+        "input_snapshot": report.get("input_snapshot"),
+        "summary": summary,
     }
 
 

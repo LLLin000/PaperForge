@@ -97,3 +97,35 @@ Data is present but not usable (NaN/Inf embedding, wrong dimension).
 **embed.resume**: incrementally embed missing/stale per-paper vectors.
 **embed.build**: (re)build the vector substrate (global, shadow).
 **library.prune**: remove all carriers of a residual (Zotero-absent) paper.
+
+### Render reconciliation vocabulary
+
+**Canonical object**:
+An existing figure or table object in the canonical inventory. Reconciliation
+may reference it, but may not create or rewrite it.
+
+**Supported formal figure set**:
+Figure labels supported by caption text and optional PDF-media evidence. This
+is a high-evidence candidate set, not canonical truth.
+
+**Render repair**:
+A render-layer action that materializes an already-existing canonical object.
+It may write render images, render markdown, provenance, and consistency
+reports; it must not change OCR truth or inventory.
+
+**Inventory proposal**:
+A constrained caption/asset candidate for which no canonical object exists.
+It is report-only and never creates a figure or table object.
+
+**Reservation artifact**:
+A temporary cross-page or unresolved object placeholder. It is not a formal
+figure and must not be counted as one without independent evidence.
+
+**Blocked**:
+Evidence is contradictory, ambiguous, or missing. No render repair is
+authorized.
+
+**Visual correctness**:
+Whether the pixels semantically show the captioned object. Structural
+reconciliation can test assignment and provenance, but does not prove visual
+meaning without PDF or human visual verification.

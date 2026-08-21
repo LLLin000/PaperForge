@@ -183,6 +183,33 @@ Each issue also reports:
 
 `audit_algorithm_version` and `render_consistency_schema_version` are separate. The input snapshot records source and render changes, not only renderer version.
 The existing object materializer may write `render/materialization.provenance.json` as an additive result sidecar. It records object status, stage, reason, PDF-input availability, asset/render paths, and crop attempts. The audit reads this sidecar when present and attaches the matching record to issue evidence; it never recomputes or replaces the materializer's result.
+The shared `write_render_outputs` boundary invokes the existing audit after `fulltext.md` and `render-map.json` are written, so initial OCR and derived rebuild paths publish the same report. Audit failure is diagnostic-only and does not fail rendering.
+## Reconciliation proposal report
+
+`render/reconciliation.proposals.json` is an on-demand, read-only projection of existing inventory, render consistency, materialization provenance, structured caption text, and optional PDF media evidence. It has exactly three result buckets:
+
+```json
+{
+  "summary": {
+    "exact_repairs": 0,
+    "proposals": 0,
+    "blocked": 0
+  },
+  "exact_repairs": [],
+  "proposals": [],
+  "blocked": []
+}
+```
+
+Rules:
+
+- `exact_repairs` may reference only an existing `canonical_object_id` and have `repair_scope=render_only`.
+- `proposals` may describe a missing canonical candidate but never create one or request `materialize_render`.
+- `blocked` records reservations, ambiguity, ownership conflicts, missing source, and other review targets.
+- Scores rank evidence only; hard constraints and canonical identity decide the bucket.
+- The report reuses the audit input snapshot and is projected by `probe lineage` under `details.render_reconciliation`.
+The consistency report also exposes position evidence from existing truth: legend page/block, object page, asset pages, page range, relation, and asset bboxes. PDF media remains optional evidence for on-demand reconciliation, not a second canonical source.
+Position relations expose both booleans and ordering: `same_page`, `cross_page`, and `ordering=legend_before_asset|asset_before_legend|same_page|unknown|no_asset`. The legacy `relation` value remains as a compact compatibility label.
 
 ## Authority boundary
 
@@ -190,7 +217,7 @@ Future `paperforge render reconcile` may update only:
 
 - render-layer markdown artifacts;
 - render-layer image materialization through the existing renderer;
-- `render/render.consistency.json`.
+- `render/render.consistency.json`;
 - `render/materialization.provenance.json`.
 
 It must not mutate:

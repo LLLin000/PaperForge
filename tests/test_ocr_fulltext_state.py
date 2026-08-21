@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import datetime as dt
 from pathlib import Path
 
@@ -79,4 +80,6 @@ def test_write_render_outputs_updates_render_artifact_and_meta(tmp_path: Path) -
     assert (render_root / "fulltext.md").read_text(encoding="utf-8") == "new\n"
     assert user_fulltext.read_text(encoding="utf-8") == "new\n"
     assert updated["machine_fulltext_hash"] == compute_disk_fulltext_hash(user_fulltext)
+    report = json.loads((render_root / "render.consistency.json").read_text(encoding="utf-8"))
+    assert report["audit_algorithm_version"] == 2
     assert updated["last_backup_path"].startswith("backups/fulltext.pre-rebuild.")
