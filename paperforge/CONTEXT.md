@@ -129,3 +129,61 @@ authorized.
 Whether the pixels semantically show the captioned object. Structural
 reconciliation can test assignment and provenance, but does not prove visual
 meaning without PDF or human visual verification.
+
+**Exact repair candidate**:
+A canonical object whose current render output is missing or inconsistent and
+whose canonical asset evidence is unique. It is a plan candidate, not proof
+that execution may start.
+
+**Repair-ready**:
+An exact repair candidate whose live preconditions still match and whose
+materialization input/result is observable. A candidate without fresh
+provenance remains `needs_fresh_provenance`.
+**Canonical-to-render gap**:
+An existing canonical object has a unique ordered asset reference, but its
+render image or markdown image link is absent or invalid. This is a render-only
+repair candidate; it does not mean the figure's visual semantics are proven.
+
+**Canonical-missing figure candidate**:
+Caption, source-image, or PDF-media evidence suggests a figure, but no
+canonical inventory object exists. This is an inventory proposal only: no
+canonical ID, ownership claim, or render artifact may be created.
+
+**Repair dry-run**:
+A read-only precondition check. It never writes images, markdown, inventory,
+or canonical metadata. It may verify against a live snapshot or a persisted
+audit snapshot; only the live mode can support an execution gate.
+
+**Bounded repair**:
+A repair accepted because it has clear user benefit, preserves canonical
+identity, and passes render-layer preconditions and postconditions. It does
+not claim perfect semantic or visual truth.
+
+**Structurally unique proposal**:
+Within a bounded slot, after kind, namespace, ownership, reservation,
+page-range, and existing-group filters, exactly one visual candidate remains.
+It is still an inventory proposal, never canonical truth.
+
+**Candidate enumeration**:
+The reconciliation record of raw candidates, rejected candidates with reasons,
+and surviving candidates. “Unique” is valid only after this enumeration.
+
+**Paper-level candidate exclusivity**:
+Within one paper, a surviving visual candidate may be claimed by at most one
+proposal. A group claimed by multiple proposals is a conflict: every claiming
+proposal becomes blocked until ownership evidence resolves the conflict.
+
+**Visual claim identity**:
+A proposal claims not only a group ID but the group's member block references.
+Two proposals conflict when they claim the same group or overlapping block
+references, even if their top-level candidate IDs differ.
+
+**Exact evidence**:
+Evidence that the existing canonical object and its ordered asset references
+are preserved exactly for a render-only operation. It does not mean that the
+source PDF's visual meaning has been proven with absolute certainty.
+
+**Repair policy**:
+Prefer a measurable, low-risk improvement over a perfect-but-unavailable
+decision. Apply only when a wrong repair is less likely and less damaging than
+leaving the known render defect; otherwise produce a proposal or block.
