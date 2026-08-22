@@ -383,7 +383,6 @@ def _audit_kind(
                     "render artifact has no canonical header label",
                     diagnosis="render_header_missing",
                     recommended_action="inspect_render",
-                    **artifact_evidence,
                 )
             )
         if (
@@ -469,7 +468,10 @@ def _snapshot(root: Path) -> dict[str, str | None]:
         "blocks_hash": _sha256_file(structure / "blocks.structured.jsonl"),
         "figure_inventory_hash": _sha256_file(structure / "figure_inventory.json"),
         "table_inventory_hash": _sha256_file(structure / "table_inventory.json"),
-        "render_hash": _sha256_tree(root / "render", exclude_names={"render.consistency.json"}),
+        "render_hash": _sha256_tree(
+            root / "render",
+            exclude_names={"render.consistency.json", "reconciliation.proposals.json"},
+        ),
         "asset_index_hash": _sha256_tree(root / "assets"),
     }
 

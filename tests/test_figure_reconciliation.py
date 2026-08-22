@@ -101,3 +101,25 @@ def test_reconciliation_keeps_existing_canonical_render_gap_exact(tmp_path: Path
 
     assert report["exact_repairs"][0]["canonical_object_id"] == "figure_001"
     assert report["exact_repairs"][0]["repair_scope"] == "render_only"
+
+
+def test_dry_run_exact_repair_only_reports_preconditions(tmp_path: Path) -> None:
+    from paperforge.figure_reconciliation import dry_run_exact_repairs, write_reconciliation_report
+
+    ocr_root = _write_fixture(tmp_path)
+    paper = ocr_root / "TESTREC1"
+    (paper / "render" / "figures" / "figure_001.md").write_text(
+        "# Figure 1\n\n## Legend\nFig. 1 Existing\n\n*Page 2*\n",
+        encoding="utf-8",
+    )
+    audit_paper(ocr_root, "TESTREC1", write_report=True)
+    write_reconciliation_report(ocr_root, "TESTREC1")
+
+    dry_run = dry_run_exact_repairs(ocr_root, "TESTREC1")
+
+    assert dry_run["mode"] == "dry_run"
+    assert dry_run["input_snapshot_match"] is True
+    assert dry_run["audit_snapshot_match"] is True
+    assert dry_run["summary"]["exact_repair_candidates"] == 1
+    assert dry_run["summary"]["needs_fresh_provenance"] == 1
+    assert dry_run["summary"]["ready"] == 0
