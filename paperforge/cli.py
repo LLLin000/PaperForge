@@ -345,6 +345,11 @@ def build_parser() -> argparse.ArgumentParser:
     p_render_audit = p_render_sp.add_parser("audit", help="Run read-only render consistency audit")
     p_render_audit.add_argument("keys", nargs="*", metavar="KEY", help="Paper keys (default: all OCR papers)")
     p_render_audit.add_argument("--json", action="store_true", help="Output JSON")
+    p_render_reconcile = p_render_sp.add_parser("reconcile", help="Stage R/P reconciliation in isolated tmp (production write gated)")
+    p_render_reconcile.add_argument("keys", nargs="*", metavar="KEY", help="Paper keys (default: all OCR papers)")
+    p_render_reconcile.add_argument("--json", action="store_true", help="Output JSON")
+    p_render_reconcile.add_argument("--include-pdf-media", action="store_true", help="Include PDF media validation")
+    p_render_reconcile.add_argument("--apply-r", action="store_true", help="Apply verified R repairs to production (gated; currently staging-only)")
 
 
     # prune
