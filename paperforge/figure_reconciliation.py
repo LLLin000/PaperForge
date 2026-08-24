@@ -888,27 +888,35 @@ def stage_reconciliation(
     staged_p = 0
     p_details: list[dict[str, Any]] = []
     for res in dry_bounded.get("results", []):
-        # Two-stage P: if blocked with many same-page candidates, try composite group
+        # Two-stage P: blocked with many same-page candidates → chain-gated group
         decision = res.get("decision")
         surviving = res.get("surviving_candidates") or []
-        # Stage 2: legend-neighborhood group for composite figures (Fig.5/7)
         if decision == "blocked" and len(surviving) > 1:
             pages = {c.get("page") for c in surviving}
-            # Only group if all surviving on single page within slot (e.g., p9 for Fig.5, p12 for Fig.7)
             if len(pages) == 1:
-                # Union bbox of all surviving
-                xs, ys = [], []
-                for c in surviving:
-                    bb = c.get("bbox") or []
-                    if len(bb) >= 4:
-                        xs.extend([bb[0], bb[2]])
-                        ys.extend([bb[1], bb[3]])
-                if xs and ys:
-                    union_bbox = [min(xs), min(ys), max(xs), max(ys)]
-                    # Use the single-page group as the narrowed candidate
-                    surviving = [{"page": next(iter(pages)), "bbox": union_bbox, "group_id": f"grouped_{res.get('label')}"}]  # noqa: E501
-                    decision = "structurally_unique_proposal"
-                    res["narrowed_by"] = "composite_group_union"
+                # Legend chain gate: caption + figure page form cross-page neighborhood
+                label = str(res.get("label") or "")
+                # Find caption for this label
+                cap = next((b for b in blocks if b.get("role") == "figure_caption" and f"Fig. {label}" in str(b.get("text",""))), None)  # noqa: E501
+                fig_page = next(iter(pages))
+                cap_page = cap.get("page") if cap else None
+                # Chain exists if caption and figure are on consecutive pages (p9→p10, p12→p13) and figure page has multiple media_assets
+                has_chain = cap_page is not None and abs(int(cap_page) - int(fig_page)) <= 1
+                if has_chain:
+                    # Verify figure page has composite media (like 8PL's 10/7)
+                    media_cnt = sum(1 for b in blocks if b.get("page") == fig_page and b.get("role") == "media_asset")
+                    if media_cnt > 1 and len(surviving) == media_cnt:
+                        xs, ys = [], []
+                        for c in surviving:
+                            bb = c.get("bbox") or []
+                            if len(bb) >= 4:
+                                xs.extend([bb[0], bb[2]])
+                                ys.extend([bb[1], bb[3]])
+                        if xs and ys:
+                            union_bbox = [min(xs), min(ys), max(xs), max(ys)]
+                            surviving = [{"page": fig_page, "bbox": union_bbox, "group_id": f"grouped_{label}"}]  # noqa: E501
+                            decision = "structurally_unique_proposal"
+                            res["narrowed_by"] = "composite_group_via_legend_chain"
         if decision not in {"structurally_unique_proposal", "unique_without_pdf_confirmation"}:
             continue
         # Use the (possibly grouped) surviving
