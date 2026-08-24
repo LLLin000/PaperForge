@@ -287,8 +287,15 @@ def build_reconciliation_report(
                 "decision": "exact_repair",
                 "repair_scope": "render_only",
                 "action": "materialize_render",
-                "evidence_mode": "exact",
                 "source": {
+                    "ordered_asset_refs": [
+                        {
+                            "page": asset.get("page"),
+                            "block_id": str(asset.get("block_id")),
+                            "bbox": asset.get("bbox"),
+                        }
+                        for asset in assets
+                    ],
                     "asset_block_ids": [str(asset.get("block_id")) for asset in assets],
                     "asset_pages": sorted({asset.get("page") for asset in assets if asset.get("page") is not None}),
                     "settlement_type": row.get("settlement_type"),
@@ -466,21 +473,23 @@ def dry_run_exact_repairs(
         if row is None:
             blockers.append("canonical_object_missing")
         else:
-            current_asset_ids = {
-                str(asset_id)
-                for asset_id in (row.get("asset_block_ids") or [])
-            }
-            if not current_asset_ids:
-                current_asset_ids = {
-                    str(asset.get("block_id"))
-                    for asset in (row.get("matched_assets") or [])
-                    if asset.get("block_id") is not None
-                }
-            planned_asset_ids = {
-                str(asset_id)
-                for asset_id in (plan.get("source") or {}).get("asset_block_ids") or []
-            }
-            if current_asset_ids != planned_asset_ids:
+            # Compare ordered (page, block_id) refs, not collapsed block_id set
+            current_ordered = [
+                (_page_number(asset.get("page")), str(asset.get("block_id")))
+                for asset in (row.get("matched_assets") or [])
+                if asset.get("block_id") is not None
+            ]
+            planned_source = plan.get("source") or {}
+            planned_ordered = [
+                (_page_number(ref.get("page")), str(ref.get("block_id")))
+                for ref in (planned_source.get("ordered_asset_refs") or [])
+                if ref.get("block_id") is not None
+            ]
+            # Fallback for legacy plans without ordered_asset_refs
+            if not planned_ordered and planned_source.get("asset_block_ids"):
+                planned_ordered = [(None, str(bid)) for bid in planned_source.get("asset_block_ids")]
+                current_ordered = [(None, bid) for _, bid in current_ordered]
+            if current_ordered != planned_ordered:
                 blockers.append("matched_assets_changed")
             asset_keys = [
                 (_page_number(asset.get("page")), str(asset.get("block_id")))
@@ -504,8 +513,11 @@ def dry_run_exact_repairs(
             record = provenance_by_render_path.get(artifact_path)
             if record is None:
                 current_state = "needs_fresh_provenance"
-            elif record.get("status") == "failed":
+            elif record.get("status") == "success":
                 current_state = "ready"
+            elif record.get("status") == "failed":
+                blockers.append("materialization_failed")
+                current_state = "blocked"
             else:
                 blockers.append("provenance_inconsistent")
                 current_state = "blocked"
@@ -767,4 +779,161 @@ def dry_run_bounded_slot_proposals(
             "blocked": sum(result["decision"] == "blocked" for result in results),
         },
         "results": results,
+    }
+
+def stage_reconciliation(
+    ocr_root: Path,
+    paper_key: str,
+    *,
+    include_pdf_media: bool = False,
+    staging_root: Path | None = None,
+) -> dict[str, Any]:
+    """Stage R/P reconciliation in an isolated tmp root; never writes production.
+
+    Returns a manifest with R prepared count, P preview count, and staging paths.
+    Default production_write is False.  --apply-r is not honored here; promoter
+    is deliberately absent in this staging-only build.
+    """
+    import tempfile
+    import time
+
+    from paperforge.worker.ocr_objects import extract_and_write_objects
+
+    root = ocr_root / paper_key
+    # Fresh audit + reconciliation are caller-owned; we just stage what exists
+    report = build_reconciliation_report(ocr_root, paper_key, include_pdf_media=include_pdf_media)
+    dry_exact = dry_run_exact_repairs(ocr_root, paper_key, report, verify_live_snapshot=True)
+    dry_bounded = dry_run_bounded_slot_proposals(ocr_root, paper_key, include_pdf_media=include_pdf_media)
+
+    # Resolve PDF and blocks for staging
+    try:
+        meta = json.loads((root / "meta.json").read_text(encoding="utf-8"))
+        src_pdf = str(meta.get("source_pdf") or "")
+    except (OSError, TypeError, ValueError):
+        src_pdf = ""
+    vault = ocr_root.parent.parent.parent  # vault is 3 up from ocr
+    # Fallback vault via ocr_root.parents[2]
+    # Use the same resolver that handles Zotero
+    from pathlib import Path as _P
+    zot_candidates = [_P("D:/L/Med/Research/99_System/Zotero"), _P.home() / "Zotero"]
+    zot = next((p for p in zot_candidates if p.is_dir()), _P.home())
+    pdf_path = None
+    try:
+        from paperforge.pdf_resolver import resolve_pdf_path as _resolve
+        pdf_resolved = _resolve(src_pdf, True, vault, zot) if src_pdf else None
+        pdf_path = _P(pdf_resolved) if pdf_resolved and _P(pdf_resolved).is_file() else None
+    except Exception:
+        pdf_path = None
+    try:
+        text = (root / "structure" / "blocks.structured.jsonl").read_text(
+            encoding="utf-8", errors="replace"
+        )
+        blocks = [json.loads(line) for line in text.splitlines() if line.strip()]
+    except (OSError, TypeError, ValueError):
+        blocks = []
+    dims = {
+        int(b.get("page", 0)): (int(b.get("page_width", 0)), int(b.get("page_height", 0)))
+        for b in blocks
+        if b.get("page") and b.get("page_width") and b.get("page_height")
+    }
+    try:
+        fig_inventory = json.loads((root / "structure" / "figure_inventory.json").read_text(encoding="utf-8"))
+        tab_inventory = json.loads((root / "structure" / "table_inventory.json").read_text(encoding="utf-8"))
+    except (OSError, TypeError, ValueError):
+        fig_inventory, tab_inventory = {}, {}
+    run_id = f"{int(time.time())}_{paper_key}"
+    if staging_root is None:
+        staging_root = Path(tempfile.gettempdir()) / "paperforge-staging" / run_id
+    staging_root = Path(staging_root) / paper_key
+    staging_root.mkdir(parents=True, exist_ok=True)
+    asset_staging = staging_root / "assets"
+    render_staging = staging_root / "render"
+
+    # Stage R: materialize all exact repairs in tmp (single call, then verify each)
+    staged_r = 0
+    r_details: list[dict[str, Any]] = []
+    if dry_exact.get("results"):
+        try:
+            extract_and_write_objects(pdf_path, fig_inventory, tab_inventory, asset_staging, render_staging, page_dimensions_by_page=dims, structured_blocks=blocks, use_disk_page_cache=False)  # noqa: E501
+            # Verify each R object that was staged
+            for res in dry_exact["results"]:
+                if res.get("state") in {"ready", "needs_fresh_provenance"}:
+                    obj_id = res.get("object_id")
+                    img = asset_staging / "figures" / f"{obj_id}.jpg"
+                    md = render_staging / "figures" / f"{obj_id}.md"
+                    ok = img.is_file() and img.stat().st_size > 0 and md.is_file()
+                    if ok:
+                        try:
+                            from PIL import Image
+                            with Image.open(img) as im:
+                                ok = im.width > 0 and im.height > 0
+                        except Exception:
+                            ok = False
+                    r_details.append({"object_id": obj_id, "staged": ok, "image": str(img), "markdown": str(md)})
+                    if ok:
+                        staged_r += 1
+        except Exception as exc:
+            r_details.append({"error": type(exc).__name__, "message": str(exc)[:300]})
+
+    # Stage P: each structurally unique proposal as preview (PDF clip)
+    staged_p = 0
+    p_details: list[dict[str, Any]] = []
+    for res in dry_bounded.get("results", []):
+        if res.get("decision") not in {"structurally_unique_proposal", "unique_without_pdf_confirmation"}:
+            continue
+        surviving = (res.get("surviving_candidates") or [{}])[0]
+        page = surviving.get("page")
+        bbox = surviving.get("bbox")
+        if page is None or not bbox or len(bbox) < 4:
+            continue
+        # For P, we clip from PDF via fitz if available, else try to copy source image
+        preview_dir = staging_root / "previews"
+        preview_dir.mkdir(parents=True, exist_ok=True)
+        preview_path = preview_dir / f"figure_{res.get('label')}.proposed.jpg"
+        preview_md = preview_dir / f"figure_{res.get('label')}.proposed.md"
+        ok = False
+        try:
+            import fitz
+            if pdf_path and pdf_path.is_file():
+                doc = fitz.open(str(pdf_path))
+                try:
+                    # bbox from proposal is in block coords (0-1200); map via page dims if needed
+                    # For now, try to find pdf_media bbox if available, else use block bbox scaled
+                    pix = None
+                    # Prefer pdf_media bbox for this page if available
+                    pdf_pages = [p for p in (res.get("pdf_media") or {}).get("pages", []) if p.get("page") == page]
+                    if pdf_pages and pdf_pages[0].get("bbox"):
+                        rect = fitz.Rect(*pdf_pages[0]["bbox"])
+                        pix = doc[int(page) - 1].get_pixmap(dpi=150, clip=rect)
+                    else:
+                        # Fallback: use block bbox directly as PDF points (approx)
+                        rect = fitz.Rect(*bbox)
+                        pix = doc[int(page) - 1].get_pixmap(dpi=150, clip=rect)
+                    if pix:
+                        pix.save(str(preview_path))
+                        ok = preview_path.is_file() and preview_path.stat().st_size > 0
+                finally:
+                    doc.close()
+        except Exception:
+            ok = False
+        # Write preview markdown
+        if ok:
+            preview_md.write_text(f"# Figure {res.get('label')} (proposed)\n\n![](figure_{res.get('label')}.proposed.jpg)\n\n*Page {page}*\n\n---\n", encoding="utf-8")  # noqa: E501
+            staged_p += 1
+        p_details.append({"label": res.get("label"), "page": page, "staged": ok, "preview": str(preview_path)})
+
+    return {
+        "paper_key": paper_key,
+        "staging_root": str(staging_root),
+        "production_write": False,
+        "summary": {
+            "exact_total": len(dry_exact.get("results", [])),
+            "r_prepared_staged": staged_r,
+            "proposals_total": len(dry_bounded.get("results", [])),
+            "p_preview_staged": staged_p,
+        },
+        "r_details": r_details,
+        "p_details": p_details,
+        "dry_exact": dry_exact,
+        "dry_bounded": dry_bounded,
     }
