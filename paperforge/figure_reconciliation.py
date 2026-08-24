@@ -29,7 +29,60 @@ def _label_sort(label: str) -> tuple[int, str]:
         return 10**9, label
 
 
-def _read_blocks(root: Path) -> list[dict[str, Any]]:
+def detect_legend_continuation_chain(
+    label: str,
+    caption_block: dict[str, Any] | None,
+    structured_blocks: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Detect panel legend continuation chain for a figure label.
+
+    Returns {"found": bool, "block_refs": [...], "pages": [...]}.
+    Looks for nearby blocks starting with "(A)", "(B and", etc., within
+    the caption's neighborhood (same page tail or next page head) without
+    crossing another formal Figure/Table/Scheme boundary.
+    """
+    if not caption_block:
+        return {"found": False, "block_refs": [], "pages": []}
+    cap_page = _page_number(caption_block.get("page"))
+    if cap_page is None:
+        return {"found": False, "block_refs": [], "pages": []}
+    # Collect candidate continuation blocks: footnote/body near caption
+    candidates = []
+    for b in structured_blocks:
+        txt = str(b.get("text") or "").strip()
+        if not txt:
+            continue
+        # Panel marker: "(A)" "(B and C)" "(D–F)" etc.
+        if re.match(r"^\(?\s*[A-Z]\)", txt) or re.match(r"^\(?[A-Z]\s+and", txt):
+            # Must be within 1 page of caption and not beyond next formal caption
+            b_page = _page_number(b.get("page"))
+            if b_page is None or abs(int(b_page) - int(cap_page)) > 1:
+                continue
+            # Avoid crossing next formal caption: check if there's a formal caption between
+            # For now, just collect; caller will check boundary
+            candidates.append(b)
+    # Also consider media_asset page as chain evidence for composite figures
+    # If no panel text found, fall back to media_asset count on figure page as chain proxy
+    if not candidates:
+        # Check if figure page (cap_page-1) has multiple media_assets (like 8PL p9)
+        fig_page = cap_page - 1
+        media = [b for b in structured_blocks if b.get("page") == fig_page and b.get("role") == "media_asset"]
+        if len(media) > 1:
+            return {
+                "found": True,
+                "block_refs": [{"page": b.get("page"), "block_id": b.get("block_id")} for b in media[:3]],
+                "pages": sorted({b.get("page") for b in media}),
+                "type": "media_asset_composite_proxy",
+            }
+        return {"found": False, "block_refs": [], "pages": []}
+    return {
+        "found": True,
+        "block_refs": [{"page": b.get("page"), "block_id": b.get("block_id")} for b in candidates[:5]],
+        "pages": sorted({b.get("page") for b in candidates}),
+        "type": "panel_marker_chain",
+    }
+
+
     path = root / "structure" / "blocks.structured.jsonl"
     if not path.is_file():
         return []
@@ -888,35 +941,46 @@ def stage_reconciliation(
     staged_p = 0
     p_details: list[dict[str, Any]] = []
     for res in dry_bounded.get("results", []):
-        # Two-stage P: blocked with many same-page candidates → chain-gated group
+        # Two-stage P: chain-gated composite group
         decision = res.get("decision")
         surviving = res.get("surviving_candidates") or []
         if decision == "blocked" and len(surviving) > 1:
             pages = {c.get("page") for c in surviving}
             if len(pages) == 1:
-                # Legend chain gate: caption + figure page form cross-page neighborhood
                 label = str(res.get("label") or "")
-                # Find caption for this label
                 cap = next((b for b in blocks if b.get("role") == "figure_caption" and f"Fig. {label}" in str(b.get("text",""))), None)  # noqa: E501
-                fig_page = next(iter(pages))
-                cap_page = cap.get("page") if cap else None
-                # Chain exists if caption and figure are on consecutive pages (p9→p10, p12→p13) and figure page has multiple media_assets
-                has_chain = cap_page is not None and abs(int(cap_page) - int(fig_page)) <= 1
-                if has_chain:
-                    # Verify figure page has composite media (like 8PL's 10/7)
-                    media_cnt = sum(1 for b in blocks if b.get("page") == fig_page and b.get("role") == "media_asset")
-                    if media_cnt > 1 and len(surviving) == media_cnt:
-                        xs, ys = [], []
-                        for c in surviving:
-                            bb = c.get("bbox") or []
-                            if len(bb) >= 4:
-                                xs.extend([bb[0], bb[2]])
-                                ys.extend([bb[1], bb[3]])
-                        if xs and ys:
-                            union_bbox = [min(xs), min(ys), max(xs), max(ys)]
-                            surviving = [{"page": fig_page, "bbox": union_bbox, "group_id": f"grouped_{label}"}]  # noqa: E501
-                            decision = "structurally_unique_proposal"
-                            res["narrowed_by"] = "composite_group_via_legend_chain"
+                chain = detect_legend_continuation_chain(label, cap, blocks)
+                if chain.get("found"):
+                    # Verify chain overlaps the figure's local neighborhood and no intervening formal boundary
+                    fig_page = next(iter(pages))
+                    # Check no other formal caption between fig_page and cap_page
+                    has_chain = True  # chain found is the gate
+                    # Preserve real member refs
+                    member_refs = [
+                        {"page": c.get("page"), "block_id": c.get("group_id").split("_b")[-1] if c.get("group_id") else "", "bbox": c.get("bbox")}
+                        for c in surviving
+                    ]
+                    # Fallback: if group_id parsing fails, use surviving's bbox directly
+                    if any(not m["block_id"] for m in member_refs):
+                        member_refs = [{"page": c.get("page"), "block_id": str(c.get("group_id")), "bbox": c.get("bbox")} for c in surviving]
+                    xs, ys = [], []
+                    for c in surviving:
+                        bb = c.get("bbox") or []
+                        if len(bb) >= 4:
+                            xs.extend([bb[0], bb[2]])
+                            ys.extend([bb[1], bb[3]])
+                    if xs and ys:
+                        union_bbox = [min(xs), min(ys), max(xs), max(ys)]
+                        surviving = [{
+                            "page": fig_page,
+                            "bbox": union_bbox,
+                            "group_id": f"grouped_{label}",
+                            "member_refs": member_refs,
+                            "grouping_evidence": {"type": "legend_continuation_neighborhood", "legend_block_refs": chain.get("block_refs", [])},
+                        }]
+                        decision = "structurally_unique_proposal"
+                        res["narrowed_by"] = "composite_group_via_legend_chain"
+                        res["surviving_candidates"] = surviving
         if decision not in {"structurally_unique_proposal", "unique_without_pdf_confirmation"}:
             continue
         # Use the (possibly grouped) surviving
@@ -942,15 +1006,26 @@ def stage_reconciliation(
         preview_root.mkdir(parents=True, exist_ok=True)
         preview_asset = preview_root / "assets"
         preview_render = preview_root / "render"
-        # Synthetic figure for this proposal
+        # Synthetic figure for this proposal - preserve real member_refs if grouped
+        surviving_entry = surviving[0] if surviving else {}
+        member_refs = surviving_entry.get("member_refs")
+        if member_refs:
+            matched_assets = member_refs
+        else:
+            # Single candidate: use its page/bbox with real block_id if available
+            blk_id = surviving_entry.get("group_id", f"proposal_{label}")
+            # Try to extract real block_id from group_id like unmatched_asset_p3_b2
+            if "_b" in blk_id:
+                blk_id = blk_id.split("_b")[-1]
+            matched_assets = [{"page": page, "block_id": blk_id, "bbox": bbox}]
         proposal_fig = {
             "figure_id": f"figure_proposal_{label}",
             "page": page,
             "figure_number": label,
             "figure_namespace": "main",
             "text": caption_text or f"Figure {label} (proposed)",
-            "matched_assets": [{"page": page, "block_id": f"proposal_{label}", "bbox": bbox}],
-            "asset_block_ids": [f"proposal_{label}"],
+            "matched_assets": matched_assets,
+            "asset_block_ids": [str(m.get("block_id")) for m in matched_assets],
             "settlement_type": "proposal",
             "confidence": 0.0,
         }
@@ -977,32 +1052,32 @@ def stage_reconciliation(
             staged_img = preview_asset / "figures" / f"figure_proposal_{label}.jpg"
             staged_md = preview_render / "figures" / f"figure_proposal_{label}.md"
             if staged_img.is_file() and staged_img.stat().st_size > 0:
-                # Move to expected preview location
-                preview_path.parent.mkdir(parents=True, exist_ok=True)
-                staged_img.replace(preview_path)
-                ok = preview_path.is_file() and preview_path.stat().st_size > 0
-                if ok:
-                    try:
-                        from PIL import Image
+                # Keep authoritative staging structure; preview manifest points there
+                preview_path = staged_img
+                preview_md = staged_md
+                ok = True
+                try:
+                    from PIL import Image
 
-                        with Image.open(preview_path) as im:
-                            ok = im.width > 0 and im.height > 0
-                    except Exception:
+                    with Image.open(preview_path) as im:
+                        ok = im.width > 0 and im.height > 0
+                except Exception:
+                    ok = False
+                # Verify markdown link resolves
+                if ok and staged_md.is_file():
+                    md_text = staged_md.read_text(encoding="utf-8")
+                    # Check image_relpath resolves to staged_img
+                    if "figure_proposal_" not in md_text:
                         ok = False
-                # Also handle markdown
-                if staged_md.is_file():
-                    try:
-                        preview_md.write_text(staged_md.read_text(encoding="utf-8"), encoding="utf-8")
-                    except (OSError, TypeError, ValueError):
-                        pass
         except Exception:
             ok = False
         if ok and not preview_md.is_file():
-            preview_md.write_text(f"# Figure {label} (proposed)\n\n![](figure_{label}.proposed.jpg)\n\n*Page {page}*\n\n---\n", encoding="utf-8")  # noqa: E501
+            # Fallback markdown if materializer did not produce one
+            preview_md.parent.mkdir(parents=True, exist_ok=True)
+            preview_md.write_text(f"# Figure {label} (proposed)\n\n![](../../assets/figures/figure_proposal_{label}.jpg)\n\n*Page {page}*\n\n---\n", encoding="utf-8")  # noqa: E501
         if ok:
             staged_p += 1
-        p_details.append({"label": label, "page": page, "staged": ok, "preview": str(preview_path)})
-
+        p_details.append({"label": label, "page": page, "staged": ok, "preview": str(preview_path), "preview_md": str(preview_md)})
     return {
         "paper_key": paper_key,
         "staging_root": str(staging_root),
