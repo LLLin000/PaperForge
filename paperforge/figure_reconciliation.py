@@ -888,14 +888,34 @@ def stage_reconciliation(
     staged_p = 0
     p_details: list[dict[str, Any]] = []
     for res in dry_bounded.get("results", []):
-        if res.get("decision") not in {"structurally_unique_proposal", "unique_without_pdf_confirmation"}:
+        # Two-stage P: if blocked with many same-page candidates, try composite group
+        decision = res.get("decision")
+        surviving = res.get("surviving_candidates") or []
+        # Stage 2: legend-neighborhood group for composite figures (Fig.5/7)
+        if decision == "blocked" and len(surviving) > 1:
+            pages = {c.get("page") for c in surviving}
+            # Only group if all surviving on single page within slot (e.g., p9 for Fig.5, p12 for Fig.7)
+            if len(pages) == 1:
+                # Union bbox of all surviving
+                xs, ys = [], []
+                for c in surviving:
+                    bb = c.get("bbox") or []
+                    if len(bb) >= 4:
+                        xs.extend([bb[0], bb[2]])
+                        ys.extend([bb[1], bb[3]])
+                if xs and ys:
+                    union_bbox = [min(xs), min(ys), max(xs), max(ys)]
+                    # Use the single-page group as the narrowed candidate
+                    surviving = [{"page": next(iter(pages)), "bbox": union_bbox, "group_id": f"grouped_{res.get('label')}"}]  # noqa: E501
+                    decision = "structurally_unique_proposal"
+                    res["narrowed_by"] = "composite_group_union"
+        if decision not in {"structurally_unique_proposal", "unique_without_pdf_confirmation"}:
             continue
-        surviving = (res.get("surviving_candidates") or [{}])[0]
-        page = surviving.get("page")
-        bbox = surviving.get("bbox")
+        # Use the (possibly grouped) surviving
+        page = surviving[0].get("page") if surviving else None
+        bbox = surviving[0].get("bbox") if surviving else None
         if page is None or not bbox or len(bbox) < 4:
             continue
-        # Build disposable proposal inventory for this single label
         label = str(res.get("label") or "")
         # Caption text from proposal evidence_chain
         caption_text = ""
