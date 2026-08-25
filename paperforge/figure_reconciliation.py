@@ -83,6 +83,7 @@ def detect_legend_continuation_chain(
     }
 
 
+def _read_blocks(root: Path) -> list[dict[str, Any]]:
     path = root / "structure" / "blocks.structured.jsonl"
     if not path.is_file():
         return []
@@ -979,6 +980,7 @@ def stage_reconciliation(
                             "grouping_evidence": {"type": "legend_continuation_neighborhood", "legend_block_refs": chain.get("block_refs", [])},
                         }]
                         decision = "structurally_unique_proposal"
+                        res["decision"] = decision  # sync authority field
                         res["narrowed_by"] = "composite_group_via_legend_chain"
                         res["surviving_candidates"] = surviving
         if decision not in {"structurally_unique_proposal", "unique_without_pdf_confirmation"}:
@@ -1002,6 +1004,19 @@ def stage_reconciliation(
                         break
             if caption_text:
                 break
+        # Same-page two-column legend: merge left+right caption blocks if detected
+        # Check if this label has a multicolumn pair on its caption page
+        try:
+            from paperforge.worker.ocr_figures import _collect_same_page_multicolumn_legend_pairs
+            # Need blocks and page_width; use 1200 as default
+            pairs = _collect_same_page_multicolumn_legend_pairs(blocks, page_width=1200)
+            for prim, cont in pairs:
+                if f"Fig. {label}" in str(prim.get("text") or "") or f"Figure {label}" in str(prim.get("text") or ""):
+                    # Merge
+                    caption_text = str(prim.get("text") or "").rstrip() + " " + str(cont.get("text") or "").strip()
+                    break
+        except Exception:
+            pass
         preview_root = staging_root / "previews" / f"figure_{label}"
         preview_root.mkdir(parents=True, exist_ok=True)
         preview_asset = preview_root / "assets"
@@ -1078,6 +1093,17 @@ def stage_reconciliation(
         if ok:
             staged_p += 1
         p_details.append({"label": label, "page": page, "staged": ok, "preview": str(preview_path), "preview_md": str(preview_md)})
+    # Fresh fulltext reconciliation on the SAME in-memory report
+    try:
+        from paperforge.fulltext_reconciliation import fulltext_reconcile
+
+        ft_result = fulltext_reconcile(
+            ocr_root,
+            paper_key,
+            reconciliation_report=report,
+        )
+    except Exception as exc:  # noqa: BLE001 — fulltext is fail-soft observer
+        ft_result = {"error": type(exc).__name__, "message": str(exc)[:200]}
     return {
         "paper_key": paper_key,
         "staging_root": str(staging_root),
@@ -1092,4 +1118,5 @@ def stage_reconciliation(
         "p_details": p_details,
         "dry_exact": dry_exact,
         "dry_bounded": dry_bounded,
+        "fulltext": ft_result,
     }
