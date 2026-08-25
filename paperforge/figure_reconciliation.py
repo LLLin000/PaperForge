@@ -46,6 +46,12 @@ def _snapshot_hash(root: Path) -> str:
             parts.append("missing")
     return hashlib.sha256("|".join(parts).encode()).hexdigest()[:16]
 
+def _extract_label(block: dict[str, Any]) -> str | None:
+    """Extract formal figure label from a caption block's text, if any."""
+    m = _FORMAL_LABEL_RE.match(str(block.get("text") or "").strip())
+    return m.group(1) if m else None
+
+
 def detect_legend_continuation_chain(
     label: str,
     caption_block: dict[str, Any] | None,
@@ -70,28 +76,30 @@ def detect_legend_continuation_chain(
         if not txt:
             continue
         # Panel marker: "(A)" "(B and C)" "(D–F)" etc.
-        if re.match(r"^\(?\s*[A-Z]\)", txt) or re.match(r"^\(?[A-Z]\s+and", txt):
-            # Must be within 1 page of caption and not beyond next formal caption
-            b_page = _page_number(b.get("page"))
-            if b_page is None or abs(int(b_page) - int(cap_page)) > 1:
-                continue
-            # Avoid crossing next formal caption: check if there's a formal caption between
-            # For now, just collect; caller will check boundary
-            candidates.append(b)
-    # Also consider media_asset page as chain evidence for composite figures
-    # If no panel text found, fall back to media_asset count on figure page as chain proxy
+        if not (re.match(r"^\(?\s*[A-Z]\)", txt) or re.match(r"^\(?[A-Z]\s+and", txt)):
+            continue
+        b_page = _page_number(b.get("page"))
+        if b_page is None or abs(int(b_page) - int(cap_page)) > 1:
+            continue
+        candidates.append(b)
     if not candidates:
-        # Check if figure page (cap_page-1) has multiple media_assets (like 8PL p9)
-        fig_page = cap_page - 1
-        media = [b for b in structured_blocks if b.get("page") == fig_page and b.get("role") == "media_asset"]
-        if len(media) > 1:
-            return {
-                "found": True,
-                "block_refs": [{"page": b.get("page"), "block_id": b.get("block_id")} for b in media[:3]],
-                "pages": sorted({b.get("page") for b in media}),
-                "type": "media_asset_composite_proxy",
-            }
+        # P-2 frozen rule: no panel-marker chain → NOT a legend chain.
+        # media_asset count alone is NOT evidence (Scheme/QR/publisher graphics
+        # would false-positive). Return found=False.
         return {"found": False, "block_refs": [], "pages": []}
+    # Formal-caption boundary gate: no OTHER formal figure caption between
+    # the panel chain blocks and this caption's page.
+    other_formal = [
+        b for b in structured_blocks
+        if b.get("role") in ("figure_caption", "figure_caption_candidate")
+        and b is not caption_block
+        and _page_number(b.get("page")) is not None
+        and abs(int(_page_number(b.get("page"))) - int(cap_page)) <= 1
+        and _extract_label(b) not in (None, str(caption_block.get("label") or ""))
+    ]
+    if other_formal:
+        # A competing formal caption sits inside the would-be neighborhood
+        return {"found": False, "block_refs": [], "pages": [], "reason": "formal_caption_boundary"}
     return {
         "found": True,
         "block_refs": [{"page": b.get("page"), "block_id": b.get("block_id")} for b in candidates[:5]],
@@ -969,18 +977,26 @@ def stage_reconciliation(
                 cap = next((b for b in blocks if b.get("role") == "figure_caption" and f"Fig. {label}" in str(b.get("text",""))), None)  # noqa: E501
                 chain = detect_legend_continuation_chain(label, cap, blocks)
                 if chain.get("found"):
-                    # Verify chain overlaps the figure's local neighborhood and no intervening formal boundary
-                    fig_page = next(iter(pages))
-                    # Check no other formal caption between fig_page and cap_page
-                    has_chain = True  # chain found is the gate
-                    # Preserve real member refs
+                    # chain found + formal-caption boundary already gated inside
+                    # detect_legend_continuation_chain; preserve real member refs
                     member_refs = [
-                        {"page": c.get("page"), "block_id": c.get("group_id").split("_b")[-1] if c.get("group_id") else "", "bbox": c.get("bbox")}
+                        {
+                            "page": c.get("page"),
+                            "block_id": c.get("group_id").split("_b")[-1] if c.get("group_id") else "",
+                            "bbox": c.get("bbox"),
+                        }
                         for c in surviving
                     ]
                     # Fallback: if group_id parsing fails, use surviving's bbox directly
                     if any(not m["block_id"] for m in member_refs):
-                        member_refs = [{"page": c.get("page"), "block_id": str(c.get("group_id")), "bbox": c.get("bbox")} for c in surviving]
+                        member_refs = [
+                            {
+                                "page": c.get("page"),
+                                "block_id": str(c.get("group_id")),
+                                "bbox": c.get("bbox"),
+                            }
+                            for c in surviving
+                        ]
                     xs, ys = [], []
                     for c in surviving:
                         bb = c.get("bbox") or []
@@ -990,11 +1006,14 @@ def stage_reconciliation(
                     if xs and ys:
                         union_bbox = [min(xs), min(ys), max(xs), max(ys)]
                         surviving = [{
-                            "page": fig_page,
+                            "page": next(iter(pages)),
                             "bbox": union_bbox,
                             "group_id": f"grouped_{label}",
                             "member_refs": member_refs,
-                            "grouping_evidence": {"type": "legend_continuation_neighborhood", "legend_block_refs": chain.get("block_refs", [])},
+                            "grouping_evidence": {
+                                "type": "legend_continuation_neighborhood",
+                                "legend_block_refs": chain.get("block_refs", []),
+                            },
                         }]
                         decision = "structurally_unique_proposal"
                         res["decision"] = decision  # sync authority field
