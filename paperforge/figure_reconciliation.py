@@ -146,6 +146,13 @@ def _formal_text_census(root: Path) -> dict[str, list[dict[str, Any]]]:
 
 
 def _formal_canonical(rows: list[dict[str, Any]]) -> tuple[dict[str, dict[str, Any]], list[dict[str, Any]]]:
+    """Namespace-aware canonical map.
+
+    Key = (namespace, figure_number) rendered as "NS:N" so that figure_001
+    (main), figure_a001 (appendix), figure_s001 (supplementary) and
+    figure_ed004 (extended_data) are ALWAYS distinct objects.  Same-number
+    collisions never overwrite each other.
+    """
     formal: dict[str, dict[str, Any]] = {}
     reservations: list[dict[str, Any]] = []
     for row in rows:
@@ -158,20 +165,34 @@ def _formal_canonical(rows: list[dict[str, Any]]) -> tuple[dict[str, dict[str, A
         number = row.get("figure_number")
         if number is None:
             continue
-        label = str(number).upper()
+        namespace = str(row.get("figure_namespace") or "main").lower()
+        label = "{}:{}".format(namespace, str(number).upper())
+        if label in formal:
+            # Same (namespace, number) with a different figure_id → keep both
+            # distinct by figure_id suffix; never overwrite.
+            label = "{}:{}".format(label, object_id)
         formal[label] = row
     return formal, reservations
 
 
-def _formal_render_artifacts(artifacts: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+def _formal_render_artifacts(
+    artifacts: list[dict[str, Any]],
+    *,
+    namespace_by_file: dict[str, str] | None = None,
+) -> dict[str, dict[str, Any]]:
+    """Namespace-aware rendered map, keys aligned with _formal_canonical."""
     formal: dict[str, dict[str, Any]] = {}
+    ns_map = namespace_by_file or {}
     for artifact in artifacts:
         name = str(artifact.get("file") or "")
         if "reserved" in name.lower():
             continue
         label = artifact.get("header_label")
-        if label:
-            formal[str(label).upper()] = artifact
+        if not label:
+            continue
+        ns = ns_map.get(name, "main").lower()
+        key = "{}:{}".format(ns, str(label).upper())
+        formal[key] = artifact
     return formal
 
 
@@ -327,9 +348,16 @@ def build_reconciliation_report(
     artifacts = _render_artifacts(root / "render" / "figures", "figure")
     text_evidence = _formal_text_census(root)
     canonical, reservations = _formal_canonical(figure_rows)
-    rendered = _formal_render_artifacts(artifacts)
+    # namespace per render artifact file: derive from inventory figure_id → ns
+    ns_by_id = {
+        str(r.get("figure_id")): str(r.get("figure_namespace") or "main").lower()
+        for r in figure_rows
+    }
+    ns_by_file = {
+        "{}.md".format(fid): ns for fid, ns in ns_by_id.items()
+    }
+    rendered = _formal_render_artifacts(artifacts, namespace_by_file=ns_by_file)
     source_images = _source_images(root)
-
     missing_labels = sorted(set(text_evidence) - set(canonical), key=_label_sort)
     candidate_pages = {
         page
