@@ -38,15 +38,10 @@ def _canonical_figure_ids(inv: dict[str, Any]) -> list[str]:
     return sorted(ids)
 
 
-def _proposal_figure_ids(ocr_root: Path, paper_key: str) -> list[str]:
+def _proposal_figure_ids(recon: dict[str, Any]) -> list[str]:
     """P proposals from reconciliation manifest (NOT from inventory).
     P contract: P doesn't write canonical inventory.
     """
-    recon_path = ocr_root / paper_key / "render" / "reconciliation.proposals.json"
-    try:
-        recon = json.loads(recon_path.read_text(encoding="utf-8"))
-    except (OSError, ValueError, TypeError):
-        return []
     ids: list[str] = []
     for prop in recon.get("proposals", []):
         decision = prop.get("decision", "")
@@ -59,16 +54,10 @@ def _proposal_figure_ids(ocr_root: Path, paper_key: str) -> list[str]:
     return ids
 
 
-def _proposal_label_map(ocr_root: Path, paper_key: str) -> dict[str, str]:
+def _proposal_label_map(recon: dict[str, Any]) -> dict[str, str]:
     """Map canonical-style names (figure_001) to proposal names if active P exists.
     E.g. figure_001 → figure_proposal_1 when label=1 has proposal_only decision.
-    This handles the case where user manually promoted a P proposal to canonical name.
     """
-    recon_path = ocr_root / paper_key / "render" / "reconciliation.proposals.json"
-    try:
-        recon = json.loads(recon_path.read_text(encoding="utf-8"))
-    except (OSError, ValueError, TypeError):
-        return {}
     mapping: dict[str, str] = {}
     for prop in recon.get("proposals", []):
         decision = prop.get("decision", "")
@@ -92,16 +81,19 @@ def _f2_canonical_mapping(
     canonical_ids: list[str],
     recon: dict[str, Any],
 ) -> str | None:
-    """F2: explicit canonical mapping from reconciliation evidence, NOT suffix.
-    Returns canonical figure_id if unique mapping found, else None.
+    """F2: explicit canonical mapping where reserved_target participates.
+
+    blocked[].block_id must be "blocked:reservation:<reserved_target>"
+    AND canonical_object_id must be a DIFFERENT canonical figure_id.
     """
+    expected_block = "blocked:reservation:{}".format(reserved_target)
     for b in recon.get("blocked", []):
+        if str(b.get("block_id") or "") != expected_block:
+            continue
         cid = str(b.get("canonical_object_id") or "")
-        if cid and cid in canonical_ids:
-            return cid
-    for repair in recon.get("exact_repairs", []):
-        cid = str(repair.get("canonical_object_id") or "")
-        if cid and cid in canonical_ids:
+        if not cid or cid == reserved_target:
+            continue
+        if cid in canonical_ids:
             return cid
     return None
 
@@ -155,6 +147,7 @@ def _file_hash(path: Path) -> str:
 def fulltext_reconcile(
     ocr_root: Path,
     paper_key: str,
+    reconciliation_report: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     root = ocr_root / paper_key
     inv_path = root / "structure" / "figure_inventory.json"
@@ -169,14 +162,18 @@ def fulltext_reconcile(
         fulltext = ft_path.read_text(encoding="utf-8")
     except (OSError, ValueError, TypeError):
         fulltext = ""
-    try:
-        recon = json.loads(recon_path.read_text(encoding="utf-8"))
-    except (OSError, ValueError, TypeError):
-        recon = {}
+    # Freshness: prefer in-memory report over disk-persisted
+    if reconciliation_report is not None:
+        recon = reconciliation_report
+    else:
+        try:
+            recon = json.loads(recon_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError, TypeError):
+            recon = {}
 
     canonical_ids = _canonical_figure_ids(inv)
-    proposal_ids = _proposal_figure_ids(ocr_root, paper_key)
-    proposal_label_map = _proposal_label_map(ocr_root, paper_key)
+    proposal_ids = _proposal_figure_ids(recon)
+    proposal_label_map = _proposal_label_map(recon)
     orphan_ids = _orphan_ids(render_fig_dir)
     embed_targets_raw = _fulltext_embeds(fulltext)
     targets_only = [t for t, _ in embed_targets_raw]
