@@ -785,10 +785,15 @@ def dry_run_bounded_slot_proposals(
     paper_key: str,
     *,
     include_pdf_media: bool = False,
+    reconciliation_report: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     root = ocr_root / paper_key
-    report_path = root / "render" / "reconciliation.proposals.json"
-    report = json.loads(report_path.read_text(encoding="utf-8"))
+    # Freshness: prefer in-memory report over disk-persisted (same as R/fulltext)
+    if reconciliation_report is not None:
+        report = reconciliation_report
+    else:
+        report_path = root / "render" / "reconciliation.proposals.json"
+        report = json.loads(report_path.read_text(encoding="utf-8"))
     results = [
         _bounded_slot_dry_run(
             ocr_root,
@@ -892,7 +897,10 @@ def stage_reconciliation(
         ocr_root, paper_key, audit_report=audit, include_pdf_media=include_pdf_media
     )
     dry_exact = dry_run_exact_repairs(ocr_root, paper_key, report, verify_live_snapshot=True)
-    dry_bounded = dry_run_bounded_slot_proposals(ocr_root, paper_key, include_pdf_media=include_pdf_media)
+    dry_bounded = dry_run_bounded_slot_proposals(
+        ocr_root, paper_key, include_pdf_media=include_pdf_media,
+        reconciliation_report=report,
+    )
     # Resolve PDF and blocks for staging
     try:
         meta = json.loads((root / "meta.json").read_text(encoding="utf-8"))
