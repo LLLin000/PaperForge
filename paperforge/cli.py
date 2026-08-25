@@ -350,6 +350,10 @@ def build_parser() -> argparse.ArgumentParser:
     p_render_reconcile.add_argument("--json", action="store_true", help="Output JSON")
     p_render_reconcile.add_argument("--include-pdf-media", action="store_true", help="Include PDF media validation")
     p_render_reconcile.add_argument("--apply-r", action="store_true", help="Apply verified R repairs to production (gated; currently staging-only)")
+    p_render_accept = p_render_sp.add_parser("accept-proposal", help="Promote a verified P proposal to canonical inventory (authority action)")
+    p_render_accept.add_argument("key", metavar="KEY", help="Paper key")
+    p_render_accept.add_argument("label", metavar="LABEL", help="Proposal label (e.g. 5)")
+    p_render_accept.add_argument("--json", action="store_true", help="Output JSON")
 
 
     # prune
