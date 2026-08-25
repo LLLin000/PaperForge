@@ -2,25 +2,29 @@
 
 `paperforge render accept-proposal <KEY> <label> [--json]`
 
-Authority action: promotes a verified P proposal (figure_proposal_N) into
-canonical figure_inventory as figure_00N with real matched_assets. This is
-the ONLY sanctioned path from P_REVIEWABLE to canonical — fulltext/reconcile
-never promote on their own.
+Authority action: promotes the EXACT staged final plan (what the user
+reviewed) into canonical figure_inventory. Invariants:
 
-After promotion:
-- figure_inventory.matched_figures gains/updates the canonical entry
-- render/reconciliation.proposals.json proposals list drops the accepted label
-- downstream: role_index → object_units → retrieval_identity changes →
-  lineage vector goes stale → memory.build re-embeds that paper
+1. Only FINAL P_REVIEWABLE decisions are accepted (not early proposal_only).
+2. The staged final-plan.json is the authority — matched_assets are an
+   exact copy of final_plan.member_refs; no re-derivation, no re-matching.
+3. Live input snapshot must match the staged plan's snapshot; mismatch →
+   STALE_PROPOSAL → refuse.
+4. Same-number figure_reserved_00N is NOT auto-deleted; reservation
+   correlation must be explicit.
 """
 
 from __future__ import annotations
 
 import json
-import re
 import shutil
 from pathlib import Path
 from typing import Any
+
+_FINAL_P_DECISIONS = {
+    "structurally_unique_proposal",
+    "unique_without_pdf_confirmation",
+}
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -31,7 +35,29 @@ def _load_json(path: Path) -> dict[str, Any]:
 
 
 def _save_json(path: Path, data: dict[str, Any]) -> None:
-    path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    path.write_text(
+        json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+
+
+def _snapshot_hash(root: Path) -> str:
+    """Cheap live-snapshot fingerprint of the inputs that produced the plan."""
+    import hashlib
+
+    parts = []
+    for rel in (
+        "structure/blocks.structured.jsonl",
+        "structure/figure_inventory.json",
+        "render/reconciliation.proposals.json",
+    ):
+        p = root / rel
+        if p.is_file():
+            parts.append(
+                hashlib.sha256(p.read_bytes()).hexdigest()[:16]
+            )
+        else:
+            parts.append("missing")
+    return hashlib.sha256("|".join(parts).encode()).hexdigest()[:16]
 
 
 def accept_proposal(
@@ -39,69 +65,63 @@ def accept_proposal(
     paper_key: str,
     label: str,
 ) -> dict[str, Any]:
-    """Promote one P proposal to canonical inventory.
-
-    Steps:
-    1. Read reconciliation.proposals.json, find the proposal with this label
-       and a P decision (proposal_only / structurally_unique_proposal /
-       unique_without_pdf_confirmation).
-    2. Read staging preview artifacts (jpg + md) from the latest
-       paperforge-staging run for this paper.
-    3. Copy preview jpg → assets/figures/figure_00N.jpg
-       Copy preview md  → render/figures/figure_00N.md (rewriting image ref)
-    4. Update figure_inventory.matched_figures: upsert canonical entry with
-       figure_id=figure_00N, figure_number=N, matched_assets from the
-       proposal's surviving candidate(s), settlement_type="accepted_proposal".
-    5. Remove the accepted proposal from reconciliation.proposals.json.
-    """
     root = ocr_root / paper_key
     recon_path = root / "render" / "reconciliation.proposals.json"
     inv_path = root / "structure" / "figure_inventory.json"
     assets_dir = root / "assets" / "figures"
     render_dir = root / "render" / "figures"
 
-    recon = _load_json(recon_path)
-    inv = _load_json(inv_path)
-
-    # 1. find proposal
-    prop = None
-    for cand in recon.get("proposals", []):
-        if str(cand.get("label")) == label and cand.get("decision") in {
-            "proposal_only",
-            "structurally_unique_proposal",
-            "unique_without_pdf_confirmation",
-        }:
-            prop = cand
-            break
-    if prop is None:
-        return {
-            "ok": False,
-            "reason": "proposal_not_found",
-            "paper_key": paper_key,
-            "label": label,
-        }
-
-    # 2. find latest staging preview for this label
+    # 1. find latest staging preview with a final-plan.json for this label
     staging_base = Path(__import__("tempfile").gettempdir()) / "paperforge-staging"
     candidates = sorted(
-        (d for d in staging_base.glob("*_{}/{}/previews/figure_{}".format(paper_key, paper_key, label))),
-        key=lambda d: d.stat().st_mtime,
+        (
+            d
+            for d in staging_base.glob(
+                "*_{}/{}/previews/figure_{}".format(paper_key, paper_key, label)
+            )
+            if (d / "final-plan.json").is_file()
+        ),
+        key=lambda d: (d / "final-plan.json").stat().st_mtime,
         reverse=True,
     )
     if not candidates:
         return {
             "ok": False,
-            "reason": "staging_preview_not_found",
+            "reason": "staging_final_plan_not_found",
             "paper_key": paper_key,
             "label": label,
         }
     preview_dir = candidates[0]
-    staged_jpg = preview_dir / "assets" / "figures" / "figure_proposal_{}.jpg".format(label)
-    staged_md = preview_dir / "render" / "figures" / "figure_proposal_{}.md".format(label)
-    if not staged_jpg.is_file():
-        # fallback: flat preview layout
-        staged_jpg = preview_dir / "figure_{}.proposed.jpg".format(label)
-        staged_md = preview_dir / "figure_{}.proposed.md".format(label)
+    plan = _load_json(preview_dir / "final-plan.json")
+
+    # 2. P0-1: only FINAL P_REVIEWABLE decisions
+    if plan.get("decision") not in _FINAL_P_DECISIONS:
+        return {
+            "ok": False,
+            "reason": "not_final_p_reviewable",
+            "paper_key": paper_key,
+            "label": label,
+            "decision": plan.get("decision"),
+        }
+
+    # 3. P0-2: live snapshot must match staged snapshot (recorded at stage time)
+    staged_snapshot = plan.get("input_snapshot_hash")
+    live_snapshot = _snapshot_hash(root)
+    if staged_snapshot and staged_snapshot != live_snapshot:
+        return {
+            "ok": False,
+            "reason": "STALE_PROPOSAL",
+            "paper_key": paper_key,
+            "label": label,
+            "staged_snapshot": staged_snapshot,
+            "live_snapshot": live_snapshot,
+        }
+
+    # 4. staged artifacts
+    staged_jpg_rel = plan.get("staged_jpg", "")
+    staged_md_rel = plan.get("staged_md", "")
+    staged_jpg = preview_dir / staged_jpg_rel
+    staged_md = preview_dir / staged_md_rel
     if not staged_jpg.is_file():
         return {
             "ok": False,
@@ -111,34 +131,39 @@ def accept_proposal(
             "expected": str(staged_jpg),
         }
 
-    # 3. promote artifacts
     num = int(label)
     canonical_id = "figure_{:03d}".format(num)
     assets_dir.mkdir(parents=True, exist_ok=True)
     render_dir.mkdir(parents=True, exist_ok=True)
     dst_jpg = assets_dir / "{}.jpg".format(canonical_id)
     dst_md = render_dir / "{}.md".format(canonical_id)
-    shutil.copy2(staged_jpg, dst_jpg)
 
-    # Build canonical markdown from staged md (rewrite image ref) or from scratch
-    caption_text = ""
-    for ev in prop.get("evidence_chain", []):
-        for item in ev.get("items", []):
-            if item.get("text"):
-                caption_text = str(item["text"])
-                break
-        if caption_text:
-            break
-    page = prop.get("candidate_pages", [{}])[0].get("page") if prop.get("candidate_pages") else None
+    # 5. P0-3: matched_assets = EXACT copy of final_plan.member_refs
+    member_refs = plan.get("member_refs") or []
+    if not member_refs:
+        return {
+            "ok": False,
+            "reason": "empty_member_refs",
+            "paper_key": paper_key,
+            "label": label,
+        }
+
+    # 6. promote artifacts
+    shutil.copy2(staged_jpg, dst_jpg)
+    caption_text = str(plan.get("caption_text") or "")
+    page = plan.get("page")
     if staged_md.is_file():
         md_text = staged_md.read_text(encoding="utf-8")
         md_text = md_text.replace(
-            "figure_proposal_{}.jpg".format(label), "{}.jpg".format(canonical_id)
+            "figure_proposal_{}.jpg".format(label),
+            "{}.jpg".format(canonical_id),
         )
-        md_text = md_text.replace("figure_proposal_{}".format(label), canonical_id)
+        md_text = md_text.replace(
+            "figure_proposal_{}".format(label), canonical_id
+        )
         dst_md.write_text(md_text, encoding="utf-8")
     else:
-        md_lines = [
+        lines = [
             "# Figure {}".format(label),
             "",
             "![](../../assets/figures/{}.jpg)".format(canonical_id),
@@ -148,47 +173,32 @@ def accept_proposal(
             "",
         ]
         if page is not None:
-            md_lines.append("*Page {}*".format(page))
-            md_lines.append("")
-        md_lines.append("---")
-        md_lines.append("")
-        dst_md.write_text("\n".join(md_lines), encoding="utf-8")
+            lines.append("*Page {}*".format(page))
+            lines.append("")
+        lines.append("---")
+        lines.append("")
+        dst_md.write_text("\n".join(lines), encoding="utf-8")
 
-    # 4. update figure_inventory
+    # 7. canonical inventory upsert — exact member_refs, no re-derivation
+    inv = _load_json(inv_path)
     matched = inv.setdefault("matched_figures", [])
-    # collect matched_assets from proposal surviving candidates (if staged run recorded)
-    matched_assets: list[dict[str, Any]] = []
-    # try dry_bounded surviving candidates recorded in recon? recon doesn't carry them;
-    # use the candidate_pages source_images bbox as authoritative asset refs
-    for cp in prop.get("candidate_pages", []):
-        for si in cp.get("source_images", []):
-            m = re.search(r"figure_(\d+)_([\d_]+)\.jpg$", str(si.get("path", "")))
-            bbox = None
-            if m:
-                parts = m.group(2).split("_")
-                if len(parts) == 4:
-                    try:
-                        bbox = [int(x) for x in parts]
-                    except ValueError:
-                        bbox = None
-            matched_assets.append({
-                "page": cp.get("page"),
-                "block_id": si.get("block_id") or (m.group(1) if m else None),
-                "bbox": bbox,
-            })
-
     entry = {
         "figure_id": canonical_id,
         "figure_number": num,
         "figure_namespace": "main",
         "page": page,
         "text": caption_text,
-        "matched_assets": matched_assets,
-        "asset_block_ids": [str(a.get("block_id")) for a in matched_assets if a.get("block_id")],
+        "matched_assets": member_refs,
+        "asset_block_ids": [
+            str(a.get("block_id")) for a in member_refs if a.get("block_id")
+        ],
         "settlement_type": "accepted_proposal",
         "confidence": 1.0,
+        "accepted_from": {
+            "staging_dir": str(preview_dir),
+            "final_plan_hash": _snapshot_hash(preview_dir),
+        },
     }
-    # upsert by figure_id
     replaced = False
     for i, existing in enumerate(matched):
         if str(existing.get("figure_id")) == canonical_id:
@@ -197,24 +207,15 @@ def accept_proposal(
             break
     if not replaced:
         matched.append(entry)
-
-    # drop reserved entry with same number if present (e.g. figure_reserved_005 → figure_005)
-    inv["matched_figures"] = [
-        f for f in inv["matched_figures"]
-        if not (
-            str(f.get("figure_id", "")).startswith("figure_reserved_")
-            and str(f.get("figure_id", "")) == "figure_reserved_{:03d}".format(num)
-        )
-    ]
     _save_json(inv_path, inv)
 
-    # 5. drop the accepted proposal from reconciliation
+    # 8. drop the accepted proposal from reconciliation (derived report;
+    #    fresh reconcile would regenerate without it anyway)
+    recon = _load_json(recon_path)
     recon["proposals"] = [
-        p for p in recon.get("proposals", [])
-        if not (str(p.get("label")) == label and p is not prop)
-    ]
-    recon["proposals"] = [
-        p for p in recon.get("proposals", []) if str(p.get("label")) != label
+        p
+        for p in recon.get("proposals", [])
+        if str(p.get("label")) != label
     ]
     _save_json(recon_path, recon)
 
@@ -225,6 +226,7 @@ def accept_proposal(
         "canonical_id": canonical_id,
         "assets": str(dst_jpg),
         "markdown": str(dst_md),
-        "matched_assets_count": len(matched_assets),
-        "note": "lineage: role_index/object_units will change → retrieval_identity stale → memory.build re-embeds",
+        "member_refs_count": len(member_refs),
+        "staging_dir": str(preview_dir),
+        "note": "lineage: object_units change → retrieval_identity stale → memory.build re-embeds",
     }

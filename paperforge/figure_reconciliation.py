@@ -29,6 +29,23 @@ def _label_sort(label: str) -> tuple[int, str]:
         return 10**9, label
 
 
+def _snapshot_hash(root: Path) -> str:
+    """Cheap live-snapshot fingerprint of reconciliation inputs."""
+    import hashlib
+
+    parts = []
+    for rel in (
+        "structure/blocks.structured.jsonl",
+        "structure/figure_inventory.json",
+        "render/reconciliation.proposals.json",
+    ):
+        p = root / rel
+        if p.is_file():
+            parts.append(hashlib.sha256(p.read_bytes()).hexdigest()[:16])
+        else:
+            parts.append("missing")
+    return hashlib.sha256("|".join(parts).encode()).hexdigest()[:16]
+
 def detect_legend_continuation_chain(
     label: str,
     caption_block: dict[str, Any] | None,
@@ -1044,6 +1061,23 @@ def stage_reconciliation(
             "settlement_type": "proposal",
             "confidence": 0.0,
         }
+        # Final AssetPlan manifest: what user reviewed is exactly what accept promotes
+        final_plan = {
+            "schema_version": 1,
+            "label": label,
+            "proposal_id": f"figure_proposal_{label}",
+            "decision": decision,
+            "narrowed_by": res.get("narrowed_by"),
+            "page": page,
+            "member_refs": matched_assets,
+            "caption_text": caption_text,
+            "input_snapshot_hash": _snapshot_hash(root),
+            "staged_jpg": "assets/figures/figure_proposal_{}.jpg".format(label),
+            "staged_md": "render/figures/figure_proposal_{}.md".format(label),
+        }
+        (preview_root / "final-plan.json").write_text(
+            json.dumps(final_plan, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
         proposal_inventory = {
             "matched_figures": [proposal_fig],
             "unresolved_clusters": [],
