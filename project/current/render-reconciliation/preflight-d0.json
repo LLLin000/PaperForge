@@ -443,5 +443,24 @@
       ]
     ],
     "note": "R-F0 = supplementary/extended_data objects fulltext does not reference (expected); F0-R = 0 unexplained"
+  },
+  "after_figure_id_identity": {
+    "f0_unique_count": 37,
+    "r_unique_count": 48,
+    "f0_minus_r": [],
+    "r_minus_f0_reasons": {
+      "8CCATQE3:figure_001": "main_embed_absent_F1_debt",
+      "CYJLYG56:figure_003": "main_embed_absent_F1_debt",
+      "ID2NXSYY:figure_s001": "non_main_ns_supplementary_not_embedded_expected",
+      "ID2NXSYY:figure_s002": "non_main_ns_supplementary_not_embedded_expected",
+      "LSTHKPAE:figure_s002": "embedded_but_f0_missed",
+      "LSTHKPAE:figure_s004": "embedded_but_f0_missed",
+      "WLMYX4XT:figure_002": "main_embed_absent_F1_debt",
+      "XGT9Z257:figure_ed002": "non_main_ns_extended_data_not_embedded_expected",
+      "XGT9Z257:figure_ed003": "non_main_ns_extended_data_not_embedded_expected",
+      "XGT9Z257:figure_ed004": "embedded_but_f0_missed",
+      "XGT9Z257:figure_ed005": "non_main_ns_extended_data_not_embedded_expected"
+    },
+    "note": "R identity = figure_id <-> render filename; R-F0 split into F1 debt (main embed absent) vs expected non-main observer asymmetry"
   }
 }

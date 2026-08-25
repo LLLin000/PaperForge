@@ -145,13 +145,46 @@ def _formal_text_census(root: Path) -> dict[str, list[dict[str, Any]]]:
     return evidence
 
 
-def _formal_canonical(rows: list[dict[str, Any]]) -> tuple[dict[str, dict[str, Any]], list[dict[str, Any]]]:
-    """Namespace-aware canonical map.
+def _canonical_by_id(rows: list[dict[str, Any]]) -> tuple[dict[str, dict[str, Any]], list[dict[str, Any]]]:
+    """R identity domain: figure_id → canonical row (exact, no label matching).
 
-    Key = (namespace, figure_number) rendered as "NS:N" so that figure_001
-    (main), figure_a001 (appendix), figure_s001 (supplementary) and
-    figure_ed004 (extended_data) are ALWAYS distinct objects.  Same-number
-    collisions never overwrite each other.
+    figure_id is the canonical object identity; render filename is
+    "<figure_id>.md", so R never needs to round-trip through
+    figure_number/namespace.  P (formal-label domain) keeps its own
+    (namespace, number) map separately.
+    """
+    by_id: dict[str, dict[str, Any]] = {}
+    reservations: list[dict[str, Any]] = []
+    for row in rows:
+        object_id = str(row.get("figure_id") or "")
+        settlement = str(row.get("settlement_type") or "").lower()
+        reserved = "reserved" in object_id.lower() or "reservation" in settlement
+        if reserved:
+            reservations.append(row)
+            continue
+        if not object_id:
+            continue
+        by_id[object_id] = row
+    return by_id, reservations
+
+
+def _rendered_by_id(artifacts: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    """R render identity: "<figure_id>.md" → artifact (exact filename match)."""
+    by_id: dict[str, dict[str, Any]] = {}
+    for artifact in artifacts:
+        name = str(artifact.get("file") or "")
+        if "reserved" in name.lower():
+            continue
+        stem = name[:-3] if name.lower().endswith(".md") else name
+        by_id[stem] = artifact
+    return by_id
+
+
+def _formal_canonical(rows: list[dict[str, Any]]) -> tuple[dict[str, dict[str, Any]], list[dict[str, Any]]]:
+    """P formal-label domain: (namespace, figure_number) → row.
+
+    Used ONLY by P bounded-slot anchor search.  Same-number collisions are
+    disambiguated by figure_id suffix; never overwrite.
     """
     formal: dict[str, dict[str, Any]] = {}
     reservations: list[dict[str, Any]] = []
@@ -168,8 +201,6 @@ def _formal_canonical(rows: list[dict[str, Any]]) -> tuple[dict[str, dict[str, A
         namespace = str(row.get("figure_namespace") or "main").lower()
         label = "{}:{}".format(namespace, str(number).upper())
         if label in formal:
-            # Same (namespace, number) with a different figure_id → keep both
-            # distinct by figure_id suffix; never overwrite.
             label = "{}:{}".format(label, object_id)
         formal[label] = row
     return formal, reservations
@@ -180,7 +211,7 @@ def _formal_render_artifacts(
     *,
     namespace_by_file: dict[str, str] | None = None,
 ) -> dict[str, dict[str, Any]]:
-    """Namespace-aware rendered map, keys aligned with _formal_canonical."""
+    """P formal-label domain rendered map (keys aligned with _formal_canonical)."""
     formal: dict[str, dict[str, Any]] = {}
     ns_map = namespace_by_file or {}
     for artifact in artifacts:
@@ -347,8 +378,11 @@ def build_reconciliation_report(
     figure_rows = _inventory_rows(root / "structure" / "figure_inventory.json", "figure")
     artifacts = _render_artifacts(root / "render" / "figures", "figure")
     text_evidence = _formal_text_census(root)
+    # R identity domain: figure_id ↔ render filename (exact, no label matching)
+    canonical_by_id, reservations = _canonical_by_id(figure_rows)
+    rendered_by_id = _rendered_by_id(artifacts)
+    # P formal-label domain (bounded-slot anchors only)
     canonical, reservations = _formal_canonical(figure_rows)
-    # namespace per render artifact file: derive from inventory figure_id → ns
     ns_by_id = {
         str(r.get("figure_id")): str(r.get("figure_namespace") or "main").lower()
         for r in figure_rows
@@ -378,13 +412,12 @@ def build_reconciliation_report(
             label = candidate.get("normalized_label")
             if label:
                 issue_by_label.setdefault(str(label).upper(), []).append(issue)
-    for label, row in canonical.items():
-        artifact = rendered.get(label)
+    for object_id, row in canonical_by_id.items():
+        artifact = rendered_by_id.get(object_id)
         image_missing = artifact is None or not artifact.get("image_ref") or not artifact.get("image_exists")
         assets = row.get("matched_assets") or []
         if not image_missing or not assets:
             continue
-        object_id = str(row.get("figure_id"))
         exact_repairs.append(
             {
                 "repair_id": f"render_repair:{object_id}",
@@ -416,7 +449,9 @@ def build_reconciliation_report(
                     "issue_types": sorted(
                         {
                             str(issue.get("type") or "")
-                            for issue in issue_by_label.get(label, [])
+                            for issue in issue_by_label.get(
+                                str(row.get("figure_number") or "").upper(), []
+                            )
                             if issue.get("type")
                         }
                     ),
