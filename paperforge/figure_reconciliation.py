@@ -1181,7 +1181,13 @@ def stage_reconciliation(
             preview_md.write_text(f"# Figure {label} (proposed)\n\n![](../../assets/figures/figure_proposal_{label}.jpg)\n\n*Page {page}*\n\n---\n", encoding="utf-8")  # noqa: E501
         if ok:
             staged_p += 1
-        p_details.append({"label": label, "page": page, "staged": ok, "preview": str(preview_path), "preview_md": str(preview_md)})
+        p_details.append({
+            "label": label,
+            "page": page,
+            "staged": ok,
+            "preview": str(preview_path),
+            "preview_md": str(preview_md),
+        })
     # Fresh fulltext reconciliation on the SAME in-memory report
     try:
         from paperforge.fulltext_reconciliation import fulltext_reconcile
