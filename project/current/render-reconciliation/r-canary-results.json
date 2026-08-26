@@ -1,0 +1,184 @@
+{
+  "schema_version": 1,
+  "scope": "disposable_ocr_copies_only",
+  "production_write": false,
+  "papers": 10,
+  "objects": 12,
+  "successful_first_promotions": 11,
+  "successful_second_noops": 11,
+  "expected_failures": [
+    {
+      "paper_key": "2ZBAK9VY",
+      "object_ids": [
+        "figure_003"
+      ],
+      "reason": "R_GATE_FAILED"
+    }
+  ],
+  "results": [
+    {
+      "paper_key": "2ZBAK9VY",
+      "object_ids": [
+        "figure_002",
+        "figure_001"
+      ],
+      "first_ok": true,
+      "first_reason": null,
+      "second_ok": true,
+      "second_reason": null,
+      "second_states": {
+        "figure_001": "already_promoted",
+        "figure_002": "already_promoted"
+      },
+      "post_errors": null
+    },
+    {
+      "paper_key": "2ZBAK9VY",
+      "object_ids": [
+        "figure_003"
+      ],
+      "expected_failure_ok": false,
+      "expected_failure_reason": "R_GATE_FAILED",
+      "gates": [
+        {
+          "object_id": "figure_003",
+          "ok": false,
+          "gates": [
+            "STALE_R_DESTINATION",
+            "markdown_image_reference_missing",
+            "staged_image_hash_mismatch",
+            "staged_image_invalid",
+            "staged_verification_not_passed",
+            "staging_provenance_not_success"
+          ]
+        }
+      ]
+    },
+    {
+      "paper_key": "4FL992ND",
+      "object_ids": [
+        "figure_001"
+      ],
+      "first_ok": true,
+      "first_reason": null,
+      "second_ok": true,
+      "second_reason": null,
+      "second_states": {
+        "figure_001": "already_promoted"
+      },
+      "post_errors": null
+    },
+    {
+      "paper_key": "7M6FIW4V",
+      "object_ids": [
+        "figure_003"
+      ],
+      "first_ok": true,
+      "first_reason": null,
+      "second_ok": true,
+      "second_reason": null,
+      "second_states": {
+        "figure_003": "already_promoted"
+      },
+      "post_errors": null
+    },
+    {
+      "paper_key": "7ZHJ43VI",
+      "object_ids": [
+        "figure_s004"
+      ],
+      "first_ok": true,
+      "first_reason": null,
+      "second_ok": true,
+      "second_reason": null,
+      "second_states": {
+        "figure_s004": "already_promoted"
+      },
+      "post_errors": null
+    },
+    {
+      "paper_key": "9DM6MCIF",
+      "object_ids": [
+        "figure_004"
+      ],
+      "first_ok": true,
+      "first_reason": null,
+      "second_ok": true,
+      "second_reason": null,
+      "second_states": {
+        "figure_004": "already_promoted"
+      },
+      "post_errors": null
+    },
+    {
+      "paper_key": "G3IIG3AT",
+      "object_ids": [
+        "figure_012"
+      ],
+      "first_ok": true,
+      "first_reason": null,
+      "second_ok": true,
+      "second_reason": null,
+      "second_states": {
+        "figure_012": "already_promoted"
+      },
+      "post_errors": null
+    },
+    {
+      "paper_key": "KWVMRYRN",
+      "object_ids": [
+        "figure_004"
+      ],
+      "first_ok": true,
+      "first_reason": null,
+      "second_ok": true,
+      "second_reason": null,
+      "second_states": {
+        "figure_004": "already_promoted"
+      },
+      "post_errors": null
+    },
+    {
+      "paper_key": "M84CTEM9",
+      "object_ids": [
+        "figure_a001"
+      ],
+      "first_ok": true,
+      "first_reason": null,
+      "second_ok": true,
+      "second_reason": null,
+      "second_states": {
+        "figure_a001": "already_promoted"
+      },
+      "post_errors": null
+    },
+    {
+      "paper_key": "S8X8CBJM",
+      "object_ids": [
+        "figure_003"
+      ],
+      "first_ok": true,
+      "first_reason": null,
+      "second_ok": true,
+      "second_reason": null,
+      "second_states": {
+        "figure_003": "already_promoted"
+      },
+      "post_errors": null
+    },
+    {
+      "paper_key": "XGT9Z257",
+      "object_ids": [
+        "figure_ed002"
+      ],
+      "first_ok": true,
+      "first_reason": null,
+      "second_ok": true,
+      "second_reason": null,
+      "second_states": {
+        "figure_ed002": "already_promoted"
+      },
+      "post_errors": null
+    }
+  ]
+}

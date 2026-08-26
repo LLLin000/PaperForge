@@ -359,7 +359,12 @@ def build_parser() -> argparse.ArgumentParser:
         "object_ids",
         nargs="*",
         metavar="OBJECT_ID",
-        help="Canonical figure IDs (default: all plans in latest R staging)",
+        help="Canonical figure IDs (required unless --all is explicit)",
+    )
+    p_render_promote.add_argument(
+        "--all",
+        action="store_true",
+        help="Explicitly promote all plans in the latest R staging",
     )
     p_render_promote.add_argument("--json", action="store_true", help="Output JSON")
     p_render_accept = p_render_sp.add_parser("accept-proposal", help="Promote a verified P proposal to canonical inventory (authority action)")

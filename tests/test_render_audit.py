@@ -126,6 +126,23 @@ def test_audit_classifies_identical_duplicate_canonical_rows(tmp_path: Path) -> 
     issue = next(issue for issue in result["issues"] if issue["type"] == "inventory_duplicate_entry")
     assert issue["evidence"]["duplicate_class"] == "DUPLICATE_IDENTICAL"
 
+
+def test_audit_reports_cross_canonical_asset_claim_conflict(tmp_path: Path) -> None:
+    ocr_root = _write_fixture(tmp_path / "ocr")
+    inventory = ocr_root / "TESTFIG1" / "structure" / "figure_inventory.json"
+    data = json.loads(inventory.read_text(encoding="utf-8"))
+    second = json.loads(json.dumps(data["matched_figures"][0]))
+    second["figure_id"] = "figure_002"
+    second["figure_number"] = 2
+    data["matched_figures"].append(second)
+    inventory.write_text(json.dumps(data), encoding="utf-8")
+
+    result = audit_paper(ocr_root, "TESTFIG1", write_report=False)
+
+    issue = next(issue for issue in result["issues"] if issue["type"] == "inventory_asset_claim_conflict")
+    assert issue["domain"] == "inventory_layer"
+    assert issue["evidence"]["owners"] == ["figure_001", "figure_002"]
+
 def test_missing_figure_image_is_upstream_caption_without_asset(tmp_path: Path) -> None:
     ocr_root = _write_fixture(tmp_path / "ocr")
     figure = ocr_root / "TESTFIG1" / "render" / "figures" / "figure_001.md"
