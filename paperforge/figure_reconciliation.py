@@ -7,15 +7,24 @@ candidates, and blocked reservation/ambiguity cases.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from pathlib import Path
 from typing import Any
 
-from paperforge.render_audit import _inventory_rows, _page_number, _position_view, _render_artifacts, _snapshot
+from paperforge.render_audit import (
+    _inventory_identity_conflicts,
+    _inventory_rows,
+    _label,
+    _page_number,
+    _position_view,
+    _render_artifacts,
+    _snapshot,
+)
 
 _SCHEMA_VERSION = 1
-_ALGORITHM_VERSION = 1
+_ALGORITHM_VERSION = 2
 _FORMAL_LABEL_RE = re.compile(
     r"^\s*(?:fig(?:ure)?s?\.?|图)\s*([A-Z]?\d+)\b", re.IGNORECASE
 )
@@ -45,6 +54,58 @@ def _snapshot_hash(root: Path) -> str:
         else:
             parts.append("missing")
     return hashlib.sha256("|".join(parts).encode()).hexdigest()[:16]
+
+
+def reconcile_snapshot_hash(root: Path) -> str:
+    return _snapshot_hash(root)
+
+
+def reconcile_sha256_path(path: Path) -> str | None:
+    if not path.is_file():
+        return None
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def reconcile_image_facts(path: Path) -> dict[str, Any] | None:
+    if not path.is_file():
+        return None
+    try:
+        from PIL import Image
+
+        with Image.open(path) as image:
+            image.verify()
+        with Image.open(path) as image:
+            width, height = image.size
+    except Exception:
+        return None
+    return {
+        "sha256": reconcile_sha256_path(path),
+        "width": width,
+        "height": height,
+    }
+
+
+def reconcile_plan_hash(plan: dict[str, Any]) -> str:
+    payload = {
+        key: plan.get(key)
+        for key in (
+            "object_id",
+            "canonical_identity",
+            "input_snapshot_hash",
+            "ordered_asset_refs",
+            "staged_asset",
+            "staged_markdown",
+            "production_asset",
+            "production_markdown",
+        )
+    }
+    return hashlib.sha256(
+        json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
 
 def _extract_label(block: dict[str, Any]) -> str | None:
     """Extract formal figure label from a caption block's text, if any."""
@@ -199,9 +260,9 @@ def _formal_canonical(rows: list[dict[str, Any]]) -> tuple[dict[str, dict[str, A
         if number is None:
             continue
         namespace = str(row.get("figure_namespace") or "main").lower()
-        label = "{}:{}".format(namespace, str(number).upper())
+        label = f"{namespace}:{str(number).upper()}"
         if label in formal:
-            label = "{}:{}".format(label, object_id)
+            label = f"{label}:{object_id}"
         formal[label] = row
     return formal, reservations
 
@@ -222,7 +283,7 @@ def _formal_render_artifacts(
         if not label:
             continue
         ns = ns_map.get(name, "main").lower()
-        key = "{}:{}".format(ns, str(label).upper())
+        key = f"{ns}:{str(label).upper()}"
         formal[key] = artifact
     return formal
 
@@ -378,21 +439,51 @@ def build_reconciliation_report(
     figure_rows = _inventory_rows(root / "structure" / "figure_inventory.json", "figure")
     artifacts = _render_artifacts(root / "render" / "figures", "figure")
     text_evidence = _formal_text_census(root)
-    # R identity domain: figure_id ↔ render filename (exact, no label matching)
-    canonical_by_id, reservations = _canonical_by_id(figure_rows)
+    inventory_conflicts = _inventory_identity_conflicts(figure_rows, "figure")
+    conflicted_ids = {
+        str(conflict["canonical_object_id"]) for conflict in inventory_conflicts
+    }
+    valid_figure_rows = [
+        row
+        for row in figure_rows
+        if str(row.get("canonical_object_id") or "") not in conflicted_ids
+    ]
+    conflicted_labels = {
+        label
+        for row in figure_rows
+        if str(row.get("canonical_object_id") or "") in conflicted_ids
+        for label in [
+            _label(row.get("figure_number"))
+            or _label(row.get("text") or row.get("caption") or row.get("raw_label"))
+        ]
+        if label
+    }
+    # R identity domain: figure_id ↔ render filename (exact, no label matching).
+    # Conflicted IDs are removed before indexing; no duplicate row can win.
+    canonical_by_id, reservations = _canonical_by_id(valid_figure_rows)
     rendered_by_id = _rendered_by_id(artifacts)
-    # P formal-label domain (bounded-slot anchors only)
-    canonical, reservations = _formal_canonical(figure_rows)
+    # P formal-label domain (bounded-slot anchors only).
+    canonical, formal_reservations = _formal_canonical(valid_figure_rows)
+    reservations = formal_reservations
     ns_by_id = {
         str(r.get("figure_id")): str(r.get("figure_namespace") or "main").lower()
-        for r in figure_rows
+        for r in valid_figure_rows
     }
     ns_by_file = {
-        "{}.md".format(fid): ns for fid, ns in ns_by_id.items()
+        f"{fid}.md": ns for fid, ns in ns_by_id.items()
     }
     rendered = _formal_render_artifacts(artifacts, namespace_by_file=ns_by_file)
     source_images = _source_images(root)
-    missing_labels = sorted(set(text_evidence) - set(canonical), key=_label_sort)
+    canonical_labels = {
+        _label(row.get("figure_number"))
+        for row in canonical.values()
+        if str(row.get("figure_namespace") or "main").lower() == "main"
+    }
+    canonical_labels.discard(None)
+    missing_labels = sorted(
+        set(text_evidence) - canonical_labels - conflicted_labels,
+        key=_label_sort,
+    )
     candidate_pages = {
         page
         for label in missing_labels
@@ -463,11 +554,29 @@ def build_reconciliation_report(
     proposals: list[dict[str, Any]] = []
     occupied_pages = {
         int(asset.get("page"))
-        for row in canonical.values()
+        for row in figure_rows
         for asset in (row.get("matched_assets") or [])
         if str(asset.get("page", "")).isdigit()
     }
     blocked: list[dict[str, Any]] = []
+    for conflict in inventory_conflicts:
+        blocked.append(
+            {
+                "block_id": "blocked:inventory_duplicate:{}".format(
+                    conflict["canonical_object_id"]
+                ),
+                "kind": "figure",
+                "decision": "blocked",
+                "repair_scope": "review_only",
+                "reason": "inventory_duplicate_entry",
+                "canonical_object_id": conflict["canonical_object_id"],
+                "duplicate_class": conflict["duplicate_class"],
+                "count": conflict["count"],
+                "row_digests": conflict["row_digests"],
+                "matched_asset_refs": conflict["matched_asset_refs"],
+                "action": "inspect_inventory",
+            }
+        )
     for label in missing_labels:
         proposal = _candidate_proposal(
             label,
@@ -516,12 +625,14 @@ def build_reconciliation_report(
         "algorithm_version": _ALGORITHM_VERSION,
         "paper_key": paper_key,
         "input_snapshot": audit_snapshot,
+        "inventory_conflicts": inventory_conflicts,
         "formal_figure_assessment": {
             "supported_formal_figure_labels": sorted(text_evidence, key=_label_sort),
             "canonical_formal_figure_labels": sorted(canonical, key=_label_sort),
             "rendered_formal_figure_labels": sorted(rendered, key=_label_sort),
             "missing_canonical_labels": missing_labels,
             "missing_render_labels": sorted(set(canonical) - set(rendered), key=_label_sort),
+            "ambiguous_canonical_labels": sorted(conflicted_labels, key=_label_sort),
             "caption_evidence": text_evidence,
         },
         "pdf_media_validation": pdf_media,
@@ -529,6 +640,7 @@ def build_reconciliation_report(
             "supported_formal_figures": len(text_evidence),
             "canonical_formal_figures": len(canonical),
             "rendered_formal_figures": len(rendered),
+            "inventory_conflicts": len(inventory_conflicts),
             "exact_repairs": len(exact_repairs),
             "proposals": len(proposals),
             "blocked": len(blocked),
@@ -587,7 +699,17 @@ def dry_run_exact_repairs(
     )
     audit_snapshot_match = plan_snapshot == (audit_report.get("input_snapshot") or {})
     rows = _inventory_rows(root / "structure" / "figure_inventory.json", "figure")
-    rows_by_id = {str(row.get("figure_id")): row for row in rows if row.get("figure_id")}
+    inventory_conflicts = _inventory_identity_conflicts(rows, "figure")
+    conflicted_ids = {
+        str(conflict["canonical_object_id"]) for conflict in inventory_conflicts
+    }
+    rows_by_id = {
+        str(row.get("figure_id")): row
+        for row in rows
+        if row.get("_inventory_bucket") == "matched_figures"
+        and row.get("figure_id")
+        and str(row.get("figure_id")) not in conflicted_ids
+    }
     artifacts = {
         artifact["file"]: artifact
         for artifact in _render_artifacts(root / "render" / "figures", "figure")
@@ -612,7 +734,9 @@ def dry_run_exact_repairs(
         row = rows_by_id.get(object_id)
         if not snapshot_match or not audit_snapshot_match:
             blockers.append("stale_input_snapshot")
-        if row is None:
+        if object_id in conflicted_ids:
+            blockers.append("inventory_duplicate_entry")
+        elif row is None:
             blockers.append("canonical_object_missing")
         else:
             def _norm_bbox(b):
@@ -687,6 +811,7 @@ def dry_run_exact_repairs(
         "input_snapshot_match": snapshot_match,
         "snapshot_verification": "live" if verify_live_snapshot else "persisted_audit",
         "audit_snapshot_match": audit_snapshot_match,
+        "inventory_conflicts": inventory_conflicts,
         "summary": {
             "exact_repair_candidates": len(results),
             "repair_required": counts.get("ready", 0)
@@ -996,10 +1121,11 @@ def stage_reconciliation(
         if b.get("page") and b.get("page_width") and b.get("page_height")
     }
     try:
-        fig_inventory = json.loads((root / "structure" / "figure_inventory.json").read_text(encoding="utf-8"))
-        tab_inventory = json.loads((root / "structure" / "table_inventory.json").read_text(encoding="utf-8"))
+        fig_inventory = json.loads(
+            (root / "structure" / "figure_inventory.json").read_text(encoding="utf-8")
+        )
     except (OSError, TypeError, ValueError):
-        fig_inventory, tab_inventory = {}, {}
+        fig_inventory = {}
     run_id = f"{int(time.time())}_{paper_key}"
     if staging_root is None:
         staging_root = Path(tempfile.gettempdir()) / "paperforge-staging" / run_id
@@ -1008,13 +1134,37 @@ def stage_reconciliation(
     asset_staging = staging_root / "assets"
     render_staging = staging_root / "render"
 
-    # Stage R: materialize all exact repairs in tmp (single call, then verify each)
+    # Stage R: materialize only the exact repair plans selected by reconcile.
+    # The front OCR renderer remains untouched; unrelated inventory rows,
+    # tables, and ambiguous IDs never enter this isolated staging call.
     staged_r = 0
     r_details: list[dict[str, Any]] = []
-    if dry_exact.get("results"):
+    r_object_ids = {
+        str(res.get("object_id"))
+        for res in dry_exact.get("results", [])
+        if res.get("state") in {"ready", "needs_fresh_provenance"} and res.get("object_id")
+    }
+    r_fig_inventory = {
+        "matched_figures": [
+            row
+            for row in (fig_inventory.get("matched_figures") or [])
+            if str(row.get("figure_id") or "") in r_object_ids
+        ],
+        "unresolved_clusters": [],
+        "unmatched_assets": [],
+    }
+    if r_object_ids:
         try:
-            extract_and_write_objects(pdf_path, fig_inventory, tab_inventory, asset_staging, render_staging, page_dimensions_by_page=dims, structured_blocks=blocks, use_disk_page_cache=False)  # noqa: E501
-            # Verify each R object that was staged
+            extract_and_write_objects(
+                pdf_path,
+                r_fig_inventory,
+                {"tables": [], "unmatched_assets": []},
+                asset_staging,
+                render_staging,
+                page_dimensions_by_page=dims,
+                structured_blocks=blocks,
+                use_disk_page_cache=False,
+            )
             for res in dry_exact["results"]:
                 if res.get("state") in {"ready", "needs_fresh_provenance"}:
                     obj_id = res.get("object_id")
@@ -1033,6 +1183,72 @@ def stage_reconciliation(
                         staged_r += 1
         except Exception as exc:
             r_details.append({"error": type(exc).__name__, "message": str(exc)[:300]})
+
+    r_details_by_id = {
+        str(detail.get("object_id")): detail
+        for detail in r_details
+        if detail.get("object_id")
+    }
+    r_plans: list[dict[str, Any]] = []
+    selected_rows_by_id = {
+        str(row.get("figure_id")): row
+        for row in r_fig_inventory.get("matched_figures", [])
+        if row.get("figure_id")
+    }
+    input_snapshot_hash = _snapshot_hash(root)
+    for repair in report.get("exact_repairs", []):
+        object_id = str(repair.get("canonical_object_id") or "")
+        if object_id not in r_object_ids:
+            continue
+        row = selected_rows_by_id.get(object_id, {})
+        plan = {
+            "object_id": object_id,
+            "canonical_identity": {
+                "figure_id": object_id,
+                "figure_namespace": row.get("figure_namespace") or "main",
+                "figure_number": row.get("figure_number"),
+                "page": row.get("page"),
+            },
+            "input_snapshot_hash": input_snapshot_hash,
+            "ordered_asset_refs": (repair.get("source") or {}).get("ordered_asset_refs") or [],
+            "staged_asset": f"assets/figures/{object_id}.jpg",
+            "staged_markdown": f"render/figures/{object_id}.md",
+            "production_asset": f"assets/figures/{object_id}.jpg",
+            "production_markdown": f"render/figures/{object_id}.md",
+        }
+        plan["plan_hash"] = reconcile_plan_hash(plan)
+        image_path = staging_root / plan["staged_asset"]
+        markdown_path = staging_root / plan["staged_markdown"]
+        image_facts = reconcile_image_facts(image_path)
+        markdown_hash = reconcile_sha256_path(markdown_path)
+        detail = r_details_by_id.get(object_id, {})
+        plan["staged_verification"] = {
+            "status": "passed"
+            if detail.get("staged") and image_facts and markdown_hash
+            else "failed",
+            "image": image_facts,
+            "markdown_sha256": markdown_hash,
+        }
+        r_plans.append(plan)
+    r_manifest = {
+        "schema_version": 1,
+        "kind": "R",
+        "paper_key": paper_key,
+        "input_snapshot_hash": input_snapshot_hash,
+        "staging_provenance": "render/materialization.provenance.json",
+        "plans": r_plans,
+        "summary": {
+            "selected": len(r_plans),
+            "staged": sum(
+                plan["staged_verification"]["status"] == "passed" for plan in r_plans
+            ),
+        },
+    }
+    r_manifest_path = staging_root / "r-manifest.json"
+    r_manifest_path.write_text(
+        json.dumps(r_manifest, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
 
     # Stage P: each structurally unique proposal via SAME authoritative materializer
     staged_p = 0
@@ -1162,8 +1378,8 @@ def stage_reconciliation(
             "member_refs": matched_assets,
             "caption_text": caption_text,
             "input_snapshot_hash": _snapshot_hash(root),
-            "staged_jpg": "assets/figures/figure_proposal_{}.jpg".format(label),
-            "staged_md": "render/figures/figure_proposal_{}.md".format(label),
+            "staged_jpg": f"assets/figures/figure_proposal_{label}.jpg",
+            "staged_md": f"render/figures/figure_proposal_{label}.md",
         }
         (preview_root / "final-plan.json").write_text(
             json.dumps(final_plan, ensure_ascii=False, indent=2), encoding="utf-8"
@@ -1237,10 +1453,12 @@ def stage_reconciliation(
     return {
         "paper_key": paper_key,
         "staging_root": str(staging_root),
+        "r_manifest": str(r_manifest_path),
         "production_write": False,
         "summary": {
             "exact_total": len(dry_exact.get("results", [])),
             "r_prepared_staged": staged_r,
+            "r_manifest_plans": len(r_plans),
             "proposals_total": len(dry_bounded.get("results", [])),
             "p_preview_staged": staged_p,
         },
