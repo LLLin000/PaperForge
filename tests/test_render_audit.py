@@ -93,6 +93,39 @@ def test_audit_reports_caption_mismatch_and_dangling_asset(tmp_path: Path) -> No
     assert mismatch_issue["domain"] == "inventory_layer"
 
 
+
+def test_audit_reports_conflicting_duplicate_canonical_rows(tmp_path: Path) -> None:
+    ocr_root = _write_fixture(tmp_path / "ocr")
+    inventory = ocr_root / "TESTFIG1" / "structure" / "figure_inventory.json"
+    data = json.loads(inventory.read_text(encoding="utf-8"))
+    duplicate = json.loads(json.dumps(data["matched_figures"][0]))
+    duplicate["matched_assets"] = [{"block_id": "asset-2", "page": 2, "bbox": [1, 2, 3, 4]}]
+    data["matched_figures"].append(duplicate)
+    inventory.write_text(json.dumps(data), encoding="utf-8")
+
+    result = audit_paper(ocr_root, "TESTFIG1", write_report=False)
+
+    issue = next(issue for issue in result["issues"] if issue["type"] == "inventory_duplicate_entry")
+    assert issue["domain"] == "inventory_layer"
+    assert issue["diagnosis"] == "inventory_identity_ambiguous"
+    assert issue["evidence"]["canonical_object_id"] == "figure_001"
+    assert issue["evidence"]["count"] == 2
+    assert issue["evidence"]["duplicate_class"] == "DUPLICATE_CONFLICTING"
+    assert len(issue["evidence"]["row_digests"]) == 2
+
+
+def test_audit_classifies_identical_duplicate_canonical_rows(tmp_path: Path) -> None:
+    ocr_root = _write_fixture(tmp_path / "ocr")
+    inventory = ocr_root / "TESTFIG1" / "structure" / "figure_inventory.json"
+    data = json.loads(inventory.read_text(encoding="utf-8"))
+    data["matched_figures"].append(json.loads(json.dumps(data["matched_figures"][0])))
+    inventory.write_text(json.dumps(data), encoding="utf-8")
+
+    result = audit_paper(ocr_root, "TESTFIG1", write_report=False)
+
+    issue = next(issue for issue in result["issues"] if issue["type"] == "inventory_duplicate_entry")
+    assert issue["evidence"]["duplicate_class"] == "DUPLICATE_IDENTICAL"
+
 def test_missing_figure_image_is_upstream_caption_without_asset(tmp_path: Path) -> None:
     ocr_root = _write_fixture(tmp_path / "ocr")
     figure = ocr_root / "TESTFIG1" / "render" / "figures" / "figure_001.md"

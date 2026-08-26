@@ -1,6 +1,15 @@
 # OCR-v2 Active Queue
 > Status: `EXECUTABLE_FROZEN a42f8bb7` / `PROTOCOL_DOCS 781910f3` — S1–S6 lightweight **COMPLETE** on `462398cb` (valid for `a42f8bb7`, `ruff` clean). Hosted CI `32353318123` on docs-only descendant `a2e18fa4` is **green: All Checks Passed, 14/14**, with `3.11` Ubuntu/macOS/Windows, J-Matrix, Ruff, plugin, OCR, E2E; no executable change after `a42f8bb7`. #191 FROZEN / ready-for-agent; #81 OPEN / owner gate. Remaining: live browser/Ctrl+C/recovery evidence + Release-N support-window owner decision.
-> Last updated: 2026-08-20
+> Last updated: 2026-08-26
+
+## 2026-08-26: Reconcile-only R promoter
+
+- Reconcile remains independent from the stable OCR/front-render pipeline; no `ocr_figures.py`, `ocr_objects.py`, `ocr.py`, or `ocr_rebuild.py` changes.
+- Read-only census: 965 papers scanned; 182 papers contain 250 duplicate canonical figure-ID groups (224 conflicting, 26 identical).
+- Audit/reconcile now blocks ambiguous IDs and R staging passes only selected exact plans.
+- Added `paperforge render promote-r KEY [OBJECT_ID...] --json`. It consumes a verified `r-manifest.json`, checks live snapshot, canonical uniqueness, ordered refs, ownership, staged image/markdown hashes, markdown link, and staging provenance before atomic per-file promotion. Production inventory is not rewritten.
+- Verification: promoter + reconcile/audit/lineage/CLI focused suite **88 passed, 1 warning**; targeted Ruff `E,F,I,UP` clean. Mid-batch write-failure rollback and idempotent second run passed.
+- Next gate: hard-kill/restart recovery and stratified R canaries, then limited rollout. No full-corpus promotion yet.
 
 ## 2026-08-20: S1–S6 lightweight certification (EXECUTABLE_FROZEN 462398cb → a42f8bb7)
 - **S1 PASS:** `setup --modular` → `probe installation ready`, `status` 0 papers, `doctor` only Zotero/BBT optional fails. #191 gap: still deploys `.agents/skills` and retains `skill_dir/command_dir/agent_platform`.

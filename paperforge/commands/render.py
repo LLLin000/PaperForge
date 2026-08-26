@@ -66,6 +66,23 @@ def run(args: argparse.Namespace) -> int:
                 if r.get("summary", {}).get("r_prepared_staged") or r.get("summary", {}).get("p_preview_staged"):
                     print(f"  {r['paper_key']}: R {r['summary']['r_prepared_staged']} P {r['summary']['p_preview_staged']} -> {r.get('staging_root')}")  # noqa: E501
         return 0
+    if sub == "promote-r":
+        from paperforge.promote_r import promote_r
+
+        result = promote_r(
+            Path(args.paths["ocr"]),
+            str(args.key),
+            getattr(args, "object_ids", None),
+        )
+        if getattr(args, "json", False):
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+        else:
+            if result.get("ok"):
+                promoted = ", ".join(result.get("promoted", []))
+                print(f"promoted R: {args.key} -> {promoted}")
+            else:
+                print(f"failed: {result.get('reason', 'unknown')}")
+        return 0 if result.get("ok") else 1
     if sub == "accept-proposal":
         from paperforge.accept_proposal import accept_proposal
 

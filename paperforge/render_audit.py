@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any
 
 SCHEMA_VERSION = 1
-ALGORITHM_VERSION = 2
+ALGORITHM_VERSION = 3
 _LABEL_RE = re.compile(r"\b(?:fig(?:ure)?s?\.?|table|tab\.?|图|scheme)\s*([A-Z]?\d+)", re.IGNORECASE)
 _HEADER_RE = re.compile(r"^#\s+(Figure|Table)\s+(.+?)\s*$", re.IGNORECASE | re.MULTILINE)
 _PAGE_RE = re.compile(r"\*Page\s+([0-9]+)\*", re.IGNORECASE)
@@ -68,24 +68,114 @@ def _inventory_rows(path: Path, kind: str) -> list[dict[str, Any]]:
         return []
     data = _read_json(path)
     if kind == "figure":
-        rows = list(data.get("matched_figures") or []) + list(data.get("unmatched_captions") or [])
+        source_rows = [
+            ("matched_figures", row) for row in (data.get("matched_figures") or [])
+        ] + [
+            ("unmatched_captions", row) for row in (data.get("unmatched_captions") or [])
+        ]
     else:
-        rows = (
-            list(data.get("tables") or [])
-            + list(data.get("held_tables") or [])
-            + list(data.get("unmatched_captions") or [])
-        )
+        source_rows = [
+            ("tables", row) for row in (data.get("tables") or [])
+        ] + [
+            ("held_tables", row) for row in (data.get("held_tables") or [])
+        ] + [
+            ("unmatched_captions", row) for row in (data.get("unmatched_captions") or [])
+        ]
     result: list[dict[str, Any]] = []
-    for row in rows:
+    for bucket, row in source_rows:
         if not isinstance(row, dict):
             continue
         row = dict(row)
+        row["_inventory_bucket"] = bucket
         row["canonical_object_id"] = row.get("figure_id") or row.get("table_id")
-        row["normalized_label"] = _label(row.get("figure_number") if kind == "figure" else row.get("table_number"))
+        row["normalized_label"] = _label(
+            row.get("figure_number") if kind == "figure" else row.get("table_number")
+        )
         if row["normalized_label"] is None:
             row["normalized_label"] = _label(row.get("text") or row.get("caption") or row.get("raw_label"))
         result.append(row)
     return result
+
+
+def _canonical_inventory_bucket(kind: str) -> str:
+    return "matched_figures" if kind == "figure" else "tables"
+
+
+def _inventory_plan_payload(row: dict[str, Any], kind: str) -> dict[str, Any]:
+    assets = []
+    for asset in row.get("matched_assets") or []:
+        if not isinstance(asset, dict):
+            continue
+        assets.append(
+            {
+                "page": asset.get("page"),
+                "block_id": str(asset.get("block_id") or ""),
+                "bbox": asset.get("bbox"),
+            }
+        )
+    caption = row.get("text") or row.get("caption") or row.get("caption_text") or ""
+    namespace_key = "figure_namespace" if kind == "figure" else "table_namespace"
+    number_key = "figure_number" if kind == "figure" else "table_number"
+    return {
+        "canonical_object_id": row.get("canonical_object_id"),
+        "namespace": str(row.get(namespace_key) or "main").lower(),
+        "number": row.get(number_key),
+        "page": row.get("page"),
+        "legend_page": row.get("legend_page"),
+        "rotation": int(row.get("rotation_correction_deg", 0) or 0),
+        "cluster_bbox": row.get("cluster_bbox"),
+        "matched_assets": assets,
+        "caption": re.sub(r"\s+", " ", str(caption)).strip(),
+    }
+
+
+def _inventory_identity_conflicts(
+    rows: list[dict[str, Any]], kind: str
+) -> list[dict[str, Any]]:
+    """Return duplicate canonical rows without selecting a winner.
+
+    This is a reconcile/audit observer. It does not mutate inventory rows and
+    deliberately treats both identical and conflicting duplicates as
+    cardinality violations.
+    """
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    bucket = _canonical_inventory_bucket(kind)
+    for row in rows:
+        if row.get("_inventory_bucket") != bucket:
+            continue
+        object_id = str(row.get("canonical_object_id") or "")
+        if object_id:
+            grouped.setdefault(object_id, []).append(row)
+
+    conflicts: list[dict[str, Any]] = []
+    for object_id, group in grouped.items():
+        if len(group) < 2:
+            continue
+        payloads = [_inventory_plan_payload(row, kind) for row in group]
+        digests = [
+            hashlib.sha256(
+                json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+            ).hexdigest()[:16]
+            for payload in payloads
+        ]
+        refs = [payload["matched_assets"] for payload in payloads]
+        conflicts.append(
+            {
+                "canonical_object_id": object_id,
+                "count": len(group),
+                "duplicate_class": (
+                    "DUPLICATE_IDENTICAL" if len(set(digests)) == 1 else "DUPLICATE_CONFLICTING"
+                ),
+                "row_digests": digests,
+                "matched_asset_refs": refs,
+                "pages": [row.get("page") for row in group],
+                "namespaces": [
+                    str(row.get("figure_namespace") or row.get("table_namespace") or "main").lower()
+                    for row in group
+                ],
+            }
+        )
+    return sorted(conflicts, key=lambda item: str(item["canonical_object_id"]))
 def _enrich_inventory_positions(root: Path, rows: list[dict[str, Any]], kind: str) -> None:
     if kind != "figure":
         return
@@ -278,6 +368,7 @@ _DIAGNOSIS_DOMAIN = {
     "dangling_render_asset": "render_layer",
     "render_artifact_missing": "render_layer",
     "canonical_identity_ambiguous": "inventory_layer",
+    "inventory_identity_ambiguous": "inventory_layer",
     "upstream_asset_missing_or_reserved": "asset_layer",
 }
 
@@ -355,6 +446,19 @@ def _audit_kind(
     artifacts = _render_artifacts(root / "render" / ("figures" if kind == "figure" else "tables"), kind)
 
     issues: list[dict[str, Any]] = []
+    identity_conflicts = _inventory_identity_conflicts(rows, kind)
+    for conflict in identity_conflicts:
+        issues.append(
+            _issue(
+                "inventory_duplicate_entry",
+                "P1",
+                "canonical inventory object has multiple rows for one object ID",
+                diagnosis="inventory_identity_ambiguous",
+                recommended_action="inspect_inventory",
+                kind=kind,
+                **conflict,
+            )
+        )
     for artifact in artifacts:
         labels = {artifact.get("header_label"), artifact.get("legend_label")} - {None}
         candidates = _candidates(rows, labels, kind)
