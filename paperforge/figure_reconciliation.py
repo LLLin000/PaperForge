@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from paperforge.render_audit import (
+    _inventory_asset_claim_conflicts,
     _inventory_identity_conflicts,
     _inventory_rows,
     _label,
@@ -24,7 +25,7 @@ from paperforge.render_audit import (
 )
 
 _SCHEMA_VERSION = 1
-_ALGORITHM_VERSION = 2
+_ALGORITHM_VERSION = 3
 _FORMAL_LABEL_RE = re.compile(
     r"^\s*(?:fig(?:ure)?s?\.?|图)\s*([A-Z]?\d+)\b", re.IGNORECASE
 )
@@ -70,6 +71,10 @@ def reconcile_sha256_path(path: Path) -> str | None:
     return digest.hexdigest()
 
 
+def reconcile_file_precondition(path: Path) -> dict[str, Any]:
+    return {"exists": path.is_file(), "sha256": reconcile_sha256_path(path)}
+
+
 def reconcile_image_facts(path: Path) -> dict[str, Any] | None:
     if not path.is_file():
         return None
@@ -101,6 +106,7 @@ def reconcile_plan_hash(plan: dict[str, Any]) -> str:
             "staged_markdown",
             "production_asset",
             "production_markdown",
+            "production_precondition",
         )
     }
     return hashlib.sha256(
@@ -440,8 +446,14 @@ def build_reconciliation_report(
     artifacts = _render_artifacts(root / "render" / "figures", "figure")
     text_evidence = _formal_text_census(root)
     inventory_conflicts = _inventory_identity_conflicts(figure_rows, "figure")
+    asset_claim_conflicts = _inventory_asset_claim_conflicts(figure_rows, "figure")
     conflicted_ids = {
         str(conflict["canonical_object_id"]) for conflict in inventory_conflicts
+    }
+    claim_conflicted_ids = {
+        owner
+        for conflict in asset_claim_conflicts
+        for owner in conflict["owners"]
     }
     valid_figure_rows = [
         row
@@ -508,6 +520,8 @@ def build_reconciliation_report(
         image_missing = artifact is None or not artifact.get("image_ref") or not artifact.get("image_exists")
         assets = row.get("matched_assets") or []
         if not image_missing or not assets:
+            continue
+        if object_id in claim_conflicted_ids:
             continue
         exact_repairs.append(
             {
@@ -577,6 +591,23 @@ def build_reconciliation_report(
                 "action": "inspect_inventory",
             }
         )
+    for claim_conflict in asset_claim_conflicts:
+        blocked.append(
+            {
+                "block_id": "blocked:asset_claim_conflict:{}:{}".format(
+                    claim_conflict["page"], claim_conflict["block_id"]
+                ),
+                "kind": "figure",
+                "decision": "blocked",
+                "repair_scope": "review_only",
+                "reason": "asset_claim_conflict",
+                "page": claim_conflict["page"],
+                "asset_block_id": claim_conflict["block_id"],
+                "bbox": claim_conflict["bbox"],
+                "owners": claim_conflict["owners"],
+                "action": "inspect_inventory",
+            }
+        )
     for label in missing_labels:
         proposal = _candidate_proposal(
             label,
@@ -626,6 +657,7 @@ def build_reconciliation_report(
         "paper_key": paper_key,
         "input_snapshot": audit_snapshot,
         "inventory_conflicts": inventory_conflicts,
+        "asset_claim_conflicts": asset_claim_conflicts,
         "formal_figure_assessment": {
             "supported_formal_figure_labels": sorted(text_evidence, key=_label_sort),
             "canonical_formal_figure_labels": sorted(canonical, key=_label_sort),
@@ -641,6 +673,7 @@ def build_reconciliation_report(
             "canonical_formal_figures": len(canonical),
             "rendered_formal_figures": len(rendered),
             "inventory_conflicts": len(inventory_conflicts),
+            "asset_claim_conflicts": len(asset_claim_conflicts),
             "exact_repairs": len(exact_repairs),
             "proposals": len(proposals),
             "blocked": len(blocked),
@@ -700,6 +733,7 @@ def dry_run_exact_repairs(
     audit_snapshot_match = plan_snapshot == (audit_report.get("input_snapshot") or {})
     rows = _inventory_rows(root / "structure" / "figure_inventory.json", "figure")
     inventory_conflicts = _inventory_identity_conflicts(rows, "figure")
+    asset_claim_conflicts = _inventory_asset_claim_conflicts(rows, "figure")
     conflicted_ids = {
         str(conflict["canonical_object_id"]) for conflict in inventory_conflicts
     }
@@ -760,6 +794,16 @@ def dry_run_exact_repairs(
             if not planned_ordered and planned_source.get("asset_block_ids"):
                 planned_ordered = [(None, str(bid), ()) for bid in planned_source.get("asset_block_ids")]
                 current_ordered = [(None, bid, ()) for _, bid, _ in current_ordered]
+            if any(
+                any(
+                    _page_number(ref.get("page")) == conflict["page"]
+                    and str(ref.get("block_id")) == str(conflict["block_id"])
+                    and _norm_bbox(ref.get("bbox")) == tuple(conflict["bbox"])
+                    for ref in planned_source.get("ordered_asset_refs") or []
+                )
+                for conflict in asset_claim_conflicts
+            ):
+                blockers.append("asset_claim_conflict")
             if current_ordered != planned_ordered:
                 blockers.append("matched_assets_changed")
             asset_keys = [
@@ -812,6 +856,7 @@ def dry_run_exact_repairs(
         "snapshot_verification": "live" if verify_live_snapshot else "persisted_audit",
         "audit_snapshot_match": audit_snapshot_match,
         "inventory_conflicts": inventory_conflicts,
+        "asset_claim_conflicts": asset_claim_conflicts,
         "summary": {
             "exact_repair_candidates": len(results),
             "repair_required": counts.get("ready", 0)
@@ -1144,6 +1189,16 @@ def stage_reconciliation(
         for res in dry_exact.get("results", [])
         if res.get("state") in {"ready", "needs_fresh_provenance"} and res.get("object_id")
     }
+    production_preconditions = {
+        object_id: {
+            "asset": reconcile_file_precondition(root / "assets" / "figures" / f"{object_id}.jpg"),
+            "markdown": reconcile_file_precondition(root / "render" / "figures" / f"{object_id}.md"),
+            "provenance": reconcile_file_precondition(
+                root / "render" / "materialization.provenance.json"
+            ),
+        }
+        for object_id in r_object_ids
+    }
     r_fig_inventory = {
         "matched_figures": [
             row
@@ -1215,6 +1270,7 @@ def stage_reconciliation(
             "staged_markdown": f"render/figures/{object_id}.md",
             "production_asset": f"assets/figures/{object_id}.jpg",
             "production_markdown": f"render/figures/{object_id}.md",
+            "production_precondition": production_preconditions.get(object_id, {}),
         }
         plan["plan_hash"] = reconcile_plan_hash(plan)
         image_path = staging_root / plan["staged_asset"]
@@ -1231,7 +1287,7 @@ def stage_reconciliation(
         }
         r_plans.append(plan)
     r_manifest = {
-        "schema_version": 1,
+        "schema_version": 2,
         "kind": "R",
         "paper_key": paper_key,
         "input_snapshot_hash": input_snapshot_hash,

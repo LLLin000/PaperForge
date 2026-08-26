@@ -80,6 +80,7 @@ def test_reconciliation_separates_exact_proposal_and_blocked(tmp_path: Path) -> 
 
     assert report["formal_figure_assessment"]["supported_formal_figure_labels"] == ["1", "2"]
     assert report["summary"] == {
+        "asset_claim_conflicts": 0,
         "supported_formal_figures": 2,
         "canonical_formal_figures": 1,
         "rendered_formal_figures": 1,

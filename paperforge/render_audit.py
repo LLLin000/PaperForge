@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any
 
 SCHEMA_VERSION = 1
-ALGORITHM_VERSION = 3
+ALGORITHM_VERSION = 4
 _LABEL_RE = re.compile(r"\b(?:fig(?:ure)?s?\.?|table|tab\.?|图|scheme)\s*([A-Z]?\d+)", re.IGNORECASE)
 _HEADER_RE = re.compile(r"^#\s+(Figure|Table)\s+(.+?)\s*$", re.IGNORECASE | re.MULTILINE)
 _PAGE_RE = re.compile(r"\*Page\s+([0-9]+)\*", re.IGNORECASE)
@@ -176,6 +176,46 @@ def _inventory_identity_conflicts(
             }
         )
     return sorted(conflicts, key=lambda item: str(item["canonical_object_id"]))
+
+
+def _inventory_asset_claim_conflicts(
+    rows: list[dict[str, Any]], kind: str
+) -> list[dict[str, Any]]:
+    """Return media refs claimed by more than one canonical object."""
+    claims: dict[tuple[Any, str, tuple[Any, ...]], set[str]] = {}
+    bucket = _canonical_inventory_bucket(kind)
+    for row in rows:
+        if row.get("_inventory_bucket") != bucket:
+            continue
+        object_id = str(row.get("canonical_object_id") or "")
+        if not object_id:
+            continue
+        for asset in row.get("matched_assets") or []:
+            if not isinstance(asset, dict):
+                continue
+            page = asset.get("page")
+            try:
+                page = int(page) if page is not None else None
+            except (TypeError, ValueError):
+                pass
+            block_id = str(asset.get("block_id") or "")
+            if not block_id:
+                continue
+            try:
+                bbox = tuple(int(round(float(value))) for value in (asset.get("bbox") or [])[:4])
+            except (TypeError, ValueError):
+                bbox = tuple(asset.get("bbox") or [])
+            claims.setdefault((page, block_id, bbox), set()).add(object_id)
+    return [
+        {
+            "page": page,
+            "block_id": block_id,
+            "bbox": list(bbox),
+            "owners": sorted(owners),
+        }
+        for (page, block_id, bbox), owners in sorted(claims.items(), key=str)
+        if len(owners) > 1
+    ]
 def _enrich_inventory_positions(root: Path, rows: list[dict[str, Any]], kind: str) -> None:
     if kind != "figure":
         return
@@ -369,6 +409,7 @@ _DIAGNOSIS_DOMAIN = {
     "render_artifact_missing": "render_layer",
     "canonical_identity_ambiguous": "inventory_layer",
     "inventory_identity_ambiguous": "inventory_layer",
+    "inventory_asset_claim_ambiguous": "inventory_layer",
     "upstream_asset_missing_or_reserved": "asset_layer",
 }
 
@@ -457,6 +498,18 @@ def _audit_kind(
                 recommended_action="inspect_inventory",
                 kind=kind,
                 **conflict,
+            )
+        )
+    for claim_conflict in _inventory_asset_claim_conflicts(rows, kind):
+        issues.append(
+            _issue(
+                "inventory_asset_claim_conflict",
+                "P1",
+                "canonical inventory asset is claimed by multiple object IDs",
+                diagnosis="inventory_asset_claim_ambiguous",
+                recommended_action="inspect_inventory",
+                kind=kind,
+                **claim_conflict,
             )
         )
     for artifact in artifacts:

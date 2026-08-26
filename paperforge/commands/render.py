@@ -69,11 +69,18 @@ def run(args: argparse.Namespace) -> int:
     if sub == "promote-r":
         from paperforge.promote_r import promote_r
 
-        result = promote_r(
-            Path(args.paths["ocr"]),
-            str(args.key),
-            getattr(args, "object_ids", None),
-        )
+        object_ids = list(getattr(args, "object_ids", None) or [])
+        promote_all = bool(getattr(args, "all", False))
+        if promote_all and object_ids:
+            result = {"ok": False, "reason": "promote_scope_conflict"}
+        elif not promote_all and not object_ids:
+            result = {"ok": False, "reason": "promote_scope_required"}
+        else:
+            result = promote_r(
+                Path(args.paths["ocr"]),
+                str(args.key),
+                None if promote_all else object_ids,
+            )
         if getattr(args, "json", False):
             print(json.dumps(result, ensure_ascii=False, indent=2))
         else:

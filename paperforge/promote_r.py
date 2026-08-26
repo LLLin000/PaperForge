@@ -20,12 +20,15 @@ from pathlib import Path
 from typing import Any
 
 from paperforge.render_audit import (
+    _inventory_asset_claim_conflicts,
     _inventory_identity_conflicts,
     _inventory_rows,
     audit_paper,
 )
 
 _MANIFEST_NAME = "r-manifest.json"
+_JOURNAL_NAME = ".paperforge-r-promotion.json"
+_TRANSACTION_DIR_NAME = ".paperforge-r-promotion"
 _SUCCESS_MATERIALIZATION_STATUSES = {"materialized", "success"}
 
 
@@ -76,6 +79,7 @@ def _plan_hash(plan: dict[str, Any]) -> str:
             "staged_markdown",
             "production_asset",
             "production_markdown",
+            "production_precondition",
         )
     }
     return hashlib.sha256(
@@ -93,6 +97,10 @@ def _snapshot_hash(root: Path) -> str:
         path = root / relative
         parts.append((_sha256_path(path) or "missing")[:16])
     return hashlib.sha256("|".join(parts).encode("utf-8")).hexdigest()[:16]
+
+
+def _file_precondition(path: Path) -> dict[str, Any]:
+    return {"exists": path.is_file(), "sha256": _sha256_path(path)}
 
 
 def _write_json_atomic(path: Path, payload: dict[str, Any]) -> None:
@@ -242,6 +250,15 @@ def _validate_plan(
     current_refs = _ordered_refs((row or {}).get("matched_assets") or [])
     if row is not None and current_refs != planned_refs:
         errors.append("ordered_asset_refs_mismatch")
+    claim_conflicts = _inventory_asset_claim_conflicts(rows, "figure")
+    for claim_conflict in claim_conflicts:
+        claim_key = (
+            claim_conflict["page"],
+            str(claim_conflict["block_id"]),
+            tuple(claim_conflict["bbox"]),
+        )
+        if claim_key in set(planned_refs) and claim_conflict["owners"] != [object_id]:
+            errors.append("asset_claim_conflict")
     ownership_keys = [(page, block_id) for page, block_id, _ in planned_refs]
     if any(not block_id for _, block_id in ownership_keys):
         errors.append("asset_ownership_missing_block_id")
@@ -300,6 +317,34 @@ def _validate_plan(
         if str(record.get("asset_path") or "").replace("\\", "/") != expected_staged_asset:
             errors.append("staging_provenance_asset_mismatch")
 
+    production_precondition = plan.get("production_precondition")
+    destination_state = "promote"
+    production_provenance_path = root / "render" / "materialization.provenance.json"
+    production_records = _provenance_records(production_provenance_path)
+    if not isinstance(production_precondition, dict):
+        errors.append("production_precondition_missing")
+    elif production_provenance_path.is_file() and production_records is None:
+        errors.append("production_provenance_unreadable")
+    else:
+        current_precondition = {
+            "asset": _file_precondition(root / expected_production_asset),
+            "markdown": _file_precondition(root / expected_production_markdown),
+            "provenance": _file_precondition(production_provenance_path),
+        }
+        production_record = (production_records or {}).get(expected_production_markdown)
+        artifacts_match = bool(
+            image_facts
+            and _sha256_path(root / expected_production_asset) == image_facts["sha256"]
+            and _sha256_path(root / expected_production_markdown) == markdown_hash
+        )
+        provenance_matches = bool(
+            production_record and production_record.get("plan_hash") == plan.get("plan_hash")
+        )
+        if artifacts_match and provenance_matches:
+            destination_state = "already_promoted"
+        elif current_precondition != production_precondition:
+            errors.append("STALE_R_DESTINATION")
+
     if errors or image_facts is None or markdown_hash is None:
         return sorted(set(errors)), None
     return [], {
@@ -310,6 +355,7 @@ def _validate_plan(
         "image_facts": image_facts,
         "markdown_sha256": markdown_hash,
         "staging_provenance": record or {},
+        "destination_state": destination_state,
     }
 
 
@@ -330,29 +376,116 @@ def _cleanup_backup_dir(path: Path) -> None:
         if child.is_file():
             child.unlink(missing_ok=True)
     path.rmdir()
+def _journal_path(root: Path) -> Path:
+    return root / _JOURNAL_NAME
 
 
-def _snapshot_files(paths: list[Path]) -> tuple[Path, list[dict[str, Any]]]:
-    backup_dir = Path(tempfile.mkdtemp(prefix="paperforge-r-rollback-"))
+def _transaction_dir(root: Path, transaction_id: str) -> Path:
+    return root / _TRANSACTION_DIR_NAME / transaction_id
+
+
+def _snapshot_files(root: Path, paths: list[Path]) -> tuple[Path, list[dict[str, Any]]]:
+    transaction_dir = _transaction_dir(root, uuid.uuid4().hex)
+    transaction_dir.mkdir(parents=True, exist_ok=False)
     snapshots: list[dict[str, Any]] = []
     try:
         unique_paths = list(dict.fromkeys(paths))
         for index, destination in enumerate(unique_paths):
             existed = destination.is_file()
-            backup = backup_dir / f"{index}.bak"
+            backup = transaction_dir / f"{index}.bak"
             if existed:
                 shutil.copy2(destination, backup)
+            relative_destination = destination.resolve().relative_to(root.resolve()).as_posix()
+            relative_backup = backup.relative_to(root.resolve()).as_posix()
             snapshots.append(
                 {
                     "destination": destination,
                     "existed": existed,
                     "backup": backup if existed else None,
+                    "destination_relative": relative_destination,
+                    "backup_relative": relative_backup if existed else None,
                 }
             )
+        _write_json_atomic(
+            _journal_path(root),
+            {
+                "schema_version": 1,
+                "state": "prepared",
+                "transaction_dir": transaction_dir.relative_to(root).as_posix(),
+                "snapshots": [
+                    {
+                        key: value
+                        for key, value in snapshot.items()
+                        if key.endswith("_relative") or key == "existed"
+                    }
+                    for snapshot in snapshots
+                ],
+            },
+        )
     except Exception:
-        _cleanup_backup_dir(backup_dir)
+        _cleanup_backup_dir(transaction_dir)
         raise
-    return backup_dir, snapshots
+    return transaction_dir, snapshots
+
+
+def _journal_snapshots(root: Path, journal: dict[str, Any]) -> tuple[Path, list[dict[str, Any]]]:
+    transaction_relative = str(journal.get("transaction_dir") or "")
+    transaction_dir = _safe_stage_path(root, transaction_relative)
+    if transaction_dir is None:
+        raise ValueError("promotion_journal_path_unsafe")
+    snapshots: list[dict[str, Any]] = []
+    for item in journal.get("snapshots") or []:
+        if not isinstance(item, dict):
+            raise ValueError("promotion_journal_snapshot_invalid")
+        destination = _safe_stage_path(root, str(item.get("destination_relative") or ""))
+        backup_relative = item.get("backup_relative")
+        backup = (
+            _safe_stage_path(root, str(backup_relative))
+            if backup_relative
+            else None
+        )
+        if destination is None or (item.get("existed") and backup is None):
+            raise ValueError("promotion_journal_snapshot_path_unsafe")
+        snapshots.append(
+            {
+                "destination": destination,
+                "existed": bool(item.get("existed")),
+                "backup": backup,
+            }
+        )
+    return transaction_dir, snapshots
+
+
+def _recover_pending_transaction(root: Path) -> str | None:
+    journal_path = _journal_path(root)
+    if not journal_path.is_file():
+        return None
+    journal = _read_json(journal_path)
+    if journal is None:
+        return "promotion_journal_unreadable"
+    try:
+        transaction_dir, snapshots = _journal_snapshots(root, journal)
+        if journal.get("state") != "committed":
+            _restore_snapshots(snapshots)
+        _cleanup_backup_dir(transaction_dir)
+        journal_path.unlink(missing_ok=True)
+    except Exception as exc:
+        return f"promotion_recovery_failed:{type(exc).__name__}:{exc}"
+    return None
+
+
+def _mark_transaction_committed(root: Path) -> None:
+    journal_path = _journal_path(root)
+    journal = _read_json(journal_path)
+    if journal is None:
+        raise ValueError("promotion_journal_unreadable")
+    journal["state"] = "committed"
+    _write_json_atomic(journal_path, journal)
+
+
+def _finish_transaction(root: Path, transaction_dir: Path) -> None:
+    _cleanup_backup_dir(transaction_dir)
+    _journal_path(root).unlink(missing_ok=True)
 
 
 def _restore_file(source: Path, destination: Path) -> None:
@@ -450,7 +583,63 @@ def _audit_targets(report: dict[str, Any], object_id: str) -> list[str]:
     ]
 
 
-def promote_r(
+def _postcondition_errors(
+    root: Path,
+    before_audit: dict[str, Any],
+    after_audit: dict[str, Any],
+    prepared: list[dict[str, Any]],
+) -> list[str]:
+    errors: list[str] = []
+    before_snapshot = before_audit.get("input_snapshot") or {}
+    after_snapshot = after_audit.get("input_snapshot") or {}
+    for key in ("blocks_hash", "figure_inventory_hash", "table_inventory_hash"):
+        if before_snapshot.get(key) != after_snapshot.get(key):
+            errors.append(f"source_snapshot_changed:{key}")
+    repair_issue_types = {
+        "render_artifact_integrity",
+        "render_artifact_missing",
+        "missing_render_materialization",
+        "render_dangling_asset_reference",
+    }
+    for item in prepared:
+        object_id = item["object_id"]
+        before_target = [
+            issue
+            for issue in before_audit.get("issues") or []
+            if isinstance(issue, dict) and _issue_mentions_object(issue, object_id)
+        ]
+        after_target = [
+            issue
+            for issue in after_audit.get("issues") or []
+            if isinstance(issue, dict) and _issue_mentions_object(issue, object_id)
+        ]
+        if item.get("destination_state") != "already_promoted":
+            before_repair_count = sum(
+                issue.get("type") in repair_issue_types for issue in before_target
+            )
+            after_repair_count = sum(
+                issue.get("type") in repair_issue_types for issue in after_target
+            )
+            if after_repair_count >= before_repair_count and before_repair_count:
+                errors.append(f"target_repair_issue_not_removed:{object_id}")
+            if not before_repair_count and after_repair_count:
+                errors.append(f"target_repair_issue_introduced:{object_id}")
+        before_issue_keys = {
+            (issue.get("type"), issue.get("severity"), issue.get("message"))
+            for issue in before_target
+        }
+        for issue in after_target:
+            issue_key = (issue.get("type"), issue.get("severity"), issue.get("message"))
+            if issue_key not in before_issue_keys and issue.get("severity") in {"P0", "P1"}:
+                errors.append(f"target_new_high_issue:{object_id}")
+        plan = item["plan"]
+        if _sha256_path(root / plan["production_asset"]) != item["image_facts"]["sha256"]:
+            errors.append(f"production_image_hash_mismatch:{object_id}")
+        if _sha256_path(root / plan["production_markdown"]) != item["markdown_sha256"]:
+            errors.append(f"production_markdown_hash_mismatch:{object_id}")
+    return errors
+
+def _promote_r_unlocked(
     ocr_root: Path,
     paper_key: str,
     object_ids: Iterable[str] | None = None,
@@ -459,14 +648,24 @@ def promote_r(
 ) -> dict[str, Any]:
     """Promote selected verified R plans without re-materializing them."""
     root = Path(ocr_root) / paper_key
+    recovery_error = _recover_pending_transaction(root)
+    if recovery_error:
+        return {
+            "ok": False,
+            "reason": "R_PROMOTION_RECOVERY_REQUIRED",
+            "paper_key": paper_key,
+            "error": recovery_error,
+        }
     stage_root = _find_staging_root(paper_key, staging_root)
-    if stage_root is None:
-        return {"ok": False, "reason": "r_manifest_not_found", "paper_key": paper_key}
     manifest_path = stage_root / _MANIFEST_NAME
     manifest = _read_json(manifest_path)
     if manifest is None:
         return {"ok": False, "reason": "r_manifest_unreadable", "paper_key": paper_key}
-    if manifest.get("kind") != "R" or manifest.get("paper_key") != paper_key:
+    if (
+        manifest.get("schema_version") != 2
+        or manifest.get("kind") != "R"
+        or manifest.get("paper_key") != paper_key
+    ):
         return {"ok": False, "reason": "r_manifest_invalid", "paper_key": paper_key}
 
     plans = [plan for plan in manifest.get("plans") or [] if isinstance(plan, dict)]
@@ -564,7 +763,7 @@ def promote_r(
         for plan in (item["plan"] for item in prepared)
     ] + [production_provenance_path]
     try:
-        backup_dir, snapshots = _snapshot_files(promotion_targets)
+        transaction_dir, snapshots = _snapshot_files(root, promotion_targets)
     except Exception as exc:
         return {
             "ok": False,
@@ -579,9 +778,7 @@ def promote_r(
             plan = item["plan"]
             production_asset = destination_root / plan["production_asset"]
             production_markdown = destination_root / plan["production_markdown"]
-            image_same = _sha256_path(production_asset) == item["image_facts"]["sha256"]
-            markdown_same = _sha256_path(production_markdown) == item["markdown_sha256"]
-            if image_same and markdown_same:
+            if item.get("destination_state") == "already_promoted":
                 promotion_states[item["object_id"]] = "already_promoted"
                 continue
             _atomic_copy(item["staged_asset"], production_asset)
@@ -590,12 +787,31 @@ def promote_r(
         production_provenance = _merge_provenance(production_provenance_path, prepared)
         if _read_json(production_provenance_path) != production_provenance:
             _write_json_atomic(production_provenance_path, production_provenance)
+        post_audit = audit_paper(Path(ocr_root), paper_key, write_report=False)
+        postcondition_errors = _postcondition_errors(root, before_audit, post_audit, prepared)
+        if postcondition_errors:
+            _restore_snapshots(snapshots)
+            rollback_audit = audit_paper(Path(ocr_root), paper_key, write_report=False)
+            _finish_transaction(root, transaction_dir)
+            return {
+                "ok": False,
+                "reason": "R_PROMOTION_POSTVERIFY_FAILED",
+                "paper_key": paper_key,
+                "staging_root": str(stage_root),
+                "objects": validations,
+                "postcondition_errors": postcondition_errors,
+                "rolled_back": True,
+                "rollback_audit_state": rollback_audit.get("state"),
+            }
+        _mark_transaction_committed(root)
     except Exception as exc:
         rollback_error: str | None = None
         try:
             _restore_snapshots(snapshots)
         except Exception as rollback_exc:
             rollback_error = f"{type(rollback_exc).__name__}: {rollback_exc}"
+        if rollback_error is None:
+            _finish_transaction(root, transaction_dir)
         result = {
             "ok": False,
             "reason": "R_PROMOTION_WRITE_FAILED",
@@ -608,9 +824,7 @@ def promote_r(
         if rollback_error:
             result["rollback_error"] = rollback_error
         return result
-    finally:
-        _cleanup_backup_dir(backup_dir)
-
+    _finish_transaction(root, transaction_dir)
     after_audit = audit_paper(Path(ocr_root), paper_key, write_report=True)
     target_delta = {
         item["object_id"]: {
@@ -635,3 +849,31 @@ def promote_r(
         },
         "production_write": True,
     }
+
+
+def promote_r(
+    ocr_root: Path,
+    paper_key: str,
+    object_ids: Iterable[str] | None = None,
+    *,
+    staging_root: Path | None = None,
+) -> dict[str, Any]:
+    """Promote R plans under a paper-scoped cross-process writer lock."""
+    from filelock import FileLock, Timeout
+
+    root = Path(ocr_root) / paper_key
+    lock = FileLock(str(root / ".paperforge-r-promotion.lock"), timeout=0)
+    try:
+        with lock:
+            return _promote_r_unlocked(
+                ocr_root,
+                paper_key,
+                object_ids,
+                staging_root=staging_root,
+            )
+    except Timeout:
+        return {
+            "ok": False,
+            "reason": "R_PROMOTION_BUSY",
+            "paper_key": paper_key,
+        }

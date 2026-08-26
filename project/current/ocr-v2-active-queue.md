@@ -7,9 +7,9 @@
 - Reconcile remains independent from the stable OCR/front-render pipeline; no `ocr_figures.py`, `ocr_objects.py`, `ocr.py`, or `ocr_rebuild.py` changes.
 - Read-only census: 965 papers scanned; 182 papers contain 250 duplicate canonical figure-ID groups (224 conflicting, 26 identical).
 - Audit/reconcile now blocks ambiguous IDs and R staging passes only selected exact plans.
-- Added `paperforge render promote-r KEY [OBJECT_ID...] --json`. It consumes a verified `r-manifest.json`, checks live snapshot, canonical uniqueness, ordered refs, ownership, staged image/markdown hashes, markdown link, and staging provenance before atomic per-file promotion. Production inventory is not rewritten.
-- Verification: promoter + reconcile/audit/lineage/CLI focused suite **88 passed, 1 warning**; targeted Ruff `E,F,I,UP` clean. Mid-batch write-failure rollback and idempotent second run passed.
-- Next gate: hard-kill/restart recovery and stratified R canaries, then limited rollout. No full-corpus promotion yet.
+- Added `paperforge render promote-r KEY [OBJECT_ID...] --json`; mutation scope is explicit (`OBJECT_ID` or `--all`). It consumes a verified `r-manifest.json`, checks live snapshot, canonical uniqueness, cross-object `(page, block_id, bbox)` claims, destination CAS, staged image/markdown facts, markdown link, and staging provenance before journaled atomic promotion. Production inventory is not rewritten.
+- Verification: focused promoter + reconcile/audit/lineage/CLI/docs suite **114 passed, 1 warning**; targeted Ruff `E,F,I,UP` clean. Post-audit rollback, four hard-kill recovery points, paper writer lock, and cross-object claims passed. A 12-object disposable set produced **11 successful promotions + 1 expected page-range failure**; all 11 second promotes were no-ops.
+- Next gate: explicit owner authorization only. No production batch rollout. Evidence: `project/current/render-reconciliation/r-canary-results.json`.
 
 ## 2026-08-20: S1–S6 lightweight certification (EXECUTABLE_FROZEN 462398cb → a42f8bb7)
 - **S1 PASS:** `setup --modular` → `probe installation ready`, `status` 0 papers, `doctor` only Zotero/BBT optional fails. #191 gap: still deploys `.agents/skills` and retains `skill_dir/command_dir/agent_platform`.
