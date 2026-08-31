@@ -198,3 +198,46 @@ def test_audit_projects_existing_materialization_provenance(tmp_path: Path) -> N
 
     assert result["materialization_provenance"]["state"] == "available"
     assert issue["evidence"]["materialization"]["reason"] == "pdf_not_found"
+
+
+def test_audit_marks_duplicate_provenance_paths_ambiguous(tmp_path: Path) -> None:
+    ocr_root = _write_fixture(tmp_path / "ocr")
+    path = ocr_root / "TESTFIG1" / "render" / "materialization.provenance.json"
+    record = {
+        "object_id": "figure_001",
+        "kind": "figure",
+        "status": "materialized",
+        "render_path": "render/figures/figure_001.md",
+    }
+    path.write_text(
+        json.dumps({"schema_version": 1, "objects": [record, dict(record)]}),
+        encoding="utf-8",
+    )
+
+    result = audit_paper(ocr_root, "TESTFIG1", write_report=False)
+
+    assert result["materialization_provenance"]["state"] == "ambiguous"
+
+
+def test_audit_marks_malformed_provenance_unreadable(tmp_path: Path) -> None:
+    ocr_root = _write_fixture(tmp_path / "ocr")
+    path = ocr_root / "TESTFIG1" / "render" / "materialization.provenance.json"
+    path.write_text(json.dumps({"schema_version": 1, "objects": {}}), encoding="utf-8")
+
+    result = audit_paper(ocr_root, "TESTFIG1", write_report=False)
+    issue = next(issue for issue in result["issues"] if issue["type"] == "materialization_provenance_invalid")
+
+    assert result["state"] == "DEGRADED"
+    assert result["materialization_provenance"]["state"] == "unreadable"
+    assert result["materialization_provenance"]["reason"] == "objects_not_list"
+
+
+def test_audit_marks_malformed_provenance_record_unreadable(tmp_path: Path) -> None:
+    ocr_root = _write_fixture(tmp_path / "ocr")
+    path = ocr_root / "TESTFIG1" / "render" / "materialization.provenance.json"
+    path.write_text(json.dumps({"schema_version": 1, "objects": [None]}), encoding="utf-8")
+
+    result = audit_paper(ocr_root, "TESTFIG1", write_report=False)
+
+    assert result["materialization_provenance"]["state"] == "unreadable"
+    assert result["materialization_provenance"]["reason"] == "record_invalid"

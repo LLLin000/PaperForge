@@ -411,6 +411,7 @@ _DIAGNOSIS_DOMAIN = {
     "inventory_identity_ambiguous": "inventory_layer",
     "inventory_asset_claim_ambiguous": "inventory_layer",
     "upstream_asset_missing_or_reserved": "asset_layer",
+    "materialization_provenance_invalid": "render_layer",
 }
 
 
@@ -451,27 +452,53 @@ def _read_materialization_provenance(root: Path) -> dict[str, Any]:
         return {
             "path": relative_path,
             "state": "unreadable",
+            "reason": "invalid_json",
             "records_by_render_path": {},
         }
-    records = payload.get("objects") if isinstance(payload, dict) else None
-    records = records if isinstance(records, list) else []
+    if not isinstance(payload, dict) or not isinstance(payload.get("objects"), list):
+        return {
+            "path": relative_path,
+            "state": "unreadable",
+            "reason": "objects_not_list",
+            "schema_version": payload.get("schema_version") if isinstance(payload, dict) else None,
+            "records_by_render_path": {},
+        }
+    records = payload["objects"]
+    by_path: dict[str, dict[str, Any]] = {}
+    for record in records:
+        if not isinstance(record, dict) or not record.get("render_path"):
+            return {
+                "path": relative_path,
+                "state": "unreadable",
+                "reason": "record_invalid",
+                "schema_version": payload.get("schema_version"),
+                "summary": payload.get("summary"),
+                "records_by_render_path": {},
+            }
+        render_path = str(record["render_path"])
+        if render_path in by_path:
+            return {
+                "path": relative_path,
+                "state": "ambiguous",
+                "reason": "duplicate_render_path",
+                "schema_version": payload.get("schema_version"),
+                "summary": payload.get("summary"),
+                "records_by_render_path": {},
+            }
+        by_path[render_path] = record
     return {
         "path": relative_path,
         "state": "available",
-        "schema_version": payload.get("schema_version") if isinstance(payload, dict) else None,
-        "summary": payload.get("summary") if isinstance(payload, dict) else {},
-        "records_by_render_path": {
-            str(record.get("render_path")): record
-            for record in records
-            if isinstance(record, dict) and record.get("render_path")
-        },
+        "schema_version": payload.get("schema_version"),
+        "summary": payload.get("summary"),
+        "records_by_render_path": by_path,
     }
 
 
 def _materialization_provenance_view(provenance: dict[str, Any]) -> dict[str, Any]:
     return {
         key: provenance[key]
-        for key in ("path", "state", "schema_version", "summary")
+        for key in ("path", "state", "reason", "schema_version", "summary")
         if key in provenance
     }
 
@@ -647,6 +674,19 @@ def audit_paper(ocr_root: Path, paper_key: str, *, write_report: bool = True) ->
 
     issues: list[dict[str, Any]] = []
     materialization_provenance = _read_materialization_provenance(root)
+    if materialization_provenance.get("state") in {"ambiguous", "unreadable"}:
+        issues.append(
+            _issue(
+                "materialization_provenance_invalid",
+                "P1",
+                "materialization provenance is ambiguous or malformed",
+                diagnosis="materialization_provenance_invalid",
+                recommended_action="inspect_provenance",
+                path=materialization_provenance.get("path"),
+                provenance_state=materialization_provenance.get("state"),
+                reason=materialization_provenance.get("reason"),
+            )
+        )
     try:
         figure_rows, figure_artifacts, figure_issues = _audit_kind(
             root,

@@ -308,6 +308,166 @@ def test_promote_r_postcondition_failure_rolls_back(tmp_path: Path, monkeypatch)
     assert not (paper / ".paperforge-r-promotion.json").exists()
 
 
+
+def test_promote_r_refuses_failed_pre_audit(tmp_path: Path, monkeypatch) -> None:
+    ocr_root, paper, _ = _write_r_fixture(tmp_path)
+    audit_paper(ocr_root, "TESTRPROMO1", write_report=True)
+    staging = _write_r_manifest(paper, tmp_path / "staging")
+    import paperforge.promote_r as promoter_module
+
+    monkeypatch.setattr(
+        promoter_module,
+        "audit_paper",
+        lambda *args, **kwargs: {
+            "state": "FAILED",
+            "issues": [{"type": "audit_execution_failure"}],
+        },
+    )
+
+    result = promote_r(ocr_root, "TESTRPROMO1", staging_root=staging)
+
+    assert result["ok"] is False
+    assert result["reason"] == "R_PROMOTION_PREAUDIT_FAILED"
+    assert result["audit_0"]["state"] == "FAILED"
+    assert result["production_write"] is False
+    assert not (paper / "assets/figures/figure_001.jpg").exists()
+    assert not (paper / ".paperforge-r-promotion.json").exists()
+
+
+def test_promote_r_failed_post_audit_rolls_back_and_records_rollback_audit(
+    tmp_path: Path, monkeypatch
+) -> None:
+    ocr_root, paper, _ = _write_r_fixture(tmp_path)
+    audit_paper(ocr_root, "TESTRPROMO1", write_report=True)
+    staging = _write_r_manifest(paper, tmp_path / "staging")
+    import paperforge.promote_r as promoter_module
+
+    calls = 0
+
+    def fake_audit(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        if calls == 2:
+            return {
+                "state": "FAILED",
+                "issues": [{"type": "audit_execution_failure"}],
+            }
+        return {"state": "CLEAN", "issues": [], "input_snapshot": {}}
+
+    monkeypatch.setattr(promoter_module, "audit_paper", fake_audit)
+
+    result = promote_r(ocr_root, "TESTRPROMO1", staging_root=staging)
+
+    assert result["ok"] is False
+    assert result["reason"] == "R_PROMOTION_POSTVERIFY_FAILED"
+    assert result["post_audit_state"] == "FAILED"
+    assert result["rollback_audit_state"] == "CLEAN"
+    assert result["rolled_back"] is True
+    assert not (paper / "assets/figures/figure_001.jpg").exists()
+    assert not (paper / ".paperforge-r-promotion.json").exists()
+
+
+def test_promote_r_recovery_refuses_external_destination_conflict(
+    tmp_path: Path, monkeypatch
+) -> None:
+    ocr_root, paper, _ = _write_r_fixture(tmp_path)
+    audit_paper(ocr_root, "TESTRPROMO1", write_report=True)
+    staging = _write_r_manifest(paper, tmp_path / "staging")
+    import paperforge.promote_r as promoter_module
+
+    original_copy = promoter_module._atomic_copy
+    calls = 0
+
+    def interrupt_on_second_copy(source: Path, destination: Path) -> None:
+        nonlocal calls
+        calls += 1
+        if calls == 2:
+            raise KeyboardInterrupt
+        original_copy(source, destination)
+
+    monkeypatch.setattr(promoter_module, "_atomic_copy", interrupt_on_second_copy)
+    with pytest.raises(KeyboardInterrupt):
+        promote_r(ocr_root, "TESTRPROMO1", staging_root=staging)
+
+    image = paper / "assets/figures/figure_001.jpg"
+    image.write_bytes(b"external-writer")
+    monkeypatch.undo()
+
+    result = promote_r(ocr_root, "TESTRPROMO1", staging_root=staging)
+
+    assert result["ok"] is False
+    assert result["reason"] == "R_PROMOTION_RECOVERY_REQUIRED"
+    assert "promotion_recovery_conflict" in result["error"]
+    assert image.read_bytes() == b"external-writer"
+    assert (paper / ".paperforge-r-promotion.json").is_file()
+
+
+def test_promote_r_blocks_duplicate_staging_provenance(tmp_path: Path) -> None:
+    ocr_root, paper, _ = _write_r_fixture(tmp_path)
+    audit_paper(ocr_root, "TESTRPROMO1", write_report=True)
+    staging = _write_r_manifest(paper, tmp_path / "staging")
+    provenance_path = staging / "render" / "materialization.provenance.json"
+    provenance = json.loads(provenance_path.read_text(encoding="utf-8"))
+    provenance["objects"].append(json.loads(json.dumps(provenance["objects"][0])))
+    provenance_path.write_text(json.dumps(provenance), encoding="utf-8")
+
+    result = promote_r(ocr_root, "TESTRPROMO1", staging_root=staging)
+
+    assert result["ok"] is False
+    assert result["reason"] == "R_GATE_FAILED"
+    assert result["objects"][0]["gates"] == ["staging_provenance_unreadable"]
+    assert not (paper / "assets/figures/figure_001.jpg").exists()
+
+
+def test_promote_r_keeps_malformed_pending_journal(tmp_path: Path) -> None:
+    ocr_root, paper, _ = _write_r_fixture(tmp_path)
+    journal = paper / ".paperforge-r-promotion.json"
+    journal.write_text(
+        json.dumps(
+            {
+                "schema_version": 2,
+                "state": "prepared",
+                "transaction_dir": ".paperforge-r-promotion/tx",
+                "snapshots": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = promote_r(ocr_root, "TESTRPROMO1", staging_root=tmp_path / "missing")
+
+    assert result["ok"] is False
+    assert result["reason"] == "R_PROMOTION_RECOVERY_REQUIRED"
+    assert result["error"] == (
+        "promotion_recovery_failed:ValueError:promotion_journal_snapshots_invalid"
+    )
+    assert journal.is_file()
+
+def test_promote_r_rejects_unsafe_object_id(tmp_path: Path) -> None:
+    ocr_root, paper, _ = _write_r_fixture(tmp_path)
+    audit_paper(ocr_root, "TESTRPROMO1", write_report=True)
+    staging = _write_r_manifest(paper, tmp_path / "staging")
+    manifest_path = staging / "r-manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    plan = manifest["plans"][0]
+    plan["object_id"] = "../outside"
+    plan["canonical_identity"]["figure_id"] = "../outside"
+    plan["staged_asset"] = "assets/figures/../outside.jpg"
+    plan["staged_markdown"] = "render/figures/../outside.md"
+    plan["production_asset"] = "assets/figures/../outside.jpg"
+    plan["production_markdown"] = "render/figures/../outside.md"
+    plan["plan_hash"] = _plan_hash(plan)
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    result = promote_r(ocr_root, "TESTRPROMO1", staging_root=staging)
+
+    assert result["ok"] is False
+    assert result["reason"] == "R_GATE_FAILED"
+    assert "object_id_unsafe" in result["objects"][0]["gates"]
+    assert not (paper / "outside.jpg").exists()
+
+
+
 def test_promote_r_recovers_persisted_journal_after_interruption(
     tmp_path: Path, monkeypatch
 ) -> None:

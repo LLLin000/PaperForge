@@ -1,7 +1,7 @@
 # OCR Render Consistency Audit — V1 Plan
 
-**Status:** V1 read-only audit implementation. Existing render code remains unchanged.
-
+**Status:** V1 read-only audit and D1 R/P reconciliation implementation are present. R disposable canary passes; production real-vault canary and batch rollout remain blocked on owner authorization and semantic-coverage adjudication.
+**Revision 2026-08-31:** D1 adds duplicate-identity and cross-canonical ownership blocking, selected-plan R staging, manifest-gated promotion, destination CAS, journaled rollback/recovery, explicit mutation scope, fail-closed audit/journal/provenance gates, safe-ID validation, report-level `R_CONTENT_UNVERIFIED`, namespace-aware P anchors, and fulltext source/identity blocking. Semantic coverage defects remain report-only.
 ## Boundary
 
 Existing OCR structural parsing, figure/table matching, and render code remain untouched. V1 is an append-only post-render audit. It never synthesizes visual content or edits canonical OCR truth.
@@ -10,7 +10,7 @@ Existing OCR structural parsing, figure/table matching, and render code remain u
 existing render → audit_0 → render/render.consistency.json → probe OCR details.render_consistency
 ```
 
-V1 does not reconcile or modify artifacts. Reconcile is deferred until the corpus audit validates exact repair rules.
+V1 itself does not reconcile or modify artifacts. The later D1 `paperforge render reconcile` command produces an isolated staging result; only `promote-r` can write production, and only after its separate safety gates.
 
 ## V1 scope
 
@@ -213,12 +213,9 @@ Position relations expose both booleans and ordering: `same_page`, `cross_page`,
 
 ## Authority boundary
 
-Future `paperforge render reconcile` may update only:
+The implemented D1 `paperforge render reconcile` command stages the read-only report's selected R/P results in an isolated temporary directory. It does not write production artifacts or canonical inventory.
 
-- render-layer markdown artifacts;
-- render-layer image materialization through the existing renderer;
-- `render/render.consistency.json`;
-- `render/materialization.provenance.json`.
+The R promoter may update only the selected render-layer image, Markdown, and materialization-provenance outputs after live identity, ownership, source snapshot, staged-output, destination-CAS, journal, and post-audit gates pass. It never re-materializes during promotion.
 
 It must not mutate:
 
@@ -231,26 +228,39 @@ It must not mutate:
 
 ## Execution surface
 
-V1 implements only:
+The current commands are:
 
 ```text
 paperforge render audit
+paperforge render reconcile
+paperforge render promote-r
+paperforge render accept-proposal
 ```
 
-It is read-only for one paper or a batch. `paperforge render reconcile` is a later phase after the corpus audit.
+`render audit` is read-only for one paper or a batch. `render reconcile` is staging-only. `promote-r` requires explicit object IDs or `--all`; `accept-proposal` remains a human-authority action.
+
+Production batch rollout is not authorized. The current disposable canary evidence is recorded in `project/current/render-reconciliation/r-canary-results.json`.
 
 ## Implementation phases
 
-1. Build read-only consistency audit against existing `render/figures`, `figure_inventory`, `render/fulltext.md`, and source block/asset metadata.
-2. Run it over the real OCR corpus; review false positives and issue distribution.
-3. Freeze exact repair rules from observed evidence; only then design explicit reconcile.
-4. Integrate the audit as a post-pass after render without changing the existing render algorithm.
-5. Keep V1 to main/supplement figure/table namespaces; formula remains report-only and scheme/appendix remain future scope.
+1. Build read-only consistency audit against existing `render/figures`, `figure_inventory`, `render/fulltext.md`, and source block/asset metadata. **Complete.**
+2. Run it over the real OCR corpus; review false positives and issue distribution. **Complete.**
+3. Freeze exact repair rules from observed evidence; only then design explicit reconcile. **Complete for the current R subset; semantic coverage remains outside R exact.**
+4. Integrate the audit as a post-pass after render without changing the existing render algorithm. **Complete.**
+5. Keep V1 to main/supplement figure/table namespaces; formula remains report-only and scheme/appendix remain future scope. **Current scope retained.**
+
+## Known detection boundaries
+
+- Duplicate canonical IDs, cross-canonical asset claims, duplicate provenance paths, malformed provenance, and unavailable fulltext sources are detected and blocked.
+- A missing or dangling render artifact can become an R exact plan when source identity and ownership are unique.
+- An existing image with missing, ambiguous, unreadable, or mismatched authoritative provenance is surfaced as `R_CONTENT_UNVERIFIED`; it cannot become an exact repair or be overwritten by promotion.
+- A semantically incomplete crop (for example, a nearby `table_html` claim absorbing a Figure panel) is not proven by hash/dimension/CAS checks. It requires a separate coverage-suspect diagnostic and human/upstream adjudication.
 
 ## Unresolved case queue
 
 These remain report-only until separately specified:
 
+- semantic coverage suspicion, including a Figure panel absorbed by a nearby `table_html` claim.
 - caption continuation across pages;
 - `Figs. 2A–2D` and mixed ranges where subfigure ownership is unclear;
 - main/supplement/scheme/appendix namespace ambiguity;

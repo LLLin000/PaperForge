@@ -103,6 +103,51 @@ def _file_precondition(path: Path) -> dict[str, Any]:
     return {"exists": path.is_file(), "sha256": _sha256_path(path)}
 
 
+def _json_payload_hash(payload: dict[str, Any]) -> str:
+    encoded = (json.dumps(payload, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _valid_precondition(value: Any) -> bool:
+    if not isinstance(value, dict) or not isinstance(value.get("exists"), bool):
+        return False
+    if value["exists"]:
+        return isinstance(value.get("sha256"), str) and bool(value["sha256"])
+    return value.get("sha256") is None
+
+
+def _audit_failed(audit: Any) -> bool:
+    return not isinstance(audit, dict) or audit.get("state") not in {"CLEAN", "DEGRADED"}
+
+
+def _promotion_audit(
+    ocr_root: Path, paper_key: str, *, write_report: bool
+) -> dict[str, Any]:
+    try:
+        result = audit_paper(ocr_root, paper_key, write_report=write_report)
+    except Exception as exc:  # noqa: BLE001 — promotion must fail closed
+        return {
+            "state": "FAILED",
+            "issues": [
+                {
+                    "type": "audit_execution_failure",
+                    "message": f"{type(exc).__name__}: {exc}",
+                }
+            ],
+        }
+    if not isinstance(result, dict):
+        return {
+            "state": "FAILED",
+            "issues": [
+                {
+                    "type": "audit_execution_failure",
+                    "message": "audit returned a non-object result",
+                }
+            ],
+        }
+    return result
+
+
 def _write_json_atomic(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temp_path: Path | None = None
@@ -110,6 +155,7 @@ def _write_json_atomic(path: Path, payload: dict[str, Any]) -> None:
         with tempfile.NamedTemporaryFile(
             mode="w",
             encoding="utf-8",
+            newline="\n",
             dir=path.parent,
             prefix=f".{path.name}.",
             suffix=".tmp",
@@ -205,11 +251,15 @@ def _provenance_records(path: Path) -> dict[str, dict[str, Any]] | None:
     records = payload.get("objects")
     if not isinstance(records, list):
         return None
-    return {
-        str(record.get("render_path")): record
-        for record in records
-        if isinstance(record, dict) and record.get("render_path")
-    }
+    by_path: dict[str, dict[str, Any]] = {}
+    for record in records:
+        if not isinstance(record, dict) or not record.get("render_path"):
+            return None
+        render_path = str(record["render_path"])
+        if render_path in by_path:
+            return None
+        by_path[render_path] = record
+    return by_path
 
 
 def _validate_plan(
@@ -224,6 +274,8 @@ def _validate_plan(
 ) -> tuple[list[str], dict[str, Any] | None]:
     object_id = str(plan.get("object_id") or "")
     errors: list[str] = []
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*", object_id):
+        errors.append("object_id_unsafe")
     identity = plan.get("canonical_identity") or {}
     if not object_id or identity.get("figure_id") != object_id:
         errors.append("canonical_identity_mismatch")
@@ -376,6 +428,7 @@ def _cleanup_backup_dir(path: Path) -> None:
         if child.is_file():
             child.unlink(missing_ok=True)
     path.rmdir()
+
 def _journal_path(root: Path) -> Path:
     return root / _JOURNAL_NAME
 
@@ -384,39 +437,48 @@ def _transaction_dir(root: Path, transaction_id: str) -> Path:
     return root / _TRANSACTION_DIR_NAME / transaction_id
 
 
-def _snapshot_files(root: Path, paths: list[Path]) -> tuple[Path, list[dict[str, Any]]]:
+def _snapshot_files(
+    root: Path,
+    paths: list[Path],
+    *,
+    output_preconditions: dict[Path, dict[str, Any]] | None = None,
+) -> tuple[Path, list[dict[str, Any]]]:
     transaction_dir = _transaction_dir(root, uuid.uuid4().hex)
     transaction_dir.mkdir(parents=True, exist_ok=False)
     snapshots: list[dict[str, Any]] = []
+    output_preconditions = output_preconditions or {}
     try:
         unique_paths = list(dict.fromkeys(paths))
         for index, destination in enumerate(unique_paths):
-            existed = destination.is_file()
+            before = _file_precondition(destination)
             backup = transaction_dir / f"{index}.bak"
-            if existed:
+            if before["exists"]:
                 shutil.copy2(destination, backup)
             relative_destination = destination.resolve().relative_to(root.resolve()).as_posix()
             relative_backup = backup.relative_to(root.resolve()).as_posix()
             snapshots.append(
                 {
                     "destination": destination,
-                    "existed": existed,
-                    "backup": backup if existed else None,
+                    "existed": before["exists"],
+                    "backup": backup if before["exists"] else None,
                     "destination_relative": relative_destination,
-                    "backup_relative": relative_backup if existed else None,
+                    "backup_relative": relative_backup if before["exists"] else None,
+                    "before": before,
+                    "output": output_preconditions.get(destination),
                 }
             )
         _write_json_atomic(
             _journal_path(root),
             {
-                "schema_version": 1,
+                "schema_version": 2,
                 "state": "prepared",
                 "transaction_dir": transaction_dir.relative_to(root).as_posix(),
                 "snapshots": [
                     {
                         key: value
                         for key, value in snapshot.items()
-                        if key.endswith("_relative") or key == "existed"
+                        if key.endswith("_relative")
+                        or key in {"existed", "before", "output"}
                     }
                     for snapshot in snapshots
                 ],
@@ -429,28 +491,37 @@ def _snapshot_files(root: Path, paths: list[Path]) -> tuple[Path, list[dict[str,
 
 
 def _journal_snapshots(root: Path, journal: dict[str, Any]) -> tuple[Path, list[dict[str, Any]]]:
-    transaction_relative = str(journal.get("transaction_dir") or "")
-    transaction_dir = _safe_stage_path(root, transaction_relative)
+    transaction_relative = journal.get("transaction_dir")
+    transaction_dir = _safe_stage_path(root, str(transaction_relative or ""))
     if transaction_dir is None:
         raise ValueError("promotion_journal_path_unsafe")
+    raw_snapshots = journal.get("snapshots")
+    if not isinstance(raw_snapshots, list) or not raw_snapshots:
+        raise ValueError("promotion_journal_snapshots_invalid")
     snapshots: list[dict[str, Any]] = []
-    for item in journal.get("snapshots") or []:
-        if not isinstance(item, dict):
+    for item in raw_snapshots:
+        if not isinstance(item, dict) or not isinstance(item.get("existed"), bool):
             raise ValueError("promotion_journal_snapshot_invalid")
-        destination = _safe_stage_path(root, str(item.get("destination_relative") or ""))
+        destination_relative = item.get("destination_relative")
+        if not isinstance(destination_relative, str) or not destination_relative:
+            raise ValueError("promotion_journal_snapshot_invalid")
+        destination = _safe_stage_path(root, destination_relative)
         backup_relative = item.get("backup_relative")
         backup = (
             _safe_stage_path(root, str(backup_relative))
             if backup_relative
             else None
         )
-        if destination is None or (item.get("existed") and backup is None):
+        if destination is None or (item["existed"] and backup is None):
             raise ValueError("promotion_journal_snapshot_path_unsafe")
         snapshots.append(
             {
                 "destination": destination,
-                "existed": bool(item.get("existed")),
+                "existed": item["existed"],
                 "backup": backup,
+                "before": item.get("before"),
+                "output": item.get("output"),
+                "destination_relative": destination_relative,
             }
         )
     return transaction_dir, snapshots
@@ -463,12 +534,32 @@ def _recover_pending_transaction(root: Path) -> str | None:
     journal = _read_json(journal_path)
     if journal is None:
         return "promotion_journal_unreadable"
+    state = journal.get("state")
+    if state not in {"prepared", "committed"}:
+        return "promotion_journal_state_invalid"
     try:
         transaction_dir, snapshots = _journal_snapshots(root, journal)
-        if journal.get("state") != "committed":
-            _restore_snapshots(snapshots)
+        if state == "prepared":
+            if not transaction_dir.is_dir():
+                return "promotion_journal_transaction_missing"
+            for snapshot in snapshots:
+                before = snapshot.get("before")
+                output = snapshot.get("output")
+                if not _valid_precondition(before) or not _valid_precondition(output):
+                    return "promotion_journal_cas_missing"
+                current = _file_precondition(snapshot["destination"])
+                if current != before and current != output:
+                    return (
+                        "promotion_recovery_conflict:"
+                        + str(snapshot.get("destination_relative") or snapshot["destination"])
+                    )
+            _restore_snapshots(snapshots, verify_cas=True)
         _cleanup_backup_dir(transaction_dir)
         journal_path.unlink(missing_ok=True)
+    except ValueError as exc:
+        if str(exc).startswith("promotion_recovery_conflict:"):
+            return str(exc)
+        return f"promotion_recovery_failed:{type(exc).__name__}:{exc}"
     except Exception as exc:
         return f"promotion_recovery_failed:{type(exc).__name__}:{exc}"
     return None
@@ -498,9 +589,24 @@ def _restore_file(source: Path, destination: Path) -> None:
         temporary.unlink(missing_ok=True)
 
 
-def _restore_snapshots(snapshots: list[dict[str, Any]]) -> None:
+def _restore_snapshots(
+    snapshots: list[dict[str, Any]], *, verify_cas: bool = False
+) -> None:
     for snapshot in reversed(snapshots):
         destination = snapshot["destination"]
+        if verify_cas:
+            before = snapshot.get("before")
+            output = snapshot.get("output")
+            current = _file_precondition(destination)
+            if (
+                not _valid_precondition(before)
+                or not _valid_precondition(output)
+                or (current != before and current != output)
+            ):
+                raise ValueError(
+                    "promotion_recovery_conflict:"
+                    + str(snapshot.get("destination_relative") or destination)
+                )
         if snapshot["existed"]:
             _restore_file(snapshot["backup"], destination)
         else:
@@ -590,6 +696,11 @@ def _postcondition_errors(
     prepared: list[dict[str, Any]],
 ) -> list[str]:
     errors: list[str] = []
+    if _audit_failed(before_audit):
+        errors.append("before_audit_failed")
+    if _audit_failed(after_audit):
+        errors.append("after_audit_failed")
+
     before_snapshot = before_audit.get("input_snapshot") or {}
     after_snapshot = after_audit.get("input_snapshot") or {}
     for key in ("blocks_hash", "figure_inventory_hash", "table_inventory_hash"):
@@ -657,7 +768,10 @@ def _promote_r_unlocked(
             "error": recovery_error,
         }
     stage_root = _find_staging_root(paper_key, staging_root)
+    if stage_root is None:
+        return {"ok": False, "reason": "r_manifest_missing", "paper_key": paper_key}
     manifest_path = stage_root / _MANIFEST_NAME
+
     manifest = _read_json(manifest_path)
     if manifest is None:
         return {"ok": False, "reason": "r_manifest_unreadable", "paper_key": paper_key}
@@ -742,8 +856,19 @@ def _promote_r_unlocked(
             "objects": validations,
         }
 
-    before_audit = audit_paper(Path(ocr_root), paper_key, write_report=False)
+    before_audit = _promotion_audit(Path(ocr_root), paper_key, write_report=False)
+    if _audit_failed(before_audit):
+        return {
+            "ok": False,
+            "reason": "R_PROMOTION_PREAUDIT_FAILED",
+            "paper_key": paper_key,
+            "staging_root": str(stage_root),
+            "objects": validations,
+            "audit_0": before_audit,
+            "production_write": False,
+        }
     destination_root = root
+
     production_provenance_path = destination_root / "render" / "materialization.provenance.json"
     if production_provenance_path.is_file() and _read_json(production_provenance_path) is None:
         return {
@@ -754,6 +879,18 @@ def _promote_r_unlocked(
             "objects": validations,
             "global_gates": ["production_provenance_unreadable"],
         }
+    try:
+        production_provenance = _merge_provenance(production_provenance_path, prepared)
+    except Exception as exc:
+        return {
+            "ok": False,
+            "reason": "R_PROMOTION_PREPARE_FAILED",
+            "paper_key": paper_key,
+            "staging_root": str(stage_root),
+            "objects": validations,
+            "error": f"{type(exc).__name__}: {exc}",
+        }
+
     promotion_states: dict[str, str] = {}
     promotion_targets = [
         destination_root / plan["production_asset"]
@@ -762,8 +899,34 @@ def _promote_r_unlocked(
         destination_root / plan["production_markdown"]
         for plan in (item["plan"] for item in prepared)
     ] + [production_provenance_path]
+    promotion_outputs = {
+        destination_root / item["plan"]["production_asset"]: {
+            "exists": True,
+            "sha256": item["image_facts"]["sha256"],
+        }
+        for item in prepared
+    }
+    promotion_outputs.update(
+        {
+            destination_root / item["plan"]["production_markdown"]: {
+                "exists": True,
+                "sha256": item["markdown_sha256"],
+            }
+            for item in prepared
+        }
+    )
+    promotion_outputs[production_provenance_path] = {
+        "exists": True,
+        "sha256": _json_payload_hash(production_provenance),
+    }
+
     try:
-        transaction_dir, snapshots = _snapshot_files(root, promotion_targets)
+        transaction_dir, snapshots = _snapshot_files(
+            root,
+            promotion_targets,
+            output_preconditions=promotion_outputs,
+        )
+
     except Exception as exc:
         return {
             "ok": False,
@@ -784,14 +947,46 @@ def _promote_r_unlocked(
             _atomic_copy(item["staged_asset"], production_asset)
             _atomic_copy(item["staged_markdown"], production_markdown)
             promotion_states[item["object_id"]] = "promoted"
-        production_provenance = _merge_provenance(production_provenance_path, prepared)
         if _read_json(production_provenance_path) != production_provenance:
             _write_json_atomic(production_provenance_path, production_provenance)
-        post_audit = audit_paper(Path(ocr_root), paper_key, write_report=False)
-        postcondition_errors = _postcondition_errors(root, before_audit, post_audit, prepared)
+
+        post_audit = _promotion_audit(Path(ocr_root), paper_key, write_report=False)
+        if _audit_failed(post_audit):
+            rollback_error: str | None = None
+            rollback_audit: dict[str, Any] | None = None
+            try:
+                _restore_snapshots(snapshots, verify_cas=True)
+                rollback_audit = _promotion_audit(
+                    Path(ocr_root), paper_key, write_report=False
+                )
+            except Exception as rollback_exc:
+                rollback_error = f"{type(rollback_exc).__name__}: {rollback_exc}"
+            if rollback_error is None:
+                _finish_transaction(root, transaction_dir)
+            result = {
+                "ok": False,
+                "reason": "R_PROMOTION_POSTVERIFY_FAILED",
+                "paper_key": paper_key,
+                "staging_root": str(stage_root),
+                "objects": validations,
+                "postcondition_errors": ["post_audit_failed"],
+                "post_audit_state": post_audit.get("state"),
+                "rolled_back": rollback_error is None,
+                "rollback_audit_state": (
+                    rollback_audit.get("state") if rollback_audit else None
+                ),
+            }
+            if rollback_error:
+                result["rollback_error"] = rollback_error
+            return result
+        postcondition_errors = _postcondition_errors(
+            root, before_audit, post_audit, prepared
+        )
         if postcondition_errors:
-            _restore_snapshots(snapshots)
-            rollback_audit = audit_paper(Path(ocr_root), paper_key, write_report=False)
+            _restore_snapshots(snapshots, verify_cas=True)
+            rollback_audit = _promotion_audit(
+                Path(ocr_root), paper_key, write_report=False
+            )
             _finish_transaction(root, transaction_dir)
             return {
                 "ok": False,
@@ -807,7 +1002,7 @@ def _promote_r_unlocked(
     except Exception as exc:
         rollback_error: str | None = None
         try:
-            _restore_snapshots(snapshots)
+            _restore_snapshots(snapshots, verify_cas=True)
         except Exception as rollback_exc:
             rollback_error = f"{type(rollback_exc).__name__}: {rollback_exc}"
         if rollback_error is None:

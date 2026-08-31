@@ -15,6 +15,24 @@
       "reason": "R_GATE_FAILED"
     }
   ],
+  "fresh_isolated_negative_canary": {
+    "verified_on": "2026-08-31",
+    "paper_key": "2ZBAK9VY",
+    "object_ids": [
+      "figure_003"
+    ],
+    "production_write": false,
+    "prior_promotions_in_same_copy": false,
+    "ok": false,
+    "reason": "R_GATE_FAILED",
+    "gates": [
+      "markdown_image_reference_missing",
+      "staged_image_hash_mismatch",
+      "staged_image_invalid",
+      "staged_verification_not_passed",
+      "staging_provenance_not_success"
+    ]
+  },
   "results": [
     {
       "paper_key": "2ZBAK9VY",

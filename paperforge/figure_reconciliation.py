@@ -20,6 +20,7 @@ from paperforge.render_audit import (
     _label,
     _page_number,
     _position_view,
+    _read_materialization_provenance,
     _render_artifacts,
     _snapshot,
 )
@@ -245,6 +246,51 @@ def _rendered_by_id(artifacts: list[dict[str, Any]]) -> dict[str, dict[str, Any]
         stem = name[:-3] if name.lower().endswith(".md") else name
         by_id[stem] = artifact
     return by_id
+
+def _unverified_render_content(
+    root: Path,
+    canonical_by_id: dict[str, dict[str, Any]],
+    rendered_by_id: dict[str, dict[str, Any]],
+) -> list[dict[str, Any]]:
+    provenance = _read_materialization_provenance(root)
+    records = provenance.get("records_by_render_path", {})
+    findings: list[dict[str, Any]] = []
+    for object_id, artifact in rendered_by_id.items():
+        if not artifact.get("image_ref") or not artifact.get("image_exists"):
+            continue
+        render_path = f"render/figures/{artifact['file']}"
+        record = records.get(render_path)
+        output = record.get("output") if isinstance(record, dict) else None
+        verified = bool(
+            isinstance(record, dict)
+            and record.get("status") in {"materialized", "success"}
+            and isinstance(output, dict)
+            and output.get("image_sha256") == artifact.get("image_hash")
+            and output.get("markdown_sha256") == artifact.get("text_hash")
+        )
+        if verified:
+            continue
+        provenance_state = str(provenance.get("state") or "unavailable")
+        if record is None and provenance_state == "available":
+            reason = "provenance_missing"
+        elif record is None:
+            reason = f"provenance_{provenance_state}"
+        elif not isinstance(output, dict):
+            reason = "provenance_output_missing"
+        else:
+            reason = "provenance_output_mismatch"
+        findings.append(
+            {
+                "code": "R_CONTENT_UNVERIFIED",
+                "object_id": object_id,
+                "render_path": render_path,
+                "image_hash": artifact.get("image_hash"),
+                "reason": reason,
+                "canonical_present": object_id in canonical_by_id,
+                "recommended_action": "inspect_or_rerender",
+            }
+        )
+    return findings
 
 
 def _formal_canonical(rows: list[dict[str, Any]]) -> tuple[dict[str, dict[str, Any]], list[dict[str, Any]]]:
@@ -474,6 +520,10 @@ def build_reconciliation_report(
     # Conflicted IDs are removed before indexing; no duplicate row can win.
     canonical_by_id, reservations = _canonical_by_id(valid_figure_rows)
     rendered_by_id = _rendered_by_id(artifacts)
+    content_unverified = _unverified_render_content(
+        root, canonical_by_id, rendered_by_id
+    )
+
     # P formal-label domain (bounded-slot anchors only).
     canonical, formal_reservations = _formal_canonical(valid_figure_rows)
     reservations = formal_reservations
@@ -658,6 +708,7 @@ def build_reconciliation_report(
         "input_snapshot": audit_snapshot,
         "inventory_conflicts": inventory_conflicts,
         "asset_claim_conflicts": asset_claim_conflicts,
+        "content_unverified": content_unverified,
         "formal_figure_assessment": {
             "supported_formal_figure_labels": sorted(text_evidence, key=_label_sort),
             "canonical_formal_figure_labels": sorted(canonical, key=_label_sort),
@@ -748,18 +799,10 @@ def dry_run_exact_repairs(
         artifact["file"]: artifact
         for artifact in _render_artifacts(root / "render" / "figures", "figure")
     }
-    provenance_by_render_path: dict[str, dict[str, Any]] = {}
-    provenance_path = root / "render" / "materialization.provenance.json"
-    if provenance_path.is_file():
-        try:
-            provenance = json.loads(provenance_path.read_text(encoding="utf-8"))
-            provenance_by_render_path = {
-                str(record.get("render_path")): record
-                for record in provenance.get("objects", [])
-                if isinstance(record, dict) and record.get("render_path")
-            }
-        except (OSError, TypeError, ValueError):
-            provenance_by_render_path = {}
+    provenance = _read_materialization_provenance(root)
+    provenance_by_render_path = provenance.get("records_by_render_path", {})
+    provenance_ambiguous = provenance.get("state") == "ambiguous"
+    provenance_unreadable = provenance.get("state") == "unreadable"
 
     results: list[dict[str, Any]] = []
     for plan in reconciliation_report.get("exact_repairs") or []:
@@ -815,13 +858,32 @@ def dry_run_exact_repairs(
                 blockers.append("asset_ownership_not_unique")
             if "reservation" in str(row.get("settlement_type") or "").lower():
                 blockers.append("reservation")
+        if provenance_ambiguous:
+            blockers.append("provenance_ambiguous")
+        elif provenance_unreadable:
+            blockers.append("provenance_unreadable")
         artifact_path = str((plan.get("render") or {}).get("artifact_path") or "")
         artifact_name = Path(artifact_path).name
         artifact = artifacts.get(artifact_name)
-        if artifact is not None and artifact.get("image_ref") and artifact.get("image_exists"):
-            current_state = "not_required"
-        elif blockers:
+        if blockers:
             current_state = "stale_plan" if "stale_input_snapshot" in blockers else "blocked"
+        elif artifact is not None and artifact.get("image_ref") and artifact.get("image_exists"):
+            record = provenance_by_render_path.get(artifact_path)
+            output = record.get("output") if isinstance(record, dict) else None
+            verified = bool(
+                isinstance(record, dict)
+                and record.get("status") in {"materialized", "success"}
+                and isinstance(output, dict)
+                and output.get("image_sha256") == artifact.get("image_hash")
+                and output.get("markdown_sha256") == artifact.get("text_hash")
+            )
+            if verified:
+                current_state = "not_required"
+            else:
+                blockers.append("R_CONTENT_UNVERIFIED")
+                if isinstance(record, dict) and isinstance(output, dict):
+                    blockers.append("materialization_provenance_mismatch")
+                current_state = "content_unverified"
         elif not provenance_by_render_path:
             current_state = "needs_fresh_provenance"
         else:
@@ -862,15 +924,62 @@ def dry_run_exact_repairs(
             "repair_required": counts.get("ready", 0)
             + counts.get("needs_fresh_provenance", 0)
             + counts.get("blocked", 0)
-            + counts.get("stale_plan", 0),
+            + counts.get("stale_plan", 0)
+            + counts.get("content_unverified", 0),
             "ready": counts.get("ready", 0),
             "needs_fresh_provenance": counts.get("needs_fresh_provenance", 0),
             "stale_plan": counts.get("stale_plan", 0),
             "blocked": counts.get("blocked", 0),
+            "content_unverified": counts.get("content_unverified", 0),
             "not_required": counts.get("not_required", 0),
         },
         "results": results,
     }
+def _main_anchor_rows(
+    rows: list[dict[str, Any]],
+) -> list[tuple[int, str, dict[str, Any]]]:
+    """Return only unique, non-conflicted main-namespace anchors."""
+    identity_conflicted = {
+        str(conflict.get("canonical_object_id") or "")
+        for conflict in _inventory_identity_conflicts(rows, "figure")
+    }
+    claim_conflicted = {
+        str(owner)
+        for conflict in _inventory_asset_claim_conflicts(rows, "figure")
+        for owner in conflict.get("owners") or []
+    }
+    by_label: dict[str, dict[str, Any]] = {}
+    ambiguous_labels: set[str] = set()
+    for row in rows:
+        if row.get("_inventory_bucket") != "matched_figures":
+            continue
+        object_id = str(row.get("figure_id") or "")
+        if (
+            not object_id
+            or object_id in identity_conflicted
+            or object_id in claim_conflicted
+            or "reserved" in object_id.lower()
+            or "reserved" in str(row.get("settlement_type") or "").lower()
+            or str(row.get("figure_namespace") or "main").lower() != "main"
+        ):
+            continue
+        label = _label(row.get("figure_number"))
+        if not label or not label.isdigit():
+            continue
+        if label in by_label:
+            ambiguous_labels.add(label)
+        else:
+            by_label[label] = row
+    return sorted(
+        (
+            (int(label), f"main:{label}", row)
+            for label, row in by_label.items()
+            if label not in ambiguous_labels
+        ),
+        key=lambda item: item[0],
+    )
+
+
 def _bounded_slot_dry_run(
     ocr_root: Path,
     paper_key: str,
@@ -885,7 +994,7 @@ def _bounded_slot_dry_run(
     canonical, _ = _formal_canonical(rows)
     label = str(proposal.get("label") or "")
     numeric_label = int(label) if label.isdigit() else None
-    ordered = sorted((int(key), key, row) for key, row in canonical.items() if key.isdigit())
+    ordered = _main_anchor_rows(rows)
     lower = next((item for item in reversed(ordered) if numeric_label is not None and item[0] < numeric_label), None)
     upper = next((item for item in ordered if numeric_label is not None and item[0] > numeric_label), None)
     def _anchor_entry(item: tuple[int, str, dict[str, Any]] | None) -> dict[str, Any] | None:
@@ -948,7 +1057,9 @@ def _bounded_slot_dry_run(
     for group in groups:
         reasons: list[str] = []
         page = group.get("page")
-        if lower_page is not None and upper_page is not None and not lower_page < page < upper_page:
+        if page is None:
+            reasons.append("page_missing")
+        elif lower_page is not None and upper_page is not None and not lower_page < page < upper_page:
             reasons.append("outside_anchor_slot")
         elif lower_page is not None and upper_page is None and page < lower_page:
             reasons.append("outside_anchor_slot")
@@ -966,8 +1077,9 @@ def _bounded_slot_dry_run(
             "caption_distance": min(abs(page - caption_page) for caption_page in caption_pages)
             if page is not None and caption_pages
             else None,
-            "within_anchor_slot": not any(reason == "outside_anchor_slot" for reason in reasons),
-            "ownership_conflict": "owned_by_canonical" in reasons,
+            "within_anchor_slot": not any(
+                reason in {"outside_anchor_slot", "page_missing"} for reason in reasons
+            ),
         }
         if reasons:
             rejected.append({**candidate, "reasons": reasons})
@@ -1521,6 +1633,6 @@ def stage_reconciliation(
         "r_details": r_details,
         "p_details": p_details,
         "dry_exact": dry_exact,
-        "dry_bounded": dry_bounded,
+        "content_unverified": report.get("content_unverified", []),
         "fulltext": ft_result,
     }

@@ -1,4 +1,4 @@
-"""Fulltext presentation reconciliation — 5-class incremental patch (report-only).
+r"""Fulltext presentation reconciliation — 5-class incremental patch (report-only).
 
 F1 MISSING_EMBED, F2 WRONG_EMBED_TARGET, F3 EXTRA_OR_DUPLICATE,
 F4 MISPLACED_EMBED, F0 TARGET_DEGRADED (no fulltext mutation, delegate).
@@ -27,15 +27,34 @@ _EMBED_RE = re.compile(
 
 
 def _canonical_figure_ids(inv: dict[str, Any]) -> list[str]:
-    ids: list[str] = []
-    for fig in inv.get("matched_figures", []):
+    ids: set[str] = set()
+    for fig in inv.get("matched_figures") or []:
+        if not isinstance(fig, dict):
+            continue
         fid = str(fig.get("figure_id") or "")
-        if not fid or fid.startswith("figure_reserved_"):
+        if (
+            not fid
+            or "reserved" in fid.lower()
+            or fig.get("figure_number") is None
+        ):
             continue
-        if fig.get("figure_number") is None:
-            continue
-        ids.append(fid)
+        ids.add(fid)
     return sorted(ids)
+
+def _canonical_figure_id_conflicts(inv: dict[str, Any]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for fig in inv.get("matched_figures") or []:
+        if not isinstance(fig, dict):
+            continue
+        fid = str(fig.get("figure_id") or "")
+        if (
+            not fid
+            or "reserved" in fid.lower()
+            or fig.get("figure_number") is None
+        ):
+            continue
+        counts[fid] = counts.get(fid, 0) + 1
+    return {fid: count for fid, count in sorted(counts.items()) if count > 1}
 
 
 def _proposal_figure_ids(recon: dict[str, Any]) -> list[str]:
@@ -43,15 +62,17 @@ def _proposal_figure_ids(recon: dict[str, Any]) -> list[str]:
     P contract: P doesn't write canonical inventory.
     """
     ids: list[str] = []
-    for prop in recon.get("proposals", []):
+    for prop in recon.get("proposals") or []:
+        if not isinstance(prop, dict):
+            continue
         decision = prop.get("decision", "")
         if decision in {
             "structurally_unique_proposal",
             "unique_without_pdf_confirmation",
             "proposal_only",
         }:
-            ids.append("figure_proposal_{}".format(prop.get("label", "")))
-    return ids
+            ids.append(f"figure_proposal_{prop.get('label', '')}")
+    return list(dict.fromkeys(ids))
 
 
 def _proposal_label_map(recon: dict[str, Any]) -> dict[str, str]:
@@ -59,7 +80,9 @@ def _proposal_label_map(recon: dict[str, Any]) -> dict[str, str]:
     E.g. figure_001 → figure_proposal_1 when label=1 has proposal_only decision.
     """
     mapping: dict[str, str] = {}
-    for prop in recon.get("proposals", []):
+    for prop in recon.get("proposals") or []:
+        if not isinstance(prop, dict):
+            continue
         decision = prop.get("decision", "")
         if decision not in {
             "structurally_unique_proposal",
@@ -70,8 +93,8 @@ def _proposal_label_map(recon: dict[str, Any]) -> dict[str, str]:
         label = str(prop.get("label", ""))
         if not label.isdigit():
             continue
-        canonical_name = "figure_{:03d}".format(int(label))
-        proposal_name = "figure_proposal_{}".format(label)
+        canonical_name = f"figure_{int(label):03d}"
+        proposal_name = f"figure_proposal_{label}"
         mapping[canonical_name] = proposal_name
     return mapping
 
@@ -86,8 +109,10 @@ def _f2_canonical_mapping(
     blocked[].block_id must be "blocked:reservation:<reserved_target>"
     AND canonical_object_id must be a DIFFERENT canonical figure_id.
     """
-    expected_block = "blocked:reservation:{}".format(reserved_target)
-    for b in recon.get("blocked", []):
+    expected_block = f"blocked:reservation:{reserved_target}"
+    for b in recon.get("blocked") or []:
+        if not isinstance(b, dict):
+            continue
         if str(b.get("block_id") or "") != expected_block:
             continue
         cid = str(b.get("canonical_object_id") or "")
@@ -95,7 +120,6 @@ def _f2_canonical_mapping(
             continue
         if cid in canonical_ids:
             return cid
-    return None
 
 
 def _orphan_ids(d: Path) -> list[str]:
@@ -155,25 +179,31 @@ def fulltext_reconcile(
     recon_path = root / "render" / "reconciliation.proposals.json"
     render_fig_dir = root / "render" / "figures"
     try:
-        inv = json.loads(inv_path.read_text(encoding="utf-8"))
+        value = json.loads(inv_path.read_text(encoding="utf-8"))
+        inv = value if isinstance(value, dict) else {}
     except (OSError, ValueError, TypeError):
         inv = {}
     try:
         fulltext = ft_path.read_text(encoding="utf-8")
+        fulltext_available = True
     except (OSError, ValueError, TypeError):
         fulltext = ""
+        fulltext_available = False
     # Freshness: prefer in-memory report over disk-persisted
     if reconciliation_report is not None:
-        recon = reconciliation_report
+        recon = reconciliation_report if isinstance(reconciliation_report, dict) else {}
     else:
         try:
-            recon = json.loads(recon_path.read_text(encoding="utf-8"))
+            value = json.loads(recon_path.read_text(encoding="utf-8"))
+            recon = value if isinstance(value, dict) else {}
         except (OSError, ValueError, TypeError):
             recon = {}
 
     canonical_ids = _canonical_figure_ids(inv)
+    canonical_id_conflicts = _canonical_figure_id_conflicts(inv)
     proposal_ids = _proposal_figure_ids(recon)
     proposal_label_map = _proposal_label_map(recon)
+
     orphan_ids = _orphan_ids(render_fig_dir)
     embed_targets_raw = _fulltext_embeds(fulltext)
     targets_only = [t for t, _ in embed_targets_raw]
@@ -186,9 +216,26 @@ def fulltext_reconcile(
     cnt = Counter(targets_only)
     patches: list[dict[str, Any]] = []
     issues: list[dict[str, Any]] = []
+    if not fulltext_available:
+        issues.append({
+            "type": "fulltext_source_unavailable",
+            "classification": "F0_FULLTEXT_UNREADABLE",
+            "recommended_action": "BLOCK",
+        })
     ft_hash = _file_hash(ft_path)
+    for fid, count in canonical_id_conflicts.items():
+        issues.append({
+            "type": "fulltext_canonical_identity_ambiguous",
+            "object_id": fid,
+            "classification": "F0_CANONICAL_DUPLICATE",
+            "count": count,
+            "recommended_action": "BLOCK",
+        })
+
 
     for fid in canonical_ids:
+        if fid in canonical_id_conflicts:
+            continue
         c = cnt.get(fid, 0)
         if c == 0:
             issues.append({
@@ -217,12 +264,12 @@ def fulltext_reconcile(
                 "object_id": fid,
                 "reason": "F3_DUPLICATE_EMBED",
                 "count": c,
-                "expected_embed": "![[render/figures/{}.md]]".format(fid),
+                "expected_embed": f"![[render/figures/{fid}.md]]",
                 "input_fulltext_hash": ft_hash,
                 "authority": "canonical_inventory",
             })
         else:
-            fig_md = render_fig_dir / "{}.md".format(fid)
+            fig_md = render_fig_dir / f"{fid}.md"
             try:
                 md_text = fig_md.read_text(encoding="utf-8")
                 has_img = "assets/figures" in md_text
@@ -264,8 +311,8 @@ def fulltext_reconcile(
                     "from": target,
                     "to": canonical_target,
                     "reason": "F2_WRONG_EMBED_TARGET",
-                    "expected_embed": "![[render/figures/{}.md]]".format(target),
-                    "replacement_embed": "![[render/figures/{}.md]]".format(canonical_target),
+                    "expected_embed": f"![[render/figures/{target}.md]]",
+                    "replacement_embed": f"![[render/figures/{canonical_target}.md]]",
                     "input_fulltext_hash": ft_hash,
                     "authority": "reconciliation_proposals",
                 })
@@ -287,7 +334,7 @@ def fulltext_reconcile(
                 "op": "DELETE",
                 "object_id": target,
                 "reason": "F3_ORPHAN_EMBED",
-                "expected_embed": "![[render/figures/{}.md]]".format(target),
+                "expected_embed": f"![[render/figures/{target}.md]]",
                 "input_fulltext_hash": ft_hash,
                 "authority": "canonical_inventory",
             })
@@ -298,19 +345,36 @@ def fulltext_reconcile(
                 "classification": "F3_BLOCKED_UNKNOWN",
                 "recommended_action": "BLOCK",
             })
+    if not fulltext_available:
+        issues = [
+            issue
+            for issue in issues
+            if issue["type"] in {
+                "fulltext_source_unavailable",
+                "fulltext_canonical_identity_ambiguous",
+            }
+        ]
+        patches = []
+    mutation_blocked = bool(canonical_id_conflicts or not fulltext_available)
+    if mutation_blocked:
+        patches = []
 
     return {
         "paper_key": paper_key,
         "canonical_ids": canonical_ids,
+        "canonical_identity_conflicts": canonical_id_conflicts,
+        "mutation_blocked": mutation_blocked,
         "proposal_ids": proposal_ids,
         "orphan_ids": orphan_ids,
         "embeds": targets_only,
         "kinds": kinds,
         "issues": issues,
+        "fulltext_available": fulltext_available,
         "patches": patches,
         "input_fulltext_hash": ft_hash,
         "summary": {
             "canonical": len(canonical_ids),
+            "canonical_ambiguous": len(canonical_id_conflicts),
             "proposals": len(proposal_ids),
             "embeds": len(targets_only),
             "issues": len(issues),

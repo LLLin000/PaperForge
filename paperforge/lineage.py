@@ -933,6 +933,7 @@ def _render_reconciliation_detail(paper_dir: Path | None) -> dict[str, Any] | No
                 "proposals": 0,
                 "blocked": 0,
             },
+            "content_unverified": [],
         }
     try:
         report = json.loads(report_path.read_text(encoding="utf-8"))
@@ -942,9 +943,19 @@ def _render_reconciliation_detail(paper_dir: Path | None) -> dict[str, Any] | No
             "report_path": relative_path,
             "reason": "reconciliation_report_unreadable",
         }
+    if not isinstance(report, dict):
+        return {
+            "state": "UNKNOWN",
+            "report_path": relative_path,
+            "reason": "reconciliation_report_not_object",
+        }
     summary = report.get("summary")
     summary = summary if isinstance(summary, dict) else {}
-    if summary.get("exact_repairs", 0):
+    content_unverified = report.get("content_unverified")
+    content_unverified = content_unverified if isinstance(content_unverified, list) else []
+    if content_unverified:
+        state = "BLOCKED"
+    elif summary.get("exact_repairs", 0):
         state = "READY"
     elif summary.get("proposals", 0):
         state = "PROPOSAL_ONLY"
@@ -959,6 +970,7 @@ def _render_reconciliation_detail(paper_dir: Path | None) -> dict[str, Any] | No
         "algorithm_version": report.get("algorithm_version"),
         "input_snapshot": report.get("input_snapshot"),
         "summary": summary,
+        "content_unverified": content_unverified,
     }
 
 

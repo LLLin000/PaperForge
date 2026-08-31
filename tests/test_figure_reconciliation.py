@@ -89,6 +89,8 @@ def test_reconciliation_separates_exact_proposal_and_blocked(tmp_path: Path) -> 
         "proposals": 1,
         "blocked": 1,
     }
+    assert report["content_unverified"][0]["code"] == "R_CONTENT_UNVERIFIED"
+    assert report["content_unverified"][0]["reason"] == "provenance_missing"
     assert report["proposals"][0]["label"] == "2"
     assert report["blocked"][0]["reason"] == "reservation_artifact_conflict"
 
@@ -239,3 +241,136 @@ def test_stage_reconciliation_filters_ambiguous_inventory_from_r_materialization
     assert captured["figure_ids"] == ["figure_002"]
     assert captured["table_inventory"] == {"tables": [], "unmatched_assets": []}
     assert result["summary"]["r_prepared_staged"] == 1
+
+
+def test_dry_run_marks_existing_unprovenanced_artifact_unverified(tmp_path: Path) -> None:
+    from paperforge.figure_reconciliation import dry_run_exact_repairs
+
+    ocr_root = _write_fixture(tmp_path)
+    paper = ocr_root / "TESTREC1"
+    (paper / "assets" / "figures").mkdir(parents=True)
+    (paper / "assets" / "figures" / "figure_001.jpg").write_bytes(b"legacy-image")
+    (paper / "render" / "figures" / "figure_001.md").write_text(
+        "# Figure 1\n\n![](../../assets/figures/figure_001.jpg)\n\n*Page 2*\n",
+        encoding="utf-8",
+    )
+    audit = audit_paper(ocr_root, "TESTREC1", write_report=True)
+    plan = {
+        "canonical_object_id": "figure_001",
+        "source": {
+            "ordered_asset_refs": [
+                {"page": 2, "block_id": "asset-1", "bbox": [10, 10, 110, 110]}
+            ]
+        },
+        "render": {"artifact_path": "render/figures/figure_001.md"},
+    }
+
+    result = dry_run_exact_repairs(
+        ocr_root,
+        "TESTREC1",
+        {"input_snapshot": audit["input_snapshot"], "exact_repairs": [plan]},
+    )
+
+    assert result["results"][0]["state"] == "content_unverified"
+    assert result["results"][0]["blockers"] == ["R_CONTENT_UNVERIFIED"]
+    assert result["summary"]["content_unverified"] == 1
+
+
+def test_bounded_slot_anchors_use_unique_main_namespace_labels(tmp_path: Path) -> None:
+    from paperforge.figure_reconciliation import _bounded_slot_dry_run
+
+    paper = tmp_path / "ocr" / "TESTRECANCHOR"
+    inventory_path = paper / "structure" / "figure_inventory.json"
+    inventory_path.parent.mkdir(parents=True)
+    inventory_path.write_text(
+        json.dumps(
+            {
+                "matched_figures": [
+                    {
+                        "figure_id": "figure_001",
+                        "figure_number": 1,
+                        "figure_namespace": "main",
+                        "page": 1,
+                        "matched_assets": [],
+                    },
+                    {
+                        "figure_id": "figure_s002",
+                        "figure_number": 2,
+                        "figure_namespace": "supplement",
+                        "page": 2,
+                        "matched_assets": [],
+                    },
+                    {
+                        "figure_id": "figure_003",
+                        "figure_number": 3,
+                        "figure_namespace": "main",
+                        "page": 3,
+                        "matched_assets": [],
+                    },
+                ],
+                "unmatched_captions": [],
+                "unresolved_clusters": [],
+                "unmatched_assets": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = _bounded_slot_dry_run(
+        tmp_path / "ocr",
+        "TESTRECANCHOR",
+        {"label": "2", "evidence_chain": []},
+        include_pdf_media=False,
+    )
+
+    assert result["anchors"]["lower"]["label"] == "main:1"
+    assert result["anchors"]["upper"]["label"] == "main:3"
+
+
+def test_bounded_slot_rejects_candidate_without_page(tmp_path: Path) -> None:
+    from paperforge.figure_reconciliation import dry_run_bounded_slot_proposals
+
+    paper = tmp_path / "ocr" / "TESTREC2"
+    structure = paper / "structure"
+    structure.mkdir(parents=True)
+    (structure / "figure_inventory.json").write_text(
+        json.dumps(
+            {
+                "matched_figures": [
+                    {
+                        "figure_id": "figure_001",
+                        "figure_number": 1,
+                        "figure_namespace": "main",
+                        "page": 1,
+                        "matched_assets": [],
+                    }
+                ],
+                "unresolved_clusters": [
+                    {
+                        "cluster_id": "cluster_missing_page",
+                        "page": None,
+                        "cluster_bbox": [1, 2, 30, 40],
+                        "media_block_ids": [],
+                    }
+                ],
+                "unmatched_assets": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+    report = {
+        "proposals": [
+            {
+                "proposal_id": "inventory_proposal:figure:2",
+                "label": "2",
+                "evidence_chain": [{"type": "caption", "items": [{"page": 2}]}],
+            }
+        ]
+    }
+
+    result = dry_run_bounded_slot_proposals(
+        tmp_path / "ocr", "TESTREC2", reconciliation_report=report
+    )
+
+    assert result["results"][0]["decision"] == "blocked"
+    assert result["results"][0]["rejected_candidates"][0]["reasons"] == ["page_missing"]
