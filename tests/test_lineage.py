@@ -465,6 +465,39 @@ class TestProbeLineage:
         assert detail["input_snapshot"]["render_hash"] == "sha256:test"
         assert detail["report_path"] == "render/render.consistency.json"
 
+    def test_render_reconciliation_projects_unverified_content_as_blocked(
+        self, tmp_path: Path
+    ) -> None:
+        vault = _make_vault(tmp_path)
+        report_path = (
+            vault
+            / "99_System"
+            / "PaperForge"
+            / "ocr"
+            / "KEY1"
+            / "render"
+            / "reconciliation.proposals.json"
+        )
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        report_path.write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "algorithm_version": 3,
+                    "summary": {"exact_repairs": 0, "proposals": 1, "blocked": 0},
+                    "content_unverified": [
+                        {"code": "R_CONTENT_UNVERIFIED", "object_id": "figure_001"}
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        detail = probe_lineage(vault)["papers"]["KEY1"]["details"]["render_reconciliation"]
+
+        assert detail["state"] == "BLOCKED"
+        assert detail["content_unverified"][0]["code"] == "R_CONTENT_UNVERIFIED"
+
     def test_meta_read_once_per_paper_per_observation(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:

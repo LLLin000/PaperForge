@@ -171,6 +171,35 @@ paperforge ocr rebuild --dry-run    # 预览
 paperforge ocr rebuild --resume     # 跳过已有检查点的文献
 ```
 
+### `paperforge render`
+
+Render consistency and figure reconciliation commands. The audit is read-only; reconciliation stages into an isolated temporary directory.
+
+```bash
+paperforge render audit [KEY...] --json
+paperforge render reconcile [KEY...] --json
+paperforge render reconcile [KEY...] --include-pdf-media --json
+```
+
+`render reconcile` never writes production artifacts. `--apply-r` is retained as a compatibility flag but remains staging-only while the rollout gate is closed.
+
+Verified R plans can be promoted only with an explicit scope:
+
+```bash
+paperforge render promote-r KEY OBJECT_ID [OBJECT_ID...] --json
+paperforge render promote-r KEY --all --json
+```
+
+An empty scope is rejected. `promote-r` consumes the verified `r-manifest.json`, does not re-materialize or rewrite canonical inventory, and remains blocked for production batch rollout until the owner-authorized canary gate passes.
+
+P proposals require human authority:
+
+```bash
+paperforge render accept-proposal KEY LABEL --json
+```
+
+`accept-proposal` is not an automatic consequence of a P dry-run.
+
 ### `paperforge context`
 
 ```bash

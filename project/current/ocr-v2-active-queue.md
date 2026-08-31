@@ -1,6 +1,16 @@
 # OCR-v2 Active Queue
 > Status: `EXECUTABLE_FROZEN a42f8bb7` / `PROTOCOL_DOCS 781910f3` — S1–S6 lightweight **COMPLETE** on `462398cb` (valid for `a42f8bb7`, `ruff` clean). Hosted CI `32353318123` on docs-only descendant `a2e18fa4` is **green: All Checks Passed, 14/14**, with `3.11` Ubuntu/macOS/Windows, J-Matrix, Ruff, plugin, OCR, E2E; no executable change after `a42f8bb7`. #191 FROZEN / ready-for-agent; #81 OPEN / owner gate. Remaining: live browser/Ctrl+C/recovery evidence + Release-N support-window owner decision.
-> Last updated: 2026-08-26
+> Last updated: 2026-08-31
+
+
+## 2026-08-31: D1 status sync
+
+- **R:** duplicate canonical IDs, cross-canonical asset claims, duplicate provenance paths, malformed provenance/journal states, and unsafe object IDs are detected and blocked; selected exact R plans stage in isolation; manifest v2, plan hash, destination CAS, journaled rollback/recovery, post-audit checks, and explicit promotion scope are implemented.
+- **Canary:** disposable evidence remains PASS: 12 objects tested, 11 successful promotions, 1 expected page-range/materialization failure, and 11 second-promote no-ops. Fresh isolated `2ZBAK9VY/figure_003` fails only its own staged-source gates. No production write has run.
+- **R production blockers:** implementation P0-A/P0-B gates are closed and focused-covered. Production rollout remains owner-blocked; semantic figure-coverage defects are still report-only.
+- **R detection boundary:** report and dry-run expose `R_CONTENT_UNVERIFIED` for existing artifacts without authoritative output hashes and block provenance mismatch/ambiguity; they do not prove semantic coverage loss such as a panel absorbed by `table_html`. No automatic merge or overwrite.
+- **P/fulltext:** bounded-slot anchors now derive from unique, non-conflicted `main` rows; missing-page candidates block safely. Fulltext duplicate canonical IDs and unavailable fulltext block all patches. No production mutation.
+
 
 ## 2026-08-26: Reconcile-only R promoter
 
