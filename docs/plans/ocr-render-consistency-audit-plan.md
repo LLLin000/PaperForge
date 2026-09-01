@@ -1,7 +1,7 @@
 # OCR Render Consistency Audit — V1 Plan
 
 **Status:** V1 read-only audit and D1 R/P reconciliation implementation are present. R disposable canary passes; production real-vault canary and batch rollout remain blocked on owner authorization and semantic-coverage adjudication.
-**Revision 2026-09-01:** D1 recovery now requires journal schema 2, an exact `.paperforge-r-promotion/<32-hex-id>` transaction namespace, allowlisted production destinations, and in-transaction integer backups. Malformed canonical fulltext inventories fail closed as `F0_CANONICAL_AUTHORITY_UNAVAILABLE` with no patches. A report-refresh exception after commit is explicit and never rolls back committed artifacts. Semantic coverage defects remain report-only.
+**Revision 2026-09-01:** D1 recovery requires journal schema 2, an exact `.paperforge-r-promotion/<32-hex-id>` transaction namespace, allowlisted production destinations, in-transaction integer backups, and non-symlink raw path components. Malformed canonical fulltext inventories fail closed as `F0_CANONICAL_AUTHORITY_UNAVAILABLE` with no patches. Committed recovery does not require cleaned backups and best-effort removes its journal without rolling back production. A successful report write with audit `state=FAILED` surfaces `report_refresh=written` plus `report_audit_state=FAILED`; refresh exceptions/non-object results use `report_refresh=failed`. Semantic coverage defects remain report-only.
 ## Boundary
 
 Existing OCR structural parsing, figure/table matching, and render code remain untouched. V1 is an append-only post-render audit. It never synthesizes visual content or edits canonical OCR truth.
@@ -10,7 +10,7 @@ Existing OCR structural parsing, figure/table matching, and render code remain u
 existing render → audit_0 → render/render.consistency.json → probe OCR details.render_consistency
 ```
 
-V1 itself does not reconcile or modify artifacts. The later D1 `paperforge render reconcile` command produces an isolated staging result; only `promote-r` can write production, and only after its separate safety gates. A committed promotion keeps its artifacts even if the final report refresh fails; the result surfaces `report_refresh=failed`.
+V1 itself does not reconcile or modify artifacts. The later D1 `paperforge render reconcile` command produces an isolated staging result; only `promote-r` can write production, and only after its separate safety gates. A committed promotion preserves production through cleanup/report-refresh failures; the result distinguishes report-write success (`report_refresh=written`) from a failed final audit (`report_audit_state=FAILED`).
 
 ## V1 scope
 
@@ -255,8 +255,8 @@ Production batch rollout is not authorized. The current disposable canary eviden
 - A missing or dangling render artifact can become an R exact plan when source identity and ownership are unique.
 - An existing image with missing, ambiguous, unreadable, or mismatched authoritative provenance is surfaced as `R_CONTENT_UNVERIFIED`; it cannot become an exact repair or be overwritten by promotion.
 - A missing, unreadable, non-object, non-list, or malformed canonical fulltext inventory is an F0 authority failure, sets `mutation_blocked`, and emits no patches, including orphan or reserved embed candidates.
-- Journal recovery rejects schema versions other than 2, transaction paths outside `.paperforge-r-promotion/<32-hex-id>`, destinations outside the three production namespaces, backups outside that transaction directory, and symlinked paths.
-- A semantically incomplete crop (for example, a nearby `table_html` claim absorbing a Figure panel) is not proven by hash/dimension/CAS checks. It requires a separate coverage-suspect diagnostic and human/upstream adjudication.
+- Journal recovery rejects schema versions other than 2, transaction paths outside `.paperforge-r-promotion/<32-hex-id>`, destinations outside the three production namespaces, backups outside that transaction directory, and symlinked raw path components. A `committed` journal does not require backup files to remain and removes its journal after best-effort cleanup.
+- A semantically incomplete crop (for example, a nearby `table_html` claim absorbing a Figure panel) is not proven by hash/dimension/CAS checks. It requires a separate coverage-suspect diagnostic and human/upstream adjudication. A report write that returns audit `FAILED` is represented separately from a refresh exception.
 
 ## Unresolved case queue
 

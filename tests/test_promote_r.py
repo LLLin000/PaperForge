@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 from typing import Any
@@ -184,6 +185,174 @@ def test_promote_r_reports_post_commit_refresh_failure_without_rollback(
     assert not (paper / ".paperforge-r-promotion.json").exists()
 
 
+
+
+
+def test_promote_r_separates_report_write_from_failed_audit_state(
+    tmp_path: Path, monkeypatch
+) -> None:
+    ocr_root, paper, _ = _write_r_fixture(tmp_path)
+    staging = _write_r_manifest(paper, tmp_path / "staging")
+
+    import paperforge.promote_r as promoter_module
+
+    def failed_final_audit(*args, **kwargs):
+        if kwargs.get("write_report"):
+            return {"state": "FAILED", "issues": [{"type": "audit_failed"}]}
+        return {"state": "CLEAN", "issues": [], "input_snapshot": {}}
+
+    monkeypatch.setattr(promoter_module, "audit_paper", failed_final_audit)
+    result = promote_r(ocr_root, "TESTRPROMO1", staging_root=staging)
+
+    assert result["ok"] is True
+    assert result["committed"] is True
+    assert result["report_refresh"] == "written"
+    assert result["report_audit_state"] == "FAILED"
+    assert result["audit_1"]["after_state"] == "FAILED"
+    assert (paper / "assets/figures/figure_001.jpg").is_file()
+
+
+def test_promote_r_rejects_raw_destination_symlink_without_cleanup(
+    tmp_path: Path,
+) -> None:
+    ocr_root, paper, _ = _write_r_fixture(tmp_path)
+    target = paper / "render" / "figures" / "sentinel.md"
+    target.write_bytes(b"keep")
+    destination = paper / "render" / "figures" / "figure_001.md"
+    try:
+        destination.symlink_to(target)
+    except (OSError, NotImplementedError) as exc:
+        pytest.skip(f"symlink unavailable: {exc}")
+
+    transaction_id = "c" * 32
+    transaction_relative = f".paperforge-r-promotion/{transaction_id}"
+    transaction_dir = paper / transaction_relative
+    transaction_dir.mkdir(parents=True)
+    journal = paper / ".paperforge-r-promotion.json"
+    journal.write_text(
+        json.dumps(
+            {
+                "schema_version": 2,
+                "state": "committed",
+                "transaction_dir": transaction_relative,
+                "snapshots": [
+                    {
+                        "existed": False,
+                        "destination_relative": "render/figures/figure_001.md",
+                        "backup_relative": None,
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = promote_r(ocr_root, "TESTRPROMO1", staging_root=tmp_path / "missing")
+
+    assert result["ok"] is False
+    assert result["reason"] == "R_PROMOTION_RECOVERY_REQUIRED"
+    assert result["error"] == (
+        "promotion_recovery_failed:ValueError:promotion_journal_destination_path_unsafe"
+    )
+    assert target.read_bytes() == b"keep"
+    assert destination.is_symlink()
+    assert journal.is_file()
+    assert transaction_dir.is_dir()
+
+
+def test_promote_r_rejects_raw_backup_symlink_without_rollback(
+    tmp_path: Path,
+) -> None:
+    ocr_root, paper, _ = _write_r_fixture(tmp_path)
+    destination = paper / "render" / "figures" / "figure_001.md"
+    destination.write_bytes(b"current")
+    transaction_id = "d" * 32
+    transaction_relative = f".paperforge-r-promotion/{transaction_id}"
+    transaction_dir = paper / transaction_relative
+    transaction_dir.mkdir(parents=True)
+    real_backup = transaction_dir / "real.bak"
+    real_backup.write_bytes(b"before")
+    backup = transaction_dir / "0.bak"
+    try:
+        backup.symlink_to(real_backup)
+    except (OSError, NotImplementedError) as exc:
+        pytest.skip(f"symlink unavailable: {exc}")
+
+    journal = paper / ".paperforge-r-promotion.json"
+    journal.write_text(
+        json.dumps(
+            {
+                "schema_version": 2,
+                "state": "prepared",
+                "transaction_dir": transaction_relative,
+                "snapshots": [
+                    {
+                        "existed": True,
+                        "destination_relative": "render/figures/figure_001.md",
+                        "backup_relative": f"{transaction_relative}/0.bak",
+                        "before": {
+                            "exists": True,
+                            "sha256": hashlib.sha256(b"before").hexdigest(),
+                        },
+                        "output": {
+                            "exists": True,
+                            "sha256": hashlib.sha256(b"current").hexdigest(),
+                        },
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = promote_r(ocr_root, "TESTRPROMO1", staging_root=tmp_path / "missing")
+
+    assert result["ok"] is False
+    assert result["reason"] == "R_PROMOTION_RECOVERY_REQUIRED"
+    assert result["error"] == (
+        "promotion_recovery_failed:ValueError:promotion_journal_backup_path_unsafe"
+    )
+    assert destination.read_bytes() == b"current"
+    assert backup.is_symlink()
+    assert journal.is_file()
+
+
+def test_promote_r_recovers_committed_journal_after_backup_cleanup(
+    tmp_path: Path,
+) -> None:
+    ocr_root, paper, _ = _write_r_fixture(tmp_path)
+    destination = paper / "render" / "figures" / "figure_001.md"
+    destination.write_bytes(b"committed")
+    transaction_id = "b" * 32
+    transaction_relative = f".paperforge-r-promotion/{transaction_id}"
+    transaction_dir = paper / transaction_relative
+    transaction_dir.mkdir(parents=True)
+    journal = paper / ".paperforge-r-promotion.json"
+    journal.write_text(
+        json.dumps(
+            {
+                "schema_version": 2,
+                "state": "committed",
+                "transaction_dir": transaction_relative,
+                "snapshots": [
+                    {
+                        "existed": True,
+                        "destination_relative": "render/figures/figure_001.md",
+                        "backup_relative": f"{transaction_relative}/0.bak",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = promote_r(ocr_root, "TESTRPROMO1", staging_root=tmp_path / "missing")
+
+    assert result["ok"] is False
+    assert result["reason"] == "r_manifest_missing"
+    assert destination.read_bytes() == b"committed"
+    assert not journal.exists()
+    assert not transaction_dir.exists()
 
 
 def test_promote_r_second_run_is_artifact_noop(tmp_path: Path, monkeypatch) -> None:
