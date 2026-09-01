@@ -156,6 +156,35 @@ def test_promote_r_copies_verified_artifacts_and_refreshes_audit(tmp_path: Path)
     assert result["audit_1"]["target_delta"]["figure_001"]["after"] == []
 
 
+def test_promote_r_reports_post_commit_refresh_failure_without_rollback(
+    tmp_path: Path, monkeypatch
+) -> None:
+    ocr_root, paper, _ = _write_r_fixture(tmp_path)
+    audit_paper(ocr_root, "TESTRPROMO1", write_report=True)
+    staging = _write_r_manifest(paper, tmp_path / "staging")
+
+    import paperforge.promote_r as promoter_module
+
+    original_audit = promoter_module.audit_paper
+
+    def fail_report_refresh(*args, **kwargs):
+        if kwargs.get("write_report"):
+            raise OSError("report refresh unavailable")
+        return original_audit(*args, **kwargs)
+
+    monkeypatch.setattr(promoter_module, "audit_paper", fail_report_refresh)
+    result = promote_r(ocr_root, "TESTRPROMO1", staging_root=staging)
+
+    assert result["ok"] is True
+    assert result["committed"] is True
+    assert result["report_refresh"] == "failed"
+    assert result["report_refresh_error"] == "OSError: report refresh unavailable"
+    assert result["audit_1"]["after_state"] == "FAILED"
+    assert (paper / "assets/figures/figure_001.jpg").is_file()
+    assert not (paper / ".paperforge-r-promotion.json").exists()
+
+
+
 
 def test_promote_r_second_run_is_artifact_noop(tmp_path: Path, monkeypatch) -> None:
     ocr_root, paper, _ = _write_r_fixture(tmp_path)
@@ -427,7 +456,7 @@ def test_promote_r_keeps_malformed_pending_journal(tmp_path: Path) -> None:
             {
                 "schema_version": 2,
                 "state": "prepared",
-                "transaction_dir": ".paperforge-r-promotion/tx",
+                "transaction_dir": ".paperforge-r-promotion/" + ("a" * 32),
                 "snapshots": [],
             }
         ),
@@ -465,6 +494,133 @@ def test_promote_r_rejects_unsafe_object_id(tmp_path: Path) -> None:
     assert result["reason"] == "R_GATE_FAILED"
     assert "object_id_unsafe" in result["objects"][0]["gates"]
     assert not (paper / "outside.jpg").exists()
+
+
+def test_promote_r_rejects_unsafe_transaction_directory_without_cleanup(
+    tmp_path: Path,
+) -> None:
+    ocr_root, paper, _ = _write_r_fixture(tmp_path)
+    sentinel = paper / "render" / "figures" / "sentinel.md"
+    sentinel.write_bytes(b"keep")
+    journal = paper / ".paperforge-r-promotion.json"
+    journal.write_text(
+        json.dumps(
+            {
+                "schema_version": 2,
+                "state": "committed",
+                "transaction_dir": "render/figures",
+                "snapshots": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = promote_r(ocr_root, "TESTRPROMO1", staging_root=tmp_path / "missing")
+
+    assert result["ok"] is False
+    assert result["reason"] == "R_PROMOTION_RECOVERY_REQUIRED"
+    assert result["error"] == (
+        "promotion_recovery_failed:ValueError:promotion_journal_transaction_path_invalid"
+    )
+    assert sentinel.read_bytes() == b"keep"
+    assert journal.is_file()
+
+
+def test_promote_r_rejects_unsafe_journal_destination_without_cleanup(
+    tmp_path: Path,
+) -> None:
+    ocr_root, paper, _ = _write_r_fixture(tmp_path)
+    sentinel = paper / "render" / "figures" / "sentinel.md"
+    sentinel.write_bytes(b"keep")
+    transaction_id = "a" * 32
+    journal = paper / ".paperforge-r-promotion.json"
+    journal.write_text(
+        json.dumps(
+            {
+                "schema_version": 2,
+                "state": "committed",
+                "transaction_dir": f".paperforge-r-promotion/{transaction_id}",
+                "snapshots": [
+                    {
+                        "existed": False,
+                        "destination_relative": "render/figures",
+                        "backup_relative": None,
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = promote_r(ocr_root, "TESTRPROMO1", staging_root=tmp_path / "missing")
+
+    assert result["ok"] is False
+    assert result["reason"] == "R_PROMOTION_RECOVERY_REQUIRED"
+    assert result["error"] == (
+        "promotion_recovery_failed:ValueError:promotion_journal_destination_path_invalid"
+    )
+    assert sentinel.read_bytes() == b"keep"
+    assert journal.is_file()
+
+
+def test_promote_r_rejects_unsupported_journal_schema(tmp_path: Path) -> None:
+    ocr_root, paper, _ = _write_r_fixture(tmp_path)
+    journal = paper / ".paperforge-r-promotion.json"
+    journal.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "state": "committed",
+                "transaction_dir": ".paperforge-r-promotion/" + ("a" * 32),
+                "snapshots": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = promote_r(ocr_root, "TESTRPROMO1", staging_root=tmp_path / "missing")
+
+    assert result["ok"] is False
+    assert result["reason"] == "R_PROMOTION_RECOVERY_REQUIRED"
+    assert result["error"] == "promotion_journal_schema_invalid"
+    assert journal.is_file()
+
+
+def test_promote_r_rejects_backup_outside_transaction_directory(
+    tmp_path: Path,
+) -> None:
+    ocr_root, paper, _ = _write_r_fixture(tmp_path)
+    sentinel = paper / "render" / "figures" / "sentinel.md"
+    sentinel.write_bytes(b"keep")
+    transaction_id = "a" * 32
+    journal = paper / ".paperforge-r-promotion.json"
+    journal.write_text(
+        json.dumps(
+            {
+                "schema_version": 2,
+                "state": "committed",
+                "transaction_dir": f".paperforge-r-promotion/{transaction_id}",
+                "snapshots": [
+                    {
+                        "existed": True,
+                        "destination_relative": "render/figures/figure_001.md",
+                        "backup_relative": "render/figures/0.bak",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    result = promote_r(ocr_root, "TESTRPROMO1", staging_root=tmp_path / "missing")
+
+    assert result["ok"] is False
+    assert result["reason"] == "R_PROMOTION_RECOVERY_REQUIRED"
+    assert result["error"] == (
+        "promotion_recovery_failed:ValueError:promotion_journal_backup_path_invalid"
+    )
+    assert sentinel.read_bytes() == b"keep"
+    assert journal.is_file()
 
 
 

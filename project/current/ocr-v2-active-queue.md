@@ -1,7 +1,14 @@
 # OCR-v2 Active Queue
-> Status: `EXECUTABLE_FROZEN a42f8bb7` / `PROTOCOL_DOCS 781910f3` — S1–S6 lightweight **COMPLETE** on `462398cb` (valid for `a42f8bb7`, `ruff` clean). Hosted CI `32353318123` on docs-only descendant `a2e18fa4` is **green: All Checks Passed, 14/14**, with `3.11` Ubuntu/macOS/Windows, J-Matrix, Ruff, plugin, OCR, E2E; no executable change after `a42f8bb7`. #191 FROZEN / ready-for-agent; #81 OPEN / owner gate. Remaining: live browser/Ctrl+C/recovery evidence + Release-N support-window owner decision.
-> Last updated: 2026-08-31
+> Status: `EXECUTABLE_FROZEN a42f8bb7` / `PROTOCOL_DOCS 781910f3` — S1–S6 lightweight **COMPLETE** on `462398cb` (valid for `a42f8bb7`, `ruff` clean). Hosted CI `32353318123` on docs-only descendant `a2e18fa4` is **green: All Checks Passed, 14/14**, with `3.11` Ubuntu/macOS/Windows, J-Matrix, Ruff, plugin, OCR, E2E; no executable change after `a42f8bb7`. #191 FROZEN / ready-for-agent; #81 OPEN / owner gate. Reconcile recovery/fulltext safety follow-up is closed on disposable fixtures; semantic coverage and all production writes remain owner-gated.
+> Last updated: 2026-09-01
 
+
+## 2026-09-01: Recovery and fulltext safety follow-up
+
+- **R journal recovery:** schema version 2 is required; transaction paths must be exactly `.paperforge-r-promotion/<32-hex-id>`, destinations are limited to `assets/figures/*.jpg`, `render/figures/*.md`, and `render/materialization.provenance.json`, and backups must be integer `.bak` files inside that transaction directory. Symlinked roots/entries are rejected.
+- **Fulltext authority:** missing, unreadable, or malformed canonical inventories produce `F0_CANONICAL_AUTHORITY_UNAVAILABLE`, set `mutation_blocked`, and emit no patches, including orphan/reserved embed candidates.
+- **Committed reporting:** a post-commit report refresh failure is explicit (`ok=true`, `committed=true`, `report_refresh=failed`) and never triggers rollback of committed artifacts.
+- **Verification:** focused reconcile suite **114 passed, 1 warning**; Ruff `E,F,I,UP` and `py_compile` clean. No production mutation or front OCR/render change.
 
 ## 2026-08-31: D1 status sync
 

@@ -178,11 +178,22 @@ def fulltext_reconcile(
     ft_path = root / "fulltext.md"
     recon_path = root / "render" / "reconciliation.proposals.json"
     render_fig_dir = root / "render" / "figures"
+    inventory_available = False
+    inventory_authority_reason: str | None = None
+    inv: dict[str, Any] = {}
     try:
         value = json.loads(inv_path.read_text(encoding="utf-8"))
-        inv = value if isinstance(value, dict) else {}
+        if not isinstance(value, dict):
+            inventory_authority_reason = "inventory_not_object"
+        elif not isinstance(value.get("matched_figures"), list):
+            inventory_authority_reason = "matched_figures_not_list"
+        elif any(not isinstance(row, dict) for row in value["matched_figures"]):
+            inventory_authority_reason = "matched_figure_row_invalid"
+        else:
+            inv = value
+            inventory_available = True
     except (OSError, ValueError, TypeError):
-        inv = {}
+        inventory_authority_reason = "inventory_unreadable"
     try:
         fulltext = ft_path.read_text(encoding="utf-8")
         fulltext_available = True
@@ -345,7 +356,20 @@ def fulltext_reconcile(
                 "classification": "F3_BLOCKED_UNKNOWN",
                 "recommended_action": "BLOCK",
             })
-    if not fulltext_available:
+    if not inventory_available:
+        issues = [
+            issue
+            for issue in issues
+            if issue["type"] == "fulltext_source_unavailable"
+        ]
+        issues.append({
+            "type": "fulltext_canonical_authority_unavailable",
+            "classification": "F0_CANONICAL_AUTHORITY_UNAVAILABLE",
+            "reason": inventory_authority_reason,
+            "recommended_action": "BLOCK",
+        })
+        patches = []
+    elif not fulltext_available:
         issues = [
             issue
             for issue in issues
@@ -355,7 +379,9 @@ def fulltext_reconcile(
             }
         ]
         patches = []
-    mutation_blocked = bool(canonical_id_conflicts or not fulltext_available)
+    mutation_blocked = bool(
+        canonical_id_conflicts or not fulltext_available or not inventory_available
+    )
     if mutation_blocked:
         patches = []
 
@@ -363,6 +389,8 @@ def fulltext_reconcile(
         "paper_key": paper_key,
         "canonical_ids": canonical_ids,
         "canonical_identity_conflicts": canonical_id_conflicts,
+        "inventory_available": inventory_available,
+        "inventory_authority_reason": inventory_authority_reason,
         "mutation_blocked": mutation_blocked,
         "proposal_ids": proposal_ids,
         "orphan_ids": orphan_ids,

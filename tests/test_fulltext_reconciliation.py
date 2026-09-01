@@ -81,24 +81,58 @@ def test_fulltext_source_unavailable_blocks_all_patches(tmp_path: Path) -> None:
     assert result["issues"][0]["type"] == "fulltext_source_unavailable"
 
 
-def test_fulltext_ignores_malformed_inventory_collection(tmp_path: Path) -> None:
+def test_fulltext_blocks_malformed_inventory_before_orphan_patch(tmp_path: Path) -> None:
     paper = tmp_path / "ocr" / "TESTFULLTEXT4"
     structure = paper / "structure"
+    (paper / "render" / "figures").mkdir(parents=True)
     structure.mkdir(parents=True)
     (structure / "figure_inventory.json").write_text(
         json.dumps({"matched_figures": {"not": "a-list"}}), encoding="utf-8"
     )
-    (paper / "fulltext.md").write_text("", encoding="utf-8")
+    (paper / "fulltext.md").write_text(
+        "![[render/figures/orphan_001.md]]\n", encoding="utf-8"
+    )
+    (paper / "render" / "figures" / "orphan_001.md").write_text(
+        "# Orphan\n", encoding="utf-8"
+    )
 
     result = fulltext_reconcile(tmp_path / "ocr", "TESTFULLTEXT4")
 
     assert result["canonical_ids"] == []
-    assert result["mutation_blocked"] is False
+    assert result["inventory_available"] is False
+    assert result["inventory_authority_reason"] == "matched_figures_not_list"
+    assert result["mutation_blocked"] is True
+    assert result["patches"] == []
+    assert result["issues"][0]["type"] == "fulltext_canonical_authority_unavailable"
+
+
+def test_fulltext_blocks_malformed_inventory_row_before_orphan_patch(
+    tmp_path: Path,
+) -> None:
+    paper = tmp_path / "ocr" / "TESTFULLTEXT5"
+    structure = paper / "structure"
+    (paper / "render" / "figures").mkdir(parents=True)
+    structure.mkdir(parents=True)
+    (structure / "figure_inventory.json").write_text(
+        json.dumps({"matched_figures": ["malformed-row"]}), encoding="utf-8"
+    )
+    (paper / "fulltext.md").write_text(
+        "![[render/figures/orphan_001.md]]\n", encoding="utf-8"
+    )
+    (paper / "render" / "figures" / "orphan_001.md").write_text(
+        "# Orphan\n", encoding="utf-8"
+    )
+
+    result = fulltext_reconcile(tmp_path / "ocr", "TESTFULLTEXT5")
+
+    assert result["inventory_available"] is False
+    assert result["inventory_authority_reason"] == "matched_figure_row_invalid"
+    assert result["mutation_blocked"] is True
     assert result["patches"] == []
 
 
 def test_fulltext_ignores_malformed_reserved_mapping_rows(tmp_path: Path) -> None:
-    paper = tmp_path / "ocr" / "TESTFULLTEXT5"
+    paper = tmp_path / "ocr" / "TESTFULLTEXT6"
     structure = paper / "structure"
     structure.mkdir(parents=True)
     (structure / "figure_inventory.json").write_text(
@@ -115,7 +149,7 @@ def test_fulltext_ignores_malformed_reserved_mapping_rows(tmp_path: Path) -> Non
         json.dumps({"blocked": ["malformed-row"]}), encoding="utf-8"
     )
 
-    result = fulltext_reconcile(tmp_path / "ocr", "TESTFULLTEXT5")
+    result = fulltext_reconcile(tmp_path / "ocr", "TESTFULLTEXT6")
 
     issue = next(issue for issue in result["issues"] if issue["type"] == "fulltext_wrong_target")
     assert issue["classification"] == "F2_AMBIGUOUS"
