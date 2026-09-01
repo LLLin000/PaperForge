@@ -215,6 +215,17 @@ def _safe_stage_path(stage_root: Path, relative_path: str) -> Path | None:
         return None
     return candidate
 
+def _raw_path_has_symlink(root: Path, relative_path: str) -> bool:
+    current = root
+    if current.is_symlink():
+        return True
+    for part in Path(relative_path).parts:
+        current /= part
+        if current.is_symlink():
+            return True
+    return False
+
+
 
 def _norm_bbox(value: Any) -> tuple[Any, ...]:
     try:
@@ -500,7 +511,9 @@ def _snapshot_files(
     return transaction_dir, snapshots
 
 
-def _journal_snapshots(root: Path, journal: dict[str, Any]) -> tuple[Path, list[dict[str, Any]]]:
+def _journal_snapshots(
+    root: Path, journal: dict[str, Any], *, require_backups: bool = True
+) -> tuple[Path, list[dict[str, Any]]]:
     if journal.get("schema_version") != 2:
         raise ValueError("promotion_journal_schema_invalid")
     transaction_relative = journal.get("transaction_dir")
@@ -517,6 +530,7 @@ def _journal_snapshots(root: Path, journal: dict[str, Any]) -> tuple[Path, list[
         transaction_dir is None
         or transaction_root_path.is_symlink()
         or transaction_path.is_symlink()
+        or _raw_path_has_symlink(root, transaction_relative)
         or transaction_dir.parent.resolve() != transaction_root
     ):
         raise ValueError("promotion_journal_transaction_path_unsafe")
@@ -535,7 +549,11 @@ def _journal_snapshots(root: Path, journal: dict[str, Any]) -> tuple[Path, list[
         ):
             raise ValueError("promotion_journal_destination_path_invalid")
         destination = _safe_stage_path(root, destination_relative)
-        if destination is None or destination in destinations:
+        if (
+            destination is None
+            or _raw_path_has_symlink(root, destination_relative)
+            or destination in destinations
+        ):
             raise ValueError("promotion_journal_destination_path_unsafe")
         destinations.add(destination)
         backup_relative = item.get("backup_relative")
@@ -550,9 +568,9 @@ def _journal_snapshots(root: Path, journal: dict[str, Any]) -> tuple[Path, list[
             backup = _safe_stage_path(root, backup_relative)
             if (
                 backup is None
+                or _raw_path_has_symlink(root, backup_relative)
                 or backup.parent.resolve() != transaction_dir
-                or backup.is_symlink()
-                or not backup.is_file()
+                or (require_backups and not backup.is_file())
             ):
                 raise ValueError("promotion_journal_backup_path_unsafe")
         elif backup_relative is not None:
@@ -583,7 +601,9 @@ def _recover_pending_transaction(root: Path) -> str | None:
     if state not in {"prepared", "committed"}:
         return "promotion_journal_state_invalid"
     try:
-        transaction_dir, snapshots = _journal_snapshots(root, journal)
+        transaction_dir, snapshots = _journal_snapshots(
+            root, journal, require_backups=state == "prepared"
+        )
         if state == "prepared":
             if not transaction_dir.is_dir():
                 return "promotion_journal_transaction_missing"
@@ -599,7 +619,12 @@ def _recover_pending_transaction(root: Path) -> str | None:
                         + str(snapshot.get("destination_relative") or snapshot["destination"])
                     )
             _restore_snapshots(snapshots, verify_cas=True)
-        _cleanup_backup_dir(transaction_dir)
+            _cleanup_backup_dir(transaction_dir)
+        else:  # committed: production is authoritative; cleanup is best-effort
+            try:
+                _cleanup_backup_dir(transaction_dir)
+            except OSError:
+                pass
         journal_path.unlink(missing_ok=True)
     except ValueError as exc:
         if str(exc).startswith("promotion_recovery_conflict:"):
@@ -1065,7 +1090,7 @@ def _promote_r_unlocked(
             result["rollback_error"] = rollback_error
         return result
     _finish_transaction(root, transaction_dir)
-    report_refresh = "ok"
+    report_refresh = "written"
     report_refresh_error: str | None = None
     try:
         after_audit = audit_paper(Path(ocr_root), paper_key, write_report=True)
@@ -1083,6 +1108,7 @@ def _promote_r_unlocked(
         }
         report_refresh = "failed"
         report_refresh_error = f"{type(exc).__name__}: {exc}"
+    report_audit_state = after_audit.get("state")
     target_delta = {
         item["object_id"]: {
             "before": _audit_targets(before_audit, item["object_id"]),
@@ -1106,6 +1132,7 @@ def _promote_r_unlocked(
         },
         "committed": True,
         "report_refresh": report_refresh,
+        "report_audit_state": report_audit_state,
         "production_write": True,
     }
     if report_refresh_error:
