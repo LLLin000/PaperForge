@@ -10,7 +10,7 @@ Existing OCR structural parsing, figure/table matching, and render code remain u
 existing render → audit_0 → render/render.consistency.json → probe OCR details.render_consistency
 ```
 
-V1 itself does not reconcile or modify artifacts. The later D1 `paperforge render reconcile` command produces an isolated staging result; only `promote-r` can write production, and only after its separate safety gates. A committed promotion preserves production through cleanup/report-refresh failures; the result distinguishes report-write success (`report_refresh=written`) from a failed final audit (`report_audit_state=FAILED`).
+V1 itself does not reconcile or modify artifacts. The later D1 `paperforge render reconcile` command produces an isolated staging result; only `promote-r` can write production, and only after its separate safety gates. A committed promotion preserves production through cleanup/report-refresh failures; cleanup `OSError` after the commit marker returns `committed=true, cleanup=pending` with `cleanup_error` and leaves the journal for the next recovery. The result distinguishes report-write success (`report_refresh=written`) from a failed final audit (`report_audit_state=FAILED`).
 
 ## V1 scope
 
@@ -255,7 +255,7 @@ Production batch rollout is not authorized. The current disposable canary eviden
 - A missing or dangling render artifact can become an R exact plan when source identity and ownership are unique.
 - An existing image with missing, ambiguous, unreadable, or mismatched authoritative provenance is surfaced as `R_CONTENT_UNVERIFIED`; it cannot become an exact repair or be overwritten by promotion.
 - A missing, unreadable, non-object, non-list, or malformed canonical fulltext inventory is an F0 authority failure, sets `mutation_blocked`, and emits no patches, including orphan or reserved embed candidates.
-- Journal recovery rejects schema versions other than 2, transaction paths outside `.paperforge-r-promotion/<32-hex-id>`, destinations outside the three production namespaces, backups outside that transaction directory, and symlinked raw path components. A `committed` journal does not require backup files to remain and removes its journal after best-effort cleanup.
+- Journal recovery rejects schema versions other than 2, transaction paths outside `.paperforge-r-promotion/<32-hex-id>`, destinations outside the three production namespaces, backups outside that transaction directory, and symlinked raw path components. A `committed` journal does not require backup files to remain and removes its journal after best-effort cleanup. A cleanup failure on the original committed call is returned as `cleanup=pending` with the journal retained for recovery.
 - A semantically incomplete crop (for example, a nearby `table_html` claim absorbing a Figure panel) is not proven by hash/dimension/CAS checks. It requires a separate coverage-suspect diagnostic and human/upstream adjudication. A report write that returns audit `FAILED` is represented separately from a refresh exception.
 
 ## Unresolved case queue

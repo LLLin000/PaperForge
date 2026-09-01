@@ -12,7 +12,7 @@
 
 ## 2026-09-01: Committed cleanup hardening and R-content census
 
-- **Committed journal recovery:** after `state=committed`, production remains authoritative; recovery no longer requires backup files, cleanup is best-effort, and the journal is removed without rollback. The crash window between backup deletion, transaction-directory removal, and journal deletion is covered.
+- **Committed journal recovery:** after `state=committed`, production remains authoritative; recovery no longer requires backup files, cleanup is best-effort, and the journal is removed without rollback. A cleanup `OSError` on the original committed call returns `committed=true, cleanup=pending` with `cleanup_error`; the journal remains for the next recovery.
 - **Raw path safety:** destination and backup checks inspect raw path components before `.resolve()`; symlinked production, transaction, and backup paths fail closed.
 - **Final audit semantics:** report-write success is `report_refresh=written`; a returned audit `state=FAILED` is separately exposed as `report_audit_state=FAILED`; exceptions/non-object results remain `report_refresh=failed`.
 - **Read-only census:** `D:\L\OB\Literature-hub\System\PaperForge\ocr` scanned **969** paper directories with `write_report=False`: **0 affected papers, 0 affected objects, 0 audit failures**. No production mutation.

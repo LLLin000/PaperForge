@@ -1089,7 +1089,13 @@ def _promote_r_unlocked(
         if rollback_error:
             result["rollback_error"] = rollback_error
         return result
-    _finish_transaction(root, transaction_dir)
+    cleanup_state = "done"
+    cleanup_error: str | None = None
+    try:
+        _finish_transaction(root, transaction_dir)
+    except OSError as exc:
+        cleanup_state = "pending"
+        cleanup_error = f"{type(exc).__name__}: {exc}"
     report_refresh = "written"
     report_refresh_error: str | None = None
     try:
@@ -1131,10 +1137,13 @@ def _promote_r_unlocked(
             "target_delta": target_delta,
         },
         "committed": True,
+        "cleanup": cleanup_state,
         "report_refresh": report_refresh,
         "report_audit_state": report_audit_state,
         "production_write": True,
     }
+    if cleanup_error:
+        result["cleanup_error"] = cleanup_error
     if report_refresh_error:
         result["report_refresh_error"] = report_refresh_error
     return result

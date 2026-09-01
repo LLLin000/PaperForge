@@ -185,6 +185,45 @@ def test_promote_r_reports_post_commit_refresh_failure_without_rollback(
     assert not (paper / ".paperforge-r-promotion.json").exists()
 
 
+def test_promote_r_returns_committed_when_cleanup_is_pending(
+    tmp_path: Path, monkeypatch
+) -> None:
+    ocr_root, paper, _ = _write_r_fixture(tmp_path)
+    audit_paper(ocr_root, "TESTRPROMO1", write_report=True)
+    staging = _write_r_manifest(paper, tmp_path / "staging")
+
+    import paperforge.promote_r as promoter_module
+
+    original_cleanup = promoter_module._cleanup_backup_dir
+    calls = 0
+
+    def fail_once(path: Path) -> None:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise OSError("cleanup unavailable")
+        original_cleanup(path)
+
+    monkeypatch.setattr(promoter_module, "_cleanup_backup_dir", fail_once)
+    result = promote_r(ocr_root, "TESTRPROMO1", staging_root=staging)
+
+    journal = paper / ".paperforge-r-promotion.json"
+    assert result["ok"] is True
+    assert result["committed"] is True
+    assert result["cleanup"] == "pending"
+    assert result["cleanup_error"] == "OSError: cleanup unavailable"
+    assert json.loads(journal.read_text(encoding="utf-8"))["state"] == "committed"
+    assert (
+        paper / "assets/figures/figure_001.jpg"
+    ).read_bytes() == (
+        staging / "assets/figures/figure_001.jpg"
+    ).read_bytes()
+
+    second = promote_r(ocr_root, "TESTRPROMO1", staging_root=staging)
+
+    assert second["ok"] is True
+    assert second["promotion_states"] == {"figure_001": "already_promoted"}
+    assert not journal.exists()
 
 
 
