@@ -31,6 +31,16 @@ _JOURNAL_NAME = ".paperforge-r-promotion.json"
 _TRANSACTION_DIR_NAME = ".paperforge-r-promotion"
 _SUCCESS_MATERIALIZATION_STATUSES = {"materialized", "success"}
 
+_TRANSACTION_RELATIVE_RE = re.compile(
+    rf"^{re.escape(_TRANSACTION_DIR_NAME)}/[0-9a-f]{{32}}$"
+)
+_DESTINATION_RELATIVE_RE = re.compile(
+    r"^(?:assets/figures/[^/\\]+\.jpg|"
+    r"render/figures/[^/\\]+\.md|"
+    r"render/materialization\.provenance\.json)$"
+)
+_BACKUP_NAME_RE = re.compile(r"^[0-9]+\.bak$")
+
 
 def _read_json(path: Path) -> dict[str, Any] | None:
     try:
@@ -491,29 +501,62 @@ def _snapshot_files(
 
 
 def _journal_snapshots(root: Path, journal: dict[str, Any]) -> tuple[Path, list[dict[str, Any]]]:
+    if journal.get("schema_version") != 2:
+        raise ValueError("promotion_journal_schema_invalid")
     transaction_relative = journal.get("transaction_dir")
-    transaction_dir = _safe_stage_path(root, str(transaction_relative or ""))
-    if transaction_dir is None:
-        raise ValueError("promotion_journal_path_unsafe")
+    if (
+        not isinstance(transaction_relative, str)
+        or not _TRANSACTION_RELATIVE_RE.fullmatch(transaction_relative)
+    ):
+        raise ValueError("promotion_journal_transaction_path_invalid")
+    transaction_dir = _safe_stage_path(root, transaction_relative)
+    transaction_path = root / transaction_relative
+    transaction_root_path = root / _TRANSACTION_DIR_NAME
+    transaction_root = transaction_root_path.resolve()
+    if (
+        transaction_dir is None
+        or transaction_root_path.is_symlink()
+        or transaction_path.is_symlink()
+        or transaction_dir.parent.resolve() != transaction_root
+    ):
+        raise ValueError("promotion_journal_transaction_path_unsafe")
     raw_snapshots = journal.get("snapshots")
     if not isinstance(raw_snapshots, list) or not raw_snapshots:
         raise ValueError("promotion_journal_snapshots_invalid")
     snapshots: list[dict[str, Any]] = []
+    destinations: set[Path] = set()
     for item in raw_snapshots:
         if not isinstance(item, dict) or not isinstance(item.get("existed"), bool):
             raise ValueError("promotion_journal_snapshot_invalid")
         destination_relative = item.get("destination_relative")
-        if not isinstance(destination_relative, str) or not destination_relative:
-            raise ValueError("promotion_journal_snapshot_invalid")
+        if (
+            not isinstance(destination_relative, str)
+            or not _DESTINATION_RELATIVE_RE.fullmatch(destination_relative)
+        ):
+            raise ValueError("promotion_journal_destination_path_invalid")
         destination = _safe_stage_path(root, destination_relative)
+        if destination is None or destination in destinations:
+            raise ValueError("promotion_journal_destination_path_unsafe")
+        destinations.add(destination)
         backup_relative = item.get("backup_relative")
-        backup = (
-            _safe_stage_path(root, str(backup_relative))
-            if backup_relative
-            else None
-        )
-        if destination is None or (item["existed"] and backup is None):
-            raise ValueError("promotion_journal_snapshot_path_unsafe")
+        backup = None
+        if item["existed"]:
+            if (
+                not isinstance(backup_relative, str)
+                or backup_relative != f"{transaction_relative}/{Path(backup_relative).name}"
+                or not _BACKUP_NAME_RE.fullmatch(Path(backup_relative).name)
+            ):
+                raise ValueError("promotion_journal_backup_path_invalid")
+            backup = _safe_stage_path(root, backup_relative)
+            if (
+                backup is None
+                or backup.parent.resolve() != transaction_dir
+                or backup.is_symlink()
+                or not backup.is_file()
+            ):
+                raise ValueError("promotion_journal_backup_path_unsafe")
+        elif backup_relative is not None:
+            raise ValueError("promotion_journal_backup_path_invalid")
         snapshots.append(
             {
                 "destination": destination,
@@ -534,6 +577,8 @@ def _recover_pending_transaction(root: Path) -> str | None:
     journal = _read_json(journal_path)
     if journal is None:
         return "promotion_journal_unreadable"
+    if journal.get("schema_version") != 2:
+        return "promotion_journal_schema_invalid"
     state = journal.get("state")
     if state not in {"prepared", "committed"}:
         return "promotion_journal_state_invalid"
@@ -1020,7 +1065,24 @@ def _promote_r_unlocked(
             result["rollback_error"] = rollback_error
         return result
     _finish_transaction(root, transaction_dir)
-    after_audit = audit_paper(Path(ocr_root), paper_key, write_report=True)
+    report_refresh = "ok"
+    report_refresh_error: str | None = None
+    try:
+        after_audit = audit_paper(Path(ocr_root), paper_key, write_report=True)
+        if not isinstance(after_audit, dict):
+            raise TypeError("audit returned a non-object result")
+    except Exception as exc:  # noqa: BLE001 — commit already completed
+        after_audit = {
+            "state": "FAILED",
+            "issues": [
+                {
+                    "type": "audit_report_refresh_failure",
+                    "message": f"{type(exc).__name__}: {exc}",
+                }
+            ],
+        }
+        report_refresh = "failed"
+        report_refresh_error = f"{type(exc).__name__}: {exc}"
     target_delta = {
         item["object_id"]: {
             "before": _audit_targets(before_audit, item["object_id"]),
@@ -1028,7 +1090,7 @@ def _promote_r_unlocked(
         }
         for item in prepared
     }
-    return {
+    result = {
         "ok": True,
         "paper_key": paper_key,
         "staging_root": str(stage_root),
@@ -1042,8 +1104,13 @@ def _promote_r_unlocked(
             "after_issues": len(after_audit.get("issues") or []),
             "target_delta": target_delta,
         },
+        "committed": True,
+        "report_refresh": report_refresh,
         "production_write": True,
     }
+    if report_refresh_error:
+        result["report_refresh_error"] = report_refresh_error
+    return result
 
 
 def promote_r(

@@ -2,7 +2,7 @@
 
 > Maintainer-facing documentation covering the two-layer design, data flow, directory structure, key design decisions, and extension points.
 >
-> **Last updated:** 2026-08-31 | **Version:** v1.2 | **Target audience:** maintainers and contributors
+> **Last updated:** 2026-09-01 | **Version:** v1.3 | **Target audience:** maintainers and contributors
 
 ---
 
@@ -217,12 +217,14 @@ R/P reconciliation report
 The authority boundary is deliberate:
 
 - Duplicate canonical `figure_id` occurrences, cross-canonical `(page, block_id, normalized_bbox)` claims, duplicate provenance paths, malformed provenance, and unavailable fulltext sources are blocked. Reconcile never chooses a winner or merges `table_html` into a figure.
-- R promotion is relationship-exact: it verifies identity, ordered refs, ownership, source snapshot, staged outputs, destination CAS, journal recovery, and post-audit rollback. Audit failures, unsafe IDs, malformed journals, and third-party destination changes fail closed. It does not prove semantic figure coverage.
+- R promotion is relationship-exact: it verifies identity, ordered refs, ownership, source snapshot, staged outputs, destination CAS, journal recovery, and post-audit rollback. Recovery accepts only journal schema 2, transaction paths under `.paperforge-r-promotion/<32-hex-id>`, allowlisted destinations (`assets/figures/*.jpg`, `render/figures/*.md`, `render/materialization.provenance.json`), and in-transaction integer `.bak` files; unsafe paths and symlinked entries fail closed. It does not prove semantic figure coverage.
+- A committed promotion never rolls back because the final report refresh fails. The result remains `ok=true`, `committed=true`, with `report_refresh=failed`; committed artifacts stay authoritative for recovery.
 - An existing image is not considered authoritative merely because it exists. Missing, ambiguous, unreadable, or mismatched materialization provenance is surfaced as `R_CONTENT_UNVERIFIED` and cannot be promoted or treated as an exact repair.
+- Fulltext reconciliation requires a valid canonical figure inventory. Missing, unreadable, non-object, non-list, or malformed authority rows produce `F0_CANONICAL_AUTHORITY_UNAVAILABLE`, set `mutation_blocked`, and emit no patches.
 - P remains reviewable only. Bounded-slot anchors derive from unique, non-conflicted `main` rows; a proposal never mutates canonical inventory until an explicit human `accept-proposal` action passes its live authority checks.
 - `render reconcile` is staging-only. `render promote-r` requires explicit object IDs or `--all`; production batch rollout is a separate owner gate.
 
-Current known limits are part of the contract: semantic figure-coverage suspects remain diagnostic and never auto-repaired; no bbox/pixel ratio establishes that a panel was not absorbed by `table_html`. Fulltext duplicate canonical identities and unavailable fulltext block all patches rather than allowing a partial mutation.
+Current known limits are part of the contract: semantic figure-coverage suspects remain diagnostic and never auto-repaired; no bbox/pixel ratio establishes that a panel was not absorbed by `table_html`. Fulltext duplicate canonical identities and unavailable fulltext authority block all patches rather than allowing a partial mutation.
 
 ---
 
