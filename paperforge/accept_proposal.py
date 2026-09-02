@@ -1,6 +1,7 @@
 """Accept a reviewed P proposal and promote it to canonical inventory.
 
-The reviewed ``final-plan.json`` is the authority for the accepted member refs.
+The caller-supplied SHA-256 token selects the exact reviewed
+``final-plan.json``; that plan is the authority for accepted member refs.
 Production writes use the same paper-scoped journal, CAS, audit, and recovery
 contract as R promotion; this module never re-matches the proposal.
 """
@@ -174,6 +175,7 @@ def _accept_proposal_unlocked(
     ocr_root: Path,
     paper_key: str,
     label: str,
+    plan_hash: str | None,
 ) -> dict[str, Any]:
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*", str(paper_key)):
         return {
@@ -187,6 +189,22 @@ def _accept_proposal_unlocked(
         return {
             "ok": False,
             "reason": "paper_missing",
+            "paper_key": paper_key,
+            "label": label,
+        }
+    if plan_hash is None:
+        return {
+            "ok": False,
+            "reason": "review_plan_hash_missing",
+            "paper_key": paper_key,
+            "label": label,
+        }
+    if not isinstance(plan_hash, str) or not re.fullmatch(
+        r"[0-9a-f]{64}", plan_hash
+    ):
+        return {
+            "ok": False,
+            "reason": "review_plan_hash_invalid",
             "paper_key": paper_key,
             "label": label,
         }
@@ -256,14 +274,15 @@ def _accept_proposal_unlocked(
 
     staging_base = Path(tempfile.gettempdir()) / "paperforge-staging"
     pattern = f"*_{paper_key}/{paper_key}/previews/figure_{label}"
-    candidates: list[tuple[int, Path]] = []
+    candidates: list[tuple[Path, bytes]] = []
     if staging_base.is_dir() and not staging_base.is_symlink():
-        for directory in staging_base.glob(pattern):
+        for directory in sorted(
+            staging_base.glob(pattern), key=lambda path: path.as_posix()
+        ):
             plan_candidate = directory / "final-plan.json"
             try:
                 relative_directory = directory.relative_to(staging_base).as_posix()
                 relative_plan = plan_candidate.relative_to(staging_base).as_posix()
-                plan_mtime = plan_candidate.stat().st_mtime_ns
             except (OSError, ValueError):
                 continue
             if (
@@ -275,18 +294,22 @@ def _accept_proposal_unlocked(
                 or _raw_path_has_symlink(staging_base, relative_plan)
             ):
                 continue
-            candidates.append((plan_mtime, directory))
+            try:
+                candidate_plan_bytes = plan_candidate.read_bytes()
+            except (OSError, UnicodeError):
+                continue
+            if hashlib.sha256(candidate_plan_bytes).hexdigest() == plan_hash:
+                candidates.append((directory, candidate_plan_bytes))
     if not candidates:
         return {
             "ok": False,
-            "reason": "staging_final_plan_not_found",
+            "reason": "STALE_REVIEWED_PLAN",
             "paper_key": paper_key,
             "label": label,
+            "plan_hash": plan_hash,
         }
-    preview_dir = max(candidates, key=lambda item: item[0])[1]
-    plan_path = preview_dir / "final-plan.json"
+    preview_dir, plan_bytes = candidates[0]
     try:
-        plan_bytes = plan_path.read_bytes()
         plan = json.loads(plan_bytes.decode("utf-8"))
     except (OSError, UnicodeError, TypeError, ValueError):
         return {
@@ -833,8 +856,9 @@ def accept_proposal(
     ocr_root: Path,
     paper_key: str,
     label: str,
+    plan_hash: str | None = None,
 ) -> dict[str, Any]:
-    """Accept one reviewed P plan under the shared paper-scoped writer lock."""
+    """Accept the exact reviewed P plan named by its SHA-256 token."""
     from filelock import FileLock, Timeout
 
     root = Path(ocr_root) / paper_key
@@ -855,7 +879,9 @@ def accept_proposal(
     lock = FileLock(str(root / ".paperforge-r-promotion.lock"), timeout=0)
     try:
         with lock:
-            return _accept_proposal_unlocked(ocr_root, paper_key, label)
+            return _accept_proposal_unlocked(
+                ocr_root, paper_key, label, plan_hash
+            )
     except Timeout:
         return {
             "ok": False,

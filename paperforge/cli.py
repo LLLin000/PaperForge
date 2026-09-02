@@ -370,6 +370,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_render_accept = p_render_sp.add_parser("accept-proposal", help="Promote a verified P proposal to canonical inventory (authority action)")
     p_render_accept.add_argument("key", metavar="KEY", help="Paper key")
     p_render_accept.add_argument("label", metavar="LABEL", help="Proposal label (e.g. 5)")
+    p_render_accept.add_argument("--plan-hash", required=True, help="SHA-256 of the reviewed final-plan.json")
     p_render_accept.add_argument("--json", action="store_true", help="Output JSON")
 
 

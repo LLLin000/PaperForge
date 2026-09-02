@@ -1,7 +1,7 @@
 # OCR Render Consistency Audit — V1 Plan
 
 **Status:** V1 read-only audit and D1 R/P reconciliation implementation are present. R disposable canary passes; P authority acceptance is regression-covered on disposable fixtures; production real-vault canary and batch rollout remain blocked on owner authorization and semantic-coverage adjudication.
-**Revision 2026-09-02:** `accept-proposal` now shares the paper-scoped lock and schema-v2 journal/CAS/recovery contract with `promote-r`. It requires a live reviewed-plan snapshot, exact staged paths, and plan-owned member refs; records the direct SHA-256 of `final-plan.json`; atomically updates the accepted canonical inventory row, JPG, Markdown, materialization provenance, and proposal report; rolls back failed post-audits before commit; and refreshes the final consistency report after commit. Committed cleanup/report failures remain recoverable without rolling back production. Semantic coverage defects remain report-only.
+**Revision 2026-09-02:** `accept-proposal` now shares the paper-scoped lock and schema-v2 journal/CAS/recovery contract with `promote-r`. `render reconcile --json` emits `p_details[].final_plan_hash`; acceptance requires that exact SHA-256 token for the reviewed `final-plan.json`, then checks the live reviewed-plan snapshot, exact staged paths, and plan-owned member refs. It atomically updates the accepted canonical inventory row, JPG, Markdown, materialization provenance, and proposal report; rolls back failed post-audits before commit; and refreshes the final consistency report after commit. Committed cleanup/report failures remain recoverable without rolling back production. Semantic coverage defects remain report-only.
 ## Boundary
 
 Existing OCR structural parsing, figure/table matching, and render code remain untouched. V1 is an append-only post-render audit. It never synthesizes visual content or edits canonical OCR truth.
@@ -226,7 +226,7 @@ R promotion must not mutate:
 - `meta.json`;
 - source PDF or user-authored notes.
 
-The P `accept-proposal` authority action is the only exception for a reviewed canonical figure: it may add one accepted `figure_inventory` row and the corresponding JPG, Markdown, materialization-provenance record, and proposal-report removal, but only through its own lock/CAS/schema-v2 journal transaction and post-audit gate. It never rematches assets or changes OCR/source/user-authored inputs.
+- The P `accept-proposal` authority action is the only exception for a reviewed canonical figure: it may add one accepted `figure_inventory` row and the corresponding JPG, Markdown, materialization-provenance record, and proposal-report removal, but only through its own lock/CAS/schema-v2 journal transaction and post-audit gate. It requires the caller-supplied SHA-256 of the exact reviewed `final-plan.json`, never selects a plan by mtime, never rematches assets, and never changes OCR/source/user-authored inputs.
 
 ## Execution surface
 
@@ -239,7 +239,7 @@ paperforge render promote-r
 paperforge render accept-proposal
 ```
 
-`render audit` is read-only for one paper or a batch. `render reconcile` is staging-only. `promote-r` requires explicit object IDs or `--all`; `accept-proposal` is a human-authority action that requires the reviewed plan's live snapshot and exact member refs.
+`render audit` is read-only for one paper or a batch. `render reconcile` is staging-only and exposes each P plan's `final_plan_hash` in JSON output. `promote-r` requires explicit object IDs or `--all`; `accept-proposal` requires that exact reviewed-plan hash, the plan's live snapshot, and exact member refs.
 
 Production batch rollout is not authorized. The current disposable canary evidence is recorded in `project/current/render-reconciliation/r-canary-results.json`.
 

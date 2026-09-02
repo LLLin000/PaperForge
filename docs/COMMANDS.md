@@ -192,13 +192,16 @@ paperforge render promote-r KEY --all --json
 
 An empty scope is rejected. `promote-r` consumes the verified `r-manifest.json`, does not re-materialize or rewrite canonical inventory, and remains blocked for production batch rollout until the owner-authorized canary gate passes.
 
-P proposals require human authority:
+P proposals require human authority. `render reconcile --json` returns each staged
+proposal's `p_details[].final_plan_hash`; pass the exact hash for the plan the
+user reviewed:
 
 ```bash
-paperforge render accept-proposal KEY LABEL --json
+paperforge render accept-proposal KEY LABEL --plan-hash <SHA256_FINAL_PLAN> --json
 ```
 
-`accept-proposal` is not an automatic consequence of a P dry-run.
+`accept-proposal` rejects a missing, malformed, or unstaged plan hash. It is not
+an automatic consequence of a P dry-run.
 
 ### `paperforge context`
 
