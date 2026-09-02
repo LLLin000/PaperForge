@@ -97,6 +97,7 @@ def run(args: argparse.Namespace) -> int:
             Path(args.paths["ocr"]),
             str(args.key),
             str(args.label),
+            str(args.plan_hash),
         )
         if getattr(args, "json", False):
             print(json.dumps(result, ensure_ascii=False, indent=2))

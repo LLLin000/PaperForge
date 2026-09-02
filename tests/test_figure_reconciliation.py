@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
+import paperforge.figure_reconciliation as reconciliation_module
 from paperforge.figure_reconciliation import build_reconciliation_report
 from paperforge.render_audit import audit_paper
 
@@ -237,10 +239,90 @@ def test_stage_reconciliation_filters_ambiguous_inventory_from_r_materialization
         "TESTSTAGE1",
         staging_root=tmp_path / "staging",
     )
-
     assert captured["figure_ids"] == ["figure_002"]
     assert captured["table_inventory"] == {"tables": [], "unmatched_assets": []}
     assert result["summary"]["r_prepared_staged"] == 1
+
+
+def test_stage_reconciliation_reports_final_plan_hash(
+    tmp_path: Path, monkeypatch
+) -> None:
+    from paperforge.figure_reconciliation import stage_reconciliation
+
+    ocr_root = _write_fixture(tmp_path)
+    report = {
+        "proposals": [
+            {
+                "label": "3",
+                "evidence_chain": [{"items": [{"text": "Figure 3 Proposed"}]}],
+            }
+        ],
+        "exact_repairs": [],
+    }
+    monkeypatch.setattr(
+        reconciliation_module,
+        "build_reconciliation_report",
+        lambda *args, **kwargs: report,
+    )
+    monkeypatch.setattr(
+        reconciliation_module,
+        "dry_run_exact_repairs",
+        lambda *args, **kwargs: {"results": []},
+    )
+    monkeypatch.setattr(
+        reconciliation_module,
+        "dry_run_bounded_slot_proposals",
+        lambda *args, **kwargs: {
+            "results": [
+                {
+                    "label": "3",
+                    "decision": "structurally_unique_proposal",
+                    "surviving_candidates": [
+                        {
+                            "page": 3,
+                            "bbox": [10, 20, 100, 120],
+                            "group_id": "candidate_p3_b7",
+                        }
+                    ],
+                }
+            ]
+        },
+    )
+    monkeypatch.setattr(
+        "paperforge.render_audit.audit_paper",
+        lambda *args, **kwargs: {"state": "CLEAN", "issues": []},
+    )
+
+    def fake_materializer(
+        pdf_path, figure_inventory, table_inventory, asset_root, render_root, **kwargs
+    ):
+        from PIL import Image
+
+        row = figure_inventory["matched_figures"][0]
+        figure_id = row["figure_id"]
+        image_path = asset_root / "figures" / f"{figure_id}.jpg"
+        markdown_path = render_root / "figures" / f"{figure_id}.md"
+        image_path.parent.mkdir(parents=True, exist_ok=True)
+        markdown_path.parent.mkdir(parents=True, exist_ok=True)
+        Image.new("RGB", (2, 2), color="white").save(image_path)
+        markdown_path.write_text(
+            f"# Figure 3\n\n![](../../assets/figures/{figure_id}.jpg)\n",
+            encoding="utf-8",
+        )
+
+    monkeypatch.setattr(
+        "paperforge.worker.ocr_objects.extract_and_write_objects",
+        fake_materializer,
+    )
+    result = stage_reconciliation(
+        ocr_root,
+        "TESTREC1",
+        staging_root=tmp_path / "staging",
+    )
+
+    detail = result["p_details"][0]
+    plan_path = Path(detail["final_plan"])
+    assert detail["final_plan_hash"] == hashlib.sha256(plan_path.read_bytes()).hexdigest()
 
 
 def test_dry_run_marks_existing_unprovenanced_artifact_unverified(tmp_path: Path) -> None:

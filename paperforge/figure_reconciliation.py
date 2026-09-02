@@ -1224,7 +1224,8 @@ def stage_reconciliation(
 ) -> dict[str, Any]:
     """Stage R/P reconciliation in an isolated tmp root; never writes production.
 
-    Returns a manifest with R prepared count, P preview count, and staging paths.
+    Returns a manifest with R prepared count, P preview count, staging paths,
+    and the exact SHA-256 token for each staged P final plan.
     Default production_write is False.  --apply-r is not honored here; promoter
     is deliberately absent in this staging-only build.
     """
@@ -1549,9 +1550,12 @@ def stage_reconciliation(
             "staged_jpg": f"assets/figures/figure_proposal_{label}.jpg",
             "staged_md": f"render/figures/figure_proposal_{label}.md",
         }
-        (preview_root / "final-plan.json").write_text(
-            json.dumps(final_plan, ensure_ascii=False, indent=2), encoding="utf-8"
-        )
+        final_plan_path = preview_root / "final-plan.json"
+        final_plan_bytes = json.dumps(
+            final_plan, ensure_ascii=False, indent=2
+        ).encode("utf-8")
+        final_plan_path.write_bytes(final_plan_bytes)
+        final_plan_hash = hashlib.sha256(final_plan_bytes).hexdigest()
         proposal_inventory = {
             "matched_figures": [proposal_fig],
             "unresolved_clusters": [],
@@ -1606,6 +1610,8 @@ def stage_reconciliation(
             "staged": ok,
             "preview": str(preview_path),
             "preview_md": str(preview_md),
+            "final_plan": str(final_plan_path),
+            "final_plan_hash": final_plan_hash,
         })
     # Fresh fulltext reconciliation on the SAME in-memory report
     try:
