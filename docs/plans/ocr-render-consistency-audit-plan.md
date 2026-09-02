@@ -4,13 +4,13 @@
 **Revision 2026-09-02:** `accept-proposal` now shares the paper-scoped lock and schema-v2 journal/CAS/recovery contract with `promote-r`. `render reconcile --json` emits `p_details[].final_plan_hash`; acceptance requires that exact SHA-256 token for the reviewed `final-plan.json`, then checks the live reviewed-plan snapshot, exact staged paths, and plan-owned member refs. It atomically updates the accepted canonical inventory row, JPG, Markdown, materialization provenance, and proposal report; rolls back failed post-audits before commit; and refreshes the final consistency report after commit. Committed cleanup/report failures remain recoverable without rolling back production. Semantic coverage defects remain report-only.
 ## Boundary
 
-Existing OCR structural parsing, figure/table matching, and render code remain untouched. V1 is an append-only post-render audit. It never synthesizes visual content or edits canonical OCR truth.
+Existing OCR structural parsing, figure/table matching, and render content code remain untouched. V1 is an append-only post-render audit. It never synthesizes visual content or edits canonical OCR truth.
 
 ```text
 existing render → audit_0 → render/render.consistency.json → probe OCR details.render_consistency
 ```
 
-V1 itself does not reconcile or modify artifacts. The later D1 `paperforge render reconcile` command produces an isolated staging result; only explicit `promote-r` or human-authorized `accept-proposal` can write production, and each action must pass its separate safety gates. A committed action preserves production through cleanup/report-refresh failures; cleanup `OSError` after the commit marker returns `committed=true, cleanup=pending` with `cleanup_error` and leaves the journal for the next recovery. The result distinguishes report-write success (`report_refresh=written`) from a failed final audit (`report_audit_state=FAILED`).
+V1 itself does not reconcile or modify artifacts. The later D1 `paperforge render reconcile` command produces an isolated staging result; only explicit `promote-r` or human-authorized `accept-proposal` can write production, and each action must pass its separate safety gates. A committed action preserves production through cleanup/report-refresh failures; cleanup `OSError` after the commit marker returns `committed=true, cleanup=pending` with `cleanup_error` and leaves the journal for the next recovery. The result distinguishes report-write success (`report_refresh=written`) from a failed final audit (`report_audit_state=FAILED`). The shared automatic `write_render_outputs` audit boundary also replaces a prior consistency report with `state=FAILED` when the audit raises or returns a non-object; if that replacement fails, it attempts to remove the prior report.
 
 ## V1 scope
 
@@ -155,7 +155,7 @@ The unified `probe lineage --json` surface projects this existing report under `
 ```json
 {
   "render_consistency_schema_version": 1,
-  "audit_algorithm_version": 2,
+  "audit_algorithm_version": 4,
   "input_snapshot": {
     "blocks_hash": "...",
     "figure_inventory_hash": "...",
@@ -183,7 +183,7 @@ Each issue also reports:
 
 `audit_algorithm_version` and `render_consistency_schema_version` are separate. The input snapshot records source and render changes, not only renderer version.
 The existing object materializer may write `render/materialization.provenance.json` as an additive result sidecar. It records object status, stage, reason, PDF-input availability, asset/render paths, and crop attempts. The audit reads this sidecar when present and attaches the matching record to issue evidence; it never recomputes or replaces the materializer's result.
-The shared `write_render_outputs` boundary invokes the existing audit after `fulltext.md` and `render-map.json` are written, so initial OCR and derived rebuild paths publish the same report. Audit failure is diagnostic-only and does not fail rendering.
+The shared `write_render_outputs` boundary invokes the existing audit after `fulltext.md` and `render-map.json` are written, so initial OCR and derived rebuild paths publish the same report. Audit failure is diagnostic-only and does not fail rendering; on an audit exception or non-object result, the boundary replaces any prior report with a fail-closed `state=FAILED` execution-failure report so lineage cannot project old `CLEAN` or `DEGRADED` state.
 ## Reconciliation proposal report
 
 `render/reconciliation.proposals.json` is an on-demand, read-only projection of existing inventory, render consistency, materialization provenance, structured caption text, and optional PDF media evidence. It has exactly three result buckets:
