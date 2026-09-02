@@ -13,6 +13,8 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
+from paperforge.core.io import write_json_atomic
+
 SCHEMA_VERSION = 1
 ALGORITHM_VERSION = 4
 _LABEL_RE = re.compile(r"\b(?:fig(?:ure)?s?\.?|table|tab\.?|图|scheme)\s*([A-Z]?\d+)", re.IGNORECASE)
@@ -435,6 +437,37 @@ def _issue(
     if diagnosis:
         issue["diagnosis"] = diagnosis
     return issue
+
+
+def write_audit_failure_report(
+    ocr_root: Path, paper_key: str, exc: BaseException
+) -> Path:
+    """Replace any prior report with a fail-closed execution failure."""
+    report_path = ocr_root / paper_key / "render" / "render.consistency.json"
+    result: dict[str, Any] = {
+        "render_consistency_schema_version": SCHEMA_VERSION,
+        "audit_algorithm_version": ALGORITHM_VERSION,
+        "paper_key": paper_key,
+        "state": "FAILED",
+        "evidence_mode": "mixed",
+        "summary": {
+            "issues_found": 1,
+            "issues_repaired": 0,
+            "issues_remaining": 1,
+        },
+        "issues": [
+            _issue(
+                "audit_execution_failure",
+                "P0",
+                f"{type(exc).__name__}: {exc}",
+                paper_key=paper_key,
+            )
+        ],
+        "audit_0": {"state": "FAILED"},
+        "audit_1": None,
+    }
+    write_json_atomic(report_path, result)
+    return report_path
 
 
 def _read_materialization_provenance(root: Path) -> dict[str, Any]:

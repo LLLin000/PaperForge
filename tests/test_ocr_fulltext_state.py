@@ -81,5 +81,44 @@ def test_write_render_outputs_updates_render_artifact_and_meta(tmp_path: Path) -
     assert user_fulltext.read_text(encoding="utf-8") == "new\n"
     assert updated["machine_fulltext_hash"] == compute_disk_fulltext_hash(user_fulltext)
     report = json.loads((render_root / "render.consistency.json").read_text(encoding="utf-8"))
-    assert report["audit_algorithm_version"] == 2
+    assert report["audit_algorithm_version"] == 4
     assert updated["last_backup_path"].startswith("backups/fulltext.pre-rebuild.")
+
+
+def test_write_render_outputs_invalidates_stale_report_when_audit_raises(
+    tmp_path: Path, monkeypatch
+) -> None:
+    import datetime as _dt
+
+    from paperforge.lineage import _render_consistency_detail
+    from paperforge.worker.ocr_render import write_render_outputs
+
+    paper_root = tmp_path / "ocr" / "KEY1"
+    render_root = paper_root / "render"
+    user_fulltext = paper_root / "fulltext.md"
+    user_fulltext.parent.mkdir(parents=True)
+    user_fulltext.write_text("old\n", encoding="utf-8")
+    render_root.mkdir()
+    (render_root / "render.consistency.json").write_text(
+        json.dumps({"state": "CLEAN", "audit_algorithm_version": 4}),
+        encoding="utf-8",
+    )
+
+    def _raise_audit(*args, **kwargs):
+        raise RuntimeError("injected audit failure")
+
+    monkeypatch.setattr("paperforge.render_audit.audit_paper", _raise_audit)
+    updated = write_render_outputs(
+        render_root=render_root,
+        user_fulltext=user_fulltext,
+        markdown="new\n",
+        meta={"ocr_finished_at": "2026-07-05T12:00:00+00:00", "rebuild_count": 0},
+        rebuild_increment=False,
+        now_utc=_dt.datetime(2026, 7, 5, 12, 0, tzinfo=_dt.timezone.utc),
+    )
+
+    assert updated["machine_fulltext_hash"].startswith("sha256:")
+    report = json.loads((render_root / "render.consistency.json").read_text(encoding="utf-8"))
+    assert report["state"] == "FAILED"
+    assert report["issues"][0]["type"] == "audit_execution_failure"
+    assert _render_consistency_detail(paper_root)["state"] == "FAILED"

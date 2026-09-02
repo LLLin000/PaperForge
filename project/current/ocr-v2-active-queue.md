@@ -3,6 +3,12 @@
 > Last updated: 2026-09-02
 
 
+## 2026-09-02: Stale render-consistency report invalidation
+
+- **Fail-closed boundary:** `write_render_outputs` validates the automatic audit result and, on an exception or non-object result, atomically replaces any prior `render.consistency.json` with a structured `state=FAILED` execution-failure report. If replacement itself fails, it attempts to remove the old report.
+- **Projection:** lineage therefore exposes `FAILED` (or `NOT_RUN` after best-effort cleanup) after a new render's automatic audit failure; it never projects the prior `CLEAN`/`DEGRADED` status as current.
+- **Verification:** focused reconcile suite **132 passed, 2 skipped, 1 warning**; `render_audit.py` targeted Ruff, both changed Python modules `py_compile`, and `git diff --check` passed. No production mutation.
+
 ## 2026-09-02: P authority acceptance hardening
 
 - **Authority action:** `accept-proposal` now shares the paper-scoped writer lock with R, requires the exact SHA-256 of the human-reviewed `final-plan.json`, a nonempty lowercase 16-hex live snapshot, exact staged paths, and the plan's exact `member_refs`; it never selects a same-label plan by mtime.

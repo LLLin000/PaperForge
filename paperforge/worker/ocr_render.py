@@ -2110,15 +2110,29 @@ def write_render_outputs(
     # The audit is a read-only projection of the artifacts just committed.
     # Keep it on the shared render-output boundary so initial OCR and rebuild
     # paths publish the same report without a second detector.
+    paper_root = render_root.parent
     try:
-        from paperforge.render_audit import audit_paper
+        from paperforge.render_audit import audit_paper, write_audit_failure_report
 
-        paper_root = render_root.parent
-        audit_paper(paper_root.parent, paper_root.name, write_report=True)
-    except Exception:  # noqa: BLE001 — diagnostics must not fail rendering
+        audit_result = audit_paper(paper_root.parent, paper_root.name, write_report=True)
+        if not isinstance(audit_result, dict):
+            raise TypeError("render consistency audit returned a non-object result")
+    except Exception as exc:  # noqa: BLE001 — diagnostics must not fail rendering
         import logging
 
-        logging.getLogger(__name__).warning(
+        logger = logging.getLogger(__name__)
+        try:
+            write_audit_failure_report(paper_root.parent, paper_root.name, exc)
+        except Exception:  # noqa: BLE001 — stale-report cleanup is best effort
+            try:
+                (render_root / "render.consistency.json").unlink(missing_ok=True)
+            except OSError:
+                logger.warning(
+                    "render consistency audit report invalidation unavailable for %s",
+                    render_root,
+                    exc_info=True,
+                )
+        logger.warning(
             "render consistency audit unavailable for %s",
             render_root,
             exc_info=True,
