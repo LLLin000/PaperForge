@@ -1,7 +1,7 @@
 # OCR Render Consistency Audit — V1 Plan
 
-**Status:** V1 read-only audit and D1 R/P reconciliation implementation are present. R disposable canary passes; production real-vault canary and batch rollout remain blocked on owner authorization and semantic-coverage adjudication.
-**Revision 2026-09-01:** D1 recovery requires journal schema 2, an exact `.paperforge-r-promotion/<32-hex-id>` transaction namespace, allowlisted production destinations, in-transaction integer backups, and non-symlink raw path components. Malformed canonical fulltext inventories fail closed as `F0_CANONICAL_AUTHORITY_UNAVAILABLE` with no patches. Committed recovery does not require cleaned backups and best-effort removes its journal without rolling back production. A successful report write with audit `state=FAILED` surfaces `report_refresh=written` plus `report_audit_state=FAILED`; refresh exceptions/non-object results use `report_refresh=failed`. Semantic coverage defects remain report-only.
+**Status:** V1 read-only audit and D1 R/P reconciliation implementation are present. R disposable canary passes; P authority acceptance is regression-covered on disposable fixtures; production real-vault canary and batch rollout remain blocked on owner authorization and semantic-coverage adjudication.
+**Revision 2026-09-02:** `accept-proposal` now shares the paper-scoped lock and schema-v2 journal/CAS/recovery contract with `promote-r`. It requires a live reviewed-plan snapshot, exact staged paths, and plan-owned member refs; records the direct SHA-256 of `final-plan.json`; atomically updates the accepted canonical inventory row, JPG, Markdown, materialization provenance, and proposal report; rolls back failed post-audits before commit; and refreshes the final consistency report after commit. Committed cleanup/report failures remain recoverable without rolling back production. Semantic coverage defects remain report-only.
 ## Boundary
 
 Existing OCR structural parsing, figure/table matching, and render code remain untouched. V1 is an append-only post-render audit. It never synthesizes visual content or edits canonical OCR truth.
@@ -10,7 +10,7 @@ Existing OCR structural parsing, figure/table matching, and render code remain u
 existing render → audit_0 → render/render.consistency.json → probe OCR details.render_consistency
 ```
 
-V1 itself does not reconcile or modify artifacts. The later D1 `paperforge render reconcile` command produces an isolated staging result; only `promote-r` can write production, and only after its separate safety gates. A committed promotion preserves production through cleanup/report-refresh failures; cleanup `OSError` after the commit marker returns `committed=true, cleanup=pending` with `cleanup_error` and leaves the journal for the next recovery. The result distinguishes report-write success (`report_refresh=written`) from a failed final audit (`report_audit_state=FAILED`).
+V1 itself does not reconcile or modify artifacts. The later D1 `paperforge render reconcile` command produces an isolated staging result; only explicit `promote-r` or human-authorized `accept-proposal` can write production, and each action must pass its separate safety gates. A committed action preserves production through cleanup/report-refresh failures; cleanup `OSError` after the commit marker returns `committed=true, cleanup=pending` with `cleanup_error` and leaves the journal for the next recovery. The result distinguishes report-write success (`report_refresh=written`) from a failed final audit (`report_audit_state=FAILED`).
 
 ## V1 scope
 
@@ -217,7 +217,7 @@ The implemented D1 `paperforge render reconcile` command stages the read-only re
 
 The R promoter may update only the selected render-layer image, Markdown, and materialization-provenance outputs after live identity, ownership, source snapshot, staged-output, destination-CAS, journal, and post-audit gates pass. It never re-materializes during promotion.
 
-It must not mutate:
+R promotion must not mutate:
 
 - OCR blocks;
 - `figure_inventory` or `table_inventory`;
@@ -225,6 +225,8 @@ It must not mutate:
 - canonical metadata;
 - `meta.json`;
 - source PDF or user-authored notes.
+
+The P `accept-proposal` authority action is the only exception for a reviewed canonical figure: it may add one accepted `figure_inventory` row and the corresponding JPG, Markdown, materialization-provenance record, and proposal-report removal, but only through its own lock/CAS/schema-v2 journal transaction and post-audit gate. It never rematches assets or changes OCR/source/user-authored inputs.
 
 ## Execution surface
 
@@ -237,7 +239,7 @@ paperforge render promote-r
 paperforge render accept-proposal
 ```
 
-`render audit` is read-only for one paper or a batch. `render reconcile` is staging-only. `promote-r` requires explicit object IDs or `--all`; `accept-proposal` remains a human-authority action.
+`render audit` is read-only for one paper or a batch. `render reconcile` is staging-only. `promote-r` requires explicit object IDs or `--all`; `accept-proposal` is a human-authority action that requires the reviewed plan's live snapshot and exact member refs.
 
 Production batch rollout is not authorized. The current disposable canary evidence is recorded in `project/current/render-reconciliation/r-canary-results.json`.
 
@@ -255,7 +257,7 @@ Production batch rollout is not authorized. The current disposable canary eviden
 - A missing or dangling render artifact can become an R exact plan when source identity and ownership are unique.
 - An existing image with missing, ambiguous, unreadable, or mismatched authoritative provenance is surfaced as `R_CONTENT_UNVERIFIED`; it cannot become an exact repair or be overwritten by promotion.
 - A missing, unreadable, non-object, non-list, or malformed canonical fulltext inventory is an F0 authority failure, sets `mutation_blocked`, and emits no patches, including orphan or reserved embed candidates.
-- Journal recovery rejects schema versions other than 2, transaction paths outside `.paperforge-r-promotion/<32-hex-id>`, destinations outside the three production namespaces, backups outside that transaction directory, and symlinked raw path components. A `committed` journal does not require backup files to remain and removes its journal after best-effort cleanup. A cleanup failure on the original committed call is returned as `cleanup=pending` with the journal retained for recovery.
+- Journal recovery rejects schema versions other than 2, transaction paths outside `.paperforge-r-promotion/<32-hex-id>`, destinations outside the shared five-path allowlist (`assets/figures/*.jpg`, `render/figures/*.md`, `render/materialization.provenance.json`, `structure/figure_inventory.json`, and `render/reconciliation.proposals.json`), backups outside that transaction directory, and symlinked raw path components. A `committed` journal does not require backup files to remain and removes its journal after best-effort cleanup. A cleanup failure on the original committed call is returned as `cleanup=pending` with the journal retained for recovery.
 - A semantically incomplete crop (for example, a nearby `table_html` claim absorbing a Figure panel) is not proven by hash/dimension/CAS checks. It requires a separate coverage-suspect diagnostic and human/upstream adjudication. A report write that returns audit `FAILED` is represented separately from a refresh exception.
 
 ## Unresolved case queue
