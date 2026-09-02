@@ -1,7 +1,13 @@
 # OCR-v2 Active Queue
-> Status: `EXECUTABLE_FROZEN a42f8bb7` / `PROTOCOL_DOCS 781910f3` — S1–S6 lightweight **COMPLETE** on `462398cb` (valid for `a42f8bb7`, `ruff` clean). Hosted CI `32353318123` on docs-only descendant `a2e18fa4` is **green: All Checks Passed, 14/14**, with `3.11` Ubuntu/macOS/Windows, J-Matrix, Ruff, plugin, OCR, E2E; no executable change after `a42f8bb7`. #191 FROZEN / ready-for-agent; #81 OPEN / owner gate. Reconcile recovery/fulltext safety follow-up is closed on disposable fixtures; the 969-paper unverified-content census is clean; semantic coverage and all production writes remain owner-gated.
-> Last updated: 2026-09-01
+> Status: `EXECUTABLE_FROZEN a42f8bb7` / `PROTOCOL_DOCS 781910f3` — S1–S6 lightweight **COMPLETE** on `462398cb` (valid for `a42f8bb7`, `ruff` clean). Hosted CI `32353318123` on docs-only descendant `a2e18fa4` is **green: All Checks Passed, 14/14**, with `3.11` Ubuntu/macOS/Windows, J-Matrix, Ruff, plugin, OCR, E2E; no executable change after `a42f8bb7`. #191 FROZEN / ready-for-agent; #81 OPEN / owner gate. Reconcile recovery/fulltext safety follow-up is closed on disposable fixtures; P authority acceptance is now transaction-safe and regression-covered; the 969-paper unverified-content census is clean; semantic coverage and all production writes remain owner-gated.
+> Last updated: 2026-09-02
 
+
+## 2026-09-02: P authority acceptance hardening
+
+- **Authority action:** `accept-proposal` now shares the paper-scoped writer lock with R, requires a nonempty lowercase 16-hex reviewed snapshot and exact staged paths, preserves the plan's exact `member_refs`, and stores the direct SHA-256 of `final-plan.json` in canonical/provenance records.
+- **Atomic production boundary:** one schema-v2 journal covers the canonical JPG, Markdown, `figure_inventory.json`, materialization provenance, and proposal report. Each target uses atomic replacement; failed post-audit restores all snapshots before commit; a committed journal keeps production authoritative through cleanup/report-refresh failure and remains recoverable.
+- **Verification:** **4/4 new proposal safety tests passed; focused reconcile suite 121 passed, 2 skipped, 1 warning**. The two symlink tests remain skipped on Windows `WinError 1314` due missing privilege. No production mutation or front OCR/render change.
 
 ## 2026-09-01: Recovery and fulltext safety follow-up
 

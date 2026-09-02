@@ -37,7 +37,9 @@ _TRANSACTION_RELATIVE_RE = re.compile(
 _DESTINATION_RELATIVE_RE = re.compile(
     r"^(?:assets/figures/[^/\\]+\.jpg|"
     r"render/figures/[^/\\]+\.md|"
-    r"render/materialization\.provenance\.json)$"
+    r"render/materialization\.provenance\.json|"
+    r"structure/figure_inventory\.json|"
+    r"render/reconciliation\.proposals\.json)$"
 )
 _BACKUP_NAME_RE = re.compile(r"^[0-9]+\.bak$")
 
