@@ -535,7 +535,7 @@ export class PaperForgeClient {
     return this._cachedRead(`ocr-papers:${keyPart}`, 10000, async () => {
       const argv = ["ocr", "list", "--json"];
       if (sortedKeys.length > 0) {
-        argv.push("--keys", sortedKeys.join(","));
+        argv.push("--keys", ...sortedKeys);
       }
       const raw = await this._transport.execute(argv);
       return ocrRowsFromPayload(JSON.parse(raw));

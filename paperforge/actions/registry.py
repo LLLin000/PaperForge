@@ -153,7 +153,6 @@ def _library_prune_handler(ctx: ActionContext, request: ActionRequest) -> PFResu
     prune re-verifies each key against the current residual report before
     deleting anything.  Destructive — confirmation is enforced by the
     registry policy; never automatic."""
-    import argparse
 
     from pathlib import Path
 
@@ -246,9 +245,7 @@ def _ocr_rebuild_derived_preflight(ctx: ActionContext, request: ActionRequest) -
 
 
 def _ocr_rebuild_derived_handler(ctx: ActionContext, request: ActionRequest) -> PFResult:
-    """#168/T7 P0-1: ocr.rebuild_derived — the LOCAL derived-layer rebuild
-    (structured blocks/metadata/figure+table inventories/objects/render/
-    health) from stored raw blocks, per-key outcomes."""
+    """#168/T7 P0-1: local derived-layer rebuild with stream hooks."""
     from paperforge import __version__ as PF_VERSION
     from paperforge.core.errors import ErrorCode
     from paperforge.core.result import PFError, PFResult
@@ -262,9 +259,27 @@ def _ocr_rebuild_derived_handler(ctx: ActionContext, request: ActionRequest) -> 
         keys = [r.key for r in collect_maintenance_rows(ctx.vault) if r.can_rebuild]
     else:
         keys = list(request.scope.keys)
+
+    hooks = ctx.execution_hooks
+    if hooks is not None and hooks.phase is not None:
+        hooks.phase("render")
+    current = 0
+
+    def _on_progress(key: str, result: dict) -> None:
+        nonlocal current
+        current += 1
+        if hooks is not None and hooks.progress is not None:
+            hooks.progress(current, len(keys), key)
+        if hooks is not None and hooks.item_result is not None:
+            hooks.item_result(key, str(result.get("status", "unknown")))
+
     try:
         result = run_derived_rebuild_for_keys(
-            ctx.vault, keys, parallel=0,
+            ctx.vault,
+            keys,
+            parallel=0,
+            on_progress=_on_progress if hooks is not None else None,
+            stop_check=hooks.is_stopped if hooks is not None else None,
         )
     except Exception as exc:  # noqa: BLE001 — structured boundary
         return PFResult(
@@ -276,15 +291,32 @@ def _ocr_rebuild_derived_handler(ctx: ActionContext, request: ActionRequest) -> 
     failed = result.get("failed_keys", [])
     skipped = result.get("skipped", [])
     success = result.get("success_keys", [])
+    cancelled = (
+        bool(skipped)
+        and hooks is not None
+        and hooks.is_stopped is not None
+        and hooks.is_stopped()
+    )
+    data = {
+        "rebuilt": success,
+        "failed": failed,
+        "skipped": [s.get("key") for s in skipped],
+    }
+    if cancelled:
+        data["exit_code"] = 130
+        return PFResult(
+            ok=False,
+            command="action run",
+            version=PF_VERSION,
+            error=PFError(code=ErrorCode.ACTION_CANCELLED, message="OCR rebuild cancelled"),
+            data=data,
+            successful_keys=success or None,
+        )
     return PFResult(
         ok=not failed and not skipped,
         command="action run",
         version=PF_VERSION,
-        data={
-            "rebuilt": success,
-            "failed": failed,
-            "skipped": [s.get("key") for s in skipped],
-        },
+        data=data,
         successful_keys=success or None,
     )
 
@@ -292,7 +324,8 @@ def _ocr_rebuild_derived_handler(ctx: ActionContext, request: ActionRequest) -> 
 def _ocr_run_preflight(ctx: ActionContext, request: ActionRequest) -> PreflightResult:
     """ocr.run availability: OCR credential available (C1 seam) + per-key
     applicability projected from observation truth (M2-B)."""
-    from paperforge.credentials import CredentialKey, status as credential_status
+    from paperforge.credentials import CredentialKey
+    from paperforge.credentials import status as credential_status
 
     cred = credential_status(CredentialKey("ocr"))
     if cred.state == "missing":
@@ -330,8 +363,28 @@ def _ocr_run_handler(ctx: ActionContext, request: ActionRequest) -> PFResult:
 
     keys = None if request.scope.kind == "all" else list(request.scope.keys)
     sink: dict = {}
+    hooks = ctx.execution_hooks
+    if hooks is not None and hooks.phase is not None:
+        hooks.phase("ocr")
+    progress_keys: list[str] = []
+
+    def _progress(key: str) -> None:
+        progress_keys.append(key)
+        if hooks is not None and hooks.progress is not None:
+            hooks.progress(
+                len(progress_keys),
+                len(keys) if keys is not None else None,
+                key,
+            )
+
     try:
-        rc = run_ocr(ctx.vault, selected_keys=set(keys) if keys else None, result_sink=sink)
+        rc = run_ocr(
+            ctx.vault,
+            selected_keys=set(keys) if keys else None,
+            stop_check=hooks.is_stopped if hooks is not None else None,
+            progress_callback=_progress if hooks is not None else None,
+            result_sink=sink,
+        )
     except Exception as exc:  # noqa: BLE001 — structured boundary
         return PFResult(
             ok=False,
@@ -340,6 +393,9 @@ def _ocr_run_handler(ctx: ActionContext, request: ActionRequest) -> PFResult:
             error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(exc)),
         )
     per_key = sink.get("per_key", {})
+    if hooks is not None and hooks.item_result is not None:
+        for key in progress_keys:
+            hooks.item_result(key, str(per_key.get(key, "unknown")))
     # M2-D: standardized settlement — outcome vocabulary + summary +
     # successful_keys derived from per_key (single truth).
     from paperforge.core.settlement import settlement_payload
@@ -400,7 +456,8 @@ def _ocr_run_handler(ctx: ActionContext, request: ActionRequest) -> PFResult:
 def _embed_build_preflight(ctx: ActionContext, request: ActionRequest) -> PreflightResult:
     """embed.build availability: credential available and builder not
     mid-flight (global substrate operation, #159)."""
-    from paperforge.credentials import CredentialKey, status as credential_status
+    from paperforge.credentials import CredentialKey
+    from paperforge.credentials import status as credential_status
 
     cred = credential_status(CredentialKey("embedding"))
     if cred.state == "missing":
@@ -484,7 +541,8 @@ def _embed_build_handler(ctx: ActionContext, request: ActionRequest) -> PFResult
 def _embed_resume_preflight(ctx: ActionContext, request: ActionRequest) -> PreflightResult:
     """embed.resume availability: canonical embedding credential available
     (#173/C1) and the vector builder is not mid-flight."""
-    from paperforge.credentials import CredentialKey, status as credential_status
+    from paperforge.credentials import CredentialKey
+    from paperforge.credentials import status as credential_status
 
     cred = credential_status(CredentialKey("embedding"))
     if cred.state == "missing":
@@ -524,7 +582,10 @@ def _embed_resume_preflight(ctx: ActionContext, request: ActionRequest) -> Prefl
             return PreflightResult(
                 availability="unavailable",
                 availability_reason_code="vector.substrate_incompatible",
-                availability_reason="Vector substrate requires a global rebuild — run `paperforge action run embed.build` first",
+                availability_reason=(
+                    "Vector substrate requires a global rebuild — run "
+                    "`paperforge action run embed.build` first"
+                ),
             )
     per_key: tuple = ()
     if request.scope.kind == "papers":
@@ -542,7 +603,6 @@ def _embed_resume_preflight(ctx: ActionContext, request: ActionRequest) -> Prefl
 
 
 def _embed_resume_handler(ctx: ActionContext, request: ActionRequest) -> PFResult:
-    import argparse
     import contextlib
     import io
     import json

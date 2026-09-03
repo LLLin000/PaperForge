@@ -19,7 +19,6 @@ import { PaperForgeConfirmModal } from "./modals";
 import { resolveVaultPaths } from "../services/runtime-paths";
 import {
   PaperForgeClient,
-  NodeProcessTransport,
   type ActionDescriptor,
   type OcrPaperRow,
 } from "../client";
@@ -165,23 +164,35 @@ export class OcrWorkspaceView extends ItemView {
 
   /* ── Data loading ── */
 
-  private _getClient(): PaperForgeClient {
+  private _getClient(): PaperForgeClient | null {
     if (this._client) return this._client;
-    if (typeof this.plugin?.getClient === "function") {
-      this._client = this.plugin.getClient();
-      return this._client!;
+    if (typeof this.plugin?.getClient !== "function") return null;
+    try {
+      const client = this.plugin.getClient();
+      if (client) this._client = client;
+    } catch {
+      return null;
     }
-    const vp = ((this.app?.vault?.adapter as any)?.basePath as string) ?? "";
-    const transport = new NodeProcessTransport({
-      vaultPath: vp,
-      customPythonPath: this.plugin?.settings?.python_path,
-    });
-    this._client = new PaperForgeClient({ transport });
     return this._client;
   }
 
   private async _loadPapers(): Promise<void> {
+    this.actionDescriptors.clear();
     const client = this._getClient();
+    if (!client) {
+      this.globalActivity = {
+        state: "unknown",
+        label: t("runtime_not_available") || "Environment unavailable",
+        current: 0,
+        total: 0,
+      };
+      this.papers = [];
+      this.selectedKey = null;
+      this.checkedKeys.clear();
+      this._page = 1;
+      if (this.containerEl?.children?.[1]) this._refreshTable();
+      return;
+    }
     const [lineageResult, activityResult, rowsResult] = await Promise.all([
       client.probe("lineage").catch(() => null),
       client.probe("ocr").catch(() => null),
@@ -320,8 +331,19 @@ export class OcrWorkspaceView extends ItemView {
     ) {
       return;
     }
+    const client = this._getClient();
+    if (!client) {
+      this.actionDescriptors.set(actionId, {
+        action_id: actionId,
+        availability: "unavailable",
+        availability_reason:
+          t("runtime_not_available") || "Environment unavailable",
+      });
+      if (this.containerEl?.children?.[1]) this._render();
+      return;
+    }
     this.pendingActionDescriptors.add(actionId);
-    void this._getClient()
+    void client
       .describeAction(actionId)
       .then((descriptor) => {
         if (descriptor?.action_id === actionId) {
@@ -395,7 +417,7 @@ export class OcrWorkspaceView extends ItemView {
       text: t("ocr_ws_stop") || "Stop",
     });
     const client = this._getClient();
-    if (!client.isOperationActive()) {
+    if (!client || !client.isOperationActive()) {
       stopBtn.disabled = true;
       stopBtn.title =
         t("ocr_ws_stop_unavailable") || "Operation is not owned by this window";
@@ -1038,6 +1060,10 @@ export class OcrWorkspaceView extends ItemView {
     mode: OcrMode = actionId === "ocr.rebuild_derived" ? "rebuild" : "run"
   ): Promise<void> {
     const client = this._getClient();
+    if (!client) {
+      new Notice(t("runtime_not_available") || "Environment unavailable");
+      return;
+    }
     if (this.running || client.isOperationActive()) {
       new Notice(t("ocr_already_running") || "OCR is already running");
       return;
@@ -1076,7 +1102,7 @@ export class OcrWorkspaceView extends ItemView {
               paperKey: String(event.item_id ?? this.progress.paperKey),
               phase:
                 event.event === "phase"
-                  ? String(event.status ?? event.operation)
+                  ? String(event.phase ?? event.operation)
                   : this.progress.phase,
               itemStatus:
                 event.event === "item_result"
@@ -1140,7 +1166,7 @@ export class OcrWorkspaceView extends ItemView {
 
   private _stopBuild(): void {
     const client = this._getClient();
-    if (!client.isOperationActive()) {
+    if (!client || !client.isOperationActive()) {
       new Notice(
         t("ocr_stopped_notice") || "No local operation active to stop"
       );

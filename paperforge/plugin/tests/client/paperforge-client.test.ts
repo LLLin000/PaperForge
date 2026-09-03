@@ -73,6 +73,14 @@ describe("PaperForgeClient", () => {
       expect(env3.module).toBe("ocr");
       expect(transport.calls.length).toBe(2); // Fresh call made!
     });
+    it("passes OCR keys as separate CLI arguments", async () => {
+      transport.executeHandler = (argv) => {
+        expect(argv).toEqual(["ocr", "list", "--json", "--keys", "A", "B"]);
+        return "[]";
+      };
+
+      await client.queryOcrPapers(["B", "A"]);
+    });
   });
 
   describe("In-Flight Read Deduplication", () => {

@@ -5,7 +5,7 @@
 **Blocked by:**
 - 03 — Foundation & Maintenance Domain Cutover
 
-**Status:** complete
+**Status:** complete (corrective closure 2026-09-03)
 
 - [x] Route OCR Workspace paper table rows through `client.probe("lineage")` and `client.queryOcrPapers()`, eliminating direct reads of OCR directories or cache files.
 - [x] Connect individual and batch action buttons ("Rebuild Derived", "Run OCR", "Redo") to `client.runAction()`, honoring backend `ActionDescriptor.availability` and `execution_mode`.
@@ -14,5 +14,5 @@
 - [x] Assert that global background OCR activity is observed as "Running" via probe truth, but local "Stop" control is enabled only when this client owns the active operation handle.
 - [x] Add Vitest tests for OCR Workspace data loading, action dispatch, availability gating, and cooperative cancellation over `MockTransport`.
 
-Implementation notes: the Workspace no longer resolves Python runtimes, imports `execFile`, or depends on `OcrProcessController`; `ocr.redo` remains an internal legacy command and the user-facing Redo action routes through canonical `ocr.run`.
-Verification: focused client/OCR suite **60 passed / 0 failed**; `npm run typecheck` clean.
+Implementation notes: the Workspace no longer resolves Python runtimes, imports `execFile`, or depends on `OcrProcessController`; it fails closed when the plugin client is unavailable, and refresh clears cached dynamic action descriptors. `ocr.redo` remains an internal legacy command and the user-facing Redo action routes through canonical `ocr.run`. Python action streams now pass cooperative cancellation and worker progress/item-result hooks through the action context; `ocr.rebuild_derived` and `ocr.run` emit real worker-backed events.
+Verification: real CLI regressions cover rebuild start → phase/progress/item-result → one terminal and `PAPERFORGE_STOP` → worker-safe-point cancellation (`rc=130`); **103 passed, 1 skipped** focused Python tests; **63 passed** focused plugin tests; `npm run typecheck` clean. No OCR/render materialization was run.

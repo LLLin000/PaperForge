@@ -11,12 +11,14 @@ handler's next_actions are returned unchanged.
 from __future__ import annotations
 
 from collections.abc import Mapping
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
 from paperforge.actions.registry import ACTION_REGISTRY
 from paperforge.actions.types import (
     ActionContext,
+    ActionExecutionHooks,
     ActionIntent,
     ActionRequest,
     ActionScope,
@@ -167,6 +169,7 @@ def run_action(
     context: ActionContext,
     *,
     confirmed_action_id: str | None = None,
+    execution_hooks: ActionExecutionHooks | None = None,
 ) -> PFResult:
     """The #145 §6 pipeline for one action.
 
@@ -180,8 +183,13 @@ def run_action(
     _require_available(preflight)
     descriptor = descriptor_for(spec, request, preflight)
     _require_confirmation(spec, confirmed_action_id, descriptor=descriptor)
+    handler_context = (
+        replace(context, execution_hooks=execution_hooks)
+        if execution_hooks is not None
+        else context
+    )
     try:
-        result = spec.handler(context, request)
+        result = spec.handler(handler_context, request)
     except KeyboardInterrupt:
         # #137: the cancellation path owns this — re-raise for rc130.
         raise

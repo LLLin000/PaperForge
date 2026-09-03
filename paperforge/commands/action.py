@@ -20,11 +20,13 @@ from paperforge.actions.runner import (
     run_action,
 )
 from paperforge.actions.types import (
+    ActionExecutionHooks,
     ActionRequest,
     ActionScope,
     AllScope,
     PapersScope,
 )
+from paperforge.core.errors import ErrorCode
 from paperforge.core.result import PFResult
 
 EXIT_INVALID_REQUEST = 2
@@ -69,7 +71,11 @@ def run_list(args: argparse.Namespace) -> int:
         print(result.to_json())
     else:
         for row in rows:
-            print(f"{row['action_id']:24s} {row['cost']:14s} {row['impact']:12s} confirm={row['confirmation']} auto={row['automatic']}")
+            print(
+                f"{row['action_id']:24s} {row['cost']:14s} "
+                f"{row['impact']:12s} confirm={row['confirmation']} "
+                f"auto={row['automatic']}"
+            )
     return 0
 
 
@@ -198,18 +204,41 @@ def run_dispatch(args: argparse.Namespace) -> int:
     spec = ACTION_REGISTRY.get(action_id)
     is_stream = json_output and (spec is not None and spec.execution_mode == "stream")
 
+    execution_hooks = None
     if is_stream:
         from paperforge.core.cancellation import make_cancellation_token
-        from paperforge.core.ndjson import emit_start, emit_terminal
+        from paperforge.core.ndjson import (
+            emit_item_result,
+            emit_phase,
+            emit_progress,
+            emit_start,
+            emit_terminal,
+        )
 
         total = len(request.scope.keys) if request.scope.kind == "papers" else None
         emit_start(action_id, total=total, scope=request.scope.kind)
         _is_stopped, restore = make_cancellation_token()
+        execution_hooks = ActionExecutionHooks(
+            is_stopped=_is_stopped,
+            phase=lambda phase: emit_phase(action_id, phase),
+            progress=lambda current, progress_total, item_id: emit_progress(
+                action_id, current, progress_total, item_id
+            ),
+            item_result=lambda item_id, status: emit_item_result(
+                action_id, item_id, status
+            ),
+        )
     else:
-        restore = lambda: None
+        def restore() -> None:
+            return None
 
     try:
-        result = run_action(request, context, confirmed_action_id=confirmed)
+        result = run_action(
+            request,
+            context,
+            confirmed_action_id=confirmed,
+            execution_hooks=execution_hooks,
+        )
     except ActionError as exc:
         result = _error_result("action run", exc.code, str(exc), data=exc.data)
         if json_output:
@@ -236,6 +265,16 @@ def run_dispatch(args: argparse.Namespace) -> int:
         return EXIT_CANCELLED
 
     restore()
+    if result.error is not None and result.error.code == ErrorCode.ACTION_CANCELLED:
+        if json_output:
+            if is_stream:
+                emit_terminal("cancelled", action_id, result)
+            else:
+                print(result.to_json())
+        else:
+            print("cancelled", file=sys.stderr)
+        return EXIT_CANCELLED
+
 
     if result.ok and follow == "auto":
         _run_descendants(args, request, context, result)

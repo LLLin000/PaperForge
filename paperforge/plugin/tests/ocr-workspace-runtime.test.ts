@@ -45,7 +45,7 @@ import { WorkspaceLeaf } from "obsidian";
 import { MockTransport } from "./client/mock-transport";
 
 function makeView(
-  client: PaperForgeClient,
+  client: PaperForgeClient | null,
   refreshAll = vi.fn()
 ): OcrWorkspaceView {
   const plugin = {
@@ -152,7 +152,7 @@ describe("OcrWorkspaceView PaperForgeClient cutover", () => {
           schema_version: 1,
           event: "phase",
           operation: "ocr.rebuild_derived",
-          status: "render",
+          phase: "render",
         },
         {
           schema_version: 1,
@@ -246,6 +246,31 @@ describe("OcrWorkspaceView PaperForgeClient cutover", () => {
       "--json",
     ]);
     expect(streamCall?.argv.includes("redo")).toBe(false);
+  });
+
+  it("fails closed when the plugin has no PaperForgeClient", async () => {
+    const view = makeView(null);
+
+    await (view as any)._loadPapers();
+
+    expect((view as any).papers).toEqual([]);
+    expect((view as any).globalActivity.state).toBe("unknown");
+  });
+
+  it("clears dynamic action descriptors on read-model refresh", async () => {
+    const client = {
+      probe: vi.fn().mockResolvedValue({}),
+      queryOcrPapers: vi.fn().mockResolvedValue([]),
+    } as unknown as PaperForgeClient;
+    const view = makeView(client);
+    (view as any).actionDescriptors.set("ocr.run", {
+      action_id: "ocr.run",
+      availability: "available",
+    });
+
+    await (view as any)._loadPapers();
+
+    expect((view as any).actionDescriptors.size).toBe(0);
   });
 
   it("does not execute an action when the backend descriptor is busy", async () => {

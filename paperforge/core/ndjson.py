@@ -48,7 +48,7 @@ def emit_phase(operation: str, phase: str) -> None:
     emit("phase", operation, phase=phase)
 
 
-def emit_progress(operation: str, current: int, total: int, item_id: str | None = None) -> None:
+def emit_progress(operation: str, current: int, total: int | None, item_id: str | None = None) -> None:
     emit("progress", operation, current=current, total=total, item_id=item_id)
 
 
