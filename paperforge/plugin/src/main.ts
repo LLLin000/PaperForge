@@ -69,6 +69,7 @@ import {
   RuntimeBootstrap,
   resolveRuntimeCommand,
 } from "./services/managed-runtime";
+import { PaperForgeClient, NodeProcessTransport } from "./client";
 
 export default class PaperForgePlugin extends Plugin {
   /** agent_platform choices from Python's config list (#142) — empty until hydrated. */
@@ -94,6 +95,22 @@ export default class PaperForgePlugin extends Plugin {
   private _settingTab: PaperForgeSettingTab | null = null;
   private _managedRuntime: RuntimeBootstrap | null = null;
 
+  private _client: PaperForgeClient | null = null;
+
+  getClient(): PaperForgeClient {
+    if (!this._client) {
+      const vaultPath =
+        (this.app.vault.adapter as unknown as { basePath?: string })
+          ?.basePath ?? "";
+      const transport = new NodeProcessTransport({
+        vaultPath,
+        customPythonPath: this.settings?.python_path,
+        resolveRuntime: async () => this._getPythonCommand(),
+      });
+      this._client = new PaperForgeClient({ transport });
+    }
+    return this._client;
+  }
   getManagedRuntime(): RuntimeBootstrap {
     if (!this._managedRuntime) {
       this._managedRuntime = new RuntimeBootstrap();
@@ -468,6 +485,7 @@ export default class PaperForgePlugin extends Plugin {
     this._embedController?.dispose();
     this._embedController = null;
     this.app.workspace.detachLeavesOfType(VIEW_TYPE_PAPERFORGE);
+    this._client?.cancelActiveOperation();
   }
 
   async loadSettings() {
