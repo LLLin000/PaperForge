@@ -16,11 +16,13 @@ export interface ExecuteOptions {
   timeoutMs?: number;
   stdin?: string;
   env?: Record<string, string | undefined>;
+  pythonExe?: string;
 }
 
 export interface StreamOptions {
   graceMs?: number;
   env?: Record<string, string | undefined>;
+  pythonExe?: string;
   onEvent?: (event: NdjsonEvent) => void;
 }
 

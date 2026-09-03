@@ -171,12 +171,39 @@ export class PaperForgeOrphanModal extends Modal {
       this._countEl.setText("Deleting...");
       this._countEl.setAttr("disabled", "");
       this._selectAllBtn.setAttr("disabled", "");
+      const keys = selected.map((o) => o.key);
+      const plugin = ((this.app as any).plugins?.plugins as any)?.[
+        "paperforge"
+      ];
+      const client = plugin?.getClient?.();
+      if (client) {
+        client
+          .runAction({
+            action_id: "library.prune",
+            scope: { kind: "papers", keys },
+            confirm: "library.prune",
+          })
+          .then((res: any) => {
+            if (res.ok) {
+              const deleted = (res.payload?.data as any)?.deleted ?? keys;
+              new Notice("Deleted " + deleted.length + " orphan workspace(s)");
+            } else {
+              new Notice("PaperForge: prune failed");
+            }
+            this.close();
+          })
+          .catch(() => {
+            new Notice("PaperForge: prune failed");
+            this.close();
+          });
+        return;
+      }
+
       if (!this.py || !this.py.path) {
         new Notice("PaperForge: Python not found");
         this.close();
         return;
       }
-      const keys = selected.map((o) => o.key);
       execFile(
         this.py.path,
         [

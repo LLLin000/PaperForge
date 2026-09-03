@@ -65,6 +65,7 @@ import {
   probeAll,
   invalidateAll,
 } from "./services/config-client";
+import { PaperForgeClient } from "./client";
 import {
   PaperForgeConfirmModal,
   PaperForgeIssueDraftModal,
@@ -425,6 +426,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
     this._displayInProgress = false;
   }
+  getClient(): PaperForgeClient {
+    return (this.plugin as any).getClient();
+  }
+
   private _startSetupJourney(
     stage: 1 | 2 | 3 | 4 = 1,
     reinstall = false
@@ -2738,7 +2743,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       ttl_seconds: current?.ttl_seconds ?? 0,
     };
     this._updateCapabilityEnvelope(mod, probing);
-
     const vp = (this.app.vault.adapter as any).basePath as string;
     const resolved = this._resolveRuntimeCommand(vp);
     if (!resolved) {

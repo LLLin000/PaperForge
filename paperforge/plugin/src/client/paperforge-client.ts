@@ -217,9 +217,31 @@ export class PaperForgeClient {
 
   // ── 1. Observation Contract (probe) ───────────────────────────────────────
 
-  async probe(module: string): Promise<ProbeEnvelope> {
-    return this._cachedRead(`probe:${module}`, 60000, async () => {
-      const raw = await this._transport.execute(["probe", module, "--json"]);
+  async probe(
+    module: string,
+    options?: { expectedVersion?: string; lastOperationExitCode?: number }
+  ): Promise<ProbeEnvelope> {
+    const extraArgs: string[] = [];
+    if (options?.expectedVersion) {
+      extraArgs.push("--expected-version", options.expectedVersion);
+    }
+    if (
+      options?.lastOperationExitCode != null &&
+      options.lastOperationExitCode !== 0
+    ) {
+      extraArgs.push(
+        "--last-operation-exit-code",
+        String(options.lastOperationExitCode)
+      );
+    }
+    const cacheKey = `probe:${module}:${options?.expectedVersion ?? ""}:${options?.lastOperationExitCode ?? ""}`;
+    return this._cachedRead(cacheKey, 60000, async () => {
+      const raw = await this._transport.execute([
+        "probe",
+        module,
+        "--json",
+        ...extraArgs,
+      ]);
       return JSON.parse(raw) as ProbeEnvelope;
     });
   }
