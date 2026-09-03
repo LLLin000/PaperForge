@@ -378,6 +378,52 @@ function fakePlugin(overrides: Record<string, unknown> = {}) {
     _autoSyncRunning: false,
     _lastSyncTime: "",
     ...overrides,
+    getClient: () => ({
+      probe: vi.fn().mockImplementation((mod: string, opts?: any) => {
+        execFileCalls.push({
+          args: [
+            "-m",
+            "paperforge",
+            "probe",
+            mod,
+            "--json",
+            ...(opts?.expectedVersion
+              ? ["--expected-version", opts.expectedVersion]
+              : []),
+            ...(opts?.lastOperationExitCode != null
+              ? [
+                  "--last-operation-exit-code",
+                  String(opts.lastOperationExitCode),
+                ]
+              : []),
+          ],
+        });
+        return Promise.resolve(createUnknownEnvelope(mod));
+      }),
+      setup: vi.fn().mockImplementation((args: any, streamOpts?: any) => {
+        spawnedProcesses.push({
+          path: streamOpts?.pythonExe || "C:/managed/runtime/python.exe",
+          args: [
+            "-m",
+            "paperforge",
+            "setup",
+            ...(args?.modular ? ["--modular"] : []),
+            "--json",
+          ],
+          onClose: (code: number) => {},
+        });
+        return {
+          outcome: Promise.resolve({ ok: true, exitCode: 0 }),
+          stop: vi.fn(),
+          events: [],
+        };
+      }),
+      reconcile: vi.fn().mockResolvedValue({ deficits: [], next_actions: [] }),
+      describeAction: vi
+        .fn()
+        .mockResolvedValue({ action_id: "test", confirmation: "none" }),
+      runAction: vi.fn().mockResolvedValue({ ok: true, payload: {} }),
+    }),
   };
 }
 
