@@ -5,10 +5,21 @@
 **Blocked by:**
 - 04 — OCR Workspace & Processing Domain Cutover
 
-**Status:** ready-for-agent
+**Status:** complete
 
-- [ ] Connect the Smart Retrieval control panel to `client.probe("memory")` and `client.probe("lineage")`, eliminating client-side vector dimension or build state checks.
-- [ ] Bind the localized "构建索引" action to `client.runAction("memory.rebuild")` or `client.runAction("embed.build")` based on probe-suggested primary action, streaming progress through the client.
-- [ ] Route user-facing semantic search queries and deep retrieval calls through `client.retrieve(query, options)` and `client.search(query, options)`.
-- [ ] Verify that completing an index build invalidates memory and retrieval cache entries across the client generation epoch.
-- [ ] Add Vitest tests for retrieval views and search invocation over `MockTransport`.
+- [x] Harmonize TS `NdjsonStreamParser` vocabulary with Python #137 spec (`preflight`, `paper_settled`, `heartbeat`), eliminating contract divergence.
+- [x] Wire `ActionExecutionHooks` and single cancellation token owner into `run_embedding_build`, ensuring `action run embed.build` and `action run embed.resume` stream worker-backed progress without stdout buffering or token collision.
+- [x] Connect the Smart Retrieval control panel to `client.probe("memory")` and `client.probe("lineage")`, eliminating client-side vector dimension or build state checks.
+- [x] Bind the localized "构建索引" / resume actions to `client.runAction()`, streaming progress through the client and wiring Stop to `client.cancelActiveOperation()`.
+- [x] Route user-facing semantic search queries and deep retrieval calls through `client.retrieve(query, options)` and `client.search(query, options)`.
+- [x] Verify that completing an index build invalidates memory and retrieval cache entries across the client generation epoch.
+- [x] Add real CLI and Vitest tests for embed streaming, cooperative cancellation, search, and retrieval views over `MockTransport`.
+
+Implementation notes:
+- Python and TS event vocabulary frozen to the 10 standard #137 events (`start`, `preflight`, `phase`, `progress`, `paper_settled`, `heartbeat`, `item_result`, `result`, `error`, `cancelled`).
+- `ActionExecutionHooks` now feeds `stop_check`, `on_progress`, and `on_item_result` directly into `run_embedding_build`, eliminating stdout redirection and duplicate cancellation tokens.
+- Dashboard search and deep retrieval (@ query) cut over to `client.search(query, options)` and `client.retrieve(query, options)`.
+- Smart Retrieval build/resume dispatches route through `client.runAction()`, streaming progress and wiring Stop to `client.cancelActiveOperation()`.
+Verification:
+- Python: **106 passed / 1 skipped** focused tests (`TestEmbedActionStreamWire` covers real CLI progress, paper settlement, and `PAPERFORGE_STOP` cancellation with `rc=130`).
+- Plugin: **446/446 passed**; `npm run typecheck` clean.

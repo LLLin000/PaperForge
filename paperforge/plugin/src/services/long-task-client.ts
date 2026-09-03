@@ -29,8 +29,11 @@ export interface NdjsonEvent {
 
 const KNOWN_EVENTS: ReadonlySet<string> = new Set([
   "start",
+  "preflight",
   "phase",
   "progress",
+  "paper_settled",
+  "heartbeat",
   "item_result",
   "result",
   "error",

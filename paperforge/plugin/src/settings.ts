@@ -1471,26 +1471,22 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this._capabilityState?.memory ?? createUnknownEnvelope("memory");
     const body = containerEl.createDiv({ cls: "pf-module-body" });
     const reasonCode = env.reason?.code ?? "";
-    const embedController = this.plugin._embedController;
+    const client = this.getClient();
+    const isOperationActive =
+      typeof client?.isOperationActive === "function" &&
+      client.isOperationActive();
+    const embedController = (this.plugin as any)?._embedController;
     const isRunning =
-      env.activity_state === "running" || Boolean(embedController?.busy);
-    const liveFailure =
-      embedController?.state === "failed" ? embedController.warning : null;
+      env.activity_state === "running" ||
+      isOperationActive ||
+      Boolean(embedController?.busy);
 
     // ── Status text: single source of truth ──
-    // The backend state machine owns every status's meaning and wording
-    // (env.reason.text); the panel only special-cases the three live
-    // controller states (running / controller-failure) and the ready
-    // banner.  No per-reason-code branches — a new backend state shows up
-    // here automatically instead of silently rendering nothing.
     let statusText: string | null = null;
     let statusClass = "setting-item-description";
     if (isRunning) {
       statusText = env.activity_label ?? t("cc_activity_running");
       statusClass = "pf-status-ok";
-    } else if (liveFailure) {
-      statusText = `${t("retrieval_build_failed")}: ${liveFailure}`;
-      statusClass = "pf-status-error";
     } else if (env.user_state === "ready") {
       statusText = t("md_retrieval_ready");
       statusClass = "pf-status-ok";
@@ -1502,20 +1498,23 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       body.createEl("p", { text: statusText, cls: statusClass });
     }
 
-    // ── Primary action button ──
     // ── Primary action button: single source of truth ──
-    // Label and intent come from env.action.primary (backend state machine);
-    // only the two live controller states (Stop / Retry) bypass it.
-    if (isRunning && embedController) {
-      renderActionButton(body, {
-        label: t("retrieval_stop"),
-        onClick: () => void embedController.stop(),
-      });
-    } else if (liveFailure) {
-      renderActionButton(body, {
-        label: t("retrieval_retry"),
-        onClick: () => this._dispatchModuleAction("memory", env),
-      });
+    if (isRunning) {
+      if (isOperationActive) {
+        renderActionButton(body, {
+          label: t("retrieval_stop"),
+          onClick: () => {
+            client.cancelActiveOperation();
+          },
+        });
+      } else if (embedController?.busy && embedController?.stop) {
+        renderActionButton(body, {
+          label: t("retrieval_stop"),
+          onClick: () => {
+            embedController.stop();
+          },
+        });
+      }
     } else if (
       env.action?.primary &&
       env.user_state !== "ready" &&
@@ -1536,7 +1535,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         onClick: () => this._dispatchModuleAction("memory", env),
       });
     }
-
     // ── Info card (read-only status): details-driven ──
     // Every row comes from env.details (backend authority, same probe that
     // produced the status text) — never from plugin caches that can lag or
@@ -1877,15 +1875,18 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         // → ChromaDB→sqlite-vec migration; memory.build / memory.rebuild →
         // the local memory build.
         if (actionId === "embed.build") {
-          this._dispatchMemoryBuild("embed", "force");
+          this._dispatchMemoryBuild("embed", "force", "embed.build");
         } else if (actionId === "embed.resume") {
-          this._dispatchMemoryBuild("embed", "resume");
+          this._dispatchMemoryBuild("embed", "resume", "embed.resume");
         } else if (actionId === "memory.upgrade_backend") {
           this._runBackendMigration();
         } else {
-          this._dispatchMemoryBuild("build");
+          this._dispatchMemoryBuild(
+            "build",
+            undefined,
+            actionId || "memory.rebuild"
+          );
         }
-        return;
       }
       if (verb === "restore_backup" || actionId === "memory.restore_backup") {
         this._callPython(["memory", "restore-backup"], {
@@ -2065,171 +2066,138 @@ export class PaperForgeSettingTab extends PluginSettingTab {
    * decides which flag; the frontend never guesses. */
   _dispatchMemoryBuild(
     kind: "build" | "embed",
-    embedMode?: "force" | "resume"
+    embedMode?: "force" | "resume",
+    actionIdOverride?: string
   ): void {
-    const vp = (this.app.vault.adapter as any).basePath as string;
-    // Set activity overlay on Memory — the embed branch defers this to the
-    // controller's onStateChange so a cancelled confirmation modal never
-    // leaves the card stuck on "Building vector index…".
+    if (kind === "embed") {
+      void buildTargetedEnv(null, "embed");
+    }
+    const client = this.getClient();
+    if (!client) {
+      new Notice(t("runtime_not_available") || "Environment unavailable");
+      return;
+    }
+    if (
+      typeof client?.isOperationActive === "function" &&
+      client.isOperationActive()
+    ) {
+      new Notice(t("embed_already_running") || "Operation already running");
+      return;
+    }
+
     const envelopes = this._capabilityState ?? {};
-    if (kind !== "embed" && envelopes["memory"]) {
+    const primaryActionId = envelopes["memory"]?.action?.primary?.action_id;
+    let actionId: string;
+    if (actionIdOverride) {
+      actionId = actionIdOverride;
+    } else if (kind === "embed") {
+      if (embedMode === "resume") {
+        actionId = "embed.resume";
+      } else if (embedMode === "force") {
+        actionId = "embed.build";
+      } else if (
+        primaryActionId === "embed.resume" ||
+        primaryActionId === "embed.build"
+      ) {
+        actionId = primaryActionId;
+      } else {
+        actionId = "embed.build";
+      }
+    } else {
+      if (
+        primaryActionId === "memory.build" ||
+        primaryActionId === "memory.rebuild"
+      ) {
+        actionId = primaryActionId;
+      } else {
+        actionId = "memory.rebuild";
+      }
+    }
+    if (envelopes["memory"]) {
       envelopes["memory"].activity_state = "running";
-      envelopes["memory"].activity_label = "Building memory…";
+      envelopes["memory"].activity_label =
+        kind === "embed"
+          ? t("embed_activity_building") || "Building vector index…"
+          : "Building memory…";
     }
     this.display();
 
-    const embedFlag = embedMode === "resume" ? "--resume" : "--force";
-    const cliArgs =
-      kind === "embed" ? ["embed", "build", embedFlag] : ["memory", "build"];
-
-    if (kind === "embed") {
-      // #120-fix (P1-2): never stack a second controller while one is
-      // mid-flight — the busy getter is per-instance, so the guard lives
-      // here, at the only creation site.
-      if (this.plugin._embedController?.busy) {
-        new Notice(t("embed_already_running"));
-        return;
-      }
-      // #120: embed lifecycle is owned by EmbedBuildController — the old
-      // path stored _callPython's null return (async credential branch),
-      // making stop / duplicate-start guards / unload cleanup impossible.
-      const resolved = this._resolveRuntimeCommand(vp);
-      if (!resolved) {
-        new Notice(t("retrieval_no_python"));
-        this._refreshAllReadModels();
-        return;
-      }
-      const startEmbed = () => {
-        // #120-fix: the controller spawns `python pythonArgs embed build`
-        // directly — without the module prefix the child would be
-        // `python embed ...` (can't open file 'embed'). _resolveRuntimeCommand
-        // returns bare `{path, args: []}`, so the full CLI base is built
-        // here, matching the runShort invocation below.
-        const baseCliArgs = [
-          ...resolved.args,
-          "-m",
-          "paperforge",
-          "--vault",
-          vp,
-        ];
-        const controller = new EmbedBuildController({
-          vaultPath: vp,
-          pythonPath: resolved.path,
-          pythonArgs: baseCliArgs,
-          resolveEnv: () => buildTargetedEnv(null, "embed"),
-          runShort: (args: string[], timeoutMs: number) => {
-            const { promise, resolve } = deferred<{
-              code: number;
-              stdout: string;
-              stderr: string;
-            }>();
-            execFile(
-              resolved.path,
-              [...resolved.args, "-m", "paperforge", "--vault", vp, ...args],
-              { cwd: vp, timeout: timeoutMs, env: paperforgeEnrichedEnv() },
-              (err, stdout, stderr) => {
-                resolve({
-                  code: err ? 1 : 0,
-                  stdout: stdout ?? "",
-                  stderr: stderr ?? "",
-                });
-              }
-            );
-            return promise;
-          },
-          callbacks: {
-            onStateChange: (state, progress, warning, _stopResult) => {
-              this.plugin._embedProgress = {
-                current: progress.current,
-                total: progress.total,
-                key: progress.key,
-              };
-              if (envelopes["memory"]) {
-                if (
-                  state === "running" ||
-                  state === "resolving_credentials" ||
-                  state === "stopping"
-                ) {
-                  envelopes["memory"].activity_state = "running";
-                  envelopes["memory"].activity_label =
-                    state === "stopping"
-                      ? t("embed_activity_stopping")
-                      : t("embed_activity_building");
-                  envelopes["memory"].activity_progress = {
-                    current: progress.current,
-                    total: progress.total || 1,
-                  };
-                } else {
-                  envelopes["memory"].activity_state = "idle";
-                  envelopes["memory"].activity_label = null;
-                  envelopes["memory"].activity_progress = null;
-                }
-              }
-              let terminal = false;
-              if (state === "success") {
-                terminal = true;
-                new Notice(t("embed_build_complete"));
-              } else if (state === "success_with_warning") {
-                terminal = true;
-                new Notice(
-                  t("embed_build_warning").replace(
-                    "{detail}",
-                    warning || t("embed_bookkeeping_incomplete")
-                  ),
-                  8000
-                );
-              } else if (state === "failed") {
-                terminal = true;
-                new Notice(
-                  t("sr_build_failed_notice").replace(
-                    "{detail}",
-                    warning || "exit code ?"
-                  ),
-                  8000
-                );
-              } else if (state === "cancelled") {
-                terminal = true;
-                new Notice(t("embed_build_stopped"), 8000);
-              }
-              if (terminal) {
-                // RC UX Seam P1: mutation settled → invalidate all + probe
-                // all. Without this the envelope keeps the pre-build
-                // needs_action truth until the next convergence tick, so the
-                // card would keep offering "Build" right after a success.
-                this._refreshAllReadModels();
-              }
-              this.display();
-            },
-          },
-        });
-        this.plugin._embedController = controller;
-        void controller.start(embedFlag);
-      };
-      startEmbed();
-    } else {
-      // Memory build: timeout-based (no streaming)
-      this._callPython(cliArgs, {
-        timeout: 120000,
-        onClose: (code: number | null, _stdout: string, stderr: string) => {
-          if (envelopes["memory"]) {
-            envelopes["memory"].activity_state = "idle";
-            envelopes["memory"].activity_label = null;
+    let sawCancelled = false;
+    const runPromise = client.runAction(
+      {
+        action_id: actionId,
+        scope: { kind: "all" },
+        confirm: actionId,
+      },
+      {
+        onEvent: (event) => {
+          if (event.event === "cancelled") sawCancelled = true;
+          if (event.event === "progress") {
+            const current = Number(event.current ?? 0);
+            const total = Number(event.total ?? 1);
+            this.plugin._embedProgress = {
+              current,
+              total,
+              key: String(event.item_id ?? ""),
+            };
+            if (envelopes["memory"]) {
+              envelopes["memory"].activity_progress = { current, total };
+            }
+            this.display();
           }
-          if (code === 0) {
-            new Notice(t("feat_memory_rebuild_done"));
-          } else {
-            new Notice(
-              t("feat_memory_rebuild_failed") +
-                (stderr ? " " + stderr.slice(0, 120) : ""),
-              8000
-            );
-          }
-          this._refreshAllReadModels();
-          this.display();
         },
-      });
-    }
-  } /** Shared module detail shell for Library, OCR, and Memory (Issue #78). */
+      }
+    );
+
+    void (async () => {
+      try {
+        const result = await runPromise;
+        if (envelopes["memory"]) {
+          envelopes["memory"].activity_state = "idle";
+          envelopes["memory"].activity_label = null;
+          envelopes["memory"].activity_progress = null;
+        }
+
+        if (result.ok) {
+          new Notice(
+            kind === "embed"
+              ? t("embed_build_complete")
+              : t("feat_memory_rebuild_done")
+          );
+        } else if (result.cancelled || sawCancelled) {
+          new Notice(t("embed_build_stopped"), 8000);
+        } else {
+          const reason =
+            typeof result.payload?.availability_reason === "string"
+              ? result.payload.availability_reason
+              : `exit code ${result.exitCode}`;
+          new Notice(
+            (t("sr_build_failed_notice") || "Build failed: {detail}").replace(
+              "{detail}",
+              reason
+            ),
+            8000
+          );
+        }
+      } catch (err: any) {
+        if (envelopes["memory"]) {
+          envelopes["memory"].activity_state = "idle";
+          envelopes["memory"].activity_label = null;
+          envelopes["memory"].activity_progress = null;
+        }
+        new Notice(
+          (t("sr_build_failed_notice") || "Build failed: {detail}").replace(
+            "{detail}",
+            err?.message ?? String(err)
+          ),
+          8000
+        );
+      } finally {
+        this._refreshAllReadModels();
+        this.display();
+      }
+    })();
+  }
   /** Shared module detail shell for all five operational modules. */
   _renderModuleDetailShell(
     containerEl: HTMLElement,

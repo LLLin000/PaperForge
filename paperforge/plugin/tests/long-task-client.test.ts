@@ -21,6 +21,32 @@ describe("NdjsonStreamParser", () => {
     p.finishEOF();
     expect(p.protocolFailure).toBeUndefined();
   });
+  it("accepts all standardized #137 stream events", () => {
+    const p = new NdjsonStreamParser();
+    const evs = p.feed(
+      '{"schema_version":1,"event":"start","operation":"x","total":2}\n' +
+        '{"schema_version":1,"event":"preflight","operation":"x","availability":"available"}\n' +
+        '{"schema_version":1,"event":"phase","operation":"x","phase":"embedding"}\n' +
+        '{"schema_version":1,"event":"heartbeat","operation":"x","active":1,"pending":1}\n' +
+        '{"schema_version":1,"event":"progress","operation":"x","current":1,"total":2,"item_id":"K1"}\n' +
+        '{"schema_version":1,"event":"paper_settled","operation":"x","key":"K1","outcome":"succeeded"}\n' +
+        '{"schema_version":1,"event":"item_result","operation":"x","item_id":"K1","status":"ok"}\n' +
+        '{"schema_version":1,"event":"result","operation":"x","result":{"ok":true}}\n'
+    );
+    expect(p.protocolFailure).toBeUndefined();
+    expect(evs.map((e) => e.event)).toEqual([
+      "start",
+      "preflight",
+      "phase",
+      "heartbeat",
+      "progress",
+      "paper_settled",
+      "item_result",
+      "result",
+    ]);
+    p.finishEOF();
+    expect(p.protocolFailure).toBeUndefined();
+  });
 
   it("fails closed on an unknown event type", () => {
     const p = new NdjsonStreamParser();

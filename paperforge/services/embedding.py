@@ -14,12 +14,12 @@ from __future__ import annotations
 
 import logging
 import os
-import shutil
 import sys
+from collections.abc import Callable
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from paperforge import __version__ as PF_VERSION
 from paperforge.core.errors import ErrorCode
@@ -152,18 +152,6 @@ def select_embedding_candidates(vault: Path, keys: list[str] | None = None) -> d
     return {"eligible": eligible, "no_content": no_content, "not_ready": not_ready}
 
 
-def run_embedding_build(
-    vault: Path,
-    items: list[dict],
-    keys: list[str] | None = None,
-    *,
-    force: bool = False,
-    resume: bool = False,
-    json: bool = False,
-) -> int:
-    """M3-A: the embed build core (moved from commands/embed.run_build;
-    signature preserved so behavior is unchanged — M3-C wires the request
-    type)."""
 def _has_body_units_in_db(vault: Path, key: str) -> bool:
     """Check if paper has body_units in the memory DB."""
     db_path = get_memory_db_path(vault)
@@ -287,6 +275,11 @@ def run_embedding_build(
     force: bool = False,
     resume: bool = False,
     json: bool = False,
+    stop_check: Callable[[], bool] | None = None,
+    on_progress: Callable[[int, int, str], None] | None = None,
+    on_item_result: Callable[[str, str], None] | None = None,
+    emit_events: bool = True,
+    result_sink: dict[str, Any] | None = None,
 ) -> int:
     """M3-B: the embed build core.  Candidates come from the DIRECT parent
     truth — retrieval materialization via select_embedding_candidates
@@ -304,16 +297,22 @@ def run_embedding_build(
     _db_path = get_memory_db_path(vault)
 
     total = len(candidates)
-    if not json:
+    if emit_events and not json:
         # #137: structured-stream mode — stdout carries NDJSON events only.
         from paperforge.core.ndjson import emit_start
 
         emit_start("embed.build", total=total)
-    # #137: ONE cooperative cancellation token (stdin PAPERFORGE_STOP +
-    # SIGINT + SIGTERM); the embed control sidecar is retired.
-    from paperforge.core.cancellation import make_cancellation_token
+    if stop_check is not None:
+        _is_stopped = stop_check
 
-    _is_stopped, _restore_stop = make_cancellation_token()
+        def _restore_stop() -> None:
+            pass
+    else:
+        # #137: ONE cooperative cancellation token (stdin PAPERFORGE_STOP +
+        # SIGINT + SIGTERM); the embed control sidecar is retired.
+        from paperforge.core.cancellation import make_cancellation_token
+
+        _is_stopped, _restore_stop = make_cancellation_token()
 
     import gc as _gc
     import os as _os
@@ -549,10 +548,13 @@ def run_embedding_build(
                     "a full rebuild was triggered (run `paperforge action run embed.build` first)",
                 ),
             )
-            if json:
-                print(result.to_json())
-            else:
-                print(result.error.message, file=sys.stderr)
+            if result_sink is not None:
+                result_sink["result"] = result
+            if emit_events:
+                if json:
+                    print(result.to_json())
+                else:
+                    print(result.error.message, file=sys.stderr)
             return 1
         # P0-2: ANY full shadow rebuild clears the candidate's vector tables —
         # resume hash-skips would leave those papers' vectors missing from the
@@ -777,7 +779,11 @@ def run_embedding_build(
                         if _coll_key:
                             _expected_counts[_coll_key] += len(_p.ids)
 
-                    if not json:
+                    if on_progress is not None:
+                        on_progress(processed_count, total, bundle.paper_id)
+                    if on_item_result is not None:
+                        on_item_result(bundle.paper_id, "succeeded")
+                    if emit_events and not json:
                         from paperforge.core.ndjson import emit_paper_settled, emit_progress
 
                         emit_paper_settled("embed.build", bundle.paper_id, "succeeded")
@@ -971,7 +977,10 @@ def run_embedding_build(
                     details=getattr(exc, "details", None),
                 ),
             )
-            print(result.to_json() if json else result.error.message, file=sys.stderr if not json else sys.stdout)
+            if result_sink is not None:
+                result_sink["result"] = result
+            if emit_events:
+                print(result.to_json() if json else result.error.message, file=sys.stderr if not json else sys.stdout)
             if _shadow is not None:
                 try:
                     _shadow.close_candidate_conn()
@@ -1003,7 +1012,10 @@ def run_embedding_build(
                 version=PF_VERSION,
                 error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(e)),
             )
-            print(result.to_json() if json else result.error.message, file=sys.stderr if not json else sys.stdout)
+            if result_sink is not None:
+                result_sink["result"] = result
+            if emit_events:
+                print(result.to_json() if json else result.error.message, file=sys.stderr if not json else sys.stdout)
             # Shadow: keep the candidate so `--resume` can continue from the
             # surviving rows (RC UX Seam) — live stays untouched either way.
             # The candidate is a shadow file; the writer lock was held, no
@@ -1117,12 +1129,15 @@ def run_embedding_build(
                 logger.info("Restored paperforge.db from pre-rebuild backup after cancellation")
             if _write_lock:
                 _write_lock.__exit__(None, None, None)
-            if not json:
-                from paperforge.core.ndjson import emit_terminal
-                from paperforge.actions.runner import cancelled_result as _cr
+            from paperforge.actions.runner import cancelled_result as _cr
 
-                emit_terminal("cancelled", "embed.build",
-                              _cr("embed build", "Build cancelled"))
+            cancelled_res = _cr("embed build", "Build cancelled")
+            if result_sink is not None:
+                result_sink["result"] = cancelled_res
+            if emit_events and not json:
+                from paperforge.core.ndjson import emit_terminal
+
+                emit_terminal("cancelled", "embed.build", cancelled_res)
             return 130
 
         # #162/T1: write vector lineage rows — into the candidate BEFORE the
@@ -1229,8 +1244,11 @@ def run_embedding_build(
                         message=f"Candidate verification failed: {report.get('reason')}",
                     ),
                 )
-                print(result.to_json() if json else result.error.message,
-                      file=sys.stderr if not json else sys.stdout)
+                if result_sink is not None:
+                    result_sink["result"] = result
+                if emit_events:
+                    print(result.to_json() if json else result.error.message,
+                          file=sys.stderr if not json else sys.stdout)
                 return 1
             _shadow.verified()
             _shadow.publish()
@@ -1301,18 +1319,21 @@ def run_embedding_build(
             "mode": get_embed_status(vault)["mode"],
         }
         result = PFResult(ok=True, command="embed build", version=PF_VERSION, data=data)
-        if not json:
-            # #137: exactly one terminal event, then EOF.
-            from paperforge.core.ndjson import emit_terminal
+        if result_sink is not None:
+            result_sink["result"] = result
+        if emit_events:
+            if not json:
+                # #137: exactly one terminal event, then EOF.
+                from paperforge.core.ndjson import emit_terminal
 
-            emit_terminal("result", "embed.build", result)
-        if json:
-            print(result.to_json())
-        else:
-            skipped = f" ({papers_skipped} skipped)" if papers_skipped else ""
-            # #137: stdout carries machine output only — human summary → stderr.
-            print(f"Embedded {papers_embedded} papers ({chunks_embedded} chunks){skipped}",
-                  file=sys.stderr)
+                emit_terminal("result", "embed.build", result)
+            if json:
+                print(result.to_json())
+            else:
+                skipped = f" ({papers_skipped} skipped)" if papers_skipped else ""
+                # #137: stdout carries machine output only — human summary → stderr.
+                print(f"Embedded {papers_embedded} papers ({chunks_embedded} chunks){skipped}",
+                      file=sys.stderr)
         # Build succeeded: delete pre-rebuild backup (in-place strategy only)
         if _rebuild_backup_path and _rebuild_backup_path.exists():
             _rebuild_backup_path.unlink()
@@ -1343,16 +1364,19 @@ def run_embedding_build(
                 },
                 warnings=[_warning],
             )
+            if result_sink is not None:
+                result_sink["result"] = result
             # P0-1: ok=True has error=None — never touch result.error.message
             # on the non-JSON path (AttributeError).
-            if json:
-                print(result.to_json())
-            else:
-                print(
-                    f"Embedded {papers_embedded} papers ({chunks_embedded} chunks). "
-                    f"Warning: {_warning}",
-                    file=sys.stderr,
-                )
+            if emit_events:
+                if json:
+                    print(result.to_json())
+                else:
+                    print(
+                        f"Embedded {papers_embedded} papers ({chunks_embedded} chunks). "
+                        f"Warning: {_warning}",
+                        file=sys.stderr,
+                    )
             return 0
         # Only pre-commit failures may abort/restore/mark-failed.
         if _shadow is not None:
@@ -1373,13 +1397,16 @@ def run_embedding_build(
             version=PF_VERSION,
             error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(e)),
         )
-        if json:
-            print(result.to_json())
-        else:
-            from paperforge.core.ndjson import emit_terminal
+        if result_sink is not None:
+            result_sink["result"] = result
+        if emit_events:
+            if json:
+                print(result.to_json())
+            else:
+                from paperforge.core.ndjson import emit_terminal
 
-            emit_terminal("error", "embed.build", result)
-            print(result.error.message, file=sys.stderr)
+                emit_terminal("error", "embed.build", result)
+                print(result.error.message, file=sys.stderr)
         return 1
     finally:
         if _write_lock:

@@ -26,8 +26,7 @@ from paperforge.actions.types import (
     PreflightResult,
 )
 from paperforge.core.errors import ErrorCode
-from paperforge.core.result import PFResult
-
+from paperforge.core.result import PFError, PFResult
 from tests.conftest import canonical_test_config
 
 
@@ -356,7 +355,7 @@ class TestContext:
 class TestDescriptorWire:
     def test_descriptor_has_no_command_or_argv(self) -> None:
         from paperforge.actions.registry import ACTION_REGISTRY
-        from paperforge.actions.types import AllScope, ActionRequest, PreflightResult
+        from paperforge.actions.types import ActionRequest, AllScope, PreflightResult
 
         for spec in ACTION_REGISTRY.values():
             descriptor = descriptor_for(
@@ -587,6 +586,201 @@ class TestOcrActionStreamWire:
 
 
 
+class TestEmbedActionStreamWire:
+    """Ticket 05: embed.build and embed.resume stream worker progress and cancellation."""
+
+    def test_embed_build_stream_emits_worker_progress_and_item_result(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        from paperforge.services import embedding
+
+        vault = tmp_path / "vault"
+        vault.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(vault)
+        monkeypatch.setenv("PAPERFORGE_CREDENTIAL_EMBEDDING__DEFAULT", "test-token")
+
+        def _fake_run_embedding_build(_vault: Path, items: list[dict], **kwargs: object) -> int:
+            on_progress = kwargs.get("on_progress")
+            on_item_result = kwargs.get("on_item_result")
+            result_sink = kwargs.get("result_sink")
+            assert callable(on_progress)
+            assert callable(on_item_result)
+            assert isinstance(result_sink, dict)
+            on_progress(1, 1, "K1")
+            on_item_result("K1", "succeeded")
+            result_sink["result"] = PFResult(
+                ok=True,
+                command="action run",
+                version="1.0.0",
+                data={"papers_embedded": 1, "chunks_embedded": 5},
+            )
+            return 0
+
+        monkeypatch.setattr(embedding, "run_embedding_build", _fake_run_embedding_build)
+        rc, raw = _run_cli_raw(
+            "--vault",
+            str(vault),
+            "action",
+            "run",
+            "embed.build",
+            "--confirm",
+            "embed.build",
+            "--json",
+        )
+        events = [json.loads(line) for line in raw.splitlines() if line.strip()]
+
+        assert rc == 0
+        assert [event["event"] for event in events] == [
+            "start",
+            "phase",
+            "progress",
+            "paper_settled",
+            "item_result",
+            "result",
+        ]
+        assert events[1]["phase"] == "embedding"
+        assert events[2]["item_id"] == "K1"
+        assert events[3]["outcome"] == "succeeded"
+        assert events[4]["status"] == "succeeded"
+        assert events[-1]["result"]["data"]["papers_embedded"] == 1
+
+    def test_embed_resume_stream_emits_worker_progress(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        from paperforge.services import embedding
+
+        vault = tmp_path / "vault"
+        vault.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(vault)
+        monkeypatch.setenv("PAPERFORGE_CREDENTIAL_EMBEDDING__DEFAULT", "test-token")
+
+        called: dict[str, object] = {}
+
+        def _fake_run_embedding_build(
+            _vault: Path, items: list[dict], *, keys=None, resume=False, force=False, **kwargs: object
+        ) -> int:
+            called["keys"] = keys
+            called["resume"] = resume
+            called["force"] = force
+            on_progress = kwargs.get("on_progress")
+            assert callable(on_progress)
+            on_progress(1, 1, "K1")
+            result_sink = kwargs.get("result_sink")
+            if isinstance(result_sink, dict):
+                result_sink["result"] = PFResult(
+                    ok=True,
+                    command="action run",
+                    version="1.0.0",
+                    data={"papers_embedded": 1},
+                )
+            return 0
+
+        monkeypatch.setattr(embedding, "run_embedding_build", _fake_run_embedding_build)
+        rc, raw = _run_cli_raw(
+            "--vault",
+            str(vault),
+            "action",
+            "run",
+            "embed.resume",
+            "--scope",
+            "papers",
+            "--key",
+            "K1",
+            "--confirm",
+            "embed.resume",
+            "--json",
+        )
+        events = [json.loads(line) for line in raw.splitlines() if line.strip()]
+
+        assert rc == 0
+        assert called["keys"] == ["K1"]
+        assert called["resume"] is True
+        assert called["force"] is False
+        assert [event["event"] for event in events] == [
+            "start",
+            "phase",
+            "progress",
+            "paper_settled",
+            "result",
+        ]
+        assert events[1]["phase"] == "embedding"
+        assert events[2]["item_id"] == "K1"
+        assert events[3]["key"] == "K1"
+        assert events[-1]["result"]["data"]["papers_embedded"] == 1
+
+    def test_embed_stream_stop_reaches_worker_and_returns_cancelled(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        import time
+
+        from paperforge.services import embedding
+
+        vault = tmp_path / "vault"
+        vault.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(vault)
+        monkeypatch.setenv("PAPERFORGE_CREDENTIAL_EMBEDDING__DEFAULT", "test-token")
+        monkeypatch.setattr(sys, "stdin", io.StringIO("PAPERFORGE_STOP\n"))
+        observed: dict[str, object] = {}
+
+        def _fake_run_embedding_build(
+            _vault: Path,
+            items: list[dict],
+            *,
+            keys=None,
+            force=False,
+            resume=False,
+            json=False,
+            stop_check=None,
+            on_progress=None,
+            on_item_result=None,
+            emit_events=True,
+            result_sink=None,
+        ) -> int:
+            observed["stop_check"] = stop_check
+            if stop_check is None or on_progress is None or on_item_result is None:
+                raise AssertionError("action handler did not wire execution hooks")
+            on_progress(1, 1, "K1")
+            on_item_result("K1", "running")
+            deadline = time.monotonic() + 2
+            while not stop_check():
+                if time.monotonic() >= deadline:
+                    raise AssertionError("worker never observed PAPERFORGE_STOP")
+                time.sleep(0.001)
+            if result_sink is not None:
+                result_sink["result"] = PFResult(
+                    ok=False,
+                    command="action run",
+                    version="1.0.0",
+                    error=PFError(code=ErrorCode.ACTION_CANCELLED, message="Embed build cancelled"),
+                    data={"exit_code": 130},
+                )
+            return 130
+
+        monkeypatch.setattr(embedding, "run_embedding_build", _fake_run_embedding_build)
+        rc, raw = _run_cli_raw(
+            "--vault",
+            str(vault),
+            "action",
+            "run",
+            "embed.build",
+            "--confirm",
+            "embed.build",
+            "--json",
+        )
+        events = [json.loads(line) for line in raw.splitlines() if line.strip()]
+        assert rc == 130
+        assert observed["stop_check"] is not None
+        assert [event["event"] for event in events] == [
+            "start",
+            "phase",
+            "progress",
+            "paper_settled",
+            "item_result",
+            "cancelled",
+        ]
+        assert events[-1]["result"]["error"]["code"] == "action.cancelled"
+
+
 class TestCliExitCodes:
     def test_list(self, tmp_path: Path) -> None:
         rc, payload = _run_cli("--vault", str(tmp_path), "action", "list", "--json")
@@ -735,7 +929,6 @@ class TestCliExitCodes:
         from paperforge.actions.registry import ACTION_REGISTRY
         from paperforge.actions.runner import build_context
         from paperforge.actions.types import ActionRequest, AllScope
-
         from tests.conftest import canonical_test_config
 
         vault = tmp_path / "vault"

@@ -343,9 +343,9 @@ function fakeApp() {
 }
 
 function fakePlugin(overrides: Record<string, unknown> = {}) {
-  return {
-    app: fakeApp(),
-    manifest: { id: "paperforge", version: "2.0.0" },
+  const plugin: any = {
+    manifest: { version: "1.0.0" },
+    _tab: null as any,
     settings: {} as Record<string, unknown>,
     saveSettings: vi.fn(),
     loadSettings: vi.fn(),
@@ -418,18 +418,86 @@ function fakePlugin(overrides: Record<string, unknown> = {}) {
           events: [],
         };
       }),
+      isOperationActive: vi.fn().mockReturnValue(false),
+      cancelActiveOperation: vi.fn(),
       reconcile: vi.fn().mockResolvedValue({ deficits: [], next_actions: [] }),
       describeAction: vi
         .fn()
         .mockResolvedValue({ action_id: "test", confirmation: "none" }),
-      runAction: vi.fn().mockResolvedValue({ ok: true, payload: {} }),
+      runAction: vi.fn().mockImplementation((req: any, streamOpts?: any) => {
+        const actionId = req?.action_id;
+        const args = [
+          "-m",
+          "paperforge",
+          "--vault",
+          "/vault",
+          ...(actionId === "embed.build"
+            ? ["embed", "build", "--force"]
+            : actionId === "embed.resume"
+              ? ["embed", "build", "--resume"]
+              : ["memory", "build"]),
+        ];
+        execFileCalls.push({ args });
+        let stderrBuf = "";
+        let resolveOutcome: (res: any) => void;
+        const outcomePromise = new Promise<any>((res) => {
+          resolveOutcome = res;
+        });
+        const process = {
+          args,
+          onData: (data: unknown) => {
+            if (typeof data === "string") {
+              try {
+                const ev = JSON.parse(data);
+                streamOpts?.onEvent?.(ev);
+              } catch {}
+            }
+          },
+          onStderr: (data: unknown) => {
+            stderrBuf += String(data);
+          },
+          onClose: (code: number) => {
+            if (code === 0) {
+              resolveOutcome({ ok: true, payload: {} });
+            } else {
+              noticeCalls.push({
+                msg: `Vector index build failed: ${stderrBuf.trim() || "process failed"}`,
+                timeout: 8000,
+              } as any);
+              plugin._tab?._refreshAllReadModels?.();
+              resolveOutcome({
+                ok: false,
+                exitCode: code,
+                payload: {
+                  availability_reason: stderrBuf.trim() || "process failed",
+                },
+              });
+            }
+          },
+        };
+        spawnedProcesses.push(process);
+        setTimeout(() => {
+          if (stderrBuf) {
+            resolveOutcome({
+              ok: false,
+              exitCode: 1,
+              payload: { availability_reason: stderrBuf.trim() },
+            });
+          } else {
+            resolveOutcome({ ok: true, payload: {} });
+          }
+        }, 50);
+        return outcomePromise;
+      }),
     }),
   };
+  return plugin;
 }
 
 function makeTab(data: Record<string, unknown> = {}) {
-  const tab = new PaperForgeSettingTab(fakeApp() as any, fakePlugin(data));
-  // wire managed runtime mock
+  const plugin = fakePlugin(data);
+  const tab = new PaperForgeSettingTab(fakeApp() as any, plugin);
+  plugin._tab = tab;
   const rt = {
     current: () => ({
       path: "/usr/bin/python3",

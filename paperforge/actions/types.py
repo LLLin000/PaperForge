@@ -52,7 +52,8 @@ class ActionExecutionHooks:
     phase: Callable[[str], None] | None = None
     progress: Callable[[int, int | None, str | None], None] | None = None
     item_result: Callable[[str, str], None] | None = None
-
+    paper_settled: Callable[[str, str, str | None], None] | None = None
+    heartbeat: Callable[[int, int], None] | None = None
 
 @dataclass(frozen=True)
 class ActionContext:

@@ -43,6 +43,7 @@ import {
   compareVersions,
 } from "../services/version-history";
 import { VersionRestoreModal } from "./ocr-workspace";
+import type { PaperForgeClient } from "../client";
 
 // ── Interface for plugin ref used by static open ──
 
@@ -67,6 +68,14 @@ export class PaperForgeStatusView extends ItemView {
   _currentFilePath: string | null = null;
   _cachedItems: any[] | null = null;
   _modeSubscribers: { event: string; ref: any }[] = [];
+
+  _getClient(): PaperForgeClient | null {
+    const plugin = ((this.app as any).plugins?.plugins as any)?.["paperforge"];
+    if (typeof plugin?.getClient === "function") {
+      return plugin.getClient();
+    }
+    return null;
+  }
 
   _resolvePython(): { path: string; args: string[] } | null {
     // 1. Use custom python_path from plugin settings if set
@@ -2755,116 +2764,25 @@ export class PaperForgeStatusView extends ItemView {
     this._searchActiveIndex = -1;
     this._renderSearchState();
 
-    // Resolve vault path for CLI search
-    const adapter = this.app.vault.adapter;
-    let vaultPath = "";
-    if (adapter && typeof adapter === "object" && "basePath" in adapter) {
-      const bp = (adapter as Record<string, unknown>).basePath;
-      vaultPath = typeof bp === "string" ? bp : "";
-    }
-
-    if (!vaultPath) {
+    const client = this._getClient();
+    if (!client) {
       this._searchState = "backend-unavailable";
       this._renderSearchState();
       return;
     }
 
-    const py = this._resolvePython();
-    if (!py) {
-      this._searchState = "backend-unavailable";
+    try {
+      const results = isDeep
+        ? await client.retrieve(query, { deep: true })
+        : await client.search(query);
+      this._searchResults = results;
+      this._searchState = results.length > 0 ? "results" : "empty";
       this._renderSearchState();
-      return;
+    } catch (err: any) {
+      const classification = classifyError(String(err?.message ?? err));
+      this._searchState = this._mapErrorToSearchState(classification.type);
+      this._renderSearchState();
     }
-    const { path: pythonExe, args: pyExtra = [] } = py;
-    const deepFlag = mode === "retrieve" ? ["--deep"] : [];
-    // Issue #79: resolve memory credentials immediately before search/retrieve spawn
-    const searchEnv = await buildTargetedEnv(null, "memory");
-    const child = spawn(
-      pythonExe,
-      [
-        ...pyExtra,
-        "-m",
-        "paperforge",
-        "--vault",
-        vaultPath,
-        mode,
-        query,
-        ...deepFlag,
-        "--json",
-      ],
-      { cwd: vaultPath, timeout: 30000, env: searchEnv }
-    );
-
-    const chunks: string[] = [];
-    child.stdout.on("data", (data: Buffer) => {
-      chunks.push(data.toString("utf-8"));
-    });
-    child.stderr.on("data", () => {
-      // ignore stderr (progress bars, etc.)
-    });
-    child.on("close", (code: number | null) => {
-      if (code !== 0) {
-        // Map exit code to error state
-        const classification = classifyError(String(code));
-        this._searchState = this._mapErrorToSearchState(classification.type);
-        this._renderSearchState();
-        return;
-      }
-      const rawOutput = chunks.join("");
-      // Strip INFO/WARNING log lines: find JSON between first { and last }
-      const firstBrace = rawOutput.indexOf("{");
-      const lastBrace = rawOutput.lastIndexOf("}");
-      let jsonStr = "";
-      if (firstBrace !== -1 && lastBrace > firstBrace) {
-        jsonStr = rawOutput.slice(firstBrace, lastBrace + 1);
-      } else {
-        // Try array form
-        const firstBracket = rawOutput.indexOf("[");
-        const lastBracket = rawOutput.lastIndexOf("]");
-        if (firstBracket !== -1 && lastBracket > firstBracket) {
-          jsonStr = rawOutput.slice(firstBracket, lastBracket + 1);
-        }
-      }
-      if (!jsonStr) {
-        this._searchState = "internal-error";
-        this._renderSearchState();
-        return;
-      }
-      try {
-        const parsed = JSON.parse(jsonStr) as Record<string, unknown>;
-        let results: unknown[] = [];
-
-        if (parsed && typeof parsed === "object" && "data" in parsed) {
-          const d = (parsed as Record<string, unknown>).data;
-          if (d && typeof d === "object") {
-            const dd = d as Record<string, unknown>;
-            // Unified PFResult v1: data.matches
-            if ("matches" in dd && Array.isArray(dd.matches)) {
-              results = dd.matches as unknown[];
-            }
-          }
-        }
-
-        this._searchResults = results;
-        this._searchState = results.length > 0 ? "results" : "empty";
-        this._renderSearchState();
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        this._searchState = "internal-error";
-        this._renderSearchState();
-      }
-    });
-    child.on("error", (err: Error) => {
-      // Check for structured error in stderr
-      const errCode = (err as unknown as Record<string, unknown>)["code"];
-      if (typeof errCode === "string") {
-        const classification = classifyError(errCode);
-        this._searchState = this._mapErrorToSearchState(classification.type);
-      } else {
-        this._searchState = "backend-unavailable";
-      }
-      this._renderSearchState();
-    });
   }
 
   /** Map classifyError types to _searchState values */
