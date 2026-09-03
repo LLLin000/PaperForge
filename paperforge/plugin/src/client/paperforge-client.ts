@@ -255,23 +255,37 @@ export class PaperForgeClient {
 
   // ── 3. Policy & Action Contract (action registry) ─────────────────────────
 
+  /**
+   * Execute a command expecting a PFResult envelope and unwrap data.
+   */
+  private async _executePfResult<T>(argv: string[]): Promise<T> {
+    const raw = await this._transport.execute(argv);
+    let parsed: any;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      throw new Error(`Failed to parse PFResult JSON: ${raw.slice(0, 100)}`);
+    }
+    if (parsed && typeof parsed === "object" && "data" in parsed) {
+      return parsed.data as T;
+    }
+    return parsed as T;
+  }
+
   async listActions(): Promise<any[]> {
     return this._cachedRead("action:list", 300000, async () => {
-      const raw = await this._transport.execute(["action", "list", "--json"]);
-      const parsed = JSON.parse(raw);
-      return parsed.actions ?? parsed;
+      const data = await this._executePfResult<any>([
+        "action",
+        "list",
+        "--json",
+      ]);
+      return data?.actions ?? (Array.isArray(data) ? data : []);
     });
   }
 
   async describeAction(actionId: string): Promise<any> {
     return this._cachedRead(`action:describe:${actionId}`, 300000, async () => {
-      const raw = await this._transport.execute([
-        "action",
-        "describe",
-        actionId,
-        "--json",
-      ]);
-      return JSON.parse(raw);
+      return this._executePfResult(["action", "describe", actionId, "--json"]);
     });
   }
 
@@ -284,14 +298,16 @@ export class PaperForgeClient {
       argv.push("--key", k);
     }
     argv.push("--json");
-    const raw = await this._transport.execute(argv);
-    return JSON.parse(raw);
+    return this._executePfResult(argv);
   }
 
   /**
    * Execute an action dynamically based on its backend execution_mode:
    * - execution_mode === "result" -> executes single JSON via transport.execute.
    * - execution_mode === "stream" -> routes to streamAction (OperationLock gated).
+   *
+   * Uses buildActionArgv(req) as the single authoritative argv constructor,
+   * preserving scope, keys, confirm, and follow flags across both branches.
    *
    * Mutation: NEVER deduplicated. Bumps epoch on completion.
    */
@@ -300,8 +316,14 @@ export class PaperForgeClient {
     streamOptions?: StreamOptions
   ): Promise<ActionRunResult> {
     const desc = await this.describeAction(req.action_id);
+    const argv = buildActionArgv(req);
+
     if (desc?.execution_mode === "stream") {
-      const handle = this.streamAction(req.action_id, req.scope, streamOptions);
+      const handle = this.streamOperation(
+        `action.${req.action_id}`,
+        argv,
+        streamOptions
+      );
       const outcome = await handle.outcome;
       const terminalEv = outcome.events.find(
         (e) =>
@@ -316,7 +338,6 @@ export class PaperForgeClient {
       };
     }
 
-    const argv = buildActionArgv(req);
     try {
       const raw = await this._transport.execute(argv);
       let payload: Record<string, unknown> | null = null;
@@ -334,16 +355,14 @@ export class PaperForgeClient {
   }
 
   streamAction(
-    actionId: string,
+    req: ActionRequest | string,
     scope: ActionScope = { kind: "all" },
     options?: StreamOptions
   ): StreamHandle {
-    const argv = ["action", "run", actionId, "--scope", scope.kind];
-    for (const k of scope.keys ?? []) {
-      argv.push("--key", k);
-    }
-    argv.push("--json");
-    return this.streamOperation(`action.${actionId}`, argv, options);
+    const actionReq: ActionRequest =
+      typeof req === "string" ? { action_id: req, scope } : req;
+    const argv = buildActionArgv(actionReq);
+    return this.streamOperation(`action.${actionReq.action_id}`, argv, options);
   }
 
   // ── 4. Operation Contract (Setup, Sync, Maintenance) ──────────────────────
