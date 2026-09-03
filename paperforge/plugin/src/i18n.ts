@@ -857,6 +857,7 @@ const LANG: Record<string, Record<string, string>> = {
     ocr_ws_detail_view_fulltext: "View Fulltext",
     ocr_ws_detail_restore_backup: "Restore Backup",
     ocr_ws_detail_re_extract: "Re-extract This Paper",
+    ocr_ws_detail_run: "Run OCR",
     ocr_ws_re_extract_disabled_title: "Re-extraction not available",
     ocr_ws_re_extract_disabled_body:
       "Single-paper re-extraction currently deletes all OCR data without creating a backup. Use Re-extract All Papers from OCR Settings \u2014 that path has built-in backup.",
@@ -930,10 +931,12 @@ const LANG: Record<string, Record<string, string>> = {
     ocr_ws_fact_pages: "Pages",
     ocr_ws_fact_backups: "Backups",
     ocr_ws_status_done: "Processed",
+    ocr_ws_status_update: "Update available",
     ocr_ws_status_failed: "Failed",
     ocr_ws_status_processing: "Processing",
     ocr_ws_status_nopdf: "No PDF",
     ocr_ws_status_pending: "Pending",
+    ocr_ws_status_unknown: "Unknown",
   },
   zh: {
     action_running: "正在执行 ",
@@ -1732,6 +1735,7 @@ const LANG: Record<string, Record<string, string>> = {
     ocr_ws_detail_view_fulltext: "查看全文",
     ocr_ws_detail_restore_backup: "恢复备份",
     ocr_ws_detail_re_extract: "重新提取此论文",
+    ocr_ws_detail_run: "运行 OCR",
     ocr_ws_re_extract_disabled_title: "重新提取不可用",
     ocr_ws_re_extract_disabled_body:
       "单篇论文重新提取目前会删除所有OCR数据而不创建备份。请使用OCR设置中的\u2018重新提取所有论文\u2019\u2014\u2014该路径具有内置备份。",
@@ -1802,10 +1806,12 @@ const LANG: Record<string, Record<string, string>> = {
     ocr_ws_fact_pages: "页数",
     ocr_ws_fact_backups: "备份",
     ocr_ws_status_done: "已处理",
+    ocr_ws_status_update: "有更新",
     ocr_ws_status_failed: "失败",
     ocr_ws_status_processing: "处理中",
     ocr_ws_status_nopdf: "无PDF",
     ocr_ws_status_pending: "待处理",
+    ocr_ws_status_unknown: "未知",
   },
 };
 
