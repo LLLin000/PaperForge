@@ -127,6 +127,98 @@ describe("PaperForgeClient", () => {
     });
   });
 
+  describe("Machine Contract & Dynamic Execution Mode Routing", () => {
+    it("routes execution_mode=result to execute and never calls stream", async () => {
+      let executeCalls = 0;
+      let streamCalls = 0;
+
+      transport.executeHandler = (argv) => {
+        if (argv.includes("describe")) {
+          return JSON.stringify({
+            action_id: "any.result_action",
+            execution_mode: "result",
+          });
+        }
+        if (argv.includes("run")) {
+          executeCalls++;
+          return JSON.stringify({ ok: true, data: { done: true } });
+        }
+        return "{}";
+      };
+
+      transport.streamHandler = () => {
+        streamCalls++;
+        return { events: [], outcome: { ok: true } };
+      };
+
+      const result = await client.runAction({
+        action_id: "any.result_action",
+        scope: { kind: "all" },
+      });
+
+      expect(result.ok).toBe(true);
+      expect(executeCalls).toBe(1);
+      expect(streamCalls).toBe(0); // Stream must never be called!
+    });
+
+    it("routes execution_mode=stream to stream and never executes action run directly", async () => {
+      let actionRunExecuteCalls = 0;
+      let streamCalls = 0;
+
+      transport.executeHandler = (argv) => {
+        if (argv.includes("describe")) {
+          return JSON.stringify({
+            action_id: "any.stream_action",
+            execution_mode: "stream",
+          });
+        }
+        if (argv.includes("run")) {
+          actionRunExecuteCalls++;
+          return JSON.stringify({ ok: true });
+        }
+        return "{}";
+      };
+
+      transport.streamHandler = (argv) => {
+        streamCalls++;
+        expect(argv).toEqual([
+          "action",
+          "run",
+          "any.stream_action",
+          "--scope",
+          "all",
+          "--json",
+        ]);
+        return {
+          events: [
+            {
+              schema_version: 1,
+              event: "start",
+              operation: "action.any.stream_action",
+            },
+            {
+              schema_version: 1,
+              event: "result",
+              operation: "action.any.stream_action",
+              result: { ok: true, count: 42 },
+            },
+          ],
+          outcome: { ok: true, exitCode: 0 },
+        };
+      };
+
+      const result = await client.runAction({
+        action_id: "any.stream_action",
+        scope: { kind: "all" },
+      });
+
+      expect(result.ok).toBe(true);
+      expect(result.payload).toEqual({ ok: true, count: 42 });
+      expect(streamCalls).toBe(1);
+      expect(actionRunExecuteCalls).toBe(0); // execute must never be called for running the action!
+    });
+  });
+
   describe("Generation / Epoch Invalidation & Anti-Resurrection Guard", () => {
     it("discards late-arriving reads across a mutation boundary so they never resurrect stale cache", async () => {
       let resolveSlowRead: (val: string) => void;

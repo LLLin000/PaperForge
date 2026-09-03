@@ -289,10 +289,33 @@ export class PaperForgeClient {
   }
 
   /**
-   * Execute a single-result action.
+   * Execute an action dynamically based on its backend execution_mode:
+   * - execution_mode === "result" -> executes single JSON via transport.execute.
+   * - execution_mode === "stream" -> routes to streamAction (OperationLock gated).
+   *
    * Mutation: NEVER deduplicated. Bumps epoch on completion.
    */
-  async runAction(req: ActionRequest): Promise<ActionRunResult> {
+  async runAction(
+    req: ActionRequest,
+    streamOptions?: StreamOptions
+  ): Promise<ActionRunResult> {
+    const desc = await this.describeAction(req.action_id);
+    if (desc?.execution_mode === "stream") {
+      const handle = this.streamAction(req.action_id, req.scope, streamOptions);
+      const outcome = await handle.outcome;
+      const terminalEv = outcome.events.find(
+        (e) =>
+          e.event === "result" || e.event === "error" || e.event === "cancelled"
+      );
+      const payload =
+        (terminalEv?.result as Record<string, unknown> | null) ?? null;
+      return {
+        ok: outcome.ok,
+        payload,
+        exitCode: outcome.exitCode ?? (outcome.ok ? 0 : 1),
+      };
+    }
+
     const argv = buildActionArgv(req);
     try {
       const raw = await this._transport.execute(argv);
