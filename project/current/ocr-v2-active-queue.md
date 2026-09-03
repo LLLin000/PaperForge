@@ -3,6 +3,12 @@
 > Last updated: 2026-09-02
 
 
+## 2026-09-02: Reconcile Core Frozen & Backend Contract Mapping Established
+
+- **Reconcile Core Frozen:** Core mutation engine (Audit → Staging → R/P/Blocked → CAS/Journal/Rollback → Commit) is frozen under `docs/RECONCILE-EXTENSION-CONTRACT.md`. No new heuristic detectors or mutation logic will be added to Reconcile. Future detectors operate strictly as read-only finding producers conforming to the minimal finding schema.
+- **Backend Contract Blueprint:** Established `docs/BACKEND-FRONTEND-CONTRACT-MAPPING.md` defining Python Backend Authority as SSOT across 5 contracts (Observation, Deficit, Policy, Operation, Authority-Write) and 6 product projection domains (Foundation, Library, Processing, Knowledge/Retrieval, Maintenance, Render Quality).
+- **Next Lane:** Transition to Backend Surface Rationalization & Frontend Thin-Client Mapping (`PaperForgeClient`).
+
 ## 2026-09-02: Stale render-consistency report invalidation
 
 - **Fail-closed boundary:** `write_render_outputs` validates the automatic audit result and, on an exception or non-object result, atomically replaces any prior `render.consistency.json` with a structured `state=FAILED` execution-failure report. If replacement itself fails, it attempts to remove the old report.
