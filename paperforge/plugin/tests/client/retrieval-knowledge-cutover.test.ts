@@ -404,5 +404,46 @@ describe("Knowledge & Retrieval Domain Cutover (Ticket 05)", () => {
       ]);
       expect(tab._capabilityState.memory.activity_state).toBe("idle");
     });
+    it("rejects cross-domain actions like ocr.run and library.prune and never dispatches runAction", async () => {
+      const tab = makeSettingTab(client);
+
+      // Attempt to dispatch ocr.run in embed domain
+      tab._dispatchMemoryBuild("embed", undefined, "ocr.run");
+      expect(transport.calls).toHaveLength(0);
+      expect(tab._capabilityState.memory.activity_state).toBe("idle");
+
+      // Attempt to dispatch library.prune in build domain
+      tab._dispatchMemoryBuild("build", undefined, "library.prune");
+      expect(transport.calls).toHaveLength(0);
+      expect(tab._capabilityState.memory.activity_state).toBe("idle");
+    });
+
+    it("enables Stop button only when client owns the active operation handle", () => {
+      const tab = makeSettingTab(client);
+      tab._capabilityState.memory.activity_state = "running";
+      tab._capabilityState.memory.activity_label = "Running elsewhere";
+
+      // 1. Client has no active operation -> Stop button is NOT rendered
+      const el1 = document.createElement("div");
+      tab._renderMemoryDetail(el1);
+      const stopBtn1 = [...el1.querySelectorAll("button")].find(
+        (b) => b.textContent === "Stop"
+      );
+      expect(stopBtn1).toBeUndefined();
+
+      // 2. Client owns active operation -> Stop button is rendered and clickable
+      vi.spyOn(client, "isOperationActive").mockReturnValue(true);
+      const cancelSpy = vi
+        .spyOn(client, "cancelActiveOperation")
+        .mockImplementation(() => {});
+      const el2 = document.createElement("div");
+      tab._renderMemoryDetail(el2);
+      const stopBtn2 = [...el2.querySelectorAll("button")].find(
+        (b) => b.textContent === "Stop"
+      );
+      expect(stopBtn2).toBeDefined();
+      stopBtn2?.click();
+      expect(cancelSpy).toHaveBeenCalledOnce();
+    });
   });
 });

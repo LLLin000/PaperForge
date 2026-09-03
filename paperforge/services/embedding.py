@@ -395,7 +395,7 @@ def run_embedding_build(
                     "Resuming from the surviving candidate."
                 )
                 if not json:
-                    print(msg)
+                    print(msg, file=sys.stderr)
                 mark_vector_build_state(
                     vault,
                     _target_db=_candidate_path if _recover_candidate else None,
@@ -432,7 +432,7 @@ def run_embedding_build(
                             "Resuming from the surviving candidate."
                         )
                         if not json:
-                            print(msg)
+                            print(msg, file=sys.stderr)
                         mark_vector_build_state(
                             vault,
                             _target_db=_candidate_path if _recover_candidate else None,
@@ -456,7 +456,7 @@ def run_embedding_build(
                             "Recovering; resuming from existing vectors."
                         )
                         if not json:
-                            print(msg)
+                            print(msg, file=sys.stderr)
                         mark_vector_build_state(
                             vault,
                             status="interrupted",
@@ -482,7 +482,7 @@ def run_embedding_build(
                 if stored_model and _current_model and stored_model != _current_model:
                     msg = f"Model changed: {stored_model} -> {_current_model}. Re-embedding all papers."
                     if not json:
-                        print(msg)
+                        print(msg, file=sys.stderr)
                     resume = False
 
         # P0-2: full rebuild must never honor resume — the candidate's
@@ -503,7 +503,8 @@ def run_embedding_build(
             print(
                 f"Embedding identity changed: "
                 f"{_substrate.stored_model}@{_substrate.stored_endpoint} -> "
-                f"{_substrate.current_model}@{_substrate.current_endpoint}. Re-embedding all papers."
+                f"{_substrate.current_model}@{_substrate.current_endpoint}. Re-embedding all papers.",
+                file=sys.stderr,
             )
         # P0-3/P1-1: a live vector-layout mismatch must route through shadow —
         # an in-place recreate would destroy live vectors + orphan meta rows.
@@ -576,7 +577,8 @@ def run_embedding_build(
             if not json:
                 print(
                     "Maintenance mode: OCR syncs and memory updates are paused "
-                    "until the rebuild completes."
+                    "until the rebuild completes.",
+                    file=sys.stderr,
                 )
             _target = BuildTarget(
                 source_path=_db_path,
@@ -736,6 +738,17 @@ def run_embedding_build(
                 fut = pool.submit(encode_paper_job, vault, job)
                 in_flight[fut] = job
 
+            def _emit_paper_event(paper_id: str, outcome: str = "succeeded") -> None:
+                if on_progress is not None:
+                    on_progress(processed_count, total, paper_id)
+                if on_item_result is not None:
+                    on_item_result(paper_id, outcome)
+                if emit_events and not json:
+                    from paperforge.core.ndjson import emit_paper_settled, emit_progress
+
+                    emit_paper_settled("embed.build", paper_id, outcome)
+                    emit_progress("embed.build", processed_count, total, item_id=paper_id)
+
             def _complete_one(pool, block: bool = True) -> bool:
                 nonlocal processed_count, papers_embedded, chunks_embedded, _expected_counts
                 if not in_flight:
@@ -779,16 +792,7 @@ def run_embedding_build(
                         if _coll_key:
                             _expected_counts[_coll_key] += len(_p.ids)
 
-                    if on_progress is not None:
-                        on_progress(processed_count, total, bundle.paper_id)
-                    if on_item_result is not None:
-                        on_item_result(bundle.paper_id, "succeeded")
-                    if emit_events and not json:
-                        from paperforge.core.ndjson import emit_paper_settled, emit_progress
-
-                        emit_paper_settled("embed.build", bundle.paper_id, "succeeded")
-                        emit_progress("embed.build", processed_count, total,
-                                      item_id=bundle.paper_id)
+                    _emit_paper_event(bundle.paper_id, "succeeded")
                     _mark(
                         current=processed_count,
                         paper_id=bundle.paper_id,
@@ -875,9 +879,7 @@ def run_embedding_build(
                                     logger.warning("Resume object_units check failed for %s: %s", key, exc)
 
                             if body_ok and object_ok:
-                                processed_count += 1
-                                papers_skipped += 1
-                                print(f"EMBED_PROGRESS:{processed_count}:{total}:{key}", flush=True)
+                                _emit_paper_event(key, "noop")
                                 _mark(current=processed_count, paper_id=key, last_update=_now())
                                 continue
 
@@ -915,9 +917,7 @@ def run_embedding_build(
                                         "SELECT 1 FROM vec_fulltext_meta WHERE paper_id = ? LIMIT 1", (key,)
                                     ).fetchone()
                                     if row:
-                                        processed_count += 1
-                                        papers_skipped += 1
-                                        print(f"EMBED_PROGRESS:{processed_count}:{total}:{key}", flush=True)
+                                        _emit_paper_event(key, "noop")
                                         _mark(
                                             current=processed_count, paper_id=key, last_update=_now()
                                         )
@@ -932,9 +932,7 @@ def run_embedding_build(
                             vault, key, has_body, has_object, [], [], fulltext_rel=fulltext_rel
                         )
 
-                    if not payloads:
-                        processed_count += 1
-                        print(f"EMBED_PROGRESS:{processed_count}:{total}:{key}", flush=True)
+                        _emit_paper_event(key, "noop")
                         _mark(current=processed_count, paper_id=key, last_update=_now())
                         continue
 
@@ -1039,12 +1037,7 @@ def run_embedding_build(
                 _write_lock.__exit__(None, None, None)
             return 1
 
-        # Check if we stopped or were cancelled — exit cleanly without
-        # marking completed.  #137: cancelled is a terminal outcome with
-        # exit code 130, never a folded rc0.  RC UX Seam: write an explicit
-        # interrupted state so the probe can surface a resume path instead
-        # of a zombie "running" that reads as ready.
-        if _is_stopped():
+        def _settle_cancellation() -> int:
             logger.info("Build stopped, exiting cleanly")
             try:
                 _mark(
@@ -1055,23 +1048,8 @@ def run_embedding_build(
             except Exception as exc:  # noqa: BLE001
                 logger.warning("Failed to mark interrupted state: %s", exc)
             if _shadow is not None:
-                # RC UX Seam: user stop KEEPS the candidate so resume can
-                # continue from where it stopped.  Wiping it here would
-                # discard real progress (like the old abort did).  A full
-                # rebuild remains available via --force / embed.build.
-                #
-                # Checkpoint publish: papers whose vectors were fully
-                # embedded this run get lineage rows and the candidate is
-                # COPIED (not moved) onto live — they become retrievable
-                # now, while the candidate survives for resume.  The copied
-                # build_state also carries model/endpoint/dimension/identity,
-                # so a later incremental resume no longer needs shadow.
                 _partial_published = False
                 try:
-                    # Partial publish whenever the candidate holds vector
-                    # rows — not just when THIS run embedded new papers.  A
-                    # stop that lands before any new embedding must still
-                    # publish what earlier interrupted runs already built.
                     _has_candidate_rows = False
                     if _candidate_conn is not None:
                         from paperforge.embedding.substrate import _has_any_rows
@@ -1086,13 +1064,6 @@ def run_embedding_build(
                         _lineage_dim = _resolve_lineage_dimension(
                             _candidate_conn, _expected_dim, int(_stored_dim or 0)
                         )
-                        # Partial publish writes lineage for EVERY paper with
-                        # vectors in the candidate — not just this run's
-                        # regenerated set.  Earlier interrupted runs embedded
-                        # papers whose lineage was never written (it is
-                        # written at final completion only); without rows they
-                        # would probe unknown and the reader gate would drop
-                        # them.  paper_ids=None = all papers with vectors.
                         write_vector_lineage(
                             _candidate_conn,
                             vault,
@@ -1140,6 +1111,13 @@ def run_embedding_build(
                 emit_terminal("cancelled", "embed.build", cancelled_res)
             return 130
 
+        # Check if we stopped or were cancelled — exit cleanly without
+        # marking completed.  #137: cancelled is a terminal outcome with
+        # exit code 130, never a folded rc0.  RC UX Seam: write an explicit
+        # interrupted state so the probe can surface a resume path instead
+        # of a zombie "running" that reads as ready.
+        if _is_stopped():
+            return _settle_cancellation()
         # #162/T1: write vector lineage rows — into the candidate BEFORE the
         # seal/publish swap (atomic with publish), or onto the live DB for
         # the in-place fallback.  Papers without a retrieval identity (legacy
@@ -1250,6 +1228,10 @@ def run_embedding_build(
                     print(result.to_json() if json else result.error.message,
                           file=sys.stderr if not json else sys.stdout)
                 return 1
+            # P1 safe point: verify succeeded; check cancellation before irreversible publish
+            if _is_stopped():
+                return _settle_cancellation()
+
             _shadow.verified()
             _shadow.publish()
             logger.info("Shadow build published: %s → %s",

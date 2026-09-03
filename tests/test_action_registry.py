@@ -779,6 +779,69 @@ class TestEmbedActionStreamWire:
             "cancelled",
         ]
         assert events[-1]["result"]["error"]["code"] == "action.cancelled"
+    def test_embed_resume_real_service_stream_is_clean_ndjson(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        """Ticket 05: run real embedding build without mocking, assert clean NDJSON."""
+        import sqlite3
+        import sqlite_vec
+        from paperforge.core.io import write_json
+        from paperforge.memory.db import get_memory_db_path
+
+        vault = tmp_path / "vault"
+        vault.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(vault)
+
+        index_path = vault / "99_System" / "PaperForge" / "indexes" / "asset-index.json"
+        index_path.parent.mkdir(parents=True, exist_ok=True)
+        write_json(index_path, {
+            "version": 1,
+            "items": [{"zotero_key": "K1", "title": "Paper 1"}]
+        })
+
+        db_path = get_memory_db_path(vault)
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        from paperforge.memory.schema import ensure_schema
+
+        conn = sqlite3.connect(str(db_path))
+        conn.enable_load_extension(True)
+        sqlite_vec.load(conn)
+        ensure_schema(conn)
+        conn.execute("INSERT OR REPLACE INTO papers (zotero_key, title) VALUES ('K1', 'Paper 1')")
+        conn.execute("INSERT OR REPLACE INTO meta (key, value) VALUES ('manifest:K1', '{}')")
+        conn.commit()
+        conn.close()
+        monkeypatch.setenv("PAPERFORGE_CREDENTIAL_EMBEDDING__DEFAULT", "test-token")
+        rc, raw = _run_cli_raw(
+            "--vault",
+            str(vault),
+            "action",
+            "run",
+            "embed.resume",
+            "--scope",
+            "papers",
+            "--key",
+            "K1",
+            "--confirm",
+            "embed.resume",
+            "--json",
+        )
+
+        assert rc == 0, f"rc={rc}, raw={raw}"
+        lines = [line for line in raw.splitlines() if line.strip()]
+        assert len(lines) >= 3
+        events = []
+        for line in lines:
+            assert not line.startswith("EMBED_PROGRESS:"), f"Leaked legacy progress token: {line}"
+            ev = json.loads(line)  # Every single line must be valid JSON
+            assert ev.get("schema_version") == 1
+            events.append(ev)
+
+        terminal_events = [ev for ev in events if ev.get("event") in ("result", "error", "cancelled")]
+        assert len(terminal_events) == 1
+        assert terminal_events[0]["event"] == "result"
+        assert terminal_events[0]["operation"] == "embed.resume"
+
 
 
 class TestCliExitCodes:

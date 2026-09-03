@@ -17,9 +17,11 @@
 
 Implementation notes:
 - Python and TS event vocabulary frozen to the 10 standard #137 events (`start`, `preflight`, `phase`, `progress`, `paper_settled`, `heartbeat`, `item_result`, `result`, `error`, `cancelled`).
-- `ActionExecutionHooks` now feeds `stop_check`, `on_progress`, and `on_item_result` directly into `run_embedding_build`, eliminating stdout redirection and duplicate cancellation tokens.
-- Dashboard search and deep retrieval (@ query) cut over to `client.search(query, options)` and `client.retrieve(query, options)`.
-- Smart Retrieval build/resume dispatches route through `client.runAction()`, streaming progress and wiring Stop to `client.cancelActiveOperation()`.
+- `ActionExecutionHooks` feeds `stop_check`, `on_progress`, and `on_item_result` directly into `run_embedding_build`, eliminating stdout redirection, legacy `EMBED_PROGRESS:` tokens, and duplicate cancellation tokens.
+- Added pre-publish cancellation safe point between `verify_candidate()` and `_shadow.publish()`.
+- Added `--no-expand` CLI wire parity for `RetrieveOptions.expand`.
+- Dashboard search and deep retrieval (@ query) cut over to `client.search(query, options)` and `client.retrieve(query, options)`, unwrapping `SearchResult[]` inside the client.
+- Smart Retrieval build/resume dispatches route through `client.runAction()`, streaming progress, strictly failing closed on cross-domain action IDs, and wiring Stop only when `client.isOperationActive()`.
 Verification:
-- Python: **106 passed / 1 skipped** focused tests (`TestEmbedActionStreamWire` covers real CLI progress, paper settlement, and `PAPERFORGE_STOP` cancellation with `rc=130`).
-- Plugin: **446/446 passed**; `npm run typecheck` clean.
+- Python: **107 passed / 1 skipped** focused tests (`TestEmbedActionStreamWire` covers real CLI progress, paper settlement, `PAPERFORGE_STOP` cancellation with `rc=130`, and un-mocked real service clean NDJSON stream).
+- Plugin: **448/448 passed**; `npm run typecheck` clean.

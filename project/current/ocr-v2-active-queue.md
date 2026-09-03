@@ -12,11 +12,11 @@
 ## 2026-09-03: Ticket 05 Knowledge & Retrieval Domain Cutover
 
 - **Vocabulary:** Python and TypeScript agree on the 10 frozen #137 stream events (`start`, `preflight`, `phase`, `progress`, `paper_settled`, `heartbeat`, `item_result`, `result`, `error`, `cancelled`).
-- **Worker streaming:** `ActionExecutionHooks` passes `stop_check`, `on_progress`, and `on_item_result` directly into `run_embedding_build`; duplicate stdin token reader and stdout capture in `action run embed.build` / `embed.resume` eliminated.
-- **Search & Retrieval:** `dashboard.ts` cuts over `executeSearch()` to `client.search(query, options)` and `client.retrieve(query, options)`; direct `spawn` and manual JSON extraction removed.
-- **Smart Retrieval:** `settings.ts` memory/embed build dispatches route through `client.runAction()`, streaming progress and wiring Stop to `client.cancelActiveOperation()`.
-- **Verification:** **106 passed, 1 skipped** focused Python tests; **446 plugin tests passed**; `npm run typecheck` clean. No production write ran.
-
+- **Worker streaming:** `ActionExecutionHooks` passes `stop_check`, `on_progress`, and `on_item_result` directly into `run_embedding_build`; silent service mode eliminates stdout capture and legacy `EMBED_PROGRESS:` tokens; single token owner.
+- **Pre-publish safe point:** `run_embedding_build` checks `_is_stopped()` after verification before irreversible `_shadow.publish()`.
+- **Search & Retrieval:** `dashboard.ts` cuts over `executeSearch()` to `client.search(query, options)` and `client.retrieve(query, options)` with unwrap normalization; `--no-expand` added to CLI for wire parity.
+- **Smart Retrieval:** `settings.ts` memory/embed build dispatches route through `client.runAction()`, streaming progress, strictly failing closed on cross-domain action IDs, and wiring Stop only when `client.isOperationActive()`.
+- **Verification:** **107 passed, 1 skipped** focused Python tests; **448 plugin tests passed**; `npm run typecheck` clean. No production write ran.
 
 ## 2026-09-02: Reconcile Core Frozen & Backend Contract Mapping Established
 

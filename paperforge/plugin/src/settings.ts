@@ -1881,11 +1881,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         } else if (actionId === "memory.upgrade_backend") {
           this._runBackendMigration();
         } else {
-          this._dispatchMemoryBuild(
-            "build",
-            undefined,
-            actionId || "memory.rebuild"
-          );
+          const memActionId =
+            actionId === "memory.build" || actionId === "memory.rebuild"
+              ? actionId
+              : "memory.build";
+          this._dispatchMemoryBuild("build", undefined, memActionId);
         }
       }
       if (verb === "restore_backup" || actionId === "memory.restore_backup") {
@@ -2112,6 +2112,21 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       } else {
         actionId = "memory.rebuild";
       }
+    }
+
+    const ALLOWED_ACTIONS: Record<"embed" | "build", ReadonlySet<string>> = {
+      embed: new Set(["embed.build", "embed.resume"]),
+      build: new Set(["memory.build", "memory.rebuild"]),
+    };
+
+    if (!ALLOWED_ACTIONS[kind].has(actionId)) {
+      new Notice(
+        (t("action_unknown_pair") || "Unknown action: {verb}").replace(
+          "{verb}",
+          actionId
+        )
+      );
+      return;
     }
     if (envelopes["memory"]) {
       envelopes["memory"].activity_state = "running";
