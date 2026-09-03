@@ -135,8 +135,13 @@ describe("PaperForgeClient", () => {
       transport.executeHandler = (argv) => {
         if (argv.includes("describe")) {
           return JSON.stringify({
-            action_id: "any.result_action",
-            execution_mode: "result",
+            ok: true,
+            command: "action.describe",
+            version: "1.5.15",
+            data: {
+              action_id: "any.result_action",
+              execution_mode: "result",
+            },
           });
         }
         if (argv.includes("run")) {
@@ -168,8 +173,13 @@ describe("PaperForgeClient", () => {
       transport.executeHandler = (argv) => {
         if (argv.includes("describe")) {
           return JSON.stringify({
-            action_id: "any.stream_action",
-            execution_mode: "stream",
+            ok: true,
+            command: "action.describe",
+            version: "1.5.15",
+            data: {
+              action_id: "any.stream_action",
+              execution_mode: "stream",
+            },
           });
         }
         if (argv.includes("run")) {
@@ -216,6 +226,150 @@ describe("PaperForgeClient", () => {
       expect(result.payload).toEqual({ ok: true, count: 42 });
       expect(streamCalls).toBe(1);
       expect(actionRunExecuteCalls).toBe(0); // execute must never be called for running the action!
+    });
+
+    it("unwraps real PFResult envelope in describeAction", async () => {
+      transport.executeHandler = (argv) => {
+        if (argv.includes("describe") && argv.includes("ocr.run")) {
+          return JSON.stringify({
+            ok: true,
+            command: "action.describe",
+            version: "1.5.15",
+            data: {
+              schema_version: 1,
+              action_id: "ocr.run",
+              execution_mode: "stream",
+              availability: "available",
+            },
+          });
+        }
+        return "{}";
+      };
+
+      const desc = await client.describeAction("ocr.run");
+      expect(desc.action_id).toBe("ocr.run");
+      expect(desc.execution_mode).toBe("stream");
+    });
+
+    it("unwraps real PFResult envelope in listActions", async () => {
+      transport.executeHandler = (argv) => {
+        if (argv.includes("list")) {
+          return JSON.stringify({
+            ok: true,
+            command: "action.list",
+            version: "1.5.15",
+            data: {
+              actions: [
+                { action_id: "ocr.run", execution_mode: "stream" },
+                { action_id: "memory.build", execution_mode: "result" },
+              ],
+            },
+          });
+        }
+        return "{}";
+      };
+
+      const actions = await client.listActions();
+      expect(Array.isArray(actions)).toBe(true);
+      expect(actions.length).toBe(2);
+      expect(actions[0].action_id).toBe("ocr.run");
+      expect(actions[0].execution_mode).toBe("stream");
+    });
+
+    it("preserves confirm flag when running streaming action", async () => {
+      transport.executeHandler = (argv) => {
+        if (argv.includes("describe")) {
+          return JSON.stringify({
+            ok: true,
+            command: "action.describe",
+            version: "1.5.15",
+            data: {
+              action_id: "foundation.update",
+              execution_mode: "stream",
+            },
+          });
+        }
+        return "{}";
+      };
+
+      let capturedArgv: string[] = [];
+      transport.streamHandler = (argv) => {
+        capturedArgv = argv;
+        return {
+          events: [
+            {
+              schema_version: 1,
+              event: "start",
+              operation: "action.foundation.update",
+            },
+            {
+              schema_version: 1,
+              event: "result",
+              operation: "action.foundation.update",
+              result: { ok: true },
+            },
+          ],
+          outcome: { ok: true, exitCode: 0 },
+        };
+      };
+
+      const res = await client.runAction({
+        action_id: "foundation.update",
+        scope: { kind: "all" },
+        confirm: "foundation.update",
+      });
+
+      expect(res.ok).toBe(true);
+      expect(capturedArgv).toContain("--confirm");
+      expect(capturedArgv[capturedArgv.indexOf("--confirm") + 1]).toBe(
+        "foundation.update"
+      );
+    });
+
+    it("preserves follow auto flag when running streaming action", async () => {
+      transport.executeHandler = (argv) => {
+        if (argv.includes("describe")) {
+          return JSON.stringify({
+            ok: true,
+            command: "action.describe",
+            version: "1.5.15",
+            data: {
+              action_id: "ocr.run",
+              execution_mode: "stream",
+            },
+          });
+        }
+        return "{}";
+      };
+
+      let capturedArgv: string[] = [];
+      transport.streamHandler = (argv) => {
+        capturedArgv = argv;
+        return {
+          events: [
+            { schema_version: 1, event: "start", operation: "action.ocr.run" },
+            {
+              schema_version: 1,
+              event: "result",
+              operation: "action.ocr.run",
+              result: { ok: true },
+            },
+          ],
+          outcome: { ok: true, exitCode: 0 },
+        };
+      };
+
+      const res = await client.runAction({
+        action_id: "ocr.run",
+        scope: { kind: "papers", keys: ["PAPER1"] },
+        follow: "auto",
+      });
+
+      expect(res.ok).toBe(true);
+      expect(capturedArgv).toContain("--follow");
+      expect(capturedArgv[capturedArgv.indexOf("--follow") + 1]).toBe("auto");
+      expect(capturedArgv).toContain("--key");
+      expect(capturedArgv[capturedArgv.indexOf("--key") + 1]).toBe("PAPER1");
     });
   });
 
