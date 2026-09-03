@@ -17,6 +17,7 @@ Impact = Literal["read_only", "mutating", "destructive"]
 Confirmation = Literal["none", "required"]
 Availability = Literal["available", "unavailable", "busy"]
 Applicability = Literal["needed", "noop", "blocked", "not_applicable"]
+ExecutionMode = Literal["result", "stream"]
 
 
 @dataclass(frozen=True)
@@ -115,6 +116,7 @@ class ActionSpec:
     confirmation: Confirmation
     automatic: bool
     interruptible: bool
+    execution_mode: ExecutionMode = "result"
 
 
 def scope_to_dict(scope: ActionScope) -> dict[str, object]:

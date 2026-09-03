@@ -59,6 +59,7 @@ def _spec(action_id: str, **overrides) -> ActionSpec:
         confirmation="none",
         automatic=True,
         interruptible=True,
+        execution_mode="result",
     )
     defaults.update(overrides)
     return ActionSpec(**defaults)
@@ -138,6 +139,28 @@ class TestRegistryInvariants:
         # T3/T4: both memory.build and embed.resume gained papers scope.
         assert set(ACTION_REGISTRY["memory.build"].scope_kinds) == {"all", "papers"}
         assert set(ACTION_REGISTRY["embed.resume"].scope_kinds) == {"all", "papers"}
+
+    def test_execution_mode_invariants(self) -> None:
+        """T2 / ADR 0003: Every action explicitly declares execution_mode."""
+        streaming = {
+            "foundation.update", "embed.resume", "embed.build", "ocr.run", "ocr.rebuild_derived",
+        }
+        result_only = {
+            "foundation.repair", "memory.build", "memory.rebuild", "library.prune",
+        }
+        for action_id, spec in ACTION_REGISTRY.items():
+            assert hasattr(spec, "execution_mode"), f"{action_id} missing execution_mode"
+            assert spec.execution_mode in ("result", "stream")
+            if action_id in streaming:
+                assert spec.execution_mode == "stream", f"{action_id} must be stream"
+            if action_id in result_only:
+                assert spec.execution_mode == "result", f"{action_id} must be result"
+
+    def test_invalid_execution_mode_rejected(self) -> None:
+        problems = validate_registry({
+            "test.invalid": _spec("test.invalid", execution_mode="unknown"),
+        })
+        assert any("invalid execution_mode" in p for p in problems)
 
 
 # ── runner pipeline ────────────────────────────────────────────────────────
@@ -293,6 +316,19 @@ class TestRunnerPipeline:
         assert "not PFResult" in (result.error.message if result.error else "")
 
 
+    def test_descriptor_carries_execution_mode(self, tmp_path: Path, _registry) -> None:
+        spec = _spec("test.mode", execution_mode="stream")
+        _registry(spec)
+        context = _ctx(tmp_path)
+        request = ActionRequest("test.mode", AllScope())
+        preflight = spec.preflight(context, request)
+        desc = descriptor_for(spec, request, preflight)
+        assert desc["execution_mode"] == "stream"
+
+        intent = ActionIntent("test.mode", AllScope(), "test", "test")
+        hydrated = hydrate_from_registry(intent)
+        assert hydrated["execution_mode"] == "stream"
+
 # ── follow-up chain ────────────────────────────────────────────────────────
 
 class TestContext:
@@ -341,7 +377,7 @@ class TestDescriptorWire:
         assert wire["cost"] == "local"
         assert wire["confirmation"] == "none"
         assert wire["reason"] == "Library changed"
-        assert "dedupe_key" not in wire
+        assert wire["execution_mode"] == "result"
         assert "command" not in wire
 
     def test_emit_unknown_action_fails_closed(self) -> None:
@@ -368,10 +404,38 @@ class TestCliExitCodes:
     def test_list(self, tmp_path: Path) -> None:
         rc, payload = _run_cli("--vault", str(tmp_path), "action", "list", "--json")
         assert rc == 0
-        ids = [a["action_id"] for a in payload["data"]["actions"]]
+        actions = payload["data"]["actions"]
+        ids = [a["action_id"] for a in actions]
         assert ids == ["embed.build", "embed.resume", "foundation.repair", "foundation.update",
                 "library.prune", "memory.build", "memory.rebuild", "ocr.rebuild_derived", "ocr.run"]
+        for a in actions:
+            assert a["execution_mode"] in ("result", "stream")
+            if a["action_id"] in ("embed.build", "embed.resume", "foundation.update", "ocr.run", "ocr.rebuild_derived"):
+                assert a["execution_mode"] == "stream"
+            else:
+                assert a["execution_mode"] == "result"
 
+    def test_describe_includes_execution_mode(self, tmp_path: Path) -> None:
+        canonical_test_config(tmp_path)
+        rc, payload = _run_cli("--vault", str(tmp_path), "action", "describe", "ocr.run", "--json")
+        assert rc == 0
+        assert payload["data"]["execution_mode"] == "stream"
+
+        rc2, payload2 = _run_cli("--vault", str(tmp_path), "action", "describe", "memory.build", "--json")
+        assert rc2 == 0
+        assert payload2["data"]["execution_mode"] == "result"
+
+    def test_probe_primary_action_includes_execution_mode(self) -> None:
+        from paperforge.commands.probe import build_action_primary
+
+        act_stream = build_action_primary(action_id="ocr.rebuild_derived", verb="rebuild_derived", label="Rebuild")
+        assert act_stream["execution_mode"] == "stream"
+
+        act_result = build_action_primary(action_id="memory.build", verb="build", label="Build")
+        assert act_result["execution_mode"] == "result"
+
+        act_setup = build_action_primary(action_id="foundation.setup", verb="setup", label="Setup")
+        assert act_setup["execution_mode"] == "stream"
     def test_describe_unknown_is_exit_2(self, tmp_path: Path) -> None:
         rc, payload = _run_cli("--vault", str(tmp_path), "action", "describe", "nope.nope", "--json")
         assert rc == 2

@@ -752,6 +752,8 @@ def validate_registry(registry: Mapping[str, ActionSpec] | None = None) -> list[
             problems.append(f"{action_id}: automatic actions are local and non-destructive")
         if spec.confirmation not in ("none", "required"):
             problems.append(f"{action_id}: invalid confirmation policy")
+        if spec.execution_mode not in ("result", "stream"):
+            problems.append(f"{action_id}: invalid execution_mode {spec.execution_mode!r}")
     return problems
 
 
@@ -768,6 +770,7 @@ _SPECS: tuple[ActionSpec, ...] = (
         confirmation="required",
         automatic=False,
         interruptible=True,
+        execution_mode="stream",
     ),
     ActionSpec(
         action_id="foundation.repair",
@@ -781,6 +784,7 @@ _SPECS: tuple[ActionSpec, ...] = (
         confirmation="required",
         automatic=False,
         interruptible=True,
+        execution_mode="result",
     ),
     ActionSpec(
         action_id="memory.build",
@@ -794,6 +798,7 @@ _SPECS: tuple[ActionSpec, ...] = (
         confirmation="none",
         automatic=True,
         interruptible=True,
+        execution_mode="result",
     ),
     ActionSpec(
         # #135: full-text (paperforge.db papers/FTS) index realignment —
@@ -812,6 +817,7 @@ _SPECS: tuple[ActionSpec, ...] = (
         confirmation="none",
         automatic=True,
         interruptible=True,
+        execution_mode="result",
     ),
     ActionSpec(
         action_id="library.prune",
@@ -825,6 +831,7 @@ _SPECS: tuple[ActionSpec, ...] = (
         confirmation="required",
         automatic=False,
         interruptible=True,
+        execution_mode="result",
     ),
     ActionSpec(
         action_id="embed.resume",
@@ -838,6 +845,7 @@ _SPECS: tuple[ActionSpec, ...] = (
         confirmation="required",
         automatic=False,
         interruptible=True,
+        execution_mode="stream",
     ),
     ActionSpec(
         action_id="embed.build",
@@ -851,6 +859,7 @@ _SPECS: tuple[ActionSpec, ...] = (
         confirmation="required",
         automatic=False,
         interruptible=True,
+        execution_mode="stream",
     ),
     ActionSpec(
         action_id="ocr.run",
@@ -864,6 +873,7 @@ _SPECS: tuple[ActionSpec, ...] = (
         confirmation="required",
         automatic=False,
         interruptible=True,
+        execution_mode="stream",
     ),
     ActionSpec(
         action_id="ocr.rebuild_derived",
@@ -877,6 +887,7 @@ _SPECS: tuple[ActionSpec, ...] = (
         confirmation="none",
         automatic=True,
         interruptible=True,
+        execution_mode="stream",
     ),
 )
 

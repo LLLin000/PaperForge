@@ -62,6 +62,7 @@ def run_list(args: argparse.Namespace) -> int:
             "impact": spec.impact,
             "confirmation": spec.confirmation,
             "automatic": spec.automatic,
+            "execution_mode": spec.execution_mode,
         })
     if json_output:
         result = PFResult(ok=True, command="action.list", version=PF_VERSION, data={"actions": rows})
