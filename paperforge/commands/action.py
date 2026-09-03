@@ -195,28 +195,62 @@ def run_dispatch(args: argparse.Namespace) -> int:
     context = build_context(args.vault_path)
     request = ActionRequest(action_id=action_id, scope=_parse_scope(args))
 
+    spec = ACTION_REGISTRY.get(action_id)
+    is_stream = json_output and (spec is not None and spec.execution_mode == "stream")
+
+    if is_stream:
+        from paperforge.core.cancellation import make_cancellation_token
+        from paperforge.core.ndjson import emit_start, emit_terminal
+
+        total = len(request.scope.keys) if request.scope.kind == "papers" else None
+        emit_start(action_id, total=total, scope=request.scope.kind)
+        _is_stopped, restore = make_cancellation_token()
+    else:
+        restore = lambda: None
+
     try:
         result = run_action(request, context, confirmed_action_id=confirmed)
     except ActionError as exc:
         result = _error_result("action run", exc.code, str(exc), data=exc.data)
         if json_output:
-            print(result.to_json())
+            if is_stream:
+                emit_terminal("error", action_id, result)
+            else:
+                print(result.to_json())
         else:
             print(result.error.message if result.error else str(exc), file=sys.stderr)
+        restore()
         return exc.exit_code
+    except KeyboardInterrupt as exc:
+        from paperforge.actions.runner import cancelled_result
+
+        result = cancelled_result("action run", str(exc))
+        if json_output:
+            if is_stream:
+                emit_terminal("cancelled", action_id, result)
+            else:
+                print(result.to_json())
+        else:
+            print("cancelled", file=sys.stderr)
+        restore()
+        return EXIT_CANCELLED
+
+    restore()
 
     if result.ok and follow == "auto":
         _run_descendants(args, request, context, result)
 
     if json_output:
-        print(result.to_json())
+        if is_stream:
+            emit_terminal("result" if result.ok else "error", action_id, result)
+        else:
+            print(result.to_json())
     else:
         if result.ok:
             print(f"ok: {action_id}")
         else:
             print(f"error: {result.error.message if result.error else 'unknown'}", file=sys.stderr)
     return 0 if result.ok else 1
-
 
 def _run_descendants(args: argparse.Namespace, request: ActionRequest, context, root_result) -> None:
     """#167 P0-1: follow auto governs descendants only — after a successful
@@ -277,8 +311,14 @@ def run(args: argparse.Namespace) -> int:
             from paperforge.actions.runner import cancelled_result
 
             result = cancelled_result("action run", str(exc))
+            spec = ACTION_REGISTRY.get(getattr(args, "action_id", ""))
             if getattr(args, "json", False):
-                print(result.to_json())
+                if spec is not None and spec.execution_mode == "stream":
+                    from paperforge.core.ndjson import emit_terminal
+
+                    emit_terminal("cancelled", spec.action_id, result)
+                else:
+                    print(result.to_json())
             else:
                 print("cancelled", file=sys.stderr)
             return EXIT_CANCELLED

@@ -397,7 +397,75 @@ def _run_cli(*argv: str) -> tuple[int, dict]:
         rc = main(list(argv))
     finally:
         sys.stdin, sys.stdout = old_in, old_out
-    return rc, json.loads(buf.getvalue())
+    text = buf.getvalue().strip()
+    if not text:
+        return rc, {}
+    lines = [line.strip() for line in text.split("\n") if line.strip()]
+    if len(lines) > 1 and lines[0].startswith('{"schema_version":'):
+        # #137 NDJSON stream: return the result payload of the terminal event
+        terminal_ev = json.loads(lines[-1])
+        res = terminal_ev.get("result")
+        if isinstance(res, dict):
+            return rc, res
+        return rc, terminal_ev
+    return rc, json.loads(text)
+
+def _run_cli_raw(*argv: str) -> tuple[int, str]:
+    from paperforge.cli import main
+
+    old_in, old_out = sys.stdin, sys.stdout
+    buf = io.StringIO()
+    sys.stdout = buf
+    try:
+        rc = main(list(argv))
+    finally:
+        sys.stdin, sys.stdout = old_in, old_out
+    return rc, buf.getvalue()
+
+
+class TestMachineModeWireParity:
+    """Group 1 & Group 3 parity contract verification:
+    Every action's declared execution_mode matches its wire format.
+    - result actions: emit exactly one line of PFResult JSON.
+    - stream actions: emit a valid #137 NDJSON stream (start, ..., terminal) with NO trailing PFResult.
+    """
+
+    @pytest.mark.parametrize("action_id", [
+        "foundation.repair", "memory.build", "memory.rebuild", "library.prune"
+    ])
+    def test_result_action_wire_format(self, tmp_path: Path, action_id: str) -> None:
+        vault = tmp_path / "vault"
+        vault.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(vault)
+        rc, raw = _run_cli_raw("--vault", str(vault), "action", "run", action_id, "--json")
+        # Result wire format is a single JSON document (PFResult), NOT an NDJSON stream
+        parsed = json.loads(raw)
+        assert isinstance(parsed, dict)
+        assert "command" in parsed
+        assert "version" in parsed
+        assert "ok" in parsed
+        assert "event" not in parsed, f"{action_id} result must not be an NDJSON event"
+
+    @pytest.mark.parametrize("action_id", [
+        "foundation.update", "embed.resume", "embed.build", "ocr.run", "ocr.rebuild_derived"
+    ])
+    def test_stream_action_wire_format(self, tmp_path: Path, action_id: str) -> None:
+        vault = tmp_path / "vault"
+        vault.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(vault)
+        rc, raw = _run_cli_raw("--vault", str(vault), "action", "run", action_id, "--json")
+        lines = [line.strip() for line in raw.strip().split("\n") if line.strip()]
+        assert len(lines) >= 2, f"{action_id} stream must emit at least start and terminal, got: {lines}"
+        events = [json.loads(line) for line in lines]
+        assert events[0]["event"] == "start"
+        assert events[0]["schema_version"] == 1
+        assert events[0]["operation"] == action_id
+        assert events[-1]["event"] in ("result", "error", "cancelled")
+        assert events[-1]["schema_version"] == 1
+        assert events[-1]["operation"] == action_id
+        for ev in events:
+            assert "schema_version" in ev
+            assert "event" in ev
 
 
 class TestCliExitCodes:
