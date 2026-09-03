@@ -87,6 +87,15 @@ A derived view of unresolved user-visible problems that have concrete recovery a
 ### Managed Runtime
 The verified, versioned execution component inside Foundation. Runtime identity and recovery are advanced diagnostics; normal user language refers to the Foundation or PaperForge environment.
 
+
+### PaperForgeClient
+The single, host-independent TypeScript client library that wraps all Python backend contracts (Observation, Deficit, Policy, Operation, Authority-Write). It owns memory caching, in-flight request deduplication, and streaming operation state.
+
+### Transport
+The decoupled communication seam underneath `PaperForgeClient`. It executes or streams backend commands without embedding domain knowledge. Node.js environments use `NodeProcessTransport` (handling Python pointer resolution and cancellation); web or test environments use WebSocket or Mock transports.
+
+### Operation Lock
+A client-level gate ensuring at most one long-running streaming operation (`ocr.run`, `embed.build`, `sync`, `setup`, `update`) executes at any time, preventing SQLite contention and inconsistent UI progress.
 ## Architecture layers
 
 ```

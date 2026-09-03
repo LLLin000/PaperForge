@@ -225,9 +225,9 @@ The authority boundary is deliberate:
 - Fulltext reconciliation requires a valid canonical figure inventory. Missing, unreadable, non-object, non-list, or malformed authority rows produce `F0_CANONICAL_AUTHORITY_UNAVAILABLE`, set `mutation_blocked`, and emit no patches.
 - P remains a human-authority action, not an automatic consequence of a dry-run. `render reconcile --json` exposes each staged plan's `final_plan_hash`; acceptance may create the canonical object only when the supplied hash selects the exact reviewed plan bytes (identical duplicate bytes use a stable path tie-break) and its live authority checks pass. Bounded-slot anchors derive from unique, non-conflicted `main` rows.
 - `render reconcile` is staging-only. `render promote-r` requires explicit object IDs or `--all`; production batch rollout is a separate owner gate.
-
 Current known limits are part of the contract: semantic figure-coverage suspects remain diagnostic and never auto-repaired; no bbox/pixel ratio establishes that a panel was not absorbed by `table_html`. Fulltext duplicate canonical identities and unavailable fulltext authority block all patches rather than allowing a partial mutation.
 
+The Reconcile mutation engine is **FROZEN** under the extension contract (`docs/RECONCILE-EXTENSION-CONTRACT.md`). Future detectors must remain read-only finding producers without implementing private execution paths. The system's cross-layer integration follows the 5 backend contracts and 6 product projection domains documented in `docs/BACKEND-FRONTEND-CONTRACT-MAPPING.md`.
 ---
 
 
