@@ -13,14 +13,17 @@ import {
 } from "obsidian";
 import * as fs from "fs";
 import * as path from "path";
-import { execFile } from "child_process";
 import { VIEW_TYPE_OCR_WORKSPACE } from "../constants";
 import { t } from "../i18n";
+import { PaperForgeConfirmModal } from "./modals";
 import { resolveVaultPaths } from "../services/runtime-paths";
-import { resolveRuntimeCommand } from "../services/managed-runtime";
-import type { OcrProcessOutcome } from "../services/ocr-process-controller";
-import { runAction, type ActionRunResult } from "../services/python-bridge";
-
+import {
+  PaperForgeClient,
+  NodeProcessTransport,
+  type ActionDescriptor,
+  type OcrPaperRow,
+} from "../client";
+import type { ActionRequest } from "../services/action-client";
 /* ── OcrPaper interface ── */
 
 interface OcrPaper {
@@ -34,13 +37,44 @@ interface OcrPaper {
   year: string;
   pages: string;
   backupCount: number;
+  canRedo: boolean;
+  canRebuild: boolean;
+  recommendedAction: string;
   /** #126: vault-relative fulltext path from the canonical index. */
   fulltextPath: string;
   /** #129: RAW ocr_finished_at timestamp (never display-formatted). */
   ocrFinishedAt: string;
 }
 
-/* ── View ── */
+interface LineagePaperState {
+  ocr?: string;
+  details?: {
+    ocr?: string | null;
+    ocr_execution?: { local_status?: string | null } | null;
+  };
+  flags?: { version_old?: boolean };
+}
+
+interface LineageProbe {
+  papers?: Record<string, LineagePaperState>;
+}
+
+type OcrActionId = "ocr.run" | "ocr.rebuild_derived";
+type OcrMode = "run" | "rebuild" | "redo";
+
+function paperStatusFromLineage(
+  rowStatus: string,
+  observed?: LineagePaperState
+): string {
+  if (!observed) return rowStatus;
+  if (observed.flags?.version_old) return "update_available";
+  if (observed.ocr === "stale") return "update_available";
+  if (observed.ocr === "missing" && rowStatus === "done") return "pending";
+  if (observed.ocr === "failed") return "failed";
+  if (observed.ocr === "incomplete") return "done_incomplete";
+  if (observed.ocr === "unknown" && rowStatus === "done") return "unknown";
+  return rowStatus;
+}
 
 const PAGE_SIZE = 100;
 
@@ -70,13 +104,27 @@ export class OcrWorkspaceView extends ItemView {
   private versionFilter: string | null = null;
   private selectedKey: string | null = null;
   private checkedKeys: Set<string> = new Set();
-  private running: boolean = false;
-  private progress = { current: 0, total: 0, paperKey: "" };
-  private _searchQuery: string = "";
+  private running = false;
+  private progress = {
+    current: 0,
+    total: 0,
+    paperKey: "",
+    phase: "",
+    itemStatus: "",
+  };
+  private globalActivity: {
+    state: "idle" | "running" | "unknown";
+    label: string;
+    current: number;
+    total: number;
+  } = { state: "idle", label: "", current: 0, total: 0 };
+  private readonly actionDescriptors = new Map<string, ActionDescriptor>();
+  private readonly pendingActionDescriptors = new Set<string>();
+  private _client: PaperForgeClient | null = null;
+  private _searchQuery = "";
   private _searchTimer: ReturnType<typeof setTimeout> | undefined;
   /** #126 PR D: pagination — selection is per visible page. */
   private _page = 1;
-  private _enriched = false;
 
   constructor(
     leaf: WorkspaceLeaf,
@@ -115,86 +163,87 @@ export class OcrWorkspaceView extends ItemView {
     this._render();
   }
 
-  /* ── Data loading (#126 PR D: index-first, background enrichment) ── */
+  /* ── Data loading ── */
 
-  private async _loadPapers(): Promise<void> {
-    const vp = (this.app.vault.adapter as any).basePath as string;
-    const paths = resolveVaultPaths(vp);
-    const indexPath = path.join(paths.indexesDir, "formal-library.json");
-    if (!fs.existsSync(indexPath)) {
-      this.papers = [];
-      return;
+  private _getClient(): PaperForgeClient {
+    if (this._client) return this._client;
+    if (typeof this.plugin?.getClient === "function") {
+      this._client = this.plugin.getClient();
+      return this._client!;
     }
-    try {
-      const index = JSON.parse(fs.readFileSync(indexPath, "utf-8"));
-      const items: any[] = index?.items ?? [];
-      // First paint reads ONLY canonical index fields — no per-paper
-      // meta.json reads, no per-paper backups/ scans on the main thread.
-      // #126 review: preserve backend-enriched fields (pipelineVersion,
-      // enriched status) across in-place reloads — do not regress them to
-      // index defaults after a rebuild/restore.
-      const prevByKey = new Map(this.papers.map((p) => [p.key, p]));
-      this.papers = [];
-      for (const item of items) {
-        const key = item.zotero_key;
-        if (!key) continue;
-        const prev = prevByKey.get(key);
-        this.papers.push({
-          key,
-          title: item.title ?? key,
-          status: prev?.status ?? item.ocr_status ?? "pending",
-          pipelineVersion: prev?.pipelineVersion ?? "",
-          lastRun: prev?.lastRun ?? item.ocr_time ?? "",
-          hasBackup: prev?.hasBackup ?? false,
-          authors: item.authors?.join?.(", ") ?? "",
-          year: item.year ?? "",
-          pages: prev?.pages ?? "",
-          backupCount: prev?.backupCount ?? 0,
-          fulltextPath: item.fulltext_path ?? "",
-          ocrFinishedAt: prev?.ocrFinishedAt ?? item.ocr_time ?? "",
-        });
-      }
-    } catch {
-      this.papers = [];
-    }
-    this._page = 1;
-    // Background enrichment: one `ocr list --json` call (backend-owned
-    // status semantics), preserving search/page/selection.
-    if (!this._enriched) {
-      this._enriched = true;
-      void this._enrichFromOcrList(vp);
-    }
+    const vp = ((this.app?.vault?.adapter as any)?.basePath as string) ?? "";
+    const transport = new NodeProcessTransport({
+      vaultPath: vp,
+      customPythonPath: this.plugin?.settings?.python_path,
+    });
+    this._client = new PaperForgeClient({ transport });
+    return this._client;
   }
 
-  private _enrichFromOcrList(vp: string): Promise<void> {
-    const pyCmd = this._resolvePython();
-    if (!pyCmd) return Promise.resolve();
-    return new Promise((resolve) => {
-      execFile(
-        pyCmd.path,
-        [...pyCmd.args, "-m", "paperforge", "ocr", "list", "--json"],
-        { cwd: vp, timeout: 60000, windowsHide: true },
-        (err: any, stdout: string) => {
-          if (!err) {
-            try {
-              const payload = JSON.parse(stdout);
-              const rows: any[] = payload?.data?.rows ?? payload?.rows ?? [];
-              const byKey = new Map(rows.map((r) => [r.key, r]));
-              for (const paper of this.papers) {
-                const row = byKey.get(paper.key);
-                if (!row) continue;
-                paper.status = row.status ?? paper.status;
-                paper.pipelineVersion = row.version ?? "";
-                paper.lastRun = row.finished_at ?? paper.lastRun;
-                paper.pages = row.pages ? String(row.pages) : "";
-              }
-            } catch {}
-          }
-          this._refreshTable();
-          resolve();
-        }
-      );
-    });
+  private async _loadPapers(): Promise<void> {
+    const client = this._getClient();
+    const [lineageResult, activityResult, rowsResult] = await Promise.all([
+      client.probe("lineage").catch(() => null),
+      client.probe("ocr").catch(() => null),
+      client.queryOcrPapers().catch(() => []),
+    ]);
+    const lineage = lineageResult as unknown as LineageProbe | null;
+    const activity = activityResult as {
+      activity_state?: string;
+      activity_label?: string | null;
+      activity_progress?: { current?: number; total?: number } | null;
+    } | null;
+    this.globalActivity = {
+      state:
+        activity?.activity_state === "running"
+          ? "running"
+          : activity
+            ? "idle"
+            : "unknown",
+      label: activity?.activity_label ?? "",
+      current: activity?.activity_progress?.current ?? 0,
+      total: activity?.activity_progress?.total ?? 0,
+    };
+
+    const prevByKey = new Map(this.papers.map((p) => [p.key, p]));
+    const lineagePapers = lineage?.papers ?? {};
+    this.papers = [];
+    for (const row of rowsResult as OcrPaperRow[]) {
+      const key = row.key;
+      if (!key) continue;
+      const prev = prevByKey.get(key);
+      const observed = lineagePapers[key];
+      const executionStatus = observed?.details?.ocr_execution?.local_status;
+      const status =
+        executionStatus === "running" || executionStatus === "processing"
+          ? "processing"
+          : executionStatus === "queued"
+            ? "queued"
+            : paperStatusFromLineage(
+                row.status ?? prev?.status ?? "pending",
+                observed
+              );
+      this.papers.push({
+        key,
+        title: row.title ?? key,
+        status,
+        pipelineVersion: row.version ?? prev?.pipelineVersion ?? "",
+        lastRun: row.finished_at ?? prev?.lastRun ?? "",
+        hasBackup: prev?.hasBackup ?? false,
+        authors: row.authors ?? prev?.authors ?? "",
+        year: row.year != null ? String(row.year) : (prev?.year ?? ""),
+        pages: row.pages != null ? String(row.pages) : (prev?.pages ?? ""),
+        backupCount: prev?.backupCount ?? 0,
+        canRedo: row.can_redo ?? prev?.canRedo ?? false,
+        canRebuild: row.can_rebuild ?? prev?.canRebuild ?? false,
+        recommendedAction:
+          row.recommended_action ?? prev?.recommendedAction ?? "",
+        fulltextPath: row.fulltext_path ?? prev?.fulltextPath ?? "",
+        ocrFinishedAt: row.finished_at ?? prev?.ocrFinishedAt ?? "",
+      });
+    }
+    this._page = 1;
+    this._refreshTable();
   }
 
   /* ── Render ── */
@@ -264,16 +313,72 @@ export class OcrWorkspaceView extends ItemView {
     header.createEl("h1", { text: t("ocr_ws_title") });
     header.createEl("p", { cls: "pf-ocr-ws-lede", text: t("ocr_ws_lede") });
   }
+  private _ensureActionDescriptor(actionId: OcrActionId): void {
+    if (
+      this.actionDescriptors.has(actionId) ||
+      this.pendingActionDescriptors.has(actionId)
+    ) {
+      return;
+    }
+    this.pendingActionDescriptors.add(actionId);
+    void this._getClient()
+      .describeAction(actionId)
+      .then((descriptor) => {
+        if (descriptor?.action_id === actionId) {
+          this.actionDescriptors.set(actionId, descriptor);
+        }
+      })
+      .catch(() => {
+        this.actionDescriptors.set(actionId, {
+          action_id: actionId,
+          availability: "unavailable",
+        });
+      })
+      .finally(() => {
+        this.pendingActionDescriptors.delete(actionId);
+        if (this.containerEl?.children?.[1]) this._render();
+      });
+  }
+
+  private _isActionAvailable(actionId: OcrActionId): boolean {
+    return this.actionDescriptors.get(actionId)?.availability === "available";
+  }
+  private _actionAvailabilityTitle(
+    actionId: OcrActionId,
+    fallback: string
+  ): string {
+    const descriptor = this.actionDescriptors.get(actionId);
+    return descriptor && descriptor.availability !== "available"
+      ? descriptor.availability_reason || fallback
+      : fallback;
+  }
+
   private _renderActivity(container: HTMLElement): void {
-    if (!this.running) return;
+    const showLocal = this.running;
+    const showGlobal = !showLocal && this.globalActivity.state === "running";
+    if (!showLocal && !showGlobal) return;
+
+    const activity = showLocal
+      ? this.progress
+      : {
+          current: this.globalActivity.current,
+          total: this.globalActivity.total,
+          paperKey: "",
+          phase: "",
+          itemStatus: "",
+        };
     const act = container.createDiv({
       cls: "pf-ocr-ws-activity pf-active",
       attr: { "aria-live": "polite" },
     });
     const head = act.createDiv({ cls: "pf-ocr-ws-activity-head" });
     const title = head.createDiv({ cls: "pf-ocr-ws-activity-title" });
-    title.setText(t("ocr_ws_processing"));
-    const key = this.progress.paperKey;
+    title.setText(
+      showLocal
+        ? t("ocr_ws_processing")
+        : this.globalActivity.label || t("ocr_ws_processing")
+    );
+    const key = activity.paperKey;
     if (key) {
       const paper = this.papers.find((p) => p.key === key);
       if (paper) {
@@ -281,18 +386,19 @@ export class OcrWorkspaceView extends ItemView {
         titleSpan.setText(paper.title ?? key);
       }
     }
+    if (showLocal && this.progress.phase) {
+      title.createEl("span", { text: ` · ${this.progress.phase}` });
+    }
+
     const stopBtn = head.createEl("button", {
       cls: "pf-btn pf-btn-ghost",
-      text: t("ocr_ws_stop"),
+      text: t("ocr_ws_stop") || "Stop",
     });
-    if (this._runningMode === "rebuild") {
-      // RC UX Seam: rebuild runs through the ActionClient (single-result
-      // mode) — there is no plugin-owned child to stop, so a live Stop
-      // button would be a false affordance. Disable it and say why.
+    const client = this._getClient();
+    if (!client.isOperationActive()) {
       stopBtn.disabled = true;
       stopBtn.title =
-        t("ocr_ws_stop_unavailable_rebuild") ||
-        "Rebuild is not stoppable from here";
+        t("ocr_ws_stop_unavailable") || "Operation is not owned by this window";
     } else {
       stopBtn.addEventListener("click", () => this._stopBuild());
     }
@@ -300,16 +406,19 @@ export class OcrWorkspaceView extends ItemView {
     const track = act.createDiv({ cls: "pf-ocr-ws-progress-track" });
     const fill = track.createDiv({ cls: "pf-ocr-ws-progress-fill" });
     const pct =
-      this.progress.total > 0
-        ? Math.round((this.progress.current / this.progress.total) * 100)
+      activity.total > 0
+        ? Math.round((activity.current / activity.total) * 100)
         : 0;
     fill.style.transform = `scaleX(${pct / 100})`;
 
     const meta = act.createDiv({ cls: "pf-ocr-ws-progress-meta" });
     meta.createEl("span", {
-      text: `${this.progress.current} / ${this.progress.total} papers`,
+      text: `${activity.current} / ${activity.total} papers`,
     });
     meta.createEl("span", { text: `${pct}%` });
+    if (showLocal && this.progress.itemStatus) {
+      meta.createEl("span", { text: this.progress.itemStatus });
+    }
   }
 
   private _renderToolbar(container: HTMLElement): void {
@@ -402,7 +511,12 @@ export class OcrWorkspaceView extends ItemView {
   private _filteredPapers(): OcrPaper[] {
     let list = this.papers;
     if (this.filter === "unprocessed")
-      list = list.filter((p) => p.status === "pending" || p.status === "nopdf");
+      list = list.filter(
+        (p) =>
+          p.status === "pending" ||
+          p.status === "nopdf" ||
+          p.status === "update_available"
+      );
     else if (this.filter === "review")
       list = list.filter(
         (p) => p.status === "failed" || p.status === "processing"
@@ -603,8 +717,47 @@ export class OcrWorkspaceView extends ItemView {
     }
   }
 
+  private _requestOcrRun(keys: string[], mode: OcrMode): void {
+    const descriptor = this.actionDescriptors.get("ocr.run");
+    if (!descriptor) {
+      this._ensureActionDescriptor("ocr.run");
+      return;
+    }
+    if (descriptor.availability !== "available") {
+      new Notice(
+        descriptor.availability_reason ||
+          t("ocr_ws_re_extract_disabled_body") ||
+          "OCR is unavailable"
+      );
+      return;
+    }
+    if (descriptor.confirmation === "required") {
+      new PaperForgeConfirmModal(
+        this.app,
+        {
+          title:
+            mode === "redo" ? t("ocr_modal_title") : t("ocr_run_confirm_title"),
+          effectLabel:
+            mode === "redo"
+              ? t("ocr_modal_description")
+              : t("ocr_run_confirm_body"),
+        },
+        () => {
+          void this._runOcrAction("ocr.run", keys, mode);
+        }
+      ).open();
+      return;
+    }
+    void this._runOcrAction("ocr.run", keys, mode);
+  }
+
   private _renderBatchBar(container: HTMLElement): void {
+    this._ensureActionDescriptor("ocr.run");
+    this._ensureActionDescriptor("ocr.rebuild_derived");
     const selected = this.papers.filter((p) => this.checkedKeys.has(p.key));
+    const redoSelected = selected.filter(
+      (paper) => paper.canRedo || paper.recommendedAction === "redo"
+    );
     const bar = container.createDiv({ cls: "pf-ocr-ws-batchbar" });
 
     const sel = bar.createDiv({ cls: "pf-ocr-ws-selection" });
@@ -618,14 +771,53 @@ export class OcrWorkspaceView extends ItemView {
     }
 
     const actions = bar.createDiv({ cls: "pf-ocr-ws-batch-actions" });
+    const processBtn = actions.createEl("button", {
+      cls: "pf-btn pf-btn-secondary",
+      text: t("ocr_ws_btn_process_selected"),
+    });
+    processBtn.title = this._actionAvailabilityTitle(
+      "ocr.run",
+      t("ocr_ws_tooltip_process")
+    );
+    processBtn.disabled =
+      selected.length === 0 || !this._isActionAvailable("ocr.run");
+    processBtn.addEventListener("click", () =>
+      this._requestOcrRun(
+        selected.map((paper) => paper.key),
+        "run"
+      )
+    );
+
+    if (redoSelected.length > 0) {
+      const redoBtn = actions.createEl("button", {
+        cls: "pf-btn pf-btn-warning",
+        text: `${t("ocr_ws_detail_re_extract")} (${redoSelected.length})`,
+      });
+      redoBtn.title = this._actionAvailabilityTitle(
+        "ocr.run",
+        t("ocr_ws_tooltip_reextract")
+      );
+      redoBtn.disabled = !this._isActionAvailable("ocr.run");
+      redoBtn.addEventListener("click", () =>
+        this._requestOcrRun(
+          redoSelected.map((paper) => paper.key),
+          "redo"
+        )
+      );
+    }
+
     const rebuildBtn = actions.createEl("button", {
       cls: "pf-btn pf-btn-warning",
       text: t("ocr_ws_btn_rebuild_selected"),
     });
-    rebuildBtn.title = t("ocr_ws_tooltip_rebuild");
-    rebuildBtn.disabled = selected.length === 0;
+    rebuildBtn.title = this._actionAvailabilityTitle(
+      "ocr.rebuild_derived",
+      t("ocr_ws_tooltip_rebuild")
+    );
+    rebuildBtn.disabled =
+      selected.length === 0 || !this._isActionAvailable("ocr.rebuild_derived");
     rebuildBtn.addEventListener("click", () =>
-      this._runRebuild(selected.map((p) => p.key))
+      this._runRebuild(selected.map((paper) => paper.key))
     );
   }
 
@@ -681,6 +873,22 @@ export class OcrWorkspaceView extends ItemView {
       text: t("ocr_ws_detail_view_fulltext"),
     });
     fulltextBtn.addEventListener("click", () => this._openFulltext(paper.key));
+    this._ensureActionDescriptor("ocr.run");
+    const redo = paper.canRedo || paper.recommendedAction === "redo";
+    const runBtn = actions.createEl("button", {
+      cls: `pf-btn ${redo ? "pf-btn-warning" : "pf-btn-secondary"}`,
+      text: redo
+        ? t("ocr_ws_detail_re_extract")
+        : t("ocr_ws_detail_run") || t("ocr_ws_btn_process_selected"),
+    });
+    runBtn.title = this._actionAvailabilityTitle(
+      "ocr.run",
+      redo ? t("ocr_ws_tooltip_reextract") : t("ocr_ws_tooltip_process")
+    );
+    runBtn.disabled = !this._isActionAvailable("ocr.run");
+    runBtn.addEventListener("click", () =>
+      this._requestOcrRun([paper.key], redo ? "redo" : "run")
+    );
 
     // Restore backup — lazy availability on detail open: formal version
     // history first, legacy backups/ fallback second (#126 PR C).
@@ -801,16 +1009,17 @@ export class OcrWorkspaceView extends ItemView {
       modal.open();
     });
 
-    // Single-paper rebuild (#126 PR C) — the batch bar is no longer required.
+    // Single-paper rebuild is routed through the backend action descriptor.
+    this._ensureActionDescriptor("ocr.rebuild_derived");
     const rebuildBtn = actions.createEl("button", {
       cls: "pf-btn pf-btn-warning",
       text: t("ocr_ws_detail_rebuild") || "Rebuild this paper",
     });
+    rebuildBtn.title = t("ocr_ws_tooltip_rebuild");
+    rebuildBtn.disabled = !this._isActionAvailable("ocr.rebuild_derived");
     rebuildBtn.addEventListener("click", () => {
       this._runRebuild([paper.key]);
     });
-
-    // Re-extract — runs paperforge ocr redo <key>
   }
 
   private _addFact(grid: HTMLElement, label: string, value: string): void {
@@ -821,132 +1030,126 @@ export class OcrWorkspaceView extends ItemView {
 
   /* ── Actions ── */
 
-  private _resolvePython(): { path: string; args: string[] } | null {
-    // 1. Use custom python_path from plugin settings if set
-    const plugin = ((this.app as any).plugins.plugins as any)["paperforge"];
-    const customPath = plugin?.settings?.python_path?.trim();
-    if (customPath && require("fs").existsSync(customPath)) {
-      return { path: customPath, args: [] };
-    }
-    // 2. Fall back to managed runtime pointer (post-#174: RuntimeBootstrap
-    // exposes readPointer() only — current() was deleted with the FSM).
-    if (!plugin || typeof plugin.getManagedRuntime !== "function") return null;
-    const mr = plugin.getManagedRuntime();
-    if (!mr) return null;
-    const run = resolveRuntimeCommand(mr.readPointer());
-    if (!run) return null;
-    return { path: run.command, args: [...run.args] };
-  }
+  private _runningMode: OcrMode | null = null;
 
-  private _runningMode: "run" | "rebuild" | "redo" | null = null;
-
-  private _runRebuild(keys: string[]): void {
-    // T8 (#169): the rebuild path is the ACTION client —
-    // `action run ocr.rebuild_derived --follow auto`.  The Python chain
-    // runner derives the local memory.build inline and leaves embed.resume
-    // pending (confirmed from the descriptor, never auto-dispatched).
-    const pyCmd = this._resolvePython();
-    const vp = (this.app.vault.adapter as any).basePath as string;
-    if (!pyCmd?.path) {
-      new Notice("Runtime not ready for rebuild");
+  private async _runOcrAction(
+    actionId: OcrActionId,
+    keys: string[],
+    mode: OcrMode = actionId === "ocr.rebuild_derived" ? "rebuild" : "run"
+  ): Promise<void> {
+    const client = this._getClient();
+    if (this.running || client.isOperationActive()) {
+      new Notice(t("ocr_already_running") || "OCR is already running");
       return;
     }
-    this._runningMode = "rebuild";
+
+    this._runningMode = mode;
     this.running = true;
-    this.progress = { current: 0, total: keys.length, paperKey: "" };
+    this.progress = {
+      current: 0,
+      total: keys.length,
+      paperKey: "",
+      phase: "",
+      itemStatus: "",
+    };
     this._render();
 
-    const scope = keys.length > 0 ? { kind: "papers", keys } : { kind: "all" };
-    runAction(
-      pyCmd.path,
-      pyCmd.args,
-      vp,
-      "ocr.rebuild_derived",
-      scope,
-      undefined,
-      300000
-    )
-      .then((res: ActionRunResult) => {
-        this._runningMode = null;
-        this.running = false;
-        const data = (res.payload?.data ?? {}) as Record<string, unknown>;
-        const rebuilt = Array.isArray(data.rebuilt) ? data.rebuilt : [];
-        const failed = Array.isArray(data.failed) ? data.failed : [];
-        if (res.ok) {
-          new Notice(
-            (t("ocr_rebuild_complete") || "Rebuild completed") +
-              (rebuilt.length ? ` (${rebuilt.length})` : "")
-          );
-        } else if (failed.length > 0) {
-          new Notice(
-            (t("ocr_rebuild_partial") || "Rebuild finished with failures") +
-              ": " +
-              failed.join(", "),
-            8000
-          );
-        } else {
-          new Notice(
-            (t("ocr_error_notice") || "OCR error") +
-              ": " +
-              String(
-                (res.payload?.error as Record<string, unknown> | null)
-                  ?.message ?? "rebuild failed"
-              ),
-            8000
-          );
-        }
-        // Remote embedding stays pending in the canonical read model. The
-        // Smart Retrieval card is the durable review/consent surface.
-        const pending = res.payload?.next_actions as
-          | Array<{ action_id: string; reason?: string }>
-          | undefined;
-        const embedPending =
-          pending &&
-          pending.some(
-            (p) =>
-              p.action_id === "embed.resume" || p.action_id === "embed.build"
-          );
-        if (embedPending) {
-          new Notice(t("next_action_pending"), 8000);
-        }
-        // RC UX Seam: a settled rebuild mutates canonical state (OCR derived
-        // artifacts + local memory).  Invalidate all + probe all so the
-        // Smart Retrieval card immediately shows the fresh stale/ready truth
-        // instead of waiting for the 120 s convergence tick.
-        const settingsTab = (this.plugin as any)?._settingTab;
-        if (
-          settingsTab &&
-          typeof settingsTab._refreshAllReadModels === "function"
-        ) {
-          settingsTab._refreshAllReadModels();
-        }
-        this._loadPapers().then(() => this._render());
-      })
-      .catch((err: Error) => {
-        this.running = false;
-        new Notice(
-          (t("ocr_error_notice") || "OCR error") +
-            ": " +
-            (err?.message || String(err))
-        );
-        this._render();
+    const request: ActionRequest = {
+      action_id: actionId,
+      scope: keys.length > 0 ? { kind: "papers", keys } : { kind: "all" },
+      confirm: actionId === "ocr.run" ? actionId : undefined,
+    };
+    let sawCancelled = false;
+    try {
+      const result = await client.runAction(request, {
+        onEvent: (event) => {
+          if (event.event === "cancelled") sawCancelled = true;
+          if (
+            event.event === "start" ||
+            event.event === "phase" ||
+            event.event === "progress" ||
+            event.event === "item_result"
+          ) {
+            this.progress = {
+              current: Number(event.current ?? this.progress.current),
+              total: Number(event.total ?? this.progress.total),
+              paperKey: String(event.item_id ?? this.progress.paperKey),
+              phase:
+                event.event === "phase"
+                  ? String(event.status ?? event.operation)
+                  : this.progress.phase,
+              itemStatus:
+                event.event === "item_result"
+                  ? String(event.status ?? "")
+                  : this.progress.itemStatus,
+            };
+            this._render();
+          }
+        },
       });
+      this.actionDescriptors.delete(actionId);
+
+      this._runningMode = null;
+      this.running = false;
+      const payloadStatus =
+        typeof result.payload?.status === "string" ? result.payload.status : "";
+      if (result.ok) {
+        new Notice(t("ocr_rebuild_complete") || "Operation completed");
+      } else if (
+        result.cancelled ||
+        sawCancelled ||
+        payloadStatus === "cancelled"
+      ) {
+        new Notice(t("ocr_stopped_notice") || "Operation cancelled");
+      } else {
+        const reason =
+          typeof result.payload?.availability_reason === "string"
+            ? result.payload.availability_reason
+            : `exit code ${result.exitCode}`;
+        new Notice(
+          (t("ocr_error_notice") || "OCR error") + ": " + reason,
+          8000
+        );
+      }
+      const settingsTab = (this.plugin as any)?._settingTab;
+      if (
+        settingsTab &&
+        typeof settingsTab._refreshAllReadModels === "function"
+      ) {
+        settingsTab._refreshAllReadModels();
+      }
+      await this._loadPapers();
+      this._render();
+    } catch (err) {
+      this.actionDescriptors.delete(actionId);
+      this.running = false;
+      this._runningMode = null;
+      new Notice(
+        (t("ocr_error_notice") || "OCR error") +
+          ": " +
+          (err instanceof Error ? err.message : String(err)),
+        8000
+      );
+      this._render();
+    }
+  }
+
+  private _runRebuild(keys: string[]): void {
+    void this._runOcrAction("ocr.rebuild_derived", keys, "rebuild");
   }
 
   private _stopBuild(): void {
-    // #169 corrective: rebuild runs through the ActionClient (single-result
-    // mode — no plugin-owned child to stop; the Python runner handles its
-    // own cooperative stop).  run/redo go through the shared controller,
-    // which owns its child and stops via the stdin token.
-    if (this._runningMode === "rebuild") {
+    const client = this._getClient();
+    if (!client.isOperationActive()) {
       new Notice(
-        t("ocr_stopped_notice") || "Rebuild is not stoppable from here",
-        4000
+        t("ocr_stopped_notice") || "No local operation active to stop"
       );
       return;
     }
-    this.plugin?.ocrProcessController?.stop();
-    this.running = false;
+    client.cancelActiveOperation();
+    this.progress.itemStatus =
+      t("ocr_stopping_notice") || "Stopping operation...";
+    new Notice(t("ocr_stopping_notice") || "Stopping operation...");
     this._render();
   }
 
@@ -1009,17 +1212,21 @@ export function resolvePaperFulltextPath(
 /* ── Helpers ── */
 
 function statusClass(status: string): string {
-  if (status === "done") return "pf-done";
-  if (status === "done_degraded") return "pf-done-degraded";
-  if (status === "done_incomplete") return "pf-done-incomplete";
+  if (status === "done") return "done";
+  if (status === "update_available") return "update";
+  if (status === "done_degraded") return "done-degraded";
+  if (status === "done_incomplete") return "done-incomplete";
   if (status === "failed" || status === "error" || status === "fatal_error")
-    return "pf-failed";
-  return "";
+    return "failed";
+  return "pending";
 }
+
 /* ── Version Restore Modal ── */
 
 function statusLabel(status: string): string {
   if (status === "done") return t("ocr_ws_status_done") || "Processed";
+  if (status === "update_available")
+    return t("ocr_ws_status_update") || "Update available";
   if (status === "done_degraded")
     return t("ocr_ws_status_degraded") || "Partial";
   if (status === "done_incomplete")
@@ -1032,6 +1239,7 @@ function statusLabel(status: string): string {
   if (status === "queued") return t("ocr_ws_status_queued") || "Queued";
   if (status === "blocked") return t("ocr_ws_status_blocked") || "Blocked";
   if (status === "nopdf") return t("ocr_ws_status_nopdf") || "No PDF";
+  if (status === "unknown") return t("ocr_ws_status_unknown") || "Unknown";
   return t("ocr_ws_status_pending") || "Pending";
 }
 

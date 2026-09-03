@@ -28,6 +28,51 @@ export interface PaperForgeClientOptions {
   transport: Transport;
   clock?: () => number;
 }
+export interface ActionDescriptor {
+  action_id: string;
+  availability?: "available" | "unavailable" | "busy" | string;
+  availability_reason?: string;
+  execution_mode?: "result" | "stream";
+  label_code?: string;
+  confirmation?: "none" | "required" | string;
+}
+
+export interface OcrPaperRow {
+  key: string;
+  title?: string;
+  status?: string;
+  health?: string;
+  version?: string;
+  finished_at?: string;
+  rebuild_finished_at?: string;
+  pages?: number;
+  blocks?: number;
+  figures?: number;
+  tables?: number;
+  model?: string;
+  can_redo?: boolean;
+  can_rebuild?: boolean;
+  recommended_action?: string;
+  fulltext_path?: string;
+  authors?: string;
+  year?: string | number;
+  [key: string]: unknown;
+}
+
+const ACTION_AVAILABLE = "available";
+
+function ocrRowsFromPayload(payload: unknown): OcrPaperRow[] {
+  if (Array.isArray(payload)) return payload as OcrPaperRow[];
+  if (!payload || typeof payload !== "object") return [];
+  const object = payload as Record<string, unknown>;
+  const data = object.data;
+  if (Array.isArray(data)) return data as OcrPaperRow[];
+  if (data && typeof data === "object") {
+    const rows = (data as Record<string, unknown>).rows;
+    if (Array.isArray(rows)) return rows as OcrPaperRow[];
+  }
+  return Array.isArray(object.rows) ? (object.rows as OcrPaperRow[]) : [];
+}
 
 interface CacheEntry<T> {
   data: T;
@@ -305,9 +350,14 @@ export class PaperForgeClient {
     });
   }
 
-  async describeAction(actionId: string): Promise<any> {
+  async describeAction(actionId: string): Promise<ActionDescriptor> {
     return this._cachedRead(`action:describe:${actionId}`, 300000, async () => {
-      return this._executePfResult(["action", "describe", actionId, "--json"]);
+      return this._executePfResult<ActionDescriptor>([
+        "action",
+        "describe",
+        actionId,
+        "--json",
+      ]);
     });
   }
 
@@ -338,6 +388,18 @@ export class PaperForgeClient {
     streamOptions?: StreamOptions
   ): Promise<ActionRunResult> {
     const desc = await this.describeAction(req.action_id);
+    if (desc?.availability && desc.availability !== ACTION_AVAILABLE) {
+      return {
+        ok: false,
+        payload: {
+          ok: false,
+          action_id: req.action_id,
+          availability: desc.availability,
+          availability_reason: desc.availability_reason,
+        },
+        exitCode: 1,
+      };
+    }
     const argv = buildActionArgv(req);
 
     if (desc?.execution_mode === "stream") {
@@ -357,6 +419,7 @@ export class PaperForgeClient {
         ok: outcome.ok,
         payload,
         exitCode: outcome.exitCode ?? (outcome.ok ? 0 : 1),
+        cancelled: outcome.cancelled,
       };
     }
 
@@ -466,13 +529,17 @@ export class PaperForgeClient {
     });
   }
 
-  async queryOcrPapers(keys?: string[]): Promise<any> {
-    const argv = ["ocr", "list", "--json"];
-    if (keys && keys.length > 0) {
-      argv.push("--keys", keys.join(","));
-    }
-    const raw = await this._transport.execute(argv);
-    return JSON.parse(raw);
+  async queryOcrPapers(keys?: string[]): Promise<OcrPaperRow[]> {
+    const sortedKeys = keys ? [...keys].sort() : [];
+    const keyPart = sortedKeys.join(",");
+    return this._cachedRead(`ocr-papers:${keyPart}`, 10000, async () => {
+      const argv = ["ocr", "list", "--json"];
+      if (sortedKeys.length > 0) {
+        argv.push("--keys", sortedKeys.join(","));
+      }
+      const raw = await this._transport.execute(argv);
+      return ocrRowsFromPayload(JSON.parse(raw));
+    });
   }
 
   // ── 6. Authority Actions (Render Quality) ──────────────────────────────────

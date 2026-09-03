@@ -1,7 +1,16 @@
 # OCR-v2 Active Queue
 > Status: `EXECUTABLE_FROZEN a42f8bb7` / `PROTOCOL_DOCS 781910f3` — S1–S6 lightweight **COMPLETE** on `462398cb` (valid for `a42f8bb7`, `ruff` clean). Hosted CI `32353318123` on docs-only descendant `a2e18fa4` is **green: All Checks Passed, 14/14**, with `3.11` Ubuntu/macOS/Windows, J-Matrix, Ruff, plugin, OCR, E2E; no executable change after `a42f8bb7`. #191 FROZEN / ready-for-agent; #81 OPEN / owner gate. Reconcile recovery/fulltext safety follow-up is closed on disposable fixtures; P authority acceptance is transaction-safe and bound to the exact human-reviewed plan hash; the 969-paper unverified-content census is clean; semantic coverage and all production writes remain owner-gated.
-> Last updated: 2026-09-02
+> Last updated: 2026-09-03
+> Ticket 04 is complete: OCR Workspace observation/action/progress/cancellation now route through `PaperForgeClient`; focused MockTransport regressions and TypeScript typecheck pass.
 
+
+## 2026-09-03: Ticket 04 OCR Workspace & Processing Domain Cutover
+
+- **Observation:** paper rows now combine `probe("lineage")` state with typed `queryOcrPapers()` rows; global OCR activity is read from the OCR probe.
+- **Actions:** individual and batch Run OCR, user-facing Redo, and Rebuild Derived use backend descriptor availability and canonical `client.runAction()` scopes. The legacy `ocr.redo` command remains internal-only.
+- **Operations:** client-owned NDJSON events render phase, progress, and item-result state; Stop calls the client-owned cooperative cancellation handle and is disabled for externally observed work.
+- **Cutover:** OCR Workspace production code no longer resolves Python, imports `execFile`, or depends on `OcrProcessController`.
+- **Verification:** focused client/OCR suite **60 passed / 0 failed**; `npm run typecheck` clean. No OCR/render materialization ran.
 
 ## 2026-09-02: Reconcile Core Frozen & Backend Contract Mapping Established
 
@@ -138,6 +147,7 @@
 - [Current-contract audit](https://github.com/LLLin000/PaperForge/issues/66#issuecomment-4968837257) identified the migration boundary: preserve durable OCR/SQLite truth and recovery actions; replace global setup state, duplicate runtime/config resolution, and freshness-free snapshots.
 - The approved `control-center-ux-redesign.md` is implemented: five operational modules, three top-level destinations, contextual Module Detail, progressive setup, user-problem-only Maintenance, and Obsidian-native presentation.
 - `paperforge/plugin/DESIGN.md` and `paperforge/plugin/CONTEXT.md` now govern the production surface.
+- Ticket 04 OCR Workspace & Processing Domain Cutover is complete; its read, action, progress, and cancellation paths now use `PaperForgeClient` with no Workspace-local runtime/controller seam.
 - **[#83–#93](https://github.com/LLLin000/PaperForge/issues/83) implemented**: schema-v2 presentation, shared primitives, five-card Overview, four-stage Setup Journey, Library/OCR/Smart Retrieval/Agent details, Maintenance/Help, and cutover cleanup are merged to `master`.
 - **[#69](https://github.com/LLLin000/PaperForge/issues/69) resolved** at `issuecomment-4971161072`: orthogonal availability/activity/attention axes, 6-state capability ordinal, 12 canonical verbs, backend-owned severity and primary actions, maintenance projection.
 - **[#70](https://github.com/LLLin000/PaperForge/issues/70) resolved** at `issuecomment-4971239398`: plugin-managed immutable runtime slots, system-Python bootstrap with validated-triplet fallback, single `active-runtime.json` pointer, `ManagedRuntime` class with `current()`/`status()`/`ensure()`, fail-closed command resolution.
@@ -197,6 +207,7 @@
 - [ ] Complete Release N+2 deletion ([#82](https://github.com/LLLin000/PaperForge/issues/82)) only after an N+1 package and support window.
 - [x] Implement replacement PRD [#83](https://github.com/LLLin000/PaperForge/issues/83) and dependency-ordered issues #84–#93.
 - [x] Browser-audit every English and Chinese Control Center page and deploy the corrected bundle to Literature-hub.
+- [x] Cut OCR Workspace and processing interactions over to `PaperForgeClient` (Ticket 04).
 
 ## Deferred
 

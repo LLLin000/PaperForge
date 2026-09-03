@@ -29,8 +29,8 @@ export interface ActionRunResult {
   ok: boolean;
   payload: Record<string, unknown> | null;
   exitCode: number;
+  cancelled?: boolean;
 }
-
 /** THE one argv builder for action requests. */
 export function buildActionArgv(req: ActionRequest): string[] {
   const argv = ["action", "run", req.action_id, "--scope", req.scope.kind];
