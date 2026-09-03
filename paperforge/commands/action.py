@@ -208,7 +208,9 @@ def run_dispatch(args: argparse.Namespace) -> int:
     if is_stream:
         from paperforge.core.cancellation import make_cancellation_token
         from paperforge.core.ndjson import (
+            emit_heartbeat,
             emit_item_result,
+            emit_paper_settled,
             emit_phase,
             emit_progress,
             emit_start,
@@ -226,6 +228,12 @@ def run_dispatch(args: argparse.Namespace) -> int:
             ),
             item_result=lambda item_id, status: emit_item_result(
                 action_id, item_id, status
+            ),
+            paper_settled=lambda key, outcome, reason_code=None: emit_paper_settled(
+                action_id, key, outcome, reason_code
+            ),
+            heartbeat=lambda active, pending: emit_heartbeat(
+                action_id, active, pending
             ),
         )
     else:

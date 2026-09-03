@@ -481,5 +481,108 @@ describe("PaperForgeClient", () => {
       expect(outcome.cancelled).toBe(true);
       expect(client.isOperationActive()).toBe(false);
     });
+    describe("Search & Retrieve Query Interface", () => {
+      it("supports search with options and backward-compatible numeric limit", async () => {
+        transport.executeHandler = (argv) => {
+          return JSON.stringify({
+            ok: true,
+            data: { matches: [{ id: "1" }], argv },
+          });
+        };
+
+        const res1 = await client.search("cancer", { limit: 10 });
+        expect(transport.calls[transport.calls.length - 1].argv).toEqual([
+          "search",
+          "cancer",
+          "--limit",
+          "10",
+          "--json",
+        ]);
+        expect(res1).toEqual([{ id: "1" }]);
+
+        await client.search("cancer", 15);
+        expect(transport.calls[transport.calls.length - 1].argv).toEqual([
+          "search",
+          "cancer",
+          "--limit",
+          "15",
+          "--json",
+        ]);
+      });
+
+      it("supports retrieve with options (deep, paper) and backward-compatible numeric limit", async () => {
+        transport.executeHandler = (argv) => {
+          return JSON.stringify({
+            ok: true,
+            data: { matches: [{ id: "2" }], argv },
+          });
+        };
+
+        const res1 = await client.retrieve("quantum", {
+          limit: 8,
+          deep: true,
+          paper: "P123",
+        });
+        expect(transport.calls[transport.calls.length - 1].argv).toEqual([
+          "retrieve",
+          "quantum",
+          "--limit",
+          "8",
+          "--deep",
+          "--paper",
+          "P123",
+          "--json",
+        ]);
+        expect(res1).toEqual([{ id: "2" }]);
+
+        await client.retrieve("quantum", 3);
+        expect(transport.calls[transport.calls.length - 1].argv).toEqual([
+          "retrieve",
+          "quantum",
+          "--limit",
+          "3",
+          "--json",
+        ]);
+      });
+
+      it("invalidates search and memory caches across generation epoch on build actions", async () => {
+        let searchCallCount = 0;
+        transport.executeHandler = (argv) => {
+          if (argv[0] === "search") {
+            searchCallCount++;
+            return JSON.stringify({ ok: true, data: { matches: [] } });
+          }
+          if (argv[0] === "action" && argv[1] === "describe") {
+            return JSON.stringify({
+              ok: true,
+              data: {
+                action_id: argv[2],
+                availability: "available",
+                execution_mode: "result",
+                confirmation: "none",
+              },
+            });
+          }
+          if (argv[0] === "action" && argv[1] === "run") {
+            return JSON.stringify({ ok: true, data: { status: "ok" } });
+          }
+          return "{}";
+        };
+
+        await client.search("test");
+        expect(searchCallCount).toBe(1);
+
+        // Same search within TTL is cached
+        await client.search("test");
+        expect(searchCallCount).toBe(1);
+
+        // Run action invalidates cache
+        await client.runAction({ action_id: "memory.rebuild" });
+
+        // Next search fetches fresh from transport
+        await client.search("test");
+        expect(searchCallCount).toBe(2);
+      });
+    });
   });
 });

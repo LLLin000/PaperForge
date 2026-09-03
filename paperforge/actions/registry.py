@@ -483,13 +483,7 @@ def _embed_build_preflight(ctx: ActionContext, request: ActionRequest) -> Prefli
 
 def _embed_build_handler(ctx: ActionContext, request: ActionRequest) -> PFResult:
     """embed.build: the GLOBAL substrate operation — always all-scope, full
-    rebuild over the canonical library.  M3-C: calls the embedding SERVICE
-    directly (no Action→CLI→stdout→parse chain; the stdout capture below
-    only relays the service's own json-mode PFResult)."""
-    import contextlib
-    import io
-    import json
-
+    rebuild over the canonical library."""
     from paperforge import __version__ as PF_VERSION
     from paperforge.core.errors import ErrorCode
     from paperforge.core.result import PFError, PFResult
@@ -498,36 +492,54 @@ def _embed_build_handler(ctx: ActionContext, request: ActionRequest) -> PFResult
 
     envelope = read_index(ctx.vault)
     items = envelope.get("items") if isinstance(envelope, dict) else (envelope or [])
-    buf = io.StringIO()
-    with contextlib.redirect_stdout(buf):
-        try:
-            rc = run_embedding_build(
-                ctx.vault, items, keys=None, force=True, resume=False, json=True
-            )
-        except Exception as exc:  # noqa: BLE001
-            return PFResult(
-                ok=False,
-                command="action run",
-                version=PF_VERSION,
-                error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(exc)),
-            )
-    text = buf.getvalue().strip()
-    payload = None
-    if text.startswith("{") and text.endswith("}"):
-        try:
-            payload = json.loads(text)
-        except (ValueError, KeyError):
-            payload = None
-    if payload is not None:
+    hooks = ctx.execution_hooks
+    if hooks is not None and hooks.phase is not None:
+        hooks.phase("embedding")
+
+    def _on_progress(current: int, total: int, key: str) -> None:
+        if hooks is not None:
+            if hooks.progress is not None:
+                hooks.progress(current, total, key)
+            if hooks.paper_settled is not None:
+                hooks.paper_settled(key, "succeeded", None)
+
+    def _on_item_result(key: str, status: str) -> None:
+        if hooks is not None and hooks.item_result is not None:
+            hooks.item_result(key, status)
+
+    sink: dict = {}
+    try:
+        rc = run_embedding_build(
+            ctx.vault,
+            items,
+            keys=None,
+            force=True,
+            resume=False,
+            json=False,
+            stop_check=hooks.is_stopped if hooks else None,
+            on_progress=_on_progress if hooks else None,
+            on_item_result=_on_item_result if hooks else None,
+            emit_events=False,
+            result_sink=sink,
+        )
+    except Exception as exc:  # noqa: BLE001
         return PFResult(
-            ok=bool(payload.get("ok", rc == 0)),
+            ok=False,
             command="action run",
             version=PF_VERSION,
-            data=payload.get("data"),
-            error=(PFError(code=ErrorCode.INTERNAL_ERROR, message=str(payload["error"].get("message", "")))
-                   if payload.get("error") else None),
-            warnings=payload.get("warnings", []),
-            next_actions=payload.get("next_actions", []),
+            error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(exc)),
+        )
+    result = sink.get("result")
+    if result is not None and isinstance(result, PFResult):
+        result.command = "action run"
+        return result
+    if rc == 130 or (hooks is not None and hooks.is_stopped is not None and hooks.is_stopped()):
+        return PFResult(
+            ok=False,
+            command="action run",
+            version=PF_VERSION,
+            error=PFError(code=ErrorCode.ACTION_CANCELLED, message="Embed build cancelled"),
+            data={"exit_code": 130},
         )
     return PFResult(
         ok=rc == 0,
@@ -603,10 +615,6 @@ def _embed_resume_preflight(ctx: ActionContext, request: ActionRequest) -> Prefl
 
 
 def _embed_resume_handler(ctx: ActionContext, request: ActionRequest) -> PFResult:
-    import contextlib
-    import io
-    import json
-
     from paperforge import __version__ as PF_VERSION
     from paperforge.core.errors import ErrorCode
     from paperforge.core.result import PFError, PFResult
@@ -616,47 +624,54 @@ def _embed_resume_handler(ctx: ActionContext, request: ActionRequest) -> PFResul
     envelope = read_index(ctx.vault)
     items = envelope.get("items") if isinstance(envelope, dict) else (envelope or [])
     keys = list(request.scope.keys) if request.scope.kind == "papers" else None
-    buf = io.StringIO()
-    with contextlib.redirect_stdout(buf):
-        try:
-            rc = run_embedding_build(
-                ctx.vault, items, keys=keys, force=False, resume=True, json=True
-            )
-        except Exception as exc:  # noqa: BLE001 — structured error boundary
-            return PFResult(
-                ok=False,
-                command="action run",
-                version=PF_VERSION,
-                error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(exc)),
-            )
-    # the service's json mode emits exactly one PFResult JSON.
-    text = buf.getvalue().strip()
-    payload = None
-    if text.startswith("{") and text.endswith("}"):
-        try:
-            payload = json.loads(text)
-        except (ValueError, KeyError):
-            payload = None
-    if payload is not None:
-        error = None
-        if payload.get("error"):
-            code = str(payload["error"].get("code", "INTERNAL_ERROR"))
-            try:
-                code_enum = ErrorCode(code)
-            except ValueError:
-                code_enum = ErrorCode.INTERNAL_ERROR
-            error = PFError(
-                code=code_enum,
-                message=str(payload["error"].get("message", "")),
-            )
+    hooks = ctx.execution_hooks
+    if hooks is not None and hooks.phase is not None:
+        hooks.phase("embedding")
+
+    def _on_progress(current: int, total: int, key: str) -> None:
+        if hooks is not None:
+            if hooks.progress is not None:
+                hooks.progress(current, total, key)
+            if hooks.paper_settled is not None:
+                hooks.paper_settled(key, "succeeded", None)
+
+    def _on_item_result(key: str, status: str) -> None:
+        if hooks is not None and hooks.item_result is not None:
+            hooks.item_result(key, status)
+
+    sink: dict = {}
+    try:
+        rc = run_embedding_build(
+            ctx.vault,
+            items,
+            keys=keys,
+            force=False,
+            resume=True,
+            json=False,
+            stop_check=hooks.is_stopped if hooks else None,
+            on_progress=_on_progress if hooks else None,
+            on_item_result=_on_item_result if hooks else None,
+            emit_events=False,
+            result_sink=sink,
+        )
+    except Exception as exc:  # noqa: BLE001 — structured error boundary
         return PFResult(
-            ok=bool(payload.get("ok", rc == 0)),
+            ok=False,
             command="action run",
             version=PF_VERSION,
-            data=payload.get("data"),
-            error=error,
-            warnings=payload.get("warnings", []),
-            next_actions=payload.get("next_actions", []),
+            error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(exc)),
+        )
+    result = sink.get("result")
+    if result is not None and isinstance(result, PFResult):
+        result.command = "action run"
+        return result
+    if rc == 130 or (hooks is not None and hooks.is_stopped is not None and hooks.is_stopped()):
+        return PFResult(
+            ok=False,
+            command="action run",
+            version=PF_VERSION,
+            error=PFError(code=ErrorCode.ACTION_CANCELLED, message="Embed resume cancelled"),
+            data={"exit_code": 130},
         )
     return PFResult(
         ok=rc == 0,
@@ -665,7 +680,6 @@ def _embed_resume_handler(ctx: ActionContext, request: ActionRequest) -> PFResul
         data={"exit_code": rc},
         error=PFError(code=ErrorCode.INTERNAL_ERROR, message="embed run produced no PFResult") if rc else None,
     )
-
 
 # ── the registry ───────────────────────────────────────────────────────────
 

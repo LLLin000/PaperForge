@@ -1,7 +1,7 @@
 # OCR-v2 Active Queue
 > Status: `EXECUTABLE_FROZEN a42f8bb7` / `PROTOCOL_DOCS 781910f3` — S1–S6 lightweight **COMPLETE** on `462398cb` (valid for `a42f8bb7`, `ruff` clean). Hosted CI `32353318123` on docs-only descendant `a2e18fa4` is **green: All Checks Passed, 14/14**, with `3.11` Ubuntu/macOS/Windows, J-Matrix, Ruff, plugin, OCR, E2E; no executable change after `a42f8bb7`. #191 FROZEN / ready-for-agent; #81 OPEN / owner gate. Reconcile recovery/fulltext safety follow-up is closed on disposable fixtures; P authority acceptance is transaction-safe and bound to the exact human-reviewed plan hash; the 969-paper unverified-content census is clean; semantic coverage and all production writes remain owner-gated.
 > Last updated: 2026-09-03
-> Ticket 04 corrective closure is complete: OCR Workspace observation/action/progress/cancellation route through `PaperForgeClient`; real Python workers now emit streamed progress/item results and cooperative cancellation. Focused Python/plugin gates and TypeScript typecheck pass.
+> Ticket 05 is complete: Knowledge & Retrieval domain cut over to `PaperForgeClient`; #137 NDJSON vocabulary frozen across Python and TS; embed streaming progress and cancellation wired into real workers. Focused Python/plugin gates and TypeScript typecheck pass.
 
 
 ## 2026-09-03: Ticket 04 OCR Workspace & Processing Domain Cutover — corrective closure
@@ -9,6 +9,14 @@
 - **Initial cutover:** paper rows use `probe("lineage")` plus typed `queryOcrPapers()`; Run OCR, user-facing Redo, and Rebuild Derived use descriptor-gated canonical actions; Stop uses the client-owned cancellation handle.
 - **Review corrections:** `ActionExecutionHooks` now pass stop/progress/item-result callbacks into real OCR and rebuild workers; the Workspace consumes wire `event.phase`, fails closed without a shared client, clears dynamic descriptors on read refresh, and sends OCR keys as separate CLI arguments.
 - **Verification:** real CLI tests cover rebuild event ordering and worker-safe-point cancellation (`PAPERFORGE_STOP`, `rc=130`); **103 passed, 1 skipped** focused Python tests; **63 plugin tests passed**; `npm run typecheck` clean. No OCR/render materialization ran.
+## 2026-09-03: Ticket 05 Knowledge & Retrieval Domain Cutover
+
+- **Vocabulary:** Python and TypeScript agree on the 10 frozen #137 stream events (`start`, `preflight`, `phase`, `progress`, `paper_settled`, `heartbeat`, `item_result`, `result`, `error`, `cancelled`).
+- **Worker streaming:** `ActionExecutionHooks` passes `stop_check`, `on_progress`, and `on_item_result` directly into `run_embedding_build`; duplicate stdin token reader and stdout capture in `action run embed.build` / `embed.resume` eliminated.
+- **Search & Retrieval:** `dashboard.ts` cuts over `executeSearch()` to `client.search(query, options)` and `client.retrieve(query, options)`; direct `spawn` and manual JSON extraction removed.
+- **Smart Retrieval:** `settings.ts` memory/embed build dispatches route through `client.runAction()`, streaming progress and wiring Stop to `client.cancelActiveOperation()`.
+- **Verification:** **106 passed, 1 skipped** focused Python tests; **446 plugin tests passed**; `npm run typecheck` clean. No production write ran.
+
 
 ## 2026-09-02: Reconcile Core Frozen & Backend Contract Mapping Established
 
@@ -206,6 +214,7 @@
 - [x] Implement replacement PRD [#83](https://github.com/LLLin000/PaperForge/issues/83) and dependency-ordered issues #84–#93.
 - [x] Browser-audit every English and Chinese Control Center page and deploy the corrected bundle to Literature-hub.
 - [x] Cut OCR Workspace and processing interactions over to `PaperForgeClient` (Ticket 04), including real worker-backed progress/item-result events, cooperative cancellation, phase-field consumption, fail-closed client ownership, multi-key argv, and descriptor refresh.
+- [x] Cut Knowledge & Retrieval interactions over to `PaperForgeClient` (Ticket 05), including frozen #137 vocabulary, worker-backed embed progress streaming, single cancellation token, dashboard search/retrieve normalization, and Smart Retrieval action dispatch.
 
 ## Deferred
 

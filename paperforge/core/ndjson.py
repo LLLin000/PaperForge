@@ -8,19 +8,16 @@ human logs.  A stream ends with EXACTLY ONE terminal event
 The old colon-token family (EMBED_START/…, OCR_REBUILD_*, OCR_REDO_*,
 DONE, NOTICE) is retired — no token + NDJSON dual parsing.
 
-M2-E (Control Plane Closure): the STANDARDIZED event vocabulary — the
-six core event types every long task emits; domain code renders nothing
-itself, renderers (Rich/text, NDJSON, terminal) consume the same stream:
+The frozen #137 protocol event vocabulary across Python and TypeScript:
 
-    start          — operation begins (total)
+    start          — operation begins (total, scope)
     preflight      — availability/applicability summary before work
-    progress       — completed/total
+    phase          — high-level execution phase
+    progress       — completed/total, item_id
+    item_result    — per-item status
     paper_settled  — one paper settled (key, outcome, reason_code?)
     heartbeat      — periodic liveness (active, pending)
-    terminal       — EXACTLY ONE final result (result|error|cancelled)
-
-``phase`` / ``item_result`` remain available as extensions; consumers
-must tolerate unknown event types (forward compatibility).
+    terminal       — EXACTLY ONE final result (result | error | cancelled)
 """
 
 from __future__ import annotations

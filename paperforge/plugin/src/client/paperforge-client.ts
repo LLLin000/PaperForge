@@ -102,7 +102,42 @@ export interface SetupArgs {
   modular?: boolean;
   headless?: boolean;
 }
+export interface SearchOptions {
+  limit?: number;
+}
 
+export interface RetrieveOptions {
+  limit?: number;
+  deep?: boolean;
+  paper?: string;
+  expand?: boolean;
+}
+
+export interface SearchResult {
+  [key: string]: unknown;
+}
+
+export function unwrapMatches(raw: unknown): SearchResult[] {
+  let parsed: unknown = raw;
+  if (typeof raw === "string") {
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      return [];
+    }
+  }
+  if (!parsed || typeof parsed !== "object") return [];
+  const obj = parsed as Record<string, unknown>;
+  if (obj.data && typeof obj.data === "object") {
+    const d = obj.data as Record<string, unknown>;
+    if (Array.isArray(d.matches)) return d.matches as SearchResult[];
+    if (Array.isArray(d.results)) return d.results as SearchResult[];
+  }
+  if (Array.isArray(obj.matches)) return obj.matches as SearchResult[];
+  if (Array.isArray(obj.results)) return obj.results as SearchResult[];
+  if (Array.isArray(parsed)) return parsed as SearchResult[];
+  return [];
+}
 export class PaperForgeClient {
   private readonly _transport: Transport;
   private readonly _clock: () => number;
@@ -400,7 +435,11 @@ export class PaperForgeClient {
         exitCode: 1,
       };
     }
-    const argv = buildActionArgv(req);
+    const actionReq: ActionRequest = {
+      ...req,
+      scope: req.scope ?? { kind: "all" },
+    };
+    const argv = buildActionArgv(actionReq);
 
     if (desc?.execution_mode === "stream") {
       const handle = this.streamOperation(
@@ -476,29 +515,47 @@ export class PaperForgeClient {
 
   // ── 5. Queries & Search Gateway ───────────────────────────────────────────
 
-  async search(query: string, limit = 20): Promise<any> {
-    return this._cachedRead(`search:${query}:${limit}`, 30000, async () => {
+  async search(
+    query: string,
+    options?: number | SearchOptions
+  ): Promise<SearchResult[]> {
+    const opts: SearchOptions =
+      typeof options === "number" ? { limit: options } : (options ?? {});
+    const limit = opts.limit ?? 20;
+    const cleanQuery = query.trim();
+    const cacheKey = `search:${cleanQuery}:${limit}`;
+    return this._cachedRead(cacheKey, 30000, async () => {
       const raw = await this._transport.execute([
         "search",
-        query,
+        cleanQuery,
         "--limit",
         String(limit),
         "--json",
       ]);
-      return JSON.parse(raw);
+      return unwrapMatches(raw);
     });
   }
 
-  async retrieve(query: string, limit = 5): Promise<any> {
-    return this._cachedRead(`retrieve:${query}:${limit}`, 30000, async () => {
-      const raw = await this._transport.execute([
-        "retrieve",
-        query,
-        "--limit",
-        String(limit),
-        "--json",
-      ]);
-      return JSON.parse(raw);
+  async retrieve(
+    query: string,
+    options?: number | RetrieveOptions
+  ): Promise<SearchResult[]> {
+    const opts: RetrieveOptions =
+      typeof options === "number" ? { limit: options } : (options ?? {});
+    const limit = opts.limit ?? 5;
+    const deep = Boolean(opts.deep);
+    const paper = opts.paper?.trim() || "";
+    const expand = opts.expand !== false;
+    const cleanQuery = query.trim();
+    const cacheKey = `retrieve:${cleanQuery}:${limit}:${deep}:${paper}:${expand}`;
+    return this._cachedRead(cacheKey, 30000, async () => {
+      const argv = ["retrieve", cleanQuery, "--limit", String(limit)];
+      if (deep) argv.push("--deep");
+      if (paper) argv.push("--paper", paper);
+      if (!expand) argv.push("--no-expand");
+      argv.push("--json");
+      const raw = await this._transport.execute(argv);
+      return unwrapMatches(raw);
     });
   }
 
