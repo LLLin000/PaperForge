@@ -468,6 +468,125 @@ class TestMachineModeWireParity:
             assert "event" in ev
 
 
+class TestOcrActionStreamWire:
+    """Ticket 04: real action CLI streams worker progress and cancellation."""
+
+    def test_rebuild_stream_emits_worker_progress_and_item_result(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        from paperforge.worker import ocr_rebuild
+
+        vault = tmp_path / "vault"
+        vault.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(vault)
+
+        def _fake_rebuild(_vault: Path, keys: list[str], **kwargs: object) -> dict:
+            callback = kwargs["on_progress"]
+            assert callable(callback)
+            callback(keys[0], {"key": keys[0], "status": "ok"})
+            return {
+                "success_keys": list(keys),
+                "failed_keys": [],
+                "skipped": [],
+                "results": [{"key": keys[0], "status": "ok"}],
+                "rebuild_count": len(keys),
+            }
+
+        monkeypatch.setattr(ocr_rebuild, "run_derived_rebuild_for_keys", _fake_rebuild)
+        rc, raw = _run_cli_raw(
+            "--vault",
+            str(vault),
+            "action",
+            "run",
+            "ocr.rebuild_derived",
+            "--scope",
+            "papers",
+            "--key",
+            "K1",
+            "--json",
+        )
+        events = [json.loads(line) for line in raw.splitlines() if line.strip()]
+
+        assert rc == 0
+        assert [event["event"] for event in events] == [
+            "start",
+            "phase",
+            "progress",
+            "item_result",
+            "result",
+        ]
+        assert events[1]["phase"] == "render"
+        assert events[2]["item_id"] == "K1"
+        assert events[3]["status"] == "ok"
+        assert events[-1]["result"]["data"]["rebuilt"] == ["K1"]
+
+    def test_ocr_stream_stop_reaches_worker_and_returns_cancelled(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        import time
+
+        from paperforge.worker import ocr
+
+        vault = tmp_path / "vault"
+        vault.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(vault)
+        monkeypatch.setenv("PAPERFORGE_CREDENTIAL_OCR__DEFAULT", "test-token")
+        monkeypatch.setattr(sys, "stdin", io.StringIO("PAPERFORGE_STOP\n"))
+        observed: dict[str, object] = {}
+
+        def _fake_run_ocr(
+            _vault: Path,
+            *,
+            selected_keys=None,
+            result_sink=None,
+            stop_check=None,
+            progress_callback=None,
+        ) -> int:
+            observed["stop_check"] = stop_check
+            observed["progress_callback"] = progress_callback
+            if stop_check is None or progress_callback is None:
+                raise AssertionError("action handler did not wire execution hooks")
+            if result_sink is not None:
+                result_sink["per_key"] = {"K1": "running"}
+            progress_callback("K1")
+            deadline = time.monotonic() + 2
+            while not stop_check():
+                if time.monotonic() >= deadline:
+                    raise AssertionError("worker never observed PAPERFORGE_STOP")
+                time.sleep(0.001)
+            return 130
+
+        monkeypatch.setattr(ocr, "run_ocr", _fake_run_ocr)
+        rc, raw = _run_cli_raw(
+            "--vault",
+            str(vault),
+            "action",
+            "run",
+            "ocr.run",
+            "--scope",
+            "papers",
+            "--key",
+            "K1",
+            "--confirm",
+            "ocr.run",
+            "--json",
+        )
+        events = [json.loads(line) for line in raw.splitlines() if line.strip()]
+
+        assert rc == 130
+        assert observed["stop_check"] is not None
+        assert observed["progress_callback"] is not None
+        assert [event["event"] for event in events] == [
+            "start",
+            "phase",
+            "progress",
+            "item_result",
+            "cancelled",
+        ]
+        assert events[-1]["result"]["error"]["code"] == "action.cancelled"
+
+
+
 class TestCliExitCodes:
     def test_list(self, tmp_path: Path) -> None:
         rc, payload = _run_cli("--vault", str(tmp_path), "action", "list", "--json")

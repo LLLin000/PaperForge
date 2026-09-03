@@ -45,11 +45,21 @@ class ActionRequest:
 
 
 @dataclass(frozen=True)
+class ActionExecutionHooks:
+    """Runtime-only mechanics supplied by the streaming transport."""
+
+    is_stopped: Callable[[], bool] | None = None
+    phase: Callable[[str], None] | None = None
+    progress: Callable[[int, int | None, str | None], None] | None = None
+    item_result: Callable[[str, str], None] | None = None
+
+
+@dataclass(frozen=True)
 class ActionContext:
     vault: Path
     config: dict[str, object]  # resolved vault config values (C0 seam)
     paths: dict[str, Path]  # resolved canonical paths (C0 seam)
-
+    execution_hooks: ActionExecutionHooks | None = None
 
 @dataclass(frozen=True)
 class PaperPreflight:
