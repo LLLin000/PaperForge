@@ -950,6 +950,26 @@ describe("production-seam runtime dispatch", () => {
       readPaperforgeJson: () => ({}),
       savePaperforgeJson: vi.fn(),
       loadSettings: vi.fn(),
+      getClient: () => ({
+        probe: vi.fn().mockImplementation((mod: string, opts?: any) => {
+          mockExecFile(
+            "/managed/python",
+            [
+              "-m",
+              "paperforge",
+              "probe",
+              mod,
+              "--json",
+              ...(opts?.expectedVersion
+                ? ["--expected-version", opts.expectedVersion]
+                : []),
+            ],
+            {},
+            () => {}
+          );
+          return Promise.resolve(createUnknownEnvelope(mod));
+        }),
+      }),
     };
     tab = new PaperForgeSettingTab(app as any, plugin as any);
 

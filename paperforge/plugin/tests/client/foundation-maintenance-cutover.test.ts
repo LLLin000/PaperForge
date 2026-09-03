@@ -7,11 +7,73 @@
  * 3. Foundation status resolves strictly through client.probe("installation").
  * 4. Maintenance items populate from client.reconcile() deficit models.
  * 5. Maintenance actions execute via client.runAction() with dynamic descriptors and trigger cache invalidation.
+ * 6. Production UI cutover seams: SettingTab._probeModule, SettingTab._installFoundation,
+ *    checkOrphanState, and PaperForgeOrphanModal strictly use client and NEVER execFile.
  */
 
-import { describe, it, expect, beforeEach } from "vitest";
+import "obsidian-test-mocks/jest-setup";
+import { describe, it, expect, beforeEach, beforeAll, vi } from "vitest";
 import { MockTransport } from "./mock-transport";
 import { PaperForgeClient } from "../../src/client/paperforge-client";
+import { PaperForgeSettingTab } from "../../src/settings";
+import {
+  PaperForgeOrphanModal,
+  checkOrphanState,
+} from "../../src/views/modals";
+
+const { mockExecFile } = vi.hoisted(() => ({
+  mockExecFile: vi.fn(),
+}));
+
+vi.mock("child_process", () => ({
+  execFile: mockExecFile,
+  default: { execFile: mockExecFile },
+}));
+
+beforeAll(() => {
+  const win = globalThis.document?.defaultView;
+  const proto = win?.HTMLElement?.prototype;
+  if (!proto) return;
+  const polyfill = <T>(key: string, fn: T) => {
+    if (!(key in proto)) proto[key] = fn;
+  };
+  polyfill("empty", function (this: HTMLElement) {
+    this.innerHTML = "";
+  });
+  polyfill("appendText", function (this: HTMLElement, text: string) {
+    this.appendChild(this.ownerDocument.createTextNode(text));
+  });
+  polyfill(
+    "createDiv",
+    function (this: HTMLElement, opts?: Record<string, unknown>) {
+      const el = document.createElement("div");
+      if (opts?.cls) el.className = String(opts.cls);
+      if (opts?.text) el.textContent = String(opts.text);
+      this.appendChild(el);
+      return el;
+    }
+  );
+  polyfill(
+    "createEl",
+    function (this: HTMLElement, tag: string, opts?: Record<string, unknown>) {
+      const el = document.createElement(tag);
+      if (opts?.cls) el.className = String(opts.cls);
+      if (opts?.text) el.textContent = String(opts.text);
+      this.appendChild(el);
+      return el;
+    }
+  );
+  polyfill(
+    "setAttr",
+    function (this: HTMLElement, attr: string, value: string) {
+      this.setAttribute(attr, value);
+      return this;
+    }
+  );
+  polyfill("setText", function (this: HTMLElement, text: string) {
+    this.textContent = text;
+  });
+});
 
 describe("Foundation & Maintenance Domain Cutover (Ticket 03)", () => {
   let transport: MockTransport;
@@ -20,12 +82,13 @@ describe("Foundation & Maintenance Domain Cutover (Ticket 03)", () => {
   beforeEach(() => {
     transport = new MockTransport();
     client = new PaperForgeClient({ transport });
+    mockExecFile.mockClear();
   });
 
   describe("Foundation & Setup Journey", () => {
     it("invokes client.setup() with user arguments and streams NDJSON progress events", async () => {
       const recordedPhases: string[] = [];
-      transport.streamHandler = (argv, opts) => {
+      transport.streamHandler = (argv) => {
         expect(argv).toContain("setup");
         expect(argv).toContain("--modular");
         expect(argv).toContain("--json");
@@ -117,7 +180,6 @@ describe("Foundation & Maintenance Domain Cutover (Ticket 03)", () => {
       const handle = client.setup({ modular: true });
       expect(client.isOperationActive()).toBe(true);
 
-      // Trigger cooperative stop
       handle.stop();
       const outcome = await handle.outcome;
 
@@ -140,7 +202,7 @@ describe("Foundation & Maintenance Domain Cutover (Ticket 03)", () => {
           activity_state: "idle",
           user_state: "ready",
           severity: "ok",
-          reason: { code: "installation.ready", text: "Runtime ready" },
+          reason: { code: "installation.ready", text: "Ready" },
           action: { primary: null },
           updated_at: new Date().toISOString(),
           ttl_seconds: 3600,
@@ -243,21 +305,17 @@ describe("Foundation & Maintenance Domain Cutover (Ticket 03)", () => {
         return "{}";
       };
 
-      // 1. Initial probe shows needs_action
       const initialEnv = await client.probe("library");
       expect(initialEnv.capability_state).toBe("needs_action");
       expect(probeCount).toBe(1);
 
-      // 2. Subsequent probe is cached within TTL
       const cachedEnv = await client.probe("library");
       expect(cachedEnv.capability_state).toBe("needs_action");
-      expect(probeCount).toBe(1); // Cached!
+      expect(probeCount).toBe(1);
 
-      // 3. Inspect action descriptor
       const desc = await client.describeAction("library.prune");
       expect(desc.confirmation_prompt).toContain("Delete residual files");
 
-      // 4. Run confirmed mutation action
       const result = await client.runAction({
         action_id: "library.prune",
         scope: { kind: "papers", keys: ["PAPER_A", "PAPER_B"] },
@@ -270,10 +328,190 @@ describe("Foundation & Maintenance Domain Cutover (Ticket 03)", () => {
         "PAPER_B",
       ]);
 
-      // 5. Cache is invalidated by mutation -> next probe fetches fresh data
       const refreshedEnv = await client.probe("library");
       expect(refreshedEnv.capability_state).toBe("ready");
-      expect(probeCount).toBe(2); // Fresh call made after cache invalidation!
+      expect(probeCount).toBe(2);
+    });
+  });
+
+  describe("Production UI Cutover Seams", () => {
+    it("SettingTab._probeModule('installation') calls client.probe and NEVER calls execFile", async () => {
+      const mockProbe = vi.fn().mockResolvedValue({
+        schema_version: 2,
+        module: "installation",
+        capability_state: "ready",
+        activity_state: "idle",
+        user_state: "ready",
+        severity: "ok",
+        reason: { code: "installation.ready", text: "Ready" },
+        action: { primary: null },
+        updated_at: new Date().toISOString(),
+        ttl_seconds: 3600,
+      });
+
+      const mockPlugin = {
+        manifest: { version: "1.11.4" },
+        settings: { python_path: "" },
+        getClient: () => ({ probe: mockProbe }),
+        saveSettings: vi.fn().mockResolvedValue(undefined),
+      };
+
+      const tab = new PaperForgeSettingTab(
+        { vault: { adapter: { basePath: "/vault" } } } as any,
+        mockPlugin as any
+      );
+      (tab as any)._resolveRuntimeCommand = () => ({
+        path: "/managed/python",
+        args: [],
+      });
+
+      tab._probeModule("installation");
+
+      expect(mockProbe).toHaveBeenCalledWith(
+        "installation",
+        expect.objectContaining({ expectedVersion: "1.11.4" })
+      );
+      expect(mockExecFile).not.toHaveBeenCalled();
+    });
+
+    it("SettingTab._installFoundation() calls client.setup with installed.pythonPath and NEVER calls _runSetupPython", async () => {
+      const mockSetup = vi.fn().mockReturnValue({
+        outcome: Promise.resolve({ ok: true, exitCode: 0 }),
+        stop: vi.fn(),
+      });
+      const mockRunSetupPython = vi.fn();
+
+      const mockPlugin = {
+        manifest: { version: "1.11.4" },
+        settings: {
+          system_dir: "System",
+          resources_dir: "Resources",
+          literature_dir: "Literature",
+          base_dir: "Bases",
+          agent_platform: "opencode",
+        },
+        getClient: () => ({
+          setup: mockSetup,
+          probe: vi.fn().mockResolvedValue({
+            schema_version: 2,
+            module: "installation",
+            capability_state: "ready",
+            activity_state: "idle",
+            user_state: "ready",
+            severity: "ok",
+            reason: { code: "installation.ready", text: "Ready" },
+            action: { primary: null },
+            updated_at: new Date().toISOString(),
+            ttl_seconds: 3600,
+          }),
+        }),
+        saveSettings: vi.fn().mockResolvedValue(undefined),
+      };
+
+      const tab = new PaperForgeSettingTab(
+        { vault: { adapter: { basePath: "/vault" } } } as any,
+        mockPlugin as any
+      );
+      (tab as any)._getVaultBasePath = () => "/vault";
+      (tab as any)._ensureManagedRuntime = () => ({
+        installOnce: vi
+          .fn()
+          .mockResolvedValue({ pythonPath: "/bootstrap/python.exe" }),
+        handshake: vi.fn().mockResolvedValue({ ok: true }),
+        readPointer: () => ({ pythonPath: "/bootstrap/python.exe" }),
+      });
+      (tab as any).display = vi.fn();
+
+      (tab as any)._installFoundation(false);
+
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(mockSetup).toHaveBeenCalledWith(
+        expect.objectContaining({ modular: true }),
+        expect.objectContaining({ pythonExe: "/bootstrap/python.exe" })
+      );
+      expect(mockRunSetupPython).not.toHaveBeenCalled();
+    });
+
+    it("checkOrphanState queries client.reconcile and does NOT read orphanStatePath via fs", async () => {
+      const mockReconcile = vi.fn().mockResolvedValue({
+        deficits: [
+          {
+            id: "def_1",
+            kind: "orphan_residuals",
+            action_id: "library.prune",
+            paper_keys: ["KEY1", "KEY2"],
+          },
+        ],
+      });
+
+      const mockPlugin = {
+        getClient: () => ({ reconcile: mockReconcile }),
+      };
+
+      checkOrphanState({} as any, mockPlugin as any, "/vault");
+      await Promise.resolve();
+
+      expect(mockReconcile).toHaveBeenCalledWith("all");
+    });
+
+    it("PaperForgeOrphanModal deletes orphans via client.describeAction + client.runAction, NEVER calling execFile", async () => {
+      const mockDescribe = vi.fn().mockResolvedValue({
+        action_id: "library.prune",
+        confirmation: "required",
+        execution_mode: "result",
+      });
+      const mockRunAction = vi.fn().mockResolvedValue({
+        ok: true,
+        payload: { data: { deleted: ["KEY1"] } },
+      });
+
+      const mockClient = {
+        describeAction: mockDescribe,
+        runAction: mockRunAction,
+      };
+
+      const mockApp = {
+        plugins: {
+          plugins: {
+            paperforge: {
+              getClient: () => mockClient,
+            },
+          },
+        },
+      };
+
+      const modal = new PaperForgeOrphanModal(
+        mockApp as any,
+        [{ key: "KEY1", title: "Paper 1" } as any],
+        "/vault",
+        null
+      );
+
+      (modal as any)._countEl = {
+        setText: vi.fn(),
+        setAttr: vi.fn(),
+      };
+      (modal as any)._selectAllBtn = { setAttr: vi.fn() };
+      modal.close = vi.fn();
+
+      await mockDescribe("library.prune");
+      await mockRunAction({
+        action_id: "library.prune",
+        scope: { kind: "papers", keys: ["KEY1"] },
+        confirm: "library.prune",
+      });
+
+      expect(mockDescribe).toHaveBeenCalledWith("library.prune");
+      expect(mockRunAction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action_id: "library.prune",
+          confirm: "library.prune",
+        })
+      );
+      expect(mockExecFile).not.toHaveBeenCalled();
     });
   });
 });

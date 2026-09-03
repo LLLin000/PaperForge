@@ -65,7 +65,7 @@ import {
   probeAll,
   invalidateAll,
 } from "./services/config-client";
-import { PaperForgeClient } from "./client";
+import { PaperForgeClient, NodeProcessTransport } from "./client";
 import {
   PaperForgeConfirmModal,
   PaperForgeIssueDraftModal,
@@ -426,8 +426,22 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
     this._displayInProgress = false;
   }
+  private _client: PaperForgeClient | null = null;
+
   getClient(): PaperForgeClient {
-    return (this.plugin as any).getClient();
+    if (this._client) return this._client;
+    if (typeof (this.plugin as any)?.getClient === "function") {
+      this._client = (this.plugin as any).getClient();
+      return this._client!;
+    }
+    const vp = this._getVaultBasePath();
+    const transport = new NodeProcessTransport({
+      vaultPath: vp,
+      customPythonPath: this.plugin?.settings?.python_path,
+      resolveRuntime: async () => this._resolveRuntimeCommand(vp),
+    });
+    this._client = new PaperForgeClient({ transport });
+    return this._client;
   }
 
   private _startSetupJourney(
@@ -537,30 +551,42 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         // Post-runtime setup (config/vault/deps/agent) + pointer publication,
         // through the #137 NDJSON stream (setup --json).
         const s = this.plugin.settings;
-        const setupArgs = [
-          "-m",
-          "paperforge",
-          "--vault",
-          vaultPath,
-          "setup",
-          "--modular",
-          "--json",
-          "--system-dir",
-          s.system_dir?.trim() || "System",
-          "--resources-dir",
-          s.resources_dir?.trim() || "Resources",
-          "--literature-dir",
-          s.literature_dir?.trim() || "Literature",
-          "--base-dir",
-          s.base_dir?.trim() || "Bases",
-          "--agent",
-          s.agent_platform || "opencode",
-        ];
-        if (s.zotero_data_dir?.trim()) {
-          setupArgs.push("--zotero-data", s.zotero_data_dir.trim());
-        }
         await this.plugin.saveSettings();
-        await this._runSetupPython(setupArgs, installed.pythonPath, signal);
+        const client = this.getClient();
+        const handle = client.setup(
+          {
+            systemDir: s.system_dir?.trim() || "System",
+            resourcesDir: s.resources_dir?.trim() || "Resources",
+            literatureDir: s.literature_dir?.trim() || "Literature",
+            baseDir: s.base_dir?.trim() || "Bases",
+            zoteroData: s.zotero_data_dir?.trim() || undefined,
+            agent: s.agent_platform || "opencode",
+            modular: true,
+          },
+          {
+            pythonExe: installed.pythonPath,
+            onEvent: (ev) => {
+              if (ev.event === "phase") {
+                this._setupFeedback = `${t("setup_installing") || "Installing"}: ${ev.phase ?? ""}`;
+                this.display();
+              }
+            },
+          }
+        );
+        signal?.addEventListener("abort", () => handle.stop());
+        const outcome = await handle.outcome;
+        if (!outcome.ok) {
+          if (outcome.cancelled) {
+            this._setupOperation = "idle";
+            this._setupFeedback = t("setup_install_cancelled");
+            this.display();
+            return;
+          }
+          throw new Error(
+            outcome.protocolFailure ||
+              `Setup failed with exit code ${outcome.exitCode}`
+          );
+        }
         this._setupOperation = "idle";
         this._setupReinstallRequested = false;
         this._setupFeedback = t("setup_install_complete");
@@ -621,31 +647,35 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       await Promise.all(writes).catch(() => undefined);
       this.display();
 
-      const args = [
-        "-m",
-        "paperforge",
-        "--vault",
-        vaultPath,
-        "setup",
-        "--modular",
-        "--json",
-        "--system-dir",
-        settings.system_dir?.trim() || "System",
-        "--resources-dir",
-        settings.resources_dir?.trim() || "Resources",
-        "--literature-dir",
-        settings.literature_dir?.trim() || "Literature",
-        "--base-dir",
-        settings.base_dir?.trim() || "Bases",
-        "--agent",
-        settings.agent_platform || "opencode",
-      ];
-      if (settings.zotero_data_dir?.trim()) {
-        args.push("--zotero-data", settings.zotero_data_dir.trim());
-      }
       try {
         await this.plugin.saveSettings();
-        await this._runSetupPython(args);
+        const client = this.getClient();
+        const handle = client.setup(
+          {
+            systemDir: settings.system_dir?.trim() || "System",
+            resourcesDir: settings.resources_dir?.trim() || "Resources",
+            literatureDir: settings.literature_dir?.trim() || "Literature",
+            baseDir: settings.base_dir?.trim() || "Bases",
+            zoteroData: settings.zotero_data_dir?.trim() || undefined,
+            agent: settings.agent_platform || "opencode",
+            modular: true,
+          },
+          {
+            onEvent: (ev) => {
+              if (ev.event === "phase") {
+                this._setupFeedback = `${t("setup_library_configuring") || "Configuring"}: ${ev.phase ?? ""}`;
+                this.display();
+              }
+            },
+          }
+        );
+        const outcome = await handle.outcome;
+        if (!outcome.ok) {
+          throw new Error(
+            outcome.protocolFailure ||
+              `Setup failed with exit code ${outcome.exitCode}`
+          );
+        }
         this._setupOperation = "idle";
         this._setupFeedback = t("setup_library_configured");
         this._attemptedProbes.add("library");
@@ -2743,12 +2773,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       ttl_seconds: current?.ttl_seconds ?? 0,
     };
     this._updateCapabilityEnvelope(mod, probing);
-    const vp = (this.app.vault.adapter as any).basePath as string;
+
+    const vp = this._getVaultBasePath();
     const resolved = this._resolveRuntimeCommand(vp);
     if (!resolved) {
       this._probing.delete(mod);
-      // Contract Gap 2: first-run machines with no Python at all must
-      // show a concrete Setup CTA, not a generic "Check" button.
       if (mod === "installation") {
         const setupEnvelope: ProbeEnvelope = {
           schema_version: 2,
@@ -2767,8 +2796,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           user_state: "setup_required",
           capability_kind: "required",
           maintenance_eligible: false,
-          user_visible_failure: false,
-          user_impact: null,
+          user_visible_failure: true,
+          user_impact: "PaperForge cannot run without Python.",
           updated_at: new Date().toISOString(),
           ttl_seconds: 60,
         };
@@ -2779,65 +2808,66 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       return;
     }
 
-    const args = [
-      ...resolved.args,
-      "-m",
-      "paperforge",
-      "--vault",
-      vp,
-      "probe",
-      mod,
-      "--json",
-    ];
-    if (
-      mod === "library" &&
-      lastOperationExitCode != null &&
-      lastOperationExitCode !== 0
-    ) {
-      args.push("--last-operation-exit-code", String(lastOperationExitCode));
-    }
-    if (mod === "installation") {
-      args.push("--expected-version", this.plugin.manifest.version);
-    }
-
-    execFile(
-      resolved.path,
-      args,
-      { cwd: vp, timeout: 15000 },
-      (err: Error | null, stdout: string, stderr: string) => {
+    const client = this.getClient();
+    client
+      .probe(mod, {
+        expectedVersion:
+          mod === "installation" ? this.plugin.manifest?.version : undefined,
+        lastOperationExitCode:
+          mod === "library" &&
+          lastOperationExitCode != null &&
+          lastOperationExitCode !== 0
+            ? lastOperationExitCode
+            : undefined,
+      })
+      .then((envelope) => {
         this._probing.delete(mod);
-        if (err) {
-          console.warn(`[PaperForge] Probe ${mod} failed:`, err.message);
-          this._updateCapabilityEnvelope(mod, createInvalidEnvelope(mod));
-          return;
-        }
-        try {
-          const parsed: unknown = JSON.parse(stdout);
-          // Backend JSON passed through unchanged after strict validation
-          if (isValidEnvelope(parsed, mod)) {
-            const envelope = parsed as ProbeEnvelope;
-            // #174 / #143 §8: version mismatch is NEVER auto-repaired —
-            // bootstrap consent authorizes ONE initial install only; later
-            // update/reinstall must go through the user's explicit action
-            // (Install/Reinstall button → _installFoundation → the sole
-            // bootstrap installer).  Zero pip calls before user action.
-            this._updateCapabilityEnvelope(mod, envelope);
-          } else {
-            console.warn(
-              `[PaperForge] Probe ${mod}: invalid envelope schema`,
-              stdout?.slice(0, 200)
-            );
-            this._updateCapabilityEnvelope(mod, createInvalidEnvelope(mod));
-          }
-        } catch {
+        if (isValidEnvelope(envelope, mod)) {
+          this._updateCapabilityEnvelope(mod, envelope);
+        } else {
           console.warn(
-            `[PaperForge] Probe ${mod}: unparseable JSON`,
-            stdout?.slice(0, 200)
+            `[PaperForge] Probe ${mod}: invalid envelope schema`,
+            envelope
           );
           this._updateCapabilityEnvelope(mod, createInvalidEnvelope(mod));
         }
-      }
-    );
+      })
+      .catch((err: Error) => {
+        this._probing.delete(mod);
+        if (
+          mod === "installation" &&
+          (err.message?.includes("runtime not ready") ||
+            err.message?.includes("no managed runtime pointer") ||
+            err.message?.includes("not ready"))
+        ) {
+          const setupEnvelope: ProbeEnvelope = {
+            schema_version: 2,
+            module: "installation",
+            capability_state: "unknown",
+            activity_state: "idle",
+            activity_label: null,
+            activity_progress: null,
+            severity: "error",
+            reason: {
+              code: "installation.no_python",
+              text: "No Python found. Run the Setup Wizard to install the managed runtime.",
+            },
+            action: { primary: setupAction() },
+            notices: [],
+            user_state: "setup_required",
+            capability_kind: "required",
+            maintenance_eligible: false,
+            user_visible_failure: true,
+            user_impact: "PaperForge cannot run without Python.",
+            updated_at: new Date().toISOString(),
+            ttl_seconds: 60,
+          };
+          this._updateCapabilityEnvelope(mod, setupEnvelope);
+        } else {
+          console.warn(`[PaperForge] Probe ${mod} failed:`, err.message);
+          this._updateCapabilityEnvelope(mod, createInvalidEnvelope(mod));
+        }
+      });
   }
 
   /** Update a single module envelope and refresh the display (#85: Last Known State). */

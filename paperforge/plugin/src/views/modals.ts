@@ -176,64 +176,37 @@ export class PaperForgeOrphanModal extends Modal {
         "paperforge"
       ];
       const client = plugin?.getClient?.();
-      if (client) {
-        client
-          .runAction({
-            action_id: "library.prune",
-            scope: { kind: "papers", keys },
-            confirm: "library.prune",
-          })
-          .then((res: any) => {
-            if (res.ok) {
-              const deleted = (res.payload?.data as any)?.deleted ?? keys;
-              new Notice("Deleted " + deleted.length + " orphan workspace(s)");
-            } else {
-              new Notice("PaperForge: prune failed");
-            }
-            this.close();
-          })
-          .catch(() => {
-            new Notice("PaperForge: prune failed");
-            this.close();
-          });
-        return;
-      }
-
-      if (!this.py || !this.py.path) {
-        new Notice("PaperForge: Python not found");
+      if (!client) {
+        new Notice("PaperForge: client unavailable");
         this.close();
         return;
       }
-      execFile(
-        this.py.path,
-        [
-          ...this.py.extraArgs,
-          "-m",
-          "paperforge",
-          "--vault",
-          this.vaultPath,
-          "prune",
-          "--force",
-          "--json",
-          ...keys,
-        ],
-        { cwd: this.vaultPath, timeout: 60000 },
-        (err, stdout) => {
-          if (err) {
-            new Notice("PaperForge: prune failed");
-            this.close();
-            return;
-          }
-          try {
-            const r = JSON.parse(stdout);
-            const deleted = (r.data && r.data.deleted) || [];
+
+      client
+        .describeAction("library.prune")
+        .then((desc: any) => {
+          const actionId = desc?.action_id ?? "library.prune";
+          const confirm =
+            desc?.confirmation === "required" ? actionId : undefined;
+          return client.runAction({
+            action_id: actionId,
+            scope: { kind: "papers", keys },
+            confirm,
+          });
+        })
+        .then((res: any) => {
+          if (res.ok) {
+            const deleted = (res.payload?.data as any)?.deleted ?? keys;
             new Notice("Deleted " + deleted.length + " orphan workspace(s)");
-          } catch (_) {
-            new Notice("PaperForge: prune done");
+          } else {
+            new Notice("PaperForge: prune failed");
           }
           this.close();
-        }
-      );
+        })
+        .catch(() => {
+          new Notice("PaperForge: prune failed");
+          this.close();
+        });
     });
   }
 
@@ -246,29 +219,36 @@ export class PaperForgeOrphanModal extends Modal {
 
 export function checkOrphanState(app: App, plugin: IPluginRef, vp: string) {
   console.log("[PF] checkOrphanState called");
-  try {
-    const paths = resolveVaultPaths(vp);
-    const orphanPath = paths.orphanStatePath;
-    if (!fs.existsSync(orphanPath)) {
-      console.log("[PF] orphan file NOT FOUND");
-      return;
-    }
-    console.log("[PF] orphan file FOUND");
-    const raw = fs.readFileSync(orphanPath, "utf-8");
-    const data = JSON.parse(raw);
-    const orphans = data;
-    const py = {
-      path: "python",
-      extraArgs: [] as string[],
-      source: "auto-detected" as const,
-    };
-    console.log("[PF] py.path:", py ? py.path : "null");
-    new PaperForgeOrphanModal(app, orphans, vp, py).open();
-    fs.unlinkSync(orphanPath);
-    console.log("[PF] orphan file cleaned");
-  } catch (e) {
-    console.log("[PF] checkOrphanState exception:", (e as Error).message || e);
+  const client = (plugin as any)?.getClient?.();
+  if (!client) {
+    console.log("[PF] orphan file NOT FOUND");
+    return;
   }
+
+  client
+    .reconcile("all")
+    .then((report: any) => {
+      const deficits = Array.isArray(report?.deficits) ? report.deficits : [];
+      const orphanDeficit = deficits.find(
+        (d: any) =>
+          d.kind === "orphan_residuals" || d.action_id === "library.prune"
+      );
+      const keys: string[] = orphanDeficit?.paper_keys ?? [];
+      if (keys.length > 0) {
+        console.log("[PF] orphan file FOUND");
+        const orphans: OrphanItem[] = keys.map((k) => ({
+          key: k,
+          title: k,
+          folder: k,
+        }));
+        new PaperForgeOrphanModal(app, orphans, vp, null).open();
+      } else {
+        console.log("[PF] orphan file NOT FOUND");
+      }
+    })
+    .catch((err: any) => {
+      console.log("[PF] checkOrphanState exception:", err?.message || err);
+    });
 }
 
 /* ── Setup Wizard Modal ── */
