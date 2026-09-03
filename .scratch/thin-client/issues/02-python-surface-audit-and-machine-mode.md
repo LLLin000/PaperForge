@@ -4,10 +4,10 @@
 
 **Blocked by:** None — can start immediately.
 
-**Status:** ready-for-agent
+**Status:** closed
 
-- [ ] Audit `paperforge action list/describe/preflight` to ensure every `ActionDescriptor` includes `execution_mode: "result" | "stream"`.
-- [ ] Verify that streaming commands (`ocr run`, `setup`, `embed build`, `update`) strictly emit standard #137 NDJSON events (`start`, `phase`, `item_result`, `terminal: result|error|cancelled`).
-- [ ] Verify that standard commands (`action run <id> --json` for non-streaming actions) emit valid, uniform single JSON results (`PFResult`).
-- [ ] Verify that action registry IDs are canonical and match existing backend commands (`memory.build`, `memory.rebuild`, `embed.build`, `embed.resume`, etc.), eliminating non-existent IDs like `memory.rebuild_vector`.
-- [ ] Add backend regression tests in `tests/` verifying descriptor execution modes and NDJSON event contract compliance.
+- [x] Audit `paperforge action list/describe/preflight` to ensure every `ActionDescriptor` includes `execution_mode: "result" | "stream"`.
+- [x] Verify that streaming commands (`ocr run`, `setup`, `embed build`, `update`) strictly emit standard #137 NDJSON events (`start`, `phase`, `item_result`, `terminal: result|error|cancelled`).
+- [x] Verify that standard commands (`action run <id> --json` for non-streaming actions) emit valid, uniform single JSON results (`PFResult`).
+- [x] Verify that action registry IDs are canonical and match existing backend commands (`memory.build`, `memory.rebuild`, `embed.build`, `embed.resume`, etc.), eliminating non-existent IDs like `memory.rebuild_vector`.
+- [x] Add backend regression tests in `tests/` verifying descriptor execution modes and NDJSON event contract compliance.

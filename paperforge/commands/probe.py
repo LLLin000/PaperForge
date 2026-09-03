@@ -95,6 +95,7 @@ def build_action_primary(
     from paperforge.actions.registry import ACTION_REGISTRY
 
     spec = ACTION_REGISTRY.get(action_id)
+    execution_mode = "stream" if verb == "setup" else "result"
     if spec is not None:
         safety_class = (
             SAFETY_DESTRUCTIVE
@@ -103,6 +104,7 @@ def build_action_primary(
         )
         interruptible = spec.interruptible
         confirmation_required = spec.confirmation == "required"
+        execution_mode = spec.execution_mode
     return {
         "action_id": action_id, "verb": verb, "label": label,
         "availability": availability, "safety_class": safety_class,
@@ -114,6 +116,7 @@ def build_action_primary(
         # T8 (#169): `command` is DELETED — the plugin never consumes a
         # backend command string; action dispatch is the action client.
         "scope": scope, "scope_count": scope_count,
+        "execution_mode": execution_mode,
     }
 
 

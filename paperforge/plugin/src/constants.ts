@@ -261,6 +261,7 @@ export interface ActionPrimary {
   // T8 (#169): `command` DELETED — no backend command strings.
   scope: string;
   scope_count: number;
+  execution_mode?: "result" | "stream";
 }
 
 export interface ProbeReason {
@@ -376,6 +377,12 @@ function isValidActionPrimary(p: unknown): p is ActionPrimary {
     return false;
   if (typeof a.scope !== "string") return false;
   if (typeof a.scope_count !== "number") return false;
+  if (
+    a.execution_mode !== undefined &&
+    a.execution_mode !== "result" &&
+    a.execution_mode !== "stream"
+  )
+    return false;
   return true;
 }
 

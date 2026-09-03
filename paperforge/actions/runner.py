@@ -81,6 +81,7 @@ def descriptor_for(
         "confirmation": spec.confirmation,
         "automatic": spec.automatic,
         "interruptible": spec.interruptible,
+        "execution_mode": spec.execution_mode,
         "preservation_facts": list(preflight.preservation_facts),
         "replacement_facts": list(preflight.replacement_facts),
     }
@@ -238,6 +239,7 @@ def hydrate_from_registry(intent: ActionIntent) -> dict[str, Any]:
         "impact": spec.impact,
         "confirmation": spec.confirmation,
         "reason": intent.trigger_reason,
+        "execution_mode": spec.execution_mode,
     }
 
 
