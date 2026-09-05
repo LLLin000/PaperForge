@@ -7,11 +7,13 @@
 
 **Status:** in progress — stage 1 corrective complete (authority gate + exact-snapshot ratchet + committed census)
 
-## Stage 1 (2026-09-05) — done
+**Round-2 gate corrective (2026-09-05):** Gate B upgraded from name-matching to true **binding provenance** — `spawn as launch`, `cp.spawn`, `const { fork: runFork } = require(...)`, `require(...).spawn(...)` and fallback-chain aliases all resolve to child_process bindings; unrelated objects (`deps.spawn`, `someObject.exec`) and call-result handles (`const child = spawn(...)` then `child.on()`) never count. Synthetic regressions pin every provenance form. The provenance gate immediately caught 4 real spawn sites the regex gate under-counted (ocr-process-controller `spawnFn(...)`, python-bridge `execSync`/`exe`×2/`sp` fallback aliases) — snapshots corrected to 1 and 8 respectively.
 
-- [ ] Delete `services/ocr-maintenance-ui.ts` — zero src importers (obsoleted by probe-owned maintenance projections); its dedicated test and stale `vi.mock` blocks removed.
-- [ ] Add the architecture ratchet gate (`tests/client/architecture-boundaries.test.ts`): child-process usage is frozen per file (baseline = current counts), shrinking only; new files with child-process usage fail the suite; the thin-client deletions are pinned ("deleted surfaces stay deleted"). Exemptions: `src/client/**` (the one Transport owner), `managed-runtime.ts` (bootstrap seam), `main.ts` (bootstrap ratchet), `secret-storage.ts` (DI-injected spawn).
-- [ ] Packaging check: `npm run build` clean (main.js 347.1kb, no broken import paths); full suite green.
+## Stage 1 (2026-09-05) — done (superseded wording below replaced by the corrective contract)
+
+- [x] Delete `services/ocr-maintenance-ui.ts` — zero src importers (obsoleted by probe-owned maintenance projections); its dedicated test and stale `vi.mock` blocks removed.
+- [x] Add the architecture gate (`tests/client/architecture-boundaries.test.ts`) — final semantics after the corrective: **Gate A** child_process import authority via TS-AST provenance, allowed only in the exact listed files (`client/node-transport.ts` transport root, `services/long-task-client.ts` transport streaming stack pending merge, `services/managed-runtime.ts` listed host seam, plus the legacy ratchet files); **Gate B** exact-snapshot ratchet (`actual === frozen`) resolved by binding provenance (named/aliased imports, namespace members, all require forms, fallback-chain aliases such as `const execSync = _execFileSync || execFileSync`) — never by bare function-name regex, and never counting call-result handles like `const child = spawn(...)`; **Gate C** tombstones for absorbed surfaces.
+- [x] Packaging check: `npm run build` clean (no broken import paths); full suite green.
 
 ## Remaining surfaces (each needs a client method or a UI decision first)
 
