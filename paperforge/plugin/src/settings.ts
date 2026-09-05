@@ -1475,11 +1475,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const isOperationActive =
       typeof client?.isOperationActive === "function" &&
       client.isOperationActive();
-    const embedController = (this.plugin as any)?._embedController;
-    const isRunning =
-      env.activity_state === "running" ||
-      isOperationActive ||
-      Boolean(embedController?.busy);
+    const isRunning = env.activity_state === "running" || isOperationActive;
 
     // ── Status text: single source of truth ──
     let statusText: string | null = null;
@@ -1505,13 +1501,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           label: t("retrieval_stop"),
           onClick: () => {
             client.cancelActiveOperation();
-          },
-        });
-      } else if (embedController?.busy && embedController?.stop) {
-        renderActionButton(body, {
-          label: t("retrieval_stop"),
-          onClick: () => {
-            embedController.stop();
           },
         });
       }
@@ -1881,11 +1870,16 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         } else if (actionId === "memory.upgrade_backend") {
           this._runBackendMigration();
         } else {
-          const memActionId =
-            actionId === "memory.build" || actionId === "memory.rebuild"
-              ? actionId
-              : "memory.build";
-          this._dispatchMemoryBuild("build", undefined, memActionId);
+          // fail-closed: never substitute an unknown memory action (#05 corrective)
+          new Notice(
+            (t("action_unknown_pair") || "Unknown action: {verb}").replace(
+              "{verb}",
+              actionId || verb
+            ),
+            5000
+          );
+          this._probeModule(mod);
+          return;
         }
       }
       if (verb === "restore_backup" || actionId === "memory.restore_backup") {

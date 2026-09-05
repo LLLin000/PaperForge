@@ -817,27 +817,6 @@ describe("Memory module detail (Issue #78)", () => {
     expect(el.querySelector(".pf-sr-impact-box")).toBeNull();
     expect(el.querySelectorAll(".pf-sr-cfg-input")).toHaveLength(3);
   });
-
-  it("renders a visible stop action for the active embed controller", () => {
-    const stop = vi.fn();
-    const tab = makeTab({
-      _embedController: { busy: true, state: "running", warning: null, stop },
-    });
-    (tab as any)._capabilityState = {
-      memory: {
-        ...createUnknownEnvelope("memory"),
-        capability_state: "needs_action",
-        reason: { code: "memory.db_missing", text: "Not built" },
-      },
-    };
-    const el = dom.window.document.createElement("div");
-    (tab as any)._renderMemoryDetail(el);
-    const button = [...el.querySelectorAll("button")].find(
-      (node) => node.textContent === "Stop"
-    ) as HTMLButtonElement;
-    button.click();
-    expect(stop).toHaveBeenCalledOnce();
-  });
 });
 
 // ════════════════════════════════ 4. Dispatch allowlist ════════════════
@@ -1070,36 +1049,6 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
     expect(start).toHaveBeenCalledWith("redo", expect.anything());
   });
 
-  it("memory build -> uses execFile", () => {
-    const tab = makeTab();
-    (tab as any)._capabilityState = { memory: createUnknownEnvelope("memory") };
-    const env = {
-      ...createUnknownEnvelope("memory"),
-      action: {
-        primary: {
-          action_id: "module.run",
-          verb: "run",
-          label: "Build",
-          command: "paperforge memory build",
-          availability: "available",
-          safety_class: "safe",
-          preservation_facts: [],
-          replacement_facts: [],
-          interruptible: true,
-          confirmation_required: false,
-          confirmation_prompt: null,
-          scope: "module",
-          scope_count: 1,
-        },
-      },
-    } as any;
-    execFileCalls.length = 0;
-    (tab as any)._dispatchModuleAction("memory", env);
-    expect(
-      execFileCalls.some((c: { args: string[] }) => c.args.includes("build"))
-    ).toBe(true);
-  });
-
   it("embed build --force -> spawns embed", async () => {
     const tab = makeTab();
     (tab as any)._capabilityState = { memory: createUnknownEnvelope("memory") };
@@ -1210,36 +1159,6 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
       expect(String(Reflect.get(draft, "title") ?? "")).toContain("5");
       expect(String(Reflect.get(draft, "body") ?? "")).toContain("5");
     }
-  });
-
-  it("memory rebuild_index dispatches the local memory build", () => {
-    const tab = makeTab();
-    const env = {
-      ...createUnknownEnvelope("memory"),
-      action: {
-        primary: {
-          action_id: "memory.build",
-          verb: "rebuild_index",
-          label: "Rebuild",
-          availability: "available",
-          safety_class: "safe",
-          preservation_facts: [],
-          replacement_facts: [],
-          interruptible: true,
-          confirmation_required: false,
-          confirmation_prompt: null,
-          scope: "module",
-          scope_count: 1,
-        },
-      },
-    } as any;
-    execFileCalls.length = 0;
-    (tab as any)._dispatchModuleAction("memory", env);
-    const es = execFileCalls.find((p: { args: string[] }) =>
-      p.args.includes("memory")
-    );
-    expect(es).toBeDefined();
-    expect(es?.args.join(" ")).toContain("memory build");
   });
 });
 

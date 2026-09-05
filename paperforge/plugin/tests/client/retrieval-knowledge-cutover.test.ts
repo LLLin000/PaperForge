@@ -17,6 +17,7 @@ import { MockTransport } from "./mock-transport";
 import { PaperForgeClient } from "../../src/client/paperforge-client";
 import { PaperForgeStatusView } from "../../src/views/dashboard";
 import { PaperForgeSettingTab } from "../../src/settings";
+import type { ActionPrimary } from "../../src/constants";
 
 const { mockExecFile, mockSpawn } = vi.hoisted(() => ({
   mockExecFile: vi.fn(),
@@ -416,6 +417,35 @@ describe("Knowledge & Retrieval Domain Cutover (Ticket 05)", () => {
       tab._dispatchMemoryBuild("build", undefined, "library.prune");
       expect(transport.calls).toHaveLength(0);
       expect(tab._capabilityState.memory.activity_state).toBe("idle");
+    });
+
+    it("fail-closed: unknown memory action id is never substituted with memory.build", () => {
+      const unknownPrimary = {
+        verb: "run",
+        action_id: "memory.some_new_action",
+        label: "X",
+        availability: "available",
+        safety_class: "safe",
+        preservation_facts: [],
+        replacement_facts: [],
+        interruptible: true,
+        confirmation_required: false,
+        confirmation_prompt: null,
+        scope: "module",
+        scope_count: 1,
+      } satisfies ActionPrimary;
+      const tab = makeSettingTab(client);
+      tab._probeModule = vi.fn();
+      tab._runAllowedDispatch(
+        "memory",
+        unknownPrimary,
+        tab._capabilityState.memory
+      );
+      const runCalls = transport.calls.filter(
+        (c) => c.argv[0] === "action" && c.argv[1] === "run"
+      );
+      expect(runCalls).toHaveLength(0);
+      expect(tab._probeModule).toHaveBeenCalledWith("memory");
     });
 
     it("enables Stop button only when client owns the active operation handle", () => {

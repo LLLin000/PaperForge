@@ -25,3 +25,13 @@ Implementation notes:
 Verification:
 - Python: **107 passed / 1 skipped** focused tests (`TestEmbedActionStreamWire` covers real CLI progress, paper settlement, `PAPERFORGE_STOP` cancellation with `rc=130`, and un-mocked real service clean NDJSON stream).
 - Plugin: **448/448 passed**; `npm run typecheck` clean.
+
+Corrective round 2 (noop settlement + fail-closed entrypoint + Stop ownership):
+- `registry._on_progress()` no longer settles papers as `succeeded`; `paper_settled(key, status, None)` moved into `_on_item_result()` so noop/skip papers settle with their real status.
+- `run_embedding_build` restores `processed_count` / `papers_skipped` increments on all noop branches, so `progress.current` and `papers_skipped` are truthful.
+- New un-mocked CLI test: real `embed.resume` against a fully seeded vault (matched body/object units hashes + aligned vec0 rows) executes the hash-skip branch without network and asserts `progress.current==1`, single `paper_settled outcome=noop`, single `item_result status=noop`, `papers_skipped==1`, every stdout line clean NDJSON.
+- `_runAllowedDispatch("memory", …)` else-branch no longer substitutes an unknown `action_id` with `memory.build` — Notice + re-probe, fail-closed; regression test added (`ActionPrimary satisfies` typed).
+- `_renderMemoryDetail` removed the last `embedController.busy/stop` fallback; Stop renders only when `client.isOperationActive()`; legacy module-detail-navigation tests pinning execFile memory-build dispatch and the embed-controller Stop deleted.
+Verification:
+- Python focused: **169 passed** (`test_action_registry.py` + `test_shadow_rebuild.py` + `test_lineage.py`); ruff clean on changed files (embedding.py pre-existing findings unchanged vs HEAD).
+- Plugin: **446/446 passed** (27 files); `tsc --noEmit --skipLibCheck` clean.

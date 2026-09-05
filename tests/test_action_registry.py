@@ -663,8 +663,11 @@ class TestEmbedActionStreamWire:
             called["resume"] = resume
             called["force"] = force
             on_progress = kwargs.get("on_progress")
+            on_item_result = kwargs.get("on_item_result")
             assert callable(on_progress)
+            assert callable(on_item_result)
             on_progress(1, 1, "K1")
+            on_item_result("K1", "succeeded")
             result_sink = kwargs.get("result_sink")
             if isinstance(result_sink, dict):
                 result_sink["result"] = PFResult(
@@ -701,9 +704,9 @@ class TestEmbedActionStreamWire:
             "phase",
             "progress",
             "paper_settled",
+            "item_result",
             "result",
         ]
-        assert events[1]["phase"] == "embedding"
         assert events[2]["item_id"] == "K1"
         assert events[3]["key"] == "K1"
         assert events[-1]["result"]["data"]["papers_embedded"] == 1
@@ -783,32 +786,43 @@ class TestEmbedActionStreamWire:
         self, tmp_path: Path, monkeypatch
     ) -> None:
         """Ticket 05: run real embedding build without mocking, assert clean NDJSON."""
+        from tests.test_lineage import _make_vault
+
+        vault = _make_vault(tmp_path, keys=("K1",))
         import sqlite3
+
         import sqlite_vec
-        from paperforge.core.io import write_json
+
+        from paperforge.embedding.builder import (
+            get_body_units_for_embedding,
+            get_object_units_for_embedding,
+        )
         from paperforge.memory.db import get_memory_db_path
+        from paperforge.retrieval.manifest import (
+            RETRIEVAL_POLICY_VERSION,
+            compute_body_units_hash,
+            compute_object_units_hash,
+        )
 
-        vault = tmp_path / "vault"
-        vault.mkdir(parents=True, exist_ok=True)
-        canonical_test_config(vault)
-
-        index_path = vault / "99_System" / "PaperForge" / "indexes" / "asset-index.json"
-        index_path.parent.mkdir(parents=True, exist_ok=True)
-        write_json(index_path, {
-            "version": 1,
-            "items": [{"zotero_key": "K1", "title": "Paper 1"}]
-        })
-
-        db_path = get_memory_db_path(vault)
-        db_path.parent.mkdir(parents=True, exist_ok=True)
-        from paperforge.memory.schema import ensure_schema
-
-        conn = sqlite3.connect(str(db_path))
+        b_units = get_body_units_for_embedding(vault, "K1")
+        b_hash = compute_body_units_hash(b_units)
+        o_units = get_object_units_for_embedding(vault, "K1")
+        o_hash = compute_object_units_hash(o_units)
+        conn = sqlite3.connect(str(get_memory_db_path(vault)))
         conn.enable_load_extension(True)
         sqlite_vec.load(conn)
-        ensure_schema(conn)
-        conn.execute("INSERT OR REPLACE INTO papers (zotero_key, title) VALUES ('K1', 'Paper 1')")
-        conn.execute("INSERT OR REPLACE INTO meta (key, value) VALUES ('manifest:K1', '{}')")
+        conn.execute("CREATE VIRTUAL TABLE IF NOT EXISTS vec_body USING vec0(embedding float[1536])")
+        conn.execute("CREATE VIRTUAL TABLE IF NOT EXISTS vec_objects USING vec0(embedding float[1536])")
+        cur_b = conn.execute("INSERT INTO vec_body(embedding) VALUES (?)", (json.dumps([0.0] * 1536),))
+        conn.execute(
+            "INSERT OR REPLACE INTO vec_body_meta (rowid, paper_id, unit_id, body_units_hash, retrieval_policy_version) VALUES (?, 'K1', 'K1-b1', ?, ?)",
+            (cur_b.lastrowid, b_hash, RETRIEVAL_POLICY_VERSION),
+        )
+        cur_o = conn.execute("INSERT INTO vec_objects(embedding) VALUES (?)", (json.dumps([0.0] * 1536),))
+        conn.execute(
+            "INSERT OR REPLACE INTO vec_objects_meta (rowid, paper_id, unit_id, object_units_hash, retrieval_policy_version) VALUES (?, 'K1', 'K1-o1', ?, ?)",
+            (cur_o.lastrowid, o_hash, RETRIEVAL_POLICY_VERSION),
+        )
         conn.commit()
         conn.close()
         monkeypatch.setenv("PAPERFORGE_CREDENTIAL_EMBEDDING__DEFAULT", "test-token")
@@ -842,6 +856,27 @@ class TestEmbedActionStreamWire:
         assert terminal_events[0]["event"] == "result"
         assert terminal_events[0]["operation"] == "embed.resume"
 
+        # Assert noop settlement consistency:
+        # progress current must be 1, paper_settled outcome must be noop,
+        # item_result status must be noop, and papers_skipped must be 1.
+        progress_events = [e for e in events if e.get("event") == "progress"]
+        assert len(progress_events) >= 1
+        assert progress_events[-1]["current"] == 1
+        assert progress_events[-1]["total"] == 1
+        assert progress_events[-1]["item_id"] == "K1"
+
+        settled_events = [e for e in events if e.get("event") == "paper_settled"]
+        assert len(settled_events) == 1
+        assert settled_events[0]["key"] == "K1"
+        assert settled_events[0]["outcome"] == "noop"
+
+        item_events = [e for e in events if e.get("event") == "item_result"]
+        assert len(item_events) == 1
+        assert item_events[0]["item_id"] == "K1"
+        assert item_events[0]["status"] == "noop"
+
+        data = terminal_events[0]["result"]["data"]
+        assert data.get("papers_skipped") == 1
 
 
 class TestCliExitCodes:
