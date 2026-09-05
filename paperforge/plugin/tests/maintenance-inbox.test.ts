@@ -128,14 +128,6 @@ vi.mock("../src/services/runtime-paths", () => ({
   getVectorStatusText: () => "",
   getCachedPython: () => null,
 }));
-vi.mock("../src/services/ocr-maintenance-ui", () => ({
-  categorizeMaintenanceRow: () => [],
-  buildMaintenanceSummary: () => ({}),
-  maintenanceActionForRow: () => null,
-  maintenanceActionRequiresConfirmation: () => false,
-  readMaintenanceCache: () => null,
-  refreshMaintenanceData: () => new Promise(() => {}),
-}));
 vi.mock("../src/services/managed-runtime", () => ({
   ManagedRuntime: class {
     current() {
