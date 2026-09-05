@@ -457,6 +457,38 @@ class TestLibraryProbe:
         assert data['capability_state'] == 'unavailable'
         assert data['reason']['code'] == 'library.config_corrupt'
 
+    def test_ready_envelope_carries_probe_owned_paper_count(self, tmp_path: Path) -> None:
+        """Ticket 06: ready library envelope exposes details.paper_count."""
+        from paperforge.commands import probe as probe_mod
+        from paperforge.config import paperforge_paths
+        from paperforge.worker.asset_index import (
+            _compute_export_hash,
+            atomic_write_index,
+            get_index_path,
+        )
+
+        canonical_test_config(
+            tmp_path, system_dir="99_System", zotero_data_dir=str(tmp_path),
+        )
+        idx = get_index_path(tmp_path)
+        idx.parent.mkdir(parents=True, exist_ok=True)
+        env = {
+            "schema_version": 1,
+            "generated_at": "",
+            "paper_count": 2,
+            "items": [
+                {"key": "A", "title": "Paper A"},
+                {"key": "B", "title": "Paper B"},
+            ],
+        }
+        env["export_hash"] = _compute_export_hash(paperforge_paths(tmp_path))
+        atomic_write_index(idx, env)
+
+        data = probe_mod.probe_library(tmp_path)
+        assert data['capability_state'] == 'ready'
+        assert data['reason']['code'] == 'library.ready'
+        assert data['details']['paper_count'] == 2
+
 # ---------------------------------------------------------------------------
 # OCR probe states (Issue #78)
 # ---------------------------------------------------------------------------

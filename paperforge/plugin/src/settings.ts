@@ -1163,9 +1163,32 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
 
     const facts = body.createDiv({ cls: "pf-module-facts" });
+    // Ticket 06: sync state + corpus/orphan counts are Python probe facts —
+    // no client-side database scans.
+    const paperCount = (env.details as Record<string, unknown> | undefined)?.[
+      "paper_count"
+    ];
     const corpus = facts.createDiv({ cls: "pf-module-fact" });
     corpus.createEl("span", { text: t("md_library_corpus") });
-    corpus.createEl("span", { text: t("metric_after_sync") });
+    corpus.createEl("span", {
+      text:
+        typeof paperCount === "number"
+          ? String(paperCount)
+          : t("metric_not_available"),
+    });
+    const orphanCount = (
+      this._capabilityState?.maintenance as
+        | { orphan?: { count?: number } }
+        | undefined
+    )?.orphan?.count;
+    const orphanRow = facts.createDiv({ cls: "pf-module-fact" });
+    orphanRow.createEl("span", { text: "Orphans" });
+    orphanRow.createEl("span", {
+      text:
+        typeof orphanCount === "number"
+          ? String(orphanCount)
+          : t("metric_not_available"),
+    });
     const lastSync = facts.createDiv({ cls: "pf-module-fact" });
     lastSync.createEl("span", { text: t("md_library_last_sync") });
     lastSync.createEl("span", {
@@ -2516,9 +2539,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   }
 
   _runManualSync() {
-    const vp = (this.app.vault.adapter as any).basePath as string;
-    const py = this._resolveRuntimeCommand(vp);
-    if (!py?.path) return;
+    const vp =
+      (this.app.vault.adapter as unknown as { basePath?: string }).basePath ??
+      "";
+    const client = this.getClient();
+    if (!client) {
+      new Notice(t("runtime_not_available") || "Environment unavailable");
+      return;
+    }
 
     // Overlay envelope activity
     const envelopes = this._capabilityState ?? {};
@@ -2527,44 +2555,45 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       envelopes["library"].activity_label = "Syncing library…";
     }
 
-    const statusRow = document.querySelector(".paperforge-memory-status");
-    if (statusRow) {
-      // RC UX Seam: legacy status row retired with the old Smart Retrieval
-      // UI — the read model owns activity truth now.
-      (statusRow as HTMLElement).setText("Checking...");
-    }
-
     this.plugin._autoSyncRunning = true;
     this._libraryRunning = true;
     this.display();
-    this._callPython(["sync", "--json"], {
-      timeout: 120000,
-      onClose: (code: number | null, stdout: string) => {
-        this.plugin._autoSyncRunning = false;
-        this._libraryRunning = false;
-        this._memoryStatusText = null;
-        // Clear activity overlay
-        if (envelopes["library"]) {
-          envelopes["library"].activity_state = "idle";
-          envelopes["library"].activity_label = null;
-        }
-        if (code === 0) {
+
+    void (async () => {
+      let exitCode = 1;
+      try {
+        const result = await client.sync();
+        exitCode = result?.ok === false ? 1 : 0;
+        if (exitCode === 0) {
           this._lastSyncTime = new Date().toLocaleTimeString();
           this.plugin._lastSyncTime = this._lastSyncTime;
           // #127: consume backend next_actions. Automatic local work starts
           // now; consent-required work remains visible in the module card.
-          void orchestrateFromSync(stdout, {
+          void orchestrateFromSync(JSON.stringify(result), {
             vaultPath: vp,
             resolveCommand: (v) => this._resolveRuntimeCommand(v),
           });
         }
+      } catch (err: unknown) {
+        new Notice(
+          `Sync failed: ${err instanceof Error ? err.message : String(err)}`,
+          8000
+        );
+      } finally {
+        this.plugin._autoSyncRunning = false;
+        this._libraryRunning = false;
+        this._memoryStatusText = null;
+        if (envelopes["library"]) {
+          envelopes["library"].activity_state = "idle";
+          envelopes["library"].activity_label = null;
+        }
         // #161: completed mutation → invalidate all + probe all; the
         // library exit code is forwarded for sync-failure detection (#78).
-        this._refreshAllReadModels(code ?? 1);
+        this._refreshAllReadModels(exitCode);
         this._refreshSnapshots(vp);
         checkOrphanState(this.app, this.plugin, vp);
-      },
-    });
+      }
+    })();
   }
 
   _refreshSnapshots(vp: string) {

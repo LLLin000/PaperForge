@@ -609,6 +609,24 @@ export class PaperForgeClient {
     return JSON.parse(raw);
   }
 
+  /** Ticket 06: R/P staging preview for one paper (isolated tmp root; never
+   * writes production). Surfaces `p_details[].final_plan_hash` — the exact
+   * SHA-256 token `accept-proposal` requires — and `r_details[].object_id`
+   * candidates for `promote-r`. */
+  async renderReconcileStaging(key: string): Promise<Record<string, unknown>> {
+    const raw = await this._transport.execute([
+      "render",
+      "reconcile",
+      "--keys",
+      key,
+      "--json",
+    ]);
+    const parsed = JSON.parse(raw) as {
+      papers?: Record<string, unknown>[];
+    };
+    return parsed.papers?.find((p) => p.paper_key === key) ?? {};
+  }
+
   async promoteR(key: string, objectIds: string[] = []): Promise<any> {
     const argv = ["render", "promote-r", key, ...objectIds, "--json"];
     try {

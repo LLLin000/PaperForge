@@ -1,7 +1,7 @@
 # OCR-v2 Active Queue
 > Status: `EXECUTABLE_FROZEN a42f8bb7` / `PROTOCOL_DOCS 781910f3` — S1–S6 lightweight **COMPLETE** on `462398cb` (valid for `a42f8bb7`, `ruff` clean). Hosted CI `32353318123` on docs-only descendant `a2e18fa4` is **green: All Checks Passed, 14/14**, with `3.11` Ubuntu/macOS/Windows, J-Matrix, Ruff, plugin, OCR, E2E; no executable change after `a42f8bb7`. #191 FROZEN / ready-for-agent; #81 OPEN / owner gate. Reconcile recovery/fulltext safety follow-up is closed on disposable fixtures; P authority acceptance is transaction-safe and bound to the exact human-reviewed plan hash; the 969-paper unverified-content census is clean; semantic coverage and all production writes remain owner-gated.
 > Last updated: 2026-09-05
-> Ticket 05 corrective round 2 is complete: noop settlement truth (`paper_settled`/counters), fail-closed memory dispatch entrypoint, and client-only Stop ownership verified. Next: owner review to formally close 05, then Ticket 06 (Library & Render Quality cutover).
+> Ticket 06 is complete: Library sync/facts and the Render Quality drawer route through `PaperForgeClient` (`sync`, `renderAudit`, `renderReconcileStaging`, `promoteR`, `acceptProposal`); R/P CAS/journal/plan-hash semantics stay frozen backend contracts. Next: Ticket 07 (legacy bridge deletion) is unblocked.
 
 
 ## 2026-09-03: Ticket 04 OCR Workspace & Processing Domain Cutover — corrective closure
@@ -23,6 +23,13 @@
 - **Fail-closed entrypoint:** `_runAllowedDispatch("memory")` is an exhaustive exact-ID chain — `embed.build`/`embed.resume`/`memory.build`/`memory.rebuild`/`memory.upgrade_backend` dispatch, unknown IDs fail closed (Notice + re-probe, no substitution); the dispatched run/rebuild_index branch `return`s so legal actions never fall through to the unknown-pair probe; production-entry `it.each` regression proves `memory.build` and `memory.rebuild` reach `client.runAction` with the exact ID while unknown IDs never run.
 - **Stop ownership:** `_renderMemoryDetail` Stop renders only when `client.isOperationActive()`; legacy `embedController.busy/stop` fallback and tests pinning execFile memory-build dispatch deleted.
 - **Verification:** Python focused **169 passed**; plugin **448/448** (incl. production-entry allowlist regression); `tsc --noEmit` clean; ruff clean on changed files.
+
+## 2026-09-05: Ticket 06 Library & Render Quality Domain Cutover
+
+- **Library:** `_runManualSync` routes through `client.sync()` (invalidate-on-mutation; `orchestrateFromSync` consumes the same PFResult; exit code 0/1 forwarded into `_refreshAllReadModels` for sync-failure probing). Library facts render probe-owned `details.paper_count` (new structured field on ready/stale envelopes) and the maintenance envelope's orphan count — no client-side database scans.
+- **Render Quality:** typed-client projection inside the paper technical-details drawer — `client.renderAudit(key)` findings, new `client.renderReconcileStaging(key)` for isolated R/P staging previews, per-object `client.promoteR(key, [objectId])`, per-card `client.acceptProposal(key, label, final_plan_hash)` forwarding the exact reviewed SHA-256; committed mutations invalidate the staging snapshot.
+- **Frozen backend contracts untouched:** reconcile/render core, R/P CAS/journal/plan-hash semantics, OCR/render pipeline.
+- **Verification:** plugin **455/455** (28 files, new `library-render-quality-cutover.test.ts` 9 cases); `tsc --noEmit` clean; Python focused **193 passed**; ruff adds no new findings.
 
 ## 2026-09-02: Reconcile Core Frozen & Backend Contract Mapping Established
 

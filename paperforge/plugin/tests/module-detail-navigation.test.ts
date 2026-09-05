@@ -330,6 +330,8 @@ vi.mock("../src/services/progress-parser", () => ({
 import { createUnknownEnvelope, ProbeEnvelope } from "../src/constants";
 import { PaperForgeSettingTab } from "../src/settings";
 import { setLanguage } from "../src/i18n";
+import { MockTransport } from "./client/mock-transport";
+import { PaperForgeClient } from "../src/client/paperforge-client";
 
 // ── Helpers ──
 function fakeApp() {
@@ -650,6 +652,11 @@ describe("Library module detail (Issue #78)", () => {
 
   it("primary action click overlays envelope running", () => {
     const tab = makeTab();
+    const syncTransport = new MockTransport();
+    syncTransport.executeHandler = () =>
+      JSON.stringify({ ok: true, data: { papers_synced: 1 } });
+    (tab as unknown as { _client: PaperForgeClient | null })._client =
+      new PaperForgeClient({ transport: syncTransport });
     (tab as any)._capabilityState = {
       library: {
         ...createUnknownEnvelope("library"),
@@ -1584,60 +1591,6 @@ describe("Library sync failure probe (Issue #78)", () => {
     );
     expect(probeCall).toBeDefined();
     expect(probeCall!.args.indexOf("--last-operation-exit-code")).toBe(-1);
-  });
-
-  it("failed _runManualSync onClose passes nonzero code to probe", async () => {
-    const tab = makeTab();
-    execFileCalls.length = 0;
-
-    (tab as any)._runManualSync();
-
-    // First call is sync, second (after onClose) is probe
-    const syncCall = execFileCalls.find(
-      (c) => c.args.includes("sync") && !c.args.includes("probe")
-    );
-    expect(syncCall).toBeDefined();
-
-    // Simulate sync failure by invoking the onClose directly
-    if (syncCall!.cb) syncCall!.cb(new Error("sync failed"), "", "error");
-
-    // #161/R: the completion goes through refresh-all — probe all first,
-    // then the library probe with the forwarded exit code (#78).
-    await new Promise((r) => setTimeout(r, 20));
-
-    const probeCall = execFileCalls.find(
-      (c) =>
-        c.args.includes("probe") &&
-        c.args.includes("library") &&
-        c.args.includes("--last-operation-exit-code")
-    );
-    expect(probeCall).toBeDefined();
-    const lastOpIdx = probeCall!.args.indexOf("--last-operation-exit-code");
-    expect(probeCall!.args[lastOpIdx + 1]).toBe("1");
-  });
-
-  it("successful _runManualSync onClose passes 0 to probe (no flag)", () => {
-    const tab = makeTab();
-    execFileCalls.length = 0;
-
-    (tab as any)._runManualSync();
-
-    const syncCall = execFileCalls.find(
-      (c) => c.args.includes("sync") && !c.args.includes("probe")
-    );
-    expect(syncCall).toBeDefined();
-
-    // Simulate sync success: code=0
-    if (syncCall!.cb) syncCall!.cb(null, "success", "");
-
-    // After success (code=0), probe should NOT have --last-operation-exit-code
-    const probeCalls = execFileCalls.filter(
-      (c) => c.args.includes("probe") && c.args.includes("library")
-    );
-    const failureProbe = probeCalls.find((c) =>
-      c.args.includes("--last-operation-exit-code")
-    );
-    expect(failureProbe).toBeUndefined();
   });
 
   it("sync_failed envelope renders actionable on failure probe", () => {

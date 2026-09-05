@@ -415,7 +415,7 @@ def probe_library(vault: Path, last_operation_exit_code: int | None = None) -> d
             paper_count = envelope.get("paper_count", 0)
 
             if not stored_hash or stored_hash != current_hash:
-                return build_envelope(
+                env = build_envelope(
                     module="library", capability_state="needs_action", severity="warning",
                     reason_code="library.index_stale",
                     reason_text=f"Library index is stale ({paper_count} papers — export files changed since last sync)",
@@ -425,6 +425,8 @@ def probe_library(vault: Path, last_operation_exit_code: int | None = None) -> d
                     ),
                     ttl_seconds=TTL_LIBRARY,
                 )
+                env["details"] = {"paper_count": paper_count}
+                return env
 
             # Cross-validate DB canonical_index_hash
             try:
@@ -443,13 +445,15 @@ def probe_library(vault: Path, last_operation_exit_code: int | None = None) -> d
             except Exception:
                 pass
             # Export hash valid and index healthy → ready
-            return build_envelope(
+            env = build_envelope(
                 module="library", capability_state="ready", severity="ok",
                 reason_code="library.ready",
                 reason_text=f"Library synced and index is fresh ({paper_count} papers)",
                 user_state=USER_STATE_READY, capability_kind=CAPABILITY_REQUIRED,
                 notices=notices, action_primary=None, ttl_seconds=TTL_LIBRARY,
             )
+            env["details"] = {"paper_count": paper_count}
+            return env
         elif envelope is not None:
             # Legacy list format
             return build_envelope(
