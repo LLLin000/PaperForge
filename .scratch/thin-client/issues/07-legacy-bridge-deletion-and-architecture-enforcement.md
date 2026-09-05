@@ -5,7 +5,36 @@
 **Blocked by:**
 - 06 — Library & Render Quality Domain Cutover
 
-**Status:** ready-for-agent
+**Status:** in progress — stage 1 corrective complete (authority gate + exact-snapshot ratchet + committed census)
+
+## Stage 1 (2026-09-05) — done
+
+- [ ] Delete `services/ocr-maintenance-ui.ts` — zero src importers (obsoleted by probe-owned maintenance projections); its dedicated test and stale `vi.mock` blocks removed.
+- [ ] Add the architecture ratchet gate (`tests/client/architecture-boundaries.test.ts`): child-process usage is frozen per file (baseline = current counts), shrinking only; new files with child-process usage fail the suite; the thin-client deletions are pinned ("deleted surfaces stay deleted"). Exemptions: `src/client/**` (the one Transport owner), `managed-runtime.ts` (bootstrap seam), `main.ts` (bootstrap ratchet), `secret-storage.ts` (DI-injected spawn).
+- [ ] Packaging check: `npm run build` clean (main.js 347.1kb, no broken import paths); full suite green.
+
+## Remaining surfaces (each needs a client method or a UI decision first)
+
+- `views/dashboard.ts` (3 sites): `_runAction` doctor/repair/needsKey context commands (`spawn` 3012, 3491), `execFileSync` in `_fetchVersion` (248). Needs `client.doctor/repair` typed methods + a client-side stats method before deletion; the Stats view itself still aggregates via `dashboard --json`/`status --json`.
+- `views/modals.ts` (3 sites): setup/install flows (295, 953) and one `execFile` (1259). Install journeys need a client `setup`-family reroute or explicit host-seam classification.
+- `settings.ts` (7 sites): `_callPython` (477) + runtime-health `_refreshSnapshots` (2510), `_runUpdateAction` (1946), OCR legacy dispatch (2497), auth-secret flows (2616, 3948, 4046). `_callPython` call sites must each map to a typed client method or a documented host seam.
+- `main.ts` (2 sites): convergence `_autoSync` (427) and one install/exec path (277). `_autoSync` should route through `client.sync()` + the shared orchestrator.
+- `services/config-client.ts` (2 sites): `probeAll`/credential queries still consumed by settings `_refreshAllReadModels` and dashboard global status rows — reroute to `client.probeAll()`/typed queries, then delete.
+- `services/ocr-process-controller.ts` (LIVE callers): `main.requestOcrRun()` → `controller.start(...)` drives the `paperforge-ocr` command and Settings reads `plugin.ocrProcessController`; reroute both through `client.runAction("ocr.run")` with production-entry tests BEFORE deleting the controller. `services/embed-build-controller.ts` (2 sites): still imported by main/settings; audit every importer before deletion. Neither is dead wiring.
+- `services/action-client.ts` + `next-actions-*`: alive — the follow-up bridge is the sanctioned next_actions consumer; reroute `runActionRequest` through `PaperForgeClient.runAction` (or classify as host seam) before deletion.
+- `services/python-bridge.ts`: `paperforgeEnrichedEnv`/runtime resolution used by node-transport (core); only `runSubprocess`/git-detection helpers become dead once the surfaces above are rerouted.
+
+## Stage 1 corrective (2026-09-05) — gate hardened to authority + exact snapshot
+
+Reviewer findings, all closed (no business code touched):
+
+- **Exact-snapshot ratchet (was max-baseline):** every gate entry now asserts `actual === frozen` (Gate B). Deleting a call forces the snapshot down in the same commit; debt can never silently regrow.
+- **Import authority gate (Gate A, TS AST via the `typescript` compiler API):** importing/requiring `child_process` is legal only in the exact listed files — any new importer fails the suite. The over-broad `client/**` directory exemption is gone: authority owners are exactly `client/node-transport.ts` (transport root) and `services/long-task-client.ts` (transport streaming stack, snapshot-frozen, must merge into node-transport before 07 closes). Regex call-name matching is replaced by AST call-expression counting over `{spawn, exec, execFile, execFileSync, spawnSync, execSync, fork}` (identifier + property access), so `spawn as launch` / `exec` / `fork` styles are covered.
+- **No blanket file exemptions:** `secret-storage.ts` needs none — its `deps.spawn` is an injected DI seam with no child_process import, so the authority gate alone proves it clean; `managed-runtime.ts` is now a listed HOST_SEAM (bootstrap/runtime adapter: imports `cpExecFile`/`cpExecFileSync` and injects them as DI defaults, zero direct call sites) instead of an undocumented exemption.
+- **Census correction (OCR controller is LIVE, not dead wiring):** `main.requestOcrRun()` → `ocrProcessController.start(...)` is still driven by the `paperforge-ocr` command and Settings reads `plugin.ocrProcessController` for its stop button. Stage 2 must first route `main.requestOcrRun` and the Settings OCR CTA through `client.runAction("ocr.run")` with production-entry tests, THEN delete `OcrProcessController`. `EmbedBuildController` likewise requires a full main/settings importer audit before deletion — neither may be direct-deleted.
+- **Census is committed** (this file): the surface→prerequisite table below is the authoritative handoff for the next session.
+
+Stage 2 execution order (leaf callers → transport root; each step lowers the snapshot): 1) `main._autoSync` → `client.sync()` + shared orchestration; 2) config-client read surfaces → `client.probeAll()`/typed queries, delete duplication; 3) OCR main/settings live callers → `client.runAction`, then delete `OcrProcessController`; 4) Embed controller residual callers → shared client, delete; 5) Dashboard `_runAction`/stats/version → typed methods/probe DTO; 6) Settings `_callPython` callers, one typed migration each; 7) modals setup/bootstrap seams → classify true host seam vs backend command; 8) collapse `action-client`/`next-actions-bridge`/`long-task-client`/`python-bridge` remnants into the transport root.
 
 - [ ] Delete all remaining direct `child_process.spawn("paperforge", ...)` and `child_process.execFile` calls inside view and component files.
 - [ ] Remove deprecated client helpers in `services/python-bridge.ts`, `services/action-client.ts`, and `services/long-task-client.ts` that have been absorbed by `PaperForgeClient` and `NodeProcessTransport`.

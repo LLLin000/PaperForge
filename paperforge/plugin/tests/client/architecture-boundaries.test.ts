@@ -1,49 +1,78 @@
 /**
- * Architecture boundary gate (Ticket 07).
+ * Architecture boundary gate (Ticket 07) — authority + exact-snapshot ratchet.
  *
- * After the thin-client cutover (Tickets 01–06), business UI code must
- * communicate with the Python backend exclusively through `PaperForgeClient`
- * over `Transport`. Direct child-process usage is allowed ONLY in:
+ * Layering contract:
+ *   PaperForgeClient → Transport → NodeProcessTransport  ← the ONLY
+ *   long-term child-process authority in the plugin.
  *
- *   1. `src/client/**`            — the single Transport owner
- *   2. `src/services/managed-runtime.ts` — bootstrap/runtime adapter seam
- *   3. `main.ts`                  — plugin bootstrap (legacy ratchet)
+ * Gate A — import authority: importing/requiring `child_process` (or
+ *   `node:child_process`) is allowed ONLY in the exact files listed below.
+ *   Any new importer fails the suite. DI seams (e.g. secret-storage's
+ *   injected `deps.spawn`) carry no authority and need no exemption.
  *
- * Every other file is on a ratchet baseline: the recorded count of
- * `spawn|execFile|execFileSync` call sites must NEVER increase, and no new
- * file may appear on the list. Shrink the baseline as Ticket 07 deletes the
- * remaining legacy surfaces; a shrinking baseline is the enforcement.
+ * Gate B — exact-snapshot ratchet: legacy files still on child_process
+ *   authority are frozen at their current call-site count. `actual ===
+ *   snapshot` — deleting a call forces the snapshot down in the same commit,
+ *   so debt can never silently regrow.
+ *
+ * Gate C — tombstones: surfaces already absorbed by the thin-client cutover
+ *   stay deleted.
+ *
+ * Shrink the snapshots as Stage 2 collapses each legacy surface from leaf
+ * callers toward the transport root.
  */
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
+import ts from "typescript";
 import { describe, it, expect } from "vitest";
 
 const SRC = join(__dirname, "..", "..", "src");
+const CP_MODULE = /^(node:)?child_process$/;
 
-/** Files permanently exempt from the child-process ratchet. */
-const EXEMPT = (relPosix: string): boolean => {
-  if (relPosix.startsWith("client/")) return true; // Transport owner
-  if (relPosix === "services/secret-storage.ts") return true; // DI: spawn injected via MigrationSpawn
-  return false;
+/** Permanent child-process authority — the transport stack, exact files. */
+const DIRECT_AUTHORITY_OWNERS: Record<string, number> = {
+  // Transport root. Spawn delegation lives in long-task-client until Stage 2
+  // collapses it into this file.
+  "client/node-transport.ts": 0,
+  // Transport stack (NodeProcessTransport's streaming engine). Snapshot
+  // frozen; must be merged into client/node-transport.ts before Ticket 07
+  // closes.
+  "services/long-task-client.ts": 2,
 };
 
-/** plugin bootstrap ratchet — shrink when main.ts legacy sync dies. */
-const MAIN_BASELINE = 2;
+/** Host-layer seams, listed file-by-file with their exact current shape. */
+const HOST_SEAMS: Record<string, number> = {
+  // Bootstrap/runtime adapter: imports cpExecFile/cpExecFileSync and injects
+  // them as DI defaults (opts?.execFile ?? cpExecFile); zero direct calls.
+  "services/managed-runtime.ts": 0,
+};
 
-/** Ratchet baseline: file (posix, relative to src/) → max call sites. */
-const BASELINE: Record<string, number> = {
+/** Legacy debt — exact-snapshot ratchet, shrinks only. */
+const LEGACY_RATCHET: Record<string, number> = {
+  "main.ts": 2,
   "settings.ts": 7,
   "views/dashboard.ts": 3,
   "views/modals.ts": 3,
   "services/config-client.ts": 2,
   "services/embed-build-controller.ts": 2,
-  "services/long-task-client.ts": 2,
-  "services/ocr-process-controller.ts": 3,
-  "services/python-bridge.ts": 3,
+  // Test-seam spawn via this._spawn; zero direct call sites, import frozen.
+  "services/ocr-process-controller.ts": 0,
+  "services/python-bridge.ts": 5,
 };
 
-const PATTERN = /\b(spawn|execFile|execFileSync)\s*\(/g;
+/** Files that must never exist again. */
+const TOMBSTONES = ["services/ocr-maintenance-ui.ts"];
+
+const CALL_NAMES = new Set([
+  "spawn",
+  "exec",
+  "execFile",
+  "execFileSync",
+  "spawnSync",
+  "execSync",
+  "fork",
+]);
 
 function* walk(dir: string): Generator<string> {
   for (const entry of readdirSync(dir)) {
@@ -56,43 +85,91 @@ function* walk(dir: string): Generator<string> {
   }
 }
 
-function countCallSites(content: string): number {
-  return [...content.matchAll(PATTERN)].length;
+interface Probe {
+  importsChildProcess: boolean;
+  callCount: number;
+}
+
+function probe(content: string): Probe {
+  const sf = ts.createSourceFile(
+    "gate.ts",
+    content,
+    ts.ScriptTarget.Latest,
+    true
+  );
+  let importsChildProcess = false;
+  let callCount = 0;
+  const visit = (node: ts.Node): void => {
+    if (
+      ts.isImportDeclaration(node) &&
+      CP_MODULE.test(node.moduleSpecifier.text)
+    ) {
+      importsChildProcess = true;
+    }
+    if (
+      ts.isCallExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      node.expression.text === "require" &&
+      node.arguments.length === 1 &&
+      ts.isStringLiteral(node.arguments[0]) &&
+      CP_MODULE.test(node.arguments[0].text)
+    ) {
+      importsChildProcess = true;
+    }
+    if (ts.isCallExpression(node)) {
+      const expr = node.expression;
+      const name = ts.isIdentifier(expr)
+        ? expr.text
+        : ts.isPropertyAccessExpression(expr)
+          ? expr.name.text
+          : undefined;
+      if (name !== undefined && CALL_NAMES.has(name)) callCount += 1;
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sf);
+  return { importsChildProcess, callCount };
 }
 
 describe("architecture boundary gate (Ticket 07)", () => {
-  it("no file exceeds its child-process ratchet baseline", () => {
+  it("Gate A: child_process import authority belongs only to listed files", () => {
     const violations: string[] = [];
+    const known = new Set([
+      ...Object.keys(DIRECT_AUTHORITY_OWNERS),
+      ...Object.keys(HOST_SEAMS),
+      ...Object.keys(LEGACY_RATCHET),
+    ]);
     for (const file of walk(SRC)) {
       const rel = relative(SRC, file).split(sep).join("/");
-      if (EXEMPT(rel)) continue;
-      const count = countCallSites(readFileSync(file, "utf-8"));
-      if (rel === "main.ts") {
-        if (count > MAIN_BASELINE) {
-          violations.push(`${rel}: ${count} > baseline ${MAIN_BASELINE}`);
-        }
-        continue;
-      }
-      const baseline = BASELINE[rel];
-      if (baseline === undefined) {
-        if (count > 0) {
-          violations.push(
-            `${rel}: NEW file with child-process usage (${count})`
-          );
-        }
-        continue;
-      }
-      if (count > baseline) {
-        violations.push(`${rel}: ${count} > baseline ${baseline}`);
+      const { importsChildProcess } = probe(readFileSync(file, "utf-8"));
+      if (importsChildProcess && !known.has(rel)) {
+        violations.push(`${rel}: unauthorized child_process import`);
       }
     }
     expect(violations).toEqual([]);
   });
 
-  it("deleted legacy surfaces stay deleted", () => {
-    // Files absorbed or obsoleted by the thin-client cutover must never return.
-    const deleted = ["services/ocr-maintenance-ui.ts"];
-    for (const rel of deleted) {
+  it("Gate B: legacy/host subprocess call sites match their exact snapshot", () => {
+    const violations: string[] = [];
+    const snapshots: Array<[string, Record<string, number>]> = [
+      ["authority", DIRECT_AUTHORITY_OWNERS],
+      ["host", HOST_SEAMS],
+      ["legacy", LEGACY_RATCHET],
+    ];
+    for (const [kind, map] of snapshots) {
+      for (const [rel, frozen] of Object.entries(map)) {
+        const file = join(SRC, rel);
+        const actual = probe(readFileSync(file, "utf-8")).callCount;
+        // exact equality: deleting a call forces the snapshot down in the
+        // same commit — the debt can only move toward zero.
+        expect([`${kind}:${rel}`, actual]).toEqual([`${kind}:${rel}`, frozen]);
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+
+  it("Gate C: absorbed legacy surfaces stay deleted", () => {
+    for (const rel of TOMBSTONES) {
       expect(() => statSync(join(SRC, rel))).toThrow();
     }
   });

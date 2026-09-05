@@ -5,8 +5,6 @@
 **Blocked by:**
 - 05 — Knowledge & Retrieval Domain Cutover
 
-**Status:** complete (2026-09-05)
-
 - [x] Connect Library overview and sync indicators to `client.probe("library")`, displaying sync state and orphan counts without client-side database scans.
 - [x] Bind manual Library sync triggers to `client.sync()`.
 - [x] Expose the Render Quality diagnostic interface within paper inspection drawers, fetching consistency findings via `client.renderAudit(key)`.
@@ -23,6 +21,8 @@ Implementation notes:
 Verification:
 - Plugin: **455/455 passed** (28 files, incl. `library-render-quality-cutover.test.ts` 9 cases: sync argv/exit-code, probe-owned facts, renderAudit argv, staging argv, R promote + snapshot invalidation, P accept exact hash, fail-closed); `tsc --noEmit --skipLibCheck` clean.
 - Python focused: **193 passed** (`test_probe.py` incl. ready-envelope paper_count, `test_lineage.py`, `test_shadow_rebuild.py`); ruff on changed files adds no new findings.
+
+**Status:** CLOSED — 31c5a321 (owner-verified 2026-09-05, after corrective rounds 1+2)
 
 ## Corrective (2026-09-05) — reviewer-identified contract gaps, all closed
 

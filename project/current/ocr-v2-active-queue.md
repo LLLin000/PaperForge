@@ -1,7 +1,7 @@
 # OCR-v2 Active Queue
 > Status: `EXECUTABLE_FROZEN a42f8bb7` / `PROTOCOL_DOCS 781910f3` — S1–S6 lightweight **COMPLETE** on `462398cb` (valid for `a42f8bb7`, `ruff` clean). Hosted CI `32353318123` on docs-only descendant `a2e18fa4` is **green: All Checks Passed, 14/14**, with `3.11` Ubuntu/macOS/Windows, J-Matrix, Ruff, plugin, OCR, E2E; no executable change after `a42f8bb7`. #191 FROZEN / ready-for-agent; #81 OPEN / owner gate. Reconcile recovery/fulltext safety follow-up is closed on disposable fixtures; P authority acceptance is transaction-safe and bound to the exact human-reviewed plan hash; the 969-paper unverified-content census is clean; semantic coverage and all production writes remain owner-gated.
 > Last updated: 2026-09-05
-> Ticket 06 is complete: Library sync/facts and the Render Quality drawer route through `PaperForgeClient` (`sync`, `renderAudit`, `renderReconcileStaging`, `promoteR`, `acceptProposal`); R/P CAS/journal/plan-hash semantics stay frozen backend contracts. Next: Ticket 07 (legacy bridge deletion) is unblocked.
+> Tickets 01–06 all CLOSED (06 — 31c5a321, owner-verified after corrective rounds 1+2): Library and Render Quality fully route through `PaperForgeClient`; sync follow-up semantics preserved via the shared orchestrator; R/P review renders actual staged crops with Open preview. Next: Ticket 07 (legacy bridge deletion + architecture enforcement).
 
 
 ## 2026-09-03: Ticket 04 OCR Workspace & Processing Domain Cutover — corrective closure
