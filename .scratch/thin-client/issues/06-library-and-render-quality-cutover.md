@@ -24,3 +24,15 @@ Verification:
 - Plugin: **455/455 passed** (28 files, incl. `library-render-quality-cutover.test.ts` 9 cases: sync argv/exit-code, probe-owned facts, renderAudit argv, staging argv, R promote + snapshot invalidation, P accept exact hash, fail-closed); `tsc --noEmit --skipLibCheck` clean.
 - Python focused: **193 passed** (`test_probe.py` incl. ready-envelope paper_count, `test_lineage.py`, `test_shadow_rebuild.py`); ruff on changed files adds no new findings.
 
+## Corrective (2026-09-05) — reviewer-identified contract gaps, all closed
+
+- **A. Every Dashboard sync CTA → `client.sync()`**: Global, Collection, and per-paper next-step `sync` buttons route through the shared `_runLibrarySync()`; sync never re-enters `_runAction`/`spawn` (regression covers all three rendered buttons plus the Settings entry).
+- **B. `render reconcile` positional-key wire**: client sends `render reconcile KEY --json` (positional), never the non-existent `--keys`; real-parser regression (`tests/test_render_wire.py`) proves the grammar and rejects `--keys`.
+- **C. Structured authority results preserved**: client-private `_executeStructuredJson` used by `renderAudit`/`promoteR`/`acceptProposal` — rc=1 with stdout JSON (FAILED audit, `R_GATE_FAILED`, `STALE_PROPOSAL`, `STALE_REVIEWED_PLAN`) returns as a normal authority response; only genuine spawn/protocol failures raise.
+- **D. Full quality refresh after committed mutation**: R/P commit clears the staging snapshot AND re-runs `renderAudit`, re-rendering the whole section; structured rejections also invalidate staging so the user must re-stage and re-review.
+- **E. Human-review evidence projection**: Python `stage_reconciliation` `p_details` now carries `decision`/`caption_text`/`member_refs` from the reviewed `final-plan.json` (DTO equals plan bytes, asserted); R rows show the staged preview path; P cards render caption, member blocks (page/block/bbox), preview, decision, and the reviewed plan hash — TS never parses staging files.
+
+Corrective verification:
+- Plugin: **461/461 passed** (28 files, `library-render-quality-cutover.test.ts` now 15 cases); `tsc --noEmit --skipLibCheck` clean.
+- Python: **266 passed** focused (incl. real `render reconcile` parser regression + DTO-equals-plan evidence test); ruff adds no new findings.
+

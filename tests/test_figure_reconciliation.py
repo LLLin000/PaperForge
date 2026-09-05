@@ -323,7 +323,14 @@ def test_stage_reconciliation_reports_final_plan_hash(
     detail = result["p_details"][0]
     plan_path = Path(detail["final_plan"])
     assert detail["final_plan_hash"] == hashlib.sha256(plan_path.read_bytes()).hexdigest()
-
+    # Ticket 06 corrective E: the staging DTO must project the reviewed
+    # plan's evidence (decision / caption / member blocks) so the client
+    # renders what the user is authorizing without reading files itself.
+    plan = json.loads(plan_path.read_bytes())
+    assert detail["decision"] == plan["decision"]
+    assert detail["caption_text"] == plan["caption_text"]
+    assert detail["member_refs"] == plan["member_refs"]
+    assert isinstance(detail["member_refs"], list) and detail["member_refs"]
 
 def test_dry_run_marks_existing_unprovenanced_artifact_unverified(tmp_path: Path) -> None:
     from paperforge.figure_reconciliation import dry_run_exact_repairs

@@ -1190,8 +1190,7 @@ export class PaperForgeStatusView extends ItemView {
     });
     globalSyncBtn.createEl("span", { text: "Sync Library" });
     globalSyncBtn.addEventListener("click", () => {
-      const action = ACTIONS.find((a) => a.id === "paperforge-sync");
-      if (action) this._runAction(action, globalSyncBtn);
+      void this._runLibrarySync();
     });
     const globalOcrBtn = btnsRow.createEl("button", {
       cls: "paperforge-contextual-btn",
@@ -1841,7 +1840,7 @@ export class PaperForgeStatusView extends ItemView {
       const stagingBlock = container.createDiv({
         cls: "paperforge-quality-staging",
       });
-      this._renderQualityStaging(stagingBlock, key);
+      this._renderQualityStaging(stagingBlock, key, container);
     } catch (err: unknown) {
       status.setText(
         `Render audit failed: ${err instanceof Error ? err.message : String(err)}`
@@ -1849,7 +1848,11 @@ export class PaperForgeStatusView extends ItemView {
     }
   }
 
-  private _renderQualityStaging(container: HTMLElement, key: string) {
+  private _renderQualityStaging(
+    container: HTMLElement,
+    key: string,
+    root: HTMLElement
+  ) {
     container.empty();
     const cached =
       this._qualityStagingCache?.key === key
@@ -1861,16 +1864,17 @@ export class PaperForgeStatusView extends ItemView {
         text: "Stage R/P proposals",
       });
       stageBtn.addEventListener("click", () => {
-        void this._loadQualityStaging(container, key);
+        void this._loadQualityStaging(container, key, root);
       });
       return;
     }
-    this._renderQualityStagingData(container, key, cached);
+    this._renderQualityStagingData(container, key, cached, root);
   }
 
   private async _loadQualityStaging(
     container: HTMLElement,
-    key: string
+    key: string,
+    root: HTMLElement
   ): Promise<void> {
     const client = this._getClient();
     if (!client) {
@@ -1889,7 +1893,7 @@ export class PaperForgeStatusView extends ItemView {
     try {
       const data = await client.renderReconcileStaging(key);
       this._qualityStagingCache = { key, data };
-      this._renderQualityStagingData(container, key, data);
+      this._renderQualityStagingData(container, key, data, root);
     } catch (err: unknown) {
       container.empty();
       container.createEl("p", {
@@ -1902,7 +1906,8 @@ export class PaperForgeStatusView extends ItemView {
   private _renderQualityStagingData(
     container: HTMLElement,
     key: string,
-    data: Record<string, unknown>
+    data: Record<string, unknown>,
+    root: HTMLElement
   ): void {
     container.empty();
     // ── R exact repairs: per-object promote through the client ──
@@ -1921,17 +1926,27 @@ export class PaperForgeStatusView extends ItemView {
         row.createEl("span", {
           text: `${objectId} ${staged ? "(staged)" : "(unstaged)"}`,
         });
+        // Corrective E: show the exact staged preview the plan promotes.
+        if (r["image"]) {
+          row.createEl("div", {
+            cls: "paperforge-quality-preview-path",
+            text: String(r["image"]),
+          });
+        }
         const promote = row.createEl("button", {
           cls: "pf-action-btn",
           text: "Promote",
         });
         if (!staged) promote.disabled = true;
         promote.addEventListener("click", () => {
-          void this._promoteRObject(container, key, objectId);
+          void this._promoteRObject(root, key, objectId);
         });
       }
     }
-    // ── P proposals: evidence cards, accept requires the exact plan hash ──
+    // ── P proposals: human-review evidence cards (#06 corrective E).
+    // The card shows exactly what the user is authorizing — caption,
+    // member blocks, page/bbox, preview, and the reviewed plan hash —
+    // all projected by the Python staging DTO, never parsed client-side. ──
     const pDetails = (data["p_details"] ?? []) as Array<
       Record<string, unknown>
     >;
@@ -1949,8 +1964,34 @@ export class PaperForgeStatusView extends ItemView {
           cls: "paperforge-quality-p-card",
         });
         card.createEl("div", {
-          text: `Figure ${label} — page ${String(p["page"] ?? "?")}, staged: ${p["staged"] === true}`,
+          text: `Figure ${label} — page ${String(p["page"] ?? "?")}, decision: ${String(p["decision"] ?? "?")}, staged: ${p["staged"] === true}`,
         });
+        const caption = p["caption_text"];
+        if (typeof caption === "string" && caption.trim()) {
+          card.createEl("div", {
+            cls: "paperforge-quality-caption",
+            text: caption,
+          });
+        }
+        const memberRefs = (p["member_refs"] ?? []) as Array<
+          Record<string, unknown>
+        >;
+        if (memberRefs.length > 0) {
+          const list = card.createEl("ul", {
+            cls: "paperforge-quality-members",
+          });
+          for (const m of memberRefs) {
+            list.createEl("li", {
+              text: `p${String(m["page"] ?? "?")} · block ${String(m["block_id"] ?? "?")} · bbox ${JSON.stringify(m["bbox"] ?? null)}`,
+            });
+          }
+        }
+        if (p["preview"]) {
+          card.createEl("div", {
+            cls: "paperforge-quality-preview-path",
+            text: `preview: ${String(p["preview"])}`,
+          });
+        }
         card.createEl("div", {
           cls: "paperforge-quality-plan-hash",
           text: `plan ${planHash.slice(0, 12)}…`,
@@ -1961,7 +2002,7 @@ export class PaperForgeStatusView extends ItemView {
         });
         if (p["staged"] !== true) accept.disabled = true;
         accept.addEventListener("click", () => {
-          void this._acceptProposalCard(container, key, label, planHash);
+          void this._acceptProposalCard(root, key, label, planHash);
         });
       }
     }
@@ -1972,8 +2013,28 @@ export class PaperForgeStatusView extends ItemView {
     }
   }
 
+  /** Committed R/P mutation → the whole quality read model must refresh
+   * (#06 corrective D): clear the staging snapshot, re-run renderAudit, and
+   * show the current authoritative state. A structured authority rejection
+   * (e.g. STALE_PROPOSAL) also clears staging so the user must re-stage and
+   * re-review instead of acting on an invalidated evidence card. */
+  private _afterQualityMutation(
+    root: HTMLElement,
+    key: string,
+    rejected: boolean
+  ): void {
+    this._qualityStagingCache = null;
+    void this._loadQualitySection(root, key);
+    if (rejected) {
+      new Notice(
+        "Authority rejected the action — re-stage and review the current proposals",
+        8000
+      );
+    }
+  }
+
   private async _promoteRObject(
-    container: HTMLElement,
+    root: HTMLElement,
     key: string,
     objectId: string
   ): Promise<void> {
@@ -1985,12 +2046,10 @@ export class PaperForgeStatusView extends ItemView {
       new Notice(
         ok
           ? `Promoted ${objectId}`
-          : `Promotion failed: ${String(result?.error?.code ?? result?.reason ?? "unknown")}`,
+          : `Promotion rejected: ${String(result?.error?.code ?? result?.reason ?? "unknown")}`,
         8000
       );
-      // Committed mutation → staging snapshot is stale; invalidate and reload.
-      this._qualityStagingCache = null;
-      this._renderQualityStaging(container, key);
+      this._afterQualityMutation(root, key, !ok);
     } catch (err: unknown) {
       new Notice(
         `Promotion failed: ${err instanceof Error ? err.message : String(err)}`,
@@ -2000,7 +2059,7 @@ export class PaperForgeStatusView extends ItemView {
   }
 
   private async _acceptProposalCard(
-    container: HTMLElement,
+    root: HTMLElement,
     key: string,
     label: string,
     planHash: string
@@ -2015,11 +2074,10 @@ export class PaperForgeStatusView extends ItemView {
       new Notice(
         ok
           ? `Accepted proposal ${label}`
-          : `Acceptance failed: ${String(result?.error?.code ?? result?.reason ?? "unknown")}`,
+          : `Acceptance rejected: ${String(result?.error?.code ?? result?.reason ?? "unknown")}`,
         8000
       );
-      this._qualityStagingCache = null;
-      this._renderQualityStaging(container, key);
+      this._afterQualityMutation(root, key, !ok);
     } catch (err: unknown) {
       new Notice(
         `Acceptance failed: ${err instanceof Error ? err.message : String(err)}`,
@@ -2088,6 +2146,10 @@ export class PaperForgeStatusView extends ItemView {
       });
       trigger.createEl("span", { text: info.icon + "  " + info.label });
       trigger.addEventListener("click", () => {
+        if (info.actionId === "paperforge-sync") {
+          void this._runLibrarySync();
+          return;
+        }
         const action = ACTIONS.find((a) => a.id === info.actionId);
         if (action) this._runAction(action, trigger);
       });
@@ -2315,8 +2377,7 @@ export class PaperForgeStatusView extends ItemView {
     });
     syncBtn.createEl("span", { text: "Sync Library" });
     syncBtn.addEventListener("click", () => {
-      const action = ACTIONS.find((a) => a.id === "paperforge-sync");
-      if (action) this._runAction(action, syncBtn);
+      void this._runLibrarySync();
     });
     this.renderSearchSection(view);
   }
@@ -3250,6 +3311,54 @@ export class PaperForgeStatusView extends ItemView {
       text: msg,
     });
   }
+  /* ── Library Sync (Ticket 06 corrective A): every manual sync CTA routes
+     through the shared client — sync must never re-enter _runAction/spawn ── */
+  private _librarySyncRunning = false;
+
+  private async _runLibrarySync(): Promise<void> {
+    if (this._librarySyncRunning) return;
+    const client = this._getClient();
+    if (!client) {
+      new Notice("[!!] PaperForge backend unavailable", 6000);
+      return;
+    }
+    this._librarySyncRunning = true;
+    this._showMessage("Syncing library...", "running");
+    let exitOk = false;
+    try {
+      const result = await client.sync();
+      exitOk = result?.ok !== false;
+      if (exitOk) {
+        this._showMessage("[OK] Sync Library: complete", "ok");
+        new Notice("Sync complete");
+      } else {
+        this._showMessage("[!!] Sync failed", "error");
+        new Notice("[!!] Sync Library failed", 8000);
+      }
+    } catch (err: unknown) {
+      const detail = err instanceof Error ? err.message : String(err);
+      this._showMessage("[!!] " + detail, "error");
+      new Notice("[!!] Sync failed: " + detail, 8000);
+    } finally {
+      this._librarySyncRunning = false;
+      // Committed mutation → refresh the read model and re-check orphans
+      // through the shared client (same behavior as the legacy sync path).
+      this._cachedStats = null;
+      try {
+        this._fetchStats(false);
+      } catch (e) {
+        console.log("[PF] fetchStats error:", e);
+      }
+      if (exitOk) {
+        checkOrphanState(
+          this.app,
+          ((this.app as any).plugins.plugins as any)["paperforge"],
+          (this.app.vault.adapter as any).basePath as string
+        );
+      }
+    }
+  }
+
   /* ── Run Action ── */
   async _runAction(a: any, card: HTMLElement) {
     if (a.disabled) {

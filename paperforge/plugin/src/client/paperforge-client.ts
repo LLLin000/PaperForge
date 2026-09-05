@@ -601,12 +601,36 @@ export class PaperForgeClient {
 
   // ── 6. Authority Actions (Render Quality) ──────────────────────────────────
 
+  /** #06 corrective C: Render authority exits rc=1 with a STRUCTURED JSON
+   * rejection on stdout (FAILED audit, R_GATE_FAILED, STALE_PROPOSAL,
+   * STALE_REVIEWED_PLAN, …). The transport rejects non-zero exits, but the
+   * Python decision must survive as a normal authority response — only a
+   * genuine spawn/protocol failure may surface as an exception. */
+  private async _executeStructuredJson<T>(argv: string[]): Promise<T> {
+    try {
+      const raw = await this._transport.execute(argv);
+      return JSON.parse(raw) as T;
+    } catch (err: unknown) {
+      const stdout =
+        err instanceof Error
+          ? ((err as unknown as { stdout?: unknown }).stdout ?? null)
+          : null;
+      if (typeof stdout === "string" && stdout.trim()) {
+        try {
+          return JSON.parse(stdout) as T;
+        } catch {
+          // fall through — stdout was not JSON
+        }
+      }
+      throw err;
+    }
+  }
+
   async renderAudit(key?: string): Promise<any> {
     const argv = ["render", "audit"];
     if (key) argv.push(key);
     argv.push("--json");
-    const raw = await this._transport.execute(argv);
-    return JSON.parse(raw);
+    return this._executeStructuredJson(argv);
   }
 
   /** Ticket 06: R/P staging preview for one paper (isolated tmp root; never
@@ -614,24 +638,21 @@ export class PaperForgeClient {
    * SHA-256 token `accept-proposal` requires — and `r_details[].object_id`
    * candidates for `promote-r`. */
   async renderReconcileStaging(key: string): Promise<Record<string, unknown>> {
-    const raw = await this._transport.execute([
+    // `render reconcile` takes POSITIONAL keys — never `--keys` (#06 corrective B).
+    const raw = await this._executeStructuredJson<Record<string, unknown>>([
       "render",
       "reconcile",
-      "--keys",
       key,
       "--json",
     ]);
-    const parsed = JSON.parse(raw) as {
-      papers?: Record<string, unknown>[];
-    };
+    const parsed = raw as { papers?: Record<string, unknown>[] };
     return parsed.papers?.find((p) => p.paper_key === key) ?? {};
   }
 
   async promoteR(key: string, objectIds: string[] = []): Promise<any> {
     const argv = ["render", "promote-r", key, ...objectIds, "--json"];
     try {
-      const raw = await this._transport.execute(argv);
-      return JSON.parse(raw);
+      return await this._executeStructuredJson(argv);
     } finally {
       this.invalidateCache();
     }
@@ -652,8 +673,7 @@ export class PaperForgeClient {
       "--json",
     ];
     try {
-      const raw = await this._transport.execute(argv);
-      return JSON.parse(raw);
+      return await this._executeStructuredJson(argv);
     } finally {
       this.invalidateCache();
     }

@@ -229,6 +229,111 @@ describe("Library & Render Quality Domain Cutover (Ticket 06)", () => {
         expect(tab._refreshAllReadModels).toHaveBeenCalledWith(1);
       });
     });
+
+    // #06 corrective A: EVERY manual sync CTA (Dashboard global/collection/
+    // per-paper and Settings) must reach client.sync — never _runAction/spawn.
+    describe("Dashboard sync CTAs", () => {
+      function makeDashboardForSync() {
+        const leaf = {};
+        const view = new (PaperForgeStatusView as unknown as new (
+          ...a: unknown[]
+        ) => Record<string, unknown>)(leaf) as Record<
+          string,
+          (...args: unknown[]) => unknown
+        > & {
+          _contentEl: HTMLElement | null;
+          _currentDomain: string;
+        };
+        view.app = {
+          vault: { adapter: { basePath: "/vault" } },
+          plugins: {
+            plugins: {
+              paperforge: {
+                getClient: () => client,
+              },
+            },
+          },
+        };
+        view._fetchStats = vi.fn();
+        return view;
+      }
+
+      const syncHandler = (argv: string[]) => {
+        if (argv[0] === "sync") {
+          return JSON.stringify({ ok: true, data: { papers_synced: 1 } });
+        }
+        if (argv[0] === "reconcile") {
+          return JSON.stringify({ deficits: [] });
+        }
+        return "{}";
+      };
+
+      async function expectOnlyClientSync(click: () => void) {
+        transport.executeHandler = syncHandler;
+        click();
+        await vi.waitFor(() => {
+          expect(transport.calls.some((c) => c.argv[0] === "sync")).toBe(true);
+        });
+        const nonSync = transport.calls.filter((c) => c.argv[0] !== "sync");
+        expect(
+          nonSync.every(
+            (c) => c.argv[0] === "reconcile" || c.argv[0] === "probe"
+          )
+        ).toBe(true);
+        expect(
+          transport.calls.filter((c) => c.argv[0] === "sync").map((c) => c.argv)
+        ).toEqual([["sync", "--json"]]);
+        // The sync ACTION must never spawn or execFile. (Render-time reads
+        // such as the global-mode `auth status ocr` row are unrelated legacy
+        // surfaces owned by Ticket 07 — they are not part of the sync path.)
+        const childProcArgv = [
+          ...mockSpawn.mock.calls,
+          ...mockExecFile.mock.calls,
+        ].map((c) => JSON.stringify(c[1] ?? []));
+        for (const a of childProcArgv) {
+          expect(a).not.toContain('"sync"');
+        }
+      }
+
+      it("global Sync Library button routes through _runLibrarySync", async () => {
+        const view = makeDashboardForSync();
+        view._contentEl = document.createElement("div");
+        view._getCachedIndex = () => [];
+        view._loadIndex = () => null;
+        view._renderGlobalMode();
+        const btn = Array.from(view._contentEl.querySelectorAll("button")).find(
+          (b) => b.textContent?.includes("Sync Library")
+        );
+        expect(btn).toBeDefined();
+        await expectOnlyClientSync(() => btn?.click());
+      });
+
+      it("collection Sync Library button routes through _runLibrarySync", async () => {
+        const view = makeDashboardForSync();
+        view._contentEl = document.createElement("div");
+        view._currentDomain = "All";
+        view._filterByDomain = () => [
+          { key: "A", title: "A", has_pdf: true, ocr_status: "done" },
+        ];
+        view._renderCollectionMode();
+        const btn = Array.from(view._contentEl.querySelectorAll("button")).find(
+          (b) => b.textContent?.includes("Sync Library")
+        );
+        expect(btn).toBeDefined();
+        await expectOnlyClientSync(() => btn?.click());
+      });
+
+      it("per-paper next-step Sync CTA routes through _runLibrarySync", async () => {
+        const view = makeDashboardForSync();
+        const card = document.createElement("div");
+        view._renderNextStepCard(card, { next_step: "sync" }, "ABCD1234");
+        const trigger = card.querySelector(
+          ".paperforge-next-step-trigger"
+        ) as HTMLButtonElement | null;
+        expect(trigger?.textContent).toContain("Sync Needed");
+        await expectOnlyClientSync(() => trigger?.click());
+      });
+    });
   });
 
   describe("Render Quality Cutover", () => {
@@ -300,6 +405,11 @@ describe("Library & Render Quality Domain Cutover (Ticket 06)", () => {
                 staged: true,
                 preview: "p.jpg",
                 final_plan_hash: PLAN_HASH,
+                decision: "high",
+                caption_text: "Figure 1: Overall architecture",
+                member_refs: [
+                  { page: 3, block_id: "p3:b2", bbox: [10, 20, 300, 400] },
+                ],
               },
             ],
           },
@@ -350,7 +460,7 @@ describe("Library & Render Quality Domain Cutover (Ticket 06)", () => {
         transport.calls.find(
           (c) => c.argv[0] === "render" && c.argv[1] === "reconcile"
         )?.argv
-      ).toEqual(["render", "reconcile", "--keys", KEY, "--json"]);
+      ).toEqual(["render", "reconcile", KEY, "--json"]);
       await vi.waitFor(() => {
         expect(stagingEl?.textContent).toContain("R exact repairs");
       });
@@ -458,6 +568,110 @@ describe("Library & Render Quality Domain Cutover (Ticket 06)", () => {
       expect(transport.calls).toHaveLength(0);
       expect(mockSpawn).not.toHaveBeenCalled();
       expect(mockExecFile).not.toHaveBeenCalled();
+    });
+
+    it("P evidence card renders caption, member blocks, preview, and decision from the staging DTO", async () => {
+      transport.executeHandler = (argv) => {
+        if (argv[0] === "render" && argv[1] === "audit") return auditResponse();
+        if (argv[0] === "render" && argv[1] === "reconcile")
+          return stagingResponse();
+        return "{}";
+      };
+      const view = makeDashboard(client);
+      const body = document.createElement("div");
+      await view._loadQualitySection(body, KEY);
+      body.querySelector(".paperforge-quality-staging button")?.click();
+      await vi.waitFor(() => {
+        expect(body.textContent).toContain("Figure 1");
+      });
+      expect(body.textContent).toContain("decision: high");
+      expect(body.textContent).toContain("Figure 1: Overall architecture");
+      expect(body.textContent).toContain("block p3:b2");
+      expect(body.textContent).toContain("preview: p.jpg");
+      expect(body.textContent).toContain("x.jpg"); // R staged preview
+    });
+
+    it("committed R/P mutation refreshes the whole quality view (renderAudit re-run)", async () => {
+      transport.executeHandler = (argv) => {
+        if (argv[0] === "render" && argv[1] === "audit") return auditResponse();
+        if (argv[0] === "render" && argv[1] === "reconcile")
+          return stagingResponse();
+        if (argv[0] === "render" && argv[1] === "promote-r") {
+          return JSON.stringify({ ok: true, data: { promoted: 1 } });
+        }
+        return "{}";
+      };
+      const view = makeDashboard(client);
+      const body = document.createElement("div");
+      await view._loadQualitySection(body, KEY);
+      const auditsBefore = transport.calls.filter(
+        (c) => c.argv[0] === "render" && c.argv[1] === "audit"
+      ).length;
+      const stagingEl = body.querySelector(".paperforge-quality-staging");
+      stagingEl?.querySelector("button")?.click();
+      await vi.waitFor(() => {
+        expect(stagingEl?.textContent).toContain("Promote");
+      });
+      const promoteBtn = Array.from(
+        stagingEl?.querySelectorAll("button") ?? []
+      ).find((b) => b.textContent === "Promote");
+      promoteBtn?.click();
+
+      await vi.waitFor(() => {
+        const auditsAfter = transport.calls.filter(
+          (c) => c.argv[0] === "render" && c.argv[1] === "audit"
+        ).length;
+        expect(auditsAfter).toBeGreaterThan(auditsBefore);
+      });
+      // The audit section itself must be re-rendered, not just the staging block.
+      await vi.waitFor(() => {
+        expect(body.textContent?.includes("Render consistency: DEGRADED")).toBe(
+          true
+        );
+      });
+    });
+
+    it("structured authority rejection (rc=1 + stdout JSON) survives as a normal result and forces re-stage", async () => {
+      transport.executeHandler = (argv) => {
+        if (argv[0] === "render" && argv[1] === "audit") return auditResponse();
+        if (argv[0] === "render" && argv[1] === "reconcile")
+          return stagingResponse();
+        if (argv[0] === "render" && argv[1] === "accept-proposal") {
+          const err = new Error("exit code 1");
+          (err as unknown as { stdout: string }).stdout = JSON.stringify({
+            ok: false,
+            reason: "STALE_PROPOSAL",
+            staged_snapshot: "abc",
+            live_snapshot: "def",
+          });
+          throw err;
+        }
+        return "{}";
+      };
+      const view = makeDashboard(client);
+      const body = document.createElement("div");
+      await view._loadQualitySection(body, KEY);
+      const stagingEl = body.querySelector(".paperforge-quality-staging");
+      stagingEl?.querySelector("button")?.click();
+      await vi.waitFor(() => {
+        expect(stagingEl?.textContent).toContain("Accept");
+      });
+      const acceptBtn = Array.from(
+        stagingEl?.querySelectorAll("button") ?? []
+      ).find((b) => b.textContent === "Accept");
+      acceptBtn?.click();
+
+      // Structured rejection preserved → staging invalidated → user must
+      // re-stage and re-review (no stale Accept card remains).
+      await vi.waitFor(() => {
+        expect(view._qualityStagingCache).toBeNull();
+      });
+      // The full quality section re-renders → re-query the fresh staging block.
+      const freshStaging = body.querySelector(".paperforge-quality-staging");
+      await vi.waitFor(() => {
+        expect(freshStaging?.textContent).toContain("Stage R/P proposals");
+      });
+      expect(freshStaging?.textContent).not.toContain("Accept");
     });
   });
 });

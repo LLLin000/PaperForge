@@ -24,12 +24,15 @@
 - **Stop ownership:** `_renderMemoryDetail` Stop renders only when `client.isOperationActive()`; legacy `embedController.busy/stop` fallback and tests pinning execFile memory-build dispatch deleted.
 - **Verification:** Python focused **169 passed**; plugin **448/448** (incl. production-entry allowlist regression); `tsc --noEmit` clean; ruff clean on changed files.
 
-## 2026-09-05: Ticket 06 Library & Render Quality Domain Cutover
+## 2026-09-05: Ticket 06 Library & Render Quality Domain Cutover — corrective closure
 
-- **Library:** `_runManualSync` routes through `client.sync()` (invalidate-on-mutation; `orchestrateFromSync` consumes the same PFResult; exit code 0/1 forwarded into `_refreshAllReadModels` for sync-failure probing). Library facts render probe-owned `details.paper_count` (new structured field on ready/stale envelopes) and the maintenance envelope's orphan count — no client-side database scans.
-- **Render Quality:** typed-client projection inside the paper technical-details drawer — `client.renderAudit(key)` findings, new `client.renderReconcileStaging(key)` for isolated R/P staging previews, per-object `client.promoteR(key, [objectId])`, per-card `client.acceptProposal(key, label, final_plan_hash)` forwarding the exact reviewed SHA-256; committed mutations invalidate the staging snapshot.
-- **Frozen backend contracts untouched:** reconcile/render core, R/P CAS/journal/plan-hash semantics, OCR/render pipeline.
-- **Verification:** plugin **455/455** (28 files, new `library-render-quality-cutover.test.ts` 9 cases); `tsc --noEmit` clean; Python focused **193 passed**; ruff adds no new findings.
+- **Review verdict:** initial cutover complete but reviewer found 5 contract gaps (4 P1); all closed in one corrective.
+- **A (sync CTAs):** Dashboard Global / Collection / per-paper next-step sync buttons route through the shared `_runLibrarySync()` → `client.sync()`; sync never re-enters `_runAction`/`spawn`.
+- **B (wire):** `renderReconcileStaging` sends `render reconcile KEY --json` (positional; `--keys` never existed); real-parser regression rejects `--keys`.
+- **C (authority results):** client `_executeStructuredJson` preserves rc=1 stdout JSON (`STALE_PROPOSAL`, `STALE_REVIEWED_PLAN`, `R_GATE_FAILED`) as normal responses on `renderAudit`/`promoteR`/`acceptProposal`.
+- **D (refresh):** committed R/P mutation clears staging AND re-runs `renderAudit`; structured rejections force re-stage + re-review.
+- **E (evidence):** Python staging DTO projects `decision`/`caption_text`/`member_refs` from the reviewed final plan (DTO == plan bytes, asserted); P cards render caption/member blocks/preview/decision/hash; R rows show staged preview. TS never reads staging files.
+- **Verification:** plugin **461/461**; `tsc` clean; Python focused **266 passed**; ruff adds no new findings.
 
 ## 2026-09-02: Reconcile Core Frozen & Backend Contract Mapping Established
 
