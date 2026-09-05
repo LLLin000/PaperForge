@@ -879,6 +879,8 @@ def run_embedding_build(
                                     logger.warning("Resume object_units check failed for %s: %s", key, exc)
 
                             if body_ok and object_ok:
+                                processed_count += 1
+                                papers_skipped += 1
                                 _emit_paper_event(key, "noop")
                                 _mark(current=processed_count, paper_id=key, last_update=_now())
                                 continue
@@ -917,6 +919,8 @@ def run_embedding_build(
                                         "SELECT 1 FROM vec_fulltext_meta WHERE paper_id = ? LIMIT 1", (key,)
                                     ).fetchone()
                                     if row:
+                                        processed_count += 1
+                                        papers_skipped += 1
                                         _emit_paper_event(key, "noop")
                                         _mark(
                                             current=processed_count, paper_id=key, last_update=_now()
@@ -932,6 +936,8 @@ def run_embedding_build(
                             vault, key, has_body, has_object, [], [], fulltext_rel=fulltext_rel
                         )
 
+                    if not payloads:
+                        processed_count += 1
                         _emit_paper_event(key, "noop")
                         _mark(current=processed_count, paper_id=key, last_update=_now())
                         continue

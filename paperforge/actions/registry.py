@@ -497,15 +497,15 @@ def _embed_build_handler(ctx: ActionContext, request: ActionRequest) -> PFResult
         hooks.phase("embedding")
 
     def _on_progress(current: int, total: int, key: str) -> None:
-        if hooks is not None:
-            if hooks.progress is not None:
-                hooks.progress(current, total, key)
-            if hooks.paper_settled is not None:
-                hooks.paper_settled(key, "succeeded", None)
+        if hooks is not None and hooks.progress is not None:
+            hooks.progress(current, total, key)
 
     def _on_item_result(key: str, status: str) -> None:
-        if hooks is not None and hooks.item_result is not None:
-            hooks.item_result(key, status)
+        if hooks is not None:
+            if hooks.paper_settled is not None:
+                hooks.paper_settled(key, status, None)
+            if hooks.item_result is not None:
+                hooks.item_result(key, status)
 
     sink: dict = {}
     try:
@@ -629,15 +629,15 @@ def _embed_resume_handler(ctx: ActionContext, request: ActionRequest) -> PFResul
         hooks.phase("embedding")
 
     def _on_progress(current: int, total: int, key: str) -> None:
-        if hooks is not None:
-            if hooks.progress is not None:
-                hooks.progress(current, total, key)
-            if hooks.paper_settled is not None:
-                hooks.paper_settled(key, "succeeded", None)
+        if hooks is not None and hooks.progress is not None:
+            hooks.progress(current, total, key)
 
     def _on_item_result(key: str, status: str) -> None:
-        if hooks is not None and hooks.item_result is not None:
-            hooks.item_result(key, status)
+        if hooks is not None:
+            if hooks.paper_settled is not None:
+                hooks.paper_settled(key, status, None)
+            if hooks.item_result is not None:
+                hooks.item_result(key, status)
 
     sink: dict = {}
     try:

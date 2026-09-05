@@ -1,7 +1,7 @@
 # OCR-v2 Active Queue
 > Status: `EXECUTABLE_FROZEN a42f8bb7` / `PROTOCOL_DOCS 781910f3` — S1–S6 lightweight **COMPLETE** on `462398cb` (valid for `a42f8bb7`, `ruff` clean). Hosted CI `32353318123` on docs-only descendant `a2e18fa4` is **green: All Checks Passed, 14/14**, with `3.11` Ubuntu/macOS/Windows, J-Matrix, Ruff, plugin, OCR, E2E; no executable change after `a42f8bb7`. #191 FROZEN / ready-for-agent; #81 OPEN / owner gate. Reconcile recovery/fulltext safety follow-up is closed on disposable fixtures; P authority acceptance is transaction-safe and bound to the exact human-reviewed plan hash; the 969-paper unverified-content census is clean; semantic coverage and all production writes remain owner-gated.
-> Last updated: 2026-09-03
-> Ticket 05 is complete: Knowledge & Retrieval domain cut over to `PaperForgeClient`; #137 NDJSON vocabulary frozen across Python and TS; embed streaming progress and cancellation wired into real workers. Focused Python/plugin gates and TypeScript typecheck pass.
+> Last updated: 2026-09-05
+> Ticket 05 corrective round 2 is complete: noop settlement truth (`paper_settled`/counters), fail-closed memory dispatch entrypoint, and client-only Stop ownership verified. Next: owner review to formally close 05, then Ticket 06 (Library & Render Quality cutover).
 
 
 ## 2026-09-03: Ticket 04 OCR Workspace & Processing Domain Cutover — corrective closure
@@ -17,6 +17,13 @@
 - **Search & Retrieval:** `dashboard.ts` cuts over `executeSearch()` to `client.search(query, options)` and `client.retrieve(query, options)` with unwrap normalization; `--no-expand` added to CLI for wire parity.
 - **Smart Retrieval:** `settings.ts` memory/embed build dispatches route through `client.runAction()`, streaming progress, strictly failing closed on cross-domain action IDs, and wiring Stop only when `client.isOperationActive()`.
 - **Verification:** **107 passed, 1 skipped** focused Python tests; **448 plugin tests passed**; `npm run typecheck` clean. No production write ran.
+
+### 2026-09-05: Ticket 05 corrective round 2
+
+- **Noop settlement truth:** `paper_settled(key, status)` moved from `_on_progress` to `_on_item_result`; noop/skip branches increment `processed_count`/`papers_skipped`; un-mocked real-service CLI test asserts clean NDJSON with `progress.current==1`, single `paper_settled outcome=noop`, single `item_result status=noop`, `papers_skipped==1`.
+- **Fail-closed entrypoint:** `_runAllowedDispatch("memory")` unknown action IDs no longer substitute `memory.build` — Notice + re-probe; typed `satisfies ActionPrimary` regression added.
+- **Stop ownership:** `_renderMemoryDetail` Stop renders only when `client.isOperationActive()`; legacy `embedController.busy/stop` fallback and tests pinning execFile memory-build dispatch deleted.
+- **Verification:** Python focused **169 passed**; plugin **446/446**; `tsc --noEmit` clean; ruff clean on changed files.
 
 ## 2026-09-02: Reconcile Core Frozen & Backend Contract Mapping Established
 
