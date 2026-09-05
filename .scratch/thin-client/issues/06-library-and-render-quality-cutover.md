@@ -36,3 +36,12 @@ Corrective verification:
 - Plugin: **461/461 passed** (28 files, `library-render-quality-cutover.test.ts` now 15 cases); `tsc --noEmit --skipLibCheck` clean.
 - Python: **266 passed** focused (incl. real `render reconcile` parser regression + DTO-equals-plan evidence test); ruff adds no new findings.
 
+## Corrective round 2 (2026-09-05) — final 2 P1, both closed
+
+- **A′. Sync follow-up semantics preserved**: `_runLibrarySync` feeds the sync PFResult through the SAME `orchestrateFromSync` consumer as Settings — automatic-local next_actions still execute (via the action bridge), consent-required work stays pending. No second loop, no legacy spawn re-introduced; regression drives a real `library.prune` automatic intent through the rendered sync path.
+- **E′. Actual preview artifacts rendered**: `_renderPreviewArtifact` renders the staged crop inline (`<img>` from the Python-returned path, hidden on load error) plus an explicit **Open preview** action (Electron `shell.openPath`, `window.open` fallback) for R rows and P cards alike — the human sees the exact candidate before Accept, never a bare path string. Regression asserts both artifacts render and the open action targets the reviewed file.
+
+Round-2 verification:
+- Plugin: **463/463 passed** (28 files, cutover suite now 17 cases); `tsc --noEmit --skipLibCheck` clean.
+- Reconcile core untouched: diff scope limited to dashboard UI, client, tests, docs.
+

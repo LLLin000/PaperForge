@@ -34,6 +34,12 @@
 - **E (evidence):** Python staging DTO projects `decision`/`caption_text`/`member_refs` from the reviewed final plan (DTO == plan bytes, asserted); P cards render caption/member blocks/preview/decision/hash; R rows show staged preview. TS never reads staging files.
 - **Verification:** plugin **461/461**; `tsc` clean; Python focused **266 passed**; ruff adds no new findings.
 
+### Corrective round 2 (final 2 P1)
+
+- **A′ sync follow-up:** `_runLibrarySync` feeds the sync PFResult through the SAME `orchestrateFromSync` consumer as Settings — automatic-local next_actions still execute, consent-required work stays pending; no legacy spawn re-introduced.
+- **E′ preview artifacts:** staged crops render inline (`<img>` from the Python-returned path) with an explicit **Open preview** action (Electron shell / window.open fallback) on R rows and P cards — human review sees the exact candidate, never a bare path.
+- **Verification:** plugin **463/463** (17 cutover cases); `tsc` clean; reconcile core untouched.
+
 ## 2026-09-02: Reconcile Core Frozen & Backend Contract Mapping Established
 
 - **Reconcile Core Frozen:** Core mutation engine (Audit → Staging → R/P/Blocked → CAS/Journal/Rollback → Commit) is frozen under `docs/RECONCILE-EXTENSION-CONTRACT.md`. No new heuristic detectors or mutation logic will be added to Reconcile. Future detectors operate strictly as read-only finding producers conforming to the minimal finding schema.

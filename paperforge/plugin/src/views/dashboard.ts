@@ -35,6 +35,7 @@ import { queryOcrCredentialStatus } from "../services/config-client";
 import { getDisclosureState, toggleDisclosureState } from "../utils/disclosure";
 import { extractZoteroKeyFromPath } from "../utils/zotero-path";
 import { checkOrphanState } from "./modals";
+import { orchestrateFromSync } from "../services/next-actions-bridge";
 import {
   type PaperVersionInfo,
   listPapersWithBackups,
@@ -1926,12 +1927,10 @@ export class PaperForgeStatusView extends ItemView {
         row.createEl("span", {
           text: `${objectId} ${staged ? "(staged)" : "(unstaged)"}`,
         });
-        // Corrective E: show the exact staged preview the plan promotes.
+        // Corrective E: show the EXACT staged preview the plan promotes —
+        // a Python-returned UI artifact, not a bare path string.
         if (r["image"]) {
-          row.createEl("div", {
-            cls: "paperforge-quality-preview-path",
-            text: String(r["image"]),
-          });
+          this._renderPreviewArtifact(row, String(r["image"]));
         }
         const promote = row.createEl("button", {
           cls: "pf-action-btn",
@@ -1987,10 +1986,7 @@ export class PaperForgeStatusView extends ItemView {
           }
         }
         if (p["preview"]) {
-          card.createEl("div", {
-            cls: "paperforge-quality-preview-path",
-            text: `preview: ${String(p["preview"])}`,
-          });
+          this._renderPreviewArtifact(card, String(p["preview"]));
         }
         card.createEl("div", {
           cls: "paperforge-quality-plan-hash",
@@ -2018,6 +2014,41 @@ export class PaperForgeStatusView extends ItemView {
    * show the current authoritative state. A structured authority rejection
    * (e.g. STALE_PROPOSAL) also clears staging so the user must re-stage and
    * re-review instead of acting on an invalidated evidence card. */
+  /** Corrective (final P1-E): the human must SEE the candidate they are
+   * authorizing. The staging DTO's preview path is a Python-returned UI
+   * artifact: render the crop inline and offer an explicit open action
+   * (Electron shell) for full-size review. Never a bare path string. */
+  private _renderPreviewArtifact(container: HTMLElement, previewPath: string) {
+    const wrap = container.createDiv({
+      cls: "paperforge-quality-preview",
+    });
+    const img = wrap.createEl("img", {
+      cls: "paperforge-quality-preview-img",
+      attr: {
+        src: "file:///" + previewPath.replace(/\\/g, "/").replace(/^\//, ""),
+        alt: "Staged preview",
+      },
+    });
+    img.onerror = () => (img.style.display = "none");
+    const openBtn = wrap.createEl("button", {
+      cls: "pf-action-btn paperforge-quality-preview-open",
+      text: "Open preview",
+    });
+    openBtn.addEventListener("click", () => {
+      this._openExternalPath(previewPath);
+    });
+  }
+
+  private _openExternalPath(path: string): void {
+    try {
+      const { shell } = require("electron") as {
+        shell: { openPath: (p: string) => Promise<string> };
+      };
+      void shell.openPath(path);
+    } catch {
+      window.open(path, "_blank");
+    }
+  }
   private _afterQualityMutation(
     root: HTMLElement,
     key: string,
@@ -3322,6 +3353,8 @@ export class PaperForgeStatusView extends ItemView {
       new Notice("[!!] PaperForge backend unavailable", 6000);
       return;
     }
+    const vp = (this.app.vault.adapter as unknown as { basePath?: string })
+      .basePath;
     this._librarySyncRunning = true;
     this._showMessage("Syncing library...", "running");
     let exitOk = false;
@@ -3331,6 +3364,14 @@ export class PaperForgeStatusView extends ItemView {
       if (exitOk) {
         this._showMessage("[OK] Sync Library: complete", "ok");
         new Notice("Sync complete");
+        // Corrective (final P1-A): JSON-mode sync attaches the next_action
+        // intents and NEVER executes them. Dashboard must consume the SAME
+        // sync-result consumer as Settings so automatic-local follow-ups
+        // still run (consent-required work stays pending in the read model).
+        void orchestrateFromSync(JSON.stringify(result), {
+          vaultPath: vp ?? "",
+          resolveCommand: () => this._resolvePython(),
+        });
       } else {
         this._showMessage("[!!] Sync failed", "error");
         new Notice("[!!] Sync Library failed", 8000);

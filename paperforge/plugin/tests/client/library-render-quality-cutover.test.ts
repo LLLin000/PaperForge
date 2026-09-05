@@ -333,6 +333,52 @@ describe("Library & Render Quality Domain Cutover (Ticket 06)", () => {
         expect(trigger?.textContent).toContain("Sync Needed");
         await expectOnlyClientSync(() => trigger?.click());
       });
+
+      it("client.sync next_actions follow through the SAME orchestrator as Settings", async () => {
+        transport.executeHandler = (argv) => {
+          if (argv[0] === "sync") {
+            return JSON.stringify({
+              ok: true,
+              data: { papers_synced: 1 },
+              next_actions: [
+                {
+                  schema_version: 1,
+                  action_id: "library.prune",
+                  automatic: true,
+                  scope: { kind: "all" },
+                },
+              ],
+            });
+          }
+          if (argv[0] === "reconcile") {
+            return JSON.stringify({ deficits: [] });
+          }
+          return "{}";
+        };
+        const view = makeDashboardForSync();
+        view._resolvePython = () => ({ path: "py", args: ["-3"] });
+        // The action bridge spawns a real (mocked) child; give it a stub so
+        // runSubprocess never touches an undefined stdout stream.
+        mockSpawn.mockImplementationOnce(
+          () =>
+            ({
+              stdout: { on: vi.fn() },
+              stderr: { on: vi.fn() },
+              on: vi.fn(),
+            }) as unknown as import("child_process").ChildProcess
+        );
+        view._runLibrarySync();
+
+        // JSON-mode sync attaches intents without executing them; the
+        // Dashboard must feed the SAME sync-result consumer as Settings so
+        // the automatic-local follow-up still runs (via the action bridge).
+        await vi.waitFor(() => {
+          const followUp = mockSpawn.mock.calls.find((c) =>
+            JSON.stringify(c[1]).includes("library.prune")
+          );
+          expect(followUp).toBeDefined();
+        });
+      });
     });
   });
 
@@ -587,8 +633,50 @@ describe("Library & Render Quality Domain Cutover (Ticket 06)", () => {
       expect(body.textContent).toContain("decision: high");
       expect(body.textContent).toContain("Figure 1: Overall architecture");
       expect(body.textContent).toContain("block p3:b2");
-      expect(body.textContent).toContain("preview: p.jpg");
-      expect(body.textContent).toContain("x.jpg"); // R staged preview
+      // Corrective: the actual preview artifact is rendered (inline image +
+      // explicit open action), never a bare path string.
+      expect(
+        body.querySelectorAll(".paperforge-quality-preview-img")
+      ).toHaveLength(2);
+      expect(
+        Array.from(body.querySelectorAll("button")).filter(
+          (b) => b.textContent === "Open preview"
+        )
+      ).toHaveLength(2);
+      const imgSrcs = Array.from(
+        body.querySelectorAll<HTMLImageElement>(
+          ".paperforge-quality-preview-img"
+        )
+      ).map((i) => i.getAttribute("src"));
+      expect(imgSrcs.some((src) => src?.includes("x.jpg"))).toBe(true);
+      expect(imgSrcs.some((src) => src?.includes("p.jpg"))).toBe(true);
+    });
+
+    it("Open preview opens the exact staged artifact the user is reviewing", async () => {
+      transport.executeHandler = (argv) => {
+        if (argv[0] === "render" && argv[1] === "audit") return auditResponse();
+        if (argv[0] === "render" && argv[1] === "reconcile")
+          return stagingResponse();
+        return "{}";
+      };
+      const view = makeDashboard(client);
+      const body = document.createElement("div");
+      await view._loadQualitySection(body, KEY);
+      body.querySelector(".paperforge-quality-staging button")?.click();
+      await vi.waitFor(() => {
+        expect(body.textContent).toContain("Open preview");
+      });
+      const openSpy = vi.spyOn(window, "open").mockReturnValue(null);
+      const pCard = body.querySelector(".paperforge-quality-p-card");
+      const openBtn = Array.from(pCard?.querySelectorAll("button") ?? []).find(
+        (b) => b.textContent === "Open preview"
+      );
+      openBtn?.click();
+      expect(openSpy).toHaveBeenCalledWith(
+        expect.stringContaining("p.jpg"),
+        "_blank"
+      );
+      openSpy.mockRestore();
     });
 
     it("committed R/P mutation refreshes the whole quality view (renderAudit re-run)", async () => {
