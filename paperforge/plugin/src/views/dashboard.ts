@@ -1759,6 +1759,273 @@ export class PaperForgeStatusView extends ItemView {
         });
       }
     }
+    if (!key) return;
+    this._renderQualitySection(body, key);
+  }
+
+  /* ── Render Quality (Ticket 06: typed-client projection only — the
+     reconcile/render core, CAS/journal/plan-hash semantics stay frozen
+     backend contracts) ── */
+  private _qualityStagingCache: {
+    key: string;
+    data: Record<string, unknown>;
+  } | null = null;
+
+  private _renderQualitySection(body: HTMLElement, key: string) {
+    const section = body.createEl("div", {
+      cls: "paperforge-quality-section",
+    });
+    const toggle = section.createEl("button", {
+      cls: "paperforge-technical-details-toggle",
+    });
+    const qualityBody = section.createEl("div", {
+      cls: "paperforge-quality-body",
+    });
+    qualityBody.style.display = "none";
+    toggle.setText("Render Quality \u25B8");
+    toggle.addEventListener("click", () => {
+      const visible = qualityBody.style.display !== "none";
+      qualityBody.style.display = visible ? "none" : "block";
+      toggle.setText(
+        visible ? "Render Quality \u25B8" : "Render Quality \u25BE"
+      );
+      if (!visible && !qualityBody.dataset.loaded) {
+        void this._loadQualitySection(qualityBody, key);
+      }
+    });
+  }
+
+  private async _loadQualitySection(container: HTMLElement, key: string) {
+    const client = this._getClient();
+    if (!client) {
+      container.empty();
+      container.dataset.loaded = "1";
+      container.createEl("p", {
+        cls: "pf-status-warn",
+        text: "Backend unavailable",
+      });
+      return;
+    }
+    container.dataset.loaded = "1";
+    container.empty();
+    const status = container.createEl("p", {
+      cls: "pf-status-checking",
+      text: "Checking render consistency…",
+    });
+    try {
+      const audit = await client.renderAudit(key);
+      const papers = (audit?.papers ?? []) as Array<Record<string, unknown>>;
+      const paper = papers.find((p) => p["paper_key"] === key);
+      const state = String(audit?.state ?? "UNKNOWN");
+      status.setText(`Render consistency: ${state}`);
+      status.setAttr(
+        "class",
+        state === "CLEAN" ? "pf-status-ok" : "pf-status-warn"
+      );
+      const issues = (paper?.issues ?? []) as Array<Record<string, unknown>>;
+      if (issues.length > 0) {
+        const list = container.createEl("ul", {
+          cls: "paperforge-quality-issues",
+        });
+        for (const issue of issues.slice(0, 5)) {
+          list.createEl("li", {
+            text: String(
+              issue["message"] ?? issue["code"] ?? JSON.stringify(issue)
+            ),
+          });
+        }
+        if (issues.length > 5) {
+          list.createEl("li", { text: `…and ${issues.length - 5} more` });
+        }
+      }
+      const stagingBlock = container.createDiv({
+        cls: "paperforge-quality-staging",
+      });
+      this._renderQualityStaging(stagingBlock, key);
+    } catch (err: unknown) {
+      status.setText(
+        `Render audit failed: ${err instanceof Error ? err.message : String(err)}`
+      );
+    }
+  }
+
+  private _renderQualityStaging(container: HTMLElement, key: string) {
+    container.empty();
+    const cached =
+      this._qualityStagingCache?.key === key
+        ? this._qualityStagingCache.data
+        : null;
+    if (!cached) {
+      const stageBtn = container.createEl("button", {
+        cls: "pf-action-btn",
+        text: "Stage R/P proposals",
+      });
+      stageBtn.addEventListener("click", () => {
+        void this._loadQualityStaging(container, key);
+      });
+      return;
+    }
+    this._renderQualityStagingData(container, key, cached);
+  }
+
+  private async _loadQualityStaging(
+    container: HTMLElement,
+    key: string
+  ): Promise<void> {
+    const client = this._getClient();
+    if (!client) {
+      container.empty();
+      container.createEl("p", {
+        cls: "pf-status-warn",
+        text: "Backend unavailable",
+      });
+      return;
+    }
+    container.empty();
+    container.createEl("p", {
+      cls: "pf-status-checking",
+      text: "Staging R/P proposals (isolated tmp root)…",
+    });
+    try {
+      const data = await client.renderReconcileStaging(key);
+      this._qualityStagingCache = { key, data };
+      this._renderQualityStagingData(container, key, data);
+    } catch (err: unknown) {
+      container.empty();
+      container.createEl("p", {
+        cls: "pf-status-warn",
+        text: `Staging failed: ${err instanceof Error ? err.message : String(err)}`,
+      });
+    }
+  }
+
+  private _renderQualityStagingData(
+    container: HTMLElement,
+    key: string,
+    data: Record<string, unknown>
+  ): void {
+    container.empty();
+    // ── R exact repairs: per-object promote through the client ──
+    const rDetails = (data["r_details"] ?? []) as Array<
+      Record<string, unknown>
+    >;
+    const rRows = rDetails.filter(
+      (r) => typeof r["object_id"] === "string" && r["object_id"]
+    );
+    if (rRows.length > 0) {
+      container.createEl("h4", { text: "R exact repairs" });
+      for (const r of rRows) {
+        const objectId = String(r["object_id"]);
+        const row = container.createDiv({ cls: "paperforge-quality-r-row" });
+        const staged = r["staged"] === true;
+        row.createEl("span", {
+          text: `${objectId} ${staged ? "(staged)" : "(unstaged)"}`,
+        });
+        const promote = row.createEl("button", {
+          cls: "pf-action-btn",
+          text: "Promote",
+        });
+        if (!staged) promote.disabled = true;
+        promote.addEventListener("click", () => {
+          void this._promoteRObject(container, key, objectId);
+        });
+      }
+    }
+    // ── P proposals: evidence cards, accept requires the exact plan hash ──
+    const pDetails = (data["p_details"] ?? []) as Array<
+      Record<string, unknown>
+    >;
+    const pRows = pDetails.filter(
+      (p) => typeof p["final_plan_hash"] === "string" && p["final_plan_hash"]
+    );
+    if (pRows.length > 0) {
+      container.createEl("h4", {
+        text: "P proposals — review the candidate before accepting",
+      });
+      for (const p of pRows) {
+        const label = String(p["label"] ?? "");
+        const planHash = String(p["final_plan_hash"]);
+        const card = container.createDiv({
+          cls: "paperforge-quality-p-card",
+        });
+        card.createEl("div", {
+          text: `Figure ${label} — page ${String(p["page"] ?? "?")}, staged: ${p["staged"] === true}`,
+        });
+        card.createEl("div", {
+          cls: "paperforge-quality-plan-hash",
+          text: `plan ${planHash.slice(0, 12)}…`,
+        });
+        const accept = card.createEl("button", {
+          cls: "pf-action-btn",
+          text: "Accept",
+        });
+        if (p["staged"] !== true) accept.disabled = true;
+        accept.addEventListener("click", () => {
+          void this._acceptProposalCard(container, key, label, planHash);
+        });
+      }
+    }
+    if (rRows.length === 0 && pRows.length === 0) {
+      container.createEl("p", {
+        text: "No staged R/P candidates for this paper.",
+      });
+    }
+  }
+
+  private async _promoteRObject(
+    container: HTMLElement,
+    key: string,
+    objectId: string
+  ): Promise<void> {
+    const client = this._getClient();
+    if (!client) return;
+    try {
+      const result = await client.promoteR(key, [objectId]);
+      const ok = result?.ok === true;
+      new Notice(
+        ok
+          ? `Promoted ${objectId}`
+          : `Promotion failed: ${String(result?.error?.code ?? result?.reason ?? "unknown")}`,
+        8000
+      );
+      // Committed mutation → staging snapshot is stale; invalidate and reload.
+      this._qualityStagingCache = null;
+      this._renderQualityStaging(container, key);
+    } catch (err: unknown) {
+      new Notice(
+        `Promotion failed: ${err instanceof Error ? err.message : String(err)}`,
+        8000
+      );
+    }
+  }
+
+  private async _acceptProposalCard(
+    container: HTMLElement,
+    key: string,
+    label: string,
+    planHash: string
+  ): Promise<void> {
+    const client = this._getClient();
+    if (!client) return;
+    // The exact SHA-256 the human reviewed is forwarded verbatim; Python
+    // rejects any hash that no longer matches the staged final-plan.json.
+    try {
+      const result = await client.acceptProposal(key, label, planHash);
+      const ok = result?.ok === true;
+      new Notice(
+        ok
+          ? `Accepted proposal ${label}`
+          : `Acceptance failed: ${String(result?.error?.code ?? result?.reason ?? "unknown")}`,
+        8000
+      );
+      this._qualityStagingCache = null;
+      this._renderQualityStaging(container, key);
+    } catch (err: unknown) {
+      new Notice(
+        `Acceptance failed: ${err instanceof Error ? err.message : String(err)}`,
+        8000
+      );
+    }
   }
 
   /* ── Next-Step Recommendation Card (D-08, D-09) ── */
