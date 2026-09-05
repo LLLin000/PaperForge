@@ -448,6 +448,74 @@ describe("Knowledge & Retrieval Domain Cutover (Ticket 05)", () => {
       expect(tab._probeModule).toHaveBeenCalledWith("memory");
     });
 
+    it.each(["memory.build", "memory.rebuild"] as const)(
+      "production entry dispatches %s through client.runAction without substitution",
+      async (legalId) => {
+        transport.executeHandler = (argv) => {
+          if (argv[0] === "action" && argv[1] === "describe") {
+            return JSON.stringify({
+              ok: true,
+              data: {
+                action_id: argv[2],
+                availability: "available",
+                execution_mode: "stream",
+                confirmation: "none",
+              },
+            });
+          }
+          return "{}";
+        };
+        transport.streamHandler = async () => ({
+          events: [
+            {
+              schema_version: 1,
+              event: "start",
+              operation: legalId,
+              total: 1,
+            },
+            {
+              schema_version: 1,
+              event: "result",
+              operation: legalId,
+              data: { ok: true },
+            },
+          ],
+        });
+        const tab = makeSettingTab(client);
+        tab._probeModule = vi.fn();
+        tab._runAllowedDispatch(
+          "memory",
+          {
+            verb: "run",
+            action_id: legalId,
+            label: "Build",
+            availability: "available",
+            safety_class: "safe",
+            preservation_facts: [],
+            replacement_facts: [],
+            interruptible: true,
+            confirmation_required: false,
+            confirmation_prompt: null,
+            scope: "module",
+            scope_count: 1,
+          } satisfies ActionPrimary,
+          tab._capabilityState.memory
+        );
+        await vi.waitFor(() => {
+          expect(
+            transport.calls.some(
+              (c) => c.argv[0] === "action" && c.argv[1] === "run"
+            )
+          ).toBe(true);
+        });
+        const runCall = transport.calls.find(
+          (c) => c.argv[0] === "action" && c.argv[1] === "run"
+        );
+        expect(runCall?.argv.slice(0, 3)).toEqual(["action", "run", legalId]);
+        expect(tab._probeModule).not.toHaveBeenCalled();
+      }
+    );
+
     it("enables Stop button only when client owns the active operation handle", () => {
       const tab = makeSettingTab(client);
       tab._capabilityState.memory.activity_state = "running";

@@ -20,10 +20,9 @@
 
 ### 2026-09-05: Ticket 05 corrective round 2
 
-- **Noop settlement truth:** `paper_settled(key, status)` moved from `_on_progress` to `_on_item_result`; noop/skip branches increment `processed_count`/`papers_skipped`; un-mocked real-service CLI test asserts clean NDJSON with `progress.current==1`, single `paper_settled outcome=noop`, single `item_result status=noop`, `papers_skipped==1`.
-- **Fail-closed entrypoint:** `_runAllowedDispatch("memory")` unknown action IDs no longer substitute `memory.build` — Notice + re-probe; typed `satisfies ActionPrimary` regression added.
+- **Fail-closed entrypoint:** `_runAllowedDispatch("memory")` is an exhaustive exact-ID chain — `embed.build`/`embed.resume`/`memory.build`/`memory.rebuild`/`memory.upgrade_backend` dispatch, unknown IDs fail closed (Notice + re-probe, no substitution); the dispatched run/rebuild_index branch `return`s so legal actions never fall through to the unknown-pair probe; production-entry `it.each` regression proves `memory.build` and `memory.rebuild` reach `client.runAction` with the exact ID while unknown IDs never run.
 - **Stop ownership:** `_renderMemoryDetail` Stop renders only when `client.isOperationActive()`; legacy `embedController.busy/stop` fallback and tests pinning execFile memory-build dispatch deleted.
-- **Verification:** Python focused **169 passed**; plugin **446/446**; `tsc --noEmit` clean; ruff clean on changed files.
+- **Verification:** Python focused **169 passed**; plugin **448/448** (incl. production-entry allowlist regression); `tsc --noEmit` clean; ruff clean on changed files.
 
 ## 2026-09-02: Reconcile Core Frozen & Backend Contract Mapping Established
 
