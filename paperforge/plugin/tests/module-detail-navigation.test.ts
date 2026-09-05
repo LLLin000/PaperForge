@@ -284,15 +284,6 @@ vi.mock("../src/services/runtime-paths", () => ({
   getCachedPython: () => ({ path: "/usr/bin/python3", extraArgs: [] }),
 }));
 
-vi.mock("../src/services/ocr-maintenance-ui", () => ({
-  categorizeMaintenanceRow: () => [],
-  buildMaintenanceSummary: () => ({ items: [], summary: "" }),
-  maintenanceActionForRow: () => null,
-  maintenanceActionRequiresConfirmation: () => false,
-  readMaintenanceCache: () => ({ items: [], updated_at: "" }),
-  refreshMaintenanceData: () => Promise.resolve({ data: [] }),
-}));
-
 vi.mock("../src/services/managed-runtime", () => ({
   ManagedRuntime: class {},
   runtimeActionsForHealth: () => [],
