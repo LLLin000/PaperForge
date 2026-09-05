@@ -1867,6 +1867,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           this._dispatchMemoryBuild("embed", "force", "embed.build");
         } else if (actionId === "embed.resume") {
           this._dispatchMemoryBuild("embed", "resume", "embed.resume");
+        } else if (
+          actionId === "memory.build" ||
+          actionId === "memory.rebuild"
+        ) {
+          // probe-owned legal local memory actions — exact ID, no substitution
+          this._dispatchMemoryBuild("build", undefined, actionId);
         } else if (actionId === "memory.upgrade_backend") {
           this._runBackendMigration();
         } else {
@@ -1881,6 +1887,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           this._probeModule(mod);
           return;
         }
+        return; // dispatched run/rebuild_index — never fall through to unknown-pair probe
       }
       if (verb === "restore_backup" || actionId === "memory.restore_backup") {
         this._callPython(["memory", "restore-backup"], {
