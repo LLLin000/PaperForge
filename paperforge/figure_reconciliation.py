@@ -1612,6 +1612,12 @@ def stage_reconciliation(
             "preview_md": str(preview_md),
             "final_plan": str(final_plan_path),
             "final_plan_hash": final_plan_hash,
+            # Ticket 06 corrective E: human-review evidence projection — the
+            # same facts the reviewed final-plan.json carries, so the client
+            # renders what the user is authorizing without opening files.
+            "decision": final_plan["decision"],
+            "caption_text": final_plan["caption_text"],
+            "member_refs": final_plan["member_refs"],
         })
     # Fresh fulltext reconciliation on the SAME in-memory report
     try:
