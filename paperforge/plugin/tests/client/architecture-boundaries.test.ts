@@ -55,7 +55,9 @@ const HOST_SEAMS: Record<string, number> = {
 
 /** Legacy debt — exact-snapshot ratchet, shrinks only. */
 const LEGACY_RATCHET: Record<string, number> = {
-  "main.ts": 2,
+  // Stage 2 step 1: convergence `_autoSync` cut over to client.sync() —
+  // the sync spawn is gone; only the dashboard-tool dispatcher remains.
+  "main.ts": 1,
   "settings.ts": 7,
   "views/dashboard.ts": 3,
   "views/modals.ts": 3,

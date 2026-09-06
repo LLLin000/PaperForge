@@ -50,10 +50,7 @@ import {
 import { PaperForgeStatusView } from "./views/dashboard";
 import { OcrWorkspaceView } from "./views/ocr-workspace";
 import { PaperForgeConfirmModal } from "./views/modals";
-import {
-  paperforgeEnrichedEnv,
-  buildTargetedEnv,
-} from "./services/python-bridge";
+import { buildTargetedEnv } from "./services/python-bridge";
 import { resolveVaultPaths } from "./services/runtime-paths";
 import {
   setPathConfigSource,
@@ -415,51 +412,35 @@ export default class PaperForgePlugin extends Plugin {
     if (this._autoSyncRunning) return;
     this._autoSyncRunning = true;
 
-    const pyCmd = this._getPythonCommand();
-    if (!pyCmd) {
-      this._autoSyncRunning = false;
-      return;
-    }
-
-    // #173/C1: the desktop child env is the redacted
-    // paperforgeEnrichedEnv() — never the bare process env.
-    const env = paperforgeEnrichedEnv();
-    execFile(
-      pyCmd.path,
-      [
-        ...pyCmd.args,
-        "-m",
-        "paperforge",
-        "--vault",
-        vaultPath,
-        "sync",
-        "--json",
-      ],
-      {
-        timeout: 120000,
-        encoding: "utf-8",
-        cwd: vaultPath,
-        windowsHide: true,
-        env,
-      },
-      (err, stdout, _stderr) => {
-        this._autoSyncRunning = false;
-        this._memoryStatusText = null;
-        if (!err) {
+    // Ticket 07 Stage 2 step 1: the convergence tick routes through the
+    // shared client — same sync PFResult consumer as Settings/Dashboard.
+    // main never assembles sync argv, never spawns, and never duplicates
+    // next_actions policy; NodeProcessTransport owns the redacted env.
+    void (async () => {
+      let ok = false;
+      try {
+        const result = await this.getClient().sync();
+        ok = result?.ok !== false;
+        if (ok) {
           this._lastSyncTime = new Date().toLocaleTimeString();
           // #127/#169: consume next_actions — the Python registry is the
-          // policy authority; the plugin executes via the action client.
-          void orchestrateFromSync(stdout, {
+          // policy authority; the plugin executes via the action bridge.
+          void orchestrateFromSync(JSON.stringify(result), {
             vaultPath,
-            resolveCommand: (v) => this._getPythonCommand(),
+            resolveCommand: () => this._getPythonCommand(),
           });
           // RC UX Seam: sync settled — refresh the read model so the
           // Smart Retrieval card durably shows the pending embed CTA
           // instead of relying on the 8s Notice + convergence tick.
           this._settingTab?._refreshAllReadModels();
         }
+      } catch {
+        ok = false;
+      } finally {
+        this._autoSyncRunning = false;
+        this._memoryStatusText = null;
       }
-    );
+    })();
   }
 
   // T8: OCR mtime scanning deleted — the convergence tick fires sync only.

@@ -26,6 +26,13 @@
 - `services/action-client.ts` + `next-actions-*`: alive — the follow-up bridge is the sanctioned next_actions consumer; reroute `runActionRequest` through `PaperForgeClient.runAction` (or classify as host seam) before deletion.
 - `services/python-bridge.ts`: `paperforgeEnrichedEnv`/runtime resolution used by node-transport (core); only `runSubprocess`/git-detection helpers become dead once the surfaces above are rerouted.
 
+## Stage 2 — step 1: `main._autoSync` (2026-09-05, done)
+
+- `main._autoSync` routes through the shared `PaperForgeClient.sync()` and hands the SAME PFResult document to the SAME `orchestrateFromSync` bridge as Settings/Dashboard (`resolveCommand: () => this._getPythonCommand()`). main never assembles sync argv, never spawns for sync, never duplicates next_actions policy, never creates a second client; `NodeProcessTransport` owns the redacted env.
+- Semantics preserved: `_autoSyncRunning` dedup (concurrent ticks collapse to one sync), timer cadence untouched, failure cleanup resets running-state/`_memoryStatusText`, and `ok:false`/throw paths skip refresh + follow-ups.
+- **First architecture-ratchet evidence:** `main.ts` provenance snapshot lowered **2 → 1** (only the dashboard-tool dispatcher `execFile` remains); regression `tests/client/main-autosync-cutover.test.ts` (4 cases: exact argv + bridge handoff, dedup, failure path, `ok:false`) and the gate confirm it.
+- Discovery for the record: `vi.mock("child_process")` collapses main.ts's namespace to an empty module under this import chain; the regression therefore mocks the bridge module and observes the handoff there, while direct child-process usage stays enforced by the gate.
+
 ## Stage 1 corrective (2026-09-05) — gate hardened to authority + exact snapshot
 
 Reviewer findings, all closed (no business code touched):
