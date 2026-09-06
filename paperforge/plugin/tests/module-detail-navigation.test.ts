@@ -496,23 +496,24 @@ function installOcrClient(
     isOperationActive: vi.fn(impl.isOperationActive ?? (() => false)),
     cancelActiveOperation: vi.fn(),
     invalidateCache: vi.fn(),
+    probe: vi.fn(async () => createUnknownEnvelope("ocr")),
     probeAll: vi.fn(async () => ({ modules: {} })),
-    describeAction:
-      impl.describeAction ??
-      vi.fn(async () => ({
-        action_id: "ocr.run",
-        availability: "available",
-        execution_mode: "stream",
-        confirmation: "none",
-      })),
-    runAction:
-      impl.runAction ??
-      vi.fn(async () => ({
-        ok: true,
-        payload: { status: "done" },
-        exitCode: 0,
-      })),
   };
+  client.describeAction =
+    impl.describeAction ??
+    vi.fn(async () => ({
+      action_id: "ocr.run",
+      availability: "available",
+      execution_mode: "stream",
+      confirmation: "none",
+    }));
+  client.runAction =
+    impl.runAction ??
+    vi.fn(async () => ({
+      ok: true,
+      payload: { status: "done" },
+      exitCode: 0,
+    }));
   (tab as any)._client = client;
   return client;
 }
@@ -1054,7 +1055,11 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
     );
   });
 
-  it("redo -> confirms once, then dispatches ocr.redo with the confirm token", async () => {
+  it("stale ocr.redo envelope -> confirm modal still presents, then fail-closed unknown-pair re-probe", async () => {
+    // #99 owner decision: redo is internal-only — the registry has no
+    // `ocr.redo` primary and the thin client NEVER encodes it. A stale
+    // envelope carrying ocr.redo must fail closed: Notice + re-probe, no
+    // substituted dispatch.
     const tab = makeTab();
     const client = installOcrClient(tab);
     (tab as any)._capabilityState = { ocr: createUnknownEnvelope("ocr") };
@@ -1081,16 +1086,12 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
     modalOpens.length = 0;
     (tab as any)._dispatchModuleAction("ocr", env);
     expect(modalOpens.length).toBe(1);
-    expect(modalOpens[0].effectLabel).toBe("OCR artifacts");
     if (modalOpens[0].onConfirm) modalOpens[0].onConfirm();
     await Promise.resolve();
-    expect(client.runAction).toHaveBeenCalledWith(
-      expect.objectContaining({
-        action_id: "ocr.redo",
-        confirm: "ocr.redo",
-      }),
-      expect.anything()
-    );
+    // Never substituted into a canonical action — zero dispatches.
+    expect(client.runAction).not.toHaveBeenCalled();
+    const messages = noticeCalls.map((c: { msg: string }) => c.msg).join(" ");
+    expect(messages).toContain("redo");
   });
 
   it("embed build --force -> spawns embed", async () => {
@@ -1708,7 +1709,7 @@ describe("Library sync failure probe (Issue #78)", () => {
 
 // ════════════════════════════════ 5b. OCR gating ══════════════
 describe("_dispatchOcrAction availability gating (#07 step 3)", () => {
-  it("run/redo credential fail-closed is owned by the action registry via the client", async () => {
+  it("credential fail-closed is owned by the action registry via the client", async () => {
     // The Python action registry owns availability (missing Paddle
     // credential -> unavailable); client.runAction gates on the descriptor
     // and returns a structured rejection — no transport call, no spawn.
@@ -1724,13 +1725,13 @@ describe("_dispatchOcrAction availability gating (#07 step 3)", () => {
       })),
     });
     (tab as any)._capabilityState = { ocr: createUnknownEnvelope("ocr") };
-    (tab as any)._dispatchOcrAction("redo");
+    (tab as any)._dispatchOcrAction("rebuild");
     await Promise.resolve();
     await Promise.resolve();
     // The registry rejection surfaces through runAction's own gate — the
     // tab never bypasses it with its own credential logic.
     expect(client.runAction).toHaveBeenCalledWith(
-      expect.objectContaining({ action_id: "ocr.redo" }),
+      expect.objectContaining({ action_id: "ocr.rebuild_derived" }),
       expect.anything()
     );
     await vi.waitFor(() => {

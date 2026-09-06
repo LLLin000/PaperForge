@@ -26,6 +26,13 @@
 - `services/action-client.ts` + `next-actions-*`: alive — the follow-up bridge is the sanctioned next_actions consumer; reroute `runActionRequest` through `PaperForgeClient.runAction` (or classify as host seam) before deletion.
 - `services/python-bridge.ts`: `paperforgeEnrichedEnv`/runtime resolution used by node-transport (core); only `runSubprocess`/git-detection helpers become dead once the surfaces above are rerouted.
 
+## Stage 2 — step 3 contract corrective (2026-09-06, reviewer-verified findings)
+
+- **P1 fake canonical `ocr.redo` removed:** `settings._runAllowedDispatch` no longer routes `verb==="redo" || actionId==="ocr.redo"` — the Python registry has no `ocr.redo` primary (#99: internal-only), so encoding it in the thin client was re-introducing legacy semantic knowledge. `_dispatchOcrAction` mode narrowed to `"run" | "rebuild"`; the redo label/notice/confirm-token branches are gone. A stale `ocr.redo` envelope now falls through to the frozen unknown-pair invariant: **Notice → re-probe, NEVER substitute** (regression pins it: confirm modal still presents per envelope policy, then zero dispatches + unknown-action notice). The user-facing Redo affordance in the OCR Workspace keeps using the canonical `ocr.run` descriptor (unchanged, T04).
+- **P1 `main.requestOcrRun` production-entry regression added** (`tests/client/main-ocr-run-cutover.test.ts`, 4 cases, shared client mocked directly — no child_process): ① exact wiring `{action_id:"ocr.run", scope:{kind:"all"}, confirm:"ocr.run"}` + item_result failed-key "B" surfaces in the notice + `_autoSync` settle; ② active-operation guard → zero dispatches, no settle; ③ cancelled event → stopped notice + settle; ④ registry unavailability → notice carries `availability_reason`, not a generic failure.
+- **P2 availability reason surfaced:** failure detail order in BOTH `main.requestOcrRun` and `settings._dispatchOcrAction` is `failedKeys → payload.availability_reason → payload.error.message → exit code` — command-palette users with a missing token see `ocr.credential_missing`, not bare "OCR failed" (legacy controller parity).
+- Found and fixed during the corrective: the then-branch settle (`_refreshAllReadModels` + `display`) had been dropped from `settings._dispatchOcrAction` by the first corrective pass — the settle regression ("clears activity and re-probes all after settle") now guards it.
+
 ## Stage 2 — step 3: OCR live callers → shared client, `OcrProcessController` deleted (2026-09-06, done)
 
 Leaf→root order per reviewer: migrate the live callers FIRST, keep Stop/operation ownership, then physically delete the controller.
