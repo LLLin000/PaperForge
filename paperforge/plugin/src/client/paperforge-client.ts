@@ -81,13 +81,23 @@ export interface ConfigListData {
   fields: ConfigField[];
 }
 
-export interface ConfigMutationData {
+export interface ConfigSetData {
   schema_version: number;
   revision: string;
   unknown_keys: string[];
   changed: boolean;
   field: ConfigField;
-  warnings?: string[];
+}
+
+/** Python `config migrate` wire: snapshot meta + changed/dry_run/warnings.
+ * It never carries `field` — a per-field DTO is the `config set` shape. */
+export interface ConfigMigrateData {
+  schema_version: number;
+  revision: string;
+  unknown_keys: string[];
+  changed: boolean;
+  dry_run: boolean;
+  warnings: string[];
 }
 
 export interface ConfigValidateData {
@@ -425,11 +435,33 @@ export class PaperForgeClient {
    * Execute a command expecting a PFResult envelope and unwrap data.
    */
   private async _executePfResult<T>(argv: string[]): Promise<T> {
-    const raw = await this._transport.execute(argv);
+    // Layer split: the Transport owns process/exit semantics (rejects
+    // non-zero exits), this client owns PFResult machine-protocol
+    // semantics. The Python config contract emits a STRUCTURED ok:false
+    // PFResult on stdout together with rc=1/2 — so on a transport
+    // rejection, recover the authority reason from err.stdout instead of
+    // losing it to a generic "exit code 1" error (legacy config-client
+    // behavior, preserved here).
+    let raw: string;
+    let transportError: unknown = null;
+    try {
+      raw = await this._transport.execute(argv);
+    } catch (err: unknown) {
+      const stdout =
+        err instanceof Error
+          ? ((err as unknown as { stdout?: unknown }).stdout ?? null)
+          : null;
+      if (typeof stdout !== "string" || !stdout.trim()) {
+        throw err;
+      }
+      transportError = err;
+      raw = stdout;
+    }
     let parsed: any;
     try {
       parsed = JSON.parse(raw);
     } catch {
+      if (transportError) throw transportError;
       throw new Error(`Failed to parse PFResult JSON: ${raw.slice(0, 100)}`);
     }
     if (parsed && typeof parsed === "object" && "data" in parsed) {
@@ -439,8 +471,14 @@ export class PaperForgeClient {
         const err = parsed.error ?? {};
         throw new Error(String(err.message || err.code || "backend_error"));
       }
+      if (transportError) {
+        // rc != 0 but the PFResult claims ok — protocol contradiction;
+        // the process-level failure wins.
+        throw transportError;
+      }
       return parsed.data as T;
     }
+    if (transportError) throw transportError;
     return parsed as T;
   }
 
@@ -461,12 +499,12 @@ export class PaperForgeClient {
     ]);
   }
 
-  async configMigrate(dryRun = false): Promise<ConfigMutationData> {
+  async configMigrate(dryRun = false): Promise<ConfigMigrateData> {
     const argv = ["config", "migrate"];
     if (dryRun) argv.push("--dry-run");
     argv.push("--json");
     try {
-      return await this._executePfResult<ConfigMutationData>(argv);
+      return await this._executePfResult<ConfigMigrateData>(argv);
     } finally {
       this.invalidateCache();
     }
@@ -475,9 +513,9 @@ export class PaperForgeClient {
   async configSet(
     key: string,
     value: string | boolean
-  ): Promise<ConfigMutationData> {
+  ): Promise<ConfigSetData> {
     try {
-      return await this._executePfResult<ConfigMutationData>([
+      return await this._executePfResult<ConfigSetData>([
         "config",
         "set",
         key,
