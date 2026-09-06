@@ -636,9 +636,19 @@ describe("PaperForgeClient", () => {
       expect(probed2).not.toEqual(probed);
     });
 
-    it("configMigrate emits the dry-run flag in the right position and invalidates", async () => {
+    it("configMigrate emits the dry-run flag in the right position and returns the real Python wire DTO", async () => {
       transport.executeHandler = () =>
-        JSON.stringify({ ok: true, data: { changed: false, warnings: [] } });
+        JSON.stringify({
+          ok: true,
+          data: {
+            schema_version: 1,
+            revision: "r1",
+            unknown_keys: [],
+            changed: false,
+            dry_run: true,
+            warnings: [],
+          },
+        });
       await client.configMigrate(true);
       await client.configMigrate(false);
       expect(transport.calls.map((c) => c.argv)).toEqual([
@@ -681,7 +691,54 @@ describe("PaperForgeClient", () => {
       ]);
     });
 
-    it("structured ok:false PFResult is an authority rejection (fail closed)", async () => {
+    it("rc=1 + structured ok:false stdout preserves the authority reason (real machine contract)", async () => {
+      // The Python config contract emits a STRUCTURED ok:false PFResult on
+      // stdout together with a non-zero exit code. NodeProcessTransport
+      // rejects non-zero exits attaching err.stdout; the client must
+      // recover the machine-readable authority reason from that stdout
+      // instead of losing it to a generic "exit code 1" error (legacy
+      // config-client behavior, preserved here).
+      const transportErr: any = new Error(
+        "PaperForge command failed (exit code 1): config validate"
+      );
+      transportErr.exitCode = 1;
+      transportErr.stdout = JSON.stringify({
+        ok: false,
+        command: "config.validate",
+        version: "1",
+        data: null,
+        error: {
+          code: "validation_error",
+          message: "config.migration_required",
+          details: {},
+        },
+      });
+      transport.executeHandler = () => {
+        throw transportErr;
+      };
+      await expect(client.configValidate()).rejects.toThrow(
+        "config.migration_required"
+      );
+    });
+
+    it("rc=1 with ok:true stdout is a protocol contradiction — the transport error wins", async () => {
+      const transportErr: any = new Error("exit 1");
+      transportErr.exitCode = 1;
+      transportErr.stdout = JSON.stringify({ ok: true, data: { state: "ok" } });
+      transport.executeHandler = () => {
+        throw transportErr;
+      };
+      await expect(client.configValidate()).rejects.toThrow("exit 1");
+    });
+
+    it("transport failure without structured stdout rethrows the transport error", async () => {
+      transport.executeHandler = () => {
+        throw new Error("spawn ENOENT");
+      };
+      await expect(client.configValidate()).rejects.toThrow("spawn ENOENT");
+    });
+
+    it("resolved ok:false PFResult is an authority rejection (fail closed)", async () => {
       transport.executeHandler = () =>
         JSON.stringify({
           ok: false,

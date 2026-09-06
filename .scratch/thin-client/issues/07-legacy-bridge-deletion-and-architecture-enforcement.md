@@ -26,6 +26,12 @@
 - `services/action-client.ts` + `next-actions-*`: alive — the follow-up bridge is the sanctioned next_actions consumer; reroute `runActionRequest` through `PaperForgeClient.runAction` (or classify as host seam) before deletion.
 - `services/python-bridge.ts`: `paperforgeEnrichedEnv`/runtime resolution used by node-transport (core); only `runSubprocess`/git-detection helpers become dead once the surfaces above are rerouted.
 
+## Stage 2 — step 2 contract corrective (2026-09-06, reviewer-verified findings)
+
+- **P1 configMigrate DTO vs Python wire:** the carried-over type lie from legacy config-client was not allowed to survive the typed cutover. `ConfigMutationData` split into `ConfigSetData` (per-field: `changed` + `field`) and `ConfigMigrateData` (snapshot meta + `changed` + `dry_run` + `warnings`, never `field`) — matching the real `config migrate` machine output. The regression now asserts the full real wire DTO, not a fixture-shaped subset.
+- **P1 `_executePfResult` never saw real rejections:** the first fail-closed hardening only handled a transport that RESOLVES an ok:false JSON — but `NodeProcessTransport.execute` rejects non-zero exits, and the Python config contract emits a structured ok:false PFResult on stdout WITH rc=1/2, so the authority reason was being lost to a generic "exit code 1" error (a real regression vs legacy config-client, which JSON-parsed err stdout). Fixed at the layer split the reviewer prescribed: **Transport owns process/exit semantics; PaperForgeClient._executePfResult owns PFResult machine-protocol semantics.** On a transport rejection the client inspects `err.stdout`: parseable PFResult ok:false → throw the authority message; parseable PFResult ok:true despite rc≠0 → protocol contradiction, transport error wins; no/parsing-failed stdout → transport error wins. `Transport.execute()`'s global nonzero-reject contract untouched; no Python change; no public generic API added.
+- Regression set on the real rejection path: rc=1 + structured stdout → `config.migration_required` survives; rc=1 + ok:true stdout → contradiction, transport error; rc=1 + no stdout → transport error; resolved ok:false → fail closed (MockTransport still exercises this branch).
+
 ## Stage 2 — step 2: `config-client` dissolved (2026-09-06, done)
 
 Per the reviewer's decomposition brief, `config-client.ts` (428 lines) was split by **actual responsibility**, then deleted — the goal was eliminating duplicate semantic authority, not shrinking a file count:
