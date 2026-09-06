@@ -1853,10 +1853,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         this._dispatchOcrAction("rebuild");
         return;
       }
-      if (verb === "redo" || actionId === "ocr.redo") {
-        this._dispatchOcrAction("redo");
-        return;
-      }
       if (verb === "investigate") {
         const vp = this._getVaultBasePath();
         const draft = buildRedactedDraft(
@@ -1986,7 +1982,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
    * the same canonical action registry, #137 NDJSON progress, availability
    * gating, and cooperative Stop the OCR Workspace uses — no second
    * child-process owner. */
-  _dispatchOcrAction(mode: "run" | "rebuild" | "redo"): void {
+  _dispatchOcrAction(mode: "run" | "rebuild"): void {
     if (mode === "run" && typeof this.plugin.requestOcrRun === "function") {
       // The probe-owned confirmation already ran in _dispatchModuleAction.
       this.plugin.requestOcrRun(true);
@@ -2001,7 +1997,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const labelMap: Record<string, string> = {
       run: t("ocr_activity_run"),
       rebuild: t("ocr_activity_rebuild"),
-      redo: t("ocr_activity_redo"),
     };
 
     // Set envelope activity overlay without changing capability/severity/reason
@@ -2018,15 +2013,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const completeNotice: Record<string, string> = {
       run: t("ocr_run_complete"),
       rebuild: t("ocr_rebuild_complete"),
-      redo: t("ocr_redo_complete"),
     };
 
-    const actionId =
-      mode === "rebuild"
-        ? "ocr.rebuild_derived"
-        : mode === "redo"
-          ? "ocr.redo"
-          : "ocr.run";
+    // #99 owner decision: redo is internal-only — the registry has no
+    // `ocr.redo` primary and the thin client never encodes one. A stale
+    // `ocr.redo` envelope falls through to the unknown-pair fail-closed
+    // re-probe in _runAllowedDispatch; the user-facing Redo affordance in
+    // the OCR Workspace uses the canonical `ocr.run` descriptor.
+    const actionId = mode === "rebuild" ? "ocr.rebuild_derived" : "ocr.run";
     const request: ActionRequest = {
       action_id: actionId,
       scope: { kind: "all" },
@@ -2082,16 +2076,26 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         } else if (result.cancelled || sawCancelled) {
           new Notice(t("ocr_stopped_notice"));
         } else {
-          // #126: surface the failing keys instead of claiming success.
+          // #126: surface the real reason instead of a generic failure —
+          // failed keys, then the registry's availability_reason, then the
+          // exit code.
           const failed = failedKeys.filter(Boolean).join(", ");
+          const payload = result.payload as Record<string, unknown> | null;
+          const payloadError = payload?.error as
+            | { message?: unknown }
+            | undefined;
+          const payloadReason =
+            typeof payload?.availability_reason === "string"
+              ? payload.availability_reason
+              : typeof payloadError?.message === "string"
+                ? payloadError.message
+                : "";
+          const base = failed || payloadReason;
           const detail =
             skippedCount > 0
-              ? `${failed ? failed + " " : ""}(${skippedCount} skipped)`
-              : failed;
-          new Notice(
-            t("ocr_failed_notice") + (detail ? ": " + detail : ""),
-            8000
-          );
+              ? `${base ? base + " " : ""}(${skippedCount} skipped)`
+              : base || `exit code ${result.exitCode}`;
+          new Notice(t("ocr_failed_notice") + ": " + detail, 8000);
         }
         this._refreshAllReadModels();
         this.display();

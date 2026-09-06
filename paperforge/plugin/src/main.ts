@@ -164,11 +164,24 @@ export default class PaperForgePlugin extends Plugin {
         } else if (result.cancelled || sawCancelled) {
           new Notice(t("ocr_stopped_notice"));
         } else {
-          const detail = failedKeys.filter(Boolean).join(", ");
-          new Notice(
-            t("ocr_failed_notice") + (detail ? ": " + detail : ""),
-            8000
-          );
+          // Surface the real reason instead of a generic failure — failed
+          // keys, then the registry's availability_reason, then the exit
+          // code.
+          const payload = result.payload as Record<string, unknown> | null;
+          const payloadError = payload?.error as
+            | { message?: unknown }
+            | undefined;
+          const payloadReason =
+            typeof payload?.availability_reason === "string"
+              ? payload.availability_reason
+              : typeof payloadError?.message === "string"
+                ? payloadError.message
+                : "";
+          const detail =
+            failedKeys.filter(Boolean).join(", ") ||
+            payloadReason ||
+            `exit code ${result.exitCode}`;
+          new Notice(t("ocr_failed_notice") + ": " + detail, 8000);
         }
         this._settingTab?.display();
         const vaultPath = (this.app.vault.adapter as any).basePath as string;
