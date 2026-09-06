@@ -73,7 +73,7 @@ import {
 import { getDisclosureState, toggleDisclosureState } from "./utils/disclosure";
 import { stripCredentialEnv } from "./services/secret-storage";
 import { processProgressChunk } from "./services/progress-parser";
-import type { OcrProcessOutcome } from "./services/ocr-process-controller";
+import type { ActionRequest } from "./services/action-client";
 
 // ── Interface ──
 
@@ -1251,13 +1251,18 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           },
         });
       }
-      const controller = this.plugin.ocrProcessController;
-      if (controller.isRunning) {
+      // Client-owned cooperative Stop (#07 step 3): the shared
+      // PaperForgeClient owns the single active operation.
+      const client = this.getClient();
+      if (
+        typeof client?.isOperationActive === "function" &&
+        client.isOperationActive()
+      ) {
         const stop = card.createEl("button", {
           cls: "pf-action-btn mod-warning",
           text: t("ocr_stop_batch"),
         });
-        stop.addEventListener("click", () => void controller.stop());
+        stop.addEventListener("click", () => client.cancelActiveOperation());
       }
     } else if (updateAvailable) {
       // ── State: Update Available ──
@@ -1919,7 +1924,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       5000
     );
     this._probeModule(mod);
-  } /** Dispatch OCR action through the shared OcrProcessController (#126 PR B). */
+  }
   /** #174 RC: dispatch foundation.update through the action runner.
    * The confirm modal already ran (destructive + confirmation_required);
    * Python's perform_update owns policy + fresh-child verification. */
@@ -1977,15 +1982,18 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       },
     });
   }
-
+  /** Dispatch OCR actions through the shared PaperForgeClient (#07 step 3):
+   * the same canonical action registry, #137 NDJSON progress, availability
+   * gating, and cooperative Stop the OCR Workspace uses — no second
+   * child-process owner. */
   _dispatchOcrAction(mode: "run" | "rebuild" | "redo"): void {
-    const controller = this.plugin.ocrProcessController;
     if (mode === "run" && typeof this.plugin.requestOcrRun === "function") {
       // The probe-owned confirmation already ran in _dispatchModuleAction.
       this.plugin.requestOcrRun(true);
       return;
     }
-    if (controller.isRunning) {
+    const client = this.getClient();
+    if (client.isOperationActive()) {
       new Notice(t("ocr_already_running"));
       return;
     }
@@ -2004,10 +2012,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         labelMap[mode] || t("cc_activity_running");
       envelopes["ocr"].activity_progress = { current: 0, total: 1 };
     }
-    this.plugin._ocrBuffer = "";
     this.plugin._ocrProgress = { current: 0, total: 1, key: "" };
-    this.plugin._ocrStderr = "";
-    this.plugin._ocrWasStopped = false;
     this.display();
 
     const completeNotice: Record<string, string> = {
@@ -2016,37 +2021,72 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       redo: t("ocr_redo_complete"),
     };
 
-    controller
-      .start(mode, {
-        all: mode === "rebuild",
-        callbacks: {
-          onProgress: (current: number, total: number, key: string) => {
-            this.plugin._ocrProgress = { current, total, key };
+    const actionId =
+      mode === "rebuild"
+        ? "ocr.rebuild_derived"
+        : mode === "redo"
+          ? "ocr.redo"
+          : "ocr.run";
+    const request: ActionRequest = {
+      action_id: actionId,
+      scope: { kind: "all" },
+      confirm: actionId,
+    };
+    let sawCancelled = false;
+    const failedKeys: string[] = [];
+    let skippedCount = 0;
+    client
+      .runAction(request, {
+        onEvent: (event) => {
+          if (event.event === "cancelled") sawCancelled = true;
+          if (
+            event.event === "start" ||
+            event.event === "phase" ||
+            event.event === "progress" ||
+            event.event === "item_result"
+          ) {
+            this.plugin._ocrProgress = {
+              current: Number(
+                event.current ?? this.plugin._ocrProgress.current
+              ),
+              total: Number(event.total ?? this.plugin._ocrProgress.total),
+              key: String(event.item_id ?? this.plugin._ocrProgress.key),
+            };
+            if (event.event === "item_result") {
+              if (event.status === "succeeded" || event.status === "noop") {
+                // settled fine
+              } else if (event.status === "skipped") {
+                skippedCount += 1;
+              } else {
+                failedKeys.push(String(event.item_id ?? ""));
+              }
+            }
             if (envelopes["ocr"]) {
-              envelopes["ocr"].activity_progress = { current, total };
+              envelopes["ocr"].activity_progress = {
+                current: this.plugin._ocrProgress.current,
+                total: this.plugin._ocrProgress.total,
+              };
             }
             this.display();
-          },
-          onNotice: (message: string) => new Notice(message, 8000),
+          }
         },
       })
-      .then((outcome: OcrProcessOutcome) => {
+      .then((result) => {
         if (envelopes["ocr"]) {
           envelopes["ocr"].activity_state = "idle";
           envelopes["ocr"].activity_label = null;
           envelopes["ocr"].activity_progress = null;
         }
-        if (outcome.ok) {
+        if (result.ok) {
           new Notice(completeNotice[mode] || "OCR completed");
-        } else if (outcome.stopped) {
-          this.plugin._ocrWasStopped = false;
+        } else if (result.cancelled || sawCancelled) {
           new Notice(t("ocr_stopped_notice"));
         } else {
           // #126: surface the failing keys instead of claiming success.
-          const failed = outcome.failedKeys.join(", ");
+          const failed = failedKeys.filter(Boolean).join(", ");
           const detail =
-            outcome.skippedKeys.length > 0
-              ? `${failed ? failed + " " : ""}(${outcome.skippedKeys.length} skipped)`
+            skippedCount > 0
+              ? `${failed ? failed + " " : ""}(${skippedCount} skipped)`
               : failed;
           new Notice(
             t("ocr_failed_notice") + (detail ? ": " + detail : ""),
@@ -2071,7 +2111,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         this._refreshAllReadModels();
         this.display();
       });
-  } /** Dispatch memory build: distinct build vs embed modes, overlay activity, terminal re-probe (Issue #78). */
+  }
+  /** Dispatch memory build: distinct build vs embed modes, overlay activity, terminal re-probe (Issue #78). */
   /** RC UX Seam: `embedMode` distinguishes a full rebuild (--force) from a
    * resume (--resume).  The backend action (embed.build vs embed.resume)
    * decides which flag; the frontend never guesses. */

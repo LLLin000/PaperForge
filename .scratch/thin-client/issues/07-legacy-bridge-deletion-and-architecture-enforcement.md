@@ -26,6 +26,18 @@
 - `services/action-client.ts` + `next-actions-*`: alive — the follow-up bridge is the sanctioned next_actions consumer; reroute `runActionRequest` through `PaperForgeClient.runAction` (or classify as host seam) before deletion.
 - `services/python-bridge.ts`: `paperforgeEnrichedEnv`/runtime resolution used by node-transport (core); only `runSubprocess`/git-detection helpers become dead once the surfaces above are rerouted.
 
+## Stage 2 — step 3: OCR live callers → shared client, `OcrProcessController` deleted (2026-09-06, done)
+
+Leaf→root order per reviewer: migrate the live callers FIRST, keep Stop/operation ownership, then physically delete the controller.
+
+- **`main.requestOcrRun()`** (command palette + Settings run dispatch + Dashboard) → `client.runAction({action_id:"ocr.run", scope:{kind:"all"}, confirm:"ocr.run"})` with #137 event mapping (`start/phase/progress/item_result` → `_ocrProgress`; failed keys aggregated from non-succeeded item_results; `cancelled` event → stopped notice). Client-side confirm modal kept; already-running guard → `client.isOperationActive()`; settle → `_autoSync` (unchanged cadence).
+- **`settings._dispatchOcrAction(mode)`** — run still delegates to `plugin.requestOcrRun(true)`; rebuild → `ocr.rebuild_derived` (scope all); redo → `ocr.redo` + confirm token (the module-level confirm modal already ran). Envelope activity overlay + `_ocrProgress` mapping preserved; settle → `_refreshAllReadModels()`.
+- **Stop ownership** — Settings OCR Stop button → `client.isOperationActive() ? client.cancelActiveOperation()` (single OperationLock owner, T05 semantics). Cooperative-stop protocol itself stays Python-side (`#137` `stop_check`, covered by Python tests); the TS side never wrote stdin tokens.
+- **Credential fail-closed** — moved from the controller's `needsCredential` callback to where it always belonged: the Python action registry (`describeAction.availability`), consumed by `client.runAction`'s gate. Tests assert the unavailable descriptor produces a structured rejection, no transport call, and an activity reset.
+- **Deleted:** `services/ocr-process-controller.ts` (second spawn owner: its own argv assembly, `PAPERFORGE_STOP` stdin writes, credential resolution, NDJSON parsing) + `tests/ocr-process-controller.test.ts` (14 tests of the dead seam — the surviving behaviors are covered client-side: exact-argv, gating, Stop ownership, item_result aggregation) + main's `ocrProcessController` field/construction + settings' `OcrProcessOutcome` import + controller-era `_ocrBuffer/_ocrStderr/_ocrWasStopped` state writes.
+- **Gate:** `services/ocr-process-controller.ts` leaves `LEGACY_RATCHET` (1 test-seam spawn site) and enters `TOMBSTONES`.
+- Also carried: reviewer's P2 from step 2 — `configMigrate` regression now asserts the runtime-returned DTO equals the real Python wire (not just fixture shape + argv).
+
 ## Stage 2 — step 2 contract corrective (2026-09-06, reviewer-verified findings)
 
 - **P1 configMigrate DTO vs Python wire:** the carried-over type lie from legacy config-client was not allowed to survive the typed cutover. `ConfigMutationData` split into `ConfigSetData` (per-field: `changed` + `field`) and `ConfigMigrateData` (snapshot meta + `changed` + `dry_run` + `warnings`, never `field`) — matching the real `config migrate` machine output. The regression now asserts the full real wire DTO, not a fixture-shaped subset.

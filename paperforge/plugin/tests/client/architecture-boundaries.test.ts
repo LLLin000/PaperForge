@@ -66,10 +66,6 @@ const LEGACY_RATCHET: Record<string, number> = {
   "views/dashboard.ts": 3,
   "views/modals.ts": 3,
   "services/embed-build-controller.ts": 2,
-  // Test-seam default `spawnFn = this._opts.spawnFn ?? spawn` — the
-  // `spawnFn(...)` call IS a real spawn site the old regex gate
-  // under-counted as 0; binding provenance catches it. Import frozen.
-  "services/ocr-process-controller.ts": 1,
   // Provenance-resolved: 8 real spawn sites (incl. `const execSync =
   // _execFileSync || execFileSync` fallback aliases at 99/151/361/415 that
   // the old regex gate under-counted as 5).
@@ -80,6 +76,10 @@ const LEGACY_RATCHET: Record<string, number> = {
 const TOMBSTONES = [
   "services/ocr-maintenance-ui.ts",
   "services/config-client.ts",
+  // Stage 2 step 3: the legacy OCR child-process owner — run/redo/rebuild
+  // now route through the shared client's canonical actions; Python's
+  // cooperative-stop + credential policy stay authoritative.
+  "services/ocr-process-controller.ts",
 ];
 
 function* walk(dir: string): Generator<string> {
