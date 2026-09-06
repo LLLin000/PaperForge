@@ -649,7 +649,17 @@ describe("PaperForgeClient", () => {
             warnings: [],
           },
         });
-      await client.configMigrate(true);
+      const result = await client.configMigrate(true);
+      // Runtime returned DTO equals the real Python wire, not just the
+      // transport fixture shape.
+      expect(result).toEqual({
+        schema_version: 1,
+        revision: "r1",
+        unknown_keys: [],
+        changed: false,
+        dry_run: true,
+        warnings: [],
+      });
       await client.configMigrate(false);
       expect(transport.calls.map((c) => c.argv)).toEqual([
         ["config", "migrate", "--dry-run", "--json"],

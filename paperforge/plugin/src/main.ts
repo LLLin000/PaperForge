@@ -1,3 +1,4 @@
+import type { ActionRequest } from "./services/action-client";
 import { Plugin, addIcon, Notice, Modal, Setting, App } from "obsidian";
 
 /** Thin confirm modal for the one-time plugin-assisted config migration. */
@@ -43,10 +44,6 @@ import {
 import { t, setLanguage } from "./i18n";
 import { PaperForgeSettingTab } from "./settings";
 import { orchestrateFromSync } from "./services/next-actions-bridge";
-import {
-  OcrProcessController,
-  type OcrProcessOutcome,
-} from "./services/ocr-process-controller";
 import { PaperForgeStatusView } from "./views/dashboard";
 import { OcrWorkspaceView } from "./views/ocr-workspace";
 import { PaperForgeConfirmModal } from "./views/modals";
@@ -79,8 +76,6 @@ export default class PaperForgePlugin extends Plugin {
   _embedController:
     | import("./services/embed-build-controller").EmbedBuildController
     | null = null;
-  /** #126 PR B: the single OCR process controller shared by Settings and Workspace. */
-  ocrProcessController!: OcrProcessController;
   _memoryStatusText: string | null = null;
   _ocrProgress = { current: 0, total: 1, key: "" };
   private _settingTab: PaperForgeSettingTab | null = null;
@@ -118,7 +113,7 @@ export default class PaperForgePlugin extends Plugin {
 
   /** One user-facing OCR run path for Settings, Dashboard, and commands. */
   requestOcrRun(confirmed = false): void {
-    if (this.ocrProcessController.isRunning) {
+    if (this.getClient().isOperationActive()) {
       new Notice(t("ocr_already_running"));
       return;
     }
@@ -126,41 +121,67 @@ export default class PaperForgePlugin extends Plugin {
     const start = () => {
       this._ocrProgress = { current: 0, total: 1, key: "" };
       this._settingTab?.display();
-      void this.ocrProcessController
-        .start("run", {
-          callbacks: {
-            onProgress: (current, total, key) => {
-              this._ocrProgress = { current, total, key };
+      void (async () => {
+        // Ticket 07 step 3: the shared client owns the OCR run — the same
+        // canonical `ocr.run` action, #137 NDJSON progress, availability
+        // gating, and cooperative Stop that the OCR Workspace uses. No
+        // second argv assembly, no second child-process owner.
+        const request: ActionRequest = {
+          action_id: "ocr.run",
+          scope: { kind: "all" },
+          confirm: "ocr.run",
+        };
+        let sawCancelled = false;
+        const failedKeys: string[] = [];
+        const result = await this.getClient().runAction(request, {
+          onEvent: (event) => {
+            if (event.event === "cancelled") sawCancelled = true;
+            if (
+              event.event === "start" ||
+              event.event === "phase" ||
+              event.event === "progress" ||
+              event.event === "item_result"
+            ) {
+              this._ocrProgress = {
+                current: Number(event.current ?? this._ocrProgress.current),
+                total: Number(event.total ?? this._ocrProgress.total),
+                key: String(event.item_id ?? this._ocrProgress.key),
+              };
+              if (
+                event.event === "item_result" &&
+                event.status !== "succeeded" &&
+                event.status !== "noop" &&
+                event.status !== "skipped"
+              ) {
+                failedKeys.push(String(event.item_id ?? ""));
+              }
               this._settingTab?.display();
-            },
-            onNotice: (message) => new Notice(message, 8000),
+            }
           },
-        })
-        .then((outcome: OcrProcessOutcome) => {
-          if (outcome.ok) {
-            new Notice(t("ocr_run_complete"));
-          } else if (outcome.stopped) {
-            new Notice(t("ocr_stopped_notice"));
-          } else {
-            const detail = outcome.failedKeys.join(", ");
-            new Notice(
-              t("ocr_failed_notice") + (detail ? ": " + detail : ""),
-              8000
-            );
-          }
-          this._settingTab?.display();
-          const vaultPath = (this.app.vault.adapter as any).basePath as string;
-          this._autoSync(vaultPath);
-        })
-        .catch((error: Error) => {
+        });
+        if (result.ok) {
+          new Notice(t("ocr_run_complete"));
+        } else if (result.cancelled || sawCancelled) {
+          new Notice(t("ocr_stopped_notice"));
+        } else {
+          const detail = failedKeys.filter(Boolean).join(", ");
           new Notice(
-            t("ocr_failed_notice") +
-              ": " +
-              (error.message || t("ocr_error_notice")),
+            t("ocr_failed_notice") + (detail ? ": " + detail : ""),
             8000
           );
-          this._settingTab?.display();
-        });
+        }
+        this._settingTab?.display();
+        const vaultPath = (this.app.vault.adapter as any).basePath as string;
+        this._autoSync(vaultPath);
+      })().catch((error: Error) => {
+        new Notice(
+          t("ocr_failed_notice") +
+            ": " +
+            (error.message || t("ocr_error_notice")),
+          8000
+        );
+        this._settingTab?.display();
+      });
     };
 
     if (confirmed) {
@@ -183,20 +204,8 @@ export default class PaperForgePlugin extends Plugin {
     await this.saveSettings();
     setLanguage(this.app, this.settings.language);
 
-    // #126 PR B: one OCR process controller for Settings and Workspace —
-    // run/redo resolve the Paddle credential (fail closed when missing),
-    // rebuild never requires it.
-    this.ocrProcessController = new OcrProcessController({
-      vaultPath: (this.app.vault.adapter as any).basePath as string,
-      resolveCommand: () => this._getPythonCommand(),
-      // #173/C1: the plugin never injects credentials — Python resolves them
-      // from the credential authority; missing credentials fail closed there.
-      resolveEnv: async () => {
-        const env = await buildTargetedEnv(null, "ocr");
-        return env;
-      },
-      needsCredential: (mode) => mode === "run" || mode === "redo",
-    });
+    // (OCR run/redo credential gating is Python-side: the canonical action
+    // registry owns availability; the client gates on it — #173/C1.)
 
     this.registerView(
       VIEW_TYPE_PAPERFORGE,
