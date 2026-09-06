@@ -585,4 +585,113 @@ describe("PaperForgeClient", () => {
       });
     });
   });
+
+  /**
+   * Configuration & Read-Model Contract (Ticket 07 Stage 2 step 2).
+   *
+   * Regression guard carried over from the deleted config-client.ts
+   * (read-model-client.test.ts): the typed methods must emit exactly
+   * `paperforge <subcommand> ... --json`; the client owns the only argv
+   * assembly and the only PFResult unwrap. A structured ok:false PFResult is
+   * an authority rejection — fail closed, never a null payload.
+   */
+  describe("Configuration & Read-Model Contract (#07 step 2)", () => {
+    let transport: MockTransport;
+    let client: PaperForgeClient;
+
+    beforeEach(() => {
+      transport = new MockTransport();
+      client = new PaperForgeClient({ transport });
+    });
+
+    it("configList emits `config list --json` and unwraps the PFResult data", async () => {
+      transport.executeHandler = () =>
+        JSON.stringify({ ok: true, data: { fields: [{ key: "system_dir" }] } });
+      const data = await client.configList();
+      expect(transport.calls.map((c) => c.argv)).toEqual([
+        ["config", "list", "--json"],
+      ]);
+      expect(data.fields).toEqual([{ key: "system_dir" }]);
+    });
+
+    it("configSet emits `config set <key> <value> --json` and invalidates the cache", async () => {
+      let reads = 0;
+      transport.executeHandler = (argv) => {
+        if (argv[1] === "set")
+          return JSON.stringify({ ok: true, data: { changed: true } });
+        reads += 1;
+        return JSON.stringify({ ok: true, data: { n: reads } });
+      };
+      const probed = await client.memoryStatus();
+      await client.configSet("system_dir", "/vault/System");
+      const probed2 = await client.memoryStatus();
+      expect(transport.calls[0].argv).toEqual(["memory", "status", "--json"]);
+      expect(transport.calls[1].argv).toEqual([
+        "config",
+        "set",
+        "system_dir",
+        "/vault/System",
+        "--json",
+      ]);
+      expect(probed2).not.toEqual(probed);
+    });
+
+    it("configMigrate emits the dry-run flag in the right position and invalidates", async () => {
+      transport.executeHandler = () =>
+        JSON.stringify({ ok: true, data: { changed: false, warnings: [] } });
+      await client.configMigrate(true);
+      await client.configMigrate(false);
+      expect(transport.calls.map((c) => c.argv)).toEqual([
+        ["config", "migrate", "--dry-run", "--json"],
+        ["config", "migrate", "--json"],
+      ]);
+    });
+
+    it("configValidate and credentialAvailable emit their authority argv", async () => {
+      transport.executeHandler = (argv) => {
+        if (argv[0] === "auth")
+          return JSON.stringify({
+            ok: true,
+            data: { credentials: [{ state: "available" }] },
+          });
+        return JSON.stringify({ ok: true, data: { state: "ok" } });
+      };
+      expect(await client.configValidate()).toEqual({ state: "ok" });
+      expect(await client.credentialAvailable("ocr")).toBe(true);
+      expect(transport.calls.map((c) => c.argv)).toEqual([
+        ["config", "validate", "--json"],
+        ["auth", "status", "ocr", "--json"],
+      ]);
+    });
+
+    it("embedStatus and memoryStatus emit exact argv and cache within TTL", async () => {
+      let calls = 0;
+      transport.executeHandler = () => {
+        calls += 1;
+        return JSON.stringify({ ok: true, data: { model: "m" } });
+      };
+      await client.embedStatus();
+      await client.embedStatus();
+      await client.memoryStatus();
+      await client.memoryStatus();
+      expect(calls).toBe(2);
+      expect(transport.calls.map((c) => c.argv)).toEqual([
+        ["embed", "status", "--json"],
+        ["memory", "status", "--json"],
+      ]);
+    });
+
+    it("structured ok:false PFResult is an authority rejection (fail closed)", async () => {
+      transport.executeHandler = () =>
+        JSON.stringify({
+          ok: false,
+          data: null,
+          error: {
+            code: "config.migration_required",
+            message: "migrate first",
+          },
+        });
+      await expect(client.configValidate()).rejects.toThrow("migrate first");
+    });
+  });
 });

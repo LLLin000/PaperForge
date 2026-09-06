@@ -482,6 +482,14 @@ function fakePlugin(overrides: Record<string, unknown> = {}) {
         }, 50);
         return outcomePromise;
       }),
+      // Ticket 07 Stage 2 step 2: read models + config mutations moved
+      // onto the shared client; the refresh chain needs the new seams.
+      invalidateCache: vi.fn(),
+      probeAll: vi.fn().mockResolvedValue({ modules: {} }),
+      memoryStatus: vi.fn().mockResolvedValue({}),
+      embedStatus: vi.fn().mockResolvedValue({}),
+      credentialAvailable: vi.fn().mockResolvedValue(false),
+      configSet: vi.fn().mockResolvedValue({}),
     }),
   };
   return plugin;

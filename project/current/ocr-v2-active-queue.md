@@ -3,6 +3,7 @@
 > Last updated: 2026-09-05
 > Tickets 01–06 all CLOSED (06 — 31c5a321, owner-verified after corrective rounds 1+2): Library and Render Quality fully route through `PaperForgeClient`; sync follow-up semantics preserved via the shared orchestrator; R/P review renders actual staged crops with Open preview. Next: Ticket 07 (legacy bridge deletion + architecture enforcement).
 > Stage 1 CLOSED — 97fa1e6d (binding-provenance authority gate + exact-snapshot ratchet). Stage 2 step 1 done: `main._autoSync` → `client.sync()` + shared orchestrator; main.ts provenance snapshot 2 → 1.
+> Stage 2 step 1 CLOSED — production 504825e5 + evidence 092fdea0. Stage 2 step 2 done: config-client.ts dissolved by responsibility (probeAll → client, credentials/config → typed client methods, second generic argv wrapper deleted); `config-client.ts` tombstoned; `_executePfResult` fail-closed on ok:false.
 
 
 ## 2026-09-03: Ticket 04 OCR Workspace & Processing Domain Cutover — corrective closure

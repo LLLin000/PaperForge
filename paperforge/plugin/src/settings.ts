@@ -11,7 +11,6 @@ import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
 import { execFile, execFileSync, spawn, exec } from "child_process";
-import { configSet } from "./services/config-client";
 import { t, setLanguage, langFromApp } from "./i18n";
 import {
   PaperForgeSettings,
@@ -58,13 +57,6 @@ import type { PythonResult } from "./services/python-bridge";
 import { EmbedBuildController } from "./services/embed-build-controller";
 import { deferred } from "./services/deferred";
 import { orchestrateFromSync } from "./services/next-actions-bridge";
-import {
-  queryMemoryDetail,
-  queryEmbedStatus,
-  queryEmbeddingCredentialStatus,
-  probeAll,
-  invalidateAll,
-} from "./services/config-client";
 import { PaperForgeClient, NodeProcessTransport } from "./client";
 import {
   PaperForgeConfirmModal,
@@ -638,9 +630,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       for (const [key, value] of Object.entries(paths)) {
         if (value && value.trim()) {
           writes.push(
-            configSet(vaultPath, key, value.trim(), settings).catch((e) => {
-              console.error(`PaperForge: config set ${key} failed`, e);
-            })
+            this.getClient()
+              .configSet(key, value.trim())
+              .catch((e) => {
+                console.error(`PaperForge: config set ${key} failed`, e);
+              })
           );
         }
       }
@@ -1428,17 +1422,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           const value = this._agentPlatformDraft ?? current;
           this.plugin.settings.agent_platform = value;
           // #142 / C0: mutation through the typed config command.
-          void configSet(
-            this._getVaultBasePath(),
-            "agent_platform",
-            value,
-            this.plugin.settings
-          ).catch(
-            (e) =>
-              new Notice(
-                `PaperForge: config set agent_platform failed: ${String(e)}`
-              )
-          );
+          void this.getClient()
+            .configSet("agent_platform", value)
+            .catch(
+              (e) =>
+                new Notice(
+                  `PaperForge: config set agent_platform failed: ${String(e)}`
+                )
+            );
           this.plugin.saveSettings();
           this._agentPlatformDraft = null;
           this.display();
@@ -1635,17 +1626,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     bi.value = this.plugin.settings.vector_db_api_base || "";
     bi.addEventListener("change", () => {
       this.plugin.settings.vector_db_api_base = bi.value;
-      void configSet(
-        this._getVaultBasePath(),
-        "vector_db_api_base",
-        bi.value,
-        this.plugin.settings
-      ).catch(
-        (e) =>
-          new Notice(
-            `PaperForge: config set vector_db_api_base failed: ${String(e)}`
-          )
-      );
+      void this.getClient()
+        .configSet("vector_db_api_base", bi.value)
+        .catch(
+          (e) =>
+            new Notice(
+              `PaperForge: config set vector_db_api_base failed: ${String(e)}`
+            )
+        );
       this._refreshVectorDbCredentialStatus();
     });
 
@@ -1663,17 +1651,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this.plugin.settings.vector_db_api_model || "text-embedding-3-small";
     mi.addEventListener("change", () => {
       this.plugin.settings.vector_db_api_model = mi.value;
-      void configSet(
-        this._getVaultBasePath(),
-        "vector_db_api_model",
-        mi.value,
-        this.plugin.settings
-      ).catch(
-        (e) =>
-          new Notice(
-            `PaperForge: config set vector_db_api_model failed: ${String(e)}`
-          )
-      );
+      void this.getClient()
+        .configSet("vector_db_api_model", mi.value)
+        .catch(
+          (e) =>
+            new Notice(
+              `PaperForge: config set vector_db_api_model failed: ${String(e)}`
+            )
+        );
       this._refreshVectorDbCredentialStatus();
     });
 
@@ -1733,14 +1718,16 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     // #161/R: detail rows come from the typed read-model queries — the
     // plugin never reads snapshot files.
     if (vp) {
-      void queryMemoryDetail(vp, this.plugin.settings)
+      void this.getClient()
+        .memoryStatus()
         .then((d) => {
           setRow("FTS5 Papers", String(d?.paper_count_db ?? "?"));
           setRow("FTS5 Fresh", d?.fresh ? "Yes" : "Stale");
           setRow("Needs Rebuild", d?.needs_rebuild ? "Yes" : "No");
         })
         .catch(() => undefined);
-      void queryEmbedStatus(vp, this.plugin.settings)
+      void this.getClient()
+        .embedStatus()
         .then((d) => {
           setRow("Vector Model", String(d?.model ?? "-"));
           setRow("Vector Mode", String(d?.mode ?? "-"));
@@ -3415,7 +3402,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
    * Stale actions stay disabled until fresh envelopes land (last-known kept).
    */
   _refreshAllReadModels(lastLibraryExitCode?: number): void {
-    invalidateAll();
+    this.getClient().invalidateCache();
     const vp =
       (this.app.vault.adapter as unknown as { basePath?: string }).basePath ??
       "";
@@ -3427,7 +3414,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     for (const mod of CAPABILITY_MODULES) {
       this._probing.add(mod);
     }
-    void probeAll(vp, this.plugin.settings)
+    void this.getClient()
+      .probeAll()
       .then((data) => {
         this._probing.clear();
         for (const [mod, env] of Object.entries(data.modules ?? {})) {
@@ -3448,9 +3436,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         // orphans (none before, some now) pop the confirmation modal once;
         // persistent orphans just stay visible on the module card — never
         // re-pop on every 120s tick.
-        const maint = (data.modules ?? {})["maintenance"] as
-          | Record<string, unknown>
-          | undefined;
+        const maint = (data.modules?.["maintenance"] ??
+          null) as unknown as Record<string, unknown> | null;
         const orphanInfo = (maint?.orphan ?? {}) as {
           count?: number;
           orphans?: { key: string; title?: string }[];
@@ -3990,7 +3977,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     // never from SecretStorage or settings flags.
     const vp = this._getVaultBasePath();
     if (!vp) return;
-    void queryEmbeddingCredentialStatus(vp, this.plugin.settings)
+    void this.getClient()
+      .credentialAvailable("embedding")
       .then((available) => {
         if (available === this.plugin.settings._vector_db_configured) return;
         this.plugin.settings._vector_db_configured = available;
@@ -4257,17 +4245,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         select.addEventListener("change", () => {
           this.plugin.settings.agent_platform = select.value;
           // #142 / C0: mutation through the typed config command.
-          void configSet(
-            this._getVaultBasePath(),
-            "agent_platform",
-            select.value,
-            this.plugin.settings
-          ).catch(
-            (e) =>
-              new Notice(
-                `PaperForge: config set agent_platform failed: ${String(e)}`
-              )
-          );
+          void this.getClient()
+            .configSet("agent_platform", select.value)
+            .catch(
+              (e) =>
+                new Notice(
+                  `PaperForge: config set agent_platform failed: ${String(e)}`
+                )
+            );
           void this.plugin.saveSettings();
           status.setText(t("setup_optional_saved"));
         });

@@ -277,7 +277,13 @@ describe("Library & Render Quality Domain Cutover (Ticket 06)", () => {
         const nonSync = transport.calls.filter((c) => c.argv[0] !== "sync");
         expect(
           nonSync.every(
-            (c) => c.argv[0] === "reconcile" || c.argv[0] === "probe"
+            (c) =>
+              c.argv[0] === "reconcile" ||
+              c.argv[0] === "probe" ||
+              // Ticket 07 Stage 2 step 2: the OCR-token render-time read now
+              // flows through the SAME unified transport as everything else
+              // (previously config-client built its own argv/spawn).
+              c.argv[0] === "auth"
           )
         ).toBe(true);
         expect(

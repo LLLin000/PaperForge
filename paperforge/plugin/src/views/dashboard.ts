@@ -31,7 +31,6 @@ import {
 } from "../services/python-bridge";
 import { resolveRuntimeCommand } from "../services/managed-runtime";
 import { stripCredentialEnv } from "../services/secret-storage";
-import { queryOcrCredentialStatus } from "../services/config-client";
 import { getDisclosureState, toggleDisclosureState } from "../utils/disclosure";
 import { extractZoteroKeyFromPath } from "../utils/zotero-path";
 import { checkOrphanState } from "./modals";
@@ -1069,21 +1068,23 @@ export class PaperForgeStatusView extends ItemView {
       "checking",
       "Checking…"
     );
-    void queryOcrCredentialStatus(vp, pfPlugin?.settings).then(
-      (available) => {
-        if (!tokenRow.isConnected) return;
-        const dot = tokenRow.querySelector(".paperforge-status-dot");
-        dot?.classList.toggle("ok", available);
-        dot?.classList.toggle("fail", !available);
-        const detail = tokenRow.querySelector(".paperforge-status-detail");
-        if (detail) detail.textContent = available ? "Configured" : "Not set";
-      },
-      () => {
-        if (!tokenRow.isConnected) return;
-        const detail = tokenRow.querySelector(".paperforge-status-detail");
-        if (detail) detail.textContent = "Status unavailable";
-      }
-    );
+    void this._getClient()
+      ?.credentialAvailable("ocr")
+      .then(
+        (available) => {
+          if (!tokenRow.isConnected) return;
+          const dot = tokenRow.querySelector(".paperforge-status-dot");
+          dot?.classList.toggle("ok", available);
+          dot?.classList.toggle("fail", !available);
+          const detail = tokenRow.querySelector(".paperforge-status-detail");
+          if (detail) detail.textContent = available ? "Configured" : "Not set";
+        },
+        () => {
+          if (!tokenRow.isConnected) return;
+          const detail = tokenRow.querySelector(".paperforge-status-detail");
+          if (detail) detail.textContent = "Status unavailable";
+        }
+      );
     const vp2 =
       (this.app.vault.adapter as unknown as { basePath?: string }).basePath ??
       "";
