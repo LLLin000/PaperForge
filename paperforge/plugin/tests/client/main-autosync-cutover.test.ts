@@ -7,57 +7,35 @@
  * spawns for sync, never duplicates next_actions policy, and never creates
  * a second client. `_autoSyncRunning` dedup and failure cleanup semantics
  * are preserved.
+ *
+ * The bridge MODULE is mocked (not child_process): this observes the
+ * handoff seam directly — `orchestrateFromSync` must receive the same
+ * parsed PFResult document (semantic content; client.sync() JSON.parses the
+ * backend stdout, so raw bytes are not preserved by design) plus the vault
+ * context. Direct child-process usage of main.ts stays enforced by the
+ * architecture gate (provenance snapshot = 1).
  */
 
 import "obsidian-test-mocks/jest-setup";
 import { describe, it, expect, beforeEach, beforeAll, vi } from "vitest";
 import { MockTransport } from "./mock-transport";
-import type { ChildProcess } from "node:child_process";
 import type { PaperForgeClient } from "../../src/client/paperforge-client";
 import type { PaperForgePlugin as PluginClass } from "../../src/main";
 
-const { mockExecFile, mockSpawn } = vi.hoisted(() => ({
-  mockExecFile: vi.fn(),
-  mockSpawn: vi.fn(),
+const { orchestrateFromSync } = vi.hoisted(() => ({
+  orchestrateFromSync: vi.fn(async () => 1),
 }));
 
-vi.mock("child_process", () => ({
-  execFile: mockExecFile,
-  exec: vi.fn(),
-  execFileSync: vi.fn(),
-  default: { execFile: mockExecFile, spawn: mockSpawn },
+vi.mock("../../src/services/next-actions-bridge", () => ({
+  orchestrateFromSync,
 }));
 
 vi.mock("obsidian", () => ({
-  Plugin: class {
-    app: unknown;
-    constructor(_app?: unknown, _manifest?: unknown) {}
-    addSettingTab() {}
-    registerEvent() {}
-    registerDomEvent() {}
-    addRibbonIcon() {
-      return { addEventListener: () => {} };
-    }
-    addCommand() {
-      return {};
-    }
-    loadData() {
-      return Promise.resolve({});
-    }
-    saveData() {
-      return Promise.resolve();
-    }
-  },
+  Plugin: class {},
   PluginSettingTab: class {},
-  Notice: class {
-    constructor(public message: string) {}
-  },
+  Notice: class {},
   Modal: class {},
-  Setting: class {
-    setName() {
-      return this;
-    }
-  },
+  Setting: class {},
   addIcon: () => {},
   ItemView: class {},
   TFile: class {},
@@ -71,7 +49,7 @@ vi.mock("obsidian", () => ({
 }));
 
 // Import-order-sensitive: main must evaluate before paperforge-client under
-// the vi.mock obsidian module (static order hits a vitest hoisting TDZ).
+// the vi.mock obsidian module (client-first hits a hoisting TDZ).
 let PaperForgePlugin: typeof PluginClass;
 let PaperForgeClientClass: new (t: { transport: unknown }) => PaperForgeClient;
 
@@ -97,7 +75,7 @@ const SYNC_RESULT = {
   ],
 };
 
-function makePlugin(client: PaperForgeClient | null) {
+function makePlugin(client: PaperForgeClient) {
   const plugin = Object.create(
     PaperForgePlugin.prototype
   ) as PaperForgePlugin & {
@@ -105,7 +83,7 @@ function makePlugin(client: PaperForgeClient | null) {
     _memoryStatusText: string | null;
     _lastSyncTime: string | null;
     _settingTab: { _refreshAllReadModels: (code?: number) => void } | null;
-    getClient: () => PaperForgeClient | null;
+    getClient: () => PaperForgeClient;
     _getPythonCommand: () => { path: string; args: string[] } | null;
     app: unknown;
   };
@@ -113,7 +91,7 @@ function makePlugin(client: PaperForgeClient | null) {
   plugin._memoryStatusText = "Checking...";
   plugin._lastSyncTime = null;
   plugin._settingTab = { _refreshAllReadModels: vi.fn() };
-  plugin.getClient = () => client!;
+  plugin.getClient = () => client;
   plugin._getPythonCommand = () => ({ path: "py", args: ["-3"] });
   plugin.app = { vault: { adapter: { basePath: "/vault" } } };
   return plugin;
@@ -126,26 +104,15 @@ describe("convergence tick cutover (Ticket 07 Stage 2 step 1)", () => {
   beforeEach(() => {
     transport = new MockTransport();
     client = new PaperForgeClientClass({ transport });
-    mockExecFile.mockClear();
-    mockSpawn.mockClear();
+    orchestrateFromSync.mockClear();
   });
 
-  it("fires sync through the shared client with the exact argv and refreshes the read model", async () => {
+  it("fires sync through the shared client with the exact argv and hands the PFResult to the shared bridge", async () => {
     transport.executeHandler = (argv) => {
       if (argv[0] === "sync") return JSON.stringify(SYNC_RESULT);
       if (argv[0] === "reconcile") return JSON.stringify({ deficits: [] });
       return "{}";
     };
-    // The follow-up bridge spawns through the mocked child_process; give it
-    // a stub child so runSubprocess never touches an undefined stream.
-    mockSpawn.mockImplementation(
-      () =>
-        ({
-          stdout: { on: vi.fn() },
-          stderr: { on: vi.fn() },
-          on: vi.fn(),
-        }) as unknown as ChildProcess
-    );
     const plugin = makePlugin(client);
     plugin._autoSync("/vault");
 
@@ -156,14 +123,19 @@ describe("convergence tick cutover (Ticket 07 Stage 2 step 1)", () => {
       transport.calls.filter((c) => c.argv[0] === "sync").map((c) => c.argv)
     ).toEqual([["sync", "--json"]]);
 
-    // next_actions consumed through the SAME bridge — automatic intent runs.
+    // Same sync-result consumer as Settings: the SAME parsed PFResult
+    // document (semantic content preserved through JSON.parse/stringify)
+    // plus the vault context — not a projected subset.
     await vi.waitFor(() => {
-      expect(
-        mockSpawn.mock.calls.some((c) =>
-          JSON.stringify(c[1]).includes("memory.build")
-        )
-      ).toBe(true);
+      expect(orchestrateFromSync).toHaveBeenCalledTimes(1);
     });
+    expect(orchestrateFromSync).toHaveBeenCalledWith(
+      JSON.stringify(SYNC_RESULT),
+      expect.objectContaining({
+        vaultPath: "/vault",
+        resolveCommand: expect.any(Function),
+      })
+    );
     expect(plugin._settingTab?._refreshAllReadModels).toHaveBeenCalled();
     expect(plugin._lastSyncTime).not.toBeNull();
     await vi.waitFor(() => {
@@ -196,10 +168,27 @@ describe("convergence tick cutover (Ticket 07 Stage 2 step 1)", () => {
     });
   });
 
-  it("failure path resets state, skips refresh and follow-ups", async () => {
+  it("transport failure resets state and skips refresh and follow-ups", async () => {
+    transport.executeHandler = (argv) => {
+      if (argv[0] === "sync") throw new Error("exit code 1");
+      return "{}";
+    };
+    const plugin = makePlugin(client);
+    plugin._autoSync("/vault");
+
+    await vi.waitFor(() => {
+      expect(plugin._autoSyncRunning).toBe(false);
+    });
+    expect(plugin._memoryStatusText).toBeNull();
+    expect(plugin._settingTab?._refreshAllReadModels).not.toHaveBeenCalled();
+    expect(plugin._lastSyncTime).toBeNull();
+    expect(orchestrateFromSync).not.toHaveBeenCalled();
+  });
+
+  it("structured ok:false result skips refresh and follow-ups", async () => {
     transport.executeHandler = (argv) => {
       if (argv[0] === "sync") {
-        throw new Error("exit code 1");
+        return JSON.stringify({ ok: false, error: { code: "SYNC_FAILED" } });
       }
       return "{}";
     };
@@ -212,28 +201,6 @@ describe("convergence tick cutover (Ticket 07 Stage 2 step 1)", () => {
     expect(plugin._memoryStatusText).toBeNull();
     expect(plugin._settingTab?._refreshAllReadModels).not.toHaveBeenCalled();
     expect(plugin._lastSyncTime).toBeNull();
-    expect(mockSpawn).not.toHaveBeenCalled();
-  });
-
-  it("never spawns or execFiles for sync", async () => {
-    transport.executeHandler = (argv) => {
-      if (argv[0] === "sync") return JSON.stringify(SYNC_RESULT);
-      if (argv[0] === "reconcile") return JSON.stringify({ deficits: [] });
-      return "{}";
-    };
-    const plugin = makePlugin(client);
-    plugin._autoSync("/vault");
-    await vi.waitFor(() => {
-      expect(transport.calls.some((c) => c.argv[0] === "sync")).toBe(true);
-    });
-    await vi.waitFor(() => {
-      expect(plugin._autoSyncRunning).toBe(false);
-    });
-    const childArgv = [...mockSpawn.mock.calls, ...mockExecFile.mock.calls].map(
-      (c) => JSON.stringify(c[1] ?? [])
-    );
-    for (const a of childArgv) {
-      expect(a).not.toContain('"sync"');
-    }
+    expect(orchestrateFromSync).not.toHaveBeenCalled();
   });
 });
