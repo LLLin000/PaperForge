@@ -26,6 +26,19 @@
 - `services/action-client.ts` + `next-actions-*`: alive — the follow-up bridge is the sanctioned next_actions consumer; reroute `runActionRequest` through `PaperForgeClient.runAction` (or classify as host seam) before deletion.
 - `services/python-bridge.ts`: `paperforgeEnrichedEnv`/runtime resolution used by node-transport (core); only `runSubprocess`/git-detection helpers become dead once the surfaces above are rerouted.
 
+## Stage 2 — step 2: `config-client` dissolved (2026-09-06, done)
+
+Per the reviewer's decomposition brief, `config-client.ts` (428 lines) was split by **actual responsibility**, then deleted — the goal was eliminating duplicate semantic authority, not shrinking a file count:
+
+- **probeAll semantic read** → `PaperForgeClient.probeAll()` (existing); return type corrected to the true bare envelope `ProbeAllEnvelope {schema_version, module:"all", modules}` (the old cast `Record<string, ProbeEnvelope>` was a type lie). Settings' `_refreshAllReadModels` invalidates the shared cache first (`client.invalidateCache()`) so a refresh can never serve a 60s-stale probe.
+- **credential/config typed queries** → Python authority surface already existed (`auth status <svc> --json`, `config <verb> --json`), so per the brief these became **client typed methods, no Python contract change needed**: `credentialAvailable("embedding"|"ocr")`, `configList`, `configValidate`, `configMigrate(dryRun)`, `configSet(key, value)` (mutations invalidate the cache), `embedStatus()`, `memoryStatus()`. Vault path, python resolution, env sanitization, and PFResult unwrapping now happen exactly once, in `NodeProcessTransport`/`PaperForgeClient`.
+- **runtime/bootstrap-only helper** — `config-client`'s own `invokePaperForge` was a second generic argv wrapper with a second `resolvePythonExecutable` call and its own `execFile`/`windowsHide` options; that is precisely the duplicated semantic authority, deleted, not re-homed.
+- **Shared-root hardening:** `_executePfResult` is now fail-closed — a structured `ok:false` PFResult throws with the authority's message; previously every PFResult-based read silently received `null` data on authority rejection.
+- **Dead weight removed with the file:** unused `configGet/configUnset/configPaths/paperContext/queryOcrPapers` standalone, the module-scope `_detailCaches`/`refreshAll`/`getDetailCache`/`invalidateAll` cache nobody read, `ConfigClientError`, and the `--json` double-append in `auth status` argv.
+- **Gate evidence:** `services/config-client.ts` leaves `LEGACY_RATCHET` (2 execFile sites) and enters `TOMBSTONES`; the argv-contract regression from `read-model-client.test.ts` was re-homed onto the unified seam in `tests/client/paperforge-client.test.ts` (6 cases: exact argv for list/set/migrate dry+real/validate/auth-status, mutation invalidation, TTL caching, ok:false fail-closed).
+- Consumers cut over: `main.ts` (configValidate/embedStatus/configMigrate×2/configList×2), `settings.ts` (configSet×5, memoryStatus, embedStatus, credentialAvailable("embedding"), invalidateCache+probeAll), `views/dashboard.ts` (credentialAvailable("ocr") via `_getClient()`).
+- Ticket 06 note: `expectOnlyClientSync` now admits `auth` on the unified transport — the OCR-token render read previously never reached any transport because config-client resolved python (and failed) outside the seam; now it is an honest transport call.
+
 ## Stage 2 — step 1: `main._autoSync` (2026-09-05, done)
 
 - `main._autoSync` routes through the shared `PaperForgeClient.sync()` and hands the SAME PFResult document to the SAME `orchestrateFromSync` bridge as Settings/Dashboard (`resolveCommand: () => this._getPythonCommand()`). main never assembles sync argv, never spawns for sync, never duplicates next_actions policy, never creates a second client; `NodeProcessTransport` owns the redacted env.

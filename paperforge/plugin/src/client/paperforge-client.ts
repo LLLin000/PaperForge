@@ -59,6 +59,71 @@ export interface OcrPaperRow {
   [key: string]: unknown;
 }
 
+export interface ConfigField {
+  key: string;
+  value: string | boolean;
+  stored_value: string | boolean | null;
+  source: "default" | "file" | "environment" | "override";
+  is_set: boolean;
+  type: string;
+  default: string | boolean;
+  environment: string | null;
+  choices: string[];
+  writable: boolean;
+  allow_empty: boolean;
+  vault_relative: boolean;
+}
+
+export interface ConfigListData {
+  schema_version: number;
+  revision: string;
+  unknown_keys: string[];
+  fields: ConfigField[];
+}
+
+export interface ConfigMutationData {
+  schema_version: number;
+  revision: string;
+  unknown_keys: string[];
+  changed: boolean;
+  field: ConfigField;
+  warnings?: string[];
+}
+
+export interface ConfigValidateData {
+  state: string;
+  revision: string | null;
+  errors: Array<Record<string, unknown>>;
+  warnings: Array<Record<string, unknown>>;
+  migration: Record<string, unknown> | null;
+}
+
+export interface ProbeAllEnvelope {
+  schema_version: number;
+  module: "all";
+  updated_at: string;
+  modules: Record<string, ProbeEnvelope>;
+}
+
+export interface MemoryDetailData {
+  paper_count_db?: number;
+  fresh?: boolean;
+  needs_rebuild?: boolean;
+  [key: string]: unknown;
+}
+
+export interface EmbedStatusData {
+  model?: string;
+  mode?: string;
+  deps_installed?: boolean;
+  body_chunk_count?: number;
+  object_chunk_count?: number;
+  chunk_count?: number;
+  total_chunks?: number;
+  build_state?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
 const ACTION_AVAILABLE = "available";
 
 function ocrRowsFromPayload(payload: unknown): OcrPaperRow[] {
@@ -326,13 +391,12 @@ export class PaperForgeClient {
     });
   }
 
-  async probeAll(): Promise<Record<string, ProbeEnvelope>> {
+  async probeAll(): Promise<ProbeAllEnvelope> {
     return this._cachedRead("probe:all", 60000, async () => {
       const raw = await this._transport.execute(["probe", "all", "--json"]);
-      return JSON.parse(raw) as Record<string, ProbeEnvelope>;
+      return JSON.parse(raw) as ProbeAllEnvelope;
     });
   }
-
   // ── 2. Deficit Contract (reconcile) ───────────────────────────────────────
 
   async reconcile(
@@ -369,9 +433,83 @@ export class PaperForgeClient {
       throw new Error(`Failed to parse PFResult JSON: ${raw.slice(0, 100)}`);
     }
     if (parsed && typeof parsed === "object" && "data" in parsed) {
+      // Fail closed: a structured ok:false PFResult is an authority
+      // rejection, never a null payload.
+      if (parsed.ok === false) {
+        const err = parsed.error ?? {};
+        throw new Error(String(err.message || err.code || "backend_error"));
+      }
       return parsed.data as T;
     }
     return parsed as T;
+  }
+
+  // ── 3b. Configuration & Read-Model Contract (config/auth authority) ──────
+  // Ticket 07 Stage 2 step 2: typed surfaces replace config-client.ts. The
+  // plugin never builds config argv or touches PFResult `.data` outside this
+  // class; every read/mutation routes through the Python authority.
+
+  async configList(): Promise<ConfigListData> {
+    return this._executePfResult<ConfigListData>(["config", "list", "--json"]);
+  }
+
+  async configValidate(): Promise<ConfigValidateData> {
+    return this._executePfResult<ConfigValidateData>([
+      "config",
+      "validate",
+      "--json",
+    ]);
+  }
+
+  async configMigrate(dryRun = false): Promise<ConfigMutationData> {
+    const argv = ["config", "migrate"];
+    if (dryRun) argv.push("--dry-run");
+    argv.push("--json");
+    try {
+      return await this._executePfResult<ConfigMutationData>(argv);
+    } finally {
+      this.invalidateCache();
+    }
+  }
+
+  async configSet(
+    key: string,
+    value: string | boolean
+  ): Promise<ConfigMutationData> {
+    try {
+      return await this._executePfResult<ConfigMutationData>([
+        "config",
+        "set",
+        key,
+        String(value),
+        "--json",
+      ]);
+    } finally {
+      this.invalidateCache();
+    }
+  }
+
+  async embedStatus(): Promise<EmbedStatusData> {
+    return this._cachedRead("embed:status", 30000, async () =>
+      this._executePfResult<EmbedStatusData>(["embed", "status", "--json"])
+    );
+  }
+
+  async memoryStatus(): Promise<MemoryDetailData> {
+    return this._cachedRead("memory:status", 30000, async () =>
+      this._executePfResult<MemoryDetailData>(["memory", "status", "--json"])
+    );
+  }
+
+  /** Credential presence from the authority (`auth status`), never from
+   * SecretStorage or settings flags (#173/C1). */
+  async credentialAvailable(service: "embedding" | "ocr"): Promise<boolean> {
+    return this._cachedRead(`auth-status:${service}`, 60000, async () => {
+      const data = await this._executePfResult<{
+        credentials?: Array<{ state?: string }>;
+      }>(["auth", "status", service, "--json"]);
+      return data.credentials?.some((c) => c.state === "available") ?? false;
+    });
   }
 
   async listActions(): Promise<any[]> {

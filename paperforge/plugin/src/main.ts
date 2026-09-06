@@ -57,12 +57,6 @@ import {
   isConfigHydrated,
 } from "./services/runtime-paths";
 import {
-  configList,
-  configMigrate,
-  configValidate,
-  queryEmbedStatus,
-} from "./services/config-client";
-import {
   RuntimeBootstrap,
   resolveRuntimeCommand,
 } from "./services/managed-runtime";
@@ -307,7 +301,8 @@ export default class PaperForgePlugin extends Plugin {
       this.app.vault.adapter as unknown as { basePath?: string }
     ).basePath;
     if (vaultBase) {
-      void configValidate(vaultBase, this.settings)
+      void this.getClient()
+        .configValidate()
         .then((validation) => {
           if (validation.state === "migration_required") {
             this._needsConfigMigration = true;
@@ -315,7 +310,8 @@ export default class PaperForgePlugin extends Plugin {
         })
         .catch(() => undefined);
       // #161/R: embed status read model for the vector UI.
-      void queryEmbedStatus(vaultBase, this.settings)
+      void this.getClient()
+        .embedStatus()
         .then((d) => {
           if (d) {
             this._embedStatusCache = d as unknown as Record<string, unknown>;
@@ -335,22 +331,24 @@ export default class PaperForgePlugin extends Plugin {
     ).basePath;
     if (!vaultPath) return;
     void (async () => {
-      const dry = await configMigrate(vaultPath, true, this.settings).catch(
-        (e) => null
-      );
+      const dry = await this.getClient()
+        .configMigrate(true)
+        .catch((e) => null);
       const summary =
         dry && dry.warnings?.length
           ? dry.warnings.join("\n")
           : "No conflicts; legacy path keys will move under vault_config.";
       new ConfirmMigrationModal(this.app, summary, async () => {
-        await configMigrate(vaultPath, false, this.settings).catch((e) => {
-          new Notice(`PaperForge: config migrate failed: ${String(e)}`);
-          return;
-        });
+        await this.getClient()
+          .configMigrate(false)
+          .catch((e) => {
+            new Notice(`PaperForge: config migrate failed: ${String(e)}`);
+            return;
+          });
         // Re-hydrate mirrors from the canonical config, then purge the
         // legacy domain values from data.json (#142 §12 step 4/5).
         try {
-          const list = await configList(vaultPath, this.settings);
+          const list = await this.getClient().configList();
           const pick = (key: string) =>
             list.fields.find((f) => f.key === key)?.value;
           const systemDir = String(pick("system_dir") ?? "");
@@ -503,7 +501,7 @@ export default class PaperForgePlugin extends Plugin {
     const vaultPath = (this.app.vault.adapter as any).basePath as string;
     if (vaultPath) {
       try {
-        const list = await configList(vaultPath, this.settings);
+        const list = await this.getClient().configList();
         const pick = (key: string) =>
           list.fields.find((f) => f.key === key)?.value;
         const systemDir = String(pick("system_dir") ?? "");

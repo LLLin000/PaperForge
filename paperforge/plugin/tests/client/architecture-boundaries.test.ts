@@ -58,10 +58,13 @@ const LEGACY_RATCHET: Record<string, number> = {
   // Stage 2 step 1: convergence `_autoSync` cut over to client.sync() —
   // the sync spawn is gone; only the dashboard-tool dispatcher remains.
   "main.ts": 1,
+  // Stage 2 step 2: services/config-client.ts DELETED (tombstone below) —
+  // its two execFile sites (generic argv assembly + bare-envelope probe)
+  // collapsed into the unified Transport seam; the duplicate read-model
+  // authority is gone and no source file may rebuild it.
   "settings.ts": 7,
   "views/dashboard.ts": 3,
   "views/modals.ts": 3,
-  "services/config-client.ts": 2,
   "services/embed-build-controller.ts": 2,
   // Test-seam default `spawnFn = this._opts.spawnFn ?? spawn` — the
   // `spawnFn(...)` call IS a real spawn site the old regex gate
@@ -74,7 +77,10 @@ const LEGACY_RATCHET: Record<string, number> = {
 };
 
 /** Files that must never exist again. */
-const TOMBSTONES = ["services/ocr-maintenance-ui.ts"];
+const TOMBSTONES = [
+  "services/ocr-maintenance-ui.ts",
+  "services/config-client.ts",
+];
 
 function* walk(dir: string): Generator<string> {
   for (const entry of readdirSync(dir)) {
