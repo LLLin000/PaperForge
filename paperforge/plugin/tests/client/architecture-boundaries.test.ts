@@ -66,14 +66,18 @@ const HOST_SEAMS: Record<string, number> = {
 const LEGACY_RATCHET: Record<string, number> = {
   // Stage 2 step 1: convergence `_autoSync` cut over to client.sync() —
   // the sync spawn is gone; only the dashboard-tool dispatcher remains.
-  "main.ts": 1,
+  "main.ts": 0,
   // Stage 2 step 2: services/config-client.ts DELETED (tombstone below) —
   // its two execFile sites (generic argv assembly + bare-envelope probe)
   // collapsed into the unified Transport seam; the duplicate read-model
   // authority is gone and no source file may rebuild it.
-  "views/dashboard.ts": 3,
-  "views/modals.ts": 3,
-  "services/embed-build-controller.ts": 2,
+  // Stage 2 step 5: dashboard/modals leaf callers cut over —
+  // version/doctor/repair/stats reads + the tool dispatcher route through
+  // the shared client; the dead PaperForgeSetupModal wizard and the
+  // superseded embed-build controller are tombstoned. Remaining cp
+  // surface: python-bridge (host resolution/env bootstrap, collapsed at
+  // the transport root in a later step) and main.ts.
+  "views/dashboard.ts": 0,
   // Provenance-resolved: 8 real spawn sites (incl. `const execSync =
   // _execFileSync || execFileSync` fallback aliases at 99/151/361/415 that
   // the old regex gate under-counted as 5).
@@ -88,6 +92,9 @@ const TOMBSTONES = [
   // now route through the shared client's canonical actions; Python's
   // cooperative-stop + credential policy stay authoritative.
   "services/ocr-process-controller.ts",
+  // Stage 2 step 5: superseded by the shared client's OperationLock embed
+  // execution (T05); the controller was never constructed in production.
+  "services/embed-build-controller.ts",
 ];
 
 function* walk(dir: string): Generator<string> {

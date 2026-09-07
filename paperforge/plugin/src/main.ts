@@ -30,7 +30,6 @@ class ConfirmMigrationModal extends Modal {
 }
 import * as fs from "fs";
 import * as path from "path";
-import { execFile, exec, spawn } from "child_process";
 import {
   VIEW_TYPE_PAPERFORGE,
   VIEW_TYPE_OCR_WORKSPACE,
@@ -73,9 +72,6 @@ export default class PaperForgePlugin extends Plugin {
   private _embedProcess: unknown = null;
   private _embedProgress = { current: 0, total: 0, key: "" };
   private _embedStderr = "";
-  _embedController:
-    | import("./services/embed-build-controller").EmbedBuildController
-    | null = null;
   _memoryStatusText: string | null = null;
   _ocrProgress = { current: 0, total: 1, key: "" };
   private _settingTab: PaperForgeSettingTab | null = null;
@@ -274,36 +270,36 @@ export default class PaperForgePlugin extends Plugin {
             );
             return;
           }
-          const vp = (this.app.vault.adapter as any).basePath as string;
-          new Notice(`PaperForge: running ${a.commandId}...`);
-          const pyCmd = this._getPythonCommand();
-          if (!pyCmd) {
-            new Notice("Runtime not ready");
-            return;
-          }
-          const { path: cmdPythonExe, args: cmdExtra = [] } = pyCmd;
-          const cmdArgs = Array.isArray(a.args) ? [...a.args] : [];
-          // #173/C1: credentials are resolved by Python; the env is redacted.
-          const env = await buildTargetedEnv(null, a.commandId);
-          // T8 (#169): typed tool argv — never a generic dispatch table.
-          const toolArgv = toolArgvFor(a.id) ?? [];
-          execFile(
-            cmdPythonExe,
-            [...cmdExtra, "-m", "paperforge", ...toolArgv, ...cmdArgs],
-            { cwd: vp, timeout: 300000, env },
-            (err, stdout, stderr) => {
-              if (err) {
-                new Notice(
-                  `[!!] ${a.commandId} failed: ${(stderr || err.message).slice(0, 120)}`,
-                  8000
-                );
-                return;
-              }
-              new Notice(
-                `[OK] ${a.okMsg || stdout.trim().split("\n")[0].slice(0, 80)}`
-              );
+          // Ticket 07 step 5: command palette routes through the shared
+          // client — no second argv assembly, no child_process authority.
+          const client = this.getClient();
+          try {
+            if (a.id === "paperforge-sync") {
+              const vp = (this.app.vault.adapter as any).basePath as string;
+              this._autoSync(vp);
+              return;
             }
-          );
+            if (a.id === "paperforge-doctor") {
+              new Notice(`PaperForge: running ${a.commandId}...`);
+              await client.doctor();
+              new Notice(`[OK] ${a.okMsg}`);
+              return;
+            }
+            if (a.id === "paperforge-repair") {
+              new Notice(`PaperForge: running ${a.commandId}...`);
+              await client.repair();
+              new Notice(`[OK] ${a.okMsg}`);
+              this._settingTab?._refreshAllReadModels();
+              return;
+            }
+            // Unknown tool identity — fail closed, never substitute.
+            new Notice(`[!!] Unsupported tool: ${a.id}`, 8000);
+          } catch (err: any) {
+            new Notice(
+              `[!!] ${a.commandId} failed: ${String(err?.message || err).slice(0, 120)}`,
+              8000
+            );
+          }
         },
       });
     }
@@ -481,10 +477,8 @@ export default class PaperForgePlugin extends Plugin {
 
   onunload() {
     if (this._pollTimer) clearInterval(this._pollTimer);
-    // #120: kill any in-flight embed build and stop its status poll — a
-    // reload/unload must not orphan the child (UI would lose control).
-    this._embedController?.dispose();
-    this._embedController = null;
+    // In-flight embed/OCR operations are owned by the shared client's
+    // OperationLock — cancelled below via cancelActiveOperation.
     this.app.workspace.detachLeavesOfType(VIEW_TYPE_PAPERFORGE);
     this._client?.cancelActiveOperation();
   }
