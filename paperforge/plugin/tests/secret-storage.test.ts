@@ -98,6 +98,26 @@ describe("migrateLegacySecret (explicit bridge only)", () => {
     expect(ss.setSecret).not.toHaveBeenCalled();
   });
 
+  it("normalizes a capability REJECTION into a migration result (production shape)", async () => {
+    // Production binding: client.authSetSecret resolves true or THROWS.
+    // The real-world case — the canonical keyring already holds a value
+    // and replace:false was declined — arrives as a rejection, not a
+    // false. The migration workflow must convert it into a warning and
+    // keep the legacy value, never reject itself.
+    const ss: SecretAccess = {
+      getSecret: vi.fn(async () => "legacy-secret"),
+      setSecret: vi.fn(async () => undefined),
+    };
+    const r = await migrateLegacySecret("ocr", ss, {
+      writeCredential: async () => {
+        throw new Error("credential already exists");
+      },
+    });
+    expect(r.migrated).toEqual([]);
+    expect(r.warnings.length).toBeGreaterThan(0);
+    expect(ss.setSecret).not.toHaveBeenCalled();
+  });
+
   it("no-op when no legacy value exists", async () => {
     const { calls, deps } = writerFor(true);
     const ss: SecretAccess = {
