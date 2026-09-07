@@ -1040,44 +1040,6 @@ describe("production-seam runtime dispatch", () => {
     expect(mockExecFile.mock.calls[0][3]).toBeInstanceOf(Function);
   });
 
-  it("uses managed python path in _callPython when runtime is ready", () => {
-    setManagedHealth({
-      state: "ready",
-      pythonPath: "/managed/python",
-      version: "1.0.0",
-      source: "venv",
-      error: null,
-      lastVerifiedAt: "2026-01-01T00:00:00.000Z",
-      stale: false,
-    });
-    mockResolveRuntimeCommand.mockReturnValue({
-      command: "/managed/python",
-      args: [],
-    });
-    mockGetCachedPython.mockReturnValue({
-      path: "",
-      source: "manual" as const,
-      extraArgs: [],
-    });
-
-    tab._callPython(["sync"], {
-      timeout: 5000,
-      onClose: vi.fn(),
-    });
-
-    expect(mockExecFile).toHaveBeenCalledTimes(1);
-    const execPath: string = mockExecFile.mock.calls[0][0];
-    expect(execPath).toBe("/managed/python");
-    const execArgs: string[] = mockExecFile.mock.calls[0][1];
-    expect(execArgs).not.toContain("-3");
-    expect(execArgs).toContain("-m");
-    expect(execArgs).toContain("paperforge");
-    expect(execArgs).toContain("sync");
-    const execOpts: Record<string, unknown> = mockExecFile.mock.calls[0][2];
-    expect(execOpts.timeout).toBe(5000);
-    expect(mockExecFile.mock.calls[0][3]).toBeInstanceOf(Function);
-  });
-
   it("fails closed when no pointer is published — no legacy fallback", () => {
     setManagedHealth(null);
     mockResolveRuntimeCommand.mockReturnValue(null);
@@ -1111,52 +1073,6 @@ describe("production-seam runtime dispatch", () => {
     const env = tab._capabilityState?.["installation"];
     expect(env?.reason?.code).toBe("installation.no_python");
     expect(env?.action?.primary?.verb).toBe("setup");
-  });
-
-  it("propagates execFile timeout and stream behavior through managed path", () => {
-    setManagedHealth({
-      state: "ready",
-      pythonPath: "/managed/python",
-      version: "1.0.0",
-      source: "venv",
-      error: null,
-      lastVerifiedAt: "2026-01-01T00:00:00.000Z",
-      stale: false,
-    });
-    mockResolveRuntimeCommand.mockReturnValue({
-      command: "/managed/python",
-      args: [],
-    });
-    mockGetCachedPython.mockReturnValue({
-      path: "",
-      source: "manual" as const,
-      extraArgs: [],
-    });
-
-    // Stream path — spawn called
-    tab._callPython(["embed", "build"], {
-      stream: true,
-      onData: vi.fn(),
-      onClose: vi.fn(),
-    });
-    expect(mockSpawn).toHaveBeenCalledTimes(1);
-    const spawnPath: string = mockSpawn.mock.calls[0][0];
-    expect(spawnPath).toBe("/managed/python");
-    const spawnArgs: string[] = mockSpawn.mock.calls[0][1];
-    expect(spawnArgs).not.toContain("-3");
-    expect(spawnArgs).toContain("embed");
-    expect(spawnArgs).toContain("build");
-
-    // Non-stream path with timeout
-    tab._callPython(["retrieval", "status", "--json"], {
-      timeout: 8000,
-      onClose: vi.fn(),
-    });
-    expect(mockExecFile).toHaveBeenCalledTimes(1);
-    const execPath: string = mockExecFile.mock.calls[0][0];
-    expect(execPath).toBe("/managed/python");
-    const execOpts: Record<string, unknown> = mockExecFile.mock.calls[0][2];
-    expect(execOpts.timeout).toBe(8000);
   });
 
   it("managed absent and legacy empty path produces stale envelope without fallback warning", () => {

@@ -448,64 +448,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     void this.plugin.saveSettings().then(() => this.display());
   }
 
-  private _runSetupPython(
-    args: string[],
-    pythonOverride?: string,
-    signal?: AbortSignal
-  ): Promise<void> {
-    // RC UX Seam P0: after Stage 1 publishes the managed pointer, every
-    // later setup step MUST run on that runtime — never ambient `python`.
-    // pythonOverride is used ONLY by Stage 1 pre-publication (the bootstrap
-    // candidate); every other caller resolves the managed pointer and fails
-    // closed when it is missing.
-    let pythonExe = pythonOverride?.trim();
-    if (!pythonExe) {
-      const resolved = this._resolveRuntimeCommand(this._getVaultBasePath());
-      pythonExe = resolved?.path ?? "";
-    }
-    if (!pythonExe) {
-      return Promise.reject(new Error("no managed runtime pointer"));
-    }
-    const child = spawn(pythonExe, args, {
-      cwd: this._getVaultBasePath(),
-      env: paperforgeEnrichedEnv(),
-      windowsHide: true,
-      signal,
-    });
-    return new Promise<void>((resolve, reject) => {
-      let stderr = "";
-      let closed = false;
-      let pendingAbort = false;
-      const settle = (err: Error | null) => {
-        if (closed) return;
-        closed = true;
-        err ? reject(err) : resolve();
-      };
-      child.stderr?.on("data", (chunk: Buffer) => {
-        stderr += chunk.toString("utf-8");
-      });
-      child.once("error", (err: Error) => {
-        if (signal?.aborted || err.name === "AbortError") {
-          // RC UX Seam P0: abort is cooperative (SIGTERM sets a Python
-          // flag, the child cleans up and exits by itself). Record the
-          // cancellation but DO NOT settle until close() fires, so the UI
-          // never returns to idle while the old setup child is still
-          // running (which would allow an immediate Retry racing it).
-          pendingAbort = true;
-        } else {
-          settle(err);
-        }
-      });
-      child.once("close", (code) => {
-        if (pendingAbort || signal?.aborted || code === null) {
-          settle(new DOMException("Operation was cancelled", "AbortError"));
-        } else {
-          settle(code === 0 ? null : new Error(stderr || `exit code ${code}`));
-        }
-      });
-    });
-  }
-
   private _installFoundation(forceInstall: boolean): void {
     if (this._setupOperation === "running") return;
     this._setupOperation = "running";
@@ -1901,12 +1843,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         return; // dispatched run/rebuild_index — never fall through to unknown-pair probe
       }
       if (verb === "restore_backup" || actionId === "memory.restore_backup") {
-        this._callPython(["memory", "restore-backup"], {
-          timeout: 30000,
-          onClose: () => {
+        void this.getClient()
+          .memoryRestoreBackup()
+          .catch(() => undefined)
+          .finally(() => {
             this._refreshAllReadModels();
-          },
-        });
+          });
         return;
       }
     }
@@ -1925,58 +1867,51 @@ export class PaperForgeSettingTab extends PluginSettingTab {
    * The confirm modal already ran (destructive + confirmation_required);
    * Python's perform_update owns policy + fresh-child verification. */
   _runUpdateAction(): void {
-    const vp = this._getVaultBasePath();
-    const resolved = this._resolveRuntimeCommand(vp);
-    if (!resolved) {
-      new Notice(t("retrieval_no_python") || "No Python runtime available");
-      return;
-    }
-    execFile(
-      resolved.path,
-      [
-        ...resolved.args,
-        "-m",
-        "paperforge",
-        "--vault",
-        vp,
-        "action",
-        "run",
-        "foundation.update",
-        "--confirm",
-        "foundation.update",
-        "--json",
-      ],
-      { cwd: vp, timeout: 600000, env: paperforgeEnrichedEnv() },
-      (err, _stdout, stderr) => {
-        if (err) {
-          new Notice(
-            t("update_failed") ||
-              `Update failed: ${stderr?.trim() || err.message}`
-          );
-        } else {
+    // Dispatch through the canonical action runner — Python's
+    // perform_update owns policy + fresh-child verification; the client's
+    // OperationLock owns the single active operation.
+    void this.getClient()
+      .runAction({
+        action_id: "foundation.update",
+        scope: { kind: "all" },
+        confirm: "foundation.update",
+      })
+      .then((result) => {
+        if (result.ok) {
           new Notice(t("update_done") || "PaperForge updated");
+        } else {
+          const reason =
+            typeof result.payload?.availability_reason === "string"
+              ? result.payload.availability_reason
+              : `exit code ${result.exitCode}`;
+          new Notice((t("update_failed") || "Update failed") + ": " + reason);
         }
         this._refreshAllReadModels();
-      }
-    );
+      })
+      .catch((err: Error) => {
+        new Notice(
+          (t("update_failed") || "Update failed") + ": " + err.message
+        );
+        this._refreshAllReadModels();
+      });
   }
 
   /** #174 RC: ChromaDB -> sqlite-vec backend migration (embed migrate). */
   _runBackendMigration(): void {
-    this._callPython(["embed", "migrate", "--json"], {
-      timeout: 600000,
-      onClose: (code: number, _stdout: string, stderr: string) => {
-        if (code === 0) {
-          new Notice(t("migrate_done") || "Backend migrated to sqlite-vec");
-        } else {
-          new Notice(
-            t("migrate_failed") ||
-              `Backend migration failed: ${stderr?.trim() || "unknown error"}`
-          );
-        }
+    void this.getClient()
+      .embedMigrate()
+      .then(() => {
+        new Notice(t("migrate_done") || "Backend migrated to sqlite-vec");
         this._refreshAllReadModels();
-      },
-    });
+      })
+      .catch((err: Error) => {
+        new Notice(
+          (t("migrate_failed") || "Backend migration failed") +
+            ": " +
+            (err.message || "unknown error")
+        );
+        this._refreshAllReadModels();
+      });
   }
   /** Dispatch OCR actions through the shared PaperForgeClient (#07 step 3):
    * the same canonical action registry, #137 NDJSON progress, availability
@@ -2506,70 +2441,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       });
   }
 
-  _callPython(command: string[], opts?: any) {
-    const vp = (this.app.vault.adapter as any).basePath as string;
-    const resolved = this._resolveRuntimeCommand(vp);
-    if (!resolved) {
-      if (opts && opts.onClose)
-        opts.onClose(1, "", "No python runtime available");
-      return null;
-    }
-    const args = [
-      ...resolved.args,
-      "-m",
-      "paperforge",
-      "--vault",
-      vp,
-      ...command,
-    ];
-    // Env: caller-supplied takes precedence; credentialType triggers on-demand secret resolution
-    const hasCredentialType = opts?.credentialType && !opts?.env;
-
-    const spawnChild = (env: Record<string, string | undefined>) => {
-      const child = spawn(resolved.path, args, {
-        cwd: vp,
-        env,
-        windowsHide: true,
-      });
-      if (opts.onData) child.stdout.on("data", opts.onData);
-      if (opts.onStderr) child.stderr.on("data", opts.onStderr);
-      if (opts.onError) child.on("error", opts.onError);
-      child.on("close", opts.onClose);
-      return child;
-    };
-
-    const execChild = (env: Record<string, string | undefined>) => {
-      execFile(
-        resolved.path,
-        args,
-        { cwd: vp, timeout: (opts && opts.timeout) || 60000, env },
-        (err, stdout, stderr) => {
-          if (opts && opts.onClose) opts.onClose(err ? 1 : 0, stdout, stderr);
-        }
-      );
-    };
-
-    if (hasCredentialType) {
-      // Async: resolve SecretStorage credentials before launch
-      buildTargetedEnv(null, opts.credentialType).then((env) => {
-        if (opts && opts.stream) {
-          spawnChild(env);
-        } else {
-          execChild(env);
-        }
-      });
-      return null;
-    }
-
-    // Sync: no credential resolution needed — launch immediately
-    const env = opts?.env || paperforgeEnrichedEnv();
-    if (opts && opts.stream) {
-      return spawnChild(env);
-    }
-    execChild(env);
-    return null;
-  }
-
   _runManualSync() {
     const vp =
       (this.app.vault.adapter as unknown as { basePath?: string }).basePath ??
@@ -2628,28 +2499,16 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     })();
   }
 
-  _refreshSnapshots(vp: string) {
+  _refreshSnapshots(_vp: string) {
     // #161/R: snapshot readers are retired; status text comes from probe
-    // envelopes. The runtime-health command remains an on-demand diagnostic.
-    const py = this._resolveRuntimeCommand(vp);
-    if (!py) return;
-    const args = [
-      ...py.args,
-      "-m",
-      "paperforge",
-      "--vault",
-      vp,
-      "runtime-health",
-      "--json",
-    ];
-
+    // envelopes. `runtime-health` remains an on-demand diagnostic warm-up,
+    // dispatched through the shared client — the transport owns the
+    // runtime resolution and sanitized env.
     this._refreshPending = true;
-
-    execFile(
-      py.path,
-      args,
-      { cwd: vp, timeout: 30000, windowsHide: true },
-      () => {
+    void this.getClient()
+      .runtimeHealth()
+      .catch(() => undefined)
+      .finally(() => {
         this._refreshPending = false;
         const memEnv = this._capabilityState?.["memory"];
         const embedEnv = this._capabilityState?.["embed"];
@@ -2660,8 +2519,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           ? ((embedEnv as { reason?: { text?: string } }).reason?.text ?? null)
           : null;
         this.display();
-      }
-    );
+      });
   }
 
   _debouncedSave() {
@@ -4072,48 +3930,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     kind: "ocr" | "embedding",
     value: string
   ): Promise<boolean> {
-    const vp = this._getVaultBasePath();
-    const py = this._resolveRuntimeCommand(vp);
-    if (!py || !value) return Promise.resolve(false);
-    return new Promise((resolvePromise) => {
-      const child = spawn(
-        py.path,
-        [
-          ...py.args,
-          "-m",
-          "paperforge",
-          "--vault",
-          vp,
-          "auth",
-          "set",
-          kind,
-          "--stdin",
-          "--replace",
-          "--json",
-        ],
-        {
-          cwd: vp,
-          windowsHide: true,
-          stdio: ["pipe", "pipe", "pipe"],
-          // #173 corrective: never inherit credential env from the desktop
-          // process — the child resolves through the keyring.
-          env: paperforgeEnrichedEnv(),
-        }
-      );
-      let stdout = "";
-      child.stdout.on("data", (d) => (stdout += String(d)));
-      child.on("error", () => resolvePromise(false));
-      child.on("close", (code: number | null) => {
-        try {
-          const parsed = JSON.parse(stdout) as { ok?: boolean };
-          resolvePromise(code === 0 && parsed?.ok === true);
-        } catch {
-          resolvePromise(false);
-        }
-      });
-      child.stdin.write(value);
-      child.stdin.end();
-    });
+    if (!value) return Promise.resolve(false);
+    // #173/C1: the secret travels only via the child stdin — the client
+    // passes it through ExecuteOptions.stdin; never argv, env, files, or
+    // settings. The transport owns the sanitized env.
+    return this.getClient()
+      .authSetSecret(kind, value)
+      .then(() => true)
+      .catch(() => false);
   }
 
   _renderSetupStageOptionals(containerEl: HTMLElement): void {

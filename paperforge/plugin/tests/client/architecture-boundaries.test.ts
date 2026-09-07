@@ -51,6 +51,13 @@ const HOST_SEAMS: Record<string, number> = {
   // Bootstrap/runtime adapter: imports cpExecFile/cpExecFileSync and injects
   // them as DI defaults (opts?.execFile ?? cpExecFile); zero direct calls.
   "services/managed-runtime.ts": 0,
+  // Stage 2 step 4: settings' only child-process site is the DI spawn
+  // passthrough handed to secret-storage's migrateLegacySecret
+  // (`deps.spawn` — a library DI contract, zero semantic argv assembly).
+  // Every semantic command (config, OCR run, foundation.update, embed
+  // migrate, memory restore-backup, runtime-health, auth set --stdin)
+  // routes through the shared PaperForgeClient.
+  "settings.ts": 1,
 };
 
 /** Legacy debt — exact-snapshot ratchet, shrinks only. */
@@ -62,7 +69,6 @@ const LEGACY_RATCHET: Record<string, number> = {
   // its two execFile sites (generic argv assembly + bare-envelope probe)
   // collapsed into the unified Transport seam; the duplicate read-model
   // authority is gone and no source file may rebuild it.
-  "settings.ts": 7,
   "views/dashboard.ts": 3,
   "views/modals.ts": 3,
   "services/embed-build-controller.ts": 2,
