@@ -260,27 +260,30 @@ export class PaperForgeStatusView extends ItemView {
     } else if (quiet && !this._cachedStats) {
       return;
     }
-    // Ticket 07 step 5: the dashboard stats read routes through the shared
-    // client (`dashboard --json`). The legacy fallbacks are gone: the
-    // direct index-file snapshot reader violated #161/R, and the
-    // `status --json` second spawn duplicated the read — when the
-    // authority is unreachable the UI shows the same error card as before.
+    // Ticket 07 step 5 corrective: `dashboardStats()` resolves to the
+    // UNWRAPPED PFResult data (the client owns the envelope; ok:false
+    // rejects fail-closed upstream). The payload carries BOTH the stats
+    // and the canonical index items — the paper/collection lists come from
+    // the same authority read, never from a direct file inspection.
     try {
-      const body = (await this._getClient()?.dashboardStats()) as {
-        ok?: boolean;
-        data?: Record<string, unknown>;
+      const data = (await this._getClient()?.dashboardStats()) as {
+        stats?: Record<string, unknown>;
+        permissions?: Record<string, boolean>;
+        items?: any[];
       } | null;
-      if (body && body.ok && body.data) {
-        const d = this._normalizeDashboardData(body.data);
-        this._cachedStats = d;
-        this._metricsEl!.empty();
-        this._renderStats(d);
-        this._renderOcr(d);
-        this._dashboardPermissions =
-          (body.data.permissions as Record<string, boolean>) || {};
-        return;
+      if (!data) throw new Error("no dashboard payload");
+      const d = this._normalizeDashboardData(data);
+      this._cachedStats = d;
+      this._cachedItems = Array.isArray(data.items) ? data.items : [];
+      this._metricsEl!.empty();
+      this._renderStats(d);
+      this._renderOcr(d);
+      this._dashboardPermissions = data.permissions ?? {};
+      // First payload of this open: mode content rendered before the fetch
+      // landed may have rendered from an empty list — refresh it.
+      if (!quiet && this._currentMode) {
+        this._switchMode(this._currentMode, this._currentFilePath);
       }
-      throw new Error("invalid dashboard envelope");
     } catch (err) {
       if (!quiet && !this._cachedStats) {
         this._metricsEl!.createEl("div", {
@@ -345,35 +348,12 @@ export class PaperForgeStatusView extends ItemView {
     });
   }
 
-  /* ── Index Loading (D-11, D-17, D-19) ── */
-  _loadIndex(): any {
-    const vp = (this.app.vault.adapter as any).basePath as string;
-    const plugin = ((this.app as any).plugins.plugins as any)[
-      "paperforge"
-    ] as any;
-    const systemDir = plugin?.settings?.system_dir || "System";
-    const indexPath = path.join(
-      vp,
-      systemDir,
-      "PaperForge",
-      "indexes",
-      "formal-library.json"
-    );
-    try {
-      const raw = fs.readFileSync(indexPath, "utf-8");
-      return JSON.parse(raw);
-    } catch {
-      return null;
-    }
-  }
-
   /* ── Cached Index Accessor (D-14) ── */
+  /* The canonical item list comes ONLY from the client's dashboard payload
+   * (P1 corrective: the direct `formal-library.json` inspection violated
+   * the thin-client boundary — business views never read canonical files). */
   _getCachedIndex(): any {
-    if (!this._cachedItems) {
-      const index = this._loadIndex();
-      this._cachedItems = index ? index.items || [] : [];
-    }
-    return this._cachedItems;
+    return this._cachedItems ?? [];
   }
 
   /* ── Single Paper Lookup by Key (D-12, D-18) ── */
@@ -738,7 +718,9 @@ export class PaperForgeStatusView extends ItemView {
 
   /* ── Invalidate cached index (D-14) ── */
   _invalidateIndex() {
-    this._cachedItems = null;
+    // The canonical list is a client payload now — invalidation is a quiet
+    // re-fetch, never a direct file re-read.
+    void this._fetchStats(true);
   }
 
   /* ── Extract zotero_key from workspace directory name ── */
@@ -892,15 +874,16 @@ export class PaperForgeStatusView extends ItemView {
     const plugin = ((this.app as any).plugins.plugins as any)[
       "paperforge"
     ] as any;
-    const index = this._loadIndex();
-    const indexOk = index && index.items && index.items.length > 0;
+    // The canonical item list is the client payload — never a file read.
+    const indexItems = this._getCachedIndex();
+    const indexOk = indexItems.length > 0;
     this._renderSystemStatusRow(
       statusGrid,
       "Index",
       indexOk ? "healthy" : "missing",
       indexOk
-        ? index.items.length + " entries"
-        : "formal-library.json not found"
+        ? indexItems.length + " entries"
+        : "Index not loaded — run Sync Library"
     );
     const systemDir = plugin?.settings?.system_dir || "System";
     const vp = (this.app.vault.adapter as any).basePath as string;

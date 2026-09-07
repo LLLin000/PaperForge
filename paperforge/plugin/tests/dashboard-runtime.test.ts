@@ -162,3 +162,71 @@ describe("PaperForgeStatusView OCR dispatch", () => {
     expect(requestOcrRun).toHaveBeenCalledOnce();
   });
 });
+
+describe("PaperForgeStatusView._fetchStats production entry (#07 step 5 corrective)", () => {
+  function makeView(client: Record<string, unknown>) {
+    const view = new (PaperForgeStatusView as any)({});
+    (view as any).app = {
+      plugins: { plugins: { paperforge: { getClient: () => client } } },
+    };
+    (view as any)._metricsEl = document.createElement("div");
+    (view as any)._getClient = () => client;
+    return view;
+  }
+
+  it("consumes the UNWRAPPED dashboard DTO, feeds the paper index, and never shows the error card", async () => {
+    const renderStats = vi.fn();
+    const renderOcr = vi.fn();
+    const dashboardStats = vi.fn(async () => ({
+      stats: { papers: 3 },
+      permissions: { can_sync: true },
+      items: [{ zotero_key: "K1", title: "Paper One", domain: "cardio" }],
+    }));
+    const view = makeView({ dashboardStats });
+    view._renderStats = renderStats;
+    view._renderOcr = renderOcr;
+    view._versionBadge = null;
+
+    await view._fetchStats(false);
+
+    console.log(
+      "DBG2",
+      JSON.stringify(view._cachedStats),
+      "srccount",
+      (globalThis as any).__srccount
+    );
+    expect(view._cachedStats.total_papers).toBe(3);
+    expect(view._dashboardPermissions).toEqual({ can_sync: true });
+    expect(renderStats).toHaveBeenCalledOnce();
+    expect(renderOcr).toHaveBeenCalledOnce();
+    // canonical item list comes from the same authority payload — the
+    // paper/collection index is a client DTO, not a file read
+    expect(view._getCachedIndex()).toEqual([
+      { zotero_key: "K1", title: "Paper One", domain: "cardio" },
+    ]);
+    // no error card on the success path
+    expect(
+      view._metricsEl.querySelector(".paperforge-status-error")
+    ).toBeNull();
+    // the direct canonical-file reader is gone from the view
+    expect(view._loadIndex).toBeUndefined();
+  });
+
+  it("failure keeps the error card and never invents items", async () => {
+    const dashboardStats = vi.fn(async () => {
+      throw new Error("backend down");
+    });
+    const view = makeView({ dashboardStats });
+    view._renderStats = vi.fn();
+    view._renderOcr = vi.fn();
+    view._versionBadge = null;
+
+    await view._fetchStats(false);
+
+    expect(view._cachedStats).toBeNull();
+    expect(view._getCachedIndex()).toEqual([]);
+    expect(
+      view._metricsEl.querySelector(".paperforge-status-error")
+    ).not.toBeNull();
+  });
+});

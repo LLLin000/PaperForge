@@ -26,6 +26,13 @@
 - `services/action-client.ts` + `next-actions-*`: alive — the follow-up bridge is the sanctioned next_actions consumer; reroute `runActionRequest` through `PaperForgeClient.runAction` (or classify as host seam) before deletion.
 - `services/python-bridge.ts`: `paperforgeEnrichedEnv`/runtime resolution used by node-transport (core); only `runSubprocess`/git-detection helpers become dead once the surfaces above are rerouted.
 
+## Stage 2 — step 5 contract corrective (2026-09-06, reviewer-verified findings)
+
+- **P1 `dashboardStats` DTO contract:** `_fetchStats` consumed a PFResult envelope but the client method resolves the UNWRAPPED data — the happy path could never render. Fixed: `_fetchStats` consumes `data` directly (`stats`/`permissions`/`items`), `ok:false` already fails closed upstream. Production-entry regression added (`tests/dashboard-runtime.test.ts`, 2 cases): unwrapped DTO → normalized stats + `renderStats/renderOcr` + permissions + NO error card + `_loadIndex` gone; failure → error card, no invented items. Root cause of the original miss: no production-entry test pinned the seam, while the client contract test "proved" the wrong (unwrapped) shape.
+- **P1 Dashboard canonical-file inspection retired:** `_loadIndex()` (`fs.readFileSync formal-library.json`) and the System-Status Index row consumed it — business UI still held a second truth read. **Surface census first:** no existing Python/client read returns the per-paper index list (`dashboard --json` carried stats/permissions only), so per the brief Python gained a NARROW read surface: `_gather_dashboard_data` attaches `items` from `worker.asset_index.read_index` (Python remains the only reader of its own canonical index; legacy bare-list format tolerated). Dashboard's item list now comes ONLY from the client payload; `_invalidateIndex` is a quiet re-fetch, never a file re-read; the System-Status Index row reads the same payload. `overlayEntryWorkflowState` stays host-local (Obsidian metadataCache frontmatter overlay).
+- **Collector authority updated to the new truth:** `test_architecture_audit_collectors` asserted real-repo `formal_library` reads EXIST; the deterministic survey now shows none (the retirement is the point) — the assertion flipped to require the read stays ABSENT, with the #133 collector remaining the authority over prose.
+- Python: `commands/dashboard.py` only; focused tests 33 passed (e2e/asset_index/architecture_audit_collectors; ruff findings in that file are pre-existing at HEAD, untouched).
+
 ## Stage 2 — step 5: dashboard/modals leaf callers → client, dead surfaces deleted (2026-09-06, done)
 
 Leaf→root continues; per-site classification again, and one honest gate correction:

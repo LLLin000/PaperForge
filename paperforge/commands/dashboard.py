@@ -204,12 +204,32 @@ def _dashboard_from_files(vault: Path) -> dict:
 
 
 def _gather_dashboard_data(vault: Path) -> dict:
+    """Aggregate stats + the canonical index item list.
+
+    Ticket 07 step 5 corrective: the plugin dashboard previously read
+    ``indexes/formal-library.json`` directly from TypeScript, violating the
+    thin-client boundary (business views never inspect canonical files).
+    The canonical item list now travels INSIDE this dashboard payload —
+    Python is the only reader of its own canonical index.
+    """
+    from paperforge.worker.asset_index import read_index
+
+    index = read_index(vault)
+    if isinstance(index, dict):
+        items = index.get("items", [])
+    elif isinstance(index, list):
+        items = index  # legacy bare-list format
+    else:
+        items = []
+
     # Try DB first
     data = _dashboard_from_db(vault)
     if data is not None:
+        data["items"] = items
         data["permissions"] = _check_permissions(vault)
         return data
     # Fallback to file scanning
     data = _dashboard_from_files(vault)
+    data["items"] = items
     data["permissions"] = _check_permissions(vault)
     return data
