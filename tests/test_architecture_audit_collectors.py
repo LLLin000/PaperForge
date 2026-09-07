@@ -643,12 +643,16 @@ class TestCanonicalReadCollection:
         reads = [f for f in survey.get("facts", []) if f.get("kind") == "filesystem_read"]
         assert len(reads) > 0, "TS collector must extract filesystem reads"
         units = {f.get("unit_id") for f in reads}
-        # The dashboard/ocr-workspace readFileSync(indexPath) path.join trace
-        # must classify to the canonical formal_library unit.
+        # Ticket 07 stage-2 step 5 corrective: the plugin dashboard's direct
+        # `formal-library.json` inspection is RETIRED — the canonical item
+        # list now travels inside the `dashboard --json` payload (Python is
+        # the only reader of its own canonical index). The collector must
+        # confirm the UI canonical-file read is gone; the TS side keeps only
+        # host-local reads (exports dir listing, OCR state).
         formal = [f for f in reads if f.get("unit_id") == "formal_library"]
-        assert formal, f"expected formal_library reads from the real repo, got units={units}"
-        assert all(f.get("wrapper_id") is None for f in formal), (
-            "bare reads carry no wrapper attribution (#149 collector knowledge)"
+        assert not formal, (
+            "UI canonical-file inspection must stay retired — got "
+            f"{[f.get('unit_id') for f in reads]}"
         )
 
 
