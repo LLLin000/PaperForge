@@ -3827,6 +3827,31 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     };
     btn.disabled = true;
     const results: string[] = [];
+    try {
+      await this._collectLegacyMigrations(deps, results);
+    } finally {
+      // The button must always recover — even if the migration workflow
+      // itself throws unexpectedly.
+      btn.disabled = false;
+    }
+    if (results.length === 0) {
+      new Notice("No legacy credentials found in SecretStorage");
+    } else {
+      results.forEach((line) => new Notice(line, 6000));
+    }
+    this._refreshVectorDbCredentialStatus();
+    this._refreshAllReadModels();
+  }
+
+  private async _collectLegacyMigrations(
+    deps: {
+      writeCredential: (
+        kind: "ocr" | "embedding",
+        value: string
+      ) => Promise<boolean>;
+    },
+    results: string[]
+  ): Promise<void> {
     for (const kind of ["ocr", "embedding"] as const) {
       const r = await migrateLegacySecret(
         kind,
@@ -3849,14 +3874,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       if (r.migrated.length) results.push(`${kind}: migrated`);
       for (const w of r.warnings) results.push(w);
     }
-    btn.disabled = false;
-    if (results.length === 0) {
-      new Notice("No legacy credentials found in SecretStorage");
-    } else {
-      results.forEach((line) => new Notice(line, 6000));
-    }
-    this._refreshVectorDbCredentialStatus();
-    this._refreshAllReadModels();
   }
 
   private _refreshVectorDbCredentialStatus(): void {

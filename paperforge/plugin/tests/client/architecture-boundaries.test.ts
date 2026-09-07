@@ -7,8 +7,10 @@
  *
  * Gate A — import authority: importing/requiring `child_process` (or
  *   `node:child_process`) is allowed ONLY in the exact files listed below.
- *   Any new importer fails the suite. DI seams (e.g. secret-storage's
- *   injected `deps.spawn`) carry no authority and need no exemption.
+ *   Any new importer fails the suite. DI-passed callees carry no authority
+ *   and need no exemption (the legacy secret-storage MigrationSpawn seam
+ *   was deleted in the step 4 corrective — backend argv knowledge lives
+ *   only in PaperForgeClient).
  *
  * Gate B — exact-snapshot ratchet via BINDING PROVENANCE: legacy files are
  *   frozen at their current count of call sites whose callee resolves to a

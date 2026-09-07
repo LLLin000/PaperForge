@@ -124,7 +124,16 @@ export async function migrateLegacySecret(
   for (const id of ids) {
     const value = await ss.getSecret(id);
     if (!value) continue;
-    const ok = await deps.writeCredential(kind, value);
+    // The capability's contract is true-or-throw (PaperForgeClient
+    // semantics); the migration workflow normalizes a rejection into a
+    // host-level result — never lets it escape (e.g. the canonical keyring
+    // already holds a value and replace:false was declined).
+    let ok = false;
+    try {
+      ok = await deps.writeCredential(kind, value);
+    } catch {
+      ok = false;
+    }
     if (!ok) {
       return {
         migrated: [],

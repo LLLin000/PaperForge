@@ -26,6 +26,12 @@
 - `services/action-client.ts` + `next-actions-*`: alive — the follow-up bridge is the sanctioned next_actions consumer; reroute `runActionRequest` through `PaperForgeClient.runAction` (or classify as host seam) before deletion.
 - `services/python-bridge.ts`: `paperforgeEnrichedEnv`/runtime resolution used by node-transport (core); only `runSubprocess`/git-detection helpers become dead once the surfaces above are rerouted.
 
+## Stage 2 — step 4 failure-contract corrective (2026-09-06, reviewer-verified)
+
+- **P1 `writeCredential` failure semantics aligned:** `PaperForgeClient.authSetSecret` is true-or-throw; `migrateLegacySecret` now normalizes a capability REJECTION into a host-level migration result (warning + legacy value kept) — the real production case (canonical keyring already holds a value, `replace:false` declined) can no longer escape as an unhandled rejection. Regression uses the production-shaped writer (`throw new Error("credential already exists")`) and asserts: no reject, `migrated=[]`, warning present, old SecretStorage value kept.
+- **P2 hardening:** `_migrateLegacyCredentials` wraps the migration loop in `try/finally` — the migration button always recovers, even on an unexpected workflow throw.
+- **P3:** stale gate-header comment referencing secret-storage's injected `deps.spawn` rewritten (the seam was deleted; the reference remains only as a "DI-passed callees carry no authority" rationale).
+
 ## Stage 2 — step 4 contract corrective (2026-09-06, reviewer-verified findings)
 
 - **P1 mutation invalidation contract completed:** `authSetSecret` and `memoryRestoreBackup` now invalidate the cache in `finally`, same as `configSet`/`configMigrate`/`embedMigrate` — no caller may be relied on to compensate. The real-bug scenario is pinned: `credentialAvailable` cached `unavailable` (60s) → `authSetSecret` → next `credentialAvailable` MUST re-hit the transport (and the same for `memoryStatus` across `memoryRestoreBackup`). A cached `describeAction` unavailability after saving a key can no longer block a subsequent Run.
