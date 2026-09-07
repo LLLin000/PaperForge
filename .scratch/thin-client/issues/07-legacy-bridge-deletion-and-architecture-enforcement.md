@@ -26,6 +26,12 @@
 - `services/action-client.ts` + `next-actions-*`: alive — the follow-up bridge is the sanctioned next_actions consumer; reroute `runActionRequest` through `PaperForgeClient.runAction` (or classify as host seam) before deletion.
 - `services/python-bridge.ts`: `paperforgeEnrichedEnv`/runtime resolution used by node-transport (core); only `runSubprocess`/git-detection helpers become dead once the surfaces above are rerouted.
 
+## Stage 2 — step 4 contract corrective (2026-09-06, reviewer-verified findings)
+
+- **P1 mutation invalidation contract completed:** `authSetSecret` and `memoryRestoreBackup` now invalidate the cache in `finally`, same as `configSet`/`configMigrate`/`embedMigrate` — no caller may be relied on to compensate. The real-bug scenario is pinned: `credentialAvailable` cached `unavailable` (60s) → `authSetSecret` → next `credentialAvailable` MUST re-hit the transport (and the same for `memoryStatus` across `memoryRestoreBackup`). A cached `describeAction` unavailability after saving a key can no longer block a subsequent Run.
+- **P1 legacy credential migration split by responsibility:** `secret-storage.migrateLegacySecret` no longer holds ANY backend protocol knowledge — `MigrationSpawn` (spawn/pythonPath/pythonArgs/vaultPath/env + the `auth set --stdin --json` argv) is deleted; the module now receives a narrow `writeCredential(kind, value)` capability and owns only the host side (which legacy SecretStorage ids exist, how to clear them). Settings binds the capability to `client.authSetSecret(kind, value, { replace: false })` — honoring the frozen safety semantics: a stale host copy must never overwrite a live keyring value. `authSetSecret` gained `options?: { replace?: boolean }` (default true = user Save; contract test asserts the migration shape emits argv WITHOUT `--replace`). A source-level regression pins the boundary: secret-storage must contain no `child_process`/`"-m"`/`MigrationSpawn` — backend argv knowledge lives only in PaperForgeClient.
+- **Gate:** `settings.ts` leaves `HOST_SEAMS` — it now has ZERO child-process sites (the DI spawn passthrough died with the split). Also: settings' `child_process` import removed entirely; `migrateLegacySecret` is a static import now (no runtime-selected module).
+
 ## Stage 2 — step 4: Settings semantic commands → typed client, per-site ratchet (2026-09-06, done)
 
 Per the reviewer's principle — classify each site, never target the number:

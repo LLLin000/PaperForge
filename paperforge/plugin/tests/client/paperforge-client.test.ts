@@ -719,6 +719,46 @@ describe("PaperForgeClient", () => {
       expect(call.options?.stdin).toBe("sk-secret-123\n");
     });
 
+    it("authSetSecret({replace:false}) — the legacy-migration shape — never overwrites a live keyring value", async () => {
+      transport.executeHandler = () =>
+        JSON.stringify({ ok: true, data: { stored: true } });
+      await client.authSetSecret("ocr", "legacy-copy", { replace: false });
+      expect(transport.calls[0].argv).toEqual([
+        "auth",
+        "set",
+        "ocr",
+        "--stdin",
+        "--json",
+      ]);
+      expect(transport.calls[0].options?.stdin).toBe("legacy-copy\n");
+    });
+
+    it("authSetSecret invalidates cached credential/descriptor reads (mutation contract)", async () => {
+      let available = false;
+      transport.executeHandler = (argv) => {
+        if (argv[0] === "auth" && argv[1] === "status") {
+          return JSON.stringify({
+            ok: true,
+            data: {
+              credentials: [{ state: available ? "available" : "missing" }],
+            },
+          });
+        }
+        return JSON.stringify({ ok: true, data: { stored: true } });
+      };
+      // First read: unavailable, cached for 60s.
+      expect(await client.credentialAvailable("ocr")).toBe(false);
+      // Save the key — the mutation must bump the epoch.
+      await client.authSetSecret("ocr", "sk-1");
+      available = true;
+      // Second read MUST hit the transport again, not the stale cache.
+      expect(await client.credentialAvailable("ocr")).toBe(true);
+      const statusCalls = transport.calls.filter(
+        (c) => c.argv[0] === "auth" && c.argv[1] === "status"
+      );
+      expect(statusCalls.length).toBe(2);
+    });
+
     it("embedMigrate emits its authority argv and invalidates the cache", async () => {
       let reads = 0;
       transport.executeHandler = (argv) => {
@@ -742,6 +782,25 @@ describe("PaperForgeClient", () => {
         ["memory", "restore-backup", "--json"],
         ["runtime-health", "--json"],
       ]);
+    });
+
+    it("memoryRestoreBackup invalidates cached read models (mutation contract)", async () => {
+      let version = 1;
+      transport.executeHandler = (argv) => {
+        if (argv[0] === "memory" && argv[1] === "status") {
+          return JSON.stringify({
+            ok: true,
+            data: { paper_count_db: version },
+          });
+        }
+        return JSON.stringify({ ok: true, data: {} });
+      };
+      const before = await client.memoryStatus();
+      version = 2;
+      await client.memoryRestoreBackup();
+      const after = await client.memoryStatus();
+      expect(after).not.toEqual(before);
+      expect(after.paper_count_db).toBe(2);
     });
 
     it("rc=1 + structured ok:false stdout preserves the authority reason (real machine contract)", async () => {

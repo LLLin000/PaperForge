@@ -12,69 +12,30 @@ import {
   migrateLegacySecret,
   legacyEmbeddingSecretIds,
   type SecretAccess,
-  type MigrationSpawn,
+  type MigrationDeps,
 } from "../src/services/secret-storage";
 
-interface SpawnCall {
-  command: string;
-  args: string[];
-  opts: Record<string, unknown>;
-  written: string;
+/** A deterministic writer capability standing in for
+ * `client.authSetSecret(kind, value, {replace: false})` — records calls
+ * without any transport/protocol surface. */
+interface WriterCall {
+  kind: string;
+  value: string;
 }
 
-interface FakeSpawnHandle {
-  calls: SpawnCall[];
-  spawn: (
-    command: string,
-    args: string[],
-    opts: Record<string, unknown>
-  ) => {
-    stdin: { write(s: string): void; end(): void };
-    stdout: { on(ev: "data", cb: (d: unknown) => void): void };
-    on(ev: "error" | "close", cb: (arg?: unknown) => void): void;
-  };
-}
-
-/** A spawn that completes deterministically on a microtask — no wall-clock
- *  timers; the close/stdout events fire before the awaited promise resolves. */
-function fakeSpawn(result: { code: number; stdout: string }): FakeSpawnHandle {
-  const calls: SpawnCall[] = [];
-  const spawn: FakeSpawnHandle["spawn"] = (command, args, opts) => {
-    const rec: SpawnCall = { command, args, opts, written: "" };
-    calls.push(rec);
-    const handlers: Record<string, (arg?: unknown) => void> = {};
-    let dataCb: ((d: unknown) => void) | null = null;
-    return {
-      stdin: {
-        write(s: string) {
-          rec.written = s;
-        },
-        end() {},
-      },
-      stdout: {
-        on(ev: "data", cb: (d: unknown) => void) {
-          dataCb = cb;
-        },
-      },
-      on(ev: "error" | "close", cb: (arg?: unknown) => void) {
-        handlers[ev] = cb;
-        queueMicrotask(() => {
-          if (result.stdout) dataCb?.(result.stdout);
-          handlers["close"]?.(result.code);
-        });
-      },
-    };
-  };
-  return { calls, spawn };
-}
-
-function depsFor(fake: FakeSpawnHandle, vault = "/vault"): MigrationSpawn {
+function writerFor(result: boolean): {
+  calls: WriterCall[];
+  deps: MigrationDeps;
+} {
+  const calls: WriterCall[] = [];
   return {
-    spawn: fake.spawn as never,
-    pythonPath: "/fake/python",
-    pythonArgs: [],
-    vaultPath: vault,
-    env: { PATH: "/usr/bin" },
+    calls,
+    deps: {
+      writeCredential: async (kind, value) => {
+        calls.push({ kind, value });
+        return result;
+      },
+    },
   };
 }
 
@@ -109,50 +70,43 @@ describe("isAllowlistedCommand", () => {
 });
 
 describe("migrateLegacySecret (explicit bridge only)", () => {
-  it("migrates via auth set --stdin and clears the old value after success", async () => {
-    const fake = fakeSpawn({ code: 0, stdout: JSON.stringify({ ok: true }) });
+  it("writes via the injected credential capability and clears the old value", async () => {
+    const { calls, deps } = writerFor(true);
     const ss: SecretAccess = {
       getSecret: vi.fn(async (id: string) =>
         id === "paddleocr-api-key" ? "legacy-secret" : null
       ),
       setSecret: vi.fn(async () => undefined),
     };
-    const r = await migrateLegacySecret("ocr", ss, depsFor(fake));
+    const r = await migrateLegacySecret("ocr", ss, deps);
     expect(r.migrated).toEqual(["paddleocr-api-key"]);
     expect(r.warnings).toEqual([]);
-    expect(fake.calls.length).toBe(1);
-    const call = fake.calls[0];
-    expect(call.args).toContain("auth");
-    expect(call.args).toContain("set");
-    expect(call.args).toContain("ocr");
-    expect(call.args).toContain("--stdin");
-    // secret travels via stdin only, never argv
-    expect(call.args.join(" ")).not.toContain("legacy-secret");
-    expect(call.written).toBe("legacy-secret");
+    // host side stays host-side; the write is a capability call, not argv
+    expect(calls).toEqual([{ kind: "ocr", value: "legacy-secret" }]);
     expect(ss.setSecret).toHaveBeenCalledWith("paddleocr-api-key", "");
   });
 
-  it("keeps the old SecretStorage value when the keyring write fails", async () => {
-    const fake = fakeSpawn({ code: 1, stdout: JSON.stringify({ ok: false }) });
+  it("keeps the old SecretStorage value when the capability write fails", async () => {
+    const { deps } = writerFor(false);
     const ss: SecretAccess = {
       getSecret: vi.fn(async () => "legacy-secret"),
       setSecret: vi.fn(async () => undefined),
     };
-    const r = await migrateLegacySecret("ocr", ss, depsFor(fake));
+    const r = await migrateLegacySecret("ocr", ss, deps);
     expect(r.migrated).toEqual([]);
     expect(r.warnings.length).toBeGreaterThan(0);
     expect(ss.setSecret).not.toHaveBeenCalled();
   });
 
   it("no-op when no legacy value exists", async () => {
-    const fake = fakeSpawn({ code: 0, stdout: "{}" });
+    const { calls, deps } = writerFor(true);
     const ss: SecretAccess = {
       getSecret: vi.fn(async () => null),
       setSecret: vi.fn(async () => undefined),
     };
-    const r = await migrateLegacySecret("embedding", ss, depsFor(fake));
+    const r = await migrateLegacySecret("embedding", ss, deps);
     expect(r.migrated).toEqual([]);
-    expect(fake.calls.length).toBe(0);
+    expect(calls.length).toBe(0);
   });
 
   it("migrates a profile-hashed legacy embedding secret (real upgrade path)", async () => {
@@ -162,44 +116,52 @@ describe("migrateLegacySecret (explicit bridge only)", () => {
       "text-embedding-3-small"
     );
     expect(hashedId).toMatch(/^vector-db-api-key-v2-[0-9a-f]{40}$/);
-    const fake = fakeSpawn({ code: 0, stdout: JSON.stringify({ ok: true }) });
+    const { calls, deps } = writerFor(true);
     const ss: SecretAccess = {
       getSecret: vi.fn(async (id: string) =>
         id === hashedId ? "old-embedding-secret" : null
       ),
       setSecret: vi.fn(async () => undefined),
     };
-    const r = await migrateLegacySecret(
-      "embedding",
-      ss,
-      depsFor(fake),
-      { baseUrl: "https://api.openai.com/v1", model: "text-embedding-3-small" }
-    );
+    const r = await migrateLegacySecret("embedding", ss, deps, {
+      baseUrl: "https://api.openai.com/v1",
+      model: "text-embedding-3-small",
+    });
     expect(r.migrated).toEqual([hashedId]);
     expect(r.warnings).toEqual([]);
-    expect(fake.calls.length).toBe(1);
-    expect(fake.calls[0].args).toContain("embedding");
+    expect(calls).toEqual([
+      { kind: "embedding", value: "old-embedding-secret" },
+    ]);
     // the old hashed value is cleared after the verified keyring write
     expect(ss.setSecret).toHaveBeenCalledWith(hashedId, "");
   });
 
   it("does not report 'no legacy credentials' when only the hashed id exists", async () => {
     const [hashedId] = await legacyEmbeddingSecretIds("https://custom/v1", "m");
-    const fake = fakeSpawn({ code: 0, stdout: JSON.stringify({ ok: true }) });
+    const { deps } = writerFor(true);
     const ss: SecretAccess = {
       getSecret: vi.fn(async (id: string) =>
         id === hashedId ? "secret" : null
       ),
       setSecret: vi.fn(async () => undefined),
     };
-    const r = await migrateLegacySecret(
-      "embedding",
-      ss,
-      depsFor(fake),
-      { baseUrl: "https://custom/v1", model: "m" }
-    );
+    const r = await migrateLegacySecret("embedding", ss, deps, {
+      baseUrl: "https://custom/v1",
+      model: "m",
+    });
     expect(r.migrated).toEqual([hashedId]); // NOT empty — the fixed global id
     // was absent but the hashed id carried the value
+  });
+
+  it("migration module carries no transport/protocol surface", () => {
+    const src = require("fs").readFileSync(
+      require("path").join(__dirname, "../src/services/secret-storage.ts"),
+      "utf-8"
+    );
+    // backend argv knowledge lives ONLY in PaperForgeClient
+    expect(src).not.toContain("child_process");
+    expect(src).not.toContain('"-m"');
+    expect(src).not.toContain("MigrationSpawn");
   });
 
   it("runtime never reads SecretStorage — migration is the only consumer", () => {

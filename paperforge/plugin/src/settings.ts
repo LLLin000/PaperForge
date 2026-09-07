@@ -10,7 +10,7 @@ import {
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
-import { execFile, execFileSync, spawn, exec } from "child_process";
+import { migrateLegacySecret } from "./services/secret-storage";
 import { t, setLanguage, langFromApp } from "./i18n";
 import {
   PaperForgeSettings,
@@ -3816,30 +3816,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   private async _migrateLegacyCredentials(
     btn: HTMLButtonElement
   ): Promise<void> {
-    const vaultPath = this._getVaultBasePath();
-    const py = this._resolveRuntimeCommand(vaultPath);
-    if (!py || !vaultPath) {
-      new Notice("Runtime not ready — cannot migrate credentials");
-      return;
-    }
-    const { migrateLegacySecret, isAllowlistedCommand: _unused } =
-      await import("./services/secret-storage");
-    void _unused;
+    // Host responsibility: where the legacy SecretStorage value lives and
+    // how to clear it.  Backend responsibility: the credential write goes
+    // through the shared client — `{replace: false}` so a stale host copy
+    // can never overwrite a live keyring value.
+    const client = this.getClient();
     const deps = {
-      spawn: (
-        command: string,
-        args: string[],
-        opts: {
-          cwd: string;
-          env: Record<string, string | undefined>;
-          windowsHide: boolean;
-          stdio: string[];
-        }
-      ) => spawn(command, args, opts as never),
-      pythonPath: py.path,
-      pythonArgs: py.args,
-      vaultPath,
-      env: paperforgeEnrichedEnv(),
+      writeCredential: (kind: "ocr" | "embedding", value: string) =>
+        client.authSetSecret(kind, value, { replace: false }),
     };
     btn.disabled = true;
     const results: string[] = [];
