@@ -26,6 +26,25 @@
 - `services/action-client.ts` + `next-actions-*`: alive — the follow-up bridge is the sanctioned next_actions consumer; reroute `runActionRequest` through `PaperForgeClient.runAction` (or classify as host seam) before deletion.
 - `services/python-bridge.ts`: `paperforgeEnrichedEnv`/runtime resolution used by node-transport (core); only `runSubprocess`/git-detection helpers become dead once the surfaces above are rerouted.
 
+## Stage 2 — step 4: Settings semantic commands → typed client, per-site ratchet (2026-09-06, done)
+
+Per the reviewer's principle — classify each site, never target the number:
+
+| Site | Classification | Action |
+|---|---|---|
+| `_runUpdateAction` execFile (`action run foundation.update --confirm`) | backend semantic | → `client.runAction({action_id:"foundation.update", scope:all, confirm})` |
+| `_callPython` spawn+execFile (generic runner; credentialType env-resolution branch) | duplicated semantic authority | **deleted** — only callers were restore-backup + embed migrate; both got typed methods |
+| `memory restore-backup` | backend semantic | → `client.memoryRestoreBackup()` (`["memory","restore-backup","--json"]`, 30s) |
+| `embed migrate` | backend semantic (mutation) | → `client.embedMigrate()` (`["embed","migrate","--json"]`, 600s, cache-invalidating) |
+| `runtime-health` fire-and-forget warm-up | backend semantic read | → `client.runtimeHealth()`; `_refreshSnapshots` keeps envelope-text semantics |
+| `_authSetSecret` spawn (`auth set <kind> --stdin --replace --json`) | backend semantic, security-sensitive | → `client.authSetSecret(kind, secret)` — secret travels ONLY via `ExecuteOptions.stdin`; argv never carries it (contract test pins both directions) |
+| `_runSetupPython` spawn | **dead code** (zero production callers since the T03 setup cutover) | deleted |
+| `deps.spawn` passthrough in `_migrateLegacyCredentials` | **host seam** — DI contract into `secret-storage.migrateLegacySecret`, zero semantic argv assembly | kept; reclassified `LEGACY_RATCHET` → `HOST_SEAMS` |
+
+**Ratchet: `settings.ts` 7 → 1, and the 1 is a host seam (DI passthrough), not legacy debt.** Client gained `_executePfResult(argv, ExecuteOptions)` (stdin/timeout pass-through; PFResult semantics unchanged) and 4 typed methods. `_callPython`'s credentialType env-resolution branch died with it — env assembly is NodeProcessTransport's job.
+
+Test reconciliation: two capability-state `_callPython` plumbing tests deleted (managed-path resolution is transport-owned, covered by node-transport tests); module-detail update/migrate/vector-credential tests re-homed onto the client seam; the sync-failure test drops its dead `_callPython` override (modern equivalent: transport rejection → sentinel 1 forwarded). Client contract tests added for all 4 new typed surfaces (28 total in the contract describe file).
+
 ## Stage 2 — step 3 contract corrective (2026-09-06, reviewer-verified findings)
 
 - **P1 fake canonical `ocr.redo` removed:** `settings._runAllowedDispatch` no longer routes `verb==="redo" || actionId==="ocr.redo"` — the Python registry has no `ocr.redo` primary (#99: internal-only), so encoding it in the thin client was re-introducing legacy semantic knowledge. `_dispatchOcrAction` mode narrowed to `"run" | "rebuild"`; the redo label/notice/confirm-token branches are gone. A stale `ocr.redo` envelope now falls through to the frozen unknown-pair invariant: **Notice → re-probe, NEVER substitute** (regression pins it: confirm modal still presents per envelope policy, then zero dispatches + unknown-action notice). The user-facing Redo affordance in the OCR Workspace keeps using the canonical `ocr.run` descriptor (unchanged, T04).

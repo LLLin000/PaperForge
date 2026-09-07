@@ -701,6 +701,49 @@ describe("PaperForgeClient", () => {
       ]);
     });
 
+    it("authSetSecret passes the secret ONLY via ExecuteOptions.stdin, never argv", async () => {
+      transport.executeHandler = () =>
+        JSON.stringify({ ok: true, data: { stored: true } });
+      const saved = await client.authSetSecret("embedding", "sk-secret-123");
+      expect(saved).toBe(true);
+      const call = transport.calls[0];
+      expect(call.argv).toEqual([
+        "auth",
+        "set",
+        "embedding",
+        "--stdin",
+        "--replace",
+        "--json",
+      ]);
+      expect(call.argv.join(" ")).not.toContain("sk-secret-123");
+      expect(call.options?.stdin).toBe("sk-secret-123\n");
+    });
+
+    it("embedMigrate emits its authority argv and invalidates the cache", async () => {
+      let reads = 0;
+      transport.executeHandler = (argv) => {
+        if (argv[0] === "embed" && argv[1] === "migrate")
+          return JSON.stringify({ ok: true, data: { migrated: 3 } });
+        reads += 1;
+        return JSON.stringify({ ok: true, data: { n: reads } });
+      };
+      const before = await client.embedStatus();
+      await client.embedMigrate();
+      const after = await client.embedStatus();
+      expect(transport.calls[1].argv).toEqual(["embed", "migrate", "--json"]);
+      expect(after).not.toEqual(before);
+    });
+
+    it("memoryRestoreBackup and runtimeHealth emit their authority argv", async () => {
+      transport.executeHandler = () => JSON.stringify({ ok: true, data: {} });
+      await client.memoryRestoreBackup();
+      await client.runtimeHealth();
+      expect(transport.calls.map((c) => c.argv)).toEqual([
+        ["memory", "restore-backup", "--json"],
+        ["runtime-health", "--json"],
+      ]);
+    });
+
     it("rc=1 + structured ok:false stdout preserves the authority reason (real machine contract)", async () => {
       // The Python config contract emits a STRUCTURED ok:false PFResult on
       // stdout together with a non-zero exit code. NodeProcessTransport

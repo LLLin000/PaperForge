@@ -12,6 +12,7 @@
 import {
   type Transport,
   type StreamOptions,
+  type ExecuteOptions,
   type StreamHandle,
   type LongTaskOutcome,
   AsyncEventQueue,
@@ -434,7 +435,10 @@ export class PaperForgeClient {
   /**
    * Execute a command expecting a PFResult envelope and unwrap data.
    */
-  private async _executePfResult<T>(argv: string[]): Promise<T> {
+  private async _executePfResult<T>(
+    argv: string[],
+    options?: ExecuteOptions
+  ): Promise<T> {
     // Layer split: the Transport owns process/exit semantics (rejects
     // non-zero exits), this client owns PFResult machine-protocol
     // semantics. The Python config contract emits a STRUCTURED ok:false
@@ -445,7 +449,7 @@ export class PaperForgeClient {
     let raw: string;
     let transportError: unknown = null;
     try {
-      raw = await this._transport.execute(argv);
+      raw = await this._transport.execute(argv, options);
     } catch (err: unknown) {
       const stdout =
         err instanceof Error
@@ -547,6 +551,44 @@ export class PaperForgeClient {
         credentials?: Array<{ state?: string }>;
       }>(["auth", "status", service, "--json"]);
       return data.credentials?.some((c) => c.state === "available") ?? false;
+    });
+  }
+
+  /** #173/C1: `paperforge auth set <kind> --stdin` — the secret travels
+   * only via child stdin, never argv, env, files, or settings; the
+   * NodeProcessTransport owns the sanitized env. */
+  async authSetSecret(
+    kind: "ocr" | "embedding",
+    secret: string
+  ): Promise<boolean> {
+    await this._executePfResult(
+      ["auth", "set", kind, "--stdin", "--replace", "--json"],
+      { stdin: secret + "\n" }
+    );
+    return true;
+  }
+
+  async memoryRestoreBackup(): Promise<unknown> {
+    return this._executePfResult(["memory", "restore-backup", "--json"], {
+      timeoutMs: 30000,
+    });
+  }
+
+  async embedMigrate(): Promise<unknown> {
+    try {
+      return await this._executePfResult(["embed", "migrate", "--json"], {
+        timeoutMs: 600000,
+      });
+    } finally {
+      this.invalidateCache();
+    }
+  }
+
+  /** On-demand diagnostic read (`runtime-health --json`); output is a
+   * warm-up side effect — status text comes from probe envelopes. */
+  async runtimeHealth(): Promise<unknown> {
+    return this._executePfResult(["runtime-health", "--json"], {
+      timeoutMs: 30000,
     });
   }
 

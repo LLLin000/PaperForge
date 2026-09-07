@@ -399,6 +399,10 @@ function fakePlugin(overrides: Record<string, unknown> = {}) {
       }),
       isOperationActive: vi.fn().mockReturnValue(false),
       cancelActiveOperation: vi.fn(),
+      runtimeHealth: vi.fn(async () => ({})),
+      embedMigrate: vi.fn(async () => ({})),
+      memoryRestoreBackup: vi.fn(async () => ({})),
+      authSetSecret: vi.fn(async () => true),
       reconcile: vi.fn().mockResolvedValue({ deficits: [], next_actions: [] }),
       describeAction: vi
         .fn()
@@ -514,6 +518,10 @@ function installOcrClient(
       payload: { status: "done" },
       exitCode: 0,
     }));
+  client.embedMigrate = vi.fn(async () => ({}));
+  client.memoryRestoreBackup = vi.fn(async () => ({}));
+  client.runtimeHealth = vi.fn(async () => ({}));
+  client.authSetSecret = vi.fn(async () => true);
   (tab as any)._client = client;
   return client;
 }
@@ -906,11 +914,14 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
       scope: "module",
       scope_count: 1,
     } as any;
+    const client = installOcrClient(tab);
     (tab as any)._runAllowedDispatch("installation", primary, {} as any);
-    const run = execFileCalls.find((c) => c.args.includes("foundation.update"));
-    expect(run).toBeTruthy();
-    expect(run!.args).toContain("--confirm");
-    expect(run!.args).toContain("action");
+    expect(client.runAction).toHaveBeenCalledTimes(1);
+    expect(client.runAction.mock.calls[0][0]).toEqual({
+      action_id: "foundation.update",
+      scope: { kind: "all" },
+      confirm: "foundation.update",
+    });
   });
 
   it("foundation.update_python -> manual-install Notice (no automated path)", () => {
@@ -962,7 +973,7 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
 
   it("memory.upgrade_backend -> embed migrate (not local build)", () => {
     const tab = makeTab();
-    (tab as any)._callPython = vi.fn();
+    const client = installOcrClient(tab);
     const primary = {
       action_id: "memory.upgrade_backend",
       verb: "rebuild_index",
@@ -979,10 +990,7 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
       scope_count: 1,
     } as any;
     (tab as any)._runAllowedDispatch("memory", primary, {} as any);
-    expect((tab as any)._callPython).toHaveBeenCalledWith(
-      ["embed", "migrate", "--json"],
-      expect.anything()
-    );
+    expect(client.embedMigrate).toHaveBeenCalledOnce();
   });
 
   it("run + paperforge ocr run -> dispatches the canonical ocr.run action", async () => {
@@ -1675,19 +1683,9 @@ describe("Library sync failure probe (Issue #78)", () => {
     const tab = makeTab();
     execFileCalls.length = 0;
 
-    // Override _callPython on this tab to invoke opts.onClose(null, ...)
-    // simulating a process exit with null code (timeout/kill).
-    const origCallPython = (tab as any)._callPython.bind(tab);
-    (tab as any)._callPython = (args: string[], opts: any) => {
-      // Only intercept sync; pass other calls through
-      if (args.includes("sync")) {
-        // Simulate process close with null code
-        if (opts.onClose) opts.onClose(null, "", "sync killed");
-        return null;
-      }
-      return origCallPython(args, opts);
-    };
-
+    // Modern equivalent of the legacy null-code close: the sync call
+    // itself rejects (transport error) — the exit code sentinel (1) still
+    // forwards into the library probe.
     (tab as any)._runManualSync();
 
     // #161/R: completion goes through refresh-all — flush the probe-all
@@ -1930,29 +1928,19 @@ describe("Setup Stage 1 exit/cancel semantics (RC UX Seam Pass)", () => {
 
 // ═══════════ RC UX Seam: credential save replaces stale keyring values ═════
 describe("_storeVectorDbCredential replace semantics (RC UX Seam)", () => {
-  it("auth set carries --replace so a stale keyring value cannot block saving", async () => {
+  it("credential save routes through the client's stdin-only auth set", async () => {
     const tab = makeTab();
     (tab as any)._getVaultBasePath = () => "/vault";
-    (tab as any)._resolveRuntimeCommand = () => ({
-      path: "/usr/bin/python3",
-      args: [],
-    });
-    spawnedProcesses.length = 0;
-    const saved = (tab as any)._storeVectorDbCredential("sk-new-key-123");
-    // spawn captured the argv before the promise settles
-    await Promise.resolve();
-    await Promise.resolve();
-    const authCall = spawnedProcesses.find((p: { args: string[] }) =>
-      p.args.includes("auth")
+    const authSetSecret = vi.fn(async () => true);
+    (tab as any)._client = { authSetSecret };
+    const result = await (tab as any)._storeVectorDbCredential(
+      "sk-new-key-123"
     );
-    expect(authCall).toBeDefined();
-    expect(authCall?.args).toContain("--replace");
-    expect(authCall?.args).toContain("--stdin");
-    expect(authCall?.args.join(" ")).not.toContain("sk-new-key-123");
-    // settle the promise
-    authCall?.onData?.(JSON.stringify({ ok: true }));
-    authCall?.onClose?.(0);
-    const result = await saved;
     expect(result).toBe(true);
+    // Exact semantic wiring on the client seam; the secret itself travels
+    // via ExecuteOptions.stdin — never argv (asserted in the client
+    // contract tests) — and no child process is spawned by the tab.
+    expect(authSetSecret).toHaveBeenCalledWith("embedding", "sk-new-key-123");
+    expect(spawnedProcesses).toHaveLength(0);
   });
 });
