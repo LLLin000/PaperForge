@@ -54,7 +54,6 @@ import {
   runSubprocess,
 } from "./services/python-bridge";
 import type { PythonResult } from "./services/python-bridge";
-import { EmbedBuildController } from "./services/embed-build-controller";
 import { deferred } from "./services/deferred";
 import { orchestrateFromSync } from "./services/next-actions-bridge";
 import { PaperForgeClient, NodeProcessTransport } from "./client";

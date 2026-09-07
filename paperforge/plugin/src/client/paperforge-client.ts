@@ -607,6 +607,39 @@ export class PaperForgeClient {
     });
   }
 
+  /** Dashboard stats read (`dashboard --json`, PFResult envelope). The
+   * legacy index-file snapshot reader and its `status --json` second spawn
+   * are retired (#161/R) — this is the single stats authority. */
+  async dashboardStats(): Promise<Record<string, unknown>> {
+    return this._executePfResult(["dashboard", "--json"], { timeoutMs: 30000 });
+  }
+
+  /** Backend version (`paperforge --version`). argparse fires the version
+   * action during parse (before --vault validation), printing a plain
+   * `paperforge X.Y.Z` line — not a PFResult. */
+  async backendVersion(): Promise<string> {
+    const raw = await this._transport.execute(["--version"]);
+    return raw.trim().replace(/^paperforge\s+/, "");
+  }
+
+  /** Explicit diagnostic read (`doctor --json`). No cache — a user-invoked
+   * check must always hit the authority. */
+  async doctor(): Promise<Record<string, unknown>> {
+    return this._executePfResult(["doctor", "--json"]);
+  }
+
+  /** Authority repair mutation (`repair --fix --fix-paths --json`). */
+  async repair(): Promise<Record<string, unknown>> {
+    try {
+      return await this._executePfResult(
+        ["repair", "--fix", "--fix-paths", "--json"],
+        { timeoutMs: 600000 }
+      );
+    } finally {
+      this.invalidateCache();
+    }
+  }
+
   async listActions(): Promise<any[]> {
     return this._cachedRead("action:list", 300000, async () => {
       const data = await this._executePfResult<any>([

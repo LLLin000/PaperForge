@@ -9,7 +9,6 @@ import {
 } from "obsidian";
 import * as fs from "fs";
 import * as path from "path";
-import { execFile, spawn, execFileSync } from "child_process";
 import {
   VIEW_TYPE_PAPERFORGE,
   ACTIONS,
@@ -239,24 +238,18 @@ export class PaperForgeStatusView extends ItemView {
   /*  Fetch & Render Stats                                                  */
   /* ---------------------------------------------------------------------- */
   _fetchVersion() {
-    const vp = (this.app.vault.adapter as any).basePath as string;
-    const py = this._resolvePython();
-    if (!py) return;
-    const { path: pythonExe, args = [] } = py;
-    try {
-      const raw = execFileSync(
-        pythonExe,
-        [...args, "-c", "import paperforge; print(paperforge.__version__)"],
-        { cwd: vp, timeout: 5000, encoding: "utf-8", windowsHide: true }
-      ).trim();
-      if (!raw) return;
-      const v = raw.startsWith("v") ? raw : "v" + raw;
-      this._paperforgeVersion = v;
-      if (this._versionBadge) this._versionBadge.setText(v);
-    } catch {}
+    void this._getClient()
+      ?.backendVersion()
+      .then((raw) => {
+        if (!raw) return;
+        const v = raw.startsWith("v") ? raw : "v" + raw;
+        this._paperforgeVersion = v;
+        if (this._versionBadge) this._versionBadge.setText(v);
+      })
+      .catch(() => undefined);
   }
 
-  _fetchStats(quiet: boolean) {
+  async _fetchStats(quiet: boolean) {
     if (!this._metricsEl) return;
     if (!quiet && !this._cachedStats) {
       this._metricsEl.empty();
@@ -267,38 +260,35 @@ export class PaperForgeStatusView extends ItemView {
     } else if (quiet && !this._cachedStats) {
       return;
     }
-    const vp = (this.app.vault.adapter as any).basePath as string;
-    const plugin = ((this.app as any).plugins.plugins as any)[
-      "paperforge"
-    ] as any;
-    const py = this._resolvePython();
-    if (!py) {
-      this._fallbackFetchStats(quiet, vp, plugin);
-      return;
-    }
-    const { path: pythonExe, args = [] } = py;
-    (execFile as any)(
-      pythonExe,
-      [...args, "-m", "paperforge", "dashboard", "--json"],
-      { cwd: vp, timeout: 30000 },
-      (err: any, stdout: string) => {
-        if (!err) {
-          try {
-            const body = JSON.parse(stdout);
-            if (body.ok && body.data) {
-              const d = this._normalizeDashboardData(body.data);
-              this._cachedStats = d;
-              this._metricsEl!.empty();
-              this._renderStats(d);
-              this._renderOcr(d);
-              this._dashboardPermissions = body.data.permissions || {};
-              return;
-            }
-          } catch (_) {}
-        }
-        this._fallbackFetchStats(quiet, vp, plugin);
+    // Ticket 07 step 5: the dashboard stats read routes through the shared
+    // client (`dashboard --json`). The legacy fallbacks are gone: the
+    // direct index-file snapshot reader violated #161/R, and the
+    // `status --json` second spawn duplicated the read — when the
+    // authority is unreachable the UI shows the same error card as before.
+    try {
+      const body = (await this._getClient()?.dashboardStats()) as {
+        ok?: boolean;
+        data?: Record<string, unknown>;
+      } | null;
+      if (body && body.ok && body.data) {
+        const d = this._normalizeDashboardData(body.data);
+        this._cachedStats = d;
+        this._metricsEl!.empty();
+        this._renderStats(d);
+        this._renderOcr(d);
+        this._dashboardPermissions =
+          (body.data.permissions as Record<string, boolean>) || {};
+        return;
       }
-    );
+      throw new Error("invalid dashboard envelope");
+    } catch (err) {
+      if (!quiet && !this._cachedStats) {
+        this._metricsEl!.createEl("div", {
+          cls: "paperforge-status-error",
+          text: "Cannot reach PaperForge CLI.\nMake sure paperforge is installed and in your PATH.",
+        });
+      }
+    }
   }
 
   _normalizeDashboardData(data: any) {
@@ -329,133 +319,6 @@ export class PaperForgeStatusView extends ItemView {
         raw_upgradable_count: ocrVersionState.raw_upgradable_count || 0,
       },
     };
-  }
-
-  _fallbackFetchStats(quiet: boolean, vp: string, plugin: any) {
-    const systemDir = plugin?.settings?.system_dir || "System";
-    const indexPath = path.join(
-      vp,
-      systemDir,
-      "PaperForge",
-      "indexes",
-      "formal-library.json"
-    );
-    try {
-      const raw = fs.readFileSync(indexPath, "utf-8");
-      const index = JSON.parse(raw);
-      const items = index.items || [];
-      const lifecycleCounts: Record<string, number> = {};
-      const healthCounts: Record<
-        string,
-        { healthy: number; unhealthy: number }
-      > = {
-        pdf_health: { healthy: 0, unhealthy: 0 },
-        ocr_health: { healthy: 0, unhealthy: 0 },
-        note_health: { healthy: 0, unhealthy: 0 },
-        asset_health: { healthy: 0, unhealthy: 0 },
-      };
-      let ocrTotal = 0,
-        ocrDone = 0,
-        ocrPending = 0,
-        ocrProcessing = 0,
-        ocrFailed = 0;
-      let formalNotes = 0;
-      for (const item of items) {
-        if (item.note_path) formalNotes++;
-        const lifecycle = item.lifecycle || "pdf_ready";
-        lifecycleCounts[lifecycle] = (lifecycleCounts[lifecycle] || 0) + 1;
-        const health = item.health || {};
-        for (const dim of [
-          "pdf_health",
-          "ocr_health",
-          "note_health",
-          "asset_health",
-        ]) {
-          const val = health[dim] || "healthy";
-          if (val === "healthy") healthCounts[dim].healthy++;
-          else healthCounts[dim].unhealthy++;
-        }
-        const ocrStatus = item.ocr_status || "";
-        ocrTotal++;
-        if (ocrStatus === "done") ocrDone++;
-        else if (ocrStatus === "pending") ocrPending++;
-        else if (
-          ocrStatus === "processing" ||
-          ocrStatus === "queued" ||
-          ocrStatus === "running"
-        )
-          ocrProcessing++;
-        else ocrFailed++;
-      }
-      this._cachedStats = {
-        version:
-          index.paperforge_version || this._cachedStats?.version || "\u2014",
-        total_papers: items.length,
-        formal_notes: formalNotes,
-        exports: 0,
-        bases: 0,
-        ocr: {
-          total: ocrTotal,
-          pending: ocrPending,
-          processing: ocrProcessing,
-          done: ocrDone,
-          failed: ocrFailed,
-        },
-        path_errors: 0,
-        lifecycle_level_counts: lifecycleCounts,
-        health_aggregate: healthCounts,
-      };
-      this._metricsEl!.empty();
-      this._renderStats(this._cachedStats);
-      this._renderOcr(this._cachedStats);
-    } catch (err) {
-      if (!quiet && !this._cachedStats) {
-        this._metricsEl!.createEl("div", {
-          cls: "paperforge-status-loading",
-          text: "No index \u2014 trying CLI...",
-        });
-      }
-      const py = this._resolvePython();
-      if (!py) {
-        if (!this._cachedStats) {
-          this._metricsEl!.createEl("div", {
-            cls: "paperforge-status-error",
-            text: "Cannot reach PaperForge CLI.\nMake sure paperforge is installed and in your PATH.",
-          });
-        }
-        return;
-      }
-      const { path: pythonExe, args = [] } = py;
-      (execFile as any)(
-        pythonExe,
-        [...args, "-m", "paperforge", "status", "--json"],
-        { cwd: vp, timeout: 30000 },
-        (err2: any, stdout: string) => {
-          if (err2) {
-            if (this._cachedStats) return;
-            this._metricsEl!.createEl("div", {
-              cls: "paperforge-status-error",
-              text: "Cannot reach PaperForge CLI.\nMake sure paperforge is installed and in your PATH.",
-            });
-            return;
-          }
-          try {
-            const d = JSON.parse(stdout);
-            this._cachedStats = d;
-            this._metricsEl!.empty();
-            this._renderStats(d);
-            this._renderOcr(d);
-          } catch {
-            if (!this._cachedStats) {
-              this._metricsEl!.createEl("div", {
-                cls: "paperforge-status-error",
-                text: "Invalid response from paperforge status.",
-              });
-            }
-          }
-        }
-      );
-    }
   }
 
   /* ── Loading Skeleton Utility (D-24) ── */
@@ -3003,17 +2866,18 @@ export class PaperForgeStatusView extends ItemView {
           text: t("retrieval_run_doctor"),
         });
         doctorBtn.addEventListener("click", () => {
-          const vp = (
-            this.app.vault.adapter as unknown as Record<string, unknown>
-          )["basePath"];
-          if (typeof vp !== "string") return;
-          const py = this._resolvePython();
-          if (!py) return;
-          const { path: pyExe, args = [] } = py;
-          spawn(pyExe, [...args, "-m", "paperforge", "doctor"], {
-            cwd: vp,
-            stdio: "inherit",
-          });
+          void this._getClient()
+            ?.doctor()
+            .then((r) => {
+              const ok = (r as { ok?: boolean })?.ok !== false;
+              new Notice(
+                ok ? "[OK] Doctor complete" : "[!!] Doctor reported issues",
+                6000
+              );
+            })
+            .catch((err: Error) => {
+              new Notice("[!!] Doctor failed: " + err.message, 8000);
+            });
         });
         const retryBtn = actions.createEl("button", {
           cls: "pf-btn-secondary",
@@ -3402,6 +3266,12 @@ export class PaperForgeStatusView extends ItemView {
   }
 
   /* ── Run Action ── */
+  /** Ticket 07 step 5: the dashboard tool dispatcher routes through the
+   * shared PaperForgeClient — no second argv assembly, no second
+   * child-process owner. Tools: doctor (diagnostic read), repair
+   * (authority mutation). sync owns its own envelope UX; OCR routes
+   * through the plugin's canonical requestOcrRun; redo is internal-only
+   * (#99) and never dispatches. */
   async _runAction(a: any, card: HTMLElement) {
     if (a.disabled) {
       new Notice(
@@ -3421,182 +3291,52 @@ export class PaperForgeStatusView extends ItemView {
       return;
     }
     card.addClass("running");
-    const vp = (this.app.vault.adapter as any).basePath as string;
     this._showMessage("Processing...", "running");
-    let extraArgs = Array.isArray(a.args) ? [...a.args] : [];
-    if (a.needsKey) {
-      const activeFile = this.app.workspace.getActiveFile();
-      let key: string | null = null;
-      if (activeFile) {
-        const cache = this.app.metadataCache.getFileCache(activeFile);
-        if (cache && cache.frontmatter && cache.frontmatter.zotero_key) {
-          key = cache.frontmatter.zotero_key;
-        } else {
-          key = this._extractZoteroKeyFromPath(activeFile.path);
-        }
-        if (key) {
-          extraArgs = [...extraArgs, key];
-        } else if (cache && cache.frontmatter) {
-          this._showMessage(
-            "[!!] No zotero_key in active note frontmatter",
-            "error"
-          );
-          new Notice(
-            "[!!] Open a paper note with a zotero_key in its frontmatter first",
-            6000
-          );
-          card.removeClass("running");
-          return;
-        } else {
-          this._showMessage("[!!] No frontmatter in active note", "error");
-          new Notice(
-            "[!!] The active note has no frontmatter with a zotero_key",
-            6000
-          );
-          card.removeClass("running");
-          return;
-        }
-      } else {
-        this._showMessage("[!!] No active note open", "error");
-        new Notice(
-          "[!!] Open a paper note with a zotero_key in its frontmatter first",
-          6000
-        );
-        card.removeClass("running");
-        return;
-      }
-    }
-    if (a.needsFilter) {
-      extraArgs = [...extraArgs, "--all"];
-    }
-    const cmdTimeout =
-      a.timeoutMs ?? (a.needsFilter ? 60000 : a.needsKey ? 30000 : 600000);
-    const py = this._resolvePython();
-    if (!py) {
-      this._showMessage(
-        "[!!] Runtime not available — open PaperForge Setup",
-        "error"
-      );
-      new Notice("PaperForge runtime is not ready. Opening Setup…", 6000);
-      const setting = (this.app as any).setting;
-      setting?.open();
-      setting?.openTabById?.("paperforge");
-      card.removeClass("running");
-      return;
-    }
-    const { path: pythonExe, args: pyExtra = [] } = py;
-    // Issue #79: resolve credentials for allowlisted command types immediately before launch
-    const actionEnv = await buildTargetedEnv(null, a.commandId);
-    // T8 (#169): typed tool argv — never a generic dispatch table.
-    const toolArgv = toolArgvFor(a.id) ?? [];
-    const child = spawn(
-      pythonExe,
-      [...pyExtra, "-m", "paperforge", ...toolArgv, ...extraArgs],
-      { cwd: vp, timeout: cmdTimeout, env: actionEnv }
-    );
-    const log: string[] = [];
-    const startTime = Date.now();
-    const pollTimer = setInterval(() => this._fetchStats(true), 4000);
-    child.stdout.on("data", (data: Buffer) => {
-      const lines = data.toString("utf-8").split("\n").filter(Boolean);
-      for (const l of lines) {
-        const clean = l.trim();
-        if (clean) {
-          log.push(clean);
-          this._showMessage(log.slice(-8).join("\n"), "running");
-        }
-      }
-    });
-    child.stderr.on("data", (data: Buffer) => {
-      const lines = data.toString("utf-8").split("\n").filter(Boolean);
-      for (const l of lines) {
-        if (l.includes("\r") || l.includes("%") || l.includes("\u2588"))
-          continue;
-        const trim = l.trim();
-        if (trim && !trim.match(/^\d+%|^\|/)) {
-          log.push(trim);
-          this._showMessage(log.slice(-8).join("\n"), "running");
-        }
-      }
-    });
-    child.on("close", (code: number | null) => {
-      clearInterval(pollTimer);
-      card.removeClass("running");
-      const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-      if (code !== 0) {
-        const last = log.slice(-3).join(" | ") || "exit code " + code;
-        if ((a.commandId === "repair" || a.commandId === "ocr") && code === 1) {
-          this._showMessage("[WARN] " + last, "running");
-          new Notice("[WARN] " + a.commandId + " partial: " + last, 8000);
-          this._fetchStats(true);
-        } else {
-          this._showMessage("[!!] " + last, "error");
-          new Notice("[!!] " + a.commandId + " failed: " + last, 8000);
-        }
-      } else if (a.needsKey || a.needsFilter) {
-        const output = log.join("\n");
-        if (output.trim()) {
-          try {
-            JSON.parse(output);
-            navigator.clipboard
-              .writeText(output)
-              .then(() => {
-                const summary = `${elapsed}s \u2014 ${output.length} chars copied`;
-                this._showMessage("[OK] " + a.title + ": " + summary, "ok");
-                new Notice(
-                  "[OK] " + a.okMsg + " \u2014 " + output.length + " chars"
-                );
-              })
-              .catch((err: any) => {
-                this._showMessage(
-                  "[!!] Clipboard write failed: " + err.message,
-                  "error"
-                );
-                new Notice("[!!] Clipboard error", 6000);
-              });
-          } catch (e: any) {
-            this._showMessage("[!!] Invalid JSON from " + a.title, "error");
-            new Notice(
-              "[!!] " +
-                a.title +
-                " returned invalid JSON: " +
-                e.message.slice(0, 100),
-              8000
-            );
-          }
-        } else {
-          this._showMessage("[!!] No output from context command", "error");
-          new Notice("[!!] Context command returned empty output", 8000);
-        }
-        this._fetchStats(true);
-      } else {
-        const updated = log.filter((l) => l.match(/updated \d+/));
-        const lastUpdated = updated.pop() || log[log.length - 1] || "";
-        const summary = `${elapsed}s \u2014 ${lastUpdated}`;
-        this._showMessage("[OK] " + a.title + ": " + summary, "ok");
-        new Notice("[OK] " + a.okMsg);
-        if (this._contentEl) this._contentEl.removeClass("switching");
-        this._cachedStats = null;
-        try {
-          this._fetchStats(false);
-        } catch (e) {
-          console.log("[PF] fetchStats error:", e);
-        }
-        console.log("[PF] close cmd=" + a.commandId + " id=" + a.id);
-        if (a.commandId === "sync")
-          checkOrphanState(
-            this.app,
-            ((this.app as any).plugins.plugins as any)["paperforge"],
-            vp
-          );
-      }
-    });
-    child.on("error", (err: Error) => {
+    const settle = (msg: string, cls: string) => {
+      this._showMessage(msg, cls);
       card.removeClass("running");
       if (this._contentEl) this._contentEl.removeClass("switching");
-      this._showMessage("[!!] " + err.message, "error");
-      new Notice("[!!] Cannot start: " + err.message, 8000);
-    });
+    };
+    try {
+      if (a.id === "paperforge-sync") {
+        card.removeClass("running");
+        await this._runLibrarySync();
+        return;
+      }
+      if (a.id === "paperforge-doctor") {
+        await this._getClient()!.doctor();
+        settle("[OK] " + (a.okMsg || "Doctor complete"), "ok");
+        new Notice("[OK] " + (a.okMsg || "Doctor complete"));
+        this._fetchStats(true);
+        return;
+      }
+      if (a.id === "paperforge-repair") {
+        await this._getClient()!.repair();
+        settle("[OK] " + (a.okMsg || "Repair complete"), "ok");
+        new Notice("[OK] " + (a.okMsg || "Repair complete"));
+        this._fetchStats(true);
+        return;
+      }
+      // Unknown/unsupported tool identity — fail closed, never substitute.
+      settle(
+        "[!!] No client route for " + (a.id || a.commandId || "unknown"),
+        "error"
+      );
+      new Notice(
+        "[!!] Unsupported tool: " + (a.id || a.commandId || "unknown"),
+        8000
+      );
+    } catch (err: any) {
+      settle(
+        "[!!] " + (a.commandId || a.id) + " failed: " + (err?.message || err),
+        "error"
+      );
+      new Notice(
+        "[!!] " + (a.commandId || a.id) + " failed: " + (err?.message || err),
+        8000
+      );
+      this._fetchStats(true);
+    }
   }
 
   _showMessage(msg: string, cls: string) {

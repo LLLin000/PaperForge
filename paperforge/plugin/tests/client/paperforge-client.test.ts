@@ -784,6 +784,41 @@ describe("PaperForgeClient", () => {
       ]);
     });
 
+    it("backendVersion parses the plain version line from exact argv", async () => {
+      transport.executeHandler = () => "paperforge 1.2.3\n";
+      const v = await client.backendVersion();
+      expect(transport.calls[0].argv).toEqual(["--version"]);
+      expect(v).toBe("1.2.3");
+    });
+
+    it("doctor and repair emit their authority argv; repair invalidates", async () => {
+      let reads = 0;
+      transport.executeHandler = (argv) => {
+        if (argv[0] === "repair") {
+          return JSON.stringify({ ok: true, data: { fixed: 2 } });
+        }
+        reads += 1;
+        return JSON.stringify({ ok: true, data: { n: reads } });
+      };
+      expect(await client.doctor()).toEqual({ n: 1 });
+      await client.repair();
+      expect(transport.calls.map((c) => c.argv)).toEqual([
+        ["doctor", "--json"],
+        ["repair", "--fix", "--fix-paths", "--json"],
+      ]);
+      // repair is a mutation — cached reads must refetch.
+      const after = await client.embedStatus();
+      expect(after).toEqual({ n: 2 });
+    });
+
+    it("dashboardStats emits its authority argv (single stats authority)", async () => {
+      transport.executeHandler = () =>
+        JSON.stringify({ ok: true, data: { stats: { papers: 3 } } });
+      const body = await client.dashboardStats();
+      expect(transport.calls[0].argv).toEqual(["dashboard", "--json"]);
+      expect((body as any).stats.papers).toBe(3);
+    });
+
     it("memoryRestoreBackup invalidates cached read models (mutation contract)", async () => {
       let version = 1;
       transport.executeHandler = (argv) => {
