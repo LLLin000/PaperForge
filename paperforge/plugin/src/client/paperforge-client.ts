@@ -556,22 +556,37 @@ export class PaperForgeClient {
 
   /** #173/C1: `paperforge auth set <kind> --stdin` — the secret travels
    * only via child stdin, never argv, env, files, or settings; the
-   * NodeProcessTransport owns the sanitized env. */
+   * NodeProcessTransport owns the sanitized env. Mutation: bumps the
+   * cache epoch so stale `credentialAvailable`/`describeAction` reads
+   * (e.g. a cached `unavailable` before the key was saved) never survive
+   * it. `replace` defaults to true (user Save); the legacy SecretStorage
+   * migration passes `{replace: false}` so a stale host copy can never
+   * overwrite a live keyring value. */
   async authSetSecret(
     kind: "ocr" | "embedding",
-    secret: string
+    secret: string,
+    options?: { replace?: boolean }
   ): Promise<boolean> {
-    await this._executePfResult(
-      ["auth", "set", kind, "--stdin", "--replace", "--json"],
-      { stdin: secret + "\n" }
-    );
-    return true;
+    const argv = ["auth", "set", kind, "--stdin"];
+    if (options?.replace !== false) argv.push("--replace");
+    argv.push("--json");
+    try {
+      await this._executePfResult(argv, { stdin: secret + "\n" });
+      return true;
+    } finally {
+      this.invalidateCache();
+    }
   }
 
   async memoryRestoreBackup(): Promise<unknown> {
-    return this._executePfResult(["memory", "restore-backup", "--json"], {
-      timeoutMs: 30000,
-    });
+    try {
+      return await this._executePfResult(
+        ["memory", "restore-backup", "--json"],
+        { timeoutMs: 30000 }
+      );
+    } finally {
+      this.invalidateCache();
+    }
   }
 
   async embedMigrate(): Promise<unknown> {

@@ -48,20 +48,16 @@ export interface SecretAccess {
   setSecret(id: string, secret: string): Promise<void>;
 }
 
-export interface MigrationSpawn {
-  spawn: (
-    command: string,
-    args: string[],
-    opts: { cwd: string; env: Record<string, string | undefined>; windowsHide: boolean; stdio: string[] }
-  ) => {
-    stdin: { write(s: string): void; end(): void };
-    stdout: { on(ev: "data", cb: (d: unknown) => void): void };
-    on(ev: "error" | "close", cb: (arg?: unknown) => void): void;
-  };
-  pythonPath: string;
-  pythonArgs: string[];
-  vaultPath: string;
-  env: Record<string, string | undefined>;
+export interface MigrationDeps {
+  /** Backend credential-write capability — injected by the caller as
+   * `client.authSetSecret(kind, value, {replace: false})`.  This module
+   * owns ONLY the host side of the migration bridge (where the legacy
+   * SecretStorage value lives, how to clear it); it never assembles
+   * backend argv. */
+  writeCredential: (
+    kind: "ocr" | "embedding",
+    value: string
+  ) => Promise<boolean>;
 }
 
 export interface LegacyMigrationResult {
@@ -109,7 +105,7 @@ export async function legacyEmbeddingSecretIds(
 export async function migrateLegacySecret(
   kind: "ocr" | "embedding",
   ss: SecretAccess | undefined,
-  deps: MigrationSpawn,
+  deps: MigrationDeps,
   embeddingProfile?: { baseUrl: string; model: string }
 ): Promise<LegacyMigrationResult> {
   if (!ss || typeof ss.getSecret !== "function") {
@@ -128,13 +124,15 @@ export async function migrateLegacySecret(
   for (const id of ids) {
     const value = await ss.getSecret(id);
     if (!value) continue;
-    const ok = await _authSetViaSpawn(kind, value, deps);
+    const ok = await deps.writeCredential(kind, value);
     if (!ok) {
       return {
         migrated: [],
         warnings: [
           "Keyring write failed — the legacy SecretStorage value was kept. " +
-            "Run `paperforge auth set " + kind + " --stdin` manually.",
+            "Run `paperforge auth set " +
+            kind +
+            " --stdin` manually.",
         ],
       };
     }
@@ -152,47 +150,4 @@ export async function migrateLegacySecret(
     return { migrated: [id], warnings: [] };
   }
   return { migrated: [], warnings: [] };
-}
-
-function _authSetViaSpawn(
-  kind: "ocr" | "embedding",
-  value: string,
-  deps: MigrationSpawn
-): Promise<boolean> {
-  return new Promise((resolvePromise) => {
-    const child = deps.spawn(
-      deps.pythonPath,
-      [
-        ...deps.pythonArgs,
-        "-m",
-        "paperforge",
-        "--vault",
-        deps.vaultPath,
-        "auth",
-        "set",
-        kind,
-        "--stdin",
-        "--json",
-      ],
-      {
-        cwd: deps.vaultPath,
-        env: deps.env,
-        windowsHide: true,
-        stdio: ["pipe", "pipe", "pipe"],
-      }
-    );
-    let stdout = "";
-    child.stdout.on("data", (d) => (stdout += String(d)));
-    child.on("error", () => resolvePromise(false));
-    child.on("close", (code) => {
-      try {
-        const parsed = JSON.parse(stdout) as { ok?: boolean };
-        resolvePromise(code === 0 && parsed?.ok === true);
-      } catch {
-        resolvePromise(false);
-      }
-    });
-    child.stdin.write(value);
-    child.stdin.end();
-  });
 }
