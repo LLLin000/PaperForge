@@ -200,6 +200,58 @@ describe("Dashboard mode resolution consumes Python identity", () => {
   });
 });
 
+describe("Note workflow flags are Python authority (note set-flag)", () => {
+  it("routes the toggle through note set-flag with the exact argv", async () => {
+    transport.executeHandler = (argv) => {
+      expect(argv).toEqual([
+        "note",
+        "set-flag",
+        "--key",
+        "ABCD1234",
+        "--field",
+        "do_ocr",
+        "--value",
+        "true",
+        "--json",
+      ]);
+      return JSON.stringify({
+        ok: true,
+        data: { intent: "note-set-flag", changed: true },
+      });
+    };
+    const out = await client.setNoteFlag("ABCD1234", "do_ocr", true);
+    expect(out.changed).toBe(true);
+    expect(mockExecFile).not.toHaveBeenCalled();
+    expect(mockSpawn).not.toHaveBeenCalled();
+  });
+
+  it("reports changed=false for an idempotent backend no-op", async () => {
+    transport.executeHandler = () =>
+      JSON.stringify({
+        ok: true,
+        data: { intent: "note-set-flag", changed: false },
+      });
+    const out = await client.setNoteFlag("K1", "analyze", false);
+    expect(out.changed).toBe(false);
+  });
+
+  it("propagates backend rejection (unknown field fails closed upstream)", async () => {
+    transport.executeHandler = () =>
+      // real PFResult serialization always carries "data" (null on failure)
+      JSON.stringify({
+        ok: false,
+        data: null,
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "field must be one of do_ocr, analyze",
+        },
+      });
+    await expect(client.setNoteFlag("K1", "analyze", true)).rejects.toThrow(
+      "field must be one of"
+    );
+  });
+});
+
 describe("Semantic-boundary source gates (frontmatter overlay deleted)", () => {
   const SRC = join(__dirname, "..", "..", "src");
   const dashboard = readFileSync(join(SRC, "views", "dashboard.ts"), "utf-8");
@@ -223,6 +275,10 @@ describe("Semantic-boundary source gates (frontmatter overlay deleted)", () => {
   it("no formal-library.json filename watcher (mutations reach the UI via refresh/sync only)", () => {
     expect(dashboard).not.toContain('path.endsWith("formal-library.json")');
     expect(dashboard).not.toContain('vault.on("modify"');
+  });
+
+  it("workflow toggles never mutate frontmatter client-side", () => {
+    expect(dashboard).not.toContain("processFrontMatter(");
   });
 
   it("export health comes from Python permissions.can_sync, not an exports-dir fs scan", () => {

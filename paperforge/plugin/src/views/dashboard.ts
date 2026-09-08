@@ -1383,25 +1383,32 @@ export class PaperForgeStatusView extends ItemView {
         text: tf.hint,
       });
       cb.addEventListener("change", async () => {
-        const noteFile = entry.note_path
-          ? this.app.vault.getAbstractFileByPath(entry.note_path)
-          : null;
-        if (!noteFile) {
-          new Notice("[!!] Note file not found", 6000);
+        const newVal = cb.checked;
+        const client = this._getClient();
+        if (!client) {
+          new Notice("[!!] PaperForge backend unavailable", 6000);
+          cb.checked = !newVal;
           return;
         }
-        const newVal = cb.checked;
-        await this.app.fileManager.processFrontMatter(
-          noteFile as TFile,
-          (fm: any) => {
-            fm[tf.key] = newVal;
-          }
-        );
-        this._patchCachedEntry(key!, { [tf.key]: newVal });
-        this._currentPaperEntry = patchEntryWorkflowState(
-          this._currentPaperEntry,
-          { [tf.key]: newVal }
-        );
+        try {
+          // Python authority: the note frontmatter is Python's own
+          // literature note — the client passes key/field/value only
+          // (final-leaf census: processFrontMatter retired).
+          await client.setNoteFlag(
+            key!,
+            tf.key as "do_ocr" | "analyze",
+            newVal
+          );
+          this._patchCachedEntry(key!, { [tf.key]: newVal });
+          this._currentPaperEntry = patchEntryWorkflowState(
+            this._currentPaperEntry,
+            { [tf.key]: newVal }
+          );
+        } catch (err: any) {
+          // fail closed: revert the checkbox, never leave a lying UI state
+          cb.checked = !newVal;
+          new Notice("[!!] Flag update failed: " + (err?.message || err), 6000);
+        }
       });
     }
     const health = entry.health || {};
