@@ -28,6 +28,11 @@
 
 > **STATUS: Stage 2 step 5 CLOSED / SEALED — 27c33f4b** (owner-verified 2026-09-08). Step 6 unlocked, order: cast-form architecture probe fix → final leaf semantic census (`processFrontMatter(do_ocr/analyze)` included, never dragged back to step 5) → action-client/next-actions execution convergence → long-task-client → NodeProcessTransport → python-bridge contraction → final zero-census/architecture gate → Ticket 07 close.
 
+## Stage 2 — step 6 item 2 corrective (2026-09-08, round 2)
+
+- **P1-1 `setNoteFlag` epoch invalidation:** the new mutation surface skipped the frozen client-core invariant (mutation settles → epoch++ → cache clear → in-flight stale read cannot resurrect). Fixed: `try { ... } finally { this.invalidateCache(); }` — a settled FAILED mutation advances the epoch too. Regression asserts `getEpoch()` advances across both success and rejection; generation ownership stays in the client (the dashboard's local DTO patch is presentation only).
+- **P1-2 `set_frontmatter_flag` body-integrity:** the helper regexed the FULL markdown content, so a prose line like `analyze: this paragraph...` in the body could absorb the replacement (body mutated, frontmatter unchanged, `changed:true` returned). Fixed: strict `---`/`---` split — replace/search runs ONLY on the frontmatter segment; a missing field is appended inside the block; body reassembled verbatim. Regressions (parameterized do_ocr/analyze): body line survives byte-identical AND exactly once, real frontmatter field becomes a bare bool; a frontmatter-less note fails closed with the file untouched. Python **7 passed**; plugin **476/476**; tsc + ruff (touched files) clean.
+
 ## Stage 2 — step 6 (2026-09-08, in progress)
 
 - **Item 1 — cast-form architecture probe fixed:** the binding-provenance probe undercounted cast-call forms (`(execFile as any)(...)`, the exact blind spot that hid dashboard's real semantic execFile sites in step 5). The callee now unwraps parens / as-expressions / angle-bracket type assertions (`TypeAssertionExpression`) / non-null assertions before binding resolution; synthetic regressions cover all four forms plus the unbound-callee negative. **Gate B snapshots stayed EXACT** — no hidden site remains. (`ef32ff52`)

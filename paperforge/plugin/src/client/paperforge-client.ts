@@ -652,17 +652,25 @@ export class PaperForgeClient {
     field: "do_ocr" | "analyze",
     value: boolean
   ): Promise<{ changed: boolean }> {
-    return this._executePfResult<{ changed?: boolean }>([
-      "note",
-      "set-flag",
-      "--key",
-      key,
-      "--field",
-      field,
-      "--value",
-      value ? "true" : "false",
-      "--json",
-    ]).then((data) => ({ changed: data?.changed === true }));
+    try {
+      const data = await this._executePfResult<{ changed?: boolean }>([
+        "note",
+        "set-flag",
+        "--key",
+        key,
+        "--field",
+        field,
+        "--value",
+        value ? "true" : "false",
+        "--json",
+      ]);
+      return { changed: data?.changed === true };
+    } finally {
+      // Frozen client-core invariant: an authority mutation settles by
+      // advancing the epoch — stale in-flight reads (probe/reconcile/
+      // action descriptors) can never resurrect across the boundary.
+      this.invalidateCache();
+    }
   }
 
   /** Canonical paper identity resolver (`paper-lookup --from-path`). The
