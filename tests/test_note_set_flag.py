@@ -195,3 +195,76 @@ def test_note_without_frontmatter_fails_closed(tmp_path: Path) -> None:
     assert payload["ok"] is False
     assert "no frontmatter" in payload["error"]["message"]
     assert note.read_text(encoding="utf-8") == "no frontmatter here\n"
+
+
+def test_inline_dashes_in_value_are_not_a_fence(tmp_path: Path) -> None:
+    """P1 fence-parser regression: ``split("---")``-style parsing would
+    treat the inline ``---`` inside a title value as the closing fence —
+    truncating the frontmatter and corrupting the title on reassembly.
+    Line-anchored parsing must keep the value intact."""
+    vault = tmp_path / "v"
+    vault.mkdir()
+    note = _seed(
+        vault,
+        "---\nzotero_key: ABCD1234\ntitle: State --- X\n---\n\nbody text\n",
+    )
+    rc, payload, err = _run(
+        vault, "set-flag", "--key", "ABCD1234", "--field", "analyze", "--value", "true", "--json"
+    )
+    assert rc == 0, err
+    text = note.read_text(encoding="utf-8")
+    fm = read_frontmatter_dict(text)
+    assert fm["analyze"] is True
+    assert fm["title"] == "State --- X", text
+    assert "body text" in text
+
+
+def test_body_horizontal_rule_stays_body(tmp_path: Path) -> None:
+    vault = tmp_path / "v"
+    vault.mkdir()
+    note = _seed(
+        vault,
+        "---\nzotero_key: ABCD1234\n---\n\n---\nhr line context\n",
+    )
+    rc, _, err = _run(
+        vault, "set-flag", "--key", "ABCD1234", "--field", "do_ocr", "--value", "true", "--json"
+    )
+    assert rc == 0, err
+    text = note.read_text(encoding="utf-8")
+    fm = read_frontmatter_dict(text)
+    assert fm["do_ocr"] is True
+    # the body hr block survives verbatim after the REAL closing fence
+    assert text.endswith("---\n\n---\nhr line context\n")
+
+
+def test_crlf_line_endings_preserved(tmp_path: Path) -> None:
+    """_seed writes via text mode, so the on-disk note is CRLF on Windows.
+    The setter must preserve each line's original ending (read raw with
+    newline="" — read_text would translate CRLF away)."""
+    vault = tmp_path / "v"
+    vault.mkdir()
+    note = _seed(vault, "---\nzotero_key: ABCD1234\ndo_ocr: false\n---\nbody\n")
+    rc, _, err = _run(
+        vault, "set-flag", "--key", "ABCD1234", "--field", "do_ocr", "--value", "true", "--json"
+    )
+    assert rc == 0, err
+    with open(note, encoding="utf-8", newline="") as f:
+        raw = f.read()
+    assert "do_ocr: true\r\n" in raw
+    assert "---\r\n" in raw
+    assert raw.count("\n") == raw.count("\r\n")  # no mixed endings introduced
+
+
+def test_unterminated_frontmatter_fails_closed_locally(tmp_path: Path) -> None:
+    vault = tmp_path / "v"
+    vault.mkdir()
+    note = _seed(vault, "---\nzotero_key: ABCD1234\nno close fence")
+    rc, payload, _ = _run(
+        vault, "set-flag", "--key", "ABCD1234", "--field", "do_ocr", "--value", "true", "--json"
+    )
+    # the command-level check (startswith "---") passes, but the adapter
+    # must refuse to fabricate a block for an unterminated fence
+    assert note.read_text(encoding="utf-8") == "---\nzotero_key: ABCD1234\nno close fence"
+    if rc == 0:
+        text = note.read_text(encoding="utf-8")
+        assert "do_ocr" not in text.split("---")[1], text
