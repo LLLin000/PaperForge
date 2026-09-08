@@ -28,6 +28,23 @@
 
 > **STATUS: Stage 2 step 5 CLOSED / SEALED — 27c33f4b** (owner-verified 2026-09-08). Step 6 unlocked, order: cast-form architecture probe fix → final leaf semantic census (`processFrontMatter(do_ocr/analyze)` included, never dragged back to step 5) → action-client/next-actions execution convergence → long-task-client → NodeProcessTransport → python-bridge contraction → final zero-census/architecture gate → Ticket 07 close.
 
+## Stage 2 — step 6 item 2 corrective (2026-09-08, round 3 — fence parser)
+
+- **P1 frontmatter fence parser:** round 2's `split("---", 2)` was substring splitting, not line-anchored fence parsing — an inline `---` inside a frontmatter VALUE (`title: State --- X`) was treated as the closing fence: frontmatter truncated, the reassembled note corrupted the title, and the appended flag could land outside the real block. `set_frontmatter_flag` now parses line-anchored fences: first line exactly `---`, next line exactly `---` closes (BOM tolerated, CRLF/LF endings preserved per line); replace/append strictly inside the block; an unterminated frontmatter refuses (never fabricates a block). Regressions: inline-dashes value intact (`title == "State --- X"`, flag inside block), body `---` horizontal rule stays body, CRLF endings preserved raw (no mixed endings), unterminated fence untouched. Python note-flag suite **11 passed**; ruff clean.
+
+## Step 6 Item 3 — design APPROVED WITH AMENDMENTS (owner ruling, code HELD until item 2 closes)
+
+Amendments frozen here for execution:
+1. caller census = **3** production `orchestrateFromSync` callers: `main._autoSync`, Settings library sync, Dashboard library sync.
+2. Inject the SAME singleton `PaperForgeClient.runAction` — `NextActionBridgeContext` = `{ runAction: (req) => Promise<ActionRunResult> }`; `vaultPath`/`resolveCommand` removed from the bridge contract (bridge never knows runtime/env again). Each caller binds the client instance that just executed the sync.
+3. `services/action-client.ts` TOMBSTONED entirely (no argv-shell leftover): `ActionScope`/`ActionRequest`/`ActionRunResult`/`buildActionArgv` move to `client/action-contract.ts`, exported via `client/index.ts` — removes the `client → services` reverse dependency; `paperforge-client.ts` does not grow.
+4. Orchestrator `runAction` becomes async; `markInFlight` covers the REAL settlement (await result in try/finally) — the old sync-boolean contract only guarded the dispatch microsecond, contradicting its own duplicate-click guard comment. Settle-then-clear preserves #169 re-repair semantics.
+5. NO unlocked bypass for automatic follow-ups. `memory.build` is the only automatic action and is `execution_mode="result"` today (no streaming lock); a future `automatic+stream` descriptor is governed by Python policy + the same OperationLock. Never `runActionUnlockedForAutomatic`.
+6. `action-client.ts` is NOT a Gate B ratchet file (no direct child_process import); its spawn authority is delegated to `python-bridge.runSubprocess()`. Item 3 same-commit chain: tombstone action-client → `runSubprocess` zero src callers → delete `runSubprocess` → python-bridge Gate B 8→7. `paperforgeEnrichedEnv()` stays (transport/root still needs it).
+
+Target topology (frozen):
+sync PFResult → next-actions-bridge (parse/filter/Notice only) → NextAction → ActionRequest → injected SAME singleton client.runAction → backend descriptor (result → Transport.execute | stream → OperationLock → Transport.stream).
+
 ## Stage 2 — step 6 item 2 corrective (2026-09-08, round 2)
 
 - **P1-1 `setNoteFlag` epoch invalidation:** the new mutation surface skipped the frozen client-core invariant (mutation settles → epoch++ → cache clear → in-flight stale read cannot resurrect). Fixed: `try { ... } finally { this.invalidateCache(); }` — a settled FAILED mutation advances the epoch too. Regression asserts `getEpoch()` advances across both success and rejection; generation ownership stays in the client (the dashboard's local DTO patch is presentation only).

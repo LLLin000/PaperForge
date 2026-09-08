@@ -317,29 +317,44 @@ def _add_missing_frontmatter_fields(existing_content: str, new_fields: dict[str,
 def set_frontmatter_flag(content: str, key: str, value: bool) -> str:
     """Set a boolean frontmatter field to an UNQUOTED YAML bool.
 
-    Operates STRICTLY on the frontmatter segment: a body line such as
-    ``analyze: ...`` in prose must never be touched, and a missing field
-    is appended INSIDE the frontmatter block — never via a full-text
-    regex hit (data-integrity: authority success must equal durable
-    frontmatter state).
+    LINE-ANCHORED fence parsing: the frontmatter block is the lines
+    between a first line of exactly ``---`` and the NEXT line of exactly
+    ``---`` — never a substring split. An inline value such as
+    ``title: State --- X`` is not a fence; a body ``---`` horizontal rule
+    stays body. Replace/search runs ONLY inside the block; a missing
+    field is appended INSIDE it, before the closing fence. Line endings
+    (CRLF/LF) are preserved.
 
     The index builder derives ``do_ocr``/``analyze`` with
     ``isinstance(v, bool)`` — a quoted ``'true'`` string would silently
     fall back to legacy derivation, so booleans must stay bare.
     """
-    if not content.startswith("---"):
+    bom = "\ufeff" if content.startswith("\ufeff") else ""
+    lines = content[len(bom):].splitlines(keepends=True)
+    if not lines or lines[0].rstrip("\r\n") != "---":
         return content
-    parts = content.split("---", 2)
-    if len(parts) < 3:
+    close = None
+    for i in range(1, len(lines)):
+        if lines[i].rstrip("\r\n") == "---":
+            close = i
+            break
+    if close is None:
+        # Unterminated frontmatter — refuse, never fabricate a block.
         return content
-    frontmatter = parts[1]
-    body = parts[2]
+    fm_lines = lines[1:close]
+    body_lines = lines[close:]
     replacement = f"{key}: {'true' if value else 'false'}"
-    pattern = "^" + re.escape(key) + "\\s*:.*$"
-    new_fm, count = re.subn(pattern, replacement, frontmatter, flags=re.MULTILINE, count=1)
-    if count == 0:
-        new_fm = frontmatter.rstrip("\n") + "\n" + replacement + "\n"
-    return f"---{new_fm}---{body}"
+    pattern = re.compile("^" + re.escape(key) + "\\s*:.*$")
+    for idx, line in enumerate(fm_lines):
+        if pattern.match(line.rstrip("\r\n")):
+            eol = "\r\n" if line.endswith("\r\n") else "\n"
+            fm_lines[idx] = replacement + eol
+            break
+    else:
+        last = fm_lines[-1] if fm_lines else "---\n"
+        eol = "\r\n" if last.endswith("\r\n") else "\n"
+        fm_lines.append(replacement + eol)
+    return bom + "---\n" + "".join(fm_lines) + "".join(body_lines)
 
 
 def update_frontmatter_field(content: str, key: str, value: str) -> str:
