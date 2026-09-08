@@ -99,12 +99,6 @@ export class PaperForgeStatusView extends ItemView {
   _messageEl: HTMLElement | null = null;
   _contentEl!: HTMLElement;
   _modeContextEl!: HTMLElement;
-  _metricsEl: HTMLElement | null = null;
-  _ocrSection: HTMLElement | null = null;
-  _ocrEmpty: HTMLElement | null = null;
-  _ocrBadge: HTMLElement | null = null;
-  _ocrTrack: HTMLElement | null = null;
-  _ocrCounts: HTMLElement | null = null;
   // ── Search state ──
   // ── Version state ──
   _versionPapers: PaperVersionInfo[] | null = null;
@@ -149,7 +143,7 @@ export class PaperForgeStatusView extends ItemView {
     this._leafChangeTimer = null;
     this._setupEventSubscriptions();
     this._fetchVersion();
-    void this._detectAndSwitch();
+    void this._bootstrapDashboard();
 
     // Global "/" keyboard shortcut to focus search input
     this._onKeyDown = (e: KeyboardEvent) => {
@@ -222,8 +216,10 @@ export class PaperForgeStatusView extends ItemView {
     });
     refreshBtn.innerHTML = "\u21BB";
     refreshBtn.addEventListener("click", () => {
-      this._invalidateIndex();
-      void this._detectAndSwitch();
+      void (async () => {
+        await this._invalidateIndex();
+        await this._detectAndSwitch();
+      })();
     });
     this._messageEl = root.createEl("div", {
       cls: "paperforge-message",
@@ -247,49 +243,48 @@ export class PaperForgeStatusView extends ItemView {
       .catch(() => undefined);
   }
 
-  async _fetchStats(quiet: boolean) {
-    if (!this._metricsEl) return;
-    if (!quiet && !this._cachedStats) {
-      this._metricsEl.empty();
-      this._metricsEl.createEl("div", {
-        cls: "paperforge-status-loading",
-        text: "Loading...",
-      });
-    } else if (quiet && !this._cachedStats) {
-      return;
-    }
-    // Ticket 07 step 5 corrective: `dashboardStats()` resolves to the
-    // UNWRAPPED PFResult data (the client owns the envelope; ok:false
-    // rejects fail-closed upstream). The payload carries BOTH the stats
-    // and the canonical index items — the paper/collection lists come from
-    // the same authority read, never from a direct file inspection.
+  /* ── Read-model acquisition (D-14) ──
+   * The dashboard data load is DATA acquisition, not presentation: it must
+   * never be gated by metrics DOM state. `dashboardStats()` fills
+   * _cachedStats/_cachedItems/_dashboardPermissions; the current mode
+   * re-renders from the loaded read model. */
+  async _loadDashboardData(quiet: boolean): Promise<void> {
+    // Quiet load with no prior read model = the onOpen race guard from the
+    // legacy fetch path (avoid double initial fetch).
+    if (quiet && !this._cachedStats) return;
     try {
-      const data = (await this._getClient()?.dashboardStats()) as {
-        stats?: Record<string, unknown>;
-        permissions?: Record<string, boolean>;
-        items?: any[];
-      } | null;
+      // Ticket 07 step 5 corrective: `dashboardStats()` resolves to the
+      // UNWRAPPED PFResult data (the client owns the envelope; ok:false
+      // rejects fail-closed upstream). The payload carries BOTH the stats
+      // and the canonical index items — the paper/collection lists come
+      // from the same authority read, never from a direct file inspection.
+      const data = await this._getClient()?.dashboardStats();
       if (!data) throw new Error("no dashboard payload");
-      const d = this._normalizeDashboardData(data);
-      this._cachedStats = d;
+      this._cachedStats = this._normalizeDashboardData(data);
       this._cachedItems = Array.isArray(data.items) ? data.items : [];
-      this._metricsEl!.empty();
-      this._renderStats(d);
-      this._renderOcr(d);
       this._dashboardPermissions = data.permissions ?? {};
-      // First payload of this open: mode content rendered before the fetch
-      // landed may have rendered from an empty list — refresh it.
+      // Mode content rendered before the payload landed (empty list /
+      // empty permissions) — refresh it from the loaded read model.
       if (!quiet && this._currentMode) {
-        this._switchMode(this._currentMode, this._currentFilePath);
+        await this._switchMode(this._currentMode, this._currentFilePath);
       }
-    } catch (err) {
+    } catch (_err) {
       if (!quiet && !this._cachedStats) {
-        this._metricsEl!.createEl("div", {
-          cls: "paperforge-status-error",
-          text: "Cannot reach PaperForge CLI.\nMake sure paperforge is installed and in your PATH.",
-        });
+        this._showMessage(
+          "Cannot reach PaperForge CLI.\nMake sure paperforge is installed and in your PATH.",
+          "error"
+        );
       }
     }
+  }
+
+  /** Production lifecycle: load the read model FIRST, then resolve the
+   * active context against the loaded items (Step 5 corrective: the old
+   * cold path never called dashboardStats at all, so every mode rendered
+   * from an empty cache). */
+  async _bootstrapDashboard() {
+    await this._loadDashboardData(false);
+    await this._detectAndSwitch();
   }
 
   _normalizeDashboardData(data: any) {
@@ -336,16 +331,6 @@ export class PaperForgeStatusView extends ItemView {
   }
 
   /* ── Metric Progress Bar Helper (D-05) ── */
-  _buildMetricBar(card: HTMLElement, value: number, max: number) {
-    if (max <= 0) return;
-    const pct = Math.min(100, (value / max) * 100);
-    const bar = card.createEl("div", { cls: "paperforge-metric-progress" });
-    bar.createEl("div", {
-      cls: "paperforge-metric-progress-fill",
-      attr: { style: `width:${pct.toFixed(1)}%` },
-    });
-  }
-
   /* ── Cached Index Accessor (D-14) ── */
   /* The canonical item list comes ONLY from the client's dashboard payload
    * (P1 corrective: the direct `formal-library.json` inspection violated
@@ -383,153 +368,7 @@ export class PaperForgeStatusView extends ItemView {
   }
 
   /* ── Metric Cards (Enhanced D-04, D-05, D-06) ── */
-  _renderStats(d: any) {
-    if (this._versionBadge)
-      this._versionBadge.setText(
-        this._paperforgeVersion || (d.version ? "v" + d.version : "v\u2014")
-      );
-    if (!d || typeof d.total_papers === "undefined") {
-      if (this._metricsEl) this._renderSkeleton(this._metricsEl);
-      return;
-    }
-    if (!this._metricsEl) return;
-    this._metricsEl.removeClass("paperforge-loading");
-    const totalPapers = d.total_papers || 0;
-    const totalFormal = d.formal_notes || 0;
-    const metrics = [
-      {
-        value: totalPapers,
-        label: "Papers",
-        color: "var(--color-cyan)",
-        barMax: 0,
-      },
-      {
-        value: totalFormal,
-        label: "Formal Notes",
-        color: "var(--color-blue)",
-        barMax: totalPapers,
-      },
-      {
-        value: d.exports || 0,
-        label: "Exports",
-        color: "var(--color-purple)",
-        barMax: 0,
-      },
-    ];
-    for (const m of metrics) {
-      const card = this._metricsEl.createEl("div", {
-        cls: "paperforge-metric-card",
-      });
-      card.style.setProperty("--metric-color", m.color);
-      card.createEl("div", {
-        cls: "paperforge-metric-value",
-        text: m.value?.toString() || "\u2014",
-      });
-      card.createEl("div", { cls: "paperforge-metric-label", text: m.label });
-      if (m.barMax > 0) {
-        this._buildMetricBar(card, m.value, m.barMax);
-      }
-    }
-    const vs = d.ocr_version_state || {};
-    if (
-      vs.total_papers > 0 &&
-      (vs.derived_stale_count > 0 || vs.raw_upgradable_count > 0)
-    ) {
-      const vsParts: string[] = [];
-      if (vs.derived_stale_count > 0)
-        vsParts.push(`${vs.derived_stale_count} stale`);
-      if (vs.raw_upgradable_count > 0)
-        vsParts.push(`${vs.raw_upgradable_count} upgradable`);
-      const card = this._metricsEl.createEl("div", {
-        cls: "paperforge-metric-card",
-      });
-      card.style.setProperty("--metric-color", "var(--color-yellow)");
-      card.createEl("div", {
-        cls: "paperforge-metric-value",
-        text: vsParts.join(", "),
-      });
-      card.createEl("div", {
-        cls: "paperforge-metric-label",
-        text: "OCR Version",
-      });
-    }
-  }
-
   /* ── OCR Pipeline ── */
-  _renderOcr(d: any) {
-    if (!this._ocrSection) return;
-    const ocr = d.ocr || {};
-    const total = ocr.total || 0;
-    if (total === 0) {
-      this._ocrSection.style.display = "none";
-      return;
-    }
-    this._ocrSection.style.display = "block";
-    if (this._ocrEmpty) this._ocrEmpty.style.display = "none";
-    const done = ocr.done || 0;
-    const pending = ocr.pending || 0;
-    const processing = ocr.processing || 0;
-    const failed = ocr.failed || 0;
-    if (this._ocrBadge) {
-      this._ocrBadge.removeClass("active", "idle");
-      if (processing > 0) {
-        this._ocrBadge.addClass("active");
-        this._ocrBadge.setText("Processing");
-      } else if (pending > 0) {
-        this._ocrBadge.addClass("idle");
-        this._ocrBadge.setText("Pending");
-      } else {
-        this._ocrBadge.addClass("idle");
-        this._ocrBadge.setText("Idle");
-      }
-    }
-    if (this._ocrTrack) {
-      this._ocrTrack.empty();
-      if (processing > 0) {
-        this._ocrTrack.addClass("paperforge-processing");
-      } else {
-        this._ocrTrack.removeClass("paperforge-processing");
-      }
-      const segs = [
-        { cls: "pending", count: pending },
-        { cls: "active", count: processing },
-        { cls: "done", count: done },
-        { cls: "failed", count: failed },
-      ];
-      for (const s of segs) {
-        if (s.count > 0) {
-          const pct = ((s.count / total) * 100).toFixed(1);
-          this._ocrTrack.createEl("div", {
-            cls: `paperforge-progress-seg ${s.cls}`,
-            attr: { style: `width:${pct}%` },
-          });
-        }
-      }
-    }
-    if (this._ocrCounts) {
-      this._ocrCounts.empty();
-      const labels = [
-        { cls: "pending", value: pending, label: "Pending" },
-        { cls: "active", value: processing, label: "Processing" },
-        { cls: "done", value: done, label: "Done" },
-        { cls: "failed", value: failed, label: "Failed" },
-      ];
-      for (const l of labels) {
-        const cnt = this._ocrCounts.createEl("div", {
-          cls: "paperforge-ocr-count",
-        });
-        cnt.createEl("div", {
-          cls: "paperforge-ocr-count-value",
-          text: l.value.toString(),
-        });
-        cnt.createEl("div", {
-          cls: "paperforge-ocr-count-label",
-          text: l.label,
-        });
-      }
-    }
-  }
-
   /* ── Lifecycle Stepper (D-07 through D-11) ── */
   _renderLifecycleStepper(
     container: HTMLElement,
@@ -716,10 +555,10 @@ export class PaperForgeStatusView extends ItemView {
   }
 
   /* ── Invalidate cached index (D-14) ── */
-  _invalidateIndex() {
+  async _invalidateIndex() {
     // The canonical list is a client payload now — invalidation is a quiet
     // re-fetch, never a direct file re-read.
-    void this._fetchStats(true);
+    await this._loadDashboardData(true);
   }
 
   /* ── Extract zotero_key from workspace directory name ── */
@@ -760,8 +599,15 @@ export class PaperForgeStatusView extends ItemView {
   }
 
   /* ── Context Detection & Mode Switch (D-01, D-02, D-03, D-04, D-10) ── */
-  async _detectAndSwitch() {
-    const resolved = await this._resolveModeForFile(
+  async _detectAndSwitch(resolved?: {
+    mode: "global" | "paper" | "collection";
+    filePath: string | null;
+    key: string | null;
+    domain: string | null;
+  }) {
+    // One leaf change = one paper-lookup: callers that already resolved
+    // (leaf-change debounce) commit their result; no second subprocess.
+    resolved ??= await this._resolveModeForFile(
       this.app.workspace.getActiveFile()
     );
     this._currentDomain = resolved.domain || null;
@@ -769,13 +615,13 @@ export class PaperForgeStatusView extends ItemView {
     this._currentPaperEntry = resolved.key
       ? this._findEntry(resolved.key)
       : null;
-    this._switchMode(resolved.mode, resolved.filePath);
+    await this._switchMode(resolved.mode, resolved.filePath);
   }
 
   /* ── Mode Switching (D-05, D-06) ── */
-  _switchMode(mode: string, filePath: string | null) {
+  async _switchMode(mode: string, filePath: string | null) {
     if (this._currentMode === mode && this._currentFilePath === filePath) {
-      this._refreshCurrentMode();
+      await this._refreshCurrentMode();
       return;
     }
     this._currentMode = mode as "global" | "paper" | "collection";
@@ -2232,11 +2078,13 @@ export class PaperForgeStatusView extends ItemView {
   }
 
   /* ── Refresh current mode (called on index change, D-09, REFR-01) ── */
-  _refreshCurrentMode() {
+  async _refreshCurrentMode() {
     if (!this._currentMode || !this._contentEl) return;
     this._contentEl.empty();
     this._contentEl.addClass("switching");
-    this._invalidateIndex();
+    // Render from the FRESH read model: the quiet loader never triggers
+    // _switchMode itself, so the refresh must await the payload.
+    await this._invalidateIndex();
     this._currentPaperEntry = this._currentPaperKey
       ? this._findEntry(this._currentPaperKey)
       : null;
@@ -3205,9 +3053,9 @@ export class PaperForgeStatusView extends ItemView {
       // through the shared client (same behavior as the legacy sync path).
       this._cachedStats = null;
       try {
-        this._fetchStats(false);
+        await this._loadDashboardData(false);
       } catch (e) {
-        console.log("[PF] fetchStats error:", e);
+        console.log("[PF] dashboard load error:", e);
       }
       if (exitOk) {
         checkOrphanState(
@@ -3261,14 +3109,14 @@ export class PaperForgeStatusView extends ItemView {
         await this._getClient()!.doctor();
         settle("[OK] " + (a.okMsg || "Doctor complete"), "ok");
         new Notice("[OK] " + (a.okMsg || "Doctor complete"));
-        this._fetchStats(true);
+        void this._loadDashboardData(true);
         return;
       }
       if (a.id === "paperforge-repair") {
         await this._getClient()!.repair();
         settle("[OK] " + (a.okMsg || "Repair complete"), "ok");
         new Notice("[OK] " + (a.okMsg || "Repair complete"));
-        this._fetchStats(true);
+        void this._loadDashboardData(true);
         return;
       }
       // Unknown/unsupported tool identity — fail closed, never substitute.
@@ -3289,7 +3137,7 @@ export class PaperForgeStatusView extends ItemView {
         "[!!] " + (a.commandId || a.id) + " failed: " + (err?.message || err),
         8000
       );
-      this._fetchStats(true);
+      void this._loadDashboardData(true);
     }
   }
 
@@ -3368,7 +3216,7 @@ export class PaperForgeStatusView extends ItemView {
           ) {
             return;
           }
-          await this._detectAndSwitch();
+          await this._detectAndSwitch(resolved);
         })();
       }, 300);
     });

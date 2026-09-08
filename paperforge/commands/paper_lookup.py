@@ -114,7 +114,34 @@ def run(args: argparse.Namespace) -> int:
     from paperforge.core.errors import ErrorCode
     from paperforge.core.result import PFError, PFResult
 
-    if getattr(args, "from_path", None):
+    # Exactly-one-of contract: positional query OR --from-path.
+    from_path = getattr(args, "from_path", None)
+    query = getattr(args, "query", None)
+    if from_path and query:
+        result = PFResult(
+            ok=False,
+            command="paper-lookup",
+            version=__version__,
+            error=PFError(
+                code=ErrorCode.VALIDATION_ERROR,
+                message="paper-lookup takes exactly one of query or --from-path",
+            ),
+        )
+        print(result.to_json())
+        return 1
+    if not from_path and not query:
+        result = PFResult(
+            ok=False,
+            command="paper-lookup",
+            version=__version__,
+            error=PFError(
+                code=ErrorCode.VALIDATION_ERROR,
+                message="paper-lookup requires a query or --from-path",
+            ),
+        )
+        print(result.to_json())
+        return 1
+    if from_path:
         try:
             vault = resolve_vault(cli_vault=getattr(args, "vault", None))
         except FileNotFoundError as exc:

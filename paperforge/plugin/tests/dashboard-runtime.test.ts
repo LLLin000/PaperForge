@@ -163,64 +163,182 @@ describe("PaperForgeStatusView OCR dispatch", () => {
   });
 });
 
-describe("PaperForgeStatusView._fetchStats production entry (#07 step 5 corrective)", () => {
-  function makeView(client: Record<string, unknown>) {
-    const view = new (PaperForgeStatusView as any)({});
-    (view as any).app = {
-      plugins: { plugins: { paperforge: { getClient: () => client } } },
+describe("PaperForgeStatusView.onOpen production lifecycle (Step 5 wiring corrective)", () => {
+  function polyfillDom() {
+    const win = globalThis.document?.defaultView;
+    const proto = win?.HTMLElement?.prototype;
+    if (!proto) return;
+    const polyfill = <T>(key: string, fn: T) => {
+      if (!(key in proto)) proto[key] = fn;
     };
-    (view as any)._metricsEl = document.createElement("div");
+    polyfill("empty", function (this: HTMLElement) {
+      this.innerHTML = "";
+    });
+    polyfill("appendText", function (this: HTMLElement, text: string) {
+      this.appendChild(this.ownerDocument.createTextNode(text));
+    });
+    polyfill(
+      "createDiv",
+      function (this: HTMLElement, opts?: Record<string, unknown>) {
+        const el = document.createElement("div");
+        if (opts?.cls) el.className = String(opts.cls);
+        if (opts?.text) el.textContent = String(opts.text);
+        this.appendChild(el);
+        return el;
+      }
+    );
+    polyfill(
+      "createEl",
+      function (
+        this: HTMLElement,
+        tag: string,
+        opts?: Record<string, unknown>
+      ) {
+        const el = document.createElement(tag);
+        if (opts?.cls) el.className = String(opts.cls);
+        if (opts?.text) el.textContent = String(opts.text);
+        if (opts?.attr) {
+          for (const [k, v] of Object.entries(
+            opts.attr as Record<string, string>
+          ))
+            el.setAttribute(k, String(v));
+        }
+        this.appendChild(el);
+        return el;
+      }
+    );
+    polyfill(
+      "createSpan",
+      function (this: HTMLElement, opts?: Record<string, unknown>) {
+        const el = document.createElement("span");
+        if (opts?.cls) el.className = String(opts.cls);
+        if (opts?.text) el.textContent = String(opts.text);
+        this.appendChild(el);
+        return el;
+      }
+    );
+  }
+
+  function makeLifecycleView(client: Record<string, unknown>, activeFile: any) {
+    polyfillDom();
+    const view = new (PaperForgeStatusView as any)({});
+    (view as any).containerEl = document.createElement("div");
+    (view as any).app = {
+      workspace: {
+        on: () => ({}),
+        off: () => undefined,
+        getActiveFile: () => activeFile,
+      },
+      vault: { adapter: { basePath: "C:/vault" } },
+      plugins: {
+        plugins: { paperforge: { getClient: () => client, settings: {} } },
+      },
+    };
     (view as any)._getClient = () => client;
     return view;
   }
 
-  it("consumes the UNWRAPPED dashboard DTO, feeds the paper index, and never shows the error card", async () => {
-    const renderStats = vi.fn();
-    const renderOcr = vi.fn();
+  it("cold open with an active paper: loads the read model FIRST, then resolves and renders the entry", async () => {
     const dashboardStats = vi.fn(async () => ({
-      stats: { papers: 3 },
+      stats: { papers: 1 },
       permissions: { can_sync: true },
       items: [{ zotero_key: "K1", title: "Paper One", domain: "cardio" }],
     }));
-    const view = makeView({ dashboardStats });
-    view._renderStats = renderStats;
-    view._renderOcr = renderOcr;
-    view._versionBadge = null;
+    const resolvePaperContext = vi.fn(async () => ({
+      kind: "paper",
+      zotero_key: "K1",
+      entry: null,
+    }));
+    const backendVersion = vi.fn(async () => "1.5.15");
+    const view = makeLifecycleView(
+      { dashboardStats, resolvePaperContext, backendVersion },
+      {
+        path: "03_Resources/Literature/Cardio/ABCD1234/ABCD1234.md",
+        extension: "md",
+        basename: "ABCD1234",
+      }
+    );
 
-    await view._fetchStats(false);
+    await view.onOpen();
+    // onOpen fires bootstrap without awaiting it — drain the chain
+    await vi.waitFor(() => {
+      expect(dashboardStats).toHaveBeenCalledOnce();
+      expect(view._currentPaperEntry && view._currentPaperEntry.title).toBe(
+        "Paper One"
+      );
+    });
 
-    expect(view._cachedStats.total_papers).toBe(3);
-    expect(view._dashboardPermissions).toEqual({ can_sync: true });
-    expect(renderStats).toHaveBeenCalledOnce();
-    expect(renderOcr).toHaveBeenCalledOnce();
-    // canonical item list comes from the same authority payload — the
-    // paper/collection index is a client DTO, not a file read
+    // read model actually loaded into the cache
     expect(view._getCachedIndex()).toEqual([
       { zotero_key: "K1", title: "Paper One", domain: "cardio" },
     ]);
-    // no error card on the success path
-    expect(
-      view._metricsEl.querySelector(".paperforge-status-error")
-    ).toBeNull();
-    // the direct canonical-file reader is gone from the view
-    expect(view._loadIndex).toBeUndefined();
+    expect(view._dashboardPermissions).toEqual({ can_sync: true });
+    // mode header shows the entry title, never "Not found in index"
+    expect(view.containerEl.textContent).not.toContain("Not found in index");
+    expect(view.containerEl.textContent).toContain("Paper One");
+    await view.onClose();
   });
 
-  it("failure keeps the error card and never invents items", async () => {
+  it("cold open with no active file: global mode renders from the loaded read model (no empty-index, export health from can_sync)", async () => {
+    const dashboardStats = vi.fn(async () => ({
+      stats: { papers: 3 },
+      permissions: { can_sync: true },
+      items: [
+        { zotero_key: "K1", title: "Paper One", domain: "cardio" },
+        { zotero_key: "K2", title: "Paper Two", domain: "derm" },
+      ],
+    }));
+    const resolvePaperContext = vi.fn();
+    const credentialAvailable = vi.fn(async () => false);
+    const backendVersion = vi.fn(async () => "1.5.15");
+    const view = makeLifecycleView(
+      {
+        dashboardStats,
+        resolvePaperContext,
+        backendVersion,
+        credentialAvailable,
+      },
+      null
+    );
+
+    await view.onOpen();
+    await vi.waitFor(() => {
+      expect(dashboardStats).toHaveBeenCalledOnce();
+      expect(view._currentMode).toBe("global");
+    });
+    expect(resolvePaperContext).not.toHaveBeenCalled();
+    expect(view._getCachedIndex()).toHaveLength(2);
+    expect(view._dashboardPermissions).toEqual({ can_sync: true });
+    // can_sync=true must never render as export missing
+    expect(view.containerEl.textContent).not.toContain("No exports found");
+    expect(view.containerEl.textContent).toContain("Exports detected");
+    await view.onClose();
+  });
+
+  it("backend failure on cold open: fail-closed message, no invented items", async () => {
     const dashboardStats = vi.fn(async () => {
       throw new Error("backend down");
     });
-    const view = makeView({ dashboardStats });
-    view._renderStats = vi.fn();
-    view._renderOcr = vi.fn();
-    view._versionBadge = null;
+    const backendVersion = vi.fn(async () => "1.5.15");
+    const view = makeLifecycleView(
+      {
+        dashboardStats,
+        backendVersion,
+        resolvePaperContext: vi.fn(),
+        credentialAvailable: vi.fn(async () => false),
+      },
+      null
+    );
 
-    await view._fetchStats(false);
-
-    expect(view._cachedStats).toBeNull();
+    await view.onOpen();
+    await vi.waitFor(() => {
+      expect(dashboardStats).toHaveBeenCalledOnce();
+    });
     expect(view._getCachedIndex()).toEqual([]);
-    expect(
-      view._metricsEl.querySelector(".paperforge-status-error")
-    ).not.toBeNull();
+    expect(view._cachedStats).toBeNull();
+    expect(view.containerEl.textContent).toContain(
+      "Cannot reach PaperForge CLI"
+    );
+    await view.onClose();
   });
 });
