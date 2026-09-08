@@ -116,6 +116,32 @@ export interface ProbeAllEnvelope {
   modules: Record<string, ProbeEnvelope>;
 }
 
+export interface DashboardStatsData {
+  stats?: Record<string, unknown>;
+  permissions?: Record<string, boolean>;
+  items?: PaperIndexItem[];
+  [key: string]: unknown;
+}
+
+export interface PaperIndexItem {
+  zotero_key?: string;
+  title?: string;
+  domain?: string;
+  note_path?: string;
+  pdf_path?: string;
+  ocr_status?: string;
+  deep_reading_status?: string;
+  [key: string]: unknown;
+}
+
+/** Canonical paper identity, resolved by Python from the active path. */
+export interface PaperIdentity {
+  kind: "paper" | "domain" | "unknown";
+  zotero_key?: string;
+  domain?: string;
+  entry?: PaperIndexItem | null;
+}
+
 export interface MemoryDetailData {
   paper_count_db?: number;
   fresh?: boolean;
@@ -607,11 +633,26 @@ export class PaperForgeClient {
     });
   }
 
-  /** Dashboard stats read (`dashboard --json`, PFResult envelope). The
-   * legacy index-file snapshot reader and its `status --json` second spawn
-   * are retired (#161/R) — this is the single stats authority. */
-  async dashboardStats(): Promise<Record<string, unknown>> {
-    return this._executePfResult(["dashboard", "--json"], { timeoutMs: 30000 });
+  /** Dashboard stats DTO — the canonical index item list travels INSIDE
+   * this payload (Python is the only reader of its own canonical index);
+   * the UI never inspects canonical files. */
+  async dashboardStats(): Promise<DashboardStatsData> {
+    return this._executePfResult<DashboardStatsData>(["dashboard", "--json"], {
+      timeoutMs: 30000,
+    });
+  }
+
+  /** Canonical paper identity resolver (`paper-lookup --from-path`). The
+   * plugin passes ONLY the host fact (the active vault-relative path);
+   * frontmatter, the canonical index, and workspace-key derivation are
+   * Python authority — never inferred from files client-side. */
+  async resolvePaperContext(
+    vaultRelativePath: string
+  ): Promise<PaperIdentity | null> {
+    const data = await this._executePfResult<{
+      identity?: PaperIdentity | null;
+    }>(["paper-lookup", "--from-path", vaultRelativePath, "--json"]);
+    return data?.identity ?? null;
   }
 
   /** Backend version (`paperforge --version`). argparse fires the version

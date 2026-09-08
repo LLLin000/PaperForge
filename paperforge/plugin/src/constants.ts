@@ -167,26 +167,6 @@ export interface WorkflowState {
   [key: string]: unknown;
 }
 
-export function overlayEntryWorkflowState(app: any, entry: any): WorkflowState {
-  if (!entry || !entry.note_path) return entry;
-  const noteFile = app.vault.getAbstractFileByPath(entry.note_path);
-  if (!noteFile) return entry;
-  const cache = app.metadataCache.getFileCache(noteFile);
-  const fm = cache && cache.frontmatter;
-  if (!fm) return entry;
-  const merged = { ...entry };
-  for (const key of [
-    "do_ocr",
-    "analyze",
-    "ocr_status",
-    "ocr_redo",
-    "deep_reading_status",
-  ]) {
-    if (Object.prototype.hasOwnProperty.call(fm, key)) merged[key] = fm[key];
-  }
-  return merged;
-}
-
 export function patchEntryWorkflowState(
   entry: any,
   patch: Partial<WorkflowState>

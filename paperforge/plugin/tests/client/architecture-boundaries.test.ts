@@ -86,6 +86,9 @@ const LEGACY_RATCHET: Record<string, number> = {
 
 /** Files that must never exist again. */
 const TOMBSTONES = [
+  // Ticket 07 step 5: filename→zotero-key inference deleted — canonical
+  // identity is Python authority (paper-lookup --from-path).
+  "utils/zotero-path.ts",
   "services/ocr-maintenance-ui.ts",
   "services/config-client.ts",
   // Stage 2 step 3: the legacy OCR child-process owner — run/redo/rebuild
