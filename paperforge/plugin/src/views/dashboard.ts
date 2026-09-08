@@ -15,7 +15,6 @@ import {
   ActionDef,
   PaperForgeSettings,
   PF_ICON_ID,
-  overlayEntryWorkflowState,
   patchEntryWorkflowState,
   toolArgvFor,
 } from "../constants";
@@ -31,7 +30,6 @@ import {
 import { resolveRuntimeCommand } from "../services/managed-runtime";
 import { stripCredentialEnv } from "../services/secret-storage";
 import { getDisclosureState, toggleDisclosureState } from "../utils/disclosure";
-import { extractZoteroKeyFromPath } from "../utils/zotero-path";
 import { checkOrphanState } from "./modals";
 import { orchestrateFromSync } from "../services/next-actions-bridge";
 import {
@@ -151,7 +149,7 @@ export class PaperForgeStatusView extends ItemView {
     this._leafChangeTimer = null;
     this._setupEventSubscriptions();
     this._fetchVersion();
-    this._detectAndSwitch();
+    void this._detectAndSwitch();
 
     // Global "/" keyboard shortcut to focus search input
     this._onKeyDown = (e: KeyboardEvent) => {
@@ -225,7 +223,7 @@ export class PaperForgeStatusView extends ItemView {
     refreshBtn.innerHTML = "\u21BB";
     refreshBtn.addEventListener("click", () => {
       this._invalidateIndex();
-      this._detectAndSwitch();
+      void this._detectAndSwitch();
     });
     this._messageEl = root.createEl("div", {
       cls: "paperforge-message",
@@ -362,7 +360,8 @@ export class PaperForgeStatusView extends ItemView {
     const entry =
       this._getCachedIndex().find((item: any) => item.zotero_key === key) ||
       null;
-    return overlayEntryWorkflowState(this.app, entry);
+    // No frontmatter overlay: the cached entry is already the Python DTO.
+    return entry;
   }
 
   _patchCachedEntry(key: string, patch: any) {
@@ -724,61 +723,45 @@ export class PaperForgeStatusView extends ItemView {
   }
 
   /* ── Extract zotero_key from workspace directory name ── */
-  _extractZoteroKeyFromPath(filePath: string): string | null {
-    return extractZoteroKeyFromPath(filePath);
-  }
-
-  /* ── Pure Mode Resolution (D-07, Phase 32) ── */
-  _resolveModeForFile(file: any): {
+  /* ── Pure Mode Resolution (D-07, Phase 32) ──
+   * Host facts: extension + path only. Canonical identity (frontmatter,
+   * canonical index, workspace keys) is Python authority via
+   * paper-lookup --from-path — never inferred from files client-side. */
+  async _resolveModeForFile(file: any): Promise<{
     mode: "global" | "paper" | "collection";
     filePath: string | null;
     key: string | null;
     domain: string | null;
-  } {
+  }> {
     if (!file)
       return { mode: "global", filePath: null, key: null, domain: null };
-    const ext = file.extension;
-    const filePath = file.path;
-    if (ext === "base") {
+    const filePath = file.path as string;
+    const identity = await this._getClient()
+      ?.resolvePaperContext(filePath)
+      .catch(() => null);
+    if (identity && identity.kind === "paper" && identity.zotero_key) {
+      return {
+        mode: "paper",
+        filePath,
+        key: identity.zotero_key,
+        domain: null,
+      };
+    }
+    if (identity && identity.kind === "domain" && identity.domain) {
       return {
         mode: "collection",
         filePath,
         key: null,
-        domain: file.basename.trim(),
+        domain: identity.domain,
       };
     }
-    if (ext === "md") {
-      const cache = this.app.metadataCache.getFileCache(file);
-      const fmKey = cache && cache.frontmatter && cache.frontmatter.zotero_key;
-      if (fmKey) {
-        return { mode: "paper", filePath, key: fmKey, domain: null };
-      }
-    }
-    if (ext === "pdf") {
-      const items = this._getCachedIndex();
-      for (const item of items) {
-        const pathMatch = (item.pdf_path || "").match(/\[\[([^\]]+)\]\]/);
-        const targetPath = pathMatch ? pathMatch[1] : item.pdf_path;
-        if (targetPath === filePath) {
-          return {
-            mode: "paper",
-            filePath,
-            key: item.zotero_key,
-            domain: null,
-          };
-        }
-      }
-    }
-    const wsKey = this._extractZoteroKeyFromPath(filePath);
-    if (wsKey) {
-      return { mode: "paper", filePath, key: wsKey, domain: null };
-    }
+    // Fail-closed: unresolved identity -> global mode, no filename inference.
     return { mode: "global", filePath, key: null, domain: null };
   }
 
   /* ── Context Detection & Mode Switch (D-01, D-02, D-03, D-04, D-10) ── */
-  _detectAndSwitch() {
-    const resolved = this._resolveModeForFile(
+  async _detectAndSwitch() {
+    const resolved = await this._resolveModeForFile(
       this.app.workspace.getActiveFile()
     );
     this._currentDomain = resolved.domain || null;
@@ -885,22 +868,10 @@ export class PaperForgeStatusView extends ItemView {
         ? indexItems.length + " entries"
         : "Index not loaded — run Sync Library"
     );
-    const systemDir = plugin?.settings?.system_dir || "System";
-    const vp = (this.app.vault.adapter as any).basePath as string;
-    let exportOk = false,
-      exportDetail = "No exports found";
-    try {
-      const exportsDir = path.join(vp, systemDir, "PaperForge", "exports");
-      if (fs.existsSync(exportsDir)) {
-        const files = fs
-          .readdirSync(exportsDir)
-          .filter((f: string) => f.endsWith(".json"));
-        exportOk = files.length > 0;
-        exportDetail = exportOk
-          ? files.length + " export(s)"
-          : "No JSON exports";
-      }
-    } catch (_) {}
+    // Export health is Python's check_permissions().can_sync — the
+    // host-local filesystem scan (Semantic Fact) is retired (#TB-2).
+    const exportOk = this._dashboardPermissions.can_sync === true;
+    const exportDetail = exportOk ? "Exports detected" : "No exports found";
     this._renderSystemStatusRow(
       statusGrid,
       "Zotero Export",
@@ -3385,31 +3356,29 @@ export class PaperForgeStatusView extends ItemView {
     const leafHandler = this.app.workspace.on("active-leaf-change", () => {
       if (this._leafChangeTimer) clearTimeout(this._leafChangeTimer);
       this._leafChangeTimer = setTimeout(() => {
-        const resolved = this._resolveModeForFile(
-          this.app.workspace.getActiveFile()
-        );
-        const nextMode = resolved.mode;
-        const nextFilePath = resolved.filePath;
-        if (
-          this._currentMode === nextMode &&
-          this._currentFilePath === nextFilePath
-        ) {
-          return;
-        }
-        this._detectAndSwitch();
+        void (async () => {
+          const resolved = await this._resolveModeForFile(
+            this.app.workspace.getActiveFile()
+          );
+          const nextMode = resolved.mode;
+          const nextFilePath = resolved.filePath;
+          if (
+            this._currentMode === nextMode &&
+            this._currentFilePath === nextFilePath
+          ) {
+            return;
+          }
+          await this._detectAndSwitch();
+        })();
       }, 300);
     });
     this._modeSubscribers.push({
       event: "active-leaf-change",
       ref: leafHandler,
     });
-    const modifyHandler = this.app.vault.on("modify", (file: any) => {
-      if (file && file.path && file.path.endsWith("formal-library.json")) {
-        this._invalidateIndex();
-        this._refreshCurrentMode();
-      }
-    });
-    this._modeSubscribers.push({ event: "modify", ref: modifyHandler });
+    // No filename watcher: formal-library.json is Python's file — mutations
+    // reach the UI via explicit refresh / sync / client invalidation,
+    // never via host-local filename inference (Ticket 07 step 5).
   }
 
   /* ── Static: open or reveal view ── */

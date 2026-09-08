@@ -573,9 +573,19 @@ def build_parser() -> argparse.ArgumentParser:
 
     # Layer 4 gateway commands
     p_paper_lookup = sub.add_parser("paper-lookup", help="Locate a specific paper through the Layer 4 gateway")
-    p_paper_lookup.add_argument("query", help="Paper identifier, title fragment, author+year, DOI, or alias")
+    p_paper_lookup.add_argument(
+        "query",
+        nargs="?",
+        default=None,
+        help="Paper identifier, title fragment, author+year, DOI, or alias",
+    )
     p_paper_lookup.add_argument("--json", action="store_true", help="Output JSON")
     p_paper_lookup.add_argument("--limit", type=int, default=5, help="Max results (default 5)")
+    p_paper_lookup.add_argument(
+        "--from-path",
+        metavar="PATH",
+        help="Resolve a vault-relative note/PDF/workspace path or Base basename to its canonical paper identity",
+    )
 
     p_content_discovery = sub.add_parser("content-discovery", help="Discover content within vault through the Layer 4 gateway")
     p_content_discovery.add_argument("query", help="Topic, domain, or research question for content discovery")

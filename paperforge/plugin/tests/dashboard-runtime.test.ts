@@ -189,12 +189,6 @@ describe("PaperForgeStatusView._fetchStats production entry (#07 step 5 correcti
 
     await view._fetchStats(false);
 
-    console.log(
-      "DBG2",
-      JSON.stringify(view._cachedStats),
-      "srccount",
-      (globalThis as any).__srccount
-    );
     expect(view._cachedStats.total_papers).toBe(3);
     expect(view._dashboardPermissions).toEqual({ can_sync: true });
     expect(renderStats).toHaveBeenCalledOnce();
