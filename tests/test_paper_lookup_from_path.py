@@ -11,7 +11,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from paperforge.commands.paper_lookup import resolve_paper_context
+from paperforge.commands.paper_lookup import resolve_paper_context, run
 from paperforge.worker.asset_index import get_index_path
 from tests.conftest import canonical_test_config
 
@@ -125,3 +125,42 @@ def test_unknown_path_stays_unknown(tmp_path: Path) -> None:
     _seed_vault(vault)
     identity = resolve_paper_context(vault, "somewhere/else/file.md")
     assert identity["kind"] == "unknown"
+
+
+def _run_capture(capsys, argv_ns) -> int:
+    return run(argv_ns)
+
+
+def test_query_and_from_path_are_mutually_exclusive(tmp_path, capsys) -> None:
+    import argparse
+
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    _seed_vault(vault)
+    args = argparse.Namespace(
+        vault_path=vault,
+        vault=str(vault),
+        query="some query",
+        from_path="03_Resources/Literature/x.md",
+        json=True,
+        limit=5,
+    )
+    rc = _run_capture(capsys, args)
+    assert rc == 1
+    out = capsys.readouterr().out
+    assert "exactly one" in out
+
+
+def test_neither_query_nor_from_path_fails_closed(tmp_path, capsys) -> None:
+    import argparse
+
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    _seed_vault(vault)
+    args = argparse.Namespace(
+        vault_path=vault, vault=str(vault), query=None, from_path=None, json=True, limit=5
+    )
+    rc = _run_capture(capsys, args)
+    assert rc == 1
+    out = capsys.readouterr().out
+    assert "requires a query or --from-path" in out
