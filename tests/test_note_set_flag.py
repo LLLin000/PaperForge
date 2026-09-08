@@ -144,3 +144,54 @@ def test_wikilinked_note_path_resolves(tmp_path: Path) -> None:
     assert rc == 0, err
     fm = read_frontmatter_dict(note.read_text(encoding="utf-8"))
     assert fm["do_ocr"] is True
+
+
+def test_body_line_with_same_key_is_never_touched(tmp_path: Path) -> None:
+    """P1-2 regression: the setter must operate strictly on the
+    frontmatter segment — a prose line like ``analyze: ...`` in the body
+    must stay byte-identical, and the real frontmatter field must be
+    created (authority success == durable frontmatter state)."""
+    for field in ("do_ocr", "analyze"):
+        vault = tmp_path / f"v-{field}"
+        vault.mkdir()
+        body_line = f"{field}: BODY MUST STAY"
+        note = _seed(
+            vault,
+            f"---\nzotero_key: ABCD1234\ntitle: X\n---\n\n实验参数：\n\n{body_line}\n",
+        )
+        rc, payload, err = _run(
+            vault,
+            "set-flag",
+            "--key",
+            "ABCD1234",
+            "--field",
+            field,
+            "--value",
+            "true",
+            "--json",
+        )
+        assert rc == 0, err
+        assert payload["data"]["changed"] is True
+        text = note.read_text(encoding="utf-8")
+        fm = read_frontmatter_dict(text)
+        assert fm[field] is True, text
+        # the body line survives byte-identical, after the closing fence
+        closing = text.index("---", 4)
+        assert body_line in text[closing + 3:]
+        assert body_line not in text[:closing]
+        assert text[closing + 3 :].count(body_line) == 1
+
+
+def test_note_without_frontmatter_fails_closed(tmp_path: Path) -> None:
+    vault = tmp_path / "v"
+    vault.mkdir()
+    note = _seed(vault, "no frontmatter here\n")
+    # index points at a note that lost its frontmatter — refuse, never
+    # silently fabricate a frontmatter block
+    rc, payload, _ = _run(
+        vault, "set-flag", "--key", "ABCD1234", "--field", "do_ocr", "--value", "true", "--json"
+    )
+    assert rc == 1
+    assert payload["ok"] is False
+    assert "no frontmatter" in payload["error"]["message"]
+    assert note.read_text(encoding="utf-8") == "no frontmatter here\n"

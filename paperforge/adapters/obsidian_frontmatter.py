@@ -317,25 +317,29 @@ def _add_missing_frontmatter_fields(existing_content: str, new_fields: dict[str,
 def set_frontmatter_flag(content: str, key: str, value: bool) -> str:
     """Set a boolean frontmatter field to an UNQUOTED YAML bool.
 
+    Operates STRICTLY on the frontmatter segment: a body line such as
+    ``analyze: ...`` in prose must never be touched, and a missing field
+    is appended INSIDE the frontmatter block — never via a full-text
+    regex hit (data-integrity: authority success must equal durable
+    frontmatter state).
+
     The index builder derives ``do_ocr``/``analyze`` with
     ``isinstance(v, bool)`` — a quoted ``'true'`` string would silently
     fall back to legacy derivation, so booleans must stay bare.
     """
     if not content.startswith("---"):
         return content
+    parts = content.split("---", 2)
+    if len(parts) < 3:
+        return content
+    frontmatter = parts[1]
+    body = parts[2]
     replacement = f"{key}: {'true' if value else 'false'}"
     pattern = "^" + re.escape(key) + "\\s*:.*$"
-    new_content, count = re.subn(
-        pattern, replacement, content, flags=re.MULTILINE, count=1
-    )
+    new_fm, count = re.subn(pattern, replacement, frontmatter, flags=re.MULTILINE, count=1)
     if count == 0:
-        parts = content.split("---", 2)
-        if len(parts) < 3:
-            return content
-        frontmatter = parts[1].rstrip("\n")
-        body = parts[2]
-        return f"---{frontmatter}\n{replacement}\n---{body}"
-    return new_content
+        new_fm = frontmatter.rstrip("\n") + "\n" + replacement + "\n"
+    return f"---{new_fm}---{body}"
 
 
 def update_frontmatter_field(content: str, key: str, value: str) -> str:

@@ -235,6 +235,33 @@ describe("Note workflow flags are Python authority (note set-flag)", () => {
     expect(out.changed).toBe(false);
   });
 
+  it("advances the mutation epoch in a finally (success AND rejection)", async () => {
+    let fail = true;
+    transport.executeHandler = () => {
+      if (fail)
+        return JSON.stringify({
+          ok: false,
+          data: null,
+          error: { code: "VALIDATION_ERROR", message: "unknown paper key" },
+        });
+      return JSON.stringify({
+        ok: true,
+        data: { intent: "note-set-flag", changed: true },
+      });
+    };
+    const before = client.getEpoch();
+    await expect(client.setNoteFlag("K1", "do_ocr", true)).rejects.toThrow(
+      "unknown paper key"
+    );
+    // a settled failed mutation still closes the generation boundary —
+    // stale in-flight reads must not resurrect across it
+    expect(client.getEpoch()).toBe(before + 1);
+    fail = false;
+    const beforeOk = client.getEpoch();
+    await client.setNoteFlag("K1", "do_ocr", true);
+    expect(client.getEpoch()).toBe(beforeOk + 1);
+  });
+
   it("propagates backend rejection (unknown field fails closed upstream)", async () => {
     transport.executeHandler = () =>
       // real PFResult serialization always carries "data" (null on failure)
