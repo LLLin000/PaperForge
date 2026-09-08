@@ -341,4 +341,102 @@ describe("PaperForgeStatusView.onOpen production lifecycle (Step 5 wiring correc
     );
     await view.onClose();
   });
+
+  it("RECOVERY: a failed initial load is not sticky — quiet Refresh re-acquires and clears the stale failure message", async () => {
+    let fail = true;
+    const dashboardStats = vi.fn(async () => {
+      if (fail) throw new Error("backend down");
+      return {
+        stats: { papers: 1 },
+        permissions: { can_sync: true },
+        items: [{ zotero_key: "K1", title: "Paper One", domain: "cardio" }],
+      };
+    });
+    const credentialAvailable = vi.fn(async () => false);
+    const backendVersion = vi.fn(async () => "1.5.15");
+    const view = makeLifecycleView(
+      {
+        dashboardStats,
+        backendVersion,
+        credentialAvailable,
+        resolvePaperContext: vi.fn(),
+      },
+      null
+    );
+
+    await view.onOpen();
+    await vi.waitFor(() => {
+      expect(dashboardStats).toHaveBeenCalledOnce();
+    });
+    expect(view._cachedStats).toBeNull();
+    expect(view.containerEl.textContent).toContain(
+      "Cannot reach PaperForge CLI"
+    );
+
+    // backend recovers; the top Refresh button is the natural recovery action
+    fail = false;
+    await view._invalidateIndex();
+    await view._detectAndSwitch();
+
+    // the quiet path RE-ACQUIRED instead of no-op'ing on the null cache
+    expect(dashboardStats).toHaveBeenCalledTimes(2);
+    expect(view._cachedStats).not.toBeNull();
+    expect(view._getCachedIndex()).toHaveLength(1);
+    expect(view._dashboardPermissions).toEqual({ can_sync: true });
+    // the stale failure message no longer hangs in the message bar
+    expect(view.containerEl.textContent).not.toContain(
+      "Cannot reach PaperForge CLI"
+    );
+    await view.onClose();
+  });
+
+  it("RECOVERY: Doctor success re-acquires the read model and re-renders the current mode from the fresh payload", async () => {
+    let loaded = false;
+    const dashboardStats = vi.fn(async () => {
+      if (!loaded) throw new Error("backend down");
+      return {
+        stats: { papers: 1 },
+        permissions: { can_sync: true },
+        items: [{ zotero_key: "K1", title: "Paper One", domain: "cardio" }],
+      };
+    });
+    const credentialAvailable = vi.fn(async () => false);
+    const backendVersion = vi.fn(async () => "1.5.15");
+    const doctor = vi.fn(async () => undefined);
+    const view = makeLifecycleView(
+      {
+        dashboardStats,
+        backendVersion,
+        credentialAvailable,
+        doctor,
+        resolvePaperContext: vi.fn(),
+      },
+      null
+    );
+
+    await view.onOpen();
+    await vi.waitFor(() => {
+      expect(dashboardStats).toHaveBeenCalledOnce();
+    });
+    expect(view._getCachedIndex()).toEqual([]);
+
+    // user fixes the runtime, then runs Doctor
+    loaded = true;
+    const card = document.createElement("div");
+    await view._runAction(
+      { id: "paperforge-doctor", okMsg: "Doctor complete" },
+      card
+    );
+
+    expect(doctor).toHaveBeenCalledOnce();
+    // fresh acquisition AFTER the initial failure (the old quiet guard
+    // would have skipped it) and the mode re-rendered from the payload
+    expect(dashboardStats).toHaveBeenCalledTimes(2);
+    expect(view._getCachedIndex()).toHaveLength(1);
+    // the current (global) mode re-rendered from the FRESH payload:
+    // counts and permissions come from the recovered acquisition
+    expect(view.containerEl.textContent).toContain("1 papers");
+    expect(view.containerEl.textContent).toContain("Exports detected");
+    await view.onClose();
+  });
 });

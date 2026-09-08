@@ -249,9 +249,10 @@ export class PaperForgeStatusView extends ItemView {
    * _cachedStats/_cachedItems/_dashboardPermissions; the current mode
    * re-renders from the loaded read model. */
   async _loadDashboardData(quiet: boolean): Promise<void> {
-    // Quiet load with no prior read model = the onOpen race guard from the
-    // legacy fetch path (avoid double initial fetch).
-    if (quiet && !this._cachedStats) return;
+    // quiet means "fetch, but no presentation side effects" — NEVER
+    // "forbid the fetch when no old data exists": after a failed initial
+    // load (_cachedStats === null) the quiet Refresh/Doctor/Repair path is
+    // the recovery route and must still acquire (Step 5 round 3).
     try {
       // Ticket 07 step 5 corrective: `dashboardStats()` resolves to the
       // UNWRAPPED PFResult data (the client owns the envelope; ok:false
@@ -263,10 +264,14 @@ export class PaperForgeStatusView extends ItemView {
       this._cachedStats = this._normalizeDashboardData(data);
       this._cachedItems = Array.isArray(data.items) ? data.items : [];
       this._dashboardPermissions = data.permissions ?? {};
-      // Mode content rendered before the payload landed (empty list /
-      // empty permissions) — refresh it from the loaded read model.
-      if (!quiet && this._currentMode) {
-        await this._switchMode(this._currentMode, this._currentFilePath);
+      // A recovered acquisition must not leave the old backend-failure
+      // message hanging in the message bar.
+      if (
+        this._messageEl &&
+        this._messageEl.textContent &&
+        this._messageEl.textContent.startsWith("Cannot reach PaperForge CLI")
+      ) {
+        this._showMessage("", "idle");
       }
     } catch (_err) {
       if (!quiet && !this._cachedStats) {
@@ -2082,9 +2087,8 @@ export class PaperForgeStatusView extends ItemView {
     if (!this._currentMode || !this._contentEl) return;
     this._contentEl.empty();
     this._contentEl.addClass("switching");
-    // Render from the FRESH read model: the quiet loader never triggers
-    // _switchMode itself, so the refresh must await the payload.
-    await this._invalidateIndex();
+    // Render-only: acquisition lives in _invalidateIndex/_loadDashboardData,
+    // so each caller fetches exactly once and renders the fresh payload.
     this._currentPaperEntry = this._currentPaperKey
       ? this._findEntry(this._currentPaperKey)
       : null;
@@ -3054,6 +3058,7 @@ export class PaperForgeStatusView extends ItemView {
       this._cachedStats = null;
       try {
         await this._loadDashboardData(false);
+        await this._refreshCurrentMode();
       } catch (e) {
         console.log("[PF] dashboard load error:", e);
       }
@@ -3109,14 +3114,18 @@ export class PaperForgeStatusView extends ItemView {
         await this._getClient()!.doctor();
         settle("[OK] " + (a.okMsg || "Doctor complete"), "ok");
         new Notice("[OK] " + (a.okMsg || "Doctor complete"));
-        void this._loadDashboardData(true);
+        // Recovery path: fresh read model + re-render (works even when the
+        // initial load failed — _invalidateIndex no longer skips a null cache).
+        await this._invalidateIndex();
+        await this._refreshCurrentMode();
         return;
       }
       if (a.id === "paperforge-repair") {
         await this._getClient()!.repair();
         settle("[OK] " + (a.okMsg || "Repair complete"), "ok");
         new Notice("[OK] " + (a.okMsg || "Repair complete"));
-        void this._loadDashboardData(true);
+        await this._invalidateIndex();
+        await this._refreshCurrentMode();
         return;
       }
       // Unknown/unsupported tool identity — fail closed, never substitute.
