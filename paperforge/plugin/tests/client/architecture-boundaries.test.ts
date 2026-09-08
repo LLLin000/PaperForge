@@ -223,19 +223,30 @@ export function probe(content: string): Probe {
       }
     }
     if (ts.isCallExpression(node)) {
+      // Cast chains never launder provenance: `(execFile as any)(...)`,
+      // `<any>cp.spawn(...)`, `cp!.spawn(...)` all resolve through parens,
+      // as-expressions, and non-null assertions to the same binding.
+      let callee = node.expression;
+      for (;;) {
+        if (ts.isParenthesizedExpression(callee)) callee = callee.expression;
+        else if (ts.isAsExpression(callee)) callee = callee.expression;
+        else if (ts.isTypeAssertionExpression(callee))
+          callee = callee.expression;
+        else if (ts.isNonNullExpression(callee)) callee = callee.expression;
+        else break;
+      }
       // require("child_process").spawn(...) — member call straight off the require
       if (
-        ts.isPropertyAccessExpression(node.expression) &&
-        isChildProcessRequire(node.expression.expression)
+        ts.isPropertyAccessExpression(callee) &&
+        isChildProcessRequire(callee.expression)
       ) {
         importsChildProcess = true;
         callCount += 1;
       } else {
-        const expr = node.expression;
-        if (ts.isIdentifier(expr)) {
-          if (bindings.get(expr.text) === "named") callCount += 1;
-        } else if (ts.isPropertyAccessExpression(expr)) {
-          const obj = expr.expression;
+        if (ts.isIdentifier(callee)) {
+          if (bindings.get(callee.text) === "named") callCount += 1;
+        } else if (ts.isPropertyAccessExpression(callee)) {
+          const obj = callee.expression;
           if (ts.isIdentifier(obj) && bindings.get(obj.text) === "namespace") {
             callCount += 1;
           }
@@ -316,6 +327,30 @@ describe("architecture boundary gate (Ticket 07)", () => {
           `const { fork: runFork } = require("child_process");\nrunFork("x");`
         )
       ).toEqual({ importsChildProcess: true, callCount: 1 });
+    });
+
+    it("counts cast-call forms (step 6: the undercount that hid _fetchStats)", () => {
+      expect(
+        probe(
+          `import { execFile } from "child_process";\n(execFile as any)("x");`
+        )
+      ).toEqual({ importsChildProcess: true, callCount: 1 });
+      // angle-bracket form parses as TypeAssertionExpression, `as` form as
+      // AsExpression — both must unwrap
+      expect(
+        probe(`import * as cp from "child_process";\n(<any>cp.spawn)("x");`)
+      ).toEqual({ importsChildProcess: true, callCount: 1 });
+      expect(
+        probe(`import * as cp from "child_process";\n(cp.spawn as any)("x");`)
+      ).toEqual({ importsChildProcess: true, callCount: 1 });
+      expect(
+        probe(`import { spawn } from "child_process";\nspawn!("x");`)
+      ).toEqual({ importsChildProcess: true, callCount: 1 });
+      // casts on UNBOUND callees stay uncounted — no provenance, no authority
+      expect(probe(`(someUnknown as any)("x");`)).toEqual({
+        importsChildProcess: false,
+        callCount: 0,
+      });
     });
 
     it("counts member calls straight off require()", () => {
