@@ -642,6 +642,29 @@ export class PaperForgeClient {
     });
   }
 
+  /** Python-authoritative note workflow flag mutation
+   * (`note set-flag`). The dashboard workflow toggles (do_ocr/analyze)
+   * must NEVER write Obsidian frontmatter client-side — the note is
+   * Python's own literature note; the client passes key/field/value
+   * only. Unknown fields fail closed backend-side. */
+  async setNoteFlag(
+    key: string,
+    field: "do_ocr" | "analyze",
+    value: boolean
+  ): Promise<{ changed: boolean }> {
+    return this._executePfResult<{ changed?: boolean }>([
+      "note",
+      "set-flag",
+      "--key",
+      key,
+      "--field",
+      field,
+      "--value",
+      value ? "true" : "false",
+      "--json",
+    ]).then((data) => ({ changed: data?.changed === true }));
+  }
+
   /** Canonical paper identity resolver (`paper-lookup --from-path`). The
    * plugin passes ONLY the host fact (the active vault-relative path);
    * frontmatter, the canonical index, and workspace-key derivation are

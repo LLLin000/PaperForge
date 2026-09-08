@@ -572,6 +572,23 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     # Layer 4 gateway commands
+    p_note = sub.add_parser(
+        "note",
+        help="Python-authoritative note frontmatter mutation (workflow flags)",
+    )
+    p_note_sub = p_note.add_subparsers(dest="note_command", required=True)
+    p_note_set = p_note_sub.add_parser(
+        "set-flag",
+        help="Set a boolean workflow flag (do_ocr/analyze) on the canonical note frontmatter",
+    )
+    p_note_set.add_argument("--key", required=True, metavar="KEY", help="Canonical zotero_key of the paper")
+    # No argparse choices: the fail-closed field allowlist lives in the
+    # command (own VALIDATION_ERROR), not the parser.
+    p_note_set.add_argument("--field", required=True, metavar="FIELD", help="Workflow flag to set (do_ocr | analyze)")
+    p_note_set.add_argument(
+        "--value", required=True, choices=["true", "false"], help="Boolean value for the flag"
+    )
+    p_note_set.add_argument("--json", action="store_true", help="Output JSON")
     p_paper_lookup = sub.add_parser("paper-lookup", help="Locate a specific paper through the Layer 4 gateway")
     p_paper_lookup.add_argument(
         "query",
@@ -967,6 +984,10 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "skill":
         return _run_skill(args)
 
+    if args.command == "note":
+        from paperforge.commands.note import run as _note_run
+
+        return _note_run(args)
     if args.command == "paper-lookup":
         from paperforge.commands import paper_lookup
 
