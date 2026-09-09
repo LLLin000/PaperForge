@@ -725,15 +725,23 @@ export class PaperForgeClient {
   async versionsRestore(
     key: string,
     label: string
-  ): Promise<{ target_path: string; label: string }> {
+  ): Promise<{
+    target_path: string;
+    label: string;
+    provenance_persisted: boolean;
+  }> {
     try {
       const data = await this._executePfResult<{
         target_path?: string;
         label?: string;
+        provenance_persisted?: boolean;
       }>(["versions", "restore", "--key", key, "--label", label, "--json"]);
       return {
         target_path: data?.target_path ?? "",
         label: data?.label ?? label,
+        // restored BYTES are authoritative; provenance is best-effort
+        // metadata and this flag reports the truth.
+        provenance_persisted: data?.provenance_persisted === true,
       };
     } finally {
       this.invalidateCache();

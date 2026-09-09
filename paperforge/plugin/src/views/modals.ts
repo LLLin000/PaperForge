@@ -4,7 +4,6 @@ import * as path from "path";
 import * as https from "https";
 import { t } from "../i18n";
 import { PaperForgeSettings } from "../constants";
-import { resolveVaultPaths } from "../services/runtime-paths";
 import {
   RuntimeBootstrap,
   resolveRuntimeCommand,

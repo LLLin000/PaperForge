@@ -38,7 +38,6 @@ import {
   ACTIONS,
   DEFAULT_SETTINGS,
   PaperForgeSettings,
-  toolArgvFor,
 } from "./constants";
 import { t, setLanguage } from "./i18n";
 import { PaperForgeSettingTab } from "./settings";
