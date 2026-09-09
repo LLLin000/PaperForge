@@ -31,6 +31,17 @@ def _safe_segment(name: str) -> bool:
     return bool(name) and name not in (".", "..") and "/" not in name and "\\" not in name
 
 
+def _safe_artifact_path(paper_root: Path, candidate: Path) -> str | None:
+    """THE single exit for every presentation path handed to the UI.
+
+    A DTO path is returned only when its RESOLVED form stays inside the
+    paper root — a symlinked ``backups``/``render``/``versions`` subtree (or
+    a symlinked paper directory) can never leak an out-of-root artifact path
+    to a UI that is allowed to read Python-returned paths verbatim.
+    """
+    return str(candidate) if _contained(paper_root, candidate) else None
+
+
 def _contained(root: Path, candidate: Path) -> bool:
     try:
         candidate.resolve().relative_to(root.resolve())
@@ -118,6 +129,9 @@ def list_backups(paper_root: Path) -> list[dict[str, Any]]:
         parsed = parse_pre_rebuild_backup_name(entry.name)
         if parsed is None:
             continue
+        safe_path = _safe_artifact_path(paper_root, entry)
+        if safe_path is None:
+            continue
         stamp, seq = parsed
         try:
             size = entry.stat().st_size
@@ -129,7 +143,7 @@ def list_backups(paper_root: Path) -> list[dict[str, Any]]:
                 "created_at": backup_stamp_to_iso(stamp),
                 "source": "pre-rebuild",
                 "fulltext_size": size,
-                "source_path": str(entry),
+                "source_path": safe_path,
             }
         )
     return out
@@ -150,13 +164,13 @@ def _authority_source(paper_root: Path, label: str) -> tuple[Path, str] | None:
         for entry in manifest["versions"]:
             if isinstance(entry, dict) and str(entry.get("label")) == label:
                 source = paper_root / "versions" / label / "fulltext.md"
-                if _contained(paper_root, source):
+                if _safe_artifact_path(paper_root, source) is not None:
                     return source, "version"
                 return None
     for backup in list_backups(paper_root):
         if backup["label"] == label:
             source = Path(str(backup["source_path"]))
-            if _contained(paper_root, source):
+            if _safe_artifact_path(paper_root, source) is not None:
                 return source, "legacy_backup"
             return None
     return None
@@ -169,13 +183,14 @@ def _entry_paths(paper_root: Path, label: str) -> dict[str, Any] | None:
         return None
     source, kind = resolved
     target = paper_root / "render" / "fulltext.md"
-    if not _contained(paper_root, target):
+    safe_target = _safe_artifact_path(paper_root, target)
+    if safe_target is None:
         return None
     return {
         "label": label,
         "kind": kind,
         "source_path": str(source),
-        "current_path": str(target),
+        "current_path": safe_target,
     }
 
 
@@ -206,10 +221,11 @@ def _with_paths(paper_root: Path, versions: list[Any]) -> list[dict[str, Any]]:
         if not _safe_segment(label):
             continue
         source = paper_root / "versions" / label / "fulltext.md"
-        if not _contained(paper_root, source):
+        safe_source = _safe_artifact_path(paper_root, source)
+        if safe_source is None:
             continue
         enriched = dict(entry)
-        enriched["source_path"] = str(source)
+        enriched["source_path"] = safe_source
         out.append(enriched)
     return out
 
@@ -230,7 +246,10 @@ def _paper_info(paper_root: Path) -> dict[str, Any] | None:
         "title": paper_root.name.replace("_", " "),
         "versions": versions,
         "current_label": manifest["current"]["label"],
-        "current_path": str(paper_root / "render" / "fulltext.md"),
+        "current_path": _safe_artifact_path(
+            paper_root, paper_root / "render" / "fulltext.md"
+        )
+        or "",
         "total_size": total_size,
     }
 
@@ -240,10 +259,14 @@ def _run_list(vault: Path, version: str) -> int:
     papers: list[dict[str, Any]] = []
     if root.is_dir():
         for child in sorted(root.iterdir()):
-            if child.is_dir():
-                info = _paper_info(child)
-                if info:
-                    papers.append(info)
+            # canonical direct child only: a symlinked paper entry must not
+            # make the authority interpret a manifest outside the OCR root
+            canonical = _paper_root(vault, child.name)
+            if canonical is None or not canonical.is_dir():
+                continue
+            info = _paper_info(canonical)
+            if info:
+                papers.append(info)
     papers.sort(key=lambda p: p["title"].lower())
     print(_ok(version, {"intent": "versions-list", "papers": papers}).to_json())
     return 0
@@ -266,7 +289,10 @@ def _run_show(vault: Path, key: str, version: str) -> int:
                     "key": key,
                     "versions": [],
                     "current_label": "",
-                    "current_path": str(root / "render" / "fulltext.md"),
+                    "current_path": _safe_artifact_path(
+                        root, root / "render" / "fulltext.md"
+                    )
+                    or "",
                 },
             ).to_json()
         )
@@ -279,7 +305,10 @@ def _run_show(vault: Path, key: str, version: str) -> int:
                 "key": key,
                 "versions": _with_paths(root, manifest["versions"]),
                 "current_label": manifest["current"]["label"],
-                "current_path": str(root / "render" / "fulltext.md"),
+                "current_path": _safe_artifact_path(
+                    root, root / "render" / "fulltext.md"
+                )
+                or "",
             },
         ).to_json()
     )

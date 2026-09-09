@@ -271,3 +271,106 @@ def test_restore_missing_label_fails_closed_without_writing(tmp_path: Path) -> N
     assert "restore_provenance" not in json.loads(
         (root / "meta.json").read_text(encoding="utf-8")
     )
+
+
+def _make_symlink(target: Path, link: Path) -> bool:
+    """Create a directory symlink; False when the platform refuses."""
+    import os
+
+    try:
+        os.symlink(target, link, target_is_directory=True)
+        return True
+    except (OSError, NotImplementedError):
+        return False
+
+
+def test_backups_symlink_outside_paper_root_is_not_returned(tmp_path: Path) -> None:
+    """A symlinked backups/ dir must not leak an out-of-root artifact path to
+    a UI that is allowed to read Python-returned paths verbatim."""
+    import pytest
+
+    vault = tmp_path / "v"
+    vault.mkdir()
+    root = _seed(vault)
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "fulltext.pre-rebuild.20260909T123456Z.md").write_text(
+        "external bytes\n", encoding="utf-8"
+    )
+    import shutil
+
+    shutil.rmtree(root / "backups")
+    if not _make_symlink(outside, root / "backups"):
+        pytest.skip("symlinks unavailable on this platform")
+    rc, payload, raw = _run(vault, "backups", key=KEY)
+    assert rc == 0, raw
+    assert payload["data"]["backups"] == []
+    # paths for a legacy label must fail closed too
+    rc2, payload2, _ = _run(vault, "paths", key=KEY, label="backup-20260909T123456Z")
+    assert rc2 == 1 and payload2["ok"] is False
+
+
+def test_symlinked_paper_child_is_not_interpreted_by_list(tmp_path: Path) -> None:
+    """A symlinked OCR child must not make the authority read a manifest
+    outside the OCR root."""
+    import pytest
+
+    vault = tmp_path / "v"
+    vault.mkdir()
+    root = _seed(vault)
+    ocr = root.parent
+    external_paper = tmp_path / "external-paper"
+    (external_paper / "versions" / "v9").mkdir(parents=True)
+    (external_paper / "versions" / "v9" / "fulltext.md").write_text(
+        "external\n", encoding="utf-8"
+    )
+    (external_paper / "render").mkdir()
+    (external_paper / "render" / "fulltext.md").write_text(
+        "external current\n", encoding="utf-8"
+    )
+    (external_paper / "versions" / "manifest.json").write_text(
+        json.dumps(
+            {
+                "versions": [
+                    {
+                        "label": "v9",
+                        "created_at": "2026-01-01T00:00:00Z",
+                        "source": "pre-rebuild",
+                        "fulltext_size": 9,
+                    }
+                ],
+                "current": {"label": "v9"},
+            }
+        ),
+        encoding="utf-8",
+    )
+    if not _make_symlink(external_paper, ocr / "LINKEDPAPER"):
+        pytest.skip("symlinks unavailable on this platform")
+    rc, payload, raw = _run(vault, "list")
+    assert rc == 0, raw
+    keys = [p["key"] for p in payload["data"]["papers"]]
+    assert "LINKEDPAPER" not in keys
+    assert KEY in keys
+    # and the symlinked key cannot be addressed directly either
+    rc2, payload2, _ = _run(vault, "show", key="LINKEDPAPER")
+    assert rc2 == 1 and payload2["ok"] is False
+
+
+def test_safe_artifact_path_is_the_single_contained_exit(tmp_path: Path) -> None:
+    """Platform-independent pin for the exit helper (symlink tests skip on
+    Windows without privilege, but the containment logic must hold)."""
+    from paperforge.commands.versions import _paper_root, _safe_artifact_path
+
+    vault = tmp_path / "v"
+    vault.mkdir()
+    root = _seed(vault)
+    assert _safe_artifact_path(root, root / "render" / "fulltext.md") == str(
+        root / "render" / "fulltext.md"
+    )
+    assert _safe_artifact_path(root, tmp_path / "outside.md") is None
+    assert _safe_artifact_path(root, root / ".." / "OTHER" / "x.md") is None
+    # key validation: separators / dot segments / non-direct children refused
+    assert _paper_root(vault, "..") is None
+    assert _paper_root(vault, "../OTHERPAPER") is None
+    assert _paper_root(vault, "OTHERPAPER/v1") is None
+    assert _paper_root(vault, KEY) == root
