@@ -28,6 +28,36 @@
 
 > **STATUS: Stage 2 step 5 CLOSED / SEALED — 27c33f4b** (owner-verified 2026-09-08). Step 6 unlocked, order: cast-form architecture probe fix → final leaf semantic census (`processFrontMatter(do_ocr/analyze)` included, never dragged back to step 5) → action-client/next-actions execution convergence → long-task-client → NodeProcessTransport → python-bridge contraction → final zero-census/architecture gate → Ticket 07 close.
 
+## Post-closure — real-task e2e coverage (2026-09-08, user-directed)
+
+The smoke harness grew into a real-task suite with a deterministic vault:
+
+- **Fixture builder** `test/fixtures/build_e2e_vault.py` (run by
+  `pretest:e2e`): canonical config + the repo's BBT export and completed OCR
+  fixture → REAL `paperforge sync` → REAL `memory build` → seeded version
+  manifest (`v1`/`v2`) and a legacy pre-rebuild backup under the OCR root.
+- **Spec** `test/specs/paperforge.e2e.ts` — 7 tests, each isolated by a fresh
+  sandbox reload (`beforeEach`), all against real Obsidian v1.13.7:
+  1. plugin load + client → real backend (`probe installation` ready)
+  2. **Sync Library button** → real mutation → panel shows the fresh read
+     model
+  3. **Base/collection mode → search box** → real FTS results ("Suture Anchor")
+  4. **OCR Workspace view** → real lineage rows
+  5. **paper mode → Version History modal → Restore** (confirmation) → Python
+     performs the copy; the spec reads the durable `render/fulltext.md`
+  6. **action execution** through the client (`memory.build`)
+  7. **trace**: real traffic + backend phase timing (`timing detail=…reconcile`)
+- **Two production-hardening changes made because the tests exposed them:**
+  stable `data-pf-testid` hooks on the sync button, version-history button and
+  the restore/confirm buttons (no authority change); and a symmetric
+  `plugin.setDebugTrace(enabled)` next to `getDebugTrace()`.
+- **Environment findings worth keeping:** programmatic
+  `workspace.getLeaf("tab").openFile()` does NOT fire `active-leaf-change` —
+  the spec calls `setActiveLeaf(leaf, {focus:true})` to model a real user
+  activation; the release-notes modal opens on a fresh sandbox and must be
+  dismissed; `getText()` returns CSS-transformed text (assert lowercase).
+- **Result: 7/7 passing (38s)** via `npm run test:e2e`; unit 452/452; tsc clean.
+
 ## Post-closure — real-Obsidian e2e harness (2026-09-08, user-directed)
 
 Industry-standard approach researched and adopted: **wdio-obsidian-service**

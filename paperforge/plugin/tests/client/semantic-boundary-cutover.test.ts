@@ -442,7 +442,8 @@ describe("Semantic-boundary source gates (frontmatter overlay deleted)", () => {
       expect(file).not.toContain("fulltext.pre-rebuild");
       expect(file).not.toContain("versionContentPath");
       expect(file).not.toContain("persistRestoreProvenance");
-      expect(file).not.toContain("version-history");
+      // the retired module may not be IMPORTED (a test-id string is fine)
+      expect(file).not.toMatch(/from\s+"[^"]*version-history"/);
     }
   });
 

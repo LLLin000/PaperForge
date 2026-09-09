@@ -61,3 +61,6 @@ audit/media_asset_samples/
 
 # Obsidian e2e download cache (wdio-obsidian-service)
 paperforge/plugin/.obsidian-cache/
+
+# Generated e2e vault (npm run pretest:e2e)
+paperforge/plugin/test/vaults/e2e/
