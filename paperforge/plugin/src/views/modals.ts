@@ -6,10 +6,6 @@ import { t } from "../i18n";
 import { PaperForgeSettings } from "../constants";
 import { resolveVaultPaths } from "../services/runtime-paths";
 import {
-  resolveGitDir,
-  paperforgeEnrichedEnv,
-} from "../services/python-bridge";
-import {
   RuntimeBootstrap,
   resolveRuntimeCommand,
 } from "../services/managed-runtime";

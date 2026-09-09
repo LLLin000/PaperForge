@@ -1,9 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import {
-  classifyError,
-  parseRuntimeStatus,
-} from "../src/services/python-bridge";
+import { classifyError } from "../src/services/python-bridge";
 
 describe("classifyError", () => {
   it("classifies ENOENT as python_missing", () => {
@@ -98,46 +95,5 @@ describe("classifyError", () => {
     const result = classifyError(1);
     expect(result.type).toBe("unknown");
     expect(result.recoverable).toBe(false);
-  });
-});
-
-describe("parseRuntimeStatus", () => {
-  it("returns ok with version on success", () => {
-    const result = parseRuntimeStatus(null, "1.4.17rc3\n", "");
-    expect(result.status).toBe("ok");
-    expect(result.version).toBe("1.4.17rc3");
-  });
-
-  it("classifies ENOENT as python_missing", () => {
-    const err = new Error("spawn ENOENT");
-    err.code = "ENOENT";
-    const result = parseRuntimeStatus(err, null, "");
-    expect(result.status).toBe("error");
-    expect(result.type).toBe("python_missing");
-  });
-
-  it("classifies ModuleNotFoundError in stderr as import_failed", () => {
-    const result = parseRuntimeStatus(
-      new Error("fail"),
-      null,
-      "No module named paperforge"
-    );
-    expect(result.status).toBe("error");
-    expect(result.type).toBe("import_failed");
-  });
-
-  it("classifies killed/timeout subprocess as timeout", () => {
-    const err = new Error("timeout");
-    err.killed = true;
-    const result = parseRuntimeStatus(err, null, "");
-    expect(result.status).toBe("error");
-    expect(result.type).toBe("timeout");
-  });
-
-  it("classifies generic error as unknown", () => {
-    const err = new Error("Something went wrong");
-    const result = parseRuntimeStatus(err, null, "some output");
-    expect(result.status).toBe("error");
-    expect(result.type).toBe("unknown");
   });
 });

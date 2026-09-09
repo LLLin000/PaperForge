@@ -105,17 +105,8 @@ vi.mock("child_process", () => {
 });
 
 vi.mock("../src/services/python-bridge", () => ({
-  resolvePythonExecutable: () => ({
-    path: "/usr/bin/python3",
-    source: "managed",
-    extraArgs: [],
-  }),
-  buildRuntimeInstallCommand: () => [],
-  paperforgeEnrichedEnv: () => ({}),
-  buildTargetedEnv: () => ({}),
   scanBbtUnderProfiles: () => false,
   scanBbtDirectChildren: () => false,
-  runSubprocess: () => {},
 }));
 vi.mock("../src/services/runtime-paths", () => ({
   resolveVaultPaths: () => ({}),
