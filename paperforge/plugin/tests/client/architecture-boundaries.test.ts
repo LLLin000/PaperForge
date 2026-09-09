@@ -95,6 +95,10 @@ const TOMBSTONES = [
   // client/node-transport.ts (the transport root) — no second
   // child-process owner may exist.
   "services/long-task-client.ts",
+  // Ticket 07 step 6 item 6: version-history.ts tombstoned — version
+  // discovery/manifest/path/restore/provenance are Python authority
+  // (`paperforge versions ...`); the host keeps only the pure text diff.
+  "services/version-history.ts",
   "services/ocr-maintenance-ui.ts",
   "services/config-client.ts",
   // Stage 2 step 3: the legacy OCR child-process owner — run/redo/rebuild

@@ -301,9 +301,119 @@ describe("Single client owner (step 6 item 4)", () => {
   });
 });
 
+describe("Version history is Python authority (step 6 item 6)", () => {
+  it("routes discovery/manifest/backups/paths through the versions command", async () => {
+    const calls: string[][] = [];
+    transport.executeHandler = (argv) => {
+      calls.push([...argv]);
+      if (argv[1] === "list")
+        return JSON.stringify({
+          ok: true,
+          data: {
+            papers: [
+              {
+                key: "K1",
+                title: "T",
+                versions: [
+                  {
+                    label: "v1",
+                    source_path: "/ocr/K1/versions/v1/fulltext.md",
+                  },
+                ],
+                current_label: "v1",
+                current_path: "/ocr/K1/render/fulltext.md",
+                total_size: 5,
+              },
+            ],
+          },
+        });
+      if (argv[1] === "show")
+        return JSON.stringify({
+          ok: true,
+          data: {
+            versions: [
+              { label: "v2", source_path: "/ocr/K1/versions/v2/fulltext.md" },
+            ],
+            current_label: "v2",
+            current_path: "/ocr/K1/render/fulltext.md",
+          },
+        });
+      if (argv[1] === "backups")
+        return JSON.stringify({
+          ok: true,
+          data: {
+            backups: [
+              {
+                label: "backup-20250102030405",
+                source_path: "/ocr/K1/backups/x.md",
+              },
+            ],
+          },
+        });
+      if (argv[1] === "paths")
+        return JSON.stringify({
+          ok: true,
+          data: {
+            label: "v1",
+            kind: "version",
+            source_path: "/ocr/K1/versions/v1/fulltext.md",
+            current_path: "/ocr/K1/render/fulltext.md",
+          },
+        });
+      return JSON.stringify({
+        ok: true,
+        data: { target_path: "/ocr/K1/render/fulltext.md", label: "v1" },
+      });
+    };
+    const list = await client.versionsList();
+    expect(list[0].current_label).toBe("v1");
+    expect(list[0].versions[0].source_path).toBe(
+      "/ocr/K1/versions/v1/fulltext.md"
+    );
+    const show = await client.versionsShow("K1");
+    expect(show.current_path).toBe("/ocr/K1/render/fulltext.md");
+    const backups = await client.versionsBackups("K1");
+    expect(backups[0].label).toBe("backup-20250102030405");
+    const paths = await client.versionsPaths("K1", "v1");
+    expect(paths.kind).toBe("version");
+    expect(calls.map((c) => c[1])).toEqual([
+      "list",
+      "show",
+      "backups",
+      "paths",
+    ]);
+  });
+
+  it("restore is a mutation: exact argv + epoch invalidation", async () => {
+    transport.executeHandler = (argv) => {
+      expect(argv).toEqual([
+        "versions",
+        "restore",
+        "--key",
+        "K1",
+        "--label",
+        "v1",
+        "--json",
+      ]);
+      return JSON.stringify({
+        ok: true,
+        data: { target_path: "/ocr/K1/render/fulltext.md", label: "v1" },
+      });
+    };
+    const before = client.getEpoch();
+    const res = await client.versionsRestore("K1", "v1");
+    expect(res.label).toBe("v1");
+    expect(client.getEpoch()).toBe(before + 1);
+  });
+});
+
 describe("Semantic-boundary source gates (frontmatter overlay deleted)", () => {
   const SRC = join(__dirname, "..", "..", "src");
   const dashboard = readFileSync(join(SRC, "views", "dashboard.ts"), "utf-8");
+  const workspace = readFileSync(
+    join(SRC, "views", "ocr-workspace.ts"),
+    "utf-8"
+  );
   const constants = readFileSync(join(SRC, "constants.ts"), "utf-8");
 
   it("_resolveModeForFile never reads Obsidian frontmatter or workspace keys", () => {
@@ -324,6 +434,16 @@ describe("Semantic-boundary source gates (frontmatter overlay deleted)", () => {
   it("no formal-library.json filename watcher (mutations reach the UI via refresh/sync only)", () => {
     expect(dashboard).not.toContain('path.endsWith("formal-library.json")');
     expect(dashboard).not.toContain('vault.on("modify"');
+  });
+
+  it("views never parse version manifests or legacy backup filenames", () => {
+    for (const file of [dashboard, workspace]) {
+      expect(file).not.toContain("manifest.json");
+      expect(file).not.toContain("fulltext.pre-rebuild");
+      expect(file).not.toContain("versionContentPath");
+      expect(file).not.toContain("persistRestoreProvenance");
+      expect(file).not.toContain("version-history");
+    }
   });
 
   it("workflow toggles never mutate frontmatter client-side", () => {

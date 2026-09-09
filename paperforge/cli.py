@@ -572,6 +572,34 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     # Layer 4 gateway commands
+    p_versions = sub.add_parser(
+        "versions",
+        help="Display-fulltext version authority (discovery/manifest/paths/restore)",
+    )
+    p_versions_sub = p_versions.add_subparsers(dest="versions_command", required=True)
+    p_versions_list = p_versions_sub.add_parser("list", help="List every paper with version manifests")
+    p_versions_list.add_argument("--json", action="store_true", help="Output JSON")
+    p_versions_show = p_versions_sub.add_parser("show", help="Show one paper's version manifest")
+    p_versions_show.add_argument("--key", required=True, metavar="KEY")
+    p_versions_show.add_argument("--json", action="store_true", help="Output JSON")
+    p_versions_backups = p_versions_sub.add_parser(
+        "backups", help="Recognize legacy pre-rebuild backup artifacts"
+    )
+    p_versions_backups.add_argument("--key", required=True, metavar="KEY")
+    p_versions_backups.add_argument("--json", action="store_true", help="Output JSON")
+    p_versions_paths = p_versions_sub.add_parser(
+        "paths", help="Canonical artifact paths for a version label"
+    )
+    p_versions_paths.add_argument("--key", required=True, metavar="KEY")
+    p_versions_paths.add_argument("--label", default="", metavar="LABEL", help="Version label (default: current)")
+    p_versions_paths.add_argument("--json", action="store_true", help="Output JSON")
+    p_versions_restore = p_versions_sub.add_parser(
+        "restore", help="Display-only restore of a version's fulltext"
+    )
+    p_versions_restore.add_argument("--key", required=True, metavar="KEY")
+    p_versions_restore.add_argument("--label", required=True, metavar="LABEL")
+    p_versions_restore.add_argument("--json", action="store_true", help="Output JSON")
+
     p_note = sub.add_parser(
         "note",
         help="Python-authoritative note frontmatter mutation (workflow flags)",
@@ -984,6 +1012,10 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "skill":
         return _run_skill(args)
 
+    if args.command == "versions":
+        from paperforge.commands.versions import run as _versions_run
+
+        return _versions_run(args)
     if args.command == "note":
         from paperforge.commands.note import run as _note_run
 
