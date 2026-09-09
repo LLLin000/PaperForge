@@ -28,6 +28,33 @@
 
 > **STATUS: Stage 2 step 5 CLOSED / SEALED — 27c33f4b** (owner-verified 2026-09-08). Step 6 unlocked, order: cast-form architecture probe fix → final leaf semantic census (`processFrontMatter(do_ocr/analyze)` included, never dragged back to step 5) → action-client/next-actions execution convergence → long-task-client → NodeProcessTransport → python-bridge contraction → final zero-census/architecture gate → Ticket 07 close.
 
+## Post-closure — real-Obsidian e2e harness (2026-09-08, user-directed)
+
+Industry-standard approach researched and adopted: **wdio-obsidian-service**
+(WebdriverIO + Mocha, sandboxed real Obsidian, multi-version, vault
+management — the maintained successor to Spectron/`wdio-electron-service`
+for plugins).
+
+- `wdio.conf.mts`: `browserName: obsidian`, app/installer `latest`,
+  `plugins: ["."]` (installs the repo build), vault
+  `test/vaults/simple`, `cacheDir: .obsidian-cache` (gitignored).
+- `test/vaults/simple`: note + canonical `paperforge.json` (so the
+  installation probe resolves through the real runtime pointer).
+- `test/specs/paperforge.e2e.ts` (read-only): plugin loads from the built
+  bundle; client reaches the REAL Python backend (`backendVersion 1.5.15`,
+  `probe installation: ready/ready`, typed `dashboardStats` carries
+  `stats`+`items`); debug-trace handle present; status panel renders.
+- **Result: 3/3 passing against real Obsidian v1.13.7 (installer 1.13.7,
+  win32)** via `npm run test:e2e`; unit suite unchanged at 452/452; tsc clean.
+
+Remaining known gaps (not blockers, tracked honestly):
+- e2e is a smoke layer: no interaction coverage for settings toggles,
+  OCR workspace flows, or restore dialogs; no CI workflow yet.
+- No multi-version matrix (earliest = `minAppVersion 1.11.4` not run).
+- `client.sync()` returns the raw PFResult, so `data.timing` is reachable
+  only via `s.data.timing` (the trace surfaces it; the return shape was not
+  changed to avoid touching frozen contracts).
+
 ## Post-closure — backend phase timing for slow commands (2026-09-08, user-directed)
 
 - **`paperforge/core/timing.py`:** phase timer that NEVER touches stdout
