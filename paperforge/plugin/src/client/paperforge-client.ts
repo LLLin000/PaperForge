@@ -22,8 +22,8 @@ import type {
   ActionRequest,
   ActionRunResult,
   ActionScope,
-} from "../services/action-client";
-import { buildActionArgv } from "../services/action-client";
+} from "./action-contract";
+import { buildActionArgv } from "./action-contract";
 
 export interface PaperForgeClientOptions {
   transport: Transport;

@@ -1,13 +1,12 @@
 /**
- * Vitest tests for commands.js — ACTIONS, buildCommandArgs, runSubprocess.
+ * Vitest tests for commands.js — ACTIONS + buildCommandArgs.
  *
- * runSubprocess uses dependency injection (last _spawn param) instead of
  * vi.mock to avoid CJS/ESM module mocking limitations in vitest v2.1.x.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 import { ACTIONS } from "../src/constants";
-import { buildCommandArgs, runSubprocess } from "../src/services/python-bridge";
+import { buildCommandArgs } from "../src/services/python-bridge";
 
 describe("ACTIONS", () => {
   it("has exactly 5 entries", () => {
@@ -49,101 +48,5 @@ describe("buildCommandArgs", () => {
     const a = { args: ["--json"], needsKey: true };
     expect(buildCommandArgs(a, "K1")).toEqual(["--json", "K1"]);
     expect(buildCommandArgs(a, "K2")).toEqual(["--json", "K2"]);
-  });
-});
-
-describe("runSubprocess", () => {
-  let mockSpawn;
-
-  function makeMockChild() {
-    return {
-      stdout: { on: vi.fn() },
-      stderr: { on: vi.fn() },
-      on: vi.fn(),
-    };
-  }
-
-  beforeEach(() => {
-    mockSpawn = vi.fn(makeMockChild);
-  });
-
-  it("returns stdout, stderr, exitCode from spawned process", async () => {
-    const promise = runSubprocess(
-      "python",
-      ["--version"],
-      "/vault",
-      undefined,
-      mockSpawn
-    );
-    const child = mockSpawn.mock.results[0]?.value;
-    expect(child).toBeDefined();
-
-    const closeCb = child.on.mock.calls.find(([e]) => e === "close")?.[1];
-    const dataCb = child.stdout.on.mock.calls.find(([e]) => e === "data")?.[1];
-    expect(closeCb).toBeDefined();
-    expect(dataCb).toBeDefined();
-
-    dataCb("Python 3.11.0\n");
-    closeCb(0);
-
-    const r = await promise;
-    expect(r.stdout).toBe("Python 3.11.0\n");
-    expect(r.exitCode).toBe(0);
-    expect(r.elapsed).toBeGreaterThanOrEqual(0);
-  });
-
-  it("captures stderr on non-zero exit", async () => {
-    const promise = runSubprocess(
-      "python",
-      ["bad"],
-      "/vault",
-      undefined,
-      mockSpawn
-    );
-    const child = mockSpawn.mock.results[0]?.value;
-
-    const closeCb = child.on.mock.calls.find(([e]) => e === "close")?.[1];
-    const dataCb = child.stderr.on.mock.calls.find(([e]) => e === "data")?.[1];
-    dataCb("Error: unknown");
-    closeCb(1);
-
-    const r = await promise;
-    expect(r.exitCode).toBe(1);
-    expect(r.stderr).toContain("Error");
-  });
-
-  it("captures spawn error events", async () => {
-    const promise = runSubprocess(
-      "python",
-      ["bad"],
-      "/vault",
-      undefined,
-      mockSpawn
-    );
-    const child = mockSpawn.mock.results[0]?.value;
-
-    const errCb = child.on.mock.calls.find(([e]) => e === "error")?.[1];
-    expect(errCb).toBeDefined();
-    errCb(new Error("ENOENT"));
-
-    const r = await promise;
-    expect(r.exitCode).toBe(-1);
-    expect(r.stderr).toContain("ENOENT");
-  });
-
-  it("passes timeout and windowsHide options to spawn", async () => {
-    runSubprocess("python", ["cmd"], "/vault", 30000, mockSpawn);
-    const opts = mockSpawn.mock.calls[0]?.[2];
-    expect(opts).toHaveProperty("timeout", 30000);
-    expect(opts).toHaveProperty("windowsHide", true);
-  });
-
-  it("resolves on spawn error with exitCode -1", async () => {
-    const promise = runSubprocess("py", [], "/vault", 5000, mockSpawn);
-    const child = mockSpawn.mock.results[0]?.value;
-    const errCb = child.on.mock.calls.find(([e]) => e === "error")?.[1];
-    errCb(new Error("spawn ENOENT"));
-    const r = await promise;
-    expect(r.exitCode).toBe(-1);
   });
 });

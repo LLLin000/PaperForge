@@ -13,7 +13,7 @@
  * never be suppressed by a stale plugin-side mark.
  */
 import type { NextAction } from "./next-actions-types";
-import type { ActionRequest } from "./action-client";
+import type { ActionRequest, ActionRunResult } from "../client/action-contract";
 
 export { resetNextActionTracker } from "./next-actions-types";
 
@@ -41,7 +41,9 @@ export function actionRequestFor(
 export async function orchestrateNextActions(
   actions: NextAction[],
   deps: {
-    runAction: (req: ActionRequest) => boolean;
+    /** Async execution capability — normally PaperForgeClient.runAction.
+     * The in-flight guard covers the REAL settlement below. */
+    runAction: (req: ActionRequest) => Promise<ActionRunResult>;
     confirm: (action: NextAction) => Promise<boolean>;
     notify: (message: string) => void;
     isInFlight: (key: string) => boolean;
@@ -82,14 +84,17 @@ export async function orchestrateNextActions(
       confirmed = true;
     }
 
+    // Item 3 contract: the in-flight guard now covers the REAL action
+    // settlement — the legacy sync-boolean only guarded the dispatch
+    // microsecond, contradicting its own duplicate-click guard. Settling
+    // clears the guard, so a later legitimate re-repair still runs (#169).
     deps.markInFlight(key);
-    let startedNow = false;
     try {
-      startedNow = deps.runAction(actionRequestFor(action, confirmed)) === true;
+      await deps.runAction(actionRequestFor(action, confirmed));
+      started += 1;
     } finally {
       deps.clearInFlight(key);
     }
-    if (startedNow) started += 1;
   }
   return started;
 }
