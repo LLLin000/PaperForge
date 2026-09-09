@@ -793,6 +793,17 @@ def _cmd_ocr_doctor(vault: Path, args: argparse.Namespace) -> int:
 # Main entry point
 # ---------------------------------------------------------------------------
 def main(argv: list[str] | None = None) -> int:
+    """CLI entry point with per-command phase timing (stderr only)."""
+    from paperforge.core import timing
+
+    timing.reset()
+    try:
+        return _run_cli(argv)
+    finally:
+        timing.emit_total()
+
+
+def _run_cli(argv: list[str] | None = None) -> int:
     """CLI entry point. Returns integer exit code (0 = success)."""
     if argv is None:
         argv = sys.argv[1:]
@@ -803,6 +814,10 @@ def main(argv: list[str] | None = None) -> int:
     if args.command is None:
         parser.print_help()
         return 1
+
+    from paperforge.core import timing
+
+    timing.set_command(str(args.command))
 
     # Resolve/import worker modules only for commands that actually need them.
     lightweight_commands = {

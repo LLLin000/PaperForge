@@ -12,6 +12,7 @@ from paperforge.adapters.obsidian_frontmatter import (
     candidate_markdown,
     read_frontmatter_dict,
 )
+from paperforge.core import timing
 from paperforge.core.errors import ErrorCode
 from paperforge.core.result import PFError, PFResult
 
@@ -310,7 +311,8 @@ class SyncService:
         # ── Pre-check: BBT exports ──
         _export_code = "ok"
         try:
-            rows = self.load_exports()
+            with timing.phase("sync.load_exports"):
+                rows = self.load_exports()
             if not rows:
                 _export_code = "BBT_EXPORT_NOT_FOUND"
         except Exception:
@@ -332,7 +334,8 @@ class SyncService:
 
             _t0 = _time.time()
             try:
-                selection_result = run_selection_sync(self.vault, verbose=verbose, json_output=json_output)
+                with timing.phase("sync.selection"):
+                    selection_result = run_selection_sync(self.vault, verbose=verbose, json_output=json_output)
                 _t1 = _time.time()
                 logger.info("select: %d items in %.1fs", selection_result.get("updated", 0), _t1 - _t0)
             except Exception as exc:
@@ -356,37 +359,43 @@ class SyncService:
             from paperforge.worker._domain import load_domain_config
             from paperforge.worker.base_views import ensure_base_views
 
-            paths = self.resolve_paths()
-            config = load_domain_config(paths)
-            ensure_base_views(self.vault, paths, config)
+            with timing.phase("sync.resolve_paths"):
+                paths = self.resolve_paths()
+                config = load_domain_config(paths)
+                ensure_base_views(self.vault, paths, config)
             domain_lookup = {entry["export_file"]: entry["domain"] for entry in config["domains"]}
 
             from paperforge.config import load_vault_config
 
             load_vault_config(self.vault)
             exports: dict[str, dict[str, dict]] = {}
-            for export_path in sorted(paths["exports"].glob("*.json")):
-                domain = domain_lookup.get(export_path.name, export_path.stem)
-                export_rows = load_export_rows(export_path)
-                exports[domain] = {row["key"]: row for row in export_rows}
+            with timing.phase("sync.load_export_rows"):
+                for export_path in sorted(paths["exports"].glob("*.json")):
+                    domain = domain_lookup.get(export_path.name, export_path.stem)
+                    export_rows = load_export_rows(export_path)
+                    exports[domain] = {row["key"]: row for row in export_rows}
 
             from paperforge.worker.sync import migrate_to_workspace
 
-            migrate_to_workspace(self.vault, paths)
+            with timing.phase("sync.migrate_to_workspace"):
+                migrate_to_workspace(self.vault, paths)
 
             import paperforge.worker.asset_index as asset_index
 
             _t2 = _time.time()
-            index_count = asset_index.build_index(self.vault, verbose, force_rebuild=rebuild_index)
+            with timing.phase("sync.build_index"):
+                index_count = asset_index.build_index(self.vault, verbose, force_rebuild=rebuild_index)
             _t3 = _time.time()
             logger.info("build_index: %d entries in %.1fs", index_count, _t3 - _t2)
 
             # ── Phase 3: Clean ──
-            orphaned = self.clean_orphaned_records(exports, paths, json_output=json_output)
-            flat_cleaned = self.clean_flat_notes(paths, json_output=json_output)
+            with timing.phase("sync.cleanup"):
+                orphaned = self.clean_orphaned_records(exports, paths, json_output=json_output)
+                flat_cleaned = self.clean_flat_notes(paths, json_output=json_output)
 
             if orphaned > 0 or flat_cleaned > 0:
-                index_count = asset_index.build_index(self.vault, verbose, force_rebuild=rebuild_index)
+                with timing.phase("sync.rebuild_index_after_cleanup"):
+                    index_count = asset_index.build_index(self.vault, verbose, force_rebuild=rebuild_index)
 
             # ── Phase 4: Prune orphans ──
             prune_data = None
@@ -398,9 +407,10 @@ class SyncService:
                 _zotero_keys = {
                     k for _domain in exports.values() for k in _domain
                 }
-                prune_data = self.prune(
-                    paths, fresh_keys=_zotero_keys, dry_run=True
-                )
+                with timing.phase("sync.prune_preview"):
+                    prune_data = self.prune(
+                        paths, fresh_keys=_zotero_keys, dry_run=True
+                    )
                 if prune_force:
                     prune_data = self.prune(
                         paths, fresh_keys=_zotero_keys, dry_run=False

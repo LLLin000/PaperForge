@@ -24,7 +24,7 @@ import type {
   ActionScope,
 } from "./action-contract";
 import { buildActionArgv } from "./action-contract";
-import { commandIdentity, traceRecord } from "./trace";
+import { commandIdentity, isTraceEnabled, traceRecord } from "./trace";
 
 export interface PaperForgeClientOptions {
   transport: Transport;
@@ -570,6 +570,31 @@ export class PaperForgeClient {
         ms: Date.now() - startedAt,
         epoch: this._epoch,
       });
+      // Backend phase timing (sync attaches data.timing): surface WHERE the
+      // time went, not just the round trip. Parsed only while tracing.
+      if (isTraceEnabled()) {
+        try {
+          const timing = (
+            JSON.parse(raw) as { data?: { timing?: Record<string, number> } }
+          )?.data?.timing;
+          if (timing && typeof timing === "object") {
+            const compact = Object.entries(timing)
+              .map(
+                ([k, v]) =>
+                  `${k.replace(/^sync\./, "")}=${Math.round(Number(v))}ms`
+              )
+              .join(" ");
+            traceRecord({
+              ts: Date.now(),
+              kind: "exec",
+              op: `${op} timing`,
+              detail: compact.slice(0, 400),
+            });
+          }
+        } catch {
+          // stdout was not JSON (text mode) — nothing to surface.
+        }
+      }
       return raw;
     } catch (err: unknown) {
       const exitCode = (err as { exitCode?: number } | null)?.exitCode;
