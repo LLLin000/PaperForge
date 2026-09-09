@@ -64,3 +64,6 @@ paperforge/plugin/.obsidian-cache/
 
 # Generated e2e vault (npm run pretest:e2e)
 paperforge/plugin/test/vaults/e2e/
+
+# E2E acceptance evidence (per-run JSON; never committed)
+paperforge/plugin/test/evidence/
