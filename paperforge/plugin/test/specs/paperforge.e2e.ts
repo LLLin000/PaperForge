@@ -14,16 +14,60 @@
  *  5. paper mode → Version History modal → restore → durable file change
  *  6. action execution through the client (memory.build)
  *  7. client trace records the real boundary traffic
+ *  8. candidate binding: the loaded bundle is the built artifact, and the
+ *     sandbox vault is a copy that cannot write back into the fixture
  *
  * NOTE: `executeObsidian` serializes its callback into the Obsidian window,
  * so callbacks must be self-contained and return serializable data.
  */
 import { browser } from "@wdio/globals";
+import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import * as path from "node:path";
 
 const PAPER_KEY = "TSTONE001";
 const NOTE_PATH =
   "Resources/Literature/骨科/TSTONE001 - Biomechanical Comparison of Suture Anchor Fixations in Rotator Cuff Repair/TSTONE001.md";
 const BASE_PATH = "Bases/骨科.base";
+
+const PLUGIN_DIR = process.cwd();
+const FIXTURE_VAULT = path.resolve(PLUGIN_DIR, "test", "vaults", "e2e");
+const EVIDENCE_DIR = path.resolve(PLUGIN_DIR, "test", "evidence");
+
+/** Version of the artifact under test (plugin manifest is version-synced). */
+const CANDIDATE_VERSION = (
+  JSON.parse(readFileSync(path.join(PLUGIN_DIR, "manifest.json"), "utf8")) as {
+    version: string;
+  }
+).version;
+
+/** sha256 of a file's bytes — artifact identity, not its path. */
+function sha256(file: string): string {
+  return createHash("sha256").update(readFileSync(file)).digest("hex");
+}
+
+async function sandboxBasePath(): Promise<string> {
+  return await browser.executeObsidian(async ({ app }) => {
+    const adapter = app.vault.adapter as unknown as { basePath?: string };
+    return adapter.basePath ?? "";
+  });
+}
+
+/** Acceptance evidence record (plan §4.3): one JSON per case variant. */
+function writeEvidence(name: string, payload: Record<string, unknown>): void {
+  mkdirSync(EVIDENCE_DIR, { recursive: true });
+  writeFileSync(
+    path.join(EVIDENCE_DIR, name),
+    JSON.stringify(payload, null, 2)
+  );
+}
 
 async function openVaultFile(path: string): Promise<void> {
   // New tab + explicit activation: a programmatic openFile() alone does not
@@ -93,13 +137,70 @@ describe("PaperForge real-task e2e", function () {
       const probe = await client.probe("installation");
       return {
         id: plugin.manifest.id,
+        plugin_version: plugin.manifest.version,
         backend: await client.backendVersion(),
         capability_state: probe.capability_state,
       };
     });
     expect(info.id).toBe("paperforge");
-    expect(info.backend).toBe("1.5.15");
+    // Candidate binding: plugin and backend must be the artifact under test,
+    // never a stale install or an older editable Python.
+    expect(info.plugin_version).toBe(CANDIDATE_VERSION);
+    expect(info.backend).toBe(CANDIDATE_VERSION);
     expect(info.capability_state).toBe("ready");
+  });
+
+  it("binds the loaded bundle to the built artifact and isolates the sandbox", async function () {
+    const builtBundle = sha256(path.join(PLUGIN_DIR, "main.js"));
+    const builtManifestSha = sha256(path.join(PLUGIN_DIR, "manifest.json"));
+
+    const base = await sandboxBasePath();
+    expect(base.length).toBeGreaterThan(0);
+    // reloadObsidian copies the vault: the running instance must never be the
+    // fixture source directory.
+    expect(path.resolve(base)).not.toBe(FIXTURE_VAULT);
+
+    const sandboxPlugin = path.join(base, ".obsidian", "plugins", "paperforge");
+    expect(sha256(path.join(sandboxPlugin, "main.js"))).toBe(builtBundle);
+    expect(sha256(path.join(sandboxPlugin, "manifest.json"))).toBe(
+      builtManifestSha
+    );
+
+    // Isolation: a write inside the sandbox never reaches the fixture source.
+    const sentinel = `.pf-e2e-sentinel-${Date.now()}`;
+    writeFileSync(path.join(base, sentinel), "sentinel");
+    expect(existsSync(path.join(FIXTURE_VAULT, sentinel))).toBe(false);
+    rmSync(path.join(base, sentinel), { force: true });
+
+    const backend = await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"];
+      if (!plugin || typeof plugin.getClient !== "function") {
+        throw new Error("paperforge plugin not loaded");
+      }
+      return await plugin.getClient().backendVersion();
+    });
+
+    writeEvidence("w01-candidate-binding.json", {
+      case_id: "X11",
+      variant: "bundle-binding+isolation",
+      required_layer: "H",
+      status: "VERIFIED",
+      source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: PLUGIN_DIR,
+      })
+        .toString()
+        .trim(),
+      artifact_sha256: {
+        "main.js": builtBundle,
+        "manifest.json": builtManifestSha,
+      },
+      plugin_version: CANDIDATE_VERSION,
+      backend_version: backend,
+      obsidian_version: String(await browser.getObsidianVersion()),
+      sandbox_base: base,
+      fixture_vault: FIXTURE_VAULT,
+      recorded_at: new Date().toISOString(),
+    });
   });
 
   it("runs Sync Library through the UI and refreshes the read model", async function () {
