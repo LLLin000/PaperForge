@@ -43,6 +43,20 @@ def _seed(vault: Path, fm_text: str) -> Path:
     return note
 
 
+def _seed_raw(vault: Path, text: str) -> Path:
+    """Seed the vault, then overwrite the note with EXACT bytes (newline=""
+    writes) so newline-ending tests are platform independent."""
+    note = _seed(vault, "")
+    with open(note, "w", encoding="utf-8", newline="") as f:
+        f.write(text)
+    return note
+
+
+def _read_raw(note: Path) -> str:
+    with open(note, encoding="utf-8", newline="") as f:
+        return f.read()
+
+
 def _run(vault: Path, *extra: str) -> tuple[int, dict | None, str]:
     r = subprocess.run(
         [sys.executable, "-m", "paperforge", "--vault", str(vault), "note", *extra],
@@ -185,7 +199,7 @@ def test_body_line_with_same_key_is_never_touched(tmp_path: Path) -> None:
 def test_note_without_frontmatter_fails_closed(tmp_path: Path) -> None:
     vault = tmp_path / "v"
     vault.mkdir()
-    note = _seed(vault, "no frontmatter here\n")
+    note = _seed_raw(vault, "no frontmatter here\n")
     # index points at a note that lost its frontmatter — refuse, never
     # silently fabricate a frontmatter block
     rc, payload, _ = _run(
@@ -193,8 +207,8 @@ def test_note_without_frontmatter_fails_closed(tmp_path: Path) -> None:
     )
     assert rc == 1
     assert payload["ok"] is False
-    assert "no frontmatter" in payload["error"]["message"]
-    assert note.read_text(encoding="utf-8") == "no frontmatter here\n"
+    assert "no valid frontmatter block" in payload["error"]["message"]
+    assert _read_raw(note) == "no frontmatter here\n"
 
 
 def test_inline_dashes_in_value_are_not_a_fence(tmp_path: Path) -> None:
@@ -237,34 +251,70 @@ def test_body_horizontal_rule_stays_body(tmp_path: Path) -> None:
     assert text.endswith("---\n\n---\nhr line context\n")
 
 
-def test_crlf_line_endings_preserved(tmp_path: Path) -> None:
-    """_seed writes via text mode, so the on-disk note is CRLF on Windows.
-    The setter must preserve each line's original ending (read raw with
-    newline="" — read_text would translate CRLF away)."""
+def test_crlf_line_endings_preserved_platform_independent(tmp_path: Path) -> None:
+    """The fixture writes CRLF bytes EXPLICITLY (newline="") — no OS
+    newline-translation dependency. The command reads/writes raw, so the
+    durable note keeps its CRLF endings on every platform."""
     vault = tmp_path / "v"
     vault.mkdir()
-    note = _seed(vault, "---\nzotero_key: ABCD1234\ndo_ocr: false\n---\nbody\n")
+    note = _seed_raw(
+        vault, "---\r\nzotero_key: ABCD1234\r\ndo_ocr: false\r\n---\r\nbody\r\n"
+    )
     rc, _, err = _run(
         vault, "set-flag", "--key", "ABCD1234", "--field", "do_ocr", "--value", "true", "--json"
     )
     assert rc == 0, err
-    with open(note, encoding="utf-8", newline="") as f:
-        raw = f.read()
+    raw = _read_raw(note)
     assert "do_ocr: true\r\n" in raw
     assert "---\r\n" in raw
-    assert raw.count("\n") == raw.count("\r\n")  # no mixed endings introduced
+    assert raw.count("\n") == raw.count("\r\n")  # no mixed endings
 
 
-def test_unterminated_frontmatter_fails_closed_locally(tmp_path: Path) -> None:
+def test_lf_line_endings_stay_lf_platform_independent(tmp_path: Path) -> None:
     vault = tmp_path / "v"
     vault.mkdir()
-    note = _seed(vault, "---\nzotero_key: ABCD1234\nno close fence")
+    note = _seed_raw(
+        vault, "---\nzotero_key: ABCD1234\ndo_ocr: false\n---\nbody\n"
+    )
+    rc, _, err = _run(
+        vault, "set-flag", "--key", "ABCD1234", "--field", "do_ocr", "--value", "true", "--json"
+    )
+    assert rc == 0, err
+    raw = _read_raw(note)
+    assert "do_ocr: true\n" in raw
+    assert "\r" not in raw  # LF notes must never gain CR endings
+
+
+def test_bom_tolerated_at_the_cli_entry(tmp_path: Path) -> None:
+    """The BOM-tolerance claim must hold at the CLI boundary, not just
+    inside the adapter."""
+    vault = tmp_path / "v"
+    vault.mkdir()
+    note = _seed_raw(
+        vault,
+        "\ufeff---\nzotero_key: ABCD1234\ndo_ocr: false\n---\nbody\n",
+    )
+    rc, payload, err = _run(
+        vault, "set-flag", "--key", "ABCD1234", "--field", "do_ocr", "--value", "true", "--json"
+    )
+    assert rc == 0, err
+    raw = _read_raw(note)
+    assert raw.startswith("\ufeff---")  # BOM preserved
+    assert "do_ocr: true\n" in raw
+
+
+def test_unterminated_frontmatter_fails_closed(tmp_path: Path) -> None:
+    """P1: authority success == durable state. An unterminated frontmatter
+    block is a validation failure — rc 1, ok false, no write, and the
+    command must NEVER claim changed=true for an unchanged file."""
+    vault = tmp_path / "v"
+    vault.mkdir()
+    raw = "---\nzotero_key: ABCD1234\nno close fence"
+    note = _seed_raw(vault, raw)
     rc, payload, _ = _run(
         vault, "set-flag", "--key", "ABCD1234", "--field", "do_ocr", "--value", "true", "--json"
     )
-    # the command-level check (startswith "---") passes, but the adapter
-    # must refuse to fabricate a block for an unterminated fence
-    assert note.read_text(encoding="utf-8") == "---\nzotero_key: ABCD1234\nno close fence"
-    if rc == 0:
-        text = note.read_text(encoding="utf-8")
-        assert "do_ocr" not in text.split("---")[1], text
+    assert rc == 1
+    assert payload is not None and payload["ok"] is False
+    assert "no valid frontmatter block" in payload["error"]["message"]
+    assert _read_raw(note) == raw
