@@ -28,6 +28,11 @@
 
 > **STATUS: Stage 2 step 5 CLOSED / SEALED — 27c33f4b** (owner-verified 2026-09-08). Step 6 unlocked, order: cast-form architecture probe fix → final leaf semantic census (`processFrontMatter(do_ocr/analyze)` included, never dragged back to step 5) → action-client/next-actions execution convergence → long-task-client → NodeProcessTransport → python-bridge contraction → final zero-census/architecture gate → Ticket 07 close.
 
+## Stage 2 — step 6 item 3 corrective (2026-09-08, packaging fix)
+
+- **P1 packaging: the tombstone deletion was never staged.** The item 3 commit's explicit `git add` list omitted the deleted path, so `services/action-client.ts` shipped in HEAD while Gate C (and `tsc`, which compiles `src/**/*.ts` and would see the stale `runSubprocess` import) demanded its absence — the local clean gates ran against the uncommitted working tree. Fix: the deletion is now actually committed, together with the dead `SubprocessResult` interface in python-bridge (its only consumer, `runSubprocess`, was already deleted). Gates re-run against the committed state: tsc clean, Gate A/B/C 9/9, plugin **473/473**.
+- **Item 4 precondition recorded (owner finding):** Settings still holds a fallback `new PaperForgeClient({ transport: new NodeProcessTransport(...) })` when `plugin.getClient` is absent. Not an item 3 blocker (production plugins always have the singleton), but it is a second-operation-owner entry point that must die in Item 4 long-task consolidation: delete the fallback, `plugin.getClient` singleton only.
+
 ## Stage 2 — step 6 item 3 — action-client / next-actions execution convergence (2026-09-08, done)
 
 Executed exactly per the frozen amended contract:

@@ -22,13 +22,6 @@ export interface InstallCommand {
   timeout: number;
 }
 
-export interface SubprocessResult {
-  stdout: string;
-  stderr: string;
-  exitCode: number;
-  elapsed: number;
-}
-
 export interface ErrorClassification {
   type: string;
   message: string;
