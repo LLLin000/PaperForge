@@ -318,6 +318,7 @@ describe("architecture boundary gate (Ticket 07)", () => {
       "client/probe-types.ts",
       "client/transport.ts",
       "client/paperforge-client.ts",
+      "client/trace.ts",
     ];
     const forbiddenImports = [
       /from "obsidian"/,

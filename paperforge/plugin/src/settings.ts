@@ -54,6 +54,7 @@ import type { PythonResult } from "./services/python-bridge";
 import { deferred } from "./services/deferred";
 import { orchestrateFromSync } from "./services/next-actions-bridge";
 import { PaperForgeClient } from "./client";
+import { clearTrace, dumpTrace, setTraceEnabled } from "./client/trace";
 import {
   PaperForgeConfirmModal,
   PaperForgeIssueDraftModal,
@@ -1629,6 +1630,39 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       text: t("cc_diagnostic_toggle") || "Advanced Status",
     });
     const diagBody = details.createDiv({ cls: "pf-sr-diagnostics-body" });
+
+    // ── Debug trace: the client-side boundary log (metadata only) ──
+    new Setting(diagBody)
+      .setName("Debug trace")
+      .setDesc(
+        "Log every client↔backend operation (command, ok, duration, epoch, error code — never stdin/env/values) to the console. The last 200 records stay in memory for copying."
+      )
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.debug_trace === true)
+          .onChange(async (value) => {
+            this.plugin.settings.debug_trace = value;
+            setTraceEnabled(value);
+            await this.plugin.saveSettings();
+          })
+      )
+      .addButton((btn) =>
+        btn.setButtonText("Copy").onClick(() => {
+          const text = dumpTrace();
+          void navigator.clipboard?.writeText(text || "(trace is empty)");
+          new Notice(
+            text
+              ? `Copied ${text.split("\n").length} trace lines`
+              : "Trace is empty"
+          );
+        })
+      )
+      .addButton((btn) =>
+        btn.setButtonText("Clear").onClick(() => {
+          clearTrace();
+          new Notice("Trace cleared");
+        })
+      );
 
     const vp = this._getVaultBasePath();
     const baseUrl = this.plugin.settings.vector_db_api_base || "-";

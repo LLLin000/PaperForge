@@ -144,6 +144,8 @@ export interface PaperForgeSettings {
   _migration_warnings?: string[];
   _paddleocr_configured?: boolean;
   _vector_db_configured?: boolean;
+  /** Diagnostic: log every client↔backend operation (metadata only). */
+  debug_trace?: boolean;
   [key: string]: unknown;
 }
 

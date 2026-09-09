@@ -55,6 +55,7 @@ import {
   resolveRuntimeCommand,
 } from "./services/managed-runtime";
 import { PaperForgeClient, NodeProcessTransport } from "./client";
+import { dumpTrace, setTraceEnabled } from "./client/trace";
 
 export default class PaperForgePlugin extends Plugin {
   /** agent_platform choices from Python's config list (#142) — empty until hydrated. */
@@ -96,6 +97,12 @@ export default class PaperForgePlugin extends Plugin {
       this._managedRuntime = new RuntimeBootstrap();
     }
     return this._managedRuntime;
+  }
+
+  /** Diagnostic handle for the console: `app.plugins.plugins.paperforge
+   * .getDebugTrace()` prints the client↔backend boundary log (metadata only). */
+  getDebugTrace(): string {
+    return dumpTrace();
   }
 
   _getPythonCommand(): { path: string; args: string[] } | null {
@@ -209,6 +216,8 @@ export default class PaperForgePlugin extends Plugin {
   async onload() {
     await this.loadSettings();
     await this.saveSettings();
+    // Diagnostic boundary trace (metadata only; see client/trace.ts).
+    setTraceEnabled(this.settings.debug_trace === true);
     setLanguage(this.app, this.settings.language);
 
     // (OCR run/redo credential gating is Python-side: the canonical action
