@@ -27,12 +27,10 @@ import { getDisclosureState, toggleDisclosureState } from "../utils/disclosure";
 import { checkOrphanState } from "./modals";
 import { orchestrateFromSync } from "../services/next-actions-bridge";
 import {
-  type PaperVersionInfo,
-  listPapersWithBackups,
-  scanVersions,
-  restoreVersion,
-  compareVersions,
-} from "../services/version-history";
+  type PaperVersionInfoDTO,
+  type VersionEntryDTO,
+} from "../client/paperforge-client";
+import { diffFulltext } from "../services/version-diff";
 import { VersionRestoreModal } from "./ocr-workspace";
 import type { PaperForgeClient } from "../client";
 
@@ -95,7 +93,7 @@ export class PaperForgeStatusView extends ItemView {
   _modeContextEl!: HTMLElement;
   // ── Search state ──
   // ── Version state ──
-  _versionPapers: PaperVersionInfo[] | null = null;
+  _versionPapers: PaperVersionInfoDTO[] | null = null;
   _versionFilter: string = "";
   // ── Search state ──
   _searchContainer: HTMLElement | null = null;
@@ -1019,61 +1017,45 @@ export class PaperForgeStatusView extends ItemView {
     verBtn.createEl("span", { text: t("version_panel_title") });
     verBtn.addEventListener("click", () => {
       const k = key!;
-      const vp = (this.app.vault.adapter as any).basePath as string;
-      const paths = resolveVaultPaths(vp);
-      const versions = scanVersions(vp, k);
-      if (versions && versions.versions.length > 0) {
-        new VersionRestoreModal(
-          this.app,
-          vp,
-          k,
-          versions.versions.map((v) => ({
-            label: v.label,
-            created_at: v.created_at,
-            source: v.source,
-            renderer_version: v.renderer_version,
-            fulltext_size: v.fulltext_size,
-          })),
-          versions.currentLabel
-        ).open();
-        return;
-      }
-      const backupsDir = path.join(paths.ocrDir, k, "backups");
-      if (!fs.existsSync(backupsDir)) return;
-      const files = fs
-        .readdirSync(backupsDir)
-        .filter((f) => f.startsWith("fulltext.pre-rebuild"))
-        .sort();
-      if (files.length === 0) return;
-      const entries = files.map((f) => {
-        const ts = f.replace("fulltext.pre-rebuild.", "").replace(/\.md$/, "");
-        const iso =
-          ts.length >= 16
-            ? ts.slice(0, 4) +
-              "-" +
-              ts.slice(4, 6) +
-              "-" +
-              ts.slice(6, 8) +
-              "T" +
-              ts.slice(9, 11) +
-              ":" +
-              ts.slice(11, 13) +
-              ":" +
-              ts.slice(13, 15) +
-              "Z"
-            : ts;
-        let size = 0;
+      // Python authority: manifest entries + legacy backup recognition +
+      // canonical artifact paths. The modal only reads those paths.
+      void (async () => {
+        const client = this._getClient();
+        if (!client) {
+          new Notice(t("runtime_not_available") || "Environment unavailable");
+          return;
+        }
         try {
-          size = fs.statSync(path.join(backupsDir, f)).size;
-        } catch {}
-        return {
-          label: "backup-" + ts,
-          created_at: iso,
-          source: "pre-rebuild",
-          fulltext_size: size,
-        };
-      });
-      new VersionRestoreModal(this.app, vp, k, entries, "").open();
+          const show = await client.versionsShow(k);
+          if (show.versions.length > 0) {
+            new VersionRestoreModal(
+              this.app,
+              k,
+              show.versions,
+              show.current_label,
+              show.current_path,
+              (label) => client.versionsRestore(k, label).then(() => undefined)
+            ).open();
+            return;
+          }
+          const backups = await client.versionsBackups(k);
+          if (backups.length > 0) {
+            new VersionRestoreModal(
+              this.app,
+              k,
+              backups,
+              "",
+              show.current_path,
+              (label) => client.versionsRestore(k, label).then(() => undefined)
+            ).open();
+          }
+        } catch (err: any) {
+          new Notice(
+            "[!!] Version history failed: " + (err?.message || err),
+            6000
+          );
+        }
+      })();
     });
     this._renderPaperOverviewCard(view, entry);
     if (entry.next_step === "ready" && entry.deep_reading_status === "done") {
@@ -2117,18 +2099,19 @@ export class PaperForgeStatusView extends ItemView {
   }
 
   /* ── Switch to Version Mode ── */
-  _switchToVersionMode(paperKey: string) {
-    const adapter = this.app.vault.adapter as unknown as Record<
-      string,
-      unknown
-    >;
-    const vp = adapter.basePath;
-    const vaultPath = typeof vp === "string" ? vp : "";
-    if (!vaultPath) {
-      new Notice("Cannot determine vault path");
+  async _switchToVersionMode(paperKey: string) {
+    // Version discovery/manifest interpretation is Python authority.
+    const client = this._getClient();
+    if (!client) {
+      new Notice(t("runtime_not_available") || "Environment unavailable");
       return;
     }
-    this._versionPapers = listPapersWithBackups(vaultPath);
+    try {
+      this._versionPapers = await client.versionsList();
+    } catch (err: any) {
+      new Notice("[!!] Version list failed: " + (err?.message || err), 6000);
+      this._versionPapers = [];
+    }
     this._versionFilter = "";
     this._currentMode = "versions";
     this._currentFilePath = null;
@@ -2147,23 +2130,16 @@ export class PaperForgeStatusView extends ItemView {
       cls: "paperforge-version-panel",
     });
 
-    const adapter = this.app.vault.adapter as unknown as Record<
-      string,
-      unknown
-    >;
-    const vp = adapter.basePath;
-    const vaultPath = typeof vp === "string" ? vp : "";
-    if (!vaultPath) {
-      view.createEl("div", {
-        cls: "paperforge-status-error",
-        text: "Could not determine vault path",
-      });
-      return;
-    }
-
-    // Re-scan if null
-    if (!this._versionPapers || this._versionPapers.length === 0) {
-      this._versionPapers = listPapersWithBackups(vaultPath);
+    // Re-scan if null (async — the panel renders the empty state first and
+    // re-renders when Python answers).
+    if (!this._versionPapers) {
+      void this._getClient()
+        ?.versionsList()
+        .then((papers) => {
+          this._versionPapers = papers;
+          if (this._currentMode === "versions") this._renderVersionMode();
+        })
+        .catch(() => undefined);
     }
 
     // ── Left Panel: Filter + Paper List ──
@@ -2241,7 +2217,7 @@ export class PaperForgeStatusView extends ItemView {
       cls: "paperforge-version-timeline-area",
     });
 
-    const renderTimeline = (paper: PaperVersionInfo) => {
+    const renderTimeline = (paper: PaperVersionInfoDTO) => {
       timelineArea.empty();
       const header = timelineArea.createEl("div", {
         cls: "paperforge-version-timeline-header",
@@ -2262,7 +2238,7 @@ export class PaperForgeStatusView extends ItemView {
       });
 
       for (const ver of paper.versions) {
-        const isCurrent = ver.label === paper.currentLabel;
+        const isCurrent = ver.label === paper.current_label;
         const entry = timeline.createEl("div", {
           cls:
             "paperforge-version-entry" +
@@ -2308,12 +2284,24 @@ export class PaperForgeStatusView extends ItemView {
           text: t("version_restore_btn"),
         });
         restoreBtn.addEventListener("click", () => {
-          const ok = restoreVersion(vaultPath, paper.key, ver.label);
-          if (ok) {
-            new Notice(t("version_restore_done").replace("{label}", ver.label));
-          } else {
-            new Notice("Restore failed", 6000);
-          }
+          void (async () => {
+            const client = this._getClient();
+            if (!client) {
+              new Notice(
+                t("runtime_not_available") || "Environment unavailable"
+              );
+              return;
+            }
+            try {
+              // Python performs the copy AND persists restore_provenance.
+              await client.versionsRestore(paper.key, ver.label);
+              new Notice(
+                t("version_restore_done").replace("{label}", ver.label)
+              );
+            } catch (err: any) {
+              new Notice("[!!] Restore failed: " + (err?.message || err), 6000);
+            }
+          })();
         });
 
         if (paper.versions.length > 1 && !isCurrent) {
@@ -2322,7 +2310,7 @@ export class PaperForgeStatusView extends ItemView {
             text: t("version_compare_btn"),
           });
           compareBtn.addEventListener("click", () => {
-            renderComparison(paper, ver.label, paper.currentLabel);
+            void renderComparison(paper, ver.label, paper.current_label);
           });
         }
       }
@@ -2334,12 +2322,33 @@ export class PaperForgeStatusView extends ItemView {
     });
     compareArea.style.display = "none";
 
-    const renderComparison = (
-      paper: PaperVersionInfo,
+    const renderComparison = async (
+      paper: PaperVersionInfoDTO,
       vA: string,
       vB: string
     ) => {
-      const diffs = compareVersions(vaultPath, paper.key, vA, vB);
+      const client = this._getClient();
+      if (!client) {
+        new Notice(t("runtime_not_available") || "Environment unavailable");
+        return;
+      }
+      let diffs: ReturnType<typeof diffFulltext> = [];
+      try {
+        // Python constructs the canonical artifact paths; the host only
+        // reads them for presentation and diffs the two texts (pure).
+        const pathsA = await client.versionsPaths(paper.key, vA);
+        const pathsB = await client.versionsPaths(paper.key, vB);
+        const textA = fs.existsSync(pathsA.source_path)
+          ? fs.readFileSync(pathsA.source_path, "utf-8")
+          : "";
+        const textB = fs.existsSync(pathsB.source_path)
+          ? fs.readFileSync(pathsB.source_path, "utf-8")
+          : "";
+        diffs = diffFulltext(textA, textB);
+      } catch (err: any) {
+        new Notice("[!!] Compare failed: " + (err?.message || err), 6000);
+        return;
+      }
       compareArea.style.display = "block";
       compareArea.empty();
       const header = compareArea.createEl("div", {

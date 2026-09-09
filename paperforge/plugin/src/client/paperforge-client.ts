@@ -116,6 +116,39 @@ export interface ProbeAllEnvelope {
   modules: Record<string, ProbeEnvelope>;
 }
 
+export interface VersionEntryDTO {
+  label: string;
+  created_at: string;
+  source: string;
+  renderer_version?: string;
+  structured_content_hash?: string;
+  fulltext_size: number;
+  /** Canonical artifact path constructed by Python — the UI reads ONLY this. */
+  source_path?: string;
+}
+
+export interface PaperVersionInfoDTO {
+  key: string;
+  title: string;
+  versions: VersionEntryDTO[];
+  current_label: string;
+  current_path?: string;
+  total_size: number;
+}
+
+export interface VersionShowDTO {
+  versions: VersionEntryDTO[];
+  current_label: string;
+  current_path: string;
+}
+
+export interface VersionPathsDTO {
+  label: string;
+  kind: "version" | "legacy_backup";
+  source_path: string;
+  current_path: string;
+}
+
 export interface DashboardStatsData {
   stats?: Record<string, unknown>;
   permissions?: Record<string, boolean>;
@@ -640,6 +673,71 @@ export class PaperForgeClient {
     return this._executePfResult<DashboardStatsData>(["dashboard", "--json"], {
       timeoutMs: 30000,
     });
+  }
+
+  // ── Display-fulltext version authority (Ticket 07 step 6 item 6) ──────
+  /** Version discovery + manifest interpretation + canonical artifact
+   * paths — Python authority. The UI renders these DTOs and may read the
+   * returned `source_path` for presentation/diff only. */
+  async versionsList(): Promise<PaperVersionInfoDTO[]> {
+    const data = await this._executePfResult<{
+      papers?: PaperVersionInfoDTO[];
+    }>(["versions", "list", "--json"]);
+    return Array.isArray(data?.papers) ? data.papers : [];
+  }
+
+  /** One paper's manifest. A paper with no manifest is a legitimate empty
+   * state (Python returns ok with empty lists). */
+  async versionsShow(key: string): Promise<VersionShowDTO> {
+    const data = await this._executePfResult<VersionShowDTO>([
+      "versions",
+      "show",
+      "--key",
+      key,
+      "--json",
+    ]);
+    return {
+      versions: Array.isArray(data?.versions) ? data.versions : [],
+      current_label: data?.current_label ?? "",
+      current_path: data?.current_path ?? "",
+    };
+  }
+
+  /** Legacy pre-rebuild backup recognition (filename + timestamp semantics
+   * are Python-owned). */
+  async versionsBackups(key: string): Promise<VersionEntryDTO[]> {
+    const data = await this._executePfResult<{
+      backups?: VersionEntryDTO[];
+    }>(["versions", "backups", "--key", key, "--json"]);
+    return Array.isArray(data?.backups) ? data.backups : [];
+  }
+
+  /** Canonical artifact paths for a label (current label when omitted). */
+  async versionsPaths(key: string, label?: string): Promise<VersionPathsDTO> {
+    const argv = ["versions", "paths", "--key", key];
+    if (label) argv.push("--label", label);
+    argv.push("--json");
+    return this._executePfResult<VersionPathsDTO>(argv);
+  }
+
+  /** Display-only restore: Python performs the copy AND persists
+   * restore_provenance (authority mutation → epoch invalidation). */
+  async versionsRestore(
+    key: string,
+    label: string
+  ): Promise<{ target_path: string; label: string }> {
+    try {
+      const data = await this._executePfResult<{
+        target_path?: string;
+        label?: string;
+      }>(["versions", "restore", "--key", key, "--label", label, "--json"]);
+      return {
+        target_path: data?.target_path ?? "",
+        label: data?.label ?? label,
+      };
+    } finally {
+      this.invalidateCache();
+    }
   }
 
   /** Python-authoritative note workflow flag mutation

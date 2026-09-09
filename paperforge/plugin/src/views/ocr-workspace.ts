@@ -1,8 +1,5 @@
-import {
-  scanVersions,
-  restoreVersion,
-  persistRestoreProvenance,
-} from "../services/version-history";
+import { diffParagraphs } from "../services/version-diff";
+import type { VersionEntryDTO } from "../client/paperforge-client";
 import {
   ItemView,
   WorkspaceLeaf,
@@ -912,124 +909,88 @@ export class OcrWorkspaceView extends ItemView {
       this._requestOcrRun([paper.key], redo ? "redo" : "run")
     );
 
-    // Restore backup — lazy availability on detail open: formal version
-    // history first, legacy backups/ fallback second (#126 PR C).
+    // Restore backup — Python authority: manifest entries, legacy backup
+    // recognition, canonical artifact paths. The UI only renders the DTOs.
     const restoreBtn = actions.createEl("button", {
       cls: "pf-btn pf-btn-secondary",
       text: t("ocr_ws_restore_checking") || "Checking versions…",
     });
     restoreBtn.disabled = true;
-    const vp = (this.app.vault.adapter as any).basePath as string;
-    const paths = resolveVaultPaths(vp);
     const restoreKey = paper.key;
-    const hasFormalVersions = (() => {
-      try {
-        const versions = scanVersions(vp, paper.key);
-        return versions && versions.versions.length > 0;
-      } catch {
-        return false;
+    const restoreClient = this._getClient();
+    const openRestore = async () => {
+      if (!restoreClient) {
+        new Notice(t("runtime_not_available") || "Environment unavailable");
+        return;
       }
-    })();
-    let hasLegacyBackups = false;
-    if (!hasFormalVersions) {
-      const backupsDir = path.join(paths.ocrDir, paper.key, "backups");
       try {
-        hasLegacyBackups =
-          fs
-            .readdirSync(backupsDir)
-            .filter((f: string) => f.startsWith("fulltext.pre-rebuild"))
-            .length > 0;
-      } catch {}
-    }
-    const restoreAvailable = hasFormalVersions || hasLegacyBackups;
-    if (this.selectedKey === restoreKey) {
-      // race protection: only apply when the same detail is still open
-      restoreBtn.disabled = !restoreAvailable;
-      restoreBtn.setText(t("ocr_ws_detail_restore_backup") || "Restore Backup");
-      if (!restoreAvailable) {
-        restoreBtn.title =
-          t("ocr_ws_restore_unavailable") || "No backup versions available";
-      }
-    }
-    restoreBtn.addEventListener("click", () => {
-      // Try version manifest first
-      const versions = scanVersions(vp, paper.key);
-      if (versions && versions.versions.length > 0) {
-        const modal = new VersionRestoreModal(
+        const show = await restoreClient.versionsShow(restoreKey);
+        if (show.versions.length > 0) {
+          new VersionRestoreModal(
+            this.app,
+            restoreKey,
+            show.versions,
+            show.current_label,
+            show.current_path,
+            (label) =>
+              restoreClient
+                .versionsRestore(restoreKey, label)
+                .then(() => undefined),
+            () => {
+              this._loadPapers().then(() => this._render());
+            }
+          ).open();
+          return;
+        }
+        const backups = await restoreClient.versionsBackups(restoreKey);
+        if (backups.length === 0) {
+          new Notice("No backup versions available");
+          return;
+        }
+        new VersionRestoreModal(
           this.app,
-          vp,
-          paper.key,
-          versions.versions.map((v) => ({
-            label: v.label,
-            created_at: v.created_at,
-            source: v.source,
-            renderer_version: v.renderer_version,
-            fulltext_size: v.fulltext_size,
-          })),
-          versions.currentLabel,
+          restoreKey,
+          backups,
+          "",
+          show.current_path,
+          (label) =>
+            restoreClient
+              .versionsRestore(restoreKey, label)
+              .then(() => undefined),
           () => {
             this._loadPapers().then(() => this._render());
-          },
-          paper.ocrFinishedAt
+          }
+        ).open();
+      } catch (err: any) {
+        new Notice(
+          "[!!] Version history failed: " + (err?.message || err),
+          6000
         );
-        modal.open();
-        return;
       }
-      // Fallback: scan backups/ directory for pre-rebuild files
-      const backupsDir = path.join(paths.ocrDir, paper.key, "backups");
-      if (!fs.existsSync(backupsDir)) {
-        new Notice("No backup versions available");
-        return;
+    };
+    void (async () => {
+      if (!restoreClient) return;
+      try {
+        const show = await restoreClient.versionsShow(restoreKey);
+        const hasFormal = show.versions.length > 0;
+        const hasLegacy = hasFormal
+          ? false
+          : (await restoreClient.versionsBackups(restoreKey)).length > 0;
+        const available = hasFormal || hasLegacy;
+        if (this.selectedKey !== restoreKey) return; // race protection
+        restoreBtn.disabled = !available;
+        restoreBtn.setText(
+          t("ocr_ws_detail_restore_backup") || "Restore Backup"
+        );
+        if (!available) {
+          restoreBtn.title =
+            t("ocr_ws_restore_unavailable") || "No backup versions available";
+        }
+      } catch {
+        // leave the button disabled (fail closed)
       }
-      const backupFiles = fs
-        .readdirSync(backupsDir)
-        .filter((f) => f.startsWith("fulltext.pre-rebuild"))
-        .sort();
-      if (backupFiles.length === 0) {
-        new Notice("No backup versions available");
-        return;
-      }
-      const backupEntries = backupFiles.map((f) => {
-        const ts = f.replace("fulltext.pre-rebuild.", "").replace(/\.md$/, "");
-        const iso =
-          ts.length >= 16
-            ? ts.slice(0, 4) +
-              "-" +
-              ts.slice(4, 6) +
-              "-" +
-              ts.slice(6, 8) +
-              "T" +
-              ts.slice(9, 11) +
-              ":" +
-              ts.slice(11, 13) +
-              ":" +
-              ts.slice(13, 15) +
-              "Z"
-            : ts;
-        let size = 0;
-        try {
-          size = fs.statSync(path.join(backupsDir, f)).size;
-        } catch {}
-        return {
-          label: "backup-" + ts,
-          created_at: iso,
-          source: "pre-rebuild",
-          fulltext_size: size,
-        };
-      });
-      const modal = new VersionRestoreModal(
-        this.app,
-        vp,
-        paper.key,
-        backupEntries,
-        "",
-        () => {
-          this._loadPapers().then(() => this._render());
-        },
-        paper.ocrFinishedAt
-      );
-      modal.open();
-    });
+    })();
+    restoreBtn.addEventListener("click", () => void openRestore());
 
     // Single-paper rebuild is routed through the backend action descriptor.
     this._ensureActionDescriptor("ocr.rebuild_derived");
@@ -1279,54 +1240,12 @@ interface VersionEntry {
   fulltext_size: number;
 }
 
-function versionContentPath(
-  ocrDir: string,
-  key: string,
-  label: string
-): string {
-  if (label.startsWith("backup-")) {
-    const ts = label.slice("backup-".length);
-    return path.join(
-      ocrDir,
-      key,
-      "backups",
-      "fulltext.pre-rebuild." + ts + ".md"
-    );
-  }
-  return path.join(ocrDir, key, "versions", label, "fulltext.md");
-}
-
-function diffParagraphs(
-  textA: string,
-  textB: string
-): { type: "added" | "removed" | "unchanged"; text: string }[] {
-  const split = (t: string) => t.split(/\n\n+/).filter(Boolean);
-  const pa = split(textA);
-  const pb = split(textB);
-  const max = Math.max(pa.length, pb.length);
-  const result: { type: "added" | "removed" | "unchanged"; text: string }[] =
-    [];
-  for (let i = 0; i < max; i++) {
-    const a = i < pa.length ? pa[i] : "";
-    const b = i < pb.length ? pb[i] : "";
-    if (!a && b) result.push({ type: "added", text: b });
-    else if (a && !b) result.push({ type: "removed", text: a });
-    else if (a !== b) {
-      result.push({ type: "removed", text: a });
-      result.push({ type: "added", text: b });
-    } else {
-      result.push({ type: "unchanged", text: a });
-    }
-  }
-  return result;
-}
-
 export class VersionRestoreModal extends Modal {
-  private versions: VersionEntry[];
+  private versions: VersionEntryDTO[];
   private currentLabel: string;
-  private vaultPath: string;
   private paperKey: string;
-  private ocrDir: string;
+  private currentPath: string;
+  private restore: (label: string) => Promise<void>;
   private selectedIdx: number = 0;
   private onRestored: (() => void) | null;
   private contentCache: Map<string, string> = new Map();
@@ -1334,30 +1253,32 @@ export class VersionRestoreModal extends Modal {
 
   constructor(
     app: any,
-    vaultPath: string,
     paperKey: string,
-    versions: VersionEntry[],
+    versions: VersionEntryDTO[],
     currentLabel: string,
-    onRestored?: () => void,
-    private paperFinishedAt = ""
+    currentPath: string,
+    restore: (label: string) => Promise<void>,
+    onRestored?: () => void
   ) {
     super(app);
-    this.vaultPath = vaultPath;
     this.paperKey = paperKey;
-    this.ocrDir = path.join(vaultPath, "System", "PaperForge", "ocr");
     this.versions = versions;
     this.currentLabel = currentLabel;
+    this.currentPath = currentPath;
+    this.restore = restore;
     this.onRestored = onRestored ?? null;
     this.mdComponent = new Component();
     this.mdComponent.load();
   }
 
+  /** Presentation only: read the Python-returned canonical artifact path. */
   private getContent(label: string): string {
     const cached = this.contentCache.get(label);
     if (cached !== undefined) return cached;
     try {
-      const fp = versionContentPath(this.ocrDir, this.paperKey, label);
-      if (fs.existsSync(fp)) {
+      const entry = this.versions.find((v) => v.label === label);
+      const fp = entry?.source_path ?? "";
+      if (fp && fs.existsSync(fp)) {
         const text = fs.readFileSync(fp, "utf-8");
         this.contentCache.set(label, text);
         return text;
@@ -1376,16 +1297,14 @@ export class VersionRestoreModal extends Modal {
       if (innerModal) innerModal.style.width = "min(90vw, 1200px)";
     } catch {}
 
-    // Cache current render content
-    const curPath = path.join(
-      this.ocrDir,
-      this.paperKey,
-      "render",
-      "fulltext.md"
-    );
+    // Cache current render content (Python-returned canonical path)
     try {
-      if (fs.existsSync(curPath))
-        this.contentCache.set("__current__", fs.readFileSync(curPath, "utf-8"));
+      if (this.currentPath && fs.existsSync(this.currentPath)) {
+        this.contentCache.set(
+          "__current__",
+          fs.readFileSync(this.currentPath, "utf-8")
+        );
+      }
     } catch {}
 
     this.renderAll();
@@ -1464,7 +1383,7 @@ export class VersionRestoreModal extends Modal {
       this.app,
       this.getContent(ver.label),
       contentArea,
-      this.vaultPath,
+      ver.source_path ?? "",
       this.mdComponent
     );
     diffArea.style.display = "none";
@@ -1562,61 +1481,19 @@ export class VersionRestoreModal extends Modal {
     modal.open();
   }
 
-  private _executeRestore(ver: VersionEntry) {
-    let ok = false;
-    if (ver.label.startsWith("backup-")) {
-      const source = versionContentPath(this.ocrDir, this.paperKey, ver.label);
-      const targetDir = path.join(this.ocrDir, this.paperKey, "render");
-      const target = path.join(targetDir, "fulltext.md");
-      try {
-        if (fs.existsSync(source)) {
-          if (!fs.existsSync(targetDir))
-            fs.mkdirSync(targetDir, { recursive: true });
-          fs.copyFileSync(source, target);
-          ok = true;
-          // #129: legacy backup restores must record provenance too —
-          // version_created_at derives from the backup timestamp.
-          persistRestoreProvenance(this.ocrDir, this.paperKey, {
-            label: ver.label,
-            restored_at: new Date().toISOString(),
-            version_created_at: ver.created_at,
-          });
-        }
-      } catch (e) {
-        console.warn("[PaperForge] Restore backup failed:", e);
-      }
-    } else {
-      ok = restoreVersion(
-        this.vaultPath,
-        this.paperKey,
-        ver.label,
-        ver.created_at
-      );
-    }
-    if (ok) {
+  private async _executeRestore(ver: VersionEntryDTO): Promise<void> {
+    if (ver.label === this.currentLabel) return;
+    try {
+      // Python owns the copy AND the restore-provenance mutation.
+      await this.restore(ver.label);
       new Notice(t("ocr_ws_detail_restore_done").replace("{label}", ver.label));
-      // #129: warn when the restored display version predates the current
-      // structured state — a rebuild is needed to re-sync structure. Compare
-      // as Dates so display-formatted timestamps cannot corrupt the check.
-      const restoredAt = new Date(ver.created_at).getTime();
-      const finishedAt = new Date(this.paperFinishedAt).getTime();
-      if (
-        Number.isFinite(restoredAt) &&
-        Number.isFinite(finishedAt) &&
-        restoredAt < finishedAt
-      ) {
-        new Notice(
-          t("ocr_ws_restore_stale_notice") ||
-            "This version predates the current structured state; rebuild the paper to re-sync structure",
-          8000
-        );
-      }
       this.close();
       this.onRestored?.();
-    } else {
-      new Notice("Restore failed");
+    } catch (err: any) {
+      new Notice("[!!] Restore failed: " + (err?.message || err), 6000);
     }
   }
+
   onClose() {
     try {
       this.contentEl.empty();
