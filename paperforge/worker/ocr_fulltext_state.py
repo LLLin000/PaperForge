@@ -28,6 +28,12 @@ def parse_pre_rebuild_backup_name(name: str) -> tuple[str, str] | None:
     return match.group(1), match.group(2) or ""
 
 
+def format_pre_rebuild_backup_name(stamp: str, seq: str = "") -> str:
+    """THE producer-side counterpart of parse_pre_rebuild_backup_name."""
+    suffix = f".{seq}" if seq else ""
+    return f"fulltext.pre-rebuild.{stamp}{suffix}.md"
+
+
 def backup_stamp_to_iso(stamp: str) -> str:
     """``YYYYMMDDTHHMMSSZ`` -> ``YYYY-MM-DDTHH:MM:SSZ`` (identity if odd)."""
     if len(stamp) == 16 and stamp[8] == "T" and stamp.endswith("Z"):
@@ -64,8 +70,9 @@ def create_pre_rebuild_backup(fulltext_path: Path, now_utc: dt.datetime) -> tupl
     source_bytes = fulltext_path.read_bytes()
     source_hash = _sha256_hexdigest(source_bytes)
     for seq in range(1000):
-        suffix = "" if seq == 0 else f".{seq:03d}"
-        name = f"fulltext.pre-rebuild.{stamp}{suffix}.md"
+        name = format_pre_rebuild_backup_name(
+            stamp, "" if seq == 0 else f"{seq:03d}"
+        )
         candidate = backups_dir / name
         if candidate.exists():
             continue

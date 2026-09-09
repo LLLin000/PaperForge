@@ -28,6 +28,33 @@
 
 > **STATUS: Stage 2 step 5 CLOSED / SEALED — 27c33f4b** (owner-verified 2026-09-08). Step 6 unlocked, order: cast-form architecture probe fix → final leaf semantic census (`processFrontMatter(do_ocr/analyze)` included, never dragged back to step 5) → action-client/next-actions execution convergence → long-task-client → NodeProcessTransport → python-bridge contraction → final zero-census/architecture gate → Ticket 07 close.
 
+## Stage 2 — step 6 item 6 presentation-path containment (2026-09-08, round 3 — owner audit)
+
+- **P1 read-side containment:** the mutation side was contained, but the
+  Python-returned PRESENTATION paths were not uniformly symlink-contained,
+  and the UI's frozen seam is "read the Python-returned path verbatim".
+  Fixed with ONE exit helper `_safe_artifact_path(paper_root, candidate)`
+  (resolved-containment) that every DTO path now passes:
+  - `list_backups()` skips entries whose resolved path escapes the paper
+    root (a symlinked `backups/` dir can no longer leak an external
+    `source_path` to the UI);
+  - `versions list` validates every child through `_paper_root()` — a
+    symlinked OCR child is never interpreted (no external manifest);
+  - `show`/`list` `current_path` and `_with_paths`/`_entry_paths` sources
+    go through the same helper, failing closed (`""`/dropped) when unsafe.
+- **Producer consumes the SSOT for real:** `format_pre_rebuild_backup_name`
+  added next to `parse_pre_rebuild_backup_name`; `create_pre_rebuild_backup`
+  now builds its filename through it (the round-trip regression still pins
+  producer↔parser agreement).
+- **Regressions:** symlinked `backups/` → outside (no external path, legacy
+  `paths` label fails closed); symlinked OCR child → outside paper (absent
+  from `list`, direct `show` fails closed); plus a platform-independent pin
+  of `_safe_artifact_path`/`_paper_root` (the symlink tests skip where the
+  platform refuses symlinks, POSIX runs them).
+- Evidence: Python versions **10 passed + 2 skipped**; fulltext-state 9;
+  note/paper-lookup 30; ruff clean on touched files (pre-existing UP024/E501
+  in the producer untouched); no TS change (UI seam untouched).
+
 ## Stage 2 — step 6 item 6 final corrective (2026-09-08, round 2 — owner audit)
 
 - **P1 key/label canonical containment:** the `versions` authority accepted raw
