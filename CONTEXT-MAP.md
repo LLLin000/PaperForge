@@ -7,6 +7,7 @@
 - [Retrieval Layer](./paperforge/memory/CONTEXT.md) — paper-native retrieval units, lookup intents, corpus recall, and structured paper navigation.
 - [Plugin Control Center](./paperforge/plugin/CONTEXT.md) — presents device foundation, module health, recovery actions, and configuration in user-facing language
 - [Standalone Onboarding & Client-Neutral Setup Protocol](./paperforge/setup/CONTEXT.md) — installation and first configuration as a backend-owned, client-neutral lifecycle: Foundation vs client integration, onboarding protocol, secret contract, relocation, S1–S8 certification.
+- [Release Acceptance](./project/CONTEXT.md) — how a candidate is proven fit to ship: acceptance cases, evidence layers, candidate binding, and the RELEASE_READY / RELEASED boundary.
 
 ## Relationships
 
