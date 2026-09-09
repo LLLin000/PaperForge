@@ -1,3 +1,8 @@
+> ARCHIVED — 2026-09-09
+> 原因：旧的七条 CLI 模拟旅程与固定 assertion 上限，已被完整真实宿主/后端/恢复/发布验收矩阵替代。
+> 替代：[插件大版本全工作流测试与发布验收计划](../current/plugin-major-release-acceptance-plan.md)。
+> 下文为原始历史内容；旧 token、命令和固定 vault 仅供溯源，不是当前执行指令。
+
 # User Journey Acceptance Tests
 
 ## 问题

@@ -1,8 +1,8 @@
-> **Branch:** `master` | **Last Updated:** 2026-09-08
+> **Branch:** `master` | **Last Updated:** 2026-09-09
 >
-> **Ticket 07 CLOSED / SEALED — `7ed1930c` (2026-09-08, owner-audited).** The thin-client authority cutover is complete and frozen. Final invariants: process execution authority → `client/node-transport.ts` only; action execution authority → `PaperForgeClient` only; canonical semantic interpretation + identity → Python only; frontend durable mutation → typed Python/client surfaces only; long-task ownership → the singleton client only; UI filesystem use → host context / Python-returned (contained) presentation paths only. Ticket 07 is closed for hardening; next work is a NEW architecture frontier (kernel/control-plane), not further cleanup of this ticket.
+> **Ticket 07 CLOSED / SEALED — `7ed1930c` (2026-09-08, owner-audited).** The thin-client authority cutover remains frozen: process execution → `client/node-transport.ts`; action execution and long-task ownership → singleton `PaperForgeClient`; semantic interpretation, identity and durable mutation → Python; UI filesystem access → host context / contained Python-returned presentation paths. New release-acceptance issues do not reopen Ticket 07.
 >
-> **Active work:** **Reconcile Core is FROZEN** under `docs/RECONCILE-EXTENSION-CONTRACT.md` (Audit → Staging → R/P/Blocked → CAS/Journal/Rollback → Commit invariants locked; detection open as read-only finding producers). Active engineering shifts to **Backend Surface Rationalization & Frontend Thin-Client Mapping** per `docs/BACKEND-FRONTEND-CONTRACT-MAPPING.md` (5 core backend contracts: Observation, Deficit, Policy, Operation, Authority-Write; 6 product projection domains: Foundation, Library, Processing, Knowledge/Retrieval, Maintenance, Render Quality; unified `PaperForgeClient` boundary). Reconcile production batch rollout remains owner-gated.
+> **Active work:** [Plugin major-release workflow testing and release acceptance](project/current/plugin-major-release-acceptance-plan.md) — **PLANNED**, investigation baseline `d1244f96`. Next: W00 aligns release scope, current contracts and owner decisions; W01 makes real-artifact/sandbox evidence reliable. Reconcile Core remains FROZEN under `docs/RECONCILE-EXTENSION-CONTRACT.md`; Python/client authority under `docs/BACKEND-FRONTEND-CONTRACT-MAPPING.md` is unchanged. No new test completion, production write, tag or release is claimed.
 >
 > **Ticket 05 (2026-09-03):** Knowledge & Retrieval cut over to `PaperForgeClient`; #137 NDJSON vocabulary frozen across Python and TypeScript; `embed.build` and `embed.resume` stream worker-backed progress without stdout capture or cancellation token collision; dashboard search/retrieve and Smart Retrieval build/resume route through typed client methods.
 >
@@ -48,6 +48,7 @@ raw observations → structural signatures → stable anchors/families → zone 
 </br>
 | Suite | Result |
 |-------|--------|
+| Major-release acceptance plan (2026-09-09) | **PLANNED, documentation only.** Full frontend/backend workflows, cross-task journeys, failure/recovery, real-host/process/provider/content evidence and candidate-bound release gates are specified in `project/current/plugin-major-release-acceptance-plan.md`. Existing test counts are historical; new suites and final candidate certification have not run. |
 | 2026-08-15 safety + residual + UI (post-incident) | **130 py (trash layer, prune DB-cleanup, residual detection, registry) + 35 OCR + 4 update + pre-commit destructive-delete check + 408 vitest + tsc clean** ✅ |
 | Architecture Audit Slice A (#131) | **183/183 focused passed (153 slice A + 14 collectors + 14 report/gate + 2); Ruff clean; full suite 2883→2899 passed / 292 skipped (0 failures)** ✅ |
 | Architecture Review Skill (#132) | **32/32 evals passed** (process invariants + skill document contracts); Ruff clean ✅ |
@@ -93,6 +94,7 @@ raw observations → structural signatures → stable anchors/families → zone 
 </br>
 | Component | Status |
 |-----------|--------|
+| Major-release acceptance | **PLANNED** — new workflow matrix and dependency-ordered work packages; implementation and release remain unaccepted pending per-issue evidence and owner gates |
 | Structural gate | Installed |
 | Role assignment (seed only) | ✅ |
 | Zone inference + fallback | ✅ |
@@ -591,11 +593,14 @@ Remaining legacy OCR issues (carried forward):
 
 ## 3. Remaining Issues
 
+- Major-release acceptance is now the active planned lane: [full plan](project/current/plugin-major-release-acceptance-plan.md). W00 must reconcile old #81 wording with the sealed current contracts and freeze version/support/quality/performance decisions; no scope reduction or release authorization is implied.
 - Release owner gates remain open: exact-SHA hosted CI, full live cancellation/recovery, Release-N reinstall, and support-window/publication decisions.
 - Reconcile semantic panel coverage remains report-only and production reconcile rollout remains owner-gated.
 - Embed/vector post-publish and reader-contention optimization remains open; no OCR Workspace change resolves those backend performance findings.
 
 ## 4. Active Queue
+
+**Current priority (2026-09-09):** Execute W00 → W01 of the [major-release acceptance plan](project/current/plugin-major-release-acceptance-plan.md), then the dependency-ordered per-issue work packages. Prior RC checkpoints below remain historical evidence, not certification for the next release. New deterministic, real-host, live-provider and packaging gates must be bound to the final candidate.
 
 0. 🔒 **M4 Release Candidate validation** — S1–S6 lightweight disposable certification **COMPLETE** on `EXECUTABLE_FROZEN 462398cb` (docs `PROTOCOL_DOCS 781910f3`): `46c4ddaf` and `b66fde53` are already ancestors of `462398cb` (ahead 21/18), so no reconstruction is needed; `781910f3` adds only 2 docs commits. No RC blocker in current lightweight invariants (see §2.12, `project/current/cert-462398cb-S1-S6-matrix.md`). Full RC matrix `2026-08-17` `OWNER GATE` / `EVIDENCE OPEN` rows (plugin managed-runtime browser, Release-N reinstall, full S6) remain open. Local full suite `3312/0` green; hosted exact-SHA CI pending (do not claim `14899168` as `462398cb` evidence). **#81 remains open + `ready-for-human`; #191 remains `ready-for-agent` (FROZEN) without product code change; no release/tag/package publication.**
 0.1. ⏳ **Reconcile-only render-result hardening** — identity census, duplicate/claim blocking, isolated R staging, manifest/CAS/journal gates, explicit scope, fail-closed malformed provenance/journal/ID handling, report-level `R_CONTENT_UNVERIFIED`, namespace-aware P anchors, and fulltext duplicate/source blocking are implemented. Disposable canary remains PASS (**11/12 promotions; 1 expected page-range failure; 11 second-promote no-ops**). Production real-vault canary remains owner-blocked; semantic coverage defects stay report-only. No production batch rollout.
@@ -764,6 +769,8 @@ Remaining legacy OCR issues (carried forward):
 
 | Date | Decision | Rationale |
 |------|----------|-----------|
+| 2026-09-09 | Major-release acceptance effort assessment | Measured baseline: 236 Python test files / 3431 test functions, 26 plugin files / 459 `it`, 1 real-host spec / 7 `it`, 3 chaos files, releases available to 1.5.15, 9 CI jobs with no WDIO job. Estimate [INFERENCE] 60–100 new real-host scenarios, 110–180 new/extended I·U tests, 15–40 product fixes, 57–75 issues (±40%; drivers W18/W19/W20). Recommendation: calibrate via W00+W01+one vertical slice before committing. |
+| 2026-09-09 | Full workflow acceptance before plugin major release | Replace CLI-as-GUI and seven-journey caps with an exhaustive task/state/evidence matrix using existing pytest/Vitest/WDIO seams; distinguish IMPLEMENTED, VERIFIED, RELEASE_READY and RELEASED. Preserve sealed authority contracts, one-writer issue flow and independent production/provider/publication owner gates. |
 | 2026-08-17 | Recovery + Control Plane Closure | Recovery CLOSED: frozen 958-paper census, 938 OCR/retrieval current, 935 vector-current + 3 `no_content`, serving smoke verified. M1/M1.1/M2/M3 CLOSED; architecture frozen; M4 RC gate matrix and owner decision are now the only active work. | §2.4–§4 |
 | 2026-08-17 | M4 lifecycle evidence and non-blocker classification | Disposable fresh/existing chains, schema migration, fail-closed config rollback, offline failure, stale-state tests, plugin static checks, and safety scan passed. The remaining stdout relay, managed-runtime/UI, cancellation, scoped-embed, CI/checksum, and real Release-N reinstall items remain RC evidence/owner gates; no candidate code or materialization change is justified. | RC matrix |
 | 2026-08-18 | Cache canonical PDF lookup per lineage observation | Full sync was reparsing the 4 MB canonical index once per paper inside the lineage loop. Build one observation-scoped PDF map instead; preserve per-paper semantics while reducing the measured full reconcile from 144.61 s to 48.38 s. No materialization rerun is required. |
@@ -1068,6 +1075,7 @@ python -m ruff check paperforge/worker/ocr_*.py
 ## 8. Session Timeline (Compressed)
 | Date | Session | Key Results | Detailed Archive |
 |------|---------|-------------|------------------|
+| 2026-09-09 | Major-release acceptance planning | Wrote the complete frontend/backend workflow, recovery, real-host/provider/quality and release-gate plan at baseline `d1244f96`; archived the two superseded acceptance drafts and updated active pointers. Documentation only: no new product tests certified, no product code changed, no production/provider task or release executed. | §2.1, §3–§4; `project/current/plugin-major-release-acceptance-plan.md` |
 | 2026-08-21 | **Read-only render consistency + figure reconciliation reports** | Full audit found 5304 render-layer issues. The shared output boundary emits consistency reports; an on-demand reconciliation pass now separates exact render repairs, inventory proposals, and blocked cases. 388XI46Q produced 8 supported labels, 6 canonical figures, 2 high-evidence proposals, and 5 reservation blocks; 965 report-only files were generated with 3619 exact, 128 proposal, and 727 blocked entries. No action executed. | §2.13, §4 |
 | 2026-08-26 | **Reconcile-only identity hardening** | Read-only census scanned 965 papers and found 250 duplicate canonical figure-ID groups across 182 papers (224 conflicting, 26 identical; 500 affected output paths). Audit now emits structured duplicate issues; reconcile excludes ambiguous IDs from R/P indexing and blocks them; R staging filters to selected exact plans instead of passing the full inventory. **82 tests passed, 1 warning; no front OCR/render or production artifact changed.** | §2.16, §4, `project/current/render-reconciliation/duplicate-id-census.json` |
 | 2026-08-26 | **D1 P0 hardening + disposable canary closure** | Added cross-object claims, destination CAS, post-audit commit gate, durable journal, writer lock, explicit scope, and four hard-kill recovery injections. **114 tests passed, 1 warning**; 12 disposable objects tested (**11 promoted, 1 expected page-range failure**), all 11 second promotes were no-ops. No production write ran; batch rollout remains owner-blocked. | §2.17, §4, `project/current/render-reconciliation/r-canary-results.json` |

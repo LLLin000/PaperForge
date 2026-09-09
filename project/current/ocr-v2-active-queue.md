@@ -1,4 +1,13 @@
 # OCR-v2 Active Queue
+
+> **Current priority (2026-09-09): Plugin major-release acceptance — PLANNED.** Complete the [full workflow and release plan](plugin-major-release-acceptance-plan.md), starting with W00 (release scope/contract alignment) then W01 (real-artifact and sandbox harness). Effort assessment (§15, [INFERENCE]): 60–100 new real-host scenarios, 110–180 new/extended I·U tests, 15–40 product fixes, 57–75 issues (±40%). Calibrate with W00+W01+one vertical slice before committing to the full range. Implementation follows one issue / one worktree / one writer; this document does not create or close issues.
+> **Planning baseline:** `d1244f96ef6e0f8c61c1bdf3510e0c771f1c479e`. New tests are not yet implemented or certified. Ticket 07 remains CLOSED / SEALED; Reconcile Core remains frozen. Production/provider work and publication require their respective explicit owner gates.
+> **Last updated:** 2026-09-09. The two earlier acceptance drafts were moved to `project/archive/` with replacement pointers. The new plan is the current acceptance-scope reference; CI / owner gates remain the release authority.
+
+## Historical checkpoints (not current candidate certification)
+
+The dated checkpoints below preserve prior evidence and prior next-step wording. They do not supersede the current priority above or certify a new major-release candidate.
+
 > Status: `EXECUTABLE_FROZEN a42f8bb7` / `PROTOCOL_DOCS 781910f3` — S1–S6 lightweight **COMPLETE** on `462398cb` (valid for `a42f8bb7`, `ruff` clean). Hosted CI `32353318123` on docs-only descendant `a2e18fa4` is **green: All Checks Passed, 14/14**, with `3.11` Ubuntu/macOS/Windows, J-Matrix, Ruff, plugin, OCR, E2E; no executable change after `a42f8bb7`. #191 FROZEN / ready-for-agent; #81 OPEN / owner gate. Reconcile recovery/fulltext safety follow-up is closed on disposable fixtures; P authority acceptance is transaction-safe and bound to the exact human-reviewed plan hash; the 969-paper unverified-content census is clean; semantic coverage and all production writes remain owner-gated.
 > Last updated: 2026-09-08
 > Tickets 01–06 all CLOSED (06 — 31c5a321, owner-verified after corrective rounds 1+2): Library and Render Quality fully route through `PaperForgeClient`; sync follow-up semantics preserved via the shared orchestrator; R/P review renders actual staged crops with Open preview. Next: Ticket 07 (legacy bridge deletion + architecture enforcement).
