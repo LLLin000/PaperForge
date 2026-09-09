@@ -314,47 +314,62 @@ def _add_missing_frontmatter_fields(existing_content: str, new_fields: dict[str,
     return f"---{new_frontmatter}---{body}"
 
 
-def set_frontmatter_flag(content: str, key: str, value: bool) -> str:
-    """Set a boolean frontmatter field to an UNQUOTED YAML bool.
+def split_frontmatter_block(text: str) -> tuple[str, str] | None:
+    """Split a note into (frontmatter block, body) with LINE-ANCHORED
+    fences, or ``None`` when the note has no frontmatter or the fence is
+    unterminated.
 
-    LINE-ANCHORED fence parsing: the frontmatter block is the lines
-    between a first line of exactly ``---`` and the NEXT line of exactly
-    ``---`` — never a substring split. An inline value such as
-    ``title: State --- X`` is not a fence; a body ``---`` horizontal rule
-    stays body. Replace/search runs ONLY inside the block; a missing
-    field is appended INSIDE it, before the closing fence. Line endings
-    (CRLF/LF) are preserved.
-
-    The index builder derives ``do_ocr``/``analyze`` with
-    ``isinstance(v, bool)`` — a quoted ``'true'`` string would silently
-    fall back to legacy derivation, so booleans must stay bare.
+    The block includes the opening/closing fence lines verbatim (BOM
+    prefixed when present); the body is everything after the closing
+    fence. Inline ``---`` inside a value is never a fence; a body
+    ``---`` horizontal rule stays body.
     """
-    bom = "\ufeff" if content.startswith("\ufeff") else ""
-    lines = content[len(bom):].splitlines(keepends=True)
+    bom = "\ufeff" if text.startswith("\ufeff") else ""
+    lines = text[len(bom):].splitlines(keepends=True)
     if not lines or lines[0].rstrip("\r\n") != "---":
-        return content
+        return None
     close = None
     for i in range(1, len(lines)):
         if lines[i].rstrip("\r\n") == "---":
             close = i
             break
     if close is None:
-        # Unterminated frontmatter — refuse, never fabricate a block.
+        return None
+    return bom + "".join(lines[: close + 1]), "".join(lines[close + 1 :])
+
+
+def set_frontmatter_flag(content: str, key: str, value: bool) -> str:
+    """Set a boolean frontmatter field to an UNQUOTED YAML bool.
+
+    Operates STRICTLY inside the line-anchored frontmatter block (see
+    :func:`split_frontmatter_block`); a missing field is appended inside
+    it, before the closing fence. All original line endings are preserved
+    byte-for-byte, including the fences — an invalid/unterminated block
+    returns the content UNCHANGED (callers must treat that as a validation
+    failure, never as success).
+
+    The index builder derives ``do_ocr``/``analyze`` with
+    ``isinstance(v, bool)`` — a quoted ``'true'`` string would silently
+    fall back to legacy derivation, so booleans must stay bare.
+    """
+    block = split_frontmatter_block(content)
+    if block is None:
         return content
-    fm_lines = lines[1:close]
-    body_lines = lines[close:]
+    fm_block, body = block
+    bom = "\ufeff" if fm_block.startswith("\ufeff") else ""
+    lines = fm_block[len(bom):].splitlines(keepends=True)
+    fence_open, close_fence = lines[0], lines[-1]
+    inner = lines[1:-1]
     replacement = f"{key}: {'true' if value else 'false'}"
     pattern = re.compile("^" + re.escape(key) + "\\s*:.*$")
-    for idx, line in enumerate(fm_lines):
+    for idx, line in enumerate(inner):
         if pattern.match(line.rstrip("\r\n")):
-            eol = "\r\n" if line.endswith("\r\n") else "\n"
-            fm_lines[idx] = replacement + eol
+            inner[idx] = replacement + ("\r\n" if line.endswith("\r\n") else "\n")
             break
     else:
-        last = fm_lines[-1] if fm_lines else "---\n"
-        eol = "\r\n" if last.endswith("\r\n") else "\n"
-        fm_lines.append(replacement + eol)
-    return bom + "---\n" + "".join(fm_lines) + "".join(body_lines)
+        last = inner[-1] if inner else fence_open
+        inner.append(replacement + ("\r\n" if last.endswith("\r\n") else "\n"))
+    return bom + fence_open + "".join(inner) + close_fence + body
 
 
 def update_frontmatter_field(content: str, key: str, value: str) -> str:

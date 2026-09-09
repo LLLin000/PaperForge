@@ -84,16 +84,26 @@ def run(args: argparse.Namespace) -> int:
         from paperforge.adapters.obsidian_frontmatter import (
             read_frontmatter_dict,
             set_frontmatter_flag,
+            split_frontmatter_block,
         )
 
-        text = note.read_text(encoding="utf-8")
-        if not text.startswith("---"):
+        # Byte-preserving I/O: read/write with newline translation OFF so
+        # the durable note keeps its original CRLF/LF endings on every
+        # platform (Path.read_text would translate CRLF away).
+        with open(note, encoding="utf-8", newline="") as f:
+            text = f.read()
+        # Authority validation BEFORE any mutation: an absent or
+        # unterminated frontmatter block is a validation failure — never
+        # a silent unchanged-file success.
+        if split_frontmatter_block(text) is None:
             result = _err(
-                __version__, f"note has no frontmatter: {note_rel}"
+                __version__,
+                f"note has no valid frontmatter block: {note_rel}",
             )
             print(result.to_json())
             return 1
-        fm = read_frontmatter_dict(text)
+        probe_text = text[1:] if text.startswith("\ufeff") else text
+        fm = read_frontmatter_dict(probe_text)
         if fm.get(field) is value:
             # Idempotent no-op — still authoritative, no write.
             data = {
@@ -111,7 +121,11 @@ def run(args: argparse.Namespace) -> int:
             )
             print(result.to_json())
             return 0
-        note.write_text(set_frontmatter_flag(text, field, value), encoding="utf-8")
+        note.write_text(
+            set_frontmatter_flag(text, field, value),
+            encoding="utf-8",
+            newline="",
+        )
         data = {
             "intent": "note-set-flag",
             "key": entry.get("zotero_key"),
