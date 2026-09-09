@@ -17,7 +17,7 @@ import {
   type LongTaskOutcome,
   AsyncEventQueue,
 } from "./transport";
-import type { ProbeEnvelope } from "../constants";
+import type { ProbeAllEnvelope, ProbeEnvelope } from "./probe-types";
 import type {
   ActionRequest,
   ActionRunResult,
@@ -109,11 +109,45 @@ export interface ConfigValidateData {
   migration: Record<string, unknown> | null;
 }
 
-export interface ProbeAllEnvelope {
-  schema_version: number;
-  module: "all";
-  updated_at: string;
-  modules: Record<string, ProbeEnvelope>;
+/** Structured authority rejection/acceptance (render R/P exits rc=1 with a
+ * structured JSON body — the reason must survive as data, never as an
+ * exception). */
+export interface AuthorityMutationResult {
+  ok?: boolean;
+  reason?: string;
+  error?: { code?: string; message?: string } | null;
+  [key: string]: unknown;
+}
+
+export interface RenderAuditIssue {
+  code?: string;
+  severity?: string;
+  message?: string;
+  [key: string]: unknown;
+}
+
+export interface RenderAuditPaper {
+  paper_key?: string;
+  issues?: RenderAuditIssue[];
+  [key: string]: unknown;
+}
+
+export interface RenderAuditDTO {
+  state?: string;
+  papers?: RenderAuditPaper[];
+  summary?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
+export interface PaperStatusDTO {
+  [key: string]: unknown;
+}
+
+export interface ActionPreflightDTO {
+  action_id?: string;
+  availability?: string;
+  preflight?: Record<string, unknown>;
+  [key: string]: unknown;
 }
 
 export interface VersionEntryDTO {
@@ -818,14 +852,12 @@ export class PaperForgeClient {
     }
   }
 
-  async listActions(): Promise<any[]> {
+  async listActions(): Promise<ActionDescriptor[]> {
     return this._cachedRead("action:list", 300000, async () => {
-      const data = await this._executePfResult<any>([
-        "action",
-        "list",
-        "--json",
-      ]);
-      return data?.actions ?? (Array.isArray(data) ? data : []);
+      const data = await this._executePfResult<{
+        actions?: ActionDescriptor[];
+      }>(["action", "list", "--json"]);
+      return Array.isArray(data?.actions) ? data.actions : [];
     });
   }
 
@@ -843,7 +875,7 @@ export class PaperForgeClient {
   async preflightAction(
     actionId: string,
     scope: ActionScope = { kind: "all" }
-  ): Promise<any> {
+  ): Promise<ActionPreflightDTO> {
     const argv = ["action", "preflight", actionId, "--scope", scope.kind];
     for (const k of scope.keys ?? []) {
       argv.push("--key", k);
@@ -1003,11 +1035,12 @@ export class PaperForgeClient {
     });
   }
 
+  /** `read` prints TEXT (no `--json`): the matched passage verbatim. */
   async read(
     key: string,
     find: string,
     source: "auto" | "fulltext" | "pdf" = "auto"
-  ): Promise<any> {
+  ): Promise<string> {
     const raw = await this._transport.execute([
       "read",
       key,
@@ -1019,14 +1052,14 @@ export class PaperForgeClient {
     return raw;
   }
 
-  async paperStatus(query: string): Promise<any> {
+  async paperStatus(query: string): Promise<PaperStatusDTO> {
     return this._cachedRead(`paper-status:${query}`, 30000, async () => {
       const raw = await this._transport.execute([
         "paper-status",
         query,
         "--json",
       ]);
-      return JSON.parse(raw);
+      return JSON.parse(raw) as PaperStatusDTO;
     });
   }
 
@@ -1070,11 +1103,11 @@ export class PaperForgeClient {
     }
   }
 
-  async renderAudit(key?: string): Promise<any> {
+  async renderAudit(key?: string): Promise<RenderAuditDTO> {
     const argv = ["render", "audit"];
     if (key) argv.push(key);
     argv.push("--json");
-    return this._executeStructuredJson(argv);
+    return this._executeStructuredJson<RenderAuditDTO>(argv);
   }
 
   /** Ticket 06: R/P staging preview for one paper (isolated tmp root; never
@@ -1093,10 +1126,13 @@ export class PaperForgeClient {
     return parsed.papers?.find((p) => p.paper_key === key) ?? {};
   }
 
-  async promoteR(key: string, objectIds: string[] = []): Promise<any> {
+  async promoteR(
+    key: string,
+    objectIds: string[] = []
+  ): Promise<AuthorityMutationResult> {
     const argv = ["render", "promote-r", key, ...objectIds, "--json"];
     try {
-      return await this._executeStructuredJson(argv);
+      return await this._executeStructuredJson<AuthorityMutationResult>(argv);
     } finally {
       this.invalidateCache();
     }
@@ -1106,7 +1142,7 @@ export class PaperForgeClient {
     key: string,
     label: string,
     planHash: string
-  ): Promise<any> {
+  ): Promise<AuthorityMutationResult> {
     const argv = [
       "render",
       "accept-proposal",

@@ -28,6 +28,34 @@
 
 > **STATUS: Stage 2 step 5 CLOSED / SEALED — 27c33f4b** (owner-verified 2026-09-08). Step 6 unlocked, order: cast-form architecture probe fix → final leaf semantic census (`processFrontMatter(do_ocr/analyze)` included, never dragged back to step 5) → action-client/next-actions execution convergence → long-task-client → NodeProcessTransport → python-bridge contraction → final zero-census/architecture gate → Ticket 07 close.
 
+## Post-closure — frontend interface completion (2026-09-08, user-directed)
+
+> Ticket 07 stays SEALED; this is interface hardening on top of the frozen
+> authority graph (no architecture change).
+
+- **Host-agnostic client layer.** Probe/capability wire DTOs moved from
+  `constants.ts` to **`client/probe-types.ts`** (constants re-exports them, so
+  plugin-internal imports are unchanged); `NdjsonEvent`/`LongTaskOutcome`
+  moved from the Node host implementation (`node-transport.ts`) into the
+  interface module (`transport.ts`). The client interface layer
+  (`action-contract`, `probe-types`, `transport`, `paperforge-client`) now
+  imports **no** `obsidian`, no plugin constants, and no host implementation —
+  the prerequisite for any second frontend.
+- **Typed surface (no `any`).** Added `AuthorityMutationResult`,
+  `RenderAuditDTO`/`RenderAuditPaper`/`RenderAuditIssue`, `PaperStatusDTO`,
+  `ActionPreflightDTO`; typed `listActions()` → `ActionDescriptor[]`,
+  `preflightAction()`, `read()` → `string` (text mode), `paperStatus()`,
+  `renderAudit()`, `promoteR()`, `acceptProposal()`. `Promise<any>` is now
+  absent from the client.
+- **Gate E added:** the interface layer must stay host-agnostic, constants must
+  re-export the client-owned DTOs, `Promise<any>` must not reappear, and the
+  21-method public surface must not silently shrink.
+- **OB frontend wiring verified headlessly:** the plugin dir is a reparse
+  point inside the test vault (`D:/L/Med/test/.obsidian/plugins/paperforge`),
+  so the built bundle IS the live plugin. Real-bundle smoke (isolated temp +
+  Obsidian API stub): `main.js` loads, `PaperForgePlugin` instantiates,
+  `getClient()` exposes all 25 public methods. Plugin **447/447**; tsc clean.
+
 ## Stage 2 — step 6 item 6 presentation-path containment (2026-09-08, round 3 — owner audit)
 
 - **P1 read-side containment:** the mutation side was contained, but the
