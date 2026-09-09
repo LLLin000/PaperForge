@@ -55,7 +55,7 @@ import {
 import type { PythonResult } from "./services/python-bridge";
 import { deferred } from "./services/deferred";
 import { orchestrateFromSync } from "./services/next-actions-bridge";
-import { PaperForgeClient, NodeProcessTransport } from "./client";
+import { PaperForgeClient } from "./client";
 import {
   PaperForgeConfirmModal,
   PaperForgeIssueDraftModal,
@@ -420,18 +420,17 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
   getClient(): PaperForgeClient {
     if (this._client) return this._client;
-    if (typeof (this.plugin as any)?.getClient === "function") {
-      this._client = (this.plugin as any).getClient();
-      return this._client!;
+    // Ticket 07 step 6 item 4 (P1 closure condition): Settings NEVER
+    // constructs its own client — a second PaperForgeClient would be a
+    // second OperationLock/long-task owner. Fail closed on the singleton.
+    const singleton = (this.plugin as any)?.getClient;
+    if (typeof singleton !== "function") {
+      throw new Error(
+        "PaperForge client unavailable: plugin.getClient singleton is missing"
+      );
     }
-    const vp = this._getVaultBasePath();
-    const transport = new NodeProcessTransport({
-      vaultPath: vp,
-      customPythonPath: this.plugin?.settings?.python_path,
-      resolveRuntime: async () => this._resolveRuntimeCommand(vp),
-    });
-    this._client = new PaperForgeClient({ transport });
-    return this._client;
+    this._client = singleton.call(this.plugin);
+    return this._client!;
   }
 
   private _startSetupJourney(

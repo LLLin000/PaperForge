@@ -1,12 +1,13 @@
 /**
- * LongTaskClient + NdjsonStreamParser tests (T8 closure #169).
+ * NDJSON stream parser tests (T8 closure #169; engine merged into
+ * client/node-transport.ts at Ticket 07 step 6 item 4).
  *
  * #137 protocol-fail-closed table: non-JSON / bad schema / unknown event /
  * second terminal / event after terminal / EOF without terminal.  Stop →
  * stdin token → grace → hard escalation.
  */
 import { describe, expect, it } from "vitest";
-import { NdjsonStreamParser } from "../src/services/long-task-client";
+import { NdjsonStreamParser } from "../src/client/node-transport";
 
 describe("NdjsonStreamParser", () => {
   it("accepts a valid start → progress → result stream", () => {

@@ -5,10 +5,7 @@
  * only on PaperForgeClient; PaperForgeClient depends only on Transport.
  */
 
-import type {
-  NdjsonEvent,
-  LongTaskOutcome,
-} from "../services/long-task-client";
+import type { NdjsonEvent, LongTaskOutcome } from "./node-transport";
 
 export type { NdjsonEvent, LongTaskOutcome };
 

@@ -28,6 +28,18 @@
 
 > **STATUS: Stage 2 step 5 CLOSED / SEALED — 27c33f4b** (owner-verified 2026-09-08). Step 6 unlocked, order: cast-form architecture probe fix → final leaf semantic census (`processFrontMatter(do_ocr/analyze)` included, never dragged back to step 5) → action-client/next-actions execution convergence → long-task-client → NodeProcessTransport → python-bridge contraction → final zero-census/architecture gate → Ticket 07 close.
 
+## Stage 2 — step 6 item 4 — LongTaskClient → NodeProcessTransport merge (2026-09-08, done)
+
+All 5 frozen closure conditions met:
+
+1. **Engine merged at the transport root.** `services/long-task-client.ts` TOMBSTONED; `NdjsonEvent`, the frozen KNOWN/TERMINAL event sets, `NdjsonStreamParser`, `LongTaskOptions/Outcome/Handle`, `hardKill`, `runLongTask` now live in `client/node-transport.ts`. Verified a PURE MOVE: the engine block diffs **0 lines** against HEAD's long-task-client (byte-identical semantics).
+2. **#137 protocol preserved verbatim:** 10-event vocabulary, schema_version gate, non-JSON/unknown/second-terminal/event-after-terminal/EOF-without-terminal fail-closed — parser tests re-pointed and passing.
+3. **Cancellation preserved verbatim:** stdin `PAPERFORGE_STOP\n` → grace window → hard escalation (Windows `taskkill /T /F`, POSIX process-group SIGKILL), `shell:false`, sanitized `paperforgeEnrichedEnv()`.
+4. **Settings fallback client DELETED (P1 closure condition):** `getClient()` no longer constructs `new PaperForgeClient({ new NodeProcessTransport(...) })`; it binds `plugin.getClient()` or THROWS — no second OperationLock/long-task owner can be created. Regressions: missing singleton → throws with `_client` still null; present singleton → returns it.
+5. **Gate updated to real provenance:** `DIRECT_AUTHORITY_OWNERS = { "client/node-transport.ts": 2 }` (execute + stream + hardKill authority); `services/long-task-client.ts` tombstoned in Gate C; `services/python-bridge.ts` Gate B **7 → 6** — the dead `runLongTask` streaming engine (zero callers) was deleted there too, so streaming ownership exists ONLY at the transport root.
+
+Evidence: plugin **475/475** (2 new singleton-ownership tests); tsc clean; Gate A/B/C 9/9; bundle rebuilt (`PAPERFORGE_STOP`/`taskkill` present once — no duplicate engine).
+
 ## Stage 2 — step 6 item 3 corrective (2026-09-08, packaging fix)
 
 - **P1 packaging: the tombstone deletion was never staged.** The item 3 commit's explicit `git add` list omitted the deleted path, so `services/action-client.ts` shipped in HEAD while Gate C (and `tsc`, which compiles `src/**/*.ts` and would see the stale `runSubprocess` import) demanded its absence — the local clean gates ran against the uncommitted working tree. Fix: the deletion is now actually committed, together with the dead `SubprocessResult` interface in python-bridge (its only consumer, `runSubprocess`, was already deleted). Gates re-run against the committed state: tsc clean, Gate A/B/C 9/9, plugin **473/473**.
