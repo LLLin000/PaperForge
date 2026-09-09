@@ -28,6 +28,56 @@
 
 > **STATUS: Stage 2 step 5 CLOSED / SEALED — 27c33f4b** (owner-verified 2026-09-08). Step 6 unlocked, order: cast-form architecture probe fix → final leaf semantic census (`processFrontMatter(do_ocr/analyze)` included, never dragged back to step 5) → action-client/next-actions execution convergence → long-task-client → NodeProcessTransport → python-bridge contraction → final zero-census/architecture gate → Ticket 07 close.
 
+## Stage 2 — step 6 item 5 + item 6 + closure (2026-09-08, final)
+
+### Commit A — python-bridge contraction (item 5)
+
+All 6 child-process provenance sites belonged to dead post-cutover runtime
+surfaces. Deleted: `resolvePythonExecutable`, `checkRuntimeVersion`,
+`getPluginVersion`, `runQueryPlan`, `buildRuntimeInstallCommand`,
+`parseRuntimeStatus`, `shellQuoteForExec`, `isLikelyAppleStubPython`,
+`collectDarwinPythonCandidates`, `getPaperforgePythonCmd`,
+`paperforgePythonExecArgs`, `tryExecPythonVersion`, `buildTargetedEnv`
+(discarded no-op call) + orphan interfaces. Moved to the transport root:
+`resolveGitDir` + `paperforgeEnrichedEnv`. `python-bridge.ts` is now a
+**pure helper module with child_process import = 0** (removed from
+LEGACY_RATCHET; Gate A enforces the absence); `node-transport.ts`
+DIRECT_AUTHORITY_OWNERS 2 → 4.
+
+### Commit B — final semantic census: version history (item 6)
+
+New narrow Python authority `paperforge versions list|show|backups|paths|restore`
+(discovery, manifest interpretation, legacy `fulltext.pre-rebuild.<ts>.md`
+recognition + timestamp semantics, canonical artifact paths, display-only
+restore copy, and the `restore_provenance` mutation). `services/version-history.ts`
+TOMBSTONED; new pure `services/version-diff.ts` keeps only the text diff;
+dashboard/ocr-workspace consume DTOs and read Python-returned `source_path`
+for presentation; the restore modal takes an injected restore capability.
+`_openFulltext` now fails closed on the Python-returned path (TS canonical
+path construction removed).
+
+### Commit C — final enforcement + closure evidence
+
+- **Gate D added** (final zero-census): UI/service layers contain no
+  canonical index read, version manifest parsing, legacy backup filename
+  recognition, frontmatter mutation/semantic read, action argv assembly,
+  identity resolution argv, or canonical artifact path construction
+  (comments stripped); exactly one client/transport construction site
+  (`main.ts`).
+- **Authority snapshot (final):**
+  - child_process imports: `client/node-transport.ts` (authority, 4
+    provenance sites) + `services/managed-runtime.ts` (host seam, DI, 0
+    call sites). Everything else: 0.
+  - `new PaperForgeClient` / `new NodeProcessTransport`: `main.ts` only.
+  - tombstones: `utils/zotero-path.ts`, `services/ocr-maintenance-ui.ts`,
+    `services/config-client.ts`, `services/ocr-process-controller.ts`,
+    `services/action-client.ts`, `services/long-task-client.ts`,
+    `services/version-history.ts`.
+  - UI canonical semantic reads/writes, identity derivation, action argv
+    authority, second executor, second client owner: **0**.
+- **Evidence:** plugin **450/450** (25 files); Python focused **87 passed**;
+  tsc clean; Gate A/B/C/D 11/11; bundle rebuilt.
+
 ## Stage 2 — step 6 item 4 — LongTaskClient → NodeProcessTransport merge (2026-09-08, done)
 
 All 5 frozen closure conditions met:
