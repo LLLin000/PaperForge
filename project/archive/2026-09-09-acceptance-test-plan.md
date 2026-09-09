@@ -1,3 +1,8 @@
+> ARCHIVED — 2026-09-09
+> 原因：旧计划以 CLI 模拟 GUI、固定 test vault 和历史进度 token 为主，已不代表当前发布验收契约。
+> 替代：[插件大版本全工作流测试与发布验收计划](../current/plugin-major-release-acceptance-plan.md)。
+> 下文为原始历史内容；不得按其示例直接执行真实 vault / 收费任务。
+
 # Acceptance Test Plan
 
 ## 问题
