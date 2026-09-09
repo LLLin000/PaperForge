@@ -1,0 +1,22 @@
+{
+  "schema_version": 2,
+  "vault_config": {
+    "system_dir": "System",
+    "resources_dir": "Resources",
+    "literature_dir": "Literature",
+    "control_dir": "LiteratureControl",
+    "base_dir": "Bases",
+    "skill_dir": ".opencode/skills",
+    "command_dir": ".opencode/command"
+  },
+  "zotero_data_dir": "",
+  "agent_platform": "opencode",
+  "auto_analyze_after_ocr": false,
+  "ocr_profile": "default",
+  "paddleocr_job_url": "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs",
+  "paddleocr_model": "PaddleOCR-VL-1.6",
+  "embedding_profile": "default",
+  "vector_db_provider_type": "openai_sdk",
+  "vector_db_api_base": "",
+  "vector_db_api_model": "text-embedding-3-small"
+}

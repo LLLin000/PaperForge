@@ -58,3 +58,6 @@ audit/media_asset_samples/
 
 # OpenCode MCP binaries
 .opencode/mcp/
+
+# Obsidian e2e download cache (wdio-obsidian-service)
+paperforge/plugin/.obsidian-cache/
