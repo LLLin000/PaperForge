@@ -13,7 +13,6 @@ import * as path from "path";
 import { VIEW_TYPE_OCR_WORKSPACE } from "../constants";
 import { t } from "../i18n";
 import { PaperForgeConfirmModal } from "./modals";
-import { resolveVaultPaths } from "../services/runtime-paths";
 import {
   PaperForgeClient,
   type ActionDescriptor,
@@ -1141,31 +1140,19 @@ export class OcrWorkspaceView extends ItemView {
   }
 
   /**
-   * #126 P0: resolve and open a paper's fulltext from the canonical index
-   * path (vault-relative) when present, else `ocrDir/<key>/fulltext.md`.
-   * Never re-join `vp`/`PaperForge` onto `systemDir` (which already
-   * contains `PaperForge`).
+   * Open a paper's fulltext using ONLY the Python-returned vault-relative
+   * path (step 6 item 6: the UI never constructs canonical artifact paths;
+   * a missing path fails closed).
    */
   private _openFulltext(key: string): void {
     const vp = (this.app.vault.adapter as any).basePath as string;
-    const paths = resolveVaultPaths(vp);
     const paper = this.papers.find((p) => p.key === key);
-
-    const fulltextPath = resolvePaperFulltextPath(
-      vp,
-      paper?.fulltextPath ?? "",
-      key,
-      paths.ocrDir,
-      fs.existsSync
-    );
-    if (!fulltextPath) {
+    const rel = (paper?.fulltextPath ?? "").replace(/\\/g, "/");
+    if (!rel) {
       new Notice(t("ocr_ws_fulltext_not_found") || "Fulltext not found");
       return;
     }
-
-    const file = this.app.vault.getAbstractFileByPath(
-      path.relative(vp, fulltextPath).replace(/\\/g, "/").replace(/^\//, "")
-    );
+    const file = this.app.vault.getAbstractFileByPath(rel);
     if (file) {
       (this.app.workspace as any).getLeaf().openFile(file);
     } else {
@@ -1174,26 +1161,6 @@ export class OcrWorkspaceView extends ItemView {
       );
     }
   }
-}
-
-/**
- * #126 P0: canonical fulltext resolution — index path first, ocrDir fallback.
- * Pure (injectable fs exists) so the double-`PaperForge` regression is testable.
- */
-export function resolvePaperFulltextPath(
-  vaultPath: string,
-  fulltextPathFromIndex: string,
-  key: string,
-  ocrDir: string,
-  exists: (p: string) => boolean = fs.existsSync
-): string | null {
-  if (fulltextPathFromIndex) {
-    const candidate = path.join(vaultPath, fulltextPathFromIndex);
-    if (exists(candidate)) return candidate;
-  }
-  const fallback = path.join(ocrDir, key, "fulltext.md");
-  if (exists(fallback)) return fallback;
-  return null;
 }
 
 /* ── Helpers ── */

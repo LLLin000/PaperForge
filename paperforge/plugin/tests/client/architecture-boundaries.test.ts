@@ -309,6 +309,55 @@ describe("architecture boundary gate (Ticket 07)", () => {
     }
   });
 
+  it("Gate D: UI/service layers hold no semantic authority (final census)", () => {
+    // Final zero-census enforcement (Ticket 07 step 6 item 6). Allowed host
+    // seams remain: bootstrap/runtime pointer, UI prefs/cache, active
+    // workspace context, and opening/reading Python-returned artifact paths
+    // for presentation. Everything below must resolve through the client.
+    const forbidden: Array<[string, RegExp]> = [
+      ["canonical index file read", /formal-library\.json/],
+      ["version manifest parsing", /manifest\.json/],
+      ["legacy backup filename recognition", /fulltext\.pre-rebuild/],
+      ["frontmatter mutation", /processFrontMatter\(/],
+      ["frontmatter semantic read", /getFileCache\(/],
+      ["action argv assembly", /"action",\s*"run"/],
+      ["identity resolution argv", /"paper-lookup"/],
+      ["identity argv flag", /"--from-path"/],
+      [
+        "canonical artifact path construction",
+        /"versions"\s*\/|"backups"\s*\/|"render"\s*\//,
+      ],
+    ];
+    const stripComments = (text: string): string =>
+      text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+    const violations: string[] = [];
+    for (const file of walk(SRC)) {
+      const rel = relative(SRC, file).split(sep).join("/");
+      if (rel.startsWith("client/") || rel === "main.ts") continue;
+      const code = stripComments(readFileSync(file, "utf-8"));
+      for (const [name, pattern] of forbidden) {
+        if (pattern.test(code)) violations.push(`${rel}: ${name}`);
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+
+  it("Gate D: exactly one client/transport construction site (the plugin singleton)", () => {
+    const violations: string[] = [];
+    for (const file of walk(SRC)) {
+      const rel = relative(SRC, file).split(sep).join("/");
+      if (rel === "main.ts" || rel.startsWith("client/")) continue;
+      const code = readFileSync(file, "utf-8");
+      if (/new PaperForgeClient\(/.test(code)) {
+        violations.push(`${rel}: constructs a second PaperForgeClient`);
+      }
+      if (/new NodeProcessTransport\(/.test(code)) {
+        violations.push(`${rel}: constructs a second transport`);
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+
   it("Gate C: absorbed legacy surfaces stay deleted", () => {
     for (const rel of TOMBSTONES) {
       expect(() => statSync(join(SRC, rel))).toThrow();
