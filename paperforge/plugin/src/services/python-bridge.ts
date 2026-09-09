@@ -344,51 +344,6 @@ export function buildCommandArgs(action: any, key: any, filter: any): string[] {
   return args;
 }
 
-export function runSubprocess(
-  pythonExe: string,
-  args: string[],
-  cwd: string,
-  timeout: number,
-  _spawn: any,
-  env?: any
-): Promise<SubprocessResult> {
-  const sp = _spawn || spawn;
-
-  return new Promise((resolve) => {
-    const startTime = Date.now();
-    const opts: any = { cwd, timeout, windowsHide: true };
-    if (env) opts.env = env;
-    const child = sp(pythonExe, args, opts);
-    const stdoutChunks: string[] = [];
-    const stderrChunks: string[] = [];
-
-    child.stdout.on("data", (data: any) => {
-      stdoutChunks.push(data.toString("utf-8"));
-    });
-    child.stderr.on("data", (data: any) => {
-      stderrChunks.push(data.toString("utf-8"));
-    });
-
-    child.on("close", (code: any) => {
-      resolve({
-        stdout: stdoutChunks.join(""),
-        stderr: stderrChunks.join(""),
-        exitCode: code,
-        elapsed: Date.now() - startTime,
-      });
-    });
-
-    child.on("error", (err: any) => {
-      resolve({
-        stdout: stdoutChunks.join(""),
-        stderr: stderrChunks.join("") + "\n" + err.message,
-        exitCode: -1,
-        elapsed: Date.now() - startTime,
-      });
-    });
-  });
-}
-
 export function runQueryPlan(
   pythonExe: string,
   extraArgs: string[],
@@ -677,60 +632,6 @@ export function scanBbtUnderProfiles(profilesDir: string): boolean {
 // ── #137/#144 action client cutover (T8 #169) ──────────────────────────────
 
 /** Single-result mode: `paperforge action run ... --json` → one PFResult. */
-export interface ActionRunResult {
-  ok: boolean;
-  payload: Record<string, unknown> | null;
-  exitCode: number;
-}
-
-/**
- * Explicit single-result mode (#137 §0): stdout is EXACTLY ONE PFResult JSON.
- * Never mixes with the streaming mode.
- */
-export function runAction(
-  pythonExe: string,
-  extraArgs: string[],
-  vaultPath: string,
-  actionId: string,
-  scope: { kind: string; keys?: string[] },
-  env?: Record<string, string | undefined>,
-  timeout = 120000
-): Promise<ActionRunResult> {
-  const args = [
-    ...extraArgs,
-    "-m",
-    "paperforge",
-    "--vault",
-    vaultPath,
-    "action",
-    "run",
-    actionId,
-    "--scope",
-    scope.kind,
-    ...(scope.kind === "papers" ? (scope.keys ?? []) : []),
-    "--json",
-  ];
-  return runSubprocess(
-    pythonExe,
-    args,
-    vaultPath,
-    timeout,
-    undefined,
-    env
-  ).then((res) => {
-    try {
-      const payload = JSON.parse(res.stdout) as Record<string, unknown>;
-      return {
-        ok: payload.ok === true,
-        payload,
-        exitCode: res.exitCode,
-      };
-    } catch {
-      return { ok: false, payload: null, exitCode: res.exitCode };
-    }
-  });
-}
-
 /** Structured-stream mode (#137 §0): NDJSON events + exactly-one terminal. */
 export interface LongTaskEvent {
   schema_version: number;

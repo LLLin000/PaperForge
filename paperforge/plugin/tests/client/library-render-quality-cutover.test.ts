@@ -362,25 +362,16 @@ describe("Library & Render Quality Domain Cutover (Ticket 06)", () => {
           return "{}";
         };
         const view = makeDashboardForSync();
-        view._resolvePython = () => ({ path: "py", args: ["-3"] });
-        // The action bridge spawns a real (mocked) child; give it a stub so
-        // runSubprocess never touches an undefined stdout stream.
-        mockSpawn.mockImplementationOnce(
-          () =>
-            ({
-              stdout: { on: vi.fn() },
-              stderr: { on: vi.fn() },
-              on: vi.fn(),
-            }) as unknown as import("child_process").ChildProcess
-        );
+        // Item 3: the bridge no longer spawns — the follow-up executes
+        // through the SAME client Transport that served the sync.
         view._runLibrarySync();
 
         // JSON-mode sync attaches intents without executing them; the
         // Dashboard must feed the SAME sync-result consumer as Settings so
-        // the automatic-local follow-up still runs (via the action bridge).
+        // the automatic-local follow-up still runs (via the shared client).
         await vi.waitFor(() => {
-          const followUp = mockSpawn.mock.calls.find((c) =>
-            JSON.stringify(c[1]).includes("library.prune")
+          const followUp = transport.calls.find(
+            (c) => c.argv[0] === "action" && c.argv.includes("library.prune")
           );
           expect(followUp).toBeDefined();
         });

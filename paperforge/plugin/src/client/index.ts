@@ -4,6 +4,7 @@
  * Provides the unified host-independent client and Node.js process transport.
  */
 
+export * from "./action-contract";
 export * from "./transport";
 export * from "./paperforge-client";
 export * from "./node-transport";

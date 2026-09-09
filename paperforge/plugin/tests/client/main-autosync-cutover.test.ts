@@ -132,10 +132,27 @@ describe("convergence tick cutover (Ticket 07 Stage 2 step 1)", () => {
     expect(orchestrateFromSync).toHaveBeenCalledWith(
       JSON.stringify(SYNC_RESULT),
       expect.objectContaining({
-        vaultPath: "/vault",
-        resolveCommand: expect.any(Function),
+        // Item 3: the capability is the SAME client instance that just ran
+        // the sync — asserted below by executing through it.
+        runAction: expect.any(Function),
       })
     );
+    // SAME-client binding regression: the injected capability routes
+    // through THIS client's Transport (no second executor, no runtime
+    // resolution) — the action argv appears on the same transport that
+    // served the sync.
+    transport.calls.length = 0;
+    const bridgeCtx = (orchestrateFromSync as any).mock.calls[0][1];
+    await bridgeCtx.runAction({
+      action_id: "memory.build",
+      scope: { kind: "all" },
+    });
+    const actionCall = transport.calls.find(
+      (c) => c.argv[0] === "action" && c.argv[1] === "run"
+    );
+    expect(actionCall).toBeDefined();
+    expect(actionCall!.argv).toContain("memory.build");
+    expect(actionCall!.argv[actionCall!.argv.length - 1]).toBe("--json");
     expect(plugin._settingTab?._refreshAllReadModels).toHaveBeenCalled();
     expect(plugin._lastSyncTime).not.toBeNull();
     await vi.waitFor(() => {

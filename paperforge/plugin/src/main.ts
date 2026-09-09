@@ -1,4 +1,4 @@
-import type { ActionRequest } from "./services/action-client";
+import type { ActionRequest } from "./client/action-contract";
 import { Plugin, addIcon, Notice, Modal, Setting, App } from "obsidian";
 
 /** Thin confirm modal for the one-time plugin-assisted config migration. */
@@ -435,15 +435,17 @@ export default class PaperForgePlugin extends Plugin {
     void (async () => {
       let ok = false;
       try {
-        const result = await this.getClient().sync();
+        // Item 3: the SAME client instance that executed the sync executes
+        // its next_actions — shared epoch/OperationLock, no second executor.
+        const client = this.getClient();
+        const result = await client.sync();
         ok = result?.ok !== false;
         if (ok) {
           this._lastSyncTime = new Date().toLocaleTimeString();
           // #127/#169: consume next_actions — the Python registry is the
           // policy authority; the plugin executes via the action bridge.
           void orchestrateFromSync(JSON.stringify(result), {
-            vaultPath,
-            resolveCommand: () => this._getPythonCommand(),
+            runAction: (req) => client.runAction(req),
           });
           // RC UX Seam: sync settled — refresh the read model so the
           // Smart Retrieval card durably shows the pending embed CTA

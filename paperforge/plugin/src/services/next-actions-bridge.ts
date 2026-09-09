@@ -1,24 +1,28 @@
 /**
  * Next-action bridge (T8 closure #169): wires the pure orchestrator to
- * Obsidian through the ONE ActionClient.  Executes with the redacted
- * desktop env (never the bare process env).
+ * the plugin through ONE injected execution capability — the SAME
+ * singleton PaperForgeClient.runAction that just executed the sync
+ * (Ticket 07 step 6 item 3).  The bridge never knows the Python
+ * executable, `-m paperforge`, env, or runtime resolution: it parses,
+ * filters, notifies, and hands ActionRequests to the capability.
  */
 import { Notice } from "obsidian";
 import { t } from "../i18n";
 import { orchestrateNextActions } from "./next-actions-orchestrator";
 import { parseNextActions, trackerDeps } from "./next-actions-types";
-import { runActionRequest, type ActionRequest } from "./action-client";
+import type { ActionRequest, ActionRunResult } from "../client/action-contract";
 
 export interface NextActionBridgeContext {
-  vaultPath: string;
-  resolveCommand: (
-    vaultPath: string
-  ) => { path: string; args: string[] } | null;
+  /** The SAME client instance that executed the sync — next_actions share
+   * its epoch/OperationLock semantics with user-initiated actions. */
+  runAction: (req: ActionRequest) => Promise<ActionRunResult>;
 }
 
 /**
  * Parse and execute the next_actions of a sync PFResult document.
- * Returns the number of actions started (0 when nothing to do).
+ * Returns the number of actions that were executed to settlement.
+ * Automatic intents run inline; everything else is confirmed first
+ * (the confirmed request carries the exact `--confirm <id>`).
  */
 export async function orchestrateFromSync(
   stdout: string,
@@ -39,29 +43,34 @@ export async function orchestrateFromSync(
   if (runnable.length === 0) return 0;
 
   return orchestrateNextActions(runnable, {
-    runAction: (req: ActionRequest): boolean => {
-      const py = ctx.resolveCommand(ctx.vaultPath);
-      if (!py?.path) {
-        new Notice(t("next_action_runtime_unavailable"));
-        return false;
-      }
-      void runActionRequest(py.path, py.args, ctx.vaultPath, req).then(
-        (res) => {
-          if (res.ok) {
-            new Notice(t("next_action_done"));
-          } else {
-            const err = (res.payload?.error as Record<string, unknown> | null)
-              ?.message;
-            new Notice(
-              t("next_action_failed").replace(
-                "{detail}",
-                String(err ?? "unknown error")
-              )
-            );
-          }
+    // No unlocked bypass: an automatic action with a streaming descriptor
+    // takes the SAME OperationLock as a user-initiated action — Python's
+    // descriptor/policy owns that decision, never this bridge.
+    runAction: async (req: ActionRequest): Promise<ActionRunResult> => {
+      try {
+        const res = await ctx.runAction(req);
+        if (res.ok) {
+          new Notice(t("next_action_done"));
+        } else {
+          const err = (res.payload?.error as Record<string, unknown> | null)
+            ?.message;
+          new Notice(
+            t("next_action_failed").replace(
+              "{detail}",
+              String(err ?? "unknown error")
+            )
+          );
         }
-      );
-      return true;
+        return res;
+      } catch (err: unknown) {
+        new Notice(
+          t("next_action_failed").replace(
+            "{detail}",
+            String((err as Error)?.message ?? err ?? "unknown error")
+          )
+        );
+        return { ok: false, payload: null, exitCode: -1 };
+      }
     },
     // Only automatic actions reach this orchestrator call.
     confirm: async () => false,

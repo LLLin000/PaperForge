@@ -51,7 +51,6 @@ import {
   buildTargetedEnv,
   scanBbtUnderProfiles,
   scanBbtDirectChildren,
-  runSubprocess,
 } from "./services/python-bridge";
 import type { PythonResult } from "./services/python-bridge";
 import { deferred } from "./services/deferred";
@@ -72,7 +71,7 @@ import {
 import { getDisclosureState, toggleDisclosureState } from "./utils/disclosure";
 import { stripCredentialEnv } from "./services/secret-storage";
 import { processProgressChunk } from "./services/progress-parser";
-import type { ActionRequest } from "./services/action-client";
+import type { ActionRequest } from "./client/action-contract";
 
 // ── Interface ──
 
@@ -2472,8 +2471,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           // #127: consume backend next_actions. Automatic local work starts
           // now; consent-required work remains visible in the module card.
           void orchestrateFromSync(JSON.stringify(result), {
-            vaultPath: vp,
-            resolveCommand: (v) => this._resolveRuntimeCommand(v),
+            runAction: (req) => client.runAction(req),
           });
         }
       } catch (err: unknown) {

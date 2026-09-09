@@ -22,7 +22,7 @@ import {
   type ActionDescriptor,
   type OcrPaperRow,
 } from "../client";
-import type { ActionRequest } from "../services/action-client";
+import type { ActionRequest } from "../client/action-contract";
 /* ── OcrPaper interface ── */
 
 interface OcrPaper {

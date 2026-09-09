@@ -81,7 +81,10 @@ const LEGACY_RATCHET: Record<string, number> = {
   // Provenance-resolved: 8 real spawn sites (incl. `const execSync =
   // _execFileSync || execFileSync` fallback aliases at 99/151/361/415 that
   // the old regex gate under-counted as 5).
-  "services/python-bridge.ts": 8,
+  // Step 6 item 3: runSubprocess + the legacy python-bridge runAction
+  // deleted (action-client tombstoned; the injected SAME singleton
+  // client.runAction is the only execution path). 8 -> 7 provenance sites.
+  "services/python-bridge.ts": 7,
 };
 
 /** Files that must never exist again. */
@@ -89,6 +92,11 @@ const TOMBSTONES = [
   // Ticket 07 step 5: filename→zotero-key inference deleted — canonical
   // identity is Python authority (paper-lookup --from-path).
   "utils/zotero-path.ts",
+  // Ticket 07 step 6 item 3: action-client.ts tombstoned — the DTOs and
+  // the single argv builder moved to client/action-contract.ts, and its
+  // runActionRequest execution path (the last external runSubprocess
+  // caller) was replaced by the injected SAME singleton client.runAction.
+  "services/action-client.ts",
   "services/ocr-maintenance-ui.ts",
   "services/config-client.ts",
   // Stage 2 step 3: the legacy OCR child-process owner — run/redo/rebuild

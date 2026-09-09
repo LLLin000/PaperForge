@@ -22,7 +22,6 @@ import { t } from "../i18n";
 import { resolveVaultPaths } from "../services/runtime-paths";
 import {
   buildCommandArgs,
-  runSubprocess,
   classifyError,
   paperforgeEnrichedEnv,
   buildTargetedEnv,
@@ -3047,8 +3046,7 @@ export class PaperForgeStatusView extends ItemView {
         // sync-result consumer as Settings so automatic-local follow-ups
         // still run (consent-required work stays pending in the read model).
         void orchestrateFromSync(JSON.stringify(result), {
-          vaultPath: vp ?? "",
-          resolveCommand: () => this._resolvePython(),
+          runAction: (req) => client.runAction(req),
         });
       } else {
         this._showMessage("[!!] Sync failed", "error");
