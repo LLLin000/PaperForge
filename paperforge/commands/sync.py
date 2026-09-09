@@ -66,10 +66,16 @@ def run(args: argparse.Namespace) -> int:
         filtered_kwargs = {k: v for k, v in run_kwargs.items() if k in accepted}
     except Exception:
         filtered_kwargs = run_kwargs
-    result = svc.run(**filtered_kwargs)
+    from paperforge.core import timing
 
-    _write_orphan_state(vault, result)
-    _cleanup_legacy_snapshot_files(vault)
+    timing.reset()
+    with timing.phase("sync.service"):
+        result = svc.run(**filtered_kwargs)
+
+    with timing.phase("sync.orphan_state"):
+        _write_orphan_state(vault, result)
+    with timing.phase("sync.cleanup_legacy"):
+        _cleanup_legacy_snapshot_files(vault)
 
     if result.warnings and not json_output:
         for w in result.warnings:
@@ -82,9 +88,15 @@ def run(args: argparse.Namespace) -> int:
     # runner executes the emitted intents; reconcile is the SINGLE
     # producer — no command-specific branch, no hardcoded follow-ups.
     if result.ok and not index_only and not selection_only:
-        _reconcile_and_attach(vault, result, execute=not json_output)
+        with timing.phase("sync.reconcile"):
+            _reconcile_and_attach(vault, result, execute=not json_output)
 
+    # Diagnostic phase timing (stderr-only total is emitted by the CLI
+    # wrapper; here we attach the phases to the data for clients).
     if json_output:
+        data = dict(result.data or {})
+        data["timing"] = {**timing.summary(), "total_ms": timing.total_ms()}
+        result.data = data
         print(result.to_json())
         return 0
 
@@ -104,15 +116,18 @@ def _reconcile_and_attach(vault, result: PFResult, *, execute: bool) -> None:
     """
     from paperforge.actions.chain import run_chain
     from paperforge.actions.runner import build_context
+    from paperforge.core import timing
 
     context = build_context(vault)
-    initial = reconcile(vault)
+    with timing.phase("sync.reconcile.derive"):
+        initial = reconcile(vault)
     result.next_actions = list(initial.next_actions or [])
 
     if not execute:
         return
 
-    chain = run_chain(result.next_actions, context)
+    with timing.phase("sync.reconcile.chain"):
+        chain = run_chain(result.next_actions, context)
     data = dict(result.data or {})
     data["chain"] = chain.to_wire()
     result.data = data

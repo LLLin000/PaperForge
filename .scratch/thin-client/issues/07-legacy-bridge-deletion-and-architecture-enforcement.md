@@ -28,6 +28,30 @@
 
 > **STATUS: Stage 2 step 5 CLOSED / SEALED — 27c33f4b** (owner-verified 2026-09-08). Step 6 unlocked, order: cast-form architecture probe fix → final leaf semantic census (`processFrontMatter(do_ocr/analyze)` included, never dragged back to step 5) → action-client/next-actions execution convergence → long-task-client → NodeProcessTransport → python-bridge contraction → final zero-census/architecture gate → Ticket 07 close.
 
+## Post-closure — backend phase timing for slow commands (2026-09-08, user-directed)
+
+- **`paperforge/core/timing.py`:** phase timer that NEVER touches stdout
+  (machine protocol). Emission policy: unset env → only phases ≥ 1s;
+  `PAPERFORGE_TIMING=1` → every phase; `=0` → silent (records still collected).
+  `total_ms()` is command WALL CLOCK (nested phases never double-count); the
+  CLI wrapper emits one `[PF:time] command=<c> total=<ms>ms` line per run.
+- **Instrumented:** `SyncService.run` (`load_exports`, `selection`,
+  `resolve_paths`, `load_export_rows`, `migrate_to_workspace`, `build_index`,
+  `cleanup`, `rebuild_index_after_cleanup`, `prune_preview`) and
+  `commands/sync.py` (`service`, `orphan_state`, `cleanup_legacy`,
+  `reconcile.derive`, `reconcile.chain`) — the JSON payload carries
+  `data.timing` (additive; existing keys untouched).
+- **Frontend:** when the trace is enabled, `_executeRaw` surfaces the backend
+  phases as a second trace record (`sync --json timing detail=…`), so the OB
+  console shows WHERE the time went, not just the round trip.
+- **Real finding (test vault, warm):** `sync` ≈ 5.4–6.1s, of which
+  `reconcile.derive` ≈ 2.9–5.5s dominates, `cleanup` ≈ 0.95s, `selection`
+  ≈ 0.9s, `service` ≈ 2.5s; round-trip minus backend total ≈ 0.6s
+  (spawn + interpreter start).
+- Evidence: Python `test_timing.py` (4) + `test_sync_timing.py` (1) plus
+  sync/read-model/e2e focused **39 passed**; plugin **452/452**; tsc clean;
+  bundle rebuilt + deployed to the test vault.
+
 ## Post-closure — client boundary trace + real-vault E2E (2026-09-08, user-directed)
 
 - **Switchable, redaction-safe trace (`client/trace.ts`).** One ring (200
