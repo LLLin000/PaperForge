@@ -842,6 +842,7 @@ export class PaperForgeStatusView extends ItemView {
     });
     const globalSyncBtn = btnsRow.createEl("button", {
       cls: "paperforge-contextual-btn",
+      attr: { "data-pf-testid": "sync-library" },
     });
     globalSyncBtn.createEl("span", {
       cls: "paperforge-contextual-btn-icon",
@@ -1010,6 +1011,7 @@ export class PaperForgeStatusView extends ItemView {
     // Version history button — always visible, versions mode handles empty state
     const verBtn = stripRight.createEl("button", {
       cls: "paperforge-contextual-btn",
+      attr: { "data-pf-testid": "version-history" },
     });
     verBtn.createEl("span", { text: t("version_panel_title") });
     verBtn.addEventListener("click", () => {

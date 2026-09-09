@@ -105,6 +105,13 @@ export default class PaperForgePlugin extends Plugin {
     return dumpTrace();
   }
 
+  /** Diagnostic toggle (mirrors the Settings switch; persists the pref). */
+  async setDebugTrace(enabled: boolean): Promise<void> {
+    this.settings.debug_trace = enabled;
+    setTraceEnabled(enabled);
+    await this.saveSettings();
+  }
+
   _getPythonCommand(): { path: string; args: string[] } | null {
     // #174: pointer publication is the ONLY runtime truth — the plugin
     // never uses an installed-but-unpublished runtime.

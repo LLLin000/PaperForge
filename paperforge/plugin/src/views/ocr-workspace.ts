@@ -1411,6 +1411,7 @@ export class VersionRestoreModal extends Modal {
 
       const restoreBtn = actionsDiv.createEl("button", {
         cls: "btn-primary pf-vr-btn",
+        attr: { "data-pf-testid": "version-restore" },
         text: t("ocr_ws_restore_btn") || "Restore this version",
       });
       restoreBtn.addEventListener("click", () => this.doRestore(ver));
@@ -1439,6 +1440,7 @@ export class VersionRestoreModal extends Modal {
     cancel.addEventListener("click", () => modal.close());
     const confirm = row.createEl("button", {
       cls: "btn-primary pf-vr-btn mod-warning",
+      attr: { "data-pf-testid": "version-restore-confirm" },
       text: t("ocr_ws_restore_confirm_btn") || "恢复展示全文",
     });
     confirm.addEventListener("click", () => {
