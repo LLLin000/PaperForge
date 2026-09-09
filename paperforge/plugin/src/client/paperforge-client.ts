@@ -24,6 +24,7 @@ import type {
   ActionScope,
 } from "./action-contract";
 import { buildActionArgv } from "./action-contract";
+import { commandIdentity, traceRecord } from "./trace";
 
 export interface PaperForgeClientOptions {
   transport: Transport;
@@ -439,9 +440,32 @@ export class PaperForgeClient {
       }
     })();
 
+    const streamStartedAt = Date.now();
+    traceRecord({
+      ts: Date.now(),
+      kind: "stream",
+      op: `${operationId} ${commandIdentity(argv)}`,
+      ok: undefined,
+      epoch: this._epoch,
+      detail: "start",
+    });
     const wrappedOutcome = (async (): Promise<LongTaskOutcome> => {
       try {
         const outcome = await rawHandle.outcome;
+        traceRecord({
+          ts: Date.now(),
+          kind: "stream",
+          op: `${operationId} ${commandIdentity(argv)}`,
+          ok: outcome.ok,
+          ms: Date.now() - streamStartedAt,
+          epoch: this._epoch,
+          code: outcome.protocolFailure
+            ? "protocol_failure"
+            : outcome.cancelled
+              ? "cancelled"
+              : undefined,
+          detail: `exit=${outcome.exitCode} events=${outcome.events.length}`,
+        });
         return outcome;
       } finally {
         // Deterministic release across all outcomes!
@@ -485,7 +509,7 @@ export class PaperForgeClient {
     }
     const cacheKey = `probe:${module}:${options?.expectedVersion ?? ""}:${options?.lastOperationExitCode ?? ""}`;
     return this._cachedRead(cacheKey, 60000, async () => {
-      const raw = await this._transport.execute([
+      const raw = await this._executeRaw([
         "probe",
         module,
         "--json",
@@ -497,7 +521,7 @@ export class PaperForgeClient {
 
   async probeAll(): Promise<ProbeAllEnvelope> {
     return this._cachedRead("probe:all", 60000, async () => {
-      const raw = await this._transport.execute(["probe", "all", "--json"]);
+      const raw = await this._executeRaw(["probe", "all", "--json"]);
       return JSON.parse(raw) as ProbeAllEnvelope;
     });
   }
@@ -517,7 +541,7 @@ export class PaperForgeClient {
           argv.push("--key", k);
         }
         argv.push("--json");
-        const raw = await this._transport.execute(argv);
+        const raw = await this._executeRaw(argv);
         return JSON.parse(raw);
       }
     );
@@ -528,6 +552,40 @@ export class PaperForgeClient {
   /**
    * Execute a command expecting a PFResult envelope and unwrap data.
    */
+  /** EVERY backend exec funnels through here — one trace point that sees
+   * all frontend↔backend traffic (metadata only; see client/trace.ts). */
+  private async _executeRaw(
+    argv: string[],
+    options?: ExecuteOptions
+  ): Promise<string> {
+    const startedAt = Date.now();
+    const op = commandIdentity(argv);
+    try {
+      const raw = await this._transport.execute(argv, options);
+      traceRecord({
+        ts: Date.now(),
+        kind: "exec",
+        op,
+        ok: true,
+        ms: Date.now() - startedAt,
+        epoch: this._epoch,
+      });
+      return raw;
+    } catch (err: unknown) {
+      const exitCode = (err as { exitCode?: number } | null)?.exitCode;
+      traceRecord({
+        ts: Date.now(),
+        kind: "exec",
+        op,
+        ok: false,
+        ms: Date.now() - startedAt,
+        epoch: this._epoch,
+        code: exitCode != null ? `rc${exitCode}` : "transport_error",
+      });
+      throw err;
+    }
+  }
+
   private async _executePfResult<T>(
     argv: string[],
     options?: ExecuteOptions
@@ -539,10 +597,12 @@ export class PaperForgeClient {
     // rejection, recover the authority reason from err.stdout instead of
     // losing it to a generic "exit code 1" error (legacy config-client
     // behavior, preserved here).
+    const startedAt = Date.now();
+    const op = commandIdentity(argv);
     let raw: string;
     let transportError: unknown = null;
     try {
-      raw = await this._transport.execute(argv, options);
+      raw = await this._executeRaw(argv, options);
     } catch (err: unknown) {
       const stdout =
         err instanceof Error
@@ -566,11 +626,29 @@ export class PaperForgeClient {
       // rejection, never a null payload.
       if (parsed.ok === false) {
         const err = parsed.error ?? {};
+        traceRecord({
+          ts: Date.now(),
+          kind: "error",
+          op,
+          ok: false,
+          ms: Date.now() - startedAt,
+          epoch: this._epoch,
+          code: String(err.code || "backend_error"),
+        });
         throw new Error(String(err.message || err.code || "backend_error"));
       }
       if (transportError) {
         // rc != 0 but the PFResult claims ok — protocol contradiction;
         // the process-level failure wins.
+        traceRecord({
+          ts: Date.now(),
+          kind: "error",
+          op,
+          ok: false,
+          ms: Date.now() - startedAt,
+          epoch: this._epoch,
+          code: "protocol_contradiction",
+        });
         throw transportError;
       }
       return parsed.data as T;
@@ -830,7 +908,7 @@ export class PaperForgeClient {
    * action during parse (before --vault validation), printing a plain
    * `paperforge X.Y.Z` line — not a PFResult. */
   async backendVersion(): Promise<string> {
-    const raw = await this._transport.execute(["--version"]);
+    const raw = await this._executeRaw(["--version"]);
     return raw.trim().replace(/^paperforge\s+/, "");
   }
 
@@ -939,7 +1017,7 @@ export class PaperForgeClient {
     }
 
     try {
-      const raw = await this._transport.execute(argv);
+      const raw = await this._executeRaw(argv);
       let payload: Record<string, unknown> | null = null;
       try {
         payload = JSON.parse(raw);
@@ -984,7 +1062,7 @@ export class PaperForgeClient {
   async sync(dryRun = false): Promise<Record<string, unknown>> {
     const argv = ["sync", "--json"];
     if (dryRun) argv.push("--dry-run");
-    const raw = await this._transport.execute(argv);
+    const raw = await this._executeRaw(argv);
     this.invalidateCache();
     return JSON.parse(raw);
   }
@@ -1001,7 +1079,7 @@ export class PaperForgeClient {
     const cleanQuery = query.trim();
     const cacheKey = `search:${cleanQuery}:${limit}`;
     return this._cachedRead(cacheKey, 30000, async () => {
-      const raw = await this._transport.execute([
+      const raw = await this._executeRaw([
         "search",
         cleanQuery,
         "--limit",
@@ -1030,7 +1108,7 @@ export class PaperForgeClient {
       if (paper) argv.push("--paper", paper);
       if (!expand) argv.push("--no-expand");
       argv.push("--json");
-      const raw = await this._transport.execute(argv);
+      const raw = await this._executeRaw(argv);
       return unwrapMatches(raw);
     });
   }
@@ -1041,7 +1119,7 @@ export class PaperForgeClient {
     find: string,
     source: "auto" | "fulltext" | "pdf" = "auto"
   ): Promise<string> {
-    const raw = await this._transport.execute([
+    const raw = await this._executeRaw([
       "read",
       key,
       "--find",
@@ -1054,11 +1132,7 @@ export class PaperForgeClient {
 
   async paperStatus(query: string): Promise<PaperStatusDTO> {
     return this._cachedRead(`paper-status:${query}`, 30000, async () => {
-      const raw = await this._transport.execute([
-        "paper-status",
-        query,
-        "--json",
-      ]);
+      const raw = await this._executeRaw(["paper-status", query, "--json"]);
       return JSON.parse(raw) as PaperStatusDTO;
     });
   }
@@ -1071,7 +1145,7 @@ export class PaperForgeClient {
       if (sortedKeys.length > 0) {
         argv.push("--keys", ...sortedKeys);
       }
-      const raw = await this._transport.execute(argv);
+      const raw = await this._executeRaw(argv);
       return ocrRowsFromPayload(JSON.parse(raw));
     });
   }
@@ -1085,7 +1159,7 @@ export class PaperForgeClient {
    * genuine spawn/protocol failure may surface as an exception. */
   private async _executeStructuredJson<T>(argv: string[]): Promise<T> {
     try {
-      const raw = await this._transport.execute(argv);
+      const raw = await this._executeRaw(argv);
       return JSON.parse(raw) as T;
     } catch (err: unknown) {
       const stdout =

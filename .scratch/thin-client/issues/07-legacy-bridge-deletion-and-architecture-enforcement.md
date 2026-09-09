@@ -28,6 +28,33 @@
 
 > **STATUS: Stage 2 step 5 CLOSED / SEALED — 27c33f4b** (owner-verified 2026-09-08). Step 6 unlocked, order: cast-form architecture probe fix → final leaf semantic census (`processFrontMatter(do_ocr/analyze)` included, never dragged back to step 5) → action-client/next-actions execution convergence → long-task-client → NodeProcessTransport → python-bridge contraction → final zero-census/architecture gate → Ticket 07 close.
 
+## Post-closure — client boundary trace + real-vault E2E (2026-09-08, user-directed)
+
+- **Switchable, redaction-safe trace (`client/trace.ts`).** One ring (200
+  records) fed from the single `_executeRaw` choke point (all 12 former
+  direct transport calls now funnel there) plus `streamOperation`. Records are
+  metadata only: command IDENTITY (`commandIdentity` keeps subcommand tokens +
+  flag NAMES, never values), ok, ms, epoch, error code, stream terminal shape.
+  **Never** stdin payloads, env, or argument values — pinned by test
+  (`auth set` + secret → trace has no secret; authority rejection traced by
+  CODE, not message). Console emission only while enabled; the ring is always
+  available for copying.
+- **UI surface:** Settings → Advanced Status → "Debug trace" toggle (persisted
+  as `debug_trace`, applied on plugin load) + Copy/Clear buttons; console
+  handle `app.plugins.plugins.paperforge.getDebugTrace()`.
+- **Real-vault E2E (D:/L/Med/test, Obsidian API stub, real bundle):**
+  `onload()` clean → views `paperforge-status`/`paperforge-ocr-workspace`,
+  7 commands; client reached the REAL Python backend: `backendVersion 1.5.15`,
+  `probe installation: ready/ready`, `sync --dry-run ok`, `versions show`
+  unknown key → fail-closed. Trace output (redaction visible):
+  `exec versions show --key --json ok=false 231ms epoch=1 code=rc1` +
+  `error … code=VALIDATION_ERROR` — the key VALUE never appears.
+- **Correction to an earlier claim:** `D:/L/Med/test/.obsidian/plugins/paperforge`
+  is NOT a junction (independent copy). The current build was deployed there
+  (previous bundle backed up as `main.js.bak-*`).
+- Evidence: plugin **452/452** (26 files, +5 trace tests); tsc clean; Gate E
+  extended to the trace module; bundle rebuilt + deployed.
+
 ## Post-closure — frontend interface completion (2026-09-08, user-directed)
 
 > Ticket 07 stays SEALED; this is interface hardening on top of the frozen
