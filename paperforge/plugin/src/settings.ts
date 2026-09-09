@@ -47,8 +47,6 @@ import {
   type DiagnosticInput,
 } from "./primitives";
 import {
-  paperforgeEnrichedEnv,
-  buildTargetedEnv,
   scanBbtUnderProfiles,
   scanBbtDirectChildren,
 } from "./services/python-bridge";
@@ -2057,9 +2055,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     embedMode?: "force" | "resume",
     actionIdOverride?: string
   ): void {
-    if (kind === "embed") {
-      void buildTargetedEnv(null, "embed");
-    }
     const client = this.getClient();
     if (!client) {
       new Notice(t("runtime_not_available") || "Environment unavailable");

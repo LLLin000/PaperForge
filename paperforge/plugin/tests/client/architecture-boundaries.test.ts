@@ -39,10 +39,10 @@ const CP_MODULE = /^(node:)?child_process$/;
 
 /** Permanent child-process authority — the transport stack, exact files. */
 const DIRECT_AUTHORITY_OWNERS: Record<string, number> = {
-  // Ticket 07 step 6 item 4: the LongTaskClient streaming/process engine
-  // merged into the transport root — ALL child-process authority lives here
-  // (execute + #137 structured-stream + hardKill escalation).
-  "client/node-transport.ts": 2,
+  // Ticket 07 step 6 items 4+5: ALL child-process authority lives at the
+  // transport root — execute + #137 structured-stream + hardKill escalation
+  // + the host git/PATH bootstrap probe (2 execFileSync).
+  "client/node-transport.ts": 4,
 };
 
 /** Host-layer seams, listed file-by-file with their exact current shape. */
@@ -75,16 +75,10 @@ const LEGACY_RATCHET: Record<string, number> = {
   // surface: python-bridge (host resolution/env bootstrap, collapsed at
   // the transport root in a later step) and main.ts.
   "views/dashboard.ts": 0,
-  // Provenance-resolved: 8 real spawn sites (incl. `const execSync =
-  // _execFileSync || execFileSync` fallback aliases at 99/151/361/415 that
-  // the old regex gate under-counted as 5).
-  // Step 6 item 3: runSubprocess + the legacy python-bridge runAction
-  // deleted (action-client tombstoned; the injected SAME singleton
-  // client.runAction is the only execution path). 8 -> 7 provenance sites.
-  // Step 6 item 4: the dead python-bridge runLongTask streaming engine
-  // deleted (zero callers; streaming ownership lives only in
-  // client/node-transport.ts). 7 -> 6.
-  "services/python-bridge.ts": 6,
+  // Step 6 item 5: services/python-bridge.ts is now a PURE helper module —
+  // all child-process provenance deleted and the env/PATH bootstrap moved
+  // to the transport root. Zero cp sites, so it is no longer a ratchet
+  // file; Gate A enforces the absence of any child_process import there.
 };
 
 /** Files that must never exist again. */

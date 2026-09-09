@@ -14,7 +14,9 @@
  *   SIGKILL). shell:false everywhere.
  */
 
-import { spawn, type ChildProcess } from "child_process";
+import { execFileSync, spawn, type ChildProcess } from "child_process";
+import * as os from "os";
+import * as path from "path";
 import {
   type Transport,
   type ExecuteOptions,
@@ -22,7 +24,7 @@ import {
   type StreamHandle,
   AsyncEventQueue,
 } from "./transport";
-import { paperforgeEnrichedEnv } from "../services/python-bridge";
+import { stripCredentialEnv } from "../services/secret-storage";
 import {
   RuntimeBootstrap,
   resolveRuntimeCommand,
@@ -240,6 +242,63 @@ export function runLongTask(
     },
     promise: outcome,
   };
+}
+
+// ── Host env/PATH bootstrap (moved from python-bridge, step 6 item 5) ──────
+
+let _gitDir: string | null = null;
+let _gitDirResolved = false;
+
+/** Host bootstrap seam: locate git for the child PATH. This is a host
+ * environment probe, NOT PaperForge process execution. */
+function resolveGitDir(): string | null {
+  if (_gitDirResolved) return _gitDir;
+  _gitDirResolved = true;
+  try {
+    let out: string;
+    if (process.platform === "win32") {
+      const cmdExe = process.env.ComSpec || "C:\\Windows\\System32\\cmd.exe";
+      out = execFileSync(cmdExe, ["/c", "where", "git"], {
+        timeout: 5000,
+        windowsHide: true,
+        encoding: "utf-8",
+      });
+    } else {
+      out = execFileSync("which", ["git"], {
+        timeout: 5000,
+        encoding: "utf-8",
+      });
+    }
+    if (out) {
+      const line = out.split("\n")[0].trim();
+      if (line) _gitDir = path.dirname(line);
+    }
+  } catch (_) {}
+  return _gitDir;
+}
+
+/** Redacted child env: PATH enrichment + credential strip. Never merges
+ * process.env secrets into the child. */
+export function paperforgeEnrichedEnv(): Record<string, string | undefined> {
+  const env: Record<string, string | undefined> = { ...process.env };
+  const plat = process.platform;
+  const home = os.homedir();
+  const extras: string[] = [];
+  const gitDir = resolveGitDir();
+  if (gitDir) extras.push(gitDir);
+  if (plat === "darwin") {
+    extras.push(
+      "/opt/homebrew/bin",
+      "/usr/local/bin",
+      "/usr/bin",
+      `${home}/.local/bin`
+    );
+  } else if (plat === "linux") {
+    extras.push("/usr/local/bin", "/usr/bin", `${home}/.local/bin`);
+  }
+  const cur = env.PATH || "";
+  env.PATH = [...extras, cur].filter(Boolean).join(path.delimiter);
+  return stripCredentialEnv(env) as Record<string, string | undefined>;
 }
 
 export interface NodeProcessTransportOptions {

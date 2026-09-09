@@ -46,7 +46,6 @@ import { orchestrateFromSync } from "./services/next-actions-bridge";
 import { PaperForgeStatusView } from "./views/dashboard";
 import { OcrWorkspaceView } from "./views/ocr-workspace";
 import { PaperForgeConfirmModal } from "./views/modals";
-import { buildTargetedEnv } from "./services/python-bridge";
 import { resolveVaultPaths } from "./services/runtime-paths";
 import {
   setPathConfigSource,

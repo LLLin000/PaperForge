@@ -20,12 +20,7 @@ import {
 } from "../constants";
 import { t } from "../i18n";
 import { resolveVaultPaths } from "../services/runtime-paths";
-import {
-  buildCommandArgs,
-  classifyError,
-  paperforgeEnrichedEnv,
-  buildTargetedEnv,
-} from "../services/python-bridge";
+import { buildCommandArgs, classifyError } from "../services/python-bridge";
 import { resolveRuntimeCommand } from "../services/managed-runtime";
 import { stripCredentialEnv } from "../services/secret-storage";
 import { getDisclosureState, toggleDisclosureState } from "../utils/disclosure";

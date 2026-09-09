@@ -257,16 +257,6 @@ vi.mock("child_process", () => {
 });
 
 vi.mock("../src/services/python-bridge", () => ({
-  resolvePythonExecutable: () => ({ path: "/usr/bin/python3", extraArgs: [] }),
-  buildRuntimeInstallCommand: () => "pip install",
-  paperforgeEnrichedEnv: () => ({}),
-  buildTargetedEnv: async (app: unknown, type: string) =>
-    type === "ocr"
-      ? {
-          PADDLEOCR_API_KEY: "sk-test-paddle",
-          PADDLEOCR_API_TOKEN: "sk-test-paddle",
-        }
-      : {},
   scanBbtUnderProfiles: () => [],
   scanBbtDirectChildren: () => [],
   runSubprocess: () => {},
@@ -1453,22 +1443,6 @@ describe("_dispatchMemoryBuild (Issue #78)", () => {
     // all so the envelope reflects Python truth instead of the stale
     // pre-build needs_action state.
     expect(refreshes).toBe(1);
-  });
-
-  it("injects the current secure credential profile into embed builds", async () => {
-    const tab = makeTab();
-    (tab as any)._capabilityState = { memory: createUnknownEnvelope("memory") };
-    // #120: the controller resolves credentials (buildTargetedEnv) BEFORE
-    // spawning — no more credentialType null-return branch in _callPython.
-    const bridge = await import("../src/services/python-bridge");
-    const envSpy = vi.spyOn(bridge, "buildTargetedEnv");
-    (tab as any)._dispatchMemoryBuild("embed");
-    modalOpens.at(-1)?.onConfirm?.();
-    await Promise.resolve();
-    expect(envSpy).toHaveBeenCalled();
-    expect(
-      spawnedProcesses.some((p: { args: string[] }) => p.args.includes("embed"))
-    ).toBe(true);
   });
 
   it("embed parses PROGRESS into activity_progress", async () => {
