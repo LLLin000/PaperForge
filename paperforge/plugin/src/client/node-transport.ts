@@ -1,12 +1,17 @@
 /**
- * NodeProcessTransport — Node.js child_process transport for PaperForgeClient.
+ * NodeProcessTransport — THE single child-process authority for PaperForge.
  *
- * Consolidates existing subprocess and streaming mechanics (LongTaskClient,
- * ActionClient, ManagedRuntime):
- * - Resolves canonical Python interpreter via ManagedRuntime pointer.
+ * Ticket 07 step 6 item 4: the LongTaskClient streaming/process engine was
+ * merged here (`services/long-task-client.ts` tombstoned) so ALL
+ * child-process authority lives at the transport root:
+ * - Resolves the canonical Python interpreter via ManagedRuntime pointer.
  * - Sanitizes subprocess environment via paperforgeEnrichedEnv().
- * - Submits credentials strictly over stdin (never in process arguments or env).
- * - Implements cooperative cancellation via stdin PAPERFORGE_STOP and escalation.
+ * - Submits credentials strictly over stdin (never argv/env).
+ * - execute(): single-result mode; stream(): #137 structured-stream mode
+ *   with the frozen stateful protocol-fail-closed NDJSON parser.
+ * - Cooperative cancellation via stdin `PAPERFORGE_STOP`, grace window,
+ *   then hard escalation (Windows `taskkill /T /F`, POSIX process-group
+ *   SIGKILL). shell:false everywhere.
  */
 
 import { spawn, type ChildProcess } from "child_process";
@@ -15,16 +20,227 @@ import {
   type ExecuteOptions,
   type StreamOptions,
   type StreamHandle,
-  type NdjsonEvent,
-  type LongTaskOutcome,
   AsyncEventQueue,
 } from "./transport";
-import { runLongTask } from "../services/long-task-client";
 import { paperforgeEnrichedEnv } from "../services/python-bridge";
 import {
   RuntimeBootstrap,
   resolveRuntimeCommand,
 } from "../services/managed-runtime";
+
+export interface NdjsonEvent {
+  schema_version: number;
+  event: string;
+  operation: string;
+  total?: number;
+  current?: number;
+  item_id?: string;
+  status?: string;
+  result?: Record<string, unknown> | null;
+  [key: string]: unknown;
+}
+
+const KNOWN_EVENTS: ReadonlySet<string> = new Set([
+  "start",
+  "preflight",
+  "phase",
+  "progress",
+  "paper_settled",
+  "heartbeat",
+  "item_result",
+  "result",
+  "error",
+  "cancelled",
+]);
+const TERMINAL_EVENTS: ReadonlySet<string> = new Set([
+  "result",
+  "error",
+  "cancelled",
+]);
+
+/** Stateful, protocol-fail-closed NDJSON stream parser (#137 §5). */
+export class NdjsonStreamParser {
+  private _buffer = "";
+  private _terminalSeen = false;
+  private _protocolFailure: string | undefined;
+
+  get protocolFailure(): string | undefined {
+    return this._protocolFailure;
+  }
+
+  get terminalSeen(): boolean {
+    return this._terminalSeen;
+  }
+
+  /** Feed a raw chunk; returns the parsed events (empty after failure). */
+  feed(chunk: string): NdjsonEvent[] {
+    if (this._protocolFailure) return [];
+    const full = this._buffer + chunk;
+    const lines = full.split("\n");
+    this._buffer = lines.pop() ?? "";
+
+    const out: NdjsonEvent[] = [];
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      let parsed: NdjsonEvent;
+      try {
+        parsed = JSON.parse(line) as NdjsonEvent;
+      } catch {
+        this._protocolFailure = `non-JSON stdout line: ${line.slice(0, 80)}`;
+        break;
+      }
+      if (parsed.schema_version !== 1) {
+        this._protocolFailure = `schema_version ${parsed.schema_version} != 1`;
+        break;
+      }
+      if (typeof parsed.event !== "string" || !KNOWN_EVENTS.has(parsed.event)) {
+        this._protocolFailure = `unknown event: ${String(parsed.event)}`;
+        break;
+      }
+      if (this._terminalSeen) {
+        this._protocolFailure = "event after terminal";
+        break;
+      }
+      if (TERMINAL_EVENTS.has(parsed.event)) {
+        this._terminalSeen = true;
+      }
+      out.push(parsed);
+    }
+    return out;
+  }
+
+  /** EOF without a terminal event is a protocol failure. */
+  finishEOF(): void {
+    if (!this._protocolFailure && !this._terminalSeen) {
+      this._protocolFailure = "EOF without terminal event";
+    }
+  }
+}
+
+export interface LongTaskOptions {
+  onEvent: (event: NdjsonEvent) => void;
+  env?: Record<string, string | undefined>;
+  /** Grace window after the stop token before hard escalation. */
+  graceMs?: number;
+}
+
+export interface LongTaskOutcome {
+  ok: boolean;
+  exitCode: number | null;
+  cancelled: boolean;
+  events: NdjsonEvent[];
+  protocolFailure?: string;
+}
+
+export interface LongTaskHandle {
+  /** Cooperative stop: stdin token, then grace, then hard escalation. */
+  stop: () => void;
+  promise: Promise<LongTaskOutcome>;
+}
+
+function hardKill(child: ChildProcess): void {
+  if (!child.pid) return;
+  if (process.platform === "win32") {
+    try {
+      spawn("taskkill", ["/T", "/F", "/PID", String(child.pid)], {
+        stdio: "ignore",
+      });
+    } catch {
+      child.kill("SIGKILL");
+    }
+  } else {
+    try {
+      // Process-group kill (detached children live in their own group).
+      process.kill(-child.pid, "SIGKILL");
+    } catch {
+      child.kill("SIGKILL");
+    }
+  }
+}
+
+/**
+ * THE single structured-stream client.  Spawns with shell:false, pipes
+ * stdin for the cooperative stop token, parses stdout with the stateful
+ * protocol-fail-closed parser, escalates hard after the grace window.
+ * Env is the redacted paperforgeEnrichedEnv() unless explicitly provided —
+ * never merged with process.env.
+ */
+export function runLongTask(
+  pythonExe: string,
+  extraArgs: string[],
+  vaultPath: string,
+  argv: string[],
+  opts: LongTaskOptions
+): LongTaskHandle {
+  const env = opts.env ?? paperforgeEnrichedEnv();
+  const child = spawn(
+    pythonExe,
+    [...extraArgs, "-m", "paperforge", "--vault", vaultPath, ...argv],
+    {
+      cwd: vaultPath,
+      shell: false,
+      windowsHide: true,
+      env,
+      stdio: ["pipe", "pipe", "pipe"],
+    }
+  );
+
+  const parser = new NdjsonStreamParser();
+  const events: NdjsonEvent[] = [];
+  let hardKilled = false;
+  let graceTimer: ReturnType<typeof setTimeout> | null = null;
+
+  child.stdout?.setEncoding("utf-8");
+  child.stdout?.on("data", (chunk: string) => {
+    for (const ev of parser.feed(chunk)) {
+      events.push(ev);
+      opts.onEvent(ev);
+    }
+  });
+
+  const outcome = new Promise<LongTaskOutcome>((resolve) => {
+    child.on("close", (code: number | null) => {
+      if (graceTimer) clearTimeout(graceTimer);
+      parser.finishEOF();
+      resolve({
+        ok: !parser.protocolFailure && code === 0,
+        exitCode: code,
+        cancelled: code === 130,
+        events,
+        protocolFailure: parser.protocolFailure,
+      });
+    });
+    child.on("error", (err: Error) => {
+      if (graceTimer) clearTimeout(graceTimer);
+      resolve({
+        ok: false,
+        exitCode: -1,
+        cancelled: false,
+        events,
+        protocolFailure: `spawn error: ${err.message}`,
+      });
+    });
+  });
+
+  return {
+    stop: () => {
+      try {
+        child.stdin?.write("PAPERFORGE_STOP\n");
+      } catch {
+        // stdin closed — the exit path still settles.
+      }
+      if (graceTimer) return;
+      const graceMs = opts.graceMs ?? 5000;
+      graceTimer = setTimeout(() => {
+        if (child.exitCode === null && !hardKilled) {
+          hardKilled = true;
+          hardKill(child);
+        }
+      }, graceMs);
+    },
+    promise: outcome,
+  };
+}
 
 export interface NodeProcessTransportOptions {
   vaultPath: string;

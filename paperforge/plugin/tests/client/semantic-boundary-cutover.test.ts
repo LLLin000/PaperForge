@@ -24,6 +24,7 @@ import { join } from "node:path";
 import { MockTransport } from "./mock-transport";
 import { PaperForgeClient } from "../../src/client/paperforge-client";
 import { PaperForgeStatusView } from "../../src/views/dashboard";
+import { PaperForgeSettingTab } from "../../src/settings";
 
 const { mockExecFile, mockSpawn } = vi.hoisted(() => ({
   mockExecFile: vi.fn(),
@@ -276,6 +277,27 @@ describe("Note workflow flags are Python authority (note set-flag)", () => {
     await expect(client.setNoteFlag("K1", "analyze", true)).rejects.toThrow(
       "field must be one of"
     );
+  });
+});
+
+describe("Single client owner (step 6 item 4)", () => {
+  it("Settings never constructs a fallback client — it fails closed on the singleton", () => {
+    const app = { vault: { adapter: { basePath: "/vault" } } } as any;
+    const plugin = { settings: {} } as any; // NO getClient
+    const tab = new (PaperForgeSettingTab as any)(app, plugin) as any;
+    expect(() => tab.getClient()).toThrow(
+      /plugin\.getClient singleton is missing/
+    );
+    // no second OperationLock/long-task owner can be created
+    expect(tab._client).toBeNull();
+  });
+
+  it("Settings binds the plugin singleton when present", () => {
+    const sentinel = { runAction: vi.fn() };
+    const app = { vault: { adapter: { basePath: "/vault" } } } as any;
+    const plugin = { getClient: () => sentinel, settings: {} } as any;
+    const tab = new (PaperForgeSettingTab as any)(app, plugin) as any;
+    expect(tab.getClient()).toBe(sentinel);
   });
 });
 

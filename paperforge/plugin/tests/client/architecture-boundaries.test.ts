@@ -39,13 +39,10 @@ const CP_MODULE = /^(node:)?child_process$/;
 
 /** Permanent child-process authority — the transport stack, exact files. */
 const DIRECT_AUTHORITY_OWNERS: Record<string, number> = {
-  // Transport root. Spawn delegation lives in long-task-client until Stage 2
-  // collapses it into this file.
-  "client/node-transport.ts": 0,
-  // Transport stack (NodeProcessTransport's streaming engine). Snapshot
-  // frozen; must be merged into client/node-transport.ts before Ticket 07
-  // closes.
-  "services/long-task-client.ts": 2,
+  // Ticket 07 step 6 item 4: the LongTaskClient streaming/process engine
+  // merged into the transport root — ALL child-process authority lives here
+  // (execute + #137 structured-stream + hardKill escalation).
+  "client/node-transport.ts": 2,
 };
 
 /** Host-layer seams, listed file-by-file with their exact current shape. */
@@ -84,7 +81,10 @@ const LEGACY_RATCHET: Record<string, number> = {
   // Step 6 item 3: runSubprocess + the legacy python-bridge runAction
   // deleted (action-client tombstoned; the injected SAME singleton
   // client.runAction is the only execution path). 8 -> 7 provenance sites.
-  "services/python-bridge.ts": 7,
+  // Step 6 item 4: the dead python-bridge runLongTask streaming engine
+  // deleted (zero callers; streaming ownership lives only in
+  // client/node-transport.ts). 7 -> 6.
+  "services/python-bridge.ts": 6,
 };
 
 /** Files that must never exist again. */
@@ -97,6 +97,10 @@ const TOMBSTONES = [
   // runActionRequest execution path (the last external runSubprocess
   // caller) was replaced by the injected SAME singleton client.runAction.
   "services/action-client.ts",
+  // Ticket 07 step 6 item 4: streaming/process engine merged into
+  // client/node-transport.ts (the transport root) — no second
+  // child-process owner may exist.
+  "services/long-task-client.ts",
   "services/ocr-maintenance-ui.ts",
   "services/config-client.ts",
   // Stage 2 step 3: the legacy OCR child-process owner — run/redo/rebuild
