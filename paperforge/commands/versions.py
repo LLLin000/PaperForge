@@ -26,6 +26,19 @@ from typing import Any
 BACKUP_PREFIX = "fulltext.pre-rebuild."
 
 
+def _safe_segment(name: str) -> bool:
+    """A canonical single path segment: no separators, no dot segments."""
+    return bool(name) and name not in (".", "..") and "/" not in name and "\\" not in name
+
+
+def _contained(root: Path, candidate: Path) -> bool:
+    try:
+        candidate.resolve().relative_to(root.resolve())
+        return True
+    except (ValueError, OSError):
+        return False
+
+
 def _err(version: str, message: str):
     from paperforge.core.errors import ErrorCode
     from paperforge.core.result import PFError, PFResult
@@ -81,77 +94,122 @@ def read_manifest(paper_root: Path) -> dict[str, Any] | None:
     return None
 
 
-def _backup_label(ts: str) -> str:
-    return f"backup-{ts}"
-
-
-def _backup_timestamp_to_iso(ts: str) -> str:
-    """``YYYYMMDDHHMMSS`` (legacy filename) → ISO-8601 UTC, best effort."""
-    if len(ts) >= 14 and ts[:14].isdigit():
-        return (
-            f"{ts[0:4]}-{ts[4:6]}-{ts[6:8]}T{ts[8:10]}:{ts[10:12]}:{ts[12:14]}Z"
-        )
-    return ts
+def _backup_label(stamp: str, seq: str) -> str:
+    """Label preserves sequence identity (``.001`` suffixes)."""
+    return f"backup-{stamp}" + (f".{seq}" if seq else "")
 
 
 def list_backups(paper_root: Path) -> list[dict[str, Any]]:
-    """Legacy ``backups/fulltext.pre-rebuild.<ts>.md`` recognition."""
+    """Legacy ``backups/fulltext.pre-rebuild.<stamp>[.<seq>].md`` recognition.
+
+    Filename + timestamp semantics come from the producer's SSOT
+    (``parse_pre_rebuild_backup_name`` / ``backup_stamp_to_iso``).
+    """
+    from paperforge.worker.ocr_fulltext_state import (
+        backup_stamp_to_iso,
+        parse_pre_rebuild_backup_name,
+    )
+
     backups_dir = paper_root / "backups"
     if not backups_dir.is_dir():
         return []
     out: list[dict[str, Any]] = []
     for entry in sorted(backups_dir.iterdir()):
-        if not entry.name.startswith(BACKUP_PREFIX) or not entry.name.endswith(".md"):
+        parsed = parse_pre_rebuild_backup_name(entry.name)
+        if parsed is None:
             continue
-        ts = entry.name[len(BACKUP_PREFIX) : -len(".md")]
+        stamp, seq = parsed
         try:
             size = entry.stat().st_size
         except OSError:
             size = 0
         out.append(
             {
-                "label": _backup_label(ts),
-                "created_at": _backup_timestamp_to_iso(ts),
+                "label": _backup_label(stamp, seq),
+                "created_at": backup_stamp_to_iso(stamp),
                 "source": "pre-rebuild",
                 "fulltext_size": size,
-                "path": str(entry.relative_to(paper_root.parent.parent)),
+                "source_path": str(entry),
             }
         )
     return out
 
 
-def _entry_paths(paper_root: Path, label: str) -> dict[str, Any]:
-    """Canonical artifact paths for a label (formal version or legacy backup)."""
-    if label.startswith("backup-"):
-        ts = label[len("backup-") :]
-        source = paper_root / "backups" / f"{BACKUP_PREFIX}{ts}.md"
-        kind = "legacy_backup"
-    else:
-        source = paper_root / "versions" / label / "fulltext.md"
-        kind = "version"
+def _authority_source(paper_root: Path, label: str) -> tuple[Path, str] | None:
+    """Resolve a label through the AUTHORITY SETS only.
+
+    The raw label string is never used as a path segment: it must exactly
+    match a manifest version label or a recognized legacy backup label, and
+    the source path is then constructed from the authority record. This
+    makes cross-paper / dot-segment labels structurally impossible.
+    """
+    if not _safe_segment(label):
+        return None
+    manifest = read_manifest(paper_root)
+    if manifest:
+        for entry in manifest["versions"]:
+            if isinstance(entry, dict) and str(entry.get("label")) == label:
+                source = paper_root / "versions" / label / "fulltext.md"
+                if _contained(paper_root, source):
+                    return source, "version"
+                return None
+    for backup in list_backups(paper_root):
+        if backup["label"] == label:
+            source = Path(str(backup["source_path"]))
+            if _contained(paper_root, source):
+                return source, "legacy_backup"
+            return None
+    return None
+
+
+def _entry_paths(paper_root: Path, label: str) -> dict[str, Any] | None:
+    """Canonical artifact paths for an AUTHORITY-matched label, or None."""
+    resolved = _authority_source(paper_root, label)
+    if resolved is None:
+        return None
+    source, kind = resolved
+    target = paper_root / "render" / "fulltext.md"
+    if not _contained(paper_root, target):
+        return None
     return {
         "label": label,
         "kind": kind,
         "source_path": str(source),
-        "current_path": str(paper_root / "render" / "fulltext.md"),
+        "current_path": str(target),
     }
 
 
-def _paper_root(vault: Path, key: str) -> Path:
-    return _ocr_root(vault) / key
+def _paper_root(vault: Path, key: str) -> Path | None:
+    """OCR root's DIRECT canonical child — separators/dot segments refused."""
+    if not _safe_segment(key):
+        return None
+    root = _ocr_root(vault) / key
+    if not _contained(_ocr_root(vault), root):
+        return None
+    if root.resolve().parent != _ocr_root(vault).resolve():
+        return None
+    return root
 
 
 def _with_paths(paper_root: Path, versions: list[Any]) -> list[dict[str, Any]]:
-    """Attach the canonical artifact path to every version entry — the UI
-    reads ONLY these Python-constructed paths."""
+    """Attach the canonical artifact path to every version entry.
+
+    Entries whose label is not a safe single segment, or whose resolved
+    source escapes the paper root, are DROPPED — a corrupt manifest can
+    never make Python hand the UI an out-of-root artifact path.
+    """
     out: list[dict[str, Any]] = []
     for entry in versions:
         if not isinstance(entry, dict):
             continue
+        label = str(entry.get("label", ""))
+        if not _safe_segment(label):
+            continue
+        source = paper_root / "versions" / label / "fulltext.md"
+        if not _contained(paper_root, source):
+            continue
         enriched = dict(entry)
-        enriched["source_path"] = str(
-            paper_root / "versions" / str(entry.get("label", "")) / "fulltext.md"
-        )
+        enriched["source_path"] = str(source)
         out.append(enriched)
     return out
 
@@ -193,7 +251,7 @@ def _run_list(vault: Path, version: str) -> int:
 
 def _run_show(vault: Path, key: str, version: str) -> int:
     root = _paper_root(vault, key)
-    if not root.is_dir():
+    if root is None or not root.is_dir():
         print(_err(version, f"unknown paper key: {key}").to_json())
         return 1
     manifest = read_manifest(root)
@@ -230,7 +288,7 @@ def _run_show(vault: Path, key: str, version: str) -> int:
 
 def _run_backups(vault: Path, key: str, version: str) -> int:
     root = _paper_root(vault, key)
-    if not root.is_dir():
+    if root is None or not root.is_dir():
         print(_err(version, f"unknown paper key: {key}").to_json())
         return 1
     print(
@@ -248,7 +306,7 @@ def _run_backups(vault: Path, key: str, version: str) -> int:
 
 def _run_paths(vault: Path, key: str, label: str, version: str) -> int:
     root = _paper_root(vault, key)
-    if not root.is_dir():
+    if root is None or not root.is_dir():
         print(_err(version, f"unknown paper key: {key}").to_json())
         return 1
     if not label:
@@ -258,6 +316,9 @@ def _run_paths(vault: Path, key: str, label: str, version: str) -> int:
             return 1
         label = str(manifest["current"]["label"])
     paths = _entry_paths(root, label)
+    if paths is None:
+        print(_err(version, f"unknown version label for {key}: {label}").to_json())
+        return 1
     if not Path(paths["source_path"]).exists():
         print(_err(version, f"version artifact not found for {key}/{label}").to_json())
         return 1
@@ -266,16 +327,24 @@ def _run_paths(vault: Path, key: str, label: str, version: str) -> int:
 
 
 def _run_restore(vault: Path, key: str, label: str, version: str) -> int:
-    """Display-only restore: copy source fulltext → render/fulltext.md and
-    persist restore provenance. Python owns both the copy and the mutation."""
+    """Display-only restore: copy the AUTHORITY-matched source fulltext →
+    render/fulltext.md, then persist restore provenance (best-effort).
+
+    Durable-state contract: the restored BYTES are authoritative; the
+    provenance record is explanatory metadata and a failed write does not
+    fail the restore (`provenance_persisted` reports the truth).
+    """
     root = _paper_root(vault, key)
-    if not root.is_dir():
+    if root is None or not root.is_dir():
         print(_err(version, f"unknown paper key: {key}").to_json())
         return 1
     if not label:
         print(_err(version, "restore requires --label").to_json())
         return 1
     paths = _entry_paths(root, label)
+    if paths is None:
+        print(_err(version, f"unknown version label for {key}: {label}").to_json())
+        return 1
     source = Path(paths["source_path"])
     if not source.exists():
         print(_err(version, f"version artifact not found for {key}/{label}").to_json())
@@ -300,15 +369,17 @@ def _run_restore(vault: Path, key: str, label: str, version: str) -> int:
         "version_created_at": version_created_at,
     }
     meta_path = root / "meta.json"
+    provenance_persisted = False
     try:
         meta = _read_json(meta_path) if meta_path.exists() else {}
         if not isinstance(meta, dict):
             meta = {}
         meta["restore_provenance"] = provenance
         _write_json(meta_path, meta)
+        provenance_persisted = True
     except Exception:
-        # Provenance is best-effort metadata; the restore itself succeeded.
-        pass
+        # Best-effort metadata: the restored bytes are authoritative.
+        provenance_persisted = False
     print(
         _ok(
             version,
@@ -318,6 +389,7 @@ def _run_restore(vault: Path, key: str, label: str, version: str) -> int:
                 "label": label,
                 "target_path": str(target),
                 "provenance": provenance,
+                "provenance_persisted": provenance_persisted,
             },
         ).to_json()
     )

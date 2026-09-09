@@ -28,6 +28,41 @@
 
 > **STATUS: Stage 2 step 5 CLOSED / SEALED — 27c33f4b** (owner-verified 2026-09-08). Step 6 unlocked, order: cast-form architecture probe fix → final leaf semantic census (`processFrontMatter(do_ocr/analyze)` included, never dragged back to step 5) → action-client/next-actions execution convergence → long-task-client → NodeProcessTransport → python-bridge contraction → final zero-census/architecture gate → Ticket 07 close.
 
+## Stage 2 — step 6 item 6 final corrective (2026-09-08, round 2 — owner audit)
+
+- **P1 key/label canonical containment:** the `versions` authority accepted raw
+  `key`/`label` strings as path segments. Now: `key` must be the OCR root's
+  DIRECT canonical child (separators/dot segments refused); a `label` is never
+  used as a path segment — it must exactly match a manifest version label or a
+  recognized legacy backup label, and the source path is constructed from the
+  authority record; every resolved `paper_root`/`source`/`target` passes a
+  `resolve()` containment assertion; `_with_paths` DROPS unsafe manifest
+  entries so a corrupt manifest can never hand the UI an out-of-root path.
+  Regressions: cross-paper label traversal (`../../OTHERPAPER/render`, `..`,
+  nested) → rc 1, A's bytes unchanged, no `paths` leak; key traversal
+  (`../OTHERPAPER`, `OTHERPAPER/v1`, `..`) → rc 1, zero write.
+- **P1 legacy backup timestamp SSOT:** the round-1 parser expected a compact
+  `YYYYMMDDHHMMSS` stamp the producer never emits, and the fixture used that
+  invalid shape — masking the bug. The producer regex/format now lives in ONE
+  public helper (`parse_pre_rebuild_backup_name` + `backup_stamp_to_iso` in
+  `worker/ocr_fulltext_state.py`), consumed by the producer, the pruner, and
+  `versions`; labels preserve `.NNN` sequence identity. Regressions use the
+  real producer shapes (`…20260909T123456Z.md`, `…Z.001.md`) through the CLI,
+  assert `created_at == 2026-09-09T12:34:56Z`, restore-by-seq hits the exact
+  backup, and a producer↔parser round-trip test pins the SSOT.
+- **P2 provenance wording:** restore is documented as "restored bytes are
+  authoritative; provenance is best-effort metadata"; the result now reports
+  `provenance_persisted` (CLI + client) instead of implying a strong
+  durable-state contract.
+- **Dead-helper cleanup (zero callers verified):** `toolArgvFor` (definition +
+  both imports), `buildCommandArgs` (helper + its test block + dashboard
+  import), and import-only `resolveVaultPaths`/`stripCredentialEnv` in the
+  dashboard were deleted.
+- **Bookkeeping:** the tombstone list has **8** entries (the earlier report said
+  7; `services/embed-build-controller.ts` is also tombstoned).
+- Evidence: Python versions **9 passed** + fulltext-state **9 passed**; plugin
+  **446/446**; tsc clean; Gate A/B/C/D 11/11.
+
 ## Stage 2 — step 6 item 5 + item 6 + closure (2026-09-08, final)
 
 ### Commit A — python-bridge contraction (item 5)

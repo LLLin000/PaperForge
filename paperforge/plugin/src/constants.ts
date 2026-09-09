@@ -84,22 +84,6 @@ export const ACTIONS: ActionDef[] = [
  * These are NOT registry actions (sync/doctor/repair/ocr are standalone
  * commands); action surfaces route through the ActionClient instead.
  */
-export function toolArgvFor(id: string): string[] | null {
-  switch (id) {
-    case "paperforge-sync":
-      return ["sync"];
-    case "paperforge-ocr":
-      return ["ocr", "run"];
-    case "paperforge-doctor":
-      return ["doctor"];
-    case "paperforge-repair":
-      return ["repair", "--fix", "--fix-paths"];
-    case "paperforge-ocr-redo":
-      return ["ocr", "redo"];
-    default:
-      return null;
-  }
-}
 
 // ── Settings ──
 

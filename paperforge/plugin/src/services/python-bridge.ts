@@ -119,13 +119,6 @@ export function classifyError(errorCode: string): ErrorClassification {
   return { type: "unknown", message: String(errorCode), recoverable: false };
 }
 
-export function buildCommandArgs(action: any, key: any, filter: any): string[] {
-  const args = Array.isArray(action.args) ? [...action.args] : [];
-  if (action.needsKey && key) args.push(key);
-  if (action.needsFilter || filter) args.push("--all");
-  return args;
-}
-
 function dirLooksLikeBetterBibtexFolder(entryName: string): boolean {
   const compact = String(entryName)
     .toLowerCase()

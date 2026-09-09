@@ -13,6 +13,34 @@ _DRIFT = Literal["MATCHED", "DRIFTED", "UNKNOWN"]
 _BACKUP_RE = re.compile(r"^fulltext\.pre-rebuild\.(\d{8}T\d{6}Z)(?:\.(\d{3}))?\.md$")
 
 
+def parse_pre_rebuild_backup_name(name: str) -> tuple[str, str] | None:
+    """Parse a canonical pre-rebuild backup filename.
+
+    THE single authority for legacy backup filename semantics: the producer
+    (``create_pre_rebuild_backup``), the pruner, and every reader (e.g.
+    ``paperforge versions``) consume this.  Returns ``(stamp, seq)`` where
+    stamp is ``YYYYMMDDTHHMMSSZ`` and seq is ``""`` or a 3-digit string, or
+    ``None`` when the name is not a canonical backup artifact.
+    """
+    match = _BACKUP_RE.match(name)
+    if not match:
+        return None
+    return match.group(1), match.group(2) or ""
+
+
+def backup_stamp_to_iso(stamp: str) -> str:
+    """``YYYYMMDDTHHMMSSZ`` -> ``YYYY-MM-DDTHH:MM:SSZ`` (identity if odd)."""
+    if len(stamp) == 16 and stamp[8] == "T" and stamp.endswith("Z"):
+        head = stamp[:8]
+        tail = stamp[9:15]
+        if head.isdigit() and tail.isdigit():
+            return (
+                f"{head[0:4]}-{head[4:6]}-{head[6:8]}"
+                f"T{tail[0:2]}:{tail[2:4]}:{tail[4:6]}Z"
+            )
+    return stamp
+
+
 def compute_disk_fulltext_hash(path: Path) -> str:
     return _sha256_hexdigest(path.read_bytes())
 
@@ -52,7 +80,11 @@ def prune_pre_rebuild_backups(backups_dir: Path, keep: int = 5) -> list[Path]:
     if not backups_dir.exists():
         return []
     matches = sorted(
-        (p for p in backups_dir.glob("fulltext.pre-rebuild.*.md") if _BACKUP_RE.match(p.name)),
+        (
+            p
+            for p in backups_dir.glob("fulltext.pre-rebuild.*.md")
+            if parse_pre_rebuild_backup_name(p.name) is not None
+        ),
         key=lambda p: p.name,
     )
     doomed = matches[:-keep] if len(matches) > keep else []
