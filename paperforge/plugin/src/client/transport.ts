@@ -5,9 +5,27 @@
  * only on PaperForgeClient; PaperForgeClient depends only on Transport.
  */
 
-import type { NdjsonEvent, LongTaskOutcome } from "./node-transport";
+/** #137 structured-stream NDJSON event (frozen 10-event vocabulary). */
+export interface NdjsonEvent {
+  schema_version: number;
+  event: string;
+  operation: string;
+  total?: number;
+  current?: number;
+  item_id?: string;
+  status?: string;
+  result?: Record<string, unknown> | null;
+  [key: string]: unknown;
+}
 
-export type { NdjsonEvent, LongTaskOutcome };
+/** Terminal outcome of one structured-stream operation. */
+export interface LongTaskOutcome {
+  ok: boolean;
+  exitCode: number | null;
+  cancelled: boolean;
+  events: NdjsonEvent[];
+  protocolFailure?: string;
+}
 
 export interface ExecuteOptions {
   timeoutMs?: number;

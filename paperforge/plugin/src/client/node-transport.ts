@@ -22,6 +22,8 @@ import {
   type ExecuteOptions,
   type StreamOptions,
   type StreamHandle,
+  type NdjsonEvent,
+  type LongTaskOutcome,
   AsyncEventQueue,
 } from "./transport";
 import { stripCredentialEnv } from "../services/secret-storage";
@@ -29,18 +31,6 @@ import {
   RuntimeBootstrap,
   resolveRuntimeCommand,
 } from "../services/managed-runtime";
-
-export interface NdjsonEvent {
-  schema_version: number;
-  event: string;
-  operation: string;
-  total?: number;
-  current?: number;
-  item_id?: string;
-  status?: string;
-  result?: Record<string, unknown> | null;
-  [key: string]: unknown;
-}
 
 const KNOWN_EVENTS: ReadonlySet<string> = new Set([
   "start",
@@ -124,14 +114,6 @@ export interface LongTaskOptions {
   env?: Record<string, string | undefined>;
   /** Grace window after the stop token before hard escalation. */
   graceMs?: number;
-}
-
-export interface LongTaskOutcome {
-  ok: boolean;
-  exitCode: number | null;
-  cancelled: boolean;
-  events: NdjsonEvent[];
-  protocolFailure?: string;
 }
 
 export interface LongTaskHandle {

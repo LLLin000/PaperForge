@@ -309,6 +309,65 @@ describe("architecture boundary gate (Ticket 07)", () => {
     }
   });
 
+  it("Gate E: the client interface layer is host-agnostic and complete", () => {
+    // The shared client (action-contract / probe-types / transport /
+    // paperforge-client) must be consumable by ANY host: no Obsidian API, no
+    // plugin-constants, and no dependency on the Node host implementation.
+    const interfaceLayer = [
+      "client/action-contract.ts",
+      "client/probe-types.ts",
+      "client/transport.ts",
+      "client/paperforge-client.ts",
+    ];
+    const forbiddenImports = [
+      /from "obsidian"/,
+      /from "\.\.\/constants"/,
+      /from "\.\/node-transport"/,
+    ];
+    const violations: string[] = [];
+    for (const rel of interfaceLayer) {
+      const text = readFileSync(join(SRC, rel), "utf-8");
+      for (const pattern of forbiddenImports) {
+        if (pattern.test(text)) violations.push(`${rel}: ${pattern}`);
+      }
+    }
+    expect(violations).toEqual([]);
+    // probe DTOs are owned by the client and re-exported for the plugin
+    const constants = readFileSync(join(SRC, "constants.ts"), "utf-8");
+    expect(constants).toContain('from "./client/probe-types"');
+    // the typed public surface must not regress to `any`
+    const client = readFileSync(
+      join(SRC, "client/paperforge-client.ts"),
+      "utf-8"
+    );
+    expect(client).not.toMatch(/Promise<any>/);
+    for (const method of [
+      "probe(",
+      "probeAll(",
+      "reconcile(",
+      "runAction(",
+      "streamAction(",
+      "sync(",
+      "search(",
+      "retrieve(",
+      "read(",
+      "paperStatus(",
+      "queryOcrPapers(",
+      "renderAudit(",
+      "promoteR(",
+      "acceptProposal(",
+      "versionsList(",
+      "versionsRestore(",
+      "setNoteFlag(",
+      "resolvePaperContext(",
+      "dashboardStats(",
+      "configSet(",
+      "authSetSecret(",
+    ]) {
+      expect(client).toContain(method);
+    }
+  });
+
   it("Gate D: UI/service layers hold no semantic authority (final census)", () => {
     // Final zero-census enforcement (Ticket 07 step 6 item 6). Allowed host
     // seams remain: bootstrap/runtime pointer, UI prefs/cache, active
