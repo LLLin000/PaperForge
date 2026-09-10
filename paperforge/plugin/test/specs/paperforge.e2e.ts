@@ -845,4 +845,71 @@ describe("PaperForge real-task e2e", function () {
       observed_at: new Date().toISOString(),
     });
   });
+  it("reverts the workflow toggle when the backend refuses, and says so", async function () {
+    // Case B07, failure branch. The toggle must never leave a UI state that
+    // disagrees with the note: on rejection the checkbox reverts and the
+    // cached entry stays untouched.
+    const base = await sandboxBasePath();
+    await openPanel();
+    await openVaultFile(NOTE_PATH);
+
+    await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"];
+      if (!plugin || typeof plugin.setDebugTrace !== "function") {
+        throw new Error("paperforge plugin not loaded");
+      }
+      await plugin.setDebugTrace(true);
+    });
+
+    // Render the panel from the healthy note first: the toggles only exist in
+    // paper mode, which resolves the note, so breaking it before the render
+    // removes the very control under test.
+    const disclosure = await browser.$(".paperforge-technical-details-toggle");
+    await disclosure.waitForExist({ timeout: 60000 });
+    await disclosure.click();
+
+    const checkbox = await browser.$("[data-pf-testid='flag-do_ocr']");
+    await checkbox.waitForDisplayed({ timeout: 60000 });
+    const initial = await checkbox.isSelected();
+
+    // Now make the authority refuse: a note with no frontmatter block is a
+    // validation failure for `note set-flag`, never a silent no-op.
+    const brokenNote = "# no frontmatter\n\nbody only\n";
+    writeFileSync(path.join(base, BYSTANDER_NOTE), brokenNote);
+
+    await clickTestId("flag-do_ocr");
+
+    // The refusal must be real: the command reached the backend and failed.
+    await browser.waitUntil(async () => await traceContains("note set-flag"), {
+      timeout: 60000,
+      timeoutMsg: "the toggle never reached the backend",
+    });
+    await browser.waitUntil(
+      async () => (await checkbox.isSelected()) === initial,
+      {
+        timeout: 30000,
+        timeoutMsg: "the checkbox kept a value the note does not have",
+      }
+    );
+
+    // Fail-closed means the file is untouched, not partially written.
+    expect(readNote(base, BYSTANDER_NOTE)).toBe(brokenNote);
+
+    appendEvidence("b07-note-flag-reject.json", {
+      case_id: "B07",
+      variant: "UI toggle rejected -> revert, no write",
+      required_layer: "H",
+      status: "VERIFIED",
+      source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: PLUGIN_DIR,
+      })
+        .toString()
+        .trim(),
+      field: "do_ocr",
+      checkbox_value_before: initial,
+      checkbox_value_after: await checkbox.isSelected(),
+      note_unchanged: true,
+      observed_at: new Date().toISOString(),
+    });
+  });
 });
