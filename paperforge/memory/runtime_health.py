@@ -1,6 +1,26 @@
 from __future__ import annotations
 
+import platform
+import sys
 from pathlib import Path
+
+
+def _runtime_identity() -> dict:
+    """Which interpreter and package are actually serving this request.
+
+    A version number cannot distinguish the worktree source from an installed
+    artifact, so acceptance evidence needs the artifact path as well. Reporting
+    it here also answers the support question "which runtime am I actually
+    running?" without asking the user to read a traceback.
+    """
+    import paperforge
+
+    return {
+        "interpreter": sys.executable,
+        "python_version": platform.python_version(),
+        "package_path": str(Path(paperforge.__file__).resolve().parent),
+        "package_version": str(getattr(paperforge, "__version__", "")),
+    }
 
 
 def get_runtime_health(vault: Path) -> dict:
@@ -15,6 +35,7 @@ def get_runtime_health(vault: Path) -> dict:
     summary = _derive_summary(layers)
     capabilities = _derive_capabilities(layers)
     return {
+        "runtime": _runtime_identity(),
         "summary": summary,
         "layers": layers,
         "capabilities": capabilities,
