@@ -1,8 +1,3813 @@
-"use strict";var wr=Object.create;var ze=Object.defineProperty;var xr=Object.getOwnPropertyDescriptor;var kr=Object.getOwnPropertyNames;var Er=Object.getPrototypeOf,Sr=Object.prototype.hasOwnProperty;var Cr=(p,o)=>()=>(p&&(o=p(p=0)),o);var Pr=(p,o)=>()=>(o||p((o={exports:{}}).exports,o),o.exports),At=(p,o)=>{for(var e in o)ze(p,e,{get:o[e],enumerable:!0})},Tt=(p,o,e,t)=>{if(o&&typeof o=="object"||typeof o=="function")for(let r of kr(o))!Sr.call(p,r)&&r!==e&&ze(p,r,{get:()=>o[r],enumerable:!(t=xr(o,r))||t.enumerable});return p};var K=(p,o,e)=>(e=p!=null?wr(Er(p)):{},Tt(o||!p||!p.__esModule?ze(e,"default",{value:p,enumerable:!0}):e,p)),Dt=p=>Tt(ze({},"__esModule",{value:!0}),p);var dt=Pr((un,Mr)=>{Mr.exports={versions:[{version:"1.5.15",date:"2026-06-01",title:"\u5168\u6587\u5B58\u50A8\u91CD\u6784 + OCR \u9605\u8BFB\u987A\u5E8F\u4FEE\u590D + Redo \u4E00\u952E\u91CD\u505A",breaking_or_migration:["\u5168\u6587\u6587\u4EF6\u73B0\u5728\u7EDF\u4E00\u5B58\u653E\u4E8E System/PaperForge/ocr/ \u4E0B\uFF0C\u4E0D\u518D\u5728\u5DE5\u4F5C\u533A\u4FDD\u7559\u526F\u672C","Redo OCR \u73B0\u5728\u4F1A\u7ACB\u5373\u6267\u884C\uFF08\u4E00\u952E\u5B8C\u6210\uFF09\uFF0C\u4E0D\u518D\u9700\u8981\u624B\u52A8\u518D\u8DD1\u4E00\u6B21"],new_features:["Redo OCR \u4E00\u952E\u95ED\u73AF\uFF1A\u52FE\u9009 \u2192 \u70B9\u6309\u94AE \u2192 \u81EA\u52A8\u5B8C\u6210\u5168\u90E8\u6D41\u7A0B","\u8BBE\u7F6E\u9875\u65B0\u589E\u300C\u66F4\u65B0\u4E0E\u624B\u518C\u300D\u6807\u7B7E\u9875\uFF0C\u53EF\u968F\u65F6\u67E5\u770B\u7248\u672C\u66F4\u65B0\u8BB0\u5F55\u548C\u4F7F\u7528\u624B\u518C","\u63D2\u4EF6\u66F4\u65B0\u540E\u81EA\u52A8\u5F39\u51FA\u66F4\u65B0\u8BF4\u660E"],fixes:["\u4FEE\u590D\u5168\u6587\u9605\u8BFB\u987A\u5E8F\u6DF7\u4E71\uFF0C\u4F18\u5316\u6574\u4F53\u6392\u7248\u4F53\u9A8C","\u4FEE\u590D\u7AE0\u8282\u6807\u9898\u548C\u6B63\u6587\u6BB5\u843D\u9519\u4F4D\u65AD\u5F00\u7684\u95EE\u9898","\u4FEE\u590D\u56FE\u8868\u548C\u5BF9\u5E94\u56FE\u6CE8\u88AB\u5206\u5F00\u7684\u95EE\u9898","\u4FEE\u590D\u9996\u9875\u6458\u8981\u533A\u5757\u6392\u5E8F\u5F02\u5E38","\u4FEE\u590D\u5E76\u6392\u56FE\u7247\u672A\u80FD\u81EA\u52A8\u5408\u5E76\u7684\u95EE\u9898","Dashboard \u73B0\u5728\u80FD\u6B63\u786E\u8BC6\u522B\u65B0\u7684\u5168\u6587\u6587\u4EF6\u4F4D\u7F6E"],recommended_actions:["\u65E7\u7248 OCR \u5168\u6587\u53EF\u80FD\u5B58\u5728\u9605\u8BFB\u987A\u5E8F\u95EE\u9898\uFF0C\u5EFA\u8BAE\u5BF9\u91CD\u8981\u8BBA\u6587\u6267\u884C\u4E00\u6B21 Redo OCR","\u6253\u5F00\u5168\u6587\u8BF7\u76F4\u63A5\u4F7F\u7528 Dashboard \u7684\u300C\u6253\u5F00\u5168\u6587\u300D\u6309\u94AE"]}]}});var sr={};At(sr,{isConfigHydrated:()=>gt,readPathConfig:()=>ir,resolveVaultPaths:()=>Gr,setPathConfigSource:()=>Ge});function Ge(p){$e=p}function gt(){return $e!==null}function ir(p,o){var e;return $e?{...$e,_warning:(e=$e._warning)!=null?e:null}:{system_dir:"",resources_dir:"",literature_dir:"",base_dir:"",_warning:"config authority not hydrated; paths unavailable \u2014 no semantic work may run"}}function Gr(p,o){let e=ir(p,o),t=le.join(p,e.system_dir,"PaperForge");return{vault:p,systemDir:t,indexesDir:le.join(t,"indexes"),logsDir:le.join(t,"logs"),dbPath:le.join(t,"indexes","paperforge.db"),orphanStatePath:le.join(t,"indexes","sync-orphan-state.json"),exportsDir:le.join(t,"exports"),ocrDir:le.join(t,"ocr"),configWarning:e._warning}}var le,$e,ht=Cr(()=>{"use strict";le=K(require("path")),$e=null});var on={};At(on,{default:()=>rt});module.exports=Dt(on);var q=require("obsidian"),vr=K(require("fs"));var fe="paperforge-status",ve="paperforge-ocr-workspace",Oe="paperforge",Mt='<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path><line x1="8" y1="7" x2="16" y2="7"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>',ae=[{id:"paperforge-sync",title:"Sync Library",desc:"Pull new references from Zotero and generate literature notes",icon:"\u21BB",commandId:"sync",okMsg:"Sync complete"},{id:"paperforge-ocr",title:"Run OCR",desc:"Extract full text and figures from PDFs via PaddleOCR",icon:"\u229E",commandId:"ocr",okMsg:"OCR started",timeoutMs:18e5},{id:"paperforge-doctor",title:"Run Doctor",desc:"Verify PaperForge setup \u2014 check configs, Zotero, paths, and index health",icon:"\u2695",commandId:"doctor",okMsg:"Doctor complete"},{id:"paperforge-repair",title:"Repair Issues",desc:"Fix three-way state divergence, path errors, and rebuild index",icon:"\u21BA",commandId:"repair",args:["--fix","--fix-paths"],okMsg:"Repair complete"},{id:"paperforge-ocr-redo",title:"Redo OCR",desc:"Re-run OCR for papers marked ocr_redo: true",icon:"\u21BA",commandId:"ocr",args:["redo"],okMsg:"OCR redo started"}],Le={vault_path:"",frozen_skills:{},language:"",paddleocr_api_key:"",zotero_data_dir:"",agent_platform:"opencode",python_path:"",features:{memory_layer:!0,vector_db:!1},vector_db_api_key:"",vector_db_api_base:"",vector_db_api_model:"text-embedding-3-small",system_dir:"",resources_dir:"",literature_dir:"",base_dir:"",capabilityState:{},last_seen_version:"",_migrated_keys:[],_migration_warnings:[],autoSyncEnabled:!0,autoSyncIntervalSeconds:120,_paddleocr_configured:!1,_vector_db_configured:!1,_setup_complete:!1};function nt(p,o){return p&&{...p,...o}}var je=2,we=["installation","library","ocr","memory","maintenance","help"],Rr=new Set(["checking","ready","not_enabled","setup_required","action_required","detection_failed"]),Ot=new Set(["unknown","unavailable","missing_input","needs_action","limited","ready"]),Ar=new Set(["unknown","ok","warning","error"]),Lt=new Set(["idle","running"]),Tr=new Set(["safe","destructive","irreversible"]);function Ft(p){if(!p||typeof p!="object"||Array.isArray(p))return!1;let o=p;return!(typeof o.action_id!="string"||!o.action_id||typeof o.verb!="string"||typeof o.label!="string"||typeof o.availability!="string"||typeof o.safety_class!="string"||!Tr.has(o.safety_class)||!Array.isArray(o.preservation_facts)||!Array.isArray(o.replacement_facts)||typeof o.interruptible!="boolean"||typeof o.confirmation_required!="boolean"||o.confirmation_prompt!==null&&typeof o.confirmation_prompt!="string"||typeof o.scope!="string"||typeof o.scope_count!="number"||o.execution_mode!==void 0&&o.execution_mode!=="result"&&o.execution_mode!=="stream")}function Fe(p){return{action_id:p+".probe",verb:"probe",label:"Retry",availability:"available",safety_class:"safe",preservation_facts:[],replacement_facts:[],interruptible:!0,confirmation_required:!1,confirmation_prompt:null,scope:p,scope_count:1}}function at(){return{action_id:"foundation.setup",verb:"setup",label:"Open Setup Wizard",availability:"available",safety_class:"safe",preservation_facts:[],replacement_facts:[],interruptible:!0,confirmation_required:!1,confirmation_prompt:null,scope:"installation",scope_count:1}}function Ke(p,o){if(!p||typeof p!="object")return!1;let e=p;if(e.schema_version!==je||typeof e.module!="string"||!e.module||!we.includes(e.module)||o!==void 0&&e.module!==o||typeof e.capability_state!="string"||!Ot.has(e.capability_state)||typeof e.activity_state!="string"||!Lt.has(e.activity_state)||typeof e.user_state!="string"||!Rr.has(e.user_state)||typeof e.capability_kind!="string"||typeof e.maintenance_eligible!="boolean"||typeof e.user_visible_failure!="boolean"||e.user_impact!==null&&typeof e.user_impact!="string"||e.activity_label!==null&&typeof e.activity_label!="string")return!1;if(e.activity_progress!==null){if(typeof e.activity_progress!="object")return!1;let n=e.activity_progress;if(typeof n.current!="number"||typeof n.total!="number")return!1}if(!Array.isArray(e.notices)||!e.reason||typeof e.reason!="object")return!1;let t=e.reason;if(typeof t.code!="string"||typeof t.text!="string"||!e.action||typeof e.action!="object")return!1;let r=e.action;if(r.primary!==null&&!Ft(r.primary)||typeof e.updated_at!="string"||!e.updated_at||typeof e.ttl_seconds!="number")return!1;if(e.module==="maintenance"){if(r.primary!==null||!Array.isArray(e.items))return!1;for(let n of e.items){if(!n||typeof n!="object")return!1;let a=n,s=["installation","library","ocr","memory","help"];if(typeof a.capability_state!="string"||!Ot.has(a.capability_state)||typeof a.severity!="string"||!Ar.has(a.severity)||typeof a.activity_state!="string"||!Lt.has(a.activity_state)||a.activity_label!==null&&typeof a.activity_label!="string")return!1;if(a.activity_progress!==null){if(typeof a.activity_progress!="object")return!1;let c=a.activity_progress;if(typeof c.current!="number"||typeof c.total!="number")return!1}if(typeof a.reason_code!="string"||!a.reason_code||typeof a.reason_text!="string"||a.action!==null&&!Ft(a.action))return!1}}return!0}function X(p){return{schema_version:je,module:p,capability_state:"unknown",activity_state:"idle",activity_label:null,activity_progress:null,severity:"unknown",reason:{code:p+".no_probe",text:p+" has not been probed yet."},action:{primary:p==="maintenance"?null:Fe(p)},notices:[],user_state:"detection_failed",capability_kind:"required",maintenance_eligible:!1,user_visible_failure:!1,user_impact:null,updated_at:new Date(0).toISOString(),ttl_seconds:0}}function it(p){return{schema_version:je,module:p,capability_state:"unknown",activity_state:"idle",activity_label:null,activity_progress:null,severity:"unknown",reason:{code:p+".stale",text:"Cached probe data for "+p+" is stale."},action:{primary:p==="maintenance"?null:Fe(p)},notices:[],user_state:"detection_failed",capability_kind:"required",maintenance_eligible:!1,user_visible_failure:!1,user_impact:null,updated_at:new Date(0).toISOString(),ttl_seconds:0}}function Me(p){return{schema_version:je,module:p,capability_state:"unknown",activity_state:"idle",activity_label:null,activity_progress:null,severity:"unknown",reason:{code:p+".invalid_response",text:"Probe response for "+p+" was invalid."},action:{primary:p==="maintenance"?null:Fe(p)},notices:[],user_state:"detection_failed",capability_kind:"required",maintenance_eligible:!1,user_visible_failure:!1,user_impact:null,updated_at:new Date(0).toISOString(),ttl_seconds:0}}function st(p){if(p.activity_state==="running")return!1;if(p.ttl_seconds<=0)return!0;let o=new Date(p.updated_at).getTime();return isNaN(o)?!0:Date.now()-o>p.ttl_seconds*1e3}function It(p){return p.capability_state==="ready"&&p.action.primary===null}function Bt(p){var r,n,a;let o=(r=p.action)==null?void 0:r.primary,e=(n=o==null?void 0:o.verb)!=null?n:"probe",t=(a=o==null?void 0:o.label)!=null?a:e;return e==="setup"||e==="set_config"||e==="update"?{kind:"setup",verb:e,label:t}:e==="probe"?{kind:"probe",verb:e,label:t}:{kind:"action",verb:e,label:t}}function Nt(p,o){let e={};for(let t of o){let r=p[t];if(!r||typeof r!="object"){e[t]=X(t);continue}if(!Ke(r,t)){e[t]=Me(t);continue}if(st(r)){e[t]=it(t);continue}e[t]=r}return e}var ot={en:{action_running:"Running ",api_key_missing:"Missing",api_key_set:"Entered",btn_install:"Open Setup Wizard",btn_install_desc:"Check whether the environment is ready, then open the step-by-step setup wizard",btn_reconfig:"Reconfigure",btn_reconfig_desc:"Open the setup wizard again to change directories, platform, or API keys",btn_validate:"Validate",check_bbt_fail:"Not detected",check_bbt_ok:"Installed",check_python_fail:"Not found",check_python_ok:"Ready",check_zotero_fail:"Not detected",check_zotero_ok:"Found",complete_export_path:"Save Better BibTeX JSON exports into:",complete_next:"Recommended next steps",complete_step1:"Open Dashboard",complete_step1_desc:'Press Ctrl+P and run "PaperForge: Open Main Panel", or click the PaperForge icon in the left sidebar.',complete_step2:"Sync Literature",complete_step2_desc:"In the main panel, click Sync Library to bring papers from Zotero into Obsidian and generate notes.",complete_step3:"Run OCR",complete_step3_desc:"In the Obsidian Base view, mark do_ocr:true on papers, then run OCR in the main panel.",complete_step4:"Configure Better BibTeX Auto-export",complete_step4_desc:'In Zotero, right-click the library or collection you want to sync -> Export -> Better BibTeX JSON -> enable "Keep updated".',complete_summary:"Saved Configuration",complete_title:"Setup Complete",copied:"Copied!",copy_pf_deep_cmd:"Copy /pf-deep Command",dashboard_drift_warning:"PaperForge CLI (v{0}) differs from plugin (v{1}). Open Settings \u2192 Runtime Health to sync.",deep_reading_not_found:"Deep reading file not found",desc:"Obsidian + Zotero literature pipeline. Sync papers, generate notes, run OCR, and read deeply in one place.",dir_base:"Base Dir",dir_index:"Index Dir",dir_notes:"Notes Dir",dir_resources:"Resource Dir",dir_system:"System Dir",ocr_ws_search_placeholder:"Search papers by title, author, year...",dir_vault:"Vault Path",error_copied:"Copied!",error_copy_diagnostic:"Copy diagnostic",feat_agent_platform:"Agent Platform",feat_agent_platform_desc:"Select which agent platform to manage skills for.",feat_api_base_url:"API Base URL",feat_api_base_url_desc:"Custom OpenAI-compatible API endpoint. Leave empty for default.",feat_api_model:"API Model",feat_api_model_desc:"Embedding model name for this endpoint.",feat_build_btn:"Build",feat_building:"Building...",feat_cache_remove_failed:"Failed: {0}",feat_cache_removed:"Model cache removed.",feat_checking:"Checking...",feat_checking_btn:"Checking...",feat_deps_missing:"Dependencies not installed. Required: chromadb, openai.",feat_key_rejected:"API key rejected.",feat_memory_desc:"The Memory Layer is the core data engine of PaperForge, powered by SQLite. It integrates literature metadata (papers, assets, aliases, reading events), provides FTS5 metadata search across titles, abstracts, authors, domains, and collections, and powers agent-context and paper-status. Always active \u2014 no toggle needed.",feat_memory_rebuild_btn:"Rebuild",feat_memory_rebuild_done:"Memory DB rebuilt.",feat_memory_rebuild_failed:"Rebuild failed.",feat_memory_rebuilding:"Rebuilding...",feat_model:"Model",feat_model_changed_warn:"Model changed ({0} -> {1}). Existing vectors are incompatible \u2014 rebuild required.",feat_network_error:"Network error: ",feat_not_cached:"Not cached",feat_openai_key:"OpenAI API Key",feat_openai_key_desc:"Used for API embedding calls. Model is defined below.",feat_output_copied:"Output copied to clipboard.",feat_rebuild_btn:"Rebuild",feat_rebuild_vectors:"Rebuild Vectors",feat_rebuild_vectors_changed:"Model changed \u2014 rebuild to update all vectors.",feat_rebuild_vectors_desc:"Rebuild all OCR fulltext vectors. Required after model or mode change.",feat_removing:"Removing...",feat_skills_desc:"Manage and enable/disable agent skills installed in your vault. Each row corresponds to a SKILL.md file \u2014 toggle off to prevent the agent from auto-invoking that skill.",feat_skills_system:"System Skills ship with PaperForge and are updated alongside PaperForge.",feat_skills_user:"User Skills are custom skills you install from community or create yourself.",feat_uninstall_btn:"Uninstall",feat_valid_key:"API key valid.",field_paddleocr:"PaddleOCR API Key",field_python_custom:"Custom Path",field_python_interp:"Python Interpreter",field_zotero_data:"Zotero Data Dir",field_zotero_placeholder:"Required. Path to Zotero data directory for PDF attachment resolution.",guide_ocr:"Run OCR",guide_ocr_desc:"In the main panel, click Run OCR to extract full text and figures from PDFs for later reading and analysis.",guide_open:"Open Main Panel",guide_open_desc:"Open the main PaperForge panel to manage your literature.",guide_sync:"Sync Literature",guide_sync_desc:"After Better BibTeX JSON export is configured, click Sync Library to import papers from Zotero into Obsidian and generate notes automatically.",header_title:"PaperForge",install_bootstrapping:"PaperForge Python package not found. Installing automatically...",install_btn:"Start Install",install_btn_retry:"Retry",install_btn_running:"Installing...",install_complete:"Installation complete!",install_failed:"Installation failed: ",install_validating:"Validating setup...",jump_to_deep_reading:"Open Deep Reading",label_agent:"Agent Platform",nav_close:"Close",nav_next:"Next",no_pending_ocr:"All OCR tasks complete",nav_prev:"Back",not_set:"Not entered",notice_check_fail:"Missing: ",notice_python_missing:"Python was not detected. Install Python 3.11+ and add it to PATH.",ocr_privacy_title:"OCR Privacy Notice",ocr_privacy_warning:"OCR will upload PDFs to the PaddleOCR API. Do not upload sensitive or confidential documents.",ocr_queue_add:"Add to OCR Queue",ocr_queue_added:"Added to OCR queue",ocr_queue_remove:"Remove from OCR Queue",ocr_queue_removed:"Removed from OCR queue",ocr_understand:"I understand, continue",optional_later:"(can be set later in Settings)",orphan_delete_failed:"Prune failed",orphan_delete_selected:"Delete {count} selected",orphan_deleted:"Deleted {count} orphan workspace(s)",orphan_desc:"These papers are no longer in your Zotero library.",orphan_deselect_all:"Deselect all",orphan_explain:"Removed from Zotero. Workspace files remain on disk.",orphan_keep_all:"Keep all",orphan_none_selected:"No papers selected for deletion",orphan_select_all:"Select all",orphan_title:"Found {count} orphan paper(s)",panel_actions:"Quick Actions",prep_bbt:"Better BibTeX",prep_bbt_desc:"In Zotero: Tools -> Add-ons -> install Better BibTeX.",prep_export:"Better BibTeX Auto-export",prep_export_desc:'In Zotero, right-click the collection you want to sync -> Export Collection -> BetterBibTeX JSON -> enable "Keep updated" -> save the JSON file into the exports folder shown below. Obsidian Base views will use the JSON filename as the Base name:',prep_export_path_label:"Save the exported JSON file into this folder:",prep_key:"PaddleOCR Key",prep_key_desc:"Get your API key from https://aistudio.baidu.com/paddleocr",prep_python:"Python 3.11+",prep_python_desc:"Python must be available from the command line. If you are not sure, click below to auto-detect.",prep_zotero:"Zotero Desktop",prep_zotero_desc:"Install Zotero from https://www.zotero.org",run_in_agent:"Run in {0}",runtime_health:"Runtime Health",runtime_health_checking:"Checking...",runtime_health_desc:"Check whether the installed paperforge Python package matches the plugin version and whether the deployed skill contract is current.",runtime_health_match:"Match",runtime_health_mismatch:"Mismatch",runtime_health_package_ver:"Python package v{0}",runtime_health_plugin_ver:"Plugin v{0}",runtime_health_sync:"Sync Runtime",runtime_health_sync_done:"Runtime synced to v{0}",runtime_health_sync_fail:"Sync failed: {0}",runtime_health_syncing:"Syncing...",section_config:"Current Configuration",section_guide:"How To Use",section_prep:"Preparation",section_prep_desc:"Before first use, finish these 4 preparation items. Better BibTeX auto-export is configured after setup:",setup_done:"PaperForge environment is ready",setup_pending:"Not installed yet. Finish the preparation items below, then open the wizard.",tab_overview:"Overview",tab_modules:"Module Detail",tab_help:"Help",tab_setup:"Installation",tab_features:"Features",tab_maintenance:"Maintenance",validate_base:"Base directory is required",validate_fail:"Please complete the required fields below",validate_index:"Index directory is required",validate_key:"PaddleOCR API key (optional, needed for OCR)",validate_notes:"Notes directory is required",validate_resources:"Resources directory is required",validate_system:"System directory is required",validate_vault:"Vault path is required",validate_zotero:"Zotero data directory (optional, needed for PDF linking)",wizard_agent_hint:"Choose the AI agent platform you use most often. PaperForge will place the matching command and skill files in the correct location.",wizard_dir_hint:"PaperForge stores user-facing literature data under the resources directory. These folders will live there:",wizard_dir_sub_hint:"Resolved folder preview based on the names below:",wizard_intro:"This wizard walks you through the full setup. In most cases, the default values are fine to keep.",wizard_keys_hint:"Enter your PaddleOCR API key below. If you want PaperForge to auto-locate Zotero PDFs, you can also fill in the Zotero data directory.",wizard_preview:"After installation, system files stay at the vault root while literature data stays under the resources directory.",wizard_safety:"Safety: if the selected folders already contain files, setup preserves existing files and only creates missing PaperForge folders and files.",wizard_step1:"Overview",wizard_step2:"Directory Setup",wizard_step3:"Platform & Keys",wizard_step4:"Install",wizard_step5:"Done",wizard_skip_ocr_desc:"OCR will not be available until you configure a valid PaddleOCR API key. You can continue setup now and configure it later in Settings.",wizard_skip_ocr_continue:"Continue without OCR key",wizard_skip_ocr_back:"Back to configure",wizard_api_hint_skip:"OCR key is optional \u2014 you may skip it and configure later.",wizard_sys_hint:"These folders live at the vault root, outside the resources directory:",wizard_title:"PaperForge Setup Wizard",ocr_maint_no_action:"No Action Needed",ocr_maint_rebuild:"Rebuild Recommended",ocr_maint_failed:"OCR Failed",ocr_maint_limited:"Result Limited",ocr_maint_needs_attention:"Needs Attention",ocr_maint_limitations:"Result Limitations",ocr_maint_hero_ok:"OCR looks usable overall.",ocr_maint_hero_warn:"OCR needs attention: {rebuild} rebuild recommended, {failed} failed.",ocr_maint_hero_note:"This page only promotes issues where maintenance is likely to help. Some papers may have limitations that maintenance will not improve.",ocr_maint_limitations_intro:"These papers look less certain, but PaperForge does not currently have a high-confidence maintenance action to recommend.",ocr_maint_all_papers:"All Papers",ocr_maint_rebuild_btn:"Rebuild results",ocr_maint_redo_btn:"Rerun OCR",ocr_maint_redo_confirm:"Rerun OCR for {n} paper(s)? Existing derived OCR artifacts will be replaced.",maintenance_group_retry:"Needs Retry",maintenance_group_rebuild:"Can Rebuild",maintenance_group_legacy:"Upgrade Available (Optional)",maintenance_btn_retry:"Retry",maintenance_btn_rebuild:"Rebuild",maintenance_btn_upgrade:"Upgrade",maintenance_refresh_spinning:"Updating\u2026",maintenance_all_good:"\u2705 All good \u2014 no action needed",maintenance_n_pending:"{n} need attention",maintenance_filter_all:"All",maintenance_filter_recommended:"Recommended",maintenance_batch_rebuild:"\u25B6 Rebuild selected",maintenance_batch_redo:"\u25B6 Full OCR redo selected",maintenance_stop:"Stop",maintenance_batch_complete:"Batch operation complete \u2014 {n} papers processed.",maintenance_progress_label:"{current}/{total} papers",version_panel_title:"Version History",version_panel_back:"Back",version_filter_placeholder:"Filter papers...",version_papers_count:"{n} papers",version_current:"current",version_restore_btn:"Restore",version_compare_btn:"Compare",version_restore_selected:"Restore selected",version_clear_old:"Clear old versions (free {size})",version_no_backups:"No version history available",version_restore_confirm:"Restore {label} for {paper}?",version_restore_done:"Restored {label}",version_compare_title:"{vA} vs {vB}",version_compare_paragraphs:"{n} paragraphs changed",version_error_read:"Cannot read version data",retrieval_search_placeholder:"Search papers... (@ for deep search)",retrieval_search_placeholder_deep:"Search paper content...",retrieval_search_idle_hint:"Type a keyword or @ to search paper content",retrieval_searching_metadata:"Searching metadata...",retrieval_searching_deep:"Deep searching...",retrieval_search_cancel:"Cancel",retrieval_results_count:"{n} result(s)",retrieval_empty:"No matching papers found.",retrieval_empty_tips:"Try broader terms or use @ deep search.",retrieval_vectors_not_built:"Vector index not built",retrieval_vectors_not_built_desc:"Build vectors to enable @ deep search with semantic matching.",retrieval_open_vector_settings:"Open Vector Settings",retrieval_backend_unavailable:"Search backend unavailable",retrieval_backend_unavailable_desc:"The Python CLI search backend is not responding correctly.",retrieval_run_doctor:"Run Doctor",retrieval_retry:"Retry",retrieval_timeout_title:"Search timed out",retrieval_timeout_desc:"The search took too long. Try a more specific query.",retrieval_model_changed:"Model changed",retrieval_model_changed_desc:"The embedding model has changed since vectors were built. Rebuild to use deep search.",retrieval_rebuild_vectors:"Rebuild Vectors",retrieval_build_idle:"Vector database ready",retrieval_build_ready:"{n} vector(s) built",retrieval_build_stopping:"Stopping...",retrieval_build_stopped:"Build stopped ({n}/{t} papers)",retrieval_build_failed:"Build failed",retrieval_build_deps_missing:"Dependencies missing. Install chromadb and openai.",retrieval_stop:"Stop",retrieval_no_python:"Python not found",retrieval_internal_error:"An internal error occurred",retrieval_force_rebuild:"Force Rebuild",retrieval_rebuild_warning:"Rebuild will replace {n} existing chunk(s). Continue?",md_select_installation:"Foundation",md_select_library:"Library",md_select_ocr:"OCR",md_select_memory:"Smart Retrieval",md_select_agent:"Agent Integration",installation_detail_heading:"Foundation",library_detail_heading:"Library",ocr_detail_heading:"OCR",memory_detail_heading:"Smart Retrieval",agent_detail_heading:"Agent Integration",btn_back_to_overview:"\u2190 Back to Overview",agent_integration_section:"Agent Integration",module_detail_open_installation:"Open Foundation",module_detail_open_help:"Help",module_detail_open_maintenance:"Maintenance",module_detail_open_library:"Open Library",module_detail_open_ocr:"Open OCR",module_detail_open_memory:"Open Smart Retrieval",action_unknown_pair:"Unknown action: {verb}",update_python_manual:"Python 3.11+ upgrade requires a manual install (python.org or your package manager).",update_done:"PaperForge updated",update_failed:"Update failed",migrate_done:"Backend migrated to sqlite-vec",migrate_failed:"Backend migration failed",ocr_stop_batch:"Stop OCR batch",runtime_not_available:"Environment unavailable",md_unavailable_module:"Not available yet",managed_runtime_status:"Runtime Status",managed_runtime_install:"Install Runtime",managed_runtime_repair:"Repair Runtime",managed_runtime_update:"Update Runtime",managed_runtime_check_status:"Check Status",managed_runtime_refresh:"Refresh Status",managed_runtime_manual_setup:"Manual Setup",managed_runtime_stop:"Stop",managed_runtime_unknown_state:"Unknown",managed_runtime_ok_state:"Ready",managed_runtime_not_installed:"Not Installed",managed_runtime_needs_repair:"Needs Repair",managed_runtime_unavailable:"Unavailable",managed_runtime_last_verified:"Last verified: {time}",managed_runtime_running:"Runtime operation in progress...",managed_runtime_action_complete:"Runtime operation completed.",managed_runtime_action_failed:"Runtime operation failed: {error}",managed_runtime_action_cancelled:"Runtime operation cancelled.",cc_module_foundation:"Foundation",cc_module_agent:"Agent Integration",cc_badge_checking:"Checking",cc_badge_ready:"Ready",cc_badge_not_enabled:"Not Enabled",cc_badge_setup_required:"Setup Required",cc_badge_action_required:"Action Required",cc_badge_detection_failed:"Detection Failed",cc_summary_ready:"PaperForge is ready",cc_summary_incomplete:"Setup incomplete",cc_summary_ready_body:"Foundation and Library are operational.",cc_summary_incomplete_body:"Complete Foundation and Library setup to use PaperForge.",cc_summary_checking:"Checking PaperForge",cc_summary_checking_body:"Checking Foundation and Library status\u2026",cc_refresh_btn:"Refresh Status",cc_last_checked:"Last checked: ",cc_needs_attention:"item needs attention",cc_checked_pending:"Not checked yet",cc_eyebrow:"control center",cc_modules_header:"modules",cc_five_capabilities:"Five capabilities",cc_optional_note:"Optional modules do not affect core readiness.",cc_title:"Your literature pipeline",cc_lede:"See what is working, what needs you, and the single next action for every PaperForge capability.",cc_modules_label:"modules",cc_modules_title:"Five capabilities",cc_modules_caption:"Optional modules do not affect core readiness.",cc_maintenance_count:"{n} items need attention",cc_card_retry:"Retry",cc_action_rebuild_derived:"Rebuild",ocr_progress:"{current}/{total} papers",cc_operational_modules:"Operational modules",cc_consequence_default:"Status is not available yet.",cc_consequence_checking:"Checking the latest status\u2026",cc_consequence_detection_failed:"PaperForge could not determine the current status.",cc_consequence_setup_required:"Configuration is required before use.",cc_consequence_action_required:"A problem needs your attention.",cc_consequence_installation_ready:"PaperForge is ready on this device.",cc_consequence_library_ready:"Your Zotero library is connected and current.",cc_consequence_ocr_ready:"OCR is ready to process papers.",cc_consequence_memory_ready:"Your papers are indexed and searchable.",cc_consequence_agent_ready:"PaperForge Skills are deployed for the selected Agent platform.",cc_consequence_agent_not_enabled:"Choose an agent platform when you want to deploy PaperForge Skills.",cc_consequence_ocr_not_enabled:"OCR is optional and is currently not enabled.",cc_consequence_memory_not_enabled:"Smart Retrieval is optional and is currently not enabled.",md_foundation_overview:"Environment",md_foundation_ready:"PaperForge is installed, verified, and ready for normal use.",md_library_connection:"Zotero connection",md_library_ready:"Zotero is connected and literature is up to date.",md_library_corpus:"Literature corpus",md_library_last_sync:"Last successful sync",md_ocr_status:"OCR capability",md_status_refresh_hint:"Check status to load the current OCR details. This does not change any papers.",ocr_error_notice:"OCR stopped because of an error. Open Advanced Diagnostics for details.",ocr_run_complete:"OCR run complete.",ocr_rebuild_complete:"OCR rebuild complete.",ocr_redo_complete:"OCR redo complete.",ocr_stopped_notice:"OCR batch stopped.",ocr_failed_notice:"OCR did not complete. Open Advanced Diagnostics for details.",md_ocr_ready:"OCR is configured and ready.",md_ocr_workspace:"Open OCR Workspace",md_retrieval_coverage:"Retrieval coverage",md_retrieval_ready:"All available papers are indexed and searchable.",md_agent_integration:"Agent Integration",md_agent_placeholder:"Configure a target platform, deploy PaperForge files, and manage Skills. File deployment does not verify a live agent connection.",md_agent_platform:"Target platform",md_agent_deployment:"Deployment state",agent_deployed:"Files deployed",agent_not_deployed:"Files not deployed",agent_live_connection:"Live connection",agent_verify_found:"PaperForge Skills were found for this platform.",agent_verify_missing:"No PaperForge Skills were found for this platform. Run setup to deploy them.",skills_system:"System Skills",skills_user:"User Skills",skills_empty:"No Skills are deployed for the selected platform.",md_agent_connection_unknown:"Live connection is not verified",md_agent_skills:"PaperForge Skills",md_copy_diagnostic:"Copy Support Diagnostic",md_configuration:"Configuration",md_current_activity:"Current activity",config_change:"Change",config_save:"Save",config_cancel:"Cancel",config_verify:"Verify",config_configured:"Configured",config_not_configured:"Not configured",config_zotero_dir:"Zotero data directory",problem_what_happened:"What happened",problem_impact:"Impact:",problem_next:"Next:",problem_copy:"Copy Diagnostic Information",problem_use_action:"Use the action above to resolve this problem.",library_problem_impact:"New references and literature notes may not be available.",ocr_problem_impact:"Some papers may not have readable full text.",retrieval_problem_impact:"Search and retrieval may miss papers until coverage is restored.",metric_after_sync:"Available after the next successful sync",metric_not_available:"Not available",coverage_complete:"Complete",retrieval_freshness:"Last checked",md_module_switcher:"Module",advanced_diagnostics:"Advanced Diagnostics",foundation_version:"PaperForge version",foundation_last_verified:"Last verified",foundation_runtime_managed:"Managed environment",foundation_runtime_system:"System environment",foundation_runtime_unavailable:"Environment unavailable",foundation_skills_ready:"Available",foundation_skills:"Skills",md_foundation_legacy_migrate:"Migrate legacy configuration",foundation_setup_desc:"Run setup to create the Python-owned vault configuration and publish the runtime pointer.",foundation_setup_btn:"Open Setup",config_confirm:"Confirm",ocr_configure_credential:"Configure OCR credential",setup_welcome:"Set up PaperForge",setup_desc:"Complete the required stages, then choose any optional capabilities you want to enable.",setup_stage_1:"Foundation",setup_stage_2:"Connect Library",setup_stage_3:"Optional Capabilities",setup_stage_4:"Review & Begin",setup_progress:"Setup progress",setup_foundation_title:"Step 1: Foundation",setup_foundation_desc:"Choose the Python runtime, then install the PaperForge package. It does not create or configure your library.",setup_ready:"Foundation is ready.",setup_foundation_python:"Python executable",setup_foundation_python_hint:'Leave blank to use "python" from your system PATH.',setup_foundation_install_btn:"Install PaperForge",setup_library_title:"Step 2: Connect Library",setup_library_desc:"Connect Zotero so PaperForge can sync your literature.",setup_library_ready:"Library is connected.",setup_library_config_desc:"Verify the Zotero data directory, then confirm where PaperForge stores files in this vault.",setup_library_zotero_hint:"PaperForge reads this folder; it never modifies Zotero's database.",setup_library_folder_heading:"Vault folders",setup_library_verify:"Save and verify configuration",setup_library_configured:"Library configuration saved. Checking the connection.",setup_library_configuring:"Saving and checking library configuration\u2026",setup_library_config_failed:"Library configuration could not be verified. Check the paths, then try again.",setup_reinstall_notice:"Reinstall only the local PaperForge Python package. Your library configuration is unchanged.",setup_installing:"Installing and preparing PaperForge\u2026",setup_install_complete:"Installation complete. Checking the updated environment.",setup_install_failed:"PaperForge could not be installed. Check the Python path, then try again.",setup_optionals_title:"Step 3: Optional Capabilities",setup_optionals_desc:"Choose only what you need. Skipped capabilities can be enabled later.",setup_optional_saved:"Configuration saved securely.",setup_optional_save_failed:"Configuration could not be saved. Check Obsidian secure storage, then try again.",setup_opt_ocr_desc:"Extract text and figures from PDFs",setup_opt_memory_desc:"Search and navigate across your papers",setup_opt_agent_desc:"Deploy and manage PaperForge Skills",setup_review_title:"Step 4: Review & Begin",setup_review_selected:"Selected: ",setup_no_optionals:"No optional capabilities selected.",setup_incomplete_warn:"Foundation and Library must be ready before setup can finish.",setup_review_checking:"Checking your current configuration\u2026",setup_review_recheck:"Recheck configuration",setup_nav_continue:"Continue",setup_nav_skip:"Skip for now",setup_nav_back:"Back",setup_nav_cancel:"Cancel",setup_nav_later:"Later",setup_install_cancelled:"Setup cancelled. The runtime was not activated.",setup_nav_complete:"Complete Setup",help_title:"Help",help_eyebrow:"help",help_lede:"Open the relevant module, or copy a diagnostic for support.",help_intro:"Choose a task or copy a privacy-safe diagnostic for support.",help_getting_started:"Getting started",help_library_task:"Connect Zotero and sync your literature",help_ocr_task:"Configure OCR and open the OCR Workspace",help_retrieval_task:"Enable Smart Retrieval and build coverage",help_agent_task:"Choose an agent platform and deploy Skills",help_current_problem:"Current problem guidance",help_no_problem:"No current problem needs guidance.",help_support:"Support Diagnostic",help_support_desc:"Copies module states and version identifiers without secrets, content, identity, absolute paths, or raw logs.",help_copy:"Copy Support Diagnostic",help_documentation:"Documentation",help_documentation_desc:"Open the project guide for setup, workflows, and troubleshooting.",help_open_documentation:"Open PaperForge Documentation",help_release_notes:"Release notes",help_release_notes_desc:"Installed version: {version}. See GitHub for the complete change history.",help_open_release_notes:"Open Release Notes",help_load_error:"Failed to load help content. Check your internet connection.",maintenance_empty_title:"No maintenance needed",maintenance_empty_body:"There are no unresolved problems that require action.",maintenance_default_impact:"This capability may be unavailable or return incomplete results.",maintenance_open_module:"Open module",migration_banner_title:"Credential Migration Notice",foundation_git:"Git",foundation_git_missing:"Not installed \u2014 install Git for version control",foundation_python_packages:"Python Packages",foundation_paddle_key:"PaddleOCR API Key",foundation_paddle_missing:"Not configured \u2014 required for OCR extraction",foundation_openai_key:"OpenAI API Key",foundation_openai_missing:"Not configured \u2014 required for Smart Retrieval",foundation_python:"Python Path",foundation_python_status:"Python Status",foundation_python_ok:"Python is installed",foundation_python_missing:"Python not found \u2014 install Python 3.11+",foundation_vault_structure:"Vault folders",foundation_zotero:"Zotero data directory",foundation_zotero_missing:"Not configured \u2014 connect your Zotero data directory",foundation_reinstall:"Reinstall PaperForge",foundation_reinstall_desc:"Reinstall the Python package from the local source",foundation_reinstall_btn:"Reinstall",foundation_reinstalling:"Reinstalling PaperForge...",foundation_reinstall_ok:"PaperForge reinstalled successfully",foundation_reinstall_failed:"Reinstall failed",cc_summary_ok:"All systems ready",cc_summary_core_ok:"Core environment ready; {n} modules pending detection",cc_summary_attention:"Some modules need attention",cc_summary_ok_body:"PaperForge environment is fully operational. Installation and documentation are verified.",cc_summary_core_ok_body:"Installation and Help modules are active. Library, OCR, Memory, and Maintenance will show live status once their backends are connected.",cc_summary_attention_body:"One or more core modules require your attention to function properly.",cc_badge_ok:"Ready",cc_badge_pending:"Pending",cc_badge_setup:"Setup needed",cc_badge_attention:"Needs attention",cc_diagnostic_toggle:"Details",cc_n_ready:"{n} ready",migration_banner_body:"Credentials for {modules} could not be moved to secure storage automatically. Re-enter them in the owning module.",migration_banner_next:"Save the new value; PaperForge will retry secure migration on restart.",cc_n_pending:"{n} pending",cc_desc:"Real-time status of PaperForge core modules. Modules with a pending action need your attention.",cc_zone_attention:"Needs Attention",cc_zone_modules:"All Modules",cc_module_installation:"Foundation",cc_module_help:"Help & Docs",cc_module_library:"Library",cc_module_ocr:"OCR Engine",cc_module_memory:"Smart Retrieval",cc_module_maintenance:"Maintenance",cc_state_ready:"Ready",cc_state_limited:"Limited",cc_state_unavailable:"Unavailable",cc_state_unknown:"Unknown",cc_severity_ok:"OK",cc_severity_unknown:"Unknown",cc_severity_warning:"Warning",cc_severity_error:"Error",cc_state_missing_input:"Missing Input",cc_state_needs_action:"Needs Action",cc_action_setup:"Open Setup Wizard",setup_bbt_title:"Import BBT JSON",setup_bbt_desc:"Export your Zotero library as Better BibTeX JSON from Zotero (File \u2192 Export Library \u2192 Better BibTeX JSON), then drop or select the file(s) below.",setup_bbt_path:"Exports folder:",setup_bbt_drop:"Drop BBT JSON files here or click to select",setup_bbt_no_files:"No JSON files imported yet.",setup_bbt_invalid:"Invalid JSON file: ",setup_bbt_guide:"How to export from Zotero",setup_bbt_step1:"1. Install Better BibTeX",setup_bbt_step1_desc:"In Zotero, go to Tools \u2192 Add-ons, search for Better BibTeX and install it. If you cannot find it, download from: https://github.com/retorquere/zotero-better-bibtex/releases/tag/v9.0.50",setup_bbt_step2:"2. Export with auto-update",setup_bbt_step2_desc:"Right-click your library or collection \u2192 Export Library\u2026 \u2192 choose 'Better BibTeX JSON' format. Check 'Keep updated'.",setup_bbt_step3:"3. Save to exports folder",setup_bbt_step3_desc:"Point the export destination to the folder shown above. Once saved, click 'Detect'.",setup_bbt_copy:"Copy",setup_bbt_copied:"Path copied",setup_bbt_detect:"Detect",setup_bbt_found:"Found: ",cc_action_probe:"Check",cc_action_set_config:"Set Config",cc_action_update:"Update",action_ocr_run:"Run OCR",action_ocr_rebuild_derived:"Rebuild OCR output",action_memory_build:"Build memory index",action_embed_build:"Build vector index",action_embed_resume:"Resume vector build",action_foundation_update:"Update PaperForge",action_foundation_repair:"Repair runtime",cc_reason_installation_ready:"PaperForge environment is set up correctly.",cc_reason_config_missing:"Configuration file is missing. Run setup to create one.",cc_reason_config_corrupt:"Configuration file is corrupt. Run setup to repair.",cc_reason_python_version_unsupported:"Python version is not supported. Install Python 3.11+.",cc_reason_help_ready:"Help documentation is available.",cc_reason_docs_missing:"Help documentation is not yet installed.",cc_reason_placeholder:"Detection pending \u2014 will show live status once connected.",cc_reason_library_ready:"Library is synced and indexed.",cc_reason_library_config_missing:"Configuration not found \u2014 run setup to configure library.",cc_reason_library_config_corrupt:"Configuration file is corrupt \u2014 library cannot proceed.",cc_reason_library_zotero_missing:"Zotero data directory is not configured.",cc_reason_library_zotero_not_found:"Zotero data directory path does not exist.",cc_reason_library_index_missing:"Library index has not been built yet \u2014 run sync.",cc_reason_library_index_stale:"Library index is stale \u2014 sync to refresh.",cc_reason_library_sync_failed:"Last library sync failed. Retry when the source is available.",cc_reason_ocr_ready:"OCR pipeline is configured and functional.",cc_reason_ocr_config_missing:"Configuration not found \u2014 run setup to configure OCR.",cc_reason_ocr_config_corrupt:"Configuration file is corrupt \u2014 OCR cannot proceed.",cc_reason_ocr_api_key_missing:"No OCR API key configured \u2014 add one in setup.",cc_reason_ocr_artifacts_missing:"No OCR output found \u2014 run OCR on papers.",cc_reason_memory_ready:"Smart Retrieval is healthy and indexed.",cc_reason_memory_db_missing:"The retrieval index has not been built \u2014 build it to enable search.",cc_reason_memory_db_corrupt:"The retrieval index is damaged \u2014 restore it from backup.",cc_reason_memory_index_stale:"Smart Retrieval needs a rebuild to match the current library.",cc_diag_module:"Module",cc_diag_state:"State",cc_diag_severity:"Severity",cc_diag_activity:"Activity",cc_diag_reason:"Reason",cc_diag_ttl:"TTL",cc_diag_updated:"Updated",cc_reason_no_probe:"{module} has not been probed yet.",cc_reason_stale:"Cached probe data for {module} is stale.",cc_reason_invalid_response:"Probe response for {module} was invalid.",activity_syncing:"Syncing...",activity_ocr_running:"Processing OCR... {pct}%",activity_ocr_running_noprogress:"Processing OCR...",cc_action_unknown_verb:"Unknown backend action: {verb}",cc_action_investigate:"Running diagnostics...",cc_reason_probing:"Checking {module} status...",cc_notice_placeholder:"{module} module probing is not yet available; it will be added in a future update.",cc_notice_refreshed:"Module status refreshed.",cc_notice_refresh_failed:"Failed to refresh module status.",cc_activity_idle:"Idle",cc_activity_running:"Running",maintenance_inbox_title:"Maintenance Inbox",maintenance_checking:"Checking maintenance status\u2026",maintenance_all_clear:"All modules are ready \u2014 no maintenance needed.",maintenance_n_pending_inbox:"{n} module(s) need attention",maintenance_dismiss:"Dismiss",maintenance_undismiss:"Show",maintenance_ocr_section:"OCR Maintenance",maintenance_action_result_success:"Action complete \u2014 module is now ready.",maintenance_action_result_failure:"Action failed \u2014 module still needs attention.",maintenance_confirm_redo_title:"Confirm Rerun",maintenance_confirm_redo_body:"This will delete and re-run OCR for the selected papers. Existing derived artifacts will be replaced.",maintenance_confirm_restore_title:"Confirm Restore",maintenance_confirm_restore_body:"This will restore the memory database from backup. Current data will be replaced.",maintenance_confirm_ok:"Proceed",maintenance_confirm_cancel:"Cancel",confirmation_default_effect:"This action will change PaperForge data.",confirm_effect_label:"Effect",ocr_already_running:"OCR is already running.",ocr_activity_run:"Running OCR\u2026",ocr_activity_rebuild:"Rebuilding OCR derived artifacts\u2026",ocr_activity_redo:"Running OCR redo\u2026",ocr_run_confirm_title:"Run OCR",ocr_run_confirm_body:"Pending PDFs will be sent to the configured OCR service and may incur cost. Existing OCR output is preserved until each replacement succeeds. You can stop the run safely.",embed_already_running:"Vector build is already in progress.",embed_activity_stopping:"Stopping vector build\u2026",embed_activity_building:"Building vector index\u2026",embed_rebuild_title:"Rebuild vector index",embed_rebuild_body:"The embedding API may incur cost. Existing vectors stay available until the replacement is verified; PDFs, notes, and OCR are preserved. You can stop the build safely.",embed_build_complete:"Vector index build complete.",embed_build_warning:"Vector index published with warning: {detail}",embed_bookkeeping_incomplete:"bookkeeping incomplete",embed_build_stopped:"Build stopped. Run again to resume.",next_action_pending:"Vector embedding is ready. Open Smart Retrieval to review and run it.",next_action_runtime_unavailable:"PaperForge runtime unavailable; follow-up not started.",next_action_failed:"Follow-up failed: {detail}",maintenance_issue_draft_title:"OCR Issue Draft",maintenance_issue_draft_preview:"Review the issue draft below before opening GitHub.",maintenance_issue_draft_included:"Included",maintenance_issue_draft_redacted:"Redacted",maintenance_issue_draft_open_github:"Open GitHub Issue",maintenance_issue_draft_edit:"Edit Draft",ocr_state_ready:"{count} papers processed with OCR version {version}",ocr_state_ready_no_version:"{count} papers processed",ocr_state_update_available:"OCR v{version} is available",ocr_state_update_description:"The new pipeline improves structure detection, figure extraction accuracy, and fulltext formatting.",ocr_state_update_safety:"Your PDFs and existing OCR data are preserved. Backups are created before changes.",ocr_action_re_extract:"Re-extract All Papers",ocr_modal_title:"Re-extract All OCR",ocr_modal_description:"This will re-run OCR on all papers using the latest pipeline version.",ocr_state_running:"Re-extracting\u2026",sr_state_disabled:"Smart Retrieval is not enabled",sr_state_db_missing:"Memory database has not been built yet",sr_state_upgrade_available:"Your vector index uses the old ChromaDB backend",sr_state_build_failed:"The last vector build failed",sr_state_build_interrupted:"Vector index is partially built \u2014 resume to embed the remaining papers",sr_state_identity_changed:"Embedding configuration changed \u2014 existing vectors need a rebuild",sr_build_failed_notice:"Vector index build failed: {detail}",sr_action_build:"Build Index",sr_action_rebuild:"Rebuild Index",sr_action_upgrade:"Upgrade to vec0",sr_db_building:"Building",sr_db_partial:"Partially built",sr_db_failed:"Build failed",sr_db_corrupt:"Corrupted",sr_db_stale:"Index stale",sr_upgrade_modal_title:"Upgrade Vector Index",sr_upgrade_modal_description:"This will rebuild your entire vector index using the new vec0 backend.",sr_upgrade_modal_safety:"Your existing ChromaDB data is preserved. This process requires an active API key and may incur API charges.",sr_api_key_notice:"API key not configured \u2014 search and retrieval are unavailable",sr_config_label:"Configuration",ocr_ws_title:"OCR Workspace",ocr_ws_filter_all:"All",ocr_ws_filter_unprocessed:"Not processed",ocr_ws_filter_review:"Needs review",ocr_ws_filter_processed:"Processed",ocr_ws_col_title:"Title",ocr_ws_col_status:"Status",ocr_ws_col_version:"Version",ocr_ws_col_lastrun:"Last run",ocr_ws_btn_preview:"Preview",ocr_ws_btn_process_all:"Process All Unprocessed ({count})",ocr_ws_detail_view_fulltext:"View Fulltext",ocr_ws_detail_restore_backup:"Restore Backup",ocr_ws_detail_re_extract:"Re-extract This Paper",ocr_ws_detail_run:"Run OCR",ocr_ws_re_extract_disabled_title:"Re-extraction not available",ocr_ws_re_extract_disabled_body:"Single-paper re-extraction currently deletes all OCR data without creating a backup. Use Re-extract All Papers from OCR Settings \u2014 that path has built-in backup.",ocr_ws_what_happens:"What happens when I re-extract?",ocr_ws_disclosure_text:"Re-extraction re-runs OCR on the selected paper. The current version is backed up first. PDFs are never modified.",ocr_ws_no_papers:"No papers found with OCR data",ocr_ws_lede:"View and manage OCR extraction for your literature collection.",ocr_ws_processing:"Processing\u2026",ocr_ws_stop:"Stop",ocr_ws_stop_unavailable_rebuild:"Rebuild is not stoppable from here",ocr_ws_btn_refresh:"Refresh",ocr_ws_showing:"<strong>{count}</strong> of {total} papers",ocr_ws_filter_status:"Filter by status",ocr_ws_none_selected:"No papers selected",ocr_ws_select_hint:"Select papers that are not processed or have an update available.",ocr_ws_selected:"{count} paper(s) selected",ocr_ws_btn_process_selected:"Process selected",ocr_ws_btn_rebuild_selected:"Rebuild selected",ocr_ws_tooltip_process:"Run full OCR from scratch: extract text, then rebuild derived artifacts. Needed when the OCR model is updated, but generally not required.",ocr_ws_tooltip_rebuild:"Regenerate rendered results from existing OCR raw data without re-running OCR. Run this when the OCR render version has changed.",ocr_ws_tooltip_reextract:"Re-run OCR from scratch for this paper (deletes and regenerates all OCR data).",ocr_ws_detail_restore_done:"Restored backup {label}",next_action_memory_started:"Memory index rebuild started",next_action_done:"Follow-up completed",next_action_refused:"Follow-up refused by user",next_action_unknown:"Unknown follow-up action refused",next_action_cancel:"Later",ocr_ws_fulltext_not_found:"Fulltext not found",ocr_ws_restore_checking:"Checking versions\u2026",ocr_ws_restore_unavailable:"No backup versions available",ocr_ws_detail_rebuild:"Rebuild this paper",ocr_ws_memory_refresh:"Updating local text index\u2026",ocr_ws_memory_refresh_failed:"Text index refresh failed \u2014 retry later",ocr_ws_index_updated:"\u6B63\u6587\u7D22\u5F15\u5DF2\u66F4\u65B0\uFF0C\u8BED\u4E49\u7D22\u5F15\u9700\u8981\u5237\u65B0",ocr_ws_embed_confirm:"Confirm embedding",ocr_ws_embed_confirm_body:"Rebuilding vectors for changed papers may call a paid API. Continue?",ocr_ws_embed_done:"Vector embedding completed",ocr_rebuild_partial:"Rebuild finished with failures",ocr_ws_restore_confirm_title:"Restore displayed fulltext",ocr_ws_restore_confirm_body:"This overwrites render/fulltext.md with the selected version. OCR structure, indexes, memory units, and vectors are NOT affected. Continue?",ocr_ws_restore_confirm_btn:"Restore displayed fulltext",ocr_ws_restore_stale_notice:"This version predates the current structured state; rebuild the paper to re-sync structure",ocr_ws_restore_title:"Restore Backup Version",ocr_ws_restore_desc:"Select a version to restore for this paper. The current fulltext will be replaced.",ocr_ws_restore_current:"current",ocr_ws_restore_created:"Created:",ocr_ws_restore_source:"Source:",ocr_ws_restore_renderer:"Renderer:",ocr_ws_restore_btn:"Restore",ocr_ws_restore_versions:"Versions",ocr_ws_restore_compare:"Compare with current",ocr_ws_restore_diff_title:"Changes from current vs {v}",ocr_ws_restore_no_diff:"No differences found",ocr_ws_restore_back:"Back to preview",ocr_ws_restore_same:"This is already the current version",ocr_ws_close:"Close",ocr_ws_fact_version:"OCR Version",ocr_ws_fact_last_run:"Last Processed",ocr_ws_fact_authors:"Authors",ocr_ws_fact_year:"Year",ocr_ws_fact_pages:"Pages",ocr_ws_fact_backups:"Backups",ocr_ws_status_done:"Processed",ocr_ws_status_update:"Update available",ocr_ws_status_failed:"Failed",ocr_ws_status_processing:"Processing",ocr_ws_status_nopdf:"No PDF",ocr_ws_status_pending:"Pending",ocr_ws_status_unknown:"Unknown"},zh:{action_running:"\u6B63\u5728\u6267\u884C ",api_key_missing:"\u672A\u914D\u7F6E",api_key_set:"\u5DF2\u914D\u7F6E",btn_install:"\u6253\u5F00\u5B89\u88C5\u5411\u5BFC",btn_install_desc:"\u81EA\u52A8\u68C0\u6D4B Python + \u524D\u7F6E\u73AF\u5883\uFF0C\u901A\u8FC7\u540E\u6253\u5F00\u5206\u6B65\u5B89\u88C5\u5411\u5BFC",btn_reconfig:"\u91CD\u65B0\u914D\u7F6E",btn_reconfig_desc:"\u91CD\u65B0\u8FD0\u884C\u5B89\u88C5\u5411\u5BFC\uFF0C\u4FEE\u6539\u76EE\u5F55\u6216\u5BC6\u94A5\u914D\u7F6E",btn_validate:"\u9A8C\u8BC1",check_bbt_fail:"\u672A\u68C0\u6D4B\u5230",check_bbt_ok:"\u5DF2\u5B89\u88C5",check_python_fail:"\u672A\u5B89\u88C5",check_python_ok:"\u5DF2\u5C31\u7EEA",check_zotero_fail:"\u672A\u68C0\u6D4B\u5230",check_zotero_ok:"\u5DF2\u5B89\u88C5",complete_export_path:"\u5C06 Better BibTeX JSON \u5BFC\u51FA\u4FDD\u5B58\u5230\uFF1A",complete_next:"\u4E0B\u4E00\u6B65\u64CD\u4F5C",complete_step1:"\u6253\u5F00 PaperForge Dashboard",complete_step1_desc:"Ctrl+P \u2192 \u8F93\u5165 PaperForge: Open Dashboard\uFF0C\u6216\u70B9\u5DE6\u4FA7\u4E66\u672C\u56FE\u6807",complete_step2:"\u540C\u6B65\u6587\u732E",complete_step2_desc:"Dashboard \u4E2D\u70B9 Sync Library\uFF0C\u4ECE Zotero \u62C9\u53D6\u6587\u732E\u751F\u6210\u7B14\u8BB0",complete_step3:"\u8FD0\u884C OCR",complete_step3_desc:"Dashboard \u4E2D\u70B9 Run OCR\uFF0C\u63D0\u53D6 PDF \u5168\u6587\u4E0E\u56FE\u8868",complete_step4:"\u914D\u7F6E BBT \u81EA\u52A8\u5BFC\u51FA",complete_step4_desc:'\u5728 Zotero \u4E2D\uFF0C\u53F3\u952E\u8981\u540C\u6B65\u7684\u6587\u732E\u5E93/\u5206\u7C7B \u2192 \u5BFC\u51FA \u2192 Better BibTeX JSON \u2192 \u542F\u7528"\u4FDD\u6301\u66F4\u65B0"\u3002',complete_summary:"\u5F53\u524D\u5B8C\u6574\u914D\u7F6E",complete_title:"\u2713 PaperForge \u5B89\u88C5\u5B8C\u6210",copied:"\u5DF2\u590D\u5236\uFF01",copy_pf_deep_cmd:"\u590D\u5236 /pf-deep \u547D\u4EE4",dashboard_drift_warning:'\u63D2\u4EF6\u7248\u672C\u4E0E Python \u8FD0\u884C\u65F6\u7248\u672C\u4E0D\u5339\u914D\u3002\u8BF7\u5728\u8BBE\u7F6E\u4E2D\u70B9\u51FB"\u540C\u6B65\u8FD0\u884C\u65F6"\u3002',deep_reading_not_found:"\u7CBE\u8BFB\u6587\u4EF6\u672A\u627E\u5230",desc:"Obsidian + Zotero \u6587\u732E\u7BA1\u7406\u6D41\u6C34\u7EBF\u3002\u81EA\u52A8\u540C\u6B65\u6587\u732E\u3001\u751F\u6210\u7B14\u8BB0\u3001OCR \u63D0\u53D6\u5168\u6587\uFF0C\u4E00\u7AD9\u5F0F\u6587\u732E\u7CBE\u8BFB\u5DE5\u4F5C\u6D41\u3002",dir_base:"Base \u76EE\u5F55",dir_index:"\u7D22\u5F15\u76EE\u5F55",dir_notes:"\u6B63\u6587\u76EE\u5F55",dir_resources:"\u8D44\u6E90\u76EE\u5F55",dir_system:"\u7CFB\u7EDF\u76EE\u5F55",dir_vault:"Vault \u8DEF\u5F84",error_copied:"\u5DF2\u590D\u5236\uFF01",error_copy_diagnostic:"\u590D\u5236\u8BCA\u65AD\u4FE1\u606F",feat_agent_platform:"Agent \u5E73\u53F0",feat_agent_platform_desc:"\u9009\u62E9\u8981\u7BA1\u7406\u7684 Agent \u5E73\u53F0\u3002",feat_api_base_url:"API \u5730\u5740",feat_api_base_url_desc:"\u81EA\u5B9A\u4E49 OpenAI \u517C\u5BB9 API \u7AEF\u70B9\u3002\u7559\u7A7A\u4F7F\u7528\u9ED8\u8BA4\u5730\u5740\u3002",feat_api_model:"API \u6A21\u578B",feat_api_model_desc:"\u8BE5\u7AEF\u70B9\u4F7F\u7528\u7684\u5D4C\u5165\u6A21\u578B\u540D\u79F0\u3002",feat_build_btn:"\u6784\u5EFA",feat_build_complete:"\u5411\u91CF\u6784\u5EFA\u5B8C\u6210\u3002",feat_build_failed:"\u6784\u5EFA\u5931\u8D25\u3002\u8BF7\u67E5\u770B\u7EC8\u7AEF\u8F93\u51FA\u3002",feat_building:"\u6784\u5EFA\u4E2D\u2026",feat_cache_remove_failed:"\u5931\u8D25\uFF1A{0}",feat_cache_removed:"\u6A21\u578B\u7F13\u5B58\u5DF2\u6E05\u9664\u3002",feat_checking:"\u68C0\u6D4B\u4E2D\u2026",feat_checking_btn:"\u68C0\u6D4B\u4E2D\u2026",feat_deps_checking:"\u6B63\u5728\u68C0\u6D4B\u4F9D\u8D56\u2026",feat_enter_key:"\u8BF7\u8F93\u5165\u6709\u6548\u7684 OpenAI API Key\u3002",feat_install_btn:"\u5B89\u88C5",feat_install_deps:"\u5B89\u88C5\u4F9D\u8D56",feat_install_done:"\u4F9D\u8D56\u5DF2\u5B89\u88C5\u3002\u6B63\u5728\u6784\u5EFA\u5411\u91CF\u2026",feat_install_failed:"\u5B89\u88C5\u5931\u8D25\uFF1A",feat_installing:"\u5B89\u88C5\u4E2D\u2026",feat_installing_pkgs:"\u6B63\u5728\u5B89\u88C5 {pkgs}...",feat_key_rejected:"API Key \u88AB\u62D2\u7EDD\u3002",feat_memory_desc:"\u8BB0\u5FC6\u5C42\u662F PaperForge \u7684\u6838\u5FC3\u6570\u636E\u5F15\u64CE\uFF0C\u57FA\u4E8E SQLite \u6784\u5EFA\u3002\u5B83\u6574\u5408\u4E86\u6587\u732E\u5143\u6570\u636E\uFF08\u8BBA\u6587\u3001\u8D44\u6E90\u6587\u4EF6\u3001\u522B\u540D\u3001\u9605\u8BFB\u4E8B\u4EF6\uFF09\uFF0C\u652F\u6301 FTS5 \u5143\u6570\u636E\u68C0\u7D22\uFF08\u6807\u9898\u3001\u6458\u8981\u3001\u4F5C\u8005\u3001domain\u3001collection\uFF09\uFF0C\u5E76\u4E3A agent-context \u548C paper-status \u547D\u4EE4\u63D0\u4F9B\u6570\u636E\u652F\u6491\u3002\u59CB\u7EC8\u8FD0\u884C\uFF0C\u65E0\u9700\u624B\u52A8\u5F00\u542F\u3002",feat_memory_rebuild_btn:"\u91CD\u5EFA\u6570\u636E\u5E93",feat_memory_rebuild_done:"\u8BB0\u5FC6\u6570\u636E\u5E93\u91CD\u5EFA\u5B8C\u6210\u3002",feat_memory_rebuild_failed:"\u91CD\u5EFA\u5931\u8D25\u3002",feat_memory_rebuilding:"\u91CD\u5EFA\u4E2D\u2026",feat_model:"\u6A21\u578B",feat_model_changed_warn:"\u6A21\u578B\u5DF2\u66F4\u6362\uFF08{0} -> {1}\uFF09\u3002\u5DF2\u6709\u5411\u91CF\u4E0D\u517C\u5BB9\u2014\u2014\u9700\u8981\u91CD\u5EFA\u3002",feat_network_error:"\u7F51\u7EDC\u9519\u8BEF\uFF1A",feat_no_python:"\u672A\u627E\u5230 Python\u3002\u8BF7\u67E5\u770B\u5B89\u88C5\u6807\u7B7E\u9875\u3002",feat_not_cached:"\u672A\u7F13\u5B58",feat_openai_key:"OpenAI API Key",feat_openai_key_desc:"\u7528\u4E8E API \u5D4C\u5165\u8C03\u7528\uFF0C\u6A21\u578B\u5728\u4E0B\u65B9\u5B9A\u4E49\u3002",feat_output_copied:"\u8F93\u51FA\u5DF2\u590D\u5236\u5230\u526A\u8D34\u677F\u3002",feat_rebuild_btn:"\u91CD\u5EFA",feat_rebuild_vectors:"\u91CD\u5EFA\u5411\u91CF",feat_rebuild_vectors_changed:"\u6A21\u578B\u5DF2\u66F4\u6362 \u2014 \u9700\u8981\u91CD\u5EFA\u5411\u91CF\u3002",feat_rebuild_vectors_desc:"\u91CD\u5EFA\u6240\u6709 OCR \u5168\u6587\u5411\u91CF\u3002\u66F4\u6362\u6A21\u578B\u6216\u6A21\u5F0F\u540E\u9700\u8981\u91CD\u5EFA\u3002",feat_removing:"\u5220\u9664\u4E2D\u2026",feat_retry_btn:"\u91CD\u8BD5",feat_skills_desc:"\u7BA1\u7406 Vault \u4E2D\u5DF2\u5B89\u88C5\u7684 Agent \u6280\u80FD\u3002\u6BCF\u884C\u5BF9\u5E94\u4E00\u4E2A SKILL.md \u6587\u4EF6\uFF0C\u5173\u95ED\u5F00\u5173\u53EF\u963B\u6B62 Agent \u81EA\u52A8\u8C03\u7528\u8BE5\u6280\u80FD\u3002",feat_skills_system:"\u7CFB\u7EDF\u6280\u80FD\u968F PaperForge \u4E00\u540C\u53D1\u5E03\uFF0C\u4F1A\u8DDF\u968F PaperForge \u7248\u672C\u66F4\u65B0\u3002",feat_skills_user:"\u7528\u6237\u6280\u80FD\u662F\u4F60\u81EA\u884C\u5B89\u88C5\u6216\u521B\u5EFA\u7684\u81EA\u5B9A\u4E49\u6280\u80FD\u3002",feat_uninstall_btn:"\u5378\u8F7D",feat_valid_key:"API Key \u6709\u6548\u3002",feat_vector_corrupted:"\u5411\u91CF\u7D22\u5F15\u5DF2\u635F\u574F \u2014 \u9700\u8981\u5F3A\u5236\u91CD\u5EFA\u3002",field_paddleocr:"PaddleOCR API \u5BC6\u94A5",field_python_custom:"\u81EA\u5B9A\u4E49 Python \u8DEF\u5F84",field_python_interp:"\u5F53\u524D Python \u89E3\u91CA\u5668",field_zotero_data:"Zotero \u6570\u636E\u76EE\u5F55",field_zotero_placeholder:"\u53EF\u9009\uFF0C\u7528\u4E8E\u81EA\u52A8\u68C0\u6D4B PDF",guide_ocr:"\u8FD0\u884C OCR",guide_ocr_desc:"Dashboard \u4E2D\u70B9 Run OCR\uFF0C\u63D0\u53D6 PDF \u5168\u6587\u4E0E\u56FE\u8868",guide_open:"\u6253\u5F00 Dashboard",guide_open_desc:"Ctrl+P \u2192 \u8F93\u5165 PaperForge: Open Dashboard\uFF0C\u6216\u70B9\u5DE6\u4FA7\u4E66\u672C\u56FE\u6807",guide_sync:"\u540C\u6B65\u6587\u732E",guide_sync_desc:"Dashboard \u4E2D\u70B9 Sync Library\uFF0C\u4ECE Zotero \u62C9\u53D6\u6587\u732E\u751F\u6210\u7B14\u8BB0",header_title:"PaperForge",install_bootstrapping:"\u672A\u68C0\u6D4B\u5230 PaperForge Python \u5305\uFF0C\u6B63\u5728\u81EA\u52A8\u5B89\u88C5\u2026",install_btn:"\u5F00\u59CB\u5B89\u88C5",install_btn_retry:"\u91CD\u8BD5",install_btn_running:"\u6B63\u5728\u5B89\u88C5...",install_complete:"\u2713 \u5B89\u88C5\u5B8C\u6210\uFF01",install_failed:"\u2717 \u5B89\u88C5\u5931\u8D25\uFF1A",install_validating:"\u6B63\u5728\u6821\u9A8C\u5B89\u88C5\u73AF\u5883\u2026",jump_to_deep_reading:"\u8DF3\u8F6C\u5230\u7CBE\u8BFB",label_agent:"Agent \u5E73\u53F0",nav_close:"\u5173\u95ED",nav_next:"\u4E0B\u4E00\u6B65 \u2192",nav_prev:"\u2190 \u4E0A\u4E00\u6B65",no_pending_ocr:"\u6240\u6709 OCR \u4EFB\u52A1\u5DF2\u5B8C\u6210",not_set:"\u672A\u8BBE\u7F6E",notice_check_fail:"\u7F3A\u5931\uFF1A",notice_python_missing:"Python \u672A\u68C0\u6D4B\u5230\uFF0C\u8BF7\u5148\u5B89\u88C5 Python 3.11+ \u5E76\u52A0\u5165 PATH",ocr_privacy_title:"OCR \u9690\u79C1\u63D0\u793A",ocr_privacy_warning:"OCR \u4F1A\u5C06 PDF \u4E0A\u4F20\u5230 PaddleOCR API \u8FDB\u884C\u5904\u7406\u3002\u8BF7\u4E0D\u8981\u4E0A\u4F20\u5305\u542B\u654F\u611F\u4FE1\u606F\u6216\u65E0\u6CD5\u5916\u4F20\u7684\u6587\u732E\u3002",ocr_queue_add:"\u52A0\u5165 OCR \u961F\u5217",ocr_queue_added:"\u5DF2\u52A0\u5165 OCR \u961F\u5217",ocr_queue_remove:"\u79FB\u51FA OCR \u961F\u5217",ocr_queue_removed:"\u5DF2\u79FB\u51FA OCR \u961F\u5217",ocr_understand:"\u6211\u4E86\u89E3\uFF0C\u7EE7\u7EED",optional_later:"\uFF08\u7A0D\u540E\u53EF\u5728\u8BBE\u7F6E\u4E2D\u8865\u5145\uFF09",orphan_delete_failed:"\u6E05\u7406\u5931\u8D25",orphan_delete_selected:"\u5220\u9664 {count} \u7BC7",orphan_deleted:"\u5DF2\u5220\u9664 {count} \u7BC7\u6B8B\u7559\u6587\u732E",orphan_desc:"\u8FD9\u4E9B\u6587\u732E\u5DF2\u4ECE Zotero \u4E2D\u79FB\u9664\u3002",orphan_deselect_all:"\u53D6\u6D88\u5168\u9009",orphan_explain:"\u5DF2\u4ECE Zotero \u4E2D\u79FB\u9664\u3002\u5DE5\u4F5C\u533A\u6587\u4EF6\u4ECD\u4FDD\u7559\u5728\u78C1\u76D8\u4E0A\u3002",orphan_keep_all:"\u4FDD\u7559\u5168\u90E8",orphan_none_selected:"\u672A\u9009\u62E9\u4EFB\u4F55\u6587\u732E",orphan_select_all:"\u5168\u9009",orphan_title:"\u53D1\u73B0 {count} \u7BC7\u6B8B\u7559\u6587\u732E",panel_actions:"\u5FEB\u6377\u64CD\u4F5C",prep_bbt:"Better BibTeX",prep_bbt_desc:"Zotero \u2192 \u5DE5\u5177 \u2192 \u63D2\u4EF6 \u2192 \u5B89\u88C5 Better BibTeX",prep_export:"BBT \u81EA\u52A8\u5BFC\u51FA",prep_export_desc:"\u53F3\u952E\u6587\u732E\u5B50\u5206\u7C7B \u2192 \u5BFC\u51FA\u5206\u7C7B \u2192 BetterBibTeX JSON \u2192 \u52FE\u9009\u4FDD\u6301\u66F4\u65B0 \u2192 \u5BFC\u51FA\u5230\uFF08JSON \u6587\u4EF6\u540D\u5373\u4E3A Base \u540D\uFF09\uFF1A",prep_export_path_label:"\u5C06\u5BFC\u51FA\u7684 JSON \u6587\u4EF6\u4FDD\u5B58\u5230\u6B64\u6587\u4EF6\u5939\uFF1A",prep_key:"PaddleOCR Key",prep_key_desc:"\u4ECE https://aistudio.baidu.com/paddleocr \u83B7\u53D6 API \u5BC6\u94A5",prep_python:"Python 3.11+",prep_python_desc:"\u786E\u4FDD Python \u53EF\u547D\u4EE4\u884C\u8C03\u7528\u3002\u70B9\u51FB\u4E0B\u65B9\u6309\u94AE\u81EA\u52A8\u68C0\u6D4B\u3002",prep_zotero:"Zotero \u684C\u9762\u7248",prep_zotero_desc:"\u5B89\u88C5 Zotero (https://www.zotero.org)",run_in_agent:"\u5728 {0} \u4E2D\u8FD0\u884C",runtime_health:"\u8FD0\u884C\u65F6\u72B6\u6001",runtime_health_checking:"\u6B63\u5728\u68C0\u6D4B\u2026",runtime_health_desc:"\u68C0\u67E5\u63D2\u4EF6\u4E0E Python \u8FD0\u884C\u65F6\u7248\u672C\u7684\u5339\u914D\u60C5\u51B5\uFF0C\u5E76\u786E\u8BA4\u5DF2\u90E8\u7F72\u7684 skill contract \u662F\u5426\u4E3A\u5F53\u524D\u7248\u672C\u3002",runtime_health_match:"\u5339\u914D",runtime_health_mismatch:"\u4E0D\u5339\u914D",runtime_health_package_ver:"Python \u5305 v{0}",runtime_health_plugin_ver:"\u63D2\u4EF6 v{0}",runtime_health_sync:"\u540C\u6B65\u8FD0\u884C\u65F6",runtime_health_sync_done:"\u8FD0\u884C\u65F6\u5DF2\u540C\u6B65\u81F3 v{0}",runtime_health_sync_fail:"\u8FD0\u884C\u65F6\u540C\u6B65\u5931\u8D25\uFF1A{0}",runtime_health_syncing:"\u6B63\u5728\u540C\u6B65\u2026",section_config:"\u5F53\u524D\u914D\u7F6E",section_guide:"\u64CD\u4F5C\u65B9\u5F0F",section_prep:"\u5B89\u88C5\u51C6\u5907",section_prep_desc:"\u9996\u6B21\u4F7F\u7528\u524D\uFF0C\u8BF7\u4F9D\u6B21\u5B8C\u6210\u4EE5\u4E0B\u51C6\u5907\uFF1A",setup_done:"\u2713 PaperForge \u73AF\u5883\u5DF2\u914D\u7F6E\u5B8C\u6210",setup_pending:"\u5C1A\u672A\u5B89\u88C5\uFF0C\u5B8C\u6210\u5B89\u88C5\u51C6\u5907\u540E\u70B9\u51FB\u5B89\u88C5\u5411\u5BFC",tab_overview:"\u6982\u89C8",tab_modules:"\u6A21\u5757\u8BE6\u60C5",tab_help:"\u5E2E\u52A9",tab_features:"\u529F\u80FD",tab_setup:"\u5B89\u88C5",tab_maintenance:"\u7EF4\u62A4",validate_base:"Base \u76EE\u5F55\u672A\u586B\u5199",validate_fail:"\u914D\u7F6E\u9A8C\u8BC1\u5931\u8D25",validate_index:"\u7D22\u5F15\u76EE\u5F55\u672A\u586B\u5199",validate_key:"PaddleOCR API \u5BC6\u94A5\u672A\u586B\u5199",validate_notes:"\u6B63\u6587\u76EE\u5F55\u672A\u586B\u5199",validate_resources:"\u8D44\u6E90\u76EE\u5F55\u672A\u586B\u5199",validate_system:"\u7CFB\u7EDF\u76EE\u5F55\u672A\u586B\u5199",validate_vault:"Vault \u8DEF\u5F84\u672A\u586B\u5199",validate_zotero:"Zotero \u6570\u636E\u76EE\u5F55\u4E3A\u5FC5\u586B\u9879",wizard_agent_hint:"\u9009\u62E9\u4F60\u4F7F\u7528\u7684 AI Agent \u5E73\u53F0\uFF0C\u5B89\u88C5\u65F6\u5C06\u6309\u5BF9\u5E94\u683C\u5F0F\u90E8\u7F72\u6280\u80FD\u6587\u4EF6\uFF1A",wizard_dir_hint:"\u8D44\u6E90\u76EE\u5F55\u662F\u6587\u732E\u6570\u636E\u7684\u7EDF\u4E00\u6839\u76EE\u5F55\uFF0C\u4EE5\u4E0B\u5B50\u76EE\u5F55\u5C06\u521B\u5EFA\u5728\u5176\u5185\u90E8\uFF1A",wizard_dir_sub_hint:"\u8D44\u6E90\u76EE\u5F55\u5185\u7684\u4E24\u4E2A\u5B50\u76EE\u5F55\uFF1A",wizard_intro:"\u672C\u5411\u5BFC\u5C06\u5F15\u5BFC\u60A8\u5B8C\u6210 PaperForge \u73AF\u5883\u7684\u5B8C\u6574\u914D\u7F6E\u3002\u5B89\u88C5\u8FC7\u7A0B\u4F1A\u81EA\u52A8\u521B\u5EFA\u6240\u6709\u76EE\u5F55\u7ED3\u6784\uFF0C\u65E0\u9700\u624B\u52A8\u64CD\u4F5C\u3002",wizard_keys_hint:"\u4EE5\u4E0B\u4E3A API \u5BC6\u94A5\u4E0E Zotero \u914D\u7F6E\uFF1A",wizard_preview:"\u7CFB\u7EDF\u6587\u4EF6\u548C Agent \u914D\u7F6E\u4F4D\u4E8E Vault \u6839\u76EE\u5F55\u4E0B\u3002\u6587\u732E\u6570\u636E\uFF08\u6B63\u6587\u3001\u7D22\u5F15\uFF09\u7EDF\u4E00\u5B58\u653E\u5728\u8D44\u6E90\u76EE\u5F55\u5185\u3002\u5B89\u88C5\u540E\u4ECD\u53EF\u5728\u8BBE\u7F6E\u4E2D\u4FEE\u6539\u3002",wizard_safety:"\u5B89\u5168\u8BF4\u660E\uFF1A\u5982\u679C\u4F60\u9009\u62E9\u7684\u76EE\u5F55\u91CC\u5DF2\u7ECF\u6709\u6587\u4EF6\uFF0C\u5B89\u88C5\u5411\u5BFC\u4F1A\u4FDD\u7559\u5DF2\u6709\u5185\u5BB9\uFF0C\u53EA\u8865\u5145\u7F3A\u5931\u7684 PaperForge \u6587\u4EF6\u548C\u76EE\u5F55\u3002",wizard_step1:"\u6982\u89C8",wizard_step2:"\u76EE\u5F55",wizard_step3:"Agent",wizard_step4:"\u5B89\u88C5",wizard_step5:"\u5B8C\u6210",wizard_skip_ocr_desc:"OCR \u529F\u80FD\u5728\u914D\u7F6E\u6709\u6548\u7684 PaddleOCR API \u5BC6\u94A5\u4E4B\u524D\u4E0D\u53EF\u7528\u3002\u60A8\u53EF\u4EE5\u7EE7\u7EED\u5B8C\u6210\u8BBE\u7F6E\uFF0C\u7A0D\u540E\u5728\u8BBE\u7F6E\u4E2D\u914D\u7F6E\u3002",wizard_skip_ocr_continue:"\u7EE7\u7EED\uFF0C\u7A0D\u540E\u914D\u7F6E\u5BC6\u94A5",wizard_skip_ocr_back:"\u8FD4\u56DE\u914D\u7F6E",wizard_api_hint_skip:"OCR \u5BC6\u94A5\u4E3A\u9009\u586B\u9879 \u2014 \u53EF\u8DF3\u8FC7\uFF0C\u7A0D\u540E\u5728\u8BBE\u7F6E\u4E2D\u914D\u7F6E\u3002",wizard_sys_hint:"\u72EC\u7ACB\u4E8E\u8D44\u6E90\u76EE\u5F55\u7684\u7CFB\u7EDF\u6587\u4EF6\uFF1A",wizard_title:"PaperForge \u5B89\u88C5\u5411\u5BFC",ocr_maint_no_action:"\u65E0\u9700\u5904\u7406",ocr_maint_rebuild:"\u5EFA\u8BAE\u91CD\u5EFA",ocr_maint_failed:"OCR \u5931\u8D25",ocr_maint_limited:"\u7ED3\u679C\u4E00\u822C",ocr_maint_needs_attention:"\u9700\u8981\u5904\u7406",ocr_maint_limitations:"\u7ED3\u679C\u8BF4\u660E",ocr_maint_hero_ok:"OCR \u6574\u4F53\u6B63\u5E38\u3002",ocr_maint_hero_warn:"OCR \u9700\u8981\u5173\u6CE8\uFF1A{rebuild} \u7BC7\u5EFA\u8BAE\u91CD\u5EFA\uFF0C{failed} \u7BC7\u5904\u7406\u5931\u8D25\u3002",ocr_maint_hero_note:"\u672C\u9875\u53EA\u63D0\u793A\u7EF4\u62A4\u540E\u5927\u6982\u7387\u4F1A\u6539\u5584\u7684\u95EE\u9898\u3002\u90E8\u5206\u8BBA\u6587\u6548\u679C\u4E00\u822C\uFF0C\u7EF4\u62A4\u672A\u5FC5\u80FD\u6539\u5584\u3002",ocr_maint_limitations_intro:"\u8FD9\u7C7B\u8BBA\u6587\u901A\u5E38\u8868\u793A\u7248\u5F0F\u590D\u6742\u6216\u4FE1\u53F7\u504F\u5F31\uFF0CPaperForge \u76EE\u524D\u6CA1\u6709\u9AD8\u7F6E\u4FE1\u5EA6\u7684\u7EF4\u62A4\u5EFA\u8BAE\u3002",ocr_maint_all_papers:"\u5168\u90E8\u8BBA\u6587",ocr_maint_rebuild_btn:"\u91CD\u5EFA\u7ED3\u679C",ocr_maint_redo_btn:"\u91CD\u65B0 OCR",ocr_maint_redo_confirm:"\u786E\u8BA4\u91CD\u65B0 OCR {n} \u7BC7\u8BBA\u6587\uFF1F\u73B0\u6709\u7684\u6D3E\u751F OCR \u7ED3\u679C\u5C06\u88AB\u66FF\u6362\u3002",maintenance_group_retry:"\u9700\u8981\u91CD\u8BD5",maintenance_group_rebuild:"\u53EF\u91CD\u5EFA\u7ED3\u679C",maintenance_group_legacy:"\u53EF\u5347\u7EA7\u65E7\u7ED3\u679C\uFF08\u53EF\u9009\uFF09",maintenance_btn_retry:"\u91CD\u8BD5",maintenance_btn_rebuild:"\u91CD\u5EFA",maintenance_btn_upgrade:"\u5347\u7EA7",maintenance_refresh_spinning:"\u6B63\u5728\u66F4\u65B0\u2026",maintenance_all_good:"\u2705 \u5168\u90E8\u6B63\u5E38",maintenance_n_pending:"{n} \u7BC7\u9700\u8981\u5904\u7406",maintenance_filter_all:"\u5168\u90E8",maintenance_filter_recommended:"\u5EFA\u8BAE\u5904\u7406",maintenance_batch_rebuild:"\u25B6 \u91CD\u5EFA\u5DF2\u9009",maintenance_batch_redo:"\u25B6 \u5168\u90E8\u91CD\u8DD1 OCR",maintenance_stop:"\u505C\u6B62",maintenance_batch_complete:"\u6279\u91CF\u64CD\u4F5C\u5B8C\u6210 \u2014 \u5904\u7406\u4E86 {n} \u7BC7\u8BBA\u6587\u3002",maintenance_progress_label:"{current}/{total} \u7BC7",version_panel_title:"\u7248\u672C\u5386\u53F2",version_panel_back:"\u8FD4\u56DE",version_filter_placeholder:"\u641C\u7D22\u8BBA\u6587...",version_papers_count:"{n} \u7BC7\u8BBA\u6587",version_current:"\u5F53\u524D",version_restore_btn:"\u6062\u590D",version_compare_btn:"\u5BF9\u6BD4",version_restore_selected:"\u6062\u590D\u9009\u4E2D\u7248\u672C",version_clear_old:"\u6E05\u9664\u65E7\u7248\u672C (\u91CA\u653E {size})",version_no_backups:"\u6CA1\u6709\u53EF\u6062\u590D\u7684\u5386\u53F2\u7248\u672C",md_select_installation:"\u57FA\u7840\u73AF\u5883",md_select_library:"\u6587\u732E\u5E93",md_select_ocr:"OCR",md_select_memory:"\u667A\u80FD\u68C0\u7D22",md_select_agent:"Agent \u96C6\u6210",installation_detail_heading:"\u57FA\u7840\u73AF\u5883",library_detail_heading:"\u6587\u732E\u5E93",ocr_detail_heading:"OCR",memory_detail_heading:"\u667A\u80FD\u68C0\u7D22",agent_detail_heading:"Agent \u96C6\u6210",btn_back_to_overview:"\u2190 \u8FD4\u56DE\u6982\u89C8",agent_integration_section:"Agent \u96C6\u6210",module_detail_open_installation:"\u6253\u5F00\u57FA\u7840\u73AF\u5883",module_detail_open_help:"\u5E2E\u52A9",module_detail_open_maintenance:"\u7EF4\u62A4",module_detail_open_library:"\u6253\u5F00\u6587\u732E\u5E93",module_detail_open_ocr:"\u6253\u5F00 OCR",module_detail_open_memory:"\u6253\u5F00\u667A\u80FD\u68C0\u7D22",action_unknown_pair:"\u672A\u77E5\u64CD\u4F5C: {verb}",update_python_manual:"Python 3.11+ \u5347\u7EA7\u9700\u8981\u624B\u52A8\u5B89\u88C5(python.org \u6216\u5305\u7BA1\u7406\u5668)\u3002",update_done:"PaperForge \u5DF2\u66F4\u65B0",update_failed:"\u66F4\u65B0\u5931\u8D25",migrate_done:"\u540E\u7AEF\u5DF2\u8FC1\u79FB\u5230 sqlite-vec",migrate_failed:"\u540E\u7AEF\u8FC1\u79FB\u5931\u8D25",ocr_stop_batch:"\u505C\u6B62 OCR \u6279\u5904\u7406",runtime_not_available:"\u73AF\u5883\u4E0D\u53EF\u7528",md_unavailable_module:"\u6682\u4E0D\u53EF\u7528",managed_runtime_status:"\u8FD0\u884C\u65F6\u72B6\u6001",managed_runtime_install:"\u5B89\u88C5\u8FD0\u884C\u65F6",managed_runtime_repair:"\u4FEE\u590D\u8FD0\u884C\u65F6",managed_runtime_update:"\u66F4\u65B0\u8FD0\u884C\u65F6",managed_runtime_check_status:"\u68C0\u67E5\u72B6\u6001",managed_runtime_refresh:"\u5237\u65B0\u72B6\u6001",managed_runtime_manual_setup:"\u624B\u52A8\u914D\u7F6E",managed_runtime_stop:"\u505C\u6B62",managed_runtime_unknown_state:"\u672A\u77E5",managed_runtime_ok_state:"\u5C31\u7EEA",managed_runtime_not_installed:"\u672A\u5B89\u88C5",managed_runtime_needs_repair:"\u9700\u8981\u4FEE\u590D",managed_runtime_unavailable:"\u4E0D\u53EF\u7528",managed_runtime_last_verified:"\u6700\u540E\u9A8C\u8BC1\uFF1A{time}",managed_runtime_running:"\u8FD0\u884C\u65F6\u64CD\u4F5C\u8FDB\u884C\u4E2D...",managed_runtime_action_complete:"\u8FD0\u884C\u65F6\u64CD\u4F5C\u5DF2\u5B8C\u6210\u3002",managed_runtime_action_cancelled:"\u8FD0\u884C\u65F6\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002",managed_runtime_action_failed:"\u8FD0\u884C\u65F6\u64CD\u4F5C\u5931\u8D25\uFF1A{error}",version_restore_confirm:"\u786E\u8BA4\u5C06 {paper} \u6062\u590D\u5230 {label}\uFF1F",version_restore_done:"\u5DF2\u6062\u590D\u5230 {label}",version_compare_title:"{vA} vs {vB}",version_compare_paragraphs:"{n} \u6BB5\u6709\u53D8\u5316",version_error_read:"\u65E0\u6CD5\u8BFB\u53D6\u7248\u672C\u6570\u636E",retrieval_search_placeholder:"\u641C\u7D22\u8BBA\u6587...\uFF08@ \u542F\u52A8\u6DF1\u5EA6\u641C\u7D22\uFF09",retrieval_search_placeholder_deep:"\u641C\u7D22\u8BBA\u6587\u5185\u5BB9...",retrieval_search_idle_hint:"\u8F93\u5165\u5173\u952E\u8BCD\u641C\u7D22\u8BBA\u6587\uFF0C\u6216\u4EE5 @ \u5F00\u5934\u641C\u7D22\u8BBA\u6587\u5185\u5BB9",retrieval_searching_metadata:"\u641C\u7D22\u5143\u6570\u636E\u4E2D...",retrieval_searching_deep:"\u6DF1\u5EA6\u641C\u7D22\u4E2D...",retrieval_search_cancel:"\u53D6\u6D88",retrieval_results_count:"{n} \u4E2A\u7ED3\u679C",retrieval_empty:"\u672A\u627E\u5230\u5339\u914D\u7684\u8BBA\u6587\u3002",retrieval_empty_tips:"\u5C1D\u8BD5\u66F4\u5BBD\u6CDB\u7684\u5173\u952E\u8BCD\uFF0C\u6216\u4F7F\u7528 @ \u6DF1\u5EA6\u641C\u7D22\u8BBA\u6587\u5185\u5BB9\u3002",retrieval_vectors_not_built:"\u5411\u91CF\u7D22\u5F15\u672A\u6784\u5EFA",retrieval_vectors_not_built_desc:"\u6784\u5EFA\u5411\u91CF\u7D22\u5F15\u4EE5\u542F\u7528 @ \u6DF1\u5EA6\u8BED\u4E49\u641C\u7D22\u3002",retrieval_open_vector_settings:"\u6253\u5F00\u5411\u91CF\u8BBE\u7F6E",retrieval_backend_unavailable:"\u641C\u7D22\u540E\u7AEF\u4E0D\u53EF\u7528",retrieval_backend_unavailable_desc:"Python CLI \u641C\u7D22\u540E\u7AEF\u672A\u6B63\u5E38\u54CD\u5E94\u3002",retrieval_run_doctor:"\u8FD0\u884C\u8BCA\u65AD",retrieval_retry:"\u91CD\u8BD5",retrieval_timeout_title:"\u641C\u7D22\u8D85\u65F6",retrieval_timeout_desc:"\u641C\u7D22\u8017\u65F6\u8FC7\u957F\uFF0C\u8BF7\u5C1D\u8BD5\u66F4\u7CBE\u786E\u7684\u67E5\u8BE2\u3002",retrieval_model_changed:"\u6A21\u578B\u5DF2\u66F4\u6362",retrieval_model_changed_desc:"\u5D4C\u5165\u6A21\u578B\u5DF2\u66F4\u6362\uFF0C\u9700\u91CD\u5EFA\u5411\u91CF\u540E\u624D\u80FD\u4F7F\u7528\u6DF1\u5EA6\u641C\u7D22\u3002",retrieval_rebuild_vectors:"\u91CD\u5EFA\u5411\u91CF",retrieval_build_idle:"\u5411\u91CF\u6570\u636E\u5E93\u5C31\u7EEA",retrieval_build_ready:"\u5DF2\u6784\u5EFA {n} \u4E2A\u5411\u91CF",retrieval_build_stopping:"\u6B63\u5728\u505C\u6B62...",cc_module_foundation:"\u57FA\u7840\u73AF\u5883",cc_module_agent:"Agent \u96C6\u6210",cc_badge_checking:"\u6B63\u5728\u68C0\u67E5",cc_badge_ready:"\u5DF2\u5C31\u7EEA",cc_badge_not_enabled:"\u672A\u542F\u7528",cc_badge_setup_required:"\u9700\u8981\u8BBE\u7F6E",cc_badge_action_required:"\u9700\u8981\u64CD\u4F5C",cc_badge_detection_failed:"\u68C0\u6D4B\u5931\u8D25",cc_summary_ready:"PaperForge \u5DF2\u5C31\u7EEA",cc_summary_incomplete:"\u8BBE\u7F6E\u672A\u5B8C\u6210",cc_summary_ready_body:"\u57FA\u7840\u73AF\u5883\u548C\u6587\u732E\u5E93\u5747\u5DF2\u6B63\u5E38\u8FD0\u884C\u3002",cc_summary_incomplete_body:"\u8BF7\u5B8C\u6210\u57FA\u7840\u73AF\u5883\u548C\u6587\u732E\u5E93\u8BBE\u7F6E\u540E\u518D\u4F7F\u7528 PaperForge\u3002",cc_summary_checking:"\u6B63\u5728\u68C0\u67E5 PaperForge",cc_summary_checking_body:"\u6B63\u5728\u68C0\u67E5\u57FA\u7840\u73AF\u5883\u548C\u6587\u732E\u5E93\u72B6\u6001\u2026",cc_refresh_btn:"\u5237\u65B0\u72B6\u6001",cc_last_checked:"\u4E0A\u6B21\u68C0\u67E5\uFF1A",cc_needs_attention:"\u9879\u9700\u8981\u5173\u6CE8",cc_checked_pending:"\u5C1A\u672A\u68C0\u67E5",cc_eyebrow:"\u63A7\u5236\u4E2D\u5FC3",cc_title:"\u6587\u732E\u5DE5\u4F5C\u6D41",cc_lede:"\u67E5\u770B\u5404\u9879\u80FD\u529B\u7684\u8FD0\u884C\u72B6\u6001\u3001\u9700\u8981\u5904\u7406\u7684\u4E8B\u9879\uFF0C\u4EE5\u53CA\u4E0B\u4E00\u6B65\u8BE5\u505A\u4EC0\u4E48\u3002",cc_modules_header:"\u6A21\u5757",cc_five_capabilities:"\u4E94\u4E2A\u529F\u80FD",cc_optional_note:"\u53EF\u9009\u6A21\u5757\u4E0D\u5F71\u54CD\u6838\u5FC3\u8FD0\u884C\u72B6\u6001\u3002",cc_maintenance_count:"{n} \u9879\u9700\u8981\u5173\u6CE8",cc_card_retry:"\u91CD\u8BD5",cc_consequence_default:"\u5F53\u524D\u72B6\u6001\u6682\u4E0D\u53EF\u7528\u3002",cc_action_rebuild_derived:"\u91CD\u5EFA",ocr_progress:"{current}/{total} \u7BC7\u8BBA\u6587",cc_operational_modules:"\u8FD0\u884C\u6A21\u5757",cc_consequence_checking:"\u6B63\u5728\u68C0\u67E5\u6700\u65B0\u72B6\u6001\u2026",cc_consequence_detection_failed:"PaperForge \u65E0\u6CD5\u786E\u5B9A\u5F53\u524D\u72B6\u6001\u3002",cc_consequence_setup_required:"\u4F7F\u7528\u524D\u9700\u8981\u5B8C\u6210\u914D\u7F6E\u3002",cc_consequence_action_required:"\u6709\u4E00\u9879\u95EE\u9898\u9700\u8981\u5904\u7406\u3002",cc_consequence_installation_ready:"PaperForge \u5DF2\u5728\u6B64\u8BBE\u5907\u4E0A\u5C31\u7EEA\u3002",cc_consequence_library_ready:"Zotero \u6587\u732E\u5E93\u5DF2\u8FDE\u63A5\u5E76\u4FDD\u6301\u6700\u65B0\u3002",cc_consequence_ocr_ready:"OCR \u5DF2\u51C6\u5907\u597D\u5904\u7406\u8BBA\u6587\u3002",cc_consequence_memory_ready:"\u8BBA\u6587\u5DF2\u5EFA\u7ACB\u7D22\u5F15\u5E76\u53EF\u641C\u7D22\u3002",cc_consequence_agent_ready:"PaperForge Skills \u5DF2\u90E8\u7F72\u5230\u6240\u9009 Agent \u5E73\u53F0\u3002",cc_consequence_agent_not_enabled:"\u9700\u8981\u90E8\u7F72 PaperForge Skills \u65F6\u518D\u9009\u62E9 Agent \u5E73\u53F0\u3002",cc_consequence_ocr_not_enabled:"OCR \u4E3A\u53EF\u9009\u529F\u80FD\uFF0C\u5F53\u524D\u672A\u542F\u7528\u3002",cc_consequence_memory_not_enabled:"\u667A\u80FD\u68C0\u7D22\u4E3A\u53EF\u9009\u529F\u80FD\uFF0C\u5F53\u524D\u672A\u542F\u7528\u3002",md_foundation_overview:"\u8FD0\u884C\u73AF\u5883",md_foundation_ready:"PaperForge \u5DF2\u5B89\u88C5\u5E76\u901A\u8FC7\u9A8C\u8BC1\uFF0C\u53EF\u4EE5\u6B63\u5E38\u4F7F\u7528\u3002",md_library_connection:"Zotero \u8FDE\u63A5",ocr_error_notice:"OCR \u56E0\u9519\u8BEF\u505C\u6B62\uFF0C\u8BF7\u6253\u5F00\u9AD8\u7EA7\u8BCA\u65AD\u67E5\u770B\u8BE6\u60C5\u3002",ocr_run_complete:"OCR \u5904\u7406\u5B8C\u6210\u3002",ocr_rebuild_complete:"OCR \u91CD\u5EFA\u5B8C\u6210\u3002",ocr_redo_complete:"OCR \u91CD\u505A\u5B8C\u6210\u3002",ocr_stopped_notice:"OCR \u6279\u5904\u7406\u5DF2\u505C\u6B62\u3002",ocr_failed_notice:"OCR \u672A\u5B8C\u6210\uFF0C\u8BF7\u6253\u5F00\u9AD8\u7EA7\u8BCA\u65AD\u67E5\u770B\u8BE6\u60C5\u3002",md_library_ready:"Zotero \u5DF2\u8FDE\u63A5\uFF0C\u6587\u732E\u5E93\u5DF2\u540C\u6B65\u3002",md_library_corpus:"\u6587\u732E\u8BED\u6599\u5E93",md_library_last_sync:"\u4E0A\u6B21\u6210\u529F\u540C\u6B65",md_ocr_status:"OCR \u529F\u80FD",md_status_refresh_hint:"\u8BF7\u5148\u68C0\u6D4B\u72B6\u6001\u4EE5\u52A0\u8F7D\u5F53\u524D OCR \u4FE1\u606F\uFF1B\u6B64\u64CD\u4F5C\u4E0D\u4F1A\u4FEE\u6539\u8BBA\u6587\u3002",md_ocr_ready:"OCR \u5DF2\u914D\u7F6E\u5E76\u53EF\u7528\u3002",md_ocr_workspace:"\u6253\u5F00 OCR \u5DE5\u4F5C\u533A",md_retrieval_coverage:"\u68C0\u7D22\u8986\u76D6\u8303\u56F4",md_retrieval_ready:"\u6240\u6709\u53EF\u7528\u8BBA\u6587\u5747\u5DF2\u5EFA\u7ACB\u7D22\u5F15\u5E76\u53EF\u641C\u7D22\u3002",md_agent_integration:"Agent \u96C6\u6210",md_agent_placeholder:"\u914D\u7F6E\u76EE\u6807\u5E73\u53F0\u3001\u90E8\u7F72 PaperForge \u6587\u4EF6\u5E76\u7BA1\u7406 Skills\u3002\u6587\u4EF6\u5DF2\u90E8\u7F72\u4E0D\u4EE3\u8868\u5B9E\u65F6\u8FDE\u63A5\u5DF2\u7ECF\u9A8C\u8BC1\u3002",md_agent_platform:"\u76EE\u6807\u5E73\u53F0",md_agent_deployment:"\u90E8\u7F72\u72B6\u6001",agent_deployed:"\u6587\u4EF6\u5DF2\u90E8\u7F72",agent_not_deployed:"\u6587\u4EF6\u672A\u90E8\u7F72",agent_live_connection:"\u5B9E\u65F6\u8FDE\u63A5",agent_verify_found:"\u5DF2\u627E\u5230\u6B64\u5E73\u53F0\u7684 PaperForge Skills\u3002",agent_verify_missing:"\u672A\u627E\u5230\u6B64\u5E73\u53F0\u7684 PaperForge Skills\uFF0C\u8BF7\u8FD0\u884C\u8BBE\u7F6E\u8FDB\u884C\u90E8\u7F72\u3002",skills_system:"\u7CFB\u7EDF Skills",skills_user:"\u7528\u6237 Skills",skills_empty:"\u6240\u9009\u5E73\u53F0\u5C1A\u672A\u90E8\u7F72 Skills\u3002",md_agent_connection_unknown:"\u5B9E\u65F6\u8FDE\u63A5\u5C1A\u672A\u9A8C\u8BC1",md_agent_skills:"PaperForge Skills",md_copy_diagnostic:"\u590D\u5236\u652F\u6301\u8BCA\u65AD",md_configuration:"\u914D\u7F6E",md_current_activity:"\u5F53\u524D\u6D3B\u52A8",config_change:"\u66F4\u6539",config_save:"\u4FDD\u5B58",config_cancel:"\u53D6\u6D88",config_verify:"\u9A8C\u8BC1",config_configured:"\u5DF2\u914D\u7F6E",config_not_configured:"\u672A\u914D\u7F6E",config_zotero_dir:"Zotero \u6570\u636E\u76EE\u5F55",problem_what_happened:"\u53D1\u751F\u4E86\u4EC0\u4E48",problem_impact:"\u5F71\u54CD\uFF1A",problem_next:"\u4E0B\u4E00\u6B65\uFF1A",problem_copy:"\u590D\u5236\u8BCA\u65AD\u4FE1\u606F",problem_use_action:"\u4F7F\u7528\u4E0A\u65B9\u64CD\u4F5C\u5904\u7406\u6B64\u95EE\u9898\u3002",library_problem_impact:"\u65B0\u7684\u53C2\u8003\u6587\u732E\u548C\u6587\u732E\u7B14\u8BB0\u53EF\u80FD\u6682\u4E0D\u53EF\u7528\u3002",ocr_problem_impact:"\u90E8\u5206\u8BBA\u6587\u53EF\u80FD\u6CA1\u6709\u53EF\u9605\u8BFB\u7684\u5168\u6587\u3002",retrieval_problem_impact:"\u6062\u590D\u8986\u76D6\u524D\uFF0C\u641C\u7D22\u548C\u68C0\u7D22\u53EF\u80FD\u9057\u6F0F\u8BBA\u6587\u3002",metric_after_sync:"\u4E0B\u6B21\u6210\u529F\u540C\u6B65\u540E\u53EF\u7528",metric_not_available:"\u6682\u4E0D\u53EF\u7528",coverage_complete:"\u5B8C\u6574",retrieval_freshness:"\u4E0A\u6B21\u68C0\u67E5",md_module_switcher:"\u6A21\u5757",advanced_diagnostics:"\u9AD8\u7EA7\u8BCA\u65AD",foundation_version:"PaperForge \u7248\u672C",foundation_last_verified:"\u4E0A\u6B21\u9A8C\u8BC1",foundation_runtime_managed:"\u6258\u7BA1\u8FD0\u884C\u73AF\u5883",foundation_runtime_system:"\u7CFB\u7EDF\u8FD0\u884C\u73AF\u5883",foundation_runtime_unavailable:"\u8FD0\u884C\u73AF\u5883\u4E0D\u53EF\u7528",foundation_skills_ready:"\u53EF\u7528",foundation_skills:"Skills",md_foundation_legacy_migrate:"\u8FC1\u79FB\u65E7\u7248\u914D\u7F6E",foundation_setup_desc:"\u8FD0\u884C\u5B89\u88C5\u5411\u5BFC\uFF0C\u521B\u5EFA\u7531 Python \u7BA1\u7406\u7684\u5E93\u914D\u7F6E\u5E76\u53D1\u5E03\u8FD0\u884C\u73AF\u5883\u6307\u9488\u3002",foundation_setup_btn:"\u6253\u5F00\u5B89\u88C5\u5411\u5BFC",config_confirm:"\u786E\u8BA4",ocr_configure_credential:"\u914D\u7F6E OCR \u51ED\u636E",feat_install_deps_desc:"\u5B89\u88C5\u667A\u80FD\u68C0\u7D22\u6240\u9700\u7684\u4F9D\u8D56\u9879\u3002",setup_welcome:"\u8BBE\u7F6E PaperForge",setup_desc:"\u5B8C\u6210\u5FC5\u9700\u9636\u6BB5\uFF0C\u7136\u540E\u9009\u62E9\u9700\u8981\u542F\u7528\u7684\u53EF\u9009\u529F\u80FD\u3002",setup_stage_1:"\u57FA\u7840\u73AF\u5883",setup_stage_2:"\u8FDE\u63A5\u6587\u732E\u5E93",setup_stage_3:"\u53EF\u9009\u529F\u80FD",setup_stage_4:"\u68C0\u67E5\u5E76\u5F00\u59CB",setup_progress:"\u8BBE\u7F6E\u8FDB\u5EA6",setup_foundation_title:"\u7B2C 1 \u6B65\uFF1A\u57FA\u7840\u73AF\u5883",setup_foundation_desc:"\u9009\u62E9 Python \u8FD0\u884C\u73AF\u5883\uFF0C\u7136\u540E\u5B89\u88C5 PaperForge \u5305\uFF1B\u6B64\u6B65\u9AA4\u4E0D\u4F1A\u521B\u5EFA\u6216\u914D\u7F6E\u6587\u732E\u5E93\u3002",setup_ready:"\u57FA\u7840\u73AF\u5883\u5DF2\u5C31\u7EEA\u3002",setup_foundation_python:"Python \u53EF\u6267\u884C\u6587\u4EF6",setup_foundation_python_hint:"\u7559\u7A7A\u65F6\u4F7F\u7528\u7CFB\u7EDF PATH \u4E2D\u7684 \u201Cpython\u201D\u3002",setup_foundation_install_btn:"\u5B89\u88C5 PaperForge",setup_library_title:"\u7B2C 2 \u6B65\uFF1A\u8FDE\u63A5\u6587\u732E\u5E93",setup_library_desc:"\u8FDE\u63A5 Zotero\uFF0C\u8BA9 PaperForge \u53EF\u4EE5\u540C\u6B65\u6587\u732E\u3002",setup_library_ready:"\u6587\u732E\u5E93\u5DF2\u8FDE\u63A5\u3002",setup_library_config_desc:"\u9A8C\u8BC1 Zotero \u6570\u636E\u76EE\u5F55\uFF0C\u7136\u540E\u786E\u8BA4 PaperForge \u5728\u6B64\u5E93\u4E2D\u4F7F\u7528\u7684\u6587\u4EF6\u5939\u3002",setup_library_zotero_hint:"PaperForge \u53EA\u8BFB\u53D6\u6B64\u6587\u4EF6\u5939\uFF0C\u4E0D\u4F1A\u4FEE\u6539 Zotero \u6570\u636E\u5E93\u3002",setup_library_folder_heading:"\u5E93\u5185\u6587\u4EF6\u5939",setup_library_verify:"\u4FDD\u5B58\u5E76\u9A8C\u8BC1\u914D\u7F6E",setup_library_configured:"\u6587\u732E\u5E93\u914D\u7F6E\u5DF2\u4FDD\u5B58\uFF0C\u6B63\u5728\u68C0\u67E5\u8FDE\u63A5\u3002",setup_library_configuring:"\u6B63\u5728\u4FDD\u5B58\u5E76\u68C0\u67E5\u6587\u732E\u5E93\u914D\u7F6E\u2026",setup_library_config_failed:"\u6587\u732E\u5E93\u914D\u7F6E\u65E0\u6CD5\u9A8C\u8BC1\u3002\u8BF7\u68C0\u67E5\u8DEF\u5F84\u540E\u91CD\u8BD5\u3002",setup_reinstall_notice:"\u53EA\u91CD\u65B0\u5B89\u88C5\u672C\u673A\u7684 PaperForge Python \u5305\uFF0C\u4E0D\u4F1A\u6539\u52A8\u6587\u732E\u5E93\u914D\u7F6E\u3002",setup_installing:"\u6B63\u5728\u5B89\u88C5\u5E76\u51C6\u5907 PaperForge\u2026",setup_install_complete:"\u5B89\u88C5\u5B8C\u6210\uFF0C\u6B63\u5728\u68C0\u67E5\u66F4\u65B0\u540E\u7684\u8FD0\u884C\u73AF\u5883\u3002",setup_install_failed:"PaperForge \u5B89\u88C5\u672A\u5B8C\u6210\u3002\u8BF7\u68C0\u67E5 Python \u8DEF\u5F84\u540E\u91CD\u8BD5\u3002",setup_optionals_title:"\u7B2C 3 \u6B65\uFF1A\u53EF\u9009\u529F\u80FD",setup_optionals_desc:"\u53EA\u9009\u62E9\u9700\u8981\u7684\u529F\u80FD\uFF1B\u8DF3\u8FC7\u540E\u4ECD\u53EF\u968F\u65F6\u542F\u7528\u3002",setup_optional_saved:"\u914D\u7F6E\u5DF2\u5B89\u5168\u4FDD\u5B58\u3002",setup_optional_save_failed:"\u914D\u7F6E\u65E0\u6CD5\u4FDD\u5B58\u3002\u8BF7\u68C0\u67E5 Obsidian \u5B89\u5168\u5B58\u50A8\u540E\u91CD\u8BD5\u3002",setup_opt_ocr_desc:"\u4ECE PDF \u63D0\u53D6\u6587\u672C\u548C\u56FE\u8868",setup_opt_memory_desc:"\u8DE8\u8BBA\u6587\u641C\u7D22\u548C\u6D4F\u89C8",setup_opt_agent_desc:"\u90E8\u7F72\u5E76\u7BA1\u7406 PaperForge Skills",setup_review_title:"\u7B2C 4 \u6B65\uFF1A\u68C0\u67E5\u5E76\u5F00\u59CB",setup_review_selected:"\u5DF2\u9009\u62E9\uFF1A",setup_no_optionals:"\u672A\u9009\u62E9\u53EF\u9009\u529F\u80FD\u3002",setup_incomplete_warn:"\u57FA\u7840\u73AF\u5883\u548C\u6587\u732E\u5E93\u5747\u5C31\u7EEA\u540E\u624D\u80FD\u5B8C\u6210\u8BBE\u7F6E\u3002",setup_review_checking:"\u6B63\u5728\u68C0\u67E5\u5F53\u524D\u914D\u7F6E\u2026",setup_review_recheck:"\u91CD\u65B0\u68C0\u67E5\u914D\u7F6E",setup_nav_continue:"\u7EE7\u7EED",setup_nav_skip:"\u6682\u65F6\u8DF3\u8FC7",setup_nav_back:"\u8FD4\u56DE",setup_nav_cancel:"\u53D6\u6D88",setup_nav_later:"\u7A0D\u540E",setup_install_cancelled:"\u8BBE\u7F6E\u5DF2\u53D6\u6D88\uFF0C\u8FD0\u884C\u65F6\u672A\u6FC0\u6D3B\u3002",setup_nav_complete:"\u5B8C\u6210\u8BBE\u7F6E",help_title:"\u5E2E\u52A9",help_lede:"\u6253\u5F00\u76F8\u5173\u6A21\u5757\uFF0C\u6216\u590D\u5236\u8BCA\u65AD\u4FE1\u606F\u5BFB\u6C42\u652F\u6301\u3002",help_intro:"\u9009\u62E9\u4E00\u4E2A\u4EFB\u52A1\uFF0C\u6216\u590D\u5236\u9690\u79C1\u5B89\u5168\u7684\u652F\u6301\u8BCA\u65AD\u3002",help_getting_started:"\u5F00\u59CB\u4F7F\u7528",help_library_task:"\u8FDE\u63A5 Zotero \u5E76\u540C\u6B65\u6587\u732E",help_ocr_task:"\u914D\u7F6E OCR \u5E76\u6253\u5F00 OCR \u5DE5\u4F5C\u533A",help_retrieval_task:"\u542F\u7528\u667A\u80FD\u68C0\u7D22\u5E76\u5EFA\u7ACB\u8986\u76D6",help_agent_task:"\u9009\u62E9 Agent \u5E73\u53F0\u5E76\u90E8\u7F72 Skills",help_current_problem:"\u5F53\u524D\u95EE\u9898\u6307\u5F15",help_no_problem:"\u5F53\u524D\u6CA1\u6709\u9700\u8981\u6307\u5F15\u7684\u95EE\u9898\u3002",help_support:"\u652F\u6301\u8BCA\u65AD",help_support_desc:"\u4EC5\u590D\u5236\u6A21\u5757\u72B6\u6001\u548C\u7248\u672C\u6807\u8BC6\uFF0C\u4E0D\u5305\u542B\u5BC6\u94A5\u3001\u5185\u5BB9\u3001\u8EAB\u4EFD\u3001\u7EDD\u5BF9\u8DEF\u5F84\u6216\u539F\u59CB\u65E5\u5FD7\u3002",help_copy:"\u590D\u5236\u652F\u6301\u8BCA\u65AD",help_documentation:"\u6587\u6863",help_documentation_desc:"\u6253\u5F00\u9879\u76EE\u6307\u5357\uFF0C\u67E5\u770B\u8BBE\u7F6E\u3001\u5DE5\u4F5C\u6D41\u7A0B\u548C\u6545\u969C\u6392\u9664\u8BF4\u660E\u3002",help_open_documentation:"\u6253\u5F00 PaperForge \u6587\u6863",help_release_notes:"\u7248\u672C\u8BF4\u660E",help_release_notes_desc:"\u5F53\u524D\u5B89\u88C5\u7248\u672C\uFF1A{version}\u3002\u5B8C\u6574\u53D8\u66F4\u8BB0\u5F55\u8BF7\u67E5\u770B GitHub\u3002",help_open_release_notes:"\u6253\u5F00\u7248\u672C\u8BF4\u660E",support_diagnostic_copied:"\u652F\u6301\u8BCA\u65AD\u5DF2\u590D\u5236\u3002",maintenance_empty_title:"\u65E0\u9700\u7EF4\u62A4",maintenance_empty_body:"\u5F53\u524D\u6CA1\u6709\u9700\u8981\u5904\u7406\u7684\u672A\u89E3\u51B3\u95EE\u9898\u3002",maintenance_default_impact:"\u6B64\u529F\u80FD\u53EF\u80FD\u4E0D\u53EF\u7528\uFF0C\u6216\u8FD4\u56DE\u4E0D\u5B8C\u6574\u7684\u7ED3\u679C\u3002",maintenance_open_module:"\u6253\u5F00\u6A21\u5757",migration_banner_title:"\u51ED\u636E\u8FC1\u79FB\u901A\u77E5",cc_summary_attention:"\u90E8\u5206\u6A21\u5757\u9700\u8981\u5173\u6CE8",help_load_error:"\u65E0\u6CD5\u52A0\u8F7D\u5E2E\u52A9\u5185\u5BB9\u3002\u8BF7\u68C0\u67E5\u7F51\u7EDC\u8FDE\u63A5\u3002",cc_summary_ok_body:"PaperForge \u73AF\u5883\u5DF2\u5B8C\u5168\u5C31\u7EEA\u3002\u5B89\u88C5\u548C\u5E2E\u52A9\u6587\u6863\u5747\u6B63\u5E38\u53EF\u7528\u3002",cc_summary_core_ok_body:"\u5B89\u88C5\u548C\u5E2E\u52A9\u6A21\u5757\u5DF2\u53EF\u7528\u3002\u6587\u732E\u7D22\u5F15\u3001OCR\u3001\u8BB0\u5FC6\u5C42\u548C\u7EF4\u62A4\u6A21\u5757\u5C06\u5728\u540E\u7AEF\u63A5\u5165\u540E\u663E\u793A\u5B9E\u65F6\u72B6\u6001\u3002",cc_summary_attention_body:"\u4E00\u4E2A\u6216\u591A\u4E2A\u6838\u5FC3\u6A21\u5757\u9700\u8981\u60A8\u7684\u5173\u6CE8\u624D\u80FD\u6B63\u5E38\u8FD0\u884C\u3002",retrieval_build_stopped:"\u6784\u5EFA\u5DF2\u505C\u6B62\uFF08{n}/{t} \u7BC7\uFF09",retrieval_build_failed:"\u6784\u5EFA\u5931\u8D25",retrieval_build_stale:"\u5411\u91CF\u5DF2\u8FC7\u671F \u2014 \u5EFA\u8BAE\u91CD\u5EFA",retrieval_build_runtime_mismatch:"Python \u8FD0\u884C\u65F6\u7248\u672C\u4E0D\u5339\u914D\u3002",retrieval_stop:"\u505C\u6B62",retrieval_no_python:"\u672A\u627E\u5230 Python",retrieval_internal_error:"\u53D1\u751F\u5185\u90E8\u9519\u8BEF",retrieval_force_rebuild:"\u5F3A\u5236\u91CD\u5EFA",retrieval_rebuild_warning:"\u91CD\u5EFA\u5C06\u66FF\u6362 {n} \u4E2A\u73B0\u6709\u6587\u672C\u5757\uFF0C\u662F\u5426\u7EE7\u7EED\uFF1F",foundation_git:"Git",foundation_git_missing:"\u672A\u5B89\u88C5 \u2014 \u8BF7\u5B89\u88C5 Git \u7528\u4E8E\u7248\u672C\u63A7\u5236",foundation_obsidian:"Obsidian \u7248\u672C",foundation_obsidian_old:"\u7248\u672C\u8FC7\u65E7 \u2014 \u8BF7\u66F4\u65B0 Obsidian",foundation_python_packages:"Python \u5305",foundation_python_packages_checking:"\u6B63\u5728\u68C0\u67E5\u5DF2\u5B89\u88C5\u7684\u5305...",foundation_paddle_key:"PaddleOCR API \u5BC6\u94A5",foundation_paddle_missing:"\u672A\u914D\u7F6E \u2014 OCR \u63D0\u53D6\u9700\u8981\u6B64\u5BC6\u94A5",foundation_openai_key:"OpenAI API \u5BC6\u94A5",foundation_openai_missing:"\u672A\u914D\u7F6E \u2014 \u667A\u80FD\u68C0\u7D22\u9700\u8981\u6B64\u5BC6\u94A5",foundation_python:"Python \u8DEF\u5F84",foundation_python_status:"Python \u72B6\u6001",foundation_python_ok:"Python \u5DF2\u5B89\u88C5",foundation_python_missing:"\u672A\u627E\u5230 Python \u2014 \u8BF7\u5B89\u88C5 Python 3.11+",foundation_vault_structure:"\u5E93\u5185\u6587\u4EF6\u5939",foundation_zotero:"Zotero \u6570\u636E\u76EE\u5F55",foundation_zotero_missing:"\u672A\u914D\u7F6E \u2014 \u8BF7\u8FDE\u63A5 Zotero \u6570\u636E\u76EE\u5F55",foundation_reinstall:"\u91CD\u65B0\u5B89\u88C5 PaperForge",foundation_reinstall_desc:"\u4ECE\u672C\u5730\u6E90\u7801\u91CD\u65B0\u5B89\u88C5 Python \u5305",foundation_reinstall_btn:"\u91CD\u65B0\u5B89\u88C5",foundation_reinstalling:"\u6B63\u5728\u91CD\u65B0\u5B89\u88C5 PaperForge...",foundation_reinstall_ok:"PaperForge \u91CD\u65B0\u5B89\u88C5\u6210\u529F",foundation_reinstall_failed:"\u91CD\u65B0\u5B89\u88C5\u5931\u8D25",cc_summary_ok:"\u5168\u90E8\u6B63\u5E38",cc_summary_core_ok:"\u6838\u5FC3\u73AF\u5883\u6B63\u5E38\uFF1B{n} \u4E2A\u6A21\u5757\u72B6\u6001\u68C0\u6D4B\u5F85\u63A5\u5165",cc_badge_ok:"\u5DF2\u5C31\u7EEA",cc_badge_pending:"\u5F85\u63A5\u5165",migration_banner_body:"{modules} \u7684\u51ED\u636E\u65E0\u6CD5\u81EA\u52A8\u8FC1\u79FB\u5230\u5B89\u5168\u5B58\u50A8\uFF0C\u8BF7\u5728\u6240\u5C5E\u6A21\u5757\u4E2D\u91CD\u65B0\u8F93\u5165\u3002",migration_banner_next:"\u4FDD\u5B58\u65B0\u503C\u540E\uFF0CPaperForge \u5C06\u5728\u91CD\u542F\u65F6\u518D\u6B21\u5C1D\u8BD5\u5B89\u5168\u8FC1\u79FB\u3002",cc_badge_setup:"\u9700\u8981\u5B89\u88C5",cc_badge_attention:"\u9700\u8981\u6CE8\u610F",cc_diagnostic_toggle:"\u8BE6\u60C5",cc_n_ready:"{n} \u5DF2\u5C31\u7EEA",cc_n_pending:"{n} \u5F85\u63A5\u5165",cc_desc:"PaperForge \u6838\u5FC3\u6A21\u5757\u7684\u5B9E\u65F6\u72B6\u6001\u3002\u6709\u5F85\u5904\u7406\u64CD\u4F5C\u7684\u6A21\u5757\u9700\u8981\u60A8\u7684\u5173\u6CE8\u3002",cc_zone_attention:"\u9700\u8981\u5173\u6CE8",cc_zone_modules:"\u6240\u6709\u6A21\u5757",cc_module_installation:"\u5B89\u88C5",cc_module_help:"\u5E2E\u52A9\u4E0E\u6587\u6863",cc_module_library:"\u6587\u732E\u5E93",cc_module_ocr:"OCR \u5F15\u64CE",cc_module_memory:"\u667A\u80FD\u68C0\u7D22",cc_module_maintenance:"\u7EF4\u62A4",cc_state_ready:"\u5C31\u7EEA",cc_state_limited:"\u53D7\u9650",cc_state_unavailable:"\u4E0D\u53EF\u7528",cc_state_unknown:"\u672A\u77E5",cc_severity_ok:"\u6B63\u5E38",cc_severity_unknown:"\u672A\u77E5",cc_severity_warning:"\u8B66\u544A",cc_severity_error:"\u9519\u8BEF",cc_state_missing_input:"\u7F3A\u5C11\u8F93\u5165",cc_state_needs_action:"\u9700\u8981\u64CD\u4F5C",cc_action_setup:"\u6253\u5F00\u5B89\u88C5\u5411\u5BFC",cc_action_probe:"\u68C0\u6D4B",cc_action_set_config:"\u914D\u7F6E\u8BBE\u7F6E",action_ocr_run:"\u8FD0\u884C OCR",action_ocr_rebuild_derived:"\u91CD\u5EFA OCR \u7ED3\u679C",action_memory_build:"\u6784\u5EFA\u6587\u672C\u7D22\u5F15",action_embed_build:"\u6784\u5EFA\u5411\u91CF\u7D22\u5F15",action_embed_resume:"\u7EE7\u7EED\u5411\u91CF\u6784\u5EFA",action_foundation_update:"\u66F4\u65B0 PaperForge",action_foundation_repair:"\u4FEE\u590D\u8FD0\u884C\u73AF\u5883",setup_bbt_title:"\u5BFC\u5165 BBT JSON",setup_bbt_desc:"\u4ECE Zotero \u4E2D\u5BFC\u51FA Better BibTeX JSON\uFF08\u6587\u4EF6 \u2192 \u5BFC\u51FA\u6587\u732E\u5E93 \u2192 Better BibTeX JSON\uFF09\uFF0C\u7136\u540E\u5C06\u6587\u4EF6\u62D6\u5165\u4E0B\u65B9\u6216\u70B9\u51FB\u9009\u62E9\u3002",setup_bbt_path:"\u5BFC\u51FA\u6587\u4EF6\u5939\uFF1A",setup_bbt_drop:"\u5C06 BBT JSON \u6587\u4EF6\u62D6\u5230\u6B64\u5904\uFF0C\u6216\u70B9\u51FB\u9009\u62E9",setup_bbt_no_files:"\u5C1A\u672A\u5BFC\u5165 JSON \u6587\u4EF6\u3002",setup_bbt_invalid:"\u65E0\u6548\u7684 JSON \u6587\u4EF6\uFF1A",setup_bbt_guide:"\u5982\u4F55\u4ECE Zotero \u5BFC\u51FA",setup_bbt_step1:"1. \u5B89\u88C5 Better BibTeX",setup_bbt_step2:"2. \u5BFC\u51FA\u5E76\u5F00\u542F\u81EA\u52A8\u66F4\u65B0",setup_bbt_step1_desc:"\u5728 Zotero \u4E2D\u6253\u5F00 \u5DE5\u5177 \u2192 \u63D2\u4EF6\uFF0C\u641C\u7D22 Better BibTeX \u5E76\u5B89\u88C5\u3002\u5982\u679C\u641C\u7D22\u4E0D\u5230\uFF0C\u8BF7\u4ECE\u4EE5\u4E0B\u5730\u5740\u4E0B\u8F7D\uFF1Ahttps://github.com/retorquere/zotero-better-bibtex/releases/tag/v9.0.50",setup_bbt_step2_desc:"\u53F3\u952E\u6587\u732E\u5E93\u6216\u5206\u7C7B \u2192 \u5BFC\u51FA\u6587\u732E\u5E93\u2026 \u2192 \u9009\u62E9\u300CBetter BibTeX JSON\u300D\u683C\u5F0F\u3002\u52FE\u9009\u300CKeep updated\u300D\uFF0C\u4EE5\u540E Zotero \u6709\u53D8\u5316\u65F6\u4F1A\u81EA\u52A8\u91CD\u65B0\u5BFC\u51FA\u3002",setup_bbt_step3:"3. \u4FDD\u5B58\u5230\u5BFC\u51FA\u6587\u4EF6\u5939",setup_bbt_step3_desc:"\u5C06\u5BFC\u51FA\u76EE\u6807\u6307\u5411\u4E0A\u65B9\u663E\u793A\u7684\u6587\u4EF6\u5939\u3002\u4FDD\u5B58\u540E\u70B9\u51FB\u300C\u68C0\u6D4B\u300D\u3002",setup_bbt_copy:"\u590D\u5236",setup_bbt_copied:"\u8DEF\u5F84\u5DF2\u590D\u5236",setup_bbt_detect:"\u68C0\u6D4B",setup_bbt_found:"\u5DF2\u627E\u5230\uFF1A",cc_reason_installation_ready:"PaperForge \u73AF\u5883\u5DF2\u6B63\u786E\u914D\u7F6E\u3002",cc_reason_config_missing:"\u914D\u7F6E\u6587\u4EF6\u7F3A\u5931\uFF0C\u8BF7\u8FD0\u884C\u5B89\u88C5\u5411\u5BFC\u3002",cc_reason_config_corrupt:"\u914D\u7F6E\u6587\u4EF6\u635F\u574F\uFF0C\u8BF7\u8FD0\u884C\u5B89\u88C5\u5411\u5BFC\u4FEE\u590D\u3002",cc_reason_python_version_unsupported:"Python \u7248\u672C\u4E0D\u53D7\u652F\u6301\uFF0C\u8BF7\u5B89\u88C5 Python 3.11+\u3002",cc_reason_help_ready:"\u5E2E\u52A9\u6587\u6863\u5DF2\u53EF\u7528\u3002",cc_reason_docs_missing:"\u5E2E\u52A9\u6587\u6863\u5C1A\u672A\u5B89\u88C5\u3002",cc_reason_placeholder:"\u72B6\u6001\u68C0\u6D4B\u5F85\u63A5\u5165\uFF0C\u63A5\u5165\u540E\u5C06\u663E\u793A\u5B9E\u65F6\u72B6\u6001\u3002",cc_reason_library_ready:"\u6587\u732E\u5E93\u5DF2\u540C\u6B65\u5E76\u5EFA\u7ACB\u7D22\u5F15\u3002",cc_reason_library_config_missing:"\u672A\u627E\u5230\u914D\u7F6E\uFF0C\u8BF7\u5148\u8BBE\u7F6E\u6587\u732E\u5E93\u3002",cc_reason_library_config_corrupt:"\u914D\u7F6E\u6587\u4EF6\u635F\u574F\uFF0C\u6587\u732E\u5E93\u65E0\u6CD5\u8FD0\u884C\u3002",cc_reason_library_zotero_missing:"\u5C1A\u672A\u914D\u7F6E Zotero \u6570\u636E\u76EE\u5F55\u3002",cc_reason_library_zotero_not_found:"Zotero \u6570\u636E\u76EE\u5F55\u4E0D\u5B58\u5728\u3002",cc_reason_library_index_missing:"\u5C1A\u672A\u5EFA\u7ACB\u6587\u732E\u7D22\u5F15\uFF0C\u8BF7\u5148\u540C\u6B65\u3002",cc_reason_library_index_stale:"\u6587\u732E\u7D22\u5F15\u5DF2\u8FC7\u671F\uFF0C\u8BF7\u540C\u6B65\u5237\u65B0\u3002",cc_reason_ocr_ready:"OCR \u5DF2\u914D\u7F6E\u5E76\u53EF\u6B63\u5E38\u8FD0\u884C\u3002",cc_reason_ocr_config_missing:"\u672A\u627E\u5230\u914D\u7F6E\uFF0C\u8BF7\u5148\u8BBE\u7F6E OCR\u3002",cc_reason_ocr_config_corrupt:"\u914D\u7F6E\u6587\u4EF6\u635F\u574F\uFF0COCR \u65E0\u6CD5\u8FD0\u884C\u3002",cc_reason_ocr_api_key_missing:"\u5C1A\u672A\u914D\u7F6E OCR API \u5BC6\u94A5\u3002",cc_reason_ocr_artifacts_missing:"\u5C1A\u65E0 OCR \u8F93\u51FA\uFF0C\u8BF7\u5148\u5904\u7406\u8BBA\u6587\u3002",cc_reason_memory_ready:"\u667A\u80FD\u68C0\u7D22\u72B6\u6001\u6B63\u5E38\u4E14\u5DF2\u5EFA\u7ACB\u7D22\u5F15\u3002",cc_reason_memory_db_missing:"\u5C1A\u672A\u5EFA\u7ACB\u68C0\u7D22\u7D22\u5F15\uFF0C\u8BF7\u5148\u6784\u5EFA\u4EE5\u542F\u7528\u641C\u7D22\u3002",cc_reason_memory_db_corrupt:"\u68C0\u7D22\u7D22\u5F15\u5DF2\u635F\u574F\uFF0C\u8BF7\u4ECE\u5907\u4EFD\u6062\u590D\u3002",cc_reason_memory_index_stale:"\u667A\u80FD\u68C0\u7D22\u9700\u8981\u91CD\u5EFA\u4EE5\u5339\u914D\u5F53\u524D\u6587\u732E\u5E93\u3002",cc_diag_module:"\u6A21\u5757",cc_diag_state:"\u72B6\u6001",cc_reason_library_sync_failed:"\u4E0A\u6B21\u6587\u732E\u5E93\u540C\u6B65\u5931\u8D25\uFF0C\u8BF7\u5728\u6570\u636E\u6E90\u53EF\u7528\u540E\u91CD\u8BD5\u3002",cc_diag_severity:"\u4E25\u91CD\u7A0B\u5EA6",cc_diag_activity:"\u6D3B\u52A8",cc_diag_reason:"\u539F\u56E0",cc_diag_ttl:"TTL",cc_diag_updated:"\u66F4\u65B0\u65F6\u95F4",cc_reason_no_probe:"{module} \u5C1A\u672A\u68C0\u6D4B\u3002",cc_reason_stale:"{module} \u7684\u68C0\u6D4B\u6570\u636E\u5DF2\u8FC7\u671F\u3002",cc_reason_invalid_response:"{module} \u7684\u68C0\u6D4B\u54CD\u5E94\u65E0\u6548\u3002",activity_syncing:"\u540C\u6B65\u4E2D...",activity_ocr_running:"\u6B63\u5728\u5904\u7406 OCR... {pct}%",activity_ocr_running_noprogress:"\u6B63\u5728\u5904\u7406 OCR...",cc_action_unknown_verb:"\u672A\u77E5\u540E\u7AEF\u64CD\u4F5C: {verb}",cc_action_investigate:"\u6B63\u5728\u8FD0\u884C\u8BCA\u65AD...",cc_reason_probing:"\u6B63\u5728\u68C0\u6D4B {module} \u72B6\u6001...",cc_notice_placeholder:"{module} \u6A21\u5757\u68C0\u6D4B\u529F\u80FD\u5C1A\u672A\u53EF\u7528\uFF0C\u5C06\u5728\u540E\u7EED\u7248\u672C\u4E2D\u6DFB\u52A0\u3002",cc_notice_refreshed:"\u6A21\u5757\u72B6\u6001\u5DF2\u5237\u65B0\u3002",cc_notice_refresh_failed:"\u6A21\u5757\u72B6\u6001\u5237\u65B0\u5931\u8D25\u3002",cc_activity_idle:"\u7A7A\u95F2",cc_activity_running:"\u8FD0\u884C\u4E2D",maintenance_inbox_title:"\u7EF4\u62A4\u6536\u4EF6\u7BB1",maintenance_checking:"\u6B63\u5728\u68C0\u6D4B\u7EF4\u62A4\u72B6\u6001\u2026",maintenance_all_clear:"\u6240\u6709\u6A21\u5757\u5DF2\u5C31\u7EEA \u2014 \u65E0\u9700\u7EF4\u62A4\u3002",maintenance_n_pending_inbox:"{n} \u4E2A\u6A21\u5757\u9700\u8981\u5173\u6CE8",maintenance_dismiss:"\u5FFD\u7565",maintenance_undismiss:"\u663E\u793A",maintenance_ocr_section:"OCR \u7EF4\u62A4",maintenance_action_result_success:"\u64CD\u4F5C\u5B8C\u6210 \u2014 \u6A21\u5757\u5DF2\u5C31\u7EEA\u3002",maintenance_action_result_failure:"\u64CD\u4F5C\u5931\u8D25 \u2014 \u6A21\u5757\u4ECD\u9700\u5173\u6CE8\u3002",maintenance_confirm_redo_title:"\u786E\u8BA4\u91CD\u65B0\u8FD0\u884C",maintenance_confirm_redo_body:"\u8FD9\u5C06\u5220\u9664\u5E76\u91CD\u65B0\u8FD0\u884C\u6240\u9009\u8BBA\u6587\u7684 OCR\u3002\u5DF2\u6709\u7684\u884D\u751F\u7ED3\u679C\u5C06\u88AB\u66FF\u6362\u3002",maintenance_confirm_restore_title:"\u786E\u8BA4\u6062\u590D",maintenance_confirm_restore_body:"\u8FD9\u5C06\u4ECE\u5907\u4EFD\u6062\u590D\u8BB0\u5FC6\u6570\u636E\u5E93\u3002\u5F53\u524D\u6570\u636E\u5C06\u88AB\u66FF\u6362\u3002",maintenance_confirm_ok:"\u7EE7\u7EED",maintenance_confirm_cancel:"\u53D6\u6D88",confirmation_default_effect:"\u6B64\u64CD\u4F5C\u5C06\u66F4\u6539 PaperForge \u6570\u636E\u3002",confirm_effect_label:"\u5F71\u54CD",ocr_already_running:"OCR \u6B63\u5728\u8FD0\u884C\u3002",ocr_activity_run:"\u6B63\u5728\u8FD0\u884C OCR\u2026",ocr_activity_rebuild:"\u6B63\u5728\u91CD\u5EFA OCR \u884D\u751F\u7ED3\u679C\u2026",ocr_activity_redo:"\u6B63\u5728\u91CD\u65B0\u6267\u884C OCR\u2026",ocr_run_confirm_title:"\u8FD0\u884C OCR",ocr_run_confirm_body:"\u5F85\u5904\u7406 PDF \u5C06\u53D1\u9001\u5230\u5DF2\u914D\u7F6E\u7684 OCR \u670D\u52A1\uFF0C\u53EF\u80FD\u4EA7\u751F\u8D39\u7528\u3002\u6BCF\u7BC7\u8BBA\u6587\u5904\u7406\u6210\u529F\u524D\uFF0C\u73B0\u6709 OCR \u7ED3\u679C\u4F1A\u4FDD\u7559\uFF1B\u8FD0\u884C\u53EF\u5B89\u5168\u505C\u6B62\u3002",embed_already_running:"\u5411\u91CF\u6784\u5EFA\u6B63\u5728\u8FDB\u884C\u3002",embed_activity_stopping:"\u6B63\u5728\u505C\u6B62\u5411\u91CF\u6784\u5EFA\u2026",embed_activity_building:"\u6B63\u5728\u6784\u5EFA\u5411\u91CF\u7D22\u5F15\u2026",embed_rebuild_title:"\u91CD\u5EFA\u5411\u91CF\u7D22\u5F15",embed_rebuild_body:"\u8C03\u7528\u5D4C\u5165 API \u53EF\u80FD\u4EA7\u751F\u8D39\u7528\u3002\u66FF\u6362\u7D22\u5F15\u9A8C\u8BC1\u5B8C\u6210\u524D\uFF0C\u73B0\u6709\u5411\u91CF\u4ECD\u53EF\u7528\uFF1BPDF\u3001\u7B14\u8BB0\u548C OCR \u5747\u4F1A\u4FDD\u7559\u3002\u6784\u5EFA\u53EF\u5B89\u5168\u505C\u6B62\u3002",embed_build_complete:"\u5411\u91CF\u7D22\u5F15\u6784\u5EFA\u5B8C\u6210\u3002",embed_build_warning:"\u5411\u91CF\u7D22\u5F15\u5DF2\u53D1\u5E03\uFF0C\u4F46\u5B58\u5728\u8B66\u544A\uFF1A{detail}",embed_bookkeeping_incomplete:"\u6536\u5C3E\u8BB0\u5F55\u672A\u5B8C\u6210",embed_build_stopped:"\u6784\u5EFA\u5DF2\u505C\u6B62\u3002\u518D\u6B21\u8FD0\u884C\u5373\u53EF\u7EE7\u7EED\u3002",next_action_pending:"\u5411\u91CF\u5D4C\u5165\u5DF2\u5C31\u7EEA\u3002\u8BF7\u6253\u5F00\u201C\u667A\u80FD\u68C0\u7D22\u201D\u67E5\u770B\u5E76\u8FD0\u884C\u3002",next_action_runtime_unavailable:"PaperForge \u8FD0\u884C\u73AF\u5883\u4E0D\u53EF\u7528\uFF1B\u540E\u7EED\u64CD\u4F5C\u672A\u542F\u52A8\u3002",next_action_failed:"\u540E\u7EED\u64CD\u4F5C\u5931\u8D25\uFF1A{detail}",maintenance_issue_draft_title:"OCR \u95EE\u9898\u8349\u7A3F",maintenance_issue_draft_preview:"\u5728\u6253\u5F00 GitHub \u4E4B\u524D\uFF0C\u8BF7\u5BA1\u9605\u4EE5\u4E0B\u95EE\u9898\u8349\u7A3F\u3002",maintenance_issue_draft_included:"\u5DF2\u5305\u542B",maintenance_issue_draft_redacted:"\u5DF2\u8131\u654F",maintenance_issue_draft_open_github:"\u6253\u5F00 GitHub Issue",maintenance_issue_draft_edit:"\u7F16\u8F91\u8349\u7A3F",ocr_state_ready:"\u5DF2\u5904\u7406 {count} \u7BC7\u8BBA\u6587\uFF0COCR \u7248\u672C {version}",ocr_state_ready_no_version:"\u5DF2\u5904\u7406 {count} \u7BC7\u8BBA\u6587",ocr_state_update_available:"OCR v{version} \u53EF\u7528",ocr_state_update_description:"\u65B0\u7248\u6D41\u6C34\u7EBF\u6539\u8FDB\u4E86\u7ED3\u6784\u68C0\u6D4B\u3001\u56FE\u8868\u63D0\u53D6\u7CBE\u5EA6\u548C\u5168\u6587\u683C\u5F0F\u3002",ocr_state_update_safety:"\u60A8\u7684 PDF \u548C\u73B0\u6709 OCR \u6570\u636E\u4F1A\u5F97\u5230\u4FDD\u7559\u3002\u64CD\u4F5C\u524D\u4F1A\u81EA\u52A8\u521B\u5EFA\u5907\u4EFD\u3002",ocr_action_re_extract:"\u5168\u90E8\u91CD\u65B0\u63D0\u53D6",ocr_modal_title:"\u5168\u90E8\u91CD\u65B0 OCR",ocr_modal_description:"\u8FD9\u5C06\u4F7F\u7528\u6700\u65B0\u6D41\u6C34\u7EBF\u7248\u672C\u5BF9\u6240\u6709\u8BBA\u6587\u91CD\u65B0\u8FD0\u884C OCR\u3002",ocr_state_running:"\u6B63\u5728\u91CD\u65B0\u63D0\u53D6\u2026",sr_state_disabled:"\u667A\u80FD\u68C0\u7D22\u672A\u542F\u7528",sr_state_db_missing:"\u8BB0\u5FC6\u6570\u636E\u5E93\u5C1A\u672A\u6784\u5EFA",sr_state_upgrade_available:"\u5411\u91CF\u7D22\u5F15\u4F7F\u7528\u65E7\u7248 ChromaDB \u540E\u7AEF",sr_state_build_failed:"\u4E0A\u6B21\u5411\u91CF\u6784\u5EFA\u5931\u8D25",sr_state_build_interrupted:"\u5411\u91CF\u7D22\u5F15\u90E8\u5206\u6784\u5EFA\u4E2D\u2014\u2014\u7EE7\u7EED\u5D4C\u5165\u5269\u4F59\u8BBA\u6587",sr_state_identity_changed:"\u5D4C\u5165\u914D\u7F6E\u5DF2\u53D8\u5316\u2014\u2014\u73B0\u6709\u5411\u91CF\u9700\u91CD\u5EFA",sr_build_failed_notice:"\u5411\u91CF\u7D22\u5F15\u6784\u5EFA\u5931\u8D25\uFF1A{detail}",sr_action_build:"\u6784\u5EFA\u7D22\u5F15",sr_action_rebuild:"\u91CD\u5EFA\u7D22\u5F15",sr_action_upgrade:"\u5347\u7EA7\u5230 vec0",sr_upgrade_modal_title:"\u5347\u7EA7\u5411\u91CF\u7D22\u5F15",sr_upgrade_modal_description:"\u8FD9\u5C06\u4F7F\u7528\u65B0\u7684 vec0 \u540E\u7AEF\u91CD\u5EFA\u6574\u4E2A\u5411\u91CF\u7D22\u5F15\u3002",sr_upgrade_modal_safety:"\u73B0\u6709 ChromaDB \u6570\u636E\u4F1A\u5F97\u5230\u4FDD\u7559\u3002\u6B64\u8FC7\u7A0B\u9700\u8981\u6709\u6548\u7684 API Key \u5E76\u53EF\u80FD\u4EA7\u751F API \u8D39\u7528\u3002",sr_api_key_notice:"API Key \u672A\u914D\u7F6E \u2014 \u641C\u7D22\u548C\u68C0\u7D22\u4E0D\u53EF\u7528",sr_db_status:"\u6570\u636E\u5E93",sr_backend:"\u540E\u7AEF",sr_api_key:"API Key",sr_db_exists:"\u5DF2\u6FC0\u6D3B",sr_db_missing:"\u672A\u6784\u5EFA",sr_db_building:"\u6784\u5EFA\u4E2D",sr_db_partial:"\u90E8\u5206\u6784\u5EFA",sr_db_failed:"\u6784\u5EFA\u5931\u8D25",sr_db_corrupt:"\u5DF2\u635F\u574F",sr_db_stale:"\u7D22\u5F15\u8FC7\u671F",sr_impact_db_missing:"\u667A\u80FD\u68C0\u7D22\u9700\u8981 OpenAI API Key \u548C\u5411\u91CF\u7D22\u5F15\u3002\u70B9\u51FB\u6784\u5EFA\u7D22\u5F15\u5F00\u59CB\u8BBE\u7F6E\u3002",sr_impact_upgrade:"\u65B0\u7684\u5411\u91CF\u540E\u7AEF\u53EF\u7528\u3002\u5347\u7EA7\u53EF\u63D0\u5347\u641C\u7D22\u8D28\u91CF\u3002",sr_impact_build_failed:"\u4E0A\u6B21\u6784\u5EFA\u5931\u8D25\u3002\u8BF7\u68C0\u67E5 API Key \u540E\u91CD\u8BD5\u3002",sr_impact_schema_stale:"\u5411\u91CF\u6A21\u5F0F\u5DF2\u8FC7\u671F\u3002\u8BF7\u91CD\u5EFA\u4EE5\u5339\u914D\u5F53\u524D\u6587\u732E\u5E93\u3002",sr_action_enable:"\u542F\u7528\u667A\u80FD\u68C0\u7D22",sr_configure_api_keys:"\u914D\u7F6E API Key...",sr_config_hint:"\u8BBE\u7F6E \u203A \u667A\u80FD\u68C0\u7D22",sr_configure_api_keys_hint:"\u8BF7\u5728 \u8BBE\u7F6E \u2192 PaperForge \u2192 Smart Retrieval \u4E2D\u914D\u7F6E API Key\u3002",sr_config_label:"\u914D\u7F6E",ocr_ws_title:"OCR \u5DE5\u4F5C\u533A",ocr_ws_filter_all:"\u5168\u90E8",ocr_ws_filter_unprocessed:"\u672A\u5904\u7406",ocr_ws_filter_review:"\u9700\u5BA1\u6838",ocr_ws_filter_processed:"\u5DF2\u5904\u7406",ocr_ws_col_title:"\u6807\u9898",ocr_ws_col_status:"\u72B6\u6001",ocr_ws_col_version:"\u7248\u672C",ocr_ws_col_lastrun:"\u6700\u540E\u8FD0\u884C",ocr_ws_btn_preview:"\u9884\u89C8",ocr_ws_btn_process_all:"\u5904\u7406\u6240\u6709\u672A\u5904\u7406 ({count})",ocr_ws_detail_view_fulltext:"\u67E5\u770B\u5168\u6587",ocr_ws_detail_restore_backup:"\u6062\u590D\u5907\u4EFD",ocr_ws_detail_re_extract:"\u91CD\u65B0\u63D0\u53D6\u6B64\u8BBA\u6587",ocr_ws_detail_run:"\u8FD0\u884C OCR",ocr_ws_re_extract_disabled_title:"\u91CD\u65B0\u63D0\u53D6\u4E0D\u53EF\u7528",ocr_ws_re_extract_disabled_body:"\u5355\u7BC7\u8BBA\u6587\u91CD\u65B0\u63D0\u53D6\u76EE\u524D\u4F1A\u5220\u9664\u6240\u6709OCR\u6570\u636E\u800C\u4E0D\u521B\u5EFA\u5907\u4EFD\u3002\u8BF7\u4F7F\u7528OCR\u8BBE\u7F6E\u4E2D\u7684\u2018\u91CD\u65B0\u63D0\u53D6\u6240\u6709\u8BBA\u6587\u2019\u2014\u2014\u8BE5\u8DEF\u5F84\u5177\u6709\u5185\u7F6E\u5907\u4EFD\u3002",ocr_ws_what_happens:"\u91CD\u65B0\u63D0\u53D6\u65F6\u4F1A\u53D1\u751F\u4EC0\u4E48\uFF1F",ocr_ws_disclosure_text:"\u91CD\u65B0\u63D0\u53D6\u4F1A\u5BF9\u6240\u9009\u8BBA\u6587\u91CD\u65B0\u8FD0\u884COCR\u3002\u5F53\u524D\u7248\u672C\u4F1A\u5148\u5907\u4EFD\u3002PDF\u6C38\u8FDC\u4E0D\u4F1A\u88AB\u4FEE\u6539\u3002",ocr_ws_no_papers:"\u672A\u627E\u5230\u5177\u6709OCR\u6570\u636E\u7684\u8BBA\u6587",ocr_ws_lede:"\u67E5\u770B\u548C\u7BA1\u7406\u6587\u732E\u96C6\u5408\u7684 OCR \u63D0\u53D6\u3002",ocr_ws_processing:"\u5904\u7406\u4E2D\u2026",ocr_ws_stop:"\u505C\u6B62",ocr_ws_stop_unavailable_rebuild:"\u91CD\u5EFA\u64CD\u4F5C\u65E0\u6CD5\u5728\u6B64\u505C\u6B62",ocr_ws_btn_refresh:"\u5237\u65B0",ocr_ws_search_placeholder:"\u6309\u6807\u9898\u3001\u4F5C\u8005\u3001\u5E74\u4EFD\u641C\u7D22\u8BBA\u6587...",ocr_ws_showing:"\u5171 {total} \u7BC7\uFF0C\u663E\u793A <strong>{count}</strong> \u7BC7",ocr_ws_filter_status:"\u6309\u72B6\u6001\u7B5B\u9009",ocr_ws_none_selected:"\u672A\u9009\u62E9\u8BBA\u6587",ocr_ws_select_hint:"\u9009\u62E9\u672A\u5904\u7406\u6216\u6709\u66F4\u65B0\u53EF\u7528\u7684\u8BBA\u6587\u3002",ocr_ws_selected:"\u5DF2\u9009\u62E9 {count} \u7BC7",ocr_ws_btn_process_selected:"\u5904\u7406\u6240\u9009",ocr_ws_btn_rebuild_selected:"\u91CD\u5EFA\u6240\u9009",ocr_ws_restore_title:"\u6062\u590D\u5907\u4EFD\u7248\u672C",ocr_ws_restore_versions:"\u7248\u672C",ocr_ws_restore_compare:"\u5BF9\u6BD4\u5F53\u524D\u7248\u672C",ocr_ws_restore_diff_title:"\u5F53\u524D vs {v} \u7684\u53D8\u5316",ocr_ws_restore_no_diff:"\u65E0\u5DEE\u5F02",ocr_ws_restore_back:"\u8FD4\u56DE\u9884\u89C8",ocr_ws_restore_same:"\u8FD9\u5DF2\u7ECF\u662F\u5F53\u524D\u7248\u672C",ocr_ws_restore_desc:"\u9009\u62E9\u8981\u6062\u590D\u7684\u7248\u672C\u3002\u5F53\u524D\u7684\u5168\u6587\u5C06\u88AB\u66FF\u6362\u3002",ocr_ws_restore_current:"\u5F53\u524D",ocr_ws_restore_created:"\u521B\u5EFA\u65F6\u95F4\uFF1A",ocr_ws_restore_source:"\u6765\u6E90\uFF1A",ocr_ws_restore_renderer:"\u6E32\u67D3\u5668\uFF1A",ocr_ws_restore_btn:"\u6062\u590D",ocr_ws_tooltip_process:"\u4ECE\u5934\u6267\u884C\u5B8C\u6574 OCR\uFF1A\u63D0\u53D6\u6587\u5B57\u5E76\u91CD\u5EFA\u884D\u751F\u7ED3\u679C\u3002OCR \u6A21\u578B\u66F4\u65B0\u540E\u9700\u8981\u6267\u884C\uFF0C\u4F46\u4E00\u822C\u4E0D\u9700\u8981\u3002",ocr_ws_tooltip_rebuild:"\u57FA\u4E8E\u5DF2\u6709 OCR \u539F\u59CB\u6570\u636E\u91CD\u65B0\u751F\u6210\u6E32\u67D3\u7ED3\u679C\uFF0C\u4E0D\u91CD\u65B0\u8FD0\u884C OCR\u3002OCR \u6E32\u67D3\u7248\u672C\u66F4\u65B0\u540E\u9700\u8981\u6267\u884C\u3002",ocr_ws_tooltip_reextract:"\u4ECE\u5934\u91CD\u65B0 OCR \u6B64\u8BBA\u6587\uFF08\u5220\u9664\u5E76\u91CD\u65B0\u751F\u6210\u5168\u90E8 OCR \u6570\u636E\uFF09\u3002",ocr_ws_detail_restore_done:"\u5DF2\u6062\u590D\u5907\u4EFD {label}",next_action_memory_started:"\u5185\u5B58\u7D22\u5F15\u91CD\u5EFA\u5DF2\u542F\u52A8",next_action_done:"\u540E\u7EED\u52A8\u4F5C\u5DF2\u5B8C\u6210",next_action_refused:"\u540E\u7EED\u52A8\u4F5C\u5DF2\u88AB\u62D2\u7EDD",next_action_unknown:"\u672A\u77E5\u540E\u7EED\u52A8\u4F5C\u5DF2\u62D2\u7EDD",next_action_cancel:"\u7A0D\u540E",ocr_ws_fulltext_not_found:"\u672A\u627E\u5230\u5168\u6587",ocr_ws_restore_checking:"\u6B63\u5728\u68C0\u67E5\u7248\u672C\u2026",ocr_ws_restore_unavailable:"\u6CA1\u6709\u53EF\u7528\u7684\u5907\u4EFD\u7248\u672C",ocr_ws_detail_rebuild:"\u91CD\u5EFA\u6B64\u8BBA\u6587",ocr_ws_memory_refresh:"\u6B63\u5728\u66F4\u65B0\u672C\u5730\u6587\u672C\u7D22\u5F15\u2026",ocr_ws_memory_refresh_failed:"\u6587\u672C\u7D22\u5F15\u5237\u65B0\u5931\u8D25\uFF0C\u53EF\u7A0D\u540E\u91CD\u8BD5",ocr_ws_index_updated:"\u6B63\u6587\u7D22\u5F15\u5DF2\u66F4\u65B0\uFF0C\u8BED\u4E49\u7D22\u5F15\u9700\u8981\u5237\u65B0",ocr_ws_embed_confirm:"\u786E\u8BA4\u5411\u91CF\u5D4C\u5165",ocr_ws_embed_confirm_body:"\u4E3A\u53D8\u66F4\u8BBA\u6587\u91CD\u5EFA\u5411\u91CF\u53EF\u80FD\u8C03\u7528\u4ED8\u8D39 API\uFF0C\u662F\u5426\u7EE7\u7EED\uFF1F",ocr_ws_embed_done:"\u5411\u91CF\u5D4C\u5165\u5B8C\u6210",ocr_rebuild_partial:"\u91CD\u5EFA\u5B8C\u6210\u4F46\u5B58\u5728\u5931\u8D25",ocr_ws_restore_confirm_title:"\u6062\u590D\u5C55\u793A\u5168\u6587\u6587\u672C",ocr_ws_restore_confirm_body:"\u5C06\u7528\u6240\u9009\u7248\u672C\u7684 fulltext.md \u8986\u76D6 render/fulltext.md\u3002OCR \u7ED3\u6784\u3001\u7D22\u5F15\u3001\u8BB0\u5FC6\u4E0E\u5411\u91CF\u5747\u4E0D\u53D7\u5F71\u54CD\u3002\u7EE7\u7EED\uFF1F",ocr_ws_restore_confirm_btn:"\u6062\u590D\u5C55\u793A\u5168\u6587",ocr_ws_restore_stale_notice:"\u8BE5\u7248\u672C\u65E9\u4E8E\u5F53\u524D\u7ED3\u6784\u72B6\u6001\uFF1B\u5982\u9700\u7ED3\u6784\u4E00\u81F4\u8BF7\u91CD\u5EFA\u6B64\u8BBA\u6587",ocr_ws_close:"\u5173\u95ED",ocr_ws_fact_version:"OCR \u7248\u672C",ocr_ws_fact_last_run:"\u6700\u540E\u5904\u7406",ocr_ws_fact_authors:"\u4F5C\u8005",ocr_ws_fact_year:"\u5E74\u4EFD",ocr_ws_fact_pages:"\u9875\u6570",ocr_ws_fact_backups:"\u5907\u4EFD",ocr_ws_status_done:"\u5DF2\u5904\u7406",ocr_ws_status_update:"\u6709\u66F4\u65B0",ocr_ws_status_failed:"\u5931\u8D25",ocr_ws_status_processing:"\u5904\u7406\u4E2D",ocr_ws_status_nopdf:"\u65E0PDF",ocr_ws_status_pending:"\u5F85\u5904\u7406",ocr_ws_status_unknown:"\u672A\u77E5"}},ct=null;function lt(p){try{let o=p.vault;if(typeof o.getConfig=="function"){let e=o.getConfig("language");if(e&&String(e).startsWith("zh"))return"zh"}}catch(o){}try{if(typeof localStorage!="undefined"){let o=localStorage.getItem("language");if(o&&String(o).startsWith("zh"))return"zh"}}catch(o){}try{let o=document.documentElement.lang||navigator.language;if(o&&o.startsWith("zh"))return"zh"}catch(o){}return"en"}function Ht(p,o=""){ct=(o||lt(p)).startsWith("zh")?ot.zh:ot.en}function i(p){return ct&&ct[p]||ot.en[p]||p}var A=require("obsidian"),j=K(require("fs")),ge=K(require("path"));var Dr=["PAPERFORGE_CREDENTIAL_","PADDLEOCR_","VECTOR_DB_","OPENAI_"];function $t(p){let o={};for(let[e,t]of Object.entries(p))Dr.some(r=>e.startsWith(r))||(o[e]=t);return o}var Or="paddleocr-api-key",Lr="vector-db-api-key";async function Fr(p,o){let e=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(`${p.trim()}\0${o.trim()||"text-embedding-3-small"}`));return[`vector-db-api-key-v2-${[...new Uint8Array(e)].map(r=>r.toString(16).padStart(2,"0")).join("").slice(0,40)}`,Lr]}async function qt(p,o,e,t){var n,a;if(!o||typeof o.getSecret!="function")return{migrated:[],warnings:["SecretStorage unavailable"]};let r=p==="embedding"?await Fr((n=t==null?void 0:t.baseUrl)!=null?n:"",(a=t==null?void 0:t.model)!=null?a:""):[Or];for(let s of r){let c=await o.getSecret(s);if(!c)continue;let l=!1;try{l=await e.writeCredential(p,c)}catch(d){l=!1}if(!l)return{migrated:[],warnings:["Keyring write failed \u2014 the legacy SecretStorage value was kept. Run `paperforge auth set "+p+" --stdin` manually."]};try{await o.setSecret(s,"")}catch(d){return{migrated:[s],warnings:["Credential migrated and verified, but the old SecretStorage value could not be cleared \u2014 delete it manually in Obsidian."]}}return{migrated:[s],warnings:[]}}return{migrated:[],warnings:[]}}var or=K(dt());var Ir={checking:"pf-badge pf-badge--checking",ready:"pf-badge pf-badge--ready",not_enabled:"pf-badge pf-badge--not-enabled",setup_required:"pf-badge pf-badge--setup-required",action_required:"pf-badge pf-badge--action-required",detection_failed:"pf-badge pf-badge--detection-failed"},Br={checking:"Checking",ready:"Ready",not_enabled:"Not Enabled",setup_required:"Setup Required",action_required:"Action Required",detection_failed:"Detection Failed"};function ie(p,o,e){return p.createEl("span",{cls:Ir[o],text:e!=null?e:Br[o],attr:{role:"status"}})}function Vt(p,o){let e=p.createEl("div",{cls:"pf-activity-row"}),t=e.createEl("span",{cls:"pf-activity-label",text:o.label});if(o.progress&&o.progress.total>0){let r=e.createEl("div",{cls:"pf-activity-bar"}),n=Math.round(o.progress.current/o.progress.total*100);r.createEl("div",{cls:"pf-activity-bar-fill",attr:{style:`width: ${n}%`,role:"progressbar","aria-valuenow":String(o.progress.current),"aria-valuemin":"1","aria-valuemax":String(o.progress.total)}}),e.createEl("span",{cls:"pf-activity-count",text:`${o.progress.current}/${o.progress.total}`})}else e.createEl("span",{cls:"pf-activity-spinner"}).setAttr("aria-label","In progress");if(o.scope&&e.createEl("span",{cls:"pf-activity-scope",text:o.scope}),o.stopLabel&&o.onStop){let r=e.createEl("button",{cls:"pf-activity-stop",text:o.stopLabel});r.addEventListener("click",o.onStop),r.addEventListener("keydown",n=>{var a;(n.key==="Enter"||n.key===" ")&&(n.preventDefault(),(a=o.onStop)==null||a.call(o))})}return e}function z(p,o){let e=p.createEl("button",{cls:"pf-action-btn",text:o.loading?"\u2026":o.label});return o.loading?(e.setAttr("disabled","true"),e.classList.add("pf-action-btn--loading")):o.disabled&&(e.setAttr("disabled","true"),e.classList.add("pf-action-btn--disabled")),e.addEventListener("click",o.onClick),e.addEventListener("keydown",t=>{(t.key==="Enter"||t.key===" ")&&(t.preventDefault(),o.onClick())}),e}function zt(p,o){let e=p.createEl("div",{cls:"pf-error-anatomy"});e.createEl("div",{cls:"pf-error-title",text:o.whatHappened});let t=e.createEl("div",{cls:"pf-error-impact"});t.createEl("span",{cls:"pf-error-impact-label",text:(o.impactLabel||"Impact:")+" "}),t.createEl("span",{text:o.impact}),o.reasonCode&&e.createEl("div",{cls:"pf-error-code",text:o.reasonCode});let r=e.createEl("div",{cls:"pf-error-next"});return r.createEl("span",{cls:"pf-error-next-label",text:(o.nextLabel||"Next:")+" "}),r.createEl("span",{text:o.nextStep}),o.onCopyDiagnostic&&e.createEl("button",{cls:"pf-error-copy-diagnostic",text:o.copyLabel||"Copy Diagnostic Information"}).addEventListener("click",o.onCopyDiagnostic),e}function jt(p,o){let e=p.createEl("div",{cls:"pf-config-summary"});for(let r of o.items){let n=e.createEl("div",{cls:"pf-config-row"});n.createEl("span",{cls:"pf-config-label",text:r.label});let a=r.isCredential?r.value?o.configuredLabel||"Configured":o.notConfiguredLabel||"Not configured":r.value;n.createEl("span",{cls:`pf-config-value${r.isCredential?r.value?" pf-config-value--ok":" pf-config-value--muted":""}`,text:a})}return e.createEl("button",{cls:"pf-config-change-btn",text:o.onChangeLabel}).addEventListener("click",o.onChange),e}function Kt(p){let o=[];o.push("=== PaperForge Support Diagnostic ==="),o.push(`Time: ${new Date().toISOString()}`),o.push(`Plugin: ${p.pluginVersion}`),p.backendVersion&&o.push(`Backend: ${p.backendVersion}`),o.push(""),o.push("--- Module Status ---");for(let e of p.modules)o.push(`${e.module}: ${e.userState}`),e.reasonCode&&o.push(`  reason: ${e.reasonCode}`),e.actionId&&o.push(`  action: ${e.actionId}`),e.lastSuccessAt&&o.push(`  last-success: ${e.lastSuccessAt}`),e.errorExcerpt&&o.push(`  error: ${e.errorExcerpt}`);return o.push(""),o.push("=== End ==="),o.join(`
-`)}function Ut(p,o){navigator.clipboard.writeText(p).then(()=>{o==null||o()}).catch(e=>{console.warn("[PaperForge] Failed to copy diagnostic:",e)})}function Wt(p){return{envelope:p,capturedAt:new Date().toISOString()}}function Jt(p,o){return!p||o.user_state==="ready"?!0:!(o.user_state==="detection_failed"||p.user_state==="ready")}function Zt(p,o){var t,r,n,a,s,c,l;let e=[];for(let[d,u]of Object.entries(p)){let f=o.get(d);e.push({module:d,userState:u.user_state,lastSuccessAt:(t=f==null?void 0:f.capturedAt)!=null?t:null,reasonCode:(r=u.reason)==null?void 0:r.code,actionId:(a=(n=u.action)==null?void 0:n.primary)==null?void 0:a.action_id,errorExcerpt:(l=(c=(s=u.reason)==null?void 0:s.text)==null?void 0:c.slice(0,200))!=null?l:void 0})}return e}var xe=require("obsidian");function Gt(p){try{let o=JSON.parse(p),e=o==null?void 0:o.next_actions;return Array.isArray(e)?e:[]}catch(o){return[]}}var pt=new Set;var Xt={isInFlight:p=>pt.has(p),markInFlight:p=>pt.add(p),clearInFlight:p=>pt.delete(p)};var Nr=1;function Hr(p,o){var e;return{action_id:p.action_id,scope:(e=p.scope)!=null?e:{kind:"all"},confirm:o?p.action_id:void 0,follow:"auto"}}async function Qt(p,o,e=0){var r,n;let t=0;for(let a of p){if(a.schema_version!==Nr){o.notify(`Unknown next-action schema v${a.schema_version}; refused`);continue}if(!a.action_id){o.notify("Next action without action_id; refused");continue}let s=a.dedupe_key||`${a.action_id}:${(n=(r=a.scope)==null?void 0:r.kind)!=null?n:"all"}`;if(o.isInFlight(s))continue;let c=!1;if(a.automatic!==!0){if(e>0){o.notify(`Follow-up depth exceeded for '${a.action_id}'; skipped`);continue}if(!await o.confirm(a)){o.notify(`Follow-up '${a.action_id}' refused by user`);continue}c=!0}o.markInFlight(s);try{await o.runAction(Hr(a,c)),t+=1}finally{o.clearInFlight(s)}}return t}async function ke(p,o){let e=Gt(p);if(e.length===0)return 0;let t=e.filter(r=>r.automatic?!0:(new xe.Notice(i("next_action_pending"),8e3),!1));return t.length===0?0:Qt(t,{runAction:async r=>{var n,a,s,c;try{let l=await o.runAction(r);if(l.ok)new xe.Notice(i("next_action_done"));else{let d=(a=(n=l.payload)==null?void 0:n.error)==null?void 0:a.message;new xe.Notice(i("next_action_failed").replace("{detail}",String(d!=null?d:"unknown error")))}return l}catch(l){return new xe.Notice(i("next_action_failed").replace("{detail}",String((c=(s=l==null?void 0:l.message)!=null?s:l)!=null?c:"unknown error"))),{ok:!1,payload:null,exitCode:-1}}},confirm:async()=>!1,notify:r=>new xe.Notice(r),...Xt})}var Ee=[],ut=!1;function Ie(p){ut=p}function Yt(){return ut}function se(p){if(Ee.push(p),Ee.length>200&&Ee.splice(0,Ee.length-200),!ut)return;let o=[`[PF:trace] ${p.kind} ${p.op}`,p.ok===void 0?"":`ok=${p.ok}`,p.ms===void 0?"":`${p.ms}ms`,p.epoch===void 0?"":`epoch=${p.epoch}`,p.code?`code=${p.code}`:"",p.detail?`detail=${p.detail}`:""].filter(Boolean);console.debug(o.join(" "))}function Ue(){return Ee.map(p=>[new Date(p.ts).toISOString().slice(11,23),p.kind,p.op,p.ok===void 0?"":`ok=${p.ok}`,p.ms===void 0?"":`${p.ms}ms`,p.epoch===void 0?"":`epoch=${p.epoch}`,p.code?`code=${p.code}`:"",p.detail?`detail=${p.detail}`:""].filter(Boolean).join(" ")).join(`
-`)}function er(){Ee.length=0}function Be(p){let o=p.filter(t=>t.startsWith("--"));return[p.filter(t=>!t.startsWith("-")).slice(0,2).join(" "),...o].join(" ").trim()}var Q=require("obsidian");var He=class extends Q.Modal{constructor(e,t,r,n){super(e);this._rowEls=[];this.orphans=t.map((a,s)=>({...a,_selected:!0,_idx:s})),this.vaultPath=r,this.py=n}_updateUI(){let e=this.orphans.filter(t=>t._selected);this._countEl.setText(i("orphan_delete_selected").replace("{count}",String(e.length))),this._selectAllBtn.setText(e.length===this.orphans.length?i("orphan_deselect_all"):i("orphan_select_all"));for(let t of this.orphans){let r=this._rowEls[t._idx];r&&r.toggleClass("paperforge-orphan-dimmed",!t._selected)}}onOpen(){let{contentEl:e}=this;e.addClass("paperforge-modal"),e.createEl("h2",{text:i("orphan_title").replace("{count}",String(this.orphans.length))}),e.createEl("p",{cls:"paperforge-modal-desc",text:i("orphan_desc")}),this._rowEls=[];let t=e.createEl("div",{cls:"paperforge-orphan-list"});for(let n of this.orphans){let a=t.createEl("div",{cls:"paperforge-orphan-row"+(n._selected?"":" paperforge-orphan-dimmed")});this._rowEls.push(a);let s=a.createEl("div",{cls:"paperforge-orphan-info"}),c=s.createEl("div",{cls:"paperforge-orphan-header"});c.createEl("span",{cls:"paperforge-orphan-key",text:n.citation_key||n.key});let l=c.createEl("span",{cls:"paperforge-orphan-tags"});l.createEl("span",{cls:"paperforge-tag "+(n.has_pdf?"tag-pdf":"tag-nopdf"),text:n.has_pdf?"PDF":"no PDF"}),n.collection_path&&l.createEl("span",{cls:"paperforge-tag tag-collection",text:n.collection_path}),n.title&&s.createEl("div",{cls:"paperforge-orphan-title",text:n.title});let d=[];n.authors&&d.push(n.authors),n.year&&d.push(n.year),d.length>0&&s.createEl("div",{cls:"paperforge-orphan-meta",text:d.join(" \xB7 ")}),s.createEl("div",{cls:"paperforge-orphan-explain",text:i("orphan_explain")}),a.addEventListener("click",()=>{n._selected=!n._selected,this._updateUI()})}let r=e.createEl("div",{cls:"paperforge-modal-actions"});this._selectAllBtn=r.createEl("button",{cls:"paperforge-step-btn",text:"Deselect all"}),this._selectAllBtn.addEventListener("click",()=>{let n=this.orphans.every(a=>a._selected);for(let a of this.orphans)a._selected=!n;this._updateUI()}),this._countEl=r.createEl("button",{cls:"paperforge-step-btn mod-cta",text:"Delete "+this.orphans.length+" selected"}),r.createEl("button",{cls:"paperforge-step-btn",text:"Keep all"}).addEventListener("click",()=>this.close()),this._countEl.addEventListener("click",()=>{var l,d,u;let n=this.orphans.filter(f=>f._selected);if(n.length===0){new Q.Notice(i("orphan_none_selected"));return}this._countEl.setText("Deleting..."),this._countEl.setAttr("disabled",""),this._selectAllBtn.setAttr("disabled","");let a=n.map(f=>f.key),s=(d=(l=this.app.plugins)==null?void 0:l.plugins)==null?void 0:d.paperforge,c=(u=s==null?void 0:s.getClient)==null?void 0:u.call(s);if(!c){new Q.Notice("PaperForge: client unavailable"),this.close();return}c.describeAction("library.prune").then(f=>{var g;let _=(g=f==null?void 0:f.action_id)!=null?g:"library.prune",m=(f==null?void 0:f.confirmation)==="required"?_:void 0;return c.runAction({action_id:_,scope:{kind:"papers",keys:a},confirm:m})}).then(f=>{var _,m,g;if(f.ok){let h=(g=(m=(_=f.payload)==null?void 0:_.data)==null?void 0:m.deleted)!=null?g:a;new Q.Notice("Deleted "+h.length+" orphan workspace(s)")}else new Q.Notice("PaperForge: prune failed");this.close()}).catch(()=>{new Q.Notice("PaperForge: prune failed"),this.close()})})}onClose(){this.contentEl.empty()}};function Je(p,o,e){var r;console.log("[PF] checkOrphanState called");let t=(r=o==null?void 0:o.getClient)==null?void 0:r.call(o);if(!t){console.log("[PF] orphan file NOT FOUND");return}t.reconcile("all").then(n=>{var l;let s=(Array.isArray(n==null?void 0:n.deficits)?n.deficits:[]).find(d=>d.kind==="orphan_residuals"||d.action_id==="library.prune"),c=(l=s==null?void 0:s.paper_keys)!=null?l:[];if(c.length>0){console.log("[PF] orphan file FOUND");let d=c.map(u=>({key:u,title:u,folder:u}));new He(p,d,e,null).open()}else console.log("[PF] orphan file NOT FOUND")}).catch(n=>{console.log("[PF] checkOrphanState exception:",(n==null?void 0:n.message)||n)})}function tr(p,o){if(o.key!=="Tab")return;let e=p.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');if(e.length===0)return;let t=e[0],r=e[e.length-1];o.shiftKey?document.activeElement===t&&(o.preventDefault(),r.focus()):document.activeElement===r&&(o.preventDefault(),t.focus())}var ee=class extends Q.Modal{constructor(e,t,r){super(e);this._returnFocusEl=null;this._inertedEls=[];this._config=t,this._onConfirm=r,this._returnFocusEl=document.activeElement}onOpen(){let{contentEl:e}=this;e.addClass("paperforge-modal"),e.addClass("paperforge-confirm-modal"),e.setAttr("role","alertdialog"),e.setAttr("aria-modal","true");let t=e.closest(".modal-container");if(t){let c=t.parentElement;if(c)for(let l of Array.from(c.children))l!==t&&!l.hasAttribute("inert")&&(l.setAttribute("inert",""),this._inertedEls.push(l))}e.createEl("h2",{text:this._config.title});let r=e.createEl("div",{cls:"paperforge-confirm-effect"});r.createEl("span",{cls:"paperforge-confirm-effect-label",text:i("confirm_effect_label")+": "}),r.createEl("span",{text:this._config.effectLabel});let n=e.createEl("div",{cls:"paperforge-confirm-actions"}),a=n.createEl("button",{text:this._config.cancelLabel||i("maintenance_confirm_cancel")||"Cancel"});a.addEventListener("click",()=>this.close()),n.createEl("button",{cls:"mod-warning",text:this._config.confirmLabel||i("maintenance_confirm_ok")||"Proceed"}).addEventListener("click",()=>{this._onConfirm&&this._onConfirm(),this.close()}),this._boundKeydown=c=>tr(e,c),e.addEventListener("keydown",this._boundKeydown),a.focus()}onClose(){for(let e of this._inertedEls)e.removeAttribute("inert");if(this._inertedEls.length=0,this._boundKeydown&&this.contentEl.removeEventListener("keydown",this._boundKeydown),this.contentEl.empty(),this._returnFocusEl&&typeof this._returnFocusEl.focus=="function")try{this._returnFocusEl.focus()}catch(e){}}},$r=[{pattern:/sk-[A-Za-z0-9]{16,}/g,label:"API key",class_:"credential"},{pattern:/[A-Za-z0-9+/]{20,}={0,2}/g,label:"Credential token",class_:"credential"},{pattern:/api[_-]?key[=:]\s*['"]?\S+['"]?/gi,label:"API key",class_:"credential"},{pattern:/token[=:]\s*['"]?\S+['"]?/gi,label:"Token",class_:"credential"},{pattern:/[A-Za-z]:\\[^"'\n,;]+/gi,label:"Absolute path",class_:"vault-path"},{pattern:/(?<=^|\s)\/[^/\s][^"'\n,;]*/g,label:"Absolute path",class_:"vault-path"},{pattern:/Zotero[^"'\s,;]*/gi,label:"Zotero path",class_:"zotero-path"},{pattern:/Paper:\s*[^\n]+/gi,label:"Paper title",class_:"paper-title"},{pattern:/Title:\s*[^\n]+/gi,label:"Paper title",class_:"paper-title"}];function Ne(p){let o={},e=p;for(let{pattern:t,label:r,class_:n}of $r){let a=0;e=e.replace(t,()=>(a++,"[REDACTED]")),a>0&&(o[n]||(o[n]={label:r,class_:n,count:0}),o[n].count+=a)}return{clean:e,redactions:Object.values(o)}}function rr(p,o,e,t){let r=`OCR: ${p} (${e} papers)`,n=["## Diagnostic Summary",`- Reason: ${p}`,`- Detail: ${o}`,`- Papers affected: ${e}`,"","## Environment","- Vault: [REDACTED]","- Plugin version: PaperForge","","## Steps to reproduce","1. Run OCR on affected papers","2. Review output quality","3. Review this draft, then open GitHub to submit"].join(`
-`);return{title:r,body:n,labels:["ocr","quality","auto-generated"]}}var We=class extends Q.Modal{constructor(e,t,r){super(e);this._returnFocusEl=null;this._inertedEls=[];this._draft=t,this._githubUrl=r,this._returnFocusEl=document.activeElement}onOpen(){let{contentEl:e}=this;e.addClass("paperforge-modal"),e.addClass("paperforge-issue-draft-modal"),e.setAttr("role","dialog"),e.setAttr("aria-modal","true");let t=e.closest(".modal-container");if(t){let g=t.parentElement;if(g)for(let h of Array.from(g.children))h!==t&&!h.hasAttribute("inert")&&(h.setAttribute("inert",""),this._inertedEls.push(h))}e.createEl("h2",{text:i("maintenance_issue_draft_title")||"OCR Issue Draft"}),e.createEl("p",{cls:"paperforge-issue-draft-desc",text:i("maintenance_issue_draft_preview")||"Review the issue draft below before opening GitHub."});let r=e.createEl("div",{cls:"paperforge-issue-draft-field"});r.createEl("label",{text:"Title"});let n=Ne(this._draft.title).clean;this._titleInput=r.createEl("input",{cls:"paperforge-issue-draft-input",attr:{type:"text",value:n}});let a=e.createEl("div",{cls:"paperforge-issue-draft-field"});a.createEl("label",{text:"Body"});let s=Ne(this._draft.body).clean;this._bodyTextarea=a.createEl("textarea",{cls:"paperforge-issue-draft-textarea",attr:{rows:"12"},text:s});let{redactions:c}=Ne(this._draft.title+`
-`+this._draft.body),l=e.createEl("div",{cls:"paperforge-issue-draft-preview"}),d=l.createEl("div",{cls:"paperforge-issue-draft-included"});d.createEl("span",{cls:"paperforge-issue-draft-preview-label",text:(i("maintenance_issue_draft_included")||"Included")+": "}),d.createEl("span",{text:`Title, Body, Labels (${this._draft.labels.join(", ")})`});let u=l.createEl("div",{cls:"paperforge-issue-draft-redacted"});u.createEl("span",{cls:"paperforge-issue-draft-preview-label",text:(i("maintenance_issue_draft_redacted")||"Redacted")+": "}),u.createEl("span",{text:"Credentials, vault/Zotero paths, paper titles, paper content are excluded"+(c.length>0?" ("+c.map(g=>`${g.count} ${g.label}`).join(", ")+")":"")});let f=e.createEl("div",{cls:"paperforge-issue-draft-actions"});f.createEl("button",{text:i("maintenance_confirm_cancel")||"Cancel"}).addEventListener("click",()=>this.close()),f.createEl("button",{cls:"mod-cta",text:i("maintenance_issue_draft_open_github")||"Open GitHub Issue"}).addEventListener("click",()=>{let g=encodeURIComponent(Ne(this._titleInput.value).clean),h=encodeURIComponent(Ne(this._bodyTextarea.value).clean),y=encodeURIComponent(this._draft.labels.join(",")),v=`${this._githubUrl}?title=${g}&body=${h}&labels=${y}`;window.open(v,"_blank","noopener,noreferrer")}),this._boundKeydown=g=>tr(e,g),e.addEventListener("keydown",this._boundKeydown),this._titleInput.focus()}onClose(){for(let e of this._inertedEls)e.removeAttribute("inert");if(this._inertedEls.length=0,this._boundKeydown&&this.contentEl.removeEventListener("keydown",this._boundKeydown),this.contentEl.empty(),this._returnFocusEl&&typeof this._returnFocusEl.focus=="function")try{this._returnFocusEl.focus()}catch(e){}}};var ft=K(require("fs")),te=K(require("path")),Ze=require("child_process"),ar=K(require("os")),nr="3.11",qr=1,Vr="pointer.json",zr="venv";function _t(){let p,o;return{promise:new Promise((t,r)=>{p=t,o=r}),resolve:p,reject:o}}function jr(p){let o=p.match(/Python\s+(\d+\.\d+(?:\.\d+)?)/);if(o)return o[1];let e=p.match(/Python\s+(\d+\.\d+)/);return e?e[1]+".0":null}function Kr(p,o){var r,n;let e=p.split(".").map(Number),t=o.split(".").map(Number);for(let a=0;a<Math.max(e.length,t.length);a++){let s=(r=e[a])!=null?r:0,c=(n=t[a])!=null?n:0;if(s!==c)return s-c}return 0}function Ur(p,o){return Kr(p,o)>=0}function Wr(){var p;return process.env.FLATPAK_ID!==void 0||((p=process.env.XDG_DATA_DIRS)!=null?p:"").includes("flatpak")||!1}function Jr(){return process.env.SNAP!==void 0||process.env.SNAP_NAME!==void 0||!1}function Zr(p,o){var t;return`${(t={win32:"windows",darwin:"macos",linux:"linux"}[p])!=null?t:p}-${o}`}function ce(p){return p?{command:p.pythonPath,args:[]}:null}var oe=class{constructor(o){var e,t,r,n,a,s;this.osPlatform=(e=o==null?void 0:o.osPlatform)!=null?e:process.platform,this.osArch=(t=o==null?void 0:o.osArch)!=null?t:process.arch,this.rootDir=(r=o==null?void 0:o.runtimeDir)!=null?r:te.join(ar.homedir(),".paperforge","runtime"),this._fs=(n=o==null?void 0:o.fs)!=null?n:ft,this._execFile=(a=o==null?void 0:o.execFile)!=null?a:Ze.execFile,this._execFileSync=(s=o==null?void 0:o.execFileSync)!=null?s:Ze.execFileSync}get venvDir(){return te.join(this.rootDir,zr)}pythonExeFor(o){return this.osPlatform==="win32"?te.join(o,"Scripts","python.exe"):te.join(o,"bin","python")}discoverInterpreter(){let o=this.osPlatform==="win32"?[{path:"py",args:["-3"]},{path:"py",args:["-3.11"]},{path:"python",args:[]}]:this.osPlatform==="darwin"?[{path:"/usr/bin/python3",args:[]},{path:"python3",args:[]}]:[{path:"/usr/bin/python3",args:[]},{path:"python3",args:[]}];for(let e of o)try{let t=this._execFileSync(e.path,[...e.args,"--version"],{encoding:"utf-8",timeout:5e3}),r=jr(t);if(r&&Ur(r,nr))return{path:e.path,version:r}}catch(t){}return null}platformGate(){if(Wr()||Jr())return{ok:!1,code:"FLATPAK_SNAP_UNSUPPORTED",message:"Flatpak and Snap are not supported. Install Python 3.11+ natively.",platformAction:"Install Python 3.11+ from python.org or package manager"};let o=Zr(this.osPlatform,this.osArch);return this.osPlatform==="darwin"&&["macos-x64","macos-arm64"].includes(o)?{ok:!1,code:"NO_PYTHON",message:"No Python 3.11+ found. macOS auto-download disabled until signed/notarized artifacts exist.",platformAction:"Install Python 3.11+ from python.org or Homebrew"}:["windows-x64","linux-x64"].includes(o)?{ok:!1,code:"NO_PYTHON",message:"No Python 3.11+ found and automatic download failed.",platformAction:"Install Python 3.11+ manually"}:{ok:!1,code:"FALLBACK_UNAVAILABLE",message:"No Python found and this platform has no validated fallback.",platformAction:"Install Python 3.11+ manually from python.org"}}async installOnce(o,e){if(e!=null&&e.aborted)throw new Se("Operation was cancelled");let t=this.discoverInterpreter();if(!t){let n=this.platformGate();throw new Error(`No Python ${nr}+ found (${n.ok?"no interpreter":n.message})`)}if(e!=null&&e.aborted)throw new Se("Operation was cancelled");let r=this.pythonExeFor(this.venvDir);try{if(this._fs.mkdirSync(this.venvDir,{recursive:!0}),await this._exec(t.path,["-m","venv",this.venvDir],{timeout:6e4,signal:e},"venv creation"),e!=null&&e.aborted)throw new Se("Operation was cancelled");if(await this._exec(r,["-m","pip","install",`paperforge[vector]==${o}`],{timeout:12e4,signal:e},"pip install"),e!=null&&e.aborted)throw new Se("Operation was cancelled");let n=await this._probeVersion(r,e);if(n!==o)throw new Error(`installed version mismatch: observed ${n} != requested ${o}`)}catch(n){try{this._fs.rmSync(this.venvDir,{recursive:!0,force:!0})}catch(a){}throw n}return{pythonPath:r,observedVersion:o}}async handshake(o,e){var r;let t=(r=e.pythonPath)!=null?r:this.pythonExeFor(this.venvDir);if(!this._fs.existsSync(t))return{ok:!1,observedVersion:null,reason:"interpreter missing"};try{let n=await this._probeVersion(t,e.signal);if(n!==o)return{ok:!1,observedVersion:n,reason:`version mismatch: observed ${n} != expected ${o}`};let a=await this._probeInstallation(t,e.vaultPath,o,e.signal);if(a===null)return{ok:!1,observedVersion:n,reason:"installation probe failed or returned an unparseable envelope"};if(a==="installation.version_mismatch")return{ok:!1,observedVersion:n,reason:"installation probe reports version mismatch"};if(a!=="installation.ready"&&a!=="installation.config_missing"&&a!=="installation.config_corrupt")return{ok:!1,observedVersion:n,reason:`unexpected installation probe state: ${a}`}}catch(n){return{ok:!1,observedVersion:null,reason:n instanceof Error?n.message:String(n)}}return{ok:!0,observedVersion:o}}readPointer(){let o=te.join(this.rootDir,Vr),e;try{e=this._fs.readFileSync(o,"utf-8")}catch(s){return null}let t;try{t=JSON.parse(e)}catch(s){return null}if(t.schema_version!==qr)return null;let{python_path:r,environment_root:n,paperforge_version:a}=t;return typeof r!="string"||!r||typeof n!="string"||!n||typeof a!="string"||!a||!te.isAbsolute(r)||!te.isAbsolute(n)?null:{pythonPath:r,environmentRoot:n,paperforgeVersion:a}}_exec(o,e,t,r){let{promise:n,resolve:a,reject:s}=_t();return this._execFile(o,e,{...t,encoding:"utf-8"},c=>{c?s(new Error(`${r} failed: ${c.message}`)):a()}),n}_probeVersion(o,e){let{promise:t,resolve:r,reject:n}=_t();return this._execFile(o,["-I","-c","import paperforge; print(paperforge.__version__)"],{timeout:3e4,signal:e},(a,s)=>{if(a)n(a);else{let c=(s!=null?s:"").trim()||null;r(c)}}),t}_probeInstallation(o,e,t,r){let{promise:n,resolve:a,reject:s}=_t();return this._execFile(o,["-m","paperforge","--vault",e,"probe","installation","--json","--expected-version",t],{timeout:3e4,signal:r},(c,l)=>{var d,u;if(c){a(null);return}try{let f=JSON.parse(l);a((u=(d=f.reason)==null?void 0:d.code)!=null?u:null)}catch(f){a(null)}}),n}},Se=class extends Error{constructor(o){super(o),this.name="AbortError"}};var Ce=class Ce extends A.PluginSettingTab{constructor(e,t){super(e,t);this._saveTimeout=null;this._pfConfig=null;this._lastSyncTime=null;this._memoryStatusText=null;this._vectorDepsOk=null;this._embedStatusText=null;this._skillsCollapsed={user:!0};this._featurePanelsCollapsed={};this._advCollapsed=!0;this._refreshPending=!1;this._pythonInterpDescEl=null;this._customPathDescEl=null;this._checkEl=null;this.activeTab="overview";this._buildState="idle";this._buildProgress={current:0,total:0,key:""};this._capabilityState=null;this._lastKnownState=new Map;this._navMemory={destination:"overview"};this._initialDisplay=!0;this._probing=new Set;this._lastOrphanCount=0;this._attemptedProbes=new Set;this._setupView="overview";this._setupStage=1;this._setupOptionals={ocr:!1,memory:!1,agent:!1};this._setupReinstallRequested=!1;this._setupOperation="idle";this._setupFeedback=null;this._setupJourneyDismissedForSession=!1;this._selectedDetailModule="";this._focusTargetId=null;this._runtimeAbortController=null;this._managedRuntime=null;this._runtimeBusy=!1;this._libraryRunning=!1;this._displayInProgress=!1;this._detailReturn=null;this._agentPlatformDraft=null;this._client=null;this.plugin=t}_getOverviewModules(){return[{id:"installation",label:i("cc_module_foundation")||"Foundation"},{id:"library",label:i("cc_module_library")||"Library"},{id:"ocr",label:i("cc_module_ocr")||"OCR"},{id:"memory",label:i("cc_module_memory")||"Smart Retrieval"},{id:"agent",label:i("cc_module_agent")||"Agent Integration"}]}_getUserModuleName(e){let t="cc_module_"+(e==="installation"?"foundation":e==="memory"?"memory":e);return i(t)||e.charAt(0).toUpperCase()+e.slice(1)}_refreshPfConfig(){let e=this.plugin.settings;this._pfConfig={system_dir:e.system_dir||"System",resources_dir:e.resources_dir||"Resources",literature_dir:e.literature_dir||"Literature",base_dir:e.base_dir||"Bases",zotero_data_dir:e.zotero_data_dir||""}}display(){var u,f;this._displayInProgress=!0;let{containerEl:e}=this;if(e.empty(),this._refreshPfConfig(),this._initialDisplay&&(this._restoreNavMemory(),this._initialDisplay=!1),this._initCapabilityState(),this.plugin.settings._setup_complete===!1&&!this._setupJourneyDismissedForSession){this._renderSetupJourney(e),this._displayInProgress=!1;return}if(!document.getElementById("paperforge-tab-styles")){let _=document.createElement("style");_.id="paperforge-tab-styles",_.textContent=`
+"use strict";
+var wr = Object.create;
+var ze = Object.defineProperty;
+var xr = Object.getOwnPropertyDescriptor;
+var kr = Object.getOwnPropertyNames;
+var Er = Object.getPrototypeOf,
+  Sr = Object.prototype.hasOwnProperty;
+var Cr = (p, o) => () => (p && (o = p((p = 0))), o);
+var Pr = (p, o) => () => (o || p((o = { exports: {} }).exports, o), o.exports),
+  At = (p, o) => {
+    for (var e in o) ze(p, e, { get: o[e], enumerable: !0 });
+  },
+  Tt = (p, o, e, t) => {
+    if ((o && typeof o == "object") || typeof o == "function")
+      for (let r of kr(o))
+        !Sr.call(p, r) &&
+          r !== e &&
+          ze(p, r, {
+            get: () => o[r],
+            enumerable: !(t = xr(o, r)) || t.enumerable,
+          });
+    return p;
+  };
+var K = (p, o, e) => (
+    (e = p != null ? wr(Er(p)) : {}),
+    Tt(
+      o || !p || !p.__esModule
+        ? ze(e, "default", { value: p, enumerable: !0 })
+        : e,
+      p
+    )
+  ),
+  Dt = (p) => Tt(ze({}, "__esModule", { value: !0 }), p);
+var dt = Pr((un, Mr) => {
+  Mr.exports = {
+    versions: [
+      {
+        version: "1.5.15",
+        date: "2026-06-01",
+        title:
+          "\u5168\u6587\u5B58\u50A8\u91CD\u6784 + OCR \u9605\u8BFB\u987A\u5E8F\u4FEE\u590D + Redo \u4E00\u952E\u91CD\u505A",
+        breaking_or_migration: [
+          "\u5168\u6587\u6587\u4EF6\u73B0\u5728\u7EDF\u4E00\u5B58\u653E\u4E8E System/PaperForge/ocr/ \u4E0B\uFF0C\u4E0D\u518D\u5728\u5DE5\u4F5C\u533A\u4FDD\u7559\u526F\u672C",
+          "Redo OCR \u73B0\u5728\u4F1A\u7ACB\u5373\u6267\u884C\uFF08\u4E00\u952E\u5B8C\u6210\uFF09\uFF0C\u4E0D\u518D\u9700\u8981\u624B\u52A8\u518D\u8DD1\u4E00\u6B21",
+        ],
+        new_features: [
+          "Redo OCR \u4E00\u952E\u95ED\u73AF\uFF1A\u52FE\u9009 \u2192 \u70B9\u6309\u94AE \u2192 \u81EA\u52A8\u5B8C\u6210\u5168\u90E8\u6D41\u7A0B",
+          "\u8BBE\u7F6E\u9875\u65B0\u589E\u300C\u66F4\u65B0\u4E0E\u624B\u518C\u300D\u6807\u7B7E\u9875\uFF0C\u53EF\u968F\u65F6\u67E5\u770B\u7248\u672C\u66F4\u65B0\u8BB0\u5F55\u548C\u4F7F\u7528\u624B\u518C",
+          "\u63D2\u4EF6\u66F4\u65B0\u540E\u81EA\u52A8\u5F39\u51FA\u66F4\u65B0\u8BF4\u660E",
+        ],
+        fixes: [
+          "\u4FEE\u590D\u5168\u6587\u9605\u8BFB\u987A\u5E8F\u6DF7\u4E71\uFF0C\u4F18\u5316\u6574\u4F53\u6392\u7248\u4F53\u9A8C",
+          "\u4FEE\u590D\u7AE0\u8282\u6807\u9898\u548C\u6B63\u6587\u6BB5\u843D\u9519\u4F4D\u65AD\u5F00\u7684\u95EE\u9898",
+          "\u4FEE\u590D\u56FE\u8868\u548C\u5BF9\u5E94\u56FE\u6CE8\u88AB\u5206\u5F00\u7684\u95EE\u9898",
+          "\u4FEE\u590D\u9996\u9875\u6458\u8981\u533A\u5757\u6392\u5E8F\u5F02\u5E38",
+          "\u4FEE\u590D\u5E76\u6392\u56FE\u7247\u672A\u80FD\u81EA\u52A8\u5408\u5E76\u7684\u95EE\u9898",
+          "Dashboard \u73B0\u5728\u80FD\u6B63\u786E\u8BC6\u522B\u65B0\u7684\u5168\u6587\u6587\u4EF6\u4F4D\u7F6E",
+        ],
+        recommended_actions: [
+          "\u65E7\u7248 OCR \u5168\u6587\u53EF\u80FD\u5B58\u5728\u9605\u8BFB\u987A\u5E8F\u95EE\u9898\uFF0C\u5EFA\u8BAE\u5BF9\u91CD\u8981\u8BBA\u6587\u6267\u884C\u4E00\u6B21 Redo OCR",
+          "\u6253\u5F00\u5168\u6587\u8BF7\u76F4\u63A5\u4F7F\u7528 Dashboard \u7684\u300C\u6253\u5F00\u5168\u6587\u300D\u6309\u94AE",
+        ],
+      },
+    ],
+  };
+});
+var sr = {};
+At(sr, {
+  isConfigHydrated: () => gt,
+  readPathConfig: () => ir,
+  resolveVaultPaths: () => Gr,
+  setPathConfigSource: () => Ge,
+});
+function Ge(p) {
+  $e = p;
+}
+function gt() {
+  return $e !== null;
+}
+function ir(p, o) {
+  var e;
+  return $e
+    ? { ...$e, _warning: (e = $e._warning) != null ? e : null }
+    : {
+        system_dir: "",
+        resources_dir: "",
+        literature_dir: "",
+        base_dir: "",
+        _warning:
+          "config authority not hydrated; paths unavailable \u2014 no semantic work may run",
+      };
+}
+function Gr(p, o) {
+  let e = ir(p, o),
+    t = le.join(p, e.system_dir, "PaperForge");
+  return {
+    vault: p,
+    systemDir: t,
+    indexesDir: le.join(t, "indexes"),
+    logsDir: le.join(t, "logs"),
+    dbPath: le.join(t, "indexes", "paperforge.db"),
+    orphanStatePath: le.join(t, "indexes", "sync-orphan-state.json"),
+    exportsDir: le.join(t, "exports"),
+    ocrDir: le.join(t, "ocr"),
+    configWarning: e._warning,
+  };
+}
+var le,
+  $e,
+  ht = Cr(() => {
+    "use strict";
+    ((le = K(require("path"))), ($e = null));
+  });
+var on = {};
+At(on, { default: () => rt });
+module.exports = Dt(on);
+var q = require("obsidian"),
+  vr = K(require("fs"));
+var fe = "paperforge-status",
+  ve = "paperforge-ocr-workspace",
+  Oe = "paperforge",
+  Mt =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path><line x1="8" y1="7" x2="16" y2="7"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>',
+  ae = [
+    {
+      id: "paperforge-sync",
+      title: "Sync Library",
+      desc: "Pull new references from Zotero and generate literature notes",
+      icon: "\u21BB",
+      commandId: "sync",
+      okMsg: "Sync complete",
+    },
+    {
+      id: "paperforge-ocr",
+      title: "Run OCR",
+      desc: "Extract full text and figures from PDFs via PaddleOCR",
+      icon: "\u229E",
+      commandId: "ocr",
+      okMsg: "OCR started",
+      timeoutMs: 18e5,
+    },
+    {
+      id: "paperforge-doctor",
+      title: "Run Doctor",
+      desc: "Verify PaperForge setup \u2014 check configs, Zotero, paths, and index health",
+      icon: "\u2695",
+      commandId: "doctor",
+      okMsg: "Doctor complete",
+    },
+    {
+      id: "paperforge-repair",
+      title: "Repair Issues",
+      desc: "Fix three-way state divergence, path errors, and rebuild index",
+      icon: "\u21BA",
+      commandId: "repair",
+      args: ["--fix", "--fix-paths"],
+      okMsg: "Repair complete",
+    },
+    {
+      id: "paperforge-ocr-redo",
+      title: "Redo OCR",
+      desc: "Re-run OCR for papers marked ocr_redo: true",
+      icon: "\u21BA",
+      commandId: "ocr",
+      args: ["redo"],
+      okMsg: "OCR redo started",
+    },
+  ],
+  Le = {
+    vault_path: "",
+    frozen_skills: {},
+    language: "",
+    paddleocr_api_key: "",
+    zotero_data_dir: "",
+    agent_platform: "opencode",
+    python_path: "",
+    features: { memory_layer: !0, vector_db: !1 },
+    vector_db_api_key: "",
+    vector_db_api_base: "",
+    vector_db_api_model: "text-embedding-3-small",
+    system_dir: "",
+    resources_dir: "",
+    literature_dir: "",
+    base_dir: "",
+    capabilityState: {},
+    last_seen_version: "",
+    _migrated_keys: [],
+    _migration_warnings: [],
+    autoSyncEnabled: !0,
+    autoSyncIntervalSeconds: 120,
+    _paddleocr_configured: !1,
+    _vector_db_configured: !1,
+    _setup_complete: !1,
+  };
+function nt(p, o) {
+  return p && { ...p, ...o };
+}
+var je = 2,
+  we = ["installation", "library", "ocr", "memory", "maintenance", "help"],
+  Rr = new Set([
+    "checking",
+    "ready",
+    "not_enabled",
+    "setup_required",
+    "action_required",
+    "detection_failed",
+  ]),
+  Ot = new Set([
+    "unknown",
+    "unavailable",
+    "missing_input",
+    "needs_action",
+    "limited",
+    "ready",
+  ]),
+  Ar = new Set(["unknown", "ok", "warning", "error"]),
+  Lt = new Set(["idle", "running"]),
+  Tr = new Set(["safe", "destructive", "irreversible"]);
+function Ft(p) {
+  if (!p || typeof p != "object" || Array.isArray(p)) return !1;
+  let o = p;
+  return !(
+    typeof o.action_id != "string" ||
+    !o.action_id ||
+    typeof o.verb != "string" ||
+    typeof o.label != "string" ||
+    typeof o.availability != "string" ||
+    typeof o.safety_class != "string" ||
+    !Tr.has(o.safety_class) ||
+    !Array.isArray(o.preservation_facts) ||
+    !Array.isArray(o.replacement_facts) ||
+    typeof o.interruptible != "boolean" ||
+    typeof o.confirmation_required != "boolean" ||
+    (o.confirmation_prompt !== null &&
+      typeof o.confirmation_prompt != "string") ||
+    typeof o.scope != "string" ||
+    typeof o.scope_count != "number" ||
+    (o.execution_mode !== void 0 &&
+      o.execution_mode !== "result" &&
+      o.execution_mode !== "stream")
+  );
+}
+function Fe(p) {
+  return {
+    action_id: p + ".probe",
+    verb: "probe",
+    label: "Retry",
+    availability: "available",
+    safety_class: "safe",
+    preservation_facts: [],
+    replacement_facts: [],
+    interruptible: !0,
+    confirmation_required: !1,
+    confirmation_prompt: null,
+    scope: p,
+    scope_count: 1,
+  };
+}
+function at() {
+  return {
+    action_id: "foundation.setup",
+    verb: "setup",
+    label: "Open Setup Wizard",
+    availability: "available",
+    safety_class: "safe",
+    preservation_facts: [],
+    replacement_facts: [],
+    interruptible: !0,
+    confirmation_required: !1,
+    confirmation_prompt: null,
+    scope: "installation",
+    scope_count: 1,
+  };
+}
+function Ke(p, o) {
+  if (!p || typeof p != "object") return !1;
+  let e = p;
+  if (
+    e.schema_version !== je ||
+    typeof e.module != "string" ||
+    !e.module ||
+    !we.includes(e.module) ||
+    (o !== void 0 && e.module !== o) ||
+    typeof e.capability_state != "string" ||
+    !Ot.has(e.capability_state) ||
+    typeof e.activity_state != "string" ||
+    !Lt.has(e.activity_state) ||
+    typeof e.user_state != "string" ||
+    !Rr.has(e.user_state) ||
+    typeof e.capability_kind != "string" ||
+    typeof e.maintenance_eligible != "boolean" ||
+    typeof e.user_visible_failure != "boolean" ||
+    (e.user_impact !== null && typeof e.user_impact != "string") ||
+    (e.activity_label !== null && typeof e.activity_label != "string")
+  )
+    return !1;
+  if (e.activity_progress !== null) {
+    if (typeof e.activity_progress != "object") return !1;
+    let n = e.activity_progress;
+    if (typeof n.current != "number" || typeof n.total != "number") return !1;
+  }
+  if (!Array.isArray(e.notices) || !e.reason || typeof e.reason != "object")
+    return !1;
+  let t = e.reason;
+  if (
+    typeof t.code != "string" ||
+    typeof t.text != "string" ||
+    !e.action ||
+    typeof e.action != "object"
+  )
+    return !1;
+  let r = e.action;
+  if (
+    (r.primary !== null && !Ft(r.primary)) ||
+    typeof e.updated_at != "string" ||
+    !e.updated_at ||
+    typeof e.ttl_seconds != "number"
+  )
+    return !1;
+  if (e.module === "maintenance") {
+    if (r.primary !== null || !Array.isArray(e.items)) return !1;
+    for (let n of e.items) {
+      if (!n || typeof n != "object") return !1;
+      let a = n,
+        s = ["installation", "library", "ocr", "memory", "help"];
+      if (
+        typeof a.capability_state != "string" ||
+        !Ot.has(a.capability_state) ||
+        typeof a.severity != "string" ||
+        !Ar.has(a.severity) ||
+        typeof a.activity_state != "string" ||
+        !Lt.has(a.activity_state) ||
+        (a.activity_label !== null && typeof a.activity_label != "string")
+      )
+        return !1;
+      if (a.activity_progress !== null) {
+        if (typeof a.activity_progress != "object") return !1;
+        let c = a.activity_progress;
+        if (typeof c.current != "number" || typeof c.total != "number")
+          return !1;
+      }
+      if (
+        typeof a.reason_code != "string" ||
+        !a.reason_code ||
+        typeof a.reason_text != "string" ||
+        (a.action !== null && !Ft(a.action))
+      )
+        return !1;
+    }
+  }
+  return !0;
+}
+function X(p) {
+  return {
+    schema_version: je,
+    module: p,
+    capability_state: "unknown",
+    activity_state: "idle",
+    activity_label: null,
+    activity_progress: null,
+    severity: "unknown",
+    reason: { code: p + ".no_probe", text: p + " has not been probed yet." },
+    action: { primary: p === "maintenance" ? null : Fe(p) },
+    notices: [],
+    user_state: "detection_failed",
+    capability_kind: "required",
+    maintenance_eligible: !1,
+    user_visible_failure: !1,
+    user_impact: null,
+    updated_at: new Date(0).toISOString(),
+    ttl_seconds: 0,
+  };
+}
+function it(p) {
+  return {
+    schema_version: je,
+    module: p,
+    capability_state: "unknown",
+    activity_state: "idle",
+    activity_label: null,
+    activity_progress: null,
+    severity: "unknown",
+    reason: {
+      code: p + ".stale",
+      text: "Cached probe data for " + p + " is stale.",
+    },
+    action: { primary: p === "maintenance" ? null : Fe(p) },
+    notices: [],
+    user_state: "detection_failed",
+    capability_kind: "required",
+    maintenance_eligible: !1,
+    user_visible_failure: !1,
+    user_impact: null,
+    updated_at: new Date(0).toISOString(),
+    ttl_seconds: 0,
+  };
+}
+function Me(p) {
+  return {
+    schema_version: je,
+    module: p,
+    capability_state: "unknown",
+    activity_state: "idle",
+    activity_label: null,
+    activity_progress: null,
+    severity: "unknown",
+    reason: {
+      code: p + ".invalid_response",
+      text: "Probe response for " + p + " was invalid.",
+    },
+    action: { primary: p === "maintenance" ? null : Fe(p) },
+    notices: [],
+    user_state: "detection_failed",
+    capability_kind: "required",
+    maintenance_eligible: !1,
+    user_visible_failure: !1,
+    user_impact: null,
+    updated_at: new Date(0).toISOString(),
+    ttl_seconds: 0,
+  };
+}
+function st(p) {
+  if (p.activity_state === "running") return !1;
+  if (p.ttl_seconds <= 0) return !0;
+  let o = new Date(p.updated_at).getTime();
+  return isNaN(o) ? !0 : Date.now() - o > p.ttl_seconds * 1e3;
+}
+function It(p) {
+  return p.capability_state === "ready" && p.action.primary === null;
+}
+function Bt(p) {
+  var r, n, a;
+  let o = (r = p.action) == null ? void 0 : r.primary,
+    e = (n = o == null ? void 0 : o.verb) != null ? n : "probe",
+    t = (a = o == null ? void 0 : o.label) != null ? a : e;
+  return e === "setup" || e === "set_config" || e === "update"
+    ? { kind: "setup", verb: e, label: t }
+    : e === "probe"
+      ? { kind: "probe", verb: e, label: t }
+      : { kind: "action", verb: e, label: t };
+}
+function Nt(p, o) {
+  let e = {};
+  for (let t of o) {
+    let r = p[t];
+    if (!r || typeof r != "object") {
+      e[t] = X(t);
+      continue;
+    }
+    if (!Ke(r, t)) {
+      e[t] = Me(t);
+      continue;
+    }
+    if (st(r)) {
+      e[t] = it(t);
+      continue;
+    }
+    e[t] = r;
+  }
+  return e;
+}
+var ot = {
+    en: {
+      action_running: "Running ",
+      api_key_missing: "Missing",
+      api_key_set: "Entered",
+      btn_install: "Open Setup Wizard",
+      btn_install_desc:
+        "Check whether the environment is ready, then open the step-by-step setup wizard",
+      btn_reconfig: "Reconfigure",
+      btn_reconfig_desc:
+        "Open the setup wizard again to change directories, platform, or API keys",
+      btn_validate: "Validate",
+      check_bbt_fail: "Not detected",
+      check_bbt_ok: "Installed",
+      check_python_fail: "Not found",
+      check_python_ok: "Ready",
+      check_zotero_fail: "Not detected",
+      check_zotero_ok: "Found",
+      complete_export_path: "Save Better BibTeX JSON exports into:",
+      complete_next: "Recommended next steps",
+      complete_step1: "Open Dashboard",
+      complete_step1_desc:
+        'Press Ctrl+P and run "PaperForge: Open Main Panel", or click the PaperForge icon in the left sidebar.',
+      complete_step2: "Sync Literature",
+      complete_step2_desc:
+        "In the main panel, click Sync Library to bring papers from Zotero into Obsidian and generate notes.",
+      complete_step3: "Run OCR",
+      complete_step3_desc:
+        "In the Obsidian Base view, mark do_ocr:true on papers, then run OCR in the main panel.",
+      complete_step4: "Configure Better BibTeX Auto-export",
+      complete_step4_desc:
+        'In Zotero, right-click the library or collection you want to sync -> Export -> Better BibTeX JSON -> enable "Keep updated".',
+      complete_summary: "Saved Configuration",
+      complete_title: "Setup Complete",
+      copied: "Copied!",
+      copy_pf_deep_cmd: "Copy /pf-deep Command",
+      dashboard_drift_warning:
+        "PaperForge CLI (v{0}) differs from plugin (v{1}). Open Settings \u2192 Runtime Health to sync.",
+      deep_reading_not_found: "Deep reading file not found",
+      desc: "Obsidian + Zotero literature pipeline. Sync papers, generate notes, run OCR, and read deeply in one place.",
+      dir_base: "Base Dir",
+      dir_index: "Index Dir",
+      dir_notes: "Notes Dir",
+      dir_resources: "Resource Dir",
+      dir_system: "System Dir",
+      ocr_ws_search_placeholder: "Search papers by title, author, year...",
+      dir_vault: "Vault Path",
+      error_copied: "Copied!",
+      error_copy_diagnostic: "Copy diagnostic",
+      feat_agent_platform: "Agent Platform",
+      feat_agent_platform_desc:
+        "Select which agent platform to manage skills for.",
+      feat_api_base_url: "API Base URL",
+      feat_api_base_url_desc:
+        "Custom OpenAI-compatible API endpoint. Leave empty for default.",
+      feat_api_model: "API Model",
+      feat_api_model_desc: "Embedding model name for this endpoint.",
+      feat_build_btn: "Build",
+      feat_building: "Building...",
+      feat_cache_remove_failed: "Failed: {0}",
+      feat_cache_removed: "Model cache removed.",
+      feat_checking: "Checking...",
+      feat_checking_btn: "Checking...",
+      feat_deps_missing:
+        "Dependencies not installed. Required: chromadb, openai.",
+      feat_key_rejected: "API key rejected.",
+      feat_memory_desc:
+        "The Memory Layer is the core data engine of PaperForge, powered by SQLite. It integrates literature metadata (papers, assets, aliases, reading events), provides FTS5 metadata search across titles, abstracts, authors, domains, and collections, and powers agent-context and paper-status. Always active \u2014 no toggle needed.",
+      feat_memory_rebuild_btn: "Rebuild",
+      feat_memory_rebuild_done: "Memory DB rebuilt.",
+      feat_memory_rebuild_failed: "Rebuild failed.",
+      feat_memory_rebuilding: "Rebuilding...",
+      feat_model: "Model",
+      feat_model_changed_warn:
+        "Model changed ({0} -> {1}). Existing vectors are incompatible \u2014 rebuild required.",
+      feat_network_error: "Network error: ",
+      feat_not_cached: "Not cached",
+      feat_openai_key: "OpenAI API Key",
+      feat_openai_key_desc:
+        "Used for API embedding calls. Model is defined below.",
+      feat_output_copied: "Output copied to clipboard.",
+      feat_rebuild_btn: "Rebuild",
+      feat_rebuild_vectors: "Rebuild Vectors",
+      feat_rebuild_vectors_changed:
+        "Model changed \u2014 rebuild to update all vectors.",
+      feat_rebuild_vectors_desc:
+        "Rebuild all OCR fulltext vectors. Required after model or mode change.",
+      feat_removing: "Removing...",
+      feat_skills_desc:
+        "Manage and enable/disable agent skills installed in your vault. Each row corresponds to a SKILL.md file \u2014 toggle off to prevent the agent from auto-invoking that skill.",
+      feat_skills_system:
+        "System Skills ship with PaperForge and are updated alongside PaperForge.",
+      feat_skills_user:
+        "User Skills are custom skills you install from community or create yourself.",
+      feat_uninstall_btn: "Uninstall",
+      feat_valid_key: "API key valid.",
+      field_paddleocr: "PaddleOCR API Key",
+      field_python_custom: "Custom Path",
+      field_python_interp: "Python Interpreter",
+      field_zotero_data: "Zotero Data Dir",
+      field_zotero_placeholder:
+        "Required. Path to Zotero data directory for PDF attachment resolution.",
+      guide_ocr: "Run OCR",
+      guide_ocr_desc:
+        "In the main panel, click Run OCR to extract full text and figures from PDFs for later reading and analysis.",
+      guide_open: "Open Main Panel",
+      guide_open_desc:
+        "Open the main PaperForge panel to manage your literature.",
+      guide_sync: "Sync Literature",
+      guide_sync_desc:
+        "After Better BibTeX JSON export is configured, click Sync Library to import papers from Zotero into Obsidian and generate notes automatically.",
+      header_title: "PaperForge",
+      install_bootstrapping:
+        "PaperForge Python package not found. Installing automatically...",
+      install_btn: "Start Install",
+      install_btn_retry: "Retry",
+      install_btn_running: "Installing...",
+      install_complete: "Installation complete!",
+      install_failed: "Installation failed: ",
+      install_validating: "Validating setup...",
+      jump_to_deep_reading: "Open Deep Reading",
+      label_agent: "Agent Platform",
+      nav_close: "Close",
+      nav_next: "Next",
+      no_pending_ocr: "All OCR tasks complete",
+      nav_prev: "Back",
+      not_set: "Not entered",
+      notice_check_fail: "Missing: ",
+      notice_python_missing:
+        "Python was not detected. Install Python 3.11+ and add it to PATH.",
+      ocr_privacy_title: "OCR Privacy Notice",
+      ocr_privacy_warning:
+        "OCR will upload PDFs to the PaddleOCR API. Do not upload sensitive or confidential documents.",
+      ocr_queue_add: "Add to OCR Queue",
+      ocr_queue_added: "Added to OCR queue",
+      ocr_queue_remove: "Remove from OCR Queue",
+      ocr_queue_removed: "Removed from OCR queue",
+      ocr_understand: "I understand, continue",
+      optional_later: "(can be set later in Settings)",
+      orphan_delete_failed: "Prune failed",
+      orphan_delete_selected: "Delete {count} selected",
+      orphan_deleted: "Deleted {count} orphan workspace(s)",
+      orphan_desc: "These papers are no longer in your Zotero library.",
+      orphan_deselect_all: "Deselect all",
+      orphan_explain: "Removed from Zotero. Workspace files remain on disk.",
+      orphan_keep_all: "Keep all",
+      orphan_none_selected: "No papers selected for deletion",
+      orphan_select_all: "Select all",
+      orphan_title: "Found {count} orphan paper(s)",
+      panel_actions: "Quick Actions",
+      prep_bbt: "Better BibTeX",
+      prep_bbt_desc: "In Zotero: Tools -> Add-ons -> install Better BibTeX.",
+      prep_export: "Better BibTeX Auto-export",
+      prep_export_desc:
+        'In Zotero, right-click the collection you want to sync -> Export Collection -> BetterBibTeX JSON -> enable "Keep updated" -> save the JSON file into the exports folder shown below. Obsidian Base views will use the JSON filename as the Base name:',
+      prep_export_path_label: "Save the exported JSON file into this folder:",
+      prep_key: "PaddleOCR Key",
+      prep_key_desc:
+        "Get your API key from https://aistudio.baidu.com/paddleocr",
+      prep_python: "Python 3.11+",
+      prep_python_desc:
+        "Python must be available from the command line. If you are not sure, click below to auto-detect.",
+      prep_zotero: "Zotero Desktop",
+      prep_zotero_desc: "Install Zotero from https://www.zotero.org",
+      run_in_agent: "Run in {0}",
+      runtime_health: "Runtime Health",
+      runtime_health_checking: "Checking...",
+      runtime_health_desc:
+        "Check whether the installed paperforge Python package matches the plugin version and whether the deployed skill contract is current.",
+      runtime_health_match: "Match",
+      runtime_health_mismatch: "Mismatch",
+      runtime_health_package_ver: "Python package v{0}",
+      runtime_health_plugin_ver: "Plugin v{0}",
+      runtime_health_sync: "Sync Runtime",
+      runtime_health_sync_done: "Runtime synced to v{0}",
+      runtime_health_sync_fail: "Sync failed: {0}",
+      runtime_health_syncing: "Syncing...",
+      section_config: "Current Configuration",
+      section_guide: "How To Use",
+      section_prep: "Preparation",
+      section_prep_desc:
+        "Before first use, finish these 4 preparation items. Better BibTeX auto-export is configured after setup:",
+      setup_done: "PaperForge environment is ready",
+      setup_pending:
+        "Not installed yet. Finish the preparation items below, then open the wizard.",
+      tab_overview: "Overview",
+      tab_modules: "Module Detail",
+      tab_help: "Help",
+      tab_setup: "Installation",
+      tab_features: "Features",
+      tab_maintenance: "Maintenance",
+      validate_base: "Base directory is required",
+      validate_fail: "Please complete the required fields below",
+      validate_index: "Index directory is required",
+      validate_key: "PaddleOCR API key (optional, needed for OCR)",
+      validate_notes: "Notes directory is required",
+      validate_resources: "Resources directory is required",
+      validate_system: "System directory is required",
+      validate_vault: "Vault path is required",
+      validate_zotero:
+        "Zotero data directory (optional, needed for PDF linking)",
+      wizard_agent_hint:
+        "Choose the AI agent platform you use most often. PaperForge will place the matching command and skill files in the correct location.",
+      wizard_dir_hint:
+        "PaperForge stores user-facing literature data under the resources directory. These folders will live there:",
+      wizard_dir_sub_hint: "Resolved folder preview based on the names below:",
+      wizard_intro:
+        "This wizard walks you through the full setup. In most cases, the default values are fine to keep.",
+      wizard_keys_hint:
+        "Enter your PaddleOCR API key below. If you want PaperForge to auto-locate Zotero PDFs, you can also fill in the Zotero data directory.",
+      wizard_preview:
+        "After installation, system files stay at the vault root while literature data stays under the resources directory.",
+      wizard_safety:
+        "Safety: if the selected folders already contain files, setup preserves existing files and only creates missing PaperForge folders and files.",
+      wizard_step1: "Overview",
+      wizard_step2: "Directory Setup",
+      wizard_step3: "Platform & Keys",
+      wizard_step4: "Install",
+      wizard_step5: "Done",
+      wizard_skip_ocr_desc:
+        "OCR will not be available until you configure a valid PaddleOCR API key. You can continue setup now and configure it later in Settings.",
+      wizard_skip_ocr_continue: "Continue without OCR key",
+      wizard_skip_ocr_back: "Back to configure",
+      wizard_api_hint_skip:
+        "OCR key is optional \u2014 you may skip it and configure later.",
+      wizard_sys_hint:
+        "These folders live at the vault root, outside the resources directory:",
+      wizard_title: "PaperForge Setup Wizard",
+      ocr_maint_no_action: "No Action Needed",
+      ocr_maint_rebuild: "Rebuild Recommended",
+      ocr_maint_failed: "OCR Failed",
+      ocr_maint_limited: "Result Limited",
+      ocr_maint_needs_attention: "Needs Attention",
+      ocr_maint_limitations: "Result Limitations",
+      ocr_maint_hero_ok: "OCR looks usable overall.",
+      ocr_maint_hero_warn:
+        "OCR needs attention: {rebuild} rebuild recommended, {failed} failed.",
+      ocr_maint_hero_note:
+        "This page only promotes issues where maintenance is likely to help. Some papers may have limitations that maintenance will not improve.",
+      ocr_maint_limitations_intro:
+        "These papers look less certain, but PaperForge does not currently have a high-confidence maintenance action to recommend.",
+      ocr_maint_all_papers: "All Papers",
+      ocr_maint_rebuild_btn: "Rebuild results",
+      ocr_maint_redo_btn: "Rerun OCR",
+      ocr_maint_redo_confirm:
+        "Rerun OCR for {n} paper(s)? Existing derived OCR artifacts will be replaced.",
+      maintenance_group_retry: "Needs Retry",
+      maintenance_group_rebuild: "Can Rebuild",
+      maintenance_group_legacy: "Upgrade Available (Optional)",
+      maintenance_btn_retry: "Retry",
+      maintenance_btn_rebuild: "Rebuild",
+      maintenance_btn_upgrade: "Upgrade",
+      maintenance_refresh_spinning: "Updating\u2026",
+      maintenance_all_good: "\u2705 All good \u2014 no action needed",
+      maintenance_n_pending: "{n} need attention",
+      maintenance_filter_all: "All",
+      maintenance_filter_recommended: "Recommended",
+      maintenance_batch_rebuild: "\u25B6 Rebuild selected",
+      maintenance_batch_redo: "\u25B6 Full OCR redo selected",
+      maintenance_stop: "Stop",
+      maintenance_batch_complete:
+        "Batch operation complete \u2014 {n} papers processed.",
+      maintenance_progress_label: "{current}/{total} papers",
+      version_panel_title: "Version History",
+      version_panel_back: "Back",
+      version_filter_placeholder: "Filter papers...",
+      version_papers_count: "{n} papers",
+      version_current: "current",
+      version_restore_btn: "Restore",
+      version_compare_btn: "Compare",
+      version_restore_selected: "Restore selected",
+      version_clear_old: "Clear old versions (free {size})",
+      version_no_backups: "No version history available",
+      version_restore_confirm: "Restore {label} for {paper}?",
+      version_restore_done: "Restored {label}",
+      version_compare_title: "{vA} vs {vB}",
+      version_compare_paragraphs: "{n} paragraphs changed",
+      version_error_read: "Cannot read version data",
+      retrieval_search_placeholder: "Search papers... (@ for deep search)",
+      retrieval_search_placeholder_deep: "Search paper content...",
+      retrieval_search_idle_hint: "Type a keyword or @ to search paper content",
+      retrieval_searching_metadata: "Searching metadata...",
+      retrieval_searching_deep: "Deep searching...",
+      retrieval_search_cancel: "Cancel",
+      retrieval_results_count: "{n} result(s)",
+      retrieval_empty: "No matching papers found.",
+      retrieval_empty_tips: "Try broader terms or use @ deep search.",
+      retrieval_vectors_not_built: "Vector index not built",
+      retrieval_vectors_not_built_desc:
+        "Build vectors to enable @ deep search with semantic matching.",
+      retrieval_open_vector_settings: "Open Vector Settings",
+      retrieval_backend_unavailable: "Search backend unavailable",
+      retrieval_backend_unavailable_desc:
+        "The Python CLI search backend is not responding correctly.",
+      retrieval_run_doctor: "Run Doctor",
+      retrieval_retry: "Retry",
+      retrieval_timeout_title: "Search timed out",
+      retrieval_timeout_desc:
+        "The search took too long. Try a more specific query.",
+      retrieval_model_changed: "Model changed",
+      retrieval_model_changed_desc:
+        "The embedding model has changed since vectors were built. Rebuild to use deep search.",
+      retrieval_rebuild_vectors: "Rebuild Vectors",
+      retrieval_build_idle: "Vector database ready",
+      retrieval_build_ready: "{n} vector(s) built",
+      retrieval_build_stopping: "Stopping...",
+      retrieval_build_stopped: "Build stopped ({n}/{t} papers)",
+      retrieval_build_failed: "Build failed",
+      retrieval_build_deps_missing:
+        "Dependencies missing. Install chromadb and openai.",
+      retrieval_stop: "Stop",
+      retrieval_no_python: "Python not found",
+      retrieval_internal_error: "An internal error occurred",
+      retrieval_force_rebuild: "Force Rebuild",
+      retrieval_rebuild_warning:
+        "Rebuild will replace {n} existing chunk(s). Continue?",
+      md_select_installation: "Foundation",
+      md_select_library: "Library",
+      md_select_ocr: "OCR",
+      md_select_memory: "Smart Retrieval",
+      md_select_agent: "Agent Integration",
+      installation_detail_heading: "Foundation",
+      library_detail_heading: "Library",
+      ocr_detail_heading: "OCR",
+      memory_detail_heading: "Smart Retrieval",
+      agent_detail_heading: "Agent Integration",
+      btn_back_to_overview: "\u2190 Back to Overview",
+      agent_integration_section: "Agent Integration",
+      module_detail_open_installation: "Open Foundation",
+      module_detail_open_help: "Help",
+      module_detail_open_maintenance: "Maintenance",
+      module_detail_open_library: "Open Library",
+      module_detail_open_ocr: "Open OCR",
+      module_detail_open_memory: "Open Smart Retrieval",
+      action_unknown_pair: "Unknown action: {verb}",
+      update_python_manual:
+        "Python 3.11+ upgrade requires a manual install (python.org or your package manager).",
+      update_done: "PaperForge updated",
+      update_failed: "Update failed",
+      migrate_done: "Backend migrated to sqlite-vec",
+      migrate_failed: "Backend migration failed",
+      ocr_stop_batch: "Stop OCR batch",
+      runtime_not_available: "Environment unavailable",
+      md_unavailable_module: "Not available yet",
+      managed_runtime_status: "Runtime Status",
+      managed_runtime_install: "Install Runtime",
+      managed_runtime_repair: "Repair Runtime",
+      managed_runtime_update: "Update Runtime",
+      managed_runtime_check_status: "Check Status",
+      managed_runtime_refresh: "Refresh Status",
+      managed_runtime_manual_setup: "Manual Setup",
+      managed_runtime_stop: "Stop",
+      managed_runtime_unknown_state: "Unknown",
+      managed_runtime_ok_state: "Ready",
+      managed_runtime_not_installed: "Not Installed",
+      managed_runtime_needs_repair: "Needs Repair",
+      managed_runtime_unavailable: "Unavailable",
+      managed_runtime_last_verified: "Last verified: {time}",
+      managed_runtime_running: "Runtime operation in progress...",
+      managed_runtime_action_complete: "Runtime operation completed.",
+      managed_runtime_action_failed: "Runtime operation failed: {error}",
+      managed_runtime_action_cancelled: "Runtime operation cancelled.",
+      cc_module_foundation: "Foundation",
+      cc_module_agent: "Agent Integration",
+      cc_badge_checking: "Checking",
+      cc_badge_ready: "Ready",
+      cc_badge_not_enabled: "Not Enabled",
+      cc_badge_setup_required: "Setup Required",
+      cc_badge_action_required: "Action Required",
+      cc_badge_detection_failed: "Detection Failed",
+      cc_summary_ready: "PaperForge is ready",
+      cc_summary_incomplete: "Setup incomplete",
+      cc_summary_ready_body: "Foundation and Library are operational.",
+      cc_summary_incomplete_body:
+        "Complete Foundation and Library setup to use PaperForge.",
+      cc_summary_checking: "Checking PaperForge",
+      cc_summary_checking_body: "Checking Foundation and Library status\u2026",
+      cc_refresh_btn: "Refresh Status",
+      cc_last_checked: "Last checked: ",
+      cc_needs_attention: "item needs attention",
+      cc_checked_pending: "Not checked yet",
+      cc_eyebrow: "control center",
+      cc_modules_header: "modules",
+      cc_five_capabilities: "Five capabilities",
+      cc_optional_note: "Optional modules do not affect core readiness.",
+      cc_title: "Your literature pipeline",
+      cc_lede:
+        "See what is working, what needs you, and the single next action for every PaperForge capability.",
+      cc_modules_label: "modules",
+      cc_modules_title: "Five capabilities",
+      cc_modules_caption: "Optional modules do not affect core readiness.",
+      cc_maintenance_count: "{n} items need attention",
+      cc_card_retry: "Retry",
+      cc_action_rebuild_derived: "Rebuild",
+      ocr_progress: "{current}/{total} papers",
+      cc_operational_modules: "Operational modules",
+      cc_consequence_default: "Status is not available yet.",
+      cc_consequence_checking: "Checking the latest status\u2026",
+      cc_consequence_detection_failed:
+        "PaperForge could not determine the current status.",
+      cc_consequence_setup_required: "Configuration is required before use.",
+      cc_consequence_action_required: "A problem needs your attention.",
+      cc_consequence_installation_ready: "PaperForge is ready on this device.",
+      cc_consequence_library_ready:
+        "Your Zotero library is connected and current.",
+      cc_consequence_ocr_ready: "OCR is ready to process papers.",
+      cc_consequence_memory_ready: "Your papers are indexed and searchable.",
+      cc_consequence_agent_ready:
+        "PaperForge Skills are deployed for the selected Agent platform.",
+      cc_consequence_agent_not_enabled:
+        "Choose an agent platform when you want to deploy PaperForge Skills.",
+      cc_consequence_ocr_not_enabled:
+        "OCR is optional and is currently not enabled.",
+      cc_consequence_memory_not_enabled:
+        "Smart Retrieval is optional and is currently not enabled.",
+      md_foundation_overview: "Environment",
+      md_foundation_ready:
+        "PaperForge is installed, verified, and ready for normal use.",
+      md_library_connection: "Zotero connection",
+      md_library_ready: "Zotero is connected and literature is up to date.",
+      md_library_corpus: "Literature corpus",
+      md_library_last_sync: "Last successful sync",
+      md_ocr_status: "OCR capability",
+      md_status_refresh_hint:
+        "Check status to load the current OCR details. This does not change any papers.",
+      ocr_error_notice:
+        "OCR stopped because of an error. Open Advanced Diagnostics for details.",
+      ocr_run_complete: "OCR run complete.",
+      ocr_rebuild_complete: "OCR rebuild complete.",
+      ocr_redo_complete: "OCR redo complete.",
+      ocr_stopped_notice: "OCR batch stopped.",
+      ocr_failed_notice:
+        "OCR did not complete. Open Advanced Diagnostics for details.",
+      md_ocr_ready: "OCR is configured and ready.",
+      md_ocr_workspace: "Open OCR Workspace",
+      md_retrieval_coverage: "Retrieval coverage",
+      md_retrieval_ready: "All available papers are indexed and searchable.",
+      md_agent_integration: "Agent Integration",
+      md_agent_placeholder:
+        "Configure a target platform, deploy PaperForge files, and manage Skills. File deployment does not verify a live agent connection.",
+      md_agent_platform: "Target platform",
+      md_agent_deployment: "Deployment state",
+      agent_deployed: "Files deployed",
+      agent_not_deployed: "Files not deployed",
+      agent_live_connection: "Live connection",
+      agent_verify_found: "PaperForge Skills were found for this platform.",
+      agent_verify_missing:
+        "No PaperForge Skills were found for this platform. Run setup to deploy them.",
+      skills_system: "System Skills",
+      skills_user: "User Skills",
+      skills_empty: "No Skills are deployed for the selected platform.",
+      md_agent_connection_unknown: "Live connection is not verified",
+      md_agent_skills: "PaperForge Skills",
+      md_copy_diagnostic: "Copy Support Diagnostic",
+      md_configuration: "Configuration",
+      md_current_activity: "Current activity",
+      config_change: "Change",
+      config_save: "Save",
+      config_cancel: "Cancel",
+      config_verify: "Verify",
+      config_configured: "Configured",
+      config_not_configured: "Not configured",
+      config_zotero_dir: "Zotero data directory",
+      problem_what_happened: "What happened",
+      problem_impact: "Impact:",
+      problem_next: "Next:",
+      problem_copy: "Copy Diagnostic Information",
+      problem_use_action: "Use the action above to resolve this problem.",
+      library_problem_impact:
+        "New references and literature notes may not be available.",
+      ocr_problem_impact: "Some papers may not have readable full text.",
+      retrieval_problem_impact:
+        "Search and retrieval may miss papers until coverage is restored.",
+      metric_after_sync: "Available after the next successful sync",
+      metric_not_available: "Not available",
+      coverage_complete: "Complete",
+      retrieval_freshness: "Last checked",
+      md_module_switcher: "Module",
+      advanced_diagnostics: "Advanced Diagnostics",
+      foundation_version: "PaperForge version",
+      foundation_last_verified: "Last verified",
+      foundation_runtime_managed: "Managed environment",
+      foundation_runtime_system: "System environment",
+      foundation_runtime_unavailable: "Environment unavailable",
+      foundation_skills_ready: "Available",
+      foundation_skills: "Skills",
+      md_foundation_legacy_migrate: "Migrate legacy configuration",
+      foundation_setup_desc:
+        "Run setup to create the Python-owned vault configuration and publish the runtime pointer.",
+      foundation_setup_btn: "Open Setup",
+      config_confirm: "Confirm",
+      ocr_configure_credential: "Configure OCR credential",
+      setup_welcome: "Set up PaperForge",
+      setup_desc:
+        "Complete the required stages, then choose any optional capabilities you want to enable.",
+      setup_stage_1: "Foundation",
+      setup_stage_2: "Connect Library",
+      setup_stage_3: "Optional Capabilities",
+      setup_stage_4: "Review & Begin",
+      setup_progress: "Setup progress",
+      setup_foundation_title: "Step 1: Foundation",
+      setup_foundation_desc:
+        "Choose the Python runtime, then install the PaperForge package. It does not create or configure your library.",
+      setup_ready: "Foundation is ready.",
+      setup_foundation_python: "Python executable",
+      setup_foundation_python_hint:
+        'Leave blank to use "python" from your system PATH.',
+      setup_foundation_install_btn: "Install PaperForge",
+      setup_library_title: "Step 2: Connect Library",
+      setup_library_desc:
+        "Connect Zotero so PaperForge can sync your literature.",
+      setup_library_ready: "Library is connected.",
+      setup_library_config_desc:
+        "Verify the Zotero data directory, then confirm where PaperForge stores files in this vault.",
+      setup_library_zotero_hint:
+        "PaperForge reads this folder; it never modifies Zotero's database.",
+      setup_library_folder_heading: "Vault folders",
+      setup_library_verify: "Save and verify configuration",
+      setup_library_configured:
+        "Library configuration saved. Checking the connection.",
+      setup_library_configuring:
+        "Saving and checking library configuration\u2026",
+      setup_library_config_failed:
+        "Library configuration could not be verified. Check the paths, then try again.",
+      setup_reinstall_notice:
+        "Reinstall only the local PaperForge Python package. Your library configuration is unchanged.",
+      setup_installing: "Installing and preparing PaperForge\u2026",
+      setup_install_complete:
+        "Installation complete. Checking the updated environment.",
+      setup_install_failed:
+        "PaperForge could not be installed. Check the Python path, then try again.",
+      setup_optionals_title: "Step 3: Optional Capabilities",
+      setup_optionals_desc:
+        "Choose only what you need. Skipped capabilities can be enabled later.",
+      setup_optional_saved: "Configuration saved securely.",
+      setup_optional_save_failed:
+        "Configuration could not be saved. Check Obsidian secure storage, then try again.",
+      setup_opt_ocr_desc: "Extract text and figures from PDFs",
+      setup_opt_memory_desc: "Search and navigate across your papers",
+      setup_opt_agent_desc: "Deploy and manage PaperForge Skills",
+      setup_review_title: "Step 4: Review & Begin",
+      setup_review_selected: "Selected: ",
+      setup_no_optionals: "No optional capabilities selected.",
+      setup_incomplete_warn:
+        "Foundation and Library must be ready before setup can finish.",
+      setup_review_checking: "Checking your current configuration\u2026",
+      setup_review_recheck: "Recheck configuration",
+      setup_nav_continue: "Continue",
+      setup_nav_skip: "Skip for now",
+      setup_nav_back: "Back",
+      setup_nav_cancel: "Cancel",
+      setup_nav_later: "Later",
+      setup_install_cancelled:
+        "Setup cancelled. The runtime was not activated.",
+      setup_nav_complete: "Complete Setup",
+      help_title: "Help",
+      help_eyebrow: "help",
+      help_lede: "Open the relevant module, or copy a diagnostic for support.",
+      help_intro:
+        "Choose a task or copy a privacy-safe diagnostic for support.",
+      help_getting_started: "Getting started",
+      help_library_task: "Connect Zotero and sync your literature",
+      help_ocr_task: "Configure OCR and open the OCR Workspace",
+      help_retrieval_task: "Enable Smart Retrieval and build coverage",
+      help_agent_task: "Choose an agent platform and deploy Skills",
+      help_current_problem: "Current problem guidance",
+      help_no_problem: "No current problem needs guidance.",
+      help_support: "Support Diagnostic",
+      help_support_desc:
+        "Copies module states and version identifiers without secrets, content, identity, absolute paths, or raw logs.",
+      help_copy: "Copy Support Diagnostic",
+      help_documentation: "Documentation",
+      help_documentation_desc:
+        "Open the project guide for setup, workflows, and troubleshooting.",
+      help_open_documentation: "Open PaperForge Documentation",
+      help_release_notes: "Release notes",
+      help_release_notes_desc:
+        "Installed version: {version}. See GitHub for the complete change history.",
+      help_open_release_notes: "Open Release Notes",
+      help_load_error:
+        "Failed to load help content. Check your internet connection.",
+      maintenance_empty_title: "No maintenance needed",
+      maintenance_empty_body:
+        "There are no unresolved problems that require action.",
+      maintenance_default_impact:
+        "This capability may be unavailable or return incomplete results.",
+      maintenance_open_module: "Open module",
+      migration_banner_title: "Credential Migration Notice",
+      foundation_git: "Git",
+      foundation_git_missing:
+        "Not installed \u2014 install Git for version control",
+      foundation_python_packages: "Python Packages",
+      foundation_paddle_key: "PaddleOCR API Key",
+      foundation_paddle_missing:
+        "Not configured \u2014 required for OCR extraction",
+      foundation_openai_key: "OpenAI API Key",
+      foundation_openai_missing:
+        "Not configured \u2014 required for Smart Retrieval",
+      foundation_python: "Python Path",
+      foundation_python_status: "Python Status",
+      foundation_python_ok: "Python is installed",
+      foundation_python_missing: "Python not found \u2014 install Python 3.11+",
+      foundation_vault_structure: "Vault folders",
+      foundation_zotero: "Zotero data directory",
+      foundation_zotero_missing:
+        "Not configured \u2014 connect your Zotero data directory",
+      foundation_reinstall: "Reinstall PaperForge",
+      foundation_reinstall_desc:
+        "Reinstall the Python package from the local source",
+      foundation_reinstall_btn: "Reinstall",
+      foundation_reinstalling: "Reinstalling PaperForge...",
+      foundation_reinstall_ok: "PaperForge reinstalled successfully",
+      foundation_reinstall_failed: "Reinstall failed",
+      cc_summary_ok: "All systems ready",
+      cc_summary_core_ok:
+        "Core environment ready; {n} modules pending detection",
+      cc_summary_attention: "Some modules need attention",
+      cc_summary_ok_body:
+        "PaperForge environment is fully operational. Installation and documentation are verified.",
+      cc_summary_core_ok_body:
+        "Installation and Help modules are active. Library, OCR, Memory, and Maintenance will show live status once their backends are connected.",
+      cc_summary_attention_body:
+        "One or more core modules require your attention to function properly.",
+      cc_badge_ok: "Ready",
+      cc_badge_pending: "Pending",
+      cc_badge_setup: "Setup needed",
+      cc_badge_attention: "Needs attention",
+      cc_diagnostic_toggle: "Details",
+      cc_n_ready: "{n} ready",
+      migration_banner_body:
+        "Credentials for {modules} could not be moved to secure storage automatically. Re-enter them in the owning module.",
+      migration_banner_next:
+        "Save the new value; PaperForge will retry secure migration on restart.",
+      cc_n_pending: "{n} pending",
+      cc_desc:
+        "Real-time status of PaperForge core modules. Modules with a pending action need your attention.",
+      cc_zone_attention: "Needs Attention",
+      cc_zone_modules: "All Modules",
+      cc_module_installation: "Foundation",
+      cc_module_help: "Help & Docs",
+      cc_module_library: "Library",
+      cc_module_ocr: "OCR Engine",
+      cc_module_memory: "Smart Retrieval",
+      cc_module_maintenance: "Maintenance",
+      cc_state_ready: "Ready",
+      cc_state_limited: "Limited",
+      cc_state_unavailable: "Unavailable",
+      cc_state_unknown: "Unknown",
+      cc_severity_ok: "OK",
+      cc_severity_unknown: "Unknown",
+      cc_severity_warning: "Warning",
+      cc_severity_error: "Error",
+      cc_state_missing_input: "Missing Input",
+      cc_state_needs_action: "Needs Action",
+      cc_action_setup: "Open Setup Wizard",
+      setup_bbt_title: "Import BBT JSON",
+      setup_bbt_desc:
+        "Export your Zotero library as Better BibTeX JSON from Zotero (File \u2192 Export Library \u2192 Better BibTeX JSON), then drop or select the file(s) below.",
+      setup_bbt_path: "Exports folder:",
+      setup_bbt_drop: "Drop BBT JSON files here or click to select",
+      setup_bbt_no_files: "No JSON files imported yet.",
+      setup_bbt_invalid: "Invalid JSON file: ",
+      setup_bbt_guide: "How to export from Zotero",
+      setup_bbt_step1: "1. Install Better BibTeX",
+      setup_bbt_step1_desc:
+        "In Zotero, go to Tools \u2192 Add-ons, search for Better BibTeX and install it. If you cannot find it, download from: https://github.com/retorquere/zotero-better-bibtex/releases/tag/v9.0.50",
+      setup_bbt_step2: "2. Export with auto-update",
+      setup_bbt_step2_desc:
+        "Right-click your library or collection \u2192 Export Library\u2026 \u2192 choose 'Better BibTeX JSON' format. Check 'Keep updated'.",
+      setup_bbt_step3: "3. Save to exports folder",
+      setup_bbt_step3_desc:
+        "Point the export destination to the folder shown above. Once saved, click 'Detect'.",
+      setup_bbt_copy: "Copy",
+      setup_bbt_copied: "Path copied",
+      setup_bbt_detect: "Detect",
+      setup_bbt_found: "Found: ",
+      cc_action_probe: "Check",
+      cc_action_set_config: "Set Config",
+      cc_action_update: "Update",
+      action_ocr_run: "Run OCR",
+      action_ocr_rebuild_derived: "Rebuild OCR output",
+      action_memory_build: "Build memory index",
+      action_embed_build: "Build vector index",
+      action_embed_resume: "Resume vector build",
+      action_foundation_update: "Update PaperForge",
+      action_foundation_repair: "Repair runtime",
+      cc_reason_installation_ready:
+        "PaperForge environment is set up correctly.",
+      cc_reason_config_missing:
+        "Configuration file is missing. Run setup to create one.",
+      cc_reason_config_corrupt:
+        "Configuration file is corrupt. Run setup to repair.",
+      cc_reason_python_version_unsupported:
+        "Python version is not supported. Install Python 3.11+.",
+      cc_reason_help_ready: "Help documentation is available.",
+      cc_reason_docs_missing: "Help documentation is not yet installed.",
+      cc_reason_placeholder:
+        "Detection pending \u2014 will show live status once connected.",
+      cc_reason_library_ready: "Library is synced and indexed.",
+      cc_reason_library_config_missing:
+        "Configuration not found \u2014 run setup to configure library.",
+      cc_reason_library_config_corrupt:
+        "Configuration file is corrupt \u2014 library cannot proceed.",
+      cc_reason_library_zotero_missing:
+        "Zotero data directory is not configured.",
+      cc_reason_library_zotero_not_found:
+        "Zotero data directory path does not exist.",
+      cc_reason_library_index_missing:
+        "Library index has not been built yet \u2014 run sync.",
+      cc_reason_library_index_stale:
+        "Library index is stale \u2014 sync to refresh.",
+      cc_reason_library_sync_failed:
+        "Last library sync failed. Retry when the source is available.",
+      cc_reason_ocr_ready: "OCR pipeline is configured and functional.",
+      cc_reason_ocr_config_missing:
+        "Configuration not found \u2014 run setup to configure OCR.",
+      cc_reason_ocr_config_corrupt:
+        "Configuration file is corrupt \u2014 OCR cannot proceed.",
+      cc_reason_ocr_api_key_missing:
+        "No OCR API key configured \u2014 add one in setup.",
+      cc_reason_ocr_artifacts_missing:
+        "No OCR output found \u2014 run OCR on papers.",
+      cc_reason_memory_ready: "Smart Retrieval is healthy and indexed.",
+      cc_reason_memory_db_missing:
+        "The retrieval index has not been built \u2014 build it to enable search.",
+      cc_reason_memory_db_corrupt:
+        "The retrieval index is damaged \u2014 restore it from backup.",
+      cc_reason_memory_index_stale:
+        "Smart Retrieval needs a rebuild to match the current library.",
+      cc_diag_module: "Module",
+      cc_diag_state: "State",
+      cc_diag_severity: "Severity",
+      cc_diag_activity: "Activity",
+      cc_diag_reason: "Reason",
+      cc_diag_ttl: "TTL",
+      cc_diag_updated: "Updated",
+      cc_reason_no_probe: "{module} has not been probed yet.",
+      cc_reason_stale: "Cached probe data for {module} is stale.",
+      cc_reason_invalid_response: "Probe response for {module} was invalid.",
+      activity_syncing: "Syncing...",
+      activity_ocr_running: "Processing OCR... {pct}%",
+      activity_ocr_running_noprogress: "Processing OCR...",
+      cc_action_unknown_verb: "Unknown backend action: {verb}",
+      cc_action_investigate: "Running diagnostics...",
+      cc_reason_probing: "Checking {module} status...",
+      cc_notice_placeholder:
+        "{module} module probing is not yet available; it will be added in a future update.",
+      cc_notice_refreshed: "Module status refreshed.",
+      cc_notice_refresh_failed: "Failed to refresh module status.",
+      cc_activity_idle: "Idle",
+      cc_activity_running: "Running",
+      maintenance_inbox_title: "Maintenance Inbox",
+      maintenance_checking: "Checking maintenance status\u2026",
+      maintenance_all_clear:
+        "All modules are ready \u2014 no maintenance needed.",
+      maintenance_n_pending_inbox: "{n} module(s) need attention",
+      maintenance_dismiss: "Dismiss",
+      maintenance_undismiss: "Show",
+      maintenance_ocr_section: "OCR Maintenance",
+      maintenance_action_result_success:
+        "Action complete \u2014 module is now ready.",
+      maintenance_action_result_failure:
+        "Action failed \u2014 module still needs attention.",
+      maintenance_confirm_redo_title: "Confirm Rerun",
+      maintenance_confirm_redo_body:
+        "This will delete and re-run OCR for the selected papers. Existing derived artifacts will be replaced.",
+      maintenance_confirm_restore_title: "Confirm Restore",
+      maintenance_confirm_restore_body:
+        "This will restore the memory database from backup. Current data will be replaced.",
+      maintenance_confirm_ok: "Proceed",
+      maintenance_confirm_cancel: "Cancel",
+      confirmation_default_effect: "This action will change PaperForge data.",
+      confirm_effect_label: "Effect",
+      ocr_already_running: "OCR is already running.",
+      ocr_activity_run: "Running OCR\u2026",
+      ocr_activity_rebuild: "Rebuilding OCR derived artifacts\u2026",
+      ocr_activity_redo: "Running OCR redo\u2026",
+      ocr_run_confirm_title: "Run OCR",
+      ocr_run_confirm_body:
+        "Pending PDFs will be sent to the configured OCR service and may incur cost. Existing OCR output is preserved until each replacement succeeds. You can stop the run safely.",
+      embed_already_running: "Vector build is already in progress.",
+      embed_activity_stopping: "Stopping vector build\u2026",
+      embed_activity_building: "Building vector index\u2026",
+      embed_rebuild_title: "Rebuild vector index",
+      embed_rebuild_body:
+        "The embedding API may incur cost. Existing vectors stay available until the replacement is verified; PDFs, notes, and OCR are preserved. You can stop the build safely.",
+      embed_build_complete: "Vector index build complete.",
+      embed_build_warning: "Vector index published with warning: {detail}",
+      embed_bookkeeping_incomplete: "bookkeeping incomplete",
+      embed_build_stopped: "Build stopped. Run again to resume.",
+      next_action_pending:
+        "Vector embedding is ready. Open Smart Retrieval to review and run it.",
+      next_action_runtime_unavailable:
+        "PaperForge runtime unavailable; follow-up not started.",
+      next_action_failed: "Follow-up failed: {detail}",
+      maintenance_issue_draft_title: "OCR Issue Draft",
+      maintenance_issue_draft_preview:
+        "Review the issue draft below before opening GitHub.",
+      maintenance_issue_draft_included: "Included",
+      maintenance_issue_draft_redacted: "Redacted",
+      maintenance_issue_draft_open_github: "Open GitHub Issue",
+      maintenance_issue_draft_edit: "Edit Draft",
+      ocr_state_ready: "{count} papers processed with OCR version {version}",
+      ocr_state_ready_no_version: "{count} papers processed",
+      ocr_state_update_available: "OCR v{version} is available",
+      ocr_state_update_description:
+        "The new pipeline improves structure detection, figure extraction accuracy, and fulltext formatting.",
+      ocr_state_update_safety:
+        "Your PDFs and existing OCR data are preserved. Backups are created before changes.",
+      ocr_action_re_extract: "Re-extract All Papers",
+      ocr_modal_title: "Re-extract All OCR",
+      ocr_modal_description:
+        "This will re-run OCR on all papers using the latest pipeline version.",
+      ocr_state_running: "Re-extracting\u2026",
+      sr_state_disabled: "Smart Retrieval is not enabled",
+      sr_state_db_missing: "Memory database has not been built yet",
+      sr_state_upgrade_available:
+        "Your vector index uses the old ChromaDB backend",
+      sr_state_build_failed: "The last vector build failed",
+      sr_state_build_interrupted:
+        "Vector index is partially built \u2014 resume to embed the remaining papers",
+      sr_state_identity_changed:
+        "Embedding configuration changed \u2014 existing vectors need a rebuild",
+      sr_build_failed_notice: "Vector index build failed: {detail}",
+      sr_action_build: "Build Index",
+      sr_action_rebuild: "Rebuild Index",
+      sr_action_upgrade: "Upgrade to vec0",
+      sr_db_building: "Building",
+      sr_db_partial: "Partially built",
+      sr_db_failed: "Build failed",
+      sr_db_corrupt: "Corrupted",
+      sr_db_stale: "Index stale",
+      sr_upgrade_modal_title: "Upgrade Vector Index",
+      sr_upgrade_modal_description:
+        "This will rebuild your entire vector index using the new vec0 backend.",
+      sr_upgrade_modal_safety:
+        "Your existing ChromaDB data is preserved. This process requires an active API key and may incur API charges.",
+      sr_api_key_notice:
+        "API key not configured \u2014 search and retrieval are unavailable",
+      sr_config_label: "Configuration",
+      ocr_ws_title: "OCR Workspace",
+      ocr_ws_filter_all: "All",
+      ocr_ws_filter_unprocessed: "Not processed",
+      ocr_ws_filter_review: "Needs review",
+      ocr_ws_filter_processed: "Processed",
+      ocr_ws_col_title: "Title",
+      ocr_ws_col_status: "Status",
+      ocr_ws_col_version: "Version",
+      ocr_ws_col_lastrun: "Last run",
+      ocr_ws_btn_preview: "Preview",
+      ocr_ws_btn_process_all: "Process All Unprocessed ({count})",
+      ocr_ws_detail_view_fulltext: "View Fulltext",
+      ocr_ws_detail_restore_backup: "Restore Backup",
+      ocr_ws_detail_re_extract: "Re-extract This Paper",
+      ocr_ws_detail_run: "Run OCR",
+      ocr_ws_re_extract_disabled_title: "Re-extraction not available",
+      ocr_ws_re_extract_disabled_body:
+        "Single-paper re-extraction currently deletes all OCR data without creating a backup. Use Re-extract All Papers from OCR Settings \u2014 that path has built-in backup.",
+      ocr_ws_what_happens: "What happens when I re-extract?",
+      ocr_ws_disclosure_text:
+        "Re-extraction re-runs OCR on the selected paper. The current version is backed up first. PDFs are never modified.",
+      ocr_ws_no_papers: "No papers found with OCR data",
+      ocr_ws_lede:
+        "View and manage OCR extraction for your literature collection.",
+      ocr_ws_processing: "Processing\u2026",
+      ocr_ws_stop: "Stop",
+      ocr_ws_stop_unavailable_rebuild: "Rebuild is not stoppable from here",
+      ocr_ws_btn_refresh: "Refresh",
+      ocr_ws_showing: "<strong>{count}</strong> of {total} papers",
+      ocr_ws_filter_status: "Filter by status",
+      ocr_ws_none_selected: "No papers selected",
+      ocr_ws_select_hint:
+        "Select papers that are not processed or have an update available.",
+      ocr_ws_selected: "{count} paper(s) selected",
+      ocr_ws_btn_process_selected: "Process selected",
+      ocr_ws_btn_rebuild_selected: "Rebuild selected",
+      ocr_ws_tooltip_process:
+        "Run full OCR from scratch: extract text, then rebuild derived artifacts. Needed when the OCR model is updated, but generally not required.",
+      ocr_ws_tooltip_rebuild:
+        "Regenerate rendered results from existing OCR raw data without re-running OCR. Run this when the OCR render version has changed.",
+      ocr_ws_tooltip_reextract:
+        "Re-run OCR from scratch for this paper (deletes and regenerates all OCR data).",
+      ocr_ws_detail_restore_done: "Restored backup {label}",
+      next_action_memory_started: "Memory index rebuild started",
+      next_action_done: "Follow-up completed",
+      next_action_refused: "Follow-up refused by user",
+      next_action_unknown: "Unknown follow-up action refused",
+      next_action_cancel: "Later",
+      ocr_ws_fulltext_not_found: "Fulltext not found",
+      ocr_ws_restore_checking: "Checking versions\u2026",
+      ocr_ws_restore_unavailable: "No backup versions available",
+      ocr_ws_detail_rebuild: "Rebuild this paper",
+      ocr_ws_memory_refresh: "Updating local text index\u2026",
+      ocr_ws_memory_refresh_failed:
+        "Text index refresh failed \u2014 retry later",
+      ocr_ws_index_updated:
+        "\u6B63\u6587\u7D22\u5F15\u5DF2\u66F4\u65B0\uFF0C\u8BED\u4E49\u7D22\u5F15\u9700\u8981\u5237\u65B0",
+      ocr_ws_embed_confirm: "Confirm embedding",
+      ocr_ws_embed_confirm_body:
+        "Rebuilding vectors for changed papers may call a paid API. Continue?",
+      ocr_ws_embed_done: "Vector embedding completed",
+      ocr_rebuild_partial: "Rebuild finished with failures",
+      ocr_ws_restore_confirm_title: "Restore displayed fulltext",
+      ocr_ws_restore_confirm_body:
+        "This overwrites render/fulltext.md with the selected version. OCR structure, indexes, memory units, and vectors are NOT affected. Continue?",
+      ocr_ws_restore_confirm_btn: "Restore displayed fulltext",
+      ocr_ws_restore_stale_notice:
+        "This version predates the current structured state; rebuild the paper to re-sync structure",
+      ocr_ws_restore_title: "Restore Backup Version",
+      ocr_ws_restore_desc:
+        "Select a version to restore for this paper. The current fulltext will be replaced.",
+      ocr_ws_restore_current: "current",
+      ocr_ws_restore_created: "Created:",
+      ocr_ws_restore_source: "Source:",
+      ocr_ws_restore_renderer: "Renderer:",
+      ocr_ws_restore_btn: "Restore",
+      ocr_ws_restore_versions: "Versions",
+      ocr_ws_restore_compare: "Compare with current",
+      ocr_ws_restore_diff_title: "Changes from current vs {v}",
+      ocr_ws_restore_no_diff: "No differences found",
+      ocr_ws_restore_back: "Back to preview",
+      ocr_ws_restore_same: "This is already the current version",
+      ocr_ws_close: "Close",
+      ocr_ws_fact_version: "OCR Version",
+      ocr_ws_fact_last_run: "Last Processed",
+      ocr_ws_fact_authors: "Authors",
+      ocr_ws_fact_year: "Year",
+      ocr_ws_fact_pages: "Pages",
+      ocr_ws_fact_backups: "Backups",
+      ocr_ws_status_done: "Processed",
+      ocr_ws_status_update: "Update available",
+      ocr_ws_status_failed: "Failed",
+      ocr_ws_status_processing: "Processing",
+      ocr_ws_status_nopdf: "No PDF",
+      ocr_ws_status_pending: "Pending",
+      ocr_ws_status_unknown: "Unknown",
+    },
+    zh: {
+      action_running: "\u6B63\u5728\u6267\u884C ",
+      api_key_missing: "\u672A\u914D\u7F6E",
+      api_key_set: "\u5DF2\u914D\u7F6E",
+      btn_install: "\u6253\u5F00\u5B89\u88C5\u5411\u5BFC",
+      btn_install_desc:
+        "\u81EA\u52A8\u68C0\u6D4B Python + \u524D\u7F6E\u73AF\u5883\uFF0C\u901A\u8FC7\u540E\u6253\u5F00\u5206\u6B65\u5B89\u88C5\u5411\u5BFC",
+      btn_reconfig: "\u91CD\u65B0\u914D\u7F6E",
+      btn_reconfig_desc:
+        "\u91CD\u65B0\u8FD0\u884C\u5B89\u88C5\u5411\u5BFC\uFF0C\u4FEE\u6539\u76EE\u5F55\u6216\u5BC6\u94A5\u914D\u7F6E",
+      btn_validate: "\u9A8C\u8BC1",
+      check_bbt_fail: "\u672A\u68C0\u6D4B\u5230",
+      check_bbt_ok: "\u5DF2\u5B89\u88C5",
+      check_python_fail: "\u672A\u5B89\u88C5",
+      check_python_ok: "\u5DF2\u5C31\u7EEA",
+      check_zotero_fail: "\u672A\u68C0\u6D4B\u5230",
+      check_zotero_ok: "\u5DF2\u5B89\u88C5",
+      complete_export_path:
+        "\u5C06 Better BibTeX JSON \u5BFC\u51FA\u4FDD\u5B58\u5230\uFF1A",
+      complete_next: "\u4E0B\u4E00\u6B65\u64CD\u4F5C",
+      complete_step1: "\u6253\u5F00 PaperForge Dashboard",
+      complete_step1_desc:
+        "Ctrl+P \u2192 \u8F93\u5165 PaperForge: Open Dashboard\uFF0C\u6216\u70B9\u5DE6\u4FA7\u4E66\u672C\u56FE\u6807",
+      complete_step2: "\u540C\u6B65\u6587\u732E",
+      complete_step2_desc:
+        "Dashboard \u4E2D\u70B9 Sync Library\uFF0C\u4ECE Zotero \u62C9\u53D6\u6587\u732E\u751F\u6210\u7B14\u8BB0",
+      complete_step3: "\u8FD0\u884C OCR",
+      complete_step3_desc:
+        "Dashboard \u4E2D\u70B9 Run OCR\uFF0C\u63D0\u53D6 PDF \u5168\u6587\u4E0E\u56FE\u8868",
+      complete_step4: "\u914D\u7F6E BBT \u81EA\u52A8\u5BFC\u51FA",
+      complete_step4_desc:
+        '\u5728 Zotero \u4E2D\uFF0C\u53F3\u952E\u8981\u540C\u6B65\u7684\u6587\u732E\u5E93/\u5206\u7C7B \u2192 \u5BFC\u51FA \u2192 Better BibTeX JSON \u2192 \u542F\u7528"\u4FDD\u6301\u66F4\u65B0"\u3002',
+      complete_summary: "\u5F53\u524D\u5B8C\u6574\u914D\u7F6E",
+      complete_title: "\u2713 PaperForge \u5B89\u88C5\u5B8C\u6210",
+      copied: "\u5DF2\u590D\u5236\uFF01",
+      copy_pf_deep_cmd: "\u590D\u5236 /pf-deep \u547D\u4EE4",
+      dashboard_drift_warning:
+        '\u63D2\u4EF6\u7248\u672C\u4E0E Python \u8FD0\u884C\u65F6\u7248\u672C\u4E0D\u5339\u914D\u3002\u8BF7\u5728\u8BBE\u7F6E\u4E2D\u70B9\u51FB"\u540C\u6B65\u8FD0\u884C\u65F6"\u3002',
+      deep_reading_not_found: "\u7CBE\u8BFB\u6587\u4EF6\u672A\u627E\u5230",
+      desc: "Obsidian + Zotero \u6587\u732E\u7BA1\u7406\u6D41\u6C34\u7EBF\u3002\u81EA\u52A8\u540C\u6B65\u6587\u732E\u3001\u751F\u6210\u7B14\u8BB0\u3001OCR \u63D0\u53D6\u5168\u6587\uFF0C\u4E00\u7AD9\u5F0F\u6587\u732E\u7CBE\u8BFB\u5DE5\u4F5C\u6D41\u3002",
+      dir_base: "Base \u76EE\u5F55",
+      dir_index: "\u7D22\u5F15\u76EE\u5F55",
+      dir_notes: "\u6B63\u6587\u76EE\u5F55",
+      dir_resources: "\u8D44\u6E90\u76EE\u5F55",
+      dir_system: "\u7CFB\u7EDF\u76EE\u5F55",
+      dir_vault: "Vault \u8DEF\u5F84",
+      error_copied: "\u5DF2\u590D\u5236\uFF01",
+      error_copy_diagnostic: "\u590D\u5236\u8BCA\u65AD\u4FE1\u606F",
+      feat_agent_platform: "Agent \u5E73\u53F0",
+      feat_agent_platform_desc:
+        "\u9009\u62E9\u8981\u7BA1\u7406\u7684 Agent \u5E73\u53F0\u3002",
+      feat_api_base_url: "API \u5730\u5740",
+      feat_api_base_url_desc:
+        "\u81EA\u5B9A\u4E49 OpenAI \u517C\u5BB9 API \u7AEF\u70B9\u3002\u7559\u7A7A\u4F7F\u7528\u9ED8\u8BA4\u5730\u5740\u3002",
+      feat_api_model: "API \u6A21\u578B",
+      feat_api_model_desc:
+        "\u8BE5\u7AEF\u70B9\u4F7F\u7528\u7684\u5D4C\u5165\u6A21\u578B\u540D\u79F0\u3002",
+      feat_build_btn: "\u6784\u5EFA",
+      feat_build_complete: "\u5411\u91CF\u6784\u5EFA\u5B8C\u6210\u3002",
+      feat_build_failed:
+        "\u6784\u5EFA\u5931\u8D25\u3002\u8BF7\u67E5\u770B\u7EC8\u7AEF\u8F93\u51FA\u3002",
+      feat_building: "\u6784\u5EFA\u4E2D\u2026",
+      feat_cache_remove_failed: "\u5931\u8D25\uFF1A{0}",
+      feat_cache_removed: "\u6A21\u578B\u7F13\u5B58\u5DF2\u6E05\u9664\u3002",
+      feat_checking: "\u68C0\u6D4B\u4E2D\u2026",
+      feat_checking_btn: "\u68C0\u6D4B\u4E2D\u2026",
+      feat_deps_checking: "\u6B63\u5728\u68C0\u6D4B\u4F9D\u8D56\u2026",
+      feat_enter_key:
+        "\u8BF7\u8F93\u5165\u6709\u6548\u7684 OpenAI API Key\u3002",
+      feat_install_btn: "\u5B89\u88C5",
+      feat_install_deps: "\u5B89\u88C5\u4F9D\u8D56",
+      feat_install_done:
+        "\u4F9D\u8D56\u5DF2\u5B89\u88C5\u3002\u6B63\u5728\u6784\u5EFA\u5411\u91CF\u2026",
+      feat_install_failed: "\u5B89\u88C5\u5931\u8D25\uFF1A",
+      feat_installing: "\u5B89\u88C5\u4E2D\u2026",
+      feat_installing_pkgs: "\u6B63\u5728\u5B89\u88C5 {pkgs}...",
+      feat_key_rejected: "API Key \u88AB\u62D2\u7EDD\u3002",
+      feat_memory_desc:
+        "\u8BB0\u5FC6\u5C42\u662F PaperForge \u7684\u6838\u5FC3\u6570\u636E\u5F15\u64CE\uFF0C\u57FA\u4E8E SQLite \u6784\u5EFA\u3002\u5B83\u6574\u5408\u4E86\u6587\u732E\u5143\u6570\u636E\uFF08\u8BBA\u6587\u3001\u8D44\u6E90\u6587\u4EF6\u3001\u522B\u540D\u3001\u9605\u8BFB\u4E8B\u4EF6\uFF09\uFF0C\u652F\u6301 FTS5 \u5143\u6570\u636E\u68C0\u7D22\uFF08\u6807\u9898\u3001\u6458\u8981\u3001\u4F5C\u8005\u3001domain\u3001collection\uFF09\uFF0C\u5E76\u4E3A agent-context \u548C paper-status \u547D\u4EE4\u63D0\u4F9B\u6570\u636E\u652F\u6491\u3002\u59CB\u7EC8\u8FD0\u884C\uFF0C\u65E0\u9700\u624B\u52A8\u5F00\u542F\u3002",
+      feat_memory_rebuild_btn: "\u91CD\u5EFA\u6570\u636E\u5E93",
+      feat_memory_rebuild_done:
+        "\u8BB0\u5FC6\u6570\u636E\u5E93\u91CD\u5EFA\u5B8C\u6210\u3002",
+      feat_memory_rebuild_failed: "\u91CD\u5EFA\u5931\u8D25\u3002",
+      feat_memory_rebuilding: "\u91CD\u5EFA\u4E2D\u2026",
+      feat_model: "\u6A21\u578B",
+      feat_model_changed_warn:
+        "\u6A21\u578B\u5DF2\u66F4\u6362\uFF08{0} -> {1}\uFF09\u3002\u5DF2\u6709\u5411\u91CF\u4E0D\u517C\u5BB9\u2014\u2014\u9700\u8981\u91CD\u5EFA\u3002",
+      feat_network_error: "\u7F51\u7EDC\u9519\u8BEF\uFF1A",
+      feat_no_python:
+        "\u672A\u627E\u5230 Python\u3002\u8BF7\u67E5\u770B\u5B89\u88C5\u6807\u7B7E\u9875\u3002",
+      feat_not_cached: "\u672A\u7F13\u5B58",
+      feat_openai_key: "OpenAI API Key",
+      feat_openai_key_desc:
+        "\u7528\u4E8E API \u5D4C\u5165\u8C03\u7528\uFF0C\u6A21\u578B\u5728\u4E0B\u65B9\u5B9A\u4E49\u3002",
+      feat_output_copied:
+        "\u8F93\u51FA\u5DF2\u590D\u5236\u5230\u526A\u8D34\u677F\u3002",
+      feat_rebuild_btn: "\u91CD\u5EFA",
+      feat_rebuild_vectors: "\u91CD\u5EFA\u5411\u91CF",
+      feat_rebuild_vectors_changed:
+        "\u6A21\u578B\u5DF2\u66F4\u6362 \u2014 \u9700\u8981\u91CD\u5EFA\u5411\u91CF\u3002",
+      feat_rebuild_vectors_desc:
+        "\u91CD\u5EFA\u6240\u6709 OCR \u5168\u6587\u5411\u91CF\u3002\u66F4\u6362\u6A21\u578B\u6216\u6A21\u5F0F\u540E\u9700\u8981\u91CD\u5EFA\u3002",
+      feat_removing: "\u5220\u9664\u4E2D\u2026",
+      feat_retry_btn: "\u91CD\u8BD5",
+      feat_skills_desc:
+        "\u7BA1\u7406 Vault \u4E2D\u5DF2\u5B89\u88C5\u7684 Agent \u6280\u80FD\u3002\u6BCF\u884C\u5BF9\u5E94\u4E00\u4E2A SKILL.md \u6587\u4EF6\uFF0C\u5173\u95ED\u5F00\u5173\u53EF\u963B\u6B62 Agent \u81EA\u52A8\u8C03\u7528\u8BE5\u6280\u80FD\u3002",
+      feat_skills_system:
+        "\u7CFB\u7EDF\u6280\u80FD\u968F PaperForge \u4E00\u540C\u53D1\u5E03\uFF0C\u4F1A\u8DDF\u968F PaperForge \u7248\u672C\u66F4\u65B0\u3002",
+      feat_skills_user:
+        "\u7528\u6237\u6280\u80FD\u662F\u4F60\u81EA\u884C\u5B89\u88C5\u6216\u521B\u5EFA\u7684\u81EA\u5B9A\u4E49\u6280\u80FD\u3002",
+      feat_uninstall_btn: "\u5378\u8F7D",
+      feat_valid_key: "API Key \u6709\u6548\u3002",
+      feat_vector_corrupted:
+        "\u5411\u91CF\u7D22\u5F15\u5DF2\u635F\u574F \u2014 \u9700\u8981\u5F3A\u5236\u91CD\u5EFA\u3002",
+      field_paddleocr: "PaddleOCR API \u5BC6\u94A5",
+      field_python_custom: "\u81EA\u5B9A\u4E49 Python \u8DEF\u5F84",
+      field_python_interp: "\u5F53\u524D Python \u89E3\u91CA\u5668",
+      field_zotero_data: "Zotero \u6570\u636E\u76EE\u5F55",
+      field_zotero_placeholder:
+        "\u53EF\u9009\uFF0C\u7528\u4E8E\u81EA\u52A8\u68C0\u6D4B PDF",
+      guide_ocr: "\u8FD0\u884C OCR",
+      guide_ocr_desc:
+        "Dashboard \u4E2D\u70B9 Run OCR\uFF0C\u63D0\u53D6 PDF \u5168\u6587\u4E0E\u56FE\u8868",
+      guide_open: "\u6253\u5F00 Dashboard",
+      guide_open_desc:
+        "Ctrl+P \u2192 \u8F93\u5165 PaperForge: Open Dashboard\uFF0C\u6216\u70B9\u5DE6\u4FA7\u4E66\u672C\u56FE\u6807",
+      guide_sync: "\u540C\u6B65\u6587\u732E",
+      guide_sync_desc:
+        "Dashboard \u4E2D\u70B9 Sync Library\uFF0C\u4ECE Zotero \u62C9\u53D6\u6587\u732E\u751F\u6210\u7B14\u8BB0",
+      header_title: "PaperForge",
+      install_bootstrapping:
+        "\u672A\u68C0\u6D4B\u5230 PaperForge Python \u5305\uFF0C\u6B63\u5728\u81EA\u52A8\u5B89\u88C5\u2026",
+      install_btn: "\u5F00\u59CB\u5B89\u88C5",
+      install_btn_retry: "\u91CD\u8BD5",
+      install_btn_running: "\u6B63\u5728\u5B89\u88C5...",
+      install_complete: "\u2713 \u5B89\u88C5\u5B8C\u6210\uFF01",
+      install_failed: "\u2717 \u5B89\u88C5\u5931\u8D25\uFF1A",
+      install_validating:
+        "\u6B63\u5728\u6821\u9A8C\u5B89\u88C5\u73AF\u5883\u2026",
+      jump_to_deep_reading: "\u8DF3\u8F6C\u5230\u7CBE\u8BFB",
+      label_agent: "Agent \u5E73\u53F0",
+      nav_close: "\u5173\u95ED",
+      nav_next: "\u4E0B\u4E00\u6B65 \u2192",
+      nav_prev: "\u2190 \u4E0A\u4E00\u6B65",
+      no_pending_ocr: "\u6240\u6709 OCR \u4EFB\u52A1\u5DF2\u5B8C\u6210",
+      not_set: "\u672A\u8BBE\u7F6E",
+      notice_check_fail: "\u7F3A\u5931\uFF1A",
+      notice_python_missing:
+        "Python \u672A\u68C0\u6D4B\u5230\uFF0C\u8BF7\u5148\u5B89\u88C5 Python 3.11+ \u5E76\u52A0\u5165 PATH",
+      ocr_privacy_title: "OCR \u9690\u79C1\u63D0\u793A",
+      ocr_privacy_warning:
+        "OCR \u4F1A\u5C06 PDF \u4E0A\u4F20\u5230 PaddleOCR API \u8FDB\u884C\u5904\u7406\u3002\u8BF7\u4E0D\u8981\u4E0A\u4F20\u5305\u542B\u654F\u611F\u4FE1\u606F\u6216\u65E0\u6CD5\u5916\u4F20\u7684\u6587\u732E\u3002",
+      ocr_queue_add: "\u52A0\u5165 OCR \u961F\u5217",
+      ocr_queue_added: "\u5DF2\u52A0\u5165 OCR \u961F\u5217",
+      ocr_queue_remove: "\u79FB\u51FA OCR \u961F\u5217",
+      ocr_queue_removed: "\u5DF2\u79FB\u51FA OCR \u961F\u5217",
+      ocr_understand: "\u6211\u4E86\u89E3\uFF0C\u7EE7\u7EED",
+      optional_later:
+        "\uFF08\u7A0D\u540E\u53EF\u5728\u8BBE\u7F6E\u4E2D\u8865\u5145\uFF09",
+      orphan_delete_failed: "\u6E05\u7406\u5931\u8D25",
+      orphan_delete_selected: "\u5220\u9664 {count} \u7BC7",
+      orphan_deleted:
+        "\u5DF2\u5220\u9664 {count} \u7BC7\u6B8B\u7559\u6587\u732E",
+      orphan_desc:
+        "\u8FD9\u4E9B\u6587\u732E\u5DF2\u4ECE Zotero \u4E2D\u79FB\u9664\u3002",
+      orphan_deselect_all: "\u53D6\u6D88\u5168\u9009",
+      orphan_explain:
+        "\u5DF2\u4ECE Zotero \u4E2D\u79FB\u9664\u3002\u5DE5\u4F5C\u533A\u6587\u4EF6\u4ECD\u4FDD\u7559\u5728\u78C1\u76D8\u4E0A\u3002",
+      orphan_keep_all: "\u4FDD\u7559\u5168\u90E8",
+      orphan_none_selected: "\u672A\u9009\u62E9\u4EFB\u4F55\u6587\u732E",
+      orphan_select_all: "\u5168\u9009",
+      orphan_title: "\u53D1\u73B0 {count} \u7BC7\u6B8B\u7559\u6587\u732E",
+      panel_actions: "\u5FEB\u6377\u64CD\u4F5C",
+      prep_bbt: "Better BibTeX",
+      prep_bbt_desc:
+        "Zotero \u2192 \u5DE5\u5177 \u2192 \u63D2\u4EF6 \u2192 \u5B89\u88C5 Better BibTeX",
+      prep_export: "BBT \u81EA\u52A8\u5BFC\u51FA",
+      prep_export_desc:
+        "\u53F3\u952E\u6587\u732E\u5B50\u5206\u7C7B \u2192 \u5BFC\u51FA\u5206\u7C7B \u2192 BetterBibTeX JSON \u2192 \u52FE\u9009\u4FDD\u6301\u66F4\u65B0 \u2192 \u5BFC\u51FA\u5230\uFF08JSON \u6587\u4EF6\u540D\u5373\u4E3A Base \u540D\uFF09\uFF1A",
+      prep_export_path_label:
+        "\u5C06\u5BFC\u51FA\u7684 JSON \u6587\u4EF6\u4FDD\u5B58\u5230\u6B64\u6587\u4EF6\u5939\uFF1A",
+      prep_key: "PaddleOCR Key",
+      prep_key_desc:
+        "\u4ECE https://aistudio.baidu.com/paddleocr \u83B7\u53D6 API \u5BC6\u94A5",
+      prep_python: "Python 3.11+",
+      prep_python_desc:
+        "\u786E\u4FDD Python \u53EF\u547D\u4EE4\u884C\u8C03\u7528\u3002\u70B9\u51FB\u4E0B\u65B9\u6309\u94AE\u81EA\u52A8\u68C0\u6D4B\u3002",
+      prep_zotero: "Zotero \u684C\u9762\u7248",
+      prep_zotero_desc: "\u5B89\u88C5 Zotero (https://www.zotero.org)",
+      run_in_agent: "\u5728 {0} \u4E2D\u8FD0\u884C",
+      runtime_health: "\u8FD0\u884C\u65F6\u72B6\u6001",
+      runtime_health_checking: "\u6B63\u5728\u68C0\u6D4B\u2026",
+      runtime_health_desc:
+        "\u68C0\u67E5\u63D2\u4EF6\u4E0E Python \u8FD0\u884C\u65F6\u7248\u672C\u7684\u5339\u914D\u60C5\u51B5\uFF0C\u5E76\u786E\u8BA4\u5DF2\u90E8\u7F72\u7684 skill contract \u662F\u5426\u4E3A\u5F53\u524D\u7248\u672C\u3002",
+      runtime_health_match: "\u5339\u914D",
+      runtime_health_mismatch: "\u4E0D\u5339\u914D",
+      runtime_health_package_ver: "Python \u5305 v{0}",
+      runtime_health_plugin_ver: "\u63D2\u4EF6 v{0}",
+      runtime_health_sync: "\u540C\u6B65\u8FD0\u884C\u65F6",
+      runtime_health_sync_done:
+        "\u8FD0\u884C\u65F6\u5DF2\u540C\u6B65\u81F3 v{0}",
+      runtime_health_sync_fail:
+        "\u8FD0\u884C\u65F6\u540C\u6B65\u5931\u8D25\uFF1A{0}",
+      runtime_health_syncing: "\u6B63\u5728\u540C\u6B65\u2026",
+      section_config: "\u5F53\u524D\u914D\u7F6E",
+      section_guide: "\u64CD\u4F5C\u65B9\u5F0F",
+      section_prep: "\u5B89\u88C5\u51C6\u5907",
+      section_prep_desc:
+        "\u9996\u6B21\u4F7F\u7528\u524D\uFF0C\u8BF7\u4F9D\u6B21\u5B8C\u6210\u4EE5\u4E0B\u51C6\u5907\uFF1A",
+      setup_done:
+        "\u2713 PaperForge \u73AF\u5883\u5DF2\u914D\u7F6E\u5B8C\u6210",
+      setup_pending:
+        "\u5C1A\u672A\u5B89\u88C5\uFF0C\u5B8C\u6210\u5B89\u88C5\u51C6\u5907\u540E\u70B9\u51FB\u5B89\u88C5\u5411\u5BFC",
+      tab_overview: "\u6982\u89C8",
+      tab_modules: "\u6A21\u5757\u8BE6\u60C5",
+      tab_help: "\u5E2E\u52A9",
+      tab_features: "\u529F\u80FD",
+      tab_setup: "\u5B89\u88C5",
+      tab_maintenance: "\u7EF4\u62A4",
+      validate_base: "Base \u76EE\u5F55\u672A\u586B\u5199",
+      validate_fail: "\u914D\u7F6E\u9A8C\u8BC1\u5931\u8D25",
+      validate_index: "\u7D22\u5F15\u76EE\u5F55\u672A\u586B\u5199",
+      validate_key: "PaddleOCR API \u5BC6\u94A5\u672A\u586B\u5199",
+      validate_notes: "\u6B63\u6587\u76EE\u5F55\u672A\u586B\u5199",
+      validate_resources: "\u8D44\u6E90\u76EE\u5F55\u672A\u586B\u5199",
+      validate_system: "\u7CFB\u7EDF\u76EE\u5F55\u672A\u586B\u5199",
+      validate_vault: "Vault \u8DEF\u5F84\u672A\u586B\u5199",
+      validate_zotero:
+        "Zotero \u6570\u636E\u76EE\u5F55\u4E3A\u5FC5\u586B\u9879",
+      wizard_agent_hint:
+        "\u9009\u62E9\u4F60\u4F7F\u7528\u7684 AI Agent \u5E73\u53F0\uFF0C\u5B89\u88C5\u65F6\u5C06\u6309\u5BF9\u5E94\u683C\u5F0F\u90E8\u7F72\u6280\u80FD\u6587\u4EF6\uFF1A",
+      wizard_dir_hint:
+        "\u8D44\u6E90\u76EE\u5F55\u662F\u6587\u732E\u6570\u636E\u7684\u7EDF\u4E00\u6839\u76EE\u5F55\uFF0C\u4EE5\u4E0B\u5B50\u76EE\u5F55\u5C06\u521B\u5EFA\u5728\u5176\u5185\u90E8\uFF1A",
+      wizard_dir_sub_hint:
+        "\u8D44\u6E90\u76EE\u5F55\u5185\u7684\u4E24\u4E2A\u5B50\u76EE\u5F55\uFF1A",
+      wizard_intro:
+        "\u672C\u5411\u5BFC\u5C06\u5F15\u5BFC\u60A8\u5B8C\u6210 PaperForge \u73AF\u5883\u7684\u5B8C\u6574\u914D\u7F6E\u3002\u5B89\u88C5\u8FC7\u7A0B\u4F1A\u81EA\u52A8\u521B\u5EFA\u6240\u6709\u76EE\u5F55\u7ED3\u6784\uFF0C\u65E0\u9700\u624B\u52A8\u64CD\u4F5C\u3002",
+      wizard_keys_hint:
+        "\u4EE5\u4E0B\u4E3A API \u5BC6\u94A5\u4E0E Zotero \u914D\u7F6E\uFF1A",
+      wizard_preview:
+        "\u7CFB\u7EDF\u6587\u4EF6\u548C Agent \u914D\u7F6E\u4F4D\u4E8E Vault \u6839\u76EE\u5F55\u4E0B\u3002\u6587\u732E\u6570\u636E\uFF08\u6B63\u6587\u3001\u7D22\u5F15\uFF09\u7EDF\u4E00\u5B58\u653E\u5728\u8D44\u6E90\u76EE\u5F55\u5185\u3002\u5B89\u88C5\u540E\u4ECD\u53EF\u5728\u8BBE\u7F6E\u4E2D\u4FEE\u6539\u3002",
+      wizard_safety:
+        "\u5B89\u5168\u8BF4\u660E\uFF1A\u5982\u679C\u4F60\u9009\u62E9\u7684\u76EE\u5F55\u91CC\u5DF2\u7ECF\u6709\u6587\u4EF6\uFF0C\u5B89\u88C5\u5411\u5BFC\u4F1A\u4FDD\u7559\u5DF2\u6709\u5185\u5BB9\uFF0C\u53EA\u8865\u5145\u7F3A\u5931\u7684 PaperForge \u6587\u4EF6\u548C\u76EE\u5F55\u3002",
+      wizard_step1: "\u6982\u89C8",
+      wizard_step2: "\u76EE\u5F55",
+      wizard_step3: "Agent",
+      wizard_step4: "\u5B89\u88C5",
+      wizard_step5: "\u5B8C\u6210",
+      wizard_skip_ocr_desc:
+        "OCR \u529F\u80FD\u5728\u914D\u7F6E\u6709\u6548\u7684 PaddleOCR API \u5BC6\u94A5\u4E4B\u524D\u4E0D\u53EF\u7528\u3002\u60A8\u53EF\u4EE5\u7EE7\u7EED\u5B8C\u6210\u8BBE\u7F6E\uFF0C\u7A0D\u540E\u5728\u8BBE\u7F6E\u4E2D\u914D\u7F6E\u3002",
+      wizard_skip_ocr_continue:
+        "\u7EE7\u7EED\uFF0C\u7A0D\u540E\u914D\u7F6E\u5BC6\u94A5",
+      wizard_skip_ocr_back: "\u8FD4\u56DE\u914D\u7F6E",
+      wizard_api_hint_skip:
+        "OCR \u5BC6\u94A5\u4E3A\u9009\u586B\u9879 \u2014 \u53EF\u8DF3\u8FC7\uFF0C\u7A0D\u540E\u5728\u8BBE\u7F6E\u4E2D\u914D\u7F6E\u3002",
+      wizard_sys_hint:
+        "\u72EC\u7ACB\u4E8E\u8D44\u6E90\u76EE\u5F55\u7684\u7CFB\u7EDF\u6587\u4EF6\uFF1A",
+      wizard_title: "PaperForge \u5B89\u88C5\u5411\u5BFC",
+      ocr_maint_no_action: "\u65E0\u9700\u5904\u7406",
+      ocr_maint_rebuild: "\u5EFA\u8BAE\u91CD\u5EFA",
+      ocr_maint_failed: "OCR \u5931\u8D25",
+      ocr_maint_limited: "\u7ED3\u679C\u4E00\u822C",
+      ocr_maint_needs_attention: "\u9700\u8981\u5904\u7406",
+      ocr_maint_limitations: "\u7ED3\u679C\u8BF4\u660E",
+      ocr_maint_hero_ok: "OCR \u6574\u4F53\u6B63\u5E38\u3002",
+      ocr_maint_hero_warn:
+        "OCR \u9700\u8981\u5173\u6CE8\uFF1A{rebuild} \u7BC7\u5EFA\u8BAE\u91CD\u5EFA\uFF0C{failed} \u7BC7\u5904\u7406\u5931\u8D25\u3002",
+      ocr_maint_hero_note:
+        "\u672C\u9875\u53EA\u63D0\u793A\u7EF4\u62A4\u540E\u5927\u6982\u7387\u4F1A\u6539\u5584\u7684\u95EE\u9898\u3002\u90E8\u5206\u8BBA\u6587\u6548\u679C\u4E00\u822C\uFF0C\u7EF4\u62A4\u672A\u5FC5\u80FD\u6539\u5584\u3002",
+      ocr_maint_limitations_intro:
+        "\u8FD9\u7C7B\u8BBA\u6587\u901A\u5E38\u8868\u793A\u7248\u5F0F\u590D\u6742\u6216\u4FE1\u53F7\u504F\u5F31\uFF0CPaperForge \u76EE\u524D\u6CA1\u6709\u9AD8\u7F6E\u4FE1\u5EA6\u7684\u7EF4\u62A4\u5EFA\u8BAE\u3002",
+      ocr_maint_all_papers: "\u5168\u90E8\u8BBA\u6587",
+      ocr_maint_rebuild_btn: "\u91CD\u5EFA\u7ED3\u679C",
+      ocr_maint_redo_btn: "\u91CD\u65B0 OCR",
+      ocr_maint_redo_confirm:
+        "\u786E\u8BA4\u91CD\u65B0 OCR {n} \u7BC7\u8BBA\u6587\uFF1F\u73B0\u6709\u7684\u6D3E\u751F OCR \u7ED3\u679C\u5C06\u88AB\u66FF\u6362\u3002",
+      maintenance_group_retry: "\u9700\u8981\u91CD\u8BD5",
+      maintenance_group_rebuild: "\u53EF\u91CD\u5EFA\u7ED3\u679C",
+      maintenance_group_legacy:
+        "\u53EF\u5347\u7EA7\u65E7\u7ED3\u679C\uFF08\u53EF\u9009\uFF09",
+      maintenance_btn_retry: "\u91CD\u8BD5",
+      maintenance_btn_rebuild: "\u91CD\u5EFA",
+      maintenance_btn_upgrade: "\u5347\u7EA7",
+      maintenance_refresh_spinning: "\u6B63\u5728\u66F4\u65B0\u2026",
+      maintenance_all_good: "\u2705 \u5168\u90E8\u6B63\u5E38",
+      maintenance_n_pending: "{n} \u7BC7\u9700\u8981\u5904\u7406",
+      maintenance_filter_all: "\u5168\u90E8",
+      maintenance_filter_recommended: "\u5EFA\u8BAE\u5904\u7406",
+      maintenance_batch_rebuild: "\u25B6 \u91CD\u5EFA\u5DF2\u9009",
+      maintenance_batch_redo: "\u25B6 \u5168\u90E8\u91CD\u8DD1 OCR",
+      maintenance_stop: "\u505C\u6B62",
+      maintenance_batch_complete:
+        "\u6279\u91CF\u64CD\u4F5C\u5B8C\u6210 \u2014 \u5904\u7406\u4E86 {n} \u7BC7\u8BBA\u6587\u3002",
+      maintenance_progress_label: "{current}/{total} \u7BC7",
+      version_panel_title: "\u7248\u672C\u5386\u53F2",
+      version_panel_back: "\u8FD4\u56DE",
+      version_filter_placeholder: "\u641C\u7D22\u8BBA\u6587...",
+      version_papers_count: "{n} \u7BC7\u8BBA\u6587",
+      version_current: "\u5F53\u524D",
+      version_restore_btn: "\u6062\u590D",
+      version_compare_btn: "\u5BF9\u6BD4",
+      version_restore_selected: "\u6062\u590D\u9009\u4E2D\u7248\u672C",
+      version_clear_old: "\u6E05\u9664\u65E7\u7248\u672C (\u91CA\u653E {size})",
+      version_no_backups:
+        "\u6CA1\u6709\u53EF\u6062\u590D\u7684\u5386\u53F2\u7248\u672C",
+      md_select_installation: "\u57FA\u7840\u73AF\u5883",
+      md_select_library: "\u6587\u732E\u5E93",
+      md_select_ocr: "OCR",
+      md_select_memory: "\u667A\u80FD\u68C0\u7D22",
+      md_select_agent: "Agent \u96C6\u6210",
+      installation_detail_heading: "\u57FA\u7840\u73AF\u5883",
+      library_detail_heading: "\u6587\u732E\u5E93",
+      ocr_detail_heading: "OCR",
+      memory_detail_heading: "\u667A\u80FD\u68C0\u7D22",
+      agent_detail_heading: "Agent \u96C6\u6210",
+      btn_back_to_overview: "\u2190 \u8FD4\u56DE\u6982\u89C8",
+      agent_integration_section: "Agent \u96C6\u6210",
+      module_detail_open_installation: "\u6253\u5F00\u57FA\u7840\u73AF\u5883",
+      module_detail_open_help: "\u5E2E\u52A9",
+      module_detail_open_maintenance: "\u7EF4\u62A4",
+      module_detail_open_library: "\u6253\u5F00\u6587\u732E\u5E93",
+      module_detail_open_ocr: "\u6253\u5F00 OCR",
+      module_detail_open_memory: "\u6253\u5F00\u667A\u80FD\u68C0\u7D22",
+      action_unknown_pair: "\u672A\u77E5\u64CD\u4F5C: {verb}",
+      update_python_manual:
+        "Python 3.11+ \u5347\u7EA7\u9700\u8981\u624B\u52A8\u5B89\u88C5(python.org \u6216\u5305\u7BA1\u7406\u5668)\u3002",
+      update_done: "PaperForge \u5DF2\u66F4\u65B0",
+      update_failed: "\u66F4\u65B0\u5931\u8D25",
+      migrate_done: "\u540E\u7AEF\u5DF2\u8FC1\u79FB\u5230 sqlite-vec",
+      migrate_failed: "\u540E\u7AEF\u8FC1\u79FB\u5931\u8D25",
+      ocr_stop_batch: "\u505C\u6B62 OCR \u6279\u5904\u7406",
+      runtime_not_available: "\u73AF\u5883\u4E0D\u53EF\u7528",
+      md_unavailable_module: "\u6682\u4E0D\u53EF\u7528",
+      managed_runtime_status: "\u8FD0\u884C\u65F6\u72B6\u6001",
+      managed_runtime_install: "\u5B89\u88C5\u8FD0\u884C\u65F6",
+      managed_runtime_repair: "\u4FEE\u590D\u8FD0\u884C\u65F6",
+      managed_runtime_update: "\u66F4\u65B0\u8FD0\u884C\u65F6",
+      managed_runtime_check_status: "\u68C0\u67E5\u72B6\u6001",
+      managed_runtime_refresh: "\u5237\u65B0\u72B6\u6001",
+      managed_runtime_manual_setup: "\u624B\u52A8\u914D\u7F6E",
+      managed_runtime_stop: "\u505C\u6B62",
+      managed_runtime_unknown_state: "\u672A\u77E5",
+      managed_runtime_ok_state: "\u5C31\u7EEA",
+      managed_runtime_not_installed: "\u672A\u5B89\u88C5",
+      managed_runtime_needs_repair: "\u9700\u8981\u4FEE\u590D",
+      managed_runtime_unavailable: "\u4E0D\u53EF\u7528",
+      managed_runtime_last_verified: "\u6700\u540E\u9A8C\u8BC1\uFF1A{time}",
+      managed_runtime_running:
+        "\u8FD0\u884C\u65F6\u64CD\u4F5C\u8FDB\u884C\u4E2D...",
+      managed_runtime_action_complete:
+        "\u8FD0\u884C\u65F6\u64CD\u4F5C\u5DF2\u5B8C\u6210\u3002",
+      managed_runtime_action_cancelled:
+        "\u8FD0\u884C\u65F6\u64CD\u4F5C\u5DF2\u53D6\u6D88\u3002",
+      managed_runtime_action_failed:
+        "\u8FD0\u884C\u65F6\u64CD\u4F5C\u5931\u8D25\uFF1A{error}",
+      version_restore_confirm:
+        "\u786E\u8BA4\u5C06 {paper} \u6062\u590D\u5230 {label}\uFF1F",
+      version_restore_done: "\u5DF2\u6062\u590D\u5230 {label}",
+      version_compare_title: "{vA} vs {vB}",
+      version_compare_paragraphs: "{n} \u6BB5\u6709\u53D8\u5316",
+      version_error_read: "\u65E0\u6CD5\u8BFB\u53D6\u7248\u672C\u6570\u636E",
+      retrieval_search_placeholder:
+        "\u641C\u7D22\u8BBA\u6587...\uFF08@ \u542F\u52A8\u6DF1\u5EA6\u641C\u7D22\uFF09",
+      retrieval_search_placeholder_deep:
+        "\u641C\u7D22\u8BBA\u6587\u5185\u5BB9...",
+      retrieval_search_idle_hint:
+        "\u8F93\u5165\u5173\u952E\u8BCD\u641C\u7D22\u8BBA\u6587\uFF0C\u6216\u4EE5 @ \u5F00\u5934\u641C\u7D22\u8BBA\u6587\u5185\u5BB9",
+      retrieval_searching_metadata: "\u641C\u7D22\u5143\u6570\u636E\u4E2D...",
+      retrieval_searching_deep: "\u6DF1\u5EA6\u641C\u7D22\u4E2D...",
+      retrieval_search_cancel: "\u53D6\u6D88",
+      retrieval_results_count: "{n} \u4E2A\u7ED3\u679C",
+      retrieval_empty: "\u672A\u627E\u5230\u5339\u914D\u7684\u8BBA\u6587\u3002",
+      retrieval_empty_tips:
+        "\u5C1D\u8BD5\u66F4\u5BBD\u6CDB\u7684\u5173\u952E\u8BCD\uFF0C\u6216\u4F7F\u7528 @ \u6DF1\u5EA6\u641C\u7D22\u8BBA\u6587\u5185\u5BB9\u3002",
+      retrieval_vectors_not_built: "\u5411\u91CF\u7D22\u5F15\u672A\u6784\u5EFA",
+      retrieval_vectors_not_built_desc:
+        "\u6784\u5EFA\u5411\u91CF\u7D22\u5F15\u4EE5\u542F\u7528 @ \u6DF1\u5EA6\u8BED\u4E49\u641C\u7D22\u3002",
+      retrieval_open_vector_settings: "\u6253\u5F00\u5411\u91CF\u8BBE\u7F6E",
+      retrieval_backend_unavailable:
+        "\u641C\u7D22\u540E\u7AEF\u4E0D\u53EF\u7528",
+      retrieval_backend_unavailable_desc:
+        "Python CLI \u641C\u7D22\u540E\u7AEF\u672A\u6B63\u5E38\u54CD\u5E94\u3002",
+      retrieval_run_doctor: "\u8FD0\u884C\u8BCA\u65AD",
+      retrieval_retry: "\u91CD\u8BD5",
+      retrieval_timeout_title: "\u641C\u7D22\u8D85\u65F6",
+      retrieval_timeout_desc:
+        "\u641C\u7D22\u8017\u65F6\u8FC7\u957F\uFF0C\u8BF7\u5C1D\u8BD5\u66F4\u7CBE\u786E\u7684\u67E5\u8BE2\u3002",
+      retrieval_model_changed: "\u6A21\u578B\u5DF2\u66F4\u6362",
+      retrieval_model_changed_desc:
+        "\u5D4C\u5165\u6A21\u578B\u5DF2\u66F4\u6362\uFF0C\u9700\u91CD\u5EFA\u5411\u91CF\u540E\u624D\u80FD\u4F7F\u7528\u6DF1\u5EA6\u641C\u7D22\u3002",
+      retrieval_rebuild_vectors: "\u91CD\u5EFA\u5411\u91CF",
+      retrieval_build_idle: "\u5411\u91CF\u6570\u636E\u5E93\u5C31\u7EEA",
+      retrieval_build_ready: "\u5DF2\u6784\u5EFA {n} \u4E2A\u5411\u91CF",
+      retrieval_build_stopping: "\u6B63\u5728\u505C\u6B62...",
+      cc_module_foundation: "\u57FA\u7840\u73AF\u5883",
+      cc_module_agent: "Agent \u96C6\u6210",
+      cc_badge_checking: "\u6B63\u5728\u68C0\u67E5",
+      cc_badge_ready: "\u5DF2\u5C31\u7EEA",
+      cc_badge_not_enabled: "\u672A\u542F\u7528",
+      cc_badge_setup_required: "\u9700\u8981\u8BBE\u7F6E",
+      cc_badge_action_required: "\u9700\u8981\u64CD\u4F5C",
+      cc_badge_detection_failed: "\u68C0\u6D4B\u5931\u8D25",
+      cc_summary_ready: "PaperForge \u5DF2\u5C31\u7EEA",
+      cc_summary_incomplete: "\u8BBE\u7F6E\u672A\u5B8C\u6210",
+      cc_summary_ready_body:
+        "\u57FA\u7840\u73AF\u5883\u548C\u6587\u732E\u5E93\u5747\u5DF2\u6B63\u5E38\u8FD0\u884C\u3002",
+      cc_summary_incomplete_body:
+        "\u8BF7\u5B8C\u6210\u57FA\u7840\u73AF\u5883\u548C\u6587\u732E\u5E93\u8BBE\u7F6E\u540E\u518D\u4F7F\u7528 PaperForge\u3002",
+      cc_summary_checking: "\u6B63\u5728\u68C0\u67E5 PaperForge",
+      cc_summary_checking_body:
+        "\u6B63\u5728\u68C0\u67E5\u57FA\u7840\u73AF\u5883\u548C\u6587\u732E\u5E93\u72B6\u6001\u2026",
+      cc_refresh_btn: "\u5237\u65B0\u72B6\u6001",
+      cc_last_checked: "\u4E0A\u6B21\u68C0\u67E5\uFF1A",
+      cc_needs_attention: "\u9879\u9700\u8981\u5173\u6CE8",
+      cc_checked_pending: "\u5C1A\u672A\u68C0\u67E5",
+      cc_eyebrow: "\u63A7\u5236\u4E2D\u5FC3",
+      cc_title: "\u6587\u732E\u5DE5\u4F5C\u6D41",
+      cc_lede:
+        "\u67E5\u770B\u5404\u9879\u80FD\u529B\u7684\u8FD0\u884C\u72B6\u6001\u3001\u9700\u8981\u5904\u7406\u7684\u4E8B\u9879\uFF0C\u4EE5\u53CA\u4E0B\u4E00\u6B65\u8BE5\u505A\u4EC0\u4E48\u3002",
+      cc_modules_header: "\u6A21\u5757",
+      cc_five_capabilities: "\u4E94\u4E2A\u529F\u80FD",
+      cc_optional_note:
+        "\u53EF\u9009\u6A21\u5757\u4E0D\u5F71\u54CD\u6838\u5FC3\u8FD0\u884C\u72B6\u6001\u3002",
+      cc_maintenance_count: "{n} \u9879\u9700\u8981\u5173\u6CE8",
+      cc_card_retry: "\u91CD\u8BD5",
+      cc_consequence_default:
+        "\u5F53\u524D\u72B6\u6001\u6682\u4E0D\u53EF\u7528\u3002",
+      cc_action_rebuild_derived: "\u91CD\u5EFA",
+      ocr_progress: "{current}/{total} \u7BC7\u8BBA\u6587",
+      cc_operational_modules: "\u8FD0\u884C\u6A21\u5757",
+      cc_consequence_checking:
+        "\u6B63\u5728\u68C0\u67E5\u6700\u65B0\u72B6\u6001\u2026",
+      cc_consequence_detection_failed:
+        "PaperForge \u65E0\u6CD5\u786E\u5B9A\u5F53\u524D\u72B6\u6001\u3002",
+      cc_consequence_setup_required:
+        "\u4F7F\u7528\u524D\u9700\u8981\u5B8C\u6210\u914D\u7F6E\u3002",
+      cc_consequence_action_required:
+        "\u6709\u4E00\u9879\u95EE\u9898\u9700\u8981\u5904\u7406\u3002",
+      cc_consequence_installation_ready:
+        "PaperForge \u5DF2\u5728\u6B64\u8BBE\u5907\u4E0A\u5C31\u7EEA\u3002",
+      cc_consequence_library_ready:
+        "Zotero \u6587\u732E\u5E93\u5DF2\u8FDE\u63A5\u5E76\u4FDD\u6301\u6700\u65B0\u3002",
+      cc_consequence_ocr_ready:
+        "OCR \u5DF2\u51C6\u5907\u597D\u5904\u7406\u8BBA\u6587\u3002",
+      cc_consequence_memory_ready:
+        "\u8BBA\u6587\u5DF2\u5EFA\u7ACB\u7D22\u5F15\u5E76\u53EF\u641C\u7D22\u3002",
+      cc_consequence_agent_ready:
+        "PaperForge Skills \u5DF2\u90E8\u7F72\u5230\u6240\u9009 Agent \u5E73\u53F0\u3002",
+      cc_consequence_agent_not_enabled:
+        "\u9700\u8981\u90E8\u7F72 PaperForge Skills \u65F6\u518D\u9009\u62E9 Agent \u5E73\u53F0\u3002",
+      cc_consequence_ocr_not_enabled:
+        "OCR \u4E3A\u53EF\u9009\u529F\u80FD\uFF0C\u5F53\u524D\u672A\u542F\u7528\u3002",
+      cc_consequence_memory_not_enabled:
+        "\u667A\u80FD\u68C0\u7D22\u4E3A\u53EF\u9009\u529F\u80FD\uFF0C\u5F53\u524D\u672A\u542F\u7528\u3002",
+      md_foundation_overview: "\u8FD0\u884C\u73AF\u5883",
+      md_foundation_ready:
+        "PaperForge \u5DF2\u5B89\u88C5\u5E76\u901A\u8FC7\u9A8C\u8BC1\uFF0C\u53EF\u4EE5\u6B63\u5E38\u4F7F\u7528\u3002",
+      md_library_connection: "Zotero \u8FDE\u63A5",
+      ocr_error_notice:
+        "OCR \u56E0\u9519\u8BEF\u505C\u6B62\uFF0C\u8BF7\u6253\u5F00\u9AD8\u7EA7\u8BCA\u65AD\u67E5\u770B\u8BE6\u60C5\u3002",
+      ocr_run_complete: "OCR \u5904\u7406\u5B8C\u6210\u3002",
+      ocr_rebuild_complete: "OCR \u91CD\u5EFA\u5B8C\u6210\u3002",
+      ocr_redo_complete: "OCR \u91CD\u505A\u5B8C\u6210\u3002",
+      ocr_stopped_notice: "OCR \u6279\u5904\u7406\u5DF2\u505C\u6B62\u3002",
+      ocr_failed_notice:
+        "OCR \u672A\u5B8C\u6210\uFF0C\u8BF7\u6253\u5F00\u9AD8\u7EA7\u8BCA\u65AD\u67E5\u770B\u8BE6\u60C5\u3002",
+      md_library_ready:
+        "Zotero \u5DF2\u8FDE\u63A5\uFF0C\u6587\u732E\u5E93\u5DF2\u540C\u6B65\u3002",
+      md_library_corpus: "\u6587\u732E\u8BED\u6599\u5E93",
+      md_library_last_sync: "\u4E0A\u6B21\u6210\u529F\u540C\u6B65",
+      md_ocr_status: "OCR \u529F\u80FD",
+      md_status_refresh_hint:
+        "\u8BF7\u5148\u68C0\u6D4B\u72B6\u6001\u4EE5\u52A0\u8F7D\u5F53\u524D OCR \u4FE1\u606F\uFF1B\u6B64\u64CD\u4F5C\u4E0D\u4F1A\u4FEE\u6539\u8BBA\u6587\u3002",
+      md_ocr_ready: "OCR \u5DF2\u914D\u7F6E\u5E76\u53EF\u7528\u3002",
+      md_ocr_workspace: "\u6253\u5F00 OCR \u5DE5\u4F5C\u533A",
+      md_retrieval_coverage: "\u68C0\u7D22\u8986\u76D6\u8303\u56F4",
+      md_retrieval_ready:
+        "\u6240\u6709\u53EF\u7528\u8BBA\u6587\u5747\u5DF2\u5EFA\u7ACB\u7D22\u5F15\u5E76\u53EF\u641C\u7D22\u3002",
+      md_agent_integration: "Agent \u96C6\u6210",
+      md_agent_placeholder:
+        "\u914D\u7F6E\u76EE\u6807\u5E73\u53F0\u3001\u90E8\u7F72 PaperForge \u6587\u4EF6\u5E76\u7BA1\u7406 Skills\u3002\u6587\u4EF6\u5DF2\u90E8\u7F72\u4E0D\u4EE3\u8868\u5B9E\u65F6\u8FDE\u63A5\u5DF2\u7ECF\u9A8C\u8BC1\u3002",
+      md_agent_platform: "\u76EE\u6807\u5E73\u53F0",
+      md_agent_deployment: "\u90E8\u7F72\u72B6\u6001",
+      agent_deployed: "\u6587\u4EF6\u5DF2\u90E8\u7F72",
+      agent_not_deployed: "\u6587\u4EF6\u672A\u90E8\u7F72",
+      agent_live_connection: "\u5B9E\u65F6\u8FDE\u63A5",
+      agent_verify_found:
+        "\u5DF2\u627E\u5230\u6B64\u5E73\u53F0\u7684 PaperForge Skills\u3002",
+      agent_verify_missing:
+        "\u672A\u627E\u5230\u6B64\u5E73\u53F0\u7684 PaperForge Skills\uFF0C\u8BF7\u8FD0\u884C\u8BBE\u7F6E\u8FDB\u884C\u90E8\u7F72\u3002",
+      skills_system: "\u7CFB\u7EDF Skills",
+      skills_user: "\u7528\u6237 Skills",
+      skills_empty:
+        "\u6240\u9009\u5E73\u53F0\u5C1A\u672A\u90E8\u7F72 Skills\u3002",
+      md_agent_connection_unknown:
+        "\u5B9E\u65F6\u8FDE\u63A5\u5C1A\u672A\u9A8C\u8BC1",
+      md_agent_skills: "PaperForge Skills",
+      md_copy_diagnostic: "\u590D\u5236\u652F\u6301\u8BCA\u65AD",
+      md_configuration: "\u914D\u7F6E",
+      md_current_activity: "\u5F53\u524D\u6D3B\u52A8",
+      config_change: "\u66F4\u6539",
+      config_save: "\u4FDD\u5B58",
+      config_cancel: "\u53D6\u6D88",
+      config_verify: "\u9A8C\u8BC1",
+      config_configured: "\u5DF2\u914D\u7F6E",
+      config_not_configured: "\u672A\u914D\u7F6E",
+      config_zotero_dir: "Zotero \u6570\u636E\u76EE\u5F55",
+      problem_what_happened: "\u53D1\u751F\u4E86\u4EC0\u4E48",
+      problem_impact: "\u5F71\u54CD\uFF1A",
+      problem_next: "\u4E0B\u4E00\u6B65\uFF1A",
+      problem_copy: "\u590D\u5236\u8BCA\u65AD\u4FE1\u606F",
+      problem_use_action:
+        "\u4F7F\u7528\u4E0A\u65B9\u64CD\u4F5C\u5904\u7406\u6B64\u95EE\u9898\u3002",
+      library_problem_impact:
+        "\u65B0\u7684\u53C2\u8003\u6587\u732E\u548C\u6587\u732E\u7B14\u8BB0\u53EF\u80FD\u6682\u4E0D\u53EF\u7528\u3002",
+      ocr_problem_impact:
+        "\u90E8\u5206\u8BBA\u6587\u53EF\u80FD\u6CA1\u6709\u53EF\u9605\u8BFB\u7684\u5168\u6587\u3002",
+      retrieval_problem_impact:
+        "\u6062\u590D\u8986\u76D6\u524D\uFF0C\u641C\u7D22\u548C\u68C0\u7D22\u53EF\u80FD\u9057\u6F0F\u8BBA\u6587\u3002",
+      metric_after_sync:
+        "\u4E0B\u6B21\u6210\u529F\u540C\u6B65\u540E\u53EF\u7528",
+      metric_not_available: "\u6682\u4E0D\u53EF\u7528",
+      coverage_complete: "\u5B8C\u6574",
+      retrieval_freshness: "\u4E0A\u6B21\u68C0\u67E5",
+      md_module_switcher: "\u6A21\u5757",
+      advanced_diagnostics: "\u9AD8\u7EA7\u8BCA\u65AD",
+      foundation_version: "PaperForge \u7248\u672C",
+      foundation_last_verified: "\u4E0A\u6B21\u9A8C\u8BC1",
+      foundation_runtime_managed: "\u6258\u7BA1\u8FD0\u884C\u73AF\u5883",
+      foundation_runtime_system: "\u7CFB\u7EDF\u8FD0\u884C\u73AF\u5883",
+      foundation_runtime_unavailable:
+        "\u8FD0\u884C\u73AF\u5883\u4E0D\u53EF\u7528",
+      foundation_skills_ready: "\u53EF\u7528",
+      foundation_skills: "Skills",
+      md_foundation_legacy_migrate: "\u8FC1\u79FB\u65E7\u7248\u914D\u7F6E",
+      foundation_setup_desc:
+        "\u8FD0\u884C\u5B89\u88C5\u5411\u5BFC\uFF0C\u521B\u5EFA\u7531 Python \u7BA1\u7406\u7684\u5E93\u914D\u7F6E\u5E76\u53D1\u5E03\u8FD0\u884C\u73AF\u5883\u6307\u9488\u3002",
+      foundation_setup_btn: "\u6253\u5F00\u5B89\u88C5\u5411\u5BFC",
+      config_confirm: "\u786E\u8BA4",
+      ocr_configure_credential: "\u914D\u7F6E OCR \u51ED\u636E",
+      feat_install_deps_desc:
+        "\u5B89\u88C5\u667A\u80FD\u68C0\u7D22\u6240\u9700\u7684\u4F9D\u8D56\u9879\u3002",
+      setup_welcome: "\u8BBE\u7F6E PaperForge",
+      setup_desc:
+        "\u5B8C\u6210\u5FC5\u9700\u9636\u6BB5\uFF0C\u7136\u540E\u9009\u62E9\u9700\u8981\u542F\u7528\u7684\u53EF\u9009\u529F\u80FD\u3002",
+      setup_stage_1: "\u57FA\u7840\u73AF\u5883",
+      setup_stage_2: "\u8FDE\u63A5\u6587\u732E\u5E93",
+      setup_stage_3: "\u53EF\u9009\u529F\u80FD",
+      setup_stage_4: "\u68C0\u67E5\u5E76\u5F00\u59CB",
+      setup_progress: "\u8BBE\u7F6E\u8FDB\u5EA6",
+      setup_foundation_title: "\u7B2C 1 \u6B65\uFF1A\u57FA\u7840\u73AF\u5883",
+      setup_foundation_desc:
+        "\u9009\u62E9 Python \u8FD0\u884C\u73AF\u5883\uFF0C\u7136\u540E\u5B89\u88C5 PaperForge \u5305\uFF1B\u6B64\u6B65\u9AA4\u4E0D\u4F1A\u521B\u5EFA\u6216\u914D\u7F6E\u6587\u732E\u5E93\u3002",
+      setup_ready: "\u57FA\u7840\u73AF\u5883\u5DF2\u5C31\u7EEA\u3002",
+      setup_foundation_python: "Python \u53EF\u6267\u884C\u6587\u4EF6",
+      setup_foundation_python_hint:
+        "\u7559\u7A7A\u65F6\u4F7F\u7528\u7CFB\u7EDF PATH \u4E2D\u7684 \u201Cpython\u201D\u3002",
+      setup_foundation_install_btn: "\u5B89\u88C5 PaperForge",
+      setup_library_title:
+        "\u7B2C 2 \u6B65\uFF1A\u8FDE\u63A5\u6587\u732E\u5E93",
+      setup_library_desc:
+        "\u8FDE\u63A5 Zotero\uFF0C\u8BA9 PaperForge \u53EF\u4EE5\u540C\u6B65\u6587\u732E\u3002",
+      setup_library_ready: "\u6587\u732E\u5E93\u5DF2\u8FDE\u63A5\u3002",
+      setup_library_config_desc:
+        "\u9A8C\u8BC1 Zotero \u6570\u636E\u76EE\u5F55\uFF0C\u7136\u540E\u786E\u8BA4 PaperForge \u5728\u6B64\u5E93\u4E2D\u4F7F\u7528\u7684\u6587\u4EF6\u5939\u3002",
+      setup_library_zotero_hint:
+        "PaperForge \u53EA\u8BFB\u53D6\u6B64\u6587\u4EF6\u5939\uFF0C\u4E0D\u4F1A\u4FEE\u6539 Zotero \u6570\u636E\u5E93\u3002",
+      setup_library_folder_heading: "\u5E93\u5185\u6587\u4EF6\u5939",
+      setup_library_verify: "\u4FDD\u5B58\u5E76\u9A8C\u8BC1\u914D\u7F6E",
+      setup_library_configured:
+        "\u6587\u732E\u5E93\u914D\u7F6E\u5DF2\u4FDD\u5B58\uFF0C\u6B63\u5728\u68C0\u67E5\u8FDE\u63A5\u3002",
+      setup_library_configuring:
+        "\u6B63\u5728\u4FDD\u5B58\u5E76\u68C0\u67E5\u6587\u732E\u5E93\u914D\u7F6E\u2026",
+      setup_library_config_failed:
+        "\u6587\u732E\u5E93\u914D\u7F6E\u65E0\u6CD5\u9A8C\u8BC1\u3002\u8BF7\u68C0\u67E5\u8DEF\u5F84\u540E\u91CD\u8BD5\u3002",
+      setup_reinstall_notice:
+        "\u53EA\u91CD\u65B0\u5B89\u88C5\u672C\u673A\u7684 PaperForge Python \u5305\uFF0C\u4E0D\u4F1A\u6539\u52A8\u6587\u732E\u5E93\u914D\u7F6E\u3002",
+      setup_installing:
+        "\u6B63\u5728\u5B89\u88C5\u5E76\u51C6\u5907 PaperForge\u2026",
+      setup_install_complete:
+        "\u5B89\u88C5\u5B8C\u6210\uFF0C\u6B63\u5728\u68C0\u67E5\u66F4\u65B0\u540E\u7684\u8FD0\u884C\u73AF\u5883\u3002",
+      setup_install_failed:
+        "PaperForge \u5B89\u88C5\u672A\u5B8C\u6210\u3002\u8BF7\u68C0\u67E5 Python \u8DEF\u5F84\u540E\u91CD\u8BD5\u3002",
+      setup_optionals_title: "\u7B2C 3 \u6B65\uFF1A\u53EF\u9009\u529F\u80FD",
+      setup_optionals_desc:
+        "\u53EA\u9009\u62E9\u9700\u8981\u7684\u529F\u80FD\uFF1B\u8DF3\u8FC7\u540E\u4ECD\u53EF\u968F\u65F6\u542F\u7528\u3002",
+      setup_optional_saved: "\u914D\u7F6E\u5DF2\u5B89\u5168\u4FDD\u5B58\u3002",
+      setup_optional_save_failed:
+        "\u914D\u7F6E\u65E0\u6CD5\u4FDD\u5B58\u3002\u8BF7\u68C0\u67E5 Obsidian \u5B89\u5168\u5B58\u50A8\u540E\u91CD\u8BD5\u3002",
+      setup_opt_ocr_desc:
+        "\u4ECE PDF \u63D0\u53D6\u6587\u672C\u548C\u56FE\u8868",
+      setup_opt_memory_desc: "\u8DE8\u8BBA\u6587\u641C\u7D22\u548C\u6D4F\u89C8",
+      setup_opt_agent_desc: "\u90E8\u7F72\u5E76\u7BA1\u7406 PaperForge Skills",
+      setup_review_title: "\u7B2C 4 \u6B65\uFF1A\u68C0\u67E5\u5E76\u5F00\u59CB",
+      setup_review_selected: "\u5DF2\u9009\u62E9\uFF1A",
+      setup_no_optionals: "\u672A\u9009\u62E9\u53EF\u9009\u529F\u80FD\u3002",
+      setup_incomplete_warn:
+        "\u57FA\u7840\u73AF\u5883\u548C\u6587\u732E\u5E93\u5747\u5C31\u7EEA\u540E\u624D\u80FD\u5B8C\u6210\u8BBE\u7F6E\u3002",
+      setup_review_checking:
+        "\u6B63\u5728\u68C0\u67E5\u5F53\u524D\u914D\u7F6E\u2026",
+      setup_review_recheck: "\u91CD\u65B0\u68C0\u67E5\u914D\u7F6E",
+      setup_nav_continue: "\u7EE7\u7EED",
+      setup_nav_skip: "\u6682\u65F6\u8DF3\u8FC7",
+      setup_nav_back: "\u8FD4\u56DE",
+      setup_nav_cancel: "\u53D6\u6D88",
+      setup_nav_later: "\u7A0D\u540E",
+      setup_install_cancelled:
+        "\u8BBE\u7F6E\u5DF2\u53D6\u6D88\uFF0C\u8FD0\u884C\u65F6\u672A\u6FC0\u6D3B\u3002",
+      setup_nav_complete: "\u5B8C\u6210\u8BBE\u7F6E",
+      help_title: "\u5E2E\u52A9",
+      help_lede:
+        "\u6253\u5F00\u76F8\u5173\u6A21\u5757\uFF0C\u6216\u590D\u5236\u8BCA\u65AD\u4FE1\u606F\u5BFB\u6C42\u652F\u6301\u3002",
+      help_intro:
+        "\u9009\u62E9\u4E00\u4E2A\u4EFB\u52A1\uFF0C\u6216\u590D\u5236\u9690\u79C1\u5B89\u5168\u7684\u652F\u6301\u8BCA\u65AD\u3002",
+      help_getting_started: "\u5F00\u59CB\u4F7F\u7528",
+      help_library_task: "\u8FDE\u63A5 Zotero \u5E76\u540C\u6B65\u6587\u732E",
+      help_ocr_task:
+        "\u914D\u7F6E OCR \u5E76\u6253\u5F00 OCR \u5DE5\u4F5C\u533A",
+      help_retrieval_task:
+        "\u542F\u7528\u667A\u80FD\u68C0\u7D22\u5E76\u5EFA\u7ACB\u8986\u76D6",
+      help_agent_task:
+        "\u9009\u62E9 Agent \u5E73\u53F0\u5E76\u90E8\u7F72 Skills",
+      help_current_problem: "\u5F53\u524D\u95EE\u9898\u6307\u5F15",
+      help_no_problem:
+        "\u5F53\u524D\u6CA1\u6709\u9700\u8981\u6307\u5F15\u7684\u95EE\u9898\u3002",
+      help_support: "\u652F\u6301\u8BCA\u65AD",
+      help_support_desc:
+        "\u4EC5\u590D\u5236\u6A21\u5757\u72B6\u6001\u548C\u7248\u672C\u6807\u8BC6\uFF0C\u4E0D\u5305\u542B\u5BC6\u94A5\u3001\u5185\u5BB9\u3001\u8EAB\u4EFD\u3001\u7EDD\u5BF9\u8DEF\u5F84\u6216\u539F\u59CB\u65E5\u5FD7\u3002",
+      help_copy: "\u590D\u5236\u652F\u6301\u8BCA\u65AD",
+      help_documentation: "\u6587\u6863",
+      help_documentation_desc:
+        "\u6253\u5F00\u9879\u76EE\u6307\u5357\uFF0C\u67E5\u770B\u8BBE\u7F6E\u3001\u5DE5\u4F5C\u6D41\u7A0B\u548C\u6545\u969C\u6392\u9664\u8BF4\u660E\u3002",
+      help_open_documentation: "\u6253\u5F00 PaperForge \u6587\u6863",
+      help_release_notes: "\u7248\u672C\u8BF4\u660E",
+      help_release_notes_desc:
+        "\u5F53\u524D\u5B89\u88C5\u7248\u672C\uFF1A{version}\u3002\u5B8C\u6574\u53D8\u66F4\u8BB0\u5F55\u8BF7\u67E5\u770B GitHub\u3002",
+      help_open_release_notes: "\u6253\u5F00\u7248\u672C\u8BF4\u660E",
+      support_diagnostic_copied:
+        "\u652F\u6301\u8BCA\u65AD\u5DF2\u590D\u5236\u3002",
+      maintenance_empty_title: "\u65E0\u9700\u7EF4\u62A4",
+      maintenance_empty_body:
+        "\u5F53\u524D\u6CA1\u6709\u9700\u8981\u5904\u7406\u7684\u672A\u89E3\u51B3\u95EE\u9898\u3002",
+      maintenance_default_impact:
+        "\u6B64\u529F\u80FD\u53EF\u80FD\u4E0D\u53EF\u7528\uFF0C\u6216\u8FD4\u56DE\u4E0D\u5B8C\u6574\u7684\u7ED3\u679C\u3002",
+      maintenance_open_module: "\u6253\u5F00\u6A21\u5757",
+      migration_banner_title: "\u51ED\u636E\u8FC1\u79FB\u901A\u77E5",
+      cc_summary_attention: "\u90E8\u5206\u6A21\u5757\u9700\u8981\u5173\u6CE8",
+      help_load_error:
+        "\u65E0\u6CD5\u52A0\u8F7D\u5E2E\u52A9\u5185\u5BB9\u3002\u8BF7\u68C0\u67E5\u7F51\u7EDC\u8FDE\u63A5\u3002",
+      cc_summary_ok_body:
+        "PaperForge \u73AF\u5883\u5DF2\u5B8C\u5168\u5C31\u7EEA\u3002\u5B89\u88C5\u548C\u5E2E\u52A9\u6587\u6863\u5747\u6B63\u5E38\u53EF\u7528\u3002",
+      cc_summary_core_ok_body:
+        "\u5B89\u88C5\u548C\u5E2E\u52A9\u6A21\u5757\u5DF2\u53EF\u7528\u3002\u6587\u732E\u7D22\u5F15\u3001OCR\u3001\u8BB0\u5FC6\u5C42\u548C\u7EF4\u62A4\u6A21\u5757\u5C06\u5728\u540E\u7AEF\u63A5\u5165\u540E\u663E\u793A\u5B9E\u65F6\u72B6\u6001\u3002",
+      cc_summary_attention_body:
+        "\u4E00\u4E2A\u6216\u591A\u4E2A\u6838\u5FC3\u6A21\u5757\u9700\u8981\u60A8\u7684\u5173\u6CE8\u624D\u80FD\u6B63\u5E38\u8FD0\u884C\u3002",
+      retrieval_build_stopped:
+        "\u6784\u5EFA\u5DF2\u505C\u6B62\uFF08{n}/{t} \u7BC7\uFF09",
+      retrieval_build_failed: "\u6784\u5EFA\u5931\u8D25",
+      retrieval_build_stale:
+        "\u5411\u91CF\u5DF2\u8FC7\u671F \u2014 \u5EFA\u8BAE\u91CD\u5EFA",
+      retrieval_build_runtime_mismatch:
+        "Python \u8FD0\u884C\u65F6\u7248\u672C\u4E0D\u5339\u914D\u3002",
+      retrieval_stop: "\u505C\u6B62",
+      retrieval_no_python: "\u672A\u627E\u5230 Python",
+      retrieval_internal_error: "\u53D1\u751F\u5185\u90E8\u9519\u8BEF",
+      retrieval_force_rebuild: "\u5F3A\u5236\u91CD\u5EFA",
+      retrieval_rebuild_warning:
+        "\u91CD\u5EFA\u5C06\u66FF\u6362 {n} \u4E2A\u73B0\u6709\u6587\u672C\u5757\uFF0C\u662F\u5426\u7EE7\u7EED\uFF1F",
+      foundation_git: "Git",
+      foundation_git_missing:
+        "\u672A\u5B89\u88C5 \u2014 \u8BF7\u5B89\u88C5 Git \u7528\u4E8E\u7248\u672C\u63A7\u5236",
+      foundation_obsidian: "Obsidian \u7248\u672C",
+      foundation_obsidian_old:
+        "\u7248\u672C\u8FC7\u65E7 \u2014 \u8BF7\u66F4\u65B0 Obsidian",
+      foundation_python_packages: "Python \u5305",
+      foundation_python_packages_checking:
+        "\u6B63\u5728\u68C0\u67E5\u5DF2\u5B89\u88C5\u7684\u5305...",
+      foundation_paddle_key: "PaddleOCR API \u5BC6\u94A5",
+      foundation_paddle_missing:
+        "\u672A\u914D\u7F6E \u2014 OCR \u63D0\u53D6\u9700\u8981\u6B64\u5BC6\u94A5",
+      foundation_openai_key: "OpenAI API \u5BC6\u94A5",
+      foundation_openai_missing:
+        "\u672A\u914D\u7F6E \u2014 \u667A\u80FD\u68C0\u7D22\u9700\u8981\u6B64\u5BC6\u94A5",
+      foundation_python: "Python \u8DEF\u5F84",
+      foundation_python_status: "Python \u72B6\u6001",
+      foundation_python_ok: "Python \u5DF2\u5B89\u88C5",
+      foundation_python_missing:
+        "\u672A\u627E\u5230 Python \u2014 \u8BF7\u5B89\u88C5 Python 3.11+",
+      foundation_vault_structure: "\u5E93\u5185\u6587\u4EF6\u5939",
+      foundation_zotero: "Zotero \u6570\u636E\u76EE\u5F55",
+      foundation_zotero_missing:
+        "\u672A\u914D\u7F6E \u2014 \u8BF7\u8FDE\u63A5 Zotero \u6570\u636E\u76EE\u5F55",
+      foundation_reinstall: "\u91CD\u65B0\u5B89\u88C5 PaperForge",
+      foundation_reinstall_desc:
+        "\u4ECE\u672C\u5730\u6E90\u7801\u91CD\u65B0\u5B89\u88C5 Python \u5305",
+      foundation_reinstall_btn: "\u91CD\u65B0\u5B89\u88C5",
+      foundation_reinstalling:
+        "\u6B63\u5728\u91CD\u65B0\u5B89\u88C5 PaperForge...",
+      foundation_reinstall_ok:
+        "PaperForge \u91CD\u65B0\u5B89\u88C5\u6210\u529F",
+      foundation_reinstall_failed: "\u91CD\u65B0\u5B89\u88C5\u5931\u8D25",
+      cc_summary_ok: "\u5168\u90E8\u6B63\u5E38",
+      cc_summary_core_ok:
+        "\u6838\u5FC3\u73AF\u5883\u6B63\u5E38\uFF1B{n} \u4E2A\u6A21\u5757\u72B6\u6001\u68C0\u6D4B\u5F85\u63A5\u5165",
+      cc_badge_ok: "\u5DF2\u5C31\u7EEA",
+      cc_badge_pending: "\u5F85\u63A5\u5165",
+      migration_banner_body:
+        "{modules} \u7684\u51ED\u636E\u65E0\u6CD5\u81EA\u52A8\u8FC1\u79FB\u5230\u5B89\u5168\u5B58\u50A8\uFF0C\u8BF7\u5728\u6240\u5C5E\u6A21\u5757\u4E2D\u91CD\u65B0\u8F93\u5165\u3002",
+      migration_banner_next:
+        "\u4FDD\u5B58\u65B0\u503C\u540E\uFF0CPaperForge \u5C06\u5728\u91CD\u542F\u65F6\u518D\u6B21\u5C1D\u8BD5\u5B89\u5168\u8FC1\u79FB\u3002",
+      cc_badge_setup: "\u9700\u8981\u5B89\u88C5",
+      cc_badge_attention: "\u9700\u8981\u6CE8\u610F",
+      cc_diagnostic_toggle: "\u8BE6\u60C5",
+      cc_n_ready: "{n} \u5DF2\u5C31\u7EEA",
+      cc_n_pending: "{n} \u5F85\u63A5\u5165",
+      cc_desc:
+        "PaperForge \u6838\u5FC3\u6A21\u5757\u7684\u5B9E\u65F6\u72B6\u6001\u3002\u6709\u5F85\u5904\u7406\u64CD\u4F5C\u7684\u6A21\u5757\u9700\u8981\u60A8\u7684\u5173\u6CE8\u3002",
+      cc_zone_attention: "\u9700\u8981\u5173\u6CE8",
+      cc_zone_modules: "\u6240\u6709\u6A21\u5757",
+      cc_module_installation: "\u5B89\u88C5",
+      cc_module_help: "\u5E2E\u52A9\u4E0E\u6587\u6863",
+      cc_module_library: "\u6587\u732E\u5E93",
+      cc_module_ocr: "OCR \u5F15\u64CE",
+      cc_module_memory: "\u667A\u80FD\u68C0\u7D22",
+      cc_module_maintenance: "\u7EF4\u62A4",
+      cc_state_ready: "\u5C31\u7EEA",
+      cc_state_limited: "\u53D7\u9650",
+      cc_state_unavailable: "\u4E0D\u53EF\u7528",
+      cc_state_unknown: "\u672A\u77E5",
+      cc_severity_ok: "\u6B63\u5E38",
+      cc_severity_unknown: "\u672A\u77E5",
+      cc_severity_warning: "\u8B66\u544A",
+      cc_severity_error: "\u9519\u8BEF",
+      cc_state_missing_input: "\u7F3A\u5C11\u8F93\u5165",
+      cc_state_needs_action: "\u9700\u8981\u64CD\u4F5C",
+      cc_action_setup: "\u6253\u5F00\u5B89\u88C5\u5411\u5BFC",
+      cc_action_probe: "\u68C0\u6D4B",
+      cc_action_set_config: "\u914D\u7F6E\u8BBE\u7F6E",
+      action_ocr_run: "\u8FD0\u884C OCR",
+      action_ocr_rebuild_derived: "\u91CD\u5EFA OCR \u7ED3\u679C",
+      action_memory_build: "\u6784\u5EFA\u6587\u672C\u7D22\u5F15",
+      action_embed_build: "\u6784\u5EFA\u5411\u91CF\u7D22\u5F15",
+      action_embed_resume: "\u7EE7\u7EED\u5411\u91CF\u6784\u5EFA",
+      action_foundation_update: "\u66F4\u65B0 PaperForge",
+      action_foundation_repair: "\u4FEE\u590D\u8FD0\u884C\u73AF\u5883",
+      setup_bbt_title: "\u5BFC\u5165 BBT JSON",
+      setup_bbt_desc:
+        "\u4ECE Zotero \u4E2D\u5BFC\u51FA Better BibTeX JSON\uFF08\u6587\u4EF6 \u2192 \u5BFC\u51FA\u6587\u732E\u5E93 \u2192 Better BibTeX JSON\uFF09\uFF0C\u7136\u540E\u5C06\u6587\u4EF6\u62D6\u5165\u4E0B\u65B9\u6216\u70B9\u51FB\u9009\u62E9\u3002",
+      setup_bbt_path: "\u5BFC\u51FA\u6587\u4EF6\u5939\uFF1A",
+      setup_bbt_drop:
+        "\u5C06 BBT JSON \u6587\u4EF6\u62D6\u5230\u6B64\u5904\uFF0C\u6216\u70B9\u51FB\u9009\u62E9",
+      setup_bbt_no_files: "\u5C1A\u672A\u5BFC\u5165 JSON \u6587\u4EF6\u3002",
+      setup_bbt_invalid: "\u65E0\u6548\u7684 JSON \u6587\u4EF6\uFF1A",
+      setup_bbt_guide: "\u5982\u4F55\u4ECE Zotero \u5BFC\u51FA",
+      setup_bbt_step1: "1. \u5B89\u88C5 Better BibTeX",
+      setup_bbt_step2:
+        "2. \u5BFC\u51FA\u5E76\u5F00\u542F\u81EA\u52A8\u66F4\u65B0",
+      setup_bbt_step1_desc:
+        "\u5728 Zotero \u4E2D\u6253\u5F00 \u5DE5\u5177 \u2192 \u63D2\u4EF6\uFF0C\u641C\u7D22 Better BibTeX \u5E76\u5B89\u88C5\u3002\u5982\u679C\u641C\u7D22\u4E0D\u5230\uFF0C\u8BF7\u4ECE\u4EE5\u4E0B\u5730\u5740\u4E0B\u8F7D\uFF1Ahttps://github.com/retorquere/zotero-better-bibtex/releases/tag/v9.0.50",
+      setup_bbt_step2_desc:
+        "\u53F3\u952E\u6587\u732E\u5E93\u6216\u5206\u7C7B \u2192 \u5BFC\u51FA\u6587\u732E\u5E93\u2026 \u2192 \u9009\u62E9\u300CBetter BibTeX JSON\u300D\u683C\u5F0F\u3002\u52FE\u9009\u300CKeep updated\u300D\uFF0C\u4EE5\u540E Zotero \u6709\u53D8\u5316\u65F6\u4F1A\u81EA\u52A8\u91CD\u65B0\u5BFC\u51FA\u3002",
+      setup_bbt_step3: "3. \u4FDD\u5B58\u5230\u5BFC\u51FA\u6587\u4EF6\u5939",
+      setup_bbt_step3_desc:
+        "\u5C06\u5BFC\u51FA\u76EE\u6807\u6307\u5411\u4E0A\u65B9\u663E\u793A\u7684\u6587\u4EF6\u5939\u3002\u4FDD\u5B58\u540E\u70B9\u51FB\u300C\u68C0\u6D4B\u300D\u3002",
+      setup_bbt_copy: "\u590D\u5236",
+      setup_bbt_copied: "\u8DEF\u5F84\u5DF2\u590D\u5236",
+      setup_bbt_detect: "\u68C0\u6D4B",
+      setup_bbt_found: "\u5DF2\u627E\u5230\uFF1A",
+      cc_reason_installation_ready:
+        "PaperForge \u73AF\u5883\u5DF2\u6B63\u786E\u914D\u7F6E\u3002",
+      cc_reason_config_missing:
+        "\u914D\u7F6E\u6587\u4EF6\u7F3A\u5931\uFF0C\u8BF7\u8FD0\u884C\u5B89\u88C5\u5411\u5BFC\u3002",
+      cc_reason_config_corrupt:
+        "\u914D\u7F6E\u6587\u4EF6\u635F\u574F\uFF0C\u8BF7\u8FD0\u884C\u5B89\u88C5\u5411\u5BFC\u4FEE\u590D\u3002",
+      cc_reason_python_version_unsupported:
+        "Python \u7248\u672C\u4E0D\u53D7\u652F\u6301\uFF0C\u8BF7\u5B89\u88C5 Python 3.11+\u3002",
+      cc_reason_help_ready: "\u5E2E\u52A9\u6587\u6863\u5DF2\u53EF\u7528\u3002",
+      cc_reason_docs_missing:
+        "\u5E2E\u52A9\u6587\u6863\u5C1A\u672A\u5B89\u88C5\u3002",
+      cc_reason_placeholder:
+        "\u72B6\u6001\u68C0\u6D4B\u5F85\u63A5\u5165\uFF0C\u63A5\u5165\u540E\u5C06\u663E\u793A\u5B9E\u65F6\u72B6\u6001\u3002",
+      cc_reason_library_ready:
+        "\u6587\u732E\u5E93\u5DF2\u540C\u6B65\u5E76\u5EFA\u7ACB\u7D22\u5F15\u3002",
+      cc_reason_library_config_missing:
+        "\u672A\u627E\u5230\u914D\u7F6E\uFF0C\u8BF7\u5148\u8BBE\u7F6E\u6587\u732E\u5E93\u3002",
+      cc_reason_library_config_corrupt:
+        "\u914D\u7F6E\u6587\u4EF6\u635F\u574F\uFF0C\u6587\u732E\u5E93\u65E0\u6CD5\u8FD0\u884C\u3002",
+      cc_reason_library_zotero_missing:
+        "\u5C1A\u672A\u914D\u7F6E Zotero \u6570\u636E\u76EE\u5F55\u3002",
+      cc_reason_library_zotero_not_found:
+        "Zotero \u6570\u636E\u76EE\u5F55\u4E0D\u5B58\u5728\u3002",
+      cc_reason_library_index_missing:
+        "\u5C1A\u672A\u5EFA\u7ACB\u6587\u732E\u7D22\u5F15\uFF0C\u8BF7\u5148\u540C\u6B65\u3002",
+      cc_reason_library_index_stale:
+        "\u6587\u732E\u7D22\u5F15\u5DF2\u8FC7\u671F\uFF0C\u8BF7\u540C\u6B65\u5237\u65B0\u3002",
+      cc_reason_ocr_ready:
+        "OCR \u5DF2\u914D\u7F6E\u5E76\u53EF\u6B63\u5E38\u8FD0\u884C\u3002",
+      cc_reason_ocr_config_missing:
+        "\u672A\u627E\u5230\u914D\u7F6E\uFF0C\u8BF7\u5148\u8BBE\u7F6E OCR\u3002",
+      cc_reason_ocr_config_corrupt:
+        "\u914D\u7F6E\u6587\u4EF6\u635F\u574F\uFF0COCR \u65E0\u6CD5\u8FD0\u884C\u3002",
+      cc_reason_ocr_api_key_missing:
+        "\u5C1A\u672A\u914D\u7F6E OCR API \u5BC6\u94A5\u3002",
+      cc_reason_ocr_artifacts_missing:
+        "\u5C1A\u65E0 OCR \u8F93\u51FA\uFF0C\u8BF7\u5148\u5904\u7406\u8BBA\u6587\u3002",
+      cc_reason_memory_ready:
+        "\u667A\u80FD\u68C0\u7D22\u72B6\u6001\u6B63\u5E38\u4E14\u5DF2\u5EFA\u7ACB\u7D22\u5F15\u3002",
+      cc_reason_memory_db_missing:
+        "\u5C1A\u672A\u5EFA\u7ACB\u68C0\u7D22\u7D22\u5F15\uFF0C\u8BF7\u5148\u6784\u5EFA\u4EE5\u542F\u7528\u641C\u7D22\u3002",
+      cc_reason_memory_db_corrupt:
+        "\u68C0\u7D22\u7D22\u5F15\u5DF2\u635F\u574F\uFF0C\u8BF7\u4ECE\u5907\u4EFD\u6062\u590D\u3002",
+      cc_reason_memory_index_stale:
+        "\u667A\u80FD\u68C0\u7D22\u9700\u8981\u91CD\u5EFA\u4EE5\u5339\u914D\u5F53\u524D\u6587\u732E\u5E93\u3002",
+      cc_diag_module: "\u6A21\u5757",
+      cc_diag_state: "\u72B6\u6001",
+      cc_reason_library_sync_failed:
+        "\u4E0A\u6B21\u6587\u732E\u5E93\u540C\u6B65\u5931\u8D25\uFF0C\u8BF7\u5728\u6570\u636E\u6E90\u53EF\u7528\u540E\u91CD\u8BD5\u3002",
+      cc_diag_severity: "\u4E25\u91CD\u7A0B\u5EA6",
+      cc_diag_activity: "\u6D3B\u52A8",
+      cc_diag_reason: "\u539F\u56E0",
+      cc_diag_ttl: "TTL",
+      cc_diag_updated: "\u66F4\u65B0\u65F6\u95F4",
+      cc_reason_no_probe: "{module} \u5C1A\u672A\u68C0\u6D4B\u3002",
+      cc_reason_stale:
+        "{module} \u7684\u68C0\u6D4B\u6570\u636E\u5DF2\u8FC7\u671F\u3002",
+      cc_reason_invalid_response:
+        "{module} \u7684\u68C0\u6D4B\u54CD\u5E94\u65E0\u6548\u3002",
+      activity_syncing: "\u540C\u6B65\u4E2D...",
+      activity_ocr_running: "\u6B63\u5728\u5904\u7406 OCR... {pct}%",
+      activity_ocr_running_noprogress: "\u6B63\u5728\u5904\u7406 OCR...",
+      cc_action_unknown_verb: "\u672A\u77E5\u540E\u7AEF\u64CD\u4F5C: {verb}",
+      cc_action_investigate: "\u6B63\u5728\u8FD0\u884C\u8BCA\u65AD...",
+      cc_reason_probing: "\u6B63\u5728\u68C0\u6D4B {module} \u72B6\u6001...",
+      cc_notice_placeholder:
+        "{module} \u6A21\u5757\u68C0\u6D4B\u529F\u80FD\u5C1A\u672A\u53EF\u7528\uFF0C\u5C06\u5728\u540E\u7EED\u7248\u672C\u4E2D\u6DFB\u52A0\u3002",
+      cc_notice_refreshed: "\u6A21\u5757\u72B6\u6001\u5DF2\u5237\u65B0\u3002",
+      cc_notice_refresh_failed:
+        "\u6A21\u5757\u72B6\u6001\u5237\u65B0\u5931\u8D25\u3002",
+      cc_activity_idle: "\u7A7A\u95F2",
+      cc_activity_running: "\u8FD0\u884C\u4E2D",
+      maintenance_inbox_title: "\u7EF4\u62A4\u6536\u4EF6\u7BB1",
+      maintenance_checking:
+        "\u6B63\u5728\u68C0\u6D4B\u7EF4\u62A4\u72B6\u6001\u2026",
+      maintenance_all_clear:
+        "\u6240\u6709\u6A21\u5757\u5DF2\u5C31\u7EEA \u2014 \u65E0\u9700\u7EF4\u62A4\u3002",
+      maintenance_n_pending_inbox:
+        "{n} \u4E2A\u6A21\u5757\u9700\u8981\u5173\u6CE8",
+      maintenance_dismiss: "\u5FFD\u7565",
+      maintenance_undismiss: "\u663E\u793A",
+      maintenance_ocr_section: "OCR \u7EF4\u62A4",
+      maintenance_action_result_success:
+        "\u64CD\u4F5C\u5B8C\u6210 \u2014 \u6A21\u5757\u5DF2\u5C31\u7EEA\u3002",
+      maintenance_action_result_failure:
+        "\u64CD\u4F5C\u5931\u8D25 \u2014 \u6A21\u5757\u4ECD\u9700\u5173\u6CE8\u3002",
+      maintenance_confirm_redo_title: "\u786E\u8BA4\u91CD\u65B0\u8FD0\u884C",
+      maintenance_confirm_redo_body:
+        "\u8FD9\u5C06\u5220\u9664\u5E76\u91CD\u65B0\u8FD0\u884C\u6240\u9009\u8BBA\u6587\u7684 OCR\u3002\u5DF2\u6709\u7684\u884D\u751F\u7ED3\u679C\u5C06\u88AB\u66FF\u6362\u3002",
+      maintenance_confirm_restore_title: "\u786E\u8BA4\u6062\u590D",
+      maintenance_confirm_restore_body:
+        "\u8FD9\u5C06\u4ECE\u5907\u4EFD\u6062\u590D\u8BB0\u5FC6\u6570\u636E\u5E93\u3002\u5F53\u524D\u6570\u636E\u5C06\u88AB\u66FF\u6362\u3002",
+      maintenance_confirm_ok: "\u7EE7\u7EED",
+      maintenance_confirm_cancel: "\u53D6\u6D88",
+      confirmation_default_effect:
+        "\u6B64\u64CD\u4F5C\u5C06\u66F4\u6539 PaperForge \u6570\u636E\u3002",
+      confirm_effect_label: "\u5F71\u54CD",
+      ocr_already_running: "OCR \u6B63\u5728\u8FD0\u884C\u3002",
+      ocr_activity_run: "\u6B63\u5728\u8FD0\u884C OCR\u2026",
+      ocr_activity_rebuild:
+        "\u6B63\u5728\u91CD\u5EFA OCR \u884D\u751F\u7ED3\u679C\u2026",
+      ocr_activity_redo: "\u6B63\u5728\u91CD\u65B0\u6267\u884C OCR\u2026",
+      ocr_run_confirm_title: "\u8FD0\u884C OCR",
+      ocr_run_confirm_body:
+        "\u5F85\u5904\u7406 PDF \u5C06\u53D1\u9001\u5230\u5DF2\u914D\u7F6E\u7684 OCR \u670D\u52A1\uFF0C\u53EF\u80FD\u4EA7\u751F\u8D39\u7528\u3002\u6BCF\u7BC7\u8BBA\u6587\u5904\u7406\u6210\u529F\u524D\uFF0C\u73B0\u6709 OCR \u7ED3\u679C\u4F1A\u4FDD\u7559\uFF1B\u8FD0\u884C\u53EF\u5B89\u5168\u505C\u6B62\u3002",
+      embed_already_running:
+        "\u5411\u91CF\u6784\u5EFA\u6B63\u5728\u8FDB\u884C\u3002",
+      embed_activity_stopping:
+        "\u6B63\u5728\u505C\u6B62\u5411\u91CF\u6784\u5EFA\u2026",
+      embed_activity_building:
+        "\u6B63\u5728\u6784\u5EFA\u5411\u91CF\u7D22\u5F15\u2026",
+      embed_rebuild_title: "\u91CD\u5EFA\u5411\u91CF\u7D22\u5F15",
+      embed_rebuild_body:
+        "\u8C03\u7528\u5D4C\u5165 API \u53EF\u80FD\u4EA7\u751F\u8D39\u7528\u3002\u66FF\u6362\u7D22\u5F15\u9A8C\u8BC1\u5B8C\u6210\u524D\uFF0C\u73B0\u6709\u5411\u91CF\u4ECD\u53EF\u7528\uFF1BPDF\u3001\u7B14\u8BB0\u548C OCR \u5747\u4F1A\u4FDD\u7559\u3002\u6784\u5EFA\u53EF\u5B89\u5168\u505C\u6B62\u3002",
+      embed_build_complete:
+        "\u5411\u91CF\u7D22\u5F15\u6784\u5EFA\u5B8C\u6210\u3002",
+      embed_build_warning:
+        "\u5411\u91CF\u7D22\u5F15\u5DF2\u53D1\u5E03\uFF0C\u4F46\u5B58\u5728\u8B66\u544A\uFF1A{detail}",
+      embed_bookkeeping_incomplete:
+        "\u6536\u5C3E\u8BB0\u5F55\u672A\u5B8C\u6210",
+      embed_build_stopped:
+        "\u6784\u5EFA\u5DF2\u505C\u6B62\u3002\u518D\u6B21\u8FD0\u884C\u5373\u53EF\u7EE7\u7EED\u3002",
+      next_action_pending:
+        "\u5411\u91CF\u5D4C\u5165\u5DF2\u5C31\u7EEA\u3002\u8BF7\u6253\u5F00\u201C\u667A\u80FD\u68C0\u7D22\u201D\u67E5\u770B\u5E76\u8FD0\u884C\u3002",
+      next_action_runtime_unavailable:
+        "PaperForge \u8FD0\u884C\u73AF\u5883\u4E0D\u53EF\u7528\uFF1B\u540E\u7EED\u64CD\u4F5C\u672A\u542F\u52A8\u3002",
+      next_action_failed: "\u540E\u7EED\u64CD\u4F5C\u5931\u8D25\uFF1A{detail}",
+      maintenance_issue_draft_title: "OCR \u95EE\u9898\u8349\u7A3F",
+      maintenance_issue_draft_preview:
+        "\u5728\u6253\u5F00 GitHub \u4E4B\u524D\uFF0C\u8BF7\u5BA1\u9605\u4EE5\u4E0B\u95EE\u9898\u8349\u7A3F\u3002",
+      maintenance_issue_draft_included: "\u5DF2\u5305\u542B",
+      maintenance_issue_draft_redacted: "\u5DF2\u8131\u654F",
+      maintenance_issue_draft_open_github: "\u6253\u5F00 GitHub Issue",
+      maintenance_issue_draft_edit: "\u7F16\u8F91\u8349\u7A3F",
+      ocr_state_ready:
+        "\u5DF2\u5904\u7406 {count} \u7BC7\u8BBA\u6587\uFF0COCR \u7248\u672C {version}",
+      ocr_state_ready_no_version:
+        "\u5DF2\u5904\u7406 {count} \u7BC7\u8BBA\u6587",
+      ocr_state_update_available: "OCR v{version} \u53EF\u7528",
+      ocr_state_update_description:
+        "\u65B0\u7248\u6D41\u6C34\u7EBF\u6539\u8FDB\u4E86\u7ED3\u6784\u68C0\u6D4B\u3001\u56FE\u8868\u63D0\u53D6\u7CBE\u5EA6\u548C\u5168\u6587\u683C\u5F0F\u3002",
+      ocr_state_update_safety:
+        "\u60A8\u7684 PDF \u548C\u73B0\u6709 OCR \u6570\u636E\u4F1A\u5F97\u5230\u4FDD\u7559\u3002\u64CD\u4F5C\u524D\u4F1A\u81EA\u52A8\u521B\u5EFA\u5907\u4EFD\u3002",
+      ocr_action_re_extract: "\u5168\u90E8\u91CD\u65B0\u63D0\u53D6",
+      ocr_modal_title: "\u5168\u90E8\u91CD\u65B0 OCR",
+      ocr_modal_description:
+        "\u8FD9\u5C06\u4F7F\u7528\u6700\u65B0\u6D41\u6C34\u7EBF\u7248\u672C\u5BF9\u6240\u6709\u8BBA\u6587\u91CD\u65B0\u8FD0\u884C OCR\u3002",
+      ocr_state_running: "\u6B63\u5728\u91CD\u65B0\u63D0\u53D6\u2026",
+      sr_state_disabled: "\u667A\u80FD\u68C0\u7D22\u672A\u542F\u7528",
+      sr_state_db_missing:
+        "\u8BB0\u5FC6\u6570\u636E\u5E93\u5C1A\u672A\u6784\u5EFA",
+      sr_state_upgrade_available:
+        "\u5411\u91CF\u7D22\u5F15\u4F7F\u7528\u65E7\u7248 ChromaDB \u540E\u7AEF",
+      sr_state_build_failed: "\u4E0A\u6B21\u5411\u91CF\u6784\u5EFA\u5931\u8D25",
+      sr_state_build_interrupted:
+        "\u5411\u91CF\u7D22\u5F15\u90E8\u5206\u6784\u5EFA\u4E2D\u2014\u2014\u7EE7\u7EED\u5D4C\u5165\u5269\u4F59\u8BBA\u6587",
+      sr_state_identity_changed:
+        "\u5D4C\u5165\u914D\u7F6E\u5DF2\u53D8\u5316\u2014\u2014\u73B0\u6709\u5411\u91CF\u9700\u91CD\u5EFA",
+      sr_build_failed_notice:
+        "\u5411\u91CF\u7D22\u5F15\u6784\u5EFA\u5931\u8D25\uFF1A{detail}",
+      sr_action_build: "\u6784\u5EFA\u7D22\u5F15",
+      sr_action_rebuild: "\u91CD\u5EFA\u7D22\u5F15",
+      sr_action_upgrade: "\u5347\u7EA7\u5230 vec0",
+      sr_upgrade_modal_title: "\u5347\u7EA7\u5411\u91CF\u7D22\u5F15",
+      sr_upgrade_modal_description:
+        "\u8FD9\u5C06\u4F7F\u7528\u65B0\u7684 vec0 \u540E\u7AEF\u91CD\u5EFA\u6574\u4E2A\u5411\u91CF\u7D22\u5F15\u3002",
+      sr_upgrade_modal_safety:
+        "\u73B0\u6709 ChromaDB \u6570\u636E\u4F1A\u5F97\u5230\u4FDD\u7559\u3002\u6B64\u8FC7\u7A0B\u9700\u8981\u6709\u6548\u7684 API Key \u5E76\u53EF\u80FD\u4EA7\u751F API \u8D39\u7528\u3002",
+      sr_api_key_notice:
+        "API Key \u672A\u914D\u7F6E \u2014 \u641C\u7D22\u548C\u68C0\u7D22\u4E0D\u53EF\u7528",
+      sr_db_status: "\u6570\u636E\u5E93",
+      sr_backend: "\u540E\u7AEF",
+      sr_api_key: "API Key",
+      sr_db_exists: "\u5DF2\u6FC0\u6D3B",
+      sr_db_missing: "\u672A\u6784\u5EFA",
+      sr_db_building: "\u6784\u5EFA\u4E2D",
+      sr_db_partial: "\u90E8\u5206\u6784\u5EFA",
+      sr_db_failed: "\u6784\u5EFA\u5931\u8D25",
+      sr_db_corrupt: "\u5DF2\u635F\u574F",
+      sr_db_stale: "\u7D22\u5F15\u8FC7\u671F",
+      sr_impact_db_missing:
+        "\u667A\u80FD\u68C0\u7D22\u9700\u8981 OpenAI API Key \u548C\u5411\u91CF\u7D22\u5F15\u3002\u70B9\u51FB\u6784\u5EFA\u7D22\u5F15\u5F00\u59CB\u8BBE\u7F6E\u3002",
+      sr_impact_upgrade:
+        "\u65B0\u7684\u5411\u91CF\u540E\u7AEF\u53EF\u7528\u3002\u5347\u7EA7\u53EF\u63D0\u5347\u641C\u7D22\u8D28\u91CF\u3002",
+      sr_impact_build_failed:
+        "\u4E0A\u6B21\u6784\u5EFA\u5931\u8D25\u3002\u8BF7\u68C0\u67E5 API Key \u540E\u91CD\u8BD5\u3002",
+      sr_impact_schema_stale:
+        "\u5411\u91CF\u6A21\u5F0F\u5DF2\u8FC7\u671F\u3002\u8BF7\u91CD\u5EFA\u4EE5\u5339\u914D\u5F53\u524D\u6587\u732E\u5E93\u3002",
+      sr_action_enable: "\u542F\u7528\u667A\u80FD\u68C0\u7D22",
+      sr_configure_api_keys: "\u914D\u7F6E API Key...",
+      sr_config_hint: "\u8BBE\u7F6E \u203A \u667A\u80FD\u68C0\u7D22",
+      sr_configure_api_keys_hint:
+        "\u8BF7\u5728 \u8BBE\u7F6E \u2192 PaperForge \u2192 Smart Retrieval \u4E2D\u914D\u7F6E API Key\u3002",
+      sr_config_label: "\u914D\u7F6E",
+      ocr_ws_title: "OCR \u5DE5\u4F5C\u533A",
+      ocr_ws_filter_all: "\u5168\u90E8",
+      ocr_ws_filter_unprocessed: "\u672A\u5904\u7406",
+      ocr_ws_filter_review: "\u9700\u5BA1\u6838",
+      ocr_ws_filter_processed: "\u5DF2\u5904\u7406",
+      ocr_ws_col_title: "\u6807\u9898",
+      ocr_ws_col_status: "\u72B6\u6001",
+      ocr_ws_col_version: "\u7248\u672C",
+      ocr_ws_col_lastrun: "\u6700\u540E\u8FD0\u884C",
+      ocr_ws_btn_preview: "\u9884\u89C8",
+      ocr_ws_btn_process_all:
+        "\u5904\u7406\u6240\u6709\u672A\u5904\u7406 ({count})",
+      ocr_ws_detail_view_fulltext: "\u67E5\u770B\u5168\u6587",
+      ocr_ws_detail_restore_backup: "\u6062\u590D\u5907\u4EFD",
+      ocr_ws_detail_re_extract: "\u91CD\u65B0\u63D0\u53D6\u6B64\u8BBA\u6587",
+      ocr_ws_detail_run: "\u8FD0\u884C OCR",
+      ocr_ws_re_extract_disabled_title:
+        "\u91CD\u65B0\u63D0\u53D6\u4E0D\u53EF\u7528",
+      ocr_ws_re_extract_disabled_body:
+        "\u5355\u7BC7\u8BBA\u6587\u91CD\u65B0\u63D0\u53D6\u76EE\u524D\u4F1A\u5220\u9664\u6240\u6709OCR\u6570\u636E\u800C\u4E0D\u521B\u5EFA\u5907\u4EFD\u3002\u8BF7\u4F7F\u7528OCR\u8BBE\u7F6E\u4E2D\u7684\u2018\u91CD\u65B0\u63D0\u53D6\u6240\u6709\u8BBA\u6587\u2019\u2014\u2014\u8BE5\u8DEF\u5F84\u5177\u6709\u5185\u7F6E\u5907\u4EFD\u3002",
+      ocr_ws_what_happens:
+        "\u91CD\u65B0\u63D0\u53D6\u65F6\u4F1A\u53D1\u751F\u4EC0\u4E48\uFF1F",
+      ocr_ws_disclosure_text:
+        "\u91CD\u65B0\u63D0\u53D6\u4F1A\u5BF9\u6240\u9009\u8BBA\u6587\u91CD\u65B0\u8FD0\u884COCR\u3002\u5F53\u524D\u7248\u672C\u4F1A\u5148\u5907\u4EFD\u3002PDF\u6C38\u8FDC\u4E0D\u4F1A\u88AB\u4FEE\u6539\u3002",
+      ocr_ws_no_papers:
+        "\u672A\u627E\u5230\u5177\u6709OCR\u6570\u636E\u7684\u8BBA\u6587",
+      ocr_ws_lede:
+        "\u67E5\u770B\u548C\u7BA1\u7406\u6587\u732E\u96C6\u5408\u7684 OCR \u63D0\u53D6\u3002",
+      ocr_ws_processing: "\u5904\u7406\u4E2D\u2026",
+      ocr_ws_stop: "\u505C\u6B62",
+      ocr_ws_stop_unavailable_rebuild:
+        "\u91CD\u5EFA\u64CD\u4F5C\u65E0\u6CD5\u5728\u6B64\u505C\u6B62",
+      ocr_ws_btn_refresh: "\u5237\u65B0",
+      ocr_ws_search_placeholder:
+        "\u6309\u6807\u9898\u3001\u4F5C\u8005\u3001\u5E74\u4EFD\u641C\u7D22\u8BBA\u6587...",
+      ocr_ws_showing:
+        "\u5171 {total} \u7BC7\uFF0C\u663E\u793A <strong>{count}</strong> \u7BC7",
+      ocr_ws_filter_status: "\u6309\u72B6\u6001\u7B5B\u9009",
+      ocr_ws_none_selected: "\u672A\u9009\u62E9\u8BBA\u6587",
+      ocr_ws_select_hint:
+        "\u9009\u62E9\u672A\u5904\u7406\u6216\u6709\u66F4\u65B0\u53EF\u7528\u7684\u8BBA\u6587\u3002",
+      ocr_ws_selected: "\u5DF2\u9009\u62E9 {count} \u7BC7",
+      ocr_ws_btn_process_selected: "\u5904\u7406\u6240\u9009",
+      ocr_ws_btn_rebuild_selected: "\u91CD\u5EFA\u6240\u9009",
+      ocr_ws_restore_title: "\u6062\u590D\u5907\u4EFD\u7248\u672C",
+      ocr_ws_restore_versions: "\u7248\u672C",
+      ocr_ws_restore_compare: "\u5BF9\u6BD4\u5F53\u524D\u7248\u672C",
+      ocr_ws_restore_diff_title: "\u5F53\u524D vs {v} \u7684\u53D8\u5316",
+      ocr_ws_restore_no_diff: "\u65E0\u5DEE\u5F02",
+      ocr_ws_restore_back: "\u8FD4\u56DE\u9884\u89C8",
+      ocr_ws_restore_same: "\u8FD9\u5DF2\u7ECF\u662F\u5F53\u524D\u7248\u672C",
+      ocr_ws_restore_desc:
+        "\u9009\u62E9\u8981\u6062\u590D\u7684\u7248\u672C\u3002\u5F53\u524D\u7684\u5168\u6587\u5C06\u88AB\u66FF\u6362\u3002",
+      ocr_ws_restore_current: "\u5F53\u524D",
+      ocr_ws_restore_created: "\u521B\u5EFA\u65F6\u95F4\uFF1A",
+      ocr_ws_restore_source: "\u6765\u6E90\uFF1A",
+      ocr_ws_restore_renderer: "\u6E32\u67D3\u5668\uFF1A",
+      ocr_ws_restore_btn: "\u6062\u590D",
+      ocr_ws_tooltip_process:
+        "\u4ECE\u5934\u6267\u884C\u5B8C\u6574 OCR\uFF1A\u63D0\u53D6\u6587\u5B57\u5E76\u91CD\u5EFA\u884D\u751F\u7ED3\u679C\u3002OCR \u6A21\u578B\u66F4\u65B0\u540E\u9700\u8981\u6267\u884C\uFF0C\u4F46\u4E00\u822C\u4E0D\u9700\u8981\u3002",
+      ocr_ws_tooltip_rebuild:
+        "\u57FA\u4E8E\u5DF2\u6709 OCR \u539F\u59CB\u6570\u636E\u91CD\u65B0\u751F\u6210\u6E32\u67D3\u7ED3\u679C\uFF0C\u4E0D\u91CD\u65B0\u8FD0\u884C OCR\u3002OCR \u6E32\u67D3\u7248\u672C\u66F4\u65B0\u540E\u9700\u8981\u6267\u884C\u3002",
+      ocr_ws_tooltip_reextract:
+        "\u4ECE\u5934\u91CD\u65B0 OCR \u6B64\u8BBA\u6587\uFF08\u5220\u9664\u5E76\u91CD\u65B0\u751F\u6210\u5168\u90E8 OCR \u6570\u636E\uFF09\u3002",
+      ocr_ws_detail_restore_done: "\u5DF2\u6062\u590D\u5907\u4EFD {label}",
+      next_action_memory_started:
+        "\u5185\u5B58\u7D22\u5F15\u91CD\u5EFA\u5DF2\u542F\u52A8",
+      next_action_done: "\u540E\u7EED\u52A8\u4F5C\u5DF2\u5B8C\u6210",
+      next_action_refused: "\u540E\u7EED\u52A8\u4F5C\u5DF2\u88AB\u62D2\u7EDD",
+      next_action_unknown:
+        "\u672A\u77E5\u540E\u7EED\u52A8\u4F5C\u5DF2\u62D2\u7EDD",
+      next_action_cancel: "\u7A0D\u540E",
+      ocr_ws_fulltext_not_found: "\u672A\u627E\u5230\u5168\u6587",
+      ocr_ws_restore_checking: "\u6B63\u5728\u68C0\u67E5\u7248\u672C\u2026",
+      ocr_ws_restore_unavailable:
+        "\u6CA1\u6709\u53EF\u7528\u7684\u5907\u4EFD\u7248\u672C",
+      ocr_ws_detail_rebuild: "\u91CD\u5EFA\u6B64\u8BBA\u6587",
+      ocr_ws_memory_refresh:
+        "\u6B63\u5728\u66F4\u65B0\u672C\u5730\u6587\u672C\u7D22\u5F15\u2026",
+      ocr_ws_memory_refresh_failed:
+        "\u6587\u672C\u7D22\u5F15\u5237\u65B0\u5931\u8D25\uFF0C\u53EF\u7A0D\u540E\u91CD\u8BD5",
+      ocr_ws_index_updated:
+        "\u6B63\u6587\u7D22\u5F15\u5DF2\u66F4\u65B0\uFF0C\u8BED\u4E49\u7D22\u5F15\u9700\u8981\u5237\u65B0",
+      ocr_ws_embed_confirm: "\u786E\u8BA4\u5411\u91CF\u5D4C\u5165",
+      ocr_ws_embed_confirm_body:
+        "\u4E3A\u53D8\u66F4\u8BBA\u6587\u91CD\u5EFA\u5411\u91CF\u53EF\u80FD\u8C03\u7528\u4ED8\u8D39 API\uFF0C\u662F\u5426\u7EE7\u7EED\uFF1F",
+      ocr_ws_embed_done: "\u5411\u91CF\u5D4C\u5165\u5B8C\u6210",
+      ocr_rebuild_partial:
+        "\u91CD\u5EFA\u5B8C\u6210\u4F46\u5B58\u5728\u5931\u8D25",
+      ocr_ws_restore_confirm_title:
+        "\u6062\u590D\u5C55\u793A\u5168\u6587\u6587\u672C",
+      ocr_ws_restore_confirm_body:
+        "\u5C06\u7528\u6240\u9009\u7248\u672C\u7684 fulltext.md \u8986\u76D6 render/fulltext.md\u3002OCR \u7ED3\u6784\u3001\u7D22\u5F15\u3001\u8BB0\u5FC6\u4E0E\u5411\u91CF\u5747\u4E0D\u53D7\u5F71\u54CD\u3002\u7EE7\u7EED\uFF1F",
+      ocr_ws_restore_confirm_btn: "\u6062\u590D\u5C55\u793A\u5168\u6587",
+      ocr_ws_restore_stale_notice:
+        "\u8BE5\u7248\u672C\u65E9\u4E8E\u5F53\u524D\u7ED3\u6784\u72B6\u6001\uFF1B\u5982\u9700\u7ED3\u6784\u4E00\u81F4\u8BF7\u91CD\u5EFA\u6B64\u8BBA\u6587",
+      ocr_ws_close: "\u5173\u95ED",
+      ocr_ws_fact_version: "OCR \u7248\u672C",
+      ocr_ws_fact_last_run: "\u6700\u540E\u5904\u7406",
+      ocr_ws_fact_authors: "\u4F5C\u8005",
+      ocr_ws_fact_year: "\u5E74\u4EFD",
+      ocr_ws_fact_pages: "\u9875\u6570",
+      ocr_ws_fact_backups: "\u5907\u4EFD",
+      ocr_ws_status_done: "\u5DF2\u5904\u7406",
+      ocr_ws_status_update: "\u6709\u66F4\u65B0",
+      ocr_ws_status_failed: "\u5931\u8D25",
+      ocr_ws_status_processing: "\u5904\u7406\u4E2D",
+      ocr_ws_status_nopdf: "\u65E0PDF",
+      ocr_ws_status_pending: "\u5F85\u5904\u7406",
+      ocr_ws_status_unknown: "\u672A\u77E5",
+    },
+  },
+  ct = null;
+function lt(p) {
+  try {
+    let o = p.vault;
+    if (typeof o.getConfig == "function") {
+      let e = o.getConfig("language");
+      if (e && String(e).startsWith("zh")) return "zh";
+    }
+  } catch (o) {}
+  try {
+    if (typeof localStorage != "undefined") {
+      let o = localStorage.getItem("language");
+      if (o && String(o).startsWith("zh")) return "zh";
+    }
+  } catch (o) {}
+  try {
+    let o = document.documentElement.lang || navigator.language;
+    if (o && o.startsWith("zh")) return "zh";
+  } catch (o) {}
+  return "en";
+}
+function Ht(p, o = "") {
+  ct = (o || lt(p)).startsWith("zh") ? ot.zh : ot.en;
+}
+function i(p) {
+  return (ct && ct[p]) || ot.en[p] || p;
+}
+var A = require("obsidian"),
+  j = K(require("fs")),
+  ge = K(require("path"));
+var Dr = ["PAPERFORGE_CREDENTIAL_", "PADDLEOCR_", "VECTOR_DB_", "OPENAI_"];
+function $t(p) {
+  let o = {};
+  for (let [e, t] of Object.entries(p))
+    Dr.some((r) => e.startsWith(r)) || (o[e] = t);
+  return o;
+}
+var Or = "paddleocr-api-key",
+  Lr = "vector-db-api-key";
+async function Fr(p, o) {
+  let e = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(
+      `${p.trim()}\0${o.trim() || "text-embedding-3-small"}`
+    )
+  );
+  return [
+    `vector-db-api-key-v2-${[...new Uint8Array(e)]
+      .map((r) => r.toString(16).padStart(2, "0"))
+      .join("")
+      .slice(0, 40)}`,
+    Lr,
+  ];
+}
+async function qt(p, o, e, t) {
+  var n, a;
+  if (!o || typeof o.getSecret != "function")
+    return { migrated: [], warnings: ["SecretStorage unavailable"] };
+  let r =
+    p === "embedding"
+      ? await Fr(
+          (n = t == null ? void 0 : t.baseUrl) != null ? n : "",
+          (a = t == null ? void 0 : t.model) != null ? a : ""
+        )
+      : [Or];
+  for (let s of r) {
+    let c = await o.getSecret(s);
+    if (!c) continue;
+    let l = !1;
+    try {
+      l = await e.writeCredential(p, c);
+    } catch (d) {
+      l = !1;
+    }
+    if (!l)
+      return {
+        migrated: [],
+        warnings: [
+          "Keyring write failed \u2014 the legacy SecretStorage value was kept. Run `paperforge auth set " +
+            p +
+            " --stdin` manually.",
+        ],
+      };
+    try {
+      await o.setSecret(s, "");
+    } catch (d) {
+      return {
+        migrated: [s],
+        warnings: [
+          "Credential migrated and verified, but the old SecretStorage value could not be cleared \u2014 delete it manually in Obsidian.",
+        ],
+      };
+    }
+    return { migrated: [s], warnings: [] };
+  }
+  return { migrated: [], warnings: [] };
+}
+var or = K(dt());
+var Ir = {
+    checking: "pf-badge pf-badge--checking",
+    ready: "pf-badge pf-badge--ready",
+    not_enabled: "pf-badge pf-badge--not-enabled",
+    setup_required: "pf-badge pf-badge--setup-required",
+    action_required: "pf-badge pf-badge--action-required",
+    detection_failed: "pf-badge pf-badge--detection-failed",
+  },
+  Br = {
+    checking: "Checking",
+    ready: "Ready",
+    not_enabled: "Not Enabled",
+    setup_required: "Setup Required",
+    action_required: "Action Required",
+    detection_failed: "Detection Failed",
+  };
+function ie(p, o, e) {
+  return p.createEl("span", {
+    cls: Ir[o],
+    text: e != null ? e : Br[o],
+    attr: { role: "status" },
+  });
+}
+function Vt(p, o) {
+  let e = p.createEl("div", { cls: "pf-activity-row" }),
+    t = e.createEl("span", { cls: "pf-activity-label", text: o.label });
+  if (o.progress && o.progress.total > 0) {
+    let r = e.createEl("div", { cls: "pf-activity-bar" }),
+      n = Math.round((o.progress.current / o.progress.total) * 100);
+    (r.createEl("div", {
+      cls: "pf-activity-bar-fill",
+      attr: {
+        style: `width: ${n}%`,
+        role: "progressbar",
+        "aria-valuenow": String(o.progress.current),
+        "aria-valuemin": "1",
+        "aria-valuemax": String(o.progress.total),
+      },
+    }),
+      e.createEl("span", {
+        cls: "pf-activity-count",
+        text: `${o.progress.current}/${o.progress.total}`,
+      }));
+  } else
+    e.createEl("span", { cls: "pf-activity-spinner" }).setAttr(
+      "aria-label",
+      "In progress"
+    );
+  if (
+    (o.scope && e.createEl("span", { cls: "pf-activity-scope", text: o.scope }),
+    o.stopLabel && o.onStop)
+  ) {
+    let r = e.createEl("button", {
+      cls: "pf-activity-stop",
+      text: o.stopLabel,
+    });
+    (r.addEventListener("click", o.onStop),
+      r.addEventListener("keydown", (n) => {
+        var a;
+        (n.key === "Enter" || n.key === " ") &&
+          (n.preventDefault(), (a = o.onStop) == null || a.call(o));
+      }));
+  }
+  return e;
+}
+function z(p, o) {
+  let e = p.createEl("button", {
+    cls: "pf-action-btn",
+    text: o.loading ? "\u2026" : o.label,
+  });
+  return (
+    o.loading
+      ? (e.setAttr("disabled", "true"),
+        e.classList.add("pf-action-btn--loading"))
+      : o.disabled &&
+        (e.setAttr("disabled", "true"),
+        e.classList.add("pf-action-btn--disabled")),
+    e.addEventListener("click", o.onClick),
+    e.addEventListener("keydown", (t) => {
+      (t.key === "Enter" || t.key === " ") && (t.preventDefault(), o.onClick());
+    }),
+    e
+  );
+}
+function zt(p, o) {
+  let e = p.createEl("div", { cls: "pf-error-anatomy" });
+  e.createEl("div", { cls: "pf-error-title", text: o.whatHappened });
+  let t = e.createEl("div", { cls: "pf-error-impact" });
+  (t.createEl("span", {
+    cls: "pf-error-impact-label",
+    text: (o.impactLabel || "Impact:") + " ",
+  }),
+    t.createEl("span", { text: o.impact }),
+    o.reasonCode &&
+      e.createEl("div", { cls: "pf-error-code", text: o.reasonCode }));
+  let r = e.createEl("div", { cls: "pf-error-next" });
+  return (
+    r.createEl("span", {
+      cls: "pf-error-next-label",
+      text: (o.nextLabel || "Next:") + " ",
+    }),
+    r.createEl("span", { text: o.nextStep }),
+    o.onCopyDiagnostic &&
+      e
+        .createEl("button", {
+          cls: "pf-error-copy-diagnostic",
+          text: o.copyLabel || "Copy Diagnostic Information",
+        })
+        .addEventListener("click", o.onCopyDiagnostic),
+    e
+  );
+}
+function jt(p, o) {
+  let e = p.createEl("div", { cls: "pf-config-summary" });
+  for (let r of o.items) {
+    let n = e.createEl("div", { cls: "pf-config-row" });
+    n.createEl("span", { cls: "pf-config-label", text: r.label });
+    let a = r.isCredential
+      ? r.value
+        ? o.configuredLabel || "Configured"
+        : o.notConfiguredLabel || "Not configured"
+      : r.value;
+    n.createEl("span", {
+      cls: `pf-config-value${r.isCredential ? (r.value ? " pf-config-value--ok" : " pf-config-value--muted") : ""}`,
+      text: a,
+    });
+  }
+  return (
+    e
+      .createEl("button", {
+        cls: "pf-config-change-btn",
+        text: o.onChangeLabel,
+      })
+      .addEventListener("click", o.onChange),
+    e
+  );
+}
+function Kt(p) {
+  let o = [];
+  (o.push("=== PaperForge Support Diagnostic ==="),
+    o.push(`Time: ${new Date().toISOString()}`),
+    o.push(`Plugin: ${p.pluginVersion}`),
+    p.backendVersion && o.push(`Backend: ${p.backendVersion}`),
+    o.push(""),
+    o.push("--- Module Status ---"));
+  for (let e of p.modules)
+    (o.push(`${e.module}: ${e.userState}`),
+      e.reasonCode && o.push(`  reason: ${e.reasonCode}`),
+      e.actionId && o.push(`  action: ${e.actionId}`),
+      e.lastSuccessAt && o.push(`  last-success: ${e.lastSuccessAt}`),
+      e.errorExcerpt && o.push(`  error: ${e.errorExcerpt}`));
+  return (
+    o.push(""),
+    o.push("=== End ==="),
+    o.join(`
+`)
+  );
+}
+function Ut(p, o) {
+  navigator.clipboard
+    .writeText(p)
+    .then(() => {
+      o == null || o();
+    })
+    .catch((e) => {
+      console.warn("[PaperForge] Failed to copy diagnostic:", e);
+    });
+}
+function Wt(p) {
+  return { envelope: p, capturedAt: new Date().toISOString() };
+}
+function Jt(p, o) {
+  return !p || o.user_state === "ready"
+    ? !0
+    : !(o.user_state === "detection_failed" || p.user_state === "ready");
+}
+function Zt(p, o) {
+  var t, r, n, a, s, c, l;
+  let e = [];
+  for (let [d, u] of Object.entries(p)) {
+    let f = o.get(d);
+    e.push({
+      module: d,
+      userState: u.user_state,
+      lastSuccessAt: (t = f == null ? void 0 : f.capturedAt) != null ? t : null,
+      reasonCode: (r = u.reason) == null ? void 0 : r.code,
+      actionId:
+        (a = (n = u.action) == null ? void 0 : n.primary) == null
+          ? void 0
+          : a.action_id,
+      errorExcerpt:
+        (l =
+          (c = (s = u.reason) == null ? void 0 : s.text) == null
+            ? void 0
+            : c.slice(0, 200)) != null
+          ? l
+          : void 0,
+    });
+  }
+  return e;
+}
+var xe = require("obsidian");
+function Gt(p) {
+  try {
+    let o = JSON.parse(p),
+      e = o == null ? void 0 : o.next_actions;
+    return Array.isArray(e) ? e : [];
+  } catch (o) {
+    return [];
+  }
+}
+var pt = new Set();
+var Xt = {
+  isInFlight: (p) => pt.has(p),
+  markInFlight: (p) => pt.add(p),
+  clearInFlight: (p) => pt.delete(p),
+};
+var Nr = 1;
+function Hr(p, o) {
+  var e;
+  return {
+    action_id: p.action_id,
+    scope: (e = p.scope) != null ? e : { kind: "all" },
+    confirm: o ? p.action_id : void 0,
+    follow: "auto",
+  };
+}
+async function Qt(p, o, e = 0) {
+  var r, n;
+  let t = 0;
+  for (let a of p) {
+    if (a.schema_version !== Nr) {
+      o.notify(`Unknown next-action schema v${a.schema_version}; refused`);
+      continue;
+    }
+    if (!a.action_id) {
+      o.notify("Next action without action_id; refused");
+      continue;
+    }
+    let s =
+      a.dedupe_key ||
+      `${a.action_id}:${(n = (r = a.scope) == null ? void 0 : r.kind) != null ? n : "all"}`;
+    if (o.isInFlight(s)) continue;
+    let c = !1;
+    if (a.automatic !== !0) {
+      if (e > 0) {
+        o.notify(`Follow-up depth exceeded for '${a.action_id}'; skipped`);
+        continue;
+      }
+      if (!(await o.confirm(a))) {
+        o.notify(`Follow-up '${a.action_id}' refused by user`);
+        continue;
+      }
+      c = !0;
+    }
+    o.markInFlight(s);
+    try {
+      (await o.runAction(Hr(a, c)), (t += 1));
+    } finally {
+      o.clearInFlight(s);
+    }
+  }
+  return t;
+}
+async function ke(p, o) {
+  let e = Gt(p);
+  if (e.length === 0) return 0;
+  let t = e.filter((r) =>
+    r.automatic ? !0 : (new xe.Notice(i("next_action_pending"), 8e3), !1)
+  );
+  return t.length === 0
+    ? 0
+    : Qt(t, {
+        runAction: async (r) => {
+          var n, a, s, c;
+          try {
+            let l = await o.runAction(r);
+            if (l.ok) new xe.Notice(i("next_action_done"));
+            else {
+              let d =
+                (a = (n = l.payload) == null ? void 0 : n.error) == null
+                  ? void 0
+                  : a.message;
+              new xe.Notice(
+                i("next_action_failed").replace(
+                  "{detail}",
+                  String(d != null ? d : "unknown error")
+                )
+              );
+            }
+            return l;
+          } catch (l) {
+            return (
+              new xe.Notice(
+                i("next_action_failed").replace(
+                  "{detail}",
+                  String(
+                    (c =
+                      (s = l == null ? void 0 : l.message) != null ? s : l) !=
+                      null
+                      ? c
+                      : "unknown error"
+                  )
+                )
+              ),
+              { ok: !1, payload: null, exitCode: -1 }
+            );
+          }
+        },
+        confirm: async () => !1,
+        notify: (r) => new xe.Notice(r),
+        ...Xt,
+      });
+}
+var Ee = [],
+  ut = !1;
+function Ie(p) {
+  ut = p;
+}
+function Yt() {
+  return ut;
+}
+function se(p) {
+  if ((Ee.push(p), Ee.length > 200 && Ee.splice(0, Ee.length - 200), !ut))
+    return;
+  let o = [
+    `[PF:trace] ${p.kind} ${p.op}`,
+    p.ok === void 0 ? "" : `ok=${p.ok}`,
+    p.ms === void 0 ? "" : `${p.ms}ms`,
+    p.epoch === void 0 ? "" : `epoch=${p.epoch}`,
+    p.code ? `code=${p.code}` : "",
+    p.detail ? `detail=${p.detail}` : "",
+  ].filter(Boolean);
+  console.debug(o.join(" "));
+}
+function Ue() {
+  return Ee.map((p) =>
+    [
+      new Date(p.ts).toISOString().slice(11, 23),
+      p.kind,
+      p.op,
+      p.ok === void 0 ? "" : `ok=${p.ok}`,
+      p.ms === void 0 ? "" : `${p.ms}ms`,
+      p.epoch === void 0 ? "" : `epoch=${p.epoch}`,
+      p.code ? `code=${p.code}` : "",
+      p.detail ? `detail=${p.detail}` : "",
+    ]
+      .filter(Boolean)
+      .join(" ")
+  ).join(`
+`);
+}
+function er() {
+  Ee.length = 0;
+}
+function Be(p) {
+  let o = p.filter((t) => t.startsWith("--"));
+  return [
+    p
+      .filter((t) => !t.startsWith("-"))
+      .slice(0, 2)
+      .join(" "),
+    ...o,
+  ]
+    .join(" ")
+    .trim();
+}
+var Q = require("obsidian");
+var He = class extends Q.Modal {
+  constructor(e, t, r, n) {
+    super(e);
+    this._rowEls = [];
+    ((this.orphans = t.map((a, s) => ({ ...a, _selected: !0, _idx: s }))),
+      (this.vaultPath = r),
+      (this.py = n));
+  }
+  _updateUI() {
+    let e = this.orphans.filter((t) => t._selected);
+    (this._countEl.setText(
+      i("orphan_delete_selected").replace("{count}", String(e.length))
+    ),
+      this._selectAllBtn.setText(
+        e.length === this.orphans.length
+          ? i("orphan_deselect_all")
+          : i("orphan_select_all")
+      ));
+    for (let t of this.orphans) {
+      let r = this._rowEls[t._idx];
+      r && r.toggleClass("paperforge-orphan-dimmed", !t._selected);
+    }
+  }
+  onOpen() {
+    let { contentEl: e } = this;
+    (e.addClass("paperforge-modal"),
+      e.createEl("h2", {
+        text: i("orphan_title").replace("{count}", String(this.orphans.length)),
+      }),
+      e.createEl("p", { cls: "paperforge-modal-desc", text: i("orphan_desc") }),
+      (this._rowEls = []));
+    let t = e.createEl("div", { cls: "paperforge-orphan-list" });
+    for (let n of this.orphans) {
+      let a = t.createEl("div", {
+        cls:
+          "paperforge-orphan-row" +
+          (n._selected ? "" : " paperforge-orphan-dimmed"),
+      });
+      this._rowEls.push(a);
+      let s = a.createEl("div", { cls: "paperforge-orphan-info" }),
+        c = s.createEl("div", { cls: "paperforge-orphan-header" });
+      c.createEl("span", {
+        cls: "paperforge-orphan-key",
+        text: n.citation_key || n.key,
+      });
+      let l = c.createEl("span", { cls: "paperforge-orphan-tags" });
+      (l.createEl("span", {
+        cls: "paperforge-tag " + (n.has_pdf ? "tag-pdf" : "tag-nopdf"),
+        text: n.has_pdf ? "PDF" : "no PDF",
+      }),
+        n.collection_path &&
+          l.createEl("span", {
+            cls: "paperforge-tag tag-collection",
+            text: n.collection_path,
+          }),
+        n.title &&
+          s.createEl("div", { cls: "paperforge-orphan-title", text: n.title }));
+      let d = [];
+      (n.authors && d.push(n.authors),
+        n.year && d.push(n.year),
+        d.length > 0 &&
+          s.createEl("div", {
+            cls: "paperforge-orphan-meta",
+            text: d.join(" \xB7 "),
+          }),
+        s.createEl("div", {
+          cls: "paperforge-orphan-explain",
+          text: i("orphan_explain"),
+        }),
+        a.addEventListener("click", () => {
+          ((n._selected = !n._selected), this._updateUI());
+        }));
+    }
+    let r = e.createEl("div", { cls: "paperforge-modal-actions" });
+    ((this._selectAllBtn = r.createEl("button", {
+      cls: "paperforge-step-btn",
+      text: "Deselect all",
+    })),
+      this._selectAllBtn.addEventListener("click", () => {
+        let n = this.orphans.every((a) => a._selected);
+        for (let a of this.orphans) a._selected = !n;
+        this._updateUI();
+      }),
+      (this._countEl = r.createEl("button", {
+        cls: "paperforge-step-btn mod-cta",
+        text: "Delete " + this.orphans.length + " selected",
+      })),
+      r
+        .createEl("button", { cls: "paperforge-step-btn", text: "Keep all" })
+        .addEventListener("click", () => this.close()),
+      this._countEl.addEventListener("click", () => {
+        var l, d, u;
+        let n = this.orphans.filter((f) => f._selected);
+        if (n.length === 0) {
+          new Q.Notice(i("orphan_none_selected"));
+          return;
+        }
+        (this._countEl.setText("Deleting..."),
+          this._countEl.setAttr("disabled", ""),
+          this._selectAllBtn.setAttr("disabled", ""));
+        let a = n.map((f) => f.key),
+          s =
+            (d = (l = this.app.plugins) == null ? void 0 : l.plugins) == null
+              ? void 0
+              : d.paperforge,
+          c =
+            (u = s == null ? void 0 : s.getClient) == null ? void 0 : u.call(s);
+        if (!c) {
+          (new Q.Notice("PaperForge: client unavailable"), this.close());
+          return;
+        }
+        c.describeAction("library.prune")
+          .then((f) => {
+            var g;
+            let _ =
+                (g = f == null ? void 0 : f.action_id) != null
+                  ? g
+                  : "library.prune",
+              m =
+                (f == null ? void 0 : f.confirmation) === "required"
+                  ? _
+                  : void 0;
+            return c.runAction({
+              action_id: _,
+              scope: { kind: "papers", keys: a },
+              confirm: m,
+            });
+          })
+          .then((f) => {
+            var _, m, g;
+            if (f.ok) {
+              let h =
+                (g =
+                  (m = (_ = f.payload) == null ? void 0 : _.data) == null
+                    ? void 0
+                    : m.deleted) != null
+                  ? g
+                  : a;
+              new Q.Notice("Deleted " + h.length + " orphan workspace(s)");
+            } else new Q.Notice("PaperForge: prune failed");
+            this.close();
+          })
+          .catch(() => {
+            (new Q.Notice("PaperForge: prune failed"), this.close());
+          });
+      }));
+  }
+  onClose() {
+    this.contentEl.empty();
+  }
+};
+function Je(p, o, e) {
+  var r;
+  console.log("[PF] checkOrphanState called");
+  let t = (r = o == null ? void 0 : o.getClient) == null ? void 0 : r.call(o);
+  if (!t) {
+    console.log("[PF] orphan file NOT FOUND");
+    return;
+  }
+  t.reconcile("all")
+    .then((n) => {
+      var l;
+      let s = (
+          Array.isArray(n == null ? void 0 : n.deficits) ? n.deficits : []
+        ).find(
+          (d) =>
+            d.kind === "orphan_residuals" || d.action_id === "library.prune"
+        ),
+        c = (l = s == null ? void 0 : s.paper_keys) != null ? l : [];
+      if (c.length > 0) {
+        console.log("[PF] orphan file FOUND");
+        let d = c.map((u) => ({ key: u, title: u, folder: u }));
+        new He(p, d, e, null).open();
+      } else console.log("[PF] orphan file NOT FOUND");
+    })
+    .catch((n) => {
+      console.log(
+        "[PF] checkOrphanState exception:",
+        (n == null ? void 0 : n.message) || n
+      );
+    });
+}
+function tr(p, o) {
+  if (o.key !== "Tab") return;
+  let e = p.querySelectorAll(
+    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+  );
+  if (e.length === 0) return;
+  let t = e[0],
+    r = e[e.length - 1];
+  o.shiftKey
+    ? document.activeElement === t && (o.preventDefault(), r.focus())
+    : document.activeElement === r && (o.preventDefault(), t.focus());
+}
+var ee = class extends Q.Modal {
+    constructor(e, t, r) {
+      super(e);
+      this._returnFocusEl = null;
+      this._inertedEls = [];
+      ((this._config = t),
+        (this._onConfirm = r),
+        (this._returnFocusEl = document.activeElement));
+    }
+    onOpen() {
+      let { contentEl: e } = this;
+      (e.addClass("paperforge-modal"),
+        e.addClass("paperforge-confirm-modal"),
+        e.setAttr("role", "alertdialog"),
+        e.setAttr("aria-modal", "true"));
+      let t = e.closest(".modal-container");
+      if (t) {
+        let c = t.parentElement;
+        if (c)
+          for (let l of Array.from(c.children))
+            l !== t &&
+              !l.hasAttribute("inert") &&
+              (l.setAttribute("inert", ""), this._inertedEls.push(l));
+      }
+      e.createEl("h2", { text: this._config.title });
+      let r = e.createEl("div", { cls: "paperforge-confirm-effect" });
+      (r.createEl("span", {
+        cls: "paperforge-confirm-effect-label",
+        text: i("confirm_effect_label") + ": ",
+      }),
+        r.createEl("span", { text: this._config.effectLabel }));
+      let n = e.createEl("div", { cls: "paperforge-confirm-actions" }),
+        a = n.createEl("button", {
+          text:
+            this._config.cancelLabel ||
+            i("maintenance_confirm_cancel") ||
+            "Cancel",
+        });
+      (a.addEventListener("click", () => this.close()),
+        n
+          .createEl("button", {
+            cls: "mod-warning",
+            text:
+              this._config.confirmLabel ||
+              i("maintenance_confirm_ok") ||
+              "Proceed",
+          })
+          .addEventListener("click", () => {
+            (this._onConfirm && this._onConfirm(), this.close());
+          }),
+        (this._boundKeydown = (c) => tr(e, c)),
+        e.addEventListener("keydown", this._boundKeydown),
+        a.focus());
+    }
+    onClose() {
+      for (let e of this._inertedEls) e.removeAttribute("inert");
+      if (
+        ((this._inertedEls.length = 0),
+        this._boundKeydown &&
+          this.contentEl.removeEventListener("keydown", this._boundKeydown),
+        this.contentEl.empty(),
+        this._returnFocusEl && typeof this._returnFocusEl.focus == "function")
+      )
+        try {
+          this._returnFocusEl.focus();
+        } catch (e) {}
+    }
+  },
+  $r = [
+    { pattern: /sk-[A-Za-z0-9]{16,}/g, label: "API key", class_: "credential" },
+    {
+      pattern: /[A-Za-z0-9+/]{20,}={0,2}/g,
+      label: "Credential token",
+      class_: "credential",
+    },
+    {
+      pattern: /api[_-]?key[=:]\s*['"]?\S+['"]?/gi,
+      label: "API key",
+      class_: "credential",
+    },
+    {
+      pattern: /token[=:]\s*['"]?\S+['"]?/gi,
+      label: "Token",
+      class_: "credential",
+    },
+    {
+      pattern: /[A-Za-z]:\\[^"'\n,;]+/gi,
+      label: "Absolute path",
+      class_: "vault-path",
+    },
+    {
+      pattern: /(?<=^|\s)\/[^/\s][^"'\n,;]*/g,
+      label: "Absolute path",
+      class_: "vault-path",
+    },
+    {
+      pattern: /Zotero[^"'\s,;]*/gi,
+      label: "Zotero path",
+      class_: "zotero-path",
+    },
+    {
+      pattern: /Paper:\s*[^\n]+/gi,
+      label: "Paper title",
+      class_: "paper-title",
+    },
+    {
+      pattern: /Title:\s*[^\n]+/gi,
+      label: "Paper title",
+      class_: "paper-title",
+    },
+  ];
+function Ne(p) {
+  let o = {},
+    e = p;
+  for (let { pattern: t, label: r, class_: n } of $r) {
+    let a = 0;
+    ((e = e.replace(t, () => (a++, "[REDACTED]"))),
+      a > 0 &&
+        (o[n] || (o[n] = { label: r, class_: n, count: 0 }),
+        (o[n].count += a)));
+  }
+  return { clean: e, redactions: Object.values(o) };
+}
+function rr(p, o, e, t) {
+  let r = `OCR: ${p} (${e} papers)`,
+    n = [
+      "## Diagnostic Summary",
+      `- Reason: ${p}`,
+      `- Detail: ${o}`,
+      `- Papers affected: ${e}`,
+      "",
+      "## Environment",
+      "- Vault: [REDACTED]",
+      "- Plugin version: PaperForge",
+      "",
+      "## Steps to reproduce",
+      "1. Run OCR on affected papers",
+      "2. Review output quality",
+      "3. Review this draft, then open GitHub to submit",
+    ].join(`
+`);
+  return { title: r, body: n, labels: ["ocr", "quality", "auto-generated"] };
+}
+var We = class extends Q.Modal {
+  constructor(e, t, r) {
+    super(e);
+    this._returnFocusEl = null;
+    this._inertedEls = [];
+    ((this._draft = t),
+      (this._githubUrl = r),
+      (this._returnFocusEl = document.activeElement));
+  }
+  onOpen() {
+    let { contentEl: e } = this;
+    (e.addClass("paperforge-modal"),
+      e.addClass("paperforge-issue-draft-modal"),
+      e.setAttr("role", "dialog"),
+      e.setAttr("aria-modal", "true"));
+    let t = e.closest(".modal-container");
+    if (t) {
+      let g = t.parentElement;
+      if (g)
+        for (let h of Array.from(g.children))
+          h !== t &&
+            !h.hasAttribute("inert") &&
+            (h.setAttribute("inert", ""), this._inertedEls.push(h));
+    }
+    (e.createEl("h2", {
+      text: i("maintenance_issue_draft_title") || "OCR Issue Draft",
+    }),
+      e.createEl("p", {
+        cls: "paperforge-issue-draft-desc",
+        text:
+          i("maintenance_issue_draft_preview") ||
+          "Review the issue draft below before opening GitHub.",
+      }));
+    let r = e.createEl("div", { cls: "paperforge-issue-draft-field" });
+    r.createEl("label", { text: "Title" });
+    let n = Ne(this._draft.title).clean;
+    this._titleInput = r.createEl("input", {
+      cls: "paperforge-issue-draft-input",
+      attr: { type: "text", value: n },
+    });
+    let a = e.createEl("div", { cls: "paperforge-issue-draft-field" });
+    a.createEl("label", { text: "Body" });
+    let s = Ne(this._draft.body).clean;
+    this._bodyTextarea = a.createEl("textarea", {
+      cls: "paperforge-issue-draft-textarea",
+      attr: { rows: "12" },
+      text: s,
+    });
+    let { redactions: c } = Ne(
+        this._draft.title +
+          `
+` +
+          this._draft.body
+      ),
+      l = e.createEl("div", { cls: "paperforge-issue-draft-preview" }),
+      d = l.createEl("div", { cls: "paperforge-issue-draft-included" });
+    (d.createEl("span", {
+      cls: "paperforge-issue-draft-preview-label",
+      text: (i("maintenance_issue_draft_included") || "Included") + ": ",
+    }),
+      d.createEl("span", {
+        text: `Title, Body, Labels (${this._draft.labels.join(", ")})`,
+      }));
+    let u = l.createEl("div", { cls: "paperforge-issue-draft-redacted" });
+    (u.createEl("span", {
+      cls: "paperforge-issue-draft-preview-label",
+      text: (i("maintenance_issue_draft_redacted") || "Redacted") + ": ",
+    }),
+      u.createEl("span", {
+        text:
+          "Credentials, vault/Zotero paths, paper titles, paper content are excluded" +
+          (c.length > 0
+            ? " (" + c.map((g) => `${g.count} ${g.label}`).join(", ") + ")"
+            : ""),
+      }));
+    let f = e.createEl("div", { cls: "paperforge-issue-draft-actions" });
+    (f
+      .createEl("button", { text: i("maintenance_confirm_cancel") || "Cancel" })
+      .addEventListener("click", () => this.close()),
+      f
+        .createEl("button", {
+          cls: "mod-cta",
+          text: i("maintenance_issue_draft_open_github") || "Open GitHub Issue",
+        })
+        .addEventListener("click", () => {
+          let g = encodeURIComponent(Ne(this._titleInput.value).clean),
+            h = encodeURIComponent(Ne(this._bodyTextarea.value).clean),
+            y = encodeURIComponent(this._draft.labels.join(",")),
+            v = `${this._githubUrl}?title=${g}&body=${h}&labels=${y}`;
+          window.open(v, "_blank", "noopener,noreferrer");
+        }),
+      (this._boundKeydown = (g) => tr(e, g)),
+      e.addEventListener("keydown", this._boundKeydown),
+      this._titleInput.focus());
+  }
+  onClose() {
+    for (let e of this._inertedEls) e.removeAttribute("inert");
+    if (
+      ((this._inertedEls.length = 0),
+      this._boundKeydown &&
+        this.contentEl.removeEventListener("keydown", this._boundKeydown),
+      this.contentEl.empty(),
+      this._returnFocusEl && typeof this._returnFocusEl.focus == "function")
+    )
+      try {
+        this._returnFocusEl.focus();
+      } catch (e) {}
+  }
+};
+var ft = K(require("fs")),
+  te = K(require("path")),
+  Ze = require("child_process"),
+  ar = K(require("os")),
+  nr = "3.11",
+  qr = 1,
+  Vr = "pointer.json",
+  zr = "venv";
+function _t() {
+  let p, o;
+  return {
+    promise: new Promise((t, r) => {
+      ((p = t), (o = r));
+    }),
+    resolve: p,
+    reject: o,
+  };
+}
+function jr(p) {
+  let o = p.match(/Python\s+(\d+\.\d+(?:\.\d+)?)/);
+  if (o) return o[1];
+  let e = p.match(/Python\s+(\d+\.\d+)/);
+  return e ? e[1] + ".0" : null;
+}
+function Kr(p, o) {
+  var r, n;
+  let e = p.split(".").map(Number),
+    t = o.split(".").map(Number);
+  for (let a = 0; a < Math.max(e.length, t.length); a++) {
+    let s = (r = e[a]) != null ? r : 0,
+      c = (n = t[a]) != null ? n : 0;
+    if (s !== c) return s - c;
+  }
+  return 0;
+}
+function Ur(p, o) {
+  return Kr(p, o) >= 0;
+}
+function Wr() {
+  var p;
+  return (
+    process.env.FLATPAK_ID !== void 0 ||
+    ((p = process.env.XDG_DATA_DIRS) != null ? p : "").includes("flatpak") ||
+    !1
+  );
+}
+function Jr() {
+  return process.env.SNAP !== void 0 || process.env.SNAP_NAME !== void 0 || !1;
+}
+function Zr(p, o) {
+  var t;
+  return `${(t = { win32: "windows", darwin: "macos", linux: "linux" }[p]) != null ? t : p}-${o}`;
+}
+function ce(p) {
+  return p ? { command: p.pythonPath, args: [] } : null;
+}
+var oe = class {
+    constructor(o) {
+      var e, t, r, n, a, s;
+      ((this.osPlatform =
+        (e = o == null ? void 0 : o.osPlatform) != null ? e : process.platform),
+        (this.osArch =
+          (t = o == null ? void 0 : o.osArch) != null ? t : process.arch),
+        (this.rootDir =
+          (r = o == null ? void 0 : o.runtimeDir) != null
+            ? r
+            : te.join(ar.homedir(), ".paperforge", "runtime")),
+        (this._fs = (n = o == null ? void 0 : o.fs) != null ? n : ft),
+        (this._execFile =
+          (a = o == null ? void 0 : o.execFile) != null ? a : Ze.execFile),
+        (this._execFileSync =
+          (s = o == null ? void 0 : o.execFileSync) != null
+            ? s
+            : Ze.execFileSync));
+    }
+    get venvDir() {
+      return te.join(this.rootDir, zr);
+    }
+    pythonExeFor(o) {
+      return this.osPlatform === "win32"
+        ? te.join(o, "Scripts", "python.exe")
+        : te.join(o, "bin", "python");
+    }
+    discoverInterpreter() {
+      let o =
+        this.osPlatform === "win32"
+          ? [
+              { path: "py", args: ["-3"] },
+              { path: "py", args: ["-3.11"] },
+              { path: "python", args: [] },
+            ]
+          : this.osPlatform === "darwin"
+            ? [
+                { path: "/usr/bin/python3", args: [] },
+                { path: "python3", args: [] },
+              ]
+            : [
+                { path: "/usr/bin/python3", args: [] },
+                { path: "python3", args: [] },
+              ];
+      for (let e of o)
+        try {
+          let t = this._execFileSync(e.path, [...e.args, "--version"], {
+              encoding: "utf-8",
+              timeout: 5e3,
+            }),
+            r = jr(t);
+          if (r && Ur(r, nr)) return { path: e.path, version: r };
+        } catch (t) {}
+      return null;
+    }
+    platformGate() {
+      if (Wr() || Jr())
+        return {
+          ok: !1,
+          code: "FLATPAK_SNAP_UNSUPPORTED",
+          message:
+            "Flatpak and Snap are not supported. Install Python 3.11+ natively.",
+          platformAction:
+            "Install Python 3.11+ from python.org or package manager",
+        };
+      let o = Zr(this.osPlatform, this.osArch);
+      return this.osPlatform === "darwin" &&
+        ["macos-x64", "macos-arm64"].includes(o)
+        ? {
+            ok: !1,
+            code: "NO_PYTHON",
+            message:
+              "No Python 3.11+ found. macOS auto-download disabled until signed/notarized artifacts exist.",
+            platformAction: "Install Python 3.11+ from python.org or Homebrew",
+          }
+        : ["windows-x64", "linux-x64"].includes(o)
+          ? {
+              ok: !1,
+              code: "NO_PYTHON",
+              message: "No Python 3.11+ found and automatic download failed.",
+              platformAction: "Install Python 3.11+ manually",
+            }
+          : {
+              ok: !1,
+              code: "FALLBACK_UNAVAILABLE",
+              message:
+                "No Python found and this platform has no validated fallback.",
+              platformAction: "Install Python 3.11+ manually from python.org",
+            };
+    }
+    async installOnce(o, e) {
+      if (e != null && e.aborted) throw new Se("Operation was cancelled");
+      let t = this.discoverInterpreter();
+      if (!t) {
+        let n = this.platformGate();
+        throw new Error(
+          `No Python ${nr}+ found (${n.ok ? "no interpreter" : n.message})`
+        );
+      }
+      if (e != null && e.aborted) throw new Se("Operation was cancelled");
+      let r = this.pythonExeFor(this.venvDir);
+      try {
+        if (
+          (this._fs.mkdirSync(this.venvDir, { recursive: !0 }),
+          await this._exec(
+            t.path,
+            ["-m", "venv", this.venvDir],
+            { timeout: 6e4, signal: e },
+            "venv creation"
+          ),
+          e != null && e.aborted)
+        )
+          throw new Se("Operation was cancelled");
+        if (
+          (await this._exec(
+            r,
+            ["-m", "pip", "install", `paperforge[vector]==${o}`],
+            { timeout: 12e4, signal: e },
+            "pip install"
+          ),
+          e != null && e.aborted)
+        )
+          throw new Se("Operation was cancelled");
+        let n = await this._probeVersion(r, e);
+        if (n !== o)
+          throw new Error(
+            `installed version mismatch: observed ${n} != requested ${o}`
+          );
+      } catch (n) {
+        try {
+          this._fs.rmSync(this.venvDir, { recursive: !0, force: !0 });
+        } catch (a) {}
+        throw n;
+      }
+      return { pythonPath: r, observedVersion: o };
+    }
+    async handshake(o, e) {
+      var r;
+      let t = (r = e.pythonPath) != null ? r : this.pythonExeFor(this.venvDir);
+      if (!this._fs.existsSync(t))
+        return { ok: !1, observedVersion: null, reason: "interpreter missing" };
+      try {
+        let n = await this._probeVersion(t, e.signal);
+        if (n !== o)
+          return {
+            ok: !1,
+            observedVersion: n,
+            reason: `version mismatch: observed ${n} != expected ${o}`,
+          };
+        let a = await this._probeInstallation(t, e.vaultPath, o, e.signal);
+        if (a === null)
+          return {
+            ok: !1,
+            observedVersion: n,
+            reason:
+              "installation probe failed or returned an unparseable envelope",
+          };
+        if (a === "installation.version_mismatch")
+          return {
+            ok: !1,
+            observedVersion: n,
+            reason: "installation probe reports version mismatch",
+          };
+        if (
+          a !== "installation.ready" &&
+          a !== "installation.config_missing" &&
+          a !== "installation.config_corrupt"
+        )
+          return {
+            ok: !1,
+            observedVersion: n,
+            reason: `unexpected installation probe state: ${a}`,
+          };
+      } catch (n) {
+        return {
+          ok: !1,
+          observedVersion: null,
+          reason: n instanceof Error ? n.message : String(n),
+        };
+      }
+      return { ok: !0, observedVersion: o };
+    }
+    readPointer() {
+      let o = te.join(this.rootDir, Vr),
+        e;
+      try {
+        e = this._fs.readFileSync(o, "utf-8");
+      } catch (s) {
+        return null;
+      }
+      let t;
+      try {
+        t = JSON.parse(e);
+      } catch (s) {
+        return null;
+      }
+      if (t.schema_version !== qr) return null;
+      let { python_path: r, environment_root: n, paperforge_version: a } = t;
+      return typeof r != "string" ||
+        !r ||
+        typeof n != "string" ||
+        !n ||
+        typeof a != "string" ||
+        !a ||
+        !te.isAbsolute(r) ||
+        !te.isAbsolute(n)
+        ? null
+        : { pythonPath: r, environmentRoot: n, paperforgeVersion: a };
+    }
+    _exec(o, e, t, r) {
+      let { promise: n, resolve: a, reject: s } = _t();
+      return (
+        this._execFile(o, e, { ...t, encoding: "utf-8" }, (c) => {
+          c ? s(new Error(`${r} failed: ${c.message}`)) : a();
+        }),
+        n
+      );
+    }
+    _probeVersion(o, e) {
+      let { promise: t, resolve: r, reject: n } = _t();
+      return (
+        this._execFile(
+          o,
+          ["-I", "-c", "import paperforge; print(paperforge.__version__)"],
+          { timeout: 3e4, signal: e },
+          (a, s) => {
+            if (a) n(a);
+            else {
+              let c = (s != null ? s : "").trim() || null;
+              r(c);
+            }
+          }
+        ),
+        t
+      );
+    }
+    _probeInstallation(o, e, t, r) {
+      let { promise: n, resolve: a, reject: s } = _t();
+      return (
+        this._execFile(
+          o,
+          [
+            "-m",
+            "paperforge",
+            "--vault",
+            e,
+            "probe",
+            "installation",
+            "--json",
+            "--expected-version",
+            t,
+          ],
+          { timeout: 3e4, signal: r },
+          (c, l) => {
+            var d, u;
+            if (c) {
+              a(null);
+              return;
+            }
+            try {
+              let f = JSON.parse(l);
+              a(
+                (u = (d = f.reason) == null ? void 0 : d.code) != null
+                  ? u
+                  : null
+              );
+            } catch (f) {
+              a(null);
+            }
+          }
+        ),
+        n
+      );
+    }
+  },
+  Se = class extends Error {
+    constructor(o) {
+      (super(o), (this.name = "AbortError"));
+    }
+  };
+var Ce = class Ce extends A.PluginSettingTab {
+  constructor(e, t) {
+    super(e, t);
+    this._saveTimeout = null;
+    this._pfConfig = null;
+    this._lastSyncTime = null;
+    this._memoryStatusText = null;
+    this._vectorDepsOk = null;
+    this._embedStatusText = null;
+    this._skillsCollapsed = { user: !0 };
+    this._featurePanelsCollapsed = {};
+    this._advCollapsed = !0;
+    this._refreshPending = !1;
+    this._pythonInterpDescEl = null;
+    this._customPathDescEl = null;
+    this._checkEl = null;
+    this.activeTab = "overview";
+    this._buildState = "idle";
+    this._buildProgress = { current: 0, total: 0, key: "" };
+    this._capabilityState = null;
+    this._lastKnownState = new Map();
+    this._navMemory = { destination: "overview" };
+    this._initialDisplay = !0;
+    this._probing = new Set();
+    this._lastOrphanCount = 0;
+    this._attemptedProbes = new Set();
+    this._setupView = "overview";
+    this._setupStage = 1;
+    this._setupOptionals = { ocr: !1, memory: !1, agent: !1 };
+    this._setupReinstallRequested = !1;
+    this._setupOperation = "idle";
+    this._setupFeedback = null;
+    this._setupJourneyDismissedForSession = !1;
+    this._selectedDetailModule = "";
+    this._focusTargetId = null;
+    this._runtimeAbortController = null;
+    this._managedRuntime = null;
+    this._runtimeBusy = !1;
+    this._libraryRunning = !1;
+    this._displayInProgress = !1;
+    this._detailReturn = null;
+    this._agentPlatformDraft = null;
+    this._client = null;
+    this.plugin = t;
+  }
+  _getOverviewModules() {
+    return [
+      { id: "installation", label: i("cc_module_foundation") || "Foundation" },
+      { id: "library", label: i("cc_module_library") || "Library" },
+      { id: "ocr", label: i("cc_module_ocr") || "OCR" },
+      { id: "memory", label: i("cc_module_memory") || "Smart Retrieval" },
+      { id: "agent", label: i("cc_module_agent") || "Agent Integration" },
+    ];
+  }
+  _getUserModuleName(e) {
+    let t =
+      "cc_module_" +
+      (e === "installation" ? "foundation" : e === "memory" ? "memory" : e);
+    return i(t) || e.charAt(0).toUpperCase() + e.slice(1);
+  }
+  _refreshPfConfig() {
+    let e = this.plugin.settings;
+    this._pfConfig = {
+      system_dir: e.system_dir || "System",
+      resources_dir: e.resources_dir || "Resources",
+      literature_dir: e.literature_dir || "Literature",
+      base_dir: e.base_dir || "Bases",
+      zotero_data_dir: e.zotero_data_dir || "",
+    };
+  }
+  display() {
+    var u, f;
+    this._displayInProgress = !0;
+    let { containerEl: e } = this;
+    if (
+      (e.empty(),
+      this._refreshPfConfig(),
+      this._initialDisplay &&
+        (this._restoreNavMemory(), (this._initialDisplay = !1)),
+      this._initCapabilityState(),
+      this.plugin.settings._setup_complete === !1 &&
+        !this._setupJourneyDismissedForSession)
+    ) {
+      (this._renderSetupJourney(e), (this._displayInProgress = !1));
+      return;
+    }
+    if (!document.getElementById("paperforge-tab-styles")) {
+      let _ = document.createElement("style");
+      ((_.id = "paperforge-tab-styles"),
+        (_.textContent = `
                 .paperforge-settings-tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--background-modifier-border); }
                 .paperforge-settings-tab { padding: 6px 16px; border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; font-size: 14px; color: var(--text-muted); }
                 .paperforge-settings-tab--active { color: var(--text-accent); border-bottom-color: var(--text-accent); }
@@ -68,23 +3873,8915 @@
                 .pf-sr-diagnostics summary { cursor: pointer; font-weight: 600; font-size: 13px; color: var(--text-muted); }
                 .pf-sr-diagnostics summary:hover { color: var(--text-normal); }
                 .pf-sr-diagnostics-body { margin-top: 8px; }
-            `,document.head.appendChild(_)}let t=this.plugin.settings._migration_warnings;if(Array.isArray(t)&&t.length>0){let _=e.createDiv({cls:"paperforge-migration-warning"}),m=t.map(g=>g==="paddleocr_api_key"?"OCR":"Smart Retrieval").join(", ");_.createEl("strong",{text:i("migration_banner_title")}),_.createEl("p",{text:i("migration_banner_body").replace("{modules}",m)}),_.createEl("p",{text:i("migration_banner_next"),cls:"paperforge-manual-links"})}let r=e.createDiv({cls:"pf-cc-topbar"}),n=r.createDiv({cls:"pf-cc-topbar-left"});n.createEl("span",{cls:"pf-cc-topbar-brand",text:"PaperForge"}),n.createEl("span",{cls:"pf-cc-topbar-version",text:"v"+((f=(u=this.plugin.manifest)==null?void 0:u.version)!=null?f:"?")});let a=r.createDiv({cls:"pf-cc-topbar-center"}),s=[{id:"overview",label:i("tab_overview")||"Overview"},{id:"help",label:i("tab_help")||"Help"}],c={};if(s.forEach(_=>{a.createEl("button",{cls:"pf-cc-topbar-tab"+(_.id===this.activeTab?" pf-cc-topbar-tab--active":""),text:_.label}).addEventListener("click",()=>{this._detailReturn=null,this.activeTab=_.id,this._navMemory={destination:_.id},this._persistNavMemory(),this.display()})}),r.createDiv({cls:"pf-cc-topbar-right"}).createEl("a",{cls:"pf-cc-topbar-ocr-link",text:(i("md_ocr_workspace")||"OCR Workspace")+" \u2197",attr:{href:"#",role:"button"}}).addEventListener("click",_=>{_.preventDefault(),this.app.setting.close(),this.app.workspace.getLeaf().setViewState({type:"paperforge-ocr-workspace"})}),s.forEach(_=>{c[_.id]=e.createDiv({cls:"paperforge-tab-content"+(_.id===this.activeTab?" paperforge-tab-content--active":"")})}),c["module-detail"]=e.createDiv({cls:"paperforge-tab-content"+(this.activeTab==="module-detail"?" paperforge-tab-content--active":"")}),this.activeTab==="overview"?this._renderOverviewTab(c.overview):this.activeTab==="module-detail"?this._renderModuleDetailTab(c["module-detail"]):this.activeTab==="help"&&this._renderHelpTab(c.help),this._focusTargetId&&this.activeTab!=="help"){let _=e.querySelector(this._focusTargetId);if(!_&&this.activeTab==="overview"&&(_=e.querySelector(".pf-cc-module-card")),_){try{_.focus()}catch(m){}this._focusTargetId=null}}this._displayInProgress=!1}getClient(){var t;if(this._client)return this._client;let e=(t=this.plugin)==null?void 0:t.getClient;if(typeof e!="function")throw new Error("PaperForge client unavailable: plugin.getClient singleton is missing");return this._client=e.call(this.plugin),this._client}_startSetupJourney(e=1,t=!1){this._setupStage=e,this._setupReinstallRequested=t,this._setupOperation="idle",this._setupFeedback=null,this.plugin.settings._setup_complete=!1,this.plugin.saveSettings().then(()=>this.display())}_installFoundation(e){if(this._setupOperation==="running")return;this._setupOperation="running",this._setupFeedback=null,this.display(),this._runtimeAbortController=new AbortController;let t=this._runtimeAbortController.signal;(async()=>{var r,n,a,s,c,l;try{let d=this._getVaultBasePath(),u=this._ensureManagedRuntime(),f=await u.installOnce(this.plugin.manifest.version,t),_=await u.handshake(this.plugin.manifest.version,{pythonPath:f.pythonPath,vaultPath:d,signal:t});if(!_.ok)throw new Error((r=_.reason)!=null?r:"handshake failed");let m=this.plugin.settings;await this.plugin.saveSettings();let h=this.getClient().setup({systemDir:((n=m.system_dir)==null?void 0:n.trim())||"System",resourcesDir:((a=m.resources_dir)==null?void 0:a.trim())||"Resources",literatureDir:((s=m.literature_dir)==null?void 0:s.trim())||"Literature",baseDir:((c=m.base_dir)==null?void 0:c.trim())||"Bases",zoteroData:((l=m.zotero_data_dir)==null?void 0:l.trim())||void 0,agent:m.agent_platform||"opencode",modular:!0},{pythonExe:f.pythonPath,onEvent:v=>{var b;v.event==="phase"&&(this._setupFeedback=`${i("setup_installing")||"Installing"}: ${(b=v.phase)!=null?b:""}`,this.display())}});t==null||t.addEventListener("abort",()=>h.stop());let y=await h.outcome;if(!y.ok){if(y.cancelled){this._setupOperation="idle",this._setupFeedback=i("setup_install_cancelled"),this.display();return}throw new Error(y.protocolFailure||`Setup failed with exit code ${y.exitCode}`)}this._setupOperation="idle",this._setupReinstallRequested=!1,this._setupFeedback=i("setup_install_complete"),this._probeModule("installation"),this._probeModule("help"),this.display()}catch(d){if(t.aborted||typeof d=="object"&&d!==null&&d.name==="AbortError"){this._setupOperation="idle",this._setupFeedback=i("setup_install_cancelled"),this.display();return}console.error("PaperForge runtime installation failed:",d),this._setupOperation="failed",this._setupFeedback=i("setup_install_failed"),this.display()}finally{this._runtimeAbortController=null}})()}_applyLibraryConfiguration(){if(this._setupOperation==="running")return;this._setupOperation="running",this._setupFeedback=null;let e=this.plugin.settings,t=this._getVaultBasePath(),r={zotero_data_dir:e.zotero_data_dir,system_dir:e.system_dir,resources_dir:e.resources_dir,literature_dir:e.literature_dir,base_dir:e.base_dir};(async()=>{var a,s,c,l,d;let n=[];for(let[u,f]of Object.entries(r))f&&f.trim()&&n.push(this.getClient().configSet(u,f.trim()).catch(_=>{console.error(`PaperForge: config set ${u} failed`,_)}));await Promise.all(n).catch(()=>{}),this.display();try{await this.plugin.saveSettings();let _=await this.getClient().setup({systemDir:((a=e.system_dir)==null?void 0:a.trim())||"System",resourcesDir:((s=e.resources_dir)==null?void 0:s.trim())||"Resources",literatureDir:((c=e.literature_dir)==null?void 0:c.trim())||"Literature",baseDir:((l=e.base_dir)==null?void 0:l.trim())||"Bases",zoteroData:((d=e.zotero_data_dir)==null?void 0:d.trim())||void 0,agent:e.agent_platform||"opencode",modular:!0},{onEvent:m=>{var g;m.event==="phase"&&(this._setupFeedback=`${i("setup_library_configuring")||"Configuring"}: ${(g=m.phase)!=null?g:""}`,this.display())}}).outcome;if(!_.ok)throw new Error(_.protocolFailure||`Setup failed with exit code ${_.exitCode}`);this._setupOperation="idle",this._setupFeedback=i("setup_library_configured"),this._attemptedProbes.add("library"),this._probeModule("library"),this.display()}catch(u){console.error("PaperForge library configuration failed:",u),this._setupOperation="failed",this._setupFeedback=i("setup_library_config_failed"),this.display()}})()}_renderOverviewTab(e){var r;let t=this._getVaultBasePath();this.plugin.settings.vault_path||(this.plugin.settings.vault_path=t,this._debouncedSave()),e.createEl("h2",{text:i("header_title")||"PaperForge"}),e.createEl("p",{text:i("desc"),cls:"paperforge-settings-desc"});for(let n of we){let a=(r=this._capabilityState)==null?void 0:r[n];if(!a)continue;let s=a.capability_state==="unknown"&&a.updated_at===new Date(0).toISOString(),c=a.user_state==="detection_failed"&&a.reason.code.endsWith(".stale");(s||c)&&!this._attemptedProbes.has(n)&&(this._attemptedProbes.add(n),n!=="maintenance"&&this._probeModule(n))}this._renderControlCenter(e)}_getVaultBasePath(){let e=this.app.vault.adapter;if(e&&typeof e=="object"&&"basePath"in e){let t=e.basePath;return typeof t=="string"?t:""}return""}_ensureManagedRuntime(){var e,t,r;return this._managedRuntime?this._managedRuntime:(this._managedRuntime=(r=(t=(e=this.plugin).getManagedRuntime)==null?void 0:t.call(e))!=null?r:new oe,this._managedRuntime)}_resolveRuntimeCommand(e){var n;let t=(n=this.plugin.settings.python_path)==null?void 0:n.trim();if(t&&j.existsSync(t))return{path:t,args:[]};let r=ce(this._ensureManagedRuntime().readPointer());return r?{path:r.command,args:[...r.args]}:null}_renderInstallationDetail(e){var y,v,b,w,k,x,E;this._renderModuleDetailShell(e,"installation");let t=(v=(y=this._capabilityState)==null?void 0:y.installation)!=null?v:X("installation"),r=e.createDiv({cls:"pf-module-body"});r.createEl("h3",{text:i("md_foundation_overview")}),r.createEl("p",{text:t.user_state==="ready"?i("md_foundation_ready"):this._getModuleConsequence("installation",t),cls:t.user_state==="ready"?"pf-status-ok":"setting-item-description"});let n=r.createDiv({cls:"pf-config"}),a=(S,C,R,F)=>{let D=n.createDiv({cls:"pf-config-row"});D.createEl("span",{cls:"pf-config-key",text:S});let L=D.createDiv({cls:"pf-config-right"});L.createEl("span",{cls:F,text:C}),L.createEl("span",{cls:"pf-config-value",text:R})};a(i("foundation_version"),"\u2713",this.plugin.manifest.version,"pf-status-ok");let s=this.app.vault.adapter.basePath,c=(w=(b=this._resolveRuntimeCommand(s))==null?void 0:b.path)!=null?w:this.plugin.settings.python_path||"python";a(i("foundation_python"),t.user_state==="ready"?"\u2713":"\u2014",c,t.user_state==="ready"?"pf-status-ok":"pf-status-checking");let l=ge.join(s,this.plugin.settings.system_dir||"System"),d=j.existsSync(l);a(i("foundation_vault_structure"),d?"\u2713":"\u2717",d?l:i("foundation_vault_missing"),d?"pf-status-ok":"pf-status-error");let u=this.plugin.settings.zotero_data_dir&&j.existsSync(this.plugin.settings.zotero_data_dir);a(i("foundation_zotero"),u?"\u2713":"\u2717",u?this.plugin.settings.zotero_data_dir:i("foundation_zotero_missing"),u?"pf-status-ok":"pf-status-error");let f=!!this.plugin.settings._paddleocr_configured,_=!!this.plugin.settings._vector_db_configured;a(i("foundation_paddle_key"),f?"\u2713":"\u2717",f?i("config_configured"):i("foundation_paddle_missing"),f?"pf-status-ok":"pf-status-error"),a(i("foundation_openai_key"),_?"\u2713":"\u2717",_?i("config_configured"):i("foundation_openai_missing"),_?"pf-status-ok":"pf-status-error");let m=n.createDiv({cls:"pf-config-row"});m.createEl("span",{cls:"pf-config-key",text:(k=i("md_foundation_legacy_migrate"))!=null?k:"Migrate legacy credentials"});let h=m.createDiv({cls:"pf-config-right"}).createEl("button",{cls:"paperforge-refresh-btn",text:"Migrate"});h.title="One-time migration of Obsidian SecretStorage values into the keyring (auth set)",h.onclick=()=>this._migrateLegacyCredentials(h),a(i("foundation_python_packages"),t.user_state==="ready"?"\u2713":"\u2014",t.user_state==="ready"?i("check_bbt_ok")||"Ready":(E=(x=t.reason)==null?void 0:x.text)!=null?E:"\u2014",t.user_state==="ready"?"pf-status-ok":"pf-status-checking"),t.user_state!=="ready"&&new A.Setting(r).setName(i("foundation_setup")).setDesc(i("foundation_setup_desc")).addButton(S=>S.setButtonText(i("foundation_setup_btn")).setCta().onClick(()=>this._startSetupJourney(1))),new A.Setting(r).setName(i("foundation_reinstall")).setDesc(i("foundation_reinstall_desc")).addButton(S=>S.setButtonText(i("foundation_reinstall_btn")).setWarning().onClick(()=>this._startSetupJourney(1,!0)))}_renderSkillsList(e){let t={opencode:".opencode/skills",claude:".claude/skills",codex:".codex/skills",cursor:".cursor/skills",windsurf:".windsurf/skills",github_copilot:".github/skills",gemini:".gemini/skills"},r=this._getVaultBasePath(),n=this.plugin.settings.agent_platform||"opencode";e.createEl("h3",{text:i("md_agent_skills")});let a=e.createEl("div",{cls:"paperforge-desc-box"});a.setText(i("feat_skills_desc")),a.createEl("br"),a.createEl("span",{text:i("feat_skills_system")});let s=ge.join(r,t[n]),c=[],l=[];j.existsSync(s)&&j.readdirSync(s,{withFileTypes:!0}).forEach(f=>{if(!f.isDirectory())return;let _=ge.join(s,f.name,"SKILL.md");if(!j.existsSync(_))return;let m=j.readFileSync(_,"utf-8"),g=m.match(/^name:\s*(.+)$/m),h=m.split(`
-`),y=h.findIndex(E=>/^description:/.test(E)),v="";if(y>=0){let E=h[y].match(/^description:\s*(.+)$/);if(E&&E[1]&&E[1]!==">"&&E[1]!=="|-"&&E[1]!=="|")v=E[1].trim();else{for(let S=y+1;S<h.length&&(/^\s{2,}/.test(h[S])||h[S].trim()==="");S++)v+=h[S].trim()+" ";v=v.trim()}}let b=m.match(/^source:\s*(.+)$/m),w=m.match(/^disable-model-invocation:\s*(.+)$/m),k=m.match(/^version:\s*(.+)$/m),x={name:g?g[1].trim():f.name,desc:v,source:b?b[1].trim():"user",disabled:!!w&&w[1].trim()==="true",version:k?k[1].trim():"",path:_,content:m,dirName:f.name};x.source==="paperforge"?c.push(x):l.push(x)});let d=e.createEl("div",{cls:"paperforge-skills-box"}),u=(f,_,m)=>{if(_.length===0)return;let g=d.createEl("div",{cls:"paperforge-skills-group"}),h=g.createEl("div",{cls:"paperforge-skills-collapse-header"}),y=g.createEl("div",{cls:"paperforge-skills-collapse-content"}),v=h.createEl("span",{text:"\u25BC",cls:"paperforge-skills-arrow"});h.createEl("h4",{text:`${f} (${_.length})`,cls:"paperforge-skills-subheader"}),_.forEach(k=>{let x=k.name+(k.version?" v"+k.version:""),E=m?" ["+i("skills_system")+"]":" ["+i("skills_user")+"]",S=k.desc||"",C=new A.Setting(y).setName(x+E).setDesc(S);C.settingEl.style.opacity=k.disabled?"0.4":"1",C.addToggle(R=>{R.setValue(!k.disabled).onChange(F=>{let D=!F,V=k.content.match(/^disable-model-invocation:\s*(.+)$/m)?k.content.replace(/^disable-model-invocation:\s*.+$/m,`disable-model-invocation: ${D}`):k.content.replace(/^(---\r?\n)/,`$1disable-model-invocation: ${D}
-`);j.writeFileSync(k.path,V,"utf-8"),k.disabled=D,k.content=V,C.settingEl.style.opacity=k.disabled?"0.4":"1"})})});let b=m?"system":"user";(this._skillsCollapsed[b]||!1)&&(y.style.display="none",v.style.transform="rotate(-90deg)"),h.addEventListener("click",()=>{y.style.display!=="none"?(y.style.display="none",v.style.transform="rotate(-90deg)"):(y.style.display="",v.style.transform="rotate(0deg)"),this._skillsCollapsed[b]=y.style.display==="none"})};u(i("skills_system"),c,!0),u(i("skills_user"),l,!1),c.length===0&&l.length===0&&d.createEl("p",{text:i("skills_empty"),cls:"setting-item-description"})}_renderModuleDetailTab(e){this._selectedDetailModule||(this._selectedDetailModule="installation"),this._selectedDetailModule==="installation"?this._renderInstallationDetail(e):this._selectedDetailModule==="library"?this._renderLibraryDetail(e):this._selectedDetailModule==="ocr"?this._renderOcrDetail(e):this._selectedDetailModule==="memory"?this._renderMemoryDetail(e):this._selectedDetailModule==="agent"?this._renderAgentDetail(e):(this._selectedDetailModule="installation",this._renderInstallationDetail(e))}_renderLibraryDetail(e){var u,f,_,m,g,h;this._renderModuleDetailShell(e,"library");let t=(f=(u=this._capabilityState)==null?void 0:u.library)!=null?f:X("library"),r=e.createDiv({cls:"pf-module-body"});r.createEl("h3",{text:i("md_library_connection")}),t.user_state==="ready"?r.createEl("p",{text:i("md_library_ready"),cls:"pf-status-ok"}):t.user_state!=="checking"&&t.user_state!=="not_enabled"&&zt(r,{whatHappened:i("cc_module_library")+" \u2014 "+this._getUserStateLabel(t.user_state),impact:i("library_problem_impact"),nextStep:i("problem_use_action"),impactLabel:i("problem_impact"),nextLabel:i("problem_next"),copyLabel:i("problem_copy"),onCopyDiagnostic:()=>this._buildAndCopyDiagnostic()});let n=r.createDiv({cls:"pf-module-facts"}),a=(_=t.details)==null?void 0:_.paper_count,s=n.createDiv({cls:"pf-module-fact"});s.createEl("span",{text:i("md_library_corpus")}),s.createEl("span",{text:typeof a=="number"?String(a):i("metric_not_available")});let c=(h=(g=(m=this._capabilityState)==null?void 0:m.maintenance)==null?void 0:g.orphan)==null?void 0:h.count,l=n.createDiv({cls:"pf-module-fact"});l.createEl("span",{text:"Orphans"}),l.createEl("span",{text:typeof c=="number"?String(c):i("metric_not_available")});let d=n.createDiv({cls:"pf-module-fact"});d.createEl("span",{text:i("md_library_last_sync")}),d.createEl("span",{text:this.plugin._lastSyncTime||i("metric_not_available")}),r.createEl("h3",{text:i("md_configuration")}),jt(r,{items:[{label:i("config_zotero_dir"),value:this.plugin.settings.zotero_data_dir||i("config_not_configured")}],configuredLabel:i("config_configured"),notConfiguredLabel:i("config_not_configured"),onChangeLabel:i("config_change"),onChange:()=>this._startSetupJourney(2)})}_renderOcrDetail(e){var d,u,f,_,m,g,h,y,v,b,w,k,x,E;this._renderModuleDetailShell(e,"ocr");let t=(u=(d=this._capabilityState)==null?void 0:d.ocr)!=null?u:X("ocr"),r=e.createDiv({cls:"pf-module-body"});r.createEl("h3",{text:i("md_ocr_status")}),t.user_state==="detection_failed"&&r.createEl("p",{cls:"pf-status-checking",text:i("md_status_refresh_hint")});let n=t.pipeline_version,a=t.last_pipeline_version,c=((_=(f=t.pipeline_version_summary)==null?void 0:f.stale)!=null?_:0)>0,l=t.activity_state==="running";if(l){ie(r,"checking",i("ocr_state_running"));let S=this.plugin._ocrProgress,C=r.createDiv({cls:"pf-ocr-progress-card"});if(S!=null&&S.total){let F=i("ocr_progress").replace("{current}",String(S.current)).replace("{total}",String(S.total)),D=S.key?" \u2014 "+S.key:"";C.createEl("span",{cls:"pf-detail-progress",text:i("ocr_state_running")+" "+F+D});let L=C.createDiv({cls:"pf-activity-bar"}),V=Math.round(S.current/S.total*100);L.createDiv({cls:"pf-activity-bar-fill",attr:{style:`width: ${V}%`,role:"progressbar","aria-valuenow":String(S.current),"aria-valuemin":"1","aria-valuemax":String(S.total)}})}let R=this.getClient();typeof(R==null?void 0:R.isOperationActive)=="function"&&R.isOperationActive()&&C.createEl("button",{cls:"pf-action-btn mod-warning",text:i("ocr_stop_batch")}).addEventListener("click",()=>R.cancelActiveOperation())}else if(c){let S=n?i("ocr_state_update_available").replace("{version}",n):i("ocr_state_update_available").replace("{version}","");ie(r,"action_required",S),r.createEl("p",{text:i("ocr_state_update_description"),cls:"setting-item-description"}),r.createEl("p",{text:i("ocr_state_update_safety"),cls:"setting-item-description"}),r.createEl("button",{cls:"pf-action-btn mod-warning",text:i("ocr_action_re_extract")}).addEventListener("click",()=>{new ee(this.app,{title:i("ocr_modal_title"),effectLabel:i("ocr_modal_description")+" "+i("ocr_state_update_safety"),confirmLabel:i("ocr_action_re_extract"),cancelLabel:i("maintenance_confirm_cancel")},()=>this._dispatchOcrAction("rebuild")).open()})}else if(t.user_state==="ready"){ie(r,"ready",i("cc_state_ready"));let S=n?i("ocr_state_ready").replace("{count}",String((v=(y=(g=(m=t.action)==null?void 0:m.primary)==null?void 0:g.scope_count)!=null?y:(h=t.pipeline_version_summary)==null?void 0:h.total)!=null?v:"")).replace("{version}",n):i("ocr_state_ready_no_version").replace("{count}",String((E=(x=(w=(b=t.action)==null?void 0:b.primary)==null?void 0:w.scope_count)!=null?x:(k=t.pipeline_version_summary)==null?void 0:k.total)!=null?E:""));r.createEl("p",{text:S,cls:"pf-status-ok"}),z(r,{label:i("md_ocr_workspace"),onClick:()=>this.app.workspace.getLeaf().setViewState({type:"paperforge-ocr-workspace"})}),n&&a&&n!==a&&r.createDiv({cls:"pf-ocr-update-banner"}).createEl("span",{text:i("ocr_state_update_available").replace("{version}",n)})}l||z(r,{label:i("ocr_configure_credential"),onClick:()=>this._startSetupJourney(3)})}_renderAgentDetail(e){var _,m;this._renderModuleDetailShell(e,"agent");let t=e.createDiv({cls:"pf-module-body"}),r={opencode:"OpenCode",claude:"Claude Code",codex:"Codex",cursor:"Cursor",windsurf:"Windsurf",github_copilot:"GitHub Copilot",gemini:"Gemini CLI"},n={opencode:".opencode/skills",claude:".claude/skills",codex:".codex/skills",cursor:".cursor/skills",windsurf:".windsurf/skills",github_copilot:".github/skills",gemini:".gemini/skills"},a=this.plugin.settings.agent_platform||"opencode",s=ge.join(this._getVaultBasePath(),n[a]),c=j.existsSync(s),l=t.createDiv({cls:"pf-module-facts"}),d=l.createDiv({cls:"pf-module-fact"});d.createEl("span",{text:i("md_agent_platform")}),d.createEl("span",{text:(_=r[a])!=null?_:a});let u=l.createDiv({cls:"pf-module-fact"});u.createEl("span",{text:i("md_agent_deployment")}),u.createEl("span",{text:c?i("agent_deployed"):i("agent_not_deployed")});let f=l.createDiv({cls:"pf-module-fact"});if(f.createEl("span",{text:i("agent_live_connection")}),f.createEl("span",{text:i("md_agent_connection_unknown")}),this._agentPlatformDraft===null)z(t,{label:i("config_change"),onClick:()=>{this._agentPlatformDraft=a,this.display()}});else{let g=t.createDiv({cls:"pf-agent-config-editor"}),h=g.createEl("select",{attr:{"aria-label":i("md_agent_platform")}}),y=this.plugin.agentPlatformChoices.length?this.plugin.agentPlatformChoices:Object.keys(r);for(let b of y){let w=h.createEl("option",{text:(m=r[b])!=null?m:b,attr:{value:b}});w.selected=b===this._agentPlatformDraft}h.addEventListener("change",()=>{this._agentPlatformDraft=h.value});let v=g.createDiv({cls:"pf-agent-config-actions"});z(v,{label:i("config_save"),onClick:()=>{var w;let b=(w=this._agentPlatformDraft)!=null?w:a;this.plugin.settings.agent_platform=b,this.getClient().configSet("agent_platform",b).catch(k=>new A.Notice(`PaperForge: config set agent_platform failed: ${String(k)}`)),this.plugin.saveSettings(),this._agentPlatformDraft=null,this.display()}}),z(v,{label:i("config_cancel"),onClick:()=>{this._agentPlatformDraft=null,this.display()}}),z(v,{label:i("config_verify"),onClick:()=>{var k;let b=(k=this._agentPlatformDraft)!=null?k:a,w=j.existsSync(ge.join(this._getVaultBasePath(),n[b]));new A.Notice(w?i("agent_verify_found"):i("agent_verify_missing"))}})}this._renderSkillsList(t)}_memoryDbStatusText(e,t){var n,a;let r=(a=(n=e.reason)==null?void 0:n.code)!=null?a:"";return e.user_state==="ready"?i("sr_db_exists")||"Active":t==="running"?i("sr_db_building")||"Building":t==="interrupted"?i("sr_db_partial")||"Partially built":t==="failed"?i("sr_db_failed")||"Build failed":r==="memory.db_missing"?i("sr_db_missing")||"Not built":r==="memory.db_corrupt"?i("sr_db_corrupt")||"Corrupted":r==="memory.index_stale"?i("sr_db_stale")||"Index stale":i("sr_db_missing")||"Not built"}_renderMemoryDetail(e){var M,$,U,J,W,N,Z,O,_e,be,qe,wt,xt;this._renderModuleDetailShell(e,"memory",!1);let t=($=(M=this._capabilityState)==null?void 0:M.memory)!=null?$:X("memory"),r=e.createDiv({cls:"pf-module-body"}),n=(J=(U=t.reason)==null?void 0:U.code)!=null?J:"",a=this.getClient(),s=typeof(a==null?void 0:a.isOperationActive)=="function"&&a.isOperationActive(),c=t.activity_state==="running"||s,l=null,d="setting-item-description";if(c?(l=(W=t.activity_label)!=null?W:i("cc_activity_running"),d="pf-status-ok"):t.user_state==="ready"?(l=i("md_retrieval_ready"),d="pf-status-ok"):(l=(Z=(N=t.reason)==null?void 0:N.text)!=null?Z:null,d="pf-status-warn"),l&&r.createEl("p",{text:l,cls:d}),c)s&&z(r,{label:i("retrieval_stop"),onClick:()=>{a.cancelActiveOperation()}});else if((O=t.action)!=null&&O.primary&&t.user_state!=="ready"&&t.user_state!=="not_enabled"){let P=t.action.primary,I="action_"+((_e=P.action_id)!=null?_e:P.verb).replace(/[.-]/g,"_"),G=P.label||(i(I)!==I?i(I):i("cc_action_"+P.verb)!=="cc_action_"+P.verb?i("cc_action_"+P.verb):i("cc_action_probe"));z(r,{label:G,onClick:()=>this._dispatchModuleAction("memory",t)})}let u=(be=t.details)!=null?be:{},f=(wt=(qe=u.build_state)==null?void 0:qe.status)!=null?wt:"idle",_=this._memoryDbStatusText(t,f),m="vec0",g=!!u.api_key_configured,h=g?i("api_key_set")||"Configured":i("api_key_missing")||"Not configured",y=r.createDiv({cls:"pf-sr-info-card"}),v=[[i("sr_db_status")||"Database",_],[i("sr_backend")||"Backend",m],[i("sr_api_key")||"API Key",h]];for(let[P,I]of v){let G=y.createDiv({cls:"pf-sr-info-row"});G.createEl("span",{cls:"pf-sr-info-label",text:P}),G.createEl("span",{cls:"pf-sr-info-value",text:I})}let b=!g,w=r.createDiv({cls:"pf-sr-cfg"}),k=w.createDiv({cls:"pf-sr-cfg-head"});k.createEl("span",{cls:"pf-sr-cfg-title",text:i("sr_config_label")||"\u914D\u7F6E"});let x=k.createEl("span",{cls:"pf-sr-cfg-icon",text:b?"\u25BC":"\u25B6"}),E=w.createDiv({cls:"pf-sr-cfg-body"});E.style.display=b?"":"none",k.addEventListener("click",()=>{let P=E.style.display!=="none";E.style.display=P?"none":"",x.textContent=P?"\u25B6":"\u25BC"});let S=E.createDiv({cls:"pf-sr-cfg-row"});S.createEl("label",{text:i("feat_openai_key")||"API Key",cls:"pf-sr-cfg-lbl"});let C=S.createEl("input",{cls:"pf-sr-cfg-input",attr:{type:"password",placeholder:g?"\u2022\u2022\u2022\u2022":"sk-..."}}),R=null;C.addEventListener("input",()=>{let P=C.value;P&&(R&&clearTimeout(R),R=setTimeout(async()=>{await this._storeVectorDbCredential(P)&&(C.value="",C.placeholder="\u2022\u2022\u2022\u2022",E.style.display="none",x.textContent="\u25B6"),R=null},600))});let F=E.createDiv({cls:"pf-sr-cfg-row"});F.createEl("label",{text:i("feat_api_base_url")||"API Base URL",cls:"pf-sr-cfg-lbl"});let D=F.createEl("input",{cls:"pf-sr-cfg-input",attr:{type:"text",placeholder:"https://api.openai.com/v1"}});D.value=this.plugin.settings.vector_db_api_base||"",D.addEventListener("change",()=>{this.plugin.settings.vector_db_api_base=D.value,this.getClient().configSet("vector_db_api_base",D.value).catch(P=>new A.Notice(`PaperForge: config set vector_db_api_base failed: ${String(P)}`)),this._refreshVectorDbCredentialStatus()});let L=E.createDiv({cls:"pf-sr-cfg-row"});L.createEl("label",{text:i("feat_api_model")||"Model",cls:"pf-sr-cfg-lbl"});let V=L.createEl("input",{cls:"pf-sr-cfg-input",attr:{type:"text",placeholder:"text-embedding-3-small"}});if(V.value=this.plugin.settings.vector_db_api_model||"text-embedding-3-small",V.addEventListener("change",()=>{this.plugin.settings.vector_db_api_model=V.value,this.getClient().configSet("vector_db_api_model",V.value).catch(P=>new A.Notice(`PaperForge: config set vector_db_api_model failed: ${String(P)}`)),this._refreshVectorDbCredentialStatus()}),t.capability_state==="needs_action"&&t.user_state!=="not_enabled"){let P=r.createDiv({cls:"pf-sr-impact-box"});P.createEl("strong",{text:i("cc_badge_action_required")||"Action Required"});let I=((xt=t.reason)==null?void 0:xt.text)||i("sr_impact_db_missing")||"Smart Retrieval needs an API key and vector index.";P.createEl("p",{text:I})}let re=r.createEl("details",{cls:"pf-sr-diagnostics"});re.createEl("summary",{text:i("cc_diagnostic_toggle")||"Advanced Status"});let ne=re.createDiv({cls:"pf-sr-diagnostics-body"});new A.Setting(ne).setName("Debug trace").setDesc("Log every client\u2194backend operation (command, ok, duration, epoch, error code \u2014 never stdin/env/values) to the console. The last 200 records stay in memory for copying.").addToggle(P=>P.setValue(this.plugin.settings.debug_trace===!0).onChange(async I=>{this.plugin.settings.debug_trace=I,Ie(I),await this.plugin.saveSettings()})).addButton(P=>P.setButtonText("Copy").onClick(()=>{var G;let I=Ue();(G=navigator.clipboard)==null||G.writeText(I||"(trace is empty)"),new A.Notice(I?`Copied ${I.split(`
-`).length} trace lines`:"Trace is empty")})).addButton(P=>P.setButtonText("Clear").onClick(()=>{er(),new A.Notice("Trace cleared")}));let de=this._getVaultBasePath(),pe=this.plugin.settings.vector_db_api_base||"-",ue=ne.createEl("table",{cls:"pf-diag-table"}),Y=new Map,B=(P,I)=>{if(!Y.has(P)){let ye=ue.createEl("tr");ye.createEl("td",{cls:"pf-diag-label",text:P});let Ve=ye.createEl("td",{cls:"pf-diag-value"});Y.set(P,ye),Ve.textContent=I;return}let G=Y.get(P).children[1];G.textContent=I};B("FTS5 Papers","\u2026"),B("FTS5 Fresh","\u2026"),B("Needs Rebuild","\u2026"),B("",""),B("Vector Backend","vec0 (sqlite-vec)"),B("Vector Model","\u2026"),B("Vector Mode","\u2026"),B("Vector Dimension","\u2026"),B("Base URL",pe),de&&(this.getClient().memoryStatus().then(P=>{var I;B("FTS5 Papers",String((I=P==null?void 0:P.paper_count_db)!=null?I:"?")),B("FTS5 Fresh",P!=null&&P.fresh?"Yes":"Stale"),B("Needs Rebuild",P!=null&&P.needs_rebuild?"Yes":"No")}).catch(()=>{}),this.getClient().embedStatus().then(P=>{var G,ye,Ve,kt,Et,St,Ct,Pt,Rt;B("Vector Model",String((G=P==null?void 0:P.model)!=null?G:"-")),B("Vector Mode",String((ye=P==null?void 0:P.mode)!=null?ye:"-")),B("Body Chunks",String((Ve=P==null?void 0:P.body_chunk_count)!=null?Ve:0)),B("Object Chunks",String((kt=P==null?void 0:P.object_chunk_count)!=null?kt:0)),B("Total Chunks",String((Et=P==null?void 0:P.total_chunks)!=null?Et:0));let I=(St=P==null?void 0:P.build_state)!=null?St:void 0;B("Build Status",String((Ct=I==null?void 0:I.status)!=null?Ct:"-")),B("Build Progress",`${(Pt=I==null?void 0:I.current)!=null?Pt:"?"}/${(Rt=I==null?void 0:I.total)!=null?Rt:"?"}`)}).catch(()=>{})),B("",""),B("Capability State",t.capability_state),B("Severity",t.severity),B("Reason Code",n)}_dispatchModuleAction(e,t){var n,a;let r=(n=t.action)==null?void 0:n.primary;if(!r){this._probeModule(e);return}if(r.safety_class!=="safe"&&r.confirmation_required){let s=r.action_id==="ocr.run"?i("ocr_run_confirm_title"):r.action_id==="embed.build"?i("embed_rebuild_title"):r.label,c=r.action_id==="ocr.run"?i("ocr_run_confirm_body"):r.action_id==="embed.build"?i("embed_rebuild_body"):(a=(r.replacement_facts||[]).join("; ")||r.confirmation_prompt)!=null?a:i("confirmation_default_effect");new ee(this.app,{title:s,effectLabel:c},()=>this._runAllowedDispatch(e,r,t)).open();return}this._runAllowedDispatch(e,r,t)}_runAllowedDispatch(e,t,r){var s,c,l;let n=t.verb,a=t.action_id;if(n==="setup"||n==="set_config"){if(e==="library")this._startSetupJourney(2);else{let d=e==="installation"&&r.reason.code==="installation.version_mismatch";this._startSetupJourney(e==="ocr"||e==="memory"?3:1,d)}return}if(n==="probe"){this._probeModule(e);return}if(n==="update"){if(a==="foundation.update"){this._runUpdateAction();return}new A.Notice(i("update_python_manual")||"Python 3.11+ upgrade requires a manual install (python.org or your package manager)."),this._probeModule(e);return}if(n==="install"&&a==="memory.install_vector_deps"){this._startSetupJourney(3);return}if(e==="library"){if(n==="sync"||a==="library.sync"){this._runManualSync();return}}else if(e==="ocr"){if(n==="run"||a==="ocr.run"){this._dispatchOcrAction("run");return}if(n==="rebuild_derived"||a==="ocr.rebuild_derived"){this._dispatchOcrAction("rebuild");return}if(n==="investigate"){let d=this._getVaultBasePath(),u=rr(r.reason.code,r.reason.text,(l=(c=(s=r.action)==null?void 0:s.primary)==null?void 0:c.scope_count)!=null?l:0,d);new We(this.app,u,"https://github.com/LLLin000/PaperForge/issues/new").open();return}}else if(e==="memory"){if(n==="run"||n==="rebuild_index"){if(a==="embed.build")this._dispatchMemoryBuild("embed","force","embed.build");else if(a==="embed.resume")this._dispatchMemoryBuild("embed","resume","embed.resume");else if(a==="memory.build"||a==="memory.rebuild")this._dispatchMemoryBuild("build",void 0,a);else if(a==="memory.upgrade_backend")this._runBackendMigration();else{new A.Notice((i("action_unknown_pair")||"Unknown action: {verb}").replace("{verb}",a||n),5e3),this._probeModule(e);return}return}if(n==="restore_backup"||a==="memory.restore_backup"){this.getClient().memoryRestoreBackup().catch(()=>{}).finally(()=>{this._refreshAllReadModels()});return}}new A.Notice((i("action_unknown_pair")||"Unknown action: {verb}").replace("{verb}",n),5e3),this._probeModule(e)}_runUpdateAction(){this.getClient().runAction({action_id:"foundation.update",scope:{kind:"all"},confirm:"foundation.update"}).then(e=>{var t;if(e.ok)new A.Notice(i("update_done")||"PaperForge updated");else{let r=typeof((t=e.payload)==null?void 0:t.availability_reason)=="string"?e.payload.availability_reason:`exit code ${e.exitCode}`;new A.Notice((i("update_failed")||"Update failed")+": "+r)}this._refreshAllReadModels()}).catch(e=>{new A.Notice((i("update_failed")||"Update failed")+": "+e.message),this._refreshAllReadModels()})}_runBackendMigration(){this.getClient().embedMigrate().then(()=>{new A.Notice(i("migrate_done")||"Backend migrated to sqlite-vec"),this._refreshAllReadModels()}).catch(e=>{new A.Notice((i("migrate_failed")||"Backend migration failed")+": "+(e.message||"unknown error")),this._refreshAllReadModels()})}_dispatchOcrAction(e){var f;if(e==="run"&&typeof this.plugin.requestOcrRun=="function"){this.plugin.requestOcrRun(!0);return}let t=this.getClient();if(t.isOperationActive()){new A.Notice(i("ocr_already_running"));return}let r={run:i("ocr_activity_run"),rebuild:i("ocr_activity_rebuild")},n=(f=this._capabilityState)!=null?f:{};n.ocr&&(n.ocr.activity_state="running",n.ocr.activity_label=r[e]||i("cc_activity_running"),n.ocr.activity_progress={current:0,total:1}),this.plugin._ocrProgress={current:0,total:1,key:""},this.display();let a={run:i("ocr_run_complete"),rebuild:i("ocr_rebuild_complete")},s=e==="rebuild"?"ocr.rebuild_derived":"ocr.run",c={action_id:s,scope:{kind:"all"},confirm:s},l=!1,d=[],u=0;t.runAction(c,{onEvent:_=>{var m,g,h,y;_.event==="cancelled"&&(l=!0),(_.event==="start"||_.event==="phase"||_.event==="progress"||_.event==="item_result")&&(this.plugin._ocrProgress={current:Number((m=_.current)!=null?m:this.plugin._ocrProgress.current),total:Number((g=_.total)!=null?g:this.plugin._ocrProgress.total),key:String((h=_.item_id)!=null?h:this.plugin._ocrProgress.key)},_.event==="item_result"&&(_.status==="succeeded"||_.status==="noop"||(_.status==="skipped"?u+=1:d.push(String((y=_.item_id)!=null?y:"")))),n.ocr&&(n.ocr.activity_progress={current:this.plugin._ocrProgress.current,total:this.plugin._ocrProgress.total}),this.display())}}).then(_=>{if(n.ocr&&(n.ocr.activity_state="idle",n.ocr.activity_label=null,n.ocr.activity_progress=null),_.ok)new A.Notice(a[e]||"OCR completed");else if(_.cancelled||l)new A.Notice(i("ocr_stopped_notice"));else{let m=d.filter(Boolean).join(", "),g=_.payload,h=g==null?void 0:g.error,y=typeof(g==null?void 0:g.availability_reason)=="string"?g.availability_reason:typeof(h==null?void 0:h.message)=="string"?h.message:"",v=m||y,b=u>0?`${v?v+" ":""}(${u} skipped)`:v||`exit code ${_.exitCode}`;new A.Notice(i("ocr_failed_notice")+": "+b,8e3)}this._refreshAllReadModels(),this.display()}).catch(_=>{n.ocr&&(n.ocr.activity_state="idle",n.ocr.activity_label=null,n.ocr.activity_progress=null),new A.Notice(i("ocr_failed_notice")+": "+((_==null?void 0:_.message)||i("ocr_error_notice")),8e3),this._refreshAllReadModels(),this.display()})}_dispatchMemoryBuild(e,t,r){var f,_,m,g;let n=this.getClient();if(!n){new A.Notice(i("runtime_not_available")||"Environment unavailable");return}if(typeof(n==null?void 0:n.isOperationActive)=="function"&&n.isOperationActive()){new A.Notice(i("embed_already_running")||"Operation already running");return}let a=(f=this._capabilityState)!=null?f:{},s=(g=(m=(_=a.memory)==null?void 0:_.action)==null?void 0:m.primary)==null?void 0:g.action_id,c;if(r?c=r:e==="embed"?t==="resume"?c="embed.resume":t==="force"?c="embed.build":s==="embed.resume"||s==="embed.build"?c=s:c="embed.build":s==="memory.build"||s==="memory.rebuild"?c=s:c="memory.rebuild",!{embed:new Set(["embed.build","embed.resume"]),build:new Set(["memory.build","memory.rebuild"])}[e].has(c)){new A.Notice((i("action_unknown_pair")||"Unknown action: {verb}").replace("{verb}",c));return}a.memory&&(a.memory.activity_state="running",a.memory.activity_label=e==="embed"?i("embed_activity_building")||"Building vector index\u2026":"Building memory\u2026"),this.display();let d=!1,u=n.runAction({action_id:c,scope:{kind:"all"},confirm:c},{onEvent:h=>{var y,v,b;if(h.event==="cancelled"&&(d=!0),h.event==="progress"){let w=Number((y=h.current)!=null?y:0),k=Number((v=h.total)!=null?v:1);this.plugin._embedProgress={current:w,total:k,key:String((b=h.item_id)!=null?b:"")},a.memory&&(a.memory.activity_progress={current:w,total:k}),this.display()}}});(async()=>{var h,y;try{let v=await u;if(a.memory&&(a.memory.activity_state="idle",a.memory.activity_label=null,a.memory.activity_progress=null),v.ok)new A.Notice(e==="embed"?i("embed_build_complete"):i("feat_memory_rebuild_done"));else if(v.cancelled||d)new A.Notice(i("embed_build_stopped"),8e3);else{let b=typeof((h=v.payload)==null?void 0:h.availability_reason)=="string"?v.payload.availability_reason:`exit code ${v.exitCode}`;new A.Notice((i("sr_build_failed_notice")||"Build failed: {detail}").replace("{detail}",b),8e3)}}catch(v){a.memory&&(a.memory.activity_state="idle",a.memory.activity_label=null,a.memory.activity_progress=null),new A.Notice((i("sr_build_failed_notice")||"Build failed: {detail}").replace("{detail}",(y=v==null?void 0:v.message)!=null?y:String(v)),8e3)}finally{this._refreshAllReadModels(),this.display()}})()}_renderModuleDetailShell(e,t,r=!0){var h,y,v,b,w,k;e.classList.add("pf-module-detail"),e.createEl("button",{cls:"pf-back-btn",text:i("btn_back_to_overview")}).addEventListener("click",()=>{this._detailReturn?(this.activeTab=this._detailReturn.tab,this._focusTargetId=this._detailReturn.selector,this._detailReturn=null):(this.activeTab="overview",this._focusTargetId=`button.pf-cc-module-card[data-module="${t}"]`),this._selectedDetailModule="",this.display()});let a=this._getOverviewModules(),s=e.createDiv({cls:"pf-module-detail-selector",attr:{role:"tablist","aria-label":i("md_module_switcher")}});for(let x of a)s.createEl("button",{cls:"pf-module-detail-btn"+(x.id===t?" pf-module-detail-btn--active":""),text:x.label,attr:{role:"tab","aria-selected":String(x.id===t)}}).addEventListener("click",()=>{this._selectedDetailModule=x.id,this._focusTargetId="#pf-"+x.id+"-detail-heading",this.display()});let c=e.createEl("select",{cls:"pf-module-switcher",attr:{"aria-label":i("md_module_switcher")}});for(let x of a){let E=c.createEl("option",{text:x.label,attr:{value:x.id}});E.selected=x.id===t}c.addEventListener("change",()=>{this._selectedDetailModule=c.value,this._focusTargetId="#pf-"+c.value+"-detail-heading",this.display()});let l=t==="agent"?this._getAgentPlaceholderEnvelope():(y=(h=this._capabilityState)==null?void 0:h[t])!=null?y:X(t),d=(v=l.user_state)!=null?v:l.capability_state==="ready"?"ready":"action_required",u=e.createDiv({cls:"pf-module-summary",attr:{"aria-live":"polite"}}),f=u.createDiv({cls:"pf-module-summary-header"});f.createEl("h2",{cls:"pf-module-summary-name pf-module-detail-heading",text:this._getUserModuleName(t),attr:{id:"pf-"+t+"-detail-heading",tabindex:"-1"}}),ie(f,d,this._getUserStateLabel(d)),u.createEl("p",{cls:"pf-module-summary-consequence",text:this._getModuleConsequence(t,l)}),l.activity_state==="running"&&Vt(u,{label:i("cc_activity_running"),progress:l.activity_progress});let _=(b=l.action)==null?void 0:b.primary;if(r&&_&&d!=="ready"&&t!=="agent"){let x="action_"+((w=_.action_id)!=null?w:_.verb).replace(/[.-]/g,"_"),E=i(x),S=E!==x?E:i("cc_action_"+_.verb)!=="cc_action_"+_.verb?i("cc_action_"+_.verb):i("cc_action_probe");z(u,{label:S,loading:l.activity_state==="running",onClick:()=>this._dispatchModuleAction(t,l)})}let m=u.createEl("details",{cls:"pf-module-diagnostics"});m.createEl("summary",{text:i("advanced_diagnostics")});let g=m.createDiv({cls:"pf-module-diagnostics-body"});g.createEl("div",{text:i("cc_diag_module")+": "+l.module}),g.createEl("div",{text:i("cc_diag_state")+": "+this._getUserStateLabel(d)}),g.createEl("div",{text:i("cc_diag_severity")+": "+l.severity}),g.createEl("div",{text:i("cc_diag_activity")+": "+l.activity_state}),g.createEl("div",{text:i("cc_diag_reason")+": "+l.reason.code}),g.createEl("div",{text:i("cc_diag_ttl")+": "+l.ttl_seconds+"s"});for(let x of(k=l.notices)!=null?k:[])g.createEl("div",{text:x.message});g.createEl("div",{text:i("cc_diag_updated")+": "+new Date(l.updated_at).toLocaleString()})}_renderHelpTab(e){e.createEl("div",{cls:"pf-cc-eyebrow",text:i("help_eyebrow")||"help"}),e.createEl("h1",{cls:"pf-cc-title",text:i("help_title")||"Help"}),e.createEl("p",{cls:"pf-cc-lede",text:i("help_lede")||"Open the relevant module, or copy a diagnostic for support."});let t=e.createEl("p",{cls:"pf-help-loading",text:"Loading help content\u2026"}),r=lt(this.app),n="https://api.github.com/repos/LLLin000/PaperForge/contents/docs/help",a=["guide","faq","support"],s=this;Promise.all(a.map(c=>fetch(`${n}/${r}/${c}.md`).then(l=>l.ok?l.json():Promise.reject()).then(l=>{let d=atob(l.content.replace(/\n/g,"")),u=new Uint8Array(d.length);for(let f=0;f<d.length;f++)u[f]=d.charCodeAt(f);return new TextDecoder().decode(u)}).then(l=>({name:c,text:l})).catch(()=>({name:c,text:""})))).then(c=>{t.remove();for(let{name:l,text:d}of c){if(!d)continue;let u=d.match(/^#\s+(.+)/m),f=u?u[1]:l,_=d.replace(/^#\s+.+(\r?\n|$)/,"").trim(),m=e.createEl("details",{cls:"pf-help-section",attr:l==="support"?{open:"true"}:{}});m.createEl("summary",{cls:"pf-help-section-title",text:f});let g=m.createDiv({cls:"pf-help-section-body"});l==="support"?(A.MarkdownRenderer.render(s.app,_,g,"",s.plugin),g.createEl("button",{cls:"pf-help-diagnostic-btn",text:i("help_copy")||"Copy Support Diagnostic"}).addEventListener("click",()=>s._buildAndCopyDiagnostic())):A.MarkdownRenderer.render(s.app,_,g,"",s.plugin)}}).catch(()=>{t.setText(i("help_load_error")||"Failed to load help content.")})}_runManualSync(){var n,a;let e=(n=this.app.vault.adapter.basePath)!=null?n:"",t=this.getClient();if(!t){new A.Notice(i("runtime_not_available")||"Environment unavailable");return}let r=(a=this._capabilityState)!=null?a:{};r.library&&(r.library.activity_state="running",r.library.activity_label="Syncing library\u2026"),this.plugin._autoSyncRunning=!0,this._libraryRunning=!0,this.display(),(async()=>{let s=1;try{let c=await t.sync();s=(c==null?void 0:c.ok)===!1?1:0,s===0&&(this._lastSyncTime=new Date().toLocaleTimeString(),this.plugin._lastSyncTime=this._lastSyncTime,ke(JSON.stringify(c),{runAction:l=>t.runAction(l)}))}catch(c){new A.Notice(`Sync failed: ${c instanceof Error?c.message:String(c)}`,8e3)}finally{this.plugin._autoSyncRunning=!1,this._libraryRunning=!1,this._memoryStatusText=null,r.library&&(r.library.activity_state="idle",r.library.activity_label=null),this._refreshAllReadModels(s),this._refreshSnapshots(e),Je(this.app,this.plugin,e)}})()}_refreshSnapshots(e){this._refreshPending=!0,this.getClient().runtimeHealth().catch(()=>{}).finally(()=>{var n,a,s,c,l,d;this._refreshPending=!1;let t=(n=this._capabilityState)==null?void 0:n.memory,r=(a=this._capabilityState)==null?void 0:a.embed;this._memoryStatusText=t&&(c=(s=t.reason)==null?void 0:s.text)!=null?c:null,this._embedStatusText=r&&(d=(l=r.reason)==null?void 0:l.text)!=null?d:null,this.display()})}_debouncedSave(){clearTimeout(this._saveTimeout),this._saveTimeout=setTimeout(()=>this.plugin.saveSettings(),500)}_renderReleaseNotesTab(e){e.createEl("h2",{text:"\u66F4\u65B0\u4E0E\u624B\u518C"}),e.createEl("h3",{text:"\u7248\u672C\u66F4\u65B0\u8BB0\u5F55"});let t=or.default.versions||[];for(let a of t){let s=e.createEl("div",{cls:"paperforge-release-card"}),c=s.createEl("div",{cls:"paperforge-release-header"});if(c.createEl("strong",{text:`v${a.version} \u2014 ${a.title}`}),c.createEl("span",{cls:"paperforge-release-date",text:`  (${a.date})`}),a.breaking_or_migration&&a.breaking_or_migration.length>0){let l=s.createEl("div",{cls:"paperforge-release-section"});l.createEl("div",{cls:"paperforge-release-label",text:"\u884C\u4E3A\u53D8\u66F4 / \u8FC1\u79FB\u6CE8\u610F"});for(let d of a.breaking_or_migration)l.createEl("div",{cls:"paperforge-release-item",text:`\u2022 ${d}`})}if(a.new_features&&a.new_features.length>0){let l=s.createEl("div",{cls:"paperforge-release-section"});l.createEl("div",{cls:"paperforge-release-label",text:"\u65B0\u529F\u80FD"});for(let d of a.new_features)l.createEl("div",{cls:"paperforge-release-item",text:`\u2022 ${d}`})}if(a.fixes&&a.fixes.length>0){let l=s.createEl("div",{cls:"paperforge-release-section"});l.createEl("div",{cls:"paperforge-release-label",text:"\u4FEE\u590D"});for(let d of a.fixes)l.createEl("div",{cls:"paperforge-release-item",text:`\u2022 ${d}`})}if(a.recommended_actions&&a.recommended_actions.length>0){let l=s.createEl("div",{cls:"paperforge-release-section paperforge-release-recommended"});l.createEl("div",{cls:"paperforge-release-label",text:"\u5EFA\u8BAE\u64CD\u4F5C"});for(let d of a.recommended_actions)l.createEl("div",{cls:"paperforge-release-item paperforge-release-item-bold",text:`\u2022 ${d}`})}}e.createEl("h3",{text:"\u4F7F\u7528\u624B\u518C"}),e.createEl("div",{cls:"paperforge-manual-links"}).createEl("a",{text:"\u2192 \u67E5\u770B\u5B8C\u6574\u4F7F\u7528\u624B\u518C\uFF08GitHub\uFF09",href:"https://github.com/LLLin000/PaperForge/blob/master/docs/user-manual.md"}).setAttr("target","_blank")}_initCapabilityState(){let e=this.plugin.settings.capabilityState;this._capabilityState=Nt(e!=null?e:{},we),this._persistCapabilityState()}_persistCapabilityState(){this._capabilityState&&(this.plugin.settings.capabilityState=this._capabilityState,this.plugin.saveSettings())}_probeModule(e,t){var l,d,u,f,_;if(this._probing.has(e))return;this._probing.add(e);let r=(l=this._capabilityState)==null?void 0:l[e],n={schema_version:2,module:e,capability_state:(d=r==null?void 0:r.capability_state)!=null?d:"unknown",activity_state:"running",activity_label:"Probing...",activity_progress:null,severity:"unknown",reason:{code:`${e}.probing`,text:`Checking ${e} status...`},action:{primary:Fe(e)},notices:(u=r==null?void 0:r.notices)!=null?u:[],user_state:"checking",capability_kind:e==="installation"||e==="library"?"required":"optional",maintenance_eligible:!1,user_visible_failure:!1,user_impact:null,updated_at:new Date().toISOString(),ttl_seconds:(f=r==null?void 0:r.ttl_seconds)!=null?f:0};this._updateCapabilityEnvelope(e,n);let a=this._getVaultBasePath();if(!this._resolveRuntimeCommand(a)){if(this._probing.delete(e),e==="installation"){let m={schema_version:2,module:"installation",capability_state:"unknown",activity_state:"idle",activity_label:null,activity_progress:null,severity:"error",reason:{code:"installation.no_python",text:"No Python found. Run the Setup Wizard to install the managed runtime."},action:{primary:at()},notices:[],user_state:"setup_required",capability_kind:"required",maintenance_eligible:!1,user_visible_failure:!0,user_impact:"PaperForge cannot run without Python.",updated_at:new Date().toISOString(),ttl_seconds:60};this._updateCapabilityEnvelope(e,m)}else this._updateCapabilityEnvelope(e,Me(e));return}this.getClient().probe(e,{expectedVersion:e==="installation"?(_=this.plugin.manifest)==null?void 0:_.version:void 0,lastOperationExitCode:e==="library"&&t!=null&&t!==0?t:void 0}).then(m=>{this._probing.delete(e),Ke(m,e)?this._updateCapabilityEnvelope(e,m):(console.warn(`[PaperForge] Probe ${e}: invalid envelope schema`,m),this._updateCapabilityEnvelope(e,Me(e)))}).catch(m=>{var g,h,y;if(this._probing.delete(e),e==="installation"&&((g=m.message)!=null&&g.includes("runtime not ready")||(h=m.message)!=null&&h.includes("no managed runtime pointer")||(y=m.message)!=null&&y.includes("not ready"))){let v={schema_version:2,module:"installation",capability_state:"unknown",activity_state:"idle",activity_label:null,activity_progress:null,severity:"error",reason:{code:"installation.no_python",text:"No Python found. Run the Setup Wizard to install the managed runtime."},action:{primary:at()},notices:[],user_state:"setup_required",capability_kind:"required",maintenance_eligible:!1,user_visible_failure:!0,user_impact:"PaperForge cannot run without Python.",updated_at:new Date().toISOString(),ttl_seconds:60};this._updateCapabilityEnvelope(e,v)}else console.warn(`[PaperForge] Probe ${e} failed:`,m.message),this._updateCapabilityEnvelope(e,Me(e))})}_updateCapabilityEnvelope(e,t){this._capabilityState||(this._capabilityState={});let r=this._capabilityState[t.module];Jt(r,t)&&this._lastKnownState.set(e,Wt(t)),e==="installation"&&t.user_state==="ready"&&(this._setupReinstallRequested=!1),this._capabilityState[t.module]=t,this._persistCapabilityState(),(r==null?void 0:r.activity_state)==="running"&&t.activity_state!=="running"&&new A.Notice(i("cc_notice_refreshed"),3e3),this._displayInProgress||this.display()}_ccBadgeKey(e,t){return e.activity_state==="running"?"cc_badge_checking":e.severity==="ok"?"cc_badge_ok":e.severity==="error"&&t==="installation"?"cc_badge_setup":e.severity==="warning"||e.severity==="error"?"cc_badge_attention":"cc_badge_pending"}_sevClass(e,t){return t==="running"?"checking":e==="error"?"error":e==="warning"?"warn":e==="unknown"?"unknown":"ok"}_localizeReason(e,t){let r="cc_reason_"+e.replace(/\./g,"_"),n=i(r);if(n!==r)return n.replace("{module}",t);let s="cc_reason_"+e.replace(/^[a-z]+\./,""),c=i(s);return c===s?null:c.replace("{module}",t)}_renderCard(e,t,r){let n=r,a=this._sevClass(n.severity,n.activity_state),s=Ce._REAL_PROBE.has(t),c=Ce._NAVIGABLE.has(t),l=e.createEl("div",{cls:"pf-cc-card pf-open-module-btn",attr:{role:"listitem",tabindex:"0","data-module":t,"aria-label":`${i("cc_module_"+t)} \u2014 ${i(this._ccBadgeKey(n,t))}`}}),d=l.createEl("div",{cls:"pf-cc-card-header"}),u=d.createEl("div",{cls:"pf-cc-card-name-area"});if(c){let x=t==="installation"?i("module_detail_open_installation"):t==="library"?i("module_detail_open_library"):t==="ocr"?i("module_detail_open_ocr"):t==="memory"?i("module_detail_open_memory"):t==="help"?i("module_detail_open_help"):i("md_select_installation"),E=u.createEl("button",{cls:"pf-open-module-btn",text:i("cc_module_"+t),attr:{"data-module":t,"aria-label":x}});E.addEventListener("click",()=>this._handleCardNavigation(t)),E.addEventListener("keydown",S=>{(S.key==="Enter"||S.key===" ")&&(S.preventDefault(),this._handleCardNavigation(t))})}else u.createEl("div",{cls:"pf-cc-card-name",text:i("cc_module_"+t)});d.createEl("div",{cls:`pf-cc-card-badge pf-cc-card-badge--${a}`,text:i(this._ccBadgeKey(n,t))});let f;if(!s)f=i("cc_reason_placeholder").replace("{module}",i("cc_module_"+t));else{let x=this._localizeReason(n.reason.code,t);f=x!=null?x:n.reason.text}if(l.createEl("div",{cls:"pf-cc-card-reason",text:f}),n.activity_state==="running"&&n.activity_label){let x=l.createEl("div",{cls:"pf-cc-card-activity",attr:{"aria-live":"polite"}});if(x.createEl("span",{text:n.activity_label}),n.activity_progress&&n.activity_progress.total>0){let E=Math.round(n.activity_progress.current/n.activity_progress.total*100),C=x.createEl("div",{cls:"pf-cc-card-progress",attr:{role:"progressbar","aria-valuenow":String(n.activity_progress.current),"aria-valuemin":"0","aria-valuemax":String(n.activity_progress.total)}}).createEl("div",{cls:"pf-cc-card-progress-fill"});C.style.width=E+"%"}}let _=l.createEl("div",{cls:"pf-cc-card-footer"});if(s&&n.action.primary&&!It(n)){let x=Bt(n),S=x.kind==="setup"?"pf-cc-card-action pf-cc-card-action--primary":"pf-cc-card-action";_.createEl("button",{cls:S,text:x.label,attr:{"aria-label":x.label}}).addEventListener("click",()=>{x.kind==="setup"?this._startSetupJourney(1):this._dispatchModuleAction(t,n)})}let m=l.createEl("details",{cls:"pf-cc-card-diagnostic"});m.createEl("summary",{text:i("cc_diagnostic_toggle")});let g=m.createEl("div",{cls:"pf-cc-card-diagnostic-body"}),h=i("cc_state_"+n.capability_state)||n.capability_state,y=i("cc_severity_"+n.severity)||n.severity,v=i("cc_activity_"+n.activity_state)||n.activity_state,b;try{b=new Date(n.updated_at).toLocaleString()}catch(x){b=n.updated_at}g.createEl("div",{text:`${i("cc_diag_module")}: ${n.module}`}),g.createEl("div",{text:`${i("cc_diag_state")}: ${h}`}),g.createEl("div",{text:`${i("cc_diag_severity")}: ${y}`}),g.createEl("div",{text:`${i("cc_diag_activity")}: ${v}`});let w=g.createEl("div");w.appendText(i("cc_diag_reason")+": "+f+" ");let k=w.createEl("code",{text:n.reason.code});g.createEl("div",{text:`${i("cc_diag_ttl")}: ${String(n.ttl_seconds)}s`}),g.createEl("div",{text:`${i("cc_diag_updated")}: ${b}`})}_handleCardNavigation(e){e==="help"?(this.activeTab="help",this._selectedDetailModule="",this._focusTargetId="div.pf-open-module-btn[data-module=help]"):(this.activeTab="module-detail",this._selectedDetailModule=e,this._focusTargetId="#pf-"+e+"-detail-heading"),this.display()}_renderControlCenter(e){var S,C,R,F;let t=e.createEl("div",{cls:"pf-control-center"}),r=(S=this._capabilityState)!=null?S:{};t.createEl("div",{cls:"pf-cc-eyebrow",text:i("cc_eyebrow")||"control center"}),t.createEl("h1",{cls:"pf-cc-title",text:i("cc_title")||"Your literature pipeline"}),t.createEl("p",{cls:"pf-cc-lede",text:i("cc_lede")||"See what is working and what needs attention across your pipeline."});let n=(C=r.installation)!=null?C:X("installation"),a=(R=r.library)!=null?R:X("library"),s=n.user_state==="ready",c=a.user_state==="ready",l=s&&c,d=[n,a].some(D=>D.user_state==="checking"),u=Object.values(r).filter(D=>D.user_state&&D.user_state!=="ready"&&D.user_state!=="not_enabled").length,f=t.createEl("div",{cls:"pf-cc-summary"}),_=l?"ready":d?"checking":"attention",m=l?i("cc_badge_ready")||"Ready":d?i("cc_badge_checking")||"Checking":i("cc_badge_attention")||"Needs attention";f.createEl("span",{cls:`pf-cc-summary-badge pf-cc-summary-badge--${_}`,text:m});let g=f.createDiv({cls:"pf-cc-summary-copy"}),h=l?i("cc_summary_ready"):d?i("cc_summary_checking"):this.plugin.settings._setup_complete===!1?i("cc_summary_incomplete"):i("cc_summary_attention"),y=l?i("cc_summary_ready_body"):d?i("cc_summary_checking_body"):this.plugin.settings._setup_complete===!1?i("cc_summary_incomplete_body"):i("cc_summary_attention_body");g.createEl("strong",{text:h}),g.createEl("span",{cls:"caption",text:y});let v=f.createDiv({cls:"pf-cc-summary-meta"}),b=v.createEl("span");b.createEl("strong",{text:String(u)}),b.appendText(" "+(i("cc_needs_attention")||"item needs attention"));let w=Object.values(r).map(D=>D.updated_at).filter(Boolean).sort().pop();v.createEl("span",{text:w?(i("cc_last_checked")||"Checked just now: ")+new Date(w).toLocaleString():i("cc_checked_pending")||"Not checked yet"}),v.createEl("button",{cls:"pf-cc-summary-refresh",text:i("cc_refresh_btn")||"Refresh status"}).addEventListener("click",()=>this._refreshAllModules());let x=t.createDiv({cls:"pf-cc-section-head"});x.createEl("div",{cls:"pf-cc-eyebrow",text:i("cc_modules_header")||"modules"}),x.createEl("span",{cls:"caption",text:i("cc_optional_note")||"Optional modules do not affect core readiness."});let E=t.createDiv({cls:"pf-cc-module-list"});for(let[D,L]of this._getOverviewModules().entries()){let V=L.id==="agent"?this._getAgentPlaceholderEnvelope():(F=r[L.id])!=null?F:X(L.id);this._renderOverviewCard(E,L.id,L.label,V,D+1)}}_getAgentPlaceholderEnvelope(){var a;let e=this.plugin.settings.agent_platform||"opencode",t={opencode:".opencode/skills",claude:".claude/skills",codex:".codex/skills",cursor:".cursor/skills",windsurf:".windsurf/skills",github_copilot:".github/skills",gemini:".gemini/skills"},r=ge.join(this._getVaultBasePath(),(a=t[e])!=null?a:t.opencode,"paperforge","SKILL.md"),n=j.existsSync(r);return{schema_version:2,module:"agent",capability_state:n?"ready":"needs_action",activity_state:"idle",activity_label:null,activity_progress:null,severity:n?"ok":"warning",reason:{code:n?"agent.skills_deployed":"agent.skills_not_deployed",text:n?"PaperForge Skills are deployed for the selected platform.":"PaperForge Skills have not been deployed for the selected platform."},action:{primary:null},notices:[],user_state:n?"ready":"not_enabled",capability_kind:"optional",maintenance_eligible:!1,user_visible_failure:!1,user_impact:null,updated_at:new Date().toISOString(),ttl_seconds:300}}_renderOverviewCard(e,t,r,n,a){var l,d;let s=e.createEl("div",{cls:"pf-cc-module-card pf-open-module-btn",attr:{"data-module":t,"aria-label":r+" \u2014 "+this._getUserStateLabel(n.user_state),role:"button",tabindex:"0"}});s.style.cursor="pointer",s.createEl("span",{cls:"pf-cc-num",text:String(a).padStart(2,"0")}),s.createEl("span",{cls:"pf-cc-card-name",text:r}),ie(s,n.user_state,this._getUserStateLabel(n.user_state)),s.createEl("span",{cls:"pf-cc-card-sentence",text:this._getModuleConsequence(t,n)});let c=n.user_state==="ready"&&((d=(l=n.action)==null?void 0:l.primary)!=null&&d.scope_count)&&n.action.primary.scope_count>1?(i("cc_metric_papers")||"Papers: ")+n.action.primary.scope_count:n.updated_at&&n.updated_at!==new Date(0).toISOString()?(i("cc_last_checked")||"")+new Date(n.updated_at).toLocaleString():"";s.createEl("span",{cls:"pf-cc-card-metric",text:c}),s.createEl("span",{cls:"pf-cc-card-arrow",text:"\u2192"}),s.addEventListener("click",()=>this._handleCardNavigation(t))}_getUserStateLabel(e){return i("cc_badge_"+e)}_getModuleConsequence(e,t){var d,u,f;let r=(d=t.user_state)!=null?d:t.capability_state==="ready"?"ready":"action_required",n="cc_consequence_"+e+"_"+r,a=i(n);if(a&&a!==n)return a;let s=this._localizeReason((f=(u=t.reason)==null?void 0:u.code)!=null?f:"",this._getUserModuleName(e));if(s)return s;let c="cc_consequence_"+r,l=i(c);return l!==c?l:i("cc_consequence_default")}_applyStaleTolerance(){if(!this._capabilityState)return;let e=!1;for(let t of we){let r=this._capabilityState[t];r&&st(r)&&(this._capabilityState[t]=it(t),e=!0)}e&&this._persistCapabilityState()}_refreshAllModules(){this._refreshAllReadModels()}_refreshAllReadModels(e){var r;if(this.getClient().invalidateCache(),!((r=this.app.vault.adapter.basePath)!=null?r:"")){this._probing.clear();return}this._probing.clear();for(let n of we)this._probing.add(n);this.getClient().probeAll().then(n=>{var l,d,u,f,_,m;this._probing.clear();for(let[g,h]of Object.entries((l=n.modules)!=null?l:{}))Ke(h,g)&&this._updateCapabilityEnvelope(g,h);e!=null&&e!==0&&this._probeModule("library",e);let a=(u=(d=n.modules)==null?void 0:d.maintenance)!=null?u:null,s=(f=a==null?void 0:a.orphan)!=null?f:{},c=(_=s.count)!=null?_:0;c>0&&!this._lastOrphanCount&&this._openOrphanModal((m=s.orphans)!=null?m:[]),this._lastOrphanCount=c}).catch(()=>{this._probing.clear(),this.display()})}_openOrphanModal(e){var a;let t=(a=this.app.vault.adapter)==null?void 0:a.basePath;if(!t)return;let r=this._resolveRuntimeCommand(t);if(!r){new A.Notice(i("next_action_runtime_unavailable"));return}let n={path:r.path,extraArgs:[...r.args],source:"auto-detected"};new He(this.app,e,t,n).open()}_buildAndCopyDiagnostic(){var a,s,c;let e=(s=(a=this.plugin.manifest)==null?void 0:a.version)!=null?s:"unknown",t=Zt((c=this._capabilityState)!=null?c:{},this._lastKnownState),n=Kt({pluginVersion:e,modules:t});Ut(n,()=>{new A.Notice(i("support_diagnostic_copied"),3e3)})}_persistNavMemory(){this.plugin.settings._navMemory={...this._navMemory},this.plugin.saveSettings()}_renderSetupJourney(e){this.plugin.settings._setup_journey_started!==!0&&(this.plugin.settings._setup_journey_started=!0,this.plugin.saveSettings());let t=e.createDiv({cls:"pf-setup-journey"});t.createEl("h2",{text:i("setup_welcome")}),t.createEl("p",{text:i("setup_desc"),cls:"pf-setup-desc"});let r=[i("setup_stage_1"),i("setup_stage_2"),i("setup_stage_3"),i("setup_stage_4")],n=t.createDiv({cls:"pf-setup-progress",attr:{"aria-label":i("setup_progress")}});r.forEach((s,c)=>{n.createEl("span",{cls:"pf-setup-step"+(c+1===this._setupStage?" pf-setup-step--active":"")+(c+1<this._setupStage?" pf-setup-step--done":""),text:String(c+1)+". "+s,attr:{"aria-current":c+1===this._setupStage?"step":"false"}})});let a=t.createDiv({cls:"pf-setup-body"});this._setupStage===1?this._renderSetupStageFoundation(a):this._setupStage===2?this._renderSetupStageLibrary(a):this._setupStage===3?this._renderSetupStageOptionals(a):this._renderSetupStageReview(a)}_renderSetupStageFoundation(e){var c,l;let t=(l=(c=this._capabilityState)==null?void 0:c.installation)!=null?l:X("installation");(t.capability_state==="unknown"&&t.updated_at===new Date(0).toISOString()||t.user_state==="detection_failed"&&t.reason.code.endsWith(".stale"))&&!this._attemptedProbes.has("installation")&&(this._attemptedProbes.add("installation"),this._probeModule("installation")),e.createEl("h3",{text:i("setup_foundation_title")}),e.createEl("p",{text:i("setup_foundation_desc")});let n=e.createDiv({cls:"pf-setup-field"});n.createEl("label",{text:i("setup_foundation_python")}),n.createEl("span",{cls:"caption",text:i("setup_foundation_python_hint")});let a=n.createEl("input",{cls:"pf-setup-input",attr:{type:"text",placeholder:"python"}});a.value=this.plugin.settings.python_path||"",a.addEventListener("input",()=>{this.plugin.settings.python_path=a.value.trim(),this._debouncedSave()}),ie(e,t.user_state,this._getUserStateLabel(t.user_state)),e.createEl("p",{text:t.user_state==="ready"?i("setup_ready"):this._getModuleConsequence("installation",t),cls:t.user_state==="ready"?"pf-setup-ok":"pf-setup-status"}),this._setupOperation==="running"?e.createEl("p",{cls:"pf-setup-status",text:i("setup_installing")}):(this._setupFeedback&&e.createEl("p",{cls:this._setupOperation==="failed"?"pf-setup-warn":"pf-setup-ok",text:this._setupFeedback}),t.user_state!=="ready"&&(this._setupReinstallRequested||t.reason.code==="installation.version_mismatch")?(e.createEl("p",{cls:"pf-setup-warn",text:i("setup_reinstall_notice")}),z(e,{label:i("foundation_reinstall_btn"),onClick:()=>this._installFoundation(!0)})):(t.user_state!=="ready"||this._setupOperation==="failed")&&z(e,{label:i("setup_foundation_install_btn"),onClick:()=>this._installFoundation(!1)}));let s=e.createDiv({cls:"pf-setup-nav"});this._setupOperation==="running"?z(s,{label:i("setup_nav_cancel"),onClick:()=>{var d;(d=this._runtimeAbortController)==null||d.abort()}}):z(s,{label:i("setup_nav_later"),onClick:()=>{this._setupOperation="idle",this._setupFeedback=null,this._setupStage=1,this.activeTab="overview",this._setupJourneyDismissedForSession=!0,this.display()}}),z(s,{label:i("setup_nav_continue"),disabled:t.user_state!=="ready",onClick:()=>{this._setupFeedback=null,this._setupStage=2,this.display()}})}_renderSetupStageLibrary(e){var x,E;let t=(E=(x=this._capabilityState)==null?void 0:x.library)!=null?E:X("library");(t.capability_state==="unknown"&&t.updated_at===new Date(0).toISOString()||t.user_state==="detection_failed"&&t.reason.code.endsWith(".stale"))&&!this._attemptedProbes.has("library")&&(this._attemptedProbes.add("library"),this._probeModule("library")),e.createEl("h3",{text:i("setup_library_title")}),e.createEl("p",{text:i("setup_library_desc")}),ie(e,t.user_state,this._getUserStateLabel(t.user_state)),e.createEl("p",{text:t.user_state==="ready"?i("setup_library_ready"):this._getModuleConsequence("library",t),cls:t.user_state==="ready"?"pf-setup-ok":"pf-setup-status"}),this._setupOperation==="running"?e.createEl("p",{cls:"pf-setup-status",text:i("setup_library_configuring")}):this._setupFeedback&&e.createEl("p",{cls:this._setupOperation==="failed"?"pf-setup-warn":"pf-setup-ok",text:this._setupFeedback});let n=e.createDiv({cls:"pf-setup-library-form"});n.createEl("p",{cls:"pf-setup-form-intro",text:i("setup_library_config_desc")});let a=(S,C,R,F)=>{let D=S.createDiv({cls:"pf-setup-field"});D.createEl("label",{text:C}),F&&D.createEl("span",{cls:"caption",text:F});let L=D.createEl("input",{cls:"pf-setup-input",attr:{type:"text"}});L.value=this.plugin.settings[R]||"",L.addEventListener("input",()=>{this.plugin.settings[R]=L.value.trim(),this._debouncedSave()})};a(n,i("field_zotero_data"),"zotero_data_dir",i("setup_library_zotero_hint")),n.createEl("h4",{text:i("setup_library_folder_heading")});let s=n.createDiv({cls:"pf-setup-folder-grid"});a(s,i("dir_system"),"system_dir"),a(s,i("dir_resources"),"resources_dir"),a(s,i("dir_notes"),"literature_dir"),a(s,i("dir_base"),"base_dir");let c=n.createEl("button",{cls:"pf-setup-verify",text:i("setup_library_verify"),attr:{type:"button"}});c.disabled=this._setupOperation==="running",c.addEventListener("click",()=>this._applyLibraryConfiguration());let l=e.createDiv({cls:"pf-setup-import"});l.createEl("h4",{text:i("setup_bbt_title")||"BBT JSON Export"});let d=this.app.vault.adapter.basePath,u=(ht(),Dt(sr)).resolveVaultPaths(d);l.createEl("p",{cls:"pf-setup-form-intro",text:i("setup_bbt_desc")||"Export your Zotero library as Better BibTeX JSON into the folder below. Enable 'Keep updated' for automatic re-exports."});let f=l.createDiv({cls:"pf-setup-path-row"});f.createEl("span",{cls:"pf-setup-path-label",text:i("setup_bbt_path")||"Exports folder:"}),f.createEl("code",{cls:"pf-setup-path-value",text:u.exportsDir}),f.createEl("button",{cls:"pf-btn pf-btn-secondary",text:i("setup_bbt_copy")||"Copy"}).addEventListener("click",()=>{navigator.clipboard.writeText(u.exportsDir),new A.Notice(i("setup_bbt_copied")||"Path copied")});let m=l.createEl("details",{cls:"pf-setup-guide"});m.createEl("summary",{cls:"pf-setup-guide-summary",text:i("setup_bbt_guide")||"How to export from Zotero \u2192"});let g=m.createDiv({cls:"pf-setup-guide-body"}),h="https://raw.githubusercontent.com/LLLin000/PaperForge/master/docs/help/images",y=[{img:"bbt-plugin-installed.jpg",title:i("setup_bbt_step1")||"1. Install Better BibTeX",desc:i("setup_bbt_step1_desc")||"In Zotero, go to Tools \u2192 Add-ons, search for Better BibTeX and install it. If you cannot find it, download from: https://github.com/retorquere/zotero-better-bibtex/releases/tag/v9.0.50"},{img:"bbt-export-dialog.jpg",title:i("setup_bbt_step2")||"2. Export with auto-update",desc:i("setup_bbt_step2_desc")||"Right-click your library or collection \u2192 Export Library\u2026 \u2192 choose 'Better BibTeX JSON' format. Check 'Keep updated'."},{img:"bbt-save-dialog.jpg",title:i("setup_bbt_step3")||"3. Save to exports folder",desc:i("setup_bbt_step3_desc")||"Point the export destination to the folder above. Once saved, click 'Detect' below."}];for(let S of y){let C=g.createDiv({cls:"pf-setup-guide-step"});C.createEl("strong",{text:S.title}),C.createEl("p",{text:S.desc}),C.createEl("img",{attr:{src:h+"/"+S.img,alt:S.title,loading:"lazy",onerror:"this.style.display='none'"}}).addClass("pf-setup-guide-img")}let v=l.createDiv({cls:"pf-setup-detect-row"}),b=v.createEl("span",{cls:"pf-setup-detect-status"}),w=e.createDiv({cls:"pf-setup-nav"}),k=()=>{try{j.existsSync(u.exportsDir)||j.mkdirSync(u.exportsDir,{recursive:!0});let S=j.readdirSync(u.exportsDir).filter(R=>R.endsWith(".json"));S.length===0?b.setText(i("setup_bbt_no_files")||"No JSON files found."):b.setText("\u2713 "+(i("setup_bbt_found")||"Found: ")+S.join(", "));let C=w.querySelector(".pf-action-btn:last-child");if(C){let R=S.length===0||t.user_state!=="ready"||this._setupOperation==="running";C.disabled=R,C.classList.toggle("pf-action-btn--disabled",R)}}catch(S){}};v.createEl("button",{cls:"pf-btn pf-btn-primary",text:i("setup_bbt_detect")||"Detect"}).addEventListener("click",k),z(w,{label:i("setup_nav_back"),onClick:()=>{this._setupFeedback=null,this._setupStage=1,this.display()}}),z(w,{label:i("setup_nav_continue"),disabled:!0,onClick:()=>{this._setupFeedback=null,this._setupStage=3,this.display()}}),k()}async _migrateLegacyCredentials(e){let t=this.getClient(),r={writeCredential:(a,s)=>t.authSetSecret(a,s,{replace:!1})};e.disabled=!0;let n=[];try{await this._collectLegacyMigrations(r,n)}finally{e.disabled=!1}n.length===0?new A.Notice("No legacy credentials found in SecretStorage"):n.forEach(a=>new A.Notice(a,6e3)),this._refreshVectorDbCredentialStatus(),this._refreshAllReadModels()}async _collectLegacyMigrations(e,t){var r,n;for(let a of["ocr","embedding"]){let s=await qt(a,this.app.secretStorage,e,{baseUrl:(r=this.plugin.settings.vector_db_api_base)!=null?r:"",model:(n=this.plugin.settings.vector_db_api_model)!=null?n:""});s.migrated.length&&t.push(`${a}: migrated`);for(let c of s.warnings)t.push(c)}}_refreshVectorDbCredentialStatus(){this._getVaultBasePath()&&this.getClient().credentialAvailable("embedding").then(t=>{t!==this.plugin.settings._vector_db_configured&&(this.plugin.settings._vector_db_configured=t,this.plugin.saveSettings())}).catch(()=>{})}async _storeVectorDbCredential(e){return await this._authSetSecret("embedding",e)?(this.plugin.settings._vector_db_configured=!0,this.plugin.settings.vector_db_api_key="",this.plugin.settings._migration_warnings=Array.isArray(this.plugin.settings._migration_warnings)?this.plugin.settings._migration_warnings.filter(r=>r!=="vector_db_api_key"):[],await this.plugin.saveSettings(),this.display(),!0):!1}async _storeSetupSecret(e,t){return e==="vector-db-api-key"?this._storeVectorDbCredential(t):!t||!await this._authSetSecret("ocr",t)?!1:(this.plugin.settings._paddleocr_configured=!0,this.plugin.settings.paddleocr_api_key="",await this.plugin.saveSettings(),!0)}_authSetSecret(e,t){return t?this.getClient().authSetSecret(e,t).then(()=>!0).catch(()=>!1):Promise.resolve(!1)}_renderSetupStageOptionals(e){var n;e.createEl("h3",{text:i("setup_optionals_title")}),e.createEl("p",{text:i("setup_optionals_desc")});let t=[{id:"ocr",label:i("cc_module_ocr"),desc:i("setup_opt_ocr_desc")},{id:"memory",label:i("cc_module_memory"),desc:i("setup_opt_memory_desc")},{id:"agent",label:i("cc_module_agent"),desc:i("setup_opt_agent_desc")}];for(let a of t){let s=e.createDiv({cls:"pf-setup-optional"}),c=s.createEl("input",{attr:{type:"checkbox",id:"pf-setup-opt-"+a.id}});c.checked=this._setupOptionals[a.id],c.addEventListener("change",()=>{this._setupOptionals[a.id]=c.checked,this.display()});let l=a.id==="ocr"?!!this.plugin.settings._paddleocr_configured:a.id==="memory"?!!this.plugin.settings._vector_db_configured:!0,d=s.createDiv({cls:"pf-setup-optional-copy"});d.createEl("label",{attr:{for:"pf-setup-opt-"+a.id},text:a.label,cls:"pf-setup-optional-label"}),d.createEl("div",{text:a.desc,cls:"pf-setup-optional-desc"});let u=d.createEl("span",{cls:"pf-setup-optional-state",text:l?i("config_configured"):i("config_not_configured")});if(!c.checked)continue;let f=s.createDiv({cls:"pf-setup-optional-config"});if(a.id==="ocr"){f.createEl("label",{text:i("field_paddleocr")}),f.createEl("p",{cls:"caption",text:i("ocr_privacy_warning")});let _=f.createEl("input",{cls:"pf-setup-input",attr:{type:"password",autocomplete:"off",placeholder:this.plugin.settings._paddleocr_configured?"\u2022\u2022\u2022\u2022":i("field_paddleocr")}});f.createEl("button",{cls:"pf-setup-verify",text:i("config_save"),attr:{type:"button"}}).addEventListener("click",()=>{this._storeSetupSecret("paddleocr-api-key",_.value).then(g=>{u.setText(g?i("setup_optional_saved"):i("setup_optional_save_failed")),g&&(_.value="")})})}else if(a.id==="memory"){f.createEl("label",{text:i("feat_openai_key")}),f.createEl("p",{cls:"caption",text:i("feat_openai_key_desc")});let _=f.createEl("input",{cls:"pf-setup-input",attr:{type:"password",autocomplete:"off",placeholder:this.plugin.settings._vector_db_configured?"\u2022\u2022\u2022\u2022":"sk-..."}});f.createEl("label",{text:i("feat_api_model")});let m=f.createEl("input",{cls:"pf-setup-input",attr:{type:"text",placeholder:this.plugin.settings.vector_db_api_model||"text-embedding-3-small"}});m.addEventListener("change",()=>{this.plugin.settings.vector_db_api_model=m.value.trim(),this.plugin.saveSettings(),this._refreshVectorDbCredentialStatus()}),f.createEl("label",{text:i("feat_api_base_url")});let g=f.createEl("input",{cls:"pf-setup-input",attr:{type:"text",placeholder:this.plugin.settings.vector_db_api_base||"https://api.openai.com/v1"}});g.addEventListener("change",()=>{this.plugin.settings.vector_db_api_base=g.value.trim(),this.plugin.saveSettings(),this._refreshVectorDbCredentialStatus()}),f.createEl("button",{cls:"pf-setup-verify",text:i("config_save"),attr:{type:"button"}}).addEventListener("click",()=>{this._storeSetupSecret("vector-db-api-key",_.value).then(y=>{u.setText(y?i("setup_optional_saved"):i("setup_optional_save_failed")),y&&(_.value="")})})}else{f.createEl("label",{text:i("feat_agent_platform")}),f.createEl("p",{cls:"caption",text:i("feat_agent_platform_desc")});let _=f.createEl("select"),m={opencode:"OpenCode",claude:"Claude Code",codex:"Codex",cursor:"Cursor",windsurf:"Windsurf",github_copilot:"GitHub Copilot",gemini:"Gemini CLI"},g=this.plugin.agentPlatformChoices.length?this.plugin.agentPlatformChoices:Object.keys(m);for(let h of g){let y=_.createEl("option",{text:(n=m[h])!=null?n:h,attr:{value:h}});y.selected=h===this.plugin.settings.agent_platform}_.addEventListener("change",()=>{this.plugin.settings.agent_platform=_.value,this.getClient().configSet("agent_platform",_.value).catch(h=>new A.Notice(`PaperForge: config set agent_platform failed: ${String(h)}`)),this.plugin.saveSettings(),u.setText(i("setup_optional_saved"))})}}let r=e.createDiv({cls:"pf-setup-nav"});z(r,{label:i("setup_nav_back"),onClick:()=>{this._setupStage=2,this.display()}}),z(r,{label:i("setup_nav_continue"),onClick:()=>this._refreshSetupReadiness()})}_refreshSetupReadiness(){this._setupStage=4;for(let e of["installation","library"])this._attemptedProbes.add(e),this._probeModule(e);this.display()}_renderSetupStageReview(e){var d,u;e.createEl("h3",{text:i("setup_review_title")});let t=(d=this._capabilityState)==null?void 0:d.installation,r=(u=this._capabilityState)==null?void 0:u.library,n=(t==null?void 0:t.user_state)==="ready",a=(r==null?void 0:r.user_state)==="ready",s=(t==null?void 0:t.user_state)==="checking"||(r==null?void 0:r.user_state)==="checking";e.createEl("p",{text:n?i("setup_ready"):s?i("setup_review_checking"):i("cc_consequence_setup_required"),cls:n?"pf-setup-ok":"pf-setup-warn"}),e.createEl("p",{text:a?i("setup_library_ready"):s?i("setup_review_checking"):i("cc_consequence_setup_required"),cls:a?"pf-setup-ok":"pf-setup-warn"});let c=Object.entries(this._setupOptionals).filter(([,f])=>f).map(([f])=>this._getUserModuleName(f));e.createEl("p",{text:c.length>0?i("setup_review_selected")+c.join(", "):i("setup_no_optionals")});let l=e.createDiv({cls:"pf-setup-nav"});z(l,{label:i("setup_nav_back"),onClick:()=>{this._setupStage=3,this.display()}}),(!n||!a)&&z(l,{label:i("setup_review_recheck"),disabled:s,onClick:()=>this._refreshSetupReadiness()}),z(l,{label:i("setup_nav_complete"),disabled:!n||!a,onClick:()=>this._completeSetup()}),(!n||!a)&&e.createEl("p",{text:s?i("setup_review_checking"):i("setup_incomplete_warn"),cls:"pf-setup-warn"})}_completeSetup(){this.plugin.settings._setup_complete=!0,this.plugin.saveSettings().then(()=>this.display())}_restoreNavMemory(){let e=this.plugin.settings._navMemory;e!=null&&e.destination&&["overview","help"].includes(e.destination)&&(this.activeTab=e.destination,this._navMemory={destination:e.destination},this._focusTargetId||(this._focusTargetId=null,this._detailReturn=null,this._setupView="overview"))}hide(){this._setupJourneyDismissedForSession=!1,super.hide()}};Ce._REAL_PROBE=new Set(["installation","library","ocr","memory","help"]),Ce._NAVIGABLE=new Set(["installation","library","ocr","memory","help"]);var Xe=Ce;var T=require("obsidian"),Ae=K(require("fs")),gr=K(require("path"));var cr=K(require("fs")),Xr=K(require("path"));function lr(p){let o=String(p),t={ENOENT:{type:"python_missing",message:"Python executable not found",recoverable:!0},"python-missing":{type:"python_missing",message:"Python executable not found",recoverable:!0},MODULE_NOT_FOUND:{type:"import_failed",message:"PaperForge package not installed",recoverable:!0},"import-failed":{type:"import_failed",message:"PaperForge package not installed",recoverable:!0},"version-mismatch":{type:"version_mismatch",message:"Plugin and package versions differ",recoverable:!0,action:"sync-runtime"},"pip-failed":{type:"pip_install_failure",message:"pip install command failed",recoverable:!0},ETIMEDOUT:{type:"timeout",message:"Subprocess timed out",recoverable:!0,action:"retry"},timeout:{type:"timeout",message:"Subprocess timed out",recoverable:!0,action:"retry"},NO_PYTHON:{type:"no_python",message:"Python executable not found",recoverable:!0,action:"open-setup"},VECTOR_NOT_BUILT:{type:"vectors_not_built",message:"Vector index has not been built yet",recoverable:!0,action:"open-vector-settings"},VECTOR_CORRUPTED:{type:"vectors_corrupted",message:"Vector index is corrupted",recoverable:!0,action:"force-rebuild"},MODEL_CHANGED:{type:"model_changed",message:"Embedding model has changed since vectors were built",recoverable:!0,action:"rebuild-vectors"},BACKEND_UNAVAILABLE:{type:"backend_unavailable",message:"Python CLI search backend is not responding",recoverable:!0,action:"run-doctor"},TIMEOUT:{type:"timeout",message:"Search timed out",recoverable:!0,action:"retry"},INTERNAL_ERROR:{type:"internal_error",message:"An internal error occurred",recoverable:!1}}[o];return t?{...t}:{type:"unknown",message:String(p),recoverable:!1}}function pr(p,o){var a;let e=dr(p),t=dr(o),r=Math.max(e.length,t.length),n=[];for(let s=0;s<r;s++){let c=s<e.length?e[s]:"",l=s<t.length?t[s]:"",d=(a=(c||l).split(`
-`)[0])!=null?a:"",u=d.startsWith("## ")?d.replace(/^##\s+/,""):"",f="unchanged";!c&&l?f="added":c&&!l?f="removed":c!==l&&(f="changed"),f!=="unchanged"&&n.push({paragraphIndex:s,heading:u,type:f,oldText:c||void 0,newText:l||void 0})}return n}function ur(p,o){let e=s=>s.split(/\n\n+/).filter(Boolean),t=e(p),r=e(o),n=Math.max(t.length,r.length),a=[];for(let s=0;s<n;s++){let c=s<t.length?t[s]:"",l=s<r.length?r[s]:"";!c&&l?a.push({type:"added",text:l}):c&&!l?a.push({type:"removed",text:c}):c!==l?(a.push({type:"removed",text:c}),a.push({type:"added",text:l})):a.push({type:"unchanged",text:c})}return a}function dr(p){let o=p.split(`
-`),e=[],t=[];for(let r of o)if(r.startsWith("## ")&&t.length>0)e.push(t.join(`
-`).trim()),t=[r];else if(r.trim()===""&&t.length>0){let n=t.join(`
-`).trim();n&&(e.push(n),t=[])}else t.push(r);if(t.length>0){let r=t.join(`
-`).trim();r&&e.push(r)}return e}var H=require("obsidian"),Pe=K(require("fs"));function Qr(p,o){var e;return o?(e=o.flags)!=null&&e.version_old||o.ocr==="stale"?"update_available":o.ocr==="missing"&&p==="done"?"pending":o.ocr==="failed"?"failed":o.ocr==="incomplete"?"done_incomplete":o.ocr==="unknown"&&p==="done"?"unknown":p:p}var Qe=100;var Re=class extends H.ItemView{constructor(e,t){super(e);this.plugin=t;this.papers=[];this.filter="all";this.versionFilter=null;this.selectedKey=null;this.checkedKeys=new Set;this.running=!1;this.progress={current:0,total:0,paperKey:"",phase:"",itemStatus:""};this.globalActivity={state:"idle",label:"",current:0,total:0};this.actionDescriptors=new Map;this.pendingActionDescriptors=new Set;this._client=null;this._searchQuery="";this._page=1;this._runningMode=null}static async open(e){let t=e.app.workspace.getLeavesOfType(ve);if(t.length>0){e.app.workspace.revealLeaf(t[0]);return}let r=e.app.workspace.getLeaf("tab");r&&(await r.setViewState({type:ve,active:!0}),e.app.workspace.revealLeaf(r))}getViewType(){return ve}getDisplayText(){return i("ocr_ws_title")}getIcon(){return"scan-text"}async onOpen(){await this._loadPapers(),this._render()}_getClient(){var e;if(this._client)return this._client;if(typeof((e=this.plugin)==null?void 0:e.getClient)!="function")return null;try{let t=this.plugin.getClient();t&&(this._client=t)}catch(t){return null}return this._client}async _loadPapers(){var d,u,f,_,m,g,h,y,v,b,w,k,x,E,S,C,R,F,D,L,V,re,ne,de,pe,ue,Y,B,M,$,U,J,W;this.actionDescriptors.clear();let e=this._getClient();if(!e){this.globalActivity={state:"unknown",label:i("runtime_not_available")||"Environment unavailable",current:0,total:0},this.papers=[],this.selectedKey=null,this.checkedKeys.clear(),this._page=1,(u=(d=this.containerEl)==null?void 0:d.children)!=null&&u[1]&&this._refreshTable();return}let[t,r,n]=await Promise.all([e.probe("lineage").catch(()=>null),e.probe("ocr").catch(()=>null),e.queryOcrPapers().catch(()=>[])]),a=t,s=r;this.globalActivity={state:(s==null?void 0:s.activity_state)==="running"?"running":s?"idle":"unknown",label:(f=s==null?void 0:s.activity_label)!=null?f:"",current:(m=(_=s==null?void 0:s.activity_progress)==null?void 0:_.current)!=null?m:0,total:(h=(g=s==null?void 0:s.activity_progress)==null?void 0:g.total)!=null?h:0};let c=new Map(this.papers.map(N=>[N.key,N])),l=(y=a==null?void 0:a.papers)!=null?y:{};this.papers=[];for(let N of n){let Z=N.key;if(!Z)continue;let O=c.get(Z),_e=l[Z],be=(b=(v=_e==null?void 0:_e.details)==null?void 0:v.ocr_execution)==null?void 0:b.local_status,qe=be==="running"||be==="processing"?"processing":be==="queued"?"queued":Qr((k=(w=N.status)!=null?w:O==null?void 0:O.status)!=null?k:"pending",_e);this.papers.push({key:Z,title:(x=N.title)!=null?x:Z,status:qe,pipelineVersion:(S=(E=N.version)!=null?E:O==null?void 0:O.pipelineVersion)!=null?S:"",lastRun:(R=(C=N.finished_at)!=null?C:O==null?void 0:O.lastRun)!=null?R:"",hasBackup:(F=O==null?void 0:O.hasBackup)!=null?F:!1,authors:(L=(D=N.authors)!=null?D:O==null?void 0:O.authors)!=null?L:"",year:N.year!=null?String(N.year):(V=O==null?void 0:O.year)!=null?V:"",pages:N.pages!=null?String(N.pages):(re=O==null?void 0:O.pages)!=null?re:"",backupCount:(ne=O==null?void 0:O.backupCount)!=null?ne:0,canRedo:(pe=(de=N.can_redo)!=null?de:O==null?void 0:O.canRedo)!=null?pe:!1,canRebuild:(Y=(ue=N.can_rebuild)!=null?ue:O==null?void 0:O.canRebuild)!=null?Y:!1,recommendedAction:(M=(B=N.recommended_action)!=null?B:O==null?void 0:O.recommendedAction)!=null?M:"",fulltextPath:(U=($=N.fulltext_path)!=null?$:O==null?void 0:O.fulltextPath)!=null?U:"",ocrFinishedAt:(W=(J=N.finished_at)!=null?J:O==null?void 0:O.ocrFinishedAt)!=null?W:""})}this._page=1,this._refreshTable()}_render(){let e=this.containerEl.children[1];e.empty(),e.addClass("pf-ocr-workspace"),this._renderHeader(e),this._renderActivity(e),this._renderToolbar(e),this._renderTable(e),this._renderBatchBar(e),this.selectedKey&&this._renderDetail(e)}_refreshTable(){let e=this.containerEl.children[1],t=this._filteredPapers(),r=e.querySelector(".pf-ocr-ws-toolbar-count");r&&(r.innerHTML=i("ocr_ws_showing").replace("{count}",String(t.length)).replace("{total}",String(this.papers.length)));let n=e.querySelector(".pf-ocr-ws-table");if(n){let l=n.querySelector("tbody");l&&l.remove(),this._buildTableRows(n,this._currentPagePapers(t))}else{let l=e.createDiv({cls:"pf-ocr-ws-viewport"});this._buildTableBody(l,this._currentPagePapers(t))}let a=e.querySelector(".pf-ocr-ws-pagination");a&&a.remove(),this._renderPagination(e,t);let s=e.querySelector(".pf-ocr-ws-batchbar");s&&s.remove(),this._renderBatchBar(e);let c=e.querySelector(".pf-ocr-ws-detail");c&&c.remove(),this.selectedKey&&this._renderDetail(e)}_renderHeader(e){let t=e.createDiv({cls:"pf-ocr-ws-header"});t.createEl("h1",{text:i("ocr_ws_title")}),t.createEl("p",{cls:"pf-ocr-ws-lede",text:i("ocr_ws_lede")})}_ensureActionDescriptor(e){var r,n;if(this.actionDescriptors.has(e)||this.pendingActionDescriptors.has(e))return;let t=this._getClient();if(!t){this.actionDescriptors.set(e,{action_id:e,availability:"unavailable",availability_reason:i("runtime_not_available")||"Environment unavailable"}),(n=(r=this.containerEl)==null?void 0:r.children)!=null&&n[1]&&this._render();return}this.pendingActionDescriptors.add(e),t.describeAction(e).then(a=>{(a==null?void 0:a.action_id)===e&&this.actionDescriptors.set(e,a)}).catch(()=>{this.actionDescriptors.set(e,{action_id:e,availability:"unavailable"})}).finally(()=>{var a,s;this.pendingActionDescriptors.delete(e),(s=(a=this.containerEl)==null?void 0:a.children)!=null&&s[1]&&this._render()})}_isActionAvailable(e){var t;return((t=this.actionDescriptors.get(e))==null?void 0:t.availability)==="available"}_actionAvailabilityTitle(e,t){let r=this.actionDescriptors.get(e);return r&&r.availability!=="available"&&r.availability_reason||t}_renderActivity(e){var h;let t=this.running,r=!t&&this.globalActivity.state==="running";if(!t&&!r)return;let n=t?this.progress:{current:this.globalActivity.current,total:this.globalActivity.total,paperKey:"",phase:"",itemStatus:""},a=e.createDiv({cls:"pf-ocr-ws-activity pf-active",attr:{"aria-live":"polite"}}),s=a.createDiv({cls:"pf-ocr-ws-activity-head"}),c=s.createDiv({cls:"pf-ocr-ws-activity-title"});c.setText(t?i("ocr_ws_processing"):this.globalActivity.label||i("ocr_ws_processing"));let l=n.paperKey;if(l){let y=this.papers.find(v=>v.key===l);y&&c.createEl("span").setText((h=y.title)!=null?h:l)}t&&this.progress.phase&&c.createEl("span",{text:` \xB7 ${this.progress.phase}`});let d=s.createEl("button",{cls:"pf-btn pf-btn-ghost",text:i("ocr_ws_stop")||"Stop"}),u=this._getClient();!u||!u.isOperationActive()?(d.disabled=!0,d.title=i("ocr_ws_stop_unavailable")||"Operation is not owned by this window"):d.addEventListener("click",()=>this._stopBuild());let _=a.createDiv({cls:"pf-ocr-ws-progress-track"}).createDiv({cls:"pf-ocr-ws-progress-fill"}),m=n.total>0?Math.round(n.current/n.total*100):0;_.style.transform=`scaleX(${m/100})`;let g=a.createDiv({cls:"pf-ocr-ws-progress-meta"});g.createEl("span",{text:`${n.current} / ${n.total} papers`}),g.createEl("span",{text:`${m}%`}),t&&this.progress.itemStatus&&g.createEl("span",{text:this.progress.itemStatus})}_renderToolbar(e){let t=this._filteredPapers(),r=[...new Set(this.papers.map(u=>u.pipelineVersion).filter(Boolean))].sort().reverse(),n=e.createDiv({cls:"pf-ocr-ws-toolbar"}),a=n.createDiv({cls:"pf-ocr-ws-toolbar-count"});a.innerHTML=i("ocr_ws_showing").replace("{count}",String(t.length)).replace("{total}",String(this.papers.length));let c=n.createDiv({cls:"pf-ocr-ws-search"}).createEl("input",{cls:"pf-ocr-ws-search-input",attr:{type:"text",placeholder:i("ocr_ws_search_placeholder")||"Search papers by title, author, year..."}});c.value=this._searchQuery,c.addEventListener("input",()=>{this._searchQuery=c.value,this.selectedKey=null,this.checkedKeys.clear(),this._page=1,clearTimeout(this._searchTimer),this._searchTimer=setTimeout(()=>this._refreshTable(),100)}),c.addEventListener("keydown",u=>{u.key==="Escape"&&(c.value="",this._searchQuery="",this.selectedKey=null,this.checkedKeys.clear(),this._page=1,clearTimeout(this._searchTimer),this._refreshTable(),c.blur())});let l=n.createDiv({cls:"pf-ocr-ws-field"});l.createEl("label",{text:i("ocr_ws_filter_status")});let d=l.createEl("select");for(let[u,f]of[["all",i("ocr_ws_filter_all")],["unprocessed",i("ocr_ws_filter_unprocessed")],["review",i("ocr_ws_filter_review")],["processed",i("ocr_ws_filter_processed")]]){let _=d.createEl("option",{text:String(f),attr:{value:String(u)}});u===this.filter&&(_.selected=!0)}if(d.addEventListener("change",()=>{this.filter=d.value,this.selectedKey=null,this.checkedKeys.clear(),this._page=1,this._refreshTable()}),r.length>0){let u=n.createDiv({cls:"pf-ocr-ws-version-field"});for(let f of r)u.createEl("button",{cls:`pf-ocr-ws-chip${this.versionFilter===f?" pf-active":""}`,text:`v${f}`}).addEventListener("click",()=>{this.versionFilter=this.versionFilter===f?null:f,this.selectedKey=null,this.checkedKeys.clear(),this._page=1,this._refreshTable()})}}_filteredPapers(){let e=this.papers;if(this.filter==="unprocessed"?e=e.filter(t=>t.status==="pending"||t.status==="nopdf"||t.status==="update_available"):this.filter==="review"?e=e.filter(t=>t.status==="failed"||t.status==="processing"):this.filter==="processed"&&(e=e.filter(t=>t.status==="done")),this.versionFilter&&(e=e.filter(t=>t.pipelineVersion===this.versionFilter)),this._searchQuery.trim()){let t=this._searchQuery.trim().toLowerCase();e=e.filter(r=>r.title.toLowerCase().includes(t)||r.authors.toLowerCase().includes(t)||r.year.toLowerCase().includes(t)||r.key.toLowerCase().includes(t))}return e}_currentPagePapers(e){let t=Math.max(1,Math.ceil(e.length/Qe));this._page>t&&(this._page=t),this._page<1&&(this._page=1);let r=(this._page-1)*Qe;return e.slice(r,r+Qe)}_renderPagination(e,t){let r=Math.max(1,Math.ceil(t.length/Qe));if(r<=1)return;let n=e.createDiv({cls:"pf-ocr-ws-pagination"}),a=n.createEl("button",{cls:"pf-btn pf-btn-secondary",text:"\u2039"});a.disabled=this._page<=1,a.addEventListener("click",()=>{this._page=Math.max(1,this._page-1),this._refreshTable()});let s=n.createEl("span",{text:`${this._page} / ${r}`}),c=n.createEl("button",{cls:"pf-btn pf-btn-secondary",text:"\u203A"});c.disabled=this._page>=r,c.addEventListener("click",()=>{this._page=Math.min(r,this._page+1),this._refreshTable()})}_renderTable(e){let t=this._filteredPapers(),r=e.createDiv({cls:"pf-ocr-ws-viewport"});this._buildTableBody(r,this._currentPagePapers(t)),this._renderPagination(e,t)}_buildTableBody(e,t){if(t.length===0){e.createDiv({cls:"pf-ocr-ws-empty pf-visible",text:i("ocr_ws_no_papers")});return}let r=e.createEl("table",{cls:"pf-ocr-ws-table"});this._buildTableHead(r),this._buildTableRows(r,t)}_buildTableHead(e){let r=e.createEl("thead").createEl("tr");r.createEl("th",{cls:"pf-ocr-ws-col-check"}).createEl("input",{attr:{type:"checkbox"}},n=>{n.addEventListener("change",()=>{let a=this._currentPagePapers(this._filteredPapers());n.checked?a.forEach(s=>this.checkedKeys.add(s.key)):a.forEach(s=>this.checkedKeys.delete(s.key)),this._refreshTable()})}),r.createEl("th",{cls:"pf-ocr-ws-col-paper",text:i("ocr_ws_col_title")}),r.createEl("th",{cls:"pf-ocr-ws-col-status",text:i("ocr_ws_col_status")}),r.createEl("th",{cls:"pf-ocr-ws-col-version",text:i("ocr_ws_col_version")}),r.createEl("th",{cls:"pf-ocr-ws-col-date",text:i("ocr_ws_col_lastrun")}),r.createEl("th",{cls:"pf-ocr-ws-col-action"})}_buildTableRows(e,t){let r=e.createEl("tbody"),n=this.papers.reduce((a,s)=>s.pipelineVersion>a?s.pipelineVersion:a,"");for(let a of t){let s=!!(a.pipelineVersion&&n>a.pipelineVersion),c=r.createEl("tr",{cls:s?"pf-update":""});c.addEventListener("click",h=>{h.target.tagName!=="INPUT"&&(this.selectedKey=a.key===this.selectedKey?null:a.key,this._refreshTable())}),c.createEl("td",{cls:"pf-ocr-ws-col-check"}).createEl("input",{attr:{type:"checkbox"}},h=>{h.checked=this.checkedKeys.has(a.key),h.addEventListener("change",()=>{h.checked?this.checkedKeys.add(a.key):this.checkedKeys.delete(a.key),this._refreshTable()})});let d=c.createEl("td",{cls:"pf-ocr-ws-col-paper"});if(d.createDiv({cls:"pf-ocr-ws-paper-title",text:a.title}),a.authors||a.year){let h=d.createDiv({cls:"pf-ocr-ws-paper-meta"});if(a.authors){let y=a.authors.split(",")[0].trim(),v=a.authors.includes(",")?" et al.":"";h.createEl("span",{cls:"pf-ocr-ws-meta-author",text:y+v})}a.year&&h.createEl("span",{cls:"pf-ocr-ws-meta-year",text:a.year})}c.createEl("td",{cls:"pf-ocr-ws-col-status"}).createEl("span",{cls:`pf-ocr-ws-status pf-${_r(a.status)}`,text:fr(a.status)}),c.createEl("td",{cls:"pf-ocr-ws-col-version"}).createEl("span",{cls:"pf-ocr-ws-version",text:a.pipelineVersion||"\u2014"}),c.createEl("td",{cls:"pf-ocr-ws-col-date"}).setText(a.lastRun?a.lastRun.slice(0,10):"\u2014"),c.createEl("td",{cls:"pf-ocr-ws-col-action"}).createEl("button",{cls:"pf-btn pf-btn-secondary",text:i("ocr_ws_btn_preview")}).addEventListener("click",h=>{h.stopPropagation(),this._openFulltext(a.key)})}}_requestOcrRun(e,t){let r=this.actionDescriptors.get("ocr.run");if(!r){this._ensureActionDescriptor("ocr.run");return}if(r.availability!=="available"){new H.Notice(r.availability_reason||i("ocr_ws_re_extract_disabled_body")||"OCR is unavailable");return}if(r.confirmation==="required"){new ee(this.app,{title:t==="redo"?i("ocr_modal_title"):i("ocr_run_confirm_title"),effectLabel:t==="redo"?i("ocr_modal_description"):i("ocr_run_confirm_body")},()=>{this._runOcrAction("ocr.run",e,t)}).open();return}this._runOcrAction("ocr.run",e,t)}_renderBatchBar(e){this._ensureActionDescriptor("ocr.run"),this._ensureActionDescriptor("ocr.rebuild_derived");let t=this.papers.filter(d=>this.checkedKeys.has(d.key)),r=t.filter(d=>d.canRedo||d.recommendedAction==="redo"),n=e.createDiv({cls:"pf-ocr-ws-batchbar"}),a=n.createDiv({cls:"pf-ocr-ws-selection"});t.length===0?(a.createEl("strong",{text:i("ocr_ws_none_selected")}),a.createEl("span",{text:i("ocr_ws_select_hint")})):a.createEl("strong",{text:i("ocr_ws_selected").replace("{count}",String(t.length))});let s=n.createDiv({cls:"pf-ocr-ws-batch-actions"}),c=s.createEl("button",{cls:"pf-btn pf-btn-secondary",text:i("ocr_ws_btn_process_selected")});if(c.title=this._actionAvailabilityTitle("ocr.run",i("ocr_ws_tooltip_process")),c.disabled=t.length===0||!this._isActionAvailable("ocr.run"),c.addEventListener("click",()=>this._requestOcrRun(t.map(d=>d.key),"run")),r.length>0){let d=s.createEl("button",{cls:"pf-btn pf-btn-warning",text:`${i("ocr_ws_detail_re_extract")} (${r.length})`});d.title=this._actionAvailabilityTitle("ocr.run",i("ocr_ws_tooltip_reextract")),d.disabled=!this._isActionAvailable("ocr.run"),d.addEventListener("click",()=>this._requestOcrRun(r.map(u=>u.key),"redo"))}let l=s.createEl("button",{cls:"pf-btn pf-btn-warning",text:i("ocr_ws_btn_rebuild_selected")});l.title=this._actionAvailabilityTitle("ocr.rebuild_derived",i("ocr_ws_tooltip_rebuild")),l.disabled=t.length===0||!this._isActionAvailable("ocr.rebuild_derived"),l.addEventListener("click",()=>this._runRebuild(t.map(d=>d.key)))}_renderDetail(e){let t=this.papers.find(b=>b.key===this.selectedKey);if(!t)return;let n=e.createDiv({cls:"pf-ocr-ws-detail pf-open"}).createDiv({cls:"pf-ocr-ws-detail-card"}),a=n.createDiv({cls:"pf-ocr-ws-detail-head"}),s=a.createDiv({});s.createEl("h2",{text:t.title}),s.createEl("span",{cls:`pf-ocr-ws-status pf-${_r(t.status)}`,text:fr(t.status)}),a.createEl("button",{cls:"pf-btn pf-btn-ghost",text:i("ocr_ws_close")}).addEventListener("click",()=>{this.selectedKey=null,this._refreshTable()});let l=n.createDiv({cls:"pf-ocr-ws-detail-grid"});this._addFact(l,i("ocr_ws_fact_version"),t.pipelineVersion||"\u2014"),this._addFact(l,i("ocr_ws_fact_last_run"),t.lastRun?t.lastRun.slice(0,10):"\u2014"),this._addFact(l,i("ocr_ws_fact_authors"),t.authors||"\u2014"),this._addFact(l,i("ocr_ws_fact_year"),t.year||"\u2014"),this._addFact(l,i("ocr_ws_fact_pages"),t.pages||"\u2014"),this._addFact(l,i("ocr_ws_fact_backups"),t.backupCount>0?String(t.backupCount):"\u2014");let d=n.createDiv({cls:"pf-ocr-ws-detail-actions"});d.createEl("button",{cls:"pf-btn pf-btn-secondary",text:i("ocr_ws_detail_view_fulltext")}).addEventListener("click",()=>this._openFulltext(t.key)),this._ensureActionDescriptor("ocr.run");let f=t.canRedo||t.recommendedAction==="redo",_=d.createEl("button",{cls:`pf-btn ${f?"pf-btn-warning":"pf-btn-secondary"}`,text:f?i("ocr_ws_detail_re_extract"):i("ocr_ws_detail_run")||i("ocr_ws_btn_process_selected")});_.title=this._actionAvailabilityTitle("ocr.run",f?i("ocr_ws_tooltip_reextract"):i("ocr_ws_tooltip_process")),_.disabled=!this._isActionAvailable("ocr.run"),_.addEventListener("click",()=>this._requestOcrRun([t.key],f?"redo":"run"));let m=d.createEl("button",{cls:"pf-btn pf-btn-secondary",text:i("ocr_ws_restore_checking")||"Checking versions\u2026"});m.disabled=!0;let g=t.key,h=this._getClient(),y=async()=>{if(!h){new H.Notice(i("runtime_not_available")||"Environment unavailable");return}try{let b=await h.versionsShow(g);if(b.versions.length>0){new he(this.app,g,b.versions,b.current_label,b.current_path,k=>h.versionsRestore(g,k).then(()=>{}),()=>{this._loadPapers().then(()=>this._render())}).open();return}let w=await h.versionsBackups(g);if(w.length===0){new H.Notice("No backup versions available");return}new he(this.app,g,w,"",b.current_path,k=>h.versionsRestore(g,k).then(()=>{}),()=>{this._loadPapers().then(()=>this._render())}).open()}catch(b){new H.Notice("[!!] Version history failed: "+((b==null?void 0:b.message)||b),6e3)}};(async()=>{if(h)try{let w=(await h.versionsShow(g)).versions.length>0,k=w?!1:(await h.versionsBackups(g)).length>0,x=w||k;if(this.selectedKey!==g)return;m.disabled=!x,m.setText(i("ocr_ws_detail_restore_backup")||"Restore Backup"),x||(m.title=i("ocr_ws_restore_unavailable")||"No backup versions available")}catch(b){}})(),m.addEventListener("click",()=>void y()),this._ensureActionDescriptor("ocr.rebuild_derived");let v=d.createEl("button",{cls:"pf-btn pf-btn-warning",text:i("ocr_ws_detail_rebuild")||"Rebuild this paper"});v.title=i("ocr_ws_tooltip_rebuild"),v.disabled=!this._isActionAvailable("ocr.rebuild_derived"),v.addEventListener("click",()=>{this._runRebuild([t.key])})}_addFact(e,t,r){let n=e.createDiv({cls:"pf-ocr-ws-fact"});n.createEl("dt",{text:t}),n.createEl("dd",{text:r})}async _runOcrAction(e,t,r=e==="ocr.rebuild_derived"?"rebuild":"run"){var c,l,d;let n=this._getClient();if(!n){new H.Notice(i("runtime_not_available")||"Environment unavailable");return}if(this.running||n.isOperationActive()){new H.Notice(i("ocr_already_running")||"OCR is already running");return}this._runningMode=r,this.running=!0,this.progress={current:0,total:t.length,paperKey:"",phase:"",itemStatus:""},this._render();let a={action_id:e,scope:t.length>0?{kind:"papers",keys:t}:{kind:"all"},confirm:e==="ocr.run"?e:void 0},s=!1;try{let u=await n.runAction(a,{onEvent:m=>{var g,h,y,v,b;m.event==="cancelled"&&(s=!0),(m.event==="start"||m.event==="phase"||m.event==="progress"||m.event==="item_result")&&(this.progress={current:Number((g=m.current)!=null?g:this.progress.current),total:Number((h=m.total)!=null?h:this.progress.total),paperKey:String((y=m.item_id)!=null?y:this.progress.paperKey),phase:m.event==="phase"?String((v=m.phase)!=null?v:m.operation):this.progress.phase,itemStatus:m.event==="item_result"?String((b=m.status)!=null?b:""):this.progress.itemStatus},this._render())}});this.actionDescriptors.delete(e),this._runningMode=null,this.running=!1;let f=typeof((c=u.payload)==null?void 0:c.status)=="string"?u.payload.status:"";if(u.ok)new H.Notice(i("ocr_rebuild_complete")||"Operation completed");else if(u.cancelled||s||f==="cancelled")new H.Notice(i("ocr_stopped_notice")||"Operation cancelled");else{let m=typeof((l=u.payload)==null?void 0:l.availability_reason)=="string"?u.payload.availability_reason:`exit code ${u.exitCode}`;new H.Notice((i("ocr_error_notice")||"OCR error")+": "+m,8e3)}let _=(d=this.plugin)==null?void 0:d._settingTab;_&&typeof _._refreshAllReadModels=="function"&&_._refreshAllReadModels(),await this._loadPapers(),this._render()}catch(u){this.actionDescriptors.delete(e),this.running=!1,this._runningMode=null,new H.Notice((i("ocr_error_notice")||"OCR error")+": "+(u instanceof Error?u.message:String(u)),8e3),this._render()}}_runRebuild(e){this._runOcrAction("ocr.rebuild_derived",e,"rebuild")}_stopBuild(){let e=this._getClient();if(!e||!e.isOperationActive()){new H.Notice(i("ocr_stopped_notice")||"No local operation active to stop");return}e.cancelActiveOperation(),this.progress.itemStatus=i("ocr_stopping_notice")||"Stopping operation...",new H.Notice(i("ocr_stopping_notice")||"Stopping operation..."),this._render()}_openFulltext(e){var s;let t=this.app.vault.adapter.basePath,r=this.papers.find(c=>c.key===e),n=((s=r==null?void 0:r.fulltextPath)!=null?s:"").replace(/\\/g,"/");if(!n){new H.Notice(i("ocr_ws_fulltext_not_found")||"Fulltext not found");return}let a=this.app.vault.getAbstractFileByPath(n);a?this.app.workspace.getLeaf().openFile(a):new H.Notice(i("ocr_ws_fulltext_not_found")||"Fulltext not found in vault")}};function _r(p){return p==="done"?"done":p==="update_available"?"update":p==="done_degraded"?"done-degraded":p==="done_incomplete"?"done-incomplete":p==="failed"||p==="error"||p==="fatal_error"?"failed":"pending"}function fr(p){return p==="done"?i("ocr_ws_status_done")||"Processed":p==="update_available"?i("ocr_ws_status_update")||"Update available":p==="done_degraded"?i("ocr_ws_status_degraded")||"Partial":p==="done_incomplete"?i("ocr_ws_status_incomplete")||"Incomplete":p==="failed"||p==="error"||p==="fatal_error"?i("ocr_ws_status_failed")||"Failed":p==="retryable_error"?i("ocr_ws_status_error")||"Error":p==="processing"||p==="running"?i("ocr_ws_status_processing")||"Processing":p==="queued"?i("ocr_ws_status_queued")||"Queued":p==="blocked"?i("ocr_ws_status_blocked")||"Blocked":p==="nopdf"?i("ocr_ws_status_nopdf")||"No PDF":p==="unknown"?i("ocr_ws_status_unknown")||"Unknown":i("ocr_ws_status_pending")||"Pending"}var he=class extends H.Modal{constructor(e,t,r,n,a,s,c){super(e);this.selectedIdx=0;this.contentCache=new Map;this.paperKey=t,this.versions=r,this.currentLabel=n,this.currentPath=a,this.restore=s,this.onRestored=c!=null?c:null,this.mdComponent=new H.Component,this.mdComponent.load()}getContent(e){var r;let t=this.contentCache.get(e);if(t!==void 0)return t;try{let n=this.versions.find(s=>s.label===e),a=(r=n==null?void 0:n.source_path)!=null?r:"";if(a&&Pe.existsSync(a)){let s=Pe.readFileSync(a,"utf-8");return this.contentCache.set(e,s),s}}catch(n){}return this.contentCache.set(e,""),""}onOpen(){let{contentEl:e}=this;e.addClass("paperforge-modal");try{let t=e.closest(".modal");t&&(t.style.width="min(90vw, 1200px)")}catch(t){}try{this.currentPath&&Pe.existsSync(this.currentPath)&&this.contentCache.set("__current__",Pe.readFileSync(this.currentPath,"utf-8"))}catch(t){}this.renderAll()}renderAll(){var h;let{contentEl:e}=this;e.empty();let t=e.createDiv({cls:"pf-vr-layout"}),r=t.createDiv({cls:"pf-vr-sidebar"}),n=t.createDiv({cls:"pf-vr-preview"});r.createEl("div",{cls:"pf-vr-sidebar-title",text:i("ocr_ws_restore_versions")||"Versions"});let a=r.createDiv({cls:"pf-vr-timeline"});this.versions.forEach((y,v)=>{let b=new Date(y.created_at).toLocaleDateString(),w=a.createDiv({cls:"pf-vr-entry"+(v===this.selectedIdx?" pf-vr-entry--active":"")+(y.label===this.currentLabel?" pf-vr-entry--current":""),attr:{"data-idx":String(v)}});w.createEl("span",{cls:"pf-vr-entry-label",text:y.label}),w.createEl("span",{cls:"pf-vr-entry-date",text:b}),y.label===this.currentLabel&&w.createEl("span",{cls:"pf-vr-entry-badge",text:i("ocr_ws_restore_current")||"current"}),w.addEventListener("click",()=>{this.selectedIdx=v,this.renderAll()})});let s=this.versions[this.selectedIdx],c=s.label===this.currentLabel,l=n.createDiv({cls:"pf-vr-toolbar"}),d=l.createDiv({cls:"pf-vr-info"}),u=l.createDiv({cls:"pf-vr-actions"}),f=new Date(s.created_at).toLocaleString(),_=s.fulltext_size>1024?(s.fulltext_size/1024).toFixed(0)+"KB":s.fulltext_size+"B";d.innerHTML="<strong>"+s.label+"</strong>"+(c?' <span class="pf-vr-current-tag">'+(i("ocr_ws_restore_current")||"current")+"</span>":"")+'<br><span class="pf-vr-info-meta">'+f+" \xB7 "+s.source+" \xB7 "+_+(s.renderer_version?" \xB7 renderer v"+s.renderer_version:"")+"</span>";let m=n.createDiv({cls:"pf-vr-content"}),g=n.createDiv({cls:"pf-vr-diff"});H.MarkdownRenderer.render(this.app,this.getContent(s.label),m,(h=s.source_path)!=null?h:"",this.mdComponent),g.style.display="none",c||(u.createEl("button",{cls:"btn-secondary pf-vr-btn",text:i("ocr_ws_restore_compare")||"Compare with current"}).addEventListener("click",()=>{let b=this.getContent("__current__"),w=this.getContent(s.label);m.style.display="none",g.style.display="block",g.empty(),g.createEl("div",{cls:"pf-vr-diff-header"}).setText((i("ocr_ws_restore_diff_title")||"Changes from current").replace("{v}",s.label));let x=g.createEl("div",{cls:"pf-vr-diff-body"}),E=ur(b,w);for(let C of E){let R=x.createEl("div",{cls:"pf-vr-diff-line pf-vr-diff-"+C.type});R.createEl("span",{cls:"pf-vr-diff-prefix",text:C.type==="added"?"+ ":C.type==="removed"?"\u2212 ":"  "}),R.createEl("span",{cls:"pf-vr-diff-text",text:C.text.slice(0,200)+(C.text.length>200?"\u2026":"")})}E.length===0&&x.createEl("div",{cls:"pf-vr-diff-empty",text:i("ocr_ws_restore_no_diff")||"No differences"}),g.createEl("button",{cls:"btn-secondary pf-vr-btn",text:i("ocr_ws_restore_back")||"Back"}).addEventListener("click",()=>{m.style.display="block",g.style.display="none",g.empty()})}),u.createEl("button",{cls:"btn-primary pf-vr-btn",attr:{"data-pf-testid":"version-restore"},text:i("ocr_ws_restore_btn")||"Restore this version"}).addEventListener("click",()=>this.doRestore(s)))}doRestore(e){if(e.label===this.currentLabel)return;let t=new H.Modal(this.app);t.contentEl.addClass("paperforge-modal"),t.contentEl.createEl("h2",{text:i("ocr_ws_restore_confirm_title")||"\u6062\u590D\u5C55\u793A\u5168\u6587\u6587\u672C"}),t.contentEl.createEl("div",{cls:"pf-vr-confirm-body",text:i("ocr_ws_restore_confirm_body")||"\u5C06\u7528\u6240\u9009\u7248\u672C\u7684 fulltext.md \u8986\u76D6 render/fulltext.md\u3002OCR \u7ED3\u6784\u3001\u7D22\u5F15\u3001\u8BB0\u5FC6\u4E0E\u5411\u91CF\u5747\u4E0D\u53D7\u5F71\u54CD\u3002\u7EE7\u7EED\uFF1F"});let r=t.contentEl.createDiv({cls:"pf-vr-confirm-actions"});r.createEl("button",{cls:"btn-secondary pf-vr-btn",text:i("next_action_cancel")||"Later"}).addEventListener("click",()=>t.close()),r.createEl("button",{cls:"btn-primary pf-vr-btn mod-warning",attr:{"data-pf-testid":"version-restore-confirm"},text:i("ocr_ws_restore_confirm_btn")||"\u6062\u590D\u5C55\u793A\u5168\u6587"}).addEventListener("click",()=>{t.close(),this._executeRestore(e)}),t.open()}async _executeRestore(e){var t;if(e.label!==this.currentLabel)try{await this.restore(e.label),new H.Notice(i("ocr_ws_detail_restore_done").replace("{label}",e.label)),this.close(),(t=this.onRestored)==null||t.call(this)}catch(r){new H.Notice("[!!] Restore failed: "+((r==null?void 0:r.message)||r),6e3)}}onClose(){try{this.contentEl.empty()}catch(e){}this.contentCache.clear(),this.mdComponent.unload()}};var Te=class extends T.ItemView{constructor(e){super(e);this._currentMode=null;this._currentDomain=null;this._currentPaperKey=null;this._currentPaperEntry=null;this._currentFilePath=null;this._cachedItems=null;this._modeSubscribers=[];this._leafChangeTimer=null;this._ocrPrivacyShown=!1;this._cachedStats=null;this._techDetailsExpanded=!1;this._paperforgeVersion="";this._dashboardPermissions={};this._headerTitle=null;this._versionBadge=null;this._messageEl=null;this._versionPapers=null;this._versionFilter="";this._searchContainer=null;this._searchInput=null;this._searchResultsEl=null;this._searchTimer=void 0;this._searchState="idle";this._searchMode="M";this._searchResults=null;this._searchActiveIndex=-1;this._onKeyDown=null;this._qualityStagingCache=null;this._librarySyncRunning=!1;this._currentMode=null,this._currentDomain=null,this._currentPaperKey=null,this._currentPaperEntry=null,this._currentFilePath=null,this._cachedItems=null,this._modeSubscribers=[],this._leafChangeTimer=null,this._ocrPrivacyShown=!1}_getClient(){var t,r;let e=(r=(t=this.app.plugins)==null?void 0:t.plugins)==null?void 0:r.paperforge;return typeof(e==null?void 0:e.getClient)=="function"?e.getClient():null}_resolvePython(){var a,s,c;let e=this.app.plugins.plugins.paperforge,t=(s=(a=e==null?void 0:e.settings)==null?void 0:a.python_path)==null?void 0:s.trim();if(t&&require("fs").existsSync(t))return{path:t,args:[]};let r=(c=e==null?void 0:e.getManagedRuntime)==null?void 0:c.call(e);if(!r)return null;let n=ce(r.readPointer());return n?{path:n.command,args:[...n.args]}:null}getViewType(){return fe}getDisplayText(){return"PaperForge"}getIcon(){return Oe}async onOpen(){this._buildPanel(),this._modeSubscribers=[],this._leafChangeTimer=null,this._setupEventSubscriptions(),this._fetchVersion(),this._bootstrapDashboard(),this._onKeyDown=e=>{var t,r,n;if(e.key==="/"&&!e.ctrlKey&&!e.metaKey&&!e.altKey){let a=(r=(t=e.target)==null?void 0:t.tagName)==null?void 0:r.toLowerCase();a!=="input"&&a!=="textarea"&&(e.preventDefault(),(n=this._searchInput)==null||n.focus())}},document.addEventListener("keydown",this._onKeyDown)}async onClose(){if(this._modeSubscribers&&this._modeSubscribers.length>0){for(let e of this._modeSubscribers)e.event==="active-leaf-change"?this.app.workspace.off("active-leaf-change",e.ref):e.event==="modify"&&this.app.vault.off("modify",e.ref);this._modeSubscribers=[]}this._leafChangeTimer&&(clearTimeout(this._leafChangeTimer),this._leafChangeTimer=null),this._onKeyDown&&(document.removeEventListener("keydown",this._onKeyDown),this._onKeyDown=null),this._searchState="idle",this._searchResults=null,this._searchActiveIndex=-1,this._searchTimer=void 0,this._cachedItems=null,this._cachedStats=null}_buildPanel(){let e=this.containerEl;e.empty(),e.addClass("paperforge-status-panel");let t=e.createEl("div",{cls:"paperforge-header"}),r=t.createEl("div",{cls:"paperforge-header-left"});r.createEl("div",{cls:"paperforge-header-logo",text:"P"}),this._modeContextEl=r.createEl("div",{cls:"paperforge-mode-context"}),this._headerTitle=r.createEl("h3",{cls:"paperforge-header-title",text:"PaperForge"}),this._versionBadge=r.createEl("span",{cls:"paperforge-header-badge",text:"v\u2014"});let n=t.createEl("button",{cls:"paperforge-header-refresh",attr:{"aria-label":"Refresh"}});n.innerHTML="\u21BB",n.addEventListener("click",()=>{(async()=>(await this._invalidateIndex(),await this._detectAndSwitch()))()}),this._messageEl=e.createEl("div",{cls:"paperforge-message",attr:{"aria-live":"polite"}}),this._contentEl=e.createEl("div",{cls:"paperforge-content-area"})}_fetchVersion(){var e;(e=this._getClient())==null||e.backendVersion().then(t=>{if(!t)return;let r=t.startsWith("v")?t:"v"+t;this._paperforgeVersion=r,this._versionBadge&&this._versionBadge.setText(r)}).catch(()=>{})}async _loadDashboardData(e){var t,r;try{let n=await((t=this._getClient())==null?void 0:t.dashboardStats());if(!n)throw new Error("no dashboard payload");this._cachedStats=this._normalizeDashboardData(n),this._cachedItems=Array.isArray(n.items)?n.items:[],this._dashboardPermissions=(r=n.permissions)!=null?r:{},this._messageEl&&this._messageEl.textContent&&this._messageEl.textContent.startsWith("Cannot reach PaperForge CLI")&&this._showMessage("","idle")}catch(n){!e&&!this._cachedStats&&this._showMessage(`Cannot reach PaperForge CLI.
-Make sure paperforge is installed and in your PATH.`,"error")}}async _bootstrapDashboard(){await this._loadDashboardData(!1),await this._detectAndSwitch()}_normalizeDashboardData(e){let t=e.stats||{},r=t.ocr_health||{},n=t.pdf_health||{},a=e.ocr_version_state||{},s=(r.done||0)+(r.pending||0)+(r.failed||0);return{total_papers:t.papers||0,formal_notes:t.papers||0,exports:0,bases:0,ocr:{total:s,pending:r.pending||0,processing:0,done:r.done||0,failed:r.failed||0},path_errors:(n.broken||0)+(n.missing||0),ocr_version_state:{total_papers:a.total_papers||0,derived_stale_count:a.derived_stale_count||0,raw_upgradable_count:a.raw_upgradable_count||0}}}_renderSkeleton(e){e.addClass("paperforge-loading")}_renderEmptyState(e,t){e.createEl("div",{cls:"paperforge-empty-state",text:t||"No data"})}_getCachedIndex(){var e;return(e=this._cachedItems)!=null?e:[]}_findEntry(e){return e&&this._getCachedIndex().find(r=>r.zotero_key===e)||null}_patchCachedEntry(e,t){if(!e||!this._cachedItems)return;let r=this._cachedItems.findIndex(n=>n.zotero_key===e);r!==-1&&(this._cachedItems[r]=nt(this._cachedItems[r],t))}_filterByDomain(e){return e?this._getCachedIndex().filter(t=>t.domain===e):[]}_renderLifecycleStepper(e,t,r){if(!t||!r){this._renderSkeleton(e);return}let n=[{key:"indexed",label:"Indexed"},{key:"pdf_ready",label:"PDF Ready"},{key:"fulltext_ready",label:"Fulltext Ready"},{key:"deep_read_done",label:"Deep Read"}],a=e.createEl("div",{cls:"paperforge-lifecycle-stepper"}),s=!1;for(let c of n){let l=a.createEl("div",{cls:"step"});l.createEl("div",{cls:"step-indicator"}),l.createEl("div",{cls:"step-label",text:c.label}),c.key===r?(l.addClass("current"),s=!0):s?l.addClass("pending"):l.addClass("completed")}}_renderHealthMatrix(e,t){if(!t){this._renderSkeleton(e);return}let r=[{key:"pdf_health",label:"PDF Health",iconOk:"\u2713",iconWarn:"\u26A0",iconFail:"\u2717"},{key:"ocr_health",label:"OCR Health",iconOk:"\u2713",iconWarn:"\u26A0",iconFail:"\u2717"},{key:"note_health",label:"Note Health",iconOk:"\u2713",iconWarn:"\u26A0",iconFail:"\u2717"},{key:"asset_health",label:"Asset Health",iconOk:"\u2713",iconWarn:"\u26A0",iconFail:"\u2717"}],n=e.createEl("div",{cls:"paperforge-health-matrix"});for(let a of r){let s=t[a.key]||"healthy",c=n.createEl("div",{cls:"paperforge-health-cell"}),l,d,u;s==="healthy"||s==="ok"?(l=a.iconOk,d="ok",u=`${a.label}: OK`):s==="warn"||s==="warning"||s==="degraded"?(l=a.iconWarn,d="warn",u=`${a.label}: Needs Attention`):(l=a.iconFail,d="fail",u=`${a.label}: Failed`),c.addClass(d),c.setAttribute("title",u),c.createEl("div",{cls:"paperforge-health-cell-icon",text:l}),c.createEl("div",{cls:"paperforge-health-cell-label",text:a.label})}}_renderMaturityGauge(e,t,r){if(t==null||t===void 0){this._renderSkeleton(e);return}let n=e.createEl("div",{cls:"paperforge-maturity-gauge"}),a=n.createEl("div",{cls:"gauge-track"}),s=4,c=Math.max(1,Math.min(s,Math.round(t)));for(let l=1;l<=s;l++){let d=a.createEl("div",{cls:"gauge-segment"});l<=c&&(d.addClass("filled"),d.addClass(`level-${l}`))}if(n.createEl("div",{cls:"gauge-level",text:`Level ${c} / ${s}`}),c<s&&r){let l=typeof r=="string"?[r]:r;if(l.length>0){let d=n.createEl("ul",{cls:"gauge-blockers"});for(let u of l)d.createEl("li",{text:u})}}}_renderBarChart(e,t){if(!t||Object.keys(t).length===0){this._renderEmptyState(e,"No lifecycle data");return}let r=[{key:"indexed",label:"Indexed",cls:"stage-indexed"},{key:"pdf_ready",label:"PDF Ready",cls:"stage-pdf-ready"},{key:"fulltext_ready",label:"Fulltext Ready",cls:"stage-fulltext-ready"},{key:"deep_read_done",label:"Deep Read",cls:"stage-deep-read"}],n=e.createEl("div",{cls:"paperforge-bar-chart"}),a=Math.max(1,...r.map(s=>t[s.key]||0));for(let s of r){let c=t[s.key]||0,l=c/a*100,d=n.createEl("div",{cls:"bar-row"});d.createEl("div",{cls:"bar-label",text:s.label}),d.createEl("div",{cls:"bar-track"}).createEl("div",{cls:`bar-fill ${s.cls}`,attr:{style:`width:${l.toFixed(1)}%`}}),d.createEl("div",{cls:"bar-count",text:c.toString()})}}async _invalidateIndex(){await this._loadDashboardData(!0)}async _resolveModeForFile(e){var n;if(!e)return{mode:"global",filePath:null,key:null,domain:null};let t=e.path,r=await((n=this._getClient())==null?void 0:n.resolvePaperContext(t).catch(()=>null));return r&&r.kind==="paper"&&r.zotero_key?{mode:"paper",filePath:t,key:r.zotero_key,domain:null}:r&&r.kind==="domain"&&r.domain?{mode:"collection",filePath:t,key:null,domain:r.domain}:{mode:"global",filePath:t,key:null,domain:null}}async _detectAndSwitch(e){e!=null||(e=await this._resolveModeForFile(this.app.workspace.getActiveFile())),this._currentDomain=e.domain||null,this._currentPaperKey=e.key||null,this._currentPaperEntry=e.key?this._findEntry(e.key):null,await this._switchMode(e.mode,e.filePath)}async _switchMode(e,t){if(this._currentMode===e&&this._currentFilePath===t){await this._refreshCurrentMode();return}if(this._currentMode=e,this._currentFilePath=t,this._techDetailsExpanded=!1,!!this._contentEl)switch(this._contentEl.empty(),this._contentEl.removeClass("switching"),this._renderModeHeader(e),e){case"global":this._renderGlobalMode();break;case"paper":this._renderPaperMode();break;case"collection":this._renderCollectionMode();break;case"versions":this._renderVersionMode();break}}_renderGlobalMode(){var V,re,ne,de,pe,ue,Y,B;if(!this._contentEl)return;let e=this._contentEl.createEl("div",{cls:"paperforge-global-view"}),t=this._getCachedIndex(),r=t.length,n=0,a=0,s=0;for(let M of t)M.has_pdf&&n++,M.ocr_status==="done"&&a++,M.deep_reading_status==="done"&&s++;let c=e.createEl("div",{cls:"paperforge-library-snapshot"});c.createEl("div",{cls:"paperforge-section-label",text:"Library Snapshot"});let l=c.createEl("div",{cls:"paperforge-snapshot-pills"}),d=[{value:r,label:"papers"},{value:n,label:"PDFs ready"},{value:a,label:"OCR done"},{value:s,label:"deep-read done"}];for(let M of d){let $=l.createEl("div",{cls:"paperforge-snapshot-pill"});$.createEl("span",{cls:"paperforge-snapshot-value",text:String(M.value)}),$.createEl("span",{cls:"paperforge-snapshot-label",text:" "+M.label})}let u=e.createEl("div",{cls:"paperforge-system-status"});u.createEl("div",{cls:"paperforge-section-label",text:"System Status"});let f=u.createEl("div",{cls:"paperforge-status-grid"}),_=this.app.plugins.plugins.paperforge,m=this._getCachedIndex(),g=m.length>0;this._renderSystemStatusRow(f,"Index",g?"healthy":"missing",g?m.length+" entries":"Index not loaded \u2014 run Sync Library");let h=this._dashboardPermissions.can_sync===!0,y=h?"Exports detected":"No exports found";this._renderSystemStatusRow(f,"Zotero Export",h?"healthy":"missing",y);let v=(re=(V=this.app.plugins)==null?void 0:V.plugins)==null?void 0:re.paperforge,b=this._renderSystemStatusRow(f,"OCR Token","checking","Checking\u2026");(ne=this._getClient())==null||ne.credentialAvailable("ocr").then(M=>{if(!b.isConnected)return;let $=b.querySelector(".paperforge-status-dot");$==null||$.classList.toggle("ok",M),$==null||$.classList.toggle("fail",!M);let U=b.querySelector(".paperforge-status-detail");U&&(U.textContent=M?"Configured":"Not set")},()=>{if(!b.isConnected)return;let M=b.querySelector(".paperforge-status-detail");M&&(M.textContent="Status unavailable")});let w=(de=this.app.vault.adapter.basePath)!=null?de:"",k=(ue=(pe=_==null?void 0:_.settings)==null?void 0:pe.capabilityState)==null?void 0:ue.memory,x=(k==null?void 0:k.capability_state)==="ready",E=(B=(Y=k==null?void 0:k.reason)==null?void 0:Y.text)!=null?B:"Unknown";if(this._renderSystemStatusRow(f,"Memory Layer",x?"healthy":"fail",E),!g||!h){let M=e.createEl("div",{cls:"paperforge-issue-summary"});M.createEl("div",{cls:"paperforge-section-label",text:"\u9700\u8981\u5904\u7406"});let $=M.createEl("div",{cls:"paperforge-issue-list"});g||$.createEl("div",{cls:"paperforge-issue-item",text:"Index missing or corrupted"}),h||$.createEl("div",{cls:"paperforge-issue-item",text:"No Zotero export found"});let U=M.createEl("div",{cls:"paperforge-issue-actions"}),J=U.createEl("button",{cls:"paperforge-contextual-btn"});J.createEl("span",{text:"Run Doctor"}),J.addEventListener("click",()=>{let N=ae.find(Z=>Z.id==="paperforge-doctor");N&&this._runAction(N,J)});let W=U.createEl("button",{cls:"paperforge-contextual-btn"});W.createEl("span",{text:"Repair Issues"}),W.addEventListener("click",()=>{let N=ae.find(Z=>Z.id==="paperforge-repair");N&&this._runAction(N,W)})}let C=e.createEl("div",{cls:"paperforge-global-actions"});C.createEl("div",{cls:"paperforge-section-label",text:"Start Working"});let R=C.createEl("div",{cls:"paperforge-global-actions-row"}),F=R.createEl("button",{cls:"paperforge-contextual-btn primary"});F.createEl("span",{cls:"paperforge-contextual-btn-icon",text:"\u{1F4C1}"}),F.createEl("span",{text:"Open Literature Hub"}),F.addEventListener("click",()=>{var U;let M=((U=_==null?void 0:_.settings)==null?void 0:U.base_dir)||"Bases",$=this.app.vault.getAbstractFileByPath(M);if($){let J=null;if($.children&&(J=$.children.find(W=>W.extension==="base")),J){let W=this.app.workspace.getLeaf(!1);W&&W.openFile(J)}else new T.Notice("[!!] No .base file found in "+M,6e3)}else new T.Notice("[!!] Base directory not found: "+M,6e3)});let D=R.createEl("button",{cls:"paperforge-contextual-btn",attr:{"data-pf-testid":"sync-library"}});D.createEl("span",{cls:"paperforge-contextual-btn-icon",text:"\u21BB"}),D.createEl("span",{text:"Sync Library"}),D.addEventListener("click",()=>{this._runLibrarySync()});let L=R.createEl("button",{cls:"paperforge-contextual-btn"});L.createEl("span",{cls:"paperforge-contextual-btn-icon",text:"\u229E"}),L.createEl("span",{text:"Run OCR"}),L.addEventListener("click",()=>{let M=ae.find($=>$.id==="paperforge-ocr");M&&this._runAction(M,L)})}_renderSystemStatusRow(e,t,r,n){let a=e.createEl("div",{cls:"paperforge-status-row"});return a.createEl("span",{cls:"paperforge-status-dot"}).addClass(r==="healthy"||r==="configured"?"ok":"fail"),a.createEl("span",{cls:"paperforge-status-label",text:t}),a.createEl("span",{cls:"paperforge-status-detail",text:n||""}),a}_renderPaperMode(){let e=this._currentPaperEntry,t=this._currentPaperKey;if(!this._contentEl)return;if(!t){this._renderEmptyState(this._contentEl,"No paper data available.");return}if(!e){this._contentEl.createEl("div",{cls:"paperforge-content-placeholder",text:'Paper "'+t+'" not found in canonical index. Sync first.'});return}let r=this._contentEl.createEl("div",{cls:"paperforge-paper-view"}),n=r.createEl("div",{cls:"paperforge-paper-header"});n.createEl("div",{cls:"paperforge-paper-title pf-copy",text:e.title||"Untitled"}).addEventListener("click",()=>{navigator.clipboard.writeText(e.title||""),new T.Notice("Title copied")});let s=n.createEl("div",{cls:"paperforge-paper-meta"});e.authors&&e.authors.length>0&&s.createEl("span",{cls:"paperforge-paper-authors",text:e.authors.join(", ")}),e.year&&s.createEl("span",{cls:"paperforge-paper-year",text:String(e.year)});let c=r.createEl("div",{cls:"paperforge-status-strip"}),l=c.createEl("div",{cls:"paperforge-status-strip-left"}),d=c.createEl("div",{cls:"paperforge-status-strip-right"}),u=[{key:"pdf",label:"PDF",ok:e.has_pdf===!0},{key:"ocr",label:"OCR",ok:e.ocr_status==="done",pending:["pending","queued","processing"].includes(e.ocr_status||""),fail:["failed","blocked","done_incomplete","nopdf"].includes(e.ocr_status||"")},{key:"deep",label:"\u7CBE\u8BFB",ok:e.deep_reading_status==="done"}];for(let _ of u){let m=l.createEl("span",{cls:"paperforge-status-pill"}),g="pending";_.ok?g="ok":_.fail?g="fail":_.pending&&(g="pending"),m.addClass(g);let h=_.ok?"\u2713":_.fail?"\u2717":"\u25CB";m.createEl("span",{cls:"paperforge-status-pill-icon",text:h}),m.createEl("span",{text:" "+_.label})}if(e.pdf_path){let _=d.createEl("button",{cls:"paperforge-contextual-btn"});_.createEl("span",{cls:"paperforge-contextual-btn-icon",text:"\u{1F4C4}"}),_.createEl("span",{text:"\u6253\u5F00 PDF"}),_.addEventListener("click",()=>{var b,w,k;let m=e.pdf_path.match(/\[\[([^\]]+)\]\]/),g=m?m[1]:e.pdf_path;if(this.app.vault.getAbstractFileByPath(g)){this.app.workspace.openLinkText(g,"");return}let y=(k=(w=(b=this.app.vault.adapter).getBasePath)==null?void 0:w.call(b))!=null?k:"",v=T.Platform.openPath;y&&typeof v=="function"?v.call(T.Platform,gr.join(y,g)):new T.Notice("[!!] PDF not found: "+g,6e3)})}if(e.fulltext_path){let _=d.createEl("button",{cls:"paperforge-contextual-btn"});_.createEl("span",{cls:"paperforge-contextual-btn-icon",text:"\u{1F4DD}"}),_.createEl("span",{text:"\u6253\u5F00\u5168\u6587"}),_.addEventListener("click",()=>this._openFulltext(e.fulltext_path))}let f=d.createEl("button",{cls:"paperforge-contextual-btn",attr:{"data-pf-testid":"version-history"}});if(f.createEl("span",{text:i("version_panel_title")}),f.addEventListener("click",()=>{let _=t;(async()=>{let m=this._getClient();if(!m){new T.Notice(i("runtime_not_available")||"Environment unavailable");return}try{let g=await m.versionsShow(_);if(g.versions.length>0){new he(this.app,_,g.versions,g.current_label,g.current_path,y=>m.versionsRestore(_,y).then(()=>{})).open();return}let h=await m.versionsBackups(_);h.length>0&&new he(this.app,_,h,"",g.current_path,y=>m.versionsRestore(_,y).then(()=>{})).open()}catch(g){new T.Notice("[!!] Version history failed: "+((g==null?void 0:g.message)||g),6e3)}})()}),this._renderPaperOverviewCard(r,e),e.next_step==="ready"&&e.deep_reading_status==="done"){let _=r.createEl("div",{cls:"paperforge-complete-row"});_.createEl("span",{text:"\u2713"}),_.createEl("span",{text:"\u5DF2\u5B8C\u6210\uFF0C\u53EF\u76F4\u63A5\u4F7F\u7528"})}else this._renderNextStepCard(r,e,t);this._renderRecentDiscussionCard(r,e),this._renderPaperTechnicalDetails(r,e)}_renderPaperOverviewCard(e,t){let r=e.createEl("div",{cls:"paperforge-paper-overview"});r.createEl("div",{cls:"paperforge-paper-overview-header"}).createEl("span",{cls:"paperforge-paper-overview-title",text:"\u6587\u7AE0\u6982\u89C8"});let a=r.createEl("div",{cls:"paperforge-paper-overview-body"}),s=a.createEl("div",{cls:"paperforge-paper-overview-excerpt",text:"\u52A0\u8F7D\u4E2D..."});if(t.note_path){let c=this.app.vault.getAbstractFileByPath(t.note_path);c?this.app.vault.read(c).then(l=>{let d=this._extractOverviewFromNote(l);if(d){let u=d.length>200?d.slice(0,200)+"...":d;if(s.setText(u),d.length>200){let f=a.createEl("div",{cls:"paperforge-expand-container"}),_=f.createEl("button",{cls:"paperforge-expand-icon",title:"\u5C55\u5F00/\u6536\u8D77"});_.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';let m=!1;f.addEventListener("click",()=>{s.setText(m?u:d),_.innerHTML=m?'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>':'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>',m=!m})}}else s.setText("\u5C1A\u672A\u751F\u6210\u6587\u7AE0\u6982\u89C8\u3002\u8FD0\u884C /pf-deep \u5F00\u59CB\u7CBE\u8BFB\u3002")}).catch(()=>{s.setText("\u65E0\u6CD5\u8BFB\u53D6\u7B14\u8BB0\u5185\u5BB9")}):s.setText("\u7B14\u8BB0\u6587\u4EF6\u4E0D\u5B58\u5728")}else s.setText("\u5C1A\u672A\u751F\u6210\u6587\u7AE0\u6982\u89C8")}_extractOverviewFromNote(e){if(!e)return null;let t=e.indexOf("## \u{1F50D} \u7CBE\u8BFB");if(t===-1)return null;let r=e.slice(t),n=["**\u4E00\u53E5\u8BDD\u603B\u89C8:**","**\u4E00\u53E5\u8BDD\u603B\u89C8**","**\u6587\u7AE0\u6458\u8981:**","**\u6587\u7AE0\u6458\u8981**"];for(let c of n){let l=r.indexOf(c);if(l!==-1){let d=r.slice(l+c.length),u=["**5 Cs","**Figure","**\u8BC1\u636E","### Pass 2","## "],f=d.length;for(let g of u){let h=d.indexOf(g);h!==-1&&h<f&&(f=h)}let _=d.indexOf(`
+            `),
+        document.head.appendChild(_));
+    }
+    let t = this.plugin.settings._migration_warnings;
+    if (Array.isArray(t) && t.length > 0) {
+      let _ = e.createDiv({ cls: "paperforge-migration-warning" }),
+        m = t
+          .map((g) => (g === "paddleocr_api_key" ? "OCR" : "Smart Retrieval"))
+          .join(", ");
+      (_.createEl("strong", { text: i("migration_banner_title") }),
+        _.createEl("p", {
+          text: i("migration_banner_body").replace("{modules}", m),
+        }),
+        _.createEl("p", {
+          text: i("migration_banner_next"),
+          cls: "paperforge-manual-links",
+        }));
+    }
+    let r = e.createDiv({ cls: "pf-cc-topbar" }),
+      n = r.createDiv({ cls: "pf-cc-topbar-left" });
+    (n.createEl("span", { cls: "pf-cc-topbar-brand", text: "PaperForge" }),
+      n.createEl("span", {
+        cls: "pf-cc-topbar-version",
+        text:
+          "v" +
+          ((f = (u = this.plugin.manifest) == null ? void 0 : u.version) != null
+            ? f
+            : "?"),
+      }));
+    let a = r.createDiv({ cls: "pf-cc-topbar-center" }),
+      s = [
+        { id: "overview", label: i("tab_overview") || "Overview" },
+        { id: "help", label: i("tab_help") || "Help" },
+      ],
+      c = {};
+    if (
+      (s.forEach((_) => {
+        a.createEl("button", {
+          cls:
+            "pf-cc-topbar-tab" +
+            (_.id === this.activeTab ? " pf-cc-topbar-tab--active" : ""),
+          text: _.label,
+        }).addEventListener("click", () => {
+          ((this._detailReturn = null),
+            (this.activeTab = _.id),
+            (this._navMemory = { destination: _.id }),
+            this._persistNavMemory(),
+            this.display());
+        });
+      }),
+      r
+        .createDiv({ cls: "pf-cc-topbar-right" })
+        .createEl("a", {
+          cls: "pf-cc-topbar-ocr-link",
+          text: (i("md_ocr_workspace") || "OCR Workspace") + " \u2197",
+          attr: { href: "#", role: "button" },
+        })
+        .addEventListener("click", (_) => {
+          (_.preventDefault(),
+            this.app.setting.close(),
+            this.app.workspace
+              .getLeaf()
+              .setViewState({ type: "paperforge-ocr-workspace" }));
+        }),
+      s.forEach((_) => {
+        c[_.id] = e.createDiv({
+          cls:
+            "paperforge-tab-content" +
+            (_.id === this.activeTab ? " paperforge-tab-content--active" : ""),
+        });
+      }),
+      (c["module-detail"] = e.createDiv({
+        cls:
+          "paperforge-tab-content" +
+          (this.activeTab === "module-detail"
+            ? " paperforge-tab-content--active"
+            : ""),
+      })),
+      this.activeTab === "overview"
+        ? this._renderOverviewTab(c.overview)
+        : this.activeTab === "module-detail"
+          ? this._renderModuleDetailTab(c["module-detail"])
+          : this.activeTab === "help" && this._renderHelpTab(c.help),
+      this._focusTargetId && this.activeTab !== "help")
+    ) {
+      let _ = e.querySelector(this._focusTargetId);
+      if (
+        (!_ &&
+          this.activeTab === "overview" &&
+          (_ = e.querySelector(".pf-cc-module-card")),
+        _)
+      ) {
+        try {
+          _.focus();
+        } catch (m) {}
+        this._focusTargetId = null;
+      }
+    }
+    this._displayInProgress = !1;
+  }
+  getClient() {
+    var t;
+    if (this._client) return this._client;
+    let e = (t = this.plugin) == null ? void 0 : t.getClient;
+    if (typeof e != "function")
+      throw new Error(
+        "PaperForge client unavailable: plugin.getClient singleton is missing"
+      );
+    return ((this._client = e.call(this.plugin)), this._client);
+  }
+  _startSetupJourney(e = 1, t = !1) {
+    ((this._setupStage = e),
+      (this._setupReinstallRequested = t),
+      (this._setupOperation = "idle"),
+      (this._setupFeedback = null),
+      (this.plugin.settings._setup_complete = !1),
+      this.plugin.saveSettings().then(() => this.display()));
+  }
+  _installFoundation(e) {
+    if (this._setupOperation === "running") return;
+    ((this._setupOperation = "running"),
+      (this._setupFeedback = null),
+      this.display(),
+      (this._runtimeAbortController = new AbortController()));
+    let t = this._runtimeAbortController.signal;
+    (async () => {
+      var r, n, a, s, c, l;
+      try {
+        let d = this._getVaultBasePath(),
+          u = this._ensureManagedRuntime(),
+          f = await u.installOnce(this.plugin.manifest.version, t),
+          _ = await u.handshake(this.plugin.manifest.version, {
+            pythonPath: f.pythonPath,
+            vaultPath: d,
+            signal: t,
+          });
+        if (!_.ok)
+          throw new Error((r = _.reason) != null ? r : "handshake failed");
+        let m = this.plugin.settings;
+        await this.plugin.saveSettings();
+        let h = this.getClient().setup(
+          {
+            systemDir:
+              ((n = m.system_dir) == null ? void 0 : n.trim()) || "System",
+            resourcesDir:
+              ((a = m.resources_dir) == null ? void 0 : a.trim()) ||
+              "Resources",
+            literatureDir:
+              ((s = m.literature_dir) == null ? void 0 : s.trim()) ||
+              "Literature",
+            baseDir: ((c = m.base_dir) == null ? void 0 : c.trim()) || "Bases",
+            zoteroData:
+              ((l = m.zotero_data_dir) == null ? void 0 : l.trim()) || void 0,
+            agent: m.agent_platform || "opencode",
+            modular: !0,
+          },
+          {
+            pythonExe: f.pythonPath,
+            onEvent: (v) => {
+              var b;
+              v.event === "phase" &&
+                ((this._setupFeedback = `${i("setup_installing") || "Installing"}: ${(b = v.phase) != null ? b : ""}`),
+                this.display());
+            },
+          }
+        );
+        t == null || t.addEventListener("abort", () => h.stop());
+        let y = await h.outcome;
+        if (!y.ok) {
+          if (y.cancelled) {
+            ((this._setupOperation = "idle"),
+              (this._setupFeedback = i("setup_install_cancelled")),
+              this.display());
+            return;
+          }
+          throw new Error(
+            y.protocolFailure || `Setup failed with exit code ${y.exitCode}`
+          );
+        }
+        ((this._setupOperation = "idle"),
+          (this._setupReinstallRequested = !1),
+          (this._setupFeedback = i("setup_install_complete")),
+          this._probeModule("installation"),
+          this._probeModule("help"),
+          this.display());
+      } catch (d) {
+        if (
+          t.aborted ||
+          (typeof d == "object" && d !== null && d.name === "AbortError")
+        ) {
+          ((this._setupOperation = "idle"),
+            (this._setupFeedback = i("setup_install_cancelled")),
+            this.display());
+          return;
+        }
+        (console.error("PaperForge runtime installation failed:", d),
+          (this._setupOperation = "failed"),
+          (this._setupFeedback = i("setup_install_failed")),
+          this.display());
+      } finally {
+        this._runtimeAbortController = null;
+      }
+    })();
+  }
+  _applyLibraryConfiguration() {
+    if (this._setupOperation === "running") return;
+    ((this._setupOperation = "running"), (this._setupFeedback = null));
+    let e = this.plugin.settings,
+      t = this._getVaultBasePath(),
+      r = {
+        zotero_data_dir: e.zotero_data_dir,
+        system_dir: e.system_dir,
+        resources_dir: e.resources_dir,
+        literature_dir: e.literature_dir,
+        base_dir: e.base_dir,
+      };
+    (async () => {
+      var a, s, c, l, d;
+      let n = [];
+      for (let [u, f] of Object.entries(r))
+        f &&
+          f.trim() &&
+          n.push(
+            this.getClient()
+              .configSet(u, f.trim())
+              .catch((_) => {
+                console.error(`PaperForge: config set ${u} failed`, _);
+              })
+          );
+      (await Promise.all(n).catch(() => {}), this.display());
+      try {
+        await this.plugin.saveSettings();
+        let _ = await this.getClient().setup(
+          {
+            systemDir:
+              ((a = e.system_dir) == null ? void 0 : a.trim()) || "System",
+            resourcesDir:
+              ((s = e.resources_dir) == null ? void 0 : s.trim()) ||
+              "Resources",
+            literatureDir:
+              ((c = e.literature_dir) == null ? void 0 : c.trim()) ||
+              "Literature",
+            baseDir: ((l = e.base_dir) == null ? void 0 : l.trim()) || "Bases",
+            zoteroData:
+              ((d = e.zotero_data_dir) == null ? void 0 : d.trim()) || void 0,
+            agent: e.agent_platform || "opencode",
+            modular: !0,
+          },
+          {
+            onEvent: (m) => {
+              var g;
+              m.event === "phase" &&
+                ((this._setupFeedback = `${i("setup_library_configuring") || "Configuring"}: ${(g = m.phase) != null ? g : ""}`),
+                this.display());
+            },
+          }
+        ).outcome;
+        if (!_.ok)
+          throw new Error(
+            _.protocolFailure || `Setup failed with exit code ${_.exitCode}`
+          );
+        ((this._setupOperation = "idle"),
+          (this._setupFeedback = i("setup_library_configured")),
+          this._attemptedProbes.add("library"),
+          this._probeModule("library"),
+          this.display());
+      } catch (u) {
+        (console.error("PaperForge library configuration failed:", u),
+          (this._setupOperation = "failed"),
+          (this._setupFeedback = i("setup_library_config_failed")),
+          this.display());
+      }
+    })();
+  }
+  _renderOverviewTab(e) {
+    var r;
+    let t = this._getVaultBasePath();
+    (this.plugin.settings.vault_path ||
+      ((this.plugin.settings.vault_path = t), this._debouncedSave()),
+      e.createEl("h2", { text: i("header_title") || "PaperForge" }),
+      e.createEl("p", { text: i("desc"), cls: "paperforge-settings-desc" }));
+    for (let n of we) {
+      let a = (r = this._capabilityState) == null ? void 0 : r[n];
+      if (!a) continue;
+      let s =
+          a.capability_state === "unknown" &&
+          a.updated_at === new Date(0).toISOString(),
+        c =
+          a.user_state === "detection_failed" &&
+          a.reason.code.endsWith(".stale");
+      (s || c) &&
+        !this._attemptedProbes.has(n) &&
+        (this._attemptedProbes.add(n),
+        n !== "maintenance" && this._probeModule(n));
+    }
+    this._renderControlCenter(e);
+  }
+  _getVaultBasePath() {
+    let e = this.app.vault.adapter;
+    if (e && typeof e == "object" && "basePath" in e) {
+      let t = e.basePath;
+      return typeof t == "string" ? t : "";
+    }
+    return "";
+  }
+  _ensureManagedRuntime() {
+    var e, t, r;
+    return this._managedRuntime
+      ? this._managedRuntime
+      : ((this._managedRuntime =
+          (r =
+            (t = (e = this.plugin).getManagedRuntime) == null
+              ? void 0
+              : t.call(e)) != null
+            ? r
+            : new oe()),
+        this._managedRuntime);
+  }
+  _resolveRuntimeCommand(e) {
+    var n;
+    let t = (n = this.plugin.settings.python_path) == null ? void 0 : n.trim();
+    if (t && j.existsSync(t)) return { path: t, args: [] };
+    let r = ce(this._ensureManagedRuntime().readPointer());
+    return r ? { path: r.command, args: [...r.args] } : null;
+  }
+  _renderInstallationDetail(e) {
+    var y, v, b, w, k, x, E;
+    this._renderModuleDetailShell(e, "installation");
+    let t =
+        (v = (y = this._capabilityState) == null ? void 0 : y.installation) !=
+        null
+          ? v
+          : X("installation"),
+      r = e.createDiv({ cls: "pf-module-body" });
+    (r.createEl("h3", { text: i("md_foundation_overview") }),
+      r.createEl("p", {
+        text:
+          t.user_state === "ready"
+            ? i("md_foundation_ready")
+            : this._getModuleConsequence("installation", t),
+        cls:
+          t.user_state === "ready"
+            ? "pf-status-ok"
+            : "setting-item-description",
+      }));
+    let n = r.createDiv({ cls: "pf-config" }),
+      a = (S, C, R, F) => {
+        let D = n.createDiv({ cls: "pf-config-row" });
+        D.createEl("span", { cls: "pf-config-key", text: S });
+        let L = D.createDiv({ cls: "pf-config-right" });
+        (L.createEl("span", { cls: F, text: C }),
+          L.createEl("span", { cls: "pf-config-value", text: R }));
+      };
+    a(
+      i("foundation_version"),
+      "\u2713",
+      this.plugin.manifest.version,
+      "pf-status-ok"
+    );
+    let s = this.app.vault.adapter.basePath,
+      c =
+        (w = (b = this._resolveRuntimeCommand(s)) == null ? void 0 : b.path) !=
+        null
+          ? w
+          : this.plugin.settings.python_path || "python";
+    a(
+      i("foundation_python"),
+      t.user_state === "ready" ? "\u2713" : "\u2014",
+      c,
+      t.user_state === "ready" ? "pf-status-ok" : "pf-status-checking"
+    );
+    let l = ge.join(s, this.plugin.settings.system_dir || "System"),
+      d = j.existsSync(l);
+    a(
+      i("foundation_vault_structure"),
+      d ? "\u2713" : "\u2717",
+      d ? l : i("foundation_vault_missing"),
+      d ? "pf-status-ok" : "pf-status-error"
+    );
+    let u =
+      this.plugin.settings.zotero_data_dir &&
+      j.existsSync(this.plugin.settings.zotero_data_dir);
+    a(
+      i("foundation_zotero"),
+      u ? "\u2713" : "\u2717",
+      u ? this.plugin.settings.zotero_data_dir : i("foundation_zotero_missing"),
+      u ? "pf-status-ok" : "pf-status-error"
+    );
+    let f = !!this.plugin.settings._paddleocr_configured,
+      _ = !!this.plugin.settings._vector_db_configured;
+    (a(
+      i("foundation_paddle_key"),
+      f ? "\u2713" : "\u2717",
+      f ? i("config_configured") : i("foundation_paddle_missing"),
+      f ? "pf-status-ok" : "pf-status-error"
+    ),
+      a(
+        i("foundation_openai_key"),
+        _ ? "\u2713" : "\u2717",
+        _ ? i("config_configured") : i("foundation_openai_missing"),
+        _ ? "pf-status-ok" : "pf-status-error"
+      ));
+    let m = n.createDiv({ cls: "pf-config-row" });
+    m.createEl("span", {
+      cls: "pf-config-key",
+      text:
+        (k = i("md_foundation_legacy_migrate")) != null
+          ? k
+          : "Migrate legacy credentials",
+    });
+    let h = m
+      .createDiv({ cls: "pf-config-right" })
+      .createEl("button", { cls: "paperforge-refresh-btn", text: "Migrate" });
+    ((h.title =
+      "One-time migration of Obsidian SecretStorage values into the keyring (auth set)"),
+      (h.onclick = () => this._migrateLegacyCredentials(h)),
+      a(
+        i("foundation_python_packages"),
+        t.user_state === "ready" ? "\u2713" : "\u2014",
+        t.user_state === "ready"
+          ? i("check_bbt_ok") || "Ready"
+          : (E = (x = t.reason) == null ? void 0 : x.text) != null
+            ? E
+            : "\u2014",
+        t.user_state === "ready" ? "pf-status-ok" : "pf-status-checking"
+      ),
+      t.user_state !== "ready" &&
+        new A.Setting(r)
+          .setName(i("foundation_setup"))
+          .setDesc(i("foundation_setup_desc"))
+          .addButton((S) =>
+            S.setButtonText(i("foundation_setup_btn"))
+              .setCta()
+              .onClick(() => this._startSetupJourney(1))
+          ),
+      new A.Setting(r)
+        .setName(i("foundation_reinstall"))
+        .setDesc(i("foundation_reinstall_desc"))
+        .addButton((S) =>
+          S.setButtonText(i("foundation_reinstall_btn"))
+            .setWarning()
+            .onClick(() => this._startSetupJourney(1, !0))
+        ));
+  }
+  _renderSkillsList(e) {
+    let t = {
+        opencode: ".opencode/skills",
+        claude: ".claude/skills",
+        codex: ".codex/skills",
+        cursor: ".cursor/skills",
+        windsurf: ".windsurf/skills",
+        github_copilot: ".github/skills",
+        gemini: ".gemini/skills",
+      },
+      r = this._getVaultBasePath(),
+      n = this.plugin.settings.agent_platform || "opencode";
+    e.createEl("h3", { text: i("md_agent_skills") });
+    let a = e.createEl("div", { cls: "paperforge-desc-box" });
+    (a.setText(i("feat_skills_desc")),
+      a.createEl("br"),
+      a.createEl("span", { text: i("feat_skills_system") }));
+    let s = ge.join(r, t[n]),
+      c = [],
+      l = [];
+    j.existsSync(s) &&
+      j.readdirSync(s, { withFileTypes: !0 }).forEach((f) => {
+        if (!f.isDirectory()) return;
+        let _ = ge.join(s, f.name, "SKILL.md");
+        if (!j.existsSync(_)) return;
+        let m = j.readFileSync(_, "utf-8"),
+          g = m.match(/^name:\s*(.+)$/m),
+          h = m.split(`
+`),
+          y = h.findIndex((E) => /^description:/.test(E)),
+          v = "";
+        if (y >= 0) {
+          let E = h[y].match(/^description:\s*(.+)$/);
+          if (E && E[1] && E[1] !== ">" && E[1] !== "|-" && E[1] !== "|")
+            v = E[1].trim();
+          else {
+            for (
+              let S = y + 1;
+              S < h.length && (/^\s{2,}/.test(h[S]) || h[S].trim() === "");
+              S++
+            )
+              v += h[S].trim() + " ";
+            v = v.trim();
+          }
+        }
+        let b = m.match(/^source:\s*(.+)$/m),
+          w = m.match(/^disable-model-invocation:\s*(.+)$/m),
+          k = m.match(/^version:\s*(.+)$/m),
+          x = {
+            name: g ? g[1].trim() : f.name,
+            desc: v,
+            source: b ? b[1].trim() : "user",
+            disabled: !!w && w[1].trim() === "true",
+            version: k ? k[1].trim() : "",
+            path: _,
+            content: m,
+            dirName: f.name,
+          };
+        x.source === "paperforge" ? c.push(x) : l.push(x);
+      });
+    let d = e.createEl("div", { cls: "paperforge-skills-box" }),
+      u = (f, _, m) => {
+        if (_.length === 0) return;
+        let g = d.createEl("div", { cls: "paperforge-skills-group" }),
+          h = g.createEl("div", { cls: "paperforge-skills-collapse-header" }),
+          y = g.createEl("div", { cls: "paperforge-skills-collapse-content" }),
+          v = h.createEl("span", {
+            text: "\u25BC",
+            cls: "paperforge-skills-arrow",
+          });
+        (h.createEl("h4", {
+          text: `${f} (${_.length})`,
+          cls: "paperforge-skills-subheader",
+        }),
+          _.forEach((k) => {
+            let x = k.name + (k.version ? " v" + k.version : ""),
+              E = m
+                ? " [" + i("skills_system") + "]"
+                : " [" + i("skills_user") + "]",
+              S = k.desc || "",
+              C = new A.Setting(y).setName(x + E).setDesc(S);
+            ((C.settingEl.style.opacity = k.disabled ? "0.4" : "1"),
+              C.addToggle((R) => {
+                R.setValue(!k.disabled).onChange((F) => {
+                  let D = !F,
+                    V = k.content.match(/^disable-model-invocation:\s*(.+)$/m)
+                      ? k.content.replace(
+                          /^disable-model-invocation:\s*.+$/m,
+                          `disable-model-invocation: ${D}`
+                        )
+                      : k.content.replace(
+                          /^(---\r?\n)/,
+                          `$1disable-model-invocation: ${D}
+`
+                        );
+                  (j.writeFileSync(k.path, V, "utf-8"),
+                    (k.disabled = D),
+                    (k.content = V),
+                    (C.settingEl.style.opacity = k.disabled ? "0.4" : "1"));
+                });
+              }));
+          }));
+        let b = m ? "system" : "user";
+        ((this._skillsCollapsed[b] || !1) &&
+          ((y.style.display = "none"), (v.style.transform = "rotate(-90deg)")),
+          h.addEventListener("click", () => {
+            (y.style.display !== "none"
+              ? ((y.style.display = "none"),
+                (v.style.transform = "rotate(-90deg)"))
+              : ((y.style.display = ""), (v.style.transform = "rotate(0deg)")),
+              (this._skillsCollapsed[b] = y.style.display === "none"));
+          }));
+      };
+    (u(i("skills_system"), c, !0),
+      u(i("skills_user"), l, !1),
+      c.length === 0 &&
+        l.length === 0 &&
+        d.createEl("p", {
+          text: i("skills_empty"),
+          cls: "setting-item-description",
+        }));
+  }
+  _renderModuleDetailTab(e) {
+    (this._selectedDetailModule ||
+      (this._selectedDetailModule = "installation"),
+      this._selectedDetailModule === "installation"
+        ? this._renderInstallationDetail(e)
+        : this._selectedDetailModule === "library"
+          ? this._renderLibraryDetail(e)
+          : this._selectedDetailModule === "ocr"
+            ? this._renderOcrDetail(e)
+            : this._selectedDetailModule === "memory"
+              ? this._renderMemoryDetail(e)
+              : this._selectedDetailModule === "agent"
+                ? this._renderAgentDetail(e)
+                : ((this._selectedDetailModule = "installation"),
+                  this._renderInstallationDetail(e)));
+  }
+  _renderLibraryDetail(e) {
+    var u, f, _, m, g, h;
+    this._renderModuleDetailShell(e, "library");
+    let t =
+        (f = (u = this._capabilityState) == null ? void 0 : u.library) != null
+          ? f
+          : X("library"),
+      r = e.createDiv({ cls: "pf-module-body" });
+    (r.createEl("h3", { text: i("md_library_connection") }),
+      t.user_state === "ready"
+        ? r.createEl("p", { text: i("md_library_ready"), cls: "pf-status-ok" })
+        : t.user_state !== "checking" &&
+          t.user_state !== "not_enabled" &&
+          zt(r, {
+            whatHappened:
+              i("cc_module_library") +
+              " \u2014 " +
+              this._getUserStateLabel(t.user_state),
+            impact: i("library_problem_impact"),
+            nextStep: i("problem_use_action"),
+            impactLabel: i("problem_impact"),
+            nextLabel: i("problem_next"),
+            copyLabel: i("problem_copy"),
+            onCopyDiagnostic: () => this._buildAndCopyDiagnostic(),
+          }));
+    let n = r.createDiv({ cls: "pf-module-facts" }),
+      a = (_ = t.details) == null ? void 0 : _.paper_count,
+      s = n.createDiv({ cls: "pf-module-fact" });
+    (s.createEl("span", { text: i("md_library_corpus") }),
+      s.createEl("span", {
+        text: typeof a == "number" ? String(a) : i("metric_not_available"),
+      }));
+    let c =
+        (h =
+          (g = (m = this._capabilityState) == null ? void 0 : m.maintenance) ==
+          null
+            ? void 0
+            : g.orphan) == null
+          ? void 0
+          : h.count,
+      l = n.createDiv({ cls: "pf-module-fact" });
+    (l.createEl("span", { text: "Orphans" }),
+      l.createEl("span", {
+        text: typeof c == "number" ? String(c) : i("metric_not_available"),
+      }));
+    let d = n.createDiv({ cls: "pf-module-fact" });
+    (d.createEl("span", { text: i("md_library_last_sync") }),
+      d.createEl("span", {
+        text: this.plugin._lastSyncTime || i("metric_not_available"),
+      }),
+      r.createEl("h3", { text: i("md_configuration") }),
+      jt(r, {
+        items: [
+          {
+            label: i("config_zotero_dir"),
+            value:
+              this.plugin.settings.zotero_data_dir ||
+              i("config_not_configured"),
+          },
+        ],
+        configuredLabel: i("config_configured"),
+        notConfiguredLabel: i("config_not_configured"),
+        onChangeLabel: i("config_change"),
+        onChange: () => this._startSetupJourney(2),
+      }));
+  }
+  _renderOcrDetail(e) {
+    var d, u, f, _, m, g, h, y, v, b, w, k, x, E;
+    this._renderModuleDetailShell(e, "ocr");
+    let t =
+        (u = (d = this._capabilityState) == null ? void 0 : d.ocr) != null
+          ? u
+          : X("ocr"),
+      r = e.createDiv({ cls: "pf-module-body" });
+    (r.createEl("h3", { text: i("md_ocr_status") }),
+      t.user_state === "detection_failed" &&
+        r.createEl("p", {
+          cls: "pf-status-checking",
+          text: i("md_status_refresh_hint"),
+        }));
+    let n = t.pipeline_version,
+      a = t.last_pipeline_version,
+      c =
+        ((_ = (f = t.pipeline_version_summary) == null ? void 0 : f.stale) !=
+        null
+          ? _
+          : 0) > 0,
+      l = t.activity_state === "running";
+    if (l) {
+      ie(r, "checking", i("ocr_state_running"));
+      let S = this.plugin._ocrProgress,
+        C = r.createDiv({ cls: "pf-ocr-progress-card" });
+      if (S != null && S.total) {
+        let F = i("ocr_progress")
+            .replace("{current}", String(S.current))
+            .replace("{total}", String(S.total)),
+          D = S.key ? " \u2014 " + S.key : "";
+        C.createEl("span", {
+          cls: "pf-detail-progress",
+          text: i("ocr_state_running") + " " + F + D,
+        });
+        let L = C.createDiv({ cls: "pf-activity-bar" }),
+          V = Math.round((S.current / S.total) * 100);
+        L.createDiv({
+          cls: "pf-activity-bar-fill",
+          attr: {
+            style: `width: ${V}%`,
+            role: "progressbar",
+            "aria-valuenow": String(S.current),
+            "aria-valuemin": "1",
+            "aria-valuemax": String(S.total),
+          },
+        });
+      }
+      let R = this.getClient();
+      typeof (R == null ? void 0 : R.isOperationActive) == "function" &&
+        R.isOperationActive() &&
+        C.createEl("button", {
+          cls: "pf-action-btn mod-warning",
+          text: i("ocr_stop_batch"),
+        }).addEventListener("click", () => R.cancelActiveOperation());
+    } else if (c) {
+      let S = n
+        ? i("ocr_state_update_available").replace("{version}", n)
+        : i("ocr_state_update_available").replace("{version}", "");
+      (ie(r, "action_required", S),
+        r.createEl("p", {
+          text: i("ocr_state_update_description"),
+          cls: "setting-item-description",
+        }),
+        r.createEl("p", {
+          text: i("ocr_state_update_safety"),
+          cls: "setting-item-description",
+        }),
+        r
+          .createEl("button", {
+            cls: "pf-action-btn mod-warning",
+            text: i("ocr_action_re_extract"),
+          })
+          .addEventListener("click", () => {
+            new ee(
+              this.app,
+              {
+                title: i("ocr_modal_title"),
+                effectLabel:
+                  i("ocr_modal_description") +
+                  " " +
+                  i("ocr_state_update_safety"),
+                confirmLabel: i("ocr_action_re_extract"),
+                cancelLabel: i("maintenance_confirm_cancel"),
+              },
+              () => this._dispatchOcrAction("rebuild")
+            ).open();
+          }));
+    } else if (t.user_state === "ready") {
+      ie(r, "ready", i("cc_state_ready"));
+      let S = n
+        ? i("ocr_state_ready")
+            .replace(
+              "{count}",
+              String(
+                (v =
+                  (y =
+                    (g = (m = t.action) == null ? void 0 : m.primary) == null
+                      ? void 0
+                      : g.scope_count) != null
+                    ? y
+                    : (h = t.pipeline_version_summary) == null
+                      ? void 0
+                      : h.total) != null
+                  ? v
+                  : ""
+              )
+            )
+            .replace("{version}", n)
+        : i("ocr_state_ready_no_version").replace(
+            "{count}",
+            String(
+              (E =
+                (x =
+                  (w = (b = t.action) == null ? void 0 : b.primary) == null
+                    ? void 0
+                    : w.scope_count) != null
+                  ? x
+                  : (k = t.pipeline_version_summary) == null
+                    ? void 0
+                    : k.total) != null
+                ? E
+                : ""
+            )
+          );
+      (r.createEl("p", { text: S, cls: "pf-status-ok" }),
+        z(r, {
+          label: i("md_ocr_workspace"),
+          onClick: () =>
+            this.app.workspace
+              .getLeaf()
+              .setViewState({ type: "paperforge-ocr-workspace" }),
+        }),
+        n &&
+          a &&
+          n !== a &&
+          r
+            .createDiv({ cls: "pf-ocr-update-banner" })
+            .createEl("span", {
+              text: i("ocr_state_update_available").replace("{version}", n),
+            }));
+    }
+    l ||
+      z(r, {
+        label: i("ocr_configure_credential"),
+        onClick: () => this._startSetupJourney(3),
+      });
+  }
+  _renderAgentDetail(e) {
+    var _, m;
+    this._renderModuleDetailShell(e, "agent");
+    let t = e.createDiv({ cls: "pf-module-body" }),
+      r = {
+        opencode: "OpenCode",
+        claude: "Claude Code",
+        codex: "Codex",
+        cursor: "Cursor",
+        windsurf: "Windsurf",
+        github_copilot: "GitHub Copilot",
+        gemini: "Gemini CLI",
+      },
+      n = {
+        opencode: ".opencode/skills",
+        claude: ".claude/skills",
+        codex: ".codex/skills",
+        cursor: ".cursor/skills",
+        windsurf: ".windsurf/skills",
+        github_copilot: ".github/skills",
+        gemini: ".gemini/skills",
+      },
+      a = this.plugin.settings.agent_platform || "opencode",
+      s = ge.join(this._getVaultBasePath(), n[a]),
+      c = j.existsSync(s),
+      l = t.createDiv({ cls: "pf-module-facts" }),
+      d = l.createDiv({ cls: "pf-module-fact" });
+    (d.createEl("span", { text: i("md_agent_platform") }),
+      d.createEl("span", { text: (_ = r[a]) != null ? _ : a }));
+    let u = l.createDiv({ cls: "pf-module-fact" });
+    (u.createEl("span", { text: i("md_agent_deployment") }),
+      u.createEl("span", {
+        text: c ? i("agent_deployed") : i("agent_not_deployed"),
+      }));
+    let f = l.createDiv({ cls: "pf-module-fact" });
+    if (
+      (f.createEl("span", { text: i("agent_live_connection") }),
+      f.createEl("span", { text: i("md_agent_connection_unknown") }),
+      this._agentPlatformDraft === null)
+    )
+      z(t, {
+        label: i("config_change"),
+        onClick: () => {
+          ((this._agentPlatformDraft = a), this.display());
+        },
+      });
+    else {
+      let g = t.createDiv({ cls: "pf-agent-config-editor" }),
+        h = g.createEl("select", {
+          attr: { "aria-label": i("md_agent_platform") },
+        }),
+        y = this.plugin.agentPlatformChoices.length
+          ? this.plugin.agentPlatformChoices
+          : Object.keys(r);
+      for (let b of y) {
+        let w = h.createEl("option", {
+          text: (m = r[b]) != null ? m : b,
+          attr: { value: b },
+        });
+        w.selected = b === this._agentPlatformDraft;
+      }
+      h.addEventListener("change", () => {
+        this._agentPlatformDraft = h.value;
+      });
+      let v = g.createDiv({ cls: "pf-agent-config-actions" });
+      (z(v, {
+        label: i("config_save"),
+        onClick: () => {
+          var w;
+          let b = (w = this._agentPlatformDraft) != null ? w : a;
+          ((this.plugin.settings.agent_platform = b),
+            this.getClient()
+              .configSet("agent_platform", b)
+              .catch(
+                (k) =>
+                  new A.Notice(
+                    `PaperForge: config set agent_platform failed: ${String(k)}`
+                  )
+              ),
+            this.plugin.saveSettings(),
+            (this._agentPlatformDraft = null),
+            this.display());
+        },
+      }),
+        z(v, {
+          label: i("config_cancel"),
+          onClick: () => {
+            ((this._agentPlatformDraft = null), this.display());
+          },
+        }),
+        z(v, {
+          label: i("config_verify"),
+          onClick: () => {
+            var k;
+            let b = (k = this._agentPlatformDraft) != null ? k : a,
+              w = j.existsSync(ge.join(this._getVaultBasePath(), n[b]));
+            new A.Notice(
+              w ? i("agent_verify_found") : i("agent_verify_missing")
+            );
+          },
+        }));
+    }
+    this._renderSkillsList(t);
+  }
+  _memoryDbStatusText(e, t) {
+    var n, a;
+    let r = (a = (n = e.reason) == null ? void 0 : n.code) != null ? a : "";
+    return e.user_state === "ready"
+      ? i("sr_db_exists") || "Active"
+      : t === "running"
+        ? i("sr_db_building") || "Building"
+        : t === "interrupted"
+          ? i("sr_db_partial") || "Partially built"
+          : t === "failed"
+            ? i("sr_db_failed") || "Build failed"
+            : r === "memory.db_missing"
+              ? i("sr_db_missing") || "Not built"
+              : r === "memory.db_corrupt"
+                ? i("sr_db_corrupt") || "Corrupted"
+                : r === "memory.index_stale"
+                  ? i("sr_db_stale") || "Index stale"
+                  : i("sr_db_missing") || "Not built";
+  }
+  _renderMemoryDetail(e) {
+    var M, $, U, J, W, N, Z, O, _e, be, qe, wt, xt;
+    this._renderModuleDetailShell(e, "memory", !1);
+    let t =
+        ($ = (M = this._capabilityState) == null ? void 0 : M.memory) != null
+          ? $
+          : X("memory"),
+      r = e.createDiv({ cls: "pf-module-body" }),
+      n = (J = (U = t.reason) == null ? void 0 : U.code) != null ? J : "",
+      a = this.getClient(),
+      s =
+        typeof (a == null ? void 0 : a.isOperationActive) == "function" &&
+        a.isOperationActive(),
+      c = t.activity_state === "running" || s,
+      l = null,
+      d = "setting-item-description";
+    if (
+      (c
+        ? ((l = (W = t.activity_label) != null ? W : i("cc_activity_running")),
+          (d = "pf-status-ok"))
+        : t.user_state === "ready"
+          ? ((l = i("md_retrieval_ready")), (d = "pf-status-ok"))
+          : ((l =
+              (Z = (N = t.reason) == null ? void 0 : N.text) != null
+                ? Z
+                : null),
+            (d = "pf-status-warn")),
+      l && r.createEl("p", { text: l, cls: d }),
+      c)
+    )
+      s &&
+        z(r, {
+          label: i("retrieval_stop"),
+          onClick: () => {
+            a.cancelActiveOperation();
+          },
+        });
+    else if (
+      (O = t.action) != null &&
+      O.primary &&
+      t.user_state !== "ready" &&
+      t.user_state !== "not_enabled"
+    ) {
+      let P = t.action.primary,
+        I =
+          "action_" +
+          ((_e = P.action_id) != null ? _e : P.verb).replace(/[.-]/g, "_"),
+        G =
+          P.label ||
+          (i(I) !== I
+            ? i(I)
+            : i("cc_action_" + P.verb) !== "cc_action_" + P.verb
+              ? i("cc_action_" + P.verb)
+              : i("cc_action_probe"));
+      z(r, {
+        label: G,
+        onClick: () => this._dispatchModuleAction("memory", t),
+      });
+    }
+    let u = (be = t.details) != null ? be : {},
+      f =
+        (wt = (qe = u.build_state) == null ? void 0 : qe.status) != null
+          ? wt
+          : "idle",
+      _ = this._memoryDbStatusText(t, f),
+      m = "vec0",
+      g = !!u.api_key_configured,
+      h = g
+        ? i("api_key_set") || "Configured"
+        : i("api_key_missing") || "Not configured",
+      y = r.createDiv({ cls: "pf-sr-info-card" }),
+      v = [
+        [i("sr_db_status") || "Database", _],
+        [i("sr_backend") || "Backend", m],
+        [i("sr_api_key") || "API Key", h],
+      ];
+    for (let [P, I] of v) {
+      let G = y.createDiv({ cls: "pf-sr-info-row" });
+      (G.createEl("span", { cls: "pf-sr-info-label", text: P }),
+        G.createEl("span", { cls: "pf-sr-info-value", text: I }));
+    }
+    let b = !g,
+      w = r.createDiv({ cls: "pf-sr-cfg" }),
+      k = w.createDiv({ cls: "pf-sr-cfg-head" });
+    k.createEl("span", {
+      cls: "pf-sr-cfg-title",
+      text: i("sr_config_label") || "\u914D\u7F6E",
+    });
+    let x = k.createEl("span", {
+        cls: "pf-sr-cfg-icon",
+        text: b ? "\u25BC" : "\u25B6",
+      }),
+      E = w.createDiv({ cls: "pf-sr-cfg-body" });
+    ((E.style.display = b ? "" : "none"),
+      k.addEventListener("click", () => {
+        let P = E.style.display !== "none";
+        ((E.style.display = P ? "none" : ""),
+          (x.textContent = P ? "\u25B6" : "\u25BC"));
+      }));
+    let S = E.createDiv({ cls: "pf-sr-cfg-row" });
+    S.createEl("label", {
+      text: i("feat_openai_key") || "API Key",
+      cls: "pf-sr-cfg-lbl",
+    });
+    let C = S.createEl("input", {
+        cls: "pf-sr-cfg-input",
+        attr: {
+          type: "password",
+          placeholder: g ? "\u2022\u2022\u2022\u2022" : "sk-...",
+        },
+      }),
+      R = null;
+    C.addEventListener("input", () => {
+      let P = C.value;
+      P &&
+        (R && clearTimeout(R),
+        (R = setTimeout(async () => {
+          ((await this._storeVectorDbCredential(P)) &&
+            ((C.value = ""),
+            (C.placeholder = "\u2022\u2022\u2022\u2022"),
+            (E.style.display = "none"),
+            (x.textContent = "\u25B6")),
+            (R = null));
+        }, 600)));
+    });
+    let F = E.createDiv({ cls: "pf-sr-cfg-row" });
+    F.createEl("label", {
+      text: i("feat_api_base_url") || "API Base URL",
+      cls: "pf-sr-cfg-lbl",
+    });
+    let D = F.createEl("input", {
+      cls: "pf-sr-cfg-input",
+      attr: { type: "text", placeholder: "https://api.openai.com/v1" },
+    });
+    ((D.value = this.plugin.settings.vector_db_api_base || ""),
+      D.addEventListener("change", () => {
+        ((this.plugin.settings.vector_db_api_base = D.value),
+          this.getClient()
+            .configSet("vector_db_api_base", D.value)
+            .catch(
+              (P) =>
+                new A.Notice(
+                  `PaperForge: config set vector_db_api_base failed: ${String(P)}`
+                )
+            ),
+          this._refreshVectorDbCredentialStatus());
+      }));
+    let L = E.createDiv({ cls: "pf-sr-cfg-row" });
+    L.createEl("label", {
+      text: i("feat_api_model") || "Model",
+      cls: "pf-sr-cfg-lbl",
+    });
+    let V = L.createEl("input", {
+      cls: "pf-sr-cfg-input",
+      attr: { type: "text", placeholder: "text-embedding-3-small" },
+    });
+    if (
+      ((V.value =
+        this.plugin.settings.vector_db_api_model || "text-embedding-3-small"),
+      V.addEventListener("change", () => {
+        ((this.plugin.settings.vector_db_api_model = V.value),
+          this.getClient()
+            .configSet("vector_db_api_model", V.value)
+            .catch(
+              (P) =>
+                new A.Notice(
+                  `PaperForge: config set vector_db_api_model failed: ${String(P)}`
+                )
+            ),
+          this._refreshVectorDbCredentialStatus());
+      }),
+      t.capability_state === "needs_action" && t.user_state !== "not_enabled")
+    ) {
+      let P = r.createDiv({ cls: "pf-sr-impact-box" });
+      P.createEl("strong", {
+        text: i("cc_badge_action_required") || "Action Required",
+      });
+      let I =
+        ((xt = t.reason) == null ? void 0 : xt.text) ||
+        i("sr_impact_db_missing") ||
+        "Smart Retrieval needs an API key and vector index.";
+      P.createEl("p", { text: I });
+    }
+    let re = r.createEl("details", { cls: "pf-sr-diagnostics" });
+    re.createEl("summary", {
+      text: i("cc_diagnostic_toggle") || "Advanced Status",
+    });
+    let ne = re.createDiv({ cls: "pf-sr-diagnostics-body" });
+    new A.Setting(ne)
+      .setName("Debug trace")
+      .setDesc(
+        "Log every client\u2194backend operation (command, ok, duration, epoch, error code \u2014 never stdin/env/values) to the console. The last 200 records stay in memory for copying."
+      )
+      .addToggle((P) =>
+        P.setValue(this.plugin.settings.debug_trace === !0).onChange(
+          async (I) => {
+            ((this.plugin.settings.debug_trace = I),
+              Ie(I),
+              await this.plugin.saveSettings());
+          }
+        )
+      )
+      .addButton((P) =>
+        P.setButtonText("Copy").onClick(() => {
+          var G;
+          let I = Ue();
+          ((G = navigator.clipboard) == null ||
+            G.writeText(I || "(trace is empty)"),
+            new A.Notice(
+              I
+                ? `Copied ${
+                    I.split(`
+`).length
+                  } trace lines`
+                : "Trace is empty"
+            ));
+        })
+      )
+      .addButton((P) =>
+        P.setButtonText("Clear").onClick(() => {
+          (er(), new A.Notice("Trace cleared"));
+        })
+      );
+    let de = this._getVaultBasePath(),
+      pe = this.plugin.settings.vector_db_api_base || "-",
+      ue = ne.createEl("table", { cls: "pf-diag-table" }),
+      Y = new Map(),
+      B = (P, I) => {
+        if (!Y.has(P)) {
+          let ye = ue.createEl("tr");
+          ye.createEl("td", { cls: "pf-diag-label", text: P });
+          let Ve = ye.createEl("td", { cls: "pf-diag-value" });
+          (Y.set(P, ye), (Ve.textContent = I));
+          return;
+        }
+        let G = Y.get(P).children[1];
+        G.textContent = I;
+      };
+    (B("FTS5 Papers", "\u2026"),
+      B("FTS5 Fresh", "\u2026"),
+      B("Needs Rebuild", "\u2026"),
+      B("", ""),
+      B("Vector Backend", "vec0 (sqlite-vec)"),
+      B("Vector Model", "\u2026"),
+      B("Vector Mode", "\u2026"),
+      B("Vector Dimension", "\u2026"),
+      B("Base URL", pe),
+      de &&
+        (this.getClient()
+          .memoryStatus()
+          .then((P) => {
+            var I;
+            (B(
+              "FTS5 Papers",
+              String(
+                (I = P == null ? void 0 : P.paper_count_db) != null ? I : "?"
+              )
+            ),
+              B("FTS5 Fresh", P != null && P.fresh ? "Yes" : "Stale"),
+              B("Needs Rebuild", P != null && P.needs_rebuild ? "Yes" : "No"));
+          })
+          .catch(() => {}),
+        this.getClient()
+          .embedStatus()
+          .then((P) => {
+            var G, ye, Ve, kt, Et, St, Ct, Pt, Rt;
+            (B(
+              "Vector Model",
+              String((G = P == null ? void 0 : P.model) != null ? G : "-")
+            ),
+              B(
+                "Vector Mode",
+                String((ye = P == null ? void 0 : P.mode) != null ? ye : "-")
+              ),
+              B(
+                "Body Chunks",
+                String(
+                  (Ve = P == null ? void 0 : P.body_chunk_count) != null
+                    ? Ve
+                    : 0
+                )
+              ),
+              B(
+                "Object Chunks",
+                String(
+                  (kt = P == null ? void 0 : P.object_chunk_count) != null
+                    ? kt
+                    : 0
+                )
+              ),
+              B(
+                "Total Chunks",
+                String(
+                  (Et = P == null ? void 0 : P.total_chunks) != null ? Et : 0
+                )
+              ));
+            let I =
+              (St = P == null ? void 0 : P.build_state) != null ? St : void 0;
+            (B(
+              "Build Status",
+              String((Ct = I == null ? void 0 : I.status) != null ? Ct : "-")
+            ),
+              B(
+                "Build Progress",
+                `${(Pt = I == null ? void 0 : I.current) != null ? Pt : "?"}/${(Rt = I == null ? void 0 : I.total) != null ? Rt : "?"}`
+              ));
+          })
+          .catch(() => {})),
+      B("", ""),
+      B("Capability State", t.capability_state),
+      B("Severity", t.severity),
+      B("Reason Code", n));
+  }
+  _dispatchModuleAction(e, t) {
+    var n, a;
+    let r = (n = t.action) == null ? void 0 : n.primary;
+    if (!r) {
+      this._probeModule(e);
+      return;
+    }
+    if (r.safety_class !== "safe" && r.confirmation_required) {
+      let s =
+          r.action_id === "ocr.run"
+            ? i("ocr_run_confirm_title")
+            : r.action_id === "embed.build"
+              ? i("embed_rebuild_title")
+              : r.label,
+        c =
+          r.action_id === "ocr.run"
+            ? i("ocr_run_confirm_body")
+            : r.action_id === "embed.build"
+              ? i("embed_rebuild_body")
+              : (a =
+                    (r.replacement_facts || []).join("; ") ||
+                    r.confirmation_prompt) != null
+                ? a
+                : i("confirmation_default_effect");
+      new ee(this.app, { title: s, effectLabel: c }, () =>
+        this._runAllowedDispatch(e, r, t)
+      ).open();
+      return;
+    }
+    this._runAllowedDispatch(e, r, t);
+  }
+  _runAllowedDispatch(e, t, r) {
+    var s, c, l;
+    let n = t.verb,
+      a = t.action_id;
+    if (n === "setup" || n === "set_config") {
+      if (e === "library") this._startSetupJourney(2);
+      else {
+        let d =
+          e === "installation" &&
+          r.reason.code === "installation.version_mismatch";
+        this._startSetupJourney(e === "ocr" || e === "memory" ? 3 : 1, d);
+      }
+      return;
+    }
+    if (n === "probe") {
+      this._probeModule(e);
+      return;
+    }
+    if (n === "update") {
+      if (a === "foundation.update") {
+        this._runUpdateAction();
+        return;
+      }
+      (new A.Notice(
+        i("update_python_manual") ||
+          "Python 3.11+ upgrade requires a manual install (python.org or your package manager)."
+      ),
+        this._probeModule(e));
+      return;
+    }
+    if (n === "install" && a === "memory.install_vector_deps") {
+      this._startSetupJourney(3);
+      return;
+    }
+    if (e === "library") {
+      if (n === "sync" || a === "library.sync") {
+        this._runManualSync();
+        return;
+      }
+    } else if (e === "ocr") {
+      if (n === "run" || a === "ocr.run") {
+        this._dispatchOcrAction("run");
+        return;
+      }
+      if (n === "rebuild_derived" || a === "ocr.rebuild_derived") {
+        this._dispatchOcrAction("rebuild");
+        return;
+      }
+      if (n === "investigate") {
+        let d = this._getVaultBasePath(),
+          u = rr(
+            r.reason.code,
+            r.reason.text,
+            (l =
+              (c = (s = r.action) == null ? void 0 : s.primary) == null
+                ? void 0
+                : c.scope_count) != null
+              ? l
+              : 0,
+            d
+          );
+        new We(
+          this.app,
+          u,
+          "https://github.com/LLLin000/PaperForge/issues/new"
+        ).open();
+        return;
+      }
+    } else if (e === "memory") {
+      if (n === "run" || n === "rebuild_index") {
+        if (a === "embed.build")
+          this._dispatchMemoryBuild("embed", "force", "embed.build");
+        else if (a === "embed.resume")
+          this._dispatchMemoryBuild("embed", "resume", "embed.resume");
+        else if (a === "memory.build" || a === "memory.rebuild")
+          this._dispatchMemoryBuild("build", void 0, a);
+        else if (a === "memory.upgrade_backend") this._runBackendMigration();
+        else {
+          (new A.Notice(
+            (i("action_unknown_pair") || "Unknown action: {verb}").replace(
+              "{verb}",
+              a || n
+            ),
+            5e3
+          ),
+            this._probeModule(e));
+          return;
+        }
+        return;
+      }
+      if (n === "restore_backup" || a === "memory.restore_backup") {
+        this.getClient()
+          .memoryRestoreBackup()
+          .catch(() => {})
+          .finally(() => {
+            this._refreshAllReadModels();
+          });
+        return;
+      }
+    }
+    (new A.Notice(
+      (i("action_unknown_pair") || "Unknown action: {verb}").replace(
+        "{verb}",
+        n
+      ),
+      5e3
+    ),
+      this._probeModule(e));
+  }
+  _runUpdateAction() {
+    this.getClient()
+      .runAction({
+        action_id: "foundation.update",
+        scope: { kind: "all" },
+        confirm: "foundation.update",
+      })
+      .then((e) => {
+        var t;
+        if (e.ok) new A.Notice(i("update_done") || "PaperForge updated");
+        else {
+          let r =
+            typeof ((t = e.payload) == null ? void 0 : t.availability_reason) ==
+            "string"
+              ? e.payload.availability_reason
+              : `exit code ${e.exitCode}`;
+          new A.Notice((i("update_failed") || "Update failed") + ": " + r);
+        }
+        this._refreshAllReadModels();
+      })
+      .catch((e) => {
+        (new A.Notice(
+          (i("update_failed") || "Update failed") + ": " + e.message
+        ),
+          this._refreshAllReadModels());
+      });
+  }
+  _runBackendMigration() {
+    this.getClient()
+      .embedMigrate()
+      .then(() => {
+        (new A.Notice(i("migrate_done") || "Backend migrated to sqlite-vec"),
+          this._refreshAllReadModels());
+      })
+      .catch((e) => {
+        (new A.Notice(
+          (i("migrate_failed") || "Backend migration failed") +
+            ": " +
+            (e.message || "unknown error")
+        ),
+          this._refreshAllReadModels());
+      });
+  }
+  _dispatchOcrAction(e) {
+    var f;
+    if (e === "run" && typeof this.plugin.requestOcrRun == "function") {
+      this.plugin.requestOcrRun(!0);
+      return;
+    }
+    let t = this.getClient();
+    if (t.isOperationActive()) {
+      new A.Notice(i("ocr_already_running"));
+      return;
+    }
+    let r = { run: i("ocr_activity_run"), rebuild: i("ocr_activity_rebuild") },
+      n = (f = this._capabilityState) != null ? f : {};
+    (n.ocr &&
+      ((n.ocr.activity_state = "running"),
+      (n.ocr.activity_label = r[e] || i("cc_activity_running")),
+      (n.ocr.activity_progress = { current: 0, total: 1 })),
+      (this.plugin._ocrProgress = { current: 0, total: 1, key: "" }),
+      this.display());
+    let a = { run: i("ocr_run_complete"), rebuild: i("ocr_rebuild_complete") },
+      s = e === "rebuild" ? "ocr.rebuild_derived" : "ocr.run",
+      c = { action_id: s, scope: { kind: "all" }, confirm: s },
+      l = !1,
+      d = [],
+      u = 0;
+    t.runAction(c, {
+      onEvent: (_) => {
+        var m, g, h, y;
+        (_.event === "cancelled" && (l = !0),
+          (_.event === "start" ||
+            _.event === "phase" ||
+            _.event === "progress" ||
+            _.event === "item_result") &&
+            ((this.plugin._ocrProgress = {
+              current: Number(
+                (m = _.current) != null ? m : this.plugin._ocrProgress.current
+              ),
+              total: Number(
+                (g = _.total) != null ? g : this.plugin._ocrProgress.total
+              ),
+              key: String(
+                (h = _.item_id) != null ? h : this.plugin._ocrProgress.key
+              ),
+            }),
+            _.event === "item_result" &&
+              (_.status === "succeeded" ||
+                _.status === "noop" ||
+                (_.status === "skipped"
+                  ? (u += 1)
+                  : d.push(String((y = _.item_id) != null ? y : "")))),
+            n.ocr &&
+              (n.ocr.activity_progress = {
+                current: this.plugin._ocrProgress.current,
+                total: this.plugin._ocrProgress.total,
+              }),
+            this.display()));
+      },
+    })
+      .then((_) => {
+        if (
+          (n.ocr &&
+            ((n.ocr.activity_state = "idle"),
+            (n.ocr.activity_label = null),
+            (n.ocr.activity_progress = null)),
+          _.ok)
+        )
+          new A.Notice(a[e] || "OCR completed");
+        else if (_.cancelled || l) new A.Notice(i("ocr_stopped_notice"));
+        else {
+          let m = d.filter(Boolean).join(", "),
+            g = _.payload,
+            h = g == null ? void 0 : g.error,
+            y =
+              typeof (g == null ? void 0 : g.availability_reason) == "string"
+                ? g.availability_reason
+                : typeof (h == null ? void 0 : h.message) == "string"
+                  ? h.message
+                  : "",
+            v = m || y,
+            b =
+              u > 0
+                ? `${v ? v + " " : ""}(${u} skipped)`
+                : v || `exit code ${_.exitCode}`;
+          new A.Notice(i("ocr_failed_notice") + ": " + b, 8e3);
+        }
+        (this._refreshAllReadModels(), this.display());
+      })
+      .catch((_) => {
+        (n.ocr &&
+          ((n.ocr.activity_state = "idle"),
+          (n.ocr.activity_label = null),
+          (n.ocr.activity_progress = null)),
+          new A.Notice(
+            i("ocr_failed_notice") +
+              ": " +
+              ((_ == null ? void 0 : _.message) || i("ocr_error_notice")),
+            8e3
+          ),
+          this._refreshAllReadModels(),
+          this.display());
+      });
+  }
+  _dispatchMemoryBuild(e, t, r) {
+    var f, _, m, g;
+    let n = this.getClient();
+    if (!n) {
+      new A.Notice(i("runtime_not_available") || "Environment unavailable");
+      return;
+    }
+    if (
+      typeof (n == null ? void 0 : n.isOperationActive) == "function" &&
+      n.isOperationActive()
+    ) {
+      new A.Notice(i("embed_already_running") || "Operation already running");
+      return;
+    }
+    let a = (f = this._capabilityState) != null ? f : {},
+      s =
+        (g =
+          (m = (_ = a.memory) == null ? void 0 : _.action) == null
+            ? void 0
+            : m.primary) == null
+          ? void 0
+          : g.action_id,
+      c;
+    if (
+      (r
+        ? (c = r)
+        : e === "embed"
+          ? t === "resume"
+            ? (c = "embed.resume")
+            : t === "force"
+              ? (c = "embed.build")
+              : s === "embed.resume" || s === "embed.build"
+                ? (c = s)
+                : (c = "embed.build")
+          : s === "memory.build" || s === "memory.rebuild"
+            ? (c = s)
+            : (c = "memory.rebuild"),
+      !{
+        embed: new Set(["embed.build", "embed.resume"]),
+        build: new Set(["memory.build", "memory.rebuild"]),
+      }[e].has(c))
+    ) {
+      new A.Notice(
+        (i("action_unknown_pair") || "Unknown action: {verb}").replace(
+          "{verb}",
+          c
+        )
+      );
+      return;
+    }
+    (a.memory &&
+      ((a.memory.activity_state = "running"),
+      (a.memory.activity_label =
+        e === "embed"
+          ? i("embed_activity_building") || "Building vector index\u2026"
+          : "Building memory\u2026")),
+      this.display());
+    let d = !1,
+      u = n.runAction(
+        { action_id: c, scope: { kind: "all" }, confirm: c },
+        {
+          onEvent: (h) => {
+            var y, v, b;
+            if ((h.event === "cancelled" && (d = !0), h.event === "progress")) {
+              let w = Number((y = h.current) != null ? y : 0),
+                k = Number((v = h.total) != null ? v : 1);
+              ((this.plugin._embedProgress = {
+                current: w,
+                total: k,
+                key: String((b = h.item_id) != null ? b : ""),
+              }),
+                a.memory &&
+                  (a.memory.activity_progress = { current: w, total: k }),
+                this.display());
+            }
+          },
+        }
+      );
+    (async () => {
+      var h, y;
+      try {
+        let v = await u;
+        if (
+          (a.memory &&
+            ((a.memory.activity_state = "idle"),
+            (a.memory.activity_label = null),
+            (a.memory.activity_progress = null)),
+          v.ok)
+        )
+          new A.Notice(
+            e === "embed"
+              ? i("embed_build_complete")
+              : i("feat_memory_rebuild_done")
+          );
+        else if (v.cancelled || d) new A.Notice(i("embed_build_stopped"), 8e3);
+        else {
+          let b =
+            typeof ((h = v.payload) == null ? void 0 : h.availability_reason) ==
+            "string"
+              ? v.payload.availability_reason
+              : `exit code ${v.exitCode}`;
+          new A.Notice(
+            (i("sr_build_failed_notice") || "Build failed: {detail}").replace(
+              "{detail}",
+              b
+            ),
+            8e3
+          );
+        }
+      } catch (v) {
+        (a.memory &&
+          ((a.memory.activity_state = "idle"),
+          (a.memory.activity_label = null),
+          (a.memory.activity_progress = null)),
+          new A.Notice(
+            (i("sr_build_failed_notice") || "Build failed: {detail}").replace(
+              "{detail}",
+              (y = v == null ? void 0 : v.message) != null ? y : String(v)
+            ),
+            8e3
+          ));
+      } finally {
+        (this._refreshAllReadModels(), this.display());
+      }
+    })();
+  }
+  _renderModuleDetailShell(e, t, r = !0) {
+    var h, y, v, b, w, k;
+    (e.classList.add("pf-module-detail"),
+      e
+        .createEl("button", {
+          cls: "pf-back-btn",
+          text: i("btn_back_to_overview"),
+        })
+        .addEventListener("click", () => {
+          (this._detailReturn
+            ? ((this.activeTab = this._detailReturn.tab),
+              (this._focusTargetId = this._detailReturn.selector),
+              (this._detailReturn = null))
+            : ((this.activeTab = "overview"),
+              (this._focusTargetId = `button.pf-cc-module-card[data-module="${t}"]`)),
+            (this._selectedDetailModule = ""),
+            this.display());
+        }));
+    let a = this._getOverviewModules(),
+      s = e.createDiv({
+        cls: "pf-module-detail-selector",
+        attr: { role: "tablist", "aria-label": i("md_module_switcher") },
+      });
+    for (let x of a)
+      s.createEl("button", {
+        cls:
+          "pf-module-detail-btn" +
+          (x.id === t ? " pf-module-detail-btn--active" : ""),
+        text: x.label,
+        attr: { role: "tab", "aria-selected": String(x.id === t) },
+      }).addEventListener("click", () => {
+        ((this._selectedDetailModule = x.id),
+          (this._focusTargetId = "#pf-" + x.id + "-detail-heading"),
+          this.display());
+      });
+    let c = e.createEl("select", {
+      cls: "pf-module-switcher",
+      attr: { "aria-label": i("md_module_switcher") },
+    });
+    for (let x of a) {
+      let E = c.createEl("option", { text: x.label, attr: { value: x.id } });
+      E.selected = x.id === t;
+    }
+    c.addEventListener("change", () => {
+      ((this._selectedDetailModule = c.value),
+        (this._focusTargetId = "#pf-" + c.value + "-detail-heading"),
+        this.display());
+    });
+    let l =
+        t === "agent"
+          ? this._getAgentPlaceholderEnvelope()
+          : (y = (h = this._capabilityState) == null ? void 0 : h[t]) != null
+            ? y
+            : X(t),
+      d =
+        (v = l.user_state) != null
+          ? v
+          : l.capability_state === "ready"
+            ? "ready"
+            : "action_required",
+      u = e.createDiv({
+        cls: "pf-module-summary",
+        attr: { "aria-live": "polite" },
+      }),
+      f = u.createDiv({ cls: "pf-module-summary-header" });
+    (f.createEl("h2", {
+      cls: "pf-module-summary-name pf-module-detail-heading",
+      text: this._getUserModuleName(t),
+      attr: { id: "pf-" + t + "-detail-heading", tabindex: "-1" },
+    }),
+      ie(f, d, this._getUserStateLabel(d)),
+      u.createEl("p", {
+        cls: "pf-module-summary-consequence",
+        text: this._getModuleConsequence(t, l),
+      }),
+      l.activity_state === "running" &&
+        Vt(u, {
+          label: i("cc_activity_running"),
+          progress: l.activity_progress,
+        }));
+    let _ = (b = l.action) == null ? void 0 : b.primary;
+    if (r && _ && d !== "ready" && t !== "agent") {
+      let x =
+          "action_" +
+          ((w = _.action_id) != null ? w : _.verb).replace(/[.-]/g, "_"),
+        E = i(x),
+        S =
+          E !== x
+            ? E
+            : i("cc_action_" + _.verb) !== "cc_action_" + _.verb
+              ? i("cc_action_" + _.verb)
+              : i("cc_action_probe");
+      z(u, {
+        label: S,
+        loading: l.activity_state === "running",
+        onClick: () => this._dispatchModuleAction(t, l),
+      });
+    }
+    let m = u.createEl("details", { cls: "pf-module-diagnostics" });
+    m.createEl("summary", { text: i("advanced_diagnostics") });
+    let g = m.createDiv({ cls: "pf-module-diagnostics-body" });
+    (g.createEl("div", { text: i("cc_diag_module") + ": " + l.module }),
+      g.createEl("div", {
+        text: i("cc_diag_state") + ": " + this._getUserStateLabel(d),
+      }),
+      g.createEl("div", { text: i("cc_diag_severity") + ": " + l.severity }),
+      g.createEl("div", {
+        text: i("cc_diag_activity") + ": " + l.activity_state,
+      }),
+      g.createEl("div", { text: i("cc_diag_reason") + ": " + l.reason.code }),
+      g.createEl("div", {
+        text: i("cc_diag_ttl") + ": " + l.ttl_seconds + "s",
+      }));
+    for (let x of (k = l.notices) != null ? k : [])
+      g.createEl("div", { text: x.message });
+    g.createEl("div", {
+      text:
+        i("cc_diag_updated") + ": " + new Date(l.updated_at).toLocaleString(),
+    });
+  }
+  _renderHelpTab(e) {
+    (e.createEl("div", {
+      cls: "pf-cc-eyebrow",
+      text: i("help_eyebrow") || "help",
+    }),
+      e.createEl("h1", { cls: "pf-cc-title", text: i("help_title") || "Help" }),
+      e.createEl("p", {
+        cls: "pf-cc-lede",
+        text:
+          i("help_lede") ||
+          "Open the relevant module, or copy a diagnostic for support.",
+      }));
+    let t = e.createEl("p", {
+        cls: "pf-help-loading",
+        text: "Loading help content\u2026",
+      }),
+      r = lt(this.app),
+      n = "https://api.github.com/repos/LLLin000/PaperForge/contents/docs/help",
+      a = ["guide", "faq", "support"],
+      s = this;
+    Promise.all(
+      a.map((c) =>
+        fetch(`${n}/${r}/${c}.md`)
+          .then((l) => (l.ok ? l.json() : Promise.reject()))
+          .then((l) => {
+            let d = atob(l.content.replace(/\n/g, "")),
+              u = new Uint8Array(d.length);
+            for (let f = 0; f < d.length; f++) u[f] = d.charCodeAt(f);
+            return new TextDecoder().decode(u);
+          })
+          .then((l) => ({ name: c, text: l }))
+          .catch(() => ({ name: c, text: "" }))
+      )
+    )
+      .then((c) => {
+        t.remove();
+        for (let { name: l, text: d } of c) {
+          if (!d) continue;
+          let u = d.match(/^#\s+(.+)/m),
+            f = u ? u[1] : l,
+            _ = d.replace(/^#\s+.+(\r?\n|$)/, "").trim(),
+            m = e.createEl("details", {
+              cls: "pf-help-section",
+              attr: l === "support" ? { open: "true" } : {},
+            });
+          m.createEl("summary", { cls: "pf-help-section-title", text: f });
+          let g = m.createDiv({ cls: "pf-help-section-body" });
+          l === "support"
+            ? (A.MarkdownRenderer.render(s.app, _, g, "", s.plugin),
+              g
+                .createEl("button", {
+                  cls: "pf-help-diagnostic-btn",
+                  text: i("help_copy") || "Copy Support Diagnostic",
+                })
+                .addEventListener("click", () => s._buildAndCopyDiagnostic()))
+            : A.MarkdownRenderer.render(s.app, _, g, "", s.plugin);
+        }
+      })
+      .catch(() => {
+        t.setText(i("help_load_error") || "Failed to load help content.");
+      });
+  }
+  _runManualSync() {
+    var n, a;
+    let e = (n = this.app.vault.adapter.basePath) != null ? n : "",
+      t = this.getClient();
+    if (!t) {
+      new A.Notice(i("runtime_not_available") || "Environment unavailable");
+      return;
+    }
+    let r = (a = this._capabilityState) != null ? a : {};
+    (r.library &&
+      ((r.library.activity_state = "running"),
+      (r.library.activity_label = "Syncing library\u2026")),
+      (this.plugin._autoSyncRunning = !0),
+      (this._libraryRunning = !0),
+      this.display(),
+      (async () => {
+        let s = 1;
+        try {
+          let c = await t.sync();
+          ((s = (c == null ? void 0 : c.ok) === !1 ? 1 : 0),
+            s === 0 &&
+              ((this._lastSyncTime = new Date().toLocaleTimeString()),
+              (this.plugin._lastSyncTime = this._lastSyncTime),
+              ke(JSON.stringify(c), { runAction: (l) => t.runAction(l) })));
+        } catch (c) {
+          new A.Notice(
+            `Sync failed: ${c instanceof Error ? c.message : String(c)}`,
+            8e3
+          );
+        } finally {
+          ((this.plugin._autoSyncRunning = !1),
+            (this._libraryRunning = !1),
+            (this._memoryStatusText = null),
+            r.library &&
+              ((r.library.activity_state = "idle"),
+              (r.library.activity_label = null)),
+            this._refreshAllReadModels(s),
+            this._refreshSnapshots(e),
+            Je(this.app, this.plugin, e));
+        }
+      })());
+  }
+  _refreshSnapshots(e) {
+    ((this._refreshPending = !0),
+      this.getClient()
+        .runtimeHealth()
+        .catch(() => {})
+        .finally(() => {
+          var n, a, s, c, l, d;
+          this._refreshPending = !1;
+          let t = (n = this._capabilityState) == null ? void 0 : n.memory,
+            r = (a = this._capabilityState) == null ? void 0 : a.embed;
+          ((this._memoryStatusText =
+            t && (c = (s = t.reason) == null ? void 0 : s.text) != null
+              ? c
+              : null),
+            (this._embedStatusText =
+              r && (d = (l = r.reason) == null ? void 0 : l.text) != null
+                ? d
+                : null),
+            this.display());
+        }));
+  }
+  _debouncedSave() {
+    (clearTimeout(this._saveTimeout),
+      (this._saveTimeout = setTimeout(() => this.plugin.saveSettings(), 500)));
+  }
+  _renderReleaseNotesTab(e) {
+    (e.createEl("h2", { text: "\u66F4\u65B0\u4E0E\u624B\u518C" }),
+      e.createEl("h3", { text: "\u7248\u672C\u66F4\u65B0\u8BB0\u5F55" }));
+    let t = or.default.versions || [];
+    for (let a of t) {
+      let s = e.createEl("div", { cls: "paperforge-release-card" }),
+        c = s.createEl("div", { cls: "paperforge-release-header" });
+      if (
+        (c.createEl("strong", { text: `v${a.version} \u2014 ${a.title}` }),
+        c.createEl("span", {
+          cls: "paperforge-release-date",
+          text: `  (${a.date})`,
+        }),
+        a.breaking_or_migration && a.breaking_or_migration.length > 0)
+      ) {
+        let l = s.createEl("div", { cls: "paperforge-release-section" });
+        l.createEl("div", {
+          cls: "paperforge-release-label",
+          text: "\u884C\u4E3A\u53D8\u66F4 / \u8FC1\u79FB\u6CE8\u610F",
+        });
+        for (let d of a.breaking_or_migration)
+          l.createEl("div", {
+            cls: "paperforge-release-item",
+            text: `\u2022 ${d}`,
+          });
+      }
+      if (a.new_features && a.new_features.length > 0) {
+        let l = s.createEl("div", { cls: "paperforge-release-section" });
+        l.createEl("div", {
+          cls: "paperforge-release-label",
+          text: "\u65B0\u529F\u80FD",
+        });
+        for (let d of a.new_features)
+          l.createEl("div", {
+            cls: "paperforge-release-item",
+            text: `\u2022 ${d}`,
+          });
+      }
+      if (a.fixes && a.fixes.length > 0) {
+        let l = s.createEl("div", { cls: "paperforge-release-section" });
+        l.createEl("div", {
+          cls: "paperforge-release-label",
+          text: "\u4FEE\u590D",
+        });
+        for (let d of a.fixes)
+          l.createEl("div", {
+            cls: "paperforge-release-item",
+            text: `\u2022 ${d}`,
+          });
+      }
+      if (a.recommended_actions && a.recommended_actions.length > 0) {
+        let l = s.createEl("div", {
+          cls: "paperforge-release-section paperforge-release-recommended",
+        });
+        l.createEl("div", {
+          cls: "paperforge-release-label",
+          text: "\u5EFA\u8BAE\u64CD\u4F5C",
+        });
+        for (let d of a.recommended_actions)
+          l.createEl("div", {
+            cls: "paperforge-release-item paperforge-release-item-bold",
+            text: `\u2022 ${d}`,
+          });
+      }
+    }
+    (e.createEl("h3", { text: "\u4F7F\u7528\u624B\u518C" }),
+      e
+        .createEl("div", { cls: "paperforge-manual-links" })
+        .createEl("a", {
+          text: "\u2192 \u67E5\u770B\u5B8C\u6574\u4F7F\u7528\u624B\u518C\uFF08GitHub\uFF09",
+          href: "https://github.com/LLLin000/PaperForge/blob/master/docs/user-manual.md",
+        })
+        .setAttr("target", "_blank"));
+  }
+  _initCapabilityState() {
+    let e = this.plugin.settings.capabilityState;
+    ((this._capabilityState = Nt(e != null ? e : {}, we)),
+      this._persistCapabilityState());
+  }
+  _persistCapabilityState() {
+    this._capabilityState &&
+      ((this.plugin.settings.capabilityState = this._capabilityState),
+      this.plugin.saveSettings());
+  }
+  _probeModule(e, t) {
+    var l, d, u, f, _;
+    if (this._probing.has(e)) return;
+    this._probing.add(e);
+    let r = (l = this._capabilityState) == null ? void 0 : l[e],
+      n = {
+        schema_version: 2,
+        module: e,
+        capability_state:
+          (d = r == null ? void 0 : r.capability_state) != null ? d : "unknown",
+        activity_state: "running",
+        activity_label: "Probing...",
+        activity_progress: null,
+        severity: "unknown",
+        reason: { code: `${e}.probing`, text: `Checking ${e} status...` },
+        action: { primary: Fe(e) },
+        notices: (u = r == null ? void 0 : r.notices) != null ? u : [],
+        user_state: "checking",
+        capability_kind:
+          e === "installation" || e === "library" ? "required" : "optional",
+        maintenance_eligible: !1,
+        user_visible_failure: !1,
+        user_impact: null,
+        updated_at: new Date().toISOString(),
+        ttl_seconds: (f = r == null ? void 0 : r.ttl_seconds) != null ? f : 0,
+      };
+    this._updateCapabilityEnvelope(e, n);
+    let a = this._getVaultBasePath();
+    if (!this._resolveRuntimeCommand(a)) {
+      if ((this._probing.delete(e), e === "installation")) {
+        let m = {
+          schema_version: 2,
+          module: "installation",
+          capability_state: "unknown",
+          activity_state: "idle",
+          activity_label: null,
+          activity_progress: null,
+          severity: "error",
+          reason: {
+            code: "installation.no_python",
+            text: "No Python found. Run the Setup Wizard to install the managed runtime.",
+          },
+          action: { primary: at() },
+          notices: [],
+          user_state: "setup_required",
+          capability_kind: "required",
+          maintenance_eligible: !1,
+          user_visible_failure: !0,
+          user_impact: "PaperForge cannot run without Python.",
+          updated_at: new Date().toISOString(),
+          ttl_seconds: 60,
+        };
+        this._updateCapabilityEnvelope(e, m);
+      } else this._updateCapabilityEnvelope(e, Me(e));
+      return;
+    }
+    this.getClient()
+      .probe(e, {
+        expectedVersion:
+          e === "installation"
+            ? (_ = this.plugin.manifest) == null
+              ? void 0
+              : _.version
+            : void 0,
+        lastOperationExitCode:
+          e === "library" && t != null && t !== 0 ? t : void 0,
+      })
+      .then((m) => {
+        (this._probing.delete(e),
+          Ke(m, e)
+            ? this._updateCapabilityEnvelope(e, m)
+            : (console.warn(
+                `[PaperForge] Probe ${e}: invalid envelope schema`,
+                m
+              ),
+              this._updateCapabilityEnvelope(e, Me(e))));
+      })
+      .catch((m) => {
+        var g, h, y;
+        if (
+          (this._probing.delete(e),
+          e === "installation" &&
+            (((g = m.message) != null && g.includes("runtime not ready")) ||
+              ((h = m.message) != null &&
+                h.includes("no managed runtime pointer")) ||
+              ((y = m.message) != null && y.includes("not ready"))))
+        ) {
+          let v = {
+            schema_version: 2,
+            module: "installation",
+            capability_state: "unknown",
+            activity_state: "idle",
+            activity_label: null,
+            activity_progress: null,
+            severity: "error",
+            reason: {
+              code: "installation.no_python",
+              text: "No Python found. Run the Setup Wizard to install the managed runtime.",
+            },
+            action: { primary: at() },
+            notices: [],
+            user_state: "setup_required",
+            capability_kind: "required",
+            maintenance_eligible: !1,
+            user_visible_failure: !0,
+            user_impact: "PaperForge cannot run without Python.",
+            updated_at: new Date().toISOString(),
+            ttl_seconds: 60,
+          };
+          this._updateCapabilityEnvelope(e, v);
+        } else
+          (console.warn(`[PaperForge] Probe ${e} failed:`, m.message),
+            this._updateCapabilityEnvelope(e, Me(e)));
+      });
+  }
+  _updateCapabilityEnvelope(e, t) {
+    this._capabilityState || (this._capabilityState = {});
+    let r = this._capabilityState[t.module];
+    (Jt(r, t) && this._lastKnownState.set(e, Wt(t)),
+      e === "installation" &&
+        t.user_state === "ready" &&
+        (this._setupReinstallRequested = !1),
+      (this._capabilityState[t.module] = t),
+      this._persistCapabilityState(),
+      (r == null ? void 0 : r.activity_state) === "running" &&
+        t.activity_state !== "running" &&
+        new A.Notice(i("cc_notice_refreshed"), 3e3),
+      this._displayInProgress || this.display());
+  }
+  _ccBadgeKey(e, t) {
+    return e.activity_state === "running"
+      ? "cc_badge_checking"
+      : e.severity === "ok"
+        ? "cc_badge_ok"
+        : e.severity === "error" && t === "installation"
+          ? "cc_badge_setup"
+          : e.severity === "warning" || e.severity === "error"
+            ? "cc_badge_attention"
+            : "cc_badge_pending";
+  }
+  _sevClass(e, t) {
+    return t === "running"
+      ? "checking"
+      : e === "error"
+        ? "error"
+        : e === "warning"
+          ? "warn"
+          : e === "unknown"
+            ? "unknown"
+            : "ok";
+  }
+  _localizeReason(e, t) {
+    let r = "cc_reason_" + e.replace(/\./g, "_"),
+      n = i(r);
+    if (n !== r) return n.replace("{module}", t);
+    let s = "cc_reason_" + e.replace(/^[a-z]+\./, ""),
+      c = i(s);
+    return c === s ? null : c.replace("{module}", t);
+  }
+  _renderCard(e, t, r) {
+    let n = r,
+      a = this._sevClass(n.severity, n.activity_state),
+      s = Ce._REAL_PROBE.has(t),
+      c = Ce._NAVIGABLE.has(t),
+      l = e.createEl("div", {
+        cls: "pf-cc-card pf-open-module-btn",
+        attr: {
+          role: "listitem",
+          tabindex: "0",
+          "data-module": t,
+          "aria-label": `${i("cc_module_" + t)} \u2014 ${i(this._ccBadgeKey(n, t))}`,
+        },
+      }),
+      d = l.createEl("div", { cls: "pf-cc-card-header" }),
+      u = d.createEl("div", { cls: "pf-cc-card-name-area" });
+    if (c) {
+      let x =
+          t === "installation"
+            ? i("module_detail_open_installation")
+            : t === "library"
+              ? i("module_detail_open_library")
+              : t === "ocr"
+                ? i("module_detail_open_ocr")
+                : t === "memory"
+                  ? i("module_detail_open_memory")
+                  : t === "help"
+                    ? i("module_detail_open_help")
+                    : i("md_select_installation"),
+        E = u.createEl("button", {
+          cls: "pf-open-module-btn",
+          text: i("cc_module_" + t),
+          attr: { "data-module": t, "aria-label": x },
+        });
+      (E.addEventListener("click", () => this._handleCardNavigation(t)),
+        E.addEventListener("keydown", (S) => {
+          (S.key === "Enter" || S.key === " ") &&
+            (S.preventDefault(), this._handleCardNavigation(t));
+        }));
+    } else
+      u.createEl("div", { cls: "pf-cc-card-name", text: i("cc_module_" + t) });
+    d.createEl("div", {
+      cls: `pf-cc-card-badge pf-cc-card-badge--${a}`,
+      text: i(this._ccBadgeKey(n, t)),
+    });
+    let f;
+    if (!s)
+      f = i("cc_reason_placeholder").replace("{module}", i("cc_module_" + t));
+    else {
+      let x = this._localizeReason(n.reason.code, t);
+      f = x != null ? x : n.reason.text;
+    }
+    if (
+      (l.createEl("div", { cls: "pf-cc-card-reason", text: f }),
+      n.activity_state === "running" && n.activity_label)
+    ) {
+      let x = l.createEl("div", {
+        cls: "pf-cc-card-activity",
+        attr: { "aria-live": "polite" },
+      });
+      if (
+        (x.createEl("span", { text: n.activity_label }),
+        n.activity_progress && n.activity_progress.total > 0)
+      ) {
+        let E = Math.round(
+            (n.activity_progress.current / n.activity_progress.total) * 100
+          ),
+          C = x
+            .createEl("div", {
+              cls: "pf-cc-card-progress",
+              attr: {
+                role: "progressbar",
+                "aria-valuenow": String(n.activity_progress.current),
+                "aria-valuemin": "0",
+                "aria-valuemax": String(n.activity_progress.total),
+              },
+            })
+            .createEl("div", { cls: "pf-cc-card-progress-fill" });
+        C.style.width = E + "%";
+      }
+    }
+    let _ = l.createEl("div", { cls: "pf-cc-card-footer" });
+    if (s && n.action.primary && !It(n)) {
+      let x = Bt(n),
+        S =
+          x.kind === "setup"
+            ? "pf-cc-card-action pf-cc-card-action--primary"
+            : "pf-cc-card-action";
+      _.createEl("button", {
+        cls: S,
+        text: x.label,
+        attr: { "aria-label": x.label },
+      }).addEventListener("click", () => {
+        x.kind === "setup"
+          ? this._startSetupJourney(1)
+          : this._dispatchModuleAction(t, n);
+      });
+    }
+    let m = l.createEl("details", { cls: "pf-cc-card-diagnostic" });
+    m.createEl("summary", { text: i("cc_diagnostic_toggle") });
+    let g = m.createEl("div", { cls: "pf-cc-card-diagnostic-body" }),
+      h = i("cc_state_" + n.capability_state) || n.capability_state,
+      y = i("cc_severity_" + n.severity) || n.severity,
+      v = i("cc_activity_" + n.activity_state) || n.activity_state,
+      b;
+    try {
+      b = new Date(n.updated_at).toLocaleString();
+    } catch (x) {
+      b = n.updated_at;
+    }
+    (g.createEl("div", { text: `${i("cc_diag_module")}: ${n.module}` }),
+      g.createEl("div", { text: `${i("cc_diag_state")}: ${h}` }),
+      g.createEl("div", { text: `${i("cc_diag_severity")}: ${y}` }),
+      g.createEl("div", { text: `${i("cc_diag_activity")}: ${v}` }));
+    let w = g.createEl("div");
+    w.appendText(i("cc_diag_reason") + ": " + f + " ");
+    let k = w.createEl("code", { text: n.reason.code });
+    (g.createEl("div", {
+      text: `${i("cc_diag_ttl")}: ${String(n.ttl_seconds)}s`,
+    }),
+      g.createEl("div", { text: `${i("cc_diag_updated")}: ${b}` }));
+  }
+  _handleCardNavigation(e) {
+    (e === "help"
+      ? ((this.activeTab = "help"),
+        (this._selectedDetailModule = ""),
+        (this._focusTargetId = "div.pf-open-module-btn[data-module=help]"))
+      : ((this.activeTab = "module-detail"),
+        (this._selectedDetailModule = e),
+        (this._focusTargetId = "#pf-" + e + "-detail-heading")),
+      this.display());
+  }
+  _renderControlCenter(e) {
+    var S, C, R, F;
+    let t = e.createEl("div", { cls: "pf-control-center" }),
+      r = (S = this._capabilityState) != null ? S : {};
+    (t.createEl("div", {
+      cls: "pf-cc-eyebrow",
+      text: i("cc_eyebrow") || "control center",
+    }),
+      t.createEl("h1", {
+        cls: "pf-cc-title",
+        text: i("cc_title") || "Your literature pipeline",
+      }),
+      t.createEl("p", {
+        cls: "pf-cc-lede",
+        text:
+          i("cc_lede") ||
+          "See what is working and what needs attention across your pipeline.",
+      }));
+    let n = (C = r.installation) != null ? C : X("installation"),
+      a = (R = r.library) != null ? R : X("library"),
+      s = n.user_state === "ready",
+      c = a.user_state === "ready",
+      l = s && c,
+      d = [n, a].some((D) => D.user_state === "checking"),
+      u = Object.values(r).filter(
+        (D) =>
+          D.user_state &&
+          D.user_state !== "ready" &&
+          D.user_state !== "not_enabled"
+      ).length,
+      f = t.createEl("div", { cls: "pf-cc-summary" }),
+      _ = l ? "ready" : d ? "checking" : "attention",
+      m = l
+        ? i("cc_badge_ready") || "Ready"
+        : d
+          ? i("cc_badge_checking") || "Checking"
+          : i("cc_badge_attention") || "Needs attention";
+    f.createEl("span", {
+      cls: `pf-cc-summary-badge pf-cc-summary-badge--${_}`,
+      text: m,
+    });
+    let g = f.createDiv({ cls: "pf-cc-summary-copy" }),
+      h = l
+        ? i("cc_summary_ready")
+        : d
+          ? i("cc_summary_checking")
+          : this.plugin.settings._setup_complete === !1
+            ? i("cc_summary_incomplete")
+            : i("cc_summary_attention"),
+      y = l
+        ? i("cc_summary_ready_body")
+        : d
+          ? i("cc_summary_checking_body")
+          : this.plugin.settings._setup_complete === !1
+            ? i("cc_summary_incomplete_body")
+            : i("cc_summary_attention_body");
+    (g.createEl("strong", { text: h }),
+      g.createEl("span", { cls: "caption", text: y }));
+    let v = f.createDiv({ cls: "pf-cc-summary-meta" }),
+      b = v.createEl("span");
+    (b.createEl("strong", { text: String(u) }),
+      b.appendText(" " + (i("cc_needs_attention") || "item needs attention")));
+    let w = Object.values(r)
+      .map((D) => D.updated_at)
+      .filter(Boolean)
+      .sort()
+      .pop();
+    (v.createEl("span", {
+      text: w
+        ? (i("cc_last_checked") || "Checked just now: ") +
+          new Date(w).toLocaleString()
+        : i("cc_checked_pending") || "Not checked yet",
+    }),
+      v
+        .createEl("button", {
+          cls: "pf-cc-summary-refresh",
+          text: i("cc_refresh_btn") || "Refresh status",
+        })
+        .addEventListener("click", () => this._refreshAllModules()));
+    let x = t.createDiv({ cls: "pf-cc-section-head" });
+    (x.createEl("div", {
+      cls: "pf-cc-eyebrow",
+      text: i("cc_modules_header") || "modules",
+    }),
+      x.createEl("span", {
+        cls: "caption",
+        text:
+          i("cc_optional_note") ||
+          "Optional modules do not affect core readiness.",
+      }));
+    let E = t.createDiv({ cls: "pf-cc-module-list" });
+    for (let [D, L] of this._getOverviewModules().entries()) {
+      let V =
+        L.id === "agent"
+          ? this._getAgentPlaceholderEnvelope()
+          : (F = r[L.id]) != null
+            ? F
+            : X(L.id);
+      this._renderOverviewCard(E, L.id, L.label, V, D + 1);
+    }
+  }
+  _getAgentPlaceholderEnvelope() {
+    var a;
+    let e = this.plugin.settings.agent_platform || "opencode",
+      t = {
+        opencode: ".opencode/skills",
+        claude: ".claude/skills",
+        codex: ".codex/skills",
+        cursor: ".cursor/skills",
+        windsurf: ".windsurf/skills",
+        github_copilot: ".github/skills",
+        gemini: ".gemini/skills",
+      },
+      r = ge.join(
+        this._getVaultBasePath(),
+        (a = t[e]) != null ? a : t.opencode,
+        "paperforge",
+        "SKILL.md"
+      ),
+      n = j.existsSync(r);
+    return {
+      schema_version: 2,
+      module: "agent",
+      capability_state: n ? "ready" : "needs_action",
+      activity_state: "idle",
+      activity_label: null,
+      activity_progress: null,
+      severity: n ? "ok" : "warning",
+      reason: {
+        code: n ? "agent.skills_deployed" : "agent.skills_not_deployed",
+        text: n
+          ? "PaperForge Skills are deployed for the selected platform."
+          : "PaperForge Skills have not been deployed for the selected platform.",
+      },
+      action: { primary: null },
+      notices: [],
+      user_state: n ? "ready" : "not_enabled",
+      capability_kind: "optional",
+      maintenance_eligible: !1,
+      user_visible_failure: !1,
+      user_impact: null,
+      updated_at: new Date().toISOString(),
+      ttl_seconds: 300,
+    };
+  }
+  _renderOverviewCard(e, t, r, n, a) {
+    var l, d;
+    let s = e.createEl("div", {
+      cls: "pf-cc-module-card pf-open-module-btn",
+      attr: {
+        "data-module": t,
+        "aria-label": r + " \u2014 " + this._getUserStateLabel(n.user_state),
+        role: "button",
+        tabindex: "0",
+      },
+    });
+    ((s.style.cursor = "pointer"),
+      s.createEl("span", {
+        cls: "pf-cc-num",
+        text: String(a).padStart(2, "0"),
+      }),
+      s.createEl("span", { cls: "pf-cc-card-name", text: r }),
+      ie(s, n.user_state, this._getUserStateLabel(n.user_state)),
+      s.createEl("span", {
+        cls: "pf-cc-card-sentence",
+        text: this._getModuleConsequence(t, n),
+      }));
+    let c =
+      n.user_state === "ready" &&
+      (d = (l = n.action) == null ? void 0 : l.primary) != null &&
+      d.scope_count &&
+      n.action.primary.scope_count > 1
+        ? (i("cc_metric_papers") || "Papers: ") + n.action.primary.scope_count
+        : n.updated_at && n.updated_at !== new Date(0).toISOString()
+          ? (i("cc_last_checked") || "") +
+            new Date(n.updated_at).toLocaleString()
+          : "";
+    (s.createEl("span", { cls: "pf-cc-card-metric", text: c }),
+      s.createEl("span", { cls: "pf-cc-card-arrow", text: "\u2192" }),
+      s.addEventListener("click", () => this._handleCardNavigation(t)));
+  }
+  _getUserStateLabel(e) {
+    return i("cc_badge_" + e);
+  }
+  _getModuleConsequence(e, t) {
+    var d, u, f;
+    let r =
+        (d = t.user_state) != null
+          ? d
+          : t.capability_state === "ready"
+            ? "ready"
+            : "action_required",
+      n = "cc_consequence_" + e + "_" + r,
+      a = i(n);
+    if (a && a !== n) return a;
+    let s = this._localizeReason(
+      (f = (u = t.reason) == null ? void 0 : u.code) != null ? f : "",
+      this._getUserModuleName(e)
+    );
+    if (s) return s;
+    let c = "cc_consequence_" + r,
+      l = i(c);
+    return l !== c ? l : i("cc_consequence_default");
+  }
+  _applyStaleTolerance() {
+    if (!this._capabilityState) return;
+    let e = !1;
+    for (let t of we) {
+      let r = this._capabilityState[t];
+      r && st(r) && ((this._capabilityState[t] = it(t)), (e = !0));
+    }
+    e && this._persistCapabilityState();
+  }
+  _refreshAllModules() {
+    this._refreshAllReadModels();
+  }
+  _refreshAllReadModels(e) {
+    var r;
+    if (
+      (this.getClient().invalidateCache(),
+      !((r = this.app.vault.adapter.basePath) != null ? r : ""))
+    ) {
+      this._probing.clear();
+      return;
+    }
+    this._probing.clear();
+    for (let n of we) this._probing.add(n);
+    this.getClient()
+      .probeAll()
+      .then((n) => {
+        var l, d, u, f, _, m;
+        this._probing.clear();
+        for (let [g, h] of Object.entries((l = n.modules) != null ? l : {}))
+          Ke(h, g) && this._updateCapabilityEnvelope(g, h);
+        e != null && e !== 0 && this._probeModule("library", e);
+        let a =
+            (u = (d = n.modules) == null ? void 0 : d.maintenance) != null
+              ? u
+              : null,
+          s = (f = a == null ? void 0 : a.orphan) != null ? f : {},
+          c = (_ = s.count) != null ? _ : 0;
+        (c > 0 &&
+          !this._lastOrphanCount &&
+          this._openOrphanModal((m = s.orphans) != null ? m : []),
+          (this._lastOrphanCount = c));
+      })
+      .catch(() => {
+        (this._probing.clear(), this.display());
+      });
+  }
+  _openOrphanModal(e) {
+    var a;
+    let t = (a = this.app.vault.adapter) == null ? void 0 : a.basePath;
+    if (!t) return;
+    let r = this._resolveRuntimeCommand(t);
+    if (!r) {
+      new A.Notice(i("next_action_runtime_unavailable"));
+      return;
+    }
+    let n = { path: r.path, extraArgs: [...r.args], source: "auto-detected" };
+    new He(this.app, e, t, n).open();
+  }
+  _buildAndCopyDiagnostic() {
+    var a, s, c;
+    let e =
+        (s = (a = this.plugin.manifest) == null ? void 0 : a.version) != null
+          ? s
+          : "unknown",
+      t = Zt(
+        (c = this._capabilityState) != null ? c : {},
+        this._lastKnownState
+      ),
+      n = Kt({ pluginVersion: e, modules: t });
+    Ut(n, () => {
+      new A.Notice(i("support_diagnostic_copied"), 3e3);
+    });
+  }
+  _persistNavMemory() {
+    ((this.plugin.settings._navMemory = { ...this._navMemory }),
+      this.plugin.saveSettings());
+  }
+  _renderSetupJourney(e) {
+    this.plugin.settings._setup_journey_started !== !0 &&
+      ((this.plugin.settings._setup_journey_started = !0),
+      this.plugin.saveSettings());
+    let t = e.createDiv({ cls: "pf-setup-journey" });
+    (t.createEl("h2", { text: i("setup_welcome") }),
+      t.createEl("p", { text: i("setup_desc"), cls: "pf-setup-desc" }));
+    let r = [
+        i("setup_stage_1"),
+        i("setup_stage_2"),
+        i("setup_stage_3"),
+        i("setup_stage_4"),
+      ],
+      n = t.createDiv({
+        cls: "pf-setup-progress",
+        attr: { "aria-label": i("setup_progress") },
+      });
+    r.forEach((s, c) => {
+      n.createEl("span", {
+        cls:
+          "pf-setup-step" +
+          (c + 1 === this._setupStage ? " pf-setup-step--active" : "") +
+          (c + 1 < this._setupStage ? " pf-setup-step--done" : ""),
+        text: String(c + 1) + ". " + s,
+        attr: { "aria-current": c + 1 === this._setupStage ? "step" : "false" },
+      });
+    });
+    let a = t.createDiv({ cls: "pf-setup-body" });
+    this._setupStage === 1
+      ? this._renderSetupStageFoundation(a)
+      : this._setupStage === 2
+        ? this._renderSetupStageLibrary(a)
+        : this._setupStage === 3
+          ? this._renderSetupStageOptionals(a)
+          : this._renderSetupStageReview(a);
+  }
+  _renderSetupStageFoundation(e) {
+    var c, l;
+    let t =
+      (l = (c = this._capabilityState) == null ? void 0 : c.installation) !=
+      null
+        ? l
+        : X("installation");
+    (((t.capability_state === "unknown" &&
+      t.updated_at === new Date(0).toISOString()) ||
+      (t.user_state === "detection_failed" &&
+        t.reason.code.endsWith(".stale"))) &&
+      !this._attemptedProbes.has("installation") &&
+      (this._attemptedProbes.add("installation"),
+      this._probeModule("installation")),
+      e.createEl("h3", { text: i("setup_foundation_title") }),
+      e.createEl("p", { text: i("setup_foundation_desc") }));
+    let n = e.createDiv({ cls: "pf-setup-field" });
+    (n.createEl("label", { text: i("setup_foundation_python") }),
+      n.createEl("span", {
+        cls: "caption",
+        text: i("setup_foundation_python_hint"),
+      }));
+    let a = n.createEl("input", {
+      cls: "pf-setup-input",
+      attr: { type: "text", placeholder: "python" },
+    });
+    ((a.value = this.plugin.settings.python_path || ""),
+      a.addEventListener("input", () => {
+        ((this.plugin.settings.python_path = a.value.trim()),
+          this._debouncedSave());
+      }),
+      ie(e, t.user_state, this._getUserStateLabel(t.user_state)),
+      e.createEl("p", {
+        text:
+          t.user_state === "ready"
+            ? i("setup_ready")
+            : this._getModuleConsequence("installation", t),
+        cls: t.user_state === "ready" ? "pf-setup-ok" : "pf-setup-status",
+      }),
+      this._setupOperation === "running"
+        ? e.createEl("p", {
+            cls: "pf-setup-status",
+            text: i("setup_installing"),
+          })
+        : (this._setupFeedback &&
+            e.createEl("p", {
+              cls:
+                this._setupOperation === "failed"
+                  ? "pf-setup-warn"
+                  : "pf-setup-ok",
+              text: this._setupFeedback,
+            }),
+          t.user_state !== "ready" &&
+          (this._setupReinstallRequested ||
+            t.reason.code === "installation.version_mismatch")
+            ? (e.createEl("p", {
+                cls: "pf-setup-warn",
+                text: i("setup_reinstall_notice"),
+              }),
+              z(e, {
+                label: i("foundation_reinstall_btn"),
+                onClick: () => this._installFoundation(!0),
+              }))
+            : (t.user_state !== "ready" || this._setupOperation === "failed") &&
+              z(e, {
+                label: i("setup_foundation_install_btn"),
+                onClick: () => this._installFoundation(!1),
+              })));
+    let s = e.createDiv({ cls: "pf-setup-nav" });
+    (this._setupOperation === "running"
+      ? z(s, {
+          label: i("setup_nav_cancel"),
+          onClick: () => {
+            var d;
+            (d = this._runtimeAbortController) == null || d.abort();
+          },
+        })
+      : z(s, {
+          label: i("setup_nav_later"),
+          onClick: () => {
+            ((this._setupOperation = "idle"),
+              (this._setupFeedback = null),
+              (this._setupStage = 1),
+              (this.activeTab = "overview"),
+              (this._setupJourneyDismissedForSession = !0),
+              this.display());
+          },
+        }),
+      z(s, {
+        label: i("setup_nav_continue"),
+        disabled: t.user_state !== "ready",
+        onClick: () => {
+          ((this._setupFeedback = null),
+            (this._setupStage = 2),
+            this.display());
+        },
+      }));
+  }
+  _renderSetupStageLibrary(e) {
+    var x, E;
+    let t =
+      (E = (x = this._capabilityState) == null ? void 0 : x.library) != null
+        ? E
+        : X("library");
+    (((t.capability_state === "unknown" &&
+      t.updated_at === new Date(0).toISOString()) ||
+      (t.user_state === "detection_failed" &&
+        t.reason.code.endsWith(".stale"))) &&
+      !this._attemptedProbes.has("library") &&
+      (this._attemptedProbes.add("library"), this._probeModule("library")),
+      e.createEl("h3", { text: i("setup_library_title") }),
+      e.createEl("p", { text: i("setup_library_desc") }),
+      ie(e, t.user_state, this._getUserStateLabel(t.user_state)),
+      e.createEl("p", {
+        text:
+          t.user_state === "ready"
+            ? i("setup_library_ready")
+            : this._getModuleConsequence("library", t),
+        cls: t.user_state === "ready" ? "pf-setup-ok" : "pf-setup-status",
+      }),
+      this._setupOperation === "running"
+        ? e.createEl("p", {
+            cls: "pf-setup-status",
+            text: i("setup_library_configuring"),
+          })
+        : this._setupFeedback &&
+          e.createEl("p", {
+            cls:
+              this._setupOperation === "failed"
+                ? "pf-setup-warn"
+                : "pf-setup-ok",
+            text: this._setupFeedback,
+          }));
+    let n = e.createDiv({ cls: "pf-setup-library-form" });
+    n.createEl("p", {
+      cls: "pf-setup-form-intro",
+      text: i("setup_library_config_desc"),
+    });
+    let a = (S, C, R, F) => {
+      let D = S.createDiv({ cls: "pf-setup-field" });
+      (D.createEl("label", { text: C }),
+        F && D.createEl("span", { cls: "caption", text: F }));
+      let L = D.createEl("input", {
+        cls: "pf-setup-input",
+        attr: { type: "text" },
+      });
+      ((L.value = this.plugin.settings[R] || ""),
+        L.addEventListener("input", () => {
+          ((this.plugin.settings[R] = L.value.trim()), this._debouncedSave());
+        }));
+    };
+    (a(
+      n,
+      i("field_zotero_data"),
+      "zotero_data_dir",
+      i("setup_library_zotero_hint")
+    ),
+      n.createEl("h4", { text: i("setup_library_folder_heading") }));
+    let s = n.createDiv({ cls: "pf-setup-folder-grid" });
+    (a(s, i("dir_system"), "system_dir"),
+      a(s, i("dir_resources"), "resources_dir"),
+      a(s, i("dir_notes"), "literature_dir"),
+      a(s, i("dir_base"), "base_dir"));
+    let c = n.createEl("button", {
+      cls: "pf-setup-verify",
+      text: i("setup_library_verify"),
+      attr: { type: "button" },
+    });
+    ((c.disabled = this._setupOperation === "running"),
+      c.addEventListener("click", () => this._applyLibraryConfiguration()));
+    let l = e.createDiv({ cls: "pf-setup-import" });
+    l.createEl("h4", { text: i("setup_bbt_title") || "BBT JSON Export" });
+    let d = this.app.vault.adapter.basePath,
+      u = (ht(), Dt(sr)).resolveVaultPaths(d);
+    l.createEl("p", {
+      cls: "pf-setup-form-intro",
+      text:
+        i("setup_bbt_desc") ||
+        "Export your Zotero library as Better BibTeX JSON into the folder below. Enable 'Keep updated' for automatic re-exports.",
+    });
+    let f = l.createDiv({ cls: "pf-setup-path-row" });
+    (f.createEl("span", {
+      cls: "pf-setup-path-label",
+      text: i("setup_bbt_path") || "Exports folder:",
+    }),
+      f.createEl("code", { cls: "pf-setup-path-value", text: u.exportsDir }),
+      f
+        .createEl("button", {
+          cls: "pf-btn pf-btn-secondary",
+          text: i("setup_bbt_copy") || "Copy",
+        })
+        .addEventListener("click", () => {
+          (navigator.clipboard.writeText(u.exportsDir),
+            new A.Notice(i("setup_bbt_copied") || "Path copied"));
+        }));
+    let m = l.createEl("details", { cls: "pf-setup-guide" });
+    m.createEl("summary", {
+      cls: "pf-setup-guide-summary",
+      text: i("setup_bbt_guide") || "How to export from Zotero \u2192",
+    });
+    let g = m.createDiv({ cls: "pf-setup-guide-body" }),
+      h =
+        "https://raw.githubusercontent.com/LLLin000/PaperForge/master/docs/help/images",
+      y = [
+        {
+          img: "bbt-plugin-installed.jpg",
+          title: i("setup_bbt_step1") || "1. Install Better BibTeX",
+          desc:
+            i("setup_bbt_step1_desc") ||
+            "In Zotero, go to Tools \u2192 Add-ons, search for Better BibTeX and install it. If you cannot find it, download from: https://github.com/retorquere/zotero-better-bibtex/releases/tag/v9.0.50",
+        },
+        {
+          img: "bbt-export-dialog.jpg",
+          title: i("setup_bbt_step2") || "2. Export with auto-update",
+          desc:
+            i("setup_bbt_step2_desc") ||
+            "Right-click your library or collection \u2192 Export Library\u2026 \u2192 choose 'Better BibTeX JSON' format. Check 'Keep updated'.",
+        },
+        {
+          img: "bbt-save-dialog.jpg",
+          title: i("setup_bbt_step3") || "3. Save to exports folder",
+          desc:
+            i("setup_bbt_step3_desc") ||
+            "Point the export destination to the folder above. Once saved, click 'Detect' below.",
+        },
+      ];
+    for (let S of y) {
+      let C = g.createDiv({ cls: "pf-setup-guide-step" });
+      (C.createEl("strong", { text: S.title }),
+        C.createEl("p", { text: S.desc }),
+        C.createEl("img", {
+          attr: {
+            src: h + "/" + S.img,
+            alt: S.title,
+            loading: "lazy",
+            onerror: "this.style.display='none'",
+          },
+        }).addClass("pf-setup-guide-img"));
+    }
+    let v = l.createDiv({ cls: "pf-setup-detect-row" }),
+      b = v.createEl("span", { cls: "pf-setup-detect-status" }),
+      w = e.createDiv({ cls: "pf-setup-nav" }),
+      k = () => {
+        try {
+          j.existsSync(u.exportsDir) ||
+            j.mkdirSync(u.exportsDir, { recursive: !0 });
+          let S = j
+            .readdirSync(u.exportsDir)
+            .filter((R) => R.endsWith(".json"));
+          S.length === 0
+            ? b.setText(i("setup_bbt_no_files") || "No JSON files found.")
+            : b.setText(
+                "\u2713 " + (i("setup_bbt_found") || "Found: ") + S.join(", ")
+              );
+          let C = w.querySelector(".pf-action-btn:last-child");
+          if (C) {
+            let R =
+              S.length === 0 ||
+              t.user_state !== "ready" ||
+              this._setupOperation === "running";
+            ((C.disabled = R),
+              C.classList.toggle("pf-action-btn--disabled", R));
+          }
+        } catch (S) {}
+      };
+    (v
+      .createEl("button", {
+        cls: "pf-btn pf-btn-primary",
+        text: i("setup_bbt_detect") || "Detect",
+      })
+      .addEventListener("click", k),
+      z(w, {
+        label: i("setup_nav_back"),
+        onClick: () => {
+          ((this._setupFeedback = null),
+            (this._setupStage = 1),
+            this.display());
+        },
+      }),
+      z(w, {
+        label: i("setup_nav_continue"),
+        disabled: !0,
+        onClick: () => {
+          ((this._setupFeedback = null),
+            (this._setupStage = 3),
+            this.display());
+        },
+      }),
+      k());
+  }
+  async _migrateLegacyCredentials(e) {
+    let t = this.getClient(),
+      r = { writeCredential: (a, s) => t.authSetSecret(a, s, { replace: !1 }) };
+    e.disabled = !0;
+    let n = [];
+    try {
+      await this._collectLegacyMigrations(r, n);
+    } finally {
+      e.disabled = !1;
+    }
+    (n.length === 0
+      ? new A.Notice("No legacy credentials found in SecretStorage")
+      : n.forEach((a) => new A.Notice(a, 6e3)),
+      this._refreshVectorDbCredentialStatus(),
+      this._refreshAllReadModels());
+  }
+  async _collectLegacyMigrations(e, t) {
+    var r, n;
+    for (let a of ["ocr", "embedding"]) {
+      let s = await qt(a, this.app.secretStorage, e, {
+        baseUrl: (r = this.plugin.settings.vector_db_api_base) != null ? r : "",
+        model: (n = this.plugin.settings.vector_db_api_model) != null ? n : "",
+      });
+      s.migrated.length && t.push(`${a}: migrated`);
+      for (let c of s.warnings) t.push(c);
+    }
+  }
+  _refreshVectorDbCredentialStatus() {
+    this._getVaultBasePath() &&
+      this.getClient()
+        .credentialAvailable("embedding")
+        .then((t) => {
+          t !== this.plugin.settings._vector_db_configured &&
+            ((this.plugin.settings._vector_db_configured = t),
+            this.plugin.saveSettings());
+        })
+        .catch(() => {});
+  }
+  async _storeVectorDbCredential(e) {
+    return (await this._authSetSecret("embedding", e))
+      ? ((this.plugin.settings._vector_db_configured = !0),
+        (this.plugin.settings.vector_db_api_key = ""),
+        (this.plugin.settings._migration_warnings = Array.isArray(
+          this.plugin.settings._migration_warnings
+        )
+          ? this.plugin.settings._migration_warnings.filter(
+              (r) => r !== "vector_db_api_key"
+            )
+          : []),
+        await this.plugin.saveSettings(),
+        this.display(),
+        !0)
+      : !1;
+  }
+  async _storeSetupSecret(e, t) {
+    return e === "vector-db-api-key"
+      ? this._storeVectorDbCredential(t)
+      : !t || !(await this._authSetSecret("ocr", t))
+        ? !1
+        : ((this.plugin.settings._paddleocr_configured = !0),
+          (this.plugin.settings.paddleocr_api_key = ""),
+          await this.plugin.saveSettings(),
+          !0);
+  }
+  _authSetSecret(e, t) {
+    return t
+      ? this.getClient()
+          .authSetSecret(e, t)
+          .then(() => !0)
+          .catch(() => !1)
+      : Promise.resolve(!1);
+  }
+  _renderSetupStageOptionals(e) {
+    var n;
+    (e.createEl("h3", { text: i("setup_optionals_title") }),
+      e.createEl("p", { text: i("setup_optionals_desc") }));
+    let t = [
+      { id: "ocr", label: i("cc_module_ocr"), desc: i("setup_opt_ocr_desc") },
+      {
+        id: "memory",
+        label: i("cc_module_memory"),
+        desc: i("setup_opt_memory_desc"),
+      },
+      {
+        id: "agent",
+        label: i("cc_module_agent"),
+        desc: i("setup_opt_agent_desc"),
+      },
+    ];
+    for (let a of t) {
+      let s = e.createDiv({ cls: "pf-setup-optional" }),
+        c = s.createEl("input", {
+          attr: { type: "checkbox", id: "pf-setup-opt-" + a.id },
+        });
+      ((c.checked = this._setupOptionals[a.id]),
+        c.addEventListener("change", () => {
+          ((this._setupOptionals[a.id] = c.checked), this.display());
+        }));
+      let l =
+          a.id === "ocr"
+            ? !!this.plugin.settings._paddleocr_configured
+            : a.id === "memory"
+              ? !!this.plugin.settings._vector_db_configured
+              : !0,
+        d = s.createDiv({ cls: "pf-setup-optional-copy" });
+      (d.createEl("label", {
+        attr: { for: "pf-setup-opt-" + a.id },
+        text: a.label,
+        cls: "pf-setup-optional-label",
+      }),
+        d.createEl("div", { text: a.desc, cls: "pf-setup-optional-desc" }));
+      let u = d.createEl("span", {
+        cls: "pf-setup-optional-state",
+        text: l ? i("config_configured") : i("config_not_configured"),
+      });
+      if (!c.checked) continue;
+      let f = s.createDiv({ cls: "pf-setup-optional-config" });
+      if (a.id === "ocr") {
+        (f.createEl("label", { text: i("field_paddleocr") }),
+          f.createEl("p", { cls: "caption", text: i("ocr_privacy_warning") }));
+        let _ = f.createEl("input", {
+          cls: "pf-setup-input",
+          attr: {
+            type: "password",
+            autocomplete: "off",
+            placeholder: this.plugin.settings._paddleocr_configured
+              ? "\u2022\u2022\u2022\u2022"
+              : i("field_paddleocr"),
+          },
+        });
+        f.createEl("button", {
+          cls: "pf-setup-verify",
+          text: i("config_save"),
+          attr: { type: "button" },
+        }).addEventListener("click", () => {
+          this._storeSetupSecret("paddleocr-api-key", _.value).then((g) => {
+            (u.setText(
+              g ? i("setup_optional_saved") : i("setup_optional_save_failed")
+            ),
+              g && (_.value = ""));
+          });
+        });
+      } else if (a.id === "memory") {
+        (f.createEl("label", { text: i("feat_openai_key") }),
+          f.createEl("p", { cls: "caption", text: i("feat_openai_key_desc") }));
+        let _ = f.createEl("input", {
+          cls: "pf-setup-input",
+          attr: {
+            type: "password",
+            autocomplete: "off",
+            placeholder: this.plugin.settings._vector_db_configured
+              ? "\u2022\u2022\u2022\u2022"
+              : "sk-...",
+          },
+        });
+        f.createEl("label", { text: i("feat_api_model") });
+        let m = f.createEl("input", {
+          cls: "pf-setup-input",
+          attr: {
+            type: "text",
+            placeholder:
+              this.plugin.settings.vector_db_api_model ||
+              "text-embedding-3-small",
+          },
+        });
+        (m.addEventListener("change", () => {
+          ((this.plugin.settings.vector_db_api_model = m.value.trim()),
+            this.plugin.saveSettings(),
+            this._refreshVectorDbCredentialStatus());
+        }),
+          f.createEl("label", { text: i("feat_api_base_url") }));
+        let g = f.createEl("input", {
+          cls: "pf-setup-input",
+          attr: {
+            type: "text",
+            placeholder:
+              this.plugin.settings.vector_db_api_base ||
+              "https://api.openai.com/v1",
+          },
+        });
+        (g.addEventListener("change", () => {
+          ((this.plugin.settings.vector_db_api_base = g.value.trim()),
+            this.plugin.saveSettings(),
+            this._refreshVectorDbCredentialStatus());
+        }),
+          f
+            .createEl("button", {
+              cls: "pf-setup-verify",
+              text: i("config_save"),
+              attr: { type: "button" },
+            })
+            .addEventListener("click", () => {
+              this._storeSetupSecret("vector-db-api-key", _.value).then((y) => {
+                (u.setText(
+                  y
+                    ? i("setup_optional_saved")
+                    : i("setup_optional_save_failed")
+                ),
+                  y && (_.value = ""));
+              });
+            }));
+      } else {
+        (f.createEl("label", { text: i("feat_agent_platform") }),
+          f.createEl("p", {
+            cls: "caption",
+            text: i("feat_agent_platform_desc"),
+          }));
+        let _ = f.createEl("select"),
+          m = {
+            opencode: "OpenCode",
+            claude: "Claude Code",
+            codex: "Codex",
+            cursor: "Cursor",
+            windsurf: "Windsurf",
+            github_copilot: "GitHub Copilot",
+            gemini: "Gemini CLI",
+          },
+          g = this.plugin.agentPlatformChoices.length
+            ? this.plugin.agentPlatformChoices
+            : Object.keys(m);
+        for (let h of g) {
+          let y = _.createEl("option", {
+            text: (n = m[h]) != null ? n : h,
+            attr: { value: h },
+          });
+          y.selected = h === this.plugin.settings.agent_platform;
+        }
+        _.addEventListener("change", () => {
+          ((this.plugin.settings.agent_platform = _.value),
+            this.getClient()
+              .configSet("agent_platform", _.value)
+              .catch(
+                (h) =>
+                  new A.Notice(
+                    `PaperForge: config set agent_platform failed: ${String(h)}`
+                  )
+              ),
+            this.plugin.saveSettings(),
+            u.setText(i("setup_optional_saved")));
+        });
+      }
+    }
+    let r = e.createDiv({ cls: "pf-setup-nav" });
+    (z(r, {
+      label: i("setup_nav_back"),
+      onClick: () => {
+        ((this._setupStage = 2), this.display());
+      },
+    }),
+      z(r, {
+        label: i("setup_nav_continue"),
+        onClick: () => this._refreshSetupReadiness(),
+      }));
+  }
+  _refreshSetupReadiness() {
+    this._setupStage = 4;
+    for (let e of ["installation", "library"])
+      (this._attemptedProbes.add(e), this._probeModule(e));
+    this.display();
+  }
+  _renderSetupStageReview(e) {
+    var d, u;
+    e.createEl("h3", { text: i("setup_review_title") });
+    let t = (d = this._capabilityState) == null ? void 0 : d.installation,
+      r = (u = this._capabilityState) == null ? void 0 : u.library,
+      n = (t == null ? void 0 : t.user_state) === "ready",
+      a = (r == null ? void 0 : r.user_state) === "ready",
+      s =
+        (t == null ? void 0 : t.user_state) === "checking" ||
+        (r == null ? void 0 : r.user_state) === "checking";
+    (e.createEl("p", {
+      text: n
+        ? i("setup_ready")
+        : s
+          ? i("setup_review_checking")
+          : i("cc_consequence_setup_required"),
+      cls: n ? "pf-setup-ok" : "pf-setup-warn",
+    }),
+      e.createEl("p", {
+        text: a
+          ? i("setup_library_ready")
+          : s
+            ? i("setup_review_checking")
+            : i("cc_consequence_setup_required"),
+        cls: a ? "pf-setup-ok" : "pf-setup-warn",
+      }));
+    let c = Object.entries(this._setupOptionals)
+      .filter(([, f]) => f)
+      .map(([f]) => this._getUserModuleName(f));
+    e.createEl("p", {
+      text:
+        c.length > 0
+          ? i("setup_review_selected") + c.join(", ")
+          : i("setup_no_optionals"),
+    });
+    let l = e.createDiv({ cls: "pf-setup-nav" });
+    (z(l, {
+      label: i("setup_nav_back"),
+      onClick: () => {
+        ((this._setupStage = 3), this.display());
+      },
+    }),
+      (!n || !a) &&
+        z(l, {
+          label: i("setup_review_recheck"),
+          disabled: s,
+          onClick: () => this._refreshSetupReadiness(),
+        }),
+      z(l, {
+        label: i("setup_nav_complete"),
+        disabled: !n || !a,
+        onClick: () => this._completeSetup(),
+      }),
+      (!n || !a) &&
+        e.createEl("p", {
+          text: s ? i("setup_review_checking") : i("setup_incomplete_warn"),
+          cls: "pf-setup-warn",
+        }));
+  }
+  _completeSetup() {
+    ((this.plugin.settings._setup_complete = !0),
+      this.plugin.saveSettings().then(() => this.display()));
+  }
+  _restoreNavMemory() {
+    let e = this.plugin.settings._navMemory;
+    e != null &&
+      e.destination &&
+      ["overview", "help"].includes(e.destination) &&
+      ((this.activeTab = e.destination),
+      (this._navMemory = { destination: e.destination }),
+      this._focusTargetId ||
+        ((this._focusTargetId = null),
+        (this._detailReturn = null),
+        (this._setupView = "overview")));
+  }
+  hide() {
+    ((this._setupJourneyDismissedForSession = !1), super.hide());
+  }
+};
+((Ce._REAL_PROBE = new Set([
+  "installation",
+  "library",
+  "ocr",
+  "memory",
+  "help",
+])),
+  (Ce._NAVIGABLE = new Set([
+    "installation",
+    "library",
+    "ocr",
+    "memory",
+    "help",
+  ])));
+var Xe = Ce;
+var T = require("obsidian"),
+  Ae = K(require("fs")),
+  gr = K(require("path"));
+var cr = K(require("fs")),
+  Xr = K(require("path"));
+function lr(p) {
+  let o = String(p),
+    t = {
+      ENOENT: {
+        type: "python_missing",
+        message: "Python executable not found",
+        recoverable: !0,
+      },
+      "python-missing": {
+        type: "python_missing",
+        message: "Python executable not found",
+        recoverable: !0,
+      },
+      MODULE_NOT_FOUND: {
+        type: "import_failed",
+        message: "PaperForge package not installed",
+        recoverable: !0,
+      },
+      "import-failed": {
+        type: "import_failed",
+        message: "PaperForge package not installed",
+        recoverable: !0,
+      },
+      "version-mismatch": {
+        type: "version_mismatch",
+        message: "Plugin and package versions differ",
+        recoverable: !0,
+        action: "sync-runtime",
+      },
+      "pip-failed": {
+        type: "pip_install_failure",
+        message: "pip install command failed",
+        recoverable: !0,
+      },
+      ETIMEDOUT: {
+        type: "timeout",
+        message: "Subprocess timed out",
+        recoverable: !0,
+        action: "retry",
+      },
+      timeout: {
+        type: "timeout",
+        message: "Subprocess timed out",
+        recoverable: !0,
+        action: "retry",
+      },
+      NO_PYTHON: {
+        type: "no_python",
+        message: "Python executable not found",
+        recoverable: !0,
+        action: "open-setup",
+      },
+      VECTOR_NOT_BUILT: {
+        type: "vectors_not_built",
+        message: "Vector index has not been built yet",
+        recoverable: !0,
+        action: "open-vector-settings",
+      },
+      VECTOR_CORRUPTED: {
+        type: "vectors_corrupted",
+        message: "Vector index is corrupted",
+        recoverable: !0,
+        action: "force-rebuild",
+      },
+      MODEL_CHANGED: {
+        type: "model_changed",
+        message: "Embedding model has changed since vectors were built",
+        recoverable: !0,
+        action: "rebuild-vectors",
+      },
+      BACKEND_UNAVAILABLE: {
+        type: "backend_unavailable",
+        message: "Python CLI search backend is not responding",
+        recoverable: !0,
+        action: "run-doctor",
+      },
+      TIMEOUT: {
+        type: "timeout",
+        message: "Search timed out",
+        recoverable: !0,
+        action: "retry",
+      },
+      INTERNAL_ERROR: {
+        type: "internal_error",
+        message: "An internal error occurred",
+        recoverable: !1,
+      },
+    }[o];
+  return t
+    ? { ...t }
+    : { type: "unknown", message: String(p), recoverable: !1 };
+}
+function pr(p, o) {
+  var a;
+  let e = dr(p),
+    t = dr(o),
+    r = Math.max(e.length, t.length),
+    n = [];
+  for (let s = 0; s < r; s++) {
+    let c = s < e.length ? e[s] : "",
+      l = s < t.length ? t[s] : "",
+      d =
+        (a = (c || l).split(`
+`)[0]) != null
+          ? a
+          : "",
+      u = d.startsWith("## ") ? d.replace(/^##\s+/, "") : "",
+      f = "unchanged";
+    (!c && l
+      ? (f = "added")
+      : c && !l
+        ? (f = "removed")
+        : c !== l && (f = "changed"),
+      f !== "unchanged" &&
+        n.push({
+          paragraphIndex: s,
+          heading: u,
+          type: f,
+          oldText: c || void 0,
+          newText: l || void 0,
+        }));
+  }
+  return n;
+}
+function ur(p, o) {
+  let e = (s) => s.split(/\n\n+/).filter(Boolean),
+    t = e(p),
+    r = e(o),
+    n = Math.max(t.length, r.length),
+    a = [];
+  for (let s = 0; s < n; s++) {
+    let c = s < t.length ? t[s] : "",
+      l = s < r.length ? r[s] : "";
+    !c && l
+      ? a.push({ type: "added", text: l })
+      : c && !l
+        ? a.push({ type: "removed", text: c })
+        : c !== l
+          ? (a.push({ type: "removed", text: c }),
+            a.push({ type: "added", text: l }))
+          : a.push({ type: "unchanged", text: c });
+  }
+  return a;
+}
+function dr(p) {
+  let o = p.split(`
+`),
+    e = [],
+    t = [];
+  for (let r of o)
+    if (r.startsWith("## ") && t.length > 0)
+      (e.push(
+        t
+          .join(
+            `
+`
+          )
+          .trim()
+      ),
+        (t = [r]));
+    else if (r.trim() === "" && t.length > 0) {
+      let n = t
+        .join(
+          `
+`
+        )
+        .trim();
+      n && (e.push(n), (t = []));
+    } else t.push(r);
+  if (t.length > 0) {
+    let r = t
+      .join(
+        `
+`
+      )
+      .trim();
+    r && e.push(r);
+  }
+  return e;
+}
+var H = require("obsidian"),
+  Pe = K(require("fs"));
+function Qr(p, o) {
+  var e;
+  return o
+    ? ((e = o.flags) != null && e.version_old) || o.ocr === "stale"
+      ? "update_available"
+      : o.ocr === "missing" && p === "done"
+        ? "pending"
+        : o.ocr === "failed"
+          ? "failed"
+          : o.ocr === "incomplete"
+            ? "done_incomplete"
+            : o.ocr === "unknown" && p === "done"
+              ? "unknown"
+              : p
+    : p;
+}
+var Qe = 100;
+var Re = class extends H.ItemView {
+  constructor(e, t) {
+    super(e);
+    this.plugin = t;
+    this.papers = [];
+    this.filter = "all";
+    this.versionFilter = null;
+    this.selectedKey = null;
+    this.checkedKeys = new Set();
+    this.running = !1;
+    this.progress = {
+      current: 0,
+      total: 0,
+      paperKey: "",
+      phase: "",
+      itemStatus: "",
+    };
+    this.globalActivity = { state: "idle", label: "", current: 0, total: 0 };
+    this.actionDescriptors = new Map();
+    this.pendingActionDescriptors = new Set();
+    this._client = null;
+    this._searchQuery = "";
+    this._page = 1;
+    this._runningMode = null;
+  }
+  static async open(e) {
+    let t = e.app.workspace.getLeavesOfType(ve);
+    if (t.length > 0) {
+      e.app.workspace.revealLeaf(t[0]);
+      return;
+    }
+    let r = e.app.workspace.getLeaf("tab");
+    r &&
+      (await r.setViewState({ type: ve, active: !0 }),
+      e.app.workspace.revealLeaf(r));
+  }
+  getViewType() {
+    return ve;
+  }
+  getDisplayText() {
+    return i("ocr_ws_title");
+  }
+  getIcon() {
+    return "scan-text";
+  }
+  async onOpen() {
+    (await this._loadPapers(), this._render());
+  }
+  _getClient() {
+    var e;
+    if (this._client) return this._client;
+    if (typeof ((e = this.plugin) == null ? void 0 : e.getClient) != "function")
+      return null;
+    try {
+      let t = this.plugin.getClient();
+      t && (this._client = t);
+    } catch (t) {
+      return null;
+    }
+    return this._client;
+  }
+  async _loadPapers() {
+    var d,
+      u,
+      f,
+      _,
+      m,
+      g,
+      h,
+      y,
+      v,
+      b,
+      w,
+      k,
+      x,
+      E,
+      S,
+      C,
+      R,
+      F,
+      D,
+      L,
+      V,
+      re,
+      ne,
+      de,
+      pe,
+      ue,
+      Y,
+      B,
+      M,
+      $,
+      U,
+      J,
+      W;
+    this.actionDescriptors.clear();
+    let e = this._getClient();
+    if (!e) {
+      ((this.globalActivity = {
+        state: "unknown",
+        label: i("runtime_not_available") || "Environment unavailable",
+        current: 0,
+        total: 0,
+      }),
+        (this.papers = []),
+        (this.selectedKey = null),
+        this.checkedKeys.clear(),
+        (this._page = 1),
+        (u = (d = this.containerEl) == null ? void 0 : d.children) != null &&
+          u[1] &&
+          this._refreshTable());
+      return;
+    }
+    let [t, r, n] = await Promise.all([
+        e.probe("lineage").catch(() => null),
+        e.probe("ocr").catch(() => null),
+        e.queryOcrPapers().catch(() => []),
+      ]),
+      a = t,
+      s = r;
+    this.globalActivity = {
+      state:
+        (s == null ? void 0 : s.activity_state) === "running"
+          ? "running"
+          : s
+            ? "idle"
+            : "unknown",
+      label: (f = s == null ? void 0 : s.activity_label) != null ? f : "",
+      current:
+        (m =
+          (_ = s == null ? void 0 : s.activity_progress) == null
+            ? void 0
+            : _.current) != null
+          ? m
+          : 0,
+      total:
+        (h =
+          (g = s == null ? void 0 : s.activity_progress) == null
+            ? void 0
+            : g.total) != null
+          ? h
+          : 0,
+    };
+    let c = new Map(this.papers.map((N) => [N.key, N])),
+      l = (y = a == null ? void 0 : a.papers) != null ? y : {};
+    this.papers = [];
+    for (let N of n) {
+      let Z = N.key;
+      if (!Z) continue;
+      let O = c.get(Z),
+        _e = l[Z],
+        be =
+          (b =
+            (v = _e == null ? void 0 : _e.details) == null
+              ? void 0
+              : v.ocr_execution) == null
+            ? void 0
+            : b.local_status,
+        qe =
+          be === "running" || be === "processing"
+            ? "processing"
+            : be === "queued"
+              ? "queued"
+              : Qr(
+                  (k =
+                    (w = N.status) != null
+                      ? w
+                      : O == null
+                        ? void 0
+                        : O.status) != null
+                    ? k
+                    : "pending",
+                  _e
+                );
+      this.papers.push({
+        key: Z,
+        title: (x = N.title) != null ? x : Z,
+        status: qe,
+        pipelineVersion:
+          (S =
+            (E = N.version) != null
+              ? E
+              : O == null
+                ? void 0
+                : O.pipelineVersion) != null
+            ? S
+            : "",
+        lastRun:
+          (R =
+            (C = N.finished_at) != null ? C : O == null ? void 0 : O.lastRun) !=
+          null
+            ? R
+            : "",
+        hasBackup: (F = O == null ? void 0 : O.hasBackup) != null ? F : !1,
+        authors:
+          (L = (D = N.authors) != null ? D : O == null ? void 0 : O.authors) !=
+          null
+            ? L
+            : "",
+        year:
+          N.year != null
+            ? String(N.year)
+            : (V = O == null ? void 0 : O.year) != null
+              ? V
+              : "",
+        pages:
+          N.pages != null
+            ? String(N.pages)
+            : (re = O == null ? void 0 : O.pages) != null
+              ? re
+              : "",
+        backupCount: (ne = O == null ? void 0 : O.backupCount) != null ? ne : 0,
+        canRedo:
+          (pe =
+            (de = N.can_redo) != null ? de : O == null ? void 0 : O.canRedo) !=
+          null
+            ? pe
+            : !1,
+        canRebuild:
+          (Y =
+            (ue = N.can_rebuild) != null
+              ? ue
+              : O == null
+                ? void 0
+                : O.canRebuild) != null
+            ? Y
+            : !1,
+        recommendedAction:
+          (M =
+            (B = N.recommended_action) != null
+              ? B
+              : O == null
+                ? void 0
+                : O.recommendedAction) != null
+            ? M
+            : "",
+        fulltextPath:
+          (U =
+            ($ = N.fulltext_path) != null
+              ? $
+              : O == null
+                ? void 0
+                : O.fulltextPath) != null
+            ? U
+            : "",
+        ocrFinishedAt:
+          (W =
+            (J = N.finished_at) != null
+              ? J
+              : O == null
+                ? void 0
+                : O.ocrFinishedAt) != null
+            ? W
+            : "",
+      });
+    }
+    ((this._page = 1), this._refreshTable());
+  }
+  _render() {
+    let e = this.containerEl.children[1];
+    (e.empty(),
+      e.addClass("pf-ocr-workspace"),
+      this._renderHeader(e),
+      this._renderActivity(e),
+      this._renderToolbar(e),
+      this._renderTable(e),
+      this._renderBatchBar(e),
+      this.selectedKey && this._renderDetail(e));
+  }
+  _refreshTable() {
+    let e = this.containerEl.children[1],
+      t = this._filteredPapers(),
+      r = e.querySelector(".pf-ocr-ws-toolbar-count");
+    r &&
+      (r.innerHTML = i("ocr_ws_showing")
+        .replace("{count}", String(t.length))
+        .replace("{total}", String(this.papers.length)));
+    let n = e.querySelector(".pf-ocr-ws-table");
+    if (n) {
+      let l = n.querySelector("tbody");
+      (l && l.remove(), this._buildTableRows(n, this._currentPagePapers(t)));
+    } else {
+      let l = e.createDiv({ cls: "pf-ocr-ws-viewport" });
+      this._buildTableBody(l, this._currentPagePapers(t));
+    }
+    let a = e.querySelector(".pf-ocr-ws-pagination");
+    (a && a.remove(), this._renderPagination(e, t));
+    let s = e.querySelector(".pf-ocr-ws-batchbar");
+    (s && s.remove(), this._renderBatchBar(e));
+    let c = e.querySelector(".pf-ocr-ws-detail");
+    (c && c.remove(), this.selectedKey && this._renderDetail(e));
+  }
+  _renderHeader(e) {
+    let t = e.createDiv({ cls: "pf-ocr-ws-header" });
+    (t.createEl("h1", { text: i("ocr_ws_title") }),
+      t.createEl("p", { cls: "pf-ocr-ws-lede", text: i("ocr_ws_lede") }));
+  }
+  _ensureActionDescriptor(e) {
+    var r, n;
+    if (this.actionDescriptors.has(e) || this.pendingActionDescriptors.has(e))
+      return;
+    let t = this._getClient();
+    if (!t) {
+      (this.actionDescriptors.set(e, {
+        action_id: e,
+        availability: "unavailable",
+        availability_reason:
+          i("runtime_not_available") || "Environment unavailable",
+      }),
+        (n = (r = this.containerEl) == null ? void 0 : r.children) != null &&
+          n[1] &&
+          this._render());
+      return;
+    }
+    (this.pendingActionDescriptors.add(e),
+      t
+        .describeAction(e)
+        .then((a) => {
+          (a == null ? void 0 : a.action_id) === e &&
+            this.actionDescriptors.set(e, a);
+        })
+        .catch(() => {
+          this.actionDescriptors.set(e, {
+            action_id: e,
+            availability: "unavailable",
+          });
+        })
+        .finally(() => {
+          var a, s;
+          (this.pendingActionDescriptors.delete(e),
+            (s = (a = this.containerEl) == null ? void 0 : a.children) !=
+              null &&
+              s[1] &&
+              this._render());
+        }));
+  }
+  _isActionAvailable(e) {
+    var t;
+    return (
+      ((t = this.actionDescriptors.get(e)) == null
+        ? void 0
+        : t.availability) === "available"
+    );
+  }
+  _actionAvailabilityTitle(e, t) {
+    let r = this.actionDescriptors.get(e);
+    return (r && r.availability !== "available" && r.availability_reason) || t;
+  }
+  _renderActivity(e) {
+    var h;
+    let t = this.running,
+      r = !t && this.globalActivity.state === "running";
+    if (!t && !r) return;
+    let n = t
+        ? this.progress
+        : {
+            current: this.globalActivity.current,
+            total: this.globalActivity.total,
+            paperKey: "",
+            phase: "",
+            itemStatus: "",
+          },
+      a = e.createDiv({
+        cls: "pf-ocr-ws-activity pf-active",
+        attr: { "aria-live": "polite" },
+      }),
+      s = a.createDiv({ cls: "pf-ocr-ws-activity-head" }),
+      c = s.createDiv({ cls: "pf-ocr-ws-activity-title" });
+    c.setText(
+      t
+        ? i("ocr_ws_processing")
+        : this.globalActivity.label || i("ocr_ws_processing")
+    );
+    let l = n.paperKey;
+    if (l) {
+      let y = this.papers.find((v) => v.key === l);
+      y && c.createEl("span").setText((h = y.title) != null ? h : l);
+    }
+    t &&
+      this.progress.phase &&
+      c.createEl("span", { text: ` \xB7 ${this.progress.phase}` });
+    let d = s.createEl("button", {
+        cls: "pf-btn pf-btn-ghost",
+        text: i("ocr_ws_stop") || "Stop",
+      }),
+      u = this._getClient();
+    !u || !u.isOperationActive()
+      ? ((d.disabled = !0),
+        (d.title =
+          i("ocr_ws_stop_unavailable") ||
+          "Operation is not owned by this window"))
+      : d.addEventListener("click", () => this._stopBuild());
+    let _ = a
+        .createDiv({ cls: "pf-ocr-ws-progress-track" })
+        .createDiv({ cls: "pf-ocr-ws-progress-fill" }),
+      m = n.total > 0 ? Math.round((n.current / n.total) * 100) : 0;
+    _.style.transform = `scaleX(${m / 100})`;
+    let g = a.createDiv({ cls: "pf-ocr-ws-progress-meta" });
+    (g.createEl("span", { text: `${n.current} / ${n.total} papers` }),
+      g.createEl("span", { text: `${m}%` }),
+      t &&
+        this.progress.itemStatus &&
+        g.createEl("span", { text: this.progress.itemStatus }));
+  }
+  _renderToolbar(e) {
+    let t = this._filteredPapers(),
+      r = [
+        ...new Set(this.papers.map((u) => u.pipelineVersion).filter(Boolean)),
+      ]
+        .sort()
+        .reverse(),
+      n = e.createDiv({ cls: "pf-ocr-ws-toolbar" }),
+      a = n.createDiv({ cls: "pf-ocr-ws-toolbar-count" });
+    a.innerHTML = i("ocr_ws_showing")
+      .replace("{count}", String(t.length))
+      .replace("{total}", String(this.papers.length));
+    let c = n
+      .createDiv({ cls: "pf-ocr-ws-search" })
+      .createEl("input", {
+        cls: "pf-ocr-ws-search-input",
+        attr: {
+          type: "text",
+          placeholder:
+            i("ocr_ws_search_placeholder") ||
+            "Search papers by title, author, year...",
+        },
+      });
+    ((c.value = this._searchQuery),
+      c.addEventListener("input", () => {
+        ((this._searchQuery = c.value),
+          (this.selectedKey = null),
+          this.checkedKeys.clear(),
+          (this._page = 1),
+          clearTimeout(this._searchTimer),
+          (this._searchTimer = setTimeout(() => this._refreshTable(), 100)));
+      }),
+      c.addEventListener("keydown", (u) => {
+        u.key === "Escape" &&
+          ((c.value = ""),
+          (this._searchQuery = ""),
+          (this.selectedKey = null),
+          this.checkedKeys.clear(),
+          (this._page = 1),
+          clearTimeout(this._searchTimer),
+          this._refreshTable(),
+          c.blur());
+      }));
+    let l = n.createDiv({ cls: "pf-ocr-ws-field" });
+    l.createEl("label", { text: i("ocr_ws_filter_status") });
+    let d = l.createEl("select");
+    for (let [u, f] of [
+      ["all", i("ocr_ws_filter_all")],
+      ["unprocessed", i("ocr_ws_filter_unprocessed")],
+      ["review", i("ocr_ws_filter_review")],
+      ["processed", i("ocr_ws_filter_processed")],
+    ]) {
+      let _ = d.createEl("option", {
+        text: String(f),
+        attr: { value: String(u) },
+      });
+      u === this.filter && (_.selected = !0);
+    }
+    if (
+      (d.addEventListener("change", () => {
+        ((this.filter = d.value),
+          (this.selectedKey = null),
+          this.checkedKeys.clear(),
+          (this._page = 1),
+          this._refreshTable());
+      }),
+      r.length > 0)
+    ) {
+      let u = n.createDiv({ cls: "pf-ocr-ws-version-field" });
+      for (let f of r)
+        u.createEl("button", {
+          cls: `pf-ocr-ws-chip${this.versionFilter === f ? " pf-active" : ""}`,
+          text: `v${f}`,
+        }).addEventListener("click", () => {
+          ((this.versionFilter = this.versionFilter === f ? null : f),
+            (this.selectedKey = null),
+            this.checkedKeys.clear(),
+            (this._page = 1),
+            this._refreshTable());
+        });
+    }
+  }
+  _filteredPapers() {
+    let e = this.papers;
+    if (
+      (this.filter === "unprocessed"
+        ? (e = e.filter(
+            (t) =>
+              t.status === "pending" ||
+              t.status === "nopdf" ||
+              t.status === "update_available"
+          ))
+        : this.filter === "review"
+          ? (e = e.filter(
+              (t) => t.status === "failed" || t.status === "processing"
+            ))
+          : this.filter === "processed" &&
+            (e = e.filter((t) => t.status === "done")),
+      this.versionFilter &&
+        (e = e.filter((t) => t.pipelineVersion === this.versionFilter)),
+      this._searchQuery.trim())
+    ) {
+      let t = this._searchQuery.trim().toLowerCase();
+      e = e.filter(
+        (r) =>
+          r.title.toLowerCase().includes(t) ||
+          r.authors.toLowerCase().includes(t) ||
+          r.year.toLowerCase().includes(t) ||
+          r.key.toLowerCase().includes(t)
+      );
+    }
+    return e;
+  }
+  _currentPagePapers(e) {
+    let t = Math.max(1, Math.ceil(e.length / Qe));
+    (this._page > t && (this._page = t), this._page < 1 && (this._page = 1));
+    let r = (this._page - 1) * Qe;
+    return e.slice(r, r + Qe);
+  }
+  _renderPagination(e, t) {
+    let r = Math.max(1, Math.ceil(t.length / Qe));
+    if (r <= 1) return;
+    let n = e.createDiv({ cls: "pf-ocr-ws-pagination" }),
+      a = n.createEl("button", {
+        cls: "pf-btn pf-btn-secondary",
+        text: "\u2039",
+      });
+    ((a.disabled = this._page <= 1),
+      a.addEventListener("click", () => {
+        ((this._page = Math.max(1, this._page - 1)), this._refreshTable());
+      }));
+    let s = n.createEl("span", { text: `${this._page} / ${r}` }),
+      c = n.createEl("button", {
+        cls: "pf-btn pf-btn-secondary",
+        text: "\u203A",
+      });
+    ((c.disabled = this._page >= r),
+      c.addEventListener("click", () => {
+        ((this._page = Math.min(r, this._page + 1)), this._refreshTable());
+      }));
+  }
+  _renderTable(e) {
+    let t = this._filteredPapers(),
+      r = e.createDiv({ cls: "pf-ocr-ws-viewport" });
+    (this._buildTableBody(r, this._currentPagePapers(t)),
+      this._renderPagination(e, t));
+  }
+  _buildTableBody(e, t) {
+    if (t.length === 0) {
+      e.createDiv({
+        cls: "pf-ocr-ws-empty pf-visible",
+        text: i("ocr_ws_no_papers"),
+      });
+      return;
+    }
+    let r = e.createEl("table", { cls: "pf-ocr-ws-table" });
+    (this._buildTableHead(r), this._buildTableRows(r, t));
+  }
+  _buildTableHead(e) {
+    let r = e.createEl("thead").createEl("tr");
+    (r
+      .createEl("th", { cls: "pf-ocr-ws-col-check" })
+      .createEl("input", { attr: { type: "checkbox" } }, (n) => {
+        n.addEventListener("change", () => {
+          let a = this._currentPagePapers(this._filteredPapers());
+          (n.checked
+            ? a.forEach((s) => this.checkedKeys.add(s.key))
+            : a.forEach((s) => this.checkedKeys.delete(s.key)),
+            this._refreshTable());
+        });
+      }),
+      r.createEl("th", {
+        cls: "pf-ocr-ws-col-paper",
+        text: i("ocr_ws_col_title"),
+      }),
+      r.createEl("th", {
+        cls: "pf-ocr-ws-col-status",
+        text: i("ocr_ws_col_status"),
+      }),
+      r.createEl("th", {
+        cls: "pf-ocr-ws-col-version",
+        text: i("ocr_ws_col_version"),
+      }),
+      r.createEl("th", {
+        cls: "pf-ocr-ws-col-date",
+        text: i("ocr_ws_col_lastrun"),
+      }),
+      r.createEl("th", { cls: "pf-ocr-ws-col-action" }));
+  }
+  _buildTableRows(e, t) {
+    let r = e.createEl("tbody"),
+      n = this.papers.reduce(
+        (a, s) => (s.pipelineVersion > a ? s.pipelineVersion : a),
+        ""
+      );
+    for (let a of t) {
+      let s = !!(a.pipelineVersion && n > a.pipelineVersion),
+        c = r.createEl("tr", { cls: s ? "pf-update" : "" });
+      (c.addEventListener("click", (h) => {
+        h.target.tagName !== "INPUT" &&
+          ((this.selectedKey = a.key === this.selectedKey ? null : a.key),
+          this._refreshTable());
+      }),
+        c
+          .createEl("td", { cls: "pf-ocr-ws-col-check" })
+          .createEl("input", { attr: { type: "checkbox" } }, (h) => {
+            ((h.checked = this.checkedKeys.has(a.key)),
+              h.addEventListener("change", () => {
+                (h.checked
+                  ? this.checkedKeys.add(a.key)
+                  : this.checkedKeys.delete(a.key),
+                  this._refreshTable());
+              }));
+          }));
+      let d = c.createEl("td", { cls: "pf-ocr-ws-col-paper" });
+      if (
+        (d.createDiv({ cls: "pf-ocr-ws-paper-title", text: a.title }),
+        a.authors || a.year)
+      ) {
+        let h = d.createDiv({ cls: "pf-ocr-ws-paper-meta" });
+        if (a.authors) {
+          let y = a.authors.split(",")[0].trim(),
+            v = a.authors.includes(",") ? " et al." : "";
+          h.createEl("span", { cls: "pf-ocr-ws-meta-author", text: y + v });
+        }
+        a.year &&
+          h.createEl("span", { cls: "pf-ocr-ws-meta-year", text: a.year });
+      }
+      (c
+        .createEl("td", { cls: "pf-ocr-ws-col-status" })
+        .createEl("span", {
+          cls: `pf-ocr-ws-status pf-${_r(a.status)}`,
+          text: fr(a.status),
+        }),
+        c
+          .createEl("td", { cls: "pf-ocr-ws-col-version" })
+          .createEl("span", {
+            cls: "pf-ocr-ws-version",
+            text: a.pipelineVersion || "\u2014",
+          }),
+        c
+          .createEl("td", { cls: "pf-ocr-ws-col-date" })
+          .setText(a.lastRun ? a.lastRun.slice(0, 10) : "\u2014"),
+        c
+          .createEl("td", { cls: "pf-ocr-ws-col-action" })
+          .createEl("button", {
+            cls: "pf-btn pf-btn-secondary",
+            text: i("ocr_ws_btn_preview"),
+          })
+          .addEventListener("click", (h) => {
+            (h.stopPropagation(), this._openFulltext(a.key));
+          }));
+    }
+  }
+  _requestOcrRun(e, t) {
+    let r = this.actionDescriptors.get("ocr.run");
+    if (!r) {
+      this._ensureActionDescriptor("ocr.run");
+      return;
+    }
+    if (r.availability !== "available") {
+      new H.Notice(
+        r.availability_reason ||
+          i("ocr_ws_re_extract_disabled_body") ||
+          "OCR is unavailable"
+      );
+      return;
+    }
+    if (r.confirmation === "required") {
+      new ee(
+        this.app,
+        {
+          title:
+            t === "redo" ? i("ocr_modal_title") : i("ocr_run_confirm_title"),
+          effectLabel:
+            t === "redo"
+              ? i("ocr_modal_description")
+              : i("ocr_run_confirm_body"),
+        },
+        () => {
+          this._runOcrAction("ocr.run", e, t);
+        }
+      ).open();
+      return;
+    }
+    this._runOcrAction("ocr.run", e, t);
+  }
+  _renderBatchBar(e) {
+    (this._ensureActionDescriptor("ocr.run"),
+      this._ensureActionDescriptor("ocr.rebuild_derived"));
+    let t = this.papers.filter((d) => this.checkedKeys.has(d.key)),
+      r = t.filter((d) => d.canRedo || d.recommendedAction === "redo"),
+      n = e.createDiv({ cls: "pf-ocr-ws-batchbar" }),
+      a = n.createDiv({ cls: "pf-ocr-ws-selection" });
+    t.length === 0
+      ? (a.createEl("strong", { text: i("ocr_ws_none_selected") }),
+        a.createEl("span", { text: i("ocr_ws_select_hint") }))
+      : a.createEl("strong", {
+          text: i("ocr_ws_selected").replace("{count}", String(t.length)),
+        });
+    let s = n.createDiv({ cls: "pf-ocr-ws-batch-actions" }),
+      c = s.createEl("button", {
+        cls: "pf-btn pf-btn-secondary",
+        text: i("ocr_ws_btn_process_selected"),
+      });
+    if (
+      ((c.title = this._actionAvailabilityTitle(
+        "ocr.run",
+        i("ocr_ws_tooltip_process")
+      )),
+      (c.disabled = t.length === 0 || !this._isActionAvailable("ocr.run")),
+      c.addEventListener("click", () =>
+        this._requestOcrRun(
+          t.map((d) => d.key),
+          "run"
+        )
+      ),
+      r.length > 0)
+    ) {
+      let d = s.createEl("button", {
+        cls: "pf-btn pf-btn-warning",
+        text: `${i("ocr_ws_detail_re_extract")} (${r.length})`,
+      });
+      ((d.title = this._actionAvailabilityTitle(
+        "ocr.run",
+        i("ocr_ws_tooltip_reextract")
+      )),
+        (d.disabled = !this._isActionAvailable("ocr.run")),
+        d.addEventListener("click", () =>
+          this._requestOcrRun(
+            r.map((u) => u.key),
+            "redo"
+          )
+        ));
+    }
+    let l = s.createEl("button", {
+      cls: "pf-btn pf-btn-warning",
+      text: i("ocr_ws_btn_rebuild_selected"),
+    });
+    ((l.title = this._actionAvailabilityTitle(
+      "ocr.rebuild_derived",
+      i("ocr_ws_tooltip_rebuild")
+    )),
+      (l.disabled =
+        t.length === 0 || !this._isActionAvailable("ocr.rebuild_derived")),
+      l.addEventListener("click", () => this._runRebuild(t.map((d) => d.key))));
+  }
+  _renderDetail(e) {
+    let t = this.papers.find((b) => b.key === this.selectedKey);
+    if (!t) return;
+    let n = e
+        .createDiv({ cls: "pf-ocr-ws-detail pf-open" })
+        .createDiv({ cls: "pf-ocr-ws-detail-card" }),
+      a = n.createDiv({ cls: "pf-ocr-ws-detail-head" }),
+      s = a.createDiv({});
+    (s.createEl("h2", { text: t.title }),
+      s.createEl("span", {
+        cls: `pf-ocr-ws-status pf-${_r(t.status)}`,
+        text: fr(t.status),
+      }),
+      a
+        .createEl("button", {
+          cls: "pf-btn pf-btn-ghost",
+          text: i("ocr_ws_close"),
+        })
+        .addEventListener("click", () => {
+          ((this.selectedKey = null), this._refreshTable());
+        }));
+    let l = n.createDiv({ cls: "pf-ocr-ws-detail-grid" });
+    (this._addFact(l, i("ocr_ws_fact_version"), t.pipelineVersion || "\u2014"),
+      this._addFact(
+        l,
+        i("ocr_ws_fact_last_run"),
+        t.lastRun ? t.lastRun.slice(0, 10) : "\u2014"
+      ),
+      this._addFact(l, i("ocr_ws_fact_authors"), t.authors || "\u2014"),
+      this._addFact(l, i("ocr_ws_fact_year"), t.year || "\u2014"),
+      this._addFact(l, i("ocr_ws_fact_pages"), t.pages || "\u2014"),
+      this._addFact(
+        l,
+        i("ocr_ws_fact_backups"),
+        t.backupCount > 0 ? String(t.backupCount) : "\u2014"
+      ));
+    let d = n.createDiv({ cls: "pf-ocr-ws-detail-actions" });
+    (d
+      .createEl("button", {
+        cls: "pf-btn pf-btn-secondary",
+        text: i("ocr_ws_detail_view_fulltext"),
+      })
+      .addEventListener("click", () => this._openFulltext(t.key)),
+      this._ensureActionDescriptor("ocr.run"));
+    let f = t.canRedo || t.recommendedAction === "redo",
+      _ = d.createEl("button", {
+        cls: `pf-btn ${f ? "pf-btn-warning" : "pf-btn-secondary"}`,
+        text: f
+          ? i("ocr_ws_detail_re_extract")
+          : i("ocr_ws_detail_run") || i("ocr_ws_btn_process_selected"),
+      });
+    ((_.title = this._actionAvailabilityTitle(
+      "ocr.run",
+      f ? i("ocr_ws_tooltip_reextract") : i("ocr_ws_tooltip_process")
+    )),
+      (_.disabled = !this._isActionAvailable("ocr.run")),
+      _.addEventListener("click", () =>
+        this._requestOcrRun([t.key], f ? "redo" : "run")
+      ));
+    let m = d.createEl("button", {
+      cls: "pf-btn pf-btn-secondary",
+      text: i("ocr_ws_restore_checking") || "Checking versions\u2026",
+    });
+    m.disabled = !0;
+    let g = t.key,
+      h = this._getClient(),
+      y = async () => {
+        if (!h) {
+          new H.Notice(i("runtime_not_available") || "Environment unavailable");
+          return;
+        }
+        try {
+          let b = await h.versionsShow(g);
+          if (b.versions.length > 0) {
+            new he(
+              this.app,
+              g,
+              b.versions,
+              b.current_label,
+              b.current_path,
+              (k) => h.versionsRestore(g, k).then(() => {}),
+              () => {
+                this._loadPapers().then(() => this._render());
+              }
+            ).open();
+            return;
+          }
+          let w = await h.versionsBackups(g);
+          if (w.length === 0) {
+            new H.Notice("No backup versions available");
+            return;
+          }
+          new he(
+            this.app,
+            g,
+            w,
+            "",
+            b.current_path,
+            (k) => h.versionsRestore(g, k).then(() => {}),
+            () => {
+              this._loadPapers().then(() => this._render());
+            }
+          ).open();
+        } catch (b) {
+          new H.Notice(
+            "[!!] Version history failed: " +
+              ((b == null ? void 0 : b.message) || b),
+            6e3
+          );
+        }
+      };
+    ((async () => {
+      if (h)
+        try {
+          let w = (await h.versionsShow(g)).versions.length > 0,
+            k = w ? !1 : (await h.versionsBackups(g)).length > 0,
+            x = w || k;
+          if (this.selectedKey !== g) return;
+          ((m.disabled = !x),
+            m.setText(i("ocr_ws_detail_restore_backup") || "Restore Backup"),
+            x ||
+              (m.title =
+                i("ocr_ws_restore_unavailable") ||
+                "No backup versions available"));
+        } catch (b) {}
+    })(),
+      m.addEventListener("click", () => void y()),
+      this._ensureActionDescriptor("ocr.rebuild_derived"));
+    let v = d.createEl("button", {
+      cls: "pf-btn pf-btn-warning",
+      text: i("ocr_ws_detail_rebuild") || "Rebuild this paper",
+    });
+    ((v.title = i("ocr_ws_tooltip_rebuild")),
+      (v.disabled = !this._isActionAvailable("ocr.rebuild_derived")),
+      v.addEventListener("click", () => {
+        this._runRebuild([t.key]);
+      }));
+  }
+  _addFact(e, t, r) {
+    let n = e.createDiv({ cls: "pf-ocr-ws-fact" });
+    (n.createEl("dt", { text: t }), n.createEl("dd", { text: r }));
+  }
+  async _runOcrAction(
+    e,
+    t,
+    r = e === "ocr.rebuild_derived" ? "rebuild" : "run"
+  ) {
+    var c, l, d;
+    let n = this._getClient();
+    if (!n) {
+      new H.Notice(i("runtime_not_available") || "Environment unavailable");
+      return;
+    }
+    if (this.running || n.isOperationActive()) {
+      new H.Notice(i("ocr_already_running") || "OCR is already running");
+      return;
+    }
+    ((this._runningMode = r),
+      (this.running = !0),
+      (this.progress = {
+        current: 0,
+        total: t.length,
+        paperKey: "",
+        phase: "",
+        itemStatus: "",
+      }),
+      this._render());
+    let a = {
+        action_id: e,
+        scope: t.length > 0 ? { kind: "papers", keys: t } : { kind: "all" },
+        confirm: e === "ocr.run" ? e : void 0,
+      },
+      s = !1;
+    try {
+      let u = await n.runAction(a, {
+        onEvent: (m) => {
+          var g, h, y, v, b;
+          (m.event === "cancelled" && (s = !0),
+            (m.event === "start" ||
+              m.event === "phase" ||
+              m.event === "progress" ||
+              m.event === "item_result") &&
+              ((this.progress = {
+                current: Number(
+                  (g = m.current) != null ? g : this.progress.current
+                ),
+                total: Number((h = m.total) != null ? h : this.progress.total),
+                paperKey: String(
+                  (y = m.item_id) != null ? y : this.progress.paperKey
+                ),
+                phase:
+                  m.event === "phase"
+                    ? String((v = m.phase) != null ? v : m.operation)
+                    : this.progress.phase,
+                itemStatus:
+                  m.event === "item_result"
+                    ? String((b = m.status) != null ? b : "")
+                    : this.progress.itemStatus,
+              }),
+              this._render()));
+        },
+      });
+      (this.actionDescriptors.delete(e),
+        (this._runningMode = null),
+        (this.running = !1));
+      let f =
+        typeof ((c = u.payload) == null ? void 0 : c.status) == "string"
+          ? u.payload.status
+          : "";
+      if (u.ok)
+        new H.Notice(i("ocr_rebuild_complete") || "Operation completed");
+      else if (u.cancelled || s || f === "cancelled")
+        new H.Notice(i("ocr_stopped_notice") || "Operation cancelled");
+      else {
+        let m =
+          typeof ((l = u.payload) == null ? void 0 : l.availability_reason) ==
+          "string"
+            ? u.payload.availability_reason
+            : `exit code ${u.exitCode}`;
+        new H.Notice((i("ocr_error_notice") || "OCR error") + ": " + m, 8e3);
+      }
+      let _ = (d = this.plugin) == null ? void 0 : d._settingTab;
+      (_ &&
+        typeof _._refreshAllReadModels == "function" &&
+        _._refreshAllReadModels(),
+        await this._loadPapers(),
+        this._render());
+    } catch (u) {
+      (this.actionDescriptors.delete(e),
+        (this.running = !1),
+        (this._runningMode = null),
+        new H.Notice(
+          (i("ocr_error_notice") || "OCR error") +
+            ": " +
+            (u instanceof Error ? u.message : String(u)),
+          8e3
+        ),
+        this._render());
+    }
+  }
+  _runRebuild(e) {
+    this._runOcrAction("ocr.rebuild_derived", e, "rebuild");
+  }
+  _stopBuild() {
+    let e = this._getClient();
+    if (!e || !e.isOperationActive()) {
+      new H.Notice(
+        i("ocr_stopped_notice") || "No local operation active to stop"
+      );
+      return;
+    }
+    (e.cancelActiveOperation(),
+      (this.progress.itemStatus =
+        i("ocr_stopping_notice") || "Stopping operation..."),
+      new H.Notice(i("ocr_stopping_notice") || "Stopping operation..."),
+      this._render());
+  }
+  _openFulltext(e) {
+    var s;
+    let t = this.app.vault.adapter.basePath,
+      r = this.papers.find((c) => c.key === e),
+      n = ((s = r == null ? void 0 : r.fulltextPath) != null ? s : "").replace(
+        /\\/g,
+        "/"
+      );
+    if (!n) {
+      new H.Notice(i("ocr_ws_fulltext_not_found") || "Fulltext not found");
+      return;
+    }
+    let a = this.app.vault.getAbstractFileByPath(n);
+    a
+      ? this.app.workspace.getLeaf().openFile(a)
+      : new H.Notice(
+          i("ocr_ws_fulltext_not_found") || "Fulltext not found in vault"
+        );
+  }
+};
+function _r(p) {
+  return p === "done"
+    ? "done"
+    : p === "update_available"
+      ? "update"
+      : p === "done_degraded"
+        ? "done-degraded"
+        : p === "done_incomplete"
+          ? "done-incomplete"
+          : p === "failed" || p === "error" || p === "fatal_error"
+            ? "failed"
+            : "pending";
+}
+function fr(p) {
+  return p === "done"
+    ? i("ocr_ws_status_done") || "Processed"
+    : p === "update_available"
+      ? i("ocr_ws_status_update") || "Update available"
+      : p === "done_degraded"
+        ? i("ocr_ws_status_degraded") || "Partial"
+        : p === "done_incomplete"
+          ? i("ocr_ws_status_incomplete") || "Incomplete"
+          : p === "failed" || p === "error" || p === "fatal_error"
+            ? i("ocr_ws_status_failed") || "Failed"
+            : p === "retryable_error"
+              ? i("ocr_ws_status_error") || "Error"
+              : p === "processing" || p === "running"
+                ? i("ocr_ws_status_processing") || "Processing"
+                : p === "queued"
+                  ? i("ocr_ws_status_queued") || "Queued"
+                  : p === "blocked"
+                    ? i("ocr_ws_status_blocked") || "Blocked"
+                    : p === "nopdf"
+                      ? i("ocr_ws_status_nopdf") || "No PDF"
+                      : p === "unknown"
+                        ? i("ocr_ws_status_unknown") || "Unknown"
+                        : i("ocr_ws_status_pending") || "Pending";
+}
+var he = class extends H.Modal {
+  constructor(e, t, r, n, a, s, c) {
+    super(e);
+    this.selectedIdx = 0;
+    this.contentCache = new Map();
+    ((this.paperKey = t),
+      (this.versions = r),
+      (this.currentLabel = n),
+      (this.currentPath = a),
+      (this.restore = s),
+      (this.onRestored = c != null ? c : null),
+      (this.mdComponent = new H.Component()),
+      this.mdComponent.load());
+  }
+  getContent(e) {
+    var r;
+    let t = this.contentCache.get(e);
+    if (t !== void 0) return t;
+    try {
+      let n = this.versions.find((s) => s.label === e),
+        a = (r = n == null ? void 0 : n.source_path) != null ? r : "";
+      if (a && Pe.existsSync(a)) {
+        let s = Pe.readFileSync(a, "utf-8");
+        return (this.contentCache.set(e, s), s);
+      }
+    } catch (n) {}
+    return (this.contentCache.set(e, ""), "");
+  }
+  onOpen() {
+    let { contentEl: e } = this;
+    e.addClass("paperforge-modal");
+    try {
+      let t = e.closest(".modal");
+      t && (t.style.width = "min(90vw, 1200px)");
+    } catch (t) {}
+    try {
+      this.currentPath &&
+        Pe.existsSync(this.currentPath) &&
+        this.contentCache.set(
+          "__current__",
+          Pe.readFileSync(this.currentPath, "utf-8")
+        );
+    } catch (t) {}
+    this.renderAll();
+  }
+  renderAll() {
+    var h;
+    let { contentEl: e } = this;
+    e.empty();
+    let t = e.createDiv({ cls: "pf-vr-layout" }),
+      r = t.createDiv({ cls: "pf-vr-sidebar" }),
+      n = t.createDiv({ cls: "pf-vr-preview" });
+    r.createEl("div", {
+      cls: "pf-vr-sidebar-title",
+      text: i("ocr_ws_restore_versions") || "Versions",
+    });
+    let a = r.createDiv({ cls: "pf-vr-timeline" });
+    this.versions.forEach((y, v) => {
+      let b = new Date(y.created_at).toLocaleDateString(),
+        w = a.createDiv({
+          cls:
+            "pf-vr-entry" +
+            (v === this.selectedIdx ? " pf-vr-entry--active" : "") +
+            (y.label === this.currentLabel ? " pf-vr-entry--current" : ""),
+          attr: { "data-idx": String(v) },
+        });
+      (w.createEl("span", { cls: "pf-vr-entry-label", text: y.label }),
+        w.createEl("span", { cls: "pf-vr-entry-date", text: b }),
+        y.label === this.currentLabel &&
+          w.createEl("span", {
+            cls: "pf-vr-entry-badge",
+            text: i("ocr_ws_restore_current") || "current",
+          }),
+        w.addEventListener("click", () => {
+          ((this.selectedIdx = v), this.renderAll());
+        }));
+    });
+    let s = this.versions[this.selectedIdx],
+      c = s.label === this.currentLabel,
+      l = n.createDiv({ cls: "pf-vr-toolbar" }),
+      d = l.createDiv({ cls: "pf-vr-info" }),
+      u = l.createDiv({ cls: "pf-vr-actions" }),
+      f = new Date(s.created_at).toLocaleString(),
+      _ =
+        s.fulltext_size > 1024
+          ? (s.fulltext_size / 1024).toFixed(0) + "KB"
+          : s.fulltext_size + "B";
+    d.innerHTML =
+      "<strong>" +
+      s.label +
+      "</strong>" +
+      (c
+        ? ' <span class="pf-vr-current-tag">' +
+          (i("ocr_ws_restore_current") || "current") +
+          "</span>"
+        : "") +
+      '<br><span class="pf-vr-info-meta">' +
+      f +
+      " \xB7 " +
+      s.source +
+      " \xB7 " +
+      _ +
+      (s.renderer_version ? " \xB7 renderer v" + s.renderer_version : "") +
+      "</span>";
+    let m = n.createDiv({ cls: "pf-vr-content" }),
+      g = n.createDiv({ cls: "pf-vr-diff" });
+    (H.MarkdownRenderer.render(
+      this.app,
+      this.getContent(s.label),
+      m,
+      (h = s.source_path) != null ? h : "",
+      this.mdComponent
+    ),
+      (g.style.display = "none"),
+      c ||
+        (u
+          .createEl("button", {
+            cls: "btn-secondary pf-vr-btn",
+            text: i("ocr_ws_restore_compare") || "Compare with current",
+          })
+          .addEventListener("click", () => {
+            let b = this.getContent("__current__"),
+              w = this.getContent(s.label);
+            ((m.style.display = "none"),
+              (g.style.display = "block"),
+              g.empty(),
+              g
+                .createEl("div", { cls: "pf-vr-diff-header" })
+                .setText(
+                  (
+                    i("ocr_ws_restore_diff_title") || "Changes from current"
+                  ).replace("{v}", s.label)
+                ));
+            let x = g.createEl("div", { cls: "pf-vr-diff-body" }),
+              E = ur(b, w);
+            for (let C of E) {
+              let R = x.createEl("div", {
+                cls: "pf-vr-diff-line pf-vr-diff-" + C.type,
+              });
+              (R.createEl("span", {
+                cls: "pf-vr-diff-prefix",
+                text:
+                  C.type === "added"
+                    ? "+ "
+                    : C.type === "removed"
+                      ? "\u2212 "
+                      : "  ",
+              }),
+                R.createEl("span", {
+                  cls: "pf-vr-diff-text",
+                  text:
+                    C.text.slice(0, 200) +
+                    (C.text.length > 200 ? "\u2026" : ""),
+                }));
+            }
+            (E.length === 0 &&
+              x.createEl("div", {
+                cls: "pf-vr-diff-empty",
+                text: i("ocr_ws_restore_no_diff") || "No differences",
+              }),
+              g
+                .createEl("button", {
+                  cls: "btn-secondary pf-vr-btn",
+                  text: i("ocr_ws_restore_back") || "Back",
+                })
+                .addEventListener("click", () => {
+                  ((m.style.display = "block"),
+                    (g.style.display = "none"),
+                    g.empty());
+                }));
+          }),
+        u
+          .createEl("button", {
+            cls: "btn-primary pf-vr-btn",
+            attr: { "data-pf-testid": "version-restore" },
+            text: i("ocr_ws_restore_btn") || "Restore this version",
+          })
+          .addEventListener("click", () => this.doRestore(s))));
+  }
+  doRestore(e) {
+    if (e.label === this.currentLabel) return;
+    let t = new H.Modal(this.app);
+    (t.contentEl.addClass("paperforge-modal"),
+      t.contentEl.createEl("h2", {
+        text:
+          i("ocr_ws_restore_confirm_title") ||
+          "\u6062\u590D\u5C55\u793A\u5168\u6587\u6587\u672C",
+      }),
+      t.contentEl.createEl("div", {
+        cls: "pf-vr-confirm-body",
+        text:
+          i("ocr_ws_restore_confirm_body") ||
+          "\u5C06\u7528\u6240\u9009\u7248\u672C\u7684 fulltext.md \u8986\u76D6 render/fulltext.md\u3002OCR \u7ED3\u6784\u3001\u7D22\u5F15\u3001\u8BB0\u5FC6\u4E0E\u5411\u91CF\u5747\u4E0D\u53D7\u5F71\u54CD\u3002\u7EE7\u7EED\uFF1F",
+      }));
+    let r = t.contentEl.createDiv({ cls: "pf-vr-confirm-actions" });
+    (r
+      .createEl("button", {
+        cls: "btn-secondary pf-vr-btn",
+        text: i("next_action_cancel") || "Later",
+      })
+      .addEventListener("click", () => t.close()),
+      r
+        .createEl("button", {
+          cls: "btn-primary pf-vr-btn mod-warning",
+          attr: { "data-pf-testid": "version-restore-confirm" },
+          text:
+            i("ocr_ws_restore_confirm_btn") ||
+            "\u6062\u590D\u5C55\u793A\u5168\u6587",
+        })
+        .addEventListener("click", () => {
+          (t.close(), this._executeRestore(e));
+        }),
+      t.open());
+  }
+  async _executeRestore(e) {
+    var t;
+    if (e.label !== this.currentLabel)
+      try {
+        (await this.restore(e.label),
+          new H.Notice(
+            i("ocr_ws_detail_restore_done").replace("{label}", e.label)
+          ),
+          this.close(),
+          (t = this.onRestored) == null || t.call(this));
+      } catch (r) {
+        new H.Notice(
+          "[!!] Restore failed: " + ((r == null ? void 0 : r.message) || r),
+          6e3
+        );
+      }
+  }
+  onClose() {
+    try {
+      this.contentEl.empty();
+    } catch (e) {}
+    (this.contentCache.clear(), this.mdComponent.unload());
+  }
+};
+var Te = class extends T.ItemView {
+  constructor(e) {
+    super(e);
+    this._currentMode = null;
+    this._currentDomain = null;
+    this._currentPaperKey = null;
+    this._currentPaperEntry = null;
+    this._currentFilePath = null;
+    this._cachedItems = null;
+    this._modeSubscribers = [];
+    this._leafChangeTimer = null;
+    this._ocrPrivacyShown = !1;
+    this._cachedStats = null;
+    this._techDetailsExpanded = !1;
+    this._paperforgeVersion = "";
+    this._dashboardPermissions = {};
+    this._headerTitle = null;
+    this._versionBadge = null;
+    this._messageEl = null;
+    this._versionPapers = null;
+    this._versionFilter = "";
+    this._searchContainer = null;
+    this._searchInput = null;
+    this._searchResultsEl = null;
+    this._searchTimer = void 0;
+    this._searchState = "idle";
+    this._searchMode = "M";
+    this._searchResults = null;
+    this._searchActiveIndex = -1;
+    this._onKeyDown = null;
+    this._qualityStagingCache = null;
+    this._librarySyncRunning = !1;
+    ((this._currentMode = null),
+      (this._currentDomain = null),
+      (this._currentPaperKey = null),
+      (this._currentPaperEntry = null),
+      (this._currentFilePath = null),
+      (this._cachedItems = null),
+      (this._modeSubscribers = []),
+      (this._leafChangeTimer = null),
+      (this._ocrPrivacyShown = !1));
+  }
+  _getClient() {
+    var t, r;
+    let e =
+      (r = (t = this.app.plugins) == null ? void 0 : t.plugins) == null
+        ? void 0
+        : r.paperforge;
+    return typeof (e == null ? void 0 : e.getClient) == "function"
+      ? e.getClient()
+      : null;
+  }
+  _resolvePython() {
+    var a, s, c;
+    let e = this.app.plugins.plugins.paperforge,
+      t =
+        (s =
+          (a = e == null ? void 0 : e.settings) == null
+            ? void 0
+            : a.python_path) == null
+          ? void 0
+          : s.trim();
+    if (t && require("fs").existsSync(t)) return { path: t, args: [] };
+    let r =
+      (c = e == null ? void 0 : e.getManagedRuntime) == null
+        ? void 0
+        : c.call(e);
+    if (!r) return null;
+    let n = ce(r.readPointer());
+    return n ? { path: n.command, args: [...n.args] } : null;
+  }
+  getViewType() {
+    return fe;
+  }
+  getDisplayText() {
+    return "PaperForge";
+  }
+  getIcon() {
+    return Oe;
+  }
+  async onOpen() {
+    (this._buildPanel(),
+      (this._modeSubscribers = []),
+      (this._leafChangeTimer = null),
+      this._setupEventSubscriptions(),
+      this._fetchVersion(),
+      this._bootstrapDashboard(),
+      (this._onKeyDown = (e) => {
+        var t, r, n;
+        if (e.key === "/" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+          let a =
+            (r = (t = e.target) == null ? void 0 : t.tagName) == null
+              ? void 0
+              : r.toLowerCase();
+          a !== "input" &&
+            a !== "textarea" &&
+            (e.preventDefault(), (n = this._searchInput) == null || n.focus());
+        }
+      }),
+      document.addEventListener("keydown", this._onKeyDown));
+  }
+  async onClose() {
+    if (this._modeSubscribers && this._modeSubscribers.length > 0) {
+      for (let e of this._modeSubscribers)
+        e.event === "active-leaf-change"
+          ? this.app.workspace.off("active-leaf-change", e.ref)
+          : e.event === "modify" && this.app.vault.off("modify", e.ref);
+      this._modeSubscribers = [];
+    }
+    (this._leafChangeTimer &&
+      (clearTimeout(this._leafChangeTimer), (this._leafChangeTimer = null)),
+      this._onKeyDown &&
+        (document.removeEventListener("keydown", this._onKeyDown),
+        (this._onKeyDown = null)),
+      (this._searchState = "idle"),
+      (this._searchResults = null),
+      (this._searchActiveIndex = -1),
+      (this._searchTimer = void 0),
+      (this._cachedItems = null),
+      (this._cachedStats = null));
+  }
+  _buildPanel() {
+    let e = this.containerEl;
+    (e.empty(), e.addClass("paperforge-status-panel"));
+    let t = e.createEl("div", { cls: "paperforge-header" }),
+      r = t.createEl("div", { cls: "paperforge-header-left" });
+    (r.createEl("div", { cls: "paperforge-header-logo", text: "P" }),
+      (this._modeContextEl = r.createEl("div", {
+        cls: "paperforge-mode-context",
+      })),
+      (this._headerTitle = r.createEl("h3", {
+        cls: "paperforge-header-title",
+        text: "PaperForge",
+      })),
+      (this._versionBadge = r.createEl("span", {
+        cls: "paperforge-header-badge",
+        text: "v\u2014",
+      })));
+    let n = t.createEl("button", {
+      cls: "paperforge-header-refresh",
+      attr: { "aria-label": "Refresh" },
+    });
+    ((n.innerHTML = "\u21BB"),
+      n.addEventListener("click", () => {
+        (async () => (
+          await this._invalidateIndex(),
+          await this._detectAndSwitch()
+        ))();
+      }),
+      (this._messageEl = e.createEl("div", {
+        cls: "paperforge-message",
+        attr: { "aria-live": "polite" },
+      })),
+      (this._contentEl = e.createEl("div", {
+        cls: "paperforge-content-area",
+      })));
+  }
+  _fetchVersion() {
+    var e;
+    (e = this._getClient()) == null ||
+      e
+        .backendVersion()
+        .then((t) => {
+          if (!t) return;
+          let r = t.startsWith("v") ? t : "v" + t;
+          ((this._paperforgeVersion = r),
+            this._versionBadge && this._versionBadge.setText(r));
+        })
+        .catch(() => {});
+  }
+  async _loadDashboardData(e) {
+    var t, r;
+    try {
+      let n = await ((t = this._getClient()) == null
+        ? void 0
+        : t.dashboardStats());
+      if (!n) throw new Error("no dashboard payload");
+      ((this._cachedStats = this._normalizeDashboardData(n)),
+        (this._cachedItems = Array.isArray(n.items) ? n.items : []),
+        (this._dashboardPermissions = (r = n.permissions) != null ? r : {}),
+        this._messageEl &&
+          this._messageEl.textContent &&
+          this._messageEl.textContent.startsWith(
+            "Cannot reach PaperForge CLI"
+          ) &&
+          this._showMessage("", "idle"));
+    } catch (n) {
+      !e &&
+        !this._cachedStats &&
+        this._showMessage(
+          `Cannot reach PaperForge CLI.
+Make sure paperforge is installed and in your PATH.`,
+          "error"
+        );
+    }
+  }
+  async _bootstrapDashboard() {
+    (await this._loadDashboardData(!1), await this._detectAndSwitch());
+  }
+  _normalizeDashboardData(e) {
+    let t = e.stats || {},
+      r = t.ocr_health || {},
+      n = t.pdf_health || {},
+      a = e.ocr_version_state || {},
+      s = (r.done || 0) + (r.pending || 0) + (r.failed || 0);
+    return {
+      total_papers: t.papers || 0,
+      formal_notes: t.papers || 0,
+      exports: 0,
+      bases: 0,
+      ocr: {
+        total: s,
+        pending: r.pending || 0,
+        processing: 0,
+        done: r.done || 0,
+        failed: r.failed || 0,
+      },
+      path_errors: (n.broken || 0) + (n.missing || 0),
+      ocr_version_state: {
+        total_papers: a.total_papers || 0,
+        derived_stale_count: a.derived_stale_count || 0,
+        raw_upgradable_count: a.raw_upgradable_count || 0,
+      },
+    };
+  }
+  _renderSkeleton(e) {
+    e.addClass("paperforge-loading");
+  }
+  _renderEmptyState(e, t) {
+    e.createEl("div", { cls: "paperforge-empty-state", text: t || "No data" });
+  }
+  _getCachedIndex() {
+    var e;
+    return (e = this._cachedItems) != null ? e : [];
+  }
+  _findEntry(e) {
+    return (
+      (e && this._getCachedIndex().find((r) => r.zotero_key === e)) || null
+    );
+  }
+  _patchCachedEntry(e, t) {
+    if (!e || !this._cachedItems) return;
+    let r = this._cachedItems.findIndex((n) => n.zotero_key === e);
+    r !== -1 && (this._cachedItems[r] = nt(this._cachedItems[r], t));
+  }
+  _filterByDomain(e) {
+    return e ? this._getCachedIndex().filter((t) => t.domain === e) : [];
+  }
+  _renderLifecycleStepper(e, t, r) {
+    if (!t || !r) {
+      this._renderSkeleton(e);
+      return;
+    }
+    let n = [
+        { key: "indexed", label: "Indexed" },
+        { key: "pdf_ready", label: "PDF Ready" },
+        { key: "fulltext_ready", label: "Fulltext Ready" },
+        { key: "deep_read_done", label: "Deep Read" },
+      ],
+      a = e.createEl("div", { cls: "paperforge-lifecycle-stepper" }),
+      s = !1;
+    for (let c of n) {
+      let l = a.createEl("div", { cls: "step" });
+      (l.createEl("div", { cls: "step-indicator" }),
+        l.createEl("div", { cls: "step-label", text: c.label }),
+        c.key === r
+          ? (l.addClass("current"), (s = !0))
+          : s
+            ? l.addClass("pending")
+            : l.addClass("completed"));
+    }
+  }
+  _renderHealthMatrix(e, t) {
+    if (!t) {
+      this._renderSkeleton(e);
+      return;
+    }
+    let r = [
+        {
+          key: "pdf_health",
+          label: "PDF Health",
+          iconOk: "\u2713",
+          iconWarn: "\u26A0",
+          iconFail: "\u2717",
+        },
+        {
+          key: "ocr_health",
+          label: "OCR Health",
+          iconOk: "\u2713",
+          iconWarn: "\u26A0",
+          iconFail: "\u2717",
+        },
+        {
+          key: "note_health",
+          label: "Note Health",
+          iconOk: "\u2713",
+          iconWarn: "\u26A0",
+          iconFail: "\u2717",
+        },
+        {
+          key: "asset_health",
+          label: "Asset Health",
+          iconOk: "\u2713",
+          iconWarn: "\u26A0",
+          iconFail: "\u2717",
+        },
+      ],
+      n = e.createEl("div", { cls: "paperforge-health-matrix" });
+    for (let a of r) {
+      let s = t[a.key] || "healthy",
+        c = n.createEl("div", { cls: "paperforge-health-cell" }),
+        l,
+        d,
+        u;
+      (s === "healthy" || s === "ok"
+        ? ((l = a.iconOk), (d = "ok"), (u = `${a.label}: OK`))
+        : s === "warn" || s === "warning" || s === "degraded"
+          ? ((l = a.iconWarn),
+            (d = "warn"),
+            (u = `${a.label}: Needs Attention`))
+          : ((l = a.iconFail), (d = "fail"), (u = `${a.label}: Failed`)),
+        c.addClass(d),
+        c.setAttribute("title", u),
+        c.createEl("div", { cls: "paperforge-health-cell-icon", text: l }),
+        c.createEl("div", {
+          cls: "paperforge-health-cell-label",
+          text: a.label,
+        }));
+    }
+  }
+  _renderMaturityGauge(e, t, r) {
+    if (t == null || t === void 0) {
+      this._renderSkeleton(e);
+      return;
+    }
+    let n = e.createEl("div", { cls: "paperforge-maturity-gauge" }),
+      a = n.createEl("div", { cls: "gauge-track" }),
+      s = 4,
+      c = Math.max(1, Math.min(s, Math.round(t)));
+    for (let l = 1; l <= s; l++) {
+      let d = a.createEl("div", { cls: "gauge-segment" });
+      l <= c && (d.addClass("filled"), d.addClass(`level-${l}`));
+    }
+    if (
+      (n.createEl("div", { cls: "gauge-level", text: `Level ${c} / ${s}` }),
+      c < s && r)
+    ) {
+      let l = typeof r == "string" ? [r] : r;
+      if (l.length > 0) {
+        let d = n.createEl("ul", { cls: "gauge-blockers" });
+        for (let u of l) d.createEl("li", { text: u });
+      }
+    }
+  }
+  _renderBarChart(e, t) {
+    if (!t || Object.keys(t).length === 0) {
+      this._renderEmptyState(e, "No lifecycle data");
+      return;
+    }
+    let r = [
+        { key: "indexed", label: "Indexed", cls: "stage-indexed" },
+        { key: "pdf_ready", label: "PDF Ready", cls: "stage-pdf-ready" },
+        {
+          key: "fulltext_ready",
+          label: "Fulltext Ready",
+          cls: "stage-fulltext-ready",
+        },
+        { key: "deep_read_done", label: "Deep Read", cls: "stage-deep-read" },
+      ],
+      n = e.createEl("div", { cls: "paperforge-bar-chart" }),
+      a = Math.max(1, ...r.map((s) => t[s.key] || 0));
+    for (let s of r) {
+      let c = t[s.key] || 0,
+        l = (c / a) * 100,
+        d = n.createEl("div", { cls: "bar-row" });
+      (d.createEl("div", { cls: "bar-label", text: s.label }),
+        d
+          .createEl("div", { cls: "bar-track" })
+          .createEl("div", {
+            cls: `bar-fill ${s.cls}`,
+            attr: { style: `width:${l.toFixed(1)}%` },
+          }),
+        d.createEl("div", { cls: "bar-count", text: c.toString() }));
+    }
+  }
+  async _invalidateIndex() {
+    await this._loadDashboardData(!0);
+  }
+  async _resolveModeForFile(e) {
+    var n;
+    if (!e) return { mode: "global", filePath: null, key: null, domain: null };
+    let t = e.path,
+      r = await ((n = this._getClient()) == null
+        ? void 0
+        : n.resolvePaperContext(t).catch(() => null));
+    return r && r.kind === "paper" && r.zotero_key
+      ? { mode: "paper", filePath: t, key: r.zotero_key, domain: null }
+      : r && r.kind === "domain" && r.domain
+        ? { mode: "collection", filePath: t, key: null, domain: r.domain }
+        : { mode: "global", filePath: t, key: null, domain: null };
+  }
+  async _detectAndSwitch(e) {
+    (e != null ||
+      (e = await this._resolveModeForFile(this.app.workspace.getActiveFile())),
+      (this._currentDomain = e.domain || null),
+      (this._currentPaperKey = e.key || null),
+      (this._currentPaperEntry = e.key ? this._findEntry(e.key) : null),
+      await this._switchMode(e.mode, e.filePath));
+  }
+  async _switchMode(e, t) {
+    if (this._currentMode === e && this._currentFilePath === t) {
+      await this._refreshCurrentMode();
+      return;
+    }
+    if (
+      ((this._currentMode = e),
+      (this._currentFilePath = t),
+      (this._techDetailsExpanded = !1),
+      !!this._contentEl)
+    )
+      switch (
+        (this._contentEl.empty(),
+        this._contentEl.removeClass("switching"),
+        this._renderModeHeader(e),
+        e)
+      ) {
+        case "global":
+          this._renderGlobalMode();
+          break;
+        case "paper":
+          this._renderPaperMode();
+          break;
+        case "collection":
+          this._renderCollectionMode();
+          break;
+        case "versions":
+          this._renderVersionMode();
+          break;
+      }
+  }
+  _renderGlobalMode() {
+    var V, re, ne, de, pe, ue, Y, B;
+    if (!this._contentEl) return;
+    let e = this._contentEl.createEl("div", { cls: "paperforge-global-view" }),
+      t = this._getCachedIndex(),
+      r = t.length,
+      n = 0,
+      a = 0,
+      s = 0;
+    for (let M of t)
+      (M.has_pdf && n++,
+        M.ocr_status === "done" && a++,
+        M.deep_reading_status === "done" && s++);
+    let c = e.createEl("div", { cls: "paperforge-library-snapshot" });
+    c.createEl("div", {
+      cls: "paperforge-section-label",
+      text: "Library Snapshot",
+    });
+    let l = c.createEl("div", { cls: "paperforge-snapshot-pills" }),
+      d = [
+        { value: r, label: "papers" },
+        { value: n, label: "PDFs ready" },
+        { value: a, label: "OCR done" },
+        { value: s, label: "deep-read done" },
+      ];
+    for (let M of d) {
+      let $ = l.createEl("div", { cls: "paperforge-snapshot-pill" });
+      ($.createEl("span", {
+        cls: "paperforge-snapshot-value",
+        text: String(M.value),
+      }),
+        $.createEl("span", {
+          cls: "paperforge-snapshot-label",
+          text: " " + M.label,
+        }));
+    }
+    let u = e.createEl("div", { cls: "paperforge-system-status" });
+    u.createEl("div", {
+      cls: "paperforge-section-label",
+      text: "System Status",
+    });
+    let f = u.createEl("div", { cls: "paperforge-status-grid" }),
+      _ = this.app.plugins.plugins.paperforge,
+      m = this._getCachedIndex(),
+      g = m.length > 0;
+    this._renderSystemStatusRow(
+      f,
+      "Index",
+      g ? "healthy" : "missing",
+      g ? m.length + " entries" : "Index not loaded \u2014 run Sync Library"
+    );
+    let h = this._dashboardPermissions.can_sync === !0,
+      y = h ? "Exports detected" : "No exports found";
+    this._renderSystemStatusRow(
+      f,
+      "Zotero Export",
+      h ? "healthy" : "missing",
+      y
+    );
+    let v =
+        (re = (V = this.app.plugins) == null ? void 0 : V.plugins) == null
+          ? void 0
+          : re.paperforge,
+      b = this._renderSystemStatusRow(
+        f,
+        "OCR Token",
+        "checking",
+        "Checking\u2026"
+      );
+    (ne = this._getClient()) == null ||
+      ne.credentialAvailable("ocr").then(
+        (M) => {
+          if (!b.isConnected) return;
+          let $ = b.querySelector(".paperforge-status-dot");
+          ($ == null || $.classList.toggle("ok", M),
+            $ == null || $.classList.toggle("fail", !M));
+          let U = b.querySelector(".paperforge-status-detail");
+          U && (U.textContent = M ? "Configured" : "Not set");
+        },
+        () => {
+          if (!b.isConnected) return;
+          let M = b.querySelector(".paperforge-status-detail");
+          M && (M.textContent = "Status unavailable");
+        }
+      );
+    let w = (de = this.app.vault.adapter.basePath) != null ? de : "",
+      k =
+        (ue =
+          (pe = _ == null ? void 0 : _.settings) == null
+            ? void 0
+            : pe.capabilityState) == null
+          ? void 0
+          : ue.memory,
+      x = (k == null ? void 0 : k.capability_state) === "ready",
+      E =
+        (B = (Y = k == null ? void 0 : k.reason) == null ? void 0 : Y.text) !=
+        null
+          ? B
+          : "Unknown";
+    if (
+      (this._renderSystemStatusRow(
+        f,
+        "Memory Layer",
+        x ? "healthy" : "fail",
+        E
+      ),
+      !g || !h)
+    ) {
+      let M = e.createEl("div", { cls: "paperforge-issue-summary" });
+      M.createEl("div", {
+        cls: "paperforge-section-label",
+        text: "\u9700\u8981\u5904\u7406",
+      });
+      let $ = M.createEl("div", { cls: "paperforge-issue-list" });
+      (g ||
+        $.createEl("div", {
+          cls: "paperforge-issue-item",
+          text: "Index missing or corrupted",
+        }),
+        h ||
+          $.createEl("div", {
+            cls: "paperforge-issue-item",
+            text: "No Zotero export found",
+          }));
+      let U = M.createEl("div", { cls: "paperforge-issue-actions" }),
+        J = U.createEl("button", { cls: "paperforge-contextual-btn" });
+      (J.createEl("span", { text: "Run Doctor" }),
+        J.addEventListener("click", () => {
+          let N = ae.find((Z) => Z.id === "paperforge-doctor");
+          N && this._runAction(N, J);
+        }));
+      let W = U.createEl("button", { cls: "paperforge-contextual-btn" });
+      (W.createEl("span", { text: "Repair Issues" }),
+        W.addEventListener("click", () => {
+          let N = ae.find((Z) => Z.id === "paperforge-repair");
+          N && this._runAction(N, W);
+        }));
+    }
+    let C = e.createEl("div", { cls: "paperforge-global-actions" });
+    C.createEl("div", {
+      cls: "paperforge-section-label",
+      text: "Start Working",
+    });
+    let R = C.createEl("div", { cls: "paperforge-global-actions-row" }),
+      F = R.createEl("button", { cls: "paperforge-contextual-btn primary" });
+    (F.createEl("span", {
+      cls: "paperforge-contextual-btn-icon",
+      text: "\u{1F4C1}",
+    }),
+      F.createEl("span", { text: "Open Literature Hub" }),
+      F.addEventListener("click", () => {
+        var U;
+        let M =
+            ((U = _ == null ? void 0 : _.settings) == null
+              ? void 0
+              : U.base_dir) || "Bases",
+          $ = this.app.vault.getAbstractFileByPath(M);
+        if ($) {
+          let J = null;
+          if (
+            ($.children && (J = $.children.find((W) => W.extension === "base")),
+            J)
+          ) {
+            let W = this.app.workspace.getLeaf(!1);
+            W && W.openFile(J);
+          } else new T.Notice("[!!] No .base file found in " + M, 6e3);
+        } else new T.Notice("[!!] Base directory not found: " + M, 6e3);
+      }));
+    let D = R.createEl("button", {
+      cls: "paperforge-contextual-btn",
+      attr: { "data-pf-testid": "sync-library" },
+    });
+    (D.createEl("span", {
+      cls: "paperforge-contextual-btn-icon",
+      text: "\u21BB",
+    }),
+      D.createEl("span", { text: "Sync Library" }),
+      D.addEventListener("click", () => {
+        this._runLibrarySync();
+      }));
+    let L = R.createEl("button", { cls: "paperforge-contextual-btn" });
+    (L.createEl("span", {
+      cls: "paperforge-contextual-btn-icon",
+      text: "\u229E",
+    }),
+      L.createEl("span", { text: "Run OCR" }),
+      L.addEventListener("click", () => {
+        let M = ae.find(($) => $.id === "paperforge-ocr");
+        M && this._runAction(M, L);
+      }));
+  }
+  _renderSystemStatusRow(e, t, r, n) {
+    let a = e.createEl("div", { cls: "paperforge-status-row" });
+    return (
+      a
+        .createEl("span", { cls: "paperforge-status-dot" })
+        .addClass(r === "healthy" || r === "configured" ? "ok" : "fail"),
+      a.createEl("span", { cls: "paperforge-status-label", text: t }),
+      a.createEl("span", { cls: "paperforge-status-detail", text: n || "" }),
+      a
+    );
+  }
+  _renderPaperMode() {
+    let e = this._currentPaperEntry,
+      t = this._currentPaperKey;
+    if (!this._contentEl) return;
+    if (!t) {
+      this._renderEmptyState(this._contentEl, "No paper data available.");
+      return;
+    }
+    if (!e) {
+      this._contentEl.createEl("div", {
+        cls: "paperforge-content-placeholder",
+        text: 'Paper "' + t + '" not found in canonical index. Sync first.',
+      });
+      return;
+    }
+    let r = this._contentEl.createEl("div", { cls: "paperforge-paper-view" }),
+      n = r.createEl("div", { cls: "paperforge-paper-header" });
+    n.createEl("div", {
+      cls: "paperforge-paper-title pf-copy",
+      text: e.title || "Untitled",
+    }).addEventListener("click", () => {
+      (navigator.clipboard.writeText(e.title || ""),
+        new T.Notice("Title copied"));
+    });
+    let s = n.createEl("div", { cls: "paperforge-paper-meta" });
+    (e.authors &&
+      e.authors.length > 0 &&
+      s.createEl("span", {
+        cls: "paperforge-paper-authors",
+        text: e.authors.join(", "),
+      }),
+      e.year &&
+        s.createEl("span", {
+          cls: "paperforge-paper-year",
+          text: String(e.year),
+        }));
+    let c = r.createEl("div", { cls: "paperforge-status-strip" }),
+      l = c.createEl("div", { cls: "paperforge-status-strip-left" }),
+      d = c.createEl("div", { cls: "paperforge-status-strip-right" }),
+      u = [
+        { key: "pdf", label: "PDF", ok: e.has_pdf === !0 },
+        {
+          key: "ocr",
+          label: "OCR",
+          ok: e.ocr_status === "done",
+          pending: ["pending", "queued", "processing"].includes(
+            e.ocr_status || ""
+          ),
+          fail: ["failed", "blocked", "done_incomplete", "nopdf"].includes(
+            e.ocr_status || ""
+          ),
+        },
+        {
+          key: "deep",
+          label: "\u7CBE\u8BFB",
+          ok: e.deep_reading_status === "done",
+        },
+      ];
+    for (let _ of u) {
+      let m = l.createEl("span", { cls: "paperforge-status-pill" }),
+        g = "pending";
+      (_.ok ? (g = "ok") : _.fail ? (g = "fail") : _.pending && (g = "pending"),
+        m.addClass(g));
+      let h = _.ok ? "\u2713" : _.fail ? "\u2717" : "\u25CB";
+      (m.createEl("span", { cls: "paperforge-status-pill-icon", text: h }),
+        m.createEl("span", { text: " " + _.label }));
+    }
+    if (e.pdf_path) {
+      let _ = d.createEl("button", { cls: "paperforge-contextual-btn" });
+      (_.createEl("span", {
+        cls: "paperforge-contextual-btn-icon",
+        text: "\u{1F4C4}",
+      }),
+        _.createEl("span", { text: "\u6253\u5F00 PDF" }),
+        _.addEventListener("click", () => {
+          var b, w, k;
+          let m = e.pdf_path.match(/\[\[([^\]]+)\]\]/),
+            g = m ? m[1] : e.pdf_path;
+          if (this.app.vault.getAbstractFileByPath(g)) {
+            this.app.workspace.openLinkText(g, "");
+            return;
+          }
+          let y =
+              (k =
+                (w = (b = this.app.vault.adapter).getBasePath) == null
+                  ? void 0
+                  : w.call(b)) != null
+                ? k
+                : "",
+            v = T.Platform.openPath;
+          y && typeof v == "function"
+            ? v.call(T.Platform, gr.join(y, g))
+            : new T.Notice("[!!] PDF not found: " + g, 6e3);
+        }));
+    }
+    if (e.fulltext_path) {
+      let _ = d.createEl("button", { cls: "paperforge-contextual-btn" });
+      (_.createEl("span", {
+        cls: "paperforge-contextual-btn-icon",
+        text: "\u{1F4DD}",
+      }),
+        _.createEl("span", { text: "\u6253\u5F00\u5168\u6587" }),
+        _.addEventListener("click", () => this._openFulltext(e.fulltext_path)));
+    }
+    let f = d.createEl("button", {
+      cls: "paperforge-contextual-btn",
+      attr: { "data-pf-testid": "version-history" },
+    });
+    if (
+      (f.createEl("span", { text: i("version_panel_title") }),
+      f.addEventListener("click", () => {
+        let _ = t;
+        (async () => {
+          let m = this._getClient();
+          if (!m) {
+            new T.Notice(
+              i("runtime_not_available") || "Environment unavailable"
+            );
+            return;
+          }
+          try {
+            let g = await m.versionsShow(_);
+            if (g.versions.length > 0) {
+              new he(
+                this.app,
+                _,
+                g.versions,
+                g.current_label,
+                g.current_path,
+                (y) => m.versionsRestore(_, y).then(() => {})
+              ).open();
+              return;
+            }
+            let h = await m.versionsBackups(_);
+            h.length > 0 &&
+              new he(this.app, _, h, "", g.current_path, (y) =>
+                m.versionsRestore(_, y).then(() => {})
+              ).open();
+          } catch (g) {
+            new T.Notice(
+              "[!!] Version history failed: " +
+                ((g == null ? void 0 : g.message) || g),
+              6e3
+            );
+          }
+        })();
+      }),
+      this._renderPaperOverviewCard(r, e),
+      e.next_step === "ready" && e.deep_reading_status === "done")
+    ) {
+      let _ = r.createEl("div", { cls: "paperforge-complete-row" });
+      (_.createEl("span", { text: "\u2713" }),
+        _.createEl("span", {
+          text: "\u5DF2\u5B8C\u6210\uFF0C\u53EF\u76F4\u63A5\u4F7F\u7528",
+        }));
+    } else this._renderNextStepCard(r, e, t);
+    (this._renderRecentDiscussionCard(r, e),
+      this._renderPaperTechnicalDetails(r, e));
+  }
+  _renderPaperOverviewCard(e, t) {
+    let r = e.createEl("div", { cls: "paperforge-paper-overview" });
+    r.createEl("div", { cls: "paperforge-paper-overview-header" }).createEl(
+      "span",
+      {
+        cls: "paperforge-paper-overview-title",
+        text: "\u6587\u7AE0\u6982\u89C8",
+      }
+    );
+    let a = r.createEl("div", { cls: "paperforge-paper-overview-body" }),
+      s = a.createEl("div", {
+        cls: "paperforge-paper-overview-excerpt",
+        text: "\u52A0\u8F7D\u4E2D...",
+      });
+    if (t.note_path) {
+      let c = this.app.vault.getAbstractFileByPath(t.note_path);
+      c
+        ? this.app.vault
+            .read(c)
+            .then((l) => {
+              let d = this._extractOverviewFromNote(l);
+              if (d) {
+                let u = d.length > 200 ? d.slice(0, 200) + "..." : d;
+                if ((s.setText(u), d.length > 200)) {
+                  let f = a.createEl("div", {
+                      cls: "paperforge-expand-container",
+                    }),
+                    _ = f.createEl("button", {
+                      cls: "paperforge-expand-icon",
+                      title: "\u5C55\u5F00/\u6536\u8D77",
+                    });
+                  _.innerHTML =
+                    '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+                  let m = !1;
+                  f.addEventListener("click", () => {
+                    (s.setText(m ? u : d),
+                      (_.innerHTML = m
+                        ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>'
+                        : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>'),
+                      (m = !m));
+                  });
+                }
+              } else
+                s.setText(
+                  "\u5C1A\u672A\u751F\u6210\u6587\u7AE0\u6982\u89C8\u3002\u8FD0\u884C /pf-deep \u5F00\u59CB\u7CBE\u8BFB\u3002"
+                );
+            })
+            .catch(() => {
+              s.setText("\u65E0\u6CD5\u8BFB\u53D6\u7B14\u8BB0\u5185\u5BB9");
+            })
+        : s.setText("\u7B14\u8BB0\u6587\u4EF6\u4E0D\u5B58\u5728");
+    } else s.setText("\u5C1A\u672A\u751F\u6210\u6587\u7AE0\u6982\u89C8");
+  }
+  _extractOverviewFromNote(e) {
+    if (!e) return null;
+    let t = e.indexOf("## \u{1F50D} \u7CBE\u8BFB");
+    if (t === -1) return null;
+    let r = e.slice(t),
+      n = [
+        "**\u4E00\u53E5\u8BDD\u603B\u89C8:**",
+        "**\u4E00\u53E5\u8BDD\u603B\u89C8**",
+        "**\u6587\u7AE0\u6458\u8981:**",
+        "**\u6587\u7AE0\u6458\u8981**",
+      ];
+    for (let c of n) {
+      let l = r.indexOf(c);
+      if (l !== -1) {
+        let d = r.slice(l + c.length),
+          u = ["**5 Cs", "**Figure", "**\u8BC1\u636E", "### Pass 2", "## "],
+          f = d.length;
+        for (let g of u) {
+          let h = d.indexOf(g);
+          h !== -1 && h < f && (f = h);
+        }
+        let _ = d.indexOf(`
 
-`);_!==-1&&_<f&&(f=_);let m=d.slice(0,f).trim();return m.startsWith("**")&&(m=m.slice(2)),m.endsWith("**")&&(m=m.slice(0,-2)),m||null}}let a=r.indexOf(`
-`);if(a===-1)return null;let s=r.slice(a+1).split(`
+`);
+        _ !== -1 && _ < f && (f = _);
+        let m = d.slice(0, f).trim();
+        return (
+          m.startsWith("**") && (m = m.slice(2)),
+          m.endsWith("**") && (m = m.slice(0, -2)),
+          m || null
+        );
+      }
+    }
+    let a = r.indexOf(`
+`);
+    if (a === -1) return null;
+    let s = r
+      .slice(a + 1)
+      .split(
+        `
 
-`)[0].trim();return!s||s.startsWith("###")||s.startsWith("##")?null:s.length>300?s.slice(0,300)+"...":s}_renderRecentDiscussionCard(e,t){let r=e.createEl("div",{cls:"paperforge-discussion-card"});if(r.style.display="none",!t.note_path)return;let n=t.note_path.lastIndexOf("/"),s=(n!==-1?t.note_path.substring(0,n):".")+"/ai/discussion.md";this.app.vault.adapter.exists(s).then(c=>{if(c)return this.app.vault.adapter.read(s)}).then(async c=>{if(!c)return;let l=this._parseDiscussionMD(c);if(!l||l.length===0)return;r.style.display="block",r.createEl("div",{cls:"paperforge-discussion-header"}).createEl("span",{cls:"paperforge-discussion-title",text:"\u6700\u8FD1\u8BA8\u8BBA"});for(let f of l){let _=r.createEl("div",{cls:"paperforge-discussion-item"}),m=_.createEl("div",{cls:"paperforge-discussion-q"});m.createEl("span",{cls:"paperforge-discussion-q-label",text:"\u63D0\u95EE\uFF1A"}),m.createEl("span",{cls:"paperforge-discussion-q-text",text:f.question});let g=_.createEl("div",{cls:"paperforge-discussion-a"}),h=!1;if(f.answer&&f.answer.length>500&&(h=!0,g.classList.add("paperforge-discussion-a-collapsed")),await T.MarkdownRenderer.render(this.app,f.answer||"",g,s,this),h){let y=!1;_.style.cursor="pointer",_.addEventListener("click",()=>{y=!y,g.classList.toggle("paperforge-discussion-a-collapsed",!y),g.classList.toggle("paperforge-discussion-a-expanded",y)})}}r.createEl("a",{cls:"paperforge-discussion-viewall",text:"\u67E5\u770B\u5168\u90E8\u8BA8\u8BBA \u2192"}).addEventListener("click",f=>{f.preventDefault(),this.app.vault.getAbstractFileByPath(s)?this.app.workspace.openLinkText(s,""):new T.Notice("\u8BA8\u8BBA\u6587\u4EF6\u5C1A\u672A\u751F\u6210")})}).catch(c=>{console.error("PaperForge: discussion.md read error",s,c.message)})}_parseDiscussionMD(e){let t=e.split(/\n## /).slice(1);if(t.length===0)return null;let r=t[t.length-1],n=[],a=r.split(/\*\*\u95EE\u9898:\*\*/).slice(1);for(let s of a){let c=s.match(/\*\*\u89E3\u7B54:\*\*/);if(!c)continue;let l=s.substring(0,c.index).trim(),d=s.substring(c.index+3+4).trim();n.push({question:l,answer:d})}return n.slice(-3)}_renderPaperTechnicalDetails(e,t){let r=this._currentPaperKey,n=e.createEl("div",{cls:"paperforge-technical-details"}),a=n.createEl("button",{cls:"paperforge-technical-details-toggle"}),s=n.createEl("div",{cls:"paperforge-technical-details-body"});s.style.display="none",this._techDetailsExpanded?(s.style.display="block",a.setText("\u6280\u672F\u8BE6\u60C5 \u25BE")):a.setText("\u6280\u672F\u8BE6\u60C5 \u25B8"),a.addEventListener("click",()=>{let _=s.style.display!=="none";s.style.display=_?"none":"block",a.setText(_?"\u6280\u672F\u8BE6\u60C5 \u25B8":"\u6280\u672F\u8BE6\u60C5 \u25BE"),this._techDetailsExpanded=!_});let c=s.createEl("div",{cls:"paperforge-workflow-toggles"}),l=[{key:"do_ocr",label:"OCR",hint:"\u52A0\u5165 OCR"},{key:"analyze",label:"\u7CBE\u8BFB",hint:"\u6807\u8BB0\u7CBE\u8BFB"}];for(let _ of l){let m=c.createEl("label",{cls:"paperforge-workflow-toggle"}),g=m.createEl("input",{type:"checkbox",cls:"paperforge-workflow-checkbox"});g.checked=t[_.key]===!0,m.createEl("span",{cls:"paperforge-workflow-toggle-label",text:_.label}),m.createEl("span",{cls:"paperforge-workflow-toggle-hint",text:_.hint}),g.addEventListener("change",async()=>{let h=g.checked,y=this._getClient();if(!y){new T.Notice("[!!] PaperForge backend unavailable",6e3),g.checked=!h;return}try{await y.setNoteFlag(r,_.key,h),this._patchCachedEntry(r,{[_.key]:h}),this._currentPaperEntry=nt(this._currentPaperEntry,{[_.key]:h})}catch(v){g.checked=!h,new T.Notice("[!!] Flag update failed: "+((v==null?void 0:v.message)||v),6e3)}})}let d=t.health||{},u=[["PDF Health",d.pdf_health||"\u2014"],["OCR Status",t.ocr_status||"\u2014"],["Asset Health",d.asset_health||"\u2014"],["Note Path",t.note_path||"\u2014"],["Fulltext Path",t.fulltext_path||"\u2014"]],f=new Set(["Note Path","Fulltext Path","Key"]);for(let[_,m]of u){let g=s.createEl("div",{cls:"paperforge-technical-row"});g.createEl("span",{cls:"paperforge-technical-label",text:_});let h=g.createEl("span",{cls:"paperforge-technical-value",text:String(m)});f.has(_)&&m&&m!=="\u2014"&&(h.addClass("pf-copy"),h.addEventListener("click",()=>{navigator.clipboard.writeText(m),new T.Notice(_+" copied")}))}r&&this._renderQualitySection(s,r)}_renderQualitySection(e,t){let r=e.createEl("div",{cls:"paperforge-quality-section"}),n=r.createEl("button",{cls:"paperforge-technical-details-toggle"}),a=r.createEl("div",{cls:"paperforge-quality-body"});a.style.display="none",n.setText("Render Quality \u25B8"),n.addEventListener("click",()=>{let s=a.style.display!=="none";a.style.display=s?"none":"block",n.setText(s?"Render Quality \u25B8":"Render Quality \u25BE"),!s&&!a.dataset.loaded&&this._loadQualitySection(a,t)})}async _loadQualitySection(e,t){var a,s,c,l,d;let r=this._getClient();if(!r){e.empty(),e.dataset.loaded="1",e.createEl("p",{cls:"pf-status-warn",text:"Backend unavailable"});return}e.dataset.loaded="1",e.empty();let n=e.createEl("p",{cls:"pf-status-checking",text:"Checking render consistency\u2026"});try{let u=await r.renderAudit(t),_=((a=u==null?void 0:u.papers)!=null?a:[]).find(y=>y.paper_key===t),m=String((s=u==null?void 0:u.state)!=null?s:"UNKNOWN");n.setText(`Render consistency: ${m}`),n.setAttr("class",m==="CLEAN"?"pf-status-ok":"pf-status-warn");let g=(c=_==null?void 0:_.issues)!=null?c:[];if(g.length>0){let y=e.createEl("ul",{cls:"paperforge-quality-issues"});for(let v of g.slice(0,5))y.createEl("li",{text:String((d=(l=v.message)!=null?l:v.code)!=null?d:JSON.stringify(v))});g.length>5&&y.createEl("li",{text:`\u2026and ${g.length-5} more`})}let h=e.createDiv({cls:"paperforge-quality-staging"});this._renderQualityStaging(h,t,e)}catch(u){n.setText(`Render audit failed: ${u instanceof Error?u.message:String(u)}`)}}_renderQualityStaging(e,t,r){var a;e.empty();let n=((a=this._qualityStagingCache)==null?void 0:a.key)===t?this._qualityStagingCache.data:null;if(!n){e.createEl("button",{cls:"pf-action-btn",text:"Stage R/P proposals"}).addEventListener("click",()=>{this._loadQualityStaging(e,t,r)});return}this._renderQualityStagingData(e,t,n,r)}async _loadQualityStaging(e,t,r){let n=this._getClient();if(!n){e.empty(),e.createEl("p",{cls:"pf-status-warn",text:"Backend unavailable"});return}e.empty(),e.createEl("p",{cls:"pf-status-checking",text:"Staging R/P proposals (isolated tmp root)\u2026"});try{let a=await n.renderReconcileStaging(t);this._qualityStagingCache={key:t,data:a},this._renderQualityStagingData(e,t,a,r)}catch(a){e.empty(),e.createEl("p",{cls:"pf-status-warn",text:`Staging failed: ${a instanceof Error?a.message:String(a)}`})}}_renderQualityStagingData(e,t,r,n){var d,u,f,_,m,g,h,y,v;e.empty();let s=((d=r.r_details)!=null?d:[]).filter(b=>typeof b.object_id=="string"&&b.object_id);if(s.length>0){e.createEl("h4",{text:"R exact repairs"});for(let b of s){let w=String(b.object_id),k=e.createDiv({cls:"paperforge-quality-r-row"}),x=b.staged===!0;k.createEl("span",{text:`${w} ${x?"(staged)":"(unstaged)"}`}),b.image&&this._renderPreviewArtifact(k,String(b.image));let E=k.createEl("button",{cls:"pf-action-btn",text:"Promote"});x||(E.disabled=!0),E.addEventListener("click",()=>{this._promoteRObject(n,t,w)})}}let l=((u=r.p_details)!=null?u:[]).filter(b=>typeof b.final_plan_hash=="string"&&b.final_plan_hash);if(l.length>0){e.createEl("h4",{text:"P proposals \u2014 review the candidate before accepting"});for(let b of l){let w=String((f=b.label)!=null?f:""),k=String(b.final_plan_hash),x=e.createDiv({cls:"paperforge-quality-p-card"});x.createEl("div",{text:`Figure ${w} \u2014 page ${String((_=b.page)!=null?_:"?")}, decision: ${String((m=b.decision)!=null?m:"?")}, staged: ${b.staged===!0}`});let E=b.caption_text;typeof E=="string"&&E.trim()&&x.createEl("div",{cls:"paperforge-quality-caption",text:E});let S=(g=b.member_refs)!=null?g:[];if(S.length>0){let R=x.createEl("ul",{cls:"paperforge-quality-members"});for(let F of S)R.createEl("li",{text:`p${String((h=F.page)!=null?h:"?")} \xB7 block ${String((y=F.block_id)!=null?y:"?")} \xB7 bbox ${JSON.stringify((v=F.bbox)!=null?v:null)}`})}b.preview&&this._renderPreviewArtifact(x,String(b.preview)),x.createEl("div",{cls:"paperforge-quality-plan-hash",text:`plan ${k.slice(0,12)}\u2026`});let C=x.createEl("button",{cls:"pf-action-btn",text:"Accept"});b.staged!==!0&&(C.disabled=!0),C.addEventListener("click",()=>{this._acceptProposalCard(n,t,w,k)})}}s.length===0&&l.length===0&&e.createEl("p",{text:"No staged R/P candidates for this paper."})}_renderPreviewArtifact(e,t){let r=e.createDiv({cls:"paperforge-quality-preview"}),n=r.createEl("img",{cls:"paperforge-quality-preview-img",attr:{src:"file:///"+t.replace(/\\/g,"/").replace(/^\//,""),alt:"Staged preview"}});n.onerror=()=>n.style.display="none",r.createEl("button",{cls:"pf-action-btn paperforge-quality-preview-open",text:"Open preview"}).addEventListener("click",()=>{this._openExternalPath(t)})}_openExternalPath(e){try{let{shell:t}=require("electron");t.openPath(e)}catch(t){window.open(e,"_blank")}}_afterQualityMutation(e,t,r){this._qualityStagingCache=null,this._loadQualitySection(e,t),r&&new T.Notice("Authority rejected the action \u2014 re-stage and review the current proposals",8e3)}async _promoteRObject(e,t,r){var a,s,c;let n=this._getClient();if(n)try{let l=await n.promoteR(t,[r]),d=(l==null?void 0:l.ok)===!0;new T.Notice(d?`Promoted ${r}`:`Promotion rejected: ${String((c=(s=(a=l==null?void 0:l.error)==null?void 0:a.code)!=null?s:l==null?void 0:l.reason)!=null?c:"unknown")}`,8e3),this._afterQualityMutation(e,t,!d)}catch(l){new T.Notice(`Promotion failed: ${l instanceof Error?l.message:String(l)}`,8e3)}}async _acceptProposalCard(e,t,r,n){var s,c,l;let a=this._getClient();if(a)try{let d=await a.acceptProposal(t,r,n),u=(d==null?void 0:d.ok)===!0;new T.Notice(u?`Accepted proposal ${r}`:`Acceptance rejected: ${String((l=(c=(s=d==null?void 0:d.error)==null?void 0:s.code)!=null?c:d==null?void 0:d.reason)!=null?l:"unknown")}`,8e3),this._afterQualityMutation(e,t,!u)}catch(d){new T.Notice(`Acceptance failed: ${d instanceof Error?d.message:String(d)}`,8e3)}}_renderNextStepCard(e,t,r){var l,d;let n=t.next_step||"ready",a={sync:{label:"Sync Needed",text:"This paper needs to be synced from Zotero. Click to run sync.",actionId:"paperforge-sync",icon:"\u21BB"},ocr:{label:"OCR Needed",text:"Fulltext is missing but PDF is present. Click to run OCR.",actionId:"paperforge-ocr",icon:"\u229E"},repair:{label:"Repair Needed",text:"State divergence or path errors detected. Click to repair.",actionId:"paperforge-repair",icon:"\u21BA"},"rebuild index":{label:"Rebuild Needed",text:"Index may be stale. Click to run sync to rebuild.",actionId:"paperforge-sync",icon:"\u21BB"},"/pf-deep":{label:"Ready for Deep Reading",text:"Fulltext is ready. Copy /pf-deep command and run in your agent.",actionId:null,icon:"\u{1F50D}"},ready:{label:"All Set",text:"This paper is fully processed and ready for use.",actionId:"ready",icon:"\u2713"}},s=a[n]||a.ready,c=e.createEl("div",{cls:"paperforge-next-step-card"});if(n==="ready"&&c.addClass("ready"),c.createEl("div",{cls:"paperforge-next-step-label",text:"Recommended Next Step"}),c.createEl("div",{cls:"paperforge-next-step-text",text:s.text}),s.actionId&&s.actionId!=="ready"){let u=c.createEl("button",{cls:"paperforge-next-step-trigger"});u.createEl("span",{text:s.icon+"  "+s.label}),u.addEventListener("click",()=>{if(s.actionId==="paperforge-sync"){this._runLibrarySync();return}let f=ae.find(_=>_.id===s.actionId);f&&this._runAction(f,u)})}else if(n==="/pf-deep"){let u=c.createEl("button",{cls:"paperforge-next-step-trigger"});u.createEl("span",{text:"\u{1F4CB}  "+i("copy_pf_deep_cmd")}),u.addEventListener("click",()=>{let h="/pf-deep "+r;navigator.clipboard.writeText(h).then(()=>{u.setText("\u2713  "+i("copied")),new T.Notice(h+" copied")}).catch(()=>{new T.Notice("[!!] Clipboard write failed",6e3)})});let f=((d=(l=this.app.plugins.plugins.paperforge)==null?void 0:l.settings)==null?void 0:d.agent_platform)||"opencode",m={opencode:"OpenCode",claude:"Claude Code",cursor:"Cursor",github_copilot:"GitHub Copilot",windsurf:"Windsurf",codex:"Codex",gemini:"Gemini CLI",cline:"Cline"}[f]||f;c.createEl("div",{cls:"paperforge-agent-platform-label"}).setText(i("run_in_agent").replace("{0}",m))}else n==="ready"&&c.createEl("button",{cls:"paperforge-next-step-trigger"}).createEl("span",{text:"\u2713  "+s.label})}_openFulltext(e){if(!e){new T.Notice("[!!] No fulltext path available for this paper",6e3);return}let t=this.app.vault.getAbstractFileByPath(e);t?this.app.workspace.openLinkText(t.path,""):new T.Notice("[!!] Fulltext file not found: "+e,6e3)}_renderCollectionMode(){let e=this._currentDomain||"Unknown",t=this._filterByDomain(e);if(t.length===0){this._renderGlobalMode();return}if(!this._contentEl)return;let r=this._contentEl.createEl("div",{cls:"paperforge-collection-view"}),n=t.length,a=0,s=0,c=0,l=0,d=0,u=0,f=0;for(let w of t){w.has_pdf&&a++,w.ocr_status==="done"&&s++,w.ocr_status==="done"&&w.analyze===!0&&c++,w.deep_reading_status==="done"&&l++;let k=w.ocr_status||"";k==="pending"||k==="queued"?d++:k==="processing"?u++:(k==="failed"||k==="blocked"||k==="done_incomplete"||k==="nopdf")&&f++}r.createEl("div",{cls:"paperforge-collection-header"}).createEl("div",{cls:"paperforge-collection-title",text:e});let m=r.createEl("div",{cls:"paperforge-workflow-overview"});m.createEl("div",{cls:"paperforge-section-label",text:"Workflow Overview"});let g=m.createEl("div",{cls:"paperforge-workflow-funnel"}),h=[{value:n,label:"Total"},{value:a,label:"PDF Ready"},{value:s,label:"OCR Done"},{value:l,label:"Deep Read"}];for(let w=0;w<h.length;w++){let k=g.createEl("div",{cls:"paperforge-workflow-stage"});k.createEl("div",{cls:"paperforge-workflow-stage-value",text:String(h[w].value)}),k.createEl("div",{cls:"paperforge-workflow-stage-label",text:h[w].label}),w<h.length-1&&g.createEl("div",{cls:"paperforge-workflow-arrow",text:"\u2192"})}if(d+u+s+f>0){let w=r.createEl("div",{cls:"paperforge-ocr-section"}),k=w.createEl("div",{cls:"paperforge-collection-ocr-header"});k.createEl("h4",{cls:"paperforge-ocr-title",text:"OCR Pipeline"});let x=k.createEl("span",{cls:"paperforge-ocr-badge idle"});u>0?(x.addClass("active"),x.setText("Processing")):d>0?x.setText("Pending"):(x.addClass("idle"),x.setText("Idle"));let E=w.createEl("div",{cls:"paperforge-progress-track"});u>0&&E.addClass("paperforge-processing");let S=d+u+s+f,C=[{cls:"pending",count:d},{cls:"active",count:u},{cls:"done",count:s},{cls:"failed",count:f}];for(let D of C)if(D.count>0){let L=(D.count/S*100).toFixed(1);E.createEl("div",{cls:`paperforge-progress-seg ${D.cls}`,attr:{style:`width:${L}%`}})}let R=w.createEl("div",{cls:"paperforge-ocr-counts"}),F=[{cls:"pending",value:d,label:"Pending"},{cls:"active",value:u,label:"Processing"},{cls:"done",value:s,label:"Done"},{cls:"failed",value:f,label:"Attention"}];for(let D of F){let L=R.createEl("div",{cls:"paperforge-ocr-count"});L.createEl("div",{cls:"paperforge-ocr-count-value",text:D.value.toString()}),L.createEl("div",{cls:"paperforge-ocr-count-label",text:D.label})}}let y=r.createEl("div",{cls:"paperforge-collection-actions"}),v=y.createEl("button",{cls:"paperforge-contextual-btn primary"});v.createEl("span",{cls:"paperforge-contextual-btn-icon",text:"\u229E"}),v.createEl("span",{text:"Run OCR"}),v.addEventListener("click",()=>{let w=ae.find(k=>k.id==="paperforge-ocr");w&&this._runAction(w,v)});let b=y.createEl("button",{cls:"paperforge-contextual-btn"});b.createEl("span",{cls:"paperforge-contextual-btn-icon",text:"\u21BB"}),b.createEl("span",{text:"Sync Library"}),b.addEventListener("click",()=>{this._runLibrarySync()}),this.renderSearchSection(r)}async _refreshCurrentMode(){if(!(!this._currentMode||!this._contentEl)){this._contentEl.empty(),this._contentEl.addClass("switching"),this._currentPaperEntry=this._currentPaperKey?this._findEntry(this._currentPaperKey):null,this._renderModeHeader(this._currentMode);try{switch(this._currentMode){case"global":this._renderGlobalMode();break;case"paper":this._renderPaperMode();break;case"collection":this._renderCollectionMode();break;case"versions":this._renderVersionMode();break}}finally{setTimeout(()=>{this._contentEl&&this._contentEl.removeClass("switching")},50)}}}async _switchToVersionMode(e){let t=this._getClient();if(!t){new T.Notice(i("runtime_not_available")||"Environment unavailable");return}try{this._versionPapers=await t.versionsList()}catch(r){new T.Notice("[!!] Version list failed: "+((r==null?void 0:r.message)||r),6e3),this._versionPapers=[]}this._versionFilter="",this._currentMode="versions",this._currentFilePath=null,this._techDetailsExpanded=!1,this._contentEl&&(this._contentEl.empty(),this._contentEl.removeClass("switching"),this._renderModeHeader("versions"),this._renderVersionMode())}_renderVersionMode(){var g;if(!this._contentEl)return;let e=this._contentEl.createEl("div",{cls:"paperforge-version-panel"});this._versionPapers||(g=this._getClient())==null||g.versionsList().then(h=>{this._versionPapers=h,this._currentMode==="versions"&&this._renderVersionMode()}).catch(()=>{});let t=e.createEl("div",{cls:"paperforge-version-left"}),r=e.createEl("div",{cls:"paperforge-version-right"}),n=t.createEl("input",{cls:"paperforge-version-filter",attr:{type:"text",placeholder:i("version_filter_placeholder")}});n.value=this._versionFilter;let a=t.createEl("div",{cls:"paperforge-version-paper-list"}),s=()=>{a.empty();let h=this._versionFilter.toLowerCase(),y=this._versionPapers?this._versionPapers.filter(b=>!h||b.key.toLowerCase().includes(h)||b.title.toLowerCase().includes(h)):[];if(y.length===0){a.createEl("div",{cls:"paperforge-meta",text:i("version_no_backups")});return}let v=a.createEl("div",{cls:"paperforge-meta",text:i("version_papers_count").replace("{n}",String(y.length))});for(let b of y){let w=a.createEl("div",{cls:"paperforge-version-paper-item"}),k=w.createEl("span",{cls:"paperforge-version-paper-title",text:b.title}),x=w.createEl("span",{cls:"paperforge-version-paper-versions",text:b.versions.map(E=>E.label).join(" ")});w.addEventListener("click",()=>{a.querySelectorAll(".paperforge-version-paper-item.selected").forEach(E=>E.removeClass("selected")),w.addClass("selected"),l(b)})}};n.addEventListener("input",()=>{this._versionFilter=n.value,s()});let c=r.createEl("div",{cls:"paperforge-version-timeline-area"}),l=h=>{if(c.empty(),c.createEl("div",{cls:"paperforge-version-timeline-header"}).createEl("span",{cls:"pf-title",text:h.title}),h.versions.length===0){c.createEl("div",{cls:"paperforge-meta",text:i("version_no_backups")});return}let v=c.createEl("div",{cls:"paperforge-version-timeline"});for(let b of h.versions){let w=b.label===h.current_label,k=v.createEl("div",{cls:"paperforge-version-entry"+(w?" paperforge-version-current":"")}),x=k.createEl("div",{cls:"paperforge-version-dot"}),E=k.createEl("div",{cls:"paperforge-version-content"}),S=E.createEl("div",{cls:"paperforge-version-label-row"});S.createEl("span",{cls:"paperforge-version-label",text:b.label}),w&&S.createEl("span",{cls:"paperforge-version-current-tag",text:i("version_current")});let C=b.created_at?b.created_at.slice(0,10):"";E.createEl("div",{cls:"paperforge-meta",text:C+" \u2014 "+b.source});let R=b.fulltext_size?b.fulltext_size>1024?(b.fulltext_size/1024).toFixed(0)+"KB":b.fulltext_size+"B":"";R&&E.createEl("div",{cls:"paperforge-meta",text:R});let F=E.createEl("div",{cls:"paperforge-version-actions"});F.createEl("button",{cls:"pf-btn-primary",text:i("version_restore_btn")}).addEventListener("click",()=>{(async()=>{let L=this._getClient();if(!L){new T.Notice(i("runtime_not_available")||"Environment unavailable");return}try{await L.versionsRestore(h.key,b.label),new T.Notice(i("version_restore_done").replace("{label}",b.label))}catch(V){new T.Notice("[!!] Restore failed: "+((V==null?void 0:V.message)||V),6e3)}})()}),h.versions.length>1&&!w&&F.createEl("button",{cls:"pf-btn-secondary",text:i("version_compare_btn")}).addEventListener("click",()=>{u(h,b.label,h.current_label)})}},d=r.createEl("div",{cls:"paperforge-version-compare"});d.style.display="none";let u=async(h,y,v)=>{let b=this._getClient();if(!b){new T.Notice(i("runtime_not_available")||"Environment unavailable");return}let w=[];try{let E=await b.versionsPaths(h.key,y),S=await b.versionsPaths(h.key,v),C=Ae.existsSync(E.source_path)?Ae.readFileSync(E.source_path,"utf-8"):"",R=Ae.existsSync(S.source_path)?Ae.readFileSync(S.source_path,"utf-8"):"";w=pr(C,R)}catch(E){new T.Notice("[!!] Compare failed: "+((E==null?void 0:E.message)||E),6e3);return}d.style.display="block",d.empty();let k=d.createEl("div",{cls:"paperforge-version-compare-header"});if(k.createEl("span",{cls:"pf-title",text:i("version_compare_title").replace("{vA}",y).replace("{vB}",v)}),k.createEl("span",{cls:"paperforge-meta",text:i("version_compare_paragraphs").replace("{n}",String(w.length))}),w.length===0){d.createEl("div",{cls:"paperforge-meta",text:"No changes"});return}let x=d.createEl("div",{cls:"paperforge-version-diff-list"});for(let E of w){let S=x.createEl("div",{cls:"paperforge-version-diff-row"}),C=E.type==="added"?"[+]":E.type==="removed"?"[-]":"[~]",R=E.heading||"paragraph "+(E.paragraphIndex+1);S.createEl("span",{cls:"paperforge-version-diff-label",text:C+" "+R}),E.oldText&&S.createEl("pre",{cls:"paperforge-version-diff-old",text:E.oldText.slice(0,200)}),E.newText&&S.createEl("pre",{cls:"paperforge-version-diff-new",text:E.newText.slice(0,200)})}},f=e.createEl("div",{cls:"paperforge-version-actions-bar"}),_=f.createEl("button",{cls:"pf-btn-primary",text:i("version_restore_selected")}),m=f.createEl("button",{cls:"pf-btn-secondary",text:i("version_clear_old").replace("{size}","")});s()}renderSearchSection(e){this._searchContainer=e.createEl("div",{cls:"paperforge-search-section"}),this._searchContainer.createEl("div",{cls:"paperforge-search-header"}).createEl("span",{cls:"pf-label",text:"Search"});let r=this._searchContainer.createEl("div",{cls:"paperforge-search-input-row"}),n=r.createEl("span",{cls:"paperforge-search-mode",text:"M"});this._searchInput=r.createEl("input",{cls:"paperforge-search-input",attr:{type:"text",placeholder:"Search papers... (@ for deep search)"}}),this._searchResultsEl=this._searchContainer.createEl("div",{cls:"paperforge-search-results"}),this._searchInput.placeholder=i("retrieval_search_placeholder"),this._searchInput.addEventListener("input",()=>{var s;let a=((s=this._searchInput)==null?void 0:s.value)||"";if(a.startsWith("@")&&!a.startsWith("@ ")?(this._searchMode="@",n.setText("@"),n.addClass("deep"),this._searchInput&&(this._searchInput.placeholder=i("retrieval_search_placeholder_deep"))):(this._searchMode="M",n.setText("M"),n.removeClass("deep"),this._searchInput&&(this._searchInput.placeholder=i("retrieval_search_placeholder"))),clearTimeout(this._searchTimer),!a.trim()){this._searchState="idle",this._searchResults=null,this._searchActiveIndex=-1,this._renderSearchState();return}a.startsWith("@")||(this._searchTimer=setTimeout(()=>{this.executeSearch()},200))}),this._searchInput.addEventListener("keydown",a=>{var s,c;if(a.key==="Escape"){a.preventDefault(),this._searchInput&&(this._searchInput.value="",this._searchInput.blur()),this._searchState="idle",this._searchResults=null,this._searchActiveIndex=-1,this._renderSearchState();return}if(a.key==="ArrowDown"||a.key==="ArrowUp"){if(this._searchState!=="results"||!((s=this._searchResults)!=null&&s.length))return;a.preventDefault();let l=this._searchResults.length;a.key==="ArrowDown"?this._searchActiveIndex=Math.min(this._searchActiveIndex+1,l-1):this._searchActiveIndex=Math.max(this._searchActiveIndex-1,-1);let d=(c=this._searchResultsEl)==null?void 0:c.querySelectorAll(".paperforge-search-result-card");d&&d.forEach((u,f)=>{f===this._searchActiveIndex?(u.setAttribute("aria-selected","true"),u.classList.add("active")):(u.setAttribute("aria-selected","false"),u.classList.remove("active"))});return}if(a.key==="Enter"&&a.ctrlKey){a.preventDefault(),this._searchTimer&&(clearTimeout(this._searchTimer),this._searchTimer=void 0);let l=this._searchMode;this._searchMode="@",this.executeSearch(),this._searchMode=l;return}a.key==="Enter"&&(a.preventDefault(),this._searchTimer&&(clearTimeout(this._searchTimer),this._searchTimer=void 0),this.executeSearch())})}_renderSearchState(){if(!this._searchResultsEl)return;switch(this._searchResultsEl.empty(),this._searchResultsEl.removeAttribute("role"),this._searchResultsEl.removeAttribute("aria-live"),this._searchInput&&(this._searchInput.disabled=!1),this._searchState){case"idle":break;case"searching":{let t=this._searchMode==="@";this._searchResultsEl.createEl("div",{cls:"paperforge-search-loading",text:t?i("retrieval_searching_deep"):i("retrieval_searching_metadata")}),this._searchResultsEl.setAttr("aria-live","polite"),t&&this._searchInput&&(this._searchInput.disabled=!0);break}case"results":{this._searchResultsEl.setAttr("role","listbox"),this._searchResultsEl.setAttr("aria-live","polite"),this._searchResults&&this._renderSearchResultsList(this._searchResults,this._searchMode==="@"),setTimeout(()=>{var r;let t=(r=this._searchResultsEl)==null?void 0:r.querySelector(".paperforge-search-result-card");t&&t instanceof HTMLElement&&t.focus()},100);break}case"empty":{let t=this._searchResultsEl.createEl("div",{cls:"paperforge-search-empty"});t.setAttr("role","alert"),t.createEl("div",{text:i("retrieval_empty")}),t.createEl("div",{cls:"paperforge-search-empty-tips",text:i("retrieval_empty_tips")});break}case"vectors-not-built":{let t=this._searchResultsEl.createEl("div",{cls:"paperforge-search-state-card",attr:{role:"alert"}});t.addClass("warning-soft"),t.createEl("div",{cls:"paperforge-search-state-title",text:i("retrieval_vectors_not_built")}),t.createEl("div",{cls:"paperforge-search-state-desc",text:i("retrieval_vectors_not_built_desc")});let r=t.createEl("button",{cls:"pf-btn-link",text:i("retrieval_open_vector_settings")});r.addEventListener("click",()=>{let n=this.app.setting;if(n&&typeof n=="object"){let a=n.openTab;typeof a=="function"&&a.call(n,"paperforge")}}),setTimeout(()=>{r.focus()},100);break}case"backend-unavailable":{let t=this._searchResultsEl.createEl("div",{cls:"paperforge-search-state-card",attr:{role:"alert"}});t.addClass("error-soft"),t.createEl("div",{cls:"paperforge-search-state-title",text:i("retrieval_backend_unavailable")}),t.createEl("div",{cls:"paperforge-search-state-desc",text:i("retrieval_backend_unavailable_desc")});let r=t.createEl("div",{cls:"paperforge-search-state-actions"}),n=r.createEl("button",{cls:"pf-btn-primary",text:i("retrieval_run_doctor")});n.addEventListener("click",()=>{var s;(s=this._getClient())==null||s.doctor().then(c=>{let l=(c==null?void 0:c.ok)!==!1;new T.Notice(l?"[OK] Doctor complete":"[!!] Doctor reported issues",6e3)}).catch(c=>{new T.Notice("[!!] Doctor failed: "+c.message,8e3)})}),r.createEl("button",{cls:"pf-btn-secondary",text:i("retrieval_retry")}).addEventListener("click",()=>{this.executeSearch()}),setTimeout(()=>{n.focus()},100);break}case"timeout":{let t=this._searchResultsEl.createEl("div",{cls:"paperforge-search-state-card",attr:{role:"alert"}});t.addClass("warning-soft"),t.createEl("div",{cls:"paperforge-search-state-title",text:i("retrieval_timeout_title")}),t.createEl("div",{cls:"paperforge-search-state-desc",text:i("retrieval_timeout_desc")});let r=t.createEl("button",{cls:"pf-btn-primary",text:i("retrieval_retry")});r.addEventListener("click",()=>{this.executeSearch()}),setTimeout(()=>{r.focus()},100);break}case"model-changed":{let t=this._searchResultsEl.createEl("div",{cls:"paperforge-search-state-card",attr:{role:"alert"}});t.addClass("warning-soft"),t.createEl("div",{cls:"paperforge-search-state-title",text:i("retrieval_model_changed")}),t.createEl("div",{cls:"paperforge-search-state-desc",text:i("retrieval_model_changed_desc")});let r=t.createEl("button",{cls:"pf-btn-primary",text:i("retrieval_rebuild_vectors")});r.addEventListener("click",()=>{let n=this.app.setting;if(n&&typeof n=="object"){let a=n.openTab;typeof a=="function"&&a.call(n,"paperforge")}}),setTimeout(()=>{r.focus()},100);break}default:{this._searchResultsEl.createEl("div",{cls:"paperforge-search-state-card",text:i("retrieval_internal_error"),attr:{role:"alert"}}).addClass("error-soft"),setTimeout(()=>{this._searchInput&&this._searchInput.focus()},100);break}}}async executeSearch(){var s;if(!this._searchInput||!this._searchResultsEl)return;let e=this._searchInput.value.trim();if(!e)return;let t=this._searchMode==="@"||e.startsWith("@"),r=t?e.replace(/^@\s*/,"").trim():e;if(!r)return;let n=t?"retrieve":"search";this._searchState="searching",this._searchResults=null,this._searchActiveIndex=-1,this._renderSearchState();let a=this._getClient();if(!a){this._searchState="backend-unavailable",this._renderSearchState();return}try{let c=t?await a.retrieve(r,{deep:!0}):await a.search(r);this._searchResults=c,this._searchState=c.length>0?"results":"empty",this._renderSearchState()}catch(c){let l=lr(String((s=c==null?void 0:c.message)!=null?s:c));this._searchState=this._mapErrorToSearchState(l.type),this._renderSearchState()}}_mapErrorToSearchState(e){switch(e){case"vectors_not_built":return"vectors-not-built";case"vectors_corrupted":return"vectors-not-built";case"backend_unavailable":return"backend-unavailable";case"model_changed":return"model-changed";case"timeout":return"timeout";case"no_python":case"python_missing":case"import_failed":case"version_mismatch":return"backend-unavailable";default:return"backend-unavailable"}}_renderSearchResultsList(e,t){if(!this._searchResultsEl)return;if(this._searchResultsEl.setAttr("aria-live","polite"),e.length===0){this._searchResultsEl.createEl("div",{cls:"paperforge-search-empty",text:"No results found."});return}let r=this._searchResultsEl.createEl("div",{cls:"paperforge-search-results-header"});r.createEl("span",{text:i("retrieval_results_count").replace("{n}",String(e.length)).replace("{s}",e.length!==1?"s":"")}).setAttr("aria-live","polite"),r.createEl("span",{cls:"paperforge-search-mode",text:t?"@":"M"});for(let a=0;a<e.length;a++){let s=e[a];if(!s||typeof s!="object")continue;let c=s,l=a===this._searchActiveIndex,d=this._searchResultsEl.createEl("div",{cls:"paperforge-search-result-card",attr:{role:"option",tabindex:"0","aria-selected":l?"true":"false","aria-posinset":String(a+1),"aria-setsize":String(e.length)}});l&&d.addClass("active");let u=typeof c.title=="string"?c.title:typeof c.file_name=="string"?c.file_name:"(untitled)";d.createEl("div",{cls:"paperforge-search-result-title",text:u});let f=typeof c.zotero_key=="string"?c.zotero_key:"",_=typeof c.main_note_path=="string"&&c.main_note_path?c.main_note_path:null,m=typeof c.note_path=="string"&&c.note_path?c.note_path:null,g=_||m;if(!g&&f){let v=this._getCachedIndex().find(b=>b!==null&&typeof b=="object"&&"zotero_key"in b&&b.zotero_key===f);if(v&&typeof v=="object"){let b=v;g=typeof b.main_note_path=="string"&&b.main_note_path?b.main_note_path:typeof b.note_path=="string"&&b.note_path?b.note_path:null}}g?d.addEventListener("click",y=>{let v=y.ctrlKey||y.metaKey;this.app.workspace.openLinkText(g,"",v)}):d.addEventListener("click",()=>{new T.Notice("[!!] Note not found: "+(f||"unknown"),6e3)}),d.addEventListener("keydown",y=>{if(y.key==="Enter"&&g){y.preventDefault();let v=y.ctrlKey||y.metaKey;this.app.workspace.openLinkText(g,"",v)}});let h=d.createEl("div",{cls:"paperforge-search-result-meta"});if(typeof c.first_author=="string"&&c.first_author&&h.createEl("span",{cls:"paperforge-search-result-author",text:c.first_author}),typeof c.journal=="string"&&c.journal&&h.createEl("span",{cls:"paperforge-search-result-journal",text:c.journal}),c.score!==void 0){let y=c.score,v=typeof y=="number"?y.toFixed(3):String(y);h.createEl("span",{cls:"paperforge-search-result-score",text:"Score: "+v})}if(typeof c.domain=="string"&&c.domain&&d.createEl("span",{cls:"paperforge-search-result-tag",text:c.domain}),typeof c.abstract=="string"&&c.abstract){let y=c.abstract;d.createEl("div",{cls:"paperforge-search-result-abstract",text:y.length>200?y.slice(0,200)+"...":y})}if(t&&typeof c.text=="string"&&c.text){let y=c.text;d.createEl("div",{cls:"paperforge-search-result-source",text:y.length>300?y.slice(0,300)+"...":y})}}}_renderSearchError(e){this._searchResultsEl&&(this._searchResultsEl.empty(),this._searchResultsEl.createEl("div",{cls:"paperforge-search-error",text:e}))}async _runLibrarySync(){if(this._librarySyncRunning)return;let e=this._getClient();if(!e){new T.Notice("[!!] PaperForge backend unavailable",6e3);return}let t=this.app.vault.adapter.basePath;this._librarySyncRunning=!0,this._showMessage("Syncing library...","running");let r=!1;try{let n=await e.sync();r=(n==null?void 0:n.ok)!==!1,r?(this._showMessage("[OK] Sync Library: complete","ok"),new T.Notice("Sync complete"),ke(JSON.stringify(n),{runAction:a=>e.runAction(a)})):(this._showMessage("[!!] Sync failed","error"),new T.Notice("[!!] Sync Library failed",8e3))}catch(n){let a=n instanceof Error?n.message:String(n);this._showMessage("[!!] "+a,"error"),new T.Notice("[!!] Sync failed: "+a,8e3)}finally{this._librarySyncRunning=!1,this._cachedStats=null;try{await this._loadDashboardData(!1),await this._refreshCurrentMode()}catch(n){console.log("[PF] dashboard load error:",n)}r&&Je(this.app,this.app.plugins.plugins.paperforge,this.app.vault.adapter.basePath)}}async _runAction(e,t){var n,a;if(e.disabled){new T.Notice(`[i] ${e.disabledMsg||"This action is not yet available."}`,6e3);return}if(e.id==="paperforge-ocr"){let s=(a=(n=this.app.plugins)==null?void 0:n.plugins)==null?void 0:a.paperforge;if(typeof(s==null?void 0:s.requestOcrRun)=="function"){s.requestOcrRun();return}}if(t.classList.contains("running"))return;t.addClass("running"),this._showMessage("Processing...","running");let r=(s,c)=>{this._showMessage(s,c),t.removeClass("running"),this._contentEl&&this._contentEl.removeClass("switching")};try{if(e.id==="paperforge-sync"){t.removeClass("running"),await this._runLibrarySync();return}if(e.id==="paperforge-doctor"){await this._getClient().doctor(),r("[OK] "+(e.okMsg||"Doctor complete"),"ok"),new T.Notice("[OK] "+(e.okMsg||"Doctor complete")),await this._invalidateIndex(),await this._refreshCurrentMode();return}if(e.id==="paperforge-repair"){await this._getClient().repair(),r("[OK] "+(e.okMsg||"Repair complete"),"ok"),new T.Notice("[OK] "+(e.okMsg||"Repair complete")),await this._invalidateIndex(),await this._refreshCurrentMode();return}r("[!!] No client route for "+(e.id||e.commandId||"unknown"),"error"),new T.Notice("[!!] Unsupported tool: "+(e.id||e.commandId||"unknown"),8e3)}catch(s){r("[!!] "+(e.commandId||e.id)+" failed: "+((s==null?void 0:s.message)||s),"error"),new T.Notice("[!!] "+(e.commandId||e.id)+" failed: "+((s==null?void 0:s.message)||s),8e3),this._loadDashboardData(!0)}}_showMessage(e,t){this._messageEl&&(this._messageEl.setText(e),this._messageEl.className=`paperforge-message msg-${t}`)}_renderModeHeader(e){if(!this._modeContextEl)return;this._modeContextEl.empty();let t=this._modeContextEl.createEl("span",{cls:"paperforge-mode-badge"}),r="";switch(e){case"global":t.addClass("global"),t.setText("Global"),this._headerTitle&&this._headerTitle.setText("PaperForge");break;case"paper":t.addClass("paper"),t.setText("Paper"),this._headerTitle&&this._headerTitle.setText("Paper"),this._currentPaperEntry&&this._currentPaperEntry.title?r=this._currentPaperEntry.title:this._currentPaperKey?(r=this._currentPaperKey,this._modeContextEl.createEl("span",{cls:"paperforge-mode-warning",text:"Not found in index"})):r="Unknown paper";break;case"collection":t.addClass("collection"),t.setText("Collection"),this._headerTitle&&this._headerTitle.setText("Collection"),r=this._currentDomain||"Unknown Domain";break;case"versions":t.addClass("versions"),t.setText(i("version_panel_title")),this._headerTitle&&this._headerTitle.setText(i("version_panel_title"));break}r&&this._modeContextEl.createEl("span",{cls:"paperforge-mode-name",text:r})}_setupEventSubscriptions(){let e=this.app.workspace.on("active-leaf-change",()=>{this._leafChangeTimer&&clearTimeout(this._leafChangeTimer),this._leafChangeTimer=setTimeout(()=>{(async()=>{let t=await this._resolveModeForFile(this.app.workspace.getActiveFile()),r=t.mode,n=t.filePath;this._currentMode===r&&this._currentFilePath===n||await this._detectAndSwitch(t)})()},300)});this._modeSubscribers.push({event:"active-leaf-change",ref:e})}static async open(e){let t=e.app.workspace.getLeavesOfType(fe);if(t.length>0){await e.app.workspace.revealLeaf(t[0]);return}let r=e.app.workspace.getRightLeaf(!1);r&&(await r.setViewState({type:fe,active:!0}),await e.app.workspace.revealLeaf(r))}};ht();function mt(p){var e;let o=["action","run",p.action_id,"--scope",p.scope.kind];if(p.scope.kind==="papers")for(let t of(e=p.scope.keys)!=null?e:[])o.push("--key",t);return p.confirm&&o.push("--confirm",p.confirm),p.follow==="auto"&&o.push("--follow","auto"),o.push("--json"),o}var De=class{constructor(){this._queue=[];this._resolvers=[];this._done=!1;this._error=null}push(o){this._done||(this._resolvers.length>0?this._resolvers.shift()({value:o,done:!1}):this._queue.push(o))}finish(){if(!this._done)for(this._done=!0;this._resolvers.length>0;)this._resolvers.shift()({value:void 0,done:!0})}fail(o){if(!this._done)for(this._error=o,this._done=!0;this._resolvers.length>0;)this._resolvers.shift()({value:void 0,done:!0})}[Symbol.asyncIterator](){return{next:()=>this._queue.length>0?Promise.resolve({value:this._queue.shift(),done:!1}):this._done?this._error?Promise.reject(this._error):Promise.resolve({value:void 0,done:!0}):new Promise(o=>{this._resolvers.push(o)})}}};var Yr="available";function en(p){if(Array.isArray(p))return p;if(!p||typeof p!="object")return[];let o=p,e=o.data;if(Array.isArray(e))return e;if(e&&typeof e=="object"){let t=e.rows;if(Array.isArray(t))return t}return Array.isArray(o.rows)?o.rows:[]}function hr(p){let o=p;if(typeof p=="string")try{o=JSON.parse(p)}catch(t){return[]}if(!o||typeof o!="object")return[];let e=o;if(e.data&&typeof e.data=="object"){let t=e.data;if(Array.isArray(t.matches))return t.matches;if(Array.isArray(t.results))return t.results}return Array.isArray(e.matches)?e.matches:Array.isArray(e.results)?e.results:Array.isArray(o)?o:[]}var Ye=class{constructor(o){this._epoch=0;this._cache=new Map;this._inFlightReads=new Map;this._activeOperation=null;var e;this._transport=o.transport,this._clock=(e=o.clock)!=null?e:Date.now}getEpoch(){return this._epoch}invalidateCache(){this._epoch++,this._cache.clear(),this._inFlightReads.clear()}async _cachedRead(o,e,t){let r=this._clock(),n=this._cache.get(o);if(n&&n.epoch===this._epoch&&n.expiresAt>r)return n.data;let a=this._inFlightReads.get(o);if(a&&a.epoch===this._epoch)return a.promise;let s=this._epoch,c,l=(async()=>{try{let d=await t();return this._epoch===s&&this._cache.set(o,{data:d,expiresAt:this._clock()+e,epoch:s}),d}finally{c&&this._inFlightReads.get(o)===c&&this._inFlightReads.delete(o)}})();return c={promise:l,epoch:s},this._inFlightReads.set(o,c),l}isOperationActive(){return this._activeOperation!==null}get activeOperationId(){var o,e;return(e=(o=this._activeOperation)==null?void 0:o.operationId)!=null?e:null}cancelActiveOperation(){this._activeOperation&&this._activeOperation.stop()}streamOperation(o,e,t){if(this._activeOperation)throw new Error(`Another operation is already active: ${this._activeOperation.operationId}`);let r=this._transport.stream(e,t),n=new De;(async()=>{try{for await(let c of r.events)n.push(c);n.finish()}catch(c){n.fail(c)}})();let a=Date.now();se({ts:Date.now(),kind:"stream",op:`${o} ${Be(e)}`,ok:void 0,epoch:this._epoch,detail:"start"});let s=(async()=>{try{let c=await r.outcome;return se({ts:Date.now(),kind:"stream",op:`${o} ${Be(e)}`,ok:c.ok,ms:Date.now()-a,epoch:this._epoch,code:c.protocolFailure?"protocol_failure":c.cancelled?"cancelled":void 0,detail:`exit=${c.exitCode} events=${c.events.length}`}),c}finally{this._activeOperation=null,this.invalidateCache()}})();return this._activeOperation={operationId:o,stop:r.stop,outcome:s},{events:n,stop:r.stop,outcome:s}}async probe(o,e){var n,a;let t=[];e!=null&&e.expectedVersion&&t.push("--expected-version",e.expectedVersion),(e==null?void 0:e.lastOperationExitCode)!=null&&e.lastOperationExitCode!==0&&t.push("--last-operation-exit-code",String(e.lastOperationExitCode));let r=`probe:${o}:${(n=e==null?void 0:e.expectedVersion)!=null?n:""}:${(a=e==null?void 0:e.lastOperationExitCode)!=null?a:""}`;return this._cachedRead(r,6e4,async()=>{let s=await this._executeRaw(["probe",o,"--json",...t]);return JSON.parse(s)})}async probeAll(){return this._cachedRead("probe:all",6e4,async()=>{let o=await this._executeRaw(["probe","all","--json"]);return JSON.parse(o)})}async reconcile(o="all",e){let t=e?[...e].sort().join(","):"";return this._cachedRead(`reconcile:${o}:${t}`,1e4,async()=>{let r=["reconcile","--scope",o];for(let a of e!=null?e:[])r.push("--key",a);r.push("--json");let n=await this._executeRaw(r);return JSON.parse(n)})}async _executeRaw(o,e){var n,a;let t=Date.now(),r=Be(o);try{let s=await this._transport.execute(o,e);if(se({ts:Date.now(),kind:"exec",op:r,ok:!0,ms:Date.now()-t,epoch:this._epoch}),Yt())try{let c=(a=(n=JSON.parse(s))==null?void 0:n.data)==null?void 0:a.timing;if(c&&typeof c=="object"){let l=Object.entries(c).map(([d,u])=>`${d.replace(/^sync\./,"")}=${Math.round(Number(u))}ms`).join(" ");se({ts:Date.now(),kind:"exec",op:`${r} timing`,detail:l.slice(0,400)})}}catch(c){}return s}catch(s){let c=s==null?void 0:s.exitCode;throw se({ts:Date.now(),kind:"exec",op:r,ok:!1,ms:Date.now()-t,epoch:this._epoch,code:c!=null?`rc${c}`:"transport_error"}),s}}async _executePfResult(o,e){var c,l;let t=Date.now(),r=Be(o),n,a=null;try{n=await this._executeRaw(o,e)}catch(d){let u=d instanceof Error&&(c=d.stdout)!=null?c:null;if(typeof u!="string"||!u.trim())throw d;a=d,n=u}let s;try{s=JSON.parse(n)}catch(d){throw a||new Error(`Failed to parse PFResult JSON: ${n.slice(0,100)}`)}if(s&&typeof s=="object"&&"data"in s){if(s.ok===!1){let d=(l=s.error)!=null?l:{};throw se({ts:Date.now(),kind:"error",op:r,ok:!1,ms:Date.now()-t,epoch:this._epoch,code:String(d.code||"backend_error")}),new Error(String(d.message||d.code||"backend_error"))}if(a)throw se({ts:Date.now(),kind:"error",op:r,ok:!1,ms:Date.now()-t,epoch:this._epoch,code:"protocol_contradiction"}),a;return s.data}if(a)throw a;return s}async configList(){return this._executePfResult(["config","list","--json"])}async configValidate(){return this._executePfResult(["config","validate","--json"])}async configMigrate(o=!1){let e=["config","migrate"];o&&e.push("--dry-run"),e.push("--json");try{return await this._executePfResult(e)}finally{this.invalidateCache()}}async configSet(o,e){try{return await this._executePfResult(["config","set",o,String(e),"--json"])}finally{this.invalidateCache()}}async embedStatus(){return this._cachedRead("embed:status",3e4,async()=>this._executePfResult(["embed","status","--json"]))}async memoryStatus(){return this._cachedRead("memory:status",3e4,async()=>this._executePfResult(["memory","status","--json"]))}async credentialAvailable(o){return this._cachedRead(`auth-status:${o}`,6e4,async()=>{var t,r;return(r=(t=(await this._executePfResult(["auth","status",o,"--json"])).credentials)==null?void 0:t.some(n=>n.state==="available"))!=null?r:!1})}async authSetSecret(o,e,t){let r=["auth","set",o,"--stdin"];(t==null?void 0:t.replace)!==!1&&r.push("--replace"),r.push("--json");try{return await this._executePfResult(r,{stdin:e+`
-`}),!0}finally{this.invalidateCache()}}async memoryRestoreBackup(){try{return await this._executePfResult(["memory","restore-backup","--json"],{timeoutMs:3e4})}finally{this.invalidateCache()}}async embedMigrate(){try{return await this._executePfResult(["embed","migrate","--json"],{timeoutMs:6e5})}finally{this.invalidateCache()}}async runtimeHealth(){return this._executePfResult(["runtime-health","--json"],{timeoutMs:3e4})}async dashboardStats(){return this._executePfResult(["dashboard","--json"],{timeoutMs:3e4})}async versionsList(){let o=await this._executePfResult(["versions","list","--json"]);return Array.isArray(o==null?void 0:o.papers)?o.papers:[]}async versionsShow(o){var t,r;let e=await this._executePfResult(["versions","show","--key",o,"--json"]);return{versions:Array.isArray(e==null?void 0:e.versions)?e.versions:[],current_label:(t=e==null?void 0:e.current_label)!=null?t:"",current_path:(r=e==null?void 0:e.current_path)!=null?r:""}}async versionsBackups(o){let e=await this._executePfResult(["versions","backups","--key",o,"--json"]);return Array.isArray(e==null?void 0:e.backups)?e.backups:[]}async versionsPaths(o,e){let t=["versions","paths","--key",o];return e&&t.push("--label",e),t.push("--json"),this._executePfResult(t)}async versionsRestore(o,e){var t,r;try{let n=await this._executePfResult(["versions","restore","--key",o,"--label",e,"--json"]);return{target_path:(t=n==null?void 0:n.target_path)!=null?t:"",label:(r=n==null?void 0:n.label)!=null?r:e,provenance_persisted:(n==null?void 0:n.provenance_persisted)===!0}}finally{this.invalidateCache()}}async setNoteFlag(o,e,t){try{let r=await this._executePfResult(["note","set-flag","--key",o,"--field",e,"--value",t?"true":"false","--json"]);return{changed:(r==null?void 0:r.changed)===!0}}finally{this.invalidateCache()}}async resolvePaperContext(o){var t;let e=await this._executePfResult(["paper-lookup","--from-path",o,"--json"]);return(t=e==null?void 0:e.identity)!=null?t:null}async backendVersion(){return(await this._executeRaw(["--version"])).trim().replace(/^paperforge\s+/,"")}async doctor(){return this._executePfResult(["doctor","--json"])}async repair(){try{return await this._executePfResult(["repair","--fix","--fix-paths","--json"],{timeoutMs:6e5})}finally{this.invalidateCache()}}async listActions(){return this._cachedRead("action:list",3e5,async()=>{let o=await this._executePfResult(["action","list","--json"]);return Array.isArray(o==null?void 0:o.actions)?o.actions:[]})}async describeAction(o){return this._cachedRead(`action:describe:${o}`,3e5,async()=>this._executePfResult(["action","describe",o,"--json"]))}async preflightAction(o,e={kind:"all"}){var r;let t=["action","preflight",o,"--scope",e.kind];for(let n of(r=e.keys)!=null?r:[])t.push("--key",n);return t.push("--json"),this._executePfResult(t)}async runAction(o,e){var a,s,c,l;let t=await this.describeAction(o.action_id);if(t!=null&&t.availability&&t.availability!==Yr)return{ok:!1,payload:{ok:!1,action_id:o.action_id,availability:t.availability,availability_reason:t.availability_reason},exitCode:1};let r={...o,scope:(a=o.scope)!=null?a:{kind:"all"}},n=mt(r);if((t==null?void 0:t.execution_mode)==="stream"){let u=await this.streamOperation(`action.${o.action_id}`,n,e).outcome,f=u.events.find(m=>m.event==="result"||m.event==="error"||m.event==="cancelled"),_=(s=f==null?void 0:f.result)!=null?s:null;return{ok:u.ok,payload:_,exitCode:(c=u.exitCode)!=null?c:u.ok?0:1,cancelled:u.cancelled}}try{let d=await this._executeRaw(n),u=null;try{u=JSON.parse(d)}catch(f){}return{ok:!0,payload:u,exitCode:0}}catch(d){return{ok:!1,payload:null,exitCode:(l=d.exitCode)!=null?l:1}}finally{this.invalidateCache()}}streamAction(o,e={kind:"all"},t){let r=typeof o=="string"?{action_id:o,scope:e}:o,n=mt(r);return this.streamOperation(`action.${r.action_id}`,n,t)}setup(o,e){let t=["setup","--json"];return(o.modular||!o.headless)&&t.push("--modular"),o.systemDir&&t.push("--system-dir",o.systemDir),o.resourcesDir&&t.push("--resources-dir",o.resourcesDir),o.literatureDir&&t.push("--literature-dir",o.literatureDir),o.baseDir&&t.push("--base-dir",o.baseDir),o.zoteroData&&t.push("--zotero-data",o.zoteroData),o.agent&&t.push("--agent",o.agent),o.skipChecks&&t.push("--skip-checks"),this.streamOperation("foundation.setup",t,e)}async sync(o=!1){let e=["sync","--json"];o&&e.push("--dry-run");let t=await this._executeRaw(e);return this.invalidateCache(),JSON.parse(t)}async search(o,e){var s;let r=(s=(typeof e=="number"?{limit:e}:e!=null?e:{}).limit)!=null?s:20,n=o.trim(),a=`search:${n}:${r}`;return this._cachedRead(a,3e4,async()=>{let c=await this._executeRaw(["search",n,"--limit",String(r),"--json"]);return hr(c)})}async retrieve(o,e){var d,u;let t=typeof e=="number"?{limit:e}:e!=null?e:{},r=(d=t.limit)!=null?d:5,n=!!t.deep,a=((u=t.paper)==null?void 0:u.trim())||"",s=t.expand!==!1,c=o.trim(),l=`retrieve:${c}:${r}:${n}:${a}:${s}`;return this._cachedRead(l,3e4,async()=>{let f=["retrieve",c,"--limit",String(r)];n&&f.push("--deep"),a&&f.push("--paper",a),s||f.push("--no-expand"),f.push("--json");let _=await this._executeRaw(f);return hr(_)})}async read(o,e,t="auto"){return await this._executeRaw(["read",o,"--find",e,"--source",t])}async paperStatus(o){return this._cachedRead(`paper-status:${o}`,3e4,async()=>{let e=await this._executeRaw(["paper-status",o,"--json"]);return JSON.parse(e)})}async queryOcrPapers(o){let e=o?[...o].sort():[],t=e.join(",");return this._cachedRead(`ocr-papers:${t}`,1e4,async()=>{let r=["ocr","list","--json"];e.length>0&&r.push("--keys",...e);let n=await this._executeRaw(r);return en(JSON.parse(n))})}async _executeStructuredJson(o){var e;try{let t=await this._executeRaw(o);return JSON.parse(t)}catch(t){let r=t instanceof Error&&(e=t.stdout)!=null?e:null;if(typeof r=="string"&&r.trim())try{return JSON.parse(r)}catch(n){}throw t}}async renderAudit(o){let e=["render","audit"];return o&&e.push(o),e.push("--json"),this._executeStructuredJson(e)}async renderReconcileStaging(o){var r,n;return(n=(r=(await this._executeStructuredJson(["render","reconcile",o,"--json"])).papers)==null?void 0:r.find(a=>a.paper_key===o))!=null?n:{}}async promoteR(o,e=[]){let t=["render","promote-r",o,...e,"--json"];try{return await this._executeStructuredJson(t)}finally{this.invalidateCache()}}async acceptProposal(o,e,t){let r=["render","accept-proposal",o,e,"--plan-hash",t,"--json"];try{return await this._executeStructuredJson(r)}finally{this.invalidateCache()}}};var me=require("child_process"),br=K(require("os")),tt=K(require("path"));var tn=new Set(["start","preflight","phase","progress","paper_settled","heartbeat","item_result","result","error","cancelled"]),rn=new Set(["result","error","cancelled"]),yt=class{constructor(){this._buffer="";this._terminalSeen=!1}get protocolFailure(){return this._protocolFailure}get terminalSeen(){return this._terminalSeen}feed(o){var n;if(this._protocolFailure)return[];let t=(this._buffer+o).split(`
-`);this._buffer=(n=t.pop())!=null?n:"";let r=[];for(let a of t){if(!a.trim())continue;let s;try{s=JSON.parse(a)}catch(c){this._protocolFailure=`non-JSON stdout line: ${a.slice(0,80)}`;break}if(s.schema_version!==1){this._protocolFailure=`schema_version ${s.schema_version} != 1`;break}if(typeof s.event!="string"||!tn.has(s.event)){this._protocolFailure=`unknown event: ${String(s.event)}`;break}if(this._terminalSeen){this._protocolFailure="event after terminal";break}rn.has(s.event)&&(this._terminalSeen=!0),r.push(s)}return r}finishEOF(){!this._protocolFailure&&!this._terminalSeen&&(this._protocolFailure="EOF without terminal event")}};function nn(p){if(p.pid)if(process.platform==="win32")try{(0,me.spawn)("taskkill",["/T","/F","/PID",String(p.pid)],{stdio:"ignore"})}catch(o){p.kill("SIGKILL")}else try{process.kill(-p.pid,"SIGKILL")}catch(o){p.kill("SIGKILL")}}function an(p,o,e,t,r){var f,_,m;let n=(f=r.env)!=null?f:yr(),a=(0,me.spawn)(p,[...o,"-m","paperforge","--vault",e,...t],{cwd:e,shell:!1,windowsHide:!0,env:n,stdio:["pipe","pipe","pipe"]}),s=new yt,c=[],l=!1,d=null;(_=a.stdout)==null||_.setEncoding("utf-8"),(m=a.stdout)==null||m.on("data",g=>{for(let h of s.feed(g))c.push(h),r.onEvent(h)});let u=new Promise(g=>{a.on("close",h=>{d&&clearTimeout(d),s.finishEOF(),g({ok:!s.protocolFailure&&h===0,exitCode:h,cancelled:h===130,events:c,protocolFailure:s.protocolFailure})}),a.on("error",h=>{d&&clearTimeout(d),g({ok:!1,exitCode:-1,cancelled:!1,events:c,protocolFailure:`spawn error: ${h.message}`})})});return{stop:()=>{var h,y;try{(h=a.stdin)==null||h.write(`PAPERFORGE_STOP
-`)}catch(v){}if(d)return;let g=(y=r.graceMs)!=null?y:5e3;d=setTimeout(()=>{a.exitCode===null&&!l&&(l=!0,nn(a))},g)},promise:u}}var bt=null,mr=!1;function sn(){if(mr)return bt;mr=!0;try{let p;if(process.platform==="win32"){let o=process.env.ComSpec||"C:\\Windows\\System32\\cmd.exe";p=(0,me.execFileSync)(o,["/c","where","git"],{timeout:5e3,windowsHide:!0,encoding:"utf-8"})}else p=(0,me.execFileSync)("which",["git"],{timeout:5e3,encoding:"utf-8"});if(p){let o=p.split(`
-`)[0].trim();o&&(bt=tt.dirname(o))}}catch(p){}return bt}function yr(){let p={...process.env},o=process.platform,e=br.homedir(),t=[],r=sn();r&&t.push(r),o==="darwin"?t.push("/opt/homebrew/bin","/usr/local/bin","/usr/bin",`${e}/.local/bin`):o==="linux"&&t.push("/usr/local/bin","/usr/bin",`${e}/.local/bin`);let n=p.PATH||"";return p.PATH=[...t,n].filter(Boolean).join(tt.delimiter),$t(p)}var et=class{constructor(o){var e,t;this._vaultPath=o.vaultPath,this._customPythonPath=(e=o.customPythonPath)==null?void 0:e.trim(),this._resolveRuntime=o.resolveRuntime,this._spawnFn=(t=o.spawnFn)!=null?t:me.spawn}async resolvePython(){if(this._resolveRuntime){let r=await this._resolveRuntime();if(r!=null&&r.path)return r;throw new Error("PaperForge Python runtime not ready. Please complete setup or configure python_path.")}if(this._customPythonPath)return{path:this._customPythonPath,args:[]};let e=new oe().readPointer(),t=ce(e);if(t!=null&&t.command)return{path:t.command,args:[...t.args]};throw new Error("PaperForge Python runtime not ready. Please complete setup or configure python_path.")}async execute(o,e){var s,c;let t=e!=null&&e.pythonExe?{path:e.pythonExe,args:[]}:await this.resolvePython(),r=(s=e==null?void 0:e.env)!=null?s:yr(),n=(c=e==null?void 0:e.timeoutMs)!=null?c:12e4,a=[...t.args,"-m","paperforge","--vault",this._vaultPath,...o];return new Promise((l,d)=>{var g,h,y,v,b,w,k;let u;try{u=this._spawnFn(t.path,a,{cwd:this._vaultPath,shell:!1,windowsHide:!0,env:r,stdio:["pipe","pipe","pipe"]})}catch(x){return d(new Error(`Failed to spawn Python process: ${x}`))}let f=[],_=[];typeof((g=u.stdout)==null?void 0:g.setEncoding)=="function"&&u.stdout.setEncoding("utf-8"),(h=u.stdout)==null||h.on("data",x=>{f.push(x.toString())}),typeof((y=u.stderr)==null?void 0:y.setEncoding)=="function"&&u.stderr.setEncoding("utf-8"),(v=u.stderr)==null||v.on("data",x=>{_.push(x.toString())});let m=null;if(n>0&&(m=setTimeout(()=>{try{u.kill()}catch(x){}d(new Error(`PaperForge command timed out after ${n}ms: ${o.join(" ")}`))},n)),e!=null&&e.stdin)try{(b=u.stdin)==null||b.write(e.stdin),(w=u.stdin)==null||w.end()}catch(x){}else(k=u.stdin)==null||k.end();u.on("close",x=>{if(clearTimeout(m),x===0)l(f.join(""));else{let E=_.join("").trim(),S=new Error(`PaperForge command failed (exit code ${x}): ${E||o.join(" ")}`);S.exitCode=x!=null?x:1,S.stderr=E,S.stdout=f.join(""),d(S)}}),u.on("error",x=>{clearTimeout(m),d(x)})})}stream(o,e){let t=new De,r=!1,n=null,a=(async()=>{let s;try{s=e!=null&&e.pythonExe?{path:e.pythonExe,args:[]}:await this.resolvePython()}catch(c){let l=(c==null?void 0:c.message)||String(c);return t.fail(c),{ok:!1,exitCode:-1,cancelled:!1,events:[],protocolFailure:l}}n=an(s.path,s.args,this._vaultPath,o,{graceMs:e==null?void 0:e.graceMs,env:e==null?void 0:e.env,onEvent:c=>{var l;t.push(c),(l=e==null?void 0:e.onEvent)==null||l.call(e,c)}}),r&&n.stop();try{let c=await n.promise;return t.finish(),c}catch(c){throw t.fail(c),c}})();return{events:t,stop:()=>{r=!0,n&&n.stop()},outcome:a}}};var vt=class extends q.Modal{constructor(e,t,r){super(e);this.onConfirm=r;this.setTitle("Migrate PaperForge configuration"),this.contentEl.createEl("p",{text:"Legacy configuration detected. Migration preview:"}),this.contentEl.createEl("pre",{cls:"pf-migration-summary"}).setText(t),this.contentEl.createEl("p",{text:"Canonical values win on conflict. Credentials are never migrated through config.",cls:"setting-item-description"});let a=this.contentEl.createDiv({cls:"pf-modal-actions"});a.createEl("button",{text:"Cancel"}).addEventListener("click",()=>this.close()),a.createEl("button",{text:"Migrate"}).addEventListener("click",()=>{this.onConfirm().finally(()=>this.close())})}},rt=class extends q.Plugin{constructor(){super(...arguments);this.agentPlatformChoices=[];this._embedStatusCache={};this._autoSyncRunning=!1;this._lastSyncTime=null;this._pollTimer=null;this._embedProcess=null;this._embedProgress={current:0,total:0,key:""};this._embedStderr="";this._memoryStatusText=null;this._ocrProgress={current:0,total:1,key:""};this._settingTab=null;this._managedRuntime=null;this._client=null;this._needsConfigMigration=!1}getClient(){var e,t,r;if(!this._client){let n=(t=(e=this.app.vault.adapter)==null?void 0:e.basePath)!=null?t:"",a=new et({vaultPath:n,customPythonPath:(r=this.settings)==null?void 0:r.python_path,resolveRuntime:async()=>this._getPythonCommand()});this._client=new Ye({transport:a})}return this._client}getManagedRuntime(){return this._managedRuntime||(this._managedRuntime=new oe),this._managedRuntime}getDebugTrace(){return Ue()}async setDebugTrace(e){this.settings.debug_trace=e,Ie(e),await this.saveSettings()}_getPythonCommand(){let e=ce(this.getManagedRuntime().readPointer());return e?{path:e.command,args:[...e.args]}:null}requestOcrRun(e=!1){if(this.getClient().isOperationActive()){new q.Notice(i("ocr_already_running"));return}let t=()=>{var r;this._ocrProgress={current:0,total:1,key:""},(r=this._settingTab)==null||r.display(),(async()=>{var d;let n={action_id:"ocr.run",scope:{kind:"all"},confirm:"ocr.run"},a=!1,s=[],c=await this.getClient().runAction(n,{onEvent:u=>{var f,_,m,g,h;u.event==="cancelled"&&(a=!0),(u.event==="start"||u.event==="phase"||u.event==="progress"||u.event==="item_result")&&(this._ocrProgress={current:Number((f=u.current)!=null?f:this._ocrProgress.current),total:Number((_=u.total)!=null?_:this._ocrProgress.total),key:String((m=u.item_id)!=null?m:this._ocrProgress.key)},u.event==="item_result"&&u.status!=="succeeded"&&u.status!=="noop"&&u.status!=="skipped"&&s.push(String((g=u.item_id)!=null?g:"")),(h=this._settingTab)==null||h.display())}});if(c.ok)new q.Notice(i("ocr_run_complete"));else if(c.cancelled||a)new q.Notice(i("ocr_stopped_notice"));else{let u=c.payload,f=u==null?void 0:u.error,_=typeof(u==null?void 0:u.availability_reason)=="string"?u.availability_reason:typeof(f==null?void 0:f.message)=="string"?f.message:"",m=s.filter(Boolean).join(", ")||_||`exit code ${c.exitCode}`;new q.Notice(i("ocr_failed_notice")+": "+m,8e3)}(d=this._settingTab)==null||d.display();let l=this.app.vault.adapter.basePath;this._autoSync(l)})().catch(n=>{var a;new q.Notice(i("ocr_failed_notice")+": "+(n.message||i("ocr_error_notice")),8e3),(a=this._settingTab)==null||a.display()})};if(e){t();return}new ee(this.app,{title:i("ocr_run_confirm_title"),effectLabel:i("ocr_run_confirm_body"),confirmLabel:i("maintenance_confirm_ok"),cancelLabel:i("maintenance_confirm_cancel")},t).open()}async onload(){await this.loadSettings(),await this.saveSettings(),Ie(this.settings.debug_trace===!0),Ht(this.app,this.settings.language),this.registerView(fe,t=>new Te(t)),this.registerView(ve,t=>new Re(t,this));try{(0,q.addIcon)(Oe,Mt)}catch(t){}this.addRibbonIcon(Oe,"PaperForge Dashboard",()=>Te.open(this)),this.addRibbonIcon("scan-text","PaperForge OCR Workspace",()=>Re.open(this)),this._settingTab=new Xe(this.app,this),this.addSettingTab(this._settingTab),this.addCommand({id:"paperforge-status-panel",name:i("guide_open"),callback:()=>Te.open(this)}),this.addCommand({id:"paperforge-ocr-workspace",name:"Open OCR Workspace",callback:()=>Re.open(this)});for(let t of ae)t.id!=="paperforge-ocr-redo"&&this.addCommand({id:t.id,name:t.title,callback:async()=>{var n;if(t.id==="paperforge-ocr"){this.requestOcrRun();return}if(t.disabled){new q.Notice(`[i] ${t.disabledMsg||"This action is not yet available."}`,6e3);return}let r=this.getClient();try{if(t.id==="paperforge-sync"){let a=this.app.vault.adapter.basePath;this._autoSync(a);return}if(t.id==="paperforge-doctor"){new q.Notice(`PaperForge: running ${t.commandId}...`),await r.doctor(),new q.Notice(`[OK] ${t.okMsg}`);return}if(t.id==="paperforge-repair"){new q.Notice(`PaperForge: running ${t.commandId}...`),await r.repair(),new q.Notice(`[OK] ${t.okMsg}`),(n=this._settingTab)==null||n._refreshAllReadModels();return}new q.Notice(`[!!] Unsupported tool: ${t.id}`,8e3)}catch(a){new q.Notice(`[!!] ${t.commandId} failed: ${String((a==null?void 0:a.message)||a).slice(0,120)}`,8e3)}}});this.addCommand({id:"paperforge-migrate-config",name:"Migrate PaperForge legacy configuration",callback:()=>this._runLegacyConfigMigration()}),this._startConvergenceTimer(),this._checkReleaseNotes(),this.app.vault.adapter.basePath&&(this.getClient().configValidate().then(t=>{t.state==="migration_required"&&(this._needsConfigMigration=!0)}).catch(()=>{}),this.getClient().embedStatus().then(t=>{t&&(this._embedStatusCache=t)}).catch(()=>{}))}_runLegacyConfigMigration(){this.app.vault.adapter.basePath&&(async()=>{var n;let t=await this.getClient().configMigrate(!0).catch(a=>null),r=t&&((n=t.warnings)!=null&&n.length)?t.warnings.join(`
-`):"No conflicts; legacy path keys will move under vault_config.";new vt(this.app,r,async()=>{var a,s,c,l,d,u,f,_;await this.getClient().configMigrate(!1).catch(m=>{new q.Notice(`PaperForge: config migrate failed: ${String(m)}`)});try{let m=await this.getClient().configList(),g=S=>{var C;return(C=m.fields.find(R=>R.key===S))==null?void 0:C.value},h=String((a=g("system_dir"))!=null?a:""),y=String((s=g("resources_dir"))!=null?s:""),v=String((c=g("literature_dir"))!=null?c:""),b=String((l=g("base_dir"))!=null?l:""),w=String((d=g("zotero_data_dir"))!=null?d:""),k=String((u=g("vector_db_api_base"))!=null?u:""),x=String((f=g("vector_db_api_model"))!=null?f:""),E=String((_=g("agent_platform"))!=null?_:"");h&&(this.settings.system_dir=h),y&&(this.settings.resources_dir=y),v&&(this.settings.literature_dir=v),b&&(this.settings.base_dir=b),w&&(this.settings.zotero_data_dir=w),k&&(this.settings.vector_db_api_base=k),x&&(this.settings.vector_db_api_model=x),E&&(this.settings.agent_platform=E),Ge({system_dir:h||"System",resources_dir:y||"Resources",literature_dir:v||"Literature",base_dir:b||"Bases",_warning:null})}catch(m){}this._needsConfigMigration=!1,await this.saveSettings(),new q.Notice("PaperForge: configuration migrated")}).open()})()}_startConvergenceTimer(){var r;let e=this.app.vault.adapter.basePath,t=Math.max(30,(r=this.settings.autoSyncIntervalSeconds)!=null?r:120)*1e3;this.settings.autoSyncEnabled!==!1&&(this._autoSync(e),this._pollTimer=setInterval(()=>{gt()&&this._autoSync(e)},t))}_autoSync(e){this._autoSyncRunning||(this._autoSyncRunning=!0,(async()=>{var r;let t=!1;try{let n=this.getClient(),a=await n.sync();t=(a==null?void 0:a.ok)!==!1,t&&(this._lastSyncTime=new Date().toLocaleTimeString(),ke(JSON.stringify(a),{runAction:s=>n.runAction(s)}),(r=this._settingTab)==null||r._refreshAllReadModels())}catch(n){t=!1}finally{this._autoSyncRunning=!1,this._memoryStatusText=null}})())}readPaperforgeJson(){return{}}savePaperforgeJson(e){console.warn("PaperForge: savePaperforgeJson is retired; use paperforge config set")}onunload(){var e;this._pollTimer&&clearInterval(this._pollTimer),this.app.workspace.detachLeavesOfType(fe),(e=this._client)==null||e.cancelActiveOperation()}async loadSettings(){var n,a,s,c,l,d,u,f,_,m;let e=(n=await this.loadData())!=null?n:{};this.settings=Object.assign({},Le,e),this.settings.features&&Le.features&&(this.settings.features=Object.assign({},Le.features,this.settings.features||{})),this.settings.frozen_skills||(this.settings.frozen_skills={});let t=!!e.capabilityState||!!e.last_seen_version||!!e.vault_path;if(e._setup_complete===!1&&t&&e._setup_journey_started!==!0&&(this.settings._setup_complete=!0),this.app.vault.adapter.basePath)try{let g=await this.getClient().configList(),h=R=>{var F;return(F=g.fields.find(D=>D.key===R))==null?void 0:F.value},y=String((a=h("system_dir"))!=null?a:""),v=String((s=h("resources_dir"))!=null?s:""),b=String((c=h("literature_dir"))!=null?c:""),w=String((l=h("base_dir"))!=null?l:""),k=String((d=h("zotero_data_dir"))!=null?d:"");y&&(this.settings.system_dir=y),v&&(this.settings.resources_dir=v),b&&(this.settings.literature_dir=b),w&&(this.settings.base_dir=w),k&&(this.settings.zotero_data_dir=k);let x=String((u=h("vector_db_api_base"))!=null?u:""),E=String((f=h("vector_db_api_model"))!=null?f:""),S=String((_=h("agent_platform"))!=null?_:"");x&&(this.settings.vector_db_api_base=x),E&&(this.settings.vector_db_api_model=E),S&&(this.settings.agent_platform=S);let C=g.fields.find(R=>R.key==="agent_platform");this.agentPlatformChoices=(m=C==null?void 0:C.choices)!=null?m:[],Ge({system_dir:y||"System",resources_dir:v||"Resources",literature_dir:b||"Literature",base_dir:w||"Bases",_warning:null})}catch(g){}if(this.settings.python_path&&this.settings.python_path.trim()){let g=this.settings.python_path.trim();this.settings._python_path_stale=!vr.existsSync(g)}}async saveSettings(){let e={};for(let t of Object.keys(Le))t in this.settings&&(e[t]=this.settings[t]);await this.saveData(e)}_checkReleaseNotes(){let e=this.manifest.version;if(this.settings.last_seen_version===e)return;let a=(dt().versions||[]).find(c=>c.version===e);class s extends q.Modal{constructor(l,d){super(l),this._entry=d}onOpen(){let{contentEl:l}=this;if(l.createEl("h2",{text:`PaperForge v${e} \u66F4\u65B0\u8BF4\u660E`}),this._entry){if(l.createEl("p",{text:this._entry.title,cls:"paperforge-modal-subtitle"}),this._entry.breaking_or_migration&&this._entry.breaking_or_migration.length>0){l.createEl("h4",{text:"\u884C\u4E3A\u53D8\u66F4 / \u8FC1\u79FB\u6CE8\u610F"});for(let d of this._entry.breaking_or_migration)l.createEl("p",{text:`\u2022 ${d}`,cls:"paperforge-modal-item"})}if(this._entry.new_features&&this._entry.new_features.length>0){l.createEl("h4",{text:"\u65B0\u529F\u80FD"});for(let d of this._entry.new_features)l.createEl("p",{text:`\u2022 ${d}`,cls:"paperforge-modal-item"})}if(this._entry.fixes&&this._entry.fixes.length>0){l.createEl("h4",{text:"\u4FEE\u590D"});for(let d of this._entry.fixes)l.createEl("p",{text:`\u2022 ${d}`,cls:"paperforge-modal-item"})}if(this._entry.recommended_actions&&this._entry.recommended_actions.length>0){let d=l.createEl("div",{cls:"paperforge-release-recommended"});d.createEl("h4",{text:"\u5EFA\u8BAE\u64CD\u4F5C",cls:""}),d.style.marginBottom="8px";for(let u of this._entry.recommended_actions)d.createEl("p",{text:`\u2022 ${u}`,cls:"paperforge-release-item-bold"})}}else l.createEl("p",{text:"\u7248\u672C\u5DF2\u66F4\u65B0\u81F3 v"+e+"\uFF0C\u8BF7\u524D\u5F80\u8BBE\u7F6E \u2192 \u66F4\u65B0\u4E0E\u624B\u518C \u67E5\u770B\u5B8C\u6574\u66F4\u65B0\u8BB0\u5F55\u3002"});new q.Setting(l).addButton(d=>d.setButtonText("\u77E5\u9053\u4E86").setCta().onClick(()=>{this.close()}))}onClose(){let{contentEl:l}=this;l.empty()}}new s(this.app,a).open(),this.settings.last_seen_version=e,this.saveSettings()}};
+`
+      )[0]
+      .trim();
+    return !s || s.startsWith("###") || s.startsWith("##")
+      ? null
+      : s.length > 300
+        ? s.slice(0, 300) + "..."
+        : s;
+  }
+  _renderRecentDiscussionCard(e, t) {
+    let r = e.createEl("div", { cls: "paperforge-discussion-card" });
+    if (((r.style.display = "none"), !t.note_path)) return;
+    let n = t.note_path.lastIndexOf("/"),
+      s = (n !== -1 ? t.note_path.substring(0, n) : ".") + "/ai/discussion.md";
+    this.app.vault.adapter
+      .exists(s)
+      .then((c) => {
+        if (c) return this.app.vault.adapter.read(s);
+      })
+      .then(async (c) => {
+        if (!c) return;
+        let l = this._parseDiscussionMD(c);
+        if (!l || l.length === 0) return;
+        ((r.style.display = "block"),
+          r
+            .createEl("div", { cls: "paperforge-discussion-header" })
+            .createEl("span", {
+              cls: "paperforge-discussion-title",
+              text: "\u6700\u8FD1\u8BA8\u8BBA",
+            }));
+        for (let f of l) {
+          let _ = r.createEl("div", { cls: "paperforge-discussion-item" }),
+            m = _.createEl("div", { cls: "paperforge-discussion-q" });
+          (m.createEl("span", {
+            cls: "paperforge-discussion-q-label",
+            text: "\u63D0\u95EE\uFF1A",
+          }),
+            m.createEl("span", {
+              cls: "paperforge-discussion-q-text",
+              text: f.question,
+            }));
+          let g = _.createEl("div", { cls: "paperforge-discussion-a" }),
+            h = !1;
+          if (
+            (f.answer &&
+              f.answer.length > 500 &&
+              ((h = !0), g.classList.add("paperforge-discussion-a-collapsed")),
+            await T.MarkdownRenderer.render(
+              this.app,
+              f.answer || "",
+              g,
+              s,
+              this
+            ),
+            h)
+          ) {
+            let y = !1;
+            ((_.style.cursor = "pointer"),
+              _.addEventListener("click", () => {
+                ((y = !y),
+                  g.classList.toggle("paperforge-discussion-a-collapsed", !y),
+                  g.classList.toggle("paperforge-discussion-a-expanded", y));
+              }));
+          }
+        }
+        r.createEl("a", {
+          cls: "paperforge-discussion-viewall",
+          text: "\u67E5\u770B\u5168\u90E8\u8BA8\u8BBA \u2192",
+        }).addEventListener("click", (f) => {
+          (f.preventDefault(),
+            this.app.vault.getAbstractFileByPath(s)
+              ? this.app.workspace.openLinkText(s, "")
+              : new T.Notice(
+                  "\u8BA8\u8BBA\u6587\u4EF6\u5C1A\u672A\u751F\u6210"
+                ));
+        });
+      })
+      .catch((c) => {
+        console.error("PaperForge: discussion.md read error", s, c.message);
+      });
+  }
+  _parseDiscussionMD(e) {
+    let t = e.split(/\n## /).slice(1);
+    if (t.length === 0) return null;
+    let r = t[t.length - 1],
+      n = [],
+      a = r.split(/\*\*\u95EE\u9898:\*\*/).slice(1);
+    for (let s of a) {
+      let c = s.match(/\*\*\u89E3\u7B54:\*\*/);
+      if (!c) continue;
+      let l = s.substring(0, c.index).trim(),
+        d = s.substring(c.index + 3 + 4).trim();
+      n.push({ question: l, answer: d });
+    }
+    return n.slice(-3);
+  }
+  _renderPaperTechnicalDetails(e, t) {
+    let r = this._currentPaperKey,
+      n = e.createEl("div", { cls: "paperforge-technical-details" }),
+      a = n.createEl("button", { cls: "paperforge-technical-details-toggle" }),
+      s = n.createEl("div", { cls: "paperforge-technical-details-body" });
+    ((s.style.display = "none"),
+      this._techDetailsExpanded
+        ? ((s.style.display = "block"),
+          a.setText("\u6280\u672F\u8BE6\u60C5 \u25BE"))
+        : a.setText("\u6280\u672F\u8BE6\u60C5 \u25B8"),
+      a.addEventListener("click", () => {
+        let _ = s.style.display !== "none";
+        ((s.style.display = _ ? "none" : "block"),
+          a.setText(
+            _
+              ? "\u6280\u672F\u8BE6\u60C5 \u25B8"
+              : "\u6280\u672F\u8BE6\u60C5 \u25BE"
+          ),
+          (this._techDetailsExpanded = !_));
+      }));
+    let c = s.createEl("div", { cls: "paperforge-workflow-toggles" }),
+      l = [
+        { key: "do_ocr", label: "OCR", hint: "\u52A0\u5165 OCR" },
+        {
+          key: "analyze",
+          label: "\u7CBE\u8BFB",
+          hint: "\u6807\u8BB0\u7CBE\u8BFB",
+        },
+      ];
+    for (let _ of l) {
+      let m = c.createEl("label", { cls: "paperforge-workflow-toggle" }),
+        g = m.createEl("input", {
+          type: "checkbox",
+          cls: "paperforge-workflow-checkbox",
+          attr: { "data-pf-testid": `flag-${_.key}` },
+        });
+      ((g.checked = t[_.key] === !0),
+        m.createEl("span", {
+          cls: "paperforge-workflow-toggle-label",
+          text: _.label,
+        }),
+        m.createEl("span", {
+          cls: "paperforge-workflow-toggle-hint",
+          text: _.hint,
+        }),
+        g.addEventListener("change", async () => {
+          let h = g.checked,
+            y = this._getClient();
+          if (!y) {
+            (new T.Notice("[!!] PaperForge backend unavailable", 6e3),
+              (g.checked = !h));
+            return;
+          }
+          try {
+            (await y.setNoteFlag(r, _.key, h),
+              this._patchCachedEntry(r, { [_.key]: h }),
+              (this._currentPaperEntry = nt(this._currentPaperEntry, {
+                [_.key]: h,
+              })));
+          } catch (v) {
+            ((g.checked = !h),
+              new T.Notice(
+                "[!!] Flag update failed: " +
+                  ((v == null ? void 0 : v.message) || v),
+                6e3
+              ));
+          }
+        }));
+    }
+    let d = t.health || {},
+      u = [
+        ["PDF Health", d.pdf_health || "\u2014"],
+        ["OCR Status", t.ocr_status || "\u2014"],
+        ["Asset Health", d.asset_health || "\u2014"],
+        ["Note Path", t.note_path || "\u2014"],
+        ["Fulltext Path", t.fulltext_path || "\u2014"],
+      ],
+      f = new Set(["Note Path", "Fulltext Path", "Key"]);
+    for (let [_, m] of u) {
+      let g = s.createEl("div", { cls: "paperforge-technical-row" });
+      g.createEl("span", { cls: "paperforge-technical-label", text: _ });
+      let h = g.createEl("span", {
+        cls: "paperforge-technical-value",
+        text: String(m),
+      });
+      f.has(_) &&
+        m &&
+        m !== "\u2014" &&
+        (h.addClass("pf-copy"),
+        h.addEventListener("click", () => {
+          (navigator.clipboard.writeText(m), new T.Notice(_ + " copied"));
+        }));
+    }
+    r && this._renderQualitySection(s, r);
+  }
+  _renderQualitySection(e, t) {
+    let r = e.createEl("div", { cls: "paperforge-quality-section" }),
+      n = r.createEl("button", { cls: "paperforge-technical-details-toggle" }),
+      a = r.createEl("div", { cls: "paperforge-quality-body" });
+    ((a.style.display = "none"),
+      n.setText("Render Quality \u25B8"),
+      n.addEventListener("click", () => {
+        let s = a.style.display !== "none";
+        ((a.style.display = s ? "none" : "block"),
+          n.setText(s ? "Render Quality \u25B8" : "Render Quality \u25BE"),
+          !s && !a.dataset.loaded && this._loadQualitySection(a, t));
+      }));
+  }
+  async _loadQualitySection(e, t) {
+    var a, s, c, l, d;
+    let r = this._getClient();
+    if (!r) {
+      (e.empty(),
+        (e.dataset.loaded = "1"),
+        e.createEl("p", {
+          cls: "pf-status-warn",
+          text: "Backend unavailable",
+        }));
+      return;
+    }
+    ((e.dataset.loaded = "1"), e.empty());
+    let n = e.createEl("p", {
+      cls: "pf-status-checking",
+      text: "Checking render consistency\u2026",
+    });
+    try {
+      let u = await r.renderAudit(t),
+        _ = ((a = u == null ? void 0 : u.papers) != null ? a : []).find(
+          (y) => y.paper_key === t
+        ),
+        m = String((s = u == null ? void 0 : u.state) != null ? s : "UNKNOWN");
+      (n.setText(`Render consistency: ${m}`),
+        n.setAttr("class", m === "CLEAN" ? "pf-status-ok" : "pf-status-warn"));
+      let g = (c = _ == null ? void 0 : _.issues) != null ? c : [];
+      if (g.length > 0) {
+        let y = e.createEl("ul", { cls: "paperforge-quality-issues" });
+        for (let v of g.slice(0, 5))
+          y.createEl("li", {
+            text: String(
+              (d = (l = v.message) != null ? l : v.code) != null
+                ? d
+                : JSON.stringify(v)
+            ),
+          });
+        g.length > 5 &&
+          y.createEl("li", { text: `\u2026and ${g.length - 5} more` });
+      }
+      let h = e.createDiv({ cls: "paperforge-quality-staging" });
+      this._renderQualityStaging(h, t, e);
+    } catch (u) {
+      n.setText(
+        `Render audit failed: ${u instanceof Error ? u.message : String(u)}`
+      );
+    }
+  }
+  _renderQualityStaging(e, t, r) {
+    var a;
+    e.empty();
+    let n =
+      ((a = this._qualityStagingCache) == null ? void 0 : a.key) === t
+        ? this._qualityStagingCache.data
+        : null;
+    if (!n) {
+      e.createEl("button", {
+        cls: "pf-action-btn",
+        text: "Stage R/P proposals",
+      }).addEventListener("click", () => {
+        this._loadQualityStaging(e, t, r);
+      });
+      return;
+    }
+    this._renderQualityStagingData(e, t, n, r);
+  }
+  async _loadQualityStaging(e, t, r) {
+    let n = this._getClient();
+    if (!n) {
+      (e.empty(),
+        e.createEl("p", {
+          cls: "pf-status-warn",
+          text: "Backend unavailable",
+        }));
+      return;
+    }
+    (e.empty(),
+      e.createEl("p", {
+        cls: "pf-status-checking",
+        text: "Staging R/P proposals (isolated tmp root)\u2026",
+      }));
+    try {
+      let a = await n.renderReconcileStaging(t);
+      ((this._qualityStagingCache = { key: t, data: a }),
+        this._renderQualityStagingData(e, t, a, r));
+    } catch (a) {
+      (e.empty(),
+        e.createEl("p", {
+          cls: "pf-status-warn",
+          text: `Staging failed: ${a instanceof Error ? a.message : String(a)}`,
+        }));
+    }
+  }
+  _renderQualityStagingData(e, t, r, n) {
+    var d, u, f, _, m, g, h, y, v;
+    e.empty();
+    let s = ((d = r.r_details) != null ? d : []).filter(
+      (b) => typeof b.object_id == "string" && b.object_id
+    );
+    if (s.length > 0) {
+      e.createEl("h4", { text: "R exact repairs" });
+      for (let b of s) {
+        let w = String(b.object_id),
+          k = e.createDiv({ cls: "paperforge-quality-r-row" }),
+          x = b.staged === !0;
+        (k.createEl("span", { text: `${w} ${x ? "(staged)" : "(unstaged)"}` }),
+          b.image && this._renderPreviewArtifact(k, String(b.image)));
+        let E = k.createEl("button", { cls: "pf-action-btn", text: "Promote" });
+        (x || (E.disabled = !0),
+          E.addEventListener("click", () => {
+            this._promoteRObject(n, t, w);
+          }));
+      }
+    }
+    let l = ((u = r.p_details) != null ? u : []).filter(
+      (b) => typeof b.final_plan_hash == "string" && b.final_plan_hash
+    );
+    if (l.length > 0) {
+      e.createEl("h4", {
+        text: "P proposals \u2014 review the candidate before accepting",
+      });
+      for (let b of l) {
+        let w = String((f = b.label) != null ? f : ""),
+          k = String(b.final_plan_hash),
+          x = e.createDiv({ cls: "paperforge-quality-p-card" });
+        x.createEl("div", {
+          text: `Figure ${w} \u2014 page ${String((_ = b.page) != null ? _ : "?")}, decision: ${String((m = b.decision) != null ? m : "?")}, staged: ${b.staged === !0}`,
+        });
+        let E = b.caption_text;
+        typeof E == "string" &&
+          E.trim() &&
+          x.createEl("div", { cls: "paperforge-quality-caption", text: E });
+        let S = (g = b.member_refs) != null ? g : [];
+        if (S.length > 0) {
+          let R = x.createEl("ul", { cls: "paperforge-quality-members" });
+          for (let F of S)
+            R.createEl("li", {
+              text: `p${String((h = F.page) != null ? h : "?")} \xB7 block ${String((y = F.block_id) != null ? y : "?")} \xB7 bbox ${JSON.stringify((v = F.bbox) != null ? v : null)}`,
+            });
+        }
+        (b.preview && this._renderPreviewArtifact(x, String(b.preview)),
+          x.createEl("div", {
+            cls: "paperforge-quality-plan-hash",
+            text: `plan ${k.slice(0, 12)}\u2026`,
+          }));
+        let C = x.createEl("button", { cls: "pf-action-btn", text: "Accept" });
+        (b.staged !== !0 && (C.disabled = !0),
+          C.addEventListener("click", () => {
+            this._acceptProposalCard(n, t, w, k);
+          }));
+      }
+    }
+    s.length === 0 &&
+      l.length === 0 &&
+      e.createEl("p", { text: "No staged R/P candidates for this paper." });
+  }
+  _renderPreviewArtifact(e, t) {
+    let r = e.createDiv({ cls: "paperforge-quality-preview" }),
+      n = r.createEl("img", {
+        cls: "paperforge-quality-preview-img",
+        attr: {
+          src: "file:///" + t.replace(/\\/g, "/").replace(/^\//, ""),
+          alt: "Staged preview",
+        },
+      });
+    ((n.onerror = () => (n.style.display = "none")),
+      r
+        .createEl("button", {
+          cls: "pf-action-btn paperforge-quality-preview-open",
+          text: "Open preview",
+        })
+        .addEventListener("click", () => {
+          this._openExternalPath(t);
+        }));
+  }
+  _openExternalPath(e) {
+    try {
+      let { shell: t } = require("electron");
+      t.openPath(e);
+    } catch (t) {
+      window.open(e, "_blank");
+    }
+  }
+  _afterQualityMutation(e, t, r) {
+    ((this._qualityStagingCache = null),
+      this._loadQualitySection(e, t),
+      r &&
+        new T.Notice(
+          "Authority rejected the action \u2014 re-stage and review the current proposals",
+          8e3
+        ));
+  }
+  async _promoteRObject(e, t, r) {
+    var a, s, c;
+    let n = this._getClient();
+    if (n)
+      try {
+        let l = await n.promoteR(t, [r]),
+          d = (l == null ? void 0 : l.ok) === !0;
+        (new T.Notice(
+          d
+            ? `Promoted ${r}`
+            : `Promotion rejected: ${String((c = (s = (a = l == null ? void 0 : l.error) == null ? void 0 : a.code) != null ? s : l == null ? void 0 : l.reason) != null ? c : "unknown")}`,
+          8e3
+        ),
+          this._afterQualityMutation(e, t, !d));
+      } catch (l) {
+        new T.Notice(
+          `Promotion failed: ${l instanceof Error ? l.message : String(l)}`,
+          8e3
+        );
+      }
+  }
+  async _acceptProposalCard(e, t, r, n) {
+    var s, c, l;
+    let a = this._getClient();
+    if (a)
+      try {
+        let d = await a.acceptProposal(t, r, n),
+          u = (d == null ? void 0 : d.ok) === !0;
+        (new T.Notice(
+          u
+            ? `Accepted proposal ${r}`
+            : `Acceptance rejected: ${String((l = (c = (s = d == null ? void 0 : d.error) == null ? void 0 : s.code) != null ? c : d == null ? void 0 : d.reason) != null ? l : "unknown")}`,
+          8e3
+        ),
+          this._afterQualityMutation(e, t, !u));
+      } catch (d) {
+        new T.Notice(
+          `Acceptance failed: ${d instanceof Error ? d.message : String(d)}`,
+          8e3
+        );
+      }
+  }
+  _renderNextStepCard(e, t, r) {
+    var l, d;
+    let n = t.next_step || "ready",
+      a = {
+        sync: {
+          label: "Sync Needed",
+          text: "This paper needs to be synced from Zotero. Click to run sync.",
+          actionId: "paperforge-sync",
+          icon: "\u21BB",
+        },
+        ocr: {
+          label: "OCR Needed",
+          text: "Fulltext is missing but PDF is present. Click to run OCR.",
+          actionId: "paperforge-ocr",
+          icon: "\u229E",
+        },
+        repair: {
+          label: "Repair Needed",
+          text: "State divergence or path errors detected. Click to repair.",
+          actionId: "paperforge-repair",
+          icon: "\u21BA",
+        },
+        "rebuild index": {
+          label: "Rebuild Needed",
+          text: "Index may be stale. Click to run sync to rebuild.",
+          actionId: "paperforge-sync",
+          icon: "\u21BB",
+        },
+        "/pf-deep": {
+          label: "Ready for Deep Reading",
+          text: "Fulltext is ready. Copy /pf-deep command and run in your agent.",
+          actionId: null,
+          icon: "\u{1F50D}",
+        },
+        ready: {
+          label: "All Set",
+          text: "This paper is fully processed and ready for use.",
+          actionId: "ready",
+          icon: "\u2713",
+        },
+      },
+      s = a[n] || a.ready,
+      c = e.createEl("div", { cls: "paperforge-next-step-card" });
+    if (
+      (n === "ready" && c.addClass("ready"),
+      c.createEl("div", {
+        cls: "paperforge-next-step-label",
+        text: "Recommended Next Step",
+      }),
+      c.createEl("div", { cls: "paperforge-next-step-text", text: s.text }),
+      s.actionId && s.actionId !== "ready")
+    ) {
+      let u = c.createEl("button", { cls: "paperforge-next-step-trigger" });
+      (u.createEl("span", { text: s.icon + "  " + s.label }),
+        u.addEventListener("click", () => {
+          if (s.actionId === "paperforge-sync") {
+            this._runLibrarySync();
+            return;
+          }
+          let f = ae.find((_) => _.id === s.actionId);
+          f && this._runAction(f, u);
+        }));
+    } else if (n === "/pf-deep") {
+      let u = c.createEl("button", { cls: "paperforge-next-step-trigger" });
+      (u.createEl("span", { text: "\u{1F4CB}  " + i("copy_pf_deep_cmd") }),
+        u.addEventListener("click", () => {
+          let h = "/pf-deep " + r;
+          navigator.clipboard
+            .writeText(h)
+            .then(() => {
+              (u.setText("\u2713  " + i("copied")),
+                new T.Notice(h + " copied"));
+            })
+            .catch(() => {
+              new T.Notice("[!!] Clipboard write failed", 6e3);
+            });
+        }));
+      let f =
+          ((d =
+            (l = this.app.plugins.plugins.paperforge) == null
+              ? void 0
+              : l.settings) == null
+            ? void 0
+            : d.agent_platform) || "opencode",
+        m =
+          {
+            opencode: "OpenCode",
+            claude: "Claude Code",
+            cursor: "Cursor",
+            github_copilot: "GitHub Copilot",
+            windsurf: "Windsurf",
+            codex: "Codex",
+            gemini: "Gemini CLI",
+            cline: "Cline",
+          }[f] || f;
+      c.createEl("div", { cls: "paperforge-agent-platform-label" }).setText(
+        i("run_in_agent").replace("{0}", m)
+      );
+    } else
+      n === "ready" &&
+        c
+          .createEl("button", { cls: "paperforge-next-step-trigger" })
+          .createEl("span", { text: "\u2713  " + s.label });
+  }
+  _openFulltext(e) {
+    if (!e) {
+      new T.Notice("[!!] No fulltext path available for this paper", 6e3);
+      return;
+    }
+    let t = this.app.vault.getAbstractFileByPath(e);
+    t
+      ? this.app.workspace.openLinkText(t.path, "")
+      : new T.Notice("[!!] Fulltext file not found: " + e, 6e3);
+  }
+  _renderCollectionMode() {
+    let e = this._currentDomain || "Unknown",
+      t = this._filterByDomain(e);
+    if (t.length === 0) {
+      this._renderGlobalMode();
+      return;
+    }
+    if (!this._contentEl) return;
+    let r = this._contentEl.createEl("div", {
+        cls: "paperforge-collection-view",
+      }),
+      n = t.length,
+      a = 0,
+      s = 0,
+      c = 0,
+      l = 0,
+      d = 0,
+      u = 0,
+      f = 0;
+    for (let w of t) {
+      (w.has_pdf && a++,
+        w.ocr_status === "done" && s++,
+        w.ocr_status === "done" && w.analyze === !0 && c++,
+        w.deep_reading_status === "done" && l++);
+      let k = w.ocr_status || "";
+      k === "pending" || k === "queued"
+        ? d++
+        : k === "processing"
+          ? u++
+          : (k === "failed" ||
+              k === "blocked" ||
+              k === "done_incomplete" ||
+              k === "nopdf") &&
+            f++;
+    }
+    r.createEl("div", { cls: "paperforge-collection-header" }).createEl("div", {
+      cls: "paperforge-collection-title",
+      text: e,
+    });
+    let m = r.createEl("div", { cls: "paperforge-workflow-overview" });
+    m.createEl("div", {
+      cls: "paperforge-section-label",
+      text: "Workflow Overview",
+    });
+    let g = m.createEl("div", { cls: "paperforge-workflow-funnel" }),
+      h = [
+        { value: n, label: "Total" },
+        { value: a, label: "PDF Ready" },
+        { value: s, label: "OCR Done" },
+        { value: l, label: "Deep Read" },
+      ];
+    for (let w = 0; w < h.length; w++) {
+      let k = g.createEl("div", { cls: "paperforge-workflow-stage" });
+      (k.createEl("div", {
+        cls: "paperforge-workflow-stage-value",
+        text: String(h[w].value),
+      }),
+        k.createEl("div", {
+          cls: "paperforge-workflow-stage-label",
+          text: h[w].label,
+        }),
+        w < h.length - 1 &&
+          g.createEl("div", {
+            cls: "paperforge-workflow-arrow",
+            text: "\u2192",
+          }));
+    }
+    if (d + u + s + f > 0) {
+      let w = r.createEl("div", { cls: "paperforge-ocr-section" }),
+        k = w.createEl("div", { cls: "paperforge-collection-ocr-header" });
+      k.createEl("h4", { cls: "paperforge-ocr-title", text: "OCR Pipeline" });
+      let x = k.createEl("span", { cls: "paperforge-ocr-badge idle" });
+      u > 0
+        ? (x.addClass("active"), x.setText("Processing"))
+        : d > 0
+          ? x.setText("Pending")
+          : (x.addClass("idle"), x.setText("Idle"));
+      let E = w.createEl("div", { cls: "paperforge-progress-track" });
+      u > 0 && E.addClass("paperforge-processing");
+      let S = d + u + s + f,
+        C = [
+          { cls: "pending", count: d },
+          { cls: "active", count: u },
+          { cls: "done", count: s },
+          { cls: "failed", count: f },
+        ];
+      for (let D of C)
+        if (D.count > 0) {
+          let L = ((D.count / S) * 100).toFixed(1);
+          E.createEl("div", {
+            cls: `paperforge-progress-seg ${D.cls}`,
+            attr: { style: `width:${L}%` },
+          });
+        }
+      let R = w.createEl("div", { cls: "paperforge-ocr-counts" }),
+        F = [
+          { cls: "pending", value: d, label: "Pending" },
+          { cls: "active", value: u, label: "Processing" },
+          { cls: "done", value: s, label: "Done" },
+          { cls: "failed", value: f, label: "Attention" },
+        ];
+      for (let D of F) {
+        let L = R.createEl("div", { cls: "paperforge-ocr-count" });
+        (L.createEl("div", {
+          cls: "paperforge-ocr-count-value",
+          text: D.value.toString(),
+        }),
+          L.createEl("div", {
+            cls: "paperforge-ocr-count-label",
+            text: D.label,
+          }));
+      }
+    }
+    let y = r.createEl("div", { cls: "paperforge-collection-actions" }),
+      v = y.createEl("button", { cls: "paperforge-contextual-btn primary" });
+    (v.createEl("span", {
+      cls: "paperforge-contextual-btn-icon",
+      text: "\u229E",
+    }),
+      v.createEl("span", { text: "Run OCR" }),
+      v.addEventListener("click", () => {
+        let w = ae.find((k) => k.id === "paperforge-ocr");
+        w && this._runAction(w, v);
+      }));
+    let b = y.createEl("button", { cls: "paperforge-contextual-btn" });
+    (b.createEl("span", {
+      cls: "paperforge-contextual-btn-icon",
+      text: "\u21BB",
+    }),
+      b.createEl("span", { text: "Sync Library" }),
+      b.addEventListener("click", () => {
+        this._runLibrarySync();
+      }),
+      this.renderSearchSection(r));
+  }
+  async _refreshCurrentMode() {
+    if (!(!this._currentMode || !this._contentEl)) {
+      (this._contentEl.empty(),
+        this._contentEl.addClass("switching"),
+        (this._currentPaperEntry = this._currentPaperKey
+          ? this._findEntry(this._currentPaperKey)
+          : null),
+        this._renderModeHeader(this._currentMode));
+      try {
+        switch (this._currentMode) {
+          case "global":
+            this._renderGlobalMode();
+            break;
+          case "paper":
+            this._renderPaperMode();
+            break;
+          case "collection":
+            this._renderCollectionMode();
+            break;
+          case "versions":
+            this._renderVersionMode();
+            break;
+        }
+      } finally {
+        setTimeout(() => {
+          this._contentEl && this._contentEl.removeClass("switching");
+        }, 50);
+      }
+    }
+  }
+  async _switchToVersionMode(e) {
+    let t = this._getClient();
+    if (!t) {
+      new T.Notice(i("runtime_not_available") || "Environment unavailable");
+      return;
+    }
+    try {
+      this._versionPapers = await t.versionsList();
+    } catch (r) {
+      (new T.Notice(
+        "[!!] Version list failed: " + ((r == null ? void 0 : r.message) || r),
+        6e3
+      ),
+        (this._versionPapers = []));
+    }
+    ((this._versionFilter = ""),
+      (this._currentMode = "versions"),
+      (this._currentFilePath = null),
+      (this._techDetailsExpanded = !1),
+      this._contentEl &&
+        (this._contentEl.empty(),
+        this._contentEl.removeClass("switching"),
+        this._renderModeHeader("versions"),
+        this._renderVersionMode()));
+  }
+  _renderVersionMode() {
+    var g;
+    if (!this._contentEl) return;
+    let e = this._contentEl.createEl("div", {
+      cls: "paperforge-version-panel",
+    });
+    this._versionPapers ||
+      (g = this._getClient()) == null ||
+      g
+        .versionsList()
+        .then((h) => {
+          ((this._versionPapers = h),
+            this._currentMode === "versions" && this._renderVersionMode());
+        })
+        .catch(() => {});
+    let t = e.createEl("div", { cls: "paperforge-version-left" }),
+      r = e.createEl("div", { cls: "paperforge-version-right" }),
+      n = t.createEl("input", {
+        cls: "paperforge-version-filter",
+        attr: { type: "text", placeholder: i("version_filter_placeholder") },
+      });
+    n.value = this._versionFilter;
+    let a = t.createEl("div", { cls: "paperforge-version-paper-list" }),
+      s = () => {
+        a.empty();
+        let h = this._versionFilter.toLowerCase(),
+          y = this._versionPapers
+            ? this._versionPapers.filter(
+                (b) =>
+                  !h ||
+                  b.key.toLowerCase().includes(h) ||
+                  b.title.toLowerCase().includes(h)
+              )
+            : [];
+        if (y.length === 0) {
+          a.createEl("div", {
+            cls: "paperforge-meta",
+            text: i("version_no_backups"),
+          });
+          return;
+        }
+        let v = a.createEl("div", {
+          cls: "paperforge-meta",
+          text: i("version_papers_count").replace("{n}", String(y.length)),
+        });
+        for (let b of y) {
+          let w = a.createEl("div", { cls: "paperforge-version-paper-item" }),
+            k = w.createEl("span", {
+              cls: "paperforge-version-paper-title",
+              text: b.title,
+            }),
+            x = w.createEl("span", {
+              cls: "paperforge-version-paper-versions",
+              text: b.versions.map((E) => E.label).join(" "),
+            });
+          w.addEventListener("click", () => {
+            (a
+              .querySelectorAll(".paperforge-version-paper-item.selected")
+              .forEach((E) => E.removeClass("selected")),
+              w.addClass("selected"),
+              l(b));
+          });
+        }
+      };
+    n.addEventListener("input", () => {
+      ((this._versionFilter = n.value), s());
+    });
+    let c = r.createEl("div", { cls: "paperforge-version-timeline-area" }),
+      l = (h) => {
+        if (
+          (c.empty(),
+          c
+            .createEl("div", { cls: "paperforge-version-timeline-header" })
+            .createEl("span", { cls: "pf-title", text: h.title }),
+          h.versions.length === 0)
+        ) {
+          c.createEl("div", {
+            cls: "paperforge-meta",
+            text: i("version_no_backups"),
+          });
+          return;
+        }
+        let v = c.createEl("div", { cls: "paperforge-version-timeline" });
+        for (let b of h.versions) {
+          let w = b.label === h.current_label,
+            k = v.createEl("div", {
+              cls:
+                "paperforge-version-entry" +
+                (w ? " paperforge-version-current" : ""),
+            }),
+            x = k.createEl("div", { cls: "paperforge-version-dot" }),
+            E = k.createEl("div", { cls: "paperforge-version-content" }),
+            S = E.createEl("div", { cls: "paperforge-version-label-row" });
+          (S.createEl("span", {
+            cls: "paperforge-version-label",
+            text: b.label,
+          }),
+            w &&
+              S.createEl("span", {
+                cls: "paperforge-version-current-tag",
+                text: i("version_current"),
+              }));
+          let C = b.created_at ? b.created_at.slice(0, 10) : "";
+          E.createEl("div", {
+            cls: "paperforge-meta",
+            text: C + " \u2014 " + b.source,
+          });
+          let R = b.fulltext_size
+            ? b.fulltext_size > 1024
+              ? (b.fulltext_size / 1024).toFixed(0) + "KB"
+              : b.fulltext_size + "B"
+            : "";
+          R && E.createEl("div", { cls: "paperforge-meta", text: R });
+          let F = E.createEl("div", { cls: "paperforge-version-actions" });
+          (F.createEl("button", {
+            cls: "pf-btn-primary",
+            text: i("version_restore_btn"),
+          }).addEventListener("click", () => {
+            (async () => {
+              let L = this._getClient();
+              if (!L) {
+                new T.Notice(
+                  i("runtime_not_available") || "Environment unavailable"
+                );
+                return;
+              }
+              try {
+                (await L.versionsRestore(h.key, b.label),
+                  new T.Notice(
+                    i("version_restore_done").replace("{label}", b.label)
+                  ));
+              } catch (V) {
+                new T.Notice(
+                  "[!!] Restore failed: " +
+                    ((V == null ? void 0 : V.message) || V),
+                  6e3
+                );
+              }
+            })();
+          }),
+            h.versions.length > 1 &&
+              !w &&
+              F.createEl("button", {
+                cls: "pf-btn-secondary",
+                text: i("version_compare_btn"),
+              }).addEventListener("click", () => {
+                u(h, b.label, h.current_label);
+              }));
+        }
+      },
+      d = r.createEl("div", { cls: "paperforge-version-compare" });
+    d.style.display = "none";
+    let u = async (h, y, v) => {
+        let b = this._getClient();
+        if (!b) {
+          new T.Notice(i("runtime_not_available") || "Environment unavailable");
+          return;
+        }
+        let w = [];
+        try {
+          let E = await b.versionsPaths(h.key, y),
+            S = await b.versionsPaths(h.key, v),
+            C = Ae.existsSync(E.source_path)
+              ? Ae.readFileSync(E.source_path, "utf-8")
+              : "",
+            R = Ae.existsSync(S.source_path)
+              ? Ae.readFileSync(S.source_path, "utf-8")
+              : "";
+          w = pr(C, R);
+        } catch (E) {
+          new T.Notice(
+            "[!!] Compare failed: " + ((E == null ? void 0 : E.message) || E),
+            6e3
+          );
+          return;
+        }
+        ((d.style.display = "block"), d.empty());
+        let k = d.createEl("div", { cls: "paperforge-version-compare-header" });
+        if (
+          (k.createEl("span", {
+            cls: "pf-title",
+            text: i("version_compare_title")
+              .replace("{vA}", y)
+              .replace("{vB}", v),
+          }),
+          k.createEl("span", {
+            cls: "paperforge-meta",
+            text: i("version_compare_paragraphs").replace(
+              "{n}",
+              String(w.length)
+            ),
+          }),
+          w.length === 0)
+        ) {
+          d.createEl("div", { cls: "paperforge-meta", text: "No changes" });
+          return;
+        }
+        let x = d.createEl("div", { cls: "paperforge-version-diff-list" });
+        for (let E of w) {
+          let S = x.createEl("div", { cls: "paperforge-version-diff-row" }),
+            C =
+              E.type === "added" ? "[+]" : E.type === "removed" ? "[-]" : "[~]",
+            R = E.heading || "paragraph " + (E.paragraphIndex + 1);
+          (S.createEl("span", {
+            cls: "paperforge-version-diff-label",
+            text: C + " " + R,
+          }),
+            E.oldText &&
+              S.createEl("pre", {
+                cls: "paperforge-version-diff-old",
+                text: E.oldText.slice(0, 200),
+              }),
+            E.newText &&
+              S.createEl("pre", {
+                cls: "paperforge-version-diff-new",
+                text: E.newText.slice(0, 200),
+              }));
+        }
+      },
+      f = e.createEl("div", { cls: "paperforge-version-actions-bar" }),
+      _ = f.createEl("button", {
+        cls: "pf-btn-primary",
+        text: i("version_restore_selected"),
+      }),
+      m = f.createEl("button", {
+        cls: "pf-btn-secondary",
+        text: i("version_clear_old").replace("{size}", ""),
+      });
+    s();
+  }
+  renderSearchSection(e) {
+    ((this._searchContainer = e.createEl("div", {
+      cls: "paperforge-search-section",
+    })),
+      this._searchContainer
+        .createEl("div", { cls: "paperforge-search-header" })
+        .createEl("span", { cls: "pf-label", text: "Search" }));
+    let r = this._searchContainer.createEl("div", {
+        cls: "paperforge-search-input-row",
+      }),
+      n = r.createEl("span", { cls: "paperforge-search-mode", text: "M" });
+    ((this._searchInput = r.createEl("input", {
+      cls: "paperforge-search-input",
+      attr: {
+        type: "text",
+        placeholder: "Search papers... (@ for deep search)",
+      },
+    })),
+      (this._searchResultsEl = this._searchContainer.createEl("div", {
+        cls: "paperforge-search-results",
+      })),
+      (this._searchInput.placeholder = i("retrieval_search_placeholder")),
+      this._searchInput.addEventListener("input", () => {
+        var s;
+        let a = ((s = this._searchInput) == null ? void 0 : s.value) || "";
+        if (
+          (a.startsWith("@") && !a.startsWith("@ ")
+            ? ((this._searchMode = "@"),
+              n.setText("@"),
+              n.addClass("deep"),
+              this._searchInput &&
+                (this._searchInput.placeholder = i(
+                  "retrieval_search_placeholder_deep"
+                )))
+            : ((this._searchMode = "M"),
+              n.setText("M"),
+              n.removeClass("deep"),
+              this._searchInput &&
+                (this._searchInput.placeholder = i(
+                  "retrieval_search_placeholder"
+                ))),
+          clearTimeout(this._searchTimer),
+          !a.trim())
+        ) {
+          ((this._searchState = "idle"),
+            (this._searchResults = null),
+            (this._searchActiveIndex = -1),
+            this._renderSearchState());
+          return;
+        }
+        a.startsWith("@") ||
+          (this._searchTimer = setTimeout(() => {
+            this.executeSearch();
+          }, 200));
+      }),
+      this._searchInput.addEventListener("keydown", (a) => {
+        var s, c;
+        if (a.key === "Escape") {
+          (a.preventDefault(),
+            this._searchInput &&
+              ((this._searchInput.value = ""), this._searchInput.blur()),
+            (this._searchState = "idle"),
+            (this._searchResults = null),
+            (this._searchActiveIndex = -1),
+            this._renderSearchState());
+          return;
+        }
+        if (a.key === "ArrowDown" || a.key === "ArrowUp") {
+          if (
+            this._searchState !== "results" ||
+            !((s = this._searchResults) != null && s.length)
+          )
+            return;
+          a.preventDefault();
+          let l = this._searchResults.length;
+          a.key === "ArrowDown"
+            ? (this._searchActiveIndex = Math.min(
+                this._searchActiveIndex + 1,
+                l - 1
+              ))
+            : (this._searchActiveIndex = Math.max(
+                this._searchActiveIndex - 1,
+                -1
+              ));
+          let d =
+            (c = this._searchResultsEl) == null
+              ? void 0
+              : c.querySelectorAll(".paperforge-search-result-card");
+          d &&
+            d.forEach((u, f) => {
+              f === this._searchActiveIndex
+                ? (u.setAttribute("aria-selected", "true"),
+                  u.classList.add("active"))
+                : (u.setAttribute("aria-selected", "false"),
+                  u.classList.remove("active"));
+            });
+          return;
+        }
+        if (a.key === "Enter" && a.ctrlKey) {
+          (a.preventDefault(),
+            this._searchTimer &&
+              (clearTimeout(this._searchTimer), (this._searchTimer = void 0)));
+          let l = this._searchMode;
+          ((this._searchMode = "@"),
+            this.executeSearch(),
+            (this._searchMode = l));
+          return;
+        }
+        a.key === "Enter" &&
+          (a.preventDefault(),
+          this._searchTimer &&
+            (clearTimeout(this._searchTimer), (this._searchTimer = void 0)),
+          this.executeSearch());
+      }));
+  }
+  _renderSearchState() {
+    if (!this._searchResultsEl) return;
+    switch (
+      (this._searchResultsEl.empty(),
+      this._searchResultsEl.removeAttribute("role"),
+      this._searchResultsEl.removeAttribute("aria-live"),
+      this._searchInput && (this._searchInput.disabled = !1),
+      this._searchState)
+    ) {
+      case "idle":
+        break;
+      case "searching": {
+        let t = this._searchMode === "@";
+        (this._searchResultsEl.createEl("div", {
+          cls: "paperforge-search-loading",
+          text: t
+            ? i("retrieval_searching_deep")
+            : i("retrieval_searching_metadata"),
+        }),
+          this._searchResultsEl.setAttr("aria-live", "polite"),
+          t && this._searchInput && (this._searchInput.disabled = !0));
+        break;
+      }
+      case "results": {
+        (this._searchResultsEl.setAttr("role", "listbox"),
+          this._searchResultsEl.setAttr("aria-live", "polite"),
+          this._searchResults &&
+            this._renderSearchResultsList(
+              this._searchResults,
+              this._searchMode === "@"
+            ),
+          setTimeout(() => {
+            var r;
+            let t =
+              (r = this._searchResultsEl) == null
+                ? void 0
+                : r.querySelector(".paperforge-search-result-card");
+            t && t instanceof HTMLElement && t.focus();
+          }, 100));
+        break;
+      }
+      case "empty": {
+        let t = this._searchResultsEl.createEl("div", {
+          cls: "paperforge-search-empty",
+        });
+        (t.setAttr("role", "alert"),
+          t.createEl("div", { text: i("retrieval_empty") }),
+          t.createEl("div", {
+            cls: "paperforge-search-empty-tips",
+            text: i("retrieval_empty_tips"),
+          }));
+        break;
+      }
+      case "vectors-not-built": {
+        let t = this._searchResultsEl.createEl("div", {
+          cls: "paperforge-search-state-card",
+          attr: { role: "alert" },
+        });
+        (t.addClass("warning-soft"),
+          t.createEl("div", {
+            cls: "paperforge-search-state-title",
+            text: i("retrieval_vectors_not_built"),
+          }),
+          t.createEl("div", {
+            cls: "paperforge-search-state-desc",
+            text: i("retrieval_vectors_not_built_desc"),
+          }));
+        let r = t.createEl("button", {
+          cls: "pf-btn-link",
+          text: i("retrieval_open_vector_settings"),
+        });
+        (r.addEventListener("click", () => {
+          let n = this.app.setting;
+          if (n && typeof n == "object") {
+            let a = n.openTab;
+            typeof a == "function" && a.call(n, "paperforge");
+          }
+        }),
+          setTimeout(() => {
+            r.focus();
+          }, 100));
+        break;
+      }
+      case "backend-unavailable": {
+        let t = this._searchResultsEl.createEl("div", {
+          cls: "paperforge-search-state-card",
+          attr: { role: "alert" },
+        });
+        (t.addClass("error-soft"),
+          t.createEl("div", {
+            cls: "paperforge-search-state-title",
+            text: i("retrieval_backend_unavailable"),
+          }),
+          t.createEl("div", {
+            cls: "paperforge-search-state-desc",
+            text: i("retrieval_backend_unavailable_desc"),
+          }));
+        let r = t.createEl("div", { cls: "paperforge-search-state-actions" }),
+          n = r.createEl("button", {
+            cls: "pf-btn-primary",
+            text: i("retrieval_run_doctor"),
+          });
+        (n.addEventListener("click", () => {
+          var s;
+          (s = this._getClient()) == null ||
+            s
+              .doctor()
+              .then((c) => {
+                let l = (c == null ? void 0 : c.ok) !== !1;
+                new T.Notice(
+                  l ? "[OK] Doctor complete" : "[!!] Doctor reported issues",
+                  6e3
+                );
+              })
+              .catch((c) => {
+                new T.Notice("[!!] Doctor failed: " + c.message, 8e3);
+              });
+        }),
+          r
+            .createEl("button", {
+              cls: "pf-btn-secondary",
+              text: i("retrieval_retry"),
+            })
+            .addEventListener("click", () => {
+              this.executeSearch();
+            }),
+          setTimeout(() => {
+            n.focus();
+          }, 100));
+        break;
+      }
+      case "timeout": {
+        let t = this._searchResultsEl.createEl("div", {
+          cls: "paperforge-search-state-card",
+          attr: { role: "alert" },
+        });
+        (t.addClass("warning-soft"),
+          t.createEl("div", {
+            cls: "paperforge-search-state-title",
+            text: i("retrieval_timeout_title"),
+          }),
+          t.createEl("div", {
+            cls: "paperforge-search-state-desc",
+            text: i("retrieval_timeout_desc"),
+          }));
+        let r = t.createEl("button", {
+          cls: "pf-btn-primary",
+          text: i("retrieval_retry"),
+        });
+        (r.addEventListener("click", () => {
+          this.executeSearch();
+        }),
+          setTimeout(() => {
+            r.focus();
+          }, 100));
+        break;
+      }
+      case "model-changed": {
+        let t = this._searchResultsEl.createEl("div", {
+          cls: "paperforge-search-state-card",
+          attr: { role: "alert" },
+        });
+        (t.addClass("warning-soft"),
+          t.createEl("div", {
+            cls: "paperforge-search-state-title",
+            text: i("retrieval_model_changed"),
+          }),
+          t.createEl("div", {
+            cls: "paperforge-search-state-desc",
+            text: i("retrieval_model_changed_desc"),
+          }));
+        let r = t.createEl("button", {
+          cls: "pf-btn-primary",
+          text: i("retrieval_rebuild_vectors"),
+        });
+        (r.addEventListener("click", () => {
+          let n = this.app.setting;
+          if (n && typeof n == "object") {
+            let a = n.openTab;
+            typeof a == "function" && a.call(n, "paperforge");
+          }
+        }),
+          setTimeout(() => {
+            r.focus();
+          }, 100));
+        break;
+      }
+      default: {
+        (this._searchResultsEl
+          .createEl("div", {
+            cls: "paperforge-search-state-card",
+            text: i("retrieval_internal_error"),
+            attr: { role: "alert" },
+          })
+          .addClass("error-soft"),
+          setTimeout(() => {
+            this._searchInput && this._searchInput.focus();
+          }, 100));
+        break;
+      }
+    }
+  }
+  async executeSearch() {
+    var s;
+    if (!this._searchInput || !this._searchResultsEl) return;
+    let e = this._searchInput.value.trim();
+    if (!e) return;
+    let t = this._searchMode === "@" || e.startsWith("@"),
+      r = t ? e.replace(/^@\s*/, "").trim() : e;
+    if (!r) return;
+    let n = t ? "retrieve" : "search";
+    ((this._searchState = "searching"),
+      (this._searchResults = null),
+      (this._searchActiveIndex = -1),
+      this._renderSearchState());
+    let a = this._getClient();
+    if (!a) {
+      ((this._searchState = "backend-unavailable"), this._renderSearchState());
+      return;
+    }
+    try {
+      let c = t ? await a.retrieve(r, { deep: !0 }) : await a.search(r);
+      ((this._searchResults = c),
+        (this._searchState = c.length > 0 ? "results" : "empty"),
+        this._renderSearchState());
+    } catch (c) {
+      let l = lr(String((s = c == null ? void 0 : c.message) != null ? s : c));
+      ((this._searchState = this._mapErrorToSearchState(l.type)),
+        this._renderSearchState());
+    }
+  }
+  _mapErrorToSearchState(e) {
+    switch (e) {
+      case "vectors_not_built":
+        return "vectors-not-built";
+      case "vectors_corrupted":
+        return "vectors-not-built";
+      case "backend_unavailable":
+        return "backend-unavailable";
+      case "model_changed":
+        return "model-changed";
+      case "timeout":
+        return "timeout";
+      case "no_python":
+      case "python_missing":
+      case "import_failed":
+      case "version_mismatch":
+        return "backend-unavailable";
+      default:
+        return "backend-unavailable";
+    }
+  }
+  _renderSearchResultsList(e, t) {
+    if (!this._searchResultsEl) return;
+    if (
+      (this._searchResultsEl.setAttr("aria-live", "polite"), e.length === 0)
+    ) {
+      this._searchResultsEl.createEl("div", {
+        cls: "paperforge-search-empty",
+        text: "No results found.",
+      });
+      return;
+    }
+    let r = this._searchResultsEl.createEl("div", {
+      cls: "paperforge-search-results-header",
+    });
+    (r
+      .createEl("span", {
+        text: i("retrieval_results_count")
+          .replace("{n}", String(e.length))
+          .replace("{s}", e.length !== 1 ? "s" : ""),
+      })
+      .setAttr("aria-live", "polite"),
+      r.createEl("span", {
+        cls: "paperforge-search-mode",
+        text: t ? "@" : "M",
+      }));
+    for (let a = 0; a < e.length; a++) {
+      let s = e[a];
+      if (!s || typeof s != "object") continue;
+      let c = s,
+        l = a === this._searchActiveIndex,
+        d = this._searchResultsEl.createEl("div", {
+          cls: "paperforge-search-result-card",
+          attr: {
+            role: "option",
+            tabindex: "0",
+            "aria-selected": l ? "true" : "false",
+            "aria-posinset": String(a + 1),
+            "aria-setsize": String(e.length),
+          },
+        });
+      l && d.addClass("active");
+      let u =
+        typeof c.title == "string"
+          ? c.title
+          : typeof c.file_name == "string"
+            ? c.file_name
+            : "(untitled)";
+      d.createEl("div", { cls: "paperforge-search-result-title", text: u });
+      let f = typeof c.zotero_key == "string" ? c.zotero_key : "",
+        _ =
+          typeof c.main_note_path == "string" && c.main_note_path
+            ? c.main_note_path
+            : null,
+        m = typeof c.note_path == "string" && c.note_path ? c.note_path : null,
+        g = _ || m;
+      if (!g && f) {
+        let v = this._getCachedIndex().find(
+          (b) =>
+            b !== null &&
+            typeof b == "object" &&
+            "zotero_key" in b &&
+            b.zotero_key === f
+        );
+        if (v && typeof v == "object") {
+          let b = v;
+          g =
+            typeof b.main_note_path == "string" && b.main_note_path
+              ? b.main_note_path
+              : typeof b.note_path == "string" && b.note_path
+                ? b.note_path
+                : null;
+        }
+      }
+      (g
+        ? d.addEventListener("click", (y) => {
+            let v = y.ctrlKey || y.metaKey;
+            this.app.workspace.openLinkText(g, "", v);
+          })
+        : d.addEventListener("click", () => {
+            new T.Notice("[!!] Note not found: " + (f || "unknown"), 6e3);
+          }),
+        d.addEventListener("keydown", (y) => {
+          if (y.key === "Enter" && g) {
+            y.preventDefault();
+            let v = y.ctrlKey || y.metaKey;
+            this.app.workspace.openLinkText(g, "", v);
+          }
+        }));
+      let h = d.createEl("div", { cls: "paperforge-search-result-meta" });
+      if (
+        (typeof c.first_author == "string" &&
+          c.first_author &&
+          h.createEl("span", {
+            cls: "paperforge-search-result-author",
+            text: c.first_author,
+          }),
+        typeof c.journal == "string" &&
+          c.journal &&
+          h.createEl("span", {
+            cls: "paperforge-search-result-journal",
+            text: c.journal,
+          }),
+        c.score !== void 0)
+      ) {
+        let y = c.score,
+          v = typeof y == "number" ? y.toFixed(3) : String(y);
+        h.createEl("span", {
+          cls: "paperforge-search-result-score",
+          text: "Score: " + v,
+        });
+      }
+      if (
+        (typeof c.domain == "string" &&
+          c.domain &&
+          d.createEl("span", {
+            cls: "paperforge-search-result-tag",
+            text: c.domain,
+          }),
+        typeof c.abstract == "string" && c.abstract)
+      ) {
+        let y = c.abstract;
+        d.createEl("div", {
+          cls: "paperforge-search-result-abstract",
+          text: y.length > 200 ? y.slice(0, 200) + "..." : y,
+        });
+      }
+      if (t && typeof c.text == "string" && c.text) {
+        let y = c.text;
+        d.createEl("div", {
+          cls: "paperforge-search-result-source",
+          text: y.length > 300 ? y.slice(0, 300) + "..." : y,
+        });
+      }
+    }
+  }
+  _renderSearchError(e) {
+    this._searchResultsEl &&
+      (this._searchResultsEl.empty(),
+      this._searchResultsEl.createEl("div", {
+        cls: "paperforge-search-error",
+        text: e,
+      }));
+  }
+  async _runLibrarySync() {
+    if (this._librarySyncRunning) return;
+    let e = this._getClient();
+    if (!e) {
+      new T.Notice("[!!] PaperForge backend unavailable", 6e3);
+      return;
+    }
+    let t = this.app.vault.adapter.basePath;
+    ((this._librarySyncRunning = !0),
+      this._showMessage("Syncing library...", "running"));
+    let r = !1;
+    try {
+      let n = await e.sync();
+      ((r = (n == null ? void 0 : n.ok) !== !1),
+        r
+          ? (this._showMessage("[OK] Sync Library: complete", "ok"),
+            new T.Notice("Sync complete"),
+            ke(JSON.stringify(n), { runAction: (a) => e.runAction(a) }))
+          : (this._showMessage("[!!] Sync failed", "error"),
+            new T.Notice("[!!] Sync Library failed", 8e3)));
+    } catch (n) {
+      let a = n instanceof Error ? n.message : String(n);
+      (this._showMessage("[!!] " + a, "error"),
+        new T.Notice("[!!] Sync failed: " + a, 8e3));
+    } finally {
+      ((this._librarySyncRunning = !1), (this._cachedStats = null));
+      try {
+        (await this._loadDashboardData(!1), await this._refreshCurrentMode());
+      } catch (n) {
+        console.log("[PF] dashboard load error:", n);
+      }
+      r &&
+        Je(
+          this.app,
+          this.app.plugins.plugins.paperforge,
+          this.app.vault.adapter.basePath
+        );
+    }
+  }
+  async _runAction(e, t) {
+    var n, a;
+    if (e.disabled) {
+      new T.Notice(
+        `[i] ${e.disabledMsg || "This action is not yet available."}`,
+        6e3
+      );
+      return;
+    }
+    if (e.id === "paperforge-ocr") {
+      let s =
+        (a = (n = this.app.plugins) == null ? void 0 : n.plugins) == null
+          ? void 0
+          : a.paperforge;
+      if (typeof (s == null ? void 0 : s.requestOcrRun) == "function") {
+        s.requestOcrRun();
+        return;
+      }
+    }
+    if (t.classList.contains("running")) return;
+    (t.addClass("running"), this._showMessage("Processing...", "running"));
+    let r = (s, c) => {
+      (this._showMessage(s, c),
+        t.removeClass("running"),
+        this._contentEl && this._contentEl.removeClass("switching"));
+    };
+    try {
+      if (e.id === "paperforge-sync") {
+        (t.removeClass("running"), await this._runLibrarySync());
+        return;
+      }
+      if (e.id === "paperforge-doctor") {
+        (await this._getClient().doctor(),
+          r("[OK] " + (e.okMsg || "Doctor complete"), "ok"),
+          new T.Notice("[OK] " + (e.okMsg || "Doctor complete")),
+          await this._invalidateIndex(),
+          await this._refreshCurrentMode());
+        return;
+      }
+      if (e.id === "paperforge-repair") {
+        (await this._getClient().repair(),
+          r("[OK] " + (e.okMsg || "Repair complete"), "ok"),
+          new T.Notice("[OK] " + (e.okMsg || "Repair complete")),
+          await this._invalidateIndex(),
+          await this._refreshCurrentMode());
+        return;
+      }
+      (r(
+        "[!!] No client route for " + (e.id || e.commandId || "unknown"),
+        "error"
+      ),
+        new T.Notice(
+          "[!!] Unsupported tool: " + (e.id || e.commandId || "unknown"),
+          8e3
+        ));
+    } catch (s) {
+      (r(
+        "[!!] " +
+          (e.commandId || e.id) +
+          " failed: " +
+          ((s == null ? void 0 : s.message) || s),
+        "error"
+      ),
+        new T.Notice(
+          "[!!] " +
+            (e.commandId || e.id) +
+            " failed: " +
+            ((s == null ? void 0 : s.message) || s),
+          8e3
+        ),
+        this._loadDashboardData(!0));
+    }
+  }
+  _showMessage(e, t) {
+    this._messageEl &&
+      (this._messageEl.setText(e),
+      (this._messageEl.className = `paperforge-message msg-${t}`));
+  }
+  _renderModeHeader(e) {
+    if (!this._modeContextEl) return;
+    this._modeContextEl.empty();
+    let t = this._modeContextEl.createEl("span", {
+        cls: "paperforge-mode-badge",
+      }),
+      r = "";
+    switch (e) {
+      case "global":
+        (t.addClass("global"),
+          t.setText("Global"),
+          this._headerTitle && this._headerTitle.setText("PaperForge"));
+        break;
+      case "paper":
+        (t.addClass("paper"),
+          t.setText("Paper"),
+          this._headerTitle && this._headerTitle.setText("Paper"),
+          this._currentPaperEntry && this._currentPaperEntry.title
+            ? (r = this._currentPaperEntry.title)
+            : this._currentPaperKey
+              ? ((r = this._currentPaperKey),
+                this._modeContextEl.createEl("span", {
+                  cls: "paperforge-mode-warning",
+                  text: "Not found in index",
+                }))
+              : (r = "Unknown paper"));
+        break;
+      case "collection":
+        (t.addClass("collection"),
+          t.setText("Collection"),
+          this._headerTitle && this._headerTitle.setText("Collection"),
+          (r = this._currentDomain || "Unknown Domain"));
+        break;
+      case "versions":
+        (t.addClass("versions"),
+          t.setText(i("version_panel_title")),
+          this._headerTitle &&
+            this._headerTitle.setText(i("version_panel_title")));
+        break;
+    }
+    r &&
+      this._modeContextEl.createEl("span", {
+        cls: "paperforge-mode-name",
+        text: r,
+      });
+  }
+  _setupEventSubscriptions() {
+    let e = this.app.workspace.on("active-leaf-change", () => {
+      (this._leafChangeTimer && clearTimeout(this._leafChangeTimer),
+        (this._leafChangeTimer = setTimeout(() => {
+          (async () => {
+            let t = await this._resolveModeForFile(
+                this.app.workspace.getActiveFile()
+              ),
+              r = t.mode,
+              n = t.filePath;
+            (this._currentMode === r && this._currentFilePath === n) ||
+              (await this._detectAndSwitch(t));
+          })();
+        }, 300)));
+    });
+    this._modeSubscribers.push({ event: "active-leaf-change", ref: e });
+  }
+  static async open(e) {
+    let t = e.app.workspace.getLeavesOfType(fe);
+    if (t.length > 0) {
+      await e.app.workspace.revealLeaf(t[0]);
+      return;
+    }
+    let r = e.app.workspace.getRightLeaf(!1);
+    r &&
+      (await r.setViewState({ type: fe, active: !0 }),
+      await e.app.workspace.revealLeaf(r));
+  }
+};
+ht();
+function mt(p) {
+  var e;
+  let o = ["action", "run", p.action_id, "--scope", p.scope.kind];
+  if (p.scope.kind === "papers")
+    for (let t of (e = p.scope.keys) != null ? e : []) o.push("--key", t);
+  return (
+    p.confirm && o.push("--confirm", p.confirm),
+    p.follow === "auto" && o.push("--follow", "auto"),
+    o.push("--json"),
+    o
+  );
+}
+var De = class {
+  constructor() {
+    this._queue = [];
+    this._resolvers = [];
+    this._done = !1;
+    this._error = null;
+  }
+  push(o) {
+    this._done ||
+      (this._resolvers.length > 0
+        ? this._resolvers.shift()({ value: o, done: !1 })
+        : this._queue.push(o));
+  }
+  finish() {
+    if (!this._done)
+      for (this._done = !0; this._resolvers.length > 0; )
+        this._resolvers.shift()({ value: void 0, done: !0 });
+  }
+  fail(o) {
+    if (!this._done)
+      for (this._error = o, this._done = !0; this._resolvers.length > 0; )
+        this._resolvers.shift()({ value: void 0, done: !0 });
+  }
+  [Symbol.asyncIterator]() {
+    return {
+      next: () =>
+        this._queue.length > 0
+          ? Promise.resolve({ value: this._queue.shift(), done: !1 })
+          : this._done
+            ? this._error
+              ? Promise.reject(this._error)
+              : Promise.resolve({ value: void 0, done: !0 })
+            : new Promise((o) => {
+                this._resolvers.push(o);
+              }),
+    };
+  }
+};
+var Yr = "available";
+function en(p) {
+  if (Array.isArray(p)) return p;
+  if (!p || typeof p != "object") return [];
+  let o = p,
+    e = o.data;
+  if (Array.isArray(e)) return e;
+  if (e && typeof e == "object") {
+    let t = e.rows;
+    if (Array.isArray(t)) return t;
+  }
+  return Array.isArray(o.rows) ? o.rows : [];
+}
+function hr(p) {
+  let o = p;
+  if (typeof p == "string")
+    try {
+      o = JSON.parse(p);
+    } catch (t) {
+      return [];
+    }
+  if (!o || typeof o != "object") return [];
+  let e = o;
+  if (e.data && typeof e.data == "object") {
+    let t = e.data;
+    if (Array.isArray(t.matches)) return t.matches;
+    if (Array.isArray(t.results)) return t.results;
+  }
+  return Array.isArray(e.matches)
+    ? e.matches
+    : Array.isArray(e.results)
+      ? e.results
+      : Array.isArray(o)
+        ? o
+        : [];
+}
+var Ye = class {
+  constructor(o) {
+    this._epoch = 0;
+    this._cache = new Map();
+    this._inFlightReads = new Map();
+    this._activeOperation = null;
+    var e;
+    ((this._transport = o.transport),
+      (this._clock = (e = o.clock) != null ? e : Date.now));
+  }
+  getEpoch() {
+    return this._epoch;
+  }
+  invalidateCache() {
+    (this._epoch++, this._cache.clear(), this._inFlightReads.clear());
+  }
+  async _cachedRead(o, e, t) {
+    let r = this._clock(),
+      n = this._cache.get(o);
+    if (n && n.epoch === this._epoch && n.expiresAt > r) return n.data;
+    let a = this._inFlightReads.get(o);
+    if (a && a.epoch === this._epoch) return a.promise;
+    let s = this._epoch,
+      c,
+      l = (async () => {
+        try {
+          let d = await t();
+          return (
+            this._epoch === s &&
+              this._cache.set(o, {
+                data: d,
+                expiresAt: this._clock() + e,
+                epoch: s,
+              }),
+            d
+          );
+        } finally {
+          c &&
+            this._inFlightReads.get(o) === c &&
+            this._inFlightReads.delete(o);
+        }
+      })();
+    return ((c = { promise: l, epoch: s }), this._inFlightReads.set(o, c), l);
+  }
+  isOperationActive() {
+    return this._activeOperation !== null;
+  }
+  get activeOperationId() {
+    var o, e;
+    return (e = (o = this._activeOperation) == null ? void 0 : o.operationId) !=
+      null
+      ? e
+      : null;
+  }
+  cancelActiveOperation() {
+    this._activeOperation && this._activeOperation.stop();
+  }
+  streamOperation(o, e, t) {
+    if (this._activeOperation)
+      throw new Error(
+        `Another operation is already active: ${this._activeOperation.operationId}`
+      );
+    let r = this._transport.stream(e, t),
+      n = new De();
+    (async () => {
+      try {
+        for await (let c of r.events) n.push(c);
+        n.finish();
+      } catch (c) {
+        n.fail(c);
+      }
+    })();
+    let a = Date.now();
+    se({
+      ts: Date.now(),
+      kind: "stream",
+      op: `${o} ${Be(e)}`,
+      ok: void 0,
+      epoch: this._epoch,
+      detail: "start",
+    });
+    let s = (async () => {
+      try {
+        let c = await r.outcome;
+        return (
+          se({
+            ts: Date.now(),
+            kind: "stream",
+            op: `${o} ${Be(e)}`,
+            ok: c.ok,
+            ms: Date.now() - a,
+            epoch: this._epoch,
+            code: c.protocolFailure
+              ? "protocol_failure"
+              : c.cancelled
+                ? "cancelled"
+                : void 0,
+            detail: `exit=${c.exitCode} events=${c.events.length}`,
+          }),
+          c
+        );
+      } finally {
+        ((this._activeOperation = null), this.invalidateCache());
+      }
+    })();
+    return (
+      (this._activeOperation = { operationId: o, stop: r.stop, outcome: s }),
+      { events: n, stop: r.stop, outcome: s }
+    );
+  }
+  async probe(o, e) {
+    var n, a;
+    let t = [];
+    (e != null &&
+      e.expectedVersion &&
+      t.push("--expected-version", e.expectedVersion),
+      (e == null ? void 0 : e.lastOperationExitCode) != null &&
+        e.lastOperationExitCode !== 0 &&
+        t.push("--last-operation-exit-code", String(e.lastOperationExitCode)));
+    let r = `probe:${o}:${(n = e == null ? void 0 : e.expectedVersion) != null ? n : ""}:${(a = e == null ? void 0 : e.lastOperationExitCode) != null ? a : ""}`;
+    return this._cachedRead(r, 6e4, async () => {
+      let s = await this._executeRaw(["probe", o, "--json", ...t]);
+      return JSON.parse(s);
+    });
+  }
+  async probeAll() {
+    return this._cachedRead("probe:all", 6e4, async () => {
+      let o = await this._executeRaw(["probe", "all", "--json"]);
+      return JSON.parse(o);
+    });
+  }
+  async reconcile(o = "all", e) {
+    let t = e ? [...e].sort().join(",") : "";
+    return this._cachedRead(`reconcile:${o}:${t}`, 1e4, async () => {
+      let r = ["reconcile", "--scope", o];
+      for (let a of e != null ? e : []) r.push("--key", a);
+      r.push("--json");
+      let n = await this._executeRaw(r);
+      return JSON.parse(n);
+    });
+  }
+  async _executeRaw(o, e) {
+    var n, a;
+    let t = Date.now(),
+      r = Be(o);
+    try {
+      let s = await this._transport.execute(o, e);
+      if (
+        (se({
+          ts: Date.now(),
+          kind: "exec",
+          op: r,
+          ok: !0,
+          ms: Date.now() - t,
+          epoch: this._epoch,
+        }),
+        Yt())
+      )
+        try {
+          let c =
+            (a = (n = JSON.parse(s)) == null ? void 0 : n.data) == null
+              ? void 0
+              : a.timing;
+          if (c && typeof c == "object") {
+            let l = Object.entries(c)
+              .map(
+                ([d, u]) =>
+                  `${d.replace(/^sync\./, "")}=${Math.round(Number(u))}ms`
+              )
+              .join(" ");
+            se({
+              ts: Date.now(),
+              kind: "exec",
+              op: `${r} timing`,
+              detail: l.slice(0, 400),
+            });
+          }
+        } catch (c) {}
+      return s;
+    } catch (s) {
+      let c = s == null ? void 0 : s.exitCode;
+      throw (
+        se({
+          ts: Date.now(),
+          kind: "exec",
+          op: r,
+          ok: !1,
+          ms: Date.now() - t,
+          epoch: this._epoch,
+          code: c != null ? `rc${c}` : "transport_error",
+        }),
+        s
+      );
+    }
+  }
+  async _executePfResult(o, e) {
+    var c, l;
+    let t = Date.now(),
+      r = Be(o),
+      n,
+      a = null;
+    try {
+      n = await this._executeRaw(o, e);
+    } catch (d) {
+      let u = d instanceof Error && (c = d.stdout) != null ? c : null;
+      if (typeof u != "string" || !u.trim()) throw d;
+      ((a = d), (n = u));
+    }
+    let s;
+    try {
+      s = JSON.parse(n);
+    } catch (d) {
+      throw a || new Error(`Failed to parse PFResult JSON: ${n.slice(0, 100)}`);
+    }
+    if (s && typeof s == "object" && "data" in s) {
+      if (s.ok === !1) {
+        let d = (l = s.error) != null ? l : {};
+        throw (
+          se({
+            ts: Date.now(),
+            kind: "error",
+            op: r,
+            ok: !1,
+            ms: Date.now() - t,
+            epoch: this._epoch,
+            code: String(d.code || "backend_error"),
+          }),
+          new Error(String(d.message || d.code || "backend_error"))
+        );
+      }
+      if (a)
+        throw (
+          se({
+            ts: Date.now(),
+            kind: "error",
+            op: r,
+            ok: !1,
+            ms: Date.now() - t,
+            epoch: this._epoch,
+            code: "protocol_contradiction",
+          }),
+          a
+        );
+      return s.data;
+    }
+    if (a) throw a;
+    return s;
+  }
+  async configList() {
+    return this._executePfResult(["config", "list", "--json"]);
+  }
+  async configValidate() {
+    return this._executePfResult(["config", "validate", "--json"]);
+  }
+  async configMigrate(o = !1) {
+    let e = ["config", "migrate"];
+    (o && e.push("--dry-run"), e.push("--json"));
+    try {
+      return await this._executePfResult(e);
+    } finally {
+      this.invalidateCache();
+    }
+  }
+  async configSet(o, e) {
+    try {
+      return await this._executePfResult([
+        "config",
+        "set",
+        o,
+        String(e),
+        "--json",
+      ]);
+    } finally {
+      this.invalidateCache();
+    }
+  }
+  async embedStatus() {
+    return this._cachedRead("embed:status", 3e4, async () =>
+      this._executePfResult(["embed", "status", "--json"])
+    );
+  }
+  async memoryStatus() {
+    return this._cachedRead("memory:status", 3e4, async () =>
+      this._executePfResult(["memory", "status", "--json"])
+    );
+  }
+  async credentialAvailable(o) {
+    return this._cachedRead(`auth-status:${o}`, 6e4, async () => {
+      var t, r;
+      return (r =
+        (t = (await this._executePfResult(["auth", "status", o, "--json"]))
+          .credentials) == null
+          ? void 0
+          : t.some((n) => n.state === "available")) != null
+        ? r
+        : !1;
+    });
+  }
+  async authSetSecret(o, e, t) {
+    let r = ["auth", "set", o, "--stdin"];
+    ((t == null ? void 0 : t.replace) !== !1 && r.push("--replace"),
+      r.push("--json"));
+    try {
+      return (
+        await this._executePfResult(r, {
+          stdin:
+            e +
+            `
+`,
+        }),
+        !0
+      );
+    } finally {
+      this.invalidateCache();
+    }
+  }
+  async memoryRestoreBackup() {
+    try {
+      return await this._executePfResult(
+        ["memory", "restore-backup", "--json"],
+        { timeoutMs: 3e4 }
+      );
+    } finally {
+      this.invalidateCache();
+    }
+  }
+  async embedMigrate() {
+    try {
+      return await this._executePfResult(["embed", "migrate", "--json"], {
+        timeoutMs: 6e5,
+      });
+    } finally {
+      this.invalidateCache();
+    }
+  }
+  async runtimeHealth() {
+    return this._executePfResult(["runtime-health", "--json"], {
+      timeoutMs: 3e4,
+    });
+  }
+  async dashboardStats() {
+    return this._executePfResult(["dashboard", "--json"], { timeoutMs: 3e4 });
+  }
+  async versionsList() {
+    let o = await this._executePfResult(["versions", "list", "--json"]);
+    return Array.isArray(o == null ? void 0 : o.papers) ? o.papers : [];
+  }
+  async versionsShow(o) {
+    var t, r;
+    let e = await this._executePfResult([
+      "versions",
+      "show",
+      "--key",
+      o,
+      "--json",
+    ]);
+    return {
+      versions: Array.isArray(e == null ? void 0 : e.versions)
+        ? e.versions
+        : [],
+      current_label:
+        (t = e == null ? void 0 : e.current_label) != null ? t : "",
+      current_path: (r = e == null ? void 0 : e.current_path) != null ? r : "",
+    };
+  }
+  async versionsBackups(o) {
+    let e = await this._executePfResult([
+      "versions",
+      "backups",
+      "--key",
+      o,
+      "--json",
+    ]);
+    return Array.isArray(e == null ? void 0 : e.backups) ? e.backups : [];
+  }
+  async versionsPaths(o, e) {
+    let t = ["versions", "paths", "--key", o];
+    return (
+      e && t.push("--label", e),
+      t.push("--json"),
+      this._executePfResult(t)
+    );
+  }
+  async versionsRestore(o, e) {
+    var t, r;
+    try {
+      let n = await this._executePfResult([
+        "versions",
+        "restore",
+        "--key",
+        o,
+        "--label",
+        e,
+        "--json",
+      ]);
+      return {
+        target_path: (t = n == null ? void 0 : n.target_path) != null ? t : "",
+        label: (r = n == null ? void 0 : n.label) != null ? r : e,
+        provenance_persisted:
+          (n == null ? void 0 : n.provenance_persisted) === !0,
+      };
+    } finally {
+      this.invalidateCache();
+    }
+  }
+  async setNoteFlag(o, e, t) {
+    try {
+      let r = await this._executePfResult([
+        "note",
+        "set-flag",
+        "--key",
+        o,
+        "--field",
+        e,
+        "--value",
+        t ? "true" : "false",
+        "--json",
+      ]);
+      return { changed: (r == null ? void 0 : r.changed) === !0 };
+    } finally {
+      this.invalidateCache();
+    }
+  }
+  async resolvePaperContext(o) {
+    var t;
+    let e = await this._executePfResult([
+      "paper-lookup",
+      "--from-path",
+      o,
+      "--json",
+    ]);
+    return (t = e == null ? void 0 : e.identity) != null ? t : null;
+  }
+  async backendVersion() {
+    return (await this._executeRaw(["--version"]))
+      .trim()
+      .replace(/^paperforge\s+/, "");
+  }
+  async doctor() {
+    return this._executePfResult(["doctor", "--json"]);
+  }
+  async repair() {
+    try {
+      return await this._executePfResult(
+        ["repair", "--fix", "--fix-paths", "--json"],
+        { timeoutMs: 6e5 }
+      );
+    } finally {
+      this.invalidateCache();
+    }
+  }
+  async listActions() {
+    return this._cachedRead("action:list", 3e5, async () => {
+      let o = await this._executePfResult(["action", "list", "--json"]);
+      return Array.isArray(o == null ? void 0 : o.actions) ? o.actions : [];
+    });
+  }
+  async describeAction(o) {
+    return this._cachedRead(`action:describe:${o}`, 3e5, async () =>
+      this._executePfResult(["action", "describe", o, "--json"])
+    );
+  }
+  async preflightAction(o, e = { kind: "all" }) {
+    var r;
+    let t = ["action", "preflight", o, "--scope", e.kind];
+    for (let n of (r = e.keys) != null ? r : []) t.push("--key", n);
+    return (t.push("--json"), this._executePfResult(t));
+  }
+  async runAction(o, e) {
+    var a, s, c, l;
+    let t = await this.describeAction(o.action_id);
+    if (t != null && t.availability && t.availability !== Yr)
+      return {
+        ok: !1,
+        payload: {
+          ok: !1,
+          action_id: o.action_id,
+          availability: t.availability,
+          availability_reason: t.availability_reason,
+        },
+        exitCode: 1,
+      };
+    let r = { ...o, scope: (a = o.scope) != null ? a : { kind: "all" } },
+      n = mt(r);
+    if ((t == null ? void 0 : t.execution_mode) === "stream") {
+      let u = await this.streamOperation(`action.${o.action_id}`, n, e).outcome,
+        f = u.events.find(
+          (m) =>
+            m.event === "result" ||
+            m.event === "error" ||
+            m.event === "cancelled"
+        ),
+        _ = (s = f == null ? void 0 : f.result) != null ? s : null;
+      return {
+        ok: u.ok,
+        payload: _,
+        exitCode: (c = u.exitCode) != null ? c : u.ok ? 0 : 1,
+        cancelled: u.cancelled,
+      };
+    }
+    try {
+      let d = await this._executeRaw(n),
+        u = null;
+      try {
+        u = JSON.parse(d);
+      } catch (f) {}
+      return { ok: !0, payload: u, exitCode: 0 };
+    } catch (d) {
+      return {
+        ok: !1,
+        payload: null,
+        exitCode: (l = d.exitCode) != null ? l : 1,
+      };
+    } finally {
+      this.invalidateCache();
+    }
+  }
+  streamAction(o, e = { kind: "all" }, t) {
+    let r = typeof o == "string" ? { action_id: o, scope: e } : o,
+      n = mt(r);
+    return this.streamOperation(`action.${r.action_id}`, n, t);
+  }
+  setup(o, e) {
+    let t = ["setup", "--json"];
+    return (
+      (o.modular || !o.headless) && t.push("--modular"),
+      o.systemDir && t.push("--system-dir", o.systemDir),
+      o.resourcesDir && t.push("--resources-dir", o.resourcesDir),
+      o.literatureDir && t.push("--literature-dir", o.literatureDir),
+      o.baseDir && t.push("--base-dir", o.baseDir),
+      o.zoteroData && t.push("--zotero-data", o.zoteroData),
+      o.agent && t.push("--agent", o.agent),
+      o.skipChecks && t.push("--skip-checks"),
+      this.streamOperation("foundation.setup", t, e)
+    );
+  }
+  async sync(o = !1) {
+    let e = ["sync", "--json"];
+    o && e.push("--dry-run");
+    let t = await this._executeRaw(e);
+    return (this.invalidateCache(), JSON.parse(t));
+  }
+  async search(o, e) {
+    var s;
+    let r =
+        (s = (typeof e == "number" ? { limit: e } : e != null ? e : {})
+          .limit) != null
+          ? s
+          : 20,
+      n = o.trim(),
+      a = `search:${n}:${r}`;
+    return this._cachedRead(a, 3e4, async () => {
+      let c = await this._executeRaw([
+        "search",
+        n,
+        "--limit",
+        String(r),
+        "--json",
+      ]);
+      return hr(c);
+    });
+  }
+  async retrieve(o, e) {
+    var d, u;
+    let t = typeof e == "number" ? { limit: e } : e != null ? e : {},
+      r = (d = t.limit) != null ? d : 5,
+      n = !!t.deep,
+      a = ((u = t.paper) == null ? void 0 : u.trim()) || "",
+      s = t.expand !== !1,
+      c = o.trim(),
+      l = `retrieve:${c}:${r}:${n}:${a}:${s}`;
+    return this._cachedRead(l, 3e4, async () => {
+      let f = ["retrieve", c, "--limit", String(r)];
+      (n && f.push("--deep"),
+        a && f.push("--paper", a),
+        s || f.push("--no-expand"),
+        f.push("--json"));
+      let _ = await this._executeRaw(f);
+      return hr(_);
+    });
+  }
+  async read(o, e, t = "auto") {
+    return await this._executeRaw(["read", o, "--find", e, "--source", t]);
+  }
+  async paperStatus(o) {
+    return this._cachedRead(`paper-status:${o}`, 3e4, async () => {
+      let e = await this._executeRaw(["paper-status", o, "--json"]);
+      return JSON.parse(e);
+    });
+  }
+  async queryOcrPapers(o) {
+    let e = o ? [...o].sort() : [],
+      t = e.join(",");
+    return this._cachedRead(`ocr-papers:${t}`, 1e4, async () => {
+      let r = ["ocr", "list", "--json"];
+      e.length > 0 && r.push("--keys", ...e);
+      let n = await this._executeRaw(r);
+      return en(JSON.parse(n));
+    });
+  }
+  async _executeStructuredJson(o) {
+    var e;
+    try {
+      let t = await this._executeRaw(o);
+      return JSON.parse(t);
+    } catch (t) {
+      let r = t instanceof Error && (e = t.stdout) != null ? e : null;
+      if (typeof r == "string" && r.trim())
+        try {
+          return JSON.parse(r);
+        } catch (n) {}
+      throw t;
+    }
+  }
+  async renderAudit(o) {
+    let e = ["render", "audit"];
+    return (o && e.push(o), e.push("--json"), this._executeStructuredJson(e));
+  }
+  async renderReconcileStaging(o) {
+    var r, n;
+    return (n =
+      (r = (
+        await this._executeStructuredJson(["render", "reconcile", o, "--json"])
+      ).papers) == null
+        ? void 0
+        : r.find((a) => a.paper_key === o)) != null
+      ? n
+      : {};
+  }
+  async promoteR(o, e = []) {
+    let t = ["render", "promote-r", o, ...e, "--json"];
+    try {
+      return await this._executeStructuredJson(t);
+    } finally {
+      this.invalidateCache();
+    }
+  }
+  async acceptProposal(o, e, t) {
+    let r = ["render", "accept-proposal", o, e, "--plan-hash", t, "--json"];
+    try {
+      return await this._executeStructuredJson(r);
+    } finally {
+      this.invalidateCache();
+    }
+  }
+};
+var me = require("child_process"),
+  br = K(require("os")),
+  tt = K(require("path"));
+var tn = new Set([
+    "start",
+    "preflight",
+    "phase",
+    "progress",
+    "paper_settled",
+    "heartbeat",
+    "item_result",
+    "result",
+    "error",
+    "cancelled",
+  ]),
+  rn = new Set(["result", "error", "cancelled"]),
+  yt = class {
+    constructor() {
+      this._buffer = "";
+      this._terminalSeen = !1;
+    }
+    get protocolFailure() {
+      return this._protocolFailure;
+    }
+    get terminalSeen() {
+      return this._terminalSeen;
+    }
+    feed(o) {
+      var n;
+      if (this._protocolFailure) return [];
+      let t = (this._buffer + o).split(`
+`);
+      this._buffer = (n = t.pop()) != null ? n : "";
+      let r = [];
+      for (let a of t) {
+        if (!a.trim()) continue;
+        let s;
+        try {
+          s = JSON.parse(a);
+        } catch (c) {
+          this._protocolFailure = `non-JSON stdout line: ${a.slice(0, 80)}`;
+          break;
+        }
+        if (s.schema_version !== 1) {
+          this._protocolFailure = `schema_version ${s.schema_version} != 1`;
+          break;
+        }
+        if (typeof s.event != "string" || !tn.has(s.event)) {
+          this._protocolFailure = `unknown event: ${String(s.event)}`;
+          break;
+        }
+        if (this._terminalSeen) {
+          this._protocolFailure = "event after terminal";
+          break;
+        }
+        (rn.has(s.event) && (this._terminalSeen = !0), r.push(s));
+      }
+      return r;
+    }
+    finishEOF() {
+      !this._protocolFailure &&
+        !this._terminalSeen &&
+        (this._protocolFailure = "EOF without terminal event");
+    }
+  };
+function nn(p) {
+  if (p.pid)
+    if (process.platform === "win32")
+      try {
+        (0, me.spawn)("taskkill", ["/T", "/F", "/PID", String(p.pid)], {
+          stdio: "ignore",
+        });
+      } catch (o) {
+        p.kill("SIGKILL");
+      }
+    else
+      try {
+        process.kill(-p.pid, "SIGKILL");
+      } catch (o) {
+        p.kill("SIGKILL");
+      }
+}
+function an(p, o, e, t, r) {
+  var f, _, m;
+  let n = (f = r.env) != null ? f : yr(),
+    a = (0, me.spawn)(p, [...o, "-m", "paperforge", "--vault", e, ...t], {
+      cwd: e,
+      shell: !1,
+      windowsHide: !0,
+      env: n,
+      stdio: ["pipe", "pipe", "pipe"],
+    }),
+    s = new yt(),
+    c = [],
+    l = !1,
+    d = null;
+  ((_ = a.stdout) == null || _.setEncoding("utf-8"),
+    (m = a.stdout) == null ||
+      m.on("data", (g) => {
+        for (let h of s.feed(g)) (c.push(h), r.onEvent(h));
+      }));
+  let u = new Promise((g) => {
+    (a.on("close", (h) => {
+      (d && clearTimeout(d),
+        s.finishEOF(),
+        g({
+          ok: !s.protocolFailure && h === 0,
+          exitCode: h,
+          cancelled: h === 130,
+          events: c,
+          protocolFailure: s.protocolFailure,
+        }));
+    }),
+      a.on("error", (h) => {
+        (d && clearTimeout(d),
+          g({
+            ok: !1,
+            exitCode: -1,
+            cancelled: !1,
+            events: c,
+            protocolFailure: `spawn error: ${h.message}`,
+          }));
+      }));
+  });
+  return {
+    stop: () => {
+      var h, y;
+      try {
+        (h = a.stdin) == null ||
+          h.write(`PAPERFORGE_STOP
+`);
+      } catch (v) {}
+      if (d) return;
+      let g = (y = r.graceMs) != null ? y : 5e3;
+      d = setTimeout(() => {
+        a.exitCode === null && !l && ((l = !0), nn(a));
+      }, g);
+    },
+    promise: u,
+  };
+}
+var bt = null,
+  mr = !1;
+function sn() {
+  if (mr) return bt;
+  mr = !0;
+  try {
+    let p;
+    if (process.platform === "win32") {
+      let o = process.env.ComSpec || "C:\\Windows\\System32\\cmd.exe";
+      p = (0, me.execFileSync)(o, ["/c", "where", "git"], {
+        timeout: 5e3,
+        windowsHide: !0,
+        encoding: "utf-8",
+      });
+    } else
+      p = (0, me.execFileSync)("which", ["git"], {
+        timeout: 5e3,
+        encoding: "utf-8",
+      });
+    if (p) {
+      let o = p
+        .split(
+          `
+`
+        )[0]
+        .trim();
+      o && (bt = tt.dirname(o));
+    }
+  } catch (p) {}
+  return bt;
+}
+function yr() {
+  let p = { ...process.env },
+    o = process.platform,
+    e = br.homedir(),
+    t = [],
+    r = sn();
+  (r && t.push(r),
+    o === "darwin"
+      ? t.push(
+          "/opt/homebrew/bin",
+          "/usr/local/bin",
+          "/usr/bin",
+          `${e}/.local/bin`
+        )
+      : o === "linux" &&
+        t.push("/usr/local/bin", "/usr/bin", `${e}/.local/bin`));
+  let n = p.PATH || "";
+  return ((p.PATH = [...t, n].filter(Boolean).join(tt.delimiter)), $t(p));
+}
+var et = class {
+  constructor(o) {
+    var e, t;
+    ((this._vaultPath = o.vaultPath),
+      (this._customPythonPath =
+        (e = o.customPythonPath) == null ? void 0 : e.trim()),
+      (this._resolveRuntime = o.resolveRuntime),
+      (this._spawnFn = (t = o.spawnFn) != null ? t : me.spawn));
+  }
+  async resolvePython() {
+    if (this._resolveRuntime) {
+      let r = await this._resolveRuntime();
+      if (r != null && r.path) return r;
+      throw new Error(
+        "PaperForge Python runtime not ready. Please complete setup or configure python_path."
+      );
+    }
+    if (this._customPythonPath)
+      return { path: this._customPythonPath, args: [] };
+    let e = new oe().readPointer(),
+      t = ce(e);
+    if (t != null && t.command) return { path: t.command, args: [...t.args] };
+    throw new Error(
+      "PaperForge Python runtime not ready. Please complete setup or configure python_path."
+    );
+  }
+  async execute(o, e) {
+    var s, c;
+    let t =
+        e != null && e.pythonExe
+          ? { path: e.pythonExe, args: [] }
+          : await this.resolvePython(),
+      r = (s = e == null ? void 0 : e.env) != null ? s : yr(),
+      n = (c = e == null ? void 0 : e.timeoutMs) != null ? c : 12e4,
+      a = [...t.args, "-m", "paperforge", "--vault", this._vaultPath, ...o];
+    return new Promise((l, d) => {
+      var g, h, y, v, b, w, k;
+      let u;
+      try {
+        u = this._spawnFn(t.path, a, {
+          cwd: this._vaultPath,
+          shell: !1,
+          windowsHide: !0,
+          env: r,
+          stdio: ["pipe", "pipe", "pipe"],
+        });
+      } catch (x) {
+        return d(new Error(`Failed to spawn Python process: ${x}`));
+      }
+      let f = [],
+        _ = [];
+      (typeof ((g = u.stdout) == null ? void 0 : g.setEncoding) == "function" &&
+        u.stdout.setEncoding("utf-8"),
+        (h = u.stdout) == null ||
+          h.on("data", (x) => {
+            f.push(x.toString());
+          }),
+        typeof ((y = u.stderr) == null ? void 0 : y.setEncoding) ==
+          "function" && u.stderr.setEncoding("utf-8"),
+        (v = u.stderr) == null ||
+          v.on("data", (x) => {
+            _.push(x.toString());
+          }));
+      let m = null;
+      if (
+        (n > 0 &&
+          (m = setTimeout(() => {
+            try {
+              u.kill();
+            } catch (x) {}
+            d(
+              new Error(
+                `PaperForge command timed out after ${n}ms: ${o.join(" ")}`
+              )
+            );
+          }, n)),
+        e != null && e.stdin)
+      )
+        try {
+          ((b = u.stdin) == null || b.write(e.stdin),
+            (w = u.stdin) == null || w.end());
+        } catch (x) {}
+      else (k = u.stdin) == null || k.end();
+      (u.on("close", (x) => {
+        if ((clearTimeout(m), x === 0)) l(f.join(""));
+        else {
+          let E = _.join("").trim(),
+            S = new Error(
+              `PaperForge command failed (exit code ${x}): ${E || o.join(" ")}`
+            );
+          ((S.exitCode = x != null ? x : 1),
+            (S.stderr = E),
+            (S.stdout = f.join("")),
+            d(S));
+        }
+      }),
+        u.on("error", (x) => {
+          (clearTimeout(m), d(x));
+        }));
+    });
+  }
+  stream(o, e) {
+    let t = new De(),
+      r = !1,
+      n = null,
+      a = (async () => {
+        let s;
+        try {
+          s =
+            e != null && e.pythonExe
+              ? { path: e.pythonExe, args: [] }
+              : await this.resolvePython();
+        } catch (c) {
+          let l = (c == null ? void 0 : c.message) || String(c);
+          return (
+            t.fail(c),
+            {
+              ok: !1,
+              exitCode: -1,
+              cancelled: !1,
+              events: [],
+              protocolFailure: l,
+            }
+          );
+        }
+        ((n = an(s.path, s.args, this._vaultPath, o, {
+          graceMs: e == null ? void 0 : e.graceMs,
+          env: e == null ? void 0 : e.env,
+          onEvent: (c) => {
+            var l;
+            (t.push(c),
+              (l = e == null ? void 0 : e.onEvent) == null || l.call(e, c));
+          },
+        })),
+          r && n.stop());
+        try {
+          let c = await n.promise;
+          return (t.finish(), c);
+        } catch (c) {
+          throw (t.fail(c), c);
+        }
+      })();
+    return {
+      events: t,
+      stop: () => {
+        ((r = !0), n && n.stop());
+      },
+      outcome: a,
+    };
+  }
+};
+var vt = class extends q.Modal {
+    constructor(e, t, r) {
+      super(e);
+      this.onConfirm = r;
+      (this.setTitle("Migrate PaperForge configuration"),
+        this.contentEl.createEl("p", {
+          text: "Legacy configuration detected. Migration preview:",
+        }),
+        this.contentEl
+          .createEl("pre", { cls: "pf-migration-summary" })
+          .setText(t),
+        this.contentEl.createEl("p", {
+          text: "Canonical values win on conflict. Credentials are never migrated through config.",
+          cls: "setting-item-description",
+        }));
+      let a = this.contentEl.createDiv({ cls: "pf-modal-actions" });
+      (a
+        .createEl("button", { text: "Cancel" })
+        .addEventListener("click", () => this.close()),
+        a
+          .createEl("button", { text: "Migrate" })
+          .addEventListener("click", () => {
+            this.onConfirm().finally(() => this.close());
+          }));
+    }
+  },
+  rt = class extends q.Plugin {
+    constructor() {
+      super(...arguments);
+      this.agentPlatformChoices = [];
+      this._embedStatusCache = {};
+      this._autoSyncRunning = !1;
+      this._lastSyncTime = null;
+      this._pollTimer = null;
+      this._embedProcess = null;
+      this._embedProgress = { current: 0, total: 0, key: "" };
+      this._embedStderr = "";
+      this._memoryStatusText = null;
+      this._ocrProgress = { current: 0, total: 1, key: "" };
+      this._settingTab = null;
+      this._managedRuntime = null;
+      this._client = null;
+      this._needsConfigMigration = !1;
+    }
+    getClient() {
+      var e, t, r;
+      if (!this._client) {
+        let n =
+            (t = (e = this.app.vault.adapter) == null ? void 0 : e.basePath) !=
+            null
+              ? t
+              : "",
+          a = new et({
+            vaultPath: n,
+            customPythonPath:
+              (r = this.settings) == null ? void 0 : r.python_path,
+            resolveRuntime: async () => this._getPythonCommand(),
+          });
+        this._client = new Ye({ transport: a });
+      }
+      return this._client;
+    }
+    getManagedRuntime() {
+      return (
+        this._managedRuntime || (this._managedRuntime = new oe()),
+        this._managedRuntime
+      );
+    }
+    getDebugTrace() {
+      return Ue();
+    }
+    async setDebugTrace(e) {
+      ((this.settings.debug_trace = e), Ie(e), await this.saveSettings());
+    }
+    _getPythonCommand() {
+      let e = ce(this.getManagedRuntime().readPointer());
+      return e ? { path: e.command, args: [...e.args] } : null;
+    }
+    requestOcrRun(e = !1) {
+      if (this.getClient().isOperationActive()) {
+        new q.Notice(i("ocr_already_running"));
+        return;
+      }
+      let t = () => {
+        var r;
+        ((this._ocrProgress = { current: 0, total: 1, key: "" }),
+          (r = this._settingTab) == null || r.display(),
+          (async () => {
+            var d;
+            let n = {
+                action_id: "ocr.run",
+                scope: { kind: "all" },
+                confirm: "ocr.run",
+              },
+              a = !1,
+              s = [],
+              c = await this.getClient().runAction(n, {
+                onEvent: (u) => {
+                  var f, _, m, g, h;
+                  (u.event === "cancelled" && (a = !0),
+                    (u.event === "start" ||
+                      u.event === "phase" ||
+                      u.event === "progress" ||
+                      u.event === "item_result") &&
+                      ((this._ocrProgress = {
+                        current: Number(
+                          (f = u.current) != null
+                            ? f
+                            : this._ocrProgress.current
+                        ),
+                        total: Number(
+                          (_ = u.total) != null ? _ : this._ocrProgress.total
+                        ),
+                        key: String(
+                          (m = u.item_id) != null ? m : this._ocrProgress.key
+                        ),
+                      }),
+                      u.event === "item_result" &&
+                        u.status !== "succeeded" &&
+                        u.status !== "noop" &&
+                        u.status !== "skipped" &&
+                        s.push(String((g = u.item_id) != null ? g : "")),
+                      (h = this._settingTab) == null || h.display()));
+                },
+              });
+            if (c.ok) new q.Notice(i("ocr_run_complete"));
+            else if (c.cancelled || a) new q.Notice(i("ocr_stopped_notice"));
+            else {
+              let u = c.payload,
+                f = u == null ? void 0 : u.error,
+                _ =
+                  typeof (u == null ? void 0 : u.availability_reason) ==
+                  "string"
+                    ? u.availability_reason
+                    : typeof (f == null ? void 0 : f.message) == "string"
+                      ? f.message
+                      : "",
+                m =
+                  s.filter(Boolean).join(", ") ||
+                  _ ||
+                  `exit code ${c.exitCode}`;
+              new q.Notice(i("ocr_failed_notice") + ": " + m, 8e3);
+            }
+            (d = this._settingTab) == null || d.display();
+            let l = this.app.vault.adapter.basePath;
+            this._autoSync(l);
+          })().catch((n) => {
+            var a;
+            (new q.Notice(
+              i("ocr_failed_notice") +
+                ": " +
+                (n.message || i("ocr_error_notice")),
+              8e3
+            ),
+              (a = this._settingTab) == null || a.display());
+          }));
+      };
+      if (e) {
+        t();
+        return;
+      }
+      new ee(
+        this.app,
+        {
+          title: i("ocr_run_confirm_title"),
+          effectLabel: i("ocr_run_confirm_body"),
+          confirmLabel: i("maintenance_confirm_ok"),
+          cancelLabel: i("maintenance_confirm_cancel"),
+        },
+        t
+      ).open();
+    }
+    async onload() {
+      (await this.loadSettings(),
+        await this.saveSettings(),
+        Ie(this.settings.debug_trace === !0),
+        Ht(this.app, this.settings.language),
+        this.registerView(fe, (t) => new Te(t)),
+        this.registerView(ve, (t) => new Re(t, this)));
+      try {
+        (0, q.addIcon)(Oe, Mt);
+      } catch (t) {}
+      (this.addRibbonIcon(Oe, "PaperForge Dashboard", () => Te.open(this)),
+        this.addRibbonIcon("scan-text", "PaperForge OCR Workspace", () =>
+          Re.open(this)
+        ),
+        (this._settingTab = new Xe(this.app, this)),
+        this.addSettingTab(this._settingTab),
+        this.addCommand({
+          id: "paperforge-status-panel",
+          name: i("guide_open"),
+          callback: () => Te.open(this),
+        }),
+        this.addCommand({
+          id: "paperforge-ocr-workspace",
+          name: "Open OCR Workspace",
+          callback: () => Re.open(this),
+        }));
+      for (let t of ae)
+        t.id !== "paperforge-ocr-redo" &&
+          this.addCommand({
+            id: t.id,
+            name: t.title,
+            callback: async () => {
+              var n;
+              if (t.id === "paperforge-ocr") {
+                this.requestOcrRun();
+                return;
+              }
+              if (t.disabled) {
+                new q.Notice(
+                  `[i] ${t.disabledMsg || "This action is not yet available."}`,
+                  6e3
+                );
+                return;
+              }
+              let r = this.getClient();
+              try {
+                if (t.id === "paperforge-sync") {
+                  let a = this.app.vault.adapter.basePath;
+                  this._autoSync(a);
+                  return;
+                }
+                if (t.id === "paperforge-doctor") {
+                  (new q.Notice(`PaperForge: running ${t.commandId}...`),
+                    await r.doctor(),
+                    new q.Notice(`[OK] ${t.okMsg}`));
+                  return;
+                }
+                if (t.id === "paperforge-repair") {
+                  (new q.Notice(`PaperForge: running ${t.commandId}...`),
+                    await r.repair(),
+                    new q.Notice(`[OK] ${t.okMsg}`),
+                    (n = this._settingTab) == null ||
+                      n._refreshAllReadModels());
+                  return;
+                }
+                new q.Notice(`[!!] Unsupported tool: ${t.id}`, 8e3);
+              } catch (a) {
+                new q.Notice(
+                  `[!!] ${t.commandId} failed: ${String((a == null ? void 0 : a.message) || a).slice(0, 120)}`,
+                  8e3
+                );
+              }
+            },
+          });
+      (this.addCommand({
+        id: "paperforge-migrate-config",
+        name: "Migrate PaperForge legacy configuration",
+        callback: () => this._runLegacyConfigMigration(),
+      }),
+        this._startConvergenceTimer(),
+        this._checkReleaseNotes(),
+        this.app.vault.adapter.basePath &&
+          (this.getClient()
+            .configValidate()
+            .then((t) => {
+              t.state === "migration_required" &&
+                (this._needsConfigMigration = !0);
+            })
+            .catch(() => {}),
+          this.getClient()
+            .embedStatus()
+            .then((t) => {
+              t && (this._embedStatusCache = t);
+            })
+            .catch(() => {})));
+    }
+    _runLegacyConfigMigration() {
+      this.app.vault.adapter.basePath &&
+        (async () => {
+          var n;
+          let t = await this.getClient()
+              .configMigrate(!0)
+              .catch((a) => null),
+            r =
+              t && (n = t.warnings) != null && n.length
+                ? t.warnings.join(`
+`)
+                : "No conflicts; legacy path keys will move under vault_config.";
+          new vt(this.app, r, async () => {
+            var a, s, c, l, d, u, f, _;
+            await this.getClient()
+              .configMigrate(!1)
+              .catch((m) => {
+                new q.Notice(`PaperForge: config migrate failed: ${String(m)}`);
+              });
+            try {
+              let m = await this.getClient().configList(),
+                g = (S) => {
+                  var C;
+                  return (C = m.fields.find((R) => R.key === S)) == null
+                    ? void 0
+                    : C.value;
+                },
+                h = String((a = g("system_dir")) != null ? a : ""),
+                y = String((s = g("resources_dir")) != null ? s : ""),
+                v = String((c = g("literature_dir")) != null ? c : ""),
+                b = String((l = g("base_dir")) != null ? l : ""),
+                w = String((d = g("zotero_data_dir")) != null ? d : ""),
+                k = String((u = g("vector_db_api_base")) != null ? u : ""),
+                x = String((f = g("vector_db_api_model")) != null ? f : ""),
+                E = String((_ = g("agent_platform")) != null ? _ : "");
+              (h && (this.settings.system_dir = h),
+                y && (this.settings.resources_dir = y),
+                v && (this.settings.literature_dir = v),
+                b && (this.settings.base_dir = b),
+                w && (this.settings.zotero_data_dir = w),
+                k && (this.settings.vector_db_api_base = k),
+                x && (this.settings.vector_db_api_model = x),
+                E && (this.settings.agent_platform = E),
+                Ge({
+                  system_dir: h || "System",
+                  resources_dir: y || "Resources",
+                  literature_dir: v || "Literature",
+                  base_dir: b || "Bases",
+                  _warning: null,
+                }));
+            } catch (m) {}
+            ((this._needsConfigMigration = !1),
+              await this.saveSettings(),
+              new q.Notice("PaperForge: configuration migrated"));
+          }).open();
+        })();
+    }
+    _startConvergenceTimer() {
+      var r;
+      let e = this.app.vault.adapter.basePath,
+        t =
+          Math.max(
+            30,
+            (r = this.settings.autoSyncIntervalSeconds) != null ? r : 120
+          ) * 1e3;
+      this.settings.autoSyncEnabled !== !1 &&
+        (this._autoSync(e),
+        (this._pollTimer = setInterval(() => {
+          gt() && this._autoSync(e);
+        }, t)));
+    }
+    _autoSync(e) {
+      this._autoSyncRunning ||
+        ((this._autoSyncRunning = !0),
+        (async () => {
+          var r;
+          let t = !1;
+          try {
+            let n = this.getClient(),
+              a = await n.sync();
+            ((t = (a == null ? void 0 : a.ok) !== !1),
+              t &&
+                ((this._lastSyncTime = new Date().toLocaleTimeString()),
+                ke(JSON.stringify(a), { runAction: (s) => n.runAction(s) }),
+                (r = this._settingTab) == null || r._refreshAllReadModels()));
+          } catch (n) {
+            t = !1;
+          } finally {
+            ((this._autoSyncRunning = !1), (this._memoryStatusText = null));
+          }
+        })());
+    }
+    readPaperforgeJson() {
+      return {};
+    }
+    savePaperforgeJson(e) {
+      console.warn(
+        "PaperForge: savePaperforgeJson is retired; use paperforge config set"
+      );
+    }
+    onunload() {
+      var e;
+      (this._pollTimer && clearInterval(this._pollTimer),
+        this.app.workspace.detachLeavesOfType(fe),
+        (e = this._client) == null || e.cancelActiveOperation());
+    }
+    async loadSettings() {
+      var n, a, s, c, l, d, u, f, _, m;
+      let e = (n = await this.loadData()) != null ? n : {};
+      ((this.settings = Object.assign({}, Le, e)),
+        this.settings.features &&
+          Le.features &&
+          (this.settings.features = Object.assign(
+            {},
+            Le.features,
+            this.settings.features || {}
+          )),
+        this.settings.frozen_skills || (this.settings.frozen_skills = {}));
+      let t = !!e.capabilityState || !!e.last_seen_version || !!e.vault_path;
+      if (
+        (e._setup_complete === !1 &&
+          t &&
+          e._setup_journey_started !== !0 &&
+          (this.settings._setup_complete = !0),
+        this.app.vault.adapter.basePath)
+      )
+        try {
+          let g = await this.getClient().configList(),
+            h = (R) => {
+              var F;
+              return (F = g.fields.find((D) => D.key === R)) == null
+                ? void 0
+                : F.value;
+            },
+            y = String((a = h("system_dir")) != null ? a : ""),
+            v = String((s = h("resources_dir")) != null ? s : ""),
+            b = String((c = h("literature_dir")) != null ? c : ""),
+            w = String((l = h("base_dir")) != null ? l : ""),
+            k = String((d = h("zotero_data_dir")) != null ? d : "");
+          (y && (this.settings.system_dir = y),
+            v && (this.settings.resources_dir = v),
+            b && (this.settings.literature_dir = b),
+            w && (this.settings.base_dir = w),
+            k && (this.settings.zotero_data_dir = k));
+          let x = String((u = h("vector_db_api_base")) != null ? u : ""),
+            E = String((f = h("vector_db_api_model")) != null ? f : ""),
+            S = String((_ = h("agent_platform")) != null ? _ : "");
+          (x && (this.settings.vector_db_api_base = x),
+            E && (this.settings.vector_db_api_model = E),
+            S && (this.settings.agent_platform = S));
+          let C = g.fields.find((R) => R.key === "agent_platform");
+          ((this.agentPlatformChoices =
+            (m = C == null ? void 0 : C.choices) != null ? m : []),
+            Ge({
+              system_dir: y || "System",
+              resources_dir: v || "Resources",
+              literature_dir: b || "Literature",
+              base_dir: w || "Bases",
+              _warning: null,
+            }));
+        } catch (g) {}
+      if (this.settings.python_path && this.settings.python_path.trim()) {
+        let g = this.settings.python_path.trim();
+        this.settings._python_path_stale = !vr.existsSync(g);
+      }
+    }
+    async saveSettings() {
+      let e = {};
+      for (let t of Object.keys(Le))
+        t in this.settings && (e[t] = this.settings[t]);
+      await this.saveData(e);
+    }
+    _checkReleaseNotes() {
+      let e = this.manifest.version;
+      if (this.settings.last_seen_version === e) return;
+      let a = (dt().versions || []).find((c) => c.version === e);
+      class s extends q.Modal {
+        constructor(l, d) {
+          (super(l), (this._entry = d));
+        }
+        onOpen() {
+          let { contentEl: l } = this;
+          if (
+            (l.createEl("h2", {
+              text: `PaperForge v${e} \u66F4\u65B0\u8BF4\u660E`,
+            }),
+            this._entry)
+          ) {
+            if (
+              (l.createEl("p", {
+                text: this._entry.title,
+                cls: "paperforge-modal-subtitle",
+              }),
+              this._entry.breaking_or_migration &&
+                this._entry.breaking_or_migration.length > 0)
+            ) {
+              l.createEl("h4", {
+                text: "\u884C\u4E3A\u53D8\u66F4 / \u8FC1\u79FB\u6CE8\u610F",
+              });
+              for (let d of this._entry.breaking_or_migration)
+                l.createEl("p", {
+                  text: `\u2022 ${d}`,
+                  cls: "paperforge-modal-item",
+                });
+            }
+            if (
+              this._entry.new_features &&
+              this._entry.new_features.length > 0
+            ) {
+              l.createEl("h4", { text: "\u65B0\u529F\u80FD" });
+              for (let d of this._entry.new_features)
+                l.createEl("p", {
+                  text: `\u2022 ${d}`,
+                  cls: "paperforge-modal-item",
+                });
+            }
+            if (this._entry.fixes && this._entry.fixes.length > 0) {
+              l.createEl("h4", { text: "\u4FEE\u590D" });
+              for (let d of this._entry.fixes)
+                l.createEl("p", {
+                  text: `\u2022 ${d}`,
+                  cls: "paperforge-modal-item",
+                });
+            }
+            if (
+              this._entry.recommended_actions &&
+              this._entry.recommended_actions.length > 0
+            ) {
+              let d = l.createEl("div", {
+                cls: "paperforge-release-recommended",
+              });
+              (d.createEl("h4", { text: "\u5EFA\u8BAE\u64CD\u4F5C", cls: "" }),
+                (d.style.marginBottom = "8px"));
+              for (let u of this._entry.recommended_actions)
+                d.createEl("p", {
+                  text: `\u2022 ${u}`,
+                  cls: "paperforge-release-item-bold",
+                });
+            }
+          } else
+            l.createEl("p", {
+              text:
+                "\u7248\u672C\u5DF2\u66F4\u65B0\u81F3 v" +
+                e +
+                "\uFF0C\u8BF7\u524D\u5F80\u8BBE\u7F6E \u2192 \u66F4\u65B0\u4E0E\u624B\u518C \u67E5\u770B\u5B8C\u6574\u66F4\u65B0\u8BB0\u5F55\u3002",
+            });
+          new q.Setting(l).addButton((d) =>
+            d
+              .setButtonText("\u77E5\u9053\u4E86")
+              .setCta()
+              .onClick(() => {
+                this.close();
+              })
+          );
+        }
+        onClose() {
+          let { contentEl: l } = this;
+          l.empty();
+        }
+      }
+      (new s(this.app, a).open(),
+        (this.settings.last_seen_version = e),
+        this.saveSettings());
+    }
+  };
