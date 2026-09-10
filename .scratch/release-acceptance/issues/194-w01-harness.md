@@ -39,6 +39,25 @@ Measured baseline behaviour (disposable copies):
 
 Blocker filed as **#219**: adding an unrelated paper flips `TSTONE001` from `ocr_status="done"` to `"done_incomplete"` and clears `fulltext_md_path`, while both fulltexts exist and the index keeps a valid `fulltext_path`.
 
+### #219 root cause (bisected, 2026-09-10)
+
+The trigger is the **first `sync` on a vault whose OCR artifacts predate the derived layout** — i.e. exactly the upgrade path:
+
+| Step | canonical `ocr/<key>/fulltext.md` | markers | note |
+|---|---|---|---|
+| seeded from the OCR fixture | 1574 B | 3 | — |
+| after one `sync` | **247 B** | **0** | `done` |
+
+Within that single sync the validator passes against the original artifact (so the note is written `done`), and later the legacy backfill renders from raw and writes the **rendered** markdown over the canonical fulltext (`worker/ocr_rebuild.py:561` → `user_fulltext=artifacts.compat_fulltext`, where `ocr_artifacts.py:28` defines `compat_fulltext = paper_root/"fulltext.md"`). `meta.page_count` stays 3, so the pipeline's own validator (`worker/ocr.py:357-363`) then rejects the artifact it just produced.
+
+Confirmed one-shot: re-seeding the canonical fulltext and dropping the stale `machine_fulltext_hash` leaves two consecutive syncs with no further change (`derived_rebuild_count=0`).
+
+**Consequence for the plan:** this is an upgrade-path defect (A08/J08 territory), not just a harness artefact — every existing vault with legacy OCR layout hits it on its first sync.
+
+**Fix direction:** P-a (backfill writes rendered markdown only to `render/fulltext.md`; canonical keeps page-marked text) — the culprit files are frozen, so it needs owner approval. P-b containment and P-c validator alignment are the alternatives. Plus: use the existing drift helper to force revalidation so a stale `done` cannot persist.
+
+**W01 unblock (independent of the product fix):** make the fixture a validator-passing sync fixed point — end the build with a canonical, hash-consistent OCR state and assert `sync` twice produces only `.base` churn. Proven achievable.
+
 ## Acceptance (package)
 
 Per plan §8 W01: build before WDIO with hash verification; safe root, network/user-state isolation; same-sandbox restart demonstrated; no trace-based false success.
