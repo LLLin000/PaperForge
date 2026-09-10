@@ -12,7 +12,10 @@ it may shrink as files are wired in, never grow silently.
 """
 from __future__ import annotations
 
+import json
 import re
+import subprocess
+import sys
 from pathlib import Path
 from typing import Any, cast
 
@@ -141,3 +144,57 @@ class TestAggregateGate:
         for job, reason in NON_REQUIRED_JOBS.items():
             assert job in declared, f"{name}: {job} is not a job in this workflow"
             assert reason.strip(), f"{job} needs a written reason"
+
+
+class TestLocalRunnerMirrorsCI:
+    """`scripts/ci_local.py` must not silently drop a CI step.
+
+    The pre-flight exists so a push is not the first time a gate runs; if its
+    parser quietly skipped a step it would report confidence it did not earn —
+    the same failure mode this whole file is about. Exercised through the CLI
+    surface, not an internal function.
+    """
+
+    def _listed(self) -> list[dict]:
+        result = subprocess.run(
+            [sys.executable, "scripts/ci_local.py", "--list", "--json"],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+        )
+        assert result.returncode == 0, result.stderr
+        return cast("list[dict]", json.loads(result.stdout))
+
+    def test_every_run_step_is_represented(self):
+        seen: dict[str, int] = {}
+        for entry in self._listed():
+            job = str(entry["job"])
+            seen[job] = seen.get(job, 0) + 1
+
+        for name in sorted(WORKFLOW_DIR.glob("*.yml")):
+            jobs: dict = _workflow(name.name).get("jobs") or {}
+            for job_name, job in jobs.items():
+                expected = sum(
+                    1
+                    for raw in (job or {}).get("steps") or []
+                    if isinstance((raw or {}).get("run"), str)
+                )
+                assert seen.get(job_name, 0) == expected, (
+                    f"{name.name}:{job_name} has {expected} run steps but the "
+                    f"local runner reports {seen.get(job_name, 0)}"
+                )
+
+    def test_install_steps_are_skipped_by_default(self):
+        listed = self._listed()
+        installs = [
+            e
+            for e in listed
+            if re.search(r"pip install|npm ci", json.dumps(e) + e["name"], re.I)
+            or "Install" in str(e["name"])
+        ]
+        assert installs, "expected install steps to exist in the workflows"
+        assert all(e["skipped"] for e in installs), (
+            "a pre-flight must not mutate the environment unasked: "
+            f"{[e for e in installs if not e['skipped']]}"
+        )
