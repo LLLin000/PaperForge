@@ -22,6 +22,7 @@
  */
 import { browser } from "@wdio/globals";
 import { execFileSync } from "node:child_process";
+import { chmodSync } from "node:fs";
 import { createHash } from "node:crypto";
 import {
   existsSync,
@@ -872,10 +873,13 @@ describe("PaperForge real-task e2e", function () {
     await checkbox.waitForDisplayed({ timeout: 60000 });
     const initial = await checkbox.isSelected();
 
-    // Now make the authority refuse: a note with no frontmatter block is a
-    // validation failure for `note set-flag`, never a silent no-op.
-    const brokenNote = "# no frontmatter\n\nbody only\n";
-    writeFileSync(path.join(base, BYSTANDER_NOTE), brokenNote);
+    // Make the authority refuse without changing the note's content: a
+    // read-only file cannot be written, so the command fails while the panel
+    // keeps rendering the paper (removing the note's frontmatter would make
+    // the entry unresolvable and re-render the very control under test).
+    const notePath = path.join(base, BYSTANDER_NOTE);
+    const noteBefore = readNote(base, BYSTANDER_NOTE);
+    chmodSync(notePath, 0o444);
 
     await clickTestId("flag-do_ocr");
 
@@ -893,7 +897,8 @@ describe("PaperForge real-task e2e", function () {
     );
 
     // Fail-closed means the file is untouched, not partially written.
-    expect(readNote(base, BYSTANDER_NOTE)).toBe(brokenNote);
+    expect(readNote(base, BYSTANDER_NOTE)).toBe(noteBefore);
+    chmodSync(notePath, 0o644);
 
     appendEvidence("b07-note-flag-reject.json", {
       case_id: "B07",
