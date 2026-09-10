@@ -127,7 +127,10 @@ function addExportItem(
     title: item.title,
     DOI: item.doi,
     attachments: [
-      { path: `storage:${item.key}/${item.key}.pdf`, contentType: "application/pdf" },
+      {
+        path: `storage:${item.key}/${item.key}.pdf`,
+        contentType: "application/pdf",
+      },
     ],
   });
   doc.items.push(template);
@@ -222,6 +225,59 @@ async function traceContains(needle: string): Promise<boolean> {
     if (!plugin || typeof plugin.getDebugTrace !== "function") return false;
     return plugin.getDebugTrace().includes(text);
   }, needle);
+}
+
+async function operationActive(): Promise<boolean> {
+  return await browser.executeObsidian(async ({ app }) => {
+    const plugin = app.plugins.plugins["paperforge"];
+    if (!plugin || typeof plugin.getClient !== "function") return true;
+    return plugin.getClient().isOperationActive();
+  });
+}
+
+/**
+ * Wait until no operation is in flight. Fails with a readable reason well
+ * before mocha's suite timeout, and leaves first-failure evidence — a bare
+ * "Timeout" tells the next reader nothing (plan §4.3).
+ */
+async function waitForIdle(caseId: string, step: string): Promise<void> {
+  try {
+    await browser.waitUntil(async () => !(await operationActive()), {
+      timeout: 90000,
+      timeoutMsg: "an operation was still active (startup sync never settled)",
+    });
+  } catch (error) {
+    let traceTail = "(unavailable)";
+    try {
+      traceTail = await browser.executeObsidian(async ({ app }) => {
+        const plugin = app.plugins.plugins["paperforge"];
+        if (!plugin || typeof plugin.getDebugTrace !== "function")
+          return "(no trace)";
+        return plugin
+          .getDebugTrace()
+          .split("\n")
+          .filter(Boolean)
+          .slice(-5)
+          .join(" | ");
+      });
+    } catch {
+      traceTail = "(trace unreadable)";
+    }
+    appendEvidence("b02-sync-diff.json", {
+      case_id: caseId,
+      step,
+      status: "FAILED",
+      detail: String(error),
+      trace_tail: traceTail,
+      source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: PLUGIN_DIR,
+      })
+        .toString()
+        .trim(),
+      recorded_at: new Date().toISOString(),
+    });
+    throw error;
+  }
 }
 
 describe("PaperForge real-task e2e", function () {
@@ -340,15 +396,7 @@ describe("PaperForge real-task e2e", function () {
     await openPanel();
 
     // Wait out the startup sync so the click below is the only writer left.
-    await browser.waitUntil(
-      async () =>
-        !(await browser.executeObsidian(async ({ app }) => {
-          const plugin = app.plugins.plugins["paperforge"];
-          if (!plugin || typeof plugin.getClient !== "function") return true;
-          return plugin.getClient().isOperationActive();
-        })),
-      { timeout: 120000, timeoutMsg: "startup sync never settled" }
-    );
+    await waitForIdle("B02", "startup-sync-settle");
 
     const base = await sandboxBasePath();
     const bystanderBefore = sha256(path.join(base, BYSTANDER_NOTE));
