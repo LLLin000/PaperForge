@@ -18,9 +18,26 @@
 
 ## Remaining
 
-- [ ] Replace the trace-based Sync assertion with a data-diff assertion (mutate export → click Sync → exact key-set change; bystander paper byte-identical). The current assertion is satisfiable by the startup autosync.
+- [ ] **Data-diff Sync assertion — BLOCKED on #219.** Replacing the trace-based assertion requires the bystander paper to be byte-identical after an unrelated Sync; today it is not (measured A/B). Needs the #219 fix or an explicit owner narrowing of the criterion.
 - [ ] Same-sandbox restart persistence demo (restart the current temp vault, not a fresh copy).
 - [ ] Bind the backend artifact (path/hash), not just its version — the sandbox backend may resolve to a managed slot rather than the worktree source.
+- [ ] Network / user-state isolation (HOME/APPDATA, runtime pointer, provider endpoints, credential backend) — in the package criteria, not yet covered.
+- [ ] Fixture `meta.json` → producer-shaped (currently a 4-field hand-written stub missing `fulltext_md_path`/`markdown_path`/`json_path`; patching it does not change behaviour, so this is hygiene).
+
+## Slice 2 (2026-09-10) — measurements and one blocker
+
+Repair pass `51e369eb` (self-review, Standards + Spec): freshness teeth for "build before WDIO" (proved to fail on a stale build), guarded plugin-dir resolution, appended evidence records (first failure is preserved), `worktree_dirty` recorded; plus two defects introduced by the repair itself and caught by the suite.
+
+Measured baseline behaviour (disposable copies):
+
+| Step | Delta |
+|---|---|
+| fixture → sync #1 | 2 changed (`Bases/*.base`), 2 transient sqlite sidecars |
+| sync #1 → sync #2 | 0 added, 0 removed, only the two `.base` files (whitespace-only churn) |
+
+`.base` view files are therefore an explicit **volatile allowlist** for any diff assertion, never a preservation target.
+
+Blocker filed as **#219**: adding an unrelated paper flips `TSTONE001` from `ocr_status="done"` to `"done_incomplete"` and clears `fulltext_md_path`, while both fulltexts exist and the index keeps a valid `fulltext_path`.
 
 ## Acceptance (package)
 
