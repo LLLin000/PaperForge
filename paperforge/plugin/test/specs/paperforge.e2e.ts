@@ -164,6 +164,24 @@ function worktreeDirty(): boolean {
   );
 }
 
+/**
+ * Live backend processes still referencing this sandbox.
+ *
+ * Matched on the sandbox directory *name* (a unique temp id) so no path
+ * quoting is involved. A backend that outlives its request is invisible to
+ * every other assertion in this file: the suite would report clean while a
+ * `paperforge` child keeps running against a deleted vault.
+ */
+function sandboxBackendProcesses(base: string): number {
+  const marker = path.basename(base);
+  const command =
+    process.platform === "win32"
+      ? `powershell -NoProfile -Command "(Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*${marker}*' -and $_.Name -like '*python*' }).Count"`
+      : `pgrep -fa '${marker}' | grep -c python || true`;
+  const output = execFileSync(command, { shell: true }).toString().trim();
+  return Number(output.split(/\s+/).pop() ?? "0") || 0;
+}
+
 async function sandboxBasePath(): Promise<string> {
   return await browser.executeObsidian(async ({ app }) => {
     const adapter = app.vault.adapter as unknown as { basePath?: string };
@@ -584,5 +602,157 @@ describe("PaperForge real-task e2e", function () {
     expect(trace).toContain("sync --json");
     expect(trace).toContain("versions show");
     expect(trace).toMatch(/timing detail=.*reconcile/);
+  });
+
+  it("binds the backend artifact, not only its version", async function () {
+    // A version number cannot tell a worktree source from an installed
+    // artifact, so a run claiming to test this checkout could be served by a
+    // different one. Record which artifact actually answered.
+    const health = (await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"];
+      if (!plugin || typeof plugin.getClient !== "function") {
+        throw new Error("paperforge plugin not loaded");
+      }
+      return await plugin.getClient().runtimeHealth();
+    })) as {
+      runtime?: {
+        interpreter?: string;
+        python_version?: string;
+        package_path?: string;
+        package_version?: string;
+      };
+    };
+
+    const runtime = health.runtime ?? {};
+    expect(runtime.package_version).toBe(CANDIDATE_VERSION);
+    expect(String(runtime.package_path ?? "")).toMatch(/paperforge$/);
+    expect(String(runtime.interpreter ?? "").length).toBeGreaterThan(0);
+
+    // cwd is <repo>/paperforge/plugin, so the package source is two levels up.
+    const sourcePath = path.resolve(PLUGIN_DIR, "..", "..", "paperforge");
+    const backendKind =
+      path.resolve(String(runtime.package_path)) === sourcePath
+        ? "worktree-source"
+        : "installed-artifact";
+
+    appendEvidence("w01-backend-artifact.json", {
+      case_id: "X11",
+      variant: "backend-artifact-binding",
+      required_layer: "H",
+      status: "VERIFIED",
+      source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: PLUGIN_DIR,
+      })
+        .toString()
+        .trim(),
+      backend_kind: backendKind,
+      package_path: runtime.package_path,
+      package_version: runtime.package_version,
+      interpreter: runtime.interpreter,
+      python_version: runtime.python_version,
+      source_path_expected: sourcePath,
+      observed_at: new Date().toISOString(),
+    });
+  });
+
+  it("keeps a durable change across a restart of the same sandbox", async function () {
+    const before = await sandboxBasePath();
+    await openPanel();
+
+    // Durable mutation through the client, read back from the file rather than
+    // the UI. A version restore is used instead of setNoteFlag because
+    // `note set-flag` currently resolves a stale flat path and fails for every
+    // workspace-layout paper (#230) — that path has its own case (B07).
+    const restored = (await browser.executeObsidian(async ({ app }, key) => {
+      const plugin = app.plugins.plugins["paperforge"];
+      if (!plugin || typeof plugin.getClient !== "function") {
+        throw new Error("paperforge plugin not loaded");
+      }
+      return await plugin.getClient().versionsRestore(key, "v1");
+    }, PAPER_KEY)) as { target_path?: string; provenance_persisted?: boolean };
+
+    const targetPath = String(restored.target_path ?? "");
+    expect(targetPath.length).toBeGreaterThan(0);
+    expect(readFileSync(targetPath, "utf8")).toContain("first body");
+
+    // Restart with NO vault argument: reboot the current vault, not a fresh
+    // copy — otherwise the assertion would "pass" against the fixture.
+    await browser.reloadObsidian();
+    const after = await sandboxBasePath();
+    expect(path.resolve(after)).toBe(path.resolve(before));
+    expect(readFileSync(targetPath, "utf8")).toContain("first body");
+
+    appendEvidence("w01-restart-persistence.json", {
+      case_id: "X11",
+      variant: "same-sandbox-restart-persistence",
+      required_layer: "H",
+      status: "VERIFIED",
+      source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: PLUGIN_DIR,
+      })
+        .toString()
+        .trim(),
+      sandbox_base: before,
+      sandbox_base_after_restart: after,
+      durable_artifact: targetPath,
+      observed_at: new Date().toISOString(),
+    });
+  });
+
+  it("does not inherit the developer's credentials and leaves no backend behind", async function () {
+    const base = await sandboxBasePath();
+
+    const credentials = await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"];
+      if (!plugin || typeof plugin.getClient !== "function") {
+        throw new Error("paperforge plugin not loaded");
+      }
+      const client = plugin.getClient();
+      return {
+        ocr: await client.credentialAvailable("ocr"),
+        embedding: await client.credentialAvailable("embedding"),
+      };
+    });
+
+    // A pristine sandbox has no credentials. If this machine's real keyring
+    // leaked in, every "fails closed without credentials" assertion elsewhere
+    // would be meaningless.
+    expect(credentials.ocr).toBe(false);
+    expect(credentials.embedding).toBe(false);
+
+    await openPanel();
+    await browser.waitUntil(async () => !(await operationActive()), {
+      timeout: 60000,
+      timeoutMsg: "an operation was still active",
+    });
+
+    // A backend that outlives its request is invisible to every other
+    // assertion here: the vault is a temp copy and its process would keep
+    // running against a directory the harness is about to discard.
+    let leftovers = sandboxBackendProcesses(base);
+    if (leftovers > 0) {
+      // Give a just-settled child a moment to exit before calling it a leak.
+      await browser.pause(2000);
+      leftovers = sandboxBackendProcesses(base);
+    }
+
+    appendEvidence("w01-isolation.json", {
+      case_id: "X11",
+      variant: "developer-state-isolation",
+      required_layer: "H",
+      status: leftovers === 0 ? "VERIFIED" : "FAILED",
+      source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: PLUGIN_DIR,
+      })
+        .toString()
+        .trim(),
+      credentials_ocr: credentials.ocr,
+      credentials_embedding: credentials.embedding,
+      lingering_backend_processes: leftovers,
+      sandbox_base: base,
+      observed_at: new Date().toISOString(),
+    });
+
+    expect(leftovers).toBe(0);
   });
 });

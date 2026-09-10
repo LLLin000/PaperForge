@@ -57,3 +57,33 @@ def test_runtime_health_summary_has_expected_keys(tmp_path):
         assert layer in health["layers"]
         for key in ("status", "evidence", "next_action", "repair_command"):
             assert key in health["layers"][layer]
+
+
+def test_runtime_identity_identifies_the_serving_artifact(tmp_path):
+    """Acceptance evidence must be able to name the artifact that answered.
+
+    A version alone cannot distinguish a worktree source from an installed
+    copy, so `runtime` reports the interpreter and the package path. The e2e
+    H-layer records this (W01, #194); without it a run claiming to test this
+    checkout could be served by a different one.
+    """
+    import sys
+    from pathlib import Path as _Path
+
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    canonical_test_config(vault, system_dir="System")
+
+    health = get_runtime_health(vault)
+    runtime = health["runtime"]
+
+    import paperforge
+
+    package_path = _Path(runtime["package_path"])
+    assert package_path.name == "paperforge"
+    assert package_path.is_dir()
+    # The reported path must be the package that answered, not a stale name.
+    assert (package_path / "__init__.py").is_file()
+    assert runtime["package_version"] == paperforge.__version__
+    assert runtime["interpreter"] == sys.executable
+    assert runtime["python_version"]
