@@ -260,6 +260,8 @@
 | X10! | 候选在所有声称支持的 OS/arch/app/installer 上运行 | 固定 app+installer；latest+旧兼容installer；最低支持版；真实 keyring/SQLite扩展/文件锁专项 | I/H/P | W19 |
 | X11! | 测试独立、可靠、无旧产物与假阳性 | build hash、沙箱逃逸保护、同沙箱重启 vs 新副本、autosync隔离、故意错误结果应使测试失败 | U/I/H | W01 |
 | X12 | 稳定性证据而不是重试洗绿 | 关键 H 首次通过率、独立/随机顺序、固定 seed 的状态序列、首次失败证据保存 | I/H | W19 |
+| X13! | **查询即只读**:声明为读取/报告的入口(status/dashboard/runtime-health/probe/lineage/reconcile)不得产生任何持久写入;确需写入的必须改名为变更操作或显式申报 | 三处已确认写入(status→重写 `.base`;dashboard→`.write_test`;runtime-health→`.health-check`);任一命令在只读路径上写用户可见文件即失败。配套:检测此类的门禁规则必须**能被触发**(见 X14) | U/I | W02 |
+| X14! | **观测→动作闭环完整性**:probe/lineage 报告的每个事实要么有已注册且可派发的动作,要么有书面的"无需动作"契约;所有对外发出的 action id 必须在注册表中;不得存在**无法失败**的规则 | 已确认缺口:probe 发出注册表外的 id(`foundation.setup`/`help.restore`/`library.sync`/`memory.restore_backup` 等);`query_side_effect` 规则主体 `probe_status` 无对应文件 → 零事实 → 报 `satisfied`,**假通过**;`unknown` lineage facet 无 intent 也无 probe 分支;W2 attempt 仅由 chain 记录,直接 `action run` 绕过 | U/I | W02 |
 
 ### R — 内容、发布与 owner 验收
 
