@@ -162,6 +162,15 @@ jobs:
           node-version: 22
           cache: "npm"
           cache-dependency-path: paperforge/plugin/package-lock.json
+      # #195 (W02): the protocol-conformance suite drives the real CLI through
+      # the real transport, so this job needs an interpreter that can import
+      # paperforge. Without it those cases would fail for a reason unrelated to
+      # the code under test.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install package with test deps
+        run: pip install -e ".[test]"
       - run: npm ci
         working-directory: paperforge/plugin
       - run: npx vitest run --reporter=verbose
