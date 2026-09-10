@@ -159,6 +159,40 @@ class TestGateSemantics:
         assert result.eligible is False
         assert result.reasons  # machine-readable reasons, not silent
 
+    def test_strict_mode_fails_closed_on_ineligible_audit(self):
+        """A required check that cannot evaluate must fail, and say so."""
+        audit = _audit(_contract(), _survey(coverage="unavailable"))
+        result = evaluate_gate(audit, ("publication.uses_protocol",), strict=True)
+        assert result.status == "block"
+        assert result.exit_code == EXIT_BLOCK
+        assert result.unevaluated is True  # not a rule violation
+        assert result.blocking_rules == ()
+        assert result.reasons  # still explains why it could not evaluate
+
+    def test_strict_mode_fails_closed_on_empty_allowlist(self):
+        audit = _audit(_minimal_contract(), _survey())
+        assert audit.content.assessment.gate_eligible is True
+        result = evaluate_gate(audit, (), strict=True)
+        assert result.status == "block"
+        assert result.unevaluated is True
+        assert any("allowlist" in r for r in result.reasons)
+
+    def test_strict_mode_does_not_change_a_real_verdict(self):
+        """Strict only converts an unevaluable gate; it never masks a verdict."""
+        clean = evaluate_gate(
+            _audit(_minimal_contract(), _survey()),
+            ("publication.uses_protocol",),
+            strict=True,
+        )
+        assert clean.status == "pass" and clean.unevaluated is False
+        blocked = evaluate_gate(
+            _audit(_contract(), _survey([_bypass_write()])),
+            ("publication.uses_protocol",),
+            strict=True,
+        )
+        assert blocked.status == "block" and blocked.unevaluated is False
+        assert blocked.blocking_rules == ("publication.uses_protocol",)
+
     def test_failed_audit_is_skipped_with_reasons(self):
         audit = _audit(_contract(), _survey([_bypass_write()]))
         # force failure via parse errors

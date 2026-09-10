@@ -14,6 +14,11 @@ Semantics:
   authoritative; this module never re-derives coverage completeness.
 - Ineligible audits are reported `skipped` with reasons (exit 0) — the gate
   only *blocks on violations it is configured to enforce*.
+- `strict=True` (CLI `--strict`) is the required-check mode: a gate that
+  cannot evaluate **fails** instead of passing. Use it only where the audit
+  is actually eligible, otherwise it fails for a reason unrelated to the
+  change under test. The result carries `unevaluated=True` so a "could not
+  evaluate" failure is never confused with a "found a violation" failure.
 """
 from __future__ import annotations
 
@@ -42,6 +47,7 @@ class GateResult:
     blocking_rules: tuple[str, ...] = ()
     reasons: tuple[str, ...] = ()
     findings: tuple[dict[str, Any], ...] = field(default_factory=tuple)
+    unevaluated: bool = False
 
     @property
     def exit_code(self) -> int:
@@ -50,24 +56,50 @@ class GateResult:
         return EXIT_PASS
 
 
+def _fail_closed(result: GateResult, strict: bool) -> GateResult:
+    """In strict mode a gate that cannot evaluate is a failure, not a pass.
+
+    Keeps the original reasons so the failure explains *why* the gate could not
+    evaluate, and marks it `unevaluated` so a configuration failure is not read
+    as a rule violation.
+    """
+    if not strict or result.status != "skipped":
+        return result
+    return GateResult(
+        status="block",
+        eligible=result.eligible,
+        blocking_rules=(),
+        reasons=result.reasons,
+        unevaluated=True,
+    )
+
+
 def evaluate_gate(
     audit: DeterministicAudit,
     allowlist: tuple[str, ...] = (),
+    *,
+    strict: bool = False,
 ) -> GateResult:
     """Evaluate one authoritative Audit against a reviewed rule allowlist."""
     validate_audit(audit)
     assessment = audit.content.assessment
     if not assessment.gate_eligible:
-        return GateResult(
-            status="skipped",
-            eligible=False,
-            reasons=tuple(assessment.reasons),
+        return _fail_closed(
+            GateResult(
+                status="skipped",
+                eligible=False,
+                reasons=tuple(assessment.reasons),
+            ),
+            strict,
         )
     if not allowlist:
-        return GateResult(
-            status="skipped",
-            eligible=True,
-            reasons=("no reviewed rules in the allowlist",),
+        return _fail_closed(
+            GateResult(
+                status="skipped",
+                eligible=True,
+                reasons=("no reviewed rules in the allowlist",),
+            ),
+            strict,
         )
     allowed = set(allowlist)
     blocking: list[dict[str, Any]] = []
@@ -108,6 +140,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--allowlist", nargs="*", default=(), help="reviewed rule ids allowed to block"
     )
+    parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="fail closed when the gate cannot evaluate (required-check mode)",
+    )
     parser.add_argument("--json", action="store_true", help="emit GateResult as JSON")
     args = parser.parse_args(argv)
 
@@ -117,13 +154,14 @@ def main(argv: list[str] | None = None) -> int:
         print(f"gate usage error: {exc}", file=sys.stderr)
         return EXIT_USAGE
 
-    result = evaluate_gate(audit, tuple(args.allowlist))
+    result = evaluate_gate(audit, tuple(args.allowlist), strict=args.strict)
     if args.json:
         print(
             json.dumps(
                 {
                     "status": result.status,
                     "eligible": result.eligible,
+                    "unevaluated": result.unevaluated,
                     "blocking_rules": list(result.blocking_rules),
                     "reasons": list(result.reasons),
                     "exit_code": result.exit_code,
@@ -135,6 +173,7 @@ def main(argv: list[str] | None = None) -> int:
     else:
         print(
             f"gate={result.status} eligible={result.eligible} "
+            f"unevaluated={result.unevaluated} "
             f"blocking={','.join(result.blocking_rules) or '-'} "
             f"reasons={','.join(result.reasons) or '-'}"
         )
