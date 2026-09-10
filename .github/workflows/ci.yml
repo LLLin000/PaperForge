@@ -171,6 +171,11 @@ jobs:
           python-version: "3.11"
       - name: Install package with test deps
         run: pip install -e ".[test]"
+      # `python` on PATH is not always the interpreter setup-python installed
+      # (the tool cache holds it; /usr/bin/python is a different install), so
+      # the protocol suite is told which one to use instead of guessing.
+      - name: Point the protocol suite at the job interpreter
+        run: echo "PF_PYTHON=$(command -v python)" >> "$GITHUB_ENV"
       - run: npm ci
         working-directory: paperforge/plugin
       - run: npx vitest run --reporter=verbose

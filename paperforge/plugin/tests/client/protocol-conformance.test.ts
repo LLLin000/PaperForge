@@ -14,6 +14,7 @@
  * and the read-only case can hash the whole tree.
  */
 import { createHash } from "node:crypto";
+import { execFileSync } from "node:child_process";
 import {
   cpSync,
   mkdtempSync,
@@ -30,8 +31,56 @@ import { NodeProcessTransport } from "../../src/client/node-transport";
 import type { NdjsonEvent } from "../../src/client/transport";
 
 const PLUGIN_DIR = process.cwd();
+const REPO_ROOT = path.resolve(PLUGIN_DIR, "..", "..");
 const SIMPLE_VAULT = path.resolve(PLUGIN_DIR, "test", "vaults", "simple");
-const PYTHON = process.env.PF_PYTHON ?? "python";
+
+// The CLI is spawned from the plugin directory, where `import paperforge`
+// only resolves if the package is installed — locally it is not (the repo is
+// importable through cwd), so the repository root goes on PYTHONPATH. The
+// transport still applies its own sanitized environment on top; this only
+// makes the package findable.
+process.env.PYTHONPATH = [REPO_ROOT, process.env.PYTHONPATH]
+  .filter(Boolean)
+  .join(path.delimiter);
+/**
+ * An interpreter that can actually import paperforge.
+ *
+ * `python` on PATH is not necessarily the one CI provisioned: with
+ * setup-python the tool cache holds the package while `/usr/bin/python` is a
+ * different installation, and the failure looks like a broken product rather
+ * than a wrong interpreter. Candidates are probed in order and the message
+ * names what was tried.
+ */
+function resolveInterpreter(): string {
+  const candidates = [process.env.PF_PYTHON, "python3", "python"].filter(
+    (value): value is string => Boolean(value)
+  );
+  const tried: string[] = [];
+  for (const candidate of candidates) {
+    try {
+      // `import paperforge` is not enough: a different interpreter can import
+      // the source through PYTHONPATH while lacking the package's own
+      // dependencies (filelock), and the failure then looks like a broken
+      // product. Prove the CLI entry point actually loads.
+      execFileSync(candidate, ["-m", "paperforge", "--version"], {
+        stdio: "ignore",
+        cwd: REPO_ROOT,
+      });
+      return candidate;
+    } catch (error) {
+      const reason = String((error as Error).message ?? error)
+        .split("\n")[0]
+        .slice(0, 120);
+      tried.push(`${candidate} (${reason})`);
+    }
+  }
+  throw new Error(
+    `no interpreter can import paperforge; tried: ${tried.join(" | ")}. ` +
+      "set PF_PYTHON to the interpreter the package is installed into"
+  );
+}
+
+const PYTHON = resolveInterpreter();
 
 /** #137 froze this vocabulary; a new event name is a contract change. */
 const FROZEN_EVENTS = new Set([
