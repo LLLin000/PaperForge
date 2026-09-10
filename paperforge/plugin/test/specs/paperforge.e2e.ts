@@ -87,6 +87,14 @@ const NEW_PAPER_NOTE =
 const EXPORT_REL = "System/PaperForge/exports/骨科.json";
 const INDEX_REL = "System/PaperForge/indexes/formal-library.json";
 
+/** One frontmatter field of a sandbox note, trimmed ("" when absent). */
+function readFrontmatterFlag(base: string, rel: string, field: string): string {
+  const match = readNote(base, rel).match(
+    new RegExp(`^${field}:\\s*(.+)$`, "m")
+  );
+  return match ? match[1].trim() : "";
+}
+
 function readNote(base: string, rel: string): string {
   return readFileSync(path.join(base, rel), "utf8");
 }
@@ -203,6 +211,39 @@ function appendEvidence(name: string, payload: Record<string, unknown>): void {
   const runs = Array.isArray(parsed) ? parsed : [parsed];
   runs.push(payload);
   writeFileSync(file, JSON.stringify(runs, null, 2));
+}
+
+/**
+ * Click an element identified by its stable test id.
+ *
+ * The dashboard panel is taller than the window, and a row that lands in the
+ * bottom band is covered by Obsidian's status bar — WebDriver then refuses the
+ * click ("element click intercepted"). `scrollIntoView` does not help because
+ * the element's nearest *scrollable* ancestor is the panel, not the document;
+ * this scrolls that ancestor instead, which is what a user does with the wheel.
+ */
+async function clickTestId(testid: string): Promise<void> {
+  const element = await browser.$(`[data-pf-testid='${testid}']`);
+  await element.waitForExist({ timeout: 60000 });
+  await browser.execute((id: string) => {
+    const el = document.querySelector(
+      `[data-pf-testid='${id}']`
+    ) as HTMLElement | null;
+    if (!el) return;
+    let scroller: HTMLElement | null = el.parentElement;
+    while (scroller && scroller !== document.body) {
+      const style = getComputedStyle(scroller);
+      if (/(auto|scroll)/.test(style.overflowY)) {
+        const row = el.getBoundingClientRect();
+        const box = scroller.getBoundingClientRect();
+        scroller.scrollTop +=
+          row.top - box.top - box.height / 2 + row.height / 2;
+        return;
+      }
+      scroller = scroller.parentElement;
+    }
+  }, testid);
+  await element.click();
 }
 
 async function openVaultFile(filePath: string): Promise<void> {
@@ -754,5 +795,54 @@ describe("PaperForge real-task e2e", function () {
     });
 
     expect(leftovers).toBe(0);
+  });
+  it("persists a workflow flag toggled in the UI, across a restart", async function () {
+    // Case B07. The dashboard toggles go client → NodeProcessTransport →
+    // `note set-flag` → the note; until #230 that command resolved a stale
+    // flat path, so this path could not succeed for a synced paper. The
+    // assertion is the note Python wrote, never the checkbox state.
+    const before = await sandboxBasePath();
+    await openPanel();
+    await openVaultFile(NOTE_PATH);
+
+    const disclosure = await browser.$(".paperforge-technical-details-toggle");
+    await disclosure.waitForExist({ timeout: 60000 });
+    await disclosure.click();
+
+    const checkbox = await browser.$("[data-pf-testid='flag-analyze']");
+    await checkbox.waitForDisplayed({ timeout: 60000 });
+    expect(await checkbox.isSelected()).toBe(false);
+
+    await clickTestId("flag-analyze");
+    await browser.waitUntil(
+      () => readFrontmatterFlag(before, BYSTANDER_NOTE, "analyze") === "true",
+      {
+        timeout: 60000,
+        timeoutMsg: "the UI toggle never reached the note",
+      }
+    );
+
+    // Durable on disk is not the same as durable across a host restart.
+    await browser.reloadObsidian();
+    const after = await sandboxBasePath();
+    expect(path.resolve(after)).toBe(path.resolve(before));
+    expect(readFrontmatterFlag(after, BYSTANDER_NOTE, "analyze")).toBe("true");
+
+    appendEvidence("b07-note-flag.json", {
+      case_id: "B07",
+      variant: "UI toggle -> note frontmatter -> restart",
+      required_layer: "H",
+      status: "VERIFIED",
+      source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: PLUGIN_DIR,
+      })
+        .toString()
+        .trim(),
+      field: "analyze",
+      note: BYSTANDER_NOTE,
+      sandbox_base: before,
+      sandbox_base_after_restart: after,
+      observed_at: new Date().toISOString(),
+    });
   });
 });

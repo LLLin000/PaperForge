@@ -1347,6 +1347,9 @@ export class PaperForgeStatusView extends ItemView {
       const cb = label.createEl("input", {
         type: "checkbox",
         cls: "paperforge-workflow-checkbox",
+        // Stable hook for the acceptance harness: label text is localized, so
+        // a test that finds the checkbox by text breaks with the language.
+        attr: { "data-pf-testid": `flag-${tf.key}` },
       });
       cb.checked = entry[tf.key] === true;
       label.createEl("span", {
