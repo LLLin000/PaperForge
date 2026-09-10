@@ -11,6 +11,10 @@ never touches note files.
 from __future__ import annotations
 
 import argparse
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:  # pragma: no cover - annotation only
+    from pathlib import Path
 
 # Fail-closed field allowlist — no arbitrary frontmatter key injection.
 ALLOWED_FIELDS = ("do_ocr", "analyze")
