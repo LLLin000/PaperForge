@@ -26,11 +26,12 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 WORKFLOW_DIR = REPO_ROOT / ".github" / "workflows"
 TESTS_DIR = REPO_ROOT / "tests"
 
-# Ratchet measured on 2026-09-10 (master a2034100 + this change): of 237 test
-# files, 54 are collected across the three workflows and 183 are not. Wire a
+# Ratchet measured 2026-09-10: of 237 test files, 55 are collected across the
+# three workflows and 182 are not (the note set-flag regressions were wired in
+# with the #230 fix — a test CI never runs cannot fail a merge). Wire a
 # job in, or delete a duplicated file, to lower this; raise it only with a
 # written reason, because every increment is a test that cannot fail CI.
-UNCOLLECTED_TEST_FILES_MAX = 183
+UNCOLLECTED_TEST_FILES_MAX = 182
 
 # Jobs that exist but cannot gate a merge, with the reason each may stay out of
 # the aggregate. Anything else must be in `needs:`.

@@ -134,6 +134,7 @@ jobs:
           python -m pytest \
             tests/test_ci_coverage_contract.py \
             tests/test_architecture_boundaries.py \
+            tests/test_note_set_flag.py \
             -q --tb=short --timeout=120
       - name: J2 — headless sync + vault preservation
         shell: bash

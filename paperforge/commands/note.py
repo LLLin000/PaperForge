@@ -28,6 +28,34 @@ def _err(version: str, message: str):
     )
 
 
+#: Canonical note locations, most authoritative first. `main_note_path` is the
+#: workspace note whose slug sync freezes; `note_path` is the legacy flat field
+#: and is stale for every workspace-layout paper (#230).
+NOTE_PATH_FIELDS = ("main_note_path", "note_path")
+
+
+def _resolve_note(vault: Path, entry: dict) -> tuple[Path | None, str]:
+    """Resolve a paper's note the way the rest of the system does.
+
+    Prefers the canonical path but accepts the legacy one when it is the only
+    one that exists, and reports every candidate it tried when neither does —
+    an error naming the paths tried is diagnosable; a bare "not found" is not.
+    """
+    candidates: list[tuple[str, str]] = []
+    for field in NOTE_PATH_FIELDS:
+        raw = str(entry.get(field) or "").replace("\\", "/").strip()
+        if raw.startswith("[[") and raw.endswith("]]"):
+            raw = raw[2:-2]
+        if raw:
+            candidates.append((field, raw))
+    for _field, rel in candidates:
+        path = vault / rel
+        if path.exists():
+            return path, rel
+    tried = ", ".join(f"{field}={rel}" for field, rel in candidates) or "<missing>"
+    return None, tried
+
+
 def run(args: argparse.Namespace) -> int:
     """Set a boolean workflow flag on the canonical note frontmatter."""
     from paperforge import __version__
@@ -68,15 +96,11 @@ def run(args: argparse.Namespace) -> int:
             result = _err(__version__, f"unknown paper key: {args.key}")
             print(result.to_json())
             return 1
-        note_rel = entry.get("note_path") or ""
-        note_rel = note_rel.replace("\\", "/").strip()
-        if note_rel.startswith("[[") and note_rel.endswith("]]"):
-            note_rel = note_rel[2:-2]
-        note = vault / note_rel
-        if not note_rel or not note.exists():
+        note, note_rel = _resolve_note(vault, entry)
+        if note is None:
             result = _err(
                 __version__,
-                f"note file not found for {args.key}: {note_rel or '<missing>'}",
+                f"note file not found for {args.key}: {note_rel}",
             )
             print(result.to_json())
             return 1

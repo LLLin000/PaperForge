@@ -318,3 +318,85 @@ def test_unterminated_frontmatter_fails_closed(tmp_path: Path) -> None:
     assert payload is not None and payload["ok"] is False
     assert "no valid frontmatter block" in payload["error"]["message"]
     assert _read_raw(note) == raw
+
+
+def _seed_workspace_layout(vault: Path, fm_text: str) -> Path:
+    """The normal layout, with the legacy flat `note_path` left stale (#230).
+
+    Sync freezes the workspace slug, so the note lives in the slug folder while
+    `note_path` still names the flat path that the layout migration left behind.
+    """
+    canonical_test_config(vault, resources_dir="03_Resources", literature_dir="Literature")
+    note_dir = vault / "03_Resources" / "Literature" / "Cardio" / "ABCD1234 - Smith"
+    note_dir.mkdir(parents=True, exist_ok=True)
+    note = note_dir / "ABCD1234.md"
+    note.write_text(fm_text, encoding="utf-8")
+    index_path = get_index_path(vault)
+    index_path.parent.mkdir(parents=True, exist_ok=True)
+    index_path.write_text(
+        json.dumps(
+            {
+                "items": [
+                    {
+                        "zotero_key": "ABCD1234",
+                        "main_note_path": note.relative_to(vault).as_posix(),
+                        "note_path": "03_Resources/Literature/Cardio/ABCD1234.md",
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    return note
+
+
+def test_set_flag_resolves_the_workspace_note_when_note_path_is_stale(tmp_path: Path) -> None:
+    """#230: the legacy `note_path` must not shadow the canonical note.
+
+    Every workspace-layout paper carries a stale flat `note_path`, so resolving
+    it first made set-flag fail for exactly the papers the dashboard toggles.
+    """
+    vault = tmp_path / "v"
+    vault.mkdir()
+    note = _seed_workspace_layout(vault, "---\nzotero_key: ABCD1234\nanalyze: false\n---\nbody")
+
+    rc, payload, err = _run(
+        vault, "set-flag", "--key", "ABCD1234", "--field", "analyze", "--value", "true", "--json"
+    )
+
+    assert rc == 0, err
+    assert payload["data"]["changed"] is True
+    assert payload["data"]["note_path"] == note.relative_to(vault).as_posix()
+    assert read_frontmatter_dict(note.read_text(encoding="utf-8"))["analyze"] is True
+
+
+def test_set_flag_fails_closed_and_names_every_candidate(tmp_path: Path) -> None:
+    """When no candidate exists the error must say what was tried."""
+    vault = tmp_path / "v"
+    vault.mkdir()
+    canonical_test_config(vault, resources_dir="03_Resources", literature_dir="Literature")
+    index_path = get_index_path(vault)
+    index_path.parent.mkdir(parents=True, exist_ok=True)
+    index_path.write_text(
+        json.dumps(
+            {
+                "items": [
+                    {
+                        "zotero_key": "ABCD1234",
+                        "main_note_path": "03_Resources/Literature/Cardio/ABCD1234 - Smith/ABCD1234.md",
+                        "note_path": "03_Resources/Literature/Cardio/ABCD1234.md",
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    rc, payload, err = _run(
+        vault, "set-flag", "--key", "ABCD1234", "--field", "analyze", "--value", "true", "--json"
+    )
+
+    assert rc == 1
+    assert payload["ok"] is False
+    message = payload["error"]["message"]
+    assert "main_note_path=" in message and "note_path=" in message
