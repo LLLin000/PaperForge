@@ -44,6 +44,54 @@ def _run(*args: str) -> None:
         )
 
 
+def _restore_canonical_fulltext() -> None:
+    """Restore the canonical OCR fulltext the legacy backfill overwrote (#219).
+
+    The first sync on a vault whose OCR artifacts predate the derived layout
+    renders from raw and writes the rendered markdown over
+    ``ocr/<key>/fulltext.md``, while ``meta.page_count`` keeps the original
+    value. ``validate_ocr_meta`` then rejects the artifact the pipeline just
+    produced, so the paper silently degrades to ``done_incomplete``. Re-seed
+    the canonical artifact and make ``meta`` agree with it, so the fixture is a
+    valid baseline — and, verified below, a sync fixed point.
+    """
+    canonical = (OCR_FIXTURE / "fulltext.md").read_text(encoding="utf-8")
+    target = VAULT / "System" / "PaperForge" / "ocr" / KEY / "fulltext.md"
+    target.write_text(canonical, encoding="utf-8")
+
+    import json as _json  # noqa: PLC0415
+
+    from paperforge.worker.ocr_fulltext_state import (  # noqa: PLC0415
+        compute_disk_fulltext_hash,
+    )
+
+    meta_path = target.parent / "meta.json"
+    meta = _json.loads(meta_path.read_text(encoding="utf-8"))
+    meta["machine_fulltext_hash"] = compute_disk_fulltext_hash(target)
+    meta_path.write_text(
+        _json.dumps(meta, ensure_ascii=False, indent=1), encoding="utf-8"
+    )
+
+
+def _assert_ocr_invariant() -> None:
+    """The fixture must ship a VALID completed OCR state, not an assumed one.
+
+    A hand-written stub that claims ``done`` while the artifacts fail the
+    pipeline's own validator is what let #219 hide behind a green suite.
+    """
+    from paperforge.config import resolve_paths  # noqa: PLC0415
+    from paperforge.worker.ocr import validate_ocr_meta  # noqa: PLC0415
+
+    meta_path = VAULT / "System" / "PaperForge" / "ocr" / KEY / "meta.json"
+    meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    status, reason = validate_ocr_meta(resolve_paths(VAULT), meta)
+    if status != "done":
+        raise SystemExit(
+            f"e2e fixture OCR invariant violated for {KEY}: "
+            f"validate_ocr_meta -> {status!r} ({reason})"
+        )
+
+
 def build() -> None:
     if VAULT.exists():
         shutil.rmtree(VAULT)
@@ -70,11 +118,9 @@ def build() -> None:
     ocr_target = VAULT / "System" / "PaperForge" / "ocr" / KEY
     shutil.copytree(OCR_FIXTURE, ocr_target, dirs_exist_ok=True)
 
-    # REAL sync: selection → index → workspace migration.
+    # REAL sync: selection → index → workspace migration. On this first pass
+    # the legacy backfill rewrites the canonical fulltext (see #219).
     _run("sync", "--json")
-
-    # REAL memory build: FTS index so search works offline.
-    _run("memory", "build", "--json")
 
     # Version authority reads the OCR root (System/PaperForge/ocr/<key>/),
     # so seed the version artifacts there — not in the workspace.
@@ -119,6 +165,16 @@ def build() -> None:
     (backups / "fulltext.pre-rebuild.20260909T123456Z.md").write_text(
         "# Legacy backup\n\nlegacy body\n", encoding="utf-8"
     )
+
+    # Restore the canonical artifact, then sync again: this second pass is
+    # stable (no derived rebuild), so the fixture ends as a sync fixed point.
+    _restore_canonical_fulltext()
+    _run("sync", "--json")
+
+    # REAL memory build last, so FTS reflects the final state.
+    _run("memory", "build", "--json")
+
+    _assert_ocr_invariant()
 
     print(f"e2e vault ready: {VAULT}")
 
