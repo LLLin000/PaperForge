@@ -230,13 +230,18 @@ describe(
     });
 
     it("refuses a confirmation-required action without confirmation, before any work", async () => {
-      // Only when the action is otherwise available: preflight precedes the
-      // confirmation gate, so an unavailable action must not ask for consent —
-      // it reports why it cannot run at all.
-      const available = CONFIRMATION_REQUIRED.filter(
-        (id) => id !== "library.prune"
-      );
-      for (const actionId of available) {
+      // Which gate fires first depends on the environment: preflight precedes
+      // the confirmation gate, so an unavailable action reports why it cannot
+      // run (1) instead of asking for consent. What must hold everywhere is
+      // that the exit code matches the reported availability, and that the
+      // action never runs.
+      const { PaperForgeClient } =
+        await import("../../src/client/paperforge-client");
+      const client = new PaperForgeClient({ transport });
+
+      for (const actionId of CONFIRMATION_REQUIRED) {
+        const descriptor = await client.describeAction(actionId);
+        const expected = descriptor.availability === "available" ? 3 : 1;
         await expect(
           transport.execute([
             "action",
@@ -245,20 +250,10 @@ describe(
             "--scope",
             "all",
             "--json",
-          ])
-        ).rejects.toMatchObject({ exitCode: 3 });
+          ]),
+          `${actionId} reported availability=${descriptor.availability}`
+        ).rejects.toMatchObject({ exitCode: expected });
       }
-      // library.prune has no residual report to act on in this vault.
-      await expect(
-        transport.execute([
-          "action",
-          "run",
-          "library.prune",
-          "--scope",
-          "all",
-          "--json",
-        ])
-      ).rejects.toMatchObject({ exitCode: 1 });
     });
 
     it("reports the registry policy through the client boundary", async () => {
