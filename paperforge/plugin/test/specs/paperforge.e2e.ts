@@ -79,6 +79,64 @@ function sha256(file: string): string {
   return createHash("sha256").update(readFileSync(file)).digest("hex");
 }
 
+const BYSTANDER_NOTE =
+  "Resources/Literature/骨科/TSTONE001 - Biomechanical Comparison of Suture Anchor Fixations in Rotator Cuff Repair/TSTONE001.md";
+const NEW_PAPER_KEY = "TSTONE002";
+const NEW_PAPER_NOTE =
+  "Resources/Literature/骨科/TSTONE002 - Second Paper/TSTONE002.md";
+const EXPORT_REL = "System/PaperForge/exports/骨科.json";
+const INDEX_REL = "System/PaperForge/indexes/formal-library.json";
+
+function readNote(base: string, rel: string): string {
+  return readFileSync(path.join(base, rel), "utf8");
+}
+
+function newNoteExists(base: string): boolean {
+  return existsSync(path.join(base, NEW_PAPER_NOTE));
+}
+
+function readIndex(base: string): { paper_count: number; keys: string[] } {
+  const raw = JSON.parse(readFileSync(path.join(base, INDEX_REL), "utf8")) as {
+    paper_count?: number;
+    items?: { zotero_key?: string }[];
+  };
+  const items = raw.items ?? [];
+  return {
+    paper_count: raw.paper_count ?? items.length,
+    keys: items.map((entry) => String(entry.zotero_key ?? "")),
+  };
+}
+
+/**
+ * Append one library item to the sandbox export, so Sync has exactly one
+ * change to reconcile and the assertion can be a real data diff.
+ */
+function addExportItem(
+  base: string,
+  item: { key: string; title: string; doi: string }
+): void {
+  const file = path.join(base, EXPORT_REL);
+  const doc = JSON.parse(readFileSync(file, "utf8")) as {
+    items: Record<string, unknown>[];
+    collections: Record<string, { items: string[] }>;
+  };
+  const template: Record<string, unknown> = { ...doc.items[0] };
+  Object.assign(template, {
+    key: item.key,
+    itemKey: item.key,
+    title: item.title,
+    DOI: item.doi,
+    attachments: [
+      { path: `storage:${item.key}/${item.key}.pdf`, contentType: "application/pdf" },
+    ],
+  });
+  doc.items.push(template);
+  for (const collection of Object.values(doc.collections)) {
+    collection.items.push(item.key);
+  }
+  writeFileSync(file, JSON.stringify(doc));
+}
+
 /** Newest mtime under `src/` — the built bundle must be at least this fresh. */
 function newestSourceMtime(dir: string): number {
   let newest = 0;
@@ -269,25 +327,95 @@ describe("PaperForge real-task e2e", function () {
     });
   });
 
-  it("runs Sync Library through the UI and refreshes the read model", async function () {
+  it("syncs exactly the changed export entry and preserves the bystander paper", async function () {
+    // Attribution: an unrelated convergence tick would produce the same data
+    // effect, so this test requires the background cadence to be far outside
+    // its own window (a tick would make "the button did it" unprovable).
+    const cadence = await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"];
+      return plugin.settings.autoSyncIntervalSeconds ?? 120;
+    });
+    expect(cadence).toBeGreaterThanOrEqual(120);
+
     await openPanel();
+
+    // Wait out the startup sync so the click below is the only writer left.
+    await browser.waitUntil(
+      async () =>
+        !(await browser.executeObsidian(async ({ app }) => {
+          const plugin = app.plugins.plugins["paperforge"];
+          if (!plugin || typeof plugin.getClient !== "function") return true;
+          return plugin.getClient().isOperationActive();
+        })),
+      { timeout: 120000, timeoutMsg: "startup sync never settled" }
+    );
+
+    const base = await sandboxBasePath();
+    const bystanderBefore = sha256(path.join(base, BYSTANDER_NOTE));
+    const indexBefore = readIndex(base);
+    expect(newNoteExists(base)).toBe(false);
+
+    addExportItem(base, {
+      key: "TSTONE002",
+      title: "Second Paper",
+      doi: "10.1016/j.jse.2024.01.999",
+    });
+
     const syncBtn = await browser.$("[data-pf-testid='sync-library']");
     await expect(syncBtn).toExist();
     await syncBtn.click();
 
-    // Real mutation must settle and appear in the boundary trace.
+    // Wait on the strongest data effect, never on a trace string: the startup
+    // autosync can satisfy a trace assertion without the button doing anything,
+    // and the note appears before the index is rebuilt.
     await browser.waitUntil(
-      async () => await traceContains("sync --json ok=true"),
+      () => {
+        try {
+          return readIndex(base).paper_count === indexBefore.paper_count + 1;
+        } catch {
+          return false; // the index is being rewritten
+        }
+      },
       {
         timeout: 180000,
-        timeoutMsg: "sync never completed through the client",
+        timeoutMsg: "clicking Sync never rebuilt the index for the new paper",
       }
     );
+    expect(newNoteExists(base)).toBe(true);
+
+    const indexAfter = readIndex(base);
+    expect(indexAfter.paper_count).toBe(indexBefore.paper_count + 1);
+    expect(indexAfter.keys).toContain("TSTONE002");
+    // The bystander paper is untouched: same bytes, same status, same link.
+    expect(sha256(path.join(base, BYSTANDER_NOTE))).toBe(bystanderBefore);
+    expect(readNote(base, BYSTANDER_NOTE)).toContain('ocr_status: "done"');
+
     const panelText = (await browser.$(".paperforge-content-area").getText())
       .toLowerCase()
       .replace(/\s+/g, " ");
     expect(panelText).toContain("library snapshot");
     expect(panelText).toMatch(/\d+ papers/);
+
+    appendEvidence("b02-sync-diff.json", {
+      case_id: "B02",
+      variant: "export-add -> UI Sync",
+      required_layer: "H",
+      status: "VERIFIED",
+      source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: PLUGIN_DIR,
+      })
+        .toString()
+        .trim(),
+      worktree_dirty: worktreeDirty(),
+      added_key: "TSTONE002",
+      paper_count_before: indexBefore.paper_count,
+      paper_count_after: indexAfter.paper_count,
+      bystander_note: BYSTANDER_NOTE,
+      bystander_sha256_before: bystanderBefore,
+      bystander_sha256_after: sha256(path.join(base, BYSTANDER_NOTE)),
+      volatile_allowlist: ["Bases/*.base", "*/paper-meta.json", "indexes/*"],
+      observed_at: new Date().toISOString(),
+    });
   });
 
   it("searches through the collection-mode search box", async function () {
