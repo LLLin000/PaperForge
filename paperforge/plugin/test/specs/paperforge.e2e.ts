@@ -26,8 +26,10 @@ import { createHash } from "node:crypto";
 import {
   existsSync,
   mkdirSync,
+  readdirSync,
   readFileSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from "node:fs";
 import * as path from "node:path";
@@ -37,7 +39,31 @@ const NOTE_PATH =
   "Resources/Literature/骨科/TSTONE001 - Biomechanical Comparison of Suture Anchor Fixations in Rotator Cuff Repair/TSTONE001.md";
 const BASE_PATH = "Bases/骨科.base";
 
-const PLUGIN_DIR = process.cwd();
+/**
+ * The suite must run from the plugin directory: every artifact hash below is
+ * resolved from it, so a wrong cwd would silently bind a different bundle.
+ * Fail loudly instead of reporting a green run against the wrong artifact.
+ */
+function resolvePluginDir(): string {
+  const dir = process.cwd();
+  const manifestPath = path.join(dir, "manifest.json");
+  if (!existsSync(manifestPath)) {
+    throw new Error(
+      `run the e2e suite from the plugin directory — ${dir} has no manifest.json`
+    );
+  }
+  const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as {
+    id?: string;
+  };
+  if (manifest.id !== "paperforge") {
+    throw new Error(
+      `unexpected plugin manifest in ${dir}: id=${String(manifest.id)}`
+    );
+  }
+  return dir;
+}
+
+const PLUGIN_DIR = resolvePluginDir();
 const FIXTURE_VAULT = path.resolve(PLUGIN_DIR, "test", "vaults", "e2e");
 const EVIDENCE_DIR = path.resolve(PLUGIN_DIR, "test", "evidence");
 
@@ -53,6 +79,30 @@ function sha256(file: string): string {
   return createHash("sha256").update(readFileSync(file)).digest("hex");
 }
 
+/** Newest mtime under `src/` — the built bundle must be at least this fresh. */
+function newestSourceMtime(dir: string): number {
+  let newest = 0;
+  const walk = (current: string): void => {
+    for (const entry of readdirSync(current, { withFileTypes: true })) {
+      const full = path.join(current, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (entry.name.endsWith(".ts"))
+        newest = Math.max(newest, statSync(full).mtimeMs);
+    }
+  };
+  walk(path.join(dir, "src"));
+  return newest;
+}
+
+/** True when the worktree carries uncommitted changes (plan §4.3). */
+function worktreeDirty(): boolean {
+  return (
+    execFileSync("git", ["status", "--porcelain"], { cwd: PLUGIN_DIR })
+      .toString()
+      .trim().length > 0
+  );
+}
+
 async function sandboxBasePath(): Promise<string> {
   return await browser.executeObsidian(async ({ app }) => {
     const adapter = app.vault.adapter as unknown as { basePath?: string };
@@ -60,16 +110,23 @@ async function sandboxBasePath(): Promise<string> {
   });
 }
 
-/** Acceptance evidence record (plan §4.3): one JSON per case variant. */
-function writeEvidence(name: string, payload: Record<string, unknown>): void {
+/**
+ * Acceptance evidence record (plan §4.3). Runs are appended, never replaced:
+ * a first failure must stay visible after a later green re-run.
+ */
+function appendEvidence(name: string, payload: Record<string, unknown>): void {
   mkdirSync(EVIDENCE_DIR, { recursive: true });
-  writeFileSync(
-    path.join(EVIDENCE_DIR, name),
-    JSON.stringify(payload, null, 2)
-  );
+  const file = path.join(EVIDENCE_DIR, name);
+  const parsed: unknown = existsSync(file)
+    ? JSON.parse(readFileSync(file, "utf8"))
+    : [];
+  // Older runs used a single-object record; carry it over instead of dropping it.
+  const runs = Array.isArray(parsed) ? parsed : [parsed];
+  runs.push(payload);
+  writeFileSync(file, JSON.stringify(runs, null, 2));
 }
 
-async function openVaultFile(path: string): Promise<void> {
+async function openVaultFile(filePath: string): Promise<void> {
   // New tab + explicit activation: a programmatic openFile() alone does not
   // fire active-leaf-change, so the panel would never re-resolve its mode.
   await browser.executeObsidian(async ({ app }, filePath) => {
@@ -79,7 +136,7 @@ async function openVaultFile(path: string): Promise<void> {
     const leaf = app.workspace.getLeaf("tab");
     await leaf.openFile(file);
     app.workspace.setActiveLeaf(leaf, { focus: true });
-  }, path);
+  }, filePath);
 }
 
 /** Obsidian modals (release notes, confirmations) block clicks — close them. */
@@ -151,8 +208,16 @@ describe("PaperForge real-task e2e", function () {
   });
 
   it("binds the loaded bundle to the built artifact and isolates the sandbox", async function () {
-    const builtBundle = sha256(path.join(PLUGIN_DIR, "main.js"));
+    const bundlePath = path.join(PLUGIN_DIR, "main.js");
+    const builtBundle = sha256(bundlePath);
     const builtManifestSha = sha256(path.join(PLUGIN_DIR, "manifest.json"));
+
+    // Teeth for "build before WDIO": hash equality alone would also hold when
+    // both the installed copy and the working tree are a stale bundle, so the
+    // artifact must additionally be at least as fresh as the newest source.
+    expect(statSync(bundlePath).mtimeMs).toBeGreaterThanOrEqual(
+      newestSourceMtime(PLUGIN_DIR)
+    );
 
     const base = await sandboxBasePath();
     expect(base.length).toBeGreaterThan(0);
@@ -180,7 +245,7 @@ describe("PaperForge real-task e2e", function () {
       return await plugin.getClient().backendVersion();
     });
 
-    writeEvidence("w01-candidate-binding.json", {
+    appendEvidence("w01-candidate-binding.json", {
       case_id: "X11",
       variant: "bundle-binding+isolation",
       required_layer: "H",
@@ -190,6 +255,7 @@ describe("PaperForge real-task e2e", function () {
       })
         .toString()
         .trim(),
+      worktree_dirty: worktreeDirty(),
       artifact_sha256: {
         "main.js": builtBundle,
         "manifest.json": builtManifestSha,
