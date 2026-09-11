@@ -188,6 +188,32 @@ jobs:
         working-directory: paperforge/plugin
 
   # ---------------------------------------------------------------------------
+  # L1b — Full Python Suite (#224 / Block A: CI collection convergence)
+  # ---------------------------------------------------------------------------
+  # L1 runs tests/unit/ on three OS for fast per-OS signal; this job runs the
+  # rest of the tree, so a test file nobody collected cannot sit at the
+  # repository root looking green. e2e, audit and chaos are excluded here
+  # because they have dedicated jobs (L4) or a dedicated workflow
+  # (ci-chaos.yml) and running them twice buys nothing.
+  python-suite:
+    name: L1b — Full Python Suite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install package with test deps
+        run: pip install -e ".[test,vector]"
+      - name: Run the full suite
+        run: |
+          python -m pytest tests/ \
+            --ignore=tests/e2e \
+            --ignore=tests/audit \
+            --ignore=tests/chaos \
+            -q --tb=short --timeout=180
+
+  # ---------------------------------------------------------------------------
   # L2 — Release-protocol integration tests (shadow rebuild + retrieval)
   # ---------------------------------------------------------------------------
   protocol-tests:
@@ -320,6 +346,7 @@ jobs:
       - version-check
       - ruff
       - unit-tests
+      - python-suite
       - j-matrix
       - protocol-tests
       - ocr-regression
