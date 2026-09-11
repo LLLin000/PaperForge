@@ -61,11 +61,12 @@ def _memory_build_preflight(ctx: ActionContext, request: ActionRequest) -> Prefl
         per_key = tuple(project_applicability(ctx.vault, "memory.build", list(request.scope.keys)))
     return PreflightResult(
         availability="available",
-        availability_reason_code="action.available",
-        availability_reason="Memory index can be rebuilt from the canonical library",
         per_key=per_key,
         preservation_facts=("Existing paperforge.db remains readable during the build",),
-        replacement_facts=("paperforge.db is replaced after the build",),
+        replacement_facts=(
+            "paperforge.db is replaced after the build",
+            "Existing vector rows may be invalidated; embedding must be rebuilt separately",
+        ),
     )
 
 
@@ -861,6 +862,9 @@ _SPECS: tuple[ActionSpec, ...] = (
         execution_mode="result",
     ),
     ActionSpec(
+        # The memory builder also invalidates vector rows when OCR-derived
+        # units change. Vector ownership stays with the embed layer, so this
+        # action is destructive and must never run as an automatic follow-up.
         action_id="memory.build",
         label_code="action.memory.build",
         description_code="action.memory.build.description",
@@ -868,18 +872,18 @@ _SPECS: tuple[ActionSpec, ...] = (
         preflight=_memory_build_preflight,
         scope_kinds=("all", "papers"),
         cost="local",
-        impact="mutating",
-        confirmation="none",
-        automatic=True,
+        impact="destructive",
+        confirmation="required",
+        automatic=False,
         interruptible=True,
         execution_mode="result",
     ),
     ActionSpec(
         # #135: full-text (paperforge.db papers/FTS) index realignment —
         # the DB's own "prune": rebuilds the papers table from the canonical
-        # library so rows for papers removed/merged in Zotero disappear.
-        # NEVER touches vectors (remote API cost) and never deletes files;
-        # safe to run automatically via reconcile.
+        # library and may invalidate vectors through the shared memory builder.
+        # Keep it explicit and confirmation-required; it is not safe to run
+        # automatically while the embed layer owns vector state.
         action_id="memory.rebuild",
         label_code="action.memory.rebuild",
         description_code="action.memory.rebuild.description",
@@ -887,9 +891,9 @@ _SPECS: tuple[ActionSpec, ...] = (
         preflight=_memory_build_preflight,
         scope_kinds=("all",),
         cost="local",
-        impact="mutating",
-        confirmation="none",
-        automatic=True,
+        impact="destructive",
+        confirmation="required",
+        automatic=False,
         interruptible=True,
         execution_mode="result",
     ),

@@ -34,10 +34,10 @@ def _embed_action(**overrides) -> NextAction:
 class TestBuildAndRoundTrip:
     def test_build_from_registry_defaults(self):
         action = _memory_action()
-        assert action.automatic is True
+        assert action.automatic is False
         assert action.cost == "local"
-        assert action.impact == "mutating"
-        assert action.confirmation == "none"
+        assert action.impact == IMPACT_DESTRUCTIVE
+        assert action.confirmation == CONFIRM_REQUIRED
         assert action.dedupe_key == "memory.build"
 
     def test_embed_defaults_are_non_automatic_confirmed(self):
@@ -81,7 +81,11 @@ def _raw_action(action_id: str = "memory.build", **overrides) -> NextAction:
         "automatic": spec.automatic,
         "cost": spec.cost,
         "impact": spec.impact,
-        "confirmation": "required" if spec.cost == COST_REMOTE else "none",
+        "confirmation": (
+            "required"
+            if spec.cost == COST_REMOTE or spec.impact == IMPACT_DESTRUCTIVE
+            else "none"
+        ),
         "reason": "test",
     }
     fields.update(overrides)
@@ -98,7 +102,7 @@ class TestInvariants:
         assert any("requires confirmation" in p for p in validate_next_action(action))
 
     def test_destructive_automatic_rejected(self):
-        action = _raw_action(impact=IMPACT_DESTRUCTIVE)
+        action = _raw_action(impact=IMPACT_DESTRUCTIVE, automatic=True)
         assert any("must not be automatic" in p for p in validate_next_action(action))
 
     def test_papers_scope_empty_keys_rejected(self):
@@ -138,14 +142,13 @@ class TestInvariants:
 class TestSelection:
     def test_automatic_local_subset(self):
         actions = (_memory_action(), _embed_action())
-        local = automatic_local_actions(actions)
-        assert [a.action_id for a in local] == ["memory.build"]
+        assert automatic_local_actions(actions) == ()
 
     def test_remote_subset(self):
         actions = (_memory_action(), _embed_action())
         risky = remote_or_destructive_actions(actions)
-        assert [a.action_id for a in risky] == ["embed.resume"]
+        assert [a.action_id for a in risky] == ["memory.build", "embed.resume"]
 
     def test_local_mutating_not_risky(self):
         actions = (_memory_action(),)
-        assert remote_or_destructive_actions(actions) == ()
+        assert remote_or_destructive_actions(actions) == actions

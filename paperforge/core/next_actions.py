@@ -53,13 +53,15 @@ class NextActionSpec:
 
 # Registry: the authoritative set of follow-up action ids the backend may emit.
 # The plugin keeps its own fixed argv allowlist; this table exists so producers
-# and validators share one source of truth for metadata.
+# and validators share one source of truth for metadata. Memory materialization
+# can invalidate vector rows owned by the embed layer, so it is explicit and
+# confirmation-required rather than an automatic follow-up.
 ACTION_REGISTRY: Mapping[str, NextActionSpec] = {
     "memory.build": NextActionSpec(
         cost=COST_LOCAL,
-        impact=IMPACT_MUTATING,
-        automatic=True,
-        description="rebuild the local memory index after library changes",
+        impact=IMPACT_DESTRUCTIVE,
+        automatic=False,
+        description="rebuild local memory and explicitly revalidate vector state",
     ),
     "embed.resume": NextActionSpec(
         cost=COST_REMOTE,

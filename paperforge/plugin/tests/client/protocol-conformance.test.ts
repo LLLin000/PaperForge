@@ -104,6 +104,8 @@ const CONFIRMATION_REQUIRED = [
   "foundation.repair",
   "foundation.update",
   "library.prune",
+  "memory.build",
+  "memory.rebuild",
   "ocr.run",
 ];
 const STREAM_ACTIONS = [
@@ -284,9 +286,6 @@ describe(
       // streaming action down the single-result path (or the reverse).
       for (const actionId of STREAM_ACTIONS) {
         expect(byId.get(actionId)?.execution_mode).toBe("stream");
-      }
-      for (const actionId of ["memory.build", "memory.rebuild"]) {
-        expect(byId.get(actionId)?.confirmation).toBe("none");
       }
     });
 
