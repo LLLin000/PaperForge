@@ -106,7 +106,15 @@ def _match_fulltext(path: Path, term: str) -> list[ReadMatch]:
 def _match_pdf(path: Path, term: str) -> list[ReadMatch]:
     """Literal case-insensitive substring match, per page (PyMuPDF)."""
     try:
-        import fitz  # noqa: PLC0415 — extraction dependency resolved at call time
+        # PyMuPDF >= 1.24 ships the modern module name; importing the legacy
+        # `fitz` alias prints "warning: The `fitz` API is deprecated ..." to
+        # STDOUT, which puts a non-JSON line in front of every --json envelope
+        # and breaks each machine consumer of this command (the plugin's stream
+        # parser rejects non-JSON stdout by design).
+        try:  # noqa: PLC0415 — extraction dependency resolved at call time
+            import pymupdf as fitz
+        except ImportError:  # pragma: no cover — older builds only ship `fitz`
+            import fitz
 
         doc = fitz.open(str(path))
     except Exception:  # noqa: BLE001 — unreadable PDF -> no matches from this source
