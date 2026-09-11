@@ -9,8 +9,8 @@ every run follows the same steps and the completion invariants stay checkable:
   adjudications.
 - `plan` — derive a bounded review packet from that digest-bound context; the
   model reads only the packet's candidates and exact source reads.
-- `emit` — validate a drafted ArchitectureReview and typed trace manifest
-  against the same bound audit context.
+- `emit` — re-derive a saved deterministic review packet, then validate a
+  drafted ArchitectureReview and typed trace manifest against its scope.
 
 The harness never edits source, Contract, Survey, or production artifacts; the
 review file it writes (with `--out`) is the Skill's own output overlay.
@@ -499,6 +499,10 @@ def build_review_plan(
         if isinstance(path, str) and path
     }
     requested = [operation.strip() for operation in operations if operation and operation.strip()]
+    selector = {
+        "changed_files": sorted(changed),
+        "operations": sorted(set(requested)),
+    }
 
     if mode == "gate":
         if requested or changed:
@@ -590,6 +594,7 @@ def build_review_plan(
         stop_conditions.append("No changed operation was deterministically bound; do not run a full survey.")
     return {
         "mode": mode,
+        "selector": selector,
         "scope": all_operations,
         "affected_operations": affected,
         "affected_rule_ids": affected_rule_ids,
@@ -609,6 +614,58 @@ def build_review_plan(
             "reconciler_version": audit.content.reconciler_version,
         },
     }
+
+def bind_review_plan(
+    audit: DeterministicAudit,
+    context: BoundReviewContext,
+    packet: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Re-derive and bind a saved deterministic packet before emit."""
+    if not isinstance(packet, Mapping):
+        raise ArchitectureError("review plan must be a JSON object")
+    mode = packet.get("mode")
+    if mode == "gate":
+        raise ArchitectureError("gate mode has no model review overlay")
+    if not isinstance(mode, str):
+        raise ArchitectureError("review plan mode is required")
+    selector = packet.get("selector")
+    if not isinstance(selector, Mapping):
+        raise ArchitectureError("review plan selector is required")
+    changed_files = selector.get("changed_files")
+    operations = selector.get("operations")
+    if (
+        not isinstance(changed_files, list)
+        or not all(isinstance(path, str) for path in changed_files)
+        or not isinstance(operations, list)
+        or not all(isinstance(operation, str) for operation in operations)
+    ):
+        raise ArchitectureError("review plan selector must contain string lists")
+    expected = build_review_plan(
+        audit,
+        context,
+        mode=mode,
+        changed_files=changed_files,
+        operations=operations,
+    )
+    mismatches = [
+        field
+        for field in (
+            "mode",
+            "selector",
+            "bindings",
+            "scope",
+            "affected_operations",
+            "affected_rule_ids",
+            "affected_finding_ids",
+        )
+        if packet.get(field) != expected[field]
+    ]
+    if mismatches:
+        raise ArchitectureError(
+            "review plan does not match deterministic re-derivation: "
+            + ", ".join(mismatches)
+        )
+    return expected
 
 
 def _cmd_audit(args: argparse.Namespace) -> int:
@@ -669,7 +726,9 @@ def _cmd_emit(args: argparse.Namespace) -> int:
             audit_path=args.audit,
         )
         context = _bound_context_for_args(args, audit)
-    except (ArchitectureError, ValueError, OSError, KeyError) as exc:
+        packet = json.loads(Path(args.plan).read_text(encoding="utf-8"))
+        plan = bind_review_plan(audit, context, packet)
+    except (ArchitectureError, ValueError, KeyError, TypeError, OSError, json.JSONDecodeError) as exc:
         print(f"REFUSED: {exc}", file=sys.stderr)
         return 1
     try:
@@ -689,7 +748,7 @@ def _cmd_emit(args: argparse.Namespace) -> int:
         review,
         trace,
         context,
-        operations=args.operations.split(",") if args.operations else None,
+        operations=plan["affected_operations"],
     )
     if problems:
         print("PROBLEMS:", file=sys.stderr)
@@ -732,14 +791,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     plan_p.add_argument("--out")
     plan_p.set_defaults(func=_cmd_plan)
 
-    emit_p = sub.add_parser("emit", help="validate a drafted ArchitectureReview against the audit")
+    emit_p = sub.add_parser("emit", help="validate a drafted ArchitectureReview against a deterministic plan")
     emit_p.add_argument("--audit", required=True)
+    emit_p.add_argument("--plan", required=True)
     emit_p.add_argument("--review", required=True)
     emit_p.add_argument("--trace", required=True)
     emit_p.add_argument("--fixture")
     emit_p.add_argument("--contract")
     emit_p.add_argument("--survey")
-    emit_p.add_argument("--operations")
     emit_p.add_argument("--fill-digests", action="store_true")
     emit_p.add_argument("--out")
     emit_p.set_defaults(func=_cmd_emit)

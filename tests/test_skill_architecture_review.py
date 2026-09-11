@@ -431,6 +431,113 @@ class TestReviewPlan:
             if finding.finding_id in plan["affected_finding_ids"]
         )
 
+    def test_delta_plan_binds_partial_trace_for_emit(self):
+        audit, _, context = _audit("golden_126_ocr_rebuild")
+        packet = rh.build_review_plan(
+            audit,
+            context,
+            mode="delta",
+            changed_files=["paperforge/worker/ocr_rebuild.py"],
+        )
+        bound = rh.bind_review_plan(audit, context, json.loads(json.dumps(packet)))
+        review = _make_review(audit, adjudications=_adjudicate_all(audit))
+        trace = _full_trace(bound["affected_operations"], context.evidence_index)
+        assert rh.validate_emission(
+            audit, review, trace, context, operations=bound["affected_operations"]
+        ) == []
+
+    def test_focused_plan_binds_selected_operation_trace_for_emit(self):
+        audit, _, context = _audit("golden_126_ocr_rebuild")
+        packet = rh.build_review_plan(
+            audit, context, mode="focused", operations=["memory_build"]
+        )
+        bound = rh.bind_review_plan(audit, context, packet)
+        review = _make_review(audit, adjudications=_adjudicate_all(audit))
+        trace = _full_trace(bound["affected_operations"], context.evidence_index)
+        assert rh.validate_emission(
+            audit, review, trace, context, operations=bound["affected_operations"]
+        ) == []
+
+    def test_full_release_packet_rejects_subset_trace(self):
+        audit, _, context = _audit("golden_126_ocr_rebuild")
+        packet = rh.build_review_plan(audit, context, mode="full-release")
+        bound = rh.bind_review_plan(audit, context, packet)
+        review = _make_review(audit, adjudications=_adjudicate_all(audit))
+        trace = _full_trace(["memory_build"], context.evidence_index)
+        problems = rh.validate_emission(
+            audit, review, trace, context, operations=bound["affected_operations"]
+        )
+        assert any("trace missing scoped operations" in problem for problem in problems)
+
+    def test_tampered_packet_scope_fails_rebinding(self):
+        audit, _, context = _audit("golden_126_ocr_rebuild")
+        packet = rh.build_review_plan(
+            audit,
+            context,
+            mode="delta",
+            changed_files=["paperforge/worker/ocr_rebuild.py"],
+        )
+        packet["affected_operations"] = []
+        with pytest.raises(rh.ArchitectureError, match="re-derivation"):
+            rh.bind_review_plan(audit, context, packet)
+
+    def test_gate_packet_cannot_emit_model_overlay(self):
+        audit, _, context = _audit("golden_126_ocr_rebuild")
+        packet = rh.build_review_plan(audit, context, mode="gate")
+        with pytest.raises(rh.ArchitectureError, match="gate mode"):
+            rh.bind_review_plan(audit, context, packet)
+
+    def test_emit_requires_plan_argument(self):
+        with pytest.raises(SystemExit):
+            rh.main([
+                "emit",
+                "--audit",
+                "audit.json",
+                "--review",
+                "review.json",
+                "--trace",
+                "trace.json",
+                "--fixture",
+                "golden_126_ocr_rebuild",
+            ])
+
+    def test_cli_emit_accepts_bound_delta_plan(self, tmp_path):
+        fixture = "golden_126_ocr_rebuild"
+        audit, _, context = _audit(fixture)
+        packet = rh.build_review_plan(
+            audit,
+            context,
+            mode="delta",
+            changed_files=["paperforge/worker/ocr_rebuild.py"],
+        )
+        review = _make_review(audit, adjudications=_adjudicate_all(audit))
+        trace = _full_trace(packet["affected_operations"], context.evidence_index)
+        audit_path = tmp_path / "audit.json"
+        plan_path = tmp_path / "plan.json"
+        review_path = tmp_path / "review.json"
+        trace_path = tmp_path / "trace.json"
+        out_path = tmp_path / "emitted.json"
+        audit_path.write_text(json.dumps(audit.to_dict()), encoding="utf-8")
+        plan_path.write_text(json.dumps(packet), encoding="utf-8")
+        review_path.write_text(json.dumps(review.to_dict()), encoding="utf-8")
+        trace_path.write_text(json.dumps(trace), encoding="utf-8")
+        assert rh.main([
+            "emit",
+            "--audit",
+            str(audit_path),
+            "--plan",
+            str(plan_path),
+            "--review",
+            str(review_path),
+            "--trace",
+            str(trace_path),
+            "--fixture",
+            fixture,
+            "--out",
+            str(out_path),
+        ]) == 0
+        assert out_path.exists()
+
 
 class TestSkillBenchmark:
     def test_manifest_contains_executable_and_historical_cases(self):
