@@ -33,14 +33,28 @@ def test_bootstrap_with_paperforge_json(tmp_path):
 
 
 def test_write_layer(tmp_path):
+    """#221: the probe must not create what it inspects.
+
+    A reporting command that creates the logs directory both mutates the
+    canonical tree and hides the fact that the directory was missing, so a
+    missing directory is reported, not repaired.
+    """
     vault = tmp_path / "vault"
     vault.mkdir()
     from tests.conftest import canonical_test_config
 
     canonical_test_config(vault)
-    result = _check_write(vault)
-    assert result["status"] == "ok"
-    assert any("writable" in e for e in result["evidence"])
+
+    missing = _check_write(vault)
+    assert missing["status"] == "blocked"
+    assert not (vault / "System" / "PaperForge" / "logs").exists(), (
+        "the write probe created the directory it was inspecting"
+    )
+
+    (vault / "System" / "PaperForge" / "logs").mkdir(parents=True)
+    present = _check_write(vault)
+    assert present["status"] == "ok"
+    assert any("writable" in e for e in present["evidence"])
 
 
 def test_runtime_health_summary_has_expected_keys(tmp_path):

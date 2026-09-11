@@ -106,11 +106,20 @@ def _check_write(vault: Path) -> dict:
     logs_dir = pf_root / "logs"
     evidence = []
     try:
-        logs_dir.mkdir(parents=True, exist_ok=True)
-        test_file = logs_dir / ".health-check"
-        test_file.write_text("ok", encoding="utf-8")
-        test_file.unlink()
-        evidence.append("JSONL logs dir writable")
+        # #221: the probe must not create the directory it is inspecting — that
+        # made this health check a durable writer in the canonical tree, and it
+        # also masked the read-layer finding for the same directory.
+        from paperforge.worker.fs_probe import probe_writable
+
+        if probe_writable(logs_dir):
+            evidence.append("JSONL logs dir writable")
+        else:
+            return _layer(
+                "blocked",
+                ["JSONL logs dir missing or not writable"],
+                "Run sync to create the logs directory",
+                "paperforge sync",
+            )
     except Exception as e:
         return _layer("blocked", [f"JSONL logs dir not writable: {e}"],
                       "Check filesystem permissions", "")
