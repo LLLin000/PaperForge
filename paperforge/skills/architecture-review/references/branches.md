@@ -53,6 +53,12 @@ the trace, not high-risk coverage.
 - `deep-trace` takes named operations or all Contract operations; it rejects `--changed-file`.
 - `full-release` covers every Contract operation and rejects all narrowing.
 
+## Plan → emit contract
+
+- `emit` requires the saved packet from `plan` via `--plan`; it has no independent `--operations`.
+- Emit re-derives the selector against the bound Contract/Survey and compares mode, selector, bindings, scope, and affected rule/finding IDs.
+- A `gate` packet is deterministic-only and is refused by `emit`.
+
 ## Choosing a mode
 
 Use `delta` by default. Use `focused` when the request names a bounded

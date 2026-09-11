@@ -8,7 +8,7 @@ description: >
   epistemic labeling, digest-bound review). Never for collecting facts,
   editing code, or changing the Contract.
 source: paperforge
-skill_version: 2026-09-11.1
+skill_version: 2026-09-11.2
 skill_api_version: 2
 ---
 # PaperForge Architecture Review
@@ -104,22 +104,28 @@ empty stage and no cross-operation evidence.
 Assemble the `ArchitectureReview` JSON with `reviewer_type`, `run_metadata`
 (model/session identity and created time), the four bindings from the audit,
 adjudications, semantic findings (`inferred`/`unresolved` only), evidence
-requests, and rationale. Then validate:
+requests, and rationale. Emit must consume the exact deterministic packet that
+defined the trace scope:
 
 ```bash
 python "$SKILL_DIR/scripts/review_harness.py" emit \
   --audit /tmp/golden_126_audit.json \
+  --plan /tmp/review-packet.json \
   --fixture golden_126_ocr_rebuild \
   --review <draft.json> \
   --trace <typed-trace.json> \
   --out <review.json>
 ```
 
-The harness rejects stale digests, a mismatched reconciler version, observed
-static claims, fabricated finding IDs, missing adjudications, missing bound
+The harness re-derives the packet selector against the digest-bound
+Contract/Survey and rejects changed mode, selector, bindings, scope, affected
+operations, rule IDs, or finding IDs. `gate` packets cannot produce a model
+overlay; there is no independent emit-time operations narrowing.
+
+It also rejects stale digests, a mismatched reconciler version, observed static
+claims, fabricated finding IDs, missing adjudications, missing bound
 Contract/Survey context, cross-operation/stage evidence, and incomplete typed
-traces.
-`REFUSED`/`PROBLEMS` means rework — never bypass.
+traces. `REFUSED`/`PROBLEMS` means rework — never bypass.
 
 **Completion:** emit prints `OK` and writes the review file.
 
