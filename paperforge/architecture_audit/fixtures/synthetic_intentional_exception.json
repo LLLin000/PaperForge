@@ -54,6 +54,10 @@
           "epistemic_status": "observed_static",
           "confidence": "exact"
         }
+      },
+      {
+        "kind": "operation_binding",
+        "operation_id": "probe_status"
       }
     ],
     "source_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",

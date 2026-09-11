@@ -1,127 +1,127 @@
 {
- "contract": {
-  "schema_version": 1,
-  "asset_groups": [
-   "library",
-   "ocr_raw",
-   "ocr_derived",
-   "retrieval",
-   "vectors"
-  ],
-  "publication_units": [
-   {
-    "unit_id": "ocr_display.fulltext",
-    "asset_group": "ocr_derived",
-    "publication_authority": "display.materializer",
-    "authorized_writers": [
-     "plugin.version_history"
-    ]
-   }
-  ],
-  "operations": [
-   "display_restore"
-  ],
-  "required_extractors": [
-   "python_ast",
-   "typescript"
-  ],
-  "rules": [
-   {
-    "rule_id": "canonical_writer.restore",
-    "kind": "canonical_writer",
-    "subject": "ocr_display.fulltext",
-    "lifecycle": "planned",
-    "enforcement": "blocking",
-    "effective_after": {
-     "issue": "#129"
-    },
-    "description": "UI restore writes display materialization, not the committed OCR generation"
-   },
-   {
-    "rule_id": "signal.drift_state",
-    "kind": "signal_consumer",
-    "subject": "fulltext_drift_state",
-    "lifecycle": "active",
-    "enforcement": "advisory",
-    "description": "display-vs-structure divergence must be surfaced"
-   }
-  ],
-  "exceptions": []
- },
- "survey": {
-  "schema_version": 1,
-  "scope": "paperforge/plugin",
-  "coverage": [
-   {
-    "extractor": "python_ast",
-    "status": "complete"
-   },
-   {
-    "extractor": "typescript",
-    "status": "complete"
-   }
-  ],
-  "facts": [
-   {
-    "kind": "canonical_write",
-    "unit_id": "ocr_display.fulltext",
-    "actor_kind": "ui",
-    "writer_id": "plugin.version_history",
-    "via_publication_protocol": false,
-    "evidence": {
-     "file": "paperforge/plugin/src/services/version-history.ts",
-     "file_digest": "sha256:1d0078ae5e7638de6024bac9e1063cf485b6fd4c7a1cfe4cf482db57b1404693",
-     "symbol": "restoreVersion",
-     "line_start": 184,
-     "line_end": 215,
-     "extractor": "typescript",
-     "epistemic_status": "observed_static",
-     "confidence": "exact"
+  "contract": {
+    "schema_version": 1,
+    "asset_groups": [
+      "library",
+      "ocr_raw",
+      "ocr_derived",
+      "retrieval",
+      "vectors"
+    ],
+    "publication_units": [
+      {
+        "unit_id": "ocr_display.fulltext",
+        "asset_group": "ocr_derived",
+        "publication_authority": "display.materializer",
+        "authorized_writers": [
+          "plugin.version_history"
+        ]
+      }
+    ],
+    "operations": [
+      "display_restore"
+    ],
+    "required_extractors": [
+      "python_ast",
+      "typescript"
+    ],
+    "rules": [
+      {
+        "rule_id": "canonical_writer.restore",
+        "kind": "canonical_writer",
+        "subject": "ocr_display.fulltext",
+        "lifecycle": "planned",
+        "enforcement": "blocking",
+        "effective_after": {
+          "issue": "#129"
+        },
+        "description": "UI restore writes display materialization, not the committed OCR generation"
+      },
+      {
+        "rule_id": "signal.drift_state",
+        "kind": "signal_consumer",
+        "subject": "fulltext_drift_state",
+        "lifecycle": "active",
+        "enforcement": "advisory",
+        "description": "display-vs-structure divergence must be surfaced"
+      }
+    ],
+    "exceptions": []
+  },
+  "survey": {
+    "schema_version": 1,
+    "scope": "paperforge/plugin",
+    "coverage": [
+      {
+        "extractor": "python_ast",
+        "status": "complete"
+      },
+      {
+        "extractor": "typescript",
+        "status": "complete"
+      }
+    ],
+    "facts": [
+      {
+        "kind": "canonical_write",
+        "unit_id": "ocr_display.fulltext",
+        "actor_kind": "ui",
+        "writer_id": "plugin.version_history",
+        "via_publication_protocol": false,
+        "evidence": {
+          "file": "paperforge/commands/versions.py",
+          "file_digest": "sha256:8e65dda567cd446111bdb7ec9da115df575768c12af7ba439046b4cdfc067b78",
+          "symbol": "_run_restore",
+          "line_start": 358,
+          "line_end": 392,
+          "extractor": "typescript",
+          "epistemic_status": "observed_static",
+          "confidence": "exact"
+        }
+      },
+      {
+        "kind": "signal",
+        "signal_id": "fulltext_drift_state",
+        "producer": "worker.ocr_maintenance",
+        "consumer": "plugin.ocr_maintenance_ui.categorizeMaintenanceRow",
+        "consumer_kind": "code",
+        "has_code_consumer": true,
+        "evidence": {
+          "file": "paperforge/worker/ocr_maintenance.py",
+          "file_digest": "sha256:914cbdcb5b4b0660b2ab360c174df5bbd11b734270895c1b5010833ab60327d2",
+          "symbol": "fulltext_drift_state",
+          "line_start": 44,
+          "line_end": 50,
+          "extractor": "python_ast",
+          "epistemic_status": "observed_static",
+          "confidence": "exact"
+        },
+        "consumer_evidence": [
+          {
+            "file": "paperforge/worker/ocr_maintenance.py",
+            "file_digest": "sha256:914cbdcb5b4b0660b2ab360c174df5bbd11b734270895c1b5010833ab60327d2",
+            "symbol": "fulltext_drift_state",
+            "line_start": 44,
+            "line_end": 50,
+            "extractor": "typescript",
+            "epistemic_status": "observed_static",
+            "confidence": "exact"
+          }
+        ]
+      }
+    ],
+    "source_digest": "sha256:4cae95b22384a17a501d60c0a4765faf59ae8a9362a3926c27bc9ec679899aca",
+    "parse_errors": [],
+    "excluded_roots": [],
+    "run_metadata": {
+      "repository_revision": "1a1bb895",
+      "repository_dirty": false,
+      "tool_version": "1.0.0",
+      "extractor_versions": {
+        "python_ast": "1",
+        "typescript": "1"
+      },
+      "generated_at": "2026-08-05T00:00:00Z"
     }
-   },
-   {
-    "kind": "signal",
-    "signal_id": "fulltext_drift_state",
-    "producer": "worker.ocr_maintenance",
-    "consumer": "plugin.ocr_maintenance_ui.categorizeMaintenanceRow",
-    "consumer_kind": "code",
-    "has_code_consumer": true,
-    "evidence": {
-     "file": "paperforge/worker/ocr_maintenance.py",
-     "file_digest": "sha256:914cbdcb5b4b0660b2ab360c174df5bbd11b734270895c1b5010833ab60327d2",
-     "symbol": "fulltext_drift_state",
-     "line_start": 44,
-     "line_end": 50,
-     "extractor": "python_ast",
-     "epistemic_status": "observed_static",
-     "confidence": "exact"
-    },
-    "consumer_evidence": [
-     {
-      "file": "paperforge/plugin/src/services/ocr-maintenance-ui.ts",
-      "file_digest": "sha256:4b5bab709509f1a5352824450963e28d3480e5838e6e38f1733196a46c13db5c",
-      "symbol": "categorizeMaintenanceRow",
-      "line_start": 104,
-      "line_end": 150,
-      "extractor": "typescript",
-      "epistemic_status": "observed_static",
-      "confidence": "exact"
-     }
-    ]
-   }
-  ],
-  "source_digest": "sha256:4955618c41c3ec5747f4107ce49256c648a40ab5258585510c2c8ac7dfde5132",
-  "parse_errors": [],
-  "excluded_roots": [],
-  "run_metadata": {
-   "repository_revision": "1a1bb895",
-   "repository_dirty": false,
-   "tool_version": "1.0.0",
-   "extractor_versions": {
-    "python_ast": "1",
-    "typescript": "1"
-   },
-   "generated_at": "2026-08-05T00:00:00Z"
   }
- }
 }

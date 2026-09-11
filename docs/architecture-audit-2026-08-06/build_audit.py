@@ -132,7 +132,12 @@ CONTRACT = {
     "asset_groups": ["library", "ocr_raw", "ocr_derived", "retrieval", "vectors"],
     "publication_units": PUBLICATION_UNITS,
     "operations": [
-        "sync", "probe_status", "ocr_redo", "memory_build", "restore_display",
+        # Operation ids are module stems (collectors/common.py:operation_id_of).
+        # `probe_status` was a historical alias for a file that is probe.py, so
+        # the rule below could never receive a fact; the read/report surfaces
+        # are declared by the stem the collector actually binds (#220).
+        "sync", "probe", "status", "dashboard", "runtime_health",
+        "ocr_redo", "memory_build", "restore_display",
         {
             "operation_id": "ocr_run",
             "authorities": [
@@ -180,9 +185,24 @@ CONTRACT = {
             "description": "Embed build stop has exactly one authority (plugin controller)",
         },
         {
-            "rule_id": "query.side_effect_free", "kind": "query_side_effect",
-            "subject": "probe_status", "lifecycle": "active", "enforcement": "blocking",
-            "description": "status queries must not mutate business facts",
+            "rule_id": "query.side_effect_free.probe", "kind": "query_side_effect",
+            "subject": "probe", "lifecycle": "active", "enforcement": "blocking",
+            "description": "the capability probe is an observation surface and must not mutate business facts",
+        },
+        {
+            "rule_id": "query.side_effect_free.status", "kind": "query_side_effect",
+            "subject": "status", "lifecycle": "active", "enforcement": "blocking",
+            "description": "the status report must not mutate business facts",
+        },
+        {
+            "rule_id": "query.side_effect_free.dashboard", "kind": "query_side_effect",
+            "subject": "dashboard", "lifecycle": "active", "enforcement": "blocking",
+            "description": "the dashboard aggregate must not mutate business facts",
+        },
+        {
+            "rule_id": "query.side_effect_free.runtime_health", "kind": "query_side_effect",
+            "subject": "runtime_health", "lifecycle": "active", "enforcement": "blocking",
+            "description": "the runtime health check must not mutate business facts",
         },
         {
             "rule_id": "remote_intent.sync_followup", "kind": "remote_intent",

@@ -64,11 +64,14 @@ def _infer_fact_kind(fact: dict) -> str:
         "operation_id" in fact and "path_expression" in fact
     ):
         return "filesystem_read"
+    if "operation_id" in fact and len(fact) <= 2:
+        return "operation_binding"
     raise AssertionError(f"cannot infer fact kind from {sorted(fact)}")
 
 
 def _survey(
     facts: tuple = (),
+    bind: bool = True,
     coverage: tuple[dict, ...] = ({"extractor": "python_ast", "status": "complete"},),
     schema_version: int = SCHEMA_VERSION,
     repository_state: dict | None = None,
@@ -78,6 +81,18 @@ def _survey(
         entry = dict(fact)
         entry.setdefault("kind", _infer_fact_kind(entry))
         normalized.append(entry)
+    if bind:
+        # A fixture that declares facts FOR an operation presupposes the
+        # collector bound that operation; without the binding fact a
+        # query-side-effect rule cannot be evaluated at all.
+        bound = {
+            entry.get("operation_id")
+            for entry in normalized
+            if entry.get("operation_id")
+        }
+        bound |= {entry["operation_id"] for entry in normalized if entry.get("kind") == "operation_binding"}
+        for operation_id in sorted(bound):
+            normalized.append({"kind": "operation_binding", "operation_id": operation_id})
     return ArchitectureSurvey.from_dict({
         "schema_version": schema_version,
         "scope": "paperforge",
@@ -122,6 +137,66 @@ def _coverage(audit, rule_id: str) -> RuleStatus:
 
 
 # ---------------------------------------------------------------- rule kinds
+
+
+class TestRuleSubjectBinding:
+    """A rule whose subject binds to nothing cannot be evaluated.
+
+    Reporting `satisfied` there is how a rule that can never fail reads as
+    compliance (#220: the blocking query_side_effect rule named `probe_status`,
+    which matches no module, and the audit reported it green). The distinction
+    that matters is between *no violations observed* and *nothing observed*.
+    """
+
+    def test_unbound_subject_is_not_satisfied(self):
+        audit = reconcile(_contract([_rule()]), _survey((), bind=False))
+        finding = _finding(audit, "r1")
+        assert finding.rule_status is RuleStatus.UNRESOLVED
+        assert "no observable operation binding" in finding.message
+        assert finding.subject == "probe_status"
+
+    def test_unbound_subject_makes_the_audit_ineligible(self):
+        audit = reconcile(_contract([_rule()]), _survey((), bind=False))
+        assert audit.content.assessment.status is AssessmentStatus.INCOMPLETE
+        assert audit.content.assessment.gate_eligible is False
+        assert any(
+            "rule.unresolved:r1" in reason
+            for reason in audit.content.assessment.reasons
+        )
+
+    def test_bound_and_clean_is_satisfied(self):
+        """The legitimate negative assertion must still pass.
+
+        A satisfied rule produces no finding, so the verdict is read from the
+        coverage row - asserting it through `findings` would have looked like a
+        missing rule rather than a passing one.
+        """
+        audit = reconcile(
+            _contract([_rule()]),
+            _survey(({"kind": "operation_binding", "operation_id": "probe_status"},)),
+        )
+        assert _coverage(audit, "r1") is RuleStatus.SATISFIED
+        assert audit.content.assessment.gate_eligible is True
+        assert not [f for f in audit.content.findings if f.rule_id == "r1"]
+
+    def test_bound_operation_with_a_mutation_violates(self):
+        """The rule must still be able to FAIL - that is its whole purpose."""
+        audit = reconcile(
+            _contract([_rule()]),
+            _survey(
+                (
+                    {"kind": "operation_binding", "operation_id": "probe_status"},
+                    {
+                        "operation_id": "probe_status",
+                        "effect_kind": "business_mutation",
+                        "evidence": _evidence(),
+                    },
+                )
+            ),
+        )
+        finding = _finding(audit, "r1")
+        assert finding.rule_status is RuleStatus.VIOLATED
+        assert audit.content.assessment.status is AssessmentStatus.FINDINGS
 
 
 class TestQuerySideEffect:

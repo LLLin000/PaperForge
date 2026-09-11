@@ -787,6 +787,37 @@ class RoleAuthorityFact:
 
 
 @dataclass(frozen=True)
+class OperationBindingFact:
+    """An operation id the collector actually bound to a scanned module.
+
+    Without this, a rule whose ``subject`` matches no module is indistinguishable
+    from a rule that is merely observing no violations: both produce zero facts.
+    The first is a contract defect (the rule can never be evaluated); the second
+    is a legitimate negative assertion. Recording the binding makes them
+    different observations.
+    """
+
+    operation_id: str
+    evidence: Evidence | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        out: dict[str, Any] = {
+            "kind": "operation_binding",
+            "operation_id": self.operation_id,
+        }
+        if self.evidence is not None:
+            out["evidence"] = self.evidence.to_dict()
+        return out
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> OperationBindingFact:
+        return cls(
+            operation_id=data["operation_id"],
+            evidence=Evidence.from_dict(data["evidence"]) if data.get("evidence") else None,
+        )
+
+
+@dataclass(frozen=True)
 class FilesystemReadFact:
     """#149 frozen shape — the only new fact for CANONICAL_READ.
 
@@ -1024,6 +1055,7 @@ FACT_KINDS = {
     "canonical_write": CanonicalWriteFact,
     "unresolved": UnresolvedFact,
     "filesystem_read": FilesystemReadFact,
+    "operation_binding": OperationBindingFact,
     "candidate": CandidateFact,
     "interface": InterfaceFact,
     "trace": TraceFact,
@@ -1035,6 +1067,7 @@ SurveyFact = (
     | UnitAuthorityFact
     | RoleAuthorityFact
     | CanonicalWriteFact
+    | OperationBindingFact
     | UnresolvedFact
     | CandidateFact
     | InterfaceFact
