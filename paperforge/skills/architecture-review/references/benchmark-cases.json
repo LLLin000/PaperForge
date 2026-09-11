@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "description": "Deterministic architecture-review Skill v1/v2 benchmark corpus. Fixture cases are executable; historical cases retain the issue-grounded defect without fabricating a replay fixture.",
+  "cases": [
+    {
+      "case_id": "query-business-mutation",
+      "kind": "deterministic_violation",
+      "fixture": "synthetic_query_side_effect",
+      "expected_findings": [
+        {"rule_id": "query.no_business_mutation", "status": "violated"}
+      ]
+    },
+    {
+      "case_id": "unmatched-signal",
+      "kind": "deterministic_violation",
+      "fixture": "synthetic_unmatched_signal",
+      "expected_findings": [
+        {"rule_id": "signal.has_consumer", "status": "violated"}
+      ]
+    },
+    {
+      "case_id": "ui-canonical-write",
+      "kind": "deterministic_violation",
+      "fixture": "synthetic_ui_canonical_write",
+      "expected_findings": [
+        {"rule_id": "canonical.no_ui_writer", "status": "violated"}
+      ]
+    },
+    {
+      "case_id": "implicit-remote-followup",
+      "kind": "deterministic_violation",
+      "fixture": "synthetic_implicit_remote_followup",
+      "expected_findings": [
+        {"rule_id": "remote.no_implicit", "status": "violated"}
+      ]
+    },
+    {
+      "case_id": "publication-bypass",
+      "kind": "deterministic_violation",
+      "fixture": "synthetic_publication_bypass",
+      "expected_findings": [
+        {"rule_id": "publication.uses_protocol", "status": "violated"}
+      ]
+    },
+    {
+      "case_id": "planned-gap",
+      "kind": "deterministic_planned_gap",
+      "fixture": "synthetic_planned_gap",
+      "expected_findings": [
+        {"rule_id": "hash.atomic_publish", "status": "planned_gap"}
+      ]
+    },
+    {
+      "case_id": "intentional-exception",
+      "kind": "deterministic_exception",
+      "fixture": "synthetic_intentional_exception",
+      "expected_findings": [
+        {"rule_id": "query.no_business_mutation", "status": "exception_applied"}
+      ]
+    },
+    {
+      "case_id": "partial-coverage",
+      "kind": "deterministic_incomplete",
+      "fixture": "synthetic_partial_coverage",
+      "expected_findings": [
+        {"rule_id": "coverage.required_complete", "status": "violated"}
+      ],
+      "expected_assessment": "incomplete"
+    },
+    {
+      "case_id": "golden-126-ocr-rebuild",
+      "kind": "golden_unresolved_edge",
+      "fixture": "golden_126_ocr_rebuild",
+      "expected_findings": [
+        {"rule_id": "remote_intent.embed_resume", "status": "planned_gap"},
+        {"rule_id": "publication.hash_marker", "status": "planned_gap"},
+        {"rule_id": "publication.authority", "status": "unresolved"},
+        {"rule_id": "signal.rebuild_progress", "status": "planned_gap"}
+      ],
+      "expected_assessment": "incomplete"
+    },
+    {
+      "case_id": "golden-127-sync-embed",
+      "kind": "golden_unresolved_edge",
+      "fixture": "golden_127_sync_embed",
+      "expected_findings": [
+        {"rule_id": "remote_intent.sync_followup", "status": "planned_gap"},
+        {"rule_id": "query.side_effect_free", "status": "unresolved"}
+      ],
+      "expected_assessment": "incomplete"
+    },
+    {
+      "case_id": "golden-129-display-restore",
+      "kind": "golden_planned_gap",
+      "fixture": "golden_129_display_restore",
+      "expected_findings": [
+        {"rule_id": "canonical_writer.restore", "status": "planned_gap"}
+      ],
+      "expected_assessment": "findings"
+    },
+    {
+      "case_id": "historical-220-unbound-blocking-rule",
+      "kind": "historical_incident",
+      "source_issue": 220,
+      "fixture": null,
+      "expected_behavior": "A blocking rule with no bound observable facts must be unresolved/ineligible, while a bound clean read-only operation may be satisfied.",
+      "v2_guard": "Contract-derived operation scope plus binding-aware reconciliation distinguishes unbound from bound-zero-fact rules."
+    },
+    {
+      "case_id": "historical-229-unresolved-blocking-rules",
+      "kind": "historical_incident",
+      "source_issue": 229,
+      "fixture": null,
+      "expected_behavior": "Blocking rules with no evaluable facts remain unresolved and gate-ineligible; strict mode must fail on an injected allowlisted violation.",
+      "v2_guard": "The review packet preserves required adjudications and cannot turn missing evidence into an all-clear."
+    },
+    {
+      "case_id": "historical-231-stale-generator-fixtures",
+      "kind": "historical_incident",
+      "source_issue": 231,
+      "fixture": null,
+      "expected_behavior": "A generator that cannot execute and fixtures pinning deleted files must be reported or retired, never treated as regenerated proof.",
+      "v2_guard": "The bounded packet records exact source reads and stops with needs_evidence when the pinned source cannot be established."
+    }
+  ]
+}

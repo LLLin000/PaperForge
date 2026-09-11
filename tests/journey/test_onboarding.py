@@ -5,6 +5,7 @@ Simulates a brand-new user: fresh vault -> sync -> OCR -> analyze -> deep-read r
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any
 
@@ -118,10 +119,12 @@ def test_new_user_onboarding(
     # -----------------------------------------------------------------------
     # Step 6: Verify deep-reading queue sees the paper
     # -----------------------------------------------------------------------
-    result = journey_cli_invoker(vault, ["deep-reading"])
-    # The paper key or title should appear in the output
+    result = journey_cli_invoker(vault, ["deep-reading", "--json"])
+    # Machine mode exposes the actual queue items in the PFResult envelope.
     assert result.returncode == 0, f"deep-reading failed:\n{result.stderr[:500]}"
-    combined_output = (result.stdout + result.stderr)
-    assert paper_key in combined_output or fm.get("title", "") in combined_output, (
-        f"Paper '{paper_key}' not found in deep-reading queue output:\n{combined_output[:500]}"
-    )
+    payload = json.loads(result.stdout)
+    queue = payload["data"]["queue"]
+    assert any(
+        row["zotero_key"] == paper_key or row["title"] == fm.get("title", "")
+        for row in queue
+    ), f"Paper '{paper_key}' not found in deep-reading queue: {queue!r}"

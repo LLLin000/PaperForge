@@ -61,6 +61,8 @@ def _memory_build_preflight(ctx: ActionContext, request: ActionRequest) -> Prefl
         per_key = tuple(project_applicability(ctx.vault, "memory.build", list(request.scope.keys)))
     return PreflightResult(
         availability="available",
+        availability_reason_code="action.available",
+        availability_reason="Memory substrate can be built",
         per_key=per_key,
         preservation_facts=("Existing paperforge.db remains readable during the build",),
         replacement_facts=(

@@ -33,76 +33,120 @@ from the audit, and checked by the harness before the review is accepted.
 - Architecture rules live only in the Contract (reached through the audit).
   This skill adds process, never policy; it never re-evaluates rules.
 
-## 1. Resolve scope
+## 1. Resolve the audit and build the packet
 
 Load the validated audit first — never review unvalidated input:
 
 ```bash
 python "$SKILL_DIR/scripts/review_harness.py" audit --fixture golden_126_ocr_rebuild \
   --out /tmp/golden_126_audit.json
-# or: --contract <path> --survey <path> ; or: --audit <saved-audit.json>
 ```
 
-The command refuses invalid input (exit 1, `REFUSED`). Its output fixes the
-review's bindings: `audit_digest`, `contract_digest`, `survey_digest`,
-`reconciler_version`, plus `scope` (operations to trace), `must_adjudicate`
-(findings that demand an adjudication), and `evidence_pool`. `--out` saves
-the validated audit JSON that step 4's emit validates against.
+Then build the deterministic packet. Daily development review defaults to
+`delta`; pass the changed files explicitly:
 
-**Completion:** scope written down. Default = the audit's full scope
-(full-survey branch); narrow only when the user named specific operations
-(`references/branches.md`).
+```bash
+python "$SKILL_DIR/scripts/review_harness.py" plan \
+  --audit /tmp/golden_126_audit.json \
+  --mode delta \
+  --changed-file paperforge/worker/status.py \
+  --out /tmp/review-packet.json
+```
 
-## 2. Investigate high-risk and unresolved edges
+Use `gate` for deterministic compliance only, `delta` for changed-code review,
+`focused` for named operations, `deep-trace` for unresolved/high-risk paths,
+and `full-release` for certification. The packet is the review scope. Its
+`scope` comes from the Contract operation declarations preserved by the audit,
+not from the presence of findings; a missing operation scope is a refusal.
+
+**Completion:** packet bindings, affected operations, required adjudications,
+operation/stage evidence candidates, exact source reads, and stop conditions
+are written down.
+
+## 2. Investigate only unresolved edges
 
 Every finding in `must_adjudicate` (deterministic `violated`/`unresolved`)
 gets exactly one adjudication from the five kinds in
-`references/adjudication-taxonomy.md`. Legwork for the judgment: LSP,
-codebase-memory, and focused source reads on the evidence files named in the
-audit (paths are repo-relative); never guess from the finding message alone.
+`references/adjudication-taxonomy.md`. The packet's candidate evidence is
+already operation- and stage-scoped. Use it before searching.
 
-For edges where evidence is missing, adjudicate `needs_evidence` with the
-precise evidence IDs or questions required — do not stop at the first
-plausible finding.
+Read only packet-listed file/symbol candidates. If evidence is insufficient,
+expand callers or callees by one hop, at most twice. After two hops, emit
+`needs_evidence` with a precise question; do not continue repo-wide search
+unless the packet says the subject or wrapper is unbound.
 
 **Completion:** every `must_adjudicate` finding has an adjudication or the
 emission fails.
 
-## 3. Reconcile the trace
+## 3. Reconcile the typed trace
 
-Fill the trace manifest: one entry per scoped operation, all eight stages
-(`input`, `output`, `transport`, `side_effects`, `publication`,
-`invalidation`, `failure`, `final_consumer`). A stage carries evidence IDs
-from `evidence_pool` or a one-line note explaining why the stage has no
-evidence. No stage may be silently skipped. Branch shapes are in
-`references/branches.md`.
+Fill one trace entry per packet `affected_operation`, with all eight stages:
+`input`, `output`, `transport`, `side_effects`, `publication`, `invalidation`,
+`failure`, and `final_consumer`. Every stage is exactly one typed object:
 
-**Completion:** every scoped operation has all eight stages, no empty stage.
+```json
+{"status": "observed", "evidence_ids": ["evidence:..."]}
+{"status": "not_applicable", "reason_code": "no_publication"}
+{"status": "needs_evidence", "question": "Which path publishes this state?"}
+```
+
+`observed` may cite only the packet's candidate IDs for that operation/stage.
+`not_applicable` requires a registered reason code. `needs_evidence` requires
+a question. Free-text fillers and a global evidence pool are rejected.
+
+**Completion:** every affected operation has all eight typed stages, with no
+empty stage and no cross-operation evidence.
 
 ## 4. Emit the overlay
 
 Assemble the `ArchitectureReview` JSON with `reviewer_type`, `run_metadata`
-(model/session identity and created time), the four bindings from step 1,
+(model/session identity and created time), the four bindings from the audit,
 adjudications, semantic findings (`inferred`/`unresolved` only), evidence
 requests, and rationale. Then validate:
 
 ```bash
 python "$SKILL_DIR/scripts/review_harness.py" emit \
-  --audit <audit.json> --review <draft.json> --trace <manifest.json> \
-  --fixture golden_126_ocr_rebuild --out <review.json>
+  --audit /tmp/golden_126_audit.json \
+  --review <draft.json> \
+  --trace <typed-trace.json> \
+  --out <review.json>
 ```
 
-`--fill-digests` copies the four bindings from the audit before validation.
-The harness rejects stale digests, a mismatched reconciler version,
-observed-static claims, fabricated finding IDs, missing adjudications, and
-incomplete traces. A `REFUSED`/`PROBLEMS` result means rework — never bypass.
+The harness rejects stale digests, a mismatched reconciler version, observed
+static claims, fabricated finding IDs, missing adjudications, missing evidence
+indexes, cross-operation/stage evidence, and incomplete typed traces.
+`REFUSED`/`PROBLEMS` means rework — never bypass.
 
 **Completion:** emit prints `OK` and writes the review file.
+
+## 5. Benchmark v1 versus v2
+
+Run the executable fixture corpus before comparing model runs:
+
+```bash
+python "$SKILL_DIR/scripts/skill_benchmark.py"
+```
+
+The corpus covers all 11 deterministic fixtures plus issue-grounded historical
+cases #220, #229, and #231. Historical cases without replay fixtures are
+reported as `not_run`, never scored as passes. Supply recorded answer artifacts
+only when real Skill executions exist:
+
+```bash
+python "$SKILL_DIR/scripts/skill_benchmark.py" \
+  --answers-v1 /path/to/v1-answers.json \
+  --answers-v2 /path/to/v2-answers.json
+```
+
+The evaluator reports only supplied validity, evidence-scope, typed-trace,
+tool-use, token, and timing fields. Missing fields stay missing; no A/B result
+is inferred from the deterministic corpus.
 
 ## Completion checklist
 
 - [ ] audit loaded and validated (REFUSED on invalid input → stop, report)
-- [ ] every scoped operation has one trace with all eight stages
+- [ ] deterministic packet built; daily review uses `delta`
+- [ ] every affected operation has one typed trace with all eight stages
 - [ ] every `must_adjudicate` finding adjudicated (or `needs_evidence`)
 - [ ] every claim labeled `inferred` or `unresolved`
 - [ ] review bound to exact digests + reconciler version
@@ -114,3 +158,4 @@ incomplete traces. A `REFUSED`/`PROBLEMS` result means rework — never bypass.
   epistemic rules, severity mapping
 - `references/branches.md` — full-survey / focused-signal / changed-interface
 - `references/fixtures.md` — Slice A fixture inventory and golden semantics
+- `references/benchmark-cases.json` — executable and historical v1/v2 corpus

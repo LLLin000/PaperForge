@@ -192,10 +192,10 @@ class TestNeedsDerivedRebuild:
         assert ok is False
         assert reason == "current"
 
-        # Verify meta was updated with correct stat values
+        # Read-only detection must not persist writer-owned metadata.
         updated_meta = json.loads(meta_file.read_text())
-        assert updated_meta["structured_mtime"] == st.st_mtime
-        assert updated_meta["structured_size"] == st.st_size
+        assert updated_meta["structured_mtime"] == 0
+        assert updated_meta["structured_size"] == 0
 
     @patch(PATCH_PP)
     @patch(PATCH_ART)

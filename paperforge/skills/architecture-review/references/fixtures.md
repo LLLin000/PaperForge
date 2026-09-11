@@ -36,9 +36,11 @@ treat an issue description as observed evidence.
 | `golden_127_sync_embed` | sync → embed build with planned remote follow-up | planned gap only; `query.side_effect_free` satisfied |
 | `golden_129_display_restore` | display restore must not imply structural rollback | planned gap only |
 
-## Evidence pool
+## Evidence index
 
-`evidence_pool` in the audit output lists every evidence ID a trace may cite.
-Golden fixtures carry evidence on survey facts (e.g. `ocr_rebuild.py:
-run_derived_rebuild_for_keys`, lines 616–663); a stage may cite those IDs or
-carry an explicit note when a stage has no evidence.
+The audit packet indexes every survey evidence item by fact kind, owning
+operation, subject, and admissible trace stages. A trace may cite only a
+candidate ID listed for the same operation and stage. Evidence without an
+operation owner is not silently promoted to a global pool; the model emits
+`needs_evidence` until a deterministic edge or a bounded source read connects
+it.
