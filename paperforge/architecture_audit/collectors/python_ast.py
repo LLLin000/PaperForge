@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import ast
 from dataclasses import dataclass, field
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from paperforge.architecture_audit.collectors.common import (
     EffectSpec,
@@ -32,6 +32,7 @@ from paperforge.architecture_audit.layers import (
     EffectKind,
     EpistemicStatus,
     Evidence,
+    OperationBindingFact,
     SignalFact,
     UnresolvedFact,
 )
@@ -345,6 +346,34 @@ class _SinkVisitor(ast.NodeVisitor):
                 )
 
 
+
+def _emit_operation_binding(
+    result: PythonCollectResult,
+    rel: str,
+    file: Path,
+    root: Path,
+    known_operations: frozenset[str],
+) -> None:
+    """One binding fact per module whose stem is a declared operation id."""
+    stem = PurePosixPath(rel).stem
+    if stem not in known_operations:
+        return
+    result.facts.append(
+        OperationBindingFact(
+            operation_id=stem,
+            evidence=make_evidence(
+                file,
+                root,
+                rel.replace("/", ".").removesuffix(".py"),
+                1,
+                1,
+                EXTRACTOR,
+                confidence=Confidence.EXACT,
+            ),
+        ).to_dict()
+    )
+
+
 def collect_python(
     root: Path,
     *,
@@ -367,6 +396,11 @@ def collect_python(
             result.scanned_files.append((rel, "unparsed"))
             continue
         result.scanned_files.append((rel, _file_digest(file)))
+        # Record the operation binding this module resolves to, so a rule whose
+        # subject binds to nothing can be told apart from a rule that merely
+        # observes no violations. A read-only module emits no effect facts; the
+        # binding is what proves the rule was evaluable at all.
+        _emit_operation_binding(result, rel, file, root, known_operations)
         index = ImportIndex.build(tree, rel)
         symbol = rel.replace("/", ".").removesuffix(".py")
         visitor = _SinkVisitor(

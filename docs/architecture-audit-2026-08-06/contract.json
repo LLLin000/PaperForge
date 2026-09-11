@@ -5,8 +5,7 @@
     "ocr_raw",
     "ocr_derived",
     "retrieval",
-    "vectors",
-    "runtime_state"
+    "vectors"
   ],
   "publication_units": [
     {
@@ -82,20 +81,14 @@
       "authorized_writers": [
         "embed.publisher"
       ]
-    },
-    {
-      "unit_id": "runtime_state.snapshot",
-      "asset_group": "runtime_state",
-      "publication_authority": "python.read_models",
-      "authorized_writers": [],
-      "meta": {
-        "lifecycle": "deprecated"
-      }
     }
   ],
   "operations": [
     "sync",
-    "probe_status",
+    "probe",
+    "status",
+    "dashboard",
+    "runtime_health",
     "ocr_redo",
     "memory_build",
     "restore_display",
@@ -153,42 +146,6 @@
           "authority_id": "plugin.embed_build_controller"
         }
       ]
-    },
-    {
-      "operation_id": "bootstrap.pointer.read",
-      "authorities": [
-        {
-          "role": "adapter",
-          "authority_id": "plugin.bootstrap"
-        }
-      ]
-    },
-    {
-      "operation_id": "client_cache.read",
-      "authorities": [
-        {
-          "role": "adapter",
-          "authority_id": "plugin.cache"
-        }
-      ]
-    },
-    {
-      "operation_id": "navigation.open",
-      "authorities": [
-        {
-          "role": "adapter",
-          "authority_id": "plugin.navigation"
-        }
-      ]
-    },
-    {
-      "operation_id": "workspace.context",
-      "authorities": [
-        {
-          "role": "adapter",
-          "authority_id": "plugin.workspace"
-        }
-      ]
     }
   ],
   "required_extractors": [
@@ -224,12 +181,36 @@
       "description": "Embed build stop has exactly one authority (plugin controller)"
     },
     {
-      "rule_id": "query.side_effect_free",
+      "rule_id": "query.side_effect_free.probe",
       "kind": "query_side_effect",
-      "subject": "probe_status",
+      "subject": "probe",
       "lifecycle": "active",
       "enforcement": "blocking",
-      "description": "status queries must not mutate business facts"
+      "description": "the capability probe is an observation surface and must not mutate business facts"
+    },
+    {
+      "rule_id": "query.side_effect_free.status",
+      "kind": "query_side_effect",
+      "subject": "status",
+      "lifecycle": "active",
+      "enforcement": "blocking",
+      "description": "the status report must not mutate business facts"
+    },
+    {
+      "rule_id": "query.side_effect_free.dashboard",
+      "kind": "query_side_effect",
+      "subject": "dashboard",
+      "lifecycle": "active",
+      "enforcement": "blocking",
+      "description": "the dashboard aggregate must not mutate business facts"
+    },
+    {
+      "rule_id": "query.side_effect_free.runtime_health",
+      "kind": "query_side_effect",
+      "subject": "runtime_health",
+      "lifecycle": "active",
+      "enforcement": "blocking",
+      "description": "the runtime health check must not mutate business facts"
     },
     {
       "rule_id": "remote_intent.sync_followup",
@@ -327,89 +308,6 @@
         "commit": "815dc615"
       },
       "description": "deterministic collectors feed the #131 reconciler (#133 accepted 2026-08-07)"
-    },
-    {
-      "rule_id": "canonical_writer.snapshot_retired",
-      "kind": "canonical_writer",
-      "subject": "runtime_state.snapshot",
-      "lifecycle": "deprecated",
-      "enforcement": "blocking",
-      "description": "Snapshot files (memory-runtime-state.json / vector-runtime-state.json / runtime-health.json) are retired with #148; no writer may recreate them"
-    },
-    {
-      "rule_id": "client_read.runtime_snapshots",
-      "kind": "canonical_read",
-      "subject": "runtime_state.snapshot",
-      "lifecycle": "active",
-      "enforcement": "advisory",
-      "effective_after": {
-        "issue": "#148"
-      },
-      "known_gap": {
-        "issue": "#149",
-        "rationale": "CANONICAL_READ collector soaks before evaluation/blocking; rule declared active+advisory this slice (#161)"
-      },
-      "description": "Prohibited pattern: plugin/TS reads of canonical runtime snapshot files; fresh Python read models fully determine UI (#148)"
-    },
-    {
-      "rule_id": "client_read.formal_library",
-      "kind": "canonical_read",
-      "subject": "formal_library",
-      "lifecycle": "active",
-      "enforcement": "advisory",
-      "description": "reads of formal_library go through a registered wrapper (advisory; #149)",
-      "effective_after": {
-        "issue": "#170"
-      },
-      "known_gap": {
-        "issue": "#170",
-        "rationale": "canonical-read collector + wrapper attribution landed with T9; advisory enforcement pending soak"
-      }
-    },
-    {
-      "rule_id": "client_read.paperforge_config",
-      "kind": "canonical_read",
-      "subject": "paperforge_config",
-      "lifecycle": "active",
-      "enforcement": "advisory",
-      "description": "reads of paperforge_config go through a registered wrapper (advisory; #149)",
-      "effective_after": {
-        "issue": "#170"
-      },
-      "known_gap": {
-        "issue": "#170",
-        "rationale": "canonical-read collector + wrapper attribution landed with T9; advisory enforcement pending soak"
-      }
-    },
-    {
-      "rule_id": "client_read.ocr_state",
-      "kind": "canonical_read",
-      "subject": "ocr_state",
-      "lifecycle": "active",
-      "enforcement": "advisory",
-      "description": "reads of ocr_state go through a registered wrapper (advisory; #149)",
-      "effective_after": {
-        "issue": "#170"
-      },
-      "known_gap": {
-        "issue": "#170",
-        "rationale": "canonical-read collector + wrapper attribution landed with T9; advisory enforcement pending soak"
-      }
-    },
-    {
-      "rule_id": "client_read.memory_db",
-      "kind": "canonical_read",
-      "subject": "memory_db",
-      "lifecycle": "active",
-      "enforcement": "advisory",
-      "description": "reads of memory_db go through a registered wrapper (advisory; #149)",
-      "effective_after": {
-        "issue": "#170"
-      },
-      "known_gap": {
-        "issue": "#170",
-        "rationale": "canonical-read collector + wrapper attribution landed with T9; advisory enforcement pending soak"
-      }
     }
   ],
   "exceptions": []

@@ -591,7 +591,12 @@ class TestRepositoryAcceptance:
             for c in audit["content"].get("rule_coverage", [])
         }
         for rule_id in (
-            "query.side_effect_free",
+            # #220: one blocking rule per read/report surface, instead of a
+            # single rule bound to a module that does not exist.
+            "query.side_effect_free.probe",
+            "query.side_effect_free.status",
+            "query.side_effect_free.dashboard",
+            "query.side_effect_free.runtime_health",
             "remote_intent.sync_followup",
             "signal.has_consumer",
             "publication.uses_protocol",

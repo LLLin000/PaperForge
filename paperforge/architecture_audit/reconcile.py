@@ -21,7 +21,6 @@ from paperforge.architecture_audit.canonical import (
     sha256_digest,
 )
 from paperforge.architecture_audit.layers import (
-    SCHEMA_VERSION,
     ArchitectureContract,
     ArchitectureError,
     ArchitectureReportView,
@@ -32,7 +31,6 @@ from paperforge.architecture_audit.layers import (
     AuditContent,
     AuthorityRole,
     CanonicalWriteFact,
-    FilesystemReadFact,
     CoverageEntry,
     CoverageStatus,
     DeterministicAudit,
@@ -40,14 +38,17 @@ from paperforge.architecture_audit.layers import (
     EffectKind,
     EnforcementMode,
     Evidence,
+    FilesystemReadFact,
     Finding,
     IntentMode,
     LifecycleStatus,
+    OperationBindingFact,
     RoleAuthorityFact,
     Rule,
     RuleCoverage,
     RuleKind,
     RuleStatus,
+    SCHEMA_VERSION,
     SignalConsumerKind,
     SignalFact,
     UnitAuthorityFact,
@@ -161,6 +162,25 @@ def _forbidden_query_effects(rule: Rule, survey: ArchitectureSurvey) -> tuple[li
     effects = [fact for fact in _facts_of(survey, EffectFact) if fact.operation_id == rule.subject]
     violations = [fact for fact in effects if fact.effect_kind not in allowed]
     return violations, effects
+
+
+
+def _bound_operations(survey: ArchitectureSurvey) -> frozenset[str]:
+    """Operation ids the collector actually bound to a scanned module."""
+    return frozenset(
+        fact.operation_id for fact in _facts_of(survey, OperationBindingFact)
+    )
+
+
+def _subject_is_bound(rule: Rule, survey: ArchitectureSurvey) -> bool:
+    """True when this rule's subject resolves to something the collector saw.
+
+    A rule whose subject binds to nothing can never be evaluated — its silence
+    is a contract defect, not evidence of compliance. This is what separates
+    "no violations observed" (a legitimate negative assertion) from "nothing
+    was ever observed" (a rule that cannot fail).
+    """
+    return rule.subject in _bound_operations(survey)
 
 
 def _remote_facts(rule: Rule, survey: ArchitectureSurvey) -> list[EffectFact]:
@@ -372,6 +392,15 @@ def _evaluate_rule(
         )
 
     if rule.kind is RuleKind.QUERY_SIDE_EFFECT:
+        # A rule whose subject binds to no scanned operation cannot be
+        # evaluated. Reporting "satisfied" here is how a rule that can never
+        # fail reads as compliance, so it is unresolved instead.
+        if not _subject_is_bound(rule, survey):
+            return (
+                RuleStatus.UNRESOLVED,
+                f"rule subject has no observable operation binding: {rule.subject}",
+                [],
+            )
         violations, effects = _forbidden_query_effects(rule, survey)
         if not effects:
             if _absence_is_observed(contract, survey):
