@@ -1,13 +1,12 @@
 """Deep-reading queue command."""
 
 import argparse
-import logging
+from contextlib import redirect_stdout
+from io import StringIO
 from pathlib import Path
 
 from paperforge import __version__
 from paperforge.core.result import PFResult
-
-logger = logging.getLogger(__name__)
 
 
 def _get_run_deep_reading():
@@ -40,7 +39,16 @@ def run(args: argparse.Namespace) -> int:
 
     json_output = getattr(args, "json", False)
     run_deep_reading = _get_run_deep_reading()
-    exit_code = run_deep_reading(vault, verbose=getattr(args, "verbose", False))
+
+    if json_output:
+        # The worker keeps a human summary for text mode. Machine mode must
+        # expose one JSON envelope, not a summary line followed by JSON.
+        with redirect_stdout(StringIO()):
+            exit_code = run_deep_reading(
+                vault, verbose=getattr(args, "verbose", False)
+            )
+    else:
+        exit_code = run_deep_reading(vault, verbose=getattr(args, "verbose", False))
 
     if json_output:
         from paperforge.worker._utils import get_analyze_queue
