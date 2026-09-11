@@ -10,6 +10,8 @@ ignore generated time and line movement while preserving semantic changes.
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 
 from paperforge.architecture_audit.layers import (
     ArchitectureContract,
@@ -131,6 +133,30 @@ class TestGateSemantics:
         assert result.exit_code == EXIT_BLOCK
         assert result.blocking_rules == ("publication.uses_protocol",)
         assert result.findings and result.findings[0]["rule_status"] == "violated"
+
+    def test_cli_blocks_injected_allowlisted_violation(self, tmp_path):
+        audit = _audit(_contract(), _survey([_bypass_write()]))
+        audit_path = tmp_path / "audit.json"
+        audit_path.write_text(json.dumps(audit.to_dict()), encoding="utf-8")
+        proc = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "paperforge.architecture_audit.report.gate",
+                "--audit",
+                str(audit_path),
+                "--allowlist",
+                "publication.uses_protocol",
+                "--strict",
+                "--json",
+            ],
+            capture_output=True,
+            text=True,
+        )
+        assert proc.returncode == EXIT_BLOCK
+        payload = json.loads(proc.stdout)
+        assert payload["status"] == "block"
+        assert payload["blocking_rules"] == ["publication.uses_protocol"]
 
     def test_non_allowlisted_violation_does_not_block(self):
         audit = _audit(_contract(), _survey([_bypass_write()]))

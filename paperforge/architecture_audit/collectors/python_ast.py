@@ -52,8 +52,9 @@ _OS_MODULES = frozenset({"os", "os.path", "pathlib", "shutil"})
 
 _SQL_DML = frozenset({"insert", "update", "delete", "replace", "upsert"})
 
-# Attribute call targets that are dynamic by construction.
-_DYNAMIC_FUNCS = frozenset({"getattr", "eval", "exec", "globals", "locals", "vars"})
+# Dynamic primitives whose direct invocation prevents effect enumeration.
+_DYNAMIC_FUNCS = frozenset({"eval", "exec", "globals", "locals", "vars"})
+_DYNAMIC_LOOKUPS = frozenset({"getattr"})
 
 # Methods whose name signals a write/mutation. When the receiver cannot be
 # resolved statically the effect cannot be enumerated — recorded unresolved,
@@ -227,6 +228,17 @@ class _SinkVisitor(ast.NodeVisitor):
 
     def visit_Call(self, node: ast.Call) -> None:
         func = node.func
+        if (
+            isinstance(func, ast.Call)
+            and isinstance(func.func, ast.Name)
+            and func.func.id in _DYNAMIC_LOOKUPS
+        ):
+            self._tier3_unresolved(
+                node,
+                f"dynamic call target {func.func.id}; cannot enumerate effects",
+                (EffectKind.REMOTE_OPERATION, EffectKind.BUSINESS_MUTATION),
+            )
+            return
         qualified = self.index.resolve(func)
         wrapper = self._match_wrapper(node, qualified)
         if wrapper is not None:

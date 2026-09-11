@@ -21,6 +21,7 @@ from paperforge.architecture_audit.canonical import (
     sha256_digest,
 )
 from paperforge.architecture_audit.layers import (
+    SCHEMA_VERSION,
     ArchitectureContract,
     ArchitectureError,
     ArchitectureReportView,
@@ -48,7 +49,6 @@ from paperforge.architecture_audit.layers import (
     RuleCoverage,
     RuleKind,
     RuleStatus,
-    SCHEMA_VERSION,
     SignalConsumerKind,
     SignalFact,
     UnitAuthorityFact,
@@ -260,11 +260,11 @@ def _unresolved_facts(rule: Rule, survey: ArchitectureSurvey) -> list[Unresolved
             # rather than guessing (no module-scope for read rules).
             out.append(fact)
             continue
-        # Scope by source module: an unresolved call inside `sync.py` must
-        # not shadow a rule about `probe_status`.
+        # Match the module stem exactly. A substring match makes
+        # ``services/sync_service.py`` shadow the distinct ``sync.py`` rule.
         file = (fact.evidence.file if fact.evidence else "") or ""
         stem = PurePosixPath(file).stem
-        if rule.subject and stem != rule.subject and rule.subject not in file:
+        if rule.subject and stem != rule.subject:
             continue
         out.append(fact)
     return out
