@@ -5,7 +5,9 @@
  * 1. Setup Journey invokes client.setup(), streaming #137 NDJSON progress events.
  * 2. Setup cancellation invokes handle.stop(), settling with cancelled=true and releasing lock.
  * 3. Foundation status resolves strictly through client.probe("installation").
- * 4. Maintenance items populate from client.reconcile() deficit models.
+ * 4. Maintenance items populate from client.reconcile()'s real wire (data +
+ *    top-level next_actions), and orphan detection reads the residual report
+ *    that `library.prune` actually acts on.
  * 5. Maintenance actions execute via client.runAction() with dynamic descriptors and trigger cache invalidation.
  * 6. Production UI cutover seams: SettingTab._probeModule, SettingTab._installFoundation,
  *    checkOrphanState, and PaperForgeOrphanModal strictly use client and NEVER execFile.
@@ -219,24 +221,41 @@ describe("Foundation & Maintenance Domain Cutover (Ticket 03)", () => {
   });
 
   describe("Maintenance & Deficit Remediation", () => {
-    it("populates maintenance items directly from client.reconcile() deficit outputs", async () => {
+    it("carries reconcile's real wire: data plus a top-level next_actions list", async () => {
+      // What `paperforge reconcile --json` actually emits. The previous version
+      // of this test invented a `deficits[].paper_keys` field, so it asserted
+      // the consumer's expectation instead of the producer's output — which is
+      // how #222 (the orphan modal reading a field that never exists) stayed
+      // green.
       transport.executeHandler = (argv) => {
         if (argv.includes("reconcile")) {
           return JSON.stringify({
-            deficits: [
-              {
-                id: "def_1",
-                module: "library",
-                kind: "orphan_residuals",
-                severity: "warning",
-                paper_keys: ["PAPER_A", "PAPER_B"],
+            ok: true,
+            command: "reconcile",
+            version: "1.5.15",
+            data: {
+              schema_version: 1,
+              scope: "all",
+              vault: "v",
+              global: {
+                memory_substrate_ok: true,
+                vector_substrate_ok: true,
+                reasons: [],
               },
-            ],
+              facet_summary: {},
+              per_paper: {},
+              diagnostics: [],
+            },
             next_actions: [
               {
+                schema_version: 1,
                 action_id: "library.prune",
-                scope: { kind: "papers", keys: ["PAPER_A", "PAPER_B"] },
-                reason: "Residual papers detected",
+                scope: { kind: "all" },
+                automatic: false,
+                cost: "local",
+                impact: "mutating",
+                confirmation: "required",
+                reason: "residuals",
               },
             ],
           });
@@ -245,10 +264,12 @@ describe("Foundation & Maintenance Domain Cutover (Ticket 03)", () => {
       };
 
       const report = (await client.reconcile("all")) as any;
-      expect(report.deficits).toHaveLength(1);
+      expect(Object.keys(report.data ?? {})).toEqual(
+        expect.arrayContaining(["scope", "global", "per_paper", "diagnostics"])
+      );
       expect(report.next_actions).toHaveLength(1);
       expect(report.next_actions[0].action_id).toBe("library.prune");
-      expect(report.next_actions[0].scope.keys).toEqual(["PAPER_A", "PAPER_B"]);
+      expect(report).not.toHaveProperty("deficits");
     });
 
     it("executes maintenance actions via client.runAction() and invalidates cache", async () => {
@@ -435,26 +456,58 @@ describe("Foundation & Maintenance Domain Cutover (Ticket 03)", () => {
       expect(mockRunSetupPython).not.toHaveBeenCalled();
     });
 
-    it("checkOrphanState queries client.reconcile and does NOT read orphanStatePath via fs", async () => {
-      const mockReconcile = vi.fn().mockResolvedValue({
-        deficits: [
-          {
-            id: "def_1",
-            kind: "orphan_residuals",
-            action_id: "library.prune",
-            paper_keys: ["KEY1", "KEY2"],
-          },
-        ],
+    it("checkOrphanState opens the modal from probe('lineage') residuals (#222)", async () => {
+      // The residual report is Python's authority for "in a carrier, gone from
+      // Zotero" and is what library.prune acts on. The consumer used to read a
+      // `deficits[].paper_keys` field reconcile never emits, so the modal could
+      // never open; this pins the source it must read instead.
+      const mockProbe = vi.fn().mockResolvedValue({
+        schema_version: 2,
+        module: "lineage",
+        residuals: {
+          count: 2,
+          keys: ["KEY1", "KEY2"],
+          papers: [
+            { key: "KEY1", title: "Residual One" },
+            { key: "KEY2", title: "Residual Two" },
+          ],
+        },
       });
+      const openSpy = vi
+        .spyOn(PaperForgeOrphanModal.prototype, "open")
+        .mockImplementation(() => undefined);
 
-      const mockPlugin = {
-        getClient: () => ({ reconcile: mockReconcile }),
-      };
+      checkOrphanState(
+        {} as any,
+        { getClient: () => ({ probe: mockProbe }) } as any,
+        "/vault"
+      );
+      await vi.waitFor(() => expect(openSpy).toHaveBeenCalledTimes(1));
 
-      checkOrphanState({} as any, mockPlugin as any, "/vault");
-      await Promise.resolve();
+      expect(mockProbe).toHaveBeenCalledWith("lineage");
+      expect(mockExecFile).not.toHaveBeenCalled();
+      openSpy.mockRestore();
+    });
 
-      expect(mockReconcile).toHaveBeenCalledWith("all");
+    it("checkOrphanState opens nothing when the residual report is empty", async () => {
+      const mockProbe = vi.fn().mockResolvedValue({
+        schema_version: 2,
+        module: "lineage",
+        residuals: { count: 0, keys: [], papers: [] },
+      });
+      const openSpy = vi
+        .spyOn(PaperForgeOrphanModal.prototype, "open")
+        .mockImplementation(() => undefined);
+
+      checkOrphanState(
+        {} as any,
+        { getClient: () => ({ probe: mockProbe }) } as any,
+        "/vault"
+      );
+      await vi.waitFor(() => expect(mockProbe).toHaveBeenCalled());
+
+      expect(openSpy).not.toHaveBeenCalled();
+      openSpy.mockRestore();
     });
 
     it("PaperForgeOrphanModal deletes orphans via client.describeAction + client.runAction, NEVER calling execFile", async () => {

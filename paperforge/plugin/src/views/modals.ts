@@ -219,29 +219,43 @@ export function checkOrphanState(app: App, plugin: IPluginRef, vp: string) {
     return;
   }
 
+  // The residual report is Python's authority for "this key is in a carrier but
+  // gone from Zotero", and it is exactly what `library.prune` acts on. The
+  // previous implementation read a `deficits[].paper_keys` field on the
+  // reconcile payload — a shape reconcile never emits — so the modal could
+  // never open (#222).
   client
-    .reconcile("all")
-    .then((report: any) => {
-      const deficits = Array.isArray(report?.deficits) ? report.deficits : [];
-      const orphanDeficit = deficits.find(
-        (d: any) =>
-          d.kind === "orphan_residuals" || d.action_id === "library.prune"
-      );
-      const keys: string[] = orphanDeficit?.paper_keys ?? [];
-      if (keys.length > 0) {
+    .probe("lineage")
+    .then((envelope: any) => {
+      const papers: Array<{ key?: string; title?: string }> = Array.isArray(
+        envelope?.residuals?.papers
+      )
+        ? envelope.residuals.papers
+        : [];
+      const resolved = papers
+        .map((p: any) => ({
+          key: String(p?.key ?? "").trim(),
+          title: p?.title,
+        }))
+        .filter((p: { key: string }) => p.key.length > 0);
+      if (resolved.length > 0) {
         console.log("[PF] orphan file FOUND");
-        const orphans: OrphanItem[] = keys.map((k) => ({
-          key: k,
-          title: k,
-          folder: k,
-        }));
+        const orphans: OrphanItem[] = resolved.map(
+          (p: { key: string; title?: string }) => ({
+            key: p.key,
+            title: p.title || p.key,
+          })
+        );
         new PaperForgeOrphanModal(app, orphans, vp, null).open();
       } else {
         console.log("[PF] orphan file NOT FOUND");
       }
     })
     .catch((err: any) => {
+      // A failure to detect must be visible: a silent catch made a broken
+      // reconcile indistinguishable from "no orphans" in the field log.
       console.log("[PF] checkOrphanState exception:", err?.message || err);
+      new Notice("PaperForge: orphan detection failed");
     });
 }
 
