@@ -15,7 +15,7 @@ from paperforge.core.result import PFError, PFResult
 from paperforge.worker.ocr_artifacts import artifact_paths_for_root
 from paperforge.worker.ocr_versions import classify_version_state, compute_structured_hash, expected_derived_payload
 from paperforge.worker.ocr_maintenance import _can_rebuild
-from paperforge.core.io import read_json, write_json
+from paperforge.core.io import read_json
 
 logger = logging.getLogger(__name__)
 
@@ -657,10 +657,8 @@ def _needs_derived_rebuild(vault: Path, key: str) -> tuple[bool, str]:
             # Tier 2: hash check
             current_hash = compute_structured_hash(vault, key)
             if current_hash == content_hash:
-                # False alarm — mtime changed but content identical
-                meta["structured_mtime"] = stat.st_mtime
-                meta["structured_size"] = stat.st_size
-                write_json(artifacts.meta_json, meta)
+                # False alarm — mtime changed but content identical.  A list
+                # command reports the state; only OCR writers persist metadata.
                 return False, "current"
 
             return True, "content_hash_changed"

@@ -95,3 +95,30 @@ def test_migrate_to_workspace_deletes_existing_workspace_fulltext(tmp_path, monk
     sync.migrate_to_workspace(vault, paths)
 
     assert not (workspace_dir / "fulltext.md").exists()
+
+
+def test_sync_orphan_state_and_cleanup_use_configured_index_dir(tmp_path):
+    from paperforge.commands.sync import _cleanup_legacy_snapshot_files, _write_orphan_state
+    from paperforge.config import load_vault_config, paperforge_paths
+    from paperforge.core.result import PFResult
+    from tests.conftest import canonical_test_config
+
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    canonical_test_config(vault, system_dir="CustomSystem")
+    index_dir = paperforge_paths(vault, load_vault_config(vault))["index"].parent
+    result = PFResult(
+        ok=True,
+        command="sync",
+        version="test",
+        data={"prune": {"preview": [{"zotero_key": "ABCD1234"}]}},
+    )
+
+    _write_orphan_state(vault, result)
+    orphan_path = index_dir / "sync-orphan-state.json"
+    assert orphan_path.exists()
+    assert not (vault / "System" / "PaperForge" / "indexes" / orphan_path.name).exists()
+
+    (index_dir / "memory-runtime-state.json").write_text("legacy", encoding="utf-8")
+    _cleanup_legacy_snapshot_files(vault)
+    assert not (index_dir / "memory-runtime-state.json").exists()

@@ -152,20 +152,23 @@ def _cleanup_legacy_snapshot_files(vault) -> None:
     Zero readers + zero writers make these inert garbage; hygiene only —
     failure to clean never fails the cutover and never affects the result.
     """
-    from pathlib import Path
+    from paperforge.worker._utils import pipeline_paths
 
+    index_dir = pipeline_paths(vault)["index"].parent
     for name in ("memory-runtime-state.json", "vector-runtime-state.json", "runtime-health.json"):
         try:
-            legacy = Path(vault) / "99_System" / "PaperForge" / "indexes" / name
+            legacy = index_dir / name
             legacy.unlink(missing_ok=True)
         except OSError:
             logger.debug("legacy snapshot cleanup skipped for %s", name)
 
 
 def _write_orphan_state(vault, result: PFResult) -> None:
+    from paperforge.worker._utils import pipeline_paths
+
     preview = (result.data or {}).get("prune", {}) if result.data else {}
     items = preview.get("preview", []) if isinstance(preview, dict) else []
-    orphan_path = vault / "System" / "PaperForge" / "indexes" / "sync-orphan-state.json"
+    orphan_path = pipeline_paths(vault)["index"].parent / "sync-orphan-state.json"
     if not items:
         with contextlib.suppress(Exception):
             orphan_path.unlink(missing_ok=True)
