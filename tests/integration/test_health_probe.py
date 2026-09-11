@@ -8,11 +8,12 @@ from __future__ import annotations
 
 import json
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 
-PYTHON = Path(r"D:\L\OB\Literature-hub\.venv\Scripts\python.exe")
+PYTHON = Path(sys.executable)  # the interpreter running the suite
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 
 

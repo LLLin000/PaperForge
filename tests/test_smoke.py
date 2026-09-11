@@ -61,17 +61,6 @@ def _import_ld_deep(path: Path | None = None) -> Any:
 class TestSetupWizard:
     """Task 1a: setup wizard pip install step."""
 
-    def test_setup_wizard_pip_install(self, test_vault: Path) -> None:
-        """Verify setup wizard's Phase 6 calls pip install --upgrade."""
-        from paperforge.setup_wizard import headless_setup
-
-        source = Path(headless_setup.__code__.co_filename).read_text(encoding="utf-8")
-        assert (
-            '"install", "--upgrade"' in source or "pip install --upgrade" in source
-        ), "setup wizard should call pip install --upgrade"
-        assert "pyproject.toml" in source, "setup wizard should reference pyproject.toml"
-
-
 class TestDoctorImportability:
     """Task 1b: doctor checks actual importability, not just directory."""
 

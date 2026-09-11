@@ -415,7 +415,19 @@ class TestO3Vertical:
                 rc = main(list(argv))
             finally:
                 _sys.stdout = old_out
-            return rc, json.loads(buf.getvalue())
+            # The streaming cutover (#137) made these commands emit NDJSON, so
+            # stdout can carry several JSON objects and the terminal one is the
+            # payload. Parsing the whole buffer as a single document predates
+            # that change and reads it as "extra data".
+            lines = [line for line in buf.getvalue().splitlines() if line.strip()]
+            parsed = json.loads(lines[-1])
+            # A streaming command's terminal line is the NDJSON envelope
+            # ({event, result}); the PFResult the caller wants is inside it.
+            if isinstance(parsed, dict) and "event" in parsed:
+                inner = parsed.get("result")
+                if isinstance(inner, dict):
+                    return rc, inner
+            return rc, parsed
 
         with patch("paperforge.worker.asset_index.read_index",
                    return_value={"items": [{"zotero_key": "A", "ocr_status": "done",
