@@ -692,6 +692,40 @@ class TestOcrListNeedsRebuild:
         assert "needs_derived_rebuild" in row, "JSON must include needs_derived_rebuild"
         assert isinstance(row["needs_derived_rebuild"], bool)
 
+    def test_list_json_does_not_rewrite_meta_on_hash_false_alarm(self, tmp_path, capsys):
+        """A read-only list must not persist the false-alarm stat refresh."""
+        import json
+
+        from paperforge.commands.ocr import _run_ocr_list, compute_structured_hash
+        from paperforge.worker.ocr_artifacts import artifact_paths_for_key
+
+        vault = _make_minimal_vault(tmp_path)
+        key = "KEY00001"
+        _add_ocr_meta(vault, key, "done")
+        artifacts = artifact_paths_for_key(vault, key)
+        artifacts.blocks_raw.parent.mkdir(parents=True, exist_ok=True)
+        artifacts.blocks_raw.write_text('{"page": 1}\n', encoding="utf-8")
+        artifacts.source_metadata.parent.mkdir(parents=True, exist_ok=True)
+        artifacts.source_metadata.write_text("{}", encoding="utf-8")
+        artifacts.blocks_structured.parent.mkdir(parents=True, exist_ok=True)
+        artifacts.blocks_structured.write_text('{"role": "body"}\n', encoding="utf-8")
+
+        meta = json.loads(artifacts.meta_json.read_text(encoding="utf-8"))
+        meta.update(
+            {
+                "structured_content_hash": compute_structured_hash(vault, key),
+                "structured_mtime": 0,
+                "structured_size": 0,
+            }
+        )
+        artifacts.meta_json.write_text(json.dumps(meta), encoding="utf-8")
+        before = artifacts.meta_json.read_bytes()
+
+        assert _run_ocr_list(vault, json_output=True) == 0
+        row = next(item for item in json.loads(capsys.readouterr().out) if item["key"] == key)
+        assert row["needs_derived_rebuild"] is False
+        assert artifacts.meta_json.read_bytes() == before
+
     def test_list_json_hidden_healthy(self, tmp_path):
         """Healthy up-to-date paper has needs_derived_rebuild=False."""
         vault = _make_minimal_vault(tmp_path)
