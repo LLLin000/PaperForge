@@ -24,6 +24,7 @@ from paperforge.worker._utils import (
     write_json,
 )
 from paperforge.worker.base_views import ensure_base_views
+from paperforge.worker.status_probe import run_readonly_probe
 
 logger = logging.getLogger(__name__)
 
@@ -277,7 +278,7 @@ def _resolve_plugin_interpreter(vault: Path, plugin_data: dict) -> tuple[str, st
     for path, extra in system_candidates:
         try:
             cmd = [path] + extra + ["--version"]
-            result = subprocess.run(cmd, capture_output=True, timeout=5, text=True, encoding="utf-8", errors="replace")
+            result = run_readonly_probe(cmd, timeout=5)
             if result.returncode == 0 and "Python" in (result.stdout or ""):
                 return (path, "auto-detected", extra)
         except (subprocess.TimeoutExpired, FileNotFoundError, PermissionError, OSError):
@@ -294,7 +295,7 @@ def _query_resolved_version(interp: str, extra_args: list[str]) -> tuple[str | N
     """
     try:
         cmd = [interp] + extra_args + ["--version"]
-        result = subprocess.run(cmd, capture_output=True, timeout=10, text=True, encoding="utf-8", errors="replace")
+        result = run_readonly_probe(cmd, timeout=10)
         if result.returncode != 0:
             return (None, None)
         output = (result.stdout or "").strip() or (result.stderr or "").strip()
@@ -316,7 +317,7 @@ def _query_resolved_package(interp: str, extra_args: list[str], package_name: st
     """
     try:
         cmd = [interp] + extra_args + ["-m", "pip", "show", package_name]
-        result = subprocess.run(cmd, capture_output=True, timeout=15, text=True, encoding="utf-8", errors="replace")
+        result = run_readonly_probe(cmd, timeout=15)
         if result.returncode != 0:
             return None
         output = (result.stdout or "").strip()
@@ -344,7 +345,7 @@ def _query_resolved_module(interp: str, extra_args: list[str], module_name: str)
     )
     try:
         cmd = [interp] + extra_args + ["-c", script]
-        result = subprocess.run(cmd, capture_output=True, timeout=15, text=True, encoding="utf-8", errors="replace")
+        result = run_readonly_probe(cmd, timeout=15)
         if result.returncode != 0:
             return None
         output = (result.stdout or "").strip()

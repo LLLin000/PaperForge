@@ -7,9 +7,12 @@ against the schema and reconcile to the documented semantic outcomes.
 from __future__ import annotations
 
 import json
+import runpy
 import subprocess
 import sys
 from pathlib import Path
+
+import pytest
 
 from paperforge.architecture_audit import AssessmentStatus, RuleStatus, reconcile
 from paperforge.architecture_audit.fixtures import FIXTURE_NAMES, load_fixture, load_fixture_dict
@@ -43,6 +46,21 @@ class TestFixtureIntegrity:
         assert result.returncode == 0, result.stderr + result.stdout
         summary = json.loads(result.stdout)
         assert {"revision", "coverage", "digests"} <= summary.keys()
+
+
+    def test_live_generator_check_rejects_stale_contract_artifact(self, tmp_path):
+        root = Path(__file__).resolve().parents[1]
+        module = runpy.run_path(
+            str(root / "docs/architecture-audit-2026-08-06/build_audit.py"),
+            run_name="build_audit_test",
+        )
+        stale = dict(module["CONTRACT"])
+        stale["schema_version"] = stale["schema_version"] + 1
+        artifact = tmp_path / "contract.json"
+        artifact.write_text(json.dumps(stale), encoding="utf-8")
+        with pytest.raises(SystemExit, match="does not match CONTRACT"):
+            module["_assert_contract_artifact_matches"](module["CONTRACT"], artifact)
+
 
     def test_golden_fixtures_record_revision_and_source_digests(self):
         from paperforge.architecture_audit.fixtures import load_fixture_dict

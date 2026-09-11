@@ -294,7 +294,7 @@ jobs:
       - name: Install plugin dependencies (TypeScript compiler for the collector)
         run: npm ci
         working-directory: paperforge/plugin
-      - name: Validate architecture report generator against live tree (#231)
+      - name: Validate live architecture generator and contract parity (#231)
         run: python docs/architecture-audit-2026-08-06/build_audit.py --check
       - name: Run deterministic collector
         run: |
