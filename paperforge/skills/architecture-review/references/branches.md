@@ -45,6 +45,14 @@ the trace, not high-risk coverage.
 - **Evidence:** only operation/stage candidate IDs from the packet are
   admissible.
 
+## CLI contract
+
+- `gate` has no affected operations and rejects `--operations`/`--changed-file`.
+- `delta` derives affected operations from `--changed-file` only.
+- `focused` requires `--operations`, rejects `--changed-file`, and refuses unknown operations.
+- `deep-trace` takes named operations or all Contract operations; it rejects `--changed-file`.
+- `full-release` covers every Contract operation and rejects all narrowing.
+
 ## Choosing a mode
 
 Use `delta` by default. Use `focused` when the request names a bounded

@@ -4,13 +4,13 @@
 The Skill is model-invoked; this harness is the process machinery it drives so
 every run follows the same steps and the completion invariants stay checkable:
 
-- `audit` — load and validate a DeterministicAudit, then print digests,
-  declared operation scope, operation-scoped evidence candidates, and required
+- `audit` — load and validate a DeterministicAudit plus matching Contract and
+  Survey, then print digests, operation scope, evidence candidates, and required
   adjudications.
-- `plan` — derive a bounded review packet from the validated audit and evidence
-  index; the model reads only the packet's candidates and exact source reads.
+- `plan` — derive a bounded review packet from that digest-bound context; the
+  model reads only the packet's candidates and exact source reads.
 - `emit` — validate a drafted ArchitectureReview and typed trace manifest
-  against that audit.
+  against the same bound audit context.
 
 The harness never edits source, Contract, Survey, or production artifacts; the
 review file it writes (with `--out`) is the Skill's own output overlay.
@@ -21,18 +21,26 @@ import argparse
 import json
 import sys
 from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from paperforge.architecture_audit import (
+    ArchitectureContract,
     ArchitectureError,
     ArchitectureReview,
+    ArchitectureSurvey,
     DeterministicAudit,
     DigestMismatch,
     RuleStatus,
+    canonical_json,
     compose,
     reconcile,
+    semantic_digest,
+    sha256_digest,
     validate_audit,
+    validate_contract,
+    validate_survey,
 )
 from paperforge.architecture_audit.fixtures import load_fixture
 TRACE_STAGES = (
@@ -104,11 +112,70 @@ def load_audit(
 
 
 def _load_layer(kind: str, ref: str) -> Any:
-    from paperforge.architecture_audit import ArchitectureContract, ArchitectureSurvey
-
     payload = json.loads(Path(ref).read_text(encoding="utf-8"))
     layer_cls = ArchitectureContract if kind == "contract" else ArchitectureSurvey
     return layer_cls.from_dict(payload)
+
+
+@dataclass(frozen=True)
+class BoundReviewContext:
+    """Contract and Survey context proven to match one deterministic audit."""
+
+    contract: ArchitectureContract
+    survey: ArchitectureSurvey
+
+    def assert_bound(self, audit: DeterministicAudit) -> None:
+        try:
+            validate_contract(self.contract)
+            validate_survey(self.survey)
+            contract_digest = sha256_digest(canonical_json(self.contract.to_dict()))
+            survey_digest = semantic_digest(self.survey.semantic_content())
+        except (ArchitectureError, TypeError, ValueError) as exc:
+            raise ArchitectureError(f"review context is invalid: {exc}") from exc
+        mismatches = []
+        if contract_digest != audit.content.bound_contract_digest:
+            mismatches.append("contract_digest")
+        if survey_digest != audit.content.bound_survey_digest:
+            mismatches.append("survey_digest")
+        if mismatches:
+            raise ArchitectureError(
+                "review context is not bound to this audit: " + ", ".join(mismatches)
+            )
+
+    @property
+    def operations(self) -> list[str]:
+        return sorted({
+            operation.operation_id
+            for operation in self.contract.operations
+            if operation.operation_id
+        })
+
+    @property
+    def evidence_index(self) -> dict[str, dict[str, Any]]:
+        return evidence_index_from_survey(self.survey)
+
+
+def load_bound_context(
+    *,
+    fixture: str | None = None,
+    contract: str | None = None,
+    survey: str | None = None,
+    audit: DeterministicAudit | None = None,
+) -> BoundReviewContext:
+    """Load Contract + Survey and prove both are bound to ``audit``."""
+    if fixture is not None:
+        contract_layer, survey_layer = load_fixture(fixture)
+    elif contract is not None and survey is not None:
+        contract_layer = _load_layer("contract", contract)
+        survey_layer = _load_layer("survey", survey)
+    else:
+        raise ValueError("review requires --fixture or --contract+--survey context")
+    validate_contract(contract_layer)
+    validate_survey(survey_layer)
+    context = BoundReviewContext(contract_layer, survey_layer)
+    if audit is not None:
+        context.assert_bound(audit)
+    return context
 
 
 def _evidence_of(fact: Any) -> list[Any]:
@@ -186,25 +253,21 @@ def evidence_index_from_survey(survey: Any) -> dict[str, dict[str, Any]]:
 # ---------------------------------------------------------------- scope
 
 
-def scope(audit: DeterministicAudit) -> list[str]:
-    """Declared Contract operations preserved by the deterministic audit."""
-    operation_scope = audit.run_metadata.get("operation_scope")
-    if operation_scope is None:
-        raise ArchitectureError(
-            "audit missing deterministic operation_scope; rerun the audit before review"
-        )
-    if isinstance(operation_scope, (str, bytes)) or not isinstance(operation_scope, Sequence):
-        raise ArchitectureError("audit operation_scope must be a sequence")
-    return sorted({operation for operation in operation_scope if isinstance(operation, str) and operation})
+def scope(audit: DeterministicAudit, context: BoundReviewContext) -> list[str]:
+    """Return Contract-declared operations from a digest-bound context."""
+    context.assert_bound(audit)
+    return context.operations
 
 
 def evidence_candidates(
     audit: DeterministicAudit,
-    evidence_index: Mapping[str, Mapping[str, Any]],
+    context: BoundReviewContext,
     operations: Sequence[str] | None = None,
 ) -> dict[str, dict[str, list[str]]]:
-    """Return evidence IDs that are relevant to each operation and stage."""
-    declared = list(operations) if operations is not None else scope(audit)
+    """Return evidence IDs from the bound Survey relevant to each operation/stage."""
+    context.assert_bound(audit)
+    evidence_index = context.evidence_index
+    declared = list(operations) if operations is not None else scope(audit, context)
     candidates = {operation: {stage: [] for stage in TRACE_STAGES} for operation in declared}
     finding_evidence: dict[str, set[str]] = {}
     for finding in audit.content.findings:
@@ -232,10 +295,11 @@ def required_findings(audit: DeterministicAudit) -> list[Any]:
 
 def audit_summary(
     audit: DeterministicAudit,
-    evidence_index: Mapping[str, Mapping[str, Any]] | None = None,
+    context: BoundReviewContext,
 ) -> dict[str, Any]:
-    """The fixed inputs a review binds to; also the Skill's scope list."""
-    index = dict(evidence_index or {})
+    """Return the fixed audit inputs plus Contract/Survey-derived review context."""
+    context.assert_bound(audit)
+    evidence_index = context.evidence_index
     return {
         "schema_version": audit.schema_version,
         "reconciler_version": audit.content.reconciler_version,
@@ -258,10 +322,10 @@ def audit_summary(
             }
             for finding in audit.content.findings
         ],
-        "scope": scope(audit),
+        "scope": scope(audit, context),
         "must_adjudicate": [finding.finding_id for finding in required_findings(audit)],
-        "evidence_index": index,
-        "evidence_candidates": evidence_candidates(audit, index) if index else {},
+        "evidence_index": evidence_index,
+        "evidence_candidates": evidence_candidates(audit, context) if evidence_index else {},
         "trace_stages": list(TRACE_STAGES),
         "trace_statuses": sorted(TRACE_STATUSES),
     }
@@ -320,20 +384,19 @@ def _validate_trace_stage(
             problems.append(f"{prefix} needs_evidence requires a question")
     return problems
 
-
 def validate_emission(
     audit: DeterministicAudit,
     review: ArchitectureReview,
     trace: dict[str, Any] | None,
-    evidence_index: Mapping[str, Mapping[str, Any]] | None = None,
+    context: BoundReviewContext | None = None,
     operations: Sequence[str] | None = None,
 ) -> list[str]:
     """Return process problems; empty list means the emission is valid.
 
     Trace stages are typed: ``observed`` cites operation/stage-relevant
     evidence, ``not_applicable`` carries a reason code, and
-    ``needs_evidence`` carries a question. Free-text stage fillers and a global
-    evidence pool are intentionally rejected.
+    ``needs_evidence`` carries a question. Free-text stage fillers and an
+    unbound Contract/Survey context are intentionally rejected.
     """
     problems: list[str] = []
 
@@ -345,6 +408,16 @@ def validate_emission(
         problems.append(str(exc))
     except DigestMismatch as exc:
         problems.append(str(exc))
+
+    context_bound = False
+    if context is None:
+        problems.append("bound review context required: provide matching Contract and Survey")
+    else:
+        try:
+            context.assert_bound(audit)
+            context_bound = True
+        except ArchitectureError as exc:
+            problems.append(str(exc))
 
     if not review.reviewer_type.strip():
         problems.append("review reviewer_type must not be empty")
@@ -362,15 +435,9 @@ def validate_emission(
     if trace is None:
         problems.append("trace manifest required: every emission must end in a scoped trace")
         return problems
-    if evidence_index is None:
-        problems.append(
-            "trace validation requires an evidence index (re-audit with --fixture/--survey)"
-        )
-    try:
-        declared = list(operations) if operations is not None else scope(audit)
-    except ArchitectureError as exc:
-        problems.append(str(exc))
-        declared = []
+    if not context_bound:
+        return problems
+    declared = list(operations) if operations is not None else scope(audit, context)
     declared_set = set(declared)
     trace_keys = set(trace)
     if trace_keys != declared_set:
@@ -380,8 +447,8 @@ def validate_emission(
             problems.append(f"trace missing scoped operations: {', '.join(missing)}")
         if extra:
             problems.append(f"trace covers unknown operations: {', '.join(extra)}")
-    index = evidence_index or {}
-    candidates = evidence_candidates(audit, index, declared)
+    evidence_index = context.evidence_index
+    candidates = evidence_candidates(audit, context, declared)
     for operation, stages in trace.items():
         if operation not in declared_set:
             continue
@@ -392,54 +459,94 @@ def validate_emission(
             if stage not in stages:
                 problems.append(f"trace {operation}: missing stage {stage}")
                 continue
-            problems.extend(_validate_trace_stage(operation, stage, stages[stage], index, candidates))
+            problems.extend(
+                _validate_trace_stage(operation, stage, stages[stage], evidence_index, candidates)
+            )
     return problems
 
 
 # ---------------------------------------------------------------- planning / CLI
 
 
-def _evidence_index_for_args(args: argparse.Namespace, audit: DeterministicAudit) -> dict[str, dict[str, Any]] | None:
-    if getattr(args, "fixture", None):
-        _, survey_layer = load_fixture(args.fixture)
-        return evidence_index_from_survey(survey_layer)
-    if getattr(args, "survey", None):
-        return evidence_index_from_survey(_load_layer("survey", args.survey))
-    stored = audit.run_metadata.get("evidence_index")
-    return dict(stored) if isinstance(stored, Mapping) else None
+def _bound_context_for_args(
+    args: argparse.Namespace,
+    audit: DeterministicAudit,
+) -> BoundReviewContext:
+    return load_bound_context(
+        fixture=getattr(args, "fixture", None),
+        contract=getattr(args, "contract", None),
+        survey=getattr(args, "survey", None),
+        audit=audit,
+    )
 
 
 def build_review_plan(
     audit: DeterministicAudit,
-    evidence_index: Mapping[str, Mapping[str, Any]],
+    context: BoundReviewContext,
     *,
     mode: str = "delta",
     changed_files: Sequence[str] = (),
     operations: Sequence[str] = (),
 ) -> dict[str, Any]:
-    """Build the bounded packet the model must use for an architecture review."""
-    all_operations = scope(audit)
-    candidates = evidence_candidates(audit, evidence_index)
-    changed = {path.replace("\\", "/") for path in changed_files}
-    requested = [operation for operation in operations if operation]
-    if requested:
-        affected = sorted(set(requested).intersection(all_operations))
-    elif mode in {"gate", "focused"}:
+    """Build the bounded packet the model must use for an explicit review mode."""
+    context.assert_bound(audit)
+    all_operations = scope(audit, context)
+    evidence_index = context.evidence_index
+    candidates = evidence_candidates(audit, context)
+    changed = {
+        path.replace("\\", "/")
+        for path in changed_files
+        if isinstance(path, str) and path
+    }
+    requested = [operation.strip() for operation in operations if operation and operation.strip()]
+
+    if mode == "gate":
+        if requested or changed:
+            raise ArchitectureError("gate does not accept operation or changed-file narrowing")
         affected = []
-    else:
+    elif mode == "delta":
+        if requested:
+            raise ArchitectureError("delta derives affected operations from changed files only")
         affected = sorted(
             operation
             for operation in all_operations
-            if any(evidence_index[evidence_id].get("file") in changed
-                   for stage in candidates[operation].values()
-                   for evidence_id in stage)
+            if any(
+                evidence_index[evidence_id].get("file", "").replace("\\", "/") in changed
+                for stage in candidates[operation].values()
+                for evidence_id in stage
+            )
         )
-    finding_ids = {
-        finding.finding_id
+    elif mode == "focused":
+        if changed:
+            raise ArchitectureError("focused accepts named operations, not changed files")
+        if not requested:
+            raise ArchitectureError("focused requires --operations")
+        unknown = sorted(set(requested) - set(all_operations))
+        if unknown:
+            raise ArchitectureError(f"focused has unknown operations: {', '.join(unknown)}")
+        affected = sorted(set(requested))
+    elif mode == "deep-trace":
+        if changed:
+            raise ArchitectureError("deep-trace accepts named operations, not changed files")
+        unknown = sorted(set(requested) - set(all_operations))
+        if unknown:
+            raise ArchitectureError(f"deep-trace has unknown operations: {', '.join(unknown)}")
+        affected = sorted(set(requested)) if requested else all_operations
+    elif mode == "full-release":
+        if requested or changed:
+            raise ArchitectureError("full-release always covers every Contract operation")
+        affected = all_operations
+    else:
+        raise ArchitectureError(f"unknown review mode: {mode}")
+
+    affected_findings = [
+        finding
         for finding in audit.content.findings
         if finding.subject in affected
-        or any(evidence.file in changed for evidence in finding.evidence)
-    }
+        or any(evidence.file.replace("\\", "/") in changed for evidence in finding.evidence)
+    ]
+    affected_finding_ids = sorted({finding.finding_id for finding in affected_findings})
+    affected_rule_ids = sorted({finding.rule_id for finding in affected_findings})
     source_reads: dict[tuple[str, str], dict[str, str]] = {}
     for operation in affected:
         for evidence_ids in candidates[operation].values():
@@ -485,7 +592,8 @@ def build_review_plan(
         "mode": mode,
         "scope": all_operations,
         "affected_operations": affected,
-        "affected_rules": sorted(finding_ids),
+        "affected_rule_ids": affected_rule_ids,
+        "affected_finding_ids": affected_finding_ids,
         "must_adjudicate": [finding.finding_id for finding in required_findings(audit)],
         "evidence_candidates": {
             operation: candidates[operation] for operation in affected
@@ -505,23 +613,21 @@ def build_review_plan(
 
 def _cmd_audit(args: argparse.Namespace) -> int:
     try:
-        audit = load_audit(fixture=args.fixture, contract=args.contract, survey=args.survey,
-                           audit_path=args.audit)
-        evidence_index = _evidence_index_for_args(args, audit)
-        summary = audit_summary(audit, evidence_index)
+        audit = load_audit(
+            fixture=args.fixture,
+            contract=args.contract,
+            survey=args.survey,
+            audit_path=args.audit,
+        )
+        context = _bound_context_for_args(args, audit)
+        summary = audit_summary(audit, context)
     except (ArchitectureError, ValueError, OSError, KeyError) as exc:
         print(f"REFUSED: {exc}", file=sys.stderr)
         return 1
     print(json.dumps(summary, indent=2, ensure_ascii=False))
     if args.out:
-        payload = audit.to_dict()
-        if evidence_index is not None:
-            payload["run_metadata"] = {
-                **payload.get("run_metadata", {}),
-                "evidence_index": evidence_index,
-            }
         Path(args.out).write_text(
-            json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8"
+            json.dumps(audit.to_dict(), indent=2, ensure_ascii=False), encoding="utf-8"
         )
         print(f"audit written to {args.out}", file=sys.stderr)
     return 0
@@ -529,14 +635,16 @@ def _cmd_audit(args: argparse.Namespace) -> int:
 
 def _cmd_plan(args: argparse.Namespace) -> int:
     try:
-        audit = load_audit(fixture=args.fixture, contract=args.contract, survey=args.survey,
-                           audit_path=args.audit)
-        evidence_index = _evidence_index_for_args(args, audit)
-        if evidence_index is None:
-            raise ArchitectureError("plan requires an evidence index; use --fixture or --survey")
+        audit = load_audit(
+            fixture=args.fixture,
+            contract=args.contract,
+            survey=args.survey,
+            audit_path=args.audit,
+        )
+        context = _bound_context_for_args(args, audit)
         plan = build_review_plan(
             audit,
-            evidence_index,
+            context,
             mode=args.mode,
             changed_files=args.changed_file,
             operations=args.operations.split(",") if args.operations else (),
@@ -554,8 +662,13 @@ def _cmd_plan(args: argparse.Namespace) -> int:
 
 def _cmd_emit(args: argparse.Namespace) -> int:
     try:
-        audit = load_audit(fixture=args.fixture, contract=args.contract, survey=args.survey,
-                           audit_path=args.audit)
+        audit = load_audit(
+            fixture=args.fixture,
+            contract=args.contract,
+            survey=args.survey,
+            audit_path=args.audit,
+        )
+        context = _bound_context_for_args(args, audit)
     except (ArchitectureError, ValueError, OSError, KeyError) as exc:
         print(f"REFUSED: {exc}", file=sys.stderr)
         return 1
@@ -568,7 +681,6 @@ def _cmd_emit(args: argparse.Namespace) -> int:
             review_payload["reconciler_version"] = audit.content.reconciler_version
         review = ArchitectureReview.from_dict(review_payload)
         trace = json.loads(Path(args.trace).read_text(encoding="utf-8"))
-        evidence_index = _evidence_index_for_args(args, audit)
     except (ArchitectureError, ValueError, KeyError, TypeError, OSError, json.JSONDecodeError) as exc:
         print(f"REFUSED: {exc}", file=sys.stderr)
         return 1
@@ -576,7 +688,7 @@ def _cmd_emit(args: argparse.Namespace) -> int:
         audit,
         review,
         trace,
-        evidence_index,
+        context,
         operations=args.operations.split(",") if args.operations else None,
     )
     if problems:

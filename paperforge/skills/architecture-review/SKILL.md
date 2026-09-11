@@ -8,7 +8,7 @@ description: >
   epistemic labeling, digest-bound review). Never for collecting facts,
   editing code, or changing the Contract.
 source: paperforge
-skill_version: 2026-08-05.1
+skill_version: 2026-09-11.1
 skill_api_version: 2
 ---
 # PaperForge Architecture Review
@@ -48,6 +48,7 @@ Then build the deterministic packet. Daily development review defaults to
 ```bash
 python "$SKILL_DIR/scripts/review_harness.py" plan \
   --audit /tmp/golden_126_audit.json \
+  --fixture golden_126_ocr_rebuild \
   --mode delta \
   --changed-file paperforge/worker/status.py \
   --out /tmp/review-packet.json
@@ -56,8 +57,9 @@ python "$SKILL_DIR/scripts/review_harness.py" plan \
 Use `gate` for deterministic compliance only, `delta` for changed-code review,
 `focused` for named operations, `deep-trace` for unresolved/high-risk paths,
 and `full-release` for certification. The packet is the review scope. Its
-`scope` comes from the Contract operation declarations preserved by the audit,
-not from the presence of findings; a missing operation scope is a refusal.
+`scope` is derived from a Contract whose digest matches the audit, while its
+evidence candidates are derived from a Survey whose digest matches the audit;
+missing or mismatched context is a refusal.
 
 **Completion:** packet bindings, affected operations, required adjudications,
 operation/stage evidence candidates, exact source reads, and stop conditions
@@ -107,14 +109,16 @@ requests, and rationale. Then validate:
 ```bash
 python "$SKILL_DIR/scripts/review_harness.py" emit \
   --audit /tmp/golden_126_audit.json \
+  --fixture golden_126_ocr_rebuild \
   --review <draft.json> \
   --trace <typed-trace.json> \
   --out <review.json>
 ```
 
 The harness rejects stale digests, a mismatched reconciler version, observed
-static claims, fabricated finding IDs, missing adjudications, missing evidence
-indexes, cross-operation/stage evidence, and incomplete typed traces.
+static claims, fabricated finding IDs, missing adjudications, missing bound
+Contract/Survey context, cross-operation/stage evidence, and incomplete typed
+traces.
 `REFUSED`/`PROBLEMS` means rework — never bypass.
 
 **Completion:** emit prints `OK` and writes the review file.
@@ -156,6 +160,6 @@ is inferred from the deterministic corpus.
 
 - `references/adjudication-taxonomy.md` — the five adjudication kinds,
   epistemic rules, severity mapping
-- `references/branches.md` — full-survey / focused-signal / changed-interface
+- `references/branches.md` — Gate, Delta, Focused, Deep-trace, and Full-release
 - `references/fixtures.md` — Slice A fixture inventory and golden semantics
 - `references/benchmark-cases.json` — executable and historical v1/v2 corpus
