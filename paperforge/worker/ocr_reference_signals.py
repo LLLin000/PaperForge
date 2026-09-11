@@ -12,7 +12,7 @@ def _norm(text: str) -> str:
 
 @lru_cache(maxsize=1)
 def _journal_rows() -> list[dict]:
-    raw = resources.files("paperforge.resources").joinpath("nlm_journal_abbreviations.json").read_text(encoding="utf-8")
+    raw = resources.files("paperforge.data").joinpath("nlm_journal_abbreviations.json").read_text(encoding="utf-8")
     return json.loads(raw)
 
 

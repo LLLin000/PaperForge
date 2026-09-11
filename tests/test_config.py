@@ -373,9 +373,14 @@ def test_resolve_paths_inventory(tmp_path: Path):
 
 def test_resolve_paths_zotero_env(tmp_path: Path, monkeypatch):
     _canonical(tmp_path)
-    monkeypatch.setenv("ZOTERO_DATA_DIR", "C:/Zotero")
+    # A Windows literal like "C:/Zotero" is a *relative* path on POSIX, so the
+    # resolver legitimately joins it to the vault and the assertion below would
+    # encode a Windows-only expectation. Use a path this platform agrees is
+    # absolute.
+    env_dir = tmp_path / "Zotero"
+    monkeypatch.setenv("ZOTERO_DATA_DIR", str(env_dir))
     paths = resolve_paths(tmp_path)
-    assert paths["zotero_dir"] == Path("C:/Zotero")
+    assert paths["zotero_dir"] == env_dir
 
 
 def test_unknown_fields_never_cross_wire():

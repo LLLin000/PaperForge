@@ -173,6 +173,11 @@ def test_cli_wire_shape(tmp_path: Path, capsys) -> None:
         capture_output=True, text=True, encoding="utf-8",
     )
     assert r.returncode == 0, r.stderr
+    assert r.stdout.strip(), (
+        # A bare JSONDecodeError('char 0') hides whether the command printed
+        # nothing, printed to the wrong stream, or died quietly.
+        f"read produced no stdout (rc={r.returncode}); stderr={r.stderr!r}"
+    )
     payload = json.loads(r.stdout)
     assert payload["ok"] is True
     assert payload["data"]["status"] == "matched"
