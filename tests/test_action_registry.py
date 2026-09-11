@@ -153,6 +153,15 @@ class TestRegistryInvariants:
             "ocr.rebuild_derived", "foundation.update", "foundation.repair", "library.prune",
         }
 
+    def test_memory_builds_are_explicit_vector_mutations(self) -> None:
+        """#225: the shared builder can invalidate vectors, so neither
+        memory action may be automatic or confirmation-free."""
+        for action_id in ("memory.build", "memory.rebuild"):
+            spec = ACTION_REGISTRY[action_id]
+            assert spec.impact == "destructive"
+            assert spec.confirmation == "required"
+            assert spec.automatic is False
+
     def test_id_contract_enforced(self) -> None:
         from paperforge.actions.types import require_action_id
 
@@ -436,9 +445,10 @@ class TestDescriptorWire:
             ActionIntent("memory.build", AllScope(), "library.changed", "Library changed")
         )
         assert wire["action_id"] == "memory.build"
-        assert wire["automatic"] is True
+        assert wire["automatic"] is False
         assert wire["cost"] == "local"
-        assert wire["confirmation"] == "none"
+        assert wire["impact"] == "destructive"
+        assert wire["confirmation"] == "required"
         assert wire["reason"] == "Library changed"
         assert wire["execution_mode"] == "result"
         assert "command" not in wire

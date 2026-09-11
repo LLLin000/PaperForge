@@ -129,14 +129,12 @@ class TestJsonMode:
 
 
 class TestTerminalMode:
-    def test_text_runs_automatic_local_inline_and_pends_remote(
+    def test_text_pends_destructive_memory_and_remote_followups(
         self, tmp_path, monkeypatch, capsys,
     ) -> None:
-        """The shared runner executes memory.build (automatic local) inline
-        and leaves embed.resume pending with a confirmation notice — no
-        command-specific branch.  The real preflight needs canonical config
-        + a library index, so the test uses a real config and a stubbed
-        index."""
+        """The shared runner leaves memory.build pending because the memory
+        builder can invalidate vector rows owned by the embed layer. Neither
+        it nor embed.resume may run without explicit confirmation."""
         from tests.conftest import canonical_test_config
 
         vault = tmp_path / "vault"
@@ -160,10 +158,10 @@ class TestTerminalMode:
         ))
         assert sync_module.run(_args(vault_path=vault)) == 0
         out = capsys.readouterr().out
-        assert builds == [1]
-        assert "ok: memory.build" in out
+        assert builds == []
+        assert "memory.build" in out
         assert "embed.resume" in out
-        assert "needs confirmation" in out
+        assert out.count("needs confirmation") == 2
 
     def test_text_failed_sync_returns_1_and_no_reconcile(self, monkeypatch, capsys) -> None:
         builds: list[int] = []
