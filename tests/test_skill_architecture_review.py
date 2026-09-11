@@ -35,8 +35,9 @@ import skill_benchmark as sb  # noqa: E402
 
 def _audit(fixture: str):
     contract, survey = load_fixture(fixture)
-    return reconcile(contract, survey), survey
-
+    audit = reconcile(contract, survey)
+    context = rh.load_bound_context(fixture=fixture, audit=audit)
+    return audit, survey, context
 
 def _make_review(audit, adjudications=(), semantic=(), requests=(), reviewer_type="test-reviewer") -> ArchitectureReview:
     return ArchitectureReview.from_dict({
@@ -101,8 +102,8 @@ def _adjudicate_all(audit) -> list[dict]:
 
 class TestValidatedInputFirst:
     def test_audit_loads_fixture_and_prints_bindings(self):
-        audit, survey = _audit("golden_126_ocr_rebuild")
-        summary = rh.audit_summary(audit, _index(survey))
+        audit, survey, context = _audit("golden_126_ocr_rebuild")
+        summary = rh.audit_summary(audit, context)
         assert summary["audit_digest"] == audit.semantic_digest
         assert summary["reconciler_version"] == audit.content.reconciler_version
         # T9 (#170): publication.authority is blocking + UNRESOLVED →
@@ -114,16 +115,18 @@ class TestValidatedInputFirst:
         assert summary["evidence_candidates"]["ocr_rebuild"]["side_effects"]
     def test_clean_audit_scope_uses_contract_operations(self):
         contract, survey = load_fixture("golden_126_ocr_rebuild")
-        audit = reconcile(replace(contract, rules=()), survey)
+        clean_contract = replace(contract, rules=())
+        audit = reconcile(clean_contract, survey)
+        context = rh.BoundReviewContext(clean_contract, survey)
         assert not audit.content.findings
-        assert rh.scope(audit) == ["embed_build_resume", "memory_build", "ocr_rebuild"]
+        assert rh.scope(audit, context) == ["embed_build_resume", "memory_build", "ocr_rebuild"]
 
     def test_refuses_invalid_audit_input(self):
         with pytest.raises((OSError, ValueError)):
             rh.load_audit(audit_path=str(REPO_ROOT / "missing-audit.json"))
 
     def test_refuses_unknown_schema_version(self, tmp_path):
-        audit, _ = _audit("golden_126_ocr_rebuild")
+        audit, _, _ = _audit("golden_126_ocr_rebuild")
         payload = audit.to_dict()
         payload["schema_version"] = 999
         path = tmp_path / "bad_audit.json"
@@ -137,37 +140,37 @@ class TestValidatedInputFirst:
 
 class TestBranches:
     def test_full_survey_golden126_all_edges_adjudicated(self):
-        audit, survey = _audit("golden_126_ocr_rebuild")
+        audit, survey, context = _audit("golden_126_ocr_rebuild")
         review = _make_review(audit, adjudications=_adjudicate_all(audit))
-        trace = _full_trace(rh.scope(audit), _index(survey))
-        assert rh.validate_emission(audit, review, trace, _index(survey)) == []
+        trace = _full_trace(rh.scope(audit, context), _index(survey))
+        assert rh.validate_emission(audit, review, trace, context) == []
 
     def test_full_survey_golden127_and_129(self):
         for fixture in ("golden_127_sync_embed", "golden_129_display_restore"):
-            audit, survey = _audit(fixture)
+            audit, survey, context = _audit(fixture)
             review = _make_review(audit, adjudications=_adjudicate_all(audit))
-            trace = _full_trace(rh.scope(audit), _index(survey))
-            assert rh.validate_emission(audit, review, trace, _index(survey)) == []
+            trace = _full_trace(rh.scope(audit, context), _index(survey))
+            assert rh.validate_emission(audit, review, trace, context) == []
 
     def test_focused_signal_branch_synthetic_unmatched_signal(self):
-        audit, survey = _audit("synthetic_unmatched_signal")
-        assert rh.scope(audit) == ["ocr_rebuild", "probe_status", "sync"]
+        audit, survey, context = _audit("synthetic_unmatched_signal")
+        assert rh.scope(audit, context) == ["ocr_rebuild", "probe_status", "sync"]
         review = _make_review(audit, adjudications=_adjudicate_all(audit))
-        trace = _full_trace(rh.scope(audit), _index(survey))
-        assert rh.validate_emission(audit, review, trace, _index(survey)) == []
+        trace = _full_trace(rh.scope(audit, context), _index(survey))
+        assert rh.validate_emission(audit, review, trace, context) == []
 
     def test_changed_interface_branch_publication_bypass(self):
-        audit, survey = _audit("synthetic_publication_bypass")
+        audit, survey, context = _audit("synthetic_publication_bypass")
         review = _make_review(audit, adjudications=_adjudicate_all(audit))
-        trace = _full_trace(rh.scope(audit), _index(survey))
-        assert rh.validate_emission(audit, review, trace, _index(survey)) == []
+        trace = _full_trace(rh.scope(audit, context), _index(survey))
+        assert rh.validate_emission(audit, review, trace, context) == []
 
     def test_operations_narrowing_covers_exactly_declared_operations(self):
-        audit, survey = _audit("golden_126_ocr_rebuild")
+        audit, survey, context = _audit("golden_126_ocr_rebuild")
         review = _make_review(audit, adjudications=_adjudicate_all(audit))
         trace = _full_trace(["embed_build_resume"], _index(survey))
         problems = rh.validate_emission(
-            audit, review, trace, _index(survey), operations=["embed_build_resume"]
+            audit, review, trace, context, operations=["embed_build_resume"]
         )
         assert problems == []
 
@@ -177,41 +180,53 @@ class TestBranches:
 
 class TestRefusal:
     def test_refuses_digest_mismatch(self):
-        audit, _ = _audit("golden_126_ocr_rebuild")
-        other, _ = _audit("golden_127_sync_embed")
-        stale = _make_review(other, adjudications=[_adjudication(f.finding_id) for f in rh.required_findings(audit)])
-        problems = rh.validate_emission(audit, stale, None)
+        audit, _, context = _audit("golden_126_ocr_rebuild")
+        other, _, _ = _audit("golden_127_sync_embed")
+        stale = _make_review(
+            other,
+            adjudications=[_adjudication(f.finding_id) for f in rh.required_findings(audit)],
+        )
+        problems = rh.validate_emission(audit, stale, None, context)
         assert any("not bound" in p or "digest" in p for p in problems)
 
     def test_refuses_reconciler_version_mismatch(self):
-        audit, _ = _audit("golden_126_ocr_rebuild")
+        audit, _, context = _audit("golden_126_ocr_rebuild")
         review = _make_review(audit, adjudications=_adjudicate_all(audit))
         review = ArchitectureReview.from_dict({**review.to_dict(), "reconciler_version": "9.9.9"})
-        problems = rh.validate_emission(audit, review, None)
+        problems = rh.validate_emission(audit, review, None, context)
         assert any("reconciler_version" in p for p in problems)
 
+    def test_refuses_bound_context_digest_mismatch(self):
+        audit, _, _ = _audit("golden_126_ocr_rebuild")
+        with pytest.raises(rh.ArchitectureError, match="not bound"):
+            rh.load_bound_context(fixture="golden_127_sync_embed", audit=audit)
+
     def test_refuses_observed_static_claims(self):
-        audit, _ = _audit("synthetic_publication_bypass")
+        audit, _, context = _audit("synthetic_publication_bypass")
         review = _make_review(
-            audit, adjudications=[_adjudication(f.finding_id, status="observed_static") for f in rh.required_findings(audit)]
+            audit,
+            adjudications=[
+                _adjudication(f.finding_id, status="observed_static")
+                for f in rh.required_findings(audit)
+            ],
         )
-        problems = rh.validate_emission(audit, review, None)
+        problems = rh.validate_emission(audit, review, None, context)
         assert any("epistemic" in p for p in problems)
 
     def test_refuses_fabricated_finding_id(self):
-        audit, _ = _audit("synthetic_publication_bypass")
+        audit, _, context = _audit("synthetic_publication_bypass")
         review = _make_review(audit, adjudications=[_adjudication("finding:deadbeef")])
-        problems = rh.validate_emission(audit, review, None)
+        problems = rh.validate_emission(audit, review, None, context)
         assert any("unknown finding_id" in p for p in problems)
 
     def test_refuses_missing_adjudication(self):
-        audit, _ = _audit("synthetic_publication_bypass")
-        review = _make_review(audit)  # no adjudications
-        problems = rh.validate_emission(audit, review, None)
+        audit, _, context = _audit("synthetic_publication_bypass")
+        review = _make_review(audit)
+        problems = rh.validate_emission(audit, review, None, context)
         assert any("no adjudication" in p for p in problems)
 
     def test_refuses_semantic_finding_collision(self):
-        audit, _ = _audit("synthetic_publication_bypass")
+        audit, _, context = _audit("synthetic_publication_bypass")
         finding = rh.required_findings(audit)[0]
         review = _make_review(
             audit,
@@ -222,39 +237,54 @@ class TestRefusal:
                 "epistemic_status": "inferred",
             }],
         )
-        problems = rh.validate_emission(audit, review, None)
+        problems = rh.validate_emission(audit, review, None, context)
         assert any("collides" in p for p in problems)
 
     def test_refuses_empty_reviewer_type(self):
-        audit, _ = _audit("golden_126_ocr_rebuild")
+        audit, _, context = _audit("golden_126_ocr_rebuild")
         review = _make_review(audit, adjudications=_adjudicate_all(audit), reviewer_type=" ")
-        problems = rh.validate_emission(audit, review, None)
+        problems = rh.validate_emission(audit, review, None, context)
         assert any("reviewer_type" in p for p in problems)
 
     def test_refuses_incomplete_coverage_audit_for_review(self):
         """partial coverage yields incomplete assessment; emit still binds and
         adjudicates the violated coverage finding — no silent all-clear."""
-        audit, survey = _audit("synthetic_partial_coverage")
+        audit, survey, context = _audit("synthetic_partial_coverage")
         assert audit.content.assessment.status.value == "incomplete"
         review = _make_review(audit, adjudications=_adjudicate_all(audit))
-        trace = _full_trace(rh.scope(audit), _index(survey))
-        assert rh.validate_emission(audit, review, trace, _index(survey)) == []
+        trace = _full_trace(rh.scope(audit, context), _index(survey))
+        assert rh.validate_emission(audit, review, trace, context) == []
 
     def test_refuses_emission_without_trace_manifest(self):
         """trace is the completion invariant — an overlay without a scoped
         trace must never be accepted."""
-        audit, survey = _audit("golden_126_ocr_rebuild")
+        audit, _, context = _audit("golden_126_ocr_rebuild")
         review = _make_review(audit, adjudications=_adjudicate_all(audit))
-        problems = rh.validate_emission(audit, review, None, _index(survey))
+        problems = rh.validate_emission(audit, review, None, context)
         assert any("trace manifest required" in p for p in problems)
 
-    def test_refuses_trace_without_evidence_index(self):
-        """an absent evidence index must be refused, not silently skipped."""
-        audit, _ = _audit("golden_126_ocr_rebuild")
+    def test_refuses_emission_without_bound_context(self):
+        """saved audit metadata cannot substitute for Contract + Survey context."""
+        audit, _, context = _audit("golden_126_ocr_rebuild")
         review = _make_review(audit, adjudications=_adjudicate_all(audit))
-        trace = _full_trace(rh.scope(audit))
+        trace = _full_trace(rh.scope(audit, context), context.evidence_index)
         problems = rh.validate_emission(audit, review, trace, None)
-        assert any("evidence index" in p for p in problems)
+        assert any("bound review context" in p for p in problems)
+
+    def test_saved_metadata_cannot_change_review_scope(self, tmp_path):
+        audit, _, context = _audit("golden_126_ocr_rebuild")
+        payload = audit.to_dict()
+        payload["run_metadata"] = {
+            "operation_scope": ["not_an_operation"],
+            "evidence_index": {"evidence:forged": {"operation_ids": ["not_an_operation"]}},
+        }
+        path = tmp_path / "tampered-audit.json"
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        tampered = rh.load_audit(audit_path=str(path))
+        bound = rh.load_bound_context(fixture="golden_126_ocr_rebuild", audit=tampered)
+        plan = rh.build_review_plan(tampered, bound, mode="full-release")
+        assert plan["scope"] == rh.scope(audit, context)
+        assert "evidence:forged" not in json.dumps(plan)
 
 
 # ---------------------------------------------------------------- process: trace completion
@@ -262,38 +292,38 @@ class TestRefusal:
 
 class TestTraceCompletion:
     def test_missing_stage_fails(self):
-        audit, survey = _audit("golden_126_ocr_rebuild")
+        audit, survey, context = _audit("golden_126_ocr_rebuild")
         review = _make_review(audit, adjudications=_adjudicate_all(audit))
-        trace = _full_trace(rh.scope(audit), _index(survey))
+        trace = _full_trace(rh.scope(audit, context), _index(survey))
         del trace["ocr_rebuild"]["failure"]
-        problems = rh.validate_emission(audit, review, trace, _index(survey))
+        problems = rh.validate_emission(audit, review, trace, context)
         assert any("missing stage failure" in p for p in problems)
 
     def test_typed_empty_stage_fails(self):
-        audit, survey = _audit("golden_126_ocr_rebuild")
+        audit, survey, context = _audit("golden_126_ocr_rebuild")
         review = _make_review(audit, adjudications=_adjudicate_all(audit))
-        trace = _full_trace(rh.scope(audit), _index(survey))
+        trace = _full_trace(rh.scope(audit, context), _index(survey))
         trace["ocr_rebuild"]["side_effects"] = {
             "status": "observed",
             "evidence_ids": [],
         }
-        problems = rh.validate_emission(audit, review, trace, _index(survey))
+        problems = rh.validate_emission(audit, review, trace, context)
         assert any("observed requires non-empty evidence_ids" in p for p in problems)
 
     def test_unknown_evidence_fails(self):
-        audit, survey = _audit("golden_126_ocr_rebuild")
+        audit, survey, context = _audit("golden_126_ocr_rebuild")
         index = _index(survey)
         review = _make_review(audit, adjudications=_adjudicate_all(audit))
-        trace = _full_trace(rh.scope(audit), index)
+        trace = _full_trace(rh.scope(audit, context), index)
         trace["ocr_rebuild"]["side_effects"] = {
             "status": "observed",
             "evidence_ids": ["evidence:fabricated"],
         }
-        problems = rh.validate_emission(audit, review, trace, index)
+        problems = rh.validate_emission(audit, review, trace, context)
         assert any("unknown evidence" in p for p in problems)
 
     def test_cross_operation_evidence_fails(self):
-        audit, survey = _audit("golden_126_ocr_rebuild")
+        audit, survey, context = _audit("golden_126_ocr_rebuild")
         index = _index(survey)
         evidence_id = next(
             evidence_id
@@ -302,39 +332,38 @@ class TestTraceCompletion:
             and "side_effects" in metadata["stages"]
         )
         review = _make_review(audit, adjudications=_adjudicate_all(audit))
-        trace = _full_trace(rh.scope(audit), index)
+        trace = _full_trace(rh.scope(audit, context), index)
         trace["memory_build"]["side_effects"] = {
             "status": "observed",
             "evidence_ids": [evidence_id],
         }
-        problems = rh.validate_emission(audit, review, trace, index)
+        problems = rh.validate_emission(audit, review, trace, context)
         assert any("not relevant to this operation/stage" in p for p in problems)
 
     def test_free_text_stage_fails(self):
-        audit, survey = _audit("golden_126_ocr_rebuild")
+        audit, survey, context = _audit("golden_126_ocr_rebuild")
         index = _index(survey)
         review = _make_review(audit, adjudications=_adjudicate_all(audit))
-        trace = _full_trace(rh.scope(audit), index)
+        trace = _full_trace(rh.scope(audit, context), index)
         trace["ocr_rebuild"]["input"] = "no evidence in this stage"
-        problems = rh.validate_emission(audit, review, trace, index)
+        problems = rh.validate_emission(audit, review, trace, context)
         assert any("must be a typed object" in p for p in problems)
 
-
     def test_unknown_operation_fails(self):
-        audit, survey = _audit("golden_126_ocr_rebuild")
+        audit, survey, context = _audit("golden_126_ocr_rebuild")
         review = _make_review(audit, adjudications=_adjudicate_all(audit))
-        trace = _full_trace(rh.scope(audit), _index(survey))
+        trace = _full_trace(rh.scope(audit, context), _index(survey))
         trace["not_an_operation"] = _full_trace(["not_an_operation"])["not_an_operation"]
-        problems = rh.validate_emission(audit, review, trace, _index(survey))
+        problems = rh.validate_emission(audit, review, trace, context)
         assert any("unknown operations" in p for p in problems)
 
 
 class TestReviewPlan:
     def test_delta_plan_is_bounded_to_changed_operation(self):
-        audit, survey = _audit("golden_126_ocr_rebuild")
+        audit, _, context = _audit("golden_126_ocr_rebuild")
         plan = rh.build_review_plan(
             audit,
-            _index(survey),
+            context,
             mode="delta",
             changed_files=["paperforge/worker/ocr_rebuild.py"],
         )
@@ -344,10 +373,63 @@ class TestReviewPlan:
         assert all(operation == "ocr_rebuild" for operation in plan["trace"])
 
     def test_delta_plan_stops_when_no_operation_is_affected(self):
-        audit, survey = _audit("golden_126_ocr_rebuild")
-        plan = rh.build_review_plan(audit, _index(survey), mode="delta")
+        audit, _, context = _audit("golden_126_ocr_rebuild")
+        plan = rh.build_review_plan(audit, context, mode="delta")
         assert plan["affected_operations"] == []
         assert any("do not run a full survey" in item for item in plan["stop_conditions"])
+
+    def test_gate_has_no_model_trace_and_rejects_narrowing(self):
+        audit, _, context = _audit("golden_126_ocr_rebuild")
+        plan = rh.build_review_plan(audit, context, mode="gate")
+        assert plan["affected_operations"] == []
+        with pytest.raises(rh.ArchitectureError, match="gate"):
+            rh.build_review_plan(audit, context, mode="gate", operations=["ocr_rebuild"])
+
+    def test_focused_requires_named_operations(self):
+        audit, _, context = _audit("golden_126_ocr_rebuild")
+        with pytest.raises(rh.ArchitectureError, match="requires"):
+            rh.build_review_plan(audit, context, mode="focused")
+        plan = rh.build_review_plan(
+            audit, context, mode="focused", operations=["memory_build"]
+        )
+        assert plan["affected_operations"] == ["memory_build"]
+        with pytest.raises(rh.ArchitectureError, match="unknown"):
+            rh.build_review_plan(
+                audit, context, mode="focused", operations=["not_an_operation"]
+            )
+
+    def test_deep_trace_defaults_to_all_or_accepts_named_operations(self):
+        audit, _, context = _audit("golden_126_ocr_rebuild")
+        all_plan = rh.build_review_plan(audit, context, mode="deep-trace")
+        assert all_plan["affected_operations"] == all_plan["scope"]
+        focused_plan = rh.build_review_plan(
+            audit, context, mode="deep-trace", operations=["memory_build"]
+        )
+        assert focused_plan["affected_operations"] == ["memory_build"]
+
+    def test_full_release_covers_every_contract_operation(self):
+        audit, _, context = _audit("golden_126_ocr_rebuild")
+        plan = rh.build_review_plan(audit, context, mode="full-release")
+        assert plan["affected_operations"] == plan["scope"]
+        with pytest.raises(rh.ArchitectureError, match="every Contract operation"):
+            rh.build_review_plan(
+                audit, context, mode="full-release", operations=["memory_build"]
+            )
+
+    def test_affected_rule_and_finding_ids_are_separate(self):
+        audit, _, context = _audit("golden_126_ocr_rebuild")
+        plan = rh.build_review_plan(
+            audit,
+            context,
+            mode="delta",
+            changed_files=["paperforge/worker/ocr_rebuild.py"],
+        )
+        assert "affected_rules" not in plan
+        assert all(
+            finding.rule_id in plan["affected_rule_ids"]
+            for finding in audit.content.findings
+            if finding.finding_id in plan["affected_finding_ids"]
+        )
 
 
 class TestSkillBenchmark:
@@ -406,7 +488,7 @@ class TestSkillBenchmark:
 
 class TestReviewRecord:
     def test_identity_and_time_recorded_in_run_metadata(self):
-        audit, _ = _audit("golden_126_ocr_rebuild")
+        audit, _, _ = _audit("golden_126_ocr_rebuild")
         review = _make_review(audit, adjudications=_adjudicate_all(audit))
         assert review.run_metadata["model"] == "test-model"
         assert review.run_metadata["created_at"] == "2026-08-05T00:00:00Z"
@@ -414,7 +496,7 @@ class TestReviewRecord:
     def test_semantic_digest_stable_across_run_metadata(self):
         """created time / session identity are execution metadata: changing them
         must not change the review's semantic payload."""
-        audit, _ = _audit("golden_126_ocr_rebuild")
+        audit, _, _ = _audit("golden_126_ocr_rebuild")
         base = _make_review(audit, adjudications=_adjudicate_all(audit))
         moved = _make_review(audit, adjudications=_adjudicate_all(audit))
         moved = ArchitectureReview.from_dict(
@@ -424,7 +506,7 @@ class TestReviewRecord:
 
     def test_no_observed_fact_mutation(self):
         """Review cannot touch survey facts or deterministic findings."""
-        audit, _ = _audit("golden_126_ocr_rebuild")
+        audit, _, _ = _audit("golden_126_ocr_rebuild")
         findings_before = [f.to_dict() for f in audit.content.findings]
         _make_review(audit, adjudications=_adjudicate_all(audit))
         findings_after = [f.to_dict() for f in audit.content.findings]
