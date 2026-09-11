@@ -1,0 +1,921 @@
+[
+  {
+    "layoutParsingResults": [
+      {
+        "prunedResult": {
+          "page_count": null,
+          "width": 1191,
+          "height": 1684,
+          "model_settings": {
+            "use_doc_preprocessor": false,
+            "use_layout_detection": true,
+            "use_chart_recognition": false,
+            "use_seal_recognition": false,
+            "use_ocr_for_image_block": false,
+            "format_block_content": false,
+            "merge_layout_blocks": true,
+            "markdown_ignore_labels": [
+              "number",
+              "footnote",
+              "header",
+              "header_image",
+              "footer",
+              "footer_image",
+              "aside_text"
+            ],
+            "return_layout_polygon_points": true
+          },
+          "parsing_res_list": [
+            {
+              "block_label": "doc_title",
+              "block_content": "Supplementary Files",
+              "block_bbox": [
+                414,
+                156,
+                775,
+                203
+              ],
+              "block_id": 0,
+              "block_order": 1,
+              "group_id": 0,
+              "block_polygon_points": [
+                [
+                  414.0,
+                  156.0
+                ],
+                [
+                  775.0,
+                  156.0
+                ],
+                [
+                  775.0,
+                  203.0
+                ],
+                [
+                  414.0,
+                  203.0
+                ]
+              ]
+            },
+            {
+              "block_label": "text",
+              "block_content": "Anatomic characteristics of shoulder based on MRI accurately predict incomplete rotator cuff injuries in patients: relevance for predictive, preventive, and personalized healthcare strategies\nHangxing Wu $ ^{a\\dagger} $, Zhijie Zuo $ ^{a\\dagger} $, Yuong Li $ ^{a} $, Haoqiang Song $ ^{a} $, Wanyan Hu $ ^{a} $, Jingle Chen $ ^{a} $, Chao Xie $ ^{a*} $, Lijun Lin $ ^{a*} $.",
+              "block_bbox": [
+                175,
+                239,
+                1011,
+                525
+              ],
+              "block_id": 1,
+              "block_order": 2,
+              "group_id": 1,
+              "block_polygon_points": [
+                [
+                  175.0,
+                  239.0
+                ],
+                [
+                  1011.0,
+                  239.0
+                ],
+                [
+                  1011.0,
+                  525.0
+                ],
+                [
+                  175.0,
+                  525.0
+                ]
+              ]
+            },
+            {
+              "block_label": "text",
+              "block_content": " $ ^{*} $Corresponding author, Email: chaoxie1118@foxmail.com; gost1@smu.edu.cn",
+              "block_bbox": [
+                175,
+                542,
+                971,
+                576
+              ],
+              "block_id": 2,
+              "block_order": 3,
+              "group_id": 2,
+              "block_polygon_points": [
+                [
+                  175.0,
+                  542.0
+                ],
+                [
+                  971.0,
+                  542.0
+                ],
+                [
+                  971.0,
+                  576.0
+                ],
+                [
+                  175.0,
+                  576.0
+                ]
+              ]
+            }
+          ],
+          "layout_det_res": {
+            "boxes": [
+              {
+                "cls_id": 6,
+                "label": "doc_title",
+                "score": 0.8458155393600464,
+                "coordinate": [
+                  414,
+                  156,
+                  775,
+                  203
+                ],
+                "order": 1,
+                "polygon_points": [
+                  [
+                    414.0,
+                    156.0
+                  ],
+                  [
+                    775.0,
+                    156.0
+                  ],
+                  [
+                    775.0,
+                    203.0
+                  ],
+                  [
+                    414.0,
+                    203.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 22,
+                "label": "text",
+                "score": 0.37317413091659546,
+                "coordinate": [
+                  200,
+                  238,
+                  992,
+                  402
+                ],
+                "order": 2,
+                "polygon_points": [
+                  [
+                    200.0,
+                    238.0
+                  ],
+                  [
+                    992.0,
+                    238.0
+                  ],
+                  [
+                    992.0,
+                    402.0
+                  ],
+                  [
+                    200.0,
+                    402.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 22,
+                "label": "text",
+                "score": 0.3236074149608612,
+                "coordinate": [
+                  175,
+                  239,
+                  1011,
+                  525
+                ],
+                "order": 3,
+                "polygon_points": [
+                  [
+                    175.0,
+                    239.0
+                  ],
+                  [
+                    1011.0,
+                    239.0
+                  ],
+                  [
+                    1011.0,
+                    525.0
+                  ],
+                  [
+                    175.0,
+                    525.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 22,
+                "label": "text",
+                "score": 0.4959985911846161,
+                "coordinate": [
+                  174,
+                  424,
+                  1013,
+                  521
+                ],
+                "order": 4,
+                "polygon_points": [
+                  [
+                    174.0,
+                    424.0
+                  ],
+                  [
+                    1013.0,
+                    424.0
+                  ],
+                  [
+                    1013.0,
+                    521.0
+                  ],
+                  [
+                    174.0,
+                    521.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 22,
+                "label": "text",
+                "score": 0.7885728478431702,
+                "coordinate": [
+                  175,
+                  542,
+                  971,
+                  576
+                ],
+                "order": 5,
+                "polygon_points": [
+                  [
+                    175.0,
+                    542.0
+                  ],
+                  [
+                    971.0,
+                    542.0
+                  ],
+                  [
+                    971.0,
+                    576.0
+                  ],
+                  [
+                    175.0,
+                    576.0
+                  ]
+                ]
+              }
+            ]
+          }
+        },
+        "markdown": {
+          "text": "# Supplementary Files\n\nAnatomic characteristics of shoulder based on MRI accurately predict incomplete rotator cuff injuries in patients: relevance for predictive, preventive, and personalized healthcare strategies\n\nHangxing Wu $ ^{a\\dagger} $, Zhijie Zuo $ ^{a\\dagger} $, Yuong Li $ ^{a} $, Haoqiang Song $ ^{a} $, Wanyan Hu $ ^{a} $, Jingle Chen $ ^{a} $, Chao Xie $ ^{a*} $, Lijun Lin $ ^{a*} $.\n\n $ ^{*} $Corresponding author, Email: chaoxie1118@foxmail.com; gost1@smu.edu.cn",
+          "images": {}
+        },
+        "outputImages": {
+          "layout_det_res": "https://pplines-online.bj.bcebos.com/deploy/official/paddleocr/pp-ocr-vl-16-online//2b0999f7-cbf7-4851-a949-4018c70da9c2/layout_det_res_0.jpg?authorization=bce-auth-v1%2FALTAKDN8mY5KlNI7zaRpLmOqrw%2F2026-08-15T17%3A40%3A54Z%2F-1%2F%2F571bca50bb8c0c6041d1c502670da8b9ca2f59842f45fd9c24dc8939498f49aa"
+        },
+        "inputImage": "https://pplines-online.bj.bcebos.com/deploy/official/paddleocr/pp-ocr-vl-16-online//2b0999f7-cbf7-4851-a949-4018c70da9c2/input_img_0.jpg?authorization=bce-auth-v1%2FALTAKDN8mY5KlNI7zaRpLmOqrw%2F2026-08-15T17%3A40%3A54Z%2F-1%2F%2Fcee1dc6f338754d3ef471d96be7aee5e199a8c66e7762d689a529500cfc8e2bd"
+      },
+      {
+        "prunedResult": {
+          "page_count": null,
+          "width": 1191,
+          "height": 1684,
+          "model_settings": {
+            "use_doc_preprocessor": false,
+            "use_layout_detection": true,
+            "use_chart_recognition": false,
+            "use_seal_recognition": false,
+            "use_ocr_for_image_block": false,
+            "format_block_content": false,
+            "merge_layout_blocks": true,
+            "markdown_ignore_labels": [
+              "number",
+              "footnote",
+              "header",
+              "header_image",
+              "footer",
+              "footer_image",
+              "aside_text"
+            ],
+            "return_layout_polygon_points": true
+          },
+          "parsing_res_list": [
+            {
+              "block_label": "figure_title",
+              "block_content": "Table S1. The Collection Methods of Relevent Features on MRI.",
+              "block_bbox": [
+                174,
+                163,
+                810,
+                191
+              ],
+              "block_id": 0,
+              "block_order": null,
+              "group_id": 0,
+              "block_polygon_points": [
+                [
+                  174.0,
+                  163.0
+                ],
+                [
+                  810.0,
+                  163.0
+                ],
+                [
+                  810.0,
+                  191.0
+                ],
+                [
+                  174.0,
+                  191.0
+                ]
+              ]
+            },
+            {
+              "block_label": "table",
+              "block_content": "<table><tr><td>Feature</td><td>Collection methods on MRI</td></tr><tr><td>Tendon diseases classification</td><td>No tears, tendinopathy without tears, partial tears and full-thickness tears.</td></tr><tr><td>Acromial spurs classification</td><td>Type I, flat; type II, curved; type III, hooked; type IV, convex.</td></tr><tr><td>Inferior glenohumeral distance</td><td>The distance of the inferior glenoid margin and the inferior humeral head margin (intersection of the humeral head articular margin and the humeral neck).</td></tr><tr><td>Critical shoulder angle Supraspi natus tendon thickness</td><td>Measured between a line connecting the inferior with the superior border of the glenoid fossa and another connecting the inferior border of the glenoid with the most inferolateral point of the acromion.</td></tr><tr><td>Coracoac romial ligament status</td><td>Whether there were a thickened coracoacromial ligament and acromioclavicular enthesophytes.</td></tr><tr><td>Acromial angle</td><td>The angle between the line drawn along the lower surface of the acromion and the horizontal line was measured. The scapular axis was drawn from most medial aspect of the scapula body to the centre of the glenoid fossa in axial position, and a glenoid line was drawn connecting the anterior and posterior margins of the glenoid fossa. The glenoid version angle was measured as the angle between the glenoid line and the line perpendicular to the scapular axis.</td></tr><tr><td>Glenoid version angle</td><td>Using a sagittal MRI image, and the most lateral slice in which the scapular spine was seen in contact with the scapular body. The tangent sign was considered positive when the supraspinatus muscle did not cross the tangent.</td></tr><tr><td>Supraspi natus tangent sign</td><td>In the same MRI slice used for the tangent sign, by measuring the area under the tangent sign and limited by the scapular spine and the coracoid, the cross-sectional area of the supraspinatus muscle was then measured and presented as an occupation ratio of area of the supraspinatus muscle divided by the overall area under the tangent in the supraspinatus fossa.</td></tr><tr><td>Occupation grade</td><td>The angle between the line drawn along the lower surface of the acromion and the horizontal line was measured. The scapular axis was drawn from most medial aspect of the scapula body to the centre of the glenoid fossa in axial position, and a glenoid line was drawn connecting the anterior and posterior margins of the glenoid fossa. The glenoid version angle was measured as the angle between the glenoid line and the line perpendicular to the scapular axis.</td></tr></table>",
+              "block_bbox": [
+                177,
+                202,
+                1013,
+                1493
+              ],
+              "block_id": 1,
+              "block_order": null,
+              "group_id": 1,
+              "block_polygon_points": [
+                [
+                  177.0,
+                  202.0
+                ],
+                [
+                  1013.0,
+                  202.0
+                ],
+                [
+                  1013.0,
+                  1493.0
+                ],
+                [
+                  177.0,
+                  1493.0
+                ]
+              ]
+            }
+          ],
+          "layout_det_res": {
+            "boxes": [
+              {
+                "cls_id": 7,
+                "label": "figure_title",
+                "score": 0.8333326578140259,
+                "coordinate": [
+                  174,
+                  163,
+                  810,
+                  191
+                ],
+                "order": null,
+                "polygon_points": [
+                  [
+                    174.0,
+                    163.0
+                  ],
+                  [
+                    810.0,
+                    163.0
+                  ],
+                  [
+                    810.0,
+                    191.0
+                  ],
+                  [
+                    174.0,
+                    191.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 21,
+                "label": "table",
+                "score": 0.9793459177017212,
+                "coordinate": [
+                  177,
+                  202,
+                  1013,
+                  1493
+                ],
+                "order": null,
+                "polygon_points": [
+                  [
+                    177.0,
+                    202.0
+                  ],
+                  [
+                    1013.0,
+                    202.0
+                  ],
+                  [
+                    1013.0,
+                    1493.0
+                  ],
+                  [
+                    177.0,
+                    1493.0
+                  ]
+                ]
+              }
+            ]
+          }
+        },
+        "markdown": {
+          "text": "<div style=\"text-align: center;\">Table S1. The Collection Methods of Relevent Features on MRI.</div>\n\n\n\n<table border=1 style='margin: auto; word-wrap: break-word;'><tr><td style='text-align: center; word-wrap: break-word;'>Feature</td><td style='text-align: center; word-wrap: break-word;'>Collection methods on MRI</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>Tendon diseases classification</td><td style='text-align: center; word-wrap: break-word;'>No tears, tendinopathy without tears, partial tears and full-thickness tears.</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>Acromial spurs classification</td><td style='text-align: center; word-wrap: break-word;'>Type I, flat; type II, curved; type III, hooked; type IV, convex.</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>Inferior glenohumeral distance</td><td style='text-align: center; word-wrap: break-word;'>The distance of the inferior glenoid margin and the inferior humeral head margin (intersection of the humeral head articular margin and the humeral neck).</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>Critical shoulder angle Supraspi natus tendon thickness</td><td style='text-align: center; word-wrap: break-word;'>Measured between a line connecting the inferior with the superior border of the glenoid fossa and another connecting the inferior border of the glenoid with the most inferolateral point of the acromion.</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>Coracoac romial ligament status</td><td style='text-align: center; word-wrap: break-word;'>Whether there were a thickened coracoacromial ligament and acromioclavicular enthesophytes.</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>Acromial angle</td><td style='text-align: center; word-wrap: break-word;'>The angle between the line drawn along the lower surface of the acromion and the horizontal line was measured. The scapular axis was drawn from most medial aspect of the scapula body to the centre of the glenoid fossa in axial position, and a glenoid line was drawn connecting the anterior and posterior margins of the glenoid fossa. The glenoid version angle was measured as the angle between the glenoid line and the line perpendicular to the scapular axis.</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>Glenoid version angle</td><td style='text-align: center; word-wrap: break-word;'>Using a sagittal MRI image, and the most lateral slice in which the scapular spine was seen in contact with the scapular body. The tangent sign was considered positive when the supraspinatus muscle did not cross the tangent.</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>Supraspi natus tangent sign</td><td style='text-align: center; word-wrap: break-word;'>In the same MRI slice used for the tangent sign, by measuring the area under the tangent sign and limited by the scapular spine and the coracoid, the cross-sectional area of the supraspinatus muscle was then measured and presented as an occupation ratio of area of the supraspinatus muscle divided by the overall area under the tangent in the supraspinatus fossa.</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>Occupation grade</td><td style='text-align: center; word-wrap: break-word;'>The angle between the line drawn along the lower surface of the acromion and the horizontal line was measured. The scapular axis was drawn from most medial aspect of the scapula body to the centre of the glenoid fossa in axial position, and a glenoid line was drawn connecting the anterior and posterior margins of the glenoid fossa. The glenoid version angle was measured as the angle between the glenoid line and the line perpendicular to the scapular axis.</td></tr></table>",
+          "images": {}
+        },
+        "outputImages": {
+          "layout_det_res": "https://pplines-online.bj.bcebos.com/deploy/official/paddleocr/pp-ocr-vl-16-online//2b0999f7-cbf7-4851-a949-4018c70da9c2/layout_det_res_1.jpg?authorization=bce-auth-v1%2FALTAKDN8mY5KlNI7zaRpLmOqrw%2F2026-08-15T17%3A40%3A55Z%2F-1%2F%2F511574f8c2071ad21060c13e322093fdc4d827c7c8c4addba99bcc319fe57f04"
+        },
+        "inputImage": "https://pplines-online.bj.bcebos.com/deploy/official/paddleocr/pp-ocr-vl-16-online//2b0999f7-cbf7-4851-a949-4018c70da9c2/input_img_1.jpg?authorization=bce-auth-v1%2FALTAKDN8mY5KlNI7zaRpLmOqrw%2F2026-08-15T17%3A40%3A55Z%2F-1%2F%2Fbaafe8210db901c45f6853628f83fedfec5bb0ac4b1d0ba7beabbcff1df038f2"
+      },
+      {
+        "prunedResult": {
+          "page_count": null,
+          "width": 1191,
+          "height": 1684,
+          "model_settings": {
+            "use_doc_preprocessor": false,
+            "use_layout_detection": true,
+            "use_chart_recognition": false,
+            "use_seal_recognition": false,
+            "use_ocr_for_image_block": false,
+            "format_block_content": false,
+            "merge_layout_blocks": true,
+            "markdown_ignore_labels": [
+              "number",
+              "footnote",
+              "header",
+              "header_image",
+              "footer",
+              "footer_image",
+              "aside_text"
+            ],
+            "return_layout_polygon_points": true
+          },
+          "parsing_res_list": [
+            {
+              "block_label": "table",
+              "block_content": "<table><tr><td>Coracoid overlap</td><td>The distance in the transverse plane between the glenoid fossa and the most prominent aspect of the coracoid process.</td></tr><tr><td>Coraco-coracoid base angle</td><td>The angle between the posteroinferior surface of the coracoid process and the anteroinferior surface of the base of the coracoid process on sagittal oblique images.</td></tr><tr><td>Coracogl enoid distance</td><td>The shortest distance measured from the most inferior tip of the coracoid process to the anterior rim of the glenoid on sagittal oblique sections.</td></tr><tr><td>Lateral uncovering of humeral head</td><td>The ratio of the distance from the greater tubercle edge of the humerus and the medial edge of the humeral head to the straight line which was made through the anterior edge of the acromion peak parallel to the humeral shaft in oblique coronal position.</td></tr><tr><td>Anterior uncovering of the acromion</td><td>The distance ratio between the posterior and anterior edges of the humeral head and the straight line which was made through the front edge of the acromion parallel to the humeral shaft in oblique sagittal position.</td></tr></table>",
+              "block_bbox": [
+                181,
+                143,
+                1010,
+                711
+              ],
+              "block_id": 0,
+              "block_order": null,
+              "group_id": 0,
+              "block_polygon_points": [
+                [
+                  181.0,
+                  143.0
+                ],
+                [
+                  1010.0,
+                  143.0
+                ],
+                [
+                  1010.0,
+                  711.0
+                ],
+                [
+                  181.0,
+                  711.0
+                ]
+              ]
+            }
+          ],
+          "layout_det_res": {
+            "boxes": [
+              {
+                "cls_id": 21,
+                "label": "table",
+                "score": 0.9153701066970825,
+                "coordinate": [
+                  181,
+                  143,
+                  1010,
+                  711
+                ],
+                "order": null,
+                "polygon_points": [
+                  [
+                    181.0,
+                    143.0
+                  ],
+                  [
+                    1010.0,
+                    143.0
+                  ],
+                  [
+                    1010.0,
+                    711.0
+                  ],
+                  [
+                    181.0,
+                    711.0
+                  ]
+                ]
+              }
+            ]
+          }
+        },
+        "markdown": {
+          "text": "\n<table border=1 style='margin: auto; word-wrap: break-word;'><tr><td style='text-align: center; word-wrap: break-word;'>Coracoid overlap</td><td style='text-align: center; word-wrap: break-word;'>The distance in the transverse plane between the glenoid fossa and the most prominent aspect of the coracoid process.</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>Coraco-coracoid base angle</td><td style='text-align: center; word-wrap: break-word;'>The angle between the posteroinferior surface of the coracoid process and the anteroinferior surface of the base of the coracoid process on sagittal oblique images.</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>Coracogl enoid distance</td><td style='text-align: center; word-wrap: break-word;'>The shortest distance measured from the most inferior tip of the coracoid process to the anterior rim of the glenoid on sagittal oblique sections.</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>Lateral uncovering of humeral head</td><td style='text-align: center; word-wrap: break-word;'>The ratio of the distance from the greater tubercle edge of the humerus and the medial edge of the humeral head to the straight line which was made through the anterior edge of the acromion peak parallel to the humeral shaft in oblique coronal position.</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>Anterior uncovering of the acromion</td><td style='text-align: center; word-wrap: break-word;'>The distance ratio between the posterior and anterior edges of the humeral head and the straight line which was made through the front edge of the acromion parallel to the humeral shaft in oblique sagittal position.</td></tr></table>",
+          "images": {}
+        },
+        "outputImages": {
+          "layout_det_res": "https://pplines-online.bj.bcebos.com/deploy/official/paddleocr/pp-ocr-vl-16-online//2b0999f7-cbf7-4851-a949-4018c70da9c2/layout_det_res_2.jpg?authorization=bce-auth-v1%2FALTAKDN8mY5KlNI7zaRpLmOqrw%2F2026-08-15T17%3A40%3A55Z%2F-1%2F%2Fb1962992fb9342de6f1a1483520747fde257ef45460a74790df4095052d291c6"
+        },
+        "inputImage": "https://pplines-online.bj.bcebos.com/deploy/official/paddleocr/pp-ocr-vl-16-online//2b0999f7-cbf7-4851-a949-4018c70da9c2/input_img_2.jpg?authorization=bce-auth-v1%2FALTAKDN8mY5KlNI7zaRpLmOqrw%2F2026-08-15T17%3A40%3A55Z%2F-1%2F%2F74e8a18e63d33439d9cebb7b791c6785d4d02de5f84e0ad2e0a3f5621727078c"
+      },
+      {
+        "prunedResult": {
+          "page_count": null,
+          "width": 1191,
+          "height": 1684,
+          "model_settings": {
+            "use_doc_preprocessor": false,
+            "use_layout_detection": true,
+            "use_chart_recognition": false,
+            "use_seal_recognition": false,
+            "use_ocr_for_image_block": false,
+            "format_block_content": false,
+            "merge_layout_blocks": true,
+            "markdown_ignore_labels": [
+              "number",
+              "footnote",
+              "header",
+              "header_image",
+              "footer",
+              "footer_image",
+              "aside_text"
+            ],
+            "return_layout_polygon_points": true
+          },
+          "parsing_res_list": [
+            {
+              "block_label": "figure_title",
+              "block_content": "Table S2. The Explanation of Relevant Variables.",
+              "block_bbox": [
+                174,
+                162,
+                663,
+                192
+              ],
+              "block_id": 0,
+              "block_order": null,
+              "group_id": 0,
+              "block_polygon_points": [
+                [
+                  174.0,
+                  162.0
+                ],
+                [
+                  663.0,
+                  162.0
+                ],
+                [
+                  663.0,
+                  192.0
+                ],
+                [
+                  174.0,
+                  192.0
+                ]
+              ]
+            },
+            {
+              "block_label": "table",
+              "block_content": "<table><tr><td>Characteristic</td><td>Explanation</td></tr><tr><td>Trauma</td><td>Whether there was a history of trauma</td></tr><tr><td>AT</td><td>Acromial thickness</td></tr><tr><td>AHD</td><td>Acromiohumeral distance</td></tr><tr><td>tCHD</td><td>Coracohumeral distance in transverse axial position</td></tr><tr><td>IGHD</td><td>Inferior glenohumeral distance</td></tr><tr><td>AUA</td><td>Anterior uncovering of the acromion</td></tr><tr><td>LHH</td><td>Lateral uncovering of humeral head</td></tr><tr><td>SSP</td><td>The thickness of supraspinatus tendon thickness</td></tr><tr><td>CSA</td><td>Critical shoulder angle</td></tr><tr><td>AA</td><td>Acromial angle</td></tr><tr><td>GVA</td><td>Glenoid version angle</td></tr><tr><td>SSP OG</td><td>Supraspinatus occupation grade</td></tr><tr><td>CO</td><td>Coracoid overlap</td></tr><tr><td>CBA</td><td>Coraco-coracoid base angle</td></tr><tr><td>Cor ligament</td><td>Coracoacromial ligament status,1 = a thickened coracoacromial ligament and acromioclavicular enthesophytes</td></tr><tr><td>AC signal</td><td>Acromioclavicular joint signal, 1 = normal acromioclavicular joint signals</td></tr><tr><td>GSSP Gout</td><td>The Goutallier grades of supraspinatus in the sagittal position</td></tr><tr><td>GSSC Gout</td><td>The Goutallier grades of subscapularis in the sagittal position</td></tr><tr><td>GISP Gout</td><td>The Goutallier grades of infraspinatus in the sagittal position</td></tr><tr><td>SSSP Gout</td><td>The Goutallier grades of supraspinatus in the oblique coronal position</td></tr><tr><td>SSSC Gout</td><td>The Goutallier grades of subscapularis in the oblique coronal position</td></tr><tr><td>SISP Gout</td><td>The Goutallier grades of infraspinatus in the oblique coronal position</td></tr><tr><td>ZSSP Gout</td><td>The Goutallier grades of supraspinatus in the axial position</td></tr><tr><td>ZSSC Gout</td><td>The Goutallier grades of subscapularis in the axial position</td></tr><tr><td>ZISP Gout</td><td>The Goutallier grades of infraspinatus in the axial position</td></tr><tr><td>Acro class</td><td>The classification of acromion</td></tr></table>",
+              "block_bbox": [
+                177,
+                204,
+                1011,
+                1241
+              ],
+              "block_id": 1,
+              "block_order": null,
+              "group_id": 1,
+              "block_polygon_points": [
+                [
+                  177.0,
+                  204.0
+                ],
+                [
+                  1011.0,
+                  204.0
+                ],
+                [
+                  1011.0,
+                  1241.0
+                ],
+                [
+                  177.0,
+                  1241.0
+                ]
+              ]
+            }
+          ],
+          "layout_det_res": {
+            "boxes": [
+              {
+                "cls_id": 7,
+                "label": "figure_title",
+                "score": 0.8531592488288879,
+                "coordinate": [
+                  174,
+                  162,
+                  663,
+                  192
+                ],
+                "order": null,
+                "polygon_points": [
+                  [
+                    174.0,
+                    162.0
+                  ],
+                  [
+                    663.0,
+                    162.0
+                  ],
+                  [
+                    663.0,
+                    192.0
+                  ],
+                  [
+                    174.0,
+                    192.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 21,
+                "label": "table",
+                "score": 0.9772536754608154,
+                "coordinate": [
+                  177,
+                  204,
+                  1011,
+                  1241
+                ],
+                "order": null,
+                "polygon_points": [
+                  [
+                    177.0,
+                    204.0
+                  ],
+                  [
+                    1011.0,
+                    204.0
+                  ],
+                  [
+                    1011.0,
+                    1241.0
+                  ],
+                  [
+                    177.0,
+                    1241.0
+                  ]
+                ]
+              }
+            ]
+          }
+        },
+        "markdown": {
+          "text": "<div style=\"text-align: center;\">Table S2. The Explanation of Relevant Variables.</div>\n\n\n\n<table border=1 style='margin: auto; word-wrap: break-word;'><tr><td style='text-align: center; word-wrap: break-word;'>Characteristic</td><td style='text-align: center; word-wrap: break-word;'>Explanation</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>Trauma</td><td style='text-align: center; word-wrap: break-word;'>Whether there was a history of trauma</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>AT</td><td style='text-align: center; word-wrap: break-word;'>Acromial thickness</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>AHD</td><td style='text-align: center; word-wrap: break-word;'>Acromiohumeral distance</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>tCHD</td><td style='text-align: center; word-wrap: break-word;'>Coracohumeral distance in transverse axial position</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>IGHD</td><td style='text-align: center; word-wrap: break-word;'>Inferior glenohumeral distance</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>AUA</td><td style='text-align: center; word-wrap: break-word;'>Anterior uncovering of the acromion</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>LHH</td><td style='text-align: center; word-wrap: break-word;'>Lateral uncovering of humeral head</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>SSP</td><td style='text-align: center; word-wrap: break-word;'>The thickness of supraspinatus tendon thickness</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>CSA</td><td style='text-align: center; word-wrap: break-word;'>Critical shoulder angle</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>AA</td><td style='text-align: center; word-wrap: break-word;'>Acromial angle</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>GVA</td><td style='text-align: center; word-wrap: break-word;'>Glenoid version angle</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>SSP OG</td><td style='text-align: center; word-wrap: break-word;'>Supraspinatus occupation grade</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>CO</td><td style='text-align: center; word-wrap: break-word;'>Coracoid overlap</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>CBA</td><td style='text-align: center; word-wrap: break-word;'>Coraco-coracoid base angle</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>Cor ligament</td><td style='text-align: center; word-wrap: break-word;'>Coracoacromial ligament status,1 = a thickened coracoacromial ligament and acromioclavicular enthesophytes</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>AC signal</td><td style='text-align: center; word-wrap: break-word;'>Acromioclavicular joint signal, 1 = normal acromioclavicular joint signals</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>GSSP Gout</td><td style='text-align: center; word-wrap: break-word;'>The Goutallier grades of supraspinatus in the sagittal position</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>GSSC Gout</td><td style='text-align: center; word-wrap: break-word;'>The Goutallier grades of subscapularis in the sagittal position</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>GISP Gout</td><td style='text-align: center; word-wrap: break-word;'>The Goutallier grades of infraspinatus in the sagittal position</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>SSSP Gout</td><td style='text-align: center; word-wrap: break-word;'>The Goutallier grades of supraspinatus in the oblique coronal position</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>SSSC Gout</td><td style='text-align: center; word-wrap: break-word;'>The Goutallier grades of subscapularis in the oblique coronal position</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>SISP Gout</td><td style='text-align: center; word-wrap: break-word;'>The Goutallier grades of infraspinatus in the oblique coronal position</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>ZSSP Gout</td><td style='text-align: center; word-wrap: break-word;'>The Goutallier grades of supraspinatus in the axial position</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>ZSSC Gout</td><td style='text-align: center; word-wrap: break-word;'>The Goutallier grades of subscapularis in the axial position</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>ZISP Gout</td><td style='text-align: center; word-wrap: break-word;'>The Goutallier grades of infraspinatus in the axial position</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>Acro class</td><td style='text-align: center; word-wrap: break-word;'>The classification of acromion</td></tr></table>",
+          "images": {}
+        },
+        "outputImages": {
+          "layout_det_res": "https://pplines-online.bj.bcebos.com/deploy/official/paddleocr/pp-ocr-vl-16-online//2b0999f7-cbf7-4851-a949-4018c70da9c2/layout_det_res_3.jpg?authorization=bce-auth-v1%2FALTAKDN8mY5KlNI7zaRpLmOqrw%2F2026-08-15T17%3A40%3A55Z%2F-1%2F%2Fe6002e9ad079f06ab064e480c46b9268322e684a86eb09f655864e84a77c9528"
+        },
+        "inputImage": "https://pplines-online.bj.bcebos.com/deploy/official/paddleocr/pp-ocr-vl-16-online//2b0999f7-cbf7-4851-a949-4018c70da9c2/input_img_3.jpg?authorization=bce-auth-v1%2FALTAKDN8mY5KlNI7zaRpLmOqrw%2F2026-08-15T17%3A40%3A55Z%2F-1%2F%2F86cbc57dad14b3d4bcd6a31252a9f1aa3f178dbff874a1c01f0b18624bfb3702"
+      }
+    ],
+    "dataInfo": {
+      "numPages": 4,
+      "pages": [
+        {
+          "width": 1191,
+          "height": 1684
+        },
+        {
+          "width": 1191,
+          "height": 1684
+        },
+        {
+          "width": 1191,
+          "height": 1684
+        },
+        {
+          "width": 1191,
+          "height": 1684
+        }
+      ],
+      "type": "pdf"
+    },
+    "preprocessedImages": [
+      "https://pplines-online.bj.bcebos.com/deploy/official/paddleocr/pp-ocr-vl-16-online//2b0999f7-cbf7-4851-a949-4018c70da9c2/preprocessed_img_0.jpg?authorization=bce-auth-v1%2FALTAKDN8mY5KlNI7zaRpLmOqrw%2F2026-08-15T17%3A40%3A55Z%2F-1%2F%2F646c027587bd37d360887b9e9ff7c4172d802b2b3eaef01f33ab74873765856f",
+      "https://pplines-online.bj.bcebos.com/deploy/official/paddleocr/pp-ocr-vl-16-online//2b0999f7-cbf7-4851-a949-4018c70da9c2/preprocessed_img_1.jpg?authorization=bce-auth-v1%2FALTAKDN8mY5KlNI7zaRpLmOqrw%2F2026-08-15T17%3A40%3A55Z%2F-1%2F%2F850aa7e9c2116b20963f924902c9a9c89e9a478d2456ccfbd06510dd6b23e208",
+      "https://pplines-online.bj.bcebos.com/deploy/official/paddleocr/pp-ocr-vl-16-online//2b0999f7-cbf7-4851-a949-4018c70da9c2/preprocessed_img_2.jpg?authorization=bce-auth-v1%2FALTAKDN8mY5KlNI7zaRpLmOqrw%2F2026-08-15T17%3A40%3A55Z%2F-1%2F%2F2ce615680b5af0086b0872a98fc08e1b253ebf01c6595b866bdcf18e79d02211",
+      "https://pplines-online.bj.bcebos.com/deploy/official/paddleocr/pp-ocr-vl-16-online//2b0999f7-cbf7-4851-a949-4018c70da9c2/preprocessed_img_3.jpg?authorization=bce-auth-v1%2FALTAKDN8mY5KlNI7zaRpLmOqrw%2F2026-08-15T17%3A40%3A55Z%2F-1%2F%2F0ddd007b85f6ffc5d52f1fb115cb13e230f7b19249767a2bc665beb7143ed525"
+    ]
+  },
+  {
+    "layoutParsingResults": [
+      {
+        "prunedResult": {
+          "page_count": null,
+          "width": 1191,
+          "height": 1684,
+          "model_settings": {
+            "use_doc_preprocessor": false,
+            "use_layout_detection": true,
+            "use_chart_recognition": false,
+            "use_seal_recognition": false,
+            "use_ocr_for_image_block": false,
+            "format_block_content": false,
+            "merge_layout_blocks": true,
+            "markdown_ignore_labels": [
+              "number",
+              "footnote",
+              "header",
+              "header_image",
+              "footer",
+              "footer_image",
+              "aside_text"
+            ],
+            "return_layout_polygon_points": true
+          },
+          "parsing_res_list": [
+            {
+              "block_label": "figure_title",
+              "block_content": "Table S3. The Goutallier Classification of Rotator Cuff Muscles.",
+              "block_bbox": [
+                175,
+                163,
+                809,
+                191
+              ],
+              "block_id": 0,
+              "block_order": null,
+              "group_id": 0,
+              "block_polygon_points": [
+                [
+                  175.0,
+                  163.0
+                ],
+                [
+                  809.0,
+                  163.0
+                ],
+                [
+                  809.0,
+                  191.0
+                ],
+                [
+                  175.0,
+                  191.0
+                ]
+              ]
+            },
+            {
+              "block_label": "table",
+              "block_content": "<table><tr><td>Goutallier grade</td><td>Evaluation method based on MRI</td></tr><tr><td>0</td><td>Normal muscle, no fatty streak</td></tr><tr><td>1</td><td>Some fatty streaks</td></tr><tr><td>2</td><td>More fat than grade 1 and less fat than muscle</td></tr><tr><td>3</td><td>As much fat as muscle</td></tr><tr><td>4</td><td>More fat than muscle</td></tr></table>",
+              "block_bbox": [
+                175,
+                206,
+                1012,
+                399
+              ],
+              "block_id": 1,
+              "block_order": null,
+              "group_id": 1,
+              "block_polygon_points": [
+                [
+                  175.0,
+                  206.0
+                ],
+                [
+                  1012.0,
+                  206.0
+                ],
+                [
+                  1012.0,
+                  399.0
+                ],
+                [
+                  175.0,
+                  399.0
+                ]
+              ]
+            }
+          ],
+          "layout_det_res": {
+            "boxes": [
+              {
+                "cls_id": 7,
+                "label": "figure_title",
+                "score": 0.8311768770217896,
+                "coordinate": [
+                  175,
+                  163,
+                  809,
+                  191
+                ],
+                "order": null,
+                "polygon_points": [
+                  [
+                    175.0,
+                    163.0
+                  ],
+                  [
+                    809.0,
+                    163.0
+                  ],
+                  [
+                    809.0,
+                    191.0
+                  ],
+                  [
+                    175.0,
+                    191.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 21,
+                "label": "table",
+                "score": 0.9570847749710083,
+                "coordinate": [
+                  175,
+                  206,
+                  1012,
+                  399
+                ],
+                "order": null,
+                "polygon_points": [
+                  [
+                    175.0,
+                    206.0
+                  ],
+                  [
+                    1012.0,
+                    206.0
+                  ],
+                  [
+                    1012.0,
+                    399.0
+                  ],
+                  [
+                    175.0,
+                    399.0
+                  ]
+                ]
+              }
+            ]
+          }
+        },
+        "markdown": {
+          "text": "<div style=\"text-align: center;\">Table S3. The Goutallier Classification of Rotator Cuff Muscles.</div>\n\n\n\n<table border=1 style='margin: auto; word-wrap: break-word;'><tr><td style='text-align: center; word-wrap: break-word;'>Goutallier grade</td><td style='text-align: center; word-wrap: break-word;'>Evaluation method based on MRI</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>0</td><td style='text-align: center; word-wrap: break-word;'>Normal muscle, no fatty streak</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>1</td><td style='text-align: center; word-wrap: break-word;'>Some fatty streaks</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>2</td><td style='text-align: center; word-wrap: break-word;'>More fat than grade 1 and less fat than muscle</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>3</td><td style='text-align: center; word-wrap: break-word;'>As much fat as muscle</td></tr><tr><td style='text-align: center; word-wrap: break-word;'>4</td><td style='text-align: center; word-wrap: break-word;'>More fat than muscle</td></tr></table>",
+          "images": {}
+        },
+        "outputImages": {
+          "layout_det_res": "https://pplines-online.bj.bcebos.com/deploy/official/paddleocr/pp-ocr-vl-16-online//bb0ffee8-c1bc-4d78-9521-d526cfa5268e/layout_det_res_0.jpg?authorization=bce-auth-v1%2FALTAKDN8mY5KlNI7zaRpLmOqrw%2F2026-08-15T17%3A40%3A52Z%2F-1%2F%2F7d9a9f45a2092dd7daa048291c545eeeb52dc1e4853660e521cf00e6a3b3ed4f"
+        },
+        "inputImage": "https://pplines-online.bj.bcebos.com/deploy/official/paddleocr/pp-ocr-vl-16-online//bb0ffee8-c1bc-4d78-9521-d526cfa5268e/input_img_0.jpg?authorization=bce-auth-v1%2FALTAKDN8mY5KlNI7zaRpLmOqrw%2F2026-08-15T17%3A40%3A52Z%2F-1%2F%2F0b401eabc59c2bc9e50921429fea5e1b7e3d39fbf72eac8a0c7f3f3912f5af3a"
+      }
+    ],
+    "dataInfo": {
+      "numPages": 1,
+      "pages": [
+        {
+          "width": 1191,
+          "height": 1684
+        }
+      ],
+      "type": "pdf"
+    },
+    "preprocessedImages": [
+      "https://pplines-online.bj.bcebos.com/deploy/official/paddleocr/pp-ocr-vl-16-online//bb0ffee8-c1bc-4d78-9521-d526cfa5268e/preprocessed_img_0.jpg?authorization=bce-auth-v1%2FALTAKDN8mY5KlNI7zaRpLmOqrw%2F2026-08-15T17%3A40%3A52Z%2F-1%2F%2F2a4dd8fcc7fde885c795ea22fae6204a199d10ac01d11fc697353c1236edbf9d"
+    ]
+  }
+]
