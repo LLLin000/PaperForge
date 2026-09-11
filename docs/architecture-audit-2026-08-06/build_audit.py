@@ -1,22 +1,14 @@
 #!/usr/bin/env python3
-"""Architecture audit runner v2 (2026-08-06, post-review).
+"""Generate the architecture contract and current collector-backed report.
 
-Fixes over v1:
-- real revision SHA + dirty state (no more `HEAD`)
-- honest coverage: manual_contract_trace=complete; python_ast/typescript_compiler
-  = unavailable (collectors land in #133) -> assessment incomplete, gate false
-- full publication-unit model (library/ocr_raw/ocr_derived/ocr_display/
-  retrieval/vectors)
-- test-backed evidence marked via extractor (e.g. "test:test_ocr_hash_contract")
-- a real ArchitectureReview overlay (maintainer annotations live there, never
-  in the deterministic view)
+`CONTRACT` is the reviewed policy source. The deterministic Survey is always
+collected from the live repository by the #133 orchestrator; this script does
+not carry a second hand-written fact inventory.
 """
 from __future__ import annotations
 
-import hashlib
+import argparse
 import json
-import re
-import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -29,78 +21,9 @@ from paperforge.architecture_audit import (  # noqa: E402
     SCHEMA_VERSION,
     ArchitectureContract,
     ArchitectureReview,
-    ArchitectureSurvey,
     compose,
-    reconcile,
     validate_review,
 )
-
-
-def sha(file: str) -> str:
-    return "sha256:" + hashlib.sha256((REPO / file).read_bytes()).hexdigest()
-
-
-def git_rev() -> tuple[str, bool]:
-    rev = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, cwd=REPO).stdout.strip()
-    dirty = bool(subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True, cwd=REPO).stdout.strip())
-    return rev, dirty
-
-
-def find_symbol(file: str, symbol: str, span: int = 8) -> tuple[int, int]:
-    lines = (REPO / file).read_text(encoding="utf-8").splitlines()
-    for idx, line in enumerate(lines):
-        if re.search(rf"\b{re.escape(symbol)}\b", line):
-            return max(1, idx + 1), min(len(lines), idx + span)
-    raise SystemExit(f"symbol {symbol} not found in {file}")
-
-
-def evidence(file: str, symbol: str, span: int = 8, extractor: str = "manual_audit") -> dict:
-    start, end = find_symbol(file, symbol, span)
-    return {
-        "file": file,
-        "file_digest": sha(file),
-        "symbol": symbol,
-        "line_start": start,
-        "line_end": end,
-        "extractor": extractor,
-        "epistemic_status": "observed_static",
-        "confidence": "exact",
-    }
-
-
-def evidence_callsite(
-    file: str,
-    exact_text: str,
-    symbol: str,
-    enclosing: str | None = None,
-    span: int = 1,
-    extractor: str = "test:test_ocr_hash_contract",
-) -> dict:
-    """Locate a writer callsite by its exact source text (never hardcoded
-    line numbers). Unique match required: missing text fails the build,
-    ambiguous matches require an enclosing symbol and still fail otherwise."""
-    lines = (REPO / file).read_text(encoding="utf-8").splitlines()
-    matches = [idx for idx, line in enumerate(lines) if exact_text in line]
-    if enclosing is not None:
-        enc_start, enc_end = find_symbol(file, enclosing, span=max(len(lines), 1))
-        matches = [idx for idx in matches if enc_start - 1 <= idx < enc_end]
-    if not matches:
-        raise SystemExit(f"callsite {exact_text!r} not found in {file}")
-    if len(matches) > 1:
-        detail = ", ".join(str(idx + 1) for idx in matches)
-        raise SystemExit(f"callsite {exact_text!r} not unique in {file}: lines {detail}")
-    start = matches[0] + 1
-    return {
-        "file": file,
-        "file_digest": sha(file),
-        "symbol": symbol,
-        "line_start": start,
-        "line_end": start + span - 1,
-        "extractor": extractor,
-        "epistemic_status": "observed_static",
-        "confidence": "exact",
-    }
-
 
 # ---------------------------------------------------------------- contract
 
@@ -262,103 +185,6 @@ CONTRACT = {
     "exceptions": [],
 }
 
-# ---------------------------------------------------------------- survey facts
-
-SYNC_ACTIONS = find_symbol("paperforge/commands/sync.py", "_attach_next_actions")
-SYNC_TERMINAL = find_symbol("paperforge/commands/sync.py", "_run_terminal_followups")
-TOKEN = find_symbol("paperforge/commands/ocr.py", "OCR_REBUILD_RESULT")
-PENDING = find_symbol("paperforge/worker/ocr_hash.py", "create_result_hash_pending")
-PUBLISH = find_symbol("paperforge/worker/ocr_hash.py", "publish_ocr_result_hash")
-RESTORE = find_symbol("paperforge/plugin/src/services/version-history.ts", "restoreVersion")
-PROVENANCE = find_symbol("paperforge/plugin/src/services/version-history.ts", "persistRestoreProvenance")
-REDO = find_symbol("paperforge/worker/ocr.py", "recover_redo_orphans")
-
-SURVEY = {
-    "schema_version": SCHEMA_VERSION,
-    "scope": "paperforge",
-    "coverage": [
-        {"extractor": "manual_contract_trace", "status": "complete",
-         "diagnostics": ()},
-        {"extractor": "python_ast", "status": "unavailable",
-         "diagnostics": ("#133 collector not implemented; manual trace only",)},
-        {"extractor": "typescript_compiler", "status": "unavailable",
-         "diagnostics": ("#133 collector not implemented; manual trace only",)},
-    ],
-    "facts": [
-        {
-            "kind": "effect", "operation_id": "sync", "effect_kind": "materialization_build",
-            "evidence": evidence("paperforge/commands/sync.py", "_run_terminal_followups", extractor="test:test_sync_next_actions"),
-        },
-        {
-            "kind": "effect", "operation_id": "ocr_rebuild", "effect_kind": "materialization_build",
-            "evidence": evidence("paperforge/commands/ocr.py", "OCR_REBUILD_RESULT", extractor="test:test_ocr_progress_contracts"),
-        },
-        {
-            "kind": "signal", "signal_id": "OCR_REBUILD_PROGRESS",
-            "consumer_kind": "code", "has_code_consumer": True,
-            "producer": "ocr.rebuild", "consumer": "paperforge-plugin",
-            "evidence": evidence("paperforge/commands/ocr.py", "OCR_REBUILD_RESULT", extractor="test:test_ocr_progress_contracts"),
-            "consumer_evidence": [evidence("paperforge/plugin/src/services/progress-parser.ts", "OCR_REBUILD", extractor="test:progress-parser")],
-        },
-        {
-            "kind": "canonical_write", "unit_id": "ocr_derived.generation",
-            "actor_kind": "worker", "writer_id": "ocr.rebuild", "via_publication_protocol": True,
-            "evidence": evidence_callsite("paperforge/worker/ocr_rebuild.py",
-                         "create_result_hash_pending(paper_root)",
-                         "create_result_hash_pending(paper_root)"),
-        },
-        {
-            "kind": "canonical_write", "unit_id": "ocr_derived.generation",
-            "actor_kind": "worker", "writer_id": "ocr.rebuild", "via_publication_protocol": True,
-            "evidence": evidence_callsite("paperforge/worker/ocr_rebuild.py",
-                         "publish_ocr_result_hash(paper_root)",
-                         "publish_ocr_result_hash(paper_root)",
-                         span=2),
-        },
-        {
-            "kind": "canonical_write", "unit_id": "ocr_derived.generation",
-            "actor_kind": "worker", "writer_id": "ocr.postprocess", "via_publication_protocol": True,
-            "evidence": evidence_callsite("paperforge/worker/ocr.py",
-                         "create_result_hash_pending(ocr_root)",
-                         "create_result_hash_pending(ocr_root)"),
-        },
-        {
-            "kind": "canonical_write", "unit_id": "ocr_derived.generation",
-            "actor_kind": "worker", "writer_id": "ocr.postprocess", "via_publication_protocol": True,
-            "evidence": evidence_callsite("paperforge/worker/ocr.py",
-                         "publish_ocr_result_hash(ocr_root)",
-                         "publish_ocr_result_hash(ocr_root)",
-                         span=2),
-        },
-        {
-            "kind": "canonical_write", "unit_id": "ocr_display.fulltext",
-            "actor_kind": "worker", "writer_id": "version_history.restore", "via_publication_protocol": True,
-            "evidence": evidence("paperforge/plugin/src/services/version-history.ts", "restoreVersion", extractor="test:version-restore-semantics"),
-        },
-        {
-            "kind": "canonical_write", "unit_id": "ocr_display.fulltext",
-            "actor_kind": "worker", "writer_id": "version_history.restore", "via_publication_protocol": True,
-            "evidence": evidence("paperforge/plugin/src/services/version-history.ts", "persistRestoreProvenance", extractor="test:version-restore-semantics"),
-        },
-        {
-            "kind": "effect", "operation_id": "ocr_redo", "effect_kind": "materialization_build",
-            "evidence": evidence("paperforge/worker/ocr.py", "recover_redo_orphans", extractor="test:test_redo_orphan_recovery"),
-        },
-    ],
-    "source_digest": "",
-    "parse_errors": [],
-    "excluded_roots": [],
-    "repository_state": {
-        "revision": "pending",
-        "dirty": True,
-        "dirty_diff_digest": "pending",
-    },
-    "run_metadata": {
-        "tool_version": "1.0.0",
-        "extractor_versions": {"manual_contract_trace": "1", "python_ast": "unavailable", "typescript_compiler": "unavailable"},
-        "generated_at": datetime.now(timezone.utc).isoformat(),
-    },
-}
 
 # ---------------------------------------------------------------- review overlay
 
@@ -429,8 +255,8 @@ def adjudication_rationale(rule_id: str) -> str:
     return "coverage incomplete: cannot enumerate all callsites; evidence required before judgement"
 
 
-def main() -> int:
-    # Survey is now produced by the #133 deterministic collectors (Python AST
+def main(*, write_outputs: bool = True) -> int:
+    # Survey is produced by the #133 deterministic collectors (Python AST
     # + TypeScript compiler), not hand-written facts. The maintainer overlay
     # (REVIEW) stays the only hand-authored layer — bound to the real digests.
     from paperforge.architecture_audit.collectors.orchestrator import collect
@@ -445,9 +271,10 @@ def main() -> int:
     )
     survey = outcome.survey
     audit = outcome.audit
+    if survey is None or audit is None:
+        raise SystemExit("collector did not produce a Survey and Audit")
     rev = survey.repository_state.revision
     dirty = survey.repository_state.dirty
-    assert survey is not None and audit is not None
 
     # review overlay bound to the real digests
     review_payload = dict(REVIEW)
@@ -535,7 +362,7 @@ def main() -> int:
             "steps": [
                 step("sync.1", "CLI sync (direct invocation)", []),
                 step("sync.2", "svc.run(): zotero sync + index", []),
-                step("sync.3", "terminal runner executes automatic-local memory.build", ["sync._run_terminal_followups"]),
+                step("sync.3", "sync derives and runs the generic follow-up chain", ["sync._reconcile_and_attach"]),
                 step("sync.4", "plugin confirmation for embed.resume (remote)", []),
             ],
         },
@@ -575,15 +402,33 @@ def main() -> int:
             tr["status"] = "partial"
         else:
             tr["status"] = "ok"
-    (HERE / "traces.json").write_text(json.dumps(traces, indent=2, ensure_ascii=False), encoding="utf-8")
 
-    HERE.mkdir(parents=True, exist_ok=True)
-    for name, payload in [("contract", CONTRACT), ("survey", survey.to_dict()), ("audit", audit.to_dict()),
-                          ("review", review.to_dict()), ("view", view.to_dict()), ("summary", summary)]:
-        (HERE / f"{name}.json").write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+    if write_outputs:
+        (HERE / "traces.json").write_text(
+            json.dumps(traces, indent=2, ensure_ascii=False), encoding="utf-8"
+        )
+
+        HERE.mkdir(parents=True, exist_ok=True)
+        for name, payload in [
+            ("contract", CONTRACT),
+            ("survey", survey.to_dict()),
+            ("audit", audit.to_dict()),
+            ("review", review.to_dict()),
+            ("view", view.to_dict()),
+            ("summary", summary),
+        ]:
+            (HERE / f"{name}.json").write_text(
+                json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8"
+            )
     print(json.dumps(summary, indent=2, ensure_ascii=False))
     return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="collect and validate without rewriting generated artifacts",
+    )
+    raise SystemExit(main(write_outputs=not parser.parse_args().check))

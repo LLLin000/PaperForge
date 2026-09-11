@@ -70,10 +70,10 @@
         "via_publication_protocol": false,
         "evidence": {
           "file": "paperforge/commands/versions.py",
-          "file_digest": "sha256:8e65dda567cd446111bdb7ec9da115df575768c12af7ba439046b4cdfc067b78",
+          "file_digest": "sha256:1f5d2d1345ab2a3754d1f668e45bba737f781b4f6477895d69e4ef9e16908bdb",
           "symbol": "_run_restore",
-          "line_start": 358,
-          "line_end": 392,
+          "line_start": 355,
+          "line_end": 416,
           "extractor": "typescript",
           "epistemic_status": "observed_static",
           "confidence": "exact"
@@ -110,11 +110,11 @@
         ]
       }
     ],
-    "source_digest": "sha256:4cae95b22384a17a501d60c0a4765faf59ae8a9362a3926c27bc9ec679899aca",
+    "source_digest": "sha256:57d7d4708d8ad1a1f17b73d932de249627643bdf5dd00ea509f42cc67a93a8e6",
     "parse_errors": [],
     "excluded_roots": [],
     "run_metadata": {
-      "repository_revision": "1a1bb895",
+      "repository_revision": "75c3c41d",
       "repository_dirty": false,
       "tool_version": "1.0.0",
       "extractor_versions": {

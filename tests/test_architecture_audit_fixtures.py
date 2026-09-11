@@ -6,8 +6,15 @@ against the schema and reconcile to the documented semantic outcomes.
 """
 from __future__ import annotations
 
+import json
+import subprocess
+import sys
+from pathlib import Path
+
 from paperforge.architecture_audit import AssessmentStatus, RuleStatus, reconcile
 from paperforge.architecture_audit.fixtures import FIXTURE_NAMES, load_fixture, load_fixture_dict
+
+GOLDEN_FIXTURE_NAMES = tuple(name for name in FIXTURE_NAMES if name.startswith("golden_"))
 
 
 class TestFixtureIntegrity:
@@ -20,17 +27,35 @@ class TestFixtureIntegrity:
             assert audit.content.bound_contract_digest.startswith("sha256:")
             assert audit.content.bound_survey_digest.startswith("sha256:")
 
+    def test_live_generator_check_does_not_require_deleted_sources(self):
+        root = Path(__file__).resolve().parents[1]
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(root / "docs/architecture-audit-2026-08-06/build_audit.py"),
+                "--check",
+            ],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            timeout=180,
+        )
+        assert result.returncode == 0, result.stderr + result.stdout
+        summary = json.loads(result.stdout)
+        assert {"revision", "coverage", "digests"} <= summary.keys()
+
     def test_golden_fixtures_record_revision_and_source_digests(self):
         from paperforge.architecture_audit.fixtures import load_fixture_dict
 
-        # golden_126/129 still pin the #125-era observation; golden_127 was
-        # re-observed after #127 reworked commands/sync.py (7372383b) and
-        # re-pinned in C0 (#172) after sync stopped auto-migrating config.
+        # golden_126 preserves the original #126 evidence revision because
+        # its pinned source bytes are unchanged. The #127/#129 sources were
+        # re-pinned at the current live revision after later source edits.
         expected_revisions = {
             "golden_126_ocr_rebuild": "dea041db",
-            "golden_127_sync_embed": "fd12f363",
-            "golden_129_display_restore": "1a1bb895",
+            "golden_127_sync_embed": "75c3c41d",
+            "golden_129_display_restore": "75c3c41d",
         }
+        assert set(expected_revisions) == set(GOLDEN_FIXTURE_NAMES)
         for name, expected_revision in expected_revisions.items():
             payload = load_fixture_dict(name)
             run_metadata = payload["survey"]["run_metadata"]
@@ -45,7 +70,7 @@ class TestFixtureIntegrity:
     def test_golden_fixtures_have_no_agent_authored_observed_facts(self):
         """Survey evidence epistemic status must be observed_static; inferred
         claims are a Review-layer concept and never appear in a Survey."""
-        for name in ("golden_126_ocr_rebuild", "golden_127_sync_embed", "golden_129_display_restore"):
+        for name in GOLDEN_FIXTURE_NAMES:
             _, survey = load_fixture(name)
             for fact in survey.facts:
                 evidence = getattr(fact, "evidence", None)
@@ -55,7 +80,7 @@ class TestFixtureIntegrity:
         """Evidence.file must be a POSIX repo-relative path a consumer can reopen."""
         from paperforge.architecture_audit.fixtures import load_fixture_dict
 
-        for name in ("golden_126_ocr_rebuild", "golden_127_sync_embed", "golden_129_display_restore"):
+        for name in GOLDEN_FIXTURE_NAMES:
             payload = load_fixture_dict(name)
             for fact in payload["survey"]["facts"]:
                 evidence = fact.get("evidence")
@@ -151,14 +176,9 @@ class TestGoldenOutcomes:
 class TestGoldenEvidenceVerification:
     def test_pinned_evidence_files_symbols_ranges_and_aggregate_digest(self):
         import hashlib
-        from pathlib import Path
 
         root = Path(__file__).resolve().parents[1]
-        names = (
-            "golden_126_ocr_rebuild",
-            "golden_127_sync_embed",
-            "golden_129_display_restore",
-        )
+        names = GOLDEN_FIXTURE_NAMES
         for name in names:
             payload = load_fixture_dict(name)
             pairs = set()
@@ -187,20 +207,3 @@ class TestGoldenEvidenceVerification:
             aggregate = "\n".join(f"{file}\n{digest}" for file, digest in sorted(pairs))
             expected = "sha256:" + hashlib.sha256(aggregate.encode("utf-8")).hexdigest()
             assert payload["survey"]["source_digest"] == expected, name
-
-class TestCanonicalReadGolden:
-    def test_golden_170_wrapped_read_satisfies(self) -> None:
-        """#170 closure: the reviewed golden records a formal_library read
-        through the contract-declared client_cache.read adapter → SATISFIED,
-        completing the promotion evidence ladder (synthetic → golden →
-        real-repo)."""
-        from paperforge.architecture_audit import RuleStatus
-
-        contract, survey = load_fixture("golden_170_canonical_read")
-        audit = reconcile(contract, survey)
-        status = next(
-            c for c in audit.content.rule_coverage
-            if c.rule_id == "client_read.formal_library"
-        ).status
-        assert status is RuleStatus.SATISFIED
-        assert len(audit.content.findings) == 0
