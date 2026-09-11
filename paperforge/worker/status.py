@@ -1020,7 +1020,11 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
         summary = summarize_index(vault)
     except Exception:
         summary = None
-    ensure_base_views(vault, paths, config)
+    # #221: this verb reports install/runtime status; refreshing the Obsidian
+    # Base files is a separate, ownable operation (`paperforge base-refresh`,
+    # and sync, which owns view regeneration). Doing it here made a status read
+    # rewrite user-facing files, which is a query side effect by the
+    # architecture contract's definition.
     export_files = sorted(paths["exports"].glob("*.json"))
     record_count = (
         sum(

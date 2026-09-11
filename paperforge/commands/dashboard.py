@@ -105,14 +105,12 @@ def _check_permissions(vault: Path) -> dict:
     can_copy_context = False
     pf_dir = paths.get("paperforge", vault / cfg["system_dir"] / "PaperForge")
     if pf_dir.exists():
-        try:
-            pf_dir.parent.mkdir(parents=True, exist_ok=True)
-            test_file = pf_dir / ".write_test"
-            test_file.touch()
-            test_file.unlink()
-            can_copy_context = True
-        except (OSError, PermissionError):
-            pass
+        # #221: a stats verb must not create directories in the canonical tree;
+        # it reports whether the location is writable, and creating the parent
+        # would have been a durable mutation performed by a read-only surface.
+        from paperforge.worker.fs_probe import probe_writable
+
+        can_copy_context = probe_writable(pf_dir)
 
     return {
         "can_sync": can_sync,

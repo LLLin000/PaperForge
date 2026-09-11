@@ -303,6 +303,21 @@ def load_wrapper_registry(payload: list[dict[str, Any]]) -> tuple[WrapperSpec, .
 # from ArchitectureContract policy.
 DEFAULT_PYTHON_REGISTRY: tuple[WrapperSpec, ...] = (
     WrapperSpec(
+        # #221: a report surface may prove writability by creating and removing
+        # one file inside an EXISTING directory. Declaring it a disposable
+        # snapshot is what lets the query-side-effect rule tell that apart from
+        # a query mutating business state - the probe is registered, not
+        # reclassified after the fact.
+        wrapper_id="fs_probe.probe_writable",
+        qualified_name="fs_probe.probe_writable",
+        facts=(
+            EffectSpec(
+                effect_kind=EffectKind.DISPOSABLE_SNAPSHOT,
+            ),
+        ),
+        confidence=Confidence.EXACT,
+    ),
+    WrapperSpec(
         wrapper_id="ocr_hash.publish_ocr_result_hash",
         qualified_name="ocr_hash.publish_ocr_result_hash",
         facts=(
