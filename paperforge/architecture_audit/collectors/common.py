@@ -303,6 +303,19 @@ def load_wrapper_registry(payload: list[dict[str, Any]]) -> tuple[WrapperSpec, .
 # from ArchitectureContract policy.
 DEFAULT_PYTHON_REGISTRY: tuple[WrapperSpec, ...] = (
     WrapperSpec(
+        # Status/doctor only inspect the resolved interpreter and installed
+        # package metadata. Keep the subprocess implementation isolated so
+        # this exact read-only seam can be distinguished from remote commands.
+        wrapper_id="status_probe.run_readonly",
+        qualified_name="status_probe.run_readonly_probe",
+        facts=(
+            EffectSpec(
+                effect_kind=EffectKind.DISPOSABLE_SNAPSHOT,
+            ),
+        ),
+        confidence=Confidence.EXACT,
+    ),
+    WrapperSpec(
         # #221: a report surface may prove writability by creating and removing
         # one file inside an EXISTING directory. Declaring it a disposable
         # snapshot is what lets the query-side-effect rule tell that apart from

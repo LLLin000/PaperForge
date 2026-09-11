@@ -21,6 +21,7 @@ from paperforge.architecture_audit import (  # noqa: E402
     SCHEMA_VERSION,
     ArchitectureContract,
     ArchitectureReview,
+    canonical_json,
     compose,
     validate_review,
 )
@@ -255,6 +256,19 @@ def adjudication_rationale(rule_id: str) -> str:
     return "coverage incomplete: cannot enumerate all callsites; evidence required before judgement"
 
 
+def _assert_contract_artifact_matches(expected: dict, artifact_path: Path) -> None:
+    """Fail `--check` when the committed policy projection is stale."""
+    try:
+        actual = json.loads(artifact_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise SystemExit(f"cannot read committed contract artifact {artifact_path}: {exc}") from exc
+    if canonical_json(actual) != canonical_json(expected):
+        raise SystemExit(
+            f"committed contract artifact {artifact_path} does not match CONTRACT; "
+            "regenerate it with build_audit.py"
+        )
+
+
 def main(*, write_outputs: bool = True) -> int:
     # Survey is produced by the #133 deterministic collectors (Python AST
     # + TypeScript compiler), not hand-written facts. The maintainer overlay
@@ -262,6 +276,8 @@ def main(*, write_outputs: bool = True) -> int:
     from paperforge.architecture_audit.collectors.orchestrator import collect
 
     contract = ArchitectureContract.from_dict(CONTRACT)
+    if not write_outputs:
+        _assert_contract_artifact_matches(CONTRACT, HERE / "contract.json")
     outcome = collect(
         REPO,
         contract=contract,

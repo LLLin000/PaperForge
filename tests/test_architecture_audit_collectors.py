@@ -192,6 +192,51 @@ class TestOrchestratorSeam:
         assert unresolved
         assert all(f["possible_effects"] for f in unresolved)
 
+    def test_status_probe_wrapper_scopes_read_only_subprocess(self, tmp_path):
+        repo = _make_repo(tmp_path)
+        _write_tree(
+            repo,
+            {
+                "paperforge/worker/probe_status.py": (
+                    "from paperforge.worker.status_probe import run_readonly_probe\n"
+                    "\n"
+                    "def probe_status():\n"
+                    "    return run_readonly_probe(['python', '--version'], timeout=5)\n"
+                ),
+                "paperforge/worker/status_probe.py": (
+                    "import subprocess\n"
+                    "\n"
+                    "def run_readonly_probe(command, *, timeout):\n"
+                    "    return subprocess.run(command, timeout=timeout)\n"
+                ),
+            },
+        )
+        outcome = collect(
+            repo, contract=_contract(), py_roots=("paperforge",),
+            ts_roots=("paperforge/plugin/src",), node_cmd="node",
+        )
+        status_facts = [
+            fact for fact in outcome.facts
+            if fact.get("operation_id") == "probe_status"
+        ]
+        assert [fact["effect_kind"] for fact in status_facts if fact["kind"] == "effect"] == [
+            "disposable_snapshot"
+        ]
+        assert any(
+            hit["wrapper_id"] == "status_probe.run_readonly"
+            for hit in outcome.wrapper_hits
+        )
+        assert not any(
+            fact["kind"] == "unresolved"
+            and fact["evidence"]["file"] == "worker/probe_status.py"
+            for fact in outcome.facts
+        )
+        assert any(
+            fact["kind"] == "unresolved"
+            and fact["evidence"]["file"] == "worker/status_probe.py"
+            for fact in outcome.facts
+        )
+
     def test_source_exclusions(self, tmp_path):
         repo = _make_repo(tmp_path)
         _write_tree(
