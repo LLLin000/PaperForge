@@ -393,7 +393,16 @@ function fakePlugin(overrides: Record<string, unknown> = {}) {
       embedMigrate: vi.fn(async () => ({})),
       memoryRestoreBackup: vi.fn(async () => ({})),
       authSetSecret: vi.fn(async () => true),
-      reconcile: vi.fn().mockResolvedValue({ deficits: [], next_actions: [] }),
+      // Real reconcile wire (#222): data + a top-level next_actions list. The
+      // previous mock invented a `deficits[].paper_keys` field that reconcile
+      // never emits, so nothing here could catch the consumer reading it.
+      reconcile: vi.fn().mockResolvedValue({
+        ok: true,
+        command: "reconcile",
+        version: "1.5.15",
+        data: { scope: "all", per_paper: {}, global: {}, diagnostics: [] },
+        next_actions: [],
+      }),
       describeAction: vi
         .fn()
         .mockResolvedValue({ action_id: "test", confirmation: "none" }),
