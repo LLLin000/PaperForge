@@ -72,6 +72,7 @@ paperforge = [
     "plugin/*.js",
     "plugin/*.json",
     "architecture_audit/fixtures/*.json",
+    "data/*.json",
 ]
 
 [tool.pytest.ini_options]

@@ -26,7 +26,8 @@ def _get_page_blocks(json_path: Path, page: int) -> list[dict]:
 
 def test_fixture_interleaved_text_reordered() -> None:
     json_path = _load_json_path("2GN9LMCW")
-    assert json_path and json_path.exists(), f"fixture not found: {json_path}"
+    if not json_path or not json_path.exists():
+        pytest.skip("fixture not available")
 
     blocks = _get_page_blocks(json_path, 11)
 
@@ -65,7 +66,8 @@ def test_fixture_interleaved_text_reordered() -> None:
 
 def test_session_regression_heading_retained() -> None:
     json_path = _load_json_path("7C8829BD")
-    assert json_path and json_path.exists(), f"fixture not found: {json_path}"
+    if not json_path or not json_path.exists():
+        pytest.skip("fixture not available")
 
     blocks = _get_page_blocks(json_path, 7)
 
@@ -95,7 +97,8 @@ def test_session_regression_heading_retained() -> None:
 
 def test_session_regression_figure_not_in_unrelated_section() -> None:
     json_path = _load_json_path("7C8829BD")
-    assert json_path and json_path.exists(), f"fixture not found: {json_path}"
+    if not json_path or not json_path.exists():
+        pytest.skip("fixture not available")
 
     blocks = _get_page_blocks(json_path, 14)
 

@@ -197,8 +197,14 @@ class TestRecordSession:
         )
         assert result["status"] == "ok"
         md_path = Path(result["md_path"])
+        # HARDEN-01 is about *which* lock the writer takes, not about deleting
+        # it: filelock's POSIX implementation keeps the lock file and releases
+        # the fcntl lock, so asserting absence encodes Windows-only behaviour.
+        # What must hold everywhere is that the lock is free again.
         lock_path = md_path.with_suffix(".md.lock")
-        assert not lock_path.exists()
+        probe = filelock.FileLock(lock_path, timeout=1)
+        with probe:
+            pass
 
     def test_lock_timeout_returns_error(self, tmp_path: Path) -> None:
         """HARDEN-01: When lock cannot be acquired, returns error status."""
