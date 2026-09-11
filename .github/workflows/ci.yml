@@ -271,14 +271,9 @@ jobs:
   # the first failure hiding the rest. Consumes DeterministicAudit only;
   # Review/HTML never affect exit status.
   #
-  # #224: this job CANNOT FAIL today, and must not be read as a gate. On a
-  # clean tree the audit reports `incomplete` because six blocking rules are
-  # unresolved (role_authority.*, remote_intent.sync_followup,
-  # publication.authority_*), and an ineligible audit returns status=skipped
-  # with exit 0. The reviewed allowlist below is configured so the gate is
-  # ready, and `--strict` (paperforge/architecture_audit/report/gate.py) is
-  # the switch that turns "cannot evaluate" into a failure — enable it in the
-  # same commit that binds those rules.
+  # #229: deterministic authority bindings make the six formerly unresolved
+  # blocking rules evaluable on a clean checkout. Keep strict enabled so a
+  # future incomplete audit fails closed instead of passing as "skipped".
   architecture-gate:
     name: L4b — Architecture Deterministic Gate
     runs-on: ubuntu-latest
@@ -307,8 +302,9 @@ jobs:
             --audit /tmp/pf-architecture-audit/audit.json \
             --allowlist publication.uses_protocol canonical.no_ui_writer \
                         coverage.required_complete collectors.deterministic \
+            --strict \
             --json
-      - name: Report whether this gate could evaluate at all
+      - name: Report gate assessment
         if: always()
         run: |
           python - <<'PY'
@@ -316,10 +312,9 @@ jobs:
           audit = json.load(open("/tmp/pf-architecture-audit/audit.json", encoding="utf-8"))
           assessment = audit["content"]["assessment"]
           reasons = ", ".join(assessment.get("reasons") or []) or "-"
-          print(f"::warning title=Architecture gate did not evaluate::"
+          print(f"::notice title=Architecture gate assessment::"
                 f"status={assessment.get('status')} eligible={assessment.get('gate_eligible')} "
-                f"reasons={reasons} — this job cannot fail until the unresolved "
-                f"blocking rules are bound and --strict is enabled (#224)")
+                f"reasons={reasons}")
           PY
 
   # ---------------------------------------------------------------------------

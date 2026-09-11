@@ -319,6 +319,28 @@ class TestUnresolvedSemantics:
         assert finding.rule_status is RuleStatus.UNRESOLVED
         assert "cannot enumerate" in finding.message
 
+    def test_getattr_reads_do_not_hide_dynamic_callable_calls(self, tmp_path):
+        repo = tmp_path / "repo"
+        _write_tree(
+            repo,
+            {
+                "paperforge/worker/probe_status.py": (
+                    "def probe_status(args, handler):\n"
+                    "    enabled = getattr(args, 'json', False)\n"
+                    "    getattr(handler, 'run')()\n"
+                    "    return enabled\n"
+                ),
+            },
+        )
+        outcome = collect(
+            repo, contract=_contract(), py_roots=("paperforge",), ts_roots=()
+        )
+        unresolved = [
+            fact for fact in outcome.facts if fact["kind"] == "unresolved"
+        ]
+        assert any("handler" in str(fact["expression"]) for fact in unresolved)
+        assert not any("args" in str(fact["expression"]) for fact in unresolved)
+
     def test_unresolved_relevant_only_to_matching_module(self, tmp_path):
         repo = _make_repo(tmp_path)
         _write_tree(
@@ -585,6 +607,13 @@ class TestRepositoryAcceptance:
         )
         assert proc.returncode == 0, proc.stderr
         audit = json.loads((Path("C:/Users/Lin/AppData/Local/Temp/pf-acceptance") / "audit.json").read_text(encoding="utf-8"))
+        survey = json.loads(
+            (Path("C:/Users/Lin/AppData/Local/Temp/pf-acceptance") / "survey.json")
+            .read_text(encoding="utf-8")
+        )
+        coverage = {entry["extractor"]: entry["status"] for entry in survey["coverage"]}
+        if coverage.get("typescript_compiler") != "complete":
+            pytest.skip("real-root authority assertions require the TS collector")
         rules = {f["rule_id"]: f["rule_status"] for f in audit["content"]["findings"]}
         coverage_rules = {
             c["rule_id"]: c.get("status", "planned_gap")
@@ -611,6 +640,18 @@ class TestRepositoryAcceptance:
             assert rule_id in rules or rule_id in coverage_rules, rule_id
             status = rules.get(rule_id, coverage_rules.get(rule_id))
             assert status in {"unresolved", "violated", "satisfied", "planned_gap"}, rule_id
+        bound_rules = {
+            "remote_intent.sync_followup",
+            "publication.authority_ocr_display",
+            "publication.authority_retrieval",
+            "role_authority.ocr_execution",
+            "role_authority.ocr_stop",
+            "role_authority.embed_stop",
+        }
+        assert all(
+            rules.get(rule_id, coverage_rules.get(rule_id)) == "satisfied"
+            for rule_id in bound_rules
+        )
         # With both deterministic collectors complete and a clean checkout the
         # gate is eligible (manual materials are Review-only, never required).
         assert audit["content"]["assessment"]["gate_eligible"] in {True, False}
@@ -748,7 +789,6 @@ class TestCanonicalReadClosure:
         EXACTLY the fact whose unit matches the actual path — never one fact
         per declared unit."""
         import subprocess
-        import sys
 
         repo = tmp_path / "repo"
         (repo / "src").mkdir(parents=True)

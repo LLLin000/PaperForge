@@ -220,6 +220,14 @@ class TestAggregateGate:
         unknown = required - declared
         assert not unknown, f"{name}: `needs` names unknown jobs: {sorted(unknown)}"
 
+    def test_architecture_gate_fails_closed(self):
+        jobs: dict[str, Any] = _workflow(GATING_WORKFLOW)["jobs"]
+        scripts = " ".join(
+            str(step.get("run") or "")
+            for step in jobs["architecture-gate"].get("steps") or []
+        )
+        assert "--strict" in scripts
+
 
 class TestLocalRunnerMirrorsCI:
     """`scripts/ci_local.py` must not silently drop a CI step.

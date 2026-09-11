@@ -27,6 +27,7 @@ from paperforge.architecture_audit import (
     reconcile,
     validate_survey,
 )
+from paperforge.architecture_audit.collectors.authority import collect_authority_facts
 from paperforge.architecture_audit.collectors.common import (
     WrapperSpec,
     load_default_python_registry,
@@ -34,12 +35,8 @@ from paperforge.architecture_audit.collectors.common import (
     operation_id_of,
     to_wrapper_summaries,
 )
-from paperforge.architecture_audit.collectors.python_ast import (
-    EXTRACTOR as PY_EXTRACTOR,
-)
-from paperforge.architecture_audit.collectors.python_ast import (
-    collect_python,
-)
+from paperforge.architecture_audit.collectors.python_ast import EXTRACTOR as PY_EXTRACTOR
+from paperforge.architecture_audit.collectors.python_ast import collect_python
 from paperforge.architecture_audit.layers import (
     CoverageEntry,
     CoverageStatus,
@@ -172,6 +169,9 @@ def collect(
     # ---- Python side
     py_scanned: list[tuple[str, str]] = []
     py_facts: list[dict[str, Any]] = []
+    authority_facts, authority_diagnostics = collect_authority_facts(repo, contract)
+    py_facts.extend(authority_facts)
+    outcome.diagnostics.extend(authority_diagnostics)
     py_errors: list[str] = []
     for root_rel in py_roots:
         root = repo / root_rel
