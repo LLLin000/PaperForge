@@ -239,7 +239,11 @@ views:
 
         # After merge: exactly 4 PF views, zero duplicates
         assert content.count(PAPERFORGE_VIEW_PREFIX) == 4
-        assert content.count('name: "控制面板"') == 1, f"Expected 1 控制面板, got {content.count('name: \"控制面板\"')}"
+        # Count first: a backslash inside an f-string replacement field is a
+        # SyntaxError on Python 3.11 (allowed only from 3.12, PEP 701), which is
+        # why this file could not even be collected by CI.
+        panel_views = content.count('name: "控制面板"')
+        assert panel_views == 1, f"Expected 1 控制面板, got {panel_views}"
         assert content.count('name: "待 OCR"') == 1
         assert content.count('name: "待深度阅读"') == 1
         assert content.count('name: "重做OCR"') == 1
