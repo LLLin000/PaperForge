@@ -9,7 +9,14 @@ from pathlib import Path
 
 import pytest
 
-from paperforge.actions.registry import ACTION_REGISTRY, emit_next_action, validate_registry
+from paperforge.actions.registry import (
+    ACTION_REGISTRY,
+    NON_REGISTRY_ACTIONS,
+    classify_action_id,
+    emit_next_action,
+    validate_action_vocabulary,
+    validate_registry,
+)
 from paperforge.actions.runner import (
     ActionError,
     descriptor_for,
@@ -80,6 +87,63 @@ def _registry(monkeypatch):
 
 
 # ── registry invariants ───────────────────────────────────────────────────
+
+PROBE_ACTION_IDS = frozenset(
+    {
+        "foundation.setup",
+        "foundation.update_python",
+        "foundation.update",
+        "installation.probe",
+        "help.probe",
+        "help.restore",
+        "library.setup",
+        "library.configure",
+        "library.sync",
+        "library.probe",
+        "memory.probe",
+        "memory.build",
+        "memory.rebuild",
+        "memory.restore_backup",
+        "memory.install_vector_deps",
+        "memory.upgrade_backend",
+        "embed.build",
+        "embed.resume",
+        "ocr.setup",
+        "ocr.enable",
+        "ocr.probe",
+        "ocr.run",
+        "ocr.rebuild_derived",
+        "ocr.diagnose",
+        "ocr.report_issue",
+        "ocr.configure",
+    }
+)
+
+
+def _assert_probe_action_vocabulary() -> None:
+    """Every action id probe can advertise has an execution owner."""
+    executable = set(ACTION_REGISTRY) | set(NON_REGISTRY_ACTIONS)
+    assert executable >= PROBE_ACTION_IDS
+    assert validate_action_vocabulary() == []
+    for action_id in PROBE_ACTION_IDS:
+        assert classify_action_id(action_id) in {"registry", "non_registry"}
+
+
+class TestActionVocabulary:
+    def test_probe_action_ids_are_registered_or_explicitly_non_registry(self) -> None:
+        _assert_probe_action_vocabulary()
+
+    def test_unknown_probe_action_is_rejected_at_construction(self) -> None:
+        with pytest.raises(ValueError, match="neither registered nor"):
+            from paperforge.commands.probe import build_action_primary
+
+            build_action_primary(
+                action_id="not-a-real-probe-action",
+                verb="run",
+                label="Broken",
+            )
+
+
 
 class TestRegistryInvariants:
     def test_builtin_registry_is_valid(self) -> None:
