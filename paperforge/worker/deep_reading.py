@@ -1,132 +1,51 @@
 from __future__ import annotations
 
-import logging
 from pathlib import Path
 
 from paperforge.adapters.obsidian_frontmatter import has_deep_reading_content
-from paperforge.worker._domain import load_domain_config
-from paperforge.worker._utils import (
-    get_analyze_queue,
-    pipeline_paths,
-)
-from paperforge.worker.asset_index import refresh_index_entry
-from paperforge.worker.base_views import ensure_base_views
-
-logger = logging.getLogger(__name__)
-
-
-# Re-exported from _utils.py for backward compatibility
+from paperforge.worker._utils import get_analyze_queue
 
 
 def run_deep_reading(vault: Path, verbose: bool = False) -> int:
-    """Sync deep-reading status and report pending queue.
+    """Read and report the deep-reading queue without changing the vault.
 
-    This worker does NOT generate content. It only:
-    1. Scans formal literature notes for `## 🔍 精读` content from canonical index
-    2. Reports the queue of papers awaiting deep reading (analyze=true, ocr_status=done)
-    3. Refreshes canonical index entries
-
-    Actual content filling is done via /pf-deep (agent-driven).
+    The command is a status check. It observes note content and the indexed
+    queue in memory; sync, base-view, report, and memory-index writes belong to
+    their owning commands and must not happen on this path.
     """
-    paths = pipeline_paths(vault)
-    config = load_domain_config(paths)
-    ensure_base_views(vault, paths, config)
-    synced = 0
-    pending_queue: list[dict] = []
     records = get_analyze_queue(vault)
+    status_mismatches = 0
+    pending_queue: list[dict] = []
 
     for record in records:
         key = record["zotero_key"]
-        domain = record["domain"]
-
-        # Status sync: check actual note content vs frontmatter status
-        note_path = record["note_path"]
         has_content = False
+        note_path = record["note_path"]
         if note_path and note_path.exists():
             note_text = note_path.read_text(encoding="utf-8")
             has_content = has_deep_reading_content(note_text)
         correct_status = "done" if has_content else "pending"
 
         if record["deep_reading_status"] != correct_status:
-            refresh_index_entry(vault, key)
-            synced += 1
+            status_mismatches += 1
 
         if correct_status == "pending":
             pending_queue.append(
                 {
                     "zotero_key": key,
-                    "domain": domain,
+                    "domain": record["domain"],
                     "title": record["title"],
                     "ocr_status": record["ocr_status"],
                     "is_analyze": True,
                     "is_do_ocr": record["do_ocr"],
                 }
             )
-    if pending_queue:
-        ready = [q for q in pending_queue if q["ocr_status"] == "done"]
-        waiting = [q for q in pending_queue if q["is_do_ocr"] and q["ocr_status"] in ("pending", "processing")]
-        blocked = [
-            q
-            for q in pending_queue
-            if q["is_analyze"]
-            and q["ocr_status"] not in ("done", "")
-            and not (q["is_do_ocr"] and q["ocr_status"] in ("pending", "processing"))
-        ]
-        report_lines = ["# 待精读队列", ""]
-        if ready:
-            report_lines.extend([f"## 就绪 ({len(ready)} 篇) — OCR 已完成，可直接 /pf-deep", ""])
-            for q in ready:
-                report_lines.append(f"- `{q['zotero_key']}` | {q['domain']} | {q['title']}")
-            report_lines.append("")
-        if waiting:
-            report_lines.extend([f"## 等待 OCR ({len(waiting)} 篇)", ""])
-            for q in waiting:
-                report_lines.append(f"- `{q['zotero_key']}` | {q['domain']} | {q['title']} | OCR: {q['ocr_status']}")
-            report_lines.append("")
-        if blocked:
-            report_lines.extend([f"## 阻塞 ({len(blocked)} 篇) — 需要先完成 OCR", ""])
-            for q in blocked:
-                report_lines.append(
-                    f"- `{q['zotero_key']}` | {q['domain']} | {q['title']} | OCR: {q['ocr_status'] or '未启动'}"
-                )
-            report_lines.append("")
-            if verbose:
-                report_lines.append("### 修复步骤\n")
-                for q in blocked:
-                    ocr_s = q["ocr_status"] or ""
-                    if not ocr_s or ocr_s == "pending":
-                        fix = "paperforge ocr"
-                        report_lines.append(f"- `{q['zotero_key']}`: 运行 `{fix}` 启动 OCR")
-                    elif ocr_s == "processing":
-                        report_lines.append(f"- `{q['zotero_key']}`: OCR 进行中，请等待完成")
-                    elif ocr_s == "failed":
-                        report_lines.append(
-                            f"- `{q['zotero_key']}`: OCR 失败 — 检查 meta.json 错误信息，然后重新运行 `paperforge ocr`"
-                        )
-                    else:
-                        report_lines.append(f"- `{q['zotero_key']}`: 运行 `paperforge ocr` 重试")
-                report_lines.append("")
-        report_lines.extend(
-            [
-                "## 操作",
-                "",
-                "- 对就绪论文，使用 `/pf-deep <zotero_key>` 触发精读",
-                "- 批量触发：提供多个 key，用 subagent 并行处理",
-                "",
-            ]
-        )
-    else:
-        report_lines = ["# 待精读队列", "", "所有 analyze=true 的论文已完成精读。", ""]
-    report_path = paths["pipeline"] / "deep-reading-queue.md"
-    report_path.write_text("\n".join(report_lines), encoding="utf-8")
-    print(f"deep-reading: synced {synced} records, {len(pending_queue)} pending")
 
-    # Refresh canonical index for each paper (even if synced==0, formal note content may have changed)
-    for record in records:
-        key = record["zotero_key"]
-        if key:
-            try:
-                refresh_index_entry(vault, key)
-            except Exception:
-                logger.warning("Failed to refresh index entry for %s", key)
+    # `verbose` remains part of the worker API for callers that pass it, but a
+    # read-only status command must not materialize a report as a side effect.
+    del verbose
+    print(
+        "deep-reading: observed "
+        f"{status_mismatches} status mismatches, {len(pending_queue)} pending"
+    )
     return 0

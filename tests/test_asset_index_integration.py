@@ -2,7 +2,7 @@
 
 Covers:
 1. refresh_index_entry preserves unrelated entries, appends new keys, legacy fallback
-2. Worker call sites (OCR, deep-reading, repair) trigger incremental refresh
+2. Worker call sites that own incremental refresh (OCR and repair)
 3. Workspace path fields in index entries
 
 Uses real filesystem setup with minimal vaults (same pattern as test_asset_index.py).
@@ -251,7 +251,7 @@ class TestIncrementalRefreshBehavior:
 
 
 class TestWorkerCallSites:
-    """Structural checks that workers call incremental refresh."""
+    """Structural checks for workers that own incremental refresh."""
 
     def test_ocr_calls_incremental_not_full(self) -> None:
         """OCR post-processing calls refresh_index_entry, not only run_index_refresh."""
@@ -260,12 +260,6 @@ class TestWorkerCallSites:
             "ocr.py must import and call refresh_index_entry for incremental refresh"
         )
 
-    def test_deep_reading_calls_incremental(self) -> None:
-        """deep_reading.py calls refresh_index_entry."""
-        source = Path("paperforge/worker/deep_reading.py").read_text(encoding="utf-8")
-        assert "refresh_index_entry" in source, (
-            "deep_reading.py must import and call refresh_index_entry"
-        )
 
     def test_repair_calls_incremental(self) -> None:
         """repair.py calls refresh_index_entry."""

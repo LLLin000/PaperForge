@@ -30,6 +30,14 @@ def _run(cmd: list[str], cwd: Path) -> subprocess.CompletedProcess:
     )
 
 
+def _snapshot_files(root: Path) -> dict[str, bytes]:
+    return {
+        str(path.relative_to(root)): path.read_bytes()
+        for path in root.rglob("*")
+        if path.is_file()
+    }
+
+
 class TestCliSync:
     """E2E: paperforge sync via subprocess."""
 
@@ -111,6 +119,18 @@ class TestCliDoctor:
         _run(["sync"], test_vault)
         result = _run(["deep-reading"], test_vault)
         assert result.returncode == 0, f"deep-reading failed: {result.stderr[:500]}"
+
+    def test_deep_reading_is_read_only(self, test_vault: Path) -> None:
+        """Status-only deep-reading must not rewrite any vault artifact."""
+        sync_result = _run(["sync"], test_vault)
+        assert sync_result.returncode == 0, sync_result.stderr[:500]
+        before = _snapshot_files(test_vault)
+
+        result = _run(["deep-reading", "--json"], test_vault)
+
+        assert result.returncode == 0, result.stderr[:500]
+        json.loads(result.stdout)
+        assert _snapshot_files(test_vault) == before
 
 
 class TestCliFullPipeline:
