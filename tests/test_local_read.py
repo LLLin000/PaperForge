@@ -178,7 +178,16 @@ def test_cli_wire_shape(tmp_path: Path, capsys) -> None:
         # nothing, printed to the wrong stream, or died quietly.
         f"read produced no stdout (rc={r.returncode}); stderr={r.stderr!r}"
     )
-    payload = json.loads(r.stdout)
+    try:
+        payload = json.loads(r.stdout)
+    except json.JSONDecodeError as exc:
+        # Either a library banner reached stdout (a wire-contract defect: the
+        # stream is machine-readable JSON) or the command emitted something
+        # else entirely. Report which, instead of "char 0".
+        raise AssertionError(
+            f"stdout is not a single JSON document ({exc}); "
+            f"stdout[:200]={r.stdout[:200]!r}; stderr[-200:]={r.stderr[-200:]!r}"
+        ) from exc
     assert payload["ok"] is True
     assert payload["data"]["status"] == "matched"
     assert payload["data"]["matches"][0]["source"] == "fulltext"
