@@ -62,7 +62,7 @@
         "effect_kind": "materialization_build",
         "evidence": {
           "file": "paperforge/commands/sync.py",
-          "file_digest": "sha256:33fe62fa0cc0f8d02e3af68f4178865a2ce2c3ac2fdc750561b15d5dddd88d53",
+          "file_digest": "sha256:8785469ecac0e166f3abaed0e0f5c74806720dfbf4bae99563c43bc9ba015cda",
           "symbol": "_reconcile_and_attach",
           "line_start": 97,
           "line_end": 133,
@@ -72,11 +72,11 @@
         }
       }
     ],
-    "source_digest": "sha256:121c50b412be60fa3b389235ea6fce75eec39c0090157a124c1f027a55b9e4b3",
+    "source_digest": "sha256:3de508456d4709d78e0a4250df782c3cabd9604c17ed0ea17d0cea5dabe643eb",
     "parse_errors": [],
     "excluded_roots": [],
     "run_metadata": {
-      "repository_revision": "fd12f363",
+      "repository_revision": "75c3c41d",
       "repository_dirty": false,
       "tool_version": "1.0.0",
       "extractor_versions": {

@@ -8,6 +8,9 @@ Fixtures live in `paperforge/architecture_audit/fixtures/*.json` as
   #129, recording repository revision and source digests. Issue text supplies
   declared intent only; observed facts come from the source evidence recorded
   in each fixture.
+- `golden_170_canonical_read.json` is intentionally retired: its pinned
+  dashboard direct-read source was removed by the thin-client cutover, and no
+  live source exists to re-pin.
 """
 from __future__ import annotations
 
@@ -34,7 +37,6 @@ FIXTURE_NAMES = (
     "golden_126_ocr_rebuild",
     "golden_127_sync_embed",
     "golden_129_display_restore",
-    "golden_170_canonical_read",
 )
 
 

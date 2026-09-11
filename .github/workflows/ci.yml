@@ -192,7 +192,9 @@ jobs:
   # ---------------------------------------------------------------------------
   # L1 runs tests/unit/ on three OS for fast per-OS signal; this job runs the
   # rest of the tree, so a test file nobody collected cannot sit at the
-  # repository root looking green. e2e, audit and chaos are excluded here
+  # repository root looking green. Architecture fixture tests (including every
+  # retained golden evidence pin) are collected here as part of #231.
+  # e2e, audit and chaos are excluded here
   # because they have dedicated jobs (L4) or a dedicated workflow
   # (ci-chaos.yml) and running them twice buys nothing.
   python-suite:
@@ -216,6 +218,8 @@ jobs:
       - name: Install plugin dependencies (TypeScript compiler for the collector)
         run: npm ci
         working-directory: paperforge/plugin
+      - name: Verify architecture generator and golden fixture pins (#231)
+        run: python -m pytest tests/test_architecture_audit_fixtures.py -q --tb=short --timeout=180
       - name: Run the full suite
         run: |
           python -m pytest tests/ \
@@ -290,6 +294,8 @@ jobs:
       - name: Install plugin dependencies (TypeScript compiler for the collector)
         run: npm ci
         working-directory: paperforge/plugin
+      - name: Validate architecture report generator against live tree (#231)
+        run: python docs/architecture-audit-2026-08-06/build_audit.py --check
       - name: Run deterministic collector
         run: |
           python -m paperforge.architecture_audit.collectors.orchestrator \
