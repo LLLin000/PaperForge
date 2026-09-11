@@ -10,9 +10,10 @@ above itself.
 
 Restore semantics stay DISPLAY-ONLY (#129): `restore` copies
 ``versions/<label>/fulltext.md`` → ``render/fulltext.md`` (or the legacy
-``backups/fulltext.pre-rebuild.<ts>.md`` source) and persists
-``meta.json.restore_provenance``.  Structure, indexes, memory units and
-vectors are never touched.
+``backups/fulltext.pre-rebuild.<ts>.md`` source).  Validated
+``meta.json.restore_provenance`` persistence is delegated to the OCR
+subsystem writer.  Structure, indexes, memory units and vectors are never
+touched.
 """
 
 from __future__ import annotations
@@ -80,10 +81,6 @@ def _read_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def _write_json(path: Path, data: Any) -> None:
-    import json
-
-    path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
 
 
 def read_manifest(paper_root: Path) -> dict[str, Any] | None:
@@ -356,12 +353,11 @@ def _run_paths(vault: Path, key: str, label: str, version: str) -> int:
 
 
 def _run_restore(vault: Path, key: str, label: str, version: str) -> int:
-    """Display-only restore: copy the AUTHORITY-matched source fulltext →
-    render/fulltext.md, then persist restore provenance (best-effort).
+    """Display-only restore with OCR-owned provenance validation.
 
-    Durable-state contract: the restored BYTES are authoritative; the
-    provenance record is explanatory metadata and a failed write does not
-    fail the restore (`provenance_persisted` reports the truth).
+    The displayed fulltext is authoritative for this operation.  Provenance
+    is explanatory metadata, so the write is delegated to the OCR subsystem,
+    which validates the payload and refuses to replace unreadable metadata.
     """
     root = _paper_root(vault, key)
     if root is None or not root.is_dir():
@@ -397,15 +393,10 @@ def _run_restore(vault: Path, key: str, label: str, version: str) -> int:
         "restored_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "version_created_at": version_created_at,
     }
-    meta_path = root / "meta.json"
-    provenance_persisted = False
     try:
-        meta = _read_json(meta_path) if meta_path.exists() else {}
-        if not isinstance(meta, dict):
-            meta = {}
-        meta["restore_provenance"] = provenance
-        _write_json(meta_path, meta)
-        provenance_persisted = True
+        from paperforge.worker.ocr import record_restore_provenance
+
+        provenance_persisted = record_restore_provenance(vault, key, provenance)
     except Exception:
         # Best-effort metadata: the restored bytes are authoritative.
         provenance_persisted = False

@@ -323,6 +323,65 @@ def ensure_ocr_meta(vault: Path, row: dict) -> dict:
     return meta
 
 
+def record_restore_provenance(vault: Path, key: str, provenance: dict) -> bool:
+    """Persist validated display-restore provenance through the OCR writer."""
+    if (
+        not key
+        or key in {".", ".."}
+        or "/" in key
+        or "\\" in key
+        or not isinstance(provenance, dict)
+    ):
+        return False
+
+    label = provenance.get("label")
+    restored_at = provenance.get("restored_at")
+    version_created_at = provenance.get("version_created_at", "")
+    if (
+        not isinstance(label, str)
+        or not label
+        or "/" in label
+        or "\\" in label
+        or not isinstance(restored_at, str)
+        or not restored_at
+        or not isinstance(version_created_at, str)
+    ):
+        return False
+    try:
+        restored_dt = datetime.fromisoformat(restored_at.replace("Z", "+00:00"))
+        if restored_dt.tzinfo is None:
+            return False
+        if version_created_at:
+            datetime.fromisoformat(version_created_at.replace("Z", "+00:00"))
+    except ValueError:
+        return False
+
+    paths = pipeline_paths(vault)
+    meta_path = paths["ocr"] / key / "meta.json"
+    try:
+        meta = read_json(meta_path) if meta_path.exists() else {}
+    except Exception:  # noqa: BLE001 — never replace unreadable OCR metadata
+        return False
+    if not isinstance(meta, dict):
+        return False
+    stored_key = meta.get("zotero_key")
+    if stored_key not in (None, "", key):
+        return False
+
+    meta = dict(meta)
+    meta.setdefault("zotero_key", key)
+    meta["restore_provenance"] = {
+        "label": label,
+        "restored_at": restored_at,
+        "version_created_at": version_created_at,
+    }
+    try:
+        write_json(meta_path, meta)
+    except OSError:
+        return False
+    return True
+
+
 def _read_meta_or_empty(meta_path: Path) -> dict:
     try:
         return read_json(meta_path) if meta_path.exists() else {}

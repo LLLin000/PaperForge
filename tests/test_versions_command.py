@@ -2,8 +2,9 @@
 
 Discovery, manifest interpretation, legacy backup recognition, timestamp
 semantics, canonical path construction, the restore copy, and the
-restore-provenance mutation are Python authority.  These regressions pin the
-authority-result == durable-state contract for every subcommand.
+OCR-owned restore-provenance validation are Python authority.  These
+regressions pin the authority-result == durable-state contract for every
+subcommand.
 """
 
 from __future__ import annotations
@@ -240,7 +241,7 @@ def test_paths_constructs_canonical_artifact_paths(tmp_path: Path) -> None:
     assert rc4 == 1 and payload4["ok"] is False
 
 
-def test_restore_copies_and_persists_provenance(tmp_path: Path) -> None:
+def test_restore_copies_and_persists_validated_provenance(tmp_path: Path) -> None:
     vault = tmp_path / "v"
     vault.mkdir()
     root = _seed(vault)
@@ -258,6 +259,22 @@ def test_restore_copies_and_persists_provenance(tmp_path: Path) -> None:
     assert payload["data"]["provenance_persisted"] is True
     # ocr_finished_at survives (merge, not replace)
     assert meta["ocr_finished_at"] == "2025-01-03T00:00:00Z"
+
+
+def test_restore_does_not_replace_corrupt_ocr_metadata(tmp_path: Path) -> None:
+    vault = tmp_path / "v"
+    vault.mkdir()
+    root = _seed(vault)
+    meta_path = root / "meta.json"
+    corrupt = b'{"ocr_status": "done",'
+    meta_path.write_bytes(corrupt)
+
+    rc, payload, raw = _run(vault, "restore", key=KEY, label="v1")
+
+    assert rc == 0, raw
+    assert (root / "render" / "fulltext.md").read_text(encoding="utf-8") == "v1 text\n"
+    assert meta_path.read_bytes() == corrupt
+    assert payload["data"]["provenance_persisted"] is False
 
 
 def test_restore_missing_label_fails_closed_without_writing(tmp_path: Path) -> None:
