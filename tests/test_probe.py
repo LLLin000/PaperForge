@@ -1396,6 +1396,18 @@ def _ready_env(mod: str) -> dict:
         action_primary=None, ttl_seconds=TTL_MAINTENANCE,
     )
 
+PROJECTION_ACTION_IDS = {
+    # These helpers exercise maintenance aggregation, not action dispatch.
+    # Use the real ids emitted for each module instead of inventing
+    # `${module}.rebuild`/`${module}.restore` ids that production never emits.
+    "installation": "foundation.setup",
+    "library": "library.sync",
+    "ocr": "ocr.rebuild_derived",
+    "memory": "memory.rebuild",
+    "help": "help.restore",
+}
+
+
 def _needs_action_env(mod: str, verb: str = "rebuild_derived", label: str = "Rebuild") -> dict:
     from paperforge.commands.probe import build_envelope, build_action_primary, TTL_MAINTENANCE, USER_STATE_ACTION_REQUIRED
     return build_envelope(
@@ -1403,9 +1415,12 @@ def _needs_action_env(mod: str, verb: str = "rebuild_derived", label: str = "Reb
         reason_code=f"{mod}.artifacts_stale", reason_text=f"{mod} needs action",
         user_state=USER_STATE_ACTION_REQUIRED,
         maintenance_eligible=True,
-        action_primary=build_action_primary(action_id=f"{mod}.rebuild", verb=verb, label=label),
+        action_primary=build_action_primary(
+            action_id=PROJECTION_ACTION_IDS[mod], verb=verb, label=label
+        ),
         ttl_seconds=TTL_MAINTENANCE,
     )
+
 
 def _error_env(mod: str, code: str = "unavailable") -> dict:
     from paperforge.commands.probe import build_envelope, build_action_primary, TTL_MAINTENANCE, USER_STATE_ACTION_REQUIRED
@@ -1414,9 +1429,14 @@ def _error_env(mod: str, code: str = "unavailable") -> dict:
         reason_code=f"{mod}.{code}", reason_text=f"{mod} broken",
         user_state=USER_STATE_ACTION_REQUIRED,
         maintenance_eligible=True,
-        action_primary=build_action_primary(action_id=f"{mod}.restore", verb="restore_backup", label="Restore"),
+        action_primary=build_action_primary(
+            action_id=PROJECTION_ACTION_IDS[mod],
+            verb="restore_backup",
+            label="Restore",
+        ),
         ttl_seconds=TTL_MAINTENANCE,
     )
+
 
 def _running_env(mod: str, state: str = "ready") -> dict:
     from paperforge.commands.probe import build_envelope, TTL_MAINTENANCE, USER_STATE_ACTION_REQUIRED, USER_STATE_READY
@@ -1430,6 +1450,7 @@ def _running_env(mod: str, state: str = "ready") -> dict:
         ttl_seconds=TTL_MAINTENANCE,
     )
 
+
 def _unknown_env(mod: str) -> dict:
     from paperforge.commands.probe import build_envelope, build_action_primary, TTL_MAINTENANCE, USER_STATE_DETECTION_FAILED
     return build_envelope(
@@ -1437,9 +1458,12 @@ def _unknown_env(mod: str) -> dict:
         reason_code=f"{mod}.probe_failed", reason_text=f"{mod} probe failed",
         user_state=USER_STATE_DETECTION_FAILED,
         maintenance_eligible=False,
-        action_primary=build_action_primary(action_id=f"{mod}.probe", verb="probe", label="Retry"),
+        action_primary=build_action_primary(
+            action_id=f"{mod}.probe", verb="probe", label="Retry"
+        ),
         ttl_seconds=TTL_MAINTENANCE,
     )
+
 
 MAINT_MODS = ["installation", "library", "ocr", "memory", "help"]
 

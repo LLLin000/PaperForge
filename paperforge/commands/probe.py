@@ -92,7 +92,12 @@ def build_action_primary(
     # Registered actions project safety and confirmation from the registry.
     # Probe decides *why* an action is shown; the registry alone decides
     # whether it mutates, requires consent, and can be interrupted.
-    from paperforge.actions.registry import ACTION_REGISTRY
+    from paperforge.actions.registry import ACTION_REGISTRY, classify_action_id
+
+    # #223: an envelope must never advertise an id nothing can execute. This
+    # raises for an id that is neither registered nor declared non-registry,
+    # so a new probe id fails here instead of reaching a user as a dead control.
+    classify_action_id(action_id)
 
     spec = ACTION_REGISTRY.get(action_id)
     execution_mode = "stream" if verb == "setup" else "result"

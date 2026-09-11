@@ -966,6 +966,74 @@ _SPECS: tuple[ActionSpec, ...] = (
 )
 
 
+#: Action ids a capability envelope may advertise that the ACTION PIPELINE does
+#: not execute. The plugin routes these by `verb` (settings.ts) or through a
+#: dedicated flow, and `paperforge action run <id>` must keep rejecting them —
+#: which is exactly why they are not in ACTION_REGISTRY (#223).
+#:
+#: Keeping them in one declared table is the point: before this, probe emitted
+#: seventeen ids that no registry knew about and only the plugin's dispatcher
+#: did (or did not) handle, so a new one could reach a user as a dead button.
+NON_REGISTRY_ACTIONS: Mapping[str, str] = {
+    "foundation.setup": "setup journey (verb 'setup')",
+    "foundation.update_python": "manual Python-install guidance (verb 'update')",
+    "installation.probe": "installation re-probe after detection failure (verb 'probe')",
+    "help.probe": "help re-probe after detection failure (verb 'probe')",
+    "help.restore": "help/skill redeploy flow (verb 'setup')",
+    "library.setup": "setup journey from the Library module (verb 'setup')",
+    "library.configure": "in-place config edit (verb 'set_config')",
+    "library.probe": "re-probe (verb 'probe')",
+    "library.sync": "client.sync() (verb 'sync'), not a pipeline action",
+    "memory.probe": "re-probe (verb 'probe')",
+    "memory.restore_backup": "client.memoryRestoreBackup (verb 'restore_backup')",
+    "memory.upgrade_backend": "client.embedMigrate (verb 'rebuild_index')",
+    "memory.install_vector_deps": "dependency install flow (verb 'install')",
+    "ocr.probe": "re-probe (verb 'probe')",
+    "ocr.enable": "in-place config edit (verb 'set_config')",
+    "ocr.configure": "in-place config edit (verb 'set_config')",
+    "ocr.diagnose": "diagnostics report (verb 'investigate')",
+    "ocr.report_issue": "issue-draft flow (verb 'investigate')",
+    "ocr.setup": "setup journey (verb 'setup')",
+}
+
+
+class UnknownActionId(ValueError):
+    """An envelope advertised an action id nothing can execute."""
+
+
+def classify_action_id(action_id: str) -> str:
+    """'registry' | 'non_registry' — and fail loudly on anything else.
+
+    This is the single place that answers "can this id be executed, and by
+    whom"; a probe that advertises an unclassified id would otherwise reach a
+    user as a control that does nothing.
+    """
+    if action_id in ACTION_REGISTRY:
+        return "registry"
+    if action_id in NON_REGISTRY_ACTIONS:
+        return "non_registry"
+    raise UnknownActionId(
+        f"action id {action_id!r} is neither registered nor a declared "
+        "non-registry action; add it to ACTION_REGISTRY (it runs through the "
+        "action pipeline) or to NON_REGISTRY_ACTIONS with its dispatch owner"
+    )
+
+
+def validate_action_vocabulary() -> list[str]:
+    """Invariants over the two tables; empty list = valid."""
+    problems: list[str] = []
+    overlap = sorted(set(ACTION_REGISTRY) & set(NON_REGISTRY_ACTIONS))
+    if overlap:
+        problems.append(f"ids in both tables: {overlap}")
+    for action_id, owner in NON_REGISTRY_ACTIONS.items():
+        if not owner.strip():
+            problems.append(f"{action_id}: non-registry entry needs a dispatch owner")
+    for action_id in ACTION_REGISTRY:
+        if action_id in NON_REGISTRY_ACTIONS:
+            problems.append(f"{action_id}: registered actions cannot be non-registry")
+    return problems
+
+
 class RegistryError(RuntimeError):
     """Raised at import time when the frozen table violates an invariant."""
 
@@ -985,7 +1053,13 @@ def _build_registry(specs: tuple[ActionSpec, ...]) -> dict[str, ActionSpec]:
     return table
 
 
+
 ACTION_REGISTRY: Mapping[str, ActionSpec] = _build_registry(_SPECS)
+_VOCABULARY_PROBLEMS = validate_action_vocabulary()
+if _VOCABULARY_PROBLEMS:
+    raise RegistryError(
+        "invalid action vocabulary: " + "; ".join(_VOCABULARY_PROBLEMS)
+    )
 
 
 
