@@ -1,10 +1,10 @@
 # OCR-v2 Active Queue
 
 > **Current priority (2026-09-11): Plugin major-release acceptance — ACTIVE.** Tracker live: PRD **#192**, work packages **#193–#216** (`## Blocked by` edges; only W00/W01/W02 unblocked), source-risk bugs **#217** (setup-journey config bypass) and **#218** (dead version-mode buttons). **W01 (#194) slice 1 VERIFIED** on `feat/issue-194-e2e-harness` @ `d9a65e5d` — e2e 8/8 on real Obsidian 1.13.7, vitest 452/452, tsc clean; tracked `main.js` corrected from a dev build to the deterministic production bundle. Remaining W01: data-diff Sync assertion, same-sandbox restart demo, backend artifact binding. **W00 (#193) is ready-for-human** — needs version / Release-N / support window / platform matrix / thresholds / live spend cap. Implementation follows one issue / one worktree / one writer; this document does not create or close issues.
-> **Architecture gate milestone (2026-09-11):** #229 is delivered in `b89e745f`: deterministic bindings resolve the six blocking rules, `architecture-gate --strict` is enabled, and the next Block B items are #222/#223 followed by #231–#233 reviews. This does not certify a release.
+> **Architecture gate / Block B milestone (2026-09-11):** #229 delivered in `b89e745f`; #222 orphan-prune wire coverage verified in `421867d9`, #223 probe action classification verified in `2215a4bf`, and #231 live architecture generator + golden-pin checks delivered in `48cb888f`. #232/#233 fixes are in the tree but their GitHub issues remain ready-for-human. This does not certify a release.
 > **Effort assessment:** §15 of the plan, [INFERENCE] 60–100 new real-host scenarios, 110–180 new/extended I·U tests, 15–40 product fixes, 57–75 issues (±40%).
 > **Planning baseline:** `d1244f96ef6e0f8c61c1bdf3510e0c771f1c479e`. New tests are not yet implemented or certified. Ticket 07 remains CLOSED / SEALED; Reconcile Core remains frozen. Production/provider work and publication require their respective explicit owner gates.
-> **Last updated:** 2026-09-11. The two earlier acceptance drafts were moved to `project/archive/` with replacement pointers. The new plan is the current acceptance-scope reference; CI / owner gates remain the release authority.
+> **Last updated:** 2026-09-11. Block B architecture repairs now have local focused evidence; hosted clean-tree CI and owner release gates remain authoritative.
 
 ## Historical checkpoints (not current candidate certification)
 
