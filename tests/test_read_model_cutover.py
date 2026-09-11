@@ -89,6 +89,7 @@ def test_sync_cleanup_removes_legacy_snapshots_best_effort(tmp_path):
     files but never touches other indexes files; failure never fails sync."""
     from paperforge.commands.sync import _cleanup_legacy_snapshot_files
 
+    canonical_test_config(tmp_path, system_dir="99_System")
     indexes = tmp_path / "99_System" / "PaperForge" / "indexes"
     indexes.mkdir(parents=True)
     for name in ("memory-runtime-state.json", "vector-runtime-state.json", "runtime-health.json", "orphan-state.json"):

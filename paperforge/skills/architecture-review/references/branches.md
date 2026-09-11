@@ -1,46 +1,53 @@
-# Branches
+# Review modes
 
-Three distinct review shapes, each a different trace scope. The primary
-SKILL.md steps are the same for all; only scope resolution and trace depth
-differ. All branches still adjudicate every `must_adjudicate` finding — the
-branch narrows the trace, never the high-risk coverage.
+The deterministic packet decides the scope before the model reads source.
+Every mode still adjudicates every `must_adjudicate` finding; the mode narrows
+the trace, not high-risk coverage.
 
-## 1. Full-survey
+## 1. Gate
 
-- **When:** no narrowing request; review the whole audit.
-- **Scope:** every operation in the audit's `scope` list.
-- **Trace:** one full eight-stage trace per operation.
-- **Fixture targets:** `golden_126_ocr_rebuild` (publication authority
-  unresolved + planned gaps), `golden_127_sync_embed` (planned remote
-  follow-up), `golden_129_display_restore` (planned canonical writer).
+- **When:** CI only needs deterministic compliance.
+- **Scope:** no model trace; consume the audit/gate result.
+- **Model work:** none unless the gate is ineligible or violated.
 
-## 2. Focused-signal
+## 2. Delta
 
-- **When:** the user names one signal chain — producer, transport, consumer.
-- **Scope:** the operation(s) touching that signal; e.g. `OCR_REBUILD_PROGRESS`
-  (golden_126) or `EVENT_BUS_EMIT` (`synthetic_unmatched_signal`).
-- **Trace:** deepen the signal stages (`transport`, `side_effects`,
-  `final_consumer`); the other scoped operations still get complete traces.
-- **Outcome to watch:** orphaned signals (no code consumer) are deterministic
-  violations — adjudicate why the consumer is missing or why the rule is
-  wrong (`false_positive` / `contract_drift`).
+- **When:** default development review after a code change.
+- **Scope:** operations whose candidate evidence intersects the supplied
+  `--changed-file` paths.
+- **Trace:** complete typed trace for affected operations only.
+- **Stop:** no deterministically affected operation means stop; do not promote
+  the run to a full survey.
 
-## 3. Changed-interface
+## 3. Focused
 
-- **When:** the user asks about an interface or authority change — publication
-  authority identity, delegated executors, observers, writers.
-- **Scope:** the affected publication unit / operation; e.g.
-  `ocr_derived.generation` in `synthetic_publication_bypass` (writer bypassed
-  the publication protocol) or golden_126's unresolved `publication.authority`.
-- **Trace:** emphasize `side_effects` → `publication` → `invalidation` →
-  `final_consumer`.
-- **Outcome to watch:** authority identity mismatch between Contract and
-  observed writer is a deterministic violation; adjudicate `confirmed` with
-  the traced writer chain, or `contract_drift` if the Contract names the
-  wrong authority.
+- **When:** the user names one operation or signal chain.
+- **Scope:** the named operation(s), intersected with Contract operations.
+- **Trace:** complete typed trace for the selected operation(s).
+- **Outcome to watch:** an unbound subject becomes `needs_evidence`, not a
+  repo-wide search.
 
-## Deciding between branches
+## 4. Deep-trace
 
-- Full-survey is the default; focused-signal for one signal; changed-interface
-  for authority/interface questions. If the user request does not fit a
-  branch, default to full-survey and note the deviation in `rationale`.
+- **When:** deterministic findings or unresolved edges need owner review.
+- **Scope:** all Contract operations unless explicit operations narrow it.
+- **Trace:** deepen only packet-listed unresolved stages, then expand callers or
+  callees by at most two hops.
+- **Outcome to watch:** emit `needs_evidence` with a precise question when the
+  edge remains unbound.
+
+## 5. Full-release
+
+- **When:** release certification explicitly requires a complete architecture
+  review.
+- **Scope:** every Contract operation.
+- **Trace:** one complete typed eight-stage trace per operation.
+- **Evidence:** only operation/stage candidate IDs from the packet are
+  admissible.
+
+## Choosing a mode
+
+Use `delta` by default. Use `focused` when the request names a bounded
+operation/signal, `deep-trace` for unresolved or blocking findings, and
+`full-release` only for a release gate. `gate` is deterministic compliance,
+not a substitute for a model review.

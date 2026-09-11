@@ -742,6 +742,9 @@ def reconcile(contract: ArchitectureContract, survey: ArchitectureSurvey) -> Det
     so the whole chain stays serializable and downstream consumers see one
     authoritative outcome. Direct `validate_*()` calls still raise for load-time
     rejection.
+
+    The operation scope is execution metadata so review consumers can trace the
+    Contract's declared operations even when the audit has no findings.
     """
     try:
         validate_contract(contract)
@@ -771,7 +774,13 @@ def reconcile(contract: ArchitectureContract, survey: ArchitectureSurvey) -> Det
         return DeterministicAudit(
             schema_version=SCHEMA_VERSION,
             content=content,
-            run_metadata={},
+            run_metadata={
+                "operation_scope": [
+                    operation.operation_id
+                    for operation in getattr(contract, "operations", ())
+                    if getattr(operation, "operation_id", "")
+                ]
+            },
             semantic_digest=semantic_digest(content.to_dict()),
         )
 
@@ -846,7 +855,13 @@ def reconcile(contract: ArchitectureContract, survey: ArchitectureSurvey) -> Det
     return DeterministicAudit(
         schema_version=SCHEMA_VERSION,
         content=content,
-        run_metadata={},
+        run_metadata={
+            "operation_scope": [
+                operation.operation_id
+                for operation in contract.operations
+                if operation.operation_id
+            ]
+        },
         semantic_digest=semantic_digest(content.to_dict()),
     )
 

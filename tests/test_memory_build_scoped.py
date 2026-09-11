@@ -300,7 +300,7 @@ class TestScopedOnFreshDatabase:
         _write_index(vault, [_entry("A", "A"), _entry("B", "B")])
         rc, payload = _run_cli(
             "--vault", str(vault), "action", "run", "memory.build",
-            "--scope", "papers", "--key", "A", "--json",
+            "--scope", "papers", "--key", "A", "--confirm", "memory.build", "--json",
         )
         assert rc == 1
         assert payload["error"]["code"] == "action.unavailable"
@@ -324,7 +324,7 @@ class TestRegistryAndCli:
         ])
         rc, payload = _run_cli(
             "--vault", str(vault), "action", "run", "memory.build",
-            "--scope", "papers", "--key", "A", "--json",
+            "--scope", "papers", "--key", "A", "--confirm", "memory.build", "--json",
         )
         assert rc == 0, payload
         assert payload["data"]["changed"] == ["A"]
