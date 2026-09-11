@@ -1,0 +1,789 @@
+[
+  {
+    "layoutParsingResults": [
+      {
+        "prunedResult": {
+          "page_count": null,
+          "width": 1170,
+          "height": 1566,
+          "model_settings": {
+            "use_doc_preprocessor": false,
+            "use_layout_detection": true,
+            "use_chart_recognition": false,
+            "use_seal_recognition": false,
+            "use_ocr_for_image_block": false,
+            "format_block_content": false,
+            "merge_layout_blocks": true,
+            "markdown_ignore_labels": [
+              "number",
+              "footnote",
+              "header",
+              "header_image",
+              "footer",
+              "footer_image",
+              "aside_text"
+            ],
+            "return_layout_polygon_points": true
+          },
+          "parsing_res_list": [
+            {
+              "block_label": "header",
+              "block_content": "AOSSM 2017 Annual Meeting",
+              "block_bbox": [
+                68,
+                72,
+                342,
+                95
+              ],
+              "block_id": 0,
+              "block_order": null,
+              "group_id": 0,
+              "block_polygon_points": [
+                [
+                  68.0,
+                  72.0
+                ],
+                [
+                  342.0,
+                  72.0
+                ],
+                [
+                  342.0,
+                  95.0
+                ],
+                [
+                  68.0,
+                  95.0
+                ]
+              ]
+            },
+            {
+              "block_label": "doc_title",
+              "block_content": "Biodegradation of Biocomposite Suture Anchor Implants 2,2 years after Rotator Cuff Repair",
+              "block_bbox": [
+                66,
+                144,
+                1034,
+                172
+              ],
+              "block_id": 1,
+              "block_order": 1,
+              "group_id": 1,
+              "block_polygon_points": [
+                [
+                  66.0,
+                  144.0
+                ],
+                [
+                  1034.0,
+                  144.0
+                ],
+                [
+                  1034.0,
+                  172.0
+                ],
+                [
+                  66.0,
+                  172.0
+                ]
+              ]
+            },
+            {
+              "block_label": "text",
+              "block_content": "Mirco Sgroi, Theresa Friesz, Heiko Reichel, Thomas Kappe",
+              "block_bbox": [
+                67,
+                187,
+                579,
+                211
+              ],
+              "block_id": 2,
+              "block_order": 2,
+              "group_id": 2,
+              "block_polygon_points": [
+                [
+                  67.0,
+                  187.0
+                ],
+                [
+                  579.0,
+                  187.0
+                ],
+                [
+                  579.0,
+                  211.0
+                ],
+                [
+                  67.0,
+                  211.0
+                ]
+              ]
+            },
+            {
+              "block_label": "text",
+              "block_content": "Department for Orthopaedic Surgery, RKU, University of Ulm, Ulm, Germany",
+              "block_bbox": [
+                67,
+                217,
+                687,
+                241
+              ],
+              "block_id": 3,
+              "block_order": 3,
+              "group_id": 3,
+              "block_polygon_points": [
+                [
+                  67.0,
+                  217.0
+                ],
+                [
+                  687.0,
+                  217.0
+                ],
+                [
+                  687.0,
+                  241.0
+                ],
+                [
+                  67.0,
+                  241.0
+                ]
+              ]
+            },
+            {
+              "block_label": "abstract",
+              "block_content": "Objectives: Arthroscopic rotator cuff repair is one of the most frequently performed operations in orthopaedic surgery. Resorbable PLLA or PGA implants have been reported to be associated with osteolysis. Biocomposite implants, composed of PLLA and/or PGA and ceramics, have gained popularity due to their biocompatibility and lack of osteolysis. The aim of the present study was to investigate the biodegradation progression of biocomposites suture anchor implants 2 years after rotator cuff repair.",
+              "block_bbox": [
+                66,
+                277,
+                1074,
+                416
+              ],
+              "block_id": 4,
+              "block_order": 4,
+              "group_id": 4,
+              "block_polygon_points": [
+                [
+                  66.0,
+                  277.0
+                ],
+                [
+                  1074.0,
+                  277.0
+                ],
+                [
+                  1074.0,
+                  416.0
+                ],
+                [
+                  66.0,
+                  416.0
+                ]
+              ]
+            },
+            {
+              "block_label": "abstract",
+              "block_content": "Methods: Twenty-five consecutive patients (84 implants) with arthroscopically repaired rotator cuff tears using screw-in biocomposite implants with a 5.5 mm diameter and a minimum of 2 years (range, 16.3 to 32.0 months) follow-up were included into the present study. To analyse the biodegradation process of the suture anchors, an MRI of the operated shoulder was performed. The peri-implant fluid, the degradation of the suture anchors and the widening of the bone beds were assessed.",
+              "block_bbox": [
+                66,
+                419,
+                1081,
+                560
+              ],
+              "block_id": 5,
+              "block_order": 5,
+              "group_id": 5,
+              "block_polygon_points": [
+                [
+                  66.0,
+                  419.0
+                ],
+                [
+                  1081.0,
+                  419.0
+                ],
+                [
+                  1081.0,
+                  560.0
+                ],
+                [
+                  66.0,
+                  560.0
+                ]
+              ]
+            },
+            {
+              "block_label": "abstract",
+              "block_content": "Results: In the present study, the structure of the suture anchor implants was clearly visible in 23.8%, visible in 42.9%, partially visible in 23.8%, and not visible in 9.5%. No peri-implant fluid was observed in 26.2%. Slight peri-implant fluid was seen in 34.5%, a continuous fringe of fluid at least 1 mm thick in 23.8% and more than 1 mm thick in 13.1%. The mean width of the bone beds was  $ 4.38 \\pm 1.28 $ mm (apex),  $ 5.41 \\pm 1.12 $ mm (middle) and  $ 5.88 \\pm 1.39 $ mm (basis), indicating a widening of 0.33 mm of the basis. The mean length of the bone beds was  $ 19.09 \\pm 2.38 $ mm. No significant difference was found between the lateral and medial row or between knotted and knotless implants. No case of gross osteolysis was observed.",
+              "block_bbox": [
+                65,
+                564,
+                1083,
+                760
+              ],
+              "block_id": 6,
+              "block_order": 6,
+              "group_id": 6,
+              "block_polygon_points": [
+                [
+                  65.0,
+                  564.0
+                ],
+                [
+                  1083.0,
+                  564.0
+                ],
+                [
+                  1083.0,
+                  760.0
+                ],
+                [
+                  65.0,
+                  760.0
+                ]
+              ]
+            },
+            {
+              "block_label": "text",
+              "block_content": "Conclusion: The results of the present study show that biocomposite suture anchors are frequently still visible on MRI 2 years after a rotator cuff reconstruction. No gross osteolysis was observed in the present study, indicating good biocompatibility of the implants.",
+              "block_bbox": [
+                66,
+                764,
+                1087,
+                848
+              ],
+              "block_id": 7,
+              "block_order": 7,
+              "group_id": 7,
+              "block_polygon_points": [
+                [
+                  66.0,
+                  764.0
+                ],
+                [
+                  1087.0,
+                  764.0
+                ],
+                [
+                  1087.0,
+                  848.0
+                ],
+                [
+                  66.0,
+                  848.0
+                ]
+              ]
+            },
+            {
+              "block_label": "text",
+              "block_content": "The Orthopaedic Journal of Sports Medicine, 5(7)(suppl 6)\nDOI: 10.1177/2325967117S00368\n©The Author(s) 2017",
+              "block_bbox": [
+                67,
+                873,
+                542,
+                939
+              ],
+              "block_id": 8,
+              "block_order": 8,
+              "group_id": 8,
+              "block_polygon_points": [
+                [
+                  67.0,
+                  873.0
+                ],
+                [
+                  542.0,
+                  873.0
+                ],
+                [
+                  542.0,
+                  939.0
+                ],
+                [
+                  67.0,
+                  939.0
+                ]
+              ]
+            },
+            {
+              "block_label": "footer",
+              "block_content": "This open-access article is published and distributed under the Creative Commons Attribution - NonCommercial - No Derivatives License (http://creativecommons.org/licenses/by-nc-nd/3.0/), which permits the noncommercial use, distribution, and reproduction of the article in any medium, provided the original author and source are credited. You may not alter, transform, or build upon this article without the permission of the Author(s). For reprints and permission queries, please visit SAGE's Web site at http://www.sagepub.com/journalsPermissions.nav.",
+              "block_bbox": [
+                65,
+                1416,
+                1103,
+                1495
+              ],
+              "block_id": 9,
+              "block_order": null,
+              "group_id": 9,
+              "block_polygon_points": [
+                [
+                  65.0,
+                  1416.0
+                ],
+                [
+                  1103.0,
+                  1416.0
+                ],
+                [
+                  1103.0,
+                  1495.0
+                ],
+                [
+                  65.0,
+                  1495.0
+                ]
+              ]
+            }
+          ],
+          "layout_det_res": {
+            "boxes": [
+              {
+                "cls_id": 12,
+                "label": "header",
+                "score": 0.847685694694519,
+                "coordinate": [
+                  68,
+                  72,
+                  342,
+                  95
+                ],
+                "order": null,
+                "polygon_points": [
+                  [
+                    68.0,
+                    72.0
+                  ],
+                  [
+                    342.0,
+                    72.0
+                  ],
+                  [
+                    342.0,
+                    95.0
+                  ],
+                  [
+                    68.0,
+                    95.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 6,
+                "label": "doc_title",
+                "score": 0.8761678338050842,
+                "coordinate": [
+                  66,
+                  144,
+                  1034,
+                  172
+                ],
+                "order": 1,
+                "polygon_points": [
+                  [
+                    66.0,
+                    144.0
+                  ],
+                  [
+                    1034.0,
+                    144.0
+                  ],
+                  [
+                    1034.0,
+                    172.0
+                  ],
+                  [
+                    66.0,
+                    172.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 22,
+                "label": "text",
+                "score": 0.8163740038871765,
+                "coordinate": [
+                  67,
+                  187,
+                  579,
+                  211
+                ],
+                "order": 2,
+                "polygon_points": [
+                  [
+                    67.0,
+                    187.0
+                  ],
+                  [
+                    579.0,
+                    187.0
+                  ],
+                  [
+                    579.0,
+                    211.0
+                  ],
+                  [
+                    67.0,
+                    211.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 22,
+                "label": "text",
+                "score": 0.8108523488044739,
+                "coordinate": [
+                  67,
+                  217,
+                  687,
+                  241
+                ],
+                "order": 3,
+                "polygon_points": [
+                  [
+                    67.0,
+                    217.0
+                  ],
+                  [
+                    687.0,
+                    217.0
+                  ],
+                  [
+                    687.0,
+                    241.0
+                  ],
+                  [
+                    67.0,
+                    241.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 17,
+                "label": "paragraph_title",
+                "score": 0.7548872232437134,
+                "coordinate": [
+                  69,
+                  277,
+                  174,
+                  300
+                ],
+                "order": 4,
+                "polygon_points": [
+                  [
+                    69.0,
+                    277.0
+                  ],
+                  [
+                    173.0,
+                    277.0
+                  ],
+                  [
+                    173.0,
+                    299.0
+                  ],
+                  [
+                    69.0,
+                    299.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 0,
+                "label": "abstract",
+                "score": 0.8092860579490662,
+                "coordinate": [
+                  66,
+                  277,
+                  1074,
+                  416
+                ],
+                "order": 5,
+                "polygon_points": [
+                  [
+                    66.0,
+                    277.0
+                  ],
+                  [
+                    1074.0,
+                    277.0
+                  ],
+                  [
+                    1074.0,
+                    416.0
+                  ],
+                  [
+                    66.0,
+                    416.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 0,
+                "label": "abstract",
+                "score": 0.7349819540977478,
+                "coordinate": [
+                  66,
+                  419,
+                  1081,
+                  560
+                ],
+                "order": 6,
+                "polygon_points": [
+                  [
+                    66.0,
+                    419.0
+                  ],
+                  [
+                    1081.0,
+                    419.0
+                  ],
+                  [
+                    1081.0,
+                    560.0
+                  ],
+                  [
+                    66.0,
+                    560.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 0,
+                "label": "abstract",
+                "score": 0.7865687608718872,
+                "coordinate": [
+                  65,
+                  564,
+                  1083,
+                  760
+                ],
+                "order": 7,
+                "polygon_points": [
+                  [
+                    65.0,
+                    564.0
+                  ],
+                  [
+                    1083.0,
+                    564.0
+                  ],
+                  [
+                    1083.0,
+                    760.0
+                  ],
+                  [
+                    65.0,
+                    760.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 15,
+                "label": "inline_formula",
+                "score": 0.45180925726890564,
+                "coordinate": [
+                  551,
+                  648,
+                  653,
+                  673
+                ],
+                "order": 8,
+                "polygon_points": [
+                  [
+                    551.0,
+                    648.0
+                  ],
+                  [
+                    653.0,
+                    648.0
+                  ],
+                  [
+                    653.0,
+                    673.0
+                  ],
+                  [
+                    551.0,
+                    673.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 15,
+                "label": "inline_formula",
+                "score": 0.3649578392505646,
+                "coordinate": [
+                  1019,
+                  648,
+                  1077,
+                  673
+                ],
+                "order": 9,
+                "polygon_points": [
+                  [
+                    1019.0,
+                    648.0
+                  ],
+                  [
+                    1076.0,
+                    648.0
+                  ],
+                  [
+                    1076.0,
+                    672.0
+                  ],
+                  [
+                    1019.0,
+                    672.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 15,
+                "label": "inline_formula",
+                "score": 0.3209295868873596,
+                "coordinate": [
+                  989,
+                  679,
+                  1060,
+                  702
+                ],
+                "order": 10,
+                "polygon_points": [
+                  [
+                    989.0,
+                    679.0
+                  ],
+                  [
+                    1059.0,
+                    679.0
+                  ],
+                  [
+                    1059.0,
+                    701.0
+                  ],
+                  [
+                    989.0,
+                    701.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 22,
+                "label": "text",
+                "score": 0.7668045163154602,
+                "coordinate": [
+                  66,
+                  764,
+                  1087,
+                  848
+                ],
+                "order": 11,
+                "polygon_points": [
+                  [
+                    66.0,
+                    764.0
+                  ],
+                  [
+                    1087.0,
+                    764.0
+                  ],
+                  [
+                    1087.0,
+                    848.0
+                  ],
+                  [
+                    66.0,
+                    848.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 22,
+                "label": "text",
+                "score": 0.7637770175933838,
+                "coordinate": [
+                  67,
+                  873,
+                  542,
+                  939
+                ],
+                "order": 12,
+                "polygon_points": [
+                  [
+                    67.0,
+                    873.0
+                  ],
+                  [
+                    542.0,
+                    873.0
+                  ],
+                  [
+                    542.0,
+                    939.0
+                  ],
+                  [
+                    67.0,
+                    939.0
+                  ]
+                ]
+              },
+              {
+                "cls_id": 8,
+                "label": "footer",
+                "score": 0.597373366355896,
+                "coordinate": [
+                  65,
+                  1416,
+                  1103,
+                  1495
+                ],
+                "order": null,
+                "polygon_points": [
+                  [
+                    65.0,
+                    1416.0
+                  ],
+                  [
+                    1103.0,
+                    1416.0
+                  ],
+                  [
+                    1103.0,
+                    1495.0
+                  ],
+                  [
+                    65.0,
+                    1495.0
+                  ]
+                ]
+              }
+            ]
+          }
+        },
+        "markdown": {
+          "text": "# Biodegradation of Biocomposite Suture Anchor Implants 2,2 years after Rotator Cuff Repair\n\nMirco Sgroi, Theresa Friesz, Heiko Reichel, Thomas Kappe\n\nDepartment for Orthopaedic Surgery, RKU, University of Ulm, Ulm, Germany\n\nObjectives: Arthroscopic rotator cuff repair is one of the most frequently performed operations in orthopaedic surgery. Resorbable PLLA or PGA implants have been reported to be associated with osteolysis. Biocomposite implants, composed of PLLA and/or PGA and ceramics, have gained popularity due to their biocompatibility and lack of osteolysis. The aim of the present study was to investigate the biodegradation progression of biocomposites suture anchor implants 2 years after rotator cuff repair.\n\nMethods: Twenty-five consecutive patients (84 implants) with arthroscopically repaired rotator cuff tears using screw-in biocomposite implants with a 5.5 mm diameter and a minimum of 2 years (range, 16.3 to 32.0 months) follow-up were included into the present study. To analyse the biodegradation process of the suture anchors, an MRI of the operated shoulder was performed. The peri-implant fluid, the degradation of the suture anchors and the widening of the bone beds were assessed.\n\nResults: In the present study, the structure of the suture anchor implants was clearly visible in 23.8%, visible in 42.9%, partially visible in 23.8%, and not visible in 9.5%. No peri-implant fluid was observed in 26.2%. Slight peri-implant fluid was seen in 34.5%, a continuous fringe of fluid at least 1 mm thick in 23.8% and more than 1 mm thick in 13.1%. The mean width of the bone beds was  $ 4.38 \\pm 1.28 $ mm (apex),  $ 5.41 \\pm 1.12 $ mm (middle) and  $ 5.88 \\pm 1.39 $ mm (basis), indicating a widening of 0.33 mm of the basis. The mean length of the bone beds was  $ 19.09 \\pm 2.38 $ mm. No significant difference was found between the lateral and medial row or between knotted and knotless implants. No case of gross osteolysis was observed.\n\nConclusion: The results of the present study show that biocomposite suture anchors are frequently still visible on MRI 2 years after a rotator cuff reconstruction. No gross osteolysis was observed in the present study, indicating good biocompatibility of the implants.\n\nThe Orthopaedic Journal of Sports Medicine, 5(7)(suppl 6)\n\nDOI: 10.1177/2325967117S00368\n\n©The Author(s) 2017",
+          "images": {}
+        },
+        "outputImages": {
+          "layout_det_res": "https://pplines-online.bj.bcebos.com/deploy/official/paddleocr/pp-ocr-vl-16-online//d437a82a-0b5d-4f2d-8e2a-b03d7218e87d/layout_det_res_0.jpg?authorization=bce-auth-v1%2FALTAKDN8mY5KlNI7zaRpLmOqrw%2F2026-08-16T10%3A13%3A52Z%2F-1%2F%2Fe182febb2222fad039f37a23045f49c13e0bf7556d90f1713ca633a2d709046d"
+        },
+        "inputImage": "https://pplines-online.bj.bcebos.com/deploy/official/paddleocr/pp-ocr-vl-16-online//d437a82a-0b5d-4f2d-8e2a-b03d7218e87d/input_img_0.jpg?authorization=bce-auth-v1%2FALTAKDN8mY5KlNI7zaRpLmOqrw%2F2026-08-16T10%3A13%3A55Z%2F-1%2F%2F17bf61d569ea09505b47439f288c64f45621b032329835ca222836aea7b66042"
+      }
+    ],
+    "dataInfo": {
+      "numPages": 1,
+      "pages": [
+        {
+          "width": 1170,
+          "height": 1566
+        }
+      ],
+      "type": "pdf"
+    },
+    "preprocessedImages": [
+      "https://pplines-online.bj.bcebos.com/deploy/official/paddleocr/pp-ocr-vl-16-online//d437a82a-0b5d-4f2d-8e2a-b03d7218e87d/preprocessed_img_0.jpg?authorization=bce-auth-v1%2FALTAKDN8mY5KlNI7zaRpLmOqrw%2F2026-08-16T10%3A13%3A57Z%2F-1%2F%2F2ccba3c2c6df19635c745ef3f783d1b05a48a21c9248438410a2e532b5ec3e35"
+    ]
+  }
+]

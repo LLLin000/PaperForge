@@ -1,0 +1,30 @@
+{
+ "zotero_key": "63EYTG95",
+ "source_pdf": "<scrubbed>",
+ "ocr_provider": "PaddleOCR-VL-1.6",
+ "mode": "async",
+ "ocr_status": "done",
+ "ocr_job_id": "82416478921154560",
+ "ocr_started_at": "2026-08-16T10:13:40.344147+00:00",
+ "ocr_finished_at": "2026-08-16T10:14:41.583480+00:00",
+ "page_count": 1,
+ "markdown_path": "<scrubbed>",
+ "json_path": "<scrubbed>",
+ "assets_path": "<scrubbed>",
+ "fulltext_md_path": "<scrubbed>",
+ "error": "",
+ "retry_count": 0,
+ "last_error": null,
+ "last_attempt_at": null,
+ "ocr_pipeline_version": "2.0.0",
+ "ocr_health_overall": "green",
+ "machine_fulltext_hash": "sha256:b6b5277bdd2fb75b74f598d98a3eff3f573ce01bf20bd7ff48db9d6deb58f775",
+ "raw_upgradable": false,
+ "derived_stale": false,
+ "version_state_updated_at": "2026-08-16T18:14:41.565831",
+ "legacy_images_path": "System/PaperForge/ocr/63EYTG95/images",
+ "path_map": {
+  "structured_truth": "assets/",
+  "legacy_compat": "images/"
+ }
+}
