@@ -854,6 +854,98 @@ describe("Memory module detail (Issue #78)", () => {
     expect(el.querySelector(".pf-sr-impact-box")).toBeNull();
     expect(el.querySelectorAll(".pf-sr-cfg-input")).toHaveLength(3);
   });
+  it("routes provider model/base changes through canonical config", async () => {
+    const tab = makeTab();
+    const client = (tab as any).getClient();
+    const configSet = vi.fn().mockResolvedValue({});
+    client.configSet = configSet;
+    (tab.plugin as any).settings.vector_db_api_model = "old-model";
+    (tab.plugin as any).settings.vector_db_api_base = "https://old.example";
+
+    const el = dom.window.document.createElement("div");
+    (tab as any)._renderMemoryDetail(el);
+    const inputs = [
+      ...el.querySelectorAll<HTMLInputElement>(".pf-sr-cfg-input"),
+    ];
+    expect(inputs).toHaveLength(3);
+    inputs[1].value = "https://new.example";
+    inputs[1].dispatchEvent(new dom.window.Event("change"));
+    inputs[2].value = "new-model";
+    inputs[2].dispatchEvent(new dom.window.Event("change"));
+    for (let i = 0; i < 4; i++) await Promise.resolve();
+
+    expect(configSet).toHaveBeenCalledWith(
+      "vector_db_api_base",
+      "https://new.example"
+    );
+    expect(configSet).toHaveBeenCalledWith("vector_db_api_model", "new-model");
+    expect((tab.plugin as any).settings.vector_db_api_base).toBe(
+      "https://new.example"
+    );
+    expect((tab.plugin as any).settings.vector_db_api_model).toBe("new-model");
+    expect(tab.plugin.saveSettings).toHaveBeenCalled();
+  });
+
+  it("routes setup-journey provider fields through canonical config", async () => {
+    const tab = makeTab();
+    const client = (tab as any).getClient();
+    const configSet = vi.fn().mockResolvedValue({});
+    client.configSet = configSet;
+    (tab as any)._setupOptionals.memory = true;
+
+    const el = dom.window.document.createElement("div");
+    (tab as any)._renderSetupStageOptionals(el);
+    const inputs = [
+      ...el.querySelectorAll<HTMLInputElement>(".pf-setup-input"),
+    ];
+    expect(inputs).toHaveLength(3);
+    inputs[1].value = "setup-model";
+    inputs[1].dispatchEvent(new dom.window.Event("change"));
+    inputs[2].value = "https://setup.example";
+    inputs[2].dispatchEvent(new dom.window.Event("change"));
+    for (let i = 0; i < 4; i++) await Promise.resolve();
+
+    expect(configSet).toHaveBeenCalledWith(
+      "vector_db_api_model",
+      "setup-model"
+    );
+    expect(configSet).toHaveBeenCalledWith(
+      "vector_db_api_base",
+      "https://setup.example"
+    );
+    expect((tab.plugin as any).settings.vector_db_api_model).toBe(
+      "setup-model"
+    );
+    expect((tab.plugin as any).settings.vector_db_api_base).toBe(
+      "https://setup.example"
+    );
+  });
+
+  it("restores the prior mirror and surfaces canonical config failure", async () => {
+    const tab = makeTab();
+    const client = (tab as any).getClient();
+    client.configSet = vi
+      .fn()
+      .mockRejectedValue(new Error("backend unavailable"));
+    (tab.plugin as any).settings.vector_db_api_base = "https://old.example";
+
+    const el = dom.window.document.createElement("div");
+    (tab as any)._renderMemoryDetail(el);
+    const base = el.querySelectorAll<HTMLInputElement>(".pf-sr-cfg-input")[1];
+    base.value = "https://new.example";
+    base.dispatchEvent(new dom.window.Event("change"));
+    for (let i = 0; i < 4; i++) await Promise.resolve();
+
+    expect((tab.plugin as any).settings.vector_db_api_base).toBe(
+      "https://old.example"
+    );
+    expect(base.value).toBe("https://old.example");
+    expect(
+      (noticeCalls as unknown as Array<{ msg?: string }>).some((notice) =>
+        String(notice.msg).includes("backend unavailable")
+      )
+    ).toBe(true);
+  });
 });
 
 // ════════════════════════════════ 4. Dispatch allowlist ════════════════
