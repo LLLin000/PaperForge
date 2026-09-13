@@ -609,18 +609,21 @@ describe("PaperForge real-task e2e", function () {
   });
 
   it("executes an action through the client (memory.build)", async function () {
-    const ok = await browser.executeObsidian(async ({ app }) => {
+    await waitForIdle("E01", "startup-sync-settle-before-memory-build");
+    const result = await browser.executeObsidian(async ({ app }) => {
       const plugin = app.plugins.plugins["paperforge"];
       if (!plugin || typeof plugin.getClient !== "function") {
         throw new Error("paperforge plugin not loaded");
       }
-      const result = await plugin.getClient().runAction({
+      return await plugin.getClient().runAction({
         action_id: "memory.build",
         scope: { kind: "all" },
+        confirm: "memory.build",
       });
-      return result.ok === true;
     });
-    expect(ok).toBe(true);
+    if (result.ok !== true) {
+      throw new Error(`memory.build failed: ${JSON.stringify(result)}`);
+    }
   });
 
   it("proves provider config authority through UI, restart, and a controlled embed request", async function () {
