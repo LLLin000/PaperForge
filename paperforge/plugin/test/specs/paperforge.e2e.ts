@@ -526,6 +526,91 @@ describe("PaperForge real-task e2e", function () {
     });
   });
 
+  it("autosyncs a changed export without a manual Sync click", async function () {
+    await waitForIdle("B04", "startup-sync-settle");
+    const base = await sandboxBasePath();
+    const indexBefore = readIndex(base);
+
+    // The production timer enforces a 30-second floor. Restart it after
+    // persisting the short cadence so this remains a real timer path, not a
+    // direct call to the private convergence method.
+    await browser.executeObsidian(async ({ app }) => {
+      const loaded = app.plugins.plugins["paperforge"] as unknown as {
+        settings: { autoSyncIntervalSeconds?: number };
+        _pollTimer: ReturnType<typeof setInterval> | null;
+        _autoSyncRunning: boolean;
+        _lastSyncTime: string | null;
+        _startConvergenceTimer: () => void;
+        getClient(): { isOperationActive(): boolean };
+        saveSettings(): Promise<void>;
+      };
+      if (!loaded) throw new Error("paperforge plugin not loaded");
+      loaded.settings.autoSyncIntervalSeconds = 30;
+      loaded._lastSyncTime = null;
+      await loaded.saveSettings();
+      if (loaded._pollTimer) clearInterval(loaded._pollTimer);
+      loaded._pollTimer = null;
+      loaded._startConvergenceTimer.call(loaded);
+    });
+    await browser.waitUntil(
+      async () =>
+        await browser.executeObsidian(async ({ app }) => {
+          const loaded = app.plugins.plugins["paperforge"] as unknown as {
+            _autoSyncRunning: boolean;
+            _lastSyncTime: string | null;
+            getClient(): { isOperationActive(): boolean };
+          };
+          return (
+            loaded._lastSyncTime !== null &&
+            !loaded._autoSyncRunning &&
+            !loaded.getClient().isOperationActive()
+          );
+        }),
+      {
+        timeout: 90000,
+        timeoutMsg: "the timer's initial convergence tick never settled",
+      }
+    );
+
+    addExportItem(base, {
+      key: "TSTONE002",
+      title: "Second Paper",
+      doi: "10.1016/j.jse.2024.01.999",
+    });
+
+    await browser.waitUntil(
+      () => {
+        try {
+          return readIndex(base).paper_count === indexBefore.paper_count + 1;
+        } catch {
+          return false;
+        }
+      },
+      {
+        timeout: 120000,
+        timeoutMsg: "autosync timer never reconciled the changed export",
+      }
+    );
+    expect(newNoteExists(base)).toBe(true);
+
+    appendEvidence("b04-autosync.json", {
+      case_id: "B04",
+      variant: "timed autosync -> incremental sync",
+      required_layer: "H",
+      status: "VERIFIED",
+      source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: PLUGIN_DIR,
+      })
+        .toString()
+        .trim(),
+      worktree_dirty: worktreeDirty(),
+      paper_count_before: indexBefore.paper_count,
+      paper_count_after: readIndex(base).paper_count,
+      added_key: NEW_PAPER_KEY,
+      observed_at: new Date().toISOString(),
+    });
+  });
+
   it("searches through the collection-mode search box", async function () {
     await openPanel();
     await openVaultFile(BASE_PATH);
