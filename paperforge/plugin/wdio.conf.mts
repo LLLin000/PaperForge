@@ -1,16 +1,23 @@
 import * as path from "path";
+import { rmSync } from "node:fs";
 
-// Isolation: the OS keyring is machine-level, so a sandbox vault inherits the
-// developer's real credential — `paperforge auth status` reported
-// `state=available, source=keyring` inside a throw-away vault. That makes every
-// "fails closed without credentials" assertion meaningless and lets a test
-// spend a real provider quota. The transport's credential strip cannot help
-// here (it removes env prefixes; the secret never was in the environment), so
-// the backend is pointed at a null keyring instead. `paperforge/credentials.py`
-// honours PAPERFORGE_KEYRING_BACKEND, and the strip only removes
-// PAPERFORGE_CREDENTIAL_* / PADDLEOCR_* / VECTOR_DB_* / OPENAI_*, so this value
-// reaches the child intact.
-process.env.PAPERFORGE_KEYRING_BACKEND = "keyring.backends.null.Keyring";
+// Isolation: use a disposable file backend rather than the machine keyring.
+// The real-provider W03 E2E test seeds this file with a fake key; every run
+// starts empty, so credential-isolation checks cannot inherit developer keys.
+const E2E_KEYRING_FILE = path.resolve(
+  ".obsidian-cache",
+  "paperforge-e2e-keyring.json"
+);
+rmSync(E2E_KEYRING_FILE, { force: true });
+process.env.PAPERFORGE_KEYRING_BACKEND = "e2e_keyring.Keyring";
+process.env.PAPERFORGE_E2E_KEYRING_FILE = E2E_KEYRING_FILE;
+const keyringFixtureDir = path.resolve("test", "fixtures");
+process.env.PYTHONPATH = process.env.PYTHONPATH
+  ? `${keyringFixtureDir}${path.delimiter}${process.env.PYTHONPATH}`
+  : keyringFixtureDir;
+
+// The child environment sanitizer still removes legacy credential variables;
+// this backend only changes where the test's explicit seed is read.
 
 export const config: WebdriverIO.Config = {
   runner: "local",
