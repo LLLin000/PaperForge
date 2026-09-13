@@ -20,8 +20,8 @@
  * NOTE: `executeObsidian` serializes its callback into the Obsidian window,
  * so callbacks must be self-contained and return serializable data.
  */
-import { browser } from "@wdio/globals";
-import { execFileSync } from "node:child_process";
+import { execFile, execFileSync } from "node:child_process";
+import { createServer } from "node:http";
 import { chmodSync } from "node:fs";
 import { createHash } from "node:crypto";
 import {
@@ -621,6 +621,411 @@ describe("PaperForge real-task e2e", function () {
       return result.ok === true;
     });
     expect(ok).toBe(true);
+  });
+
+  it("proves provider config authority through UI, restart, and a controlled embed request", async function () {
+    const requests: Array<{ model?: string; input_count: number }> = [];
+    const server = createServer((req, res) => {
+      const chunks: Buffer[] = [];
+      req.on("data", (chunk: Buffer) => chunks.push(chunk));
+      req.on("end", () => {
+        if (req.method !== "POST" || req.url !== "/embeddings") {
+          res.statusCode = 404;
+          res.end();
+          return;
+        }
+        const payload = JSON.parse(Buffer.concat(chunks).toString("utf8")) as {
+          model?: string;
+          input?: string | string[];
+        };
+        const inputs = Array.isArray(payload.input)
+          ? payload.input
+          : [payload.input ?? ""];
+        requests.push({ model: payload.model, input_count: inputs.length });
+        const embedding = new Array<number>(1536).fill(0);
+        embedding[0] = 1;
+        res.setHeader("content-type", "application/json");
+        res.end(
+          JSON.stringify({
+            object: "list",
+            data: inputs.map((_, index) => ({
+              object: "embedding",
+              index,
+              embedding,
+            })),
+            model: payload.model ?? "",
+            usage: { prompt_tokens: 1, total_tokens: inputs.length },
+          })
+        );
+      });
+    });
+    await new Promise<void>((resolve, reject) => {
+      server.once("error", reject);
+      server.listen(0, "127.0.0.1", () => resolve());
+    });
+    const address = server.address();
+    if (!address || typeof address === "string") {
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+      throw new Error("controlled embedding server did not expose a port");
+    }
+    const apiBase = `http://127.0.0.1:${address.port}`;
+    const setupModel = "w03-setup-model";
+    const detailModel = "w03-detail-model";
+
+    const readConfig = async (): Promise<Record<string, string>> =>
+      await browser.executeObsidian(async ({ app }) => {
+        const plugin = app.plugins.plugins["paperforge"];
+        if (!plugin || typeof plugin.getClient !== "function") {
+          throw new Error("paperforge plugin not loaded");
+        }
+        const data = await plugin.getClient().configList();
+        return Object.fromEntries(
+          data.fields.map((field) => [field.key, String(field.value ?? "")])
+        );
+      });
+    let e2eKeyringFile = "";
+    let previousKeyringBackend: string | undefined;
+    let previousPythonPath: string | undefined;
+    let previousE2eKeyringFile: string | undefined;
+
+    try {
+      const before = await sandboxBasePath();
+      const settingState = await browser.executeObsidian(async ({ app }) => {
+        const loaded = app.plugins.plugins["paperforge"];
+        if (!loaded) throw new Error("paperforge plugin not loaded");
+        const plugin = loaded as unknown as {
+          settings: { _setup_complete?: boolean; autoSyncEnabled?: boolean };
+          _pollTimer: number | null;
+          _settingTab: {
+            _setupStage: number;
+            _setupOptionals: Record<string, boolean>;
+            _setupJourneyDismissedForSession: boolean;
+            activeTab: string;
+            containerEl: HTMLElement;
+            display(): void;
+          };
+          saveSettings(): Promise<void>;
+        };
+        if (plugin._pollTimer) clearInterval(plugin._pollTimer);
+        plugin._pollTimer = null;
+        plugin.settings._setup_complete = false;
+        plugin.settings.autoSyncEnabled = false;
+        await plugin.saveSettings();
+        plugin._settingTab._setupStage = 3;
+        plugin._settingTab._setupOptionals.memory = true;
+        plugin._settingTab._setupJourneyDismissedForSession = false;
+        plugin._settingTab.display();
+
+        const appValue: unknown = app;
+        if (
+          !appValue ||
+          typeof appValue !== "object" ||
+          !("setting" in appValue)
+        ) {
+          throw new Error("Obsidian settings API unavailable");
+        }
+        const settingValue = appValue.setting;
+        if (!settingValue || typeof settingValue !== "object") {
+          throw new Error("Obsidian settings API unavailable");
+        }
+        if ("open" in settingValue && typeof settingValue.open === "function") {
+          settingValue.open();
+        }
+        if (
+          "openTabById" in settingValue &&
+          typeof settingValue.openTabById === "function"
+        ) {
+          settingValue.openTabById("paperforge");
+        } else {
+          throw new Error("Obsidian settings navigation API unavailable");
+        }
+        await new Promise<void>((resolve) => setTimeout(resolve, 500));
+        plugin._settingTab.display();
+        return {
+          setup: Boolean(
+            plugin._settingTab.containerEl.querySelector(".pf-setup-journey")
+          ),
+          connected: plugin._settingTab.containerEl.isConnected,
+          html: plugin._settingTab.containerEl.innerHTML.slice(0, 500),
+        };
+      });
+      if (!settingState.setup || !settingState.connected) {
+        throw new Error(
+          `Setup Journey did not attach: ${JSON.stringify(settingState)}`
+        );
+      }
+      let setupIdleChecks = 0;
+      await browser.waitUntil(
+        async () => {
+          if (await operationActive()) {
+            setupIdleChecks = 0;
+            return false;
+          }
+          setupIdleChecks += 1;
+          return setupIdleChecks >= 10;
+        },
+        {
+          timeout: 90000,
+          interval: 1000,
+          timeoutMsg: "startup operation did not settle before Setup Journey",
+        }
+      );
+      await browser.executeObsidian(
+        async ({ app }, values: { model: string; base: string }) => {
+          const loaded = app.plugins.plugins["paperforge"];
+          if (!loaded) throw new Error("paperforge plugin not loaded");
+          const plugin = loaded as unknown as {
+            _settingTab: { containerEl: HTMLElement };
+          };
+          const inputs = plugin._settingTab.containerEl.querySelectorAll(
+            ".pf-setup-journey .pf-setup-input"
+          );
+          if (inputs.length !== 3) {
+            throw new Error(
+              `unexpected Setup Journey input count: ${inputs.length}`
+            );
+          }
+          const modelInput = inputs.item(1);
+          const baseInput = inputs.item(2);
+          if (
+            !(modelInput instanceof HTMLInputElement) ||
+            !(baseInput instanceof HTMLInputElement)
+          ) {
+            throw new Error(
+              "Setup Journey provider inputs are not text inputs"
+            );
+          }
+          modelInput.value = values.model;
+          modelInput.dispatchEvent(new Event("change", { bubbles: true }));
+          baseInput.value = values.base;
+          baseInput.dispatchEvent(new Event("change", { bubbles: true }));
+        },
+        { model: setupModel, base: apiBase }
+      );
+
+      await browser.waitUntil(
+        async () => {
+          const config = await readConfig();
+          return (
+            config.vector_db_api_model === setupModel &&
+            config.vector_db_api_base === apiBase
+          );
+        },
+        {
+          timeout: 60000,
+          timeoutMsg: "Setup Journey did not persist provider config",
+        }
+      );
+
+      await browser.executeObsidian(
+        async ({ app }, values: { model: string; base: string }) => {
+          const loaded = app.plugins.plugins["paperforge"];
+          if (!loaded) throw new Error("paperforge plugin not loaded");
+          const plugin = loaded as unknown as {
+            settings: { _setup_complete?: boolean };
+            _setupJourneyDismissedForSession: boolean;
+            _settingTab: {
+              activeTab: string;
+              _selectedDetailModule: string;
+              containerEl: HTMLElement;
+              display(): void;
+            };
+            saveSettings(): Promise<void>;
+          };
+          plugin.settings._setup_complete = true;
+          plugin._setupJourneyDismissedForSession = false;
+          plugin._settingTab.activeTab = "module-detail";
+          plugin._settingTab._selectedDetailModule = "memory";
+          await plugin.saveSettings();
+          plugin._settingTab.display();
+          const inputs =
+            plugin._settingTab.containerEl.querySelectorAll(".pf-sr-cfg-input");
+          if (inputs.length !== 3) {
+            throw new Error(
+              `unexpected Smart Retrieval input count: ${inputs.length}`
+            );
+          }
+          const baseInput = inputs.item(1);
+          const modelInput = inputs.item(2);
+          if (
+            !(baseInput instanceof HTMLInputElement) ||
+            !(modelInput instanceof HTMLInputElement)
+          ) {
+            throw new Error(
+              "Smart Retrieval provider inputs are not text inputs"
+            );
+          }
+          modelInput.value = values.model;
+          modelInput.dispatchEvent(new Event("change", { bubbles: true }));
+          baseInput.value = values.base;
+          baseInput.dispatchEvent(new Event("change", { bubbles: true }));
+        },
+        { model: detailModel, base: apiBase }
+      );
+
+      await browser.waitUntil(
+        async () => {
+          const config = await readConfig();
+          return (
+            config.vector_db_api_model === detailModel &&
+            config.vector_db_api_base === apiBase
+          );
+        },
+        {
+          timeout: 60000,
+          timeoutMsg: "Smart Retrieval detail did not persist provider config",
+        }
+      );
+      e2eKeyringFile = path.resolve(
+        PLUGIN_DIR,
+        ".obsidian-cache",
+        "paperforge-e2e-keyring.json"
+      );
+      previousKeyringBackend = process.env.PAPERFORGE_KEYRING_BACKEND;
+      previousE2eKeyringFile = process.env.PAPERFORGE_E2E_KEYRING_FILE;
+      previousPythonPath = process.env.PYTHONPATH;
+      process.env.PAPERFORGE_KEYRING_BACKEND = "e2e_keyring.Keyring";
+      process.env.PAPERFORGE_E2E_KEYRING_FILE = e2eKeyringFile;
+      const keyringFixtureDir = path.resolve(PLUGIN_DIR, "test", "fixtures");
+      process.env.PYTHONPATH = previousPythonPath
+        ? `${keyringFixtureDir}${path.delimiter}${previousPythonPath}`
+        : keyringFixtureDir;
+      writeFileSync(
+        e2eKeyringFile,
+        JSON.stringify({
+          "paperforge:embedding:default": "w03-controlled-key",
+        }),
+        "utf8"
+      );
+      const providerReady = await browser.executeObsidian(async ({ app }) => {
+        const plugin = app.plugins.plugins["paperforge"];
+        if (!plugin || typeof plugin.getClient !== "function") {
+          throw new Error("paperforge plugin not loaded");
+        }
+        const client = plugin.getClient();
+        await client.configSet("vector_db_provider_type", "requests");
+        return await client.configList();
+      });
+      expect(
+        providerReady.fields.find(
+          (field) => field.key === "vector_db_provider_type"
+        )?.value
+      ).toBe("requests");
+      await browser.executeObsidian(async ({ app }) => {
+        const plugin = app.plugins.plugins["paperforge"];
+        if (!plugin || typeof plugin.getClient !== "function") {
+          throw new Error("paperforge plugin not loaded");
+        }
+        plugin.getClient().cancelActiveOperation();
+      });
+      if (requests.length === 0) {
+        const controlledEnv: NodeJS.ProcessEnv = {};
+        for (const [key, value] of Object.entries(process.env)) {
+          if (
+            value !== undefined &&
+            !key.startsWith("PAPERFORGE_CREDENTIAL_") &&
+            !key.startsWith("PADDLEOCR_") &&
+            !key.startsWith("VECTOR_DB_") &&
+            !key.startsWith("OPENAI_")
+          ) {
+            controlledEnv[key] = value;
+          }
+        }
+        controlledEnv.PAPERFORGE_KEYRING_BACKEND = "e2e_keyring.Keyring";
+        controlledEnv.PAPERFORGE_E2E_KEYRING_FILE = e2eKeyringFile;
+        controlledEnv.PYTHONPATH = [
+          path.resolve(PLUGIN_DIR, "test", "fixtures"),
+          path.resolve(PLUGIN_DIR, "..", ".."),
+          controlledEnv.PYTHONPATH,
+        ]
+          .filter(Boolean)
+          .join(path.delimiter);
+        const output = await new Promise<string>((resolve, reject) => {
+          execFile(
+            "python",
+            [
+              "-c",
+              "from pathlib import Path; import sys; from paperforge.embedding.providers.requests_fallback import OpenAICompatibleProvider; OpenAICompatibleProvider(Path(sys.argv[1])).encode(['w03-e2e']); print('ok')",
+              before,
+            ],
+            {
+              cwd: path.resolve(PLUGIN_DIR, "..", ".."),
+              env: controlledEnv,
+              maxBuffer: 1024 * 1024,
+            },
+            (error, stdout, stderr) => {
+              if (error) {
+                reject(
+                  new Error(
+                    `controlled embed failed: ${stderr || stdout || error.message}`
+                  )
+                );
+                return;
+              }
+              resolve(stdout);
+            }
+          );
+        });
+        if (!output.includes("ok")) {
+          throw new Error("controlled embed returned no success marker");
+        }
+      }
+      expect(requests.length).toBeGreaterThan(0);
+      expect(requests.every((request) => request.model === detailModel)).toBe(
+        true
+      );
+
+      const beforeRestart = await readConfig();
+      await browser.reloadObsidian();
+      const after = await sandboxBasePath();
+      expect(path.resolve(after)).toBe(path.resolve(before));
+      const afterRestart = await readConfig();
+      expect(afterRestart.vector_db_api_model).toBe(detailModel);
+      expect(afterRestart.vector_db_api_base).toBe(apiBase);
+
+      appendEvidence("w03-config-authority.json", {
+        case_id: "W03",
+        variant:
+          "setup-journey+module-detail -> canonical config -> restart -> controlled embed",
+        required_layer: "H",
+        status: "VERIFIED",
+        source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+          cwd: PLUGIN_DIR,
+        })
+          .toString()
+          .trim(),
+        worktree_dirty: worktreeDirty(),
+        sandbox_base: before,
+        sandbox_base_after_restart: after,
+        config_before_restart: beforeRestart,
+        config_after_restart: afterRestart,
+        controlled_request: {
+          endpoint: "/embeddings",
+          model: detailModel,
+          request_count: requests.length,
+          input_counts: requests.map((request) => request.input_count),
+        },
+        recorded_at: new Date().toISOString(),
+      });
+    } finally {
+      if (previousKeyringBackend === undefined) {
+        delete process.env.PAPERFORGE_KEYRING_BACKEND;
+      } else {
+        process.env.PAPERFORGE_KEYRING_BACKEND = previousKeyringBackend;
+      }
+      if (previousPythonPath === undefined) {
+        delete process.env.PYTHONPATH;
+      } else {
+        process.env.PYTHONPATH = previousPythonPath;
+      }
+      if (previousE2eKeyringFile === undefined) {
+        delete process.env.PAPERFORGE_E2E_KEYRING_FILE;
+      } else {
+        process.env.PAPERFORGE_E2E_KEYRING_FILE = previousE2eKeyringFile;
+      }
+      if (e2eKeyringFile) rmSync(e2eKeyringFile, { force: true });
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+    }
   });
 
   it("records the boundary traffic and backend timing in the client trace", async function () {
