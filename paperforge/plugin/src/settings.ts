@@ -1568,16 +1568,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }) as HTMLInputElement;
     bi.value = this.plugin.settings.vector_db_api_base || "";
     bi.addEventListener("change", () => {
-      this.plugin.settings.vector_db_api_base = bi.value;
-      void this.getClient()
-        .configSet("vector_db_api_base", bi.value)
-        .catch(
-          (e) =>
-            new Notice(
-              `PaperForge: config set vector_db_api_base failed: ${String(e)}`
-            )
-        );
-      this._refreshVectorDbCredentialStatus();
+      this._setVectorDbConfig("vector_db_api_base", bi);
     });
 
     // Model
@@ -1593,16 +1584,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     mi.value =
       this.plugin.settings.vector_db_api_model || "text-embedding-3-small";
     mi.addEventListener("change", () => {
-      this.plugin.settings.vector_db_api_model = mi.value;
-      void this.getClient()
-        .configSet("vector_db_api_model", mi.value)
-        .catch(
-          (e) =>
-            new Notice(
-              `PaperForge: config set vector_db_api_model failed: ${String(e)}`
-            )
-        );
-      this._refreshVectorDbCredentialStatus();
+      this._setVectorDbConfig("vector_db_api_model", mi);
     });
 
     // ── Impact box (when action needed) ──
@@ -3915,6 +3897,24 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       })
       .catch(() => undefined);
   }
+  private _setVectorDbConfig(
+    key: "vector_db_api_base" | "vector_db_api_model",
+    input: HTMLInputElement
+  ): void {
+    const value = input.value.trim();
+    const previous = String(this.plugin.settings[key] ?? "");
+    void this.getClient()
+      .configSet(key, value)
+      .then(async () => {
+        this.plugin.settings[key] = value;
+        await this.plugin.saveSettings();
+        this._refreshVectorDbCredentialStatus();
+      })
+      .catch((error) => {
+        input.value = previous;
+        new Notice(`PaperForge: config set ${key} failed: ${String(error)}`);
+      });
+  }
 
   private async _storeVectorDbCredential(value: string): Promise<boolean> {
     // #173/C1: durable secrets go to the credential authority via
@@ -4075,9 +4075,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           },
         }) as HTMLInputElement;
         model.addEventListener("change", () => {
-          this.plugin.settings.vector_db_api_model = model.value.trim();
-          void this.plugin.saveSettings();
-          this._refreshVectorDbCredentialStatus();
+          this._setVectorDbConfig("vector_db_api_model", model);
         });
         config.createEl("label", { text: t("feat_api_base_url") });
         const base = config.createEl("input", {
@@ -4090,9 +4088,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           },
         }) as HTMLInputElement;
         base.addEventListener("change", () => {
-          this.plugin.settings.vector_db_api_base = base.value.trim();
-          void this.plugin.saveSettings();
-          this._refreshVectorDbCredentialStatus();
+          this._setVectorDbConfig("vector_db_api_base", base);
         });
         const save = config.createEl("button", {
           cls: "pf-setup-verify",

@@ -2497,7 +2497,7 @@ function Ht(p, o = "") {
 function i(p) {
   return (ct && ct[p]) || ot.en[p] || p;
 }
-var A = require("obsidian"),
+var D = require("obsidian"),
   j = K(require("fs")),
   ge = K(require("path"));
 var Tr = ["PAPERFORGE_CREDENTIAL_", "PADDLEOCR_", "VECTOR_DB_", "OPENAI_"];
@@ -2633,7 +2633,7 @@ function Vt(p, o) {
   }
   return e;
 }
-function z(p, o) {
+function V(p, o) {
   let e = p.createEl("button", {
     cls: "pf-action-btn",
     text: o.loading ? "\u2026" : o.label,
@@ -3729,7 +3729,7 @@ var oe = class {
       (super(o), (this.name = "AbortError"));
     }
   };
-var Ce = class Ce extends A.PluginSettingTab {
+var Ce = class Ce extends D.PluginSettingTab {
   constructor(e, t) {
     super(e, t);
     this._saveTimeout = null;
@@ -4311,7 +4311,7 @@ var Ce = class Ce extends A.PluginSettingTab {
         t.user_state === "ready" ? "pf-status-ok" : "pf-status-checking"
       ),
       t.user_state !== "ready" &&
-        new A.Setting(r)
+        new D.Setting(r)
           .setName(i("foundation_setup"))
           .setDesc(i("foundation_setup_desc"))
           .addButton((S) =>
@@ -4319,7 +4319,7 @@ var Ce = class Ce extends A.PluginSettingTab {
               .setCta()
               .onClick(() => this._startSetupJourney(1))
           ),
-      new A.Setting(r)
+      new D.Setting(r)
         .setName(i("foundation_reinstall"))
         .setDesc(i("foundation_reinstall_desc"))
         .addButton((S) =>
@@ -4408,12 +4408,12 @@ var Ce = class Ce extends A.PluginSettingTab {
                 ? " [" + i("skills_system") + "]"
                 : " [" + i("skills_user") + "]",
               S = k.desc || "",
-              C = new A.Setting(y).setName(x + E).setDesc(S);
+              C = new D.Setting(y).setName(x + E).setDesc(S);
             ((C.settingEl.style.opacity = k.disabled ? "0.4" : "1"),
               C.addToggle((R) => {
                 R.setValue(!k.disabled).onChange((F) => {
                   let T = !F,
-                    V = k.content.match(/^disable-model-invocation:\s*(.+)$/m)
+                    z = k.content.match(/^disable-model-invocation:\s*(.+)$/m)
                       ? k.content.replace(
                           /^disable-model-invocation:\s*.+$/m,
                           `disable-model-invocation: ${T}`
@@ -4423,9 +4423,9 @@ var Ce = class Ce extends A.PluginSettingTab {
                           `$1disable-model-invocation: ${T}
 `
                         );
-                  (j.writeFileSync(k.path, V, "utf-8"),
+                  (j.writeFileSync(k.path, z, "utf-8"),
                     (k.disabled = T),
-                    (k.content = V),
+                    (k.content = z),
                     (C.settingEl.style.opacity = k.disabled ? "0.4" : "1"));
                 });
               }));
@@ -4568,11 +4568,11 @@ var Ce = class Ce extends A.PluginSettingTab {
           text: i("ocr_state_running") + " " + F + T,
         });
         let L = C.createDiv({ cls: "pf-activity-bar" }),
-          V = Math.round((S.current / S.total) * 100);
+          z = Math.round((S.current / S.total) * 100);
         L.createDiv({
           cls: "pf-activity-bar-fill",
           attr: {
-            style: `width: ${V}%`,
+            style: `width: ${z}%`,
             role: "progressbar",
             "aria-valuenow": String(S.current),
             "aria-valuemin": "1",
@@ -4658,7 +4658,7 @@ var Ce = class Ce extends A.PluginSettingTab {
             )
           );
       (r.createEl("p", { text: S, cls: "pf-status-ok" }),
-        z(r, {
+        V(r, {
           label: i("md_ocr_workspace"),
           onClick: () =>
             this.app.workspace
@@ -4675,7 +4675,7 @@ var Ce = class Ce extends A.PluginSettingTab {
             }));
     }
     l ||
-      z(r, {
+      V(r, {
         label: i("ocr_configure_credential"),
         onClick: () => this._startSetupJourney(3),
       });
@@ -4720,7 +4720,7 @@ var Ce = class Ce extends A.PluginSettingTab {
       f.createEl("span", { text: i("md_agent_connection_unknown") }),
       this._agentPlatformDraft === null)
     )
-      z(t, {
+      V(t, {
         label: i("config_change"),
         onClick: () => {
           ((this._agentPlatformDraft = a), this.display());
@@ -4745,7 +4745,7 @@ var Ce = class Ce extends A.PluginSettingTab {
         this._agentPlatformDraft = h.value;
       });
       let v = g.createDiv({ cls: "pf-agent-config-actions" });
-      (z(v, {
+      (V(v, {
         label: i("config_save"),
         onClick: () => {
           var w;
@@ -4755,7 +4755,7 @@ var Ce = class Ce extends A.PluginSettingTab {
               .configSet("agent_platform", b)
               .catch(
                 (k) =>
-                  new A.Notice(
+                  new D.Notice(
                     `PaperForge: config set agent_platform failed: ${String(k)}`
                   )
               ),
@@ -4764,19 +4764,19 @@ var Ce = class Ce extends A.PluginSettingTab {
             this.display());
         },
       }),
-        z(v, {
+        V(v, {
           label: i("config_cancel"),
           onClick: () => {
             ((this._agentPlatformDraft = null), this.display());
           },
         }),
-        z(v, {
+        V(v, {
           label: i("config_verify"),
           onClick: () => {
             var k;
             let b = (k = this._agentPlatformDraft) != null ? k : a,
               w = j.existsSync(ge.join(this._getVaultBasePath(), n[b]));
-            new A.Notice(
+            new D.Notice(
               w ? i("agent_verify_found") : i("agent_verify_missing")
             );
           },
@@ -4834,7 +4834,7 @@ var Ce = class Ce extends A.PluginSettingTab {
       c)
     )
       s &&
-        z(r, {
+        V(r, {
           label: i("retrieval_stop"),
           onClick: () => {
             a.cancelActiveOperation();
@@ -4857,7 +4857,7 @@ var Ce = class Ce extends A.PluginSettingTab {
             : i("cc_action_" + P.verb) !== "cc_action_" + P.verb
               ? i("cc_action_" + P.verb)
               : i("cc_action_probe"));
-      z(r, {
+      V(r, {
         label: G,
         onClick: () => this._dispatchModuleAction("memory", t),
       });
@@ -4939,40 +4939,22 @@ var Ce = class Ce extends A.PluginSettingTab {
     });
     ((T.value = this.plugin.settings.vector_db_api_base || ""),
       T.addEventListener("change", () => {
-        ((this.plugin.settings.vector_db_api_base = T.value),
-          this.getClient()
-            .configSet("vector_db_api_base", T.value)
-            .catch(
-              (P) =>
-                new A.Notice(
-                  `PaperForge: config set vector_db_api_base failed: ${String(P)}`
-                )
-            ),
-          this._refreshVectorDbCredentialStatus());
+        this._setVectorDbConfig("vector_db_api_base", T);
       }));
     let L = E.createDiv({ cls: "pf-sr-cfg-row" });
     L.createEl("label", {
       text: i("feat_api_model") || "Model",
       cls: "pf-sr-cfg-lbl",
     });
-    let V = L.createEl("input", {
+    let z = L.createEl("input", {
       cls: "pf-sr-cfg-input",
       attr: { type: "text", placeholder: "text-embedding-3-small" },
     });
     if (
-      ((V.value =
+      ((z.value =
         this.plugin.settings.vector_db_api_model || "text-embedding-3-small"),
-      V.addEventListener("change", () => {
-        ((this.plugin.settings.vector_db_api_model = V.value),
-          this.getClient()
-            .configSet("vector_db_api_model", V.value)
-            .catch(
-              (P) =>
-                new A.Notice(
-                  `PaperForge: config set vector_db_api_model failed: ${String(P)}`
-                )
-            ),
-          this._refreshVectorDbCredentialStatus());
+      z.addEventListener("change", () => {
+        this._setVectorDbConfig("vector_db_api_model", z);
       }),
       t.capability_state === "needs_action" && t.user_state !== "not_enabled")
     ) {
@@ -4991,7 +4973,7 @@ var Ce = class Ce extends A.PluginSettingTab {
       text: i("cc_diagnostic_toggle") || "Advanced Status",
     });
     let ne = re.createDiv({ cls: "pf-sr-diagnostics-body" });
-    new A.Setting(ne)
+    new D.Setting(ne)
       .setName("Debug trace")
       .setDesc(
         "Log every client\u2194backend operation (command, ok, duration, epoch, error code \u2014 never stdin/env/values) to the console. The last 200 records stay in memory for copying."
@@ -5011,7 +4993,7 @@ var Ce = class Ce extends A.PluginSettingTab {
           let I = Ue();
           ((G = navigator.clipboard) == null ||
             G.writeText(I || "(trace is empty)"),
-            new A.Notice(
+            new D.Notice(
               I
                 ? `Copied ${
                     I.split(`
@@ -5023,7 +5005,7 @@ var Ce = class Ce extends A.PluginSettingTab {
       )
       .addButton((P) =>
         P.setButtonText("Clear").onClick(() => {
-          (er(), new A.Notice("Trace cleared"));
+          (er(), new D.Notice("Trace cleared"));
         })
       );
     let de = this._getVaultBasePath(),
@@ -5170,7 +5152,7 @@ var Ce = class Ce extends A.PluginSettingTab {
         this._runUpdateAction();
         return;
       }
-      (new A.Notice(
+      (new D.Notice(
         i("update_python_manual") ||
           "Python 3.11+ upgrade requires a manual install (python.org or your package manager)."
       ),
@@ -5225,7 +5207,7 @@ var Ce = class Ce extends A.PluginSettingTab {
           this._dispatchMemoryBuild("build", void 0, a);
         else if (a === "memory.upgrade_backend") this._runBackendMigration();
         else {
-          (new A.Notice(
+          (new D.Notice(
             (i("action_unknown_pair") || "Unknown action: {verb}").replace(
               "{verb}",
               a || n
@@ -5247,7 +5229,7 @@ var Ce = class Ce extends A.PluginSettingTab {
         return;
       }
     }
-    (new A.Notice(
+    (new D.Notice(
       (i("action_unknown_pair") || "Unknown action: {verb}").replace(
         "{verb}",
         n
@@ -5265,19 +5247,19 @@ var Ce = class Ce extends A.PluginSettingTab {
       })
       .then((e) => {
         var t;
-        if (e.ok) new A.Notice(i("update_done") || "PaperForge updated");
+        if (e.ok) new D.Notice(i("update_done") || "PaperForge updated");
         else {
           let r =
             typeof ((t = e.payload) == null ? void 0 : t.availability_reason) ==
             "string"
               ? e.payload.availability_reason
               : `exit code ${e.exitCode}`;
-          new A.Notice((i("update_failed") || "Update failed") + ": " + r);
+          new D.Notice((i("update_failed") || "Update failed") + ": " + r);
         }
         this._refreshAllReadModels();
       })
       .catch((e) => {
-        (new A.Notice(
+        (new D.Notice(
           (i("update_failed") || "Update failed") + ": " + e.message
         ),
           this._refreshAllReadModels());
@@ -5287,11 +5269,11 @@ var Ce = class Ce extends A.PluginSettingTab {
     this.getClient()
       .embedMigrate()
       .then(() => {
-        (new A.Notice(i("migrate_done") || "Backend migrated to sqlite-vec"),
+        (new D.Notice(i("migrate_done") || "Backend migrated to sqlite-vec"),
           this._refreshAllReadModels());
       })
       .catch((e) => {
-        (new A.Notice(
+        (new D.Notice(
           (i("migrate_failed") || "Backend migration failed") +
             ": " +
             (e.message || "unknown error")
@@ -5307,7 +5289,7 @@ var Ce = class Ce extends A.PluginSettingTab {
     }
     let t = this.getClient();
     if (t.isOperationActive()) {
-      new A.Notice(i("ocr_already_running"));
+      new D.Notice(i("ocr_already_running"));
       return;
     }
     let r = { run: i("ocr_activity_run"), rebuild: i("ocr_activity_rebuild") },
@@ -5365,8 +5347,8 @@ var Ce = class Ce extends A.PluginSettingTab {
             (n.ocr.activity_progress = null)),
           _.ok)
         )
-          new A.Notice(a[e] || "OCR completed");
-        else if (_.cancelled || l) new A.Notice(i("ocr_stopped_notice"));
+          new D.Notice(a[e] || "OCR completed");
+        else if (_.cancelled || l) new D.Notice(i("ocr_stopped_notice"));
         else {
           let m = d.filter(Boolean).join(", "),
             g = _.payload,
@@ -5382,7 +5364,7 @@ var Ce = class Ce extends A.PluginSettingTab {
               u > 0
                 ? `${v ? v + " " : ""}(${u} skipped)`
                 : v || `exit code ${_.exitCode}`;
-          new A.Notice(i("ocr_failed_notice") + ": " + b, 8e3);
+          new D.Notice(i("ocr_failed_notice") + ": " + b, 8e3);
         }
         (this._refreshAllReadModels(), this.display());
       })
@@ -5391,7 +5373,7 @@ var Ce = class Ce extends A.PluginSettingTab {
           ((n.ocr.activity_state = "idle"),
           (n.ocr.activity_label = null),
           (n.ocr.activity_progress = null)),
-          new A.Notice(
+          new D.Notice(
             i("ocr_failed_notice") +
               ": " +
               ((_ == null ? void 0 : _.message) || i("ocr_error_notice")),
@@ -5405,14 +5387,14 @@ var Ce = class Ce extends A.PluginSettingTab {
     var f, _, m, g;
     let n = this.getClient();
     if (!n) {
-      new A.Notice(i("runtime_not_available") || "Environment unavailable");
+      new D.Notice(i("runtime_not_available") || "Environment unavailable");
       return;
     }
     if (
       typeof (n == null ? void 0 : n.isOperationActive) == "function" &&
       n.isOperationActive()
     ) {
-      new A.Notice(i("embed_already_running") || "Operation already running");
+      new D.Notice(i("embed_already_running") || "Operation already running");
       return;
     }
     let a = (f = this._capabilityState) != null ? f : {},
@@ -5443,7 +5425,7 @@ var Ce = class Ce extends A.PluginSettingTab {
         build: new Set(["memory.build", "memory.rebuild"]),
       }[e].has(c))
     ) {
-      new A.Notice(
+      new D.Notice(
         (i("action_unknown_pair") || "Unknown action: {verb}").replace(
           "{verb}",
           c
@@ -5490,19 +5472,19 @@ var Ce = class Ce extends A.PluginSettingTab {
             (a.memory.activity_progress = null)),
           v.ok)
         )
-          new A.Notice(
+          new D.Notice(
             e === "embed"
               ? i("embed_build_complete")
               : i("feat_memory_rebuild_done")
           );
-        else if (v.cancelled || d) new A.Notice(i("embed_build_stopped"), 8e3);
+        else if (v.cancelled || d) new D.Notice(i("embed_build_stopped"), 8e3);
         else {
           let b =
             typeof ((h = v.payload) == null ? void 0 : h.availability_reason) ==
             "string"
               ? v.payload.availability_reason
               : `exit code ${v.exitCode}`;
-          new A.Notice(
+          new D.Notice(
             (i("sr_build_failed_notice") || "Build failed: {detail}").replace(
               "{detail}",
               b
@@ -5515,7 +5497,7 @@ var Ce = class Ce extends A.PluginSettingTab {
           ((a.memory.activity_state = "idle"),
           (a.memory.activity_label = null),
           (a.memory.activity_progress = null)),
-          new A.Notice(
+          new D.Notice(
             (i("sr_build_failed_notice") || "Build failed: {detail}").replace(
               "{detail}",
               (y = v == null ? void 0 : v.message) != null ? y : String(v)
@@ -5619,7 +5601,7 @@ var Ce = class Ce extends A.PluginSettingTab {
             : i("cc_action_" + _.verb) !== "cc_action_" + _.verb
               ? i("cc_action_" + _.verb)
               : i("cc_action_probe");
-      z(u, {
+      V(u, {
         label: S,
         loading: l.activity_state === "running",
         onClick: () => this._dispatchModuleAction(t, l),
@@ -5695,14 +5677,14 @@ var Ce = class Ce extends A.PluginSettingTab {
           m.createEl("summary", { cls: "pf-help-section-title", text: f });
           let g = m.createDiv({ cls: "pf-help-section-body" });
           l === "support"
-            ? (A.MarkdownRenderer.render(s.app, _, g, "", s.plugin),
+            ? (D.MarkdownRenderer.render(s.app, _, g, "", s.plugin),
               g
                 .createEl("button", {
                   cls: "pf-help-diagnostic-btn",
                   text: i("help_copy") || "Copy Support Diagnostic",
                 })
                 .addEventListener("click", () => s._buildAndCopyDiagnostic()))
-            : A.MarkdownRenderer.render(s.app, _, g, "", s.plugin);
+            : D.MarkdownRenderer.render(s.app, _, g, "", s.plugin);
         }
       })
       .catch(() => {
@@ -5714,7 +5696,7 @@ var Ce = class Ce extends A.PluginSettingTab {
     let e = (n = this.app.vault.adapter.basePath) != null ? n : "",
       t = this.getClient();
     if (!t) {
-      new A.Notice(i("runtime_not_available") || "Environment unavailable");
+      new D.Notice(i("runtime_not_available") || "Environment unavailable");
       return;
     }
     let r = (a = this._capabilityState) != null ? a : {};
@@ -5734,7 +5716,7 @@ var Ce = class Ce extends A.PluginSettingTab {
               (this.plugin._lastSyncTime = this._lastSyncTime),
               ke(JSON.stringify(c), { runAction: (l) => t.runAction(l) })));
         } catch (c) {
-          new A.Notice(
+          new D.Notice(
             `Sync failed: ${c instanceof Error ? c.message : String(c)}`,
             8e3
           );
@@ -5986,7 +5968,7 @@ var Ce = class Ce extends A.PluginSettingTab {
       this._persistCapabilityState(),
       (r == null ? void 0 : r.activity_state) === "running" &&
         t.activity_state !== "running" &&
-        new A.Notice(i("cc_notice_refreshed"), 3e3),
+        new D.Notice(i("cc_notice_refreshed"), 3e3),
       this._displayInProgress || this.display());
   }
   _ccBadgeKey(e, t) {
@@ -6243,13 +6225,13 @@ var Ce = class Ce extends A.PluginSettingTab {
       }));
     let E = t.createDiv({ cls: "pf-cc-module-list" });
     for (let [T, L] of this._getOverviewModules().entries()) {
-      let V =
+      let z =
         L.id === "agent"
           ? this._getAgentPlaceholderEnvelope()
           : (F = r[L.id]) != null
             ? F
             : X(L.id);
-      this._renderOverviewCard(E, L.id, L.label, V, T + 1);
+      this._renderOverviewCard(E, L.id, L.label, z, T + 1);
     }
   }
   _getAgentPlaceholderEnvelope() {
@@ -6407,7 +6389,7 @@ var Ce = class Ce extends A.PluginSettingTab {
     if (!t) return;
     let r = this._resolveRuntimeCommand(t);
     if (!r) {
-      new A.Notice(i("next_action_runtime_unavailable"));
+      new D.Notice(i("next_action_runtime_unavailable"));
       return;
     }
     let n = { path: r.path, extraArgs: [...r.args], source: "auto-detected" };
@@ -6425,7 +6407,7 @@ var Ce = class Ce extends A.PluginSettingTab {
       ),
       n = Kt({ pluginVersion: e, modules: t });
     Ut(n, () => {
-      new A.Notice(i("support_diagnostic_copied"), 3e3);
+      new D.Notice(i("support_diagnostic_copied"), 3e3);
     });
   }
   _persistNavMemory() {
@@ -6527,25 +6509,25 @@ var Ce = class Ce extends A.PluginSettingTab {
                 cls: "pf-setup-warn",
                 text: i("setup_reinstall_notice"),
               }),
-              z(e, {
+              V(e, {
                 label: i("foundation_reinstall_btn"),
                 onClick: () => this._installFoundation(!0),
               }))
             : (t.user_state !== "ready" || this._setupOperation === "failed") &&
-              z(e, {
+              V(e, {
                 label: i("setup_foundation_install_btn"),
                 onClick: () => this._installFoundation(!1),
               })));
     let s = e.createDiv({ cls: "pf-setup-nav" });
     (this._setupOperation === "running"
-      ? z(s, {
+      ? V(s, {
           label: i("setup_nav_cancel"),
           onClick: () => {
             var d;
             (d = this._runtimeAbortController) == null || d.abort();
           },
         })
-      : z(s, {
+      : V(s, {
           label: i("setup_nav_later"),
           onClick: () => {
             ((this._setupOperation = "idle"),
@@ -6556,7 +6538,7 @@ var Ce = class Ce extends A.PluginSettingTab {
               this.display());
           },
         }),
-      z(s, {
+      V(s, {
         label: i("setup_nav_continue"),
         disabled: t.user_state !== "ready",
         onClick: () => {
@@ -6661,7 +6643,7 @@ var Ce = class Ce extends A.PluginSettingTab {
         })
         .addEventListener("click", () => {
           (navigator.clipboard.writeText(u.exportsDir),
-            new A.Notice(i("setup_bbt_copied") || "Path copied"));
+            new D.Notice(i("setup_bbt_copied") || "Path copied"));
         }));
     let m = l.createEl("details", { cls: "pf-setup-guide" });
     m.createEl("summary", {
@@ -6739,7 +6721,7 @@ var Ce = class Ce extends A.PluginSettingTab {
         text: i("setup_bbt_detect") || "Detect",
       })
       .addEventListener("click", k),
-      z(w, {
+      V(w, {
         label: i("setup_nav_back"),
         onClick: () => {
           ((this._setupFeedback = null),
@@ -6747,7 +6729,7 @@ var Ce = class Ce extends A.PluginSettingTab {
             this.display());
         },
       }),
-      z(w, {
+      V(w, {
         label: i("setup_nav_continue"),
         disabled: !0,
         onClick: () => {
@@ -6769,8 +6751,8 @@ var Ce = class Ce extends A.PluginSettingTab {
       e.disabled = !1;
     }
     (n.length === 0
-      ? new A.Notice("No legacy credentials found in SecretStorage")
-      : n.forEach((a) => new A.Notice(a, 6e3)),
+      ? new D.Notice("No legacy credentials found in SecretStorage")
+      : n.forEach((a) => new D.Notice(a, 6e3)),
       this._refreshVectorDbCredentialStatus(),
       this._refreshAllReadModels());
   }
@@ -6795,6 +6777,22 @@ var Ce = class Ce extends A.PluginSettingTab {
             this.plugin.saveSettings());
         })
         .catch(() => {});
+  }
+  _setVectorDbConfig(e, t) {
+    var a;
+    let r = t.value.trim(),
+      n = String((a = this.plugin.settings[e]) != null ? a : "");
+    this.getClient()
+      .configSet(e, r)
+      .then(async () => {
+        ((this.plugin.settings[e] = r),
+          await this.plugin.saveSettings(),
+          this._refreshVectorDbCredentialStatus());
+      })
+      .catch((s) => {
+        ((t.value = n),
+          new D.Notice(`PaperForge: config set ${e} failed: ${String(s)}`));
+      });
   }
   async _storeVectorDbCredential(e) {
     return (await this._authSetSecret("embedding", e))
@@ -6924,9 +6922,7 @@ var Ce = class Ce extends A.PluginSettingTab {
           },
         });
         (m.addEventListener("change", () => {
-          ((this.plugin.settings.vector_db_api_model = m.value.trim()),
-            this.plugin.saveSettings(),
-            this._refreshVectorDbCredentialStatus());
+          this._setVectorDbConfig("vector_db_api_model", m);
         }),
           f.createEl("label", { text: i("feat_api_base_url") }));
         let g = f.createEl("input", {
@@ -6939,9 +6935,7 @@ var Ce = class Ce extends A.PluginSettingTab {
           },
         });
         (g.addEventListener("change", () => {
-          ((this.plugin.settings.vector_db_api_base = g.value.trim()),
-            this.plugin.saveSettings(),
-            this._refreshVectorDbCredentialStatus());
+          this._setVectorDbConfig("vector_db_api_base", g);
         }),
           f
             .createEl("button", {
@@ -6991,7 +6985,7 @@ var Ce = class Ce extends A.PluginSettingTab {
               .configSet("agent_platform", _.value)
               .catch(
                 (h) =>
-                  new A.Notice(
+                  new D.Notice(
                     `PaperForge: config set agent_platform failed: ${String(h)}`
                   )
               ),
@@ -7001,13 +6995,13 @@ var Ce = class Ce extends A.PluginSettingTab {
       }
     }
     let r = e.createDiv({ cls: "pf-setup-nav" });
-    (z(r, {
+    (V(r, {
       label: i("setup_nav_back"),
       onClick: () => {
         ((this._setupStage = 2), this.display());
       },
     }),
-      z(r, {
+      V(r, {
         label: i("setup_nav_continue"),
         onClick: () => this._refreshSetupReadiness(),
       }));
@@ -7054,19 +7048,19 @@ var Ce = class Ce extends A.PluginSettingTab {
           : i("setup_no_optionals"),
     });
     let l = e.createDiv({ cls: "pf-setup-nav" });
-    (z(l, {
+    (V(l, {
       label: i("setup_nav_back"),
       onClick: () => {
         ((this._setupStage = 3), this.display());
       },
     }),
       (!n || !a) &&
-        z(l, {
+        V(l, {
           label: i("setup_review_recheck"),
           disabled: s,
           onClick: () => this._refreshSetupReadiness(),
         }),
-      z(l, {
+      V(l, {
         label: i("setup_nav_complete"),
         disabled: !n || !a,
         onClick: () => this._completeSetup(),
@@ -7112,7 +7106,7 @@ var Ce = class Ce extends A.PluginSettingTab {
     "help",
   ])));
 var Xe = Ce;
-var D = require("obsidian"),
+var A = require("obsidian"),
   Ae = K(require("fs")),
   gr = K(require("path"));
 var cr = K(require("fs")),
@@ -7398,7 +7392,7 @@ var Re = class extends H.ItemView {
       F,
       T,
       L,
-      V,
+      z,
       re,
       ne,
       de,
@@ -7518,8 +7512,8 @@ var Re = class extends H.ItemView {
         year:
           N.year != null
             ? String(N.year)
-            : (V = O == null ? void 0 : O.year) != null
-              ? V
+            : (z = O == null ? void 0 : O.year) != null
+              ? z
               : "",
         pages:
           N.pages != null
@@ -8620,7 +8614,7 @@ var he = class extends H.Modal {
     (this.contentCache.clear(), this.mdComponent.unload());
   }
 };
-var De = class extends D.ItemView {
+var De = class extends A.ItemView {
   constructor(e) {
     super(e);
     this._currentMode = null;
@@ -9061,7 +9055,7 @@ Make sure paperforge is installed and in your PATH.`,
       }
   }
   _renderGlobalMode() {
-    var V, re, ne, de, pe, ue, Y, B;
+    var z, re, ne, de, pe, ue, Y, B;
     if (!this._contentEl) return;
     let e = this._contentEl.createEl("div", { cls: "paperforge-global-view" }),
       t = this._getCachedIndex(),
@@ -9120,7 +9114,7 @@ Make sure paperforge is installed and in your PATH.`,
       y
     );
     let v =
-        (re = (V = this.app.plugins) == null ? void 0 : V.plugins) == null
+        (re = (z = this.app.plugins) == null ? void 0 : z.plugins) == null
           ? void 0
           : re.paperforge,
       b = this._renderSystemStatusRow(
@@ -9225,8 +9219,8 @@ Make sure paperforge is installed and in your PATH.`,
           ) {
             let W = this.app.workspace.getLeaf(!1);
             W && W.openFile(J);
-          } else new D.Notice("[!!] No .base file found in " + M, 6e3);
-        } else new D.Notice("[!!] Base directory not found: " + M, 6e3);
+          } else new A.Notice("[!!] No .base file found in " + M, 6e3);
+        } else new A.Notice("[!!] Base directory not found: " + M, 6e3);
       }));
     let T = R.createEl("button", {
       cls: "paperforge-contextual-btn",
@@ -9284,7 +9278,7 @@ Make sure paperforge is installed and in your PATH.`,
       text: e.title || "Untitled",
     }).addEventListener("click", () => {
       (navigator.clipboard.writeText(e.title || ""),
-        new D.Notice("Title copied"));
+        new A.Notice("Title copied"));
     });
     let s = n.createEl("div", { cls: "paperforge-paper-meta" });
     (e.authors &&
@@ -9351,10 +9345,10 @@ Make sure paperforge is installed and in your PATH.`,
                   : w.call(b)) != null
                 ? k
                 : "",
-            v = D.Platform.openPath;
+            v = A.Platform.openPath;
           y && typeof v == "function"
-            ? v.call(D.Platform, gr.join(y, g))
-            : new D.Notice("[!!] PDF not found: " + g, 6e3);
+            ? v.call(A.Platform, gr.join(y, g))
+            : new A.Notice("[!!] PDF not found: " + g, 6e3);
         }));
     }
     if (e.fulltext_path) {
@@ -9377,7 +9371,7 @@ Make sure paperforge is installed and in your PATH.`,
         (async () => {
           let m = this._getClient();
           if (!m) {
-            new D.Notice(
+            new A.Notice(
               i("runtime_not_available") || "Environment unavailable"
             );
             return;
@@ -9401,7 +9395,7 @@ Make sure paperforge is installed and in your PATH.`,
                 m.versionsRestore(_, y).then(() => {})
               ).open();
           } catch (g) {
-            new D.Notice(
+            new A.Notice(
               "[!!] Version history failed: " +
                 ((g == null ? void 0 : g.message) || g),
               6e3
@@ -9562,7 +9556,7 @@ Make sure paperforge is installed and in your PATH.`,
             (f.answer &&
               f.answer.length > 500 &&
               ((h = !0), g.classList.add("paperforge-discussion-a-collapsed")),
-            await D.MarkdownRenderer.render(
+            await A.MarkdownRenderer.render(
               this.app,
               f.answer || "",
               g,
@@ -9587,7 +9581,7 @@ Make sure paperforge is installed and in your PATH.`,
           (f.preventDefault(),
             this.app.vault.getAbstractFileByPath(s)
               ? this.app.workspace.openLinkText(s, "")
-              : new D.Notice(
+              : new A.Notice(
                   "\u8BA8\u8BBA\u6587\u4EF6\u5C1A\u672A\u751F\u6210"
                 ));
         });
@@ -9660,7 +9654,7 @@ Make sure paperforge is installed and in your PATH.`,
           let h = g.checked,
             y = this._getClient();
           if (!y) {
-            (new D.Notice("[!!] PaperForge backend unavailable", 6e3),
+            (new A.Notice("[!!] PaperForge backend unavailable", 6e3),
               (g.checked = !h));
             return;
           }
@@ -9672,7 +9666,7 @@ Make sure paperforge is installed and in your PATH.`,
               })));
           } catch (v) {
             ((g.checked = !h),
-              new D.Notice(
+              new A.Notice(
                 "[!!] Flag update failed: " +
                   ((v == null ? void 0 : v.message) || v),
                 6e3
@@ -9701,7 +9695,7 @@ Make sure paperforge is installed and in your PATH.`,
         m !== "\u2014" &&
         (h.addClass("pf-copy"),
         h.addEventListener("click", () => {
-          (navigator.clipboard.writeText(m), new D.Notice(_ + " copied"));
+          (navigator.clipboard.writeText(m), new A.Notice(_ + " copied"));
         }));
     }
     r && this._renderQualitySection(s, r);
@@ -9905,7 +9899,7 @@ Make sure paperforge is installed and in your PATH.`,
     ((this._qualityStagingCache = null),
       this._loadQualitySection(e, t),
       r &&
-        new D.Notice(
+        new A.Notice(
           "Authority rejected the action \u2014 re-stage and review the current proposals",
           8e3
         ));
@@ -9917,7 +9911,7 @@ Make sure paperforge is installed and in your PATH.`,
       try {
         let l = await n.promoteR(t, [r]),
           d = (l == null ? void 0 : l.ok) === !0;
-        (new D.Notice(
+        (new A.Notice(
           d
             ? `Promoted ${r}`
             : `Promotion rejected: ${String((c = (s = (a = l == null ? void 0 : l.error) == null ? void 0 : a.code) != null ? s : l == null ? void 0 : l.reason) != null ? c : "unknown")}`,
@@ -9925,7 +9919,7 @@ Make sure paperforge is installed and in your PATH.`,
         ),
           this._afterQualityMutation(e, t, !d));
       } catch (l) {
-        new D.Notice(
+        new A.Notice(
           `Promotion failed: ${l instanceof Error ? l.message : String(l)}`,
           8e3
         );
@@ -9938,7 +9932,7 @@ Make sure paperforge is installed and in your PATH.`,
       try {
         let d = await a.acceptProposal(t, r, n),
           u = (d == null ? void 0 : d.ok) === !0;
-        (new D.Notice(
+        (new A.Notice(
           u
             ? `Accepted proposal ${r}`
             : `Acceptance rejected: ${String((l = (c = (s = d == null ? void 0 : d.error) == null ? void 0 : s.code) != null ? c : d == null ? void 0 : d.reason) != null ? l : "unknown")}`,
@@ -9946,7 +9940,7 @@ Make sure paperforge is installed and in your PATH.`,
         ),
           this._afterQualityMutation(e, t, !u));
       } catch (d) {
-        new D.Notice(
+        new A.Notice(
           `Acceptance failed: ${d instanceof Error ? d.message : String(d)}`,
           8e3
         );
@@ -10023,10 +10017,10 @@ Make sure paperforge is installed and in your PATH.`,
             .writeText(h)
             .then(() => {
               (u.setText("\u2713  " + i("copied")),
-                new D.Notice(h + " copied"));
+                new A.Notice(h + " copied"));
             })
             .catch(() => {
-              new D.Notice("[!!] Clipboard write failed", 6e3);
+              new A.Notice("[!!] Clipboard write failed", 6e3);
             });
         }));
       let f =
@@ -10058,13 +10052,13 @@ Make sure paperforge is installed and in your PATH.`,
   }
   _openFulltext(e) {
     if (!e) {
-      new D.Notice("[!!] No fulltext path available for this paper", 6e3);
+      new A.Notice("[!!] No fulltext path available for this paper", 6e3);
       return;
     }
     let t = this.app.vault.getAbstractFileByPath(e);
     t
       ? this.app.workspace.openLinkText(t.path, "")
-      : new D.Notice("[!!] Fulltext file not found: " + e, 6e3);
+      : new A.Notice("[!!] Fulltext file not found: " + e, 6e3);
   }
   _renderCollectionMode() {
     let e = this._currentDomain || "Unknown",
@@ -10234,13 +10228,13 @@ Make sure paperforge is installed and in your PATH.`,
   async _switchToVersionMode(e) {
     let t = this._getClient();
     if (!t) {
-      new D.Notice(i("runtime_not_available") || "Environment unavailable");
+      new A.Notice(i("runtime_not_available") || "Environment unavailable");
       return;
     }
     try {
       this._versionPapers = await t.versionsList();
     } catch (r) {
-      (new D.Notice(
+      (new A.Notice(
         "[!!] Version list failed: " + ((r == null ? void 0 : r.message) || r),
         6e3
       ),
@@ -10377,20 +10371,20 @@ Make sure paperforge is installed and in your PATH.`,
             (async () => {
               let L = this._getClient();
               if (!L) {
-                new D.Notice(
+                new A.Notice(
                   i("runtime_not_available") || "Environment unavailable"
                 );
                 return;
               }
               try {
                 (await L.versionsRestore(h.key, b.label),
-                  new D.Notice(
+                  new A.Notice(
                     i("version_restore_done").replace("{label}", b.label)
                   ));
-              } catch (V) {
-                new D.Notice(
+              } catch (z) {
+                new A.Notice(
                   "[!!] Restore failed: " +
-                    ((V == null ? void 0 : V.message) || V),
+                    ((z == null ? void 0 : z.message) || z),
                   6e3
                 );
               }
@@ -10411,7 +10405,7 @@ Make sure paperforge is installed and in your PATH.`,
     let u = async (h, y, v) => {
         let b = this._getClient();
         if (!b) {
-          new D.Notice(i("runtime_not_available") || "Environment unavailable");
+          new A.Notice(i("runtime_not_available") || "Environment unavailable");
           return;
         }
         let w = [];
@@ -10426,7 +10420,7 @@ Make sure paperforge is installed and in your PATH.`,
               : "";
           w = pr(C, R);
         } catch (E) {
-          new D.Notice(
+          new A.Notice(
             "[!!] Compare failed: " + ((E == null ? void 0 : E.message) || E),
             6e3
           );
@@ -10710,13 +10704,13 @@ Make sure paperforge is installed and in your PATH.`,
               .doctor()
               .then((c) => {
                 let l = (c == null ? void 0 : c.ok) !== !1;
-                new D.Notice(
+                new A.Notice(
                   l ? "[OK] Doctor complete" : "[!!] Doctor reported issues",
                   6e3
                 );
               })
               .catch((c) => {
-                new D.Notice("[!!] Doctor failed: " + c.message, 8e3);
+                new A.Notice("[!!] Doctor failed: " + c.message, 8e3);
               });
         }),
           r
@@ -10932,7 +10926,7 @@ Make sure paperforge is installed and in your PATH.`,
             this.app.workspace.openLinkText(g, "", v);
           })
         : d.addEventListener("click", () => {
-            new D.Notice("[!!] Note not found: " + (f || "unknown"), 6e3);
+            new A.Notice("[!!] Note not found: " + (f || "unknown"), 6e3);
           }),
         d.addEventListener("keydown", (y) => {
           if (y.key === "Enter" && g) {
@@ -11000,7 +10994,7 @@ Make sure paperforge is installed and in your PATH.`,
     if (this._librarySyncRunning) return;
     let e = this._getClient();
     if (!e) {
-      new D.Notice("[!!] PaperForge backend unavailable", 6e3);
+      new A.Notice("[!!] PaperForge backend unavailable", 6e3);
       return;
     }
     let t = this.app.vault.adapter.basePath;
@@ -11012,14 +11006,14 @@ Make sure paperforge is installed and in your PATH.`,
       ((r = (n == null ? void 0 : n.ok) !== !1),
         r
           ? (this._showMessage("[OK] Sync Library: complete", "ok"),
-            new D.Notice("Sync complete"),
+            new A.Notice("Sync complete"),
             ke(JSON.stringify(n), { runAction: (a) => e.runAction(a) }))
           : (this._showMessage("[!!] Sync failed", "error"),
-            new D.Notice("[!!] Sync Library failed", 8e3)));
+            new A.Notice("[!!] Sync Library failed", 8e3)));
     } catch (n) {
       let a = n instanceof Error ? n.message : String(n);
       (this._showMessage("[!!] " + a, "error"),
-        new D.Notice("[!!] Sync failed: " + a, 8e3));
+        new A.Notice("[!!] Sync failed: " + a, 8e3));
     } finally {
       ((this._librarySyncRunning = !1), (this._cachedStats = null));
       try {
@@ -11038,7 +11032,7 @@ Make sure paperforge is installed and in your PATH.`,
   async _runAction(e, t) {
     var n, a;
     if (e.disabled) {
-      new D.Notice(
+      new A.Notice(
         `[i] ${e.disabledMsg || "This action is not yet available."}`,
         6e3
       );
@@ -11069,7 +11063,7 @@ Make sure paperforge is installed and in your PATH.`,
       if (e.id === "paperforge-doctor") {
         (await this._getClient().doctor(),
           r("[OK] " + (e.okMsg || "Doctor complete"), "ok"),
-          new D.Notice("[OK] " + (e.okMsg || "Doctor complete")),
+          new A.Notice("[OK] " + (e.okMsg || "Doctor complete")),
           await this._invalidateIndex(),
           await this._refreshCurrentMode());
         return;
@@ -11077,7 +11071,7 @@ Make sure paperforge is installed and in your PATH.`,
       if (e.id === "paperforge-repair") {
         (await this._getClient().repair(),
           r("[OK] " + (e.okMsg || "Repair complete"), "ok"),
-          new D.Notice("[OK] " + (e.okMsg || "Repair complete")),
+          new A.Notice("[OK] " + (e.okMsg || "Repair complete")),
           await this._invalidateIndex(),
           await this._refreshCurrentMode());
         return;
@@ -11086,7 +11080,7 @@ Make sure paperforge is installed and in your PATH.`,
         "[!!] No client route for " + (e.id || e.commandId || "unknown"),
         "error"
       ),
-        new D.Notice(
+        new A.Notice(
           "[!!] Unsupported tool: " + (e.id || e.commandId || "unknown"),
           8e3
         ));
@@ -11098,7 +11092,7 @@ Make sure paperforge is installed and in your PATH.`,
           ((s == null ? void 0 : s.message) || s),
         "error"
       ),
-        new D.Notice(
+        new A.Notice(
           "[!!] " +
             (e.commandId || e.id) +
             " failed: " +
