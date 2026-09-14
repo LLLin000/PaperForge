@@ -1884,14 +1884,81 @@ describe("Setup Stage 1 exit/cancel semantics (RC UX Seam Pass)", () => {
     ) as HTMLButtonElement | undefined;
   }
 
-  it("idle stage shows Later (exit) + disabled Continue, no Cancel", () => {
+  it("idle stage shows the exit + disabled Continue, no Cancel", () => {
     const tab = makeTab();
     const el = renderStage1(tab);
-    expect(buttonByText(el, "Later")).toBeDefined();
+    expect(buttonByText(el, "Back to control center")).toBeDefined();
     expect(buttonByText(el, "Cancel")).toBeUndefined();
     const cont = buttonByText(el, "Continue");
     expect(cont).toBeDefined();
     expect(cont?.disabled).toBe(true);
+  });
+
+  it("every wizard stage renders the exit to the Control Center", () => {
+    const cases: Array<[string, (tab: any, el: HTMLElement) => void]> = [
+      ["stage 1", (tab, el) => (tab as any)._renderSetupStageFoundation(el)],
+      ["stage 3", (tab, el) => (tab as any)._renderSetupStageOptionals(el)],
+      ["stage 4", (tab, el) => (tab as any)._renderSetupStageReview(el)],
+    ];
+    for (const [label, render] of cases) {
+      const tab = makeTab();
+      (tab as any)._capabilityState = {
+        installation: { ...createUnknownEnvelope("installation"), user_state: "setup_required" },
+        library: { ...createUnknownEnvelope("library"), user_state: "setup_required" },
+      };
+      const el = dom.window.document.createElement("div");
+      render(tab, el);
+      const exit = [...el.querySelectorAll("button")].find(
+        (b) => b.textContent?.trim() === "Back to control center"
+      );
+      expect(exit, `${label} exit`).toBeDefined();
+    }
+  });
+
+  it("_goHome leaves a module detail (and the Help tab) for the Control Center", () => {
+    const tab = makeTab();
+    (tab as any)._selectedDetailModule = "installation";
+    (tab as any).activeTab = "help";
+    (tab as any)._detailReturn = { tab: "help", selector: "#x" };
+    (tab as any)._goHome();
+    expect((tab as any).activeTab).toBe("overview");
+    expect((tab as any)._selectedDetailModule).toBe("");
+    expect((tab as any)._detailReturn).toBeNull();
+  });
+
+  it("_goHome leaves the setup journey for the session instead of re-entering it", () => {
+    const tab = makeTab();
+    (tab.plugin as any).settings._setup_complete = false;
+    (tab as any)._setupStage = 3;
+    (tab as any)._setupOperation = "failed";
+    (tab as any)._setupFailureDetail = "boom";
+    (tab as any)._goHome();
+    expect((tab as any)._setupJourneyDismissedForSession).toBe(true);
+    expect((tab as any)._setupStage).toBe(1);
+    expect((tab as any)._setupOperation).toBe("idle");
+    expect((tab as any)._setupFailureDetail).toBeNull();
+  });
+
+  it("renders a one-click home control off the Control Center", () => {
+    const tab = makeTab();
+    (tab.plugin as any).settings._setup_complete = true;
+    (tab as any)._selectedDetailModule = "installation";
+    const containerEl = dom.window.document.createElement("div");
+    (tab as any).containerEl = containerEl;
+    delete (tab as any).display;
+    (tab as any).display = PaperForgeSettingTab.prototype.display;
+    (tab as any)._displayInProgress = false;
+    (tab as any)._initialDisplay = false;
+    (tab as any)._initCapabilityState = () => {};
+    (tab as any)._renderOverviewTab = (c: HTMLElement) => {
+      c.createEl("h2", { text: "DETAIL" });
+    };
+    (tab as any).display();
+    const home = containerEl.querySelector(".pf-cc-topbar-home");
+    expect(home).not.toBeNull();
+    (home as HTMLButtonElement).click();
+    expect((tab as any).activeTab).toBe("overview");
+    expect((tab as any)._selectedDetailModule).toBe("");
   });
 
   it("a requested reinstall renders its action button even when the install is ready", () => {
@@ -1984,11 +2051,11 @@ describe("Setup Stage 1 exit/cancel semantics (RC UX Seam Pass)", () => {
     expect((tab as any)._setupFeedback).toBeTruthy();
   });
 
-  it("Later exits the wizard back to the overview; _setup_complete stays false (resume)", () => {
+  it("the exit leaves the wizard on the overview; _setup_complete stays false (resume)", () => {
     const tab = makeTab();
     const el = renderStage1(tab);
     (tab.plugin as any).settings._setup_complete = false;
-    buttonByText(el, "Later")?.click();
+    buttonByText(el, "Back to control center")?.click();
     expect(tab.activeTab).toBe("overview");
     expect((tab as any)._setupJourneyDismissedForSession).toBe(true);
     expect((tab.plugin as any).settings._setup_complete).toBe(false);
