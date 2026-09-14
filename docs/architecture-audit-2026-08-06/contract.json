@@ -1,0 +1,314 @@
+{
+  "schema_version": 1,
+  "asset_groups": [
+    "library",
+    "ocr_raw",
+    "ocr_derived",
+    "retrieval",
+    "vectors"
+  ],
+  "publication_units": [
+    {
+      "unit_id": "library.formal_note",
+      "asset_group": "library",
+      "publication_authority": "sync.publisher",
+      "authorized_writers": [
+        "sync.writer"
+      ]
+    },
+    {
+      "unit_id": "library.formal_index",
+      "asset_group": "library",
+      "publication_authority": "index.publisher",
+      "authorized_writers": [
+        "asset_index.writer"
+      ]
+    },
+    {
+      "unit_id": "ocr_raw.provider_result",
+      "asset_group": "ocr_raw",
+      "publication_authority": "ocr.publisher",
+      "authorized_writers": [
+        "ocr.provider"
+      ]
+    },
+    {
+      "unit_id": "ocr_derived.generation",
+      "asset_group": "ocr_derived",
+      "publication_authority": "ocr.publisher",
+      "authorized_writers": [
+        "ocr.postprocess",
+        "ocr.rebuild",
+        "ocr.legacy_backfill"
+      ]
+    },
+    {
+      "unit_id": "ocr_display.fulltext",
+      "asset_group": "ocr_derived",
+      "publication_authority": "version_history.authority",
+      "authorized_writers": [
+        "version_history.restore"
+      ]
+    },
+    {
+      "unit_id": "retrieval.units",
+      "asset_group": "retrieval",
+      "publication_authority": "memory.publisher",
+      "authorized_writers": [
+        "memory.builder"
+      ]
+    },
+    {
+      "unit_id": "retrieval.fts",
+      "asset_group": "retrieval",
+      "publication_authority": "memory.publisher",
+      "authorized_writers": [
+        "memory.builder"
+      ]
+    },
+    {
+      "unit_id": "vectors.candidate_generation",
+      "asset_group": "vectors",
+      "publication_authority": "embed.publisher",
+      "authorized_writers": [
+        "embed.builder"
+      ]
+    },
+    {
+      "unit_id": "vectors.live_generation",
+      "asset_group": "vectors",
+      "publication_authority": "embed.publisher",
+      "authorized_writers": [
+        "embed.publisher"
+      ]
+    }
+  ],
+  "operations": [
+    "sync",
+    "probe",
+    "status",
+    "dashboard",
+    "runtime_health",
+    "ocr_redo",
+    "memory_build",
+    "restore_display",
+    {
+      "operation_id": "ocr_run",
+      "authorities": [
+        {
+          "role": "execution",
+          "authority_id": "backend.ocr.executor",
+          "observers": [
+            "plugin.ocr_process_controller"
+          ]
+        },
+        {
+          "role": "stop",
+          "authority_id": "plugin.ocr_process_controller",
+          "delegated_executors": [
+            "cli.cooperative_stop"
+          ]
+        }
+      ]
+    },
+    {
+      "operation_id": "ocr_rebuild",
+      "authorities": [
+        {
+          "role": "execution",
+          "authority_id": "backend.ocr.executor",
+          "observers": [
+            "plugin.ocr_process_controller"
+          ]
+        },
+        {
+          "role": "stop",
+          "authority_id": "plugin.ocr_process_controller",
+          "delegated_executors": [
+            "cli.cooperative_stop"
+          ]
+        }
+      ]
+    },
+    {
+      "operation_id": "embed_build_resume",
+      "authorities": [
+        {
+          "role": "execution",
+          "authority_id": "backend.embed.executor"
+        },
+        {
+          "role": "lifecycle_state",
+          "authority_id": "plugin.embed_build_controller"
+        },
+        {
+          "role": "stop",
+          "authority_id": "plugin.embed_build_controller"
+        }
+      ]
+    }
+  ],
+  "required_extractors": [
+    "python_ast",
+    "typescript_compiler"
+  ],
+  "rules": [
+    {
+      "rule_id": "role_authority.ocr_execution",
+      "kind": "role_authority",
+      "subject": "ocr_run",
+      "authority_role": "execution",
+      "lifecycle": "active",
+      "enforcement": "blocking",
+      "description": "OCR run/re-build execution has exactly one authority (backend executor); the plugin controller is an observer"
+    },
+    {
+      "rule_id": "role_authority.ocr_stop",
+      "kind": "role_authority",
+      "subject": "ocr_rebuild",
+      "authority_role": "stop",
+      "lifecycle": "active",
+      "enforcement": "blocking",
+      "description": "Cooperative stop has exactly one authority (plugin controller) with a delegated backend executor"
+    },
+    {
+      "rule_id": "role_authority.embed_stop",
+      "kind": "role_authority",
+      "subject": "embed_build_resume",
+      "authority_role": "stop",
+      "lifecycle": "active",
+      "enforcement": "blocking",
+      "description": "Embed build stop has exactly one authority (plugin controller)"
+    },
+    {
+      "rule_id": "query.side_effect_free.probe",
+      "kind": "query_side_effect",
+      "subject": "probe",
+      "lifecycle": "active",
+      "enforcement": "blocking",
+      "description": "the capability probe is an observation surface and must not mutate business facts"
+    },
+    {
+      "rule_id": "query.side_effect_free.status",
+      "kind": "query_side_effect",
+      "subject": "status",
+      "lifecycle": "active",
+      "enforcement": "blocking",
+      "description": "the status report must not mutate business facts"
+    },
+    {
+      "rule_id": "query.side_effect_free.dashboard",
+      "kind": "query_side_effect",
+      "subject": "dashboard",
+      "lifecycle": "active",
+      "enforcement": "blocking",
+      "description": "the dashboard aggregate must not mutate business facts"
+    },
+    {
+      "rule_id": "query.side_effect_free.runtime_health",
+      "kind": "query_side_effect",
+      "subject": "runtime_health",
+      "lifecycle": "active",
+      "enforcement": "blocking",
+      "description": "the runtime health check must not mutate business facts"
+    },
+    {
+      "rule_id": "remote_intent.sync_followup",
+      "kind": "remote_intent",
+      "subject": "sync",
+      "lifecycle": "active",
+      "enforcement": "blocking",
+      "accepted_intent_modes": [
+        "direct_invocation",
+        "ui_modal",
+        "explicit_flag",
+        "interactive_prompt"
+      ],
+      "description": "sync declares next_actions only; remote follow-ups require explicit intent (#127)"
+    },
+    {
+      "rule_id": "signal.has_consumer",
+      "kind": "signal_consumer",
+      "subject": "OCR_REBUILD_PROGRESS",
+      "lifecycle": "active",
+      "enforcement": "blocking",
+      "description": "rebuild progress signals have a code consumer (#126)"
+    },
+    {
+      "rule_id": "publication.uses_protocol",
+      "kind": "publication_marker",
+      "subject": "ocr_derived.generation",
+      "lifecycle": "active",
+      "enforcement": "blocking",
+      "description": "derived publications go through the result-hash pending protocol (#126)"
+    },
+    {
+      "rule_id": "canonical.no_ui_writer",
+      "kind": "canonical_writer",
+      "subject": "ocr_derived.generation",
+      "lifecycle": "active",
+      "enforcement": "blocking",
+      "description": "UI must not write canonical OCR state"
+    },
+    {
+      "rule_id": "restore.display_only",
+      "kind": "canonical_writer",
+      "subject": "ocr_display.fulltext",
+      "lifecycle": "active",
+      "enforcement": "blocking",
+      "description": "restore writes ONLY ocr_display.fulltext (render/fulltext.md) via the version-history service; never blocks/tree/role-index/units/vectors; records provenance and drift (#129)"
+    },
+    {
+      "rule_id": "publication.authority_ocr_display",
+      "kind": "publication_authority",
+      "subject": "ocr_display.fulltext",
+      "lifecycle": "active",
+      "enforcement": "blocking",
+      "description": "display fulltext has exactly one publication authority (version_history.authority)"
+    },
+    {
+      "rule_id": "publication.authority_retrieval",
+      "kind": "publication_authority",
+      "subject": "retrieval.units",
+      "lifecycle": "active",
+      "enforcement": "blocking",
+      "description": "retrieval units have exactly one publication authority (memory.publisher)"
+    },
+    {
+      "rule_id": "coverage.required_complete",
+      "kind": "coverage_complete",
+      "subject": "",
+      "lifecycle": "active",
+      "enforcement": "blocking",
+      "description": "required extractor coverage is complete"
+    },
+    {
+      "rule_id": "retrieval.v2",
+      "kind": "coverage_complete",
+      "subject": "",
+      "lifecycle": "planned",
+      "enforcement": "blocking",
+      "effective_after": {
+        "issue": "#105"
+      },
+      "known_gap": {
+        "issue": "#105",
+        "rationale": "three-intent retrieval deferred post-release"
+      },
+      "description": "structure-aware retrieval v2"
+    },
+    {
+      "rule_id": "collectors.deterministic",
+      "kind": "coverage_complete",
+      "subject": "",
+      "lifecycle": "active",
+      "enforcement": "blocking",
+      "effective_after": {
+        "issue": "#133",
+        "commit": "815dc615"
+      },
+      "description": "deterministic collectors feed the #131 reconciler (#133 accepted 2026-08-07)"
+    }
+  ],
+  "exceptions": []
+}

@@ -64,6 +64,10 @@ project/
 node_modules/
 %TEMP%*
 scripts/dev/*.json
+# Generated architecture report projections (contract is canonical)
+docs/architecture-audit-2026-08-06/*.json
+!docs/architecture-audit-2026-08-06/contract.json
+docs/architecture-audit-2026-08-06/index.html
 loss_*.md
 audit/tmp_pdf/
 audit/media_asset_samples/
