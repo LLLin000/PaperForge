@@ -5,6 +5,7 @@ import hashlib
 import json
 import logging
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -20,6 +21,46 @@ from paperforge.worker.status import GITHUB_REPO, GITHUB_ZIP, UPDATEABLE_PATHS
 
 logger = logging.getLogger(__name__)
 GITHUB_PIP_SOURCE = f"git+https://github.com/{GITHUB_REPO}.git"
+
+# PEP 440 pre-release marker → the phase word the release tags use.
+_PRE_RELEASE_TAG = {"a": "alpha", "b": "beta", "rc": "rc"}
+# Pre-release ordering (PEP 440): a < b < rc < final.
+_PRE_RELEASE_RANK = {"a": 0, "b": 1, "rc": 2, None: 3}
+
+
+def _release_tag(version: str) -> str:
+    """PEP 440 version → the SemVer git tag the release workflow cuts.
+
+    `2.0.0rc1` → `2.0.0-rc.1`, `2.0.0` → `2.0.0`. The two spellings differ
+    on purpose: PyPI/Python must stay PEP 440, the git tag/plugin SemVer.
+    """
+    m = re.fullmatch(r"(\d+(?:\.\d+)*)(?:(a|b|rc)(\d+))?", version)
+    if not m:
+        return version
+    base, phase, serial = m.group(1), m.group(2), m.group(3)
+    return base if phase is None else f"{base}-{_PRE_RELEASE_TAG[phase]}.{serial}"
+
+
+def _version_key(version: str) -> tuple[tuple[int, ...], int, int]:
+    """Orderable key: release tuple, pre-release rank, serial."""
+    m = re.fullmatch(r"(\d+(?:\.\d+)*)(?:(a|b|rc)(\d+))?", version.strip())
+    if not m:
+        return ((0,), 3, 0)
+    release = tuple(int(part) for part in m.group(1).split("."))
+    phase, serial = m.group(2), m.group(3)
+    return (release, _PRE_RELEASE_RANK[phase], int(serial) if serial else 0)
+
+
+def _needs_update(remote: str, local: str) -> bool:
+    """True when `remote` is strictly newer than `local`.
+
+    Digit-tuple comparison (the previous rule) reads `2.0.0rc1` and
+    `2.0.0rc2` as equal, so a pre-release could never update to the next
+    pre-release.  Unknown spellings fall back to plain inequality.
+    """
+    if not re.fullmatch(r"\d+(?:\.\d+)*(?:(?:a|b|rc)\d+)?", remote or ""):
+        return remote != local
+    return _version_key(remote) > _version_key(local)
 
 
 def _sync_obsidian_plugin(vault: Path) -> None:
@@ -150,25 +191,33 @@ def _detect_install_method() -> tuple[str, Path | None]:
     return ("unknown", None)
 
 
-def _update_via_pip(editable: bool = False) -> bool:
-    """Update via pip install."""
-    cmd = [sys.executable, "-m", "pip", "install"]
-    if editable:
-        cmd.extend(["-e", "."])
-    else:
-        cmd.append("--upgrade")
-        cmd.append("paperforge")
+def _update_via_pip(version: str, editable: bool = False) -> bool:
+    """Update via pip install, PINNED to `version`.
 
+    A bare `pip install --upgrade paperforge` cannot reach a pre-release:
+    pip excludes pre-releases unless one is named exactly, so an RC install
+    would silently resolve to the newest STABLE release and then fail the
+    fresh-child version check.  The git fallback pins the same version by
+    its release tag.
+    """
+    cmd = [sys.executable, "-m", "pip", "install", "--upgrade", f"paperforge=={version}"]
+    if editable:
+        # Local source tree: the tree's own version is what gets installed;
+        # the fresh-child verify below is the authority on the outcome.
+        cmd = [sys.executable, "-m", "pip", "install", "-e", "."]
     logger.info("执行: %s", " ".join(cmd))
     r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
-    if r.returncode != 0:
+    if r.returncode != 0 and not editable:
         logger.warning("PyPI 更新失败，尝试 git: %s", r.stderr[:200])
-        cmd[-1] = GITHUB_PIP_SOURCE
+        cmd[-1] = f"{GITHUB_PIP_SOURCE}@{_release_tag(version)}"
         logger.info("执行: %s", " ".join(cmd))
         r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
         if r.returncode != 0:
             logger.error("pip 更新失败: %s", r.stderr)
             return False
+    elif r.returncode != 0:
+        logger.error("pip 更新失败: %s", r.stderr)
+        return False
     logger.info("pip 更新成功")
     return True
 
@@ -352,12 +401,7 @@ def perform_update(vault: Path, *, ndjson: bool = False) -> dict:
     if not remote:
         return _finish({"ok": False, "updated": False, "local_version": local,
                 "remote_version": None, "error": "cannot resolve remote version"})
-    try:
-        needs = tuple(int(x) for x in remote.split(".") if x.isdigit()) > tuple(
-            int(x) for x in local.split(".") if x.isdigit()
-        )
-    except ValueError:
-        needs = remote != local
+    needs = _needs_update(remote, local)
 
     if not needs:
         _sync_obsidian_plugin(vault)
@@ -371,7 +415,7 @@ def perform_update(vault: Path, *, ndjson: bool = False) -> dict:
                 "cancelled": True})
     method, path = _detect_install_method()
     if method == "pip":
-        success = _update_via_pip(editable=False)
+        success = _update_via_pip(remote, editable=False)
         if not success:
             success = _update_via_zip(vault)
     elif method == "pip-editable":
@@ -379,11 +423,11 @@ def perform_update(vault: Path, *, ndjson: bool = False) -> dict:
             success = _update_via_git(path)
             if success:
                 os.chdir(path)
-                success = _update_via_pip(editable=True)
+                success = _update_via_pip(remote, editable=True)
             if not success:
                 success = _update_via_zip(vault)
         else:
-            success = _update_via_pip(editable=False)
+            success = _update_via_pip(remote, editable=False)
             if not success:
                 success = _update_via_zip(vault)
     elif method == "git":

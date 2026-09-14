@@ -1850,12 +1850,14 @@ describe("_dispatchOcrAction availability gating (#07 step 3)", () => {
 describe("Setup Stage 1 exit/cancel semantics (RC UX Seam Pass)", () => {
   function renderStage1(
     tab: any,
-    overrides: Record<string, unknown> = {}
+    overrides: Record<string, unknown> = {},
+    envelope: Record<string, unknown> = {}
   ): HTMLDivElement {
     const el = dom.window.document.createElement("div");
     Object.assign(tab, {
       _setupOperation: "idle",
       _setupFeedback: null,
+      _setupFailureDetail: null,
       _setupReinstallRequested: false,
       _runtimeAbortController: null,
       activeTab: "overview",
@@ -1866,6 +1868,7 @@ describe("Setup Stage 1 exit/cancel semantics (RC UX Seam Pass)", () => {
         ...createUnknownEnvelope("installation"),
         user_state: "setup_required",
         reason: { code: "installation.config_missing", text: "Not set up" },
+        ...envelope,
       },
     };
     (tab as any)._renderSetupStageFoundation(el);
@@ -1881,21 +1884,273 @@ describe("Setup Stage 1 exit/cancel semantics (RC UX Seam Pass)", () => {
     ) as HTMLButtonElement | undefined;
   }
 
-  it("idle stage shows Later (exit) + disabled Continue, no Cancel", () => {
+  it("idle stage shows the exit + disabled Continue, no Cancel", () => {
     const tab = makeTab();
     const el = renderStage1(tab);
-    expect(buttonByText(el, "Later")).toBeDefined();
+    expect(buttonByText(el, "Back to control center")).toBeDefined();
     expect(buttonByText(el, "Cancel")).toBeUndefined();
     const cont = buttonByText(el, "Continue");
     expect(cont).toBeDefined();
     expect(cont?.disabled).toBe(true);
   });
 
-  it("Later exits the wizard back to the overview; _setup_complete stays false (resume)", () => {
+  it("every wizard stage renders the exit to the Control Center", () => {
+    const cases: Array<[string, (tab: any, el: HTMLElement) => void]> = [
+      ["stage 1", (tab, el) => (tab as any)._renderSetupStageFoundation(el)],
+      ["stage 3", (tab, el) => (tab as any)._renderSetupStageOptionals(el)],
+      ["stage 4", (tab, el) => (tab as any)._renderSetupStageReview(el)],
+    ];
+    for (const [label, render] of cases) {
+      const tab = makeTab();
+      (tab as any)._capabilityState = {
+        installation: { ...createUnknownEnvelope("installation"), user_state: "setup_required" },
+        library: { ...createUnknownEnvelope("library"), user_state: "setup_required" },
+      };
+      const el = dom.window.document.createElement("div");
+      render(tab, el);
+      const exit = [...el.querySelectorAll("button")].find(
+        (b) => b.textContent?.trim() === "Back to control center"
+      );
+      expect(exit, `${label} exit`).toBeDefined();
+    }
+  });
+
+  it("_goHome leaves a module detail (and the Help tab) for the Control Center", () => {
+    const tab = makeTab();
+    (tab as any)._selectedDetailModule = "installation";
+    (tab as any).activeTab = "help";
+    (tab as any)._detailReturn = { tab: "help", selector: "#x" };
+    (tab as any)._goHome();
+    expect((tab as any).activeTab).toBe("overview");
+    expect((tab as any)._selectedDetailModule).toBe("");
+    expect((tab as any)._detailReturn).toBeNull();
+  });
+
+  it("leaving a REINSTALL of a configured install keeps the vault configured", () => {
+    const tab = makeTab();
+    (tab.plugin as any).settings._setup_complete = true;
+    (tab as any).display = () => {};
+    (tab as any).saveSettings = () => Promise.resolve();
+    (tab.plugin as any).saveSettings = () => Promise.resolve();
+    (tab as any)._startSetupJourney(1, true);
+    expect((tab.plugin as any).settings._setup_complete).toBe(false);
+    (tab as any)._goHome();
+    // Fully working install must not be left "unfinished" by an aborted reinstall.
+    expect((tab.plugin as any).settings._setup_complete).toBe(true);
+    expect((tab as any)._setupJourneyDismissedForSession).toBe(true);
+  });
+
+  it("leaving a FIRST-RUN journey keeps it unfinished so it resumes later", () => {
+    const tab = makeTab();
+    (tab.plugin as any).settings._setup_complete = false;
+    (tab as any).display = () => {};
+    (tab as any).saveSettings = () => Promise.resolve();
+    (tab.plugin as any).saveSettings = () => Promise.resolve();
+    (tab as any)._startSetupJourney(1, false);
+    (tab as any)._goHome();
+    expect((tab.plugin as any).settings._setup_complete).toBe(false);
+  });
+
+  it("an explicit install request re-opens the wizard after it was left", () => {
+    // Live-found: Home/Later set the session dismissal flag, and the next
+    // "reinstall" click then silently rendered nothing.
+    const tab = makeTab();
+    (tab.plugin as any).settings._setup_complete = true;
+    (tab as any)._setupJourneyDismissedForSession = true;
+    (tab as any).display = () => {};
+    (tab as any).saveSettings = () => Promise.resolve();
+    (tab.plugin as any).saveSettings = () => Promise.resolve();
+    (tab as any)._startSetupJourney(1, true);
+    expect((tab as any)._setupJourneyDismissedForSession).toBe(false);
+    expect((tab as any)._setupReinstallRequested).toBe(true);
+    expect((tab.plugin as any).settings._setup_complete).toBe(false);
+  });
+
+  it("_goHome leaves the setup journey for the session instead of re-entering it", () => {
+    const tab = makeTab();
+    (tab.plugin as any).settings._setup_complete = false;
+    (tab as any)._setupStage = 3;
+    (tab as any)._setupOperation = "failed";
+    (tab as any)._setupFailureDetail = "boom";
+    (tab as any)._goHome();
+    expect((tab as any)._setupJourneyDismissedForSession).toBe(true);
+    expect((tab as any)._setupStage).toBe(1);
+    expect((tab as any)._setupOperation).toBe("idle");
+    expect((tab as any)._setupFailureDetail).toBeNull();
+  });
+
+  it("renders a one-click home control off the Control Center", () => {
+    const tab = makeTab();
+    (tab.plugin as any).settings._setup_complete = true;
+    (tab as any)._selectedDetailModule = "installation";
+    const containerEl = dom.window.document.createElement("div");
+    (tab as any).containerEl = containerEl;
+    delete (tab as any).display;
+    (tab as any).display = PaperForgeSettingTab.prototype.display;
+    (tab as any)._displayInProgress = false;
+    (tab as any)._initialDisplay = false;
+    (tab as any)._initCapabilityState = () => {};
+    (tab as any)._renderOverviewTab = (c: HTMLElement) => {
+      c.createEl("h2", { text: "DETAIL" });
+    };
+    (tab as any).display();
+    const home = containerEl.querySelector(".pf-cc-topbar-home");
+    expect(home).not.toBeNull();
+    (home as HTMLButtonElement).click();
+    expect((tab as any).activeTab).toBe("overview");
+    expect((tab as any)._selectedDetailModule).toBe("");
+  });
+
+  it("a requested reinstall renders its action button even when the install is ready", () => {
+    // The Installation detail's Reinstall entry is always clickable, so a
+    // healthy install must still get an action here — gating the branch on
+    // `user_state !== "ready"` dead-ended the wizard on Continue.
+    const tab = makeTab();
+    const el = renderStage1(
+      tab,
+      { _setupReinstallRequested: true },
+      {
+        user_state: "ready",
+        reason: { code: "installation.ready", text: "Ready" },
+      }
+    );
+    expect(buttonByText(el, "Reinstall")).toBeDefined();
+  });
+
+  it("a version mismatch still offers the reinstall action", () => {
+    const tab = makeTab();
+    const el = renderStage1(tab, {}, {
+      user_state: "action_required",
+      reason: {
+        code: "installation.version_mismatch",
+        text: "version mismatch",
+      },
+    });
+    expect(buttonByText(el, "Reinstall")).toBeDefined();
+  });
+
+  it("a ready install with no reinstall request shows no install action", () => {
+    const tab = makeTab();
+    const el = renderStage1(tab, {}, {
+      user_state: "ready",
+      reason: { code: "installation.ready", text: "Ready" },
+    });
+    expect(buttonByText(el, "Reinstall")).toBeUndefined();
+    expect(buttonByText(el, "Install PaperForge")).toBeUndefined();
+  });
+
+  it("renders the real ready-with-notice OCR envelope as ready work, not a fault", () => {
+    // Envelope captured from `probe ocr --json` after the reclassification:
+    // 949 of 968 papers processed, the rest are outstanding work.
+    const tab = makeTab();
+    (tab as any)._capabilityState = {
+      ocr: {
+        ...createUnknownEnvelope("ocr"),
+        capability_state: "ready",
+        user_state: "ready",
+        severity: "ok",
+        reason: {
+          code: "ocr.pending",
+          text: "19 of 968 papers have no OCR output yet",
+        },
+        action: { primary: null },
+        notices: [
+          { level: "info", message: "19 of 968 papers have no OCR output yet" },
+        ],
+      },
+    };
+    const el = dom.window.document.createElement("div");
+    (tab as any)._renderOcrDetail(el);
+    // Badge says ready, the sentence names the outstanding work, and the
+    // run affordance is a plain button.
+    expect(el.textContent).toContain("Ready");
+    expect(el.textContent).toContain("some papers still need OCR");
+    expect(el.textContent).not.toContain("A problem needs your attention");
+    const runBtn = [...el.querySelectorAll("button")].find(
+      (b) => b.textContent?.trim() === "Run OCR"
+    );
+    expect(runBtn).toBeDefined();
+  });
+
+  it("offers a rebuild action for a ready module whose index is behind", () => {
+    const tab = makeTab();
+    (tab as any)._capabilityState = {
+      memory: {
+        ...createUnknownEnvelope("memory"),
+        capability_state: "ready",
+        user_state: "ready",
+        severity: "ok",
+        reason: { code: "memory.index_stale", text: "index behind" },
+        action: { primary: null },
+        notices: [{ level: "info", message: "index behind" }],
+      },
+    };
+    const el = dom.window.document.createElement("div");
+    (tab as any)._renderMemoryDetail(el);
+    expect(el.textContent).not.toContain("A problem needs your attention");
+    const rebuild = [...el.querySelectorAll("button")].find(
+      (b) => b.textContent?.trim() === "Rebuild index"
+    );
+    expect(rebuild).toBeDefined();
+  });
+
+  it("flags a configured Python path that does not exist", () => {
+    const tab = makeTab();
+    (tab.plugin as any).settings.python_path = "C:/nope/missing/python.exe";
+    const el = renderStage1(tab);
+    expect(el.textContent).toContain("That file does not exist.");
+    expect(
+      el.querySelector(".pf-setup-field--invalid")
+    ).not.toBeNull();
+  });
+
+  it("a successful reinstall returns to the Control Center instead of marching through the stages", async () => {
+    const tab = makeTab();
+    (tab as any)._setupReinstallRequested = true;
+    (tab.plugin as any).settings._setup_complete = false;
+    (tab as any)._ensureManagedRuntime = () => ({
+      installOnce: () =>
+        Promise.resolve({ pythonPath: "/bootstrap/python.exe" }),
+      handshake: () => Promise.resolve({ ok: true }),
+    });
+    (tab as any)._getVaultBasePath = () => "/vault";
+    (tab as any)._probeModule = () => {};
+    (tab as any)._applyLibraryConfiguration = () => {};
+    (tab as any).saveSettings = () => Promise.resolve();
+    (tab as any)._installFoundation(true);
+    for (let i = 0; i < 8; i++) await Promise.resolve();
+
+    expect((tab as any)._setupOperation).toBe("idle");
+    expect((tab as any)._setupReinstallRequested).toBe(false);
+    expect((tab.plugin as any).settings._setup_complete).toBe(true);
+    expect((tab as any).activeTab).toBe("overview");
+    expect(noticeCalls.some((n) => /reinstalled successfully/i.test(n.msg))).toBe(
+      true
+    );
+  });
+
+  it("a fresh install keeps the wizard so the remaining stages still run", async () => {
+    const tab = makeTab();
+    (tab.plugin as any).settings._setup_complete = false;
+    (tab as any)._ensureManagedRuntime = () => ({
+      installOnce: () =>
+        Promise.resolve({ pythonPath: "/bootstrap/python.exe" }),
+      handshake: () => Promise.resolve({ ok: true }),
+    });
+    (tab as any)._getVaultBasePath = () => "/vault";
+    (tab as any)._probeModule = () => {};
+    (tab as any)._installFoundation(false);
+    for (let i = 0; i < 8; i++) await Promise.resolve();
+
+    expect((tab.plugin as any).settings._setup_complete).toBe(false);
+    expect((tab as any)._setupFeedback).toBeTruthy();
+  });
+
+  it("the exit leaves the wizard on the overview; _setup_complete stays false (resume)", () => {
     const tab = makeTab();
     const el = renderStage1(tab);
     (tab.plugin as any).settings._setup_complete = false;
-    buttonByText(el, "Later")?.click();
+    buttonByText(el, "Back to control center")?.click();
     expect(tab.activeTab).toBe("overview");
     expect((tab as any)._setupJourneyDismissedForSession).toBe(true);
     expect((tab.plugin as any).settings._setup_complete).toBe(false);

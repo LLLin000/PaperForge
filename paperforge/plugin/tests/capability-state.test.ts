@@ -697,6 +697,29 @@ describe("computeModuleSummary", () => {
     expect(result.coreReady).toBe(false);
     expect(result.attentionModules).toContain("help");
   });
+
+  it("treats ready-with-informational-notice as ready (unfinished work is not a fault)", () => {
+    // Real shape of `probe ocr` after the reclassification: 949/968 papers
+    // processed, the rest are outstanding work.
+    const ocr = {
+      ...createUnknownEnvelope("ocr"),
+      capability_state: "ready",
+      user_state: "ready",
+      severity: "ok",
+      reason: {
+        code: "ocr.pending",
+        text: "19 of 968 papers have no OCR output yet",
+      },
+      action: { primary: null },
+      notices: [
+        { level: "info", message: "19 of 968 papers have no OCR output yet" },
+      ],
+    } as unknown as ReturnType<typeof createUnknownEnvelope>;
+    const summary = computeModuleSummary({ ocr }, ["ocr"]);
+    expect(summary.coreReady).toBe(true);
+    expect(summary.attentionModules).toEqual([]);
+  });
+
 });
 
 describe("validatePersistedEnvelopes", () => {

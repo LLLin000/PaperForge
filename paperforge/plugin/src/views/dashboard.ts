@@ -64,13 +64,11 @@ export class PaperForgeStatusView extends ItemView {
   }
 
   _resolvePython(): { path: string; args: string[] } | null {
-    // 1. Use custom python_path from plugin settings if set
+    // The published pointer is the ONLY executable runtime authority
+    // (#174). A configured python_path is a bootstrap input, not a runtime
+    // to dispatch against — resolving it here made the dashboard run a
+    // different interpreter than the shared client.
     const plugin = ((this.app as any).plugins.plugins as any)["paperforge"];
-    const customPath = plugin?.settings?.python_path?.trim();
-    if (customPath && require("fs").existsSync(customPath)) {
-      return { path: customPath, args: [] };
-    }
-    // 2. Fall back to managed runtime
     const mr = plugin?.getManagedRuntime?.();
     if (!mr) return null;
     const run = resolveRuntimeCommand(mr.readPointer());

@@ -509,12 +509,13 @@ export class PaperForgeClient {
     }
     const cacheKey = `probe:${module}:${options?.expectedVersion ?? ""}:${options?.lastOperationExitCode ?? ""}`;
     return this._cachedRead(cacheKey, 60000, async () => {
-      const raw = await this._executeRaw([
-        "probe",
-        module,
-        "--json",
-        ...extraArgs,
-      ]);
+      const raw = await this._executeRaw(
+        ["probe", module, "--json", ...extraArgs],
+        // A module probe walks every paper's lineage (measured: 25s on a
+        // 969-paper vault, plus cold-import cost on the first run after an
+        // install) — the 120s default reported a false failure there.
+        { timeoutMs: 300000 }
+      );
       return JSON.parse(raw) as ProbeEnvelope;
     });
   }
