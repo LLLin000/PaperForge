@@ -28,10 +28,9 @@ describe("NodeProcessTransport", () => {
   const vaultPath = "C:/mock/vault";
 
   describe("resolvePython", () => {
-    it("prefers resolveRuntime override when provided", async () => {
+    it("resolves through the injected resolver (the published pointer)", async () => {
       const transport = new NodeProcessTransport({
         vaultPath,
-        customPythonPath: "C:/settings/python.exe",
         resolveRuntime: async () => ({
           path: "C:/managed/python.exe",
           args: ["-W", "ignore"],
@@ -41,17 +40,6 @@ describe("NodeProcessTransport", () => {
       const res = await transport.resolvePython();
       expect(res.path).toBe("C:/managed/python.exe");
       expect(res.args).toEqual(["-W", "ignore"]);
-    });
-
-    it("uses customPythonPath when resolveRuntime is absent", async () => {
-      const transport = new NodeProcessTransport({
-        vaultPath,
-        customPythonPath: "C:/settings/python.exe",
-      });
-
-      const res = await transport.resolvePython();
-      expect(res.path).toBe("C:/settings/python.exe");
-      expect(res.args).toEqual([]);
     });
 
     it("throws a clear error when python runtime cannot be resolved", async () => {
@@ -73,11 +61,12 @@ describe("NodeProcessTransport", () => {
 
       const transport = new NodeProcessTransport({
         vaultPath,
-        customPythonPath: "C:/py/python.exe",
         spawnFn: mockSpawn as any,
       });
 
-      const execPromise = transport.execute(["probe", "ocr", "--json"]);
+      const execPromise = transport.execute(["probe", "ocr", "--json"], {
+        pythonExe: "C:/py/python.exe",
+      });
       await Promise.resolve(); // wait for resolvePython microtask
 
       expect(mockSpawn).toHaveBeenCalledWith(
@@ -105,11 +94,11 @@ describe("NodeProcessTransport", () => {
 
       const transport = new NodeProcessTransport({
         vaultPath,
-        customPythonPath: "C:/py/python.exe",
         spawnFn: mockSpawn as any,
       });
 
       const execPromise = transport.execute(["auth", "set", "ocr", "--stdin"], {
+        pythonExe: "C:/py/python.exe",
         stdin: "secret-token-123\n",
       });
       await Promise.resolve(); // wait for resolvePython microtask
@@ -127,7 +116,6 @@ describe("NodeProcessTransport", () => {
 
       const transport = new NodeProcessTransport({
         vaultPath,
-        customPythonPath: "C:/py/python.exe",
         spawnFn: mockSpawn as any,
       });
       const execPromise = transport.execute(["failing", "command"]);

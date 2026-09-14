@@ -5432,6 +5432,21 @@
   font-size: var(--font-ui-smaller);
   color: var(--text-faint);
 }
+/* A configured Python path that does not exist is called out inline instead
+   of only after a failed install. */
+.pf-setup-input-validation:not(:empty) {
+  color: var(--text-error);
+}
+.pf-setup-field--invalid .pf-setup-input {
+  border-color: var(--text-error);
+}
+.pf-setup-failure-detail {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-faint);
+  font-family: var(--font-monospace);
+  word-break: break-word;
+  margin-top: var(--size-4-1);
+}
 .pf-setup-library-form .pf-setup-input {
   width: 100%;
   min-height: 32px;

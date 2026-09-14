@@ -135,6 +135,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   private _setupReinstallRequested = false;
   private _setupOperation: "idle" | "running" | "failed" = "idle";
   private _setupFeedback: string | null = null;
+  /** Raw failure reason for the last install attempt (null when none). */
+  private _setupFailureDetail: string | null = null;
   /** RC UX Seam P1: user chose "Later" — pure session flag; reset on hide(). */
   private _setupJourneyDismissedForSession = false;
   /** Currently selected module in the detail view. */
@@ -448,6 +450,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     if (this._setupOperation === "running") return;
     this._setupOperation = "running";
     this._setupFeedback = null;
+    this._setupFailureDetail = null;
     this.display();
 
     // #174: the Setup Journey no longer runs its own pip — the ONLY
@@ -466,9 +469,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       try {
         const vaultPath = this._getVaultBasePath();
         const bootstrap = this._ensureManagedRuntime();
+        // The wizard's "Python executable" field selects the base
+        // interpreter for the managed venv; empty falls back to discovery.
+        const baseInterpreter =
+          this.plugin.settings.python_path?.trim() || undefined;
         const installed = await bootstrap.installOnce(
           this.plugin.manifest.version,
-          signal
+          signal,
+          baseInterpreter
         );
         const hs = await bootstrap.handshake(this.plugin.manifest.version, {
           pythonPath: installed.pythonPath,
@@ -518,10 +526,24 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           );
         }
         this._setupOperation = "idle";
+        const wasReinstall = forceInstall || this._setupReinstallRequested;
         this._setupReinstallRequested = false;
-        this._setupFeedback = t("setup_install_complete");
         this._probeModule("installation");
         this._probeModule("help");
+        if (wasReinstall) {
+          // The install was already configured before the user asked for a
+          // reinstall: do NOT march them through the remaining stages to
+          // re-verify configuration that has not changed.  Report success
+          // and hand them back to the Control Center.
+          this._setupFeedback = null;
+          this.plugin.settings._setup_complete = true;
+          this.activeTab = "overview";
+          await this.plugin.saveSettings();
+          new Notice(t("foundation_reinstall_ok"));
+          this.display();
+          return;
+        }
+        this._setupFeedback = t("setup_install_complete");
         this.display();
       } catch (error) {
         const isAbort =
@@ -541,11 +563,28 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         console.error("PaperForge runtime installation failed:", error);
         this._setupOperation = "failed";
         this._setupFeedback = t("setup_install_failed");
+        // The generic line above blames the Python path for EVERY failure
+        // (pip, network, handshake). Keep the real reason visible so the
+        // user can act on it instead of retrying blind.
+        this._setupFailureDetail = this._formatSetupFailure(error);
         this.display();
       } finally {
         this._runtimeAbortController = null;
       }
     })();
+  }
+
+  /** One bounded line naming the real install failure (never the whole log). */
+  private _formatSetupFailure(error: unknown): string {
+    const raw =
+      typeof error === "string"
+        ? error
+        : error instanceof Error
+          ? error.message
+          : String(error ?? "unknown error");
+    const firstLine = raw.split(/\r?\n/).find((line) => line.trim()) ?? raw;
+    const bounded = firstLine.trim();
+    return bounded.length > 220 ? `${bounded.slice(0, 220)}…` : bounded;
   }
 
   private _applyLibraryConfiguration(): void {
@@ -680,17 +719,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   /**
    * Resolve python command via managed runtime exclusively.
    * Returns null when managed runtime is not ready.
+   *
+   * The published pointer is the ONLY executable runtime authority (#174):
+   * a configured `python_path` selects the BASE interpreter for the
+   * bootstrap venv (see RuntimeBootstrap.installOnce), never a runtime to
+   * dispatch against — otherwise this surface would run a different
+   * interpreter than the shared client uses.
    */
-  private _resolveRuntimeCommand(
-    vp: string
-  ): { path: string; args: string[] } | null {
-    // 1. Use custom python_path from settings if set
-    const customPath = this.plugin.settings.python_path?.trim();
-    if (customPath && fs.existsSync(customPath)) {
-      return { path: customPath, args: [] };
-    }
-    // 2. Fall back to the published pointer (#174): only a pointer-backed
-    // runtime is usable — never an installed-but-unpublished one.
+  private _resolveRuntimeCommand(): { path: string; args: string[] } | null {
     const run = resolveRuntimeCommand(
       this._ensureManagedRuntime().readPointer()
     );
@@ -744,16 +780,16 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       "pf-status-ok"
     );
 
-    // Python check — project the resolved runtime command (managed pointer
-    // first, then the explicit override), not a bare settings fallback.
+    // Python check — the ACTIVE runtime is the published pointer (the same
+    // interpreter the shared client spawns).  Never render a configured
+    // path or a bare "python" here: the row must not name an interpreter
+    // that would never run.
     const vp = (this.app.vault.adapter as any).basePath as string;
-    const pythonPath =
-      this._resolveRuntimeCommand(vp)?.path ??
-      (this.plugin.settings.python_path || "python");
+    const pythonPath = this._resolveRuntimeCommand()?.path;
     addCheck(
       t("foundation_python"),
       env.user_state === "ready" ? "✓" : "—",
-      pythonPath,
+      pythonPath ?? t("foundation_python_unresolved"),
       env.user_state === "ready" ? "pf-status-ok" : "pf-status-checking"
     );
 
@@ -803,19 +839,16 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
     // #173 corrective: explicit SecretStorage → keyring migration bridge.
     // User-mediated, one-time; runtime never reads SecretStorage.
-    const migrateRow = checks.createDiv({ cls: "pf-config-row" });
-    migrateRow.createEl("span", {
-      cls: "pf-config-key",
-      text: t("md_foundation_legacy_migrate") ?? "Migrate legacy credentials",
-    });
-    const migrateRight = migrateRow.createDiv({ cls: "pf-config-right" });
-    const migrateBtn = migrateRight.createEl("button", {
-      cls: "paperforge-refresh-btn",
-      text: "Migrate",
-    });
-    migrateBtn.title =
-      "One-time migration of Obsidian SecretStorage values into the keyring (auth set)";
-    migrateBtn.onclick = () => this._migrateLegacyCredentials(migrateBtn);
+    const migrateSetting = new Setting(checks)
+      .setName(t("md_foundation_legacy_migrate"))
+      .setDesc(t("md_foundation_legacy_migrate_desc"))
+      .addButton((btn) =>
+        btn
+          .setButtonText(t("md_foundation_legacy_migrate_btn"))
+          .setTooltip(t("md_foundation_legacy_migrate_desc"))
+          .onClick(() => this._migrateLegacyCredentials(btn.buttonEl))
+      );
+    migrateSetting.settingEl.classList.add("pf-config-row");
 
     // Obsidian version check removed (RC UX Seam): the previous block
     // hardcoded `obsidianOk = true` — a false green. Obsidian compatibility
@@ -2684,8 +2717,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     };
     this._updateCapabilityEnvelope(mod, probing);
 
-    const vp = this._getVaultBasePath();
-    const resolved = this._resolveRuntimeCommand(vp);
+    const resolved = this._resolveRuntimeCommand();
     if (!resolved) {
       this._probing.delete(mod);
       if (mod === "installation") {
@@ -3370,7 +3402,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const vp = (this.app.vault.adapter as unknown as { basePath?: string })
       ?.basePath;
     if (!vp) return;
-    const run = this._resolveRuntimeCommand(vp);
+    const run = this._resolveRuntimeCommand();
     if (!run) {
       new Notice(t("next_action_runtime_unavailable"));
       return;
@@ -3484,10 +3516,28 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       attr: { type: "text", placeholder: "python" },
     }) as HTMLInputElement;
     pythonInput.value = this.plugin.settings.python_path || "";
+    const pythonHint = pythonField.createEl("span", {
+      cls: "caption pf-setup-input-validation",
+    });
+    const refreshPythonValidation = () => {
+      const value = pythonInput.value.trim();
+      if (!value) {
+        pythonHint.setText("");
+        pythonField.classList.toggle("pf-setup-field--invalid", false);
+        return;
+      }
+      const exists = fs.existsSync(value);
+      pythonHint.setText(
+        exists ? "" : t("setup_foundation_python_missing")
+      );
+      pythonField.classList.toggle("pf-setup-field--invalid", !exists);
+    };
     pythonInput.addEventListener("input", () => {
       this.plugin.settings.python_path = pythonInput.value.trim();
+      refreshPythonValidation();
       this._debouncedSave();
     });
+    refreshPythonValidation();
     renderStatusBadge(
       containerEl,
       env.user_state,
@@ -3513,10 +3563,22 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           text: this._setupFeedback,
         });
       }
+      if (this._setupOperation === "failed" && this._setupFailureDetail) {
+        containerEl.createEl("p", {
+          cls: "pf-setup-failure-detail",
+          text: t("setup_install_failed_detail").replace(
+            "{detail}",
+            this._setupFailureDetail
+          ),
+        });
+      }
+      // The install chain still runs when the local install is healthy —
+      // a requested reinstall MUST render its action button instead of
+      // dead-ending on "Continue" (the previous gate hid it whenever
+      // user_state was `ready`).
       if (
-        env.user_state !== "ready" &&
-        (this._setupReinstallRequested ||
-          env.reason.code === "installation.version_mismatch")
+        this._setupReinstallRequested ||
+        env.reason.code === "installation.version_mismatch"
       ) {
         containerEl.createEl("p", {
           cls: "pf-setup-warn",
