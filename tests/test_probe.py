@@ -1117,8 +1117,13 @@ class TestMemoryConcreteFixes:
 class TestOcrPriorityOrdering:
     """OCR probe priority: redo > run > rebuild > investigate (Issue #78 repair)."""
 
-    def test_pending_overrides_provider_unreachable(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-        """Pending + provider unreachable -> needs_action/run, NOT limited/investigate."""
+    def test_pending_is_outstanding_work_not_a_fault(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Unprocessed papers are WORK, not a fault: the module stays ready.
+
+        It used to report needs_action, which reads as "something is broken"
+        for a library that simply has papers nobody has run OCR on yet.  The
+        provider-unreachable fact must still be reported — as a notice.
+        """
         from paperforge.commands import probe as probe_mod
         tmp_path.mkdir(parents=True, exist_ok=True)
         canonical_test_config(tmp_path, system_dir="99_System")
@@ -1134,10 +1139,12 @@ class TestOcrPriorityOrdering:
             lambda v: [FakePendingRow()])
 
         data = probe_mod.probe_ocr(tmp_path)
-        # Pending (run) beats provider unreachable (investigate)
-        assert data["capability_state"] == "needs_action"
+        assert data["capability_state"] == "ready"
         assert data["reason"]["code"] == "ocr.pending"
-        assert data["action"]["primary"]["verb"] == "run"
+        assert data["action"]["primary"] is None
+        messages = [n["message"] for n in data["notices"]]
+        assert any("no OCR output" in m for m in messages)
+        assert any("unreachable" in m for m in messages)
 
     def test_degraded_overrides_unexpected(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """Degraded + unexpected action -> needs_action/rebuild, NOT limited/investigate."""

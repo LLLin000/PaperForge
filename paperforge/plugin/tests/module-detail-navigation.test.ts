@@ -2039,6 +2039,61 @@ describe("Setup Stage 1 exit/cancel semantics (RC UX Seam Pass)", () => {
     expect(buttonByText(el, "Install PaperForge")).toBeUndefined();
   });
 
+  it("renders the real ready-with-notice OCR envelope as ready work, not a fault", () => {
+    // Envelope captured from `probe ocr --json` after the reclassification:
+    // 949 of 968 papers processed, the rest are outstanding work.
+    const tab = makeTab();
+    (tab as any)._capabilityState = {
+      ocr: {
+        ...createUnknownEnvelope("ocr"),
+        capability_state: "ready",
+        user_state: "ready",
+        severity: "ok",
+        reason: {
+          code: "ocr.pending",
+          text: "19 of 968 papers have no OCR output yet",
+        },
+        action: { primary: null },
+        notices: [
+          { level: "info", message: "19 of 968 papers have no OCR output yet" },
+        ],
+      },
+    };
+    const el = dom.window.document.createElement("div");
+    (tab as any)._renderOcrDetail(el);
+    // Badge says ready, the sentence names the outstanding work, and the
+    // run affordance is a plain button.
+    expect(el.textContent).toContain("Ready");
+    expect(el.textContent).toContain("some papers still need OCR");
+    expect(el.textContent).not.toContain("A problem needs your attention");
+    const runBtn = [...el.querySelectorAll("button")].find(
+      (b) => b.textContent?.trim() === "Run OCR"
+    );
+    expect(runBtn).toBeDefined();
+  });
+
+  it("offers a rebuild action for a ready module whose index is behind", () => {
+    const tab = makeTab();
+    (tab as any)._capabilityState = {
+      memory: {
+        ...createUnknownEnvelope("memory"),
+        capability_state: "ready",
+        user_state: "ready",
+        severity: "ok",
+        reason: { code: "memory.index_stale", text: "index behind" },
+        action: { primary: null },
+        notices: [{ level: "info", message: "index behind" }],
+      },
+    };
+    const el = dom.window.document.createElement("div");
+    (tab as any)._renderMemoryDetail(el);
+    expect(el.textContent).not.toContain("A problem needs your attention");
+    const rebuild = [...el.querySelectorAll("button")].find(
+      (b) => b.textContent?.trim() === "Rebuild index"
+    );
+    expect(rebuild).toBeDefined();
+  });
+
   it("flags a configured Python path that does not exist", () => {
     const tab = makeTab();
     (tab.plugin as any).settings.python_path = "C:/nope/missing/python.exe";
