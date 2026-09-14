@@ -137,6 +137,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   private _setupFeedback: string | null = null;
   /** Raw failure reason for the last install attempt (null when none). */
   private _setupFailureDetail: string | null = null;
+  /** Completion state before an explicitly entered journey (see _goHome). */
+  private _setupCompleteBeforeJourney: boolean | null = null;
   /** RC UX Seam P1: user chose "Later" — pure session flag; reset on hide(). */
   private _setupJourneyDismissedForSession = false;
   /** Currently selected module in the detail view. */
@@ -209,6 +211,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     this._setupFeedback = null;
     this._setupFailureDetail = null;
     this._setupJourneyDismissedForSession = true;
+    // Leaving a REINSTALL of an already-configured install must not leave the
+    // vault marked unfinished — otherwise the wizard blocks every later
+    // Settings open for a machine that is fully working.
+    if (this._setupCompleteBeforeJourney === true) {
+      this.plugin.settings._setup_complete = true;
+      void this.plugin.saveSettings();
+    }
+    this._setupCompleteBeforeJourney = null;
     this.display();
   }
 
@@ -470,6 +480,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     this._setupReinstallRequested = reinstall;
     this._setupOperation = "idle";
     this._setupFeedback = null;
+    this._setupFailureDetail = null;
+    // An EXPLICIT request to start the journey always wins: without this,
+    // leaving the wizard (Later / Home) left the session flag set and the
+    // next "install"/"reinstall" click silently did nothing.
+    this._setupJourneyDismissedForSession = false;
+    this._setupCompleteBeforeJourney = this.plugin.settings._setup_complete !== false;
     this.plugin.settings._setup_complete = false;
     void this.plugin.saveSettings().then(() => this.display());
   }
@@ -554,6 +570,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           );
         }
         this._setupOperation = "idle";
+        this._setupCompleteBeforeJourney = null;
         const wasReinstall = forceInstall || this._setupReinstallRequested;
         this._setupReinstallRequested = false;
         this._probeModule("installation");

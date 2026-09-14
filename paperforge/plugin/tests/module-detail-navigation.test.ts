@@ -1926,6 +1926,46 @@ describe("Setup Stage 1 exit/cancel semantics (RC UX Seam Pass)", () => {
     expect((tab as any)._detailReturn).toBeNull();
   });
 
+  it("leaving a REINSTALL of a configured install keeps the vault configured", () => {
+    const tab = makeTab();
+    (tab.plugin as any).settings._setup_complete = true;
+    (tab as any).display = () => {};
+    (tab as any).saveSettings = () => Promise.resolve();
+    (tab.plugin as any).saveSettings = () => Promise.resolve();
+    (tab as any)._startSetupJourney(1, true);
+    expect((tab.plugin as any).settings._setup_complete).toBe(false);
+    (tab as any)._goHome();
+    // Fully working install must not be left "unfinished" by an aborted reinstall.
+    expect((tab.plugin as any).settings._setup_complete).toBe(true);
+    expect((tab as any)._setupJourneyDismissedForSession).toBe(true);
+  });
+
+  it("leaving a FIRST-RUN journey keeps it unfinished so it resumes later", () => {
+    const tab = makeTab();
+    (tab.plugin as any).settings._setup_complete = false;
+    (tab as any).display = () => {};
+    (tab as any).saveSettings = () => Promise.resolve();
+    (tab.plugin as any).saveSettings = () => Promise.resolve();
+    (tab as any)._startSetupJourney(1, false);
+    (tab as any)._goHome();
+    expect((tab.plugin as any).settings._setup_complete).toBe(false);
+  });
+
+  it("an explicit install request re-opens the wizard after it was left", () => {
+    // Live-found: Home/Later set the session dismissal flag, and the next
+    // "reinstall" click then silently rendered nothing.
+    const tab = makeTab();
+    (tab.plugin as any).settings._setup_complete = true;
+    (tab as any)._setupJourneyDismissedForSession = true;
+    (tab as any).display = () => {};
+    (tab as any).saveSettings = () => Promise.resolve();
+    (tab.plugin as any).saveSettings = () => Promise.resolve();
+    (tab as any)._startSetupJourney(1, true);
+    expect((tab as any)._setupJourneyDismissedForSession).toBe(false);
+    expect((tab as any)._setupReinstallRequested).toBe(true);
+    expect((tab.plugin as any).settings._setup_complete).toBe(false);
+  });
+
   it("_goHome leaves the setup journey for the session instead of re-entering it", () => {
     const tab = makeTab();
     (tab.plugin as any).settings._setup_complete = false;
