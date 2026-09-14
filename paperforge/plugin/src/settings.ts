@@ -135,6 +135,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   private _setupReinstallRequested = false;
   private _setupOperation: "idle" | "running" | "failed" = "idle";
   private _setupFeedback: string | null = null;
+  /** Raw failure reason for the last install attempt (null when none). */
+  private _setupFailureDetail: string | null = null;
+  /** Completion state before an explicitly entered journey (see _goHome). */
+  private _setupCompleteBeforeJourney: boolean | null = null;
   /** RC UX Seam P1: user chose "Later" — pure session flag; reset on hide(). */
   private _setupJourneyDismissedForSession = false;
   /** Currently selected module in the detail view. */
@@ -191,6 +195,31 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       base_dir: s.base_dir || "Bases",
       zotero_data_dir: s.zotero_data_dir || "",
     };
+  }
+
+  /** ONE way home from anywhere in the tab: clear the detail selection,
+   *  leave the setup journey for this session, and re-render the Control
+   *  Center.  Without this, leaving a deep wizard stage meant clicking
+   *  "back" once per stage (#87 UX). */
+  _goHome(): void {
+    this.activeTab = "overview";
+    this._selectedDetailModule = "";
+    this._detailReturn = null;
+    this._focusTargetId = null;
+    this._setupStage = 1;
+    this._setupOperation = "idle";
+    this._setupFeedback = null;
+    this._setupFailureDetail = null;
+    this._setupJourneyDismissedForSession = true;
+    // Leaving a REINSTALL of an already-configured install must not leave the
+    // vault marked unfinished — otherwise the wizard blocks every later
+    // Settings open for a machine that is fully working.
+    if (this._setupCompleteBeforeJourney === true) {
+      this.plugin.settings._setup_complete = true;
+      void this.plugin.saveSettings();
+    }
+    this._setupCompleteBeforeJourney = null;
+    this.display();
   }
 
   display() {
@@ -319,8 +348,19 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     // --- Topbar ---
     const topbar = containerEl.createDiv({ cls: "pf-cc-topbar" });
 
-    // Left: Brand + Version
+    // Top: Home — present whenever the user is NOT on the Control Center
+    // (module detail, help), so there is always ONE click back to the top.
+    const onOverview =
+      this.activeTab === "overview" && !this._selectedDetailModule;
     const brandLeft = topbar.createDiv({ cls: "pf-cc-topbar-left" });
+    if (!onOverview) {
+      const homeBtn = brandLeft.createEl("button", {
+        cls: "pf-cc-topbar-home",
+        text: "\u2190 " + (t("nav_home") || "Control center"),
+      });
+      homeBtn.setAttribute("aria-label", t("nav_home") || "Control center");
+      homeBtn.addEventListener("click", () => this._goHome());
+    }
     brandLeft.createEl("span", {
       cls: "pf-cc-topbar-brand",
       text: "PaperForge",
@@ -351,21 +391,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         this._navMemory = { destination: tab.id };
         this._persistNavMemory();
         this.display();
-      });
-    });
-
-    // Right: OCR Workspace link
-    const rightLink = topbar.createDiv({ cls: "pf-cc-topbar-right" });
-    const ocrLink = rightLink.createEl("a", {
-      cls: "pf-cc-topbar-ocr-link",
-      text: (t("md_ocr_workspace") || "OCR Workspace") + " \u2197",
-      attr: { href: "#", role: "button" },
-    });
-    ocrLink.addEventListener("click", (e: MouseEvent) => {
-      e.preventDefault();
-      (this.app as any).setting.close();
-      (this.app as any).workspace.getLeaf().setViewState({
-        type: "paperforge-ocr-workspace",
       });
     });
 
@@ -440,6 +465,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     this._setupReinstallRequested = reinstall;
     this._setupOperation = "idle";
     this._setupFeedback = null;
+    this._setupFailureDetail = null;
+    // An EXPLICIT request to start the journey always wins: without this,
+    // leaving the wizard (Later / Home) left the session flag set and the
+    // next "install"/"reinstall" click silently did nothing.
+    this._setupJourneyDismissedForSession = false;
+    this._setupCompleteBeforeJourney = this.plugin.settings._setup_complete !== false;
     this.plugin.settings._setup_complete = false;
     void this.plugin.saveSettings().then(() => this.display());
   }
@@ -448,6 +479,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     if (this._setupOperation === "running") return;
     this._setupOperation = "running";
     this._setupFeedback = null;
+    this._setupFailureDetail = null;
     this.display();
 
     // #174: the Setup Journey no longer runs its own pip — the ONLY
@@ -466,9 +498,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       try {
         const vaultPath = this._getVaultBasePath();
         const bootstrap = this._ensureManagedRuntime();
+        // The wizard's "Python executable" field selects the base
+        // interpreter for the managed venv; empty falls back to discovery.
+        const baseInterpreter =
+          this.plugin.settings.python_path?.trim() || undefined;
         const installed = await bootstrap.installOnce(
           this.plugin.manifest.version,
-          signal
+          signal,
+          baseInterpreter
         );
         const hs = await bootstrap.handshake(this.plugin.manifest.version, {
           pythonPath: installed.pythonPath,
@@ -518,10 +555,25 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           );
         }
         this._setupOperation = "idle";
+        this._setupCompleteBeforeJourney = null;
+        const wasReinstall = forceInstall || this._setupReinstallRequested;
         this._setupReinstallRequested = false;
-        this._setupFeedback = t("setup_install_complete");
         this._probeModule("installation");
         this._probeModule("help");
+        if (wasReinstall) {
+          // The install was already configured before the user asked for a
+          // reinstall: do NOT march them through the remaining stages to
+          // re-verify configuration that has not changed.  Report success
+          // and hand them back to the Control Center.
+          this._setupFeedback = null;
+          this.plugin.settings._setup_complete = true;
+          this.activeTab = "overview";
+          await this.plugin.saveSettings();
+          new Notice(t("foundation_reinstall_ok"));
+          this.display();
+          return;
+        }
+        this._setupFeedback = t("setup_install_complete");
         this.display();
       } catch (error) {
         const isAbort =
@@ -541,11 +593,28 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         console.error("PaperForge runtime installation failed:", error);
         this._setupOperation = "failed";
         this._setupFeedback = t("setup_install_failed");
+        // The generic line above blames the Python path for EVERY failure
+        // (pip, network, handshake). Keep the real reason visible so the
+        // user can act on it instead of retrying blind.
+        this._setupFailureDetail = this._formatSetupFailure(error);
         this.display();
       } finally {
         this._runtimeAbortController = null;
       }
     })();
+  }
+
+  /** One bounded line naming the real install failure (never the whole log). */
+  private _formatSetupFailure(error: unknown): string {
+    const raw =
+      typeof error === "string"
+        ? error
+        : error instanceof Error
+          ? error.message
+          : String(error ?? "unknown error");
+    const firstLine = raw.split(/\r?\n/).find((line) => line.trim()) ?? raw;
+    const bounded = firstLine.trim();
+    return bounded.length > 220 ? `${bounded.slice(0, 220)}…` : bounded;
   }
 
   private _applyLibraryConfiguration(): void {
@@ -630,12 +699,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
 
     // ── Overview ──
-    /* Header */
-    containerEl.createEl("h2", { text: t("header_title") || "PaperForge" });
-    containerEl.createEl("p", {
-      text: t("desc"),
-      cls: "paperforge-settings-desc",
-    });
+    /* No title block here: the settings nav and the control-center topbar
+       already name the plugin, and the page carries its own heading. */
 
     // Auto-probe stale/unknown modules BEFORE rendering so cards show "Checking..."
     for (const mod of CAPABILITY_MODULES) {
@@ -680,17 +745,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   /**
    * Resolve python command via managed runtime exclusively.
    * Returns null when managed runtime is not ready.
+   *
+   * The published pointer is the ONLY executable runtime authority (#174):
+   * a configured `python_path` selects the BASE interpreter for the
+   * bootstrap venv (see RuntimeBootstrap.installOnce), never a runtime to
+   * dispatch against — otherwise this surface would run a different
+   * interpreter than the shared client uses.
    */
-  private _resolveRuntimeCommand(
-    vp: string
-  ): { path: string; args: string[] } | null {
-    // 1. Use custom python_path from settings if set
-    const customPath = this.plugin.settings.python_path?.trim();
-    if (customPath && fs.existsSync(customPath)) {
-      return { path: customPath, args: [] };
-    }
-    // 2. Fall back to the published pointer (#174): only a pointer-backed
-    // runtime is usable — never an installed-but-unpublished one.
+  private _resolveRuntimeCommand(): { path: string; args: string[] } | null {
     const run = resolveRuntimeCommand(
       this._ensureManagedRuntime().readPointer()
     );
@@ -744,16 +806,16 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       "pf-status-ok"
     );
 
-    // Python check — project the resolved runtime command (managed pointer
-    // first, then the explicit override), not a bare settings fallback.
+    // Python check — the ACTIVE runtime is the published pointer (the same
+    // interpreter the shared client spawns).  Never render a configured
+    // path or a bare "python" here: the row must not name an interpreter
+    // that would never run.
     const vp = (this.app.vault.adapter as any).basePath as string;
-    const pythonPath =
-      this._resolveRuntimeCommand(vp)?.path ??
-      (this.plugin.settings.python_path || "python");
+    const pythonPath = this._resolveRuntimeCommand()?.path;
     addCheck(
       t("foundation_python"),
       env.user_state === "ready" ? "✓" : "—",
-      pythonPath,
+      pythonPath ?? t("foundation_python_unresolved"),
       env.user_state === "ready" ? "pf-status-ok" : "pf-status-checking"
     );
 
@@ -803,19 +865,16 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
     // #173 corrective: explicit SecretStorage → keyring migration bridge.
     // User-mediated, one-time; runtime never reads SecretStorage.
-    const migrateRow = checks.createDiv({ cls: "pf-config-row" });
-    migrateRow.createEl("span", {
-      cls: "pf-config-key",
-      text: t("md_foundation_legacy_migrate") ?? "Migrate legacy credentials",
-    });
-    const migrateRight = migrateRow.createDiv({ cls: "pf-config-right" });
-    const migrateBtn = migrateRight.createEl("button", {
-      cls: "paperforge-refresh-btn",
-      text: "Migrate",
-    });
-    migrateBtn.title =
-      "One-time migration of Obsidian SecretStorage values into the keyring (auth set)";
-    migrateBtn.onclick = () => this._migrateLegacyCredentials(migrateBtn);
+    const migrateSetting = new Setting(checks)
+      .setName(t("md_foundation_legacy_migrate"))
+      .setDesc(t("md_foundation_legacy_migrate_desc"))
+      .addButton((btn) =>
+        btn
+          .setButtonText(t("md_foundation_legacy_migrate_btn"))
+          .setTooltip(t("md_foundation_legacy_migrate_desc"))
+          .onClick(() => this._migrateLegacyCredentials(btn.buttonEl))
+      );
+    migrateSetting.settingEl.classList.add("pf-config-row");
 
     // Obsidian version check removed (RC UX Seam): the previous block
     // hardcoded `obsidianOk = true` — a false green. Obsidian compatibility
@@ -1257,14 +1316,18 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             )
           );
       body.createEl("p", { text: readyText, cls: "pf-status-ok" });
-      // Open OCR Workspace (secondary action)
-      renderActionButton(body, {
-        label: t("md_ocr_workspace"),
-        onClick: () =>
-          (this.app as any).workspace.getLeaf().setViewState({
-            type: "paperforge-ocr-workspace",
-          } as any),
-      });
+      // Papers nobody has processed yet are outstanding WORK, not a fault:
+      // the module stays "ready" and the run action is an ordinary button.
+      if (env.reason?.code === "ocr.pending") {
+        body.createEl("p", {
+          text: this._getModuleConsequence("ocr", env),
+          cls: "pf-setup-status",
+        });
+        renderActionButton(body, {
+          label: env.action?.primary?.label || t("action_ocr_run") || "Run OCR",
+          onClick: () => this._dispatchOcrAction("run"),
+        });
+      }
       // Update banner (secondary notice when a newer pipeline is available)
       if (
         pipelineVersion &&
@@ -1280,6 +1343,15 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         });
       }
     }
+    // The OCR Workspace entry lives HERE, in its own module: the topbar
+    // link duplicated it on every other surface.
+    renderActionButton(body, {
+      label: (t("md_ocr_workspace") || "OCR Workspace") + " \u2197",
+      onClick: () =>
+        (this.app as any).workspace.getLeaf().setViewState({
+          type: "paperforge-ocr-workspace",
+        } as any),
+    });
     if (!isRunning) {
       renderActionButton(body, {
         label: t("ocr_configure_credential"),
@@ -1461,6 +1533,15 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           },
         });
       }
+    } else if (env.reason?.code === "memory.index_stale" && !env.action?.primary) {
+      // Index behind the database: ready with an ordinary rebuild action.
+      // A backend-named primary action still wins (the state machine owns
+      // the wording) — this is only the ready-with-notice shape.
+      renderActionButton(body, {
+        label: t("cc_action_rebuild_index") || "Rebuild index",
+        onClick: () =>
+          this._dispatchMemoryBuild("build", undefined, "memory.rebuild"),
+      });
     } else if (
       env.action?.primary &&
       env.user_state !== "ready" &&
@@ -2361,12 +2442,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
   /** Render the Help tab — fetches Markdown from GitHub for live-editable docs. */
   _renderHelpTab(containerEl: HTMLElement): void {
-    containerEl.createEl("div", {
-      cls: "pf-cc-eyebrow",
-      text: t("help_eyebrow") || "help",
-    });
-    containerEl.createEl("h1", {
-      cls: "pf-cc-title",
+    containerEl.createEl("h2", {
+      cls: "pf-cc-heading",
       text: t("help_title") || "Help",
     });
     containerEl.createEl("p", {
@@ -2684,8 +2761,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     };
     this._updateCapabilityEnvelope(mod, probing);
 
-    const vp = this._getVaultBasePath();
-    const resolved = this._resolveRuntimeCommand(vp);
+    const resolved = this._resolveRuntimeCommand();
     if (!resolved) {
       this._probing.delete(mod);
       if (mod === "installation") {
@@ -3043,14 +3119,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const envelopes: Record<string, ProbeEnvelope> =
       this._capabilityState ?? {};
 
-    // ── Eyebrow + Title + Lede ──
-    cc.createEl("div", {
-      cls: "pf-cc-eyebrow",
-      text: t("cc_eyebrow") || "control center",
-    });
-    cc.createEl("h1", {
-      cls: "pf-cc-title",
-      text: t("cc_title") || "Your literature pipeline",
+    // ── Page heading + lede ──
+    // ONE heading per page, at the settings-heading scale (15px/600).  The
+    // page name used to be a grey 12px eyebrow under a second title, which
+    // left four overlapping text blocks before any content.
+    cc.createEl("h2", {
+      cls: "pf-cc-heading",
+      text: t("cc_heading") || "Control center",
     });
     cc.createEl("p", {
       cls: "pf-cc-lede",
@@ -3139,8 +3214,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     // ── Section Head ──
     const sectionHead = cc.createDiv({ cls: "pf-cc-section-head" });
     sectionHead.createEl("div", {
-      cls: "pf-cc-eyebrow",
-      text: t("cc_modules_header") || "modules",
+      cls: "pf-cc-section-title",
+      text: t("cc_modules_header") || "Modules",
     });
     sectionHead.createEl("span", {
       cls: "caption",
@@ -3273,9 +3348,15 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const state =
       env.user_state ??
       (env.capability_state === "ready" ? "ready" : "action_required");
-    const key = "cc_consequence_" + mod + "_" + state;
-    const translated = t(key);
-    if (translated && translated !== key) return translated;
+    // A ready module that carries a notice has something specific to say
+    // ("19 of 968 papers have no OCR output yet") — prefer it over the
+    // generic ready sentence.
+    const hasNotice = (env.notices ?? []).length > 0;
+    if (!(state === "ready" && hasNotice)) {
+      const key = "cc_consequence_" + mod + "_" + state;
+      const translated = t(key);
+      if (translated && translated !== key) return translated;
+    }
     const reason = this._localizeReason(
       env.reason?.code ?? "",
       this._getUserModuleName(mod)
@@ -3370,7 +3451,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const vp = (this.app.vault.adapter as unknown as { basePath?: string })
       ?.basePath;
     if (!vp) return;
-    const run = this._resolveRuntimeCommand(vp);
+    const run = this._resolveRuntimeCommand();
     if (!run) {
       new Notice(t("next_action_runtime_unavailable"));
       return;
@@ -3484,10 +3565,28 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       attr: { type: "text", placeholder: "python" },
     }) as HTMLInputElement;
     pythonInput.value = this.plugin.settings.python_path || "";
+    const pythonHint = pythonField.createEl("span", {
+      cls: "caption pf-setup-input-validation",
+    });
+    const refreshPythonValidation = () => {
+      const value = pythonInput.value.trim();
+      if (!value) {
+        pythonHint.setText("");
+        pythonField.classList.toggle("pf-setup-field--invalid", false);
+        return;
+      }
+      const exists = fs.existsSync(value);
+      pythonHint.setText(
+        exists ? "" : t("setup_foundation_python_missing")
+      );
+      pythonField.classList.toggle("pf-setup-field--invalid", !exists);
+    };
     pythonInput.addEventListener("input", () => {
       this.plugin.settings.python_path = pythonInput.value.trim();
+      refreshPythonValidation();
       this._debouncedSave();
     });
+    refreshPythonValidation();
     renderStatusBadge(
       containerEl,
       env.user_state,
@@ -3513,10 +3612,22 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           text: this._setupFeedback,
         });
       }
+      if (this._setupOperation === "failed" && this._setupFailureDetail) {
+        containerEl.createEl("p", {
+          cls: "pf-setup-failure-detail",
+          text: t("setup_install_failed_detail").replace(
+            "{detail}",
+            this._setupFailureDetail
+          ),
+        });
+      }
+      // The install chain still runs when the local install is healthy —
+      // a requested reinstall MUST render its action button instead of
+      // dead-ending on "Continue" (the previous gate hid it whenever
+      // user_state was `ready`).
       if (
-        env.user_state !== "ready" &&
-        (this._setupReinstallRequested ||
-          env.reason.code === "installation.version_mismatch")
+        this._setupReinstallRequested ||
+        env.reason.code === "installation.version_mismatch"
       ) {
         containerEl.createEl("p", {
           cls: "pf-setup-warn",
@@ -3553,18 +3664,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       });
     } else {
       renderActionButton(nav, {
-        label: t("setup_nav_later"),
-        onClick: () => {
-          this._setupOperation = "idle";
-          this._setupFeedback = null;
-          this._setupStage = 1;
-          this.activeTab = "overview";
-          // RC UX Seam P1: without this the display() gate
-          // (_setup_complete === false) would immediately re-render the
-          // journey and the user could never leave Stage 1.
-          this._setupJourneyDismissedForSession = true;
-          this.display();
-        },
+        label: t("setup_nav_exit"),
+        onClick: () => this._goHome(),
       });
     }
     renderActionButton(nav, {
@@ -3795,6 +3896,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
     // ── Navigation (at the very bottom) ──
 
+    renderActionButton(nav, {
+      label: t("setup_nav_exit"),
+      onClick: () => this._goHome(),
+    });
     renderActionButton(nav, {
       label: t("setup_nav_back"),
       onClick: () => {
@@ -4151,6 +4256,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
     const nav = containerEl.createDiv({ cls: "pf-setup-nav" });
     renderActionButton(nav, {
+      label: t("setup_nav_exit"),
+      onClick: () => this._goHome(),
+    });
+    renderActionButton(nav, {
       label: t("setup_nav_back"),
       onClick: () => {
         this._setupStage = 2;
@@ -4207,6 +4316,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           : t("setup_no_optionals"),
     });
     const nav = containerEl.createDiv({ cls: "pf-setup-nav" });
+    renderActionButton(nav, {
+      label: t("setup_nav_exit"),
+      onClick: () => this._goHome(),
+    });
     renderActionButton(nav, {
       label: t("setup_nav_back"),
       onClick: () => {

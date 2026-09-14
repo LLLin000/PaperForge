@@ -15,36 +15,137 @@ def test_remote_version_has_urllib_request() -> None:
     assert hasattr(update_mod.urllib, "request")
 
 
+def test_release_tag_maps_pep440_to_semver_tag() -> None:
+    """The install spec is PEP 440; the git tag is SemVer (see publish.yml)."""
+    assert update_mod._release_tag("2.0.0") == "2.0.0"
+    assert update_mod._release_tag("2.0.0rc1") == "2.0.0-rc.1"
+    assert update_mod._release_tag("2.0.0a2") == "2.0.0-alpha.2"
+    assert update_mod._release_tag("2.0.0b3") == "2.0.0-beta.3"
+
+
+def test_needs_update_orders_pre_releases() -> None:
+    """A pre-release must be able to reach the NEXT pre-release: the old
+    digit-tuple rule read 2.0.0rc1 and 2.0.0rc2 as equal."""
+    assert update_mod._needs_update("2.0.0rc2", "2.0.0rc1") is True
+    assert update_mod._needs_update("2.0.0", "2.0.0rc1") is True
+    assert update_mod._needs_update("2.0.0rc1", "2.0.0rc1") is False
+    assert update_mod._needs_update("2.0.0rc1", "2.0.0") is False
+    assert update_mod._needs_update("2.0.0", "1.5.15") is True
+    assert update_mod._needs_update("1.5.16", "1.5.15") is True
+
+
+def test_update_pip_pins_the_exact_remote_version(monkeypatch) -> None:
+    """`pip install --upgrade paperforge` (unpinned) cannot reach a
+    pre-release — pip skips them unless one is named exactly. The install
+    spec must pin the remote version."""
+    calls: list[list[str]] = []
+
+    class _Done:
+        returncode = 0
+        stderr = ""
+
+    monkeypatch.setattr(
+        update_mod.subprocess,
+        "run",
+        lambda cmd, **kw: calls.append(list(cmd)) or _Done(),
+    )
+    assert update_mod._update_via_pip("2.0.0rc1") is True
+    assert calls[0][-1] == "paperforge==2.0.0rc1"
+
+
+def test_update_pip_falls_back_to_the_release_tag(monkeypatch) -> None:
+    """PyPI failure → same version from its git tag, never an unpinned ref."""
+    calls: list[list[str]] = []
+
+    class _Fail:
+        returncode = 1
+        stderr = "no network"
+
+    class _Done:
+        returncode = 0
+        stderr = ""
+
+    def _run(cmd, **kw):
+        calls.append(list(cmd))
+        return _Fail() if len(calls) == 1 else _Done()
+
+    monkeypatch.setattr(update_mod.subprocess, "run", _run)
+    assert update_mod._update_via_pip("2.0.0rc1") is True
+    assert calls[1][-1].endswith("@2.0.0-rc.1")
+
+
+def _capture_publications(monkeypatch) -> list[dict]:
+    """Record pointer publications instead of writing the DEVELOPER's real
+    `~/.paperforge/runtime/pointer.json`.
+
+    `perform_update` publishes through the production `publish_pointer`, and
+    a test that lets it run pollutes the machine that runs the suite: the
+    fake version lands in the real pointer, and every plugin on that machine
+    then reports `installation.runtime_pointer_stale`.  The recorder keeps
+    the publication contract assertable without side effects.
+    """
+    published: list[dict] = []
+    monkeypatch.setattr(
+        "paperforge.runtime_pointer.publish_pointer",
+        lambda **kw: published.append(kw),
+    )
+    return published
+
+
 def test_perform_update_up_to_date_no_pointer_write(tmp_path, monkeypatch) -> None:
-    """Already-latest: ok, updated=False, no pointer publication."""
+    """Already-latest: ok, updated=False, and NO pointer publication."""
+    published = _capture_publications(monkeypatch)
     monkeypatch.setattr(update_mod, "_remote_version", lambda: "1.0.0")
-    monkeypatch.setattr(update_mod, "_update_via_pip", lambda **kw: True)
+    monkeypatch.setattr(update_mod, "_update_via_pip", lambda *a, **kw: True)
     monkeypatch.setattr(update_mod, "_sync_obsidian_plugin", lambda vault: None)
     monkeypatch.setattr(update_mod, "_deploy_all_skills", lambda vault: None)
     with patch("paperforge.__version__", "1.0.0"):
         result = update_mod.perform_update(tmp_path)
     assert result["ok"] is True
     assert result["updated"] is False
+    assert published == []
 
 
-def test_perform_update_install_mismatch_does_not_publish(tmp_path, monkeypatch) -> None:
-    """Fresh-child verify mismatch → ok=False, no pointer publication."""
+def test_perform_update_publishes_only_the_observed_version(tmp_path, monkeypatch) -> None:
+    """A completed update publishes the FRESH-CHILD version, not the target."""
+    published = _capture_publications(monkeypatch)
     monkeypatch.setattr(update_mod, "_remote_version", lambda: "2.0.0")
     monkeypatch.setattr(update_mod, "_detect_install_method", lambda: ("pip", None))
-    monkeypatch.setattr(update_mod, "_update_via_pip", lambda **kw: True)
+    monkeypatch.setattr(update_mod, "_update_via_pip", lambda *a, **kw: True)
     monkeypatch.setattr(update_mod, "_fresh_installed_version", lambda: "2.0.0")
     with patch("paperforge.__version__", "1.0.0"):
         result = update_mod.perform_update(tmp_path)
     assert result["ok"] is True
     assert result["updated"] is True
     assert result["installed_version"] == "2.0.0"
+    assert published == [{"paperforge_version": "2.0.0"}]
+
+
+def test_perform_update_install_mismatch_does_not_publish(tmp_path, monkeypatch) -> None:
+    """Fresh-child verify mismatch → ok=False and NO pointer publication.
+
+    `updated` stays True on purpose: the new bits are on disk, only the
+    pointer publication is withheld, so the runtime keeps serving the
+    previously published (verified) interpreter.
+    """
+    published = _capture_publications(monkeypatch)
+    monkeypatch.setattr(update_mod, "_remote_version", lambda: "2.0.0")
+    monkeypatch.setattr(update_mod, "_detect_install_method", lambda: ("pip", None))
+    monkeypatch.setattr(update_mod, "_update_via_pip", lambda *a, **kw: True)
+    monkeypatch.setattr(update_mod, "_fresh_installed_version", lambda: "1.9.9")
+    with patch("paperforge.__version__", "1.0.0"):
+        result = update_mod.perform_update(tmp_path)
+    assert result["ok"] is False
+    assert result["updated"] is True
+    assert result["installed_version"] == "1.9.9"
+    assert published == []
 
 
 def test_perform_update_never_prompts_or_prints(tmp_path, monkeypatch, capsys) -> None:
     """The pure service owns no UX: input() must never be reached and
     nothing may be written to stdout."""
+    _capture_publications(monkeypatch)
     called = {"input": False}
-    real_input = __builtins__["input"] if isinstance(__builtins__, dict) else __builtins__.input
     monkeypatch.setattr("builtins.input", lambda *a, **k: called.__setitem__("input", True) or "y")
     monkeypatch.setattr(update_mod, "_remote_version", lambda: "1.0.0")
     with patch("paperforge.__version__", "1.0.0"):

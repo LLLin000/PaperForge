@@ -433,7 +433,7 @@ def run_doctor(vault: Path, verbose: bool = False, json_output: bool = False) ->
                 "PaperForge 包",
                 "warn",
                 f"v{pkg_version} 已安装 (插件版本 v{expected_version}) - 版本不匹配",
-                f"运行: {interp} -m pip install --upgrade git+https://github.com/LLLin000/PaperForge.git@{expected_version}",
+                f"运行: {interp} -m pip install --upgrade \"paperforge[vector]=={expected_version}\"",
             )
     else:
         expected_version = __import__("paperforge").__version__
@@ -441,7 +441,7 @@ def run_doctor(vault: Path, verbose: bool = False, json_output: bool = False) ->
             "PaperForge 包",
             "fail",
             f"PaperForge 未安装在 {interp} 中",
-            f"运行: {interp} -m pip install --upgrade git+https://github.com/LLLin000/PaperForge.git@{expected_version}",
+            f"运行: {interp} -m pip install --upgrade \"paperforge[vector]=={expected_version}\"",
         )
 
     # Wrong-environment detection

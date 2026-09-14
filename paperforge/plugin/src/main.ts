@@ -28,7 +28,6 @@ class ConfirmMigrationModal extends Modal {
     });
   }
 }
-import * as fs from "fs";
 import * as path from "path";
 import {
   VIEW_TYPE_PAPERFORGE,
@@ -85,7 +84,9 @@ export default class PaperForgePlugin extends Plugin {
           ?.basePath ?? "";
       const transport = new NodeProcessTransport({
         vaultPath,
-        customPythonPath: this.settings?.python_path,
+        // #174: the published pointer is the single runtime authority. A
+        // configured python_path is the BASE interpreter for the bootstrap
+        // venv (RuntimeBootstrap.installOnce), never a dispatch target.
         resolveRuntime: async () => this._getPythonCommand(),
       });
       this._client = new PaperForgeClient({ transport });
@@ -570,11 +571,6 @@ export default class PaperForgePlugin extends Plugin {
         // Display mirrors keep defaults until Python is reachable; actions
         // stay disabled until a fresh probe/config response (#144).
       }
-    }
-
-    if (this.settings.python_path && this.settings.python_path.trim()) {
-      const pp = this.settings.python_path.trim();
-      this.settings._python_path_stale = !fs.existsSync(pp);
     }
   }
 

@@ -59,6 +59,8 @@ export interface FsOps {
   readFileSync(p: string, encoding?: string | null): string;
   mkdirSync(p: string, opts?: { recursive?: boolean }): string | undefined;
   rmSync(p: string, opts?: { recursive?: boolean; force?: boolean }): void;
+  /** Optional: the real fs provides them; doubles may omit them. */
+  statSync?(p: string): { mtimeMs: number };
 }
 
 export type ExecFileCallback = (
@@ -69,9 +71,15 @@ export type ExecFileCallback = (
 export type ExecFileFn = (
   command: string,
   args: readonly string[],
-  opts: { timeout?: number; encoding?: string; signal?: AbortSignal },
+  opts: {
+    timeout?: number;
+    encoding?: string;
+    signal?: AbortSignal;
+    cwd?: string;
+    env?: Record<string, string | undefined>;
+  },
   cb: ExecFileCallback
-) => void;
+) => unknown;
 export type ExecFileSyncFn = (
   command: string,
   args: readonly string[],
@@ -84,6 +92,31 @@ const MIN_PYTHON = "3.11";
 const POINTER_SCHEMA_VERSION = 1;
 const POINTER_FILENAME = "pointer.json";
 const VENV_DIR_NAME = "venv";
+/** An install lock older than this is debris from a killed process. */
+const STALE_INSTALL_LOCK_MS = 15 * 60 * 1000;
+
+/**
+ * Install attempts in flight, keyed by normalized runtime root.
+ *
+ * ONE venv path is a shared, exclusively-written resource: two concurrent
+ * `pip install` runs into it deadlock on Windows file locks (WinError 32),
+ * neither exits, and every later attempt keeps failing while the stale
+ * processes hold handles.  A second attempt therefore fails fast instead of
+ * racing — this also covers a plugin reload while an install is running.
+ */
+const activeInstalls = new Set<string>();
+
+/** Case-insensitive key on Windows (the same dir spelled differently). */
+function runtimeKey(rootDir: string): string {
+  const resolved = path.resolve(rootDir);
+  return process.platform === "win32" ? resolved.toLowerCase() : resolved;
+}
+
+/** Minimal surface of a spawned child we need to terminate. */
+interface TrackedChild {
+  kill?: (signal?: string) => boolean;
+  pid?: number;
+}
 
 /** ES2018-compatible Promise.withResolvers polyfill. */
 function deferred<T>(): {
@@ -207,6 +240,42 @@ export class RuntimeBootstrap {
   /** Canonical runtime root: ~/.paperforge/runtime. */
   public readonly rootDir: string;
 
+  /**
+   * Cross-process install lock (atomic mkdir).  Returns the release function.
+   * A lock older than STALE_INSTALL_LOCK_MS is treated as debris from a killed
+   * process and reclaimed.
+   */
+  private _acquireInstallLock(): () => void {
+    const lockDir = path.join(this.rootDir, "install.lock.d");
+    const held = () => {
+      const mtime = this._fs.statSync?.(lockDir)?.mtimeMs ?? 0;
+      const stale = mtime > 0 && Date.now() - mtime > STALE_INSTALL_LOCK_MS;
+      if (!stale) {
+        throw new Error(
+          "Another PaperForge runtime install is already running for this runtime directory"
+        );
+      }
+      this._fs.rmSync(lockDir, { recursive: true, force: true });
+    };
+    try {
+      this._fs.mkdirSync(this.rootDir, { recursive: true });
+      this._fs.mkdirSync(lockDir);
+    } catch {
+      held();
+      this._fs.mkdirSync(lockDir);
+    }
+    return () => {
+      try {
+        this._fs.rmSync(lockDir, { recursive: true, force: true });
+      } catch {
+        // best effort: a stale lock is reclaimed by the next install
+      }
+    };
+  }
+
+  /** Child process of the step currently in flight (see _terminateActiveChild). */
+  private _activeChild: TrackedChild | null = null;
+
   constructor(opts?: {
     runtimeDir?: string;
     osPlatform?: string;
@@ -321,19 +390,41 @@ export class RuntimeBootstrap {
   // ── 3. ONE one-time install ──
 
   /**
-   * ONE consented one-time install into ~/.paperforge/runtime/venv:
-   * venv + ONE pinned `paperforge[vector]==<expectedVersion>` + fresh-child
-   * verify that the OBSERVED version equals the requested version.
-   * NEVER writes the pointer (Python owns publication) and returns only an
-   * ephemeral result — nothing is cached, nothing is usable until the
-   * caller's handshake + `paperforge setup` succeed.
+   * Base interpreter for the managed venv: an explicit user-selected
+   * executable when one is configured (the setup wizard's "Python
+   * executable" field), else the discovery chain.  An explicit choice is
+   * FAIL-CLOSED: a missing path, a non-interpreter, or a version below
+   * MIN_PYTHON is reported by name — the install never silently switches
+   * to a different interpreter than the one the user selected.
    */
-  async installOnce(
-    expectedVersion: string,
-    signal?: AbortSignal
-  ): Promise<{ pythonPath: string; observedVersion: string }> {
-    if (signal?.aborted) throw new AbortError("Operation was cancelled");
-
+  private _resolveBaseInterpreter(override?: string): DiscoveredInterpreter {
+    const explicit = override?.trim();
+    if (explicit) {
+      if (!this._fs.existsSync(explicit)) {
+        throw new Error(`Python executable not found: ${explicit}`);
+      }
+      let output: string;
+      try {
+        output = this._execFileSync(explicit, ["--version"], {
+          encoding: "utf-8",
+          timeout: 5000,
+        });
+      } catch {
+        throw new Error(`Not a runnable Python interpreter: ${explicit}`);
+      }
+      const version = parsePythonVersion(output);
+      if (!version) {
+        throw new Error(
+          `Could not read a Python version from: ${explicit} (${output.trim()})`
+        );
+      }
+      if (!isAtLeast(version, MIN_PYTHON)) {
+        throw new Error(
+          `Python ${version} is older than the required ${MIN_PYTHON}: ${explicit}`
+        );
+      }
+      return { path: explicit, version };
+    }
     const discovered = this.discoverInterpreter();
     if (!discovered) {
       const gate = this.platformGate();
@@ -341,11 +432,59 @@ export class RuntimeBootstrap {
         `No Python ${MIN_PYTHON}+ found (${gate.ok ? "no interpreter" : gate.message})`
       );
     }
+    return discovered;
+  }
+
+  /**
+   * ONE consented one-time install into ~/.paperforge/runtime/venv:
+   * venv + ONE pinned `paperforge[vector]==<expectedVersion>` + fresh-child
+   * verify that the OBSERVED version equals the requested version.
+   * NEVER writes the pointer (Python owns publication) and returns only an
+   * ephemeral result — nothing is cached, nothing is usable until the
+   * caller's handshake + `paperforge setup` succeed.
+   *
+   * `interpreterOverride` is the configured base interpreter (settings
+   * `python_path`); omitted/empty falls back to discovery.
+   */
+  async installOnce(
+    expectedVersion: string,
+    signal?: AbortSignal,
+    interpreterOverride?: string
+  ): Promise<{ pythonPath: string; observedVersion: string }> {
+    if (signal?.aborted) throw new AbortError("Operation was cancelled");
+
+    const discovered = this._resolveBaseInterpreter(interpreterOverride);
 
     if (signal?.aborted) throw new AbortError("Operation was cancelled");
 
     const pythonExe = this.pythonExeFor(this.venvDir);
+    const installKey = runtimeKey(this.rootDir);
+    if (activeInstalls.has(installKey)) {
+      throw new Error(
+        "Another PaperForge runtime install is already running for this runtime directory"
+      );
+    }
+    // In-memory guard first (fast, same renderer), then a CROSS-PROCESS lock:
+    // Obsidian's settings window and main window are separate renderers with
+    // separate plugin instances, and two pips writing one venv deadlock on
+    // Windows file locks — observed as two concurrent `pip install` children.
+    const releaseLock = this._acquireInstallLock();
+    activeInstalls.add(installKey);
     try {
+      // The managed venv is OWNED by the installer, so every install starts
+      // from a clean directory.  pip trusts an existing dist-info, so a venv
+      // damaged by an interrupted run (module files gone, metadata intact)
+      // survived every reinstall: observed as `import chromadb` failing
+      // with "No module named 'dotenv'" on a runtime pip reported healthy.
+      try {
+        this._fs.rmSync(this.venvDir, { recursive: true, force: true });
+      } catch (cleanupErr) {
+        throw new Error(
+          `The previous runtime directory could not be removed (${
+            cleanupErr instanceof Error ? cleanupErr.message : String(cleanupErr)
+          }). Close any running PaperForge process and try again.`
+        );
+      }
       this._fs.mkdirSync(this.venvDir, { recursive: true });
       await this._exec(
         discovered.path,
@@ -357,9 +496,9 @@ export class RuntimeBootstrap {
       await this._exec(
         pythonExe,
         ["-m", "pip", "install", `paperforge[vector]==${expectedVersion}`],
-        // Vector dependencies can be large on a clean machine; this remains
-        // bounded, while avoiding a false first-use failure at two minutes.
-        { timeout: 300000, signal },
+        // Vector dependencies are large; a cold download can exceed the
+        // default two minutes while still making progress.
+        { timeout: 600000, signal },
         "pip install"
       );
       if (signal?.aborted) throw new AbortError("Operation was cancelled");
@@ -370,11 +509,28 @@ export class RuntimeBootstrap {
         );
       }
     } catch (err) {
+      // Terminate the child FIRST: deleting a venv out from under a live
+      // pip leaves a process holding site-packages handles, and every
+      // later attempt then fails with a Windows sharing violation.
+      this._terminateActiveChild();
       // Clean the half-installed venv; nothing is published, nothing kept.
       try {
         this._fs.rmSync(this.venvDir, { recursive: true, force: true });
-      } catch {}
+      } catch (cleanupErr) {
+        // Never hide this: a venv that cannot be removed means the next
+        // attempt will fail for a reason that is not the install itself.
+        throw new Error(
+          `${err instanceof Error ? err.message : String(err)}\n` +
+            `Additionally, the previous runtime directory could not be removed (${
+              cleanupErr instanceof Error ? cleanupErr.message : String(cleanupErr)
+            }). Close any running PaperForge process and try again.`
+        );
+      }
       throw err;
+    } finally {
+      activeInstalls.delete(installKey);
+      this._activeChild = null;
+      releaseLock();
     }
     return { pythonPath: pythonExe, observedVersion: expectedVersion };
   }
@@ -518,14 +674,57 @@ export class RuntimeBootstrap {
     label: string
   ): Promise<void> {
     const { promise, resolve, reject } = deferred<void>();
-    this._execFile(command, args, { ...opts, encoding: "utf-8" }, (err) => {
-      if (err) {
-        reject(new Error(`${label} failed: ${err.message}`));
-      } else {
-        resolve();
+    const child = this._execFile(
+      command,
+      args,
+      {
+        ...opts,
+        encoding: "utf-8",
+        // Never inherit the app's CWD: a checkout in it would shadow the
+        // module being installed/verified (`python -m paperforge` from a
+        // repository root imports the source tree, not the runtime).
+        cwd: os.tmpdir(),
+      },
+      (err) => {
+        if (err) {
+          reject(new Error(`${label} failed: ${err.message}`));
+        } else {
+          resolve();
+        }
       }
-    });
+    );
+    // Remember the child so a failed install can terminate it BEFORE the
+    // venv is deleted: on Windows a still-running pip keeps handles in
+    // site-packages, and the next attempt then dies with WinError 32.
+    if (child && typeof child === "object") {
+      this._activeChild = child as TrackedChild;
+    }
     return promise;
+  }
+
+  /**
+   * Terminate the currently tracked install child (and, on Windows, its
+   * process tree).  Best-effort: the caller is already on an error path.
+   */
+  private _terminateActiveChild(): void {
+    const child = this._activeChild;
+    this._activeChild = null;
+    if (!child) return;
+    try {
+      child.kill?.();
+    } catch {
+      // ignore — a dead child is the goal, not the outcome
+    }
+    if (this.osPlatform === "win32" && child.pid) {
+      try {
+        this._execFileSync("taskkill", ["/PID", String(child.pid), "/T", "/F"], {
+          encoding: "utf-8",
+          timeout: 10000,
+        });
+      } catch {
+        // taskkill is best-effort (the tree may already be gone)
+      }
+    }
   }
 
   /** Fresh-child probe: read and RETURN the observed version (never trust
@@ -538,7 +737,7 @@ export class RuntimeBootstrap {
     this._execFile(
       pythonPath,
       ["-I", "-c", "import paperforge; print(paperforge.__version__)"],
-      { timeout: 30000, signal },
+      { timeout: 30000, signal, cwd: os.tmpdir() },
       (err, stdout) => {
         if (err) {
           reject(err);
@@ -560,9 +759,18 @@ export class RuntimeBootstrap {
     signal?: AbortSignal
   ): Promise<string | null> {
     const { promise, resolve, reject } = deferred<string | null>();
+    const env: Record<string, string | undefined> = { ...process.env };
+    // The fresh child must import the runtime being verified.  PYTHONPATH /
+    // PYTHONHOME inherited from the app would redirect the import (an
+    // editable checkout on PYTHONPATH, for instance) and make this check
+    // report a fake mismatch.
+    delete env.PYTHONPATH;
+    delete env.PYTHONHOME;
     this._execFile(
       pythonPath,
       [
+        // -P: never prepend the working directory to sys.path (3.11+).
+        "-P",
         "-m",
         "paperforge",
         "--vault",
@@ -573,7 +781,7 @@ export class RuntimeBootstrap {
         "--expected-version",
         expectedVersion,
       ],
-      { timeout: 30000, signal },
+      { timeout: 30000, signal, cwd: os.tmpdir(), env },
       (err, stdout) => {
         if (err) {
           // Probe unavailable is not itself a handshake failure — the

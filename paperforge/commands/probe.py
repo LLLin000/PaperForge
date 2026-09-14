@@ -630,6 +630,13 @@ def probe_ocr(vault: Path) -> dict[str, Any]:
     running_rows = [r for r in rows if getattr(r, 'status', '') in ACTIVE_STATUSES]
     completed_count = sum(1 for r in rows if getattr(r, 'status', '') in TERMINAL_STATUSES)
     total = len(rows)
+    # Papers with no OCR output (the actionable set the run action would
+    # process).  Counted from the rows so the number matches the OCR list.
+    pending_rows = sum(
+        1 for r in rows
+        if getattr(r, 'status', '') == 'pending'
+        or getattr(r, 'display_action', '') == 'run_ocr'
+    )
     act_state = "running" if running_rows else "idle"
     if running_rows:
         act_label = f"OCR processing ({completed_count}/{total})"
@@ -665,7 +672,12 @@ def probe_ocr(vault: Path) -> dict[str, Any]:
         + _lin_details.get("blocks_empty", 0)
         + _lin_details.get("blocks_invalid", 0)
     )
-    _n_pending = int(_lin_details.get("not_started", 0))
+    # Papers with no OCR output at all: `not_started` (nothing ran) plus
+    # `raw_missing` (no raw artifacts on disk).  Reporting only not_started
+    # said "1 paper" on a vault with 20 unprocessed papers.
+    _n_pending = int(_lin_details.get("not_started", 0)) + int(
+        _lin_details.get("raw_missing", 0)
+    )
     _n_nopdf = int(_lin_details.get("no_pdf", 0))
 
     if _n_failed:
@@ -707,16 +719,23 @@ def probe_ocr(vault: Path) -> dict[str, Any]:
         notices=notices, ttl_seconds=TTL_OCR, pipeline_version=OCR_PIPELINE_VERSION)
 
     if _n_pending:
-        return _wrap(module="ocr", capability_state="needs_action", severity="warning",
+        # NOT a defect: a library where some papers have not been processed
+        # yet is normal and the processed papers are fully searchable.  The
+        # module reports ready with an informational notice; the module
+        # detail offers "Run OCR" as an ordinary action.
+        _unprocessed = pending_rows or _n_pending
+        _pending_notice = (
+            f"{_unprocessed} of {total} papers have no OCR output yet "
+            "— run OCR when you want them processed"
+        )
+        return _wrap(module="ocr", capability_state="ready", severity="ok",
         reason_code="ocr.pending",
-        reason_text=f"OCR is pending for {_n_pending} papers — run to process",
-        user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
-        action_primary=build_action_primary(
-            action_id="ocr.run",
-            verb="run", label="Run OCR",
-        ),
+        reason_text=_pending_notice,
+        user_state=USER_STATE_READY, capability_kind=CAPABILITY_OPTIONAL,
+        notices=notices + [{"level": "info", "message": _pending_notice}],
+        action_primary=None,
         activity_state=act_state, activity_label=act_label, activity_progress=act_progress,
-        notices=notices, ttl_seconds=TTL_OCR, pipeline_version=OCR_PIPELINE_VERSION)
+        ttl_seconds=TTL_OCR, pipeline_version=OCR_PIPELINE_VERSION)
 
     if _n_nopdf:
         return _wrap(module="ocr", capability_state="needs_action", severity="warning",
@@ -779,21 +798,25 @@ def probe_ocr(vault: Path) -> dict[str, Any]:
         notices=notices, ttl_seconds=TTL_OCR, pipeline_version=OCR_PIPELINE_VERSION)
 
     # Pending rows → run action (run before rebuild/investigate)
-    has_pending = any(
-        getattr(r, 'status', '') == 'pending' or getattr(r, 'display_action', '') == 'run_ocr'
-        for r in rows
+    # Count the pending ROWS: the message used `total`, so a vault with 949
+    # finished papers and 19 pending ones claimed all of them were pending.
+    pending_rows = sum(
+        1 for r in rows
+        if getattr(r, 'status', '') == 'pending' or getattr(r, 'display_action', '') == 'run_ocr'
     )
-    if has_pending:
-        return _wrap(module="ocr", capability_state="needs_action", severity="warning",
+    if pending_rows:
+        _fallback_notice = (
+            f"{pending_rows} of {total} papers have no OCR output yet "
+            "— run OCR when you want them processed"
+        )
+        return _wrap(module="ocr", capability_state="ready", severity="ok",
         reason_code="ocr.pending",
-        reason_text=f"OCR is pending for {total} papers — run to process",
-        user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
-        action_primary=build_action_primary(
-            action_id="ocr.run",
-            verb="run", label="Run OCR",
-        ),
+        reason_text=_fallback_notice,
+        user_state=USER_STATE_READY, capability_kind=CAPABILITY_OPTIONAL,
+        notices=notices + [{"level": "info", "message": _fallback_notice}],
+        action_primary=None,
         activity_state=act_state, activity_label=act_label, activity_progress=act_progress,
-        notices=notices, ttl_seconds=TTL_OCR, pipeline_version=OCR_PIPELINE_VERSION)
+        ttl_seconds=TTL_OCR, pipeline_version=OCR_PIPELINE_VERSION)
 
     # Degraded → rebuild (safe, no maintenance eligibility)
     if has_degraded:
@@ -1142,17 +1165,25 @@ def _probe_memory_impl(vault: Path) -> dict[str, Any]:
             notices=notices, ttl_seconds=TTL_MEMORY,
         )
 
-    # Stale: schema OK but index hash doesn't match
+    # Index behind the database: search still works, its data is stale.
+    # Outstanding work, not a fault — ready with an informational notice.
     if not fresh:
+        _stale_notice = (
+            "Memory index is behind the database — rebuild to refresh search ("
+            + (
+                f"{paper_count_index} of {paper_count_db} papers indexed"
+                if paper_count_db != paper_count_index
+                else f"content changed since the last build; {paper_count_db} papers"
+            )
+            + ")"
+        )
         return build_envelope(
-            module="memory", capability_state="needs_action", severity="warning",
+            module="memory", capability_state="ready", severity="ok",
             reason_code="memory.index_stale",
-            reason_text=f"Memory index needs rebuild (DB: {paper_count_db} papers, Index: {paper_count_index} papers)",
-            user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
-            action_primary=build_action_primary(
-                action_id="memory.rebuild",
-                verb="rebuild_index", label="Rebuild index",
-            ),
+            reason_text=_stale_notice,
+            user_state=USER_STATE_READY, capability_kind=CAPABILITY_OPTIONAL,
+            notices=[{"level": "info", "message": _stale_notice}],
+            action_primary=None,
             ttl_seconds=TTL_MEMORY,
         )
 

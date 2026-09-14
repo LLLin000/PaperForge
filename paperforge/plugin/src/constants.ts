@@ -139,7 +139,6 @@ export interface PaperForgeSettings {
   capabilityState: Record<string, ProbeEnvelope>;
   autoSyncEnabled?: boolean;
   autoSyncIntervalSeconds?: number;
-  _python_path_stale?: boolean;
   _migrated_keys?: string[];
   _migration_warnings?: string[];
   _paddleocr_configured?: boolean;
