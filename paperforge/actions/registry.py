@@ -130,11 +130,25 @@ def _library_prune_preflight(ctx: ActionContext, request: ActionRequest) -> Pref
         from paperforge.lineage import _detect_residuals
 
         residuals = _detect_residuals(ctx.vault)
-        if residuals.get("count", 0) == 0:
+        residual_keys = [str(key) for key in residuals.get("keys", [])]
+        if request.scope.kind == "papers":
+            selected = set(request.scope.keys)
+            residual_keys = [key for key in residual_keys if key in selected]
+        if not residual_keys:
+            reason_code = (
+                "library.no_selected_orphans"
+                if request.scope.kind == "papers"
+                else "library.no_orphans"
+            )
+            reason = (
+                "None of the selected papers are current residuals"
+                if request.scope.kind == "papers"
+                else "No residual papers found"
+            )
             return PreflightResult(
                 availability="unavailable",
-                availability_reason_code="library.no_orphans",
-                availability_reason="No residual papers found",
+                availability_reason_code=reason_code,
+                availability_reason=reason,
             )
     except Exception:  # noqa: BLE001
         pass
@@ -148,53 +162,61 @@ def _library_prune_preflight(ctx: ActionContext, request: ActionRequest) -> Pref
 
 
 def _library_prune_handler(ctx: ActionContext, request: ActionRequest) -> PFResult:
-    """library.prune: delete ALL residual artifacts for papers absent from
-    Zotero (workspace dir / OCR data / vectors / full-text rows / retrieval
-    units / lineage records).  Candidates come from the unified residual
-    detection (Zotero exports = authority), never from a workspace scan —
-    an OCR-only or FTS-only residual has no workspace dir to scan.  The
-    prune re-verifies each key against the current residual report before
-    deleting anything.  Destructive — confirmation is enforced by the
-    registry policy; never automatic."""
+    """library.prune: delete current residual artifacts within the request scope.
+
+    Candidates come from unified residual detection (Zotero exports = authority),
+    never from a workspace scan. The prune re-verifies each selected key against
+    the current residual report before deleting anything.
+    """
 
     from pathlib import Path
 
     from paperforge import __version__ as PF_VERSION
-    from paperforge.core.result import PFResult
+    from paperforge.core.errors import ErrorCode
+    from paperforge.core.result import PFError, PFResult
     from paperforge.lineage import _detect_residuals
     from paperforge.worker.prune import prune_orphan_papers
 
     try:
         residuals = _detect_residuals(ctx.vault)
-        if residuals.get("count", 0) == 0:
+        residual_keys = [str(key) for key in residuals.get("keys", [])]
+        if request.scope.kind == "papers":
+            selected = set(request.scope.keys)
+            residual_keys = [key for key in residual_keys if key in selected]
+        if not residual_keys:
+            if request.scope.kind == "papers":
+                return PFResult(
+                    ok=False,
+                    command="action run",
+                    version=PF_VERSION,
+                    error=PFError(
+                        code=ErrorCode.ACTION_UNAVAILABLE,
+                        message="None of the selected papers are current residuals",
+                    ),
+                )
             return PFResult(
                 ok=True,
                 command="action run",
                 version=PF_VERSION,
-                data={"deleted": [], "count": 0},
+                data={"deleted": [], "count": 0, "counts": {}, "carriers": {}},
             )
-        # Safety: candidates are the CURRENT residual report keys — a key
-        # that stopped being residual (e.g. re-added to Zotero between the
-        # probe and this run) is never touched.
+        # Safety: candidates are the CURRENT residual report keys. A key that
+        # stopped being residual between probe and run is never touched.
         try:
             from paperforge.lineage import _workspace_dir_for_key
 
             candidates = [
                 {
-                    "key": k,
+                    "key": key,
                     "domain": "",
-                    "workspace_dir": _workspace_dir_for_key(ctx.vault, k) or Path(),
+                    "workspace_dir": _workspace_dir_for_key(ctx.vault, key) or Path(),
                 }
-                for k in residuals.get("keys", [])
+                for key in residual_keys
             ]
         except Exception:  # noqa: BLE001 — path resolution is best-effort
             candidates = [
-                {
-                    "key": k,
-                    "domain": "",
-                    "workspace_dir": Path(),
-                }
-                for k in residuals.get("keys", [])
+                {"key": key, "domain": "", "workspace_dir": Path()}
+                for key in residual_keys
             ]
         result_data = prune_orphan_papers(
             ctx.vault,
@@ -202,9 +224,6 @@ def _library_prune_handler(ctx: ActionContext, request: ActionRequest) -> PFResu
             dry_run=False,
         )
     except Exception as exc:  # noqa: BLE001 — structured error boundary
-        from paperforge.core.errors import ErrorCode
-        from paperforge.core.result import PFError
-
         return PFResult(
             ok=False,
             command="action run",
@@ -213,11 +232,28 @@ def _library_prune_handler(ctx: ActionContext, request: ActionRequest) -> PFResu
         )
     deleted = result_data.get("deleted", [])
     counts = result_data.get("counts", {})
+    failed_keys = result_data.get("failed_keys", [])
+    carriers = result_data.get("carriers", {})
+    failed = counts.get("failed", 0)
     return PFResult(
-        ok=True,
+        ok=failed == 0,
         command="action run",
         version=PF_VERSION,
-        data={"deleted": deleted, "count": len(deleted), "counts": counts},
+        data={
+            "deleted": deleted,
+            "count": len(deleted),
+            "counts": counts,
+            "failed_keys": failed_keys,
+            "carriers": carriers,
+        },
+        error=(
+            PFError(
+                code=ErrorCode.PARTIAL_FAILURE,
+                message=f"Prune completed with {failed} carrier failure(s)",
+            )
+            if failed
+            else None
+        ),
     )
 
 
@@ -905,7 +941,7 @@ _SPECS: tuple[ActionSpec, ...] = (
         description_code="action.library.prune.description",
         handler=_library_prune_handler,
         preflight=_library_prune_preflight,
-        scope_kinds=("all",),
+        scope_kinds=("all", "papers"),
         cost="local",
         impact="mutating",
         confirmation="required",
