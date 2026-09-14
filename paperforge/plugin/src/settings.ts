@@ -394,21 +394,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       });
     });
 
-    // Right: OCR Workspace link
-    const rightLink = topbar.createDiv({ cls: "pf-cc-topbar-right" });
-    const ocrLink = rightLink.createEl("a", {
-      cls: "pf-cc-topbar-ocr-link",
-      text: (t("md_ocr_workspace") || "OCR Workspace") + " \u2197",
-      attr: { href: "#", role: "button" },
-    });
-    ocrLink.addEventListener("click", (e: MouseEvent) => {
-      e.preventDefault();
-      (this.app as any).setting.close();
-      (this.app as any).workspace.getLeaf().setViewState({
-        type: "paperforge-ocr-workspace",
-      });
-    });
-
     // --- Tab content containers ---
     tabs.forEach((tab) => {
       tabContents[tab.id] = containerEl.createDiv({
@@ -1331,14 +1316,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             )
           );
       body.createEl("p", { text: readyText, cls: "pf-status-ok" });
-      // Open OCR Workspace (secondary action)
-      renderActionButton(body, {
-        label: t("md_ocr_workspace"),
-        onClick: () =>
-          (this.app as any).workspace.getLeaf().setViewState({
-            type: "paperforge-ocr-workspace",
-          } as any),
-      });
       // Update banner (secondary notice when a newer pipeline is available)
       if (
         pipelineVersion &&
@@ -1354,6 +1331,15 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         });
       }
     }
+    // The OCR Workspace entry lives HERE, in its own module: the topbar
+    // link duplicated it on every other surface.
+    renderActionButton(body, {
+      label: (t("md_ocr_workspace") || "OCR Workspace") + " \u2197",
+      onClick: () =>
+        (this.app as any).workspace.getLeaf().setViewState({
+          type: "paperforge-ocr-workspace",
+        } as any),
+    });
     if (!isRunning) {
       renderActionButton(body, {
         label: t("ocr_configure_credential"),

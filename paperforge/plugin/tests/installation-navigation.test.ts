@@ -214,7 +214,7 @@ describe("i18n navigation strings", () => {
     try {
       document.documentElement.lang = "zh-CN";
       setLanguage({ vault: {} } as any);
-      expect(t("tab_overview")).toBe("概览");
+      expect(t("tab_overview")).toBe("主页");
     } finally {
       document.documentElement.lang = previous;
       setLanguage({ vault: { getConfig: () => "en" } } as any);

@@ -5045,6 +5045,12 @@
 }
 
 /* ── Action Button ── */
+/* Buttons inside a module body keep their natural width — a flex column
+   stretches children by default, which made every action full-bleed. */
+.pf-module-body > .pf-action-btn,
+.pf-module-body > button {
+  align-self: flex-start;
+}
 .pf-action-btn {
   padding: 4px 12px;
   font-size: var(--font-ui-small);
@@ -6552,6 +6558,12 @@ input.pf-ocr-ws-search-input::placeholder {
   color: var(--text-normal);
   background: var(--background-modifier-hover);
 }
+.pf-cc-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-2);
+  flex-wrap: wrap;
+}
 .pf-cc-topbar-brand {
   display: flex;
   align-items: baseline;
@@ -6588,16 +6600,6 @@ input.pf-ocr-ws-search-input::placeholder {
 .pf-cc-topbar-tab[aria-selected="true"] {
   background: var(--background-secondary);
   color: var(--interactive-accent);
-}
-.pf-cc-topbar-link {
-  font-size: var(--font-ui-small);
-  color: var(--interactive-accent);
-  text-decoration: none;
-  cursor: pointer;
-  padding: var(--size-4-2) 0;
-}
-.pf-cc-topbar-link:hover {
-  text-decoration: underline;
 }
 
 /* ── Page heading ── */
