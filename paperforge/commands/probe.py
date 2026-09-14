@@ -12,6 +12,7 @@ maintenance_eligible, user_visible_failure, user_impact to envelopes.
 from __future__ import annotations
 
 import json
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -200,6 +201,20 @@ def _load_pf_config(vault: Path) -> tuple[dict[str, Any] | None, str | None]:
 # Probes
 # ---------------------------------------------------------------------------
 
+def normalize_release_version(version: str) -> str:
+    """One release, two spellings, one comparison.
+
+    Release tags and the plugin manifest carry SemVer (`2.0.0-rc.2`) while
+    the installed package reports PEP 440 (`2.0.0rc2`).  Comparing raw
+    strings reported `installation.version_mismatch` for the same release.
+    """
+    m = re.fullmatch(r"(\d+(?:\.\d+)*)-(alpha|beta|rc)\.(\d+)", (version or "").strip())
+    if not m:
+        return (version or "").strip()
+    phase = {"alpha": "a", "beta": "b", "rc": "rc"}[m.group(2)]
+    return f"{m.group(1)}{phase}{m.group(3)}"
+
+
 def probe_installation(vault: Path, expected_version: str | None = None) -> dict[str, Any]:
     pf_json = vault / "paperforge.json"
 
@@ -260,7 +275,11 @@ def probe_installation(vault: Path, expected_version: str | None = None) -> dict
             ttl_seconds=TTL_INSTALLATION,
         )
 
-    if expected_version and expected_version != PAPERFORGE_VERSION:
+    if (
+        expected_version
+        and normalize_release_version(expected_version)
+        != normalize_release_version(PAPERFORGE_VERSION)
+    ):
         return build_envelope(
             module="installation", capability_state="needs_action", severity="warning",
             reason_code="installation.version_mismatch",
