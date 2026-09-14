@@ -1,0 +1,16 @@
+{
+  "version": "2.0.0",
+  "release_source_sha": "76c179451f6ca6d6dfa863a1ad8f00cf3aa7ce27",
+  "candidate_evidence_sha": "56407222f2782c616518f55a3e0d3fe33d200aeb",
+  "artifacts": {
+    "main.js": "2a90af9209f6a090dcae3ece039ab5acb0223b841dd203be765b82828935d7ab",
+    "wheel": "bae1f729bd8d8be94a34ef223e064872b511dd8f73d7a95a6832ce6889bc384e",
+    "sdist": "5296f6dd7761e24b13ead953b244c3ad804c813b9e3b209ad06c14895be6ec13"
+  },
+  "hosted_ci": {
+    "candidate": 34805876718,
+    "master": 34806652889,
+    "pages": 34806652917
+  },
+  "status": "candidate"
+}
