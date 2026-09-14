@@ -263,9 +263,16 @@ function resolveGitDir(): string | null {
 }
 
 /** Redacted child env: PATH enrichment + credential strip. Never merges
- * process.env secrets into the child. */
+ * process.env secrets into the child.
+ *
+ * PYTHONPATH / PYTHONHOME are removed: an inherited value (a dev checkout
+ * on PYTHONPATH, a foreign PYTHONHOME) redirects `-m paperforge` away from
+ * the runtime being dispatched, which makes the CLI report another
+ * installation's version. */
 export function paperforgeEnrichedEnv(): Record<string, string | undefined> {
   const env: Record<string, string | undefined> = { ...process.env };
+  delete env.PYTHONPATH;
+  delete env.PYTHONHOME;
   const plat = process.platform;
   const home = os.homedir();
   const extras: string[] = [];
@@ -288,8 +295,6 @@ export function paperforgeEnrichedEnv(): Record<string, string | undefined> {
 
 export interface NodeProcessTransportOptions {
   vaultPath: string;
-  /** Custom python executable path (e.g. from user settings). */
-  customPythonPath?: string;
   /** Override for python runtime resolution (useful for tests or custom wrappers). */
   resolveRuntime?: () => Promise<{ path: string; args: string[] } | null>;
   /** Child process spawner (default: child_process.spawn). */
@@ -298,7 +303,6 @@ export interface NodeProcessTransportOptions {
 
 export class NodeProcessTransport implements Transport {
   private readonly _vaultPath: string;
-  private readonly _customPythonPath?: string;
   private readonly _resolveRuntime?: () => Promise<{
     path: string;
     args: string[];
@@ -307,34 +311,28 @@ export class NodeProcessTransport implements Transport {
 
   constructor(options: NodeProcessTransportOptions) {
     this._vaultPath = options.vaultPath;
-    this._customPythonPath = options.customPythonPath?.trim();
     this._resolveRuntime = options.resolveRuntime;
     this._spawnFn = options.spawnFn ?? spawn;
   }
 
   /**
    * Resolve active python interpreter.
-   * Priority: custom resolver > user setting path > managed runtime pointer.
+   *
+   * ONE authority: the published runtime pointer (#174), reached through the
+   * injected resolver.  There is deliberately no second rule — a
+   * configured `python_path` selects the bootstrap venv's base interpreter,
+   * it is not a dispatch target, and the frontend never falls back to an
+   * ambient `python`.
    */
   async resolvePython(): Promise<{ path: string; args: string[] }> {
     if (this._resolveRuntime) {
-      const res = await this._resolveRuntime();
-      if (res?.path) return res;
-      throw new Error(
-        "PaperForge Python runtime not ready. Please complete setup or configure python_path."
-      );
+      const resolved = await this._resolveRuntime();
+      if (resolved?.path) return resolved;
+    } else {
+      // No injected resolver (tests, embedders): read the pointer directly.
+      const run = resolveRuntimeCommand(new RuntimeBootstrap().readPointer());
+      if (run) return { path: run.command, args: [...run.args] };
     }
-
-    if (this._customPythonPath) {
-      return { path: this._customPythonPath, args: [] };
-    }
-    const bootstrap = new RuntimeBootstrap();
-    const ptr = bootstrap.readPointer();
-    const cmd = resolveRuntimeCommand(ptr);
-    if (cmd?.command) {
-      return { path: cmd.command, args: [...cmd.args] };
-    }
-
     throw new Error(
       "PaperForge Python runtime not ready. Please complete setup or configure python_path."
     );

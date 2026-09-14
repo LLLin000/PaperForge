@@ -284,6 +284,173 @@ describe("RuntimeBootstrap", () => {
     });
   });
 
+  // ── installOnce: configured interpreter (wizard "Python executable") ──
+  describe("installOnce() interpreter override", () => {
+    /** execFileSync recorder: only the configured path answers a version. */
+    function recordingExecFileSync(version = "3.12.4"): {
+      fn: ExecFileSyncFn;
+      commands: string[];
+    } {
+      const commands: string[] = [];
+      const fn = ((
+        cmd: string,
+        _args: readonly string[],
+        _opts: { encoding: string; timeout: number }
+      ) => {
+        commands.push(cmd);
+        return `Python ${version}`;
+      }) as ExecFileSyncFn;
+      return { fn, commands };
+    }
+
+    it("creates the venv from the configured interpreter instead of discovery", async () => {
+      const fsMock = createMockFs();
+      fsMock.existsSync.mockReturnValue(true);
+      const execFile = createMockExecFile("1.4.0");
+      const { fn: execFileSync, commands } = recordingExecFileSync();
+      const rt = makeBootstrap({ fs: fsMock, execFile, execFileSync });
+
+      await rt.installOnce("1.4.0", undefined, "C:/custom/python.exe");
+
+      expect(commands).toContain("C:/custom/python.exe");
+      const venvCall = execFile.mock.calls.find(
+        (call) => Array.isArray(call[1]) && (call[1] as string[]).includes("venv")
+      );
+      expect(venvCall?.[0]).toBe("C:/custom/python.exe");
+    });
+
+    it("fails closed on a missing path — never silently picks another interpreter", async () => {
+      const fsMock = createMockFs();
+      fsMock.existsSync.mockReturnValue(false);
+      const execFile = createMockExecFile("1.4.0");
+      const rt = makeBootstrap({ fs: fsMock, execFile });
+
+      await expect(
+        rt.installOnce("1.4.0", undefined, "C:/gone/python.exe")
+      ).rejects.toThrow(/Python executable not found: C:\/gone\/python\.exe/);
+      expect(execFile).not.toHaveBeenCalled();
+    });
+
+    it("rejects a configured interpreter below 3.11", async () => {
+      const fsMock = createMockFs();
+      fsMock.existsSync.mockReturnValue(true);
+      const rt = makeBootstrap({
+        fs: fsMock,
+        execFileSync: createMockExecFileSync("3.9.7"),
+      });
+
+      await expect(
+        rt.installOnce("1.4.0", undefined, "C:/old/python.exe")
+      ).rejects.toThrow(/older than the required 3\.11/);
+    });
+
+    it("blank override falls back to discovery", async () => {
+      const fsMock = createMockFs();
+      fsMock.existsSync.mockReturnValue(false);
+      const execFile = createMockExecFile("1.4.0");
+      const rt = makeBootstrap({ fs: fsMock, execFile });
+
+      await rt.installOnce("1.4.0", undefined, "   ");
+      const venvCall = execFile.mock.calls.find(
+        (call) => Array.isArray(call[1]) && (call[1] as string[]).includes("venv")
+      );
+      expect(venvCall?.[0]).toBe("py");
+    });
+  });
+
+  // ── installOnce: no zombie pip, no concurrent writer ──
+  describe("installOnce() failure isolation", () => {
+    it("terminates the install child before deleting the venv", async () => {
+      const kill = vi.fn();
+      const child = { kill, pid: 4242 };
+      const execFile = vi.fn<(...args: unknown[]) => unknown>();
+      execFile.mockImplementation(
+        (
+          _cmd: unknown,
+          args: unknown,
+          _opts: unknown,
+          cb: (err: Error | null, stdout: string, stderr: string) => void
+        ) => {
+          const a = args as readonly string[];
+          if (a.includes("pip")) {
+            cb(new Error("pip install failed"), "", "");
+          } else {
+            cb(null, "1.4.0", "");
+          }
+          return child;
+        }
+      );
+      const rt = makeBootstrap({
+        execFile: execFile as unknown as MockExecFile,
+      });
+
+      await expect(rt.installOnce("1.4.0")).rejects.toThrow(
+        /pip install failed/
+      );
+      expect(kill).toHaveBeenCalled();
+    });
+
+    it("refuses a second install for the same runtime dir while one runs", async () => {
+      let releasePip: (() => void) | null = null;
+      const execFile = vi.fn<(...args: unknown[]) => unknown>();
+      execFile.mockImplementation(
+        (
+          _cmd: unknown,
+          args: unknown,
+          _opts: unknown,
+          cb: (err: Error | null, stdout: string, stderr: string) => void
+        ) => {
+          const a = args as readonly string[];
+          if (a.includes("pip")) {
+            releasePip = () => cb(null, "", "");
+          } else {
+            cb(null, "1.4.0", "");
+          }
+          return { kill: vi.fn(), pid: 7 };
+        }
+      );
+      const rt = makeBootstrap({
+        execFile: execFile as unknown as MockExecFile,
+      });
+
+      const first = rt.installOnce("1.4.0");
+      await expect(rt.installOnce("1.4.0")).rejects.toThrow(
+        /already running/
+      );
+      releasePip?.();
+      await first;
+    });
+  });
+
+  // ── fresh-child probes must not inherit the app's CWD/PYTHONPATH ──
+  describe("fresh-child probe isolation", () => {
+    it("runs the installation probe with -P, a neutral cwd, and no PYTHONPATH", async () => {
+      const fsMock = createMockFs();
+      fsMock.existsSync.mockReturnValue(true);
+      const execFile = createMockExecFile("1.4.0");
+      const rt = makeBootstrap({ fs: fsMock, execFile });
+
+      await rt.handshake("1.4.0", { vaultPath: "/vault" });
+
+      const probeCall = execFile.mock.calls.find(
+        (call) =>
+          Array.isArray(call[1]) &&
+          (call[1] as string[]).includes("installation")
+      );
+      expect(probeCall).toBeDefined();
+      const probeArgs = probeCall?.[1] as string[];
+      expect(probeArgs[0]).toBe("-P");
+      const probeOpts = probeCall?.[2] as {
+        cwd?: string;
+        env?: Record<string, string | undefined>;
+      };
+      expect(probeOpts.cwd).toBeTruthy();
+      expect(probeOpts.cwd).not.toBe(process.cwd());
+      expect(probeOpts.env?.PYTHONPATH).toBeUndefined();
+      expect(probeOpts.env?.PYTHONHOME).toBeUndefined();
+    });
+  });
+
   // ── handshake ──
   describe("handshake() (#143 two mandatory probes, fail-closed)", () => {
     const VAULT = "/test/vault";

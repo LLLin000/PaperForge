@@ -495,6 +495,8 @@ const LANG: Record<string, Record<string, string>> = {
     foundation_skills_ready: "Available",
     foundation_skills: "Skills",
     md_foundation_legacy_migrate: "Migrate legacy configuration",
+    md_foundation_legacy_migrate_btn: "Migrate",
+    md_foundation_legacy_migrate_desc: "One-time move of Obsidian SecretStorage values into the system keyring",
     foundation_setup_desc:
       "Run setup to create the Python-owned vault configuration and publish the runtime pointer.",
     foundation_setup_btn: "Open Setup",
@@ -514,7 +516,8 @@ const LANG: Record<string, Record<string, string>> = {
     setup_ready: "Foundation is ready.",
     setup_foundation_python: "Python executable",
     setup_foundation_python_hint:
-      'Leave blank to use "python" from your system PATH.',
+      'Leave blank to use "python" from your system PATH. A path here is used as the base interpreter for the PaperForge runtime.',
+    setup_foundation_python_missing: "That file does not exist.",
     setup_foundation_install_btn: "Install PaperForge",
     setup_library_title: "Step 2: Connect Library",
     setup_library_desc:
@@ -538,6 +541,7 @@ const LANG: Record<string, Record<string, string>> = {
       "Installation complete. Checking the updated environment.",
     setup_install_failed:
       "PaperForge could not be installed. Check the Python path, then try again.",
+    setup_install_failed_detail: "Reason: {detail}",
     setup_optionals_title: "Step 3: Optional Capabilities",
     setup_optionals_desc:
       "Choose only what you need. Skipped capabilities can be enabled later.",
@@ -604,6 +608,7 @@ const LANG: Record<string, Record<string, string>> = {
     foundation_openai_key: "OpenAI API Key",
     foundation_openai_missing: "Not configured — required for Smart Retrieval",
     foundation_python: "Python Path",
+    foundation_python_unresolved: "Not configured — run the setup wizard",
     foundation_python_status: "Python Status",
     foundation_python_ok: "Python is installed",
     foundation_python_missing: "Python not found — install Python 3.11+",
@@ -613,7 +618,7 @@ const LANG: Record<string, Record<string, string>> = {
       "Not configured — connect your Zotero data directory",
     foundation_reinstall: "Reinstall PaperForge",
     foundation_reinstall_desc:
-      "Reinstall the Python package from the local source",
+      "Reinstall the PaperForge Python package at the current version",
     foundation_reinstall_btn: "Reinstall",
     foundation_reinstalling: "Reinstalling PaperForge...",
     foundation_reinstall_ok: "PaperForge reinstalled successfully",
@@ -1391,6 +1396,8 @@ const LANG: Record<string, Record<string, string>> = {
     foundation_skills_ready: "可用",
     foundation_skills: "Skills",
     md_foundation_legacy_migrate: "迁移旧版配置",
+    md_foundation_legacy_migrate_btn: "迁移",
+    md_foundation_legacy_migrate_desc: "把 Obsidian 安全存储中的密钥一次性迁移到系统钥匙串",
     foundation_setup_desc:
       "运行安装向导，创建由 Python 管理的库配置并发布运行环境指针。",
     foundation_setup_btn: "打开安装向导",
@@ -1409,7 +1416,9 @@ const LANG: Record<string, Record<string, string>> = {
       "选择 Python 运行环境，然后安装 PaperForge 包；此步骤不会创建或配置文献库。",
     setup_ready: "基础环境已就绪。",
     setup_foundation_python: "Python 可执行文件",
-    setup_foundation_python_hint: "留空时使用系统 PATH 中的 “python”。",
+    setup_foundation_python_hint:
+      "留空时使用系统 PATH 中的 “python”。填写后会作为 PaperForge 运行环境的基准解释器。",
+    setup_foundation_python_missing: "该文件不存在。",
     setup_foundation_install_btn: "安装 PaperForge",
     setup_library_title: "第 2 步：连接文献库",
     setup_library_desc: "连接 Zotero，让 PaperForge 可以同步文献。",
@@ -1428,6 +1437,7 @@ const LANG: Record<string, Record<string, string>> = {
     setup_installing: "正在安装并准备 PaperForge…",
     setup_install_complete: "安装完成，正在检查更新后的运行环境。",
     setup_install_failed: "PaperForge 安装未完成。请检查 Python 路径后重试。",
+    setup_install_failed_detail: "原因：{detail}",
     setup_optionals_title: "第 3 步：可选功能",
     setup_optionals_desc: "只选择需要的功能；跳过后仍可随时启用。",
     setup_optional_saved: "配置已安全保存。",
@@ -1503,6 +1513,7 @@ const LANG: Record<string, Record<string, string>> = {
     foundation_openai_key: "OpenAI API 密钥",
     foundation_openai_missing: "未配置 — 智能检索需要此密钥",
     foundation_python: "Python 路径",
+    foundation_python_unresolved: "未配置 — 请先完成安装向导",
     foundation_python_status: "Python 状态",
     foundation_python_ok: "Python 已安装",
     foundation_python_missing: "未找到 Python — 请安装 Python 3.11+",
@@ -1510,7 +1521,7 @@ const LANG: Record<string, Record<string, string>> = {
     foundation_zotero: "Zotero 数据目录",
     foundation_zotero_missing: "未配置 — 请连接 Zotero 数据目录",
     foundation_reinstall: "重新安装 PaperForge",
-    foundation_reinstall_desc: "从本地源码重新安装 Python 包",
+    foundation_reinstall_desc: "按当前版本重新安装 PaperForge Python 包",
     foundation_reinstall_btn: "重新安装",
     foundation_reinstalling: "正在重新安装 PaperForge...",
     foundation_reinstall_ok: "PaperForge 重新安装成功",

@@ -1850,12 +1850,14 @@ describe("_dispatchOcrAction availability gating (#07 step 3)", () => {
 describe("Setup Stage 1 exit/cancel semantics (RC UX Seam Pass)", () => {
   function renderStage1(
     tab: any,
-    overrides: Record<string, unknown> = {}
+    overrides: Record<string, unknown> = {},
+    envelope: Record<string, unknown> = {}
   ): HTMLDivElement {
     const el = dom.window.document.createElement("div");
     Object.assign(tab, {
       _setupOperation: "idle",
       _setupFeedback: null,
+      _setupFailureDetail: null,
       _setupReinstallRequested: false,
       _runtimeAbortController: null,
       activeTab: "overview",
@@ -1866,6 +1868,7 @@ describe("Setup Stage 1 exit/cancel semantics (RC UX Seam Pass)", () => {
         ...createUnknownEnvelope("installation"),
         user_state: "setup_required",
         reason: { code: "installation.config_missing", text: "Not set up" },
+        ...envelope,
       },
     };
     (tab as any)._renderSetupStageFoundation(el);
@@ -1889,6 +1892,96 @@ describe("Setup Stage 1 exit/cancel semantics (RC UX Seam Pass)", () => {
     const cont = buttonByText(el, "Continue");
     expect(cont).toBeDefined();
     expect(cont?.disabled).toBe(true);
+  });
+
+  it("a requested reinstall renders its action button even when the install is ready", () => {
+    // The Installation detail's Reinstall entry is always clickable, so a
+    // healthy install must still get an action here — gating the branch on
+    // `user_state !== "ready"` dead-ended the wizard on Continue.
+    const tab = makeTab();
+    const el = renderStage1(
+      tab,
+      { _setupReinstallRequested: true },
+      {
+        user_state: "ready",
+        reason: { code: "installation.ready", text: "Ready" },
+      }
+    );
+    expect(buttonByText(el, "Reinstall")).toBeDefined();
+  });
+
+  it("a version mismatch still offers the reinstall action", () => {
+    const tab = makeTab();
+    const el = renderStage1(tab, {}, {
+      user_state: "action_required",
+      reason: {
+        code: "installation.version_mismatch",
+        text: "version mismatch",
+      },
+    });
+    expect(buttonByText(el, "Reinstall")).toBeDefined();
+  });
+
+  it("a ready install with no reinstall request shows no install action", () => {
+    const tab = makeTab();
+    const el = renderStage1(tab, {}, {
+      user_state: "ready",
+      reason: { code: "installation.ready", text: "Ready" },
+    });
+    expect(buttonByText(el, "Reinstall")).toBeUndefined();
+    expect(buttonByText(el, "Install PaperForge")).toBeUndefined();
+  });
+
+  it("flags a configured Python path that does not exist", () => {
+    const tab = makeTab();
+    (tab.plugin as any).settings.python_path = "C:/nope/missing/python.exe";
+    const el = renderStage1(tab);
+    expect(el.textContent).toContain("That file does not exist.");
+    expect(
+      el.querySelector(".pf-setup-field--invalid")
+    ).not.toBeNull();
+  });
+
+  it("a successful reinstall returns to the Control Center instead of marching through the stages", async () => {
+    const tab = makeTab();
+    (tab as any)._setupReinstallRequested = true;
+    (tab.plugin as any).settings._setup_complete = false;
+    (tab as any)._ensureManagedRuntime = () => ({
+      installOnce: () =>
+        Promise.resolve({ pythonPath: "/bootstrap/python.exe" }),
+      handshake: () => Promise.resolve({ ok: true }),
+    });
+    (tab as any)._getVaultBasePath = () => "/vault";
+    (tab as any)._probeModule = () => {};
+    (tab as any)._applyLibraryConfiguration = () => {};
+    (tab as any).saveSettings = () => Promise.resolve();
+    (tab as any)._installFoundation(true);
+    for (let i = 0; i < 8; i++) await Promise.resolve();
+
+    expect((tab as any)._setupOperation).toBe("idle");
+    expect((tab as any)._setupReinstallRequested).toBe(false);
+    expect((tab.plugin as any).settings._setup_complete).toBe(true);
+    expect((tab as any).activeTab).toBe("overview");
+    expect(noticeCalls.some((n) => /reinstalled successfully/i.test(n.msg))).toBe(
+      true
+    );
+  });
+
+  it("a fresh install keeps the wizard so the remaining stages still run", async () => {
+    const tab = makeTab();
+    (tab.plugin as any).settings._setup_complete = false;
+    (tab as any)._ensureManagedRuntime = () => ({
+      installOnce: () =>
+        Promise.resolve({ pythonPath: "/bootstrap/python.exe" }),
+      handshake: () => Promise.resolve({ ok: true }),
+    });
+    (tab as any)._getVaultBasePath = () => "/vault";
+    (tab as any)._probeModule = () => {};
+    (tab as any)._installFoundation(false);
+    for (let i = 0; i < 8; i++) await Promise.resolve();
+
+    expect((tab.plugin as any).settings._setup_complete).toBe(false);
+    expect((tab as any)._setupFeedback).toBeTruthy();
   });
 
   it("Later exits the wizard back to the overview; _setup_complete stays false (resume)", () => {
