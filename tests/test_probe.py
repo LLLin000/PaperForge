@@ -333,6 +333,22 @@ class TestInstallationProbe:
         assert "command" not in data["action"]["primary"]
 
 
+    def test_missing_runtime_pointer_requires_setup(self, tmp_path: Path) -> None:
+        """A configured install without Python's published pointer is not ready."""
+        canonical_test_config(tmp_path, system_dir="99_System")
+        home = tmp_path / "home"
+        home.mkdir()
+        env = os.environ.copy()
+        env["HOME"] = str(home)
+        env["USERPROFILE"] = str(home)
+
+        data = _run_probe("installation", tmp_path, env=env)
+
+        assert data["capability_state"] == "needs_action"
+        assert data["user_state"] == "action_required"
+        assert data["reason"]["code"] == "installation.runtime_pointer_missing"
+        assert data["action"]["primary"]["action_id"] == "foundation.setup"
+
 # ---------------------------------------------------------------------------
 # Help probe states
 # ---------------------------------------------------------------------------

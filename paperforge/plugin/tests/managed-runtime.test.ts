@@ -362,6 +362,24 @@ describe("RuntimeBootstrap", () => {
       expect(hs.ok).toBe(true);
     });
 
+    it.each([
+      "installation.runtime_pointer_missing",
+      "installation.runtime_pointer_stale",
+      "installation.runtime_executable_missing",
+    ])("accepts pre-setup runtime state %s", async (code) => {
+      const fsMock = createMockFs();
+      fsMock.existsSync.mockReturnValue(true);
+      const rt = makeBootstrap({
+        fs: fsMock,
+        execFile: makeExec("1.3.0", { kind: "envelope", code }),
+      });
+      const hs = await rt.handshake("1.3.0", {
+        pythonPath: pythonPathFor(),
+        vaultPath: VAULT,
+      });
+      expect(hs.ok).toBe(true);
+    });
+
     it("fails on version match + installation.version_mismatch", async () => {
       const fsMock = createMockFs();
       fsMock.existsSync.mockReturnValue(true);

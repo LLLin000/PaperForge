@@ -38,7 +38,7 @@ from paperforge.embedding.builder import (
     prepare_payloads_for_entry,
     write_encoded_payload,
 )
-from paperforge.embedding.search import merge_retrieve
+from paperforge.embedding.search import merge_retrieve, retrieve_chunks
 
 
 def _api_key_available() -> bool:
@@ -80,9 +80,10 @@ def mock_provider():
 
 @pytest.fixture(autouse=True)
 def _patch_providers(mock_provider):
-    """Replace OpenAICompatibleProvider in builder and search modules."""
+    """Replace the provider at every production embedding seam."""
     with patch("paperforge.embedding.builder.OpenAICompatibleProvider", return_value=mock_provider), \
-         patch("paperforge.embedding.search.OpenAICompatibleProvider", return_value=mock_provider):
+         patch("paperforge.embedding.search.OpenAICompatibleProvider", return_value=mock_provider), \
+         patch("paperforge.embedding.dim_detect.OpenAICompatibleProvider", return_value=mock_provider):
         yield
 
 
@@ -157,9 +158,6 @@ class TestPayloadPrep:
 # Tests: encode -> write -> retrieve cycle with sqlite-vec
 # ---------------------------------------------------------------------------
 
-@pytest.mark.skipif(
-    not _api_key_available(), reason="requires a real embedding API key"
-)
 class TestEmbedRoundTrip:
     """Integration tests against sqlite-vec tables in paperforge.db."""
 
@@ -189,7 +187,7 @@ class TestEmbedRoundTrip:
         assert results[0]["source"] == "object"
 
     def test_write_and_retrieve_legacy_chunks(self, tmp_path, mock_provider):
-        """Write legacy chunks, retrieve them."""
+        """Legacy fulltext vectors remain retrievable through their gateway."""
         key = "p1"
         chunks = [
             {"text": f"Chunk {i}", "chunk_index": i, "section": "intro",
@@ -199,10 +197,9 @@ class TestEmbedRoundTrip:
         payload = prepare_legacy_payload(key, chunks)
         encoded = encode_payload(tmp_path, payload)
         write_encoded_payload(tmp_path, encoded)
-
-        results = merge_retrieve(tmp_path, "Chunk", limit=5)
+        results = retrieve_chunks(tmp_path, "Chunk", limit=5)
         assert len(results) >= 1
-        assert results[0]["source"] == "legacy_chunk"
+        assert results[0]["paper_id"] == key
 
     def test_multiple_papers_retrieve_respects_per_paper_cap(self, tmp_path, mock_provider):
         """merge_retrieve caps at 2 results per paper."""

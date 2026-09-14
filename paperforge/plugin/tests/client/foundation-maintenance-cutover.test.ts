@@ -14,6 +14,7 @@
  */
 
 import "obsidian-test-mocks/jest-setup";
+import type { App } from "obsidian";
 import { describe, it, expect, beforeEach, beforeAll, vi } from "vitest";
 import { MockTransport } from "./mock-transport";
 import { PaperForgeClient } from "../../src/client/paperforge-client";
@@ -21,6 +22,7 @@ import { PaperForgeSettingTab } from "../../src/settings";
 import {
   PaperForgeOrphanModal,
   checkOrphanState,
+  type IPluginRef,
 } from "../../src/views/modals";
 
 const { mockExecFile } = vi.hoisted(() => ({
@@ -486,6 +488,37 @@ describe("Foundation & Maintenance Domain Cutover (Ticket 03)", () => {
 
       expect(mockProbe).toHaveBeenCalledWith("lineage");
       expect(mockExecFile).not.toHaveBeenCalled();
+      openSpy.mockRestore();
+    });
+    it("checkOrphanState opens only one modal when probes resolve concurrently", async () => {
+      const mockProbe = vi.fn().mockResolvedValue({
+        schema_version: 2,
+        module: "lineage",
+        residuals: {
+          count: 1,
+          keys: ["KEY1"],
+          papers: [{ key: "KEY1", title: "Residual One" }],
+        },
+      });
+      const marker = document.createElement("div");
+      marker.className = "paperforge-orphan-modal";
+      const openSpy = vi
+        .spyOn(PaperForgeOrphanModal.prototype, "open")
+        .mockImplementation(() => {
+          document.body.appendChild(marker);
+        });
+      const app = {} as App;
+      // The production helper reaches the client through this runtime extension.
+      const plugin = {
+        getClient: () => ({ probe: mockProbe }),
+      } as unknown as IPluginRef;
+
+      checkOrphanState(app, plugin, "/vault");
+      checkOrphanState(app, plugin, "/vault");
+      await vi.waitFor(() => expect(openSpy).toHaveBeenCalledTimes(1));
+
+      expect(mockProbe).toHaveBeenCalledTimes(2);
+      marker.remove();
       openSpy.mockRestore();
     });
 

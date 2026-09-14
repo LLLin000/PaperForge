@@ -43,6 +43,9 @@ export class PaperForgeOrphanModal extends Modal {
   private _rowEls: HTMLElement[] = [];
   private _countEl!: HTMLElement;
   private _selectAllBtn!: HTMLElement;
+  private _returnFocusEl: HTMLElement | null = null;
+  private _inertedEls: HTMLElement[] = [];
+  private _boundKeydown!: (e: KeyboardEvent) => void;
 
   constructor(
     app: App,
@@ -54,6 +57,7 @@ export class PaperForgeOrphanModal extends Modal {
     this.orphans = orphans.map((o, i) => ({ ...o, _selected: true, _idx: i }));
     this.vaultPath = vaultPath;
     this.py = py;
+    this._returnFocusEl = document.activeElement as HTMLElement | null;
   }
 
   _updateUI() {
@@ -70,15 +74,35 @@ export class PaperForgeOrphanModal extends Modal {
       const row = this._rowEls[o._idx];
       if (!row) continue;
       row.toggleClass("paperforge-orphan-dimmed", !o._selected);
+      row.setAttr("aria-checked", String(o._selected));
     }
   }
 
   onOpen() {
     const { contentEl } = this;
     contentEl.addClass("paperforge-modal");
-    contentEl.createEl("h2", {
+    contentEl.addClass("paperforge-orphan-modal");
+    contentEl.setAttr("role", "dialog");
+    contentEl.setAttr("aria-modal", "true");
+    const heading = contentEl.createEl("h2", {
       text: t("orphan_title").replace("{count}", String(this.orphans.length)),
     });
+    heading.setAttr("id", "paperforge-orphan-title");
+    contentEl.setAttr("aria-labelledby", "paperforge-orphan-title");
+    const modalContainer = (contentEl as unknown as HTMLElement).closest(
+      ".modal-container"
+    );
+    if (modalContainer) {
+      const bg = modalContainer.parentElement;
+      if (bg) {
+        for (const child of Array.from(bg.children)) {
+          if (child !== modalContainer && !child.hasAttribute("inert")) {
+            child.setAttribute("inert", "");
+            this._inertedEls.push(child as HTMLElement);
+          }
+        }
+      }
+    }
     contentEl.createEl("p", {
       cls: "paperforge-modal-desc",
       text: t("orphan_desc"),
@@ -91,6 +115,11 @@ export class PaperForgeOrphanModal extends Modal {
         cls:
           "paperforge-orphan-row" +
           (o._selected ? "" : " paperforge-orphan-dimmed"),
+        attr: {
+          role: "checkbox",
+          tabindex: "0",
+          "aria-checked": String(o._selected),
+        },
       });
       this._rowEls.push(row);
 
@@ -128,12 +157,18 @@ export class PaperForgeOrphanModal extends Modal {
         text: t("orphan_explain"),
       });
 
-      row.addEventListener("click", () => {
+      const toggle = () => {
         o._selected = !o._selected;
         this._updateUI();
+      };
+      row.addEventListener("click", toggle);
+      row.addEventListener("keydown", (event: KeyboardEvent) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        toggle();
       });
-    }
 
+    }
     const btnRow = contentEl.createEl("div", {
       cls: "paperforge-modal-actions",
     });
@@ -155,6 +190,10 @@ export class PaperForgeOrphanModal extends Modal {
     btnRow
       .createEl("button", { cls: "paperforge-step-btn", text: "Keep all" })
       .addEventListener("click", () => this.close());
+    this._boundKeydown = (e: KeyboardEvent) =>
+      _trapFocus(contentEl as unknown as HTMLElement, e);
+    contentEl.addEventListener("keydown", this._boundKeydown);
+    this._selectAllBtn.focus();
 
     this._countEl.addEventListener("click", () => {
       const selected = this.orphans.filter((o) => o._selected);
@@ -189,9 +228,20 @@ export class PaperForgeOrphanModal extends Modal {
           });
         })
         .then((res: any) => {
-          if (res.ok) {
-            const deleted = (res.payload?.data as any)?.deleted ?? keys;
+          const data = (res?.payload?.data ?? {}) as {
+            deleted?: unknown;
+            failed_keys?: unknown;
+          };
+          const deleted = Array.isArray(data.deleted) ? data.deleted : [];
+          const failed = Array.isArray(data.failed_keys)
+            ? data.failed_keys.map(String)
+            : [];
+          if (res?.ok && failed.length === 0) {
             new Notice("Deleted " + deleted.length + " orphan workspace(s)");
+          } else if (failed.length > 0) {
+            new Notice(
+              `PaperForge: prune incomplete (${failed.length} failed: ${failed.join(", ")})`
+            );
           } else {
             new Notice("PaperForge: prune failed");
           }
@@ -205,7 +255,22 @@ export class PaperForgeOrphanModal extends Modal {
   }
 
   onClose() {
+    for (const el of this._inertedEls) {
+      el.removeAttribute("inert");
+    }
+    this._inertedEls.length = 0;
+    if (this._boundKeydown) {
+      this.contentEl.removeEventListener("keydown", this._boundKeydown);
+    }
     this.contentEl.empty();
+    if (
+      this._returnFocusEl &&
+      typeof this._returnFocusEl.focus === "function"
+    ) {
+      try {
+        this._returnFocusEl.focus();
+      } catch {}
+    }
   }
 }
 
@@ -239,6 +304,7 @@ export function checkOrphanState(app: App, plugin: IPluginRef, vp: string) {
         }))
         .filter((p: { key: string }) => p.key.length > 0);
       if (resolved.length > 0) {
+        if (document.querySelector(".paperforge-orphan-modal")) return;
         console.log("[PF] orphan file FOUND");
         const orphans: OrphanItem[] = resolved.map(
           (p: { key: string; title?: string }) => ({

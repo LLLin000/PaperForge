@@ -74,6 +74,10 @@ const CANDIDATE_VERSION = (
     version: string;
   }
 ).version;
+const SETUP_POSITIVE_E2E = process.env.PF_E2E_SETUP_POSITIVE === "1";
+const NO_POINTER_E2E =
+  process.env.PF_E2E_NO_POINTER === "1" && !SETUP_POSITIVE_E2E;
+
 
 /** sha256 of a file's bytes — artifact identity, not its path. */
 function sha256(file: string): string {
@@ -149,6 +153,22 @@ function addExportItem(
   writeFileSync(file, JSON.stringify(doc));
 }
 
+/** Remove one item from the sandbox export to create a real residual paper. */
+function removeExportItem(base: string, key: string): void {
+  const file = path.join(base, EXPORT_REL);
+  const doc = JSON.parse(readFileSync(file, "utf8")) as {
+    items: Array<Record<string, unknown>>;
+    collections: Record<string, { items: string[] }>;
+  };
+  doc.items = doc.items.filter(
+    (item) => String(item.key ?? item.itemKey ?? "") !== key
+  );
+  for (const collection of Object.values(doc.collections)) {
+    collection.items = collection.items.filter((itemKey) => itemKey !== key);
+  }
+  writeFileSync(file, JSON.stringify(doc));
+}
+
 /** Newest mtime under `src/` — the built bundle must be at least this fresh. */
 function newestSourceMtime(dir: string): number {
   let newest = 0;
@@ -190,6 +210,18 @@ function sandboxBackendProcesses(base: string): number {
   const output = execFileSync(command, { shell: true }).toString().trim();
   return Number(output.split(/\s+/).pop() ?? "0") || 0;
 }
+
+function sandboxBackendProcessDetails(base: string): string {
+  const marker = path.basename(base);
+  if (process.platform !== "win32") return "";
+  return execFileSync(
+    `powershell -NoProfile -Command "(Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*${marker}*' -and $_.Name -like '*python*' } | Select-Object ProcessId,Name,CommandLine | Format-Table -AutoSize | Out-String)"`,
+    { shell: true }
+  )
+    .toString()
+    .trim();
+}
+
 
 async function sandboxBasePath(): Promise<string> {
   return await browser.executeObsidian(async ({ app }) => {
@@ -359,6 +391,10 @@ describe("PaperForge real-task e2e", function () {
   });
 
   it("loads the plugin and reaches the real Python backend", async function () {
+    if (NO_POINTER_E2E) {
+      this.skip();
+      return;
+    }
     const info = await browser.executeObsidian(async ({ app }) => {
       const plugin = app.plugins.plugins["paperforge"];
       if (!plugin || typeof plugin.getClient !== "function") {
@@ -379,6 +415,326 @@ describe("PaperForge real-task e2e", function () {
     expect(info.plugin_version).toBe(CANDIDATE_VERSION);
     expect(info.backend).toBe(CANDIDATE_VERSION);
     expect(info.capability_state).toBe("ready");
+  });
+
+  it("fails closed and exposes setup recovery without a runtime pointer", async function () {
+    if (!NO_POINTER_E2E) {
+      this.skip();
+      return;
+    }
+    const state = await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"] as unknown as {
+        _getPythonCommand(): { path: string; args: string[] } | null;
+        getManagedRuntime(): { readPointer(): unknown };
+        settings: { _setup_complete?: boolean };
+        _settingTab: {
+          _capabilityState?: Record<
+            string,
+            { user_state?: string; reason?: { code?: string } }
+          >;
+          _setupJourneyDismissedForSession: boolean;
+          containerEl: HTMLElement;
+          display(): void;
+        };
+      };
+      if (!plugin) throw new Error("paperforge plugin not loaded");
+      plugin._settingTab._setupJourneyDismissedForSession = false;
+      plugin.settings._setup_complete = false;
+      const setting = (app as unknown as {
+        setting?: {
+          open?: () => void;
+          openTabById?: (id: string) => void;
+        };
+      }).setting;
+      if (!setting?.open || !setting.openTabById) {
+        throw new Error("Obsidian settings navigation API unavailable");
+      }
+      setting.open();
+      setting.openTabById("paperforge");
+      await new Promise<void>((resolve) => setTimeout(resolve, 1000));
+      plugin._settingTab.display();
+      await new Promise<void>((resolve) => setTimeout(resolve, 1000));
+      const journey = plugin._settingTab.containerEl.querySelector(
+        ".pf-setup-journey"
+      );
+      const badge = plugin._settingTab.containerEl.querySelector(
+        ".pf-setup-journey [role='status']"
+      );
+      const actionButtons = Array.from(
+        plugin._settingTab.containerEl.querySelectorAll(
+          ".pf-setup-journey button.pf-action-btn"
+        )
+      ).map((button) => ({
+        text: button.textContent ?? "",
+        disabled: button.hasAttribute("disabled"),
+      }));
+      const envelope = plugin._settingTab._capabilityState?.installation;
+      return {
+        pointer: plugin.getManagedRuntime().readPointer(),
+        python_command: plugin._getPythonCommand(),
+        setup_complete: plugin.settings._setup_complete,
+        journey: Boolean(journey),
+        badge: badge?.textContent ?? "",
+        action_buttons: actionButtons,
+        user_state: envelope?.user_state ?? "",
+        reason_code: envelope?.reason?.code ?? "",
+      };
+    });
+    expect(state.pointer).toBeNull();
+    expect(state.python_command).toBeNull();
+    expect(state.setup_complete).toBe(false);
+    expect(state.journey).toBe(true);
+    expect(state.user_state).not.toBe("ready");
+    expect(state.reason_code).toBe("installation.no_python");
+    expect(state.badge).not.toBe("Ready");
+    expect(
+      state.action_buttons.filter((button) => !button.disabled).length
+    ).toBeGreaterThanOrEqual(2);
+    appendEvidence("a02-pointer-negative.json", {
+      case_id: "A02",
+      variant: "cold-open-without-runtime-pointer",
+      required_layer: "H",
+      status: "VERIFIED",
+      source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: PLUGIN_DIR,
+      })
+        .toString()
+        .trim(),
+      pointer: null,
+      user_state: state.user_state,
+      reason_code: state.reason_code,
+      setup_journey: state.journey,
+      action_buttons: state.action_buttons,
+      recorded_at: new Date().toISOString(),
+    });
+  });
+
+  it("installs and publishes the runtime through the first-use setup journey", async function () {
+    if (!SETUP_POSITIVE_E2E) {
+      this.skip();
+      return;
+    }
+    this.timeout(600000);
+    await browser.reloadObsidian({ vault: "./test/vaults/empty" });
+    await dismissModals();
+    await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"] as unknown as {
+        _settingTab: {
+          _setupJourneyDismissedForSession: boolean;
+          containerEl: HTMLElement;
+          display(): void;
+        };
+        settings: { _setup_complete?: boolean };
+      };
+      if (!plugin) throw new Error("paperforge plugin not loaded");
+      plugin.settings._setup_complete = false;
+      plugin._settingTab._setupJourneyDismissedForSession = false;
+      const setting = (app as unknown as {
+        setting?: {
+          open?: () => void;
+          openTabById?: (id: string) => void;
+        };
+      }).setting;
+      if (!setting?.open || !setting.openTabById) {
+        throw new Error("Obsidian settings navigation API unavailable");
+      }
+      setting.open();
+      setting.openTabById("paperforge");
+      await new Promise<void>((resolve) => setTimeout(resolve, 1000));
+      plugin._settingTab.display();
+      const install = Array.from(
+        plugin._settingTab.containerEl.querySelectorAll(
+          ".pf-setup-journey button.pf-action-btn"
+        )
+      ).find(
+        (button) =>
+          !button.hasAttribute("disabled") &&
+          /paperforge/i.test(button.textContent ?? "")
+      );
+      if (!install) {
+        throw new Error("first-use setup install action was not rendered");
+      }
+      install.click();
+    });
+    await browser.waitUntil(
+      async () => {
+        const status = await browser.executeObsidian(async ({ app }) => {
+          const plugin = app.plugins.plugins["paperforge"] as unknown as {
+            getManagedRuntime(): { readPointer(): unknown };
+            _settingTab: {
+              _setupOperation: string;
+              _setupFeedback: string | null;
+              _capabilityState?: Record<
+                string,
+                { user_state?: string; reason?: { code?: string } }
+              >;
+            };
+          };
+          const pointer = plugin.getManagedRuntime().readPointer();
+          const installation = plugin._settingTab._capabilityState?.installation;
+          return {
+            ready:
+              pointer !== null &&
+              plugin._settingTab._setupOperation === "idle" &&
+              installation?.user_state === "ready",
+            operation: plugin._settingTab._setupOperation,
+            feedback: plugin._settingTab._setupFeedback,
+            reason_code: installation?.reason?.code ?? "",
+          };
+        });
+        if (status.operation === "failed") {
+          throw new Error(
+            `first-use setup failed: ${status.feedback ?? status.reason_code}`
+          );
+        }
+        return status.ready;
+      },
+      {
+        timeout: 540000,
+        interval: 1000,
+        timeoutMsg: "first-use setup did not publish a ready runtime pointer",
+      }
+    );
+    const state = await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"] as unknown as {
+        getManagedRuntime(): {
+          readPointer(): {
+            pythonPath: string;
+            environmentRoot: string;
+            paperforgeVersion: string;
+          } | null;
+        };
+        settings: { _setup_complete?: boolean };
+        _settingTab: {
+          _setupOperation: string;
+          _setupFeedback: string | null;
+          _capabilityState?: Record<string, { user_state?: string }>;
+        };
+      };
+      return {
+        pointer: plugin.getManagedRuntime().readPointer(),
+        setup_complete: plugin.settings._setup_complete,
+        operation: plugin._settingTab._setupOperation,
+        feedback: plugin._settingTab._setupFeedback,
+        user_state:
+          plugin._settingTab._capabilityState?.installation?.user_state ?? "",
+      };
+    });
+    expect(state.pointer).not.toBeNull();
+    expect(state.pointer?.paperforgeVersion).toBe(CANDIDATE_VERSION);
+    expect(existsSync(state.pointer?.pythonPath ?? "")).toBe(true);
+    expect(existsSync(state.pointer?.environmentRoot ?? "")).toBe(true);
+    expect(state.operation).toBe("idle");
+    const setupBase = await sandboxBasePath();
+    for (const relative of [
+      "paperforge.json",
+      "System",
+      "Resources",
+      "Resources/Literature",
+      "Resources/LiteratureControl",
+      "Bases",
+    ]) {
+      expect(existsSync(path.join(setupBase, relative))).toBe(true);
+    }
+    expect(state.user_state).toBe("ready");
+    expect(state.setup_complete).toBe(false);
+    appendEvidence("a01-first-use.json", {
+      case_id: "A01",
+      variant: "first-use-install-setup-pointer-publication",
+      required_layer: "H",
+      status: "VERIFIED",
+      source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: PLUGIN_DIR,
+      })
+        .toString()
+        .trim(),
+      pointer: state.pointer,
+      setup_operation: state.operation,
+      installation_user_state: state.user_state,
+      setup_complete: state.setup_complete,
+      recorded_at: new Date().toISOString(),
+    });
+  });
+
+  it("disables and restarts autosync without duplicate timers or orphan processes", async function () {
+    const base = await sandboxBasePath();
+    await waitForIdle("A07", "startup-sync-settle");
+    await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"] as unknown as {
+        settings: { autoSyncEnabled?: boolean };
+        saveSettings(): Promise<void>;
+      };
+      plugin.settings.autoSyncEnabled = false;
+      await plugin.saveSettings();
+    });
+    await browser.reloadObsidian();
+    const disabled = await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"] as unknown as {
+        settings: { autoSyncEnabled?: boolean };
+        _pollTimer: ReturnType<typeof setInterval> | null;
+        getClient(): { isOperationActive(): boolean };
+      };
+      return {
+        enabled: plugin.settings.autoSyncEnabled,
+        timer: plugin._pollTimer !== null,
+        operation_active: plugin.getClient().isOperationActive(),
+      };
+    });
+    expect(disabled.enabled).toBe(false);
+    expect(disabled.timer).toBe(false);
+    expect(disabled.operation_active).toBe(false);
+
+    await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"] as unknown as {
+        settings: { autoSyncEnabled?: boolean };
+        saveSettings(): Promise<void>;
+      };
+      plugin.settings.autoSyncEnabled = true;
+      await plugin.saveSettings();
+    });
+    await browser.reloadObsidian();
+    await waitForIdle("A07", "restart-with-autosync-enabled");
+    const enabled = await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"] as unknown as {
+        settings: { autoSyncEnabled?: boolean };
+        _pollTimer: ReturnType<typeof setInterval> | null;
+        getClient(): { isOperationActive(): boolean };
+      };
+      return {
+        enabled: plugin.settings.autoSyncEnabled,
+        timer: plugin._pollTimer !== null,
+        operation_active: plugin.getClient().isOperationActive(),
+      };
+    });
+    expect(enabled.enabled).toBe(true);
+    expect(enabled.timer).toBe(true);
+    expect(enabled.operation_active).toBe(false);
+    await browser.waitUntil(() => sandboxBackendProcesses(base) === 0, {
+      timeout: 30000,
+      timeoutMsg: "backend processes outlived the settled autosync operation",
+    });
+    const orphanProcesses = sandboxBackendProcesses(base);
+    if (orphanProcesses !== 0) {
+      throw new Error(
+        `backend processes still reference ${path.basename(base)}: ${orphanProcesses}\n${sandboxBackendProcessDetails(base)}`
+      );
+    }
+    appendEvidence("a07-disable-restart.json", {
+      case_id: "A07",
+      variant: "disable-reload-enable-reload",
+      required_layer: "H",
+      status: "VERIFIED",
+      source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: PLUGIN_DIR,
+      })
+        .toString()
+        .trim(),
+      sandbox_base: base,
+      disabled_timer: disabled.timer,
+      resumed_timer: enabled.timer,
+      backend_processes_after_idle: sandboxBackendProcesses(base),
+      recorded_at: new Date().toISOString(),
+    });
   });
 
   it("binds the loaded bundle to the built artifact and isolates the sandbox", async function () {
@@ -439,6 +795,104 @@ describe("PaperForge real-task e2e", function () {
       obsidian_version: String(await browser.getObsidianVersion()),
       sandbox_base: base,
       fixture_vault: FIXTURE_VAULT,
+      recorded_at: new Date().toISOString(),
+    });
+  });
+
+  it("performs an initial sync from the export into empty derived state", async function () {
+    let base = await sandboxBasePath();
+    await waitForIdle("B01", "startup-sync-settle");
+    expect(existsSync(path.join(base, EXPORT_REL))).toBe(true);
+
+    await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"] as unknown as {
+        settings: { autoSyncEnabled?: boolean };
+        saveSettings(): Promise<void>;
+      };
+      plugin.settings.autoSyncEnabled = false;
+      await plugin.saveSettings();
+    });
+    await browser.reloadObsidian();
+    base = await sandboxBasePath();
+    const exportPath = path.join(base, EXPORT_REL);
+    const exportBefore = sha256(exportPath);
+    await dismissModals();
+    const disabled = await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"] as unknown as {
+        settings: { autoSyncEnabled?: boolean };
+        _pollTimer: ReturnType<typeof setInterval> | null;
+      };
+      return {
+        enabled: plugin.settings.autoSyncEnabled,
+        timer: plugin._pollTimer !== null,
+      };
+    });
+    expect(disabled.enabled).toBe(false);
+    expect(disabled.timer).toBe(false);
+    await browser.waitUntil(() => sandboxBackendProcesses(base) === 0, {
+      timeout: 30000,
+      timeoutMsg: "previous sync process did not settle before B01 reset",
+    });
+
+    rmSync(path.join(base, INDEX_REL), { force: true });
+    await browser.executeObsidian(async ({ app }, notePath) => {
+      const file = app.vault.getAbstractFileByPath(notePath);
+      if (file) await app.vault.delete(file);
+    }, NOTE_PATH);
+    await browser.waitUntil(() => !existsSync(path.join(base, NOTE_PATH)), {
+      timeout: 30000,
+      timeoutMsg: "B01 could not clear the existing canonical note",
+    });
+    expect(existsSync(path.join(base, INDEX_REL))).toBe(false);
+    expect(existsSync(path.join(base, NOTE_PATH))).toBe(false);
+
+    await openPanel();
+    const syncBtn = await browser.$("[data-pf-testid='sync-library']");
+    await expect(syncBtn).toExist();
+    await syncBtn.click();
+    await browser.waitUntil(
+      () => {
+        try {
+          const index = readIndex(base);
+          return (
+            index.paper_count > 0 &&
+            index.keys.includes(PAPER_KEY) &&
+            existsSync(path.join(base, NOTE_PATH))
+          );
+        } catch {
+          return false;
+        }
+      },
+      {
+        timeout: 180000,
+        timeoutMsg: "initial Sync never rebuilt the canonical library",
+      }
+    );
+
+    const indexAfter = readIndex(base);
+    expect(indexAfter.keys).toContain(PAPER_KEY);
+    expect(sha256(exportPath)).toBe(exportBefore);
+    appendEvidence("b01-initial-sync.json", {
+      case_id: "B01",
+      variant: "empty-derived-state -> UI Sync",
+      required_layer: "H",
+      status: "VERIFIED",
+      source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: PLUGIN_DIR,
+      })
+        .toString()
+        .trim(),
+      worktree_dirty: worktreeDirty(),
+      fixture_vault: FIXTURE_VAULT,
+      sandbox_base: base,
+      input_export: EXPORT_REL,
+      input_export_sha256_before: exportBefore,
+      input_export_sha256_after: sha256(exportPath),
+      paper_count_after: indexAfter.paper_count,
+      asserted_key: PAPER_KEY,
+      canonical_index: INDEX_REL,
+      canonical_note: NOTE_PATH,
+      autosync_disabled: true,
       recorded_at: new Date().toISOString(),
     });
   });
@@ -510,6 +964,7 @@ describe("PaperForge real-task e2e", function () {
       required_layer: "H",
       status: "VERIFIED",
       source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+
         cwd: PLUGIN_DIR,
       })
         .toString()
@@ -523,6 +978,70 @@ describe("PaperForge real-task e2e", function () {
       bystander_sha256_after: sha256(path.join(base, BYSTANDER_NOTE)),
       volatile_allowlist: ["Bases/*.base", "*/paper-meta.json", "indexes/*"],
       observed_at: new Date().toISOString(),
+    });
+  });
+  it("exposes and completes destructive orphan pruning from the real UI", async function () {
+    await waitForIdle("J06", "startup-sync-settle");
+    const base = await sandboxBasePath();
+    const workspace = path.dirname(NOTE_PATH);
+    expect(existsSync(path.join(base, workspace))).toBe(true);
+
+    const exportPath = path.join(base, EXPORT_REL);
+    removeExportItem(base, PAPER_KEY);
+    await openPanel();
+    const syncBtn = await browser.$("[data-pf-testid='sync-library']");
+    await expect(syncBtn).toExist();
+    await syncBtn.click();
+
+    await browser.waitUntil(
+      async () => (await browser.$(".modal-container").isExisting()) === true,
+      {
+        timeout: 180000,
+        interval: 1000,
+        timeoutMsg: "orphan residual modal was not exposed after Sync",
+      }
+    );
+    const modal = await browser.$(".modal-container");
+    const modalText = (await modal.getText()).toLowerCase();
+    expect(modalText).toContain(PAPER_KEY.toLowerCase());
+    expect(modalText).toContain("delete 1 selected");
+
+    const deleteButton = await modal.$("button.mod-cta");
+    await deleteButton.click();
+    await browser.waitUntil(() => !existsSync(path.join(base, workspace)), {
+      timeout: 120000,
+      interval: 500,
+      timeoutMsg: "destructive orphan prune did not remove the workspace",
+    });
+    const modalStillOpen = await browser.$(".modal-container").isExisting();
+    if (modalStillOpen) await browser.keys("Escape");
+    await browser.waitUntil(
+      async () => (await browser.$(".modal-container").isExisting()) === false,
+      {
+        timeout: 10000,
+        interval: 500,
+        timeoutMsg: "orphan prune modal did not close after deletion",
+      }
+    );
+    expect(existsSync(path.join(base, workspace))).toBe(false);
+    expect(existsSync(exportPath)).toBe(true);
+    appendEvidence("j06-destructive-prune.json", {
+      case_id: "J06",
+      variant: "export-remove -> Sync -> residual modal -> confirmed prune",
+      required_layer: "H",
+      status: "VERIFIED",
+      source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: PLUGIN_DIR,
+      })
+        .toString()
+        .trim(),
+      worktree_dirty: worktreeDirty(),
+      fixture_vault: FIXTURE_VAULT,
+      sandbox_base: base,
+      removed_key: PAPER_KEY,
+      exported_carrier: EXPORT_REL,
+      deleted_workspace: workspace,
+      recorded_at: new Date().toISOString(),
     });
   });
 
@@ -608,6 +1127,226 @@ describe("PaperForge real-task e2e", function () {
       paper_count_after: readIndex(base).paper_count,
       added_key: NEW_PAPER_KEY,
       observed_at: new Date().toISOString(),
+    });
+  });
+
+  it("does not re-enter or leave autosync running after a failed tick", async function () {
+    await waitForIdle("B04", "boundary-startup-settle");
+    const base = await sandboxBasePath();
+    const boundary = await browser.executeObsidian(async ({ app }, vaultPath) => {
+      const plugin = app.plugins.plugins["paperforge"] as unknown as {
+        settings: { autoSyncEnabled?: boolean };
+        _pollTimer: ReturnType<typeof setInterval> | null;
+        _autoSyncRunning: boolean;
+        _lastSyncTime: string | null;
+        _autoSync: (path: string) => void;
+        _startConvergenceTimer: () => void;
+        getClient: () => { sync: () => Promise<unknown> };
+        saveSettings(): Promise<void>;
+      };
+      if (!plugin) throw new Error("paperforge plugin not loaded");
+      if (plugin._pollTimer) clearInterval(plugin._pollTimer);
+      plugin._pollTimer = null;
+      plugin.settings.autoSyncEnabled = false;
+      await plugin.saveSettings();
+      plugin._startConvergenceTimer.call(plugin);
+      const disabledTimer = plugin._pollTimer !== null;
+
+      plugin._autoSyncRunning = true;
+      plugin._lastSyncTime = null;
+      plugin._autoSync(vaultPath);
+      const reentryBlocked =
+        plugin._autoSyncRunning === true && plugin._lastSyncTime === null;
+      plugin._autoSyncRunning = false;
+
+      const originalGetClient = plugin.getClient;
+      plugin.getClient = () => ({
+        sync: async () => {
+          throw new Error("forced B04 failure");
+        },
+      });
+      plugin._lastSyncTime = null;
+      plugin._autoSync(vaultPath);
+      const deadline = Date.now() + 3000;
+      while (plugin._autoSyncRunning && Date.now() < deadline) {
+        const { promise, resolve } = Promise.withResolvers<void>();
+        setTimeout(resolve, 25);
+        await promise;
+      }
+      plugin.getClient = originalGetClient;
+      return {
+        disabledTimer,
+        reentryBlocked,
+        failureSettled: !plugin._autoSyncRunning,
+        lastSyncTime: plugin._lastSyncTime,
+      };
+    }, base);
+
+    expect(boundary.disabledTimer).toBe(false);
+    expect(boundary.reentryBlocked).toBe(true);
+    expect(boundary.failureSettled).toBe(true);
+    expect(boundary.lastSyncTime).toBe(null);
+    await browser.waitUntil(() => sandboxBackendProcesses(base) === 0, {
+      timeout: 30000,
+      timeoutMsg: "backend process did not settle after forced autosync failure",
+    });
+    expect(sandboxBackendProcesses(base)).toBe(0);
+    appendEvidence("b04-autosync-boundaries.json", {
+      case_id: "B04",
+      variant: "disabled + reentry + forced failure cleanup",
+      required_layer: "H",
+      status: "VERIFIED",
+      source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: PLUGIN_DIR,
+      })
+        .toString()
+        .trim(),
+      worktree_dirty: worktreeDirty(),
+      sandbox_base: base,
+      disabled_timer: boundary.disabledTimer,
+      reentry_blocked: boundary.reentryBlocked,
+      failure_settled: boundary.failureSettled,
+      last_sync_time_after_failure: boundary.lastSyncTime,
+      backend_processes_after_failure: sandboxBackendProcesses(base),
+      recorded_at: new Date().toISOString(),
+    });
+  });
+
+  it("carries a new synced paper through memory search and opens it", async function () {
+    const cadence = await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"];
+      return plugin.settings.autoSyncIntervalSeconds ?? 120;
+    });
+    expect(cadence).toBeGreaterThanOrEqual(120);
+
+    await openPanel();
+    await waitForIdle("J01", "startup-sync-settle");
+    const base = await sandboxBasePath();
+    const key = "J01MEM001";
+    const title = "J01 Memory Marker";
+    const notePath = `Resources/Literature/骨科/${key} - ${title}/${key}.md`;
+    const bystanderBefore = sha256(path.join(base, BYSTANDER_NOTE));
+    addExportItem(base, {
+      key,
+      title,
+      doi: "10.1016/j.jse.2024.01.998",
+    });
+
+    const syncBtn = await browser.$("[data-pf-testid='sync-library']");
+    await expect(syncBtn).toExist();
+    await syncBtn.click();
+    await browser.waitUntil(
+      () => {
+        try {
+          const index = readIndex(base);
+          return (
+            index.keys.includes(key) && existsSync(path.join(base, notePath))
+          );
+        } catch {
+          return false;
+        }
+      },
+      {
+        timeout: 180000,
+        timeoutMsg: "J01 Sync never materialized the new paper",
+      }
+    );
+    await waitForIdle("J01", "manual-sync-settle");
+    await browser.waitUntil(
+      async () =>
+        await browser.executeObsidian(
+          async ({ app }, expectedKey) =>
+            app.workspace.getLeavesOfType("paperforge-status").some((leaf) => {
+              const items = (leaf.view as { _cachedItems?: unknown[] })
+                ._cachedItems;
+              return (
+                Array.isArray(items) &&
+                items.some(
+                  (item) =>
+                    item &&
+                    typeof item === "object" &&
+                    (item as { zotero_key?: unknown }).zotero_key ===
+                      expectedKey
+                )
+              );
+            }),
+          key
+        ),
+      {
+        timeout: 60000,
+        timeoutMsg: "J01 dashboard did not refresh its synced read model",
+      }
+    );
+    expect(sha256(path.join(base, BYSTANDER_NOTE))).toBe(bystanderBefore);
+
+    const memoryResult = await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"];
+      if (!plugin || typeof plugin.getClient !== "function") {
+        throw new Error("paperforge plugin not loaded");
+      }
+      return await plugin.getClient().runAction({
+        action_id: "memory.build",
+        scope: { kind: "all" },
+        confirm: "memory.build",
+      });
+    });
+    if (memoryResult.ok !== true) {
+      throw new Error(`J01 memory.build failed: ${JSON.stringify(memoryResult)}`);
+    }
+
+    await openPanel();
+    await openVaultFile(BASE_PATH);
+    const input = await browser.$(".paperforge-search-input");
+    await input.waitForExist({ timeout: 60000 });
+    await input.setValue(title);
+    await browser.keys("Enter");
+    const card = await browser.$(".paperforge-search-result-card");
+    await browser.waitUntil(
+      async () => {
+        try {
+          return (await card.getText()).includes(title);
+        } catch {
+          return false;
+        }
+      },
+      { timeout: 60000, timeoutMsg: "J01 M search never found the synced paper" }
+    );
+    await card.click();
+    await browser.waitUntil(
+      async () =>
+        await browser.executeObsidian(
+          async ({ app }, expectedPath) =>
+            app.workspace.getActiveFile()?.path === expectedPath,
+          notePath
+        ),
+      {
+        timeout: 60000,
+        timeoutMsg: "J01 search result did not open the synced paper",
+      }
+    );
+
+    appendEvidence("j01-sync-memory-search.json", {
+      case_id: "J01",
+      variant: "new-export -> UI Sync -> memory.build -> M search -> open",
+      required_layer: "H",
+      status: "VERIFIED",
+      source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: PLUGIN_DIR,
+      })
+        .toString()
+        .trim(),
+      worktree_dirty: worktreeDirty(),
+      sandbox_base: base,
+      key,
+      title,
+      note_path: notePath,
+      bystander_note: BYSTANDER_NOTE,
+      bystander_sha256_before: bystanderBefore,
+      bystander_sha256_after: sha256(path.join(base, BYSTANDER_NOTE)),
+      memory_action: "memory.build",
+      search_mode: "M",
+      opened_active_file: notePath,
+      recorded_at: new Date().toISOString(),
     });
   });
 
