@@ -1114,6 +1114,28 @@ class TestMemoryConcreteFixes:
         assert data["action"]["primary"]["availability"] == "available"
 
 
+class TestVersionSpelling:
+    """One release, two spellings: `2.0.0-rc.2` (tag/plugin) == `2.0.0rc2` (PEP 440)."""
+
+    def test_installation_probe_accepts_the_semver_spelling(self, tmp_path: Path, monkeypatch) -> None:
+        from paperforge.commands import probe as probe_mod
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
+        monkeypatch.setattr(probe_mod, "PAPERFORGE_VERSION", "2.0.0rc2")
+
+        data = probe_mod.probe_installation(tmp_path, expected_version="2.0.0-rc.2")
+        assert data["reason"]["code"] != "installation.version_mismatch"
+
+    def test_installation_probe_still_rejects_a_different_release(self, tmp_path: Path, monkeypatch) -> None:
+        from paperforge.commands import probe as probe_mod
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
+        monkeypatch.setattr(probe_mod, "PAPERFORGE_VERSION", "2.0.0rc2")
+
+        data = probe_mod.probe_installation(tmp_path, expected_version="2.0.0-rc.1")
+        assert data["reason"]["code"] == "installation.version_mismatch"
+
+
 class TestOcrPriorityOrdering:
     """OCR probe priority: redo > run > rebuild > investigate (Issue #78 repair)."""
 
