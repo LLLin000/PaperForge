@@ -9,7 +9,7 @@ name: Publish
 on:
   push:
     tags:
-      - 'v*'
+      # Canonical numeric SemVer tags only. PEP 440 normalization happens in Gate 1.
       - '[0-9]*'
 
 jobs:
@@ -30,17 +30,60 @@ jobs:
           cache: "npm"
           cache-dependency-path: paperforge/plugin/package-lock.json
 
-      # ── Gate 1: tag == Python version (P0-1 contract; owner bumps version
-      # before tagging — a stale tag must fail, not silently skip PyPI).
+      # ── Gate 1: canonical SemVer tag → PEP 440 Python version.
+      # Stable: 2.0.0. Prerelease: 2.0.0-alpha.1 / -beta.1 / -rc.1.
       - name: Version/tag sync check
+        id: version_sync
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
         run: |
-          TAG="${{ github.ref_name }}"
-          TAG="${TAG#v}"
+          set -euo pipefail
+          TAG="$RELEASE_TAG"
           PY_VERSION="$(python -c 'import sys; sys.path.insert(0, "paperforge"); import __init__; print(__init__.__version__)' 2>/dev/null || python -c 'import re; print(re.search(r"__version__ = \"([^\"]+)\"", open("paperforge/__init__.py").read()).group(1))')"
-          if [ "$TAG" != "$PY_VERSION" ]; then
-            echo "::error::tag '$TAG' != Python version '$PY_VERSION'"
-            exit 1
-          fi
+          PLUGIN_VERSION="$(python -c 'import json; print(json.load(open("paperforge/plugin/manifest.json", encoding="utf-8"))["version"])')"
+          python - "$TAG" "$PY_VERSION" "$PLUGIN_VERSION" <<'PY'
+          import os
+          import re
+          import sys
+
+          tag, python_version, plugin_version = sys.argv[1:]
+          match = re.fullmatch(
+              r"(?P<base>\d+\.\d+\.\d+)(?:-(?P<phase>alpha|beta|rc)\.(?P<serial>\d+))?",
+              tag,
+          )
+          if match is None:
+              raise SystemExit(
+                  f"::error::unsupported release tag '{tag}'; expected "
+                  "N.N.N or N.N.N-{alpha|beta|rc}.N"
+              )
+
+          base = match.group("base")
+          phase = match.group("phase")
+          serial = match.group("serial")
+          pep440_phase = {"alpha": "a", "beta": "b", "rc": "rc"}
+          expected_python = (
+              base if phase is None else base + pep440_phase[phase] + serial
+          )
+          if python_version != expected_python:
+              raise SystemExit(
+                  f"::error::tag '{tag}' maps to Python '{expected_python}', "
+                  f"but paperforge.__version__ is '{python_version}'"
+              )
+          if plugin_version not in {python_version, tag}:
+              raise SystemExit(
+                  "::error::unsupported source version pair: "
+                  f"plugin manifest '{plugin_version}' must be "
+                  f"Python '{python_version}' or release tag '{tag}'"
+              )
+
+          release_kind = "stable" if phase is None else "prerelease"
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write(f"release_kind={release_kind}\n")
+          print(
+              f"validated tag={tag} python={expected_python} "
+              f"plugin_source={plugin_version} kind={release_kind}"
+          )
+          PY
 
       # ── Gate 1.5: wait for the SAME SHA's full CI (alls-green) before
       # touching PyPI — a tag pushed alongside the bump commit must not
@@ -105,6 +148,38 @@ jobs:
         working-directory: paperforge/plugin
         run: npm run build
 
+      # Project the plugin-only release metadata to SemVer for BRAT/GitHub.
+      # Python/PyPI stays canonical PEP 440; the source tree remains unchanged.
+      - name: Project plugin prerelease metadata
+        if: steps.version_sync.outputs.release_kind == 'prerelease'
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          python - "$RELEASE_TAG" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          tag = sys.argv[1]
+          manifest_path = Path("paperforge/plugin/manifest.json")
+          versions_path = Path("paperforge/plugin/versions.json")
+
+          manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+          manifest["version"] = tag
+          manifest_path.write_text(
+              json.dumps(manifest, indent=2, ensure_ascii=False) + "\n",
+              encoding="utf-8",
+          )
+
+          versions = json.loads(versions_path.read_text(encoding="utf-8"))
+          versions[tag] = manifest["minAppVersion"]
+          versions_path.write_text(
+              json.dumps(versions, indent=2, ensure_ascii=False) + "\n",
+              encoding="utf-8",
+          )
+          print(f"projected plugin metadata version={tag}")
+          PY
+
       # ── Gate 4: PyPI (skip-existing only protects against reruns of the
       # SAME version — the version/tag gate above prevents stale tags).
       - name: Publish to PyPI
@@ -117,12 +192,19 @@ jobs:
       - name: Determine release type
         id: release_type
         run: |
-          TAG="${{ github.ref_name }}"
-          if echo "$TAG" | grep -qiE '\-(beta|alpha|rc|preview|dev)\.[0-9]+$'; then
-            echo "prerelease=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "prerelease=false" >> "$GITHUB_OUTPUT"
-          fi
+          set -euo pipefail
+          case "${{ steps.version_sync.outputs.release_kind }}" in
+            stable)
+              echo "prerelease=false" >> "$GITHUB_OUTPUT"
+              ;;
+            prerelease)
+              echo "prerelease=true" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "::error::version sync did not produce a valid release kind"
+              exit 1
+              ;;
+          esac
 
       - name: Create GitHub Release
         env:
