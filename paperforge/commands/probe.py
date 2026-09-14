@@ -665,7 +665,12 @@ def probe_ocr(vault: Path) -> dict[str, Any]:
         + _lin_details.get("blocks_empty", 0)
         + _lin_details.get("blocks_invalid", 0)
     )
-    _n_pending = int(_lin_details.get("not_started", 0))
+    # Papers with no OCR output at all: `not_started` (nothing ran) plus
+    # `raw_missing` (no raw artifacts on disk).  Reporting only not_started
+    # said "1 paper" on a vault with 20 unprocessed papers.
+    _n_pending = int(_lin_details.get("not_started", 0)) + int(
+        _lin_details.get("raw_missing", 0)
+    )
     _n_nopdf = int(_lin_details.get("no_pdf", 0))
 
     if _n_failed:
@@ -709,7 +714,10 @@ def probe_ocr(vault: Path) -> dict[str, Any]:
     if _n_pending:
         return _wrap(module="ocr", capability_state="needs_action", severity="warning",
         reason_code="ocr.pending",
-        reason_text=f"OCR is pending for {_n_pending} papers — run to process",
+        reason_text=(
+            f"OCR has no output for {_n_pending} of {total} papers "
+            "— run to process"
+        ),
         user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
         action_primary=build_action_primary(
             action_id="ocr.run",
@@ -779,14 +787,16 @@ def probe_ocr(vault: Path) -> dict[str, Any]:
         notices=notices, ttl_seconds=TTL_OCR, pipeline_version=OCR_PIPELINE_VERSION)
 
     # Pending rows → run action (run before rebuild/investigate)
-    has_pending = any(
-        getattr(r, 'status', '') == 'pending' or getattr(r, 'display_action', '') == 'run_ocr'
-        for r in rows
+    # Count the pending ROWS: the message used `total`, so a vault with 949
+    # finished papers and 19 pending ones claimed all of them were pending.
+    pending_rows = sum(
+        1 for r in rows
+        if getattr(r, 'status', '') == 'pending' or getattr(r, 'display_action', '') == 'run_ocr'
     )
-    if has_pending:
+    if pending_rows:
         return _wrap(module="ocr", capability_state="needs_action", severity="warning",
         reason_code="ocr.pending",
-        reason_text=f"OCR is pending for {total} papers — run to process",
+        reason_text=f"OCR is pending for {pending_rows} of {total} papers — run to process",
         user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
         action_primary=build_action_primary(
             action_id="ocr.run",
@@ -1147,7 +1157,15 @@ def _probe_memory_impl(vault: Path) -> dict[str, Any]:
         return build_envelope(
             module="memory", capability_state="needs_action", severity="warning",
             reason_code="memory.index_stale",
-            reason_text=f"Memory index needs rebuild (DB: {paper_count_db} papers, Index: {paper_count_index} papers)",
+            reason_text=(
+                "Memory index is out of date — rebuild to refresh search ("
+                + (
+                    f"{paper_count_index} of {paper_count_db} papers indexed"
+                    if paper_count_db != paper_count_index
+                    else f"content changed since the last build; {paper_count_db} papers"
+                )
+                + ")"
+            ),
             user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
             action_primary=build_action_primary(
                 action_id="memory.rebuild",

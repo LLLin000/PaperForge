@@ -358,6 +358,73 @@ describe("RuntimeBootstrap", () => {
     });
   });
 
+  it("refuses to install while another process holds the runtime lock", async () => {
+    // Obsidian's settings window and main window are separate renderers with
+    // separate plugin instances: an in-memory guard is not enough.
+    const fsMock = createMockFs();
+    fsMock.existsSync.mockReturnValue(true);
+    fsMock.mkdirSync.mockImplementation((p: string) => {
+      if (String(p).endsWith("install.lock.d")) {
+        const err = new Error("EEXIST: file already exists") as Error & { code: string };
+        err.code = "EEXIST";
+        throw err;
+      }
+      return undefined;
+    });
+    (fsMock as unknown as { statSync: (p: string) => { mtimeMs: number } }).statSync = () => ({
+      mtimeMs: Date.now(),
+    });
+    const execFile = createMockExecFile("1.4.0");
+    const rt = makeBootstrap({ fs: fsMock, execFile });
+
+    await expect(rt.installOnce("1.4.0")).rejects.toThrow(/already running/);
+    expect(execFile).not.toHaveBeenCalled();
+  });
+
+  it("reclaims a stale runtime lock instead of wedging forever", async () => {
+    const fsMock = createMockFs();
+    fsMock.existsSync.mockReturnValue(true);
+    let first = true;
+    fsMock.mkdirSync.mockImplementation((p: string) => {
+      if (String(p).endsWith("install.lock.d") && first) {
+        first = false;
+        const err = new Error("EEXIST") as Error & { code: string };
+        err.code = "EEXIST";
+        throw err;
+      }
+      return undefined;
+    });
+    (fsMock as unknown as { statSync: (p: string) => { mtimeMs: number } }).statSync = () => ({
+      mtimeMs: Date.now() - 60 * 60 * 1000,
+    });
+    const execFile = createMockExecFile("1.4.0");
+    const rt = makeBootstrap({ fs: fsMock, execFile });
+
+    await expect(rt.installOnce("1.4.0")).resolves.toBeTruthy();
+  });
+
+  it("starts from a clean venv so a damaged environment cannot survive", async () => {
+    // pip trusts an existing dist-info: a venv whose module files were lost
+    // to an interrupted run looks healthy and is never repaired by pip. The
+    // installer therefore removes the venv BEFORE creating it.
+    const fsMock = createMockFs();
+    fsMock.existsSync.mockReturnValue(true);
+    const execFile = createMockExecFile("1.4.0");
+    const rt = makeBootstrap({ fs: fsMock, execFile });
+
+    await rt.installOnce("1.4.0");
+
+    const venvCall = execFile.mock.calls.find(
+      (call) => Array.isArray(call[1]) && (call[1] as string[]).includes("venv")
+    );
+    expect(venvCall).toBeDefined();
+    expect(fsMock.rmSync).toHaveBeenCalled();
+    const venvCallIndex = execFile.mock.calls.indexOf(venvCall!);
+    expect(fsMock.rmSync.mock.invocationCallOrder[0]).toBeLessThan(
+      execFile.mock.invocationCallOrder[venvCallIndex]
+    );
+  });
+
   // ── installOnce: no zombie pip, no concurrent writer ──
   describe("installOnce() failure isolation", () => {
     it("terminates the install child before deleting the venv", async () => {
