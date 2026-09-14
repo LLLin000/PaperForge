@@ -575,6 +575,10 @@ export class OcrWorkspaceView extends ItemView {
     const prev = bar.createEl("button", {
       cls: "pf-btn pf-btn-secondary",
       text: "‹",
+      attr: {
+        "aria-label": t("ocr_ws_pagination_previous"),
+        title: t("ocr_ws_pagination_previous"),
+      },
     });
     prev.disabled = this._page <= 1;
     prev.addEventListener("click", () => {
@@ -582,11 +586,16 @@ export class OcrWorkspaceView extends ItemView {
       this._refreshTable();
     });
     const info = bar.createEl("span", {
+      attr: { "aria-live": "polite" },
       text: `${this._page} / ${totalPages}`,
     });
     const next = bar.createEl("button", {
       cls: "pf-btn pf-btn-secondary",
       text: "›",
+      attr: {
+        "aria-label": t("ocr_ws_pagination_next"),
+        title: t("ocr_ws_pagination_next"),
+      },
     });
     next.disabled = this._page >= totalPages;
     next.addEventListener("click", () => {

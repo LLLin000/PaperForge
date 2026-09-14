@@ -221,8 +221,8 @@
 }
 
 .paperforge-header-refresh {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   padding: 0;
   cursor: pointer;
   background: transparent;
@@ -6085,6 +6085,21 @@ input.pf-ocr-ws-search-input::placeholder {
     color 120ms;
 }
 
+/* ── Pagination ── */
+.pf-ocr-ws-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px 0 4px;
+}
+.pf-ocr-ws-pagination > span {
+  min-width: 4.5em;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-align: center;
+}
+
 /* ── Table ── */
 .pf-ocr-ws-viewport {
   min-height: 320px;
@@ -6362,6 +6377,15 @@ input.pf-ocr-ws-search-input::placeholder {
   opacity: 0.45;
   cursor: not-allowed;
   transform: none;
+}
+
+.pf-btn:focus-visible,
+.pf-ocr-ws-chip:focus-visible,
+.paperforge-orphan-row:focus-visible,
+.paperforge-header-refresh:focus-visible,
+.paperforge-step-btn:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 2px;
 }
 .pf-btn-primary {
   background: var(--interactive-accent);

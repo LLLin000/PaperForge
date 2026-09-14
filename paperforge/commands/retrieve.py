@@ -113,9 +113,13 @@ def run(args: argparse.Namespace) -> int:
             if "vector_state" in scope:
                 vs = scope["vector_state"]
                 result = PFResult(ok=False, command="retrieve", version=PF_VERSION,
-                    error=PFError(code=ErrorCode.INTERNAL_ERROR,
+                    error=PFError(code=ErrorCode.PRECONDITION_FAILED,
                         message=f"Vectors for {paper_key} are {vs}. {'Rebuild required.' if vs == 'stale' else 'Build vectors first.'}"),
-                    data={"vector_state": vs, "scoped_paper": paper_key})
+                    data={
+                        "vector_state": vs,
+                        "scoped_paper": paper_key,
+                        "next_action_id": "embed.build",
+                    })
                 _output(args, result, query)
                 return 1
 
@@ -162,7 +166,7 @@ def run(args: argparse.Namespace) -> int:
             command="retrieve",
             version=PF_VERSION,
             error=PFError(
-                code=ErrorCode.INTERNAL_ERROR,
+                code=ErrorCode.PRECONDITION_FAILED,
                 message=f"Vector index is {state}. {'Rebuild vectors before retrieving.' if state == 'not_built' else 'Rebuild required.'}",
             ),
             data={

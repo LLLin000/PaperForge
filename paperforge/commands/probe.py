@@ -281,10 +281,66 @@ def probe_installation(vault: Path, expected_version: str | None = None) -> dict
             ttl_seconds=TTL_INSTALLATION,
         )
 
+    from paperforge.runtime_pointer import read_pointer
+
+    pointer = read_pointer()
+    if pointer is None:
+        return build_envelope(
+            module="installation", capability_state="needs_action", severity="warning",
+            reason_code="installation.runtime_pointer_missing",
+            reason_text="PaperForge is installed, but no valid runtime pointer is published",
+            user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_REQUIRED,
+            user_impact="Run setup to publish the executable PaperForge runtime",
+            action_primary=build_action_primary(
+                action_id="foundation.setup", verb="setup", label="Complete Setup",
+            ),
+            ttl_seconds=TTL_INSTALLATION,
+        )
+
+    if pointer["paperforge_version"] != PAPERFORGE_VERSION:
+        return build_envelope(
+            module="installation", capability_state="needs_action", severity="warning",
+            reason_code="installation.runtime_pointer_stale",
+            reason_text=(
+                "Published runtime version "
+                f"{pointer['paperforge_version']} does not match PaperForge {PAPERFORGE_VERSION}"
+            ),
+            user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_REQUIRED,
+            user_impact="Update the published PaperForge runtime before using it",
+            action_primary=build_action_primary(
+                action_id="foundation.update", verb="update", label="Update PaperForge",
+                safety_class=SAFETY_DESTRUCTIVE, confirmation_required=True,
+                confirmation_prompt=(
+                    "Update PaperForge\n\n"
+                    "Download and install the latest PaperForge version. "
+                    "This changes the installed runtime."
+                ),
+            ),
+            ttl_seconds=TTL_INSTALLATION,
+        )
+
+    if not Path(pointer["python_path"]).is_file():
+        return build_envelope(
+            module="installation", capability_state="needs_action", severity="warning",
+            reason_code="installation.runtime_executable_missing",
+            reason_text="Published runtime pointer targets a missing Python executable",
+            user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_REQUIRED,
+            user_impact="Repair the PaperForge runtime before using it",
+            action_primary=build_action_primary(
+                action_id="foundation.repair", verb="repair", label="Repair Runtime",
+                safety_class=SAFETY_DESTRUCTIVE, confirmation_required=True,
+                confirmation_prompt=(
+                    "Repair PaperForge runtime\n\n"
+                    "Rebuild the managed runtime and publish a verified pointer."
+                ),
+            ),
+            ttl_seconds=TTL_INSTALLATION,
+        )
+
     return build_envelope(
         module="installation", capability_state="ready", severity="ok",
         reason_code="installation.ready",
-        reason_text="PaperForge is installed and configured",
+        reason_text="PaperForge is installed, configured, and executable",
         user_state=USER_STATE_READY, capability_kind=CAPABILITY_REQUIRED,
         action_primary=None, ttl_seconds=TTL_INSTALLATION,
     )

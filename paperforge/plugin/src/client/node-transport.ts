@@ -114,6 +114,8 @@ export interface LongTaskOptions {
   env?: Record<string, string | undefined>;
   /** Grace window after the stop token before hard escalation. */
   graceMs?: number;
+  /** Close stdin for commands that do not support cooperative stop. */
+  closeStdin?: boolean;
 }
 
 export interface LongTaskHandle {
@@ -168,6 +170,7 @@ export function runLongTask(
       stdio: ["pipe", "pipe", "pipe"],
     }
   );
+  if (opts.closeStdin) child.stdin?.end();
 
   const parser = new NdjsonStreamParser();
   const events: NdjsonEvent[] = [];
@@ -461,6 +464,7 @@ export class NodeProcessTransport implements Transport {
       longTaskHandle = runLongTask(py.path, py.args, this._vaultPath, argv, {
         graceMs: options?.graceMs,
         env: options?.env,
+        closeStdin: argv[0] === "setup",
         onEvent: (ev) => {
           queue.push(ev);
           options?.onEvent?.(ev);
