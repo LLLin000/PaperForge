@@ -669,8 +669,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
 
     // ── Overview ──
-    /* Header */
-    containerEl.createEl("h2", { text: t("header_title") || "PaperForge" });
+    /* The brand in the control-center topbar already names the plugin; a
+       second "PaperForge" heading here was pure duplication. */
     containerEl.createEl("p", {
       text: t("desc"),
       cls: "paperforge-settings-desc",

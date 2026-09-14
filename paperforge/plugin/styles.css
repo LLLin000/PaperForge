@@ -607,14 +607,14 @@
    SECTION 5 — Settings Tab: Guide & Summary
    ========================================================================== */
 .paperforge-settings-desc {
-  font-size: var(--font-ui-smaller);
+  font-size: var(--font-ui-small);
   color: var(--text-muted);
   line-height: 1.6;
-  margin: 8px 0 16px;
-  padding: 10px 14px;
-  background: var(--background-secondary);
+  margin: var(--size-4-1) 0 var(--size-4-4);
+  padding: 0;
+  background: none;
   border-radius: var(--radius-m);
-  border: 1px solid var(--background-modifier-border);
+  border: none;
 }
 
 .paperforge-guide {
@@ -4915,9 +4915,9 @@
 
 /* ── Module Detail heading responsive wrap ── */
 .pf-module-detail-heading {
-  font-size: 18px;
-  font-weight: 600;
-  line-height: 1.35;
+  font-size: var(--font-ui-medium);
+  font-weight: var(--font-semibold);
+  line-height: var(--line-height-tight);
   margin: 0 0 12px 0;
   word-break: break-word;
   overflow-wrap: break-word;
@@ -5186,7 +5186,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 0;
+  padding: var(--size-4-2) 0;
   border-bottom: 1px solid var(--background-modifier-border);
 }
 .pf-config-row:last-child {
@@ -5196,13 +5196,17 @@
   font-size: var(--font-ui-small);
   color: var(--text-muted);
 }
+.pf-config-key {
+  font-size: var(--font-ui-small);
+  color: var(--text-normal);
+}
 .pf-config-value {
   font-size: var(--font-ui-small);
   color: var(--text-normal);
 }
 .pf-config-value--ok {
   color: var(--text-success);
-}
+  font-size: var(--font-ui-small);}
 .pf-config-value--muted {
   color: var(--text-faint);
 }
@@ -5383,8 +5387,8 @@
 
 /* ═══════════════ #87: Setup Journey ═══════════════ */
 .pf-setup-journey {
-  max-width: 620px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
 }
 .pf-setup-desc {
   color: var(--text-muted);
@@ -5490,11 +5494,11 @@
 }
 .pf-setup-warn {
   color: var(--text-warning);
-  font-size: 13px;
+  font-size: var(--font-ui-small);
 }
 .pf-setup-status {
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: var(--font-ui-small);
 }
 .pf-setup-optional {
   display: flex;
@@ -6530,10 +6534,10 @@ input.pf-ocr-ws-search-input::placeholder {
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  gap: var(--size-4-4) !important;
-  padding-bottom: var(--size-4-4) !important;
+  gap: var(--size-4-3) !important;
+  padding-bottom: var(--size-4-3) !important;
   border-bottom: 1px solid var(--background-modifier-border) !important;
-  margin-bottom: var(--size-4-6) !important;
+  margin-bottom: var(--size-4-4) !important;
   flex-wrap: wrap !important;
 }
 .pf-cc-topbar-brand {
@@ -6589,9 +6593,9 @@ input.pf-ocr-ws-search-input::placeholder {
   color: var(--text-faint);
   font-size: var(--font-ui-smaller);
   font-weight: 500;
-  letter-spacing: 0.5px;
-  text-transform: lowercase;
-  margin-bottom: var(--size-4-2);
+  letter-spacing: 0.3px;
+  text-transform: none;
+  margin-bottom: var(--size-4-1);
 }
 /* ── Refresh row ── */
 .pf-cc-refresh-row {
@@ -6599,7 +6603,7 @@ input.pf-ocr-ws-search-input::placeholder {
 }
 
 .vertical-tab-content .pf-cc-title {
-  font-size: var(--font-ui-large);
+  font-size: var(--font-ui-medium);
   font-weight: var(--font-semibold);
   margin: 0 0 var(--size-4-2);
   color: var(--text-normal);
@@ -6634,10 +6638,10 @@ input.pf-ocr-ws-search-input::placeholder {
   min-height: 20px;
   padding: var(--size-4-1) var(--size-4-2);
   border-radius: var(--radius-s);
-  font-size: 11px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
+  font-size: var(--font-ui-smaller);
+  font-weight: var(--font-semibold);
+  text-transform: none;
+  letter-spacing: 0;
   white-space: nowrap;
 }
 .pf-cc-summary-badge--ready {
@@ -6665,7 +6669,7 @@ input.pf-ocr-ws-search-input::placeholder {
 }
 .pf-cc-summary-copy .pf-cc-summary-desc {
   color: var(--text-muted);
-  font-size: var(--font-ui-small);
+  font-size: var(--font-ui-smaller);
   line-height: 1.4;
 }
 .pf-cc-summary-meta {
