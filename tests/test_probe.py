@@ -106,6 +106,21 @@ def _run_probe(module: str, vault: Path, extra_args: list[str] | None = None, en
     return json.loads(result.stdout)
 
 
+def _ready_installation_env(vault: Path) -> dict[str, str]:
+    """Run installation probes against an isolated published runtime."""
+    from paperforge.runtime_pointer import publish_pointer
+
+    home = vault / ".home"
+    home.mkdir(exist_ok=True)
+    publish_pointer(home=home)
+    env = os.environ.copy()
+    env["HOME"] = str(home)
+    env["USERPROFILE"] = str(home)
+    return env
+
+
+
+
 def _assert_envelope_shape(data: dict) -> None:
     """Assert envelope has all required fields with correct structural types."""
     missing = REQUIRED_ENVELOPE_FIELDS - set(data.keys())
@@ -285,7 +300,7 @@ class TestInstallationProbe:
             json.dumps({"schema_version": 2, "vault_config": {}, "name": "Foo", "version": "1.0"}),
             encoding="utf-8",
         )
-        data = _run_probe("installation", tmp_path)
+        data = _run_probe("installation", tmp_path, env=_ready_installation_env(tmp_path))
         assert data["capability_state"] == "ready"
 
     def test_v2_vault_config_accepted(self, tmp_path: Path) -> None:
@@ -293,7 +308,7 @@ class TestInstallationProbe:
         (tmp_path / "paperforge.json").write_text(
             json.dumps({"vault_config": {"system_dir": "99_System"}}), encoding="utf-8",
         )
-        data = _run_probe("installation", tmp_path)
+        data = _run_probe("installation", tmp_path, env=_ready_installation_env(tmp_path))
         assert data["capability_state"] == "ready"
         assert data["reason"]["code"] == "installation.ready"
 
@@ -302,7 +317,7 @@ class TestInstallationProbe:
         (tmp_path / "paperforge.json").write_text(
             json.dumps({"system_dir": "99_System", "resources_dir": "Resources"}), encoding="utf-8",
         )
-        data = _run_probe("installation", tmp_path)
+        data = _run_probe("installation", tmp_path, env=_ready_installation_env(tmp_path))
         assert data["capability_state"] == "ready"
         assert data["reason"]["code"] == "installation.ready"
 
@@ -310,7 +325,7 @@ class TestInstallationProbe:
         """Ready state has correct reason code and null action."""
         tmp_path.mkdir(parents=True, exist_ok=True)
         canonical_test_config(tmp_path, system_dir="99_System")
-        data = _run_probe("installation", tmp_path)
+        data = _run_probe("installation", tmp_path, env=_ready_installation_env(tmp_path))
         assert data["capability_state"] == "ready"
         assert data["severity"] == "ok"
         assert data["reason"]["code"] == "installation.ready"
