@@ -358,6 +358,40 @@ describe("RuntimeBootstrap", () => {
     });
   });
 
+  it("kills whatever still runs inside the venv when cleanup is refused", async () => {
+    // Windows refuses to delete a directory whose interpreter is running
+    // (module probes do exactly that while a user clicks around Settings).
+    const fsMock = createMockFs();
+    fsMock.existsSync.mockReturnValue(true);
+    let attempts = 0;
+    fsMock.rmSync.mockImplementation(() => {
+      attempts += 1;
+      if (attempts === 1) {
+        const err = new Error("EPERM: operation not permitted") as Error & {
+          code: string;
+        };
+        err.code = "EPERM";
+        throw err;
+      }
+    });
+    const execFileSyncCalls: string[] = [];
+    const execFileSync = ((
+      cmd: string,
+      args: readonly string[],
+      _opts: { encoding: string; timeout: number }
+    ) => {
+      execFileSyncCalls.push(cmd);
+      // Interpreter discovery still needs a version banner.
+      return args.includes("--version") ? "Python 3.12.4" : "";
+    }) as ExecFileSyncFn;
+    const execFile = createMockExecFile("1.4.0");
+    const rt = makeBootstrap({ fs: fsMock, execFile, execFileSync });
+
+    await expect(rt.installOnce("1.4.0")).resolves.toBeTruthy();
+    expect(execFileSyncCalls).toContain("powershell");
+    expect(attempts).toBeGreaterThanOrEqual(2);
+  });
+
   it("refuses to install while another process holds the runtime lock", async () => {
     // Obsidian's settings window and main window are separate renderers with
     // separate plugin instances: an in-memory guard is not enough.
@@ -401,6 +435,47 @@ describe("RuntimeBootstrap", () => {
     const rt = makeBootstrap({ fs: fsMock, execFile });
 
     await expect(rt.installOnce("1.4.0")).resolves.toBeTruthy();
+  });
+
+  it("accepts the SemVer spelling of the released plugin version", async () => {
+    // Release assets carry `2.0.0-rc.2` (Obsidian/BRAT) while the package
+    // reports `2.0.0rc2` (pip/PyPI).  A raw compare failed the fresh-child
+    // check and rolled a perfectly good install back.
+    const fsMock = createMockFs();
+    fsMock.existsSync.mockReturnValue(true);
+    const execFile = createMockExecFile("2.0.0rc2");
+    const rt = makeBootstrap({ fs: fsMock, execFile });
+
+    await expect(rt.installOnce("2.0.0-rc.2")).resolves.toBeTruthy();
+  });
+
+  it("handshake accepts the SemVer spelling too", async () => {
+    const fsMock = createMockFs();
+    fsMock.existsSync.mockReturnValue(true);
+    // version probe → PEP 440 spelling; installation probe → a ready envelope
+    const execFile = vi.fn<(...args: unknown[]) => void>();
+    execFile.mockImplementation(
+      (
+        _cmd: unknown,
+        args: unknown,
+        _opts: unknown,
+        cb: (err: Error | null, stdout: string, stderr: string) => void
+      ) => {
+        const a = args as readonly string[];
+        if (a.includes("probe")) {
+          cb(null, JSON.stringify({ reason: { code: "installation.ready" } }), "");
+        } else {
+          cb(null, "2.0.0rc2", "");
+        }
+      }
+    );
+    const rt = makeBootstrap({ fs: fsMock, execFile: execFile as unknown as MockExecFile });
+
+    const hs = await rt.handshake("2.0.0-rc.2", { vaultPath: "/vault" });
+    // ok proves the version check accepted the PEP 440 spelling of the
+    // caller's SemVer; the success path echoes the caller's spelling.
+    expect(hs.ok).toBe(true);
+    expect(hs.observedVersion).toBe("2.0.0-rc.2");
   });
 
   it("starts from a clean venv so a damaged environment cannot survive", async () => {

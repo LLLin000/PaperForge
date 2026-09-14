@@ -58,7 +58,15 @@ export interface FsOps {
   existsSync(p: string): boolean;
   readFileSync(p: string, encoding?: string | null): string;
   mkdirSync(p: string, opts?: { recursive?: boolean }): string | undefined;
-  rmSync(p: string, opts?: { recursive?: boolean; force?: boolean }): void;
+  rmSync(
+    p: string,
+    opts?: {
+      recursive?: boolean;
+      force?: boolean;
+      maxRetries?: number;
+      retryDelay?: number;
+    }
+  ): void;
   /** Optional: the real fs provides them; doubles may omit them. */
   statSync?(p: string): { mtimeMs: number };
 }
@@ -156,6 +164,21 @@ function compareVersions(a: string, b: string): number {
 
 function isAtLeast(version: string, minVersion: string): boolean {
   return compareVersions(version, minVersion) >= 0;
+}
+
+/**
+ * One release, two spellings: the release assets / tags carry SemVer
+ * (`2.0.0-rc.2`, what Obsidian and BRAT want) while the package and the
+ * runtime report PEP 440 (`2.0.0rc2`, what pip and PyPI want).  Every
+ * version COMPARISON must look through the spelling — a raw string compare
+ * failed the fresh-child check and rolled the install back.
+ */
+function normalizeReleaseVersion(version: string): string {
+  const m = version.trim().match(/^(\d+(?:\.\d+)*)-(alpha|beta|rc)\.(\d+)$/i);
+  if (!m) return version.trim();
+  const phase = m[2].toLowerCase();
+  const pep440 = phase === "alpha" ? "a" : phase === "beta" ? "b" : "rc";
+  return `${m[1]}${pep440}${m[3]}`;
 }
 
 // ── Platform helpers ──
@@ -477,13 +500,32 @@ export class RuntimeBootstrap {
       // survived every reinstall: observed as `import chromadb` failing
       // with "No module named 'dotenv'" on a runtime pip reported healthy.
       try {
-        this._fs.rmSync(this.venvDir, { recursive: true, force: true });
-      } catch (cleanupErr) {
-        throw new Error(
-          `The previous runtime directory could not be removed (${
-            cleanupErr instanceof Error ? cleanupErr.message : String(cleanupErr)
-          }). Close any running PaperForge process and try again.`
-        );
+        this._fs.rmSync(this.venvDir, {
+          recursive: true,
+          force: true,
+          maxRetries: 5,
+          retryDelay: 200,
+        });
+      } catch {
+        // A probe child (module refresh) may still be running out of the
+        // venv: terminate whatever executes inside it, then retry once
+        // before giving up.  Nothing of OURS is running yet — the install
+        // venv is created below.
+        this._terminateVenvProcesses();
+        try {
+          this._fs.rmSync(this.venvDir, {
+            recursive: true,
+            force: true,
+            maxRetries: 10,
+            retryDelay: 300,
+          });
+        } catch (cleanupErr) {
+          throw new Error(
+            `The previous runtime directory could not be removed (${
+              cleanupErr instanceof Error ? cleanupErr.message : String(cleanupErr)
+            }). Close any running PaperForge process and try again.`
+          );
+        }
       }
       this._fs.mkdirSync(this.venvDir, { recursive: true });
       await this._exec(
@@ -503,7 +545,10 @@ export class RuntimeBootstrap {
       );
       if (signal?.aborted) throw new AbortError("Operation was cancelled");
       const observed = await this._probeVersion(pythonExe, signal);
-      if (observed !== expectedVersion) {
+      if (
+        !observed ||
+        normalizeReleaseVersion(observed) !== normalizeReleaseVersion(expectedVersion)
+      ) {
         throw new Error(
           `installed version mismatch: observed ${observed!} != requested ${expectedVersion}`
         );
@@ -569,7 +614,10 @@ export class RuntimeBootstrap {
     }
     try {
       const observed = await this._probeVersion(pythonPath, opts.signal);
-      if (observed !== expectedVersion) {
+      if (
+        !observed ||
+        normalizeReleaseVersion(observed) !== normalizeReleaseVersion(expectedVersion)
+      ) {
         return {
           ok: false,
           observedVersion: observed,
@@ -700,6 +748,28 @@ export class RuntimeBootstrap {
       this._activeChild = child as TrackedChild;
     }
     return promise;
+  }
+
+  /**
+   * Terminate processes executing INSIDE the managed venv (probe children
+   * left over from a module refresh).  Best-effort, Windows only: the
+   * platform needs an OS-level kill to release the directory.
+   */
+  private _terminateVenvProcesses(): void {
+    if (this.osPlatform !== "win32") return;
+    const escaped = this.venvDir.replace(/'/g, "''");
+    const script =
+      "Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | " +
+      `Where-Object { $_.ExecutablePath -like '${escaped}\\*' } | ` +
+      "ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }";
+    try {
+      this._execFileSync("powershell", ["-NoProfile", "-Command", script], {
+        encoding: "utf-8",
+        timeout: 20000,
+      });
+    } catch {
+      // best effort — the caller falls back to a precise failure message
+    }
   }
 
   /**
