@@ -357,7 +357,9 @@ export class RuntimeBootstrap {
       await this._exec(
         pythonExe,
         ["-m", "pip", "install", `paperforge[vector]==${expectedVersion}`],
-        { timeout: 120000, signal },
+        // Vector dependencies can be large on a clean machine; this remains
+        // bounded, while avoiding a false first-use failure at two minutes.
+        { timeout: 300000, signal },
         "pip install"
       );
       if (signal?.aborted) throw new AbortError("Operation was cancelled");
@@ -386,9 +388,10 @@ export class RuntimeBootstrap {
    *      --json`) in a fresh process returns a KNOWN state.
    * Fail-closed: version mismatch, probe process failure, malformed JSON,
    * or an unexpected reason all FAIL the handshake.  Explicit pre-setup
-   * exceptions that PASS: installation.ready, installation.config_missing
-   * and installation.config_corrupt (the later `paperforge setup` step
-   * resolves config states; a version mismatch is not a pre-setup state).
+   * exceptions that PASS: installation.ready, installation.config_missing,
+   * installation.config_corrupt, and the runtime-pointer states emitted
+   * before `paperforge setup` publishes the pointer.  A version mismatch is
+   * not a pre-setup state.
    * vaultPath is REQUIRED — a handshake without the capability probe is
    * not a handshake.
    */
@@ -443,7 +446,10 @@ export class RuntimeBootstrap {
       if (
         probe !== "installation.ready" &&
         probe !== "installation.config_missing" &&
-        probe !== "installation.config_corrupt"
+        probe !== "installation.config_corrupt" &&
+        probe !== "installation.runtime_pointer_missing" &&
+        probe !== "installation.runtime_pointer_stale" &&
+        probe !== "installation.runtime_executable_missing"
       ) {
         return {
           ok: false,

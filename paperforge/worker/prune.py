@@ -175,10 +175,19 @@ def _prune_orphan_papers_locked(
     _ocr_root = (_paths.get("ocr") or Path()).resolve()
 
     deleted: list[str] = []
+    failed_keys: list[str] = []
+    carriers: dict[str, dict[str, str]] = {}
     counts = {"workspace": 0, "ocr": 0, "vectors": 0, "failed": 0}
 
     for c in candidates:
         key = c["key"]
+        status = {
+            "workspace": "absent",
+            "ocr": "absent",
+            "vectors": "absent",
+            "database": "absent",
+        }
+        key_failed = False
         try:
             ocr = c.get("ocr_dir")
             if ocr and ocr.exists():
@@ -192,9 +201,12 @@ def _prune_orphan_papers_locked(
                     )
                     if rec is not None:
                         counts["ocr"] += 1
+                        status["ocr"] = "deleted"
                 except DangerousPathError as exc:
                     logger.warning("prune: refuse to trash OCR %s: %s", ocr, exc)
                     counts["failed"] += 1
+                    status["ocr"] = "failed"
+                    key_failed = True
 
             ws = c.get("workspace_dir")
             if ws and ws.exists():
@@ -208,18 +220,25 @@ def _prune_orphan_papers_locked(
                     )
                     if rec is not None:
                         counts["workspace"] += 1
+                        status["workspace"] = "deleted"
                 except DangerousPathError as exc:
                     logger.warning("prune: refuse to trash workspace %s: %s", ws, exc)
                     counts["failed"] += 1
+                    status["workspace"] = "failed"
+                    key_failed = True
 
             try:
                 from paperforge.embedding._chroma import _delete_paper_vectors_locked
+
                 n = _delete_paper_vectors_locked(vault, key)
                 if n > 0:
                     counts["vectors"] += n
+                    status["vectors"] = "deleted"
             except Exception as vec_err:
                 logger.warning("prune: failed to delete vectors for %s: %s", key, vec_err)
                 counts["failed"] += 1
+                status["vectors"] = "failed"
+                key_failed = True
 
             # #135: unified residual cleanup — the full-text index rows,
             # OCR retrieval units, and lineage/alias/event records for the
@@ -261,16 +280,31 @@ def _prune_orphan_papers_locked(
                         # papers AFTER-DELETE trigger clears paper_fts rows.
                         conn.execute("DELETE FROM papers WHERE zotero_key = ?", (key,))
                         conn.commit()
+                        status["database"] = "deleted"
                     finally:
                         conn.close()
             except Exception as db_err:
                 logger.warning("prune: failed to clean DB records for %s: %s", key, db_err)
                 counts["failed"] += 1
+                status["database"] = "failed"
+                key_failed = True
 
             deleted.append(key)
+            carriers[key] = status
+            if key_failed:
+                failed_keys.append(key)
 
         except Exception as exc:
             logger.error("prune: failed to clean up %s: %s", key, exc)
             counts["failed"] += 1
+            status["database"] = "failed"
+            carriers[key] = status
+            failed_keys.append(key)
 
-    return {"preview": preview, "deleted": deleted, "counts": counts}
+    return {
+        "preview": preview,
+        "deleted": deleted,
+        "failed_keys": failed_keys,
+        "carriers": carriers,
+        "counts": counts,
+    }

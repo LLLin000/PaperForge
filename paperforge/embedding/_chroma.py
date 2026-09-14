@@ -113,12 +113,29 @@ def _delete_paper_vectors_locked(vault: Path, zotero_key: str) -> int:
     _delete_from_chromadb(vault, zotero_key)
 
     db_path = get_memory_db_path(vault)
-    conn = get_connection(db_path)
-    ensure_vec_extension(conn)
-    ensure_schema(conn)
+    # A vault without a vector substrate is a valid absent carrier.  Do not
+    # create a database merely because orphan cleanup was requested.
+    if not db_path.exists():
+        return 0
 
-    total = 0
+    conn = get_connection(db_path)
     try:
+        names = tuple(
+            table
+            for vec_table, meta_table in _VEC_TABLE_MAP.values()
+            for table in (vec_table, meta_table)
+        )
+        placeholders = ",".join("?" for _ in names)
+        existing = conn.execute(
+            f"SELECT 1 FROM sqlite_master WHERE name IN ({placeholders}) LIMIT 1",
+            names,
+        ).fetchone()
+        if existing is None:
+            return 0
+
+        ensure_vec_extension(conn)
+        ensure_schema(conn)
+        total = 0
         for vec_table, meta_table in _VEC_TABLE_MAP.values():
             rows = conn.execute(
                 f"SELECT rowid FROM {meta_table} WHERE paper_id = ?", (zotero_key,)
@@ -157,12 +174,12 @@ def _delete_paper_vectors_locked(vault: Path, zotero_key: str) -> int:
             )
             total += len(verified)
         conn.commit()
+        return total
     except Exception:
         conn.rollback()
         raise
     finally:
         conn.close()
-    return total
 
 
 def migrate_chroma_to_vec0(vault: Path) -> int:
