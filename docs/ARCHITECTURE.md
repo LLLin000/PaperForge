@@ -731,10 +731,10 @@ Any final role in `VERIFY_REQUIRED` must have `role_verification_status: ACCEPT`
 ## Cross-References
 
 - User-facing guide: [`AGENTS.md`](../AGENTS.md)
-- Installation instructions: [`docs/INSTALLATION.md`](INSTALLATION.md)
+- Installation instructions: [`docs/getting-started.md`](getting-started.md)
 - Command reference: [`docs/COMMANDS.md`](COMMANDS.md)
 - Migration guide: [`docs/MIGRATION-v1.2.md`](MIGRATION-v1.2.md)
-- Requirements: [`.planning/REQUIREMENTS.md`](../.planning/REQUIREMENTS.md)
+- Product requirements: `docs/prd-*.md`
 
 ---
 

@@ -18,7 +18,7 @@
 
 - [ ] All CLI examples use `paperforge` (not `paperforge_lite`)
 - [ ] All Agent examples use `/pf-*` (not `/LD-*` or `/lp-*`)
-- [ ] Old commands only appear in migration guide (`docs/MIGRATION-v1.2.md`) and historical docs (`.planning/`)
+- [ ] Old commands only appear in the migration guide (`docs/MIGRATION-v1.2.md`)
 - [ ] `python -m paperforge` fallback documented where relevant
 
 ## Cross-References

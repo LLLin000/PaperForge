@@ -38,6 +38,8 @@ OLD_COMMAND_PATTERNS = {
 CHECK1_EXCLUDES = {
     "docs/MIGRATION-v1.2.md",
     "docs/ARCHITECTURE.md",  # ADR-010 documents historical command names
+    "docs/COMMANDS.md",  # The reference includes explicitly marked compatibility aliases.
+    "paperforge/commands/prune.py",  # Recovery help intentionally names the legacy command.
     ".planning",
     ".pytest_cache",
     "__pycache__",
@@ -206,17 +208,20 @@ def check_dead_links() -> tuple[int, list[str]]:
 
 
 def check_command_docs() -> tuple[int, list[str]]:
-    """Check 4: All command/*.md files have valid structure."""
+    """Check 4: All packaged command docs have valid structure."""
     violations: list[str] = []
-    command_dir = REPO_ROOT / "command"
+    command_dir = REPO_ROOT / "paperforge" / "command_files"
 
     if not command_dir.exists():
-        violations.append("  command/ directory not found")
+        violations.append("  paperforge/command_files/ directory not found")
         return 1, violations
 
-    command_files = sorted(command_dir.glob("pf-*.md"))
-    if not command_files:
-        violations.append("  No command/pf-*.md files found")
+    command_files = [
+        command_dir / name
+        for name in ("pf-status.md", "pf-sync.md", "pf-ocr.md", "pf-deep.md", "pf-paper.md")
+    ]
+    if any(not path.exists() for path in command_files):
+        violations.append("  One or more public pf-*.md command docs are missing")
         return 1, violations
 
     for cmd_path in command_files:

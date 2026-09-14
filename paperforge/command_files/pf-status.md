@@ -84,7 +84,7 @@ PaperForge Lite v1.2
 
 ### 路径错误
 - **表现**：`✗ Zotero: 目录不存在或不是有效链接`
-- **解决**：创建 junction/symlink 到 Zotero 数据目录（见 [AGENTS.md](../AGENTS.md) 安装指南）
+- **解决**：创建 junction/symlink 到 Zotero 数据目录（见 [AGENTS.md](../../AGENTS.md) 安装指南）
 
 ### 依赖缺失
 - **表现**：`✗ 依赖: requests 未安装`
@@ -115,5 +115,5 @@ PaperForge Lite v1.2
 
 - [pf-sync](pf-sync.md) — 文献同步
 - [pf-ocr](pf-ocr.md) — OCR 提取
-- [AGENTS.md](../AGENTS.md) — 完整使用指南、架构说明、常见问题
-- [docs/COMMANDS.md](../docs/COMMANDS.md) — 命令总览与矩阵
+- [AGENTS.md](../../AGENTS.md) — 完整使用指南、架构说明、常见问题
+- [docs/COMMANDS.md](../../docs/COMMANDS.md) — 命令总览与矩阵

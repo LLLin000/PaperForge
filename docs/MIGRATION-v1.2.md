@@ -476,7 +476,7 @@ Print this and keep it handy:
 
 - **Architecture details:** See [`ARCHITECTURE.md`](ARCHITECTURE.md)
 - **Command reference:** See [`COMMANDS.md`](COMMANDS.md)
-- **Installation guide:** See [`INSTALLATION.md`](INSTALLATION.md)
+- **Installation guide:** See [`getting-started.md`](getting-started.md)
 - **User guide:** See [`AGENTS.md`](../AGENTS.md)
 - **Report issues:** Open an issue with the tag `migration-v1.2`
 

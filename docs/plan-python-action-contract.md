@@ -141,7 +141,7 @@ Exit: plugin behavior parity on the sandbox vault (dashboard actions, OCR worksp
 
 - Migrate or remove raw command-string `next_actions` producers: `commands/memory.py` (`"paperforge sync --rebuild-index"`), `paper_status.py`, `retrieve.py`, `search.py`, `retrieval/gateway.py` — to registered IDs or diagnostic data only.
 - Architecture audit: update `collectors/common.py` wrapper specs (`sync.run_terminal_followups` is replaced by the chain runner wrapper; add action-dispatch wrappers and rules forbidding command-bearing action descriptors and client action-policy tables); re-pin goldens `golden_126_ocr_rebuild.json`, `golden_127_sync_embed.json` (their pinned symbols change in Phases 2–4).
-- Lifecycle: promote the action contract capability in `ArchitectureContract.lifecycle` only after the full acceptance journey passes; update `PROJECT-MANAGEMENT.md` and the active queue per repo rules.
+- Lifecycle: promote the action contract capability in `ArchitectureContract.lifecycle` only after the full acceptance journey passes; record the decision in the release record.
 
 Exit: no action wire contains command text; all emitted IDs resolve to handlers; audit suite green with re-pinned goldens; contract promoted.
 

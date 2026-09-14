@@ -152,4 +152,4 @@ DAG: `R → T1 → T2 → (T3 ∥ T4) → T5 → T6 → T7 → T8 → T9`. T3/T4
 
 - ADR: `docs/adr/python-core-authority.md` (consolidated, per #149).
 - Glossary: six terms appended to `docs/ARCHITECTURE.md` — Canonical Fact, Semantic Read Model, Action Contract, Bootstrap Adapter, Client Cache, Convergence Tick.
-- Ledger (`PROJECT-MANAGEMENT.md`) stays a projection; report/contract stay authoritative (truth hierarchy).
+- Historical project records stay projections; the report and contract remain authoritative.
