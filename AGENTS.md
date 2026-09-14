@@ -62,22 +62,14 @@ One logical change per commit. A logical change is: a bug fix, a feature, a refa
 
 ### 5. Post-session
 
-Update `PROJECT-MANAGEMENT.md` with a timeline entry, fix table row, and decision log entry. Archive stale `project/current/` files to `project/archive/`.
+Record user-visible behavior changes in the release notes and keep the public documentation aligned with the shipped command surface.
 
+---
 
 ## Agent skills
 
-### Issue tracker
+The packaged `paperforge/skills/` directory is the source of the PaperForge skill content. Deploy it into the user's vault with the documented `paperforge skill` command; repository-local agent workspaces are not part of the product source.
 
-GitHub Issues, with external PRs as a triage surface. See `docs/agents/issue-tracker.md`.
-
-### Triage labels
-
-Default five-label vocabulary (needs-triage, needs-info, ready-for-agent, ready-for-human, wontfix). See `docs/agents/triage-labels.md`.
-
-### Domain docs
-
-Multi-context — CONTEXT-MAP.md at root pointing to per-context CONTEXT.md files. See `docs/agents/domain.md`.
 ---
 
 ## Reference
@@ -85,7 +77,7 @@ Multi-context — CONTEXT-MAP.md at root pointing to per-context CONTEXT.md file
 | Topic | Location |
 |-------|----------|
 | Architecture | `docs/ARCHITECTURE.md` |
-| OCR spec index | `docs/archive/superpowers/specs/README-ocr.md` |
+| Getting started | `docs/getting-started.md` |
 | Command docs | `docs/COMMANDS.md` |
-| Project state | `project/current/ocr-v2-active-queue.md` |
-| Full history | `PROJECT-MANAGEMENT.md` |
+| User manual | `docs/user-manual.md` |
+| Migration guide | `docs/MIGRATION-v1.2.md` |

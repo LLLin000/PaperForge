@@ -137,7 +137,7 @@ collector output → survey → contract → deterministic audit → report → 
 ```
 
 - Contract promotion is a tracked commit (ArchitectureContract.lifecycle), never implied by issue close or ledger prose (repo truth hierarchy).
-- Report is collector-driven; ledger (`PROJECT-MANAGEMENT.md`) is a projection and never overrides it.
+- Report is collector-driven; historical project records are projections and never override it.
 - Exceptions carry `review_condition`.
 
 ## 7. UNRESOLVED semantics — never a pass

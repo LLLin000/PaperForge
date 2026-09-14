@@ -4,7 +4,7 @@
 > Revision 2 (2026-08-09): reader fail-closed gate; `unknown` lineage facet (never stale, never mass-rebuild); single `next_actions` channel (no second intents wire); materialization facets separated from action policy/runtime; three-layer model (global desired → global substrate → per-paper); minimal repair frontier + scope merging; triggers know scope only; not a retry engine; deletion/orphan is library-level; old recommendation producers retired to projections; digest-based lineage identity (counters are diagnostics only).
 > Status: **ACCEPTED — ARCHITECTURE FROZEN** (2026-08-09). Later problems are implementation defects or domain-seam issues unless an invariant is proven wrong.
 > Parent map: [#135](https://github.com/LLLin000/PaperForge/issues/135)
-> Related: [#145](https://github.com/LLLin000/PaperForge/issues/145) (action contract, frozen), [#158](https://github.com/LLLin000/PaperForge/issues/158) (sync trigger ownership), [generation-lineage design](docs/research/2026-08-07-generation-lineage-design.md)
+> Related: [#145](https://github.com/LLLin000/PaperForge/issues/145) (action contract, frozen), [#158](https://github.com/LLLin000/PaperForge/issues/158) (sync trigger ownership)
 > Ticket: [#159](https://github.com/LLLin000/PaperForge/issues/159) (closed)
 
 ## 0. Decision

@@ -52,6 +52,18 @@ audit/*/
 .git-rewrite/
 .tmp/
 local-*.md
+# Public repository: local/internal workspaces
+.agents/
+.omp/
+.open-design/
+.opencode/
+.planning/
+.scratch/
+acceptance/
+project/
+node_modules/
+%TEMP%*
+scripts/dev/*.json
 loss_*.md
 audit/tmp_pdf/
 audit/media_asset_samples/
