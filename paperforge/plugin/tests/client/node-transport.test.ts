@@ -118,7 +118,11 @@ describe("NodeProcessTransport", () => {
         vaultPath,
         spawnFn: mockSpawn as any,
       });
-      const execPromise = transport.execute(["failing", "command"]);
+      // Pin the interpreter: without it this test read the machine's real
+      // runtime pointer and only passed where one exists.
+      const execPromise = transport.execute(["failing", "command"], {
+        pythonExe: "C:/py/python.exe",
+      });
       await Promise.resolve(); // wait for resolvePython microtask
 
       mockChild.stderr.emit("data", "Error: command failed");
