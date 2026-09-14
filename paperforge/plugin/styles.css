@@ -4410,10 +4410,10 @@
 
 /* ── Summary Card ── */
 .pf-control-center .pf-cc-summary {
-  background: var(--background-primary);
+  background: var(--setting-items-background);
   border: 1px solid var(--background-modifier-border);
-  border-radius: var(--radius-m);
-  padding: 16px 20px;
+  border-radius: var(--setting-items-radius);
+  padding: var(--size-4-5);
   margin-bottom: 16px;
   display: flex;
   flex-direction: column;
@@ -4506,7 +4506,7 @@
 
 .pf-control-center .pf-cc-card-name {
   font-size: var(--font-ui-small);
-  font-weight: 600;
+  font-weight: var(--font-normal);
   color: var(--text-normal);
   line-height: 1.4;
   white-space: nowrap;
@@ -5182,13 +5182,6 @@
 .pf-config-summary {
   padding: 8px 0;
 }
-.pf-config-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--size-4-2) 0;
-  border-bottom: 1px solid var(--background-modifier-border);
-}
 .pf-config-row:last-child {
   border-bottom: none;
 }
@@ -5637,7 +5630,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-}
+  border-radius: var(--setting-items-radius);
+  background: var(--setting-items-background);}
 .pf-cc-card-title {
   font-size: var(--font-ui-medium);
   font-weight: var(--font-semibold);
@@ -5682,10 +5676,10 @@
   margin-top: 0;
 }
 .pf-module-summary {
-  padding: 16px;
+  padding: var(--size-4-5);
   border: 1px solid var(--background-modifier-border);
-  border-radius: var(--radius-m);
-  background: var(--background-primary);
+  border-radius: var(--setting-items-radius);
+  background: var(--setting-items-background);
   margin-bottom: var(--size-4-4);
 }
 .pf-module-summary .pf-action-btn {
@@ -6589,23 +6583,15 @@ input.pf-ocr-ws-search-input::placeholder {
 }
 
 /* ── Page heading ── */
-.pf-cc-heading {
-  color: var(--text-normal);
-  font-size: var(--font-ui-medium);
-  font-weight: var(--font-semibold);
-  letter-spacing: 0;
-  text-transform: none;
-  margin-bottom: var(--size-4-1);
-}
 /* ── Refresh row ── */
 .pf-cc-refresh-row {
   margin-bottom: var(--size-4-4);
 }
 
 .pf-cc-section-title {
-  font-size: var(--font-ui-small);
-  font-weight: var(--font-semibold);
-  color: var(--text-muted);
+  font-size: var(--setting-group-heading-size);
+  font-weight: var(--setting-group-heading-weight);
+  color: var(--setting-group-heading-color);
 }
 
 /* ── Lede ── */
@@ -6615,7 +6601,7 @@ input.pf-ocr-ws-search-input::placeholder {
   font-size: var(--font-ui-small);
   line-height: 1.55;
   margin-bottom: var(--size-4-6);
-}
+  padding: 0 var(--size-4-4);}
 
 /* ── Summary Card ── */
 .pf-cc-summary {
@@ -6704,7 +6690,7 @@ input.pf-ocr-ws-search-input::placeholder {
   justify-content: space-between;
   gap: var(--size-4-3);
   margin-bottom: var(--size-4-4);
-}
+  padding: 0 var(--size-4-4);}
 .pf-cc-section-head h2 {
   font-size: var(--font-ui-medium);
   font-weight: var(--font-semibold);
@@ -6732,7 +6718,7 @@ input.pf-ocr-ws-search-input::placeholder {
   align-items: flex-start !important;
   gap: 12px !important;
   width: 100% !important;
-  padding: 12px 0 !important;
+  padding: var(--size-4-3) var(--size-4-5);
   border: 0 !important;
   border-bottom: 1px solid var(--background-modifier-border) !important;
   background: transparent !important;
@@ -7002,9 +6988,9 @@ input.pf-ocr-ws-search-input::placeholder {
 
 /* ── Config rows ── */
 .pf-config {
-  background: var(--background-secondary);
+  background: var(--setting-items-background);
   border: 1px solid var(--background-modifier-border);
-  border-radius: var(--radius-m);
+  border-radius: var(--setting-items-radius);
   padding: var(--size-4-1) var(--size-4-4);
   margin: var(--size-4-4) 0;
 }
@@ -7023,8 +7009,7 @@ input.pf-ocr-ws-search-input::placeholder {
   flex-shrink: 0;
 }
 .pf-config-value {
-  font-size: var(--font-ui-smaller);
-  font-family: var(--font-monospace-theme);
+  font-size: var(--font-ui-small);
   color: var(--text-muted);
 }
 
