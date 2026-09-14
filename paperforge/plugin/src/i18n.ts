@@ -190,7 +190,7 @@ const LANG: Record<string, Record<string, string>> = {
     setup_done: "PaperForge environment is ready",
     setup_pending:
       "Not installed yet. Finish the preparation items below, then open the wizard.",
-    tab_overview: "Overview",
+    tab_overview: "Home",
     tab_modules: "Module Detail",
     tab_help: "Help",
     tab_setup: "Installation",
@@ -1123,7 +1123,7 @@ const LANG: Record<string, Record<string, string>> = {
     section_prep_desc: "首次使用前，请依次完成以下准备：",
     setup_done: "✓ PaperForge 环境已配置完成",
     setup_pending: "尚未安装，完成安装准备后点击安装向导",
-    tab_overview: "概览",
+    tab_overview: "主页",
     tab_modules: "模块详情",
     tab_help: "帮助",
     tab_features: "功能",
