@@ -688,6 +688,7 @@ const LANG: Record<string, Record<string, string>> = {
     cc_action_set_config: "Set Config",
     cc_action_update: "Update",
     action_ocr_run: "Run OCR",
+    cc_action_rebuild_index: "Rebuild index",
     action_ocr_rebuild_derived: "Rebuild OCR output",
     action_memory_build: "Build memory index",
     action_embed_build: "Build vector index",
@@ -695,6 +696,7 @@ const LANG: Record<string, Record<string, string>> = {
     action_foundation_update: "Update PaperForge",
     action_foundation_repair: "Repair runtime",
     cc_reason_installation_ready: "PaperForge environment is set up correctly.",
+    cc_reason_ocr_pending: "Ready — some papers still need OCR; run it whenever you want.",
     cc_reason_config_missing:
       "Configuration file is missing. Run setup to create one.",
     cc_reason_config_corrupt:
@@ -733,7 +735,7 @@ const LANG: Record<string, Record<string, string>> = {
     cc_reason_memory_db_corrupt:
       "The retrieval index is damaged — restore it from backup.",
     cc_reason_memory_index_stale:
-      "Smart Retrieval needs a rebuild to match the current library.",
+      "Ready — the index is behind the database; rebuild to refresh search.",
     cc_diag_module: "Module",
     cc_diag_state: "State",
     cc_diag_severity: "Severity",
@@ -1562,6 +1564,7 @@ const LANG: Record<string, Record<string, string>> = {
     cc_action_probe: "检测",
     cc_action_set_config: "配置设置",
     action_ocr_run: "运行 OCR",
+    cc_action_rebuild_index: "重建索引",
     action_ocr_rebuild_derived: "重建 OCR 结果",
     action_memory_build: "构建文本索引",
     action_embed_build: "构建向量索引",
@@ -1590,6 +1593,7 @@ const LANG: Record<string, Record<string, string>> = {
     setup_bbt_detect: "检测",
     setup_bbt_found: "已找到：",
     cc_reason_installation_ready: "PaperForge 环境已正确配置。",
+    cc_reason_ocr_pending: "已就绪 — 还有论文未处理 OCR，需要时运行即可。",
     cc_reason_config_missing: "配置文件缺失，请运行安装向导。",
     cc_reason_config_corrupt: "配置文件损坏，请运行安装向导修复。",
     cc_reason_python_version_unsupported:
@@ -1612,7 +1616,7 @@ const LANG: Record<string, Record<string, string>> = {
     cc_reason_memory_ready: "智能检索状态正常且已建立索引。",
     cc_reason_memory_db_missing: "尚未建立检索索引，请先构建以启用搜索。",
     cc_reason_memory_db_corrupt: "检索索引已损坏，请从备份恢复。",
-    cc_reason_memory_index_stale: "智能检索需要重建以匹配当前文献库。",
+    cc_reason_memory_index_stale: "已就绪 — 索引落后于数据库，重建后检索更新。",
     cc_diag_module: "模块",
     cc_diag_state: "状态",
     cc_reason_library_sync_failed: "上次文献库同步失败，请在数据源可用后重试。",

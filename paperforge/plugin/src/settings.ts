@@ -1316,6 +1316,18 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             )
           );
       body.createEl("p", { text: readyText, cls: "pf-status-ok" });
+      // Papers nobody has processed yet are outstanding WORK, not a fault:
+      // the module stays "ready" and the run action is an ordinary button.
+      if (env.reason?.code === "ocr.pending") {
+        body.createEl("p", {
+          text: this._getModuleConsequence("ocr", env),
+          cls: "pf-setup-status",
+        });
+        renderActionButton(body, {
+          label: env.action?.primary?.label || t("action_ocr_run") || "Run OCR",
+          onClick: () => this._dispatchOcrAction("run"),
+        });
+      }
       // Update banner (secondary notice when a newer pipeline is available)
       if (
         pipelineVersion &&
@@ -1521,6 +1533,15 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           },
         });
       }
+    } else if (env.reason?.code === "memory.index_stale" && !env.action?.primary) {
+      // Index behind the database: ready with an ordinary rebuild action.
+      // A backend-named primary action still wins (the state machine owns
+      // the wording) — this is only the ready-with-notice shape.
+      renderActionButton(body, {
+        label: t("cc_action_rebuild_index") || "Rebuild index",
+        onClick: () =>
+          this._dispatchMemoryBuild("build", undefined, "memory.rebuild"),
+      });
     } else if (
       env.action?.primary &&
       env.user_state !== "ready" &&
@@ -3327,9 +3348,15 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const state =
       env.user_state ??
       (env.capability_state === "ready" ? "ready" : "action_required");
-    const key = "cc_consequence_" + mod + "_" + state;
-    const translated = t(key);
-    if (translated && translated !== key) return translated;
+    // A ready module that carries a notice has something specific to say
+    // ("19 of 968 papers have no OCR output yet") — prefer it over the
+    // generic ready sentence.
+    const hasNotice = (env.notices ?? []).length > 0;
+    if (!(state === "ready" && hasNotice)) {
+      const key = "cc_consequence_" + mod + "_" + state;
+      const translated = t(key);
+      if (translated && translated !== key) return translated;
+    }
     const reason = this._localizeReason(
       env.reason?.code ?? "",
       this._getUserModuleName(mod)
