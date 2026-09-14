@@ -29,7 +29,7 @@
 
 ## 2. 对应的能力状态合同关系（#69）
 
-本原型严格按照 [2026-07-14-capability-state-action-contract.md](../research/2026-07-14-capability-state-action-contract.md) 定义的三维能力模型：
+本原型严格按照 [`docs/ARCHITECTURE.md`](../ARCHITECTURE.md) 定义的三维能力模型：
 
 ### 2.1 可用性轴 (Availability)
 

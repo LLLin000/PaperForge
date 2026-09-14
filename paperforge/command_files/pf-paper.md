@@ -128,5 +128,5 @@ python -m paperforge.worker.discussion record <KEY> \
 
 - [pf-end](pf-end.md) — 结束对话并保存记录
 - [pf-deep](pf-deep.md) — 完整三阶段精读
-- [AGENTS.md](../AGENTS.md) — 完整使用指南
-- [docs/COMMANDS.md](../docs/COMMANDS.md) — 命令总览
+- [AGENTS.md](../../AGENTS.md) — 完整使用指南
+- [docs/COMMANDS.md](../../docs/COMMANDS.md) — 命令总览
