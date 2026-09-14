@@ -59,6 +59,8 @@ export interface FsOps {
   readFileSync(p: string, encoding?: string | null): string;
   mkdirSync(p: string, opts?: { recursive?: boolean }): string | undefined;
   rmSync(p: string, opts?: { recursive?: boolean; force?: boolean }): void;
+  /** Optional: the real fs provides them; doubles may omit them. */
+  statSync?(p: string): { mtimeMs: number };
 }
 
 export type ExecFileCallback = (
@@ -90,6 +92,8 @@ const MIN_PYTHON = "3.11";
 const POINTER_SCHEMA_VERSION = 1;
 const POINTER_FILENAME = "pointer.json";
 const VENV_DIR_NAME = "venv";
+/** An install lock older than this is debris from a killed process. */
+const STALE_INSTALL_LOCK_MS = 15 * 60 * 1000;
 
 /**
  * Install attempts in flight, keyed by normalized runtime root.
@@ -235,6 +239,39 @@ export class RuntimeBootstrap {
 
   /** Canonical runtime root: ~/.paperforge/runtime. */
   public readonly rootDir: string;
+
+  /**
+   * Cross-process install lock (atomic mkdir).  Returns the release function.
+   * A lock older than STALE_INSTALL_LOCK_MS is treated as debris from a killed
+   * process and reclaimed.
+   */
+  private _acquireInstallLock(): () => void {
+    const lockDir = path.join(this.rootDir, "install.lock.d");
+    const held = () => {
+      const mtime = this._fs.statSync?.(lockDir)?.mtimeMs ?? 0;
+      const stale = mtime > 0 && Date.now() - mtime > STALE_INSTALL_LOCK_MS;
+      if (!stale) {
+        throw new Error(
+          "Another PaperForge runtime install is already running for this runtime directory"
+        );
+      }
+      this._fs.rmSync(lockDir, { recursive: true, force: true });
+    };
+    try {
+      this._fs.mkdirSync(this.rootDir, { recursive: true });
+      this._fs.mkdirSync(lockDir);
+    } catch {
+      held();
+      this._fs.mkdirSync(lockDir);
+    }
+    return () => {
+      try {
+        this._fs.rmSync(lockDir, { recursive: true, force: true });
+      } catch {
+        // best effort: a stale lock is reclaimed by the next install
+      }
+    };
+  }
 
   /** Child process of the step currently in flight (see _terminateActiveChild). */
   private _activeChild: TrackedChild | null = null;
@@ -427,8 +464,27 @@ export class RuntimeBootstrap {
         "Another PaperForge runtime install is already running for this runtime directory"
       );
     }
+    // In-memory guard first (fast, same renderer), then a CROSS-PROCESS lock:
+    // Obsidian's settings window and main window are separate renderers with
+    // separate plugin instances, and two pips writing one venv deadlock on
+    // Windows file locks — observed as two concurrent `pip install` children.
+    const releaseLock = this._acquireInstallLock();
     activeInstalls.add(installKey);
     try {
+      // The managed venv is OWNED by the installer, so every install starts
+      // from a clean directory.  pip trusts an existing dist-info, so a venv
+      // damaged by an interrupted run (module files gone, metadata intact)
+      // survived every reinstall: observed as `import chromadb` failing
+      // with "No module named 'dotenv'" on a runtime pip reported healthy.
+      try {
+        this._fs.rmSync(this.venvDir, { recursive: true, force: true });
+      } catch (cleanupErr) {
+        throw new Error(
+          `The previous runtime directory could not be removed (${
+            cleanupErr instanceof Error ? cleanupErr.message : String(cleanupErr)
+          }). Close any running PaperForge process and try again.`
+        );
+      }
       this._fs.mkdirSync(this.venvDir, { recursive: true });
       await this._exec(
         discovered.path,
@@ -474,6 +530,7 @@ export class RuntimeBootstrap {
     } finally {
       activeInstalls.delete(installKey);
       this._activeChild = null;
+      releaseLock();
     }
     return { pythonPath: pythonExe, observedVersion: expectedVersion };
   }
