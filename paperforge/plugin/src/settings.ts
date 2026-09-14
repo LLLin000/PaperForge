@@ -669,12 +669,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
 
     // ── Overview ──
-    /* The brand in the control-center topbar already names the plugin; a
-       second "PaperForge" heading here was pure duplication. */
-    containerEl.createEl("p", {
-      text: t("desc"),
-      cls: "paperforge-settings-desc",
-    });
+    /* No title block here: the settings nav and the control-center topbar
+       already name the plugin, and the page carries its own heading. */
 
     // Auto-probe stale/unknown modules BEFORE rendering so cards show "Checking..."
     for (const mod of CAPABILITY_MODULES) {
@@ -2394,12 +2390,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
   /** Render the Help tab — fetches Markdown from GitHub for live-editable docs. */
   _renderHelpTab(containerEl: HTMLElement): void {
-    containerEl.createEl("div", {
-      cls: "pf-cc-eyebrow",
-      text: t("help_eyebrow") || "help",
-    });
-    containerEl.createEl("h1", {
-      cls: "pf-cc-title",
+    containerEl.createEl("h2", {
+      cls: "pf-cc-heading",
       text: t("help_title") || "Help",
     });
     containerEl.createEl("p", {
@@ -3075,14 +3067,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const envelopes: Record<string, ProbeEnvelope> =
       this._capabilityState ?? {};
 
-    // ── Eyebrow + Title + Lede ──
-    cc.createEl("div", {
-      cls: "pf-cc-eyebrow",
-      text: t("cc_eyebrow") || "control center",
-    });
-    cc.createEl("h1", {
-      cls: "pf-cc-title",
-      text: t("cc_title") || "Your literature pipeline",
+    // ── Page heading + lede ──
+    // ONE heading per page, at the settings-heading scale (15px/600).  The
+    // page name used to be a grey 12px eyebrow under a second title, which
+    // left four overlapping text blocks before any content.
+    cc.createEl("h2", {
+      cls: "pf-cc-heading",
+      text: t("cc_heading") || "Control center",
     });
     cc.createEl("p", {
       cls: "pf-cc-lede",
@@ -3171,8 +3162,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     // ── Section Head ──
     const sectionHead = cc.createDiv({ cls: "pf-cc-section-head" });
     sectionHead.createEl("div", {
-      cls: "pf-cc-eyebrow",
-      text: t("cc_modules_header") || "modules",
+      cls: "pf-cc-section-title",
+      text: t("cc_modules_header") || "Modules",
     });
     sectionHead.createEl("span", {
       cls: "caption",
