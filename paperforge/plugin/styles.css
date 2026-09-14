@@ -6534,6 +6534,24 @@ input.pf-ocr-ws-search-input::placeholder {
   margin-bottom: var(--size-4-4) !important;
   flex-wrap: wrap !important;
 }
+.pf-cc-topbar-home {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--size-4-1);
+  min-height: 26px;
+  padding: 0 var(--size-4-2);
+  margin-right: var(--size-4-2);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  background: none;
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  cursor: pointer;
+}
+.pf-cc-topbar-home:hover {
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
+}
 .pf-cc-topbar-brand {
   display: flex;
   align-items: baseline;

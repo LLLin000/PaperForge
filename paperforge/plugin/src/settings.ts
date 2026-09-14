@@ -195,6 +195,23 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     };
   }
 
+  /** ONE way home from anywhere in the tab: clear the detail selection,
+   *  leave the setup journey for this session, and re-render the Control
+   *  Center.  Without this, leaving a deep wizard stage meant clicking
+   *  "back" once per stage (#87 UX). */
+  _goHome(): void {
+    this.activeTab = "overview";
+    this._selectedDetailModule = "";
+    this._detailReturn = null;
+    this._focusTargetId = null;
+    this._setupStage = 1;
+    this._setupOperation = "idle";
+    this._setupFeedback = null;
+    this._setupFailureDetail = null;
+    this._setupJourneyDismissedForSession = true;
+    this.display();
+  }
+
   display() {
     this._displayInProgress = true;
     const { containerEl } = this;
@@ -321,8 +338,19 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     // --- Topbar ---
     const topbar = containerEl.createDiv({ cls: "pf-cc-topbar" });
 
-    // Left: Brand + Version
+    // Top: Home — present whenever the user is NOT on the Control Center
+    // (module detail, help), so there is always ONE click back to the top.
+    const onOverview =
+      this.activeTab === "overview" && !this._selectedDetailModule;
     const brandLeft = topbar.createDiv({ cls: "pf-cc-topbar-left" });
+    if (!onOverview) {
+      const homeBtn = brandLeft.createEl("button", {
+        cls: "pf-cc-topbar-home",
+        text: "\u2190 " + (t("nav_home") || "Control center"),
+      });
+      homeBtn.setAttribute("aria-label", t("nav_home") || "Control center");
+      homeBtn.addEventListener("click", () => this._goHome());
+    }
     brandLeft.createEl("span", {
       cls: "pf-cc-topbar-brand",
       text: "PaperForge",
@@ -3606,18 +3634,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       });
     } else {
       renderActionButton(nav, {
-        label: t("setup_nav_later"),
-        onClick: () => {
-          this._setupOperation = "idle";
-          this._setupFeedback = null;
-          this._setupStage = 1;
-          this.activeTab = "overview";
-          // RC UX Seam P1: without this the display() gate
-          // (_setup_complete === false) would immediately re-render the
-          // journey and the user could never leave Stage 1.
-          this._setupJourneyDismissedForSession = true;
-          this.display();
-        },
+        label: t("setup_nav_exit"),
+        onClick: () => this._goHome(),
       });
     }
     renderActionButton(nav, {
@@ -3848,6 +3866,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
     // ── Navigation (at the very bottom) ──
 
+    renderActionButton(nav, {
+      label: t("setup_nav_exit"),
+      onClick: () => this._goHome(),
+    });
     renderActionButton(nav, {
       label: t("setup_nav_back"),
       onClick: () => {
@@ -4204,6 +4226,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
     const nav = containerEl.createDiv({ cls: "pf-setup-nav" });
     renderActionButton(nav, {
+      label: t("setup_nav_exit"),
+      onClick: () => this._goHome(),
+    });
+    renderActionButton(nav, {
       label: t("setup_nav_back"),
       onClick: () => {
         this._setupStage = 2;
@@ -4260,6 +4286,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           : t("setup_no_optionals"),
     });
     const nav = containerEl.createDiv({ cls: "pf-setup-nav" });
+    renderActionButton(nav, {
+      label: t("setup_nav_exit"),
+      onClick: () => this._goHome(),
+    });
     renderActionButton(nav, {
       label: t("setup_nav_back"),
       onClick: () => {
