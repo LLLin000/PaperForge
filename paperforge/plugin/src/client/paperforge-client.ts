@@ -522,7 +522,14 @@ export class PaperForgeClient {
 
   async probeAll(): Promise<ProbeAllEnvelope> {
     return this._cachedRead("probe:all", 60000, async () => {
-      const raw = await this._executeRaw(["probe", "all", "--json"]);
+      const raw = await this._executeRaw(
+        ["probe", "all", "--json"],
+        // `probe all` walks every module's lineage in one process.  Measured
+        // 145s on a 969-paper vault with a fresh venv (bytecode compilation
+        // dominates), so the old 120s default reported a false "检测失败"
+        // for every module — the module probe got this budget already.
+        { timeoutMs: 300000 }
+      );
       return JSON.parse(raw) as ProbeAllEnvelope;
     });
   }
