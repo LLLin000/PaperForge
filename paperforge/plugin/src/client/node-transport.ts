@@ -30,6 +30,7 @@ import { stripCredentialEnv } from "../services/secret-storage";
 import {
   RuntimeBootstrap,
   resolveRuntimeCommand,
+  runtimeInstallInProgress,
 } from "../services/managed-runtime";
 
 const KNOWN_EVENTS: ReadonlySet<string> = new Set([
@@ -324,6 +325,15 @@ export class NodeProcessTransport implements Transport {
    * it is not a dispatch target, and the frontend never falls back to an
    * ambient `python`.
    */
+  /** Refuse to spawn an interpreter whose runtime is being replaced. */
+  private _assertRuntimeNotInstalling(pythonPath: string): void {
+    if (runtimeInstallInProgress(pythonPath)) {
+      throw new Error(
+        "PaperForge is installing its runtime right now — this will work again in a moment"
+      );
+    }
+  }
+
   async resolvePython(): Promise<{ path: string; args: string[] }> {
     if (this._resolveRuntime) {
       const resolved = await this._resolveRuntime();
@@ -341,6 +351,7 @@ export class NodeProcessTransport implements Transport {
     const py = options?.pythonExe
       ? { path: options.pythonExe, args: [] }
       : await this.resolvePython();
+    this._assertRuntimeNotInstalling(py.path);
     const env = options?.env ?? paperforgeEnrichedEnv();
     const timeout = options?.timeoutMs ?? 120000;
 
@@ -459,6 +470,7 @@ export class NodeProcessTransport implements Transport {
         };
       }
 
+      this._assertRuntimeNotInstalling(py.path);
       longTaskHandle = runLongTask(py.path, py.args, this._vaultPath, argv, {
         graceMs: options?.graceMs,
         env: options?.env,

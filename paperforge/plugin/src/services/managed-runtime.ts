@@ -120,6 +120,27 @@ function runtimeKey(rootDir: string): string {
   return process.platform === "win32" ? resolved.toLowerCase() : resolved;
 }
 
+/**
+ * True while a runtime install holds the cross-process lock for the runtime
+ * `pythonPath` belongs to.
+ *
+ * Spawning that interpreter mid-install is a race Windows punishes: the UI
+ * keeps probing modules (each probe imports the vector stack — chromadb
+ * pulls kubernetes' thousands of files) while pip writes the same files, and
+ * pip dies with WinError 32 against a handler the probe still holds.
+ */
+export function runtimeInstallInProgress(pythonPath: string): boolean {
+  // …/runtime/venv/Scripts/python.exe → check the three enclosing levels.
+  let dir = path.dirname(path.resolve(pythonPath));
+  for (let level = 0; level < 3; level += 1) {
+    if (fs.existsSync(path.join(dir, "install.lock.d"))) return true;
+    const parent = path.dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return false;
+}
+
 /** Minimal surface of a spawned child we need to terminate. */
 interface TrackedChild {
   kill?: (signal?: string) => boolean;
@@ -733,9 +754,21 @@ export class RuntimeBootstrap {
         // repository root imports the source tree, not the runtime).
         cwd: os.tmpdir(),
       },
-      (err) => {
+      (err, _stdout, stderr) => {
         if (err) {
-          reject(new Error(`${label} failed: ${err.message}`));
+          // `Command failed: …` alone says nothing actionable — carry the
+          // tool's own last words (pip's ERROR line) into the message.
+          const detail = String(stderr ?? "")
+            .split(/\r?\n/)
+            .map((line) => line.trim())
+            .filter(Boolean)
+            .slice(-3)
+            .join(" | ");
+          reject(
+            new Error(
+              `${label} failed: ${err.message}${detail ? ` — ${detail}` : ""}`
+            )
+          );
         } else {
           resolve();
         }
