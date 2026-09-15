@@ -54,6 +54,25 @@ describe("NodeProcessTransport", () => {
     });
   });
 
+  describe("install in progress", () => {
+    it("refuses to spawn an interpreter whose runtime is being installed", async () => {
+      const os = await import("os");
+      const fs = await import("fs");
+      const path = await import("path");
+      const runtimeDir = fs.mkdtempSync(path.join(os.tmpdir(), "pf-install-"));
+      fs.mkdirSync(path.join(runtimeDir, "install.lock.d"));
+      const pythonExe = path.join(runtimeDir, "venv", "Scripts", "python.exe");
+      const transport = new NodeProcessTransport({
+        vaultPath,
+        spawnFn: vi.fn() as any,
+      });
+      await expect(
+        transport.execute(["probe", "ocr", "--json"], { pythonExe })
+      ).rejects.toThrow(/installing its runtime/);
+      fs.rmSync(runtimeDir, { recursive: true, force: true });
+    });
+  });
+
   describe("execute", () => {
     it("spawns python with vault path and executes subcommand", async () => {
       const mockChild = new MockChildProcess();
