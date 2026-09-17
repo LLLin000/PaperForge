@@ -3646,6 +3646,20 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           onClick: () => this._installFoundation(false),
         });
       }
+      // #HW-UX P0-3: on failure, always offer a retry button.
+      if (this._setupOperation === "failed") {
+        renderActionButton(containerEl, {
+          label: t("setup_retry_btn") || "Retry",
+          onClick: () => {
+            this._setupOperation = "idle";
+            this._setupFeedback = null;
+            this._installFoundation(
+              this._setupReinstallRequested ||
+                env.reason.code === "installation.version_mismatch"
+            );
+          },
+        });
+      }
     }
     const nav = containerEl.createDiv({ cls: "pf-setup-nav" });
     // RC UX Seam: Stage 1 must never trap the user.

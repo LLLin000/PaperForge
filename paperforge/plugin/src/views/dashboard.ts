@@ -655,6 +655,13 @@ export class PaperForgeStatusView extends ItemView {
       if (item.ocr_status === "done") ocrDone++;
       if (item.deep_reading_status === "done") deepReadDone++;
     }
+    // PaperForge backend not reachable → show one-click setup guidance
+    // instead of a silent broken dashboard (#HW-UX: P0-1).
+    const client = this._getClient();
+    if (!client) {
+      this._renderBackendMissingCard(view);
+    }
+
     const snapshot = view.createEl("div", {
       cls: "paperforge-library-snapshot",
     });
@@ -861,6 +868,47 @@ export class PaperForgeStatusView extends ItemView {
     globalOcrBtn.addEventListener("click", () => {
       const action = ACTIONS.find((a) => a.id === "paperforge-ocr");
       if (action) this._runAction(action, globalOcrBtn);
+    });
+  }
+
+  /** #HW-UX P0-1: explicit backend-missing guidance on the homepage.
+   * The old behavior was a silent "Cannot reach PaperForge CLI" message with
+   * no path forward; now we surface a one-click Setup entry. */
+  private _renderBackendMissingCard(view: HTMLElement): void {
+    const card = view.createEl("div", { cls: "paperforge-setup-cta" });
+    card.createEl("div", {
+      cls: "paperforge-setup-cta-title",
+      text: t("backend_missing_title") || "PaperForge engine not installed",
+    });
+    card.createEl("div", {
+      cls: "paperforge-setup-cta-body",
+      text:
+        t("backend_missing_body") ||
+        "The Python backend is required. Complete the setup wizard to install it.",
+    });
+    const btn = card.createEl("button", {
+      cls: "paperforge-contextual-btn primary",
+      text: t("backend_missing_btn") || "Open Setup",
+    });
+    btn.addEventListener("click", () => {
+      const plugin = (
+        this.app as unknown as {
+          plugins?: { plugins?: Record<string, unknown> };
+        }
+      ).plugins?.plugins?.["paperforge"] as
+        | {
+            getSettingTab?: () => {
+              _startSetupJourney: (stage: number) => void;
+            };
+          }
+        | undefined;
+      const tab = plugin?.getSettingTab?.();
+      if (tab) {
+        (
+          this.app as unknown as { setting: { open: () => void } }
+        ).setting.open();
+        tab._startSetupJourney(1);
+      }
     });
   }
 
