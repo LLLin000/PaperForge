@@ -1,10 +1,58 @@
 # OCR-v2 Active Queue
 
-> **Current priority (2026-09-13): Plugin major-release acceptance — ACTIVE.** Tracker live: PRD **#192**, work packages **#193–#216**, source-risk bugs **#217** and **#218**. W00 freezes candidate **2.0.0** for acceptance but not release, with Release-N **1.5.15** and owner-gated quality/performance/provider values. W01/#194 and W02/#195 are CLOSED; W03/#196 and #217 are VERIFIED on `bca64a9b` + `a2272995` with local plugin **465/465**, focused H E2E **1/1**, typecheck/build clean, and hosted CI `34734730151` **15/15**. `e9382293` corrected the memory action E2E contract/setup defect; the full real-browser spec is now **15/15** on executable commit `b45729d6`, with hosted CI `34739707648` **15/15** and Pages `34739707658` **2/2**. Focused baselines: W04 plugin **78/78** + Python **58/58**; W05 plugin **21/21** + Python sync **25/25** + changed-export browser **1/1** + timed autosync browser **1/1**; W19 CI contract **10/10**. W04/W05/W19 package acceptance remains unclaimed; W12 and later candidate gates remain blocked. No release/tag/package publication.
+> **Current priority (2026-09-15): Plugin major-release acceptance — ACTIVE, rc.5 prerelease validated, final release blocked.** Frozen identities: `candidate_evidence_sha=56407222f2782c616518f55a3e0d3fe33d200aeb` (candidate acceptance tests), `release_source_sha=76c179451f6ca6d6dfa863a1ad8f00cf3aa7ce27` (2.0.0 product code/artifact source), and `metadata_head=8d04f02a63549c5837ce00420b306d350cb1b525` (public metadata state). W22 `RELEASE_READY` is **NO-GO**; rc.5 is a bounded installer/Obsidian validation artifact, not final `2.0.0` authorization. Complete the owner support contract and W18–W21 before W23 final publication.
 > **Architecture gate / Block B + Review v2 final closure (2026-09-11):** #229 delivered in `b89e745f`; #222 orphan-prune wire coverage verified in `421867d9`, #223 probe action classification verified in `2215a4bf`, and #231 live architecture generator + golden-pin checks delivered in `48cb888f` with follow-up `b04bff5a`. Review v2 final closure `6f15160f` binds `emit` to a saved deterministic plan, re-derives its normalized selector against the digest-bound Contract/Survey, rejects tampered scope and gate packets, and removes independent emit-time narrowing. Focused process tests are **54/54** and the deterministic benchmark is **11/11** executable fixtures. Hosted run `34617059623` passes all 15 CI jobs, including L1b, all three J-Matrix jobs, L4b, E2E, plugin, Ruff, and aggregate checks. Empirical v1/v2 A/B remains deferred/not-run; owner release gates remain authoritative.
 > **Effort assessment:** §15 of the plan, [INFERENCE] 60–100 new real-host scenarios, 110–180 new/extended I·U tests, 15–40 product fixes, 57–75 issues (±40%).
-> **Planning baseline:** `d1244f96ef6e0f8c61c1bdf3510e0c771f1c479e`. W01/W02 package evidence is closed, W03/#217 H-layer evidence is verified on committed harness `a2272995`, and dependency edges for W04/#197, W05/#198, and W19/#212 are cleared. Focused baselines now exist for W04/W05/W19, but their explicit H journeys and W19 publish/installer simulations are still open. W12 remains blocked by W06/#199 and W11/#204; Ticket 07 remains CLOSED / SEALED; Reconcile Core remains frozen. Production/provider work and publication require their respective explicit owner gates.
-> **Last updated:** 2026-09-13. Architecture deterministic substrate and Review v2 implementation, including plan-to-emit scope binding, are closed and hosted-CI verified; the active lane is plugin release acceptance. W04/W05/W19 have focused baseline evidence but are not package-accepted, and no release/tag/package publication is authorized until the owner-controlled gates pass.
+> **Release acceptance checkpoint (2026-09-15):** W04 A06 remains bounded positive and mismatch-preservation evidence using Release-N `1.5.15`, remote `master` version `2.0.0`, the candidate wheel, fresh-child verification, and runtime-pointer publication rules. In addition, rc.5 GitHub/PyPI publication, clean-vEnv install, real Obsidian retry, pointer republication, and final five-module control-center state are verified on Windows 11 / Obsidian 1.13.7. W18 resilience/performance, W19 supported environment/installer, W20 live provider/quality, and W21 final artifact/rollback/docs evidence remain open.
+> **Last updated:** 2026-09-16. Architecture deterministic substrate and Review v2 remain hosted-CI verified. The current lane is owner-gated final release acceptance; rc.5 prerelease validation is complete, but the lean vector extra split is a new product change requiring candidate rebinding after commit. No `RELEASE_READY` or final `2.0.0` publication decision has occurred.
+## 2026-09-14 Candidate certification checkpoint
+| Item | Status |
+|---|---|
+| Slim cleanup PR #234 | Merged to `master` at `9f770d130b27a8c699a4fec06310485facd2d965`; architecture authority files retained without generated projections. |
+| Sanitized public candidate | `candidate_evidence_sha=56407222f2782c616518f55a3e0d3fe33d200aeb`; internal planning/agent paths absent; product release source `76c179451f6ca6d6dfa863a1ad8f00cf3aa7ce27`; branch `release/2.0.0-public-candidate`. |
+| Hosted certification | Candidate CI `34805876718` 15/15; product-source master CI `34806652889` 15/15; Pages `34806652917` 2/2; public manifest PR #236 CI `34808724645` 15/15; post-merge Pages `34809127248` 2/2. |
+| A06 remote lifecycle | Bounded disposable Release-N `1.5.15` positive switch and fresh-child `2.0.0` verification passed; forced mismatch preserved the old pointer; this is not public artifact acquisition. |
+| Release gate | `RELEASE_READY=NO-GO`; freeze the owner support contract first, then complete W18–W21 and owner acceptance; public PyPI/GitHub distribution and actual-download smoke are W23; no publication performed. |
+| Owner support contract | BLOCKED — owner must decide supported OS/arch/Python/Obsidian/installer/providers/Release-N/upgrade/rollback/performance/quality/spend/privacy before W18–W21 can certify a scope. |
+| W18 resilience/performance | OPEN — budget, soak, fault/竞态, and first-failure evidence not frozen/accepted. |
+| W19 supported environment / installer | OPEN — hosted CI is green, but supported installer/Obsidian lifecycle and cross-platform evidence remain incomplete. |
+| W20 live provider / quality | OPEN — owner-approved live OCR/embedding samples, keyring, quality, privacy, and spend evidence remain incomplete. |
+| W21 release artifact / rollback / docs | OPEN — candidate clean install/upgrade/rollback, artifact consistency, migration/support docs, and publish-failure recovery remain incomplete. |
+
+
+## 2026-09-15 RC.5 prerelease checkpoint
+| Item | Status |
+|---|---|
+| Release commit | Master bump `8a1a45a1`; probeAll fix PR #242 merged at `22cacc21`. |
+| Hosted gates | CI `34933570855` **15/15**; Pages `34933570902` **2/2**; Publish `34934126941` **success**. |
+| Public prerelease | GitHub `2.0.0-rc.5` prerelease plus PyPI `2.0.0rc5` wheel/sdist verified. |
+| Real install | Initial UI attempt failed; exact clean-vEnv spec installed in **208s**; UI retry completed and pointer is `2.0.0rc5`. |
+| Real Obsidian state | Windows 11 / Obsidian 1.13.7: all five modules `已就绪`, OCR/memory expected notices, `0 项需要关注`; cold `probe all` measured **145s**. |
+| Final gate | `RELEASE_READY=NO-GO`; final `2.0.0` publication remains blocked on owner support scope and W18–W21. |
+
+## 2026-09-16 Lean vector dependency checkpoint
+| Item | Status |
+|---|---|
+| Core install | `[vector]` now contains only `openai`, `socksio`, and `sqlite-vec`; ChromaDB is no longer installed for normal users. |
+| Legacy migration | ChromaDB is isolated under `[legacy-vector]`; old-store migration reports the combined `[vector,legacy-vector]` install when the optional dependency is absent. |
+| Verification | Focused Python **26 passed / 1 warning**; final wheel metadata verified; clean lean vEnv **38 distributions / 7,217 files**, `pip check` clean, no `chromadb`; combined legacy-extra import passed. |
+| Release impact | Product change in the candidate worktree; candidate rebinding is required after commit. `RELEASE_READY=NO-GO`; W18–W21 and owner support acceptance remain open. |
+
+
+## 2026-09-16 Frontend interaction blocker audit (UX review)
+| Phase | Blocker | Severity | Root cause |
+|---|---|---|---|
+| Install | Python missing → Dashboard inert, no path to Settings wizard | P0 | `resolvePython()` null → all ops silent; error text generic |
+| Install | Setup Journey `failed` state has no retry button | P0 | `_installFoundation` catch sets `_setupOperation="failed"`, no re-dispatch |
+| Install | Flatpak/Snap/macOS auto-download disabled → cryptic message | P0 | `platformGate()` returns three codes, UI only shows one generic string |
+| Daily | Global-mode search input does nothing | P1 | `executeSearch()` only wired in collection/paper mode |
+| Daily | "Open Literature Hub" fails with `[!!]` if `.base` missing | P1 | no fallback / no Settings guidance |
+| Daily | Version restore has no loading state | P1 | `versionsRestore()` awaited with no progress UI |
+| Daily | Auto-sync vs OCR OperationLock not mutually exclusive | P1 | separate guards; Python process contention possible |
+| Edge | Release-notes modal force-blocks first open | P2 | `_checkReleaseNotes()` unconditional |
+| Edge | OCR Workspace view does not auto-refresh on reveal | P2 | `open()` uses `revealLeaf`, no reload |
+| Edge | Version compare reads symlink/cross-volume path → hard fail | P2 | `fs.readFileSync` on Python-returned `source_path` |
+| Decision pending | User wants a smooth install UX design for non-technical users — see discussion below; not yet scoped into an issue. |
 
 ## Historical checkpoints (not current candidate certification)
 
