@@ -16,7 +16,6 @@ and the pointer is published only after this step passes.
 
 from __future__ import annotations
 
-import importlib.util
 import subprocess
 import sys
 
@@ -28,35 +27,47 @@ from paperforge.setup import SetupStepResult
 # (#119: a bare install looks healthy but crashes on the first Build Index
 # click).
 VECTOR_CAPABILITY_IMPORTS = ("openai", "chromadb", "sqlite_vec")
+VECTOR_RUNTIME_PROBE = (
+    "import paperforge, openai, chromadb, sqlite_vec;"
+    "from paperforge.embedding.providers.openai_compatible import OpenAICompatibleProvider;"
+    " print(paperforge.__version__)"
+)
 
 
 def vector_extras_present() -> bool:
-    """True when every vector extra capability is importable in the CURRENT
-    interpreter."""
+    """True only when every vector capability actually imports.
+
+    ``find_spec`` verifies that a module name is discoverable, not that the
+    installed package is internally complete. Importing catches interrupted
+    upgrades and missing files before the pointer is published.
+    """
     for module in VECTOR_CAPABILITY_IMPORTS:
-        if importlib.util.find_spec(module) is None:
+        try:
+            __import__(module)
+        except Exception:
             return False
     return True
 
 
-def _fresh_child_verify() -> tuple[bool, str]:
-    """Fresh interpreter verification: imports + observed version.  Never
-    trusts the running process's module cache."""
-    probe = (
-        "import paperforge, openai, chromadb, sqlite_vec;"
-        " print(paperforge.__version__)"
-    )
+def verify_runtime_in_child(python_path: str | None = None) -> tuple[bool, str]:
+    """Verify the complete vector runtime in a fresh interpreter."""
+    executable = python_path or sys.executable
     try:
-        r = subprocess.run(
-            [sys.executable, "-I", "-c", probe],
+        result = subprocess.run(
+            [str(executable), "-I", "-c", VECTOR_RUNTIME_PROBE],
             capture_output=True,
             text=True,
             timeout=60,
         )
-        version = r.stdout.strip()
-        return r.returncode == 0 and bool(version), version
+        version = result.stdout.strip()
+        return result.returncode == 0 and bool(version), version
     except Exception:
         return False, ""
+
+
+def _fresh_child_verify() -> tuple[bool, str]:
+    """Fresh interpreter verification for the current runtime."""
+    return verify_runtime_in_child()
 
 
 def ensure_runtime_dependencies() -> SetupStepResult:

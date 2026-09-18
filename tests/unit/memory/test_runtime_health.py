@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from paperforge.memory.runtime_health import (
     _check_bootstrap,
+    _check_vector,
     _check_write,
     get_runtime_health,
 )
-
 from tests.conftest import canonical_test_config
 
 
@@ -101,3 +101,51 @@ def test_runtime_identity_identifies_the_serving_artifact(tmp_path):
     assert runtime["package_version"] == paperforge.__version__
     assert runtime["interpreter"] == sys.executable
     assert runtime["python_version"]
+
+
+def test_vector_health_degrades_when_dependency_import_fails(tmp_path, monkeypatch):
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    canonical_test_config(vault)
+    settings_path = vault / ".obsidian" / "plugins" / "paperforge"
+    settings_path.mkdir(parents=True)
+    (settings_path / "data.json").write_text(
+        '{"features": {"vector_db": true}}',
+        encoding="utf-8",
+    )
+
+    import builtins
+
+    real_import = builtins.__import__
+
+    def broken_import(name, *args, **kwargs):
+        if name == "openai":
+            raise ModuleNotFoundError("missing openai response tool")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", broken_import)
+    result = _check_vector(vault)
+
+    assert result["status"] == "degraded"
+    assert "Vector runtime unavailable" in result["evidence"][0]
+    assert result["repair_command"] == "paperforge repair --runtime --json"
+
+
+def test_runtime_health_command_returns_json_on_unexpected_failure(tmp_path, monkeypatch, capsys):
+    import json
+    from argparse import Namespace
+
+    from paperforge.commands import runtime_health as command
+
+    monkeypatch.setattr(
+        command,
+        "get_runtime_health",
+        lambda _vault: (_ for _ in ()).throw(RuntimeError("diagnostic failure")),
+    )
+    rc = command.run(Namespace(vault_path=tmp_path, json=True))
+    payload = json.loads(capsys.readouterr().out)
+
+    assert rc == 1
+    assert payload["ok"] is False
+    assert payload["error"]["code"] == "INTERNAL_ERROR"
+    assert "diagnostic failure" in payload["error"]["message"]
