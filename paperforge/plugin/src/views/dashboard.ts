@@ -2183,6 +2183,7 @@ export class PaperForgeStatusView extends ItemView {
     } catch (err: any) {
       new Notice("[!!] Version list failed: " + (err?.message || err), 6000);
       this._versionPapers = [];
+      this._backendUnavailable = true;
     }
     this._versionFilter = "";
     this._currentMode = "versions";
@@ -2192,6 +2193,7 @@ export class PaperForgeStatusView extends ItemView {
     this._contentEl.empty();
     this._contentEl.removeClass("switching");
     this._renderModeHeader("versions");
+    this._renderBackendBanner();
     this._renderVersionMode();
   }
 

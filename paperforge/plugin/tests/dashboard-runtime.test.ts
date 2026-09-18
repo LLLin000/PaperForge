@@ -464,6 +464,37 @@ describe("PaperForgeStatusView.onOpen production lifecycle (Step 5 wiring correc
     await view.onClose();
   });
 
+  it("RECOVERY: versions mode still surfaces Setup guidance when the backend is unavailable", async () => {
+    const dashboardStats = vi.fn(async () => ({
+      stats: { papers: 0 },
+      permissions: { can_sync: false },
+      items: [],
+    }));
+    const versionsList = vi.fn(async () => {
+      throw new Error("backend down");
+    });
+    const view = makeLifecycleView(
+      {
+        dashboardStats,
+        backendVersion: vi.fn(async () => "1.5.15"),
+        credentialAvailable: vi.fn(async () => false),
+        resolvePaperContext: vi.fn(),
+        versionsList,
+      },
+      null
+    );
+
+    await view.onOpen();
+    await vi.waitFor(() => expect(dashboardStats).toHaveBeenCalledOnce());
+    // Trigger the direct versions-mode entry point (not routed through
+    // _switchMode / _refreshCurrentMode).
+    await view._switchToVersionMode("K1");
+
+    expect(view._currentMode).toBe("versions");
+    expect(view.containerEl.textContent).toContain("Open Setup");
+    await view.onClose();
+  });
+
   it("RECOVERY: Doctor success re-acquires the read model and re-renders the current mode from the fresh payload", async () => {
     let loaded = false;
     const dashboardStats = vi.fn(async () => {
