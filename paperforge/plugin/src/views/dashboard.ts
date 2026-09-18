@@ -263,8 +263,8 @@ export class PaperForgeStatusView extends ItemView {
         this._showMessage("", "idle");
       }
     } catch {
+      this._backendUnavailable = true;
       if (!this._cachedStats) {
-        this._backendUnavailable = true;
         if (!quiet) {
           this._showMessage(
             "Cannot reach PaperForge CLI.\nMake sure paperforge is installed and in your PATH.",
@@ -278,6 +278,7 @@ export class PaperForgeStatusView extends ItemView {
           this._currentMode = "global";
           this._currentFilePath = null;
           this._renderModeHeader("global");
+          this._renderBackendBanner();
           this._renderGlobalMode();
         } else if (this._currentMode === "global") {
           await this._refreshCurrentMode();
@@ -639,6 +640,7 @@ export class PaperForgeStatusView extends ItemView {
     this._contentEl.empty();
     this._contentEl.removeClass("switching");
     this._renderModeHeader(mode);
+    this._renderBackendBanner();
     switch (mode) {
       case "global":
         this._renderGlobalMode();
@@ -671,12 +673,8 @@ export class PaperForgeStatusView extends ItemView {
       if (item.ocr_status === "done") ocrDone++;
       if (item.deep_reading_status === "done") deepReadDone++;
     }
-    // Render recovery guidance for the observed cold-load failure, not only
-    // for an absent client. A client object still exists when its runtime
-    // process cannot start.
-    if (this._backendUnavailable || !this._getClient()) {
-      this._renderBackendMissingCard(view);
-    }
+    // Recovery guidance is rendered by the mode shell (#244), so it is
+    // visible in every mode — not only here.
 
     const snapshot = view.createEl("div", {
       cls: "paperforge-library-snapshot",
@@ -924,6 +922,17 @@ export class PaperForgeStatusView extends ItemView {
         tab._startSetupJourney(1);
       }
     });
+  }
+
+  /** #244: recovery guidance belongs to the Dashboard shell, not one mode.
+   * A refresh can fail while paper/collection mode still renders a
+   * stale-but-useful read model; the one-click Setup entry must appear there
+   * too. */
+  private _renderBackendBanner(): void {
+    if (!this._contentEl) return;
+    if (this._backendUnavailable || !this._getClient()) {
+      this._renderBackendMissingCard(this._contentEl);
+    }
   }
 
   /* ── System Status Row helper ── */
@@ -2138,6 +2147,7 @@ export class PaperForgeStatusView extends ItemView {
       ? this._findEntry(this._currentPaperKey)
       : null;
     this._renderModeHeader(this._currentMode);
+    this._renderBackendBanner();
     try {
       switch (this._currentMode) {
         case "global":
