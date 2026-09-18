@@ -42,9 +42,7 @@ def perform_runtime_repair(*, ndjson: bool = False) -> dict[str, object]:
             from paperforge.core.ndjson import emit_terminal
             from paperforge.core.result import PFError, PFResult
 
-            event = "cancelled" if result.get("cancelled") else (
-                "result" if result["ok"] else "error"
-            )
+            event = "cancelled" if result.get("cancelled") else ("result" if result["ok"] else "error")
             pf = PFResult(
                 ok=result["ok"],
                 command="repair",
@@ -67,29 +65,37 @@ def perform_runtime_repair(*, ndjson: bool = False) -> dict[str, object]:
         return _finish({"ok": False, "cancelled": True})
 
     from paperforge.runtime_pointer import read_pointer
-    from paperforge.setup.runtime import ensure_runtime_dependencies, vector_extras_present
+    from paperforge.setup.runtime import ensure_runtime_dependencies, verify_runtime_in_child
 
     ptr = read_pointer()
     if ptr is None:
         # No published pointer: nothing to repair at runtime level — the
-        # bootstrap must run (install + setup).  Report clearly.
-        return _finish({
-            "ok": False,
-            "pointer": None,
-            "error": "no runtime pointer published — run bootstrap install + paperforge setup",
-        })
+        # bootstrap must run (install + setup). Report clearly.
+        return _finish(
+            {
+                "ok": False,
+                "pointer": None,
+                "error": "no runtime pointer published — run bootstrap install + paperforge setup",
+            }
+        )
 
     if _phase("deps") or _is_stopped():
         return _finish({"ok": False, "cancelled": True})
 
-    if not vector_extras_present():
-        deps = ensure_runtime_dependencies()
+    verified, observed = verify_runtime_in_child(ptr["python_path"])
+    if not verified:
+        deps = ensure_runtime_dependencies(
+            python_path=ptr["python_path"],
+            expected_version=ptr["paperforge_version"],
+        )
         if not deps.ok:
-            return _finish({
-                "ok": False,
-                "pointer": ptr["paperforge_version"],
-                "error": f"dependency re-ensure failed: {deps.message}",
-            })
+            return _finish(
+                {
+                    "ok": False,
+                    "pointer": ptr["paperforge_version"],
+                    "error": f"dependency re-ensure failed: {deps.message}",
+                }
+            )
 
     if _phase("verify") or _is_stopped():
         return _finish({"ok": False, "cancelled": True})
@@ -97,39 +103,23 @@ def perform_runtime_repair(*, ndjson: bool = False) -> dict[str, object]:
     # Fresh-child verification of the POINTED interpreter before any
     # success: the pointer may be stale/broken even when the current
     # interpreter has extras — never republish an unusable pointer.
-    import subprocess
-    import sys
-
-    probe = (
-        "import paperforge, openai, chromadb, sqlite_vec;"
-        " print(paperforge.__version__)"
-    )
-    try:
-        check = subprocess.run(
-            [ptr["python_path"], "-I", "-c", probe],
-            capture_output=True,
-            text=True,
-            timeout=60,
+    verified, observed = verify_runtime_in_child(ptr["python_path"])
+    if not verified:
+        return _finish(
+            {
+                "ok": False,
+                "pointer": ptr["paperforge_version"],
+                "error": "pointed interpreter cannot import the runtime stack",
+            }
         )
-        observed = check.stdout.strip()
-    except Exception as exc:  # noqa: BLE001 — structured error boundary
-        return _finish({
-            "ok": False,
-            "pointer": ptr["paperforge_version"],
-            "error": f"pointed interpreter failed probe: {exc}",
-        })
-    if check.returncode != 0 or not observed:
-        return _finish({
-            "ok": False,
-            "pointer": ptr["paperforge_version"],
-            "error": "pointed interpreter cannot import the runtime stack",
-        })
     if observed != ptr["paperforge_version"]:
-        return _finish({
-            "ok": False,
-            "pointer": ptr["paperforge_version"],
-            "error": f"pointed interpreter version {observed!r} != pointer {ptr['paperforge_version']!r}",
-        })
+        return _finish(
+            {
+                "ok": False,
+                "pointer": ptr["paperforge_version"],
+                "error": f"pointed interpreter version {observed!r} != pointer {ptr['paperforge_version']!r}",
+            }
+        )
 
     from paperforge.runtime_pointer import publish_pointer
 
@@ -138,8 +128,10 @@ def perform_runtime_repair(*, ndjson: bool = False) -> dict[str, object]:
         environment_root=ptr["environment_root"],
         paperforge_version=observed,
     )
-    return _finish({
-        "ok": True,
-        "pointer": observed,
-        "repaired": True,
-    })
+    return _finish(
+        {
+            "ok": True,
+            "pointer": observed,
+            "repaired": True,
+        }
+    )

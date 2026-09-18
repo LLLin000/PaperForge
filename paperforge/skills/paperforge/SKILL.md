@@ -39,13 +39,18 @@ python $SKILL_DIR/scripts/pf_bootstrap.py --vault "$VAULT"
 | `$VAULT`      | `vault_root`            | 所有 `--vault` 参数            |
 | `$PYTHON`     | `python_candidate`      | 所有 `python -m paperforge` 调用 |
 | `$LIT_DIR`    | `paths.literature_dir`  | 文献笔记根目录                 |
-| `$SKILL_DIR`  | 平台注入                | 脚本路径                       |
+| `$SKILL_DIR`  | `skill_dir`             | 当前执行的 skill 脚本目录       |
 | `$METHODS`    | `methodology_index`     | 可用方法论索引                 |
+
+bootstrap 使用 Python-owned runtime pointer 作为已安装环境的唯一事实源：
+
+- `runtime_pointer.status == "valid"`：`python_candidate` 必须来自 pointer；
+- pointer 存在但无效或验证失败：报告 `python_error`，停止，禁止切换到 vault `.venv` 或全局 Python；
+- 没有 pointer：bootstrap 只允许验证显式 `python_path`、vault-local venv 或已能导入 PaperForge 的 ambient Python。
 
 如果 `ok: false`，报告 `error` 给用户，**停止。禁止自己拼路径。**
 
-如果 `python_verified` 为 `false` 或 `python_candidate` 为 `null`：
-依次尝试 `python` 再 `python3`。全部失败则停止，提示用户在 `paperforge.json` 中设置 `python_path`。
+如果 `python_verified` 为 `false` 或 `python_candidate` 为 `null`，报告 `python_error` 并停止。禁止再次尝试未验证的 `python` / `python3`。
 
 bootstrap 现在也返回一个 `capabilities` 块（rg, semantic, metadata 等）。
 

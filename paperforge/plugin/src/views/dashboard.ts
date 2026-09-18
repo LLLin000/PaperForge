@@ -78,6 +78,7 @@ export class PaperForgeStatusView extends ItemView {
   _leafChangeTimer: ReturnType<typeof setTimeout> | null = null;
   _ocrPrivacyShown = false;
   _cachedStats: any = null;
+  _backendUnavailable = false;
   _techDetailsExpanded = false;
   _paperforgeVersion = "";
   _dashboardPermissions: Record<string, boolean> = {};
@@ -251,6 +252,7 @@ export class PaperForgeStatusView extends ItemView {
       this._cachedStats = this._normalizeDashboardData(data);
       this._cachedItems = Array.isArray(data.items) ? data.items : [];
       this._dashboardPermissions = data.permissions ?? {};
+      this._backendUnavailable = false;
       // A recovered acquisition must not leave the old backend-failure
       // message hanging in the message bar.
       if (
@@ -260,12 +262,26 @@ export class PaperForgeStatusView extends ItemView {
       ) {
         this._showMessage("", "idle");
       }
-    } catch (_err) {
-      if (!quiet && !this._cachedStats) {
-        this._showMessage(
-          "Cannot reach PaperForge CLI.\nMake sure paperforge is installed and in your PATH.",
-          "error"
-        );
+    } catch {
+      if (!this._cachedStats) {
+        this._backendUnavailable = true;
+        if (!quiet) {
+          this._showMessage(
+            "Cannot reach PaperForge CLI.\nMake sure paperforge is installed and in your PATH.",
+            "error"
+          );
+        }
+        // onOpen starts acquisition before context detection. Render the
+        // fail-closed global fallback now; _detectAndSwitch() will replace it
+        // if an active paper or collection is later resolved.
+        if (!this._currentMode && this._contentEl) {
+          this._currentMode = "global";
+          this._currentFilePath = null;
+          this._renderModeHeader("global");
+          this._renderGlobalMode();
+        } else if (this._currentMode === "global") {
+          await this._refreshCurrentMode();
+        }
       }
     }
   }
@@ -655,6 +671,13 @@ export class PaperForgeStatusView extends ItemView {
       if (item.ocr_status === "done") ocrDone++;
       if (item.deep_reading_status === "done") deepReadDone++;
     }
+    // Render recovery guidance for the observed cold-load failure, not only
+    // for an absent client. A client object still exists when its runtime
+    // process cannot start.
+    if (this._backendUnavailable || !this._getClient()) {
+      this._renderBackendMissingCard(view);
+    }
+
     const snapshot = view.createEl("div", {
       cls: "paperforge-library-snapshot",
     });
@@ -861,6 +884,45 @@ export class PaperForgeStatusView extends ItemView {
     globalOcrBtn.addEventListener("click", () => {
       const action = ACTIONS.find((a) => a.id === "paperforge-ocr");
       if (action) this._runAction(action, globalOcrBtn);
+    });
+  }
+
+  /** #HW-UX P0-1: explicit backend-missing guidance on the homepage.
+   * The old behavior was a silent "Cannot reach PaperForge CLI" message with
+   * no path forward; now we surface a one-click Setup entry. */
+  private _renderBackendMissingCard(view: HTMLElement): void {
+    const card = view.createEl("div", { cls: "paperforge-setup-cta" });
+    card.createEl("div", {
+      cls: "paperforge-setup-cta-title",
+      text: "PaperForge engine not installed",
+    });
+    card.createEl("div", {
+      cls: "paperforge-setup-cta-body",
+      text: "The Python backend is required. Complete the setup wizard to install it.",
+    });
+    const btn = card.createEl("button", {
+      cls: "paperforge-contextual-btn primary",
+      text: "Open Setup",
+    });
+    btn.addEventListener("click", () => {
+      const plugin = (
+        this.app as unknown as {
+          plugins?: { plugins?: Record<string, unknown> };
+        }
+      ).plugins?.plugins?.["paperforge"] as
+        | {
+            getSettingTab?: () => {
+              _startSetupJourney: (stage: number) => void;
+            };
+          }
+        | undefined;
+      const tab = plugin?.getSettingTab?.();
+      if (tab) {
+        (
+          this.app as unknown as { setting: { open: () => void } }
+        ).setting.open();
+        tab._startSetupJourney(1);
+      }
     });
   }
 

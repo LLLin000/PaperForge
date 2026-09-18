@@ -34,12 +34,15 @@ import json
 import re
 import subprocess
 import sys
+from contextlib import suppress
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+
+POINTER_SCHEMA_VERSION = 1
 
 def _read_plugin_version() -> str:
     # Deployed location first: the skill runs inside the vault
@@ -94,10 +97,8 @@ def _parse_skill_metadata() -> tuple[str, int | None]:
         if key == "skill_version":
             skill_version = value
         elif key == "skill_api_version":
-            try:
+            with suppress(ValueError):
                 skill_api_version = int(value)
-            except ValueError:
-                pass
     return (skill_version, skill_api_version)
 
 
@@ -119,49 +120,103 @@ def _read_pf_config(pf_json: Path) -> dict:
         return json.load(f)
 
 
-def _find_python_with_paperforge(vault: Path, pf_cfg: dict) -> tuple[str | None, bool]:
-    """Find a Python executable. Returns (candidate, verified_has_paperforge)."""
-    candidates = []
+def _runtime_pointer_path(home: Path | None = None) -> Path:
+    return (home or Path.home()) / ".paperforge" / "runtime" / "pointer.json"
 
-    # 1. Explicit python_path in config
-    if pf_cfg.get("python_path"):
-        candidates.append(Path(pf_cfg["python_path"]))
 
-    # 2. Common venv locations inside vault
+def _read_runtime_pointer(home: Path | None = None) -> tuple[dict | None, str]:
+    """Read the Python-owned runtime pointer without importing PaperForge."""
+    path = _runtime_pointer_path(home)
+    if not path.exists():
+        return None, "missing"
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None, "invalid"
+    if not isinstance(raw, dict) or raw.get("schema_version") != POINTER_SCHEMA_VERSION:
+        return None, "invalid"
+    for key in ("python_path", "environment_root", "paperforge_version"):
+        value = raw.get(key)
+        if not isinstance(value, str) or not value:
+            return None, "invalid"
+    if not Path(raw["python_path"]).is_absolute() or not Path(raw["environment_root"]).is_absolute():
+        return None, "invalid"
+    return raw, "valid"
+
+
+def _verify_python(candidate: str | Path, expected_version: str | None = None) -> tuple[bool, str, str]:
+    """Verify the candidate imports PaperForge in an isolated child process."""
+    try:
+        result = subprocess.run(
+            [
+                str(candidate),
+                "-I",
+                "-c",
+                "import paperforge; print(paperforge.__version__)",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=20,
+            encoding="utf-8",
+            errors="replace",
+        )
+    except Exception as exc:
+        return False, "", f"{type(exc).__name__}: {exc}"
+    version = result.stdout.strip()
+    if result.returncode != 0 or not version:
+        detail = (result.stderr or result.stdout).strip().splitlines()
+        return False, version, (detail[-1] if detail else "PaperForge import failed")[:240]
+    if expected_version and version != expected_version:
+        return False, version, f"runtime version {version!r} != pointer {expected_version!r}"
+    return True, version, ""
+
+
+def _find_python_with_paperforge(
+    vault: Path, pf_cfg: dict, *, home: Path | None = None
+) -> tuple[str | None, bool, str, str]:
+    """Find the authoritative PaperForge interpreter.
+
+    A valid published pointer is authoritative. Legacy config/local venv
+    candidates are only considered when no pointer exists; an invalid pointer
+    must not silently fall back to a different runtime.
+    """
+    pointer, pointer_status = _read_runtime_pointer(home)
+    if pointer_status == "invalid":
+        return None, False, "", "managed runtime pointer is invalid"
+    if pointer is not None:
+        candidate = pointer["python_path"]
+        verified, version, error = _verify_python(candidate, pointer["paperforge_version"])
+        return candidate, verified, version, error
+
+    candidates: list[str | Path] = []
+    configured = pf_cfg.get("python_path")
+    if isinstance(configured, str) and configured:
+        candidates.append(configured)
+
     venv_names = [".venv", ".paperforge-test-venv", "venv"]
     exe_paths = ["Scripts/python.exe", "bin/python3"]
     for vn in venv_names:
         for ep in exe_paths:
-            p = vault / vn / ep
-            if p.exists():
-                candidates.append(p)
+            candidate = vault / vn / ep
+            if candidate.exists():
+                candidates.append(candidate)
 
     for candidate in candidates:
-        try:
-            result = subprocess.run(
-                [str(candidate), "-m", "paperforge", "--version"],
-                capture_output=True, text=True, timeout=10,
-                encoding="utf-8", errors="replace",
-            )
-            if result.returncode == 0 and "paperforge" in result.stdout.lower():
-                return (str(candidate), True)
-        except Exception:
-            continue
+        verified, version, _error = _verify_python(candidate)
+        if verified:
+            return str(candidate), True, version, ""
 
-    # Fallback: check system python/python3 only (no paperforge verification)
-    for fallback in ["python", "python3"]:
-        try:
-            result = subprocess.run(
-                [fallback, "--version"],
-                capture_output=True, text=True, timeout=10,
-                encoding="utf-8", errors="replace",
-            )
-            if result.returncode == 0:
-                return (fallback, False)
-        except Exception:
-            continue
+    if candidates:
+        return None, False, "", "configured PaperForge runtime failed verification"
 
-    return (None, False)
+    last_error = "no PaperForge interpreter found"
+    for fallback in ("python", "python3"):
+        verified, version, error = _verify_python(fallback)
+        if verified:
+            return fallback, True, version, ""
+        if error:
+            last_error = error
+    return None, False, "", last_error
 
 
 def _scan_methodology_archive(pf_root: Path) -> list[dict]:
@@ -242,6 +297,11 @@ def main() -> None:
         vault = pf_json.parent
 
     result["vault_root"] = str(vault)
+    result["skill_dir"] = str(Path(__file__).resolve().parent.parent)
+    result["runtime_pointer"] = {
+        "path": str(_runtime_pointer_path()),
+        "status": _read_runtime_pointer()[1],
+    }
 
     # --- 2. Read config ---
     try:
@@ -290,30 +350,22 @@ def main() -> None:
             pass
     result["index_summary"] = index_summary
 
-    # --- 6. Find Python that has paperforge (best effort) ---
-    py_candidate, py_verified = _find_python_with_paperforge(vault, cfg)
+    # --- 6. Find the authoritative PaperForge runtime ---
+    py_candidate, py_verified, runtime_version, python_error = _find_python_with_paperforge(vault, cfg)
     if py_candidate:
         result["python_candidate"] = py_candidate
         result["python_verified"] = py_verified
     else:
-        result["python_candidate"] = "python"
+        result["python_candidate"] = None
         result["python_verified"] = False
+    result["runtime_version"] = runtime_version or None
+    if python_error:
+        result["python_error"] = python_error
 
-    # plugin_version is the INSTALLED package version on the discovered
-    # runtime, not the source-tree constant (the skill is deployed into the
-    # vault, so REPO_ROOT is not the repo).
-    plugin_version = PLUGIN_VERSION
-    if py_verified and py_candidate:
-        try:
-            ver_proc = subprocess.run(
-                [py_candidate, "-c", "import paperforge; print(paperforge.__version__)"],
-                capture_output=True, text=True, timeout=15,
-                encoding="utf-8", errors="replace",
-            )
-            if ver_proc.returncode == 0 and ver_proc.stdout.strip():
-                plugin_version = ver_proc.stdout.strip()
-        except Exception:
-            pass
+    # plugin_version is the installed package version on the verified
+    # runtime. Falling back to the local skill package is compatibility-only
+    # and must not be used to authorize runtime commands.
+    plugin_version = runtime_version or PLUGIN_VERSION
 
     # --- 7. Memory layer state ---
     memory_layer = {"available": False, "paper_count": 0, "fts_search": False, "vector_search": False}
@@ -327,14 +379,14 @@ def main() -> None:
             memory_layer["paper_count"] = len(items)
             memory_layer["available"] = True
             memory_layer["fts_search"] = True
-        except:
+        except Exception:
             pass
     plugin_data = None
     if dc_json.exists():
         try:
             with open(dc_json, encoding="utf-8") as f:
                 plugin_data = json.load(f)
-        except:
+        except Exception:
             pass
     # memory_layer.vector_search must be BACKEND truth, not the plugin
     # settings toggle (which can say enabled while the index is empty or
@@ -393,7 +445,7 @@ def main() -> None:
     }
 
     result["ok"] = True
-    result["plugin_version"] = PLUGIN_VERSION
+    result["plugin_version"] = plugin_version
     result["skill_version"] = skill_version
     result["skill_api_version"] = skill_api_version
     json.dump(result, sys.stdout, ensure_ascii=False, indent=2)

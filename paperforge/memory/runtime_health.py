@@ -127,7 +127,7 @@ def _check_write(vault: Path) -> dict:
 
 
 def _check_index(vault: Path) -> dict:
-    from paperforge.memory.db import get_connection, get_memory_db_path, open_live_reader
+    from paperforge.memory.db import get_memory_db_path, open_live_reader
     db_path = get_memory_db_path(vault)
     if not db_path.exists():
         return _layer("blocked", ["Memory DB not found"],
@@ -147,22 +147,46 @@ def _check_index(vault: Path) -> dict:
 
 
 def _check_vector(vault: Path) -> dict:
-    from paperforge.embedding.build_state import read_vector_build_state
-    from paperforge.embedding._chroma import get_vector_db_path as _get_chroma_path
-    from paperforge.memory.db import ensure_vec_extension, get_connection, get_memory_db_path, open_live_reader
-
     settings_path = vault / ".obsidian" / "plugins" / "paperforge" / "data.json"
     vector_enabled = False
     if settings_path.exists():
         try:
             import json
+
             data = json.loads(settings_path.read_text(encoding="utf-8"))
             vector_enabled = bool(data.get("features", {}).get("vector_db", False))
-        except Exception:
-            pass
+        except Exception as exc:  # noqa: BLE001 — health must return a layer result
+            return _layer(
+                "degraded",
+                [f"Vector settings unreadable: {type(exc).__name__}: {exc}"],
+                "Fix the PaperForge plugin settings",
+                "paperforge doctor",
+            )
 
     if not vector_enabled:
         return _layer("ok", ["Vector DB disabled by user"])
+
+    try:
+        # Import the actual runtime capabilities, not just their distribution
+        # metadata. A partially installed package can pass find_spec() while
+        # failing here (for example, an OpenAI module file missing from RECORD).
+        import openai  # noqa: F401
+        import sqlite_vec  # noqa: F401
+
+        return _check_vector_backend(vault)
+    except Exception as exc:  # noqa: BLE001 — optional capability degrades
+        return _layer(
+            "degraded",
+            [f"Vector runtime unavailable: {type(exc).__name__}: {exc}"],
+            "Repair vector runtime dependencies",
+            "paperforge repair --runtime --json",
+        )
+
+
+def _check_vector_backend(vault: Path) -> dict:
+    from paperforge.embedding._chroma import get_vector_db_path as _get_chroma_path
+    from paperforge.embedding.build_state import read_vector_build_state
+    from paperforge.memory.db import ensure_vec_extension, get_memory_db_path, open_live_reader
 
     build_state = read_vector_build_state(vault)
     bs_status = build_state.get("status", "idle")
@@ -170,20 +194,24 @@ def _check_vector(vault: Path) -> dict:
     if bs_status == "running":
         cur = build_state.get("current", 0)
         tot = build_state.get("total", 0)
-        return _layer("degraded", [f"Vector build in progress ({cur}/{tot})"],
-                      "Wait for build to complete",
-                      "paperforge embed status --json")
+        return _layer(
+            "degraded",
+            [f"Vector build in progress ({cur}/{tot})"],
+            "Wait for build to complete",
+            "paperforge embed status --json",
+        )
 
     if bs_status == "failed":
-        return _layer("degraded", [f"Last build failed: {build_state.get('message', '')}"],
-                      "Check error and rebuild",
-                      "paperforge embed build --resume")
+        return _layer(
+            "degraded",
+            [f"Last build failed: {build_state.get('message', '')}"],
+            "Check error and rebuild",
+            "paperforge embed build --resume",
+        )
 
     if bs_status == "completed":
         return _layer("ok", ["Vector DB ready"])
 
-    # Not completed, not running, not failed — determine backend state
-    # Check vec0 first (build_state may have been lost)
     db_path = get_memory_db_path(vault)
     if db_path.exists():
         try:
@@ -195,14 +223,25 @@ def _check_vector(vault: Path) -> dict:
         except Exception:
             pass
 
-    # Fallback: check old ChromaDB
     chroma_path = _get_chroma_path(vault) / "chroma.sqlite3"
     if chroma_path.exists():
+        try:
+            import chromadb  # noqa: F401
+        except Exception as exc:  # noqa: BLE001 — report the optional failure
+            return _layer(
+                "degraded",
+                [f"ChromaDB runtime unavailable: {type(exc).__name__}: {exc}"],
+                "Repair vector runtime dependencies",
+                "paperforge repair --runtime --json",
+            )
         return _layer("ok", ["Vector DB available (ChromaDB — upgrade recommended)"])
 
-    return _layer("degraded", ["Vector DB not built yet"],
-                  "Run embed build",
-                  "paperforge embed build --resume")
+    return _layer(
+        "degraded",
+        ["Vector DB not built yet"],
+        "Run embed build",
+        "paperforge embed build --resume",
+    )
 
 
 def _derive_summary(layers: dict) -> dict:
