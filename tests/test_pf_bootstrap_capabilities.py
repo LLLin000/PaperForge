@@ -90,7 +90,6 @@ def test_semantic_ready_reflects_backend_not_switch(
     """RC UX Seam: semantic_ready must mirror the backend embed status, not
     the plugin settings toggle. A vault with no vector index reports
     semantic_ready=false even when data.json says vector_db enabled."""
-    import paperforge.skills.paperforge.scripts.pf_bootstrap as boot
 
     vault = tmp_path / "SemVault"
     vault.mkdir()
@@ -127,3 +126,62 @@ def test_semantic_ready_reflects_backend_not_switch(
     assert output["capabilities"]["semantic_enabled"] is True
     assert output["capabilities"]["semantic_ready"] is False
     assert output["memory_layer"]["vector_search"] is False
+
+
+def test_bootstrap_prefers_published_runtime_pointer(tmp_path: Path, monkeypatch) -> None:
+    import paperforge.skills.paperforge.scripts.pf_bootstrap as boot
+
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    managed_python = tmp_path / "managed" / "python.exe"
+    managed_python.parent.mkdir()
+    managed_python.touch()
+    stale_python = vault / ".venv" / "Scripts" / "python.exe"
+    stale_python.parent.mkdir(parents=True)
+    stale_python.touch()
+
+    home = tmp_path / "home"
+    pointer_path = home / ".paperforge" / "runtime" / "pointer.json"
+    pointer_path.parent.mkdir(parents=True)
+    pointer_path.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "python_path": str(managed_python),
+                "environment_root": str(managed_python.parent),
+                "paperforge_version": "2.0.0",
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        boot,
+        "_verify_python",
+        lambda _candidate, expected_version=None: (True, expected_version or "2.0.0", ""),
+    )
+
+    assert boot._find_python_with_paperforge(vault, {}, home=home) == (
+        str(managed_python),
+        True,
+        "2.0.0",
+        "",
+    )
+
+
+def test_bootstrap_does_not_fall_back_from_invalid_pointer(tmp_path: Path) -> None:
+    import paperforge.skills.paperforge.scripts.pf_bootstrap as boot
+
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    stale_python = vault / ".venv" / "Scripts" / "python.exe"
+    stale_python.parent.mkdir(parents=True)
+    stale_python.touch()
+    pointer_path = tmp_path / "home" / ".paperforge" / "runtime" / "pointer.json"
+    pointer_path.parent.mkdir(parents=True)
+    pointer_path.write_text("{not json", encoding="utf-8")
+
+    selected = boot._find_python_with_paperforge(vault, {}, home=tmp_path / "home")
+
+    assert selected[0] is None
+    assert selected[1] is False
+    assert "pointer is invalid" in selected[3]
