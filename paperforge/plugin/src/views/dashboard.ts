@@ -78,6 +78,7 @@ export class PaperForgeStatusView extends ItemView {
   _leafChangeTimer: ReturnType<typeof setTimeout> | null = null;
   _ocrPrivacyShown = false;
   _cachedStats: any = null;
+  _backendUnavailable = false;
   _techDetailsExpanded = false;
   _paperforgeVersion = "";
   _dashboardPermissions: Record<string, boolean> = {};
@@ -251,6 +252,7 @@ export class PaperForgeStatusView extends ItemView {
       this._cachedStats = this._normalizeDashboardData(data);
       this._cachedItems = Array.isArray(data.items) ? data.items : [];
       this._dashboardPermissions = data.permissions ?? {};
+      this._backendUnavailable = false;
       // A recovered acquisition must not leave the old backend-failure
       // message hanging in the message bar.
       if (
@@ -260,12 +262,26 @@ export class PaperForgeStatusView extends ItemView {
       ) {
         this._showMessage("", "idle");
       }
-    } catch (_err) {
-      if (!quiet && !this._cachedStats) {
-        this._showMessage(
-          "Cannot reach PaperForge CLI.\nMake sure paperforge is installed and in your PATH.",
-          "error"
-        );
+    } catch {
+      if (!this._cachedStats) {
+        this._backendUnavailable = true;
+        if (!quiet) {
+          this._showMessage(
+            "Cannot reach PaperForge CLI.\nMake sure paperforge is installed and in your PATH.",
+            "error"
+          );
+        }
+        // onOpen starts acquisition before context detection. Render the
+        // fail-closed global fallback now; _detectAndSwitch() will replace it
+        // if an active paper or collection is later resolved.
+        if (!this._currentMode && this._contentEl) {
+          this._currentMode = "global";
+          this._currentFilePath = null;
+          this._renderModeHeader("global");
+          this._renderGlobalMode();
+        } else if (this._currentMode === "global") {
+          await this._refreshCurrentMode();
+        }
       }
     }
   }
@@ -655,10 +671,10 @@ export class PaperForgeStatusView extends ItemView {
       if (item.ocr_status === "done") ocrDone++;
       if (item.deep_reading_status === "done") deepReadDone++;
     }
-    // PaperForge backend not reachable → show one-click setup guidance
-    // instead of a silent broken dashboard (#HW-UX: P0-1).
-    const client = this._getClient();
-    if (!client) {
+    // Render recovery guidance for the observed cold-load failure, not only
+    // for an absent client. A client object still exists when its runtime
+    // process cannot start.
+    if (this._backendUnavailable || !this._getClient()) {
       this._renderBackendMissingCard(view);
     }
 
@@ -878,17 +894,15 @@ export class PaperForgeStatusView extends ItemView {
     const card = view.createEl("div", { cls: "paperforge-setup-cta" });
     card.createEl("div", {
       cls: "paperforge-setup-cta-title",
-      text: t("backend_missing_title") || "PaperForge engine not installed",
+      text: "PaperForge engine not installed",
     });
     card.createEl("div", {
       cls: "paperforge-setup-cta-body",
-      text:
-        t("backend_missing_body") ||
-        "The Python backend is required. Complete the setup wizard to install it.",
+      text: "The Python backend is required. Complete the setup wizard to install it.",
     });
     const btn = card.createEl("button", {
       cls: "paperforge-contextual-btn primary",
-      text: t("backend_missing_btn") || "Open Setup",
+      text: "Open Setup",
     });
     btn.addEventListener("click", () => {
       const plugin = (

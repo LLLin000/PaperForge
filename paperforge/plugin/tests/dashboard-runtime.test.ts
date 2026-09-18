@@ -339,6 +339,7 @@ describe("PaperForgeStatusView.onOpen production lifecycle (Step 5 wiring correc
     expect(view.containerEl.textContent).toContain(
       "Cannot reach PaperForge CLI"
     );
+    expect(view.containerEl.textContent).toContain("Open Setup");
     await view.onClose();
   });
 

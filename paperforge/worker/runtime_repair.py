@@ -42,9 +42,7 @@ def perform_runtime_repair(*, ndjson: bool = False) -> dict[str, object]:
             from paperforge.core.ndjson import emit_terminal
             from paperforge.core.result import PFError, PFResult
 
-            event = "cancelled" if result.get("cancelled") else (
-                "result" if result["ok"] else "error"
-            )
+            event = "cancelled" if result.get("cancelled") else ("result" if result["ok"] else "error")
             pf = PFResult(
                 ok=result["ok"],
                 command="repair",
@@ -67,29 +65,37 @@ def perform_runtime_repair(*, ndjson: bool = False) -> dict[str, object]:
         return _finish({"ok": False, "cancelled": True})
 
     from paperforge.runtime_pointer import read_pointer
-    from paperforge.setup.runtime import ensure_runtime_dependencies, vector_extras_present
+    from paperforge.setup.runtime import ensure_runtime_dependencies, verify_runtime_in_child
 
     ptr = read_pointer()
     if ptr is None:
         # No published pointer: nothing to repair at runtime level — the
-        # bootstrap must run (install + setup).  Report clearly.
-        return _finish({
-            "ok": False,
-            "pointer": None,
-            "error": "no runtime pointer published — run bootstrap install + paperforge setup",
-        })
+        # bootstrap must run (install + setup). Report clearly.
+        return _finish(
+            {
+                "ok": False,
+                "pointer": None,
+                "error": "no runtime pointer published — run bootstrap install + paperforge setup",
+            }
+        )
 
     if _phase("deps") or _is_stopped():
         return _finish({"ok": False, "cancelled": True})
 
-    if not vector_extras_present():
-        deps = ensure_runtime_dependencies()
+    verified, observed = verify_runtime_in_child(ptr["python_path"])
+    if not verified:
+        deps = ensure_runtime_dependencies(
+            python_path=ptr["python_path"],
+            expected_version=ptr["paperforge_version"],
+        )
         if not deps.ok:
-            return _finish({
-                "ok": False,
-                "pointer": ptr["paperforge_version"],
-                "error": f"dependency re-ensure failed: {deps.message}",
-            })
+            return _finish(
+                {
+                    "ok": False,
+                    "pointer": ptr["paperforge_version"],
+                    "error": f"dependency re-ensure failed: {deps.message}",
+                }
+            )
 
     if _phase("verify") or _is_stopped():
         return _finish({"ok": False, "cancelled": True})
@@ -97,8 +103,6 @@ def perform_runtime_repair(*, ndjson: bool = False) -> dict[str, object]:
     # Fresh-child verification of the POINTED interpreter before any
     # success: the pointer may be stale/broken even when the current
     # interpreter has extras — never republish an unusable pointer.
-    from paperforge.setup.runtime import verify_runtime_in_child
-
     verified, observed = verify_runtime_in_child(ptr["python_path"])
     if not verified:
         return _finish(
@@ -124,8 +128,10 @@ def perform_runtime_repair(*, ndjson: bool = False) -> dict[str, object]:
         environment_root=ptr["environment_root"],
         paperforge_version=observed,
     )
-    return _finish({
-        "ok": True,
-        "pointer": observed,
-        "repaired": True,
-    })
+    return _finish(
+        {
+            "ok": True,
+            "pointer": observed,
+            "repaired": True,
+        }
+    )
