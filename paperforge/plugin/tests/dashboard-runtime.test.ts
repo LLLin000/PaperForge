@@ -391,6 +391,37 @@ describe("PaperForgeStatusView.onOpen production lifecycle (Step 5 wiring correc
     await view.onClose();
   });
 
+  it("shows Setup guidance when a refresh fails after a successful load", async () => {
+    let fail = false;
+    const dashboardStats = vi.fn(async () => {
+      if (fail) throw new Error("backend down");
+      return {
+        stats: { papers: 1 },
+        permissions: { can_sync: true },
+        items: [{ zotero_key: "K1", title: "Paper One", domain: "cardio" }],
+      };
+    });
+    const view = makeLifecycleView(
+      {
+        dashboardStats,
+        backendVersion: vi.fn(async () => "1.5.15"),
+        credentialAvailable: vi.fn(async () => false),
+        resolvePaperContext: vi.fn(),
+      },
+      null
+    );
+
+    await view.onOpen();
+    await vi.waitFor(() => expect(dashboardStats).toHaveBeenCalledOnce());
+    fail = true;
+    await view._invalidateIndex();
+    await view._detectAndSwitch();
+
+    expect(view._getCachedIndex()).toHaveLength(1);
+    expect(view.containerEl.textContent).toContain("Open Setup");
+    await view.onClose();
+  });
+
   it("RECOVERY: Doctor success re-acquires the read model and re-renders the current mode from the fresh payload", async () => {
     let loaded = false;
     const dashboardStats = vi.fn(async () => {

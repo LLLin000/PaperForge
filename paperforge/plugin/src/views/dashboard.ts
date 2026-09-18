@@ -263,8 +263,8 @@ export class PaperForgeStatusView extends ItemView {
         this._showMessage("", "idle");
       }
     } catch {
+      this._backendUnavailable = true;
       if (!this._cachedStats) {
-        this._backendUnavailable = true;
         if (!quiet) {
           this._showMessage(
             "Cannot reach PaperForge CLI.\nMake sure paperforge is installed and in your PATH.",
