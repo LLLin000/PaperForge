@@ -70,22 +70,33 @@ def _fresh_child_verify() -> tuple[bool, str]:
     return verify_runtime_in_child()
 
 
-def ensure_runtime_dependencies() -> SetupStepResult:
-    """Ensure vector extras in the CURRENT runtime; no-op when present.
+def ensure_runtime_dependencies(
+    python_path: str | None = None,
+    expected_version: str | None = None,
+) -> SetupStepResult:
+    """Ensure vector extras in the selected runtime; no-op when present.
 
     Returns a SetupStepResult; the pointer MUST NOT be published unless
-    this step is ok."""
-    if vector_extras_present():
+    this step is ok.
+    """
+    executable = python_path or sys.executable
+    expected = expected_version or __version__
+    if python_path is None:
+        extras_present = vector_extras_present()
+    else:
+        verified, observed = verify_runtime_in_child(executable)
+        extras_present = verified and observed == expected
+    if extras_present:
         return SetupStepResult(
             step="runtime_dependencies",
             ok=True,
             message="Vector extras already present (no-op)",
         )
 
-    spec = f"paperforge[vector]=={__version__}"
+    spec = f"paperforge[vector]=={expected}"
     try:
         pip = subprocess.run(
-            [sys.executable, "-m", "pip", "install", spec],
+            [str(executable), "-m", "pip", "install", spec],
             capture_output=True,
             text=True,
             timeout=300,
@@ -105,14 +116,13 @@ def ensure_runtime_dependencies() -> SetupStepResult:
             error=ErrorCode.INTERNAL_ERROR,
         )
 
-    verified, observed = _fresh_child_verify()
-    if not verified or observed != __version__:
+    verified, observed = verify_runtime_in_child(executable)
+    if not verified or observed != expected:
         return SetupStepResult(
             step="runtime_dependencies",
             ok=False,
             message=(
-                f"fresh-child verify failed after extras install "
-                f"(observed {observed!r} != running {__version__!r})"
+                f"fresh-child verify failed after extras install (observed {observed!r} != expected {expected!r})"
             ),
             error=ErrorCode.INTERNAL_ERROR,
         )
