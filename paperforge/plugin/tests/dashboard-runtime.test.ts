@@ -463,16 +463,19 @@ describe("PaperForgeStatusView.onOpen production lifecycle (Step 5 wiring correc
     expect(view.containerEl.textContent).toContain("Open Setup");
     await view.onClose();
   });
-
-  it("RECOVERY: versions mode still surfaces Setup guidance when the backend is unavailable", async () => {
-    const dashboardStats = vi.fn(async () => ({
-      stats: { papers: 0 },
-      permissions: { can_sync: false },
-      items: [],
-    }));
-    const versionsList = vi.fn(async () => {
-      throw new Error("backend down");
+  it("versions-mode direct entry preserves Setup banner after backend acquisition fail", async () => {
+    let fail = false;
+    const dashboardStats = vi.fn(async () => {
+      if (fail) throw new Error("backend down");
+      return {
+        stats: { papers: 0 },
+        permissions: { can_sync: false },
+        items: [],
+      };
     });
+    const versionsList = vi.fn(async () => [
+      { key: "K1", title: "Paper One", versions: [], current_label: "" },
+    ]);
     const view = makeLifecycleView(
       {
         dashboardStats,
@@ -486,15 +489,20 @@ describe("PaperForgeStatusView.onOpen production lifecycle (Step 5 wiring correc
 
     await view.onOpen();
     await vi.waitFor(() => expect(dashboardStats).toHaveBeenCalledOnce());
-    // Trigger the direct versions-mode entry point (not routed through
-    // _switchMode / _refreshCurrentMode).
+    // Flip backend unavailability via refresh path (same as #244).
+    fail = true;
+    await view._invalidateIndex();
+    await view._detectAndSwitch();
+    // Now in global mode with the Setup banner showing from the failed stats.
+    // Direct versions entry must not clear it — the entry path bypasses
+    // _switchMode(). The banner must persist because _backendUnavailable
+    // was set by dashboardStats failure, not by versionsList failure.
     await view._switchToVersionMode("K1");
 
     expect(view._currentMode).toBe("versions");
     expect(view.containerEl.textContent).toContain("Open Setup");
     await view.onClose();
   });
-
   it("RECOVERY: Doctor success re-acquires the read model and re-renders the current mode from the fresh payload", async () => {
     let loaded = false;
     const dashboardStats = vi.fn(async () => {

@@ -2180,10 +2180,12 @@ export class PaperForgeStatusView extends ItemView {
     }
     try {
       this._versionPapers = await client.versionsList();
-    } catch (err: any) {
-      new Notice("[!!] Version list failed: " + (err?.message || err), 6000);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      new Notice(`[!!] Version list failed: ${msg}`, 6000);
       this._versionPapers = [];
-      this._backendUnavailable = true;
+      // F-7 deferred: version-list failures don't flip _backendUnavailable.
+      // That's a false long-lived-error class #244 targeted.
     }
     this._versionFilter = "";
     this._currentMode = "versions";
