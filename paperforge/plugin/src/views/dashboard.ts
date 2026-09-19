@@ -90,6 +90,7 @@ export class PaperForgeStatusView extends ItemView {
   // ── Search state ──
   // ── Version state ──
   _versionPapers: PaperVersionInfoDTO[] | null = null;
+  _versionsLoadError: string | null = null;
   _versionFilter: string = "";
   // ── Search state ──
   _searchContainer: HTMLElement | null = null;
@@ -1046,10 +1047,27 @@ export class PaperForgeStatusView extends ItemView {
       pdfBtn.createEl("span", { text: "\u6253\u5F00 PDF" });
       pdfBtn.addEventListener("click", () => {
         const pathMatch = entry.pdf_path.match(/\[\[([^\]]+)\]\]/);
+        const isWikilink = pathMatch !== null;
         const targetPath = pathMatch ? pathMatch[1] : entry.pdf_path;
-        const file = this.app.vault.getAbstractFileByPath(targetPath);
-        if (file) {
-          this.app.workspace.openLinkText(targetPath, "");
+        if (isWikilink) {
+          // Vault-relative wikilink body: resolve through Obsidian's VFS.
+          const file = this.app.vault.getAbstractFileByPath(targetPath);
+          if (file) {
+            this.app.workspace.openLinkText(targetPath, "");
+            return;
+          }
+          new Notice("[!!] PDF not found: " + targetPath, 6000);
+          return;
+        }
+        // F-14: a plain path is already absolute (OS path) OR a vault-relative
+        // non-wikilink. Only join the vault base when it is NOT absolute.
+        if (path.isAbsolute(targetPath)) {
+          const openPdf = (Platform as any).openPath;
+          if (typeof openPdf === "function") {
+            openPdf.call(Platform, targetPath);
+          } else {
+            new Notice("[!!] PDF not found: " + targetPath, 6000);
+          }
           return;
         }
         // Junction-inside-vault paths (System/Zotero → outside storage) are
@@ -2213,9 +2231,41 @@ export class PaperForgeStatusView extends ItemView {
         ?.versionsList()
         .then((papers) => {
           this._versionPapers = papers;
+          this._versionsLoadError = null;
           if (this._currentMode === "versions") this._renderVersionMode();
         })
-        .catch(() => undefined);
+        .catch((err: unknown) => {
+          const msg = err instanceof Error ? err.message : String(err);
+          this._versionsLoadError = msg;
+        });
+    }
+
+    // F-7: load-failure strip (distinct from "no backups"). Shows error +
+    // Retry. The global Setup banner stays away on a versions-only failure.
+    if (this._versionsLoadError !== null && this._versionPapers === null) {
+      const errorStrip = view.createEl("div", { cls: "paperforge-error-strip" });
+      errorStrip.createEl("div", {
+        cls: "paperforge-meta",
+        text: t("error_versions_load_failed") || "Failed to load version history.",
+      });
+      const retryBtn = errorStrip.createEl("button", {
+        cls: "pf-btn pf-btn-ghost",
+        text: t("retry") || "Retry",
+      });
+      retryBtn.addEventListener("click", () => {
+        void this._getClient()
+          ?.versionsList()
+          .then((papers) => {
+            this._versionPapers = papers;
+            this._versionsLoadError = null;
+            if (this._currentMode === "versions") this._renderVersionMode();
+          })
+          .catch((err: unknown) => {
+            const msg = err instanceof Error ? err.message : String(err);
+            this._versionsLoadError = msg;
+          });
+      });
+      return;
     }
 
     // ── Left Panel: Filter + Paper List ──
