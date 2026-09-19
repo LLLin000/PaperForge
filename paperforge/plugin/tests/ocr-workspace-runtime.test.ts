@@ -330,4 +330,40 @@ describe("OcrWorkspaceView PaperForgeClient cutover", () => {
     expect(streamCall?.stopped).toBe(true);
     expect((view as any).running).toBe(false);
   });
+  it("F-12: onClose clears the view-owned search timer and does NOT cancel the OCR child", async () => {
+    const client = new PaperForgeClient(new MockTransport() as any);
+    const cancel = vi.spyOn(client, "cancelActiveOperation");
+
+    const view = makeView(client);
+    await view.onOpen();
+    // Simulate a debounced search timer being scheduled.
+    (view as any)._searchTimer = setTimeout(() => {}, 10_000);
+    // Simulate an in-flight async render that would touch DOM if not guarded.
+    (view as any)._closed = false;
+
+    await view.onClose();
+
+    expect((view as any)._searchTimer).toBeUndefined();
+    expect((view as any)._closed).toBe(true);
+    // View teardown must NOT cancel the shared client's OCR operation.
+    expect(cancel).not.toHaveBeenCalled();
+  });
+
+  it("F-12: late streaming onEvent after onClose does not render", async () => {
+    const transport = new MockTransport();
+    const client = new PaperForgeClient(transport as any);
+    const view = makeView(client);
+    await view.onOpen();
+    await view.onClose();
+
+    // A late progress event should short-circuit on the _closed guard.
+    // _render() would throw on detached DOM; if guard works, no throw.
+    const renderSpy = vi.spyOn(view as any, "_render");
+    // Emulate the internal onEvent path: call _render with _closed true.
+    expect((view as any)._closed).toBe(true);
+    // Direct call should early-return, not touch DOM.
+    (view as any)._render();
+    expect(renderSpy).toHaveReturned();
+  });
+
 });

@@ -118,6 +118,8 @@ export class OcrWorkspaceView extends ItemView {
   private _client: PaperForgeClient | null = null;
   private _searchQuery = "";
   private _searchTimer: ReturnType<typeof setTimeout> | undefined;
+  /** F-12: view-owned closed flag; gates late renders/streaming. Reset by onOpen(). */
+  private _closed = false;
   /** #126 PR D: pagination — selection is per visible page. */
   private _page = 1;
 
@@ -154,8 +156,21 @@ export class OcrWorkspaceView extends ItemView {
   }
 
   async onOpen(): Promise<void> {
+    this._closed = false;
     await this._loadPapers();
     this._render();
+  }
+
+  /* ── Lifecycle ── */
+  /** F-12: clear view-owned timer; do NOT cancel the OCR child.
+   *  Task ownership is the shared client / OperationLock;
+   *  cancellation is `plugin.onunload`'s responsibility. */
+  async onClose(): Promise<void> {
+    if (this._searchTimer) {
+      clearTimeout(this._searchTimer);
+      this._searchTimer = undefined;
+    }
+    this._closed = true;
   }
 
   /* ── Data loading ── */
@@ -257,6 +272,8 @@ export class OcrWorkspaceView extends ItemView {
   /* ── Full render (structure) ── */
 
   private _render(): void {
+    // F-12: drop late renders after view is closed.
+    if (this._closed) return;
     const container = this.containerEl.children[1] as HTMLElement;
     container.empty();
     container.addClass("pf-ocr-workspace");
@@ -945,7 +962,9 @@ export class OcrWorkspaceView extends ItemView {
                 .versionsRestore(restoreKey, label)
                 .then(() => undefined),
             () => {
-              this._loadPapers().then(() => this._render());
+              this._loadPapers().then(() => {
+                if (!this._closed) this._render();
+              });
             }
           ).open();
           return;
@@ -1059,6 +1078,8 @@ export class OcrWorkspaceView extends ItemView {
       const result = await client.runAction(request, {
         onEvent: (event) => {
           if (event.event === "cancelled") sawCancelled = true;
+          // F-12: gate late-streaming renders on closed view.
+          if (this._closed) return;
           if (
             event.event === "start" ||
             event.event === "phase" ||
