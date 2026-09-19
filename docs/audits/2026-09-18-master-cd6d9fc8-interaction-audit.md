@@ -7,13 +7,13 @@
 
 > **Reviewer correction (2026-09-19):** the user re-checked the diff/CI and the upstream architecture and found several false positives in the first draft. Corrected verdicts are inlined in §1–§4 with `❌ DROPPED` and `⚠️ REDEFINED` markers. Net: F-4/F-5 stay P0 (fixed by #246, which needs a `versions` direct-entry patch before merge — see §7.1); F-10/F-3/F-7/F-14 stay real; F-12 stays real but **must not** cancel the operation; F-9/F-17/F-2/F-11-mechanism/F-13/F-15/F-16/F-1/F-8 are dropped or redefined.
 
-> Note on #246: PR #246 (`chore/integrate-stale-root` → `master`) carries the F-4/F-5 fix. Its first commit (`4bfcd031`) had a wrong versions-mode edge (`_backendUnavailable = true` on versions-only failure — a false long-lived error). Corrected in `e4ff1ead`: a transient `versionsList()` failure **does not** flip the global flag; the direct `versions` entry path still renders the banner when the flag was set by a real acquisition failure.
+> Note on PR #246+247+248: PR #246 merged F-4/F-5 (master `3c25bbd3`). PR #247 merged F-10/F-12 (`036cefe8`). PR #248 merged F-3/F-7/F-14/F-6 (pending merge). Its first commit (`4bfcd031`) had a wrong versions-mode edge (`_backendUnavailable = true` on versions-only failure — a false long-lived error). Corrected in `e4ff1ead`: a transient `versionsList()` failure **does not** flip the global flag; the direct `versions` entry path still renders the banner when the flag was set by a real acquisition failure.
 
 ---
 
 ## 1. Click-order-dependent divergent results
 
-### F-3 · Version-restore button retry with no throttle ⚠️ (real)
+### F-3 ✅ FIXED (PR #248) · Version-restore button retry with no throttle ⚠️ (real)
 - `dashboard.ts:2348-2367` (`restoreBtn` → `client.versionsRestore(paper.key, ver.label)`)
 - **Divergence:** button is **not** disabled during the await; rapid double-click fires two restore calls. The second may run while the first copy is mid-flight → Python-side guard decides outcome, UI shows two sequential notices, no dedup.
 - **Fix:** disable `restoreBtn` + `compareBtn` on click; re-enable on settle.
@@ -37,12 +37,12 @@
 - **Result:** if the backend dies while you're looking at a paper, you see stale paper data and **no** Setup entry. (The #244 fix addressed this in `chore/`; #246 brings it to master.)
 - **Gap in #246:** `_switchToVersionMode` does its own `_contentEl.empty()` + `_renderModeHeader("versions")` and bypasses `_switchMode()`. PR #246 added `_renderBackendBanner()` there (`e4ff1ead`), closing the gap.
 
-### F-6 · Orphan modal failure swallows detail but closes ⚠️
+### F-6 ✅ FIXED (PR #248) · Orphan modal failure swallows detail but closes ⚠️
 - `modals.ts:218-253` — `describeAction("library.prune")` → `runAction(...)`. `.catch(() => { new Notice("PaperForge: prune failed"); this.close(); })`.
 - **Issue:** a partial failure where `failed_keys` is non-empty but `ok` is true is *surfaced*, but a transport-level throw (e.g. pointer invalid) closes the modal with one generic notice — user loses context of which orphans were selected.
 - **Fix:** keep modal open on transport error; show `err.message`.
 
-### F-7 · Version list failure masquerades as "no backups" ⚠️
+### F-7 ✅ FIXED (PR #248) · Version list failure masquerades as "no backups" ⚠️
 - `_switchToVersionMode` (`dashboard.ts:2174-2199`): on `versionsList()` throw, sets `_versionPapers = []`.
 - `_renderVersionMode` (`2201-2497`): if `_versionPapers` is null re-fetches; if empty array, `renderPaperList` shows `version_no_backups` (line 2260-2265).
 - **Result:** a backend error and a genuine "no backups" state are visually identical.
@@ -74,7 +74,7 @@
 
 ## 4. Dead buttons / missing states / inconsistent UX
 
-### F-14 · PDF button path mismatch on `[[wikilink]]` vs absolute ⚠️
+### F-14 ✅ FIXED (PR #248) · PDF button path mismatch on `[[wikilink]]` vs absolute ⚠️
 - `dashboard.ts:1038-1056` — `pdfBtn` parses `[[...]]`; if found, `openLinkText`, else `Platform.openPath(path.join(base, targetPath))`.
 - `targetPath` from the regex is the **wikilink body** (no `.pdf`); `openLinkText(targetPath, "")` resolves Obsidian-internally, but the absolute fallback joins `base + targetPath` where `targetPath` is already a full OS path from `entry.pdf_path` → double path. Inconsistent.
 - **Fix:** branch on whether `entry.pdf_path` is already absolute.
