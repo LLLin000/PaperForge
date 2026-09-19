@@ -243,12 +243,13 @@ export class PaperForgeOrphanModal extends Modal {
               `PaperForge: prune incomplete (${failed.length} failed: ${failed.join(", ")})`
             );
           } else {
-            new Notice("PaperForge: prune failed");
+            new Notice("PaperForge: prune failed");  // ok===false with no failed_keys
           }
           this.close();
         })
-        .catch(() => {
-          new Notice("PaperForge: prune failed");
+        .catch((err: unknown) => {
+          const msg = err instanceof Error ? err.message : String(err);
+          new Notice("PaperForge: prune failed — " + msg, 6000);
           this.close();
         });
     });
