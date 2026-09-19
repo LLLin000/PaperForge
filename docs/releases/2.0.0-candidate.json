@@ -1,10 +1,10 @@
 {
   "version": "2.0.0",
-  "release_source_sha": "76c179451f6ca6d6dfa863a1ad8f00cf3aa7ce27",
+  "release_source_sha": "3485f44f2334bfeda2a0fd5958dffe8e05d62e89",
   "candidate_evidence_sha": "56407222f2782c616518f55a3e0d3fe33d200aeb",
   "artifacts": {
-    "main.js": "2a90af9209f6a090dcae3ece039ab5acb0223b841dd203be765b82828935d7ab",
-    "wheel": "bae1f729bd8d8be94a34ef223e064872b511dd8f73d7a95a6832ce6889bc384e",
+    "main.js": "b2eb0fda876c933b630aeea1358c87f8a853f4a8c87af26d7286760547609c40",
+    "wheel": "4baff0ab318241abfd976cae7b5dc5222d2bd749e480f71346d3a598c3b6ec12",
     "sdist": "5296f6dd7761e24b13ead953b244c3ad804c813b9e3b209ad06c14895be6ec13"
   },
   "hosted_ci": {
@@ -12,5 +12,10 @@
     "master": 34806652889,
     "pages": 34806652917
   },
-  "status": "candidate"
+  "status": "candidate-rebound-p1",
+  "rebound": {
+    "date": "2026-09-19",
+    "accepted_by": "P0-B owner decision",
+    "reason": "§858 release-source identity rule: #246/#247/#248 product-code changes invalidated old 76c179451f6ca6d6dfa863a1ad8f00cf3aa7ce27"
+  }
 }
