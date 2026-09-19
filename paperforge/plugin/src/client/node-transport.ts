@@ -402,11 +402,15 @@ export class NodeProcessTransport implements Transport {
           } catch {
             // ignore
           }
-          reject(
-            new Error(
-              `PaperForge command timed out after ${timeout}ms: ${argv.join(" ")}`
-            )
-          );
+          const stderrSnap = stderrChunks.join("").trim();
+          const stderrTail = stderrSnap.slice(-2000);
+          const timeoutErr = new Error(
+            `PaperForge command timed out after ${timeout}ms: ${argv.join(" ")}` +
+              (stderrTail ? `\n\nstderr:\n${stderrTail}` : "")
+          ) as Error & { stderr: string; timedOut: boolean };
+          timeoutErr.stderr = stderrSnap;
+          timeoutErr.timedOut = true;
+          reject(timeoutErr);
         }, timeout);
       }
 
