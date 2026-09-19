@@ -152,4 +152,36 @@ describe("NodeProcessTransport", () => {
       );
     });
   });
+    it("F-10: timeout rejection carries bounded stderr + err.stderr + err.timedOut", async () => {
+      vi.useFakeTimers();
+      try {
+        const mockChild = new MockChildProcess();
+        const mockSpawn = vi.fn().mockReturnValue(mockChild);
+
+        const transport = new NodeProcessTransport({
+          vaultPath,
+          spawnFn: mockSpawn as any,
+        });
+
+        const execPromise = transport.execute(["ocr", "run", "--json"], {
+          pythonExe: "C:/py/python.exe",
+          timeoutMs: 100,
+        });
+        await Promise.resolve(); // wait for resolvePython microtask
+
+        // Child emits diagnostic stderr; timeout timer will fire.
+        mockChild.stderr.emit("data", "Traceback (most recent call last):");
+        mockChild.stderr.emit("data", "ModuleNotFoundError: No module named 'foo'");
+        vi.advanceTimersByTime(150);
+
+        await expect(execPromise).rejects.toMatchObject({
+          timedOut: true,
+          stderr: expect.stringContaining("ModuleNotFoundError"),
+        });
+        await expect(execPromise).rejects.toThrow(/timed out after 100ms/);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
 });
