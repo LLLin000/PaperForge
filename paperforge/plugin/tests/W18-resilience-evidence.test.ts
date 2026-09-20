@@ -2,9 +2,7 @@
  * W18 resilience evidence — X09 soak (view lifecycle) and J03 stop→restart.
  * Scoped to the P0-A support contract (Windows 11 x64 desktop).
  *
- * Complements the existing F-12 onClose regressions in
- * ocr-workspace-runtime.test.ts. This file adds the missing repeated-cycle
- * (soak) and stop→restart coverage.
+ * Complements the existing F-12 onClose regressions in ocr-workspace-runtime.test.ts.
  */
 import { describe, expect, it, vi } from "vitest";
 
@@ -98,9 +96,6 @@ describe("W18/X09: OcrWorkspaceView lifecycle soak", () => {
       expect((view as any)._searchTimer).toBeUndefined();
       expect((view as any)._closed).toBe(true);
     }
-    // If onClose had left a timer, the pending throw would surface on
-    // advancing real time; the vi fake-timer default in this file means the
-    // callback is never flushed, but the undefined check above is the contract.
   });
 
   it("does not cancel the shared client's OCR operation across repeated lifecycles", async () => {
@@ -121,16 +116,15 @@ describe("W18/X09: OcrWorkspaceView lifecycle soak", () => {
     // Real _render (not stubbed): its guard returns before reading
     // containerEl.children[1], so with NO container it must not throw.
     const view = makeView(client, vi.fn(), false);
-    await view.onOpen().catch(() => undefined); // onOpen may render; ignore its DOM
+    await view.onOpen().catch(() => undefined);
     await view.onClose();
 
     expect((view as any)._closed).toBe(true);
-    // The closed-guard path never reads containerEl → safe with no container.
     expect(() => (view as any)._render()).not.toThrow();
   });
 });
 
-describe("W18/J03: stop→restart recovery", () => {
+describe("W18/J03: OCR stop→restart recovery", () => {
   it("after a cancelled build, a restarted build opens a fresh stream with reset state", async () => {
     const transport = new MockTransport();
     transport.executeHandler = (argv) =>
@@ -189,4 +183,19 @@ describe("W18/J03: stop→restart recovery", () => {
     expect(streams.length).toBe(2);
     expect((view as any).running).toBe(false);
   });
+});
+
+// NOTE: These tests are placeholders for remaining W18 findings that require
+// additional context (restore button disabled guard, Windows path edge cases,
+// repair rollback integration). They can be fleshed out when owner approves scope.
+describe.skip("W18/X03: Dashboard restore button double-click guard", () => {
+  it.todo(
+    "disables during async restore and only makes one versionsRestore call despite rapid clicks"
+  );
+});
+
+describe.skip("W18/X07: Repair rollback integration", () => {
+  it.todo(
+    "dry-run repair followed by actual repair, then rollback, preserves vault content integrity"
+  );
 });
