@@ -1329,9 +1329,23 @@ describe("PaperForge real-task e2e", function () {
             active: leaf === app.workspace.activeLeaf,
           });
         });
+        let reconcile_error: string | null = null;
+        try {
+          const reconcile = (
+            app.vault.adapter as typeof app.vault.adapter & {
+              reconcileFileCreation?: (path: string) => unknown;
+            }
+          ).reconcileFileCreation;
+          if (typeof reconcile === "function") {
+            await reconcile.call(app.vault.adapter, expectedPath);
+          }
+        } catch (error) {
+          reconcile_error = String(error);
+        }
         const target = app.vault.getAbstractFileByPath(expectedPath);
         return {
           expected_path: expectedPath,
+          reconcile_error,
           adapter_exists: await app.vault.adapter.exists(expectedPath),
           vault_methods: Object.getOwnPropertyNames(
             Object.getPrototypeOf(app.vault)
