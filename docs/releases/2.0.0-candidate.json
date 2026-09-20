@@ -1,5 +1,5 @@
 {
-  "version": "2.0.0",
+  "version": "2.0.0rc5",
   "release_source_sha": "3485f44f2334bfeda2a0fd5958dffe8e05d62e89",
   "candidate_evidence_sha": "56407222f2782c616518f55a3e0d3fe33d200aeb",
   "artifacts": {
@@ -8,9 +8,9 @@
     "sdist": "5296f6dd7761e24b13ead953b244c3ad804c813b9e3b209ad06c14895be6ec13"
   },
   "hosted_ci": {
-    "candidate": 34805876718,
-    "master": 34806652889,
-    "pages": 34806652917
+    "candidate": 35426268470,
+    "master": 35426268470,
+    "pages": 35430937302
   },
   "status": "candidate-rebound-p1",
   "rebound": {
