@@ -556,23 +556,28 @@ describe("PaperForgeStatusView.onOpen production lifecycle (Step 5 wiring correc
 });
 
 describe("PaperForgeStatusView note opening", () => {
-  it("waits for a newly indexed TFile before opening a search result", async () => {
+  it("materializes an externally created note before opening a search result", async () => {
     const view = new (PaperForgeStatusView as any)({});
     const notePath = "Resources/Literature/J01/J01.md";
     const file = Object.create(TFile.prototype) as TFile;
     (file as any).path = notePath;
     (file as any).extension = "md";
+    let indexed: TFile | null = null;
     const leaf = {
       openFile: vi.fn(async () => undefined),
     };
-    let lookups = 0;
     const app = {
       vault: {
-        getAbstractFileByPath: vi.fn(() => {
-          lookups += 1;
-          return lookups < 2 ? null : file;
+        getAbstractFileByPath: vi.fn(() => indexed),
+        adapter: {
+          exists: vi.fn(async () => true),
+          read: vi.fn(async () => "# J01\n"),
+        },
+        createFolder: vi.fn(async () => undefined),
+        create: vi.fn(async () => {
+          indexed = file;
+          return file;
         }),
-        adapter: { exists: vi.fn(async () => true) },
       },
       workspace: {
         getMostRecentLeaf: vi.fn(() => leaf),
@@ -586,9 +591,11 @@ describe("PaperForgeStatusView note opening", () => {
 
     await (view as any)._openSearchResult(notePath, false);
 
+    expect(app.vault.createFolder).toHaveBeenCalledWith(
+      "Resources/Literature/J01"
+    );
+    expect(app.vault.create).toHaveBeenCalledWith(notePath, "# J01\n");
     expect(leaf.openFile).toHaveBeenCalledWith(file);
-    expect(app.vault.adapter.exists).not.toHaveBeenCalled();
     expect(app.workspace.openLinkText).not.toHaveBeenCalled();
-    expect(lookups).toBe(2);
   });
 });
