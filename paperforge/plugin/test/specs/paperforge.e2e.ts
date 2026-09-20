@@ -1319,6 +1319,30 @@ describe("PaperForge real-task e2e", function () {
       { timeout: 60000, timeoutMsg: "J01 M search never found the synced paper" }
     );
     await card.click();
+    const j01OpenState = await browser.executeObsidian(
+      async ({ app }, expectedPath) => {
+        const leaves: Array<Record<string, unknown>> = [];
+        app.workspace.iterateAllLeaves((leaf) => {
+          leaves.push({
+            view_type: leaf.view.getViewType(),
+            file_path: leaf.view.file?.path ?? null,
+            active: leaf === app.workspace.activeLeaf,
+          });
+        });
+        const target = app.vault.getAbstractFileByPath(expectedPath);
+        return {
+          expected_path: expectedPath,
+          target_path: target?.path ?? null,
+          active_file: app.workspace.getActiveFile()?.path ?? null,
+          most_recent_file:
+            app.workspace.getMostRecentLeaf()?.view.file?.path ?? null,
+          leaves,
+        };
+      },
+      notePath
+    );
+    console.log(`J01 open state: ${JSON.stringify(j01OpenState)}`);
+    appendEvidence("j01-open-debug.json", j01OpenState);
     await browser.waitUntil(
       async () =>
         await browser.executeObsidian(
