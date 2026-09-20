@@ -1347,6 +1347,10 @@ describe("PaperForge real-task e2e", function () {
                   (item as { zotero_key?: unknown }).zotero_key === "J01MEM001"
               )
             ),
+          vault_files: app.vault
+            .getMarkdownFiles()
+            .filter((file) => file.path.includes("J01MEM001"))
+            .map((file) => file.path),
           search_results: app.workspace
             .getLeavesOfType("paperforge-status")
             .map((leaf) => (leaf.view as { _searchResults?: unknown })._searchResults),
