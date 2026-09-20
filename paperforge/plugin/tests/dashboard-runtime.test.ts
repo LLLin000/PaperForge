@@ -54,6 +54,7 @@ vi.mock("obsidian", () => {
 });
 
 import { PaperForgeStatusView } from "../src/views/dashboard";
+import { TFile } from "obsidian";
 
 /** Mock pointer representing a published runtime (schema v1). */
 function readyPointer(pythonPath: string) {
@@ -551,5 +552,43 @@ describe("PaperForgeStatusView.onOpen production lifecycle (Step 5 wiring correc
     expect(view.containerEl.textContent).toContain("1 papers");
     expect(view.containerEl.textContent).toContain("Exports detected");
     await view.onClose();
+  });
+});
+
+describe("PaperForgeStatusView note opening", () => {
+  it("waits for a newly indexed TFile before opening a search result", async () => {
+    const view = new (PaperForgeStatusView as any)({});
+    const notePath = "Resources/Literature/J01/J01.md";
+    const file = Object.create(TFile.prototype) as TFile;
+    (file as any).path = notePath;
+    (file as any).extension = "md";
+    const leaf = {
+      openFile: vi.fn(async () => undefined),
+    };
+    let lookups = 0;
+    const app = {
+      vault: {
+        getAbstractFileByPath: vi.fn(() => {
+          lookups += 1;
+          return lookups < 2 ? null : file;
+        }),
+        adapter: { exists: vi.fn(async () => true) },
+      },
+      workspace: {
+        getMostRecentLeaf: vi.fn(() => leaf),
+        getLeaf: vi.fn(() => leaf),
+        revealLeaf: vi.fn(async () => undefined),
+        setActiveLeaf: vi.fn(),
+        openLinkText: vi.fn(),
+      },
+    };
+    (view as any).app = app;
+
+    await (view as any)._openSearchResult(notePath, false);
+
+    expect(leaf.openFile).toHaveBeenCalledWith(file);
+    expect(app.vault.adapter.exists).not.toHaveBeenCalled();
+    expect(app.workspace.openLinkText).not.toHaveBeenCalled();
+    expect(lookups).toBe(2);
   });
 });
