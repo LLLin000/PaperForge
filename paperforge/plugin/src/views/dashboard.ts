@@ -1989,6 +1989,21 @@ export class PaperForgeStatusView extends ItemView {
   ): Promise<TFile | null> {
     if (!(await this.app.vault.adapter.exists(notePath))) return null;
     try {
+      const adapter = this.app.vault.adapter as typeof this.app.vault.adapter & {
+        reconcileFile?: (path: string) => Promise<void>;
+        reconcileFileCreation?: (path: string) => Promise<void>;
+      };
+      for (const methodName of ["reconcileFile", "reconcileFileCreation"] as const) {
+        const reconcile = adapter[methodName];
+        if (typeof reconcile !== "function") continue;
+        try {
+          await reconcile.call(adapter, notePath);
+          const reconciled = this.app.vault.getAbstractFileByPath(notePath);
+          if (reconciled instanceof TFile) return reconciled;
+        } catch (error) {
+          console.warn(`[PF] ${methodName} failed:`, notePath, error);
+        }
+      }
       const parentPath = notePath.slice(0, notePath.lastIndexOf("/"));
       if (parentPath && !this.app.vault.getAbstractFileByPath(parentPath)) {
         try {
