@@ -431,7 +431,8 @@ jobs:
   # ---------------------------------------------------------------------------
   # This runs only the declared Windows desktop host. The suite's disposable
   # file keyring intentionally does not certify native keyring behavior; that
-  # remains an owner-controlled H/W20 evidence item.
+  # remains an owner-controlled H/W20 evidence item. The first-use setup journey
+  # is not included here because its clean-checkout fixture is not yet tracked.
   obsidian-e2e:
     name: H — Obsidian (${{ matrix.app }}, installer=${{ matrix.installer }})
     strategy:
@@ -440,13 +441,10 @@ jobs:
         include:
           - app: earliest
             installer: earliest
-            setup_positive: "1"
           - app: latest
             installer: latest
-            setup_positive: "0"
           - app: latest
             installer: earliest
-            setup_positive: "0"
     runs-on: windows-latest
     timeout-minutes: 45
     steps:
@@ -472,7 +470,6 @@ jobs:
         env:
           PF_OBSIDIAN_APP_VERSION: ${{ matrix.app }}
           PF_OBSIDIAN_INSTALLER_VERSION: ${{ matrix.installer }}
-          PF_E2E_SETUP_POSITIVE: ${{ matrix.setup_positive }}
       - name: Preserve first-failure Obsidian evidence
         if: ${{ failure() }}
         uses: actions/upload-artifact@v4
