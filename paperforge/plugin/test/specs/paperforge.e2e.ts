@@ -1341,6 +1341,8 @@ describe("PaperForge real-task e2e", function () {
             birthtimeMs: stat.ctime,
             mtimeMs: stat.mtime,
             size: stat.size,
+            isFile: () => true,
+            isDirectory: () => false,
           };
           const attempts: Array<[string, unknown[]]> = [
             ["path-stat", [expectedPath, nativeStat]],
