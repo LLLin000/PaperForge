@@ -2003,6 +2003,39 @@ export class PaperForgeStatusView extends ItemView {
     this.app.workspace.openLinkText(notePath, "", newLeaf);
   }
 
+  async _openSearchResultByKey(
+    notePath: string | null,
+    zoteroKey: string,
+    newLeaf: boolean
+  ) {
+    let resolvedPath = notePath;
+    if (!resolvedPath && zoteroKey) {
+      await this._loadDashboardData(true);
+      const entry = this._getCachedIndex().find(
+        (item: unknown) =>
+          item !== null &&
+          typeof item === "object" &&
+          "zotero_key" in item &&
+          (item as Record<string, unknown>).zotero_key === zoteroKey
+      );
+      if (entry && typeof entry === "object") {
+        const record = entry as Record<string, unknown>;
+        resolvedPath =
+          typeof record["main_note_path"] === "string" &&
+          record["main_note_path"]
+            ? record["main_note_path"]
+            : typeof record["note_path"] === "string" && record["note_path"]
+              ? record["note_path"]
+              : null;
+      }
+    }
+    if (resolvedPath) {
+      this._openSearchResult(resolvedPath, newLeaf);
+      return;
+    }
+    new Notice("[!!] Note not found: " + (zoteroKey || "unknown"), 6000);
+  }
+
   /* ── Collection Mode Render: Batch Workflow Workspace ── */
   _renderCollectionMode() {
     const domain = this._currentDomain || "Unknown";
@@ -3085,23 +3118,20 @@ export class PaperForgeStatusView extends ItemView {
         }
       }
 
-      if (resolvedPath) {
-        card.addEventListener("click", (e: MouseEvent) => {
-          const newLeaf = e.ctrlKey || e.metaKey;
-          this._openSearchResult(resolvedPath, newLeaf);
-        });
-      } else {
-        card.addEventListener("click", () => {
-          new Notice("[!!] Note not found: " + (zoteroKey || "unknown"), 6000);
-        });
-      }
+      const openResult = (event: MouseEvent | KeyboardEvent) => {
+        void this._openSearchResultByKey(
+          resolvedPath,
+          zoteroKey,
+          event.ctrlKey || event.metaKey
+        );
+      };
+      card.addEventListener("click", openResult);
 
       // Enter key on card opens the note
       card.addEventListener("keydown", (e: KeyboardEvent) => {
-        if (e.key === "Enter" && resolvedPath) {
+        if (e.key === "Enter") {
           e.preventDefault();
-          const newLeaf = e.ctrlKey || e.metaKey;
-          this._openSearchResult(resolvedPath, newLeaf);
+          openResult(e);
         }
       });
 
