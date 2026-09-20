@@ -1994,7 +1994,8 @@ export class PaperForgeStatusView extends ItemView {
         ? this.app.workspace.getLeaf("tab")
         : (this.app.workspace.getMostRecentLeaf() ??
           this.app.workspace.getLeaf(false));
-      void leaf.openFile(file).then(() => {
+      void leaf.openFile(file).then(async () => {
+        await this.app.workspace.revealLeaf(leaf);
         this.app.workspace.setActiveLeaf(leaf, { focus: true });
       });
       return;
