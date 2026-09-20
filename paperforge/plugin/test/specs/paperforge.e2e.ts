@@ -1330,6 +1330,10 @@ describe("PaperForge real-task e2e", function () {
           });
         });
         const target = app.vault.getAbstractFileByPath(expectedPath);
+        const adapter = app.vault.adapter as typeof app.vault.adapter & {
+          reconcileFile?: unknown;
+          reconcileFileCreation?: unknown;
+        };
         return {
           expected_path: expectedPath,
           adapter_exists: await app.vault.adapter.exists(expectedPath),
@@ -1337,6 +1341,18 @@ describe("PaperForge real-task e2e", function () {
           active_file: app.workspace.getActiveFile()?.path ?? null,
           most_recent_file:
             app.workspace.getMostRecentLeaf()?.view.file?.path ?? null,
+          adapter_reconcile: {
+            file_type: typeof adapter.reconcileFile,
+            file_source:
+              typeof adapter.reconcileFile === "function"
+                ? String(adapter.reconcileFile).slice(0, 2000)
+                : null,
+            creation_type: typeof adapter.reconcileFileCreation,
+            creation_source:
+              typeof adapter.reconcileFileCreation === "function"
+                ? String(adapter.reconcileFileCreation).slice(0, 2000)
+                : null,
+          },
           search_results: app.workspace
             .getLeavesOfType("paperforge-status")
             .map((leaf) => (leaf.view as { _searchResults?: unknown })._searchResults),
