@@ -992,6 +992,7 @@ describe("PaperForge real-task e2e", function () {
     const base = await sandboxBasePath();
     const workspace = path.dirname(NOTE_PATH);
     expect(existsSync(path.join(base, workspace))).toBe(true);
+    const exportPath = path.join(base, EXPORT_REL);
 
     removeExportItem(base, PAPER_KEY);
     await openPanel();
