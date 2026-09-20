@@ -247,21 +247,12 @@ function appendEvidence(name: string, payload: Record<string, unknown>): void {
 }
 
 /**
- * Click an element identified by its stable test id.
- *
- * The dashboard panel is taller than the window, and a row that lands in the
- * bottom band is covered by Obsidian's status bar — WebDriver then refuses the
- * click ("element click intercepted"). `scrollIntoView` does not help because
- * the element's nearest *scrollable* ancestor is the panel, not the document;
- * this scrolls that ancestor instead, which is what a user does with the wheel.
+ * Scroll a panel control's nearest scrollable ancestor away from Obsidian's
+ * status bar before using a real WebDriver click.
  */
-async function clickTestId(testid: string): Promise<void> {
-  const element = await browser.$(`[data-pf-testid='${testid}']`);
-  await element.waitForExist({ timeout: 60000 });
-  await browser.execute((id: string) => {
-    const el = document.querySelector(
-      `[data-pf-testid='${id}']`
-    ) as HTMLElement | null;
+async function scrollPanelElement(selector: string): Promise<void> {
+  await browser.execute((selector: string) => {
+    const el = document.querySelector(selector) as HTMLElement | null;
     if (!el) return;
     let scroller: HTMLElement | null = el.parentElement;
     while (scroller && scroller !== document.body) {
@@ -275,8 +266,24 @@ async function clickTestId(testid: string): Promise<void> {
       }
       scroller = scroller.parentElement;
     }
-  }, testid);
+  }, selector);
+}
+
+async function clickPanelElement(selector: string): Promise<void> {
+  const element = await browser.$(selector);
+  await element.waitForExist({ timeout: 60000 });
+  await scrollPanelElement(selector);
   await element.click();
+}
+
+async function clickTestId(testid: string): Promise<void> {
+  await clickPanelElement(`[data-pf-testid='${testid}']`);
+}
+
+async function clickTechnicalDetails(): Promise<void> {
+  await clickPanelElement(
+    ".paperforge-technical-details > .paperforge-technical-details-toggle"
+  );
 }
 
 async function openVaultFile(filePath: string): Promise<void> {
@@ -1412,22 +1419,30 @@ describe("PaperForge real-task e2e", function () {
       }
     );
 
-    // Durable state: the current render fulltext now holds the v1 body.
+    // Use a vault-relative path for the read. Windows Obsidian can expose the
+    // adapter base via its 8.3 form while Python returns the long absolute
+    // path; slicing absolute strings by length then invents a suffix such as
+    // `...\hR9\System/...`.
     const content = await browser.executeObsidian(async ({ app }, key) => {
       const plugin = app.plugins.plugins["paperforge"];
       if (!plugin || typeof plugin.getClient !== "function") {
         throw new Error("paperforge plugin not loaded");
       }
       const paths = await plugin.getClient().versionsPaths(key);
-      const adapter = app.vault.adapter as unknown as {
-        basePath?: string;
-        read(path: string): Promise<string>;
-      };
-      const base = adapter.basePath ?? "";
-      const relative = paths.current_path
-        .slice(base.length)
-        .replace(/^[/\\]+/, "");
-      return await adapter.read(relative);
+      const expected = `System/PaperForge/ocr/${key}/render/fulltext.md`;
+      const returned = String(paths.current_path ?? "")
+        .replaceAll("\\", "/")
+        .toLowerCase();
+      if (!returned.endsWith(`/${expected.toLowerCase()}`)) {
+        throw new Error(
+          `unexpected current_path: ${String(paths.current_path)}`
+        );
+      }
+      const file = app.vault.getAbstractFileByPath(expected);
+      if (!file || !("extension" in file)) {
+        throw new Error(`render file not found: ${expected}`);
+      }
+      return await app.vault.adapter.read(expected);
     }, PAPER_KEY);
     expect(content).toContain("first body");
   });
@@ -2038,9 +2053,7 @@ describe("PaperForge real-task e2e", function () {
     await openPanel();
     await openVaultFile(NOTE_PATH);
 
-    const disclosure = await browser.$(".paperforge-technical-details-toggle");
-    await disclosure.waitForExist({ timeout: 60000 });
-    await disclosure.click();
+    await clickTechnicalDetails();
 
     const checkbox = await browser.$("[data-pf-testid='flag-analyze']");
     await checkbox.waitForDisplayed({ timeout: 60000 });
@@ -2097,9 +2110,7 @@ describe("PaperForge real-task e2e", function () {
     // Render the panel from the healthy note first: the toggles only exist in
     // paper mode, which resolves the note, so breaking it before the render
     // removes the very control under test.
-    const disclosure = await browser.$(".paperforge-technical-details-toggle");
-    await disclosure.waitForExist({ timeout: 60000 });
-    await disclosure.click();
+    await clickTechnicalDetails();
 
     const checkbox = await browser.$("[data-pf-testid='flag-do_ocr']");
     await checkbox.waitForDisplayed({ timeout: 60000 });
