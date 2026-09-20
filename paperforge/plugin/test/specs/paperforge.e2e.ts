@@ -1333,11 +1333,12 @@ describe("PaperForge real-task e2e", function () {
         try {
           const reconcile = (
             app.vault.adapter as typeof app.vault.adapter & {
-              reconcileFileCreation?: (path: string) => unknown;
+              reconcileFileCreation?: (...args: unknown[]) => unknown;
             }
           ).reconcileFileCreation;
           if (typeof reconcile === "function") {
-            await reconcile.call(app.vault.adapter, expectedPath);
+            const stat = await app.vault.adapter.stat(expectedPath);
+            await reconcile.call(app.vault.adapter, expectedPath, stat);
           }
         } catch (error) {
           reconcile_error = String(error);
