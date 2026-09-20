@@ -1332,10 +1332,14 @@ describe("PaperForge real-task e2e", function () {
         const target = app.vault.getAbstractFileByPath(expectedPath);
         return {
           expected_path: expectedPath,
+          adapter_exists: await app.vault.adapter.exists(expectedPath),
           target_path: target?.path ?? null,
           active_file: app.workspace.getActiveFile()?.path ?? null,
           most_recent_file:
             app.workspace.getMostRecentLeaf()?.view.file?.path ?? null,
+          search_results: app.workspace
+            .getLeavesOfType("paperforge-status")
+            .map((leaf) => (leaf.view as { _searchResults?: unknown })._searchResults),
           leaves,
         };
       },
