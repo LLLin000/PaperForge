@@ -185,17 +185,3 @@ describe("W18/J03: OCR stop→restart recovery", () => {
   });
 });
 
-// NOTE: These tests are placeholders for remaining W18 findings that require
-// additional context (restore button disabled guard, Windows path edge cases,
-// repair rollback integration). They can be fleshed out when owner approves scope.
-describe.skip("W18/X03: Dashboard restore button double-click guard", () => {
-  it.todo(
-    "disables during async restore and only makes one versionsRestore call despite rapid clicks"
-  );
-});
-
-describe.skip("W18/X07: Repair rollback integration", () => {
-  it.todo(
-    "dry-run repair followed by actual repair, then rollback, preserves vault content integrity"
-  );
-});
