@@ -1984,8 +1984,36 @@ export class PaperForgeStatusView extends ItemView {
     }
   }
 
+  private async _materializeExternalNote(
+    notePath: string
+  ): Promise<TFile | null> {
+    if (!(await this.app.vault.adapter.exists(notePath))) return null;
+    try {
+      const parentPath = notePath.slice(0, notePath.lastIndexOf("/"));
+      if (parentPath && !this.app.vault.getAbstractFileByPath(parentPath)) {
+        try {
+          await this.app.vault.createFolder(parentPath);
+        } catch (error) {
+          if (!(await this.app.vault.adapter.exists(parentPath))) throw error;
+        }
+      }
+      const existing = this.app.vault.getAbstractFileByPath(notePath);
+      if (existing instanceof TFile) return existing;
+      const content = await this.app.vault.adapter.read(notePath);
+      await this.app.vault.create(notePath, content);
+      const materialized = this.app.vault.getAbstractFileByPath(notePath);
+      return materialized instanceof TFile ? materialized : null;
+    } catch (error) {
+      console.warn("[PF] Could not register external note:", notePath, error);
+      return null;
+    }
+  }
+
   async _openSearchResult(notePath: string, newLeaf: boolean) {
     let file = this.app.vault.getAbstractFileByPath(notePath);
+    if (!(file instanceof TFile)) {
+      file = await this._materializeExternalNote(notePath);
+    }
     if (!(file instanceof TFile)) {
       const deadline = Date.now() + 5000;
       while (!(file instanceof TFile) && Date.now() < deadline) {
