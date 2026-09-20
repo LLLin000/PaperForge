@@ -1329,67 +1329,14 @@ describe("PaperForge real-task e2e", function () {
             active: leaf === app.workspace.activeLeaf,
           });
         });
-        const reconciliation_attempts: string[] = [];
-        const reconcile = (
-          app.vault.adapter as typeof app.vault.adapter & {
-            reconcileFileCreation?: (...args: unknown[]) => unknown;
-          }
-        ).reconcileFileCreation;
-        if (typeof reconcile === "function") {
-          const stat = await app.vault.adapter.stat(expectedPath);
-          const nativeStat = {
-            birthtimeMs: stat.ctime,
-            mtimeMs: stat.mtime,
-            size: stat.size,
-            isFile: () => true,
-            isDirectory: () => false,
-          };
-          const attempts: Array<[string, unknown[]]> = [
-            ["path-stat", [expectedPath, nativeStat]],
-            ["path-false-stat", [expectedPath, false, nativeStat]],
-            ["path-stat-false", [expectedPath, nativeStat, false]],
-            ["path-only", [expectedPath]],
-          ];
-          for (const [label, args] of attempts) {
-            try {
-              await reconcile.call(app.vault.adapter, ...args);
-              const file = app.vault.getAbstractFileByPath(expectedPath);
-              reconciliation_attempts.push(`${label}:ok:${file?.path ?? ""}`);
-              if (file) break;
-            } catch (error) {
-              reconciliation_attempts.push(`${label}:error:${String(error)}`);
-            }
-          }
-        }
         const target = app.vault.getAbstractFileByPath(expectedPath);
         return {
           expected_path: expectedPath,
-          reconciliation_attempts,
           adapter_exists: await app.vault.adapter.exists(expectedPath),
-          vault_methods: Object.getOwnPropertyNames(
-            Object.getPrototypeOf(app.vault)
-          ),
-          adapter_methods: Object.getOwnPropertyNames(
-            Object.getPrototypeOf(app.vault.adapter)
-          ),
           target_path: target?.path ?? null,
           active_file: app.workspace.getActiveFile()?.path ?? null,
           most_recent_file:
             app.workspace.getMostRecentLeaf()?.view.file?.path ?? null,
-          cached_items: app.workspace
-            .getLeavesOfType("paperforge-status")
-            .map((leaf) =>
-              ((leaf.view as { _cachedItems?: unknown[] })._cachedItems ?? []).filter(
-                (item) =>
-                  item &&
-                  typeof item === "object" &&
-                  (item as { zotero_key?: unknown }).zotero_key === "J01MEM001"
-              )
-            ),
-          vault_files: app.vault
-            .getMarkdownFiles()
-            .filter((file) => file.path.includes("J01MEM001"))
-            .map((file) => file.path),
           search_results: app.workspace
             .getLeavesOfType("paperforge-status")
             .map((leaf) => (leaf.view as { _searchResults?: unknown })._searchResults),

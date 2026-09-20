@@ -1984,7 +1984,7 @@ export class PaperForgeStatusView extends ItemView {
     }
   }
 
-  _openSearchResult(notePath: string, newLeaf: boolean) {
+  async _openSearchResult(notePath: string, newLeaf: boolean) {
     const file = this.app.vault.getAbstractFileByPath(notePath);
     if (file instanceof TFile) {
       // The dashboard lives in a sidebar. getLeaf(false) can therefore reuse
@@ -1994,13 +1994,27 @@ export class PaperForgeStatusView extends ItemView {
         ? this.app.workspace.getLeaf("tab")
         : (this.app.workspace.getMostRecentLeaf() ??
           this.app.workspace.getLeaf(false));
-      void leaf.openFile(file).then(async () => {
+      try {
+        await leaf.openFile(file);
         await this.app.workspace.revealLeaf(leaf);
         this.app.workspace.setActiveLeaf(leaf, { focus: true });
-      });
+      } catch {
+        new Notice("[!!] Failed to open note: " + notePath, 6000);
+      }
       return;
     }
-    this.app.workspace.openLinkText(notePath, "", newLeaf);
+    try {
+      if (await this.app.vault.adapter.exists(notePath)) {
+        new Notice(
+          "[!!] Note exists but Obsidian has not indexed it yet. Reopen the vault and retry.",
+          6000
+        );
+        return;
+      }
+      await this.app.workspace.openLinkText(notePath, "", newLeaf);
+    } catch {
+      new Notice("[!!] Failed to open note: " + notePath, 6000);
+    }
   }
 
   async _openSearchResultByKey(
@@ -2030,7 +2044,7 @@ export class PaperForgeStatusView extends ItemView {
       }
     }
     if (resolvedPath) {
-      this._openSearchResult(resolvedPath, newLeaf);
+      await this._openSearchResult(resolvedPath, newLeaf);
       return;
     }
     new Notice("[!!] Note not found: " + (zoteroKey || "unknown"), 6000);
