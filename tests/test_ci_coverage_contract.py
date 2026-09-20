@@ -274,13 +274,13 @@ class TestFailureEvidence:
         job = _workflow(GATING_WORKFLOW)["jobs"]["obsidian-e2e"]
         assert job["runs-on"] == "windows-latest"
         variants = {
-            (entry["app"], entry["installer"], entry["setup_positive"])
+            (entry["app"], entry["installer"])
             for entry in job["strategy"]["matrix"]["include"]
         }
         assert {
-            ("earliest", "earliest", "1"),
-            ("latest", "latest", "0"),
-            ("latest", "earliest", "0"),
+            ("earliest", "earliest"),
+            ("latest", "latest"),
+            ("latest", "earliest"),
         } <= variants
         commands = " ".join(str(step.get("run") or "") for step in job["steps"])
         assert "publish_pointer" in commands
@@ -290,7 +290,9 @@ class TestFailureEvidence:
             if step.get("env")
         ]
         assert any(
-            env.get("PF_E2E_SETUP_POSITIVE") == "${{ matrix.setup_positive }}"
+            env.get("PF_OBSIDIAN_APP_VERSION") == "${{ matrix.app }}"
+            and env.get("PF_OBSIDIAN_INSTALLER_VERSION")
+            == "${{ matrix.installer }}"
             for env in envs
         )
         uploads = [
