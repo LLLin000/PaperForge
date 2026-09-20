@@ -1338,7 +1338,11 @@ describe("PaperForge real-task e2e", function () {
           ).reconcileFileCreation;
           if (typeof reconcile === "function") {
             const stat = await app.vault.adapter.stat(expectedPath);
-            await reconcile.call(app.vault.adapter, expectedPath, stat);
+            await reconcile.call(app.vault.adapter, expectedPath, {
+              birthtimeMs: stat.ctime,
+              mtimeMs: stat.mtime,
+              size: stat.size,
+            });
           }
         } catch (error) {
           reconcile_error = String(error);
