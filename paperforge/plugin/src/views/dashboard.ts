@@ -1984,6 +1984,18 @@ export class PaperForgeStatusView extends ItemView {
     }
   }
 
+  _openSearchResult(notePath: string, newLeaf: boolean) {
+    const file = this.app.vault.getAbstractFileByPath(notePath);
+    if (file instanceof TFile) {
+      const leaf = this.app.workspace.getLeaf(newLeaf ? "tab" : false);
+      void leaf.openFile(file).then(() => {
+        this.app.workspace.setActiveLeaf(leaf, { focus: true });
+      });
+      return;
+    }
+    this.app.workspace.openLinkText(notePath, "", newLeaf);
+  }
+
   /* ── Collection Mode Render: Batch Workflow Workspace ── */
   _renderCollectionMode() {
     const domain = this._currentDomain || "Unknown";
@@ -3069,7 +3081,7 @@ export class PaperForgeStatusView extends ItemView {
       if (resolvedPath) {
         card.addEventListener("click", (e: MouseEvent) => {
           const newLeaf = e.ctrlKey || e.metaKey;
-          this.app.workspace.openLinkText(resolvedPath, "", newLeaf);
+          this._openSearchResult(resolvedPath, newLeaf);
         });
       } else {
         card.addEventListener("click", () => {
@@ -3082,7 +3094,7 @@ export class PaperForgeStatusView extends ItemView {
         if (e.key === "Enter" && resolvedPath) {
           e.preventDefault();
           const newLeaf = e.ctrlKey || e.metaKey;
-          this.app.workspace.openLinkText(resolvedPath, "", newLeaf);
+          this._openSearchResult(resolvedPath, newLeaf);
         }
       });
 
