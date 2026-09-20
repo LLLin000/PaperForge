@@ -993,9 +993,20 @@ describe("PaperForge real-task e2e", function () {
     const workspace = path.dirname(NOTE_PATH);
     expect(existsSync(path.join(base, workspace))).toBe(true);
 
-    const exportPath = path.join(base, EXPORT_REL);
     removeExportItem(base, PAPER_KEY);
     await openPanel();
+    const staleModal = await browser.$(".modal-container");
+    if (await staleModal.isExisting()) {
+      await browser.keys("Escape");
+      await browser.waitUntil(
+        async () => !(await browser.$(".modal-container").isExisting()),
+        {
+          timeout: 10000,
+          interval: 500,
+          timeoutMsg: "a previous orphan modal did not close before Sync",
+        }
+      );
+    }
     const syncBtn = await browser.$("[data-pf-testid='sync-library']");
     await expect(syncBtn).toExist();
     await syncBtn.click();
