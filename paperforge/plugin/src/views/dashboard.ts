@@ -1987,7 +1987,13 @@ export class PaperForgeStatusView extends ItemView {
   _openSearchResult(notePath: string, newLeaf: boolean) {
     const file = this.app.vault.getAbstractFileByPath(notePath);
     if (file instanceof TFile) {
-      const leaf = this.app.workspace.getLeaf(newLeaf ? "tab" : false);
+      // The dashboard lives in a sidebar. getLeaf(false) can therefore reuse
+      // that sidebar leaf when it is active; search results must open in the
+      // root workspace instead.
+      const leaf = newLeaf
+        ? this.app.workspace.getLeaf("tab")
+        : (this.app.workspace.getMostRecentLeaf() ??
+          this.app.workspace.getLeaf(false));
       void leaf.openFile(file).then(() => {
         this.app.workspace.setActiveLeaf(leaf, { focus: true });
       });
