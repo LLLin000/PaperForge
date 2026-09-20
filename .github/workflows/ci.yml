@@ -11,6 +11,9 @@ on:
       - "docs/**"
   pull_request:
     branches: [main, master]
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
 
 env:
   PYTHONIOENCODING: utf-8
@@ -78,7 +81,16 @@ jobs:
         shell: bash
         run: |
           python -m pytest tests/unit/ \
-            -v --tb=short --timeout=60
+            -v --tb=short --timeout=60 \
+            --junit-xml="$RUNNER_TEMP/paperforge-unit-tests.xml"
+      - name: Preserve first-failure unit evidence
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-failure-unit-tests-${{ matrix.os }}
+          path: ${{ runner.temp }}/paperforge-unit-tests.xml
+          if-no-files-found: warn
+          retention-days: 14
 
   # ---------------------------------------------------------------------------
   # L1.5 — J-matrix headless gates (#146): 3-OS machine contracts
@@ -124,7 +136,8 @@ jobs:
             tests/cli/test_json_contracts.py \
             tests/cli/test_text_contracts.py \
             tests/cli/test_ocr_progress_contracts.py \
-            -q --tb=short --timeout=120
+            -q --tb=short --timeout=120 \
+            --junit-xml="$RUNNER_TEMP/paperforge-j-matrix-j1.xml"
       # #224: the backend import-boundary check and the CI coverage contract are
       # what keep the other gates honest — a job that cannot fail, or a test file
       # no job collects, is invisible in a green run. Both must run on every push.
@@ -135,19 +148,30 @@ jobs:
             tests/test_ci_coverage_contract.py \
             tests/test_architecture_boundaries.py \
             tests/test_note_set_flag.py \
-            -q --tb=short --timeout=120
+            -q --tb=short --timeout=120 \
+            --junit-xml="$RUNNER_TEMP/paperforge-j-matrix-j1b.xml"
       - name: J2 — headless sync + vault preservation
         shell: bash
         run: |
           python -m pytest \
             tests/journey/test_headless_sync_preservation.py \
-            -q --tb=short --timeout=120
+            -q --tb=short --timeout=120 \
+            --junit-xml="$RUNNER_TEMP/paperforge-j-matrix-j2.xml"
       - name: J3 — deterministic OCR
         shell: bash
         run: |
           python -m pytest \
             tests/test_ocr_state_machine.py \
-            -q --tb=short --timeout=120
+            -q --tb=short --timeout=120 \
+            --junit-xml="$RUNNER_TEMP/paperforge-j-matrix-j3.xml"
+      - name: Preserve first-failure J-matrix evidence
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-failure-j-matrix-${{ matrix.os }}
+          path: ${{ runner.temp }}/paperforge-j-matrix-*.xml
+          if-no-files-found: warn
+          retention-days: 14
 
   # ---------------------------------------------------------------------------
   # L3 — Plugin tests (Vitest)
@@ -178,7 +202,7 @@ jobs:
         run: echo "PF_PYTHON=$(command -v python)" >> "$GITHUB_ENV"
       - run: npm ci
         working-directory: paperforge/plugin
-      - run: npx vitest run --reporter=verbose
+      - run: npx vitest run --reporter=junit --outputFile="$RUNNER_TEMP/paperforge-plugin-tests.xml"
         working-directory: paperforge/plugin
       # #121 (P0-6): a TypeScript compile failure or broken bundle must block
       # merge — tests alone are not a build gate.
@@ -186,6 +210,14 @@ jobs:
         working-directory: paperforge/plugin
       - run: npm run build
         working-directory: paperforge/plugin
+      - name: Preserve first-failure plugin evidence
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-failure-plugin-tests
+          path: ${{ runner.temp }}/paperforge-plugin-tests.xml
+          if-no-files-found: warn
+          retention-days: 14
 
   # ---------------------------------------------------------------------------
   # L1b — Full Python Suite (#224 / Block A: CI collection convergence)
@@ -219,14 +251,23 @@ jobs:
         run: npm ci
         working-directory: paperforge/plugin
       - name: Verify architecture generator and golden fixture pins (#231)
-        run: python -m pytest tests/test_architecture_audit_fixtures.py -q --tb=short --timeout=180
+        run: python -m pytest tests/test_architecture_audit_fixtures.py -q --tb=short --timeout=180 --junit-xml="$RUNNER_TEMP/paperforge-architecture-fixtures.xml"
       - name: Run the full suite
         run: |
           python -m pytest tests/ \
             --ignore=tests/e2e \
             --ignore=tests/audit \
             --ignore=tests/chaos \
-            -q --tb=short --timeout=180
+            -q --tb=short --timeout=180 \
+            --junit-xml="$RUNNER_TEMP/paperforge-python-suite.xml"
+      - name: Preserve first-failure Python-suite evidence
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-failure-python-suite
+          path: ${{ runner.temp }}/paperforge-*.xml
+          if-no-files-found: warn
+          retention-days: 14
 
   # ---------------------------------------------------------------------------
   # L2 — Release-protocol integration tests (shadow rebuild + retrieval)
@@ -247,7 +288,16 @@ jobs:
             tests/test_pr9c_streaming_embed.py \
             tests/test_deep_search.py \
             tests/test_query_command_diagnostics.py \
-            -v --tb=short --timeout=90
+            -v --tb=short --timeout=90 \
+            --junit-xml="$RUNNER_TEMP/paperforge-protocol-tests.xml"
+      - name: Preserve first-failure protocol evidence
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-failure-protocol-tests
+          path: ${{ runner.temp }}/paperforge-protocol-tests.xml
+          if-no-files-found: warn
+          retention-days: 14
 
   # ---------------------------------------------------------------------------
   # L4 — E2E + Audit
@@ -263,9 +313,17 @@ jobs:
       - name: Install package with test deps
         run: pip install -e ".[test,vector]"
       - name: Run E2E tests
-        run: python -m pytest tests/e2e/ -m e2e -v --tb=short --timeout=120
+        run: python -m pytest tests/e2e/ -m e2e -v --tb=short --timeout=120 --junit-xml="$RUNNER_TEMP/paperforge-e2e-tests.xml"
       - name: Run audit tests
-        run: python -m pytest tests/audit/ -m audit -v --tb=short --timeout=120
+        run: python -m pytest tests/audit/ -m audit -v --tb=short --timeout=120 --junit-xml="$RUNNER_TEMP/paperforge-audit-tests.xml"
+      - name: Preserve first-failure E2E/audit evidence
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-failure-e2e-audit
+          path: ${{ runner.temp }}/paperforge-*-tests.xml
+          if-no-files-found: warn
+          retention-days: 14
 
   # ---------------------------------------------------------------------------
   # L4b — Architecture deterministic gate (#134, review: independent job)
@@ -322,6 +380,14 @@ jobs:
                 f"status={assessment.get('status')} eligible={assessment.get('gate_eligible')} "
                 f"reasons={reasons}")
           PY
+      - name: Preserve first-failure architecture evidence
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-failure-architecture-gate
+          path: /tmp/pf-architecture-audit
+          if-no-files-found: warn
+          retention-days: 14
 
   # ---------------------------------------------------------------------------
   # Merge gate
@@ -349,7 +415,74 @@ jobs:
             tests/test_ocr_redo.py \
             tests/test_ocr_rebuild.py \
             tests/test_utils_slugify.py \
-            -q --tb=short --timeout=120
+            -q --tb=short --timeout=120 \
+            --junit-xml="$RUNNER_TEMP/paperforge-ocr-regression.xml"
+      - name: Preserve first-failure OCR evidence
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-failure-ocr-regression
+          path: ${{ runner.temp }}/paperforge-ocr-regression.xml
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------
+  # H — Real Obsidian lifecycle matrix (W19/X10 partial evidence)
+  # ---------------------------------------------------------------------------
+  # This runs only the declared Windows desktop host. The suite's disposable
+  # file keyring intentionally does not certify native keyring behavior; that
+  # remains an owner-controlled H/W20 evidence item.
+  obsidian-e2e:
+    name: H — Obsidian (${{ matrix.app }}, installer=${{ matrix.installer }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - app: earliest
+            installer: earliest
+            setup_positive: "1"
+          - app: latest
+            installer: latest
+            setup_positive: "0"
+          - app: latest
+            installer: earliest
+            setup_positive: "0"
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+          cache-dependency-path: paperforge/plugin/package-lock.json
+      - name: Install Python package
+        run: python -m pip install -e ".[test,vector]"
+      - name: Publish isolated runtime pointer for E2E
+        run: python -c "from paperforge.runtime_pointer import publish_pointer; print(publish_pointer())"
+      - name: Install plugin dependencies
+        run: npm ci
+        working-directory: paperforge/plugin
+      - name: Run real Obsidian lifecycle
+        run: npm run test:e2e
+        working-directory: paperforge/plugin
+        env:
+          PF_OBSIDIAN_APP_VERSION: ${{ matrix.app }}
+          PF_OBSIDIAN_INSTALLER_VERSION: ${{ matrix.installer }}
+          PF_E2E_SETUP_POSITIVE: ${{ matrix.setup_positive }}
+      - name: Preserve first-failure Obsidian evidence
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-failure-obsidian-${{ matrix.app }}-${{ matrix.installer }}
+          path: |
+            paperforge/plugin/test/evidence
+            paperforge/plugin/.obsidian-cache/*.log
+          if-no-files-found: warn
+          retention-days: 14
 
   alls-green:
     name: All Checks Passed
@@ -365,6 +498,7 @@ jobs:
       - plugin-tests
       - e2e-tests
       - architecture-gate
+      - obsidian-e2e
     runs-on: ubuntu-latest
     steps:
       - uses: re-actors/alls-green@v1.2.2
