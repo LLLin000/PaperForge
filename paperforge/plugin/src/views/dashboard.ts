@@ -1985,7 +1985,14 @@ export class PaperForgeStatusView extends ItemView {
   }
 
   async _openSearchResult(notePath: string, newLeaf: boolean) {
-    const file = this.app.vault.getAbstractFileByPath(notePath);
+    let file = this.app.vault.getAbstractFileByPath(notePath);
+    if (!(file instanceof TFile)) {
+      const deadline = Date.now() + 5000;
+      while (!(file instanceof TFile) && Date.now() < deadline) {
+        await new Promise<void>((resolve) => setTimeout(resolve, 100));
+        file = this.app.vault.getAbstractFileByPath(notePath);
+      }
+    }
     if (file instanceof TFile) {
       // The dashboard lives in a sidebar. getLeaf(false) can therefore reuse
       // that sidebar leaf when it is active; search results must open in the

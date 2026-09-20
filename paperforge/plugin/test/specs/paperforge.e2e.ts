@@ -1262,6 +1262,23 @@ describe("PaperForge real-task e2e", function () {
     await browser.waitUntil(
       async () =>
         await browser.executeObsidian(
+          async ({ app }, expectedPath) => {
+            const file = app.vault.getAbstractFileByPath(expectedPath);
+            return Boolean(
+              file && typeof file === "object" && "extension" in file
+            );
+          },
+          notePath
+        ),
+      {
+        timeout: 30000,
+        interval: 250,
+        timeoutMsg: "J01 Obsidian did not index the synced note",
+      }
+    );
+    await browser.waitUntil(
+      async () =>
+        await browser.executeObsidian(
           async ({ app }, expectedKey) =>
             app.workspace.getLeavesOfType("paperforge-status").some((leaf) => {
               const items = (leaf.view as { _cachedItems?: unknown[] })
