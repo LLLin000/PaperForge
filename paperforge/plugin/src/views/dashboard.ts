@@ -1989,21 +1989,6 @@ export class PaperForgeStatusView extends ItemView {
   ): Promise<TFile | null> {
     if (!(await this.app.vault.adapter.exists(notePath))) return null;
     try {
-      const adapter = this.app.vault.adapter as typeof this.app.vault.adapter & {
-        reconcileFile?: (path: string) => Promise<void>;
-        reconcileFileCreation?: (path: string) => Promise<void>;
-      };
-      for (const methodName of ["reconcileFile", "reconcileFileCreation"] as const) {
-        const reconcile = adapter[methodName];
-        if (typeof reconcile !== "function") continue;
-        try {
-          await reconcile.call(adapter, notePath);
-          const reconciled = this.app.vault.getAbstractFileByPath(notePath);
-          if (reconciled instanceof TFile) return reconciled;
-        } catch (error) {
-          console.warn(`[PF] ${methodName} failed:`, notePath, error);
-        }
-      }
       const parentPath = notePath.slice(0, notePath.lastIndexOf("/"));
       if (parentPath && !this.app.vault.getAbstractFileByPath(parentPath)) {
         try {
@@ -2015,9 +2000,17 @@ export class PaperForgeStatusView extends ItemView {
       const existing = this.app.vault.getAbstractFileByPath(notePath);
       if (existing instanceof TFile) return existing;
       const content = await this.app.vault.adapter.read(notePath);
-      await this.app.vault.create(notePath, content);
-      const materialized = this.app.vault.getAbstractFileByPath(notePath);
-      return materialized instanceof TFile ? materialized : null;
+      await this.app.vault.adapter.remove(notePath);
+      try {
+        return await this.app.vault.create(notePath, content);
+      } catch (error) {
+        try {
+          await this.app.vault.adapter.write(notePath, content);
+        } catch (restoreError) {
+          console.warn("[PF] Could not restore external note:", notePath, restoreError);
+        }
+        throw error;
+      }
     } catch (error) {
       console.warn("[PF] Could not register external note:", notePath, error);
       return null;
