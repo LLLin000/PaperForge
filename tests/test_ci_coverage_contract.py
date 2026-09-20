@@ -32,6 +32,16 @@ TESTS_DIR = REPO_ROOT / "tests"
 #: The merge gate. Only these workflows can block a pull request; a file
 #: collected solely by a scheduled workflow is *not* gated.
 GATING_WORKFLOW = "ci.yml"
+FAILURE_EVIDENCE_JOBS = (
+    "unit-tests",
+    "j-matrix",
+    "plugin-tests",
+    "python-suite",
+    "protocol-tests",
+    "e2e-tests",
+    "ocr-regression",
+)
+
 
 #: Files the merge gate does not collect, each with the reason it may stay out.
 #: Adding a file here is a claim that it need not gate; an empty reason fails.
@@ -227,6 +237,69 @@ class TestAggregateGate:
             for step in jobs["architecture-gate"].get("steps") or []
         )
         assert "--strict" in scripts
+
+class TestFailureEvidence:
+    """Key test jobs must preserve the first failing result for review."""
+
+    def test_key_test_jobs_upload_failure_reports(self):
+        jobs: dict[str, Any] = _workflow(GATING_WORKFLOW)["jobs"]
+        for name in FAILURE_EVIDENCE_JOBS:
+            steps = jobs[name].get("steps") or []
+            commands = " ".join(str(step.get("run") or "") for step in steps)
+            assert "--junit-xml=" in commands or "--reporter=junit" in commands, (
+                f"{name} does not emit a durable test report"
+            )
+            uploads = [
+                step
+                for step in steps
+                if str(step.get("uses") or "").startswith("actions/upload-artifact@")
+                and "failure()" in str(step.get("if") or "")
+            ]
+            assert uploads, (
+                f"{name} has no failure()-guarded artifact upload for its "
+                "first-failure report"
+            )
+
+    def test_architecture_gate_uploads_failure_evidence(self):
+        steps = _workflow(GATING_WORKFLOW)["jobs"]["architecture-gate"].get("steps") or []
+        uploads = [
+            step
+            for step in steps
+            if str(step.get("uses") or "").startswith("actions/upload-artifact@")
+            and "failure()" in str(step.get("if") or "")
+        ]
+        assert uploads, "architecture-gate must preserve its audit directory on failure"
+
+    def test_obsidian_matrix_covers_minimum_latest_and_old_installer(self):
+        job = _workflow(GATING_WORKFLOW)["jobs"]["obsidian-e2e"]
+        assert job["runs-on"] == "windows-latest"
+        variants = {
+            (entry["app"], entry["installer"], entry["setup_positive"])
+            for entry in job["strategy"]["matrix"]["include"]
+        }
+        assert {
+            ("earliest", "earliest", "1"),
+            ("latest", "latest", "0"),
+            ("latest", "earliest", "0"),
+        } <= variants
+        commands = " ".join(str(step.get("run") or "") for step in job["steps"])
+        assert "publish_pointer" in commands
+        envs = [
+            step.get("env") or {}
+            for step in job["steps"]
+            if step.get("env")
+        ]
+        assert any(
+            env.get("PF_E2E_SETUP_POSITIVE") == "${{ matrix.setup_positive }}"
+            for env in envs
+        )
+        uploads = [
+            step
+            for step in job.get("steps") or []
+            if str(step.get("uses") or "").startswith("actions/upload-artifact@")
+            and "failure()" in str(step.get("if") or "")
+        ]
+        assert uploads, "obsidian-e2e must preserve its first failure evidence"
 
 
 class TestLocalRunnerMirrorsCI:
