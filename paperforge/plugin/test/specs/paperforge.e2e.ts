@@ -1329,28 +1329,40 @@ describe("PaperForge real-task e2e", function () {
             active: leaf === app.workspace.activeLeaf,
           });
         });
-        let reconcile_error: string | null = null;
-        try {
-          const reconcile = (
-            app.vault.adapter as typeof app.vault.adapter & {
-              reconcileFileCreation?: (...args: unknown[]) => unknown;
-            }
-          ).reconcileFileCreation;
-          if (typeof reconcile === "function") {
-            const stat = await app.vault.adapter.stat(expectedPath);
-            await reconcile.call(app.vault.adapter, expectedPath, {
-              birthtimeMs: stat.ctime,
-              mtimeMs: stat.mtime,
-              size: stat.size,
-            });
+        const reconciliation_attempts: string[] = [];
+        const reconcile = (
+          app.vault.adapter as typeof app.vault.adapter & {
+            reconcileFileCreation?: (...args: unknown[]) => unknown;
           }
-        } catch (error) {
-          reconcile_error = String(error);
+        ).reconcileFileCreation;
+        if (typeof reconcile === "function") {
+          const stat = await app.vault.adapter.stat(expectedPath);
+          const nativeStat = {
+            birthtimeMs: stat.ctime,
+            mtimeMs: stat.mtime,
+            size: stat.size,
+          };
+          const attempts: Array<[string, unknown[]]> = [
+            ["path-stat", [expectedPath, nativeStat]],
+            ["path-false-stat", [expectedPath, false, nativeStat]],
+            ["path-stat-false", [expectedPath, nativeStat, false]],
+            ["path-only", [expectedPath]],
+          ];
+          for (const [label, args] of attempts) {
+            try {
+              await reconcile.call(app.vault.adapter, ...args);
+              const file = app.vault.getAbstractFileByPath(expectedPath);
+              reconciliation_attempts.push(`${label}:ok:${file?.path ?? ""}`);
+              if (file) break;
+            } catch (error) {
+              reconciliation_attempts.push(`${label}:error:${String(error)}`);
+            }
+          }
         }
         const target = app.vault.getAbstractFileByPath(expectedPath);
         return {
           expected_path: expectedPath,
-          reconcile_error,
+          reconciliation_attempts,
           adapter_exists: await app.vault.adapter.exists(expectedPath),
           vault_methods: Object.getOwnPropertyNames(
             Object.getPrototypeOf(app.vault)
