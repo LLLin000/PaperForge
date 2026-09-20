@@ -1337,6 +1337,16 @@ describe("PaperForge real-task e2e", function () {
           active_file: app.workspace.getActiveFile()?.path ?? null,
           most_recent_file:
             app.workspace.getMostRecentLeaf()?.view.file?.path ?? null,
+          cached_items: app.workspace
+            .getLeavesOfType("paperforge-status")
+            .map((leaf) =>
+              ((leaf.view as { _cachedItems?: unknown[] })._cachedItems ?? []).filter(
+                (item) =>
+                  item &&
+                  typeof item === "object" &&
+                  (item as { zotero_key?: unknown }).zotero_key === "J01MEM001"
+              )
+            ),
           search_results: app.workspace
             .getLeavesOfType("paperforge-status")
             .map((leaf) => (leaf.view as { _searchResults?: unknown })._searchResults),
