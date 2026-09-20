@@ -563,6 +563,7 @@ describe("PaperForgeStatusView note opening", () => {
     (file as any).path = notePath;
     (file as any).extension = "md";
     let indexed: TFile | null = null;
+    let physicalExists = true;
     const leaf = {
       openFile: vi.fn(async () => undefined),
     };
@@ -570,11 +571,21 @@ describe("PaperForgeStatusView note opening", () => {
       vault: {
         getAbstractFileByPath: vi.fn(() => indexed),
         adapter: {
-          exists: vi.fn(async () => true),
+          exists: vi.fn(async (path: string) =>
+            path === notePath ? physicalExists : true
+          ),
           read: vi.fn(async () => "# J01\n"),
+          remove: vi.fn(async () => {
+            physicalExists = false;
+          }),
+          write: vi.fn(async () => {
+            physicalExists = true;
+          }),
         },
         createFolder: vi.fn(async () => undefined),
         create: vi.fn(async () => {
+          if (physicalExists) throw new Error("File already exists");
+          physicalExists = true;
           indexed = file;
           return file;
         }),
@@ -594,6 +605,8 @@ describe("PaperForgeStatusView note opening", () => {
     expect(app.vault.createFolder).toHaveBeenCalledWith(
       "Resources/Literature/J01"
     );
+    expect(app.vault.adapter.read).toHaveBeenCalledWith(notePath);
+    expect(app.vault.adapter.remove).toHaveBeenCalledWith(notePath);
     expect(app.vault.create).toHaveBeenCalledWith(notePath, "# J01\n");
     expect(leaf.openFile).toHaveBeenCalledWith(file);
     expect(app.workspace.openLinkText).not.toHaveBeenCalled();
