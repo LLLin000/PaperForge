@@ -1333,6 +1333,12 @@ describe("PaperForge real-task e2e", function () {
         return {
           expected_path: expectedPath,
           adapter_exists: await app.vault.adapter.exists(expectedPath),
+          vault_methods: Object.getOwnPropertyNames(
+            Object.getPrototypeOf(app.vault)
+          ),
+          adapter_methods: Object.getOwnPropertyNames(
+            Object.getPrototypeOf(app.vault.adapter)
+          ),
           target_path: target?.path ?? null,
           active_file: app.workspace.getActiveFile()?.path ?? null,
           most_recent_file:
