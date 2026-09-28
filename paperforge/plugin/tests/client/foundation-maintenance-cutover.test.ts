@@ -435,10 +435,11 @@ describe("Foundation & Maintenance Domain Cutover (Ticket 03)", () => {
       );
       (tab as any)._getVaultBasePath = () => "/vault";
       (tab as any)._ensureManagedRuntime = () => ({
-        installOnce: vi
-          .fn()
-          .mockResolvedValue({ pythonPath: "/bootstrap/python.exe" }),
-        handshake: vi.fn().mockResolvedValue({ ok: true }),
+        ensureRuntime: vi.fn().mockResolvedValue({
+          action: "install",
+          pythonPath: "/bootstrap/python.exe",
+          observedVersion: "1.0.0",
+        }),
         readPointer: () => ({ pythonPath: "/bootstrap/python.exe" }),
       });
       (tab as any).display = vi.fn();

@@ -451,33 +451,35 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     this.display();
 
     // #174: the Setup Journey no longer runs its own pip — the ONLY
-    // bootstrap install path is RuntimeBootstrap.installOnce into
+    // bootstrap install path is RuntimeBootstrap into
     // ~/.paperforge/runtime/venv (ONE pinned paperforge[vector] install,
-    // never --user).  After install, handshake → `paperforge setup --json`
+    // never --user).  After install, `paperforge setup --json`
     // (the #137 NDJSON machine stream) publishes the pointer — Python is
     // the only writer.
-    // RC UX Seam: the whole chain (install → handshake → setup) is
-    // cancellable through one AbortController; installOnce deletes the
-    // half-installed venv on abort, and a cancelled install must NOT
-    // republish the pointer or flip _setup_complete.
+    // RC UX Seam: the whole chain is cancellable through one
+    // AbortController; a cancelled install must NOT republish the pointer
+    // or flip _setup_complete.  Only a venv THIS run created is removed on
+    // failure — a pre-existing runtime survives a failed upgrade.
     this._runtimeAbortController = new AbortController();
     const signal = this._runtimeAbortController.signal;
     void (async () => {
       try {
         const vaultPath = this._getVaultBasePath();
         const bootstrap = this._ensureManagedRuntime();
-        const installed = await bootstrap.installOnce(
+        // #HW-UX: ensureRuntime inspects first — a current runtime is left
+        // alone, an older one is upgraded in place, an interrupted one is
+        // repaired, and only an empty machine gets a fresh venv.  The
+        // user's configured python_path is honored as the base interpreter.
+        const ensured = await bootstrap.ensureRuntime(
           this.plugin.manifest.version,
-          signal
+          {
+            vaultPath,
+            userPythonPath:
+              this.plugin.settings.python_path?.trim() || undefined,
+            signal,
+          }
         );
-        const hs = await bootstrap.handshake(this.plugin.manifest.version, {
-          pythonPath: installed.pythonPath,
-          vaultPath,
-          signal,
-        });
-        if (!hs.ok) {
-          throw new Error(hs.reason ?? "handshake failed");
-        }
+        const installed = { pythonPath: ensured.pythonPath };
         // Post-runtime setup (config/vault/deps/agent) + pointer publication,
         // through the #137 NDJSON stream (setup --json).
         const s = this.plugin.settings;
@@ -519,7 +521,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         }
         this._setupOperation = "idle";
         this._setupReinstallRequested = false;
-        this._setupFeedback = t("setup_install_complete");
+        // #HW-UX: report what actually happened, so an upgrade or an
+        // in-place repair is distinguishable from a first install.
+        const base = t("setup_install_complete");
+        this._setupFeedback =
+          ensured.action === "none"
+            ? base
+            : `${base} (${ensured.action}, v${ensured.observedVersion})`;
         this._probeModule("installation");
         this._probeModule("help");
         this.display();
@@ -3552,8 +3560,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
     const nav = containerEl.createDiv({ cls: "pf-setup-nav" });
     // RC UX Seam: Stage 1 must never trap the user.
-    //  - running: a real Cancel aborts installOnce/handshake/setup through
-    //    the AbortController (installOnce deletes the half-installed venv).
+    //  - running: a real Cancel aborts the ensure/setup chain through the
+    //    AbortController (a venv this run created is removed; a
+    //    pre-existing runtime is kept).
     //  - idle/failed: "Later" exits the wizard; _setup_complete stays false
     //    so reopening Settings resumes at this exact stage.
     if (this._setupOperation === "running") {

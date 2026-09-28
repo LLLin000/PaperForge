@@ -1981,11 +1981,10 @@ describe("Setup Stage 1 exit/cancel semantics (RC UX Seam Pass)", () => {
     const tab = makeTab();
     (tab.plugin as any).settings._setup_complete = false;
     (tab as any)._ensureManagedRuntime = () => ({
-      installOnce: () =>
+      ensureRuntime: () =>
         Promise.reject(
           new DOMException("Operation was cancelled", "AbortError")
         ),
-      handshake: () => Promise.resolve({ ok: true }),
     });
     (tab as any)._getVaultBasePath = () => "/vault";
     (tab as any)._runSetupPython = () => Promise.resolve();

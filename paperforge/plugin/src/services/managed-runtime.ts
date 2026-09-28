@@ -52,6 +52,36 @@ export interface GateFailure {
 
 export type PlatformGate = { readonly ok: true } | GateFailure;
 
+/**
+ * Observed runtime state, read-only.  `ensureRuntime()` uses this to pick
+ * between "nothing to do", an in-place repair, an upgrade, or a fresh
+ * install — never by guessing.
+ */
+export interface RuntimeInspectResult {
+  /** True when pointer.json exists and is schema-v1 valid. */
+  readonly hasPointer: boolean;
+  /** paperforge version recorded in the pointer, or null when unpublished. */
+  readonly pointerVersion: string | null;
+  /** True when the venv directory exists on disk (published or not). */
+  readonly hasVenv: boolean;
+  /** Interpreter >= MIN_PYTHON discovered on PATH, or null. */
+  readonly systemPython: DiscoveredInterpreter | null;
+  /** User-configured python_path when it exists on disk, or null. */
+  readonly customPython: DiscoveredInterpreter | null;
+  /** Whether the venv interpreter reports the expected paperforge version. */
+  readonly venvVersionMatch: boolean | null;
+}
+
+/** Which install path `ensureRuntime()` took. */
+export type RuntimeEnsureAction = "none" | "upgrade" | "reinstall" | "install";
+
+export interface RuntimeEnsureResult {
+  readonly action: RuntimeEnsureAction;
+  /** Interpreter to run afterwards (venv python, or the pass-through one). */
+  readonly pythonPath: string;
+  readonly observedVersion: string;
+}
+
 // ── Internal DI types ──
 
 export interface FsOps {
@@ -236,6 +266,40 @@ export class RuntimeBootstrap {
       : path.join(venvDir, "bin", "python");
   }
 
+  /** Resolve a usable base interpreter: the user's configured python_path
+   * when it reports Python >= MIN_PYTHON, else the discovery chain.
+   * Returns null when neither yields one; the caller maps that to the
+   * platform-gate message.  A configured path that is missing, unreadable
+   * or too old falls back rather than producing a venv that cannot run.
+   *
+   * Acceptance is decided by actually running `--version`, never by
+   * `existsSync`: a configured value may be a bare command name (`py`,
+   * `python3`) that resolves through PATH and has no file at that path. */
+  private resolveBaseInterpreter(
+    userPythonPath?: string
+  ): DiscoveredInterpreter | null {
+    if (userPythonPath) {
+      const version = this._probePythonVersion(userPythonPath);
+      if (version && isAtLeast(version, MIN_PYTHON)) {
+        return { path: userPythonPath, version };
+      }
+    }
+    return this.discoverInterpreter();
+  }
+
+  /** `<interpreter> --version` parsed into a bare version, or null. */
+  private _probePythonVersion(pythonPath: string): string | null {
+    try {
+      const output = this._execFileSync(pythonPath, ["--version"], {
+        encoding: "utf-8",
+        timeout: 5000,
+      });
+      return parsePythonVersion(output);
+    } catch {
+      return null;
+    }
+  }
+
   // ── 1. Interpreter discovery (#143 §3 chain; >=3.11 required) ──
 
   /** Discover a system interpreter: py launcher latest, then python3.
@@ -327,15 +391,20 @@ export class RuntimeBootstrap {
    * NEVER writes the pointer (Python owns publication) and returns only an
    * ephemeral result — nothing is cached, nothing is usable until the
    * caller's handshake + `paperforge setup` succeed.
+   *
+   * `repairExistingVenv` keeps an already-present venv and force-reinstalls
+   * the pinned package in place — the path for upgrades and for a venv left
+   * with stale/conflicting packages.  Without it, a fresh venv is created.
    */
   async installOnce(
     expectedVersion: string,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    opts?: { pythonPath?: string; repairExistingVenv?: boolean }
   ): Promise<{ pythonPath: string; observedVersion: string }> {
     if (signal?.aborted) throw new AbortError("Operation was cancelled");
 
-    const discovered = this.discoverInterpreter();
-    if (!discovered) {
+    const base = this.resolveBaseInterpreter(opts?.pythonPath);
+    if (!base) {
       const gate = this.platformGate();
       throw new Error(
         `No Python ${MIN_PYTHON}+ found (${gate.ok ? "no interpreter" : gate.message})`
@@ -345,19 +414,36 @@ export class RuntimeBootstrap {
     if (signal?.aborted) throw new AbortError("Operation was cancelled");
 
     const pythonExe = this.pythonExeFor(this.venvDir);
+    // Remember whether the venv predates this call: an upgrade/reinstall
+    // failure MUST NOT destroy a previously working installation.
+    const venvExistedBefore = this._fs.existsSync(this.venvDir);
     try {
-      this._fs.mkdirSync(this.venvDir, { recursive: true });
-      await this._exec(
-        discovered.path,
-        ["-m", "venv", this.venvDir],
-        { timeout: 60000, signal },
-        "venv creation"
-      );
+      if (!opts?.repairExistingVenv || !venvExistedBefore) {
+        this._fs.mkdirSync(this.venvDir, { recursive: true });
+        await this._exec(
+          base.path,
+          ["-m", "venv", this.venvDir],
+          { timeout: 60000, signal },
+          "venv creation"
+        );
+      }
       if (signal?.aborted) throw new AbortError("Operation was cancelled");
+      const pipArgs = [
+        "-m",
+        "pip",
+        "install",
+        `paperforge[vector]==${expectedVersion}`,
+      ];
+      if (opts?.repairExistingVenv && venvExistedBefore) {
+        // In-place repair: replace paperforge and its pinned dependencies
+        // even when an older build left them behind, without dropping the
+        // rest of the venv.
+        pipArgs.push("--upgrade", "--force-reinstall");
+      }
       await this._exec(
         pythonExe,
-        ["-m", "pip", "install", `paperforge[vector]==${expectedVersion}`],
-        { timeout: 120000, signal },
+        pipArgs,
+        { timeout: 300000, signal },
         "pip install"
       );
       if (signal?.aborted) throw new AbortError("Operation was cancelled");
@@ -368,13 +454,129 @@ export class RuntimeBootstrap {
         );
       }
     } catch (err) {
-      // Clean the half-installed venv; nothing is published, nothing kept.
-      try {
-        this._fs.rmSync(this.venvDir, { recursive: true, force: true });
-      } catch {}
+      // Only a venv THIS call created may be removed.  A pre-existing venv
+      // survives a failed upgrade so the previous install keeps working.
+      if (!venvExistedBefore) {
+        try {
+          this._fs.rmSync(this.venvDir, { recursive: true, force: true });
+        } catch {}
+      }
       throw err;
     }
     return { pythonPath: pythonExe, observedVersion: expectedVersion };
+  }
+
+  // ── 3b. State inspection + decision ──
+
+  /** Read-only snapshot of what exists and whether it matches.  Never
+   * mutates anything; callers use it to choose an install path. */
+  async inspectRuntimeState(
+    expectedVersion: string,
+    userPythonPath?: string
+  ): Promise<RuntimeInspectResult> {
+    const ptr = this.readPointer();
+    const hasVenv = this._fs.existsSync(this.venvDir);
+    // `customPython` means "a configured path that will actually be used",
+    // so a failing / pre-3.11 path reports null here too — matching
+    // resolveBaseInterpreter's acceptance rule exactly (probe, not
+    // existsSync, since a bare command name like `py` has no file).
+    let customPython: DiscoveredInterpreter | null = null;
+    if (userPythonPath) {
+      const version = this._probePythonVersion(userPythonPath);
+      if (version && isAtLeast(version, MIN_PYTHON)) {
+        customPython = { path: userPythonPath, version };
+      }
+    }
+
+    let venvVersionMatch: boolean | null = null;
+    if (hasVenv) {
+      const pythonExe = this.pythonExeFor(this.venvDir);
+      if (this._fs.existsSync(pythonExe)) {
+        try {
+          venvVersionMatch =
+            (await this._probeVersion(pythonExe)) === expectedVersion;
+        } catch {
+          venvVersionMatch = false;
+        }
+      } else {
+        venvVersionMatch = false;
+      }
+    }
+
+    return {
+      hasPointer: ptr !== null,
+      pointerVersion: ptr?.paperforgeVersion ?? null,
+      hasVenv,
+      systemPython: this.discoverInterpreter(),
+      customPython,
+      venvVersionMatch,
+    };
+  }
+
+  /**
+   * Ensure a runtime at `expectedVersion` and hand it back verified.
+   *
+   *   nothing on disk            → fresh install
+   *   venv but no pointer        → repair (install was interrupted)
+   *   pointer older than current → in-place upgrade
+   *   pointer newer / divergent  → in-place repair
+   *   pointer + version match    → none (caller proceeds to `setup`)
+   *
+   * Never publishes the pointer — `paperforge setup` remains the only writer.
+   */
+  async ensureRuntime(
+    expectedVersion: string,
+    opts: { vaultPath: string; userPythonPath?: string; signal?: AbortSignal }
+  ): Promise<RuntimeEnsureResult> {
+    const state = await this.inspectRuntimeState(
+      expectedVersion,
+      opts.userPythonPath
+    );
+
+    if (
+      state.pointerVersion === expectedVersion &&
+      state.venvVersionMatch === true
+    ) {
+      return {
+        action: "none",
+        pythonPath: this.pythonExeFor(this.venvDir),
+        observedVersion: expectedVersion,
+      };
+    }
+
+    let action: RuntimeEnsureAction;
+    if (!state.hasVenv) {
+      action = "install";
+    } else if (
+      state.pointerVersion !== null &&
+      compareVersions(state.pointerVersion, expectedVersion) < 0
+    ) {
+      action = "upgrade";
+    } else {
+      action = "reinstall";
+    }
+
+    const installed = await this.installOnce(expectedVersion, opts.signal, {
+      pythonPath: opts.userPythonPath,
+      repairExistingVenv: state.hasVenv,
+    });
+
+    const hs = await this.handshake(expectedVersion, {
+      pythonPath: installed.pythonPath,
+      vaultPath: opts.vaultPath,
+      signal: opts.signal,
+    });
+    if (!hs.ok) {
+      throw new Error(
+        `runtime ensure failed: ${hs.reason ?? "handshake failed"}`
+      );
+    }
+
+    return {
+      action,
+      pythonPath: installed.pythonPath,
+      observedVersion: installed.observedVersion,
+    };
   }
 
   // ── 4. Handshake ──
@@ -386,9 +588,12 @@ export class RuntimeBootstrap {
    *      --json`) in a fresh process returns a KNOWN state.
    * Fail-closed: version mismatch, probe process failure, malformed JSON,
    * or an unexpected reason all FAIL the handshake.  Explicit pre-setup
-   * exceptions that PASS: installation.ready, installation.config_missing
-   * and installation.config_corrupt (the later `paperforge setup` step
-   * resolves config states; a version mismatch is not a pre-setup state).
+   * exceptions that PASS: installation.ready, installation.config_missing,
+   * installation.config_corrupt, and the runtime-pointer states Python
+   * emits before `paperforge setup` publishes the pointer
+   * (installation.runtime_pointer_missing / _stale /
+   * runtime_executable_missing).  The later `paperforge setup` step
+   * resolves all of them; a version mismatch is not a pre-setup state.
    * vaultPath is REQUIRED — a handshake without the capability probe is
    * not a handshake.
    */
@@ -443,7 +648,14 @@ export class RuntimeBootstrap {
       if (
         probe !== "installation.ready" &&
         probe !== "installation.config_missing" &&
-        probe !== "installation.config_corrupt"
+        probe !== "installation.config_corrupt" &&
+        // Pre-setup runtime-pointer states (probe.py).  These are emitted
+        // before `paperforge setup` publishes the pointer, and on the
+        // repair path when a venv exists but nothing is published yet —
+        // `ensureRuntime`'s "reinstall" case depends on them passing.
+        probe !== "installation.runtime_pointer_missing" &&
+        probe !== "installation.runtime_pointer_stale" &&
+        probe !== "installation.runtime_executable_missing"
       ) {
         return {
           ok: false,

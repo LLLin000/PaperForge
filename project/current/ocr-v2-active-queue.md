@@ -1,10 +1,25 @@
 # OCR-v2 Active Queue
 
-> **Current priority (2026-09-15): Plugin major-release acceptance — ACTIVE, rc.5 prerelease validated, final release blocked.** Frozen identities: `candidate_evidence_sha=56407222f2782c616518f55a3e0d3fe33d200aeb` (candidate acceptance tests), `release_source_sha=76c179451f6ca6d6dfa863a1ad8f00cf3aa7ce27` (2.0.0 product code/artifact source), and `metadata_head=8d04f02a63549c5837ce00420b306d350cb1b525` (public metadata state). W22 `RELEASE_READY` is **NO-GO**; rc.5 is a bounded installer/Obsidian validation artifact, not final `2.0.0` authorization. Complete the owner support contract and W18–W21 before W23 final publication.
+> **Current priority (2026-09-20): Plugin major-release acceptance — ACTIVE, rc.5 prerelease validated, final release blocked.** Frozen identities: `candidate_evidence_sha=56407222f2782c616518f55a3e0d3fe33d200aeb` (candidate acceptance tests), `release_source_sha=76c179451f6ca6d6dfa863a1ad8f00cf3aa7ce27` (2.0.0 product code/artifact source), and `metadata_head=8d04f02a63549c5837ce00420b306d350cb1b525` (public metadata state). W22 `RELEASE_READY` is **NO-GO**; rc.5 is a bounded installer/Obsidian validation artifact, not final `2.0.0` authorization. Complete the owner support contract and W18–W21 before W23 final publication. W19 PR #252 head `7f2215f1` passes Hosted `35521317438` across all three declared Windows app/installer cells; candidate rebinding is still required because the repair changed product/artifact content.
 > **Architecture gate / Block B + Review v2 final closure (2026-09-11):** #229 delivered in `b89e745f`; #222 orphan-prune wire coverage verified in `421867d9`, #223 probe action classification verified in `2215a4bf`, and #231 live architecture generator + golden-pin checks delivered in `48cb888f` with follow-up `b04bff5a`. Review v2 final closure `6f15160f` binds `emit` to a saved deterministic plan, re-derives its normalized selector against the digest-bound Contract/Survey, rejects tampered scope and gate packets, and removes independent emit-time narrowing. Focused process tests are **54/54** and the deterministic benchmark is **11/11** executable fixtures. Hosted run `34617059623` passes all 15 CI jobs, including L1b, all three J-Matrix jobs, L4b, E2E, plugin, Ruff, and aggregate checks. Empirical v1/v2 A/B remains deferred/not-run; owner release gates remain authoritative.
 > **Effort assessment:** §15 of the plan, [INFERENCE] 60–100 new real-host scenarios, 110–180 new/extended I·U tests, 15–40 product fixes, 57–75 issues (±40%).
-> **Release acceptance checkpoint (2026-09-15):** W04 A06 remains bounded positive and mismatch-preservation evidence using Release-N `1.5.15`, remote `master` version `2.0.0`, the candidate wheel, fresh-child verification, and runtime-pointer publication rules. In addition, rc.5 GitHub/PyPI publication, clean-vEnv install, real Obsidian retry, pointer republication, and final five-module control-center state are verified on Windows 11 / Obsidian 1.13.7. W18 resilience/performance, W19 supported environment/installer, W20 live provider/quality, and W21 final artifact/rollback/docs evidence remain open.
-> **Last updated:** 2026-09-16. Architecture deterministic substrate and Review v2 remain hosted-CI verified. The current lane is owner-gated final release acceptance; rc.5 prerelease validation is complete, but the lean vector extra split is a new product change requiring candidate rebinding after commit. No `RELEASE_READY` or final `2.0.0` publication decision has occurred.
+> **Release acceptance checkpoint (2026-09-20):** W04 A06 remains bounded positive and mismatch-preservation evidence using Release-N `1.5.15`, remote `master` version `2.0.0`, the candidate wheel, fresh-child verification, and runtime-pointer publication rules. rc.5 GitHub/PyPI publication, clean-vEnv install, real Obsidian retry, pointer republication, and final five-module control-center state are verified on Windows 11 / Obsidian 1.13.7. W18 resilience/performance, W20 live provider/quality, and W21 final artifact/rollback/docs evidence remain open. W19's PR-branch H matrix is green on `35521317438`, but candidate rebinding and owner release acceptance remain pending.
+> **Last updated:** 2026-09-20. Architecture deterministic substrate and Review v2 remain hosted-CI verified. The current lane is owner-gated final release acceptance; rc.5 prerelease validation is complete, W19 branch evidence is green, and the product/artifact repair still requires candidate rebinding. No `RELEASE_READY` or final `2.0.0` publication decision has occurred.
+
+## 2026-09-28 Runtime install-path hardening (frontend UX lane)
+| Item | Status |
+|---|---|
+| Detection | `RuntimeBootstrap.inspectRuntimeState()` added: reports pointer presence/version, venv presence, discovered vs configured interpreter, and whether the venv's paperforge matches the expected version. Read-only; no guessing. |
+| Decision | `ensureRuntime()` added and is now the single production entry from `SettingTab._installFoundation`: nothing → fresh install; venv-without-pointer → repair; older pointer → in-place update; matching runtime → `none` (skips install, proceeds to `setup`). |
+| Old-package handling | Upgrade/repair keeps the existing venv and runs `pip install --upgrade --force-reinstall paperforge[vector]==<pinned>` instead of recreating it, so stale/conflicting packages are replaced without dropping the rest of the venv. |
+| Cleanup safety | The previous unconditional `rm -rf venv` on any failure is gone. Only a venv created by the current run is removed; a pre-existing runtime survives a failed upgrade. |
+| Configured python_path | `settings.python_path` is now honored as the venv **base** interpreter (previously ignored entirely). Acceptance is decided by running `--version` (>=3.11), not `existsSync`, because discovery yields bare command names (`py`, `python3`). pip always targets the venv interpreter — never a system Python. |
+| Verification | Plugin suite **480 passed / 480 (all green)**; tsc clean; bundle 335.1kb. Real host probe: pointer `2.0.0rc5`, venv match `true`, discovered `py 3.14.0`. |
+| Handshake bug fixed | The lane uncovered a real fail-closed defect: `handshake` accepted only 3 of the 6 probe states Python emits. `paperforge/commands/probe.py` returns `installation.runtime_pointer_missing` / `_stale` / `runtime_executable_missing` before `setup` publishes the pointer — the exact state `ensureRuntime`'s repair path creates. `handshake` rejected them as "unexpected", which would have failed the repair install. Three tests already encoded the correct contract and were red on HEAD; the accepted list now matches Python's emission. |
+| E2E baseline | Real-Obsidian e2e (22 specs) is **18 passing / 2 failing / 2 skipped**, failing only on candidate version binding (`Expected "2.0.0", Received "2.0.0rc1"` at spec lines 414 and 1911). **Proven pre-existing**: an identical run with the plugin checked out at HEAD fails the same two tests at the same lines. Cause is sandbox provisioning — the sandbox runtime venv still holds `2.0.0rc1` while `manifest.json` is `2.0.0`. The spec never drives the install path (it only reads `_setupOperation`), so `ensureRuntime` is not exercised by e2e and this change cannot affect it. |
+| Known limitation | `compareVersions` is numeric-only, so prerelease-suffixed versions (`2.0.0rc5` vs `2.0.0`) yield `NaN` and take the `reinstall` label instead of `upgrade`. Install behaviour is identical either way (same pinned pip command); only the surfaced label is coarse. |
+| Release impact | Product change in the plugin; candidate rebinding required. `RELEASE_READY=NO-GO` unchanged. |
+
 ## 2026-09-14 Candidate certification checkpoint
 | Item | Status |
 |---|---|
@@ -15,7 +30,8 @@
 | Release gate | `RELEASE_READY=NO-GO`; freeze the owner support contract first, then complete W18–W21 and owner acceptance; public PyPI/GitHub distribution and actual-download smoke are W23; no publication performed. |
 | Owner support contract | BLOCKED — owner must decide supported OS/arch/Python/Obsidian/installer/providers/Release-N/upgrade/rollback/performance/quality/spend/privacy before W18–W21 can certify a scope. |
 | W18 resilience/performance | OPEN — budget, soak, fault/竞态, and first-failure evidence not frozen/accepted. |
-| W19 supported environment / installer | OPEN — hosted CI is green, but supported installer/Obsidian lifecycle and cross-platform evidence remain incomplete. |
+| W19 supported environment / installer | **PR-BRANCH H VERIFIED, RELEASE GATE OPEN** — PR #252 head `7f2215f1`; Hosted `35521317438` passes all required jobs and all three declared Windows combinations (`earliest/earliest`, `latest/earliest`, `latest/latest`). J01 now registers physically existing external notes through the Obsidian Vault boundary with restore-on-failure protection. This does not bind the frozen candidate or close owner support, native keyring/SQLite/file-lock, first-use setup, W18, W20, or W21 gates. |
+| W19 repair bundle follow-up | **IMPLEMENTED AND HOSTED-VERIFIED, NOT CANDIDATE-BOUND** — production `main.js` rebuilt at `d1ee3f9d`; final PR head `7f2215f1`; candidate rebinding remains mandatory. |
 | W20 live provider / quality | OPEN — owner-approved live OCR/embedding samples, keyring, quality, privacy, and spend evidence remain incomplete. |
 | W21 release artifact / rollback / docs | OPEN — candidate clean install/upgrade/rollback, artifact consistency, migration/support docs, and publish-failure recovery remain incomplete. |
 
@@ -37,6 +53,49 @@
 | Legacy migration | ChromaDB is isolated under `[legacy-vector]`; old-store migration reports the combined `[vector,legacy-vector]` install when the optional dependency is absent. |
 | Verification | Focused Python **26 passed / 1 warning**; final wheel metadata verified; clean lean vEnv **38 distributions / 7,217 files**, `pip check` clean, no `chromadb`; combined legacy-extra import passed. |
 | Release impact | Product change in the candidate worktree; candidate rebinding is required after commit. `RELEASE_READY=NO-GO`; W18–W21 and owner support acceptance remain open. |
+## 2026-09-17 Runtime/bootstrap hardening checkpoint
+| Item | Status |
+|---|---|
+| Runtime authority | Managed `~/.paperforge/runtime/pointer.json` is authoritative after installation; invalid or failing pointers fail closed instead of falling back to stale vault/global interpreters. |
+| Health boundary | `runtime-health --json` returns structured `ok=true` degraded capability status when optional vector imports fail; core read/write/build health remains visible. |
+| Bootstrap contract | Uses the executing absolute skill directory, actual isolated import verification, pointer status, verified interpreter, and observed runtime version; no shell/CWD path guessing. |
+| Verification | Focused regression/runtime gate **71 passed / 1 warning**; broken vault venv returned valid degraded JSON; managed pointer runtime returned green health; source bootstrap selected the published pointer. |
+| Release impact | Working-tree product change; candidate rebinding and candidate-bound hosted gates are required. `RELEASE_READY=NO-GO`; owner support scope and W18–W21 remain open. |
+
+## 2026-09-18 Clean rc.5 integration checkpoint
+| Item | Status |
+|---|---|
+| Authoritative base | Fresh `chore/integrate-stale-root` worktree at `origin/master` `8a1a45a1`; dirty root remains untouched. |
+| UX source | Local `61bc8400` replayed as `1af72888`; obsolete internal ledgers and old `main.js` were excluded, then the current source rebuilt the bundle. |
+| Runtime hardening | Pointer-first fail-closed bootstrap, lazy optional embedding imports, structured health boundary, degraded optional-vector status, and pointed-interpreter repair verification migrated without lean-vector/package/version changes. |
+| Verification | Focused runtime **70 passed / 1 warning**; scoped Ruff clean; Literature-hub source `runtime-health --json` returned fully healthy; two builds produced `main.js` hash `5d117108eae15ca3be6042c513088922`. |
+| Release impact | Product work is integrated but not candidate-bound or owner-accepted. `RELEASE_READY=NO-GO`; candidate rebinding and W18–W21 remain required. |
+| PR / review | PR #243 merged (`cd6d9fc86e1110b4edf9e32df54cff8ece782658`), CI 15/15 at `35d2189e`; PR #245 squash merged on `chore/integrate-stale-root` (`5902c8ac`, fixes #244). Owner instruction: "继续吧". `origin/master` advanced from `8a1a45a1` → `cd6d9fc8`. Local dirty root still at `61bc8400` (preserved, untouched, not rebased/pulled/reset). `RELEASE_READY=NO-GO`; candidate remains unbound. |
+## 2026-09-20 W19 hosted matrix checkpoint
+| Item | Status |
+|---|---|
+| Evidence branch | PR #252, head `7f2215f1`; the product bundle was rebuilt at `d1ee3f9d`. |
+| Failure preservation | JUnit/Vitest/audit artifacts upload only after failure; no retry or `continue-on-error` laundering. |
+| Hosted matrix | Hosted `35521317438` is green: `earliest/earliest`, `latest/earliest`, and `latest/latest` all pass, together with the existing required jobs. |
+| Repair | Dashboard re-registers an adapter-created note by reading and removing the physical file, recreating it through `Vault.create`, and restoring the original content if registration fails. Local dashboard runtime is **16/16**; typecheck/build pass. |
+| Release impact | W19 H evidence is verified for the PR branch. Candidate rebinding, owner support scope, W18/W20/W21, and `RELEASE_READY` remain open; no publication is authorized. |
+## 2026-09-18 PR merge decision
+Owner instruction: “你没测试好的测试一下吧” followed by “继续吧”. Verified post-merge state: both stacked PRs merged cleanly (no conflicts), hosted CI absent on #245 by workflow design, real-Obsidian smoke not run. Merging = acceptance onto master; **not** release — W18–W21 / owner contract / candidate rebinding still required before any rc/candidate/bundle publish. |
+| Verification | `npx vitest run` → **500 passed / 27 files**; `npm run build` passed; regression tests cover refresh failure after a successful global load and the same failure in paper mode. |
+| Review | Standards: no findings. Spec: prior P1 resolved; no new P0/P1. #244 closed. |
+| Evidence limits | No hosted CI (workflow triggers only on `main`/`master`); no real-Obsidian visual smoke (executable not discoverable). `RELEASE_READY=NO-GO`; candidate remains unbound. |
+| Merge evidence | `git fetch origin master` → origin/master = `cd6d9fc8` (was `8a1a45a1`). Local dirty root unchanged: HEAD = `61bc8400`, 37 modified + 16 untracked paths preserved. Worktrees intact; no git add -A incident after recovery lesson recorded. |
+## 2026-09-17 Whole-repository design audit
+| Severity | Finding | Evidence / required closure |
+|---|---|---|
+| P0 | Source `ManagedRuntime` handshake and tracked `main.js` disagree. | Selected plugin architecture/runtime gate has **3 failures**; rebuild/remove divergence and make the same handshake contract pass. |
+| P0 | Node transport, settings, dashboard, and worker status can bypass the published runtime pointer. | Restore one pointer-owned dispatch seam; configured/vault/global Python cannot be a post-install command target. |
+| P1 | Vector packaging/setup/health disagree on whether Chroma is normal or legacy-only. | Reconcile extras and capability contract in one source of truth. |
+| P1 | Updater accepts unvalidated archive extraction and sequential in-place copies; rollback cannot remove newly created files. | Validate archive layout and prove atomic replacement plus rollback through traversal/mid-copy/new-file tests. |
+| P1 | UI receives raw stderr/argv/path/error text; bootstrap copies lack parity enforcement. | Redact at Node→UI seam and test canonical/deployed bootstrap equality. |
+| P2 | Full Ruff has **478 diagnostics in 94 files** while CI selects only undefined-name failures. | Choose and enforce the baseline; do not equate the narrow CI check with repository style health. |
+| Scope | Audit applies to the current dirty working tree only. | Focused Python **13 passed**; selected Vitest has **3 failures**; full Ruff exits non-zero. `RELEASE_READY=NO-GO`. |
+| Revalidation | `origin/master` at `8a1a45a1` already has pointer-only dispatch in Node transport, Settings, and Dashboard; focused runtime/bundle gate **58/58** and production bundle rebuild has no textual diff. These P0s apply to stale dirty local `master` (`61bc8400`, 1 ahead / 31 behind), not current release base. Preserve and integrate local work in a dedicated worktree; do not pull/rebase the root directly. |
 
 
 ## 2026-09-16 Frontend interaction blocker audit (UX review)
