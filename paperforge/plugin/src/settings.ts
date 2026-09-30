@@ -470,7 +470,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     // leaving the wizard (Later / Home) left the session flag set and the
     // next "install"/"reinstall" click silently did nothing.
     this._setupJourneyDismissedForSession = false;
-    this._setupCompleteBeforeJourney = this.plugin.settings._setup_complete !== false;
+    this._setupCompleteBeforeJourney =
+      this.plugin.settings._setup_complete !== false;
     this.plugin.settings._setup_complete = false;
     void this.plugin.saveSettings().then(() => this.display());
   }
@@ -1595,7 +1596,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           },
         });
       }
-    } else if (env.reason?.code === "memory.index_stale" && !env.action?.primary) {
+    } else if (
+      env.reason?.code === "memory.index_stale" &&
+      !env.action?.primary
+    ) {
       // Index behind the database: ready with an ordinary rebuild action.
       // A backend-named primary action still wins (the state machine owns
       // the wording) — this is only the ready-with-notice shape.
@@ -3638,9 +3642,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         return;
       }
       const exists = fs.existsSync(value);
-      pythonHint.setText(
-        exists ? "" : t("setup_foundation_python_missing")
-      );
+      pythonHint.setText(exists ? "" : t("setup_foundation_python_missing"));
       pythonField.classList.toggle("pf-setup-field--invalid", !exists);
     };
     pythonInput.addEventListener("input", () => {

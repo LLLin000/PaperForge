@@ -496,7 +496,8 @@ const LANG: Record<string, Record<string, string>> = {
     foundation_skills: "Skills",
     md_foundation_legacy_migrate: "Migrate legacy configuration",
     md_foundation_legacy_migrate_btn: "Migrate",
-    md_foundation_legacy_migrate_desc: "One-time move of Obsidian SecretStorage values into the system keyring",
+    md_foundation_legacy_migrate_desc:
+      "One-time move of Obsidian SecretStorage values into the system keyring",
     foundation_setup_desc:
       "Run setup to create the Python-owned vault configuration and publish the runtime pointer.",
     foundation_setup_btn: "Open Setup",
@@ -698,7 +699,8 @@ const LANG: Record<string, Record<string, string>> = {
     action_foundation_update: "Update PaperForge",
     action_foundation_repair: "Repair runtime",
     cc_reason_installation_ready: "PaperForge environment is set up correctly.",
-    cc_reason_ocr_pending: "Ready — some papers still need OCR; run it whenever you want.",
+    cc_reason_ocr_pending:
+      "Ready — some papers still need OCR; run it whenever you want.",
     cc_reason_config_missing:
       "Configuration file is missing. Run setup to create one.",
     cc_reason_config_corrupt:
@@ -1400,7 +1402,8 @@ const LANG: Record<string, Record<string, string>> = {
     foundation_skills: "Skills",
     md_foundation_legacy_migrate: "迁移旧版配置",
     md_foundation_legacy_migrate_btn: "迁移",
-    md_foundation_legacy_migrate_desc: "把 Obsidian 安全存储中的密钥一次性迁移到系统钥匙串",
+    md_foundation_legacy_migrate_desc:
+      "把 Obsidian 安全存储中的密钥一次性迁移到系统钥匙串",
     foundation_setup_desc:
       "运行安装向导，创建由 Python 管理的库配置并发布运行环境指针。",
     foundation_setup_btn: "打开安装向导",

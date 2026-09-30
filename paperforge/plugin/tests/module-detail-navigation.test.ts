@@ -4,7 +4,15 @@
  * Uses JSDOM + Vitest mocks. Instantiates PaperForgeSettingTab, calls production
  * render functions, clicks production buttons. NO standalone DOM lookalikes.
  */
-import { describe, expect, it, vi, beforeEach, afterEach, type Mock } from "vitest";
+import {
+  describe,
+  expect,
+  it,
+  vi,
+  beforeEach,
+  afterEach,
+  type Mock,
+} from "vitest";
 import { JSDOM } from "jsdom";
 
 // ── Hoisted mutable state ──
@@ -1909,8 +1917,14 @@ describe("Setup Stage 1 exit/cancel semantics (RC UX Seam Pass)", () => {
     for (const [label, render] of cases) {
       const tab = makeTab();
       (tab as any)._capabilityState = {
-        installation: { ...createUnknownEnvelope("installation"), user_state: "setup_required" },
-        library: { ...createUnknownEnvelope("library"), user_state: "setup_required" },
+        installation: {
+          ...createUnknownEnvelope("installation"),
+          user_state: "setup_required",
+        },
+        library: {
+          ...createUnknownEnvelope("library"),
+          user_state: "setup_required",
+        },
       };
       const el = dom.window.document.createElement("div");
       render(tab, el);
@@ -2025,22 +2039,30 @@ describe("Setup Stage 1 exit/cancel semantics (RC UX Seam Pass)", () => {
 
   it("a version mismatch still offers the reinstall action", () => {
     const tab = makeTab();
-    const el = renderStage1(tab, {}, {
-      user_state: "action_required",
-      reason: {
-        code: "installation.version_mismatch",
-        text: "version mismatch",
-      },
-    });
+    const el = renderStage1(
+      tab,
+      {},
+      {
+        user_state: "action_required",
+        reason: {
+          code: "installation.version_mismatch",
+          text: "version mismatch",
+        },
+      }
+    );
     expect(buttonByText(el, "Reinstall")).toBeDefined();
   });
 
   it("a ready install with no reinstall request shows no install action", () => {
     const tab = makeTab();
-    const el = renderStage1(tab, {}, {
-      user_state: "ready",
-      reason: { code: "installation.ready", text: "Ready" },
-    });
+    const el = renderStage1(
+      tab,
+      {},
+      {
+        user_state: "ready",
+        reason: { code: "installation.ready", text: "Ready" },
+      }
+    );
     expect(buttonByText(el, "Reinstall")).toBeUndefined();
     expect(buttonByText(el, "Install PaperForge")).toBeUndefined();
   });
@@ -2105,9 +2127,7 @@ describe("Setup Stage 1 exit/cancel semantics (RC UX Seam Pass)", () => {
     (tab.plugin as any).settings.python_path = "C:/nope/missing/python.exe";
     const el = renderStage1(tab);
     expect(el.textContent).toContain("That file does not exist.");
-    expect(
-      el.querySelector(".pf-setup-field--invalid")
-    ).not.toBeNull();
+    expect(el.querySelector(".pf-setup-field--invalid")).not.toBeNull();
   });
 
   it("a successful reinstall returns to the Control Center instead of marching through the stages", async () => {
@@ -2130,9 +2150,9 @@ describe("Setup Stage 1 exit/cancel semantics (RC UX Seam Pass)", () => {
     expect((tab as any)._setupReinstallRequested).toBe(false);
     expect((tab.plugin as any).settings._setup_complete).toBe(true);
     expect((tab as any).activeTab).toBe("overview");
-    expect(noticeCalls.some((n) => /reinstalled successfully/i.test(n.msg))).toBe(
-      true
-    );
+    expect(
+      noticeCalls.some((n) => /reinstalled successfully/i.test(n.msg))
+    ).toBe(true);
   });
 
   it("a fresh install keeps the wizard so the remaining stages still run", async () => {
@@ -2340,13 +2360,15 @@ describe("Setup Stage 3 config truthfulness (no false success, #253)", () => {
 
   it("a failed config write fails the stage, names the key, and never runs setup", async () => {
     const { seam, plugin, client } = stageTab({
-      configSet: vi.fn().mockImplementation((key: string) =>
-        key === "zotero_data_dir"
-          ? Promise.reject(
-              new Error("config.not_found: canonical config file is missing")
-            )
-          : Promise.resolve({ changed: true })
-      ),
+      configSet: vi
+        .fn()
+        .mockImplementation((key: string) =>
+          key === "zotero_data_dir"
+            ? Promise.reject(
+                new Error("config.not_found: canonical config file is missing")
+              )
+            : Promise.resolve({ changed: true })
+        ),
     });
     seam._applyLibraryConfiguration();
     await settle();
@@ -2399,9 +2421,7 @@ describe("Setup Stage 3 config truthfulness (no false success, #253)", () => {
     seam._applyLibraryConfiguration();
     await settle();
 
-    expect(client.configSet).toHaveBeenCalledTimes(
-      Object.keys(WRITTEN).length
-    );
+    expect(client.configSet).toHaveBeenCalledTimes(Object.keys(WRITTEN).length);
     expect(client.configList).toHaveBeenCalledTimes(1);
     expect(plugin.saveSettings).toHaveBeenCalledTimes(1);
     expect(client.setup).toHaveBeenCalledTimes(1);
