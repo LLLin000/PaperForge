@@ -2400,7 +2400,7 @@ describe("Setup Stage 3 config truthfulness (no false success, #253)", () => {
 
     expect(seam._setupOperation).toBe("failed");
     expect(seam._setupFailureDetail).toContain("system_dir");
-    expect(seam._setupFailureDetail).toContain("backend reports");
+    expect(seam._setupFailureDetail).toContain("backend stored");
     expect(client.setup).not.toHaveBeenCalled();
   });
 
@@ -2414,6 +2414,32 @@ describe("Setup Stage 3 config truthfulness (no false success, #253)", () => {
     expect(seam._setupOperation).toBe("failed");
     expect(seam._setupFailureDetail).toContain("readback");
     expect(client.setup).not.toHaveBeenCalled();
+  });
+
+  it("an environment override with a verified stored write does not block the stage", async () => {
+    const { seam, client } = stageTab({
+      configList: vi.fn().mockResolvedValue({
+        schema_version: 2,
+        revision: "sha256:test",
+        unknown_keys: [],
+        fields: Object.entries(WRITTEN).map(([key, value]) => ({
+          key,
+          value: key === "zotero_data_dir" ? "D:/Env/Zotero" : value,
+          stored_value: value,
+          source: key === "zotero_data_dir" ? "environment" : "file",
+          environment: key === "zotero_data_dir" ? "ZOTERO_DATA_DIR" : null,
+        })),
+      }),
+    });
+    seam._applyLibraryConfiguration();
+    await settle();
+
+    // The save is verified against the file (stored_value); an environment
+    // override that wins at runtime is a supported user choice, not a
+    // stage failure.
+    expect(seam._setupOperation).toBe("idle");
+    expect(seam._setupFailureDetail).toBeNull();
+    expect(client.setup).toHaveBeenCalledTimes(1);
   });
 
   it("success is only claimed after the read-back confirms every value", async () => {

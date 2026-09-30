@@ -677,13 +677,22 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           const listed = await this.getClient().configList();
           for (const { key, value } of written) {
             const field = listed.fields.find((f) => f.key === key);
-            const candidates = field ? [field.value, field.stored_value] : [];
-            if (!candidates.some((v) => String(v).trim() === value)) {
+            if (!field) {
+              problems.push({ key, reason: "missing from the backend config" });
+              continue;
+            }
+            // stored_value is the file fact; `value` may be an environment
+            // override that later stages would actually consume.
+            const stored = String(field.stored_value ?? "").trim();
+            if (stored !== value) {
               problems.push({
                 key,
-                reason: `backend reports ${JSON.stringify(
-                  field ? String(field.value) : null
-                )}, expected ${JSON.stringify(value)}`,
+                reason:
+                  `backend stored ${JSON.stringify(stored)}, expected ` +
+                  JSON.stringify(value) +
+                  (field.source === "environment"
+                    ? ` (environment override ${field.environment ?? "set"} in effect)`
+                    : ""),
               });
             }
           }
