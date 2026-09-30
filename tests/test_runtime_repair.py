@@ -114,3 +114,67 @@ class _FakeCompleted:
 class _OkResult:
     ok = True
     message = "ok"
+
+
+# ── Lean vector extra contract (#255) ───────────────────────────────────────
+
+
+def test_vector_extras_and_probe_exclude_chromadb() -> None:
+    """ChromaDB is legacy-only; the core vector requirements stay lean."""
+    from pathlib import Path
+
+    import tomllib
+
+    from paperforge.setup import runtime
+
+    assert "chromadb" not in runtime.VECTOR_CAPABILITY_IMPORTS
+    assert "chromadb" not in runtime.VECTOR_RUNTIME_PROBE
+
+    repo_root = Path(__file__).resolve().parents[1]
+    data = tomllib.loads((repo_root / "pyproject.toml").read_text(encoding="utf-8"))
+    extras = data["project"]["optional-dependencies"]
+    assert extras["vector"] == ["openai>=1.0.0", "socksio>=1.0.0", "sqlite-vec>=0.1.0"]
+    assert any("chromadb" in dep for dep in extras["legacy-vector"])
+
+
+def test_core_vector_imports_survive_without_chromadb() -> None:
+    """The embedding/backends packages import without ChromaDB; the backend
+    symbol stays lazy and names the legacy extra on access."""
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    script = """
+import sys
+
+class _BlockChroma:
+    def find_spec(self, name, path=None, target=None):
+        if name == "chromadb" or name.startswith("chromadb."):
+            raise ModuleNotFoundError("blocked for test: " + name)
+        return None
+
+sys.meta_path.insert(0, _BlockChroma())
+
+import paperforge.embedding as embedding
+import paperforge.embedding.backends as backends
+
+assert embedding.get_vector_db_path is not None
+assert backends.VectorBackend is not None
+assert "chromadb" not in sys.modules
+try:
+    backends.ChromaBackend
+except ImportError as exc:
+    assert "legacy-vector" in str(exc)
+else:
+    raise SystemExit("ChromaBackend resolved although chromadb is blocked")
+print("ok")
+"""
+    proc = subprocess.run(
+        [sys.executable, "-c", script],
+        cwd=Path(__file__).resolve().parents[1],
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert "ok" in proc.stdout
