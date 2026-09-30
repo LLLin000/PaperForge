@@ -617,10 +617,19 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     return bounded.length > 220 ? `${bounded.slice(0, 220)}…` : bounded;
   }
 
+  /** Bounded one-line detail for per-key config failures (write/readback). */
+  private _formatConfigFailures(
+    failures: Array<{ key: string; reason: string }>
+  ): string {
+    const text = failures.map((f) => `${f.key}: ${f.reason}`).join(" · ");
+    return text.length > 400 ? `${text.slice(0, 400)}…` : text;
+  }
+
   private _applyLibraryConfiguration(): void {
     if (this._setupOperation === "running") return;
     this._setupOperation = "running";
     this._setupFeedback = null;
+    this._setupFailureDetail = null;
     const settings = this.plugin.settings;
     const vaultPath = this._getVaultBasePath();
     const paths = {
@@ -633,19 +642,66 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     // #142 / C0: mutations route through the typed config commands; the
     // plugin never writes paperforge.json.
     void (async () => {
-      const writes: Promise<unknown>[] = [];
+      // A rejected write is a fact: collect every failure so a partial
+      // configuration can never continue into `setup` as if it were saved.
+      const problems: Array<{ key: string; reason: string }> = [];
+      const written: Array<{ key: string; value: string }> = [];
+      const writes: Promise<void>[] = [];
       for (const [key, value] of Object.entries(paths)) {
         if (value && value.trim()) {
+          const wanted = value.trim();
+          written.push({ key, value: wanted });
           writes.push(
             this.getClient()
-              .configSet(key, value.trim())
-              .catch((e) => {
-                console.error(`PaperForge: config set ${key} failed`, e);
-              })
+              .configSet(key, wanted)
+              .then(
+                () => undefined,
+                (e) => {
+                  console.error(`PaperForge: config set ${key} failed`, e);
+                  problems.push({
+                    key,
+                    reason: this._formatSetupFailure(e),
+                  });
+                }
+              )
           );
         }
       }
-      await Promise.all(writes).catch(() => undefined);
+      await Promise.all(writes);
+
+      // Read the canonical config back before claiming success: the
+      // backend owns the truth, not the mirror the form was edited in.
+      if (problems.length === 0 && written.length > 0) {
+        try {
+          const listed = await this.getClient().configList();
+          for (const { key, value } of written) {
+            const field = listed.fields.find((f) => f.key === key);
+            const candidates = field ? [field.value, field.stored_value] : [];
+            if (!candidates.some((v) => String(v).trim() === value)) {
+              problems.push({
+                key,
+                reason: `backend reports ${JSON.stringify(
+                  field ? String(field.value) : null
+                )}, expected ${JSON.stringify(value)}`,
+              });
+            }
+          }
+        } catch (e) {
+          problems.push({
+            key: "readback",
+            reason: this._formatSetupFailure(e),
+          });
+        }
+      }
+
+      if (problems.length > 0) {
+        this._setupOperation = "failed";
+        this._setupFeedback = t("setup_library_config_failed");
+        this._setupFailureDetail = this._formatConfigFailures(problems);
+        this.display();
+        return;
+      }
+
       this.display();
 
       try {
@@ -1435,19 +1491,25 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         label: t("config_save"),
         onClick: () => {
           const value = this._agentPlatformDraft ?? current;
-          this.plugin.settings.agent_platform = value;
-          // #142 / C0: mutation through the typed config command.
+          // #142 / C0: mutation through the typed config command; the
+          // mirror and the persisted settings follow backend acceptance,
+          // never lead it.
           void this.getClient()
             .configSet("agent_platform", value)
-            .catch(
-              (e) =>
+            .then(
+              () => {
+                this.plugin.settings.agent_platform = value;
+                this._agentPlatformDraft = null;
+                void this.plugin.saveSettings();
+                this.display();
+              },
+              (e) => {
                 new Notice(
                   `PaperForge: config set agent_platform failed: ${String(e)}`
-                )
+                );
+                this.display();
+              }
             );
-          this.plugin.saveSettings();
-          this._agentPlatformDraft = null;
-          this.display();
         },
       });
       renderActionButton(actions, {
@@ -3733,6 +3795,16 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       });
     }
 
+    if (this._setupOperation === "failed" && this._setupFailureDetail) {
+      containerEl.createEl("p", {
+        cls: "pf-setup-failure-detail",
+        text: t("setup_install_failed_detail").replace(
+          "{detail}",
+          this._setupFailureDetail
+        ),
+      });
+    }
+
     const form = containerEl.createDiv({ cls: "pf-setup-library-form" });
     form.createEl("p", {
       cls: "pf-setup-form-intro",
@@ -4253,18 +4325,27 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           option.selected = value === this.plugin.settings.agent_platform;
         }
         select.addEventListener("change", () => {
-          this.plugin.settings.agent_platform = select.value;
-          // #142 / C0: mutation through the typed config command.
+          const previous = String(this.plugin.settings.agent_platform ?? "");
+          const value = select.value;
+          // #142 / C0: mutation through the typed config command; report
+          // "saved" only after the backend accepted, and never keep a
+          // rejected value in the mirror or the select.
           void this.getClient()
-            .configSet("agent_platform", select.value)
-            .catch(
-              (e) =>
+            .configSet("agent_platform", value)
+            .then(
+              () => {
+                this.plugin.settings.agent_platform = value;
+                void this.plugin.saveSettings();
+                status.setText(t("setup_optional_saved"));
+              },
+              (e) => {
                 new Notice(
                   `PaperForge: config set agent_platform failed: ${String(e)}`
-                )
+                );
+                select.value = previous;
+                status.setText(t("setup_optional_config_save_failed"));
+              }
             );
-          void this.plugin.saveSettings();
-          status.setText(t("setup_optional_saved"));
         });
       }
     }

@@ -548,6 +548,8 @@ const LANG: Record<string, Record<string, string>> = {
     setup_optional_saved: "Configuration saved securely.",
     setup_optional_save_failed:
       "Configuration could not be saved. Check Obsidian secure storage, then try again.",
+    setup_optional_config_save_failed:
+      "Configuration could not be saved. The previous value is still in effect.",
     setup_opt_ocr_desc: "Extract text and figures from PDFs",
     setup_opt_memory_desc: "Search and navigate across your papers",
     setup_opt_agent_desc: "Deploy and manage PaperForge Skills",
@@ -1444,6 +1446,7 @@ const LANG: Record<string, Record<string, string>> = {
     setup_optional_saved: "配置已安全保存。",
     setup_optional_save_failed:
       "配置无法保存。请检查 Obsidian 安全存储后重试。",
+    setup_optional_config_save_failed: "配置无法保存，仍使用原值。",
     setup_opt_ocr_desc: "从 PDF 提取文本和图表",
     setup_opt_memory_desc: "跨论文搜索和浏览",
     setup_opt_agent_desc: "部署并管理 PaperForge Skills",
