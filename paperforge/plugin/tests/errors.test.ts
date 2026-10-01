@@ -1,6 +1,9 @@
 import { describe, it, expect } from "vitest";
 
-import { classifyError } from "../src/services/python-bridge";
+import {
+  classifyError,
+  classifySetupFailure,
+} from "../src/services/python-bridge";
 
 describe("classifyError", () => {
   it("classifies ENOENT as python_missing", () => {
@@ -93,6 +96,58 @@ describe("classifyError", () => {
 
   it("classifies numeric exit codes as unknown", () => {
     const result = classifyError(1);
+    expect(result.type).toBe("unknown");
+    expect(result.recoverable).toBe(false);
+  });
+});
+
+describe("classifySetupFailure (#257)", () => {
+  it("reuses the exact-code table first", () => {
+    const result = classifySetupFailure("ETIMEDOUT");
+    expect(result.type).toBe("timeout");
+    expect(result.action).toBe("retry");
+  });
+
+  it("classifies pip network failures as network", () => {
+    const result = classifySetupFailure(
+      "pip install failed: Command failed — Could not fetch URL: Read timed out."
+    );
+    expect(result.type).toBe("network");
+    expect(result.action).toBe("retry-network");
+  });
+
+  it("classifies an unpublished version as artifact_unavailable", () => {
+    const result = classifySetupFailure(
+      "pip install failed: ERROR: Could not find a version that satisfies the requirement paperforge[vector]==9.9.9"
+    );
+    expect(result.type).toBe("artifact_unavailable");
+    expect(result.action).toBe("check-release");
+  });
+
+  it("classifies disk/permission/process conditions", () => {
+    expect(classifySetupFailure("OSError: No space left on device").type).toBe(
+      "disk_full"
+    );
+    expect(
+      classifySetupFailure("pip install failed: Permission denied: venv").type
+    ).toBe("permission_denied");
+    expect(
+      classifySetupFailure(
+        "The previous runtime directory could not be removed (WinError 32). Close any running PaperForge process and try again."
+      ).type
+    ).toBe("process_busy");
+  });
+
+  it("classifies version/handshake and missing-python messages", () => {
+    expect(
+      classifySetupFailure("version mismatch: observed 1.2.0 != expected 2.0.0")
+        .type
+    ).toBe("version_mismatch");
+    expect(classifySetupFailure("interpreter missing").type).toBe("no_python");
+  });
+
+  it("falls back to unknown without a pattern match", () => {
+    const result = classifySetupFailure("something entirely new happened");
     expect(result.type).toBe("unknown");
     expect(result.recoverable).toBe(false);
   });

@@ -415,6 +415,16 @@ export interface DiagnosticInput {
     actionId?: string;
     errorExcerpt?: string;
   }>;
+  /** #257: environment identity — home-relative or "(outside home)" only. */
+  environment?: {
+    managedRuntime?: string | null;
+    runtimeVersion?: string | null;
+    pythonSetting?: string | null;
+  };
+  /** #257: last classified install failure (category + bounded reason). */
+  lastSetupFailure?: { category: string; reason: string; at: string } | null;
+  /** #257: recent bootstrap/setup stages, oldest first. */
+  recentInstallStages?: string[];
 }
 
 /** Build a privacy-safe Support Diagnostic text block. */
@@ -425,6 +435,36 @@ export function buildSupportDiagnostic(input: DiagnosticInput): string {
   lines.push(`Plugin: ${input.pluginVersion}`);
   if (input.backendVersion) {
     lines.push(`Backend: ${input.backendVersion}`);
+  }
+
+  if (input.environment) {
+    lines.push("");
+    lines.push("--- Environment ---");
+    lines.push(
+      `managed-runtime: ${input.environment.managedRuntime ?? "(not published)"}`
+    );
+    lines.push(
+      `runtime-version: ${input.environment.runtimeVersion ?? "(unknown)"}`
+    );
+    lines.push(
+      `python-setting: ${input.environment.pythonSetting ?? "(auto)"}`
+    );
+  }
+
+  if (input.lastSetupFailure) {
+    lines.push("");
+    lines.push("--- Last Install Failure ---");
+    lines.push(`category: ${input.lastSetupFailure.category}`);
+    lines.push(`reason: ${input.lastSetupFailure.reason}`);
+    lines.push(`at: ${input.lastSetupFailure.at}`);
+  }
+
+  if (input.recentInstallStages && input.recentInstallStages.length > 0) {
+    lines.push("");
+    lines.push("--- Recent Install Stages ---");
+    for (const stage of input.recentInstallStages) {
+      lines.push(stage);
+    }
   }
 
   lines.push("");

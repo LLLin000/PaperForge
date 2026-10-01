@@ -49,6 +49,7 @@ import {
 import {
   scanBbtUnderProfiles,
   scanBbtDirectChildren,
+  classifySetupFailure,
 } from "./services/python-bridge";
 import type { PythonResult } from "./services/python-bridge";
 import { deferred } from "./services/deferred";
@@ -137,6 +138,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   private _setupFeedback: string | null = null;
   /** Raw failure reason for the last install attempt (null when none). */
   private _setupFailureDetail: string | null = null;
+  /** #257: last classified install failure, surfaced in the diagnostic. */
+  private _lastSetupFailure: {
+    category: string;
+    reason: string;
+    at: string;
+  } | null = null;
+  /** #257: bootstrap/setup stage breadcrumbs for the diagnostic (capped). */
+  private _setupStageLog: string[] = [];
   /** Completion state before an explicitly entered journey (see _goHome). */
   private _setupCompleteBeforeJourney: boolean | null = null;
   /** RC UX Seam P1: user chose "Later" — pure session flag; reset on hide(). */
@@ -506,7 +515,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         const installed = await bootstrap.installOnce(
           this.plugin.manifest.version,
           signal,
-          baseInterpreter
+          baseInterpreter,
+          (stage) => {
+            this._recordSetupStage(`bootstrap:${stage}`);
+            this._setupFeedback = `${t("setup_installing")} · ${t(
+              "setup_install_phase_" + stage
+            )}`;
+            this.display();
+          }
         );
         const hs = await bootstrap.handshake(this.plugin.manifest.version, {
           pythonPath: installed.pythonPath,
@@ -535,6 +551,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             pythonExe: installed.pythonPath,
             onEvent: (ev) => {
               if (ev.event === "phase") {
+                this._recordSetupStage(`setup:${ev.phase ?? ""}`);
                 this._setupFeedback = `${t("setup_installing") || "Installing"}: ${ev.phase ?? ""}`;
                 this.display();
               }
@@ -595,9 +612,15 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         this._setupOperation = "failed";
         this._setupFeedback = t("setup_install_failed");
         // The generic line above blames the Python path for EVERY failure
-        // (pip, network, handshake). Keep the real reason visible so the
-        // user can act on it instead of retrying blind.
-        this._setupFailureDetail = this._formatSetupFailure(error);
+        // (pip, network, handshake). #257: classify it and keep both the
+        // actionable hint and the real reason visible.
+        const reason = this._formatSetupFailure(error);
+        this._lastSetupFailure = {
+          category: classifySetupFailure(reason).type,
+          reason,
+          at: new Date().toISOString(),
+        };
+        this._setupFailureDetail = this._formatSetupFailureWithHint(error);
         this.display();
       } finally {
         this._runtimeAbortController = null;
@@ -616,6 +639,41 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const firstLine = raw.split(/\r?\n/).find((line) => line.trim()) ?? raw;
     const bounded = firstLine.trim();
     return bounded.length > 220 ? `${bounded.slice(0, 220)}…` : bounded;
+  }
+
+  /** Classified, actionable install-failure line (#257): category hint + raw. */
+  private _formatSetupFailureWithHint(error: unknown): string {
+    const raw = this._formatSetupFailure(error);
+    const hints: Record<string, string> = {
+      network: "setup_fail_hint_network",
+      disk_full: "setup_fail_hint_disk_full",
+      permission_denied: "setup_fail_hint_permission_denied",
+      process_busy: "setup_fail_hint_process_busy",
+      artifact_unavailable: "setup_fail_hint_artifact_unavailable",
+      wheel_unavailable: "setup_fail_hint_wheel_unavailable",
+      import_failed: "setup_fail_hint_import_failed",
+      version_mismatch: "setup_fail_hint_version_mismatch",
+      no_python: "setup_fail_hint_no_python",
+      python_missing: "setup_fail_hint_no_python",
+    };
+    const hintKey =
+      hints[classifySetupFailure(raw).type] ?? "setup_fail_hint_generic";
+    return `${t(hintKey)} · ${raw}`;
+  }
+
+  /** #257: bounded stage breadcrumbs (oldest first) for the diagnostic. */
+  private _recordSetupStage(label: string): void {
+    this._setupStageLog.push(`${new Date().toISOString()} ${label}`);
+    if (this._setupStageLog.length > 16) this._setupStageLog.shift();
+  }
+
+  /** #257: home-relative path for the diagnostic; never a raw user path. */
+  private _diagnosticPath(value: string | null | undefined): string | null {
+    const trimmed = value?.trim();
+    if (!trimmed) return null;
+    const home = os.homedir();
+    if (trimmed.startsWith(home)) return "~" + trimmed.slice(home.length);
+    return "(outside home)";
   }
 
   /** Bounded one-line detail for per-key config failures (write/readback). */
@@ -3554,16 +3612,24 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     ).open();
   }
 
-  /** #85: Build and copy privacy-safe Support Diagnostic. */
+  /** #85: Build and copy privacy-safe Support Diagnostic (#257 extended). */
   _buildAndCopyDiagnostic(): void {
     const pluginVersion = this.plugin.manifest?.version ?? "unknown";
     const modules = collectDiagnosticModules(
       this._capabilityState ?? {},
       this._lastKnownState
     );
+    const pointer = this._ensureManagedRuntime().readPointer?.() ?? null;
     const diag: DiagnosticInput = {
       pluginVersion,
       modules,
+      environment: {
+        managedRuntime: this._diagnosticPath(pointer?.environmentRoot),
+        runtimeVersion: pointer?.paperforgeVersion ?? null,
+        pythonSetting: this._diagnosticPath(this.plugin.settings.python_path),
+      },
+      lastSetupFailure: this._lastSetupFailure,
+      recentInstallStages: [...this._setupStageLog],
     };
     const text = buildSupportDiagnostic(diag);
     copySupportDiagnostic(text, () => {
@@ -3681,6 +3747,28 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           ? t("setup_ready")
           : this._getModuleConsequence("installation", env),
       cls: env.user_state === "ready" ? "pf-setup-ok" : "pf-setup-status",
+    });
+    // #257: environment identity — pointer facts and the advanced Python base
+    // are visible here instead of only existing on disk.
+    const pointer = this._ensureManagedRuntime().readPointer?.() ?? null;
+    const identity = containerEl.createDiv({ cls: "pf-setup-identity" });
+    identity.createEl("p", {
+      cls: "caption",
+      text: `${t("setup_identity_runtime")}: ${
+        pointer ? pointer.environmentRoot : t("setup_identity_not_published")
+      }`,
+    });
+    identity.createEl("p", {
+      cls: "caption",
+      text: `${t("setup_identity_version")}: ${
+        pointer ? pointer.paperforgeVersion : "—"
+      }`,
+    });
+    identity.createEl("p", {
+      cls: "caption",
+      text: `${t("setup_identity_python")}: ${
+        this.plugin.settings.python_path?.trim() || t("setup_identity_auto")
+      }`,
     });
     if (this._setupOperation === "running") {
       containerEl.createEl("p", {

@@ -552,7 +552,8 @@ export class RuntimeBootstrap {
   async installOnce(
     expectedVersion: string,
     signal?: AbortSignal,
-    interpreterOverride?: string
+    interpreterOverride?: string,
+    onStage?: (stage: "venv" | "pip" | "verify") => void
   ): Promise<{ pythonPath: string; observedVersion: string }> {
     if (signal?.aborted) throw new AbortError("Operation was cancelled");
 
@@ -610,6 +611,7 @@ export class RuntimeBootstrap {
         }
       }
       this._fs.mkdirSync(this.venvDir, { recursive: true });
+      onStage?.("venv");
       await this._exec(
         discovered.path,
         ["-m", "venv", this.venvDir],
@@ -617,6 +619,7 @@ export class RuntimeBootstrap {
         "venv creation"
       );
       if (signal?.aborted) throw new AbortError("Operation was cancelled");
+      onStage?.("pip");
       await this._exec(
         pythonExe,
         ["-m", "pip", "install", `paperforge[vector]==${expectedVersion}`],
@@ -626,6 +629,7 @@ export class RuntimeBootstrap {
         "pip install"
       );
       if (signal?.aborted) throw new AbortError("Operation was cancelled");
+      onStage?.("verify");
       const observed = await this._probeVersion(pythonExe, signal);
       if (
         !observed ||

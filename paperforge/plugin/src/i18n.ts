@@ -545,6 +545,34 @@ const LANG: Record<string, Record<string, string>> = {
     setup_install_failed:
       "PaperForge could not be installed. Check the Python path, then try again.",
     setup_install_failed_detail: "Reason: {detail}",
+    setup_fail_hint_generic:
+      "Unknown failure — retry; copy the Support Diagnostic if it repeats",
+    setup_fail_hint_network:
+      "The download could not reach the package index — check network/proxy and retry",
+    setup_fail_hint_disk_full: "Not enough disk space — free space and retry",
+    setup_fail_hint_permission_denied:
+      "The runtime folder could not be written — check folder permissions and retry",
+    setup_fail_hint_process_busy:
+      "A PaperForge process still holds the runtime — close it (or restart Obsidian) and retry",
+    setup_fail_hint_artifact_unavailable:
+      "This version is not on the package index — check the release, then retry",
+    setup_fail_hint_wheel_unavailable:
+      "No compatible package build for this Python/platform — pick a supported Python in Advanced settings",
+    setup_fail_hint_import_failed:
+      "The installed package could not be imported — reinstall the runtime",
+    setup_fail_hint_version_mismatch:
+      "The installed version did not match — reinstall the runtime",
+    setup_fail_hint_no_python:
+      "No usable Python was found — set one in Advanced settings",
+    setup_install_phase_venv: "creating the environment",
+    setup_install_phase_pip:
+      "installing dependencies (this can take a few minutes)",
+    setup_install_phase_verify: "verifying the runtime",
+    setup_identity_runtime: "Managed runtime",
+    setup_identity_version: "Runtime version",
+    setup_identity_python: "Python (advanced)",
+    setup_identity_not_published: "not published yet",
+    setup_identity_auto: "auto-detected",
     setup_optionals_title: "Step 3: Optional Capabilities",
     setup_optionals_desc:
       "Choose only what you need. Skipped capabilities can be enabled later.",
@@ -1447,6 +1475,28 @@ const LANG: Record<string, Record<string, string>> = {
     setup_install_complete: "安装完成，正在检查更新后的运行环境。",
     setup_install_failed: "PaperForge 安装未完成。请检查 Python 路径后重试。",
     setup_install_failed_detail: "原因：{detail}",
+    setup_fail_hint_generic: "未知错误——可重试；若反复出现请复制支持诊断",
+    setup_fail_hint_network: "下载无法连接软件源——请检查网络/代理后重试",
+    setup_fail_hint_disk_full: "磁盘空间不足——清理后重试",
+    setup_fail_hint_permission_denied:
+      "运行环境目录无法写入——请检查目录权限后重试",
+    setup_fail_hint_process_busy:
+      "仍有进程占用运行环境——请关闭后重试（必要时重启 Obsidian）",
+    setup_fail_hint_artifact_unavailable:
+      "该版本在软件源中不可用——请核对发布信息后重试",
+    setup_fail_hint_wheel_unavailable:
+      "当前 Python/平台没有兼容安装包——请在高级设置中换用受支持的 Python",
+    setup_fail_hint_import_failed: "安装包无法导入——请重装运行环境",
+    setup_fail_hint_version_mismatch: "安装后版本不一致——请重装运行环境",
+    setup_fail_hint_no_python: "未找到可用的 Python——请在高级设置中指定",
+    setup_install_phase_venv: "正在创建运行环境",
+    setup_install_phase_pip: "正在安装依赖（可能需要几分钟）",
+    setup_install_phase_verify: "正在验证运行环境",
+    setup_identity_runtime: "运行环境目录",
+    setup_identity_version: "运行版本",
+    setup_identity_python: "Python（高级项）",
+    setup_identity_not_published: "尚未发布",
+    setup_identity_auto: "自动探测",
     setup_optionals_title: "第 3 步：可选功能",
     setup_optionals_desc: "只选择需要的功能；跳过后仍可随时启用。",
     setup_optional_saved: "配置已安全保存。",

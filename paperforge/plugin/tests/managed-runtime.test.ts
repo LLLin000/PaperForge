@@ -918,6 +918,22 @@ describe("Real filesystem single venv (#174)", () => {
     expect(fs.existsSync(path.join(tmpDir, "pointer.json"))).toBe(false);
     expect(fs.readdirSync(tmpDir).some((n) => /^v\d/.test(n))).toBe(false);
   });
+
+  it("reports bootstrap stages in order (#257)", async () => {
+    const execFile = createMockExecFile("1.4.0");
+    const rt = new RuntimeBootstrap({
+      runtimeDir: tmpDir,
+      osPlatform: "win32",
+      osArch: "x64",
+      execFile: execFile as unknown as ExecFileFn,
+      execFileSync: createMockExecFileSync("3.11.0"),
+    });
+    const stages: string[] = [];
+    await rt.installOnce("1.4.0", undefined, undefined, (stage) => {
+      stages.push(stage);
+    });
+    expect(stages).toEqual(["venv", "pip", "verify"]);
+  });
 });
 
 // ── compareVersions (PEP 440 ordering, #258) ──
