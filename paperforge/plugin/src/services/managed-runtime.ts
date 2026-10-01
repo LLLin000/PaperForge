@@ -493,7 +493,8 @@ export class RuntimeBootstrap {
   async installOnce(
     expectedVersion: string,
     signal?: AbortSignal,
-    interpreterOverride?: string
+    interpreterOverride?: string,
+    onStage?: (stage: "venv" | "pip" | "verify") => void
   ): Promise<{ pythonPath: string; observedVersion: string }> {
     if (signal?.aborted) throw new AbortError("Operation was cancelled");
 
@@ -543,12 +544,15 @@ export class RuntimeBootstrap {
         } catch (cleanupErr) {
           throw new Error(
             `The previous runtime directory could not be removed (${
-              cleanupErr instanceof Error ? cleanupErr.message : String(cleanupErr)
+              cleanupErr instanceof Error
+                ? cleanupErr.message
+                : String(cleanupErr)
             }). Close any running PaperForge process and try again.`
           );
         }
       }
       this._fs.mkdirSync(this.venvDir, { recursive: true });
+      onStage?.("venv");
       await this._exec(
         discovered.path,
         ["-m", "venv", this.venvDir],
@@ -556,6 +560,7 @@ export class RuntimeBootstrap {
         "venv creation"
       );
       if (signal?.aborted) throw new AbortError("Operation was cancelled");
+      onStage?.("pip");
       await this._exec(
         pythonExe,
         ["-m", "pip", "install", `paperforge[vector]==${expectedVersion}`],
@@ -565,10 +570,12 @@ export class RuntimeBootstrap {
         "pip install"
       );
       if (signal?.aborted) throw new AbortError("Operation was cancelled");
+      onStage?.("verify");
       const observed = await this._probeVersion(pythonExe, signal);
       if (
         !observed ||
-        normalizeReleaseVersion(observed) !== normalizeReleaseVersion(expectedVersion)
+        normalizeReleaseVersion(observed) !==
+          normalizeReleaseVersion(expectedVersion)
       ) {
         throw new Error(
           `installed version mismatch: observed ${observed!} != requested ${expectedVersion}`
@@ -588,7 +595,9 @@ export class RuntimeBootstrap {
         throw new Error(
           `${err instanceof Error ? err.message : String(err)}\n` +
             `Additionally, the previous runtime directory could not be removed (${
-              cleanupErr instanceof Error ? cleanupErr.message : String(cleanupErr)
+              cleanupErr instanceof Error
+                ? cleanupErr.message
+                : String(cleanupErr)
             }). Close any running PaperForge process and try again.`
         );
       }
@@ -637,7 +646,8 @@ export class RuntimeBootstrap {
       const observed = await this._probeVersion(pythonPath, opts.signal);
       if (
         !observed ||
-        normalizeReleaseVersion(observed) !== normalizeReleaseVersion(expectedVersion)
+        normalizeReleaseVersion(observed) !==
+          normalizeReleaseVersion(expectedVersion)
       ) {
         return {
           ok: false,
@@ -820,10 +830,14 @@ export class RuntimeBootstrap {
     }
     if (this.osPlatform === "win32" && child.pid) {
       try {
-        this._execFileSync("taskkill", ["/PID", String(child.pid), "/T", "/F"], {
-          encoding: "utf-8",
-          timeout: 10000,
-        });
+        this._execFileSync(
+          "taskkill",
+          ["/PID", String(child.pid), "/T", "/F"],
+          {
+            encoding: "utf-8",
+            timeout: 10000,
+          }
+        );
       } catch {
         // taskkill is best-effort (the tree may already be gone)
       }

@@ -314,7 +314,8 @@ describe("RuntimeBootstrap", () => {
 
       expect(commands).toContain("C:/custom/python.exe");
       const venvCall = execFile.mock.calls.find(
-        (call) => Array.isArray(call[1]) && (call[1] as string[]).includes("venv")
+        (call) =>
+          Array.isArray(call[1]) && (call[1] as string[]).includes("venv")
       );
       expect(venvCall?.[0]).toBe("C:/custom/python.exe");
     });
@@ -352,7 +353,8 @@ describe("RuntimeBootstrap", () => {
 
       await rt.installOnce("1.4.0", undefined, "   ");
       const venvCall = execFile.mock.calls.find(
-        (call) => Array.isArray(call[1]) && (call[1] as string[]).includes("venv")
+        (call) =>
+          Array.isArray(call[1]) && (call[1] as string[]).includes("venv")
       );
       expect(venvCall?.[0]).toBe("py");
     });
@@ -399,13 +401,17 @@ describe("RuntimeBootstrap", () => {
     fsMock.existsSync.mockReturnValue(true);
     fsMock.mkdirSync.mockImplementation((p: string) => {
       if (String(p).endsWith("install.lock.d")) {
-        const err = new Error("EEXIST: file already exists") as Error & { code: string };
+        const err = new Error("EEXIST: file already exists") as Error & {
+          code: string;
+        };
         err.code = "EEXIST";
         throw err;
       }
       return undefined;
     });
-    (fsMock as unknown as { statSync: (p: string) => { mtimeMs: number } }).statSync = () => ({
+    (
+      fsMock as unknown as { statSync: (p: string) => { mtimeMs: number } }
+    ).statSync = () => ({
       mtimeMs: Date.now(),
     });
     const execFile = createMockExecFile("1.4.0");
@@ -428,7 +434,9 @@ describe("RuntimeBootstrap", () => {
       }
       return undefined;
     });
-    (fsMock as unknown as { statSync: (p: string) => { mtimeMs: number } }).statSync = () => ({
+    (
+      fsMock as unknown as { statSync: (p: string) => { mtimeMs: number } }
+    ).statSync = () => ({
       mtimeMs: Date.now() - 60 * 60 * 1000,
     });
     const execFile = createMockExecFile("1.4.0");
@@ -463,13 +471,20 @@ describe("RuntimeBootstrap", () => {
       ) => {
         const a = args as readonly string[];
         if (a.includes("probe")) {
-          cb(null, JSON.stringify({ reason: { code: "installation.ready" } }), "");
+          cb(
+            null,
+            JSON.stringify({ reason: { code: "installation.ready" } }),
+            ""
+          );
         } else {
           cb(null, "2.0.0rc2", "");
         }
       }
     );
-    const rt = makeBootstrap({ fs: fsMock, execFile: execFile as unknown as MockExecFile });
+    const rt = makeBootstrap({
+      fs: fsMock,
+      execFile: execFile as unknown as MockExecFile,
+    });
 
     const hs = await rt.handshake("2.0.0-rc.2", { vaultPath: "/vault" });
     // ok proves the version check accepted the PEP 440 spelling of the
@@ -556,9 +571,7 @@ describe("RuntimeBootstrap", () => {
       });
 
       const first = rt.installOnce("1.4.0");
-      await expect(rt.installOnce("1.4.0")).rejects.toThrow(
-        /already running/
-      );
+      await expect(rt.installOnce("1.4.0")).rejects.toThrow(/already running/);
       releasePip?.();
       await first;
     });
@@ -903,5 +916,21 @@ describe("Real filesystem single venv (#174)", () => {
     expect(fs.existsSync(path.join(tmpDir, "venv"))).toBe(true);
     expect(fs.existsSync(path.join(tmpDir, "pointer.json"))).toBe(false);
     expect(fs.readdirSync(tmpDir).some((n) => /^v\d/.test(n))).toBe(false);
+  });
+
+  it("reports bootstrap stages in order (#257)", async () => {
+    const execFile = createMockExecFile("1.4.0");
+    const rt = new RuntimeBootstrap({
+      runtimeDir: tmpDir,
+      osPlatform: "win32",
+      osArch: "x64",
+      execFile: execFile as unknown as ExecFileFn,
+      execFileSync: createMockExecFileSync("3.11.0"),
+    });
+    const stages: string[] = [];
+    await rt.installOnce("1.4.0", undefined, undefined, (stage) => {
+      stages.push(stage);
+    });
+    expect(stages).toEqual(["venv", "pip", "verify"]);
   });
 });
