@@ -647,6 +647,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       // configuration can never continue into `setup` as if it were saved.
       const problems: Array<{ key: string; reason: string }> = [];
       const written: Array<{ key: string; value: string }> = [];
+      const envOverridden: string[] = [];
       const writes: Promise<void>[] = [];
       for (const [key, value] of Object.entries(paths)) {
         if (value && value.trim()) {
@@ -694,6 +695,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
                     ? ` (environment override ${field.environment ?? "set"} in effect)`
                     : ""),
               });
+            }
+            if (
+              field.source === "environment" &&
+              String(field.value ?? "").trim() !== value
+            ) {
+              envOverridden.push(`${key} (${field.environment ?? "env"})`);
             }
           }
         } catch (e) {
@@ -744,7 +751,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           );
         }
         this._setupOperation = "idle";
-        this._setupFeedback = t("setup_library_configured");
+        this._setupFeedback =
+          envOverridden.length > 0
+            ? `${t("setup_library_configured")} · ${t("setup_library_config_env_override").replace("{keys}", envOverridden.join(", "))}`
+            : t("setup_library_configured");
         this._attemptedProbes.add("library");
         this._probeModule("library");
         this.display();

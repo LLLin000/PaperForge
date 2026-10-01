@@ -2436,10 +2436,12 @@ describe("Setup Stage 3 config truthfulness (no false success, #253)", () => {
 
     // The save is verified against the file (stored_value); an environment
     // override that wins at runtime is a supported user choice, not a
-    // stage failure.
+    // stage failure — and it is surfaced as a note on the success feedback.
     expect(seam._setupOperation).toBe("idle");
     expect(seam._setupFailureDetail).toBeNull();
     expect(client.setup).toHaveBeenCalledTimes(1);
+    expect(seam._setupFeedback).toContain("ZOTERO_DATA_DIR");
+    expect(seam._setupFeedback).toContain("overridden");
   });
 
   it("success is only claimed after the read-back confirms every value", async () => {

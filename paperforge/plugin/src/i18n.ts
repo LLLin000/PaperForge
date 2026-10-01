@@ -535,6 +535,8 @@ const LANG: Record<string, Record<string, string>> = {
     setup_library_configuring: "Saving and checking library configuration…",
     setup_library_config_failed:
       "Library configuration could not be verified. Check the paths, then try again.",
+    setup_library_config_env_override:
+      "At runtime these settings are overridden by environment variables: {keys}",
     setup_reinstall_notice:
       "Reinstall only the local PaperForge Python package. Your library configuration is unchanged.",
     setup_installing: "Installing and preparing PaperForge…",
@@ -1438,6 +1440,7 @@ const LANG: Record<string, Record<string, string>> = {
     setup_library_configured: "文献库配置已保存，正在检查连接。",
     setup_library_configuring: "正在保存并检查文献库配置…",
     setup_library_config_failed: "文献库配置无法验证。请检查路径后重试。",
+    setup_library_config_env_override: "运行时以下设置被环境变量覆盖：{keys}",
     setup_reinstall_notice:
       "只重新安装本机的 PaperForge Python 包，不会改动文献库配置。",
     setup_installing: "正在安装并准备 PaperForge…",
