@@ -31,7 +31,7 @@ def _make_minimal_vault(tmp_path: Path) -> Path:
 
 def _seed_chromadb(vault: Path, vectors: list[dict]) -> None:
     """Populate a ChromaDB at the vault's vector path with test data."""
-    import chromadb
+    chromadb = pytest.importorskip("chromadb")
 
     from paperforge.embedding._chroma import get_vector_db_path
 
@@ -172,7 +172,7 @@ def test_migrate_empty_collection(tmp_path):
     """No-op when ChromaDB exists but collection is empty."""
     vault = _make_minimal_vault(tmp_path)
 
-    import chromadb
+    chromadb = pytest.importorskip("chromadb")
 
     from paperforge.embedding._chroma import get_vector_db_path
 
@@ -221,7 +221,7 @@ def test_prune_deletes_from_both_backends(tmp_path):
 
     # Verify ChromaDB has data before prune
     chroma_dir = _get_chroma_dir(vault)
-    import chromadb
+    chromadb = pytest.importorskip("chromadb")
 
     chroma_client = chromadb.PersistentClient(path=str(chroma_dir))
     coll_ft = chroma_client.get_collection(name="paperforge_fulltext")
@@ -362,3 +362,45 @@ def test_migrated_legacy_fulltext_stale_after_config_change(tmp_path):
     assert payload["papers"]["LEG2"]["vector"] == "stale", (
         "migrated legacy vectors must go stale when the embedding config changes"
     )
+
+
+def test_migrate_without_chromadb_fails_with_the_legacy_install(tmp_path, monkeypatch):
+    """A ChromaDB store + no chromadb must fail actionably, never report a
+    silent 0-vector success (#255)."""
+    import sys
+
+    vault = _make_minimal_vault(tmp_path)
+
+    from paperforge.embedding import _chroma
+
+    db_path = _get_chroma_dir(vault)
+    db_path.mkdir(parents=True, exist_ok=True)
+    (db_path / "chroma.sqlite3").write_bytes(b"")
+
+    monkeypatch.setitem(sys.modules, "chromadb", None)
+
+    with pytest.raises(_chroma.LegacyVectorUnavailable) as excinfo:
+        _chroma.migrate_chroma_to_vec0(vault)
+    assert "legacy-vector" in str(excinfo.value)
+
+
+def test_embed_migrate_cli_reports_the_legacy_install(tmp_path, monkeypatch, capsys):
+    """`paperforge embed migrate` surfaces the combined-extra fix command."""
+    import argparse
+    import json
+
+    from paperforge.commands import embed as embed_cmd
+    from paperforge.embedding import _chroma
+
+    def _raise(vault):
+        raise _chroma.LegacyVectorUnavailable("ChromaDB extra missing")
+
+    monkeypatch.setattr(_chroma, "migrate_chroma_to_vec0", _raise)
+
+    args = argparse.Namespace(vault_path=tmp_path, embed_subcommand="migrate", json=True)
+    rc = embed_cmd.run(args)
+    assert rc == 1
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["ok"] is False
+    assert "legacy-vector" in payload["data"]["fix"]

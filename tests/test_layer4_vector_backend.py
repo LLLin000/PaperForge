@@ -5,6 +5,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+# Legacy extra is opt-in (#255):
+pytest.importorskip("chromadb")
+
 from paperforge.embedding.backends import ChromaBackend
 from tests.conftest import canonical_test_config
 
