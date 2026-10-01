@@ -16,6 +16,7 @@ import {
   getOsArch,
   resolveRuntimeCommand,
   AbortError,
+  compareVersions,
 } from "../src/services/managed-runtime";
 import type {
   FsOps,
@@ -314,7 +315,8 @@ describe("RuntimeBootstrap", () => {
 
       expect(commands).toContain("C:/custom/python.exe");
       const venvCall = execFile.mock.calls.find(
-        (call) => Array.isArray(call[1]) && (call[1] as string[]).includes("venv")
+        (call) =>
+          Array.isArray(call[1]) && (call[1] as string[]).includes("venv")
       );
       expect(venvCall?.[0]).toBe("C:/custom/python.exe");
     });
@@ -352,7 +354,8 @@ describe("RuntimeBootstrap", () => {
 
       await rt.installOnce("1.4.0", undefined, "   ");
       const venvCall = execFile.mock.calls.find(
-        (call) => Array.isArray(call[1]) && (call[1] as string[]).includes("venv")
+        (call) =>
+          Array.isArray(call[1]) && (call[1] as string[]).includes("venv")
       );
       expect(venvCall?.[0]).toBe("py");
     });
@@ -399,13 +402,17 @@ describe("RuntimeBootstrap", () => {
     fsMock.existsSync.mockReturnValue(true);
     fsMock.mkdirSync.mockImplementation((p: string) => {
       if (String(p).endsWith("install.lock.d")) {
-        const err = new Error("EEXIST: file already exists") as Error & { code: string };
+        const err = new Error("EEXIST: file already exists") as Error & {
+          code: string;
+        };
         err.code = "EEXIST";
         throw err;
       }
       return undefined;
     });
-    (fsMock as unknown as { statSync: (p: string) => { mtimeMs: number } }).statSync = () => ({
+    (
+      fsMock as unknown as { statSync: (p: string) => { mtimeMs: number } }
+    ).statSync = () => ({
       mtimeMs: Date.now(),
     });
     const execFile = createMockExecFile("1.4.0");
@@ -428,7 +435,9 @@ describe("RuntimeBootstrap", () => {
       }
       return undefined;
     });
-    (fsMock as unknown as { statSync: (p: string) => { mtimeMs: number } }).statSync = () => ({
+    (
+      fsMock as unknown as { statSync: (p: string) => { mtimeMs: number } }
+    ).statSync = () => ({
       mtimeMs: Date.now() - 60 * 60 * 1000,
     });
     const execFile = createMockExecFile("1.4.0");
@@ -463,13 +472,20 @@ describe("RuntimeBootstrap", () => {
       ) => {
         const a = args as readonly string[];
         if (a.includes("probe")) {
-          cb(null, JSON.stringify({ reason: { code: "installation.ready" } }), "");
+          cb(
+            null,
+            JSON.stringify({ reason: { code: "installation.ready" } }),
+            ""
+          );
         } else {
           cb(null, "2.0.0rc2", "");
         }
       }
     );
-    const rt = makeBootstrap({ fs: fsMock, execFile: execFile as unknown as MockExecFile });
+    const rt = makeBootstrap({
+      fs: fsMock,
+      execFile: execFile as unknown as MockExecFile,
+    });
 
     const hs = await rt.handshake("2.0.0-rc.2", { vaultPath: "/vault" });
     // ok proves the version check accepted the PEP 440 spelling of the
@@ -556,9 +572,7 @@ describe("RuntimeBootstrap", () => {
       });
 
       const first = rt.installOnce("1.4.0");
-      await expect(rt.installOnce("1.4.0")).rejects.toThrow(
-        /already running/
-      );
+      await expect(rt.installOnce("1.4.0")).rejects.toThrow(/already running/);
       releasePip?.();
       await first;
     });
@@ -903,5 +917,57 @@ describe("Real filesystem single venv (#174)", () => {
     expect(fs.existsSync(path.join(tmpDir, "venv"))).toBe(true);
     expect(fs.existsSync(path.join(tmpDir, "pointer.json"))).toBe(false);
     expect(fs.readdirSync(tmpDir).some((n) => /^v\d/.test(n))).toBe(false);
+  });
+});
+
+// ── compareVersions (PEP 440 ordering, #258) ──
+describe("compareVersions (PEP 440 ordering)", () => {
+  it("treats the two release spellings as equal", () => {
+    expect(compareVersions("2.0.0-rc.2", "2.0.0rc2")).toBe(0);
+    expect(compareVersions("2.0.0-alpha.1", "2.0.0a1")).toBe(0);
+    expect(compareVersions("2.0.0-beta.3", "2.0.0b3")).toBe(0);
+    expect(compareVersions("1.0", "1.0.0")).toBe(0);
+  });
+
+  it("orders rc below the final release (the upgrade-label case)", () => {
+    expect(compareVersions("2.0.0rc5", "2.0.0")).toBeLessThan(0);
+    expect(compareVersions("2.0.0", "2.0.0rc5")).toBeGreaterThan(0);
+    expect(compareVersions("2.0.0rc1", "2.0.0rc5")).toBeLessThan(0);
+  });
+
+  it("orders the full PEP 440 chain dev < a < b < rc < final < post", () => {
+    const chain = [
+      "2.0.0.dev1",
+      "2.0.0a1",
+      "2.0.0b1",
+      "2.0.0rc1",
+      "2.0.0",
+      "2.0.0.post1",
+    ];
+    for (let i = 1; i < chain.length; i++) {
+      expect(compareVersions(chain[i - 1], chain[i])).toBeLessThan(0);
+    }
+  });
+
+  it("sorts an attached .dev below its base", () => {
+    expect(compareVersions("2.0.0a1.dev1", "2.0.0a1")).toBeLessThan(0);
+    expect(compareVersions("2.0.0.post1.dev1", "2.0.0.post1")).toBeLessThan(0);
+    expect(compareVersions("2.0.0.post1.dev1", "2.0.0")).toBeGreaterThan(0);
+  });
+
+  it("compares release numbers before any phase segment", () => {
+    expect(compareVersions("1.0.post1", "1.0.1")).toBeLessThan(0);
+    expect(compareVersions("1.5.15", "2.0.0rc1")).toBeLessThan(0);
+    expect(compareVersions("3.14.0", "3.11")).toBeGreaterThan(0);
+  });
+
+  it("keeps python-min semantics: a pre-release sorts below its release", () => {
+    expect(compareVersions("3.11.0rc1", "3.11")).toBeLessThan(0);
+    expect(compareVersions("3.11.0", "3.11")).toBe(0);
+  });
+
+  it("returns NaN for unparseable input so gates fail closed", () => {
+    expect(Number.isNaN(compareVersions("bogus", "1.0.0"))).toBe(true);
+    expect(Number.isNaN(compareVersions("1.0.0", ""))).toBe(true);
   });
 });
