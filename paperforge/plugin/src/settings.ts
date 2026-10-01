@@ -574,6 +574,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         }
         this._setupOperation = "idle";
         this._setupCompleteBeforeJourney = null;
+        // #260: the pointer now names the verified candidate — retire any
+        // other runtime environment (best-effort; never the active one).
+        try {
+          const pointer = bootstrap.readPointer?.() ?? null;
+          bootstrap.retireUnusedRuntimes?.(pointer?.environmentRoot ?? null);
+        } catch {
+          // Housekeeping only: a retirement failure must never fail setup.
+        }
         const wasReinstall = forceInstall || this._setupReinstallRequested;
         this._setupReinstallRequested = false;
         this._probeModule("installation");
