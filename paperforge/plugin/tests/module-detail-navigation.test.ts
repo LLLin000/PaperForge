@@ -264,11 +264,15 @@ vi.mock("child_process", () => {
   return { ...mod, default: mod };
 });
 
-vi.mock("../src/services/python-bridge", () => ({
-  scanBbtUnderProfiles: () => [],
-  scanBbtDirectChildren: () => [],
-  runSubprocess: () => {},
-}));
+vi.mock("../src/services/python-bridge", async (importOriginal) => {
+  const actual = await importOriginal<Record<string, unknown>>();
+  return {
+    ...actual,
+    scanBbtUnderProfiles: () => [],
+    scanBbtDirectChildren: () => [],
+    runSubprocess: () => {},
+  };
+});
 
 vi.mock("../src/services/runtime-paths", () => ({
   resolveVaultPaths: () => ({}),
@@ -2550,6 +2554,103 @@ describe("Setup Stage 3 config truthfulness (no false success, #253)", () => {
     expect(plugin.settings.agent_platform).toBe("claude");
     expect(seam._agentPlatformDraft).toBeNull();
     expect(plugin.saveSettings).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ═══════════ Install failure surfacing + environment identity (#257) ═══════════
+describe("Install failure surfacing (#257)", () => {
+  interface InstallSeam {
+    _installFoundation: (force: boolean) => void;
+    _renderSetupStageFoundation: (el: HTMLElement) => void;
+    _ensureManagedRuntime: unknown;
+    _getVaultBasePath: () => string;
+    _probeModule: (mod: string) => void;
+    _setupOperation: string;
+    _setupFailureDetail: string | null;
+    _lastSetupFailure: { category: string } | null;
+    _setupStageLog: string[];
+  }
+  interface InstallPluginSeam {
+    settings: Record<string, unknown>;
+  }
+  /** Test seam: private tab members exercised below. */
+  function asInstall(tab: PaperForgeSettingTab): InstallSeam {
+    return tab as unknown as InstallSeam;
+  }
+  function asInstallPlugin(tab: PaperForgeSettingTab): InstallPluginSeam {
+    return tab.plugin as unknown as InstallPluginSeam;
+  }
+  async function settleInstall(times = 12): Promise<void> {
+    for (let i = 0; i < times; i++) await Promise.resolve();
+  }
+
+  it("classifies a network install failure and records it for the diagnostic", async () => {
+    const tab = makeTab();
+    const seam = asInstall(tab);
+    asInstallPlugin(tab).settings._setup_complete = false;
+    seam._ensureManagedRuntime = () => ({
+      installOnce: () =>
+        Promise.reject(
+          new Error("pip install failed: Read timed out. Could not fetch URL")
+        ),
+      handshake: () => Promise.resolve({ ok: true }),
+    });
+    seam._getVaultBasePath = () => "/vault";
+    seam._probeModule = () => {};
+    seam._installFoundation(false);
+    await settleInstall(6);
+
+    expect(seam._setupOperation).toBe("failed");
+    expect(seam._setupFailureDetail).toContain("network/proxy");
+    expect(seam._setupFailureDetail).toContain("Read timed out");
+    expect(seam._lastSetupFailure?.category).toBe("network");
+  });
+
+  it("records bootstrap stages on a successful install", async () => {
+    const tab = makeTab();
+    const seam = asInstall(tab);
+    asInstallPlugin(tab).settings._setup_complete = false;
+    seam._ensureManagedRuntime = () => ({
+      installOnce: (
+        _v: string,
+        _s?: unknown,
+        _p?: unknown,
+        onStage?: (stage: string) => void
+      ) => {
+        onStage?.("venv");
+        onStage?.("pip");
+        onStage?.("verify");
+        return Promise.resolve({ pythonPath: "/bootstrap/python.exe" });
+      },
+      handshake: () => Promise.resolve({ ok: true }),
+    });
+    seam._getVaultBasePath = () => "/vault";
+    seam._probeModule = () => {};
+    seam._installFoundation(false);
+    await settleInstall();
+
+    const log = seam._setupStageLog.join(" ");
+    expect(log).toContain("bootstrap:venv");
+    expect(log).toContain("bootstrap:pip");
+    expect(log).toContain("bootstrap:verify");
+  });
+
+  it("shows environment identity rows in Stage 1", () => {
+    const tab = makeTab();
+    const seam = asInstall(tab);
+    seam._ensureManagedRuntime = () => ({
+      readPointer: () => ({
+        environmentRoot: "/home/user/.paperforge/runtime/venv",
+        pythonPath: "/home/user/.paperforge/runtime/venv/bin/python",
+        paperforgeVersion: "2.0.0rc5",
+      }),
+      status: () => Promise.resolve({ state: "ready" }),
+    });
+    seam._probeModule = () => {};
+    const el = dom.window.document.createElement("div");
+    seam._renderSetupStageFoundation(el);
+    expect(el.textContent).toContain("2.0.0rc5");
+    expect(el.textContent).toContain("/home/user/.paperforge/runtime/venv");
   });
 });
 
