@@ -8,7 +8,7 @@
  *   - Python's own installation probe (probe installation --json).
  *
  * TS keeps exactly: interpreter discovery, platform gates, consent UX,
- * ONE one-time venv + ONE pinned install (installOnce), handshake, pointer
+ * ONE candidate venv + ONE pinned install (installOnce), handshake, pointer
  * READ and spawn.  DELETED: RuntimeHealth FSM / TTL cache / current() /
  * status() / ensure() / runtimeActionsForHealth policy / automatic
  * mismatch repair / any pointer write.
@@ -69,6 +69,7 @@ export interface FsOps {
   ): void;
   /** Optional: the real fs provides them; doubles may omit them. */
   statSync?(p: string): { mtimeMs: number };
+  readdirSync?(p: string): string[];
 }
 
 export type ExecFileCallback = (
@@ -130,7 +131,7 @@ function runtimeKey(rootDir: string): string {
  * pip dies with WinError 32 against a handler the probe still holds.
  */
 export function runtimeInstallInProgress(pythonPath: string): boolean {
-  // …/runtime/venv/Scripts/python.exe → check the three enclosing levels.
+  // …/runtime/venv-*/Scripts/python.exe → check the three enclosing levels.
   let dir = path.dirname(path.resolve(pythonPath));
   for (let level = 0; level < 3; level += 1) {
     if (fs.existsSync(path.join(dir, "install.lock.d"))) return true;
@@ -401,6 +402,43 @@ export class RuntimeBootstrap {
     return path.join(this.rootDir, VENV_DIR_NAME);
   }
 
+  /** #260: unique final directory for one install attempt (never renamed). */
+  private _candidateDir(expectedVersion: string): string {
+    const safe = expectedVersion.replace(/[^A-Za-z0-9._-]+/g, "_");
+    const suffix = Math.random().toString(36).slice(2, 8);
+    return path.join(this.rootDir, `${VENV_DIR_NAME}-${safe}-${suffix}`);
+  }
+
+  /**
+   * #260: remove every runtime environment except the activated one
+   * (the legacy `venv` directory and older candidates).  Best-effort
+   * housekeeping — call it only after a successful publish, so the pointer
+   * already names `activeRoot`; a locked directory is retried next time.
+   */
+  retireUnusedRuntimes(activeRoot: string | null): string[] {
+    if (!this._fs.readdirSync) return [];
+    const keep = activeRoot ? path.resolve(activeRoot) : null;
+    const removed: string[] = [];
+    let entries: string[] = [];
+    try {
+      entries = this._fs.readdirSync(this.rootDir);
+    } catch {
+      return removed;
+    }
+    for (const name of entries) {
+      if (!/^venv(-|$)/.test(name)) continue;
+      const full = path.join(this.rootDir, name);
+      if (keep && path.resolve(full) === keep) continue;
+      try {
+        this._fs.rmSync(full, { recursive: true, force: true });
+        removed.push(name);
+      } catch {
+        // Locked by a running process — the next success retires it.
+      }
+    }
+    return removed;
+  }
+
   /** ONE canonical venv interpreter path (Windows vs POSIX). */
   private pythonExeFor(venvDir: string): string {
     return this.osPlatform === "win32"
@@ -539,12 +577,15 @@ export class RuntimeBootstrap {
   }
 
   /**
-   * ONE consented one-time install into ~/.paperforge/runtime/venv:
-   * venv + ONE pinned `paperforge[vector]==<expectedVersion>` + fresh-child
-   * verify that the OBSERVED version equals the requested version.
-   * NEVER writes the pointer (Python owns publication) and returns only an
-   * ephemeral result — nothing is cached, nothing is usable until the
-   * caller's handshake + `paperforge setup` succeed.
+   * ONE consented install into a NEW candidate directory under
+   * ~/.paperforge/runtime/ (`venv-<version>-<suffix>`): venv + ONE pinned
+   * `paperforge[vector]==<expectedVersion>` + fresh-child verify that the
+   * OBSERVED version equals the requested version.  The previously
+   * activated environment is never modified or deleted here; a failure or
+   * cancellation removes only the candidate (#260).  NEVER writes the
+   * pointer (Python owns publication) and returns only an ephemeral
+   * result — nothing is cached, nothing is usable until the caller's
+   * handshake + `paperforge setup` succeed.
    *
    * `interpreterOverride` is the configured base interpreter (settings
    * `python_path`); omitted/empty falls back to discovery.
@@ -561,7 +602,12 @@ export class RuntimeBootstrap {
 
     if (signal?.aborted) throw new AbortError("Operation was cancelled");
 
-    const pythonExe = this.pythonExeFor(this.venvDir);
+    // #260: every attempt targets its own candidate directory; the
+    // currently activated environment is never touched, so a failed or
+    // cancelled upgrade leaves it runnable.  Older directories are retired
+    // only after a successful publish (retireUnusedRuntimes).
+    const candidateDir = this._candidateDir(expectedVersion);
+    const pythonExe = this.pythonExeFor(candidateDir);
     const installKey = runtimeKey(this.rootDir);
     if (activeInstalls.has(installKey)) {
       throw new Error(
@@ -570,51 +616,19 @@ export class RuntimeBootstrap {
     }
     // In-memory guard first (fast, same renderer), then a CROSS-PROCESS lock:
     // Obsidian's settings window and main window are separate renderers with
-    // separate plugin instances, and two pips writing one venv deadlock on
-    // Windows file locks — observed as two concurrent `pip install` children.
+    // separate plugin instances, and two pips into one runtime directory
+    // deadlock on Windows file locks — observed as two concurrent `pip
+    // install` children.
     const releaseLock = this._acquireInstallLock();
     activeInstalls.add(installKey);
     try {
-      // The managed venv is OWNED by the installer, so every install starts
-      // from a clean directory.  pip trusts an existing dist-info, so a venv
-      // damaged by an interrupted run (module files gone, metadata intact)
-      // survived every reinstall: observed as `import chromadb` failing
-      // with "No module named 'dotenv'" on a runtime pip reported healthy.
-      try {
-        this._fs.rmSync(this.venvDir, {
-          recursive: true,
-          force: true,
-          maxRetries: 5,
-          retryDelay: 200,
-        });
-      } catch {
-        // A probe child (module refresh) may still be running out of the
-        // venv: terminate whatever executes inside it, then retry once
-        // before giving up.  Nothing of OURS is running yet — the install
-        // venv is created below.
-        this._terminateVenvProcesses();
-        try {
-          this._fs.rmSync(this.venvDir, {
-            recursive: true,
-            force: true,
-            maxRetries: 10,
-            retryDelay: 300,
-          });
-        } catch (cleanupErr) {
-          throw new Error(
-            `The previous runtime directory could not be removed (${
-              cleanupErr instanceof Error
-                ? cleanupErr.message
-                : String(cleanupErr)
-            }). Close any running PaperForge process and try again.`
-          );
-        }
-      }
-      this._fs.mkdirSync(this.venvDir, { recursive: true });
+      // A brand-new directory is always clean: there is no stale dist-info
+      // for pip to trust, so a damaged run can never survive.
+      this._fs.mkdirSync(candidateDir, { recursive: true });
       onStage?.("venv");
       await this._exec(
         discovered.path,
-        ["-m", "venv", this.venvDir],
+        ["-m", "venv", candidateDir],
         { timeout: 60000, signal },
         "venv creation"
       );
@@ -641,24 +655,17 @@ export class RuntimeBootstrap {
         );
       }
     } catch (err) {
-      // Terminate the child FIRST: deleting a venv out from under a live
-      // pip leaves a process holding site-packages handles, and every
-      // later attempt then fails with a Windows sharing violation.
+      // This attempt owns ONLY the candidate: terminate the child first
+      // (deleting a venv out from under a live pip leaves Windows handles),
+      // then drop the candidate.  The activated environment stays intact;
+      // a candidate that cannot be removed yet is retired on the next
+      // success by retireUnusedRuntimes.
       this._terminateActiveChild();
-      // Clean the half-installed venv; nothing is published, nothing kept.
+      this._terminateVenvProcesses(candidateDir);
       try {
-        this._fs.rmSync(this.venvDir, { recursive: true, force: true });
-      } catch (cleanupErr) {
-        // Never hide this: a venv that cannot be removed means the next
-        // attempt will fail for a reason that is not the install itself.
-        throw new Error(
-          `${err instanceof Error ? err.message : String(err)}\n` +
-            `Additionally, the previous runtime directory could not be removed (${
-              cleanupErr instanceof Error
-                ? cleanupErr.message
-                : String(cleanupErr)
-            }). Close any running PaperForge process and try again.`
-        );
+        this._fs.rmSync(candidateDir, { recursive: true, force: true });
+      } catch {
+        // Best-effort — never mask the real install failure.
       }
       throw err;
     } finally {
@@ -857,9 +864,9 @@ export class RuntimeBootstrap {
    * left over from a module refresh).  Best-effort, Windows only: the
    * platform needs an OS-level kill to release the directory.
    */
-  private _terminateVenvProcesses(): void {
+  private _terminateVenvProcesses(dir: string = this.venvDir): void {
     if (this.osPlatform !== "win32") return;
-    const escaped = this.venvDir.replace(/'/g, "''");
+    const escaped = dir.replace(/'/g, "''");
     const script =
       "Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | " +
       `Where-Object { $_.ExecutablePath -like '${escaped}\\*' } | ` +

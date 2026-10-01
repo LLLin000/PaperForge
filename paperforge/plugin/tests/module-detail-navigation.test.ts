@@ -2635,6 +2635,26 @@ describe("Install failure surfacing (#257)", () => {
     expect(log).toContain("bootstrap:verify");
   });
 
+  it("retires other runtime generations after a successful publish (#260)", async () => {
+    const tab = makeTab();
+    const seam = asInstall(tab);
+    asInstallPlugin(tab).settings._setup_complete = false;
+    const retire = vi.fn().mockReturnValue([]);
+    seam._ensureManagedRuntime = () => ({
+      installOnce: () =>
+        Promise.resolve({ pythonPath: "/bootstrap/python.exe" }),
+      handshake: () => Promise.resolve({ ok: true }),
+      readPointer: () => ({ environmentRoot: "/candidate" }),
+      retireUnusedRuntimes: retire,
+    });
+    seam._getVaultBasePath = () => "/vault";
+    seam._probeModule = () => {};
+    seam._installFoundation(false);
+    await settleInstall();
+
+    expect(retire).toHaveBeenCalledWith("/candidate");
+  });
+
   it("shows environment identity rows in Stage 1", () => {
     const tab = makeTab();
     const seam = asInstall(tab);
