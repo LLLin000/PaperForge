@@ -80,9 +80,28 @@ def run(args: argparse.Namespace) -> int:
         return 0
 
     if sub == "migrate":
-        from paperforge.embedding._chroma import migrate_chroma_to_vec0
+        from paperforge.embedding._chroma import (
+            LegacyVectorUnavailable,
+            migrate_chroma_to_vec0,
+        )
 
-        count = migrate_chroma_to_vec0(vault)
+        try:
+            count = migrate_chroma_to_vec0(vault)
+        except LegacyVectorUnavailable as exc:
+            fix = 'pip install "paperforge[vector,legacy-vector]"'
+            result = PFResult(
+                ok=False,
+                command="embed migrate",
+                version=PF_VERSION,
+                error=PFError(code=ErrorCode.PRECONDITION_FAILED, message=str(exc)),
+                data={"fix": fix},
+            )
+            if args.json:
+                print(result.to_json())
+            else:
+                print(f"Error: {exc}", file=sys.stderr)
+                print(f"Fix: {fix}", file=sys.stderr)
+            return 1
 
         result = PFResult(ok=True, command="embed migrate", version=PF_VERSION, data={"migrated": count})
         if args.json:
