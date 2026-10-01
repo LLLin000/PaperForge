@@ -172,12 +172,71 @@ function parsePythonVersion(output: string): string | null {
   return null;
 }
 
-function compareVersions(a: string, b: string): number {
-  const ap = a.split(".").map(Number);
-  const bp = b.split(".").map(Number);
-  for (let i = 0; i < Math.max(ap.length, bp.length); i++) {
-    const an = ap[i] ?? 0;
-    const bn = bp[i] ?? 0;
+interface VersionKey {
+  nums: number[];
+  phase: number[];
+}
+
+/**
+ * PEP 440 ordering key for the spellings in play.
+ *
+ * `normalizeReleaseVersion()` is the single SemVer→PEP 440 entry; this
+ * parser reads the canonical PEP 440 form only and returns null for
+ * anything unrecognized so callers fail closed (NaN).
+ *
+ * Phase encoding (compared after the release numbers, per PEP 440):
+ *   bare `.devN`    → [-3, devN]                    (below every pre-release)
+ *   `aN`/`bN`/`rcN` → [rank, N, dev ? 0 : 1, devN]  (rank: a=-2, b=-1, rc=0;
+ *                     an attached `.devN` sorts below its base)
+ *   final           → [1, 0]
+ *   `.postN`        → [2, postN, dev ? 0 : 1, devN, preRank, preNum]
+ */
+function versionKey(version: string): VersionKey | null {
+  const normalized = normalizeReleaseVersion(version).trim().toLowerCase();
+  const m = normalized.match(
+    /^(\d+(?:\.\d+)*)(?:(a|b|rc)(\d+))?(?:\.post(\d+))?(?:\.dev(\d+))?$/
+  );
+  if (!m) return null;
+  const nums = m[1].split(".").map(Number);
+  const pre = m[2] ?? null;
+  const preNum = m[3] !== undefined ? Number(m[3]) : 0;
+  const post = m[4] !== undefined ? Number(m[4]) : null;
+  const dev = m[5] !== undefined ? Number(m[5]) : null;
+  const preRank = pre === "a" ? -2 : pre === "b" ? -1 : pre === "rc" ? 0 : null;
+  let phase: number[];
+  if (post !== null) {
+    phase = [2, post, dev === null ? 1 : 0, dev ?? 0];
+    if (preRank !== null) phase.push(preRank, preNum);
+  } else if (preRank !== null) {
+    phase = [preRank, preNum, dev === null ? 1 : 0, dev ?? 0];
+  } else if (dev !== null) {
+    phase = [-3, dev];
+  } else {
+    phase = [1, 0];
+  }
+  return { nums, phase };
+}
+
+/**
+ * PEP 440 ordering across release spellings (SemVer releases go through
+ * `normalizeReleaseVersion()` first): `dev < a < b < rc < final < post`,
+ * with `.dev` sorting below whatever it attaches to. Unparseable input
+ * returns NaN — callers treat that as fail-closed.
+ */
+export function compareVersions(a: string, b: string): number {
+  const ka = versionKey(a);
+  const kb = versionKey(b);
+  if (!ka || !kb) return Number.NaN;
+  const numLen = Math.max(ka.nums.length, kb.nums.length);
+  for (let i = 0; i < numLen; i++) {
+    const an = ka.nums[i] ?? 0;
+    const bn = kb.nums[i] ?? 0;
+    if (an !== bn) return an - bn;
+  }
+  const phaseLen = Math.max(ka.phase.length, kb.phase.length);
+  for (let i = 0; i < phaseLen; i++) {
+    const an = ka.phase[i] ?? 0;
+    const bn = kb.phase[i] ?? 0;
     if (an !== bn) return an - bn;
   }
   return 0;

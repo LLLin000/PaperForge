@@ -16,6 +16,7 @@ import {
   getOsArch,
   resolveRuntimeCommand,
   AbortError,
+  compareVersions,
 } from "../src/services/managed-runtime";
 import type {
   FsOps,
@@ -932,5 +933,57 @@ describe("Real filesystem single venv (#174)", () => {
       stages.push(stage);
     });
     expect(stages).toEqual(["venv", "pip", "verify"]);
+  });
+});
+
+// ── compareVersions (PEP 440 ordering, #258) ──
+describe("compareVersions (PEP 440 ordering)", () => {
+  it("treats the two release spellings as equal", () => {
+    expect(compareVersions("2.0.0-rc.2", "2.0.0rc2")).toBe(0);
+    expect(compareVersions("2.0.0-alpha.1", "2.0.0a1")).toBe(0);
+    expect(compareVersions("2.0.0-beta.3", "2.0.0b3")).toBe(0);
+    expect(compareVersions("1.0", "1.0.0")).toBe(0);
+  });
+
+  it("orders rc below the final release (the upgrade-label case)", () => {
+    expect(compareVersions("2.0.0rc5", "2.0.0")).toBeLessThan(0);
+    expect(compareVersions("2.0.0", "2.0.0rc5")).toBeGreaterThan(0);
+    expect(compareVersions("2.0.0rc1", "2.0.0rc5")).toBeLessThan(0);
+  });
+
+  it("orders the full PEP 440 chain dev < a < b < rc < final < post", () => {
+    const chain = [
+      "2.0.0.dev1",
+      "2.0.0a1",
+      "2.0.0b1",
+      "2.0.0rc1",
+      "2.0.0",
+      "2.0.0.post1",
+    ];
+    for (let i = 1; i < chain.length; i++) {
+      expect(compareVersions(chain[i - 1], chain[i])).toBeLessThan(0);
+    }
+  });
+
+  it("sorts an attached .dev below its base", () => {
+    expect(compareVersions("2.0.0a1.dev1", "2.0.0a1")).toBeLessThan(0);
+    expect(compareVersions("2.0.0.post1.dev1", "2.0.0.post1")).toBeLessThan(0);
+    expect(compareVersions("2.0.0.post1.dev1", "2.0.0")).toBeGreaterThan(0);
+  });
+
+  it("compares release numbers before any phase segment", () => {
+    expect(compareVersions("1.0.post1", "1.0.1")).toBeLessThan(0);
+    expect(compareVersions("1.5.15", "2.0.0rc1")).toBeLessThan(0);
+    expect(compareVersions("3.14.0", "3.11")).toBeGreaterThan(0);
+  });
+
+  it("keeps python-min semantics: a pre-release sorts below its release", () => {
+    expect(compareVersions("3.11.0rc1", "3.11")).toBeLessThan(0);
+    expect(compareVersions("3.11.0", "3.11")).toBe(0);
+  });
+
+  it("returns NaN for unparseable input so gates fail closed", () => {
+    expect(Number.isNaN(compareVersions("bogus", "1.0.0"))).toBe(true);
+    expect(Number.isNaN(compareVersions("1.0.0", ""))).toBe(true);
   });
 });
