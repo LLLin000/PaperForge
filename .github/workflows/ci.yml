@@ -211,7 +211,7 @@ jobs:
           cache: "npm"
           cache-dependency-path: paperforge/plugin/package-lock.json
       - name: Install package with test deps
-        run: pip install -e ".[test,vector]"
+        run: pip install -e ".[test,vector,legacy-vector]"
       # The architecture-audit collector cases drive ts_collect.js, which
       # requires `typescript`; without it those cases fail for a reason
       # unrelated to the code under test.
