@@ -54,6 +54,7 @@ vi.mock("obsidian", () => {
 });
 
 import { PaperForgeStatusView } from "../src/views/dashboard";
+import { TFile } from "obsidian";
 
 /** Mock pointer representing a published runtime (schema v1). */
 function readyPointer(pythonPath: string) {
@@ -551,5 +552,63 @@ describe("PaperForgeStatusView.onOpen production lifecycle (Step 5 wiring correc
     expect(view.containerEl.textContent).toContain("1 papers");
     expect(view.containerEl.textContent).toContain("Exports detected");
     await view.onClose();
+  });
+});
+
+describe("PaperForgeStatusView note opening", () => {
+  it("materializes an externally created note before opening a search result", async () => {
+    const view = new (PaperForgeStatusView as any)({});
+    const notePath = "Resources/Literature/J01/J01.md";
+    const file = Object.create(TFile.prototype) as TFile;
+    (file as any).path = notePath;
+    (file as any).extension = "md";
+    let indexed: TFile | null = null;
+    let physicalExists = true;
+    const leaf = {
+      openFile: vi.fn(async () => undefined),
+    };
+    const app = {
+      vault: {
+        getAbstractFileByPath: vi.fn(() => indexed),
+        adapter: {
+          exists: vi.fn(async (path: string) =>
+            path === notePath ? physicalExists : true
+          ),
+          read: vi.fn(async () => "# J01\n"),
+          remove: vi.fn(async () => {
+            physicalExists = false;
+          }),
+          write: vi.fn(async () => {
+            physicalExists = true;
+          }),
+        },
+        createFolder: vi.fn(async () => undefined),
+        create: vi.fn(async () => {
+          if (physicalExists) throw new Error("File already exists");
+          physicalExists = true;
+          indexed = file;
+          return file;
+        }),
+      },
+      workspace: {
+        getMostRecentLeaf: vi.fn(() => leaf),
+        getLeaf: vi.fn(() => leaf),
+        revealLeaf: vi.fn(async () => undefined),
+        setActiveLeaf: vi.fn(),
+        openLinkText: vi.fn(),
+      },
+    };
+    (view as any).app = app;
+
+    await (view as any)._openSearchResult(notePath, false);
+
+    expect(app.vault.createFolder).toHaveBeenCalledWith(
+      "Resources/Literature/J01"
+    );
+    expect(app.vault.adapter.read).toHaveBeenCalledWith(notePath);
+    expect(app.vault.adapter.remove).toHaveBeenCalledWith(notePath);
+    expect(app.vault.create).toHaveBeenCalledWith(notePath, "# J01\n");
+    expect(leaf.openFile).toHaveBeenCalledWith(file);
+    expect(app.workspace.openLinkText).not.toHaveBeenCalled();
   });
 });

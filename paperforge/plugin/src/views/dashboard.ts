@@ -1984,6 +1984,115 @@ export class PaperForgeStatusView extends ItemView {
     }
   }
 
+  private async _materializeExternalNote(
+    notePath: string
+  ): Promise<TFile | null> {
+    if (!(await this.app.vault.adapter.exists(notePath))) return null;
+    try {
+      const parentPath = notePath.slice(0, notePath.lastIndexOf("/"));
+      if (parentPath && !this.app.vault.getAbstractFileByPath(parentPath)) {
+        try {
+          await this.app.vault.createFolder(parentPath);
+        } catch (error) {
+          if (!(await this.app.vault.adapter.exists(parentPath))) throw error;
+        }
+      }
+      const existing = this.app.vault.getAbstractFileByPath(notePath);
+      if (existing instanceof TFile) return existing;
+      const content = await this.app.vault.adapter.read(notePath);
+      await this.app.vault.adapter.remove(notePath);
+      try {
+        return await this.app.vault.create(notePath, content);
+      } catch (error) {
+        try {
+          await this.app.vault.adapter.write(notePath, content);
+        } catch (restoreError) {
+          console.warn("[PF] Could not restore external note:", notePath, restoreError);
+        }
+        throw error;
+      }
+    } catch (error) {
+      console.warn("[PF] Could not register external note:", notePath, error);
+      return null;
+    }
+  }
+
+  async _openSearchResult(notePath: string, newLeaf: boolean) {
+    let file = this.app.vault.getAbstractFileByPath(notePath);
+    if (!(file instanceof TFile)) {
+      file = await this._materializeExternalNote(notePath);
+    }
+    if (!(file instanceof TFile)) {
+      const deadline = Date.now() + 5000;
+      while (!(file instanceof TFile) && Date.now() < deadline) {
+        await new Promise<void>((resolve) => setTimeout(resolve, 100));
+        file = this.app.vault.getAbstractFileByPath(notePath);
+      }
+    }
+    if (file instanceof TFile) {
+      // The dashboard lives in a sidebar. getLeaf(false) can therefore reuse
+      // that sidebar leaf when it is active; search results must open in the
+      // root workspace instead.
+      const leaf = newLeaf
+        ? this.app.workspace.getLeaf("tab")
+        : (this.app.workspace.getMostRecentLeaf() ??
+          this.app.workspace.getLeaf(false));
+      try {
+        await leaf.openFile(file);
+        await this.app.workspace.revealLeaf(leaf);
+        this.app.workspace.setActiveLeaf(leaf, { focus: true });
+      } catch {
+        new Notice("[!!] Failed to open note: " + notePath, 6000);
+      }
+      return;
+    }
+    try {
+      if (await this.app.vault.adapter.exists(notePath)) {
+        new Notice(
+          "[!!] Note exists but Obsidian has not indexed it yet. Reopen the vault and retry.",
+          6000
+        );
+        return;
+      }
+      await this.app.workspace.openLinkText(notePath, "", newLeaf);
+    } catch {
+      new Notice("[!!] Failed to open note: " + notePath, 6000);
+    }
+  }
+
+  async _openSearchResultByKey(
+    notePath: string | null,
+    zoteroKey: string,
+    newLeaf: boolean
+  ) {
+    let resolvedPath = notePath;
+    if (!resolvedPath && zoteroKey) {
+      await this._loadDashboardData(true);
+      const entry = this._getCachedIndex().find(
+        (item: unknown) =>
+          item !== null &&
+          typeof item === "object" &&
+          "zotero_key" in item &&
+          (item as Record<string, unknown>).zotero_key === zoteroKey
+      );
+      if (entry && typeof entry === "object") {
+        const record = entry as Record<string, unknown>;
+        resolvedPath =
+          typeof record["main_note_path"] === "string" &&
+          record["main_note_path"]
+            ? record["main_note_path"]
+            : typeof record["note_path"] === "string" && record["note_path"]
+              ? record["note_path"]
+              : null;
+      }
+    }
+    if (resolvedPath) {
+      await this._openSearchResult(resolvedPath, newLeaf);
+      return;
+    }
+    new Notice("[!!] Note not found: " + (zoteroKey || "unknown"), 6000);
+  }
+
   /* ── Collection Mode Render: Batch Workflow Workspace ── */
   _renderCollectionMode() {
     const domain = this._currentDomain || "Unknown";
@@ -3066,23 +3175,20 @@ export class PaperForgeStatusView extends ItemView {
         }
       }
 
-      if (resolvedPath) {
-        card.addEventListener("click", (e: MouseEvent) => {
-          const newLeaf = e.ctrlKey || e.metaKey;
-          this.app.workspace.openLinkText(resolvedPath, "", newLeaf);
-        });
-      } else {
-        card.addEventListener("click", () => {
-          new Notice("[!!] Note not found: " + (zoteroKey || "unknown"), 6000);
-        });
-      }
+      const openResult = (event: MouseEvent | KeyboardEvent) => {
+        void this._openSearchResultByKey(
+          resolvedPath,
+          zoteroKey,
+          event.ctrlKey || event.metaKey
+        );
+      };
+      card.addEventListener("click", openResult);
 
       // Enter key on card opens the note
       card.addEventListener("keydown", (e: KeyboardEvent) => {
-        if (e.key === "Enter" && resolvedPath) {
+        if (e.key === "Enter") {
           e.preventDefault();
-          const newLeaf = e.ctrlKey || e.metaKey;
-          this.app.workspace.openLinkText(resolvedPath, "", newLeaf);
+          openResult(e);
         }
       });
 
