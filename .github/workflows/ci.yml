@@ -512,12 +512,15 @@ jobs:
           except OSError:
               print("first-use journey gate FAILED: evidence file missing")
               sys.exit(1)
-          steps = data.get("steps", [])
+          # appendEvidence writes a JSON array of runs; judge the latest one.
+          runs = data if isinstance(data, list) else [data]
+          latest = runs[-1] if runs and isinstance(runs[-1], dict) else {}
+          steps = latest.get("steps", [])
           failed = [step for step in steps if not step.get("ok")]
-          if data.get("status") != "VERIFIED" or not steps or failed:
+          if latest.get("status") != "VERIFIED" or not steps or failed:
               print(
                   "first-use journey gate FAILED: "
-                  f"status={data.get('status')} failed={failed}"
+                  f"status={latest.get('status')} failed={failed}"
               )
               sys.exit(1)
           print(

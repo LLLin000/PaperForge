@@ -338,7 +338,22 @@ async function openVaultFile(filePath: string): Promise<void> {
   // New tab + explicit activation: a programmatic openFile() alone does not
   // fire active-leaf-change, so the panel would never re-resolve its mode.
   await browser.executeObsidian(async ({ app }, filePath) => {
-    const file = app.vault.getAbstractFileByPath(filePath);
+    let file = app.vault.getAbstractFileByPath(filePath);
+    if (!file && (await app.vault.adapter.exists(filePath))) {
+      // Mirrors the product repair for externally delivered notes
+      // (`_materializeExternalNote`): a file written by the Python backend is
+      // physically present but not yet in the Vault cache until the fs watcher
+      // fires. Register it with the same read → remove → create sequence and
+      // restore the bytes if registration fails.
+      const content = await app.vault.adapter.read(filePath);
+      await app.vault.adapter.remove(filePath);
+      try {
+        file = await app.vault.create(filePath, content);
+      } catch (error) {
+        await app.vault.adapter.write(filePath, content);
+        throw error;
+      }
+    }
     if (!file) throw new Error(`file not found: ${filePath}`);
     if (!("extension" in file)) throw new Error(`not a file: ${filePath}`);
     const leaf = app.workspace.getLeaf("tab");
