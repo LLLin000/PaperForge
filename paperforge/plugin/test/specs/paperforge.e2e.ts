@@ -34,6 +34,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import * as path from "node:path";
+import * as os from "node:os";
 
 const PAPER_KEY = "TSTONE001";
 const NOTE_PATH =
@@ -307,8 +308,46 @@ async function sandboxBasePath(): Promise<string> {
 }
 
 /**
- * Acceptance evidence record (plan §4.3). Runs are appended, never replaced:
- * a first failure must stay visible after a later green re-run.
+ * Host-profile context for every evidence record (standard §6): declared
+ * `host_profile`, `runner_kind`, and a minimal `machine` block. Owner runs
+ * can inject the full host-probe output via PF_E2E_MACHINE_JSON; fields that
+ * are not known stay "unknown" — unknown beats wrong.
+ */
+const EVIDENCE_CONTEXT = (() => {
+  const hosted = process.env.CI === "true";
+  const machine: Record<string, unknown> = {
+    os_build: String(os.release()),
+    arch: String(os.arch()),
+    username_ascii: /^[\x20-\x7E]*$/.test(os.userInfo().username),
+    path_has_space: /\s/.test(process.env.USERPROFILE ?? ""),
+    python_source: "unknown",
+    network_kind: "unknown",
+    defender_only: "unknown",
+  };
+  if (process.env.PF_E2E_MACHINE_JSON) {
+    try {
+      Object.assign(
+        machine,
+        JSON.parse(process.env.PF_E2E_MACHINE_JSON) as Record<string, unknown>
+      );
+    } catch {
+      // keep the observed defaults
+    }
+  }
+  return {
+    host_profile:
+      process.env.PF_E2E_HOST_PROFILE ??
+      (hosted ? "CI<P0近似>" : "unclassified"),
+    runner_kind:
+      process.env.PF_E2E_RUNNER_KIND ?? (hosted ? "hosted" : "owner-machine"),
+    machine,
+  };
+})();
+
+/**
+ * Acceptance evidence record (plan §4.3, standard §6). Runs are appended,
+ * never replaced: a first failure must stay visible after a later green
+ * re-run, and every record carries the host-profile context.
  */
 function appendEvidence(name: string, payload: Record<string, unknown>): void {
   mkdirSync(EVIDENCE_DIR, { recursive: true });
@@ -318,7 +357,7 @@ function appendEvidence(name: string, payload: Record<string, unknown>): void {
     : [];
   // Older runs used a single-object record; carry it over instead of dropping it.
   const runs = Array.isArray(parsed) ? parsed : [parsed];
-  runs.push(payload);
+  runs.push({ ...EVIDENCE_CONTEXT, ...payload });
   writeFileSync(file, JSON.stringify(runs, null, 2));
 }
 
