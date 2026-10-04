@@ -85,6 +85,8 @@ const NO_POINTER_E2E =
  * of passing quietly.
  */
 const JOURNEY_GATE = process.env.PF_E2E_JOURNEY_GATE === "1";
+const JOURNEY_VARIANT =
+  "first-use journey: install(A01) → library → first sync → open → restart → reopen";
 const E2E_SKIP_REGISTRY: Record<
   string,
   { reason: string; owner: string; window: string }
@@ -263,7 +265,7 @@ function sandboxBackendProcessDetails(base: string): string {
   const marker = path.basename(base);
   if (process.platform !== "win32") return "";
   return execFileSync(
-    `powershell -NoProfile -Command "(Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*${marker}*' -and $_.Name -like '*python*' } | Select-Object ProcessId,Name,CommandLine | Format-Table -AutoSize | Out-String)"`,
+    `powershell -NoProfile -Command "(Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*${marker}*' -and $_.Name -like '*python*' } | Select-Object ProcessId,Name,CommandLine | ConvertTo-Json -Compress)"`,
     { shell: true }
   )
     .toString()
@@ -766,7 +768,7 @@ describe("PaperForge real-task e2e", function () {
         steps.push({ name, ok: false, ms: Date.now() - started });
         appendEvidence("first-use-journey.json", {
           case_id: "GATE-01",
-          variant: "first-use-journey",
+          variant: JOURNEY_VARIANT,
           required_layer: "H",
           gate: true,
           status: "FAILED",
@@ -897,10 +899,27 @@ describe("PaperForge real-task e2e", function () {
       );
     });
 
+    // The app-level restart above can leave backend children draining; the
+    // next suite test asserts no backend process outlives this sandbox, so the
+    // journey must hand over a settled state (probe chains have a 300s budget).
+    await runStep("backend-settled", async () => {
+      const base = await sandboxBasePath();
+      try {
+        await browser.waitUntil(() => sandboxBackendProcesses(base) === 0, {
+          timeout: 300000,
+          timeoutMsg:
+            "first-use journey: backend processes outlived the settled journey",
+        });
+      } catch (error) {
+        throw new Error(
+          `${String(error)}\n${sandboxBackendProcessDetails(base)}`
+        );
+      }
+    });
+
     appendEvidence("first-use-journey.json", {
       case_id: "GATE-01",
-      variant:
-        "first-use journey: install(A01) → library → first sync → open → restart → reopen",
+      variant: JOURNEY_VARIANT,
       required_layer: "H",
       gate: true,
       status: "VERIFIED",
@@ -909,7 +928,11 @@ describe("PaperForge real-task e2e", function () {
       pointer: installed,
       artifact_sha256: {
         bundle: sha256(path.join(PLUGIN_DIR, "main.js")),
-        wheel: process.env.PF_E2E_WHEEL_SHA256 ?? null,
+        // Hash of the wheel OFFERED to pip via PIP_FIND_LINKS; the install
+        // resolves `paperforge==<version>` from that link or the index (same
+        // version either way), so this is provenance for the offer, not proof
+        // of which equal-version artifact pip chose.
+        wheel_offered: process.env.PF_E2E_WHEEL_SHA256 ?? null,
       },
       obsidian_version: String(await browser.getObsidianVersion()),
       fixture_vault: FIXTURE_VAULT,
