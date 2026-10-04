@@ -19,6 +19,10 @@ process.env.PYTHONPATH = process.env.PYTHONPATH
 // The child environment sanitizer still removes legacy credential variables;
 // this backend only changes where the test's explicit seed is read.
 
+const OBSIDIAN_APP_VERSION = process.env.PF_OBSIDIAN_APP_VERSION ?? "latest";
+const OBSIDIAN_INSTALLER_VERSION =
+  process.env.PF_OBSIDIAN_INSTALLER_VERSION ?? "latest";
+
 export const config: WebdriverIO.Config = {
   runner: "local",
   framework: "mocha",
@@ -27,9 +31,9 @@ export const config: WebdriverIO.Config = {
   capabilities: [
     {
       browserName: "obsidian",
-      browserVersion: "latest",
+      browserVersion: OBSIDIAN_APP_VERSION,
       "wdio:obsidianOptions": {
-        installerVersion: "latest",
+        installerVersion: OBSIDIAN_INSTALLER_VERSION,
         plugins: ["."],
         vault: "test/vaults/simple",
       },

@@ -77,6 +77,56 @@ const CANDIDATE_VERSION = (
 const SETUP_POSITIVE_E2E = process.env.PF_E2E_SETUP_POSITIVE === "1";
 const NO_POINTER_E2E =
   process.env.PF_E2E_NO_POINTER === "1" && !SETUP_POSITIVE_E2E;
+/**
+ * First-use journey gate (#263): the dedicated gating job sets BOTH switches.
+ * While the gate is on, a would-be skip of the required journey is a FAILURE.
+ * Every env-gated skip in this suite is registered below with a reason, an
+ * owner and an applicability window — a skip without an entry throws instead
+ * of passing quietly.
+ */
+const JOURNEY_GATE = process.env.PF_E2E_JOURNEY_GATE === "1";
+const JOURNEY_VARIANT =
+  "first-use journey: install(A01) → library → first sync → open → restart → reopen";
+const E2E_SKIP_REGISTRY: Record<
+  string,
+  { reason: string; owner: string; window: string }
+> = {
+  "plugin-load-requires-pointer": {
+    reason: "positive-pointer run of the suite (PF_E2E_NO_POINTER unset)",
+    owner: "release-acceptance (#263)",
+    window: "until the no-pointer negative suite gets its own job",
+  },
+  "pointer-negative-requires-no-pointer": {
+    reason: "only meaningful in the PF_E2E_NO_POINTER=1 negative run",
+    owner: "release-acceptance (#263)",
+    window: "until the no-pointer negative suite gets its own job",
+  },
+  "setup-positive-default-off": {
+    reason:
+      "the first-use install mutates the machine-local runtime; ordinary runs do not opt in",
+    owner: "release-acceptance (#263)",
+    window: "enabled by the H matrix job via PF_E2E_SETUP_POSITIVE=1",
+  },
+};
+
+/** Skip through the registry: an unknown or incomplete id is a failure. */
+function registeredSkip(ctx: { skip(): void }, id: string): void {
+  const entry = E2E_SKIP_REGISTRY[id];
+  if (!entry || !entry.reason || !entry.owner || !entry.window) {
+    throw new Error(`unregistered or incomplete e2e skip: ${id}`);
+  }
+  ctx.skip();
+}
+
+/** Gate policy: enabled → run; disabled → fail under the gate, skip otherwise. */
+function journeyRunPolicy(
+  gate: boolean,
+  enabled: boolean
+): "run" | "skip" | "fail" {
+  if (enabled) return "run";
+  return gate ? "fail" : "skip";
+}
+
 
 
 /** sha256 of a file's bytes — artifact identity, not its path. */
@@ -215,11 +265,37 @@ function sandboxBackendProcessDetails(base: string): string {
   const marker = path.basename(base);
   if (process.platform !== "win32") return "";
   return execFileSync(
-    `powershell -NoProfile -Command "(Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*${marker}*' -and $_.Name -like '*python*' } | Select-Object ProcessId,Name,CommandLine | Format-Table -AutoSize | Out-String)"`,
+    `powershell -NoProfile -Command "(Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*${marker}*' -and $_.Name -like '*python*' } | Select-Object ProcessId,Name,CommandLine | ConvertTo-Json -Compress)"`,
     { shell: true }
   )
     .toString()
     .trim();
+}
+
+/**
+ * Wait until no backend process still references this sandbox.
+ *
+ * The backend legitimately runs `probe all` chains with a 300s transport
+ * budget, so a just-settled child can still be draining long after the UI
+ * state reads idle. The drain window matches that documented budget: a
+ * process that outlives it is a genuine leak, and the failure carries the
+ * full command lines so the next occurrence is diagnosable.
+ */
+async function waitForBackendDrain(
+  base: string,
+  timeoutMs = 300000
+): Promise<void> {
+  try {
+    await browser.waitUntil(() => sandboxBackendProcesses(base) === 0, {
+      timeout: timeoutMs,
+      interval: 1000,
+      timeoutMsg: "backend processes outlived their operation",
+    });
+  } catch (error) {
+    throw new Error(
+      `${String(error)}\nremaining=${sandboxBackendProcesses(base)}\n${sandboxBackendProcessDetails(base)}`
+    );
+  }
 }
 
 
@@ -247,21 +323,12 @@ function appendEvidence(name: string, payload: Record<string, unknown>): void {
 }
 
 /**
- * Click an element identified by its stable test id.
- *
- * The dashboard panel is taller than the window, and a row that lands in the
- * bottom band is covered by Obsidian's status bar — WebDriver then refuses the
- * click ("element click intercepted"). `scrollIntoView` does not help because
- * the element's nearest *scrollable* ancestor is the panel, not the document;
- * this scrolls that ancestor instead, which is what a user does with the wheel.
+ * Scroll a panel control's nearest scrollable ancestor away from Obsidian's
+ * status bar before using a real WebDriver click.
  */
-async function clickTestId(testid: string): Promise<void> {
-  const element = await browser.$(`[data-pf-testid='${testid}']`);
-  await element.waitForExist({ timeout: 60000 });
-  await browser.execute((id: string) => {
-    const el = document.querySelector(
-      `[data-pf-testid='${id}']`
-    ) as HTMLElement | null;
+async function scrollPanelElement(selector: string): Promise<void> {
+  await browser.execute((selector: string) => {
+    const el = document.querySelector(selector) as HTMLElement | null;
     if (!el) return;
     let scroller: HTMLElement | null = el.parentElement;
     while (scroller && scroller !== document.body) {
@@ -275,15 +342,46 @@ async function clickTestId(testid: string): Promise<void> {
       }
       scroller = scroller.parentElement;
     }
-  }, testid);
+  }, selector);
+}
+
+async function clickPanelElement(selector: string): Promise<void> {
+  const element = await browser.$(selector);
+  await element.waitForExist({ timeout: 60000 });
+  await scrollPanelElement(selector);
   await element.click();
+}
+
+async function clickTestId(testid: string): Promise<void> {
+  await clickPanelElement(`[data-pf-testid='${testid}']`);
+}
+
+async function clickTechnicalDetails(): Promise<void> {
+  await clickPanelElement(
+    ".paperforge-technical-details > .paperforge-technical-details-toggle"
+  );
 }
 
 async function openVaultFile(filePath: string): Promise<void> {
   // New tab + explicit activation: a programmatic openFile() alone does not
   // fire active-leaf-change, so the panel would never re-resolve its mode.
   await browser.executeObsidian(async ({ app }, filePath) => {
-    const file = app.vault.getAbstractFileByPath(filePath);
+    let file = app.vault.getAbstractFileByPath(filePath);
+    if (!file && (await app.vault.adapter.exists(filePath))) {
+      // Mirrors the product repair for externally delivered notes
+      // (`_materializeExternalNote`): a file written by the Python backend is
+      // physically present but not yet in the Vault cache until the fs watcher
+      // fires. Register it with the same read → remove → create sequence and
+      // restore the bytes if registration fails.
+      const content = await app.vault.adapter.read(filePath);
+      await app.vault.adapter.remove(filePath);
+      try {
+        file = await app.vault.create(filePath, content);
+      } catch (error) {
+        await app.vault.adapter.write(filePath, content);
+        throw error;
+      }
+    }
     if (!file) throw new Error(`file not found: ${filePath}`);
     if (!("extension" in file)) throw new Error(`not a file: ${filePath}`);
     const leaf = app.workspace.getLeaf("tab");
@@ -392,7 +490,7 @@ describe("PaperForge real-task e2e", function () {
 
   it("loads the plugin and reaches the real Python backend", async function () {
     if (NO_POINTER_E2E) {
-      this.skip();
+      registeredSkip(this, "plugin-load-requires-pointer");
       return;
     }
     const info = await browser.executeObsidian(async ({ app }) => {
@@ -419,7 +517,7 @@ describe("PaperForge real-task e2e", function () {
 
   it("fails closed and exposes setup recovery without a runtime pointer", async function () {
     if (!NO_POINTER_E2E) {
-      this.skip();
+      registeredSkip(this, "pointer-negative-requires-no-pointer");
       return;
     }
     const state = await browser.executeObsidian(async ({ app }) => {
@@ -511,7 +609,7 @@ describe("PaperForge real-task e2e", function () {
 
   it("installs and publishes the runtime through the first-use setup journey", async function () {
     if (!SETUP_POSITIVE_E2E) {
-      this.skip();
+      registeredSkip(this, "setup-positive-default-off");
       return;
     }
     this.timeout(600000);
@@ -656,6 +754,215 @@ describe("PaperForge real-task e2e", function () {
     });
   });
 
+  it("journey gate contract: registered skips and the run policy stay explicit", function () {
+    const ids = Object.keys(E2E_SKIP_REGISTRY);
+    expect(ids.length).toBeGreaterThanOrEqual(3);
+    for (const id of ids) {
+      const entry = E2E_SKIP_REGISTRY[id];
+      expect(entry.reason.length).toBeGreaterThan(0);
+      expect(entry.owner.length).toBeGreaterThan(0);
+      expect(entry.window.length).toBeGreaterThan(0);
+    }
+    expect(journeyRunPolicy(true, false)).toBe("fail");
+    expect(journeyRunPolicy(true, true)).toBe("run");
+    expect(journeyRunPolicy(false, false)).toBe("skip");
+    expect(journeyRunPolicy(false, true)).toBe("run");
+  });
+
+  it("first-use journey gate: library → first sync → open paper → restart → reopen", async function () {
+    const policy = journeyRunPolicy(JOURNEY_GATE, SETUP_POSITIVE_E2E);
+    if (policy === "fail") {
+      throw new Error(
+        "PF_E2E_JOURNEY_GATE=1 requires PF_E2E_SETUP_POSITIVE=1 — the first-use journey must run, not skip"
+      );
+    }
+    if (policy === "skip") {
+      registeredSkip(this, "setup-positive-default-off");
+      return;
+    }
+    this.timeout(1500000);
+    const steps: Array<{ name: string; ok: boolean; ms: number }> = [];
+    const runStep = async (
+      name: string,
+      fn: () => Promise<void>
+    ): Promise<void> => {
+      const started = Date.now();
+      try {
+        await fn();
+        steps.push({ name, ok: true, ms: Date.now() - started });
+      } catch (error) {
+        steps.push({ name, ok: false, ms: Date.now() - started });
+        appendEvidence("first-use-journey.json", {
+          case_id: "GATE-01",
+          variant: JOURNEY_VARIANT,
+          required_layer: "H",
+          gate: true,
+          status: "FAILED",
+          failed_step: name,
+          steps,
+          error: String(error),
+          source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+            cwd: PLUGIN_DIR,
+          })
+            .toString()
+            .trim(),
+          worktree_dirty: worktreeDirty(),
+          recorded_at: new Date().toISOString(),
+        });
+        throw error;
+      }
+    };
+
+    // The install step ran in A01 directly above; the gate asserts it really
+    // produced a fresh candidate runtime in THIS run before continuing.
+    const installed = await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"] as unknown as {
+        getManagedRuntime(): {
+          readPointer(): {
+            pythonPath: string;
+            environmentRoot: string;
+            paperforgeVersion: string;
+          } | null;
+        };
+      };
+      return plugin.getManagedRuntime().readPointer();
+    });
+    expect(installed).not.toBeNull();
+    expect(installed?.paperforgeVersion).toBe(CANDIDATE_VERSION);
+    // #260 semantics: a fresh install lands in a candidate directory.
+    expect(String(installed?.environmentRoot ?? "")).toContain("venv-");
+
+    await runStep("connect-library", async () => {
+      await browser.reloadObsidian({ vault: "./test/vaults/e2e" });
+      await dismissModals();
+      const base = await sandboxBasePath();
+      expect(existsSync(path.join(base, EXPORT_REL))).toBe(true);
+      await openPanel();
+    });
+
+    let noteSha = "";
+    await runStep("first-sync", async () => {
+      const base = await sandboxBasePath();
+      // First sync means: empty derived state → export → index + note.
+      rmSync(path.join(base, INDEX_REL), { force: true });
+      await browser.executeObsidian(async ({ app }, notePath) => {
+        const file = app.vault.getAbstractFileByPath(notePath);
+        if (file) await app.vault.delete(file);
+      }, NOTE_PATH);
+      await browser.waitUntil(() => !existsSync(path.join(base, NOTE_PATH)), {
+        timeout: 30000,
+        timeoutMsg:
+          "first-use journey: could not clear the existing canonical note",
+      });
+      expect(existsSync(path.join(base, INDEX_REL))).toBe(false);
+      const exportPath = path.join(base, EXPORT_REL);
+      const exportBefore = sha256(exportPath);
+      await openPanel();
+      const syncBtn = await browser.$("[data-pf-testid='sync-library']");
+      await expect(syncBtn).toExist();
+      await syncBtn.click();
+      await browser.waitUntil(
+        () => {
+          try {
+            const index = readIndex(base);
+            return (
+              index.paper_count > 0 &&
+              index.keys.includes(PAPER_KEY) &&
+              existsSync(path.join(base, NOTE_PATH))
+            );
+          } catch {
+            return false;
+          }
+        },
+        {
+          timeout: 180000,
+          timeoutMsg:
+            "first-use journey: initial sync never materialized the library",
+        }
+      );
+      expect(sha256(exportPath)).toBe(exportBefore);
+      noteSha = sha256(path.join(base, NOTE_PATH));
+    });
+
+    await runStep("open-paper", async () => {
+      await openVaultFile(NOTE_PATH);
+      await browser.waitUntil(
+        async () =>
+          await browser.executeObsidian(
+            async ({ app }, notePath) =>
+              app.workspace.getActiveFile()?.path === notePath,
+            NOTE_PATH
+          ),
+        {
+          timeout: 30000,
+          timeoutMsg: "first-use journey: the note did not open",
+        }
+      );
+    });
+
+    await runStep("restart-obsidian", async () => {
+      await browser.reloadObsidian();
+      await dismissModals();
+      await openPanel();
+    });
+
+    await runStep("reopen-paper-after-restart", async () => {
+      const base = await sandboxBasePath();
+      expect(sha256(path.join(base, NOTE_PATH))).toBe(noteSha);
+      await openVaultFile(NOTE_PATH);
+      await browser.waitUntil(
+        async () =>
+          await browser.executeObsidian(
+            async ({ app }, notePath) =>
+              app.workspace.getActiveFile()?.path === notePath,
+            NOTE_PATH
+          ),
+        {
+          timeout: 30000,
+          timeoutMsg:
+            "first-use journey: the note did not reopen after restart",
+        }
+      );
+    });
+
+    // The app-level restart above can leave backend children draining; the
+    // next suite test asserts no backend process outlives this sandbox, so the
+    // journey must hand over a settled state (probe chains have a 300s budget).
+    await runStep("backend-settled", async () => {
+      const base = await sandboxBasePath();
+      await waitForBackendDrain(base);
+    });
+
+    appendEvidence("first-use-journey.json", {
+      case_id: "GATE-01",
+      variant: JOURNEY_VARIANT,
+      required_layer: "H",
+      gate: true,
+      status: "VERIFIED",
+      steps,
+      total_ms: steps.reduce((sum, step) => sum + step.ms, 0),
+      pointer: installed,
+      artifact_sha256: {
+        bundle: sha256(path.join(PLUGIN_DIR, "main.js")),
+        // Hash of the wheel OFFERED to pip via PIP_FIND_LINKS; the install
+        // resolves `paperforge==<version>` from that link or the index (same
+        // version either way), so this is provenance for the offer, not proof
+        // of which equal-version artifact pip chose.
+        wheel_offered: process.env.PF_E2E_WHEEL_SHA256 ?? null,
+      },
+      obsidian_version: String(await browser.getObsidianVersion()),
+      fixture_vault: FIXTURE_VAULT,
+      sandbox_base: await sandboxBasePath(),
+      source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: PLUGIN_DIR,
+      })
+        .toString()
+        .trim(),
+      worktree_dirty: worktreeDirty(),
+      recorded_at: new Date().toISOString(),
+    });
+  });
+
   it("disables and restarts autosync without duplicate timers or orphan processes", async function () {
     const base = await sandboxBasePath();
     await waitForIdle("A07", "startup-sync-settle");
@@ -709,10 +1016,7 @@ describe("PaperForge real-task e2e", function () {
     expect(enabled.enabled).toBe(true);
     expect(enabled.timer).toBe(true);
     expect(enabled.operation_active).toBe(false);
-    await browser.waitUntil(() => sandboxBackendProcesses(base) === 0, {
-      timeout: 30000,
-      timeoutMsg: "backend processes outlived the settled autosync operation",
-    });
+    await waitForBackendDrain(base);
     const orphanProcesses = sandboxBackendProcesses(base);
     if (orphanProcesses !== 0) {
       throw new Error(
@@ -829,11 +1133,7 @@ describe("PaperForge real-task e2e", function () {
     });
     expect(disabled.enabled).toBe(false);
     expect(disabled.timer).toBe(false);
-    await browser.waitUntil(() => sandboxBackendProcesses(base) === 0, {
-      timeout: 30000,
-      timeoutMsg: "previous sync process did not settle before B01 reset",
-    });
-
+    await waitForBackendDrain(base);
     rmSync(path.join(base, INDEX_REL), { force: true });
     await browser.executeObsidian(async ({ app }, notePath) => {
       const file = app.vault.getAbstractFileByPath(notePath);
@@ -985,10 +1285,22 @@ describe("PaperForge real-task e2e", function () {
     const base = await sandboxBasePath();
     const workspace = path.dirname(NOTE_PATH);
     expect(existsSync(path.join(base, workspace))).toBe(true);
-
     const exportPath = path.join(base, EXPORT_REL);
+
     removeExportItem(base, PAPER_KEY);
     await openPanel();
+    const staleModal = await browser.$(".modal-container");
+    if (await staleModal.isExisting()) {
+      await browser.keys("Escape");
+      await browser.waitUntil(
+        async () => !(await browser.$(".modal-container").isExisting()),
+        {
+          timeout: 10000,
+          interval: 500,
+          timeoutMsg: "a previous orphan modal did not close before Sync",
+        }
+      );
+    }
     const syncBtn = await browser.$("[data-pf-testid='sync-library']");
     await expect(syncBtn).toExist();
     await syncBtn.click();
@@ -1013,16 +1325,27 @@ describe("PaperForge real-task e2e", function () {
       interval: 500,
       timeoutMsg: "destructive orphan prune did not remove the workspace",
     });
-    const modalStillOpen = await browser.$(".modal-container").isExisting();
-    if (modalStillOpen) await browser.keys("Escape");
-    await browser.waitUntil(
-      async () => (await browser.$(".modal-container").isExisting()) === false,
-      {
-        timeout: 10000,
-        interval: 500,
-        timeoutMsg: "orphan prune modal did not close after deletion",
+    // The residual modal's close action is separate from deletion: close it
+    // through its own control (falling back to Escape), retry while the
+    // container lingers, and fail with the modal text if it never goes away.
+    for (let attempt = 0; attempt < 10; attempt++) {
+      if (!(await browser.$(".modal-container").isExisting())) break;
+      const container = await browser.$(".modal-container");
+      const closeButton = await container.$(".modal-close-button");
+      if (await closeButton.isExisting()) {
+        await closeButton.click().catch(() => undefined);
+      } else {
+        await browser.keys("Escape");
       }
-    );
+      await browser.pause(500);
+    }
+    if (await browser.$(".modal-container").isExisting()) {
+      const lingering = await browser.$(".modal-container");
+      const text = await lingering.getText().catch(() => "");
+      throw new Error(
+        `orphan prune modal did not close after deletion; text=${text.slice(0, 300)}`
+      );
+    }
     expect(existsSync(path.join(base, workspace))).toBe(false);
     expect(existsSync(exportPath)).toBe(true);
     appendEvidence("j06-destructive-prune.json", {
@@ -1186,10 +1509,7 @@ describe("PaperForge real-task e2e", function () {
     expect(boundary.reentryBlocked).toBe(true);
     expect(boundary.failureSettled).toBe(true);
     expect(boundary.lastSyncTime).toBe(null);
-    await browser.waitUntil(() => sandboxBackendProcesses(base) === 0, {
-      timeout: 30000,
-      timeoutMsg: "backend process did not settle after forced autosync failure",
-    });
+    await waitForBackendDrain(base);
     expect(sandboxBackendProcesses(base)).toBe(0);
     appendEvidence("b04-autosync-boundaries.json", {
       case_id: "B04",
@@ -1312,6 +1632,34 @@ describe("PaperForge real-task e2e", function () {
       { timeout: 60000, timeoutMsg: "J01 M search never found the synced paper" }
     );
     await card.click();
+    const j01OpenState = await browser.executeObsidian(
+      async ({ app }, expectedPath) => {
+        const leaves: Array<Record<string, unknown>> = [];
+        app.workspace.iterateAllLeaves((leaf) => {
+          leaves.push({
+            view_type: leaf.view.getViewType(),
+            file_path: leaf.view.file?.path ?? null,
+            active: leaf === app.workspace.activeLeaf,
+          });
+        });
+        const target = app.vault.getAbstractFileByPath(expectedPath);
+        return {
+          expected_path: expectedPath,
+          adapter_exists: await app.vault.adapter.exists(expectedPath),
+          target_path: target?.path ?? null,
+          active_file: app.workspace.getActiveFile()?.path ?? null,
+          most_recent_file:
+            app.workspace.getMostRecentLeaf()?.view.file?.path ?? null,
+          search_results: app.workspace
+            .getLeavesOfType("paperforge-status")
+            .map((leaf) => (leaf.view as { _searchResults?: unknown })._searchResults),
+          leaves,
+        };
+      },
+      notePath
+    );
+    console.log(`J01 open state: ${JSON.stringify(j01OpenState)}`);
+    appendEvidence("j01-open-debug.json", j01OpenState);
     await browser.waitUntil(
       async () =>
         await browser.executeObsidian(
@@ -1412,22 +1760,30 @@ describe("PaperForge real-task e2e", function () {
       }
     );
 
-    // Durable state: the current render fulltext now holds the v1 body.
+    // Use a vault-relative path for the read. Windows Obsidian can expose the
+    // adapter base via its 8.3 form while Python returns the long absolute
+    // path; slicing absolute strings by length then invents a suffix such as
+    // `...\hR9\System/...`.
     const content = await browser.executeObsidian(async ({ app }, key) => {
       const plugin = app.plugins.plugins["paperforge"];
       if (!plugin || typeof plugin.getClient !== "function") {
         throw new Error("paperforge plugin not loaded");
       }
       const paths = await plugin.getClient().versionsPaths(key);
-      const adapter = app.vault.adapter as unknown as {
-        basePath?: string;
-        read(path: string): Promise<string>;
-      };
-      const base = adapter.basePath ?? "";
-      const relative = paths.current_path
-        .slice(base.length)
-        .replace(/^[/\\]+/, "");
-      return await adapter.read(relative);
+      const expected = `System/PaperForge/ocr/${key}/render/fulltext.md`;
+      const returned = String(paths.current_path ?? "")
+        .replaceAll("\\", "/")
+        .toLowerCase();
+      if (!returned.endsWith(`/${expected.toLowerCase()}`)) {
+        throw new Error(
+          `unexpected current_path: ${String(paths.current_path)}`
+        );
+      }
+      const file = app.vault.getAbstractFileByPath(expected);
+      if (!file || !("extension" in file)) {
+        throw new Error(`render file not found: ${expected}`);
+      }
+      return await app.vault.adapter.read(expected);
     }, PAPER_KEY);
     expect(content).toContain("first body");
   });
@@ -1630,19 +1986,41 @@ describe("PaperForge real-task e2e", function () {
         { model: setupModel, base: apiBase }
       );
 
-      await browser.waitUntil(
-        async () => {
-          const config = await readConfig();
-          return (
-            config.vector_db_api_model === setupModel &&
-            config.vector_db_api_base === apiBase
-          );
-        },
-        {
-          timeout: 60000,
-          timeoutMsg: "Setup Journey did not persist provider config",
-        }
-      );
+      try {
+        await browser.waitUntil(
+          async () => {
+            const config = await readConfig();
+            return (
+              config.vector_db_api_model === setupModel &&
+              config.vector_db_api_base === apiBase
+            );
+          },
+          {
+            timeout: 60000,
+            interval: 2000,
+            timeoutMsg: "Setup Journey did not persist provider config",
+          }
+        );
+      } catch (error) {
+        const snapshot = await browser.executeObsidian(async ({ app }) => {
+          const plugin = app.plugins.plugins["paperforge"] as unknown as {
+            _settingTab: {
+              _setupFeedback: string | null;
+              _setupOperation: string;
+            };
+            getClient(): { isOperationActive(): boolean };
+          };
+          return {
+            feedback: plugin._settingTab._setupFeedback,
+            operation: plugin._settingTab._setupOperation,
+            operation_active: plugin.getClient().isOperationActive(),
+          };
+        });
+        const config = await readConfig().catch(() => null);
+        throw new Error(
+          `${String(error)}\nsnapshot=${JSON.stringify(snapshot)} config=${JSON.stringify(config)}`
+        );
+      }
 
       await browser.executeObsidian(
         async ({ app }, values: { model: string; base: string }) => {
@@ -2003,12 +2381,8 @@ describe("PaperForge real-task e2e", function () {
     // A backend that outlives its request is invisible to every other
     // assertion here: the vault is a temp copy and its process would keep
     // running against a directory the harness is about to discard.
-    let leftovers = sandboxBackendProcesses(base);
-    if (leftovers > 0) {
-      // Give a just-settled child a moment to exit before calling it a leak.
-      await browser.pause(2000);
-      leftovers = sandboxBackendProcesses(base);
-    }
+    await waitForBackendDrain(base);
+    const leftovers = sandboxBackendProcesses(base);
 
     appendEvidence("w01-isolation.json", {
       case_id: "X11",
@@ -2038,9 +2412,7 @@ describe("PaperForge real-task e2e", function () {
     await openPanel();
     await openVaultFile(NOTE_PATH);
 
-    const disclosure = await browser.$(".paperforge-technical-details-toggle");
-    await disclosure.waitForExist({ timeout: 60000 });
-    await disclosure.click();
+    await clickTechnicalDetails();
 
     const checkbox = await browser.$("[data-pf-testid='flag-analyze']");
     await checkbox.waitForDisplayed({ timeout: 60000 });
@@ -2097,9 +2469,7 @@ describe("PaperForge real-task e2e", function () {
     // Render the panel from the healthy note first: the toggles only exist in
     // paper mode, which resolves the note, so breaking it before the render
     // removes the very control under test.
-    const disclosure = await browser.$(".paperforge-technical-details-toggle");
-    await disclosure.waitForExist({ timeout: 60000 });
-    await disclosure.click();
+    await clickTechnicalDetails();
 
     const checkbox = await browser.$("[data-pf-testid='flag-do_ocr']");
     await checkbox.waitForDisplayed({ timeout: 60000 });
