@@ -498,6 +498,14 @@ jobs:
           path: paperforge/plugin/test/evidence/first-use-journey.json
           if-no-files-found: error
           retention-days: 14
+      - name: Upload obsidian evidence (all cases)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: obsidian-evidence-${{ matrix.app }}-${{ matrix.installer }}
+          path: paperforge/plugin/test/evidence
+          if-no-files-found: warn
+          retention-days: 14
       - name: Validate the first-use journey gate
         shell: bash
         run: |

@@ -1975,19 +1975,41 @@ describe("PaperForge real-task e2e", function () {
         { model: setupModel, base: apiBase }
       );
 
-      await browser.waitUntil(
-        async () => {
-          const config = await readConfig();
-          return (
-            config.vector_db_api_model === setupModel &&
-            config.vector_db_api_base === apiBase
-          );
-        },
-        {
-          timeout: 60000,
-          timeoutMsg: "Setup Journey did not persist provider config",
-        }
-      );
+      try {
+        await browser.waitUntil(
+          async () => {
+            const config = await readConfig();
+            return (
+              config.vector_db_api_model === setupModel &&
+              config.vector_db_api_base === apiBase
+            );
+          },
+          {
+            timeout: 60000,
+            interval: 2000,
+            timeoutMsg: "Setup Journey did not persist provider config",
+          }
+        );
+      } catch (error) {
+        const snapshot = await browser.executeObsidian(async ({ app }) => {
+          const plugin = app.plugins.plugins["paperforge"] as unknown as {
+            _settingTab: {
+              _setupFeedback: string | null;
+              _setupOperation: string;
+            };
+            getClient(): { isOperationActive(): boolean };
+          };
+          return {
+            feedback: plugin._settingTab._setupFeedback,
+            operation: plugin._settingTab._setupOperation,
+            operation_active: plugin.getClient().isOperationActive(),
+          };
+        });
+        const config = await readConfig().catch(() => null);
+        throw new Error(
+          `${String(error)}\nsnapshot=${JSON.stringify(snapshot)} config=${JSON.stringify(config)}`
+        );
+      }
 
       await browser.executeObsidian(
         async ({ app }, values: { model: string; base: string }) => {
