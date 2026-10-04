@@ -25,8 +25,11 @@ import {
   type ImpactConfirmationConfig,
   type DiagnosticInput,
 } from "../src/primitives";
-import { createUnknownEnvelope, type ProbeEnvelope, type UserState } from "../src/constants";
-
+import {
+  createUnknownEnvelope,
+  type ProbeEnvelope,
+  type UserState,
+} from "../src/constants";
 
 // ── Obsidian createEl polyfill for JSDOM ──
 function installCreateElPolyfill(doc: Document): void {
@@ -36,7 +39,13 @@ function installCreateElPolyfill(doc: Document): void {
   (HTMLElProto as Record<string, unknown>).createEl = function (
     this: HTMLElement,
     tag: string,
-    options?: { cls?: string; text?: string; attr?: Record<string, string>; title?: string; href?: string }
+    options?: {
+      cls?: string;
+      text?: string;
+      attr?: Record<string, string>;
+      title?: string;
+      href?: string;
+    }
   ): HTMLElement {
     const el = this.ownerDocument.createElement(tag);
     if (options?.cls) el.className = options.cls;
@@ -63,21 +72,30 @@ function installCreateElPolyfill(doc: Document): void {
     this: HTMLElement,
     options?: { cls?: string; text?: string; attr?: Record<string, string> }
   ): HTMLDivElement {
-    return (HTMLElProto as Record<string, unknown>).createEl.call(this, "div", options) as HTMLDivElement;
+    return (HTMLElProto as Record<string, unknown>).createEl.call(
+      this,
+      "div",
+      options
+    ) as HTMLDivElement;
   };
 
   (HTMLElProto as Record<string, unknown>).createSpan = function (
     this: HTMLElement,
     options?: { cls?: string; text?: string; attr?: Record<string, string> }
   ): HTMLSpanElement {
-    return (HTMLElProto as Record<string, unknown>).createEl.call(this, "span", options) as HTMLSpanElement;
+    return (HTMLElProto as Record<string, unknown>).createEl.call(
+      this,
+      "span",
+      options
+    ) as HTMLSpanElement;
   };
 }
 
 // ── Helpers ──
 
 function makeDoc(): Document {
-  const doc = new JSDOM("<!DOCTYPE html><html><body></body></html>").window.document;
+  const doc = new JSDOM("<!DOCTYPE html><html><body></body></html>").window
+    .document;
   installCreateElPolyfill(doc);
   return doc;
 }
@@ -104,7 +122,7 @@ describe("renderStatusBadge", () => {
       expect(el.getAttribute("role")).toBe("status");
       // Each variant gets a unique CSS class
       // CSS class uses hyphen for not-enabled
-expect(el.className).toContain("pf-badge");
+      expect(el.className).toContain("pf-badge");
     }
   });
 
@@ -137,7 +155,9 @@ describe("renderActivityRow", () => {
   it("renders label", () => {
     const doc = makeDoc();
     const row = renderActivityRow(doc.body, { label: "Syncing..." });
-    expect(row.querySelector(".pf-activity-label")?.textContent).toBe("Syncing...");
+    expect(row.querySelector(".pf-activity-label")?.textContent).toBe(
+      "Syncing..."
+    );
   });
 
   it("renders progress bar when progress provided", () => {
@@ -178,7 +198,9 @@ describe("renderActivityRow", () => {
       label: "Processing",
       scope: "12 papers",
     });
-    expect(row.querySelector(".pf-activity-scope")?.textContent).toBe("12 papers");
+    expect(row.querySelector(".pf-activity-scope")?.textContent).toBe(
+      "12 papers"
+    );
   });
 
   it("renders stop button when onStop provided", () => {
@@ -187,7 +209,9 @@ describe("renderActivityRow", () => {
     const row = renderActivityRow(doc.body, {
       label: "Processing",
       stopLabel: "Stop",
-      onStop: () => { stopped = true; },
+      onStop: () => {
+        stopped = true;
+      },
     });
     const btn = row.querySelector(".pf-activity-stop") as HTMLButtonElement;
     expect(btn).toBeDefined();
@@ -202,7 +226,9 @@ describe("renderActivityRow", () => {
     const row = renderActivityRow(doc.body, {
       label: "Processing",
       stopLabel: "Stop",
-      onStop: () => { stopped = true; },
+      onStop: () => {
+        stopped = true;
+      },
     });
     const btn = row.querySelector(".pf-activity-stop") as HTMLButtonElement;
     btn.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));
@@ -227,7 +253,9 @@ describe("renderActionButton", () => {
     let clicked = false;
     const btn = renderActionButton(doc.body, {
       label: "Run OCR",
-      onClick: () => { clicked = true; },
+      onClick: () => {
+        clicked = true;
+      },
     });
     expect(btn.textContent).toBe("Run OCR");
     btn.dispatchEvent(new MouseEvent("click"));
@@ -240,7 +268,9 @@ describe("renderActionButton", () => {
     const btn = renderActionButton(doc.body, {
       label: "Run OCR",
       disabled: true,
-      onClick: () => { clicked = true; },
+      onClick: () => {
+        clicked = true;
+      },
     });
     expect(btn.getAttribute("disabled")).toBe("true");
     expect(btn.className).toContain("pf-action-btn--disabled");
@@ -256,7 +286,9 @@ describe("renderActionButton", () => {
     const btn = renderActionButton(doc.body, {
       label: "Run OCR",
       loading: true,
-      onClick: () => { clicked = true; },
+      onClick: () => {
+        clicked = true;
+      },
     });
     expect(btn.textContent).toBe("…");
     expect(btn.className).toContain("pf-action-btn--loading");
@@ -271,7 +303,9 @@ describe("renderActionButton", () => {
     let clicked = false;
     const btn = renderActionButton(doc.body, {
       label: "Run OCR",
-      onClick: () => { clicked = true; },
+      onClick: () => {
+        clicked = true;
+      },
     });
     btn.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));
     expect(clicked).toBe(true);
@@ -285,7 +319,9 @@ describe("renderDisclosure", () => {
     const doc = makeDoc();
     const disc = renderDisclosure(doc.body, {
       title: "Advanced Settings",
-      renderBody: (body) => { body.createEl("div", { text: "content" }); },
+      renderBody: (body) => {
+        body.createEl("div", { text: "content" });
+      },
     });
     const header = disc.querySelector(".pf-disclosure-header") as HTMLElement;
     expect(header?.textContent).toContain("Advanced Settings");
@@ -296,7 +332,10 @@ describe("renderDisclosure", () => {
     let bodyEl: HTMLElement | null = null;
     const disc = renderDisclosure(doc.body, {
       title: "Test",
-      renderBody: (body) => { bodyEl = body; body.createEl("div", { text: "hidden" }); },
+      renderBody: (body) => {
+        bodyEl = body;
+        body.createEl("div", { text: "hidden" });
+      },
     });
     const body = disc.querySelector(".pf-disclosure-body") as HTMLElement;
     expect(body).toBeDefined();
@@ -308,7 +347,9 @@ describe("renderDisclosure", () => {
     const disc = renderDisclosure(doc.body, {
       title: "Test",
       initiallyOpen: true,
-      renderBody: (body) => { body.createEl("div", { text: "visible" }); },
+      renderBody: (body) => {
+        body.createEl("div", { text: "visible" });
+      },
     });
     const body = disc.querySelector(".pf-disclosure-body") as HTMLElement;
     expect(body?.className).toContain("pf-disclosure-body--open");
@@ -318,7 +359,9 @@ describe("renderDisclosure", () => {
     const doc = makeDoc();
     const disc = renderDisclosure(doc.body, {
       title: "Test",
-      renderBody: (body) => { body.createEl("div", { text: "hidden" }); },
+      renderBody: (body) => {
+        body.createEl("div", { text: "hidden" });
+      },
     });
     const header = disc.querySelector(".pf-disclosure-header") as HTMLElement;
     const body = disc.querySelector(".pf-disclosure-body") as HTMLElement;
@@ -334,7 +377,9 @@ describe("renderDisclosure", () => {
     const doc = makeDoc();
     const disc = renderDisclosure(doc.body, {
       title: "Test",
-      renderBody: (body) => { body.createEl("div"); },
+      renderBody: (body) => {
+        body.createEl("div");
+      },
     });
     const header = disc.querySelector(".pf-disclosure-header") as HTMLElement;
     const icon = header.querySelector(".pf-disclosure-icon") as HTMLElement;
@@ -356,7 +401,9 @@ describe("renderErrorAnatomy", () => {
       impact: "Library is out of date",
       nextStep: "Check Zotero connection",
     });
-    expect(container.querySelector(".pf-error-title")?.textContent).toBe("Sync failed");
+    expect(container.querySelector(".pf-error-title")?.textContent).toBe(
+      "Sync failed"
+    );
     expect(container.textContent).toContain("Impact:");
     expect(container.textContent).toContain("Library is out of date");
     expect(container.textContent).toContain("Next:");
@@ -371,7 +418,9 @@ describe("renderErrorAnatomy", () => {
       nextStep: "Retry",
       reasonCode: "library.sync_failed",
     });
-    expect(container.querySelector(".pf-error-code")?.textContent).toBe("library.sync_failed");
+    expect(container.querySelector(".pf-error-code")?.textContent).toBe(
+      "library.sync_failed"
+    );
   });
 
   it("renders Copy Diagnostic button when callback provided", () => {
@@ -381,9 +430,13 @@ describe("renderErrorAnatomy", () => {
       whatHappened: "Error",
       impact: "None",
       nextStep: "Retry",
-      onCopyDiagnostic: () => { copied = true; },
+      onCopyDiagnostic: () => {
+        copied = true;
+      },
     });
-    const btn = container.querySelector(".pf-error-copy-diagnostic") as HTMLButtonElement;
+    const btn = container.querySelector(
+      ".pf-error-copy-diagnostic"
+    ) as HTMLButtonElement;
     expect(btn).toBeDefined();
     btn.click();
     expect(copied).toBe(true);
@@ -415,8 +468,12 @@ describe("renderConfigurationSummary", () => {
     });
     const rows = container.querySelectorAll(".pf-config-row");
     expect(rows.length).toBe(2);
-    expect(rows[0].querySelector(".pf-config-label")?.textContent).toBe("Zotero");
-    expect(rows[0].querySelector(".pf-config-value")?.textContent).toBe("/data/zotero");
+    expect(rows[0].querySelector(".pf-config-label")?.textContent).toBe(
+      "Zotero"
+    );
+    expect(rows[0].querySelector(".pf-config-value")?.textContent).toBe(
+      "/data/zotero"
+    );
   });
 
   it("credential items show Configured/Not configured", () => {
@@ -430,8 +487,12 @@ describe("renderConfigurationSummary", () => {
       onChange: () => {},
     });
     const rows = container.querySelectorAll(".pf-config-row");
-    expect(rows[0].querySelector(".pf-config-value")?.textContent).toBe("Configured");
-    expect(rows[1].querySelector(".pf-config-value")?.textContent).toBe("Not configured");
+    expect(rows[0].querySelector(".pf-config-value")?.textContent).toBe(
+      "Configured"
+    );
+    expect(rows[1].querySelector(".pf-config-value")?.textContent).toBe(
+      "Not configured"
+    );
   });
 
   it("Change button triggers onChange", () => {
@@ -440,9 +501,13 @@ describe("renderConfigurationSummary", () => {
     const container = renderConfigurationSummary(doc.body, {
       items: [],
       onChangeLabel: "Change settings",
-      onChange: () => { changed = true; },
+      onChange: () => {
+        changed = true;
+      },
     });
-    const btn = container.querySelector(".pf-config-change-btn") as HTMLButtonElement;
+    const btn = container.querySelector(
+      ".pf-config-change-btn"
+    ) as HTMLButtonElement;
     btn.click();
     expect(changed).toBe(true);
   });
@@ -464,8 +529,9 @@ describe("renderImpactConfirmation", () => {
       onConfirm: () => {},
       onCancel: () => {},
     });
-    expect(container.querySelector(".pf-impact-confirm-title")?.textContent)
-      .toContain("Redo OCR 12 papers");
+    expect(
+      container.querySelector(".pf-impact-confirm-title")?.textContent
+    ).toContain("Redo OCR 12 papers");
   });
 
   it("renders replaced and preserved lists", () => {
@@ -516,10 +582,16 @@ describe("renderImpactConfirmation", () => {
       interruptible: true,
       confirmLabel: "Confirm",
       cancelLabel: "Cancel",
-      onConfirm: () => { confirmed = true; },
-      onCancel: () => { cancelled = true; },
+      onConfirm: () => {
+        confirmed = true;
+      },
+      onCancel: () => {
+        cancelled = true;
+      },
     });
-    (container.querySelector(".pf-impact-confirm-btn") as HTMLButtonElement).click();
+    (
+      container.querySelector(".pf-impact-confirm-btn") as HTMLButtonElement
+    ).click();
     expect(confirmed).toBe(true);
     (container.querySelector(".pf-impact-cancel") as HTMLButtonElement).click();
     expect(cancelled).toBe(true);
@@ -570,6 +642,31 @@ describe("buildSupportDiagnostic", () => {
     });
     expect(text).toContain("=== End ===");
     expect(text.length).toBeGreaterThan(0);
+  });
+
+  it("renders environment, last failure, and stages when provided (#257)", () => {
+    const text = buildSupportDiagnostic({
+      pluginVersion: "1.0.0",
+      modules: [],
+      environment: {
+        managedRuntime: "~/.paperforge/runtime/venv",
+        runtimeVersion: "2.0.0rc5",
+        pythonSetting: "(outside home)",
+      },
+      lastSetupFailure: {
+        category: "network",
+        reason: "pip install failed: Read timed out",
+        at: "2026-09-30T00:00:00.000Z",
+      },
+      recentInstallStages: ["2026-09-30T00:00:00.000Z bootstrap:venv"],
+    });
+    expect(text).toContain("--- Environment ---");
+    expect(text).toContain("~/.paperforge/runtime/venv");
+    expect(text).toContain("2.0.0rc5");
+    expect(text).toContain("--- Last Install Failure ---");
+    expect(text).toContain("category: network");
+    expect(text).toContain("--- Recent Install Stages ---");
+    expect(text).toContain("bootstrap:venv");
   });
 });
 
@@ -628,15 +725,15 @@ describe("collectDiagnosticModules", () => {
 
     const lk = new Map();
     lk.set("installation", captureLastKnown(state.installation));
-    
+
     const modules = collectDiagnosticModules(state, lk);
     expect(modules.length).toBe(2);
-    
-    const inst = modules.find(m => m.module === "installation");
+
+    const inst = modules.find((m) => m.module === "installation");
     expect(inst?.userState).toBe("ready");
     expect(inst?.lastSuccessAt).toBeDefined();
 
-    const lib = modules.find(m => m.module === "library");
+    const lib = modules.find((m) => m.module === "library");
     expect(lib?.userState).toBe("action_required");
     expect(lib?.lastSuccessAt).toBeNull();
   });
@@ -661,7 +758,7 @@ describe("reduced-motion support", () => {
     // The actual motion reduction is handled by CSS media queries
     // We verify the markup has appropriate classes
     const doc = makeDoc();
-    
+
     // Activity bar uses CSS transition — verify markup exists
     const row = renderActivityRow(doc.body, {
       label: "Test",
@@ -676,7 +773,9 @@ describe("reduced-motion support", () => {
     const doc = makeDoc();
     const disc = renderDisclosure(doc.body, {
       title: "Test",
-      renderBody: (body) => { body.createEl("div"); },
+      renderBody: (body) => {
+        body.createEl("div");
+      },
     });
     const icon = disc.querySelector(".pf-disclosure-icon");
     expect(icon).toBeDefined();

@@ -49,6 +49,7 @@ import {
 import {
   scanBbtUnderProfiles,
   scanBbtDirectChildren,
+  classifySetupFailure,
 } from "./services/python-bridge";
 import type { PythonResult } from "./services/python-bridge";
 import { deferred } from "./services/deferred";
@@ -137,6 +138,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   private _setupFeedback: string | null = null;
   /** Raw failure reason for the last install attempt (null when none). */
   private _setupFailureDetail: string | null = null;
+  /** #257: last classified install failure, surfaced in the diagnostic. */
+  private _lastSetupFailure: {
+    category: string;
+    reason: string;
+    at: string;
+  } | null = null;
+  /** #257: bootstrap/setup stage breadcrumbs for the diagnostic (capped). */
+  private _setupStageLog: string[] = [];
   /** Completion state before an explicitly entered journey (see _goHome). */
   private _setupCompleteBeforeJourney: boolean | null = null;
   /** RC UX Seam P1: user chose "Later" — pure session flag; reset on hide(). */
@@ -470,7 +479,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     // leaving the wizard (Later / Home) left the session flag set and the
     // next "install"/"reinstall" click silently did nothing.
     this._setupJourneyDismissedForSession = false;
-    this._setupCompleteBeforeJourney = this.plugin.settings._setup_complete !== false;
+    this._setupCompleteBeforeJourney =
+      this.plugin.settings._setup_complete !== false;
     this.plugin.settings._setup_complete = false;
     void this.plugin.saveSettings().then(() => this.display());
   }
@@ -505,7 +515,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         const installed = await bootstrap.installOnce(
           this.plugin.manifest.version,
           signal,
-          baseInterpreter
+          baseInterpreter,
+          (stage) => {
+            this._recordSetupStage(`bootstrap:${stage}`);
+            this._setupFeedback = `${t("setup_installing")} · ${t(
+              "setup_install_phase_" + stage
+            )}`;
+            this.display();
+          }
         );
         const hs = await bootstrap.handshake(this.plugin.manifest.version, {
           pythonPath: installed.pythonPath,
@@ -534,6 +551,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             pythonExe: installed.pythonPath,
             onEvent: (ev) => {
               if (ev.event === "phase") {
+                this._recordSetupStage(`setup:${ev.phase ?? ""}`);
                 this._setupFeedback = `${t("setup_installing") || "Installing"}: ${ev.phase ?? ""}`;
                 this.display();
               }
@@ -556,6 +574,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         }
         this._setupOperation = "idle";
         this._setupCompleteBeforeJourney = null;
+        // #260: the pointer now names the verified candidate — retire any
+        // other runtime environment (best-effort; never the active one).
+        try {
+          const pointer = bootstrap.readPointer?.() ?? null;
+          bootstrap.retireUnusedRuntimes?.(pointer?.environmentRoot ?? null);
+        } catch {
+          // Housekeeping only: a retirement failure must never fail setup.
+        }
         const wasReinstall = forceInstall || this._setupReinstallRequested;
         this._setupReinstallRequested = false;
         this._probeModule("installation");
@@ -594,9 +620,15 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         this._setupOperation = "failed";
         this._setupFeedback = t("setup_install_failed");
         // The generic line above blames the Python path for EVERY failure
-        // (pip, network, handshake). Keep the real reason visible so the
-        // user can act on it instead of retrying blind.
-        this._setupFailureDetail = this._formatSetupFailure(error);
+        // (pip, network, handshake). #257: classify it and keep both the
+        // actionable hint and the real reason visible.
+        const reason = this._formatSetupFailure(error);
+        this._lastSetupFailure = {
+          category: classifySetupFailure(reason).type,
+          reason,
+          at: new Date().toISOString(),
+        };
+        this._setupFailureDetail = this._formatSetupFailureWithHint(error);
         this.display();
       } finally {
         this._runtimeAbortController = null;
@@ -617,10 +649,54 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     return bounded.length > 220 ? `${bounded.slice(0, 220)}…` : bounded;
   }
 
+  /** Classified, actionable install-failure line (#257): category hint + raw. */
+  private _formatSetupFailureWithHint(error: unknown): string {
+    const raw = this._formatSetupFailure(error);
+    const hints: Record<string, string> = {
+      network: "setup_fail_hint_network",
+      disk_full: "setup_fail_hint_disk_full",
+      permission_denied: "setup_fail_hint_permission_denied",
+      process_busy: "setup_fail_hint_process_busy",
+      artifact_unavailable: "setup_fail_hint_artifact_unavailable",
+      wheel_unavailable: "setup_fail_hint_wheel_unavailable",
+      import_failed: "setup_fail_hint_import_failed",
+      version_mismatch: "setup_fail_hint_version_mismatch",
+      no_python: "setup_fail_hint_no_python",
+      python_missing: "setup_fail_hint_no_python",
+    };
+    const hintKey =
+      hints[classifySetupFailure(raw).type] ?? "setup_fail_hint_generic";
+    return `${t(hintKey)} · ${raw}`;
+  }
+
+  /** #257: bounded stage breadcrumbs (oldest first) for the diagnostic. */
+  private _recordSetupStage(label: string): void {
+    this._setupStageLog.push(`${new Date().toISOString()} ${label}`);
+    if (this._setupStageLog.length > 16) this._setupStageLog.shift();
+  }
+
+  /** #257: home-relative path for the diagnostic; never a raw user path. */
+  private _diagnosticPath(value: string | null | undefined): string | null {
+    const trimmed = value?.trim();
+    if (!trimmed) return null;
+    const home = os.homedir();
+    if (trimmed.startsWith(home)) return "~" + trimmed.slice(home.length);
+    return "(outside home)";
+  }
+
+  /** Bounded one-line detail for per-key config failures (write/readback). */
+  private _formatConfigFailures(
+    failures: Array<{ key: string; reason: string }>
+  ): string {
+    const text = failures.map((f) => `${f.key}: ${f.reason}`).join(" · ");
+    return text.length > 400 ? `${text.slice(0, 400)}…` : text;
+  }
+
   private _applyLibraryConfiguration(): void {
     if (this._setupOperation === "running") return;
     this._setupOperation = "running";
     this._setupFeedback = null;
+    this._setupFailureDetail = null;
     const settings = this.plugin.settings;
     const vaultPath = this._getVaultBasePath();
     const paths = {
@@ -633,19 +709,82 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     // #142 / C0: mutations route through the typed config commands; the
     // plugin never writes paperforge.json.
     void (async () => {
-      const writes: Promise<unknown>[] = [];
+      // A rejected write is a fact: collect every failure so a partial
+      // configuration can never continue into `setup` as if it were saved.
+      const problems: Array<{ key: string; reason: string }> = [];
+      const written: Array<{ key: string; value: string }> = [];
+      const envOverridden: string[] = [];
+      const writes: Promise<void>[] = [];
       for (const [key, value] of Object.entries(paths)) {
         if (value && value.trim()) {
+          const wanted = value.trim();
+          written.push({ key, value: wanted });
           writes.push(
             this.getClient()
-              .configSet(key, value.trim())
-              .catch((e) => {
-                console.error(`PaperForge: config set ${key} failed`, e);
-              })
+              .configSet(key, wanted)
+              .then(
+                () => undefined,
+                (e) => {
+                  console.error(`PaperForge: config set ${key} failed`, e);
+                  problems.push({
+                    key,
+                    reason: this._formatSetupFailure(e),
+                  });
+                }
+              )
           );
         }
       }
-      await Promise.all(writes).catch(() => undefined);
+      await Promise.all(writes);
+
+      // Read the canonical config back before claiming success: the
+      // backend owns the truth, not the mirror the form was edited in.
+      if (problems.length === 0 && written.length > 0) {
+        try {
+          const listed = await this.getClient().configList();
+          for (const { key, value } of written) {
+            const field = listed.fields.find((f) => f.key === key);
+            if (!field) {
+              problems.push({ key, reason: "missing from the backend config" });
+              continue;
+            }
+            // stored_value is the file fact; `value` may be an environment
+            // override that later stages would actually consume.
+            const stored = String(field.stored_value ?? "").trim();
+            if (stored !== value) {
+              problems.push({
+                key,
+                reason:
+                  `backend stored ${JSON.stringify(stored)}, expected ` +
+                  JSON.stringify(value) +
+                  (field.source === "environment"
+                    ? ` (environment override ${field.environment ?? "set"} in effect)`
+                    : ""),
+              });
+            }
+            if (
+              field.source === "environment" &&
+              String(field.value ?? "").trim() !== value
+            ) {
+              envOverridden.push(`${key} (${field.environment ?? "env"})`);
+            }
+          }
+        } catch (e) {
+          problems.push({
+            key: "readback",
+            reason: this._formatSetupFailure(e),
+          });
+        }
+      }
+
+      if (problems.length > 0) {
+        this._setupOperation = "failed";
+        this._setupFeedback = t("setup_library_config_failed");
+        this._setupFailureDetail = this._formatConfigFailures(problems);
+        this.display();
+        return;
+      }
+
       this.display();
 
       try {
@@ -678,7 +817,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           );
         }
         this._setupOperation = "idle";
-        this._setupFeedback = t("setup_library_configured");
+        this._setupFeedback =
+          envOverridden.length > 0
+            ? `${t("setup_library_configured")} · ${t("setup_library_config_env_override").replace("{keys}", envOverridden.join(", "))}`
+            : t("setup_library_configured");
         this._attemptedProbes.add("library");
         this._probeModule("library");
         this.display();
@@ -1435,19 +1577,25 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         label: t("config_save"),
         onClick: () => {
           const value = this._agentPlatformDraft ?? current;
-          this.plugin.settings.agent_platform = value;
-          // #142 / C0: mutation through the typed config command.
+          // #142 / C0: mutation through the typed config command; the
+          // mirror and the persisted settings follow backend acceptance,
+          // never lead it.
           void this.getClient()
             .configSet("agent_platform", value)
-            .catch(
-              (e) =>
+            .then(
+              () => {
+                this.plugin.settings.agent_platform = value;
+                this._agentPlatformDraft = null;
+                void this.plugin.saveSettings();
+                this.display();
+              },
+              (e) => {
                 new Notice(
                   `PaperForge: config set agent_platform failed: ${String(e)}`
-                )
+                );
+                this.display();
+              }
             );
-          this.plugin.saveSettings();
-          this._agentPlatformDraft = null;
-          this.display();
         },
       });
       renderActionButton(actions, {
@@ -1533,7 +1681,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           },
         });
       }
-    } else if (env.reason?.code === "memory.index_stale" && !env.action?.primary) {
+    } else if (
+      env.reason?.code === "memory.index_stale" &&
+      !env.action?.primary
+    ) {
       // Index behind the database: ready with an ordinary rebuild action.
       // A backend-named primary action still wins (the state machine owns
       // the wording) — this is only the ready-with-notice shape.
@@ -3469,16 +3620,24 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     ).open();
   }
 
-  /** #85: Build and copy privacy-safe Support Diagnostic. */
+  /** #85: Build and copy privacy-safe Support Diagnostic (#257 extended). */
   _buildAndCopyDiagnostic(): void {
     const pluginVersion = this.plugin.manifest?.version ?? "unknown";
     const modules = collectDiagnosticModules(
       this._capabilityState ?? {},
       this._lastKnownState
     );
+    const pointer = this._ensureManagedRuntime().readPointer?.() ?? null;
     const diag: DiagnosticInput = {
       pluginVersion,
       modules,
+      environment: {
+        managedRuntime: this._diagnosticPath(pointer?.environmentRoot),
+        runtimeVersion: pointer?.paperforgeVersion ?? null,
+        pythonSetting: this._diagnosticPath(this.plugin.settings.python_path),
+      },
+      lastSetupFailure: this._lastSetupFailure,
+      recentInstallStages: [...this._setupStageLog],
     };
     const text = buildSupportDiagnostic(diag);
     copySupportDiagnostic(text, () => {
@@ -3576,9 +3735,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         return;
       }
       const exists = fs.existsSync(value);
-      pythonHint.setText(
-        exists ? "" : t("setup_foundation_python_missing")
-      );
+      pythonHint.setText(exists ? "" : t("setup_foundation_python_missing"));
       pythonField.classList.toggle("pf-setup-field--invalid", !exists);
     };
     pythonInput.addEventListener("input", () => {
@@ -3598,6 +3755,28 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           ? t("setup_ready")
           : this._getModuleConsequence("installation", env),
       cls: env.user_state === "ready" ? "pf-setup-ok" : "pf-setup-status",
+    });
+    // #257: environment identity — pointer facts and the advanced Python base
+    // are visible here instead of only existing on disk.
+    const pointer = this._ensureManagedRuntime().readPointer?.() ?? null;
+    const identity = containerEl.createDiv({ cls: "pf-setup-identity" });
+    identity.createEl("p", {
+      cls: "caption",
+      text: `${t("setup_identity_runtime")}: ${
+        pointer ? pointer.environmentRoot : t("setup_identity_not_published")
+      }`,
+    });
+    identity.createEl("p", {
+      cls: "caption",
+      text: `${t("setup_identity_version")}: ${
+        pointer ? pointer.paperforgeVersion : "—"
+      }`,
+    });
+    identity.createEl("p", {
+      cls: "caption",
+      text: `${t("setup_identity_python")}: ${
+        this.plugin.settings.python_path?.trim() || t("setup_identity_auto")
+      }`,
     });
     if (this._setupOperation === "running") {
       containerEl.createEl("p", {
@@ -3730,6 +3909,16 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         cls:
           this._setupOperation === "failed" ? "pf-setup-warn" : "pf-setup-ok",
         text: this._setupFeedback,
+      });
+    }
+
+    if (this._setupOperation === "failed" && this._setupFailureDetail) {
+      containerEl.createEl("p", {
+        cls: "pf-setup-failure-detail",
+        text: t("setup_install_failed_detail").replace(
+          "{detail}",
+          this._setupFailureDetail
+        ),
       });
     }
 
@@ -4253,18 +4442,27 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           option.selected = value === this.plugin.settings.agent_platform;
         }
         select.addEventListener("change", () => {
-          this.plugin.settings.agent_platform = select.value;
-          // #142 / C0: mutation through the typed config command.
+          const previous = String(this.plugin.settings.agent_platform ?? "");
+          const value = select.value;
+          // #142 / C0: mutation through the typed config command; report
+          // "saved" only after the backend accepted, and never keep a
+          // rejected value in the mirror or the select.
           void this.getClient()
-            .configSet("agent_platform", select.value)
-            .catch(
-              (e) =>
+            .configSet("agent_platform", value)
+            .then(
+              () => {
+                this.plugin.settings.agent_platform = value;
+                void this.plugin.saveSettings();
+                status.setText(t("setup_optional_saved"));
+              },
+              (e) => {
                 new Notice(
                   `PaperForge: config set agent_platform failed: ${String(e)}`
-                )
+                );
+                select.value = previous;
+                status.setText(t("setup_optional_config_save_failed"));
+              }
             );
-          void this.plugin.saveSettings();
-          status.setText(t("setup_optional_saved"));
         });
       }
     }

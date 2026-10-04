@@ -27,9 +27,18 @@ def get_vector_db_path(vault: Path) -> Path:
     return (paths.get("memory_db", paths.get("index", vault / "System" / "PaperForge"))).parent / "vectors"
 
 
-def _get_chroma():
-    import chromadb
+class LegacyVectorUnavailable(RuntimeError):
+    """A ChromaDB-backed store exists but the legacy extra is not installed."""
 
+
+def _get_chroma():
+    try:
+        import chromadb
+    except ImportError as exc:
+        raise LegacyVectorUnavailable(
+            "ChromaDB is not installed in this runtime; legacy vector stores "
+            'need the opt-in extra: pip install "paperforge[vector,legacy-vector]"'
+        ) from exc
     return chromadb
 
 
@@ -203,9 +212,11 @@ def _migrate_chroma_to_vec0_locked(vault: Path) -> int:
 
     try:
         import chromadb  # noqa: F811
-    except ImportError:
-        logger.info("chromadb not installed, cannot migrate")
-        return 0
+    except ImportError as exc:
+        raise LegacyVectorUnavailable(
+            "A ChromaDB store exists, but ChromaDB is not installed in this "
+            'runtime. Migrate with: pip install "paperforge[vector,legacy-vector]"'
+        ) from exc
 
     try:
         client = chromadb.PersistentClient(path=str(chroma_dir))

@@ -16,6 +16,7 @@ import {
   getOsArch,
   resolveRuntimeCommand,
   AbortError,
+  compareVersions,
 } from "../src/services/managed-runtime";
 import type {
   FsOps,
@@ -216,10 +217,14 @@ describe("RuntimeBootstrap", () => {
 
       const result = await rt.installOnce("1.3.0");
       expect(result.observedVersion).toBe("1.3.0");
-      expect(path.resolve(result.pythonPath)).toBe(pythonPathFor());
+      // #260: the interpreter lives in a NEW candidate directory, never in
+      // the legacy fixed `venv` path.
+      expect(path.resolve(result.pythonPath)).toContain(
+        path.resolve(RUNTIME_DIR, "venv-")
+      );
 
       expect(fsMock.mkdirSync).toHaveBeenCalledWith(
-        expect.stringContaining("venv"),
+        expect.stringContaining("venv-"),
         expect.anything()
       );
       const cmds = execFile.mock.calls.map((c) => c[0] as string);
@@ -274,6 +279,38 @@ describe("RuntimeBootstrap", () => {
       expect(fsMock.rmSync).toHaveBeenCalled();
     });
 
+    it("a failed install removes only the candidate, never the fixed venv (#260)", async () => {
+      const fsMock = createMockFs();
+      fsMock.existsSync.mockReturnValue(true);
+      const execFile = vi.fn<(...args: unknown[]) => void>();
+      execFile.mockImplementation(
+        (
+          _cmd: unknown,
+          args: unknown,
+          _opts: unknown,
+          cb: (err: Error | null, stdout: string, stderr: string) => void
+        ) => {
+          const a = args as readonly string[];
+          if (a[0] === "-m" && a[1] === "pip") {
+            cb(new Error("pip install failed"), "", "error");
+          } else {
+            cb(null, "1.3.0", "");
+          }
+        }
+      );
+      const rt = makeBootstrap({ fs: fsMock, execFile });
+
+      await expect(rt.installOnce("1.3.0")).rejects.toThrow(
+        /pip install failed/
+      );
+      const rmTargets = fsMock.rmSync.mock.calls
+        .map((c) => String(c[0]))
+        .filter((t) => t.includes("venv"));
+      expect(rmTargets.length).toBeGreaterThan(0);
+      expect(rmTargets.every((t) => t.includes("venv-"))).toBe(true);
+      expect(rmTargets).not.toContain(path.join(RUNTIME_DIR, "venv"));
+    });
+
     it("aborted signal → AbortError", async () => {
       const ac = new AbortController();
       ac.abort();
@@ -314,7 +351,8 @@ describe("RuntimeBootstrap", () => {
 
       expect(commands).toContain("C:/custom/python.exe");
       const venvCall = execFile.mock.calls.find(
-        (call) => Array.isArray(call[1]) && (call[1] as string[]).includes("venv")
+        (call) =>
+          Array.isArray(call[1]) && (call[1] as string[]).includes("venv")
       );
       expect(venvCall?.[0]).toBe("C:/custom/python.exe");
     });
@@ -352,27 +390,24 @@ describe("RuntimeBootstrap", () => {
 
       await rt.installOnce("1.4.0", undefined, "   ");
       const venvCall = execFile.mock.calls.find(
-        (call) => Array.isArray(call[1]) && (call[1] as string[]).includes("venv")
+        (call) =>
+          Array.isArray(call[1]) && (call[1] as string[]).includes("venv")
       );
       expect(venvCall?.[0]).toBe("py");
     });
   });
 
-  it("kills whatever still runs inside the venv when cleanup is refused", async () => {
+  it("drops only the candidate when cleanup is refused, keeping the activated env (#260)", async () => {
     // Windows refuses to delete a directory whose interpreter is running
     // (module probes do exactly that while a user clicks around Settings).
     const fsMock = createMockFs();
     fsMock.existsSync.mockReturnValue(true);
-    let attempts = 0;
     fsMock.rmSync.mockImplementation(() => {
-      attempts += 1;
-      if (attempts === 1) {
-        const err = new Error("EPERM: operation not permitted") as Error & {
-          code: string;
-        };
-        err.code = "EPERM";
-        throw err;
-      }
+      const err = new Error("EPERM: operation not permitted") as Error & {
+        code: string;
+      };
+      err.code = "EPERM";
+      throw err;
     });
     const execFileSyncCalls: string[] = [];
     const execFileSync = ((
@@ -384,12 +419,33 @@ describe("RuntimeBootstrap", () => {
       // Interpreter discovery still needs a version banner.
       return args.includes("--version") ? "Python 3.12.4" : "";
     }) as ExecFileSyncFn;
-    const execFile = createMockExecFile("1.4.0");
+    const execFile = vi.fn<(...args: unknown[]) => void>();
+    execFile.mockImplementation(
+      (
+        _cmd: unknown,
+        args: unknown,
+        _opts: unknown,
+        cb: (err: Error | null, stdout: string, stderr: string) => void
+      ) => {
+        const a = args as readonly string[];
+        if (a.includes("pip")) {
+          cb(new Error("pip install failed"), "", "");
+        } else {
+          cb(null, "1.4.0", "");
+        }
+      }
+    );
     const rt = makeBootstrap({ fs: fsMock, execFile, execFileSync });
 
-    await expect(rt.installOnce("1.4.0")).resolves.toBeTruthy();
+    await expect(rt.installOnce("1.4.0")).rejects.toThrow(/pip install failed/);
+    // The stuck child inside the CANDIDATE is terminated before the drop
+    // attempt, and the refused cleanup never masks the real failure.
     expect(execFileSyncCalls).toContain("powershell");
-    expect(attempts).toBeGreaterThanOrEqual(2);
+    const rmTargets = fsMock.rmSync.mock.calls
+      .map((c) => String(c[0]))
+      .filter((t) => t.includes("venv"));
+    expect(rmTargets.length).toBeGreaterThanOrEqual(1);
+    expect(rmTargets.every((t) => t.includes("venv-"))).toBe(true);
   });
 
   it("refuses to install while another process holds the runtime lock", async () => {
@@ -399,13 +455,17 @@ describe("RuntimeBootstrap", () => {
     fsMock.existsSync.mockReturnValue(true);
     fsMock.mkdirSync.mockImplementation((p: string) => {
       if (String(p).endsWith("install.lock.d")) {
-        const err = new Error("EEXIST: file already exists") as Error & { code: string };
+        const err = new Error("EEXIST: file already exists") as Error & {
+          code: string;
+        };
         err.code = "EEXIST";
         throw err;
       }
       return undefined;
     });
-    (fsMock as unknown as { statSync: (p: string) => { mtimeMs: number } }).statSync = () => ({
+    (
+      fsMock as unknown as { statSync: (p: string) => { mtimeMs: number } }
+    ).statSync = () => ({
       mtimeMs: Date.now(),
     });
     const execFile = createMockExecFile("1.4.0");
@@ -428,7 +488,9 @@ describe("RuntimeBootstrap", () => {
       }
       return undefined;
     });
-    (fsMock as unknown as { statSync: (p: string) => { mtimeMs: number } }).statSync = () => ({
+    (
+      fsMock as unknown as { statSync: (p: string) => { mtimeMs: number } }
+    ).statSync = () => ({
       mtimeMs: Date.now() - 60 * 60 * 1000,
     });
     const execFile = createMockExecFile("1.4.0");
@@ -463,13 +525,20 @@ describe("RuntimeBootstrap", () => {
       ) => {
         const a = args as readonly string[];
         if (a.includes("probe")) {
-          cb(null, JSON.stringify({ reason: { code: "installation.ready" } }), "");
+          cb(
+            null,
+            JSON.stringify({ reason: { code: "installation.ready" } }),
+            ""
+          );
         } else {
           cb(null, "2.0.0rc2", "");
         }
       }
     );
-    const rt = makeBootstrap({ fs: fsMock, execFile: execFile as unknown as MockExecFile });
+    const rt = makeBootstrap({
+      fs: fsMock,
+      execFile: execFile as unknown as MockExecFile,
+    });
 
     const hs = await rt.handshake("2.0.0-rc.2", { vaultPath: "/vault" });
     // ok proves the version check accepted the PEP 440 spelling of the
@@ -478,10 +547,10 @@ describe("RuntimeBootstrap", () => {
     expect(hs.observedVersion).toBe("2.0.0-rc.2");
   });
 
-  it("starts from a clean venv so a damaged environment cannot survive", async () => {
-    // pip trusts an existing dist-info: a venv whose module files were lost
-    // to an interrupted run looks healthy and is never repaired by pip. The
-    // installer therefore removes the venv BEFORE creating it.
+  it("builds a fresh candidate instead of reusing or deleting an existing environment (#260)", async () => {
+    // pip trusts an existing dist-info: a reused venv could stay damaged.
+    // Candidates are brand-new by construction, so the installer never has
+    // to touch the activated environment to get a clean one.
     const fsMock = createMockFs();
     fsMock.existsSync.mockReturnValue(true);
     const execFile = createMockExecFile("1.4.0");
@@ -493,11 +562,15 @@ describe("RuntimeBootstrap", () => {
       (call) => Array.isArray(call[1]) && (call[1] as string[]).includes("venv")
     );
     expect(venvCall).toBeDefined();
-    expect(fsMock.rmSync).toHaveBeenCalled();
-    const venvCallIndex = execFile.mock.calls.indexOf(venvCall!);
-    expect(fsMock.rmSync.mock.invocationCallOrder[0]).toBeLessThan(
-      execFile.mock.invocationCallOrder[venvCallIndex]
+    const venvTarget = String((venvCall![1] as string[])[2]);
+    expect(venvTarget).toContain("venv-");
+    expect(path.resolve(venvTarget)).not.toBe(
+      path.resolve(RUNTIME_DIR, "venv")
     );
+    const venvDeletes = fsMock.rmSync.mock.calls
+      .map((c) => String(c[0]))
+      .filter((t) => t.includes("venv"));
+    expect(venvDeletes).toEqual([]);
   });
 
   // ── installOnce: no zombie pip, no concurrent writer ──
@@ -556,9 +629,7 @@ describe("RuntimeBootstrap", () => {
       });
 
       const first = rt.installOnce("1.4.0");
-      await expect(rt.installOnce("1.4.0")).rejects.toThrow(
-        /already running/
-      );
+      await expect(rt.installOnce("1.4.0")).rejects.toThrow(/already running/);
       releasePip?.();
       await first;
     });
@@ -889,7 +960,7 @@ describe("Real filesystem single venv (#174)", () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  it("installOnce() creates ONE venv and never writes a pointer", async () => {
+  it("installOnce() creates ONE candidate venv and never writes a pointer", async () => {
     const execFile = createMockExecFile("1.4.0");
     const rt = new RuntimeBootstrap({
       runtimeDir: tmpDir,
@@ -900,8 +971,99 @@ describe("Real filesystem single venv (#174)", () => {
     });
     const result = await rt.installOnce("1.4.0");
     expect(result.observedVersion).toBe("1.4.0");
-    expect(fs.existsSync(path.join(tmpDir, "venv"))).toBe(true);
+    const entries = fs.readdirSync(tmpDir);
+    expect(entries.filter((n) => /^venv-/.test(n)).length).toBe(1);
+    expect(entries).not.toContain("venv");
     expect(fs.existsSync(path.join(tmpDir, "pointer.json"))).toBe(false);
-    expect(fs.readdirSync(tmpDir).some((n) => /^v\d/.test(n))).toBe(false);
+  });
+
+  it("reports bootstrap stages in order (#257)", async () => {
+    const execFile = createMockExecFile("1.4.0");
+    const rt = new RuntimeBootstrap({
+      runtimeDir: tmpDir,
+      osPlatform: "win32",
+      osArch: "x64",
+      execFile: execFile as unknown as ExecFileFn,
+      execFileSync: createMockExecFileSync("3.11.0"),
+    });
+    const stages: string[] = [];
+    await rt.installOnce("1.4.0", undefined, undefined, (stage) => {
+      stages.push(stage);
+    });
+    expect(stages).toEqual(["venv", "pip", "verify"]);
+  });
+
+  it("retireUnusedRuntimes keeps the active root and removes other generations (#260)", () => {
+    const rt = new RuntimeBootstrap({
+      runtimeDir: tmpDir,
+      osPlatform: "win32",
+      osArch: "x64",
+    });
+    fs.mkdirSync(path.join(tmpDir, "venv"), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, "venv-1.0.0-aaa"), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, "venv-1.0.0-bbb"), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, "cache"), { recursive: true });
+    fs.writeFileSync(path.join(tmpDir, "pointer.json"), "{}");
+
+    const removed = rt.retireUnusedRuntimes(
+      path.join(tmpDir, "venv-1.0.0-bbb")
+    );
+
+    expect(removed.sort()).toEqual(["venv", "venv-1.0.0-aaa"]);
+    expect(fs.existsSync(path.join(tmpDir, "venv-1.0.0-bbb"))).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, "cache"))).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, "pointer.json"))).toBe(true);
+  });
+});
+
+// ── compareVersions (PEP 440 ordering, #258) ──
+describe("compareVersions (PEP 440 ordering)", () => {
+  it("treats the two release spellings as equal", () => {
+    expect(compareVersions("2.0.0-rc.2", "2.0.0rc2")).toBe(0);
+    expect(compareVersions("2.0.0-alpha.1", "2.0.0a1")).toBe(0);
+    expect(compareVersions("2.0.0-beta.3", "2.0.0b3")).toBe(0);
+    expect(compareVersions("1.0", "1.0.0")).toBe(0);
+  });
+
+  it("orders rc below the final release (the upgrade-label case)", () => {
+    expect(compareVersions("2.0.0rc5", "2.0.0")).toBeLessThan(0);
+    expect(compareVersions("2.0.0", "2.0.0rc5")).toBeGreaterThan(0);
+    expect(compareVersions("2.0.0rc1", "2.0.0rc5")).toBeLessThan(0);
+  });
+
+  it("orders the full PEP 440 chain dev < a < b < rc < final < post", () => {
+    const chain = [
+      "2.0.0.dev1",
+      "2.0.0a1",
+      "2.0.0b1",
+      "2.0.0rc1",
+      "2.0.0",
+      "2.0.0.post1",
+    ];
+    for (let i = 1; i < chain.length; i++) {
+      expect(compareVersions(chain[i - 1], chain[i])).toBeLessThan(0);
+    }
+  });
+
+  it("sorts an attached .dev below its base", () => {
+    expect(compareVersions("2.0.0a1.dev1", "2.0.0a1")).toBeLessThan(0);
+    expect(compareVersions("2.0.0.post1.dev1", "2.0.0.post1")).toBeLessThan(0);
+    expect(compareVersions("2.0.0.post1.dev1", "2.0.0")).toBeGreaterThan(0);
+  });
+
+  it("compares release numbers before any phase segment", () => {
+    expect(compareVersions("1.0.post1", "1.0.1")).toBeLessThan(0);
+    expect(compareVersions("1.5.15", "2.0.0rc1")).toBeLessThan(0);
+    expect(compareVersions("3.14.0", "3.11")).toBeGreaterThan(0);
+  });
+
+  it("keeps python-min semantics: a pre-release sorts below its release", () => {
+    expect(compareVersions("3.11.0rc1", "3.11")).toBeLessThan(0);
+    expect(compareVersions("3.11.0", "3.11")).toBe(0);
+  });
+
+  it("returns NaN for unparseable input so gates fail closed", () => {
+    expect(Number.isNaN(compareVersions("bogus", "1.0.0"))).toBe(true);
+    expect(Number.isNaN(compareVersions("1.0.0", ""))).toBe(true);
   });
 });
