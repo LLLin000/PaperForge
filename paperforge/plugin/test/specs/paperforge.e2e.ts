@@ -272,6 +272,32 @@ function sandboxBackendProcessDetails(base: string): string {
     .trim();
 }
 
+/**
+ * Wait until no backend process still references this sandbox.
+ *
+ * The backend legitimately runs `probe all` chains with a 300s transport
+ * budget, so a just-settled child can still be draining long after the UI
+ * state reads idle. The drain window matches that documented budget: a
+ * process that outlives it is a genuine leak, and the failure carries the
+ * full command lines so the next occurrence is diagnosable.
+ */
+async function waitForBackendDrain(
+  base: string,
+  timeoutMs = 300000
+): Promise<void> {
+  try {
+    await browser.waitUntil(() => sandboxBackendProcesses(base) === 0, {
+      timeout: timeoutMs,
+      interval: 1000,
+      timeoutMsg: "backend processes outlived their operation",
+    });
+  } catch (error) {
+    throw new Error(
+      `${String(error)}\nremaining=${sandboxBackendProcesses(base)}\n${sandboxBackendProcessDetails(base)}`
+    );
+  }
+}
+
 
 async function sandboxBasePath(): Promise<string> {
   return await browser.executeObsidian(async ({ app }) => {
@@ -904,17 +930,7 @@ describe("PaperForge real-task e2e", function () {
     // journey must hand over a settled state (probe chains have a 300s budget).
     await runStep("backend-settled", async () => {
       const base = await sandboxBasePath();
-      try {
-        await browser.waitUntil(() => sandboxBackendProcesses(base) === 0, {
-          timeout: 300000,
-          timeoutMsg:
-            "first-use journey: backend processes outlived the settled journey",
-        });
-      } catch (error) {
-        throw new Error(
-          `${String(error)}\n${sandboxBackendProcessDetails(base)}`
-        );
-      }
+      await waitForBackendDrain(base);
     });
 
     appendEvidence("first-use-journey.json", {
@@ -1000,10 +1016,7 @@ describe("PaperForge real-task e2e", function () {
     expect(enabled.enabled).toBe(true);
     expect(enabled.timer).toBe(true);
     expect(enabled.operation_active).toBe(false);
-    await browser.waitUntil(() => sandboxBackendProcesses(base) === 0, {
-      timeout: 30000,
-      timeoutMsg: "backend processes outlived the settled autosync operation",
-    });
+    await waitForBackendDrain(base);
     const orphanProcesses = sandboxBackendProcesses(base);
     if (orphanProcesses !== 0) {
       throw new Error(
@@ -1120,11 +1133,7 @@ describe("PaperForge real-task e2e", function () {
     });
     expect(disabled.enabled).toBe(false);
     expect(disabled.timer).toBe(false);
-    await browser.waitUntil(() => sandboxBackendProcesses(base) === 0, {
-      timeout: 30000,
-      timeoutMsg: "previous sync process did not settle before B01 reset",
-    });
-
+    await waitForBackendDrain(base);
     rmSync(path.join(base, INDEX_REL), { force: true });
     await browser.executeObsidian(async ({ app }, notePath) => {
       const file = app.vault.getAbstractFileByPath(notePath);
@@ -1489,10 +1498,7 @@ describe("PaperForge real-task e2e", function () {
     expect(boundary.reentryBlocked).toBe(true);
     expect(boundary.failureSettled).toBe(true);
     expect(boundary.lastSyncTime).toBe(null);
-    await browser.waitUntil(() => sandboxBackendProcesses(base) === 0, {
-      timeout: 30000,
-      timeoutMsg: "backend process did not settle after forced autosync failure",
-    });
+    await waitForBackendDrain(base);
     expect(sandboxBackendProcesses(base)).toBe(0);
     appendEvidence("b04-autosync-boundaries.json", {
       case_id: "B04",
@@ -2342,12 +2348,8 @@ describe("PaperForge real-task e2e", function () {
     // A backend that outlives its request is invisible to every other
     // assertion here: the vault is a temp copy and its process would keep
     // running against a directory the harness is about to discard.
-    let leftovers = sandboxBackendProcesses(base);
-    if (leftovers > 0) {
-      // Give a just-settled child a moment to exit before calling it a leak.
-      await browser.pause(2000);
-      leftovers = sandboxBackendProcesses(base);
-    }
+    await waitForBackendDrain(base);
+    const leftovers = sandboxBackendProcesses(base);
 
     appendEvidence("w01-isolation.json", {
       case_id: "X11",
