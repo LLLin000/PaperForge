@@ -1325,16 +1325,27 @@ describe("PaperForge real-task e2e", function () {
       interval: 500,
       timeoutMsg: "destructive orphan prune did not remove the workspace",
     });
-    const modalStillOpen = await browser.$(".modal-container").isExisting();
-    if (modalStillOpen) await browser.keys("Escape");
-    await browser.waitUntil(
-      async () => (await browser.$(".modal-container").isExisting()) === false,
-      {
-        timeout: 10000,
-        interval: 500,
-        timeoutMsg: "orphan prune modal did not close after deletion",
+    // The residual modal's close action is separate from deletion: close it
+    // through its own control (falling back to Escape), retry while the
+    // container lingers, and fail with the modal text if it never goes away.
+    for (let attempt = 0; attempt < 10; attempt++) {
+      if (!(await browser.$(".modal-container").isExisting())) break;
+      const container = await browser.$(".modal-container");
+      const closeButton = await container.$(".modal-close-button");
+      if (await closeButton.isExisting()) {
+        await closeButton.click().catch(() => undefined);
+      } else {
+        await browser.keys("Escape");
       }
-    );
+      await browser.pause(500);
+    }
+    if (await browser.$(".modal-container").isExisting()) {
+      const lingering = await browser.$(".modal-container");
+      const text = await lingering.getText().catch(() => "");
+      throw new Error(
+        `orphan prune modal did not close after deletion; text=${text.slice(0, 300)}`
+      );
+    }
     expect(existsSync(path.join(base, workspace))).toBe(false);
     expect(existsSync(exportPath)).toBe(true);
     appendEvidence("j06-destructive-prune.json", {
