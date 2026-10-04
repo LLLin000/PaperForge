@@ -12,6 +12,7 @@ Seeded content:
 - System/PaperForge/ocr/TSTONE001/     (completed OCR fixture)
 - after sync: canonical index, migrated workspace, per-paper notes
 - versions/v1 + v2 + manifest, one legacy pre-rebuild backup
+- test/vaults/empty/  (clean vault for the first-use journey gate, #263)
 """
 
 from __future__ import annotations
@@ -25,6 +26,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[4]
 PLUGIN_DIR = Path(__file__).resolve().parents[2]
 VAULT = PLUGIN_DIR / "test" / "vaults" / "e2e"
+EMPTY_VAULT = PLUGIN_DIR / "test" / "vaults" / "empty"
 EXPORT_FIXTURE = REPO_ROOT / "tests" / "sandbox" / "exports" / "骨科.json"
 OCR_FIXTURE = REPO_ROOT / "tests" / "sandbox" / "ocr-complete" / "TSTONE001"
 KEY = "TSTONE001"
@@ -93,6 +95,16 @@ def _assert_ocr_invariant() -> None:
 
 
 def build() -> None:
+    # First-use journey fixture (#263): the gate reloads into a CLEAN vault,
+    # so a clean checkout must always have one; it is generated here rather
+    # than tracked.
+    if EMPTY_VAULT.exists():
+        shutil.rmtree(EMPTY_VAULT)
+    (EMPTY_VAULT / ".obsidian").mkdir(parents=True)
+    (EMPTY_VAULT / "Welcome.md").write_text(
+        "# Empty vault\n\nThe first-use journey starts here.\n", encoding="utf-8"
+    )
+
     if VAULT.exists():
         shutil.rmtree(VAULT)
     VAULT.mkdir(parents=True)
