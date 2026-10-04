@@ -42,6 +42,12 @@ export const config: WebdriverIO.Config = {
   services: ["obsidian"],
   reporters: ["obsidian"],
   cacheDir: path.resolve(".obsidian-cache"),
-  mochaOpts: { ui: "bdd", timeout: 120000 },
+  // NOTE: @wdio/utils wraps every command in a timer derived from THIS
+  // config value — per-test `this.timeout()` overrides do not raise it.
+  // Slow profiles (P2 proxy networks) legitimately exceed 120s inside a
+  // single install wait, so the budget must cover A01's 540s wait and the
+  // journey's inner waits (found on the owner machine: a healthy install
+  // poll was killed at ~118s with the 120000 default).
+  mochaOpts: { ui: "bdd", timeout: 600000 },
   logLevel: "warn",
 };
