@@ -77,6 +77,54 @@ const CANDIDATE_VERSION = (
 const SETUP_POSITIVE_E2E = process.env.PF_E2E_SETUP_POSITIVE === "1";
 const NO_POINTER_E2E =
   process.env.PF_E2E_NO_POINTER === "1" && !SETUP_POSITIVE_E2E;
+/**
+ * First-use journey gate (#263): the dedicated gating job sets BOTH switches.
+ * While the gate is on, a would-be skip of the required journey is a FAILURE.
+ * Every env-gated skip in this suite is registered below with a reason, an
+ * owner and an applicability window — a skip without an entry throws instead
+ * of passing quietly.
+ */
+const JOURNEY_GATE = process.env.PF_E2E_JOURNEY_GATE === "1";
+const E2E_SKIP_REGISTRY: Record<
+  string,
+  { reason: string; owner: string; window: string }
+> = {
+  "plugin-load-requires-pointer": {
+    reason: "positive-pointer run of the suite (PF_E2E_NO_POINTER unset)",
+    owner: "release-acceptance (#263)",
+    window: "until the no-pointer negative suite gets its own job",
+  },
+  "pointer-negative-requires-no-pointer": {
+    reason: "only meaningful in the PF_E2E_NO_POINTER=1 negative run",
+    owner: "release-acceptance (#263)",
+    window: "until the no-pointer negative suite gets its own job",
+  },
+  "setup-positive-default-off": {
+    reason:
+      "the first-use install mutates the machine-local runtime; ordinary runs do not opt in",
+    owner: "release-acceptance (#263)",
+    window: "enabled by the H matrix job via PF_E2E_SETUP_POSITIVE=1",
+  },
+};
+
+/** Skip through the registry: an unknown or incomplete id is a failure. */
+function registeredSkip(ctx: { skip(): void }, id: string): void {
+  const entry = E2E_SKIP_REGISTRY[id];
+  if (!entry || !entry.reason || !entry.owner || !entry.window) {
+    throw new Error(`unregistered or incomplete e2e skip: ${id}`);
+  }
+  ctx.skip();
+}
+
+/** Gate policy: enabled → run; disabled → fail under the gate, skip otherwise. */
+function journeyRunPolicy(
+  gate: boolean,
+  enabled: boolean
+): "run" | "skip" | "fail" {
+  if (enabled) return "run";
+  return gate ? "fail" : "skip";
+}
+
 
 
 /** sha256 of a file's bytes — artifact identity, not its path. */
@@ -399,7 +447,7 @@ describe("PaperForge real-task e2e", function () {
 
   it("loads the plugin and reaches the real Python backend", async function () {
     if (NO_POINTER_E2E) {
-      this.skip();
+      registeredSkip(this, "plugin-load-requires-pointer");
       return;
     }
     const info = await browser.executeObsidian(async ({ app }) => {
@@ -426,7 +474,7 @@ describe("PaperForge real-task e2e", function () {
 
   it("fails closed and exposes setup recovery without a runtime pointer", async function () {
     if (!NO_POINTER_E2E) {
-      this.skip();
+      registeredSkip(this, "pointer-negative-requires-no-pointer");
       return;
     }
     const state = await browser.executeObsidian(async ({ app }) => {
@@ -518,7 +566,7 @@ describe("PaperForge real-task e2e", function () {
 
   it("installs and publishes the runtime through the first-use setup journey", async function () {
     if (!SETUP_POSITIVE_E2E) {
-      this.skip();
+      registeredSkip(this, "setup-positive-default-off");
       return;
     }
     this.timeout(600000);
@@ -659,6 +707,204 @@ describe("PaperForge real-task e2e", function () {
       setup_operation: state.operation,
       installation_user_state: state.user_state,
       setup_complete: state.setup_complete,
+      recorded_at: new Date().toISOString(),
+    });
+  });
+
+  it("journey gate contract: registered skips and the run policy stay explicit", function () {
+    const ids = Object.keys(E2E_SKIP_REGISTRY);
+    expect(ids.length).toBeGreaterThanOrEqual(3);
+    for (const id of ids) {
+      const entry = E2E_SKIP_REGISTRY[id];
+      expect(entry.reason.length).toBeGreaterThan(0);
+      expect(entry.owner.length).toBeGreaterThan(0);
+      expect(entry.window.length).toBeGreaterThan(0);
+    }
+    expect(journeyRunPolicy(true, false)).toBe("fail");
+    expect(journeyRunPolicy(true, true)).toBe("run");
+    expect(journeyRunPolicy(false, false)).toBe("skip");
+    expect(journeyRunPolicy(false, true)).toBe("run");
+  });
+
+  it("first-use journey gate: library → first sync → open paper → restart → reopen", async function () {
+    const policy = journeyRunPolicy(JOURNEY_GATE, SETUP_POSITIVE_E2E);
+    if (policy === "fail") {
+      throw new Error(
+        "PF_E2E_JOURNEY_GATE=1 requires PF_E2E_SETUP_POSITIVE=1 — the first-use journey must run, not skip"
+      );
+    }
+    if (policy === "skip") {
+      registeredSkip(this, "setup-positive-default-off");
+      return;
+    }
+    this.timeout(1500000);
+    const steps: Array<{ name: string; ok: boolean; ms: number }> = [];
+    const runStep = async (
+      name: string,
+      fn: () => Promise<void>
+    ): Promise<void> => {
+      const started = Date.now();
+      try {
+        await fn();
+        steps.push({ name, ok: true, ms: Date.now() - started });
+      } catch (error) {
+        steps.push({ name, ok: false, ms: Date.now() - started });
+        appendEvidence("first-use-journey.json", {
+          case_id: "GATE-01",
+          variant: "first-use-journey",
+          required_layer: "H",
+          gate: true,
+          status: "FAILED",
+          failed_step: name,
+          steps,
+          error: String(error),
+          source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+            cwd: PLUGIN_DIR,
+          })
+            .toString()
+            .trim(),
+          worktree_dirty: worktreeDirty(),
+          recorded_at: new Date().toISOString(),
+        });
+        throw error;
+      }
+    };
+
+    // The install step ran in A01 directly above; the gate asserts it really
+    // produced a fresh candidate runtime in THIS run before continuing.
+    const installed = await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"] as unknown as {
+        getManagedRuntime(): {
+          readPointer(): {
+            pythonPath: string;
+            environmentRoot: string;
+            paperforgeVersion: string;
+          } | null;
+        };
+      };
+      return plugin.getManagedRuntime().readPointer();
+    });
+    expect(installed).not.toBeNull();
+    expect(installed?.paperforgeVersion).toBe(CANDIDATE_VERSION);
+    // #260 semantics: a fresh install lands in a candidate directory.
+    expect(String(installed?.environmentRoot ?? "")).toContain("venv-");
+
+    await runStep("connect-library", async () => {
+      await browser.reloadObsidian({ vault: "./test/vaults/e2e" });
+      await dismissModals();
+      const base = await sandboxBasePath();
+      expect(existsSync(path.join(base, EXPORT_REL))).toBe(true);
+      await openPanel();
+    });
+
+    let noteSha = "";
+    await runStep("first-sync", async () => {
+      const base = await sandboxBasePath();
+      // First sync means: empty derived state → export → index + note.
+      rmSync(path.join(base, INDEX_REL), { force: true });
+      await browser.executeObsidian(async ({ app }, notePath) => {
+        const file = app.vault.getAbstractFileByPath(notePath);
+        if (file) await app.vault.delete(file);
+      }, NOTE_PATH);
+      await browser.waitUntil(() => !existsSync(path.join(base, NOTE_PATH)), {
+        timeout: 30000,
+        timeoutMsg:
+          "first-use journey: could not clear the existing canonical note",
+      });
+      expect(existsSync(path.join(base, INDEX_REL))).toBe(false);
+      const exportPath = path.join(base, EXPORT_REL);
+      const exportBefore = sha256(exportPath);
+      await openPanel();
+      const syncBtn = await browser.$("[data-pf-testid='sync-library']");
+      await expect(syncBtn).toExist();
+      await syncBtn.click();
+      await browser.waitUntil(
+        () => {
+          try {
+            const index = readIndex(base);
+            return (
+              index.paper_count > 0 &&
+              index.keys.includes(PAPER_KEY) &&
+              existsSync(path.join(base, NOTE_PATH))
+            );
+          } catch {
+            return false;
+          }
+        },
+        {
+          timeout: 180000,
+          timeoutMsg:
+            "first-use journey: initial sync never materialized the library",
+        }
+      );
+      expect(sha256(exportPath)).toBe(exportBefore);
+      noteSha = sha256(path.join(base, NOTE_PATH));
+    });
+
+    await runStep("open-paper", async () => {
+      await openVaultFile(NOTE_PATH);
+      await browser.waitUntil(
+        async () =>
+          await browser.executeObsidian(
+            async ({ app }, notePath) =>
+              app.workspace.getActiveFile()?.path === notePath,
+            NOTE_PATH
+          ),
+        {
+          timeout: 30000,
+          timeoutMsg: "first-use journey: the note did not open",
+        }
+      );
+    });
+
+    await runStep("restart-obsidian", async () => {
+      await browser.reloadObsidian();
+      await dismissModals();
+      await openPanel();
+    });
+
+    await runStep("reopen-paper-after-restart", async () => {
+      const base = await sandboxBasePath();
+      expect(sha256(path.join(base, NOTE_PATH))).toBe(noteSha);
+      await openVaultFile(NOTE_PATH);
+      await browser.waitUntil(
+        async () =>
+          await browser.executeObsidian(
+            async ({ app }, notePath) =>
+              app.workspace.getActiveFile()?.path === notePath,
+            NOTE_PATH
+          ),
+        {
+          timeout: 30000,
+          timeoutMsg:
+            "first-use journey: the note did not reopen after restart",
+        }
+      );
+    });
+
+    appendEvidence("first-use-journey.json", {
+      case_id: "GATE-01",
+      variant:
+        "first-use journey: install(A01) → library → first sync → open → restart → reopen",
+      required_layer: "H",
+      gate: true,
+      status: "VERIFIED",
+      steps,
+      total_ms: steps.reduce((sum, step) => sum + step.ms, 0),
+      pointer: installed,
+      artifact_sha256: {
+        bundle: sha256(path.join(PLUGIN_DIR, "main.js")),
+        wheel: process.env.PF_E2E_WHEEL_SHA256 ?? null,
+      },
+      obsidian_version: String(await browser.getObsidianVersion()),
+      fixture_vault: FIXTURE_VAULT,
+      sandbox_base: await sandboxBasePath(),
+      source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: PLUGIN_DIR,
+      })
+        .toString()
+        .trim(),
+      worktree_dirty: worktreeDirty(),
       recorded_at: new Date().toISOString(),
     });
   });
