@@ -266,21 +266,85 @@ function sandboxBackendProcessDetails(base: string): string {
   const marker = path.basename(base);
   if (process.platform !== "win32") return "";
   return execFileSync(
-    `powershell -NoProfile -Command "(Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*${marker}*' -and $_.Name -like '*python*' } | Select-Object ProcessId,Name,CommandLine | ConvertTo-Json -Compress)"`,
+    `powershell -NoProfile -Command "(Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*${marker}*' -and $_.Name -like '*python*' } | Select-Object ProcessId,ParentProcessId,CreationDate,Name,CommandLine | ConvertTo-Json -Compress)"`,
     { shell: true }
   )
     .toString()
     .trim();
 }
 
+/** PIDs of backend processes referencing this sandbox right now. */
+function sandboxBackendPids(base: string): number[] {
+  const marker = path.basename(base);
+  if (process.platform !== "win32") return [];
+  const out = execFileSync(
+    `powershell -NoProfile -Command "(Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*${marker}*' -and $_.Name -like '*python*' } | Select-Object -ExpandProperty ProcessId) -join ','"`,
+    { shell: true }
+  )
+    .toString()
+    .trim();
+  return out
+    ? out
+        .split(",")
+        .map((value) => Number(value.trim()))
+        .filter((value) => Number.isFinite(value))
+    : [];
+}
+
+/**
+ * Assert every backend process observed within the window exits promptly.
+ *
+ * Samples repeatedly for at least `observationMs` so a quiet start still
+ * observes the next background wave, tracks each PID's first sighting, and
+ * fails when a process stays alive longer than `stragglerMs` or when the
+ * window ends with one still alive. Healthy one-shot waves pass; a leak
+ * cannot slip through a quiet sample, and waves spawned after a quiet
+ * moment are observed rather than ignored (see #266).
+ */
+async function assertBackendGenerationExits(
+  base: string,
+  graceMs = 120000,
+  observationMs = 10000,
+  stragglerMs = 30000
+): Promise<void> {
+  const firstSeen = new Map<number, number>();
+  const started = Date.now();
+  for (;;) {
+    const now = Date.now();
+    const current = sandboxBackendPids(base);
+    for (const pid of current) {
+      if (!firstSeen.has(pid)) firstSeen.set(pid, now);
+    }
+    const stale = current.filter(
+      (pid) => now - (firstSeen.get(pid) ?? now) > stragglerMs
+    );
+    if (stale.length > 0) {
+      throw new Error(
+        `backend processes outlived their operation (>${stragglerMs / 1000}s): ${stale.join(",")}\n${sandboxBackendProcessDetails(base)}`
+      );
+    }
+    if (now - started >= observationMs && current.length === 0) return;
+    if (now - started >= graceMs) {
+      throw new Error(
+        `backend processes kept the sandbox busy past the grace window (${graceMs / 1000}s): ${current.join(",")}\n${sandboxBackendProcessDetails(base)}`
+      );
+    }
+    const { promise, resolve } = Promise.withResolvers<void>();
+    setTimeout(resolve, 1000);
+    await promise;
+  }
+}
+
 /**
  * Wait until no backend process still references this sandbox.
  *
- * The backend legitimately runs `probe all` chains with a 300s transport
- * budget, so a just-settled child can still be draining long after the UI
- * state reads idle. The drain window matches that documented budget: a
- * process that outlives it is a genuine leak, and the failure carries the
- * full command lines so the next occurrence is diagnosable.
+ * Used where a quiet hand-off is the contract (journey settle, pre-reset
+ * barriers). The backend legitimately runs `probe all` chains with a 300s
+ * transport budget, so a just-settled child can still be draining long after
+ * the UI state reads idle; the drain window matches that budget and the
+ * failure carries full command lines. Instantaneous "zero" assertions race
+ * the plugin's background probe cadence — those sites use
+ * {@link assertBackendGenerationExits} instead.
  */
 async function waitForBackendDrain(
   base: string,
@@ -1055,13 +1119,7 @@ describe("PaperForge real-task e2e", function () {
     expect(enabled.enabled).toBe(true);
     expect(enabled.timer).toBe(true);
     expect(enabled.operation_active).toBe(false);
-    await waitForBackendDrain(base);
-    const orphanProcesses = sandboxBackendProcesses(base);
-    if (orphanProcesses !== 0) {
-      throw new Error(
-        `backend processes still reference ${path.basename(base)}: ${orphanProcesses}\n${sandboxBackendProcessDetails(base)}`
-      );
-    }
+    await assertBackendGenerationExits(base);
     appendEvidence("a07-disable-restart.json", {
       case_id: "A07",
       variant: "disable-reload-enable-reload",
@@ -1548,8 +1606,7 @@ describe("PaperForge real-task e2e", function () {
     expect(boundary.reentryBlocked).toBe(true);
     expect(boundary.failureSettled).toBe(true);
     expect(boundary.lastSyncTime).toBe(null);
-    await waitForBackendDrain(base);
-    expect(sandboxBackendProcesses(base)).toBe(0);
+    await assertBackendGenerationExits(base);
     appendEvidence("b04-autosync-boundaries.json", {
       case_id: "B04",
       variant: "disabled + reentry + forced failure cleanup",
@@ -2472,15 +2529,16 @@ describe("PaperForge real-task e2e", function () {
 
     // A backend that outlives its request is invisible to every other
     // assertion here: the vault is a temp copy and its process would keep
-    // running against a directory the harness is about to discard.
-    await waitForBackendDrain(base);
-    const leftovers = sandboxBackendProcesses(base);
+    // running against a directory the harness is about to discard. The
+    // contract is `assertBackendGenerationExits` above (every observed
+    // process must exit promptly); the sample below is informational.
+    await assertBackendGenerationExits(base);
 
     appendEvidence("w01-isolation.json", {
       case_id: "X11",
       variant: "developer-state-isolation",
       required_layer: "H",
-      status: leftovers === 0 ? "VERIFIED" : "FAILED",
+      status: "VERIFIED",
       source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
         cwd: PLUGIN_DIR,
       })
@@ -2488,12 +2546,10 @@ describe("PaperForge real-task e2e", function () {
         .trim(),
       credentials_ocr: credentials.ocr,
       credentials_embedding: credentials.embedding,
-      lingering_backend_processes: leftovers,
+      lingering_backend_processes: sandboxBackendProcesses(base),
       sandbox_base: base,
       observed_at: new Date().toISOString(),
     });
-
-    expect(leftovers).toBe(0);
   });
   it("persists a workflow flag toggled in the UI, across a restart", async function () {
     // Case B07. The dashboard toggles go client → NodeProcessTransport →
