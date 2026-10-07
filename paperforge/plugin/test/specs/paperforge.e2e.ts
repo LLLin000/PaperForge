@@ -1758,8 +1758,16 @@ describe("PaperForge real-task e2e", function () {
     await browser.executeObsidianCommand("paperforge:paperforge-ocr-workspace");
     const viewport = await browser.$(".pf-ocr-ws-viewport");
     await viewport.waitForExist({ timeout: 60000 });
+    let workspaceText = "";
     await browser.waitUntil(
-      async () => (await viewport.getText()).includes("Biomechanical"),
+      async () => {
+        const text = await (await browser.$(".pf-ocr-ws-viewport"))
+          .getText()
+          .catch(() => "");
+        if (!text.includes("Biomechanical")) return false;
+        workspaceText = text;
+        return true;
+      },
       { timeout: 60000, timeoutMsg: "OCR workspace rows never rendered" }
     );
     appendEvidence("d01-ocr-workspace.json", {
@@ -1774,7 +1782,7 @@ describe("PaperForge real-task e2e", function () {
         .trim(),
       worktree_dirty: worktreeDirty(),
       matched_row: "Biomechanical",
-      viewport_text_head: (await viewport.getText()).slice(0, 300),
+      viewport_text_head: workspaceText.slice(0, 300),
       recorded_at: new Date().toISOString(),
     });
   });
