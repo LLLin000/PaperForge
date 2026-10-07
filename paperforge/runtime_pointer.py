@@ -79,8 +79,24 @@ def publish_pointer(
 ) -> Path:
     """Atomically publish the runtime pointer (tmp + os.replace) — the ONLY
     writer (#143).  Defaults: the running interpreter, its environment root,
-    and the installed PaperForge version."""
+    and the installed PaperForge distribution version.
+
+    Version authority (#267): the *distribution* metadata of the running
+    environment wins over the imported source.  A publisher started from a
+    checkout (cwd on ``sys.path``) must not stamp the checkout's
+    ``paperforge.__version__`` onto an environment that has a different
+    distribution installed — the imported module can be shadowed by the cwd,
+    the dist-info cannot.  ``paperforge.__version__`` remains the fallback for
+    source trees with no installed distribution."""
     from paperforge import __version__
+
+    if paperforge_version is None:
+        try:
+            from importlib.metadata import version as _dist_version
+
+            paperforge_version = _dist_version("paperforge")
+        except Exception:  # noqa: BLE001 - metadata is best-effort
+            paperforge_version = __version__
 
     payload = {
         "schema_version": POINTER_SCHEMA_VERSION,
@@ -88,7 +104,7 @@ def publish_pointer(
         "environment_root": environment_root or str(
             Path(sys.prefix)
         ),
-        "paperforge_version": paperforge_version or __version__,
+        "paperforge_version": paperforge_version,
     }
     path = pointer_path(home)
     path.parent.mkdir(parents=True, exist_ok=True)

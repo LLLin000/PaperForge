@@ -1758,10 +1758,33 @@ describe("PaperForge real-task e2e", function () {
     await browser.executeObsidianCommand("paperforge:paperforge-ocr-workspace");
     const viewport = await browser.$(".pf-ocr-ws-viewport");
     await viewport.waitForExist({ timeout: 60000 });
+    let workspaceText = "";
     await browser.waitUntil(
-      async () => (await viewport.getText()).includes("Biomechanical"),
+      async () => {
+        const text = await (await browser.$(".pf-ocr-ws-viewport"))
+          .getText()
+          .catch(() => "");
+        if (!text.includes("Biomechanical")) return false;
+        workspaceText = text;
+        return true;
+      },
       { timeout: 60000, timeoutMsg: "OCR workspace rows never rendered" }
     );
+    appendEvidence("d01-ocr-workspace.json", {
+      case_id: "D01",
+      variant: "ocr-workspace rows render from real lineage",
+      required_layer: "H",
+      status: "VERIFIED",
+      source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: PLUGIN_DIR,
+      })
+        .toString()
+        .trim(),
+      worktree_dirty: worktreeDirty(),
+      matched_row: "Biomechanical",
+      viewport_text_head: workspaceText.slice(0, 300),
+      recorded_at: new Date().toISOString(),
+    });
   });
 
   it("restores a display version through the Version History modal", async function () {
@@ -1825,6 +1848,22 @@ describe("PaperForge real-task e2e", function () {
       return await app.vault.adapter.read(expected);
     }, PAPER_KEY);
     expect(content).toContain("first body");
+    appendEvidence("d07-version-restore.json", {
+      case_id: "D07",
+      variant: "version-history modal -> restore v1 -> body readback",
+      required_layer: "H",
+      status: "VERIFIED",
+      source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: PLUGIN_DIR,
+      })
+        .toString()
+        .trim(),
+      worktree_dirty: worktreeDirty(),
+      labels,
+      restored_contains: "first body",
+      trace_marker: "versions restore",
+      recorded_at: new Date().toISOString(),
+    });
   });
 
   it("executes an action through the client (memory.build)", async function () {
@@ -1843,6 +1882,20 @@ describe("PaperForge real-task e2e", function () {
     if (result.ok !== true) {
       throw new Error(`memory.build failed: ${JSON.stringify(result)}`);
     }
+    appendEvidence("e01-memory-build.json", {
+      case_id: "E01",
+      variant: "client memory.build through the real backend",
+      required_layer: "H",
+      status: "VERIFIED",
+      source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: PLUGIN_DIR,
+      })
+        .toString()
+        .trim(),
+      worktree_dirty: worktreeDirty(),
+      action_ok: true,
+      recorded_at: new Date().toISOString(),
+    });
   });
 
   it("proves provider config authority through UI, restart, and a controlled embed request", async function () {
