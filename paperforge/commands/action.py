@@ -283,6 +283,22 @@ def run_dispatch(args: argparse.Namespace) -> int:
             print("cancelled", file=sys.stderr)
         return EXIT_CANCELLED
 
+    # X14: a directly dispatched reconcile action settles the same W2
+    # last-attempt record as the follow-up chain (which shares
+    # ``reconcile.settle_attempt``), so the re-emission gate cannot be bypassed
+    # by invoking the action directly.  Only reconcile-derivable actions have a
+    # record worth writing; anything else would be dead state.
+    from paperforge.reconcile import RECONCILE_ACTIONS, settle_attempt
+
+    if action_id in RECONCILE_ACTIONS:
+        settle_attempt(
+            context.vault,
+            action_id=action_id,
+            scope=request.scope,
+            ok=bool(result.ok),
+            error_code=(result.error.code if result.error is not None else ""),
+        )
+
 
     if result.ok and follow == "auto":
         _run_descendants(args, request, context, result)
