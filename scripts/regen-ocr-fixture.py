@@ -23,19 +23,12 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 SRC = REPO / "tests" / "sandbox" / "ocr-complete" / "TSTONE001"
-TARGETS = (
-    SRC,
-    REPO
-    / "paperforge"
-    / "plugin"
-    / "test"
-    / "vaults"
-    / "e2e"
-    / "System"
-    / "PaperForge"
-    / "ocr"
-    / "TSTONE001",
-)
+# Only the tracked fixture source is written: the e2e vault is a build
+# artifact of paperforge/plugin/test/fixtures/build_e2e_vault.py, which
+# injects the paper identity (title/venue) from the library export — mirroring
+# this directory over it would drop that identity.  Run the builder after
+# this script to refresh the vault.
+TARGETS = (SRC,)
 
 
 def synth_payload(legacy: dict) -> list[dict]:
@@ -156,8 +149,46 @@ def main() -> int:
     from paperforge.worker.ocr import postprocess_ocr_result
 
     meta = json.loads((ocr_dir / "meta.json").read_text(encoding="utf-8"))
+    # Identity fields the pipeline does not own: keep them verbatim so the
+    # workspace rows and search keep the paper's real title/venue.  The
+    # authoritative source is the library index (the OCR meta may already
+    # have lost them in an earlier regeneration).
+    identity_fields = (
+        "title",
+        "year",
+        "journal",
+        "doi",
+        "authors",
+        "first_author",
+        "authors_source",
+    )
+    identity = {key: meta[key] for key in identity_fields if key in meta}
+    index_path = (
+        REPO
+        / "paperforge"
+        / "plugin"
+        / "test"
+        / "vaults"
+        / "e2e"
+        / "System"
+        / "PaperForge"
+        / "indexes"
+        / "formal-library.json"
+    )
+    if index_path.exists():
+        try:
+            library = json.loads(index_path.read_text(encoding="utf-8"))
+            for item in library.get("items", []):
+                if item.get("zotero_key") == "TSTONE001":
+                    for key in identity_fields:
+                        if item.get(key):
+                            identity[key] = item[key]
+                    break
+        except (TypeError, ValueError):
+            pass
     meta["source_pdf"] = "System/Zotero/storage/TSTONE001/TSTONE001.pdf"
     postprocess_ocr_result(vault, "TSTONE001", all_results, meta=meta)
+    meta.update(identity)
     (ocr_dir / "meta.json").write_text(
         json.dumps(meta, indent=1, ensure_ascii=False) + "\n", encoding="utf-8"
     )
