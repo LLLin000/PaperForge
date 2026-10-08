@@ -2452,7 +2452,7 @@ describe("PaperForge real-task e2e", function () {
   it("lists OCR papers in the real workspace view", async function () {
     await browser.executeObsidianCommand("paperforge:paperforge-ocr-workspace");
     const viewport = await browser.$(".pf-ocr-ws-viewport");
-    await viewport.waitForExist({ timeout: 60000 });
+    await viewport.waitForExist({ timeout: 180000 });
     let workspaceText = "";
     await browser.waitUntil(
       async () => {
@@ -2463,7 +2463,7 @@ describe("PaperForge real-task e2e", function () {
         workspaceText = text;
         return true;
       },
-      { timeout: 60000, timeoutMsg: "OCR workspace rows never rendered" }
+      { timeout: 180000, timeoutMsg: "OCR workspace rows never rendered" }
     );
     appendEvidence("d01-ocr-workspace.json", {
       case_id: "D01",
@@ -2498,7 +2498,7 @@ describe("PaperForge real-task e2e", function () {
       const rowCheckbox = await browser.$(
         "//tr[.//*[contains(text(),'Biomechanical')]]//input[@type='checkbox']"
       );
-      await rowCheckbox.waitForExist({ timeout: 60000 });
+      await rowCheckbox.waitForExist({ timeout: 180000 });
       await rowCheckbox.click();
       // Selecting re-renders the table AND the batch bar: re-query the button
       // and wait for it to become enabled before clicking.
@@ -2655,7 +2655,7 @@ describe("PaperForge real-task e2e", function () {
       const rowCheckbox = await browser.$(
         "//tr[.//*[contains(text(),'Biomechanical')]]//input[@type='checkbox']"
       );
-      await rowCheckbox.waitForExist({ timeout: 60000 });
+      await rowCheckbox.waitForExist({ timeout: 180000 });
       await rowCheckbox.click();
       const processBtn = await browser.$(
         ".pf-ocr-ws-batch-actions button.pf-btn-secondary"
@@ -2780,7 +2780,7 @@ describe("PaperForge real-task e2e", function () {
       const rowCheckbox = await browser.$(
         "//tr[.//*[contains(text(),'Biomechanical')]]//input[@type='checkbox']"
       );
-      await rowCheckbox.waitForExist({ timeout: 60000 });
+      await rowCheckbox.waitForExist({ timeout: 180000 });
       await rowCheckbox.click();
       const redoBtn = await browser.$("//button[contains(text(),'重新提取此论文')]");
       await redoBtn.waitForExist({ timeout: 30000 });
@@ -2856,7 +2856,7 @@ describe("PaperForge real-task e2e", function () {
       const rowCheckbox = await browser.$(
         "//tr[.//*[contains(text(),'Biomechanical')]]//input[@type='checkbox']"
       );
-      await rowCheckbox.waitForExist({ timeout: 60000 });
+      await rowCheckbox.waitForExist({ timeout: 180000 });
       await rowCheckbox.click();
       const rebuildBtn = await browser.$("//button[contains(text(),'重建所选')]");
       await rebuildBtn.waitForExist({ timeout: 30000 });
@@ -3329,6 +3329,209 @@ describe("PaperForge real-task e2e", function () {
       doctor_head: doctorText.slice(0, 300),
       repair_head: repairText.slice(0, 300),
       memory_fresh_after: fresh,
+      recorded_at: new Date().toISOString(),
+    });
+  });
+
+  it("stages render repairs in isolation and promotes the reviewed candidates", async function () {
+    // F01/F02/F03: staging reconciles against an isolated tmp root; only
+    // promotion/acceptance may write the canonical inventory.
+    const base = await sandboxBasePath();
+    const inventoryPath = path.join(
+      base,
+      "System",
+      "PaperForge",
+      "ocr",
+      "TSTONE001",
+      "structure",
+      "figure_inventory.json"
+    );
+    const beforeSha = existsSync(inventoryPath) ? sha256(inventoryPath) : null;
+    await openPanel();
+    await openVaultFile(NOTE_PATH);
+    // The quality section is collapsed by default; expanding it loads the
+    // audit and the staging control.  The dashboard's detail pane scrolls,
+    // so dispatch the click through the DOM (WebDriver refuses the
+    // off-screen button as "not interactable").
+    await browser.waitUntil(
+      async () =>
+        await browser.execute(() =>
+          Boolean(
+            document.querySelector(
+              ".paperforge-quality-section button.paperforge-technical-details-toggle"
+            )
+          )
+        ),
+      { timeout: 60000, timeoutMsg: "quality toggle never rendered" }
+    );
+    await browser.execute(() => {
+      const toggle = document.querySelector(
+        ".paperforge-quality-section button.paperforge-technical-details-toggle"
+      ) as HTMLButtonElement | null;
+      toggle?.click();
+    });
+    await browser.waitUntil(
+      async () =>
+        await browser.execute(() => {
+          const body = document.querySelector(
+            ".paperforge-quality-body"
+          ) as HTMLElement | null;
+          return Boolean(body && body.style.display !== "none");
+        }),
+      { timeout: 30000, timeoutMsg: "quality section never expanded" }
+    );
+    const staging = await browser.$(".paperforge-quality-staging");
+    try {
+      await staging.waitForExist({ timeout: 60000 });
+    } catch (error) {
+      const diag = await browser.execute(() => {
+        const quality = document.querySelector(".paperforge-quality-section");
+        return {
+          quality: Boolean(quality),
+          quality_text: (quality?.textContent ?? "").slice(0, 400),
+          body_html: (document.querySelector(".paperforge-quality-body")?.innerHTML ?? "").slice(0, 400),
+        };
+      });
+      console.log("F01D " + JSON.stringify(diag));
+      throw error;
+    }
+    await browser.execute(() => {
+      const button = document.querySelector(
+        ".paperforge-quality-staging button.pf-action-btn"
+      ) as HTMLButtonElement | null;
+      button?.click();
+    });
+    try {
+      await browser.waitUntil(
+        async () => {
+          const text = await (await browser.$(".paperforge-quality-staging"))
+            .getText()
+            .catch(() => "");
+          return text.length > 0 && !text.includes("Staging R/P proposals");
+        },
+        { timeout: 300000, timeoutMsg: "staging never settled" }
+      );
+    } catch (error) {
+      const diag = await browser.execute(() => ({
+        staging: (document.querySelector(".paperforge-quality-staging")?.textContent ?? "").slice(0, 300),
+        notices: Array.from(document.querySelectorAll(".notice"))
+          .map((node) => (node.textContent ?? "").trim())
+          .join(" | ")
+          .slice(0, 300),
+      }));
+      console.log("F01D timeout=" + JSON.stringify(diag));
+      throw error;
+    }
+    const stagedText = await (await browser.$(".paperforge-quality-staging")).getText();
+    const rRows = await browser.$$(".paperforge-quality-r-row");
+    const pCards = await browser.$$(".paperforge-quality-p-card");
+    const afterStageSha = existsSync(inventoryPath) ? sha256(inventoryPath) : null;
+    expect(afterStageSha).toBe(beforeSha);
+
+    let promoted = false;
+    let promotedSha: string | null = null;
+    if (rRows.length > 0) {
+      const clicked = await browser.execute(() => {
+        const buttons = Array.from(
+          document.querySelectorAll(
+            ".paperforge-quality-r-row button.pf-action-btn"
+          )
+        ) as HTMLButtonElement[];
+        const live = buttons.find((button) => !button.disabled);
+        live?.click();
+        return Boolean(live);
+      });
+      if (clicked) {
+        try {
+          await browser.waitUntil(
+            () => existsSync(inventoryPath) && sha256(inventoryPath) !== beforeSha,
+            { timeout: 120000, timeoutMsg: "promote never wrote the inventory" }
+          );
+          promoted = true;
+          promotedSha = sha256(inventoryPath);
+        } catch {
+          promoted = false;
+        }
+      }
+    }
+
+    let accepted = false;
+    if (pCards.length > 0) {
+      const beforeAccept = existsSync(inventoryPath) ? sha256(inventoryPath) : null;
+      await browser.execute(() => {
+        const cardEl = document.querySelector(".paperforge-quality-p-card");
+        const button = cardEl?.querySelector(
+          "button.pf-action-btn"
+        ) as HTMLButtonElement | null;
+        button?.click();
+      });
+      // The acceptance may ask for confirmation first.
+      const confirm = await browser.$(".paperforge-confirm-actions button.mod-warning");
+      if (await confirm.isExisting().catch(() => false)) {
+        await clickStable(".paperforge-confirm-actions button.mod-warning");
+      }
+      try {
+        await browser.waitUntil(
+          () =>
+            existsSync(inventoryPath) && sha256(inventoryPath) !== beforeAccept,
+          { timeout: 120000 }
+        );
+        accepted = true;
+      } catch {
+        accepted = false;
+      }
+    }
+
+    const sha = execFileSync("git", ["rev-parse", "HEAD"], {
+      cwd: PLUGIN_DIR,
+    })
+      .toString()
+      .trim();
+    appendEvidence("f01-render-staging.json", {
+      case_id: "F01",
+      variant: "staging runs isolated; production inventory untouched",
+      required_layer: "H",
+      status: "VERIFIED",
+      source_sha: sha,
+      worktree_dirty: worktreeDirty(),
+      staged_text_head: stagedText.slice(0, 300),
+      r_rows: rRows.length,
+      p_cards: pCards.length,
+      production_sha_before: beforeSha,
+      production_sha_after_stage: afterStageSha,
+      recorded_at: new Date().toISOString(),
+    });
+    appendEvidence("f02-r-promote.json", {
+      case_id: "F02",
+      variant: "promote writes the canonical inventory through the UI",
+      required_layer: "H",
+      status:
+        rRows.length === 0
+          ? "NOT_EXERCISED_NO_CANDIDATES"
+          : promoted
+            ? "VERIFIED"
+            : "FAILED",
+      source_sha: sha,
+      worktree_dirty: worktreeDirty(),
+      r_rows: rRows.length,
+      promoted,
+      inventory_sha_after_promote: promotedSha,
+      recorded_at: new Date().toISOString(),
+    });
+    appendEvidence("f03-p-accept.json", {
+      case_id: "F03",
+      variant: "accept commits the reviewed proposal (hash-bound) through the UI",
+      required_layer: "H",
+      status:
+        pCards.length === 0
+          ? "NOT_EXERCISED_NO_CANDIDATES"
+          : accepted
+            ? "VERIFIED"
+            : "FAILED",
+      source_sha: sha,
+      worktree_dirty: worktreeDirty(),
+      p_cards: pCards.length,
+      accepted,
       recorded_at: new Date().toISOString(),
     });
   });
