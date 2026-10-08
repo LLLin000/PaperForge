@@ -2074,11 +2074,15 @@ describe("PaperForge real-task e2e", function () {
     // The residual modal's close action is separate from deletion: close it
     // through its own control (falling back to Escape), retry while the
     // container lingers, and fail with the modal text if it never goes away.
+    // The prune action closes its own modal once it settles, so this loop may
+    // race with that teardown: query through one selector (never a stale
+    // parent element) and let a container that disappears mean "closed".
     for (let attempt = 0; attempt < 10; attempt++) {
       if (!(await browser.$(".modal-container").isExisting())) break;
-      const container = await browser.$(".modal-container");
-      const closeButton = await container.$(".modal-close-button");
-      if (await closeButton.isExisting()) {
+      const closeButton = await browser.$(
+        ".modal-container .modal-close-button"
+      );
+      if (await closeButton.isExisting().catch(() => false)) {
         await closeButton.click().catch(() => undefined);
       } else {
         await browser.keys("Escape");
