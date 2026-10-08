@@ -177,6 +177,10 @@ export function runLongTask(
   const events: NdjsonEvent[] = [];
   let hardKilled = false;
   let graceTimer: ReturnType<typeof setTimeout> | null = null;
+  // Always drain stderr: it is diagnostics for the caller, and an unread
+  // stderr pipe fills (win32: ~4KB) and blocks the child mid-run.
+  const STDERR_TAIL = 8000;
+  let stderrTail = "";
 
   child.stdout?.setEncoding("utf-8");
   child.stdout?.on("data", (chunk: string) => {
@@ -184,6 +188,12 @@ export function runLongTask(
       events.push(ev);
       opts.onEvent(ev);
     }
+  });
+  if (typeof child.stderr?.setEncoding === "function") {
+    child.stderr.setEncoding("utf-8");
+  }
+  child.stderr?.on("data", (chunk: string | Buffer) => {
+    stderrTail = (stderrTail + chunk.toString()).slice(-STDERR_TAIL);
   });
 
   const outcome = new Promise<LongTaskOutcome>((resolve) => {
@@ -196,6 +206,7 @@ export function runLongTask(
         cancelled: code === 130,
         events,
         protocolFailure: parser.protocolFailure,
+        stderr: stderrTail,
       });
     });
     child.on("error", (err: Error) => {
@@ -206,6 +217,7 @@ export function runLongTask(
         cancelled: false,
         events,
         protocolFailure: `spawn error: ${err.message}`,
+        stderr: stderrTail,
       });
     });
   });
