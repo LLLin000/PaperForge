@@ -109,6 +109,12 @@ const E2E_SKIP_REGISTRY: Record<
     owner: "release-acceptance (#263)",
     window: "enabled by the H matrix job via PF_E2E_SETUP_POSITIVE=1",
   },
+  "vector-fixture-lacks-structured-blocks": {
+    reason:
+      "the e2e OCR fixture ships empty canonical/blocks.raw.jsonl and structure/blocks.structured.jsonl, so the memory unit builder yields zero chunks and the embed build has nothing to encode",
+    owner: "real-machine verification (#265)",
+    window: "until the fixture is regenerated from a modern provider result",
+  },
 };
 
 /** Skip through the registry: an unknown or incomplete id is a failure. */
@@ -389,6 +395,267 @@ function removeFileQuiet(filePath: string): void {
     unlinkSync(filePath);
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+  }
+}
+
+/** Loopback PaddleOCR stub for the OCR e2e cases.
+ *
+ * `success`: two polls of `running`, then `done` + a JSONL result built from a
+ * real provider payload fixture. `running`: never completes (stop case).
+ * The result URL is served outside the jobs path so the worker's plain fetch
+ * is exercised too.
+ */
+async function startOcrStub(mode: "success" | "running"): Promise<{
+  requests: Array<{ method: string; url: string }>;
+  jobUrl: string;
+  close: () => Promise<void>;
+}> {
+  const requests: Array<{ method: string; url: string }> = [];
+  let pollCount = 0;
+  let resultUrl = "";
+  const payloadFixture = path.resolve(
+    PLUGIN_DIR,
+    "..",
+    "..",
+    "tests",
+    "fixtures",
+    "ocr_real_papers",
+    "5MAW65YD",
+    "ocr_payload.json"
+  );
+  const payloadPages = JSON.parse(readFileSync(payloadFixture, "utf8")) as unknown[];
+  const resultBody = `${JSON.stringify({ result: payloadPages[0] })}\n`;
+  const settled = (): boolean => mode === "success" && pollCount >= 2;
+  const server = createServer((req, res) => {
+    const url = req.url ?? "";
+    requests.push({ method: req.method ?? "", url });
+    const sendJson = (value: unknown): void => {
+      res.setHeader("content-type", "application/json");
+      res.end(JSON.stringify(value));
+    };
+    if (req.method === "POST" && url.startsWith("/api/v2/ocr/jobs")) {
+      req.on("data", () => undefined);
+      req.on("end", () => sendJson({ data: { jobId: "pf-e2e-job-1" } }));
+      return;
+    }
+    if (req.method === "GET" && url.startsWith("/api/v2/ocr/jobs/batch/")) {
+      pollCount += 1;
+      sendJson({ data: { "pf-e2e-job-1": settled() ? "done" : "running" } });
+      return;
+    }
+    if (req.method === "GET" && url === "/api/v2/ocr/jobs/pf-e2e-job-1") {
+      pollCount += 1;
+      sendJson({
+        data: {
+          state: settled() ? "done" : "running",
+          ...(settled() ? { resultUrl: { jsonUrl: resultUrl } } : {}),
+        },
+      });
+      return;
+    }
+    if (req.method === "GET" && url === "/results/pf-e2e-job-1.jsonl") {
+      res.setHeader("content-type", "application/json");
+      res.end(resultBody);
+      return;
+    }
+    res.statusCode = 404;
+    res.end();
+  });
+  await new Promise<void>((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", () => resolve());
+  });
+  const address = server.address();
+  if (!address || typeof address === "string") {
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+    throw new Error("controlled OCR server did not expose a port");
+  }
+  resultUrl = `http://127.0.0.1:${address.port}/results/pf-e2e-job-1.jsonl`;
+  return {
+    requests,
+    jobUrl: `http://127.0.0.1:${address.port}/api/v2/ocr/jobs`,
+    close: () => new Promise<void>((resolve) => server.close(() => resolve())),
+  };
+}
+
+/** Make the e2e keyring backend importable by plugin-spawned children of the
+ * CURRENTLY published runtime. The install tests republish the pointer to a
+ * fresh candidate mid-suite, so the pointer must be resolved at call time
+ * (a one-shot copy at wdio start would miss the new candidate). */
+function provisionE2eKeyringFixture(): void {
+  try {
+    const pointerPath = path.resolve(
+      os.homedir(),
+      ".paperforge",
+      "runtime",
+      "pointer.json"
+    );
+    const pointer = JSON.parse(readFileSync(pointerPath, "utf8")) as {
+      python_path?: string;
+    };
+    if (!pointer.python_path) return;
+    // sysconfig.purelib, NOT site.getsitepackages(): the latter returns the
+    // venv ROOT first for virtualenv pythons, which silently parked the
+    // fixture outside import range.
+    const sitePackages = execFileSync(
+      pointer.python_path,
+      ["-c", "import sysconfig; print(sysconfig.get_paths()['purelib'])"],
+      { encoding: "utf8" }
+    ).trim();
+    if (!sitePackages) return;
+    copyFileSync(
+      path.resolve(PLUGIN_DIR, "test", "fixtures", "e2e_keyring.py"),
+      path.resolve(sitePackages, "e2e_keyring.py")
+    );
+  } catch {
+    // Runtime not resolvable here: the credential check will report missing.
+  }
+}
+
+/** Keyring seed + vault PDF + canonical endpoint config for a controlled OCR
+ * run; the endpoint is only set when a stub URL is provided. */
+async function prepareOcrSandbox(jobUrl: string | null): Promise<void> {
+  provisionE2eKeyringFixture();
+  const keyringPath = path.resolve(
+    PLUGIN_DIR,
+    ".obsidian-cache",
+    "paperforge-e2e-keyring.json"
+  );
+  let keyring: Record<string, string> = {};
+  try {
+    keyring = JSON.parse(readFileSync(keyringPath, "utf8")) as Record<string, string>;
+  } catch {
+    keyring = {};
+  }
+  keyring["paperforge:ocr:default"] = "pf-e2e-ocr-token";
+  writeFileSync(keyringPath, JSON.stringify(keyring), "utf8");
+  const base = await sandboxBasePath();
+  const pdfDest = path.join(base, "System", "Zotero", "storage", "TSTONE001");
+  mkdirSync(pdfDest, { recursive: true });
+  copyFileSync(
+    path.resolve(
+      PLUGIN_DIR,
+      "..",
+      "..",
+      "tests",
+      "sandbox",
+      "TestZoteroData",
+      "storage",
+      "TSTONE001",
+      "TSTONE001.pdf"
+    ),
+    path.join(pdfDest, "TSTONE001.pdf")
+  );
+  if (jobUrl) {
+    await browser.executeObsidian(async ({ app }, url) => {
+      const plugin = app.plugins.plugins["paperforge"] as unknown as {
+        getClient(): { configSet(key: string, value: string): Promise<unknown> };
+      };
+      await plugin.getClient().configSet("paddleocr_job_url", url);
+    }, jobUrl);
+  }
+}
+
+/** Loopback OpenAI-compatible embeddings stub: deterministic vectors +
+ * request log (the E-series controlled provider). */
+async function startEmbedStub(): Promise<{
+  requests: Array<{ model?: string; input_count: number }>;
+  baseUrl: string;
+  close: () => Promise<void>;
+}> {
+  const requests: Array<{ model?: string; input_count: number }> = [];
+  const server = createServer((req, res) => {
+    const chunks: Buffer[] = [];
+    req.on("data", (chunk: Buffer) => chunks.push(chunk));
+    req.on("end", () => {
+      if (req.method !== "POST" || req.url !== "/embeddings") {
+        res.statusCode = 404;
+        res.end();
+        return;
+      }
+      const payload = JSON.parse(Buffer.concat(chunks).toString("utf8")) as {
+        model?: string;
+        input?: string | string[];
+      };
+      const inputs = Array.isArray(payload.input)
+        ? payload.input
+        : [payload.input ?? ""];
+      requests.push({ model: payload.model, input_count: inputs.length });
+      const embedding = new Array<number>(1536).fill(0);
+      embedding[0] = 1;
+      res.setHeader("content-type", "application/json");
+      res.end(
+        JSON.stringify({
+          object: "list",
+          data: inputs.map((_, index) => ({
+            object: "embedding",
+            index,
+            embedding,
+          })),
+          model: payload.model ?? "",
+          usage: { prompt_tokens: 1, total_tokens: inputs.length },
+        })
+      );
+    });
+  });
+  await new Promise<void>((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", () => resolve());
+  });
+  const address = server.address();
+  if (!address || typeof address === "string") {
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+    throw new Error("controlled embedding server did not expose a port");
+  }
+  return {
+    requests,
+    baseUrl: `http://127.0.0.1:${address.port}`,
+    close: () => new Promise<void>((resolve) => server.close(() => resolve())),
+  };
+}
+
+/** Embedding credential + canonical provider config for the controlled stub. */
+async function prepareEmbedSandbox(baseUrl: string): Promise<void> {
+  provisionE2eKeyringFixture();
+  const keyringPath = path.resolve(
+    PLUGIN_DIR,
+    ".obsidian-cache",
+    "paperforge-e2e-keyring.json"
+  );
+  let keyring: Record<string, string> = {};
+  try {
+    keyring = JSON.parse(readFileSync(keyringPath, "utf8")) as Record<string, string>;
+  } catch {
+    keyring = {};
+  }
+  keyring["paperforge:embedding:default"] = "pf-e2e-embed-token";
+  writeFileSync(keyringPath, JSON.stringify(keyring), "utf8");
+  const applied = await browser.executeObsidian(async ({ app }, base) => {
+    const plugin = app.plugins.plugins["paperforge"] as unknown as {
+      getClient(): {
+        configSet(key: string, value: string): Promise<unknown>;
+        configList(): Promise<{ fields: Array<{ key: string; value: unknown }> }>;
+      };
+    };
+    const client = plugin.getClient();
+    await client.configSet("vector_db_provider_type", "requests");
+    await client.configSet("vector_db_api_base", base);
+    await client.configSet("vector_db_api_model", "pf-e2e-embed-model");
+    const list = await client.configList();
+    const read = (key: string): unknown =>
+      list.fields.find((field) => field.key === key)?.value;
+    return {
+      provider: String(read("vector_db_provider_type") ?? ""),
+      base: String(read("vector_db_api_base") ?? ""),
+      model: String(read("vector_db_api_model") ?? ""),
+    };
+  }, baseUrl);
+  if (
+    applied.provider !== "requests" ||
+    applied.base !== baseUrl ||
+    applied.model !== "pf-e2e-embed-model"
+  ) {
+    throw new Error(`embed config did not apply: ${JSON.stringify(applied)}`);
   }
 }
 
@@ -2193,117 +2460,10 @@ describe("PaperForge real-task e2e", function () {
     // loopback PaddleOCR stub wired via the canonical `paddleocr_job_url`
     // config (the plugin strips PADDLEOCR_* from child env by design, so the
     // config field is the only honest seam).
-    const requests: Array<{ method: string; url: string }> = [];
-    let pollCount = 0;
-    const payloadFixture = path.resolve(
-      PLUGIN_DIR,
-      "..",
-      "..",
-      "tests",
-      "fixtures",
-      "ocr_real_papers",
-      "5MAW65YD",
-      "ocr_payload.json"
-    );
-    const payloadPages = JSON.parse(readFileSync(payloadFixture, "utf8")) as unknown[];
-    const resultBody = `${JSON.stringify({ result: payloadPages[0] })}\n`;
-    const providerState = (): string => (pollCount >= 2 ? "done" : "running");
-    const server = createServer((req, res) => {
-      const url = req.url ?? "";
-      requests.push({ method: req.method ?? "", url });
-      const sendJson = (value: unknown): void => {
-        res.setHeader("content-type", "application/json");
-        res.end(JSON.stringify(value));
-      };
-      if (req.method === "POST" && url.startsWith("/api/v2/ocr/jobs")) {
-        req.on("data", () => undefined);
-        req.on("end", () => sendJson({ data: { jobId: "pf-e2e-job-1" } }));
-        return;
-      }
-      if (req.method === "GET" && url.startsWith("/api/v2/ocr/jobs/batch/")) {
-        pollCount += 1;
-        sendJson({ data: { "pf-e2e-job-1": providerState() } });
-        return;
-      }
-      if (req.method === "GET" && url === "/api/v2/ocr/jobs/pf-e2e-job-1") {
-        pollCount += 1;
-        const state = providerState();
-        sendJson({
-          data: {
-            state,
-            ...(state === "done"
-              ? {
-                  resultUrl: {
-                    jsonUrl: `http://127.0.0.1:${address.port}/results/pf-e2e-job-1.jsonl`,
-                  },
-                }
-              : {}),
-          },
-        });
-        return;
-      }
-      if (req.method === "GET" && url === "/results/pf-e2e-job-1.jsonl") {
-        res.setHeader("content-type", "application/json");
-        res.end(resultBody);
-        return;
-      }
-      res.statusCode = 404;
-      res.end();
-    });
-    await new Promise<void>((resolve, reject) => {
-      server.once("error", reject);
-      server.listen(0, "127.0.0.1", () => resolve());
-    });
-    const address = server.address();
-    if (!address || typeof address === "string") {
-      await new Promise<void>((resolve) => server.close(() => resolve()));
-      throw new Error("controlled OCR server did not expose a port");
-    }
-    const jobUrl = `http://127.0.0.1:${address.port}/api/v2/ocr/jobs`;
+    const stub = await startOcrStub("success");
     const base = await sandboxBasePath();
     try {
-      // 1. Provider token through the credential authority (e2e keyring file
-      // the wdio session already points the child env at).
-      const keyringPath = path.resolve(
-        PLUGIN_DIR,
-        ".obsidian-cache",
-        "paperforge-e2e-keyring.json"
-      );
-      let keyring: Record<string, string> = {};
-      try {
-        keyring = JSON.parse(readFileSync(keyringPath, "utf8")) as Record<string, string>;
-      } catch {
-        keyring = {};
-      }
-      keyring["paperforge:ocr:default"] = "pf-e2e-ocr-token";
-      writeFileSync(keyringPath, JSON.stringify(keyring), "utf8");
-
-      // 2. The canonical PDF locator is vault-relative; provision the file
-      // in the disposable sandbox so the upload can resolve it.
-      const pdfDest = path.join(base, "System", "Zotero", "storage", "TSTONE001");
-      mkdirSync(pdfDest, { recursive: true });
-      copyFileSync(
-        path.resolve(
-          PLUGIN_DIR,
-          "..",
-          "..",
-          "tests",
-          "sandbox",
-          "TestZoteroData",
-          "storage",
-          "TSTONE001",
-          "TSTONE001.pdf"
-        ),
-        path.join(pdfDest, "TSTONE001.pdf")
-      );
-
-      // 3. Canonical config → controlled endpoint.
-      await browser.executeObsidian(async ({ app }, url) => {
-        const plugin = app.plugins.plugins["paperforge"] as unknown as {
-          getClient(): { configSet(key: string, value: string): Promise<unknown> };
-        };
-        await plugin.getClient().configSet("paddleocr_job_url", url);
-      }, jobUrl);
+      await prepareOcrSandbox(stub.jobUrl);
 
       // 4. Workspace UI: select the paper → Process Selected → confirmation.
       await browser.executeObsidianCommand("paperforge:paperforge-ocr-workspace");
@@ -2339,27 +2499,86 @@ describe("PaperForge real-task e2e", function () {
       const ocrRoot = path.join(base, "System", "PaperForge", "ocr", "TSTONE001");
       const metaPath = path.join(ocrRoot, "meta.json");
       const pendingMarker = path.join(ocrRoot, "index", "result-hash.pending");
-      await browser.waitUntil(
-        () => {
-          try {
-            const meta = JSON.parse(readFileSync(metaPath, "utf8")) as {
-              ocr_job_id?: string;
-              ocr_status?: string;
-            };
-            return (
-              meta.ocr_job_id === "pf-e2e-job-1" &&
-              meta.ocr_status === "done" &&
-              !existsSync(pendingMarker)
-            );
-          } catch {
-            return false;
+      try {
+        await browser.waitUntil(
+          () => {
+            try {
+              const meta = JSON.parse(readFileSync(metaPath, "utf8")) as {
+                ocr_job_id?: string;
+                ocr_status?: string;
+              };
+              return (
+                meta.ocr_job_id === "pf-e2e-job-1" &&
+                meta.ocr_status === "done" &&
+                !existsSync(pendingMarker)
+              );
+            } catch {
+              return false;
+            }
+          },
+          {
+            timeout: 240000,
+            timeoutMsg: "OCR run never settled to done with the stub job id",
           }
-        },
-        {
-          timeout: 240000,
-          timeoutMsg: "OCR run never settled to done with the stub job id",
+        );
+      } catch (error) {
+        let metaJob = "<missing>";
+        let metaStatus = "<missing>";
+        let metaError = "";
+        try {
+          const meta = JSON.parse(readFileSync(metaPath, "utf8")) as Record<string, unknown>;
+          metaJob = String(meta.ocr_job_id ?? "");
+          metaStatus = String(meta.ocr_status ?? "");
+          metaError = String(meta.error ?? "");
+        } catch {
+          metaJob = "<unreadable>";
         }
-      );
+        const requests = stub.requests.map((entry) => `${entry.method} ${entry.url}`);
+        const ocrDir = existsSync(ocrRoot) ? readdirSync(ocrRoot).slice(0, 24) : [];
+        console.log(
+          "D02D job=" + metaJob + " status=" + metaStatus + " error=" + metaError
+        );
+        console.log("D02D req=" + JSON.stringify(requests));
+        console.log("D02D dir=" + JSON.stringify(ocrDir));
+        console.log("D02D marker=" + String(existsSync(pendingMarker)));
+        const pdfPath = path.join(
+          base,
+          "System",
+          "Zotero",
+          "storage",
+          "TSTONE001",
+          "TSTONE001.pdf"
+        );
+        console.log("D02D pdf=" + String(existsSync(pdfPath)));
+        let cfg = "<missing>";
+        try {
+          cfg = readFileSync(path.join(base, "paperforge.json"), "utf8").slice(0, 400);
+        } catch {
+          cfg = "<unreadable>";
+        }
+        console.log("D02D cfg=" + cfg.replace(/\s+/g, " "));
+        const notices = await browser.execute(() =>
+          Array.from(document.querySelectorAll(".notice"))
+            .map((node) => (node.textContent ?? "").trim())
+            .join(" | ")
+        );
+        console.log("D02D notices=" + notices.slice(0, 300));
+
+        appendEvidence("d02-failure-diagnostic.json", {
+          case_id: "D02",
+          variant: "settle-timeout diagnostic",
+          required_layer: "H",
+          status: "FAILED",
+          meta_job: metaJob,
+          meta_status: metaStatus,
+          meta_error: metaError,
+          requests,
+          ocr_dir: ocrDir,
+          pending_marker: existsSync(pendingMarker),
+          recorded_at: new Date().toISOString(),
+        });
+        throw error;
+      }
       const metaAfter = JSON.parse(readFileSync(metaPath, "utf8")) as Record<
         string,
         unknown
@@ -2367,7 +2586,7 @@ describe("PaperForge real-task e2e", function () {
       const sha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: PLUGIN_DIR })
         .toString()
         .trim();
-      const methodUrls = requests.map((entry) => `${entry.method} ${entry.url}`);
+      const methodUrls = stub.requests.map((entry) => `${entry.method} ${entry.url}`);
 
       appendEvidence("d02-ocr-run-entry.json", {
         case_id: "D02",
@@ -2378,7 +2597,7 @@ describe("PaperForge real-task e2e", function () {
         worktree_dirty: worktreeDirty(),
         provider_requests: methodUrls,
         confirm_modal_used: true,
-        job_url: jobUrl,
+        job_url: stub.jobUrl,
         recorded_at: new Date().toISOString(),
       });
       appendEvidence("d03-ocr-settlement.json", {
@@ -2396,7 +2615,427 @@ describe("PaperForge real-task e2e", function () {
         recorded_at: new Date().toISOString(),
       });
     } finally {
-      await new Promise<void>((resolve) => server.close(() => resolve()));
+      await stub.close();
+    }
+  });
+
+  it("stops a running OCR batch through the workspace Stop control", async function () {
+    // D04: cooperative stop — the provider stays running forever; the banner
+    // Stop routes through client.cancelActiveOperation() (PAPERFORGE_STOP on
+    // the child's stdin) and the batch must not be marked failed.
+    const stub = await startOcrStub("running");
+    try {
+      await prepareOcrSandbox(stub.jobUrl);
+      const base = await sandboxBasePath();
+      await browser.executeObsidianCommand("paperforge:paperforge-ocr-workspace");
+      const rowCheckbox = await browser.$(
+        "//tr[.//*[contains(text(),'Biomechanical')]]//input[@type='checkbox']"
+      );
+      await rowCheckbox.waitForExist({ timeout: 60000 });
+      await rowCheckbox.click();
+      const processBtn = await browser.$(
+        ".pf-ocr-ws-batch-actions button.pf-btn-secondary"
+      );
+      await processBtn.waitForExist({ timeout: 30000 });
+      await browser.waitUntil(
+        async () => await processBtn.isEnabled().catch(() => false),
+        { timeout: 30000, timeoutMsg: "Process Selected stayed disabled" }
+      );
+      await processBtn.click();
+      const confirmBtn = await browser.$(
+        ".paperforge-confirm-actions button.mod-warning"
+      );
+      await confirmBtn.waitForExist({ timeout: 30000 });
+      await confirmBtn.click();
+      const activity = await browser.$(".pf-ocr-ws-activity.pf-active");
+      await activity.waitForExist({ timeout: 60000 });
+      // The banner renders before the client registers the long task, and it
+      // re-renders on progress events: wait for the Stop control to become
+      // enabled, then re-query it so the click targets the live element.
+      await browser.waitUntil(
+        async () => {
+          const btn = await browser.$(
+            ".pf-ocr-ws-activity-head button.pf-btn-ghost"
+          );
+          return await btn.isEnabled().catch(() => false);
+        },
+        { timeout: 60000, timeoutMsg: "Stop stayed disabled" }
+      );
+      const stopBtn = await browser.$(
+        ".pf-ocr-ws-activity-head button.pf-btn-ghost"
+      );
+      await stopBtn.click();
+      await browser.waitUntil(
+        async () => {
+          const text = await browser.execute(() =>
+            Array.from(document.querySelectorAll(".notice"))
+              .map((node) => node.textContent ?? "")
+              .join(" | ")
+          );
+          return text.includes("停止");
+        },
+        { timeout: 120000, timeoutMsg: "stop notice never appeared" }
+      );
+      const metaPath = path.join(
+        base,
+        "System",
+        "PaperForge",
+        "ocr",
+        "TSTONE001",
+        "meta.json"
+      );
+      const meta = JSON.parse(readFileSync(metaPath, "utf8")) as Record<
+        string,
+        unknown
+      >;
+      const statusAfterStop = String(meta.ocr_status ?? "");
+      // A stopped batch must never be marked failed; the worker resets the
+      // paper to pending when the stop lands before/while it settles.
+      expect(["pending", "queued", "running"]).toContain(statusAfterStop);
+      expect(String(meta.error ?? "")).toBe("");
+      const resultFetches = stub.requests.filter((entry) =>
+        entry.url.includes("/results/")
+      ).length;
+      expect(resultFetches).toBe(0);
+      appendEvidence("d04-ocr-stop.json", {
+        case_id: "D04",
+        variant: "workspace Stop cancels the running batch; provider left running",
+        required_layer: "H",
+        status: "VERIFIED",
+        source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+          cwd: PLUGIN_DIR,
+        })
+          .toString()
+          .trim(),
+        worktree_dirty: worktreeDirty(),
+        meta_status_after_stop: statusAfterStop,
+        submits_before_stop: stub.requests.filter((entry) => entry.method === "POST")
+          .length,
+        provider_requests: stub.requests.map(
+          (entry) => `${entry.method} ${entry.url}`
+        ),
+        result_fetches: resultFetches,
+        recorded_at: new Date().toISOString(),
+      });
+    } finally {
+      await stub.close();
+    }
+  });
+
+  it("re-extracts a flagged paper through the workspace redo control", async function () {
+    // D05 (redo): a row flagged for redo surfaces the re-extract control; the
+    // run submits a fresh provider job through the same controlled endpoint
+    // and settles.
+    const stub = await startOcrStub("success");
+    try {
+      await prepareOcrSandbox(stub.jobUrl);
+      const base = await sandboxBasePath();
+      const indexPath = path.join(
+        base,
+        "System",
+        "PaperForge",
+        "indexes",
+        "formal-library.json"
+      );
+      const index = JSON.parse(readFileSync(indexPath, "utf8")) as {
+        items?: Array<Record<string, unknown>>;
+      };
+      for (const item of index.items ?? []) {
+        if (item.zotero_key === "TSTONE001") item.ocr_redo = true;
+      }
+      writeFileSync(indexPath, JSON.stringify(index, null, 2), "utf8");
+      const notePath = path.join(
+        base,
+        "Resources",
+        "Literature",
+        "骨科",
+        "TSTONE001 - Biomechanical Comparison of Suture Anchor Fixations in Rotator Cuff Repair",
+        "TSTONE001.md"
+      );
+      const note = readFileSync(notePath, "utf8");
+      if (!/^ocr_redo:/m.test(note)) {
+        writeFileSync(notePath, note.replace(/^---\r?\n/, "---\nocr_redo: true\n"), "utf8");
+      }
+      await browser.executeObsidianCommand("paperforge:paperforge-ocr-workspace");
+      const rowCheckbox = await browser.$(
+        "//tr[.//*[contains(text(),'Biomechanical')]]//input[@type='checkbox']"
+      );
+      await rowCheckbox.waitForExist({ timeout: 60000 });
+      await rowCheckbox.click();
+      const redoBtn = await browser.$("//button[contains(text(),'重新提取此论文')]");
+      await redoBtn.waitForExist({ timeout: 30000 });
+      await browser.waitUntil(
+        async () => await redoBtn.isEnabled().catch(() => false),
+        { timeout: 30000, timeoutMsg: "Re-extract Selected stayed disabled" }
+      );
+      await redoBtn.click();
+      const confirmBtn = await browser.$(
+        ".paperforge-confirm-actions button.mod-warning"
+      );
+      await confirmBtn.waitForExist({ timeout: 30000 });
+      await confirmBtn.click();
+      const metaPath = path.join(
+        base,
+        "System",
+        "PaperForge",
+        "ocr",
+        "TSTONE001",
+        "meta.json"
+      );
+      await browser.waitUntil(
+        () => {
+          try {
+            const meta = JSON.parse(readFileSync(metaPath, "utf8")) as {
+              ocr_job_id?: string;
+              ocr_status?: string;
+            };
+            return meta.ocr_job_id === "pf-e2e-job-1" && meta.ocr_status === "done";
+          } catch {
+            return false;
+          }
+        },
+        { timeout: 240000, timeoutMsg: "redo run never settled" }
+      );
+      const submits = stub.requests.filter((entry) => entry.method === "POST").length;
+      expect(submits).toBe(1);
+      appendEvidence("d05-ocr-redo.json", {
+        case_id: "D05",
+        variant: "redo control re-submits the flagged paper and settles",
+        required_layer: "H",
+        status: "VERIFIED",
+        source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+          cwd: PLUGIN_DIR,
+        })
+          .toString()
+          .trim(),
+        worktree_dirty: worktreeDirty(),
+        submits,
+        provider_requests: stub.requests.map(
+          (entry) => `${entry.method} ${entry.url}`
+        ),
+        recorded_at: new Date().toISOString(),
+      });
+    } finally {
+      await stub.close();
+    }
+  });
+
+  it("rebuilds derived OCR artifacts locally without provider traffic", async function () {
+    // D06: rebuild re-derives from the existing raw blocks; the controlled
+    // provider stub must observe ZERO requests.
+    const stub = await startOcrStub("success");
+    try {
+      await prepareOcrSandbox(stub.jobUrl);
+      const base = await sandboxBasePath();
+      const backupsDir = path.join(
+        base,
+        "System",
+        "PaperForge",
+        "ocr",
+        "TSTONE001",
+        "backups"
+      );
+      const before = existsSync(backupsDir) ? readdirSync(backupsDir).length : 0;
+      await browser.executeObsidianCommand("paperforge:paperforge-ocr-workspace");
+      const rowCheckbox = await browser.$(
+        "//tr[.//*[contains(text(),'Biomechanical')]]//input[@type='checkbox']"
+      );
+      await rowCheckbox.waitForExist({ timeout: 60000 });
+      await rowCheckbox.click();
+      const rebuildBtn = await browser.$("//button[contains(text(),'重建所选')]");
+      await rebuildBtn.waitForExist({ timeout: 30000 });
+      await browser.waitUntil(
+        async () => await rebuildBtn.isEnabled().catch(() => false),
+        { timeout: 30000, timeoutMsg: "Rebuild Selected stayed disabled" }
+      );
+      await rebuildBtn.click();
+      // confirmation="none" for ocr.rebuild_derived: the run starts directly.
+      await browser.waitUntil(
+        () => {
+          const now = existsSync(backupsDir) ? readdirSync(backupsDir).length : 0;
+          return now > before;
+        },
+        { timeout: 240000, timeoutMsg: "rebuild produced no pre-rebuild backup" }
+      );
+      const after = readdirSync(backupsDir).length;
+      expect(stub.requests.length).toBe(0);
+      appendEvidence("d06-ocr-rebuild.json", {
+        case_id: "D06",
+        variant: "rebuild re-derives locally; zero provider traffic",
+        required_layer: "H",
+        status: "VERIFIED",
+        source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+          cwd: PLUGIN_DIR,
+        })
+          .toString()
+          .trim(),
+        worktree_dirty: worktreeDirty(),
+        backups_before: before,
+        backups_after: after,
+        provider_requests: stub.requests.length,
+        recorded_at: new Date().toISOString(),
+      });
+    } finally {
+      await stub.close();
+    }
+  });
+
+  it("builds the vector substrate against a controlled provider and serves deep search", async function () {
+    // E03 (build/resume) + C03 (@deep retrieve): the build runs through the
+    // real client action against a loopback embeddings provider; the retrieval
+    // runs through the real dashboard search box.
+    const preflightBase = await sandboxBasePath();
+    const structuredPath = path.join(
+      preflightBase,
+      "System",
+      "PaperForge",
+      "ocr",
+      "TSTONE001",
+      "structure",
+      "blocks.structured.jsonl"
+    );
+    const structuredLines = existsSync(structuredPath)
+      ? readFileSync(structuredPath, "utf8")
+          .split(/\r?\n/)
+          .filter((line) => line.trim()).length
+      : 0;
+    if (structuredLines === 0) {
+      registeredSkip(this, "vector-fixture-lacks-structured-blocks");
+      return;
+    }
+    const stub = await startEmbedStub();
+    try {
+      // The plugin auto-follows sync next_actions (embed.build) on the
+      // convergence tick; disable it so the explicit action owns the lock.
+      await browser.executeObsidian(async ({ app }) => {
+        const plugin = app.plugins.plugins["paperforge"] as unknown as {
+          settings: { autoSyncEnabled?: boolean };
+          saveSettings(): Promise<void>;
+        };
+        plugin.settings.autoSyncEnabled = false;
+        await plugin.saveSettings();
+      });
+      await prepareEmbedSandbox(stub.baseUrl);
+      const runClientAction = async (actionId: string): Promise<{ ok?: boolean }> =>
+        await browser.executeObsidian(async ({ app }, id) => {
+          const plugin = app.plugins.plugins["paperforge"] as unknown as {
+            getClient(): {
+              runAction(request: unknown): Promise<{ ok?: boolean }>;
+            };
+          };
+          return await plugin.getClient().runAction({
+            action_id: id,
+            scope: { kind: "all" },
+            confirm: id,
+          });
+        }, actionId);
+      const waitIdle = async (): Promise<void> => {
+        await browser.waitUntil(
+          async () =>
+            !(await browser.executeObsidian(async ({ app }) => {
+              const plugin = app.plugins.plugins["paperforge"] as unknown as {
+                getClient(): { isOperationActive(): boolean };
+              };
+              return plugin.getClient().isOperationActive();
+            })),
+          { timeout: 60000, timeoutMsg: "operation lock never released" }
+        );
+      };
+      // The fixture db carries stale unit hashes (body_units empty while the
+      // recorded hashes match), so the incremental path would skip forever:
+      // drop the disposable sandbox db for a clean full build.
+      const base = await sandboxBasePath();
+      const dbDir = path.join(base, "System", "PaperForge", "indexes");
+      for (const name of ["paperforge.db", "paperforge.db-wal", "paperforge.db-shm"]) {
+        removeFileQuiet(path.join(dbDir, name));
+      }
+      // E01/E03 chain: memory.build indexes the fulltext that the vector
+      // build targets (embed.build is automatic=False, so a sync tick never
+      // dispatches it — the explicit action is the product path here).
+      const memoryBuild = await runClientAction("memory.build");
+      expect(memoryBuild.ok).toBe(true);
+      await waitIdle();
+      const build = await runClientAction("embed.build");
+      expect(build.ok).toBe(true);
+      expect(stub.requests.length).toBeGreaterThan(0);
+      // embedStatus is client-cached (30s TTL): poll until the promoted
+      // counts surface rather than reading once through the stale cache.
+      let totalChunks = 0;
+      await browser.waitUntil(
+        async () => {
+          const status = await browser.executeObsidian(async ({ app }) => {
+            const plugin = app.plugins.plugins["paperforge"] as unknown as {
+              getClient(): { embedStatus(): Promise<Record<string, unknown>> };
+            };
+            return await plugin.getClient().embedStatus();
+          });
+          totalChunks = Number(status.total_chunks ?? status.chunk_count ?? 0);
+          return totalChunks > 0;
+        },
+        { timeout: 90000, timeoutMsg: "vector counts never surfaced" }
+      );
+      expect(totalChunks).toBeGreaterThan(0);
+      await waitIdle();
+
+      // Resume must not re-encode anything already embedded.
+      const requestsAfterBuild = stub.requests.length;
+      const resume = await browser.executeObsidian(async ({ app }) => {
+        const plugin = app.plugins.plugins["paperforge"] as unknown as {
+          getClient(): {
+            runAction(request: unknown): Promise<{ ok?: boolean }>;
+          };
+        };
+        return await plugin.getClient().runAction({
+          action_id: "embed.resume",
+          scope: { kind: "all" },
+          confirm: "embed.resume",
+        });
+      });
+      expect(resume.ok).toBe(true);
+      expect(stub.requests.length).toBe(requestsAfterBuild);
+
+      // C03: dashboard @deep search over the built substrate.
+      await openPanel();
+      const input = await browser.$(".paperforge-search-input");
+      await input.waitForExist({ timeout: 60000 });
+      await input.click();
+      await input.setValue("@suture");
+      await browser.keys(["Enter"]);
+      const card = await browser.$(".paperforge-search-result-card");
+      await card.waitForExist({ timeout: 60000 });
+      const cardText = await card.getText();
+
+      const sha = execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: PLUGIN_DIR,
+      })
+        .toString()
+        .trim();
+      appendEvidence("e03-embed-build.json", {
+        case_id: "E03",
+        variant: "controlled embed.build promotes vectors; resume re-encodes nothing",
+        required_layer: "H",
+        status: "VERIFIED",
+        source_sha: sha,
+        worktree_dirty: worktreeDirty(),
+        build_source: buildSource,
+        provider_requests_after_build: requestsAfterBuild,
+        provider_requests_after_resume: stub.requests.length,
+        total_chunks: totalChunks,
+        models: Array.from(new Set(stub.requests.map((r) => r.model))),
+        recorded_at: new Date().toISOString(),
+      });
+      appendEvidence("c03-deep-retrieve.json", {
+        case_id: "C03",
+        variant: "@deep search renders ranked chunks from the built substrate",
+        required_layer: "H",
+        status: "VERIFIED",
+        source_sha: sha,
+        worktree_dirty: worktreeDirty(),
+        result_card_head: cardText.slice(0, 200),
+        recorded_at: new Date().toISOString(),
+      });
+    } finally {
+      await stub.close();
     }
   });
 
@@ -2415,6 +3054,39 @@ describe("PaperForge real-task e2e", function () {
     );
     expect(labels).toContain("v1");
     expect(labels).toContain("v2");
+
+    // D09: cleanup/delete is NOT an approved capability — the version surface
+    // must not present destructive cleanup affordances (the contract is the
+    // absence until an owner decision defines a cleanup policy).
+    const d09 = await browser.execute(() => {
+      const controls = Array.from(
+        document.querySelectorAll(".pf-vr-layout button, .pf-vr-layout a")
+      ).map((el) => (el.textContent ?? "").trim());
+      return {
+        scanned: controls.length,
+        destructive: controls.filter((text) =>
+          /删除|清理|Delete|Cleanup|Purge|Remove/i.test(text)
+        ),
+      };
+    });
+    expect(d09.destructive).toEqual([]);
+    appendEvidence("d09-ocr-cleanup-absence.json", {
+      case_id: "D09",
+      variant: "no unapproved cleanup/delete controls on the version surface",
+      required_layer: "H",
+      status: "VERIFIED",
+      source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: PLUGIN_DIR,
+      })
+        .toString()
+        .trim(),
+      worktree_dirty: worktreeDirty(),
+      scanned_controls: d09.scanned,
+      matched_destructive: d09.destructive,
+      capability_status:
+        "not approved — owner decision required to define a cleanup contract",
+      recorded_at: new Date().toISOString(),
+    });
 
     // Restore the oldest version (v1) → confirmation → Python performs the
     // copy AND persists provenance.
