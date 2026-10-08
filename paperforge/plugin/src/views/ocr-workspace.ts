@@ -427,6 +427,7 @@ export class OcrWorkspaceView extends ItemView {
 
     const stopBtn = head.createEl("button", {
       cls: "pf-btn pf-btn-ghost",
+      attr: { "data-pf-testid": "ocr-ws-stop" },
       text: t("ocr_ws_stop") || "Stop",
     });
     const client = this._getClient();
@@ -836,6 +837,7 @@ export class OcrWorkspaceView extends ItemView {
     if (redoSelected.length > 0) {
       const redoBtn = actions.createEl("button", {
         cls: "pf-btn pf-btn-warning",
+        attr: { "data-pf-testid": "ocr-ws-re-extract-selected" },
         text: `${t("ocr_ws_detail_re_extract")} (${redoSelected.length})`,
       });
       redoBtn.title = this._actionAvailabilityTitle(
@@ -853,6 +855,7 @@ export class OcrWorkspaceView extends ItemView {
 
     const rebuildBtn = actions.createEl("button", {
       cls: "pf-btn pf-btn-warning",
+      attr: { "data-pf-testid": "ocr-ws-rebuild-selected" },
       text: t("ocr_ws_btn_rebuild_selected"),
     });
     rebuildBtn.title = this._actionAvailabilityTitle(

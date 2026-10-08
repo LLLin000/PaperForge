@@ -657,6 +657,48 @@ async function prepareOcrSandbox(
   });
 }
 
+/** Job/queue state the CLI records on disk — the durable counterpart to the
+ * in-process stream diagnostics. A failing OCR/staging case must show BOTH:
+ * the child's stderr/exit code (client.lastStreamDiagnostics) and what the
+ * child wrote (queue rows, controller/queue locks, per-paper meta). */
+function readOcrJobState(base: string): Record<string, unknown> {
+  const ocrRoot = path.join(base, "System", "PaperForge", "ocr");
+  const queuePath = path.join(ocrRoot, "ocr-queue.json");
+  let queue: unknown;
+  try {
+    queue = JSON.parse(readFileSync(queuePath, "utf8"));
+  } catch (error) {
+    queue = `<unreadable: ${String(error)}>`;
+  }
+  const locks = ["controller.lock", "ocr_queue.lock"].map((name) => {
+    const lockPath = path.join(ocrRoot, name);
+    try {
+      const stat = statSync(lockPath);
+      return {
+        name,
+        present: true,
+        mtime: stat.mtime.toISOString(),
+        size: stat.size,
+      };
+    } catch {
+      return { name, present: false };
+    }
+  });
+  return { ocr_root: ocrRoot, queue_path: queuePath, queue, locks };
+}
+
+/** The client's last streamed-operation diagnostics (child stderr, exit code,
+ * event tail). Read through the plugin so a failing case can report why the
+ * child never progressed — the streamed path otherwise drops stderr. */
+async function readChildDiagnostics(): Promise<unknown> {
+  return await browser.executeObsidian(async ({ app }) => {
+    const plugin = app.plugins.plugins["paperforge"] as unknown as {
+      getClient?(): { lastStreamDiagnostics?: unknown };
+    };
+    return plugin.getClient?.().lastStreamDiagnostics ?? null;
+  });
+}
+
 /** Loopback OpenAI-compatible embeddings stub: deterministic vectors +
  * request log (the E-series controlled provider). */
 async function startEmbedStub(): Promise<{
@@ -2593,52 +2635,6 @@ describe("PaperForge real-task e2e", function () {
       await activity.waitForExist({ timeout: 60000 });
       const activityText = await activity.getText();
 
-      // The workspace's own onEvent-wrapped run resolves as a silent no-op in
-      // this environment (zero provider requests, untouched meta; recorded for
-      // #265), so the run itself is dispatched through the same client with
-      // the identical request while the UI entry above stays exercised.
-      await browser.waitUntil(
-        async () =>
-          !(await browser.executeObsidian(async ({ app }) => {
-            const plugin = app.plugins.plugins["paperforge"] as unknown as {
-              getClient(): { isOperationActive(): boolean };
-            };
-            return plugin.getClient().isOperationActive();
-          })),
-        { timeout: 60000, timeoutMsg: "workspace run never released the lock" }
-      );
-      // First dispatches can resolve as no-op successes in this environment
-      // (zero provider requests, untouched meta; the third run in a session
-      // succeeds — recorded for #265), so retry the identical request until
-      // the provider sees traffic or the budget runs out.
-      let dispatchAttempts = 0;
-      let dispatchedPayload = "";
-      for (dispatchAttempts = 1; dispatchAttempts <= 3; dispatchAttempts += 1) {
-        const dispatched = await browser.executeObsidian(async ({ app }) => {
-          const plugin = app.plugins.plugins["paperforge"] as unknown as {
-            getClient(): {
-              runAction(request: unknown): Promise<{
-                ok?: boolean;
-                payload?: unknown;
-              }>;
-            };
-          };
-          return await plugin.getClient().runAction({
-            action_id: "ocr.run",
-            scope: { kind: "papers", keys: ["TSTONE001"] },
-            confirm: "ocr.run",
-          });
-        });
-        dispatchedPayload = JSON.stringify(dispatched.payload ?? null).slice(0, 300);
-        console.log(
-          "D02D dispatch#" + dispatchAttempts + " ok=" + String(dispatched.ok) + " stub=" + stub.requests.length
-        );
-        if (stub.requests.length > 0) break;
-        await browser.pause(2000);
-      }
-      console.log("D02D dispatchPayload=" + dispatchedPayload);
-      expect(stub.requests.length).toBeGreaterThan(0);
-
       // 6. Settlement: the stub job id is recorded, status done, the
       // result-hash pending marker cleared.
       const ocrRoot = path.join(base, "System", "PaperForge", "ocr", "TSTONE001");
@@ -2721,6 +2717,12 @@ describe("PaperForge real-task e2e", function () {
           };
         });
         console.log("D02D ws=" + JSON.stringify(wsState));
+        // The child's own stderr/exit code is the only way to see WHY it
+        // never progressed (the streamed path used to drop it entirely).
+        const childDiagnostics = await readChildDiagnostics();
+        const jobState = readOcrJobState(base);
+        console.log("D02D child=" + JSON.stringify(childDiagnostics));
+        console.log("D02D jobstate=" + JSON.stringify(jobState));
         const probe = await browser.executeObsidian(async ({ app }) => {
           const plugin = app.plugins.plugins["paperforge"] as unknown as {
             getClient(): {
@@ -2759,10 +2761,13 @@ describe("PaperForge real-task e2e", function () {
           requests,
           ocr_dir: ocrDir,
           pending_marker: existsSync(pendingMarker),
+          child_diagnostics: childDiagnostics,
+          job_state: jobState,
           recorded_at: new Date().toISOString(),
         });
         throw error;
       }
+      expect(stub.requests.length).toBeGreaterThan(0);
       const metaAfter = JSON.parse(readFileSync(metaPath, "utf8")) as Record<
         string,
         unknown
@@ -2796,6 +2801,9 @@ describe("PaperForge real-task e2e", function () {
         meta_status: metaAfter.ocr_status,
         pending_marker_cleared: !existsSync(pendingMarker),
         result_fetches: methodUrls.filter((u) => u.includes("/results/")).length,
+        // The healthy child's process view (exit code, stderr tail, events):
+        // the reference a failing run's diagnostic is compared against.
+        child_diagnostics: await readChildDiagnostics(),
         recorded_at: new Date().toISOString(),
       });
     } finally {
@@ -2827,22 +2835,44 @@ describe("PaperForge real-task e2e", function () {
       await clickStable(".paperforge-confirm-actions button.mod-warning");
       const activity = await browser.$(".pf-ocr-ws-activity.pf-active");
       await activity.waitForExist({ timeout: 60000 });
+      // The banner and the enabled Stop control exist as soon as the client
+      // registers the long task — before the Python child has reset the
+      // paper's fixture state and submitted anything. Clicking Stop then
+      // lands on the PRE-run state (the fixture ships this paper `done`), so
+      // the batch must first be observably running: the provider has the job.
+      await browser.waitUntil(
+        () => stub.requests.some((entry) => entry.method === "POST"),
+        {
+          timeout: 120000,
+          timeoutMsg: "OCR batch never submitted a provider job",
+        }
+      );
       // The banner renders before the client registers the long task, and it
       // re-renders on progress events: wait for the Stop control to become
       // enabled, then re-query it so the click targets the live element.
       await browser.waitUntil(
         async () => {
-          const btn = await browser.$(
-            ".pf-ocr-ws-activity-head button.pf-btn-ghost"
-          );
+          const btn = await browser.$("[data-pf-testid='ocr-ws-stop']");
           return await btn.isEnabled().catch(() => false);
         },
         { timeout: 60000, timeoutMsg: "Stop stayed disabled" }
       );
-      const stopBtn = await browser.$(
-        ".pf-ocr-ws-activity-head button.pf-btn-ghost"
-      );
-      await stopBtn.click();
+      // The activity banner re-renders on progress events; dispatch the click
+      // through the DOM so the handler always fires on the live node.
+      await browser.execute(() => {
+        const button = document.querySelector(
+          "[data-pf-testid='ocr-ws-stop']"
+        ) as HTMLButtonElement | null;
+        button?.click();
+      });
+      // beforeEach pins settings.language = "en", so the acknowledgement must
+      // be the localized stop notice — never the raw i18n key (the defect this
+      // asserts against rendered the literal key string).
+      // (en table entry in src/i18n.ts; the spec cannot import i18n.ts, which
+      // pulls the runtime-less `obsidian` module).
+      // Two acknowledgements are legitimate: the "Stopping OCR batch..."
+      // notice when the click finds the operation, and "OCR batch stopped."
+      // when the run already settled between the wait and the click.
       await browser.waitUntil(
         async () => {
           const text = await browser.execute(() =>
@@ -2850,7 +2880,7 @@ describe("PaperForge real-task e2e", function () {
               .map((node) => node.textContent ?? "")
               .join(" | ")
           );
-          return text.includes("停止");
+          return /stopping OCR batch|stopped|停止/i.test(text);
         },
         { timeout: 120000, timeoutMsg: "stop notice never appeared" }
       );
@@ -2938,7 +2968,9 @@ describe("PaperForge real-task e2e", function () {
       const rowSelector =
         "//tr[.//*[contains(text(),'Biomechanical')]]//input[@type='checkbox']";
       await clickStable(rowSelector);
-      const redoBtn = await browser.$("//button[contains(text(),'重新提取此论文')]");
+      const redoBtn = await browser.$(
+        "[data-pf-testid='ocr-ws-re-extract-selected']"
+      );
       await redoBtn.waitForExist({ timeout: 30000 });
       await browser.waitUntil(
         async () => await redoBtn.isEnabled().catch(() => false),
@@ -3024,7 +3056,9 @@ describe("PaperForge real-task e2e", function () {
       const rowSelector =
         "//tr[.//*[contains(text(),'Biomechanical')]]//input[@type='checkbox']";
       await clickStable(rowSelector);
-      const rebuildBtn = await browser.$("//button[contains(text(),'重建所选')]");
+      const rebuildBtn = await browser.$(
+        "[data-pf-testid='ocr-ws-rebuild-selected']"
+      );
       await rebuildBtn.waitForExist({ timeout: 30000 });
       await browser.waitUntil(
         async () => await rebuildBtn.isEnabled().catch(() => false),
@@ -3593,7 +3627,23 @@ describe("PaperForge real-task e2e", function () {
           .join(" | ")
           .slice(0, 300),
       }));
+      // Same two views as D02: what the child said (stderr/exit code) and
+      // what it wrote (queue rows + controller/queue locks).
+      const childDiagnostics = await readChildDiagnostics();
+      const jobState = readOcrJobState(base);
       console.log("F01D timeout=" + JSON.stringify(diag));
+      console.log("F01D child=" + JSON.stringify(childDiagnostics));
+      console.log("F01D jobstate=" + JSON.stringify(jobState));
+      appendEvidence("f01-failure-diagnostic.json", {
+        case_id: "F01",
+        variant: "staging settle-timeout diagnostic",
+        required_layer: "H",
+        status: "FAILED",
+        staging_diag: diag,
+        child_diagnostics: childDiagnostics,
+        job_state: jobState,
+        recorded_at: new Date().toISOString(),
+      });
       throw error;
     }
     const stagedText = await (await browser.$(".paperforge-quality-staging")).getText();

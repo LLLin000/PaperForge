@@ -25,6 +25,23 @@ export interface LongTaskOutcome {
   cancelled: boolean;
   events: NdjsonEvent[];
   protocolFailure?: string;
+  /** Bounded tail of the child's stderr. Always drained: an unread stderr
+   * pipe deadlocks a chatty child (win32 pipes are small). */
+  stderr?: string;
+}
+
+/** Last completed (or failed) streamed operation, for failure diagnostics. */
+export interface StreamDiagnostics {
+  operationId: string;
+  argv: string[];
+  ok: boolean;
+  exitCode: number | null;
+  cancelled: boolean;
+  protocolFailure?: string;
+  stderr: string;
+  eventCount: number;
+  lastEvent: NdjsonEvent | null;
+  finishedAt: number;
 }
 
 export interface ExecuteOptions {

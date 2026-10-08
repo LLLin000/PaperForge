@@ -439,6 +439,7 @@ const LANG: Record<string, Record<string, string>> = {
     ocr_rebuild_complete: "OCR rebuild complete.",
     ocr_redo_complete: "OCR redo complete.",
     ocr_stopped_notice: "OCR batch stopped.",
+    ocr_stopping_notice: "Stopping OCR batch...",
     ocr_failed_notice:
       "OCR did not complete. Open Advanced Diagnostics for details.",
     md_ocr_ready: "OCR is configured and ready.",
@@ -1372,6 +1373,7 @@ const LANG: Record<string, Record<string, string>> = {
     ocr_rebuild_complete: "OCR 重建完成。",
     ocr_redo_complete: "OCR 重做完成。",
     ocr_stopped_notice: "OCR 批处理已停止。",
+    ocr_stopping_notice: "正在停止 OCR 批处理…",
     ocr_failed_notice: "OCR 未完成，请打开高级诊断查看详情。",
     md_library_ready: "Zotero 已连接，文献库已同步。",
     md_library_corpus: "文献语料库",
