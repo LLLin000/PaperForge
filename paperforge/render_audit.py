@@ -1,7 +1,11 @@
-"""Read-only consistency audit for rendered paper artifacts.
+"""Consistency audit for rendered paper artifacts.
 
 V1 audits the render layer only. It never changes OCR blocks, inventories,
 asset indexes, metadata, PDFs, or notes. Repair is intentionally out of scope.
+
+It is NOT a pure query: by default it writes its own report,
+``render/render.consistency.json``, which ``probe lineage`` reads as the
+render-consistency authority (``write_report=False`` skips that write).
 """
 
 from __future__ import annotations
