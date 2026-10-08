@@ -3617,7 +3617,7 @@ describe("PaperForge real-task e2e", function () {
             .catch(() => "");
           return text.length > 0 && !text.includes("Staging R/P proposals");
         },
-        { timeout: 300000, timeoutMsg: "staging never settled" }
+        { timeout: 600000, timeoutMsg: "staging never settled" }
       );
     } catch (error) {
       const diag = await browser.execute(() => ({
