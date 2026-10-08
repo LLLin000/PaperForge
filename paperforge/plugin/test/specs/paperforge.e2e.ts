@@ -595,6 +595,48 @@ async function prepareOcrSandbox(jobUrl: string | null): Promise<void> {
   }
 }
 
+/** Job/queue state the CLI records on disk — the durable counterpart to the
+ * in-process stream diagnostics. A failing OCR/staging case must show BOTH:
+ * the child's stderr/exit code (client.lastStreamDiagnostics) and what the
+ * child wrote (queue rows, controller/queue locks, per-paper meta). */
+function readOcrJobState(base: string): Record<string, unknown> {
+  const ocrRoot = path.join(base, "System", "PaperForge", "ocr");
+  const queuePath = path.join(ocrRoot, "ocr-queue.json");
+  let queue: unknown;
+  try {
+    queue = JSON.parse(readFileSync(queuePath, "utf8"));
+  } catch (error) {
+    queue = `<unreadable: ${String(error)}>`;
+  }
+  const locks = ["controller.lock", "ocr_queue.lock"].map((name) => {
+    const lockPath = path.join(ocrRoot, name);
+    try {
+      const stat = statSync(lockPath);
+      return {
+        name,
+        present: true,
+        mtime: stat.mtime.toISOString(),
+        size: stat.size,
+      };
+    } catch {
+      return { name, present: false };
+    }
+  });
+  return { ocr_root: ocrRoot, queue_path: queuePath, queue, locks };
+}
+
+/** The client's last streamed-operation diagnostics (child stderr, exit code,
+ * event tail). Read through the plugin so a failing case can report why the
+ * child never progressed — the streamed path otherwise drops stderr. */
+async function readChildDiagnostics(): Promise<unknown> {
+  return await browser.executeObsidian(async ({ app }) => {
+    const plugin = app.plugins.plugins["paperforge"] as unknown as {
+      getClient?(): { lastStreamDiagnostics?: unknown };
+    };
+    return plugin.getClient?.().lastStreamDiagnostics ?? null;
+  });
+}
+
 /** Loopback OpenAI-compatible embeddings stub: deterministic vectors +
  * request log (the E-series controlled provider). */
 async function startEmbedStub(): Promise<{
@@ -2615,6 +2657,12 @@ describe("PaperForge real-task e2e", function () {
           };
         });
         console.log("D02D ws=" + JSON.stringify(wsState));
+        // The child's own stderr/exit code is the only way to see WHY it
+        // never progressed (the streamed path used to drop it entirely).
+        const childDiagnostics = await readChildDiagnostics();
+        const jobState = readOcrJobState(base);
+        console.log("D02D child=" + JSON.stringify(childDiagnostics));
+        console.log("D02D jobstate=" + JSON.stringify(jobState));
         const probe = await browser.executeObsidian(async ({ app }) => {
           const plugin = app.plugins.plugins["paperforge"] as unknown as {
             getClient(): {
@@ -2653,6 +2701,8 @@ describe("PaperForge real-task e2e", function () {
           requests,
           ocr_dir: ocrDir,
           pending_marker: existsSync(pendingMarker),
+          child_diagnostics: childDiagnostics,
+          job_state: jobState,
           recorded_at: new Date().toISOString(),
         });
         throw error;
@@ -2690,6 +2740,9 @@ describe("PaperForge real-task e2e", function () {
         meta_status: metaAfter.ocr_status,
         pending_marker_cleared: !existsSync(pendingMarker),
         result_fetches: methodUrls.filter((u) => u.includes("/results/")).length,
+        // The healthy child's process view (exit code, stderr tail, events):
+        // the reference a failing run's diagnostic is compared against.
+        child_diagnostics: await readChildDiagnostics(),
         recorded_at: new Date().toISOString(),
       });
     } finally {
@@ -3502,7 +3555,23 @@ describe("PaperForge real-task e2e", function () {
           .join(" | ")
           .slice(0, 300),
       }));
+      // Same two views as D02: what the child said (stderr/exit code) and
+      // what it wrote (queue rows + controller/queue locks).
+      const childDiagnostics = await readChildDiagnostics();
+      const jobState = readOcrJobState(base);
       console.log("F01D timeout=" + JSON.stringify(diag));
+      console.log("F01D child=" + JSON.stringify(childDiagnostics));
+      console.log("F01D jobstate=" + JSON.stringify(jobState));
+      appendEvidence("f01-failure-diagnostic.json", {
+        case_id: "F01",
+        variant: "staging settle-timeout diagnostic",
+        required_layer: "H",
+        status: "FAILED",
+        staging_diag: diag,
+        child_diagnostics: childDiagnostics,
+        job_state: jobState,
+        recorded_at: new Date().toISOString(),
+      });
       throw error;
     }
     const stagedText = await (await browser.$(".paperforge-quality-staging")).getText();
