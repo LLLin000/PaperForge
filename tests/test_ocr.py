@@ -686,3 +686,54 @@ class TestOcrRunNdjson174:
         assert events[-1]["event"] in ("result", "error", "cancelled")
         names = [e["event"] for e in events]
         assert names.count("result") + names.count("error") + names.count("cancelled") == 1
+
+
+class TestPaddleOcrEndpointConfig:
+    """The declared `paddleocr_job_url`/`paddleocr_model` canonical fields must
+    actually drive the OCR worker.
+
+    Plugin-spawned children never see PADDLEOCR_* in their env (the transport
+    strips it as a credential prefix), so an env-only read made the
+    plugin-driven path unconfigurable — and unverifiable against a loopback
+    provider.  Resolution order must be default < file < env.
+    """
+
+    def test_file_value_is_used(self, tmp_path, monkeypatch):
+        from paperforge.worker.ocr import resolve_paddleocr_endpoint
+
+        monkeypatch.delenv("PADDLEOCR_JOB_URL", raising=False)
+        monkeypatch.delenv("PADDLEOCR_MODEL", raising=False)
+        vault = tmp_path / "vault"
+        vault.mkdir()
+        canonical_test_config(
+            vault,
+            paddleocr_job_url="http://127.0.0.1:8921/api/v2/ocr/jobs",
+            paddleocr_model="TestModel-1",
+        )
+        job_url, model = resolve_paddleocr_endpoint(vault)
+        assert job_url == "http://127.0.0.1:8921/api/v2/ocr/jobs"
+        assert model == "TestModel-1"
+
+    def test_env_overrides_file(self, tmp_path, monkeypatch):
+        from paperforge.worker.ocr import resolve_paddleocr_endpoint
+
+        monkeypatch.setenv("PADDLEOCR_JOB_URL", "http://127.0.0.1:9999/env/jobs")
+        vault = tmp_path / "vault"
+        vault.mkdir()
+        canonical_test_config(
+            vault, paddleocr_job_url="http://127.0.0.1:8921/api/v2/ocr/jobs"
+        )
+        job_url, _model = resolve_paddleocr_endpoint(vault)
+        assert job_url == "http://127.0.0.1:9999/env/jobs"
+
+    def test_default_when_unset(self, tmp_path, monkeypatch):
+        from paperforge.worker.ocr import resolve_paddleocr_endpoint
+
+        monkeypatch.delenv("PADDLEOCR_JOB_URL", raising=False)
+        monkeypatch.delenv("PADDLEOCR_MODEL", raising=False)
+        vault = tmp_path / "vault"
+        vault.mkdir()
+        canonical_test_config(vault)
+        job_url, model = resolve_paddleocr_endpoint(vault)
+        assert job_url.startswith("https://paddleocr.aistudio-app.com/")
+        assert model == "PaddleOCR-VL-1.6"

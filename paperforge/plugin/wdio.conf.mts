@@ -1,5 +1,7 @@
 import * as path from "path";
-import { rmSync } from "node:fs";
+import * as os from "node:os";
+import { execFileSync } from "node:child_process";
+import { copyFileSync, readFileSync, rmSync } from "node:fs";
 
 // Isolation: use a disposable file backend rather than the machine keyring.
 // The real-provider W03 E2E test seeds this file with a fake key; every run
@@ -15,6 +17,39 @@ const keyringFixtureDir = path.resolve("test", "fixtures");
 process.env.PYTHONPATH = process.env.PYTHONPATH
   ? `${keyringFixtureDir}${path.delimiter}${process.env.PYTHONPATH}`
   : keyringFixtureDir;
+
+// The child environment sanitizer strips PYTHONPATH from plugin-spawned
+// children (a deliberate guard), so the e2e keyring backend must be
+// importable from the runtime environment itself: copy the fixture into the
+// published runtime's site-packages. Without this, credential-gated actions
+// (ocr.run, embed.*) report `unavailable` in-plugin even though the seed
+// file is in place.
+try {
+  const pointerPath = path.resolve(
+    os.homedir(),
+    ".paperforge",
+    "runtime",
+    "pointer.json"
+  );
+  const pointer = JSON.parse(readFileSync(pointerPath, "utf8")) as {
+    python_path?: string;
+  };
+  if (pointer.python_path) {
+    const sitePackages = execFileSync(
+      pointer.python_path,
+      ["-c", "import site; print(site.getsitepackages()[0])"],
+      { encoding: "utf8" }
+    ).trim();
+    if (sitePackages) {
+      copyFileSync(
+        path.resolve(keyringFixtureDir, "e2e_keyring.py"),
+        path.resolve(sitePackages, "e2e_keyring.py")
+      );
+    }
+  }
+} catch {
+  // No published runtime yet (install-journey cells publish one later).
+}
 
 // The child environment sanitizer still removes legacy credential variables;
 // this backend only changes where the test's explicit seed is read.
