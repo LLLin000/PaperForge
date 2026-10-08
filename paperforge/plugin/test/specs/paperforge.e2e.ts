@@ -2723,6 +2723,18 @@ describe("PaperForge real-task e2e", function () {
       await clickStable(".paperforge-confirm-actions button.mod-warning");
       const activity = await browser.$(".pf-ocr-ws-activity.pf-active");
       await activity.waitForExist({ timeout: 60000 });
+      // The banner and the enabled Stop control exist as soon as the client
+      // registers the long task — before the Python child has reset the
+      // paper's fixture state and submitted anything. Clicking Stop then
+      // lands on the PRE-run state (the fixture ships this paper `done`), so
+      // the batch must first be observably running: the provider has the job.
+      await browser.waitUntil(
+        () => stub.requests.some((entry) => entry.method === "POST"),
+        {
+          timeout: 120000,
+          timeoutMsg: "OCR batch never submitted a provider job",
+        }
+      );
       // The banner renders before the client registers the long task, and it
       // re-renders on progress events: wait for the Stop control to become
       // enabled, then re-query it so the click targets the live element.
