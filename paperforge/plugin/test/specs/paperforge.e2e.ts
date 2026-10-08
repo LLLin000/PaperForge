@@ -4633,6 +4633,14 @@ describe("PaperForge real-task e2e", function () {
       );
       expect(keyField.type).toBe("password");
       expect(keyField.value).toBe("");
+      // The info row follows the backend probe; give the re-probe a bounded
+      // window to land rather than reading the pre-save render.
+      await browser
+        .waitUntil(async () => (await apiKeyRow()) !== notConfiguredText, {
+          timeout: 20000,
+          interval: 500,
+        })
+        .catch(() => undefined);
       expect(String(notConfiguredText)).not.toBe(await apiKeyRow());
       expect(await credentialAvailable("embedding")).toBe(true);
 
@@ -4675,6 +4683,12 @@ describe("PaperForge real-task e2e", function () {
       // The panel reports "not configured" again, in the same words as before.
       await openSettingsTabOn({ module: "memory" });
       await waitForTestId("sr-api-key-input");
+      await browser
+        .waitUntil(async () => (await apiKeyRow()) === notConfiguredText, {
+          timeout: 20000,
+          interval: 500,
+        })
+        .catch(() => undefined);
       expect(await apiKeyRow()).toBe(notConfiguredText);
 
       appendEvidence("a05-credential-storage.json", {
