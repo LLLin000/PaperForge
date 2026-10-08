@@ -71,7 +71,7 @@ class TestFixtureIntegrity:
         expected_revisions = {
             "golden_126_ocr_rebuild": "dea041db",
             "golden_127_sync_embed": "75c3c41d",
-            "golden_129_display_restore": "75c3c41d",
+            "golden_129_display_restore": "1196278e",
         }
         assert set(expected_revisions) == set(GOLDEN_FIXTURE_NAMES)
         for name, expected_revision in expected_revisions.items():
