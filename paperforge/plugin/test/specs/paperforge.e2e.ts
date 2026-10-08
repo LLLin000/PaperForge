@@ -2615,6 +2615,32 @@ describe("PaperForge real-task e2e", function () {
           };
         });
         console.log("D02D ws=" + JSON.stringify(wsState));
+        const probe = await browser.executeObsidian(async ({ app }) => {
+          const plugin = app.plugins.plugins["paperforge"] as unknown as {
+            getClient(): {
+              runAction(request: unknown): Promise<{
+                ok?: boolean;
+                payload?: unknown;
+                exitCode?: number;
+              }>;
+            };
+          };
+          try {
+            const res = await plugin.getClient().runAction({
+              action_id: "ocr.run",
+              scope: { kind: "papers", keys: ["TSTONE001"] },
+              confirm: "ocr.run",
+            });
+            return {
+              ok: res.ok,
+              exit: res.exitCode,
+              payload: JSON.stringify(res.payload ?? null).slice(0, 500),
+            };
+          } catch (e) {
+            return { err: String(e) };
+          }
+        });
+        console.log("D02D probe=" + JSON.stringify(probe));
 
         appendEvidence("d02-failure-diagnostic.json", {
           case_id: "D02",
