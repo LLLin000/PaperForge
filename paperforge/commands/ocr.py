@@ -466,7 +466,7 @@ def _run_ocr_status(vault: Path, json_output: bool = False, batch: str | None = 
     from pathlib import Path as _Path
 
     from paperforge.worker._utils import pipeline_paths
-    from paperforge.worker.ocr import _resolve_paddleocr_token
+    from paperforge.worker.ocr import _resolve_paddleocr_token, resolve_paddleocr_endpoint
 
     paths = pipeline_paths(vault)
     ocr_root = paths.get("ocr")
@@ -512,9 +512,7 @@ def _run_ocr_status(vault: Path, json_output: bool = False, batch: str | None = 
     import requests as _requests
 
     token = _resolve_paddleocr_token(vault)
-    job_url = _os.environ.get(
-        "PADDLEOCR_JOB_URL", "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs"
-    ).strip()
+    job_url, _model = resolve_paddleocr_endpoint(vault)
     now = _time.time()
     rows = []
     for j in jobs:
