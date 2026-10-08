@@ -86,6 +86,6 @@ export const config: WebdriverIO.Config = {
   // single install wait, so the budget must cover A01's 540s wait and the
   // journey's inner waits (found on the owner machine: a healthy install
   // poll was killed at ~118s with the 120000 default).
-  mochaOpts: { ui: "bdd", timeout: 600000 },
+  mochaOpts: { ui: "bdd", timeout: 1200000 },
   logLevel: "warn",
 };
