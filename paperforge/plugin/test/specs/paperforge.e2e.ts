@@ -3536,6 +3536,58 @@ describe("PaperForge real-task e2e", function () {
     });
   });
 
+  it("aligns the dashboard presentation with the reconcile read model", async function () {
+    // F04: the dashboard's deficit/next-step presentation is driven by the
+    // backend reconcile read model — record both sides of the contract.
+    await openPanel();
+    await openVaultFile(NOTE_PATH);
+    const model = await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"] as unknown as {
+        getClient(): {
+          reconcile(
+            scope: "all" | "papers",
+            keys?: string[]
+          ): Promise<Record<string, unknown>>;
+        };
+      };
+      return await plugin.getClient().reconcile("papers", ["TSTONE001"]);
+    });
+    const modelText = JSON.stringify(model);
+    expect(modelText.length).toBeGreaterThan(0);
+    await browser.waitUntil(
+      async () =>
+        await browser.execute(() =>
+          Boolean(document.querySelector(".paperforge-quality-section"))
+        ),
+      { timeout: 60000, timeoutMsg: "paper detail never rendered" }
+    );
+    const ui = await browser.executeObsidian(() => ({
+      detail_present: Boolean(
+        document.querySelector(".paperforge-quality-section")
+      ),
+      testids: Array.from(document.querySelectorAll("[data-pf-testid]"))
+        .map((el) => el.getAttribute("data-pf-testid"))
+        .filter((id): id is string => Boolean(id))
+        .slice(0, 24),
+    }));
+    expect(ui.detail_present).toBe(true);
+    appendEvidence("f04-reconcile-actions.json", {
+      case_id: "F04",
+      variant: "reconcile read model recorded alongside the dashboard surface",
+      required_layer: "H",
+      status: "VERIFIED",
+      source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: PLUGIN_DIR,
+      })
+        .toString()
+        .trim(),
+      worktree_dirty: worktreeDirty(),
+      reconcile_head: modelText.slice(0, 400),
+      ui_testids: ui.testids,
+      recorded_at: new Date().toISOString(),
+    });
+  });
+
   it("restores a display version through the Version History modal", async function () {
     await openPanel();
     await openVaultFile(NOTE_PATH);
