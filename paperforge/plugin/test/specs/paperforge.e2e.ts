@@ -857,6 +857,128 @@ describe("PaperForge real-task e2e", function () {
     });
   });
 
+  it("reinstalls the runtime through the setup journey and republishes the pointer", async function () {
+    if (!SETUP_POSITIVE_E2E) {
+      registeredSkip(this, "setup-positive-default-off");
+      return;
+    }
+    this.timeout(900000);
+    const pointerBefore = await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"] as unknown as {
+        getManagedRuntime(): {
+          readPointer(): {
+            pythonPath: string;
+            environmentRoot: string;
+            paperforgeVersion: string;
+          } | null;
+        };
+      };
+      return plugin.getManagedRuntime().readPointer();
+    });
+    expect(pointerBefore).not.toBeNull();
+    const beforeRoot = pointerBefore?.environmentRoot ?? "";
+
+    await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"] as unknown as {
+        _settingTab: {
+          containerEl: HTMLElement;
+          display(): void;
+          _startSetupJourney(stage?: number, reinstall?: boolean): void;
+        };
+      };
+      plugin._settingTab._startSetupJourney(1, true);
+      await new Promise<void>((resolve) => setTimeout(resolve, 500));
+      plugin._settingTab.display();
+      const action = Array.from(
+        plugin._settingTab.containerEl.querySelectorAll(
+          ".pf-setup-journey button.pf-action-btn"
+        )
+      ).find(
+        (button) =>
+          !button.hasAttribute("disabled") &&
+          /reinstall|重新安装/i.test(button.textContent ?? "")
+      );
+      if (!action) throw new Error("reinstall action was not rendered");
+      (action as HTMLButtonElement).click();
+    });
+
+    await browser.waitUntil(
+      async () => {
+        const status = await browser.executeObsidian(
+          async ({ app }, previousRoot) => {
+            const plugin = app.plugins.plugins["paperforge"] as unknown as {
+              getManagedRuntime(): {
+                readPointer(): { environmentRoot: string } | null;
+              };
+              _settingTab: {
+                _setupOperation: string;
+                _setupFeedback: string | null;
+                _setupFailureDetail: string | null;
+              };
+            };
+            const pointer = plugin.getManagedRuntime().readPointer();
+            return {
+              ready:
+                plugin._settingTab._setupOperation === "idle" &&
+                pointer !== null &&
+                pointer.environmentRoot !== previousRoot,
+              operation: plugin._settingTab._setupOperation,
+              feedback: plugin._settingTab._setupFeedback,
+              detail: plugin._settingTab._setupFailureDetail,
+            };
+          },
+          beforeRoot
+        );
+        if (status.operation === "failed") {
+          throw new Error(
+            `reinstall failed: ${status.feedback ?? ""} :: ${status.detail ?? ""}`
+          );
+        }
+        return status.ready;
+      },
+      {
+        timeout: 540000,
+        interval: 1000,
+        timeoutMsg: "reinstall did not republish a runtime pointer",
+      }
+    );
+
+    const pointerAfter = await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"] as unknown as {
+        getManagedRuntime(): {
+          readPointer(): {
+            pythonPath: string;
+            environmentRoot: string;
+            paperforgeVersion: string;
+          } | null;
+        };
+      };
+      return plugin.getManagedRuntime().readPointer();
+    });
+    expect(pointerAfter).not.toBeNull();
+    expect(pointerAfter?.paperforgeVersion).toBe(
+      pointerBefore?.paperforgeVersion
+    );
+    expect(String(pointerAfter?.environmentRoot ?? "")).toContain("venv-");
+    expect(pointerAfter?.environmentRoot).not.toBe(beforeRoot);
+
+    appendEvidence("a06-reinstall-switch.json", {
+      case_id: "A06",
+      variant: "settings reinstall -> journey action -> fresh candidate publish",
+      required_layer: "H",
+      status: "VERIFIED",
+      source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: PLUGIN_DIR,
+      })
+        .toString()
+        .trim(),
+      worktree_dirty: worktreeDirty(),
+      pointer_before: pointerBefore,
+      pointer_after: pointerAfter,
+      recorded_at: new Date().toISOString(),
+    });
+  });
+
   it("journey gate contract: registered skips and the run policy stay explicit", function () {
     const ids = Object.keys(E2E_SKIP_REGISTRY);
     expect(ids.length).toBeGreaterThanOrEqual(3);
