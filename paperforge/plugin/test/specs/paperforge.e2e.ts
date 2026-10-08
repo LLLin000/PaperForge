@@ -2728,17 +2728,19 @@ describe("PaperForge real-task e2e", function () {
       // enabled, then re-query it so the click targets the live element.
       await browser.waitUntil(
         async () => {
-          const btn = await browser.$(
-            ".pf-ocr-ws-activity-head button.pf-btn-ghost"
-          );
+          const btn = await browser.$("[data-pf-testid='ocr-ws-stop']");
           return await btn.isEnabled().catch(() => false);
         },
         { timeout: 60000, timeoutMsg: "Stop stayed disabled" }
       );
-      const stopBtn = await browser.$(
-        ".pf-ocr-ws-activity-head button.pf-btn-ghost"
-      );
+      const stopBtn = await browser.$("[data-pf-testid='ocr-ws-stop']");
       await stopBtn.click();
+      // beforeEach pins settings.language = "en", so the acknowledgement must
+      // be the localized stop notice — never the raw i18n key (the defect this
+      // asserts against rendered the literal key string).
+      // (en table entry in src/i18n.ts; the spec cannot import i18n.ts, which
+      // pulls the runtime-less `obsidian` module).
+      const stopNotice = "Stopping OCR batch";
       await browser.waitUntil(
         async () => {
           const text = await browser.execute(() =>
@@ -2746,7 +2748,7 @@ describe("PaperForge real-task e2e", function () {
               .map((node) => node.textContent ?? "")
               .join(" | ")
           );
-          return text.includes("停止");
+          return text.includes(stopNotice);
         },
         { timeout: 120000, timeoutMsg: "stop notice never appeared" }
       );
@@ -2836,7 +2838,9 @@ describe("PaperForge real-task e2e", function () {
       );
       await rowCheckbox.waitForExist({ timeout: 180000 });
       await rowCheckbox.click();
-      const redoBtn = await browser.$("//button[contains(text(),'重新提取此论文')]");
+      const redoBtn = await browser.$(
+        "[data-pf-testid='ocr-ws-re-extract-selected']"
+      );
       await redoBtn.waitForExist({ timeout: 30000 });
       await browser.waitUntil(
         async () => await redoBtn.isEnabled().catch(() => false),
@@ -2912,7 +2916,9 @@ describe("PaperForge real-task e2e", function () {
       );
       await rowCheckbox.waitForExist({ timeout: 180000 });
       await rowCheckbox.click();
-      const rebuildBtn = await browser.$("//button[contains(text(),'重建所选')]");
+      const rebuildBtn = await browser.$(
+        "[data-pf-testid='ocr-ws-rebuild-selected']"
+      );
       await rebuildBtn.waitForExist({ timeout: 30000 });
       await browser.waitUntil(
         async () => await rebuildBtn.isEnabled().catch(() => false),
