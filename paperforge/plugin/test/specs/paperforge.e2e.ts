@@ -3543,8 +3543,10 @@ describe("PaperForge real-task e2e", function () {
 
   it("stages render repairs in isolation and promotes the reviewed candidates", async function () {
     // The runner's first reconcile (cold client + render audit) can exceed
-    // the suite's per-test mocha budget; this case owns a longer one.
-    this.timeout(900000);
+    // the @wdio command wrapper's config-level timeout, and per-test mocha
+    // overrides do not apply to wrapped commands (#268) — the long wait is
+    // sliced instead.
+    this.timeout(1200000);
     // F01/F02/F03: staging reconciles against an isolated tmp root; only
     // promotion/acceptance may write the canonical inventory.
     const base = await sandboxBasePath();
@@ -3612,16 +3614,28 @@ describe("PaperForge real-task e2e", function () {
       ) as HTMLButtonElement | null;
       button?.click();
     });
+    const staged = async (): Promise<boolean> => {
+      const text = await (await browser.$(".paperforge-quality-staging"))
+        .getText()
+        .catch(() => "");
+      return text.length > 0 && !text.includes("Staging R/P proposals");
+    };
     try {
-      await browser.waitUntil(
-        async () => {
-          const text = await (await browser.$(".paperforge-quality-staging"))
-            .getText()
-            .catch(() => "");
-          return text.length > 0 && !text.includes("Staging R/P proposals");
-        },
-        { timeout: 600000, timeoutMsg: "staging never settled" }
-      );
+      let settled = false;
+      for (let slice = 0; slice < 4 && !settled; slice += 1) {
+        try {
+          await browser.waitUntil(staged, {
+            timeout: 240000,
+            timeoutMsg: "staging slice elapsed",
+          });
+          settled = true;
+        } catch {
+          // slice elapsed; keep polling unless this was the last slice
+        }
+      }
+      if (!settled) {
+        throw new Error("staging never settled");
+      }
     } catch (error) {
       const diag = await browser.execute(() => ({
         staging: (document.querySelector(".paperforge-quality-staging")?.textContent ?? "").slice(0, 300),
