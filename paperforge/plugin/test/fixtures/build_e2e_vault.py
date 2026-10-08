@@ -93,6 +93,34 @@ def _assert_ocr_invariant() -> None:
             f"validate_ocr_meta -> {status!r} ({reason})"
         )
 
+    # D06 asserts the rebuild ADDS a fulltext.pre-rebuild backup. A rebuild
+    # also prunes to ocr_fulltext_state.prune_pre_rebuild_backups' keep (5),
+    # so a fixture carrying >= keep backups prunes as many as it adds and the
+    # count never grows. The tracked fixture was polluted this way by e2e /
+    # rebuild runs against it; fail the build instead of the spec.
+    from paperforge.worker.ocr_fulltext_state import (  # noqa: PLC0415
+        parse_pre_rebuild_backup_name,
+    )
+
+    shipped = [
+        p
+        for p in (OCR_FIXTURE / "backups").glob("fulltext.pre-rebuild.*.md")
+        if parse_pre_rebuild_backup_name(p.name) is not None
+    ]
+    if len(shipped) >= 5:
+        raise SystemExit(
+            f"OCR fixture ships {len(shipped)} pre-rebuild backups "
+            f"({OCR_FIXTURE / 'backups'}); a rebuild prunes to 5 so D06's "
+            "backup-count-grew precondition can never hold. Delete the junk "
+            "backups (keep the intentional 20260909T123456Z one)."
+        )
+    stale_pointer = meta.get("last_backup_path")
+    if stale_pointer and not (OCR_FIXTURE / str(stale_pointer)).exists():
+        raise SystemExit(
+            f"OCR fixture meta.last_backup_path points at a missing file: "
+            f"{stale_pointer!r} — clear the field in {meta_path}"
+        )
+
 
 def build() -> None:
     # First-use journey fixture (#263): the gate reloads into a CLEAN vault,

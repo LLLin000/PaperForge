@@ -15,6 +15,7 @@ import {
   type ExecuteOptions,
   type StreamHandle,
   type LongTaskOutcome,
+  type StreamDiagnostics,
   AsyncEventQueue,
 } from "./transport";
 import type { ProbeAllEnvelope, ProbeEnvelope } from "./probe-types";
@@ -398,6 +399,11 @@ export class PaperForgeClient {
     return this._activeOperation !== null;
   }
 
+  /** Last completed streamed operation (child stderr/exit code/events), for
+   * failure diagnostics. Null until the first streamed operation finishes.
+   * The CLI's job files are the durable record; this is the process view. */
+  lastStreamDiagnostics: StreamDiagnostics | null = null;
+
   /** Operation ID of the currently active long task, or null if idle. */
   get activeOperationId(): string | null {
     return this._activeOperation?.operationId ?? null;
@@ -452,6 +458,18 @@ export class PaperForgeClient {
     const wrappedOutcome = (async (): Promise<LongTaskOutcome> => {
       try {
         const outcome = await rawHandle.outcome;
+        this.lastStreamDiagnostics = {
+          operationId,
+          argv,
+          ok: outcome.ok,
+          exitCode: outcome.exitCode,
+          cancelled: outcome.cancelled,
+          protocolFailure: outcome.protocolFailure,
+          stderr: outcome.stderr ?? "",
+          eventCount: outcome.events.length,
+          lastEvent: outcome.events[outcome.events.length - 1] ?? null,
+          finishedAt: Date.now(),
+        };
         traceRecord({
           ts: Date.now(),
           kind: "stream",
@@ -467,6 +485,23 @@ export class PaperForgeClient {
           detail: `exit=${outcome.exitCode} events=${outcome.events.length}`,
         });
         return outcome;
+      } catch (err: unknown) {
+        // The transport-level promise can reject (spawn/stream teardown).
+        // Keep the failure reachable from the diagnostics surface.
+        this.lastStreamDiagnostics = {
+          operationId,
+          argv,
+          ok: false,
+          exitCode: null,
+          cancelled: false,
+          protocolFailure:
+            err instanceof Error ? err.message : String(err ?? "unknown"),
+          stderr: "",
+          eventCount: 0,
+          lastEvent: null,
+          finishedAt: Date.now(),
+        };
+        throw err;
       } finally {
         // Deterministic release across all outcomes!
         this._activeOperation = null;
