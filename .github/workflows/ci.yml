@@ -465,6 +465,27 @@ jobs:
       - name: Install plugin dependencies
         run: npm ci
         working-directory: paperforge/plugin
+      - name: Give the E2E wheel a branch-only version
+        shell: bash
+        # The plugin-driven installs pin `paperforge[vector]==<manifest
+        # version>`; PyPI serves the same 2.0.0rc5, and with both sources
+        # reachable pip picks the index (observed: the A01 candidate then ran
+        # without branch-only code and hung the later runtime-dependent
+        # cases).  A `.post1` version cannot exist on PyPI, so the locally
+        # built wheel is the only match while dependencies still resolve from
+        # the index.
+        run: |
+          python - <<'PY'
+          import pathlib
+
+          for path in (
+              "paperforge/__init__.py",
+              "paperforge/plugin/manifest.json",
+          ):
+              p = pathlib.Path(path)
+              text = p.read_text(encoding="utf-8")
+              p.write_text(text.replace("2.0.0rc5", "2.0.0rc5.post1"), encoding="utf-8")
+          PY
       - name: Build the wheel the first-use journey installs
         shell: bash
         run: |
@@ -480,7 +501,6 @@ jobs:
               "PF_E2E_WHEEL_SHA256="
               + hashlib.sha256(open(sys.argv[1], "rb").read()).hexdigest()
           )
-          print("PIP_FIND_LINKS=" + os.path.abspath("dist"))
           PY
       - name: Run real Obsidian lifecycle (first-use journey gate)
         run: npm run test:e2e
