@@ -12,7 +12,8 @@ on:
   pull_request:
     branches: [main, master]
   schedule:
-    - cron: "0 6 * * 1"
+    # Nightly (02:00 Asia/Shanghai): full H matrix that PRs no longer run.
+    - cron: "0 18 * * *"
   workflow_dispatch:
 
 env:
@@ -438,14 +439,10 @@ jobs:
     name: H — Obsidian (${{ matrix.app }}, installer=${{ matrix.installer }})
     strategy:
       fail-fast: false
+      # PRs get fast feedback from one combination; push to master, the
+      # nightly schedule and manual runs keep the full version matrix.
       matrix:
-        include:
-          - app: earliest
-            installer: earliest
-          - app: latest
-            installer: latest
-          - app: latest
-            installer: earliest
+        include: ${{ fromJSON(github.event_name == 'pull_request' && '[{"app":"latest","installer":"latest"}]' || '[{"app":"earliest","installer":"earliest"},{"app":"latest","installer":"latest"},{"app":"latest","installer":"earliest"}]') }}
     runs-on: windows-latest
     timeout-minutes: 45
     steps:
