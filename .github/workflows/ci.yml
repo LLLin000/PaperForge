@@ -458,13 +458,6 @@ jobs:
           node-version: 22
           cache: "npm"
           cache-dependency-path: paperforge/plugin/package-lock.json
-      - name: Install Python package
-        run: python -m pip install -e ".[test,vector]"
-      - name: Publish isolated runtime pointer for E2E
-        run: python -c "from paperforge.runtime_pointer import publish_pointer; print(publish_pointer())"
-      - name: Install plugin dependencies
-        run: npm ci
-        working-directory: paperforge/plugin
       - name: Give the E2E wheel a branch-only version
         shell: bash
         # The plugin-driven installs pin `paperforge[vector]==<manifest
@@ -473,7 +466,10 @@ jobs:
         # without branch-only code and hung the later runtime-dependent
         # cases).  A `.post1` version cannot exist on PyPI, so the locally
         # built wheel is the only match while dependencies still resolve from
-        # the index.
+        # the index.  It must run BEFORE the editable install and the pointer
+        # publish: the pointer records the installed version, and a pointer
+        # published as 2.0.0rc5 under a .post1 package makes the installation
+        # probe report `runtime_pointer_stale` (A01 needs_action).
         run: |
           python - <<'PY'
           import pathlib
@@ -486,6 +482,13 @@ jobs:
               text = p.read_text(encoding="utf-8")
               p.write_text(text.replace("2.0.0rc5", "2.0.0rc5.post1"), encoding="utf-8")
           PY
+      - name: Install Python package
+        run: python -m pip install -e ".[test,vector]"
+      - name: Publish isolated runtime pointer for E2E
+        run: python -c "from paperforge.runtime_pointer import publish_pointer; print(publish_pointer())"
+      - name: Install plugin dependencies
+        run: npm ci
+        working-directory: paperforge/plugin
       - name: Build the wheel the first-use journey installs
         shell: bash
         run: |
