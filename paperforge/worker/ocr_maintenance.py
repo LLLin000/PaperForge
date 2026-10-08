@@ -363,8 +363,16 @@ def collect_maintenance_rows(vault: Path) -> list[OCRMaintenanceRow]:
 
     rows: list[OCRMaintenanceRow] = []
 
-    # Preload canonical index for title fallback
-    lib_index = paths.get("index", ocr_root.parent / "indexes") / "formal-library.json"
+    # Preload canonical index for title fallback. `pipeline_paths()["index"]`
+    # is the formal-library.json FILE, not the indexes directory; appending
+    # the filename again silently yields an empty title map and every row
+    # falls back to its key. A directory is still tolerated for callers that
+    # hand over the indexes dir.
+    lib_index = Path(
+        paths.get("index") or (ocr_root.parent / "indexes" / "formal-library.json")
+    )
+    if lib_index.is_dir():
+        lib_index = lib_index / "formal-library.json"
     title_by_key: dict[str, str] = {}
     if lib_index.exists():
         lib_data = read_json(lib_index)
