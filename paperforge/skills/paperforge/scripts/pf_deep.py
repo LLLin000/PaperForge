@@ -643,11 +643,59 @@ CAPTION_PATTERNS = {
 }
 
 
+_CAPTION_LABEL_PATTERN = re.compile(r"^(?:Figure|Table)\s+Caption:\s*", re.IGNORECASE)
+
+
+def _unwrap_render_callout(raw_line: str) -> str:
+    """Normalise a rendered-fulltext line to its bare caption form.
+
+    The render pipeline emits captions either as reader-figure cards
+    (``> **Figure 2**`` header + ``> Figure 2: legend`` line) or as table
+    caption callouts (``> **Table Caption:** Table 1: legend``), while raw
+    provider fulltext uses the bare ``Figure 2: legend`` form.  Stripping the
+    blockquote/bold/label decoration lets one set of caption patterns cover
+    both shapes.
+    """
+    text = raw_line.strip()
+    while text.startswith(">"):
+        text = text[1:].strip()
+    text = text.strip("*").strip()
+    label_match = _CAPTION_LABEL_PATTERN.match(text)
+    if label_match:
+        text = text[label_match.end() :].strip().strip("*").strip()
+    return text
+
+
+def _render_card_legend(lines: list[str], header_idx: int) -> str:
+    """Caption text of the reader-figure card whose header sits at ``header_idx``.
+
+    ``_render_reader_figure_card`` emits the header line followed by the legend
+    line, and the legend repeats the figure label that the caption patterns
+    strip.
+    """
+    for probe in range(header_idx + 1, min(header_idx + 4, len(lines))):
+        candidate = lines[probe].strip()
+        if not candidate:
+            continue
+        if not candidate.startswith(">"):
+            return ""
+        legend = _unwrap_render_callout(candidate)
+        for pattern in CAPTION_PATTERNS.values():
+            match = pattern.match(legend)
+            if match:
+                return match.group(2).strip() if len(match.groups()) > 1 else ""
+        return legend
+    return ""
+
+
 def build_figure_map(fulltext: str, zotero_key: str = "") -> dict:
     """Build a caption-driven inventory of figures and tables.
 
     Scans fulltext.md line-by-line, detects formal captions, and pairs each
     caption with the nearest image block within a window of adjacent pages.
+
+    Handles both the rendered card/callout form written by ``write_render_outputs``
+    and the bare ``Figure N: caption`` form used by legacy fulltext.
     """
     lines = fulltext.splitlines()
     page_pattern = re.compile(r"<!-- page (\d+) -->")
@@ -683,7 +731,7 @@ def build_figure_map(fulltext: str, zotero_key: str = "") -> dict:
     current_page = None
 
     for idx, raw_line in enumerate(lines):
-        line = raw_line.strip()
+        line = _unwrap_render_callout(raw_line)
         if not line:
             continue
 
@@ -699,6 +747,9 @@ def build_figure_map(fulltext: str, zotero_key: str = "") -> dict:
                 continue
             number = m.group(1)
             caption_text = m.group(2).strip() if len(m.groups()) > 1 else ""
+            if not caption_text:
+                # Rendered reader-figure cards carry the legend on the next line.
+                caption_text = _render_card_legend(lines, idx)
 
             # Find nearest image within window of adjacent pages (current ± 2 pages)
             # Filter: figure captions → exclude table images; table captions → prefer table images
