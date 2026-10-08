@@ -122,6 +122,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   private _lastOrphanCount: number = 0;
   /** Modules that have already been auto-probed (prevents endless re-probe). */
   private _attemptedProbes: Set<string> = new Set();
+  /** Optional modules whose detail page re-probed once this session, so a
+   *  persisted last-known envelope (e.g. "API Key: Entered" for a key since
+   *  deleted) never stands in for the live state after a restart. */
+  private _detailProbedThisSession: Set<string> = new Set();
   /** Currently active sub-view within the Setup tab. */
   _setupView: "overview" | "module-detail" = "overview";
   /** #87: Setup Journey current stage (1-4). */
@@ -1242,6 +1246,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
   }
 
+  /** Re-probe an optional module the first time its detail page renders in
+   *  this session; later renders reuse the fresh envelope. */
+  private _probeDetailOnce(mod: CapabilityModule): void {
+    if (this._detailProbedThisSession.has(mod)) return;
+    this._detailProbedThisSession.add(mod);
+    this._probeModule(mod);
+  }
+
   /** Render the Module Detail tab (top-level destination). */
   _renderModuleDetailTab(containerEl: HTMLElement): void {
     // Default to Installation if no module selected
@@ -1253,8 +1265,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     } else if (this._selectedDetailModule === "library") {
       this._renderLibraryDetail(containerEl);
     } else if (this._selectedDetailModule === "ocr") {
+      this._probeDetailOnce("ocr");
       this._renderOcrDetail(containerEl);
     } else if (this._selectedDetailModule === "memory") {
+      this._probeDetailOnce("memory");
       this._renderMemoryDetail(containerEl);
     } else if (this._selectedDetailModule === "agent") {
       this._renderAgentDetail(containerEl);
@@ -1769,6 +1783,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       cls: "pf-sr-cfg-input",
       attr: {
         type: "password",
+        "data-pf-testid": "sr-api-key-input",
         placeholder: apiKeyConfigured ? "\u2022\u2022\u2022\u2022" : "sk-...",
       },
     }) as HTMLInputElement;
@@ -1796,7 +1811,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     });
     const bi = br.createEl("input", {
       cls: "pf-sr-cfg-input",
-      attr: { type: "text", placeholder: "https://api.openai.com/v1" },
+      attr: {
+        type: "text",
+        "data-pf-testid": "sr-api-base-input",
+        placeholder: "https://api.openai.com/v1",
+      },
     }) as HTMLInputElement;
     bi.value = this.plugin.settings.vector_db_api_base || "";
     bi.addEventListener("change", () => {
@@ -1811,7 +1830,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     });
     const mi = mr.createEl("input", {
       cls: "pf-sr-cfg-input",
-      attr: { type: "text", placeholder: "text-embedding-3-small" },
+      attr: {
+        type: "text",
+        "data-pf-testid": "sr-api-model-input",
+        placeholder: "text-embedding-3-small",
+      },
     }) as HTMLInputElement;
     mi.value =
       this.plugin.settings.vector_db_api_model || "text-embedding-3-small";
@@ -3943,7 +3966,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       if (hint) field.createEl("span", { cls: "caption", text: hint });
       const input = field.createEl("input", {
         cls: "pf-setup-input",
-        attr: { type: "text" },
+        attr: { type: "text", "data-pf-testid": "setup-path-" + key },
       }) as HTMLInputElement;
       input.value = this.plugin.settings[key] || "";
       input.addEventListener("input", () => {
@@ -3968,7 +3991,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const verify = form.createEl("button", {
       cls: "pf-setup-verify",
       text: t("setup_library_verify"),
-      attr: { type: "button" },
+      attr: { type: "button", "data-pf-testid": "setup-library-save" },
     });
     verify.disabled = this._setupOperation === "running";
     verify.addEventListener("click", () => this._applyLibraryConfiguration());
@@ -4240,6 +4263,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       : [];
     await this.plugin.saveSettings();
     this.display();
+    // The API Key row reads the backend probe (env.details), so a saved key
+    // must re-probe or the panel keeps showing "Missing" until restart.
+    this._refreshAllReadModels();
     return true;
   }
 

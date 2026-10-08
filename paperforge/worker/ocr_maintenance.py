@@ -45,6 +45,9 @@ class OCRMaintenanceRow:
     display_severity: str = "normal"
     fulltext_drift_state: str = "UNKNOWN"
     fulltext_drift_reason: str = ""
+    # Vault-relative POSIX path of the paper's canonical fulltext.md, or ""
+    # when it does not exist. The OCR workspace Preview opens exactly this.
+    fulltext_path: str = ""
     show_in_base: bool = True
     def __post_init__(self) -> None:
         df = self.compute_display_fields(
@@ -170,6 +173,7 @@ class OCRMaintenanceRow:
             "show_in_base": self.show_in_base,
             "fulltext_drift_state": self.fulltext_drift_state,
             "fulltext_drift_reason": self.fulltext_drift_reason,
+            "fulltext_path": _safe_str(self.fulltext_path),
             "structured_content_hash": _safe_str(self.structured_content_hash),
         }
 
@@ -468,6 +472,13 @@ def collect_maintenance_rows(vault: Path) -> list[OCRMaintenanceRow]:
             "DRIFTED": "fulltext.md has changed since the last machine write.",
             "UNKNOWN": "No machine baseline is available.",
         }[drift_state]
+        if artifacts.compat_fulltext.is_file():
+            try:
+                row.fulltext_path = artifacts.compat_fulltext.resolve().relative_to(
+                    Path(vault).resolve()
+                ).as_posix()
+            except ValueError:  # OCR root outside the vault: nothing to open
+                row.fulltext_path = ""
         rows.append(row)
 
     return rows
