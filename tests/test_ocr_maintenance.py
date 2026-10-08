@@ -513,6 +513,37 @@ class TestCollectMaintenanceRowsDisplayFields:
 # ===========================================================================
 
 
+class TestCollectMaintenanceRowsTitle:
+    """Row titles resolve through the canonical index, not the Zotero key."""
+
+    def test_title_comes_from_canonical_index(self, tmp_path: Path) -> None:
+        from paperforge.worker._utils import pipeline_paths
+        from paperforge.worker.ocr_maintenance import collect_maintenance_rows
+        _create_paper(tmp_path, "TITLE01", has_source_meta=False)
+        # The canonical index is the only title source once meta.json and
+        # raw/source_metadata.json carry none.
+        index_path = pipeline_paths(tmp_path)["index"]
+        index_path.parent.mkdir(parents=True, exist_ok=True)
+        index_path.write_text(
+            json.dumps(
+                {
+                    "schema_version": "2",
+                    "items": [
+                        {"zotero_key": "TITLE01", "title": "A Real Paper Title"},
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        rows = collect_maintenance_rows(tmp_path)
+
+        assert len(rows) == 1
+        assert rows[0].key == "TITLE01"
+        assert rows[0].title_full == "A Real Paper Title"
+        assert rows[0].title == "A Real Paper Title"
+
+
 class TestOcrListManifest:
     """_run_ocr_list with manifest=True."""
 
