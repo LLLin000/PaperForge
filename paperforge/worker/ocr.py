@@ -263,6 +263,32 @@ def _resolve_zotero_data_dir(vault: Path) -> Path | None:
         return None
 
 
+def resolve_paddleocr_endpoint(vault: Path) -> tuple[str, str]:
+    """PaddleOCR job URL + model from the canonical config (default < file
+    < env), with the raw env read kept as the fail-open fallback.
+
+    The declared `paddleocr_job_url` / `paddleocr_model` canonical fields
+    were never consumed here, so a plugin-spawned worker — whose child env
+    has PADDLEOCR_* stripped — could only ever reach the production
+    endpoint.  Routing through load_vault_config keeps the env override
+    working for direct CLI use and adds the vault config file for the
+    plugin path.
+    """
+    default_url = "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs"
+    default_model = "PaddleOCR-VL-1.6"
+    try:
+        from paperforge.config import load_vault_config
+
+        vc = load_vault_config(vault)
+        job_url = str(vc.get("paddleocr_job_url", "") or "").strip() or default_url
+        model = str(vc.get("paddleocr_model", "") or "").strip() or default_model
+        return job_url, model
+    except Exception:  # noqa: BLE001 — config unreadable: keep the legacy env path
+        job_url = os.environ.get("PADDLEOCR_JOB_URL", default_url).strip() or default_url
+        model = os.environ.get("PADDLEOCR_MODEL", default_model).strip() or default_model
+        return job_url, model
+
+
 def apply_ocr_error_state(row: dict, meta: dict, error_state: dict) -> None:
     status = error_state["status"]
     row["queue_status"] = status
@@ -2971,8 +2997,7 @@ def run_ocr(
         except ValueError:
             max_items = 3
     token = _resolve_paddleocr_token(vault)
-    job_url = os.environ.get("PADDLEOCR_JOB_URL", "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs").strip()
-    model = os.environ.get("PADDLEOCR_MODEL", "PaddleOCR-VL-1.6").strip()
+    job_url, model = resolve_paddleocr_endpoint(vault)
     optional_payload = {"useDocOrientationClassify": False, "useDocUnwarping": False, "useChartRecognition": False}
     changed = 0
     active_submitted = 0
