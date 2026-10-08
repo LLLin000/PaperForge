@@ -141,6 +141,27 @@ const BYSTANDER_NOTE =
 const NEW_PAPER_KEY = "TSTONE002";
 const NEW_PAPER_NOTE =
   "Resources/Literature/骨科/TSTONE002 - Second Paper/TSTONE002.md";
+/** Export title of the second paper (B05 A→B discriminator). */
+const SECOND_PAPER_TITLE = "Second Paper";
+/** Export title of the factory paper (B05 A→B discriminator). */
+const PAPER_TITLE =
+  "Biomechanical Comparison of Suture Anchor Fixations in Rotator Cuff Repair";
+/** Canonical fulltext artifact the panel advertises for PAPER_KEY. */
+const CANONICAL_FULLTEXT = "System/PaperForge/ocr/TSTONE001/fulltext.md";
+/** PDF target the canonical index advertises (BBT storage wikilink body). */
+const PAPER_PDF = "System/Zotero/storage/TSTONE001/TSTONE001.pdf";
+/** Real PDF used to satisfy the advertised PDF target (repo fixture). */
+const PDF_FIXTURE = path.resolve(
+  PLUGIN_DIR,
+  "..",
+  "..",
+  "tests",
+  "sandbox",
+  "TestZoteroData",
+  "storage",
+  "TSTONE001",
+  "TSTONE001.pdf"
+);
 const EXPORT_REL = "System/PaperForge/exports/骨科.json";
 const INDEX_REL = "System/PaperForge/indexes/formal-library.json";
 
@@ -170,6 +191,186 @@ function readIndex(base: string): { paper_count: number; keys: string[] } {
     paper_count: raw.paper_count ?? items.length,
     keys: items.map((entry) => String(entry.zotero_key ?? "")),
   };
+}
+
+/** One canonical-index item, or a hard failure (no silent absent field). */
+function readIndexItem(base: string, key: string): Record<string, unknown> {
+  const raw = JSON.parse(readFileSync(path.join(base, INDEX_REL), "utf8")) as {
+    items?: Record<string, unknown>[];
+  };
+  const item = (raw.items ?? []).find(
+    (entry) => String(entry.zotero_key ?? "") === key
+  );
+  if (!item) throw new Error(`canonical index has no item for ${key}`);
+  return item;
+}
+
+/** Write one sandbox file, creating parents (host-side setup, like the export). */
+function writeSandboxFile(base: string, rel: string, content: string): void {
+  const target = path.join(base, rel);
+  mkdirSync(path.dirname(target), { recursive: true });
+  writeFileSync(target, content);
+}
+
+/**
+ * The panel's resolved context as RENDERED: the mode badge's attributes plus
+ * the visible mode name. B05 asserts this — never an internal field.
+ */
+async function panelContext(): Promise<{
+  mode: string | null;
+  key: string | null;
+  label: string;
+  name: string;
+}> {
+  return await browser.execute(() => {
+    const panel = document.querySelector(".paperforge-status-panel");
+    const root: ParentNode = panel ?? document;
+    const badge = root.querySelector("[data-pf-testid='mode-badge']");
+    return {
+      mode: badge?.getAttribute("data-pf-mode") ?? null,
+      key: badge?.getAttribute("data-pf-key") ?? null,
+      label: (badge?.textContent ?? "").trim(),
+      name: (
+        root.querySelector("[data-pf-testid='mode-name']")?.textContent ?? ""
+      ).trim(),
+    };
+  });
+}
+
+/** Wait until the panel renders the given mode (and key, when supplied). */
+async function waitForPanel(mode: string, key?: string): Promise<void> {
+  await browser.waitUntil(
+    async () => {
+      const context = await panelContext();
+      if (context.mode !== mode) return false;
+      return key === undefined || context.key === key;
+    },
+    {
+      timeout: 60000,
+      timeoutMsg: `the panel never rendered mode=${mode}${
+        key === undefined ? "" : ` key=${key}`
+      }`,
+    }
+  );
+}
+
+/** Wait until the dashboard's cached read model carries the key. */
+async function waitForDashboardIndexKey(key: string): Promise<void> {
+  await browser.waitUntil(
+    async () =>
+      await browser.executeObsidian(async ({ app }, expectedKey) => {
+        for (const leaf of app.workspace.getLeavesOfType("paperforge-status")) {
+          const view = leaf.view;
+          if (!("_cachedItems" in view)) continue;
+          const items = view._cachedItems;
+          if (!Array.isArray(items)) continue;
+          for (const item of items) {
+            if (
+              item !== null &&
+              typeof item === "object" &&
+              "zotero_key" in item &&
+              item.zotero_key === expectedKey
+            ) {
+              return true;
+            }
+          }
+        }
+        return false;
+      }, key),
+    {
+      timeout: 60000,
+      timeoutMsg: `the dashboard never loaded ${key} into its read model`,
+    }
+  );
+}
+
+/** The workspace's active file path, as Obsidian reports it. */
+async function activeFilePath(): Promise<string | null> {
+  return await browser.executeObsidian(
+    async ({ app }) => app.workspace.getActiveFile()?.path ?? null
+  );
+}
+
+/** Leaf inventory around an open action (wrong-leaf findings need the proof). */
+async function workspaceFileState(): Promise<Record<string, unknown>> {
+  return await browser.executeObsidian(async ({ app }) => {
+    const leaves: Array<Record<string, unknown>> = [];
+    app.workspace.iterateAllLeaves((leaf) => {
+      const view = leaf.view;
+      let filePath: string | null = null;
+      if (
+        "file" in view &&
+        view.file !== null &&
+        typeof view.file === "object" &&
+        "path" in view.file &&
+        typeof view.file.path === "string"
+      ) {
+        filePath = view.file.path;
+      }
+      leaves.push({
+        view_type: view.getViewType(),
+        file_path: filePath,
+        active: leaf === app.workspace.activeLeaf,
+      });
+    });
+    return {
+      active_file: app.workspace.getActiveFile()?.path ?? null,
+      leaves,
+    };
+  });
+}
+
+/** Wait until the given active file is the one Obsidian activated. */
+async function waitForActiveFile(rel: string): Promise<void> {
+  try {
+    await browser.waitUntil(async () => (await activeFilePath()) === rel, {
+      timeout: 60000,
+      timeoutMsg: `active file never became ${rel}`,
+    });
+  } catch (error) {
+    throw new Error(
+      `${String(error)}\nobserved=${JSON.stringify(await workspaceFileState())}`
+    );
+  }
+}
+
+/** Wait for a visible Obsidian notice containing `needle`. */
+async function waitUntilNotice(needle: string): Promise<void> {
+  await browser.waitUntil(
+    () =>
+      browser.execute(
+        (text: string) =>
+          Array.from(document.querySelectorAll(".notice")).some((el) =>
+            (el.textContent ?? "").includes(text)
+          ),
+        needle
+      ),
+    { timeout: 30000, timeoutMsg: `no visible notice said "${needle}"` }
+  );
+}
+
+/** Register an externally written binary file with Obsidian's Vault. */
+async function materializeBinaryFile(rel: string): Promise<void> {
+  await browser.executeObsidian(async ({ app }, target: string) => {
+    const existing = app.vault.getAbstractFileByPath(target);
+    if (existing && "extension" in existing) return;
+    const adapter = app.vault.adapter as unknown as {
+      readBinary(path: string): Promise<ArrayBuffer>;
+      exists(path: string): Promise<boolean>;
+    };
+    const parent = target.slice(0, target.lastIndexOf("/"));
+    if (parent && !app.vault.getAbstractFileByPath(parent)) {
+      try {
+        await app.vault.createFolder(parent);
+      } catch {
+        // An already-registered parent is fine; the write below is the proof.
+      }
+    }
+    if (!(await adapter.exists(target))) {
+      throw new Error(`missing on disk: ${target}`);
+    }
+    await app.vault.createBinary(target, await adapter.readBinary(target));
+  }, rel);
 }
 
 /**
@@ -3226,6 +3427,336 @@ describe("PaperForge real-task e2e", function () {
       checkbox_value_before: initial,
       checkbox_value_after: await checkbox.isSelected(),
       note_unchanged: true,
+      observed_at: new Date().toISOString(),
+    });
+  });
+
+  it("resolves the last opened paper in a rapid A→B switch and fails closed off-paper", async function () {
+    // Case B05. The panel resolves identity asynchronously (Python
+    // `paper-lookup --from-path`) behind a 300ms leaf-change debounce, so two
+    // quick opens must settle on the LAST leaf — never on a late response for
+    // the first — and a file with no canonical identity must not inherit the
+    // previous paper's key.
+    await openPanel();
+    await waitForIdle("B05", "startup-sync-settle");
+    const base = await sandboxBasePath();
+
+    // A second REAL paper: export entry + UI Sync, the same path the sync
+    // diff case uses (identity must be canonical, not hand-written).
+    addExportItem(base, {
+      key: NEW_PAPER_KEY,
+      title: SECOND_PAPER_TITLE,
+      doi: "10.1016/j.jse.2024.01.997",
+    });
+    await clickTestId("sync-library");
+    await browser.waitUntil(
+      () => {
+        try {
+          return (
+            readIndex(base).keys.includes(NEW_PAPER_KEY) &&
+            existsSync(path.join(base, NEW_PAPER_NOTE))
+          );
+        } catch {
+          return false; // the index is being rewritten
+        }
+      },
+      {
+        timeout: 180000,
+        timeoutMsg: "B05 Sync never materialized the second paper",
+      }
+    );
+    await waitForIdle("B05", "manual-sync-settle");
+    await waitForDashboardIndexKey(NEW_PAPER_KEY);
+
+    // A → B back to back: A's lookup is still in flight when B becomes the
+    // active leaf, so a late response for A must never win.
+    await openVaultFile(NOTE_PATH);
+    await browser.pause(400);
+    await openVaultFile(NEW_PAPER_NOTE);
+    await waitForPanel("paper", NEW_PAPER_KEY);
+    // A late response for A would land right after B commits; let it.
+    await browser.pause(2000);
+    const settled = await panelContext();
+    expect(settled.mode).toBe("paper");
+    expect(settled.key).toBe(NEW_PAPER_KEY);
+    expect(settled.name).toBe(SECOND_PAPER_TITLE);
+    const paperText = await (
+      await browser.$(".paperforge-content-area")
+    ).getText();
+    expect(paperText).toContain(SECOND_PAPER_TITLE);
+    expect(paperText).not.toContain(PAPER_TITLE);
+
+    // A plain note belongs to no paper: fail closed instead of keeping B.
+    const plainNote = "Resources/Literature/骨科/plain-notes.md";
+    writeSandboxFile(base, plainNote, "# Plain notes\n\nNo identity here.\n");
+    await openVaultFile(plainNote);
+    await waitForPanel("global");
+    const plain = await panelContext();
+    expect(plain.label).toBe("Global");
+    expect(plain.key).toBe("");
+    expect(plain.name).toBe("");
+    expect(await (await browser.$(".paperforge-paper-view")).isExisting()).toBe(
+      false
+    );
+
+    // The Base resolves to its collection — also not a paper.
+    await openVaultFile(BASE_PATH);
+    await waitForPanel("collection");
+    const collection = await panelContext();
+    expect(collection.key).toBe("");
+    expect(collection.name).toBe("骨科");
+
+    appendEvidence("b05-identity-mode.json", {
+      case_id: "B05",
+      variant: "rapid A->B identity switch + non-paper fail-closed",
+      required_layer: "H",
+      status: "VERIFIED",
+      source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: PLUGIN_DIR,
+      })
+        .toString()
+        .trim(),
+      worktree_dirty: worktreeDirty(),
+      paper_a: { note: NOTE_PATH, title: PAPER_TITLE },
+      paper_b: { key: NEW_PAPER_KEY, note: NEW_PAPER_NOTE, title: SECOND_PAPER_TITLE },
+      settled_panel: settled,
+      plain_note_mode: plain,
+      base_mode: collection,
+      observed_at: new Date().toISOString(),
+    });
+  });
+
+  it("refuses to guess a paper key for paths without canonical identity", async function () {
+    // Case B05, unknown/ambiguous branch. Identity is Python authority:
+    // canonical index, note frontmatter, workspace-folder key WITH an index
+    // entry. A path that merely LOOKS like a paper must fail closed — the
+    // client never infers a key from a filename, folder name, or a rename.
+    await openPanel();
+    await waitForIdle("B05", "startup-sync-settle");
+    const base = await sandboxBasePath();
+
+    // (a) Key-shaped folder (8-char key, so the workspace-key branch is
+    // actually reachable) with NO index entry: not canonical.
+    const phantomNote =
+      "Resources/Literature/骨科/TSTONE01 - Phantom Paper/TSTONE01.md";
+    writeSandboxFile(
+      base,
+      phantomNote,
+      "# Phantom\n\nA folder that looks like a workspace, without identity.\n"
+    );
+    await openVaultFile(phantomNote);
+    await waitForPanel("global");
+    const phantom = await panelContext();
+    expect(phantom.label).toBe("Global");
+    expect(phantom.key).toBe("");
+
+    // (b) A file named after the key, in the literature folder, whose content
+    // carries no identity: nothing may be inferred from the name.
+    const decoy = "Resources/Literature/骨科/TSTONE001-copy.md";
+    writeSandboxFile(
+      base,
+      decoy,
+      "# TSTONE001 copy\n\nBody without frontmatter identity.\n"
+    );
+    await openVaultFile(decoy);
+    await waitForPanel("global");
+    const named = await panelContext();
+    expect(named.key).toBe("");
+    expect(named.name).toBe("");
+
+    // (c) Contrast — the same key-named path WITH canonical frontmatter IS
+    // identity, wherever the file sits: a renamed/moved note keeps its paper.
+    const renamed = "Resources/Literature/骨科/renamed-note.md";
+    writeSandboxFile(base, renamed, readNote(base, NOTE_PATH));
+    await openVaultFile(renamed);
+    await waitForPanel("paper", PAPER_KEY);
+    expect((await panelContext()).name).toBe(PAPER_TITLE);
+
+    // …and the key does not leak back onto the identity-less leaf.
+    await openVaultFile(phantomNote);
+    await waitForPanel("global");
+    expect((await panelContext()).key).toBe("");
+
+    appendEvidence("b05-unknown-identity.json", {
+      case_id: "B05",
+      variant: "unknown/ambiguous path -> no key guessing",
+      required_layer: "H",
+      status: "VERIFIED",
+      source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: PLUGIN_DIR,
+      })
+        .toString()
+        .trim(),
+      worktree_dirty: worktreeDirty(),
+      key_shaped_folder_no_index: { note: phantomNote, panel: phantom },
+      key_named_file_no_identity: { note: decoy, panel: named },
+      canonical_frontmatter_renamed: { note: renamed, resolved_key: PAPER_KEY },
+      observed_at: new Date().toISOString(),
+    });
+  });
+
+  it("opens the key's real artifacts from the panel, workspace and version entries", async function () {
+    // Case B08. Every entry point must land on the SAME canonical file for
+    // the key, asserted on app.workspace.getActiveFile().path — a spy on
+    // openFile would stay green while the wrong file opens.
+    await openPanel();
+    await waitForIdle("B08", "startup-sync-settle");
+    const base = await sandboxBasePath();
+
+    // Fixture guard: the assertions below must not go vacuous on index drift.
+    const item = readIndexItem(base, PAPER_KEY);
+    expect(item.fulltext_path).toBe(CANONICAL_FULLTEXT);
+    expect(item.pdf_path).toBe(`[[${PAPER_PDF}]]`);
+
+    await openVaultFile(NOTE_PATH);
+    await waitForPanel("paper", PAPER_KEY);
+    expect(await activeFilePath()).toBe(NOTE_PATH);
+
+    // ── 打开全文 from the paper strip.
+    await clickTestId("open-fulltext");
+    await waitForActiveFile(CANONICAL_FULLTEXT);
+    const panelAfterFulltext = await browser.executeObsidian(
+      async ({ app }) =>
+        app.workspace.getLeavesOfType("paperforge-status").length > 0
+    );
+    const stateAfterFulltext = await workspaceFileState();
+
+    // ── Back: reopening the note returns the panel to the same paper.
+    await openPanel();
+    await openVaultFile(NOTE_PATH);
+    await waitForPanel("paper", PAPER_KEY);
+    expect(await activeFilePath()).toBe(NOTE_PATH);
+
+    // ── 打开 PDF: supply the artifact the index advertises, then click it.
+    expect(existsSync(PDF_FIXTURE)).toBe(true);
+    await openPanel();
+    mkdirSync(path.dirname(path.join(base, PAPER_PDF)), { recursive: true });
+    copyFileSync(PDF_FIXTURE, path.join(base, PAPER_PDF));
+    await materializeBinaryFile(PAPER_PDF);
+    await clickTestId("open-pdf");
+    await waitForActiveFile(PAPER_PDF);
+    const stateAfterPdf = await workspaceFileState();
+
+    // ── 正文 entry: the OCR workspace row's own Preview control.
+    await openPanel();
+    await openVaultFile(NOTE_PATH);
+    await waitForPanel("paper", PAPER_KEY);
+    await browser.executeObsidianCommand("paperforge:paperforge-ocr-workspace");
+    const previewBtn = await browser.$("[data-pf-testid='ocr-open-fulltext']");
+    await previewBtn.waitForExist({ timeout: 60000 });
+    await previewBtn.click();
+    await waitForActiveFile(CANONICAL_FULLTEXT);
+    const stateAfterPreview = await workspaceFileState();
+
+    // ── 版本入口: the history modal must belong to THIS key, and leaving it
+    // must return to the paper's own note.
+    await openPanel();
+    await openVaultFile(NOTE_PATH);
+    await waitForPanel("paper", PAPER_KEY);
+    await clickTestId("version-history");
+    await (await browser.$(".pf-vr-layout")).waitForExist({ timeout: 60000 });
+    const labels = await browser.execute(() =>
+      Array.from(document.querySelectorAll(".pf-vr-entry-label")).map((el) =>
+        (el.textContent ?? "").trim()
+      )
+    );
+    expect(labels).toContain("v1");
+    expect(labels).toContain("v2");
+    expect(await activeFilePath()).toBe(NOTE_PATH);
+    await browser.keys("Escape");
+    await dismissModals();
+    await waitForPanel("paper", PAPER_KEY);
+    expect(await activeFilePath()).toBe(NOTE_PATH);
+
+    appendEvidence("b08-open-entries.json", {
+      case_id: "B08",
+      variant: "panel/workspace/version entries open the key's canonical files",
+      required_layer: "H",
+      status: "VERIFIED",
+      source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: PLUGIN_DIR,
+      })
+        .toString()
+        .trim(),
+      worktree_dirty: worktreeDirty(),
+      key: PAPER_KEY,
+      fulltext_entry: {
+        expected: CANONICAL_FULLTEXT,
+        active_file: CANONICAL_FULLTEXT,
+        panel_still_mounted: panelAfterFulltext,
+        state: stateAfterFulltext,
+      },
+      pdf_entry: { expected: PAPER_PDF, active_file: PAPER_PDF, state: stateAfterPdf },
+      ocr_workspace_entry: {
+        expected: CANONICAL_FULLTEXT,
+        active_file: CANONICAL_FULLTEXT,
+        state: stateAfterPreview,
+      },
+      version_entry: { labels, active_file_after_open: NOTE_PATH },
+      returned_to_note: NOTE_PATH,
+      observed_at: new Date().toISOString(),
+    });
+  });
+
+  it("reports a missing target instead of opening a wrong file", async function () {
+    // Case B08, failure branch: a target that is gone must surface a visible
+    // error and leave the workspace on the paper's own note — never fall back
+    // to some other file of the same paper.
+    await openPanel();
+    await waitForIdle("B08", "startup-sync-settle");
+    const base = await sandboxBasePath();
+
+    await openVaultFile(NOTE_PATH);
+    await waitForPanel("paper", PAPER_KEY);
+
+    // The canonical fulltext is removed on disk AND from the Vault cache, so
+    // the click cannot be saved by a stale TFile handle.
+    unlinkSync(path.join(base, CANONICAL_FULLTEXT));
+    await browser.waitUntil(
+      async () =>
+        await browser.executeObsidian(
+          async ({ app }, target) =>
+            app.vault.getAbstractFileByPath(target) === null,
+          CANONICAL_FULLTEXT
+        ),
+      {
+        timeout: 30000,
+        timeoutMsg: "the removed fulltext stayed in the Vault cache",
+      }
+    );
+
+    await clickTestId("open-fulltext");
+    await waitUntilNotice("Fulltext file not found");
+    expect(await activeFilePath()).toBe(NOTE_PATH);
+
+    // This vault's export points its PDF attachment outside the vault, so the
+    // PDF target is absent by construction: the same fail-closed contract.
+    await clickTestId("open-pdf");
+    await waitUntilNotice("PDF not found");
+    expect(await activeFilePath()).toBe(NOTE_PATH);
+
+    // No wrong file, no mode drift: the panel is still on the same paper.
+    const after = await panelContext();
+    expect(after.mode).toBe("paper");
+    expect(after.key).toBe(PAPER_KEY);
+
+    appendEvidence("b08-missing-target.json", {
+      case_id: "B08",
+      variant: "missing target -> visible error, no wrong file",
+      required_layer: "H",
+      status: "VERIFIED",
+      source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: PLUGIN_DIR,
+      })
+        .toString()
+        .trim(),
+      worktree_dirty: worktreeDirty(),
+      removed_fulltext: CANONICAL_FULLTEXT,
+      absent_pdf: PAPER_PDF,
+      fulltext_notice: "Fulltext file not found",
+      pdf_notice: "PDF not found",
+      active_file_after_failures: NOTE_PATH,
+      panel_after_failures: after,
       observed_at: new Date().toISOString(),
     });
   });

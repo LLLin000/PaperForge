@@ -752,6 +752,7 @@ export class OcrWorkspaceView extends ItemView {
       const tdAction = tr.createEl("td", { cls: "pf-ocr-ws-col-action" });
       const previewBtn = tdAction.createEl("button", {
         cls: "pf-btn pf-btn-secondary",
+        attr: { "data-pf-testid": "ocr-open-fulltext" },
         text: t("ocr_ws_btn_preview"),
       });
       previewBtn.addEventListener("click", (e) => {
