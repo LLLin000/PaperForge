@@ -119,21 +119,20 @@ def _settle_w2(context: ActionContext, intent: dict[str, Any], result: Any) -> N
     """#167 P0-2: overwrite the last-attempt record for a DISPATCHED action.
     Only dispatched attempts settle — pre-dispatch pending/skipped intents
     never become failed records (a confirmation-required intent is not a
-    failed attempt)."""
+    failed attempt).  Shares ``reconcile.settle_attempt`` with a direct
+    ``action run`` (X14) so both paths write the same record."""
     from paperforge.actions.types import scope_from_dict as _s
-    from paperforge.reconcile import record_last_attempt, semantic_attempt_digest
+    from paperforge.reconcile import settle_attempt
 
     try:
         scope = _s(intent.get("scope") or {})
     except ValueError:
         return
-    digest = semantic_attempt_digest(context.vault, intent)
-    record_last_attempt(
+    settle_attempt(
         context.vault,
         action_id=str(intent.get("action_id", "")),
         scope=scope,
-        input_digest=digest,
-        outcome="succeeded" if getattr(result, "ok", False) else "failed",
+        ok=bool(getattr(result, "ok", False)),
         error_code=(
             getattr(result.error, "code", "") if getattr(result, "error", None) else ""
         ),

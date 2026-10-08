@@ -34,6 +34,21 @@ from paperforge.actions.registry import emit_next_action
 from paperforge.actions.types import ActionIntent, AllScope, PapersScope
 from paperforge.core.result import PFResult
 
+#: Actions reconcile can derive as repair intents — the only ids whose W2
+#: last-attempt record can influence a later emission.  A DIRECT `action run`
+#: settles a record only for these (X14): recording an id reconcile never
+#: emits would be dead state and would pay a full-library observation for it.
+#: Enforced against reconcile's own emission sites by
+#: tests/test_x14_loop_closure.py.
+RECONCILE_ACTIONS: frozenset[str] = frozenset({
+    "memory.build",
+    "embed.build",
+    "embed.resume",
+    "ocr.run",
+    "ocr.rebuild_derived",
+    "library.prune",
+})
+
 # ── W2 last-attempt record (overwrite-only, bounded, no history) ──────────
 
 LAST_ATTEMPT_FILENAME = "reconcile-last-attempts.json"
@@ -506,15 +521,60 @@ def semantic_attempt_digest(vault: Path, intent: dict[str, Any]) -> str:
     from paperforge.actions.types import scope_from_dict
 
     scope = scope_from_dict(intent.get("scope") or {})
+    return _attempt_digest_for(vault, str(intent.get("action_id", "")), scope)
+
+
+def _attempt_digest_for(
+    vault: Path, action_id: str, scope: AllScope | PapersScope
+) -> str:
+    """Digest of the CURRENT semantic observation for (action, scope) — the
+    W2 comparison material.  One implementation for the chain runner and a
+    direct `action run`, so the two paths cannot drift."""
     keys = list(scope.keys) if scope.kind == "papers" else None
     obs = observe(vault, keys)
-    intent_obj = ActionIntent(
-        action_id=str(intent.get("action_id", "")),
-        scope=scope,
-        trigger_reason_code="",
-        trigger_reason="",
+    return _intent_input_digest(
+        obs,
+        ActionIntent(
+            action_id=action_id,
+            scope=scope,
+            trigger_reason_code="",
+            trigger_reason="",
+        ),
+        vault,
     )
-    return _intent_input_digest(obs, intent_obj, vault)
+
+
+def settle_attempt(
+    vault: Path,
+    *,
+    action_id: str,
+    scope: AllScope | PapersScope,
+    ok: bool,
+    error_code: str = "",
+) -> None:
+    """W2 writer seam shared by EVERY dispatched attempt (X14).
+
+    The follow-up chain and a direct `paperforge action run` both settle the
+    same overwrite-only last-attempt record, so the re-emission gate cannot be
+    bypassed by invoking an action directly.  Callers decide whether an
+    attempt is dispatachable — this function just records it.
+
+    The record cannot exist without a semantic observation, so a vault whose
+    observation raises (e.g. no config: the action dispatch is still valid, a
+    reconcile-gated retry is not) settles nothing rather than aborting the
+    dispatch it is bookkeeping for."""
+    try:
+        digest = _attempt_digest_for(vault, action_id, scope)
+    except Exception:  # noqa: BLE001 — bookkeeping never breaks a dispatch
+        return
+    record_last_attempt(
+        vault,
+        action_id=action_id,
+        scope=scope,
+        input_digest=digest,
+        outcome="succeeded" if ok else "failed",
+        error_code=error_code,
+    )
 
 
 def _w2_gate(
