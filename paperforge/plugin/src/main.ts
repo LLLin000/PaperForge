@@ -367,20 +367,35 @@ export default class PaperForgePlugin extends Plugin {
     ).basePath;
     if (!vaultPath) return;
     void (async () => {
+      let dryError: unknown = null;
       const dry = await this.getClient()
         .configMigrate(true)
-        .catch((e) => null);
+        .catch((e) => {
+          dryError = e;
+          return null;
+        });
+      if (dryError) {
+        // The dry run is the authority's verdict: a legacy file it cannot
+        // migrate must not be offered as "No conflicts".
+        new Notice(
+          `PaperForge: config migrate failed: ${String(dryError)}`,
+          10000
+        );
+        return;
+      }
       const summary =
         dry && dry.warnings?.length
           ? dry.warnings.join("\n")
           : "No conflicts; legacy path keys will move under vault_config.";
       new ConfirmMigrationModal(this.app, summary, async () => {
-        await this.getClient()
-          .configMigrate(false)
-          .catch((e) => {
-            new Notice(`PaperForge: config migrate failed: ${String(e)}`);
-            return;
-          });
+        try {
+          await this.getClient().configMigrate(false);
+        } catch (e) {
+          // A failed migrate must not fall through to the success path
+          // (re-hydrate, clear the flag, "configuration migrated").
+          new Notice(`PaperForge: config migrate failed: ${String(e)}`, 10000);
+          return;
+        }
         // Re-hydrate mirrors from the canonical config, then purge the
         // legacy domain values from data.json (#142 §12 step 4/5).
         try {
