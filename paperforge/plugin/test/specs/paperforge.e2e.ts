@@ -159,6 +159,27 @@ const BYSTANDER_NOTE =
 const NEW_PAPER_KEY = "TSTONE002";
 const NEW_PAPER_NOTE =
   "Resources/Literature/骨科/TSTONE002 - Second Paper/TSTONE002.md";
+/** Export title of the second paper (B05 A→B discriminator). */
+const SECOND_PAPER_TITLE = "Second Paper";
+/** Export title of the factory paper (B05 A→B discriminator). */
+const PAPER_TITLE =
+  "Biomechanical Comparison of Suture Anchor Fixations in Rotator Cuff Repair";
+/** Canonical fulltext artifact the panel advertises for PAPER_KEY. */
+const CANONICAL_FULLTEXT = "System/PaperForge/ocr/TSTONE001/fulltext.md";
+/** PDF target the canonical index advertises (BBT storage wikilink body). */
+const PAPER_PDF = "System/Zotero/storage/TSTONE001/TSTONE001.pdf";
+/** Real PDF used to satisfy the advertised PDF target (repo fixture). */
+const PDF_FIXTURE = path.resolve(
+  PLUGIN_DIR,
+  "..",
+  "..",
+  "tests",
+  "sandbox",
+  "TestZoteroData",
+  "storage",
+  "TSTONE001",
+  "TSTONE001.pdf"
+);
 const EXPORT_REL = "System/PaperForge/exports/骨科.json";
 const INDEX_REL = "System/PaperForge/indexes/formal-library.json";
 
@@ -188,6 +209,186 @@ function readIndex(base: string): { paper_count: number; keys: string[] } {
     paper_count: raw.paper_count ?? items.length,
     keys: items.map((entry) => String(entry.zotero_key ?? "")),
   };
+}
+
+/** One canonical-index item, or a hard failure (no silent absent field). */
+function readIndexItem(base: string, key: string): Record<string, unknown> {
+  const raw = JSON.parse(readFileSync(path.join(base, INDEX_REL), "utf8")) as {
+    items?: Record<string, unknown>[];
+  };
+  const item = (raw.items ?? []).find(
+    (entry) => String(entry.zotero_key ?? "") === key
+  );
+  if (!item) throw new Error(`canonical index has no item for ${key}`);
+  return item;
+}
+
+/** Write one sandbox file, creating parents (host-side setup, like the export). */
+function writeSandboxFile(base: string, rel: string, content: string): void {
+  const target = path.join(base, rel);
+  mkdirSync(path.dirname(target), { recursive: true });
+  writeFileSync(target, content);
+}
+
+/**
+ * The panel's resolved context as RENDERED: the mode badge's attributes plus
+ * the visible mode name. B05 asserts this — never an internal field.
+ */
+async function panelContext(): Promise<{
+  mode: string | null;
+  key: string | null;
+  label: string;
+  name: string;
+}> {
+  return await browser.execute(() => {
+    const panel = document.querySelector(".paperforge-status-panel");
+    const root: ParentNode = panel ?? document;
+    const badge = root.querySelector("[data-pf-testid='mode-badge']");
+    return {
+      mode: badge?.getAttribute("data-pf-mode") ?? null,
+      key: badge?.getAttribute("data-pf-key") ?? null,
+      label: (badge?.textContent ?? "").trim(),
+      name: (
+        root.querySelector("[data-pf-testid='mode-name']")?.textContent ?? ""
+      ).trim(),
+    };
+  });
+}
+
+/** Wait until the panel renders the given mode (and key, when supplied). */
+async function waitForPanel(mode: string, key?: string): Promise<void> {
+  await browser.waitUntil(
+    async () => {
+      const context = await panelContext();
+      if (context.mode !== mode) return false;
+      return key === undefined || context.key === key;
+    },
+    {
+      timeout: 60000,
+      timeoutMsg: `the panel never rendered mode=${mode}${
+        key === undefined ? "" : ` key=${key}`
+      }`,
+    }
+  );
+}
+
+/** Wait until the dashboard's cached read model carries the key. */
+async function waitForDashboardIndexKey(key: string): Promise<void> {
+  await browser.waitUntil(
+    async () =>
+      await browser.executeObsidian(async ({ app }, expectedKey) => {
+        for (const leaf of app.workspace.getLeavesOfType("paperforge-status")) {
+          const view = leaf.view;
+          if (!("_cachedItems" in view)) continue;
+          const items = view._cachedItems;
+          if (!Array.isArray(items)) continue;
+          for (const item of items) {
+            if (
+              item !== null &&
+              typeof item === "object" &&
+              "zotero_key" in item &&
+              item.zotero_key === expectedKey
+            ) {
+              return true;
+            }
+          }
+        }
+        return false;
+      }, key),
+    {
+      timeout: 60000,
+      timeoutMsg: `the dashboard never loaded ${key} into its read model`,
+    }
+  );
+}
+
+/** The workspace's active file path, as Obsidian reports it. */
+async function activeFilePath(): Promise<string | null> {
+  return await browser.executeObsidian(
+    async ({ app }) => app.workspace.getActiveFile()?.path ?? null
+  );
+}
+
+/** Leaf inventory around an open action (wrong-leaf findings need the proof). */
+async function workspaceFileState(): Promise<Record<string, unknown>> {
+  return await browser.executeObsidian(async ({ app }) => {
+    const leaves: Array<Record<string, unknown>> = [];
+    app.workspace.iterateAllLeaves((leaf) => {
+      const view = leaf.view;
+      let filePath: string | null = null;
+      if (
+        "file" in view &&
+        view.file !== null &&
+        typeof view.file === "object" &&
+        "path" in view.file &&
+        typeof view.file.path === "string"
+      ) {
+        filePath = view.file.path;
+      }
+      leaves.push({
+        view_type: view.getViewType(),
+        file_path: filePath,
+        active: leaf === app.workspace.activeLeaf,
+      });
+    });
+    return {
+      active_file: app.workspace.getActiveFile()?.path ?? null,
+      leaves,
+    };
+  });
+}
+
+/** Wait until the given active file is the one Obsidian activated. */
+async function waitForActiveFile(rel: string): Promise<void> {
+  try {
+    await browser.waitUntil(async () => (await activeFilePath()) === rel, {
+      timeout: 60000,
+      timeoutMsg: `active file never became ${rel}`,
+    });
+  } catch (error) {
+    throw new Error(
+      `${String(error)}\nobserved=${JSON.stringify(await workspaceFileState())}`
+    );
+  }
+}
+
+/** Wait for a visible Obsidian notice containing `needle`. */
+async function waitUntilNotice(needle: string): Promise<void> {
+  await browser.waitUntil(
+    () =>
+      browser.execute(
+        (text: string) =>
+          Array.from(document.querySelectorAll(".notice")).some((el) =>
+            (el.textContent ?? "").includes(text)
+          ),
+        needle
+      ),
+    { timeout: 30000, timeoutMsg: `no visible notice said "${needle}"` }
+  );
+}
+
+/** Register an externally written binary file with Obsidian's Vault. */
+async function materializeBinaryFile(rel: string): Promise<void> {
+  await browser.executeObsidian(async ({ app }, target: string) => {
+    const existing = app.vault.getAbstractFileByPath(target);
+    if (existing && "extension" in existing) return;
+    const adapter = app.vault.adapter as unknown as {
+      readBinary(path: string): Promise<ArrayBuffer>;
+      exists(path: string): Promise<boolean>;
+    };
+    const parent = target.slice(0, target.lastIndexOf("/"));
+    if (parent && !app.vault.getAbstractFileByPath(parent)) {
+      try {
+        await app.vault.createFolder(parent);
+      } catch {
+        // An already-registered parent is fine; the write below is the proof.
+      }
+    }
+    if (!(await adapter.exists(target))) {
+      throw new Error(`missing on disk: ${target}`);
+    }
+    await app.vault.createBinary(target, await adapter.readBinary(target));
+  }, rel);
 }
 
 /**
@@ -4194,5 +4395,1304 @@ describe("PaperForge real-task e2e", function () {
       note_unchanged: true,
       observed_at: new Date().toISOString(),
     });
+  });
+
+  it("resolves the last opened paper in a rapid A→B switch and fails closed off-paper", async function () {
+    // Case B05. The panel resolves identity asynchronously (Python
+    // `paper-lookup --from-path`) behind a 300ms leaf-change debounce, so two
+    // quick opens must settle on the LAST leaf — never on a late response for
+    // the first — and a file with no canonical identity must not inherit the
+    // previous paper's key.
+    await openPanel();
+    await waitForIdle("B05", "startup-sync-settle");
+    const base = await sandboxBasePath();
+
+    // A second REAL paper: export entry + UI Sync, the same path the sync
+    // diff case uses (identity must be canonical, not hand-written).
+    addExportItem(base, {
+      key: NEW_PAPER_KEY,
+      title: SECOND_PAPER_TITLE,
+      doi: "10.1016/j.jse.2024.01.997",
+    });
+    await clickTestId("sync-library");
+    await browser.waitUntil(
+      () => {
+        try {
+          return (
+            readIndex(base).keys.includes(NEW_PAPER_KEY) &&
+            existsSync(path.join(base, NEW_PAPER_NOTE))
+          );
+        } catch {
+          return false; // the index is being rewritten
+        }
+      },
+      {
+        timeout: 180000,
+        timeoutMsg: "B05 Sync never materialized the second paper",
+      }
+    );
+    await waitForIdle("B05", "manual-sync-settle");
+    await waitForDashboardIndexKey(NEW_PAPER_KEY);
+
+    // A → B back to back: A's lookup is still in flight when B becomes the
+    // active leaf, so a late response for A must never win.
+    await openVaultFile(NOTE_PATH);
+    await browser.pause(400);
+    await openVaultFile(NEW_PAPER_NOTE);
+    await waitForPanel("paper", NEW_PAPER_KEY);
+    // A late response for A would land right after B commits; let it.
+    await browser.pause(2000);
+    const settled = await panelContext();
+    expect(settled.mode).toBe("paper");
+    expect(settled.key).toBe(NEW_PAPER_KEY);
+    expect(settled.name).toBe(SECOND_PAPER_TITLE);
+    const paperText = await (
+      await browser.$(".paperforge-content-area")
+    ).getText();
+    expect(paperText).toContain(SECOND_PAPER_TITLE);
+    expect(paperText).not.toContain(PAPER_TITLE);
+
+    // A plain note belongs to no paper: fail closed instead of keeping B.
+    const plainNote = "Resources/Literature/骨科/plain-notes.md";
+    writeSandboxFile(base, plainNote, "# Plain notes\n\nNo identity here.\n");
+    await openVaultFile(plainNote);
+    await waitForPanel("global");
+    const plain = await panelContext();
+    expect(plain.label).toBe("Global");
+    expect(plain.key).toBe("");
+    expect(plain.name).toBe("");
+    expect(await (await browser.$(".paperforge-paper-view")).isExisting()).toBe(
+      false
+    );
+
+    // The Base resolves to its collection — also not a paper.
+    await openVaultFile(BASE_PATH);
+    await waitForPanel("collection");
+    const collection = await panelContext();
+    expect(collection.key).toBe("");
+    expect(collection.name).toBe("骨科");
+
+    appendEvidence("b05-identity-mode.json", {
+      case_id: "B05",
+      variant: "rapid A->B identity switch + non-paper fail-closed",
+      required_layer: "H",
+      status: "VERIFIED",
+      source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: PLUGIN_DIR,
+      })
+        .toString()
+        .trim(),
+      worktree_dirty: worktreeDirty(),
+      paper_a: { note: NOTE_PATH, title: PAPER_TITLE },
+      paper_b: { key: NEW_PAPER_KEY, note: NEW_PAPER_NOTE, title: SECOND_PAPER_TITLE },
+      settled_panel: settled,
+      plain_note_mode: plain,
+      base_mode: collection,
+      observed_at: new Date().toISOString(),
+    });
+  });
+
+  it("refuses to guess a paper key for paths without canonical identity", async function () {
+    // Case B05, unknown/ambiguous branch. Identity is Python authority:
+    // canonical index, note frontmatter, workspace-folder key WITH an index
+    // entry. A path that merely LOOKS like a paper must fail closed — the
+    // client never infers a key from a filename, folder name, or a rename.
+    await openPanel();
+    await waitForIdle("B05", "startup-sync-settle");
+    const base = await sandboxBasePath();
+
+    // (a) Key-shaped folder (8-char key, so the workspace-key branch is
+    // actually reachable) with NO index entry: not canonical.
+    const phantomNote =
+      "Resources/Literature/骨科/TSTONE01 - Phantom Paper/TSTONE01.md";
+    writeSandboxFile(
+      base,
+      phantomNote,
+      "# Phantom\n\nA folder that looks like a workspace, without identity.\n"
+    );
+    await openVaultFile(phantomNote);
+    await waitForPanel("global");
+    const phantom = await panelContext();
+    expect(phantom.label).toBe("Global");
+    expect(phantom.key).toBe("");
+
+    // (b) A file named after the key, in the literature folder, whose content
+    // carries no identity: nothing may be inferred from the name.
+    const decoy = "Resources/Literature/骨科/TSTONE001-copy.md";
+    writeSandboxFile(
+      base,
+      decoy,
+      "# TSTONE001 copy\n\nBody without frontmatter identity.\n"
+    );
+    await openVaultFile(decoy);
+    await waitForPanel("global");
+    const named = await panelContext();
+    expect(named.key).toBe("");
+    expect(named.name).toBe("");
+
+    // (c) Contrast — the same key-named path WITH canonical frontmatter IS
+    // identity, wherever the file sits: a renamed/moved note keeps its paper.
+    const renamed = "Resources/Literature/骨科/renamed-note.md";
+    writeSandboxFile(base, renamed, readNote(base, NOTE_PATH));
+    await openVaultFile(renamed);
+    await waitForPanel("paper", PAPER_KEY);
+    expect((await panelContext()).name).toBe(PAPER_TITLE);
+
+    // …and the key does not leak back onto the identity-less leaf.
+    await openVaultFile(phantomNote);
+    await waitForPanel("global");
+    expect((await panelContext()).key).toBe("");
+
+    appendEvidence("b05-unknown-identity.json", {
+      case_id: "B05",
+      variant: "unknown/ambiguous path -> no key guessing",
+      required_layer: "H",
+      status: "VERIFIED",
+      source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: PLUGIN_DIR,
+      })
+        .toString()
+        .trim(),
+      worktree_dirty: worktreeDirty(),
+      key_shaped_folder_no_index: { note: phantomNote, panel: phantom },
+      key_named_file_no_identity: { note: decoy, panel: named },
+      canonical_frontmatter_renamed: { note: renamed, resolved_key: PAPER_KEY },
+      observed_at: new Date().toISOString(),
+    });
+  });
+
+  it("opens the key's real artifacts from the panel, workspace and version entries", async function () {
+    // Case B08. Every entry point must land on the SAME canonical file for
+    // the key, asserted on app.workspace.getActiveFile().path — a spy on
+    // openFile would stay green while the wrong file opens.
+    await openPanel();
+    await waitForIdle("B08", "startup-sync-settle");
+    const base = await sandboxBasePath();
+
+    // Fixture guard: the assertions below must not go vacuous on index drift.
+    const item = readIndexItem(base, PAPER_KEY);
+    expect(item.fulltext_path).toBe(CANONICAL_FULLTEXT);
+    expect(item.pdf_path).toBe(`[[${PAPER_PDF}]]`);
+
+    await openVaultFile(NOTE_PATH);
+    await waitForPanel("paper", PAPER_KEY);
+    expect(await activeFilePath()).toBe(NOTE_PATH);
+
+    // ── 打开全文 from the paper strip.
+    await clickTestId("open-fulltext");
+    await waitForActiveFile(CANONICAL_FULLTEXT);
+    const panelAfterFulltext = await browser.executeObsidian(
+      async ({ app }) =>
+        app.workspace.getLeavesOfType("paperforge-status").length > 0
+    );
+    const stateAfterFulltext = await workspaceFileState();
+
+    // ── Back: reopening the note returns the panel to the same paper.
+    await openPanel();
+    await openVaultFile(NOTE_PATH);
+    await waitForPanel("paper", PAPER_KEY);
+    expect(await activeFilePath()).toBe(NOTE_PATH);
+
+    // ── 打开 PDF: supply the artifact the index advertises, then click it.
+    expect(existsSync(PDF_FIXTURE)).toBe(true);
+    await openPanel();
+    mkdirSync(path.dirname(path.join(base, PAPER_PDF)), { recursive: true });
+    copyFileSync(PDF_FIXTURE, path.join(base, PAPER_PDF));
+    await materializeBinaryFile(PAPER_PDF);
+    await clickTestId("open-pdf");
+    await waitForActiveFile(PAPER_PDF);
+    const stateAfterPdf = await workspaceFileState();
+
+    // ── 正文 entry: the OCR workspace row's own Preview control.
+    await openPanel();
+    await openVaultFile(NOTE_PATH);
+    await waitForPanel("paper", PAPER_KEY);
+    await browser.executeObsidianCommand("paperforge:paperforge-ocr-workspace");
+    const previewBtn = await browser.$("[data-pf-testid='ocr-open-fulltext']");
+    await previewBtn.waitForExist({ timeout: 60000 });
+    await previewBtn.click();
+    await waitForActiveFile(CANONICAL_FULLTEXT);
+    const stateAfterPreview = await workspaceFileState();
+
+    // ── 版本入口: the history modal must belong to THIS key, and leaving it
+    // must return to the paper's own note.
+    await openPanel();
+    await openVaultFile(NOTE_PATH);
+    await waitForPanel("paper", PAPER_KEY);
+    await clickTestId("version-history");
+    await (await browser.$(".pf-vr-layout")).waitForExist({ timeout: 60000 });
+    const labels = await browser.execute(() =>
+      Array.from(document.querySelectorAll(".pf-vr-entry-label")).map((el) =>
+        (el.textContent ?? "").trim()
+      )
+    );
+    expect(labels).toContain("v1");
+    expect(labels).toContain("v2");
+    expect(await activeFilePath()).toBe(NOTE_PATH);
+    await browser.keys("Escape");
+    await dismissModals();
+    await waitForPanel("paper", PAPER_KEY);
+    expect(await activeFilePath()).toBe(NOTE_PATH);
+
+    appendEvidence("b08-open-entries.json", {
+      case_id: "B08",
+      variant: "panel/workspace/version entries open the key's canonical files",
+      required_layer: "H",
+      status: "VERIFIED",
+      source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: PLUGIN_DIR,
+      })
+        .toString()
+        .trim(),
+      worktree_dirty: worktreeDirty(),
+      key: PAPER_KEY,
+      fulltext_entry: {
+        expected: CANONICAL_FULLTEXT,
+        active_file: CANONICAL_FULLTEXT,
+        panel_still_mounted: panelAfterFulltext,
+        state: stateAfterFulltext,
+      },
+      pdf_entry: { expected: PAPER_PDF, active_file: PAPER_PDF, state: stateAfterPdf },
+      ocr_workspace_entry: {
+        expected: CANONICAL_FULLTEXT,
+        active_file: CANONICAL_FULLTEXT,
+        state: stateAfterPreview,
+      },
+      version_entry: { labels, active_file_after_open: NOTE_PATH },
+      returned_to_note: NOTE_PATH,
+      observed_at: new Date().toISOString(),
+    });
+  });
+
+  it("reports a missing target instead of opening a wrong file", async function () {
+    // Case B08, failure branch: a target that is gone must surface a visible
+    // error and leave the workspace on the paper's own note — never fall back
+    // to some other file of the same paper.
+    await openPanel();
+    await waitForIdle("B08", "startup-sync-settle");
+    const base = await sandboxBasePath();
+
+    await openVaultFile(NOTE_PATH);
+    await waitForPanel("paper", PAPER_KEY);
+
+    // The canonical fulltext is removed on disk AND from the Vault cache, so
+    // the click cannot be saved by a stale TFile handle.
+    unlinkSync(path.join(base, CANONICAL_FULLTEXT));
+    await browser.waitUntil(
+      async () =>
+        await browser.executeObsidian(
+          async ({ app }, target) =>
+            app.vault.getAbstractFileByPath(target) === null,
+          CANONICAL_FULLTEXT
+        ),
+      {
+        timeout: 30000,
+        timeoutMsg: "the removed fulltext stayed in the Vault cache",
+      }
+    );
+
+    await clickTestId("open-fulltext");
+    await waitUntilNotice("Fulltext file not found");
+    expect(await activeFilePath()).toBe(NOTE_PATH);
+
+    // This vault's export points its PDF attachment outside the vault, so the
+    // PDF target is absent by construction: the same fail-closed contract.
+    await clickTestId("open-pdf");
+    await waitUntilNotice("PDF not found");
+    expect(await activeFilePath()).toBe(NOTE_PATH);
+
+    // No wrong file, no mode drift: the panel is still on the same paper.
+    const after = await panelContext();
+    expect(after.mode).toBe("paper");
+    expect(after.key).toBe(PAPER_KEY);
+
+    appendEvidence("b08-missing-target.json", {
+      case_id: "B08",
+      variant: "missing target -> visible error, no wrong file",
+      required_layer: "H",
+      status: "VERIFIED",
+      source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: PLUGIN_DIR,
+      })
+        .toString()
+        .trim(),
+      worktree_dirty: worktreeDirty(),
+      removed_fulltext: CANONICAL_FULLTEXT,
+      absent_pdf: PAPER_PDF,
+      fulltext_notice: "Fulltext file not found",
+      pdf_notice: "PDF not found",
+      active_file_after_failures: NOTE_PATH,
+      panel_after_failures: after,
+      observed_at: new Date().toISOString(),
+    });
+  });
+
+  // ── A03 / A04 / A05: configuration and credential journeys ──────────────
+  //
+  // Every assertion below reads a REAL artifact: the canonical
+  // `paperforge.json` Python owns, the disposable keyring backend, or the
+  // rendered DOM. The plugin's own mirrors (data.json) are never the proof —
+  // they are the thing under test.
+
+  /** The sandbox's canonical config file — the one Python reads. */
+  function sandboxConfigFile(base: string): string {
+    return path.join(base, "paperforge.json");
+  }
+
+  /** One dotted field of the sandbox config (undefined when absent). */
+  function sandboxConfigField(base: string, dotted: string): unknown {
+    let node = JSON.parse(
+      readFileSync(sandboxConfigFile(base), "utf8")
+    ) as unknown;
+    for (const part of dotted.split(".")) {
+      if (node === null || typeof node !== "object") return undefined;
+      node = (node as Record<string, unknown>)[part];
+    }
+    return node;
+  }
+
+  /** The disposable keyring backend wdio.conf.mts points the runtime at. */
+  const E2E_KEYRING_FILE = path.resolve(
+    PLUGIN_DIR,
+    ".obsidian-cache",
+    "paperforge-e2e-keyring.json"
+  );
+
+  /** In-memory sha of the keyring file ("" when absent). */
+  function keyringText(file: string): string {
+    return existsSync(file) ? readFileSync(file, "utf8") : "";
+  }
+
+  /** Every file under `root` whose UTF-8 content contains `needle`. */
+  function filesContaining(root: string, needle: string): string[] {
+    const hits: string[] = [];
+    const walk = (current: string): void => {
+      for (const entry of readdirSync(current, { withFileTypes: true })) {
+        const full = path.join(current, entry.name);
+        if (entry.isDirectory()) {
+          walk(full);
+        } else if (entry.isFile()) {
+          try {
+            if (statSync(full).size > 4 * 1024 * 1024) continue;
+            if (readFileSync(full, "utf8").includes(needle)) hits.push(full);
+          } catch {
+            // Unreadable or binary: not a place a UTF-8 secret lands.
+          }
+        }
+      }
+    };
+    walk(root);
+    return hits;
+  }
+
+  /**
+   * Run the product's own credential-authority delete through the runtime
+   * Python, with the e2e keyring backend injected explicitly — the same
+   * authority the plugin spawns, never a test double.
+   */
+  function runAuthDelete(
+    base: string,
+    kind: "ocr" | "embedding"
+  ): { code: number; stdout: string; stderr: string } {
+    const env: NodeJS.ProcessEnv = { ...process.env };
+    delete env.PYTHONPATH;
+    env.PYTHONPATH = [
+      path.resolve(PLUGIN_DIR, "test", "fixtures"),
+      path.resolve(PLUGIN_DIR, "..", ".."),
+    ].join(path.delimiter);
+    env.PAPERFORGE_KEYRING_BACKEND = "e2e_keyring.Keyring";
+    env.PAPERFORGE_E2E_KEYRING_FILE = E2E_KEYRING_FILE;
+    for (const key of Object.keys(env)) {
+      if (/^(PAPERFORGE_CREDENTIAL_|PADDLEOCR_|VECTOR_DB_|OPENAI_)/.test(key)) {
+        delete env[key];
+      }
+    }
+    try {
+      const stdout = execFileSync(
+        "python",
+        [
+          "-m",
+          "paperforge",
+          "--vault",
+          base,
+          "auth",
+          "delete",
+          kind,
+          "--yes",
+          "--json",
+        ],
+        { cwd: path.resolve(PLUGIN_DIR, "..", ".."), env, encoding: "utf8" }
+      );
+      return { code: 0, stdout, stderr: "" };
+    } catch (error) {
+      // A non-zero exit is a fact to record, not a thrown failure.
+      const failure = error as {
+        status?: number;
+        stdout?: string;
+        stderr?: string;
+      };
+      return {
+        code: failure.status ?? -1,
+        stdout: String(failure.stdout ?? ""),
+        stderr: String(failure.stderr ?? ""),
+      };
+    }
+  }
+
+  /**
+   * Open the plugin's Settings tab on a render target: the Setup Journey at
+   * `stage`, or a module-detail panel. `display()` is called AFTER the tab is
+   * open, so the render lands in the tab's container (not a detached div).
+   */
+  async function openSettingsTabOn(target: {
+    stage?: number;
+    module?: string;
+  }): Promise<void> {
+    const observed = await browser.executeObsidian(
+      async ({ app }, wanted: { stage?: number; module?: string }) => {
+        const loaded = app.plugins.plugins["paperforge"];
+        if (!loaded) throw new Error("paperforge plugin not loaded");
+        const plugin = loaded as unknown as {
+          settings: { _setup_complete?: boolean; autoSyncEnabled?: boolean };
+          _pollTimer: number | null;
+          _settingTab: {
+            _setupStage: number;
+            _setupOperation: string;
+            _setupFeedback: string | null;
+            _setupFailureDetail: string | null;
+            _setupJourneyDismissedForSession: boolean;
+            _initialDisplay: boolean;
+            activeTab: string;
+            _selectedDetailModule: string;
+            containerEl: HTMLElement;
+            display(): void;
+          };
+          saveSettings(): Promise<void>;
+        };
+        clearInterval(plugin._pollTimer ?? undefined);
+        plugin._pollTimer = null;
+        plugin.settings.autoSyncEnabled = false;
+        if (typeof wanted.stage === "number") {
+          plugin.settings._setup_complete = false;
+          plugin._settingTab._setupJourneyDismissedForSession = false;
+          plugin._settingTab._setupStage = wanted.stage;
+          plugin._settingTab._setupOperation = "idle";
+          plugin._settingTab._setupFeedback = null;
+          plugin._settingTab._setupFailureDetail = null;
+        } else {
+          plugin.settings._setup_complete = true;
+          plugin._settingTab._setupJourneyDismissedForSession = true;
+          plugin._settingTab.activeTab = "module-detail";
+          plugin._settingTab._selectedDetailModule = wanted.module ?? "";
+        }
+        await plugin.saveSettings();
+
+        // Obsidian's Settings window lives behind undocumented API; the
+        // existing cases reach it through the same cast. The tab's container
+        // is attached to the document only once that window opens, so the
+        // render follows the open (rendering first would target a detached
+        // div and the controls would never be queryable).
+        const settingsApi = app as unknown as {
+          setting?: { open(): void; openTabById(id: string): void };
+        };
+        const tabApi = settingsApi.setting;
+        if (!tabApi || typeof tabApi.open !== "function") {
+          throw new Error("Obsidian settings API unavailable");
+        }
+        tabApi.open();
+        tabApi.openTabById("paperforge");
+        await new Promise<void>((resolve) => setTimeout(resolve, 500));
+        // Skip the one-time nav-memory restore: it would overwrite the target
+        // stage/module set above with the last persisted destination.
+        plugin._settingTab._initialDisplay = false;
+        plugin._settingTab.display();
+        const container = plugin._settingTab.containerEl;
+        return {
+          connected: container.isConnected,
+          journey: container.querySelectorAll(".pf-setup-journey").length,
+          modal: document.querySelectorAll(".modal-container").length,
+          testids: Array.from(container.querySelectorAll("[data-pf-testid]")).map(
+            (e) => e.getAttribute("data-pf-testid")
+          ),
+        };
+      },
+      target
+    );
+    if (!observed.connected) {
+      throw new Error(
+        `the settings tab never attached to the document: ${JSON.stringify(
+          observed
+        )}`
+      );
+    }
+  }
+
+  /**
+   * Drive the Settings tab's own DOM. Obsidian may host the Settings window in
+   * a separate window, so every query resolves through the tab container's
+   * `ownerDocument` — the ambient `document` can be a different one, and an
+   * element living there is invisible to it.
+   */
+  async function settingsElement(
+    selector: string,
+    action:
+      | "exists"
+      | "value"
+      | "text"
+      | "click"
+      | "set-input"
+      | "input-props",
+    value?: string,
+    index?: number
+  ): Promise<unknown> {
+    return await browser.executeObsidian(
+      async (
+        { app },
+        wanted: {
+          selector: string;
+          action: string;
+          value?: string;
+          index?: number;
+        }
+      ) => {
+        const plugin = app.plugins.plugins["paperforge"] as unknown as {
+          _settingTab: { containerEl: HTMLElement };
+        };
+        const doc = plugin._settingTab.containerEl.ownerDocument;
+        // DOM node cast (not a fabricated shape): querySelectorAll returns
+        // Element, and this helper only drives element-level behavior.
+        const nodes = Array.from(
+          doc.querySelectorAll(wanted.selector)
+        ) as HTMLElement[];
+        const el: HTMLElement | null = nodes[wanted.index ?? 0] ?? null;
+        switch (wanted.action) {
+          case "exists":
+            return Boolean(el);
+          case "value":
+            if (!el || !("value" in el)) return null;
+            return String(el.value);
+          case "text":
+            return (el?.textContent ?? "").trim();
+          case "click":
+            if (!el) throw new Error(`no element ${wanted.selector}`);
+            el.click();
+            return true;
+          case "set-input": {
+            if (!el || !("value" in el)) {
+              throw new Error(`no input ${wanted.selector}`);
+            }
+            el.value = wanted.value ?? "";
+            el.dispatchEvent(new Event("input", { bubbles: true }));
+            return true;
+          }
+          case "input-props": {
+            if (
+              !el ||
+              !("value" in el) ||
+              !("type" in el) ||
+              !("placeholder" in el)
+            ) {
+              throw new Error(`no input ${wanted.selector}`);
+            }
+            return {
+              type: String(el.type),
+              value: String(el.value),
+              placeholder: String(el.placeholder),
+            };
+          }
+          default:
+            throw new Error(`unknown settings action ${wanted.action}`);
+        }
+      },
+      { selector, action, value, index }
+    );
+  }
+
+  /** Every testid rendered in the settings tab's own document. */
+  async function settingsTestIds(): Promise<{
+    sameDocument: boolean;
+    connected: boolean;
+    testids: string[];
+    topbar: number;
+    journey: number;
+    html: string;
+  }> {
+    return (await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"] as unknown as {
+        _settingTab: { containerEl: HTMLElement };
+      };
+      const container = plugin._settingTab.containerEl;
+      const doc = container.ownerDocument;
+      return {
+        sameDocument: doc === document,
+        connected: container.isConnected,
+        testids: Array.from(
+          doc.querySelectorAll("[data-pf-testid]")
+        ).map((e) => e.getAttribute("data-pf-testid") ?? ""),
+        topbar: doc.querySelectorAll(".pf-cc-topbar").length,
+        journey: doc.querySelectorAll(".pf-setup-journey").length,
+        html: doc.body?.innerHTML.slice(0, 600) ?? "",
+      };
+    })) as {
+      sameDocument: boolean;
+      connected: boolean;
+      testids: string[];
+      topbar: number;
+      journey: number;
+      html: string;
+    };
+  }
+
+  /** Wait for a testid'd control in the settings tab's own document. */
+  async function waitForTestId(testid: string): Promise<void> {
+    const selector = `[data-pf-testid='${testid}']`;
+    try {
+      await browser.waitUntil(
+        async () => (await settingsElement(selector, "exists")) === true,
+        {
+          timeout: 60000,
+          interval: 250,
+          timeoutMsg: selector,
+        }
+      );
+    } catch (error) {
+      throw new Error(
+        `missing testid ${testid}: ${JSON.stringify(
+          await settingsTestIds()
+        )} (${String(error)})`
+      );
+    }
+  }
+
+  /** Type into a settings-tab input and fire the event the product listens to. */
+  async function setInputByTestId(testid: string, value: string): Promise<void> {
+    await settingsElement(`[data-pf-testid='${testid}']`, "set-input", value);
+  }
+
+  /** Click a settings-tab control through the product's own listener. */
+  async function clickSettingsTestId(testid: string): Promise<void> {
+    await settingsElement(`[data-pf-testid='${testid}']`, "click");
+  }
+
+  /** The Python-side `doctor` checks through the real client. */
+  async function doctorChecks(): Promise<
+    Array<{ category: string; status: string; message: string }>
+  > {
+    return await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"];
+      if (!plugin || typeof plugin.getClient !== "function") {
+        throw new Error("paperforge plugin not loaded");
+      }
+      const report = (await plugin.getClient().doctor()) as {
+        checks?: { category?: unknown; status?: unknown; message?: unknown }[];
+      };
+      return (report.checks ?? []).map((check) => ({
+        category: String(check.category ?? ""),
+        status: String(check.status ?? ""),
+        message: String(check.message ?? ""),
+      }));
+    });
+  }
+
+  /** True when the backend credential authority reports a stored key. */
+  async function credentialAvailable(
+    service: "ocr" | "embedding"
+  ): Promise<boolean> {
+    return await browser.executeObsidian(async ({ app }, kind: string) => {
+      const plugin = app.plugins.plugins["paperforge"];
+      if (!plugin || typeof plugin.getClient !== "function") {
+        throw new Error("paperforge plugin not loaded");
+      }
+      return await plugin
+        .getClient()
+        .credentialAvailable(kind as "ocr" | "embedding");
+    }, service);
+  }
+
+  /**
+   * A legacy (pre-#142) config: no `schema_version`, path keys at the top
+   * level, `agent_key`, the derived `paperforge_path`/`zotero_link` mirrors,
+   * and one unknown key the migration must not delete.
+   */
+  const LEGACY_CONFIG_DOC = {
+    system_dir: "System",
+    resources_dir: "LegacyResources",
+    base_dir: "LegacyBases",
+    agent_key: "claude",
+    paperforge_path: "/legacy/paperforge",
+    zotero_link: "/legacy/zotero",
+    ocr_profile: "legacy_profile",
+    custom_legacy_note: "keep-me",
+  };
+
+  /** Seed the legacy file and restart so the plugin loads against it. */
+  async function seedLegacyConfigAndRestart(base: string): Promise<void> {
+    writeSandboxFile(
+      base,
+      "paperforge.json",
+      JSON.stringify(LEGACY_CONFIG_DOC, null, 2)
+    );
+    await browser.reloadObsidian();
+    await browser.waitUntil(
+      async () =>
+        await browser.executeObsidian(async ({ app }) => {
+          const plugin = app.plugins.plugins["paperforge"];
+          if (!plugin) return false;
+          return (
+            "_needsConfigMigration" in plugin &&
+            plugin._needsConfigMigration === true
+          );
+        }),
+      {
+        timeout: 60000,
+        timeoutMsg:
+          "the plugin never flagged the legacy config as migration_required",
+      }
+    );
+  }
+
+  /** Visible Obsidian notice texts (the plugin's own failure surface). */
+  async function noticeTexts(): Promise<string[]> {
+    return (await browser.execute(() =>
+      Array.from(document.querySelectorAll(".notice")).map((n) =>
+        (n.textContent ?? "").trim()
+      )
+    )) as string[];
+  }
+
+  /**
+   * Every observable the migration journey leaves behind: the canonical
+   * file's bytes, the plugin's own flags, the notices it raised, and a fresh
+   * dry-run (whose rejection, if any, carries Python's structured error).
+   * Attached to a timeout so the failure names the real cause.
+   */
+  async function migrationDiagnostics(
+    base: string
+  ): Promise<Record<string, unknown>> {
+    return {
+      config_file: sandboxConfigFile(base),
+      config_head: existsSync(sandboxConfigFile(base))
+        ? readFileSync(sandboxConfigFile(base), "utf8").slice(0, 900)
+        : "<absent>",
+      notices: await noticeTexts(),
+      plugin: await browser.executeObsidian(async ({ app }) => {
+        const plugin = app.plugins.plugins["paperforge"] as unknown as {
+          _needsConfigMigration?: boolean;
+          _migration_warnings?: unknown;
+          getClient(): { configMigrate(dryRun: boolean): Promise<unknown> };
+        };
+        let dry: unknown = null;
+        let dryError: string | null = null;
+        try {
+          dry = await plugin.getClient().configMigrate(true);
+        } catch (error) {
+          dryError = String((error as Error)?.message ?? error);
+        }
+        return {
+          _needsConfigMigration: plugin._needsConfigMigration ?? null,
+          _migration_warnings: plugin._migration_warnings ?? null,
+          dry_run: dry,
+          dry_run_error: dryError,
+        };
+      }),
+    };
+  }
+
+  /** Wait for the canonical file to carry the migrated values. */
+  async function waitForMigratedConfig(base: string): Promise<void> {
+    try {
+      await browser.waitUntil(
+        async () =>
+          Number(sandboxConfigField(base, "schema_version")) === 2 &&
+          sandboxConfigField(base, "vault_config.resources_dir") ===
+            "LegacyResources",
+        {
+          timeout: 60000,
+          interval: 1000,
+          timeoutMsg: "the migrate command never wrote the canonical config file",
+        }
+      );
+    } catch (error) {
+      throw new Error(
+        `${String((error as Error)?.message ?? error)} — ${JSON.stringify(
+          await migrationDiagnostics(base)
+        )}`
+      );
+    }
+  }
+
+  /** Run the plugin's own migrate command end to end (dry-run modal → confirm). */
+  async function migrateLegacyConfigViaUi(): Promise<{
+    summaryText: string;
+    noticesAfterConfirm: string[];
+  }> {
+    await browser.executeObsidianCommand("paperforge:paperforge-migrate-config");
+    const summary = await browser.$(".pf-migration-summary");
+    await summary.waitForExist({ timeout: 60000 });
+    const summaryText = (await summary.getText()).trim();
+    await clickTestId("migrate-config-confirm");
+    // The migration is async; the notices it raises are gone after ~8s, so
+    // sample them while the confirmation's own callback is still settling.
+    await browser.pause(1500);
+    return { summaryText, noticesAfterConfirm: await noticeTexts() };
+  }
+
+  it("A03 config edit: a path set in Settings reaches paperforge.json, doctor reads it back, and a restart keeps it", async function () {
+    // Case A03 改配置, happy path: the Settings UI writes the canonical file
+    // Python owns, a Python-side read reflects the new value, and the
+    // Obsidian restart does not lose either.
+    const before = await sandboxBasePath();
+    const target = "ResourcesA03";
+    mkdirSync(path.join(before, target), { recursive: true });
+
+    await openSettingsTabOn({ stage: 2 });
+    await waitForTestId("setup-path-resources_dir");
+    await setInputByTestId("setup-path-resources_dir", target);
+    await clickSettingsTestId("setup-library-save");
+
+    await browser.waitUntil(
+      async () =>
+        sandboxConfigField(before, "vault_config.resources_dir") === target,
+      {
+        timeout: 60000,
+        interval: 1000,
+        timeoutMsg:
+          "the Settings UI never persisted resources_dir to paperforge.json",
+      }
+    );
+    // The Save button continues into `paperforge setup`; that follow-on run is
+    // not this case's subject, so cancel it and keep the rest deterministic.
+    await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"];
+      if (!plugin || typeof plugin.getClient !== "function") return;
+      plugin.getClient().cancelActiveOperation();
+    });
+
+    const checksAfterSave = await doctorChecks();
+    const doctorSeesNewValue = checksAfterSave.some(
+      (check) =>
+        check.message.includes("resources_dir") &&
+        check.message.includes(target)
+    );
+    expect(doctorSeesNewValue).toBe(true);
+
+    // Durable on disk is not yet durable across a host restart.
+    await browser.reloadObsidian();
+    const after = await sandboxBasePath();
+    expect(path.resolve(after)).toBe(path.resolve(before));
+    expect(sandboxConfigField(after, "vault_config.resources_dir")).toBe(target);
+    const checksAfterRestart = await doctorChecks();
+    expect(
+      checksAfterRestart.some(
+        (check) =>
+          check.message.includes("resources_dir") &&
+          check.message.includes(target)
+      )
+    ).toBe(true);
+
+    // The UI mirrors the canonical value after the restart (loadSettings
+    // hydrates from `config list`), so the field shows what Python reads.
+    await openSettingsTabOn({ stage: 2 });
+    await waitForTestId("setup-path-resources_dir");
+    const uiValue = await settingsElement(
+      "[data-pf-testid='setup-path-resources_dir']",
+      "value"
+    );
+    expect(uiValue).toBe(target);
+
+    appendEvidence("a03-config-edit.json", {
+      case_id: "A03",
+      variant: "Settings UI path edit -> canonical config -> doctor -> restart",
+      required_layer: "H",
+      status: "VERIFIED",
+      source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: PLUGIN_DIR,
+      })
+        .toString()
+        .trim(),
+      worktree_dirty: worktreeDirty(),
+      config_file: sandboxConfigFile(before),
+      field: "vault_config.resources_dir",
+      value_before: "Resources",
+      value_after: target,
+      doctor_message_after_save: checksAfterSave
+        .filter((check) => check.message.includes("resources_dir"))
+        .map((check) => check.message),
+      doctor_message_after_restart: checksAfterRestart
+        .filter((check) => check.message.includes("resources_dir"))
+        .map((check) => check.message),
+      ui_field_value_after_restart: uiValue,
+      observed_at: new Date().toISOString(),
+    });
+  });
+
+  it("A03 config edit: an invalid vault-relative path is rejected visibly and leaves the file byte-identical", async function () {
+    // Case A03 改配置, rejection branch. An absolute path violates the
+    // vault-relative rule; the write must fail loudly and leave the canonical
+    // file exactly as it was (no truncation, no partial document).
+    const base = await sandboxBasePath();
+    const bytesBefore = sha256(sandboxConfigFile(base));
+
+    await openSettingsTabOn({ stage: 2 });
+    await waitForTestId("setup-path-system_dir");
+    await setInputByTestId("setup-path-system_dir", "/absolute/not-in-vault");
+    await clickSettingsTestId("setup-library-save");
+
+    await browser.waitUntil(
+      async () =>
+        String(
+          await settingsElement(".pf-setup-failure-detail", "text")
+        ).length > 0,
+      {
+        timeout: 60000,
+        timeoutMsg:
+          "the rejected value produced no visible failure message in the Settings UI",
+      }
+    );
+    const feedback = {
+      detail: String(await settingsElement(".pf-setup-failure-detail", "text")),
+      status: String(await settingsElement(".pf-setup-warn", "text")),
+    };
+    // The rejection names the offending field. It surfaces the authority's
+    // error CODE, not the human reason: the client's PFResult unwrapping
+    // drops `error.details.reason` (recorded in a03a05-findings.md).
+    expect(feedback.detail).toContain("system_dir");
+    expect(feedback.detail).toContain("config.invalid");
+
+    // Rejected means nothing was written.
+    expect(sha256(sandboxConfigFile(base))).toBe(bytesBefore);
+    expect(sandboxConfigField(base, "vault_config.system_dir")).toBe("System");
+
+    appendEvidence("a03-config-reject.json", {
+      case_id: "A03",
+      variant: "invalid vault-relative path -> visible rejection, config intact",
+      required_layer: "H",
+      status: "VERIFIED",
+      source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: PLUGIN_DIR,
+      })
+        .toString()
+        .trim(),
+      worktree_dirty: worktreeDirty(),
+      config_file: sandboxConfigFile(base),
+      rejected_value: "/absolute/not-in-vault",
+      ui_detail: feedback.detail,
+      ui_status: feedback.status,
+      config_sha256_before: bytesBefore,
+      config_sha256_after: sha256(sandboxConfigFile(base)),
+      stored_system_dir: sandboxConfigField(base, "vault_config.system_dir"),
+      observed_at: new Date().toISOString(),
+    });
+  });
+
+  it("A04 legacy migration: the plugin migrates a legacy config without losing values and shows them", async function () {
+    // Case A04 旧配置迁移: the migration must move legacy path keys under
+    // `vault_config`, map `agent_key` → `agent_platform`, drop only the
+    // derived mirrors, and preserve everything else — including keys it does
+    // not know.
+    const base = await sandboxBasePath();
+    await seedLegacyConfigAndRestart(base);
+
+    const migration = await migrateLegacyConfigViaUi();
+    const summaryText = migration.summaryText;
+    expect(summaryText.length).toBeGreaterThan(0);
+
+    await waitForMigratedConfig(base);
+
+    // Migrated values.
+    expect(sandboxConfigField(base, "vault_config.system_dir")).toBe("System");
+    expect(sandboxConfigField(base, "vault_config.base_dir")).toBe("LegacyBases");
+    expect(sandboxConfigField(base, "agent_platform")).toBe("claude");
+    expect(sandboxConfigField(base, "ocr_profile")).toBe("legacy_profile");
+    // No data loss: a key the migration does not know survives verbatim.
+    expect(sandboxConfigField(base, "custom_legacy_note")).toBe("keep-me");
+    // The legacy shapes themselves are gone from the canonical document.
+    for (const gone of [
+      "system_dir",
+      "resources_dir",
+      "base_dir",
+      "agent_key",
+      "paperforge_path",
+      "zotero_link",
+    ]) {
+      expect(sandboxConfigField(base, gone)).toBeUndefined();
+    }
+    expect(
+      await browser.executeObsidian(async ({ app }) => {
+        const plugin = app.plugins.plugins["paperforge"];
+        if (!plugin) return false;
+        return (
+          "_needsConfigMigration" in plugin &&
+          plugin._needsConfigMigration === false
+        );
+      })
+    ).toBe(true);
+
+    // The UI shows the migrated values (mirrors re-hydrated from `config list`).
+    await openSettingsTabOn({ stage: 2 });
+    await waitForTestId("setup-path-resources_dir");
+    const uiResources = await settingsElement(
+      "[data-pf-testid='setup-path-resources_dir']",
+      "value"
+    );
+    const uiBase = await settingsElement(
+      "[data-pf-testid='setup-path-base_dir']",
+      "value"
+    );
+    expect(uiResources).toBe("LegacyResources");
+    expect(uiBase).toBe("LegacyBases");
+
+    appendEvidence("a04-legacy-migration.json", {
+      case_id: "A04",
+      variant: "legacy (no schema_version, top-level path keys) -> plugin migrate -> UI",
+      required_layer: "H",
+      status: "VERIFIED",
+      source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: PLUGIN_DIR,
+      })
+        .toString()
+        .trim(),
+      worktree_dirty: worktreeDirty(),
+      config_file: sandboxConfigFile(base),
+      legacy_document: LEGACY_CONFIG_DOC,
+      migration_summary: summaryText,
+      migrated: {
+        schema_version: sandboxConfigField(base, "schema_version"),
+        system_dir: sandboxConfigField(base, "vault_config.system_dir"),
+        resources_dir: sandboxConfigField(base, "vault_config.resources_dir"),
+        base_dir: sandboxConfigField(base, "vault_config.base_dir"),
+        agent_platform: sandboxConfigField(base, "agent_platform"),
+        ocr_profile: sandboxConfigField(base, "ocr_profile"),
+        custom_legacy_note: sandboxConfigField(base, "custom_legacy_note"),
+      },
+      ui_field_values: { resources_dir: uiResources, base_dir: uiBase },
+      observed_at: new Date().toISOString(),
+    });
+  });
+
+  it("A04 legacy migration: a second launch is idempotent (byte-identical config)", async function () {
+    // Case A04, idempotence: migration is a one-way normalization. Once the
+    // file is canonical, another launch must not rewrite it — a byte diff
+    // would mean the loader mutates state it does not own.
+    const base = await sandboxBasePath();
+    await seedLegacyConfigAndRestart(base);
+    await migrateLegacyConfigViaUi();
+    await waitForMigratedConfig(base);
+    const migrated = readFileSync(sandboxConfigFile(base));
+    const migratedSha = sha256(sandboxConfigFile(base));
+
+    await browser.reloadObsidian();
+    const after = await sandboxBasePath();
+    expect(path.resolve(after)).toBe(path.resolve(base));
+    expect(sha256(sandboxConfigFile(base))).toBe(migratedSha);
+    expect(readFileSync(sandboxConfigFile(base)).equals(migrated)).toBe(true);
+
+    // Second launch re-validates as canonical and flags no further migration.
+    const validation = (await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"];
+      if (!plugin || typeof plugin.getClient !== "function") {
+        throw new Error("paperforge plugin not loaded");
+      }
+      return await plugin.getClient().configValidate();
+    })) as { state?: string };
+    expect(validation.state).toBe("valid");
+    expect(
+      await browser.executeObsidian(async ({ app }) => {
+        const plugin = app.plugins.plugins["paperforge"];
+        if (!plugin) return false;
+        return (
+          "_needsConfigMigration" in plugin &&
+          plugin._needsConfigMigration === false
+        );
+      })
+    ).toBe(true);
+
+    appendEvidence("a04-migration-idempotent.json", {
+      case_id: "A04",
+      variant: "second launch after migration -> byte-identical config",
+      required_layer: "H",
+      status: "VERIFIED",
+      source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: PLUGIN_DIR,
+      })
+        .toString()
+        .trim(),
+      worktree_dirty: worktreeDirty(),
+      config_file: sandboxConfigFile(base),
+      config_sha256_after_migration: migratedSha,
+      config_sha256_after_second_launch: sha256(sandboxConfigFile(base)),
+      config_validate_state_second_launch: validation.state,
+      observed_at: new Date().toISOString(),
+    });
+  });
+
+  it("A05 credential storage: a key saved in Settings reaches the keyring — never config/vault — and clearing it disables the gated action", async function () {
+    // Case A05 API key 存取. The credential authority is the only place a
+    // secret may land: `auth set` writes the keyring, the canonical config
+    // and every vault file stay clean, the field stays masked, and once the
+    // key is cleared the credential-gated module reports unavailable again.
+    const base = await sandboxBasePath();
+    const secret = `pf-a05-${createHash("sha256")
+      .update(`${Date.now()}`)
+      .digest("hex")
+      .slice(0, 20)}`;
+    const dataJson = path.join(
+      base,
+      ".obsidian",
+      "plugins",
+      "paperforge",
+      "data.json"
+    );
+    // The disposable backend (wdio.conf.mts) starts empty so "unavailable →
+    // available → unavailable" is observable, not inherited.
+    removeFileQuiet(E2E_KEYRING_FILE);
+    await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"];
+      if (!plugin || typeof plugin.getClient !== "function") return;
+      plugin.getClient().invalidateCache();
+    });
+    expect(await credentialAvailable("embedding")).toBe(false);
+
+    await openSettingsTabOn({ module: "memory" });
+    await waitForTestId("sr-api-key-input");
+    const apiKeyRow = async (): Promise<string> =>
+      String(
+        await settingsElement(".pf-sr-info-value", "text", undefined, 2)
+      );
+    const notConfiguredText = await apiKeyRow();
+    expect(notConfiguredText.length).toBeGreaterThan(0);
+
+    try {
+      await setInputByTestId("sr-api-key-input", secret);
+      await browser.waitUntil(async () => keyringText(E2E_KEYRING_FILE).includes(secret), {
+        timeout: 60000,
+        interval: 500,
+        timeoutMsg:
+          "the key saved in the Settings UI never reached the e2e keyring backend",
+      });
+
+      // The keyring entry is the product's own key naming (#173/C1).
+      const keyring = JSON.parse(keyringText(E2E_KEYRING_FILE)) as Record<
+        string,
+        string
+      >;
+      const entry = Object.entries(keyring).find(
+        ([, value]) => value === secret
+      );
+      expect(entry?.[0]).toBe("paperforge:embedding:default");
+
+      // Nowhere else: the canonical config, the plugin's data.json, or any
+      // file in the vault.
+      expect(readFileSync(sandboxConfigFile(base), "utf8")).not.toContain(
+        secret
+      );
+      expect(readFileSync(dataJson, "utf8")).not.toContain(secret);
+      const vaultHits = filesContaining(base, secret).map((file) =>
+        path.relative(base, file)
+      );
+      expect(vaultHits).toEqual([]);
+
+      // Masked in the UI, and reported as configured.
+      const keyField = await settingsElement(
+        "[data-pf-testid='sr-api-key-input']",
+        "input-props"
+      );
+      expect(keyField.type).toBe("password");
+      expect(keyField.value).toBe("");
+      // The info row follows the backend probe; give the re-probe a bounded
+      // window to land rather than reading the pre-save render.
+      await browser
+        .waitUntil(async () => (await apiKeyRow()) !== notConfiguredText, {
+          timeout: 20000,
+          interval: 500,
+        })
+        .catch(() => undefined);
+      expect(String(notConfiguredText)).not.toBe(await apiKeyRow());
+      expect(await credentialAvailable("embedding")).toBe(true);
+
+      // Clear through the credential authority. There is no UI affordance for
+      // deleting a stored key yet (recorded in a03a05-findings.md), so the
+      // clear step runs the product's own `auth delete`.
+      const deleted = runAuthDelete(base, "embedding");
+      expect(deleted.code).toBe(0);
+      expect(keyringText(E2E_KEYRING_FILE)).not.toContain(secret);
+
+      // A restart drops the client's credential cache so the world after the
+      // delete is observed, not remembered.
+      await browser.reloadObsidian();
+      expect(await credentialAvailable("embedding")).toBe(false);
+      const memoryProbe = (await browser.executeObsidian(async ({ app }) => {
+        const plugin = app.plugins.plugins["paperforge"];
+        if (!plugin || typeof plugin.getClient !== "function") {
+          throw new Error("paperforge plugin not loaded");
+        }
+        const env = (await plugin.getClient().probe("memory")) as {
+          details?: Record<string, unknown>;
+          capability_state?: string;
+          user_state?: string;
+          reason?: unknown;
+        };
+        return {
+          api_key_configured: env.details?.api_key_configured ?? null,
+          capability_state: env.capability_state ?? null,
+          user_state: env.user_state ?? null,
+          reason: env.reason ?? null,
+        };
+      })) as {
+        api_key_configured: unknown;
+        capability_state: unknown;
+        user_state: unknown;
+        reason: unknown;
+      };
+      expect(memoryProbe.api_key_configured).toBe(false);
+
+      // The panel reports "not configured" again, in the same words as before.
+      await openSettingsTabOn({ module: "memory" });
+      await waitForTestId("sr-api-key-input");
+      await browser
+        .waitUntil(async () => (await apiKeyRow()) === notConfiguredText, {
+          timeout: 20000,
+          interval: 500,
+        })
+        .catch(() => undefined);
+      expect(await apiKeyRow()).toBe(notConfiguredText);
+
+      appendEvidence("a05-credential-storage.json", {
+        case_id: "A05",
+        variant:
+          "Settings UI key save -> keyring only -> masked -> clear -> unavailable",
+        required_layer: "H",
+        status: "VERIFIED",
+        source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+          cwd: PLUGIN_DIR,
+        })
+          .toString()
+          .trim(),
+        worktree_dirty: worktreeDirty(),
+        sandbox_base: base,
+        keyring_file: E2E_KEYRING_FILE,
+        keyring_entry_name: entry?.[0] ?? null,
+        keyring_contains_secret_after_save: true,
+        config_contains_secret: false,
+        data_json_contains_secret: false,
+        vault_files_containing_secret: vaultHits,
+        key_field: keyField,
+        api_key_row_before: notConfiguredText,
+        credential_available_after_save: true,
+        credential_available_after_delete: false,
+        memory_probe_after_delete: memoryProbe,
+        auth_delete: deleted,
+        observed_at: new Date().toISOString(),
+      });
+    } finally {
+      // Never leave a secret in the shared keyring backend: later cases assert
+      // a pristine sandbox.
+      try {
+        runAuthDelete(base, "embedding");
+      } catch {
+        // Best effort: the assertion above already recorded the real outcome.
+      }
+      removeFileQuiet(E2E_KEYRING_FILE);
+    }
   });
 });

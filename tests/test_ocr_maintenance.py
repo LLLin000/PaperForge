@@ -841,3 +841,29 @@ def test_maintenance_row_reports_unknown_when_machine_hash_missing(tmp_path: Pat
         fulltext_drift_reason="No machine baseline is available.",
     )
     assert row.to_dict()["fulltext_drift_state"] == "UNKNOWN"
+
+
+class TestCollectMaintenanceRowsFulltextPath:
+    """B08: the OCR workspace Preview opens exactly the row's fulltext_path."""
+
+    def test_existing_fulltext_is_vault_relative_posix(self, tmp_path: Path) -> None:
+        from paperforge.worker.ocr_maintenance import collect_maintenance_rows
+
+        _create_paper(tmp_path, "FTPATH01")
+        fulltext = _ocr_path(tmp_path) / "FTPATH01" / "fulltext.md"
+        fulltext.write_text("# body\n", encoding="utf-8")
+        row = collect_maintenance_rows(tmp_path)[0]
+        expected = fulltext.resolve().relative_to(tmp_path.resolve()).as_posix()
+        assert row.fulltext_path == expected
+        assert row.to_dict()["fulltext_path"] == expected
+
+    def test_missing_fulltext_is_empty(self, tmp_path: Path) -> None:
+        from paperforge.worker.ocr_maintenance import collect_maintenance_rows
+
+        _create_paper(tmp_path, "FTPATH02")
+        fulltext = _ocr_path(tmp_path) / "FTPATH02" / "fulltext.md"
+        if fulltext.exists():
+            fulltext.unlink()
+        row = collect_maintenance_rows(tmp_path)[0]
+        assert row.fulltext_path == ""
+        assert row.to_dict()["fulltext_path"] == ""

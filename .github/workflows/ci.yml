@@ -507,6 +507,9 @@ jobs:
               "PF_E2E_WHEEL_SHA256="
               + hashlib.sha256(open(sys.argv[1], "rb").read()).hexdigest()
           )
+          # The plugin's pinned `paperforge[vector]==2.0.0rc5.post1` exists
+          # only in dist/; without this pip finds no candidate at all.
+          print("PIP_FIND_LINKS=" + os.path.abspath("dist"))
           PY
       - name: Run real Obsidian lifecycle (first-use journey gate)
         run: npm run test:e2e
