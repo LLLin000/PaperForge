@@ -1,6 +1,6 @@
 {
   "page_count": 3,
-  "blocks_count": 21,
+  "blocks_count": 27,
   "section_heading_count": 6,
   "abstract_found": true,
   "abstract_span_status": "ACCEPT",
@@ -13,17 +13,17 @@
   "single_asset_figure_match_count": 0,
   "held_figure_count": 0,
   "table_caption_count": 2,
-  "table_asset_count": 0,
+  "table_asset_count": 2,
   "held_table_count": 0,
   "formal_table_count": 2,
-  "table_segment_count": 0,
+  "table_segment_count": 2,
   "ambiguous_table_match_count": 0,
   "low_confidence_table_match_count": 0,
   "low_confidence_insert_candidate_count": 0,
   "candidate_forced_count": 0,
-  "media_without_caption_count": 0,
-  "caption_without_media_count": 5,
-  "empty_table_count": 2,
+  "media_without_caption_count": 2,
+  "caption_without_media_count": 3,
+  "empty_table_count": 0,
   "frontmatter_quality": 0.5,
   "overall": "yellow",
   "needs_rebuild": false,
@@ -35,7 +35,7 @@
     "coverage_ratio": 0.0,
     "coverage_quality": "weak",
     "blocks_with_span": 0,
-    "blocks_without_span": 21,
+    "blocks_without_span": 27,
     "degraded_mode_active": true
   },
   "span_coverage_quality": "weak",
@@ -86,9 +86,9 @@
   "heading_total_v2": 6,
   "matched_figure_count_v2": 0,
   "issue_breakdown_v2": {
-    "caption_without_media": 5,
-    "media_without_caption": 0,
-    "empty_tables": 2,
+    "caption_without_media": 3,
+    "media_without_caption": 2,
+    "empty_tables": 0,
     "abstract_found": true,
     "references_found": false,
     "heading_total": 6,
@@ -99,7 +99,7 @@
   "figure_reader_coverage_gap_count": 0,
   "figure_reader_coverage_ratio": 1.0,
   "figure_reader_count": 3,
-  "role_mutation_count": 23,
+  "role_mutation_count": 29,
   "role_rescue_count": 0,
   "structured_insert_decision_count": 0,
   "tail_promotion_count": 0,
@@ -121,9 +121,9 @@
     "low": 0
   },
   "table_match_confidence_distribution": {
-    "high": 0,
+    "high": 2,
     "medium": 0,
-    "low": 2
+    "low": 0
   },
   "layout_confidence_distribution": {
     "high": 0,
@@ -132,17 +132,16 @@
   },
   "hard_degraded_reasons": [],
   "warning_reasons": [
-    "weak span coverage (0%)",
-    "low table match confidence (2 tables)"
+    "weak span coverage (0%)"
   ],
   "degraded_reasons": [],
   "structure_status": "yellow",
   "figure_status": "red",
-  "table_status": "red",
+  "table_status": "green",
   "dimension_statuses": {
     "structure": "yellow",
     "figure": "red",
-    "table": "red"
+    "table": "green"
   },
   "status_reasons": [
     {
@@ -155,7 +154,7 @@
     },
     {
       "scope": "table",
-      "reason": "no_table_assets"
+      "reason": "table_assets_ok:2/2"
     }
   ],
   "ocr_raw_integrity": {

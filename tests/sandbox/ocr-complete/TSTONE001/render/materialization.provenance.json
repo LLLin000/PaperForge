@@ -2,38 +2,84 @@
   "schema_version": 1,
   "objects": [
     {
+      "object_id": "orphan_001",
+      "kind": "orphan",
+      "status": "failed",
+      "stage": "pdf_open",
+      "reason": "pdf_not_found",
+      "pdf_input": "missing",
+      "asset_path": "assets/orphans/orphan_001.jpg",
+      "render_path": "render/figures/orphan_001.md",
+      "attempts": [
+        {
+          "success": false,
+          "stage": "pdf_open",
+          "reason": "pdf_not_found"
+        }
+      ]
+    },
+    {
+      "object_id": "orphan_002",
+      "kind": "orphan",
+      "status": "failed",
+      "stage": "pdf_open",
+      "reason": "pdf_not_found",
+      "pdf_input": "missing",
+      "asset_path": "assets/orphans/orphan_002.jpg",
+      "render_path": "render/figures/orphan_002.md",
+      "attempts": [
+        {
+          "success": false,
+          "stage": "pdf_open",
+          "reason": "pdf_not_found"
+        }
+      ]
+    },
+    {
       "object_id": "table_001",
       "kind": "table",
       "status": "failed",
-      "stage": "input",
-      "reason": "source_asset_unavailable",
+      "stage": "pdf_open",
+      "reason": "pdf_not_found",
       "pdf_input": "missing",
       "asset_path": "assets/tables/table_001.jpg",
       "render_path": "render/tables/table_001.md",
-      "attempts": []
+      "attempts": [
+        {
+          "success": false,
+          "stage": "pdf_open",
+          "reason": "pdf_not_found"
+        }
+      ]
     },
     {
       "object_id": "table_002",
       "kind": "table",
       "status": "failed",
-      "stage": "input",
-      "reason": "source_asset_unavailable",
+      "stage": "pdf_open",
+      "reason": "pdf_not_found",
       "pdf_input": "missing",
       "asset_path": "assets/tables/table_002.jpg",
       "render_path": "render/tables/table_002.md",
-      "attempts": []
+      "attempts": [
+        {
+          "success": false,
+          "stage": "pdf_open",
+          "reason": "pdf_not_found"
+        }
+      ]
     }
   ],
   "summary": {
-    "objects": 2,
+    "objects": 4,
     "status": {
-      "failed": 2
+      "failed": 4
     },
     "stage": {
-      "input": 2
+      "pdf_open": 4
     },
     "reason": {
-      "source_asset_unavailable": 2
+      "pdf_not_found": 4
     }
   }
 }

@@ -9,7 +9,7 @@
       "emitted_order": 0
     },
     {
-      "line_number": 20,
+      "line_number": 18,
       "markdown_level": 2,
       "title": "Biomechanical Testing",
       "page": 2,
@@ -17,7 +17,7 @@
       "emitted_order": 2
     },
     {
-      "line_number": 22,
+      "line_number": 20,
       "markdown_level": 2,
       "title": "Results Load to Failure",
       "page": 2,
@@ -33,7 +33,7 @@
       "emitted_order": 4
     },
     {
-      "line_number": 36,
+      "line_number": 34,
       "markdown_level": 2,
       "title": "Discussion",
       "page": 3,
@@ -41,7 +41,7 @@
       "emitted_order": 5
     },
     {
-      "line_number": 40,
+      "line_number": 38,
       "markdown_level": 2,
       "title": "Conclusion",
       "page": 3,
@@ -70,8 +70,8 @@
     },
     {
       "emitted_order": 2,
-      "line_start": 19,
-      "line_end": 21,
+      "line_start": 17,
+      "line_end": 19,
       "page": 2,
       "block_id": 3,
       "role": "subsection_heading",
@@ -79,8 +79,8 @@
     },
     {
       "emitted_order": 3,
-      "line_start": 21,
-      "line_end": 23,
+      "line_start": 19,
+      "line_end": 21,
       "page": 2,
       "block_id": 5,
       "role": "subsection_heading",
@@ -97,8 +97,8 @@
     },
     {
       "emitted_order": 5,
-      "line_start": 35,
-      "line_end": 37,
+      "line_start": 33,
+      "line_end": 35,
       "page": 3,
       "block_id": 3,
       "role": "section_heading",
@@ -106,8 +106,8 @@
     },
     {
       "emitted_order": 6,
-      "line_start": 37,
-      "line_end": 39,
+      "line_start": 35,
+      "line_end": 37,
       "page": 3,
       "block_id": 4,
       "role": "body_paragraph",
@@ -115,8 +115,8 @@
     },
     {
       "emitted_order": 7,
-      "line_start": 39,
-      "line_end": 41,
+      "line_start": 37,
+      "line_end": 39,
       "page": 3,
       "block_id": 5,
       "role": "section_heading",
@@ -124,8 +124,8 @@
     },
     {
       "emitted_order": 8,
-      "line_start": 41,
-      "line_end": 43,
+      "line_start": 39,
+      "line_end": 41,
       "page": 3,
       "block_id": 6,
       "role": "body_paragraph",
