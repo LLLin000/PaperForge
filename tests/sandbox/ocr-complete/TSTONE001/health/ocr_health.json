@@ -1,0 +1,168 @@
+{
+  "page_count": 3,
+  "blocks_count": 21,
+  "section_heading_count": 6,
+  "abstract_found": true,
+  "abstract_span_status": "ACCEPT",
+  "abstract_span_mode": "body_start",
+  "abstract_island_count": 1,
+  "references_found": false,
+  "figure_caption_count": 3,
+  "figure_asset_count": 0,
+  "grouped_figure_match_count": 0,
+  "single_asset_figure_match_count": 0,
+  "held_figure_count": 0,
+  "table_caption_count": 2,
+  "table_asset_count": 0,
+  "held_table_count": 0,
+  "formal_table_count": 2,
+  "table_segment_count": 0,
+  "ambiguous_table_match_count": 0,
+  "low_confidence_table_match_count": 0,
+  "low_confidence_insert_candidate_count": 0,
+  "candidate_forced_count": 0,
+  "media_without_caption_count": 0,
+  "caption_without_media_count": 5,
+  "empty_table_count": 2,
+  "frontmatter_quality": 0.5,
+  "overall": "yellow",
+  "needs_rebuild": false,
+  "structural_blockers": 1,
+  "soft_issues": 2,
+  "health_profile": "standard",
+  "waived_gates": [],
+  "span_coverage": {
+    "coverage_ratio": 0.0,
+    "coverage_quality": "weak",
+    "blocks_with_span": 0,
+    "blocks_without_span": 21,
+    "degraded_mode_active": true
+  },
+  "span_coverage_quality": "weak",
+  "degraded_mode_active": true,
+  "body_spine_quality": "moderate",
+  "body_anchor_pages": [
+    2,
+    3
+  ],
+  "body_spine_sample_count": 2,
+  "layout_audit_status": "pass",
+  "layout_anomaly_pages": [],
+  "layout_anomaly_count": 0,
+  "tail_boundary_confidence": 0.0,
+  "low_score_but_matched_count": 0,
+  "ambiguous_match_count": 0,
+  "ambiguous_figure_match_count": 0,
+  "unresolved_cluster_count": 0,
+  "held_match_count": 0,
+  "low_tail_boundary_confidence": true,
+  "hard_rule_decision_count": 2,
+  "anchor_summary": {
+    "body_family_anchor": "HOLD",
+    "reference_family_anchor": "HOLD"
+  },
+  "zone_summary": {
+    "frontmatter_main_zone": "ACCEPT",
+    "frontmatter_side_zone": "HOLD",
+    "body_zone": "ACCEPT",
+    "reference_zone": "REJECT",
+    "display_zone": "ACCEPT",
+    "tail_nonref_hold_zone": "HOLD",
+    "post_reference_backmatter_zone": "HOLD",
+    "preproof_cover_zone": "HOLD"
+  },
+  "held_counts": {
+    "families": 0,
+    "matches": 0
+  },
+  "page_text_coverage": {},
+  "text_completeness_summary": {},
+  "rendered_text_gap_count": 0,
+  "rendered_text_gap_examples": [],
+  "figure_legend_completeness_total": 0,
+  "figure_legend_completeness_accounted": 0,
+  "figure_legend_completeness_gap_count": 0,
+  "figure_legend_completeness_ratio": 1.0,
+  "heading_total_v2": 6,
+  "matched_figure_count_v2": 0,
+  "issue_breakdown_v2": {
+    "caption_without_media": 5,
+    "media_without_caption": 0,
+    "empty_tables": 2,
+    "abstract_found": true,
+    "references_found": false,
+    "heading_total": 6,
+    "formal_legend_gaps": 0
+  },
+  "figure_reader_coverage_total": 3,
+  "figure_reader_coverage_accounted": 3,
+  "figure_reader_coverage_gap_count": 0,
+  "figure_reader_coverage_ratio": 1.0,
+  "figure_reader_count": 3,
+  "role_mutation_count": 23,
+  "role_rescue_count": 0,
+  "structured_insert_decision_count": 0,
+  "tail_promotion_count": 0,
+  "candidate_resolution_count": 2,
+  "role_gate_summary": {
+    "status": "healthy",
+    "corrected_structural_seed_count": 0,
+    "held_structural_seed_count": 0,
+    "final_unverified_structural_role_count": 0,
+    "seed_role_passthrough_count": 0,
+    "abstract_body_outside_span_count": 0,
+    "reference_item_outside_reference_zone_count": 0,
+    "rendered_unverified_structural_role_count": 0,
+    "downgraded_unverified_structural_role_count": 0
+  },
+  "figure_match_confidence_distribution": {
+    "high": 0,
+    "medium": 0,
+    "low": 0
+  },
+  "table_match_confidence_distribution": {
+    "high": 0,
+    "medium": 0,
+    "low": 2
+  },
+  "layout_confidence_distribution": {
+    "high": 0,
+    "medium": 2,
+    "low": 1
+  },
+  "hard_degraded_reasons": [],
+  "warning_reasons": [
+    "weak span coverage (0%)",
+    "low table match confidence (2 tables)"
+  ],
+  "degraded_reasons": [],
+  "structure_status": "yellow",
+  "figure_status": "red",
+  "table_status": "red",
+  "dimension_statuses": {
+    "structure": "yellow",
+    "figure": "red",
+    "table": "red"
+  },
+  "status_reasons": [
+    {
+      "scope": "structure",
+      "reason": "structural_blocker:1"
+    },
+    {
+      "scope": "figure",
+      "reason": "poor_figure_accounting:0/3"
+    },
+    {
+      "scope": "table",
+      "reason": "no_table_assets"
+    }
+  ],
+  "ocr_raw_integrity": {
+    "empty_text_candidate_count": 0,
+    "pdf_text_backfilled_count": 0,
+    "unrecovered_empty_text_count": 0,
+    "no_pdf_text_layer_count": 0,
+    "pdf_text_mismatch_count": 0
+  }
+}

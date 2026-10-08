@@ -1,0 +1,410 @@
+{
+  "render_consistency_schema_version": 1,
+  "audit_algorithm_version": 4,
+  "paper_key": "TSTONE001",
+  "state": "DEGRADED",
+  "evidence_mode": "mixed",
+  "input_snapshot": {
+    "blocks_hash": "9a23cf650ff12bb5f91f26b6bce36b172eae6e437054f300a1e350c43b874f20",
+    "figure_inventory_hash": "4c52da4502be35ac4b3cb66321c643b727c7fc4d0031698be47bd56d2f82c95d",
+    "table_inventory_hash": "10e6c4efe65c0357b9d8a1ed6890efd2bfe91411973de2f34b95fec081c6e7ba",
+    "render_hash": "e55373043a38b61cabec85092de23af359d36c9496dffbcb63f94341e497d218",
+    "asset_index_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "canonical_objects": {
+    "figures": [],
+    "tables": [
+      {
+        "canonical_object_id": null,
+        "namespace": "main",
+        "normalized_label": "1",
+        "caption": "",
+        "caption_page": 2,
+        "caption_confidence": null,
+        "asset_block_ids": [],
+        "asset_pages": [],
+        "settlement_type": null,
+        "kind": "table",
+        "position": {
+          "legend_page": null,
+          "object_page": 2,
+          "asset_pages": [],
+          "page_range": [
+            2
+          ],
+          "same_page": false,
+          "cross_page": false,
+          "ordering": "no_asset",
+          "relation": "no_asset",
+          "legend_block_id": null,
+          "asset_bboxes": []
+        }
+      },
+      {
+        "canonical_object_id": null,
+        "namespace": "main",
+        "normalized_label": "2",
+        "caption": "",
+        "caption_page": 3,
+        "caption_confidence": null,
+        "asset_block_ids": [],
+        "asset_pages": [],
+        "settlement_type": null,
+        "kind": "table",
+        "position": {
+          "legend_page": null,
+          "object_page": 3,
+          "asset_pages": [],
+          "page_range": [
+            3
+          ],
+          "same_page": false,
+          "cross_page": false,
+          "ordering": "no_asset",
+          "relation": "no_asset",
+          "legend_block_id": null,
+          "asset_bboxes": []
+        }
+      },
+      {
+        "canonical_object_id": null,
+        "namespace": "main",
+        "normalized_label": "1",
+        "caption": "Table 1: Patient demographics and baseline characteristics (n=45).",
+        "caption_page": 2,
+        "caption_confidence": 0.9,
+        "asset_block_ids": [],
+        "asset_pages": [],
+        "settlement_type": null,
+        "kind": "table",
+        "position": {
+          "legend_page": null,
+          "object_page": 2,
+          "asset_pages": [],
+          "page_range": [
+            2
+          ],
+          "same_page": false,
+          "cross_page": false,
+          "ordering": "no_asset",
+          "relation": "no_asset",
+          "legend_block_id": null,
+          "asset_bboxes": []
+        }
+      },
+      {
+        "canonical_object_id": null,
+        "namespace": "main",
+        "normalized_label": "2",
+        "caption": "Table 2: Biomechanical properties summary.",
+        "caption_page": 3,
+        "caption_confidence": 0.9,
+        "asset_block_ids": [],
+        "asset_pages": [],
+        "settlement_type": null,
+        "kind": "table",
+        "position": {
+          "legend_page": null,
+          "object_page": 3,
+          "asset_pages": [],
+          "page_range": [
+            3
+          ],
+          "same_page": false,
+          "cross_page": false,
+          "ordering": "no_asset",
+          "relation": "no_asset",
+          "legend_block_id": null,
+          "asset_bboxes": []
+        }
+      }
+    ]
+  },
+  "render_artifacts": {
+    "figures": [],
+    "tables": [
+      {
+        "file": "table_001.md",
+        "path": "C:\\Users\\Lin\\AppData\\Local\\Temp\\pf-fixture-8yyajtn_\\vault\\System\\PaperForge\\ocr\\TSTONE001\\render\\tables\\table_001.md",
+        "header_label": "1",
+        "legend_label": null,
+        "legend_source": null,
+        "legend_confidence": 0.0,
+        "page": 2,
+        "image_ref": "../../assets/tables/table_001.jpg",
+        "image_exists": false,
+        "image_hash": null,
+        "text_hash": "5a704c5d58aa4cf2535445382a596a5a91c5f44899eff51be61b1afbac79db4e"
+      },
+      {
+        "file": "table_002.md",
+        "path": "C:\\Users\\Lin\\AppData\\Local\\Temp\\pf-fixture-8yyajtn_\\vault\\System\\PaperForge\\ocr\\TSTONE001\\render\\tables\\table_002.md",
+        "header_label": "2",
+        "legend_label": null,
+        "legend_source": null,
+        "legend_confidence": 0.0,
+        "page": 3,
+        "image_ref": "../../assets/tables/table_002.jpg",
+        "image_exists": false,
+        "image_hash": null,
+        "text_hash": "8aa4b123eba1eed92ff71b35e45a7e6297d0253eb70680fb1e36e82f8791a27b"
+      }
+    ]
+  },
+  "materialization_provenance": {
+    "path": "render/materialization.provenance.json",
+    "state": "available",
+    "schema_version": 1,
+    "summary": {
+      "objects": 2,
+      "status": {
+        "failed": 2
+      },
+      "stage": {
+        "input": 2
+      },
+      "reason": {
+        "source_asset_unavailable": 2
+      }
+    }
+  },
+  "summary": {
+    "figure_inventory_objects": 0,
+    "table_inventory_objects": 4,
+    "figure_render_artifacts": 0,
+    "table_render_artifacts": 2,
+    "issues_found": 2,
+    "issues_repaired": 0,
+    "issues_remaining": 2
+  },
+  "issues": [
+    {
+      "type": "render_dangling_asset_reference",
+      "severity": "P0",
+      "message": "render artifact references a missing image",
+      "domain": "render_layer",
+      "recommended_action": "rerender",
+      "evidence": {
+        "file": "table_001.md",
+        "page": 2,
+        "header_label": "1",
+        "legend_label": null,
+        "image_ref": "../../assets/tables/table_001.jpg",
+        "image_exists": false,
+        "canonical_candidates": [
+          {
+            "canonical_object_id": null,
+            "namespace": "main",
+            "normalized_label": "1",
+            "caption": "",
+            "caption_page": 2,
+            "caption_confidence": null,
+            "asset_block_ids": [],
+            "asset_pages": [],
+            "settlement_type": null,
+            "kind": "table",
+            "position": {
+              "legend_page": null,
+              "object_page": 2,
+              "asset_pages": [],
+              "page_range": [
+                2
+              ],
+              "same_page": false,
+              "cross_page": false,
+              "ordering": "no_asset",
+              "relation": "no_asset",
+              "legend_block_id": null,
+              "asset_bboxes": []
+            }
+          },
+          {
+            "canonical_object_id": null,
+            "namespace": "main",
+            "normalized_label": "1",
+            "caption": "Table 1: Patient demographics and baseline characteristics (n=45).",
+            "caption_page": 2,
+            "caption_confidence": 0.9,
+            "asset_block_ids": [],
+            "asset_pages": [],
+            "settlement_type": null,
+            "kind": "table",
+            "position": {
+              "legend_page": null,
+              "object_page": 2,
+              "asset_pages": [],
+              "page_range": [
+                2
+              ],
+              "same_page": false,
+              "cross_page": false,
+              "ordering": "no_asset",
+              "relation": "no_asset",
+              "legend_block_id": null,
+              "asset_bboxes": []
+            }
+          }
+        ],
+        "position": {
+          "render_page": 2,
+          "canonical": [
+            {
+              "canonical_object_id": null,
+              "legend_page": null,
+              "object_page": 2,
+              "asset_pages": [],
+              "page_range": [
+                2
+              ],
+              "same_page": false,
+              "cross_page": false,
+              "ordering": "no_asset",
+              "relation": "no_asset"
+            },
+            {
+              "canonical_object_id": null,
+              "legend_page": null,
+              "object_page": 2,
+              "asset_pages": [],
+              "page_range": [
+                2
+              ],
+              "same_page": false,
+              "cross_page": false,
+              "ordering": "no_asset",
+              "relation": "no_asset"
+            }
+          ]
+        },
+        "materialization": {
+          "object_id": "table_001",
+          "kind": "table",
+          "status": "failed",
+          "stage": "input",
+          "reason": "source_asset_unavailable",
+          "pdf_input": "missing",
+          "asset_path": "assets/tables/table_001.jpg",
+          "render_path": "render/tables/table_001.md",
+          "attempts": []
+        }
+      },
+      "diagnosis": "dangling_render_asset"
+    },
+    {
+      "type": "render_dangling_asset_reference",
+      "severity": "P0",
+      "message": "render artifact references a missing image",
+      "domain": "render_layer",
+      "recommended_action": "rerender",
+      "evidence": {
+        "file": "table_002.md",
+        "page": 3,
+        "header_label": "2",
+        "legend_label": null,
+        "image_ref": "../../assets/tables/table_002.jpg",
+        "image_exists": false,
+        "canonical_candidates": [
+          {
+            "canonical_object_id": null,
+            "namespace": "main",
+            "normalized_label": "2",
+            "caption": "",
+            "caption_page": 3,
+            "caption_confidence": null,
+            "asset_block_ids": [],
+            "asset_pages": [],
+            "settlement_type": null,
+            "kind": "table",
+            "position": {
+              "legend_page": null,
+              "object_page": 3,
+              "asset_pages": [],
+              "page_range": [
+                3
+              ],
+              "same_page": false,
+              "cross_page": false,
+              "ordering": "no_asset",
+              "relation": "no_asset",
+              "legend_block_id": null,
+              "asset_bboxes": []
+            }
+          },
+          {
+            "canonical_object_id": null,
+            "namespace": "main",
+            "normalized_label": "2",
+            "caption": "Table 2: Biomechanical properties summary.",
+            "caption_page": 3,
+            "caption_confidence": 0.9,
+            "asset_block_ids": [],
+            "asset_pages": [],
+            "settlement_type": null,
+            "kind": "table",
+            "position": {
+              "legend_page": null,
+              "object_page": 3,
+              "asset_pages": [],
+              "page_range": [
+                3
+              ],
+              "same_page": false,
+              "cross_page": false,
+              "ordering": "no_asset",
+              "relation": "no_asset",
+              "legend_block_id": null,
+              "asset_bboxes": []
+            }
+          }
+        ],
+        "position": {
+          "render_page": 3,
+          "canonical": [
+            {
+              "canonical_object_id": null,
+              "legend_page": null,
+              "object_page": 3,
+              "asset_pages": [],
+              "page_range": [
+                3
+              ],
+              "same_page": false,
+              "cross_page": false,
+              "ordering": "no_asset",
+              "relation": "no_asset"
+            },
+            {
+              "canonical_object_id": null,
+              "legend_page": null,
+              "object_page": 3,
+              "asset_pages": [],
+              "page_range": [
+                3
+              ],
+              "same_page": false,
+              "cross_page": false,
+              "ordering": "no_asset",
+              "relation": "no_asset"
+            }
+          ]
+        },
+        "materialization": {
+          "object_id": "table_002",
+          "kind": "table",
+          "status": "failed",
+          "stage": "input",
+          "reason": "source_asset_unavailable",
+          "pdf_input": "missing",
+          "asset_path": "assets/tables/table_002.jpg",
+          "render_path": "render/tables/table_002.md",
+          "attempts": []
+        }
+      },
+      "diagnosis": "dangling_render_asset"
+    }
+  ],
+  "audit_0": {
+    "state": "DEGRADED"
+  },
+  "audit_1": null
+}

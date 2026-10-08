@@ -1,0 +1,474 @@
+{
+  "pipeline_mode": "vnext",
+  "matched_figures": [],
+  "ambiguous_figures": [],
+  "unmatched_legends": [
+    {
+      "paper_id": "TSTONE001",
+      "page": 2,
+      "block_id": 4,
+      "raw_label": "text",
+      "raw_order": 4,
+      "bbox": [
+        100,
+        890,
+        1100,
+        1063
+      ],
+      "text": "Figure 2: Biomechanical testing setup. (A) Custom loading fixture. (B) Cyclic loading protocol.",
+      "page_width": 1224,
+      "page_height": 1584,
+      "role": "figure_caption_candidate",
+      "role_confidence": 0.9,
+      "evidence": [
+        "figure caption candidate (body narrative): Figure 2: Biomechanical testing setup. (A) Custom loading fi"
+      ],
+      "seed_role": "figure_caption_candidate",
+      "seed_confidence": 0.9,
+      "seed_evidence": [
+        "figure caption candidate (body narrative): Figure 2: Biomechanical testing setup. (A) Custom loading fi"
+      ],
+      "span_metadata": null,
+      "raw_observation": {
+        "block_id": 4,
+        "page": 2,
+        "raw_label": "text",
+        "text": "Figure 2: Biomechanical testing setup. (A) Custom loading fixture. (B) Cyclic loading protocol.",
+        "bbox": [
+          100,
+          890,
+          1100,
+          1063
+        ],
+        "page_width": 1224,
+        "page_height": 1584
+      },
+      "marker_signature": {
+        "type": "figure_number",
+        "raw_marker": "Figure 2",
+        "number": 2,
+        "kind": "figure",
+        "normalized_text": "Figure 2: Biomechanical testing setup. (A) Custom loading fixture. (B) Cyclic loading protocol."
+      },
+      "layout_signature": {
+        "width": 1000,
+        "width_bucket": 1000,
+        "height": 173,
+        "left": 100,
+        "top": 890,
+        "right": 1100,
+        "bottom": 1063,
+        "x_center": 600.0,
+        "x_center_bucket": 600,
+        "y_center": 976.5,
+        "x_ratio": 0.4902,
+        "y_ratio": 0.6165,
+        "width_ratio": 0.817,
+        "height_ratio": 0.1092,
+        "line_count": 1
+      },
+      "span_signature": {
+        "font_size": null,
+        "font_size_median": null,
+        "font_size_bucket": null,
+        "font_family_norm": null,
+        "bold": false,
+        "italic": false,
+        "span_count": 0
+      },
+      "_in_visual_container": null,
+      "_container_bbox": null,
+      "_container_text": null,
+      "_text_source": null,
+      "_ocr_raw_status": null,
+      "_ocr_raw_error_type": null,
+      "render_default": false,
+      "index_default": false,
+      "_decision_log": [
+        {
+          "block_id": 4,
+          "page": 2,
+          "bbox": [
+            100,
+            890,
+            1100,
+            1063
+          ],
+          "stage": "assign_block_role",
+          "old_role": "text",
+          "new_role": "figure_caption_candidate",
+          "reason": "seed role assigned from raw OCR label and local heuristics",
+          "confidence": 0.9,
+          "evidence": [
+            "figure caption candidate (body narrative): Figure 2: Biomechanical testing setup. (A) Custom loading fi"
+          ]
+        },
+        {
+          "block_id": 4,
+          "page": 2,
+          "bbox": [
+            100,
+            890,
+            1100,
+            1063
+          ],
+          "stage": "candidate_resolution",
+          "old_role": "figure_caption_candidate",
+          "new_role": "figure_caption",
+          "reason": "figure caption candidate resolved as figure caption",
+          "confidence": null,
+          "evidence": []
+        }
+      ]
+    },
+    {
+      "paper_id": "TSTONE001",
+      "page": 2,
+      "block_id": 7,
+      "raw_label": "text",
+      "raw_order": 7,
+      "bbox": [
+        100,
+        1484,
+        1100,
+        1564
+      ],
+      "text": "Figure 3: Load to failure comparison. Error bars represent standard deviation. *p < 0.05 vs single row.",
+      "page_width": 1224,
+      "page_height": 1584,
+      "role": "figure_caption_candidate",
+      "role_confidence": 0.9,
+      "evidence": [
+        "figure caption candidate (body narrative): Figure 3: Load to failure comparison. Error bars represent s"
+      ],
+      "seed_role": "figure_caption_candidate",
+      "seed_confidence": 0.9,
+      "seed_evidence": [
+        "figure caption candidate (body narrative): Figure 3: Load to failure comparison. Error bars represent s"
+      ],
+      "span_metadata": null,
+      "raw_observation": {
+        "block_id": 7,
+        "page": 2,
+        "raw_label": "text",
+        "text": "Figure 3: Load to failure comparison. Error bars represent standard deviation. *p < 0.05 vs single row.",
+        "bbox": [
+          100,
+          1484,
+          1100,
+          1564
+        ],
+        "page_width": 1224,
+        "page_height": 1584
+      },
+      "marker_signature": {
+        "type": "figure_number",
+        "raw_marker": "Figure 3",
+        "number": 3,
+        "kind": "figure",
+        "normalized_text": "Figure 3: Load to failure comparison. Error bars represent standard deviation. *p < 0.05 vs single row."
+      },
+      "layout_signature": {
+        "width": 1000,
+        "width_bucket": 1000,
+        "height": 80,
+        "left": 100,
+        "top": 1484,
+        "right": 1100,
+        "bottom": 1564,
+        "x_center": 600.0,
+        "x_center_bucket": 600,
+        "y_center": 1524.0,
+        "x_ratio": 0.4902,
+        "y_ratio": 0.9621,
+        "width_ratio": 0.817,
+        "height_ratio": 0.0505,
+        "line_count": 1
+      },
+      "span_signature": {
+        "font_size": null,
+        "font_size_median": null,
+        "font_size_bucket": null,
+        "font_family_norm": null,
+        "bold": false,
+        "italic": false,
+        "span_count": 0
+      },
+      "_in_visual_container": null,
+      "_container_bbox": null,
+      "_container_text": null,
+      "_text_source": null,
+      "_ocr_raw_status": null,
+      "_ocr_raw_error_type": null,
+      "render_default": false,
+      "index_default": false,
+      "_decision_log": [
+        {
+          "block_id": 7,
+          "page": 2,
+          "bbox": [
+            100,
+            1484,
+            1100,
+            1564
+          ],
+          "stage": "assign_block_role",
+          "old_role": "text",
+          "new_role": "figure_caption_candidate",
+          "reason": "seed role assigned from raw OCR label and local heuristics",
+          "confidence": 0.9,
+          "evidence": [
+            "figure caption candidate (body narrative): Figure 3: Load to failure comparison. Error bars represent s"
+          ]
+        },
+        {
+          "block_id": 7,
+          "page": 2,
+          "bbox": [
+            100,
+            1484,
+            1100,
+            1564
+          ],
+          "stage": "candidate_resolution",
+          "old_role": "figure_caption_candidate",
+          "new_role": "figure_caption",
+          "reason": "figure caption candidate resolved as figure caption",
+          "confidence": null,
+          "evidence": []
+        }
+      ]
+    },
+    {
+      "paper_id": "TSTONE001",
+      "page": 3,
+      "block_id": 1,
+      "raw_label": "text",
+      "raw_order": 1,
+      "bbox": [
+        100,
+        330,
+        1100,
+        527
+      ],
+      "text": "Figure 4: Stiffness comparison between repair techniques.",
+      "page_width": 1224,
+      "page_height": 1584,
+      "role": "figure_caption",
+      "role_confidence": 0.9,
+      "evidence": [
+        "figure prefix matched: Figure 4: Stiffness comparison between repair techniques."
+      ],
+      "seed_role": "figure_caption",
+      "seed_confidence": 0.9,
+      "seed_evidence": [
+        "figure prefix matched: Figure 4: Stiffness comparison between repair techniques."
+      ],
+      "span_metadata": null,
+      "raw_observation": {
+        "block_id": 1,
+        "page": 3,
+        "raw_label": "text",
+        "text": "Figure 4: Stiffness comparison between repair techniques.",
+        "bbox": [
+          100,
+          330,
+          1100,
+          527
+        ],
+        "page_width": 1224,
+        "page_height": 1584
+      },
+      "marker_signature": {
+        "type": "figure_number",
+        "raw_marker": "Figure 4",
+        "number": 4,
+        "kind": "figure",
+        "normalized_text": "Figure 4: Stiffness comparison between repair techniques."
+      },
+      "layout_signature": {
+        "width": 1000,
+        "width_bucket": 1000,
+        "height": 197,
+        "left": 100,
+        "top": 330,
+        "right": 1100,
+        "bottom": 527,
+        "x_center": 600.0,
+        "x_center_bucket": 600,
+        "y_center": 428.5,
+        "x_ratio": 0.4902,
+        "y_ratio": 0.2705,
+        "width_ratio": 0.817,
+        "height_ratio": 0.1244,
+        "line_count": 1
+      },
+      "span_signature": {
+        "font_size": null,
+        "font_size_median": null,
+        "font_size_bucket": null,
+        "font_family_norm": null,
+        "bold": false,
+        "italic": false,
+        "span_count": 0
+      },
+      "_in_visual_container": null,
+      "_container_bbox": null,
+      "_container_text": null,
+      "_text_source": null,
+      "_ocr_raw_status": null,
+      "_ocr_raw_error_type": null,
+      "render_default": true,
+      "index_default": true,
+      "_decision_log": [
+        {
+          "block_id": 1,
+          "page": 3,
+          "bbox": [
+            100,
+            330,
+            1100,
+            527
+          ],
+          "stage": "assign_block_role",
+          "old_role": "text",
+          "new_role": "figure_caption",
+          "reason": "seed role assigned from raw OCR label and local heuristics",
+          "confidence": 0.9,
+          "evidence": [
+            "figure prefix matched: Figure 4: Stiffness comparison between repair techniques."
+          ]
+        }
+      ]
+    }
+  ],
+  "unmatched_assets": [],
+  "unresolved_clusters": [],
+  "held_figures": [],
+  "rejected_legends": [],
+  "page_ledger": {},
+  "residual_ledger": {},
+  "local_pairing_hypotheses": [],
+  "pass_reports": [
+    {
+      "pass_name": "continuation_caption",
+      "proposals": [],
+      "accepted": [],
+      "rejected": [],
+      "conflicts": [],
+      "invariant_errors": []
+    },
+    {
+      "pass_name": "primary_same_page",
+      "proposals": [],
+      "accepted": [],
+      "rejected": [],
+      "conflicts": [],
+      "invariant_errors": []
+    },
+    {
+      "pass_name": "composite_parent",
+      "proposals": [],
+      "accepted": [],
+      "rejected": [],
+      "conflicts": [],
+      "invariant_errors": []
+    },
+    {
+      "pass_name": "sidecar",
+      "proposals": [],
+      "accepted": [],
+      "rejected": [],
+      "conflicts": [],
+      "invariant_errors": []
+    },
+    {
+      "pass_name": "locator_bridge",
+      "proposals": [],
+      "accepted": [],
+      "rejected": [],
+      "conflicts": [],
+      "invariant_errors": []
+    },
+    {
+      "pass_name": "cross_page_reservation",
+      "proposals": [],
+      "accepted": [],
+      "rejected": [],
+      "conflicts": [],
+      "invariant_errors": []
+    },
+    {
+      "pass_name": "cross_page_settlement",
+      "proposals": [],
+      "accepted": [],
+      "rejected": [],
+      "conflicts": [],
+      "invariant_errors": []
+    },
+    {
+      "pass_name": "legend_bundle",
+      "proposals": [],
+      "accepted": [],
+      "rejected": [],
+      "conflicts": [],
+      "invariant_errors": []
+    },
+    {
+      "pass_name": "group_sequential",
+      "proposals": [],
+      "accepted": [],
+      "rejected": [],
+      "conflicts": [],
+      "invariant_errors": []
+    },
+    {
+      "pass_name": "classic_sequential",
+      "proposals": [],
+      "accepted": [],
+      "rejected": [],
+      "conflicts": [],
+      "invariant_errors": []
+    },
+    {
+      "pass_name": "unresolved_cluster",
+      "proposals": [],
+      "accepted": [],
+      "rejected": [],
+      "conflicts": [],
+      "invariant_errors": []
+    },
+    {
+      "pass_name": "final_accounting",
+      "proposals": [],
+      "accepted": [],
+      "rejected": [],
+      "conflicts": [],
+      "invariant_errors": []
+    }
+  ],
+  "completeness": {
+    "total_numbered_legends": 3,
+    "accounted_for": 0,
+    "gap_count": 3,
+    "details": [
+      {
+        "legend_block_id": "4",
+        "figure_number": 2,
+        "status": "gap"
+      },
+      {
+        "legend_block_id": "7",
+        "figure_number": 3,
+        "status": "gap"
+      },
+      {
+        "legend_block_id": "1",
+        "figure_number": 4,
+        "status": "gap"
+      }
+    ]
+  },
+  "_pruned_author_bio_artifacts": [],
+  "ownership_conflicts": []
+}

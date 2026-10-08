@@ -477,6 +477,7 @@ jobs:
         run: |
           python - <<'PY'
           import pathlib
+          import shutil
 
           for path in (
               "paperforge/__init__.py",
@@ -485,6 +486,11 @@ jobs:
               p = pathlib.Path(path)
               text = p.read_text(encoding="utf-8")
               p.write_text(text.replace("2.0.0rc5", "2.0.0rc5.post1"), encoding="utf-8")
+          # The editable install above left an egg-info with the OLD version;
+          # setuptools reuses it, producing a wheel whose METADATA disagrees
+          # with its filename (pip then refuses the install on CI).
+          for stale in ("paperforge.egg-info", "build", "dist"):
+              shutil.rmtree(stale, ignore_errors=True)
           PY
       - name: Build the wheel the first-use journey installs
         shell: bash

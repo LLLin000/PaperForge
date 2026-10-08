@@ -1,0 +1,122 @@
+{
+  "paper_id": "TSTONE001",
+  "nodes": [
+    {
+      "node_id": "sec:p1:4",
+      "kind": "section",
+      "title": "Introduction",
+      "level": 2,
+      "block_id": 4,
+      "page": 1,
+      "page_span": [
+        1,
+        1
+      ],
+      "own_block_ids": [
+        "p1:5"
+      ],
+      "subtree_block_ids": [
+        "p1:4",
+        "p1:5"
+      ],
+      "children": [],
+      "objects": []
+    },
+    {
+      "node_id": "sec:p2:3",
+      "kind": "section",
+      "title": "Biomechanical Testing",
+      "level": 2,
+      "block_id": 3,
+      "page": 2,
+      "page_span": [
+        2,
+        2
+      ],
+      "own_block_ids": [],
+      "subtree_block_ids": [
+        "p2:3"
+      ],
+      "children": [],
+      "objects": []
+    },
+    {
+      "node_id": "sec:p2:5",
+      "kind": "section",
+      "title": "Results Load to Failure",
+      "level": 2,
+      "block_id": 5,
+      "page": 2,
+      "page_span": [
+        2,
+        2
+      ],
+      "own_block_ids": [],
+      "subtree_block_ids": [
+        "p2:5"
+      ],
+      "children": [],
+      "objects": []
+    },
+    {
+      "node_id": "sec:p3:0",
+      "kind": "section",
+      "title": "Stiffness Analysis",
+      "level": 2,
+      "block_id": 0,
+      "page": 3,
+      "page_span": [
+        3,
+        3
+      ],
+      "own_block_ids": [],
+      "subtree_block_ids": [
+        "p3:0"
+      ],
+      "children": [],
+      "objects": []
+    },
+    {
+      "node_id": "sec:p3:3",
+      "kind": "section",
+      "title": "Discussion",
+      "level": 2,
+      "block_id": 3,
+      "page": 3,
+      "page_span": [
+        3,
+        3
+      ],
+      "own_block_ids": [
+        "p3:4"
+      ],
+      "subtree_block_ids": [
+        "p3:3",
+        "p3:4"
+      ],
+      "children": [],
+      "objects": []
+    },
+    {
+      "node_id": "sec:p3:5",
+      "kind": "section",
+      "title": "Conclusion",
+      "level": 2,
+      "block_id": 5,
+      "page": 3,
+      "page_span": [
+        3,
+        3
+      ],
+      "own_block_ids": [
+        "p3:6"
+      ],
+      "subtree_block_ids": [
+        "p3:5",
+        "p3:6"
+      ],
+      "children": [],
+      "objects": []
+    }
+  ]
+}

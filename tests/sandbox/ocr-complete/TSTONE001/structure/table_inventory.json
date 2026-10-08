@@ -1,0 +1,321 @@
+{
+  "tables": [
+    {
+      "caption_block_id": "2",
+      "page": 2,
+      "caption_text": "Table 1: Patient demographics and baseline characteristics (n=45).",
+      "table_number": 1,
+      "formal_table_number": 1,
+      "asset_block_id": null,
+      "asset_bbox": [],
+      "assistive_text": "",
+      "truth_source": "image",
+      "has_asset": false,
+      "segments": [],
+      "note_block_ids": [],
+      "note_texts": [],
+      "note_bboxes": [],
+      "note_band_bbox": [],
+      "note_match_reason": "",
+      "note_confidence": 0.0,
+      "bridge_block_ids": [],
+      "consumed_block_ids": [],
+      "is_continuation": false,
+      "continuation_of": null,
+      "match_score": {
+        "decision": "unmatched",
+        "evidence": [],
+        "matched_asset_id": "",
+        "score": 0.0
+      },
+      "match_status": "unmatched_caption",
+      "candidate_assets": [],
+      "render_bbox": null,
+      "render_rotation_deg": 0
+    },
+    {
+      "caption_block_id": "2",
+      "page": 3,
+      "caption_text": "Table 2: Biomechanical properties summary.",
+      "table_number": 2,
+      "formal_table_number": 2,
+      "asset_block_id": null,
+      "asset_bbox": [],
+      "assistive_text": "",
+      "truth_source": "image",
+      "has_asset": false,
+      "segments": [],
+      "note_block_ids": [],
+      "note_texts": [],
+      "note_bboxes": [],
+      "note_band_bbox": [],
+      "note_match_reason": "",
+      "note_confidence": 0.0,
+      "bridge_block_ids": [],
+      "consumed_block_ids": [],
+      "is_continuation": false,
+      "continuation_of": null,
+      "match_score": {
+        "decision": "unmatched",
+        "evidence": [],
+        "matched_asset_id": "",
+        "score": 0.0
+      },
+      "match_status": "unmatched_caption",
+      "candidate_assets": [],
+      "render_bbox": null,
+      "render_rotation_deg": 0
+    }
+  ],
+  "held_tables": [],
+  "unmatched_captions": [
+    {
+      "paper_id": "TSTONE001",
+      "page": 2,
+      "block_id": 2,
+      "raw_label": "text",
+      "raw_order": 2,
+      "bbox": [
+        100,
+        495,
+        1100,
+        668
+      ],
+      "text": "Table 1: Patient demographics and baseline characteristics (n=45).",
+      "page_width": 1224,
+      "page_height": 1584,
+      "role": "table_caption",
+      "role_confidence": 0.9,
+      "evidence": [
+        "table prefix matched: Table 1: Patient demographics and baseline characteristics ("
+      ],
+      "seed_role": "table_caption",
+      "seed_confidence": 0.9,
+      "seed_evidence": [
+        "table prefix matched: Table 1: Patient demographics and baseline characteristics ("
+      ],
+      "span_metadata": null,
+      "raw_observation": {
+        "block_id": 2,
+        "page": 2,
+        "raw_label": "text",
+        "text": "Table 1: Patient demographics and baseline characteristics (n=45).",
+        "bbox": [
+          100,
+          495,
+          1100,
+          668
+        ],
+        "page_width": 1224,
+        "page_height": 1584
+      },
+      "marker_signature": {
+        "type": "table_number",
+        "raw_marker": "Table 1",
+        "number": 1,
+        "kind": "table",
+        "normalized_text": "Table 1: Patient demographics and baseline characteristics (n=45)."
+      },
+      "layout_signature": {
+        "width": 1000,
+        "width_bucket": 1000,
+        "height": 173,
+        "left": 100,
+        "top": 495,
+        "right": 1100,
+        "bottom": 668,
+        "x_center": 600.0,
+        "x_center_bucket": 600,
+        "y_center": 581.5,
+        "x_ratio": 0.4902,
+        "y_ratio": 0.3671,
+        "width_ratio": 0.817,
+        "height_ratio": 0.1092,
+        "line_count": 1
+      },
+      "span_signature": {
+        "font_size": null,
+        "font_size_median": null,
+        "font_size_bucket": null,
+        "font_family_norm": null,
+        "bold": false,
+        "italic": false,
+        "span_count": 0
+      },
+      "_in_visual_container": null,
+      "_container_bbox": null,
+      "_container_text": null,
+      "_text_source": null,
+      "_ocr_raw_status": null,
+      "_ocr_raw_error_type": null,
+      "render_default": true,
+      "index_default": true,
+      "_decision_log": [
+        {
+          "block_id": 2,
+          "page": 2,
+          "bbox": [
+            100,
+            495,
+            1100,
+            668
+          ],
+          "stage": "assign_block_role",
+          "old_role": "text",
+          "new_role": "table_caption",
+          "reason": "seed role assigned from raw OCR label and local heuristics",
+          "confidence": 0.9,
+          "evidence": [
+            "table prefix matched: Table 1: Patient demographics and baseline characteristics ("
+          ]
+        }
+      ]
+    },
+    {
+      "paper_id": "TSTONE001",
+      "page": 3,
+      "block_id": 2,
+      "raw_label": "text",
+      "raw_order": 2,
+      "bbox": [
+        100,
+        561,
+        1100,
+        758
+      ],
+      "text": "Table 2: Biomechanical properties summary.",
+      "page_width": 1224,
+      "page_height": 1584,
+      "role": "table_caption",
+      "role_confidence": 0.9,
+      "evidence": [
+        "table prefix matched: Table 2: Biomechanical properties summary."
+      ],
+      "seed_role": "table_caption",
+      "seed_confidence": 0.9,
+      "seed_evidence": [
+        "table prefix matched: Table 2: Biomechanical properties summary."
+      ],
+      "span_metadata": null,
+      "raw_observation": {
+        "block_id": 2,
+        "page": 3,
+        "raw_label": "text",
+        "text": "Table 2: Biomechanical properties summary.",
+        "bbox": [
+          100,
+          561,
+          1100,
+          758
+        ],
+        "page_width": 1224,
+        "page_height": 1584
+      },
+      "marker_signature": {
+        "type": "table_number",
+        "raw_marker": "Table 2",
+        "number": 2,
+        "kind": "table",
+        "normalized_text": "Table 2: Biomechanical properties summary."
+      },
+      "layout_signature": {
+        "width": 1000,
+        "width_bucket": 1000,
+        "height": 197,
+        "left": 100,
+        "top": 561,
+        "right": 1100,
+        "bottom": 758,
+        "x_center": 600.0,
+        "x_center_bucket": 600,
+        "y_center": 659.5,
+        "x_ratio": 0.4902,
+        "y_ratio": 0.4164,
+        "width_ratio": 0.817,
+        "height_ratio": 0.1244,
+        "line_count": 1
+      },
+      "span_signature": {
+        "font_size": null,
+        "font_size_median": null,
+        "font_size_bucket": null,
+        "font_family_norm": null,
+        "bold": false,
+        "italic": false,
+        "span_count": 0
+      },
+      "_in_visual_container": null,
+      "_container_bbox": null,
+      "_container_text": null,
+      "_text_source": null,
+      "_ocr_raw_status": null,
+      "_ocr_raw_error_type": null,
+      "render_default": true,
+      "index_default": true,
+      "_decision_log": [
+        {
+          "block_id": 2,
+          "page": 3,
+          "bbox": [
+            100,
+            561,
+            1100,
+            758
+          ],
+          "stage": "assign_block_role",
+          "old_role": "text",
+          "new_role": "table_caption",
+          "reason": "seed role assigned from raw OCR label and local heuristics",
+          "confidence": 0.9,
+          "evidence": [
+            "table prefix matched: Table 2: Biomechanical properties summary."
+          ]
+        }
+      ]
+    }
+  ],
+  "unmatched_assets": [],
+  "official_table_count": 0,
+  "pass_reports": [
+    {
+      "pass_name": "table_weak_caption_recovery",
+      "proposals": [],
+      "accepted": [],
+      "rejected": [],
+      "conflicts": [],
+      "invariant_errors": []
+    },
+    {
+      "pass_name": "table_same_page",
+      "proposals": [],
+      "accepted": [],
+      "rejected": [],
+      "conflicts": [],
+      "invariant_errors": []
+    },
+    {
+      "pass_name": "table_adjacent_page",
+      "proposals": [],
+      "accepted": [],
+      "rejected": [],
+      "conflicts": [],
+      "invariant_errors": []
+    },
+    {
+      "pass_name": "table_notes_attachment",
+      "proposals": [],
+      "accepted": [],
+      "rejected": [],
+      "conflicts": [],
+      "invariant_errors": []
+    },
+    {
+      "pass_name": "table_final_accounting",
+      "proposals": [],
+      "accepted": [],
+      "rejected": [],
+      "conflicts": [],
+      "invariant_errors": []
+    }
+  ]
+}
