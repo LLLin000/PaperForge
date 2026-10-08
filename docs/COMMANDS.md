@@ -173,7 +173,7 @@ paperforge ocr rebuild --resume     # 跳过已有检查点的文献
 
 ### `paperforge render`
 
-Render consistency and figure reconciliation commands. The audit is read-only; reconciliation stages into an isolated temporary directory.
+Render consistency and figure reconciliation commands. The audit never changes rendered artifacts, but it does write its own report, `ocr/<KEY>/render/render.consistency.json`, which `probe lineage` reads as the render-consistency authority; reconciliation stages into an isolated temporary directory.
 
 ```bash
 paperforge render audit [KEY...] --json

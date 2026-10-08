@@ -345,7 +345,7 @@ def build_parser() -> argparse.ArgumentParser:
     # Render-layer consistency audit (read-only V1)
     p_render = sub.add_parser("render", help="Audit rendered paper artifacts")
     p_render_sp = p_render.add_subparsers(dest="render_subcommand", required=True)
-    p_render_audit = p_render_sp.add_parser("audit", help="Run read-only render consistency audit")
+    p_render_audit = p_render_sp.add_parser("audit", help="Audit render consistency and write each paper's render/render.consistency.json report (rendered artifacts are never changed)")
     p_render_audit.add_argument("keys", nargs="*", metavar="KEY", help="Paper keys (default: all OCR papers)")
     p_render_audit.add_argument("--json", action="store_true", help="Output JSON")
     p_render_reconcile = p_render_sp.add_parser("reconcile", help="Stage R/P reconciliation in isolated tmp (production write gated)")
