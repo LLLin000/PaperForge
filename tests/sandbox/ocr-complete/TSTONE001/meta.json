@@ -6,8 +6,6 @@
  "source_pdf": "System/Zotero/storage/TSTONE001/TSTONE001.pdf",
  "ocr_pipeline_version": "2.0.0",
  "ocr_health_overall": "yellow",
- "last_backup_at": "2026-10-08T10:13:19.316136+00:00",
- "last_backup_path": "backups/fulltext.pre-rebuild.20261008T101319Z.md",
  "machine_fulltext_hash": "sha256:0b980a87af52ca88fe3a4e2a63ed432886351461a4701cf6b908d1114b716aff",
  "raw_version": {
   "ocr_provider": "PaddleOCR",
