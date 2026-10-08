@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "objects": [
+    {
+      "object_id": "table_001",
+      "kind": "table",
+      "status": "failed",
+      "stage": "input",
+      "reason": "source_asset_unavailable",
+      "pdf_input": "missing",
+      "asset_path": "assets/tables/table_001.jpg",
+      "render_path": "render/tables/table_001.md",
+      "attempts": []
+    },
+    {
+      "object_id": "table_002",
+      "kind": "table",
+      "status": "failed",
+      "stage": "input",
+      "reason": "source_asset_unavailable",
+      "pdf_input": "missing",
+      "asset_path": "assets/tables/table_002.jpg",
+      "render_path": "render/tables/table_002.md",
+      "attempts": []
+    }
+  ],
+  "summary": {
+    "objects": 2,
+    "status": {
+      "failed": 2
+    },
+    "stage": {
+      "input": 2
+    },
+    "reason": {
+      "source_asset_unavailable": 2
+    }
+  }
+}
