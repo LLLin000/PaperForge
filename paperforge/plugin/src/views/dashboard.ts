@@ -1039,6 +1039,7 @@ export class PaperForgeStatusView extends ItemView {
     if (entry.pdf_path) {
       const pdfBtn = stripRight.createEl("button", {
         cls: "paperforge-contextual-btn",
+        attr: { "data-pf-testid": "open-pdf" },
       });
       pdfBtn.createEl("span", {
         cls: "paperforge-contextual-btn-icon",
@@ -1085,6 +1086,7 @@ export class PaperForgeStatusView extends ItemView {
     if (entry.fulltext_path) {
       const ftBtn = stripRight.createEl("button", {
         cls: "paperforge-contextual-btn",
+        attr: { "data-pf-testid": "open-fulltext" },
       });
       ftBtn.createEl("span", {
         cls: "paperforge-contextual-btn-icon",
@@ -3402,8 +3404,16 @@ export class PaperForgeStatusView extends ItemView {
   _renderModeHeader(mode: string) {
     if (!this._modeContextEl) return;
     this._modeContextEl.empty();
+    // Stable hooks for the acceptance harness (B05): the badge text is
+    // localized and the resolved paper key is rendered nowhere else, so mode
+    // and key travel as attributes — asserted as rendered, never inferred.
     const badge = this._modeContextEl.createEl("span", {
       cls: "paperforge-mode-badge",
+      attr: {
+        "data-pf-testid": "mode-badge",
+        "data-pf-mode": mode,
+        "data-pf-key": this._currentPaperKey ?? "",
+      },
     });
     let modeName = "";
     switch (mode) {
@@ -3444,6 +3454,7 @@ export class PaperForgeStatusView extends ItemView {
     if (modeName) {
       this._modeContextEl.createEl("span", {
         cls: "paperforge-mode-name",
+        attr: { "data-pf-testid": "mode-name" },
         text: modeName,
       });
     }

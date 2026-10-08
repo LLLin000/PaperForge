@@ -2681,10 +2681,15 @@ describe("_storeVectorDbCredential replace semantics (RC UX Seam)", () => {
     (tab as any)._getVaultBasePath = () => "/vault";
     const authSetSecret = vi.fn(async () => true);
     (tab as any)._client = { authSetSecret };
+    // A saved key must re-probe so the API Key row leaves "Missing" (A05).
+    const refresh = vi
+      .spyOn(tab as any, "_refreshAllReadModels")
+      .mockImplementation(() => undefined);
     const result = await (tab as any)._storeVectorDbCredential(
       "sk-new-key-123"
     );
     expect(result).toBe(true);
+    expect(refresh).toHaveBeenCalledTimes(1);
     // Exact semantic wiring on the client seam; the secret itself travels
     // via ExecuteOptions.stdin — never argv (asserted in the client
     // contract tests) — and no child process is spawned by the tab.

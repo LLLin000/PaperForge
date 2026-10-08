@@ -668,7 +668,13 @@ export class PaperForgeClient {
           epoch: this._epoch,
           code: String(err.code || "backend_error"),
         });
-        throw new Error(String(err.message || err.code || "backend_error"));
+        const rejection = new Error(
+          String(err.message || err.code || "backend_error")
+        );
+        // Keep the raw PFResult so a caller that knows its command's
+        // contract (doctor) can still read a completed report.
+        (rejection as unknown as { stdout?: string }).stdout = raw;
+        throw rejection;
       }
       if (transportError) {
         // rc != 0 but the PFResult claims ok — protocol contradiction;
@@ -948,7 +954,19 @@ export class PaperForgeClient {
   /** Explicit diagnostic read (`doctor --json`). No cache — a user-invoked
    * check must always hit the authority. */
   async doctor(): Promise<Record<string, unknown>> {
-    return this._executePfResult(["doctor", "--json"]);
+    // `doctor` exits 1 with ok:false and NO error whenever any check fails:
+    // that is a completed diagnosis, not an authority rejection. Return the
+    // report (flagged ok:false) instead of discarding it as "backend_error".
+    try {
+      return await this._executePfResult(["doctor", "--json"]);
+    } catch (err: unknown) {
+      const stdout = (err as { stdout?: unknown } | null)?.stdout;
+      const report = parseDoctorReport(
+        typeof stdout === "string" ? stdout : null
+      );
+      if (report) return report;
+      throw err;
+    }
   }
 
   /** Authority repair mutation (`repair --fix --fix-paths --json`). */
@@ -1265,4 +1283,28 @@ export class PaperForgeClient {
       this.invalidateCache();
     }
   }
+}
+
+/** A doctor PFResult that ran to completion but found failing checks:
+ *  ok:false, no error, data.checks present. Anything else is not a report. */
+function parseDoctorReport(raw: string | null): Record<string, unknown> | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as {
+      ok?: unknown;
+      error?: unknown;
+      data?: { checks?: unknown } | null;
+    };
+    if (
+      parsed.ok === false &&
+      (parsed.error === null || parsed.error === undefined) &&
+      parsed.data &&
+      Array.isArray(parsed.data.checks)
+    ) {
+      return { ...(parsed.data as Record<string, unknown>), ok: false };
+    }
+  } catch {
+    /* not JSON */
+  }
+  return null;
 }

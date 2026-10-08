@@ -811,6 +811,40 @@ describe("PaperForgeClient", () => {
       expect(after).toEqual({ n: 2 });
     });
 
+    it("doctor with failing checks returns the report (ok:false), not backend_error", async () => {
+      const transportErr: any = new Error(
+        "PaperForge command failed (exit code 1): doctor"
+      );
+      transportErr.exitCode = 1;
+      transportErr.stdout = JSON.stringify({
+        ok: false,
+        command: "doctor",
+        version: "1",
+        data: { checks: [{ category: "Vault", status: "fail", message: "x" }] },
+        error: null,
+      });
+      transport.executeHandler = () => {
+        throw transportErr;
+      };
+      expect(await client.doctor()).toEqual({
+        checks: [{ category: "Vault", status: "fail", message: "x" }],
+        ok: false,
+      });
+    });
+
+    it("doctor still rejects a structured authority error", async () => {
+      const transportErr: any = new Error("exit 1");
+      transportErr.stdout = JSON.stringify({
+        ok: false,
+        data: null,
+        error: { code: "internal_error", message: "boom" },
+      });
+      transport.executeHandler = () => {
+        throw transportErr;
+      };
+      await expect(client.doctor()).rejects.toThrow("boom");
+    });
+
     it("dashboardStats emits its authority argv (single stats authority)", async () => {
       transport.executeHandler = () =>
         JSON.stringify({ ok: true, data: { stats: { papers: 3 } } });

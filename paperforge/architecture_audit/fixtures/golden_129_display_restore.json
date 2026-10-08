@@ -88,7 +88,7 @@
         "has_code_consumer": true,
         "evidence": {
           "file": "paperforge/worker/ocr_maintenance.py",
-          "file_digest": "sha256:914cbdcb5b4b0660b2ab360c174df5bbd11b734270895c1b5010833ab60327d2",
+          "file_digest": "sha256:cb5b912f346f9e980f49d584fb1759cccd580f5806c8efd7318ee059ad1aa416",
           "symbol": "fulltext_drift_state",
           "line_start": 44,
           "line_end": 50,
@@ -99,7 +99,7 @@
         "consumer_evidence": [
           {
             "file": "paperforge/worker/ocr_maintenance.py",
-            "file_digest": "sha256:914cbdcb5b4b0660b2ab360c174df5bbd11b734270895c1b5010833ab60327d2",
+            "file_digest": "sha256:cb5b912f346f9e980f49d584fb1759cccd580f5806c8efd7318ee059ad1aa416",
             "symbol": "fulltext_drift_state",
             "line_start": 44,
             "line_end": 50,
@@ -110,7 +110,7 @@
         ]
       }
     ],
-    "source_digest": "sha256:57d7d4708d8ad1a1f17b73d932de249627643bdf5dd00ea509f42cc67a93a8e6",
+    "source_digest": "sha256:bb51fd9e2a2746b9e42dcfe9217b1f93cdb5b107159d6b711091cb8f017c877a",
     "parse_errors": [],
     "excluded_roots": [],
     "run_metadata": {
