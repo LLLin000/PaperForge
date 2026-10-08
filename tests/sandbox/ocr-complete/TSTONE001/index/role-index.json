@@ -1,0 +1,286 @@
+{
+  "body": [
+    {
+      "paper_id": "TSTONE001",
+      "page": 1,
+      "block_id": 2,
+      "role": "abstract_heading",
+      "text": "Abstract"
+    },
+    {
+      "paper_id": "TSTONE001",
+      "page": 1,
+      "block_id": 3,
+      "role": "body_paragraph",
+      "text": "This study compares the biomechanical properties of various suture anchor configurations used in rotator cuff repair surgery."
+    },
+    {
+      "paper_id": "TSTONE001",
+      "page": 1,
+      "block_id": 4,
+      "role": "section_heading",
+      "text": "Introduction"
+    },
+    {
+      "paper_id": "TSTONE001",
+      "page": 1,
+      "block_id": 5,
+      "role": "body_paragraph",
+      "text": "Rotator cuff tears are a common shoulder pathology. Surgical repair using suture anchors remains the gold standard treatment."
+    },
+    {
+      "paper_id": "TSTONE001",
+      "page": 2,
+      "block_id": 3,
+      "role": "subsection_heading",
+      "text": "Biomechanical Testing"
+    },
+    {
+      "paper_id": "TSTONE001",
+      "page": 2,
+      "block_id": 5,
+      "role": "subsection_heading",
+      "text": "Results Load to Failure"
+    },
+    {
+      "paper_id": "TSTONE001",
+      "page": 3,
+      "block_id": 0,
+      "role": "subsection_heading",
+      "text": "Stiffness Analysis"
+    },
+    {
+      "paper_id": "TSTONE001",
+      "page": 3,
+      "block_id": 3,
+      "role": "section_heading",
+      "text": "Discussion"
+    },
+    {
+      "paper_id": "TSTONE001",
+      "page": 3,
+      "block_id": 4,
+      "role": "body_paragraph",
+      "text": "The double row technique demonstrated significantly higher load to failure compared to single row repair."
+    },
+    {
+      "paper_id": "TSTONE001",
+      "page": 3,
+      "block_id": 5,
+      "role": "section_heading",
+      "text": "Conclusion"
+    },
+    {
+      "paper_id": "TSTONE001",
+      "page": 3,
+      "block_id": 6,
+      "role": "body_paragraph",
+      "text": "Double row suture anchor fixation provides superior biomechanical properties for rotator cuff repair."
+    }
+  ],
+  "captions": [
+    {
+      "paper_id": "TSTONE001",
+      "page": 2,
+      "block_id": 4,
+      "role": "figure_caption",
+      "text": "Figure 2: Biomechanical testing setup. (A) Custom loading fixture. (B) Cyclic loading protocol."
+    },
+    {
+      "paper_id": "TSTONE001",
+      "page": 2,
+      "block_id": 7,
+      "role": "figure_caption",
+      "text": "Figure 3: Load to failure comparison. Error bars represent standard deviation. *p < 0.05 vs single row."
+    },
+    {
+      "paper_id": "TSTONE001",
+      "page": 3,
+      "block_id": 1,
+      "role": "figure_caption",
+      "text": "Figure 4: Stiffness comparison between repair techniques."
+    }
+  ],
+  "tables": [
+    {
+      "paper_id": "TSTONE001",
+      "page": 2,
+      "block_id": 2,
+      "role": "table_caption",
+      "text": "Table 1: Patient demographics and baseline characteristics (n=45)."
+    },
+    {
+      "paper_id": "TSTONE001",
+      "page": 3,
+      "block_id": 2,
+      "role": "table_caption",
+      "text": "Table 2: Biomechanical properties summary."
+    }
+  ],
+  "metadata": [
+    {
+      "paper_id": "TSTONE001",
+      "page": 0,
+      "block_id": "meta_title",
+      "role": "metadata_title",
+      "text": "Methods Patient Demographics"
+    },
+    {
+      "paper_id": "TSTONE001",
+      "page": 0,
+      "block_id": "meta_authors",
+      "role": "metadata_authors",
+      "text": "['John Smith', 'Jane Doe\\nJournal of Shoulder and Elbow Surgery, 2024']"
+    }
+  ],
+  "references": [],
+  "all_blocks": [
+    {
+      "paper_id": "TSTONE001",
+      "page": 1,
+      "block_id": 0,
+      "role": "authors",
+      "text": "Biomechanical Comparison of Suture Anchor Fixations in Rotator Cuff Repair"
+    },
+    {
+      "paper_id": "TSTONE001",
+      "page": 1,
+      "block_id": 1,
+      "role": "authors",
+      "text": "John Smith, Jane Doe\nJournal of Shoulder and Elbow Surgery, 2024"
+    },
+    {
+      "paper_id": "TSTONE001",
+      "page": 1,
+      "block_id": 2,
+      "role": "abstract_heading",
+      "text": "Abstract"
+    },
+    {
+      "paper_id": "TSTONE001",
+      "page": 1,
+      "block_id": 3,
+      "role": "body_paragraph",
+      "text": "This study compares the biomechanical properties of various suture anchor configurations used in rotator cuff repair surgery."
+    },
+    {
+      "paper_id": "TSTONE001",
+      "page": 1,
+      "block_id": 4,
+      "role": "section_heading",
+      "text": "Introduction"
+    },
+    {
+      "paper_id": "TSTONE001",
+      "page": 1,
+      "block_id": 5,
+      "role": "body_paragraph",
+      "text": "Rotator cuff tears are a common shoulder pathology. Surgical repair using suture anchors remains the gold standard treatment."
+    },
+    {
+      "paper_id": "TSTONE001",
+      "page": 2,
+      "block_id": 0,
+      "role": "paper_title",
+      "text": "Methods Patient Demographics"
+    },
+    {
+      "paper_id": "TSTONE001",
+      "page": 2,
+      "block_id": 1,
+      "role": "noise",
+      "text": ""
+    },
+    {
+      "paper_id": "TSTONE001",
+      "page": 2,
+      "block_id": 2,
+      "role": "table_caption",
+      "text": "Table 1: Patient demographics and baseline characteristics (n=45)."
+    },
+    {
+      "paper_id": "TSTONE001",
+      "page": 2,
+      "block_id": 3,
+      "role": "subsection_heading",
+      "text": "Biomechanical Testing"
+    },
+    {
+      "paper_id": "TSTONE001",
+      "page": 2,
+      "block_id": 4,
+      "role": "figure_caption",
+      "text": "Figure 2: Biomechanical testing setup. (A) Custom loading fixture. (B) Cyclic loading protocol."
+    },
+    {
+      "paper_id": "TSTONE001",
+      "page": 2,
+      "block_id": 5,
+      "role": "subsection_heading",
+      "text": "Results Load to Failure"
+    },
+    {
+      "paper_id": "TSTONE001",
+      "page": 2,
+      "block_id": 6,
+      "role": "noise",
+      "text": ""
+    },
+    {
+      "paper_id": "TSTONE001",
+      "page": 2,
+      "block_id": 7,
+      "role": "figure_caption",
+      "text": "Figure 3: Load to failure comparison. Error bars represent standard deviation. *p < 0.05 vs single row."
+    },
+    {
+      "paper_id": "TSTONE001",
+      "page": 3,
+      "block_id": 0,
+      "role": "subsection_heading",
+      "text": "Stiffness Analysis"
+    },
+    {
+      "paper_id": "TSTONE001",
+      "page": 3,
+      "block_id": 1,
+      "role": "figure_caption",
+      "text": "Figure 4: Stiffness comparison between repair techniques."
+    },
+    {
+      "paper_id": "TSTONE001",
+      "page": 3,
+      "block_id": 2,
+      "role": "table_caption",
+      "text": "Table 2: Biomechanical properties summary."
+    },
+    {
+      "paper_id": "TSTONE001",
+      "page": 3,
+      "block_id": 3,
+      "role": "section_heading",
+      "text": "Discussion"
+    },
+    {
+      "paper_id": "TSTONE001",
+      "page": 3,
+      "block_id": 4,
+      "role": "body_paragraph",
+      "text": "The double row technique demonstrated significantly higher load to failure compared to single row repair."
+    },
+    {
+      "paper_id": "TSTONE001",
+      "page": 3,
+      "block_id": 5,
+      "role": "section_heading",
+      "text": "Conclusion"
+    },
+    {
+      "paper_id": "TSTONE001",
+      "page": 3,
+      "block_id": 6,
+      "role": "body_paragraph",
+      "text": "Double row suture anchor fixation provides superior biomechanical properties for rotator cuff repair."
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "title": {
+    "value": "Methods Patient Demographics",
+    "source": "ocr_frontmatter",
+    "confidence": 0.7,
+    "alternatives": [
+      {
+        "value": "Methods Patient Demographics",
+        "source": "ocr_frontmatter",
+        "confidence": 0.7
+      }
+    ]
+  },
+  "authors": {
+    "value": [
+      "John Smith",
+      "Jane Doe\nJournal of Shoulder and Elbow Surgery, 2024"
+    ],
+    "source": "ocr_frontmatter",
+    "confidence": 0.6
+  },
+  "authors_display": "John Smith, Jane Doe\nJournal of Shoulder and Elbow Surgery, 2024",
+  "year": {
+    "value": 0,
+    "source": "unknown",
+    "confidence": 0.3
+  },
+  "journal": {
+    "value": "",
+    "source": "unknown",
+    "confidence": 0.3
+  },
+  "doi": {
+    "value": "",
+    "source": "unknown",
+    "confidence": 0.3
+  },
+  "raw_frontmatter": {
+    "author_block": "John Smith, Jane Doe\nJournal of Shoulder and Elbow Surgery, 2024",
+    "title_block": "Methods Patient Demographics"
+  }
+}

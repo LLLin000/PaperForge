@@ -1,0 +1,9 @@
+{
+  "ocr_provider": "PaddleOCR",
+  "ocr_model": "PaddleOCR",
+  "ocr_raw_schema_version": "1.0.0",
+  "created_at": "2026-10-08T08:25:38.065892+00:00",
+  "updated_at": "2026-10-08T08:25:38.065892+00:00",
+  "pdf_fingerprint": "sha256:6561f7105fd60850ef95ff17f5d030611119c4b88f7d0b37aba4fd317c0af99b",
+  "result_hash": "sha256:117d6dcbcdfc9ad651b3a3bfe3ef6316a9bee2a25966dd0a11219bfb024d78f9"
+}

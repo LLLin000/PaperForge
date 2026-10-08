@@ -1,0 +1,135 @@
+{
+  "headings": [
+    {
+      "line_number": 12,
+      "markdown_level": 2,
+      "title": "Introduction",
+      "page": 1,
+      "block_id": 4,
+      "emitted_order": 0
+    },
+    {
+      "line_number": 20,
+      "markdown_level": 2,
+      "title": "Biomechanical Testing",
+      "page": 2,
+      "block_id": 3,
+      "emitted_order": 2
+    },
+    {
+      "line_number": 22,
+      "markdown_level": 2,
+      "title": "Results Load to Failure",
+      "page": 2,
+      "block_id": 5,
+      "emitted_order": 3
+    },
+    {
+      "line_number": 32,
+      "markdown_level": 2,
+      "title": "Stiffness Analysis",
+      "page": 3,
+      "block_id": 0,
+      "emitted_order": 4
+    },
+    {
+      "line_number": 36,
+      "markdown_level": 2,
+      "title": "Discussion",
+      "page": 3,
+      "block_id": 3,
+      "emitted_order": 5
+    },
+    {
+      "line_number": 40,
+      "markdown_level": 2,
+      "title": "Conclusion",
+      "page": 3,
+      "block_id": 5,
+      "emitted_order": 7
+    }
+  ],
+  "emitted_blocks": [
+    {
+      "emitted_order": 0,
+      "line_start": 11,
+      "line_end": 13,
+      "page": 1,
+      "block_id": 4,
+      "role": "section_heading",
+      "emitted_as": "heading"
+    },
+    {
+      "emitted_order": 1,
+      "line_start": 13,
+      "line_end": 15,
+      "page": 1,
+      "block_id": 5,
+      "role": "body_paragraph",
+      "emitted_as": "body"
+    },
+    {
+      "emitted_order": 2,
+      "line_start": 19,
+      "line_end": 21,
+      "page": 2,
+      "block_id": 3,
+      "role": "subsection_heading",
+      "emitted_as": "heading"
+    },
+    {
+      "emitted_order": 3,
+      "line_start": 21,
+      "line_end": 23,
+      "page": 2,
+      "block_id": 5,
+      "role": "subsection_heading",
+      "emitted_as": "heading"
+    },
+    {
+      "emitted_order": 4,
+      "line_start": 31,
+      "line_end": 33,
+      "page": 3,
+      "block_id": 0,
+      "role": "subsection_heading",
+      "emitted_as": "heading"
+    },
+    {
+      "emitted_order": 5,
+      "line_start": 35,
+      "line_end": 37,
+      "page": 3,
+      "block_id": 3,
+      "role": "section_heading",
+      "emitted_as": "heading"
+    },
+    {
+      "emitted_order": 6,
+      "line_start": 37,
+      "line_end": 39,
+      "page": 3,
+      "block_id": 4,
+      "role": "body_paragraph",
+      "emitted_as": "body"
+    },
+    {
+      "emitted_order": 7,
+      "line_start": 39,
+      "line_end": 41,
+      "page": 3,
+      "block_id": 5,
+      "role": "section_heading",
+      "emitted_as": "heading"
+    },
+    {
+      "emitted_order": 8,
+      "line_start": 41,
+      "line_end": 43,
+      "page": 3,
+      "block_id": 6,
+      "role": "body_paragraph",
+      "emitted_as": "body"
+    }
+  ]
+}
