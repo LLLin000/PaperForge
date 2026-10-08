@@ -4155,7 +4155,7 @@ describe("PaperForge real-task e2e", function () {
     agent_key: "claude",
     paperforge_path: "/legacy/paperforge",
     zotero_link: "/legacy/zotero",
-    ocr_profile: "legacy-profile",
+    ocr_profile: "legacy_profile",
     custom_legacy_note: "keep-me",
   };
 
@@ -4437,7 +4437,7 @@ describe("PaperForge real-task e2e", function () {
     expect(sandboxConfigField(base, "vault_config.system_dir")).toBe("System");
     expect(sandboxConfigField(base, "vault_config.base_dir")).toBe("LegacyBases");
     expect(sandboxConfigField(base, "agent_platform")).toBe("claude");
-    expect(sandboxConfigField(base, "ocr_profile")).toBe("legacy-profile");
+    expect(sandboxConfigField(base, "ocr_profile")).toBe("legacy_profile");
     // No data loss: a key the migration does not know survives verbatim.
     expect(sandboxConfigField(base, "custom_legacy_note")).toBe("keep-me");
     // The legacy shapes themselves are gone from the canonical document.
