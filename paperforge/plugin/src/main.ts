@@ -22,7 +22,10 @@ class ConfirmMigrationModal extends Modal {
     const actions = this.contentEl.createDiv({ cls: "pf-modal-actions" });
     const cancel = actions.createEl("button", { text: "Cancel" });
     cancel.addEventListener("click", () => this.close());
-    const go = actions.createEl("button", { text: "Migrate" });
+    const go = actions.createEl("button", {
+      text: "Migrate",
+      attr: { "data-pf-testid": "migrate-config-confirm" },
+    });
     go.addEventListener("click", () => {
       void this.onConfirm().finally(() => this.close());
     });

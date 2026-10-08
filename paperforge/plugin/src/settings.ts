@@ -1769,6 +1769,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       cls: "pf-sr-cfg-input",
       attr: {
         type: "password",
+        "data-pf-testid": "sr-api-key-input",
         placeholder: apiKeyConfigured ? "\u2022\u2022\u2022\u2022" : "sk-...",
       },
     }) as HTMLInputElement;
@@ -1796,7 +1797,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     });
     const bi = br.createEl("input", {
       cls: "pf-sr-cfg-input",
-      attr: { type: "text", placeholder: "https://api.openai.com/v1" },
+      attr: {
+        type: "text",
+        "data-pf-testid": "sr-api-base-input",
+        placeholder: "https://api.openai.com/v1",
+      },
     }) as HTMLInputElement;
     bi.value = this.plugin.settings.vector_db_api_base || "";
     bi.addEventListener("change", () => {
@@ -1811,7 +1816,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     });
     const mi = mr.createEl("input", {
       cls: "pf-sr-cfg-input",
-      attr: { type: "text", placeholder: "text-embedding-3-small" },
+      attr: {
+        type: "text",
+        "data-pf-testid": "sr-api-model-input",
+        placeholder: "text-embedding-3-small",
+      },
     }) as HTMLInputElement;
     mi.value =
       this.plugin.settings.vector_db_api_model || "text-embedding-3-small";
@@ -3943,7 +3952,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       if (hint) field.createEl("span", { cls: "caption", text: hint });
       const input = field.createEl("input", {
         cls: "pf-setup-input",
-        attr: { type: "text" },
+        attr: { type: "text", "data-pf-testid": "setup-path-" + key },
       }) as HTMLInputElement;
       input.value = this.plugin.settings[key] || "";
       input.addEventListener("input", () => {
@@ -3968,7 +3977,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const verify = form.createEl("button", {
       cls: "pf-setup-verify",
       text: t("setup_library_verify"),
-      attr: { type: "button" },
+      attr: { type: "button", "data-pf-testid": "setup-library-save" },
     });
     verify.disabled = this._setupOperation === "running";
     verify.addEventListener("click", () => this._applyLibraryConfiguration());
