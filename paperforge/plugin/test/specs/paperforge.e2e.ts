@@ -403,10 +403,20 @@ async function materializeBinaryFile(rel: string): Promise<void> {
  * so sandbox cleanup goes through unlinkSync.
  */
 function removeFileQuiet(filePath: string): void {
-  try {
-    unlinkSync(filePath);
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      unlinkSync(filePath);
+      return;
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code;
+      if (code === "ENOENT") return;
+      // Windows: the app may still hold the handle right after a restart.
+      if (code === "EBUSY" && attempt < 9) {
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 2000);
+        continue;
+      }
+      throw error;
+    }
   }
 }
 
@@ -3614,10 +3624,16 @@ describe("PaperForge real-task e2e", function () {
       ) as HTMLButtonElement | null;
       button?.click();
     });
+    // Read via textContent, not WebDriver getText: getText returns only
+    // VISIBLE text, and the staging block can sit outside the visible
+    // viewport on the runner - the diagnostic's querySelector sees the
+    // settled text while getText stays empty forever.
     const staged = async (): Promise<boolean> => {
-      const text = await (await browser.$(".paperforge-quality-staging"))
-        .getText()
-        .catch(() => "");
+      const text = await browser.execute(
+        () =>
+          document.querySelector(".paperforge-quality-staging")?.textContent ??
+          ""
+      );
       return text.length > 0 && !text.includes("Staging R/P proposals");
     };
     try {
@@ -3663,7 +3679,10 @@ describe("PaperForge real-task e2e", function () {
       });
       throw error;
     }
-    const stagedText = await (await browser.$(".paperforge-quality-staging")).getText();
+    const stagedText = await browser.execute(
+      () =>
+        document.querySelector(".paperforge-quality-staging")?.textContent ?? ""
+    );
     const rRows = await browser.$$(".paperforge-quality-r-row");
     const pCards = await browser.$$(".paperforge-quality-p-card");
     const afterStageSha = existsSync(inventoryPath) ? sha256(inventoryPath) : null;
