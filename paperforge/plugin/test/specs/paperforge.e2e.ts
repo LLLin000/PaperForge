@@ -2217,19 +2217,42 @@ describe("PaperForge real-task e2e", function () {
         { model: detailModel, base: apiBase }
       );
 
-      await browser.waitUntil(
-        async () => {
-          const config = await readConfig();
-          return (
-            config.vector_db_api_model === detailModel &&
-            config.vector_db_api_base === apiBase
+      try {
+        await browser.waitUntil(
+          async () => {
+            const config = await readConfig();
+            return (
+              config.vector_db_api_model === detailModel &&
+              config.vector_db_api_base === apiBase
+            );
+          },
+          {
+            timeout: 60000,
+            timeoutMsg:
+              "Smart Retrieval detail did not persist provider config",
+          }
+        );
+      } catch (error) {
+        const observed = await readConfig().catch(() => null);
+        const ui = await browser.executeObsidian(async ({ app }) => {
+          const plugin = app.plugins.plugins["paperforge"] as unknown as {
+            _settingTab: { containerEl: HTMLElement };
+            getClient(): { isOperationActive(): boolean };
+          };
+          const inputs = Array.from(
+            plugin._settingTab.containerEl.querySelectorAll(".pf-sr-cfg-input")
+          ).map((element) =>
+            element instanceof HTMLInputElement ? element.value : "?"
           );
-        },
-        {
-          timeout: 60000,
-          timeoutMsg: "Smart Retrieval detail did not persist provider config",
-        }
-      );
+          return {
+            inputs,
+            operation_active: plugin.getClient().isOperationActive(),
+          };
+        });
+        throw new Error(
+          `${String(error)}\nobserved=${JSON.stringify(observed)} ui=${JSON.stringify(ui)}`
+        );
+      }
       e2eKeyringFile = path.resolve(
         PLUGIN_DIR,
         ".obsidian-cache",
