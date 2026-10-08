@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -291,6 +292,121 @@ def _facet_summary(obs: ReconcileObservation) -> dict[str, int]:
             state = getattr(paper, layer)
             summary[state] = summary.get(state, 0) + 1
     return summary
+
+
+# ── X14 facet-state closure contract ──────────────────────────────────────
+#
+# Every per-paper facet state the lineage probe can report MUST map to either
+# the registered action(s) reconcile may dispatch for it, or an explicit
+# no-action contract.  A state outside this contract is an unclosable fact —
+# reconcile() fails visibly (``reconcile.facet_uncontracted``) instead of
+# dropping it into silence, and tests/test_x14_loop_closure.py keeps the
+# vocabulary aligned with ``lineage._probe_*_state``.
+#
+# Vocabulary sources: lineage._probe_ocr_state / _probe_retrieval_state /
+# _probe_vector_state (plus materialization.ocr.top_state / identity_state for
+# the ocr values).  ``not_required`` is the documented policy terminal
+# (docs/design-materialization-reconciliation.md §2.4); it is allowed here even
+# though the current probe never returns it.
+
+FACET_STATES: Mapping[str, tuple[str, ...]] = {
+    "ocr": ("current", "stale", "missing", "incomplete", "failed", "unknown"),
+    "retrieval": ("current", "stale", "missing", "incomplete", "unknown"),
+    "vector": ("current", "stale", "missing", "incomplete", "unknown", "not_required"),
+}
+
+#: Deficit states and the registered actions that can change them.  A state
+#: may still resolve to NO intent for a narrower detail (e.g. ocr ``missing``
+#: from a not-a-file/permission environment defect) — that detail-level
+#: no-action is decided in ``_per_paper_intents``.
+FACET_REPAIR_ACTIONS: Mapping[tuple[str, str], tuple[str, ...]] = {
+    ("ocr", "missing"): ("ocr.run", "ocr.rebuild_derived"),
+    ("ocr", "stale"): ("ocr.run", "ocr.rebuild_derived"),
+    ("ocr", "incomplete"): ("ocr.rebuild_derived",),
+    ("ocr", "failed"): ("ocr.run",),
+    ("retrieval", "missing"): ("memory.build",),
+    ("retrieval", "stale"): ("memory.build",),
+    ("vector", "missing"): ("embed.resume",),
+    ("vector", "stale"): ("embed.resume",),
+}
+
+#: States with a written no-action contract — reconcile deliberately emits no
+#: per-paper intent for them.  The reason IS the contract (X14).
+FACET_NO_ACTION: Mapping[tuple[str, str], str] = {
+    ("ocr", "current"): "OCR materialization is current — no repair",
+    ("ocr", "unknown"): (
+        "unverifiable OCR lineage — the reader fails closed and reconcile "
+        "never interprets unknown as stale (design §2.3), so no mass rebuild"
+    ),
+    ("retrieval", "current"): "retrieval materialization is current — no repair",
+    ("retrieval", "incomplete"): (
+        "upstream OCR product is incomplete — the OCR frontier repairs it first"
+    ),
+    ("retrieval", "unknown"): (
+        "unverifiable retrieval lineage — reader fails closed, never stale"
+    ),
+    ("vector", "current"): "vector materialization is current — no repair",
+    ("vector", "incomplete"): (
+        "upstream materialization is incomplete — the OCR/retrieval frontier "
+        "repairs it first"
+    ),
+    ("vector", "unknown"): (
+        "unverifiable vector lineage — reader fails closed, never a rebuild"
+    ),
+    ("vector", "not_required"): (
+        "the vault's vector policy does not require this paper — nothing to do"
+    ),
+}
+
+_FACET_CONTRACT_KEYS: frozenset[tuple[str, str]] = frozenset(
+    FACET_REPAIR_ACTIONS
+) | frozenset(FACET_NO_ACTION)
+
+
+def validate_facet_contract() -> list[str]:
+    """Invariants over the facet-state contract; empty list = valid."""
+    from paperforge.actions.registry import ACTION_REGISTRY
+
+    problems: list[str] = []
+    declared = {
+        (layer, state) for layer, states in FACET_STATES.items() for state in states
+    }
+    for key in sorted(set(FACET_REPAIR_ACTIONS) | set(FACET_NO_ACTION)):
+        if key not in declared:
+            problems.append(f"{key[0]}.{key[1]}: not in FACET_STATES")
+    for layer, states in FACET_STATES.items():
+        for state in states:
+            key = (layer, state)
+            repair = key in FACET_REPAIR_ACTIONS
+            no_action = key in FACET_NO_ACTION
+            if repair and no_action:
+                problems.append(f"{layer}.{state}: both repairable and no-action")
+            elif not repair and not no_action:
+                problems.append(
+                    f"{layer}.{state}: no action and no written no-action contract"
+                )
+    for key, actions in FACET_REPAIR_ACTIONS.items():
+        if not actions:
+            problems.append(f"{key[0]}.{key[1]}: empty repair set (use FACET_NO_ACTION)")
+        for action_id in actions:
+            if action_id not in ACTION_REGISTRY:
+                problems.append(
+                    f"{key[0]}.{key[1]}: unregistered action {action_id!r}"
+                )
+    for key, reason in FACET_NO_ACTION.items():
+        if not reason.strip():
+            problems.append(f"{key[0]}.{key[1]}: empty no-action reason")
+    return problems
+
+
+def _uncontracted_facets(paper: PaperObservation) -> list[tuple[str, str]]:
+    """(layer, state) pairs this paper reports outside the closure contract."""
+    return [
+        (layer, state)
+        for layer in ("ocr", "retrieval", "vector")
+        for state in (getattr(paper, layer),)
+        if (layer, state) not in _FACET_CONTRACT_KEYS
+    ]
 
 
 # ── deficit → operation (operation decided here; policy from registry) ────
@@ -620,6 +736,15 @@ def reconcile(vault: Path, keys: list[str] | None = None) -> PFResult:
     diagnostics: list[str] = []
     per_paper_reasons: dict[str, list[str]] = {}
     intents: list[ActionIntent] = []
+
+    # X14: a facet state outside the closure contract is an unclosable fact —
+    # surface it (for every paper, independent of the global frontier) instead
+    # of dropping it into silence.
+    for paper in obs.papers:
+        for layer, state in _uncontracted_facets(paper):
+            diagnostics.append(
+                f"reconcile.facet_uncontracted:{paper.key}:{layer}:{state}"
+            )
 
     if not obs.global_state.memory_substrate_ok:
         intents = [ActionIntent(
