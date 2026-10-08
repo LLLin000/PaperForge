@@ -109,6 +109,12 @@ const E2E_SKIP_REGISTRY: Record<
     owner: "release-acceptance (#263)",
     window: "enabled by the H matrix job via PF_E2E_SETUP_POSITIVE=1",
   },
+  "vector-fixture-lacks-structured-blocks": {
+    reason:
+      "the e2e OCR fixture ships empty canonical/blocks.raw.jsonl and structure/blocks.structured.jsonl, so the memory unit builder yields zero chunks and the embed build has nothing to encode",
+    owner: "real-machine verification (#265)",
+    window: "until the fixture is regenerated from a modern provider result",
+  },
 };
 
 /** Skip through the registry: an unknown or incomplete id is a failure. */
@@ -287,9 +293,12 @@ function provisionE2eKeyringFixture(): void {
       python_path?: string;
     };
     if (!pointer.python_path) return;
+    // sysconfig.purelib, NOT site.getsitepackages(): the latter returns the
+    // venv ROOT first for virtualenv pythons, which silently parked the
+    // fixture outside import range.
     const sitePackages = execFileSync(
       pointer.python_path,
-      ["-c", "import site; print(site.getsitepackages()[0])"],
+      ["-c", "import sysconfig; print(sysconfig.get_paths()['purelib'])"],
       { encoding: "utf8" }
     ).trim();
     if (!sitePackages) return;
@@ -343,6 +352,109 @@ async function prepareOcrSandbox(jobUrl: string | null): Promise<void> {
       };
       await plugin.getClient().configSet("paddleocr_job_url", url);
     }, jobUrl);
+  }
+}
+
+/** Loopback OpenAI-compatible embeddings stub: deterministic vectors +
+ * request log (the E-series controlled provider). */
+async function startEmbedStub(): Promise<{
+  requests: Array<{ model?: string; input_count: number }>;
+  baseUrl: string;
+  close: () => Promise<void>;
+}> {
+  const requests: Array<{ model?: string; input_count: number }> = [];
+  const server = createServer((req, res) => {
+    const chunks: Buffer[] = [];
+    req.on("data", (chunk: Buffer) => chunks.push(chunk));
+    req.on("end", () => {
+      if (req.method !== "POST" || req.url !== "/embeddings") {
+        res.statusCode = 404;
+        res.end();
+        return;
+      }
+      const payload = JSON.parse(Buffer.concat(chunks).toString("utf8")) as {
+        model?: string;
+        input?: string | string[];
+      };
+      const inputs = Array.isArray(payload.input)
+        ? payload.input
+        : [payload.input ?? ""];
+      requests.push({ model: payload.model, input_count: inputs.length });
+      const embedding = new Array<number>(1536).fill(0);
+      embedding[0] = 1;
+      res.setHeader("content-type", "application/json");
+      res.end(
+        JSON.stringify({
+          object: "list",
+          data: inputs.map((_, index) => ({
+            object: "embedding",
+            index,
+            embedding,
+          })),
+          model: payload.model ?? "",
+          usage: { prompt_tokens: 1, total_tokens: inputs.length },
+        })
+      );
+    });
+  });
+  await new Promise<void>((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", () => resolve());
+  });
+  const address = server.address();
+  if (!address || typeof address === "string") {
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+    throw new Error("controlled embedding server did not expose a port");
+  }
+  return {
+    requests,
+    baseUrl: `http://127.0.0.1:${address.port}`,
+    close: () => new Promise<void>((resolve) => server.close(() => resolve())),
+  };
+}
+
+/** Embedding credential + canonical provider config for the controlled stub. */
+async function prepareEmbedSandbox(baseUrl: string): Promise<void> {
+  provisionE2eKeyringFixture();
+  const keyringPath = path.resolve(
+    PLUGIN_DIR,
+    ".obsidian-cache",
+    "paperforge-e2e-keyring.json"
+  );
+  let keyring: Record<string, string> = {};
+  try {
+    keyring = JSON.parse(readFileSync(keyringPath, "utf8")) as Record<string, string>;
+  } catch {
+    keyring = {};
+  }
+  keyring["paperforge:embedding:default"] = "pf-e2e-embed-token";
+  writeFileSync(keyringPath, JSON.stringify(keyring), "utf8");
+  const applied = await browser.executeObsidian(async ({ app }, base) => {
+    const plugin = app.plugins.plugins["paperforge"] as unknown as {
+      getClient(): {
+        configSet(key: string, value: string): Promise<unknown>;
+        configList(): Promise<{ fields: Array<{ key: string; value: unknown }> }>;
+      };
+    };
+    const client = plugin.getClient();
+    await client.configSet("vector_db_provider_type", "requests");
+    await client.configSet("vector_db_api_base", base);
+    await client.configSet("vector_db_api_model", "pf-e2e-embed-model");
+    const list = await client.configList();
+    const read = (key: string): unknown =>
+      list.fields.find((field) => field.key === key)?.value;
+    return {
+      provider: String(read("vector_db_provider_type") ?? ""),
+      base: String(read("vector_db_api_base") ?? ""),
+      model: String(read("vector_db_api_model") ?? ""),
+    };
+  }, baseUrl);
+  if (
+    applied.provider !== "requests" ||
+    applied.base !== baseUrl ||
+    applied.model !== "pf-e2e-embed-model"
+  ) {
+    throw new Error(`embed config did not apply: ${JSON.stringify(applied)}`);
   }
 }
 
@@ -2186,27 +2298,86 @@ describe("PaperForge real-task e2e", function () {
       const ocrRoot = path.join(base, "System", "PaperForge", "ocr", "TSTONE001");
       const metaPath = path.join(ocrRoot, "meta.json");
       const pendingMarker = path.join(ocrRoot, "index", "result-hash.pending");
-      await browser.waitUntil(
-        () => {
-          try {
-            const meta = JSON.parse(readFileSync(metaPath, "utf8")) as {
-              ocr_job_id?: string;
-              ocr_status?: string;
-            };
-            return (
-              meta.ocr_job_id === "pf-e2e-job-1" &&
-              meta.ocr_status === "done" &&
-              !existsSync(pendingMarker)
-            );
-          } catch {
-            return false;
+      try {
+        await browser.waitUntil(
+          () => {
+            try {
+              const meta = JSON.parse(readFileSync(metaPath, "utf8")) as {
+                ocr_job_id?: string;
+                ocr_status?: string;
+              };
+              return (
+                meta.ocr_job_id === "pf-e2e-job-1" &&
+                meta.ocr_status === "done" &&
+                !existsSync(pendingMarker)
+              );
+            } catch {
+              return false;
+            }
+          },
+          {
+            timeout: 240000,
+            timeoutMsg: "OCR run never settled to done with the stub job id",
           }
-        },
-        {
-          timeout: 240000,
-          timeoutMsg: "OCR run never settled to done with the stub job id",
+        );
+      } catch (error) {
+        let metaJob = "<missing>";
+        let metaStatus = "<missing>";
+        let metaError = "";
+        try {
+          const meta = JSON.parse(readFileSync(metaPath, "utf8")) as Record<string, unknown>;
+          metaJob = String(meta.ocr_job_id ?? "");
+          metaStatus = String(meta.ocr_status ?? "");
+          metaError = String(meta.error ?? "");
+        } catch {
+          metaJob = "<unreadable>";
         }
-      );
+        const requests = stub.requests.map((entry) => `${entry.method} ${entry.url}`);
+        const ocrDir = existsSync(ocrRoot) ? readdirSync(ocrRoot).slice(0, 24) : [];
+        console.log(
+          "D02D job=" + metaJob + " status=" + metaStatus + " error=" + metaError
+        );
+        console.log("D02D req=" + JSON.stringify(requests));
+        console.log("D02D dir=" + JSON.stringify(ocrDir));
+        console.log("D02D marker=" + String(existsSync(pendingMarker)));
+        const pdfPath = path.join(
+          base,
+          "System",
+          "Zotero",
+          "storage",
+          "TSTONE001",
+          "TSTONE001.pdf"
+        );
+        console.log("D02D pdf=" + String(existsSync(pdfPath)));
+        let cfg = "<missing>";
+        try {
+          cfg = readFileSync(path.join(base, "paperforge.json"), "utf8").slice(0, 400);
+        } catch {
+          cfg = "<unreadable>";
+        }
+        console.log("D02D cfg=" + cfg.replace(/\s+/g, " "));
+        const notices = await browser.execute(() =>
+          Array.from(document.querySelectorAll(".notice"))
+            .map((node) => (node.textContent ?? "").trim())
+            .join(" | ")
+        );
+        console.log("D02D notices=" + notices.slice(0, 300));
+
+        appendEvidence("d02-failure-diagnostic.json", {
+          case_id: "D02",
+          variant: "settle-timeout diagnostic",
+          required_layer: "H",
+          status: "FAILED",
+          meta_job: metaJob,
+          meta_status: metaStatus,
+          meta_error: metaError,
+          requests,
+          ocr_dir: ocrDir,
+          pending_marker: existsSync(pendingMarker),
+          recorded_at: new Date().toISOString(),
+        });
+        throw error;
+      }
       const metaAfter = JSON.parse(readFileSync(metaPath, "utf8")) as Record<
         string,
         unknown
@@ -2225,7 +2396,7 @@ describe("PaperForge real-task e2e", function () {
         worktree_dirty: worktreeDirty(),
         provider_requests: methodUrls,
         confirm_modal_used: true,
-        job_url: jobUrl,
+        job_url: stub.jobUrl,
         recorded_at: new Date().toISOString(),
       });
       appendEvidence("d03-ocr-settlement.json", {
@@ -2501,6 +2672,165 @@ describe("PaperForge real-task e2e", function () {
         backups_before: before,
         backups_after: after,
         provider_requests: stub.requests.length,
+        recorded_at: new Date().toISOString(),
+      });
+    } finally {
+      await stub.close();
+    }
+  });
+
+  it("builds the vector substrate against a controlled provider and serves deep search", async function () {
+    // E03 (build/resume) + C03 (@deep retrieve): the build runs through the
+    // real client action against a loopback embeddings provider; the retrieval
+    // runs through the real dashboard search box.
+    const preflightBase = await sandboxBasePath();
+    const structuredPath = path.join(
+      preflightBase,
+      "System",
+      "PaperForge",
+      "ocr",
+      "TSTONE001",
+      "structure",
+      "blocks.structured.jsonl"
+    );
+    const structuredLines = existsSync(structuredPath)
+      ? readFileSync(structuredPath, "utf8")
+          .split(/\r?\n/)
+          .filter((line) => line.trim()).length
+      : 0;
+    if (structuredLines === 0) {
+      registeredSkip(this, "vector-fixture-lacks-structured-blocks");
+      return;
+    }
+    const stub = await startEmbedStub();
+    try {
+      // The plugin auto-follows sync next_actions (embed.build) on the
+      // convergence tick; disable it so the explicit action owns the lock.
+      await browser.executeObsidian(async ({ app }) => {
+        const plugin = app.plugins.plugins["paperforge"] as unknown as {
+          settings: { autoSyncEnabled?: boolean };
+          saveSettings(): Promise<void>;
+        };
+        plugin.settings.autoSyncEnabled = false;
+        await plugin.saveSettings();
+      });
+      await prepareEmbedSandbox(stub.baseUrl);
+      const runClientAction = async (actionId: string): Promise<{ ok?: boolean }> =>
+        await browser.executeObsidian(async ({ app }, id) => {
+          const plugin = app.plugins.plugins["paperforge"] as unknown as {
+            getClient(): {
+              runAction(request: unknown): Promise<{ ok?: boolean }>;
+            };
+          };
+          return await plugin.getClient().runAction({
+            action_id: id,
+            scope: { kind: "all" },
+            confirm: id,
+          });
+        }, actionId);
+      const waitIdle = async (): Promise<void> => {
+        await browser.waitUntil(
+          async () =>
+            !(await browser.executeObsidian(async ({ app }) => {
+              const plugin = app.plugins.plugins["paperforge"] as unknown as {
+                getClient(): { isOperationActive(): boolean };
+              };
+              return plugin.getClient().isOperationActive();
+            })),
+          { timeout: 60000, timeoutMsg: "operation lock never released" }
+        );
+      };
+      // The fixture db carries stale unit hashes (body_units empty while the
+      // recorded hashes match), so the incremental path would skip forever:
+      // drop the disposable sandbox db for a clean full build.
+      const base = await sandboxBasePath();
+      const dbDir = path.join(base, "System", "PaperForge", "indexes");
+      for (const name of ["paperforge.db", "paperforge.db-wal", "paperforge.db-shm"]) {
+        removeFileQuiet(path.join(dbDir, name));
+      }
+      // E01/E03 chain: memory.build indexes the fulltext that the vector
+      // build targets (embed.build is automatic=False, so a sync tick never
+      // dispatches it — the explicit action is the product path here).
+      const memoryBuild = await runClientAction("memory.build");
+      expect(memoryBuild.ok).toBe(true);
+      await waitIdle();
+      const build = await runClientAction("embed.build");
+      expect(build.ok).toBe(true);
+      expect(stub.requests.length).toBeGreaterThan(0);
+      // embedStatus is client-cached (30s TTL): poll until the promoted
+      // counts surface rather than reading once through the stale cache.
+      let totalChunks = 0;
+      await browser.waitUntil(
+        async () => {
+          const status = await browser.executeObsidian(async ({ app }) => {
+            const plugin = app.plugins.plugins["paperforge"] as unknown as {
+              getClient(): { embedStatus(): Promise<Record<string, unknown>> };
+            };
+            return await plugin.getClient().embedStatus();
+          });
+          totalChunks = Number(status.total_chunks ?? status.chunk_count ?? 0);
+          return totalChunks > 0;
+        },
+        { timeout: 90000, timeoutMsg: "vector counts never surfaced" }
+      );
+      expect(totalChunks).toBeGreaterThan(0);
+      await waitIdle();
+
+      // Resume must not re-encode anything already embedded.
+      const requestsAfterBuild = stub.requests.length;
+      const resume = await browser.executeObsidian(async ({ app }) => {
+        const plugin = app.plugins.plugins["paperforge"] as unknown as {
+          getClient(): {
+            runAction(request: unknown): Promise<{ ok?: boolean }>;
+          };
+        };
+        return await plugin.getClient().runAction({
+          action_id: "embed.resume",
+          scope: { kind: "all" },
+          confirm: "embed.resume",
+        });
+      });
+      expect(resume.ok).toBe(true);
+      expect(stub.requests.length).toBe(requestsAfterBuild);
+
+      // C03: dashboard @deep search over the built substrate.
+      await openPanel();
+      const input = await browser.$(".paperforge-search-input");
+      await input.waitForExist({ timeout: 60000 });
+      await input.click();
+      await input.setValue("@suture");
+      await browser.keys(["Enter"]);
+      const card = await browser.$(".paperforge-search-result-card");
+      await card.waitForExist({ timeout: 60000 });
+      const cardText = await card.getText();
+
+      const sha = execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: PLUGIN_DIR,
+      })
+        .toString()
+        .trim();
+      appendEvidence("e03-embed-build.json", {
+        case_id: "E03",
+        variant: "controlled embed.build promotes vectors; resume re-encodes nothing",
+        required_layer: "H",
+        status: "VERIFIED",
+        source_sha: sha,
+        worktree_dirty: worktreeDirty(),
+        build_source: buildSource,
+        provider_requests_after_build: requestsAfterBuild,
+        provider_requests_after_resume: stub.requests.length,
+        total_chunks: totalChunks,
+        models: Array.from(new Set(stub.requests.map((r) => r.model))),
+        recorded_at: new Date().toISOString(),
+      });
+      appendEvidence("c03-deep-retrieve.json", {
+        case_id: "C03",
+        variant: "@deep search renders ranked chunks from the built substrate",
+        required_layer: "H",
+        status: "VERIFIED",
+        source_sha: sha,
+        worktree_dirty: worktreeDirty(),
+        result_card_head: cardText.slice(0, 200),
         recorded_at: new Date().toISOString(),
       });
     } finally {

@@ -35,9 +35,12 @@ try {
     python_path?: string;
   };
   if (pointer.python_path) {
+    // sysconfig.purelib, NOT site.getsitepackages(): the latter returns the
+    // venv ROOT first for virtualenv pythons, which silently parked the
+    // fixture outside import range.
     const sitePackages = execFileSync(
       pointer.python_path,
-      ["-c", "import site; print(site.getsitepackages()[0])"],
+      ["-c", "import sysconfig; print(sysconfig.get_paths()['purelib'])"],
       { encoding: "utf8" }
     ).trim();
     if (sitePackages) {
