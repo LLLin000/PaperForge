@@ -29,8 +29,8 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
-  rmSync,
   statSync,
+  unlinkSync,
   writeFileSync,
 } from "node:fs";
 import * as path from "node:path";
@@ -169,6 +169,25 @@ function readIndex(base: string): { paper_count: number; keys: string[] } {
     paper_count: raw.paper_count ?? items.length,
     keys: items.map((entry) => String(entry.zotero_key ?? "")),
   };
+}
+
+/**
+ * Remove one sandbox file, tolerating its absence.
+ *
+ * Deliberately NOT `rmSync(path, { force: true })`: under sandbox paths that
+ * contain spaces plus CJK characters (the P1 profile) Node's rmSync
+ * silently leaves the file in place — `lstat` succeeds immediately before,
+ * `unlinkSync` removes the very same path, and `existsSync` still reports
+ * the file afterwards (reproduced standalone on Windows, Node v24). A
+ * no-op cleanup poisons the "empty derived state" precondition silently,
+ * so sandbox cleanup goes through unlinkSync.
+ */
+function removeFileQuiet(filePath: string): void {
+  try {
+    unlinkSync(filePath);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+  }
 }
 
 /**
@@ -1069,7 +1088,7 @@ describe("PaperForge real-task e2e", function () {
     await runStep("first-sync", async () => {
       const base = await sandboxBasePath();
       // First sync means: empty derived state → export → index + note.
-      rmSync(path.join(base, INDEX_REL), { force: true });
+      removeFileQuiet(path.join(base, INDEX_REL));
       await browser.executeObsidian(async ({ app }, notePath) => {
         const file = app.vault.getAbstractFileByPath(notePath);
         if (file) await app.vault.delete(file);
@@ -1288,7 +1307,7 @@ describe("PaperForge real-task e2e", function () {
     const sentinel = `.pf-e2e-sentinel-${Date.now()}`;
     writeFileSync(path.join(base, sentinel), "sentinel");
     expect(existsSync(path.join(FIXTURE_VAULT, sentinel))).toBe(false);
-    rmSync(path.join(base, sentinel), { force: true });
+    removeFileQuiet(path.join(base, sentinel));
 
     const backend = await browser.executeObsidian(async ({ app }) => {
       const plugin = app.plugins.plugins["paperforge"];
@@ -1353,7 +1372,7 @@ describe("PaperForge real-task e2e", function () {
     expect(disabled.enabled).toBe(false);
     expect(disabled.timer).toBe(false);
     await waitForBackendDrain(base);
-    rmSync(path.join(base, INDEX_REL), { force: true });
+    removeFileQuiet(path.join(base, INDEX_REL));
     await browser.executeObsidian(async ({ app }, notePath) => {
       const file = app.vault.getAbstractFileByPath(notePath);
       if (file) await app.vault.delete(file);
@@ -2522,7 +2541,7 @@ describe("PaperForge real-task e2e", function () {
       } else {
         process.env.PAPERFORGE_E2E_KEYRING_FILE = previousE2eKeyringFile;
       }
-      if (e2eKeyringFile) rmSync(e2eKeyringFile, { force: true });
+      if (e2eKeyringFile) removeFileQuiet(e2eKeyringFile);
       await new Promise<void>((resolve) => server.close(() => resolve()));
     }
   });
