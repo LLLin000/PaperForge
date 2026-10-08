@@ -179,6 +179,13 @@
     },
     {
       "paper_id": "TSTONE001",
+      "page": 1,
+      "block_id": 6,
+      "role": "unknown_structural",
+      "text": "Overview of suture anchor placement techniques."
+    },
+    {
+      "paper_id": "TSTONE001",
       "page": 2,
       "block_id": 0,
       "role": "paper_title",
@@ -235,6 +242,20 @@
     },
     {
       "paper_id": "TSTONE001",
+      "page": 2,
+      "block_id": 8,
+      "role": "unknown_structural",
+      "text": "Biomechanical testing setup."
+    },
+    {
+      "paper_id": "TSTONE001",
+      "page": 2,
+      "block_id": 9,
+      "role": "table_html",
+      "text": "Patient demographics and baseline characteristics."
+    },
+    {
+      "paper_id": "TSTONE001",
       "page": 3,
       "block_id": 0,
       "role": "subsection_heading",
@@ -281,6 +302,27 @@
       "block_id": 6,
       "role": "body_paragraph",
       "text": "Double row suture anchor fixation provides superior biomechanical properties for rotator cuff repair."
+    },
+    {
+      "paper_id": "TSTONE001",
+      "page": 3,
+      "block_id": 7,
+      "role": "unknown_structural",
+      "text": "Load to failure comparison."
+    },
+    {
+      "paper_id": "TSTONE001",
+      "page": 3,
+      "block_id": 8,
+      "role": "unknown_structural",
+      "text": "Stiffness comparison between repair techniques."
+    },
+    {
+      "paper_id": "TSTONE001",
+      "page": 3,
+      "block_id": 9,
+      "role": "table_html",
+      "text": "Biomechanical properties summary."
     }
   ]
 }

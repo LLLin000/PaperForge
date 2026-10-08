@@ -5,10 +5,10 @@
   "state": "DEGRADED",
   "evidence_mode": "mixed",
   "input_snapshot": {
-    "blocks_hash": "9a23cf650ff12bb5f91f26b6bce36b172eae6e437054f300a1e350c43b874f20",
-    "figure_inventory_hash": "4c52da4502be35ac4b3cb66321c643b727c7fc4d0031698be47bd56d2f82c95d",
-    "table_inventory_hash": "10e6c4efe65c0357b9d8a1ed6890efd2bfe91411973de2f34b95fec081c6e7ba",
-    "render_hash": "e55373043a38b61cabec85092de23af359d36c9496dffbcb63f94341e497d218",
+    "blocks_hash": "e6d2aa36ac7a2c8133d61a9a6f29b66f8e51c158d285ecbaaf9a78e5f2ac60cb",
+    "figure_inventory_hash": "4e90d110a04d4c4f4a2e8bf3b4f07536c4e43e9dccc875fad74742c8b6c7e92a",
+    "table_inventory_hash": "cac511620c1c46a33f497bbebe17647348659595447ea86decb61f26dfe607f6",
+    "render_hash": "c9b84e7a13bc3ca001d33ec2a6a228171dac2dcbec946e2c79ead0e46987918e",
     "asset_index_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
   },
   "canonical_objects": {
@@ -65,58 +65,6 @@
           "legend_block_id": null,
           "asset_bboxes": []
         }
-      },
-      {
-        "canonical_object_id": null,
-        "namespace": "main",
-        "normalized_label": "1",
-        "caption": "Table 1: Patient demographics and baseline characteristics (n=45).",
-        "caption_page": 2,
-        "caption_confidence": 0.9,
-        "asset_block_ids": [],
-        "asset_pages": [],
-        "settlement_type": null,
-        "kind": "table",
-        "position": {
-          "legend_page": null,
-          "object_page": 2,
-          "asset_pages": [],
-          "page_range": [
-            2
-          ],
-          "same_page": false,
-          "cross_page": false,
-          "ordering": "no_asset",
-          "relation": "no_asset",
-          "legend_block_id": null,
-          "asset_bboxes": []
-        }
-      },
-      {
-        "canonical_object_id": null,
-        "namespace": "main",
-        "normalized_label": "2",
-        "caption": "Table 2: Biomechanical properties summary.",
-        "caption_page": 3,
-        "caption_confidence": 0.9,
-        "asset_block_ids": [],
-        "asset_pages": [],
-        "settlement_type": null,
-        "kind": "table",
-        "position": {
-          "legend_page": null,
-          "object_page": 3,
-          "asset_pages": [],
-          "page_range": [
-            3
-          ],
-          "same_page": false,
-          "cross_page": false,
-          "ordering": "no_asset",
-          "relation": "no_asset",
-          "legend_block_id": null,
-          "asset_bboxes": []
-        }
       }
     ]
   },
@@ -125,7 +73,7 @@
     "tables": [
       {
         "file": "table_001.md",
-        "path": "C:\\Users\\Lin\\AppData\\Local\\Temp\\pf-fixture-8yyajtn_\\vault\\System\\PaperForge\\ocr\\TSTONE001\\render\\tables\\table_001.md",
+        "path": "C:\\Users\\Lin\\AppData\\Local\\Temp\\pf-fixture-vhfc0dy7\\vault\\System\\PaperForge\\ocr\\TSTONE001\\render\\tables\\table_001.md",
         "header_label": "1",
         "legend_label": null,
         "legend_source": null,
@@ -138,7 +86,7 @@
       },
       {
         "file": "table_002.md",
-        "path": "C:\\Users\\Lin\\AppData\\Local\\Temp\\pf-fixture-8yyajtn_\\vault\\System\\PaperForge\\ocr\\TSTONE001\\render\\tables\\table_002.md",
+        "path": "C:\\Users\\Lin\\AppData\\Local\\Temp\\pf-fixture-vhfc0dy7\\vault\\System\\PaperForge\\ocr\\TSTONE001\\render\\tables\\table_002.md",
         "header_label": "2",
         "legend_label": null,
         "legend_source": null,
@@ -156,21 +104,21 @@
     "state": "available",
     "schema_version": 1,
     "summary": {
-      "objects": 2,
+      "objects": 4,
       "status": {
-        "failed": 2
+        "failed": 4
       },
       "stage": {
-        "input": 2
+        "pdf_open": 4
       },
       "reason": {
-        "source_asset_unavailable": 2
+        "pdf_not_found": 4
       }
     }
   },
   "summary": {
     "figure_inventory_objects": 0,
-    "table_inventory_objects": 4,
+    "table_inventory_objects": 2,
     "figure_render_artifacts": 0,
     "table_render_artifacts": 2,
     "issues_found": 2,
@@ -217,50 +165,11 @@
               "legend_block_id": null,
               "asset_bboxes": []
             }
-          },
-          {
-            "canonical_object_id": null,
-            "namespace": "main",
-            "normalized_label": "1",
-            "caption": "Table 1: Patient demographics and baseline characteristics (n=45).",
-            "caption_page": 2,
-            "caption_confidence": 0.9,
-            "asset_block_ids": [],
-            "asset_pages": [],
-            "settlement_type": null,
-            "kind": "table",
-            "position": {
-              "legend_page": null,
-              "object_page": 2,
-              "asset_pages": [],
-              "page_range": [
-                2
-              ],
-              "same_page": false,
-              "cross_page": false,
-              "ordering": "no_asset",
-              "relation": "no_asset",
-              "legend_block_id": null,
-              "asset_bboxes": []
-            }
           }
         ],
         "position": {
           "render_page": 2,
           "canonical": [
-            {
-              "canonical_object_id": null,
-              "legend_page": null,
-              "object_page": 2,
-              "asset_pages": [],
-              "page_range": [
-                2
-              ],
-              "same_page": false,
-              "cross_page": false,
-              "ordering": "no_asset",
-              "relation": "no_asset"
-            },
             {
               "canonical_object_id": null,
               "legend_page": null,
@@ -280,12 +189,18 @@
           "object_id": "table_001",
           "kind": "table",
           "status": "failed",
-          "stage": "input",
-          "reason": "source_asset_unavailable",
+          "stage": "pdf_open",
+          "reason": "pdf_not_found",
           "pdf_input": "missing",
           "asset_path": "assets/tables/table_001.jpg",
           "render_path": "render/tables/table_001.md",
-          "attempts": []
+          "attempts": [
+            {
+              "success": false,
+              "stage": "pdf_open",
+              "reason": "pdf_not_found"
+            }
+          ]
         }
       },
       "diagnosis": "dangling_render_asset"
@@ -329,50 +244,11 @@
               "legend_block_id": null,
               "asset_bboxes": []
             }
-          },
-          {
-            "canonical_object_id": null,
-            "namespace": "main",
-            "normalized_label": "2",
-            "caption": "Table 2: Biomechanical properties summary.",
-            "caption_page": 3,
-            "caption_confidence": 0.9,
-            "asset_block_ids": [],
-            "asset_pages": [],
-            "settlement_type": null,
-            "kind": "table",
-            "position": {
-              "legend_page": null,
-              "object_page": 3,
-              "asset_pages": [],
-              "page_range": [
-                3
-              ],
-              "same_page": false,
-              "cross_page": false,
-              "ordering": "no_asset",
-              "relation": "no_asset",
-              "legend_block_id": null,
-              "asset_bboxes": []
-            }
           }
         ],
         "position": {
           "render_page": 3,
           "canonical": [
-            {
-              "canonical_object_id": null,
-              "legend_page": null,
-              "object_page": 3,
-              "asset_pages": [],
-              "page_range": [
-                3
-              ],
-              "same_page": false,
-              "cross_page": false,
-              "ordering": "no_asset",
-              "relation": "no_asset"
-            },
             {
               "canonical_object_id": null,
               "legend_page": null,
@@ -392,12 +268,18 @@
           "object_id": "table_002",
           "kind": "table",
           "status": "failed",
-          "stage": "input",
-          "reason": "source_asset_unavailable",
+          "stage": "pdf_open",
+          "reason": "pdf_not_found",
           "pdf_input": "missing",
           "asset_path": "assets/tables/table_002.jpg",
           "render_path": "render/tables/table_002.md",
-          "attempts": []
+          "attempts": [
+            {
+              "success": false,
+              "stage": "pdf_open",
+              "reason": "pdf_not_found"
+            }
+          ]
         }
       },
       "diagnosis": "dangling_render_asset"

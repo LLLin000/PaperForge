@@ -16,11 +16,11 @@ Rotator cuff tears are a common shoulder pathology. Surgical repair using suture
 
 <!-- page 2 -->
 
+> **Table Caption:** Table 1: Patient demographics and baseline characteristics (n=45).
+
 ## Biomechanical Testing
 
 ## Results Load to Failure
-
-![[render/tables/table_001.md]]
 
 > **Figure 2**
 > Figure 2: Biomechanical testing setup. (A) Custom loading fixture. (B) Cyclic loading protocol.
@@ -32,6 +32,8 @@ Rotator cuff tears are a common shoulder pathology. Surgical repair using suture
 
 ## Stiffness Analysis
 
+> **Table Caption:** Table 2: Biomechanical properties summary.
+
 ## Discussion
 
 The double row technique demonstrated significantly higher load to failure compared to single row repair.
@@ -39,8 +41,6 @@ The double row technique demonstrated significantly higher load to failure compa
 ## Conclusion
 
 Double row suture anchor fixation provides superior biomechanical properties for rotator cuff repair.
-
-![[render/tables/table_002.md]]
 
 > **Figure 4**
 > Figure 4: Stiffness comparison between repair techniques.

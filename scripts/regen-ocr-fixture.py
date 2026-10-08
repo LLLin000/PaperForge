@@ -70,6 +70,29 @@ def synth_payload(legacy: dict) -> list[dict]:
                     "group_id": 0,
                 }
             )
+        # Figures/tables come from the legacy result's own records; the
+        # downstream figure pipeline derives its maps from figure/table
+        # labelled blocks, so the smoke contract needs them present.
+        page_num = int(page.get("page_num", 0) or 0)
+        for kind, records in (
+            ("figure", legacy.get("figures", [])),
+            ("table", legacy.get("tables", [])),
+        ):
+            for record in records:
+                if int(record.get("page", 0) or 0) != page_num:
+                    continue
+                index = len(blocks)
+                y = top + min(bottom - top - 40, index * row)
+                blocks.append(
+                    {
+                        "block_label": kind,
+                        "block_content": str(record.get("caption", "") or ""),
+                        "block_bbox": [100, y, 1100, min(height - 20, y + row)],
+                        "block_id": index,
+                        "block_order": index,
+                        "group_id": 0,
+                    }
+                )
         pages.append(
             {
                 "layoutParsingResults": [
@@ -89,8 +112,26 @@ def synth_payload(legacy: dict) -> list[dict]:
 def main() -> int:
     legacy = json.loads((SRC / "json" / "result.json").read_text(encoding="utf-8"))
     if isinstance(legacy, list):
-        print("fixture already modern; nothing to do")
+        print("fixture result.json is already the modern list; nothing to do")
         return 0
+
+    # The postprocess rewrites the paper directory and drops/empties the
+    # handcrafted figure/table artifacts the other tests rely on (smoke:
+    # "should have figures").  Snapshot them and restore after the run.
+    preserved_names = (
+        "json/result.json",
+        "fulltext.md",
+        "figure-map.json",
+        "chart-type-map.json",
+        "structure/figure_inventory.json",
+        "structure/table_inventory.json",
+        "structure/reader_figures.json",
+    )
+    preserved = {
+        name: (SRC / name).read_bytes()
+        for name in preserved_names
+        if (SRC / name).exists()
+    }
 
     all_results = synth_payload(legacy)
     scratch = Path(tempfile.mkdtemp(prefix="pf-fixture-"))
@@ -120,6 +161,11 @@ def main() -> int:
     (ocr_dir / "meta.json").write_text(
         json.dumps(meta, indent=1, ensure_ascii=False) + "\n", encoding="utf-8"
     )
+
+    for name, data in preserved.items():
+        target = ocr_dir / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(data)
 
     raw_lines = [
         line

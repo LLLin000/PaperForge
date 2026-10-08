@@ -6,16 +6,16 @@
  "source_pdf": "System/Zotero/storage/TSTONE001/TSTONE001.pdf",
  "ocr_pipeline_version": "2.0.0",
  "ocr_health_overall": "yellow",
- "last_backup_at": "2026-10-08T08:25:38.142719+00:00",
- "last_backup_path": "backups/fulltext.pre-rebuild.20261008T082538Z.md",
- "machine_fulltext_hash": "sha256:0b6719c4bfb8619ae0fc286f5bd9fb219fdbfd92f5fe276eec306d9be476dae3",
+ "last_backup_at": "2026-10-08T10:13:19.316136+00:00",
+ "last_backup_path": "backups/fulltext.pre-rebuild.20261008T101319Z.md",
+ "machine_fulltext_hash": "sha256:0b980a87af52ca88fe3a4e2a63ed432886351461a4701cf6b908d1114b716aff",
  "raw_version": {
   "ocr_provider": "PaddleOCR",
   "ocr_model": "PaddleOCR",
   "ocr_raw_schema_version": "2.0.0",
   "pdf_fingerprint": "sha256:6561f7105fd60850ef95ff17f5d030611119c4b88f7d0b37aba4fd317c0af99b",
-  "result_json_hash": "sha256:117d6dcbcdfc9ad651b3a3bfe3ef6316a9bee2a25966dd0a11219bfb024d78f9",
-  "raw_blocks_hash": "sha256:f82044a071dcc27c23c88baa6fd6ec7c385e46df9a26626469f9e68122e27ba6"
+  "result_json_hash": "sha256:e14602128b1af4ee589f3c2331ca5b6bbc6951d07e1050d578b14f1e9843fa5e",
+  "raw_blocks_hash": "sha256:4f9a1019aa906c8b6572872aa9a4d406939cf4f20c58dd5b94e16313bff47962"
  },
  "derived_version": {
   "ocr_pipeline_version": "2.0.0",
@@ -28,7 +28,7 @@
  },
  "raw_upgradable": false,
  "derived_stale": false,
- "version_state_updated_at": "2026-10-08T16:25:38.289288",
+ "version_state_updated_at": "2026-10-08T18:13:19.419968",
  "legacy_images_path": "System/PaperForge/ocr/TSTONE001/images",
  "path_map": {
   "structured_truth": "assets/",
