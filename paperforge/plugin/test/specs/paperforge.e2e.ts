@@ -3542,6 +3542,9 @@ describe("PaperForge real-task e2e", function () {
   });
 
   it("stages render repairs in isolation and promotes the reviewed candidates", async function () {
+    // The runner's first reconcile (cold client + render audit) can exceed
+    // the suite's per-test mocha budget; this case owns a longer one.
+    this.timeout(900000);
     // F01/F02/F03: staging reconciles against an isolated tmp root; only
     // promotion/acceptance may write the canonical inventory.
     const base = await sandboxBasePath();
