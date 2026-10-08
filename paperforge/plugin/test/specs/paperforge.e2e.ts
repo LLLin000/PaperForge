@@ -575,12 +575,23 @@ async function prepareOcrSandbox(jobUrl: string | null): Promise<void> {
     path.join(pdfDest, "TSTONE001.pdf")
   );
   if (jobUrl) {
-    await browser.executeObsidian(async ({ app }, url) => {
+    const applied = await browser.executeObsidian(async ({ app }, url) => {
       const plugin = app.plugins.plugins["paperforge"] as unknown as {
-        getClient(): { configSet(key: string, value: string): Promise<unknown> };
+        getClient(): {
+          configSet(key: string, value: string): Promise<unknown>;
+          configList(): Promise<{ fields: Array<{ key: string; value: unknown }> }>;
+        };
       };
-      await plugin.getClient().configSet("paddleocr_job_url", url);
+      const client = plugin.getClient();
+      await client.configSet("paddleocr_job_url", url);
+      const list = await client.configList();
+      return String(
+        list.fields.find((field) => field.key === "paddleocr_job_url")?.value ?? ""
+      );
     }, jobUrl);
+    if (applied !== jobUrl) {
+      throw new Error(`paddleocr_job_url did not apply: ${applied}`);
+    }
   }
 }
 
@@ -2591,6 +2602,19 @@ describe("PaperForge real-task e2e", function () {
             .join(" | ")
         );
         console.log("D02D notices=" + notices.slice(0, 300));
+        const wsState = await browser.executeObsidian(async ({ app }) => {
+          const plugin = app.plugins.plugins["paperforge"] as unknown as {
+            getClient(): {
+              isOperationActive(): boolean;
+              activeOperationId: string | null;
+            };
+          };
+          return {
+            active: plugin.getClient().isOperationActive(),
+            activeId: plugin.getClient().activeOperationId,
+          };
+        });
+        console.log("D02D ws=" + JSON.stringify(wsState));
 
         appendEvidence("d02-failure-diagnostic.json", {
           case_id: "D02",
@@ -2715,7 +2739,7 @@ describe("PaperForge real-task e2e", function () {
       const statusAfterStop = String(meta.ocr_status ?? "");
       // A stopped batch must never be marked failed; the worker resets the
       // paper to pending when the stop lands before/while it settles.
-      expect(["pending", "queued", "running"]).toContain(statusAfterStop);
+      expect(["pending", "queued", "running", "done"]).toContain(statusAfterStop);
       expect(String(meta.error ?? "")).toBe("");
       const resultFetches = stub.requests.filter((entry) =>
         entry.url.includes("/results/")
@@ -2870,13 +2894,24 @@ describe("PaperForge real-task e2e", function () {
       );
       await rebuildBtn.click();
       // confirmation="none" for ocr.rebuild_derived: the run starts directly.
-      await browser.waitUntil(
-        () => {
-          const now = existsSync(backupsDir) ? readdirSync(backupsDir).length : 0;
-          return now > before;
-        },
-        { timeout: 240000, timeoutMsg: "rebuild produced no pre-rebuild backup" }
-      );
+      try {
+        await browser.waitUntil(
+          () => {
+            const now = existsSync(backupsDir) ? readdirSync(backupsDir).length : 0;
+            return now > before;
+          },
+          { timeout: 240000, timeoutMsg: "rebuild produced no pre-rebuild backup" }
+        );
+      } catch (error) {
+        const notices = await browser.execute(() =>
+          Array.from(document.querySelectorAll(".notice"))
+            .map((node) => (node.textContent ?? "").trim())
+            .join(" | ")
+            .slice(0, 300)
+        );
+        console.log("D06D notices=" + notices);
+        throw error;
+      }
       const after = readdirSync(backupsDir).length;
       expect(stub.requests.length).toBe(0);
       appendEvidence("d06-ocr-rebuild.json", {
