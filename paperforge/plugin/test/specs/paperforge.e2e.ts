@@ -2524,6 +2524,39 @@ describe("PaperForge real-task e2e", function () {
     expect(labels).toContain("v1");
     expect(labels).toContain("v2");
 
+    // D09: cleanup/delete is NOT an approved capability — the version surface
+    // must not present destructive cleanup affordances (the contract is the
+    // absence until an owner decision defines a cleanup policy).
+    const d09 = await browser.execute(() => {
+      const controls = Array.from(
+        document.querySelectorAll(".pf-vr-layout button, .pf-vr-layout a")
+      ).map((el) => (el.textContent ?? "").trim());
+      return {
+        scanned: controls.length,
+        destructive: controls.filter((text) =>
+          /删除|清理|Delete|Cleanup|Purge|Remove/i.test(text)
+        ),
+      };
+    });
+    expect(d09.destructive).toEqual([]);
+    appendEvidence("d09-ocr-cleanup-absence.json", {
+      case_id: "D09",
+      variant: "no unapproved cleanup/delete controls on the version surface",
+      required_layer: "H",
+      status: "VERIFIED",
+      source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: PLUGIN_DIR,
+      })
+        .toString()
+        .trim(),
+      worktree_dirty: worktreeDirty(),
+      scanned_controls: d09.scanned,
+      matched_destructive: d09.destructive,
+      capability_status:
+        "not approved — owner decision required to define a cleanup contract",
+      recorded_at: new Date().toISOString(),
+    });
+
     // Restore the oldest version (v1) → confirmation → Python performs the
     // copy AND persists provenance.
     const restoreBtn = await browser.$("[data-pf-testid='version-restore']");
