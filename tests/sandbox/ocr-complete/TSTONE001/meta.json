@@ -6,6 +6,8 @@
  "source_pdf": "System/Zotero/storage/TSTONE001/TSTONE001.pdf",
  "ocr_pipeline_version": "2.0.0",
  "ocr_health_overall": "yellow",
+ "last_backup_at": "2026-10-08T12:08:42.472917+00:00",
+ "last_backup_path": "backups/fulltext.pre-rebuild.20261008T120842Z.md",
  "machine_fulltext_hash": "sha256:0b980a87af52ca88fe3a4e2a63ed432886351461a4701cf6b908d1114b716aff",
  "raw_version": {
   "ocr_provider": "PaddleOCR",
@@ -26,10 +28,19 @@
  },
  "raw_upgradable": false,
  "derived_stale": false,
- "version_state_updated_at": "2026-10-08T18:13:19.419968",
+ "version_state_updated_at": "2026-10-08T20:08:42.547207",
  "legacy_images_path": "System/PaperForge/ocr/TSTONE001/images",
  "path_map": {
   "structured_truth": "assets/",
   "legacy_compat": "images/"
- }
+ },
+ "title": "Biomechanical Comparison of Suture Anchor Fixations in Rotator Cuff Repair",
+ "year": "2024",
+ "journal": "Journal of Shoulder and Elbow Surgery",
+ "doi": "10.1016/j.jse.2024.01.001",
+ "authors": [
+  "John Smith",
+  "Jane Doe"
+ ],
+ "first_author": "John Smith"
 }
