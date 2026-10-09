@@ -420,6 +420,38 @@ function removeFileQuiet(filePath: string): void {
   }
 }
 
+/** Click the library Sync control.  The modal container can be gone while
+ * its fading backdrop still intercepts native clicks (element click
+ * intercepted by .modal-bg on the runner), so wait for the backdrop to
+ * clear, then dispatch through the DOM so the handler fires on the live
+ * node. */
+async function clickSyncLibrary(): Promise<void> {
+  await browser.waitUntil(
+    async () => (await browser.$(".modal-bg").isExisting()) === false,
+    {
+      timeout: 15000,
+      interval: 250,
+      timeoutMsg: "the modal backdrop never cleared before Sync",
+    }
+  );
+  await browser.waitUntil(
+    async () =>
+      await browser.execute(() => {
+        const btn = document.querySelector(
+          "[data-pf-testid='sync-library']"
+        ) as HTMLButtonElement | null;
+        return Boolean(btn && !btn.disabled);
+      }),
+    { timeout: 30000, timeoutMsg: "Sync stayed disabled" }
+  );
+  await browser.execute(() => {
+    const btn = document.querySelector(
+      "[data-pf-testid='sync-library']"
+    ) as HTMLButtonElement | null;
+    btn?.click();
+  });
+}
+
 /** Click a freshly queried element, retrying once through a stale-element
  * error (Obsidian re-renders replace nodes between the wait and the click). */
 async function clickStable(selector: string): Promise<void> {
@@ -1769,9 +1801,7 @@ describe("PaperForge real-task e2e", function () {
       const exportPath = path.join(base, EXPORT_REL);
       const exportBefore = sha256(exportPath);
       await openPanel();
-      const syncBtn = await browser.$("[data-pf-testid='sync-library']");
-      await expect(syncBtn).toExist();
-      await syncBtn.click();
+      await clickSyncLibrary();
       await browser.waitUntil(
         () => {
           try {
@@ -2052,34 +2082,7 @@ describe("PaperForge real-task e2e", function () {
     expect(existsSync(path.join(base, NOTE_PATH))).toBe(false);
 
     await openPanel();
-    // The modal container can be gone while its fading backdrop still
-    // intercepts clicks (element click intercepted by .modal-bg on the
-    // runner), so wait for the backdrop to clear and dispatch the click
-    // through the DOM (the handler always fires on the live node).
-    await browser.waitUntil(
-      async () => (await browser.$(".modal-bg").isExisting()) === false,
-      {
-        timeout: 15000,
-        interval: 250,
-        timeoutMsg: "the modal backdrop never cleared before Sync",
-      }
-    );
-    await browser.waitUntil(
-      async () =>
-        await browser.execute(() => {
-          const btn = document.querySelector(
-            "[data-pf-testid='sync-library']"
-          ) as HTMLButtonElement | null;
-          return Boolean(btn && !btn.disabled);
-        }),
-      { timeout: 30000, timeoutMsg: "Sync stayed disabled" }
-    );
-    await browser.execute(() => {
-      const btn = document.querySelector(
-        "[data-pf-testid='sync-library']"
-      ) as HTMLButtonElement | null;
-      btn?.click();
-    });
+    await clickSyncLibrary();
     await browser.waitUntil(
       () => {
         try {
@@ -2153,9 +2156,7 @@ describe("PaperForge real-task e2e", function () {
       doi: "10.1016/j.jse.2024.01.999",
     });
 
-    const syncBtn = await browser.$("[data-pf-testid='sync-library']");
-    await expect(syncBtn).toExist();
-    await syncBtn.click();
+    await clickSyncLibrary();
 
     // Wait on the strongest data effect, never on a trace string: the startup
     // autosync can satisfy a trace assertion without the button doing anything,
@@ -2231,9 +2232,7 @@ describe("PaperForge real-task e2e", function () {
         }
       );
     }
-    const syncBtn = await browser.$("[data-pf-testid='sync-library']");
-    await expect(syncBtn).toExist();
-    await syncBtn.click();
+    await clickSyncLibrary();
 
     await browser.waitUntil(
       async () => (await browser.$(".modal-container").isExisting()) === true,
@@ -2485,9 +2484,7 @@ describe("PaperForge real-task e2e", function () {
       doi: "10.1016/j.jse.2024.01.998",
     });
 
-    const syncBtn = await browser.$("[data-pf-testid='sync-library']");
-    await expect(syncBtn).toExist();
-    await syncBtn.click();
+    await clickSyncLibrary();
     await browser.waitUntil(
       () => {
         try {
