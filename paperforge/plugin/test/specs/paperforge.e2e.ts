@@ -3719,11 +3719,12 @@ describe("PaperForge real-task e2e", function () {
   });
 
   it("stages render repairs in isolation and promotes the reviewed candidates", async function () {
-    // The runner's first reconcile (cold client + render audit) can exceed
-    // the suite's shared per-test default, so this case owns a larger mocha
-    // budget; the long wait is additionally sliced so each wrapped command
-    // stays well inside the config-derived per-command timer.
-    this.timeout(1200000);
+    // The first reconcile on a cold runner is bounded by the case's own
+    // wait below; the oversized budgets this case briefly carried existed
+    // only to ride out a read-mechanism bug (getText vs textContent), now
+    // fixed - the settle is detected as soon as the block leaves the
+    // staging placeholder.
+    this.timeout(600000);
     // F01/F02/F03: staging reconciles against an isolated tmp root; only
     // promotion/acceptance may write the canonical inventory.
     const base = await sandboxBasePath();
@@ -3804,21 +3805,10 @@ describe("PaperForge real-task e2e", function () {
       return text.length > 0 && !text.includes("Staging R/P proposals");
     };
     try {
-      let settled = false;
-      for (let slice = 0; slice < 4 && !settled; slice += 1) {
-        try {
-          await browser.waitUntil(staged, {
-            timeout: 240000,
-            timeoutMsg: "staging slice elapsed",
-          });
-          settled = true;
-        } catch {
-          // slice elapsed; keep polling unless this was the last slice
-        }
-      }
-      if (!settled) {
-        throw new Error("staging never settled");
-      }
+      await browser.waitUntil(staged, {
+        timeout: 300000,
+        timeoutMsg: "staging never settled",
+      });
     } catch (error) {
       const diag = await browser.execute(() => ({
         staging: (document.querySelector(".paperforge-quality-staging")?.textContent ?? "").slice(0, 300),
