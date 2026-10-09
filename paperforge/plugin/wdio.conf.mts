@@ -81,11 +81,14 @@ export const config: WebdriverIO.Config = {
   reporters: ["obsidian"],
   cacheDir: path.resolve(".obsidian-cache"),
   // NOTE: @wdio/utils wraps every command in a timer derived from THIS
-  // config value — per-test `this.timeout()` overrides do not raise it.
+  // config value, so a SINGLE wrapped command must finish within it;
+  // per-test `this.timeout()` budgets (mocha level) DO apply on top for
+  // whole tests and do not extend the per-command timer.
   // Slow profiles (P2 proxy networks) legitimately exceed 120s inside a
   // single install wait, so the budget must cover A01's 540s wait and the
   // journey's inner waits (found on the owner machine: a healthy install
-  // poll was killed at ~118s with the 120000 default).
-  mochaOpts: { ui: "bdd", timeout: 1200000 },
+  // poll was killed at ~118s with the 120000 default). 600s bounds a hung
+  // command at ten minutes while covering every single-wait on record.
+  mochaOpts: { ui: "bdd", timeout: 600000 },
   logLevel: "warn",
 };
