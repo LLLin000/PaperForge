@@ -23,6 +23,8 @@ Design decisions (see Phase 23 context):
 
 from __future__ import annotations
 
+import sys
+
 import json
 import logging
 import os
@@ -245,7 +247,8 @@ def migrate_legacy_index(vault: Path) -> bool:
     bak_path = path.with_suffix(".json.bak")
     shutil.copy2(str(path), str(bak_path))
     logger.info("Legacy format detected at %s, backed up to %s", path, bak_path)
-    print(f"Legacy format detected at {path}, backed up to {bak_path}")
+    # #137: human logs -> stderr; stdout carries machine output only.
+    print(f"Legacy format detected at {path}, backed up to {bak_path}", file=sys.stderr)
     return True
 
 
@@ -606,13 +609,14 @@ def build_index(vault: Path, verbose: bool = False, force_rebuild: bool = False)
 
     migrated = migrate_legacy_index(vault)
     if migrated:
-        print("Legacy index format detected and backed up. Rebuilding with envelope...")
+        print("Legacy index format detected and backed up. Rebuilding with envelope...", file=sys.stderr)
 
     existing_data = read_index(vault)
     if isinstance(existing_data, dict) and existing_data.get("schema_version") != CURRENT_SCHEMA_VERSION:
         print(
             f"Schema version mismatch: index has {existing_data.get('schema_version')}, "
-            f"need {CURRENT_SCHEMA_VERSION}. Rebuilding..."
+            f"need {CURRENT_SCHEMA_VERSION}. Rebuilding...",
+            file=sys.stderr,
         )
 
     cfg = load_vault_config(vault)

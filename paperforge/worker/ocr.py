@@ -191,6 +191,24 @@ OCR_QUEUE_STATUSES = {
 # nopdf at the head of the queue starves every pending row behind it (the
 # upload slots are consumed by rows that can never succeed).
 OCR_SETTLED_STATUSES = {"done", "done_degraded", "fatal_error", "blocked", "nopdf", "error"}
+
+
+# Action/stream mode (#137 NDJSON): stdout must stay machine-readable while
+# the ocr.run action streams, so human diagnostics are routed to stderr when
+# this flag is set (owned by paperforge.actions.registry's run handler).
+_STREAM_DIAGNOSTICS = False
+
+
+def set_stream_diagnostics(enabled: bool) -> None:
+    """Stream mode routes human diagnostics to stderr; stdout stays NDJSON."""
+    global _STREAM_DIAGNOSTICS
+    _STREAM_DIAGNOSTICS = enabled
+
+
+def _diag(message: str = "", **kwargs: object) -> None:
+    """Human diagnostic line: stdout normally, stderr in stream mode."""
+    kwargs.setdefault("flush", True)
+    print(message, file=sys.stderr if _STREAM_DIAGNOSTICS else sys.stdout, **kwargs)
 def _emit_settlement_progress(
     progress_callback: Callable[[str], None] | None,
     reported_keys: set[str],
@@ -2892,7 +2910,7 @@ def run_ocr(
         # Report skips UP FRONT (owner: 'why does nothing show status?' —
         # no-PDF papers are correctly not queued, but silent skips read as
         # a stall).
-        print(
+        _diag(
             f"OCR: skipped {len(skipped_no_pdf)} papers (no PDF attachment): "
             + ", ".join(skipped_no_pdf[:8])
             + ("..." if len(skipped_no_pdf) > 8 else ""),
@@ -3237,11 +3255,11 @@ def run_ocr(
                         meta["error"] = "canonical PDF missing (has_pdf expected)"
                         meta["error_stage"] = "source"
                         queue_row["queue_status"] = "blocked"
-                        print(f"OCR: {key} blocked (PDF file missing)", flush=True)
+                        _diag(f"OCR: {key} blocked (PDF file missing)")
                     else:
                         meta["ocr_status"] = "nopdf"
                         queue_row["queue_status"] = "nopdf"
-                        print(f"OCR: {key} skipped (no PDF attachment)", flush=True)
+                        _diag(f"OCR: {key} skipped (no PDF attachment)")
                     write_json(paths["ocr"] / key / "meta.json", meta)
                     changed += 1
                     continue
@@ -3251,7 +3269,7 @@ def run_ocr(
                     write_json(paths["ocr"] / key / "meta.json", meta)
                     changed += 1
                     if not _token_warned:
-                        print("OCR: no API token configured — run `paperforge auth set ocr --stdin`", flush=True)
+                        _diag("OCR: no API token configured — run `paperforge auth set ocr --stdin`")
                         _token_warned = True
                     continue
                 upload_pdf = resolved_pdf
@@ -3299,7 +3317,7 @@ def run_ocr(
                     write_json(paths["ocr"] / key / "meta.json", meta)
                     changed += 1
                     continue
-                print(f"OCR: {key} uploading to PaddleOCR...", flush=True)
+                _diag(f"OCR: {key} uploading to PaddleOCR...")
                 # M1.1 write-ahead (owner review): persist the SUBMISSION
                 # INTENT before the remote POST — a crash between 'provider
                 # accepted' and 'job_id persisted' would otherwise leave an
@@ -3346,7 +3364,7 @@ def run_ocr(
                             queue_row["queue_status"] = "blocked"
                             write_json(paths["ocr"] / key / "meta.json", meta)
                             changed += 1
-                            print(f"OCR: {key} blocked (invalid API token)", flush=True)
+                            _diag(f"OCR: {key} blocked (invalid API token)")
                             continue
                         if _status in (400, 429):
                             # 400: provider error codes 10001-10008 (empty /
@@ -3361,7 +3379,7 @@ def run_ocr(
                             queue_row["queue_status"] = str(meta.get("ocr_status", "error") or "error")
                             write_json(paths["ocr"] / key / "meta.json", meta)
                             changed += 1
-                            print(f"OCR: {key} upload rejected ({_status}): {_body[:120]}", flush=True)
+                            _diag(f"OCR: {key} upload rejected ({_status}): {_body[:120]}")
                             continue
                     if isinstance(e, FileNotFoundError):
                         # The canonical PDF resolved earlier but disappeared
@@ -3384,7 +3402,7 @@ def run_ocr(
                     queue_row["queue_status"] = "pending"
                     write_json(paths["ocr"] / key / "meta.json", meta)
                     changed += 1
-                    print(f"OCR: {key} upload failed (retry {retry_count}/3): {e}", flush=True)
+                    _diag(f"OCR: {key} upload failed (retry {retry_count}/3): {e}")
                     continue
                 meta["ocr_status"] = "queued"
                 meta["ocr_started_at"] = datetime.now(timezone.utc).isoformat()
@@ -3393,7 +3411,7 @@ def run_ocr(
                 write_json(paths["ocr"] / key / "meta.json", meta)
                 changed += 1
                 active_submitted += 1
-                print(f"OCR: {key} queued (job {meta['ocr_job_id']})", flush=True)
+                _diag(f"OCR: {key} queued (job {meta['ocr_job_id']})")
             if _sanitized_temp is not None and _sanitized_temp.exists():
                 _sanitized_temp.unlink(missing_ok=True)
         poll_items = [r for r in remaining if r.get("queue_status") in ("queued", "running")]
@@ -3447,7 +3465,7 @@ def run_ocr(
                         write_json(paths["ocr"] / key / "meta.json", meta)
                         changed += 1
                         active_submitted = max(0, active_submitted - 1)
-                        print(f"OCR: {key} result expired, will retry", flush=True)
+                        _diag(f"OCR: {key} result expired, will retry")
                         continue
                     result_response.raise_for_status()
                     lines = [l.strip() for l in result_response.text.splitlines() if l.strip()]
@@ -3487,7 +3505,7 @@ def run_ocr(
                 queue_changed = True
                 active_submitted = max(0, active_submitted - 1)
                 _completed_count += 1
-                print(f"OCR: {key} completed ({page_num} pages)", flush=True)
+                _diag(f"OCR: {key} completed ({page_num} pages)")
             elif state in ("error", "failed"):
                 meta["error"] = payload.get("errorMsg", "Unknown OCR failure")
                 # P0-1 (owner review): a terminal PROVIDER failure must NOT
@@ -3508,9 +3526,8 @@ def run_ocr(
                 if attempt < MAX_OCR_JOB_ATTEMPTS:
                     meta["ocr_status"] = "pending"
                     queue_row["queue_status"] = "pending"
-                    print(
-                        f"OCR: {key} provider failed (attempt {attempt}/{MAX_OCR_JOB_ATTEMPTS}) — will resubmit: {meta['error']}",
-                        flush=True,
+                    _diag(
+                        f"OCR: {key} provider failed (attempt {attempt}/{MAX_OCR_JOB_ATTEMPTS}) — will resubmit: {meta['error']}"
                     )
                 else:
                     # Fail closed on the final allowed attempt: the row MUST
@@ -3519,9 +3536,8 @@ def run_ocr(
                     # queued/running), no poll (no job id), no settlement.
                     meta["ocr_status"] = "fatal_error"
                     queue_row["queue_status"] = "fatal_error"
-                    print(
-                        f"OCR: {key} fatal after {attempt} attempts: {meta['error']}",
-                        flush=True,
+                    _diag(
+                        f"OCR: {key} fatal after {attempt} attempts: {meta['error']}"
                     )
                 _failed_count += 1
             else:
@@ -3547,12 +3563,21 @@ def run_ocr(
                 _done_now = sum(
                     1 for r in ocr_queue if r.get("queue_status") in ("done", "done_degraded")
                 )
-                print(
+                _diag(
                     f"  [{datetime.now(timezone.utc).strftime('%H:%M:%S')}] "
-                    f"active={_active} done={_done_now} total={len(ocr_queue)}",
-                    flush=True,
+                    f"active={_active} done={_done_now} total={len(ocr_queue)}"
                 )
-            _time.sleep(poll_interval)
+            # Cooperative stop must land inside the client's grace window
+            # (5s): a full-interval sleep is always hard-killed, which ends
+            # the stream with no terminal event (exitCode 1) and leaves meta
+            # running.  Sleep in 1s slices and re-check the stop token.
+            _remaining_sleep = float(poll_interval)
+            while _remaining_sleep > 0:
+                if stop_check is not None and stop_check():
+                    break
+                _slice = min(1.0, _remaining_sleep)
+                _time.sleep(_slice)
+                _remaining_sleep -= _slice
     # Collect completed OCR keys for incremental index refresh (before filtering)
     _done_ocr_keys = (
         [
@@ -3623,28 +3648,37 @@ def run_ocr(
         summary_parts.append(f"pending={pending_count} ({', '.join(pending_keys)})")
     summary = f"OCR: {' '.join(summary_parts) if summary_parts else 'no items processed'}"
     if progress_callback is None:
-        print(summary, flush=True)
+        _diag(summary)
         if pending_keys:
-            print("OCR: re-run to continue polling incomplete items", flush=True)
+            _diag("OCR: re-run to continue polling incomplete items")
     else:
         logger.info(summary)
 
     try:
-        _sync.run_selection_sync(vault, json_output=progress_callback is not None)
+        # Machine contexts (action stream or progress callback) keep stdout
+        # free of human lines (#137).
+        _sync.run_selection_sync(
+            vault, json_output=progress_callback is not None or _STREAM_DIAGNOSTICS
+        )
         if _done_ocr_keys:
             done_keys = [k for k in _done_ocr_keys if k]
             for ocr_key in done_keys:
                 refresh_index_entry(vault, ocr_key)
             if verbose and progress_callback is None:
-                print(f"ocr: refreshed {len(done_keys)} index entries incrementally")
+                _diag(f"ocr: refreshed {len(done_keys)} index entries incrementally")
         else:
-            _sync.run_index_refresh(vault, json_output=progress_callback is not None)
+            _sync.run_index_refresh(
+                vault,
+                json_output=progress_callback is not None or _STREAM_DIAGNOSTICS,
+            )
     except ImportError:
-        _sync.run_index_refresh(vault, json_output=progress_callback is not None)
+        _sync.run_index_refresh(
+            vault, json_output=progress_callback is not None or _STREAM_DIAGNOSTICS
+        )
     except Exception as e:
         logger.error("Post-OCR index refresh failed: %s", e)
     if progress_callback is None:
-        print(f"ocr: updated {changed} records")
+        _diag(f"ocr: updated {changed} records")
     else:
         logger.info("ocr: updated %d records", changed)
     # P0-3: expose per-key settlement (successful subset survives a batch
