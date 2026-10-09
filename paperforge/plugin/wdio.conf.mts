@@ -89,6 +89,12 @@ export const config: WebdriverIO.Config = {
   // journey's inner waits (found on the owner machine: a healthy install
   // poll was killed at ~118s with the 120000 default). 600s bounds a hung
   // command at ten minutes while covering every single-wait on record.
-  mochaOpts: { ui: "bdd", timeout: 600000 },
+  // PF_E2E_GREP: local focused runs (never set in CI) — filters the mocha
+  // suite to one case while keeping the real harness and sandbox.
+  mochaOpts: {
+    ui: "bdd",
+    timeout: 600000,
+    ...(process.env.PF_E2E_GREP ? { grep: process.env.PF_E2E_GREP } : {}),
+  },
   logLevel: "warn",
 };

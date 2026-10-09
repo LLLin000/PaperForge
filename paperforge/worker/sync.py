@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import sys
+
 # =============================================================================
 # FREEZE LINE (v2.1-contract-hardened)
 #   No new business logic allowed in this file.
@@ -1234,7 +1236,11 @@ def migrate_to_workspace(vault: Path, paths: dict) -> int:
         migrated += 1
 
     if migrated > 0:
-        print(f"migrate_to_workspace: migrated {migrated} paper(s) to workspace structure")
+        # #137: human logs -> stderr; stdout carries machine output only.
+        print(
+            f"migrate_to_workspace: migrated {migrated} paper(s) to workspace structure",
+            file=sys.stderr,
+        )
 
     return migrated
 
