@@ -3553,9 +3553,9 @@ describe("PaperForge real-task e2e", function () {
 
   it("stages render repairs in isolation and promotes the reviewed candidates", async function () {
     // The runner's first reconcile (cold client + render audit) can exceed
-    // the @wdio command wrapper's config-level timeout, and per-test mocha
-    // overrides do not apply to wrapped commands (#268) — the long wait is
-    // sliced instead.
+    // the suite's shared per-test default, so this case owns a larger mocha
+    // budget; the long wait is additionally sliced so each wrapped command
+    // stays well inside the config-derived per-command timer.
     this.timeout(1200000);
     // F01/F02/F03: staging reconciles against an isolated tmp root; only
     // promotion/acceptance may write the canonical inventory.
