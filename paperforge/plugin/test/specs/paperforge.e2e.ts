@@ -3906,6 +3906,14 @@ describe("PaperForge real-task e2e", function () {
         return Boolean(live);
       });
       if (clicked) {
+        // The promote goes through the real client; capture an early failure
+        // (notice text) while it is still visible on screen.
+        await browser.pause(3000);
+        const earlyNotices = await browser.execute(() =>
+          Array.from(document.querySelectorAll(".notice")).map((node) =>
+            (node.textContent ?? "").trim()
+          )
+        );
         try {
           await browser.waitUntil(
             () => existsSync(inventoryPath) && sha256(inventoryPath) !== beforeSha,
@@ -3913,10 +3921,16 @@ describe("PaperForge real-task e2e", function () {
           );
           promoted = true;
           promotedSha = sha256(inventoryPath);
-        } catch {
+        } catch (error) {
+          console.log("F02D notices=" + JSON.stringify(earlyNotices));
           promoted = false;
         }
       }
+    }
+    // A staged R candidate exists, so the promote must actually complete:
+    // tolerating a silent failure here is how the flow shipped unverified.
+    if (rRows.length > 0) {
+      expect(promoted).toBe(true);
     }
 
     let accepted = false;
@@ -3938,12 +3952,22 @@ describe("PaperForge real-task e2e", function () {
         await browser.waitUntil(
           () =>
             existsSync(inventoryPath) && sha256(inventoryPath) !== beforeAccept,
-          { timeout: 120000 }
+          { timeout: 120000, timeoutMsg: "accept never wrote the inventory" }
         );
         accepted = true;
-      } catch {
+      } catch (error) {
+        const acceptNotices = await browser.execute(() =>
+          Array.from(document.querySelectorAll(".notice")).map((node) =>
+            (node.textContent ?? "").trim()
+          )
+        );
+        console.log("F03D notices=" + JSON.stringify(acceptNotices));
         accepted = false;
       }
+    }
+    // A staged P candidate exists, so the acceptance must actually complete.
+    if (pCards.length > 0) {
+      expect(accepted).toBe(true);
     }
 
     const sha = execFileSync("git", ["rev-parse", "HEAD"], {
