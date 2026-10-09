@@ -522,6 +522,10 @@ jobs:
           PF_OBSIDIAN_INSTALLER_VERSION: ${{ matrix.installer }}
           PF_E2E_SETUP_POSITIVE: "1"
           PF_E2E_JOURNEY_GATE: "1"
+          # Hark review item 7: the vector substrate cases (C03/E03 build +
+          # resume, E04 stop) run in the matrix now that the fixture carries
+          # structured blocks and a source image for the loopback provider.
+          PF_E2E_VECTOR_CASE: "1"
       - name: Upload first-use journey evidence
         if: always()
         uses: actions/upload-artifact@v4
