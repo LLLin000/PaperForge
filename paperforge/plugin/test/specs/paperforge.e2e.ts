@@ -3895,15 +3895,37 @@ describe("PaperForge real-task e2e", function () {
     let promoted = false;
     let promotedSha: string | null = null;
     if (rRows.length > 0) {
+      // Target the Promote control BY TEXT: the row also carries an "Open
+      // preview" button, and the first-enabled heuristic clicked that one
+      // while Promote sat disabled (the promote was never called).
+      const promoteState = await browser.execute(() => {
+        const buttons = Array.from(
+          document.querySelectorAll(
+            ".paperforge-quality-r-row button.pf-action-btn"
+          )
+        ) as HTMLButtonElement[];
+        const promote = buttons.find(
+          (button) => (button.textContent ?? "").trim() === "Promote"
+        );
+        return promote
+          ? { found: true, disabled: promote.disabled }
+          : { found: false, disabled: true };
+      });
+      // A staged candidate must offer an ENABLED Promote; anything else is
+      // the defect this case exists to catch.
+      expect(promoteState.found).toBe(true);
+      expect(promoteState.disabled).toBe(false);
       const clicked = await browser.execute(() => {
         const buttons = Array.from(
           document.querySelectorAll(
             ".paperforge-quality-r-row button.pf-action-btn"
           )
         ) as HTMLButtonElement[];
-        const live = buttons.find((button) => !button.disabled);
-        live?.click();
-        return Boolean(live);
+        const promote = buttons.find(
+          (button) => (button.textContent ?? "").trim() === "Promote"
+        );
+        promote?.click();
+        return Boolean(promote);
       });
       if (clicked) {
         // The promote goes through the real client; capture an early failure
@@ -3932,12 +3954,15 @@ describe("PaperForge real-task e2e", function () {
           });
           const rowState = await browser.execute(() =>
             Array.from(
-              document.querySelectorAll(
-                ".paperforge-quality-r-row button.pf-action-btn"
-              )
-            ).map((button) => ({
-              text: (button.textContent ?? "").trim(),
-              disabled: (button as HTMLButtonElement).disabled,
+              document.querySelectorAll(".paperforge-quality-r-row")
+            ).map((row) => ({
+              marker: (row.querySelector("span")?.textContent ?? "").trim(),
+              buttons: Array.from(row.querySelectorAll("button")).map(
+                (button) => ({
+                  text: (button.textContent ?? "").trim(),
+                  disabled: (button as HTMLButtonElement).disabled,
+                })
+              ),
             }))
           );
           console.log(
@@ -3961,11 +3986,26 @@ describe("PaperForge real-task e2e", function () {
     let accepted = false;
     if (pCards.length > 0) {
       const beforeAccept = existsSync(inventoryPath) ? sha256(inventoryPath) : null;
+      const acceptState = await browser.execute(() => {
+        const cardEl = document.querySelector(".paperforge-quality-p-card");
+        const button = Array.from(
+          cardEl?.querySelectorAll("button.pf-action-btn") ?? []
+        ).find(
+          (candidate) => (candidate.textContent ?? "").trim() === "Accept"
+        ) as HTMLButtonElement | undefined;
+        return button
+          ? { found: true, disabled: button.disabled }
+          : { found: false, disabled: true };
+      });
+      expect(acceptState.found).toBe(true);
+      expect(acceptState.disabled).toBe(false);
       await browser.execute(() => {
         const cardEl = document.querySelector(".paperforge-quality-p-card");
-        const button = cardEl?.querySelector(
-          "button.pf-action-btn"
-        ) as HTMLButtonElement | null;
+        const button = Array.from(
+          cardEl?.querySelectorAll("button.pf-action-btn") ?? []
+        ).find(
+          (candidate) => (candidate.textContent ?? "").trim() === "Accept"
+        ) as HTMLButtonElement | undefined;
         button?.click();
       });
       // The acceptance may ask for confirmation first.
