@@ -833,16 +833,31 @@ export class RuntimeBootstrap {
       (err, _stdout, stderr) => {
         if (err) {
           // `Command failed: …` alone says nothing actionable — carry the
-          // tool's own last words (pip's ERROR line) into the message.
+          // tool's own last words (pip's ERROR line) into the message, and
+          // when the tool said nothing, name how the child died (an
+          // unexplained mid-run termination is #269's open signature).
           const detail = String(stderr ?? "")
             .split(/\r?\n/)
             .map((line) => line.trim())
             .filter(Boolean)
             .slice(-3)
             .join(" | ");
+          const execErr = err as NodeJS.ErrnoException & {
+            killed?: boolean;
+            signal?: string | null;
+            code?: number | string | null;
+          };
+          const termination = [
+            execErr.killed ? "killed" : "",
+            execErr.signal ? `signal=${execErr.signal}` : "",
+            typeof execErr.code === "number" ? `exit=${execErr.code}` : "",
+          ]
+            .filter(Boolean)
+            .join(" ");
+          const suffix = detail || (termination ? `[${termination}]` : "");
           reject(
             new Error(
-              `${label} failed: ${err.message}${detail ? ` — ${detail}` : ""}`
+              `${label} failed: ${err.message}${suffix ? ` — ${suffix}` : ""}`
             )
           );
         } else {
