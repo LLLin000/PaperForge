@@ -3922,7 +3922,32 @@ describe("PaperForge real-task e2e", function () {
           promoted = true;
           promotedSha = sha256(inventoryPath);
         } catch (error) {
-          console.log("F02D notices=" + JSON.stringify(earlyNotices));
+          // The client traces every op (ok/ms/code); read the tail so the
+          // promote's actual outcome is visible even without a notice.
+          const traceTail = await browser.executeObsidian(async ({ app }) => {
+            const plugin = app.plugins.plugins["paperforge"] as unknown as {
+              getDebugTrace(): string;
+            };
+            return plugin.getDebugTrace().split("\n").slice(-6).join(" | ");
+          });
+          const rowState = await browser.execute(() =>
+            Array.from(
+              document.querySelectorAll(
+                ".paperforge-quality-r-row button.pf-action-btn"
+              )
+            ).map((button) => ({
+              text: (button.textContent ?? "").trim(),
+              disabled: (button as HTMLButtonElement).disabled,
+            }))
+          );
+          console.log(
+            "F02D notices=" +
+              JSON.stringify(earlyNotices) +
+              " trace=" +
+              JSON.stringify(traceTail) +
+              " rows=" +
+              JSON.stringify(rowState)
+          );
           promoted = false;
         }
       }
@@ -3961,7 +3986,18 @@ describe("PaperForge real-task e2e", function () {
             (node.textContent ?? "").trim()
           )
         );
-        console.log("F03D notices=" + JSON.stringify(acceptNotices));
+        const traceTail = await browser.executeObsidian(async ({ app }) => {
+          const plugin = app.plugins.plugins["paperforge"] as unknown as {
+            getDebugTrace(): string;
+          };
+          return plugin.getDebugTrace().split("\n").slice(-6).join(" | ");
+        });
+        console.log(
+          "F03D notices=" +
+            JSON.stringify(acceptNotices) +
+            " trace=" +
+            JSON.stringify(traceTail)
+        );
         accepted = false;
       }
     }
