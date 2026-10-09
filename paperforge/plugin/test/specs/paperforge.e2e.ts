@@ -1519,6 +1519,18 @@ describe("PaperForge real-task e2e", function () {
     expect(pointerBefore).not.toBeNull();
     const beforeRoot = pointerBefore?.environmentRoot ?? "";
 
+    // No stale setup operation may be running: the reinstall click would be
+    // a silent no-op (or collide) otherwise.
+    await browser.waitUntil(
+      async () =>
+        await browser.executeObsidian(async ({ app }) => {
+          const plugin = app.plugins.plugins["paperforge"] as unknown as {
+            _settingTab: { _setupOperation: string };
+          };
+          return plugin._settingTab._setupOperation === "idle";
+        }),
+      { timeout: 60000, timeoutMsg: "a previous setup operation never went idle" }
+    );
     await browser.executeObsidian(async ({ app }) => {
       const plugin = app.plugins.plugins["paperforge"] as unknown as {
         _settingTab: {
@@ -1542,6 +1554,19 @@ describe("PaperForge real-task e2e", function () {
       if (!action) throw new Error("reinstall action was not rendered");
       (action as HTMLButtonElement).click();
     });
+
+    // The click must actually start the operation; a no-op click would
+    // otherwise burn the whole outcome budget before failing.
+    await browser.waitUntil(
+      async () =>
+        await browser.executeObsidian(async ({ app }) => {
+          const plugin = app.plugins.plugins["paperforge"] as unknown as {
+            _settingTab: { _setupOperation: string };
+          };
+          return plugin._settingTab._setupOperation !== "idle";
+        }),
+      { timeout: 30000, timeoutMsg: "reinstall click never started the operation" }
+    );
 
     await browser.waitUntil(
       async () => {
@@ -2007,9 +2032,34 @@ describe("PaperForge real-task e2e", function () {
     expect(existsSync(path.join(base, NOTE_PATH))).toBe(false);
 
     await openPanel();
-    const syncBtn = await browser.$("[data-pf-testid='sync-library']");
-    await expect(syncBtn).toExist();
-    await syncBtn.click();
+    // The modal container can be gone while its fading backdrop still
+    // intercepts clicks (element click intercepted by .modal-bg on the
+    // runner), so wait for the backdrop to clear and dispatch the click
+    // through the DOM (the handler always fires on the live node).
+    await browser.waitUntil(
+      async () => (await browser.$(".modal-bg").isExisting()) === false,
+      {
+        timeout: 15000,
+        interval: 250,
+        timeoutMsg: "the modal backdrop never cleared before Sync",
+      }
+    );
+    await browser.waitUntil(
+      async () =>
+        await browser.execute(() => {
+          const btn = document.querySelector(
+            "[data-pf-testid='sync-library']"
+          ) as HTMLButtonElement | null;
+          return Boolean(btn && !btn.disabled);
+        }),
+      { timeout: 30000, timeoutMsg: "Sync stayed disabled" }
+    );
+    await browser.execute(() => {
+      const btn = document.querySelector(
+        "[data-pf-testid='sync-library']"
+      ) as HTMLButtonElement | null;
+      btn?.click();
+    });
     await browser.waitUntil(
       () => {
         try {
@@ -4548,27 +4598,6 @@ describe("PaperForge real-task e2e", function () {
     });
     expect(before).toBeGreaterThan(0);
 
-    const pressButton = async (label: string): Promise<void> => {
-      await browser.executeObsidian(async ({ app }, text) => {
-        const plugin = app.plugins.plugins["paperforge"] as unknown as {
-          _settingTab: { containerEl: HTMLElement };
-        };
-        const row = Array.from(
-          plugin._settingTab.containerEl.querySelectorAll(".setting-item")
-        ).find((el) =>
-          (el.querySelector(".setting-item-name")?.textContent ?? "").includes(
-            "Debug trace"
-          )
-        );
-        const button = Array.from(row?.querySelectorAll("button") ?? []).find(
-          (candidate) => (candidate.textContent ?? "").trim() === text
-        );
-        if (!(button instanceof HTMLButtonElement)) {
-          throw new Error(`${text} button not found`);
-        }
-        button.click();
-      }, label);
-    };
     const copySmoke = await browser.executeObsidian(async ({ app }) => {
       const plugin = app.plugins.plugins["paperforge"] as unknown as {
         _settingTab: { containerEl: HTMLElement };
@@ -4609,17 +4638,35 @@ describe("PaperForge real-task e2e", function () {
     });
     expect(traceAfterCopy).toBeGreaterThan(0);
 
-    await pressButton("Clear");
+    // Click Clear and read the length in the SAME task: the trace ring is
+    // appended by any client traffic (probe leftovers, autosync), so a
+    // readback in a separate round-trip races those writers (observed as
+    // expected 0 / received 59 on the runner).
     const cleared = await browser.executeObsidian(async ({ app }) => {
       const plugin = app.plugins.plugins["paperforge"] as unknown as {
         settings: { debug_trace?: boolean };
         getDebugTrace(): string;
         saveSettings(): Promise<void>;
         _settingTab: {
+          containerEl: HTMLElement;
           _selectedDetailModule?: string | null;
           activeTab?: string;
         };
       };
+      const row = Array.from(
+        plugin._settingTab.containerEl.querySelectorAll(".setting-item")
+      ).find((el) =>
+        (el.querySelector(".setting-item-name")?.textContent ?? "").includes(
+          "Debug trace"
+        )
+      );
+      const button = Array.from(row?.querySelectorAll("button") ?? []).find(
+        (candidate) => (candidate.textContent ?? "").trim() === "Clear"
+      );
+      if (!(button instanceof HTMLButtonElement)) {
+        throw new Error("Clear button not found");
+      }
+      button.click();
       const length = plugin.getDebugTrace().length;
       // leave the machine off and the settings view back on its default for
       // the following tests
@@ -5763,6 +5810,35 @@ describe("PaperForge real-task e2e", function () {
     await openSettingsTabOn({ stage: 2 });
     await waitForTestId("setup-path-resources_dir");
     await setInputByTestId("setup-path-resources_dir", target);
+    // The input event updates plugin.settings synchronously; confirm the
+    // value landed there before saving (a re-render racing the input would
+    // otherwise leave the OLD value and the save would write it).
+    await browser.waitUntil(
+      async () =>
+        await browser.executeObsidian(async ({ app }, wanted) => {
+          const plugin = app.plugins.plugins["paperforge"] as unknown as {
+            settings: { resources_dir?: string };
+          };
+          return (plugin.settings.resources_dir ?? "") === wanted;
+        }, target),
+      { timeout: 10000, timeoutMsg: "resources_dir did not reach plugin settings" }
+    );
+    // The Save control is disabled while a setup operation runs; clicking a
+    // disabled button is a silent no-op (observed as a 60s persistence
+    // timeout on the runner).
+    await browser.waitUntil(
+      async () =>
+        await browser.executeObsidian(async ({ app }) => {
+          const plugin = app.plugins.plugins["paperforge"] as unknown as {
+            _settingTab: { containerEl: HTMLElement };
+          };
+          const el = plugin._settingTab.containerEl.querySelector(
+            "[data-pf-testid='setup-library-save']"
+          );
+          return el instanceof HTMLButtonElement && !el.disabled;
+        }),
+      { timeout: 60000, timeoutMsg: "library Save stayed disabled" }
+    );
     await clickSettingsTestId("setup-library-save");
 
     await browser.waitUntil(

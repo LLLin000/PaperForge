@@ -572,8 +572,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             return;
           }
           throw new Error(
-            outcome.protocolFailure ||
-              `Setup failed with exit code ${outcome.exitCode}`
+            outcome.protocolFailure
+              ? `${outcome.protocolFailure} (exit=${outcome.exitCode}, cancelled=${outcome.cancelled})`
+              : `Setup failed with exit code ${outcome.exitCode}`
           );
         }
         this._setupOperation = "idle";
@@ -816,8 +817,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         const outcome = await handle.outcome;
         if (!outcome.ok) {
           throw new Error(
-            outcome.protocolFailure ||
-              `Setup failed with exit code ${outcome.exitCode}`
+            outcome.protocolFailure
+              ? `${outcome.protocolFailure} (exit=${outcome.exitCode}, cancelled=${outcome.cancelled})`
+              : `Setup failed with exit code ${outcome.exitCode}`
           );
         }
         this._setupOperation = "idle";
