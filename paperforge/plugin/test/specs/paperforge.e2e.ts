@@ -571,6 +571,26 @@ async function prepareOcrSandbox(
   keyring["paperforge:ocr:default"] = "pf-e2e-ocr-token";
   writeFileSync(keyringPath, JSON.stringify(keyring), "utf8");
   const base = await sandboxBasePath();
+  // A crashed/killed previous controller leaves controller.lock (and the
+  // queue lock) behind; the worker refuses a new controller inside the 30s
+  // stale window, so a rerun would look like "another controller is running".
+  // The sandbox is rebuilt per case — drop the locks with it.
+  for (const lockName of ["controller.lock", "ocr_queue.lock"]) {
+    const lockPath = path.join(
+      base,
+      "System",
+      "PaperForge",
+      "ocr",
+      lockName
+    );
+    if (existsSync(lockPath)) {
+      try {
+        unlinkSync(lockPath); // rmSync(force) silently no-ops on P1 paths
+      } catch {
+        // best effort — a stale lock is recoverable after the 30s window
+      }
+    }
+  }
   const pdfDest = path.join(base, "System", "Zotero", "storage", "TSTONE001");
   mkdirSync(pdfDest, { recursive: true });
   copyFileSync(
@@ -2643,6 +2663,7 @@ describe("PaperForge real-task e2e", function () {
       // 5. D03: the running banner is visible while the provider runs.
       const activity = await browser.$(".pf-ocr-ws-activity.pf-active");
       await activity.waitForExist({ timeout: 60000 });
+
       const activityText = await activity.getText();
 
       // 6. Settlement: the stub job id is recorded, status done, the
@@ -2845,18 +2866,78 @@ describe("PaperForge real-task e2e", function () {
       await clickStable(".paperforge-confirm-actions button.mod-warning");
       const activity = await browser.$(".pf-ocr-ws-activity.pf-active");
       await activity.waitForExist({ timeout: 60000 });
+      const metaPathEarly = path.join(
+        base,
+        "System",
+        "PaperForge",
+        "ocr",
+        "TSTONE001",
+        "meta.json"
+      );
       // The banner and the enabled Stop control exist as soon as the client
       // registers the long task — before the Python child has reset the
       // paper's fixture state and submitted anything. Clicking Stop then
       // lands on the PRE-run state (the fixture ships this paper `done`), so
       // the batch must first be observably running: the provider has the job.
-      await browser.waitUntil(
-        () => stub.requests.some((entry) => entry.method === "POST"),
-        {
-          timeout: 120000,
-          timeoutMsg: "OCR batch never submitted a provider job",
-        }
-      );
+      try {
+        await browser.waitUntil(
+          () => stub.requests.some((entry) => entry.method === "POST"),
+          {
+            timeout: 120000,
+            timeoutMsg: "OCR batch never submitted a provider job",
+          }
+        );
+      } catch (error) {
+        const preDump = await browser.executeObsidian(async ({ app }) => {
+          const plugin = app.plugins.plugins["paperforge"] as unknown as {
+            getClient(): {
+              isOperationActive(): boolean;
+              lastStreamDiagnostics?: Record<string, unknown> | null;
+            };
+          };
+          const client = plugin.getClient();
+          const diag = client.lastStreamDiagnostics ?? null;
+          return {
+            opActive: client.isOperationActive(),
+            notices: Array.from(document.querySelectorAll(".notice")).map((n) =>
+              (n.textContent ?? "").trim()
+            ),
+            stream: diag
+              ? {
+                  ok: diag.ok,
+                  exitCode: diag.exitCode,
+                  cancelled: diag.cancelled,
+                  protocolFailure: diag.protocolFailure,
+                  eventCount: diag.eventCount,
+                  lastEvent: diag.lastEvent,
+                  stderrTail: String(diag.stderr ?? "").slice(-700),
+                }
+              : null,
+          };
+        });
+        const metaPre = existsSync(metaPathEarly)
+          ? JSON.parse(readFileSync(metaPathEarly, "utf8"))
+          : {};
+        const queuePre = existsSync(
+          path.join(base, "System", "PaperForge", "ocr", "ocr-queue.json")
+        )
+          ? readFileSync(
+              path.join(base, "System", "PaperForge", "ocr", "ocr-queue.json"),
+              "utf8"
+            ).slice(0, 400)
+          : "(no queue)";
+        console.log(
+          "D04P " +
+            JSON.stringify({
+              ...preDump,
+              metaStatus: metaPre.ocr_status,
+              metaJob: metaPre.ocr_job_id,
+              metaError: metaPre.error,
+              queue: queuePre,
+            })
+        );
+        throw error;
+      }
       // The banner renders before the client registers the long task, and it
       // re-renders on progress events: wait for the Stop control to become
       // enabled, then re-query it so the click targets the live element.
@@ -2880,20 +2961,103 @@ describe("PaperForge real-task e2e", function () {
       // asserts against rendered the literal key string).
       // (en table entry in src/i18n.ts; the spec cannot import i18n.ts, which
       // pulls the runtime-less `obsidian` module).
-      // Two acknowledgements are legitimate: the "Stopping OCR batch..."
-      // notice when the click finds the operation, and "OCR batch stopped."
-      // when the run already settled between the wait and the click.
+      // The stub keeps the provider job running, so the click must find the
+      // live operation: the ONLY acceptable acknowledgement is the localized
+      // "Stopping OCR batch..." acceptance — never the literal i18n key, and
+      // never the already-settled "OCR batch stopped." variant.  The harness
+      // app locale is zh (the settings pin only writes settings; i18n T is
+      // fixed at plugin load from the app), so the zh acceptance counts too —
+      // precisely, excluding the zh "已停止" settled variant.
+      const seenNotices: string[] = [];
+      try {
+        await browser.waitUntil(
+          async () => {
+            const text = await browser.execute(() =>
+              Array.from(document.querySelectorAll(".notice"))
+                .map((node) => node.textContent ?? "")
+                .join(" | ")
+            );
+            if (text && !seenNotices.includes(text)) seenNotices.push(text);
+            return /stopping OCR batch|正在停止/i.test(text);
+          },
+          { timeout: 120000, timeoutMsg: "stop acceptance notice never appeared" }
+        );
+      } catch (error) {
+        console.log("D04D notices-seen=" + JSON.stringify(seenNotices));
+        const dump = await browser.executeObsidian(async ({ app }) => {
+          const plugin = app.plugins.plugins["paperforge"] as unknown as {
+            getClient(): { isOperationActive(): boolean };
+          };
+          const client = plugin.getClient() as unknown as {
+            isOperationActive(): boolean;
+            lastStreamDiagnostics?: Record<string, unknown> | null;
+          };
+          const diag = client.lastStreamDiagnostics ?? null;
+          return {
+            opActive: client.isOperationActive(),
+            banner: document.querySelector(".pf-ocr-ws-activity")?.className ?? "",
+            notices: Array.from(document.querySelectorAll(".notice")).map((n) =>
+              (n.textContent ?? "").trim()
+            ),
+            stream: diag
+              ? {
+                  ok: diag.ok,
+                  exitCode: diag.exitCode,
+                  cancelled: diag.cancelled,
+                  protocolFailure: diag.protocolFailure,
+                  eventCount: diag.eventCount,
+                  lastEvent: diag.lastEvent,
+                  stderrTail: String(diag.stderr ?? "").slice(-500),
+                }
+              : null,
+          };
+        });
+        const metaDump = existsSync(metaPathEarly)
+          ? JSON.parse(readFileSync(metaPathEarly, "utf8"))
+          : {};
+        console.log("D04D " + JSON.stringify({ ...dump, metaStatus: metaDump.ocr_status, metaJob: metaDump.ocr_job_id }));
+        throw error;
+      }
+      // The cancel must land on the client's operation lock before the state
+      // file is judged: a stop that never released the lock is not a stop.
       await browser.waitUntil(
-        async () => {
-          const text = await browser.execute(() =>
-            Array.from(document.querySelectorAll(".notice"))
-              .map((node) => node.textContent ?? "")
-              .join(" | ")
-          );
-          return /stopping OCR batch|stopped|停止/i.test(text);
-        },
-        { timeout: 120000, timeoutMsg: "stop notice never appeared" }
+        async () =>
+          await browser.executeObsidian(async ({ app }) => {
+            const plugin = app.plugins.plugins["paperforge"] as unknown as {
+              getClient(): { isOperationActive(): boolean };
+            };
+            return plugin.getClient().isOperationActive() === false;
+          }),
+        {
+          timeout: 60000,
+          timeoutMsg: "the stopped operation never released the lock",
+        }
       );
+      // A cooperative stop must end the stream with its cancelled terminal —
+      // not the hard-kill signature (exit 1 + "EOF without terminal event",
+      // which is what a stop during a non-interruptible poll sleep produced).
+      const stopOutcome = await browser.executeObsidian(async ({ app }) => {
+        const plugin = app.plugins.plugins["paperforge"] as unknown as {
+          getClient(): {
+            lastStreamDiagnostics?: {
+              cancelled?: boolean;
+              exitCode?: number | null;
+              protocolFailure?: string | null;
+            } | null;
+          };
+        };
+        const diag = plugin.getClient().lastStreamDiagnostics ?? null;
+        return diag
+          ? {
+              cancelled: diag.cancelled === true,
+              exitCode: diag.exitCode ?? null,
+              protocolFailure: diag.protocolFailure ?? null,
+            }
+          : null;
+      });
+      expect(stopOutcome).not.toBeNull();
+      expect(stopOutcome?.cancelled).toBe(true);
+      expect(stopOutcome?.protocolFailure ?? null).toBeNull();
       const metaPath = path.join(
         base,
         "System",
@@ -2907,9 +3071,12 @@ describe("PaperForge real-task e2e", function () {
         unknown
       >;
       const statusAfterStop = String(meta.ocr_status ?? "");
-      // A stopped batch must never be marked failed; the worker resets the
-      // paper to pending when the stop lands before/while it settles.
-      expect(["pending", "queued", "running", "done"]).toContain(statusAfterStop);
+      // A stopped batch must never settle as done or failed: the provider job
+      // is still running and the result is never fetched, so the paper stays
+      // resumable (pending/queued/running) with no error recorded.  `done` is
+      // the pristine fixture state, so accepting it would mask a stop that
+      // never reached the worker.
+      expect(["pending", "queued", "running"]).toContain(statusAfterStop);
       expect(String(meta.error ?? "")).toBe("");
       const resultFetches = stub.requests.filter((entry) =>
         entry.url.includes("/results/")

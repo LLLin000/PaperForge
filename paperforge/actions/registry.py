@@ -398,7 +398,7 @@ def _ocr_run_handler(ctx: ActionContext, request: ActionRequest) -> PFResult:
     from paperforge import __version__ as PF_VERSION
     from paperforge.core.errors import ErrorCode
     from paperforge.core.result import PFError, PFResult
-    from paperforge.worker.ocr import run_ocr
+    from paperforge.worker.ocr import run_ocr, set_stream_diagnostics
 
     keys = None if request.scope.kind == "all" else list(request.scope.keys)
     sink: dict = {}
@@ -416,6 +416,9 @@ def _ocr_run_handler(ctx: ActionContext, request: ActionRequest) -> PFResult:
                 key,
             )
 
+    # #137 stream contract: stdout is machine-only while this action streams;
+    # human diagnostics route to stderr (worker.ocr.set_stream_diagnostics).
+    set_stream_diagnostics(True)
     try:
         rc = run_ocr(
             ctx.vault,
@@ -431,6 +434,8 @@ def _ocr_run_handler(ctx: ActionContext, request: ActionRequest) -> PFResult:
             version=PF_VERSION,
             error=PFError(code=ErrorCode.INTERNAL_ERROR, message=str(exc)),
         )
+    finally:
+        set_stream_diagnostics(False)
     per_key = sink.get("per_key", {})
     if hooks is not None and hooks.item_result is not None:
         for key in progress_keys:
