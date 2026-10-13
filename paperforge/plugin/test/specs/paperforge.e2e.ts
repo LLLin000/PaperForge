@@ -161,6 +161,11 @@ const NEW_PAPER_NOTE =
   "Resources/Literature/骨科/TSTONE002 - Second Paper/TSTONE002.md";
 /** Export title of the second paper (B05 A→B discriminator). */
 const SECOND_PAPER_TITLE = "Second Paper";
+/** Third paper for the two-paper OCR batch (J02). */
+const THIRD_PAPER_KEY = "TSTONE003";
+const THIRD_PAPER_TITLE = "Third Paper";
+const THIRD_PAPER_NOTE =
+  "Resources/Literature/骨科/TSTONE003 - Third Paper/TSTONE003.md";
 /** Export title of the factory paper (B05 A→B discriminator). */
 const PAPER_TITLE =
   "Biomechanical Comparison of Suture Anchor Fixations in Rotator Cuff Repair";
@@ -468,20 +473,107 @@ async function clickStable(selector: string): Promise<void> {
   }
 }
 
+/** Wait until the OCR workspace renders a row for `title`. */
+async function waitForOcrRow(title: string, key?: string): Promise<void> {
+  await (
+    await browser.$(".pf-ocr-ws-viewport")
+  ).waitForExist({ timeout: 180000 });
+  try {
+    await browser.waitUntil(
+      async () => {
+        // The viewport's rendered TEXT does not carry the title cells (the
+        // CI dump showed three "Pending" rows with empty title text), so
+        // match the DOM like the D02 case does: a row whose subtree
+        // contains the title, else the key.
+        const byTitle = await browser.$$(
+          `//tr[.//*[contains(text(),'${title}')]]`
+        );
+        if (byTitle.length > 0) return true;
+        if (key) {
+          const byKey = await browser.$$(
+            `//tr[.//*[contains(text(),'${key}')]]`
+          );
+          return byKey.length > 0;
+        }
+        return false;
+      },
+      { timeout: 180000, timeoutMsg: `OCR workspace row never rendered: ${title}` }
+    );
+  } catch (error) {
+    // Name the state: what the client lists vs what the viewport shows.
+    const rows = await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"] as unknown as {
+        getClient(): { queryOcrPapers(): Promise<Array<Record<string, unknown>>> };
+      };
+      try {
+        const list = await plugin.getClient().queryOcrPapers();
+        return list.map((row) => `${String(row.key ?? row.zotero_key ?? "?")}`).join(",");
+      } catch (err) {
+        return "THREW: " + String(err);
+      }
+    });
+    const viewport = await (
+      await browser.$(".pf-ocr-ws-viewport")
+    ).getText().catch(() => "(no viewport)");
+    console.log(
+      "J02ROW list=" + JSON.stringify(rows) + " viewport=" + JSON.stringify(viewport.slice(0, 300))
+    );
+    throw error;
+  }
+}
+
+/** Click the batch bar's Process Selected (re-queried: selecting re-renders
+ * both the table and the bar, and the button starts disabled). */
+async function clickProcessSelected(): Promise<void> {
+  const button = await browser.$(
+    ".pf-ocr-ws-batch-actions button.pf-btn-secondary"
+  );
+  await button.waitForExist({ timeout: 30000 });
+  await browser.waitUntil(
+    async () => await button.isEnabled().catch(() => false),
+    { timeout: 30000, timeoutMsg: "Process Selected stayed disabled" }
+  );
+  await button.click();
+}
+
 /** Loopback PaddleOCR stub for the OCR e2e cases.
  *
- * `success`: two polls of `running`, then `done` + a JSONL result built from a
- * real provider payload fixture. `running`: never completes (stop case).
+ * `success`: two observations of `running`, then `done` + a JSONL result built
+ * from a real provider payload fixture. `running`: never completes (stop case).
  * The result URL is served outside the jobs path so the worker's plain fetch
  * is exercised too.
+ *
+ * DEFAULT (no options): one job, `pf-e2e-job-1`, reported by the batch
+ * endpoint from the very first poll, with a single shared observation counter
+ * — byte for byte what every pre-existing case pins.
+ *
+ * `failKeys` opts IN, for the two-paper batch case only, to per-paper jobs:
+ * every upload gets its own job id, and named papers terminal-fail at the
+ * provider (their results are never served). The paper is read from the
+ * multipart filename — `requests` sends the PDF's BASENAME, not its vault
+ * path, so the stem (`TSTONE003.pdf` → `TSTONE003`) is the only identity the
+ * upload carries. The worker resubmits a dead job up to
+ * MAX_OCR_JOB_ATTEMPTS, so the key — not the job id or the upload order — is
+ * what a per-paper outcome is pinned to.
  */
-async function startOcrStub(mode: "success" | "running"): Promise<{
-  requests: Array<{ method: string; url: string }>;
+async function startOcrStub(
+  mode: "success" | "running",
+  options: { failKeys?: string[] } = {}
+): Promise<{
+  requests: Array<{ method: string; url: string; key?: string }>;
   jobUrl: string;
   close: () => Promise<void>;
 }> {
-  const requests: Array<{ method: string; url: string }> = [];
-  let pollCount = 0;
+  const requests: Array<{ method: string; url: string; key?: string }> = [];
+  const failKeys = new Set(options.failKeys ?? []);
+  const perPaper = failKeys.size > 0;
+  const LEGACY_JOB_ID = "pf-e2e-job-1";
+  // The legacy job is visible to the batch observer before any upload.
+  const jobKeys = new Map<string, string>(
+    perPaper ? [] : [[LEGACY_JOB_ID, ""]]
+  );
+  const observed = new Map<string, number>();
+  let nextJob = 0;
   let resultUrl = "";
   const payloadFixture = path.resolve(
     PLUGIN_DIR,
@@ -495,35 +587,96 @@ async function startOcrStub(mode: "success" | "running"): Promise<{
   );
   const payloadPages = JSON.parse(readFileSync(payloadFixture, "utf8")) as unknown[];
   const resultBody = `${JSON.stringify({ result: payloadPages[0] })}\n`;
-  const settled = (): boolean => mode === "success" && pollCount >= 2;
+  // One job is observed through the BATCH endpoint whenever the batch reports
+  // it (per-job polling is only the fallback), so BOTH observation paths must
+  // advance the same counter — otherwise a healthy job in a multi-paper batch
+  // reads `running` forever and the batch never settles.
+  const observe = (jobId: string): void => {
+    observed.set(jobId, (observed.get(jobId) ?? 0) + 1);
+  };
+  const jobState = (jobId: string): { state: string; errorMsg?: string } => {
+    const key = jobKeys.get(jobId) ?? "";
+    if (failKeys.has(key)) {
+      return {
+        state: "error",
+        errorMsg: `controlled provider rejection for ${key}`,
+      };
+    }
+    const done = mode === "success" && (observed.get(jobId) ?? 0) >= 2;
+    return { state: done ? "done" : "running" };
+  };
   const server = createServer((req, res) => {
     const url = req.url ?? "";
-    requests.push({ method: req.method ?? "", url });
+    const record: { method: string; url: string; key?: string } = {
+      method: req.method ?? "",
+      url,
+    };
+    requests.push(record);
     const sendJson = (value: unknown): void => {
       res.setHeader("content-type", "application/json");
       res.end(JSON.stringify(value));
     };
     if (req.method === "POST" && url.startsWith("/api/v2/ocr/jobs")) {
-      req.on("data", () => undefined);
-      req.on("end", () => sendJson({ data: { jobId: "pf-e2e-job-1" } }));
+      if (!perPaper) {
+        // Pre-change behaviour, untouched: one fixed job id, body unread.
+        req.on("data", () => undefined);
+        req.on("end", () => sendJson({ data: { jobId: LEGACY_JOB_ID } }));
+        return;
+      }
+      const chunks: Buffer[] = [];
+      req.on("data", (chunk: Buffer) => chunks.push(chunk));
+      req.on("end", () => {
+        const body = Buffer.concat(chunks).toString("latin1");
+        // `requests` sends the file's basename (`TSTONE003.pdf`); the vault
+        // path it came from never reaches the provider.
+        const filename = /filename="([^"]*)"/.exec(body)?.[1] ?? "";
+        const key = (filename.split(/[\\/]/).pop() ?? "").replace(
+          /\.pdf$/i,
+          ""
+        );
+        nextJob += 1;
+        const jobId = `pf-e2e-job-${nextJob}`;
+        record.key = key;
+        jobKeys.set(jobId, key);
+        sendJson({ data: { jobId } });
+      });
       return;
     }
     if (req.method === "GET" && url.startsWith("/api/v2/ocr/jobs/batch/")) {
-      pollCount += 1;
-      sendJson({ data: { "pf-e2e-job-1": settled() ? "done" : "running" } });
+      const data: Record<string, unknown> = {};
+      for (const jobId of jobKeys.keys()) {
+        observe(jobId);
+        const state = jobState(jobId);
+        // A failing job carries its message in the batch payload (that is the
+        // only observation it gets); a healthy one reports the bare state so
+        // the worker falls back to the per-job fetch for the result URL.
+        data[jobId] = state.errorMsg ? state : state.state;
+      }
+      sendJson({ data });
       return;
     }
-    if (req.method === "GET" && url === "/api/v2/ocr/jobs/pf-e2e-job-1") {
-      pollCount += 1;
+    const jobMatch = /^\/api\/v2\/ocr\/jobs\/([^/]+)$/.exec(url);
+    if (req.method === "GET" && jobMatch && jobKeys.has(jobMatch[1])) {
+      const jobId = jobMatch[1];
+      observe(jobId);
+      const state = jobState(jobId);
       sendJson({
         data: {
-          state: settled() ? "done" : "running",
-          ...(settled() ? { resultUrl: { jsonUrl: resultUrl } } : {}),
+          ...state,
+          ...(state.state === "done"
+            ? { resultUrl: { jsonUrl: `${resultUrl}${jobId}.jsonl` } }
+            : {}),
         },
       });
       return;
     }
-    if (req.method === "GET" && url === "/results/pf-e2e-job-1.jsonl") {
+    const resultMatch = /^\/results\/([^/]+)\.jsonl$/.exec(url);
+    if (
+      req.method === "GET" &&
+      resultMatch &&
+      jobKeys.has(resultMatch[1]) &&
+      !failKeys.has(jobKeys.get(resultMatch[1]) ?? "")
+    ) {
       res.setHeader("content-type", "application/json");
       res.end(resultBody);
       return;
@@ -540,7 +693,7 @@ async function startOcrStub(mode: "success" | "running"): Promise<{
     await new Promise<void>((resolve) => server.close(() => resolve()));
     throw new Error("controlled OCR server did not expose a port");
   }
-  resultUrl = `http://127.0.0.1:${address.port}/results/pf-e2e-job-1.jsonl`;
+  resultUrl = `http://127.0.0.1:${address.port}/results/`;
   return {
     requests,
     jobUrl: `http://127.0.0.1:${address.port}/api/v2/ocr/jobs`,
@@ -907,6 +1060,67 @@ function addExportItem(
     collection.items.push(item.key);
   }
   writeFileSync(file, JSON.stringify(doc));
+}
+
+/** Synthesize one more OCR paper in the sandbox, the way the vault builder
+ * does it: the lineage dir the OCR workspace lists (rows come from scanning
+ * the OCR root), the PDF the upload resolves, and the export row the run's
+ * target selection reads (target rows come from the export, never from the
+ * OCR root). */
+function addOcrPaper(
+  base: string,
+  key: string,
+  title: string,
+  doi: string
+): void {
+  const ocrDir = path.join(base, "System", "PaperForge", "ocr", key);
+  mkdirSync(path.join(ocrDir, "assets"), { recursive: true });
+  writeFileSync(
+    path.join(ocrDir, "meta.json"),
+    JSON.stringify(
+      {
+        zotero_key: key,
+        source_pdf: `storage:${key}/${key}.pdf`,
+        ocr_provider: "PaddleOCR-VL-1.6",
+        mode: "async",
+        ocr_status: "pending",
+        ocr_job_id: "",
+        ocr_started_at: "",
+        ocr_finished_at: "",
+        page_count: 0,
+        markdown_path: "",
+        json_path: "",
+        assets_path: `System/PaperForge/ocr/${key}/assets`,
+        fulltext_md_path: "",
+        error: "",
+        retry_count: 0,
+        last_error: null,
+        last_attempt_at: null,
+        title,
+      },
+      null,
+      1
+    )
+  );
+  const pdfDir = path.join(base, "System", "Zotero", "storage", key);
+  mkdirSync(pdfDir, { recursive: true });
+  copyFileSync(PDF_FIXTURE, path.join(pdfDir, `${key}.pdf`));
+  // The paper's note must exist too: cases read it (the C-untouched check
+  // hashes it), and a synthesized paper without its note is not a paper.
+  const noteDir = path.join(
+    base,
+    "Resources",
+    "Literature",
+    "骨科",
+    `${key} - ${title}`
+  );
+  mkdirSync(noteDir, { recursive: true });
+  writeFileSync(
+    path.join(noteDir, `${key}.md`),
+    `---\nzotero_key: "${key}"\ntitle: "${title}"\ndo_ocr: true\nanalyze: false\n---\n\n# ${title}\n`,
+    "utf8"
+  );
+  addExportItem(base, { key, title, doi });
 }
 
 /** Remove one item from the sandbox export to create a real residual paper. */
@@ -2904,6 +3118,274 @@ describe("PaperForge real-task e2e", function () {
         // The healthy child's process view (exit code, stderr tail, events):
         // the reference a failing run's diagnostic is compared against.
         child_diagnostics: await readChildDiagnostics(),
+        recorded_at: new Date().toISOString(),
+      });
+    } finally {
+      await stub.close();
+    }
+  });
+
+  it("runs a two-paper OCR batch with a rejected confirm, one success and one failure", async function () {
+    // J02: multi-paper scope, reject-zero-submit, per-paper terminal states,
+    // and the follow-up task (Sync → open the finished paper).
+    //
+    // The sandbox ships ONE OCR paper, so A and B are synthesized at runtime
+    // (see addOcrPaper): the lineage dir the workspace lists, the PDF the
+    // upload resolves, and the export row the run's target selection reads.
+    // C is the fixture paper and belongs to no scope below.
+    const stub = await startOcrStub("success", { failKeys: [THIRD_PAPER_KEY] });
+    const base = await sandboxBasePath();
+    try {
+      await prepareOcrSandbox(stub.jobUrl);
+      addOcrPaper(
+        base,
+        NEW_PAPER_KEY,
+        SECOND_PAPER_TITLE,
+        "10.1016/j.jse.2024.01.902"
+      );
+      addOcrPaper(
+        base,
+        THIRD_PAPER_KEY,
+        THIRD_PAPER_TITLE,
+        "10.1016/j.jse.2024.01.901"
+      );
+
+      // The workspace lists papers from the library index, so the runtime
+      // synthesis needs a sync before the rows can render (the fixture paper
+      // is already indexed; the synthesized ones are not).
+      await openPanel();
+      await clickSyncLibrary();
+      await waitForIdle("J02", "synthesis-sync-settle");
+
+      const cMeta = path.join(
+        base,
+        "System",
+        "PaperForge",
+        "ocr",
+        PAPER_KEY,
+        "meta.json"
+      );
+      const cBefore = sha256(cMeta);
+      const posts = (): Array<{ method: string; url: string; key?: string }> =>
+        stub.requests.filter((entry) => entry.method === "POST");
+      const metaOf = (key: string): Record<string, unknown> => {
+        try {
+          return JSON.parse(
+            readFileSync(
+              path.join(base, "System", "PaperForge", "ocr", key, "meta.json"),
+              "utf8"
+            )
+          ) as Record<string, unknown>;
+        } catch {
+          return { unreadable: true };
+        }
+      };
+      const statusOf = (key: string): string => String(metaOf(key).ocr_status ?? "");
+      const requestLog = (): string[] =>
+        stub.requests.map(
+          (entry) =>
+            `${entry.method} ${entry.url}${entry.key ? ` [${entry.key}]` : ""}`
+        );
+      const aRow = `//tr[.//*[contains(text(),'${SECOND_PAPER_TITLE}')]]//input[@type='checkbox']`;
+      const bRow = `//tr[.//*[contains(text(),'${THIRD_PAPER_TITLE}')]]//input[@type='checkbox']`;
+
+      // 1. Select A and B (never C) → Process Selected → CANCEL.
+      await browser.executeObsidianCommand("paperforge:paperforge-ocr-workspace");
+      await waitForOcrRow(SECOND_PAPER_TITLE, NEW_PAPER_KEY);
+      await waitForOcrRow(THIRD_PAPER_TITLE, THIRD_PAPER_KEY);
+      await clickStable(aRow);
+      await clickStable(bRow);
+      await clickProcessSelected();
+      // The confirmation must actually appear: a modal that never opened
+      // would make "rejecting submits nothing" a vacuous pass.
+      await (
+        await browser.$(".paperforge-confirm-actions")
+      ).waitForExist({ timeout: 30000 });
+      await clickStable(".paperforge-confirm-actions button:not(.mod-warning)");
+      await browser.waitUntil(
+        async () =>
+          (await browser.$(".paperforge-confirm-actions").isExisting()) ===
+          false,
+        { timeout: 30000, timeoutMsg: "the confirm modal never closed" }
+      );
+      // Rejecting must leave the provider untouched and start no operation.
+      await browser.pause(2000);
+      const postsAtReject = posts().length;
+      expect(postsAtReject).toBe(0);
+      expect(await operationActive()).toBe(false);
+
+      // 2. Same selection, confirmed: A succeeds, B fails terminally.
+      await clickProcessSelected();
+      await clickStable(".paperforge-confirm-actions button.mod-warning");
+      const activity = await browser.$(".pf-ocr-ws-activity.pf-active");
+      await activity.waitForExist({ timeout: 60000 });
+
+      const succeeded = new Set(["done", "done_degraded"]);
+      const failed = new Set(["error", "fatal_error"]);
+      const terminal = (key: string): boolean => {
+        const status = statusOf(key);
+        return succeeded.has(status) || failed.has(status);
+      };
+      try {
+        // Wait for BOTH papers to reach a terminal state — only then is the
+        // outcome settled enough to judge. A non-terminal status here is a
+        // real failure (the run stopped progressing), not a slow provider.
+        await browser.waitUntil(
+          () => terminal(NEW_PAPER_KEY) && terminal(THIRD_PAPER_KEY),
+          {
+            timeout: 360000,
+            timeoutMsg: "the two-paper batch never settled per paper",
+          }
+        );
+        // Only judge the OUTCOME once both settled: A must have succeeded, B
+        // must have failed terminally. Inside the try so that a wrong outcome
+        // dumps the same per-paper facts as a timeout.
+        expect(succeeded.has(statusOf(NEW_PAPER_KEY))).toBe(true);
+        expect(failed.has(statusOf(THIRD_PAPER_KEY))).toBe(true);
+      } catch (error) {
+        const perKeyMetas = {
+          a: metaOf(NEW_PAPER_KEY),
+          b: metaOf(THIRD_PAPER_KEY),
+          c: metaOf(PAPER_KEY),
+        };
+        const requests = requestLog();
+        console.log("J02D metas=" + JSON.stringify(perKeyMetas));
+        console.log("J02D req=" + JSON.stringify(requests));
+        console.log(
+          "J02D child=" + JSON.stringify(await readChildDiagnostics())
+        );
+        console.log("J02D jobstate=" + JSON.stringify(readOcrJobState(base)));
+        appendEvidence("j02-partial-settle-diagnostic.json", {
+          case_id: "J02",
+          variant: "two-paper settle-timeout diagnostic",
+          required_layer: "H",
+          status: "FAILED",
+          per_key: perKeyMetas,
+          requests,
+          child_diagnostics: await readChildDiagnostics(),
+          job_state: readOcrJobState(base),
+          recorded_at: new Date().toISOString(),
+        });
+        throw error;
+      }
+
+      const postsAfterRun = posts();
+      const aStatus = statusOf(NEW_PAPER_KEY);
+      const bStatus = statusOf(THIRD_PAPER_KEY);
+      // The batch scope was exactly A and B — C's meta is byte-identical and
+      // no upload ever named it.
+      const uploadedKeys = [
+        ...new Set(postsAfterRun.map((entry) => entry.key ?? "")),
+      ].sort();
+      expect(uploadedKeys).toEqual([NEW_PAPER_KEY, THIRD_PAPER_KEY].sort());
+      expect(sha256(cMeta)).toBe(cBefore);
+      // B's failure is terminal (a dead provider job is resubmitted only up
+      // to the attempt cap, then fails closed) and produced no artifact.
+      const bMeta = metaOf(THIRD_PAPER_KEY);
+      expect(String(bMeta.ocr_job_id ?? "")).toBe("");
+      expect(String(bMeta.error_stage ?? "")).toBe("provider");
+      const aFulltext = path.join(
+        base,
+        "System",
+        "PaperForge",
+        "ocr",
+        NEW_PAPER_KEY,
+        "fulltext.md"
+      );
+      expect(existsSync(aFulltext)).toBe(true);
+      expect(
+        existsSync(
+          path.join(
+            base,
+            "System",
+            "PaperForge",
+            "ocr",
+            THIRD_PAPER_KEY,
+            "fulltext.md"
+          )
+        )
+      ).toBe(false);
+
+      // 3. Follow-up: Sync materializes both notes, then A opens.
+      await openPanel();
+      await clickSyncLibrary();
+      await browser.waitUntil(
+        () => {
+          try {
+            return (
+              readIndex(base).keys.includes(NEW_PAPER_KEY) &&
+              existsSync(path.join(base, NEW_PAPER_NOTE))
+            );
+          } catch {
+            return false; // the index is being rewritten
+          }
+        },
+        { timeout: 180000, timeoutMsg: "Sync never materialized A's note" }
+      );
+      // The notes are the papers' workflow surface (do_ocr/analyze/redo
+      // flags); the raw ocr_status lives in the OCR meta, which the per-key
+      // terminal assertions above already bind.  Here the notes must simply
+      // exist and stay bound to their own keys.
+      expect(readNote(base, NEW_PAPER_NOTE)).toContain(NEW_PAPER_KEY);
+      expect(readNote(base, THIRD_PAPER_NOTE)).toContain(THIRD_PAPER_KEY);
+      await openVaultFile(NEW_PAPER_NOTE);
+      await waitForActiveFile(NEW_PAPER_NOTE);
+
+      // A's row opens its fulltext artifact, and it holds the OCR text the
+      // controlled provider served. The artifact was written by the backend
+      // mid-case, so register it with the vault cache first (the same repair
+      // openVaultFile applies) — the row's control is what is under test.
+      const aFulltextRel = `System/PaperForge/ocr/${NEW_PAPER_KEY}/fulltext.md`;
+      await openVaultFile(aFulltextRel);
+      await waitForActiveFile(aFulltextRel);
+      await openVaultFile(NEW_PAPER_NOTE);
+      await waitForActiveFile(NEW_PAPER_NOTE);
+
+      await browser.executeObsidianCommand("paperforge:paperforge-ocr-workspace");
+      await waitForOcrRow(SECOND_PAPER_TITLE, NEW_PAPER_KEY);
+      await clickStable(
+        `//tr[.//*[contains(text(),'${SECOND_PAPER_TITLE}')]]//button[@data-pf-testid='ocr-open-fulltext']`
+      );
+      await waitForActiveFile(aFulltextRel);
+      const fulltextText = await browser.executeObsidian(async ({ app }) => {
+        const file = app.workspace.getActiveFile();
+        return file ? await app.vault.read(file) : "";
+      });
+      expect(fulltextText).toContain("photoacoustic");
+
+      appendEvidence("j02-partial-failure.json", {
+        case_id: "J02",
+        variant:
+          "two-paper batch: rejected confirm submits nothing; A done, B terminal; C untouched; Sync + open follow-up",
+        required_layer: "H",
+        status: "VERIFIED",
+        source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+          cwd: PLUGIN_DIR,
+        })
+          .toString()
+          .trim(),
+        worktree_dirty: worktreeDirty(),
+        scope: {
+          a: NEW_PAPER_KEY,
+          b: THIRD_PAPER_KEY,
+          c_excluded: PAPER_KEY,
+        },
+        per_key_terminal: {
+          [NEW_PAPER_KEY]: aStatus,
+          [THIRD_PAPER_KEY]: bStatus,
+          [PAPER_KEY]: statusOf(PAPER_KEY),
+        },
+        upload_keys: uploadedKeys,
+        posts_before_confirmed_run: postsAtReject,
+        posts_after_confirmed_run: postsAfterRun.length,
+        c_meta_sha256_before: cBefore,
+        c_meta_sha256_after: sha256(cMeta),
+        b_error_stage: String(bMeta.error_stage ?? ""),
+        b_error: String(bMeta.error ?? ""),
+        a_fulltext_bytes: statSync(aFulltext).size,
+        sync_index_keys: readIndex(base).keys,
+        opened_note: NEW_PAPER_NOTE,
+        opened_fulltext: aFulltextRel,
         recorded_at: new Date().toISOString(),
       });
     } finally {
