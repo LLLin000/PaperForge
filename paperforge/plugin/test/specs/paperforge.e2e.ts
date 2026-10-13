@@ -3464,6 +3464,7 @@ describe("PaperForge real-task e2e", function () {
         }
       }
       await waitIdle();
+      const buildSource = "client-action-explicit";
       const build = await runClientAction("embed.build");
       expect(build.ok).toBe(true);
       expect(stub.requests.length).toBeGreaterThan(0);
