@@ -762,13 +762,18 @@ async function readChildDiagnostics(): Promise<unknown> {
 }
 
 /** Loopback OpenAI-compatible embeddings stub: deterministic vectors +
- * request log (the E-series controlled provider). */
-async function startEmbedStub(): Promise<{
+ * request log (the E-series controlled provider).  ``delayMs`` holds every
+ * response open, so a caller can catch a build mid-flight (E04); the default
+ * 0 answers immediately (E03/C03). */
+async function startEmbedStub(
+  options: { delayMs?: number } = {}
+): Promise<{
   requests: Array<{ model?: string; input_count: number }>;
   baseUrl: string;
   close: () => Promise<void>;
 }> {
   const requests: Array<{ model?: string; input_count: number }> = [];
+  const delayMs = options.delayMs ?? 0;
   const server = createServer((req, res) => {
     const chunks: Buffer[] = [];
     req.on("data", (chunk: Buffer) => chunks.push(chunk));
@@ -788,19 +793,26 @@ async function startEmbedStub(): Promise<{
       requests.push({ model: payload.model, input_count: inputs.length });
       const embedding = new Array<number>(1536).fill(0);
       embedding[0] = 1;
-      res.setHeader("content-type", "application/json");
-      res.end(
-        JSON.stringify({
-          object: "list",
-          data: inputs.map((_, index) => ({
-            object: "embedding",
-            index,
-            embedding,
-          })),
-          model: payload.model ?? "",
-          usage: { prompt_tokens: 1, total_tokens: inputs.length },
-        })
-      );
+      const respond = (): void => {
+        res.setHeader("content-type", "application/json");
+        res.end(
+          JSON.stringify({
+            object: "list",
+            data: inputs.map((_, index) => ({
+              object: "embedding",
+              index,
+              embedding,
+            })),
+            model: payload.model ?? "",
+            usage: { prompt_tokens: 1, total_tokens: inputs.length },
+          })
+        );
+      };
+      if (delayMs > 0) {
+        setTimeout(respond, delayMs);
+        return;
+      }
+      respond();
     });
   });
   await new Promise<void>((resolve, reject) => {
@@ -3674,17 +3686,351 @@ describe("PaperForge real-task e2e", function () {
   });
 
   it("stops a running vector build without corrupting the substrate", async function () {
-    // E04: cooperative stop of embed.build — the in-flight shadow target
-    // stays unpromoted, the production db stays intact, and a later resume
-    // picks the work up. The running build needs embeddable chunks, which the
-    // current OCR fixture cannot supply (empty structured blocks).
+    // E04: cooperative stop of an in-flight embed.build.  The stop path is
+    // the client's own cancellation (settings.ts retrieval/OCR panels call
+    // client.cancelActiveOperation()), which writes the stdin
+    // PAPERFORGE_STOP token → rc 130 → `cancelled` terminal.  Promotion is
+    // the shadow gate (seal → verify → publish = os.replace), so an
+    // interrupted build must leave the LIVE substrate unpromoted while the
+    // shadow candidate (`paperforge.db.build`) survives with its explicit
+    // `interrupted` state for the resume path (build_target.ShadowBuild).
+    // The stop is observed between papers, so it lands with the first
+    // provider request open (before any paper payload is written): the live
+    // substrate stays unpromoted, the candidate carries the resume state,
+    // and the resume finishes the build without re-encoding anything.
     if (process.env.PF_E2E_VECTOR_CASE !== "1") {
       registeredSkip(this, "vector-case-opt-in");
       return;
     }
-    // Fixture-ready body lands with the sandbox provenance fix:
-    // start embed.build against a slow provider, cancel mid-flight, assert
-    // the shadow target stayed unpromoted and resume completes.
+    const preflightBase = await sandboxBasePath();
+    const structuredPath = path.join(
+      preflightBase,
+      "System",
+      "PaperForge",
+      "ocr",
+      "TSTONE001",
+      "structure",
+      "blocks.structured.jsonl"
+    );
+    const structuredLines = existsSync(structuredPath)
+      ? readFileSync(structuredPath, "utf8")
+          .split(/\r?\n/)
+          .filter((line) => line.trim()).length
+      : 0;
+    if (structuredLines === 0) {
+      registeredSkip(this, "vector-fixture-lacks-structured-blocks");
+      return;
+    }
+    // The build only observes the cooperative token BETWEEN papers, so the
+    // provider request has to be open when the cancel arrives — a held
+    // response is what makes the stop observable as "mid-flight".
+    const stub = await startEmbedStub({ delayMs: 2000 });
+    try {
+      // The plugin auto-follows sync next_actions (embed.build) on the
+      // convergence tick; disable it so the explicit action owns the lock.
+      await browser.executeObsidian(async ({ app }) => {
+        const plugin = app.plugins.plugins["paperforge"] as unknown as {
+          settings: { autoSyncEnabled?: boolean };
+          saveSettings(): Promise<void>;
+        };
+        plugin.settings.autoSyncEnabled = false;
+        await plugin.saveSettings();
+      });
+      await prepareEmbedSandbox(stub.baseUrl);
+      const base = await sandboxBasePath();
+      const dbDir = path.join(base, "System", "PaperForge", "indexes");
+      const liveDb = path.join(dbDir, "paperforge.db");
+      const candidateDb = path.join(dbDir, "paperforge.db.build");
+      for (const name of [
+        "paperforge.db",
+        "paperforge.db-wal",
+        "paperforge.db-shm",
+        "paperforge.db.build",
+      ]) {
+        removeFileQuiet(path.join(dbDir, name));
+      }
+      const runClientAction = async (
+        actionId: string
+      ): Promise<{
+        ok?: boolean;
+        cancelled?: boolean;
+        exitCode?: number;
+        payload?: unknown;
+      }> =>
+        await browser.executeObsidian(async ({ app }, id) => {
+          const plugin = app.plugins.plugins["paperforge"] as unknown as {
+            getClient(): {
+              runAction(request: unknown): Promise<{
+                ok?: boolean;
+                cancelled?: boolean;
+                exitCode?: number;
+                payload?: unknown;
+              }>;
+            };
+          };
+          return await plugin.getClient().runAction({
+            action_id: id,
+            scope: { kind: "all" },
+            confirm: id,
+          });
+        }, actionId);
+      const opActive = async (): Promise<boolean> =>
+        await browser.executeObsidian(async ({ app }) => {
+          const plugin = app.plugins.plugins["paperforge"] as unknown as {
+            getClient(): { isOperationActive(): boolean };
+          };
+          return plugin.getClient().isOperationActive();
+        });
+      const waitIdle = async (): Promise<void> => {
+        await browser.waitUntil(async () => !(await opActive()), {
+          timeout: 60000,
+          timeoutMsg: "operation lock never released",
+        });
+      };
+      /** Durable substrate facts: live vs shadow candidate (build_target). */
+      const probeSubstrate = async (): Promise<{
+        candidate_exists: boolean;
+        candidate_rows: number;
+        candidate_status: string;
+        live_exists: boolean;
+        live_rows: number;
+        live_status: string;
+        live_quick_check: string;
+        lineage_identities: string[];
+      }> => {
+        const pointerPath = path.resolve(
+          os.homedir(),
+          ".paperforge",
+          "runtime",
+          "pointer.json"
+        );
+        const pointer = JSON.parse(readFileSync(pointerPath, "utf8")) as {
+          python_path?: string;
+        };
+        if (!pointer.python_path) {
+          throw new Error("published runtime python missing");
+        }
+        const script = [
+          "import json, sqlite3, sys",
+          "from pathlib import Path",
+          "",
+          "def probe(raw):",
+          "    path = Path(raw)",
+          '    out = {"exists": path.exists(), "rows": 0, "status": "",',
+          '           "quick_check": "", "identities": []}',
+          "    if not out[\"exists\"]:",
+          "        return out",
+          '    conn = sqlite3.connect("file:" + path.as_posix() + "?mode=ro", uri=True)',
+          "    try:",
+          "        tables = {",
+          "            row[0]",
+          "            for row in conn.execute(",
+          "                \"SELECT name FROM sqlite_master WHERE type='table'\"",
+          "            )",
+          "        }",
+          '        out["quick_check"] = conn.execute("PRAGMA quick_check").fetchone()[0]',
+          "        out[\"rows\"] = sum(",
+          "            conn.execute('SELECT COUNT(*) FROM \"' + t + '\"').fetchone()[0]",
+          "            for t in (\"vec_fulltext_meta\", \"vec_body_meta\", \"vec_objects_meta\")",
+          "            if t in tables",
+          "        )",
+          "        state = {}",
+          '        if "build_state" in tables:',
+          "            for key, value in conn.execute('SELECT key, value FROM build_state'):",
+          "                try:",
+          "                    state[key] = json.loads(value)",
+          "                except (TypeError, ValueError):",
+          "                    state[key] = str(value)",
+          '        out["status"] = str(state.get("status", "") or "")',
+          '        if "lineage" in tables:',
+          "            out[\"identities\"] = sorted({",
+          "                str(row[0])",
+          "                for row in conn.execute(",
+          "                    \"SELECT embedding_identity FROM lineage WHERE layer='vector'\"",
+          "                )",
+          "            })",
+          "    finally:",
+          "        conn.close()",
+          "    return out",
+          "",
+          "live, candidate = probe(sys.argv[1]), probe(sys.argv[2])",
+          "print(json.dumps({",
+          '    "candidate_exists": candidate["exists"],',
+          '    "candidate_rows": candidate["rows"],',
+          '    "candidate_status": candidate["status"],',
+          '    "live_exists": live["exists"],',
+          '    "live_rows": live["rows"],',
+          '    "live_status": live["status"],',
+          '    "live_quick_check": live["quick_check"],',
+          '    "lineage_identities": sorted(',
+          '        set(live["identities"]) | set(candidate["identities"])',
+          "    ),",
+          "}))",
+        ].join("\n");
+        const raw = execFileSync(
+          pointer.python_path,
+          ["-c", script, liveDb, candidateDb],
+          { encoding: "utf8", timeout: 60000 }
+        ).trim();
+        return JSON.parse(raw) as {
+          candidate_exists: boolean;
+          candidate_rows: number;
+          candidate_status: string;
+          live_exists: boolean;
+          live_rows: number;
+          live_status: string;
+          live_quick_check: string;
+          lineage_identities: string[];
+        };
+      };
+
+      // E01/E03 chain: embed.build only encodes papers that have body_units.
+      expect((await runClientAction("memory.build")).ok).toBe(true);
+      await waitIdle();
+
+      // Start embed.build WITHOUT awaiting it: the promise settles on the
+      // stop (cancelled) or on completion, and the cancel must land while
+      // the operation owns the lock.
+      await browser.executeObsidian(async ({ app }) => {
+        const plugin = app.plugins.plugins["paperforge"] as unknown as {
+          getClient(): { runAction(request: unknown): Promise<unknown> };
+        };
+        (globalThis as Record<string, unknown>)["__pfE04Build"] = plugin
+          .getClient()
+          .runAction({
+            action_id: "embed.build",
+            scope: { kind: "all" },
+            confirm: "embed.build",
+          });
+        return true;
+      });
+      await browser.waitUntil(
+        async () => (await opActive()) && stub.requests.length > 0,
+        {
+          timeout: 90000,
+          interval: 100,
+          timeoutMsg:
+            "embed.build never reached the controlled provider while in flight",
+        }
+      );
+      const requestsAtCancel = stub.requests.map((entry) => entry.input_count);
+
+      // The stop: the client's cooperative cancellation — the same call the
+      // UI Stop controls make (settings.ts → cancelActiveOperation).
+      await browser.executeObsidian(async ({ app }) => {
+        const plugin = app.plugins.plugins["paperforge"] as unknown as {
+          getClient(): { cancelActiveOperation(): void };
+        };
+        plugin.getClient().cancelActiveOperation();
+        return true;
+      });
+      const settled = (await browser.executeObsidian(async () => {
+        const pending = (globalThis as Record<string, unknown>)[
+          "__pfE04Build"
+        ] as Promise<{
+          ok?: boolean;
+          cancelled?: boolean;
+          exitCode?: number;
+          payload?: unknown;
+        }>;
+        return await pending;
+      })) as {
+        ok?: boolean;
+        cancelled?: boolean;
+        exitCode?: number;
+        payload?: unknown;
+      };
+      await waitIdle();
+      const diag = (await readChildDiagnostics()) as {
+        cancelled?: boolean;
+        exitCode?: number | null;
+      } | null;
+
+      expect(settled.cancelled).toBe(true);
+      expect(settled.exitCode).toBe(130);
+      expect(diag?.cancelled).toBe(true);
+      expect(diag?.exitCode).toBe(130);
+      expect(
+        (settled.payload as { error?: { code?: string } } | null)?.error?.code
+      ).toBe("action.cancelled");
+
+      // Promotion never ran: the live substrate is untouched (not a
+      // completed build, zero vectors) and the shadow candidate — the target
+      // the resume continues from — survives with the explicit interrupted
+      // state.  A published build would have os.replace'd the candidate away.
+      const stopped = await probeSubstrate();
+      expect(stopped.live_exists).toBe(true);
+      expect(stopped.live_status).not.toBe("completed");
+      expect(stopped.live_rows).toBe(0);
+      expect(stopped.live_quick_check).toBe("ok");
+      expect(stopped.candidate_exists).toBe(true);
+      expect(stopped.candidate_status).toBe("interrupted");
+
+      // Resume finishes the substrate from the retained build state.
+      const resume = await runClientAction("embed.resume");
+      expect(resume.ok).toBe(true);
+      expect(resume.cancelled ?? false).toBe(false);
+      await waitIdle();
+      let totalChunks = 0;
+      await browser.waitUntil(
+        async () => {
+          const status = await browser.executeObsidian(async ({ app }) => {
+            const plugin = app.plugins.plugins["paperforge"] as unknown as {
+              getClient(): { embedStatus(): Promise<Record<string, unknown>> };
+            };
+            return await plugin.getClient().embedStatus();
+          });
+          totalChunks = Number(status.total_chunks ?? status.chunk_count ?? 0);
+          return totalChunks > 0;
+        },
+        { timeout: 90000, timeoutMsg: "vector counts never surfaced after resume" }
+      );
+      const completed = await probeSubstrate();
+      expect(completed.live_status).toBe("completed");
+      expect(completed.candidate_exists).toBe(false);
+      expect(completed.live_rows).toBeGreaterThan(0);
+      expect(completed.live_rows).toBe(totalChunks);
+      expect(completed.live_quick_check).toBe("ok");
+      expect(completed.lineage_identities.length).toBeLessThanOrEqual(1);
+
+      // Completed work is never re-encoded: a resume over the finished
+      // substrate must not call the provider at all.
+      const requestsAfterResume = stub.requests.length;
+      expect((await runClientAction("embed.resume")).ok).toBe(true);
+      await waitIdle();
+      expect(stub.requests.length).toBe(requestsAfterResume);
+
+      appendEvidence("e04-embed-stop.json", {
+        case_id: "E04",
+        variant:
+          "cooperative stop of an in-flight embed.build: live substrate unpromoted, shadow candidate retained as interrupted, resume completes without re-encoding",
+        required_layer: "H",
+        status: "VERIFIED",
+        source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+          cwd: PLUGIN_DIR,
+        })
+          .toString()
+          .trim(),
+        worktree_dirty: worktreeDirty(),
+        provider_delay_ms: 2000,
+        provider_requests_at_cancel: requestsAtCancel,
+        cancelled: settled.cancelled === true,
+        exit_code: settled.exitCode,
+        stream_cancelled: diag?.cancelled === true,
+        stream_exit_code: diag?.exitCode ?? null,
+        terminal_error_code:
+          (settled.payload as { error?: { code?: string } } | null)?.error
+            ?.code ?? "",
+        substrate_after_stop: stopped,
+        substrate_after_resume: completed,
+        total_chunks_after_resume: totalChunks,
+        provider_requests_after_resume: requestsAfterResume,
+        provider_requests_total: stub.requests.length,
+        recorded_at: new Date().toISOString(),
+      });
+    } finally {
+      await stub.close();
+    }
   });
 
   it("migrates a legacy ChromaDB substrate into sqlite-vec", async function () {
