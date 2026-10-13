@@ -43,7 +43,6 @@ PDF_FIXTURE = (
     / "TSTONE001"
     / "TSTONE001.pdf"
 )
-VAULT_PDF = VAULT / "System" / "Zotero" / "storage" / "TSTONE001" / "TSTONE001.pdf"
 KEY = "TSTONE001"
 
 
@@ -151,7 +150,8 @@ def _assert_ocr_invariant() -> None:
         raise SystemExit(
             f"e2e fixture provenance violated for {KEY}: {provenance}\n"
             f"  canonical PDF resolved to: {canonical_pdf}\n"
-            f"  vault PDF: {VAULT_PDF} (exists={VAULT_PDF.exists()})\n"
+            f"  vault PDF: {VAULT / 'System' / 'Zotero' / 'storage' / 'TSTONE001' / 'TSTONE001.pdf'}"
+            f" (exists={(VAULT / 'System' / 'Zotero' / 'storage' / 'TSTONE001' / 'TSTONE001.pdf').exists()})\n"
             f"  recorded fingerprint: "
             f"{(meta.get('raw_version') or {}).get('pdf_fingerprint')!r} — "
             f"re-stamp it with the sha256 of {PDF_FIXTURE} "
@@ -217,8 +217,12 @@ def build() -> None:
     # copy it (prepareOcrSandbox); every other case ran against a vault whose
     # advertised PDF did not exist, so OCR provenance resolved `unknown` and
     # the paper was `not_ready` for the vector build (E03/C03).
-    VAULT_PDF.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(PDF_FIXTURE, VAULT_PDF)
+    # Computed from the CURRENT VAULT at call time: the X13 fixture reloads
+    # this module with builder.VAULT overridden, so a module-level path would
+    # copy the PDF (and later check it) in the wrong vault.
+    vault_pdf = VAULT / "System" / "Zotero" / "storage" / "TSTONE001" / "TSTONE001.pdf"
+    vault_pdf.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(PDF_FIXTURE, vault_pdf)
 
     # REAL sync: selection → index → workspace migration. On this first pass
     # the legacy backfill rewrites the canonical fulltext (see #219).
