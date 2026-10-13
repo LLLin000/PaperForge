@@ -478,17 +478,39 @@ async function waitForOcrRow(title: string, key?: string): Promise<void> {
   await (
     await browser.$(".pf-ocr-ws-viewport")
   ).waitForExist({ timeout: 180000 });
-  await browser.waitUntil(
-    async () => {
-      const text = await (
-        await browser.$(".pf-ocr-ws-viewport")
-      ).getText().catch(() => "");
-      // Match the title OR the key: the row renders the key even when the
-      // index has not resolved a title for a runtime-synthesized paper.
-      return text.includes(title) || (key ? text.includes(key) : false);
-    },
-    { timeout: 180000, timeoutMsg: `OCR workspace row never rendered: ${title}` }
-  );
+  try {
+    await browser.waitUntil(
+      async () => {
+        const text = await (
+          await browser.$(".pf-ocr-ws-viewport")
+        ).getText().catch(() => "");
+        // Match the title OR the key: the row renders the key even when the
+        // index has not resolved a title for a runtime-synthesized paper.
+        return text.includes(title) || (key ? text.includes(key) : false);
+      },
+      { timeout: 180000, timeoutMsg: `OCR workspace row never rendered: ${title}` }
+    );
+  } catch (error) {
+    // Name the state: what the client lists vs what the viewport shows.
+    const rows = await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"] as unknown as {
+        getClient(): { queryOcrPapers(): Promise<Array<Record<string, unknown>>> };
+      };
+      try {
+        const list = await plugin.getClient().queryOcrPapers();
+        return list.map((row) => `${String(row.key ?? row.zotero_key ?? "?")}`).join(",");
+      } catch (err) {
+        return "THREW: " + String(err);
+      }
+    });
+    const viewport = await (
+      await browser.$(".pf-ocr-ws-viewport")
+    ).getText().catch(() => "(no viewport)");
+    console.log(
+      "J02ROW list=" + JSON.stringify(rows) + " viewport=" + JSON.stringify(viewport.slice(0, 300))
+    );
+    throw error;
+  }
 }
 
 /** Click the batch bar's Process Selected (re-queried: selecting re-renders
