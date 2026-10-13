@@ -3102,6 +3102,13 @@ describe("PaperForge real-task e2e", function () {
         "10.1016/j.jse.2024.01.901"
       );
 
+      // The workspace lists papers from the library index, so the runtime
+      // synthesis needs a sync before the rows can render (the fixture paper
+      // is already indexed; the synthesized ones are not).
+      await openPanel();
+      await clickSyncLibrary();
+      await waitForIdle("J02", "synthesis-sync-settle");
+
       const cMeta = path.join(
         base,
         "System",
