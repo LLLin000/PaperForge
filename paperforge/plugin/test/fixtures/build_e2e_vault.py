@@ -9,6 +9,8 @@ canonical index, workspace, and OCR lineage — not hand-written stubs.
 Seeded content:
 - paperforge.json (canonical schema via bootstrap_config)
 - System/PaperForge/exports/骨科.json  (BBT export fixture)
+- System/Zotero/storage/TSTONE001/TSTONE001.pdf  (the canonical PDF the
+  index advertises; OCR provenance verifies against its bytes)
 - System/PaperForge/ocr/TSTONE001/     (completed OCR fixture)
 - after sync: canonical index, migrated workspace, per-paper notes
 - versions/v1 + v2 + manifest, one legacy pre-rebuild backup
@@ -29,6 +31,19 @@ VAULT = PLUGIN_DIR / "test" / "vaults" / "e2e"
 EMPTY_VAULT = PLUGIN_DIR / "test" / "vaults" / "empty"
 EXPORT_FIXTURE = REPO_ROOT / "tests" / "sandbox" / "exports" / "骨科.json"
 OCR_FIXTURE = REPO_ROOT / "tests" / "sandbox" / "ocr-complete" / "TSTONE001"
+# The canonical index advertises this PDF (BBT storage wikilink body), so the
+# vault must ship it: OCR provenance verifies the raw OCR against the
+# canonical PDF BYTES, and a vault without the file can never verify.
+PDF_FIXTURE = (
+    REPO_ROOT
+    / "tests"
+    / "sandbox"
+    / "TestZoteroData"
+    / "storage"
+    / "TSTONE001"
+    / "TSTONE001.pdf"
+)
+VAULT_PDF = VAULT / "System" / "Zotero" / "storage" / "TSTONE001" / "TSTONE001.pdf"
 KEY = "TSTONE001"
 
 
@@ -121,6 +136,46 @@ def _assert_ocr_invariant() -> None:
             f"{stale_pointer!r} — clear the field in {meta_path}"
         )
 
+    # Provenance must VERIFY inside the vault: the canonical index advertises
+    # the PDF and the recorded `raw_version.pdf_fingerprint` must be that
+    # file's bytes. A missing PDF or a fingerprint stamped from another
+    # revision of the fixture degrades the paper to `provenance_unknown` /
+    # `provenance_pdf_changed` — and it silently drops out of the embed
+    # candidates (the E03/C03 vector case then builds zero units).
+    from paperforge.lineage import _resolve_canonical_pdf  # noqa: PLC0415
+    from paperforge.materialization.ocr import provenance_state  # noqa: PLC0415
+
+    canonical_pdf = _resolve_canonical_pdf(VAULT, meta_path.parent)
+    provenance = provenance_state(meta_path.parent, canonical_pdf, meta=meta)
+    if provenance is not None:
+        raise SystemExit(
+            f"e2e fixture provenance violated for {KEY}: {provenance}\n"
+            f"  canonical PDF resolved to: {canonical_pdf}\n"
+            f"  vault PDF: {VAULT_PDF} (exists={VAULT_PDF.exists()})\n"
+            f"  recorded fingerprint: "
+            f"{(meta.get('raw_version') or {}).get('pdf_fingerprint')!r} — "
+            f"re-stamp it with the sha256 of {PDF_FIXTURE} "
+            f"(paperforge.worker.ocr_artifacts.compute_pdf_fingerprint)."
+        )
+
+
+def _assert_embed_eligible() -> None:
+    """The fixture hands the vector/retrieval specs an EMBEDDABLE paper.
+
+    E03 (build) and C03 (@deep retrieve) only exercise anything if the paper
+    is eligible at sandbox start; asserting it here turns a broken fixture
+    into a fast, named failure instead of a 60s e2e timeout."""
+    from paperforge.services.embedding import (  # noqa: PLC0415
+        select_embedding_candidates,
+    )
+
+    candidates = select_embedding_candidates(VAULT)
+    if KEY not in candidates["eligible"]:
+        raise SystemExit(
+            f"e2e fixture: {KEY} is not embed-eligible at sandbox build "
+            f"({candidates}); E03/C03 have nothing to build or retrieve."
+        )
+
 
 def build() -> None:
     # First-use journey fixture (#263): the gate reloads into a CLEAN vault,
@@ -157,6 +212,13 @@ def build() -> None:
 
     ocr_target = VAULT / "System" / "PaperForge" / "ocr" / KEY
     shutil.copytree(OCR_FIXTURE, ocr_target, dirs_exist_ok=True)
+
+    # Ship the PDF the canonical index advertises. Only the OCR specs used to
+    # copy it (prepareOcrSandbox); every other case ran against a vault whose
+    # advertised PDF did not exist, so OCR provenance resolved `unknown` and
+    # the paper was `not_ready` for the vector build (E03/C03).
+    VAULT_PDF.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(PDF_FIXTURE, VAULT_PDF)
 
     # REAL sync: selection → index → workspace migration. On this first pass
     # the legacy backfill rewrites the canonical fulltext (see #219).
@@ -215,6 +277,7 @@ def build() -> None:
     _run("memory", "build", "--json")
 
     _assert_ocr_invariant()
+    _assert_embed_eligible()
 
     print(f"e2e vault ready: {VAULT}")
 
