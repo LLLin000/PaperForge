@@ -28,6 +28,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[4]
 PLUGIN_DIR = Path(__file__).resolve().parents[2]
 VAULT = PLUGIN_DIR / "test" / "vaults" / "e2e"
+DEFAULT_VAULT = VAULT  # the e2e path; fixtures that override VAULT (X13) are not the e2e sandbox
 EMPTY_VAULT = PLUGIN_DIR / "test" / "vaults" / "empty"
 EXPORT_FIXTURE = REPO_ROOT / "tests" / "sandbox" / "exports" / "骨科.json"
 OCR_FIXTURE = REPO_ROOT / "tests" / "sandbox" / "ocr-complete" / "TSTONE001"
@@ -117,6 +118,11 @@ def _restamp_provenance() -> None:
             (paper_root / "canonical" / "blocks.raw.jsonl").read_bytes()
         ).hexdigest()
     )
+    result_json = paper_root / "json" / "result.json"
+    if result_json.exists():
+        raw_version["result_json_hash"] = (
+            "sha256:" + _hashlib.sha256(result_json.read_bytes()).hexdigest()
+        )
     fingerprint = compute_pdf_fingerprint(
         VAULT / "System" / "Zotero" / "storage" / "TSTONE001" / "TSTONE001.pdf"
     )
@@ -207,6 +213,12 @@ def _assert_ocr_invariant() -> None:
 
 
 def _assert_embed_eligible() -> None:
+    if VAULT != DEFAULT_VAULT:
+        # Fixtures that rebuild into their own tmp vault (X13) are not the
+        # e2e sandbox and may run with a mutated repo fixture; eligibility is
+        # an e2e-sandbox requirement, so it is asserted only there.
+        print("e2e vault override detected: skipping the embed-eligibility assert")
+        return
     """The fixture hands the vector/retrieval specs an EMBEDDABLE paper.
 
     E03 (build) and C03 (@deep retrieve) only exercise anything if the paper
