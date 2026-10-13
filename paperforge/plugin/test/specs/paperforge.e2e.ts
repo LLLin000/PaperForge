@@ -3774,6 +3774,11 @@ describe("PaperForge real-task e2e", function () {
     this.timeout(600000);
     // F01/F02/F03: staging reconciles against an isolated tmp root; only
     // promotion/acceptance may write the canonical inventory.
+    // The materialization crops the canonical PDF, so the case owns that
+    // precondition (the F02RAW diagnostic showed pdfBytes=-1 without it:
+    // the sandbox's PDF is copied by prepareOcrSandbox, and a null job URL
+    // keeps this render-only case from touching the OCR config).
+    await prepareOcrSandbox(null);
     const base = await sandboxBasePath();
     const inventoryPath = path.join(
       base,
