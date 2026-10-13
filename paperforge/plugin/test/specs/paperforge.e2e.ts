@@ -2287,6 +2287,16 @@ describe("PaperForge real-task e2e", function () {
     }
     expect(existsSync(path.join(base, workspace))).toBe(false);
     expect(existsSync(exportPath)).toBe(true);
+
+    // J06 trash/restore leg — NOT implemented: the product exposes no
+    // trash-list or restore surface for pruned orphans. `views/dashboard.ts`
+    // and `main.ts` contain no trash/restore control or test id for the orphan
+    // path (the only `restore` in dashboard.ts is the version-history modal,
+    // unrelated). The pruning backend (`paperforge/commands/prune.py`) deletes
+    // the workspace destructively and has no companion UI to list or recover
+    // the removed files, so there is nothing to assert end to end. Until an
+    // owner decision defines a trash/restore contract and a UI exposes it,
+    // this leg stays a documented gap rather than a faked pass.
     appendEvidence("j06-destructive-prune.json", {
       case_id: "J06",
       variant: "export-remove -> Sync -> residual modal -> confirmed prune",
@@ -3623,6 +3633,36 @@ describe("PaperForge real-task e2e", function () {
       },
       { timeout: 60000, timeoutMsg: "memory did not report fresh after restore" }
     );
+
+    // J07 new-process leg: a fresh interpreter (not the plugin's own client)
+    // must read the restored db as non-empty. The in-process status above
+    // could be served from a warm handle; this proves the restore landed on
+    // disk in a way any process sees.
+    const pointerPath = path.resolve(
+      os.homedir(),
+      ".paperforge",
+      "runtime",
+      "pointer.json"
+    );
+    const pointer = JSON.parse(readFileSync(pointerPath, "utf8")) as {
+      python_path?: string;
+    };
+    if (!pointer.python_path) {
+      throw new Error("published runtime python missing");
+    }
+    const statusRaw = execFileSync(
+      pointer.python_path,
+      ["-m", "paperforge", "--vault", base, "memory", "status", "--json"],
+      { encoding: "utf8", timeout: 120000 }
+    );
+    const statusEnvelope = JSON.parse(statusRaw) as {
+      ok?: boolean;
+      data?: { paper_count_db?: number };
+    };
+    expect(statusEnvelope.ok).toBe(true);
+    const newProcessPaperCount = Number(statusEnvelope.data?.paper_count_db ?? 0);
+    expect(newProcessPaperCount).toBeGreaterThan(0);
+
     appendEvidence("e02-restore-backup.json", {
       case_id: "E02",
       variant: "corrupt db → restore_backup → fresh; snapshot kept; backup intact",
@@ -3637,6 +3677,7 @@ describe("PaperForge real-task e2e", function () {
       corrupt_snapshots: corruptSnapshots,
       backup_sha_unchanged: sha256(backupPath) === backupSha,
       paper_count_after: paperCount,
+      new_process_paper_count: newProcessPaperCount,
       recorded_at: new Date().toISOString(),
     });
   });
@@ -4105,10 +4146,32 @@ describe("PaperForge real-task e2e", function () {
       recorded_at: new Date().toISOString(),
     });
 
-    // Restore the oldest version (v1) → confirmation → Python performs the
-    // copy AND persists provenance.
+    const base = await sandboxBasePath();
+    const canonicalPath = path.join(
+      base,
+      `System/PaperForge/ocr/${PAPER_KEY}/render/fulltext.md`
+    );
+    const canonicalBefore = sha256(canonicalPath);
     const restoreBtn = await browser.$("[data-pf-testid='version-restore']");
     await restoreBtn.waitForExist({ timeout: 30000 });
+
+    // J05 cancel leg: dismissing the confirmation must leave the canonical
+    // fulltext bytes untouched — no copy happens before an explicit confirm.
+    await restoreBtn.click();
+    const cancelBtn = await browser.$(".pf-vr-confirm-actions .btn-secondary");
+    await cancelBtn.waitForExist({ timeout: 30000 });
+    await cancelBtn.click();
+    await browser.waitUntil(
+      async () => !(await browser.$(".pf-vr-confirm-actions").isExisting()),
+      {
+        timeout: 30000,
+        timeoutMsg: "the restore confirmation did not close on cancel",
+      }
+    );
+    expect(sha256(canonicalPath)).toBe(canonicalBefore);
+
+    // Restore the oldest version (v1) → confirmation → Python performs the
+    // copy AND persists provenance.
     await restoreBtn.click();
     const confirmBtn = await browser.$(
       "[data-pf-testid='version-restore-confirm']"
@@ -4164,6 +4227,48 @@ describe("PaperForge real-task e2e", function () {
       labels,
       restored_contains: "first body",
       trace_marker: "versions restore",
+      recorded_at: new Date().toISOString(),
+    });
+
+    // J05 restart leg: the restored version surface must survive a same-sandbox
+    // restart — the version list re-renders from the persisted substrate.
+    await browser.reloadObsidian();
+    await dismissModals();
+    await openPanel();
+    await openVaultFile(NOTE_PATH);
+    const restartVersionBtn = await browser.$(
+      "[data-pf-testid='version-history']"
+    );
+    await restartVersionBtn.waitForExist({ timeout: 60000 });
+    await restartVersionBtn.click();
+    await (await browser.$(".pf-vr-layout")).waitForExist({ timeout: 60000 });
+    await browser.waitUntil(
+      async () => {
+        const after = await browser.execute(() =>
+          Array.from(document.querySelectorAll(".pf-vr-entry-label")).map(
+            (el) => (el.textContent ?? "").trim()
+          )
+        );
+        return after.includes("v1") && after.includes("v2");
+      },
+      {
+        timeout: 60000,
+        timeoutMsg: "the version list did not re-render after a restart",
+      }
+    );
+    appendEvidence("j05-version-restart.json", {
+      case_id: "J05",
+      variant: "restore → same-sandbox restart → version list re-renders",
+      required_layer: "H",
+      status: "VERIFIED",
+      source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: PLUGIN_DIR,
+      })
+        .toString()
+        .trim(),
+      worktree_dirty: worktreeDirty(),
+      cancel_left_canonical_unchanged: true,
+      labels_after_restart: ["v1", "v2"],
       recorded_at: new Date().toISOString(),
     });
   });
