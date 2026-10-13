@@ -3981,7 +3981,23 @@ describe("PaperForge real-task e2e", function () {
           );
           promoted = true;
           promotedSha = sha256(inventoryPath);
-        } catch {
+        } catch (error) {
+          // Name the outcome: the client traces every op with ok/ms/code, and
+          // the dashboard shows a Promoted/rejected notice for 8s.
+          const diag = await browser.executeObsidian(async ({ app }) => {
+            const plugin = app.plugins.plugins["paperforge"] as unknown as {
+              getDebugTrace(): string;
+            };
+            return plugin.getDebugTrace().split("\n").slice(-8).join(" | ");
+          });
+          const notices = await browser.execute(() =>
+            Array.from(document.querySelectorAll(".notice")).map((node) =>
+              (node.textContent ?? "").trim()
+            )
+          );
+          console.log(
+            "F02D trace=" + JSON.stringify(diag) + " notices=" + JSON.stringify(notices)
+          );
           promoted = false;
         }
       }
@@ -4041,7 +4057,14 @@ describe("PaperForge real-task e2e", function () {
           { timeout: 120000 }
         );
         accepted = true;
-      } catch {
+      } catch (error) {
+        const diag = await browser.executeObsidian(async ({ app }) => {
+          const plugin = app.plugins.plugins["paperforge"] as unknown as {
+            getDebugTrace(): string;
+          };
+          return plugin.getDebugTrace().split("\n").slice(-8).join(" | ");
+        });
+        console.log("F03D trace=" + JSON.stringify(diag));
         accepted = false;
       }
     }
