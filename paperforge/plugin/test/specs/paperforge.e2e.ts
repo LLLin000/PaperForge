@@ -3951,14 +3951,28 @@ describe("PaperForge real-task e2e", function () {
       });
       expect(promoteLocate.found).toBe(true);
       expect(promoteLocate.disabled).toBe(false);
-      const clicked = await browser.execute(() => {
-        const row = document.querySelector(".paperforge-quality-r-row");
-        const button = Array.from(row?.querySelectorAll("button") ?? []).find(
-          (node) => (node.textContent ?? "").trim() === "Promote"
-        ) as HTMLButtonElement | undefined;
-        button?.click();
-        return Boolean(button);
-      });
+      // The panel re-renders between the locate above and the click, so the
+      // query + click must happen inside ONE renderer task; retry the atomic
+      // attempt a bounded number of times to ride out that transient.
+      let clicked = false;
+      for (let attempt = 0; attempt < 3 && !clicked; attempt += 1) {
+        if (attempt > 0) await browser.pause(500);
+        const state = await browser.executeObsidian(async () => {
+          const row = document.querySelector(".paperforge-quality-r-row");
+          const button = Array.from(row?.querySelectorAll("button") ?? []).find(
+            (node) => (node.textContent ?? "").trim() === "Promote"
+          ) as HTMLButtonElement | undefined;
+          const hit = Boolean(button) && !button?.disabled;
+          if (hit) button?.click();
+          return {
+            clicked: hit,
+            found: Boolean(button),
+            disabled: button ? button.disabled : true,
+          };
+        });
+        clicked = state.clicked;
+        if (!clicked) console.log("F02CLICK " + JSON.stringify(state));
+      }
       if (clicked) {
         try {
           await browser.waitUntil(
@@ -3992,15 +4006,29 @@ describe("PaperForge real-task e2e", function () {
       });
       expect(acceptLocate.found).toBe(true);
       expect(acceptLocate.disabled).toBe(false);
-      await browser.execute(() => {
-        const cardEl = document.querySelector(".paperforge-quality-p-card");
-        const button = Array.from(
-          cardEl?.querySelectorAll("button") ?? []
-        ).find(
-          (node) => (node.textContent ?? "").trim() === "Accept"
-        ) as HTMLButtonElement | undefined;
-        button?.click();
-      });
+      // Same atomic query+click contract as Promote: the card re-renders
+      // between locate and click, so retry the single-task attempt.
+      let acceptedClick = false;
+      for (let attempt = 0; attempt < 3 && !acceptedClick; attempt += 1) {
+        if (attempt > 0) await browser.pause(500);
+        const state = await browser.executeObsidian(async () => {
+          const cardEl = document.querySelector(".paperforge-quality-p-card");
+          const button = Array.from(
+            cardEl?.querySelectorAll("button") ?? []
+          ).find(
+            (node) => (node.textContent ?? "").trim() === "Accept"
+          ) as HTMLButtonElement | undefined;
+          const hit = Boolean(button) && !button?.disabled;
+          if (hit) button?.click();
+          return {
+            clicked: hit,
+            found: Boolean(button),
+            disabled: button ? button.disabled : true,
+          };
+        });
+        acceptedClick = state.clicked;
+        if (!acceptedClick) console.log("F02CLICK " + JSON.stringify(state));
+      }
       // The acceptance may ask for confirmation first.
       const confirm = await browser.$(".paperforge-confirm-actions button.mod-warning");
       if (await confirm.isExisting().catch(() => false)) {
