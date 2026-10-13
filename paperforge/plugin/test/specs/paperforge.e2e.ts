@@ -481,12 +481,21 @@ async function waitForOcrRow(title: string, key?: string): Promise<void> {
   try {
     await browser.waitUntil(
       async () => {
-        const text = await (
-          await browser.$(".pf-ocr-ws-viewport")
-        ).getText().catch(() => "");
-        // Match the title OR the key: the row renders the key even when the
-        // index has not resolved a title for a runtime-synthesized paper.
-        return text.includes(title) || (key ? text.includes(key) : false);
+        // The viewport's rendered TEXT does not carry the title cells (the
+        // CI dump showed three "Pending" rows with empty title text), so
+        // match the DOM like the D02 case does: a row whose subtree
+        // contains the title, else the key.
+        const byTitle = await browser.$$(
+          `//tr[.//*[contains(text(),'${title}')]]`
+        );
+        if (byTitle.length > 0) return true;
+        if (key) {
+          const byKey = await browser.$$(
+            `//tr[.//*[contains(text(),'${key}')]]`
+          );
+          return byKey.length > 0;
+        }
+        return false;
       },
       { timeout: 180000, timeoutMsg: `OCR workspace row never rendered: ${title}` }
     );
