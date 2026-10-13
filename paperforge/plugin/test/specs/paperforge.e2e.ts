@@ -474,14 +474,19 @@ async function clickStable(selector: string): Promise<void> {
 }
 
 /** Wait until the OCR workspace renders a row for `title`. */
-async function waitForOcrRow(title: string): Promise<void> {
+async function waitForOcrRow(title: string, key?: string): Promise<void> {
   await (
     await browser.$(".pf-ocr-ws-viewport")
   ).waitForExist({ timeout: 180000 });
   await browser.waitUntil(
-    async () =>
-      (await (await browser.$(".pf-ocr-ws-viewport")).getText().catch(() => ""))
-        .includes(title),
+    async () => {
+      const text = await (
+        await browser.$(".pf-ocr-ws-viewport")
+      ).getText().catch(() => "");
+      // Match the title OR the key: the row renders the key even when the
+      // index has not resolved a title for a runtime-synthesized paper.
+      return text.includes(title) || (key ? text.includes(key) : false);
+    },
     { timeout: 180000, timeoutMsg: `OCR workspace row never rendered: ${title}` }
   );
 }
@@ -1069,7 +1074,7 @@ function addOcrPaper(
   mkdirSync(noteDir, { recursive: true });
   writeFileSync(
     path.join(noteDir, `${key}.md`),
-    `---\nzotero_key: "${key}"\ntitle: "${title}"\n---\n\n# ${title}\n`,
+    `---\nzotero_key: "${key}"\ntitle: "${title}"\ndo_ocr: true\nanalyze: false\n---\n\n# ${title}\n`,
     "utf8"
   );
   addExportItem(base, { key, title, doi });
@@ -3143,8 +3148,8 @@ describe("PaperForge real-task e2e", function () {
 
       // 1. Select A and B (never C) → Process Selected → CANCEL.
       await browser.executeObsidianCommand("paperforge:paperforge-ocr-workspace");
-      await waitForOcrRow(SECOND_PAPER_TITLE);
-      await waitForOcrRow(THIRD_PAPER_TITLE);
+      await waitForOcrRow(SECOND_PAPER_TITLE, NEW_PAPER_KEY);
+      await waitForOcrRow(THIRD_PAPER_TITLE, THIRD_PAPER_KEY);
       await clickStable(aRow);
       await clickStable(bRow);
       await clickProcessSelected();
@@ -3294,7 +3299,7 @@ describe("PaperForge real-task e2e", function () {
       await waitForActiveFile(NEW_PAPER_NOTE);
 
       await browser.executeObsidianCommand("paperforge:paperforge-ocr-workspace");
-      await waitForOcrRow(SECOND_PAPER_TITLE);
+      await waitForOcrRow(SECOND_PAPER_TITLE, NEW_PAPER_KEY);
       await clickStable(
         `//tr[.//*[contains(text(),'${SECOND_PAPER_TITLE}')]]//button[@data-pf-testid='ocr-open-fulltext']`
       );
