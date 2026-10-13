@@ -4165,6 +4165,11 @@ describe("PaperForge real-task e2e", function () {
     this.timeout(600000);
     // F01/F02/F03: staging reconciles against an isolated tmp root; only
     // promotion/acceptance may write the canonical inventory.
+    // The materialization crops the canonical PDF, so the case owns that
+    // precondition (the F02RAW diagnostic showed pdfBytes=-1 without it:
+    // the sandbox's PDF is copied by prepareOcrSandbox, and a null job URL
+    // keeps this render-only case from touching the OCR config).
+    await prepareOcrSandbox(null);
     const base = await sandboxBasePath();
     const inventoryPath = path.join(
       base,
@@ -4286,25 +4291,120 @@ describe("PaperForge real-task e2e", function () {
     let promoted = false;
     let promotedSha: string | null = null;
     if (rRows.length > 0) {
-      const clicked = await browser.execute(() => {
-        const buttons = Array.from(
-          document.querySelectorAll(
-            ".paperforge-quality-r-row button.pf-action-btn"
-          )
-        ) as HTMLButtonElement[];
-        const live = buttons.find((button) => !button.disabled);
-        live?.click();
-        return Boolean(live);
+      // Decisive diagnostic: the CLI reports staged=true yet the UI's
+      // Promote stays disabled. Dump the client's raw staging DTO view of
+      // `staged` alongside the sandbox PDF bytes it should refer to, so the
+      // disagreement is visible before the click.
+      const raw = await browser.executeObsidian(async ({ app }) => {
+        const plugin = app.plugins.plugins["paperforge"] as unknown as {
+          getClient(): {
+            renderReconcileStaging(
+              key: string
+            ): Promise<Record<string, unknown>>;
+          };
+        };
+        const data = await plugin
+          .getClient()
+          .renderReconcileStaging("TSTONE001");
+        const rDetails = (data["r_details"] ?? []) as Array<
+          Record<string, unknown>
+        >;
+        const pDetails = (data["p_details"] ?? []) as Array<
+          Record<string, unknown>
+        >;
+        return {
+          summary: data["summary"] ?? null,
+          rStaged: rDetails.map((r) => r["staged"]),
+          rIds: rDetails.map((r) => String(r["object_id"] ?? "")),
+          pStaged: pDetails.map((p) => p["staged"]),
+        };
       });
+      const pdfPath = path.join(
+        base,
+        "System",
+        "Zotero",
+        "storage",
+        "TSTONE001",
+        "TSTONE001.pdf"
+      );
+      const pdfBytes = existsSync(pdfPath) ? statSync(pdfPath).size : -1;
+      console.log("F02RAW " + JSON.stringify({ ...raw, pdfBytes }));
+      // Target Promote BY TEXT: the row also carries an "Open preview"
+      // button, so a first-non-disabled scan can grab the wrong control.
+      const promoteLocate = await browser.execute(() => {
+        const row = document.querySelector(".paperforge-quality-r-row");
+        const button = Array.from(row?.querySelectorAll("button") ?? []).find(
+          (node) => (node.textContent ?? "").trim() === "Promote"
+        ) as HTMLButtonElement | undefined;
+        return {
+          found: Boolean(button),
+          disabled: button ? button.disabled : true,
+        };
+      });
+      expect(promoteLocate.found).toBe(true);
+      expect(promoteLocate.disabled).toBe(false);
+      // The panel re-renders between the locate above and the click, so the
+      // query + click must happen inside ONE renderer task; retry the atomic
+      // attempt a bounded number of times to ride out that transient.
+      let clicked = false;
+      for (let attempt = 0; attempt < 3 && !clicked; attempt += 1) {
+        if (attempt > 0) await browser.pause(500);
+        const state = await browser.executeObsidian(async () => {
+          const row = document.querySelector(".paperforge-quality-r-row");
+          const button = Array.from(row?.querySelectorAll("button") ?? []).find(
+            (node) => (node.textContent ?? "").trim() === "Promote"
+          ) as HTMLButtonElement | undefined;
+          const hit = Boolean(button) && !button?.disabled;
+          if (hit) button?.click();
+          return {
+            clicked: hit,
+            found: Boolean(button),
+            disabled: button ? button.disabled : true,
+          };
+        });
+        clicked = state.clicked;
+        if (!clicked) console.log("F02CLICK " + JSON.stringify(state));
+      }
       if (clicked) {
         try {
+          // R promotion materializes the staged render artifact (the plan's
+          // action is materialize_render); the canonical inventory row for
+          // this candidate already exists, so the inventory hash is not the
+          // observable - the artifact's appearance is (the CI trace showed
+          // promote-r ok=true with an unchanged inventory).
+          const promotedArtifact = path.join(
+            base,
+            "System",
+            "PaperForge",
+            "ocr",
+            "TSTONE001",
+            "render",
+            "figures",
+            `${String(raw.rIds?.[0] ?? "")}.md`
+          );
           await browser.waitUntil(
-            () => existsSync(inventoryPath) && sha256(inventoryPath) !== beforeSha,
-            { timeout: 120000, timeoutMsg: "promote never wrote the inventory" }
+            () => existsSync(promotedArtifact),
+            { timeout: 120000, timeoutMsg: "promote never materialized the render artifact" }
           );
           promoted = true;
           promotedSha = sha256(inventoryPath);
-        } catch {
+        } catch (error) {
+          // Name the outcome: the client traces every op with ok/ms/code, and
+          // the dashboard shows a Promoted/rejected notice for 8s.
+          const diag = await browser.executeObsidian(async ({ app }) => {
+            const plugin = app.plugins.plugins["paperforge"] as unknown as {
+              getDebugTrace(): string;
+            };
+            return plugin.getDebugTrace().split("\n").slice(-8).join(" | ");
+          });
+          const notices = await browser.execute(() =>
+            Array.from(document.querySelectorAll(".notice")).map((node) =>
+              (node.textContent ?? "").trim()
+            )
+          );
+          console.log(
+            "F02D trace=" + JSON.stringify(diag) + " notices=" + JSON.stringify(notices)
+          );
           promoted = false;
         }
       }
@@ -4313,13 +4413,45 @@ describe("PaperForge real-task e2e", function () {
     let accepted = false;
     if (pCards.length > 0) {
       const beforeAccept = existsSync(inventoryPath) ? sha256(inventoryPath) : null;
-      await browser.execute(() => {
+      // Same by-text contract as Promote: the card also carries an
+      // "Open preview" button, so match the control's label explicitly.
+      const acceptLocate = await browser.execute(() => {
         const cardEl = document.querySelector(".paperforge-quality-p-card");
-        const button = cardEl?.querySelector(
-          "button.pf-action-btn"
-        ) as HTMLButtonElement | null;
-        button?.click();
+        const button = Array.from(
+          cardEl?.querySelectorAll("button") ?? []
+        ).find(
+          (node) => (node.textContent ?? "").trim() === "Accept"
+        ) as HTMLButtonElement | undefined;
+        return {
+          found: Boolean(button),
+          disabled: button ? button.disabled : true,
+        };
       });
+      expect(acceptLocate.found).toBe(true);
+      expect(acceptLocate.disabled).toBe(false);
+      // Same atomic query+click contract as Promote: the card re-renders
+      // between locate and click, so retry the single-task attempt.
+      let acceptedClick = false;
+      for (let attempt = 0; attempt < 3 && !acceptedClick; attempt += 1) {
+        if (attempt > 0) await browser.pause(500);
+        const state = await browser.executeObsidian(async () => {
+          const cardEl = document.querySelector(".paperforge-quality-p-card");
+          const button = Array.from(
+            cardEl?.querySelectorAll("button") ?? []
+          ).find(
+            (node) => (node.textContent ?? "").trim() === "Accept"
+          ) as HTMLButtonElement | undefined;
+          const hit = Boolean(button) && !button?.disabled;
+          if (hit) button?.click();
+          return {
+            clicked: hit,
+            found: Boolean(button),
+            disabled: button ? button.disabled : true,
+          };
+        });
+        acceptedClick = state.clicked;
+        if (!acceptedClick) console.log("F02CLICK " + JSON.stringify(state));
+      }
       // The acceptance may ask for confirmation first.
       const confirm = await browser.$(".paperforge-confirm-actions button.mod-warning");
       if (await confirm.isExisting().catch(() => false)) {
@@ -4332,7 +4464,14 @@ describe("PaperForge real-task e2e", function () {
           { timeout: 120000 }
         );
         accepted = true;
-      } catch {
+      } catch (error) {
+        const diag = await browser.executeObsidian(async ({ app }) => {
+          const plugin = app.plugins.plugins["paperforge"] as unknown as {
+            getDebugTrace(): string;
+          };
+          return plugin.getDebugTrace().split("\n").slice(-8).join(" | ");
+        });
+        console.log("F03D trace=" + JSON.stringify(diag));
         accepted = false;
       }
     }
