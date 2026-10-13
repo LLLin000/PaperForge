@@ -3895,15 +3895,64 @@ describe("PaperForge real-task e2e", function () {
     let promoted = false;
     let promotedSha: string | null = null;
     if (rRows.length > 0) {
+      // Decisive diagnostic: the CLI reports staged=true yet the UI's
+      // Promote stays disabled. Dump the client's raw staging DTO view of
+      // `staged` alongside the sandbox PDF bytes it should refer to, so the
+      // disagreement is visible before the click.
+      const raw = await browser.executeObsidian(async ({ app }) => {
+        const plugin = app.plugins.plugins["paperforge"] as unknown as {
+          getClient(): {
+            renderReconcileStaging(
+              key: string
+            ): Promise<Record<string, unknown>>;
+          };
+        };
+        const data = await plugin
+          .getClient()
+          .renderReconcileStaging("TSTONE001");
+        const rDetails = (data["r_details"] ?? []) as Array<
+          Record<string, unknown>
+        >;
+        const pDetails = (data["p_details"] ?? []) as Array<
+          Record<string, unknown>
+        >;
+        return {
+          summary: data["summary"] ?? null,
+          rStaged: rDetails.map((r) => r["staged"]),
+          pStaged: pDetails.map((p) => p["staged"]),
+        };
+      });
+      const pdfPath = path.join(
+        base,
+        "System",
+        "Zotero",
+        "storage",
+        "TSTONE001",
+        "TSTONE001.pdf"
+      );
+      const pdfBytes = existsSync(pdfPath) ? statSync(pdfPath).size : -1;
+      console.log("F02RAW " + JSON.stringify({ ...raw, pdfBytes }));
+      // Target Promote BY TEXT: the row also carries an "Open preview"
+      // button, so a first-non-disabled scan can grab the wrong control.
+      const promoteLocate = await browser.execute(() => {
+        const row = document.querySelector(".paperforge-quality-r-row");
+        const button = Array.from(row?.querySelectorAll("button") ?? []).find(
+          (node) => (node.textContent ?? "").trim() === "Promote"
+        ) as HTMLButtonElement | undefined;
+        return {
+          found: Boolean(button),
+          disabled: button ? button.disabled : true,
+        };
+      });
+      expect(promoteLocate.found).toBe(true);
+      expect(promoteLocate.disabled).toBe(false);
       const clicked = await browser.execute(() => {
-        const buttons = Array.from(
-          document.querySelectorAll(
-            ".paperforge-quality-r-row button.pf-action-btn"
-          )
-        ) as HTMLButtonElement[];
-        const live = buttons.find((button) => !button.disabled);
-        live?.click();
-        return Boolean(live);
+        const row = document.querySelector(".paperforge-quality-r-row");
+        const button = Array.from(row?.querySelectorAll("button") ?? []).find(
+          (node) => (node.textContent ?? "").trim() === "Promote"
+        ) as HTMLButtonElement | undefined;
+        button?.click();
+        return Boolean(button);
       });
       if (clicked) {
         try {
@@ -3922,11 +3971,29 @@ describe("PaperForge real-task e2e", function () {
     let accepted = false;
     if (pCards.length > 0) {
       const beforeAccept = existsSync(inventoryPath) ? sha256(inventoryPath) : null;
+      // Same by-text contract as Promote: the card also carries an
+      // "Open preview" button, so match the control's label explicitly.
+      const acceptLocate = await browser.execute(() => {
+        const cardEl = document.querySelector(".paperforge-quality-p-card");
+        const button = Array.from(
+          cardEl?.querySelectorAll("button") ?? []
+        ).find(
+          (node) => (node.textContent ?? "").trim() === "Accept"
+        ) as HTMLButtonElement | undefined;
+        return {
+          found: Boolean(button),
+          disabled: button ? button.disabled : true,
+        };
+      });
+      expect(acceptLocate.found).toBe(true);
+      expect(acceptLocate.disabled).toBe(false);
       await browser.execute(() => {
         const cardEl = document.querySelector(".paperforge-quality-p-card");
-        const button = cardEl?.querySelector(
-          "button.pf-action-btn"
-        ) as HTMLButtonElement | null;
+        const button = Array.from(
+          cardEl?.querySelectorAll("button") ?? []
+        ).find(
+          (node) => (node.textContent ?? "").trim() === "Accept"
+        ) as HTMLButtonElement | undefined;
         button?.click();
       });
       // The acceptance may ask for confirmation first.
