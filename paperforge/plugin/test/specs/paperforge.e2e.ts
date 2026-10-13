@@ -117,9 +117,15 @@ const E2E_SKIP_REGISTRY: Record<
   },
   "vector-case-opt-in": {
     reason:
-      "the regenerated fixture works end to end through the CLI (eligible + 8 chunks embedded), but inside the wdio sandbox the lineage still reports provenance_unknown for it; the vector cases stay opt-in until that sandbox gap closes",
+      "the sandbox fixture is now provenance-verified (builder ships the advertised PDF and stamps meta.raw_version.pdf_fingerprint); the case stays opt-in until the H matrix sets PF_E2E_VECTOR_CASE=1",
     owner: "real-machine verification (#265)",
-    window: "set PF_E2E_VECTOR_CASE=1 once the sandbox provenance gap is fixed",
+    window: "set PF_E2E_VECTOR_CASE=1 in the H matrix job to run it by default",
+  },
+  "e04-embed-stop-body-pending": {
+    reason:
+      "E04's stop body is not implemented yet; the earlier opt-in gate let an empty case pass vacuously, so the gap is now an explicit registered skip",
+    owner: "real-machine verification (#265)",
+    window: "until the embed-stop case body lands (slow provider stub + shadow/promotion assertions)",
   },
   "legacy-chroma-fixture-absent": {
     reason:
@@ -3635,15 +3641,10 @@ describe("PaperForge real-task e2e", function () {
   it("stops a running vector build without corrupting the substrate", async function () {
     // E04: cooperative stop of embed.build — the in-flight shadow target
     // stays unpromoted, the production db stays intact, and a later resume
-    // picks the work up. The running build needs embeddable chunks, which the
-    // current OCR fixture cannot supply (empty structured blocks).
-    if (process.env.PF_E2E_VECTOR_CASE !== "1") {
-      registeredSkip(this, "vector-case-opt-in");
-      return;
-    }
-    // Fixture-ready body lands with the sandbox provenance fix:
-    // start embed.build against a slow provider, cancel mid-flight, assert
-    // the shadow target stayed unpromoted and resume completes.
+    // picks the work up.  The sandbox fixture is provenance-ready now, but
+    // this body is still pending (the previous shape passed vacuously when
+    // enabled, so it registers an explicit skip instead).
+    registeredSkip(this, "e04-embed-stop-body-pending");
   });
 
   it("migrates a legacy ChromaDB substrate into sqlite-vec", async function () {
