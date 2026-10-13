@@ -3924,6 +3924,7 @@ describe("PaperForge real-task e2e", function () {
         return {
           summary: data["summary"] ?? null,
           rStaged: rDetails.map((r) => r["staged"]),
+          rIds: rDetails.map((r) => String(r["object_id"] ?? "")),
           pStaged: pDetails.map((p) => p["staged"]),
         };
       });
@@ -3975,9 +3976,24 @@ describe("PaperForge real-task e2e", function () {
       }
       if (clicked) {
         try {
+          // R promotion materializes the staged render artifact (the plan's
+          // action is materialize_render); the canonical inventory row for
+          // this candidate already exists, so the inventory hash is not the
+          // observable - the artifact's appearance is (the CI trace showed
+          // promote-r ok=true with an unchanged inventory).
+          const promotedArtifact = path.join(
+            base,
+            "System",
+            "PaperForge",
+            "ocr",
+            "TSTONE001",
+            "render",
+            "figures",
+            `${String(raw.rIds?.[0] ?? "")}.md`
+          );
           await browser.waitUntil(
-            () => existsSync(inventoryPath) && sha256(inventoryPath) !== beforeSha,
-            { timeout: 120000, timeoutMsg: "promote never wrote the inventory" }
+            () => existsSync(promotedArtifact),
+            { timeout: 120000, timeoutMsg: "promote never materialized the render artifact" }
           );
           promoted = true;
           promotedSha = sha256(inventoryPath);
