@@ -117,9 +117,9 @@ const E2E_SKIP_REGISTRY: Record<
   },
   "vector-case-opt-in": {
     reason:
-      "the regenerated fixture works end to end through the CLI (eligible + 8 chunks embedded), but inside the wdio sandbox the lineage still reports provenance_unknown for it; the vector cases stay opt-in until that sandbox gap closes",
+      "the sandbox fixture is now provenance-verified (builder ships the advertised PDF and stamps meta.raw_version.pdf_fingerprint); the case stays opt-in until the H matrix sets PF_E2E_VECTOR_CASE=1",
     owner: "real-machine verification (#265)",
-    window: "set PF_E2E_VECTOR_CASE=1 once the sandbox provenance gap is fixed",
+    window: "set PF_E2E_VECTOR_CASE=1 in the H matrix job to run it by default",
   },
   "legacy-chroma-fixture-absent": {
     reason:
@@ -3464,6 +3464,7 @@ describe("PaperForge real-task e2e", function () {
         }
       }
       await waitIdle();
+      const buildSource = "client-action-explicit";
       const build = await runClientAction("embed.build");
       expect(build.ok).toBe(true);
       expect(stub.requests.length).toBeGreaterThan(0);
@@ -3517,8 +3518,11 @@ describe("PaperForge real-task e2e", function () {
       expect(resume.ok).toBe(true);
       expect(stub.requests.length).toBe(requestsAfterBuild);
 
-      // C03: dashboard @deep search over the built substrate.
+      // C03: dashboard @deep search over the built substrate.  The search
+      // input renders in the panel's note context, so open the paper first
+      // (the J01 search path does the same).
       await openPanel();
+      await openVaultFile(BASE_PATH);
       const input = await browser.$(".paperforge-search-input");
       await input.waitForExist({ timeout: 60000 });
       await input.click();
@@ -6001,8 +6005,22 @@ describe("PaperForge real-task e2e", function () {
     await waitUntilNotice("Fulltext file not found");
     expect(await activeFilePath()).toBe(NOTE_PATH);
 
-    // This vault's export points its PDF attachment outside the vault, so the
-    // PDF target is absent by construction: the same fail-closed contract.
+    // The vault now ships the advertised PDF (builder), so the missing-target
+    // condition is created here: remove the file and let the Vault cache drop
+    // it, mirroring the fulltext removal above.
+    unlinkSync(path.join(base, PAPER_PDF));
+    await browser.waitUntil(
+      async () =>
+        await browser.executeObsidian(
+          async ({ app }, target) =>
+            app.vault.getAbstractFileByPath(target) === null,
+          PAPER_PDF
+        ),
+      {
+        timeout: 30000,
+        timeoutMsg: "the removed PDF stayed in the Vault cache",
+      }
+    );
     await clickTestId("open-pdf");
     await waitUntilNotice("PDF not found");
     expect(await activeFilePath()).toBe(NOTE_PATH);
