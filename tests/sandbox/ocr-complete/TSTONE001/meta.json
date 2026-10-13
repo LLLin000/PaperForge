@@ -13,7 +13,7 @@
   "ocr_provider": "PaddleOCR",
   "ocr_model": "PaddleOCR",
   "ocr_raw_schema_version": "2.0.0",
-  "pdf_fingerprint": "sha256:6561f7105fd60850ef95ff17f5d030611119c4b88f7d0b37aba4fd317c0af99b",
+  "pdf_fingerprint": "sha256:4fed9556b9cee3ba6fc96922dcd1d6a72e15f901203145788f1717d008989ea2",
   "result_json_hash": "sha256:e14602128b1af4ee589f3c2331ca5b6bbc6951d07e1050d578b14f1e9843fa5e",
   "raw_blocks_hash": "sha256:4f9a1019aa906c8b6572872aa9a4d406939cf4f20c58dd5b94e16313bff47962"
  },
