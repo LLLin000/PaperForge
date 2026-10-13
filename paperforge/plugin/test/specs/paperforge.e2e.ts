@@ -507,11 +507,18 @@ async function clickProcessSelected(): Promise<void> {
  * The result URL is served outside the jobs path so the worker's plain fetch
  * is exercised too.
  *
- * Jobs are per-paper: every upload gets its own job id, keyed by the paper the
- * multipart upload carries. `failKeys` makes named papers terminal-fail at the
- * provider (the worker resubmits a dead job up to MAX_OCR_JOB_ATTEMPTS, so the
- * key — not the job id or the upload order — is what a per-paper outcome can
- * be pinned to), and their results are never served.
+ * DEFAULT (no options): one job, `pf-e2e-job-1`, reported by the batch
+ * endpoint from the very first poll, with a single shared observation counter
+ * — byte for byte what every pre-existing case pins.
+ *
+ * `failKeys` opts IN, for the two-paper batch case only, to per-paper jobs:
+ * every upload gets its own job id, and named papers terminal-fail at the
+ * provider (their results are never served). The paper is read from the
+ * multipart filename — `requests` sends the PDF's BASENAME, not its vault
+ * path, so the stem (`TSTONE003.pdf` → `TSTONE003`) is the only identity the
+ * upload carries. The worker resubmits a dead job up to
+ * MAX_OCR_JOB_ATTEMPTS, so the key — not the job id or the upload order — is
+ * what a per-paper outcome is pinned to.
  */
 async function startOcrStub(
   mode: "success" | "running",
@@ -523,7 +530,12 @@ async function startOcrStub(
 }> {
   const requests: Array<{ method: string; url: string; key?: string }> = [];
   const failKeys = new Set(options.failKeys ?? []);
-  const jobKeys = new Map<string, string>();
+  const perPaper = failKeys.size > 0;
+  const LEGACY_JOB_ID = "pf-e2e-job-1";
+  // The legacy job is visible to the batch observer before any upload.
+  const jobKeys = new Map<string, string>(
+    perPaper ? [] : [[LEGACY_JOB_ID, ""]]
+  );
   const observed = new Map<string, number>();
   let nextJob = 0;
   let resultUrl = "";
@@ -569,17 +581,27 @@ async function startOcrStub(
       res.end(JSON.stringify(value));
     };
     if (req.method === "POST" && url.startsWith("/api/v2/ocr/jobs")) {
+      if (!perPaper) {
+        // Pre-change behaviour, untouched: one fixed job id, body unread.
+        req.on("data", () => undefined);
+        req.on("end", () => sendJson({ data: { jobId: LEGACY_JOB_ID } }));
+        return;
+      }
       const chunks: Buffer[] = [];
       req.on("data", (chunk: Buffer) => chunks.push(chunk));
       req.on("end", () => {
         const body = Buffer.concat(chunks).toString("latin1");
-        const match = /storage[\\/]([A-Za-z0-9]+)[\\/][^\\/"]+\.pdf/.exec(body);
-        const key = match ? match[1] : "";
+        // `requests` sends the file's basename (`TSTONE003.pdf`); the vault
+        // path it came from never reaches the provider.
+        const filename = /filename="([^"]*)"/.exec(body)?.[1] ?? "";
+        const key = (filename.split(/[\\/]/).pop() ?? "").replace(
+          /\.pdf$/i,
+          ""
+        );
         nextJob += 1;
         const jobId = `pf-e2e-job-${nextJob}`;
         record.key = key;
         jobKeys.set(jobId, key);
-        observed.set(jobId, 0);
         sendJson({ data: { jobId } });
       });
       return;
@@ -3066,19 +3088,24 @@ describe("PaperForge real-task e2e", function () {
       const cBefore = sha256(cMeta);
       const posts = (): Array<{ method: string; url: string; key?: string }> =>
         stub.requests.filter((entry) => entry.method === "POST");
-      const statusOf = (key: string): string => {
+      const metaOf = (key: string): Record<string, unknown> => {
         try {
-          const meta = JSON.parse(
+          return JSON.parse(
             readFileSync(
               path.join(base, "System", "PaperForge", "ocr", key, "meta.json"),
               "utf8"
             )
-          ) as { ocr_status?: string };
-          return String(meta.ocr_status ?? "");
+          ) as Record<string, unknown>;
         } catch {
-          return "<unreadable>";
+          return { unreadable: true };
         }
       };
+      const statusOf = (key: string): string => String(metaOf(key).ocr_status ?? "");
+      const requestLog = (): string[] =>
+        stub.requests.map(
+          (entry) =>
+            `${entry.method} ${entry.url}${entry.key ? ` [${entry.key}]` : ""}`
+        );
       const aRow = `//tr[.//*[contains(text(),'${SECOND_PAPER_TITLE}')]]//input[@type='checkbox']`;
       const bRow = `//tr[.//*[contains(text(),'${THIRD_PAPER_TITLE}')]]//input[@type='checkbox']`;
 
@@ -3115,31 +3142,46 @@ describe("PaperForge real-task e2e", function () {
 
       const succeeded = new Set(["done", "done_degraded"]);
       const failed = new Set(["error", "fatal_error"]);
+      const terminal = (key: string): boolean => {
+        const status = statusOf(key);
+        return succeeded.has(status) || failed.has(status);
+      };
       try {
+        // Wait for BOTH papers to reach a terminal state — only then is the
+        // outcome settled enough to judge. A non-terminal status here is a
+        // real failure (the run stopped progressing), not a slow provider.
         await browser.waitUntil(
-          () =>
-            succeeded.has(statusOf(NEW_PAPER_KEY)) &&
-            failed.has(statusOf(THIRD_PAPER_KEY)),
+          () => terminal(NEW_PAPER_KEY) && terminal(THIRD_PAPER_KEY),
           {
             timeout: 360000,
             timeoutMsg: "the two-paper batch never settled per paper",
           }
         );
+        // Only judge the OUTCOME once both settled: A must have succeeded, B
+        // must have failed terminally. Inside the try so that a wrong outcome
+        // dumps the same per-paper facts as a timeout.
+        expect(succeeded.has(statusOf(NEW_PAPER_KEY))).toBe(true);
+        expect(failed.has(statusOf(THIRD_PAPER_KEY))).toBe(true);
       } catch (error) {
+        const perKeyMetas = {
+          a: metaOf(NEW_PAPER_KEY),
+          b: metaOf(THIRD_PAPER_KEY),
+          c: metaOf(PAPER_KEY),
+        };
+        const requests = requestLog();
+        console.log("J02D metas=" + JSON.stringify(perKeyMetas));
+        console.log("J02D req=" + JSON.stringify(requests));
+        console.log(
+          "J02D child=" + JSON.stringify(await readChildDiagnostics())
+        );
+        console.log("J02D jobstate=" + JSON.stringify(readOcrJobState(base)));
         appendEvidence("j02-partial-settle-diagnostic.json", {
           case_id: "J02",
           variant: "two-paper settle-timeout diagnostic",
           required_layer: "H",
           status: "FAILED",
-          per_key: {
-            a: statusOf(NEW_PAPER_KEY),
-            b: statusOf(THIRD_PAPER_KEY),
-            c: statusOf(PAPER_KEY),
-          },
-          requests: stub.requests.map(
-            (entry) =>
-              `${entry.method} ${entry.url}${entry.key ? ` [${entry.key}]` : ""}`
-          ),
+          per_key: perKeyMetas,
+          requests,
           child_diagnostics: await readChildDiagnostics(),
           job_state: readOcrJobState(base),
           recorded_at: new Date().toISOString(),
@@ -3159,19 +3201,7 @@ describe("PaperForge real-task e2e", function () {
       expect(sha256(cMeta)).toBe(cBefore);
       // B's failure is terminal (a dead provider job is resubmitted only up
       // to the attempt cap, then fails closed) and produced no artifact.
-      const bMeta = JSON.parse(
-        readFileSync(
-          path.join(
-            base,
-            "System",
-            "PaperForge",
-            "ocr",
-            THIRD_PAPER_KEY,
-            "meta.json"
-          ),
-          "utf8"
-        )
-      ) as Record<string, unknown>;
+      const bMeta = metaOf(THIRD_PAPER_KEY);
       expect(String(bMeta.ocr_job_id ?? "")).toBe("");
       expect(String(bMeta.error_stage ?? "")).toBe("provider");
       const aFulltext = path.join(
