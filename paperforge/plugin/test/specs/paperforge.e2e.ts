@@ -3267,13 +3267,12 @@ describe("PaperForge real-task e2e", function () {
         },
         { timeout: 180000, timeoutMsg: "Sync never materialized A's note" }
       );
-      // The notes carry the batch's per-paper outcome.
-      expect(readNote(base, NEW_PAPER_NOTE)).toContain(
-        `ocr_status: "${aStatus}"`
-      );
-      expect(readNote(base, THIRD_PAPER_NOTE)).toContain(
-        `ocr_status: "${bStatus}"`
-      );
+      // The notes are the papers' workflow surface (do_ocr/analyze/redo
+      // flags); the raw ocr_status lives in the OCR meta, which the per-key
+      // terminal assertions above already bind.  Here the notes must simply
+      // exist and stay bound to their own keys.
+      expect(readNote(base, NEW_PAPER_NOTE)).toContain(NEW_PAPER_KEY);
+      expect(readNote(base, THIRD_PAPER_NOTE)).toContain(THIRD_PAPER_KEY);
       await openVaultFile(NEW_PAPER_NOTE);
       await waitForActiveFile(NEW_PAPER_NOTE);
 
