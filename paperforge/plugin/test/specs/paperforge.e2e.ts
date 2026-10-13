@@ -1057,6 +1057,21 @@ function addOcrPaper(
   const pdfDir = path.join(base, "System", "Zotero", "storage", key);
   mkdirSync(pdfDir, { recursive: true });
   copyFileSync(PDF_FIXTURE, path.join(pdfDir, `${key}.pdf`));
+  // The paper's note must exist too: cases read it (the C-untouched check
+  // hashes it), and a synthesized paper without its note is not a paper.
+  const noteDir = path.join(
+    base,
+    "Resources",
+    "Literature",
+    "骨科",
+    `${key} - ${title}`
+  );
+  mkdirSync(noteDir, { recursive: true });
+  writeFileSync(
+    path.join(noteDir, `${key}.md`),
+    `---\nzotero_key: "${key}"\ntitle: "${title}"\n---\n\n# ${title}\n`,
+    "utf8"
+  );
   addExportItem(base, { key, title, doi });
 }
 
