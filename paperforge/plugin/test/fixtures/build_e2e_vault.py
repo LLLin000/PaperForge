@@ -89,6 +89,53 @@ def _restore_canonical_fulltext() -> None:
     )
 
 
+def _restamp_provenance() -> None:
+    """Stamp the built vault's provenance claim with ITS OWN bytes.
+
+    The tracked fixture meta is stamped against the fixture's revision, but
+    the vault does not ship that revision verbatim: the builder's first sync
+    runs the legacy backfill (#219), which rewrites
+    ``canonical/blocks.raw.jsonl``, and the repo fixture copy is itself
+    rewritten by other suite runs. A recorded hash that describes some other
+    revision makes provenance fail closed (`provenance_raw_mismatch`) and the
+    paper silently drops out of the embed candidates — E03/C03 then build
+    zero units against a fixture that "shipped OCR".
+    """
+    import hashlib as _hashlib  # noqa: PLC0415
+
+    from paperforge.worker.ocr_artifacts import (  # noqa: PLC0415
+        compute_pdf_fingerprint,
+    )
+
+    paper_root = VAULT / "System" / "PaperForge" / "ocr" / KEY
+    meta_path = paper_root / "meta.json"
+    meta = json.loads(meta_path.read_text(encoding="utf-8"))
+    raw_version = meta.setdefault("raw_version", {})
+    raw_version["raw_blocks_hash"] = (
+        "sha256:"
+        + _hashlib.sha256(
+            (paper_root / "canonical" / "blocks.raw.jsonl").read_bytes()
+        ).hexdigest()
+    )
+    fingerprint = compute_pdf_fingerprint(
+        VAULT / "System" / "Zotero" / "storage" / "TSTONE001" / "TSTONE001.pdf"
+    )
+    if fingerprint != "unknown":
+        raw_version["pdf_fingerprint"] = fingerprint
+    meta_path.write_text(
+        json.dumps(meta, ensure_ascii=False, indent=1), encoding="utf-8"
+    )
+
+    raw_meta_path = paper_root / "raw" / "raw_meta.json"
+    if raw_meta_path.exists():
+        raw_meta = json.loads(raw_meta_path.read_text(encoding="utf-8"))
+        if fingerprint != "unknown":
+            raw_meta["pdf_fingerprint"] = fingerprint
+        raw_meta_path.write_text(
+            json.dumps(raw_meta, ensure_ascii=False, indent=1), encoding="utf-8"
+        )
+
+
 def _assert_ocr_invariant() -> None:
     """The fixture must ship a VALID completed OCR state, not an assumed one.
 
@@ -276,6 +323,11 @@ def build() -> None:
     # stable (no derived rebuild), so the fixture ends as a sync fixed point.
     _restore_canonical_fulltext()
     _run("sync", "--json")
+
+    # No writer of the vault's raw OCR runs after this point: make the vault's
+    # own meta describe the artifacts it actually ships, before anything
+    # (memory index included) reads them and before the invariants verify.
+    _restamp_provenance()
 
     # REAL memory build last, so FTS reflects the final state.
     _run("memory", "build", "--json")
