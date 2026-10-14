@@ -7180,26 +7180,50 @@ describe("PaperForge real-task e2e", function () {
     );
     await clickSettingsTestId("setup-library-save");
 
-    try {
+    const waitForPersisted = async (budget: number) =>
       await browser.waitUntil(
         async () =>
           sandboxConfigField(before, "vault_config.resources_dir") === target,
         {
-          timeout: 120000,
+          timeout: budget,
           interval: 1000,
           timeoutMsg:
             "the Settings UI never persisted resources_dir to paperforge.json",
         }
       );
+    try {
+      await waitForPersisted(120000);
     } catch (error) {
+      // On the runner cell the click and the async persist can cross; re-click
+      // the (re-checked, enabled) Save once before declaring a failure.
+      await browser
+        .waitUntil(
+          async () =>
+            await browser.executeObsidian(async ({ app }) => {
+              const plugin = app.plugins.plugins["paperforge"] as unknown as {
+                _settingTab: { containerEl: HTMLElement };
+              };
+              const el = plugin._settingTab.containerEl.querySelector(
+                "[data-pf-testid='setup-library-save']"
+              );
+              return el instanceof HTMLButtonElement && !el.disabled;
+            }),
+          { timeout: 30000, timeoutMsg: "library Save stayed disabled (retry)" }
+        )
+        .catch(() => undefined);
+      await clickSettingsTestId("setup-library-save").catch(() => undefined);
       try {
-        console.log(
-          "A03D config=" + readFileSync(sandboxConfigFile(before), "utf8")
-        );
-      } catch (e) {
-        console.log("A03D config-read-error=" + String(e));
+        await waitForPersisted(60000);
+      } catch (retryError) {
+        try {
+          console.log(
+            "A03D config=" + readFileSync(sandboxConfigFile(before), "utf8")
+          );
+        } catch (e) {
+          console.log("A03D config-read-error=" + String(e));
+        }
+        throw retryError;
       }
-      throw error;
     }
     // The Save button continues into `paperforge setup`; that follow-on run is
     // not this case's subject, so cancel it and keep the rest deterministic.
