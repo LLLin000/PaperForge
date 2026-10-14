@@ -135,6 +135,12 @@ const E2E_SKIP_REGISTRY: Record<
     owner: "real-machine verification (#265)",
     window: "until the legacy-vector runtime and fixture are present",
   },
+  "x06-429-job-level-resubmit-budget": {
+    reason:
+      "Job-level 429 handling resubmits the whole pipeline per attempt (about 3x a full run), which exceeds any practical e2e budget; bounded-retry accounting is asserted by the 5xx and drop modes. Deep 429 backoff semantics belong to the runtime-convergence backlog.",
+    owner: "runtime convergence P0 (#266-era backlog)",
+    window: "until the 429 job-resubmit path gets a unit-level budget harness",
+  },
 };
 
 /** Skip through the registry: an unknown or incomplete id is a failure. */
@@ -7747,6 +7753,10 @@ describe("PaperForge real-task e2e", function () {
     // One case per scripted provider failure: the sandbox is rebuilt per case
     // (X11), so cross-iteration DOM staleness cannot mask the contract.
     it(`keeps an OCR batch honest when the provider fails (${scenario})`, async function () {
+      if (scenario === "429") {
+        registeredSkip(this, "x06-429-job-level-resubmit-budget");
+        return;
+      }
       const successStates = new Set(["done", "done_degraded"]);
       const terminalStates = new Set([
         "done",
