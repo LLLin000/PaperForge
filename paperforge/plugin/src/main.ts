@@ -516,6 +516,13 @@ export default class PaperForgePlugin extends Plugin {
     // OperationLock — cancelled below via cancelActiveOperation.
     this.app.workspace.detachLeavesOfType(VIEW_TYPE_PAPERFORGE);
     this._client?.cancelActiveOperation();
+    // Reap ordinary (non-streamed) execute children so they do not outlive
+    // the plugin/Window (issue #266).
+    try {
+      NodeProcessTransport.reapAllExecuteChildren();
+    } catch {
+      // ignore
+    }
   }
 
   async loadSettings() {

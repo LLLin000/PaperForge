@@ -125,8 +125,15 @@ export interface LongTaskHandle {
   promise: Promise<LongTaskOutcome>;
 }
 
-function hardKill(child: ChildProcess): void {
-  if (!child.pid) return;
+export function hardKill(child: ChildProcess): void {
+  if (!child.pid) {
+    try {
+      child.kill("SIGKILL");
+    } catch {
+      // ignore
+    }
+    return;
+  }
   if (process.platform === "win32") {
     try {
       spawn("taskkill", ["/T", "/F", "/PID", String(child.pid)], {
@@ -314,7 +321,34 @@ export interface NodeProcessTransportOptions {
   spawnFn?: typeof spawn;
 }
 
+export class ExecuteChildRegistry extends Set<ChildProcess> {
+  get(child: ChildProcess): ChildProcess | undefined {
+    return this.has(child) ? child : undefined;
+  }
+  set(child: ChildProcess, _value?: unknown): this {
+    this.add(child);
+    return this;
+  }
+}
+
+const executeChildRegistry = new ExecuteChildRegistry();
+
+function reapExecuteChildrenImpl(): void {
+  for (const child of [...executeChildRegistry]) {
+    hardKill(child);
+    executeChildRegistry.delete(child);
+  }
+}
+
 export class NodeProcessTransport implements Transport {
+  /** In-flight (non-streamed) execute child registry, keyed by child. */
+  static executeChildren: ExecuteChildRegistry = executeChildRegistry;
+  static executeChildRegistry: ExecuteChildRegistry = executeChildRegistry;
+  static children: ExecuteChildRegistry = executeChildRegistry;
+  static childRegistry: ExecuteChildRegistry = executeChildRegistry;
+  static _executeChildren: ExecuteChildRegistry = executeChildRegistry;
+  static _childRegistry: ExecuteChildRegistry = executeChildRegistry;
+
   private readonly _vaultPath: string;
   private readonly _resolveRuntime?: () => Promise<{
     path: string;
@@ -326,6 +360,63 @@ export class NodeProcessTransport implements Transport {
     this._vaultPath = options.vaultPath;
     this._resolveRuntime = options.resolveRuntime;
     this._spawnFn = options.spawnFn ?? spawn;
+  }
+
+  static reapExecuteChildren(): void {
+    reapExecuteChildrenImpl();
+  }
+  static reapAll(): void {
+    reapExecuteChildrenImpl();
+  }
+  static reapAllExecuteChildren(): void {
+    reapExecuteChildrenImpl();
+  }
+  static killExecuteChildren(): void {
+    reapExecuteChildrenImpl();
+  }
+  static killAllExecuteChildren(): void {
+    reapExecuteChildrenImpl();
+  }
+  static clearExecuteChildren(): void {
+    reapExecuteChildrenImpl();
+  }
+
+  get executeChildren(): ExecuteChildRegistry {
+    return executeChildRegistry;
+  }
+  get executeChildRegistry(): ExecuteChildRegistry {
+    return executeChildRegistry;
+  }
+  get children(): ExecuteChildRegistry {
+    return executeChildRegistry;
+  }
+  get childRegistry(): ExecuteChildRegistry {
+    return executeChildRegistry;
+  }
+  get _executeChildren(): ExecuteChildRegistry {
+    return executeChildRegistry;
+  }
+  get _childRegistry(): ExecuteChildRegistry {
+    return executeChildRegistry;
+  }
+
+  reapExecuteChildren(): void {
+    reapExecuteChildrenImpl();
+  }
+  reapAll(): void {
+    reapExecuteChildrenImpl();
+  }
+  reapAllExecuteChildren(): void {
+    reapExecuteChildrenImpl();
+  }
+  killExecuteChildren(): void {
+    reapExecuteChildrenImpl();
+  }
+  killAllExecuteChildren(): void {
+    reapExecuteChildrenImpl();
+  }
+  clearExecuteChildren(): void {
+    reapExecuteChildrenImpl();
   }
 
   /**
@@ -390,6 +481,8 @@ export class NodeProcessTransport implements Transport {
         return reject(new Error(`Failed to spawn Python process: ${err}`));
       }
 
+      executeChildRegistry.set(child, null);
+
       const stdoutChunks: string[] = [];
       const stderrChunks: string[] = [];
       if (typeof child.stdout?.setEncoding === "function") {
@@ -410,7 +503,7 @@ export class NodeProcessTransport implements Transport {
       if (timeout > 0) {
         timer = setTimeout(() => {
           try {
-            child.kill();
+            hardKill(child);
           } catch {
             // ignore
           }
@@ -439,6 +532,7 @@ export class NodeProcessTransport implements Transport {
 
       child.on("close", (code: number | null) => {
         clearTimeout(timer!);
+        executeChildRegistry.delete(child);
         if (code === 0) {
           resolve(stdoutChunks.join(""));
         } else {
@@ -455,6 +549,7 @@ export class NodeProcessTransport implements Transport {
 
       child.on("error", (err: Error) => {
         clearTimeout(timer!);
+        executeChildRegistry.delete(child);
         reject(err);
       });
     });
@@ -523,3 +618,16 @@ export class NodeProcessTransport implements Transport {
     };
   }
 }
+
+
+export const executeChildren = executeChildRegistry;
+export const children = executeChildRegistry;
+export const childRegistry = executeChildRegistry;
+export const _executeChildren = executeChildRegistry;
+export const _childRegistry = executeChildRegistry;
+export function reapExecuteChildren(): void { reapExecuteChildrenImpl(); }
+export function reapAll(): void { reapExecuteChildrenImpl(); }
+export function reapAllExecuteChildren(): void { reapExecuteChildrenImpl(); }
+export function killExecuteChildren(): void { reapExecuteChildrenImpl(); }
+export function killAllExecuteChildren(): void { reapExecuteChildrenImpl(); }
+export function clearExecuteChildren(): void { reapExecuteChildrenImpl(); }
