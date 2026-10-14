@@ -34,12 +34,25 @@ def test_probe_all_computes_lineage_once(monkeypatch, tmp_path):
 
 
 def test_probe_ocr_standalone_computes_lineage(monkeypatch, tmp_path):
+    import json as _json
+
     import paperforge.commands.probe as probe_mod
     import paperforge.lineage as lin
+    from paperforge.config import paperforge_paths
 
     vault = tmp_path / "vault"
     vault.mkdir()
     canonical_test_config(vault)
+
+    # A maintenance row is required for the OCR probe to reach its lineage
+    # observation; an empty vault legitimately short-circuits (0 calls).
+    paths = paperforge_paths(vault)
+    ocr_dir = paths.get("ocr", vault / "99_System" / "PaperForge" / "ocr")
+    row_dir = ocr_dir / "TSTONE001"
+    row_dir.mkdir(parents=True, exist_ok=True)
+    (row_dir / "meta.json").write_text(
+        _json.dumps({"key": "TSTONE001"}), encoding="utf-8",
+    )
 
     calls = {"n": 0}
     original = lin.probe_lineage
@@ -49,10 +62,6 @@ def test_probe_ocr_standalone_computes_lineage(monkeypatch, tmp_path):
         return original(*args, **kwargs)
 
     monkeypatch.setattr(lin, "probe_lineage", wrapper)
-    # Force the OCR probe past config classification so it reaches its
-    # lineage observation deterministically, independent of the vault
-    # shape on the runner.
-    monkeypatch.setattr(probe_mod, "_load_pf_config", lambda v: ({}, None))
     probe_mod.probe_ocr(vault)
     assert calls["n"] == 1, calls["n"]
 
