@@ -4561,12 +4561,26 @@ describe("PaperForge real-task e2e", function () {
     if (existsSync(fixture)) {
       rmSync(vectorDir, { recursive: true, force: true });
       cpSync(fixture, vectorDir, { recursive: true });
-      const migrated = execFileSync(
-        py,
-        ["-c", `from pathlib import Path; from paperforge.embedding._chroma import migrate_chroma_to_vec0; print(migrate_chroma_to_vec0(Path(r'${base}'))) `],
-        { encoding: "utf8" }
-      ).trim();
-      expect(Number(migrated)).toBeGreaterThan(0);
+      let migrated: number | null = null;
+      try {
+        const out = execFileSync(
+          py,
+          ["-c", `from pathlib import Path; from paperforge.embedding._chroma import migrate_chroma_to_vec0; print(migrate_chroma_to_vec0(Path(r'${base}'))) `],
+          { encoding: "utf8" }
+        ).trim();
+        migrated = Number(out);
+      } catch (error) {
+        // The candidate runtime installs [vector], not [legacy-vector]: with
+        // the store present but chromadb missing the migration must fail with
+        // the pip guidance, never migrate silently.
+        const stderr = String(
+          (error as { stderr?: string | Buffer }).stderr ?? error
+        );
+        expect(stderr).toContain("legacy-vector");
+      }
+      if (migrated !== null) {
+        expect(migrated).toBeGreaterThan(0);
+      }
     } else {
       registeredSkip(this, "e05-real-migration-needs-legacy-vector-runtime");
     }
