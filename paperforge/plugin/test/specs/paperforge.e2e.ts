@@ -3689,6 +3689,11 @@ describe("PaperForge real-task e2e", function () {
       expect(
         stub.requests.filter((entry) => entry.method === "POST").length
       ).toBe(postsBeforeReload);
+      // The reload drops the in-view selection, so re-select the row before
+      // the re-run (the same XPath the case's first selection uses).
+      await clickStable(
+        "//tr[.//*[contains(text(),'Biomechanical')]]//input[@type='checkbox']"
+      ).catch(() => undefined);
       const processBtn2 = await browser.$(
         ".pf-ocr-ws-batch-actions button.pf-btn-secondary"
       );
