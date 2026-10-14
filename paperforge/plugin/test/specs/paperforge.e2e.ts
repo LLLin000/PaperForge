@@ -135,6 +135,12 @@ const E2E_SKIP_REGISTRY: Record<
     owner: "real-machine verification (#265)",
     window: "until the legacy-vector runtime and fixture are present",
   },
+  "x06-429-job-level-resubmit-budget": {
+    reason:
+      "Job-level 429 handling resubmits the whole pipeline per attempt (about 3x a full run), which exceeds any practical e2e budget; bounded-retry accounting is asserted by the 5xx and drop modes. Deep 429 backoff semantics belong to the runtime-convergence backlog.",
+    owner: "runtime convergence P0 (#266-era backlog)",
+    window: "until the 429 job-resubmit path gets a unit-level budget harness",
+  },
 };
 
 /** Skip through the registry: an unknown or incomplete id is a failure. */
@@ -566,7 +572,11 @@ async function clickProcessSelected(): Promise<void> {
  */
 async function startOcrStub(
   mode: "success" | "running",
-  options: { failKeys?: string[] } = {}
+  options: {
+    failKeys?: string[];
+    scenario?: "ok" | "401" | "403" | "429" | "5xx" | "drop" | "malformed";
+    retryAfter?: number;
+  } = {}
 ): Promise<{
   requests: Array<{ method: string; url: string; key?: string }>;
   jobUrl: string;
@@ -575,6 +585,8 @@ async function startOcrStub(
   const requests: Array<{ method: string; url: string; key?: string }> = [];
   const failKeys = new Set(options.failKeys ?? []);
   const perPaper = failKeys.size > 0;
+  const scenario = (options as { scenario?: string }).scenario ?? "ok";
+  const retryAfter = (options as { retryAfter?: number }).retryAfter ?? 1;
   const LEGACY_JOB_ID = "pf-e2e-job-1";
   // The legacy job is visible to the batch observer before any upload.
   const jobKeys = new Map<string, string>(
@@ -625,10 +637,48 @@ async function startOcrStub(
       res.end(JSON.stringify(value));
     };
     if (req.method === "POST" && url.startsWith("/api/v2/ocr/jobs")) {
-      if (!perPaper) {
+      if (!perPaper && scenario === "ok") {
         // Pre-change behaviour, untouched: one fixed job id, body unread.
         req.on("data", () => undefined);
         req.on("end", () => sendJson({ data: { jobId: LEGACY_JOB_ID } }));
+        return;
+      }
+      if (!perPaper) {
+        // Scripted provider response for the X06 failure-mode leg.
+        const chunks: Buffer[] = [];
+        req.on("data", (chunk: Buffer) => chunks.push(chunk));
+        req.on("end", () => {
+          if (scenario === "drop") {
+            try {
+              req.socket.destroy();
+            } catch {
+              // best effort
+            }
+            return;
+          }
+          if (scenario === "malformed") {
+            res.statusCode = 200;
+            res.setHeader("content-type", "application/json");
+            res.end("{ this is not valid json");
+            return;
+          }
+          const status =
+            scenario === "401"
+              ? 401
+              : scenario === "403"
+              ? 403
+              : scenario === "429"
+              ? 429
+              : scenario === "5xx"
+              ? 500
+              : 200;
+          res.statusCode = status;
+          if (scenario === "429") {
+            res.setHeader("retry-after", String(retryAfter));
+          }
+          res.setHeader("content-type", "application/json");
+          res.end(JSON.stringify({ error: `scripted ${scenario}` }));
+        });
         return;
       }
       const chunks: Buffer[] = [];
@@ -7697,4 +7747,101 @@ describe("PaperForge real-task e2e", function () {
       removeFileQuiet(E2E_KEYRING_FILE);
     }
   });
+
+  const X06_SCENARIOS = ["401", "403", "429", "5xx", "drop", "malformed"] as const;
+  for (const scenario of X06_SCENARIOS) {
+    // One case per scripted provider failure: the sandbox is rebuilt per case
+    // (X11), so cross-iteration DOM staleness cannot mask the contract.
+    it(`keeps an OCR batch honest when the provider fails (${scenario})`, async function () {
+      if (scenario === "429") {
+        registeredSkip(this, "x06-429-job-level-resubmit-budget");
+        return;
+      }
+      const successStates = new Set(["done", "done_degraded"]);
+      const terminalStates = new Set([
+        "done",
+        "done_degraded",
+        "error",
+        "fatal_error",
+        "blocked",
+        "retryable_error",
+      ]);
+      const stub = await startOcrStub("success", { scenario });
+      try {
+        await prepareOcrSandbox(stub.jobUrl);
+        await browser.executeObsidianCommand("paperforge:paperforge-ocr-workspace");
+        await waitForOcrRow("Biomechanical");
+        await clickStable(
+          "//tr[.//*[contains(text(),'Biomechanical')]]//input[@type='checkbox']"
+        );
+        const processBtn = await browser.$(
+          ".pf-ocr-ws-batch-actions button.pf-btn-secondary"
+        );
+        await processBtn.waitForExist({ timeout: 30000 });
+        await browser.waitUntil(
+          async () => await processBtn.isEnabled().catch(() => false),
+          { timeout: 30000, timeoutMsg: "Process Selected stayed disabled" }
+        );
+        await processBtn.click();
+        await clickStable(".paperforge-confirm-actions button.mod-warning");
+
+        const base = await sandboxBasePath();
+        const metaPath = path.join(
+          base,
+          "System",
+          "PaperForge",
+          "ocr",
+          "TSTONE001",
+          "meta.json"
+        );
+        await browser.waitUntil(
+          async () => {
+            try {
+              const meta = JSON.parse(readFileSync(metaPath, "utf8")) as {
+                ocr_status?: string;
+              };
+              return (
+                terminalStates.has(String(meta.ocr_status ?? "")) &&
+                !(await operationActive())
+              );
+            } catch {
+              return false;
+            }
+          },
+          {
+            // Retryable modes walk the product's bounded exponential backoff
+            // (5 transport attempts up to ~30s apart) up to the job-attempt
+            // cap, so they legitimately take minutes; fatal modes fail fast.
+            timeout:
+              scenario === "401" || scenario === "403" || scenario === "malformed"
+                ? 120000
+                : 300000,
+            timeoutMsg: `OCR run for ${scenario} never reached a terminal state`,
+          }
+        );
+        const meta = JSON.parse(readFileSync(metaPath, "utf8")) as Record<
+          string,
+          unknown
+        >;
+        const status = String(meta.ocr_status ?? "");
+        expect(successStates.has(status)).toBe(false);
+        // Retry accounting must stay bounded: job_attempt never exceeds the cap.
+        const attempts = Number(meta.job_attempt ?? meta.retry_count ?? 0);
+        expect(attempts).toBeLessThanOrEqual(3);
+        await browser
+          .waitUntil(async () => !(await operationActive()), { timeout: 15000 })
+          .catch(() => undefined);
+        appendEvidence("x06-provider-failure-modes.json", {
+          case_id: `X06-${scenario}`,
+          variant: `provider ${scenario}: never success, bounded retries, honest terminal`,
+          required_layer: "H",
+          status: "VERIFIED",
+          scenario,
+          recorded_at: new Date().toISOString(),
+        });
+      } finally {
+        await stub.close();
+      }
+    });
+  }
 });
