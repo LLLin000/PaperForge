@@ -49,6 +49,10 @@ def test_probe_ocr_standalone_computes_lineage(monkeypatch, tmp_path):
         return original(*args, **kwargs)
 
     monkeypatch.setattr(lin, "probe_lineage", wrapper)
+    # Force the OCR probe past config classification so it reaches its
+    # lineage observation deterministically, independent of the vault
+    # shape on the runner.
+    monkeypatch.setattr(probe_mod, "_load_pf_config", lambda v: ({}, None))
     probe_mod.probe_ocr(vault)
     assert calls["n"] == 1, calls["n"]
 
