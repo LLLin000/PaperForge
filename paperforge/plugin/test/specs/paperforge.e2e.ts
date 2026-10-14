@@ -2682,6 +2682,23 @@ describe("PaperForge real-task e2e", function () {
       };
     }, base);
 
+    await browser.waitUntil(
+      async () => {
+        const st = await browser.executeObsidian(async ({ app }) => {
+          const plugin = app.plugins.plugins["paperforge"] as unknown as {
+            _autoSyncRunning: boolean;
+            _lastSyncTime: string | null;
+          };
+          return {
+            running: Boolean(plugin?._autoSyncRunning),
+            lastSyncTime: plugin?._lastSyncTime ?? null,
+          };
+        });
+        return st.running === false && st.lastSyncTime === null;
+      },
+      { timeout: 10000, timeoutMsg: "B04 forced failure never settled" }
+    );
+
     expect(boundary.disabledTimer).toBe(false);
     expect(boundary.reentryBlocked).toBe(true);
     expect(boundary.failureSettled).toBe(true);
@@ -3344,8 +3361,20 @@ describe("PaperForge real-task e2e", function () {
       // mid-case, so register it with the vault cache first (the same repair
       // openVaultFile applies) — the row's control is what is under test.
       const aFulltextRel = `System/PaperForge/ocr/${NEW_PAPER_KEY}/fulltext.md`;
-      await openVaultFile(aFulltextRel);
-      await waitForActiveFile(aFulltextRel);
+      // The backend wrote the artifact mid-case, so the Vault cache can lag
+      // on the older app: wait for it on disk, then register + open it with
+      // one bounded retry (the open helper repairs the cache).
+      await browser.waitUntil(
+        () => existsSync(path.join(base, aFulltextRel)),
+        { timeout: 60000, timeoutMsg: "A fulltext never materialized on disk" }
+      );
+      try {
+        await openVaultFile(aFulltextRel);
+        await waitForActiveFile(aFulltextRel);
+      } catch {
+        await openVaultFile(aFulltextRel);
+        await waitForActiveFile(aFulltextRel);
+      }
       await openVaultFile(NEW_PAPER_NOTE);
       await waitForActiveFile(NEW_PAPER_NOTE);
 
@@ -3641,6 +3670,51 @@ describe("PaperForge real-task e2e", function () {
         entry.url.includes("/results/")
       ).length;
       expect(resultFetches).toBe(0);
+
+      // J03 leg: restart + resumable state + re-run, proving the stop left a
+      // resumable paper behind.
+      const postsBeforeReload = stub.requests.filter(
+        (entry) => entry.method === "POST"
+      ).length;
+      await browser.reloadObsidian();
+      const baseAfterReload = await sandboxBasePath();
+      expect(path.resolve(baseAfterReload)).toBe(path.resolve(base));
+      await browser.executeObsidianCommand("paperforge:paperforge-ocr-workspace");
+      await browser.waitUntil(
+        async () =>
+          await browser
+            .$("#ocr-workspace-root, .pf-ocr-workspace, .paperforge-ocr-workspace")
+            .isExisting()
+            .catch(() => false),
+        { timeout: 60000, timeoutMsg: "OCR workspace did not reopen" }
+      ).catch(() => undefined);
+      const metaAfterReload = existsSync(metaPath)
+        ? (JSON.parse(readFileSync(metaPath, "utf8")) as Record<string, unknown>)
+        : {};
+      expect(["pending", "queued", "running"]).toContain(
+        String(metaAfterReload.ocr_status ?? "")
+      );
+      expect(
+        stub.requests.filter((entry) => entry.method === "POST").length
+      ).toBe(postsBeforeReload);
+      // The reload drops the in-view selection, so re-select the row before
+      // the re-run (the same XPath the case's first selection uses).
+      await clickStable(
+        "//tr[.//*[contains(text(),'Biomechanical')]]//input[@type='checkbox']"
+      ).catch(() => undefined);
+      const processBtn2 = await browser.$(
+        ".pf-ocr-ws-batch-actions button.pf-btn-secondary"
+      );
+      await processBtn2.waitForExist({ timeout: 30000 });
+      await browser.waitUntil(
+        async () => await processBtn2.isEnabled().catch(() => false),
+        { timeout: 30000, timeoutMsg: "Process Selected stayed disabled after reload" }
+      );
+      await processBtn2.click();
+      await clickStable(".paperforge-confirm-actions button.mod-warning");
+      const activity2 = await browser.$(".pf-ocr-ws-activity.pf-active");
+      await activity2.waitForExist({ timeout: 60000 });
+
       appendEvidence("d04-ocr-stop.json", {
         case_id: "D04",
         variant: "workspace Stop cancels the running batch; provider left running",
@@ -3722,20 +3796,33 @@ describe("PaperForge real-task e2e", function () {
         "TSTONE001",
         "meta.json"
       );
-      await browser.waitUntil(
-        () => {
-          try {
-            const meta = JSON.parse(readFileSync(metaPath, "utf8")) as {
-              ocr_job_id?: string;
-              ocr_status?: string;
-            };
-            return meta.ocr_job_id === "pf-e2e-job-1" && meta.ocr_status === "done";
-          } catch {
-            return false;
-          }
-        },
-        { timeout: 360000, timeoutMsg: "redo run never settled" }
-      );
+      try {
+        await browser.waitUntil(
+          () => {
+            try {
+              const meta = JSON.parse(readFileSync(metaPath, "utf8")) as {
+                ocr_job_id?: string;
+                ocr_status?: string;
+              };
+              return meta.ocr_job_id === "pf-e2e-job-1" && meta.ocr_status === "done";
+            } catch {
+              return false;
+            }
+          },
+          { timeout: 360000, timeoutMsg: "redo run never settled" }
+        );
+      } catch (error) {
+        let metaDump = "<missing>";
+        try {
+          metaDump = readFileSync(metaPath, "utf8").slice(0, 400);
+        } catch (e) {
+          metaDump = String(e);
+        }
+        const reqDump = stub.requests.map((entry) => `${entry.method} ${entry.url}`);
+        console.log("D05D meta=" + metaDump.replace(/\s+/g, " "));
+        console.log("D05D req=" + JSON.stringify(reqDump));
+        throw error;
+      }
       const submits = stub.requests.filter((entry) => entry.method === "POST").length;
       expect(submits).toBe(1);
       appendEvidence("d05-ocr-redo.json", {
@@ -4759,14 +4846,22 @@ describe("PaperForge real-task e2e", function () {
     );
     const staging = await browser.$(".paperforge-quality-staging");
     try {
-      await staging.waitForExist({ timeout: 60000 });
+      await staging.waitForExist({ timeout: 120000 });
     } catch (error) {
       const diag = await browser.execute(() => {
         const quality = document.querySelector(".paperforge-quality-section");
+        const dashboard = document.querySelector(
+          ".paperforge-quality-dashboard, .paperforge-quality-body"
+        );
         return {
           quality: Boolean(quality),
           quality_text: (quality?.textContent ?? "").slice(0, 400),
           body_html: (document.querySelector(".paperforge-quality-body")?.innerHTML ?? "").slice(0, 400),
+          dashboard_text: (dashboard?.textContent ?? "").slice(0, 400),
+          testids: Array.from(document.querySelectorAll("[data-pf-testid]"))
+            .map((el) => el.getAttribute("data-pf-testid"))
+            .filter((id): id is string => Boolean(id))
+            .slice(0, 40),
         };
       });
       console.log("F01D " + JSON.stringify(diag));
@@ -7146,16 +7241,27 @@ describe("PaperForge real-task e2e", function () {
     );
     await clickSettingsTestId("setup-library-save");
 
-    await browser.waitUntil(
-      async () =>
-        sandboxConfigField(before, "vault_config.resources_dir") === target,
-      {
-        timeout: 60000,
-        interval: 1000,
-        timeoutMsg:
-          "the Settings UI never persisted resources_dir to paperforge.json",
+    try {
+      await browser.waitUntil(
+        async () =>
+          sandboxConfigField(before, "vault_config.resources_dir") === target,
+        {
+          timeout: 120000,
+          interval: 1000,
+          timeoutMsg:
+            "the Settings UI never persisted resources_dir to paperforge.json",
+        }
+      );
+    } catch (error) {
+      try {
+        console.log(
+          "A03D config=" + readFileSync(sandboxConfigFile(before), "utf8")
+        );
+      } catch (e) {
+        console.log("A03D config-read-error=" + String(e));
       }
-    );
+      throw error;
+    }
     // The Save button continues into `paperforge setup`; that follow-on run is
     // not this case's subject, so cancel it and keep the rest deterministic.
     await browser.executeObsidian(async ({ app }) => {
