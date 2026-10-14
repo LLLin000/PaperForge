@@ -1205,13 +1205,14 @@ def run_embedding_build(
             # count match against THIS run's accumulators is meaningless.
             # Pass None to skip count comparison; layout/orphan/KNN checks
             # still run.
-            _scoped_expected = None if keys is not None else dict(_expected_counts)
+            _skip_count_verify = bool(keys is not None or _recover_candidate)
+            _scoped_expected = None if _skip_count_verify else dict(_expected_counts)
             report = verify_candidate(
                 _shadow.target.vector_path,
                 # P1-2: expected dimension comes from the model detection that
                 # built the tables — never re-read from the candidate DDL.
                 dimension=_expected_dim,
-                expected_count=None if keys is not None else sum(_expected_counts.values()),
+                expected_count=None if _skip_count_verify else sum(_expected_counts.values()),
                 expected_counts=_scoped_expected,
             )
             if not report["ok"]:
