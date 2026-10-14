@@ -571,7 +571,7 @@ def probe_library(vault: Path, last_operation_exit_code: int | None = None) -> d
         )
 
 
-def probe_ocr(vault: Path) -> dict[str, Any]:
+def probe_ocr(vault: Path, lineage: dict[str, Any] | None = None) -> dict[str, Any]:
     """Probe the OCR module using canonical maintenance rows and env config."""
     data, err = _load_pf_config(vault)
     if data is None:
@@ -675,10 +675,13 @@ def probe_ocr(vault: Path) -> dict[str, Any]:
     _lin_states: _Counter = _Counter()
     _lin_details: _Counter = _Counter()
     try:
-        from paperforge.lineage import probe_lineage as _pl
+        if lineage is None:
+            from paperforge.lineage import probe_lineage as _pl
 
-        _lin = _pl(vault)
-        for _s in _lin.get("papers", {}).values():
+            _lin = _pl(vault)
+        else:
+            _lin = lineage
+        for _s in (_lin.get("papers", {}) if isinstance(_lin, dict) else {}).values():
             _lin_states[str(_s.get("ocr", "unknown"))] += 1
             _lin_details[(str((_s.get("details") or {}).get("ocr") or "none"))] += 1
     except Exception:  # noqa: BLE001 — lineage unobservable → fall back to maintenance
@@ -1531,7 +1534,7 @@ def _worst_severity(severities: list[str]) -> str:
 PROBE_ORDER = ("installation", "library", "ocr", "memory", "help")
 
 
-def _probe_base_modules(vault: Path) -> dict[str, dict[str, Any]]:
+def _probe_base_modules(vault: Path, lineage: dict[str, Any] | None = None) -> dict[str, dict[str, Any]]:
     """#140: fixed dispatcher — each base reader runs exactly once, in
     PROBE_ORDER, sequentially. An unexpected reader exception becomes that
     module's valid detection_failed envelope; the aggregate never aborts."""
@@ -1546,7 +1549,13 @@ def _probe_base_modules(vault: Path) -> dict[str, dict[str, Any]]:
     for mod_name in PROBE_ORDER:
         probe_fn = probes[mod_name]
         try:
-            modules[mod_name] = probe_fn(vault)
+            if mod_name == "ocr":
+                try:
+                    modules[mod_name] = probe_fn(vault, lineage=lineage)
+                except TypeError:
+                    modules[mod_name] = probe_fn(vault)
+            else:
+                modules[mod_name] = probe_fn(vault)
         except Exception:
             modules[mod_name] = build_envelope(
                 module=mod_name, capability_state="unknown", severity="unknown",
@@ -1563,7 +1572,8 @@ def _probe_base_modules(vault: Path) -> dict[str, dict[str, Any]]:
 
 
 def derive_maintenance(
-    modules: dict[str, dict[str, Any]], vault: Path | None = None
+    modules: dict[str, dict[str, Any]], vault: Path | None = None,
+    lineage: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """#140: pure projection of the base envelopes — maintenance NEVER
     re-probes canonical sources. Only backend-owned maintenance_eligible
@@ -1592,11 +1602,12 @@ def derive_maintenance(
             "maintenance_eligible": True,
         })
 
-    return _derive_maintenance_tail(items, vault)
+    return _derive_maintenance_tail(items, vault, lineage=lineage)
 
 
 def _derive_maintenance_tail(
-    items: list[dict[str, Any]], vault: Path | None = None
+    items: list[dict[str, Any]], vault: Path | None = None,
+    lineage: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Envelope construction shared by the pure projection and the
     standalone `probe maintenance` fan-out."""
@@ -1626,9 +1637,18 @@ def _derive_maintenance_tail(
         envelope["items"] = items
     if vault is not None:
         try:
-            from paperforge.lineage import _detect_orphans
+            if (
+                lineage is not None
+                and isinstance(lineage, dict)
+                and isinstance(lineage.get("orphan"), dict)
+            ):
+                envelope["orphan"] = lineage["orphan"]
+                # resids already included in snapshot; ensure envelope reflects
+                # the residual count consistently (compatibility shape).
+            else:
+                from paperforge.lineage import _detect_orphans
 
-            envelope["orphan"] = _detect_orphans(vault)
+                envelope["orphan"] = _detect_orphans(vault)
         except Exception:  # noqa: BLE001
             envelope["orphan"] = {"count": 0, "keys": []}
     return envelope
@@ -1637,7 +1657,13 @@ def _derive_maintenance_tail(
 def probe_maintenance(vault: Path) -> dict[str, Any]:
     """Standalone maintenance probe — same fan-out and projection as
     probe_all (#140): five base readers, then the pure projection."""
-    return derive_maintenance(_probe_base_modules(vault), vault)
+    try:
+        from paperforge.lineage import probe_lineage as _pl
+
+        lineage_snapshot = _pl(vault)
+    except Exception:  # noqa: BLE001
+        lineage_snapshot = None
+    return derive_maintenance(_probe_base_modules(vault, lineage=lineage_snapshot), vault, lineage=lineage_snapshot)
 
 
 # ---------------------------------------------------------------------------
@@ -1651,8 +1677,14 @@ def _run_probe_all(vault: Path, *, json_output: bool) -> int:
     degrades to its own detection_failed envelope; never aborts."""
     import json as _json
 
-    modules = _probe_base_modules(vault)
-    modules["maintenance"] = derive_maintenance(modules, vault)
+    try:
+        from paperforge.lineage import probe_lineage as _pl
+
+        lineage_snapshot = _pl(vault)
+    except Exception:  # noqa: BLE001
+        lineage_snapshot = None
+    modules = _probe_base_modules(vault, lineage=lineage_snapshot)
+    modules["maintenance"] = derive_maintenance(modules, vault, lineage=lineage_snapshot)
     aggregate = {
         "schema_version": SCHEMA_VERSION,
         "module": "all",
