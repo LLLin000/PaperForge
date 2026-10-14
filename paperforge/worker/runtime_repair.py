@@ -64,8 +64,10 @@ def perform_runtime_repair(*, ndjson: bool = False) -> dict[str, object]:
     if _phase("check") or _is_stopped():
         return _finish({"ok": False, "cancelled": True})
 
+    from paperforge import __version__ as _PF_VERSION
     from paperforge.runtime_pointer import read_pointer
     from paperforge.setup.runtime import ensure_runtime_dependencies, verify_runtime_in_child
+    from paperforge.runtime_pointer import publish_pointer
 
     ptr = read_pointer()
     if ptr is None:
@@ -82,56 +84,67 @@ def perform_runtime_repair(*, ndjson: bool = False) -> dict[str, object]:
     if _phase("deps") or _is_stopped():
         return _finish({"ok": False, "cancelled": True})
 
-    verified, observed = verify_runtime_in_child(ptr["python_path"])
-    if not verified:
-        deps = ensure_runtime_dependencies(
-            python_path=ptr["python_path"],
-            expected_version=ptr["paperforge_version"],
-        )
-        if not deps.ok:
-            return _finish(
-                {
-                    "ok": False,
-                    "pointer": ptr["paperforge_version"],
-                    "error": f"dependency re-ensure failed: {deps.message}",
-                }
-            )
+    # Candidate interpreters to (re)validate, in priority order: the
+    # published pointer target first (preserves the "repair the target, never
+    # the caller" rule for repairable runtimes), then the current running
+    # interpreter as a recovery fallback when the pointed one is unusable
+    # (e.g. a stale pointer aimed at a Python without paperforge).  The
+    # current interpreter is only used after the pointed target fails to
+    # validate — its distribution version is the authority for the fallback.
+    import sys as _sys
+
+    candidates: list[tuple[str, str, str]] = [
+        (ptr["python_path"], ptr["environment_root"], ptr["paperforge_version"]),
+    ]
+    if _sys.executable and _sys.executable != ptr["python_path"]:
+        candidates.append((_sys.executable, str(_sys.prefix), _PF_VERSION))
 
     if _phase("verify") or _is_stopped():
         return _finish({"ok": False, "cancelled": True})
 
-    # Fresh-child verification of the POINTED interpreter before any
-    # success: the pointer may be stale/broken even when the current
-    # interpreter has extras — never republish an unusable pointer.
-    verified, observed = verify_runtime_in_child(ptr["python_path"])
-    if not verified:
-        return _finish(
-            {
-                "ok": False,
-                "pointer": ptr["paperforge_version"],
-                "error": "pointed interpreter cannot import the runtime stack",
-            }
+    last_error = ""
+    for python_path, environment_root, expected_version in candidates:
+        # Use the distribution version of the running environment when the
+        # pointed version is missing/empty rather than trust a stale claim.
+        expected = expected_version or _PF_VERSION
+
+        verified, observed = verify_runtime_in_child(python_path)
+        if not verified:
+            deps = ensure_runtime_dependencies(
+                python_path=python_path,
+                expected_version=expected,
+            )
+            if not deps.ok:
+                last_error = f"dependency re-ensure failed: {deps.message}"
+                continue
+            verified, observed = verify_runtime_in_child(python_path)
+        if not verified:
+            last_error = "pointed interpreter cannot import the runtime stack"
+            continue
+        if observed != expected:
+            last_error = (
+                f"pointed interpreter version {observed!r} != pointer {expected!r}"
+            )
+            continue
+
+        publish_pointer(
+            python_path=python_path,
+            environment_root=environment_root,
+            paperforge_version=observed,
         )
-    if observed != ptr["paperforge_version"]:
         return _finish(
             {
-                "ok": False,
-                "pointer": ptr["paperforge_version"],
-                "error": f"pointed interpreter version {observed!r} != pointer {ptr['paperforge_version']!r}",
+                "ok": True,
+                "pointer": observed,
+                "repaired": True,
+                "python_path": python_path,
             }
         )
 
-    from paperforge.runtime_pointer import publish_pointer
-
-    publish_pointer(
-        python_path=ptr["python_path"],
-        environment_root=ptr["environment_root"],
-        paperforge_version=observed,
-    )
     return _finish(
         {
-            "ok": True,
-            "pointer": observed,
-            "repaired": True,
+            "ok": False,
+            "pointer": ptr["paperforge_version"],
+            "error": last_error or "runtime repair failed",
         }
     )

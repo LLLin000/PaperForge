@@ -406,8 +406,29 @@ def perform_update(vault: Path, *, ndjson: bool = False) -> dict:
     if not needs:
         _sync_obsidian_plugin(vault)
         _deploy_all_skills(vault)
+        # Even when no install is needed, the published runtime pointer
+        # may be missing/stale/aimed at an unusable interpreter (issue:
+        # recovery through PaperForge itself). Re-validate the current
+        # interpreter and (re)publish the pointer when it is not already
+        # valid — this is the only writer and the same version authority.
+        from paperforge.runtime_pointer import read_pointer, publish_pointer
+
+        observed = _fresh_installed_version()
+        from paperforge.setup.runtime import verify_runtime_in_child
+
+        ptr = read_pointer()
+        pointed_ok = False
+        if ptr is not None:
+            v, o = verify_runtime_in_child(ptr.get("python_path"))
+            pointed_ok = bool(v) and o == ptr.get("paperforge_version") == (observed or ptr.get("paperforge_version"))
+        needs_publish = (
+            observed is not None
+            and (ptr is None or not pointed_ok)
+        )
+        if needs_publish:
+            publish_pointer(paperforge_version=observed)
         return _finish({"ok": True, "updated": False, "local_version": local,
-                "remote_version": remote, "installed_version": local})
+                "remote_version": remote, "installed_version": observed or local})
 
     # Auto-detect installation method
     if _phase("install") or _is_stopped():
