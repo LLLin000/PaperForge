@@ -7799,7 +7799,13 @@ describe("PaperForge real-task e2e", function () {
             }
           },
           {
-            timeout: 180000,
+            // Retryable modes walk the product's bounded exponential backoff
+            // (5 transport attempts up to ~30s apart) up to the job-attempt
+            // cap, so they legitimately take minutes; fatal modes fail fast.
+            timeout:
+              scenario === "401" || scenario === "403" || scenario === "malformed"
+                ? 120000
+                : 300000,
             timeoutMsg: `OCR run for ${scenario} never reached a terminal state`,
           }
         );
