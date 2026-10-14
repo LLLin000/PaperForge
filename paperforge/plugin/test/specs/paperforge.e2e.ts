@@ -7782,12 +7782,15 @@ describe("PaperForge real-task e2e", function () {
           "meta.json"
         );
         await browser.waitUntil(
-          () => {
+          async () => {
             try {
               const meta = JSON.parse(readFileSync(metaPath, "utf8")) as {
                 ocr_status?: string;
               };
-              return terminalStates.has(String(meta.ocr_status ?? ""));
+              return (
+                terminalStates.has(String(meta.ocr_status ?? "")) &&
+                !(await operationActive())
+              );
             } catch {
               return false;
             }
