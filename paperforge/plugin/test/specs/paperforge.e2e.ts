@@ -7742,25 +7742,28 @@ describe("PaperForge real-task e2e", function () {
     }
   });
 
-  it("keeps an OCR batch honest when the provider fails in every scripted mode", async function () {
-    const scenarios = ["401", "403", "429", "5xx", "drop", "malformed"] as const;
-    const successStates = new Set(["done", "done_degraded"]);
-    const terminalStates = new Set([
-      "done",
-      "done_degraded",
-      "error",
-      "fatal_error",
-      "blocked",
-      "retryable_error",
-    ]);
-    for (const scenario of scenarios) {
+  const X06_SCENARIOS = ["401", "403", "429", "5xx", "drop", "malformed"] as const;
+  for (const scenario of X06_SCENARIOS) {
+    // One case per scripted provider failure: the sandbox is rebuilt per case
+    // (X11), so cross-iteration DOM staleness cannot mask the contract.
+    it(`keeps an OCR batch honest when the provider fails (${scenario})`, async function () {
+      const successStates = new Set(["done", "done_degraded"]);
+      const terminalStates = new Set([
+        "done",
+        "done_degraded",
+        "error",
+        "fatal_error",
+        "blocked",
+        "retryable_error",
+      ]);
       const stub = await startOcrStub("success", { scenario });
       try {
         await prepareOcrSandbox(stub.jobUrl);
         await browser.executeObsidianCommand("paperforge:paperforge-ocr-workspace");
-        const rowSelector =
-          "//tr[.//*[contains(text(),'Biomechanical')]]//input[@type='checkbox']";
-        await clickStable(rowSelector);
+        await waitForOcrRow("Biomechanical");
+        await clickStable(
+          "//tr[.//*[contains(text(),'Biomechanical')]]//input[@type='checkbox']"
+        );
         const processBtn = await browser.$(
           ".pf-ocr-ws-batch-actions button.pf-btn-secondary"
         );
@@ -7809,25 +7812,20 @@ describe("PaperForge real-task e2e", function () {
         // Retry accounting must stay bounded: job_attempt never exceeds the cap.
         const attempts = Number(meta.job_attempt ?? meta.retry_count ?? 0);
         expect(attempts).toBeLessThanOrEqual(3);
-        // The backend may still be unwinding its event/operation state
-        // briefly after the meta goes terminal; wait briefly but do not
-        // fail the case on a stale active flag (terminal honesty is the
-        // contract above).
-        await browser.waitUntil(async () => !(await operationActive()), {
-          timeout: 15000,
-        }).catch(() => undefined);
+        await browser
+          .waitUntil(async () => !(await operationActive()), { timeout: 15000 })
+          .catch(() => undefined);
+        appendEvidence("x06-provider-failure-modes.json", {
+          case_id: `X06-${scenario}`,
+          variant: `provider ${scenario}: never success, bounded retries, honest terminal`,
+          required_layer: "H",
+          status: "VERIFIED",
+          scenario,
+          recorded_at: new Date().toISOString(),
+        });
       } finally {
         await stub.close();
       }
-    }
-    appendEvidence("x06-provider-failure-modes.json", {
-      case_id: "X06",
-      variant:
-        "provider 401/403/429(+Retry-After)/5xx/drop/malformed never report success; bounded retries; honest terminal",
-      required_layer: "H",
-      status: "VERIFIED",
-      scenarios: [...scenarios],
-      recorded_at: new Date().toISOString(),
     });
-  });
+  }
 });
