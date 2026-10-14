@@ -70,8 +70,12 @@ def _resolve_fulltext(vault: Path, paper: dict) -> Path | None:
     rel = paper.get("fulltext_path") or ""
     if not rel:
         return None
-    p = (vault / rel).resolve()
-    return p if p.is_file() else None
+    candidate = (vault / rel).resolve()
+    try:
+        candidate.relative_to(vault.resolve())
+    except ValueError:
+        return None
+    return candidate if candidate.is_file() else None
 
 
 def _resolve_canonical_pdf(vault: Path, paper: dict) -> Path | None:

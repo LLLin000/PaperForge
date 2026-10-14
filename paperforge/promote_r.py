@@ -217,13 +217,35 @@ def _safe_stage_path(stage_root: Path, relative_path: str) -> Path | None:
         return None
     return candidate
 
+def _is_reparse_point(path: Path) -> bool:
+    """Whether ``path`` is a reparse point (Windows junction, mount point,
+    or any other reparse tag).  Symlinks are handled separately by
+    ``Path.is_symlink``; this covers junctions, which ``is_symlink`` does NOT
+    report on Windows.  Junctions can retarget a containment-checked path
+    outside its root, so they must be treated as unsafe redirect surfaces.
+    """
+    if os.name != "nt":
+        return False
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        GetFileAttributesW = ctypes.windll.kernel32.GetFileAttributesW
+        attrs = GetFileAttributesW(str(path))
+        if attrs == 0xFFFFFFFF:
+            return False
+        return bool(attrs & 0x400)  # FILE_ATTRIBUTE_REPARSE_POINT
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def _raw_path_has_symlink(root: Path, relative_path: str) -> bool:
     current = root
-    if current.is_symlink():
+    if current.is_symlink() or _is_reparse_point(current):
         return True
     for part in Path(relative_path).parts:
         current /= part
-        if current.is_symlink():
+        if current.is_symlink() or _is_reparse_point(current):
             return True
     return False
 
