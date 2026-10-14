@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import os
+import time
+
 import json
 from collections.abc import Callable
 from pathlib import Path
@@ -82,6 +85,12 @@ class SetupPlan:
 
             emit_start("foundation.setup")
             _is_stopped, _restore = make_cancellation_token()
+            _hold = os.environ.get("PAPERFORGE_SETUP_TEST_HOLD_SECONDS")
+            if _hold:
+                try:
+                    time.sleep(float(_hold))
+                except (TypeError, ValueError):
+                    pass
         else:
             _is_stopped, _restore = (lambda: False), (lambda: None)
 
