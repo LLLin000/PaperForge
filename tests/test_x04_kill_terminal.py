@@ -21,6 +21,7 @@ def test_X04_hard_killed_setup_emits_no_success_terminal(tmp_path: Path) -> None
     means we assert absence-of-success, not a specific cancel terminal."""
     env = dict(os.environ)
     env["PYTHONPATH"] = str(Path.cwd())
+    env["PAPERFORGE_SETUP_TEST_HOLD_SECONDS"] = "10"
     proc = subprocess.Popen(
         [sys.executable, "-m", "paperforge", "--vault", str(tmp_path),
          "setup", "--json", "--skip-checks"],
