@@ -3670,7 +3670,7 @@ describe("PaperForge real-task e2e", function () {
       ).length;
       await browser.reloadObsidian();
       const baseAfterReload = await sandboxBasePath();
-      expect(path.resolve(baseAfterReload)).toBe(path.resolve(base)));
+      expect(path.resolve(baseAfterReload)).toBe(path.resolve(base));
       await browser.executeObsidianCommand("paperforge:paperforge-ocr-workspace");
       await browser.waitUntil(
         async () =>

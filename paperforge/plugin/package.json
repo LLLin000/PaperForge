@@ -8,7 +8,7 @@
     "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc -noEmit -skipLibCheck",
+    "typecheck": "tsc -noEmit -skipLibCheck && esbuild test/specs/paperforge.e2e.ts --loader:.ts=ts --outfile=NUL",
     "prepare": "husky",
     "test:e2e": "wdio run ./wdio.conf.mts",
     "pretest:e2e": "npm run build && python test/fixtures/build_e2e_vault.py"
