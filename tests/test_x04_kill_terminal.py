@@ -33,15 +33,31 @@ def test_X04_hard_killed_setup_emits_no_success_terminal(tmp_path: Path) -> None
     )
     # Give it a moment to start streaming, then hard-kill.
     time.sleep(0.2)
-    if sys.platform == "win32":
-        proc.kill()  # TerminateProcess
+    killed = False
+    if proc.poll() is None:
+        killed = True
+        try:
+            if sys.platform == "win32":
+                proc.kill()  # TerminateProcess
+            elif hasattr(os, "killpg"):
+                os.killpg(proc.pid, signal.SIGKILL)
+            else:
+                proc.kill()
+        except ProcessLookupError:
+            killed = False
+        try:
+            stdout, _stderr = proc.communicate(timeout=30)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            stdout, _stderr = proc.communicate(timeout=30)
     else:
-        os.killpg(proc.pid, signal.SIGKILL) if hasattr(os, "killpg") else proc.kill()
-    try:
         stdout, _stderr = proc.communicate(timeout=30)
-    except subprocess.TimeoutExpired:
-        proc.kill()
-        stdout, _stderr = proc.communicate(timeout=30)
+
+    assert proc.returncode != 0, (proc.returncode, stdout[-500:])
+    # Only a genuinely killed run proves the honest-terminal contract; a
+    # process that exited on its own is not an injection and cannot be
+    # claimed as one. Require that we actually drove the kill.
+    assert killed, "child exited before injection; race not exercised"
 
     assert proc.returncode != 0, "hard-killed child must not report success"
     events = []
