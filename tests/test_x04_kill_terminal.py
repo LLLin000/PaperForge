@@ -31,6 +31,10 @@ def test_X04_hard_killed_setup_emits_no_success_terminal(tmp_path: Path) -> None
         text=True,
         encoding="utf-8",
         env=env,
+        # POSIX: put the child in its own session so killpg(proc.pid) targets
+        # the child's group; without this the kill was a no-op on Linux and
+        # the child ran to completion (rc=0).
+        start_new_session=True,
     )
     # Give it a moment to start streaming, then hard-kill.
     time.sleep(0.2)
