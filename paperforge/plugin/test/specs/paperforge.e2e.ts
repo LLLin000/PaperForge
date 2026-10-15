@@ -1412,7 +1412,14 @@ async function waitForIdle(caseId: string, step: string): Promise<void> {
 
 describe("PaperForge real-task e2e", function () {
   beforeEach(async function () {
-    // Full isolation: every test starts from a fresh sandbox copy.
+    // Full isolation: every test starts from a fresh sandbox copy. The
+    // disposable keyring file is shared by every case (wdio.conf.mts seeds it
+    // once per run), so a case that provisions credentials would otherwise
+    // stay visible to all later ones — X11 asserts a pristine sandbox. Reset
+    // it here instead of relying on whichever case happens to clean up after
+    // itself.
+    const keyringFile = process.env.PAPERFORGE_E2E_KEYRING_FILE;
+    if (keyringFile) removeFileQuiet(keyringFile);
     await browser.reloadObsidian({ vault: "./test/vaults/e2e" });
     await browser.executeObsidian(async ({ app }) => {
       const plugin = app.plugins.plugins["paperforge"];
