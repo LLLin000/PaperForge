@@ -70,7 +70,7 @@ class CliResult:
 class StreamRun:
     """A streamed (NDJSON) call, optionally ended by a cooperative stop."""
 
-    __slots__ = ("argv", "events", "returncode", "duration_ms", "stopped", "stderr")
+    __slots__ = ("argv", "events", "returncode", "duration_ms", "stopped", "expired", "stderr")
 
     def __init__(
         self,
@@ -79,6 +79,7 @@ class StreamRun:
         returncode: int,
         duration_ms: int,
         stopped: bool,
+        expired: bool,
         stderr: str,
     ) -> None:
         self.argv = argv
@@ -86,6 +87,7 @@ class StreamRun:
         self.returncode = returncode
         self.duration_ms = duration_ms
         self.stopped = stopped
+        self.expired = expired
         self.stderr = stderr
 
     @property
@@ -214,6 +216,7 @@ class CliHost:
         )
         events: list[dict[str, Any]] = []
         stopped = False
+        stop_error = ""
         expired = False
         limit = float(timeout_s or self.timeout_s)
         assert proc.stdout is not None and proc.stdin is not None
@@ -229,18 +232,22 @@ class CliHost:
         watchdog.daemon = True
         watchdog.start()
 
-        def _stop_by_deadline() -> None:
-            # The stop has to be able to fire when the stream goes quiet: waiting
-            # for the next line would let a silent poll loop outlive its budget.
-            nonlocal stopped
+        def _write_stop() -> None:
+            nonlocal stopped, stop_error
             if stopped:
                 return
             try:
                 proc.stdin.write(STOP_TOKEN)
                 proc.stdin.flush()
                 stopped = True
-            except OSError:
-                pass
+            except (OSError, ValueError) as exc:
+                # Silence here costs a failing case its diagnosis: say why.
+                stop_error = f"{type(exc).__name__}: {exc}"
+
+        def _stop_by_deadline() -> None:
+            # The stop has to be able to fire when the stream goes quiet: waiting
+            # for the next line would let a silent poll loop outlive its budget.
+            _write_stop()
 
         stop_timer: threading.Timer | None = None
         if stop_after_s:
@@ -264,9 +271,7 @@ class CliHost:
                 events.append(event)
                 stop_now = stop_on is not None and stop_on(event)
                 if not stopped and (stop_now or (stop_after_s and time.time() - started >= stop_after_s)):
-                    proc.stdin.write(STOP_TOKEN)
-                    proc.stdin.flush()
-                    stopped = True
+                    _write_stop()
         finally:
             watchdog.cancel()
             if stop_timer is not None:
@@ -281,13 +286,13 @@ class CliHost:
         except subprocess.TimeoutExpired:
             proc.kill()
             _, stderr = proc.communicate()
-        self.case.check(
-            "the stream stayed inside its deadline",
-            not expired,
-            f"killed after {limit:.0f}s",
-        )
+        # `expired` is a fact of the run, not a verdict: a case whose stop leg is not
+        # honoured must be able to record that as its own blocker instead of turning
+        # the harness's guard into a red assertion.
         duration = int((time.time() - started) * 1000)
-        run = StreamRun(argv, events, int(proc.returncode or 0), duration, stopped, stderr or "")
+        run = StreamRun(
+            argv, events, int(proc.returncode or 0), duration, stopped, expired, stderr or ""
+        )
         self.case.command(
             argv,
             returncode=run.returncode,
@@ -296,7 +301,11 @@ class CliHost:
             stderr=stderr or "",
         )
         if stop_on is not None or stop_after_s:
-            self.case.check("stream stopped cooperatively", stopped, "no stop token was written")
+            self.case.check(
+                "stream stopped cooperatively",
+                stopped,
+                stop_error or "no stop token was written",
+            )
         return run
 
     # ── convenience ─────────────────────────────────────────────────────

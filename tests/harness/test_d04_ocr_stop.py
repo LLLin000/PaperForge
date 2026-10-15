@@ -55,7 +55,12 @@ def test_stop_is_cooperative_and_the_terminal_is_honest(ocr_cli, vault, case, oc
         json.dumps(stub.counts),
     )
     case.check(
-        "a stop returns the documented exit code",
+        "the stop was delivered inside the deadline",
+        not run.expired,
+        f"rc={run.returncode} killed={run.expired}",
+    )
+    case.check(
+        "the stop returns the documented exit code",
         run.returncode == 130,
         f"rc={run.returncode} terminal={json.dumps(run.terminal or {})[:200]}",
     )

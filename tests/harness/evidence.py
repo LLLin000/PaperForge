@@ -185,9 +185,13 @@ def write_index(records: list[Path], root: Path | None = None) -> Path:
     rows = []
     for path in records:
         try:
-            rows.append(json.loads(path.read_text(encoding="utf-8")))
+            payload = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             continue
+        # The directory also holds case artifacts (e.g. a provider ledger); only
+        # case records are index rows.
+        if isinstance(payload, dict) and payload.get("case_id"):
+            rows.append(payload)
     index = {
         "runner_kind": RUNNER_KIND,
         "source_sha": source_sha(),

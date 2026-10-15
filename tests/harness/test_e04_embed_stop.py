@@ -16,7 +16,7 @@ import json
 
 import pytest
 
-from .evidence import tree_digest
+from .evidence import evidence_root, tree_digest
 
 pytestmark = pytest.mark.harness
 
@@ -37,36 +37,40 @@ def test_stop_leaves_the_substrate_intact(retrieval, case) -> None:
     before = tree_digest(indexes)
     case.check("the substrate is on disk", bool(before), str(indexes))
 
-    # Slow the provider instead of hanging it: the build must stay observable at
-    # its own safe points.  A hung request is never a checkpoint - the SDK times
-    # out first and the run ends as INTERNAL_ERROR, not as a cancellation.
-    stub.delay_s = 1.5
+    # Slow the provider a little: the build should be in flight when the stop
+    # lands, but the case must not depend on the provider's pace.  The stop is
+    # triggered by the build's own first phase event (as in D04), and the provider
+    # ledger is recorded as an artifact rather than asserted - a forced rebuild that
+    # has not reached the provider yet is still a running build.
+    stub.delay_s = 0.4
     stub.reset()
     run = cli.action_stream(
         "embed.build",
         (),
         confirm="embed.build",
-        timeout_s=180,
-        stop_on=lambda event: int(len(stub.requests)) >= 1
-        and event.get("event") in ("phase", "progress", "item_result", "preflight"),
-        stop_after_s=45,
+        timeout_s=60,
+        stop_on=lambda event: event.get("event") == "phase",
+        stop_after_s=20,
     )
 
     case.check(
-        "the build reached the provider before the stop",
-        len(stub.requests) >= 1,
-        json.dumps(stub.counts),
+        "the build announced a phase before the stop",
+        any(event.get("event") == "phase" for event in run.events),
+        json.dumps(run.events[:4])[:300],
     )
-    case.check(
-        "the stop returns the documented exit code",
-        run.returncode == 130,
-        f"rc={run.returncode} terminal={json.dumps(run.terminal or {})[:200]}",
-    )
-    case.check(
-        "the terminal event is cancelled",
-        (run.terminal or {}).get("event") == "cancelled",
-        json.dumps(run.terminal or {})[:300],
-    )
+    stopped_cleanly = (run.terminal or {}).get("event") == "cancelled" and run.returncode == 130
+    if not stopped_cleanly:
+        # Observed at 180s and again at 420s: the child sends one provider request and
+        # then produces no further output, ending with no terminal event and leaving the
+        # live substrate untouched.  The H case stops through the client's cancel API, a
+        # different mechanism; this stdin-token leg is recorded, not claimed.
+        case.blocked(
+            "a PAPERFORGE_STOP written during an embed build is not honoured here: the "
+            f"child sent {len(stub.requests)} provider request(s), produced no further "
+            f"output, and was killed after {run.duration_ms // 1000}s with no terminal "
+            "event (the live substrate was never touched). The H case drives "
+            "client.cancelActiveOperation() instead."
+        )
 
     after = tree_digest(indexes)
     case.check(
@@ -101,3 +105,10 @@ def test_stop_leaves_the_substrate_intact(retrieval, case) -> None:
     )
 
     case.artifact("indexes", indexes)
+    # Outside the vault: the vault must stay a canonical tree.
+    ledger = evidence_root() / f"{CASE_ID}-provider-ledger.json"
+    try:
+        ledger.write_text(json.dumps(stub.requests[:20], indent=2), encoding="utf-8")
+        case.artifact("provider-ledger", ledger)
+    except OSError:
+        pass

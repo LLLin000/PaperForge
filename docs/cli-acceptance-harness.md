@@ -87,17 +87,29 @@ as covered.
 | `A05` | a secret reaches the keyring, never argv, never a vault file | “A05 credential storage: a key saved in Settings reaches the keyring — never config/vault …” |
 | `B07` | a workflow flag persists on the canonical note; a refused toggle writes nothing | “persists a workflow flag toggled in the UI, across a restart” + its refusal branch |
 | `E03` | the substrate builds against the configured provider (its ledger proves it) and serves a search | “builds the vector substrate against a controlled provider and serves deep search” |
-| `E04` | a stopped vector build leaves the live substrate byte-identical and still serving | “stops a running vector build without corrupting the substrate” |
+| `E04` | a stopped vector build leaves the live substrate byte-identical and still serving — **stop leg BLOCKED** | “stops a running vector build without corrupting the substrate” |
 | `E02` | a valid `paperforge.db.backup` restores atomically; corrupt copy kept, backup untouched | “restores the memory database from its backup after corruption” |
 | `D05` | a flagged paper is re-extracted through **one fresh** provider job | “re-extracts a flagged paper through the workspace redo control” |
 | `D07` | a display-version restore writes the display copy, never the canonical text — **BLOCKED on #227** | “restores a display version through the Version History modal” |
 | `A04` | legacy config migrates losslessly and the second run is byte-identical | the two matching `A04` cases |
 | `E05` | a legacy ChromaDB substrate migrates into sqlite-vec; no store is a no-op | “migrates a legacy ChromaDB substrate into sqlite-vec” |
+| `E06` | a missing memory database is detected with an action, and that action repairs it | “detects and repairs a missing memory schema through doctor and repair” |
+| `E01` | one action is described, preflighted and executed with visible effects | “executes an action through the client (memory.build)” |
+| `A06` | provider requests follow canonical config; a dead endpoint fails instead of falling back | “proves provider config authority through UI, restart, and a controlled embed request” |
 
 `E05` needs the optional `legacy-vector` runtime (chromadb), so job P installs
 `.[test,vector,legacy-vector]` — the extras the full-suite job already uses. A case
 that branched on an absent dependency would be a skip in disguise (R2), and a
 registered skip is what the H version has.
+
+`E04`'s **stop leg is BLOCKED**, and the evidence says why: a `PAPERFORGE_STOP`
+written to stdin right after the build's first `phase` event is not honoured — the
+child sends one provider request and then produces no output for the whole budget
+(observed at 180 s and again at 420 s), ending with no terminal event. Its headline
+invariant still holds and is asserted: the live substrate is byte-identical and still
+answers a search afterwards. The H case stops through
+`client.cancelActiveOperation()`, a different mechanism, so this leg is recorded
+rather than claimed.
 
 `D07` reports **BLOCKED**, not VERIFIED: the restore also rewrites OCR-owned
 `meta.json`, and issue #227 tracks whether that matches the command's "display-only"
@@ -134,14 +146,16 @@ stage again → accept by exact plan hash.
 
 ## Next candidates (host-agnostic, still on H today)
 
-| Candidate | Harness subject | H case it would replace |
-|---|---|---|
-| `E06` | doctor/repair detects and repairs a missing memory schema | “detects and repairs a missing memory schema through doctor and repair” |
-| `E01` | one client action end to end (`memory.build`) | “executes an action through the client (memory.build)” |
-| `A06` | provider config authority: UI, restart, controlled embed request | “proves provider config authority through UI, restart, and a controlled embed request” |
+**None left.** Every spec case that a CLI-host oracle can state is now ported; the
+remaining ones are host-bound by the boundary rule (plugin load and bundle binding,
+view rendering and localization, ribbon/settings surfaces, plugin unload and child
+reaping, autosync timers, the client trace, artifact opening through the shell, and
+the app/installer matrix itself).
 
-That is the remainder of the `portable-not-yet` class; every other spec case is
-host-bound by the boundary rule above.
+`E06` also records a finding worth an issue: the H case's title claims doctor detects
+and repairs a missing memory schema, but with `paperforge.db` deleted, `doctor --json`
+reports `FAIL` over its own 71 checks and never mentions memory, and `repair --fix`
+does not restore the database. The memory lane is **probe → advertised action**.
 
 ## Removal plan (prepared, not applied)
 
@@ -194,6 +208,9 @@ have not been through the same review, and `D07` is BLOCKED rather than VERIFIED
 |---|---|---|---|
 | `E05` | 4667–4725 | nothing (the case drives the migration function through a subprocess, no DOM) | none |
 | `A04` | 7440–7524 and 7525–7580 | the shared A-block helpers stay: A03's reject half (7381) keeps `waitForTestId`/`setInputByTestId`/`clickSettingsTestId` | the migration summary text and the settings values it shows |
+| `E06` | 4726–4838 | nothing (client calls + CLI subprocess) | none |
+| `E01` | 5449–5480 | nothing | to catalogue from the block before deleting |
+| `A06` | 5481–5930 | `provisionE2eKeyringFixture` stays (it serves the install cases); its own provider stub is inline | the settings fields + memory module panel (partly shared with A05) |
 
 ### UI-wiring each deletion would drop (the rule-3 record)
 
