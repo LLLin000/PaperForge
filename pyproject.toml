@@ -87,6 +87,7 @@ markers = [
     "chaos: Destructive tests (Level 6) — abnormal scenarios",
     "audit: Consistency audit tests — validate L1 mocks against L4 real pipeline output",
     "integration: Integration tests — multi-component workflows",
+    "harness: CLI-host acceptance cases — real CLI subprocess against a disposable vault (tests/harness/)",
     "e2e_fast: E2E tests that run quickly (seconds), tagged after fixture setup",
     "slow: Tests that take >30s (skip during development)",
     "snapshot: Tests that use snapshot comparison",

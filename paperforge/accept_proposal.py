@@ -500,7 +500,7 @@ def _accept_proposal_unlocked(
     reconciliation, reconciliation_error = _read_json_object(
         reconciliation_path, missing_ok=True
     )
-    if reconciliation_error or reconciliation is None:
+    if reconciliation_error or reconciliation is None or not reconciliation:
         return {
             "ok": False,
             "reason": "reconciliation_report_unavailable",
@@ -508,9 +508,10 @@ def _accept_proposal_unlocked(
             "label": label,
             "error": reconciliation_error,
         }
-    if "proposals" in reconciliation and not isinstance(
-        reconciliation["proposals"], list
-    ):
+    if not isinstance(reconciliation.get("proposals"), list):
+        # A report without a proposals list is not a "no proposals" report: the
+        # index below would raise KeyError straight through the CLI (rc=1, empty
+        # stdout).  Fail closed with a reason instead.
         return {
             "ok": False,
             "reason": "reconciliation_report_invalid",

@@ -40,6 +40,7 @@ FAILURE_EVIDENCE_JOBS = (
     "protocol-tests",
     "e2e-tests",
     "ocr-regression",
+    "cli-acceptance",
 )
 
 
@@ -133,6 +134,21 @@ def _matches(path: str, entries: set[str]) -> bool:
 
 def _collects(targets: set[str], file: str) -> bool:
     return _matches(file, targets)
+
+
+def _matrix_branches(job: dict[str, Any]) -> list[list[dict[str, Any]]]:
+    """Every ``include`` list a job's matrix can evaluate to.
+
+    A static matrix is one branch.  An event-conditional matrix — the
+    ``fromJSON(github.event_name == 'pull_request' && '<json>' || '<json>')``
+    form that keeps the expensive host matrix cheap on PRs — is read as its
+    quoted payloads, so the declaration stays checkable instead of opaque.
+    """
+    matrix = job["strategy"]["matrix"]
+    if isinstance(matrix, dict):
+        return [list(matrix["include"])]
+    payloads = re.findall(r"'(\{\"include\".*?\})'\s*(?:\|\||\))", str(matrix))
+    return [list(json.loads(payload)["include"]) for payload in payloads]
 
 
 class TestCITestCoverage:
@@ -273,15 +289,22 @@ class TestFailureEvidence:
     def test_obsidian_matrix_covers_minimum_latest_and_old_installer(self):
         job = _workflow(GATING_WORKFLOW)["jobs"]["obsidian-e2e"]
         assert job["runs-on"] == "windows-latest"
-        variants = {
-            (entry["app"], entry["installer"])
-            for entry in job["strategy"]["matrix"]["include"]
-        }
+        branches = _matrix_branches(job)
+        assert branches, "obsidian-e2e declares no readable matrix"
+        # The last branch is the full declaration; earlier ones must be subsets
+        # of it (a PR branch may only narrow the declared host matrix).
+        declared = {(entry["app"], entry["installer"]) for entry in branches[-1]}
         assert {
             ("earliest", "earliest"),
             ("latest", "latest"),
             ("latest", "earliest"),
-        } <= variants
+        } <= declared
+        for branch in branches:
+            narrowed = {(entry["app"], entry["installer"]) for entry in branch}
+            assert narrowed <= declared, (
+                f"a matrix branch claims {sorted(narrowed - declared)} outside the "
+                "declared host matrix"
+            )
         commands = " ".join(str(step.get("run") or "") for step in job["steps"])
         assert "publish_pointer" in commands
         envs = [
