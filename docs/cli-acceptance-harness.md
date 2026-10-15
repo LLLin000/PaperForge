@@ -67,6 +67,11 @@ A recorded assertion failure **also fails the pytest test** (the fixture raises
 in teardown) — an evidence-only failure would let a red case report green, which
 is the gate-that-cannot-fail class (#224).
 
+`status` is `VERIFIED`, `FAILED`, or `BLOCKED`: a case whose subject is
+implemented but unreachable records `case.blocked(reason)` and reports BLOCKED,
+because an unreachable capability is not evidence and the index must not read it
+as covered.
+
 ## Ported cases
 
 | Harness case | Subject | Replaces the H spec case |
@@ -77,14 +82,15 @@ is the gate-that-cannot-fail class (#224).
 | `D06` | derived OCR artifacts rebuild with zero provider requests | “rebuilds derived OCR artifacts locally without provider traffic” |
 | `J02` | two-paper batch settles per paper; scope stays scoped | “runs a two-paper OCR batch with a rejected confirm, one success and one failure” |
 | `F02` | staging writes nothing canonical; the reviewed R plan promotes; a second promote is a no-op | “stages render repairs in isolation and promotes the reviewed candidates” |
-| `F03` | acceptance refuses without its evidence, and the commit half is recorded BLOCKED | same H case (its accept half) |
+| `F03` | acceptance refuses without its evidence, then commits the reviewed plan by its exact hash | same H case (its accept half) |
 
-`F03` also carries the finding that made it worth porting: the P lane is
-unreachable today — the staged final-plan and the canonical report disagree on
-`proposal_id` (`figure_proposal_2` vs `inventory_proposal:figure:2`) and no CLI
-command writes the report at all. The case asserts the refusal contract, records
-`status: BLOCKED` in its evidence, and grows the commit half once an owner picks
-the producer.
+`F03` also carries the finding that made it worth porting: the P lane used to be
+unreachable in three layers — the Windows reparse guard refused every path, a
+missing report crashed the CLI, and the staged plan and the canonical report named
+the same proposal differently while no CLI command wrote the report. All three are
+fixed; the flow it asserts is the one a real vault takes now:
+audit → stage → promote (which refreshes the report acceptance checks against) →
+stage again → accept by exact plan hash.
 
 ## Next candidates (host-agnostic, still on H today)
 

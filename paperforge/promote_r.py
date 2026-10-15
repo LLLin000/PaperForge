@@ -19,6 +19,10 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
+# The reconciliation module owns the input fingerprint it writes into every staged
+# manifest and plan; this module verifies that value.  It used to carry a second
+# copy, so changing one side only silently marked every staged plan stale.
+from paperforge.figure_reconciliation import reconcile_snapshot_hash as _snapshot_hash
 from paperforge.render_audit import (
     _inventory_asset_claim_conflicts,
     _inventory_identity_conflicts,
@@ -97,18 +101,6 @@ def _plan_hash(plan: dict[str, Any]) -> str:
     return hashlib.sha256(
         json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
     ).hexdigest()
-
-
-def _snapshot_hash(root: Path) -> str:
-    parts = []
-    for relative in (
-        "structure/blocks.structured.jsonl",
-        "structure/figure_inventory.json",
-        "render/reconciliation.proposals.json",
-    ):
-        path = root / relative
-        parts.append((_sha256_path(path) or "missing")[:16])
-    return hashlib.sha256("|".join(parts).encode("utf-8")).hexdigest()[:16]
 
 
 def _file_precondition(path: Path) -> dict[str, Any]:
@@ -1149,6 +1141,20 @@ def _promote_r_unlocked(
         report_refresh = "failed"
         report_refresh_error = f"{type(exc).__name__}: {exc}"
     report_audit_state = after_audit.get("state")
+    # The reconciliation report is the observation acceptance checks its reviewed
+    # plan against, so a committed promotion has to refresh it - the same rule
+    # the audit report above already follows.  Nothing else in the CLI writes it:
+    # `render reconcile` is staging-only, and the report used to be produced by a
+    # writer with no callers, which is why no vault ever had one.
+    reconciliation_refresh = "written"
+    reconciliation_refresh_error: str | None = None
+    try:
+        from paperforge.figure_reconciliation import write_reconciliation_report
+
+        write_reconciliation_report(Path(ocr_root), paper_key, after_audit)
+    except Exception as exc:  # noqa: BLE001 — commit already completed
+        reconciliation_refresh = "failed"
+        reconciliation_refresh_error = f"{type(exc).__name__}: {exc}"
     target_delta = {
         item["object_id"]: {
             "before": _audit_targets(before_audit, item["object_id"]),
@@ -1174,12 +1180,15 @@ def _promote_r_unlocked(
         "cleanup": cleanup_state,
         "report_refresh": report_refresh,
         "report_audit_state": report_audit_state,
+        "reconciliation_refresh": reconciliation_refresh,
         "production_write": True,
     }
     if cleanup_error:
         result["cleanup_error"] = cleanup_error
     if report_refresh_error:
         result["report_refresh_error"] = report_refresh_error
+    if reconciliation_refresh_error:
+        result["reconciliation_refresh_error"] = reconciliation_refresh_error
     return result
 
 
