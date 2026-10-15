@@ -145,6 +145,20 @@ def ocr_cli(cli: CliHost, case: CaseEvidence) -> CliHost:
     return cli
 
 
+@pytest.fixture
+def render_ocr_cli(render_cli: CliHost, case: CaseEvidence) -> CliHost:
+    """A credentialed CLI host for the render fixture vault (OCR cases)."""
+    seeded = render_cli.json(
+        "auth", "set", "ocr", "--stdin", "--replace", stdin="pf-harness-ocr-token\n"
+    )
+    case.check(
+        "the OCR credential is seeded in the isolated keyring",
+        seeded.returncode == 0,
+        seeded.tail(),
+    )
+    return render_cli
+
+
 class RetrievalSetup(NamedTuple):
     """A CLI host whose vault is wired to a controlled embedding provider."""
 

@@ -89,6 +89,20 @@ as covered.
 | `E03` | the substrate builds against the configured provider (its ledger proves it) and serves a search | “builds the vector substrate against a controlled provider and serves deep search” |
 | `E04` | a stopped vector build leaves the live substrate byte-identical and still serving | “stops a running vector build without corrupting the substrate” |
 | `E02` | a valid `paperforge.db.backup` restores atomically; corrupt copy kept, backup untouched | “restores the memory database from its backup after corruption” |
+| `D05` | a flagged paper is re-extracted through **one fresh** provider job | “re-extracts a flagged paper through the workspace redo control” |
+| `D07` | a display-version restore writes the display copy, never the canonical text | “restores a display version through the Version History modal” |
+
+`D07` reports **BLOCKED**, not VERIFIED: the restore also rewrites OCR-owned
+`meta.json`, and issue #227 tracks whether that matches the command's "display-only"
+declaration. Its own contract (the canonical text is never replaced by the display
+copy) is asserted and passes; the blocker records the declaration drift, so the case
+does not read as a clean verification. For the same reason its H case stays.
+
+`D05` also records a fixture-shaped constraint: the redo path resolves a paper by
+its ``zotero_key`` and requires exactly eight alphanumerics (``_find_notes_by_key``
+in ``worker/ocr.py``), which is the real Zotero key shape — the render fixture's
+synthetic ``TSTONE001`` is nine characters, so the keyed redo counts it as failed
+by design. That case runs on the standard vault instead.
 
 Two rules the retrieval cases had to learn, both written into their docstrings:
 
@@ -113,17 +127,72 @@ stage again → accept by exact plan hash.
 
 ## Next candidates (host-agnostic, still on H today)
 
-Ordered by value — the first two are cases whose H versions have already failed
-silently once, so a CLI oracle buys correctness, not just speed:
-
 | Candidate | Harness subject | H case it would replace |
 |---|---|---|
 | `E05` | legacy ChromaDB → sqlite-vec migration | “migrates a legacy ChromaDB substrate into sqlite-vec” |
 | `A04` | legacy config migration is idempotent (byte-identical on the second run) | the two matching `A04` cases |
-| `D05/D07` | OCR redo for a flagged paper; version restore | “re-extracts a flagged paper …”; “restores a display version through the Version History modal” |
 
-Roughly 15–20 further spec cases are portable by the boundary rule. Each one
-moves only under the removal rule above.
+## Removal plan (prepared, not applied)
+
+Deleting the ported cases from the spec is mechanical, but it is **not yet
+authorised**. This is the prepared list so the shrink is one commit when its
+preconditions hold.
+
+### Preconditions (all three)
+
+1. job **P** green in hosted CI on the shrink's product SHA — it has never run
+   upstream, the job and the PR-tier matrix exist only on this branch;
+2. the owner admits CLI-host evidence into the verification standard. That
+   standard defines 真机证据 as H/V/P and places a real-CLI-subprocess case in the
+   **I** layer, so today a capability whose only evidence is job P reverts to
+   待测试 (R1). Admitting it is a vocabulary decision — `runner_kind=harness_cli`,
+   a `host_profile` form, and an archive slot such as `evidence/ci/<run>/cli-p0/`
+   — not a code change;
+3. the owner approves the reduced acceptance set: the acceptance plan requires
+   explicit approval for any scope reduction, and deleting spec cases moves the
+   candidate's *acceptance-test identity* while leaving the release source alone.
+
+### Deletion list (the 13 declared cases; D05/D07 follow the same shape)
+
+| Harness case | H block (spec lines) | Orphans to delete with it |
+|---|---|---|
+| B01 | 2325–2416 | — |
+| B02 | 2417–2497 | — |
+| J02 | 3203–3482 | `clickProcessSelected`, `addOcrPaper` |
+| D04 | 3483–3792 | — |
+| D06 | 3900–3979 | — |
+| E03 | 3980–4195 | `PF_E2E_VECTOR_CASE` and the skip-registry entries `vector-case-opt-in`, `vector-fixture-lacks-structured-blocks` |
+| E02 | 4196–4318 | — |
+| E04 | 4319–4666 | (same switch and registry entries) |
+| F02+F03 | 4839–5220 | — |
+| B07 (both halves) | 6281–6397 | `readFrontmatterFlag`, `clickTechnicalDetails` |
+| A03 | 7252–7380 | `doctorChecks` — keep 7381: its reject half asserts UI copy the harness does not |
+| A05 | 7581–7750 | `E2E_KEYRING_FILE`, `keyringText`, `filesContaining`, `runAuthDelete`, `credentialAvailable` |
+
+Post-shrink the spec goes from 47 static cases + one six-scenario loop to 34 + 6,
+with 13 fewer sandbox re-provisions and 18 fewer in-case Obsidian restarts per
+cell. The declared wait budgets inside the deleted blocks total ≈76 minutes
+across the three cells — a ceiling, not measured runtime.
+
+`D05` and `D07` are **not** in this list: they were ported after it was drafted and
+have not been through the same review, and `D07` is BLOCKED rather than VERIFIED.
+
+### UI-wiring each deletion would drop (the rule-3 record)
+
+| Case | Host facts that disappear |
+|---|---|
+| D04 | the Stop control's test id and enabled state, and the localized stop acknowledgement (the #294-class fact) |
+| D06 | Rebuild-Selected's test id and its no-confirmation contract |
+| F02/F03 | the whole quality drawer: toggle, staging text, R-row/P-card counts, Promote/Accept located by text with enabled state, optional confirm gate |
+| J02 | rejecting a confirmation returns the modal to closed; per-synthesized-title row matching |
+| A05 | the memory module panel, the masked-input assertion, the "not configured" copy path |
+| B07 | the technical-details toggle, the `flag-analyze`/`flag-do_ocr` checkboxes, the DOM revert on refusal, the client-trace wait |
+| A03 | the Save-enabled assertion and stage-2 re-hydration after a restart |
+| E02/E04 | nothing — both drive the client, not the DOM |
+| D07 (if ported) | the entire Version History modal, including the cancel leg |
+
+Every row must end up either kept in a smaller H case or recorded as dropped at
+the release gate; that record is what the shrink commit has to carry.
 
 ## Removing an H case
 
