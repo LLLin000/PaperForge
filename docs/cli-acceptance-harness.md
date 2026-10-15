@@ -90,7 +90,7 @@ as covered.
 | `E04` | a stopped vector build leaves the live substrate byte-identical and still serving | “stops a running vector build without corrupting the substrate” |
 | `E02` | a valid `paperforge.db.backup` restores atomically; corrupt copy kept, backup untouched | “restores the memory database from its backup after corruption” |
 | `D05` | a flagged paper is re-extracted through **one fresh** provider job | “re-extracts a flagged paper through the workspace redo control” |
-| `D07` | a display-version restore writes the display copy, never the canonical text | “restores a display version through the Version History modal” |
+| `D07` | a display-version restore writes the display copy, never the canonical text — **BLOCKED on #227** | “restores a display version through the Version History modal” |
 
 `D07` reports **BLOCKED**, not VERIFIED: the restore also rewrites OCR-owned
 `meta.json`, and issue #227 tracks whether that matches the command's "display-only"

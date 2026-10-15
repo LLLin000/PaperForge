@@ -1,18 +1,19 @@
 """D05 — a paper flagged for redo is re-extracted through a fresh provider job.
 
 Ported from the H case that clicks the workspace's re-extract control.  Its oracle
-is the provider ledger: the redo must submit **one** fresh job, not re-settle the
-existing one, and the paper must come out settled.
+is the provider ledger, and it is deliberately **keyless**: ``ocr redo`` with no key
+is the only path that reads the flag (``ocr_redo_papers`` → ``discover_redo_keys``),
+while the keyed form resolves the paper directly and would pass even with the flag
+wiring broken.  A cleared flag is asserted to submit nothing, so the first
+assertion is about the flag and not about redo in general.
 
-Two things learned while porting, both worth knowing before writing another OCR
+Two more things learned while porting, both worth knowing before writing another OCR
 case:
 
-* the redo path resolves a paper's note by scanning for its ``zotero_key`` and
-  requires exactly eight alphanumerics (``_find_notes_by_key`` in
-  ``worker/ocr.py``).  That is the real Zotero key shape; the *render* fixture's
-  ``TSTONE001`` is synthetic and nine characters long, so the redo transaction
-  counts it as failed - by design, not by defect.  This case therefore runs on the
-  standard vault, whose keys are eight characters.
+* the discovery scan requires exactly eight alphanumerics in ``zotero_key`` (the
+  real Zotero shape).  The *render* fixture's ``TSTONE001`` is synthetic and nine
+  characters long, so a keyless scan never finds it - by design, not by defect.
+  This case therefore runs on the standard vault, whose keys are eight characters.
 * the fixture ships no OCR run at all on that vault, and the worker skips an
   up-to-date paper, so the first run is a real one before the redo can differ from
   it.
@@ -59,11 +60,13 @@ def test_redo_submits_a_fresh_job(ocr_cli, case, ocr_stub) -> None:
     cli.set_note_flag(PAPER, "ocr_redo", True)
 
     stub.reset_counts()
-    # `--json` belongs to the parent `ocr` parser, not to the redo subparser.
-    redone = cli.run("ocr", "--json", "redo", PAPER, expect=0)
+    # Keyless: this is the path that reads the flag (ocr_redo_papers ->
+    # discover_redo_keys).  The keyed form resolves the paper directly and never
+    # looks at the flag, so it would pass even with the flag wiring broken.
+    redone = cli.run("ocr", "--json", "redo", expect=0)
     case.check("redo exits 0", redone.returncode == 0, redone.tail())
     case.check(
-        "redo submitted exactly one fresh job",
+        "the flag drove discovery: exactly one fresh job",
         stub.counts.get("submit") == 1,
         json.dumps(stub.counts),
     )
@@ -83,6 +86,18 @@ def test_redo_submits_a_fresh_job(ocr_cli, case, ocr_stub) -> None:
         "the redo re-published the paper's artifacts",
         (cli.vault / "System" / "PaperForge" / "ocr" / PAPER / "fulltext.md").is_file(),
         "fulltext.md missing after redo",
+    )
+
+    # Negative control: with the flag cleared, the same scan must find nothing and
+    # submit nothing - that is what makes the first assertion about the flag.
+    cli.set_note_flag(PAPER, "ocr_redo", False)
+    stub.reset_counts()
+    idle = cli.run("ocr", "--json", "redo", expect=0)
+    case.check("redo with no flagged paper exits 0", idle.returncode == 0, idle.tail())
+    case.check(
+        "an unflagged vault submits no provider job",
+        stub.counts.get("submit") in (None, 0),
+        json.dumps(stub.counts),
     )
 
     case.artifact("ocr-dir", cli.vault / "System" / "PaperForge" / "ocr" / PAPER)
