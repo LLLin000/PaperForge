@@ -91,6 +91,13 @@ as covered.
 | `E02` | a valid `paperforge.db.backup` restores atomically; corrupt copy kept, backup untouched | “restores the memory database from its backup after corruption” |
 | `D05` | a flagged paper is re-extracted through **one fresh** provider job | “re-extracts a flagged paper through the workspace redo control” |
 | `D07` | a display-version restore writes the display copy, never the canonical text — **BLOCKED on #227** | “restores a display version through the Version History modal” |
+| `A04` | legacy config migrates losslessly and the second run is byte-identical | the two matching `A04` cases |
+| `E05` | a legacy ChromaDB substrate migrates into sqlite-vec; no store is a no-op | “migrates a legacy ChromaDB substrate into sqlite-vec” |
+
+`E05` needs the optional `legacy-vector` runtime (chromadb), so job P installs
+`.[test,vector,legacy-vector]` — the extras the full-suite job already uses. A case
+that branched on an absent dependency would be a skip in disguise (R2), and a
+registered skip is what the H version has.
 
 `D07` reports **BLOCKED**, not VERIFIED: the restore also rewrites OCR-owned
 `meta.json`, and issue #227 tracks whether that matches the command's "display-only"
@@ -129,8 +136,12 @@ stage again → accept by exact plan hash.
 
 | Candidate | Harness subject | H case it would replace |
 |---|---|---|
-| `E05` | legacy ChromaDB → sqlite-vec migration | “migrates a legacy ChromaDB substrate into sqlite-vec” |
-| `A04` | legacy config migration is idempotent (byte-identical on the second run) | the two matching `A04` cases |
+| `E06` | doctor/repair detects and repairs a missing memory schema | “detects and repairs a missing memory schema through doctor and repair” |
+| `E01` | one client action end to end (`memory.build`) | “executes an action through the client (memory.build)” |
+| `A06` | provider config authority: UI, restart, controlled embed request | “proves provider config authority through UI, restart, and a controlled embed request” |
+
+That is the remainder of the `portable-not-yet` class; every other spec case is
+host-bound by the boundary rule above.
 
 ## Removal plan (prepared, not applied)
 
@@ -176,6 +187,13 @@ across the three cells — a ceiling, not measured runtime.
 
 `D05` and `D07` are **not** in this list: they were ported after it was drafted and
 have not been through the same review, and `D07` is BLOCKED rather than VERIFIED.
+
+### Second batch (ported after the first list was drafted)
+
+| Harness case | H block (spec lines) | Orphans to delete with it | UI-wiring dropped |
+|---|---|---|---|
+| `E05` | 4667–4725 | nothing (the case drives the migration function through a subprocess, no DOM) | none |
+| `A04` | 7440–7524 and 7525–7580 | the shared A-block helpers stay: A03's reject half (7381) keeps `waitForTestId`/`setInputByTestId`/`clickSettingsTestId` | the migration summary text and the settings values it shows |
 
 ### UI-wiring each deletion would drop (the rule-3 record)
 

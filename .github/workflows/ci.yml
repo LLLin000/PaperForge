@@ -599,7 +599,9 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install package with test deps
-        run: python -m pip install -e ".[test,vector]"
+        # The full-suite job's extras: E05 migrates a legacy ChromaDB substrate, and
+        # a case that branched on an absent dependency would be a skip in disguise.
+        run: python -m pip install -e ".[test,vector,legacy-vector]"
       - name: Run the CLI-host acceptance cases
         shell: bash
         run: |
