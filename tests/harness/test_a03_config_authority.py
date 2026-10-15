@@ -62,11 +62,16 @@ def test_config_edit_is_canonical_and_validated(cli, vault, case) -> None:
     )
 
     paths = cli.json("config", "paths")
-    resolved = ((paths.data or {}).get("paths") or {}).get("control", "")
+    resolved_raw = ((paths.data or {}).get("paths") or {}).get("control", "")
+    expected = vault / "Resources" / VALUE
+    # Resolve both sides: the resolver canonicalizes the vault prefix (on Windows a
+    # CI temp directory arrives in its short form, e.g. RUNNER~1), so comparing the
+    # unresolved pair would compare two spellings of the same path.
+    resolved = Path(str(resolved_raw))
     case.check(
         "the resolver places the value under the resources directory",
-        Path(str(resolved)) == vault / "Resources" / VALUE,
-        str(resolved),
+        bool(str(resolved_raw)) and resolved.resolve() == expected.resolve(),
+        f"resolved={resolved_raw!r} expected={str(expected)!r}",
     )
 
     before_refusal = config_path.read_bytes()
