@@ -84,3 +84,6 @@ paperforge/plugin/test/vaults/empty/
 
 # E2E acceptance evidence (per-run JSON; never committed)
 paperforge/plugin/test/evidence/
+
+# CLI-host acceptance evidence (per-run JSON; never committed)
+tests/evidence/

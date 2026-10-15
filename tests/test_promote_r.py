@@ -157,6 +157,30 @@ def test_promote_r_copies_verified_artifacts_and_refreshes_audit(tmp_path: Path)
     assert result["audit_1"]["target_delta"]["figure_001"]["after"] == []
 
 
+def test_promote_r_writes_the_reconciliation_report_acceptance_needs(
+    tmp_path: Path,
+) -> None:
+    """A committed promotion must leave the acceptance precondition behind.
+
+    accept_proposal refuses with reconciliation_report_unavailable when
+    render/reconciliation.proposals.json is missing, and nothing else in the CLI
+    writes it: render reconcile is staging-only and its writer had no callers.
+    """
+    ocr_root, paper, _ = _write_r_fixture(tmp_path)
+    audit_paper(ocr_root, "TESTRPROMO1", write_report=True)
+    staging = _write_r_manifest(paper, tmp_path / "staging")
+    report_path = paper / "render" / "reconciliation.proposals.json"
+    assert not report_path.is_file(), "fixture must start without a report"
+
+    result = promote_r(ocr_root, "TESTRPROMO1", staging_root=staging)
+
+    assert result["ok"] is True
+    assert result["reconciliation_refresh"] == "written"
+    payload = json.loads(report_path.read_text(encoding="utf-8"))
+    assert isinstance(payload.get("proposals"), list)
+    assert payload.get("paper_key") == "TESTRPROMO1"
+
+
 def test_promote_r_reports_post_commit_refresh_failure_without_rollback(
     tmp_path: Path, monkeypatch
 ) -> None:

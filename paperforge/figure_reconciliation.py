@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 from pathlib import Path
 from typing import Any
@@ -48,7 +49,11 @@ def _snapshot_hash(root: Path) -> str:
     for rel in (
         "structure/blocks.structured.jsonl",
         "structure/figure_inventory.json",
-        "render/reconciliation.proposals.json",
+        # NOT render/reconciliation.proposals.json: it is a derived observation of
+        # the two inputs above (render_audit already excludes it from its own input
+        # scan).  Including it made every refresh of the report - which a committed
+        # promotion performs so acceptance has the evidence it checks - invalidate
+        # the staged plans of the same paper.
     ):
         p = root / rel
         if p.is_file():
@@ -461,7 +466,12 @@ def _candidate_proposal(
             }
         )
     return {
-        "proposal_id": f"inventory_proposal:figure:{label}",
+        # The id the reviewed plan carries and acceptance matches against.  It
+        # used to be an independent scheme ("inventory_proposal:figure:<label>")
+        # that nothing could ever match: accept-proposal compares the staged
+        # plan's proposal_id with this report's, so both producers have to name
+        # the same proposal the same way.
+        "proposal_id": f"figure_proposal_{label}",
         "kind": "figure",
         "label": label,
         "decision": decision,
@@ -751,7 +761,13 @@ def write_reconciliation_report(
     )
     path = ocr_root / paper_key / "render" / "reconciliation.proposals.json"
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    payload = json.dumps(report, ensure_ascii=False, indent=2) + "\n"
+    # Atomic: this report gates a canonical acceptance, and a torn write reads as
+    # "no evidence" (reconciliation_report_unavailable) rather than as the state
+    # it was written from.
+    staged = path.with_name(f"{path.name}.tmp")
+    staged.write_text(payload, encoding="utf-8")
+    os.replace(staged, path)
     report["report_path"] = str(path)
     return report
 def dry_run_exact_repairs(
