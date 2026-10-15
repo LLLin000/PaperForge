@@ -86,6 +86,17 @@ as covered.
 | `A03` | a config edit is canonical, resolvable, and refused edits write nothing | “A03 config edit: a path set in Settings reaches paperforge.json, doctor reads it back, and a restart keeps it” |
 | `A05` | a secret reaches the keyring, never argv, never a vault file | “A05 credential storage: a key saved in Settings reaches the keyring — never config/vault …” |
 | `B07` | a workflow flag persists on the canonical note; a refused toggle writes nothing | “persists a workflow flag toggled in the UI, across a restart” + its refusal branch |
+| `E03` | the substrate builds against the configured provider (its ledger proves it) and serves a search | “builds the vector substrate against a controlled provider and serves deep search” |
+| `E04` | a stopped vector build leaves the live substrate byte-identical and still serving | “stops a running vector build without corrupting the substrate” |
+| `E02` | a valid `paperforge.db.backup` restores atomically; corrupt copy kept, backup untouched | “restores the memory database from its backup after corruption” |
+
+Two rules the retrieval cases had to learn, both written into their docstrings:
+
+* the substrate binds to the provider endpoint it was built with, so a case must
+  keep **one** stub for build and query — re-pointing the endpoint between them
+  makes the query return nothing;
+* **nothing in the CLI creates `paperforge.db.backup`** — the restore case seeds it
+  the way the H case does (a copy of a known-good database).
 
 `A03` also documents a resolution rule worth knowing before writing another case:
 the directory fields are **resources-relative**, so `literature_dir = Resources/Literature`
@@ -107,12 +118,9 @@ silently once, so a CLI oracle buys correctness, not just speed:
 
 | Candidate | Harness subject | H case it would replace |
 |---|---|---|
-| `E02` | memory restore from backup after corruption | “restores the memory database from its backup after corruption” |
-| `E04` | stop a vector build; substrate uncorrupted | “stops a running vector build without corrupting the substrate” |
 | `E05` | legacy ChromaDB → sqlite-vec migration | “migrates a legacy ChromaDB substrate into sqlite-vec” |
 | `A04` | legacy config migration is idempotent (byte-identical on the second run) | the two matching `A04` cases |
 | `D05/D07` | OCR redo for a flagged paper; version restore | “re-extracts a flagged paper …”; “restores a display version through the Version History modal” |
-| `C03/E03` | build the vector substrate against a controlled provider, then serve deep search | “builds the vector substrate … and serves deep search” |
 
 Roughly 15–20 further spec cases are portable by the boundary rule. Each one
 moves only under the removal rule above.

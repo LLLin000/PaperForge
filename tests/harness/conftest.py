@@ -16,13 +16,14 @@ import shutil
 import stat
 from collections.abc import Callable, Iterator
 from pathlib import Path
-from typing import Any
+from typing import Any, NamedTuple
 
 import pytest
 
 from .evidence import REPO_ROOT, CaseEvidence, evidence_root, write_index
 from .recorder import CliHost
 from .stub import OcrStub
+from .stub_embed import EmbedStub
 
 
 def force_rmtree(root: Path) -> None:
@@ -142,6 +143,53 @@ def ocr_cli(cli: CliHost, case: CaseEvidence) -> CliHost:
         seeded.tail(),
     )
     return cli
+
+
+class RetrievalSetup(NamedTuple):
+    """A CLI host whose vault is wired to a controlled embedding provider."""
+
+    cli: CliHost
+    stub: EmbedStub
+
+
+@pytest.fixture
+def embed_stub(case: CaseEvidence) -> Iterator[Callable[..., EmbedStub]]:
+    """Factory for loopback embedding providers; every one is stopped at teardown."""
+    started: list[EmbedStub] = []
+
+    def _start(**kwargs: Any) -> EmbedStub:
+        stub = EmbedStub(**kwargs)
+        stub.start()
+        started.append(stub)
+        return stub
+
+    yield _start
+    for stub in started:
+        stub.stop()
+
+
+@pytest.fixture
+def retrieval(render_cli: CliHost, case: CaseEvidence, embed_stub: Callable[..., EmbedStub]) -> RetrievalSetup:
+    """The render vault with an embedding credential and a controlled provider.
+
+    The credential goes into this case's isolated keyring through the product's
+    own command, and the provider endpoint/model go into canonical config - the
+    same two seams the plugin's settings write.
+    """
+    seeded = render_cli.json(
+        "auth", "set", "embedding", "--stdin", "--replace", stdin="pf-harness-embed-token\n"
+    )
+    case.check(
+        "the embedding credential is seeded in the isolated keyring",
+        seeded.returncode == 0,
+        seeded.tail(),
+    )
+    stub = embed_stub(mode="success")
+    base = render_cli.json("config", "set", "vector_db_api_base", stub.base_url)
+    model = render_cli.json("config", "set", "vector_db_api_model", "stub-embedding")
+    case.check("the provider endpoint is canonical config", base.returncode == 0, base.tail())
+    case.check("the provider model is canonical config", model.returncode == 0, model.tail())
+    return RetrievalSetup(render_cli, stub)
 
 
 @pytest.fixture
