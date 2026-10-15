@@ -258,6 +258,7 @@ jobs:
             --ignore=tests/e2e \
             --ignore=tests/audit \
             --ignore=tests/chaos \
+            --ignore=tests/harness \
             -q --tb=short --timeout=180 \
             --junit-xml="$RUNNER_TEMP/paperforge-python-suite.xml"
       - name: Preserve first-failure Python-suite evidence
@@ -438,14 +439,11 @@ jobs:
     name: H — Obsidian (${{ matrix.app }}, installer=${{ matrix.installer }})
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - app: earliest
-            installer: earliest
-          - app: latest
-            installer: latest
-          - app: latest
-            installer: earliest
+      # PRs run the newest combination for fast feedback; push, the nightly
+      # schedule and manual runs keep the full declared matrix.  The browser
+      # matrix is the expensive runner — host-agnostic cases belong to the CLI
+      # host (job P, tests/harness/) and must not be proven here.
+      matrix: ${{ fromJSON(github.event_name == 'pull_request' && '{"include":[{"app":"latest","installer":"latest"}]}' || '{"include":[{"app":"earliest","installer":"earliest"},{"app":"latest","installer":"latest"},{"app":"latest","installer":"earliest"}]}') }}
     runs-on: windows-latest
     timeout-minutes: 45
     steps:
@@ -582,6 +580,52 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  # ---------------------------------------------------------------------------
+  # P — CLI-host acceptance (host-agnostic cases, runner_kind=harness_cli)
+  # ---------------------------------------------------------------------------
+  # These cases drive the real `paperforge` CLI as a subprocess against a
+  # disposable vault: no Obsidian, no WebDriver, no wheel build.  They run on the
+  # declared P0 profile (Windows x64) because their evidence has to keep binding
+  # to a host profile when a capability moves off the H matrix.  L1b ignores
+  # tests/harness so a case runs once, here, and its junit + evidence index are
+  # what a per-area report cites.
+  cli-acceptance:
+    name: P — CLI-host acceptance
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install package with test deps
+        run: python -m pip install -e ".[test,vector]"
+      - name: Run the CLI-host acceptance cases
+        shell: bash
+        run: |
+          python -m pytest tests/harness/ -m harness -v --tb=short --timeout=600 \
+            --junit-xml="$RUNNER_TEMP/paperforge-cli-acceptance.xml"
+        env:
+          PF_EVIDENCE_DIR: ${{ github.workspace }}/tests/evidence/cli-acceptance
+      - name: Upload CLI-host acceptance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cli-acceptance-evidence
+          path: tests/evidence/cli-acceptance
+          if-no-files-found: error
+          retention-days: 14
+      - name: Preserve first-failure CLI-acceptance evidence
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-failure-cli-acceptance
+          path: |
+            ${{ runner.temp }}/paperforge-cli-acceptance.xml
+            tests/evidence/cli-acceptance
+          if-no-files-found: warn
+          retention-days: 14
+
   alls-green:
     name: All Checks Passed
     if: always()
@@ -593,6 +637,7 @@ jobs:
       - j-matrix
       - protocol-tests
       - ocr-regression
+      - cli-acceptance
       - plugin-tests
       - e2e-tests
       - architecture-gate
