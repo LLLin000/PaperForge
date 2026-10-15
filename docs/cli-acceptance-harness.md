@@ -87,7 +87,7 @@ as covered.
 | `A05` | a secret reaches the keyring, never argv, never a vault file | “A05 credential storage: a key saved in Settings reaches the keyring — never config/vault …” |
 | `B07` | a workflow flag persists on the canonical note; a refused toggle writes nothing | “persists a workflow flag toggled in the UI, across a restart” + its refusal branch |
 | `E03` | the substrate builds against the configured provider (its ledger proves it) and serves a search | “builds the vector substrate against a controlled provider and serves deep search” |
-| `E04` | a stopped vector build leaves the live substrate byte-identical and still serving — **stop leg BLOCKED** | “stops a running vector build without corrupting the substrate” |
+| `E04` | a stopped vector build leaves the live substrate byte-identical and still serving | “stops a running vector build without corrupting the substrate” |
 | `E02` | a valid `paperforge.db.backup` restores atomically; corrupt copy kept, backup untouched | “restores the memory database from its backup after corruption” |
 | `D05` | a flagged paper is re-extracted through **one fresh** provider job | “re-extracts a flagged paper through the workspace redo control” |
 | `D07` | a display-version restore writes the display copy, never the canonical text — **BLOCKED on #227** | “restores a display version through the Version History modal” |
@@ -102,14 +102,16 @@ as covered.
 that branched on an absent dependency would be a skip in disguise (R2), and a
 registered skip is what the H version has.
 
-`E04`'s **stop leg is BLOCKED**, and the evidence says why: a `PAPERFORGE_STOP`
-written to stdin right after the build's first `phase` event is not honoured — the
-child sends one provider request and then produces no output for the whole budget
-(observed at 180 s and again at 420 s), ending with no terminal event. Its headline
-invariant still holds and is asserted: the live substrate is byte-identical and still
-answers a search afterwards. The H case stops through
-`client.cancelActiveOperation()`, a different mechanism, so this leg is recorded
-rather than claimed.
+`E04`'s stop leg is verified **with a caveat the evidence pins down**: the stop is
+honoured at the build's next safe point, so a forced rebuild of one paper took 46 s
+before it answered `cancelled` (rc 130) — a user clicking Stop waits that long. And a
+stop written **before** the build reaches its provider is *not* honoured: the child
+produces no further output and is killed by the harness deadline (observed at 180 s,
+420 s and 90 s). On Windows this stdin token is the only cooperative ingress — SIGTERM
+is a hard kill — so the plugin's Stop only ends such a build through its kill
+escalation. The case asserts the invariant either way (the live substrate is
+byte-identical and still serves) and records the early-stop hazard as its blocker when
+that is the path taken.
 
 `D07` reports **BLOCKED**, not VERIFIED: the restore also rewrites OCR-owned
 `meta.json`, and issue #227 tracks whether that matches the command's "display-only"

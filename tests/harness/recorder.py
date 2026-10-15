@@ -70,7 +70,16 @@ class CliResult:
 class StreamRun:
     """A streamed (NDJSON) call, optionally ended by a cooperative stop."""
 
-    __slots__ = ("argv", "events", "returncode", "duration_ms", "stopped", "expired", "stderr")
+    __slots__ = (
+        "argv",
+        "events",
+        "returncode",
+        "duration_ms",
+        "stopped",
+        "stopped_by",
+        "expired",
+        "stderr",
+    )
 
     def __init__(
         self,
@@ -79,6 +88,7 @@ class StreamRun:
         returncode: int,
         duration_ms: int,
         stopped: bool,
+        stopped_by: str,
         expired: bool,
         stderr: str,
     ) -> None:
@@ -87,6 +97,10 @@ class StreamRun:
         self.returncode = returncode
         self.duration_ms = duration_ms
         self.stopped = stopped
+        # "event" = the case's own trigger fired; "deadline" = only the fallback timer
+        # did.  Which one it was decides whether the stop landed where the build has a
+        # safe point, so the case can record the difference instead of guessing.
+        self.stopped_by = stopped_by
         self.expired = expired
         self.stderr = stderr
 
@@ -216,6 +230,7 @@ class CliHost:
         )
         events: list[dict[str, Any]] = []
         stopped = False
+        stopped_by = ""
         stop_error = ""
         expired = False
         limit = float(timeout_s or self.timeout_s)
@@ -232,14 +247,15 @@ class CliHost:
         watchdog.daemon = True
         watchdog.start()
 
-        def _write_stop() -> None:
-            nonlocal stopped, stop_error
+        def _write_stop(origin: str) -> None:
+            nonlocal stopped, stopped_by, stop_error
             if stopped:
                 return
             try:
                 proc.stdin.write(STOP_TOKEN)
                 proc.stdin.flush()
                 stopped = True
+                stopped_by = origin
             except (OSError, ValueError) as exc:
                 # Silence here costs a failing case its diagnosis: say why.
                 stop_error = f"{type(exc).__name__}: {exc}"
@@ -247,7 +263,7 @@ class CliHost:
         def _stop_by_deadline() -> None:
             # The stop has to be able to fire when the stream goes quiet: waiting
             # for the next line would let a silent poll loop outlive its budget.
-            _write_stop()
+            _write_stop("deadline")
 
         stop_timer: threading.Timer | None = None
         if stop_after_s:
@@ -271,7 +287,7 @@ class CliHost:
                 events.append(event)
                 stop_now = stop_on is not None and stop_on(event)
                 if not stopped and (stop_now or (stop_after_s and time.time() - started >= stop_after_s)):
-                    _write_stop()
+                    _write_stop("event" if stop_now else "deadline")
         finally:
             watchdog.cancel()
             if stop_timer is not None:
@@ -291,7 +307,14 @@ class CliHost:
         # the harness's guard into a red assertion.
         duration = int((time.time() - started) * 1000)
         run = StreamRun(
-            argv, events, int(proc.returncode or 0), duration, stopped, expired, stderr or ""
+            argv,
+            events,
+            int(proc.returncode or 0),
+            duration,
+            stopped,
+            stopped_by,
+            expired,
+            stderr or "",
         )
         self.case.command(
             argv,
