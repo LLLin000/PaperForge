@@ -99,6 +99,16 @@ class CaseEvidence:
         self.assertions: list[dict[str, Any]] = []
         self.artifacts: dict[str, str] = {}
         self.failure = ""
+        self.blocker = ""
+
+    def blocked(self, reason: str) -> None:
+        """Record that part of the case's contract cannot be exercised yet.
+
+        A capability that is implemented but unreachable is not VERIFIED; the
+        evidence has to say so, or the index would report a lane as covered that
+        no run has ever reached.
+        """
+        self.blocker = reason[:2000]
 
     # ── recording ───────────────────────────────────────────────────────
     def command(
@@ -136,6 +146,12 @@ class CaseEvidence:
     # ── output ──────────────────────────────────────────────────────────
     def payload(self) -> dict[str, Any]:
         failed = [row for row in self.assertions if not row["ok"]]
+        if failed:
+            status = "FAILED"
+        elif self.blocker:
+            status = "BLOCKED"
+        else:
+            status = "VERIFIED"
         return {
             "case_id": self.case_id,
             "title": self.title,
@@ -146,8 +162,9 @@ class CaseEvidence:
             "host_profile": host_profile(),
             "started_at": time.strftime("%Y-%m-%dT%H:%M:%S%z", time.localtime(self.started_at)),
             "duration_ms": int((time.time() - self.started_at) * 1000),
-            "status": "VERIFIED" if not failed else "FAILED",
+            "status": status,
             "failure": self.failure,
+            "blocker": self.blocker,
             "assertions": self.assertions,
             "commands": self.commands,
             "artifacts": self.artifacts,
@@ -183,6 +200,7 @@ def write_index(records: list[Path], root: Path | None = None) -> Path:
                 "duration_ms": row.get("duration_ms"),
                 "host_spec_case": row.get("host_spec_case"),
                 "failure": row.get("failure"),
+                "blocker": row.get("blocker"),
             }
             for row in sorted(rows, key=lambda item: str(item.get("case_id")))
         ],

@@ -223,6 +223,14 @@ def _is_reparse_point(path: Path) -> bool:
     ``Path.is_symlink``; this covers junctions, which ``is_symlink`` does NOT
     report on Windows.  Junctions can retarget a containment-checked path
     outside its root, so they must be treated as unsafe redirect surfaces.
+
+    The signature matters: ``GetFileAttributesW`` returns
+    ``INVALID_FILE_ATTRIBUTES`` (0xFFFFFFFF) for a path that does not exist,
+    and ctypes' default restype widens that to -1, which no longer compares
+    equal — the attribute mask then read EVERY missing path as a reparse point
+    and ``accept_proposal`` refused every new object on Windows.  Declare the
+    types (as ``worker/status.py`` already does) so a missing path returns the
+    sentinel unchanged and is reported as a plain "no".
     """
     if os.name != "nt":
         return False
@@ -231,6 +239,8 @@ def _is_reparse_point(path: Path) -> bool:
         from ctypes import wintypes
 
         GetFileAttributesW = ctypes.windll.kernel32.GetFileAttributesW
+        GetFileAttributesW.argtypes = [wintypes.LPCWSTR]
+        GetFileAttributesW.restype = wintypes.DWORD
         attrs = GetFileAttributesW(str(path))
         if attrs == 0xFFFFFFFF:
             return False

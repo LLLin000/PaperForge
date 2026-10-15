@@ -20,7 +20,7 @@ from typing import Any
 
 import pytest
 
-from .evidence import CaseEvidence, evidence_root, write_index
+from .evidence import REPO_ROOT, CaseEvidence, evidence_root, write_index
 from .recorder import CliHost
 from .stub import OcrStub
 
@@ -69,6 +69,38 @@ def vault(case: CaseEvidence) -> Iterator[Path]:
 @pytest.fixture
 def cli(vault: Path, case: CaseEvidence) -> CliHost:
     return CliHost(vault, case)
+
+
+@pytest.fixture
+def render_vault(case: CaseEvidence) -> Iterator[Path]:
+    """The repo's own render fixture vault (TSTONE001 with a completed OCR run).
+
+    Built by the plugin's e2e builder so the harness and the H matrix share one
+    fixture definition: the R candidate (figure_a1) and the P proposal
+    (figure_2) come out of real reconciliation, not a hand-written stub, and the
+    canonical PDF the materializer crops is present.
+    """
+    import importlib.util
+    import tempfile
+
+    builder = REPO_ROOT / "paperforge" / "plugin" / "test" / "fixtures" / "build_e2e_vault.py"
+    spec = importlib.util.spec_from_file_location("pf_build_e2e_vault", builder)
+    assert spec is not None and spec.loader is not None
+    module: Any = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    base = Path(tempfile.mkdtemp(prefix="pf_harness_render_"))
+    module.VAULT = base / "vault"
+    module.EMPTY_VAULT = base / "empty"
+    module.build()
+    yield module.VAULT
+    if base.exists():
+        force_rmtree(base)
+
+
+@pytest.fixture
+def render_cli(render_vault: Path, case: CaseEvidence) -> CliHost:
+    """A CLI host bound to the render fixture vault (not the standard one)."""
+    return CliHost(render_vault, case)
 
 
 @pytest.fixture

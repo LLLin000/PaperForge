@@ -76,6 +76,15 @@ is the gate-that-cannot-fail class (#224).
 | `D04` | a running OCR batch stops cooperatively, `cancelled` terminal, rc 130 | “stops a running OCR batch through the workspace Stop control” |
 | `D06` | derived OCR artifacts rebuild with zero provider requests | “rebuilds derived OCR artifacts locally without provider traffic” |
 | `J02` | two-paper batch settles per paper; scope stays scoped | “runs a two-paper OCR batch with a rejected confirm, one success and one failure” |
+| `F02` | staging writes nothing canonical; the reviewed R plan promotes; a second promote is a no-op | “stages render repairs in isolation and promotes the reviewed candidates” |
+| `F03` | acceptance refuses without its evidence, and the commit half is recorded BLOCKED | same H case (its accept half) |
+
+`F03` also carries the finding that made it worth porting: the P lane is
+unreachable today — the staged final-plan and the canonical report disagree on
+`proposal_id` (`figure_proposal_2` vs `inventory_proposal:figure:2`) and no CLI
+command writes the report at all. The case asserts the refusal contract, records
+`status: BLOCKED` in its evidence, and grows the commit half once an owner picks
+the producer.
 
 ## Next candidates (host-agnostic, still on H today)
 
@@ -84,7 +93,6 @@ silently once, so a CLI oracle buys correctness, not just speed:
 
 | Candidate | Harness subject | H case it would replace |
 |---|---|---|
-| `F02/F03` | stage render repairs, promote R, accept P by plan hash | “stages render repairs in isolation and promotes the reviewed candidates” (archived evidence once read `status=FAILED` while the case passed) |
 | `E02` | memory restore from backup after corruption | “restores the memory database from its backup after corruption” |
 | `E04` | stop a vector build; substrate uncorrupted | “stops a running vector build without corrupting the substrate” |
 | `E05` | legacy ChromaDB → sqlite-vec migration | “migrates a legacy ChromaDB substrate into sqlite-vec” |
