@@ -159,60 +159,57 @@ and repairs a missing memory schema, but with `paperforge.db` deleted, `doctor -
 reports `FAIL` over its own 71 checks and never mentions memory, and `repair --fix`
 does not restore the database. The memory lane is **probe → advertised action**.
 
-## Removal plan (prepared, not applied)
+## Removal (applied on this branch)
 
-Deleting the ported cases from the spec is mechanical, but it is **not yet
-authorised**. This is the prepared list so the shrink is one commit when its
-preconditions hold.
+The ported cases have been deleted from the H spec. The spec went from **7,847 to
+4,484 lines**: 19 `it()` blocks plus the helpers, options and skip-registry entries
+that only they used.
 
-### Preconditions (all three)
+| Removed | H block (pre-deletion lines) | Also removed with it |
+|---|---|---|
+| B01, B02, J02, D04, D06, E03, E02, E04, E05, E06, F02+F03, E01, A06, B07a, B07b, A03, A04a, A04b, A05 | as listed below | `clickProcessSelected`, `addOcrPaper`, `readFrontmatterFlag`, `clickTechnicalDetails`, `prepareEmbedSandbox`, `doctorChecks`, the A05 keyring cluster (`E2E_KEYRING_FILE`, `keyringText`, `filesContaining`, `runAuthDelete`), and the skip-registry entries `vector-fixture-lacks-structured-blocks` / `vector-case-opt-in` |
+| — | — | the `PF_E2E_VECTOR_CASE` switch (its only readers were E03/E04, so the H job's env line is gone too) |
 
-1. job **P** green in hosted CI on the shrink's product SHA — it has never run
-   upstream, the job and the PR-tier matrix exist only on this branch;
-2. the owner admits CLI-host evidence into the verification standard. That
-   standard defines 真机证据 as H/V/P and places a real-CLI-subprocess case in the
-   **I** layer, so today a capability whose only evidence is job P reverts to
-   待测试 (R1). Admitting it is a vocabulary decision — `runner_kind=harness_cli`,
-   a `host_profile` form, and an archive slot such as `evidence/ci/<run>/cli-p0/`
-   — not a code change;
-3. the owner approves the reduced acceptance set: the acceptance plan requires
-   explicit approval for any scope reduction, and deleting spec cases moves the
-   candidate's *acceptance-test identity* while leaving the release source alone.
+**Not** removed: D05 and D07 (their H blocks stay — `D07` is BLOCKED rather than
+VERIFIED, and both own UI wiring the harness cannot prove), the A03 reject half
+(7381, whose UI copy the harness does not assert), and every host-bound case.
 
-### Deletion list (the 13 declared cases; D05/D07 follow the same shape)
+What the shrink does **not** touch: the declared app/installer matrix in `ci.yml`
+(three cells, machine-guarded by `tests/test_ci_coverage_contract.py`), the release
+gates, and the fact that a capability still needs its declared-profile H/V/P evidence
+for a 真机 claim — the CLI-host kind only covers the host-agnostic contract.
 
-| Harness case | H block (spec lines) | Orphans to delete with it |
+### The ranges that were applied (pre-deletion line numbers)
+
+Batch 1 (the first 13 declared cases):
+
+| Harness case | H block | Orphans deleted with it |
 |---|---|---|
 | B01 | 2325–2416 | — |
 | B02 | 2417–2497 | — |
 | J02 | 3203–3482 | `clickProcessSelected`, `addOcrPaper` |
 | D04 | 3483–3792 | — |
 | D06 | 3900–3979 | — |
-| E03 | 3980–4195 | `PF_E2E_VECTOR_CASE` and the skip-registry entries `vector-case-opt-in`, `vector-fixture-lacks-structured-blocks` |
+| E03 | 3980–4195 | the `PF_E2E_VECTOR_CASE` switch and both vector skip-registry entries |
 | E02 | 4196–4318 | — |
 | E04 | 4319–4666 | (same switch and registry entries) |
 | F02+F03 | 4839–5220 | — |
 | B07 (both halves) | 6281–6397 | `readFrontmatterFlag`, `clickTechnicalDetails` |
-| A03 | 7252–7380 | `doctorChecks` — keep 7381: its reject half asserts UI copy the harness does not |
-| A05 | 7581–7750 | `E2E_KEYRING_FILE`, `keyringText`, `filesContaining`, `runAuthDelete`, `credentialAvailable` |
+| A03 | 7252–7380 | `doctorChecks` — the reject half at 7381 was kept |
+| A05 | 7581–7750 | the keyring cluster |
 
-Post-shrink the spec goes from 47 static cases + one six-scenario loop to 34 + 6,
-with 13 fewer sandbox re-provisions and 18 fewer in-case Obsidian restarts per
-cell. The declared wait budgets inside the deleted blocks total ≈76 minutes
-across the three cells — a ceiling, not measured runtime.
+Batch 2 (ported after the first list was drafted):
 
-`D05` and `D07` are **not** in this list: they were ported after it was drafted and
-have not been through the same review, and `D07` is BLOCKED rather than VERIFIED.
-
-### Second batch (ported after the first list was drafted)
-
-| Harness case | H block (spec lines) | Orphans to delete with it | UI-wiring dropped |
+| Harness case | H block | Orphans deleted with it | UI-wiring dropped |
 |---|---|---|---|
-| `E05` | 4667–4725 | nothing (the case drives the migration function through a subprocess, no DOM) | none |
-| `A04` | 7440–7524 and 7525–7580 | the shared A-block helpers stay: A03's reject half (7381) keeps `waitForTestId`/`setInputByTestId`/`clickSettingsTestId` | the migration summary text and the settings values it shows |
-| `E06` | 4726–4838 | nothing (client calls + CLI subprocess) | none |
-| `E01` | 5449–5480 | nothing | to catalogue from the block before deleting |
-| `A06` | 5481–5930 | `provisionE2eKeyringFixture` stays (it serves the install cases); its own provider stub is inline | the settings fields + memory module panel (partly shared with A05) |
+| `E05` | 4667–4725 | — | none |
+| `E06` | 4726–4838 | — | none |
+| `E01` | 5449–5480 | — | — |
+| `A06` | 5481–5930 | `prepareEmbedSandbox` | the settings fields and memory module panel (A05's block is gone too) |
+| `A04` | 7440–7524, 7525–7580 | — | the migration summary text and the settings values it shows |
+
+`D05` and `D07` were ported after the list was drafted and are **not** in it; `D07`
+stays BLOCKED on #227, so its H case stays as well.
 
 ### UI-wiring each deletion would drop (the rule-3 record)
 
