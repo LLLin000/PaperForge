@@ -109,11 +109,15 @@ class CliHost:
         *,
         timeout_s: int = 240,
         python: str | None = None,
+        env_extra: dict[str, str] | None = None,
     ) -> None:
         self.vault = Path(vault)
         self.case = case
         self.timeout_s = timeout_s
         self.python = python or sys.executable
+        # Credential isolation is a property of every child, not of the cases
+        # that happen to assert it: the machine's keyring is never in play.
+        self.env_extra: dict[str, str] = dict(env_extra or {})
 
     # ── argv ────────────────────────────────────────────────────────────
     def argv(self, *args: str) -> list[str]:
@@ -122,10 +126,15 @@ class CliHost:
     def _env(self, extra: dict[str, str] | None) -> dict[str, str]:
         env = {**os.environ, "PAPERFORGE_VAULT": str(self.vault)}
         # The child runs from the repository root (the package is importable
-        # there); the vault is addressed by --vault, never by cwd.
+        # there) with the harness on the path so the isolated keyring backend
+        # resolves; the vault is addressed by --vault, never by cwd.
+        path_parts = [str(REPO_ROOT), str(Path(__file__).resolve().parent)]
         existing = env.get("PYTHONPATH", "")
-        env["PYTHONPATH"] = f"{REPO_ROOT}{os.pathsep}{existing}" if existing else str(REPO_ROOT)
+        if existing:
+            path_parts.append(existing)
+        env["PYTHONPATH"] = os.pathsep.join(path_parts)
         env.pop("PADDLEOCR_JOB_URL", None)  # the canonical config decides, not the shell
+        env.update(self.env_extra)
         if extra:
             env.update(extra)
         return env

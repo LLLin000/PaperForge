@@ -36,6 +36,23 @@ def force_rmtree(root: Path) -> None:
     shutil.rmtree(str(root), ignore_errors=True)
 
 
+def harness_keyring_env(vault: Path) -> dict[str, str]:
+    """A credential store the machine's keyring never sees.
+
+    The backend module lives beside this file and keeps its secrets in a JSON
+    file *outside* the vault - inside it, a case could not tell "the secret
+    reach the keyring" apart from "the secret landed in the vault".
+    """
+    return {
+        "PAPERFORGE_KEYRING_BACKEND": "harness_keyring.Keyring",
+        "PAPERFORGE_HARNESS_KEYRING_FILE": str(vault.parent / f"{vault.name}-keyring.json"),
+    }
+
+
+def _keyring_store(vault: Path) -> Path:
+    return vault.parent / f"{vault.name}-keyring.json"
+
+
 @pytest.fixture
 def case(request: pytest.FixtureRequest) -> Iterator[CaseEvidence]:
     """The case's evidence record; module-level CASE_ID/TITLE/HOST_SPEC_CASE drive it."""
@@ -64,11 +81,14 @@ def vault(case: CaseEvidence) -> Iterator[Path]:
     yield built
     if built.exists():
         force_rmtree(built)
+    store = _keyring_store(built)
+    if store.exists():
+        store.unlink()
 
 
 @pytest.fixture
 def cli(vault: Path, case: CaseEvidence) -> CliHost:
-    return CliHost(vault, case)
+    return CliHost(vault, case, env_extra=harness_keyring_env(vault))
 
 
 @pytest.fixture
@@ -100,7 +120,28 @@ def render_vault(case: CaseEvidence) -> Iterator[Path]:
 @pytest.fixture
 def render_cli(render_vault: Path, case: CaseEvidence) -> CliHost:
     """A CLI host bound to the render fixture vault (not the standard one)."""
-    return CliHost(render_vault, case)
+    return CliHost(render_vault, case, env_extra=harness_keyring_env(render_vault))
+
+
+@pytest.fixture
+def ocr_cli(cli: CliHost, case: CaseEvidence) -> CliHost:
+    """A CLI host whose vault holds an OCR credential in ITS OWN keyring.
+
+    The provider cases used to pass on whatever credential the machine running
+    the suite happened to have installed (auth status reported `keyring`, and the
+    vault's legacy .env token is not the authority).  Isolation is asserted here,
+    not assumed: the token is written through the product's own command into this
+    case's keyring file.
+    """
+    seeded = cli.json(
+        "auth", "set", "ocr", "--stdin", "--replace", stdin="pf-harness-ocr-token\n"
+    )
+    case.check(
+        "the OCR credential is seeded in the isolated keyring",
+        seeded.returncode == 0,
+        seeded.tail(),
+    )
+    return cli
 
 
 @pytest.fixture

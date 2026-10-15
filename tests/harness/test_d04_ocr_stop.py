@@ -22,22 +22,22 @@ TERMINALS = ("result", "error", "cancelled")
 LIVE_STATES = ("pending", "queued", "running")
 
 
-def test_stop_is_cooperative_and_the_terminal_is_honest(cli, vault, case, ocr_stub) -> None:
+def test_stop_is_cooperative_and_the_terminal_is_honest(ocr_cli, vault, case, ocr_stub) -> None:
     stub = ocr_stub(mode="slow", pages=1)
 
-    synced = cli.json("sync")
+    synced = ocr_cli.json("sync")
     case.check("sync exits 0", synced.returncode == 0, synced.tail())
 
-    wired = cli.config_set("paddleocr_job_url", stub.url)
+    wired = ocr_cli.config_set("paddleocr_job_url", stub.url)
     case.check("canonical job url is writable", wired.returncode == 0, wired.tail())
     case.check(
         "the run resolves the canonical job url",
-        cli.config_get("paddleocr_job_url") == stub.url,
-        cli.config_get("paddleocr_job_url"),
+        ocr_cli.config_get("paddleocr_job_url") == stub.url,
+        ocr_cli.config_get("paddleocr_job_url"),
     )
-    cli.set_note_flag("FIXT0001", "do_ocr", True)
+    ocr_cli.set_note_flag("FIXT0001", "do_ocr", True)
 
-    run = cli.action_stream(
+    run = ocr_cli.action_stream(
         "ocr.run",
         ("FIXT0001",),
         confirm="ocr.run",
@@ -71,7 +71,7 @@ def test_stop_is_cooperative_and_the_terminal_is_honest(cli, vault, case, ocr_st
         json.dumps(run.terminal or {})[:300],
     )
 
-    meta = cli.ocr_meta("FIXT0001")
+    meta = ocr_cli.ocr_meta("FIXT0001")
     status = str(meta.get("ocr_status", ""))
     case.check("the stopped paper is not marked done", status != "done", status or "<no meta>")
     case.check("the stopped paper keeps a live state", status in LIVE_STATES, status or "<no meta>")

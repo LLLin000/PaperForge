@@ -83,6 +83,14 @@ as covered.
 | `J02` | two-paper batch settles per paper; scope stays scoped | “runs a two-paper OCR batch with a rejected confirm, one success and one failure” |
 | `F02` | staging writes nothing canonical; the reviewed R plan promotes; a second promote is a no-op | “stages render repairs in isolation and promotes the reviewed candidates” |
 | `F03` | acceptance refuses without its evidence, then commits the reviewed plan by its exact hash | same H case (its accept half) |
+| `A03` | a config edit is canonical, resolvable, and refused edits write nothing | “A03 config edit: a path set in Settings reaches paperforge.json, doctor reads it back, and a restart keeps it” |
+| `A05` | a secret reaches the keyring, never argv, never a vault file | “A05 credential storage: a key saved in Settings reaches the keyring — never config/vault …” |
+| `B07` | a workflow flag persists on the canonical note; a refused toggle writes nothing | “persists a workflow flag toggled in the UI, across a restart” + its refusal branch |
+
+`A03` also documents a resolution rule worth knowing before writing another case:
+the directory fields are **resources-relative**, so `literature_dir = Resources/Literature`
+is accepted and resolves to `Resources/Resources/Literature`. The case pins the
+resolved path rather than the raw field for that reason.
 
 `F03` also carries the finding that made it worth porting: the P lane used to be
 unreachable in three layers — the Windows reparse guard refused every path, a
@@ -102,9 +110,8 @@ silently once, so a CLI oracle buys correctness, not just speed:
 | `E02` | memory restore from backup after corruption | “restores the memory database from its backup after corruption” |
 | `E04` | stop a vector build; substrate uncorrupted | “stops a running vector build without corrupting the substrate” |
 | `E05` | legacy ChromaDB → sqlite-vec migration | “migrates a legacy ChromaDB substrate into sqlite-vec” |
-| `A03/A04/A05` | config write/readback/restart; legacy migration idempotence; credential reaches the keyring | the three matching `A0x` cases (keep their UI-label assertions on H) |
+| `A04` | legacy config migration is idempotent (byte-identical on the second run) | the two matching `A04` cases |
 | `D05/D07` | OCR redo for a flagged paper; version restore | “re-extracts a flagged paper …”; “restores a display version through the Version History modal” |
-| `B07` | workflow flag persists across a restart, and reverts when the backend refuses | the two B07 cases |
 | `C03/E03` | build the vector substrate against a controlled provider, then serve deep search | “builds the vector substrate … and serves deep search” |
 
 Roughly 15–20 further spec cases are portable by the boundary rule. Each one

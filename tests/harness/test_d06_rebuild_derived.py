@@ -20,15 +20,15 @@ HOST_SPEC_CASE = "rebuilds derived OCR artifacts locally without provider traffi
 TERMINALS = ("result", "error", "cancelled")
 
 
-def test_rebuild_derived_is_local(cli, vault, case, ocr_stub) -> None:
+def test_rebuild_derived_is_local(ocr_cli, vault, case, ocr_stub) -> None:
     stub = ocr_stub(mode="success", pages=1)
 
-    cli.json("sync")
-    wired = cli.config_set("paddleocr_job_url", stub.url)
+    ocr_cli.json("sync")
+    wired = ocr_cli.config_set("paddleocr_job_url", stub.url)
     case.check("canonical job url is writable", wired.returncode == 0, wired.tail())
-    cli.set_note_flag("FIXT0001", "do_ocr", True)
+    ocr_cli.set_note_flag("FIXT0001", "do_ocr", True)
 
-    first = cli.action_stream("ocr.run", ("FIXT0001",), confirm="ocr.run", timeout_s=300)
+    first = ocr_cli.action_stream("ocr.run", ("FIXT0001",), confirm="ocr.run", timeout_s=300)
     terminal = first.terminal or {}
     case.check(
         "the first OCR run settles with a result terminal",
@@ -41,7 +41,7 @@ def test_rebuild_derived_is_local(cli, vault, case, ocr_stub) -> None:
         json.dumps(stub.counts),
     )
 
-    meta = cli.ocr_meta("FIXT0001")
+    meta = ocr_cli.ocr_meta("FIXT0001")
     case.check(
         "a settled paper is done",
         str(meta.get("ocr_status", "")) == "done",
@@ -52,7 +52,7 @@ def test_rebuild_derived_is_local(cli, vault, case, ocr_stub) -> None:
     case.artifact("ocr-artifacts", ocr_dir)
 
     stub.reset_counts()
-    rebuilt = cli.action_stream("ocr.rebuild_derived", ("FIXT0001",), timeout_s=180)
+    rebuilt = ocr_cli.action_stream("ocr.rebuild_derived", ("FIXT0001",), timeout_s=180)
     case.check(
         "rebuild settles with a result terminal",
         (rebuilt.terminal or {}).get("event") == "result",
@@ -66,7 +66,7 @@ def test_rebuild_derived_is_local(cli, vault, case, ocr_stub) -> None:
     )
     case.check(
         "rebuild kept the paper done",
-        str(cli.ocr_meta("FIXT0001").get("ocr_status", "")) == "done",
-        str(cli.ocr_meta("FIXT0001").get("ocr_status", "")),
+        str(ocr_cli.ocr_meta("FIXT0001").get("ocr_status", "")) == "done",
+        str(ocr_cli.ocr_meta("FIXT0001").get("ocr_status", "")),
     )
     case.artifact("ocr-artifacts-after-rebuild", ocr_dir)

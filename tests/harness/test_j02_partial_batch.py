@@ -24,18 +24,18 @@ BYSTANDER = "FIXT0003"
 TERMINALS = ("result", "error", "cancelled")
 
 
-def test_partial_batch_settles_per_paper(cli, vault, case, ocr_stub) -> None:
+def test_partial_batch_settles_per_paper(ocr_cli, vault, case, ocr_stub) -> None:
     stub = ocr_stub(mode="success", pages=1, fail_keys=(FAILING,))
 
-    cli.json("sync")
-    wired = cli.config_set("paddleocr_job_url", stub.url)
+    ocr_cli.json("sync")
+    wired = ocr_cli.config_set("paddleocr_job_url", stub.url)
     case.check("canonical job url is writable", wired.returncode == 0, wired.tail())
     for key in (HEALTHY, FAILING):
-        cli.set_note_flag(key, "do_ocr", True)
+        ocr_cli.set_note_flag(key, "do_ocr", True)
 
     bystander_dir = vault / "System" / "PaperForge" / "ocr" / BYSTANDER
 
-    run = cli.action_stream("ocr.run", (HEALTHY, FAILING), confirm="ocr.run", timeout_s=300)
+    run = ocr_cli.action_stream("ocr.run", (HEALTHY, FAILING), confirm="ocr.run", timeout_s=300)
     terminal = run.terminal or {}
     case.check(
         "the batch ends with exactly one terminal event",
@@ -48,8 +48,8 @@ def test_partial_batch_settles_per_paper(cli, vault, case, ocr_stub) -> None:
         f"rc={run.returncode}",
     )
 
-    healthy_meta = cli.ocr_meta(HEALTHY)
-    failing_meta = cli.ocr_meta(FAILING)
+    healthy_meta = ocr_cli.ocr_meta(HEALTHY)
+    failing_meta = ocr_cli.ocr_meta(FAILING)
     case.check(
         "the serviced paper is done",
         str(healthy_meta.get("ocr_status", "")) == "done",
@@ -76,7 +76,7 @@ def test_partial_batch_settles_per_paper(cli, vault, case, ocr_stub) -> None:
         str(bystander_dir),
     )
 
-    listed = cli.run("ocr", "list", "--json", expect=0)
+    listed = ocr_cli.run("ocr", "list", "--json", expect=0)
     if isinstance(listed.payload, list):
         rows = listed.payload
     elif isinstance(listed.data, list):
