@@ -477,10 +477,10 @@ export class PaperForgeClient {
           ok: outcome.ok,
           ms: Date.now() - streamStartedAt,
           epoch: this._epoch,
-          code: outcome.protocolFailure
-            ? "protocol_failure"
-            : outcome.cancelled
-              ? "cancelled"
+          code: outcome.cancelled
+            ? "cancelled"
+            : outcome.protocolFailure
+              ? "protocol_failure"
               : undefined,
           detail: `exit=${outcome.exitCode} events=${outcome.events.length}`,
         });

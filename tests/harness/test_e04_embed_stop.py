@@ -60,17 +60,23 @@ def test_stop_leaves_the_substrate_intact(retrieval, case) -> None:
     )
     stopped_cleanly = (run.terminal or {}).get("event") == "cancelled" and run.returncode == 130
     if run.stopped_by == "deadline" and not stopped_cleanly:
-        # The fallback timer had to fire, i.e. the build had not reached the provider and
-        # there was no later event to trigger on.  A stop *there* is not honoured: the
-        # child produces no further output and must be killed (observed at 90s and 420s,
-        # and once at 180s).  Same stdin token, later in the run, cancels cleanly.
+        # The fallback timer had to fire, i.e. the build never reached its provider
+        # inside the budget.  #330 measured why: the phase before the first provider
+        # call (assess_vector_substrate) pays a native import - sqlite_vec, which
+        # pulls numpy through its C extension - and that load took minutes on a cold
+        # machine while the same import in a sibling process took a second.  The
+        # phase has no safe point, and a control run with NO stop token stalls the
+        # same way, so this is the phase, not the cancellation logic: the token is
+        # honoured at the first safe point after it, and until then the child can
+        # only be killed.
         case.blocked(
-            "a PAPERFORGE_STOP written before the build reaches its provider is not "
-            "honoured: the child produced no further output and was killed after "
-            f"{run.duration_ms // 1000}s with no terminal event (the live substrate was "
-            "never touched). On Windows this stdin token is the only cooperative "
-            "ingress - SIGTERM is a hard kill - so the plugin's Stop only ends such a "
-            "build through its kill escalation."
+            "the pre-provider phase (substrate assessment) did not finish inside the "
+            f"budget: no further output for {run.duration_ms // 1000}s, killed with no "
+            "terminal event - a no-token control run stalls identically, so the stop "
+            "logic is not what holds it. The token is honoured at the first safe point "
+            "after the phase; before that the plugin's kill escalation ends the build "
+            "(and now reports it as a cancellation, #330). The live substrate was never "
+            "touched."
         )
     elif not stopped_cleanly:
         case.check(

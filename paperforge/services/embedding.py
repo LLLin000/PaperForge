@@ -267,6 +267,24 @@ def _scoped_global_progress(
 
 
 
+def _cancel_embed_build(json: bool, emit_events: bool, result_sink: dict[str, Any] | None) -> int:
+    """The #137 `cancelled` terminal for an embed build and its exit code (130).
+
+    Shared by the two settle points: a stop pending before the prepare step, and
+    the per-paper safe points.
+    """
+    from paperforge.actions.runner import cancelled_result
+
+    cancelled_res = cancelled_result("embed build", "Build cancelled")
+    if result_sink is not None:
+        result_sink["result"] = cancelled_res
+    if emit_events and not json:
+        from paperforge.core.ndjson import emit_terminal
+
+        emit_terminal("cancelled", "embed.build", cancelled_res)
+    return 130
+
+
 def run_embedding_build(
     vault: Path,
     items: list[dict],
@@ -345,6 +363,22 @@ def run_embedding_build(
     _write_lock = WriterLock(vault)
     _write_lock.__enter__()
     try:
+        # #330: a stop that is already pending settles before the prepare step.
+        # Substrate assessment, candidate recovery and the vec0 import that
+        # follows them have no safe point between them, and one measured
+        # CLI-host run sat inside that import for minutes with the token
+        # unread. `_mark` is only defined below (it needs the candidate
+        # connection), so this path writes the interrupted state through the
+        # module function.
+        if _is_stopped():
+            logger.info("Build cancelled before the prepare step")
+            try:
+                mark_vector_build_state(
+                    vault, status="interrupted", message="Build cancelled by user", pid=0
+                )
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Failed to mark interrupted state: %s", exc)
+            return _cancel_embed_build(json, emit_events, result_sink)
         # #166 corrective (P0-3): `requested_resume` is what the caller asked
         # for — captured BEFORE any effective-resume gate.  The gates below
         # downgrade `resume` (effective); a downgrade means a full rebuild is
@@ -1106,16 +1140,7 @@ def run_embedding_build(
                 logger.info("Restored paperforge.db from pre-rebuild backup after cancellation")
             if _write_lock:
                 _write_lock.__exit__(None, None, None)
-            from paperforge.actions.runner import cancelled_result as _cr
-
-            cancelled_res = _cr("embed build", "Build cancelled")
-            if result_sink is not None:
-                result_sink["result"] = cancelled_res
-            if emit_events and not json:
-                from paperforge.core.ndjson import emit_terminal
-
-                emit_terminal("cancelled", "embed.build", cancelled_res)
-            return 130
+            return _cancel_embed_build(json, emit_events, result_sink)
 
         # Check if we stopped or were cancelled — exit cleanly without
         # marking completed.  #137: cancelled is a terminal outcome with

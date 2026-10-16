@@ -663,6 +663,44 @@ class TestOcrActionStreamWire:
 class TestEmbedActionStreamWire:
     """Ticket 05: embed.build and embed.resume stream worker progress and cancellation."""
 
+    def test_embed_build_cancel_pending_before_the_prepare_settles_at_once(
+        self, tmp_path: Path, monkeypatch, caplog
+    ) -> None:
+        """#330: a stop already pending must not run the prepare step.
+
+        The prepare (substrate assessment, candidate recovery, the vec0 import
+        behind them) has no safe point, so a pending token is settled before the
+        lock is taken and before anything else in the build runs.
+        """
+        import logging
+
+        from paperforge.services import embedding
+
+        vault = tmp_path / "vault"
+        vault.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(vault)
+        monkeypatch.setenv("PAPERFORGE_CREDENTIAL_EMBEDDING__DEFAULT", "test-token")
+
+        sink: dict = {}
+        caplog.set_level(logging.INFO, logger="paperforge.services.embedding")
+        rc = embedding.run_embedding_build(
+            vault,
+            [{"zotero_key": "K1"}],
+            force=True,
+            json=True,
+            stop_check=lambda: True,
+            emit_events=False,
+            result_sink=sink,
+        )
+
+        assert rc == 130
+        result = sink["result"]
+        assert result.ok is False
+        assert "cancel" in str(result.error).lower()
+        # The early settle fired rather than a per-paper safe point: the prepare
+        # step, which has none, never ran.
+        assert "before the prepare step" in caplog.text
+
     def test_embed_build_stream_emits_worker_progress_and_item_result(
         self, tmp_path: Path, monkeypatch
     ) -> None:
