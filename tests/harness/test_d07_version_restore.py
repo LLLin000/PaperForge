@@ -6,12 +6,12 @@ writes ``render/fulltext.md`` (the display artifact) and **leaves the canonical
 ``fulltext.md`` alone**, so previewing an older version cannot silently replace the
 paper's current text.
 
-Recorded but not asserted, because it is a documentation question rather than a
-behaviour one: the restore also rewrites OCR-owned ``meta.json`` (provenance), which
-issue #227 tracks against the command's "display-only" wording.  The ADR that owns
-this command lists "the restore_provenance mutation" as its own responsibility, so
-the wording and the behaviour disagree - this case deliberately does not pick a
-side.
+Asserted, per #227: the restore's only OCR-metadata mutation is the
+``restore_provenance`` record, delegated to the OCR subsystem's writer.  The
+contract rule ``restore.display_only`` reads "restore writes ONLY
+ocr_display.fulltext (render/fulltext.md) ...; records provenance and drift
+(#129)", and that writer validates the payload and refuses to replace unreadable
+metadata — so the case pins the delta instead of reporting it as a blocker.
 """
 
 from __future__ import annotations
@@ -50,7 +50,7 @@ def test_display_restore_does_not_replace_the_canonical_text(render_cli, render_
 
     canonical_before = digest(canonical)
     display_before = digest(display)
-    meta_before = digest(meta)
+    meta_before_data = json.loads(meta.read_text(encoding="utf-8")) if meta.exists() else {}
 
     restored = cli.json("versions", "restore", "--key", PAPER, "--label", "v1")
     case.check("versions restore exits 0", restored.returncode == 0, restored.tail())
@@ -78,10 +78,17 @@ def test_display_restore_does_not_replace_the_canonical_text(render_cli, render_
         digest(display) != display_before,
         "render/fulltext.md did not change",
     )
-    # Recorded, not asserted: the meta rewrite is what #227 questions.
     case.artifact("ocr-dir", ocr)
-    if digest(meta) != meta_before:
-        case.blocked(
-            "display restore rewrites OCR-owned meta.json (provenance); issue #227 tracks "
-            "whether that matches the command's display-only declaration"
-        )
+    # #227: the restore's OCR-metadata mutation is exactly the delegated
+    # provenance record — the display copy must not smuggle other state in with
+    # it, and the record is the one the OCR writer validated.
+    meta_after = json.loads(meta.read_text(encoding="utf-8")) if meta.exists() else {}
+    added = set(meta_after) - set(meta_before_data)
+    untouched = {k: v for k, v in meta_after.items() if k not in added}
+    case.check(
+        "the restore adds only the provenance record, rewriting nothing else",
+        added <= {"restore_provenance", "zotero_key"}
+        and "restore_provenance" in added
+        and untouched == meta_before_data,
+        json.dumps({k: meta_after.get(k) for k in sorted(added)})[:200],
+    )
