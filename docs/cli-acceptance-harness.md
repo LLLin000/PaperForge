@@ -93,7 +93,7 @@ as covered.
 | `D07` | a display-version restore writes the display copy and only the delegated provenance record, never the canonical text | “restores a display version through the Version History modal” |
 | `A04` | legacy config migrates losslessly and the second run is byte-identical | the two matching `A04` cases |
 | `E05` | a legacy ChromaDB substrate migrates into sqlite-vec; no store is a no-op | “migrates a legacy ChromaDB substrate into sqlite-vec” |
-| `E06` | a missing memory database is detected with an action, and that action repairs it | “detects and repairs a missing memory schema through doctor and repair” |
+| `E06` | a missing memory database is diagnosed and recovered through the advertised action | “detects and repairs a missing memory schema through doctor and repair” (**retired title**, #329) |
 | `E01` | one action is described, preflighted and executed with visible effects | “executes an action through the client (memory.build)” |
 | `A06` | provider requests follow canonical config; a dead endpoint fails instead of falling back | “proves provider config authority through UI, restart, and a controlled embed request” |
 
@@ -159,10 +159,17 @@ view rendering and localization, ribbon/settings surfaces, plugin unload and chi
 reaping, autosync timers, the client trace, artifact opening through the shell, and
 the app/installer matrix itself).
 
-`E06` also records a finding worth an issue: the H case's title claims doctor detects
-and repairs a missing memory schema, but with `paperforge.db` deleted, `doctor --json`
-reports `FAIL` over its own 71 checks and never mentions memory, and `repair --fix`
-does not restore the database. The memory lane is **probe → advertised action**.
+`E06`'s subject was re-titled when #329 was closed: the H title it replaced claimed
+the memory database is diagnosed and repaired "through doctor and repair", and neither
+half holds — with `paperforge.db` deleted, `doctor --json` reports `FAIL` over its own
+71 checks and its payload never mentions memory (its vector-orphan check only runs
+while the database exists), and `repair --fix` is the path lane. The ruled contract is
+**probe → advertised action → probe**, which the case pins end to end: detection with
+`memory.db_missing` plus `memory.build` as the primary, the action rebuilding the
+database, then the next honest state — `ready`, or `needs_action` with
+`memory.index_stale`; an empty reason code no longer counts as success. `doctor` stays
+a partial diagnostic surface, and a unified diagnosis entry point is a separate design
+question rather than a reason to grow a second Memory state machine inside it.
 
 ## Removal (applied on this branch)
 
