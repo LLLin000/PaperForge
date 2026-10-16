@@ -90,7 +90,7 @@ as covered.
 | `E04` | a stopped vector build leaves the live substrate byte-identical and still serving | “stops a running vector build without corrupting the substrate” |
 | `E02` | a valid `paperforge.db.backup` restores atomically; corrupt copy kept, backup untouched | “restores the memory database from its backup after corruption” |
 | `D05` | a flagged paper is re-extracted through **one fresh** provider job | “re-extracts a flagged paper through the workspace redo control” |
-| `D07` | a display-version restore writes the display copy, never the canonical text — **BLOCKED on #227** | “restores a display version through the Version History modal” |
+| `D07` | a display-version restore writes the display copy and only the delegated provenance record, never the canonical text | “restores a display version through the Version History modal” |
 | `A04` | legacy config migrates losslessly and the second run is byte-identical | the two matching `A04` cases |
 | `E05` | a legacy ChromaDB substrate migrates into sqlite-vec; no store is a no-op | “migrates a legacy ChromaDB substrate into sqlite-vec” |
 | `E06` | a missing memory database is detected with an action, and that action repairs it | “detects and repairs a missing memory schema through doctor and repair” |
@@ -113,11 +113,14 @@ escalation. The case asserts the invariant either way (the live substrate is
 byte-identical and still serves) and records the early-stop hazard as its blocker when
 that is the path taken.
 
-`D07` reports **BLOCKED**, not VERIFIED: the restore also rewrites OCR-owned
-`meta.json`, and issue #227 tracks whether that matches the command's "display-only"
-declaration. Its own contract (the canonical text is never replaced by the display
-copy) is asserted and passes; the blocker records the declaration drift, so the case
-does not read as a clean verification. For the same reason its H case stays.
+`D07` asserts the whole restore delta, which closes the declaration drift #227
+tracked: the canonical text is never replaced by the display copy, and the only
+OCR-metadata mutation is the `restore_provenance` record — written through
+`worker.ocr.record_restore_provenance`, which validates the payload and refuses
+unreadable metadata. The contract rule `restore.display_only` already scoped the
+write that way ("writes ONLY `ocr_display.fulltext` …; records provenance and drift
+(#129)"); the missing piece was an assertion, not a behaviour change. Its H case
+stays for the modal wiring the harness cannot prove.
 
 `D05` also records a fixture-shaped constraint: the redo path resolves a paper by
 its ``zotero_key`` and requires exactly eight alphanumerics (``_find_notes_by_key``
@@ -170,9 +173,10 @@ that only they used.
 | B01, B02, J02, D04, D06, E03, E02, E04, E05, E06, F02+F03, E01, A06, B07a, B07b, A03, A04a, A04b, A05 | as listed below | `clickProcessSelected`, `addOcrPaper`, `readFrontmatterFlag`, `clickTechnicalDetails`, `prepareEmbedSandbox`, `doctorChecks`, the A05 keyring cluster (`E2E_KEYRING_FILE`, `keyringText`, `filesContaining`, `runAuthDelete`), and the skip-registry entries `vector-fixture-lacks-structured-blocks` / `vector-case-opt-in` |
 | — | — | the `PF_E2E_VECTOR_CASE` switch (its only readers were E03/E04, so the H job's env line is gone too) |
 
-**Not** removed: D05 and D07 (their H blocks stay — `D07` is BLOCKED rather than
-VERIFIED, and both own UI wiring the harness cannot prove), the A03 reject half
-(7381, whose UI copy the harness does not assert), and every host-bound case.
+**Not** removed: D05 and D07 (their H blocks stay — both own UI wiring the harness
+cannot prove: the batch bar's redo control and the Version History modal), the A03
+reject half (7381, whose UI copy the harness does not assert), and every host-bound
+case.
 
 What the shrink does **not** touch: the declared app/installer matrix in `ci.yml`
 (three cells, machine-guarded by `tests/test_ci_coverage_contract.py`), the release
