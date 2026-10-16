@@ -594,7 +594,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_versions_paths.add_argument("--label", default="", metavar="LABEL", help="Version label (default: current)")
     p_versions_paths.add_argument("--json", action="store_true", help="Output JSON")
     p_versions_restore = p_versions_sub.add_parser(
-        "restore", help="Display-only restore of a version's fulltext"
+        "restore", help="Restore a version's display fulltext (canonical text untouched; records provenance)",
     )
     p_versions_restore.add_argument("--key", required=True, metavar="KEY")
     p_versions_restore.add_argument("--label", required=True, metavar="LABEL")

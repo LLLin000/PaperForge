@@ -261,6 +261,54 @@ def test_restore_copies_and_persists_validated_provenance(tmp_path: Path) -> Non
     assert meta["ocr_finished_at"] == "2025-01-03T00:00:00Z"
 
 
+def test_restore_contract_writes_only_display_and_provenance(tmp_path: Path, monkeypatch) -> None:
+    """#227: the chosen contract, asserted.
+
+    ``restore.display_only`` declares that a restore writes ONLY
+    ``ocr_display.fulltext`` and records provenance.  The provenance mutation is
+    delegated to the OCR subsystem's writer, so this pins the whole delta: the
+    canonical text and every other ``meta.json`` field are untouched, and the
+    record is written through ``worker.ocr.record_restore_provenance``.
+    """
+    vault = tmp_path / "v"
+    vault.mkdir()
+    root = _seed(vault)
+    canonical = root / "fulltext.md"
+    canonical.write_text("canonical text\n", encoding="utf-8")
+    canonical_before = canonical.read_bytes()
+    meta_path = root / "meta.json"
+    meta_before = json.loads(meta_path.read_text(encoding="utf-8"))
+
+    from paperforge.worker import ocr as ocr_writer
+
+    delegated = ocr_writer.record_restore_provenance
+    calls: list[tuple[str, dict]] = []
+
+    def spy(vault_arg: Path, key: str, provenance: dict) -> bool:
+        calls.append((key, dict(provenance)))
+        return delegated(vault_arg, key, provenance)
+
+    monkeypatch.setattr(ocr_writer, "record_restore_provenance", spy)
+
+    rc, payload, raw = _run(vault, "restore", key=KEY, label="v1")
+
+    assert rc == 0, raw
+    assert payload["data"]["provenance_persisted"] is True
+    # the display artifact moved to the version's bytes
+    assert (root / "render" / "fulltext.md").read_text(encoding="utf-8") == "v1 text\n"
+    # the canonical text the rest of the pipeline reads is byte-identical
+    assert canonical.read_bytes() == canonical_before
+    # the only meta mutations are the record and the writer's identity stamp
+    meta_after = json.loads(meta_path.read_text(encoding="utf-8"))
+    added = set(meta_after) - set(meta_before)
+    assert added <= {"restore_provenance", "zotero_key"}, sorted(added)
+    assert "restore_provenance" in added
+    assert {k: v for k, v in meta_after.items() if k not in added} == meta_before
+    assert [key for key, _ in calls] == [KEY]
+    assert calls[0][1]["label"] == "v1"
+    assert meta_after["restore_provenance"] == calls[0][1]
+
+
 def test_restore_does_not_replace_corrupt_ocr_metadata(tmp_path: Path) -> None:
     vault = tmp_path / "v"
     vault.mkdir()
