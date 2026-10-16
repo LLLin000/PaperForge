@@ -1,31 +1,37 @@
-"""E06 — a missing memory database is detected with an action, and that action repairs it.
+"""E06 — a missing memory database is diagnosed and recovered through the advertised action.
 
-Ported from the H case titled "detects and repairs a missing memory schema through
-doctor and repair".  Two things differ from that title, both observed here:
+The contract this case asserts is the lane the product publishes: ``probe memory``
+reports ``memory.db_missing`` with a primary action, that action rebuilds the
+database, and the probe then reports the next honest state.
 
-* **``doctor`` does not report the memory database.**  With ``paperforge.db``
-  deleted, ``doctor --json`` returns ``verdict=FAIL`` over its own 71 checks and its
-  payload never mentions memory or the db path.  The memory lane is
-  **probe → advertised action**, not doctor → repair.
-* ``repair --fix`` is the path lane and does not restore the database either (rc 0,
-  no effect on it).
+The H case this was ported from was titled "detects and repairs a missing memory
+schema through doctor and repair". That title is retired (#329) because neither half
+holds:
 
-So the case asserts the lane that actually exists, end to end: structured detection
-with an actionable primary, the advertised action restoring a fresh database, and the
-probe then reporting the *next* honest deficit instead of a false "ready".
+* ``doctor`` is a partial diagnostic surface, not the module-state aggregator. With
+  ``paperforge.db`` deleted it returns ``verdict=FAIL`` over its own 71 checks and its
+  payload never mentions memory; its vector-orphan check only runs while the database
+  exists, so a deleted database is outside what it inspects. That is the interface's
+  scope, not an omission to patch here — extending it would grow a second Memory state
+  machine inside ``doctor``.
+* ``repair --fix`` is the path lane and does not restore the database (rc 0, no effect
+  on it).
+
+A unified diagnosis surface is a separate design question; this case pins the
+probe → advertised action → probe lane end to end.
 """
 
 from __future__ import annotations
-
-import json
 
 import pytest
 
 pytestmark = pytest.mark.harness
 
 CASE_ID = "E06"
-TITLE = "A missing memory database is detected with an action, and that action repairs it"
-HOST_SPEC_CASE = "detects and repairs a missing memory schema through doctor and repair"
+TITLE = "A missing memory database is diagnosed and recovered through the advertised action"
+HOST_SPEC_CASE = (
+    "retired H title: detects and repairs a missing memory schema through doctor and repair"
+)
 
 
 def _probe_memory(cli) -> dict:
@@ -60,15 +66,6 @@ def test_missing_memory_schema_is_detected_and_repaired(cli, vault, case) -> Non
         str(primary.get("action_id")),
     )
 
-    doctored = cli.json("doctor", expect=None)
-    payload = doctored.payload if isinstance(doctored.payload, dict) else {}
-    doctor_data = payload.get("data") if isinstance(payload.get("data"), dict) else {}
-    case.check(
-        "doctor runs and reports its own verdict",
-        str(doctor_data.get("verdict") or "") != "",
-        f"rc={doctored.returncode} {json.dumps(doctor_data)[:160]}",
-    )
-
     action_id = str(primary.get("action_id") or "memory.build")
     # Dispatch like a client does: the descriptor decides result vs stream.
     descriptor = cli.json("action", "describe", action_id)
@@ -93,10 +90,12 @@ def test_missing_memory_schema_is_detected_and_repaired(cli, vault, case) -> Non
     )
 
     after = _probe_memory(cli)
+    after_state = str(after.get("capability_state") or "")
+    after_code = str((after.get("reason") or {}).get("code") or "")
     case.check(
-        "the probe reports the next honest deficit, not a false ready",
-        str((after.get("reason") or {}).get("code") or "") in ("memory.index_stale", "memory.ready", ""),
-        f"{after.get('capability_state')} {(after.get('reason') or {}).get('code')}",
+        "the probe reports the next honest state, not a false ready",
+        after_state == "ready" or (after_state == "needs_action" and after_code == "memory.index_stale"),
+        f"{after_state} {after_code}",
     )
 
     case.artifact("indexes", vault / "System" / "PaperForge" / "indexes")
