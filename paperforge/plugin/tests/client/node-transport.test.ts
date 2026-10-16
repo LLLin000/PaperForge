@@ -7,7 +7,11 @@
 
 import { describe, it, expect, vi } from "vitest";
 import { EventEmitter } from "events";
-import { NodeProcessTransport } from "../../src/client/node-transport";
+import {
+  NodeProcessTransport,
+  runLongTask,
+  type LongTaskOptions,
+} from "../../src/client/node-transport";
 
 class MockStream extends EventEmitter {
   public setEncoding = vi.fn();
@@ -51,6 +55,66 @@ describe("NodeProcessTransport", () => {
       await expect(transport.resolvePython()).rejects.toThrow(
         /PaperForge Python runtime not ready/
       );
+    });
+  });
+
+  describe("runLongTask stop escalation (#330)", () => {
+    it("reports a user stop that needed the kill as cancelled, keeping the protocol note", async () => {
+      const mockChild = new MockChildProcess();
+      const mockSpawn = vi.fn().mockReturnValue(mockChild);
+
+      const handle = runLongTask(
+        "C:/py/python.exe",
+        [],
+        vaultPath,
+        ["action", "run", "embed.build", "--json"],
+        // MockChildProcess is structurally a ChildProcess for the fields
+        // runLongTask touches; the cast names that, instead of erasing types.
+        {
+          onEvent: () => undefined,
+          graceMs: 1,
+          spawnFn: mockSpawn as unknown as NonNullable<LongTaskOptions["spawnFn"]>,
+        }
+      );
+      await Promise.resolve();
+
+      handle.stop();
+      expect(mockChild.stdin.write).toHaveBeenCalledWith("PAPERFORGE_STOP\n");
+
+      // The child never reached a safe point: killed, no terminal event, rc 1.
+      mockChild.emit("close", 1);
+      const outcome = await handle.promise;
+
+      expect(outcome.cancelled).toBe(true);
+      expect(outcome.protocolFailure).toBe("EOF without terminal event");
+      expect(outcome.exitCode).toBe(1);
+    });
+
+    it("keeps a build that finished after a late stop successful, not cancelled", async () => {
+      const mockChild = new MockChildProcess();
+      const mockSpawn = vi.fn().mockReturnValue(mockChild);
+
+      const handle = runLongTask(
+        "C:/py/python.exe",
+        [],
+        vaultPath,
+        ["action", "run", "embed.build", "--json"],
+        {
+          onEvent: () => undefined,
+          spawnFn: mockSpawn as unknown as NonNullable<LongTaskOptions["spawnFn"]>,
+        }
+      );
+      await Promise.resolve();
+
+      // The click lands as the build is finishing: the token is ignored and the
+      // real terminal event still arrives.
+      handle.stop();
+      mockChild.stdout.emit("data", '{"schema_version":1,"event":"result","data":{}}\n');
+      mockChild.emit("close", 0);
+      const outcome = await handle.promise;
+
+      expect(outcome.cancelled).toBe(false);
+      expect(outcome.ok).toBe(true);
     });
   });
 

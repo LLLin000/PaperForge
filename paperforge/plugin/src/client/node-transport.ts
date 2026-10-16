@@ -117,6 +117,8 @@ export interface LongTaskOptions {
   graceMs?: number;
   /** Close stdin for commands that do not support cooperative stop. */
   closeStdin?: boolean;
+  /** Injection seam: the transport passes its own spawnFn through. */
+  spawnFn?: typeof spawn;
 }
 
 export interface LongTaskHandle {
@@ -167,7 +169,8 @@ export function runLongTask(
   opts: LongTaskOptions
 ): LongTaskHandle {
   const env = opts.env ?? paperforgeEnrichedEnv();
-  const child = spawn(
+  const spawnImpl = opts.spawnFn ?? spawn;
+  const child = spawnImpl(
     pythonExe,
     [...extraArgs, "-m", "paperforge", "--vault", vaultPath, ...argv],
     {
@@ -183,7 +186,11 @@ export function runLongTask(
   const parser = new NdjsonStreamParser();
   const events: NdjsonEvent[] = [];
   let hardKilled = false;
-  let graceTimer: ReturnType<typeof setTimeout> | null = null;
+  // A stop the user asked for: the token may be ignored because the child is
+  // inside a phase with no safe point (a cold native import in the embed
+  // prepare, #330), so the kill escalation ends it without a terminal event.
+  let stopRequested = false;
+  let graceTimer: NodeJS.Timeout | undefined;
   // Always drain stderr: it is diagnostics for the caller, and an unread
   // stderr pipe fills (win32: ~4KB) and blocks the child mid-run.
   const STDERR_TAIL = 8000;
@@ -205,19 +212,23 @@ export function runLongTask(
 
   const outcome = new Promise<LongTaskOutcome>((resolve) => {
     child.on("close", (code: number | null) => {
-      if (graceTimer) clearTimeout(graceTimer);
+      clearTimeout(graceTimer);
       parser.finishEOF();
       resolve({
         ok: !parser.protocolFailure && code === 0,
         exitCode: code,
-        cancelled: code === 130,
+        // #330: a stop we wrote the token for stays a cancellation when the
+        // child had to be killed before reaching a safe point (rc != 130). A
+        // stop that lost the race must not relabel a finished build: it only
+        // counts while no terminal event arrived.
+        cancelled: code === 130 || (stopRequested && !parser.terminalSeen),
         events,
         protocolFailure: parser.protocolFailure,
         stderr: stderrTail,
       });
     });
     child.on("error", (err: Error) => {
-      if (graceTimer) clearTimeout(graceTimer);
+      clearTimeout(graceTimer);
       resolve({
         ok: false,
         exitCode: -1,
@@ -231,6 +242,7 @@ export function runLongTask(
 
   return {
     stop: () => {
+      stopRequested = true;
       try {
         child.stdin?.write("PAPERFORGE_STOP\n");
       } catch {
@@ -586,6 +598,7 @@ export class NodeProcessTransport implements Transport {
         graceMs: options?.graceMs,
         env: options?.env,
         closeStdin: argv[0] === "setup",
+        spawnFn: this._spawnFn,
         onEvent: (ev) => {
           queue.push(ev);
           options?.onEvent?.(ev);

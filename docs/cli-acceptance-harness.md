@@ -104,14 +104,16 @@ registered skip is what the H version has.
 
 `E04`'s stop leg is verified **with a caveat the evidence pins down**: the stop is
 honoured at the build's next safe point, so a forced rebuild of one paper took 46 s
-before it answered `cancelled` (rc 130) — a user clicking Stop waits that long. And a
-stop written **before** the build reaches its provider is *not* honoured: the child
-produces no further output and is killed by the harness deadline (observed at 180 s,
-420 s and 90 s). On Windows this stdin token is the only cooperative ingress — SIGTERM
-is a hard kill — so the plugin's Stop only ends such a build through its kill
-escalation. The case asserts the invariant either way (the live substrate is
-byte-identical and still serves) and records the early-stop hazard as its blocker when
-that is the path taken.
+before it answered `cancelled` (rc 130) — a user clicking Stop waits that long. The
+earlier caveat ("a stop before the provider is not honoured") was **re-measured under
+#330** and the cause is one step earlier: the phase before the first provider call
+(`assess_vector_substrate`) pays a native import — `sqlite_vec`, which pulls numpy
+through its C extension — and a cold DLL load there took minutes. That phase has no
+safe point, and a **control run with no stop token stalls identically**, so the
+cancellation logic is not what holds the child: the token is honoured at the first
+safe point after the phase, and before that only a kill ends the build. The plugin
+now reports that kill as a cancellation instead of a protocol failure (#330), and the
+case records the phase stall as its blocker when that is the path taken.
 
 `D07` asserts the whole restore delta, which closes the declaration drift #227
 tracked: the canonical text is never replaced by the display copy, and the only
