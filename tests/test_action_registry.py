@@ -745,15 +745,18 @@ class TestEmbedActionStreamWire:
         assert [event["event"] for event in events] == [
             "start",
             "phase",
+            "phase",
             "progress",
             "paper_settled",
             "item_result",
             "result",
         ]
+        # #334: the second phase names the prepare step, so a stall there is readable.
         assert events[1]["phase"] == "embedding"
-        assert events[2]["item_id"] == "K1"
-        assert events[3]["outcome"] == "succeeded"
-        assert events[4]["status"] == "succeeded"
+        assert events[2]["phase"] == "preparing"
+        assert events[3]["item_id"] == "K1"
+        assert events[4]["outcome"] == "succeeded"
+        assert events[5]["status"] == "succeeded"
         assert events[-1]["result"]["data"]["papers_embedded"] == 1
 
     def test_embed_resume_stream_emits_worker_progress(
@@ -814,13 +817,15 @@ class TestEmbedActionStreamWire:
         assert [event["event"] for event in events] == [
             "start",
             "phase",
+            "phase",
             "progress",
             "paper_settled",
             "item_result",
             "result",
         ]
-        assert events[2]["item_id"] == "K1"
-        assert events[3]["key"] == "K1"
+        assert events[2]["phase"] == "preparing"
+        assert events[3]["item_id"] == "K1"
+        assert events[4]["key"] == "K1"
         assert events[-1]["result"]["data"]["papers_embedded"] == 1
 
     def test_embed_stream_stop_reaches_worker_and_returns_cancelled(
@@ -887,6 +892,7 @@ class TestEmbedActionStreamWire:
         assert observed["stop_check"] is not None
         assert [event["event"] for event in events] == [
             "start",
+            "phase",
             "phase",
             "progress",
             "paper_settled",

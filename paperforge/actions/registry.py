@@ -539,6 +539,12 @@ def _embed_build_handler(ctx: ActionContext, request: ActionRequest) -> PFResult
     hooks = ctx.execution_hooks
     if hooks is not None and hooks.phase is not None:
         hooks.phase("embedding")
+        # #334: the build's first phase is the prepare step (substrate assessment,
+        # candidate recovery, the vec0 extension import). Naming it here means a stall
+        # inside that import reads as "still preparing" instead of silence after
+        # "embedding" — the stall itself stays uninterruptible, but it is no longer
+        # indistinguishable from a dead child.
+        hooks.phase("preparing")
 
     def _on_progress(current: int, total: int, key: str) -> None:
         if hooks is not None and hooks.progress is not None:
@@ -671,6 +677,12 @@ def _embed_resume_handler(ctx: ActionContext, request: ActionRequest) -> PFResul
     hooks = ctx.execution_hooks
     if hooks is not None and hooks.phase is not None:
         hooks.phase("embedding")
+        # #334: the build's first phase is the prepare step (substrate assessment,
+        # candidate recovery, the vec0 extension import). Naming it here means a stall
+        # inside that import reads as "still preparing" instead of silence after
+        # "embedding" — the stall itself stays uninterruptible, but it is no longer
+        # indistinguishable from a dead child.
+        hooks.phase("preparing")
 
     def _on_progress(current: int, total: int, key: str) -> None:
         if hooks is not None and hooks.progress is not None:
