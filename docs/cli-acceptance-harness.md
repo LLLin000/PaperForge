@@ -212,8 +212,10 @@ Batch 2 (ported after the first list was drafted):
 | `A06` | 5481–5930 | `prepareEmbedSandbox` | the settings fields and memory module panel (A05's block is gone too) |
 | `A04` | 7440–7524, 7525–7580 | — | the migration summary text and the settings values it shows |
 
-`D05` and `D07` were ported after the list was drafted and are **not** in it; `D07`
-stays BLOCKED on #227, so its H case stays as well.
+`D05` and `D07` were ported after the list was drafted and are **not** in it; both keep
+their H cases for the UI wiring the harness cannot prove (the batch bar's redo control
+and the Version History modal). `D07` itself no longer reports BLOCKED — its harness
+case asserts the whole restore delta since #227 was resolved.
 
 ### UI-wiring each deletion would drop (the rule-3 record)
 
