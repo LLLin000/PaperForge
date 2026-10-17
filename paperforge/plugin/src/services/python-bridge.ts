@@ -182,6 +182,18 @@ const SETUP_FAILURE_PATTERNS: Array<[RegExp, ErrorClassification]> = [
     },
   ],
   [
+    // #269's second signature: an install child killed from outside (a proxy or
+    // supervisor terminating pip) is NOT a network timeout — it carries only
+    // the termination detail, and it needs its own retryable class.
+    /killed|signal[= ]|sigterm|sigkill/,
+    {
+      type: "install_interrupted",
+      message: "The install process was terminated",
+      recoverable: true,
+      action: "retry-install",
+    },
+  ],
+  [
     /module not found|modulenotfounderror|no module named|cannot import|fresh-child verify failed|verify failed/,
     {
       type: "import_failed",

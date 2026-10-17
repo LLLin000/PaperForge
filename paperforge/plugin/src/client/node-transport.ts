@@ -214,6 +214,17 @@ export function runLongTask(
     child.on("close", (code: number | null) => {
       clearTimeout(graceTimer);
       parser.finishEOF();
+      // #269: the EOF signature must say HOW the child died, so a killed
+      // stream is distinguishable from a silent one.
+      const death =
+        parser.protocolFailure === "EOF without terminal event"
+          ? [
+              typeof code === "number" ? `exit ${code}` : "",
+              child.signalCode ? `signal ${child.signalCode}` : "",
+            ]
+              .filter(Boolean)
+              .join(", ")
+          : "";
       resolve({
         ok: !parser.protocolFailure && code === 0,
         exitCode: code,
@@ -223,7 +234,11 @@ export function runLongTask(
         // counts while no terminal event arrived.
         cancelled: code === 130 || (stopRequested && !parser.terminalSeen),
         events,
-        protocolFailure: parser.protocolFailure,
+        protocolFailure: parser.protocolFailure
+          ? death
+            ? `${parser.protocolFailure} (${death})`
+            : parser.protocolFailure
+          : undefined,
         stderr: stderrTail,
       });
     });
