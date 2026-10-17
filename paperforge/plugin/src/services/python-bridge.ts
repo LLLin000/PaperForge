@@ -173,24 +173,27 @@ const SETUP_FAILURE_PATTERNS: Array<[RegExp, ErrorClassification]> = [
     },
   ],
   [
+    // #269: an install child terminated from outside (a proxy, supervisor, or a
+    // user kill) reports no exit status at all: Windows/TerminateProcess leaves
+    // 0xFFFFFFFF (4294967295 / -1) and a POSIX signal death carries the signal
+    // name. This outcome signature outranks any incidental network wording the
+    // child may have written to stderr before it died, so the rule sits before
+    // the network rule and stays a retryable class of its own.
+    /killed|signal[= ]|sigterm|sigkill|exit=(-1|4294967295)\b/,
+    {
+      type: "install_interrupted",
+      message: "The install process was terminated",
+      recoverable: true,
+      action: "retry-install",
+    },
+  ],
+  [
     /timed out|timeout|connection|tls|ssl|certificate|proxy|getaddrinfo|econn|enotfound|network is unreachable|10060|10054/,
     {
       type: "network",
       message: "The download could not reach the package index",
       recoverable: true,
       action: "retry-network",
-    },
-  ],
-  [
-    // #269's second signature: an install child killed from outside (a proxy or
-    // supervisor terminating pip) is NOT a network timeout — it carries only
-    // the termination detail, and it needs its own retryable class.
-    /killed|signal[= ]|sigterm|sigkill/,
-    {
-      type: "install_interrupted",
-      message: "The install process was terminated",
-      recoverable: true,
-      action: "retry-install",
     },
   ],
   [
