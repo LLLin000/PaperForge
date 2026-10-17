@@ -4529,7 +4529,7 @@ describe("PaperForge real-task e2e", function () {
         "-Command",
         "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*probe all --json*' -and $_.CommandLine -like '*" +
           base +
-          "*' } | Select-Object ProcessId,ParentProcessId,CreationDate,CommandLine | ConvertTo-Json -Compress",
+          "*' -and $_.CommandLine -notlike '*Get-CimInstance*' } | Select-Object ProcessId,ParentProcessId,CreationDate,CommandLine | ConvertTo-Json -Compress",
       ],
       { encoding: "utf8" }
     ).trim();
