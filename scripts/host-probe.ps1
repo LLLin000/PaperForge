@@ -16,7 +16,8 @@ Usage:  powershell -NoProfile -ExecutionPolicy Bypass -File scripts/host-probe.p
         powershell ... -File scripts/host-probe.ps1 -OutFile D:\evidence\host-profile.json
 #>
 param(
-  [string]$OutFile = "host-profile.json"
+  [string]$OutFile = "host-profile.json",
+  [string]$Vault = ""
 )
 
 $ErrorActionPreference = "Continue"
@@ -52,6 +53,15 @@ try {
   if ($documents -match 'OneDrive') { Add-Check 'onedrive_redirected' 'warn' "Documents -> $documents" }
   else { Add-Check 'onedrive_redirected' 'pass' $documents }
 } catch { Add-Check 'onedrive_redirected' 'unknown' "$($_.Exception.Message)" }
+
+# ── Vault path metadata (#265 P1) ──────────────────────────────────
+# Measured only when -Vault is supplied, and the subject is the vault path
+# itself: the user-profile semantics of username_ascii/path_has_space above are
+# untouched.  null means "not measured", never "no".
+$vaultPath = if ($Vault) { [string]$Vault } else { $null }
+$vaultPathLen = if ($vaultPath) { $vaultPath.Length } else { $null }
+$vaultPathNonAscii = if ($vaultPath) { -not ($vaultPath -match '^[\x20-\x7E]*$') } else { $null }
+$vaultPathHasSpace = if ($vaultPath) { [bool]($vaultPath -match '\s') } else { $null }
 
 # ── Python discovery (mirrors managed-runtime.ts candidate chain) ───────────
 $pythonSource = 'none'
@@ -193,7 +203,12 @@ $result = [pscustomobject][ordered]@{
     os_caption       = $osCaption
     arch             = $arch
     username_ascii   = $usernameAscii
+    user_profile_non_ascii = (-not $usernameAscii)
     path_has_space   = $pathHasSpace
+    vault_path_measured   = $vaultPath
+    vault_path_len_chars  = $vaultPathLen
+    vault_path_non_ascii  = $vaultPathNonAscii
+    vault_path_has_space  = $vaultPathHasSpace
     python_source    = $pythonSource
     network_kind     = $networkKind
     defender_only    = $defenderOnly
