@@ -106,3 +106,51 @@ def test_a_hollowed_publisher_yields_no_fact(tmp_path: Path) -> None:
     )
     facts = _facts(root)
     assert ("ocr_display.fulltext", "publication") not in facts
+
+
+def _foreign(root: Path, rel: str, body: str) -> None:
+    target = root / rel
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(body, encoding="utf-8")
+
+
+def test_a_foreign_writer_emits_a_canonical_write_fact(tmp_path: Path) -> None:
+    """#339: authorized publishers intact, a third writer appears."""
+    root = _sandbox(tmp_path, {})
+    _foreign(
+        root,
+        "paperforge/worker/foreign_writer.py",
+        "def sneaky_publish(render_root, text):\n"
+        "    (render_root / 'fulltext.md').write_text(text, encoding='utf-8')\n",
+    )
+    raw = collect_authority_facts(root, _contract())[0]
+    writers = [
+        str(fact.get("writer_id"))
+        for fact in raw
+        if fact.get("unit_id") == "ocr_display.fulltext" and fact.get("writer_id")
+    ]
+    assert any("foreign_writer.py:sneaky_publish" in writer for writer in writers), writers
+
+
+def test_a_backup_writer_is_not_a_publisher(tmp_path: Path) -> None:
+    root = _sandbox(tmp_path, {})
+    _foreign(
+        root,
+        "paperforge/worker/backup_writer.py",
+        "def backup_render_before_rebuild(render_root, dest):\n"
+        "    dest.write_text((render_root / 'fulltext.md').read_text(encoding='utf-8'))\n",
+    )
+    raw = collect_authority_facts(root, _contract())[0]
+    assert not [f for f in raw if "backup_writer.py" in str(f.get("writer_id"))]
+
+
+def test_test_tree_writers_are_ignored(tmp_path: Path) -> None:
+    root = _sandbox(tmp_path, {})
+    _foreign(
+        root,
+        "paperforge/plugin/test/fixtures/builder.py",
+        "def build(render_root, text):\n"
+        "    (render_root / 'fulltext.md').write_text(text, encoding='utf-8')\n",
+    )
+    raw = collect_authority_facts(root, _contract())[0]
+    assert not [f for f in raw if "builder.py" in str(f.get("writer_id"))]
