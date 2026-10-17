@@ -98,5 +98,20 @@ describe("install recovery (#269)", () => {
     expect(timeout.type).toBe("network");
     expect(killed.type).toBe("install_interrupted");
     expect(eof.type).toBe("install_interrupted");
+
+  // #269 real-kill evidence: the child was terminated from outside, so the
+  // message carries no signal name and only the Windows termination exit code.
+  // A stray "connection" line from the dying pip must not turn this into a
+  // network failure.
+  const externalKill = classifySetupFailure(
+    "pip install failed: Command failed: C:\\tmp\\venv\\Scripts\\python.exe -m pip install paperforge[vector]==2.0.0rc5\n" +
+      " — [exit=4294967295]\nERROR: ConnectionResetError: peer closed"
+  );
+  expect(externalKill.type).toBe("install_interrupted");
+  expect(externalKill.recoverable).toBe(true);
+  const unixKill = classifySetupFailure("pip install failed: — [exit=-1]");
+  expect(unixKill.type).toBe("install_interrupted");
+  const ordinary = classifySetupFailure("pip install failed: — [exit=1]\nERROR: Could not find a version");
+  expect(ordinary.type).not.toBe("install_interrupted");
   });
 });
