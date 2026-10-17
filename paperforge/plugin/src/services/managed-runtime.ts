@@ -68,6 +68,7 @@ export interface FsOps {
     }
   ): void;
   /** Optional: the real fs provides them; doubles may omit them. */
+  writeFileSync?(p: string, data: string, encoding?: string): void;
   statSync?(p: string): { mtimeMs: number };
   readdirSync?(p: string): string[];
 }
@@ -101,6 +102,8 @@ const MIN_PYTHON = "3.11";
 const POINTER_SCHEMA_VERSION = 1;
 const POINTER_FILENAME = "pointer.json";
 const VENV_DIR_NAME = "venv";
+/** Written into a candidate whose removal failed; the next install retires it. */
+const ABANDONED_MARKER = ".abandoned";
 /** An install lock older than this is debris from a killed process. */
 const STALE_INSTALL_LOCK_MS = 15 * 60 * 1000;
 
@@ -439,6 +442,40 @@ export class RuntimeBootstrap {
     return removed;
   }
 
+  /**
+   * Remove candidates a failed install marked abandoned (#269 acceptance).
+   * Runs at the start of an install, so a leftover from a killed pip does not
+   * wait for some future successful publish to be cleaned up.  Best-effort:
+   * a directory still locked keeps its marker and is retried next time.
+   */
+  retireAbandonedCandidates(): string[] {
+    if (!this._fs.readdirSync) return [];
+    const removed: string[] = [];
+    let entries: string[] = [];
+    try {
+      entries = this._fs.readdirSync(this.rootDir);
+    } catch {
+      return removed;
+    }
+    for (const name of entries) {
+      if (!/^venv(-|$)/.test(name)) continue;
+      const full = path.join(this.rootDir, name);
+      if (!this._fs.existsSync(path.join(full, ABANDONED_MARKER))) continue;
+      try {
+        this._fs.rmSync(full, {
+          recursive: true,
+          force: true,
+          maxRetries: 3,
+          retryDelay: 150,
+        });
+        removed.push(name);
+      } catch {
+        // Still locked — a later run tries again.
+      }
+    }
+    return removed;
+  }
+
   /** ONE canonical venv interpreter path (Windows vs POSIX). */
   private pythonExeFor(venvDir: string): string {
     return this.osPlatform === "win32"
@@ -622,6 +659,9 @@ export class RuntimeBootstrap {
     const releaseLock = this._acquireInstallLock();
     activeInstalls.add(installKey);
     try {
+      // #269: candidates a failed install marked abandoned are retired here,
+      // inside the install lock and before the new candidate exists.
+      this.retireAbandonedCandidates();
       // A brand-new directory is always clean: there is no stale dist-info
       // for pip to trust, so a damaged run can never survive.
       this._fs.mkdirSync(candidateDir, { recursive: true });
@@ -663,9 +703,25 @@ export class RuntimeBootstrap {
       this._terminateActiveChild();
       this._terminateVenvProcesses(candidateDir);
       try {
-        this._fs.rmSync(candidateDir, { recursive: true, force: true });
+        // A dying pip can hold handles for a moment: Node's rmSync retries
+        // inside the call before giving up.
+        this._fs.rmSync(candidateDir, {
+          recursive: true,
+          force: true,
+          maxRetries: 5,
+          retryDelay: 200,
+        });
       } catch {
-        // Best-effort — never mask the real install failure.
+        // Still locked: mark the candidate so the NEXT install retires it
+        // instead of waiting for a future success (#269 acceptance).
+        try {
+          this._fs.writeFileSync?.(
+            path.join(candidateDir, ABANDONED_MARKER),
+            "install failed; retired by the next install\n"
+          );
+        } catch {
+          // Nothing else to do: retireUnusedRuntimes still retries on success.
+        }
       }
       throw err;
     } finally {
@@ -855,9 +911,19 @@ export class RuntimeBootstrap {
             .filter(Boolean)
             .join(" ");
           const suffix = detail || (termination ? `[${termination}]` : "");
+          // Node's timeout error says "Command failed", not "timed out", so the
+          // #257 classifier would fall through to unknown.  Name it here; an
+          // externally killed child keeps only the termination detail, which
+          // the classifier maps to its own (distinct) class (#269).
+          const timedOut = Boolean(execErr.killed) && !opts.signal?.aborted;
+          const prefix = timedOut
+            ? `${label} timed out after ${Math.round(
+                (opts.timeout ?? 0) / 1000
+              )}s`
+            : `${label} failed`;
           reject(
             new Error(
-              `${label} failed: ${err.message}${suffix ? ` — ${suffix}` : ""}`
+              `${prefix}: ${err.message}${suffix ? ` — ${suffix}` : ""}`
             )
           );
         } else {
