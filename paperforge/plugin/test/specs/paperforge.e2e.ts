@@ -4483,6 +4483,12 @@ describe("PaperForge real-task e2e", function () {
           scenario,
           recorded_at: new Date().toISOString(),
         });
+      } finally {
+        await stub.close();
+      }
+    });
+  }
+
   it("reaps the probe generation across a window reload and records its cost (#266)", async function () {
     await openPanel();
     await waitForIdle("J09", "startup-sync-settle");
@@ -4543,9 +4549,4 @@ describe("PaperForge real-task e2e", function () {
     });
     expect(survivors).toEqual([]);
   });
-      } finally {
-        await stub.close();
-      }
-    });
-  }
 });
