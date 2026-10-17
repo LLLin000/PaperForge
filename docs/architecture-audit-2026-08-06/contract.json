@@ -47,7 +47,8 @@
       "asset_group": "ocr_derived",
       "publication_authority": "version_history.authority",
       "authorized_writers": [
-        "version_history.restore"
+        "version_history.restore",
+        "ocr.renderer"
       ]
     },
     {
