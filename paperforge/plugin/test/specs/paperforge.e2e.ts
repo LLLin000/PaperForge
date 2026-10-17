@@ -4488,4 +4488,65 @@ describe("PaperForge real-task e2e", function () {
       }
     });
   }
+
+  it("reaps the probe generation across a window reload and records its cost (#266)", async function () {
+    await openPanel();
+    await waitForIdle("J09", "startup-sync-settle");
+    const base = await sandboxBasePath();
+
+    // In-app cost of the full probe (the standalone measurement is separate).
+    const hostProbe = await browser.executeObsidian(async ({ app }) => {
+      const plugin = app.plugins.plugins["paperforge"];
+      if (!plugin || typeof plugin.getClient !== "function") {
+        throw new Error("paperforge plugin not loaded");
+      }
+      const client = plugin.getClient();
+      const started = Date.now();
+      const envelope = await client.probe("all");
+      return { ms: Date.now() - started, ok: Boolean(envelope) };
+    });
+    expect(hostProbe.ok).toBe(true);
+
+    // In-flight probe, then a reload while its child is alive. The generation
+    // that owns the child ends at the reload; nothing may outlive it (#266).
+    await browser.executeObsidian(async ({ app }) => {
+      const client = app.plugins.plugins["paperforge"].getClient();
+      void client.probe("all").catch(() => undefined);
+      return true;
+    });
+    await browser.pause(1500);
+    await browser.reloadObsidian({ vault: "./test/vaults/e2e" });
+    await openPanel();
+    await waitForIdle("J09", "reload-settle");
+    await browser.pause(5000);
+
+    // Attribution by command line, not by parent pid: an orphan may be
+    // reparented, but it still references this sandbox.
+    const listing = execFileSync(
+      "powershell",
+      [
+        "-NoProfile",
+        "-Command",
+        "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*probe all --json*' -and $_.CommandLine -like '*" +
+          base +
+          "*' -and $_.CommandLine -notlike '*Get-CimInstance*' } | Select-Object ProcessId,ParentProcessId,CreationDate,CommandLine | ConvertTo-Json -Compress",
+      ],
+      { encoding: "utf8" }
+    ).trim();
+    const survivors = listing ? (JSON.parse(listing) as unknown[]) : [];
+    appendEvidence("j266-probe-reaping.json", {
+      case_id: "J09",
+      variant: "probe all -> window reload -> the finished generation left no child",
+      source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: PLUGIN_DIR,
+      })
+        .toString()
+        .trim(),
+      host_probe_ms: hostProbe.ms,
+      survivors,
+      sandbox_base: base,
+      observed_at: new Date().toISOString(),
+    });
+    expect(survivors).toEqual([]);
+  });
 });
