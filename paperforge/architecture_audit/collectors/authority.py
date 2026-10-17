@@ -7,12 +7,17 @@ copying contract declarations into the survey without source evidence.
 """
 from __future__ import annotations
 
+import ast
 import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from paperforge.architecture_audit.layers import RoleAuthorityFact, UnitAuthorityFact
+from paperforge.architecture_audit.layers import (
+    CanonicalWriteFact,
+    RoleAuthorityFact,
+    UnitAuthorityFact,
+)
 
 from .common import make_evidence
 
@@ -34,6 +39,21 @@ class RoleBinding:
 
 
 @dataclass(frozen=True)
+class WriterScan:
+    """Observe who writes a unit's artifact, so a foreign writer is visible.
+
+    Function bodies are matched on literals rather than a full data-flow
+    analysis: a body that names the artifact *and* its directory *and* uses a
+    write primitive is a writer.  Everything outside ``authorized`` yields a
+    canonical-write fact, which the reconciler turns into `violated` (#339).
+    """
+
+    artifact_markers: tuple[str, ...]
+    context_markers: tuple[str, ...]
+    authorized: tuple[tuple[str, str], ...]
+
+
+@dataclass(frozen=True)
 class UnitBinding:
     source: str
     symbol: str
@@ -43,6 +63,8 @@ class UnitBinding:
     #: Calls the bound symbol's body must make for the publication to be
     #: evidenced (same fail-closed rule as RoleBinding).
     required_calls: tuple[str, ...] = ()
+    #: Present only on units whose writers are scanned (#339: the display unit).
+    writer_scan: WriterScan | None = None
 
 
 ROLE_BINDINGS: tuple[RoleBinding, ...] = (
@@ -80,6 +102,14 @@ UNIT_BINDINGS: tuple[UnitBinding, ...] = (
         ("version_history.authority",),
         ("version_history.restore",),
         ("shutil.copy2(", "record_restore_provenance("),
+        WriterScan(
+            artifact_markers=("fulltext.md",),
+            context_markers=("render",),
+            authorized=(
+                ("paperforge/commands/versions.py", "_run_restore"),
+                ("paperforge/worker/ocr_render.py", "write_render_outputs"),
+            ),
+        ),
     ),
     UnitBinding(
         "paperforge/memory/builder.py",
@@ -182,6 +212,70 @@ def _evidence(
     )
 
 
+#: Calls that publish an artifact.  A function body that names the artifact and
+#: its directory and uses one of these is treated as a writer (#339).
+_WRITE_PRIMITIVES = (
+    "write_text(",
+    "writeFileSync(",
+    "copy2(",
+    "atomic_replace_text(",
+    "write_string(",
+)
+
+
+def _foreign_writer_facts(repo: Path, binding: UnitBinding) -> list[dict[str, object]]:
+    """Canonical-write facts for writers the unit does not authorize.
+
+    Deliberately narrow: only bindings that opt in with a ``WriterScan`` are
+    scanned, and only Python sources are read (the plugin reaches the CLI).
+    A function outside ``authorized`` that names the artifact, names its
+    directory and writes is a violation candidate; the reconciler decides the
+    rule status from the fact.
+    """
+    scan = binding.writer_scan
+    if scan is None:
+        return []
+    authorized = set(scan.authorized)
+    facts: list[dict[str, object]] = []
+    for path in sorted((repo / "paperforge").glob("**/*.py")):
+        rel = path.relative_to(repo).as_posix()
+        try:
+            source = path.read_text(encoding="utf-8")
+            tree = ast.parse(source)
+        except (OSError, SyntaxError, UnicodeDecodeError):
+            continue
+        for node in ast.walk(tree):
+            if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            if (rel, node.name) in authorized:
+                continue
+            segment = ast.get_source_segment(source, node) or ""
+            if not all(marker in segment for marker in scan.artifact_markers):
+                continue
+            if not all(marker in segment for marker in scan.context_markers):
+                continue
+            if not any(primitive in segment for primitive in _WRITE_PRIMITIVES):
+                continue
+            facts.append(
+                CanonicalWriteFact(
+                    unit_id=binding.unit_id,
+                    actor_kind="backend",
+                    via_publication_protocol=False,
+                    writer_id=f"{rel}:{node.name}",
+                    publication_authority=None,
+                    evidence=make_evidence(
+                        path,
+                        repo,
+                        f"{path.with_suffix('').as_posix()}.{node.name}",
+                        node.lineno,
+                        node.lineno,
+                        "python_ast",
+                    ),
+                ).to_dict()
+            )
+    return facts
+
+
 def collect_authority_facts(
     repo: Path, contract: ArchitectureContract
 ) -> tuple[list[dict[str, object]], list[str]]:
@@ -236,5 +330,11 @@ def collect_authority_facts(
                 evidence=evidence,
             ).to_dict()
         )
+
+    # Writer scans run independently of the bound-symbol evidence: a foreign
+    # writer is a violation even when the authorized publisher is intact (#339).
+    for binding in UNIT_BINDINGS:
+        if binding.unit_id in unit_ids and binding.writer_scan is not None:
+            facts.extend(_foreign_writer_facts(repo, binding))
 
     return facts, diagnostics
