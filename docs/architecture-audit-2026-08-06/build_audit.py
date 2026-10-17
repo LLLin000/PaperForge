@@ -38,9 +38,12 @@ PUBLICATION_UNITS = [
     {"unit_id": "ocr_derived.generation", "asset_group": "ocr_derived",
      "publication_authority": "ocr.publisher",
      "authorized_writers": ["ocr.postprocess", "ocr.rebuild", "ocr.legacy_backfill"]},
+    # The display fulltext has two legitimate in-place writers: the OCR render
+    # pipeline publishes it (generation/rebuild) and the version-history restore
+    # overrides it with recorded provenance (#339 census).
     {"unit_id": "ocr_display.fulltext", "asset_group": "ocr_derived",
      "publication_authority": "version_history.authority",
-     "authorized_writers": ["version_history.restore"]},
+     "authorized_writers": ["version_history.restore", "ocr.renderer"]},
     {"unit_id": "retrieval.units", "asset_group": "retrieval",
      "publication_authority": "memory.publisher", "authorized_writers": ["memory.builder"]},
     {"unit_id": "retrieval.fts", "asset_group": "retrieval",

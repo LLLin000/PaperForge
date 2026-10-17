@@ -363,10 +363,15 @@ jobs:
             --out /tmp/pf-architecture-audit
       - name: Evaluate the gate
         run: |
+          # restore.display_only is the canonical-writer rule over the display
+          # unit; a foreign writer for render/fulltext.md now produces a write
+          # fact (#339), so an audited violation fails CI.  It stays satisfied
+          # on clean source (no foreign writer observed).
           python -m paperforge.architecture_audit.report.gate \
             --audit /tmp/pf-architecture-audit/audit.json \
             --allowlist publication.uses_protocol canonical.no_ui_writer \
                         coverage.required_complete collectors.deterministic \
+                        restore.display_only \
             --strict \
             --json
       - name: Report gate assessment
