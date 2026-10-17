@@ -46,6 +46,12 @@ class WriterScan:
     analysis: a body that names the artifact *and* its directory *and* uses a
     write primitive is a writer.  Everything outside ``authorized`` yields a
     canonical-write fact, which the reconciler turns into `violated` (#339).
+
+    Known blind spots, measured rather than chased (recorded in #339's follow-up):
+    a body that merely *mentions* ``backup`` — even in a comment — is skipped,
+    and a publish through ``open(..., "w")`` plus ``os.replace`` is not one of the
+    write primitives.  The scan proves the validated shape; it does not prove
+    that no other writer exists.
     """
 
     artifact_markers: tuple[str, ...]
@@ -99,7 +105,7 @@ UNIT_BINDINGS: tuple[UnitBinding, ...] = (
         "paperforge/commands/versions.py",
         "_run_restore",
         "ocr_display.fulltext",
-        ("version_history.authority",),
+        ("ocr_display.materializer",),
         ("version_history.restore",),
         ("shutil.copy2(", "record_restore_provenance("),
         WriterScan(
