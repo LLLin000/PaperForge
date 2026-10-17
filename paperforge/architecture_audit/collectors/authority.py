@@ -239,6 +239,11 @@ def _foreign_writer_facts(repo: Path, binding: UnitBinding) -> list[dict[str, ob
     facts: list[dict[str, object]] = []
     for path in sorted((repo / "paperforge").glob("**/*.py")):
         rel = path.relative_to(repo).as_posix()
+        # Test fixtures and caches are not product writers: the e2e vault builder
+        # writes the display artifact on purpose.  A real violation lives in the
+        # product tree.
+        if any(part in {"test", "tests", "fixtures", "__pycache__"} for part in rel.split("/")):
+            continue
         try:
             source = path.read_text(encoding="utf-8")
             tree = ast.parse(source)
@@ -255,6 +260,10 @@ def _foreign_writer_facts(repo: Path, binding: UnitBinding) -> list[dict[str, ob
             if not all(marker in segment for marker in scan.context_markers):
                 continue
             if not any(primitive in segment for primitive in _WRITE_PRIMITIVES):
+                continue
+            # A backup copies the artifact *out* instead of publishing it: the
+            # renderer and the restore are the only in-place writers.
+            if "backup" in node.name.lower() or "backup" in segment.lower():
                 continue
             facts.append(
                 CanonicalWriteFact(
