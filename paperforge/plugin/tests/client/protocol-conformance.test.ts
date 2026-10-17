@@ -17,6 +17,7 @@ import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import {
   cpSync,
+  mkdirSync,
   mkdtempSync,
   readdirSync,
   readFileSync,
@@ -33,6 +34,8 @@ import type { NdjsonEvent } from "../../src/client/transport";
 const PLUGIN_DIR = process.cwd();
 const REPO_ROOT = path.resolve(PLUGIN_DIR, "..", "..");
 const SIMPLE_VAULT = path.resolve(PLUGIN_DIR, "test", "vaults", "simple");
+/** A committed Zotero export, enough for `sync` to give the vault library state. */
+const EXPORT_FIXTURE = path.resolve(REPO_ROOT, "tests", "sandbox", "exports", "骨科.json");
 
 // The CLI is spawned from the plugin directory, where `import paperforge`
 // only resolves if the package is installed — locally it is not (the repo is
@@ -336,6 +339,42 @@ describe(
       // A query that writes is how a "read-only" surface corrupts state the user
       // never asked to change (plan X13).
       expect(hashTree(vault)).toBe(before);
+    });
+
+    it("carries the residual report the orphan modal consumes (lineage probe wire)", async () => {
+      // views/modals.ts `checkOrphanState` reads `probe lineage` → residuals.papers
+      // to decide whether to open the prune modal. That report only exists once the
+      // vault has library state, so this seeds the committed export and syncs first;
+      // the assertion is on the *shape*, so a producer rename or reshuffle fails
+      // here instead of the modal silently never opening again (#222).
+      const exports = path.join(vault, "System", "PaperForge", "exports");
+      mkdirSync(exports, { recursive: true });
+      cpSync(EXPORT_FIXTURE, path.join(exports, path.basename(EXPORT_FIXTURE)));
+
+      // The lineage probe short-circuits to a slim "not ready" envelope until the
+      // vault has both library state (the export + sync) and a memory substrate,
+      // and that envelope carries no `residuals` — measured on this same fixture.
+      await transport.execute(["sync"], { pythonExe: PYTHON });
+      await transport.execute(["memory", "build"], { pythonExe: PYTHON });
+      const raw = await transport.execute(["probe", "lineage", "--json"], {
+        pythonExe: PYTHON,
+      });
+      const envelope = JSON.parse(raw) as {
+        residuals?: { count?: unknown; keys?: unknown; papers?: unknown };
+      };
+
+      expect(
+        envelope.residuals,
+        "probe lineage must carry residuals once the vault has library state"
+      ).toBeTruthy();
+      expect(Array.isArray(envelope.residuals?.papers)).toBe(true);
+      expect(Array.isArray(envelope.residuals?.keys)).toBe(true);
+      expect(typeof envelope.residuals?.count).toBe("number");
+      for (const item of (envelope.residuals?.papers ?? []) as Array<
+        Record<string, unknown>
+      >) {
+        expect(typeof item.key).toBe("string");
+      }
     });
   }
 );
