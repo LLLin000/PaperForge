@@ -86,8 +86,34 @@ describe("NodeProcessTransport", () => {
       const outcome = await handle.promise;
 
       expect(outcome.cancelled).toBe(true);
-      expect(outcome.protocolFailure).toBe("EOF without terminal event");
+      expect(outcome.protocolFailure).toBe(
+        "EOF without terminal event (exit 1)"
+      );
       expect(outcome.exitCode).toBe(1);
+    });
+
+    it("names the terminating signal when the killed child reports one", async () => {
+      const mockChild = new MockChildProcess();
+      (mockChild as unknown as { signalCode?: string | null }).signalCode =
+        "SIGTERM";
+      const mockSpawn = vi.fn().mockReturnValue(mockChild);
+      const handle = runLongTask(
+        "C:/py/python.exe",
+        [],
+        vaultPath,
+        ["action", "run", "embed.build", "--json"],
+        {
+          onEvent: () => undefined,
+          spawnFn: mockSpawn as unknown as NonNullable<LongTaskOptions["spawnFn"]>,
+        }
+      );
+      await Promise.resolve();
+      handle.stop();
+      mockChild.emit("close", null);
+      const outcome = await handle.promise;
+      expect(outcome.protocolFailure).toBe(
+        "EOF without terminal event (signal SIGTERM)"
+      );
     });
 
     it("keeps a build that finished after a late stop successful, not cancelled", async () => {
