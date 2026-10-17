@@ -414,7 +414,7 @@ def probe_library(vault: Path, last_operation_exit_code: int | None = None) -> d
             reason_text="paperforge.json not found — cannot check library configuration",
             user_state=USER_STATE_SETUP_REQUIRED, capability_kind=CAPABILITY_REQUIRED,
             action_primary=build_action_primary(
-                action_id="library.setup", verb="set_config", label="Set config",
+                action_id="library.configure", verb="set_config", label="Set config",
             ),
             ttl_seconds=TTL_LIBRARY,
         )

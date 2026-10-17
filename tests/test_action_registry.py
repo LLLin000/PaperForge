@@ -1244,3 +1244,62 @@ class TestFoundationRepairPolicy174:
         )
         assert rc == 1
         assert payload["data"]["availability_reason_code"] == "pointer.missing"
+
+
+class TestProbeActionVocabulary223:
+    """#223: every action the Probe emits is declared, and a declared
+    non-registry action's verb matches its declaration.
+
+    The Probe produces every clickable action in the app through one builder
+    (`build_action_primary`). This sweep reads those emission sites and checks
+    each ``(action_id, verb)`` pair against the two authorities — ACTION_REGISTRY
+    and NON_REGISTRY_ACTIONS — so a declared-but-mis-emitted pair (the
+    ``library.setup`` + ``set_config`` case) fails here instead of reaching a
+    user as a wrong or dead dispatch.
+    """
+
+    def test_every_probe_emission_matches_its_declaration(self) -> None:
+        import ast
+        import re
+
+        source = Path("paperforge/commands/probe.py").read_text(encoding="utf-8")
+        emissions: list[tuple[int, str, str]] = []
+        for node in ast.walk(ast.parse(source)):
+            if not (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Name)
+                and node.func.id == "build_action_primary"
+            ):
+                continue
+            kwargs = {kw.arg: kw.value for kw in node.keywords}
+            action_id = getattr(kwargs.get("action_id"), "value", None)
+            verb = getattr(kwargs.get("verb"), "value", None)
+            if isinstance(action_id, str) and isinstance(verb, str):
+                emissions.append((node.lineno, action_id, verb))
+
+        assert len(emissions) > 30, (
+            "the emission sweep lost its target — did build_action_primary move "
+            f"or get wrapped? found {len(emissions)} literal emissions"
+        )
+
+        problems: list[str] = []
+        for lineno, action_id, verb in emissions:
+            try:
+                kind = classify_action_id(action_id)
+            except Exception as exc:  # noqa: BLE001 — the declaration IS the check
+                problems.append(f"probe.py:{lineno}: {action_id} is undeclared ({exc})")
+                continue
+            if kind != "non_registry":
+                if action_id not in ACTION_REGISTRY:
+                    problems.append(f"probe.py:{lineno}: {action_id} is neither registered nor declared")
+                continue
+            declared = NON_REGISTRY_ACTIONS[action_id]
+            match = re.search(r"\(verb '([^']+)'\)", declared)
+            if match is None:
+                problems.append(f"probe.py:{lineno}: {action_id} declaration names no verb")
+            elif match.group(1) != verb:
+                problems.append(
+                    f"probe.py:{lineno}: {action_id} emits verb {verb!r} but the "
+                    f"declaration says {match.group(1)!r}"
+                )
+        assert not problems, "\n".join(problems)

@@ -2042,6 +2042,16 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       return;
     }
 
+    if (verb === "repair" || actionId === "foundation.repair") {
+      // #223: `foundation.repair` is a REGISTERED action (the Probe emits it
+      // with verb "repair", label "Repair Runtime"), but no branch handled that
+      // verb, so it fell through to the unknown-pair re-probe. Route it like
+      // foundation.update: the confirm modal already ran (destructive +
+      // confirmation_required) and Python's policy owns the rest.
+      this._runRepairAction();
+      return;
+    }
+
     if (verb === "install" && actionId === "memory.install_vector_deps") {
       // Smart Retrieval deps missing -> setup journey re-ensures
       // paperforge[vector] in the runtime (ensure_runtime_dependencies).
@@ -2055,6 +2065,20 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         return;
       }
     } else if (mod === "ocr") {
+      // #223: an action ID the Probe emits must win over the generic verb. The
+      // Probe sends `ocr.rebuild_derived` with verb "run" and `ocr.diagnose`
+      // with the same "investigate" verb as `ocr.report_issue`, so verb-only
+      // ordering routed both to the wrong handler.
+      if (actionId === "ocr.rebuild_derived") {
+        this._dispatchOcrAction("rebuild");
+        return;
+      }
+      if (actionId === "ocr.diagnose") {
+        // Declared "diagnostics report (verb 'investigate')" — the privacy-safe
+        // support diagnostic, not the issue-draft flow.
+        this._buildAndCopyDiagnostic();
+        return;
+      }
       if (verb === "run" || actionId === "ocr.run") {
         this._dispatchOcrAction("run");
         return;
@@ -2159,6 +2183,38 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       .catch((err: Error) => {
         new Notice(
           (t("update_failed") || "Update failed") + ": " + err.message
+        );
+        this._refreshAllReadModels();
+      });
+  }
+
+  /** #223: dispatch foundation.repair through the action runner.
+   * Registered action, same shape as foundation.update: the confirm modal
+   * already ran (destructive + confirmation_required) and Python's
+   * perform_repair owns policy, while the client's OperationLock owns the
+   * single active operation. */
+  _runRepairAction(): void {
+    void this.getClient()
+      .runAction({
+        action_id: "foundation.repair",
+        scope: { kind: "all" },
+        confirm: "foundation.repair",
+      })
+      .then((result) => {
+        if (result.ok) {
+          new Notice(t("repair_done") || "PaperForge runtime repaired");
+        } else {
+          const reason =
+            typeof result.payload?.availability_reason === "string"
+              ? result.payload.availability_reason
+              : `exit code ${result.exitCode}`;
+          new Notice((t("repair_failed") || "Repair failed") + ": " + reason);
+        }
+        this._refreshAllReadModels();
+      })
+      .catch((err: Error) => {
+        new Notice(
+          (t("repair_failed") || "Repair failed") + ": " + err.message
         );
         this._refreshAllReadModels();
       });
