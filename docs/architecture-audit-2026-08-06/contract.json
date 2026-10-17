@@ -45,7 +45,7 @@
     {
       "unit_id": "ocr_display.fulltext",
       "asset_group": "ocr_derived",
-      "publication_authority": "version_history.authority",
+      "publication_authority": "ocr_display.materializer",
       "authorized_writers": [
         "version_history.restore",
         "ocr.renderer"
