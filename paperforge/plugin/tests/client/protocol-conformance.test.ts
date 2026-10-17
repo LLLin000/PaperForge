@@ -351,7 +351,11 @@ describe(
       mkdirSync(exports, { recursive: true });
       cpSync(EXPORT_FIXTURE, path.join(exports, path.basename(EXPORT_FIXTURE)));
 
+      // The lineage probe short-circuits to a slim "not ready" envelope until the
+      // vault has both library state (the export + sync) and a memory substrate,
+      // and that envelope carries no `residuals` — measured on this same fixture.
       await transport.execute(["sync"], { pythonExe: PYTHON });
+      await transport.execute(["memory", "build"], { pythonExe: PYTHON });
       const raw = await transport.execute(["probe", "lineage", "--json"], {
         pythonExe: PYTHON,
       });
