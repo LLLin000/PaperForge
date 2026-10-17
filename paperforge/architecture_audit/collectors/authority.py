@@ -27,6 +27,10 @@ class RoleBinding:
     operation_id: str
     role: str
     authorities: tuple[str, ...]
+    #: Calls the bound symbol's body must make for the role to be evidenced.
+    #: A symbol that still exists but no longer performs the role is not
+    #: evidence — the rule stays unresolved instead of satisfied (#229).
+    required_calls: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -36,6 +40,9 @@ class UnitBinding:
     unit_id: str
     publication_authorities: tuple[str, ...]
     authorized_writers: tuple[str, ...]
+    #: Calls the bound symbol's body must make for the publication to be
+    #: evidenced (same fail-closed rule as RoleBinding).
+    required_calls: tuple[str, ...] = ()
 
 
 ROLE_BINDINGS: tuple[RoleBinding, ...] = (
@@ -45,6 +52,7 @@ ROLE_BINDINGS: tuple[RoleBinding, ...] = (
         "ocr_run",
         "execution",
         ("backend.ocr.executor",),
+        ("_acquire_controller_lock(",),
     ),
     RoleBinding(
         "paperforge/plugin/src/views/ocr-workspace.ts",
@@ -52,6 +60,7 @@ ROLE_BINDINGS: tuple[RoleBinding, ...] = (
         "ocr_rebuild",
         "stop",
         ("plugin.ocr_process_controller",),
+        ("cancelActiveOperation(",),
     ),
     RoleBinding(
         "paperforge/plugin/src/settings.ts",
@@ -59,6 +68,7 @@ ROLE_BINDINGS: tuple[RoleBinding, ...] = (
         "embed_build_resume",
         "stop",
         ("plugin.embed_build_controller",),
+        ("cancelActiveOperation(",),
     ),
 )
 
@@ -69,6 +79,7 @@ UNIT_BINDINGS: tuple[UnitBinding, ...] = (
         "ocr_display.fulltext",
         ("version_history.authority",),
         ("version_history.restore",),
+        ("shutil.copy2(", "record_restore_provenance("),
     ),
     UnitBinding(
         "paperforge/memory/builder.py",
@@ -76,6 +87,7 @@ UNIT_BINDINGS: tuple[UnitBinding, ...] = (
         "retrieval.units",
         ("memory.publisher",),
         ("memory.builder",),
+        ("_build_from_index_locked(",),
     ),
     UnitBinding(
         "paperforge/memory/builder.py",
@@ -83,6 +95,7 @@ UNIT_BINDINGS: tuple[UnitBinding, ...] = (
         "retrieval.fts",
         ("memory.publisher",),
         ("memory.builder",),
+        ("_build_from_index_locked(",),
     ),
 )
 
@@ -106,11 +119,58 @@ def _definition_line(path: Path, symbol: str) -> int | None:
     return matches[0] if len(matches) == 1 else None
 
 
-def _evidence(repo: Path, source: str, symbol: str):
+def _symbol_body(path: Path, symbol: str, definition_line: int) -> str | None:
+    """The symbol's body text, from its definition to its balanced end.
+
+    Python: the signature's closing colon, then every line indented deeper.
+    TypeScript: brace balance from the definition line.
+    """
+    lines = path.read_text(encoding="utf-8").splitlines()
+    start = definition_line - 1
+    if path.suffix == ".py":
+        index = start
+        while index < len(lines) and not lines[index].rstrip().endswith(":"):
+            index += 1
+        if index >= len(lines):
+            return None
+        indent = len(lines[start]) - len(lines[start].lstrip())
+        body = lines[start : index + 1]
+        for line in lines[index + 1 :]:
+            if line.strip() and (len(line) - len(line.lstrip())) <= indent:
+                break
+            body.append(line)
+        return "\n".join(body)
+    depth = 0
+    body = []
+    for line in lines[start:]:
+        depth += line.count("{") - line.count("}")
+        body.append(line)
+        if depth <= 0 and len(body) > 1:
+            break
+    return "\n".join(body) if body else None
+
+
+def _evidence(
+    repo: Path,
+    source: str,
+    symbol: str,
+    required_calls: tuple[str, ...] = (),
+):
+    """Source evidence for a binding, or None when it cannot be evidenced.
+
+    A definition line alone is not evidence (#229): the bound symbol must also
+    make the calls its role or publication requires.  A symbol that still
+    exists while the authority moved elsewhere therefore yields no fact, and
+    the rule stays unresolved instead of claiming satisfied.
+    """
     path = repo / source
     line = _definition_line(path, symbol) if path.is_file() else None
     if line is None:
         return None
+    if required_calls:
+        body = _symbol_body(path, symbol, line)
+        if body is None or any(marker not in body for marker in required_calls):
+            return None
     extractor = "typescript_compiler" if path.suffix == ".ts" else "python_ast"
     return make_evidence(
         path,
@@ -134,10 +194,15 @@ def collect_authority_facts(
     for binding in ROLE_BINDINGS:
         if binding.operation_id not in operation_ids:
             continue
-        evidence = _evidence(repo, binding.source, binding.symbol)
+        evidence = _evidence(
+            repo, binding.source, binding.symbol, binding.required_calls
+        )
         if evidence is None:
             diagnostics.append(
-                f"authority binding missing or ambiguous: {binding.source}:{binding.symbol}"
+                "authority binding has no source evidence: "
+                f"{binding.source}:{binding.symbol} — the definition is absent, or "
+                "the call-site evidence the role needs is missing "
+                f"({', '.join(binding.required_calls) or 'no required calls'})"
             )
             continue
         facts.append(
@@ -152,10 +217,15 @@ def collect_authority_facts(
     for binding in UNIT_BINDINGS:
         if binding.unit_id not in unit_ids:
             continue
-        evidence = _evidence(repo, binding.source, binding.symbol)
+        evidence = _evidence(
+            repo, binding.source, binding.symbol, binding.required_calls
+        )
         if evidence is None:
             diagnostics.append(
-                f"authority binding missing or ambiguous: {binding.source}:{binding.symbol}"
+                "authority binding has no source evidence: "
+                f"{binding.source}:{binding.symbol} — the definition is absent, or "
+                "the call-site evidence the role needs is missing "
+                f"({', '.join(binding.required_calls) or 'no required calls'})"
             )
             continue
         facts.append(
