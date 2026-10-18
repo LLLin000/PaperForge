@@ -154,6 +154,8 @@ paperforge ocr --key <KEY>          # 处理指定文献
 paperforge ocr --diagnose           # 诊断模式
 paperforge ocr --json               # JSON 输出
 paperforge ocr run                  # 运行 OCR 队列 (新式)
+paperforge ocr run <KEY> [KEY...]   # 仅运行指定论文集合
+paperforge ocr run --keys-file keys.txt # 从文件读取精确论文集合
 paperforge ocr doctor               # 诊断 OCR 配置和连接
 paperforge ocr doctor --live        # 运行真实 PDF 测试 (L4)
 paperforge ocr redo                 # 重新运行所有标记 ocr_redo 的文献
@@ -170,6 +172,10 @@ paperforge ocr rebuild --status done # 按状态过滤
 paperforge ocr rebuild --dry-run    # 预览
 paperforge ocr rebuild --resume     # 跳过已有检查点的文献
 ```
+
+显式范围不会回退到全库：未知 key、混合有效/未知 key、空白 key、空文件或不可读文件会拒绝执行，不提交任何远程任务。未提供范围的 `ocr` / `ocr run` 保留原有队列规则：有 `do_ocr` 标记时只处理标记集合，否则处理所有符合条件的论文。
+
+插件的论文/集合入口在确认前冻结论文 key 集合；空集合不能启动。全库入口明确显示“整个文献库”和影响数量，并要求确认。停止只阻止新提交、停止本地监看；已提交的服务端 OCR 任务仍会继续，可用 `paperforge ocr status` 查看。
 
 ### `paperforge render`
 

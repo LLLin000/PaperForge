@@ -764,6 +764,11 @@ export class OcrWorkspaceView extends ItemView {
   }
 
   private _requestOcrRun(keys: string[], mode: OcrMode): void {
+    keys = [...keys];
+    if (!keys.length || keys.some((key) => !key.trim())) {
+      new Notice(t("ocr_scope_empty"));
+      return;
+    }
     const descriptor = this.actionDescriptors.get("ocr.run");
     if (!descriptor) {
       this._ensureActionDescriptor("ocr.run");
@@ -783,10 +788,7 @@ export class OcrWorkspaceView extends ItemView {
         {
           title:
             mode === "redo" ? t("ocr_modal_title") : t("ocr_run_confirm_title"),
-          effectLabel:
-            mode === "redo"
-              ? t("ocr_modal_description")
-              : t("ocr_run_confirm_body"),
+          effectLabel: `${t("ocr_scope_papers")} (${keys.length}): ${keys.join(", ")}. ${t("ocr_run_confirm_body")}`,
         },
         () => {
           void this._runOcrAction("ocr.run", keys, mode);
@@ -1051,6 +1053,11 @@ export class OcrWorkspaceView extends ItemView {
     keys: string[],
     mode: OcrMode = actionId === "ocr.rebuild_derived" ? "rebuild" : "run"
   ): Promise<void> {
+    keys = [...keys];
+    if (!keys.length || keys.some((key) => !key.trim())) {
+      new Notice(t("ocr_scope_empty"));
+      return;
+    }
     const client = this._getClient();
     if (!client) {
       new Notice(t("runtime_not_available") || "Environment unavailable");
@@ -1074,7 +1081,7 @@ export class OcrWorkspaceView extends ItemView {
 
     const request: ActionRequest = {
       action_id: actionId,
-      scope: keys.length > 0 ? { kind: "papers", keys } : { kind: "all" },
+      scope: { kind: "papers", keys },
       confirm: actionId === "ocr.run" ? actionId : undefined,
     };
     let sawCancelled = false;

@@ -363,6 +363,21 @@ def _ocr_rebuild_derived_handler(ctx: ActionContext, request: ActionRequest) -> 
 def _ocr_run_preflight(ctx: ActionContext, request: ActionRequest) -> PreflightResult:
     """ocr.run availability: OCR credential available (C1 seam) + per-key
     applicability projected from observation truth (M2-B)."""
+    if request.scope.kind == "papers":
+        from paperforge.actions.runner import ActionError
+        from paperforge.core.errors import ErrorCode
+        from paperforge.worker.asset_index import read_index
+
+        index = read_index(ctx.vault)
+        items = index.get("items", []) if isinstance(index, dict) else index or []
+        canonical_keys = {item["zotero_key"] for item in items if item.get("zotero_key")}
+        unknown = sorted(set(request.scope.keys) - canonical_keys)
+        if unknown:
+            raise ActionError(
+                ErrorCode.ACTION_SCOPE_INVALID.value,
+                f"unknown paper keys: {unknown}; no papers processed",
+                exit_code=2,
+            )
     from paperforge.credentials import CredentialKey
     from paperforge.credentials import status as credential_status
 
@@ -422,7 +437,7 @@ def _ocr_run_handler(ctx: ActionContext, request: ActionRequest) -> PFResult:
     try:
         rc = run_ocr(
             ctx.vault,
-            selected_keys=set(keys) if keys else None,
+            selected_keys=set(keys) if keys is not None else None,
             stop_check=hooks.is_stopped if hooks is not None else None,
             progress_callback=_progress if hooks is not None else None,
             result_sink=sink,
@@ -471,7 +486,10 @@ def _ocr_run_handler(ctx: ActionContext, request: ActionRequest) -> PFResult:
             ok=False,
             command="action run",
             version=PF_VERSION,
-            error=PFError(code=ErrorCode.ACTION_CANCELLED, message="OCR cancelled"),
+            error=PFError(
+                code=ErrorCode.ACTION_CANCELLED,
+                message="OCR watcher stopped; submitted provider jobs continue remotely",
+            ),
             data={"exit_code": rc, **settlement},
             successful_keys=successful,
         )
