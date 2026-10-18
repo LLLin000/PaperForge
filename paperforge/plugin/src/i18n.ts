@@ -438,7 +438,8 @@ const LANG: Record<string, Record<string, string>> = {
     ocr_run_complete: "OCR run complete.",
     ocr_rebuild_complete: "OCR rebuild complete.",
     ocr_redo_complete: "OCR redo complete.",
-    ocr_stopped_notice: "OCR batch stopped.",
+    ocr_stopped_notice:
+      "OCR watcher stopped. Submitted provider jobs continue remotely; check OCR status.",
     ocr_stopping_notice: "Stopping OCR batch...",
     ocr_failed_notice:
       "OCR did not complete. Open Advanced Diagnostics for details.",
@@ -819,8 +820,13 @@ const LANG: Record<string, Record<string, string>> = {
     ocr_activity_rebuild: "Rebuilding OCR derived artifacts…",
     ocr_activity_redo: "Running OCR redo…",
     ocr_run_confirm_title: "Run OCR",
+    ocr_scope_papers: "Selected papers",
+    ocr_scope_all: "Whole library — all eligible papers",
+    ocr_scope_empty: "No papers selected. OCR was not started.",
+    ocr_scope_unavailable:
+      "Cannot determine whole-library impact. Refresh status before running OCR.",
     ocr_run_confirm_body:
-      "Pending PDFs will be sent to the configured OCR service and may incur cost. Existing OCR output is preserved until each replacement succeeds. You can stop the run safely.",
+      "Pending PDFs in this scope will be sent to the configured OCR service and may incur cost. Existing OCR output, source PDFs and user notes are preserved until replacement succeeds. Stop prevents new submissions; already submitted provider jobs continue remotely.",
     embed_already_running: "Vector build is already in progress.",
     embed_activity_stopping: "Stopping vector build…",
     embed_activity_building: "Building vector index…",
@@ -1372,7 +1378,8 @@ const LANG: Record<string, Record<string, string>> = {
     ocr_run_complete: "OCR 处理完成。",
     ocr_rebuild_complete: "OCR 重建完成。",
     ocr_redo_complete: "OCR 重做完成。",
-    ocr_stopped_notice: "OCR 批处理已停止。",
+    ocr_stopped_notice:
+      "OCR 本地监看已停止。已提交的服务端任务仍会继续，请查看 OCR 状态。",
     ocr_stopping_notice: "正在停止 OCR 批处理…",
     ocr_failed_notice: "OCR 未完成，请打开高级诊断查看详情。",
     md_library_ready: "Zotero 已连接，文献库已同步。",
@@ -1726,8 +1733,13 @@ const LANG: Record<string, Record<string, string>> = {
     ocr_activity_rebuild: "正在重建 OCR 衍生结果…",
     ocr_activity_redo: "正在重新执行 OCR…",
     ocr_run_confirm_title: "运行 OCR",
+    ocr_scope_papers: "所选论文",
+    ocr_scope_all: "整个文献库 — 所有符合条件的论文",
+    ocr_scope_empty: "未选择论文，OCR 未启动。",
+    ocr_scope_unavailable:
+      "无法确定整个文献库的影响范围，请刷新状态后再运行 OCR。",
     ocr_run_confirm_body:
-      "待处理 PDF 将发送到已配置的 OCR 服务，可能产生费用。每篇论文处理成功前，现有 OCR 结果会保留；运行可安全停止。",
+      "此范围内待处理的 PDF 将发送到已配置的 OCR 服务，可能产生费用。替换成功前现有 OCR 结果会保留，源 PDF 和用户笔记不会删除。停止会阻止新提交，但已提交的服务端任务仍会继续。",
     embed_already_running: "向量构建正在进行。",
     embed_activity_stopping: "正在停止向量构建…",
     embed_activity_building: "正在构建向量索引…",

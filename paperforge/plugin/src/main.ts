@@ -1,4 +1,4 @@
-import type { ActionRequest } from "./client/action-contract";
+import type { ActionRequest, ActionScope } from "./client/action-contract";
 import { Plugin, addIcon, Notice, Modal, Setting, App } from "obsidian";
 
 /** Thin confirm modal for the one-time plugin-assisted config migration. */
@@ -124,13 +124,54 @@ export default class PaperForgePlugin extends Plugin {
   }
 
   /** One user-facing OCR run path for Settings, Dashboard, and commands. */
-  requestOcrRun(confirmed = false): void {
+  async requestOcrRun(scope: ActionScope = { kind: "all" }): Promise<void> {
     if (this.getClient().isOperationActive()) {
       new Notice(t("ocr_already_running"));
       return;
     }
+    if (scope.kind === "papers" && scope.keys?.some((key) => !key.trim())) {
+      new Notice(t("ocr_scope_empty"));
+      return;
+    }
+    const snapshot: ActionScope =
+      scope.kind === "papers"
+        ? {
+            kind: "papers",
+            keys: [
+              ...new Set(
+                (scope.keys ?? []).map((key) => key.trim()).filter(Boolean)
+              ),
+            ],
+          }
+        : { kind: scope.kind };
+    if (
+      snapshot.kind !== "all" &&
+      (snapshot.kind !== "papers" || !snapshot.keys?.length)
+    ) {
+      new Notice(t("ocr_scope_empty"));
+      return;
+    }
+    let scopeLabel =
+      snapshot.kind === "papers"
+        ? `${t("ocr_scope_papers")} (${snapshot.keys!.length}): ${snapshot.keys!.join(", ")}`
+        : "";
+    if (snapshot.kind === "all") {
+      try {
+        const data = await this.getClient().dashboardStats();
+        if (!Array.isArray(data.items))
+          throw new Error("Library impact unavailable");
+        scopeLabel = `${t("ocr_scope_all")} (${data.items.length})`;
+      } catch {
+        new Notice(t("ocr_scope_unavailable"));
+        return;
+      }
+    }
 
     const start = () => {
+      if (this.getClient().isOperationActive()) {
+        new Notice(t("ocr_already_running"));
+        return;
+      }
       this._ocrProgress = { current: 0, total: 1, key: "" };
       this._settingTab?.display();
       void (async () => {
@@ -140,7 +181,7 @@ export default class PaperForgePlugin extends Plugin {
         // second argv assembly, no second child-process owner.
         const request: ActionRequest = {
           action_id: "ocr.run",
-          scope: { kind: "all" },
+          scope: snapshot,
           confirm: "ocr.run",
         };
         let sawCancelled = false;
@@ -209,16 +250,12 @@ export default class PaperForgePlugin extends Plugin {
       });
     };
 
-    if (confirmed) {
-      start();
-      return;
-    }
     new PaperForgeConfirmModal(
       this.app,
       {
         title: t("ocr_run_confirm_title"),
-        effectLabel: t("ocr_run_confirm_body"),
-        confirmLabel: t("maintenance_confirm_ok"),
+        effectLabel: `${scopeLabel}. ${t("ocr_run_confirm_body")}`,
+        confirmLabel: t("ocr_run_confirm_title"),
         cancelLabel: t("maintenance_confirm_cancel"),
       },
       start

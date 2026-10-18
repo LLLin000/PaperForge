@@ -105,17 +105,22 @@ def run_describe(args: argparse.Namespace) -> int:
 def _parse_scope(args: argparse.Namespace) -> ActionScope:
     kind = getattr(args, "scope", "all")
     if kind == "papers":
-        keys = getattr(args, "key", None) or []
+        from paperforge.core.keys import normalize_paper_keys
+        keys = list(getattr(args, "key", None) or [])
+        if any(not normalize_paper_keys(key) for key in keys):
+            return PapersScope(tuple())
         keys_file = getattr(args, "keys_file", None)
-        if keys_file:
+        if keys_file is not None:
             try:
                 from pathlib import Path
 
-                keys.append(Path(keys_file).read_text(encoding="utf-8-sig"))
+                file_keys = normalize_paper_keys(Path(keys_file).read_text(encoding="utf-8-sig"))
+                if not file_keys:
+                    return PapersScope(tuple())
+                keys.extend(file_keys)
             except Exception as exc:  # noqa: BLE001 — surface a clear error
                 print(f"Error: cannot read keys file {keys_file}: {exc}", file=sys.stderr)
                 return PapersScope(tuple())
-        from paperforge.core.keys import normalize_paper_keys
 
         return PapersScope(tuple(normalize_paper_keys(keys)))
     return AllScope()

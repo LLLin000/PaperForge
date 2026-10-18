@@ -612,8 +612,10 @@ def sync_ocr_queue(paths: dict[str, Path], target_rows: list[dict]) -> list[dict
     return synced_queue
 
 
-def cleanup_blocked_ocr_dirs(paths: dict[str, Path]) -> None:
+def cleanup_blocked_ocr_dirs(paths: dict[str, Path], selected_keys: set[str] | None = None) -> None:
     for meta_path in paths["ocr"].glob("*/meta.json"):
+        if selected_keys is not None and meta_path.parent.name not in selected_keys:
+            continue
         try:
             meta = read_json(meta_path)
         except Exception:
@@ -2831,13 +2833,34 @@ def run_ocr(
     from paperforge.pdf_resolver import resolve_pdf_path
 
     paths = pipeline_paths(vault)
-    cleanup_blocked_ocr_dirs(paths)
+    export_rows = [
+        item
+        for export_path in sorted(paths["exports"].glob("*.json"))
+        for item in load_export_rows(export_path)
+    ]
+    if selected_keys is not None:
+        from paperforge.core.keys import normalize_paper_keys
+
+        selected_keys = set(normalize_paper_keys(selected_keys))
+        unknown = sorted(selected_keys - {item["key"] for item in export_rows})
+        if not selected_keys or unknown:
+            message = f"unknown paper keys: {unknown}" if unknown else "explicit OCR scope is empty"
+            print(f"Error: {message}; no papers processed", file=sys.stderr)
+            return 2
+    control_actions = load_control_actions(paths)
+    target_keys = set(selected_keys) if selected_keys is not None else {
+        key for key, action in control_actions.items() if action.get("do_ocr", False)
+    }
+    process_all = selected_keys is None and not target_keys
+    cleanup_blocked_ocr_dirs(paths, None if process_all else target_keys)
 
     # Zombie reset: reset stale processing jobs to pending
     zombie_timeout = int(os.environ.get("PAPERFORGE_ZOMBIE_TIMEOUT_MINUTES", "30"))
     ocr_root = paths.get("ocr")
     if ocr_root and ocr_root.exists():
         for meta_dir in ocr_root.iterdir():
+            if not process_all and meta_dir.name not in target_keys:
+                continue
             meta_path = meta_dir / "meta.json"
             if not meta_path.exists():
                 continue
@@ -2862,13 +2885,6 @@ def run_ocr(
                     except Exception:
                         pass
 
-    control_actions = load_control_actions(paths)
-    target_keys = {key for key, action in control_actions.items() if action.get("do_ocr", False)}
-    if selected_keys is not None:
-        # An explicit action scope is authoritative; it must not be erased
-        # by stale or absent do_ocr projection flags.
-        target_keys = set(selected_keys)
-    process_all = selected_keys is None and not target_keys
 
     target_rows = []
     skipped_no_pdf: list[str] = []
@@ -2887,22 +2903,21 @@ def run_ocr(
         }
     except Exception:  # noqa: BLE001 — fall back to export locators
         _idx_items = {}
-    for export_path in sorted(paths["exports"].glob("*.json")):
-        for item in load_export_rows(export_path):
-            if not process_all and item["key"] not in target_keys:
-                continue
-            canonical_row = _idx_items.get(item["key"], {})
-            pdf_path = str(canonical_row.get("pdf_path", "") or "")
-            if not pdf_path:
-                pdf_attachments = [a for a in item.get("attachments", []) if a.get("contentType") == "application/pdf"]
-                pdf_path = pdf_attachments[0]["path"] if pdf_attachments else ""
-            target_rows.append(
-                {
-                    "zotero_key": item["key"],
-                    "has_pdf": bool(pdf_path),
-                    "pdf_path": pdf_path,
-                }
-            )
+    for item in export_rows:
+        if not process_all and item["key"] not in target_keys:
+            continue
+        canonical_row = _idx_items.get(item["key"], {})
+        pdf_path = str(canonical_row.get("pdf_path", "") or "")
+        if not pdf_path:
+            pdf_attachments = [a for a in item.get("attachments", []) if a.get("contentType") == "application/pdf"]
+            pdf_path = pdf_attachments[0]["path"] if pdf_attachments else ""
+        target_rows.append(
+            {
+                "zotero_key": item["key"],
+                "has_pdf": bool(pdf_path),
+                "pdf_path": pdf_path,
+            }
+        )
     for row in target_rows:
         if not row["has_pdf"]:
             skipped_no_pdf.append(row["zotero_key"])
@@ -3168,7 +3183,12 @@ def run_ocr(
             _emit_settlement_progress(progress_callback, _reported_progress_keys, queue_row)
 
     # Upload pending items in batches until none remain (processes all do_ocr items, not just max_items)
+    class _UploadStopped(Exception):
+        pass
+
     def _do_upload(token_val: str, pdf_path: Path) -> requests.Response:
+        if stop_check is not None and stop_check():
+            raise _UploadStopped
         with open(pdf_path, "rb") as file_handle:
             resp = requests.post(
                 job_url,
@@ -3232,6 +3252,9 @@ def run_ocr(
                 :available_slots
             ]
             for queue_row in upload_items:
+                if stop_check is not None and stop_check():
+                    _stopped = True
+                    break
                 key = queue_row["zotero_key"]
                 meta = ensure_ocr_meta(vault, queue_row)
                 _sanitized_temp = None
@@ -3345,6 +3368,11 @@ def run_ocr(
                     _jobs.append({"attempt": _attempt + 1, "job_id": _job_id})
                     meta["provider_jobs"] = _jobs[-3:]  # bounded history
                     write_json(paths["ocr"] / key / "meta.json", meta)
+                except _UploadStopped:
+                    _stopped = True
+                    if _sanitized_temp is not None:
+                        _sanitized_temp.unlink(missing_ok=True)
+                    break
                 except Exception as e:
                     if _sanitized_temp is not None and _sanitized_temp.exists():
                         _sanitized_temp.unlink(missing_ok=True)
@@ -3414,6 +3442,9 @@ def run_ocr(
                 _diag(f"OCR: {key} queued (job {meta['ocr_job_id']})")
             if _sanitized_temp is not None and _sanitized_temp.exists():
                 _sanitized_temp.unlink(missing_ok=True)
+        if stop_check is not None and stop_check():
+            _stopped = True
+            break
         poll_items = [r for r in remaining if r.get("queue_status") in ("queued", "running")]
         # F3 (Control Plane Closure): batch observer — ONE provider request
         # per cycle for the whole logical batch; per-paper settle below is

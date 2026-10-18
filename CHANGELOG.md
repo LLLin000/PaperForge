@@ -4,6 +4,14 @@ All notable changes to PaperForge.
 
 ---
 
+## Unreleased
+
+### Fixed
+
+- Preserve exact OCR paper scope from CLI, dashboard paper/collection context and workspace confirmation through provider upload (#349). Reject empty or unknown explicit scopes without partial execution.
+- Confine OCR cleanup and stale-job resets to the selected scope. Stop prevents new uploads, including transport retries; submitted provider jobs remain separately reported as running remotely.
+- Label whole-library OCR impact and require user confirmation in the plugin. Offline synthetic regressions intercept the final multipart HTTP upload; no paid-provider acceptance is implied.
+
 ## 1.5.8 (2026-05-19)
 
 ### Memory Layer (New)

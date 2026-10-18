@@ -2009,7 +2009,11 @@ export class PaperForgeStatusView extends ItemView {
         try {
           await this.app.vault.adapter.write(notePath, content);
         } catch (restoreError) {
-          console.warn("[PF] Could not restore external note:", notePath, restoreError);
+          console.warn(
+            "[PF] Could not restore external note:",
+            notePath,
+            restoreError
+          );
         }
         throw error;
       }
@@ -2354,10 +2358,13 @@ export class PaperForgeStatusView extends ItemView {
     // F-7: load-failure strip (distinct from "no backups"). Shows error +
     // Retry. The global Setup banner stays away on a versions-only failure.
     if (this._versionsLoadError !== null && this._versionPapers === null) {
-      const errorStrip = view.createEl("div", { cls: "paperforge-error-strip" });
+      const errorStrip = view.createEl("div", {
+        cls: "paperforge-error-strip",
+      });
       errorStrip.createEl("div", {
         cls: "paperforge-meta",
-        text: t("error_versions_load_failed") || "Failed to load version history.",
+        text:
+          t("error_versions_load_failed") || "Failed to load version history.",
       });
       const retryBtn = errorStrip.createEl("button", {
         cls: "pf-btn pf-btn-ghost",
@@ -3333,7 +3340,21 @@ export class PaperForgeStatusView extends ItemView {
     if (a.id === "paperforge-ocr") {
       const plugin = (this.app as any).plugins?.plugins?.paperforge;
       if (typeof plugin?.requestOcrRun === "function") {
-        plugin.requestOcrRun();
+        const scope =
+          this._currentMode === "paper"
+            ? {
+                kind: "papers",
+                keys: this._currentPaperKey ? [this._currentPaperKey] : [],
+              }
+            : this._currentMode === "collection"
+              ? {
+                  kind: "papers",
+                  keys: this._filterByDomain(this._currentDomain ?? "").map(
+                    (item: { zotero_key: string }) => item.zotero_key
+                  ),
+                }
+              : { kind: "all" };
+        plugin.requestOcrRun(scope);
         return;
       }
     }
