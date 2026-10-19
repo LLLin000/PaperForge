@@ -830,10 +830,6 @@ class TestOcrConcreteFixes:
             lambda config=None, live=False: {"passed": True})
 
         data = probe_mod.probe_ocr(tmp_path)
-        # Running status → activity overlay
-        assert data["activity_state"] == "running"
-        assert data["activity_label"] is not None
-        assert data["activity_progress"] is not None
         # Independent actionable state preserved
         assert data["capability_state"] == "needs_action"
         assert data["reason"]["code"] == "ocr.quality_failures"
@@ -1250,73 +1246,6 @@ class TestOcrRebuildResultNonDestructive:
         assert data["action"]["primary"]["safety_class"] == "safe"
 
 
-class TestOcrActivityProgress:
-    """OCR activity progress current = terminal/completed count, not running/queued."""
-
-    @pytest.fixture(autouse=True)
-    def _credential_available(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """#173/C1: hermetic credential — this test exercises the activity overlay."""
-        monkeypatch.setenv("PAPERFORGE_CREDENTIAL_OCR__DEFAULT", "test-token")
-
-    def test_queued_only_batch_progress_zero_of_N(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-        """All queued -> progress current=0, total=N."""
-        from paperforge.commands import probe as probe_mod
-        tmp_path.mkdir(parents=True, exist_ok=True)
-        canonical_test_config(tmp_path, system_dir="99_System")
-        monkeypatch.setenv("PADDLEOCR_API_TOKEN", "test-token")
-        monkeypatch.setattr("paperforge.ocr_diagnostics.ocr_doctor",
-            lambda config=None, live=False: {"passed": True})
-
-        rows = []
-        for i in range(5):
-            class FakeQueuedRow:
-                status = "queued"
-                health = "green"
-                display_action = "none"
-            rows.append(FakeQueuedRow())
-
-        monkeypatch.setattr("paperforge.worker.ocr_maintenance.collect_maintenance_rows",
-            lambda v: rows)
-
-        data = probe_mod.probe_ocr(tmp_path)
-        assert data["activity_state"] == "running"
-        assert data["activity_progress"] is not None
-        assert data["activity_progress"]["current"] == 0  # no completed rows
-        assert data["activity_progress"]["total"] == 5
-        assert "0/5" in data["activity_label"]
-
-    def test_mixed_done_queued_progress_completed_count(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-        """3 done_degraded + 2 queued -> progress current=3, total=5."""
-        from paperforge.commands import probe as probe_mod
-        tmp_path.mkdir(parents=True, exist_ok=True)
-        canonical_test_config(tmp_path, system_dir="99_System")
-        monkeypatch.setenv("PADDLEOCR_API_TOKEN", "test-token")
-        monkeypatch.setattr("paperforge.ocr_diagnostics.ocr_doctor",
-            lambda config=None, live=False: {"passed": True})
-
-        rows = []
-        for i in range(3):
-            class FakeDoneRow:
-                status = "done_degraded"
-                health = "yellow"
-                display_action = "rebuild_result"
-            rows.append(FakeDoneRow())
-        for i in range(2):
-            class FakeQueuedRow:
-                status = "queued"
-                health = "green"
-                display_action = "none"
-            rows.append(FakeQueuedRow())
-
-        monkeypatch.setattr("paperforge.worker.ocr_maintenance.collect_maintenance_rows",
-            lambda v: rows)
-
-        data = probe_mod.probe_ocr(tmp_path)
-        assert data["activity_state"] == "running"
-        assert data["activity_progress"] is not None
-        assert data["activity_progress"]["current"] == 3  # 3 completed rows
-        assert data["activity_progress"]["total"] == 5
-        assert "3/5" in data["activity_label"]
 
 
 class TestOcrQualityUnacceptable:
@@ -1827,3 +1756,21 @@ class TestMaintenanceProjection:
         data = _run_probe("memory", tmp_path)
         assert data["reason"]["code"] == "memory.vector_publish_pending"
         assert data["action"]["primary"]["action_id"] == "embed.resume"
+
+
+def test_persisted_ocr_is_history_not_live_worker(tmp_path, monkeypatch):
+    from paperforge.commands.probe import probe_ocr
+    from paperforge.worker._utils import pipeline_paths
+
+    canonical_test_config(tmp_path)
+    monkeypatch.setattr("paperforge.ocr_diagnostics.ocr_doctor", lambda **_: {"passed": True})
+    monkeypatch.setenv("PAPERFORGE_CREDENTIAL_OCR__DEFAULT", "offline-fixture")
+    folder = pipeline_paths(tmp_path)["ocr"] / "HISTORY1"
+    folder.mkdir(parents=True)
+    meta = folder / "meta.json"
+    original = json.dumps({"ocr_status": "queued", "ocr_job_id": "unknown-remote-job"})
+    meta.write_text(original, encoding="utf-8")
+    result = probe_ocr(tmp_path, lineage={"papers": {}})
+    assert result["activity_state"] == "idle"
+    assert result["historical_activity"] == {"current": 0, "total": 1, "unsettled": 1}
+    assert meta.read_text(encoding="utf-8") == original

@@ -149,8 +149,6 @@ function journeyRunPolicy(
   return gate ? "fail" : "skip";
 }
 
-
-
 /** sha256 of a file's bytes — artifact identity, not its path. */
 function sha256(file: string): string {
   return createHash("sha256").update(readFileSync(file)).digest("hex");
@@ -189,7 +187,6 @@ const PDF_FIXTURE = path.resolve(
 );
 const EXPORT_REL = "System/PaperForge/exports/骨科.json";
 const INDEX_REL = "System/PaperForge/indexes/formal-library.json";
-
 
 function readNote(base: string, rel: string): string {
   return readFileSync(path.join(base, rel), "utf8");
@@ -492,31 +489,40 @@ async function waitForOcrRow(title: string, key?: string): Promise<void> {
         }
         return false;
       },
-      { timeout: 180000, timeoutMsg: `OCR workspace row never rendered: ${title}` }
+      {
+        timeout: 180000,
+        timeoutMsg: `OCR workspace row never rendered: ${title}`,
+      }
     );
   } catch (error) {
     // Name the state: what the client lists vs what the viewport shows.
     const rows = await browser.executeObsidian(async ({ app }) => {
       const plugin = app.plugins.plugins["paperforge"] as unknown as {
-        getClient(): { queryOcrPapers(): Promise<Array<Record<string, unknown>>> };
+        getClient(): {
+          queryOcrPapers(): Promise<Array<Record<string, unknown>>>;
+        };
       };
       try {
         const list = await plugin.getClient().queryOcrPapers();
-        return list.map((row) => `${String(row.key ?? row.zotero_key ?? "?")}`).join(",");
+        return list
+          .map((row) => `${String(row.key ?? row.zotero_key ?? "?")}`)
+          .join(",");
       } catch (err) {
         return "THREW: " + String(err);
       }
     });
-    const viewport = await (
-      await browser.$(".pf-ocr-ws-viewport")
-    ).getText().catch(() => "(no viewport)");
+    const viewport = await (await browser.$(".pf-ocr-ws-viewport"))
+      .getText()
+      .catch(() => "(no viewport)");
     console.log(
-      "J02ROW list=" + JSON.stringify(rows) + " viewport=" + JSON.stringify(viewport.slice(0, 300))
+      "J02ROW list=" +
+        JSON.stringify(rows) +
+        " viewport=" +
+        JSON.stringify(viewport.slice(0, 300))
     );
     throw error;
   }
 }
-
 
 /** Loopback PaddleOCR stub for the OCR e2e cases.
  *
@@ -573,7 +579,9 @@ async function startOcrStub(
     "5MAW65YD",
     "ocr_payload.json"
   );
-  const payloadPages = JSON.parse(readFileSync(payloadFixture, "utf8")) as unknown[];
+  const payloadPages = JSON.parse(
+    readFileSync(payloadFixture, "utf8")
+  ) as unknown[];
   const resultBody = `${JSON.stringify({ result: payloadPages[0] })}\n`;
   // One job is observed through the BATCH endpoint whenever the batch reports
   // it (per-job polling is only the fallback), so BOTH observation paths must
@@ -634,12 +642,12 @@ async function startOcrStub(
             scenario === "401"
               ? 401
               : scenario === "403"
-              ? 403
-              : scenario === "429"
-              ? 429
-              : scenario === "5xx"
-              ? 500
-              : 200;
+                ? 403
+                : scenario === "429"
+                  ? 429
+                  : scenario === "5xx"
+                    ? 500
+                    : 200;
           res.statusCode = status;
           if (scenario === "429") {
             res.setHeader("retry-after", String(retryAfter));
@@ -775,7 +783,10 @@ async function prepareOcrSandbox(
   );
   let keyring: Record<string, string> = {};
   try {
-    keyring = JSON.parse(readFileSync(keyringPath, "utf8")) as Record<string, string>;
+    keyring = JSON.parse(readFileSync(keyringPath, "utf8")) as Record<
+      string,
+      string
+    >;
   } catch {
     keyring = {};
   }
@@ -787,13 +798,7 @@ async function prepareOcrSandbox(
   // stale window, so a rerun would look like "another controller is running".
   // The sandbox is rebuilt per case — drop the locks with it.
   for (const lockName of ["controller.lock", "ocr_queue.lock"]) {
-    const lockPath = path.join(
-      base,
-      "System",
-      "PaperForge",
-      "ocr",
-      lockName
-    );
+    const lockPath = path.join(base, "System", "PaperForge", "ocr", lockName);
     if (existsSync(lockPath)) {
       try {
         unlinkSync(lockPath); // rmSync(force) silently no-ops on P1 paths
@@ -823,14 +828,17 @@ async function prepareOcrSandbox(
       const plugin = app.plugins.plugins["paperforge"] as unknown as {
         getClient(): {
           configSet(key: string, value: string): Promise<unknown>;
-          configList(): Promise<{ fields: Array<{ key: string; value: unknown }> }>;
+          configList(): Promise<{
+            fields: Array<{ key: string; value: unknown }>;
+          }>;
         };
       };
       const client = plugin.getClient();
       await client.configSet("paddleocr_job_url", url);
       const list = await client.configList();
       return String(
-        list.fields.find((field) => field.key === "paddleocr_job_url")?.value ?? ""
+        list.fields.find((field) => field.key === "paddleocr_job_url")?.value ??
+          ""
       );
     }, jobUrl);
     if (applied !== jobUrl) {
@@ -858,7 +866,11 @@ async function prepareOcrSandbox(
       "TSTONE001",
       "meta.json"
     );
-    if ((options.pending ?? true) && pointer.python_path && existsSync(metaPath)) {
+    if (
+      (options.pending ?? true) &&
+      pointer.python_path &&
+      existsSync(metaPath)
+    ) {
       execFileSync(
         pointer.python_path,
         [
@@ -867,11 +879,11 @@ async function prepareOcrSandbox(
             "import json",
             `p = r'${metaPath}'`,
             "d = json.load(open(p, encoding='utf-8'))",
-            `d['ocr_status'] = ${JSON.stringify(options.pending ?? true ? "pending" : "done")}`,
+            `d['ocr_status'] = ${JSON.stringify((options.pending ?? true) ? "pending" : "done")}`,
             "d['ocr_job_id'] = ''",
-            (options.dropVersion ?? options.pending ?? true
+            (options.dropVersion ?? options.pending ?? true)
               ? "d.pop('ocr_pipeline_version', None)"
-              : "None"),
+              : "None",
             "json.dump(d, open(p, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)",
           ].join("\n"),
         ],
@@ -944,9 +956,7 @@ async function readChildDiagnostics(): Promise<unknown> {
  * request log (the E-series controlled provider).  ``delayMs`` holds every
  * response open, so a caller can catch a build mid-flight (E04); the default
  * 0 answers immediately (E03/C03). */
-async function startEmbedStub(
-  options: { delayMs?: number } = {}
-): Promise<{
+async function startEmbedStub(options: { delayMs?: number } = {}): Promise<{
   requests: Array<{ model?: string; input_count: number }>;
   baseUrl: string;
   close: () => Promise<void>;
@@ -1044,7 +1054,6 @@ function addExportItem(
   }
   writeFileSync(file, JSON.stringify(doc));
 }
-
 
 /** Remove one item from the sandbox export to create a real residual paper. */
 function removeExportItem(base: string, key: string): void {
@@ -1205,7 +1214,6 @@ async function waitForBackendDrain(
   }
 }
 
-
 async function sandboxBasePath(): Promise<string> {
   return await browser.executeObsidian(async ({ app }) => {
     const adapter = app.vault.adapter as unknown as { basePath?: string };
@@ -1301,26 +1309,18 @@ async function clickTestId(testid: string): Promise<void> {
   await clickPanelElement(`[data-pf-testid='${testid}']`);
 }
 
-
 async function openVaultFile(filePath: string): Promise<void> {
   // New tab + explicit activation: a programmatic openFile() alone does not
   // fire active-leaf-change, so the panel would never re-resolve its mode.
   await browser.executeObsidian(async ({ app }, filePath) => {
     let file = app.vault.getAbstractFileByPath(filePath);
     if (!file && (await app.vault.adapter.exists(filePath))) {
-      // Mirrors the product repair for externally delivered notes
-      // (`_materializeExternalNote`): a file written by the Python backend is
-      // physically present but not yet in the Vault cache until the fs watcher
-      // fires. Register it with the same read → remove → create sequence and
-      // restore the bytes if registration fails.
-      const content = await app.vault.adapter.read(filePath);
-      await app.vault.adapter.remove(filePath);
-      try {
-        file = await app.vault.create(filePath, content);
-      } catch (error) {
-        await app.vault.adapter.write(filePath, content);
-        throw error;
-      }
+      // Match the product's non-writing watcher reconciliation on desktop.
+      const adapter = app.vault.adapter as typeof app.vault.adapter & {
+        reconcileInternalFile?: (path: string) => Promise<void>;
+      };
+      await adapter.reconcileInternalFile?.(filePath);
+      file = app.vault.getAbstractFileByPath(filePath);
     }
     if (!file) throw new Error(`file not found: ${filePath}`);
     if (!("extension" in file)) throw new Error(`not a file: ${filePath}`);
@@ -1485,12 +1485,14 @@ describe("PaperForge real-task e2e", function () {
       if (!plugin) throw new Error("paperforge plugin not loaded");
       plugin._settingTab._setupJourneyDismissedForSession = false;
       plugin.settings._setup_complete = false;
-      const setting = (app as unknown as {
-        setting?: {
-          open?: () => void;
-          openTabById?: (id: string) => void;
-        };
-      }).setting;
+      const setting = (
+        app as unknown as {
+          setting?: {
+            open?: () => void;
+            openTabById?: (id: string) => void;
+          };
+        }
+      ).setting;
       if (!setting?.open || !setting.openTabById) {
         throw new Error("Obsidian settings navigation API unavailable");
       }
@@ -1499,9 +1501,8 @@ describe("PaperForge real-task e2e", function () {
       await new Promise<void>((resolve) => setTimeout(resolve, 1000));
       plugin._settingTab.display();
       await new Promise<void>((resolve) => setTimeout(resolve, 1000));
-      const journey = plugin._settingTab.containerEl.querySelector(
-        ".pf-setup-journey"
-      );
+      const journey =
+        plugin._settingTab.containerEl.querySelector(".pf-setup-journey");
       const badge = plugin._settingTab.containerEl.querySelector(
         ".pf-setup-journey [role='status']"
       );
@@ -1574,12 +1575,14 @@ describe("PaperForge real-task e2e", function () {
       if (!plugin) throw new Error("paperforge plugin not loaded");
       plugin.settings._setup_complete = false;
       plugin._settingTab._setupJourneyDismissedForSession = false;
-      const setting = (app as unknown as {
-        setting?: {
-          open?: () => void;
-          openTabById?: (id: string) => void;
-        };
-      }).setting;
+      const setting = (
+        app as unknown as {
+          setting?: {
+            open?: () => void;
+            openTabById?: (id: string) => void;
+          };
+        }
+      ).setting;
       if (!setting?.open || !setting.openTabById) {
         throw new Error("Obsidian settings navigation API unavailable");
       }
@@ -1616,7 +1619,8 @@ describe("PaperForge real-task e2e", function () {
             };
           };
           const pointer = plugin.getManagedRuntime().readPointer();
-          const installation = plugin._settingTab._capabilityState?.installation;
+          const installation =
+            plugin._settingTab._capabilityState?.installation;
           return {
             ready:
               pointer !== null &&
@@ -1732,7 +1736,10 @@ describe("PaperForge real-task e2e", function () {
           };
           return plugin._settingTab._setupOperation === "idle";
         }),
-      { timeout: 60000, timeoutMsg: "a previous setup operation never went idle" }
+      {
+        timeout: 60000,
+        timeoutMsg: "a previous setup operation never went idle",
+      }
     );
     await browser.executeObsidian(async ({ app }) => {
       const plugin = app.plugins.plugins["paperforge"] as unknown as {
@@ -1768,7 +1775,10 @@ describe("PaperForge real-task e2e", function () {
           };
           return plugin._settingTab._setupOperation !== "idle";
         }),
-      { timeout: 30000, timeoutMsg: "reinstall click never started the operation" }
+      {
+        timeout: 30000,
+        timeoutMsg: "reinstall click never started the operation",
+      }
     );
 
     await browser.waitUntil(
@@ -1833,7 +1843,8 @@ describe("PaperForge real-task e2e", function () {
 
     appendEvidence("a06-reinstall-switch.json", {
       case_id: "A06",
-      variant: "settings reinstall -> journey action -> fresh candidate publish",
+      variant:
+        "settings reinstall -> journey action -> fresh candidate publish",
       required_layer: "H",
       status: "VERIFIED",
       source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
@@ -2377,54 +2388,57 @@ describe("PaperForge real-task e2e", function () {
   it("does not re-enter or leave autosync running after a failed tick", async function () {
     await waitForIdle("B04", "boundary-startup-settle");
     const base = await sandboxBasePath();
-    const boundary = await browser.executeObsidian(async ({ app }, vaultPath) => {
-      const plugin = app.plugins.plugins["paperforge"] as unknown as {
-        settings: { autoSyncEnabled?: boolean };
-        _pollTimer: ReturnType<typeof setInterval> | null;
-        _autoSyncRunning: boolean;
-        _lastSyncTime: string | null;
-        _autoSync: (path: string) => void;
-        _startConvergenceTimer: () => void;
-        getClient: () => { sync: () => Promise<unknown> };
-        saveSettings(): Promise<void>;
-      };
-      if (!plugin) throw new Error("paperforge plugin not loaded");
-      if (plugin._pollTimer) clearInterval(plugin._pollTimer);
-      plugin._pollTimer = null;
-      plugin.settings.autoSyncEnabled = false;
-      await plugin.saveSettings();
-      plugin._startConvergenceTimer.call(plugin);
-      const disabledTimer = plugin._pollTimer !== null;
+    const boundary = await browser.executeObsidian(
+      async ({ app }, vaultPath) => {
+        const plugin = app.plugins.plugins["paperforge"] as unknown as {
+          settings: { autoSyncEnabled?: boolean };
+          _pollTimer: ReturnType<typeof setInterval> | null;
+          _autoSyncRunning: boolean;
+          _lastSyncTime: string | null;
+          _autoSync: (path: string) => void;
+          _startConvergenceTimer: () => void;
+          getClient: () => { sync: () => Promise<unknown> };
+          saveSettings(): Promise<void>;
+        };
+        if (!plugin) throw new Error("paperforge plugin not loaded");
+        if (plugin._pollTimer) clearInterval(plugin._pollTimer);
+        plugin._pollTimer = null;
+        plugin.settings.autoSyncEnabled = false;
+        await plugin.saveSettings();
+        plugin._startConvergenceTimer.call(plugin);
+        const disabledTimer = plugin._pollTimer !== null;
 
-      plugin._autoSyncRunning = true;
-      plugin._lastSyncTime = null;
-      plugin._autoSync(vaultPath);
-      const reentryBlocked =
-        plugin._autoSyncRunning === true && plugin._lastSyncTime === null;
-      plugin._autoSyncRunning = false;
+        plugin._autoSyncRunning = true;
+        plugin._lastSyncTime = null;
+        plugin._autoSync(vaultPath);
+        const reentryBlocked =
+          plugin._autoSyncRunning === true && plugin._lastSyncTime === null;
+        plugin._autoSyncRunning = false;
 
-      const originalGetClient = plugin.getClient;
-      plugin.getClient = () => ({
-        sync: async () => {
-          throw new Error("forced B04 failure");
-        },
-      });
-      plugin._lastSyncTime = null;
-      plugin._autoSync(vaultPath);
-      const deadline = Date.now() + 3000;
-      while (plugin._autoSyncRunning && Date.now() < deadline) {
-        const { promise, resolve } = Promise.withResolvers<void>();
-        setTimeout(resolve, 25);
-        await promise;
-      }
-      plugin.getClient = originalGetClient;
-      return {
-        disabledTimer,
-        reentryBlocked,
-        failureSettled: !plugin._autoSyncRunning,
-        lastSyncTime: plugin._lastSyncTime,
-      };
-    }, base);
+        const originalGetClient = plugin.getClient;
+        plugin.getClient = () => ({
+          sync: async () => {
+            throw new Error("forced B04 failure");
+          },
+        });
+        plugin._lastSyncTime = null;
+        plugin._autoSync(vaultPath);
+        const deadline = Date.now() + 3000;
+        while (plugin._autoSyncRunning && Date.now() < deadline) {
+          const { promise, resolve } = Promise.withResolvers<void>();
+          setTimeout(resolve, 25);
+          await promise;
+        }
+        plugin.getClient = originalGetClient;
+        return {
+          disabledTimer,
+          reentryBlocked,
+          failureSettled: !plugin._autoSyncRunning,
+          lastSyncTime: plugin._lastSyncTime,
+        };
+      },
+      base
+    );
 
     await browser.waitUntil(
       async () => {
@@ -2546,7 +2560,9 @@ describe("PaperForge real-task e2e", function () {
       });
     });
     if (memoryResult.ok !== true) {
-      throw new Error(`J01 memory.build failed: ${JSON.stringify(memoryResult)}`);
+      throw new Error(
+        `J01 memory.build failed: ${JSON.stringify(memoryResult)}`
+      );
     }
 
     await openPanel();
@@ -2564,7 +2580,10 @@ describe("PaperForge real-task e2e", function () {
           return false;
         }
       },
-      { timeout: 60000, timeoutMsg: "J01 M search never found the synced paper" }
+      {
+        timeout: 60000,
+        timeoutMsg: "J01 M search never found the synced paper",
+      }
     );
     await card.click();
     const j01OpenState = await browser.executeObsidian(
@@ -2587,7 +2606,10 @@ describe("PaperForge real-task e2e", function () {
             app.workspace.getMostRecentLeaf()?.view.file?.path ?? null,
           search_results: app.workspace
             .getLeavesOfType("paperforge-status")
-            .map((leaf) => (leaf.view as { _searchResults?: unknown })._searchResults),
+            .map(
+              (leaf) =>
+                (leaf.view as { _searchResults?: unknown })._searchResults
+            ),
           leaves,
         };
       },
@@ -2695,7 +2717,9 @@ describe("PaperForge real-task e2e", function () {
       await prepareOcrSandbox(stub.jobUrl);
 
       // 4. Workspace UI: select the paper → Process Selected → confirmation.
-      await browser.executeObsidianCommand("paperforge:paperforge-ocr-workspace");
+      await browser.executeObsidianCommand(
+        "paperforge:paperforge-ocr-workspace"
+      );
       const rowSelector =
         "//tr[.//*[contains(text(),'Biomechanical')]]//input[@type='checkbox']";
       await clickStable(rowSelector);
@@ -2720,7 +2744,13 @@ describe("PaperForge real-task e2e", function () {
 
       // 6. Settlement: the stub job id is recorded, status done, the
       // result-hash pending marker cleared.
-      const ocrRoot = path.join(base, "System", "PaperForge", "ocr", "TSTONE001");
+      const ocrRoot = path.join(
+        base,
+        "System",
+        "PaperForge",
+        "ocr",
+        "TSTONE001"
+      );
       const metaPath = path.join(ocrRoot, "meta.json");
       const pendingMarker = path.join(ocrRoot, "index", "result-hash.pending");
       try {
@@ -2750,17 +2780,29 @@ describe("PaperForge real-task e2e", function () {
         let metaStatus = "<missing>";
         let metaError = "";
         try {
-          const meta = JSON.parse(readFileSync(metaPath, "utf8")) as Record<string, unknown>;
+          const meta = JSON.parse(readFileSync(metaPath, "utf8")) as Record<
+            string,
+            unknown
+          >;
           metaJob = String(meta.ocr_job_id ?? "");
           metaStatus = String(meta.ocr_status ?? "");
           metaError = String(meta.error ?? "");
         } catch {
           metaJob = "<unreadable>";
         }
-        const requests = stub.requests.map((entry) => `${entry.method} ${entry.url}`);
-        const ocrDir = existsSync(ocrRoot) ? readdirSync(ocrRoot).slice(0, 24) : [];
+        const requests = stub.requests.map(
+          (entry) => `${entry.method} ${entry.url}`
+        );
+        const ocrDir = existsSync(ocrRoot)
+          ? readdirSync(ocrRoot).slice(0, 24)
+          : [];
         console.log(
-          "D02D job=" + metaJob + " status=" + metaStatus + " error=" + metaError
+          "D02D job=" +
+            metaJob +
+            " status=" +
+            metaStatus +
+            " error=" +
+            metaError
         );
         console.log("D02D req=" + JSON.stringify(requests));
         console.log("D02D dir=" + JSON.stringify(ocrDir));
@@ -2776,7 +2818,10 @@ describe("PaperForge real-task e2e", function () {
         console.log("D02D pdf=" + String(existsSync(pdfPath)));
         let cfg = "<missing>";
         try {
-          cfg = readFileSync(path.join(base, "paperforge.json"), "utf8").slice(0, 400);
+          cfg = readFileSync(path.join(base, "paperforge.json"), "utf8").slice(
+            0,
+            400
+          );
         } catch {
           cfg = "<unreadable>";
         }
@@ -2855,14 +2900,19 @@ describe("PaperForge real-task e2e", function () {
         string,
         unknown
       >;
-      const sha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: PLUGIN_DIR })
+      const sha = execFileSync("git", ["rev-parse", "HEAD"], {
+        cwd: PLUGIN_DIR,
+      })
         .toString()
         .trim();
-      const methodUrls = stub.requests.map((entry) => `${entry.method} ${entry.url}`);
+      const methodUrls = stub.requests.map(
+        (entry) => `${entry.method} ${entry.url}`
+      );
 
       appendEvidence("d02-ocr-run-entry.json", {
         case_id: "D02",
-        variant: "workspace selection + confirm modal → controlled provider run",
+        variant:
+          "workspace selection + confirm modal → controlled provider run",
         required_layer: "H",
         status: "VERIFIED",
         source_sha: sha,
@@ -2874,7 +2924,8 @@ describe("PaperForge real-task e2e", function () {
       });
       appendEvidence("d03-ocr-settlement.json", {
         case_id: "D03",
-        variant: "running banner observed; provider job recorded; artifacts settled",
+        variant:
+          "running banner observed; provider job recorded; artifacts settled",
         required_layer: "H",
         status: "VERIFIED",
         source_sha: sha,
@@ -2883,7 +2934,8 @@ describe("PaperForge real-task e2e", function () {
         meta_job_id: metaAfter.ocr_job_id,
         meta_status: metaAfter.ocr_status,
         pending_marker_cleared: !existsSync(pendingMarker),
-        result_fetches: methodUrls.filter((u) => u.includes("/results/")).length,
+        result_fetches: methodUrls.filter((u) => u.includes("/results/"))
+          .length,
         // The healthy child's process view (exit code, stderr tail, events):
         // the reference a failing run's diagnostic is compared against.
         child_diagnostics: await readChildDiagnostics(),
@@ -2926,9 +2978,15 @@ describe("PaperForge real-task e2e", function () {
       );
       const note = readFileSync(notePath, "utf8");
       if (!/^ocr_redo:/m.test(note)) {
-        writeFileSync(notePath, note.replace(/^---\r?\n/, "---\nocr_redo: true\n"), "utf8");
+        writeFileSync(
+          notePath,
+          note.replace(/^---\r?\n/, "---\nocr_redo: true\n"),
+          "utf8"
+        );
       }
-      await browser.executeObsidianCommand("paperforge:paperforge-ocr-workspace");
+      await browser.executeObsidianCommand(
+        "paperforge:paperforge-ocr-workspace"
+      );
       const rowSelector =
         "//tr[.//*[contains(text(),'Biomechanical')]]//input[@type='checkbox']";
       await clickStable(rowSelector);
@@ -2958,7 +3016,9 @@ describe("PaperForge real-task e2e", function () {
                 ocr_job_id?: string;
                 ocr_status?: string;
               };
-              return meta.ocr_job_id === "pf-e2e-job-1" && meta.ocr_status === "done";
+              return (
+                meta.ocr_job_id === "pf-e2e-job-1" && meta.ocr_status === "done"
+              );
             } catch {
               return false;
             }
@@ -2972,12 +3032,16 @@ describe("PaperForge real-task e2e", function () {
         } catch (e) {
           metaDump = String(e);
         }
-        const reqDump = stub.requests.map((entry) => `${entry.method} ${entry.url}`);
+        const reqDump = stub.requests.map(
+          (entry) => `${entry.method} ${entry.url}`
+        );
         console.log("D05D meta=" + metaDump.replace(/\s+/g, " "));
         console.log("D05D req=" + JSON.stringify(reqDump));
         throw error;
       }
-      const submits = stub.requests.filter((entry) => entry.method === "POST").length;
+      const submits = stub.requests.filter(
+        (entry) => entry.method === "POST"
+      ).length;
       expect(submits).toBe(1);
       appendEvidence("d05-ocr-redo.json", {
         case_id: "D05",
@@ -3287,9 +3351,8 @@ describe("PaperForge real-task e2e", function () {
       plugin._settingTab._selectedDetailModule = "memory";
       plugin._settingTab.activeTab = "module-detail";
       plugin._settingTab.display();
-      const details = plugin._settingTab.containerEl.querySelector(
-        ".pf-sr-diagnostics"
-      );
+      const details =
+        plugin._settingTab.containerEl.querySelector(".pf-sr-diagnostics");
       if (!(details instanceof HTMLDetailsElement)) {
         throw new Error("diagnostics section not rendered");
       }
@@ -3666,7 +3729,11 @@ describe("PaperForge real-task e2e", function () {
         .trim(),
       worktree_dirty: worktreeDirty(),
       paper_a: { note: NOTE_PATH, title: PAPER_TITLE },
-      paper_b: { key: NEW_PAPER_KEY, note: NEW_PAPER_NOTE, title: SECOND_PAPER_TITLE },
+      paper_b: {
+        key: NEW_PAPER_KEY,
+        note: NEW_PAPER_NOTE,
+        title: SECOND_PAPER_TITLE,
+      },
       settled_panel: settled,
       plain_note_mode: plain,
       base_mode: collection,
@@ -3834,7 +3901,11 @@ describe("PaperForge real-task e2e", function () {
         panel_still_mounted: panelAfterFulltext,
         state: stateAfterFulltext,
       },
-      pdf_entry: { expected: PAPER_PDF, active_file: PAPER_PDF, state: stateAfterPdf },
+      pdf_entry: {
+        expected: PAPER_PDF,
+        active_file: PAPER_PDF,
+        state: stateAfterPdf,
+      },
       ocr_workspace_entry: {
         expected: CANONICAL_FULLTEXT,
         active_file: CANONICAL_FULLTEXT,
@@ -3947,9 +4018,6 @@ describe("PaperForge real-task e2e", function () {
     return node;
   }
 
-
-
-
   /**
    * Run the product's own credential-authority delete through the runtime
    * Python, with the e2e keyring backend injected explicitly — the same
@@ -4026,9 +4094,9 @@ describe("PaperForge real-task e2e", function () {
           connected: container.isConnected,
           journey: container.querySelectorAll(".pf-setup-journey").length,
           modal: document.querySelectorAll(".modal-container").length,
-          testids: Array.from(container.querySelectorAll("[data-pf-testid]")).map(
-            (e) => e.getAttribute("data-pf-testid")
-          ),
+          testids: Array.from(
+            container.querySelectorAll("[data-pf-testid]")
+          ).map((e) => e.getAttribute("data-pf-testid")),
         };
       },
       target
@@ -4050,13 +4118,7 @@ describe("PaperForge real-task e2e", function () {
    */
   async function settingsElement(
     selector: string,
-    action:
-      | "exists"
-      | "value"
-      | "text"
-      | "click"
-      | "set-input"
-      | "input-props",
+    action: "exists" | "value" | "text" | "click" | "set-input" | "input-props",
     value?: string,
     index?: number
   ): Promise<unknown> {
@@ -4141,9 +4203,9 @@ describe("PaperForge real-task e2e", function () {
       return {
         sameDocument: doc === document,
         connected: container.isConnected,
-        testids: Array.from(
-          doc.querySelectorAll("[data-pf-testid]")
-        ).map((e) => e.getAttribute("data-pf-testid") ?? ""),
+        testids: Array.from(doc.querySelectorAll("[data-pf-testid]")).map(
+          (e) => e.getAttribute("data-pf-testid") ?? ""
+        ),
         topbar: doc.querySelectorAll(".pf-cc-topbar").length,
         journey: doc.querySelectorAll(".pf-setup-journey").length,
         html: doc.body?.innerHTML.slice(0, 600) ?? "",
@@ -4180,7 +4242,10 @@ describe("PaperForge real-task e2e", function () {
   }
 
   /** Type into a settings-tab input and fire the event the product listens to. */
-  async function setInputByTestId(testid: string, value: string): Promise<void> {
+  async function setInputByTestId(
+    testid: string,
+    value: string
+  ): Promise<void> {
     await settingsElement(`[data-pf-testid='${testid}']`, "set-input", value);
   }
 
@@ -4188,7 +4253,6 @@ describe("PaperForge real-task e2e", function () {
   async function clickSettingsTestId(testid: string): Promise<void> {
     await settingsElement(`[data-pf-testid='${testid}']`, "click");
   }
-
 
   /** True when the backend credential authority reports a stored key. */
   async function credentialAvailable(
@@ -4305,7 +4369,8 @@ describe("PaperForge real-task e2e", function () {
         {
           timeout: 60000,
           interval: 1000,
-          timeoutMsg: "the migrate command never wrote the canonical config file",
+          timeoutMsg:
+            "the migrate command never wrote the canonical config file",
         }
       );
     } catch (error) {
@@ -4322,7 +4387,9 @@ describe("PaperForge real-task e2e", function () {
     summaryText: string;
     noticesAfterConfirm: string[];
   }> {
-    await browser.executeObsidianCommand("paperforge:paperforge-migrate-config");
+    await browser.executeObsidianCommand(
+      "paperforge:paperforge-migrate-config"
+    );
     const summary = await browser.$(".pf-migration-summary");
     await summary.waitForExist({ timeout: 60000 });
     const summaryText = (await summary.getText()).trim();
@@ -4347,9 +4414,8 @@ describe("PaperForge real-task e2e", function () {
 
     await browser.waitUntil(
       async () =>
-        String(
-          await settingsElement(".pf-setup-failure-detail", "text")
-        ).length > 0,
+        String(await settingsElement(".pf-setup-failure-detail", "text"))
+          .length > 0,
       {
         timeout: 60000,
         timeoutMsg:
@@ -4372,7 +4438,8 @@ describe("PaperForge real-task e2e", function () {
 
     appendEvidence("a03-config-reject.json", {
       case_id: "A03",
-      variant: "invalid vault-relative path -> visible rejection, config intact",
+      variant:
+        "invalid vault-relative path -> visible rejection, config intact",
       required_layer: "H",
       status: "VERIFIED",
       source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
@@ -4392,7 +4459,14 @@ describe("PaperForge real-task e2e", function () {
     });
   });
 
-  const X06_SCENARIOS = ["401", "403", "429", "5xx", "drop", "malformed"] as const;
+  const X06_SCENARIOS = [
+    "401",
+    "403",
+    "429",
+    "5xx",
+    "drop",
+    "malformed",
+  ] as const;
   for (const scenario of X06_SCENARIOS) {
     // One case per scripted provider failure: the sandbox is rebuilt per case
     // (X11), so cross-iteration DOM staleness cannot mask the contract.
@@ -4413,7 +4487,9 @@ describe("PaperForge real-task e2e", function () {
       const stub = await startOcrStub("success", { scenario });
       try {
         await prepareOcrSandbox(stub.jobUrl);
-        await browser.executeObsidianCommand("paperforge:paperforge-ocr-workspace");
+        await browser.executeObsidianCommand(
+          "paperforge:paperforge-ocr-workspace"
+        );
         await waitForOcrRow("Biomechanical");
         await clickStable(
           "//tr[.//*[contains(text(),'Biomechanical')]]//input[@type='checkbox']"
@@ -4457,7 +4533,9 @@ describe("PaperForge real-task e2e", function () {
             // (5 transport attempts up to ~30s apart) up to the job-attempt
             // cap, so they legitimately take minutes; fatal modes fail fast.
             timeout:
-              scenario === "401" || scenario === "403" || scenario === "malformed"
+              scenario === "401" ||
+              scenario === "403" ||
+              scenario === "malformed"
                 ? 120000
                 : 300000,
             timeoutMsg: `OCR run for ${scenario} never reached a terminal state`,
@@ -4536,7 +4614,8 @@ describe("PaperForge real-task e2e", function () {
     const survivors = listing ? (JSON.parse(listing) as unknown[]) : [];
     appendEvidence("j266-probe-reaping.json", {
       case_id: "J09",
-      variant: "probe all -> window reload -> the finished generation left no child",
+      variant:
+        "probe all -> window reload -> the finished generation left no child",
       source_sha: execFileSync("git", ["rev-parse", "HEAD"], {
         cwd: PLUGIN_DIR,
       })

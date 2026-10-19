@@ -626,11 +626,18 @@ def probe_ocr(vault: Path, lineage: dict[str, Any] | None = None) -> dict[str, A
     _pipeline_summary = {
         "total": len(rows), "on_current": papers_on_current, "stale": papers_stale,
     }
+    historical_activity = {
+        "current": sum(getattr(r, "status", "") in ("done", "done_degraded") for r in rows),
+        "total": len(rows),
+        "unsettled": sum(getattr(r, "status", "") in ("running", "processing", "queued") for r in rows),
+    }
     _build_envelope = build_envelope
 
     def _wrap(*args, **kwargs):
         env = _build_envelope(*args, **kwargs)
         env["pipeline_version_summary"] = _pipeline_summary
+        if historical_activity["unsettled"]:
+            env["historical_activity"] = historical_activity
         return env
 
     if not rows:
@@ -643,11 +650,7 @@ def probe_ocr(vault: Path, lineage: dict[str, Any] | None = None) -> dict[str, A
         ),
         notices=notices, ttl_seconds=TTL_OCR, pipeline_version=OCR_PIPELINE_VERSION)
 
-    # ── Running/active rows → activity overlay (Issue #78 fix) ──
-    TERMINAL_STATUSES = frozenset({'done', 'done_degraded'})
-    ACTIVE_STATUSES = frozenset({'running', 'processing', 'queued'})
-    running_rows = [r for r in rows if getattr(r, 'status', '') in ACTIVE_STATUSES]
-    completed_count = sum(1 for r in rows if getattr(r, 'status', '') in TERMINAL_STATUSES)
+    # Persisted provider/local records do not prove a live local worker.
     total = len(rows)
     # Papers with no OCR output (the actionable set the run action would
     # process).  Counted from the rows so the number matches the OCR list.
@@ -656,13 +659,9 @@ def probe_ocr(vault: Path, lineage: dict[str, Any] | None = None) -> dict[str, A
         if getattr(r, 'status', '') == 'pending'
         or getattr(r, 'display_action', '') == 'run_ocr'
     )
-    act_state = "running" if running_rows else "idle"
-    if running_rows:
-        act_label = f"OCR processing ({completed_count}/{total})"
-        act_progress = {"current": completed_count, "total": total}
-    else:
-        act_label = None
-        act_progress = None
+    act_state = "idle"
+    act_label = None
+    act_progress = None
 
     # ── Unified state machine (统一出统一回) ──
     # The lineage probe is the AUTHORITY for per-paper OCR state.  The old

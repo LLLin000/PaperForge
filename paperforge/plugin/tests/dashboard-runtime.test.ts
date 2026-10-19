@@ -583,59 +583,125 @@ describe("PaperForgeStatusView.onOpen production lifecycle (Step 5 wiring correc
 });
 
 describe("PaperForgeStatusView note opening", () => {
-  it("materializes an externally created note before opening a search result", async () => {
-    const view = new (PaperForgeStatusView as any)({});
+  it("opens an externally created note without deleting or rewriting it", async () => {
+    // The constructor only stores this leaf; host behavior is supplied below.
+    const hostLeaf = {} as ConstructorParameters<
+      typeof PaperForgeStatusView
+    >[0];
+    const view = new PaperForgeStatusView(hostLeaf);
     const notePath = "Resources/Literature/J01/J01.md";
-    const file = Object.create(TFile.prototype) as TFile;
-    (file as any).path = notePath;
-    (file as any).extension = "md";
+    const file = Object.assign(Object.create(TFile.prototype), {
+      path: notePath,
+      extension: "md",
+    });
     let indexed: TFile | null = null;
-    let physicalExists = true;
-    const leaf = {
-      openFile: vi.fn(async () => undefined),
-    };
-    const app = {
+    const remove = vi.fn();
+    const write = vi.fn();
+    const leaf = { openFile: vi.fn(async () => undefined) };
+    const host = {
       vault: {
-        getAbstractFileByPath: vi.fn(() => indexed),
+        getAbstractFileByPath: () => indexed,
         adapter: {
-          exists: vi.fn(async (path: string) =>
-            path === notePath ? physicalExists : true
-          ),
-          read: vi.fn(async () => "# J01\n"),
-          remove: vi.fn(async () => {
-            physicalExists = false;
+          exists: async () => true,
+          reconcileInternalFile: vi.fn(async () => {
+            indexed = file;
           }),
-          write: vi.fn(async () => {
-            physicalExists = true;
-          }),
+          remove,
+          write,
         },
-        createFolder: vi.fn(async () => undefined),
-        create: vi.fn(async () => {
-          if (physicalExists) throw new Error("File already exists");
-          physicalExists = true;
-          indexed = file;
-          return file;
-        }),
       },
       workspace: {
-        getMostRecentLeaf: vi.fn(() => leaf),
-        getLeaf: vi.fn(() => leaf),
-        revealLeaf: vi.fn(async () => undefined),
+        getMostRecentLeaf: () => leaf,
+        getLeaf: () => leaf,
+        revealLeaf: async () => undefined,
         setActiveLeaf: vi.fn(),
         openLinkText: vi.fn(),
       },
     };
-    (view as any).app = app;
-
-    await (view as any)._openSearchResult(notePath, false);
-
-    expect(app.vault.createFolder).toHaveBeenCalledWith(
-      "Resources/Literature/J01"
-    );
-    expect(app.vault.adapter.read).toHaveBeenCalledWith(notePath);
-    expect(app.vault.adapter.remove).toHaveBeenCalledWith(notePath);
-    expect(app.vault.create).toHaveBeenCalledWith(notePath, "# J01\n");
+    Object.assign(view, { app: host });
+    await view._openSearchResult(notePath, false);
     expect(leaf.openFile).toHaveBeenCalledWith(file);
-    expect(app.workspace.openLinkText).not.toHaveBeenCalled();
+    expect(remove).not.toHaveBeenCalled();
+    expect(write).not.toHaveBeenCalled();
+  });
+
+  it.each([false, true])(
+    "reads the authoritative note on a cold cache miss (workspace=%s) without rewriting bytes",
+    async (workspace) => {
+      // The constructor only stores this leaf; the host behavior is supplied below.
+      const leaf = {} as ConstructorParameters<typeof PaperForgeStatusView>[0];
+      const view = new PaperForgeStatusView(leaf);
+      const notePath = "Resources/Literature/J01/J01.md";
+      const read = vi.fn(
+        async () => "## 🔍 精读\n**一句话总览:** Existing note overview\n"
+      );
+      const remove = vi.fn();
+      const write = vi.fn();
+      Object.assign(view, {
+        app: {
+          vault: {
+            getAbstractFileByPath: () => null,
+            adapter: {
+              exists: async (p: string) => p === notePath,
+              read,
+              remove,
+              write,
+            },
+          },
+        },
+      });
+      const container = document.createElement("div");
+      view._renderPaperOverviewCard(
+        container,
+        workspace
+          ? {
+              note_path: "Resources/Literature/J01.md",
+              main_note_path: notePath,
+            }
+          : { note_path: notePath }
+      );
+      await vi.waitFor(() =>
+        expect(container.textContent).toContain("Existing note overview")
+      );
+      expect(container.textContent).not.toContain("笔记文件不存在");
+      expect(read).toHaveBeenCalledWith(notePath);
+      expect(remove).not.toHaveBeenCalled();
+      expect(write).not.toHaveBeenCalled();
+      const missing = document.createElement("div");
+      view._renderPaperOverviewCard(missing, {
+        note_path: "Resources/Literature/MISSING.md",
+      });
+      await vi.waitFor(() =>
+        expect(missing.textContent).toContain("Note file does not exist")
+      );
+    }
+  );
+
+  it("does not create a truly missing note while opening a result", async () => {
+    // The constructor only stores this leaf; host behavior is supplied below.
+    const leaf = {} as ConstructorParameters<typeof PaperForgeStatusView>[0];
+    const view = new PaperForgeStatusView(leaf);
+    const openLinkText = vi.fn();
+    Object.assign(view, {
+      app: {
+        vault: {
+          getAbstractFileByPath: () => null,
+          adapter: { exists: async () => false },
+        },
+        workspace: { openLinkText },
+      },
+    });
+    vi.useFakeTimers();
+    try {
+      const opening = view._openSearchResult(
+        "Resources/Literature/MISSING.md",
+        false
+      );
+      await vi.advanceTimersByTimeAsync(5100);
+      await opening;
+      expect(openLinkText).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

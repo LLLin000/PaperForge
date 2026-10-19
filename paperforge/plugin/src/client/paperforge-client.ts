@@ -43,6 +43,7 @@ export interface ActionDescriptor {
 export interface OcrPaperRow {
   key: string;
   title?: string;
+  title_full?: string;
   status?: string;
   health?: string;
   version?: string;

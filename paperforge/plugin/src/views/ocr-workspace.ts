@@ -107,12 +107,11 @@ export class OcrWorkspaceView extends ItemView {
     phase: "",
     itemStatus: "",
   };
-  private globalActivity: {
-    state: "idle" | "running" | "unknown";
-    label: string;
+  private historicalActivity: {
     current: number;
     total: number;
-  } = { state: "idle", label: "", current: 0, total: 0 };
+    unsettled: number;
+  } | null = null;
   private readonly actionDescriptors = new Map<string, ActionDescriptor>();
   private readonly pendingActionDescriptors = new Set<string>();
   private _client: PaperForgeClient | null = null;
@@ -191,12 +190,7 @@ export class OcrWorkspaceView extends ItemView {
     this.actionDescriptors.clear();
     const client = this._getClient();
     if (!client) {
-      this.globalActivity = {
-        state: "unknown",
-        label: t("runtime_not_available") || "Environment unavailable",
-        current: 0,
-        total: 0,
-      };
+      this.historicalActivity = null;
       this.papers = [];
       this.selectedKey = null;
       this.checkedKeys.clear();
@@ -210,22 +204,7 @@ export class OcrWorkspaceView extends ItemView {
       client.queryOcrPapers().catch(() => []),
     ]);
     const lineage = lineageResult as unknown as LineageProbe | null;
-    const activity = activityResult as {
-      activity_state?: string;
-      activity_label?: string | null;
-      activity_progress?: { current?: number; total?: number } | null;
-    } | null;
-    this.globalActivity = {
-      state:
-        activity?.activity_state === "running"
-          ? "running"
-          : activity
-            ? "idle"
-            : "unknown",
-      label: activity?.activity_label ?? "",
-      current: activity?.activity_progress?.current ?? 0,
-      total: activity?.activity_progress?.total ?? 0,
-    };
+    this.historicalActivity = activityResult?.historical_activity ?? null;
 
     const prevByKey = new Map(this.papers.map((p) => [p.key, p]));
     const lineagePapers = lineage?.papers ?? {};
@@ -247,7 +226,7 @@ export class OcrWorkspaceView extends ItemView {
               );
       this.papers.push({
         key,
-        title: row.title ?? key,
+        title: row.title_full || row.title || key,
         status,
         pipelineVersion: row.version ?? prev?.pipelineVersion ?? "",
         lastRun: row.finished_at ?? prev?.lastRun ?? "",
@@ -309,8 +288,11 @@ export class OcrWorkspaceView extends ItemView {
       if (oldTbody) oldTbody.remove();
       this._buildTableRows(existingTable, this._currentPagePapers(filtered));
     } else {
-      // First render — build full table
-      const vp = container.createDiv({ cls: "pf-ocr-ws-viewport" });
+      // Reuse the empty viewport too; a new one would leave "no papers" visible.
+      const vp =
+        container.querySelector<HTMLElement>(".pf-ocr-ws-viewport") ??
+        container.createDiv({ cls: "pf-ocr-ws-viewport" });
+      vp.empty();
       this._buildTableBody(vp, this._currentPagePapers(filtered));
     }
 
@@ -389,30 +371,26 @@ export class OcrWorkspaceView extends ItemView {
   }
 
   private _renderActivity(container: HTMLElement): void {
-    const showLocal = this.running;
-    const showGlobal = !showLocal && this.globalActivity.state === "running";
-    if (!showLocal && !showGlobal) return;
-
+    const client = this._getClient();
+    const showLocal = this.running && !!client?.isOperationActive();
+    const history = this.historicalActivity;
+    if (!showLocal && !history?.unsettled) return;
     const activity = showLocal
       ? this.progress
       : {
-          current: this.globalActivity.current,
-          total: this.globalActivity.total,
+          current: history?.current ?? 0,
+          total: history?.total ?? 0,
           paperKey: "",
           phase: "",
           itemStatus: "",
         };
     const act = container.createDiv({
-      cls: "pf-ocr-ws-activity pf-active",
+      cls: `pf-ocr-ws-activity ${showLocal ? "pf-active" : "pf-history"}`,
       attr: { "aria-live": "polite" },
     });
     const head = act.createDiv({ cls: "pf-ocr-ws-activity-head" });
     const title = head.createDiv({ cls: "pf-ocr-ws-activity-title" });
-    title.setText(
-      showLocal
-        ? t("ocr_ws_processing")
-        : this.globalActivity.label || t("ocr_ws_processing")
-    );
+    title.setText(showLocal ? t("ocr_ws_processing") : t("ocr_ws_history"));
     const key = activity.paperKey;
     if (key) {
       const paper = this.papers.find((p) => p.key === key);
@@ -425,18 +403,15 @@ export class OcrWorkspaceView extends ItemView {
       title.createEl("span", { text: ` · ${this.progress.phase}` });
     }
 
-    const stopBtn = head.createEl("button", {
-      cls: "pf-btn pf-btn-ghost",
-      attr: { "data-pf-testid": "ocr-ws-stop" },
-      text: t("ocr_ws_stop") || "Stop",
-    });
-    const client = this._getClient();
-    if (!client || !client.isOperationActive()) {
-      stopBtn.disabled = true;
-      stopBtn.title =
-        t("ocr_ws_stop_unavailable") || "Operation is not owned by this window";
-    } else {
+    if (showLocal) {
+      const stopBtn = head.createEl("button", {
+        cls: "pf-btn pf-btn-ghost",
+        attr: { "data-pf-testid": "ocr-ws-stop" },
+        text: t("ocr_ws_stop"),
+      });
       stopBtn.addEventListener("click", () => this._stopBuild());
+    } else {
+      act.createDiv({ text: t("ocr_ws_history_detail") });
     }
 
     const track = act.createDiv({ cls: "pf-ocr-ws-progress-track" });
@@ -554,8 +529,10 @@ export class OcrWorkspaceView extends ItemView {
           p.status === "update_available"
       );
     else if (this.filter === "review")
-      list = list.filter(
-        (p) => p.status === "failed" || p.status === "processing"
+      list = list.filter((p) =>
+        ["failed", "processing", "running", "queued", "unknown"].includes(
+          p.status
+        )
       );
     else if (this.filter === "processed")
       list = list.filter((p) => p.status === "done");
