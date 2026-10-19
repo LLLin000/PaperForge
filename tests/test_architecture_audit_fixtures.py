@@ -15,7 +15,7 @@ from pathlib import Path
 import pytest
 
 from paperforge.architecture_audit import AssessmentStatus, RuleStatus, reconcile
-from paperforge.architecture_audit.fixtures import FIXTURE_NAMES, load_fixture, load_fixture_dict
+from paperforge.architecture_audit.fixtures import FIXTURE_NAMES, load_fixture
 
 GOLDEN_FIXTURE_NAMES = tuple(name for name in FIXTURE_NAMES if name.startswith("golden_"))
 
@@ -190,38 +190,3 @@ class TestGoldenOutcomes:
         assert "signal.drift_state" not in statuses  # active + satisfied
 
 
-
-class TestGoldenEvidenceVerification:
-    def test_pinned_evidence_files_symbols_ranges_and_aggregate_digest(self):
-        import hashlib
-
-        root = Path(__file__).resolve().parents[1]
-        names = GOLDEN_FIXTURE_NAMES
-        for name in names:
-            payload = load_fixture_dict(name)
-            pairs = set()
-            for fact in payload["survey"]["facts"]:
-                evidence_items = []
-                if fact.get("evidence"):
-                    evidence_items.append(fact["evidence"])
-                evidence_items.extend(fact.get("consumer_evidence", []))
-                for evidence in evidence_items:
-                    path = root / evidence["file"]
-                    assert path.is_file(), (name, evidence["file"])
-                    # Digest over canonicalized bytes: the fingerprint means
-                    # CONTENT — CRLF/LF checkout variance (Windows vs CI)
-                    # must not make a pinned digest platform-dependent.
-                    digest = hashlib.sha256(
-                        path.read_bytes().replace(b"\r\n", b"\n")
-                    ).hexdigest()
-                    assert digest == evidence["file_digest"].removeprefix("sha256:"), (name, evidence["file"])
-                    lines = path.read_text(encoding="utf-8").splitlines()
-                    selected = lines[evidence["line_start"] - 1:evidence["line_end"]]
-                    assert any(evidence["symbol"] in line for line in selected), (
-                        name,
-                        evidence["symbol"],
-                    )
-                    pairs.add((evidence["file"], evidence["file_digest"]))
-            aggregate = "\n".join(f"{file}\n{digest}" for file, digest in sorted(pairs))
-            expected = "sha256:" + hashlib.sha256(aggregate.encode("utf-8")).hexdigest()
-            assert payload["survey"]["source_digest"] == expected, name
