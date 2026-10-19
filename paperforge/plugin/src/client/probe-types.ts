@@ -103,6 +103,8 @@ export interface ProbeEnvelope {
   pipeline_version?: string;
   last_pipeline_version?: string;
   pipeline_version_summary?: { stale?: number };
+  /** Saved OCR evidence only; never establishes local worker ownership. */
+  historical_activity?: { current: number; total: number; unsettled: number };
   items?: MaintenanceItem[];
   /* #135: structured module facts for the settings panel — the single
      source of truth for info-card rows (api key, db, build progress). */

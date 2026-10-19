@@ -838,7 +838,7 @@ const LANG: Record<string, Record<string, string>> = {
     embed_bookkeeping_incomplete: "bookkeeping incomplete",
     embed_build_stopped: "Build stopped. Run again to resume.",
     next_action_pending:
-      "Vector embedding is ready. Open Smart Retrieval to review and run it.",
+      "Follow-up actions require review; they have not started. Open the relevant module to continue.",
     next_action_runtime_unavailable:
       "PaperForge runtime unavailable; follow-up not started.",
     next_action_failed: "Follow-up failed: {detail}",
@@ -911,11 +911,16 @@ const LANG: Record<string, Record<string, string>> = {
     ocr_ws_what_happens: "What happens when I re-extract?",
     ocr_ws_disclosure_text:
       "Re-extraction re-runs OCR on the selected paper. The current version is backed up first. PDFs are never modified.",
-    ocr_ws_no_papers: "No papers found with OCR data",
+    ocr_ws_no_papers: "No matching indexed papers or OCR records",
     ocr_ws_lede:
       "View and manage OCR extraction for your literature collection.",
     ocr_ws_processing: "Processing\u2026",
     ocr_ws_stop: "Stop",
+    ocr_ws_history: "Saved OCR progress — no local operation",
+    ocr_ws_history_detail:
+      "Provider jobs may still be pending; remote status has not been checked.",
+    ocr_ws_status_queued: "Queued (saved state)",
+    ocr_ws_stop_unavailable: "No cancellable operation owned by this window",
     ocr_ws_stop_unavailable_rebuild: "Rebuild is not stoppable from here",
     ocr_ws_btn_refresh: "Refresh",
     ocr_ws_pagination_previous: "Previous page",
@@ -985,7 +990,12 @@ const LANG: Record<string, Record<string, string>> = {
     ocr_ws_status_processing: "Processing",
     ocr_ws_status_nopdf: "No PDF",
     ocr_ws_status_pending: "Pending",
+    paper_note_missing: "Note file does not exist",
     ocr_ws_status_unknown: "Unknown",
+    ocr_ws_status_degraded: "Partial",
+    ocr_ws_status_incomplete: "Incomplete",
+    ocr_ws_status_error: "Retryable error",
+    ocr_ws_status_blocked: "Blocked",
   },
   zh: {
     action_running: "正在执行 ",
@@ -1750,7 +1760,8 @@ const LANG: Record<string, Record<string, string>> = {
     embed_build_warning: "向量索引已发布，但存在警告：{detail}",
     embed_bookkeeping_incomplete: "收尾记录未完成",
     embed_build_stopped: "构建已停止。再次运行即可继续。",
-    next_action_pending: "向量嵌入已就绪。请打开“智能检索”查看并运行。",
+    next_action_pending:
+      "后续操作需要审核，尚未启动。请打开对应模块查看并继续。",
     next_action_runtime_unavailable:
       "PaperForge 运行环境不可用；后续操作未启动。",
     next_action_failed: "后续操作失败：{detail}",
@@ -1831,10 +1842,14 @@ const LANG: Record<string, Record<string, string>> = {
     ocr_ws_what_happens: "重新提取时会发生什么？",
     ocr_ws_disclosure_text:
       "重新提取会对所选论文重新运行OCR。当前版本会先备份。PDF永远不会被修改。",
-    ocr_ws_no_papers: "未找到具有OCR数据的论文",
+    ocr_ws_no_papers: "未找到匹配的已索引论文或 OCR 记录",
     ocr_ws_lede: "查看和管理文献集合的 OCR 提取。",
     ocr_ws_processing: "处理中\u2026",
     ocr_ws_stop: "停止",
+    ocr_ws_history: "已保存的 OCR 进度 — 当前无本地操作",
+    ocr_ws_history_detail: "服务端任务可能仍在等待；未查询远程状态。",
+    ocr_ws_status_queued: "已排队（保存状态）",
+    ocr_ws_stop_unavailable: "此窗口没有可取消的本地操作",
     ocr_ws_stop_unavailable_rebuild: "重建操作无法在此停止",
     ocr_ws_btn_refresh: "刷新",
     ocr_ws_pagination_previous: "上一页",
@@ -1902,7 +1917,12 @@ const LANG: Record<string, Record<string, string>> = {
     ocr_ws_status_processing: "处理中",
     ocr_ws_status_nopdf: "无PDF",
     ocr_ws_status_pending: "待处理",
+    paper_note_missing: "笔记文件不存在",
     ocr_ws_status_unknown: "未知",
+    ocr_ws_status_degraded: "部分完成",
+    ocr_ws_status_incomplete: "未完成",
+    ocr_ws_status_error: "可重试错误",
+    ocr_ws_status_blocked: "已阻塞",
   },
 };
 

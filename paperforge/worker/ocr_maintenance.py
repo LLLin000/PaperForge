@@ -352,37 +352,22 @@ def compute_maintenance_manifest(vault: Path) -> dict[str, str]:
 
 
 def collect_maintenance_rows(vault: Path) -> list[OCRMaintenanceRow]:
-    """Scan all OCR paper directories and return normalized maintenance rows."""
+    """Read canonical papers plus existing OCR evidence without creating artifacts."""
+    from paperforge.pdf_resolver import resolve_pdf_path
     from paperforge.worker._utils import pipeline_paths
+    from paperforge.worker.asset_index import read_index
     from paperforge.worker.ocr_artifacts import artifact_paths_for_root
 
     paths = pipeline_paths(vault)
-    ocr_root = paths.get("ocr")
-    if not ocr_root or not ocr_root.exists():
-        return []
-
+    ocr_root = paths["ocr"]
+    index = read_index(vault)
+    items = index.get("items", []) if isinstance(index, dict) else (index or [])
+    canonical = {item["zotero_key"]: item for item in items if item.get("zotero_key")}
+    existing = {p.name for p in ocr_root.iterdir() if p.is_dir()} if ocr_root.is_dir() else set()
     rows: list[OCRMaintenanceRow] = []
 
-    # Preload canonical index for title fallback. `pipeline_paths()["index"]`
-    # is the formal-library.json FILE, not the indexes directory; appending
-    # the filename again silently yields an empty title map and every row
-    # falls back to its key. A directory is still tolerated for callers that
-    # hand over the indexes dir.
-    lib_index = Path(
-        paths.get("index") or (ocr_root.parent / "indexes" / "formal-library.json")
-    )
-    if lib_index.is_dir():
-        lib_index = lib_index / "formal-library.json"
-    title_by_key: dict[str, str] = {}
-    if lib_index.exists():
-        lib_data = read_json(lib_index)
-        lib_items = lib_data.get("items", lib_data) if isinstance(lib_data, dict) else lib_data
-        title_by_key = {i.get("zotero_key", ""): str(i.get("title", "") or "") for i in lib_items if i.get("zotero_key")}
-
-    for paper_dir in sorted(ocr_root.iterdir()):
-        if not paper_dir.is_dir():
-            continue
-        key = paper_dir.name
+    for key in sorted(existing | canonical.keys()):
+        entry = canonical.get(key, {})
         artifacts = artifact_paths_for_root(ocr_root, key)
         meta_path = artifacts.meta_json
         health_path = artifacts.paper_root / "health" / "ocr_health.json"
@@ -405,7 +390,16 @@ def collect_maintenance_rows(vault: Path) -> list[OCRMaintenanceRow]:
         has_source_meta = artifacts.source_metadata.exists()
         has_structured = artifacts.blocks_structured.exists()
 
-        status = str(meta.get("ocr_status", "") or "").lower() or "-"
+        status = str(meta.get("ocr_status", "") or "").lower()
+        if not status:
+            if entry:
+                ready = resolve_pdf_path(
+                    str(entry.get("pdf_path", "") or ""), bool(entry.get("has_pdf")), vault,
+                    paths.get("zotero_dir"),
+                )
+                status = "pending" if ready else "nopdf"
+            else:
+                status = "pending"
         health_overall = str(health.get("overall", "") or "")
         version = _detect_version(meta, has_structured, has_raw)
         model = str(
@@ -432,12 +426,12 @@ def collect_maintenance_rows(vault: Path) -> list[OCRMaintenanceRow]:
             except Exception:  # noqa: BLE001 — restore-damaged source metadata
                 title = ""
         if not title:
-            title = title_by_key.get(key, key)
+            title = entry.get("title") or key
         row = OCRMaintenanceRow(
             key=key,
             title=_short_title(title),
             title_full=_safe_str(title),
-            status=status if status != "-" else "pending",
+            status=status,
             health=health_overall or "-",
             version=version,
             finished_at=_fmt_iso(meta.get("ocr_finished_at")),
@@ -450,12 +444,12 @@ def collect_maintenance_rows(vault: Path) -> list[OCRMaintenanceRow]:
             degraded_reasons=degraded_reasons,
             error_summary=_error_summary(meta),
             error_stage=_error_stage(meta),
-            can_redo=_can_redo(meta),
+            can_redo=_can_redo({**meta, "ocr_status": status}),
             can_rebuild=_can_rebuild(meta, has_raw, has_source_meta, has_structured),
             recommended_action=_recommended_action(meta, has_raw, has_source_meta),
             structured_content_hash=meta.get("structured_content_hash", ""),
         )
-        row_status = status if status != "-" else "pending"
+        row_status = status
         df = _compute_display_fields(
             status=row_status, health_overall=health_overall,
             version=version, can_redo=row.can_redo, can_rebuild=row.can_rebuild,

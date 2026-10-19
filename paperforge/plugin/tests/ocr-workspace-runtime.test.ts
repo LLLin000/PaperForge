@@ -6,6 +6,8 @@
  */
 import { describe, expect, it, vi } from "vitest";
 
+import "obsidian-test-mocks/jest-setup";
+import { setLanguage } from "../src/i18n";
 vi.mock("obsidian", () => {
   return {
     Notice: class {
@@ -92,7 +94,7 @@ describe("OcrWorkspaceView PaperForgeClient cutover", () => {
     await actions._runOcrAction("ocr.run", []);
     expect(transport.calls).toEqual([]);
   });
-  it("loads paper rows and global activity from client probes", async () => {
+  it("preserves the lineage status of listed papers", async () => {
     const transport = new MockTransport();
     transport.executeHandler = (argv) => {
       if (argv[0] === "probe" && argv[1] === "lineage") {
@@ -104,13 +106,6 @@ describe("OcrWorkspaceView PaperForgeClient cutover", () => {
               flags: { version_old: false },
             },
           },
-        });
-      }
-      if (argv[0] === "probe" && argv[1] === "ocr") {
-        return JSON.stringify({
-          activity_state: "running",
-          activity_label: "OCR processing",
-          activity_progress: { current: 1, total: 2 },
         });
       }
       if (argv[0] === "ocr" && argv[1] === "list") {
@@ -144,11 +139,6 @@ describe("OcrWorkspaceView PaperForgeClient cutover", () => {
         recommendedAction: "redo",
       },
     ]);
-    expect((view as any).globalActivity).toMatchObject({
-      state: "running",
-      current: 1,
-      total: 2,
-    });
     expect(transport.calls.some((call) => call.argv[0] === "fs")).toBe(false);
   });
 
@@ -266,7 +256,6 @@ describe("OcrWorkspaceView PaperForgeClient cutover", () => {
     await (view as any)._loadPapers();
 
     expect((view as any).papers).toEqual([]);
-    expect((view as any).globalActivity.state).toBe("unknown");
   });
 
   it("clears dynamic action descriptors on read-model refresh", async () => {
@@ -376,5 +365,101 @@ describe("OcrWorkspaceView PaperForgeClient cutover", () => {
     // Direct call should early-return, not touch DOM.
     (view as any)._render();
     expect(renderSpy).toHaveReturned();
+  });
+});
+
+describe("OCR saved activity presentation", () => {
+  it.each(["en", "zh"])(
+    "keeps history distinct from a cancellable local operation (%s)",
+    async (language) => {
+      const transport = new MockTransport();
+      transport.executeHandler = (argv) =>
+        JSON.stringify(
+          argv[0] === "ocr"
+            ? [{ key: "OLDJOB01", title: "Historical paper", status: "queued" }]
+            : argv[1] === "ocr"
+              ? {
+                  activity_state: "idle",
+                  historical_activity: {
+                    current: 8,
+                    total: 166,
+                    unsettled: 11,
+                  },
+                }
+              : {}
+        );
+      const client = new PaperForgeClient({ transport });
+      const view = makeView(client);
+      setLanguage(view.app, language);
+      // Exercise the render boundary without overriding the activity renderer.
+      const surface = view as unknown as {
+        _loadPapers(): Promise<void>;
+        _renderActivity(el: HTMLElement): void;
+        running: boolean;
+      };
+      await surface._loadPapers();
+      const container = document.createElement("div");
+      surface._renderActivity(container);
+      expect(container.textContent).toContain(
+        language === "en" ? "Saved OCR progress" : "已保存的 OCR 进度"
+      );
+      expect(container.textContent).toContain("8 / 166");
+      expect(
+        container.querySelector('[data-pf-testid="ocr-ws-stop"]')
+      ).toBeNull();
+      expect(container.textContent).not.toContain("ocr_ws_");
+      setLanguage(view.app, "en");
+    }
+  );
+});
+
+describe("OCR workspace empty-filter recovery", () => {
+  it("replaces the empty state when a reopened workspace filter has matches", async () => {
+    vi.useFakeTimers();
+    try {
+      const transport = new MockTransport();
+      transport.executeHandler = (argv) => {
+        if (argv[0] === "ocr")
+          return JSON.stringify([
+            { key: "FRESH001", title: "Fresh paper", status: "pending" },
+          ]);
+        if (argv[0] === "action") return descriptorResponse(argv[2]);
+        return JSON.stringify({});
+      };
+      const client = new PaperForgeClient({ transport });
+      const view = new OcrWorkspaceView(new WorkspaceLeaf(), {
+        getClient: () => client,
+      });
+      const host = document.createElement("div");
+      host.append(document.createElement("div"), document.createElement("div"));
+      Object.assign(view, {
+        containerEl: host,
+        app: { vault: { adapter: { basePath: "/vault" } } },
+      });
+      await view.onOpen();
+      const choose = (value: string) => {
+        const select = host.querySelector<HTMLSelectElement>(
+          ".pf-ocr-ws-field select"
+        );
+        if (!select) throw new Error("Missing status filter");
+        select.value = value;
+        select.dispatchEvent(new Event("change"));
+      };
+      choose("processed");
+      await view.onClose();
+      await view.onOpen();
+      // Settle the descriptor-driven render before exercising the filter transition.
+      await vi.runAllTimersAsync();
+      expect(host.querySelector(".pf-ocr-ws-empty")).not.toBeNull();
+      choose("all");
+      expect(host.querySelector(".pf-ocr-ws-empty")).toBeNull();
+      expect(host.querySelectorAll(".pf-ocr-ws-viewport")).toHaveLength(1);
+      expect(
+        host.querySelector(".pf-ocr-ws-table tbody")?.textContent
+      ).toContain("Fresh paper");
+      await view.onClose();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

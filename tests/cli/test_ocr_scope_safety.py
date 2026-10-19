@@ -269,3 +269,34 @@ def test_whole_library_action_requires_explicit_confirmation(scope_vault, capsys
     assert rc == 3
     events = [json.loads(line) for line in capsys.readouterr().out.splitlines() if line.strip()]
     assert events[-1]["result"]["error"]["code"] == "action.confirmation_required"
+
+
+def test_fresh_list_selection_reaches_only_selected_pdf(scope_vault, capsys):
+    """#351: discovery without seeded OCR artifacts feeds the final HTTP scope."""
+    vault, pdfs = scope_vault
+    paths = pipeline_paths(vault)
+    paths["ocr_queue"].unlink()
+    paths["ocr"].rmdir()
+    before = {p: p.read_bytes() for p in vault.rglob("*") if p.is_file()}
+    main(["--vault", str(vault), "ocr", "list", "--json"])
+    rows = json.loads(capsys.readouterr().out)
+    assert {r["key"]: r["status"] for r in rows} == {"SCOPE001": "pending", "SCOPE002": "pending"}
+    assert not paths["ocr"].exists()
+    assert {p: p.read_bytes() for p in before} == before
+    selected = next(r["key"] for r in rows if r["key"] == "SCOPE001")
+    uploads = []
+
+    def submit(request):
+        matches = [key for key, pdf in pdfs.items() if pdf in request.body]
+        assert matches == ["SCOPE001"]
+        uploads.extend(matches)
+        return 202, {}, json.dumps({"data": {"jobId": "fresh-list-job"}})
+
+    with responses.RequestsMock(assert_all_requests_are_fired=False) as http:
+        http.add_callback(responses.POST, "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs", callback=submit)
+        http.get("https://paddleocr.aistudio-app.com/api/v2/ocr/jobs/fresh-list-job", json={"data": {"state": "running"}})
+        rc = main(["--vault", str(vault), "action", "run", "ocr.run", "--scope", "papers",
+                   "--key", selected, "--confirm", "ocr.run", "--json"])
+    assert rc == 1  # Scripted provider stays pending, never successful OCR.
+    assert uploads == ["SCOPE001"]
+    assert not (paths["ocr"] / "SCOPE002").exists()

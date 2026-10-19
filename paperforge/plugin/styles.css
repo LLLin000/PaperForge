@@ -4448,7 +4448,8 @@
   display: flex;
   gap: 12px;
   align-items: center;
-  font-size: var(--font-ui-smaller);}
+  font-size: var(--font-ui-smaller);
+}
 
 .pf-control-center .pf-cc-summary-count {
   font-size: var(--font-ui-smaller);
@@ -4529,12 +4530,14 @@
 .pf-control-center .pf-cc-card-badge--ok {
   background: color-mix(in srgb, var(--text-success) 10%, transparent);
   color: var(--text-success);
-  font-size: var(--font-ui-smaller);}
+  font-size: var(--font-ui-smaller);
+}
 
 .pf-control-center .pf-cc-card-badge--warn {
   background: color-mix(in srgb, var(--text-warning) 10%, transparent);
   color: var(--text-warning);
-  font-size: var(--font-ui-smaller);}
+  font-size: var(--font-ui-smaller);
+}
 
 .pf-control-center .pf-cc-card-badge--error {
   background: color-mix(in srgb, var(--text-error) 10%, transparent);
@@ -4617,13 +4620,15 @@
 .pf-control-center .pf-cc-card-action:hover {
   background: var(--interactive-hover);
   border-color: var(--background-modifier-border-hover);
-  font-size: var(--font-ui-smaller);}
+  font-size: var(--font-ui-smaller);
+}
 
 .pf-control-center .pf-cc-card-action--primary {
   background: var(--interactive-accent);
   color: var(--text-on-accent);
   border: none;
-  font-size: var(--font-ui-smaller);}
+  font-size: var(--font-ui-smaller);
+}
 
 .pf-control-center .pf-cc-card-action--primary:hover {
   opacity: 0.85;
@@ -4647,7 +4652,8 @@
 }
 .pf-control-center .pf-cc-card-diagnostic > summary:hover {
   color: var(--text-muted);
-  font-size: var(--font-ui-smaller);}
+  font-size: var(--font-ui-smaller);
+}
 
 .pf-control-center .pf-cc-card-diagnostic:hover {
   color: var(--text-muted);
@@ -5205,7 +5211,8 @@
 }
 .pf-config-value--ok {
   color: var(--text-success);
-  font-size: var(--font-ui-small);}
+  font-size: var(--font-ui-small);
+}
 .pf-config-value--muted {
   color: var(--text-faint);
 }
@@ -5637,7 +5644,8 @@
   justify-content: space-between;
   gap: 8px;
   border-radius: var(--setting-items-radius);
-  background: var(--setting-items-background);}
+  background: var(--setting-items-background);
+}
 .pf-cc-card-title {
   font-size: var(--font-ui-medium);
   font-weight: var(--font-semibold);
@@ -5665,7 +5673,8 @@
   align-self: flex-end;
   margin-top: auto;
   color: var(--text-faint);
-  font-size: var(--font-ui-smaller);}
+  font-size: var(--font-ui-smaller);
+}
 .pf-module-detail-shell,
 .pf-module-body {
   display: flex;
@@ -5979,7 +5988,8 @@
   border: 1px solid var(--background-modifier-border);
   border-radius: 8px;
 }
-.pf-ocr-ws-activity.pf-active {
+.pf-ocr-ws-activity.pf-active,
+.pf-ocr-ws-activity.pf-history {
   display: block;
 }
 .pf-ocr-ws-activity-head {
@@ -6621,7 +6631,8 @@ input.pf-ocr-ws-search-input::placeholder {
   font-size: var(--font-ui-small);
   line-height: 1.55;
   margin-bottom: var(--size-4-6);
-  padding: 0 var(--size-4-4);}
+  padding: 0 var(--size-4-4);
+}
 
 /* ── Summary Card ── */
 .pf-cc-summary {
@@ -6710,7 +6721,8 @@ input.pf-ocr-ws-search-input::placeholder {
   justify-content: space-between;
   gap: var(--size-4-3);
   margin-bottom: var(--size-4-4);
-  padding: 0 var(--size-4-4);}
+  padding: 0 var(--size-4-4);
+}
 .pf-cc-section-head h2 {
   font-size: var(--font-ui-medium);
   font-weight: var(--font-semibold);
