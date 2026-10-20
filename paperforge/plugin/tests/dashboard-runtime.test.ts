@@ -44,8 +44,14 @@ vi.mock("obsidian", () => {
       constructor() {
         this.contentEl = document.createElement("div");
       }
-      open() {}
-      close() {}
+      open() {
+        document.body.append(this.contentEl);
+        if ("onOpen" in this && typeof this.onOpen === "function")
+          this.onOpen();
+      }
+      close() {
+        this.contentEl.remove();
+      }
     },
     MarkdownRenderer: { render: () => {} },
     App: class {},
@@ -55,6 +61,12 @@ vi.mock("obsidian", () => {
 
 import { PaperForgeStatusView } from "../src/views/dashboard";
 import { TFile } from "obsidian";
+import { PaperForgeClient } from "../src/client/paperforge-client";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { resolve, join } from "node:path";
 
 /** Mock pointer representing a published runtime (schema v1). */
 function readyPointer(pythonPath: string) {
@@ -704,4 +716,129 @@ describe("PaperForgeStatusView note opening", () => {
       vi.useRealTimers();
     }
   });
+});
+
+describe("visible research record capture", () => {
+  it("keeps the captured paper while selection changes and immediately finds its saved record", async () => {
+    const vault = mkdtempSync(join(tmpdir(), "pf-record-ui-"));
+    const run = promisify(execFile);
+    const python = process.env.PF_PYTHON || "python";
+    const cwd = resolve("../..");
+    const env = {
+      ...process.env,
+      PYTHON_KEYRING_BACKEND: "keyring.backends.fail.Keyring",
+      PAPERFORGE_KEYRING_BACKEND: "keyring.backends.fail.Keyring",
+    };
+    try {
+      await run(
+        python,
+        [
+          "-c",
+          "from pathlib import Path; from paperforge.config import bootstrap_config; import sys; bootstrap_config(Path(sys.argv[1]))",
+          vault,
+        ],
+        { cwd, env }
+      );
+      const client = new PaperForgeClient({
+        transport: {
+          execute: async (argv) =>
+            (
+              await run(
+                python,
+                ["-m", "paperforge", "--vault", vault, ...argv],
+                { cwd, env }
+              )
+            ).stdout,
+          stream: () => {
+            throw new Error("No remote/stream operations in record capture");
+          },
+        },
+      });
+      const view = new PaperForgeStatusView(
+        {} as ConstructorParameters<typeof PaperForgeStatusView>[0]
+      );
+      Object.assign(view, {
+        app: {
+          plugins: { plugins: { paperforge: { getClient: () => client } } },
+        },
+      });
+      view._contentEl = document.createElement("div");
+      document.body.append(view._contentEl);
+      view._currentPaperKey = "PAPER001";
+      view._currentPaperEntry = { title: "Unrelated title" };
+      view._renderPaperMode();
+      const capture = view._contentEl.querySelector<HTMLButtonElement>(
+        '[data-pf-testid="save-research-record"]'
+      );
+      expect(capture).not.toBeNull();
+      capture!.click();
+      view._currentPaperKey = "OTHER001";
+      const modal = document.querySelector<HTMLElement>(
+        ".paperforge-record-modal"
+      )!;
+      const quote =
+        modal.querySelector<HTMLTextAreaElement>('[name="excerpt"]')!;
+      const usage = modal.querySelector<HTMLTextAreaElement>('[name="usage"]')!;
+      quote.value = "An exact saved observation";
+      usage.value = "non-title-bridge-marker";
+      const sourcePath = modal.querySelector<HTMLInputElement>('[name="pdf"]')!;
+      sourcePath.value = "https://example.invalid/private.pdf";
+      modal.querySelector<HTMLInputElement>('[name="page"]')!.value = "2";
+      modal.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
+      await vi.waitFor(
+        () => expect(modal.textContent).toContain("Operation failed"),
+        { timeout: 10000 }
+      );
+      expect(quote.value).toBe("An exact saved observation");
+      expect(quote.disabled).toBe(false);
+      expect(modal.textContent).not.toMatch(/rln_\d{8}_/);
+      sourcePath.value = "";
+      modal.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
+      await vi.waitFor(() => expect(modal.textContent).toMatch(/rln_\d{8}_/), {
+        timeout: 10000,
+      });
+      expect(modal.textContent).toContain("unknown");
+      expect(
+        view._contentEl.querySelector(".paperforge-search-input")
+      ).not.toBeNull();
+      view._searchInput!.value = "non-title-bridge-marker";
+      await view.executeSearch();
+      const group = view._contentEl.querySelector(".paperforge-record-results");
+      expect(group?.textContent).toContain("An exact saved observation");
+      expect(group?.textContent).toContain("non-title-bridge-marker");
+      expect(group?.textContent).toContain("PAPER001");
+      expect(group?.textContent).not.toContain("OTHER001");
+      modal.remove();
+      group!.querySelector<HTMLButtonElement>("button")!.click();
+      const detail = document.querySelector<HTMLElement>(
+        ".paperforge-record-modal"
+      )!;
+      detail.querySelector<HTMLTextAreaElement>('[name="correction"]')!.value =
+        "Rechecked: do not use the earlier interpretation";
+      detail.querySelector<HTMLInputElement>('[name="reason"]')!.value =
+        "Source review";
+      detail.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
+      await vi.waitFor(
+        () => expect(group!.textContent).toContain("No matching records"),
+        { timeout: 10000 }
+      );
+      const history = view._contentEl.querySelector<HTMLInputElement>(
+        '.paperforge-record-search input[type="checkbox"]'
+      )!;
+      history.checked = true;
+      history.dispatchEvent(new Event("change"));
+      await vi.waitFor(
+        () =>
+          expect(group!.textContent).toContain(
+            "historical, not active evidence"
+          ),
+        { timeout: 10000 }
+      );
+      expect(detail.textContent).toContain("Source review");
+      expect(detail.textContent).toContain("Rechecked: do not use");
+    } finally {
+      document.body.innerHTML = "";
+      rmSync(vault, { recursive: true, force: true });
+    }
+  }, 30000);
 });
