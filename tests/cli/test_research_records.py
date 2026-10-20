@@ -281,6 +281,22 @@ def test_multiple_matching_records_return_each_stable_id(tmp_path):
     assert {hit["id"] for hit in found["matches"]} == {first["data"]["id"], second["data"]["id"]}
 
 
+def test_search_projects_only_matching_records(tmp_path, monkeypatch):
+    canonical_test_config(tmp_path)
+    for excerpt in ("Projection marker alpha", "Projection marker beta", "Projection marker gamma"):
+        assert cli(tmp_path, "--write", "PAPER001", "--excerpt", excerpt)[0] == 0
+    from paperforge.memory import permanent, record_source
+
+    projected = []
+    real = record_source.source_provenance
+    monkeypatch.setattr(
+        record_source, "source_provenance",
+        lambda *args, **kwargs: projected.append(args[2]) or real(*args, **kwargs))
+    found = permanent.search_reading_records(tmp_path, "beta")["matches"]
+    assert [hit["excerpt"] for hit in found] == ["Projection marker beta"]
+    assert projected == ["Projection marker beta"]
+
+
 def test_paper_context_projects_live_records_and_fail_closed_on_malformed_authority(tmp_path):
     from paperforge.memory.permanent import get_correction_log_path
 
