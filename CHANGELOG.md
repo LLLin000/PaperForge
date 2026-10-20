@@ -4,6 +4,12 @@ All notable changes to PaperForge.
 
 ---
 
+## Unreleased
+
+### Fixed
+
+- Pin `pymupdf<2`: 2.0 imports and activates its layout model (onnxruntime) at import time, which stalled OCR runs and broke imports on Windows; page counts and text extraction remain on 1.28.x.
+
 ## 1.5.8 (2026-05-19)
 
 ### Memory Layer (New)
