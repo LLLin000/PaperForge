@@ -301,15 +301,21 @@ def load_record_authority(vault: Path) -> tuple[list[dict], dict[str, list[dict]
     return notes, related
 
 
-def project_record(vault: Path, row: dict, history: list[dict]) -> dict:
-    """Effective read of one record: legacy fields pass through, status is live."""
-    from paperforge.memory.record_source import source_provenance
+def _record_values(row: dict) -> dict[str, str]:
+    """Legacy record fields as matched/read; JSONL stays the authority."""
     values: dict[str, str] = {}
     for field in RECORD_FIELDS:
         value = row.get(field, "")
         if not isinstance(value, str):
             raise ValueError(f"Invalid {field} in record {row['id']}")
         values[field] = value
+    return values
+
+
+def project_record(vault: Path, row: dict, history: list[dict]) -> dict:
+    """Effective read of one record: legacy fields pass through, status is live."""
+    from paperforge.memory.record_source import source_provenance
+    values = _record_values(row)
     history = sorted(history, key=lambda c: (record_time(c), c.get("id", "")))
     return {
         **row, **values,
@@ -339,10 +345,10 @@ def search_reading_records(
         history = related.get(row["id"], [])
         if history and not include_history:
             continue
-        projected = project_record(vault, row, history)
-        lowered = {field: projected[field].casefold() for field in RECORD_FIELDS}
+        lowered = {field: value.casefold() for field, value in _record_values(row).items()}
         if not all(any(token in value for value in lowered.values()) for token in tokens):
             continue
+        projected = project_record(vault, row, history)
         projected["matched_fields"] = [
             field for field in RECORD_FIELDS if any(token in lowered[field] for token in tokens)]
         matches.append(projected)
