@@ -10,7 +10,7 @@ on:
       - "**.md"
       - "docs/**"
   pull_request:
-    branches: [main, master, fix/p0-ocr-scope]
+    branches: [main, master, fix/p0-ocr-scope, fix/first-use-ux-consistency]
   schedule:
     - cron: "0 6 * * 1"
   workflow_dispatch:

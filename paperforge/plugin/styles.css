@@ -7468,3 +7468,34 @@ input.pf-ocr-ws-search-input::placeholder {
   padding: 0;
   overflow: hidden;
 }
+
+/* Contextual research records; keep quotes and controls within the host modal. */
+.paperforge-record-modal label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-1);
+  margin-bottom: var(--size-4-3);
+}
+.paperforge-record-modal textarea {
+  min-height: 5em;
+  width: 100%;
+  resize: vertical;
+}
+.paperforge-record-modal input,
+.paperforge-record-modal select {
+  width: 100%;
+}
+.paperforge-record-modal pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.paperforge-record-result {
+  padding: var(--size-4-3);
+  margin-bottom: var(--size-4-2);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  overflow-wrap: anywhere;
+}
+.paperforge-record-result blockquote {
+  margin-inline: var(--size-4-2);
+}

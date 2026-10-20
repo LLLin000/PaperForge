@@ -10,7 +10,7 @@ from paperforge import __version__ as PF_VERSION
 from paperforge.core.errors import ErrorCode
 from paperforge.core.result import PFError, PFResult
 from paperforge.memory.db import get_connection, get_memory_db_path
-from paperforge.memory.permanent import get_corrections_for_paper, get_reading_notes_for_paper
+from paperforge.memory.permanent import load_record_authority, order_records, project_record, record_time
 from paperforge.memory.query import lookup_paper
 
 def _build_compact_tree(vault: Path, zotero_key: str, conn: sqlite3.Connection) -> dict | None:
@@ -92,49 +92,22 @@ def _build_paper_context(vault: Path, key: str, structure: bool = False) -> dict
 
         paper = dict(row)
 
-        prior_notes = get_reading_notes_for_paper(vault, resolved_key)
+        notes, related = load_record_authority(vault)
+        prior_notes = [project_record(vault, n, related.get(n["id"], []))
+                       for n in notes if n["paper_id"] == resolved_key]
+        order_records(prior_notes)
 
-        corrections = []
-        corr_rows = conn.execute(
-            """SELECT created_at, payload_json
-               FROM paper_events
-               WHERE paper_id = ? AND event_type = 'correction_note'
-               ORDER BY created_at DESC""",
-            (resolved_key,),
-        ).fetchall()
-        seen_ids: set[str] = set()
-        for cr in corr_rows:
-            payload = json.loads(cr["payload_json"])
-            orig_id = payload.get("original_id", "")
-            corrections.append({
-                "created_at": cr["created_at"],
-                "previous_note_id": orig_id,
-                "correction": payload.get("correction", ""),
-                "reason": payload.get("reason", ""),
-            })
-            if orig_id:
-                seen_ids.add(orig_id)
+        corrections = [
+            {**c, "previous_note_id": c.get("original_id", "")} for c in
+            sorted((c for paper_notes in [related.get(n["id"], []) for n in prior_notes]
+                    for c in paper_notes),
+                   key=lambda c: (record_time(c), c.get("id", "")), reverse=True)
+        ]
 
-        jsonl_corrections = get_corrections_for_paper(vault, resolved_key)
-        for c in jsonl_corrections:
-            cid = c.get("original_id", "")
-            if cid and cid in seen_ids:
-                continue
-            corrections.append({
-                "created_at": c.get("created_at", ""),
-                "previous_note_id": cid,
-                "correction": c.get("correction", ""),
-                "reason": c.get("reason", ""),
-            })
-            if cid:
-                seen_ids.add(cid)
-
-        recheck_targets = []
-        for n in prior_notes:
-            if not n.get("verified", False):
-                recheck_targets.append(
-                    f"{n.get('section', 'unknown')}: {n.get('excerpt', '')[:80]}..."
-                )
+        recheck_targets = [
+            f"{n.get('section', 'unknown')}: {n.get('excerpt', '')[:80]}..."
+            for n in prior_notes if n.get("provenance", {}).get("status") not in ("matched", "confirmed")
+        ]
 
         try:
             from paperforge.core.io import read_json
@@ -185,7 +158,15 @@ def run(args: argparse.Namespace) -> int:
     vault = args.vault_path
     key = args.key
 
-    context = _build_paper_context(vault, key, structure=getattr(args, "structure", False))
+    try:
+        context = _build_paper_context(vault, key, structure=getattr(args, "structure", False))
+    except (ValueError, OSError, UnicodeError) as exc:
+        result = PFResult(
+            ok=False, command="paper-context", version=PF_VERSION,
+            error=PFError(code=ErrorCode.VALIDATION_ERROR, message=str(exc)),
+        )
+        print(result.to_json() if args.json else f"Error: {exc}", file=sys.stderr)
+        return 1
 
     if context is None:
         result = PFResult(

@@ -298,6 +298,27 @@ paperforge reading-log --correct <ID> --correction "..." --reason "..." # 修正
 paperforge reading-log --json
 ```
 
+研究记录内容检索与论文元数据检索分开；`search --evidence` 仍为 metadata-only，不搜索阅读记录。
+
+```bash
+paperforge reading-log --search "用途关键词" --json
+paperforge reading-log --search "词语 引文片段" --paper <KEY> --limit 20 --json
+paperforge reading-log --search "旧引文" --include-history --json
+paperforge reading-log --source-check <RECORD_ID> --paper <KEY> --json
+paperforge reading-log --write <KEY> --excerpt "原文" --usage "用途" --source-json '{"path":"Sources/paper.pdf","physical_page":2,"printed_page":"249","basis":"exact_text","anchor":"原文"}' --json
+```
+
+查询按 Unicode 空白分词并进行大小写无关的字面匹配；所有词必须命中同一记录，可跨 `excerpt`、`usage`、`note`、`context`、`section` 字段。无空白中文作为一个子串；不解析正则、FTS、同义词或语义改写。空查询拒绝；limit 默认 20、范围 1–100。结果按时间点降序、ID 升序，返回记录 ID、引文、用途、来源状态、命中字段和修正历史。
+
+JSONL 是权威来源，每次查询重新读取；成功保存或修正后立即可搜，无需 `memory build`。有修正历史的旧引文默认不作为有效记录返回，`--include-history` 可查看。修正是追加的说明，不是替换引文；原记录与 ID 不改写。损坏或不完整的权威记录明确报错，不伪装成零结果。
+
+`--source-json` 可省略；无来源记录保持 unknown。`recorded` 仅记录位置，`user_confirmed` 表示用户核对过该 PDF，`exact_text` 要求引文经 NFC/空白归一化后在当前 PDF 唯一出现且位于指定物理页。PDF 内容 SHA256 与引文/页码绑定；来源改变或无法核对时必须重查。`physical_page` 从 1 开始，印刷页只作独立标签，不能把页链接可打开当作引文已匹配。
+
+来源必须是当前论文规范 PDF 的 Vault 内相对路径。绝对路径、协议、穿越和解析到 Vault 外的 junction/symlink 拒绝；原 Zotero 外部存储路径不在本项来源跳转支持范围。请在授权副本 Vault 中使用本地 PDF，不自动复制或修改原件。
+
+插件单篇论文面板提供“保存研究记录”和论文／研究记录两个搜索分区。保存显示持久 ID，详情支持重新核验后打开 PDF 物理页及追加修正。无需 Embedding，不代表任意语义问句检索或 OCR 内容质量验收。
+
+
 ### `paperforge prune`
 
 ```bash
