@@ -33,7 +33,16 @@ def _isolate_ocr_runtime(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setitem(
         sys.modules,
         "winreg",
-        types.SimpleNamespace(HKEY_CURRENT_USER=object(), OpenKey=lambda *args, **kwargs: (_ for _ in ()).throw(OSError("no registry token"))),
+        types.SimpleNamespace(
+            HKEY_CURRENT_USER=object(),
+            HKEY_LOCAL_MACHINE=object(),
+            # Deny registry access without crashing imports that probe the
+            # platform (e.g. onnxruntime via platform.system()): a missing key
+            # is an OSError, not an AttributeError on the fake module.
+            OpenKey=lambda *args, **kwargs: (_ for _ in ()).throw(OSError("no registry token")),
+            OpenKeyEx=lambda *args, **kwargs: (_ for _ in ()).throw(OSError("no registry token")),
+            QueryValueEx=lambda *args, **kwargs: (_ for _ in ()).throw(OSError("no registry token")),
+        ),
     )
 
 
