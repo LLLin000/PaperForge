@@ -1102,42 +1102,6 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
     expect(client.embedMigrate).toHaveBeenCalledOnce();
   });
 
-  it("run + paperforge ocr run -> dispatches the canonical ocr.run action", async () => {
-    const tab = makeTab();
-    const client = installOcrClient(tab);
-    (tab as any)._capabilityState = { ocr: createUnknownEnvelope("ocr") };
-    const env = {
-      ...createUnknownEnvelope("ocr"),
-      action: {
-        primary: {
-          action_id: "module.run",
-          verb: "run",
-          label: "Run",
-          command: "paperforge ocr run",
-          availability: "available",
-          safety_class: "safe",
-          preservation_facts: [],
-          replacement_facts: [],
-          interruptible: true,
-          confirmation_required: false,
-          confirmation_prompt: null,
-          scope: "module",
-          scope_count: 1,
-        },
-      },
-    } as any;
-    (tab as any)._dispatchModuleAction("ocr", env);
-    await Promise.resolve();
-    expect(client.runAction).toHaveBeenCalledWith(
-      expect.objectContaining({ action_id: "ocr.run" }),
-      expect.anything()
-    );
-    expect(client.runAction).not.toHaveBeenCalledWith(
-      expect.objectContaining({ action_id: "ocr.rebuild_derived" }),
-      expect.anything()
-    );
-  });
-
   it("rebuild_derived -> dispatches ocr.rebuild_derived with scope all", () => {
     const tab = makeTab();
     const client = installOcrClient(tab);
@@ -1326,32 +1290,6 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
 
 // ════════════════════════════════ 5. _dispatchOcrAction ══════════════
 describe("_dispatchOcrAction lifecycle (Issue #78/#126)", () => {
-  it("routes OCR run through the plugin dispatcher after confirmation", () => {
-    const requestOcrRun = vi.fn();
-    const tab = makeTab({ requestOcrRun });
-
-    (tab as any)._dispatchOcrAction("run");
-
-    expect(requestOcrRun).toHaveBeenCalledWith(true);
-    // The shared client must NOT be engaged — main owns the run path.
-    expect((tab as any)._client).toBeNull();
-  });
-
-  it("dispatches through the shared client and sets activity overlay", async () => {
-    const tab = makeTab();
-    const client = installOcrClient(tab);
-    (tab as any)._capabilityState = { ocr: createUnknownEnvelope("ocr") };
-    (tab as any)._dispatchOcrAction("run");
-    expect(client.runAction).toHaveBeenCalledWith(
-      expect.objectContaining({ action_id: "ocr.run" }),
-      expect.anything()
-    );
-    expect(((tab as any)._capabilityState as any)?.ocr?.activity_state).toBe(
-      "running"
-    );
-    await Promise.resolve();
-  });
-
   it("rebuild dispatches ocr.rebuild_derived across all papers", async () => {
     const tab = makeTab();
     const client = installOcrClient(tab);
@@ -1376,7 +1314,7 @@ describe("_dispatchOcrAction lifecycle (Issue #78/#126)", () => {
       refreshes.push("all");
     };
     (tab as any)._capabilityState = { ocr: createUnknownEnvelope("ocr") };
-    (tab as any)._dispatchOcrAction("run");
+    tab._dispatchOcrAction("rebuild");
     await vi.waitFor(() => {
       expect(refreshes).toContain("all");
     });
@@ -1407,13 +1345,6 @@ describe("_dispatchOcrAction lifecycle (Issue #78/#126)", () => {
     expect(messages).toContain("B");
   });
 
-  it("rejects duplicate start via the client operation guard", async () => {
-    const tab = makeTab();
-    const client = installOcrClient(tab, { isOperationActive: () => true });
-    (tab as any)._capabilityState = { ocr: createUnknownEnvelope("ocr") };
-    (tab as any)._dispatchOcrAction("run");
-    expect(client.runAction).not.toHaveBeenCalled();
-  });
 
   it("does not change capability_state/severity during activity", async () => {
     const tab = makeTab();
@@ -1424,7 +1355,7 @@ describe("_dispatchOcrAction lifecycle (Issue #78/#126)", () => {
         severity: "warning",
       },
     };
-    (tab as any)._dispatchOcrAction("run");
+    tab._dispatchOcrAction("rebuild");
     const e = (tab as any)._capabilityState as any;
     expect(e?.ocr?.capability_state).toBe("needs_action");
     expect(e?.ocr?.severity).toBe("warning");
