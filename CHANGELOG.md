@@ -6,8 +6,15 @@ All notable changes to PaperForge.
 
 ## Unreleased
 
+### Added
+
+- Save research records from the paper panel, search specific quotes/use text separately from paper metadata, and inspect stable record IDs and append-only correction history (#353).
+- Search JSONL immediately without rebuilding Memory or using embeddings; source checks distinguish recorded, user-confirmed, exact-text matched, stale and unavailable positions.
+- Recheck hash-bound, canonical in-vault PDF sources before opening a validated physical page. External paths and junctions resolving outside the vault are refused; printed-page labels are separate and do not establish verification.
+
 ### Fixed
 
+- Pin `pymupdf<2`: 2.0 imports and activates its layout model (onnxruntime) at import time, which stalled OCR runs and broke imports on Windows; page counts and text extraction remain on 1.28.x.
 - Preserve exact OCR paper scope from CLI, dashboard paper/collection context and workspace confirmation through provider upload (#349). Reject empty or unknown explicit scopes without partial execution.
 - Confine OCR cleanup and stale-job resets to the selected scope. Stop prevents new uploads, including transport retries; submitted provider jobs remain separately reported as running remotely.
 - Label whole-library OCR impact and require user confirmation in the plugin. Offline synthetic regressions intercept the final multipart HTTP upload; no paid-provider acceptance is implied.

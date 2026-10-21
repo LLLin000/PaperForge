@@ -30,6 +30,10 @@ import {
 import { diffFulltext } from "../services/version-diff";
 import { VersionRestoreModal } from "./ocr-workspace";
 import type { PaperForgeClient } from "../client";
+import {
+  ResearchRecordCaptureModal,
+  ResearchRecordModal,
+} from "./research-record";
 
 // ── Interface for plugin ref used by static open ──
 
@@ -97,6 +101,9 @@ export class PaperForgeStatusView extends ItemView {
   _searchInput: HTMLInputElement | null = null;
   _searchResultsEl: HTMLElement | null = null;
   _searchTimer: ReturnType<typeof setTimeout> | undefined = undefined;
+  _recordResultsEl: HTMLElement | null = null;
+  _recordHistory = false;
+  _searchGeneration = 0;
   _searchState: string = "idle";
   _searchMode: "M" | "@" = "M";
   _searchResults: unknown[] | null = null;
@@ -1036,6 +1043,31 @@ export class PaperForgeStatusView extends ItemView {
       pill.createEl("span", { cls: "paperforge-status-pill-icon", text: icon });
       pill.createEl("span", { text: " " + item.label });
     }
+    const saveRecord = stripRight.createEl("button", {
+      text: t("record_save"),
+      attr: { "data-pf-testid": "save-research-record" },
+    });
+    saveRecord.onclick = () => {
+      const client = this._getClient();
+      if (!client) {
+        new Notice(t("runtime_not_available"));
+        return;
+      }
+      // Capture the canonical paper and PDF now, not when the asynchronous form submits.
+      let pdf = typeof entry.pdf_path === "string" ? entry.pdf_path : "";
+      if (pdf.startsWith("[[") && pdf.endsWith("]]")) pdf = pdf.slice(2, -2);
+      if (path.isAbsolute(pdf)) {
+        const base = this.app.vault?.adapter;
+        const root =
+          base && "basePath" in base && typeof base.basePath === "string"
+            ? base.basePath
+            : "";
+        pdf = root ? path.relative(root, pdf).replace(/\\/g, "/") : "";
+      }
+      new ResearchRecordCaptureModal(this.app, client, key, pdf, () => {
+        if (this._searchInput?.value.trim()) void this.executeSearch();
+      }).open();
+    };
     if (entry.pdf_path) {
       const pdfBtn = stripRight.createEl("button", {
         cls: "paperforge-contextual-btn",
@@ -1157,6 +1189,7 @@ export class PaperForgeStatusView extends ItemView {
     }
     this._renderRecentDiscussionCard(view, entry);
     this._renderPaperTechnicalDetails(view, entry);
+    this.renderSearchSection(view);
   }
 
   /* ── Paper Overview Card: read from formal note body ── */
@@ -2685,8 +2718,28 @@ export class PaperForgeStatusView extends ItemView {
         placeholder: "Search papers... (@ for deep search)",
       },
     }) as HTMLInputElement;
+    this._searchContainer.createEl("h3", { text: t("record_papers") });
     this._searchResultsEl = this._searchContainer.createEl("div", {
       cls: "paperforge-search-results",
+    });
+    const records = this._searchContainer.createEl("section", {
+      cls: "paperforge-record-search",
+    });
+    records.createEl("h3", { text: t("record_records") });
+    const historyLabel = records.createEl("label", {
+      text: t("record_history"),
+    });
+    const history = historyLabel.createEl("input", {
+      attr: { type: "checkbox", "aria-label": t("record_history") },
+    });
+    history.checked = this._recordHistory;
+    history.onchange = () => {
+      this._recordHistory = history.checked;
+      void this.executeSearch();
+    };
+    this._recordResultsEl = records.createEl("div", {
+      cls: "paperforge-record-results",
+      attr: { "aria-live": "polite" },
     });
 
     // Update placeholder from i18n on init
@@ -2714,6 +2767,8 @@ export class PaperForgeStatusView extends ItemView {
       clearTimeout(this._searchTimer);
       // Reset results & show idle when input cleared
       if (!val.trim()) {
+        this._searchGeneration++;
+        this._recordResultsEl?.empty();
         this._searchState = "idle";
         this._searchResults = null;
         this._searchActiveIndex = -1;
@@ -2736,6 +2791,8 @@ export class PaperForgeStatusView extends ItemView {
           this._searchInput.value = "";
           this._searchInput.blur();
         }
+        this._searchGeneration++;
+        this._recordResultsEl?.empty();
         this._searchState = "idle";
         this._searchResults = null;
         this._searchActiveIndex = -1;
@@ -3031,6 +3088,7 @@ export class PaperForgeStatusView extends ItemView {
     const isDeep = this._searchMode === "@" || raw.startsWith("@");
     const query = isDeep ? raw.replace(/^@\s*/, "").trim() : raw;
     if (!query) return;
+    const generation = ++this._searchGeneration;
 
     const mode = isDeep ? "retrieve" : "search";
 
@@ -3043,21 +3101,79 @@ export class PaperForgeStatusView extends ItemView {
     const client = this._getClient();
     if (!client) {
       this._searchState = "backend-unavailable";
+      this._recordResultsEl?.setText(t("record_failed"));
       this._renderSearchState();
       return;
     }
+    const records = this._recordResultsEl;
+    const recordSearch = records
+      ? (async () => {
+          records.setText(t("record_searching"));
+          try {
+            const result = await client.readingRecords(
+              query,
+              this._recordHistory
+            );
+            if (generation !== this._searchGeneration) return;
+            records.empty();
+            if (!result.matches.length)
+              records.createEl("p", { text: t("record_no_matches") });
+            for (const record of result.matches) {
+              const card = records.createEl("article", {
+                cls: "paperforge-record-result",
+              });
+              card.createEl("p", {
+                text: `${record.id} — ${record.paper_id} — ${t("record_" + record.record_status)}`,
+              });
+              card.createEl("blockquote", { text: record.excerpt });
+              card.createEl("p", { text: record.usage });
+              card.createEl("p", {
+                text: t("record_" + record.provenance.status),
+              });
+              const open = card.createEl("button", { text: t("record_view") });
+              open.onclick = () =>
+                new ResearchRecordModal(
+                  this.app,
+                  client,
+                  record,
+                  (key) => {
+                    const paper = this._cachedItems?.find(
+                      (item) => item.zotero_key === key
+                    );
+                    const target = paper?.main_note_path || paper?.note_path;
+                    if (target) void this._openSearchResult(target, false);
+                    else new Notice(t("record_failed"));
+                  },
+                  () => {
+                    void this.executeSearch();
+                  }
+                ).open();
+            }
+          } catch (error) {
+            if (generation !== this._searchGeneration) return;
+            records.setText(
+              `${t("record_failed")}: ${error instanceof Error ? error.message : String(error)}`
+            );
+            records.setAttribute("role", "alert");
+          }
+        })()
+      : Promise.resolve();
 
     try {
       const results = isDeep
         ? await client.retrieve(query, { deep: true })
         : await client.search(query);
+      if (generation !== this._searchGeneration) return;
       this._searchResults = results;
       this._searchState = results.length > 0 ? "results" : "empty";
       this._renderSearchState();
     } catch (err: any) {
+      if (generation !== this._searchGeneration) return;
       const classification = classifyError(String(err?.message ?? err));
       this._searchState = this._mapErrorToSearchState(classification.type);
       this._renderSearchState();
+    } finally {
+      await recordSearch;
     }
   }
 

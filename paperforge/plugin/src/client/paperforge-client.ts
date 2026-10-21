@@ -193,6 +193,37 @@ export interface DashboardStatsData {
   [key: string]: unknown;
 }
 
+export interface ResearchSource {
+  path: string;
+  physical_page: number;
+  printed_page?: string;
+  basis: "recorded" | "user_confirmed" | "exact_text";
+  anchor?: string;
+  sha256?: string;
+}
+export interface ResearchProvenance {
+  status: string;
+  basis: string;
+  reason?: string;
+  evidence?: Record<string, unknown>;
+}
+export interface ResearchRecord {
+  id: string;
+  paper_id: string;
+  created_at: string;
+  excerpt: string;
+  usage: string;
+  context: string;
+  section: string;
+  note: string;
+  record_status: "active" | "corrected";
+  verified: boolean;
+  source?: ResearchSource;
+  provenance: ResearchProvenance;
+  matched_fields: string[];
+  corrections: Array<{ id: string; correction: string; reason: string }>;
+}
+
 export interface PaperIndexItem {
   zotero_key?: string;
   title?: string;
@@ -1155,6 +1186,61 @@ export class PaperForgeClient {
   }
 
   // ── 5. Queries & Search Gateway ───────────────────────────────────────────
+
+  /** JSONL is read on every call; independent of metadata/vector caches. */
+  async readingRecords(
+    query: string,
+    includeHistory = false
+  ): Promise<{ matches: ResearchRecord[] }> {
+    const argv = ["reading-log", "--search", query, "--json"];
+    if (includeHistory) argv.push("--include-history");
+    return this._executePfResult(argv);
+  }
+
+  async saveReadingRecord(
+    paper: string,
+    fields: Record<string, string>,
+    source?: ResearchSource
+  ): Promise<{ id: string; provenance: ResearchProvenance }> {
+    const argv = ["reading-log", "--write", paper, "--json"];
+    for (const field of ["excerpt", "usage", "context", "section", "note"]) {
+      if (fields[field]) argv.push("--" + field, fields[field]);
+    }
+    if (source) argv.push("--source-json", JSON.stringify(source));
+    return this._executePfResult(argv);
+  }
+
+  async correctReadingRecord(
+    record: ResearchRecord,
+    correction: string,
+    reason: string
+  ): Promise<{ jsonl_id: string }> {
+    return this._executePfResult([
+      "reading-log",
+      "--correct",
+      record.id,
+      "--paper",
+      record.paper_id,
+      "--correction",
+      correction,
+      "--reason",
+      reason,
+      "--json",
+    ]);
+  }
+
+  async readingRecordSource(
+    record: ResearchRecord
+  ): Promise<ResearchSource & { provenance: ResearchProvenance }> {
+    return this._executePfResult([
+      "reading-log",
+      "--source-check",
+      record.id,
+      "--paper",
+      record.paper_id,
+      "--json",
+    ]);
+  }
 
   async search(
     query: string,
