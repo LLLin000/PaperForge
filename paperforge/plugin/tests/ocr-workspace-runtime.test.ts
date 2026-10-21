@@ -80,6 +80,18 @@ function descriptorResponse(
 }
 
 describe("OcrWorkspaceView PaperForgeClient cutover", () => {
+  it("refuses an empty paper selection instead of running the whole library", async () => {
+    const transport = new MockTransport();
+    transport.executeHandler = (argv) => descriptorResponse(argv[2]);
+    const client = new PaperForgeClient({ transport });
+    const view = makeView(client);
+    // Exercise the production handler at the view boundary.
+    const actions = view as unknown as {
+      _runOcrAction: (id: string, keys: string[]) => Promise<void>;
+    };
+    await actions._runOcrAction("ocr.run", []);
+    expect(transport.calls).toEqual([]);
+  });
   it("loads paper rows and global activity from client probes", async () => {
     const transport = new MockTransport();
     transport.executeHandler = (argv) => {
@@ -365,5 +377,4 @@ describe("OcrWorkspaceView PaperForgeClient cutover", () => {
     (view as any)._render();
     expect(renderSpy).toHaveReturned();
   });
-
 });

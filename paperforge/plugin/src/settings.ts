@@ -1967,6 +1967,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this._probeModule(mod);
       return;
     }
+    if (primary.action_id === "ocr.run") {
+      this._dispatchOcrAction("run");
+      return;
+    }
 
     // Destructive confirmation -> accessible modal (Issue #80)
     // Policy comes from Python; this switch only localizes presentation for
@@ -2242,9 +2246,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
    * gating, and cooperative Stop the OCR Workspace uses — no second
    * child-process owner. */
   _dispatchOcrAction(mode: "run" | "rebuild"): void {
-    if (mode === "run" && typeof this.plugin.requestOcrRun === "function") {
-      // The probe-owned confirmation already ran in _dispatchModuleAction.
-      this.plugin.requestOcrRun(true);
+    if (mode === "run") {
+      void this.plugin.requestOcrRun?.({ kind: "all" });
       return;
     }
     const client = this.getClient();

@@ -903,21 +903,32 @@ def run(args: argparse.Namespace) -> int:
     diagnose_only = getattr(args, "diagnose", False)
     live = getattr(args, "live", False)
     json_output = getattr(args, "json", False)
-    keys: list[str] = getattr(args, "keys", None) or []
+    from paperforge.core.keys import normalize_paper_keys
+    keys: list[str] = list(getattr(args, "keys", None) or [])
+    if getattr(args, "key", None) is not None:
+        keys.append(args.key)
 
     # P0-4: canonical key normalization — CRLF / BOM / duplicates from
     # Windows scripts must not silently drop keys (recovery repeatedly hit
     # '\r'-suffixed keys that never matched).
     keys_file = getattr(args, "keys_file", None)
-    if keys_file:
+    if keys_file is not None:
         try:
-            keys.append(Path(keys_file).read_text(encoding="utf-8-sig"))
+            file_keys = normalize_paper_keys(Path(keys_file).read_text(encoding="utf-8-sig"))
+            if not file_keys:
+                print("Error: explicit OCR scope is empty; no papers processed", file=sys.stderr)
+                return 2
+            keys.extend(file_keys)
         except Exception as exc:  # noqa: BLE001
             print(f"Error: cannot read keys file {keys_file}: {exc}", file=sys.stderr)
             return 1
-    from paperforge.core.keys import normalize_paper_keys
+    explicit_scope = bool(keys) or keys_file is not None
+    has_empty_key = any(not normalize_paper_keys(key) for key in keys)
 
     keys = normalize_paper_keys(keys)
+    if explicit_scope and (not keys or has_empty_key):
+        print("Error: explicit OCR scope is empty; no papers processed", file=sys.stderr)
+        return 2
 
     # Backward compat: if subcommand was "doctor", diagnose
     ocr_action = getattr(args, "ocr_action", None)

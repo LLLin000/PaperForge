@@ -162,6 +162,33 @@ describe("PaperForgeStatusView OCR dispatch", () => {
 
     expect(requestOcrRun).toHaveBeenCalledOnce();
   });
+  it.each(["paper", "collection"])(
+    "preserves the visible %s scope",
+    async (mode) => {
+      const requestOcrRun = vi.fn();
+      const view = new PaperForgeStatusView(
+        {} as ConstructorParameters<typeof PaperForgeStatusView>[0]
+      );
+      Object.assign(view, {
+        app: { plugins: { plugins: { paperforge: { requestOcrRun } } } },
+      });
+      view._currentMode = mode === "paper" ? "paper" : "collection";
+      view._currentPaperKey = "SCOPE001";
+      view._currentDomain = "Selected collection";
+      view._cachedItems = [
+        { zotero_key: "SCOPE001", domain: "Selected collection" },
+        { zotero_key: "SCOPE002", domain: "Other collection" },
+      ];
+      await view._runAction(
+        { id: "paperforge-ocr" },
+        document.createElement("button")
+      );
+      expect(requestOcrRun).toHaveBeenCalledWith({
+        kind: "papers",
+        keys: ["SCOPE001"],
+      });
+    }
+  );
 });
 
 describe("PaperForgeStatusView.onOpen production lifecycle (Step 5 wiring corrective)", () => {
