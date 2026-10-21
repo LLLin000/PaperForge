@@ -11,6 +11,9 @@ All notable changes to PaperForge.
 - Preserve exact OCR paper scope from CLI, dashboard paper/collection context and workspace confirmation through provider upload (#349). Reject empty or unknown explicit scopes without partial execution.
 - Confine OCR cleanup and stale-job resets to the selected scope. Stop prevents new uploads, including transport retries; submitted provider jobs remain separately reported as running remotely.
 - Label whole-library OCR impact and require user confirmation in the plugin. Offline synthetic regressions intercept the final multipart HTTP upload; no paid-provider acceptance is implied.
+- Discover freshly indexed papers in OCR Workspace before any OCR directory exists; retain historical OCR records and report PDF readiness without writing artifacts (#351). Switching back from an empty filter replaces the empty state with the matching rows.
+- Read existing notes through the Obsidian adapter when its file cache is cold. Refresh externally written notes without deleting/recreating them.
+- Separate saved OCR progress from a locally cancellable operation; preserve pending provider records without claiming remote termination. Resolve related English/Chinese status labels and consolidate consent-required follow-up notices without claiming vectors were built.
 - Pin `pymupdf<2`: 2.0 imports and activates its layout model (onnxruntime) at import time, which stalled OCR runs and broke imports on Windows; page counts and text extraction remain on 1.28.x.
 
 ## 1.5.8 (2026-05-19)

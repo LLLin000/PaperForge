@@ -177,6 +177,9 @@ paperforge ocr rebuild --resume     # 跳过已有检查点的文献
 
 插件的论文/集合入口在确认前冻结论文 key 集合；空集合不能启动。全库入口明确显示“整个文献库”和影响数量，并要求确认。停止只阻止新提交、停止本地监看；已提交的服务端 OCR 任务仍会继续，可用 `paperforge ocr status` 查看。
 
+OCR listing is read-only: canonical indexed papers appear even before an OCR directory exists (`pending` when the PDF resolves, `nopdf` otherwise). Existing OCR records remain visible. OCR Workspace labels saved progress separately from a current local operation; only an operation owned by the current window offers Stop. A saved queued/running record does not prove a live local worker or remote completion/termination. Consent-required follow-ups remain unstarted until reviewed; their notice is not a vector-ready claim.
+
+
 ### `paperforge render`
 
 Render consistency and figure reconciliation commands. The audit never changes rendered artifacts, but it does write its own report, `ocr/<KEY>/render/render.consistency.json`, which `probe lineage` reads as the render-consistency authority; reconciliation stages into an isolated temporary directory.

@@ -1160,7 +1160,10 @@ export class PaperForgeStatusView extends ItemView {
   }
 
   /* ── Paper Overview Card: read from formal note body ── */
-  _renderPaperOverviewCard(container: HTMLElement, entry: any) {
+  _renderPaperOverviewCard(
+    container: HTMLElement,
+    entry: { main_note_path?: string; note_path?: string }
+  ) {
     const card = container.createEl("div", {
       cls: "paperforge-paper-overview",
     });
@@ -1178,52 +1181,56 @@ export class PaperForgeStatusView extends ItemView {
       cls: "paperforge-paper-overview-excerpt",
       text: "\u52A0\u8F7D\u4E2D...",
     });
-    if (entry.note_path) {
-      const noteFile = this.app.vault.getAbstractFileByPath(entry.note_path);
-      if (noteFile) {
-        this.app.vault
-          .read(noteFile as TFile)
-          .then((content: string) => {
-            const extracted = this._extractOverviewFromNote(content);
-            if (extracted) {
-              const truncated =
-                extracted.length > 200
-                  ? extracted.slice(0, 200) + "..."
-                  : extracted;
-              excerptEl.setText(truncated);
-              if (extracted.length > 200) {
-                const expandContainer = body.createEl("div", {
-                  cls: "paperforge-expand-container",
-                });
-                const expandBtn = expandContainer.createEl("button", {
-                  cls: "paperforge-expand-icon",
-                  title: "\u5C55\u5F00/\u6536\u8D77",
-                });
-                expandBtn.innerHTML =
-                  '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
-                let expanded = false;
-                expandContainer.addEventListener("click", () => {
-                  excerptEl.setText(expanded ? truncated : extracted);
-                  expandBtn.innerHTML = expanded
-                    ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>'
-                    : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>';
-                  expanded = !expanded;
-                });
-              }
-            } else {
-              excerptEl.setText(
-                "\u5C1A\u672A\u751F\u6210\u6587\u7AE0\u6982\u89C8\u3002\u8FD0\u884C /pf-deep \u5F00\u59CB\u7CBE\u8BFB\u3002"
-              );
+    const notePath = entry.main_note_path || entry.note_path;
+    if (notePath) {
+      const readNote = async (): Promise<string | null> => {
+        if (!(await this.app.vault.adapter.exists(notePath))) return null;
+        const noteFile = this.app.vault.getAbstractFileByPath(notePath);
+        return noteFile instanceof TFile
+          ? this.app.vault.read(noteFile)
+          : this.app.vault.adapter.read(notePath);
+      };
+      void readNote()
+        .then((content: string | null) => {
+          if (content === null) {
+            excerptEl.setText(t("paper_note_missing"));
+            return;
+          }
+          const extracted = this._extractOverviewFromNote(content);
+          if (extracted) {
+            const truncated =
+              extracted.length > 200
+                ? extracted.slice(0, 200) + "..."
+                : extracted;
+            excerptEl.setText(truncated);
+            if (extracted.length > 200) {
+              const expandContainer = body.createEl("div", {
+                cls: "paperforge-expand-container",
+              });
+              const expandBtn = expandContainer.createEl("button", {
+                cls: "paperforge-expand-icon",
+                title: "\u5C55\u5F00/\u6536\u8D77",
+              });
+              expandBtn.innerHTML =
+                '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+              let expanded = false;
+              expandContainer.addEventListener("click", () => {
+                excerptEl.setText(expanded ? truncated : extracted);
+                expandBtn.innerHTML = expanded
+                  ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>'
+                  : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>';
+                expanded = !expanded;
+              });
             }
-          })
-          .catch(() => {
+          } else {
             excerptEl.setText(
-              "\u65E0\u6CD5\u8BFB\u53D6\u7B14\u8BB0\u5185\u5BB9"
+              "\u5C1A\u672A\u751F\u6210\u6587\u7AE0\u6982\u89C8\u3002\u8FD0\u884C /pf-deep \u5F00\u59CB\u7CBE\u8BFB\u3002"
             );
-          });
-      } else {
-        excerptEl.setText("\u7B14\u8BB0\u6587\u4EF6\u4E0D\u5B58\u5728");
-      }
+          }
+        })
+        .catch(() => {
+          excerptEl.setText("\u65E0\u6CD5\u8BFB\u53D6\u7B14\u8BB0\u5185\u5BB9");
+        });
     } else {
       excerptEl.setText("\u5C1A\u672A\u751F\u6210\u6587\u7AE0\u6982\u89C8");
     }
@@ -1986,49 +1993,34 @@ export class PaperForgeStatusView extends ItemView {
     }
   }
 
-  private async _materializeExternalNote(
-    notePath: string
-  ): Promise<TFile | null> {
+  private async _registerExternalNote(notePath: string): Promise<TFile | null> {
     if (!(await this.app.vault.adapter.exists(notePath))) return null;
-    try {
-      const parentPath = notePath.slice(0, notePath.lastIndexOf("/"));
-      if (parentPath && !this.app.vault.getAbstractFileByPath(parentPath)) {
-        try {
-          await this.app.vault.createFolder(parentPath);
-        } catch (error) {
-          if (!(await this.app.vault.adapter.exists(parentPath))) throw error;
-        }
-      }
-      const existing = this.app.vault.getAbstractFileByPath(notePath);
-      if (existing instanceof TFile) return existing;
-      const content = await this.app.vault.adapter.read(notePath);
-      await this.app.vault.adapter.remove(notePath);
+    // Desktop watcher reconciliation registers external files without the
+    // destructive read/remove/create cycle. Older hosts fall back to waiting.
+    const adapter = this.app.vault.adapter as typeof this.app.vault.adapter & {
+      reconcileInternalFile?: (path: string) => Promise<void>;
+    };
+    if (typeof adapter.reconcileInternalFile === "function") {
       try {
-        return await this.app.vault.create(notePath, content);
+        await adapter.reconcileInternalFile(notePath);
       } catch (error) {
-        try {
-          await this.app.vault.adapter.write(notePath, content);
-        } catch (restoreError) {
-          console.warn(
-            "[PF] Could not restore external note:",
-            notePath,
-            restoreError
-          );
-        }
-        throw error;
+        console.warn("[PF] Could not refresh external note:", notePath, error);
       }
-    } catch (error) {
-      console.warn("[PF] Could not register external note:", notePath, error);
-      return null;
     }
+    const file = this.app.vault.getAbstractFileByPath(notePath);
+    return file instanceof TFile ? file : null;
   }
 
   async _openSearchResult(notePath: string, newLeaf: boolean) {
     let file = this.app.vault.getAbstractFileByPath(notePath);
     if (!(file instanceof TFile)) {
-      file = await this._materializeExternalNote(notePath);
+      file = await this._registerExternalNote(notePath);
     }
     if (!(file instanceof TFile)) {
+      if (!(await this.app.vault.adapter.exists(notePath))) {
+        new Notice(t("paper_note_missing") + ": " + notePath, 6000);
+        return;
+      }
       const deadline = Date.now() + 5000;
       while (!(file instanceof TFile) && Date.now() < deadline) {
         await new Promise<void>((resolve) => setTimeout(resolve, 100));
@@ -2060,7 +2052,7 @@ export class PaperForgeStatusView extends ItemView {
         );
         return;
       }
-      await this.app.workspace.openLinkText(notePath, "", newLeaf);
+      new Notice(t("paper_note_missing") + ": " + notePath, 6000);
     } catch {
       new Notice("[!!] Failed to open note: " + notePath, 6000);
     }
