@@ -25,7 +25,10 @@ classifiers = [
 dependencies = [
     "xxhash>=3.4.0",
     "requests>=2.31.0",
-    "pymupdf>=1.23.0",
+    # 2.0 imports and activates pymupdf.layout (onnxruntime) at import time,
+    # which stalls/fails OCR runs and CLI startup; we only need page counts and
+    # text extraction. Revisit deliberately when the layout model is wanted.
+    "pymupdf>=1.23.0,<2",
     "pillow>=10.0.0",
     "tenacity>=8.2.0",
     "tqdm>=4.66.0",
