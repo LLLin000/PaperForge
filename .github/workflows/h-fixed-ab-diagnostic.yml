@@ -1,0 +1,72 @@
+# TEMPORARY diagnostic workflow — fixed-host A/B for renderer-crash triage.
+# Branch-only push trigger on diagnostics/h-fixed-ab; delete after evidence collected.
+# Does NOT touch .github/workflows/ci.yml. No merge/push/PR actions.
+# Exit semantics: step exit 0 means the harness finished all 4 cells with
+# terminal verdicts (pass/failed/blocked). It does NOT mean cells passed.
+# Verdicts live in h-fixed-ab-artifacts/cells/*/result.json + summary.json.
+#
+# Evidence model: prefetch pins + records the full host identity
+# (launcher/service/WDIO/driver versions, installer tree hash, lockfile
+# comparison, runner image); run-all re-verifies cell-by-cell under an
+# owned dead-proxy + per-program firewall egress gate and rechecks the
+# host tree afterwards. Crash evidence (Crashpad/WER) is collected when
+# present, explicitly marked unavailable when absent.
+
+name: h-fixed-ab-diagnostic
+
+on:
+  push:
+    branches: [diagnostics/h-fixed-ab]
+
+jobs:
+  fixed-ab:
+    name: fixed-host A/B (4 cells, sequential)
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout (full history for old/new refs)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: paperforge/plugin/.nvmrc
+          cache: npm
+          cache-dependency-path: paperforge/plugin/package-lock.json
+
+      - name: Syntax check (no browsers)
+        shell: pwsh
+        run: node scripts/diagnostics/h-fixed-ab.mjs verify
+
+      - name: Prefetch host binaries + build old/new bundles (network allowed here)
+        shell: pwsh
+        run: node scripts/diagnostics/h-fixed-ab.mjs prefetch
+
+      - name: Run 4 cells (egress-gated; evidence-only)
+        shell: pwsh
+        run: node scripts/diagnostics/h-fixed-ab.mjs run-all
+
+      - name: Report verdicts
+        if: always()
+        shell: pwsh
+        run: node scripts/diagnostics/h-fixed-ab.mjs report
+
+      - name: Upload cell evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: h-fixed-ab-evidence
+          # Scoped: receipts + verdicts + logs only. The prefetch trees
+          # (src-old/src-new incl. node_modules), tarballs, and the binary
+          # cache stay on the runner. No binaries except crash dumps.
+          path: |
+            h-fixed-ab-artifacts/prefetch/*.json
+            h-fixed-ab-artifacts/summary*.json
+            h-fixed-ab-artifacts/cells/**
+            h-fixed-ab-artifacts/**/*safety*
+            !h-fixed-ab-artifacts/cells/**/*.exe
+            !h-fixed-ab-artifacts/cells/**/*.asar
+            !h-fixed-ab-artifacts/cells/**/node_modules/**
+          if-no-files-found: error
