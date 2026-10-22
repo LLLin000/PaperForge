@@ -13,8 +13,8 @@ export const APP_VERSION = "1.14.4";
 export const INSTALLER_VERSION = "1.5.8";
 
 // Pinned full SHAs. Recorded per-cell and asserted; mismatch aborts the job.
-export const OLD_REF = "ba666a57e81ca7094c46467547a34623b64690e";
-export const NEW_REF = "a856f84f6bac666cebe1053011333f489e33";
+export const OLD_REF = "ba666a57e81ca7094c46467547a34623b646890e";
+export const NEW_REF = "a856f84f6bac666cebe22226110530133f489e33";
 
 // Fail-closed boot probe budget (ms). Bounds one cell end to end: the
 // parent enforces it as a hard child-process deadline (owned tree killed

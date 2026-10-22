@@ -58,8 +58,8 @@ import {
 } from "node:fs";
 import { createHash } from "node:crypto";
 import { release, tmpdir } from "node:os";
-import { basename, dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { basename, dirname, join, relative, resolve } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const PLUGIN_DIR = join(REPO_ROOT, "paperforge", "plugin");
@@ -67,6 +67,33 @@ const ARTIFACTS = join(REPO_ROOT, "h-fixed-ab-artifacts");
 const PREFETCH_DIR = join(ARTIFACTS, "prefetch");
 const CONF = await import("./h-fixed-ab.conf.mjs");
 
+// Windows: absolute filesystem paths (D:\...) are not valid ESM specifiers.
+// Every dynamic import of a filesystem path MUST go through fileUrl().
+function fileUrl(p) {
+  return pathToFileURL(p).href;
+}
+const SPEC_URL = fileUrl(join(dirname(fileURLToPath(import.meta.url)), "h-fixed-ab.spec.mjs"));
+
+// Prefetch writes evidence incrementally so a failure mid-way still leaves
+// receipts: prefetch-status.json (always) + summary.json (prefetch-blocked).
+function writePrefetchStatus(partial) {
+  mkdirSync(PREFETCH_DIR, { recursive: true });
+  writeFileSync(join(PREFETCH_DIR, "prefetch-status.json"), JSON.stringify({ ...partial, ts: new Date().toISOString() }, null, 2));
+  writeFileSync(
+    join(ARTIFACTS, "summary.json"),
+    JSON.stringify(
+      {
+        verdict: "prefetch-blocked",
+        cells: [],
+        prefetchStatus: partial,
+        ts: new Date().toISOString(),
+        notes: ["Prefetch failed before any cell ran; no product verdict is implied."],
+      },
+      null,
+      2
+    )
+  );
+}
 const CELLS = [
   { cell: "old-on", ref: "old", refFull: CONF.OLD_REF, pluginOn: true },
   { cell: "old-off", ref: "old", refFull: CONF.OLD_REF, pluginOn: false },
@@ -177,19 +204,40 @@ function installedVersion(pkg) {
 // ---------------------------------------------------------------- prefetch --
 
 async function prefetch() {
-  mkdirSync(PREFETCH_DIR, { recursive: true });
+  const status = { stage: "start", steps: {} };
+  try {
+    await prefetchInner(status);
+    status.stage = "done";
+    writePrefetchStatus({ ...status, ok: true });
+  } catch (err) {
+    status.stage = status.stage === "start" ? "failed" : status.stage;
+    status.error = String(err?.stack ?? err);
+    writePrefetchStatus({ ...status, ok: false });
+    throw err;
+  }
+}
 
-  // 1. Same-lockfile deps for the harness: install plugin deps once in place.
-  //    (Bundles are built inside the archived trees with their own npm ci.)
+async function prefetchInner(status) {
+  status.stage = "deps";
+  mkdirSync(PREFETCH_DIR, { recursive: true });
+  writePrefetchStatus({ ...status, ok: true, partial: true });
   console.log("[prefetch] installing harness deps (paperforge/plugin)...");
   npmSh(["ci", "--no-audit", "--no-fund"], { cwd: PLUGIN_DIR });
+  status.steps.deps = true;
 
   // 2. Host binaries via the pinned service API (resolves to exact versions,
   //    asserts 1.14.4/1.5.8, then downloads installer + asar + chromedriver).
   console.log("[prefetch] resolving + downloading host binaries...");
-  const { ObsidianLauncher } = await import("obsidian-launcher").catch(() =>
-    import(join(PLUGIN_DIR, "node_modules", "obsidian-launcher", "dist", "index.js"))
+  const launcherMod = await import("obsidian-launcher").catch(() =>
+    import(fileUrl(join(PLUGIN_DIR, "node_modules", "obsidian-launcher", "dist", "index.js")))
   );
+  // obsidian-launcher@3.2.0 exports the constructor as DEFAULT (a class),
+  // NOT as a named ObsidianLauncher export (verified against installed
+  // dist/index.js: keys ['default','minSupportedObsidianVersion']).
+  const ObsidianLauncher = launcherMod.default ?? launcherMod.ObsidianLauncher;
+  if (typeof ObsidianLauncher !== "function") {
+    throw new Error(`obsidian-launcher has no constructor export (keys: ${Object.keys(launcherMod).join(",")})`);
+  }
   const cacheDir = join(ARTIFACTS, ".obsidian-cache");
   const launcher = new ObsidianLauncher({ cacheDir });
   const [appVersion, installerVersion] = await launcher.resolveVersion(
@@ -251,6 +299,9 @@ async function prefetch() {
   if (missingVersions.length > 0) {
     console.log(`[prefetch] NOTE unresolved versions recorded as null: ${missingVersions.join(",")}`);
   }
+  status.steps.hostPins = true;
+  status.stage = "bundles";
+  writePrefetchStatus({ ...status, ok: true, partial: true });
 
   // 3. Old/new sources via git archive (baseline tree untouched) + bundle builds.
   //    Lockfiles are hashed and ACTUALLY compared, not just recorded.
@@ -263,8 +314,11 @@ async function prefetch() {
     const head = sh("git", ["rev-parse", refFull], { cwd: REPO_ROOT });
     if (head !== refFull) throw new Error(`ref moved during prefetch: ${refFull} -> ${head}`);
     const tar = join(PREFETCH_DIR, `src-${tag}.tar`);
-    sh("git", ["archive", refFull, "-o", tar], { cwd: REPO_ROOT });
-    sh("tar", ["-xf", tar, "-C", srcDir], { cwd: REPO_ROOT });
+    // Portable: GNU tar on Windows treats a D:-absolute archive arg as a
+    // remote (host D:) and BSD tar lacks --force-local, so pass both the
+    // archive and the destination repo-relative with cwd=REPO_ROOT.
+    sh("git", ["archive", refFull, "-o", relative(REPO_ROOT, tar)], { cwd: REPO_ROOT });
+    sh("tar", ["-xf", relative(REPO_ROOT, tar), "-C", relative(REPO_ROOT, srcDir)], { cwd: REPO_ROOT });
     const tagPluginDir = join(srcDir, "paperforge", "plugin");
     console.log(`[prefetch] npm ci + build (${tag})...`);
     npmSh(["ci", "--no-audit", "--no-fund"], { cwd: tagPluginDir });
@@ -282,6 +336,8 @@ async function prefetch() {
     };
     writeFileSync(join(PREFETCH_DIR, `bundle-${tag}.json`), JSON.stringify(rec, null, 2));
     console.log(`[prefetch] bundle-${tag}: main.js sha256=${rec.mainJsSha256.slice(0, 16)}...`);
+    status.steps[`bundle-${tag}`] = true;
+    writePrefetchStatus({ ...status, ok: true, partial: true });
   }
   const lockCompare = {
     old: lockHashes.old,
@@ -668,9 +724,8 @@ async function runCellChild(cellDef) {
     ctx.pointerAbsent = !existsSync(pointerProbe);
 
     const { startWdioSession } = await import("wdio-obsidian-service").catch(() =>
-      import(join(PLUGIN_DIR, "node_modules", "wdio-obsidian-service", "dist", "index.js"))
+      import(fileUrl(join(PLUGIN_DIR, "node_modules", "wdio-obsidian-service", "dist", "index.js")))
     );
-    // Standalone config: forced pins + fresh vault; plugin on/off is the
     // ONLY delta between same-ref cells. Never imports production wdio.conf.
     // cacheDir points at the PREFETCHED cache so onPrepare needs no network
     // under the egress gate (all artifacts cached, atomicCreate replace:false
@@ -733,7 +788,7 @@ async function runCellChild(cellDef) {
     }
     const tSetupEnd = Date.now();
 
-    const { probe } = await import("./h-fixed-ab.spec.mjs");
+    const { probe } = await import(SPEC_URL);
     await probe(browser, { ...ctx, setupMs: tSetupEnd - tSetupStart });
   } catch (err) {
     // Setup failure (service dies before/during boot, or seed verification
@@ -1048,10 +1103,15 @@ else if (cmd === "cell") {
 } else if (cmd === "report") {
   try {
     const summary = readJson(join(ARTIFACTS, "summary.json"));
-    for (const c of summary.cells) {
-      console.log(`${c.cell}: verdict=${c.verdict} stage=${c.errorStage ?? "-"} exit=${c.exitCode ?? "-"} timedOut=${c.timedOut}`);
+    if (summary.verdict === "prefetch-blocked") {
+      console.log(`prefetch-blocked at stage=${summary.prefetchStatus?.stage ?? "?"}: ${(summary.prefetchStatus?.error ?? "").slice(0, 300)}`);
+      console.log(`steps done: ${Object.keys(summary.prefetchStatus?.steps ?? {}).join(",") || "(none)"}`);
+    } else {
+      for (const c of summary.cells) {
+        console.log(`${c.cell}: verdict=${c.verdict} stage=${c.errorStage ?? "-"} exit=${c.exitCode ?? "-"} timedOut=${c.timedOut}`);
+      }
+      console.log(`hostTreeRecheck.match=${summary.hostTreeRecheck?.match ?? "unknown"}`);
     }
-    console.log(`hostTreeRecheck.match=${summary.hostTreeRecheck?.match ?? "unknown"}`);
   } catch {
     console.log("no summary.json yet (run-all has not completed)");
     process.exitCode = 1;
