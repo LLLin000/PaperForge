@@ -448,16 +448,19 @@ function firewallRemove() {
     }
   }
 }
-
 // Proves the loopback path the egress gate claims to preserve: starts the
 // pinned chromedriver and makes a real TCP connection to its loopback
 // listener. Run AFTER the firewall rules are applied; if loopback CDP is
 // unreachable the gate is broken and any cell result would be a harness
 // artifact (harness-blocked, never product-failure).
+// The receipt distinguishes driver startup failure (stdout/stderr/exit)
+// from a genuine firewall block — a driver that never listens is NOT
+// evidence about the firewall.
 async function proveLoopbackCdp(driverPath) {
   const { spawn: spawnProc } = await import("node:child_process");
   const { default: net } = await import("node:net");
   const probe = await new Promise((resolveProbe) => {
+    const receipt = { stdout: "", stderr: "", exitCode: null, signal: null, spawnError: null };
     const child = spawnProc(driverPath, ["--port=9519", "--allowed-ips=127.0.0.1"], { stdio: "pipe" });
     let settled = false;
     const done = (result) => {
@@ -468,12 +471,20 @@ async function proveLoopbackCdp(driverPath) {
       } catch {
         // Probe driver teardown is best-effort.
       }
-      resolveProbe(result);
+      resolveProbe({ ...result, driver: receipt });
     };
-    child.on("error", (err) => done({ ok: false, detail: `spawn failed: ${String(err?.message ?? err)}` }));
+    child.stdout.on("data", (c) => { receipt.stdout += String(c).slice(0, 2000); });
+    child.stderr.on("data", (c) => { receipt.stderr += String(c).slice(0, 2000); });
+    child.on("error", (err) => { receipt.spawnError = String(err?.message ?? err); });
+    child.on("exit", (code, sig) => {
+      receipt.exitCode = code;
+      receipt.signal = sig;
+    });
     setTimeout(() => {
+      // chromedriver 120 rejects HTTP/1.0 ("Cannot handle request with
+      // protocol: HTTP/1.0") — speak HTTP/1.1, which is also what WDIO uses.
       const sock = net.connect({ host: "127.0.0.1", port: 9519 }, () => {
-        sock.write("GET /status HTTP/1.0\r\n\r\n");
+        sock.write("GET /status HTTP/1.1\r\nHost: 127.0.0.1:9519\r\nConnection: close\r\n\r\n");
       });
       let data = "";
       const timer = setTimeout(() => {
@@ -486,6 +497,10 @@ async function proveLoopbackCdp(driverPath) {
           clearTimeout(timer);
           sock.destroy();
           done({ ok: true, detail: "real loopback /status 200 from pinned driver" });
+        } else if (/40[034]/.test(data) || data.length > 4000) {
+          clearTimeout(timer);
+          sock.destroy();
+          done({ ok: false, detail: `driver replied without 200: ${data.slice(0, 160)}` });
         }
       });
       sock.on("error", (err) => {
@@ -494,15 +509,13 @@ async function proveLoopbackCdp(driverPath) {
       });
       sock.on("close", () => {
         clearTimeout(timer);
-        if (data && !/200 OK/.test(data)) done({ ok: false, detail: `unexpected driver reply: ${data.slice(0, 120)}` });
+        if (data && !/200 OK/.test(data)) done({ ok: false, detail: `driver closed without 200: ${data.slice(0, 160)}` });
       });
     }, 1500);
     setTimeout(() => done({ ok: false, detail: "driver produced no connectable listener within 15s" }), 15000);
   });
   return probe;
 }
-
-// ------------------------------------------------------------------- cell ---
 
 function snapshotAppCrashEvents() {
   // Best-effort read of recent Windows Application Error events.
