@@ -13,31 +13,49 @@
 //   prefetch  — npm ci (plugin), download + hash-pin host binaries AND the
 //               whole installer tree, record launcher/service/wdio/driver +
 //               runner versions, git-archive old/new sources, build both
-//               bundles, compare archived lockfiles.
+//               bundles, compare archived lockfiles, then per-baseline
+//               H-like runtime: dedicated venv (python3.11, never editable)
+//               + `pip install <archived source>[vector]` + product
+//               ensure_runtime_dependencies + fresh-child verify +
+//               publish_pointer into a synthetic HOME (receipts only).
 //               MUST run before any egress gate is applied.
 //   run-all   — supervisor: applies the egress gate (dead proxy + Windows
-//               firewall program block, owned ephemeral CI only), then runs
-//               each cell as a SEPARATE child process with a bounded 120s
-//               deadline, killing the owned tree on timeout. Continues
-//               through all 4 cells; rechecks the host tree afterwards.
+//               firewall program block incl. BOTH venv pythons, owned
+//               ephemeral CI only), then runs each cell as a SEPARATE child
+//               process with a bounded 120s deadline, killing the owned
+//               tree on timeout. Continues through all 4 cells; rechecks
+//               the host tree afterwards.
 //   cell <name> — run one cell in THIS process (the run-all supervisor spawns
 //               one child per cell; direct use is for local debugging).
+//
+// Cell flow (on-cells): boot probe (pinned versions, bundle hashes,
+// renderer reachable, autosync idle, python RESOLVED via published
+// pointer) -> H-like fixture (archived builder, VAULT override into the
+// exact copied vault, venv python, fail keyring) -> service
+// reloadObsidian() on the unchanged copied vault -> 90s renderer dwell
+// (reachability + layoutReady + installation probe + backendVersion).
+// Scope: hypothesis test of the retry's proven reload boundary, NOT an
+// exact A01 replay; a passing dwell does NOT claim root-found for A01.
+// Off-cells skip runtime/fixture/reload (same cells, controls unchanged).
 //
 // Design constraints (do not weaken without owner approval):
 // - Baseline sources are fetched via `git archive <ref>` into scratch dirs;
 //   the checked-out baseline tree is never modified.
 // - Same lockfile/deps for both bundles: npm ci from the archived tree.
 // - plugin-on/off is the ONLY delta between same-ref cells.
+// - H-like runtime per baseline in prefetch; the cell republishes the
+//   pointer into its fresh HOME. No real API credentials, no OCR/
+//   embedding provider traffic (fail keyring, egress gate), no user vault.
 // - Fresh generated empty synthetic vault (Welcome.md) + fresh profile/HOME
-//   per cell. Never a guessed repo fixture path.
+//   per cell; the on-cell fixture is built INTO the exact copied vault
+//   (service openVault path, verified fresh). Never a guessed repo fixture.
 // - data.json autoSyncEnabled:false is seeded in the STAGE plugin dir BEFORE
-//   startWdioSession (the service copies it into the vault during setupVault)
-//   AND in the source vault seed; propagation is verified against the ACTUAL
-//   copied vault path from the service API. Seed failure is recorded, never
-//   swallowed. No PAPERFORGE_POLL_* overrides, no pointer/backend, no creds.
+//   startWdioSession (the service copies it into the vault during setupVault);
+//   propagation is verified against the ACTUAL copied vault path from the
+//   service API. Seed failure is recorded, never swallowed.
 // - Standalone session only (startWdioSession); never imports production
 //   wdio.conf.mts (which mutates the published runtime + reads prod pointer).
-// - No paid APIs, no keyring (fail backend), no progress-bar journeys.
+// - No paid APIs, no keyring (fail backend), no PAPERFORGE_POLL_* overrides.
 // - Diagnostic success = complete evidence for all 4 cells, even when a
 //   crash cell can never be "green". Verdicts live in result.json.
 // - Parent owns verification, commit, push, and publication. This script
@@ -345,10 +363,136 @@ async function prefetchInner(status) {
     match: lockHashes.old != null && lockHashes.old === lockHashes.new,
   };
   writeFileSync(join(PREFETCH_DIR, "lockfiles.json"), JSON.stringify(lockCompare, null, 2));
-  console.log(`[prefetch] lockfiles match=${lockCompare.match}`);
+  // 4. H-like runtime per baseline: dedicated venv (never editable, never the
+  //    harness interpreter) + wheel install from the archived source tree +
+  //    [vector] ensure + publish_pointer within a synthetic HOME. Reuses the
+  //    product's own APIs via file-URL import from the archived source (no
+  //    reimplemented business logic). Records receipts; never throws past
+  //    this point with a half-built runtime — failure blocks on-cells only.
+  const runtimeByTag = {};
+  for (const [tag, refFull] of [["old", CONF.OLD_REF], ["new", CONF.NEW_REF]]) {
+    runtimeByTag[tag] = await prefetchRuntime(tag, refFull, status);
+  }
+  writeFileSync(join(PREFETCH_DIR, "runtimes.json"), JSON.stringify(runtimeByTag, null, 2));
   console.log("[prefetch] done.");
 }
-
+// H-like runtime prefetch for one baseline tag. Dedicated venv under
+// prefetch/runtimes/<tag>/venv (never editable, never PyPI substitution):
+// python3.11 from PATH (CI setup-python) else the harness-local fallback.
+// `pip install <archived source>[vector]` (pinned; build isolation may use
+// network — prefetch is the network-allowed phase) -> product's own
+// ensure_runtime_dependencies + fresh-child verify_runtime_in_child ->
+// product's own publish_pointer within a synthetic HOME. Reuses source
+// (file-URL import from the archived tree); only the receipt on failure is
+// harness-authored. Returns the receipt; on-cells without `ok:true` are
+// blocked in-cell (never pass, never silent).
+async function prefetchRuntime(tag, refFull, status) {
+  const receipt = { tag, ref: refFull, ok: false, stage: "start" };
+  const srcDir = join(PREFETCH_DIR, `src-${tag}`);
+  const rtDir = join(PREFETCH_DIR, "runtimes", tag);
+  const venvDir = join(rtDir, "venv");
+  const synthHome = join(rtDir, "synth-home");
+  try {
+    mkdirSync(rtDir, { recursive: true });
+    mkdirSync(synthHome, { recursive: true });
+    // Creator python 3.11: PF_DIAGNOSTIC_PYTHON (parent-supplied local path)
+    // first, then PATH setup-python contract (setup-python on Windows adds
+    // `python`, not necessarily `python3.11`). Every candidate must report
+    // exactly 3.11. Never the node process itself (not python).
+    let creatorPy = null;
+    const explicit = process.env.PF_DIAGNOSTIC_PYTHON ?? "";
+    const candidates = [
+      ...(explicit ? [explicit] : []),
+      "python3.11", "python3.11.exe", "python", "python.exe",
+    ];
+    for (const cand of candidates) {
+      try { sh(cand, ["-c", "import sys; assert sys.version_info[:2]==(3,11)"]); creatorPy = cand; break; }
+      catch { /* try next */ }
+    }
+    receipt.creator = creatorPy ?? "missing-python3.11 (PF_DIAGNOSTIC_PYTHON or PATH python==3.11)";
+    if (!creatorPy) throw new Error("no python3.11 available: set PF_DIAGNOSTIC_PYTHON or put python==3.11 on PATH");
+    sh(creatorPy, ["-m", "venv", venvDir]);
+    receipt.stage = "venv-created";
+    const venvPy = join(venvDir, process.platform === "win32" ? "Scripts\\python.exe" : "bin/python");
+    // Explicit wheel identity: `pip wheel --no-deps` from the archived
+    // source, hashed (sourceSHA + wheelSHA), then install THAT wheel file
+    // with [vector]. Pip's internal build wheel is never the identity.
+    const wheelDir = join(rtDir, "wheel");
+    mkdirSync(wheelDir, { recursive: true });
+    const wheelBuild = spawnSync(venvPy, ["-m", "pip", "wheel", "--no-deps", "--no-build-isolation", "-w", wheelDir, srcDir], {
+      encoding: "utf8", timeout: 600000, stdio: "pipe",
+    });
+    receipt.wheelBuildStatus = wheelBuild.status ?? null;
+    if (wheelBuild.status !== 0) {
+      receipt.wheelBuildTail = String(wheelBuild.stderr ?? wheelBuild.stdout ?? "").slice(-500);
+      throw new Error(`pip wheel ${tag} failed (status=${wheelBuild.status})`);
+    }
+    const wheels = readdirSync(wheelDir).filter((f) => f.endsWith(".whl")).sort();
+    if (wheels.length !== 1) throw new Error(`expected exactly 1 wheel for ${tag}, got ${wheels.length}`);
+    const wheelPath = join(wheelDir, wheels[0]);
+    receipt.wheelFile = wheels[0];
+    receipt.wheelSha256 = sha256File(wheelPath);
+    receipt.sourceSha = refFull;
+    const pip = spawnSync(venvPy, ["-m", "pip", "install", `${wheelPath}[vector]`], {
+      encoding: "utf8", timeout: 600000, stdio: "pipe",
+    });
+    receipt.pipStatus = pip.status ?? null;
+    receipt.pipTail = String(pip.stderr ?? pip.stdout ?? "").slice(-500);
+    if (pip.status !== 0) throw new Error(`pip install ${tag} wheel[vector] failed (status=${pip.status})`);
+    receipt.stage = "installed";
+    // Product's own ensure + verify + publish, imported from the INSTALLED
+    // venv (the code under test), with HOME pointed at the synthetic home.
+    const probeScript = [
+      "import json, os",
+      `os.environ["HOME"] = ${JSON.stringify(synthHome)}`,
+      `os.environ["USERPROFILE"] = ${JSON.stringify(synthHome)}`,
+      "from paperforge.setup.runtime import ensure_runtime_dependencies, verify_runtime_in_child",
+      "from paperforge.runtime_pointer import pointer_path",
+      "step = ensure_runtime_dependencies()",
+      "verified, observed = verify_runtime_in_child()",
+      "ptr = None",
+      "if step.ok and verified:",
+      "    from paperforge.runtime_pointer import publish_pointer",
+      "    ptr = str(publish_pointer())",
+      "print(json.dumps({",
+      '  \"step_ok\": step.ok, \"step_message\": step.message,',
+      '  \"verified\": verified, \"observed\": observed,',
+      '  \"pointer\": ptr, \"pointer_path\": str(pointer_path()),',
+      '  \"executable\": __import__(\"sys\").executable,',
+      "}))",
+    ].join("\n");
+    const probed = spawnSync(venvPy, ["-I", "-c", probeScript], {
+      encoding: "utf8", timeout: 300000, stdio: "pipe",
+      env: { ...process.env, HOME: synthHome, USERPROFILE: synthHome },
+    });
+    receipt.probeStatus = probed.status ?? null;
+    receipt.probeTail = String(probed.stderr ?? "").slice(-500);
+    if (probed.status !== 0) throw new Error(`runtime ensure/verify ${tag} failed (status=${probed.status})`);
+    const probeJson = JSON.parse(String(probed.stdout ?? "").trim().split("\n").pop());
+    Object.assign(receipt, {
+      stepOk: probeJson.step_ok ?? null,
+      stepMessage: String(probeJson.step_message ?? "").slice(0, 300),
+      verified: probeJson.verified ?? false,
+      observedVersion: probeJson.observed ?? null,
+      pointer: probeJson.pointer ?? null,
+      venvPython: venvPy,
+    });
+    receipt.baseExecutable = (() => {
+      try { return sh(venvPy, ["-c", "import sys; print(sys._base_executable)"]); }
+      catch { return null; }
+    })();
+    receipt.pythonVersion = sh(venvPy, ["-c", "import sys; print(sys.version.split()[0])"]);
+    receipt.ok = !!(receipt.stepOk && receipt.verified && receipt.pointer && receipt.baseExecutable);
+    receipt.stage = receipt.ok ? "published" : "verify-failed";
+  } catch (err) {
+    receipt.stage = receipt.stage === "start" ? "failed" : receipt.stage;
+    receipt.error = String(err?.message ?? err).slice(0, 500);
+    receipt.ok = false;
+  }
+  status.steps[`runtime-${tag}`] = receipt.ok === true;
+  writePrefetchStatus({ ...status, ok: receipt.ok, partial: true });
+  return receipt;
+}
 // ---------------------------------------------------------------- egress ---
 
 function applyEgressGate() {
@@ -436,7 +580,7 @@ function firewallEnsure(programs) {
 function firewallRemove() {
   if (process.env.GITHUB_ACTIONS !== "true") return;
   if (process.platform !== "win32") return;
-  for (const tag of ["obsidian", "driver", "node"]) {
+  for (const tag of ["obsidian", "driver", "node", "venv-0", "venv-1", "venv-2", "venv-3"]) {
     try {
       spawnSync(
         "netsh",
@@ -518,9 +662,12 @@ async function proveLoopbackCdp(driverPath) {
 }
 
 function snapshotAppCrashEvents() {
-  // Best-effort read of recent Windows Application Error events.
-  // Absence is recorded as null (unknown), not zero.
-  if (process.platform !== "win32") return null;
+  // Structured receipt: {queried, count, events, error}. Absence of events
+  // is count:0 (queried:true); a failed query is queried:false + error.
+  // Never null; never "zero means unknown".
+  if (process.platform !== "win32") {
+    return { queried: false, count: 0, events: null, error: `platform ${process.platform}: no WinEvent log` };
+  }
   try {
     const out = sh("powershell", [
       "-NoProfile",
@@ -528,9 +675,11 @@ function snapshotAppCrashEvents() {
       "Get-WinEvent -FilterHashtable @{LogName='Application'; ID=1000,1002; StartTime=(Get-Date).AddHours(-6)} " +
         "-ErrorAction SilentlyContinue | Select-Object -First 20 TimeCreated,Id,Message | Format-List | Out-String",
     ]);
-    return out.slice(0, 4000) || null;
-  } catch {
-    return null;
+    const events = out.slice(0, 4000) || "";
+    const count = (events.match(/^Id\s*:/gim) ?? []).length;
+    return { queried: true, count, events, error: null };
+  } catch (err) {
+    return { queried: false, count: 0, events: null, error: String(err?.message ?? err).slice(0, 300) };
   }
 }
 
@@ -628,6 +777,7 @@ async function runCellChild(cellDef) {
   mkdirSync(artifactsDir, { recursive: true });
   const realLocalAppData = process.env.LOCALAPPDATA ?? null;
   const tmpBefore = new Set(readdirSync(tmpdir()));
+  const runtime = readJson(join(PREFETCH_DIR, "runtimes.json"))[cellDef.ref];
   const bundle = readJson(join(PREFETCH_DIR, `bundle-${cellDef.ref}.json`));
   const pins = readJson(join(PREFETCH_DIR, "host-pins.json"));
   const versions = readJson(join(PREFETCH_DIR, "host-versions.json"));
@@ -671,8 +821,29 @@ async function runCellChild(cellDef) {
     console.log(`[cell ${cellDef.cell}] verdict=blocked (bundle ref)`);
     return;
   }
-
-  // Fresh HOME (pointer-hostile) + fresh stage dir per cell.
+  // The venv python builds the identical H-like fixture for BOTH on- and
+  // off-cells (controls differ in plugin presence, never vault content).
+  // Missing/unverified runtime => blocked (never pass). Off-cells build with
+  // it but publish no pointer.
+  if (runtime?.ok !== true) {
+    writeCellResult(artifactsDir, {
+      cell: cellDef.cell,
+      verdict: "blocked",
+      errorStage: "setup",
+      ref: cellDef.ref,
+      refFull: cellDef.refFull,
+      pluginOn: cellDef.pluginOn,
+      setupFailure: `runtime prefetch not ok (stage=${runtime?.stage ?? "missing"}): ${(runtime?.error ?? runtime?.stepMessage ?? "no receipt").slice(0, 300)}`,
+      error: null,
+      runtimeReceipt: runtime ?? null,
+      ts: new Date().toISOString(),
+    });
+    console.log(`[cell ${cellDef.cell}] verdict=blocked (runtime)`);
+    return;
+  }
+  // Fresh HOME per cell; on-cells republish the prefetched runtime pointer
+  // into it (product publish_pointer, synthetic HOME). Off-cells publish
+  // no pointer. Fresh stage dir for both.
   const freshHome = mkdtempSync(join(tmpdir(), `h-fixed-ab-home-${cellDef.cell}-`));
   const stageDir = mkdtempSync(join(tmpdir(), `h-fixed-ab-stage-${cellDef.cell}-`));
   const stagePluginDir = join(stageDir, "paperforge-plugin");
@@ -732,10 +903,34 @@ async function runCellChild(cellDef) {
     process.env.APPDATA = join(freshHome, "AppData", "Roaming");
     process.env.LOCALAPPDATA = join(freshHome, "AppData", "Local");
 
-    // Fail-closed proof: no production pointer visible under the fresh HOME.
-    const pointerProbe = join(freshHome, ".paperforge", "runtime", "pointer.json");
-    ctx.pointerAbsent = !existsSync(pointerProbe);
-
+    // H-like runtime: republish the prefetched venv pointer into the fresh
+    // cell HOME (product publish_pointer via file-URL import of the ARCHIVED
+    // source; never editable, never production HOME). Missing runtime during
+    // egress is impossible (prefetch built the venv); failure here blocks.
+    if (cellDef.pluginOn) {
+      const setupPub = join(PREFETCH_DIR, `src-${cellDef.ref}`);
+      const pubScript = [
+        "import json",
+        `import sys; sys.path.insert(0, ${JSON.stringify(join(setupPub))})`,
+        `from paperforge.runtime_pointer import publish_pointer`,
+        `from pathlib import Path as _P`,
+        `ptr = publish_pointer(python_path=${JSON.stringify(runtime.venvPython)}, environment_root=${JSON.stringify(resolve(runtime.venvPython, "..", ".."))}, home=_P(${JSON.stringify(freshHome)}))`,
+        `print(json.dumps({"pointer": str(ptr)}))`,
+      ].join("\n");
+      const pub = spawnSync(runtime.venvPython, ["-I", "-c", pubScript], {
+        encoding: "utf8", timeout: 120000, stdio: "pipe",
+        env: { ...process.env, HOME: freshHome, USERPROFILE: freshHome },
+      });
+      ctx.runtimeRepublish = {
+        status: pub.status ?? null,
+        tail: String(pub.stderr ?? "").slice(-300),
+        pointer: (() => { try { return JSON.parse(String(pub.stdout ?? "").trim().split("\n").pop()).pointer; } catch { return null; } })(),
+        venvPython: runtime.venvPython,
+      };
+      if (pub.status !== 0 || !ctx.runtimeRepublish.pointer) {
+        throw new Error(`runtime republish failed (status=${pub.status}): ${ctx.runtimeRepublish.tail}`);
+      }
+    }
     const { startWdioSession } = await import("wdio-obsidian-service").catch(() =>
       import(fileUrl(join(PLUGIN_DIR, "node_modules", "wdio-obsidian-service", "dist", "index.js")))
     );
@@ -800,9 +995,57 @@ async function runCellChild(cellDef) {
       ctx.dataJsonSeeded = null;
     }
     const tSetupEnd = Date.now();
-
-    const { probe } = await import(SPEC_URL);
-    await probe(browser, { ...ctx, setupMs: tSetupEnd - tSetupStart });
+    const fullCtx = { ...ctx, setupMs: tSetupEnd - tSetupStart };
+    const { probeBoot, probeReloadBoundary } = await import(SPEC_URL);
+    const bootEvidence = await probeBoot(browser, fullCtx);
+    if (bootEvidence) {
+      if (cellDef.pluginOn) {
+        bootEvidence.expectedRuntimeVersion = runtime.observedVersion ?? null;
+        fullCtx.expectedRuntimeVersion = runtime.observedVersion ?? null;
+      }
+      // Identical fixture + reload boundary for on- AND off-cells (controls
+      // differ only in plugin presence, never in vault content or reload).
+      // Runtime gate above already ensured on-cells have a verified venv;
+      // off-cells build with the same venv python but publish no pointer.
+      const fixScript = [
+        "import importlib.util, json",
+        `spec = importlib.util.spec_from_file_location("h_builder", ${JSON.stringify(join(PREFETCH_DIR, `src-${cellDef.ref}`, "paperforge", "plugin", "test", "fixtures", "build_e2e_vault.py"))})`,
+        "mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)",
+        `mod.VAULT = __import__("pathlib").Path(${JSON.stringify(openVault)})`,
+        "mod.build()",
+        `print(json.dumps({"built": True, "vault": ${JSON.stringify(openVault)}}))`,
+      ].join("\n");
+      const buildOut = spawnSync(runtime.venvPython, ["-I", "-c", fixScript], {
+        encoding: "utf8", timeout: 600000, stdio: "pipe",
+        env: {
+          ...process.env, HOME: freshHome, USERPROFILE: freshHome,
+          PYTHON_KEYRING_BACKEND: "keyring.backends.fail.Keyring",
+          PAPERFORGE_KEYRING_BACKEND: "keyring.backends.fail.Keyring",
+        },
+      });
+      bootEvidence.fixtureBuild = {
+        status: buildOut.status ?? null,
+        tail: String(buildOut.stderr ?? buildOut.stdout ?? "").slice(-500),
+      };
+      if (buildOut.status !== 0) {
+        bootEvidence.error = `fixture build failed (status=${buildOut.status}): ${bootEvidence.fixtureBuild.tail}`;
+        bootEvidence.errorStage = "setup";
+        writeCellResult(artifactsDir, { cell: fullCtx.cell, verdict: "blocked", ...bootEvidence });
+      } else {
+        bootEvidence.fixtureNotes = "synthetic fixture built with venv python; subprocess python is venv-scoped";
+        const shot = await browser.saveScreenshot(join(artifactsDir, "pre-reload.png")).catch(() => null);
+        bootEvidence.preReloadScreenshot = shot == null ? "unavailable" : "pre-reload.png";
+        await probeReloadBoundary(browser, fullCtx, bootEvidence, CONF.OBSERVE_MS);
+        const shot2 = await browser.saveScreenshot(join(artifactsDir, "post-reload.png")).catch(() => null);
+        try {
+          const res2 = readJson(join(artifactsDir, "result.json"));
+          res2.postReloadScreenshot = shot2 == null ? "unavailable" : "post-reload.png";
+          res2.runtimeWheel = { venvPython: runtime.venvPython, baseExecutable: runtime.baseExecutable ?? null, wheelFile: runtime.wheelFile ?? null, wheelSha256: runtime.wheelSha256 ?? null, observedVersion: runtime.observedVersion ?? null };
+          res2.sourceSha = cellDef.refFull;
+          writeCellResult(artifactsDir, res2);
+        } catch { /* result.json already terminal; screenshot is best-effort */ }
+      }
+    }
   } catch (err) {
     // Setup failure (service dies before/during boot, or seed verification
     // failed): distinct verdict + stage. If the spec already recorded a
@@ -821,15 +1064,30 @@ async function runCellChild(cellDef) {
         setupFailure: String(err?.stack ?? err),
         error: null,
         windowsAppCrashEvents: snapshotAppCrashEvents(),
-        windowsAppCrashEventsBefore: crashBefore ? crashBefore.slice(0, 1000) : null,
+        windowsAppCrashEventsBefore: crashBefore,
         ts: new Date().toISOString(),
       });
     } else {
-      existing.windowsAppCrashEvents =
-        existing.windowsAppCrashEvents ?? snapshotAppCrashEvents();
+      existing.windowsAppCrashEvents = existing.windowsAppCrashEvents ?? snapshotAppCrashEvents();
       writeCellResult(artifactsDir, existing);
     }
   } finally {
+    // Snapshot Crashpad + main.log BEFORE deleteSession: the service
+    // afterSession deletes config tmp dirs, so post-teardown copies see
+    // nothing. Best-effort; receipts record what was actually present.
+    try {
+      const preConfigDirs = readdirSync(tmpdir()).filter(
+        (n) => n.startsWith("obsidian-launcher-config-") && !tmpBefore.has(n)
+      );
+      ctx.preTeardownCrash = copyCrashEvidence(
+        artifactsDir,
+        preConfigDirs.map((n) => join(tmpdir(), n)),
+        null,
+        cellStartMs
+      );
+    } catch (preErr) {
+      ctx.preTeardownCrash = { error: `pre-teardown snapshot failed: ${String(preErr?.message ?? preErr).slice(0, 200)}` };
+    }
     try {
       if (browser) await browser.deleteSession();
     } catch {
@@ -840,14 +1098,11 @@ async function runCellChild(cellDef) {
     ctx.orphanSweep = killOwnedByVault(ctx.copiedVault ?? null);
   }
 
-  // Crash-relevant host evidence next to result.json.
+  // Crash-relevant host evidence next to result.json. Structured receipts as
+  // JSON (count 0 = queried, no events; queried:false = query failed).
   const crashAfter = snapshotAppCrashEvents();
-  if (crashAfter) {
-    writeFileSync(join(artifactsDir, "appcrash-after.txt"), crashAfter);
-  }
-  if (crashBefore) {
-    writeFileSync(join(artifactsDir, "appcrash-before.txt"), crashBefore);
-  }
+  writeFileSync(join(artifactsDir, "appcrash-after.json"), JSON.stringify(crashAfter, null, 2));
+  writeFileSync(join(artifactsDir, "appcrash-before.json"), JSON.stringify(crashBefore, null, 2));
   const configCandidates = readdirSync(tmpdir()).filter(
     (n) => n.startsWith("obsidian-launcher-config-") && !tmpBefore.has(n)
   );
@@ -859,10 +1114,11 @@ async function runCellChild(cellDef) {
   );
   const result = readJson(join(artifactsDir, "result.json"));
   result.windowsAppCrashEvents =
-    result.windowsAppCrashEvents ?? (crashAfter ? "see appcrash-after.txt" : null);
+    result.windowsAppCrashEvents ?? { queried: true, count: crashAfter.count, events: "see appcrash-after.json", error: null };
   result.crashEvidence = crashEvidence;
+  result.preTeardownCrash = ctx.preTeardownCrash ?? null;
   result.orphanSweep = ctx.orphanSweep ?? null;
-  result.egressGate = { deadProxy: process.env.HTTP_PROXY ?? null };
+  result.egressGate = { deadProxy: process.env.HTTP_PROXY ?? null, tmpBefore: tmpBefore.size };
   writeCellResult(artifactsDir, result);
   console.log(`[cell ${cellDef.cell}] verdict=${result.verdict} stage=${result.errorStage ?? "-"}`);
 }
@@ -972,10 +1228,19 @@ async function runAll() {
   applyEgressGate();
   scrubEnv();
   const pins = readJson(join(PREFETCH_DIR, "host-pins.json"));
+  const runtimes = readJson(join(PREFETCH_DIR, "runtimes.json"));
+  // A Windows venv python redirects to its base executable (the python that
+  // created it): block that real binary too, else subprocess egress escapes
+  // the per-program rule. No `appSubprocessRisk` substitute — required.
+  const venvPrograms = ["old", "new"]
+    .flatMap((tag) => [runtimes?.[tag]?.venvPython, runtimes?.[tag]?.baseExecutable])
+    .filter((p) => typeof p === "string" && existsSync(p))
+    .map((p, i) => ({ tag: `venv-${i}`, program: p }));
   const firewallStatus = firewallEnsure([
     { tag: "obsidian", program: pins.binaryPath },
     { tag: "driver", program: pins.driverPath },
     { tag: "node", program: process.execPath },
+    ...venvPrograms,
   ]);
   console.log(`[run-all] firewall: ${firewallStatus.state}`);
   for (const n of firewallStatus.notes) console.log(`[run-all] firewall note: ${n}`);

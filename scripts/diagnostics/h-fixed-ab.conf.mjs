@@ -21,6 +21,12 @@ export const NEW_REF = "a856f84f6bac666cebe22226110530133f489e33";
 // on timeout); it is also the single-command budget passed to the session.
 export const BOOT_TIMEOUT_MS = 120000;
 
+// Post-reload renderer observation budget (ms) per cell. Hypothesis test of
+// the retry's proven reload boundary, not an exact A01 replay: the renderer
+// must stay reachable/responsive for the full dwell; any disconnect fails
+// the cell at stage "observation" (evidence, never a retry).
+export const OBSERVE_MS = 90000;
+
 // Dead proxy for renderer HTTP(S). Loopback bypass preserves the CDP /
 // driver channel on 127.0.0.1; everything else fails fast. This pairs with
 // the in-harness Windows firewall block (owned ephemeral CI only), which is

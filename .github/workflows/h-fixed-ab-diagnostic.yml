@@ -4,13 +4,18 @@
 # Exit semantics: step exit 0 means the harness finished all 4 cells with
 # terminal verdicts (pass/failed/blocked). It does NOT mean cells passed.
 # Verdicts live in h-fixed-ab-artifacts/cells/*/result.json + summary.json.
-#
 # Evidence model: prefetch pins + records the full host identity
 # (launcher/service/WDIO/driver versions, installer tree hash, lockfile
-# comparison, runner image); run-all re-verifies cell-by-cell under an
-# owned dead-proxy + per-program firewall egress gate and rechecks the
-# host tree afterwards. Crash evidence (Crashpad/WER) is collected when
-# present, explicitly marked unavailable when absent.
+# comparison, per-baseline venv receipts, runner image); run-all re-verifies
+# cell-by-cell under an owned dead-proxy + per-program firewall egress gate
+# (pinned host + node + BOTH venv pythons; loopback CDP preserved) and
+# rechecks the host tree afterwards. Crash evidence (Crashpad/WER) is
+# snapshotted BEFORE session teardown (service afterSession deletes config
+# tmp dirs) and again after; absent sources are recorded unavailable.
+# Cells: same 4 cells, but on-cells now run the H-like boundary — real
+# synthetic vault (archived builder, VAULT override) + service reloadObsidian
+# on the unchanged copied vault + 90s render dwell. Scope: hypothesis test of
+# the retry's proven reload boundary, NOT an exact A01 replay.
 
 name: h-fixed-ab-diagnostic
 
@@ -36,15 +41,20 @@ jobs:
           cache: npm
           cache-dependency-path: paperforge/plugin/package-lock.json
 
+      - name: Setup Python 3.11 (diagnostic venv creator)
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
       - name: Syntax check (no browsers)
         shell: pwsh
         run: node scripts/diagnostics/h-fixed-ab.mjs verify
 
-      - name: Prefetch host binaries + build old/new bundles (network allowed here)
+      - name: Prefetch host + bundles + per-baseline venvs (network allowed here)
         shell: pwsh
         run: node scripts/diagnostics/h-fixed-ab.mjs prefetch
 
-      - name: Run 4 cells (egress-gated; evidence-only)
+      - name: Run 4 cells incl. 90s reload dwell (egress-gated; evidence-only)
         shell: pwsh
         run: node scripts/diagnostics/h-fixed-ab.mjs run-all
 

@@ -1,22 +1,26 @@
-// Fixed-host A/B boot probe spec (4 cells: old/new x plugin-on/off).
+// Fixed-host reload-boundary hypothesis probe (4 cells: old/new x plugin-on/off).
+// Scope (explicit): hypothesis test of the retry's proven reload boundary
+// (service prepareApp -> reloadObsidian), NOT an exact A01 replay — the
+// original 90s silence had no in-flight pass lines, so no exact known replay
+// exists. A passing 90s observation does NOT claim root-found for A01.
 // Run once per cell via the h-fixed-ab.mjs harness (NOT via wdio testrunner).
 //
 // Per-cell flow:
-//   1. Called AFTER startWdioSession (copy:true on a fresh GENERATED vault);
-//      the harness pre-seeded data.json autoSyncEnabled:false in the stage
-//      plugin dir BEFORE the session (the service copies it into the vault)
-//      and verified propagation against the actual copied path.
-//   2. Assert obsidian/app versions, git ref, and bundle hashes.
-//   3. Fresh-boot observation gate: renderer reachable, workspace responsive,
-//      autoSync provably idle (poll timer null, no operation active).
-//   4. plugin-state assertion: on-cells require app.plugins.plugins.paperforge
-//      present AND enabled; off-cells require it absent. Mismatch = failed.
-//   5. Emit result.json: { cell, verdict: "pass"|"failed"|"blocked", ... }.
-//      A renderer crash / unreachable CDP is verdict "failed" with evidence —
-//      never an exception that skips remaining cells.
+//   1. probeBoot (after startWdioSession on a fresh GENERATED vault): assert
+//      obsidian/app versions, git ref, bundle hashes, renderer reachable,
+//      workspace layoutReady, autosync idle, plugin present+enabled (on) or
+//      absent (off). A renderer crash / unreachable CDP is "failed", never
+//      an exception that skips remaining cells.
+//   2. probeReloadBoundary (H-like runtime + fixture, exact copied vault):
+//      browser.reloadObsidian() on the unchanged copied vault, then a 90s
+//      dwell asserting the renderer stays reachable/responsive; disconnect
+//      fails at stage "observation". Backend checks (installation probe +
+//      backendVersion) distinguish a dead backend from a dead renderer.
+//   3. Emits result.json: { cell, verdict: "pass"|"failed"|"blocked", ... }.
 //
-// Exposes probe(browser, ctx) for the harness; the thin mocha wrapper is
-// only for local `wdio run` debugging and is NOT used in CI.
+// Exposes probeBoot + probeReloadBoundary for the harness; the thin mocha
+// wrapper is only for local `wdio run` debugging and is NOT used in CI.
+//
 
 import { strict as assert } from "node:assert";
 import { createHash } from "node:crypto";
@@ -51,10 +55,19 @@ function writeResult(ctx, verdict, evidence) {
     layoutReady: evidence.layoutReady ?? false,
     autosyncIdle: evidence.autosyncIdle ?? null,
     backendPointer: evidence.backendPointer ?? null,
-    copiedVault: ctx.copiedVault ?? null,
-    dataJsonSeeded: ctx.dataJsonSeeded ?? null,
-    pointerAbsent: ctx.pointerAbsent ?? null,
-    pluginState: evidence.pluginState ?? null,
+    bootStage: evidence.bootStage ?? null,
+    reloadStartedMs: evidence.reloadStartedMs ?? null,
+    reloadReturnedMs: evidence.reloadReturnedMs ?? null,
+    observationMs: evidence.observationMs ?? null,
+    lastDwellSample: evidence.lastDwellSample ?? null,
+    backendCapability: evidence.backendCapability ?? null,
+    backendVersionObserved: evidence.backendVersionObserved ?? null,
+    expectedRuntimeVersion: evidence.expectedRuntimeVersion ?? null,
+    fixtureBuild: evidence.fixtureBuild ?? null,
+    preReloadScreenshot: evidence.preReloadScreenshot ?? null,
+    postReloadScreenshot: evidence.postReloadScreenshot ?? null,
+    runtimeWheel: evidence.runtimeWheel ?? null,
+    sourceSha: evidence.sourceSha ?? null,
     setupFailure: evidence.setupFailure ?? null,
     error: evidence.error ?? null,
     windowsAppCrashEvents: evidence.windowsAppCrashEvents ?? null,
@@ -66,7 +79,7 @@ function writeResult(ctx, verdict, evidence) {
   return out;
 }
 
-export async function probe(browser, ctx) {
+export async function probeBoot(browser, ctx) {
   const evidence = { notes: [], hostPins: null };
   try {
     // 1. Version pins: fixed host contract.
@@ -147,7 +160,7 @@ export async function probe(browser, ctx) {
       evidence.notes.push(`autosync idle: ${JSON.stringify(idle)}`);
       assert.ok(evidence.autosyncIdle, `autoSync not idle in on-cell: ${JSON.stringify(idle)}`);
       evidence.backendPointer = idle.pythonCommand;
-      assert.strictEqual(idle.pythonCommand, null, `on-cell backend pointer must be unavailable, got: ${JSON.stringify(idle.pythonCommand)}`);
+      assert.strictEqual(idle.pythonCommand, "RESOLVED", `on-cell backend python must resolve via published pointer, got: ${JSON.stringify(idle.pythonCommand)}`);
     } else {
       evidence.autosyncIdle = idle.hasPlugin === false ? null : false;
       evidence.notes.push(`off-cell plugin probe: ${JSON.stringify(idle)}`);
@@ -173,10 +186,74 @@ export async function probe(browser, ctx) {
       assert.ok(!pluginState.present, "plugin-off cell: paperforge plugin unexpectedly present");
     }
 
-    writeResult(ctx, "pass", evidence);
+    evidence.bootStage = "boot-ok";
+    return evidence;
   } catch (err) {
     evidence.error = String(err?.stack ?? err);
+    evidence.bootStage = "boot";
     writeResult(ctx, "failed", evidence);
+    return null;
+  }
+}
+
+// Stage 2 (H-like runtime + fixture, exact copied vault). Called AFTER
+// probeBoot succeeded: reloadObsidian() on the unchanged copied vault, then
+// a 90s dwell ({ observeMs }) asserting renderer reachability/responsiveness.
+// Backend checks (installation probe + backendVersion) run inside the dwell
+// window so a dead renderer is distinguishable from a dead backend.
+// Returns null when the renderer died (result.json already failed at stage
+// "observation"); otherwise the boot evidence object.
+export async function probeReloadBoundary(browser, ctx, evidence, observeMs) {
+  const tReloadStart = Date.now();
+  try {
+    evidence.reloadStartedMs = tReloadStart;
+    evidence.errorStage = "reload";
+    await browser.reloadObsidian();
+    evidence.reloadReturnedMs = Date.now() - tReloadStart;
+    const deadline = Date.now() + observeMs;
+    let lastSample = null;
+    let backend = null;
+    for (;;) {
+      evidence.errorStage = "observation";
+      lastSample = await browser.executeObsidian(({ app }) => ({
+        workspaceReady: app?.workspace != null,
+        layoutReady: !!(app?.workspace?.layoutReady),
+      }));
+      assert.ok(lastSample?.workspaceReady, `renderer unreachable mid-dwell: ${JSON.stringify(lastSample)}`);
+      assert.ok(lastSample?.layoutReady, `workspace layout not ready mid-dwell: ${JSON.stringify(lastSample)}`);
+      if (ctx.pluginOn) {
+        evidence.errorStage = "backend";
+        backend = await browser.executeObsidian(async ({ app }) => {
+          const plugin = app?.plugins?.plugins?.paperforge ?? null;
+          if (!plugin) return { hasPlugin: false, capability: null, backend: null };
+          const client = plugin.getClient();
+          const probeEnv = await client.probe("installation");
+          return {
+            hasPlugin: true,
+            capability: probeEnv?.capability_state ?? null,
+            backend: await client.backendVersion(),
+          };
+        });
+        evidence.backendCapability = backend?.capability ?? null;
+        evidence.backendVersionObserved = backend?.backend ?? null;
+        assert.ok(backend?.hasPlugin === true, `paperforge plugin missing after reload: ${JSON.stringify(backend)}`);
+        assert.strictEqual(backend?.capability, "ready", `installation probe not ready after reload: ${JSON.stringify(backend)}`);
+        assert.strictEqual(backend?.backend, ctx.expectedRuntimeVersion ?? evidence.expectedRuntimeVersion, `backend version mismatch after reload: got ${JSON.stringify(backend?.backend)}, want ${JSON.stringify(ctx.expectedRuntimeVersion ?? evidence.expectedRuntimeVersion)}`);
+      }
+      if (Date.now() >= deadline) break;
+      await browser.pause(5000);
+      evidence.errorStage = "observation";
+    }
+    evidence.observationMs = Date.now() - tReloadStart;
+    evidence.lastDwellSample = lastSample;
+    evidence.errorStage = null;
+    writeResult(ctx, "pass", evidence);
+    return evidence;
+  } catch (err) {
+    evidence.error = String(err?.stack ?? err);
+    evidence.observationMs = Date.now() - tReloadStart;
+    writeResult(ctx, "failed", evidence);
+    return null;
   }
 }
 
@@ -184,10 +261,9 @@ export async function probe(browser, ctx) {
 export function registerMocha(ctx) {
   describe(`h-fixed-ab ${ctx.cell}`, function () {
     it("fixed boot observation", async function () {
-      await probe(globalThis.browser, ctx);
-      const result = JSON.parse(readFileSync(join(ctx.artifactsDir, "result.json"), "utf8"));
-      assert.notEqual(result.verdict, "blocked", `setup failure: ${result.setupFailure ?? result.error}`);
-      assert.equal(result.verdict, "pass", `probe failed: ${result.error}`);
+      const evidence = await probeBoot(globalThis.browser, ctx);
+      assert.ok(evidence, "probeBoot failed without evidence; see result.json");
+      assert.equal(evidence.bootStage, "boot-ok", `boot failed: ${evidence?.error ?? "unknown"}`);
     });
   });
 }
