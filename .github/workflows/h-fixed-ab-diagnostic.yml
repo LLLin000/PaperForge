@@ -18,7 +18,7 @@ on:
 
 jobs:
   fixed-ab:
-    name: A01 first-use install (new, conditional old)
+    name: Full-H single host (new, conditional old)
     runs-on: windows-latest
     timeout-minutes: 60
     steps:
@@ -55,9 +55,9 @@ jobs:
         shell: pwsh
         run: node scripts/diagnostics/a01-prefetch.mjs new
 
-      - name: Run A01 new baseline (egress-gated, 60min, no retries)
+      - name: Run Full-H single host (egress-gated, 60min, no retries)
         shell: pwsh
-        run: node scripts/diagnostics/a01-run.mjs new
+        run: $env:PF_DIAGNOSTIC_H_FULL = "1"; node scripts/diagnostics/a01-run.mjs new
 
       - name: Conditional old baseline (renderer disconnect only)
         if: always()

@@ -1,18 +1,21 @@
-// A01 overlay WDIO config: reuses the ORIGINAL production config module
-// (./wdio.conf.mts) WITHOUT modifying it, then merges only the diagnostic
-// deltas: pinned host binaries, pinned cacheDir, exact A01 mocha grep, and a
-// pre-teardown afterTest evidence hook. No product hooks/flags added.
+// A01/full-H overlay WDIO config: reuses the ORIGINAL production config
+// module (./wdio.conf.mts) WITHOUT modifying it, then merges only the
+// diagnostic deltas: pinned host binaries, pinned cacheDir, grep/bail, and
+// pre-teardown evidence hooks. No product hooks/flags added.
+// PF_DIAGNOSTIC_H_FULL=1 (diagnostic-only): full original suite, no grep,
+// bail on first failure. Default: exact A01 grep. Base PF_E2E_GREP dropped.
 //
 // Installed as <staged-plugin>/wdio.a01.mts (imports ./wdio.conf.mts, so it
 // must keep the .mts extension); run with cwd=<staged-plugin> via the
 // original WDIO testrunner: `wdio run ./wdio.a01.mts`.
-// Original A01 timeouts (600000/540000) and body/assertions are untouched.
+// Original spec/case assertions and A01 timeouts (600000/540000) untouched.
 import { execFileSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { config as base } from "./wdio.conf.mts";
 
+export const FULL_MODE = process.env.PF_DIAGNOSTIC_H_FULL === "1";
 export const A01_TITLE =
   "installs and publishes the runtime through the first-use setup journey";
 
@@ -110,8 +113,22 @@ async function afterTestHook(test, context, result) {
     snap.screenshot = `unavailable: ${String(err?.message ?? err).slice(0, 160)}`;
   }
   writeFileSync(join(ART, "a01-aftertest-snapshot.json"), JSON.stringify(snap, null, 2));
+  // FULL-H journal: every executed test title/outcome appended; the FIRST
+  // failure snapshot is preserved (later successes never overwrite it).
+  if (FULL_MODE) {
+    try {
+      const jPath = join(ART, "fullh-journal.json");
+      let journal = [];
+      try { journal = JSON.parse(readFileSync(jPath, "utf8")); } catch { journal = []; }
+      journal.push({ test: snap.test, ts: snap.ts, userDataDir: snap.userDataDir ?? null, openVault: snap.openVault ?? null, screenshot: snap.screenshot ?? null });
+      writeFileSync(jPath, JSON.stringify(journal, null, 2));
+      if ((result?.error || result?.failed) && !existsSync(join(ART, "first-failure-snapshot.json"))) {
+        cpSync(join(ART, "a01-aftertest-snapshot.json"), join(ART, "first-failure-snapshot.json"));
+        try { cpSync(join(ART, "a01-aftertest.png"), join(ART, "first-failure.png")); } catch { /* image may be absent: not absence proof */ }
+      }
+    } catch { /* journal is best-effort */ }
+  }
 }
-
 // Fallback AFTER the session (service teardown deletes config tmp dirs, so
 // this cannot recover files): writes the snapshot ONLY if no snapshot file
 // exists, so a beforeEach failure that skipped afterTest still leaves bound
@@ -134,6 +151,27 @@ async function afterHookFallback() {
   } catch { /* best-effort only */ }
 }
 
+// FULL-H final pre-teardown fallback: refreshes the COMMON snapshot with
+// the ACTUAL final profile/openVault (teardown-time truth for cleanup),
+// even when earlier cases wrote snapshots. First-failure stays separate;
+// the runner's finally reads the common file for bound markers.
+async function afterHookFallbackFull() {
+  try {
+    const b = globalThis.browser ?? null;
+    const snap = {
+      test: null,
+      ts: new Date().toISOString(),
+      hook: "after-full-final",
+      userDataDir: userDataDirFrom(b),
+      openVault: (() => { try { return b?.requestedCapabilities?.["wdio:obsidianOptions"]?.openVault ?? null; } catch { return null; } })(),
+      wer: werSnapshot(),
+      screenshot: "unavailable: final fallback takes no image",
+    };
+    writeFileSync(join(ART, "fullh-final-snapshot.json"), JSON.stringify(snap, null, 2));
+    writeFileSync(join(ART, "a01-aftertest-snapshot.json"), JSON.stringify(snap, null, 2));
+  } catch { /* best-effort only */ }
+}
+
 const caps = JSON.parse(JSON.stringify(base.capabilities[0]));
 caps.browserVersion = "1.14.4";
 caps["wdio:obsidianOptions"] = {
@@ -148,17 +186,24 @@ caps["wdio:chromedriverOptions"] = {
   binary: pins.driverPath,
 };
 
+// FULL mode: grep removed (original full-H suite), bail on first failure.
+// A01 mode: exact A01 grep. Neither mode inherits a fine-grained grep.
+const mochaBase = { ...base.mochaOpts };
+delete mochaBase.grep;
 export const config = {
   ...base,
   capabilities: [caps],
   cacheDir: process.env.A01_CACHE_DIR ?? base.cacheDir,
-  mochaOpts: { ...base.mochaOpts, grep: A01_TITLE },
+  mochaOpts: FULL_MODE
+    ? { ...mochaBase, bail: true }
+    : { ...mochaBase, grep: A01_TITLE },
   afterTest: async function (test, context, result) {
     if (typeof base.afterTest === "function") await base.afterTest.call(this, test, context, result);
     await afterTestHook.call(this, test, context, result);
   },
   after: async function (result, capabilities, specs) {
     if (typeof base.after === "function") await base.after.call(this, result, capabilities, specs);
-    await afterHookFallback.call(this);
+    if (FULL_MODE) await afterHookFallbackFull.call(this);
+    else await afterHookFallback.call(this);
   },
 };

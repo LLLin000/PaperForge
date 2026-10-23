@@ -26,6 +26,12 @@ const H_PREFETCH = join(REPO_ROOT, "h-fixed-ab-artifacts", "prefetch");
 const TAG = process.argv[2] ?? "new";
 const DEAD_PROXY = "http://127.0.0.1:9";
 const FW_PREFIX = "a01-block";
+// Diagnostic-only FULL-H single-host mode: original full suite (no grep),
+// journey gate on, mocha bail. A01 mode (default) unchanged.
+const FULL_MODE = process.env.PF_DIAGNOSTIC_H_FULL === "1";
+// A01 mode keeps the original 600s bound; FULL mode is bounded by the
+// ORIGINAL H 45min (test-level 600/540 and A06 timeouts untouched).
+const WDIO_BUDGET_MS = FULL_MODE ? 45 * 60 * 1000 : 600000;
 
 function sha256File(p) {
   return createHash("sha256").update(readFileSync(p)).digest("hex");
@@ -37,6 +43,26 @@ function listVenvRoots(home) {
     .filter((n) => n.startsWith("venv-"))
     .map((n) => join(rt, n))
     .filter((p) => { try { return statSync(p).isDirectory(); } catch { return false; } });
+}
+function readLatest(file) {
+  try {
+    const ev = JSON.parse(readFileSync(file, "utf8"));
+    const runs = Array.isArray(ev) ? ev : [ev];
+    return runs[runs.length - 1] ?? null;
+  } catch { return null; }
+}
+function countReporter(stdout) {
+  // passed/pending from the raw mocha reporter; first independent error.
+  const m = String(stdout).match(/(\d+)\s+passing/i);
+  const p = String(stdout).match(/(\d+)\s+pending/i);
+  const f = String(stdout).match(/(\d+)\s+failing/i);
+  const i = String(stdout).search(/failing|AssertionError|Error:/);
+  return {
+    passing: m ? Number(m[1]) : null,
+    pending: p ? Number(p[1]) : 0,
+    failing: f ? Number(f[1]) : null,
+    firstError: i >= 0 ? String(stdout).slice(Math.max(0, i - 200), i + 1200) : null,
+  };
 }
 function scrubEnv() {
   for (const key of Object.keys(process.env)) {
@@ -197,6 +223,11 @@ try {
   process.env.PIP_CACHE_DIR = join(ART, `pip-cache-${TAG}`);
   mkdirSync(process.env.PIP_CACHE_DIR, { recursive: true });
   process.env.PF_E2E_SETUP_POSITIVE = "1";
+  if (FULL_MODE) {
+    process.env.PF_DIAGNOSTIC_H_FULL = "1";
+    process.env.PF_E2E_JOURNEY_GATE = "1";
+    delete process.env.PF_E2E_GREP;
+  }
   process.env.PF_E2E_WHEEL_SHA256 = pre.wheelSha256;
   process.env.A01_HOST_PINS = join(H_PREFETCH, "host-pins.json");
   process.env.A01_CACHE_DIR = join(REPO_ROOT, "h-fixed-ab-artifacts", ".obsidian-cache");
@@ -241,7 +272,7 @@ try {
         else child.kill("SIGKILL");
       } catch { /* kill failure recorded below */ }
       setTimeout(() => finish({ status: null, stdout, stderr, signal: null, timedOut: true }), 10000);
-    }, 600000);
+    }, WDIO_BUDGET_MS);
   });
   out.wdioMs = Date.now() - t0;
   out.wdioStatus = run.status;
@@ -249,6 +280,12 @@ try {
   out.wdioTimedOut = run.timedOut ?? false;
   writeFileSync(join(cellArt, "wdio-stdout.log"), String(run.stdout ?? ""));
   writeFileSync(join(cellArt, "wdio-stderr.log"), String(run.stderr ?? ""));
+  out.wdioFirstError = (() => {
+    const txt = `${run.stderr ?? ""}\n${run.stdout ?? ""}`;
+    const i = txt.search(/Error|FAILED|AssertionError/i);
+    return i >= 0 ? txt.slice(Math.max(0, i - 200), i + 1200) : null;
+  })();
+  out.rendererFailure = /Unable to receive message from renderer|not connected to DevTools|disconnected.*renderer|renderer.*(crash|disconnect|died)/i.test(`${run.stderr ?? ""}\n${run.stdout ?? ""}`);
 
   // Post-state diff: the staged prefetch venv must NOT masquerade as UI
   // success — require a NEW candidate under the isolated HOME that differs
@@ -264,24 +301,54 @@ try {
     String(out.postPointer.environment_root ?? "").startsWith(String(home)) &&
     out.newVenvRoots.length > 0;
 
-  let a01 = null;
+  out.a01Receipt = readLatest(join(stagedPluginDir, "test", "evidence", "a01-first-use.json"));
+  // FULL-H gate: A01 VERIFIED + journey VERIFIED with all steps ok +
+  // pointer-change proven from the A01 receipt's OWN pointer (case
+  // completion), not the post-suite pointer later cases may rewrite.
+  // Final runtime post-state recorded separately above.
+  out.mode = FULL_MODE ? "full-h" : "a01";
+  out.reporterCounts = countReporter(run.stdout ?? "");
+  if (!FULL_MODE) {
+    out.ok = run.status === 0 && !!out.a01Receipt && out.a01Receipt.status === "VERIFIED" && out.pointerChanged === true;
+    out.stage = out.ok ? "verified" : "failed";
+    if (!out.a01Receipt) out.note = "no A01 VERIFIED receipt: 0 tests/skipped/missing receipt cannot PASS";
+    else if (out.a01Receipt.status !== "VERIFIED") out.note = `receipt status=${out.a01Receipt.status}: cannot PASS`;
+    else if (!out.pointerChanged) out.note = "pointer unchanged or outside isolated HOME: staged venv masquerade blocked";
+  } else {
+    const journey = readLatest(join(stagedPluginDir, "test", "evidence", "first-use-journey.json"));
+    out.journeyReceipt = journey;
+    const steps = Array.isArray(journey?.steps) ? journey.steps : [];
+    const stepsOk = steps.length > 0 && steps.every((s) => s.ok === true);
+    const a01ptr = out.a01Receipt?.pointer ?? null;
+    const a01PointerChanged =
+      !!a01ptr &&
+      !!out.prePointer &&
+      a01ptr.pythonPath !== out.prePointer.python_path &&
+      a01ptr.pythonPath !== pre.venvPython &&
+      String(a01ptr.environmentRoot ?? "").startsWith(String(home));
+    out.a01PointerChanged = a01PointerChanged;
+    out.journeyStepsOk = stepsOk;
+    out.ok =
+      run.status === 0 &&
+      !!out.a01Receipt && out.a01Receipt.status === "VERIFIED" &&
+      !!journey && journey.status === "VERIFIED" && stepsOk && steps.length > 0 &&
+      a01PointerChanged === true;
+    out.stage = out.ok ? "verified" : "failed";
+    if (!out.a01Receipt || out.a01Receipt.status !== "VERIFIED") out.note = "A01 receipt missing/not VERIFIED: full-H cannot be green";
+    else if (!journey || journey.status !== "VERIFIED" || !stepsOk || steps.length === 0) out.note = "journey gate missing/not VERIFIED/steps not all ok: full-H cannot be green (pending/skipped is not a pass)";
+    else if (!a01PointerChanged) out.note = "A01-case pointer unchanged: staged venv masquerade blocked";
+  }
+  // Preserve ALL original JSON evidence (not only the A01 embedded copy):
+  // staged test/evidence -> own artifact cells/<tag>/original-evidence,
+  // at finish even on failure.
   try {
-    const ev = JSON.parse(readFileSync(join(stagedPluginDir, "test", "evidence", "a01-first-use.json"), "utf8"));
-    const runs = Array.isArray(ev) ? ev : [ev];
-    a01 = runs[runs.length - 1] ?? null;
-  } catch { a01 = null; }
-  out.a01Receipt = a01;
-  out.wdioFirstError = (() => {
-    const txt = `${run.stderr ?? ""}\n${run.stdout ?? ""}`;
-    const i = txt.search(/Error|FAILED|AssertionError/i);
-    return i >= 0 ? txt.slice(Math.max(0, i - 200), i + 1200) : null;
-  })();
-  out.rendererFailure = /renderer.*(crash|disconnect|died)|disconnected.*renderer|no longer connected/i.test(`${run.stderr ?? ""}\n${run.stdout ?? ""}`);
-  out.ok = run.status === 0 && !!a01 && a01.status === "VERIFIED" && out.pointerChanged === true;
-  out.stage = out.ok ? "verified" : "failed";
-  if (!a01) out.note = "no A01 VERIFIED receipt: 0 tests/skipped/missing receipt cannot PASS";
-  else if (a01.status !== "VERIFIED") out.note = `receipt status=${a01.status}: cannot PASS`;
-  else if (!out.pointerChanged) out.note = "pointer unchanged or outside isolated HOME: staged venv masquerade blocked";
+    const src = join(stagedPluginDir, "test", "evidence");
+    const dst = join(cellArt, "original-evidence");
+    if (existsSync(src)) cpSync(src, dst, { recursive: true });
+    out.originalEvidence = existsSync(dst) ? `original-evidence (${readdirSync(dst).length} files)` : "unavailable: staged evidence dir missing";
+  } catch (err) {
+    out.originalEvidence = `copy failed: ${String(err?.message ?? err).slice(0, 160)}`;
+  }
 } catch (err) {
   out.error = String(err?.stack ?? err).slice(0, 1000);
 } finally {

@@ -40,13 +40,30 @@ if (!fresh.rendererFailure) {
   process.exit(0);
 }
 // WAN restored for the old package-prefetch only (this orchestrator runs
-// outside the egress gate); a01-run.mjs re-applies the gate itself.
-for (const k of ["HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy"]) delete process.env[k];
+// outside the egress gate); a01-run.mjs re-applies the gate itself. Never
+// prefetch old with unsafe/unconfirmed children from the new run; generic
+// case failures (no renderer disconnect) stop here with the first error.
+if (fresh?.cleanup && fresh.cleanup.firewall !== "removed-own-rules-after-children-confirmed-stopped") {
+  mkdirSync(join(ART, "cells", "old"), { recursive: true });
+  writeFileSync(join(ART, "result-old.json"), JSON.stringify({
+    tag: "old", ok: false, stage: "harness-blocked",
+    note: `new-run cleanup unconfirmed (${fresh.cleanup.firewall ?? "no receipt"}): old baseline not attempted`,
+    ts: new Date().toISOString(),
+  }, null, 2));
+  console.log(JSON.stringify({ tag: "old", stage: "harness-blocked" }));
+  process.exit(0);
+}
 delete process.env.PIP_NO_INDEX;
+// Propagate the new run's mode: old must run the SAME suite (full-H), not
+// fall back to A01-only. Supervisor budget matches the mode: full-H 45min,
+// A01-old keeps the 15min bound.
+if (fresh?.mode === "full-h") process.env.PF_DIAGNOSTIC_H_FULL = "1";
+else delete process.env.PF_DIAGNOSTIC_H_FULL;
 const pre = spawnSync(process.execPath, [join(REPO_ROOT, "scripts", "diagnostics", "a01-prefetch.mjs"), "old"], { cwd: REPO_ROOT, encoding: "utf8", timeout: 1800000, stdio: "inherit" });
 if (pre.status !== 0) {
   console.log(JSON.stringify({ tag: "old", stage: "prefetch-blocked" }));
   process.exit(1);
 }
-const run = spawnSync(process.execPath, [join(REPO_ROOT, "scripts", "diagnostics", "a01-run.mjs"), "old"], { cwd: REPO_ROOT, encoding: "utf8", timeout: 900000, stdio: "inherit" });
+const oldBudget = fresh?.mode === "full-h" ? 45 * 60 * 1000 + 300000 : 900000;
+const run = spawnSync(process.execPath, [join(REPO_ROOT, "scripts", "diagnostics", "a01-run.mjs"), "old"], { cwd: REPO_ROOT, encoding: "utf8", timeout: oldBudget, stdio: "inherit" });
 process.exit(run.status ?? 1);
