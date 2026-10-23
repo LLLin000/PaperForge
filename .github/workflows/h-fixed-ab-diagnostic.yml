@@ -1,14 +1,13 @@
-# TEMPORARY diagnostic workflow — A01 first-use setup journey (new baseline,
-# conditional old only on historical renderer disconnect).
-# Branch-only push trigger on diagnostics/h-fixed-ab; delete after evidence collected.
+# TEMPORARY diagnostic workflow — paired A01 app-version comparison
+# (1.14.4 vs 1.14.5, same runner/wheel/installer/driver, fresh HOME/vault
+# per arm). Branch-only push trigger on diagnostics/h-fixed-ab.
 # Does NOT touch .github/workflows/ci.yml. No merge/push/PR actions.
-# Exit semantics: step exit 0 means the A01 attempt finished with a terminal
-# verdict (verified/failed/blocked). It does NOT mean the install passed.
-# Verdicts live in a01-artifacts/result-*.json + cells/*/. Failure evidence,
-# never green acceptance; no retries, no timeout increases.
+# Exit semantics: step exit 0 means both arms finished with terminal
+# verdicts (verified/failed/blocked). Failure evidence, never green
+# acceptance; no retries, no timeout increases, no full-H, no old code.
 # Gate: a01-run.mjs applies dead-proxy + per-program firewall egress BEFORE
-# wdio (host/driver/node/staged-venv/selected base+exe), proves loopback
-# CDP, and removes only its own rules AFTER the owned tree is stopped.
+# wdio, proves loopback CDP, and removes only its own rules AFTER the owned
+# tree is verified stopped (fail-closed).
 
 name: h-fixed-ab-diagnostic
 
@@ -18,7 +17,7 @@ on:
 
 jobs:
   fixed-ab:
-    name: Full-H single host (new, conditional old)
+    name: Paired A01 app 1.14.4 vs 1.14.5 (same runner)
     runs-on: windows-latest
     timeout-minutes: 60
     steps:
@@ -55,21 +54,21 @@ jobs:
         shell: pwsh
         run: node scripts/diagnostics/a01-prefetch.mjs new
 
-      - name: Run Full-H single host (egress-gated, 60min, no retries)
+      - name: Prefetch paired app 1.14.5 asar (same installer/driver)
         shell: pwsh
-        run: $env:PF_DIAGNOSTIC_H_FULL = "1"; node scripts/diagnostics/a01-run.mjs new
+        run: node scripts/diagnostics/a01-prefetch-app145.mjs
 
-      - name: Conditional old baseline (renderer disconnect only)
-        if: always()
+      - name: Run paired A01 (app 1.14.4 vs 1.14.5, same runner/wheel)
         shell: pwsh
-        run: node scripts/diagnostics/a01-run-old-if-needed.mjs
+        run: node scripts/diagnostics/a01-run-paired.mjs new
 
-      - name: Report A01 verdicts
+      - name: Report paired verdicts
         if: always()
         shell: pwsh
         run: |
-          Get-Content a01-artifacts/result-new.json
-          if (Test-Path a01-artifacts/result-old.json) { Get-Content a01-artifacts/result-old.json }
+          Get-Content a01-artifacts/paired-summary-new.json
+          Get-Content a01-artifacts/result-new-app144.json
+          Get-Content a01-artifacts/result-new-app145.json
 
       - name: Upload cell evidence
         if: always()
@@ -85,7 +84,9 @@ jobs:
             h-fixed-ab-artifacts/cells/**
             h-fixed-ab-artifacts/**/*safety*
             a01-artifacts/prefetch-*.json
+            a01-artifacts/host-pins-app145.json
             a01-artifacts/result-*.json
+            a01-artifacts/paired-summary-*.json
             a01-artifacts/cells/**
             !h-fixed-ab-artifacts/cells/**/*.exe
             !h-fixed-ab-artifacts/cells/**/*.asar

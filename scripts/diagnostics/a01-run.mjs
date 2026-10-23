@@ -15,7 +15,7 @@
 // wheelhouse>; missing deps => harness-blocked, not product failure.
 import { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -26,6 +26,11 @@ const H_PREFETCH = join(REPO_ROOT, "h-fixed-ab-artifacts", "prefetch");
 const TAG = process.argv[2] ?? "new";
 const DEAD_PROXY = "http://127.0.0.1:9";
 const FW_PREFIX = "a01-block";
+// Paired app-version arm (default 144): selects immutable per-arm host
+// pins + UNIQUE result/artifact directory (no overwrites). Same wheel and
+// prepared staged source for both arms.
+const ARM = process.env.A01_APP_ARM ?? "144";
+const ARM_SUFFIX = ARM === "145" ? "-app145" : "-app144";
 // Diagnostic-only FULL-H single-host mode: original full suite (no grep),
 // journey gate on, mocha bail. A01 mode (default) unchanged.
 const FULL_MODE = process.env.PF_DIAGNOSTIC_H_FULL === "1";
@@ -150,15 +155,19 @@ async function proveLoopbackCdp(driverPath) {
   });
 }
 
-const out = { tag: TAG, ok: false, stage: "start", ts: new Date().toISOString() };
+const out = { tag: `${TAG}${ARM_SUFFIX}`, arm: ARM, ok: false, stage: "start", ts: new Date().toISOString() };
 let fw = { state: "not-applied" };
 let home = null;
-const cellArt = join(ART, "cells", TAG);
+const cellArt = join(ART, "cells", `${TAG}${ARM_SUFFIX}`);
 try {
   const pre = JSON.parse(readFileSync(join(ART, `prefetch-${TAG}.json`), "utf8"));
   if (!pre.ok) throw new Error(`prefetch-${TAG} not ok (stage=${pre.stage}) — harness-blocked, not product failure`);
   out.boundBaseline = { tag: TAG, ref: pre.ref, wheelSha256: pre.wheelSha256, sourceArchive: `src-${TAG}.zip`, sourceArchiveSha256: pre.sourceArchiveSha256 ?? null };
-  const pins = JSON.parse(readFileSync(join(H_PREFETCH, "host-pins.json"), "utf8"));
+  // Per-arm immutable pins: 144 = existing host-pins.json, 145 = paired
+  // app-1.14.5 pins file from the paired prefetch (same installer/driver).
+  const pinsFile = ARM === "145" ? join(ART, "host-pins-app145.json") : join(H_PREFETCH, "host-pins.json");
+  const pins = JSON.parse(readFileSync(pinsFile, "utf8"));
+  out.pinsFile = pinsFile;
   for (const [label, file, want] of [["installer", pins.binaryPath, pins.binarySha256], ["asar", pins.appPath, pins.appSha256], ["driver", pins.driverPath, pins.driverSha256]]) {
     if (sha256File(file) !== want) throw new Error(`host drift before run: ${label}`);
   }
@@ -230,11 +239,15 @@ try {
     delete process.env.PF_E2E_GREP;
   }
   process.env.PF_E2E_WHEEL_SHA256 = pre.wheelSha256;
-  process.env.A01_HOST_PINS = join(H_PREFETCH, "host-pins.json");
+  process.env.A01_HOST_PINS = pinsFile;
   process.env.A01_CACHE_DIR = join(REPO_ROOT, "h-fixed-ab-artifacts", ".obsidian-cache");
   mkdirSync(cellArt, { recursive: true });
   process.env.A01_ARTIFACTS_DIR = cellArt;
   out.stagedPlugin = stagedPluginDir;
+  // Reset generated evidence/cache between arms: a stale VERIFIED receipt
+  // or copied keyring from the other arm must never leak into this one.
+  rmSync(join(stagedPluginDir, "test", "evidence"), { recursive: true, force: true });
+  rmSync(join(stagedPluginDir, ".obsidian-cache", "paperforge-e2e-keyring.json"), { force: true });
   cpSync(new URL("./a01-overlay.mjs", import.meta.url), join(stagedPluginDir, "wdio.a01.mts"));
 
   // Run DIRECTLY in the prefetched staged plugin (own isolated source:
@@ -287,8 +300,12 @@ try {
     return i >= 0 ? txt.slice(Math.max(0, i - 200), i + 1200) : null;
   })();
   out.rendererFailure = /Unable to receive message from renderer|not connected to DevTools|disconnected.*renderer|renderer.*(crash|disconnect|died)/i.test(`${run.stderr ?? ""}\n${run.stdout ?? ""}`);
-
-  // Post-state diff: the staged prefetch venv must NOT masquerade as UI
+  // Actual in-runtime versions (from the hook snapshot, not requested
+  // config) flow into the artifact receipt for the pair check.
+  try {
+    const hook = JSON.parse(readFileSync(join(cellArt, "a01-aftertest-snapshot.json"), "utf8"));
+    out.actualVersions = { app: hook.actualAppVersion ?? null, installer: hook.actualInstallerVersion ?? null, requested: hook.requestedBrowserVersion ?? null, mismatch: hook.versionMismatch ?? null };
+  } catch { out.actualVersions = { app: null, installer: null, requested: null, mismatch: null }; }
   // success — require a NEW candidate under the isolated HOME that differs
   // from the initial pointer. Original A01 assertions untouched.
   out.postPointer = existsSync(ptrPath) ? JSON.parse(readFileSync(ptrPath, "utf8")) : null;
@@ -312,9 +329,16 @@ try {
   if (!FULL_MODE) {
     out.ok = run.status === 0 && !!out.a01Receipt && out.a01Receipt.status === "VERIFIED" && out.pointerChanged === true;
     out.stage = out.ok ? "verified" : "failed";
+    // Fail-first phase: reload/settings-callback vs install-wait vs
+    // assertions — from the aggregated log window, no payload dump.
+    // Current A01 callback source identifier (spec line, stable anchor).
+    out.callbackSource = "paperforge.e2e.ts A01 executeObsidian setup-journey block (settings open/wait/display/install click)";
+    const failTxt = out.wdioFirstError ?? "";
+    out.failPhase = out.ok ? null
+      : /reloadObsidian|beforeEach|empty vault/i.test(failTxt) ? "reload-or-settings-callback"
+      : /did not publish a ready runtime pointer|waitUntil|timeout/i.test(failTxt) ? "install-wait"
+      : "assertions-or-unknown";
     if (!out.a01Receipt) out.note = "no A01 VERIFIED receipt: 0 tests/skipped/missing receipt cannot PASS";
-    else if (out.a01Receipt.status !== "VERIFIED") out.note = `receipt status=${out.a01Receipt.status}: cannot PASS`;
-    else if (!out.pointerChanged) out.note = "pointer unchanged or outside isolated HOME: staged venv masquerade blocked";
   } else {
     const journey = readLatest(join(stagedPluginDir, "test", "evidence", "first-use-journey.json"));
     out.journeyReceipt = journey;
@@ -410,7 +434,9 @@ try {
 }
 out.egressFirewall = fw;
 out.ts = new Date().toISOString();
-mkdirSync(join(ART, "cells", TAG), { recursive: true });
-writeFileSync(join(ART, `result-${TAG}.json`), JSON.stringify(out, null, 2));
-console.log(JSON.stringify({ tag: TAG, ok: out.ok, stage: out.stage, rendererFailure: out.rendererFailure ?? false, note: out.note ?? out.error ?? null }));
+mkdirSync(join(ART, "cells", `${TAG}${ARM_SUFFIX}`), { recursive: true });
+// Per-arm result file (no overwrites between arms); the paired
+// orchestrator also snapshots ordered before/after command timestamps.
+writeFileSync(join(ART, `result-${TAG}${ARM_SUFFIX}.json`), JSON.stringify(out, null, 2));
+console.log(JSON.stringify({ tag: out.tag, arm: ARM, ok: out.ok, stage: out.stage, rendererFailure: out.rendererFailure ?? false, note: out.note ?? out.error ?? null }));
 if (!out.ok) process.exit(1);

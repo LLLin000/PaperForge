@@ -66,6 +66,24 @@ function werSnapshot() {
   }
 }
 
+// Inner-UI command journal (metadata only: commandName, start/end, error
+// presence — no args/payloads). Streams to command-journal.jsonl; the
+// fail-first record distinguishes callback vs wait phases by command name.
+const cmdStack = [];
+function journalCommand(phase, commandName, error) {
+  try {
+    const line = phase === "before"
+      ? { phase, command: String(commandName), start: new Date().toISOString() }
+      : { phase, command: String(commandName), end: new Date().toISOString(), error: error ? String(error?.message ?? error).slice(0, 200) : null };
+    if (phase === "before") cmdStack.push(line);
+    else {
+      const open = [...cmdStack].reverse().find((e) => e.command === String(commandName) && !e.closed);
+      if (open) { open.closed = true; line.start = open.start; }
+    }
+    writeFileSync(join(ART, "command-journal.jsonl"), JSON.stringify(line) + "\n", { flag: "a" });
+  } catch { /* journal is best-effort */ }
+}
+
 async function afterTestHook(test, context, result) {
   // Runs BEFORE service teardown. A dead renderer may HANG a screenshot
   // call and lose all crash evidence, so durable work goes FIRST:
@@ -73,9 +91,22 @@ async function afterTestHook(test, context, result) {
   // JSON is updated with the image attempt. No renderer needed for files.
   const snap = { test: test?.title ?? null, ts: new Date().toISOString() };
   const b = globalThis.browser ?? null;
+  // Actual in-runtime version assert (not the requested config): record
+  // observed app/installer versions + requested browserVersion.
+  try {
+    snap.actualAppVersion = await b?.getObsidianVersion().catch(() => null) ?? null;
+    snap.actualInstallerVersion = await b?.getObsidianInstallerVersion?.().catch(() => null) ?? null;
+  } catch {
+    snap.actualAppVersion = snap.actualAppVersion ?? null;
+    snap.actualInstallerVersion = snap.actualInstallerVersion ?? null;
+  }
+  snap.expectedAppVersion = pins.appVersion;
+  snap.requestedBrowserVersion = caps.browserVersion;
+  if (snap.actualAppVersion && snap.actualAppVersion !== pins.appVersion) {
+    snap.versionMismatch = `actual ${snap.actualAppVersion} != pinned ${pins.appVersion}`;
+  }
   try {
     const cfg = userDataDirFrom(b);
-    snap.userDataDir = cfg;
     if (cfg && existsSync(cfg)) {
       for (const name of ["Crashpad", "main.log"]) {
         const src = join(cfg, name);
@@ -173,11 +204,11 @@ async function afterHookFallbackFull() {
 }
 
 const caps = JSON.parse(JSON.stringify(base.capabilities[0]));
-caps.browserVersion = "1.14.4";
+caps.browserVersion = pins.appVersion;
 caps["wdio:obsidianOptions"] = {
   ...caps["wdio:obsidianOptions"],
-  appVersion: "1.14.4",
-  installerVersion: "1.5.8",
+  appVersion: pins.appVersion,
+  installerVersion: pins.installerVersion,
   binaryPath: pins.binaryPath,
   appPath: pins.appPath,
 };
@@ -197,6 +228,14 @@ export const config = {
   mochaOpts: FULL_MODE
     ? { ...mochaBase, bail: true }
     : { ...mochaBase, grep: A01_TITLE },
+  beforeCommand: async function (commandName) {
+    if (typeof base.beforeCommand === "function") await base.beforeCommand.call(this, commandName);
+    journalCommand("before", commandName);
+  },
+  afterCommand: async function (commandName, args, result, error) {
+    if (typeof base.afterCommand === "function") await base.afterCommand.call(this, commandName, args, result, error);
+    journalCommand("after", commandName, error);
+  },
   afterTest: async function (test, context, result) {
     if (typeof base.afterTest === "function") await base.afterTest.call(this, test, context, result);
     await afterTestHook.call(this, test, context, result);
