@@ -71,6 +71,7 @@ import {
   closeSync,
   readFileSync,
   readdirSync,
+  rmSync,
   statSync,
   writeFileSync,
 } from "node:fs";
@@ -327,16 +328,19 @@ async function prefetchInner(status) {
   for (const refFull of [CONF.OLD_REF, CONF.NEW_REF]) {
     const tag = refFull === CONF.OLD_REF ? "old" : "new";
     const srcDir = join(PREFETCH_DIR, `src-${tag}`);
+    rmSync(srcDir, { recursive: true, force: true });
     mkdirSync(srcDir, { recursive: true });
     console.log(`[prefetch] archiving ${tag} (${refFull.slice(0, 12)})...`);
     const head = sh("git", ["rev-parse", refFull], { cwd: REPO_ROOT });
     if (head !== refFull) throw new Error(`ref moved during prefetch: ${refFull} -> ${head}`);
-    const tar = join(PREFETCH_DIR, `src-${tag}.tar`);
-    // Portable: GNU tar on Windows treats a D:-absolute archive arg as a
-    // remote (host D:) and BSD tar lacks --force-local, so pass both the
-    // archive and the destination repo-relative with cwd=REPO_ROOT.
-    sh("git", ["archive", refFull, "-o", relative(REPO_ROOT, tar)], { cwd: REPO_ROOT });
-    sh("tar", ["-xf", relative(REPO_ROOT, tar), "-C", relative(REPO_ROOT, srcDir)], { cwd: REPO_ROOT });
+    const archive = join(PREFETCH_DIR, `src-${tag}.zip`);
+    sh("git", ["archive", "--format=zip", refFull, "-o", relative(REPO_ROOT, archive)], { cwd: REPO_ROOT });
+    sh(process.env.PF_DIAGNOSTIC_PYTHON ?? "python", [
+      "-c", "import sys,zipfile; zipfile.ZipFile(sys.argv[1]).extractall(sys.argv[2])",
+      archive, srcDir,
+    ]);
+    const exportFixture = join(srcDir, "tests", "sandbox", "exports", "\u9aa8\u79d1.json");
+    if (!existsSync(exportFixture)) throw new Error(`archived export fixture missing: ${exportFixture}`);
     const tagPluginDir = join(srcDir, "paperforge", "plugin");
     console.log(`[prefetch] npm ci + build (${tag})...`);
     npmSh(["ci", "--no-audit", "--no-fund"], { cwd: tagPluginDir });
@@ -672,12 +676,14 @@ function snapshotAppCrashEvents() {
     const out = sh("powershell", [
       "-NoProfile",
       "-Command",
-      "Get-WinEvent -FilterHashtable @{LogName='Application'; ID=1000,1002; StartTime=(Get-Date).AddHours(-6)} " +
-        "-ErrorAction SilentlyContinue | Select-Object -First 20 TimeCreated,Id,Message | Format-List | Out-String",
+      "$ErrorActionPreference='Stop'; try { " +
+        "$events=@(Get-WinEvent -FilterHashtable @{LogName='Application'; ProviderName='Application Error','Application Hang'; ID=1000,1002; StartTime=(Get-Date).AddHours(-6)} -ErrorAction Stop | Select-Object -First 20 TimeCreated,ProviderName,Id,Message); " +
+        "@{queried=$true;count=$events.Count;events=$events;error=$null} | ConvertTo-Json -Depth 4 " +
+        "} catch { if ($_.FullyQualifiedErrorId -like 'NoMatchingEventsFound*') { " +
+        "@{queried=$true;count=0;events=@();error=$null} | ConvertTo-Json " +
+        "} else { @{queried=$false;count=0;events=@();error=$_.Exception.Message} | ConvertTo-Json } }",
     ]);
-    const events = out.slice(0, 4000) || "";
-    const count = (events.match(/^Id\s*:/gim) ?? []).length;
-    return { queried: true, count, events, error: null };
+    return JSON.parse(out);
   } catch (err) {
     return { queried: false, count: 0, events: null, error: String(err?.message ?? err).slice(0, 300) };
   }
