@@ -419,12 +419,12 @@ async function prefetchRuntime(tag, refFull, status) {
     // with [vector]. Pip's internal build wheel is never the identity.
     const wheelDir = join(rtDir, "wheel");
     mkdirSync(wheelDir, { recursive: true });
-    const wheelBuild = spawnSync(venvPy, ["-m", "pip", "wheel", "--no-deps", "--no-build-isolation", "-w", wheelDir, srcDir], {
+    const wheelBuild = spawnSync(venvPy, ["-m", "pip", "wheel", "--no-deps", "-w", wheelDir, srcDir], {
       encoding: "utf8", timeout: 600000, stdio: "pipe",
     });
     receipt.wheelBuildStatus = wheelBuild.status ?? null;
     if (wheelBuild.status !== 0) {
-      receipt.wheelBuildTail = String(wheelBuild.stderr ?? wheelBuild.stdout ?? "").slice(-500);
+      receipt.wheelBuildOutput = `${wheelBuild.stdout ?? ""}\n${wheelBuild.stderr ?? ""}`.slice(-20000);
       throw new Error(`pip wheel ${tag} failed (status=${wheelBuild.status})`);
     }
     const wheels = readdirSync(wheelDir).filter((f) => f.endsWith(".whl")).sort();
