@@ -54,7 +54,7 @@ function readLatest(file) {
 function countReporter(stdout) {
   // passed/pending from the raw mocha reporter; first independent error.
   const m = String(stdout).match(/(\d+)\s+passing/i);
-  const p = String(stdout).match(/(\d+)\s+pending/i);
+  const p = String(stdout).match(/(\d+)\s+(?:pending|skipped)/i);
   const f = String(stdout).match(/(\d+)\s+failing/i);
   const i = String(stdout).search(/failing|AssertionError|Error:/);
   return {
@@ -218,6 +218,7 @@ try {
 
   // Offline pip + A01 opt-in for the UI install subprocesses.
   const stagedPluginDir = join(ART, `stage-${TAG}`, "paperforge", "plugin");
+  mkdirSync(join(stagedPluginDir, ".obsidian-cache"), { recursive: true });
   process.env.PIP_NO_INDEX = "1";
   process.env.PIP_FIND_LINKS = pre.wheelhouse;
   process.env.PIP_CACHE_DIR = join(ART, `pip-cache-${TAG}`);
