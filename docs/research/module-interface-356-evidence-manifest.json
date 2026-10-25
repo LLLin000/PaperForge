@@ -1,13 +1,13 @@
 {
  "artifact_provenance": "TRIAL_ROOT/module-interface-356-recovery/ (local-only, not committed); value fields below are hashes/codes/counts/commands only",
- "base_sha": "4cb51da872d41e724dc117bd5cc980b87991c5f0",
+ "base_sha": "b1530c1cdc6778a546e16537fb0931299f2157b7",
  "blocked": [
   "real OCR/Embedding/cloud-model tasks (remote frozen, no local model)",
-  "full H host root-cause (A01 unknown; see inconclusive below)",
-  "scoped-shortcut product fix for Ctrl+Enter (diagnosis conclusive this round; fix pending parent authorization, zero product diff so far)"
+  "full H host root-cause (A01 unknown; only short-A/B identity closure)",
+  "physical OS-key Ctrl+Enter (unverified; trusted-CDP host evidence stands without it)"
  ],
  "candidate": {
-  "backend_wheel": "0d58ff6f75a8937ecbcd30fb48b786281f280b74c777cbfa71ec5e0528bf1975a2 (built from 4cb51da8; 237 tracked py files byte-identical wheel-vs-source, 0 mismatch, 0 missing; binding candidate-wheel-4cb/source-wheel-hash-binding.json)",
+  "backend_wheel": "0d58ff6f75a8937ecbcd30fb48b786281f280b74c777cbfa71ec5e0528bf1975a2 (built from 4cb51da8; bound to fa650fdf install-source phase; NOT rebuilt for TS-only scope fix; Python files unchanged)",
   "binding": "candidate-wheel-4cb/source-wheel-hash-binding.json (private)",
   "diff_vs_old_fecc_wheel": "same entry set; content changes only in paperforge/commands/ocr.py, paperforge/core/next_actions.py, paperforge/plugin/main.js (+RECORD); old fecc442a wheel retained privately as red history, never offered this round",
   "interpreter": "owned uv cpython-3.11.15 base; candidate venv non-editable install; product pip command unmodified (env PIP_NO_INDEX/FIND_LINKS injection only)",
@@ -16,7 +16,8 @@
   "rc4_fixture": "official 2.0.0-rc.4 wheel SHA verified against release API (wheel/main.js/manifest/checksums all MATCH, styles==rc5); prior venv 2.0.0rc4-prior installed from official wheel, 236 py files byte-identical, pointer published by Python setup as explicit UPGRADE-PRECONDITION fixture",
   "upgrade_real_ui": "B-upgrade-home/vault port 8225, fix bundle fa650fdf: mismatch shown live, real Cancel preserves rc4 pointer+runtime (failed candidate removed by product), retry completes to 2.0.0rc5 pointer (237/237 files match), old runtime retired by product only after publish; Foundation READY",
   "official_fresh_real_ui": "B-official-home/vault port 8227, official main.js e6d0ede8 + official backend 8f931635: real Setup journey fresh install, 236/236 files match, deps 110, Foundation READY; RC5 ships pymupdf 2.0 unpinned (KNOWN RISK retained, recorded from real closure)",
-  "receipt": "issue356-B-upgrade-acceptance-2026-10-25.json (private; json.load verified)"
+  "receipt": "issue356-B-upgrade-acceptance-2026-10-25.json (private; json.load verified)",
+  "scope_bundle": "673b71cada579965b331f62f9c6659330f6ee5da0149257964cf437adf49370b (TS-only scope cutover from b1530c1c tree; independently bound on A host green; install artifacts carry fa650fdf phase)"
  },
  "cli_commands": {
   "memory_build": {
@@ -98,7 +99,7 @@
   "protocol_violation": "protocol_error; exactly one Console line per genuine failure (single-terminal rule)",
   "vector_not_built": "recovery card; no red Console"
  },
- "final_short_smoke": "SUPERSEDED 2026-10-25 by paired-upgrade + official-fresh + Scope-discriminator round (receipt issue356-B-upgrade-acceptance-2026-10-25.json): @-query deep entry + retrieve --deep argv observed live in bridge-world (synthetic, NOT user-action proof); trusted Ctrl+Enter user path diagnosed by reversible Scope experiment (capture saw ctrl+Enter defaultPrevented, debug Scope cb fired, input listener silent; plain-Enter control reaches input listener) = keymap-swallow signature, Obsidian baked editor:open-link-in-new-leaf owns Ctrl+Enter; physical-Ctrl+Enter user-focus step downgraded to optional confirmation. Bridge-world failure-card absence is a negative control, not a product finding; no product diff from the experiment.",
+ "final_short_smoke": "CURRENT 2026-10-25 scope cutover (bundle 673b71cada57): trusted CDP Ctrl+Enter -> Scope callback -> view entry forceDeep:true exactly-one -> actual transport retrieve --deep -> labeled offline fault card -> real Retry replays forceDeep -> recover leg live deep retrieve -> ordinary Enter metadata search; blur/close release (no push leak, parent baked Ctrl+Enter intact); re-render binds only new input; unit suite keeps method-level forced-deep one-shot (no fake key routing). Historical UNOBSERVED/fault-injection-gap notes and draft dd2c green retained as history.",
  "gate_provenance": {
   "plugin_603_1_bb79312a": "current bb79312a product tree, full vitest + typecheck + build",
   "python_221_3_dedicated_bb79312a": "current bb79312a product tree, dedicated module-interface-356 venv 3.12.8, offline sitecustomize, Null keyring",
@@ -168,6 +169,6 @@
   "physical_page": 1,
   "printed_page": "248"
  },
- "tested_base": "4cb51da872d41e724dc117bd5cc980b87991c5f0 (clean public HEAD; bundle fa650fdf stable from this tree)",
- "ui_bundle_this_fix_note": "4cb51da8 tree build; fa650fdfeb06070489bc76cb8e329794b16470b535e0cff3ac5e0528bf1975a2 deployed on all owned UI vaults, deployed==worktree verified per vault"
+ "tested_base": "b1530c1cdc6778a546e16537fb0931299f2157b7 + uncommitted TS-only scope cutover (dashboard.ts 6982861b5bdd, bundle 673b71cada57); Python tree unchanged",
+ "ui_bundle_this_fix_note": "scope-cutover build from b1530c1c tree; main.js 673b71cada579965b331f62f9c6659330f6ee5da0149257964cf437adf49370b deployed on A ui-vault, deployed==worktree verified"
 }
