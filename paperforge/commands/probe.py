@@ -1614,7 +1614,7 @@ def _derive_maintenance_tail(
         envelope = build_envelope(
             module="maintenance", capability_state="ready", severity="ok",
             reason_code="maintenance.no_items",
-            reason_text="All modules are ready — no maintenance needed",
+            reason_text="No maintenance items — check each module state for readiness",
             user_state=USER_STATE_READY, capability_kind=CAPABILITY_REQUIRED,
             action_primary=None, ttl_seconds=TTL_MAINTENANCE,
         )

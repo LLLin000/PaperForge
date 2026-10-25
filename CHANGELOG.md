@@ -14,7 +14,10 @@ All notable changes to PaperForge.
 
 ### Fixed
 
-- Pin `pymupdf<2`: 2.0 imports and activates its layout model (onnxruntime) at import time, which stalled OCR runs and broke imports on Windows; page counts and text extraction remain on 1.28.x.
+- Metadata search without a local Memory index now shows a dedicated missing-memory recovery card (deep-retrieve PATH_NOT_FOUND stays distinct); the card navigates to the actual Memory module detail through the Plugin-owned openModuleSettings seam without dispatching builds/embeddings (#356).
+- Console ownership sweep: View duplicates removed where the shared client already records the terminal; local-only failures (bootstrap/install fallbacks, probe validation/raw probe, discussion read, external-note refresh, clipboard copy, orphan lineage) keep one redacted op/stage/code/exit diagnostic via traceConsoleError; NO_PYTHON/cancelled/empty stay quiet (#356).
+- Doctor reports the plugin execution interpreter from the published managed-runtime pointer only: missing/invalid/missing-file/stale pointers report setup/repair/update and skip target-environment probing; no python_path or ambient-Python fallback, no in-place or global pip advice (#356).
+- Runtime health no longer projects user-disabled vector support as retrieval capability: the vector layer keeps the existing `ok` healthy-optional-disabled status and adds an explicit `enabled` boolean on the vector layer only (no generic layer API change); `summary.safe_vector` and `capabilities.vector_retrieve` are false when disabled, unchanged degraded/unavailable when enabled-but-unready, and available only when enabled-and-ready (#356).
 - Preserve exact OCR paper scope from CLI, dashboard paper/collection context and workspace confirmation through provider upload (#349). Reject empty or unknown explicit scopes without partial execution.
 - Confine OCR cleanup and stale-job resets to the selected scope. Stop prevents new uploads, including transport retries; submitted provider jobs remain separately reported as running remotely.
 - Label whole-library OCR impact and require user confirmation in the plugin. Offline synthetic regressions intercept the final multipart HTTP upload; no paid-provider acceptance is implied.

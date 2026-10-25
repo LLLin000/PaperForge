@@ -103,6 +103,53 @@ export default class PaperForgePlugin extends Plugin {
     return this._managedRuntime;
   }
 
+  /**
+   * Small Plugin-owned module-navigation entrypoint (#356 recovery seam).
+   * Opens the PaperForge settings tab, then reuses the settings tab's own
+   * `_handleCardNavigation` so cards land on the real module detail — never
+   * the settings homepage. The private `_settingTab` stays private: Views
+   * reach navigation only through this method. No action is dispatched, no
+   * build/embedding runs. Returns false when navigation is unavailable so
+   * callers show an explicit "unavailable" message instead of silently
+   * doing nothing.
+   */
+  openModuleSettings(module: string): boolean {
+    const tab = this._settingTab;
+    // this.app.setting is Obsidian-internal (absent from the public App
+    // type): narrow through unknown so narrowing, not `any`, governs.
+    const settingApp = this.app as unknown as {
+      setting?: {
+        open?: unknown;
+        openTabById?: unknown;
+      };
+    };
+    const setting = settingApp.setting;
+    // Obsidian 1.14: Setting.open() crashes when no settings tab has ever
+    // been registered (openTabById finds the tab AND parents the modal, so
+    // open() must come second). Order: tab → detail → open.
+    const openSettings =
+      typeof setting?.open === "function"
+        ? setting.open.bind(setting)
+        : undefined;
+    const openTab =
+      typeof setting?.openTabById === "function"
+        ? (setting.openTabById as (id: string) => void).bind(setting)
+        : undefined;
+    if (
+      !tab ||
+      typeof tab._handleCardNavigation !== "function" ||
+      !openSettings ||
+      !openTab
+    ) {
+      new Notice("PaperForge settings navigation is unavailable", 6000);
+      return false;
+    }
+    const found = openTab("paperforge");
+    tab._handleCardNavigation(module);
+    openSettings();
+    return found !== null && found !== undefined;
+  }
+
   /** Diagnostic handle for the console: `app.plugins.plugins.paperforge
    * .getDebugTrace()` prints the client↔backend boundary log (metadata only). */
   getDebugTrace(): string {
@@ -541,10 +588,8 @@ export default class PaperForgePlugin extends Plugin {
 
   savePaperforgeJson(_pathConfig: Record<string, string | undefined>): void {
     // #142 / C0: removed — the plugin never writes paperforge.json. Mutations
-    // route through `paperforge config set/unset` (config-client).
-    console.warn(
-      "PaperForge: savePaperforgeJson is retired; use paperforge config set"
-    );
+    // route through `paperforge config set/unset` (config-client). Retired
+    // stub: no Console noise, no behavior change.
   }
 
   onunload() {

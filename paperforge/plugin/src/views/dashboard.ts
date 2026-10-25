@@ -29,6 +29,7 @@ import {
 } from "../client/paperforge-client";
 import { diffFulltext } from "../services/version-diff";
 import { VersionRestoreModal } from "./ocr-workspace";
+import { rejectionCode, rejectionData, traceConsoleError } from "../client/trace";
 import type { PaperForgeClient } from "../client";
 import {
   ResearchRecordCaptureModal,
@@ -41,6 +42,7 @@ interface IPluginRef {
   app: App;
   manifest: { version: string };
   settings?: PaperForgeSettings;
+  openModuleSettings?: (module: string) => boolean;
   [key: string]: unknown;
 }
 
@@ -1400,12 +1402,15 @@ export class PaperForgeStatusView extends ItemView {
           }
         });
       })
-      .catch((e: any) => {
-        console.error(
-          "PaperForge: discussion.md read error",
-          mdPath,
-          e.message
-        );
+      .catch(() => {
+        // Ownership: local vault read with no client terminal — one fixed
+        // diagnostic, never the path or the Error payload.
+        traceConsoleError({
+          op: "discussion.read",
+          stage: "local",
+          code: "backend_error",
+          exitCode: null,
+        });
       });
   }
 
@@ -2036,8 +2041,15 @@ export class PaperForgeStatusView extends ItemView {
     if (typeof adapter.reconcileInternalFile === "function") {
       try {
         await adapter.reconcileInternalFile(notePath);
-      } catch (error) {
-        console.warn("[PF] Could not refresh external note:", notePath, error);
+      } catch {
+        // Ownership: local vault refresh with no client terminal — one
+        // fixed diagnostic, never the path or the Error payload.
+        traceConsoleError({
+          op: "note.refresh",
+          stage: "local",
+          code: "backend_error",
+          exitCode: null,
+        });
       }
     }
     const file = this.app.vault.getAbstractFileByPath(notePath);
@@ -2937,15 +2949,7 @@ export class PaperForgeStatusView extends ItemView {
           text: t("retrieval_open_vector_settings"),
         });
         btn.addEventListener("click", () => {
-          const setting = (this.app as unknown as Record<string, unknown>)[
-            "setting"
-          ];
-          if (setting && typeof setting === "object") {
-            const openTab = (setting as Record<string, unknown>)["openTab"];
-            if (typeof openTab === "function") {
-              openTab.call(setting, "paperforge");
-            }
-          }
+          this._openMemoryDetail();
         });
         // Focus management: focus the action button
         setTimeout(() => {
@@ -2953,6 +2957,32 @@ export class PaperForgeStatusView extends ItemView {
         }, 100);
         break;
       }
+      case "missing-memory-index": {
+        const warn = this._searchResultsEl.createEl("div", {
+          cls: "paperforge-search-state-card",
+          attr: { role: "alert" },
+        });
+        warn.addClass("warning-soft");
+        warn.createEl("div", {
+          cls: "paperforge-search-state-title",
+          text: t("retrieval_memory_index_missing"),
+        });
+        warn.createEl("div", {
+          cls: "paperforge-search-state-desc",
+          text: t("retrieval_memory_index_missing_desc"),
+        });
+        const btn = warn.createEl("button", {
+          cls: "pf-btn-link",
+          text: t("retrieval_open_memory_settings"),
+        });
+        btn.addEventListener("click", () => {
+          this._openMemoryDetail();
+        });
+        setTimeout(() => {
+          btn.focus();
+        }, 100);
+         break;
+       }
       case "backend-unavailable": {
         const err = this._searchResultsEl.createEl("div", {
           cls: "paperforge-search-state-card",
@@ -3047,16 +3077,7 @@ export class PaperForgeStatusView extends ItemView {
           text: t("retrieval_rebuild_vectors"),
         });
         rebuildBtn.addEventListener("click", () => {
-          // Trigger rebuild from settings
-          const setting = (this.app as unknown as Record<string, unknown>)[
-            "setting"
-          ];
-          if (setting && typeof setting === "object") {
-            const openTab = (setting as Record<string, unknown>)["openTab"];
-            if (typeof openTab === "function") {
-              openTab.call(setting, "paperforge");
-            }
-          }
+          this._openMemoryDetail();
         });
         // Focus: rebuild button
         setTimeout(() => {
@@ -3079,6 +3100,30 @@ export class PaperForgeStatusView extends ItemView {
       }
     }
   }
+  /**
+   * Recovery navigation for search cards (#356): reach the real Memory
+   * module detail through the Plugin-owned entrypoint. Never dispatches an
+   * action, never starts a build/embedding — navigation only.
+   */
+  _openMemoryDetail(): void {
+    const plugin = (
+      this.app as unknown as {
+        plugins?: { plugins?: Record<string, unknown> };
+      }
+    ).plugins?.plugins?.["paperforge"];
+    const open =
+      plugin !== null &&
+      typeof plugin === "object" &&
+      "openModuleSettings" in plugin
+        ? plugin.openModuleSettings
+        : undefined;
+    if (typeof open === "function") {
+      open.call(plugin, "memory");
+      return;
+    }
+    new Notice(t("retrieval_navigation_unavailable"), 6000);
+  }
+
 
   async executeSearch() {
     if (!this._searchInput || !this._searchResultsEl) return;
@@ -3167,10 +3212,39 @@ export class PaperForgeStatusView extends ItemView {
       this._searchResults = results;
       this._searchState = results.length > 0 ? "results" : "empty";
       this._renderSearchState();
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (generation !== this._searchGeneration) return;
-      const classification = classifyError(String(err?.message ?? err));
-      this._searchState = this._mapErrorToSearchState(classification.type);
+      // Machine-code-first mapping: the structured rejection carries
+      // `code` + PFResult `data` (narrowed, never message/stdout text).
+      // Missing Memory DB (PATH_NOT_FOUND) is not missing vectors, and a
+      // deep-retrieve PATH_NOT_FOUND is a different authority state than a
+      // metadata-search one: only the metadata path gets the missing-memory
+      // recovery card.
+      const code = rejectionCode(err);
+      const rawData: unknown = rejectionData(err);
+      const vectorState: unknown =
+        rawData !== null &&
+        typeof rawData === "object" &&
+        "vector_state" in rawData
+          ? rawData.vector_state
+          : undefined;
+      if (
+        code === "PRECONDITION_FAILED" &&
+        (vectorState === "not_built" || vectorState === "stale")
+      ) {
+        this._searchState = "vectors-not-built";
+      } else if (code === "PATH_NOT_FOUND" && !isDeep) {
+        // Expected unbuilt Memory index for metadata search: the rejection
+        // already reached the trace ring with its machine code; the new
+        // card explains recovery, no extra Console error here.
+        this._searchState = "missing-memory-index";
+      } else if (code === "PATH_NOT_FOUND") {
+        this._searchState = "backend-unavailable";
+      } else {
+        const msg: unknown = err instanceof Error ? err.message : err;
+        const classification = classifyError(String(code ?? (typeof msg === "string" ? msg : "unknown")));
+        this._searchState = this._mapErrorToSearchState(classification.type);
+      }
       this._renderSearchState();
     } finally {
       await recordSearch;
@@ -3417,8 +3491,9 @@ export class PaperForgeStatusView extends ItemView {
       try {
         await this._loadDashboardData(false);
         await this._refreshCurrentMode();
-      } catch (e) {
-        console.log("[PF] dashboard load error:", e);
+      } catch {
+        // Ownership: the typed dashboard read already recorded its
+        // terminal — the message bar/Notice surface stays, no View echo.
       }
       if (exitOk) {
         checkOrphanState(

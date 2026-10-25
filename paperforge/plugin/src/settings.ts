@@ -55,7 +55,7 @@ import type { PythonResult } from "./services/python-bridge";
 import { deferred } from "./services/deferred";
 import { orchestrateFromSync } from "./services/next-actions-bridge";
 import { PaperForgeClient } from "./client";
-import { clearTrace, dumpTrace, setTraceEnabled } from "./client/trace";
+import { clearTrace, dumpTrace, setTraceEnabled, traceConsoleError } from "./client/trace";
 import {
   PaperForgeConfirmModal,
   PaperForgeIssueDraftModal,
@@ -611,7 +611,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           signal.aborted ||
           (typeof error === "object" &&
             error !== null &&
-            (error as { name?: unknown }).name === "AbortError");
+            "name" in error &&
+            error.name === "AbortError");
         if (isAbort) {
           // User cancelled: keep the wizard in place, show a neutral
           // message.  Never flip _setup_complete, never treat it as a
@@ -621,7 +622,25 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           this.display();
           return;
         }
-        console.error("PaperForge runtime installation failed:", error);
+        // Ownership: install/handshake/local setup failures may be the sole
+        // terminal (bootstrap/handshake run outside the shared client
+        // stream). When the setup stream already owned the terminal, the
+        // client logged it — a failure carrying the client's stream outcome
+        // shape (exitCode + cancelled/protocolFailure) must not log twice.
+        // Post-stream local validation failures still log once here.
+        const looksLikeStreamOutcome =
+          error !== null &&
+          typeof error === "object" &&
+          (("exitCode" in error && "cancelled" in error) ||
+            "protocolFailure" in error);
+        if (!looksLikeStreamOutcome) {
+          traceConsoleError({
+            op: "foundation.setup",
+            stage: "install",
+            code: "backend_error",
+            exitCode: null,
+          });
+        }
         this._setupOperation = "failed";
         this._setupFeedback = t("setup_install_failed");
         // The generic line above blames the Python path for EVERY failure
@@ -730,7 +749,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
               .then(
                 () => undefined,
                 (e) => {
-                  console.error(`PaperForge: config set ${key} failed`, e);
+                  // Ownership: the typed config client already recorded the
+                  // terminal — keep the user-facing reason, no View echo.
                   problems.push({
                     key,
                     reason: this._formatSetupFailure(e),
@@ -816,11 +836,20 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         );
         const outcome = await handle.outcome;
         if (!outcome.ok) {
-          throw new Error(
-            outcome.protocolFailure
-              ? `${outcome.protocolFailure} (exit=${outcome.exitCode}, cancelled=${outcome.cancelled})`
-              : `Setup failed with exit code ${outcome.exitCode}`
-          );
+          if (outcome.cancelled) {
+            // User-cancelled stream: the client treats it as an expected
+            // state (no Console error) — the wizard stays neutral too.
+            this._setupOperation = "idle";
+            this._setupFeedback = t("setup_install_cancelled");
+            this.display();
+            return;
+          }
+          // Ownership: the shared client already recorded the stream
+          // terminal — keep the user-facing failure, no outer echo.
+          this._setupOperation = "failed";
+          this._setupFeedback = t("setup_library_config_failed");
+          this.display();
+          return;
         }
         this._setupOperation = "idle";
         this._setupFeedback =
@@ -831,13 +860,22 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         this._probeModule("library");
         this.display();
       } catch (error) {
-        console.error("PaperForge library configuration failed:", error);
+        // Only non-stream local failures reach here (saveSettings and the
+        // small local throw above are already handled): keep one safe
+        // diagnostic without the Error payload.
+        traceConsoleError({
+          op: "library.setup",
+          stage: "local",
+          code: "backend_error",
+          exitCode: null,
+        });
         this._setupOperation = "failed";
         this._setupFeedback = t("setup_library_config_failed");
         this.display();
       }
     })();
   }
+
   /** Render the Overview tab (header + control center + advanced settings). */
   _renderOverviewTab(containerEl: HTMLElement) {
     const vaultPath = this._getVaultBasePath();
@@ -3046,10 +3084,15 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         if (isValidEnvelope(envelope, mod)) {
           this._updateCapabilityEnvelope(mod, envelope);
         } else {
-          console.warn(
-            `[PaperForge] Probe ${mod}: invalid envelope schema`,
-            envelope
-          );
+          // Ownership: probe bypasses the typed PFResult choke point (raw
+          // envelope read), so this local validation owns the terminal.
+          // Never dump the envelope — fixed metadata only.
+          traceConsoleError({
+            op: `probe.${mod}`,
+            stage: "protocol",
+            code: "protocol_error",
+            exitCode: 0,
+          });
           this._updateCapabilityEnvelope(mod, createInvalidEnvelope(mod));
         }
       })
@@ -3085,12 +3128,29 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           };
           this._updateCapabilityEnvelope(mod, setupEnvelope);
         } else {
-          console.warn(`[PaperForge] Probe ${mod} failed:`, err.message);
+          // Ownership: the raw probe path has no typed-client terminal for
+          // transport/process failures, so keep one fixed diagnostic here.
+          // NO_PYTHON stays quiet (expected setup state, never red).
+          const errCode: unknown =
+            err !== null && typeof err === "object" && "code" in err
+              ? err.code
+              : undefined;
+          const code =
+            typeof errCode === "string" && errCode.length > 0
+              ? errCode
+              : "transport_error";
+          if (code !== "NO_PYTHON") {
+            traceConsoleError({
+              op: `probe.${mod}`,
+              stage: "process",
+              code,
+              exitCode: null,
+            });
+          }
           this._updateCapabilityEnvelope(mod, createInvalidEnvelope(mod));
         }
       });
   }
-
   /** Update a single module envelope and refresh the display (#85: Last Known State). */
   _updateCapabilityEnvelope(mod: string, envelope: ProbeEnvelope): void {
     if (!this._capabilityState) this._capabilityState = {};

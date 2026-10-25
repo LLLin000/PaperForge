@@ -333,7 +333,11 @@ const LANG: Record<string, Record<string, string>> = {
     retrieval_vectors_not_built_desc:
       "Build vectors to enable @ deep search with semantic matching.",
     retrieval_open_vector_settings: "Open Vector Settings",
-    retrieval_backend_unavailable: "Search backend unavailable",
+    retrieval_memory_index_missing: "Local memory index not built",
+    retrieval_memory_index_missing_desc:
+      "Metadata search needs the local Memory index. Reading notes remain available; this step does not use embeddings or paid services.",
+    retrieval_open_memory_settings: "Open Memory Settings",
+    retrieval_navigation_unavailable: "Settings navigation is unavailable",
     retrieval_backend_unavailable_desc:
       "The Python CLI search backend is not responding correctly.",
     retrieval_run_doctor: "Run Doctor",
@@ -835,7 +839,7 @@ const LANG: Record<string, Record<string, string>> = {
     // ── Maintenance Inbox (Issue #80) ──
     maintenance_inbox_title: "Maintenance Inbox",
     maintenance_checking: "Checking maintenance status…",
-    maintenance_all_clear: "All modules are ready — no maintenance needed.",
+    maintenance_all_clear: "No maintenance items — check each module state for readiness.",
     maintenance_n_pending_inbox: "{n} module(s) need attention",
     maintenance_dismiss: "Dismiss",
     maintenance_undismiss: "Show",
@@ -1399,7 +1403,11 @@ const LANG: Record<string, Record<string, string>> = {
     retrieval_vectors_not_built: "向量索引未构建",
     retrieval_vectors_not_built_desc: "构建向量索引以启用 @ 深度语义搜索。",
     retrieval_open_vector_settings: "打开向量设置",
-    retrieval_backend_unavailable: "搜索后端不可用",
+    retrieval_memory_index_missing: "本地记忆索引尚未构建",
+    retrieval_memory_index_missing_desc:
+      "元数据搜索需要本地 Memory 索引；阅读笔记仍可用；此步骤不调用 Embedding 或收费服务。",
+    retrieval_open_memory_settings: "打开记忆设置",
+    retrieval_navigation_unavailable: "设置导航不可用",
     retrieval_backend_unavailable_desc: "Python CLI 搜索后端未正常响应。",
     retrieval_run_doctor: "运行诊断",
     retrieval_retry: "重试",
@@ -1797,7 +1805,7 @@ const LANG: Record<string, Record<string, string>> = {
     // ── Maintenance Inbox (Issue #80) ──
     maintenance_inbox_title: "维护收件箱",
     maintenance_checking: "正在检测维护状态…",
-    maintenance_all_clear: "所有模块已就绪 — 无需维护。",
+    maintenance_all_clear: "无维护项 — 请按各模块状态确认是否就绪。",
     maintenance_n_pending_inbox: "{n} 个模块需要关注",
     maintenance_dismiss: "忽略",
     maintenance_undismiss: "显示",

@@ -17,6 +17,7 @@ import pymupdf
 import requests
 from PIL import Image
 
+from paperforge.adapters.bbt import load_export_rows
 from paperforge.config import paperforge_paths
 from paperforge.worker import sync as _sync
 from paperforge.worker._progress import progress_bar
@@ -168,10 +169,7 @@ from paperforge.worker.ocr_tables import (
     write_table_inventory,
 )
 from paperforge.worker.ocr_object_writeback import apply_object_writebacks
-from paperforge.worker.sync import (
-    load_control_actions,
-    load_export_rows,
-)
+from paperforge.worker.sync import load_control_actions
 
 logger = logging.getLogger(__name__)
 

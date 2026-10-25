@@ -4,6 +4,12 @@
 - **Established:** 2026-09-02
 - **Purpose:** Decouple frontend presentation from internal backend mechanics. Establish Python as the Single Source of Truth (SSOT) and define the 5 backend contracts and 6 product projection domains.
 
+> **Implementation checkpoint (#356):** This document remains a design blueprint,
+> not the literal wire schema. See the [module/interface map](research/module-status-and-interface-map-2026-10-24.md)
+> for implemented authorities and local diagnostic entrypoints. Actual Probe v2
+> uses `reason: {code, text}` and `action: {primary: ...}`; use the runtime types
+> and protocol-conformance tests rather than copying the illustrative envelopes below.
+
 ---
 
 ## 1. Architectural Principle: Python Authority as SSOT

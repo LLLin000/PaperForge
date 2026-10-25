@@ -174,6 +174,54 @@ describe("PaperForgeClient", () => {
       expect(streamCalls).toBe(0); // Stream must never be called!
     });
 
+    it.each([
+      { raw: JSON.stringify({ ok: false, error: { code: "action.scope_invalid", message: "Unknown paper", details: { keys: ["MISSING"] } } }), exitCode: 2, expectedCode: "action.scope_invalid" },
+      { raw: JSON.stringify({ ok: false, error: { code: "action.confirmation_required", message: "Confirm affected papers" } }), exitCode: 0, expectedCode: "action.confirmation_required" },
+      { raw: JSON.stringify({ ok: true, data: {} }), exitCode: 2, expectedCode: "protocol_contradiction" },
+      { raw: "not JSON", exitCode: 0, expectedCode: "protocol_error" },
+      { raw: JSON.stringify({ data: {} }), exitCode: 0, expectedCode: "protocol_error" },
+    ])("keeps action rejection authoritative ($expectedCode, rc=$exitCode)", async ({ raw, exitCode, expectedCode }) => {
+      transport.executeHandler = (argv) => {
+        if (argv.includes("describe")) {
+          return JSON.stringify({ ok: true, data: { execution_mode: "result" } });
+        }
+        if (exitCode !== 0) {
+          throw Object.assign(new Error("Process failed"), { exitCode, stdout: raw });
+        }
+        return raw;
+      };
+      const result = await client.runAction({
+        action_id: "memory.build",
+        scope: { kind: "papers", keys: ["MISSING"] },
+      });
+      expect(result.ok).toBe(false);
+      expect(result.exitCode).toBe(exitCode);
+      expect(result.payload?.error).toMatchObject({ code: expectedCode });
+      if (expectedCode === "action.scope_invalid") {
+        expect(result.payload?.error).toEqual({
+          code: "action.scope_invalid",
+          message: "Unknown paper",
+          details: { keys: ["MISSING"] },
+        });
+      }
+    });
+
+    it.each(["unavailable", "busy"])("keeps %s preflight failures machine-readable without dispatch", async (availability) => {
+      transport.executeHandler = (argv) => {
+        if (!argv.includes("describe")) throw new Error("Must not dispatch");
+        return JSON.stringify({
+          ok: true,
+          data: { execution_mode: "result", availability, availability_reason: "Resolve preflight first" },
+        });
+      };
+      const result = await client.runAction({ action_id: "memory.build" });
+      expect(result.ok).toBe(false);
+      expect(result.payload?.error).toMatchObject({
+        code: availability === "busy" ? "action.busy" : "action.unavailable",
+        message: "Resolve preflight first",
+      });
+    });
+
     it("routes execution_mode=stream to stream and never executes action run directly", async () => {
       let actionRunExecuteCalls = 0;
       let streamCalls = 0;
@@ -543,6 +591,61 @@ describe("PaperForgeClient", () => {
           "3",
           "--json",
         ]);
+      });
+
+      it("PRESERVES code+vector_state on search/retrieve rejections (zero AND nonzero exits)", async () => {
+        const mkRejection = (code: string, data: unknown, exitCode: number) => {
+          const e: Error & { exitCode?: number; stdout?: string } = new Error(
+            `PaperForge command failed (exit code ${exitCode})`
+          );
+          e.exitCode = exitCode;
+          e.stdout = JSON.stringify({
+            ok: false,
+            command: exitCode === 0 ? "search" : "retrieve",
+            version: "1",
+            data,
+            error: { code, message: `${code} happened` },
+          });
+          return e;
+        };
+        // nonzero rc + structured ok:false: authority reason survives.
+        transport.executeHandler = () => {
+          throw mkRejection("PATH_NOT_FOUND", null, 1);
+        };
+        const missing: { code?: unknown; data?: unknown } = await client.search("q").catch((e) => e);
+        expect(missing.code).toBe("PATH_NOT_FOUND");
+        // missing DB is not missing vectors: data stays null, never vector_state.
+        expect(missing.data).toBeNull();
+
+        transport.executeHandler = () => {
+          throw mkRejection("PRECONDITION_FAILED", { vector_state: "not_built" }, 1);
+        };
+        const stale: { code?: unknown; data?: unknown } = await client.retrieve("q", { deep: true }).catch((e) => e);
+        expect(stale.code).toBe("PRECONDITION_FAILED");
+        expect(stale.data).toEqual({ vector_state: "not_built" });
+
+        // resolved ok:false (rc=0): same contract, no transport error.
+        transport.executeHandler = () =>
+          JSON.stringify({
+            ok: false,
+            data: { vector_state: "stale" },
+            error: { code: "PRECONDITION_FAILED", message: "stale" },
+          });
+        const rc0: { code?: unknown; data?: unknown } = await client.retrieve("q").catch((e) => e);
+        expect(rc0.code).toBe("PRECONDITION_FAILED");
+        expect(rc0.data).toEqual({ vector_state: "stale" });
+      });
+
+      it("search cache/signature unchanged: same key, TTL, unwrap shape", async () => {
+        let calls = 0;
+        transport.executeHandler = () => {
+          calls += 1;
+          return JSON.stringify({ ok: true, data: { matches: [{ id: calls }] } });
+        };
+        const a = await client.search("same", { limit: 7 });
+        const b = await client.search("same", { limit: 7 });
+        expect(a).toEqual(b);
+        expect(calls).toBe(1);
       });
 
       it("invalidates search and memory caches across generation epoch on build actions", async () => {

@@ -149,3 +149,67 @@ def test_runtime_health_command_returns_json_on_unexpected_failure(tmp_path, mon
     assert payload["ok"] is False
     assert payload["error"]["code"] == "INTERNAL_ERROR"
     assert "diagnostic failure" in payload["error"]["message"]
+def test_vector_disabled_reports_enabled_false_and_no_retrieval(tmp_path):
+    """Disabled toggle is healthy-optional-disabled, not a retrieval capability.
+
+    Regression for the demonstrated projection bug: with
+    ``features.vector_db`` unset/false, ``safe_vector`` and
+    ``capabilities.vector_retrieve`` must be False while the layer keeps
+    the existing ``ok`` status (overall statuses unchanged).
+    """
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    canonical_test_config(vault)
+
+    health = get_runtime_health(vault)
+    assert health["layers"]["vector"]["status"] == "ok"
+    assert health["layers"]["vector"]["enabled"] is False
+    # Overall summary status is owned by other layers in a bare tmp vault;
+    # this regression only pins the vector capability projection.
+    assert health["summary"]["safe_vector"] is False
+    assert health["capabilities"]["vector_retrieve"] is False
+
+
+def test_vector_enabled_but_unready_stays_degraded_and_unavailable(tmp_path):
+    """Enabled toggle with no index must stay degraded and unavailable."""
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    canonical_test_config(vault)
+    settings_path = vault / ".obsidian" / "plugins" / "paperforge"
+    settings_path.mkdir(parents=True)
+    (settings_path / "data.json").write_text(
+        '{"features": {"vector_db": true}}',
+        encoding="utf-8",
+    )
+
+    health = get_runtime_health(vault)
+
+    assert health["layers"]["vector"]["status"] == "degraded"
+    assert health["layers"]["vector"]["enabled"] is True
+    assert health["summary"]["safe_vector"] is False
+    assert health["capabilities"]["vector_retrieve"] is False
+def test_vector_enabled_and_ready_reports_available(tmp_path):
+    """Enabled toggle + completed local build state must read available.
+
+    Uses only the existing local build-state carrier (no provider call):
+    ``completed`` short-circuits before any vec0/Chroma probe.
+    """
+    from paperforge.embedding.build_state import mark_vector_build_state
+
+    vault = tmp_path / "vault"
+    vault.mkdir()
+    canonical_test_config(vault)
+    settings_path = vault / ".obsidian" / "plugins" / "paperforge"
+    settings_path.mkdir(parents=True)
+    (settings_path / "data.json").write_text(
+        '{"features": {"vector_db": true}}',
+        encoding="utf-8",
+    )
+    mark_vector_build_state(vault, status="completed")
+
+    health = get_runtime_health(vault)
+
+    assert health["layers"]["vector"]["status"] == "ok"
+    assert health["layers"]["vector"]["enabled"] is True
+    assert health["summary"]["safe_vector"] is True
+    assert health["capabilities"]["vector_retrieve"] is True

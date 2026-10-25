@@ -117,11 +117,35 @@ vi.mock("obsidian", () => {
         noticeCalls.push({ msg, timeout });
       }
     },
+    Plugin: class {
+      app: Record<string, unknown> = {};
+    },
+    ItemView: class {
+      leaf: unknown;
+      app: Record<string, unknown> = {};
+      containerEl: HTMLDivElement;
+      constructor(leaf?: unknown) {
+        this.leaf = leaf;
+        this.containerEl = document.createElement("div");
+      }
+    },
+    MarkdownRenderer: class {},
+    Component: class {
+      load() {}
+      unload() {}
+    },
+    TFile: class {},
+    Vault: class {},
+    MarkdownView: class {},
+    Scope: class {},
+    Keymap: class {},
+    setIcon: () => {},
+    debounce: (fn: (...args: unknown[]) => void) => fn,
+    prepareSimpleSearch: () => () => null,
     setTooltip: () => {},
     Platform: {},
   };
 });
-
 // Mock node built-ins used by settings.ts
 vi.mock("fs", () => ({
   default: {},
@@ -162,14 +186,15 @@ import {
   createUnknownEnvelope,
   probeAction,
 } from "../src/constants";
+import PaperForgePlugin from "../src/main";
+import { JSDOM } from "jsdom";
+import { App } from "obsidian";
 import { t, setLanguage } from "../src/i18n";
 import { PaperForgeSettingTab } from "../src/settings";
 import {
   RuntimeBootstrap,
   resolveRuntimeCommand,
 } from "../src/services/managed-runtime";
-import { App } from "obsidian";
-import { JSDOM } from "jsdom";
 
 // ── 1. i18n navigation strings ──
 
@@ -1493,5 +1518,72 @@ describe("Issue #77 Contract 3 RED: _focusTargetId survives Help display()", () 
 
     // With guard: _focusTargetId survives. Without: it is null.
     expect(tab._focusTargetId).toBe("div.pf-open-module-btn[data-module=help]");
+  });
+});
+
+// ── 33. Issue #356 recovery: Plugin-owned openModuleSettings lands on the
+//   real module detail through the production settings-tab navigation. ──
+describe("Issue #356 recovery: openModuleSettings lands on memory detail", () => {
+  it("selects paperforge, navigates to memory detail, then opens settings", () => {
+    const plugin = Object.create(PaperForgePlugin.prototype) as unknown as {
+      app: unknown;
+      _settingTab: { _handleCardNavigation: (module: string) => void };
+      openModuleSettings: (module: string) => boolean;
+    };
+    const calls: string[] = [];
+    const navSeen: string[] = [];
+    plugin.app = {
+      setting: {
+        // Unbound method refs (like the real Obsidian SettingModal): the
+        // production code must bind before calling.
+        open(this: unknown) {
+          calls.push("open");
+        },
+        openTabById(this: unknown, id: string) {
+          calls.push(`openTabById:${id}`);
+          return { id };
+        },
+      },
+    };
+    plugin._settingTab = {
+      _handleCardNavigation: (module: string) => {
+        navSeen.push(module);
+      },
+    };
+    const ok = plugin.openModuleSettings("memory");
+    expect(ok).toBe(true);
+    // Order matters on Obsidian 1.14: openTabById parents the modal, so it
+    // runs before open(); detail navigation lands before the modal shows.
+    expect(calls).toEqual(["openTabById:paperforge", "open"]);
+    expect(navSeen).toEqual(["memory"]);
+  });
+
+  it("returns false when the paperforge tab is missing", () => {
+    const plugin = Object.create(PaperForgePlugin.prototype) as unknown as {
+      app: unknown;
+      _settingTab: { _handleCardNavigation: (module: string) => void };
+      openModuleSettings: (module: string) => boolean;
+    };
+    plugin.app = {
+      setting: {
+        open: () => undefined,
+        openTabById: () => null,
+      },
+    };
+    plugin._settingTab = {
+      _handleCardNavigation: () => undefined,
+    };
+    expect(plugin.openModuleSettings("memory")).toBe(false);
+  });
+
+  it("reports unavailable instead of silently doing nothing", () => {
+    const plugin = Object.create(PaperForgePlugin.prototype) as unknown as {
+      app: unknown;
+      _settingTab: null;
+      openModuleSettings: (module: string) => boolean;
+    };
+    plugin.app = { setting: {} };
+    plugin._settingTab = null;
+    expect(plugin.openModuleSettings("memory")).toBe(false);
   });
 });

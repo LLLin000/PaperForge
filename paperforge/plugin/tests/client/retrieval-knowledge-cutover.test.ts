@@ -168,7 +168,6 @@ describe("Knowledge & Retrieval Domain Cutover (Ticket 05)", () => {
       expect(mockSpawn).not.toHaveBeenCalled();
       expect(mockExecFile).not.toHaveBeenCalled();
     });
-
     it("fails closed with backend-unavailable when PaperForgeClient is missing", async () => {
       const view = makeDashboard(null);
       view._searchInput.value = "test query";
@@ -178,6 +177,97 @@ describe("Knowledge & Retrieval Domain Cutover (Ticket 05)", () => {
       expect(view._searchState).toBe("backend-unavailable");
       expect(transport.calls).toHaveLength(0);
       expect(mockSpawn).not.toHaveBeenCalled();
+    });
+
+    it("maps metadata-search PATH_NOT_FOUND to missing-memory-index and deep-retrieve PATH_NOT_FOUND stays backend-unavailable", async () => {
+      const seen: unknown[][] = [];
+      const origErr = console.error;
+      console.error = (...a: unknown[]) => void seen.push(a);
+      try {
+        transport.executeHandler = () => {
+          const e = new Error("rc1") as Error & { exitCode?: number; stdout?: string };
+          e.exitCode = 1;
+          e.stdout = JSON.stringify({ ok: false, data: null, error: { code: "PATH_NOT_FOUND", message: "no db" } });
+          throw e;
+        };
+        const meta = makeDashboard(client);
+        meta._searchMode = "M";
+        meta._searchInput.value = "metadata query";
+        await meta.executeSearch();
+        expect(meta._searchState).toBe("missing-memory-index");
+
+        client.invalidateCache();
+        const deep = makeDashboard(client);
+        deep._searchMode = "@";
+        deep._searchInput.value = "@ vector query";
+        await deep.executeSearch();
+        expect(deep._searchState).toBe("backend-unavailable");
+
+        const genuine = makeDashboard(client);
+        genuine._searchMode = "M";
+        genuine._searchInput.value = "genuine failure";
+        transport.executeHandler = () =>
+          JSON.stringify({ ok: false, data: null, error: { code: "BACKEND_UNAVAILABLE", message: "down" } });
+        await genuine.executeSearch();
+        expect(genuine._searchState).toBe("backend-unavailable");
+
+        client.invalidateCache();
+        transport.executeHandler = () =>
+          JSON.stringify({ ok: true, data: { matches: [] } });
+        const empty = makeDashboard(client);
+        empty._searchMode = "M";
+        empty._searchInput.value = "empty query";
+        await empty.executeSearch();
+        expect(empty._searchState).toBe("empty");
+
+        // Expected states stay quiet (metadata missing-memory card, empty);
+        // genuine terminals (deep PATH_NOT_FOUND, BACKEND_UNAVAILABLE) log
+        // once each with fixed metadata only — never query text.
+        expect(seen.length).toBe(2);
+        expect(String(seen[0][0])).toContain("op=retrieve");
+        expect(String(seen[0][0])).toContain("code=PATH_NOT_FOUND");
+        expect(String(seen[1][0])).toContain("op=search");
+        expect(String(seen[1][0])).toContain("code=BACKEND_UNAVAILABLE");
+        expect(JSON.stringify(seen)).not.toMatch(
+          /metadata query|vector query|genuine failure|empty query/
+        );
+      } finally {
+        console.error = origErr;
+      }
+    });
+
+    it("missing-memory and vector-settings CTAs navigate without dispatching actions", async () => {
+      const openModuleSettings = vi.fn(() => true);
+      const view = makeDashboard(client);
+      view.app = {
+        vault: { adapter: { basePath: "/vault" } },
+        plugins: { plugins: { paperforge: { getClient: () => client, openModuleSettings } } },
+      };
+      view._searchInput = document.createElement("input");
+      view._searchResultsEl = document.createElement("div");
+      view._searchState = "missing-memory-index";
+      view._renderSearchState = PaperForgeStatusView.prototype._renderSearchState.bind(view);
+      view._renderSearchState();
+      const missingBtn = [...view._searchResultsEl.querySelectorAll("button")].find((b) =>
+        (b.textContent ?? "").length > 0,
+      );
+      missingBtn?.click();
+      expect(openModuleSettings).toHaveBeenCalledWith("memory");
+      expect(transport.calls).toHaveLength(0);
+
+      const vectors = makeDashboard(client);
+      vectors.app = view.app;
+      vectors._searchInput = document.createElement("input");
+      vectors._searchResultsEl = document.createElement("div");
+      vectors._searchState = "vectors-not-built";
+      vectors._renderSearchState = PaperForgeStatusView.prototype._renderSearchState.bind(vectors);
+      vectors._renderSearchState();
+      const vectorBtn = [...vectors._searchResultsEl.querySelectorAll("button")].find((b) =>
+        (b.textContent ?? "").length > 0,
+      );
+      vectorBtn?.click();
+      expect(openModuleSettings).toHaveBeenCalledWith("memory");
+      expect(transport.calls).toHaveLength(0);
     });
   });
 
