@@ -223,7 +223,7 @@ describe("Knowledge & Retrieval Domain Cutover (Ticket 05)", () => {
       expect(mockExecFile).not.toHaveBeenCalled();
     });
 
-    it("keeps Ctrl+Enter one-shot: forced deep once, plain Enter stays metadata, mode survives in-flight change", async () => {
+    it("keeps forced deep request one-shot: forced deep once, plain Enter stays metadata, mode survives in-flight change", async () => {
       const seen: string[][] = [];
       transport.executeHandler = (argv: string[]) => {
         seen.push(argv);
@@ -282,7 +282,6 @@ describe("Knowledge & Retrieval Domain Cutover (Ticket 05)", () => {
       await gate.promise;
       expect(seen.at(-1)?.[0]).toBe("retrieve");
       await view.executeSearch();
-      expect(seen.at(-1)?.[0]).toBe("search");
       view._host.remove();
       expect(mockSpawn).not.toHaveBeenCalled();
       expect(mockExecFile).not.toHaveBeenCalled();

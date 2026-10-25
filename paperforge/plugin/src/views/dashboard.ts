@@ -6,6 +6,7 @@ import {
   App,
   TFile,
   Platform,
+  Scope,
 } from "obsidian";
 import * as fs from "fs";
 import * as path from "path";
@@ -112,6 +113,16 @@ export class PaperForgeStatusView extends ItemView {
   _searchActiveIndex: number = -1;
   _searchDeep = false;
   _onKeyDown: ((e: KeyboardEvent) => void) | null = null;
+  // ── Scoped Ctrl+Enter (#356): one Scope for the life of this view.
+  // The global keymap owns Ctrl+Enter (editor:open-link-in-new-leaf) and
+  // stops it before the search input's keydown listener, so the input
+  // handler alone can never see the gesture. The pushed Scope is the ONLY
+  // Ctrl+Enter owner: focus pushes it, blur/close/re-render pops it.
+  // Registered chord is ["Ctrl"]+Enter only (the documented contract is
+  // ctrlKey); plain Enter and every other shortcut are never registered.
+  _ctrlEnterScope: Scope | null = null;
+  _ctrlEnterActive = false;
+  _ctrlEnterBoundInput: HTMLInputElement | null = null;
 
   constructor(leaf: WorkspaceLeaf) {
     super(leaf);
@@ -177,6 +188,10 @@ export class PaperForgeStatusView extends ItemView {
       document.removeEventListener("keydown", this._onKeyDown);
       this._onKeyDown = null;
     }
+    // Release the scoped Ctrl+Enter (focus-pushed; blur may never fire on
+    // close, so pop unconditionally — never leaks a global chord). Also
+    // detach the focus/blur listeners so a dead input cannot re-push.
+    this._unbindCtrlEnterInput();
     // Reset search state
     this._searchState = "idle";
     this._searchResults = null;
@@ -2758,7 +2773,11 @@ export class PaperForgeStatusView extends ItemView {
     // Update placeholder from i18n on init
     this._searchInput.placeholder = t("retrieval_search_placeholder");
 
-    // Detect @ mode prefix + debounced metadata search
+    // #356: focus-scoped Ctrl+Enter. The input node is re-created on every
+    // re-render, so first detach the PREVIOUS binding (listeners + any push
+    // tied to the stale node — its blur cannot be relied on), then bind
+    // the new input. Exactly one push per focus lifetime; never stacked.
+    this._bindCtrlEnterInput(this._searchInput);
     this._searchInput.addEventListener("input", () => {
       const val = (this._searchInput?.value || "").trim();
       if (val.startsWith("@")) {
@@ -2843,18 +2862,15 @@ export class PaperForgeStatusView extends ItemView {
         return;
       }
       if (e.key === "Enter" && e.ctrlKey) {
-        // Ctrl+Enter forces a deep retrieve for this request only. It must
-        // not permanently flip the input mode: a later plain Enter on the
-        // unchanged input stays a metadata search.
-        e.preventDefault();
-        if (this._searchTimer) {
-          clearTimeout(this._searchTimer);
-          this._searchTimer = undefined;
-        }
-        this.executeSearch(true);
+        // #356 cutover: the focus-scoped Scope is the ONLY Ctrl+Enter
+        // owner. The keymap routes the chord to the scope callback while
+        // the input is focused (the input listener never fires there);
+        // with no push active the chord is not ours — ignore it here so a
+        // single keypress can never execute twice. Plain Enter below
+        // explicitly excludes Ctrl.
         return;
       }
-      if (e.key === "Enter") {
+      if (e.key === "Enter" && !e.ctrlKey && !e.metaKey) {
         e.preventDefault();
         if (this._searchTimer) {
           clearTimeout(this._searchTimer);
@@ -2864,6 +2880,82 @@ export class PaperForgeStatusView extends ItemView {
       }
     });
   }
+
+  /**
+   * #356: one focus-scoped Ctrl+Enter chord. The Scope is created once per
+   * view with the default parent scope (so every unrelated Obsidian
+   * shortcut keeps passing through) and registers ONLY ["Ctrl"]+Enter —
+   * the documented contract is ctrlKey. The callback owns the chord: it
+   * clears the debounce timer and runs one one-shot forced-deep request.
+   * No sticky mode, no token, no dedupe table — one owner, one request.
+   */
+  _onCtrlEnterScope(): void {
+    if (this._searchTimer) {
+      clearTimeout(this._searchTimer);
+      this._searchTimer = undefined;
+    }
+    void this.executeSearch(true);
+  }
+
+  _pushCtrlEnterScope(): void {
+    const keymap = this.app.keymap;
+    if (!keymap) return;
+    if (!this._ctrlEnterScope) {
+      this._ctrlEnterScope = new Scope(this.app.scope);
+      this._ctrlEnterScope.register(["Ctrl"], "Enter", () => {
+        // Claim the chord so the global editor binding does not ALSO
+        // open a link for the same keypress.
+        this._onCtrlEnterScope();
+        return false;
+      });
+    }
+    if (this._ctrlEnterActive) return;
+    keymap.pushScope(this._ctrlEnterScope);
+    this._ctrlEnterActive = true;
+  }
+
+  _releaseCtrlEnterScope(): void {
+    if (!this._ctrlEnterActive || !this._ctrlEnterScope) {
+      this._ctrlEnterActive = false;
+      return;
+    }
+    this.app.keymap?.popScope(this._ctrlEnterScope);
+    this._ctrlEnterActive = false;
+  }
+
+  /**
+   * Bind a search input node: detach the previous node's focus/blur
+   * listeners and release any push tied to it FIRST, then bind and record
+   * the new node. Handlers are stable per-view fields so
+   * removeEventListener always matches.
+   */
+  _bindCtrlEnterInput(input: HTMLInputElement): void {
+    if (this._ctrlEnterBoundInput) {
+      this._ctrlEnterBoundInput.removeEventListener("focus", this._onCtrlEnterFocus);
+      this._ctrlEnterBoundInput.removeEventListener("blur", this._onCtrlEnterBlur);
+    }
+    this._releaseCtrlEnterScope();
+    this._ctrlEnterBoundInput = input;
+    input.addEventListener("focus", this._onCtrlEnterFocus);
+    input.addEventListener("blur", this._onCtrlEnterBlur);
+  }
+
+  _unbindCtrlEnterInput(): void {
+    if (this._ctrlEnterBoundInput) {
+      this._ctrlEnterBoundInput.removeEventListener("focus", this._onCtrlEnterFocus);
+      this._ctrlEnterBoundInput.removeEventListener("blur", this._onCtrlEnterBlur);
+      this._ctrlEnterBoundInput = null;
+    }
+    this._releaseCtrlEnterScope();
+  }
+
+  _onCtrlEnterFocus = (): void => {
+    this._pushCtrlEnterScope();
+  };
+
+  _onCtrlEnterBlur = (): void => {
+    this._releaseCtrlEnterScope();
+  };
 
   _renderSearchState() {
     if (!this._searchResultsEl) return;

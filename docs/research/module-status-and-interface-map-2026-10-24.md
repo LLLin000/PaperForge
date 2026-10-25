@@ -277,3 +277,9 @@ JSONL authority 读回：`logs/reading-log.jsonl`（1 行，`verified:false`）�
 - 官方对（真实 UI，B-official-home/vault，端口 8227，官方 main.js `e6d0ede8…` + 官方后端 `8f931635…`）：空 HOME 首次 Setup 真实安装，236 文件与官方轮一致，依赖 110（含 pymupdf 2.0——RC5 未设上限，已如实记录风险，不算已锁依赖），Foundation READY。兼容轨（当前前端+官方后端）不冒充官方 UI 通过。
 - A 判别（可逆、仅页内、零产品 diff）：Obsidian 烘焙热键 `Ctrl+Enter → editor:open-link-in-new-leaf`；CDP 可信 Ctrl+Enter 到达页内捕获层（defaultPrevented）并触发调试 Scope 回调，但搜索框自有 keydown 未触发；普通 Enter 对照到达。判为 keymap 先吞的宿主集成缺口，非页下丢失。物理 Ctrl+Enter 人工前台步降为可选确认；scoped-shortcut 产品修复待父侧授权（本轮零 diff，先给证据）。
 - 历史阶段标题已更正：上文“操作一致性续修/剩余验收”均为 4cb 前阶段，不再是当前未提交状态。当前定位即本节 + manifest `base_sha 4cb51da8`。
+
+## 最终验收（scope cutover，b1530c1c 公共 HEAD，2026-10-25 实测）
+
+- Scope 唯一 owner（真实 UI，A ui-vault，bundle `673b71ca…`，deployed==worktree）：trusted CDP Ctrl+Enter → Scope callback → view entry `forceDeep:true` 恰一 → 实际 transport `retrieve --deep` → 离线 fault 卡 → 真实 Retry 回放 forceDeep → recover 真后端 deep → 普通 Enter 回 metadata。失焦/close 不拦截（零 entry/argv，父 baked `editor:open-link-in-new-leaf`  intact）；重渲染仅新 input 生效；旧 input 不再激活。unit 保留方法级 forced-deep one-shot（原名已正名），真实 Scope 集成回归以本 host 红/绿/blur/re-render/close 证据为准（unit 无适当宿主 Scope 接缝，不造假路由测试，删 wiring 用例及其 Scope import）。
+- 分层绑定：B1 新轮 `0d58ff6f…` + B2 official `8f931635…` 绑定 fa650fdf 安装源码阶段；当前 scope 新 bundle 独立在 A host 实机绑定。Python 221 unchanged，不重冒称新 wheel；B runtime retired（pointer 为历史发布证明，非 live 安装断言）。
+- 历史保留：A UNOBSERVED/草稿 dd2 绿为历史；current 以本节为准。远程冻结/full H 根因未闭（仅 short-A/B 身份闭合），无 merge/release。
