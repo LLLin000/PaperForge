@@ -262,3 +262,11 @@ JSONL authority 读回：`logs/reading-log.jsonl`（1 行，`verified:false`）�
 - `remaining-local-acceptance.json` 的 versions/trash/Agent/64测试摘要来自本次代理原始工具回执转录，并非逐命令原始 stdout 文件；证据强度明确，不伪装为可重放日志。
 - 尚不能完成的验收：真实 OCR/Embedding/云端模型任务仍被冻结；无可用本地模型。正式发行产物的安装升级与 full H 宿主根因仍未接受。离线候选安装和短宿主对照不是这些门禁的替代。
 - 主工作树 WIP、生产数据/凭据/pointer、#352/#354 分支均未改；未运行托管 CI、未提交/推送/合并、未自动恢复远端调用。
+
+## 操作一致性续修（public 快照后，未提交）
+
+- 搜索模式标签跟随本次请求（两轮 review 修后）：徽标/防抖用 trim 后同一前缀判定（`"  @ query"` 判 deep）；Ctrl+Enter 为单次 `executeSearch(true)`，不永久改徽标/mode，普通 Enter 仍 metadata；loading/结果头读捕获的 `_searchDeep`；两重试按钮显式回放 `this._searchDeep`（失败的 Ctrl+Enter deep 重试仍 retrieve）。测试走真实 `renderSearchSection` 接缝：`@ `/前导空格断实际 DOM badge/label 与 retrieve argv；Ctrl+Enter 单次性 + Retry 回放 retrieve + 普通 Enter 回 metadata + 在途不变性；console 用 argv 分流 mock（record 成功静默），genuine op 各恰一条、expected 零条、无 query/exception 文本。
+- OCR 取消三终态（redo/rebuild/run）均经真实生产路径覆盖 `terminal.error.code==action.cancelled` + event/rc130/无额外上传：redo（stop 接缝既有用例追加断言）、rebuild（真实 `_run_ocr_rebuild` + stop token 新增用例）、run（真实 `commands.ocr.run` + 130-returning worker + stop token 新增用例；删 echo 占位）。改前红记录：payload `error: null`（现统一为 `action.cancelled`）。
+- `tests/test_next_actions.py` 已删除（既有 `test_emit_unknown_action_fails_closed` 等 registry/reconcile 覆盖未知 id fail-closed，不重复）。生产活 DTO（`NextAction`/`NextActionScope`）+ schema 版本保留；删除前已确认生产仅 `actions/registry.py:1148` 引用 DTO。
+- 证据 manifest 不再提交占位 bundle；`ui_bundle_this_fix` 为本次源码 `npm run build` 实得 hash，最终 gate 若 rebuild 变化则先修正再提交。snapshot 期 system-Python gate 与本次 dedicated-venv gate 分开标。
+- 最终短 smoke（bundle `fa650fdf…`，隔离 ui-vault/profile/HOME/端口8217，已停自有实例并还原 vault bundle）：`'  @ spaced'` → badge `@` + loading `深度搜索中...`（捕获的 `_searchDeep` 渲染；settled 为后端 deep-ok-empty，无向量故 empty）；`Biomechanical` M → `1 个结果M` 命中；页面 resource 0 外部 http（无 provider 出网）。Ctrl+Enter：DOM KeyboardEvent 注入到达原生 handler（dispatch 被 preventDefault，即 handler 运行）但 settled 仍 metadata-empty——后端 `retrieve --deep` 在此库返回 ok-empty（直连 CLI 复核 `deep:true count:0`），造不出 deep 失败卡，故 Retry 回放以真实 DOM 点击的单测为准（transport gate 断 retrieve→search），不宣称宿主物理键已验。本 smoke 原始 DOM/argv 留私有，仅脱敏摘要入库。

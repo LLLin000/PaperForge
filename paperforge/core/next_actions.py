@@ -1,24 +1,10 @@
-"""Typed next-action contract for PaperForge commands (#127).
+"""Wire DTOs for the next_actions v1 contract (#127).
 
-A `NextAction` describes one follow-up a command may need, with orthogonal
-cost/impact/confirmation axes so executors never have to guess policy:
-
-- `cost`: `local` | `remote_possible` (API cost)
-- `impact`: `read_only` | `mutating` | `destructive`
-- `confirmation`: `none` | `required`
-
-Invariants (enforced by `validate_next_actions`):
-
-- `remote_possible` or `impact=destructive` ⇒ `automatic=false`
-- `remote_possible` or `impact=destructive` ⇒ `confirmation=required`
-- `scope.kind="all"` must carry no keys; `scope.kind="papers"` requires keys
-  (an empty keys list must never mean "all papers")
-- every `action_id` must be registered; unknown ids fail closed
-- `schema_version` must match
-
-The registry carries metadata only (defaults + reason guidance). Executable
-argv mapping lives in the plugin's fixed allowlist; the backend never ships
-command strings to executors.
+The ONLY policy/scope/confirmation authority is
+`paperforge.actions.registry` (ACTION_REGISTRY + NON_REGISTRY_ACTIONS +
+classify_action_id + validate_registry/validate_action_vocabulary). Nothing
+in this module decides which ids exist, what they cost, or whether they need
+confirmation; producers and validators must not import policy from here.
 """
 from __future__ import annotations
 
@@ -27,49 +13,6 @@ from dataclasses import dataclass
 from typing import Any
 
 NEXT_ACTIONS_SCHEMA_VERSION = 1
-
-COST_LOCAL = "local"
-COST_REMOTE = "remote_possible"
-IMPACT_READ_ONLY = "read_only"
-IMPACT_MUTATING = "mutating"
-IMPACT_DESTRUCTIVE = "destructive"
-CONFIRM_NONE = "none"
-CONFIRM_REQUIRED = "required"
-
-_ALLOWED_COSTS = (COST_LOCAL, COST_REMOTE)
-_ALLOWED_IMPACTS = (IMPACT_READ_ONLY, IMPACT_MUTATING, IMPACT_DESTRUCTIVE)
-_ALLOWED_CONFIRMATIONS = (CONFIRM_NONE, CONFIRM_REQUIRED)
-
-
-@dataclass(frozen=True)
-class NextActionSpec:
-    """Registry metadata for one known action. Never carries argv."""
-
-    cost: str
-    impact: str
-    automatic: bool
-    description: str = ""
-
-
-# Registry: the authoritative set of follow-up action ids the backend may emit.
-# The plugin keeps its own fixed argv allowlist; this table exists so producers
-# and validators share one source of truth for metadata. Memory materialization
-# can invalidate vector rows owned by the embed layer, so it is explicit and
-# confirmation-required rather than an automatic follow-up.
-ACTION_REGISTRY: Mapping[str, NextActionSpec] = {
-    "memory.build": NextActionSpec(
-        cost=COST_LOCAL,
-        impact=IMPACT_DESTRUCTIVE,
-        automatic=False,
-        description="rebuild local memory and explicitly revalidate vector state",
-    ),
-    "embed.resume": NextActionSpec(
-        cost=COST_REMOTE,
-        impact=IMPACT_MUTATING,
-        automatic=False,
-        description="resume vector embedding for changed papers (may call a paid API)",
-    ),
-}
 
 
 @dataclass(frozen=True)
@@ -128,126 +71,3 @@ class NextAction:
             reason=data.get("reason", ""),
             dedupe_key=data.get("dedupe_key", ""),
         )
-
-
-def build_next_action(
-    action_id: str,
-    *,
-    reason: str,
-    scope: NextActionScope | None = None,
-    automatic: bool | None = None,
-    cost: str | None = None,
-    impact: str | None = None,
-    confirmation: str | None = None,
-) -> NextAction:
-    """Build an action from registry defaults plus explicit overrides.
-
-    `confirmation` derives from the effective cost/impact when not given:
-    remote or destructive ⇒ `required`, otherwise `none`.
-    Raises ValueError for unknown action ids or invalid overrides.
-    """
-    spec = ACTION_REGISTRY.get(action_id)
-    if spec is None:
-        raise ValueError(f"unknown next action id: {action_id!r}")
-    effective_automatic = spec.automatic if automatic is None else automatic
-    effective_cost = spec.cost if cost is None else cost
-    effective_impact = spec.impact if impact is None else impact
-    if confirmation is None:
-        confirmation = (
-            CONFIRM_REQUIRED
-            if effective_cost == COST_REMOTE or effective_impact == IMPACT_DESTRUCTIVE
-            else CONFIRM_NONE
-        )
-    action = NextAction(
-        action_id=action_id,
-        scope=scope if scope is not None else NextActionScope(kind="all"),
-        automatic=effective_automatic,
-        cost=effective_cost,
-        impact=effective_impact,
-        confirmation=confirmation,
-        reason=reason,
-        dedupe_key=action_id,
-    )
-    problems = validate_next_actions((action,))
-    if problems:
-        raise ValueError("invalid next action: " + "; ".join(problems))
-    return action
-
-
-def validate_next_action(action: NextAction) -> list[str]:
-    """Return invariant violations for one action; empty list = valid."""
-    problems: list[str] = []
-    if action.schema_version != NEXT_ACTIONS_SCHEMA_VERSION:
-        problems.append(f"{action.action_id}: unsupported schema_version {action.schema_version}")
-    if action.action_id not in ACTION_REGISTRY:
-        problems.append(f"{action.action_id}: unknown action_id (fail closed)")
-    if action.cost not in _ALLOWED_COSTS:
-        problems.append(f"{action.action_id}: invalid cost {action.cost!r}")
-    if action.impact not in _ALLOWED_IMPACTS:
-        problems.append(f"{action.action_id}: invalid impact {action.impact!r}")
-    if action.confirmation not in _ALLOWED_CONFIRMATIONS:
-        problems.append(f"{action.action_id}: invalid confirmation {action.confirmation!r}")
-    if action.scope.kind == "papers" and not action.scope.keys:
-        problems.append(
-            f"{action.action_id}: papers scope with empty keys must not mean all papers"
-        )
-    if action.scope.kind == "all" and action.scope.keys:
-        problems.append(f"{action.action_id}: all scope must not carry keys")
-    if action.scope.kind not in ("all", "papers"):
-        problems.append(f"{action.action_id}: invalid scope kind {action.scope.kind!r}")
-    if not action.reason.strip():
-        problems.append(f"{action.action_id}: reason must not be empty")
-    risky = action.cost == COST_REMOTE or action.impact == IMPACT_DESTRUCTIVE
-    if risky and action.automatic:
-        problems.append(
-            f"{action.action_id}: remote/destructive action must not be automatic"
-        )
-    if risky and action.confirmation != CONFIRM_REQUIRED:
-        problems.append(
-            f"{action.action_id}: remote/destructive action requires confirmation"
-        )
-    return problems
-
-
-def validate_next_actions(actions: tuple[NextAction, ...]) -> list[str]:
-    """Validate a batch; duplicate dedupe_keys are also rejected."""
-    problems: list[str] = []
-    seen: set[str] = set()
-    for action in actions:
-        problems.extend(validate_next_action(action))
-        key = action.dedupe_key or action.action_id
-        if key in seen:
-            problems.append(f"{action.action_id}: duplicate dedupe_key {key!r}")
-        seen.add(key)
-    return problems
-
-
-def next_actions_to_dicts(actions: tuple[NextAction, ...]) -> list[dict[str, Any]]:
-    return [action.to_dict() for action in actions]
-
-
-def next_actions_from_dicts(payloads: list[Mapping[str, Any]]) -> tuple[NextAction, ...]:
-    return tuple(NextAction.from_dict(payload) for payload in payloads)
-
-
-def validate_next_actions_payload(payloads: list[Mapping[str, Any]]) -> list[str]:
-    """Validate raw dict payloads (the PFResult wire shape)."""
-    return validate_next_actions(next_actions_from_dicts(payloads))
-
-
-def automatic_local_actions(actions: tuple[NextAction, ...]) -> tuple[NextAction, ...]:
-    """The subset an executor may run without confirmation."""
-    return tuple(
-        action
-        for action in actions
-        if action.automatic and action.cost == COST_LOCAL and action.impact != IMPACT_DESTRUCTIVE
-    )
-
-
-def remote_or_destructive_actions(actions: tuple[NextAction, ...]) -> tuple[NextAction, ...]:
-    """The subset that must be confirmed before execution."""
-    return tuple(
-        action
-        for action in actions
-        if action.cost == COST_REMOTE or action.impact == IMPACT_DESTRUCTIVE
-    )

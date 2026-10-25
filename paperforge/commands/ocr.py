@@ -362,8 +362,9 @@ def _run_ocr_redo(vault: Path, keys: list[str] | None = None, dry_run: bool = Fa
         from paperforge.core.result import PFResult
 
         if _real_stop:
+            from paperforge.actions.runner import cancelled_result
             emit_terminal("cancelled", "ocr.redo",
-                          PFResult(ok=False, command="ocr redo", version=_PFV))
+                          cancelled_result("ocr redo", "OCR redo cancelled"))
         else:
             emit_terminal("result", "ocr.redo", PFResult(
                 ok=not failed_keys,
@@ -864,9 +865,10 @@ def _run_ocr_rebuild(
     from paperforge.core.ndjson import emit_terminal
     from paperforge import __version__ as _PFV
     from paperforge.core.result import PFResult
+    from paperforge.actions.runner import cancelled_result
 
     _terminal = (
-        ("cancelled", PFResult(ok=False, command="ocr rebuild", version=_PFV))
+        ("cancelled", cancelled_result("ocr rebuild", "OCR rebuild cancelled"))
         if _real_stop
         else ("result", PFResult(
             ok=not (failed_count or skipped_count),
@@ -1027,7 +1029,8 @@ def _run_ocr_dispatch(args, vault, json_output, ocr_action, keys, diagnose_only)
             return
         _restore()
         if exit_code == 130:
-            emit_terminal("cancelled", "ocr.run", PFResult(ok=False, command="ocr run", version=__version__))
+            from paperforge.actions.runner import cancelled_result
+            emit_terminal("cancelled", "ocr.run", cancelled_result("ocr run", "OCR run cancelled"))
         else:
             emit_terminal(
                 "result" if exit_code == 0 else "error",

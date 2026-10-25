@@ -88,8 +88,19 @@ describe("Knowledge & Retrieval Domain Cutover (Ticket 05)", () => {
 
   describe("Dashboard Search & Retrieval Seams", () => {
     function makeDashboard(clientInstance: PaperForgeClient | null) {
-      const leaf = {} as any;
-      const view = new (PaperForgeStatusView as any)(leaf) as any;
+      const leaf = {};
+      const view = new PaperForgeStatusView(leaf) as unknown as {
+        app: unknown;
+        _searchInput: HTMLInputElement;
+        _searchResultsEl: HTMLElement;
+        _searchState: string;
+        _searchMode: string;
+        _searchDeep: boolean;
+        _host: HTMLElement;
+        renderSearchSection: (host: HTMLElement) => void;
+        executeSearch: (forceDeep?: boolean) => Promise<void>;
+        _renderSearchState: () => void;
+      };
       view.app = {
         vault: { adapter: { basePath: "/vault" } },
         plugins: {
@@ -100,9 +111,10 @@ describe("Knowledge & Retrieval Domain Cutover (Ticket 05)", () => {
           },
         },
       };
-      view._searchInput = document.createElement("input");
-      view._searchResultsEl = document.createElement("div");
-      view._renderSearchState = vi.fn();
+      const host = document.createElement("div");
+      document.body.appendChild(host);
+      view.renderSearchSection(host);
+      view._host = host;
       return view;
     }
 
@@ -120,9 +132,12 @@ describe("Knowledge & Retrieval Domain Cutover (Ticket 05)", () => {
       view._searchInput.value = "machine learning";
 
       await view.executeSearch();
-
-      expect(transport.calls).toHaveLength(1);
-      expect(transport.calls[0].argv).toEqual([
+      view._host.remove();
+      const searchCalls = transport.calls.filter(
+        (c: { argv: string[] }) => c.argv[0] === "search"
+      );
+      expect(searchCalls).toHaveLength(1);
+      expect(searchCalls[0].argv).toEqual([
         "search",
         "machine learning",
         "--limit",
@@ -151,9 +166,12 @@ describe("Knowledge & Retrieval Domain Cutover (Ticket 05)", () => {
       view._searchInput.value = "@ transformer architecture";
 
       await view.executeSearch();
-
-      expect(transport.calls).toHaveLength(1);
-      expect(transport.calls[0].argv).toEqual([
+      view._host.remove();
+      const retrieveCalls = transport.calls.filter(
+        (c: { argv: string[] }) => c.argv[0] === "retrieve"
+      );
+      expect(retrieveCalls).toHaveLength(1);
+      expect(retrieveCalls[0].argv).toEqual([
         "retrieve",
         "transformer architecture",
         "--limit",
@@ -165,6 +183,107 @@ describe("Knowledge & Retrieval Domain Cutover (Ticket 05)", () => {
         { id: "unit-1", text: "Deep search snippet" },
       ]);
       expect(view._searchState).toBe("results");
+      expect(mockSpawn).not.toHaveBeenCalled();
+      expect(mockExecFile).not.toHaveBeenCalled();
+    });
+    it("renders deep labels for '@ ' and leading-whitespace '@' with real DOM and retrieve argv", async () => {
+      transport.executeHandler = () => {
+        return JSON.stringify({
+          ok: true,
+          data: { matches: [{ id: "unit-space", text: "At-space snippet" }] },
+        });
+      };
+      for (const value of ["@ hello", "  @ hello"]) {
+        const view = makeDashboard(client);
+        view._searchInput.value = value;
+        view._searchInput.dispatchEvent(new Event("input"));
+        expect(
+          view._host.querySelector(".paperforge-search-mode")?.textContent
+        ).toBe("@");
+        await view.executeSearch();
+        const retrieveCalls = transport.calls.filter(
+          (c: { argv: string[] }) => c.argv[0] === "retrieve"
+        );
+        expect(retrieveCalls.at(-1)?.argv).toEqual([
+          "retrieve",
+          "hello",
+          "--limit",
+          "5",
+          "--deep",
+          "--json",
+        ]);
+        // Real render seam: loading label then results header carry deep.
+        const header = view._host.querySelector(
+          ".paperforge-search-results-header .paperforge-search-mode"
+        );
+        expect(header?.textContent).toBe("@");
+        view._host.remove();
+      }
+      expect(mockSpawn).not.toHaveBeenCalled();
+      expect(mockExecFile).not.toHaveBeenCalled();
+    });
+
+    it("keeps Ctrl+Enter one-shot: forced deep once, plain Enter stays metadata, mode survives in-flight change", async () => {
+      const seen: string[][] = [];
+      transport.executeHandler = (argv: string[]) => {
+        seen.push(argv);
+        return JSON.stringify({
+          ok: true,
+          data: { matches: [{ id: "u", text: "t" }] },
+        });
+      };
+      const view = makeDashboard(client);
+      view._searchInput.value = "plain query";
+      view._searchInput.dispatchEvent(new Event("input"));
+      expect(
+        view._host.querySelector(".paperforge-search-mode")?.textContent
+      ).toBe("M");
+      // Forced deep for this request only: argv is retrieve, input mode stays M.
+      await view.executeSearch(true);
+      expect(seen.at(-1)?.[0]).toBe("retrieve");
+      expect(view._searchInput.value).toBe("plain query");
+      expect(view._searchMode).toBe("M");
+      // Plain Enter on the unchanged input is metadata again.
+      await view.executeSearch();
+      expect(seen.at(-1)?.[0]).toBe("search");
+      // In-flight input-mode change does not rewrite the settled label.
+      const p = view.executeSearch(true);
+      view._searchMode = "M";
+      await p;
+      expect(
+        view._host.querySelector(
+          ".paperforge-search-results-header .paperforge-search-mode"
+        )?.textContent
+      ).toBe("@");
+      // A real Retry click after a failed forced-deep replays retrieve while
+      // plain Enter stays metadata. Fail the deep request through the
+      // transport, then click the rendered retry button and await the
+      // retried request's completion via the transport gate.
+      transport.executeHandler = () => {
+        const e = new Error("rc1") as Error & { exitCode?: number; stdout?: string };
+        e.exitCode = 1;
+        e.stdout = JSON.stringify({ ok: false, data: null, error: { code: "PATH_NOT_FOUND", message: "no db" } });
+        throw e;
+      };
+      client.invalidateCache();
+      const failP = view.executeSearch(true);
+      await failP.catch(() => undefined);
+      expect(view._searchState).toBe("backend-unavailable");
+      expect(view._searchDeep).toBe(true);
+      const gate = Promise.withResolvers<void>();
+      transport.executeHandler = (argv: string[]) => {
+        seen.push(argv);
+        gate.resolve();
+        return JSON.stringify({ ok: true, data: { matches: [] } });
+      };
+      const buttons = [...view._host.querySelectorAll("button")];
+      expect(buttons.length).toBeGreaterThan(0);
+      buttons.at(-1)?.click();
+      await gate.promise;
+      expect(seen.at(-1)?.[0]).toBe("retrieve");
+      await view.executeSearch();
+      expect(seen.at(-1)?.[0]).toBe("search");
+      view._host.remove();
       expect(mockSpawn).not.toHaveBeenCalled();
       expect(mockExecFile).not.toHaveBeenCalled();
     });
@@ -184,7 +303,10 @@ describe("Knowledge & Retrieval Domain Cutover (Ticket 05)", () => {
       const origErr = console.error;
       console.error = (...a: unknown[]) => void seen.push(a);
       try {
-        transport.executeHandler = () => {
+        transport.executeHandler = (argv: string[]) => {
+          if (argv[0] === "reading-log") {
+            return JSON.stringify({ ok: true, data: { matches: [] } });
+          }
           const e = new Error("rc1") as Error & { exitCode?: number; stdout?: string };
           e.exitCode = 1;
           e.stdout = JSON.stringify({ ok: false, data: null, error: { code: "PATH_NOT_FOUND", message: "no db" } });
@@ -206,8 +328,12 @@ describe("Knowledge & Retrieval Domain Cutover (Ticket 05)", () => {
         const genuine = makeDashboard(client);
         genuine._searchMode = "M";
         genuine._searchInput.value = "genuine failure";
-        transport.executeHandler = () =>
-          JSON.stringify({ ok: false, data: null, error: { code: "BACKEND_UNAVAILABLE", message: "down" } });
+        transport.executeHandler = (argv: string[]) => {
+          if (argv[0] === "reading-log") {
+            return JSON.stringify({ ok: true, data: { matches: [] } });
+          }
+          return JSON.stringify({ ok: false, data: null, error: { code: "BACKEND_UNAVAILABLE", message: "down" } });
+        };
         await genuine.executeSearch();
         expect(genuine._searchState).toBe("backend-unavailable");
 
@@ -220,17 +346,18 @@ describe("Knowledge & Retrieval Domain Cutover (Ticket 05)", () => {
         await empty.executeSearch();
         expect(empty._searchState).toBe("empty");
 
-        // Expected states stay quiet (metadata missing-memory card, empty);
-        // genuine terminals (deep PATH_NOT_FOUND, BACKEND_UNAVAILABLE) log
-        // once each with fixed metadata only — never query text.
+        // Genuine terminals log exactly once with fixed op/code metadata;
+        // expected states (missing-memory card, empty) stay quiet; no query
+        // or exception text ever reaches the console.
         expect(seen.length).toBe(2);
         expect(String(seen[0][0])).toContain("op=retrieve");
         expect(String(seen[0][0])).toContain("code=PATH_NOT_FOUND");
         expect(String(seen[1][0])).toContain("op=search");
         expect(String(seen[1][0])).toContain("code=BACKEND_UNAVAILABLE");
         expect(JSON.stringify(seen)).not.toMatch(
-          /metadata query|vector query|genuine failure|empty query/
+          /metadata query|vector query|genuine failure|empty query|no db|down|rc1|Error/
         );
+        for (const v of [meta, deep, genuine, empty]) v._host.remove();
       } finally {
         console.error = origErr;
       }
@@ -243,11 +370,9 @@ describe("Knowledge & Retrieval Domain Cutover (Ticket 05)", () => {
         vault: { adapter: { basePath: "/vault" } },
         plugins: { plugins: { paperforge: { getClient: () => client, openModuleSettings } } },
       };
-      view._searchInput = document.createElement("input");
-      view._searchResultsEl = document.createElement("div");
       view._searchState = "missing-memory-index";
-      view._renderSearchState = PaperForgeStatusView.prototype._renderSearchState.bind(view);
       view._renderSearchState();
+      view._host.remove();
       const missingBtn = [...view._searchResultsEl.querySelectorAll("button")].find((b) =>
         (b.textContent ?? "").length > 0,
       );
@@ -257,11 +382,9 @@ describe("Knowledge & Retrieval Domain Cutover (Ticket 05)", () => {
 
       const vectors = makeDashboard(client);
       vectors.app = view.app;
-      vectors._searchInput = document.createElement("input");
-      vectors._searchResultsEl = document.createElement("div");
       vectors._searchState = "vectors-not-built";
-      vectors._renderSearchState = PaperForgeStatusView.prototype._renderSearchState.bind(vectors);
       vectors._renderSearchState();
+      vectors._host.remove();
       const vectorBtn = [...vectors._searchResultsEl.querySelectorAll("button")].find((b) =>
         (b.textContent ?? "").length > 0,
       );
