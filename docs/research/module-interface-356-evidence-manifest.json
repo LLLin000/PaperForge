@@ -3,11 +3,14 @@
  "base_sha": "b1530c1cdc6778a546e16537fb0931299f2157b7",
  "blocked": [
   "real OCR/Embedding/cloud-model tasks (remote frozen, no local model)",
-  "full H host root-cause (A01 unknown; only short-A/B identity closure)",
-  "physical OS-key Ctrl+Enter (unverified; trusted-CDP host evidence stands without it)"
+  "full H host root-cause (A01 unknown; provenance-bound short-A/B completed, not full-H acceptance)"
+ ],
+ "optional_unverified": [
+  "physical hardware/OS-key delivery; software shortcut behavior is verified using trusted CDP input in the real Obsidian host"
  ],
  "candidate": {
-  "backend_wheel": "0d58ff6f75a8937ecbcd30fb48b786281f280b74c777cbfa71ec5e0528bf1975a2 (built from 4cb51da8; bound to fa650fdf install-source phase; NOT rebuilt for TS-only scope fix; Python files unchanged)",
+  "backend_wheel_sha256": "0d58ff6f75a8937ecbcd30fb48b786281f280b74c777cbfa71ec5ae4b8790c66",
+  "backend_wheel_scope": "built from 4cb51da8; bound to fa650fdf installation phase; not rebuilt for the TS-only Scope fix; all 237 backend Python files unchanged",
   "binding": "candidate-wheel-4cb/source-wheel-hash-binding.json (private)",
   "diff_vs_old_fecc_wheel": "same entry set; content changes only in paperforge/commands/ocr.py, paperforge/core/next_actions.py, paperforge/plugin/main.js (+RECORD); old fecc442a wheel retained privately as red history, never offered this round",
   "interpreter": "owned uv cpython-3.11.15 base; candidate venv non-editable install; product pip command unmodified (env PIP_NO_INDEX/FIND_LINKS injection only)",
@@ -77,19 +80,20 @@
  },
  "current_verification": {
   "build": "exit 0",
-  "commit": "bb79312aef882947d7bf41f113fa8cc285d96ee7",
+  "commit": "527d796063cf1e4b5fd9a7e0fd7118aa9ea3259e",
   "plugin": "603 passed / 1 skipped",
   "product_source_sha256": {
    "paperforge/commands/ocr.py": "d6678be2f1a21776c3d090dc0fb9e512d480bc320695fd76cf82ca68a54d45a3",
    "paperforge/core/next_actions.py": "39732a12ebfe75ee0b417801aed3abb371c3e2fda90a8a868b035a46e176f403",
-   "paperforge/plugin/main.js": "fa650fdfeb06070489bc76cb8e329794b16470b535e0cff3ac5e0528bf1975a2",
-   "paperforge/plugin/src/views/dashboard.ts": "47377ed39fa3bfa1ebf46a3b7cf6ef141bb008776a66128cb1ebbdc6cdbd9ae2"
+   "paperforge/plugin/main.js": "673b71cada579965b331f62f9c6659330f6ee5da0149257964cf437adf49370b",
+   "paperforge/plugin/src/views/dashboard.ts": "6982861b5bdd5fc928459148fc5947188680eff35a2fa693ae1d16403855db5d"
   },
   "public_branch": "fix/module-interface-consistency-public",
-  "python": "dedicated module-interface-356 venv, Python 3.12.8, offline sitecustomize, Null keyring (PYTHON_KEYRING_BACKEND=keyring.backends.null.Keyring); NOT system 3.14",
-  "python_gates": "221 passed / 3 skipped (ocr_progress + action_registry + reconcile + chain + t7 + memory + layer4 + versions + ocr_scope; test_next_actions.py deleted, consumer safety covered by registry/reconcile tests)",
+  "python": "unchanged backend: last affected Python gate used dedicated Python 3.12.8 with offline sitecustomize and Null keyring; not rerun for TS-only Scope fix",
+  "python_gates": "221 passed / 3 skipped; historical backend gate retained for unchanged Python files, not a new Python run at the Scope commit",
   "typecheck": "exit 0",
-  "ui_bundle_sha256": "fa650fdfeb06070489bc76cb8e329794b16470b535e0cff3ac5e0528bf1975a2"
+  "ui_bundle_sha256": "673b71cada579965b331f62f9c6659330f6ee5da0149257964cf437adf49370b",
+  "host_shortcut": "PASS in real Obsidian 1.14.5 using trusted CDP: Ctrl+Enter -> exactly one forced-deep entry and retrieve --deep -> injected failure card -> actual Retry -> recovery -> ordinary Enter search; blur/close release; only the new input binds after rerender"
  },
  "evidence_strength": "gates are tool-receipt backed for TS/python/CLI/UI states listed; versions/trash/agent/embed-status/64-test summary is transcribed from agent tool receipts (remaining-local-acceptance.json, transcript-transcribed), not per-command replayable stdout; UI receipts are 8+10+4 synthetic/authorized screenshots + DOM/action/Console JSONs retained locally, none committed",
  "expected_rejections": {
@@ -101,9 +105,10 @@
  },
  "final_short_smoke": "CURRENT 2026-10-25 scope cutover (bundle 673b71cada57): trusted CDP Ctrl+Enter -> Scope callback -> view entry forceDeep:true exactly-one -> actual transport retrieve --deep -> labeled offline fault card -> real Retry replays forceDeep -> recover leg live deep retrieve -> ordinary Enter metadata search; blur/close release (no push leak, parent baked Ctrl+Enter intact); re-render binds only new input; unit suite keeps method-level forced-deep one-shot (no fake key routing). Historical UNOBSERVED/fault-injection-gap notes and draft dd2c green retained as history.",
  "gate_provenance": {
-  "plugin_603_1_bb79312a": "current bb79312a product tree, full vitest + typecheck + build",
-  "python_221_3_dedicated_bb79312a": "current bb79312a product tree, dedicated module-interface-356 venv 3.12.8, offline sitecustomize, Null keyring",
-  "python_64_2_system": "HISTORICAL snapshot-0adfc5f3 manifest-time gate on system Python 3.14 (limitation, superseded)"
+  "plugin_603_1_scope_527d7960": "final Scope product tree: full Vitest, typecheck and build; source/bundle hashes match current_verification",
+  "plugin_603_1_bb79312a": "HISTORICAL pre-Scope tree, fa650fdf bundle; not current UI artifact",
+  "python_221_3_dedicated_bb79312a": "unchanged backend gate: dedicated Python 3.12.8, offline sitecustomize, Null keyring; no new Python run claimed for TS-only Scope fix",
+  "python_64_2_system": "HISTORICAL snapshot-0adfc5f3 gate on system Python 3.14; superseded by the dedicated backend gate"
  },
  "historical_snapshot_0adfc5f3": {
   "gates": [
@@ -143,9 +148,17 @@
   "scope": "snapshot 0adfc5f3 only: TS-unchanged plugin gate + vector-fix python subset + old candidate CLI; NOT current product tree",
   "ui_bundle": "a33d905ee62a9bba13ae3c0a1ac566756135ae86325d5fff6828219d6ce2d3d8"
  },
- "host_served_mainJsSha256": "ae6fb45bb4629d5de05389616c8d421067c2429002036f36588ec65e317de7b1",
- "host_served_mainJsSha256_source": "cells/new-on/result.json:/mainJsSha256",
- "inconclusive": [
+ "historical_host_served_mainJsSha256": "ae6fb45bb4629d5de05389616c8d421067c2429002036f36588ec65e317de7b1",
+ "historical_host_served_mainJsSha256_source": "original cells/new-on/result.json:/mainJsSha256",
+ "host_short_ab_verification": {
+  "status": "PASS for provenance-bound short controls only; full A01/H root cause remains unknown",
+  "new_ref": "a856f84f6bac666cebe22226110530133f489e33",
+  "new_rebuilt_main_sha256": "48bd76436074db1a3670e232019dc3a9fccd969902b39104a2d9a01e2c69bd5e",
+  "new_cells": "new-on-rebuild and new-off-rebuild each passed once with served-hash gate; original inconclusive cells unchanged",
+  "old_cells": "original old-on and old-off short controls passed with matching old bundle",
+  "preservation": "frozen old evidence hashes unchanged; temporary diagnostic script restored byte-identically; patch and raw receipts retained privately"
+ },
+ "historical_inconclusive": [
   "fixed-host new-off cell: observed pass but artifact provenance mismatch (served main ae6fb45b == staged src-new; historical manifest main 48bd7643 differs; no per-cell build record; prefetch bundles FAILED) \u2014 NOT a pass",
   "fixed-host new-on cell: same provenance mismatch \u2014 NOT a pass"
  ],
@@ -169,6 +182,7 @@
   "physical_page": 1,
   "printed_page": "248"
  },
- "tested_base": "b1530c1cdc6778a546e16537fb0931299f2157b7 + uncommitted TS-only scope cutover (dashboard.ts 6982861b5bdd, bundle 673b71cada57); Python tree unchanged",
- "ui_bundle_this_fix_note": "scope-cutover build from b1530c1c tree; main.js 673b71cada579965b331f62f9c6659330f6ee5da0149257964cf437adf49370b deployed on A ui-vault, deployed==worktree verified"
+ "tested_base": "b1530c1cdc6778a546e16537fb0931299f2157b7",
+ "tested_source_note": "Scope implementation tested as a dirty delta from tested_base and committed as 527d7960; current_verification binds that unchanged product tree, independently from later documentation-only publication",
+ "ui_bundle_this_fix_note": "Scope cutover bundle 673b71cada579965b331f62f9c6659330f6ee5da0149257964cf437adf49370b was deployed and measured in the real host; installation proofs use the earlier fa650fdf frontend phase explicitly"
 }

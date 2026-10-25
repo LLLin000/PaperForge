@@ -12,7 +12,7 @@
 
 | 模块 | 唯一事实来源与执行入口 | 诊断入口 | 本轮证据及缺口 |
 |---|---|---|---|
-| 安装/运行时 | `runtime_pointer.py`、`setup/plan.py`；插件 `services/managed-runtime.ts` 的 Candidate → Probe → Python 发布 pointer | `probe installation --json`、`doctor --json` | 独立非 editable venv 可运行；空环境正确报告 pointer 缺失。续作通过 uv 离线构建/安装当前候选，纠正缓存 PyMuPDF 2.0 后固定为 1.28.2（符合 `<2`），`uv pip check` 全兼容，正常候选 CLI 已验证；此为基础包验收，不是含 vector extras 的 Setup/升级 Journey。临时新 candidate 已退役，保留 wheel/hash/日志，生产 pointer 和 UI 环境未改 |
+| 安装/运行时 | `runtime_pointer.py`、`setup/plan.py`；插件 `services/managed-runtime.ts` 的 Candidate → Probe → Python 发布 pointer | `probe installation --json`、`doctor --json` | 真实 UI 已验证：官方 RC5 前后端配对在空 HOME 首次安装就绪；从官方 RC4 旧运行时升级到修复候选，取消保留旧指针/可运行环境，重试成功后才发布新指针并退役旧环境。修复候选 237 个 Python 文件与目标 wheel 一致，PyMuPDF 1.28.2、vector extras、pip check 通过；官方 RC5 的 PyMuPDF 2.0 无上限风险保留。安装阶段 frontend 为 fa650fdf，后续 Scope bundle 独立实机绑定；实验运行时已退役，指针仅为历史证据 |
 | 配置/凭据 | `config.py` 的 canonical config；`commands/auth.py` 与凭据存储 | `config list --json`、`config validate --json` | 实际初始化合成 Vault。只用 Null keyring；未读写生产凭据 |
 | Zotero/同步/Base | `services/sync_service.py`、`commands/sync.py`；正式索引经 `worker/asset_index.py` 读取 | `probe library --json`、`status --json` | 本轮证据：空库显示 Zotero 未配置；插件真实进程协议测试使用合成导出同步。历史 #352/#354 曾有真实库验收（不在本轮重验），本轮未重验≠否认旧证据 |
 | OCR 范围/任务 | `actions/registry.py` 与 `actions/runner.py` 执行策略；`commands/ocr.py` legacy CLI；`worker/ocr.py` 最终作业与上传 | `probe ocr --json`、`ocr list --json` | 远端冻结。范围、取消的离线回归与真实服务终态/内容质量是两类证据，不混用 |
@@ -25,7 +25,7 @@
 | Agent/技能 | `commands/agent_context.py`、部署入口与包内 skills | `probe help --json`、`agent-context --json` | 隔离副本实测 `agent-context`、skill deploy、重复 deploy 的 noop 保护、`pf_bootstrap.py --vault`；未改用户技能。无本地模型，远端仍冻结，模型驱动的实际研究任务 BLOCKED，不把部署或帮助成功当模型任务通过 |
 | 控制面/运维 | `reconcile.py` 是 next_actions 生产者；Registry 是动作策略 authority；maintenance 仅投影 | `probe all --json`、`reconcile --scope all --json`、`action list --json` | 实际拿到六个模块信封和九个动作；maintenance=ready 只表示没有维护项不表示所有模块可用。2026-10-26 runtime-health已修（vector层显式enabled事实，仅vector返回值加字段、_layer原API不变；disabled→safe_vector/vector_retrieve=false，层状态仍ok；见CHANGELOG与红/绿CLI收据） |
 | 插件/传输 | `client/node-transport.ts` 唯一进程 authority，`client/paperforge-client.ts` 唯一业务 client | client/transport/protocol-conformance 本地验证 | 本轮修复 result-mode 拒绝原因丢失和假成功；真实 Obsidian 故障演练的诊断复制/搜索错误显示已覆盖（缺索引卡 CTA 进详情零 runAction、genuine 失败脱敏单条 Console）。旧自由文本 console 调用点已在本轮续作 diff 中移除，当前 src 原始 `console.*` 只剩 `trace.ts` 两处（见下“日志隐私限制”），不再列为未修。本轮记录流实测：每次 genuine 失败恰好一条 Console 行（rr-step5 空页保存 1 行 → rr-step6 成功保存零新增 → rr-step10 来源核验失败第 2 行；无单操作双行，单终态规则成立） |
-| 架构/发布 | `architecture_audit/collectors` 确定性观察；Contract lifecycle 决定架构接受；CI/owner 决定发布 | `scripts/ci_local.py --list`、既有 collect/gate、`scripts/release_readiness.py` | 不提升 lifecycle 或 release 状态。H 原因未闭环：固定宿主 old-off/old-on PASS（main 4552902e 与旧 bundle 一致）；new-off/new-on 实际观察存活，但 served ae6fb45b 与历史 manifest 48bd7643 不一致、缺当次构建证明，因此 INCONCLUSIVE，不计受控新基线通过。正式 Release 安装升级及完整 H 验收未完成；基础离线候选依赖已纠正且检查通过，不沿用此前 PyMuPDF 2.0 失配为当前状态 |
+| 架构/发布 | `architecture_audit/collectors` 确定性观察；Contract lifecycle 决定架构接受；CI/owner 决定发布 | `scripts/ci_local.py --list`、既有 collect/gate、`scripts/release_readiness.py` | 不提升 lifecycle 或 release 状态。原 new-on/new-off 的产物身份不一致记录仍为历史 INCONCLUSIVE；新归档重建的 new-on-rebuild/new-off-rebuild 各一次通过，实际 served hash 与新构建回执一致，旧证据冻结不变。短 A/B 身份缺口已闭合，不代表 full H/A01 根因已解决。官方首次安装与修复候选升级已实测，不为旧 RC5 自身的原地升级失败安全性背书 |
 
 ## 接口统一规则（沿用现有实现）
 
@@ -256,11 +256,11 @@ JSONL authority 读回：`logs/reading-log.jsonl`（1 行，`verified:false`）�
 
 ## 剩余验收收口与准确阻断（历史阶段：4cb 前；正式发行安装升级条已于本轮接受，见“本轮验收”）
 
-- 历史阶段（snapshot 0adfc5f3）：插件 601 passed/1 skipped、typecheck/build 仅证明当时未变的 TS；Python 64 passed/2 skipped 与当时候选 CLI 绑定当时 Python 文件 hash。当前产品树（bb79312a）以 `current_verification` 为准：Python 221 passed/3 skipped（dedicated 3.12.8 venv）、插件 603 passed/1 skipped、typecheck/build exit 0、bundle `fa650fdf…`。旧 UI/候选 wheel 证据仅历史阶段证明，不冒充当前。
+- 历史阶段（snapshot 0adfc5f3）：插件 601 passed/1 skipped、typecheck/build 仅证明当时未变的 TS；Python 64 passed/2 skipped 与当时候选 CLI 绑定当时 Python 文件 hash。其后的 bb79312a 阶段为 Python 221 passed/3 skipped、插件 603 passed/1 skipped、bundle fa650fdf。当前 Scope 产品提交为 527d7960，manifest 的 current_verification 绑定实际源码及 673b71ca bundle；Python 文件未变，沿用原专用环境回归而不冒称重新执行。
 - 来源 UI 证据绑定原 UI 环境，最终 vector 修复绑定新候选环境。真实 PDF 的页码/引文匹配成功与 PDF 变更失效均已观察；不能推广为任意 PDF/OCR 内容质量保证。
 - 新建临时 candidate 退役前已保存源码 wheel、安装路径/版本/hash、依赖清单与绿 CLI；已删除约 162.7 MB 临时环境。曾误用的 h-ab 旧 runtime 已按原 wheel 恢复并逐文件核对，后续旧基线对照使用恢复后的环境；不隐瞒这次隔离边界错误。
 - `remaining-local-acceptance.json` 的 versions/trash/Agent/64测试摘要来自本次代理原始工具回执转录，并非逐命令原始 stdout 文件；证据强度明确，不伪装为可重放日志。
-- 尚不能完成的验收：真实 OCR/Embedding/云端模型任务仍被冻结；无可用本地模型。full H 宿主根因仍未接受。正式发行产物的配对升级与官方对空-HOME首次安装已于本轮真实 UI 接受（配对：旧 rc4 fixture→Cancel 保旧→重试 2.0.0rc5 发布+退役；官方对：main.js e6d+后端 8f 空 HOME 首次 Setup，Foundation READY）。离线候选安装和短宿主对照不是其余门禁的替代。
+- 尚未接受的门禁：真实 OCR/Embedding/云端模型任务仍被冻结，无可用本地模型；full H/A01 根因仍未解决。已实测的是修复候选从官方 RC4 升级（含取消保旧与成功发布后退役），以及官方 RC5 前后端配对在空 HOME 首次 Setup；不将它们外推为旧 RC5 自身升级失败安全性或整款软件发布接受。
 - 主工作树 WIP、生产数据/凭据/pointer、#352/#354 分支均未改；未运行托管 CI、未提交/推送/合并、未自动恢复远端调用。
 
 ## 操作一致性续修（历史阶段：public 快照后、4cb 前）
@@ -275,10 +275,10 @@ JSONL authority 读回：`logs/reading-log.jsonl`（1 行，`verified:false`）�
 
 - 配对升级（真实 UI，B-upgrade-home/vault，端口 8225，bundle `fa650fdf…`）：官方 rc4 真轮（API 四项 SHA 全 MATCH）建旧 fixture `venv-2.0.0rc4-prior`，236 文件与官方轮一致，Python 发布旧 pointer（明确标注升级前置，不冒充首次安装）。UI 如实报版本不一致；走升级恢复入口真实 Cancel——旧 pointer/runtime 可运行（probe/versions 实测），失败 candidate 由产品移除；同 UI 重试完成升级——新 pointer 2.0.0rc5，237 文件与本轮新轮一致，旧 runtime 仅成功发布后由产品退役。pip 视图同一时刻只含一个同版本 paperforge 文件（官方 8f 在升级期隔离在外），产品 pip 命令未改（仅环境变量注入）。当前后端新轮 `0d58ff6f…` 建自 4cb（237 文件零差异绑定），旧 fecc 轮仅留私有红历史。
 - 官方对（真实 UI，B-official-home/vault，端口 8227，官方 main.js `e6d0ede8…` + 官方后端 `8f931635…`）：空 HOME 首次 Setup 真实安装，236 文件与官方轮一致，依赖 110（含 pymupdf 2.0——RC5 未设上限，已如实记录风险，不算已锁依赖），Foundation READY。兼容轨（当前前端+官方后端）不冒充官方 UI 通过。
-- A 判别（可逆、仅页内、零产品 diff）：Obsidian 烘焙热键 `Ctrl+Enter → editor:open-link-in-new-leaf`；CDP 可信 Ctrl+Enter 到达页内捕获层（defaultPrevented）并触发调试 Scope 回调，但搜索框自有 keydown 未触发；普通 Enter 对照到达。判为 keymap 先吞的宿主集成缺口，非页下丢失。物理 Ctrl+Enter 人工前台步降为可选确认；scoped-shortcut 产品修复待父侧授权（本轮零 diff，先给证据）。
-- 历史阶段标题已更正：上文“操作一致性续修/剩余验收”均为 4cb 前阶段，不再是当前未提交状态。当前定位即本节 + manifest `base_sha 4cb51da8`。
+- A 判别（当时为可逆诊断，零产品 diff）：Obsidian 烘焙热键 Ctrl+Enter → editor:open-link-in-new-leaf；可信 CDP 输入触发调试 Scope，但搜索框原 keydown 未触发，普通 Enter 对照正常。随后已在 527d7960 做焦点限定的真正 Scope 修复并完成宿主红绿；不再将该软件缺陷误报为 CDP/前台权限问题。
+- 本节为安装与初始判别阶段；当前产品与完整源码/产物身份以“Scope 修复验收”及 manifest 的 current_verification 为准。
 
-## 最终验收（scope cutover，b1530c1c 公共 HEAD，2026-10-25 实测）
+## Scope 修复验收（产品提交 527d7960；测试基线 b1530c1c）
 
 - Scope 唯一 owner（真实 UI，A ui-vault，bundle `673b71ca…`，deployed==worktree）：trusted CDP Ctrl+Enter → Scope callback → view entry `forceDeep:true` 恰一 → 实际 transport `retrieve --deep` → 离线 fault 卡 → 真实 Retry 回放 forceDeep → recover 真后端 deep → 普通 Enter 回 metadata。失焦/close 不拦截（零 entry/argv，父 baked `editor:open-link-in-new-leaf`  intact）；重渲染仅新 input 生效；旧 input 不再激活。unit 保留方法级 forced-deep one-shot（原名已正名），真实 Scope 集成回归以本 host 红/绿/blur/re-render/close 证据为准（unit 无适当宿主 Scope 接缝，不造假路由测试，删 wiring 用例及其 Scope import）。
 - 分层绑定：B1 新轮 `0d58ff6f…` + B2 official `8f931635…` 绑定 fa650fdf 安装源码阶段；当前 scope 新 bundle 独立在 A host 实机绑定。Python 221 unchanged，不重冒称新 wheel；B runtime retired（pointer 为历史发布证明，非 live 安装断言）。
