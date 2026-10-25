@@ -4,7 +4,7 @@
 
 下一阶段是维护性收敛，不是继续加功能，也不是再建一个 Evidence Engine。已有的 `PFResult`、Probe v2、Action Registry、NDJSON 和 `PaperForgeClient` 足够承接当前产品。保留这些接口，逐个修复信息丢失和投影误导。
 
-本轮基线为 **605be45d18ccfa9cef3b59336064ad4ff6a069db**，即 #354 的堆叠候选，不是 master，也不包含主工作树的 owner WIP。独立分支 `fix/module-interface-consistency`；未改变 #352/#354，未触发或等待 CI，未执行合并、发布或收费 API。检查代码存在不等于验证行为；本地测试不等于 Obsidian 实机验收。
+本轮基线为 **4cb51da872d41e724dc117bd5cc980b87991c5f0**（public 分支当前 HEAD；历史阶段基线 605be45d/16427446/bb79312a 见下文“历史阶段”）。独立 public 分支 `fix/module-interface-consistency-public`；未改变 #352/#354，未触发或等待 CI，未执行合并、发布或收费 API。检查代码存在不等于验证行为；本地测试不等于 Obsidian 实机验收。
 
 ## 模块责任表
 
@@ -254,19 +254,26 @@ JSONL authority 读回：`logs/reading-log.jsonl`（1 行，`verified:false`）�
 （10 张合成截图 + `rr-step*.json` 16 份 DOM/action/Console 回执，均未入库；合成记录 ID 仅本机有效）。用户实例与原 Zotero 数据未动；
 主 PROJECT-MANAGEMENT 与 queue 未改；既有 gates 未重跑（无产品修改）。
 
-## 剩余验收收口与准确阻断
+## 剩余验收收口与准确阻断（历史阶段：4cb 前；正式发行安装升级条已于本轮接受，见“本轮验收”）
 
 - 历史阶段（snapshot 0adfc5f3）：插件 601 passed/1 skipped、typecheck/build 仅证明当时未变的 TS；Python 64 passed/2 skipped 与当时候选 CLI 绑定当时 Python 文件 hash。当前产品树（bb79312a）以 `current_verification` 为准：Python 221 passed/3 skipped（dedicated 3.12.8 venv）、插件 603 passed/1 skipped、typecheck/build exit 0、bundle `fa650fdf…`。旧 UI/候选 wheel 证据仅历史阶段证明，不冒充当前。
 - 来源 UI 证据绑定原 UI 环境，最终 vector 修复绑定新候选环境。真实 PDF 的页码/引文匹配成功与 PDF 变更失效均已观察；不能推广为任意 PDF/OCR 内容质量保证。
 - 新建临时 candidate 退役前已保存源码 wheel、安装路径/版本/hash、依赖清单与绿 CLI；已删除约 162.7 MB 临时环境。曾误用的 h-ab 旧 runtime 已按原 wheel 恢复并逐文件核对，后续旧基线对照使用恢复后的环境；不隐瞒这次隔离边界错误。
 - `remaining-local-acceptance.json` 的 versions/trash/Agent/64测试摘要来自本次代理原始工具回执转录，并非逐命令原始 stdout 文件；证据强度明确，不伪装为可重放日志。
-- 尚不能完成的验收：真实 OCR/Embedding/云端模型任务仍被冻结；无可用本地模型。正式发行产物的安装升级与 full H 宿主根因仍未接受。离线候选安装和短宿主对照不是这些门禁的替代。
+- 尚不能完成的验收：真实 OCR/Embedding/云端模型任务仍被冻结；无可用本地模型。full H 宿主根因仍未接受。正式发行产物的配对升级与官方对空-HOME首次安装已于本轮真实 UI 接受（配对：旧 rc4 fixture→Cancel 保旧→重试 2.0.0rc5 发布+退役；官方对：main.js e6d+后端 8f 空 HOME 首次 Setup，Foundation READY）。离线候选安装和短宿主对照不是其余门禁的替代。
 - 主工作树 WIP、生产数据/凭据/pointer、#352/#354 分支均未改；未运行托管 CI、未提交/推送/合并、未自动恢复远端调用。
 
-## 操作一致性续修（public 快照后，未提交）
+## 操作一致性续修（历史阶段：public 快照后、4cb 前）
 
 - 搜索模式标签跟随本次请求（两轮 review 修后）：徽标/防抖用 trim 后同一前缀判定（`"  @ query"` 判 deep）；Ctrl+Enter 为单次 `executeSearch(true)`，不永久改徽标/mode，普通 Enter 仍 metadata；loading/结果头读捕获的 `_searchDeep`；两重试按钮显式回放 `this._searchDeep`（失败的 Ctrl+Enter deep 重试仍 retrieve）。测试走真实 `renderSearchSection` 接缝：`@ `/前导空格断实际 DOM badge/label 与 retrieve argv；Ctrl+Enter 单次性 + Retry 回放 retrieve + 普通 Enter 回 metadata + 在途不变性；console 用 argv 分流 mock（record 成功静默），genuine op 各恰一条、expected 零条、无 query/exception 文本。
 - OCR 取消三终态（redo/rebuild/run）均经真实生产路径覆盖 `terminal.error.code==action.cancelled` + event/rc130/无额外上传：redo（stop 接缝既有用例追加断言）、rebuild（真实 `_run_ocr_rebuild` + stop token 新增用例）、run（真实 `commands.ocr.run` + 130-returning worker + stop token 新增用例；删 echo 占位）。改前红记录：payload `error: null`（现统一为 `action.cancelled`）。
 - `tests/test_next_actions.py` 已删除（既有 `test_emit_unknown_action_fails_closed` 等 registry/reconcile 覆盖未知 id fail-closed，不重复）。生产活 DTO（`NextAction`/`NextActionScope`）+ schema 版本保留；删除前已确认生产仅 `actions/registry.py:1148` 引用 DTO。
 - 证据 manifest 不再提交占位 bundle；`ui_bundle_this_fix` 为本次源码 `npm run build` 实得 hash，最终 gate 若 rebuild 变化则先修正再提交。snapshot 期 system-Python gate 与本次 dedicated-venv gate 分开标。
 - 最终短 smoke（bundle `fa650fdf…`，隔离 ui-vault/profile/HOME/端口8217，已停自有实例并还原 vault bundle）：OBSERVED live——`'  @ spaced'` → badge `@` + loading `深度搜索中...`；`Biomechanical` M → `1 个结果M` 命中；页面 resource 0 外部 http（无 provider 出网）。UNOBSERVED——Ctrl+Enter 注入的请求语义：未记录 transport argv 与 `_searchDeep` 值（dispatch 返回 False 但消费 listener 未确认；settled 为 shared empty 卡，未区分 metadata/deep）。UNTESTED live——forced-deep 失败卡 + Retry 回放（本轮未注入后端故障）。UNIT-VERIFIED——真实 DOM 点击覆盖 forced-deep fail → Retry 回放 retrieve → 普通 Enter 回 search。不宣称宿主物理键已验，不宣称 live 捕获了 raw argv。本 smoke 原始 DOM 留私有，仅脱敏摘要入库。
+
+## 本轮验收（4cb 公共 HEAD，2026-10-25 实测）
+
+- 配对升级（真实 UI，B-upgrade-home/vault，端口 8225，bundle `fa650fdf…`）：官方 rc4 真轮（API 四项 SHA 全 MATCH）建旧 fixture `venv-2.0.0rc4-prior`，236 文件与官方轮一致，Python 发布旧 pointer（明确标注升级前置，不冒充首次安装）。UI 如实报版本不一致；走升级恢复入口真实 Cancel——旧 pointer/runtime 可运行（probe/versions 实测），失败 candidate 由产品移除；同 UI 重试完成升级——新 pointer 2.0.0rc5，237 文件与本轮新轮一致，旧 runtime 仅成功发布后由产品退役。pip 视图同一时刻只含一个同版本 paperforge 文件（官方 8f 在升级期隔离在外），产品 pip 命令未改（仅环境变量注入）。当前后端新轮 `0d58ff6f…` 建自 4cb（237 文件零差异绑定），旧 fecc 轮仅留私有红历史。
+- 官方对（真实 UI，B-official-home/vault，端口 8227，官方 main.js `e6d0ede8…` + 官方后端 `8f931635…`）：空 HOME 首次 Setup 真实安装，236 文件与官方轮一致，依赖 110（含 pymupdf 2.0——RC5 未设上限，已如实记录风险，不算已锁依赖），Foundation READY。兼容轨（当前前端+官方后端）不冒充官方 UI 通过。
+- A 判别（可逆、仅页内、零产品 diff）：Obsidian 烘焙热键 `Ctrl+Enter → editor:open-link-in-new-leaf`；CDP 可信 Ctrl+Enter 到达页内捕获层（defaultPrevented）并触发调试 Scope 回调，但搜索框自有 keydown 未触发；普通 Enter 对照到达。判为 keymap 先吞的宿主集成缺口，非页下丢失。物理 Ctrl+Enter 人工前台步降为可选确认；scoped-shortcut 产品修复待父侧授权（本轮零 diff，先给证据）。
+- 历史阶段标题已更正：上文“操作一致性续修/剩余验收”均为 4cb 前阶段，不再是当前未提交状态。当前定位即本节 + manifest `base_sha 4cb51da8`。

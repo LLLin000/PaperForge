@@ -1,17 +1,22 @@
 {
  "artifact_provenance": "TRIAL_ROOT/module-interface-356-recovery/ (local-only, not committed); value fields below are hashes/codes/counts/commands only",
- "base_sha": "605be45d18ccfa9cef3b59336064ad4ff6a069db",
+ "base_sha": "4cb51da872d41e724dc117bd5cc980b87991c5f0",
  "blocked": [
   "real OCR/Embedding/cloud-model tasks (remote frozen, no local model)",
-  "formal release install/upgrade acceptance",
-  "full H host root-cause (A01 unknown; see inconclusive below)"
+  "full H host root-cause (A01 unknown; see inconclusive below)",
+  "scoped-shortcut product fix for Ctrl+Enter (diagnosis conclusive this round; fix pending parent authorization, zero product diff so far)"
  ],
  "candidate": {
-  "interpreter": "candidate venv python 3.11.15, non-editable install",
-  "pymupdf": "1.28.2 (pin <2 enforced; 2.0 mismatch retained as red history uv-pip-check-newcand.txt, not overwritten)",
-  "runtime_health_sha256": "28daec3bebaf0792b4eb02162d5496080f8e214fdcfd742264192509ced9cbe5",
-  "uv_pip_check": "All compatible (pinned receipt; negative 2.0 run retained separately)",
-  "wheel_sha256": "fecc442a5fe8751ecbceb6e9c0b44798a5f9de06a6afa6c506f8550c11f9c5a3"
+  "backend_wheel": "0d58ff6f75a8937ecbcd30fb48b786281f280b74c777cbfa71ec5e0528bf1975a2 (built from 4cb51da8; 237 tracked py files byte-identical wheel-vs-source, 0 mismatch, 0 missing; binding candidate-wheel-4cb/source-wheel-hash-binding.json)",
+  "binding": "candidate-wheel-4cb/source-wheel-hash-binding.json (private)",
+  "diff_vs_old_fecc_wheel": "same entry set; content changes only in paperforge/commands/ocr.py, paperforge/core/next_actions.py, paperforge/plugin/main.js (+RECORD); old fecc442a wheel retained privately as red history, never offered this round",
+  "interpreter": "owned uv cpython-3.11.15 base; candidate venv non-editable install; product pip command unmodified (env PIP_NO_INDEX/FIND_LINKS injection only)",
+  "offer_isolation": "pip view held exactly one paperforge 2.0.0rc5 file at a time (4cb during upgrade; official 8f parked outside view except during official track); no random pick possible",
+  "pymupdf": "1.28.2 (pin <2 honored in upgrade closure; pip check clean)",
+  "rc4_fixture": "official 2.0.0-rc.4 wheel SHA verified against release API (wheel/main.js/manifest/checksums all MATCH, styles==rc5); prior venv 2.0.0rc4-prior installed from official wheel, 236 py files byte-identical, pointer published by Python setup as explicit UPGRADE-PRECONDITION fixture",
+  "upgrade_real_ui": "B-upgrade-home/vault port 8225, fix bundle fa650fdf: mismatch shown live, real Cancel preserves rc4 pointer+runtime (failed candidate removed by product), retry completes to 2.0.0rc5 pointer (237/237 files match), old runtime retired by product only after publish; Foundation READY",
+  "official_fresh_real_ui": "B-official-home/vault port 8227, official main.js e6d0ede8 + official backend 8f931635: real Setup journey fresh install, 236/236 files match, deps 110, Foundation READY; RC5 ships pymupdf 2.0 unpinned (KNOWN RISK retained, recorded from real closure)",
+  "receipt": "issue356-B-upgrade-acceptance-2026-10-25.json (private; json.load verified)"
  },
  "cli_commands": {
   "memory_build": {
@@ -93,7 +98,7 @@
   "protocol_violation": "protocol_error; exactly one Console line per genuine failure (single-terminal rule)",
   "vector_not_built": "recovery card; no red Console"
  },
- "final_short_smoke": "bb79312a short smoke, bundle fa650fdf, TRIAL_ROOT ui-vault/profile/HOME/8217, synthetic inputs; OBSERVED live: leading-space @ badge @ + deep loading label + M 1-hit + 0 external http. UNOBSERVED: Ctrl+Enter injection request semantics (no transport argv or _searchDeep captured; dispatch returned False but consuming listener unidentified; settled card is the shared empty card). UNTESTED live: forced-deep failure card + Retry replay (backend fault not injected this round). UNIT-VERIFIED instead: real-DOM click test covers forced-deep fail -> Retry replays retrieve -> plain Enter back to search. No raw argv captured live.",
+ "final_short_smoke": "SUPERSEDED 2026-10-25 by paired-upgrade + official-fresh + Scope-discriminator round (receipt issue356-B-upgrade-acceptance-2026-10-25.json): @-query deep entry + retrieve --deep argv observed live in bridge-world (synthetic, NOT user-action proof); trusted Ctrl+Enter user path diagnosed by reversible Scope experiment (capture saw ctrl+Enter defaultPrevented, debug Scope cb fired, input listener silent; plain-Enter control reaches input listener) = keymap-swallow signature, Obsidian baked editor:open-link-in-new-leaf owns Ctrl+Enter; physical-Ctrl+Enter user-focus step downgraded to optional confirmation. Bridge-world failure-card absence is a negative control, not a product finding; no product diff from the experiment.",
  "gate_provenance": {
   "plugin_603_1_bb79312a": "current bb79312a product tree, full vitest + typecheck + build",
   "python_221_3_dedicated_bb79312a": "current bb79312a product tree, dedicated module-interface-356 venv 3.12.8, offline sitecustomize, Null keyring",
@@ -163,6 +168,6 @@
   "physical_page": 1,
   "printed_page": "248"
  },
- "tested_base": "16427446f252bb621eae2a395eb6c90315946677 (dirty candidate base: tested code = 16427446 + uncommitted UI delta + vector fix; NOT a final tested commit)",
- "ui_bundle_this_fix_note": "bb79312a final build from current public-branch sources; hash re-verified stable across final gate"
+ "tested_base": "4cb51da872d41e724dc117bd5cc980b87991c5f0 (clean public HEAD; bundle fa650fdf stable from this tree)",
+ "ui_bundle_this_fix_note": "4cb51da8 tree build; fa650fdfeb06070489bc76cb8e329794b16470b535e0cff3ac5e0528bf1975a2 deployed on all owned UI vaults, deployed==worktree verified per vault"
 }
