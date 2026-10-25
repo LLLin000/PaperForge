@@ -256,7 +256,7 @@ JSONL authority 读回：`logs/reading-log.jsonl`（1 行，`verified:false`）�
 
 ## 剩余验收收口与准确阻断
 
-- 本地新增源码仅为上述 vector 投影修正；插件 TypeScript 未再变化。插件 601 passed/1 skipped、typecheck/build 是既有不变 TS 的证明；Python 64 passed/2 skipped 与最终候选 CLI 分别绑定新 Python 文件 hash，不合并冒称全应用最终实机验收。
+- 历史阶段（snapshot 0adfc5f3）：插件 601 passed/1 skipped、typecheck/build 仅证明当时未变的 TS；Python 64 passed/2 skipped 与当时候选 CLI 绑定当时 Python 文件 hash。当前产品树（bb79312a）以 `current_verification` 为准：Python 221 passed/3 skipped（dedicated 3.12.8 venv）、插件 603 passed/1 skipped、typecheck/build exit 0、bundle `fa650fdf…`。旧 UI/候选 wheel 证据仅历史阶段证明，不冒充当前。
 - 来源 UI 证据绑定原 UI 环境，最终 vector 修复绑定新候选环境。真实 PDF 的页码/引文匹配成功与 PDF 变更失效均已观察；不能推广为任意 PDF/OCR 内容质量保证。
 - 新建临时 candidate 退役前已保存源码 wheel、安装路径/版本/hash、依赖清单与绿 CLI；已删除约 162.7 MB 临时环境。曾误用的 h-ab 旧 runtime 已按原 wheel 恢复并逐文件核对，后续旧基线对照使用恢复后的环境；不隐瞒这次隔离边界错误。
 - `remaining-local-acceptance.json` 的 versions/trash/Agent/64测试摘要来自本次代理原始工具回执转录，并非逐命令原始 stdout 文件；证据强度明确，不伪装为可重放日志。
@@ -269,4 +269,4 @@ JSONL authority 读回：`logs/reading-log.jsonl`（1 行，`verified:false`）�
 - OCR 取消三终态（redo/rebuild/run）均经真实生产路径覆盖 `terminal.error.code==action.cancelled` + event/rc130/无额外上传：redo（stop 接缝既有用例追加断言）、rebuild（真实 `_run_ocr_rebuild` + stop token 新增用例）、run（真实 `commands.ocr.run` + 130-returning worker + stop token 新增用例；删 echo 占位）。改前红记录：payload `error: null`（现统一为 `action.cancelled`）。
 - `tests/test_next_actions.py` 已删除（既有 `test_emit_unknown_action_fails_closed` 等 registry/reconcile 覆盖未知 id fail-closed，不重复）。生产活 DTO（`NextAction`/`NextActionScope`）+ schema 版本保留；删除前已确认生产仅 `actions/registry.py:1148` 引用 DTO。
 - 证据 manifest 不再提交占位 bundle；`ui_bundle_this_fix` 为本次源码 `npm run build` 实得 hash，最终 gate 若 rebuild 变化则先修正再提交。snapshot 期 system-Python gate 与本次 dedicated-venv gate 分开标。
-- 最终短 smoke（bundle `fa650fdf…`，隔离 ui-vault/profile/HOME/端口8217，已停自有实例并还原 vault bundle）：`'  @ spaced'` → badge `@` + loading `深度搜索中...`（捕获的 `_searchDeep` 渲染；settled 为后端 deep-ok-empty，无向量故 empty）；`Biomechanical` M → `1 个结果M` 命中；页面 resource 0 外部 http（无 provider 出网）。Ctrl+Enter：DOM KeyboardEvent 注入到达原生 handler（dispatch 被 preventDefault，即 handler 运行）但 settled 仍 metadata-empty——后端 `retrieve --deep` 在此库返回 ok-empty（直连 CLI 复核 `deep:true count:0`），造不出 deep 失败卡，故 Retry 回放以真实 DOM 点击的单测为准（transport gate 断 retrieve→search），不宣称宿主物理键已验。本 smoke 原始 DOM/argv 留私有，仅脱敏摘要入库。
+- 最终短 smoke（bundle `fa650fdf…`，隔离 ui-vault/profile/HOME/端口8217，已停自有实例并还原 vault bundle）：OBSERVED live——`'  @ spaced'` → badge `@` + loading `深度搜索中...`；`Biomechanical` M → `1 个结果M` 命中；页面 resource 0 外部 http（无 provider 出网）。UNOBSERVED——Ctrl+Enter 注入的请求语义：未记录 transport argv 与 `_searchDeep` 值（dispatch 返回 False 但消费 listener 未确认；settled 为 shared empty 卡，未区分 metadata/deep）。UNTESTED live——forced-deep 失败卡 + Retry 回放（本轮未注入后端故障）。UNIT-VERIFIED——真实 DOM 点击覆盖 forced-deep fail → Retry 回放 retrieve → 普通 Enter 回 search。不宣称宿主物理键已验，不宣称 live 捕获了 raw argv。本 smoke 原始 DOM 留私有，仅脱敏摘要入库。

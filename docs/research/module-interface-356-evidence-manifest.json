@@ -64,9 +64,26 @@
     "<RECORD_ID>",
     "--json"
    ],
-   "expect": "unknown/mutated PDF -> ok:false code=VALIDATION_ERROR status=changed exit=1; restored -> ok:true matched",
-   "note": "shape only, not a directly executable raw command; <RECORD_ID> is a placeholder for the reading-record id"
+   "measured": "mutated authorized copy -> ok:false code=VALIDATION_ERROR status=changed exit=1; restored original SHA -> ok:true matched",
+   "not_claimed": "unknown/missing-PDF branches may report unavailable/invalid; not covered by this receipt",
+   "note": "shape only, not a directly executable raw command; <RECORD_ID> is a placeholder"
   }
+ },
+ "current_verification": {
+  "build": "exit 0",
+  "commit": "bb79312aef882947d7bf41f113fa8cc285d96ee7",
+  "plugin": "603 passed / 1 skipped",
+  "product_source_sha256": {
+   "paperforge/commands/ocr.py": "d6678be2f1a21776c3d090dc0fb9e512d480bc320695fd76cf82ca68a54d45a3",
+   "paperforge/core/next_actions.py": "39732a12ebfe75ee0b417801aed3abb371c3e2fda90a8a868b035a46e176f403",
+   "paperforge/plugin/main.js": "fa650fdfeb06070489bc76cb8e329794b16470b535e0cff3ac5e0528bf1975a2",
+   "paperforge/plugin/src/views/dashboard.ts": "47377ed39fa3bfa1ebf46a3b7cf6ef141bb008776a66128cb1ebbdc6cdbd9ae2"
+  },
+  "public_branch": "fix/module-interface-consistency-public",
+  "python": "dedicated module-interface-356 venv, Python 3.12.8, offline sitecustomize, Null keyring (PYTHON_KEYRING_BACKEND=keyring.backends.null.Keyring); NOT system 3.14",
+  "python_gates": "221 passed / 3 skipped (ocr_progress + action_registry + reconcile + chain + t7 + memory + layer4 + versions + ocr_scope; test_next_actions.py deleted, consumer safety covered by registry/reconcile tests)",
+  "typecheck": "exit 0",
+  "ui_bundle_sha256": "fa650fdfeb06070489bc76cb8e329794b16470b535e0cff3ac5e0528bf1975a2"
  },
  "evidence_strength": "gates are tool-receipt backed for TS/python/CLI/UI states listed; versions/trash/agent/embed-status/64-test summary is transcribed from agent tool receipts (remaining-local-acceptance.json, transcript-transcribed), not per-command replayable stdout; UI receipts are 8+10+4 synthetic/authorized screenshots + DOM/action/Console JSONs retained locally, none committed",
  "expected_rejections": {
@@ -76,10 +93,49 @@
   "protocol_violation": "protocol_error; exactly one Console line per genuine failure (single-terminal rule)",
   "vector_not_built": "recovery card; no red Console"
  },
- "final_short_smoke": "TRIAL_ROOT ui-vault/profile/HOME/8217, synthetic inputs only; badge @ + loading deep + M 1-hit live; 0 external http; raw DOM/argv private",
+ "final_short_smoke": "bb79312a short smoke, bundle fa650fdf, TRIAL_ROOT ui-vault/profile/HOME/8217, synthetic inputs; OBSERVED live: leading-space @ badge @ + deep loading label + M 1-hit + 0 external http. UNOBSERVED: Ctrl+Enter injection request semantics (no transport argv or _searchDeep captured; dispatch returned False but consuming listener unidentified; settled card is the shared empty card). UNTESTED live: forced-deep failure card + Retry replay (backend fault not injected this round). UNIT-VERIFIED instead: real-DOM click test covers forced-deep fail -> Retry replays retrieve -> plain Enter back to search. No raw argv captured live.",
  "gate_provenance": {
-  "python_64_2_dedicated": "this follow-up: dedicated module-interface-356 venv (pytest present, Null keyring, offline sitecustomize); rerun after last mutation",
-  "python_64_2_system": "snapshot 0adfc5f3 manifest-time gate on system Python 3.14 (limitation, not dedicated venv)"
+  "plugin_603_1_bb79312a": "current bb79312a product tree, full vitest + typecheck + build",
+  "python_221_3_dedicated_bb79312a": "current bb79312a product tree, dedicated module-interface-356 venv 3.12.8, offline sitecustomize, Null keyring",
+  "python_64_2_system": "HISTORICAL snapshot-0adfc5f3 manifest-time gate on system Python 3.14 (limitation, superseded)"
+ },
+ "historical_snapshot_0adfc5f3": {
+  "gates": [
+   {
+    "gate": "plugin regression (TS unchanged)",
+    "result": "601 passed / 1 skipped"
+   },
+   {
+    "gate": "plugin typecheck",
+    "result": "exit 0"
+   },
+   {
+    "gate": "plugin build",
+    "result": "exit 0"
+   },
+   {
+    "gate": "python diagnostics subset (vector fix binding)",
+    "result": "64 passed / 2 skipped"
+   },
+   {
+    "gate": "candidate CLI runtime-health (pinned green)",
+    "result": "ok; vector.enabled=false, safe_vector=false, vector_retrieve=false"
+   },
+   {
+    "gate": "synthetic UI: missing-index -> build -> hit -> restart",
+    "result": "PASS (zotero_key=TSTONE001 synthetic, no embedding/remote)"
+   },
+   {
+    "gate": "synthetic UI: research-record save -> correct -> history-toggle -> restart",
+    "result": "PASS (single-terminal Console rule holds)"
+   },
+   {
+    "gate": "transcribed versions/trash/agent-context/skill/embed-status cells",
+    "result": "PASS as transcribed (not replayable logs)"
+   }
+  ],
+  "scope": "snapshot 0adfc5f3 only: TS-unchanged plugin gate + vector-fix python subset + old candidate CLI; NOT current product tree",
+  "ui_bundle": "a33d905ee62a9bba13ae3c0a1ac566756135ae86325d5fff6828219d6ce2d3d8"
  },
  "host_served_mainJsSha256": "ae6fb45bb4629d5de05389616c8d421067c2429002036f36588ec65e317de7b1",
  "host_served_mainJsSha256_source": "cells/new-on/result.json:/mainJsSha256",
@@ -90,40 +146,6 @@
  "original_source_branch": "fix/module-interface-consistency",
  "partial_pass": [
   "authorized-copy PDF source navigation: matched / changed-on-mutation / restored-matched state machine holds; wrong-page mismatch and user_confirmed/recorded branches unverified"
- ],
- "pass": [
-  {
-   "gate": "plugin regression (TS unchanged)",
-   "result": "601 passed / 1 skipped"
-  },
-  {
-   "gate": "plugin typecheck",
-   "result": "exit 0"
-  },
-  {
-   "gate": "plugin build",
-   "result": "exit 0"
-  },
-  {
-   "gate": "python diagnostics subset (vector fix binding)",
-   "result": "64 passed / 2 skipped"
-  },
-  {
-   "gate": "candidate CLI runtime-health (pinned green)",
-   "result": "ok; vector.enabled=false, safe_vector=false, vector_retrieve=false"
-  },
-  {
-   "gate": "synthetic UI: missing-index -> build -> hit -> restart",
-   "result": "PASS (zotero_key=TSTONE001 synthetic, no embedding/remote)"
-  },
-  {
-   "gate": "synthetic UI: research-record save -> correct -> history-toggle -> restart",
-   "result": "PASS (single-terminal Console rule holds)"
-  },
-  {
-   "gate": "transcribed versions/trash/agent-context/skill/embed-status cells",
-   "result": "PASS as transcribed (not replayable logs)"
-  }
  ],
  "public_branch": "fix/module-interface-consistency-public",
  "red_history_retained": [
@@ -142,7 +164,5 @@
   "printed_page": "248"
  },
  "tested_base": "16427446f252bb621eae2a395eb6c90315946677 (dirty candidate base: tested code = 16427446 + uncommitted UI delta + vector fix; NOT a final tested commit)",
- "ui_bundle_snapshot_0adfc5f3": "a33d905ee62a9bba13ae3c0a1ac566756135ae86325d5fff6828219d6ce2d3d8",
- "ui_bundle_this_fix": "fa650fdfeb06070489bc76cb8e329794b16470b535e0cff3ac5e0528bf1975a2",
- "ui_bundle_this_fix_note": "final isolated-host short smoke bundle (leading-space @ deep labels live, M hit live, 0 external http); Ctrl+Enter DOM-injection ran handler but backend deep-ok-empty prevents failure-card path, retry replay covered by real-DOM unit test"
+ "ui_bundle_this_fix_note": "bb79312a final build from current public-branch sources; hash re-verified stable across final gate"
 }
