@@ -107,6 +107,7 @@ async function afterTestHook(test, context, result) {
   }
   try {
     const cfg = userDataDirFrom(b);
+    snap.userDataDir = cfg;
     if (cfg && existsSync(cfg)) {
       for (const name of ["Crashpad", "main.log"]) {
         const src = join(cfg, name);
@@ -216,6 +217,14 @@ caps["wdio:chromedriverOptions"] = {
   ...(caps["wdio:chromedriverOptions"] ?? {}),
   binary: pins.driverPath,
 };
+caps["goog:chromeOptions"] = {
+  ...(caps["goog:chromeOptions"] ?? {}),
+  args: [
+    ...(caps["goog:chromeOptions"]?.args ?? []),
+    "--enable-logging=file",
+    `--log-file=${join(ART, "obsidian-native.log")}`,
+  ],
+};
 
 // FULL mode: grep removed (original full-H suite), bail on first failure.
 // A01 mode: exact A01 grep. Neither mode inherits a fine-grained grep.
@@ -228,6 +237,18 @@ export const config = {
   mochaOpts: FULL_MODE
     ? { ...mochaBase, bail: true }
     : { ...mochaBase, grep: A01_TITLE },
+  beforeTest: async function (test, context) {
+    if (typeof base.beforeTest === "function") await base.beforeTest.call(this, test, context);
+    const b = globalThis.browser;
+    const snapshot = { ts: new Date().toISOString() };
+    snapshot.app = await b.getObsidianVersion().catch(() => null);
+    snapshot.installer = await b.getObsidianInstallerVersion().catch(() => null);
+    snapshot.native = await b.executeObsidian(() => ({
+      pid: process.pid, role: process.type,
+      electron: process.versions.electron, chrome: process.versions.chrome,
+    })).catch(() => null);
+    writeFileSync(join(ART, "beforetest-identity.json"), JSON.stringify(snapshot, null, 2));
+  },
   beforeCommand: async function (commandName) {
     if (typeof base.beforeCommand === "function") await base.beforeCommand.call(this, commandName);
     journalCommand("before", commandName);
@@ -235,6 +256,12 @@ export const config = {
   afterCommand: async function (commandName, args, result, error) {
     if (typeof base.afterCommand === "function") await base.afterCommand.call(this, commandName, args, result, error);
     journalCommand("after", commandName, error);
+    if (commandName === "execute" && typeof result?.ready === "boolean" && typeof result?.operation === "string") {
+      writeFileSync(join(ART, "install-status.jsonl"), JSON.stringify({
+        ts: new Date().toISOString(), ready: result.ready,
+        operation: /^[a-z_]+$/.test(result.operation) ? result.operation : "unknown",
+      }) + "\n", { flag: "a" });
+    }
   },
   afterTest: async function (test, context, result) {
     if (typeof base.afterTest === "function") await base.afterTest.call(this, test, context, result);

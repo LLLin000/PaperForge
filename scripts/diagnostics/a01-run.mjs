@@ -155,9 +155,64 @@ async function proveLoopbackCdp(driverPath) {
   });
 }
 
+// Host-side sampling survives a dead renderer. Never persist command lines:
+// only process identity/role and a fixed install-phase classification.
+function startProcessCapture(pins, home, wdioPid, artifacts) {
+  const scriptPath = join(artifacts, "native-process-capture.ps1");
+  const logPath = join(artifacts, "native-processes.jsonl");
+  const stopPath = join(artifacts, "native-process-capture.stop");
+  writeFileSync(scriptPath, `
+param([string]$Log, [string]$Stop, [string]$HostBinary, [string]$HomeMarker, [int]$WdioPid)
+$ErrorActionPreference = 'Stop'
+$utf8 = New-Object System.Text.UTF8Encoding($false)
+while (-not (Test-Path -LiteralPath $Stop)) {
+  try {
+    $rows = @(Get-CimInstance Win32_Process | Where-Object {
+      $_.ProcessId -eq $WdioPid -or $_.ExecutablePath -eq $HostBinary -or (
+        $_.Name -in @('python.exe', 'pythonw.exe') -and
+        ([string]$_.CommandLine).IndexOf($HomeMarker, [StringComparison]::OrdinalIgnoreCase) -ge 0
+      )
+    } | ForEach-Object {
+      $line = [string]$_.CommandLine
+      $role = 'other'
+      $phase = 'unknown'
+      if ($_.ExecutablePath -eq $HostBinary) {
+        $role = 'browser'
+        if ($line -match '--type=([a-z-]+)') { $role = $Matches[1] }
+      }
+      if ($line -match ' -m venv(?: |$)') { $phase = 'venv' }
+      elseif ($line -match ' -m pip(?: |$)') { $phase = 'pip' }
+      elseif ($line -match 'probe installation') { $phase = 'installation-probe' }
+      elseif ($_.Name -in @('python.exe', 'pythonw.exe')) { $phase = 'python-other' }
+      [ordered]@{
+        pid = $_.ProcessId; parent_pid = $_.ParentProcessId; name = $_.Name
+        role = $role; phase = $phase; working_set = $_.WorkingSetSize
+        created = if ($_.CreationDate) { $_.CreationDate.ToUniversalTime().ToString('o') } else { $null }
+      }
+    })
+    $entry = @{ ts = [DateTimeOffset]::UtcNow.ToString('o'); processes = $rows }
+  } catch {
+    $entry = @{ ts = [DateTimeOffset]::UtcNow.ToString('o'); error_code = 'CIM_QUERY_FAILED' }
+  }
+  [IO.File]::AppendAllText($Log, (($entry | ConvertTo-Json -Depth 5 -Compress) + [Environment]::NewLine), $utf8)
+  Start-Sleep -Milliseconds 500
+}
+`);
+  const child = spawn("powershell", [
+    "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "RemoteSigned", "-File", scriptPath,
+    "-Log", logPath, "-Stop", stopPath, "-HostBinary", pins.binaryPath,
+    "-HomeMarker", home, "-WdioPid", String(wdioPid),
+  ], { stdio: "ignore", windowsHide: true });
+  child.on("error", () => {
+    writeFileSync(join(artifacts, "native-process-capture-error.json"), JSON.stringify({ code: "SAMPLER_SPAWN_FAILED" }));
+  });
+  return { child, logPath, stopPath };
+}
+
 const out = { tag: `${TAG}${ARM_SUFFIX}`, arm: ARM, ok: false, stage: "start", ts: new Date().toISOString() };
 let fw = { state: "not-applied" };
 let home = null;
+let processCapture = null;
 const cellArt = join(ART, "cells", `${TAG}${ARM_SUFFIX}`);
 try {
   const pre = JSON.parse(readFileSync(join(ART, `prefetch-${TAG}.json`), "utf8"));
@@ -266,6 +321,7 @@ try {
       cwd: stagedPluginDir, env: { ...process.env }, stdio: ["ignore", "pipe", "pipe"],
     });
     out.wdioPid = child.pid ?? null;
+    processCapture = startProcessCapture(pins, home, child.pid, cellArt);
     let stdout = "", stderr = "", done = false;
     child.stdout.on("data", (c) => { stdout += String(c); });
     child.stderr.on("data", (c) => { stderr += String(c); });
@@ -333,7 +389,7 @@ try {
     // assertions — from the aggregated log window, no payload dump.
     // Current A01 callback source identifier (spec line, stable anchor).
     out.callbackSource = "paperforge.e2e.ts A01 executeObsidian setup-journey block (settings open/wait/display/install click)";
-    const failTxt = out.wdioFirstError ?? "";
+    const failTxt = `${out.reporterCounts?.firstError ?? ""}\n${out.wdioFirstError ?? ""}`;
     out.failPhase = out.ok ? null
       : /reloadObsidian|beforeEach|empty vault/i.test(failTxt) ? "reload-or-settings-callback"
       : /did not publish a ready runtime pointer|waitUntil|timeout/i.test(failTxt) ? "install-wait"
@@ -395,6 +451,16 @@ try {
       const r = spawnSync("taskkill", ["/PID", String(out.wdioPid), "/T", "/F"], { stdio: "pipe", encoding: "utf8", timeout: 30000 });
       cleanup.wdioTree = `taskkill pid=${out.wdioPid} status=${r.status} out=${String(r.stdout ?? r.stderr ?? "").trim().slice(0, 120)}`;
     } else cleanup.wdioTree = `skipped: ${out.wdioPid ? "non-windows" : "no wdio pid (spawn failed before start)"}`;
+    if (processCapture) {
+      writeFileSync(processCapture.stopPath, "");
+      if (processCapture.child.pid && process.platform === "win32") {
+        spawnSync("taskkill", ["/PID", String(processCapture.child.pid), "/T", "/F"], { stdio: "pipe", timeout: 30000 });
+      }
+      out.processCapture = {
+        file: "native-processes.jsonl",
+        bytes: existsSync(processCapture.logPath) ? statSync(processCapture.logPath).size : 0,
+      };
+    }
   } catch (err) {
     cleanup.wdioTree = `kill failed: ${String(err?.message ?? err).slice(0, 160)}`;
   }
