@@ -1,5 +1,5 @@
 # TEMPORARY: one authorized A01 diagnostic, app 1.14.5 / installer 1.5.8.
-# Branch-only push trigger; no full CI, paired rerun, retries or product edits.
+# Authorized push run consumed; manual-only now. Another run needs owner approval.
 # Original A01 assertions/timeouts and real egress gate remain unchanged.
 # Native/Python process sampling and Chromium logs locate the install fault.
 # A diagnostic failure is evidence, never a compatibility waiver.
@@ -10,8 +10,7 @@
 name: h-fixed-ab-diagnostic
 
 on:
-  push:
-    branches: [diagnostics/h-fixed-ab]
+  workflow_dispatch:
 
 jobs:
   fixed-ab:

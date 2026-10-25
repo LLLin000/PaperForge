@@ -94,8 +94,8 @@ async function afterTestHook(test, context, result) {
   // Actual in-runtime version assert (not the requested config): record
   // observed app/installer versions + requested browserVersion.
   try {
-    snap.actualAppVersion = await b?.getObsidianVersion().catch(() => null) ?? null;
-    snap.actualInstallerVersion = await b?.getObsidianInstallerVersion?.().catch(() => null) ?? null;
+    snap.actualAppVersion = await Promise.resolve().then(() => b?.getObsidianVersion()).catch(() => null) ?? null;
+    snap.actualInstallerVersion = await Promise.resolve().then(() => b?.getObsidianInstallerVersion?.()).catch(() => null) ?? null;
   } catch {
     snap.actualAppVersion = snap.actualAppVersion ?? null;
     snap.actualInstallerVersion = snap.actualInstallerVersion ?? null;
@@ -241,8 +241,8 @@ export const config = {
     if (typeof base.beforeTest === "function") await base.beforeTest.call(this, test, context);
     const b = globalThis.browser;
     const snapshot = { ts: new Date().toISOString() };
-    snapshot.app = await b.getObsidianVersion().catch(() => null);
-    snapshot.installer = await b.getObsidianInstallerVersion().catch(() => null);
+    snapshot.app = await Promise.resolve().then(() => b.getObsidianVersion()).catch(() => null);
+    snapshot.installer = await Promise.resolve().then(() => b.getObsidianInstallerVersion()).catch(() => null);
     snapshot.native = await b.executeObsidian(() => ({
       pid: process.pid, role: process.type,
       electron: process.versions.electron, chrome: process.versions.chrome,
