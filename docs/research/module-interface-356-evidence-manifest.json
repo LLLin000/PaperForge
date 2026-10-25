@@ -158,6 +158,29 @@
   "old_cells": "original old-on and old-off short controls passed with matching old bundle",
   "preservation": "frozen old evidence hashes unchanged; temporary diagnostic script restored byte-identically; patch and raw receipts retained privately"
  },
+ "full_a01_single_diagnostic": {
+  "status": "FAILED: native GPU fatal captured; diagnostic hook contamination retained; full H not accepted",
+  "run_id": 40217042572,
+  "run_url": "https://github.com/LLLin000/PaperForge/actions/runs/40217042572",
+  "diagnostic_source": "3d908391b8ecb296519def0a23e256ef29c1cb51",
+  "tested_product_source": "a856f84f6bac666cebe22226110530133f489e33",
+  "wheel_sha256": "6741f5c8c1a90e764aac62215042672eca4d0c10d2463aa7d432d50efed20e85",
+  "requested_host": "app 1.14.5 / installer 1.5.8 / ChromeDriver 120.0.6099.283; pinned binary hashes rechecked",
+  "egress": "firewall applied; real loopback status probe passed; offline pip; no provider calls",
+  "fatal": "gpu_data_manager_impl_private.cc(448): GPU process isn't usable. Goodbye.",
+  "native_event": "0x80000003 at 0x1bf4993; fatal-log PID 8236 equals WER PID 0x202C and sampled browser process",
+  "install_observation": "venv process observed, then pip processes; pointer unchanged; no A01 receipt",
+  "process_frames": 1089,
+  "raw_sha256": {
+   "obsidian-native.log": "405ef0361c32d3b85c43a576e7be0945a112070d524fa734776caaa10b594390",
+   "native-processes.jsonl": "175c13e07cea194069ce60e371f69f6b7d0da2f00286ec5e683500d52b0217cd",
+   "install-status.jsonl": "1381c15b1ac24a02ee902410f05e202cf339ccf7af3c0bdab6ff0ad1cb6e6778",
+   "a01-aftertest-snapshot.json": "6be23afc779fce3adfa6c46e88174e9e99d743794409c07fd97461ca54fd225e"
+  },
+  "capture_bug": "beforeTest called .catch on synchronous version helpers; run is contaminated, original version nulls and failure retained. Sync/async-safe hook repaired and red-green checked locally, not rerun in CI.",
+  "limits": "Native browser GPU termination mechanism observed, not underlying GPU cause, product causation, clean A01 pass or full H closure. Zero sampled GPU PIDs does not prove zero launch attempts.",
+  "continuation": "One authorized run consumed. Diagnostic workflow disarmed to manual-only; no second run, GPU workaround, merge or release."
+ },
  "historical_inconclusive": [
   "fixed-host new-off cell: observed pass but artifact provenance mismatch (served main ae6fb45b == staged src-new; historical manifest main 48bd7643 differs; no per-cell build record; prefetch bundles FAILED) \u2014 NOT a pass",
   "fixed-host new-on cell: same provenance mismatch \u2014 NOT a pass"

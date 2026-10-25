@@ -4,7 +4,7 @@
 
 当前进入 **Integration & Release Stabilization**：冻结既有 `PFResult`、Probe v2、Action Registry、NDJSON 和 `PaperForgeClient` 契约，不扩功能或新增控制内核；先收口上游集成，再以同一最终源码、wheel、插件 bundle 和宿主做统一候选认证，独立处置发布风险。本文是证据与计划的投影，任务状态以 GitHub Issue、发布接受以 CI/owner 门禁为准。
 
-身份口径：**产品提交 `527d796063cf1e4b5fd9a7e0fd7118aa9ea3259e`**；**本次修正前的已发布证据快照 `786924a03e45451e46b6650dc21d6756b9c02484`**。`4cb51da8` 是历史安装验收基线，不是当前 HEAD；Scope 修复的测试基线为 `b1530c1c`，各阶段产物见机器可读证据清单。独立 public 分支 `fix/module-interface-consistency-public` 的最新 HEAD 以 Git 引用为准，后续纯文档提交不改变产品身份。该分支不是 master/Release，也不是可绕过 #352/#354 依赖整体合并的小修复；未改变这些上游 PR，未执行合并、发布或收费调用。
+身份口径：**产品提交 `527d796063cf1e4b5fd9a7e0fd7118aa9ea3259e`**；**身份口径修正时采用的证据快照 `786924a03e45451e46b6650dc21d6756b9c02484`**。`4cb51da8` 是历史安装验收基线，不是当前 HEAD；Scope 修复的测试基线为 `b1530c1c`，各阶段产物见机器可读证据清单。独立 public 分支 `fix/module-interface-consistency-public` 的最新 HEAD 以 Git 引用为准，后续纯文档提交不改变产品身份。该分支不是 master/Release，也不是可绕过 #352/#354 依赖整体合并的小修复；未改变这些上游 PR，未执行合并、发布或收费调用。
 
 ## 模块责任表
 
@@ -284,9 +284,9 @@ JSONL authority 读回：`logs/reading-log.jsonl`（1 行，`verified:false`）�
 - 分层绑定：B1 新轮 `0d58ff6f…` + B2 official `8f931635…` 绑定 fa650fdf 安装源码阶段；当前 scope 新 bundle 独立在 A host 实机绑定。Python 221 unchanged，不重冒称新 wheel；B runtime retired（pointer 为历史发布证明，非 live 安装断言）。
 - 历史保留：A UNOBSERVED/草稿 dd2 绿为历史；current 以本节为准。远程冻结/full H 根因未闭（仅 short-A/B 身份闭合），无 merge/release。
 
-## Integration & Release Stabilization：下一阶段执行契约（计划，尚未执行）
+## Integration & Release Stabilization：执行契约（集成未执行；单次诊断进展见后节）
 
-本轮仅修正文档身份并整理收口方案；未新建集成分支、修改 #352/#354、执行合并、运行 CI 或重新执行产品测试。#356 的产品提交仍为 `527d7960`，最终集成候选尚未产生。主工作树 WIP 和生产环境继续隔离。
+计划建立时（`014953ca`）仅修正文档身份并整理收口方案，未新建集成分支、修改 #352/#354、合并或运行 CI。其后经用户明确授权，仅执行了一次 A01 单项诊断，结果见后节；不是完整 CI 或产品验收。#356 的产品提交仍为 `527d7960`，最终集成候选尚未产生。主工作树 WIP 和生产环境继续隔离。
 
 ### 1. 按依赖收敛，不整体合并 public 分支
 
@@ -326,8 +326,18 @@ JSONL authority 读回：`logs/reading-log.jsonl`（1 行，`verified:false`）�
 | 风险 | 最小处置与解除条件 |
 |---|---|
 | 官方 RC5 的无上限 PyMuPDF 依赖 | 保留旧发行物及风险记录；不原地替换旧资产、不声称 master 的 pin 已修复旧下载。后续获授权的新候选/发行物携带约束并核对实际安装闭包，发布说明明确旧发行物限制 |
-| 完整 H/A01 原因未知 | 保留现有阻断与原始失败；用已固定身份的基线/候选定位首个独立错误，再验证相关修复与完整矩阵；不回滚 #350 安全防护、不以短实验代替完整门禁 |
+| 完整 H/A01：已捕获 GPU 致命退出，诱因未定 | 单次诊断捕获 Chromium GPU fatal，浏览器 PID 与 WER 匹配；仍需区分 GPU/沙箱/runner 与插件交互诱因，不能据此排除产品影响或直接关闭 H。保留原始失败，不回滚 #350、不弱化矩阵 |
 | 升级与来源核验覆盖不全 | 逐个声明实际支持的升级起点和宿主；来源错页、手工确认、仅记录位置等未覆盖分支继续标待验，不扩大“已匹配”或升级安全承诺 |
 | 真实 OCR / Embedding / 云端模型 | 继续冻结。服务商作业终态、费用、数据留存与凭据处置仍须独立证据；恢复前另行确认授权、单篇目标及付费/上传范围，离线安全测试通过不等于恢复许可 |
 
 下一可执行工程任务是关闭完整 H 阻断并准备 #352 的最终目标基线验收；不是新增 UI/状态抽象、Rust 重写、Evidence Engine，也不是自动合并 #354/#356 或发布。
+
+## A01 单次诊断：原生 GPU 退出证据（2026-10-25）
+
+用户明确授权的一次诊断为 [40217042572](https://github.com/LLLin000/PaperForge/actions/runs/40217042572)，诊断源码 `3d908391`、被测产品源码 `a856f84f`，仅 app 1.14.5 / installer 1.5.8 的原 A01；不是 #356 产品、完整 H 或最终候选认证。防火墙、真实 loopback 探针、离线 pip、原断言及超时均保留；任务失败，未重跑。
+
+- **退出机制已观察**：`obsidian-native.log` 记录 `gpu_data_manager_impl_private.cc(448): GPU process isn't usable. Goodbye.`。日志 PID `8236` = WER PID `0x202C`，也对应进程采样的 `browser`，现可确认浏览器进程原生退出，而不再只描述为 renderer 失联。WER 异常 `0x80000003` / offset `0x1bf4993` 与先前成对诊断一致；不能据此反推先前每次故障都有相同诱因。
+- **安装边界已收窄**：采样先见 venv 创建进程，后见 pip 进程；随后 GPU fatal。pointer 未发布，没有 A01 收据。共保留 1089 帧进程样本，未保存命令行；没有采到 GPU PID 不等于没有尝试启动 GPU 进程。
+- **诊断自身缺陷如实保留**：新增 beforeTest 把同步版本 getter 当 Promise 调用 `.catch()`，产生 TypeError；原 afterTest 也有同类调用。因此本次有采集 hook 污染，且旧版本字段为 null 不应全部归因为崩溃。已将 hook 改为兼容同步/异步读取，实际旧 hook 的负例和新 hook 的同步、异步、不可用分支在本地红→绿；没有把本地修复当作新 CI 通过，也不回填旧收据。
+- **仍未证明**：GPU 失败的底层诱因、是否存在插件触发关系、干净的 A01 通过、完整 H 通过。未添加 `--disable-gpu` 等绕过项，未将旧 Electron 标为不支持。后续只需针对同一宿主的 GPU 启动/沙箱/渲染配置做有判别力的调查，不再重复安装、同步、记录等已过路径；任何新远端诊断另需授权。
+- **单次权限已消耗**：诊断 workflow 改为手动触发，避免后续推送自动追加运行。原始日志留在私有证据库；公开 manifest 仅发布机器码、身份和四份原始日志 hash。产品源码、#352/#354、主 WIP、生产 pointer/凭据未改；收费 OCR/Embedding/模型继续冻结。
