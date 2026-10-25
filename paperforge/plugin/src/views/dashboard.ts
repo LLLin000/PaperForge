@@ -110,6 +110,7 @@ export class PaperForgeStatusView extends ItemView {
   _searchMode: "M" | "@" = "M";
   _searchResults: unknown[] | null = null;
   _searchActiveIndex: number = -1;
+  _searchDeep = false;
   _onKeyDown: ((e: KeyboardEvent) => void) | null = null;
 
   constructor(leaf: WorkspaceLeaf) {
@@ -2759,8 +2760,8 @@ export class PaperForgeStatusView extends ItemView {
 
     // Detect @ mode prefix + debounced metadata search
     this._searchInput.addEventListener("input", () => {
-      const val = this._searchInput?.value || "";
-      if (val.startsWith("@") && !val.startsWith("@ ")) {
+      const val = (this._searchInput?.value || "").trim();
+      if (val.startsWith("@")) {
         this._searchMode = "@";
         modeBadge.setText("@");
         modeBadge.addClass("deep");
@@ -2778,7 +2779,7 @@ export class PaperForgeStatusView extends ItemView {
       // Cancel pending debounce
       clearTimeout(this._searchTimer);
       // Reset results & show idle when input cleared
-      if (!val.trim()) {
+      if (!val) {
         this._searchGeneration++;
         this._recordResultsEl?.empty();
         this._searchState = "idle";
@@ -2842,17 +2843,15 @@ export class PaperForgeStatusView extends ItemView {
         return;
       }
       if (e.key === "Enter" && e.ctrlKey) {
-        // Ctrl+Enter forces CLI deep search regardless of mode
+        // Ctrl+Enter forces a deep retrieve for this request only. It must
+        // not permanently flip the input mode: a later plain Enter on the
+        // unchanged input stays a metadata search.
         e.preventDefault();
         if (this._searchTimer) {
           clearTimeout(this._searchTimer);
           this._searchTimer = undefined;
         }
-        // Override mode to @ for this search
-        const originalMode = this._searchMode;
-        this._searchMode = "@";
-        this.executeSearch();
-        this._searchMode = originalMode;
+        this.executeSearch(true);
         return;
       }
       if (e.key === "Enter") {
@@ -2882,7 +2881,7 @@ export class PaperForgeStatusView extends ItemView {
         break;
       }
       case "searching": {
-        const isDeep = this._searchMode === "@";
+        const isDeep = this._searchDeep;
         this._searchResultsEl.createEl("div", {
           cls: "paperforge-search-loading",
           text: isDeep
@@ -2902,7 +2901,7 @@ export class PaperForgeStatusView extends ItemView {
         if (this._searchResults) {
           this._renderSearchResultsList(
             this._searchResults,
-            this._searchMode === "@"
+            this._searchDeep
           );
         }
         // Focus management: focus first result after a short delay
@@ -3023,7 +3022,9 @@ export class PaperForgeStatusView extends ItemView {
           text: t("retrieval_retry"),
         });
         retryBtn.addEventListener("click", () => {
-          this.executeSearch();
+          // Replay the failed request's captured mode (e.g. a one-shot
+          // Ctrl+Enter deep retry), never the mutable input mode.
+          this.executeSearch(this._searchDeep);
         });
         // Focus: primary action
         setTimeout(() => {
@@ -3050,7 +3051,7 @@ export class PaperForgeStatusView extends ItemView {
           text: t("retrieval_retry"),
         });
         retryBtn.addEventListener("click", () => {
-          this.executeSearch();
+          this.executeSearch(this._searchDeep);
         });
         // Focus: retry button
         setTimeout(() => {
@@ -3125,17 +3126,19 @@ export class PaperForgeStatusView extends ItemView {
   }
 
 
-  async executeSearch() {
+  async executeSearch(forceDeep = false) {
     if (!this._searchInput || !this._searchResultsEl) return;
     const raw = this._searchInput.value.trim();
     if (!raw) return;
 
-    const isDeep = this._searchMode === "@" || raw.startsWith("@");
+    // Request mode is captured once: forced deep (Ctrl+Enter, one-shot, never
+    // sticky), the normalized `@` input-mode prefix, or the raw `@` prefix.
+    // _searchMode is mutable badge state and is never re-read at render time.
+    const isDeep = forceDeep || this._searchMode === "@" || raw.startsWith("@");
     const query = isDeep ? raw.replace(/^@\s*/, "").trim() : raw;
     if (!query) return;
     const generation = ++this._searchGeneration;
-
-    const mode = isDeep ? "retrieve" : "search";
+    this._searchDeep = isDeep;
 
     // Set searching state immediately
     this._searchState = "searching";

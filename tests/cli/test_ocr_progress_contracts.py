@@ -9,7 +9,7 @@ single key, dropped keys counted) carry over to the NDJSON contract.
 from __future__ import annotations
 
 import json
-from pathlib import Path
+from argparse import Namespace as SimpleNamespace
 
 import pytest
 
@@ -482,6 +482,90 @@ class TestCooperativeStop:
         assert "OCR_REBUILD_PROGRESS:3:3:KEY003" not in captured
         assert "OCR_REBUILD_RESULT:KEY001:ok" in captured
         assert "OCR_REBUILD_DONE:1:0:2" in captured
+    def test_rebuild_stop_terminal_carries_cancelled_code(self, capsys, monkeypatch, tmp_path):
+        """Rebuild batch stop terminal carries action.cancelled + rc130."""
+        from paperforge.worker.ocr_maintenance import OCRMaintenanceRow as Row
+        vault = _make_minimal_vault(tmp_path)
+        keys = ["KEY001", "KEY002", "KEY003"]
+        rows = [Row(
+            key=k, title=f"Paper {k}", title_full=f"Full {k}",
+            status="done", health="good", pages=5, blocks=100,
+            version="2.0", finished_at="2026-07-01", rebuild_finished_at="",
+            figures=0, tables=0, model="test",
+            structured_content_hash=f"hash_{k}", can_rebuild=True,
+        ) for k in keys]
+        monkeypatch.setattr(
+            "paperforge.worker.ocr_maintenance.collect_maintenance_rows",
+            lambda _v: rows,
+        )
+        def _mock_rebuild(_vault, _keys, **kwargs):
+            stop_check = kwargs.get("stop_check")
+            results = []
+            for k in _keys:
+                if stop_check and stop_check():
+                    break
+                on_progress = kwargs.get("on_progress")
+                if on_progress:
+                    on_progress(k, {"key": k, "status": "ok"})
+                results.append({"key": k, "status": "ok"})
+            return {
+                "success_keys": [r["key"] for r in results],
+                "failed_keys": [],
+                "skipped": [],
+                "results": results,
+                "rebuild_count": len(results),
+            }
+        monkeypatch.setattr(
+            "paperforge.worker.ocr_rebuild.run_derived_rebuild_for_keys",
+            _mock_rebuild,
+        )
+        stop_count = [0]
+        def _stop_check():
+            stop_count[0] += 1
+            return stop_count[0] > 2
+        from paperforge.commands import ocr as ocr_cmd
+        monkeypatch.setattr(
+            ocr_cmd, "_make_cooperative_stop", lambda: (_stop_check, lambda: None)
+        )
+        from paperforge.commands.ocr import _run_ocr_rebuild
+        rc = _run_ocr_rebuild(vault, keys=keys)
+        assert rc == 130
+        events = _events(capsys.readouterr().out)
+        terminal = _terminal_event(events)
+        assert terminal["event"] == "cancelled"
+        assert terminal["operation"] == "ocr.rebuild"
+        err_obj = (terminal.get("result") or {}).get("error") or {}
+        assert err_obj.get("code") == "action.cancelled"
+
+    def test_run_stop_terminal_carries_cancelled_code(self, capsys, monkeypatch, tmp_path):
+        """ocr.run stop path emits cancelled terminal with code + rc130."""
+        from paperforge.commands import ocr as ocr_cmd
+        vault = _make_minimal_vault(tmp_path)
+
+        def _fake_run_ocr(_vault, **kwargs):
+            stop_check = kwargs.get("stop_check")
+            if stop_check and stop_check():
+                return 130
+            return 0
+
+        monkeypatch.setattr(ocr_cmd, "_get_run_ocr", lambda: _fake_run_ocr)
+        monkeypatch.setattr(
+            "paperforge.core.cancellation.make_cancellation_token",
+            lambda: (lambda: True, lambda: None),
+        )
+        args = SimpleNamespace(
+            vault_path=vault, ocr_action="run", keys=None, key=None,
+            keys_file=None, json=False, diagnose=False, live=False,
+            verbose=False, no_progress=True,
+        )
+        rc = ocr_cmd.run(args)
+        assert rc == 130
+        events = _events(capsys.readouterr().out)
+        terminal = _terminal_event(events)
+        assert terminal["event"] == "cancelled"
+        assert terminal["operation"] == "ocr.run"
+        err_obj = (terminal.get("result") or {}).get("error") or {}
+        assert err_obj.get("code") == "action.cancelled"
 
 
     def test_redo_stop_emits_done_and_partial_progress(self, capsys, monkeypatch, tmp_path):
@@ -522,7 +606,9 @@ class TestCooperativeStop:
         assert [e["item_id"] for e in events if e["event"] == "progress"] == ["KEY00001"]
         terminal = _terminal_event(events)
         assert terminal["event"] == "cancelled", "stopped batch must emit cancelled terminal"
-        assert "Batch stopped" in err
+        payload = terminal.get("result") or {}
+        err_obj = payload.get("error") or {}
+        assert err_obj.get("code") == "action.cancelled", "cancelled terminal must carry the machine code"
 
 
     # On Windows os.kill(pid, SIGINT) does not trigger Python signal
