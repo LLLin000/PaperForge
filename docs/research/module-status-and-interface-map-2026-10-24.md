@@ -2,9 +2,9 @@
 
 ## 结论与边界
 
-下一阶段是维护性收敛，不是继续加功能，也不是再建一个 Evidence Engine。已有的 `PFResult`、Probe v2、Action Registry、NDJSON 和 `PaperForgeClient` 足够承接当前产品。保留这些接口，逐个修复信息丢失和投影误导。
+当前进入 **Integration & Release Stabilization**：冻结既有 `PFResult`、Probe v2、Action Registry、NDJSON 和 `PaperForgeClient` 契约，不扩功能或新增控制内核；先收口上游集成，再以同一最终源码、wheel、插件 bundle 和宿主做统一候选认证，独立处置发布风险。本文是证据与计划的投影，任务状态以 GitHub Issue、发布接受以 CI/owner 门禁为准。
 
-本轮基线为 **4cb51da872d41e724dc117bd5cc980b87991c5f0**（public 分支当前 HEAD；历史阶段基线 605be45d/16427446/bb79312a 见下文“历史阶段”）。独立 public 分支 `fix/module-interface-consistency-public`；未改变 #352/#354，未触发或等待 CI，未执行合并、发布或收费 API。检查代码存在不等于验证行为；本地测试不等于 Obsidian 实机验收。
+身份口径：**产品提交 `527d796063cf1e4b5fd9a7e0fd7118aa9ea3259e`**；**本次修正前的已发布证据快照 `786924a03e45451e46b6650dc21d6756b9c02484`**。`4cb51da8` 是历史安装验收基线，不是当前 HEAD；Scope 修复的测试基线为 `b1530c1c`，各阶段产物见机器可读证据清单。独立 public 分支 `fix/module-interface-consistency-public` 的最新 HEAD 以 Git 引用为准，后续纯文档提交不改变产品身份。该分支不是 master/Release，也不是可绕过 #352/#354 依赖整体合并的小修复；未改变这些上游 PR，未执行合并、发布或收费调用。
 
 ## 模块责任表
 
@@ -283,3 +283,51 @@ JSONL authority 读回：`logs/reading-log.jsonl`（1 行，`verified:false`）�
 - Scope 唯一 owner（真实 UI，A ui-vault，bundle `673b71ca…`，deployed==worktree）：trusted CDP Ctrl+Enter → Scope callback → view entry `forceDeep:true` 恰一 → 实际 transport `retrieve --deep` → 离线 fault 卡 → 真实 Retry 回放 forceDeep → recover 真后端 deep → 普通 Enter 回 metadata。失焦/close 不拦截（零 entry/argv，父 baked `editor:open-link-in-new-leaf`  intact）；重渲染仅新 input 生效；旧 input 不再激活。unit 保留方法级 forced-deep one-shot（原名已正名），真实 Scope 集成回归以本 host 红/绿/blur/re-render/close 证据为准（unit 无适当宿主 Scope 接缝，不造假路由测试，删 wiring 用例及其 Scope import）。
 - 分层绑定：B1 新轮 `0d58ff6f…` + B2 official `8f931635…` 绑定 fa650fdf 安装源码阶段；当前 scope 新 bundle 独立在 A host 实机绑定。Python 221 unchanged，不重冒称新 wheel；B runtime retired（pointer 为历史发布证明，非 live 安装断言）。
 - 历史保留：A UNOBSERVED/草稿 dd2 绿为历史；current 以本节为准。远程冻结/full H 根因未闭（仅 short-A/B 身份闭合），无 merge/release。
+
+## Integration & Release Stabilization：下一阶段执行契约（计划，尚未执行）
+
+本轮仅修正文档身份并整理收口方案；未新建集成分支、修改 #352/#354、执行合并、运行 CI 或重新执行产品测试。#356 的产品提交仍为 `527d7960`，最终集成候选尚未产生。主工作树 WIP 和生产环境继续隔离。
+
+### 1. 按依赖收敛，不整体合并 public 分支
+
+本地提交图显示：`master@a856f84f` 与 public 快照的共同祖先为 `46dbbd2d`；public 相对 master 为 53 文件、`+4795/-1353`，不能称为独立小修复。下表是本地已包含提交的归属，不替代操作前读取的 PR HEAD/base SHA。
+
+| 顺序 | 有限交付 | 操作前与完成门禁 |
+|---|---|---|
+| 1：#352 | 首次 OCR 发现、笔记读取、历史任务呈现；本地对应 `439aa3d1`、`6cb6131e`、`18620e67` | 保持 Draft，先关闭当前 master 的完整 H 阻断；获合并授权后核对 issue `updated_at`、PR HEAD/base、目标 master SHA，整理为面向 master 的实际差异，跑所需检查和正常审查，不借用旧堆叠目标的绿灯 |
+| 2：#354 | 研究记录闭环；本地对应 `9ab7812d`、`a7a74f7a`，另包含依赖修复 `605be45d` | 等 #352 收口后才处理目标基线、冲突和必需检查；保留原记录权威、修正历史及来源状态，不混入 #356，也不提前重写分支 |
+| 3：#356 | 仅提取 `605be45d..786924a0` 的模块一致性增量；当前为 30 文件、`+2539/-709` | 上游完成后，在明确授权的隔离集成 worktree 整理增量；审查 client/transport、dashboard、i18n、设置、OCR 取消和 probe 接缝。不是直接把 public 分支合入 master |
+
+`605be45d` 与 master 的 `2c3089ba` 不是相同提交：稳定 patch-id 不同；`pyproject.toml`、`requirements.txt`、`tests/test_ocr_state_machine.py` 的文件内容一致，CHANGELOG 记录不同。集成时核对并保留一次等价的依赖约束和回归，不重复套用整个修复，也不以标题相同就跳过审查。
+
+共同接缝包括 CHANGELOG、命令文档、dashboard/i18n/client、测试及已跟踪 `main.js`。源码冲突逐项裁决；bundle 从最终源码重新构建，不手工拼接不同分支的编译件。不复制主工作树实现、不 force-push 共享历史。任何接受范围或 issue `updated_at` 改变，先刷新实施契约再写代码。
+
+### 2. 一个最终候选，不拼装不同阶段的验收结论
+
+| Gate | 明确动作与通过条件 |
+|---|---|
+| 身份冻结 | 上游集成完成后确定 `source_sha`、版本、wheel SHA256、bundle SHA256、依赖闭包、host profile 和 runner kind；目前这些最终候选值均为 **PENDING**。`527d7960` 是现有产品提交，`786924a0` 是文档快照，均不预称最终 master |
+| 统一构建 | 从同一干净候选源码构建 wheel 与插件，生成发行文件校验清单。非 editable 安装；核对版本、真实安装路径、候选实际文件数与内容 hash、`pip check`、PyMuPDF 版本及 `<2` 约束。不能拼接旧轮 `0d58ff6f…` 与 Scope bundle `673b71ca…` 就宣称统一候选已验收 |
+| 安装与升级 | 同一最终 wheel/bundle 真实空 HOME 首次 Setup；官方 RC4 → 候选的取消保旧、重试、成功发布 pointer 后退役旧环境。若声明支持官方 RC5 升级，再验 RC5 → 同候选的对应流程。官方 RC5 空 HOME 首装仅为独立发行对照，不是第二条升级证据；未测旧版本不外推支持 |
+| 关键本地旅程 | 在同一候选真实宿主完成：同步/已有笔记读回；缺 Memory → UI build → 检索 → 重启；研究记录保存 → 纠正 → 历史找回；来源匹配 → PDF 变化失效 → 恢复；Ctrl+Enter 单次 deep → 故障 Retry → 普通 Enter metadata。记录实际部署 bundle hash，保留离线 OCR 上传集合及取消后零新增提交的回归 |
+| CI 与完整 H | 实施中仅跑相关本地检查；每个 PR 遵守必需检查。最后一次产品变更后，对同一最终 SHA 做一次必要的完整候选门禁，不为纯文档投影反复启动全套 CI。当前 `ci.yml:452` 的 PR 事件只有 latest/latest，非 PR 才是三组 H；`All Checks Passed` 仅汇总实际运行的 jobs，所以 PR 全绿不能代替完整 H |
+
+完整 H 记录解析后的固定 app/installer、Electron/Chromium、ChromeDriver、服务包和二进制身份。`full H/A01` 原因仍待关闭；short-A/B 重建的两次成功只补齐短实验身份，不允许据此标记完整宿主认证通过。首次失败保留，定位后修复；不提高超时、自动重试、删断言或标 known-flaky 放行。
+
+### 3. 证据沿用与报告规则
+
+- 未变能力的历史功能证据可以引用，但须说明原 source/artifact/host、相关源码与传递调用、依赖和输入是否保持一致；变化只触发受影响接缝的重验，不一律重做所有旧实机操作。插件 `603 passed / 1 skipped` 与沿用的 Python `221 passed / 3 skipped` 继续分层记录，不能称为最终 master CI。
+- 最终候选必需的安装、关键旅程和完整门禁仍绑定统一身份。旧收据不改写 source SHA，也不把 B 阶段安装 bundle 当成 Scope 阶段 bundle。无法确认等价性的结果保留历史身份并标待验，不推导为候选 PASS。
+- 复用现有 `scripts/release_readiness.py` 做 report-only 判定，不新增证据数据库或控制内核。其候选格式为 `source_sha/version/wheel_sha256/bundle_sha256`，矩阵按 capability/profile/layer/cases 声明，记录保留 source、artifact 与 runner。该工具要求 source SHA 和产物匹配；不支持的跨源码复用只能作为历史支持材料，不冒充新候选 VERIFIED。
+- 每个候选单独保存证据目录并保留旧候选归档；同一候选的失败历史不可删除。判定器 R9 不把失败后的复跑绿色自动当作已验证，CLI 也不能替代 H/V 宿主证明，skip/timeout/warn 不算 pass。发布接受仍需现有 CI 与 owner gate。
+
+### 4. 独立风险，不混入上游功能 PR
+
+| 风险 | 最小处置与解除条件 |
+|---|---|
+| 官方 RC5 的无上限 PyMuPDF 依赖 | 保留旧发行物及风险记录；不原地替换旧资产、不声称 master 的 pin 已修复旧下载。后续获授权的新候选/发行物携带约束并核对实际安装闭包，发布说明明确旧发行物限制 |
+| 完整 H/A01 原因未知 | 保留现有阻断与原始失败；用已固定身份的基线/候选定位首个独立错误，再验证相关修复与完整矩阵；不回滚 #350 安全防护、不以短实验代替完整门禁 |
+| 升级与来源核验覆盖不全 | 逐个声明实际支持的升级起点和宿主；来源错页、手工确认、仅记录位置等未覆盖分支继续标待验，不扩大“已匹配”或升级安全承诺 |
+| 真实 OCR / Embedding / 云端模型 | 继续冻结。服务商作业终态、费用、数据留存与凭据处置仍须独立证据；恢复前另行确认授权、单篇目标及付费/上传范围，离线安全测试通过不等于恢复许可 |
+
+下一可执行工程任务是关闭完整 H 阻断并准备 #352 的最终目标基线验收；不是新增 UI/状态抽象、Rust 重写、Evidence Engine，也不是自动合并 #354/#356 或发布。
