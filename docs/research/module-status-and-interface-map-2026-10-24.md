@@ -1,0 +1,264 @@
+# PaperForge 模块状态与接口收敛（#356）
+
+## 结论与边界
+
+下一阶段是维护性收敛，不是继续加功能，也不是再建一个 Evidence Engine。已有的 `PFResult`、Probe v2、Action Registry、NDJSON 和 `PaperForgeClient` 足够承接当前产品。保留这些接口，逐个修复信息丢失和投影误导。
+
+本轮基线为 **605be45d18ccfa9cef3b59336064ad4ff6a069db**，即 #354 的堆叠候选，不是 master，也不包含主工作树的 owner WIP。独立分支 `fix/module-interface-consistency`；未改变 #352/#354，未触发或等待 CI，未执行合并、发布或收费 API。检查代码存在不等于验证行为；本地测试不等于 Obsidian 实机验收。
+
+## 模块责任表
+
+路径均相对于仓库根目录。表中的诊断命令前加 `python -m paperforge --vault <隔离 Vault>`，不是让用户在生产库执行写操作。
+
+| 模块 | 唯一事实来源与执行入口 | 诊断入口 | 本轮证据及缺口 |
+|---|---|---|---|
+| 安装/运行时 | `runtime_pointer.py`、`setup/plan.py`；插件 `services/managed-runtime.ts` 的 Candidate → Probe → Python 发布 pointer | `probe installation --json`、`doctor --json` | 独立非 editable venv 可运行；空环境正确报告 pointer 缺失。续作通过 uv 离线构建/安装当前候选，纠正缓存 PyMuPDF 2.0 后固定为 1.28.2（符合 `<2`），`uv pip check` 全兼容，正常候选 CLI 已验证；此为基础包验收，不是含 vector extras 的 Setup/升级 Journey。临时新 candidate 已退役，保留 wheel/hash/日志，生产 pointer 和 UI 环境未改 |
+| 配置/凭据 | `config.py` 的 canonical config；`commands/auth.py` 与凭据存储 | `config list --json`、`config validate --json` | 实际初始化合成 Vault。只用 Null keyring；未读写生产凭据 |
+| Zotero/同步/Base | `services/sync_service.py`、`commands/sync.py`；正式索引经 `worker/asset_index.py` 读取 | `probe library --json`、`status --json` | 本轮证据：空库显示 Zotero 未配置；插件真实进程协议测试使用合成导出同步。历史 #352/#354 曾有真实库验收（不在本轮重验），本轮未重验≠否认旧证据 |
+| OCR 范围/任务 | `actions/registry.py` 与 `actions/runner.py` 执行策略；`commands/ocr.py` legacy CLI；`worker/ocr.py` 最终作业与上传 | `probe ocr --json`、`ocr list --json` | 远端冻结。范围、取消的离线回归与真实服务终态/内容质量是两类证据，不混用 |
+| OCR 结构/渲染 | `worker/ocr_document.py`、`ocr_figures.py`、`ocr_tables.py`、`ocr_render.py`；`render_audit.py` | `render audit KEY --json` | 审计会写 `render.consistency.json`，只能在副本运行；本轮未重跑真实 PDF 视觉质量验收 |
+| Memory/元数据搜索 | `memory/builder.py`、`schema.py`、`query.py`；SQLite 是派生投影 | `memory status --json`、`search QUERY --json`、`runtime-health --json` | 空库搜索返回 `PATH_NOT_FOUND`，不是空结果。2026-10-26 真实隔离 UI 闭环：M 搜索 `Biomechanical` → `missing-memory-index` 卡 → CTA 进 Memory 详情 → `memory.build`（all）本地完成（`paperforge.db`，papers=1，`zotero_key=TSTONE001` 合成）→ 同查询命中 1 结果 → 重启仍命中。证据隔离留存 `ui-smoke-2026-10-26` 收据/DOM/截图（TRIAL_ROOT 下，未入库）。构建后 probe 为 `memory.index_stale`（vector 未建），未调用 embedding/远端。独立环境 `[vector]` 前置依赖说明保留（远端冻结，属历史行） |
+| Embedding/语义检索 | `embedding/*`、`retrieval/gateway.py` | `embed status --json`、`runtime-health --json` | 没有调用提供商；未验证召回质量、付费范围及真实模型兼容性 |
+| 阅读/研究记录 | `memory/permanent.py` 中 JSONL 是 authority；`commands/reading_log.py`；插件 `views/research-record.ts` | `reading-log --search QUERY --json`、paper-context | 本轮真实隔离 UI：保存→非标题关键词命中具体记录→打开→追加纠正→默认排除旧引文→历史开关找回→重启持久，JSONL 与 correction 关系读回一致；另完成真实授权 PDF 引文的 exact_text 匹配与来源跳转。历史 #352/#354 真实库证据保留，不把本轮隔离库验收替代正式发布验收 |
+| 来源/页面定位 | 既有 reading-record source 校验与插件打开来源入口 | 记录 source check、原有来源测试 | 2026-10-26 真实授权 PDF 验收 PARTIAL PASS：隔离留存 `source-acceptance` 收据（真实授权副本的 PDF 字节/引文原文/BBT 路径均未入库）。状态机 matched（全 PDF 唯一命中，物理页 1/印刷页 248）→ 变异 SHA `0a7c7c4c…` 后 status=changed/`VALIDATION_ERROR` → 恢复原 SHA `467c800e…`（9 页）后 matched。错页 mismatch、user_confirmed/recorded 分支未验 |
+| 版本/回收/恢复 | `commands/versions.py`、`worker/trash.py`；删除通过 move+manifest | `versions list --json`、相关回归测试 | 2026-10-26 隔离副本实测：versions restore v1→render字节一致（provenance.label=v1）；trash_remove→restore_trash原路径字节一致（禁purge）。fixture为声明合成不冒充用户文献。生产 pointer/用户vault未碰 |
+| Agent/技能 | `commands/agent_context.py`、部署入口与包内 skills | `probe help --json`、`agent-context --json` | 隔离副本实测 `agent-context`、skill deploy、重复 deploy 的 noop 保护、`pf_bootstrap.py --vault`；未改用户技能。无本地模型，远端仍冻结，模型驱动的实际研究任务 BLOCKED，不把部署或帮助成功当模型任务通过 |
+| 控制面/运维 | `reconcile.py` 是 next_actions 生产者；Registry 是动作策略 authority；maintenance 仅投影 | `probe all --json`、`reconcile --scope all --json`、`action list --json` | 实际拿到六个模块信封和九个动作；maintenance=ready 只表示没有维护项不表示所有模块可用。2026-10-26 runtime-health已修（vector层显式enabled事实，仅vector返回值加字段、_layer原API不变；disabled→safe_vector/vector_retrieve=false，层状态仍ok；见CHANGELOG与红/绿CLI收据） |
+| 插件/传输 | `client/node-transport.ts` 唯一进程 authority，`client/paperforge-client.ts` 唯一业务 client | client/transport/protocol-conformance 本地验证 | 本轮修复 result-mode 拒绝原因丢失和假成功；真实 Obsidian 故障演练的诊断复制/搜索错误显示已覆盖（缺索引卡 CTA 进详情零 runAction、genuine 失败脱敏单条 Console）。旧自由文本 console 调用点已在本轮续作 diff 中移除，当前 src 原始 `console.*` 只剩 `trace.ts` 两处（见下“日志隐私限制”），不再列为未修。本轮记录流实测：每次 genuine 失败恰好一条 Console 行（rr-step5 空页保存 1 行 → rr-step6 成功保存零新增 → rr-step10 来源核验失败第 2 行；无单操作双行，单终态规则成立） |
+| 架构/发布 | `architecture_audit/collectors` 确定性观察；Contract lifecycle 决定架构接受；CI/owner 决定发布 | `scripts/ci_local.py --list`、既有 collect/gate、`scripts/release_readiness.py` | 不提升 lifecycle 或 release 状态。H 原因未闭环：固定宿主 old-off/old-on PASS（main 4552902e 与旧 bundle 一致）；new-off/new-on 实际观察存活，但 served ae6fb45b 与历史 manifest 48bd7643 不一致、缺当次构建证明，因此 INCONCLUSIVE，不计受控新基线通过。正式 Release 安装升级及完整 H 验收未完成；基础离线候选依赖已纠正且检查通过，不沿用此前 PyMuPDF 2.0 失配为当前状态 |
+
+## 接口统一规则（沿用现有实现）
+
+| 问题类型 | 权威接口 | 消费规则 |
+|---|---|---|
+| 同步命令结果 | `core/result.py::PFResult` | 保留 `ok/command/version/data/error/warnings/next_actions`。`error.code/message/details` 不得被通用 exit code 吞掉；进程失败与 payload 自报成功矛盾时失败优先 |
+| 模块可用性 | `commands/probe.py` 的 schema v2 | 读 `reason.code/text`、`action.primary`、`user_state`、`capability_kind`。未配置、未启用、检测失败、空数据不同；不把 maintenance.ready 当全局成功 |
+| 动作与范围 | `actions/types.py` + Registry + runner | UI 传 ActionRequest，`buildActionArgv()` 组装参数；后端验证 scope、preflight、确认，再执行。不要由新 UI 推导 all 或重新维护动作策略表 |
+| 长任务 | `core/ndjson.py` + `NdjsonStreamParser` | 非终态事件后恰好一个 `result/error/cancelled`，随后 EOF；无 terminal 是协议失败。取消本地提交不等于取消云端作业 |
+| 前端访问 | `PaperForgeClient` → `Transport` | View 不直接 spawn、不解析运行时 pointer；复用缓存失效、operation lock 和诊断字段。命令特定的裸数组/authority JSON 仍由具名 client 方法适配，不强制破坏全部旧接口 |
+
+原 `BACKEND-FRONTEND-CONTRACT-MAPPING.md` 是设计蓝图，其示例不是逐字段的现行 schema；运行时代码和协议测试优先。例如实际 Probe 是 `reason: {code,text}` 与 `action: {primary: ...}`，不是蓝图示例中的扁平 `reason_code/action_primary`。
+
+### 本轮实际修复
+
+`PaperForgeClient.runAction()` 的 result 分支此前：
+
+- rc 非零时丢弃结构化 stdout，`payload=null`；
+- rc=0 时即使 `ok:false` 或非 JSON 也返回成功。
+
+现在保留后端原始 PFResult 拒绝，原 `error.code/message/details` 可被现有消费者读取；非 JSON/缺少 boolean `ok` 为 `protocol_error`；非零 rc 却自报成功为 `transport_error`。执行过的命令保留真实 exit code，`ok:false` 不伪装成进程 rc=1。不可用/busy 的早退也提供结构化 error，不分发执行。没有新增原始 stdout/stderr 导出或遥测；transport 的现有 Error.message 可能带 stderr，不能保证它不含私密内容，外发诊断仍需脱敏。保持 `buildActionArgv`、stream 路径、缓存失效和返回 DTO 不变。没有把所有 worker 异常随意映射为 scope 错误。
+
+模块回归同时暴露一个真实的跨模块别名耦合：`worker/ocr.py` 从 `worker.sync` 二次导入 `load_export_rows`。Sync 单测在临时替换 loader 时触发首次 OCR 导入，OCR 会永久保留该临时对象；随后单篇范围检查把真实存在的 key 报成 unknown，7 个 HTTP 范围/取消用例和2个流用例失败。独立新进程复现已证明这条捕获链，不是 PDF 或索引数据格式问题。修复为直接引用既有 `adapters.bbt.load_export_rows`，保留原调用 seam 和范围检查，未改成 all，也未弱化断言。原 9 failed / 739 passed / 3 skipped 的证据保留，最终重跑同一组用例。
+
+## 开发时的最短定位路径
+
+1. **先固定身份**：记录源码 SHA、工作树、`sys.executable`、`paperforge.__file__`、版本与安装来源。禁止借用指向别的 checkout 的 editable venv。本轮安装包的 237 个 Python 文件与候选逐个 SHA-256 比对一致。
+2. **看模块状态**：一次 `probe all --json`；再按上表选具体模块。不要重复扫描整个项目。
+3. **看动作拒绝**：保留 action id、scope、keys 数量、exit code 与 `error.code/message/details`。若没有终态，先查 transport 的 `protocolFailure`、stderr 尾和 last event，不先改业务 worker。
+4. **跑该模块回归**：按下面选择文件；有跨层变更才加真实 Python/client 协议验证。不要把一次失败变成长时间全套 CI 轮询。
+5. **修复后做本地最终门**：受影响 Python 回归 + 插件测试/typecheck/build + 一次实际 CLI 或 UI 路径。CI 留作集成/发布证据，不作为本地开发等待环。
+
+### 可复用的本地入口
+
+在隔离工作树运行，准备独立 venv（不加 `--system-site-packages`）：
+
+```powershell
+py -3.12 -m venv <venv>
+<venv>/Scripts/python.exe -m pip install ".[test,vector]"
+<venv>/Scripts/python.exe -c "import sys,paperforge; print(sys.executable, paperforge.__file__, paperforge.__version__)"
+<venv>/Scripts/python.exe scripts/ci_local.py --list --json
+<venv>/Scripts/python.exe -m paperforge --vault <test-vault> probe all --json
+```
+
+`ci_local.py` 从现有 workflow 推导命令，不是启动 GitHub Actions；不要不加筛选就执行全部 job。它跳过的 conditional/setup 步骤不能记为通过。各模块的快速入口：
+
+| 改动位置 | 最小选择 |
+|---|---|
+| 配置/探测 | `pytest tests/test_config.py tests/test_probe.py tests/test_probe_all_lineage_reuse.py -q` |
+| 动作/控制面 | `pytest tests/test_action_registry.py tests/test_reconcile.py tests/test_architecture_boundaries.py -q` |
+| 同步/笔记/Base | `pytest tests/test_sync.py tests/test_sync_next_actions.py tests/test_base_preservation.py -q` |
+| OCR 范围/取消/流 | `pytest tests/cli/test_ocr_scope_safety.py tests/cli/test_ocr_progress_contracts.py tests/test_ocr_stream_stdout.py tests/test_ocr_redo.py tests/test_ocr_rebuild.py -q` |
+| 记录/Memory | `pytest tests/cli/test_research_records.py tests/unit/memory tests/test_local_read.py -q` |
+| 渲染/版本/回收 | `pytest tests/test_render_wire.py tests/test_render_audit.py tests/test_versions_command.py tests/test_no_raw_delete.py -q` |
+| 插件/client 边界 | `npx vitest run tests/client/paperforge-client.test.ts tests/client/protocol-conformance.test.ts`，设置 `PF_PYTHON` 为上述 venv；随后 `npm run typecheck`、`npm run build` |
+
+使用同一个解释器的 `-m pytest`，不要依赖 PATH 上另一个 pytest。`tests/sandbox/00_TestVault` 与 `PF_EVIDENCE_DIR/index.json` 是共享写入点，相关测试串行运行，不用 `-n auto`。不同 checkout/不同临时 Vault 的独立工作可以并行。
+
+离线 OCR 回归必须拦截最终 multipart 上传，并在 Python 进程和子进程中禁止实际 socket connect；清空继承的凭据环境、使用 Null keyring，确保故障测试不会意外读取生产凭据。`probe ocr` 也可能探测远端，不要在带生产凭据的环境把所有诊断当纯本地命令。安装依赖的包下载不属于运行产品的收费服务请求。
+
+## 已观察但本轮不混修的接口缺口
+
+| 优先级 | 事实/证据 | 下一次最小修复和验证 |
+|---|---|---|
+| P1（本轮范围） | 本轮续作 diff 移除了 client 拥有终态的 View 重复与调试噪音（`configSet` 回写、`_runLibrarySync` 后刷新、`dashboardStats` typed 结果、`checkOrphanState` 调用/found/not-found/exception、`savePaperforgeJson` warn、dashboard render/version/sync Notice 拼 message、modals 孤儿 `console.log`、settings 安装失败 Error 对象）；当前 src `grep console\.` 仅命中 `trace.ts` 两处。历史段落曾列三处为未修是过期投影，本行以当前 worktree 只读核实为准 | 本轮内已做，无需再修；仍不能因公共路径收敛就宣称全应用日志已脱敏（约束仍在：`console.debug` 需 `debug_trace` 开关） |
+| P2 | `core/next_actions.py` 保留旧验证表；实际生产已由 `actions.registry` 发射/执行，旧 helper 只被旧测试引用 | 先查全部引用，再删除死 helper/测试；不要添加第三份 registry，也不要仅加“legacy”注释保留双权威 |
+| P2 | legacy OCR 取消结果与 Action runner 的 error.code 表达不同 | 复用现有取消结果语义，保留 operation 字符串；验证原有流消费者，不做全局改名 |
+| P1（已闭环，不再是缺口） | 缺 Memory DB 的元数据搜索已由 `#356` 续作细分为 `missing-memory-index` 卡（中英说明 + 阅读笔记可用 + 不调用 Embedding/收费 + `打开记忆设置` CTA 经 `openModuleSettings("memory")` 进入真实 Memory 详情，零 runAction、不自动 build）；2026-10-26 真实隔离 UI 已验证恢复→`memory.build`→命中→重启持久。深度 retrieve 的同码仍走 `backend-unavailable`，两者不混淆 | 保留，无需再修；误判为缺向量的表述已在卡片与测试中排除 |
+| P2（已修已验证） | runtime-health 曾把用户关闭的 vector 投影为 safe_vector/vector_retrieve=true；现仅 vector 层增加显式 enabled 事实，关闭不代表故障，也不代表可检索 | 保留总体状态及真实检索权威；disabled→false、enabled-unready→degraded/false、enabled-ready→true。最终影响集 64 passed/2 skipped；正常非 editable 候选 CLI 绿证据为 `runtime-health-newcand-green-pinned.json`，依赖检查 `uv-pip-check-newcand-pinned.txt`。`runtime-health-candidate-green.json` 是早期诊断回执，不作为最终候选证明 |
+
+这是一条按模块补齐契约的维护队列，不是本轮已全部完成的修复清单。暂不追加 RAG、Daemon、Rust 重写或 UI 大改。
+
+## 上一阶段本地验证回执（aa2e44a9）
+
+历史隔离 receipts（`TRIAL_ROOT/module-interface-356/` 下：python-source-identity、smoke-summary、逐检查 stdout/stderr、JUnit 与摘要；未入库）。首次5个动作负例全部失败；集中修复后，最终本地结果如下。所有远端能力保持冻结；没有新的正式 H 矩阵、Release 安装或收费服务质量证明。
+
+| 本轮检查 | 最终结果 | 能证明/不能证明 |
+|---|---|---|
+| Python 模块回归（同一选集、串行、禁止 socket） | **748 passed / 3 skipped**，164.66 秒 | 包括 CLI、probe/config、scope/取消、同步、Memory、渲染/版本等选定边界；不是全 Python suite 或全用户旅程通过。此前9个失败同组选集已消失，断言未改 |
+| 插件全部 Vitest | **581 passed / 1 skipped**，32 文件通过、1 文件跳过 | 含真实 Python 进程协议11项；不替代 Obsidian Electron 实机 |
+| 插件 typecheck / build | **通过 / 通过** | 构建成功；不安装进用户 Vault，生成的 main.js 不作为本次源码提交变更 |
+| 实际 CLI 与六模块 probe | **已执行并读回** | doctor 在未完成安装/无数据的合成库 rc=1，元数据 search 缺 DB 返回 PATH_NOT_FOUND，均保留原始报告，不篡改为全部 ready |
+| BBT loader 捕获复现 | **红 rc=1 → 绿 rc=0** | 同一临时 Sync override 结束后，已安装候选能读取真实合成 export 的 MODULE356 |
+| 网络保护检查 | **通过** | 连接函数在发起 socket I/O 前抛 OFFLINE_356；Python 子进程继承保护与 Null keyring |
+| 两轴审核与一次集中修复 | **无重要剩余发现** | 修复保留真实 exit code、统一不可用/busy 错误、澄清隐私表述；没有循环加测或通过放宽断言制造绿色 |
+
+原始缺 vector extra 的 collection failure、9-failure gate、初次 probe 和红复现均单独保留，不用后续绿色覆盖历史证据。跳过项不计通过。
+
+候选不包含受保护且未跟踪在该提交中的 `PROJECT-MANAGEMENT.md` / active queue。本轮不复制、不修改主工作树台账；此报告是本次模块盘点的投影，不是任务状态或发布接受的 authority。
+
+## 继续阶段：本地诊断与受控实机烟测（2026-10-24）
+
+本阶段以 `aa2e44a9` 为基线，实施和本地验证均已完成；以下回执独立于上一阶段，旧日志不覆盖。它不是整款软件、全宿主矩阵或正式发布验收。
+
+### 本轮代码变动
+
+| 方向 | 变动 | 决策/测试缝 |
+|---|---|---|
+| Doctor 解释器权威 | 删除 `_read_plugin_data` + `_resolve_plugin_interpreter` 死 bootstrap 副本；正式插件执行目标只读 `runtime_pointer.read_pointer()`，绝不 fallback py/python/python3、config python_path 或 ambient Python。检查顺序对齐 probe 现有权威：pointer missing → version stale → executable missing（无新 readiness 规则）。缺失/陈旧/缺文件 pointer 明确报告未准备并指向 `paperforge setup` / `update` / `repair --runtime`，跳过一切目标环境子进程探测；当前诊断进程身份是独立事实（3.11 地板与 probe 一致）。有效 pointer 复用 `_query_resolved_*` + `run_readonly_probe`（extra_args=[]），不再拼原地/global pip。`_query_resolved_package` 用目标解释器 `importlib.metadata.distribution` 读 Name/Version/Location（uv 无 pip 也可诊断；PackageNotFound→None）。正常 Vault/配置/OCR 检查仍运行，不读写生产 pointer | `tests/test_doctor.py` 新增：缺失 pointer（文本+JSON）报 setup 且零目标探测；有效 pointer 只查 pointer 路径；陈旧 pointer 用真实存在可执行文件隔离条件、零目标探测、明确 fail+可执行修复建议；无 pip 也能读 dist 版本（`_query_resolved_package` 回归）与缺失 dist→None。调用方迁移：`run_doctor` 唯一调用点已改；无外部引用（已 grep）。Worker `pip install -e .` 与 skill `pip install -e .` 文案改为 `repair --runtime` / 确认配置 |
+| Maintenance 文案 | `probe.py:1617` + `i18n.ts` en/zh 只改“无维护项”的准确措辞，不改 eligibility/readiness。不新增文案字符串测试（既有 eligibility/状态语义测试保留；review 要求改变聚合策略已拒绝） | runtime-health vector disabled 不扩 enabled DTO：本轮明确记为未修 |
+| Console 错误 | 在 trace/client 公共边界统一一次安全 `console.error`，复用 trace ring/record，不另建 logger 或新页面。覆盖：typed JSON 拒绝（pfresult：完成态 doctor 诊断报告除外；search+PATH_NOT_FOUND 空库预期态除外）、协议失败（protocol_contradiction/protocol_error，矛盾只最外终态记一次且保持 protocol code）、进程失败（transport runAction catch；NO_PYTHON 预期 setup 态保留 machine code 但抑制 Console）、runAction 结果失败、stream 终态失败（`streamOperation` wrapped outcome 单点，含 outcome-reject 异常路径；runAction stream 分支不再重复）。无跨操作全局 dedupe：同错两次独立尝试各记一次；单操作内靠终态归属（pfresult/process/stream 单点）不双报。`_executePfResult` 恢复 bare-JSON 兼容（`action preflight` 裸 descriptor rc0 即成功载荷；PFResult 识别 `ok` 即判，`ok:false` 即使无 `data` 也保留 code/data）。`commandIdentity` 按首命令 family 匹配固定 subcommand（search/retrieve/reading-log 永不带第二参数；query=`run`/`status`/`list` 反例锁定）；绝不输出用户值或 flags。Console 退出码取自 transportError.exitCode（rc0 业务拒绝 exit=0）。Console 只固定字段 op/stage/machine code/exitCode；`_executeRaw` 层不散打日志。预期缺配置/未启用/用户取消（cancelled、action.busy/unavailable、credential 缺失、*.disabled/*.not_enabled、NO_PYTHON）在默认 Console 下不报错；调试仍走 `debug_trace` 开关。legacy 散落自由文本 console（settings/dashboard/modals）不在本轮迁移，报告明确，不称全局已脱敏 | `trace.test.ts` 新增 traceConsoleError 组：单次+redaction+预期态抑制+两次独立同错==2、rc非零+PFResult拒绝单操作==1（exit=1）/rc0==exit=0+矛盾单次 protocol code+stream reject 单次+空库 search 零 Console 且 trace 保留 code+NO_PYTHON 抑制+commandIdentity 私密值断言（search/retrieve/reading-log query、config value、action keys、run/status/list query 反例）+dashboard 状态映射。未覆盖边界（legacy raw 方法）：`sync()`、`probe()`、`reconcile()`、`paperStatus()`、`queryOcrPapers()` 等仍走 `_executeRaw`+JSON.parse 的只读/旧路径，未接入统一 Console 输出——不在本轮私改契约，列为剩余边界 |
+
+### 日志隐私限制
+
+统一 Console 输出只含固定字段；当前 worktree `paperforge/plugin/src` 内原始 `console.*` 只剩 `client/trace.ts` 两处（`traceConsoleError` 的 `console.error` 与 `debug_trace` 开关门控的 `console.debug`），旧自由文本调用点（settings 安装失败含 Error 对象、`configSet` 回写、`_runLibrarySync` 后刷新、`dashboardStats` typed 结果、`checkOrphanState` 调试噪音、退休 `savePaperforgeJson` warn、dashboard render/version/sync Notice 拼 message、modals 孤儿 `console.log`）已在本轮续作 diff 中移除（`git diff` 仅见 `-` 删除行，`grep console\.` 全 src 仅命中 trace.ts）。默认 Console 可见的是真正失败（traceConsoleError），预期态被抑制。
+
+### 本轮本地验证命令（父侧已实际执行，外部 runner 未随 repo 提交）
+
+外部 runner 实际执行（`TRIAL_ROOT` 为本机隔离根，占位符；命令未随 repo 提交，仅形态记录）：
+
+```powershell
+# 1. 非 editable 重装候选 + 237 文件验证 + 同组 Python 回归（含新增 doctor/status/runtime-health 组）
+python <TRIAL_ROOT>/module-interface-356-continuation/continuation-verify.py python
+# 2. 全 Vitest + typecheck + build（含新增 trace/client 卡片/Console 组）
+python <TRIAL_ROOT>/module-interface-356-continuation/continuation-verify.py plugin
+# 3. 实际 CLI 烟雾（6 模块 probe + doctor + status + runtime-health + action/search/reconcile）
+python <TRIAL_ROOT>/module-interface-356-continuation/continuation-verify.py smoke
+```
+
+外部脚本复用原 `module-interface-356/verify.py` 的 ENV 清洗/socket 守卫/原 venv 路径（`<candidate-venv>/Scripts/python.exe`）；OUT 改独立 `module-interface-356-continuation/` 目录；offline 守卫仍原 `module-interface-356/offline`；manifest 区分 `base_sha=aa2e44a9…` 与 working-tree 文件 hash，不把 dirty 候选标成 HEAD。旧 `aa2e44a9` 证据目录不可覆盖。
+
+### 本阶段实际结果与证据范围
+
+- Python 选定模块串行回归：**769 passed / 3 skipped**，173.08 秒。新增的无 pip 回归使用真正 `venv(with_pip=False)` 和目标解释器中的 distribution metadata，不再用返回值 mock 冒充该边界证明。
+- 实际 CLI：doctor 现在只检查 pointer 目标 Python 3.12.8，PaperForge distribution 和依赖均通过；合成空库的 doctor 总 verdict 仍为 FAIL，因为未连接 Zotero/导出/凭据。未把这些缺配置项洗成绿色。
+- Maintenance 的空 inbox 保持原有 eligibility/ready 语义，文案只说“无维护项”，不推导全局就绪。
+- 搜索保留 error.code/data；typed JSON 兼容原有裸 preflight。真正失败的 Console 固定输出 operation/stage/code/exit，不输出查询、错误 message、raw stdout/stderr 或 Error 对象。同一请求只记一次；相同失败重试仍各记录一次。缺 Memory DB、未发布 runtime、向量 not_built/stale、取消等已定义预期状态不打红色错误，仍保留可分类的 trace/界面状态。
+- 受控真实 UI：新建 `module-interface-356-continuation/ui-vault`，独立 HOME/APPDATA/profile；实测 **Obsidian 1.14.5 / Electron 37.6.0 / Chromium 138.0.7204.251**，插件版本 2.0.0rc5。通过真实输入框/Enter 触发，验证向量未建、缺 Memory DB、INTERNAL_ERROR、空结果与重复失败；截图显示约 300px 侧栏中的对应卡片和恢复按钮。
+- UI 使用明确注入的离线 transport 故障，不是真实提供商或原 166 篇库验收。Python CLI 另行真实执行；两类证据不混称端到端服务质量。页面离线、子进程 socket 守卫、Null keyring，未触发收费能力。
+- 观察到既有 `@ `（带空格）输入的徽标仍显示 M，但请求走 retrieve；已记录为显示一致性后续项，未顺手扩修。缺 Memory DB 卡片仍泛化，亦如上表保留，不宣称全部 UX 闭环。
+
+本阶段 raw/manifest/截图回执隔离留存于 `TRIAL_ROOT/module-interface-356-continuation/`（未入库）。旧的 6 个插件失败、doctor 无 pip 误诊与无效测试条件保留在 before-repair/after-agent-repair 文件中。最后的插件数字、构建、Console 与 UI 重测结果以该目录收口回执和 Issue #356 最新评论为准；跳过项不计通过。
+
+### 收口状态
+
+| 验证 | 实际结果 |
+|---|---|
+| Python 选定模块回归 | 769 passed / 3 skipped |
+| 插件完整 Vitest | 595 passed / 1 skipped；32 文件通过、1 文件跳过 |
+| Typecheck / Build | 均通过 |
+| 受控构建的真实 Obsidian 故障演练 | 向量 not_built → 对应恢复卡片且无红日志；缺 Memory DB → 非向量卡片且无红日志；INTERNAL_ERROR → 每次 Enter 一条脱敏 Console；两次相同失败保留两条；空结果 → empty 且无红日志 |
+
+受控实机证据绑定在 `ui-plugin-assets.json`（部署 bundle 哈希）、`ui-host-artifact-provenance.json`（宿主/应用资产哈希）、`candidate-source-manifest.json`（被测工作树源码哈希）以及三张 `ui-*.webp` 截图。宿主会话已停止，仅保留独立测试 Vault/证据；未覆盖原试用库或生产设置。实现状态为**本地候选已验证**，不是全应用接口已统一、正式宿主矩阵已通过或可发布。
+
+实机结束后补齐了“进程未给出退出码时显示 `exit=?`，不能伪装成 `exit=0`”的元数据回归；卡片映射与实机所测 rc=1 路径未改变。实机源码快照另存 `ui-tested-source-manifest.json`，最终本地候选记录在 `candidate-source-manifest.json`，不把两份构建身份混写。
+
+## 本轮实现：缺 Memory 恢复与 Console 归属（已验证，证据见 recovery 目录）
+
+本轮基线 `16427446f252bb621eae2a395eb6c90315946677`。上一阶段的 769/595 未冒充为本轮证明。
+本轮 gates 由隔离 `TRIAL_ROOT/module-interface-356-recovery/verify.py`（plugin 模式）实际执行，
+证据隔离留存于 `TRIAL_ROOT/module-interface-356-recovery/`（均未入库）：`plugin-summary.json` +
+`plugin-regression.stdout/stderr.txt`、`plugin-typecheck.stdout/stderr.txt`、`plugin-build.stdout/stderr.txt`。
+真实 Obsidian 离线 smoke 证据同目录：`ui-smoke-2026-10-25.json`（另有既有 `smoke-summary.json` 为 CLI 历史证据，不重跑）。
+
+### 搜索卡片分野
+
+- 仅元数据搜索（`search`，非 `@`/retrieve）+ `PATH_NOT_FOUND` 映射到新状态 `missing-memory-index`；深度 retrieve 的同码仍走 `backend-unavailable`，不与其混淆。
+- 新卡中英说明：元数据搜索需要本地 Memory 索引；阅读笔记仍可用；此步骤不调用 Embedding/收费服务。不宣称“元数据搜索不受影响”。
+- 新卡与向量设置 CTA 均经 `PaperForgePlugin.openModuleSettings("memory")` 进入真实 Memory 模块详情（`app.setting.open/openTabById('paperforge')` + settings-tab `_handleCardNavigation`），不只打开设置首页，不自动执行 build，不触发 embedding/确认绕过，不新建路由。无有效导航能力时明确提示不可用，不默默无操作。
+- `executeSearch` 改用 `trace.ts` 的 `rejectionCode/rejectionData` 读取结构化拒绝的稳定 machine code/data，不把 message 转 code。
+
+### Console 所有权决定
+
+- 复用 `traceConsoleError`；新增 `rejectionCode/rejectionData` 放在现有 `trace.ts`（多调用者 code 提取，非新 logger）。
+- 删除 client 已拥有终态的 View 重复：`configSet` 失败回写、`_runLibrarySync` 后刷新、`dashboardStats` typed 结果的 View 重复、`checkOrphanState` called/found/not-found 调试噪音、退休 `savePaperforgeJson` 的 warn。
+- 保留单次脱敏诊断（固定 op/stage/code/exit，无路径/Error/message/query/envelope）：`_installFoundation` 非 stream 形态失败（`foundation.setup/install`，stream outcome 形态不双报，取消无红）、`_applyLibraryConfiguration` 本地失败（`library.setup/local`，stream 失败不 outer echo，取消中性）、probe 信封非法（`probe.<mod>/protocol/protocol_error`）、raw probe 失败（`probe.<mod>/process`，`NO_PYTHON` 保持 quiet）、discussion 本地读（`discussion.read/local`）、外部 note 刷新（`note.refresh/local`）、clipboard（`diagnostic.copy/local`）、lineage probe 失败（`probe.lineage/process` + Notice，不让“无孤儿”冒充失败）。
+- 正常取消/`NO_PYTHON`/empty 保持 quiet；真正 local/raw 错误可定位。
+
+### 测试缝与验证结果（2026-10-25 实测）
+
+- `plugin-regression`：32 passed + 1 skipped（601 passed / 1 skipped），约 29s。
+- `plugin-typecheck`：exit 0，约 3.6s。`plugin-build`：exit 0，约 2.5s。
+- `retrieval-knowledge-cutover`：缺 Memory/深度 vector 缺索引/genuine backend/empty 四态分野；
+  预期态（缺 Memory 卡、empty）零 Console，genuine 终态各一次固定诊断且不含 query 文本；
+  missingMemory/向量 CTA 调用正确导航且零 transport 调用。
+- `installation-navigation`：`Plugin.openModuleSettings` 选中 paperforge tab、导航到 memory detail、再打开设置
+  （Obsidian 1.14 下 `openTabById→navigate→open` 顺序，方法引用绑定后调用；缺 tab 时返回 false）。
+- `trace`：本地失败单次脱敏（clipboard 拒绝写入 stub、lineage 无隐私值）、client 失败（configSet）不被 View 重复；
+  bootstrap 失败仍有诊断、取消无红。
+- 真实 Obsidian 离线 smoke（`ui-smoke-2026-10-25.json`）：隔离 vault 绝对路径与 HOME 已确认；
+  TSTONE001 真实笔记打开，paper 模式；`Biomechanical` 回车后 `missing-memory-index` 新卡 + Console 零新增；
+  CTA 经 `openModuleSettings("memory")` 返回 true、零 runAction 调度，进入独立 Settings popout（`设置 - ui-vault`），
+  PaperForge tab 选中、memory 模块详情（`智能检索` heading、`Build memory` + `db_missing` + API Key 配置可见）；
+  ui-vault 无 memory.db、无新增 db 文件。Memory build 的 UI 闭环未在本次 smoke 内执行（按约束不 embed/远端），
+  其能力仅由既有 CLI 历史证据 `smoke-summary.json`（cli-vault：PATH_NOT_FOUND → memory build → 命中 TSTONE001）覆盖，
+  与 ui-vault（无 DB）只读核实区分，不假称闭环。
+- 仍未证明：含远端/embedding 的 build、收费 API 路径；`_installFoundation` 的 stream outcome 形态判断依赖 outcome
+  字段命名（后端形态变化需复核）；probe raw 路径的 exit 统一记 `null`（`exit=?`），不伪造 rc。
+
+### UI 闭环补记（2026-10-26 实测，覆盖上条“未在本次 smoke 内执行”）
+
+复用同一隔离 ui-vault/profile/HOME（未重建环境、未覆盖旧证明；bundle `a33d905e…` 与 worktree 一致）。
+真实 UI 顺序：M 搜索 `Biomechanical` → `missing-memory-index` 卡（Console 零新增）→ CTA `openModuleSettings("memory")`
+返回 true、零 runAction → 独立 Settings popout 的 Memory 详情（`智能检索`、`Build memory` + `db_missing`）→ 点击
+`Build memory` 经确认模态（`Build memory / 影响: 此操作将更改 PaperForge 数据。/ 取消|继续`）→ `继续` 后分发且仅分发
+`{action_id:"memory.build", scope:{kind:"all"}}`（hook 实录；`embed.*`/`upgrade_backend` 未分发；新增 Console 错误 0，
+CDP 外部 http(s) 资源 0，post-build probe 为 `memory.index_stale` 即 vector 未建）→ 本地 `paperforge.db` 生成
+（`papers=1`，`zotero_key=TSTONE001`）→ 同查询 M 模式命中 1 结果 → 打开笔记确认为 TSTONE001 → 仅停止自己的隔离实例后
+重启，同一查询仍命中（持久化成立）。收据隔离留存 `TRIAL_ROOT/module-interface-356-recovery/ui-smoke-2026-10-26.json`
+（8 张合成截图 + `cdp-step*.json` DOM/action/Console 回执，均未入库；合成库 `zotero_key=TSTONE001`）。用户实例未动；
+主 PROJECT-MANAGEMENT 与 queue 未改；既有 601 gates 不重跑（无产品修改）。
+
+### 研究记录 UI 闭环补记（2026-10-26 实测，与 Memory 闭环同库接续）
+
+复用同一隔离 ui-vault/profile/HOME/venv（未重建环境、未覆盖 Memory 证据；bundle `a33d905e…`）。真实 UI 顺序：
+TSTONE001 paper 模式 → `[data-pf-testid=save-research-record]` → `ResearchRecordCaptureModal`
+（excerpt/usage 必填，pdf 预填 `System/Zotero/storage/<SYNTH_KEY>/<SYNTH_KEY>.pdf`）→ 首次提交 page 为空被后端
+`VALIDATION_ERROR` 拒绝（输入保留；Console 恰一条固定脱敏行
+`[PF] failed op=reading-log stage=pfresult code=VALIDATION_ERROR exit=1`，属 genuine 失败单次诊断；
+回执链：rr-step5 `calls=1/errs=1`，rr-step6 成功保存后 `calls=2/errs=仍为1`，即成功保存零新增行）→ 补 `page=1`
+后保存成功，稳定 ID `<SYNTH_RECORD_ID>`，状态 `来源不可用 — 需重新核验`（`verified=false`，basis=recorded，
+从未标 verified）。回执 `hooks.console_errors_total=2` 的第二条来自**来源核验操作**
+（rr-step10 `readingRecordSource`：后端 `reading_log.py:361-363` 把 `Source requires recheck` 映射为
+`ok:false/code=VALIDATION_ERROR/exit=1`，client pfresult 分支按 genuine 失败记一行；rr-step14 读回 `errs=2`）。
+已核对：没有任何单个操作产生两条 Console 行，每次 genuine 失败恰好一行（单终态规则成立，非重复打日志缺陷，
+Console 行为 PASS）。`saveReadingRecord_calls=2` 仅计数 hook 包装的 `client.saveReadingRecord`
+（call#1 失败首次提交、call#2 成功补页提交；correction/source-check 走其他 client 方法，不计入此数）。
+（不含论文标题，不冒充真实结论）。独有关键词搜索：论文窗格正确为空（`未找到匹配的论文`），研究记录窗格命中该记录
+（`当前记录` + 来源未核验提示 + `查看记录`）。打开记录核对内容/用途/归属一致；`重新核验并打开 PDF 物理页`
+（`readingRecordSource`）按设计失败：`PDF is missing; recheck required`（合成库无真实 PDF 文件，
+`has_pdf` 仅为元数据；未生成伪 PDF、未用 CLI 替代），记录保持未核验。追加修正
+（`<SYNTH_CORR_ID>`）后状态变为 `已纠正 — 历史记录，非当前证据`；默认搜索不再命中旧记录
+JSONL authority 读回：`logs/reading-log.jsonl`（1 行，`verified:false`）与 `logs/correction-log.jsonl`（1 行）一致。
+仅停止自己的隔离实例后重启：默认搜索仍排除旧记录，历史勾选后仍可找回（含 corrections 的 details JSON，
+`legacy_verified:false`），0 新增 Console 错误。收据隔离留存 `TRIAL_ROOT/module-interface-356-recovery/ui-research-record-2026-10-26.json`
+（10 张合成截图 + `rr-step*.json` 16 份 DOM/action/Console 回执，均未入库；合成记录 ID 仅本机有效）。用户实例与原 Zotero 数据未动；
+主 PROJECT-MANAGEMENT 与 queue 未改；既有 gates 未重跑（无产品修改）。
+
+## 剩余验收收口与准确阻断
+
+- 本地新增源码仅为上述 vector 投影修正；插件 TypeScript 未再变化。插件 601 passed/1 skipped、typecheck/build 是既有不变 TS 的证明；Python 64 passed/2 skipped 与最终候选 CLI 分别绑定新 Python 文件 hash，不合并冒称全应用最终实机验收。
+- 来源 UI 证据绑定原 UI 环境，最终 vector 修复绑定新候选环境。真实 PDF 的页码/引文匹配成功与 PDF 变更失效均已观察；不能推广为任意 PDF/OCR 内容质量保证。
+- 新建临时 candidate 退役前已保存源码 wheel、安装路径/版本/hash、依赖清单与绿 CLI；已删除约 162.7 MB 临时环境。曾误用的 h-ab 旧 runtime 已按原 wheel 恢复并逐文件核对，后续旧基线对照使用恢复后的环境；不隐瞒这次隔离边界错误。
+- `remaining-local-acceptance.json` 的 versions/trash/Agent/64测试摘要来自本次代理原始工具回执转录，并非逐命令原始 stdout 文件；证据强度明确，不伪装为可重放日志。
+- 尚不能完成的验收：真实 OCR/Embedding/云端模型任务仍被冻结；无可用本地模型。正式发行产物的安装升级与 full H 宿主根因仍未接受。离线候选安装和短宿主对照不是这些门禁的替代。
+- 主工作树 WIP、生产数据/凭据/pointer、#352/#354 分支均未改；未运行托管 CI、未提交/推送/合并、未自动恢复远端调用。

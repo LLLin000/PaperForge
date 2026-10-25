@@ -156,15 +156,18 @@ def _check_vector(vault: Path) -> dict:
             data = json.loads(settings_path.read_text(encoding="utf-8"))
             vector_enabled = bool(data.get("features", {}).get("vector_db", False))
         except Exception as exc:  # noqa: BLE001 — health must return a layer result
-            return _layer(
+            return {**_layer(
                 "degraded",
                 [f"Vector settings unreadable: {type(exc).__name__}: {exc}"],
                 "Fix the PaperForge plugin settings",
                 "paperforge doctor",
-            )
+            ), "enabled": False}
 
     if not vector_enabled:
-        return _layer("ok", ["Vector DB disabled by user"])
+        # Healthy optional-disabled: the toggle is off, so no retrieval
+        # capability is claimed. `enabled` is the explicit boolean fact;
+        # consumers must not parse evidence strings to recover it.
+        return {**_layer("ok", ["Vector DB disabled by user"]), "enabled": False}
 
     try:
         # Import the actual runtime capabilities, not just their distribution
@@ -173,14 +176,16 @@ def _check_vector(vault: Path) -> dict:
         import openai  # noqa: F401
         import sqlite_vec  # noqa: F401
 
-        return _check_vector_backend(vault)
+        merged = _check_vector_backend(vault)
+        merged["enabled"] = True
+        return merged
     except Exception as exc:  # noqa: BLE001 — optional capability degrades
-        return _layer(
+        return {**_layer(
             "degraded",
             [f"Vector runtime unavailable: {type(exc).__name__}: {exc}"],
             "Repair vector runtime dependencies",
             "paperforge repair --runtime --json",
-        )
+        ), "enabled": True}
 
 
 def _check_vector_backend(vault: Path) -> dict:
@@ -285,20 +290,22 @@ def _derive_summary(layers: dict) -> dict:
         status = "ok"
         reasons.append("All systems operational")
 
+    vector_enabled = bool(layers["vector"].get("enabled", False))
+    vector_available = vector_s == "ok" and vector_enabled
     return {
         "status": status,
         "reason": "; ".join(reasons),
         "safe_read": read_s == "ok",
         "safe_write": write_s == "ok",
         "safe_build": index_s == "ok",
-        "safe_vector": vector_s == "ok",
+        "safe_vector": vector_available,
     }
 
 
 def _derive_capabilities(layers: dict) -> dict:
     read_ok = layers["read"]["status"] == "ok"
     write_ok = layers["write"]["status"] == "ok"
-    vector_ok = layers["vector"]["status"] == "ok"
+    vector_ok = layers["vector"]["status"] == "ok" and bool(layers["vector"].get("enabled", False))
     return {
         "paper_context": read_ok,
         "reading_log_write": write_ok,

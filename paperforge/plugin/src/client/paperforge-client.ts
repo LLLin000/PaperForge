@@ -25,7 +25,7 @@ import type {
   ActionScope,
 } from "./action-contract";
 import { buildActionArgv } from "./action-contract";
-import { commandIdentity, isTraceEnabled, traceRecord } from "./trace";
+import { commandIdentity, isTraceEnabled, traceConsoleError, traceRecord } from "./trace";
 
 export interface PaperForgeClientOptions {
   transport: Transport;
@@ -316,6 +316,29 @@ export interface RetrieveOptions {
   expand?: boolean;
 }
 
+/** Machine fields a structured PFResult rejection carries on its Error.
+ * Only the backend `error.code` and PFResult `data` (e.g. vector_state) —
+ * never argv/stdout/stderr/query/text. Narrow with `in` before reading. */
+export interface PfRejectionExtras {
+  code?: unknown;
+  data?: unknown;
+  stdout?: unknown;
+  exitCode?: unknown;
+}
+
+/** Real exit code from a transport rejection: rc0 authority rejection is
+ * exit=0, a failed process carries its rc. Never parsed from user text. */
+function transportExitCode(transportError: unknown): number | null {
+  if (
+    transportError !== null &&
+    typeof transportError === "object" &&
+    "exitCode" in transportError
+  ) {
+    const rc: unknown = transportError.exitCode;
+    if (typeof rc === "number") return rc;
+  }
+  return transportError === null ? 0 : null;
+}
 export interface SearchResult {
   [key: string]: unknown;
 }
@@ -516,10 +539,20 @@ export class PaperForgeClient {
               : undefined,
           detail: `exit=${outcome.exitCode} events=${outcome.events.length}`,
         });
+        if (!outcome.ok && !outcome.cancelled) {
+          traceConsoleError({
+            op: `${operationId} ${commandIdentity(argv)}`,
+            stage: "stream",
+            code: outcome.protocolFailure ? "protocol_failure" : "backend_error",
+            exitCode: outcome.exitCode,
+          });
+        }
         return outcome;
       } catch (err: unknown) {
         // The transport-level promise can reject (spawn/stream teardown).
-        // Keep the failure reachable from the diagnostics surface.
+        // Keep the failure reachable from the diagnostics surface, and emit
+        // the single stream terminal record (fixed metadata only; a
+        // user-cancelled stream is an expected state, never an error).
         this.lastStreamDiagnostics = {
           operationId,
           argv,
@@ -533,6 +566,22 @@ export class PaperForgeClient {
           lastEvent: null,
           finishedAt: Date.now(),
         };
+        traceRecord({
+          ts: Date.now(),
+          kind: "stream",
+          op: `${operationId} ${commandIdentity(argv)}`,
+          ok: false,
+          ms: Date.now() - streamStartedAt,
+          epoch: this._epoch,
+          code: "transport_error",
+          detail: "exit=? events=0",
+        });
+        traceConsoleError({
+          op: `${operationId} ${commandIdentity(argv)}`,
+          stage: "stream",
+          code: "transport_error",
+          exitCode: null,
+        });
         throw err;
       } finally {
         // Deterministic release across all outcomes!
@@ -672,7 +721,11 @@ export class PaperForgeClient {
       }
       return raw;
     } catch (err: unknown) {
-      const exitCode = (err as { exitCode?: number } | null)?.exitCode;
+      const exitOf: unknown =
+        err !== null && typeof err === "object" && "exitCode" in err ? err.exitCode : undefined;
+      const exitCode = typeof exitOf === "number" ? exitOf : undefined;
+      const codeOf: unknown =
+        err !== null && typeof err === "object" && "code" in err ? err.code : undefined;
       traceRecord({
         ts: Date.now(),
         kind: "exec",
@@ -680,11 +733,17 @@ export class PaperForgeClient {
         ok: false,
         ms: Date.now() - startedAt,
         epoch: this._epoch,
-        code: exitCode != null ? `rc${exitCode}` : "transport_error",
+        code:
+          typeof codeOf === "string"
+            ? codeOf
+            : exitCode != null
+              ? `rc${exitCode}`
+              : "transport_error",
       });
       throw err;
     }
   }
+
 
   private async _executePfResult<T>(
     argv: string[],
@@ -704,28 +763,56 @@ export class PaperForgeClient {
     try {
       raw = await this._executeRaw(argv, options);
     } catch (err: unknown) {
-      const stdout =
-        err instanceof Error
-          ? ((err as unknown as { stdout?: unknown }).stdout ?? null)
-          : null;
-      if (typeof stdout !== "string" || !stdout.trim()) {
+      const outOf: unknown =
+        err instanceof Error && "stdout" in err ? err.stdout : null;
+      const stdout = typeof outOf === "string" ? outOf : null;
+      if (stdout === null || !stdout.trim()) {
+        const code =
+          err !== null && typeof err === "object" && "code" in err && typeof err.code === "string"
+            ? err.code : "transport_error";
+        traceConsoleError({ op, stage: "process", code, exitCode: transportExitCode(err) });
         throw err;
       }
       transportError = err;
       raw = stdout;
     }
-    let parsed: any;
+    let parsed: unknown;
     try {
-      parsed = JSON.parse(raw);
+      parsed = JSON.parse(raw) as unknown;
     } catch {
-      if (transportError) throw transportError;
-      throw new Error(`Failed to parse PFResult JSON: ${raw.slice(0, 100)}`);
+      // No valid authority payload: report the process failure only once.
+      if (transportError) {
+        traceConsoleError({ op, stage: "process", code: "transport_error", exitCode: transportExitCode(transportError) });
+        throw transportError;
+      }
+      traceRecord({
+        ts: Date.now(),
+        kind: "error",
+        op,
+        ok: false,
+        ms: Date.now() - startedAt,
+        epoch: this._epoch,
+        code: "protocol_error",
+      });
+      traceConsoleError({ op, stage: "protocol", code: "protocol_error", exitCode: 0 });
+      throw new Error("Failed to parse PFResult JSON");
     }
-    if (parsed && typeof parsed === "object" && "data" in parsed) {
+    // PFResult recognition MUST catch ok:false even when `data` is absent
+    // (bare rejection without a data key still carries code/message).
+    if (parsed && typeof parsed === "object" && "ok" in parsed) {
+      const envelope: { ok?: unknown; error?: unknown; data?: unknown } = parsed;
+      const errCode: unknown =
+        envelope.error !== null && typeof envelope.error === "object" && "code" in envelope.error
+          ? envelope.error.code
+          : undefined;
+      const errMsg: unknown =
+        envelope.error !== null && typeof envelope.error === "object" && "message" in envelope.error
+          ? envelope.error.message
+          : undefined;
       // Fail closed: a structured ok:false PFResult is an authority
       // rejection, never a null payload.
-      if (parsed.ok === false) {
-        const err = parsed.error ?? {};
+      if (envelope.ok === false) {
+        const code = String(errCode || "backend_error");
         traceRecord({
           ts: Date.now(),
           kind: "error",
@@ -733,19 +820,44 @@ export class PaperForgeClient {
           ok: false,
           ms: Date.now() - startedAt,
           epoch: this._epoch,
-          code: String(err.code || "backend_error"),
+          code,
         });
+        // A completed diagnosis (doctor: ok:false, error null, data.checks
+        // present) is a normal report the caller consumes — not a failure to
+        // surface on the Console. search+PATH_NOT_FOUND is the expected
+        // empty-DB state: trace ring keeps the machine code and the UI keeps
+        // its card, no red log. Only other authority rejections log, with
+        // the real exit code from the transport error (rc0 is exit=0).
+        const hasAuthorityError = envelope.error !== null && envelope.error !== undefined;
+        const isExpectedEmptyDb = op === "search" && code === "PATH_NOT_FOUND";
+        const vectorState =
+          envelope.data !== null && typeof envelope.data === "object" && "vector_state" in envelope.data
+            ? envelope.data.vector_state : undefined;
+        const isExpectedVectorState = op === "retrieve" && code === "PRECONDITION_FAILED" &&
+          (vectorState === "not_built" || vectorState === "stale");
+        if (hasAuthorityError && !isExpectedEmptyDb && !isExpectedVectorState)
+          traceConsoleError({ op, stage: "pfresult", code, exitCode: transportExitCode(transportError) });
         const rejection = new Error(
-          String(err.message || err.code || "backend_error")
+          String(errMsg || errCode || "backend_error")
         );
+        // Machine contract for structured rejections: the code and the
+        // PFResult data (e.g. vector_state) survive on the thrown Error so
+        // UI mapping can classify without scraping message text or stdout.
+        // Never argv/stdout/stderr/query — only code + data.
+        const extras: PfRejectionExtras = rejection as unknown as PfRejectionExtras;
+        extras.code = code;
+        extras.data = ("data" in envelope ? envelope.data : null) ?? null;
+        extras.exitCode = transportExitCode(transportError);
         // Keep the raw PFResult so a caller that knows its command's
         // contract (doctor) can still read a completed report.
-        (rejection as unknown as { stdout?: string }).stdout = raw;
+        extras.stdout = raw;
         throw rejection;
       }
       if (transportError) {
         // rc != 0 but the PFResult claims ok — protocol contradiction;
-        // the process-level failure wins.
+        // the process-level failure wins. Log ONCE at the outermost
+        // terminal with the protocol code (D fix); the catch below must
+        // not re-log a downgraded transport_error for the same operation.
         traceRecord({
           ts: Date.now(),
           kind: "error",
@@ -755,14 +867,20 @@ export class PaperForgeClient {
           epoch: this._epoch,
           code: "protocol_contradiction",
         });
+        traceConsoleError({ op, stage: "protocol", code: "protocol_contradiction", exitCode: transportExitCode(transportError) });
         throw transportError;
       }
-      return parsed.data as T;
+      // PFResult data is unwrapped; minimal envelopes retain their shape.
+      if ("data" in envelope) return envelope.data as T;
+      return parsed as T;
     }
-    if (transportError) throw transportError;
+    // Preflight and other legacy surfaces return valid bare JSON.
+    if (transportError) {
+      traceConsoleError({ op, stage: "process", code: "transport_error", exitCode: transportExitCode(transportError) });
+      throw transportError;
+    }
     return parsed as T;
   }
-
   // ── 3b. Configuration & Read-Model Contract (config/auth authority) ──────
   // Ticket 07 Stage 2 step 2: typed surfaces replace config-client.ts. The
   // plugin never builds config argv or touches PFResult `.data` outside this
@@ -1103,6 +1221,11 @@ export class PaperForgeClient {
           action_id: req.action_id,
           availability: desc.availability,
           availability_reason: desc.availability_reason,
+          error: {
+            code: desc.availability === "busy" ? "action.busy" : "action.unavailable",
+            message: desc.availability_reason || desc.availability,
+            details: {},
+          },
         },
         exitCode: 1,
       };
@@ -1120,6 +1243,8 @@ export class PaperForgeClient {
         streamOptions
       );
       const outcome = await handle.outcome;
+      // Terminal Console output lives in streamOperation's wrapped outcome
+      // (single point) — emitting here too would double-report one failure.
       const terminalEv = outcome.events.find(
         (e) =>
           e.event === "result" || e.event === "error" || e.event === "cancelled"
@@ -1134,17 +1259,92 @@ export class PaperForgeClient {
       };
     }
 
+    let raw: string;
+    let exitCode = 0;
     try {
-      const raw = await this._executeRaw(argv);
-      let payload: Record<string, unknown> | null = null;
+      try {
+        raw = await this._executeRaw(argv);
+      } catch (err: unknown) {
+        const failureOut: unknown =
+          err !== null && typeof err === "object" && "stdout" in err ? err.stdout : undefined;
+        const failureExit: unknown =
+          err !== null && typeof err === "object" && "exitCode" in err ? err.exitCode : undefined;
+        if (typeof failureOut !== "string" || !failureOut.trim()) {
+          throw err;
+        }
+        raw = failureOut;
+        exitCode = typeof failureExit === "number" ? failureExit : 1;
+      }
+      let payload: Record<string, unknown>;
       try {
         payload = JSON.parse(raw);
+        if (!payload || typeof payload !== "object" || typeof payload.ok !== "boolean") {
+          throw new Error("Expected a PFResult with boolean ok");
+        }
       } catch {
-        // non-JSON stdout
+        traceConsoleError({ op: `action.${actionReq.action_id}`, stage: "result", code: "protocol_error", exitCode });
+        return {
+          ok: false,
+          payload: { ok: false, error: { code: "protocol_error", message: "Invalid action PFResult JSON" } },
+          exitCode,
+        };
       }
-      return { ok: true, payload, exitCode: 0 };
-    } catch (err: any) {
-      return { ok: false, payload: null, exitCode: err.exitCode ?? 1 };
+      if (exitCode !== 0 && payload.ok) {
+        // Single terminal: the inner throw is caught below, which logs the
+        // outermost failure once with the protocol code — never re-log here
+        // and never downgrade to transport_error (D fix).
+        throw Object.assign(
+          new Error("Action reported success after a non-zero exit"),
+          { exitCode, protocolContradiction: true }
+        );
+      }
+      if (payload.ok !== true) {
+        const perrCode: unknown =
+          payload.error !== null && typeof payload.error === "object" && "code" in payload.error
+            ? payload.error.code
+            : undefined;
+        traceConsoleError({
+          op: `action.${actionReq.action_id}`,
+          stage: "result",
+          code: String(perrCode || "backend_error"),
+          exitCode,
+        });
+      }
+      return { ok: payload.ok === true, payload, exitCode };
+    } catch (err: unknown) {
+      const exitOf: unknown =
+        err !== null && typeof err === "object" && "exitCode" in err
+          ? err.exitCode
+          : undefined;
+      const exitNum = typeof exitOf === "number" ? exitOf : 1;
+      const isContradiction: unknown =
+        err !== null && typeof err === "object" && "protocolContradiction" in err
+          ? err.protocolContradiction
+          : undefined;
+      const errCodeOf: unknown =
+        err !== null && typeof err === "object" && "code" in err
+          ? err.code
+          : undefined;
+      // NO_PYTHON is the expected setup state (no published runtime), not a
+      // failure: keep the machine code, suppress the Console, no new registry.
+      const isExpectedSetup = errCodeOf === "NO_PYTHON";
+      if (!isExpectedSetup) {
+        traceConsoleError({
+          op: `action.${actionReq.action_id}`,
+          stage: "result",
+          code: isContradiction ? "protocol_contradiction" : "transport_error",
+          exitCode: exitNum,
+        });
+      }
+      return {
+        ok: false,
+        payload: isContradiction
+          ? { ok: false, error: { code: "protocol_contradiction", message: err instanceof Error ? err.message : String(err) } }
+          : isExpectedSetup
+            ? { ok: false, error: { code: "NO_PYTHON", message: err instanceof Error ? err.message : String(err) } }
+            : { ok: false, error: { code: "transport_error", message: err instanceof Error ? err.message : String(err) } },
+        exitCode: exitNum,
+      };
     } finally {
       this.invalidateCache();
     }
@@ -1252,14 +1452,16 @@ export class PaperForgeClient {
     const cleanQuery = query.trim();
     const cacheKey = `search:${cleanQuery}:${limit}`;
     return this._cachedRead(cacheKey, 30000, async () => {
-      const raw = await this._executeRaw([
+      // Structured path: PFResult rejections keep code/data for the
+      // dashboard card mapping; unwrapMatches still parses the data shape.
+      const data = await this._executePfResult<unknown>([
         "search",
         cleanQuery,
         "--limit",
         String(limit),
         "--json",
       ]);
-      return unwrapMatches(raw);
+      return unwrapMatches({ data });
     });
   }
 
@@ -1281,8 +1483,8 @@ export class PaperForgeClient {
       if (paper) argv.push("--paper", paper);
       if (!expand) argv.push("--no-expand");
       argv.push("--json");
-      const raw = await this._executeRaw(argv);
-      return unwrapMatches(raw);
+      const data = await this._executePfResult<unknown>(argv);
+      return unwrapMatches({ data });
     });
   }
 

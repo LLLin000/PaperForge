@@ -29,6 +29,7 @@ import * as path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { NodeProcessTransport } from "../../src/client/node-transport";
+import { PaperForgeClient } from "../../src/client/paperforge-client";
 import type { NdjsonEvent } from "../../src/client/transport";
 
 const PLUGIN_DIR = process.cwd();
@@ -232,6 +233,37 @@ describe(
           "--json",
         ])
       ).rejects.toMatchObject({ exitCode: 2 });
+    });
+
+    it("preserves a real backend scope rejection through runAction without changing the vault", async () => {
+      const isolatedVault = mkdtempSync(path.join(tmpdir(), "pf-action-rejection-"));
+      try {
+        cpSync(SIMPLE_VAULT, isolatedVault, { recursive: true });
+        const exports = path.join(isolatedVault, "System", "PaperForge", "exports");
+        mkdirSync(exports, { recursive: true });
+        cpSync(EXPORT_FIXTURE, path.join(exports, path.basename(EXPORT_FIXTURE)));
+        const isolatedTransport = new NodeProcessTransport({
+          vaultPath: isolatedVault,
+          resolveRuntime: async () => ({ path: PYTHON, args: [] }),
+        });
+        await isolatedTransport.execute(["sync"]);
+        const before = hashTree(isolatedVault);
+        const client = new PaperForgeClient({ transport: isolatedTransport });
+        const result = await client.runAction({
+          action_id: "memory.build",
+          scope: { kind: "papers", keys: ["MISSING_RECORD_356"] },
+          confirm: "memory.build",
+        });
+        expect(result.ok).toBe(false);
+        expect(result.exitCode).toBe(2);
+        expect(result.payload?.error).toMatchObject({
+          code: "action.scope_invalid",
+          message: expect.stringContaining("MISSING_RECORD_356"),
+        });
+        expect(hashTree(isolatedVault)).toBe(before);
+      } finally {
+        rmSync(isolatedVault, { recursive: true, force: true });
+      }
     });
 
     it("refuses a confirmation-required action without confirmation, before any work", async () => {

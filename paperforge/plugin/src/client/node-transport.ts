@@ -473,9 +473,14 @@ export class NodeProcessTransport implements Transport {
       const run = resolveRuntimeCommand(new RuntimeBootstrap().readPointer());
       if (run) return { path: run.command, args: [...run.args] };
     }
-    throw new Error(
+    // Expected setup state, not a failure: tag the existing NO_PYTHON
+    // machine code (python-bridge taxonomy) so callers can suppress it
+    // from the Console without parsing this message.
+    const err = new Error(
       "PaperForge Python runtime not ready. Please complete setup or configure python_path."
-    );
+    ) as Error & { code: string };
+    err.code = "NO_PYTHON";
+    throw err;
   }
   async execute(argv: string[], options?: ExecuteOptions): Promise<string> {
     const py = options?.pythonExe

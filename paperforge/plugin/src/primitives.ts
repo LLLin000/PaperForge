@@ -12,6 +12,7 @@ import {
   type ProbeEnvelope,
   type MaintenanceItem,
 } from "./constants";
+import { traceConsoleError } from "./client/trace";
 
 // ██████████████████████████████████████████████████████████████████████
 // 1. Status Badge — 6 user-state variants (DESIGN.md §5)
@@ -492,8 +493,15 @@ export function copySupportDiagnostic(
     .then(() => {
       onSuccess?.();
     })
-    .catch((err: unknown) => {
-      console.warn("[PaperForge] Failed to copy diagnostic:", err);
+    .catch(() => {
+      // Ownership: local clipboard write with no client terminal — one
+      // fixed diagnostic, never the Error payload.
+      traceConsoleError({
+        op: "diagnostic.copy",
+        stage: "local",
+        code: "backend_error",
+        exitCode: null,
+      });
     });
 }
 
