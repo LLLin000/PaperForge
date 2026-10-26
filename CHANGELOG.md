@@ -14,6 +14,7 @@ All notable changes to PaperForge.
 
 ### Fixed
 
+- Count overlapping exact-text occurrences when checking research-record PDF sources; repeated overlapping quotes remain ambiguous and cannot pass source navigation as a unique match, including previously saved records (#356).
 - Preserve partial version-restore results at all UI consumers: inline provenance warnings survive preview/paper reselection, current-version markers follow the confirmed restored content, and absent legacy metadata flags remain unconfirmed rather than definite write failures. Only explicit provenance persistence failure adds a single safe substep diagnostic (#356).
 - Invalidate view-owned search timers, replies and focused shortcuts when switching or refreshing dashboard content, including version mode; obsolete requests cannot update the next paper's results (#356).
 - Keep Setup Stage2 startup rejections client-owned while retaining local settings-save diagnostics; expected missing-runtime states do not acquire a duplicate generic error (#356).
