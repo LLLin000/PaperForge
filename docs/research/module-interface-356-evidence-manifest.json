@@ -1,6 +1,6 @@
 {
- "artifact_provenance": "TRIAL_ROOT/module-interface-356-state-audit/ for current continuation; historical recovery receipts remain unchanged. Local raw files are not committed; public fields are hashes/codes/counts/commands only.",
- "base_sha": "f289608ca6c3b30c78b03d0f2acea5273db6e63a",
+ "artifact_provenance": "Current A/B receipts: TRIAL_ROOT/module-interface-356-workflow-repair/. Previous state-audit/recovery receipts remain unchanged. Public fields contain hashes/codes/counts/command shapes only; raw files remain private.",
+ "base_sha": "5f7504ec7a837d5c1153697f9f84d38b75a33bc0",
  "blocked": [
   "real OCR/Embedding/cloud-model tasks (remote frozen, no local model)",
   "full H host root-cause (A01 unknown; provenance-bound short-A/B completed, not full-H acceptance)"
@@ -79,6 +79,42 @@
   }
  },
  "current_verification": {
+  "commit": "2137cea9bd54a9b3708bba614c4983f2f2865ecf",
+  "tested_base": "5f7504ec7a837d5c1153697f9f84d38b75a33bc0",
+  "public_branch": "fix/module-interface-consistency-public",
+  "plugin": "641 passed / 1 skipped; 32 passed files / 1 skipped file",
+  "typecheck": "exit 0",
+  "build": "exit 0; final deployed bundle matches built bytes",
+  "ui_bundle_sha256": "d964fd7e2a7b65b2633cbaa191458edd27452874784517d80ea2c0290fac47d2",
+  "python": "No Python product changes or new Python suite; prior 221/3 remains historical only",
+  "backend_wheel_sha256": "0d58ff6f75a8937ecbcd30fb48b786281f280b74c777cbfa71ec5ae4b8790c66",
+  "backend_python_files_matching": 237,
+  "backend_python_files_mismatching": 0,
+  "backend_smoke_identity": "Owned Python3.12.8 dependencies plus exact frozen wheel package through declared temporary runtime-wrapper; no in-place install or pointer publication; not managed-install/release acceptance.",
+  "version_identity": "Actual CLI, distribution and plugin=2.0.0rc5; source module __version__ constant=2.0.0, not substituted for the handshake",
+  "host_profile": "Windows x64; Obsidian1.14.5/Electron37.6.0/Chromium138.0.7204.251; separate HOME/profile/Vault; autoSync=false",
+  "runner_kind": "Actual CDP input and Python versions/FTS for Modal restore, paper switch, close and reopen; Stage2 startup, render protocol and direct timeline remain UNIT/INSPECTED",
+  "host_artifact_sha256": {
+   "Obsidian.exe": "0ee4c57571ee0626ce2060c7bad7db5d5b0d2bb158d4099e66ddd32f388fae27",
+   "obsidian-1.14.5.asar": "3a349274f789b62c5b35ad19de10311909a94e8783033569c2210a4bac491780"
+  },
+  "hash_encoding": "Working-tree bytes on the declared Windows host; bundle hash is the actual built/deployed artifact",
+  "product_source_sha256": {
+   "paperforge/plugin/main.js": "d964fd7e2a7b65b2633cbaa191458edd27452874784517d80ea2c0290fac47d2",
+   "paperforge/plugin/src/client/transport.ts": "3799a1985881b254a7dae2f7142c12429f7dd307b62e859dbfb62f36ed9a6091",
+   "paperforge/plugin/src/client/node-transport.ts": "9cee61b17102beda053fb9dc575001c63ec9fc4cad006d46e24ecbe37a18e4e3",
+   "paperforge/plugin/src/client/paperforge-client.ts": "b93ef44ba0d3fd8d0108523ced0d2db7dd82686275028c0af9fa7bbbf8d68fb3",
+   "paperforge/plugin/src/settings.ts": "fcfaf250f63f1bf1f96d4a66ff89db0e49de521bbcbedba32d75d254f05b17c3",
+   "paperforge/plugin/src/i18n.ts": "0a509e9f9f98d027c4d1ed554216512bca3647888ff38fc72d99564081f717ed",
+   "paperforge/plugin/src/views/dashboard.ts": "ccb57423b4fc21b4e25b3a6f2d155a741acdf53019198b2e1add540786e0b7ea",
+   "paperforge/plugin/src/views/ocr-workspace.ts": "a5ff2a5c848d0be9f9103b883f5b95b55b99b4ab923c94c48cdc4e86db392718",
+   "paperforge/plugin/src/views/modals.ts": "2c10a83c2133e2967f70e2431bc00ddbce553bc2f18de006411aa59f2aaba31f",
+   "paperforge/commands/ocr.py": "d6678be2f1a21776c3d090dc0fb9e512d480bc320695fd76cf82ca68a54d45a3",
+   "paperforge/core/next_actions.py": "39732a12ebfe75ee0b417801aed3abb371c3e2fda90a8a868b035a46e176f403",
+   "paperforge/memory/runtime_health.py": "28daec3bebaf0792b4eb02162d5496080f8e214fdcfd742264192509ced9cbe5"
+  }
+ },
+ "historical_state_verification": {
   "commit": "f6775fd11c92c8b79667be8b3f883d4934ac0815",
   "tested_base": "f289608ca6c3b30c78b03d0f2acea5273db6e63a",
   "public_branch": "fix/module-interface-consistency-public",
@@ -113,6 +149,47 @@
    "paperforge/memory/runtime_health.py": "28daec3bebaf0792b4eb02162d5496080f8e214fdcfd742264192509ced9cbe5"
   }
  },
+ "workflow_error_implementation": {
+  "status": "LOCAL VERIFIED A/B; C/end-to-end coverage remains incomplete",
+  "product_commit": "2137cea9bd54a9b3708bba614c4983f2f2865ecf",
+  "issue_updated_at": "2026-10-26T05:47:29Z",
+  "delegation": "Three read-only scouts: audit wire, restore compatibility, isolated fixture; parent sole writer",
+  "negative_history": "Initial 8 failed/2 passed; render 3 failed; later modal current-marker, timeline and unknown-exit failures retained. Unknown-exit receipt is explicitly transcribed tool output, not raw stdout.",
+  "intermediate_gate": "639/1 belongs to an earlier implementation; not the final gate",
+  "new_regressions": "15 cases in existing files, including positive controls; no new permanent test files",
+  "live_restore": "Paper-panel Modal with deliberately corrupt synthetic meta: real copy v1, false provenance, current badge v1, warning survives selection, one safe substep Console. Fixture removes corruption, v2 restore closes with bytes/provenance readback. Not product auto-repair or across-restart warning persistence.",
+  "live_search": "Actual local FTS Alpha result held, native Ctrl+O opens B, Beta response held; old delivery cannot overwrite B or end its searching state; Beta terminal shows B only. New real Workflow result released after native Ctrl+W: idle, cleared refs, no detached DOM write. Registered command reopens; native Beta Study query succeeds.",
+  "live_search_dispatch_count": 4,
+  "not_live_claimed": "Stage2 startup/local-save, direct timeline, each alternate Modal adapter, render protocol failures, Collection close and full first-install journey",
+  "offline_controls": "Node external TCP denied, Python socket guard, Null keyring, Chromium offline/dead proxy; sanitized private HOME; no providers/credentials/CI",
+  "fixture": "Two generated BBT items/PDFs; actual local sync/memory build only prepare the fixture, not UI-sync acceptance. Shared hardcoded sandbox builder was not executed.",
+  "harness_failures_retained": "Fresh-reload button detached once; wrong PFResult root predicate and differing raw-page/tab.evaluate globals caused waits to time out. No restore resubmission or latency pass inferred. Context mismatch reported; subsequent waits use actual DOM.",
+  "review": "One consolidated parent acceptance/correctness and maintainability pass; current-marker/persistent-warning and unknown-exit defects repaired before final gate",
+  "cleanup": "Own host stopped and disposable profile/HOME/Vault/wheel expansion removed; initial transient IndexedDB lock retained; historical/shared assets retained; asar hardlink not counted as freed bytes",
+  "remaining": [
+   "Design C source-page/duplicate-text/printed-page/manual-state branches and broader operation/restart acceptance",
+   "Observed mixed-language status labels and technical key/frontmatter-first reading UX",
+   "Full H/native GPU cause, master integration, final release tuple and legacy distribution/upgrade gates",
+   "Real provider quality/billing/data retention/credential rotation and independent remote authorization"
+  ],
+  "raw_receipt_sha256": {
+   "red-workflow.txt": "08e6cb709a14de8c011ccf9ae2ef1b1f8ce43c1ffd08e85442452636453758bf",
+   "red-render-protocol.txt": "a6d8ee333b2bd1467646042e8927ea0dbdbb496f8cbc6995fd3b7e3360920ff8",
+   "red-ui-current-marker.txt": "5ce7ed61f6c44ba23ebb77b9d6e762490dc539e67a450deb5f50e40f20d1d1fc",
+   "red-timeline-current-marker.txt": "ad023561291280f43b3b9d066d0bf4494585cde4f0deca4b43dd026ab4f03c82",
+   "red-unknown-exit.receipt.json": "271f933b9beabb826b7a0dee056951e69afa87be68ddef65a41d28a2fada9b0a",
+   "green-final-plugin.txt": "f850ae025b568beeae95eee5cbdcdcae26891f582a8a0d9a58a2979a082684a5",
+   "final-source-ui-receipt.json": "53e8392099d5e4cb2f4da38fe81610a1af1e5b4dd4ad9f99bc2bd5ea8af4db22",
+   "ui-final-partial.json": "8f067560120ac5508d4269da0150e388933f61fc4ec7626c261f14ec1bcdf2c0",
+   "ui-final-success-observed.json": "771f309273333bacf33462ee965acad0b01a0f4ad5f0805230219a35ced08205",
+   "ui-search-switch.json": "f894200841f98edc443b9c3be533080d120e4506eeac79dc25e3c7a1eb3105bc",
+   "ui-search-close.json": "7f414cebd7cc6a4605fdc4d9b109f5a0bcbb0fa850c5ae549e1ba76e63b86e50",
+   "ui-search-reopen.json": "e10bd0698fbab4c2745a36eb101fd58e0e72b1edb0f86c16e320ab324c2d5ebb",
+   "ui-final-partial.png": "aa739ceaf6fcfc9409071fc3c0b9c00c47594739ea677ef32125b663a1926854",
+   "ui-final-search.png": "b594e706b9b878e782ccfd8e1e28c721714244b173b049d5d686ef3fda9ca44c",
+   "cleanup.json": "fbf404897e7115df39f54d07bc6ee2a9dfd2b10049ea54fbc5947e13bd210c7f"
+  }
+ },
  "historical_scope_verification": {
   "build": "exit 0",
   "commit": "527d796063cf1e4b5fd9a7e0fd7118aa9ea3259e",
@@ -130,7 +207,7 @@
   "ui_bundle_sha256": "673b71cada579965b331f62f9c6659330f6ee5da0149257964cf437adf49370b",
   "host_shortcut": "PASS in real Obsidian 1.14.5 using trusted CDP: Ctrl+Enter -> exactly one forced-deep entry and retrieve --deep -> injected failure card -> actual Retry -> recovery -> ordinary Enter search; blur/close release; only the new input binds after rerender"
  },
- "evidence_strength": "Current continuation: 19 failing-before cases retained; full plugin 626/1 and typecheck/build tool receipts; actual OCR setup/failure/Retry/empty UI plus real local-stream unload. Search-close and setup/restore feedback are unit verified, not newly live verified. Historical CLI/UI/Python/source proofs retain their original identities and limits.",
+ "evidence_strength": "Current A/B: retained red receipts, final 641/1 plugin gate, typecheck/build, real final-bundle Modal restore and paper-search switch/close/reopen. Stage2/render/timeline remain UNIT/INSPECTED. Earlier state-audit626/1, scope603/1 and backend221/3 keep their original identities; no global release/latency claim.",
  "expected_rejections": {
   "empty_result": "no red Console (expected state)",
   "missing_memory_db": "missing-memory-index card; metadata search only; zero runAction; zero new Console",
@@ -138,9 +215,9 @@
   "protocol_violation": "protocol_error; exactly one Console line per genuine failure (single-terminal rule)",
   "vector_not_built": "recovery card; no red Console"
  },
- "final_short_smoke": "CURRENT 2026-10-25 scope cutover (bundle 673b71cada57): trusted CDP Ctrl+Enter -> Scope callback -> view entry forceDeep:true exactly-one -> actual transport retrieve --deep -> labeled offline fault card -> real Retry replays forceDeep -> recover leg live deep retrieve -> ordinary Enter metadata search; blur/close release (no push leak, parent baked Ctrl+Enter intact); re-render binds only new input; unit suite keeps method-level forced-deep one-shot (no fake key routing). Historical UNOBSERVED/fault-injection-gap notes and draft dd2c green retained as history.",
+ "final_short_smoke": "HISTORICAL 2026-10-25 scope cutover, bundle673b71cada57: real Ctrl+Enter forced-deep/Retry/Enter/blur behavior remains historical support. Current final-bundle Modal/search-lifecycle evidence is workflow_error_implementation, not a rebranding of the Scope or installation phase.",
  "gate_provenance": {
-  "plugin_603_1_scope_527d7960": "final Scope product tree: full Vitest, typecheck and build; source/bundle hashes match current_verification",
+  "plugin_603_1_scope_527d7960": "HISTORICAL Scope product tree: full Vitest/typecheck/build; bound to historical_scope_verification, not the current bundle",
   "plugin_603_1_bb79312a": "HISTORICAL pre-Scope tree, fa650fdf bundle; not current UI artifact",
   "python_221_3_dedicated_bb79312a": "unchanged backend gate: dedicated Python 3.12.8, offline sitecustomize, Null keyring; no new Python run claimed for TS-only Scope fix",
   "python_64_2_system": "HISTORICAL snapshot-0adfc5f3 gate on system Python 3.14; superseded by the dedicated backend gate"
@@ -194,10 +271,10 @@
   "preservation": "frozen old evidence hashes unchanged; temporary diagnostic script restored byte-identically; patch and raw receipts retained privately"
  },
  "workflow_error_plan": {
-  "status": "PLANNED; not implementation or acceptance",
+  "status": "Historical design baseline; bounded A/B implemented separately; C not accepted",
   "baseline": "eda097a18451056baeff255b0ceb65c1240c0e6b",
   "issue_updated_at": "2026-10-26T04:34:56Z",
-  "report_section": "全流程与错误体验收敛方案（PLANNED，2026-10-26）",
+  "report_section": "全流程与错误体验收敛方案（实施前设计基线，2026-10-26）",
   "primary_journey": "Managed engine -> BBT connection -> library sync -> notes/PDF -> optional scoped OCR -> save research record -> retrieval/source -> restart recovery",
   "execution_order": [
    "Truthful partial results and one-owner startup/local/authority errors within the existing Issue356 scope",
@@ -205,7 +282,7 @@
    "Offline end-to-end normal/failure/partial/cancel/unconfirmed/restart acceptance, with exact artifact/host binding"
   ],
   "decisions": "Reuse existing protocol/authorities, not a global state machine/logger; preserve Stage2-close background continuation; no automatic paid/destructive/unknown-result write retries; legacy absent restore flag is unconfirmed rather than definite write failure",
-  "evidence": "Design only; previous product f6775fd1 and its local/runtime evidence are unchanged",
+  "evidence": "Design itself is not acceptance; actual current A/B evidence is workflow_error_implementation; previous f6775fd1 preserved as historical_state_verification",
   "release_limits": "No CI/provider authorization or release acceptance added; full H/integration/final artifact tuple and owner gate remain separate"
  },
  "remaining_gap_triage": {
@@ -251,6 +328,7 @@
   "runtime_identity_history": "Initial historical venv had three existing file differences; no in-place repair. Final actual read used a frozen wheel package with 237/237 matches. Both phases retained, not combined into installation acceptance.",
   "unload_negative_history": "First fixture expired before unload: NOT an unload pass; real EOF without terminal at exit0 correctly failed. Spawn-event-synchronized later local child was terminated, registry0/active=false/cancelled=true/Console0.",
   "cleanup": "Own disposable profile/HOME/Vault/wheel package removed; historical assets/venv/raw receipts retained",
+  "remaining_scope": "Historical at f6775fd1; current remaining boundaries are workflow_error_implementation.remaining",
   "remaining": [
    "Version restore provenance_persisted:false partial-success UI needs reproduction/correctness decision",
    "Live search close in an actual paper/Collection context; global empty dashboard has no search input",
@@ -316,7 +394,7 @@
   "physical_page": 1,
   "printed_page": "248"
  },
- "tested_base": "f289608ca6c3b30c78b03d0f2acea5273db6e63a",
- "tested_source_note": "Current state-consistency implementation was tested as a dirty delta from f289608c and committed as f6775fd1. historical_scope_verification retains the earlier 527d7960 / b1530c1c evidence, not current-product proof.",
- "ui_bundle_this_fix_note": "Current state continuation built/deployed a13eef8bd2ad32d83772d2c5782e5c6b2ddfed35faab7afd5779242797bb93a1. Scope bundle673b71ca and installation bundlefa650fdf remain named historical phases, not rebranded."
+ "tested_base": "5f7504ec7a837d5c1153697f9f84d38b75a33bc0",
+ "tested_source_note": "Current A/B delta was tested from5f7504ec and committed as2137cea9. Historical state f6775fd1, scope527d7960 and their receipts retain original identities.",
+ "ui_bundle_this_fix_note": "Current A/B final built/deployed artifact is d964fd7e2a7b65b2633cbaa191458edd27452874784517d80ea2c0290fac47d2. Earlier184d/ce44 UI stages and639/1 gate stay historical; a13eef8b state,673b71ca Scope andfa650fdf install bundles are not relabeled."
 }
