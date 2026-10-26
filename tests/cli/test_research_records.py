@@ -75,6 +75,24 @@ def source_vault(vault):
     return pdf
 
 
+def test_overlapping_source_occurrences_are_not_verified_as_unique(tmp_path):
+    import pymupdf
+
+    pdf = source_vault(tmp_path)
+    with pymupdf.open() as doc:
+        doc.new_page().insert_text((72, 72), "bridge bridge bridge")
+        doc.save(pdf)
+    source = {"path": "Sources/paper.pdf", "physical_page": 1, "basis": "exact_text"}
+    rc, saved = cli(tmp_path, "--write", "PAPER001", "--excerpt", "bridge bridge",
+                    "--source-json", json.dumps(source))
+    assert rc == 0, saved
+    hit = cli(tmp_path, "--search", "bridge")[1]["data"]["matches"][0]
+    assert hit["provenance"]["status"] == "ambiguous"
+    assert hit["provenance"]["evidence"]["occurrences"] == 2
+    rc, rejected = cli(tmp_path, "--source-check", saved["data"]["id"])
+    assert rc == 1 and rejected["error"]["code"] == "VALIDATION_ERROR"
+
+
 def test_hash_bound_physical_page_verification_and_changed_source(tmp_path):
     pdf = source_vault(tmp_path)
     source = {"path": "Sources/paper.pdf", "physical_page": 2, "printed_page": "249",

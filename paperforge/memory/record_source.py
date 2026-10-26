@@ -87,7 +87,12 @@ def source_provenance(vault: Path, paper_id: str, excerpt: str, source: object) 
                 if not isinstance(anchor, str) or not _normalize(anchor) or _normalize(anchor) != _normalize(excerpt):
                     raise ValueError("Exact anchor must equal the record excerpt after NFC/whitespace normalization")
                 needle = _normalize(anchor)
-                counts = [_normalize(cast(str, p.get_text("text"))).count(needle) for p in doc]
+                # Overlapping occurrences are also ambiguous source locations.
+                pattern = re.compile(f"(?={re.escape(needle)})")
+                counts = [
+                    sum(1 for _ in pattern.finditer(_normalize(cast(str, p.get_text("text")))))
+                    for p in doc
+                ]
                 evidence = {"normalization": "NFC and Unicode whitespace collapse", "anchor": anchor,
                             "physical_page": page, "sha256": digest, "occurrences": sum(counts)}
                 if sum(counts) != 1 or counts[page - 1] != 1:
