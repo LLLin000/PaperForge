@@ -1,6 +1,6 @@
 {
- "artifact_provenance": "Current A/B receipts: TRIAL_ROOT/module-interface-356-workflow-repair/. Previous state-audit/recovery receipts remain unchanged. Public fields contain hashes/codes/counts/command shapes only; raw files remain private.",
- "base_sha": "5f7504ec7a837d5c1153697f9f84d38b75a33bc0",
+ "artifact_provenance": "Current freeze/source-integrity receipts: TRIAL_ROOT/module-interface-356-preview-freeze/. Workflow A/B, state-audit and recovery receipts remain historical and unchanged. Public evidence contains identities/status/hashes only.",
+ "base_sha": "6c99f22e36d0707666c6a7d4208df3e1ca70cd34",
  "blocked": [
   "real OCR/Embedding/cloud-model tasks (remote frozen, no local model)",
   "full H host root-cause (A01 unknown; provenance-bound short-A/B completed, not full-H acceptance)"
@@ -79,6 +79,27 @@
   }
  },
  "current_verification": {
+  "commit": "5aa440ed14eb4eb856467fb439eb06f52ec61f78",
+  "tested_base": "6c99f22e36d0707666c6a7d4208df3e1ca70cd34",
+  "public_branch": "fix/module-interface-consistency-public",
+  "python": "15 passed: affected research-record CLI gate, dedicated Python3.12.8/socket guard/isolated HOME; not a whole-Python-suite claim",
+  "plugin": "Unchanged TS: historical641/1 at2137cea9; not rerun or promoted to new backend/release acceptance",
+  "typecheck": "Historical unchanged-TS evidence only",
+  "build": "No new integrated candidate build; final tuple PENDING",
+  "ui_bundle_sha256": "d964fd7e2a7b65b2633cbaa191458edd27452874784517d80ea2c0290fac47d2",
+  "backend_wheel_sha256": null,
+  "backend_python_files_matching": null,
+  "backend_python_files_mismatching": null,
+  "backend_smoke_identity": "Actual source-backed CLI through dedicated Python3.12.8 and offline PYTHONPATH; not an installed-candidate or managed-runtime smoke",
+  "host_profile": "Windows x64; dedicated Python3.12.8; no new real-Obsidian run",
+  "runner_kind": "Existing pytest behavior seam plus actual CLI save/search/source-check on a generated PDF, including a previously saved record",
+  "product_source_sha256": {
+   "paperforge/memory/record_source.py": "bd2480e5f0f1659a4fede251bc203138751a086722c5bbeb072c266a168f97ab",
+   "paperforge/plugin/main.js": "d964fd7e2a7b65b2633cbaa191458edd27452874784517d80ea2c0290fac47d2"
+  },
+  "unchanged_source_basis": "Other historical_workflow_ab_verification source entries remain byte-identical; no new UI behavior claim"
+ },
+ "historical_workflow_ab_verification": {
   "commit": "2137cea9bd54a9b3708bba614c4983f2f2865ecf",
   "tested_base": "5f7504ec7a837d5c1153697f9f84d38b75a33bc0",
   "public_branch": "fix/module-interface-consistency-public",
@@ -112,6 +133,57 @@
    "paperforge/commands/ocr.py": "d6678be2f1a21776c3d090dc0fb9e512d480bc320695fd76cf82ca68a54d45a3",
    "paperforge/core/next_actions.py": "39732a12ebfe75ee0b417801aed3abb371c3e2fda90a8a868b035a46e176f403",
    "paperforge/memory/runtime_health.py": "28daec3bebaf0792b4eb02162d5496080f8e214fdcfd742264192509ced9cbe5"
+  }
+ },
+ "preview_freeze": {
+  "status": "SCOPE FROZEN; final integrated candidate NOT BUILT/NOT CERTIFIED",
+  "issue_snapshot": "2026-10-26T08:56:18Z",
+  "direction": "Stop free-ranging audits and coverage-driven repairs; qualify one installable offline Preview",
+  "admission_rule": "Only wrong data/source association, data loss/unauthorized fees, core journey blockage, or install/upgrade/recovery/mandatory-gate blockers",
+  "single_admitted_fix": "Real PDF overlap was falsely matched/count1 and source-check exit0. Literal lookahead yields ambiguous/count2 and exit1 for the same saved ID; unique full quote still matched/exit0. No authority rewrite or new wire state.",
+  "regression": "One new case in existing file; affected source-record gate15 passed. Normal Bash gate repeated only after hook did not recognize Eval gate, not counted as another independent journey.",
+  "inspection_snapshot": {
+   "public_commit": "6c99f22e36d0707666c6a7d4208df3e1ca70cd34",
+   "master": "a856f84f6bac666cebe22226110530133f489e33",
+   "ahead_by": 20,
+   "behind_by": 4,
+   "changed_files": 60,
+   "merge_base": "46dbbd2d959391f063fbb97f3a230f4df3cee6ba",
+   "pr352_head": "de434c1bd3ead79e6057100af1a98cce1562d051",
+   "pr354_head": "605be45d18ccfa9cef3b59336064ad4ff6a069db",
+   "final_simulated_product": "5aa440ed14eb4eb856467fb439eb06f52ec61f78",
+   "simulation_tree": "52b45e45ada3fe98e922a350a4f751629a41f07b",
+   "simulation_conflicts": ["CHANGELOG.md"],
+   "simulation_note": "git merge-tree only; no actual merge, ref/index/worktree change. Remote20/4 snapshot predates this new product/docs publication."
+  },
+  "master_ci": "39616028538 completed/failure at a856f84f; no new CI run",
+  "integration_path": "#352 -> #354 -> #356 incremental acceptance; never wholesale-merge public branch as an independent small fix",
+  "old_wheel_current_comparison": {
+   "wheel_sha256": "0d58ff6f75a8937ecbcd30fb48b786281f280b74c777cbfa71ec5ae4b8790c66",
+   "matching_python_files": 236,
+   "mismatching_python_files": ["paperforge/memory/record_source.py"],
+   "qualification": "Historical install artifact only; no longer the current backend candidate"
+  },
+  "tuple_pending": ["final integrated source","paired wheel/bundle","frozen dependency closure","managed installation/upgrade/runtime","declared host and mandatory H gates"],
+  "two_independent_runs": "Same final tuple; separate HOME/profile/Vault/evidence; each completes clean install, authorized BBT sync, read/PDF/local metadata search, quote+usage save/search, source navigation/refusal, full restart readback, upgrade and safe recovery",
+  "stop_condition": "Both journeys pass, major CI and required full H pass, no unexplained source/data/authorization P0, exact identity and nondestructive truthful failures; then stop maintenance and begin actual user trial",
+  "not_proven": "No final candidate or two complete journeys yet; no new source-UI proof; execution-level remote freeze is NOT proof that a distributed build forcibly disables inherited paid credentials",
+  "pdf_boundary": "Existing provenance authority is canonical in-vault PDF only; external Zotero attachment workflow must be explicitly qualified, never inferred from in-vault success",
+  "maintenance_queue": ["mixed language","technical key/frontmatter-first display","raw dict/error UX","nonblocking coverage/cosmetic findings"],
+  "independent_authorization": "Real OCR/Embedding/model quality, billing/jobs/retention/key rotation; additional CI/PR-base/Ready/actual merge/release not authorized by this inspection",
+  "cleanup": "Own synthetic PDF vaults/HOME/pytest temp removed; no new worktree; shared assets and small private raw evidence retained",
+  "raw_receipt_sha256": {
+   "contract.md": "c14417e1bb04e0330216267125f681500bc55d16e5e69a33efd6a32ce273425c",
+   "red-test.receipt.json": "75b84f02ca12da120cf599c05f7615d8b2793bc2baa1315cd252de059a33a5d6",
+   "source-red-search.stdout.txt": "bd21c2f32a40e313bd7c37b4bbd1f5bc8765856aac867d77c4bdd718702770b9",
+   "source-red-check.stdout.txt": "787d4063058582953271e5493db2f859303f0acccf89861e1fad53552e7e0ca6",
+   "green-research-records.stdout.txt": "d9b48088109ae08d05bb54b4bdc87947eb118a0e344f3e0f95efae7400922b27",
+   "source-green-search.stdout.txt": "eeba35ae202430d583fa7dee19fc6eb77040a89d39f2b2d4927ba61f4248e61c",
+   "source-green-check.stdout.txt": "3ab1e2ece420831e69c4ba9f30e052b5561d5e467f1acdd8fe4b07dbd4152102",
+   "source-unique-check.stdout.txt": "ec27eff5103cb1984a7883605d1662fc212bac8f4724a4fc56fd0cf384c7d9ea",
+   "source-integrity-proof.json": "84ef30bfceff320c983359f84e1e572774f188b48aab0de59985ecd9f587543a",
+   "integration-snapshot.json": "f58c80b39fa17f47c554fe9d61eb433eccb4107a2dad6d411f0caa58cfa32cbb",
+   "cleanup.json": "6e1c9681890203075c4626d7563396c6c40d60f07eb6cd6ca143968eceb38dfb"
   }
  },
  "historical_state_verification": {
@@ -207,7 +279,7 @@
   "ui_bundle_sha256": "673b71cada579965b331f62f9c6659330f6ee5da0149257964cf437adf49370b",
   "host_shortcut": "PASS in real Obsidian 1.14.5 using trusted CDP: Ctrl+Enter -> exactly one forced-deep entry and retrieve --deep -> injected failure card -> actual Retry -> recovery -> ordinary Enter search; blur/close release; only the new input binds after rerender"
  },
- "evidence_strength": "Current A/B: retained red receipts, final 641/1 plugin gate, typecheck/build, real final-bundle Modal restore and paper-search switch/close/reopen. Stage2/render/timeline remain UNIT/INSPECTED. Earlier state-audit626/1, scope603/1 and backend221/3 keep their original identities; no global release/latency claim.",
+ "evidence_strength": "Current source-integrity fix: actual generated PDF/CLI red-to-green plus15 affected tests. No new installed wheel or UI acceptance. Workflow641/1 and real-host A/B remain at historical_workflow_ab_verification; earlier stages keep original identities. Preview scope is frozen, certification incomplete.",
  "expected_rejections": {
   "empty_result": "no red Console (expected state)",
   "missing_memory_db": "missing-memory-index card; metadata search only; zero runAction; zero new Console",
@@ -394,7 +466,7 @@
   "physical_page": 1,
   "printed_page": "248"
  },
- "tested_base": "5f7504ec7a837d5c1153697f9f84d38b75a33bc0",
- "tested_source_note": "Current A/B delta was tested from5f7504ec and committed as2137cea9. Historical state f6775fd1, scope527d7960 and their receipts retain original identities.",
- "ui_bundle_this_fix_note": "Current A/B final built/deployed artifact is d964fd7e2a7b65b2633cbaa191458edd27452874784517d80ea2c0290fac47d2. Earlier184d/ce44 UI stages and639/1 gate stay historical; a13eef8b state,673b71ca Scope andfa650fdf install bundles are not relabeled."
+ "tested_base": "6c99f22e36d0707666c6a7d4208df3e1ca70cd34",
+ "tested_source_note": "Current bounded source-integrity delta was tested from6c99f22e and committed as5aa440ed. Historical A/B2137cea9, statef6775fd1 and scope527d7960 are preserved.",
+ "ui_bundle_this_fix_note": "No frontend change or new UI run. Bundle d964fd7e2a7b65b2633cbaa191458edd27452874784517d80ea2c0290fac47d2 stays unchanged historical frontend support; paired new backend wheel and final release tuple remain PENDING."
 }
