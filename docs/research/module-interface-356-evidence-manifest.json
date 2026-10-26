@@ -1,5 +1,5 @@
 {
- "artifact_provenance": "Current freeze/source-integrity receipts: TRIAL_ROOT/module-interface-356-preview-freeze/. Workflow A/B, state-audit and recovery receipts remain historical and unchanged. Public evidence contains identities/status/hashes only.",
+ "artifact_provenance": "Local integrated candidate receipts: TRIAL_ROOT/module-interface-356-offline-preview/. Earlier freeze/source-integrity, workflow A/B, state-audit and recovery receipts keep their original identities. Raw files remain private; public evidence contains identities/status/hashes only.",
  "base_sha": "6c99f22e36d0707666c6a7d4208df3e1ca70cd34",
  "blocked": [
   "real OCR/Embedding/cloud-model tasks (remote frozen, no local model)",
@@ -112,7 +112,7 @@
   "backend_python_files_matching": 237,
   "backend_python_files_mismatching": 0,
   "backend_smoke_identity": "Owned Python3.12.8 dependencies plus exact frozen wheel package through declared temporary runtime-wrapper; no in-place install or pointer publication; not managed-install/release acceptance.",
-  "version_identity": "Actual CLI, distribution and plugin=2.0.0rc5; source module __version__ constant=2.0.0, not substituted for the handshake",
+  "version_identity": "Actual CLI/distribution/plugin=2.0.0rc5. Correction: separate direct -c probe imported the main checkout via cwd, so its module2.0.0 value was not candidate identity. Original receipt retained; new outside-checkout -I probe confirms candidate module/distribution2.0.0rc5.",
   "host_profile": "Windows x64; Obsidian1.14.5/Electron37.6.0/Chromium138.0.7204.251; separate HOME/profile/Vault; autoSync=false",
   "runner_kind": "Actual CDP input and Python versions/FTS for Modal restore, paper switch, close and reopen; Stage2 startup, render protocol and direct timeline remain UNIT/INSPECTED",
   "host_artifact_sha256": {
@@ -135,8 +135,71 @@
    "paperforge/memory/runtime_health.py": "28daec3bebaf0792b4eb02162d5496080f8e214fdcfd742264192509ced9cbe5"
   }
  },
+ "local_integration_candidate": {
+  "status": "LOCAL PACKAGE VERIFIED; not release/master acceptance",
+  "source_sha": "9ead0993290812f0575236fbe81b7620f658189d",
+  "branch": "integration/offline-preview-356",
+  "local_only": true,
+  "baseline_public_sha": "59b89729a1315b457950483acb58378c21450f56",
+  "public_product_commit_unchanged": "5aa440ed14eb4eb856467fb439eb06f52ec61f78",
+  "issue_snapshot": "2026-10-26T09:46:37Z",
+  "ancestry": {
+   "first_local_merge": "3d7500d4",
+   "final_local_merge": "9ead0993290812f0575236fbe81b7620f658189d",
+   "contains_master": "a856f84f6bac666cebe22226110530133f489e33",
+   "contains_latest352": "de434c1bd3ead79e6057100af1a98cce1562d051",
+   "contains354": "605be45d18ccfa9cef3b59336064ad4ff6a069db",
+   "delta_vs_public": "CHANGELOG.md one line only; no new product implementation",
+   "actual_conflicts": 0,
+   "master_and_pr_refs_changed": false
+  },
+  "version": "2.0.0rc5",
+  "wheel_sha256": "5f0c40217610311c4edb6d76d1ae693ca4e9ace521088b2d275c1ffadbdbe1bc",
+  "bundle_sha256": "d964fd7e2a7b65b2633cbaa191458edd27452874784517d80ea2c0290fac47d2",
+  "source_archive_sha256": "a320ea7c4749372e5b96c951212770749f77ba914b227d1c6a211285561a4f42",
+  "paired_plugin_assets": 4,
+  "canonical_python_files_matching": 237,
+  "installed_product_files_matching": 299,
+  "working_tree_python_bytes_matching": 236,
+  "working_tree_EOL_only_difference": ["paperforge/core/next_actions.py"],
+  "build_provenance": "Committed-source archive, canonical plugin rebuild with reused dependencies, staging junction removed before offline uv wheel build; SOURCE_DATE_EPOCH pinned. Raw archived prebuilt JS7491393a has94 CRLF bytes, rebuilt canonical bundle equals historical d964; not relabeled as a different bundle.",
+  "standalone_install": "Fresh noneditable Python3.12.8 venv, 35 distributions, pip check compatible, PyMuPDF1.28.2, vector imports PASS; candidate module path in its site-packages, not any checkout",
+  "dependency_versions_sha256": "11c30afa8442692aa6cc8ec4e0304e5d64003d6e6357a58b92920423c22f9cfc",
+  "dependency_lock_scope": "34 runtime dependency version pins plus paperforge; not a cross-platform hash-lock or complete offline wheelhouse",
+  "plugin_gate": "NEW integrated run:641 passed/1 skipped;32 passed files/1 skipped; actual Python child selected fresh installed candidate",
+  "python_gate": "NEW serial bounded gate:167 passed/1 skipped; Registry/reconcile, final OCR HTTP scope/cancel, progress/state and research sources; tool-output transcription explicitly labeled",
+  "installed_smoke": "9 real CLI checks, each fresh process outside checkout: save/usage-query/same ID/page2 match, overlap/count2 and wrong-page refusal, manual confirmed distinct from exact-text matched",
+  "fixture_scope": "Generated PDF/synthetic Vault; no real BBT/UI journey/restart acceptance inferred",
+  "offline_controls": "Socket guards, sanitized separate HOMEs and Null keyring; temporary runtime guard was NOT packaged in wheel",
+  "source_identity_correction": "Historical direct -c probe's2.0.0 module came from main cwd; not candidate source. New isolated probe and canonical source both2.0.0rc5; old raw receipt remains unchanged.",
+  "scout_adjudication": "Missing-validator claim rejected using absolute worktree files. Actual OpenAI requires httpx2, which requires httpcore2; pip check clean. plugin/*.json declares the JSON build inputs, so no undeclared-data defect established. Bloat/cosmetic suggestions deferred.",
+  "pending": [
+   "managed UI Setup/pointer publication, exact-tuple upgrade/recovery",
+   "two independent seven-step real UI journeys",
+   "major CI/full H",
+   "distribution-level paid-capability disable proof",
+   "cross-machine dependency closure availability",
+   "same-version rc5 upgrade behavior; do not assume replacing wheel at same version causes managed upgrade"
+  ],
+  "cleanup": "Owned source stage, fresh runtime and seven temporary build/test/home/vault dirs removed; one8-file candidate set and small receipts retained; no new worktree; shared assets untouched",
+  "publication": "Candidate branch and artifacts stay local; only evidence/docs may be published on existing public branch",
+  "raw_receipt_sha256": {
+   "source-stage-provenance.json": "93dd0d5a185cc25e2220fa15ed3cd9504e61cd13525d85775881384915509f37",
+   "installed-candidate-identity.json": "9da712949de2d4f50dca2c5ca9152c9b81d0c9bcba9ae84bcaf5e2cc858b5205",
+   "integration-verification.json": "bb3621289870bb47a4d1ff1a43874198e68d1e749a432f2b8d63a1028955d5fe",
+   "installed-smoke-summary.json": "603dfdd8f580684595fe0a3b2a5c6fa490609f8fffce43bab56e5846926a5e2a",
+   "plugin-full-gate.txt": "6b4a860312ac6b9e1961dea72b3af44ad4e8ed77972dae52b50ac892089dfb6e",
+   "python-gate.receipt.json": "5ab45c7fcef47c6af017929c6ef237b055aaff21053946a57929ccafb1a336c9",
+   "dependency-metadata.json": "2ecd29cde6754162034c26fd7855faea43d6b61402f489be615f65c96b2b38c4",
+   "cleanup.json": "3a51b1ef2f2eacd82277942cb10465dbc1d6a2c796f26177abe9ae72e4ac3cea",
+   "wheel-build.stderr.txt": "472f39cce84aede9e887aec2002deccb8596db8de8003f2c4ea0fa2f4d90fb1f",
+   "candidate-install.stderr.txt": "d18def63a82d2e85d0de657d34c6c062ff97ecf6e2f6016e9b4b175aabb74ba7",
+   "candidate/candidate.json": "5d44b06c207ea6fd6bfade2c31b2b24a88733ab09d84168a04b922ce7256e44f",
+   "candidate/checksums.txt": "921b7906350ef35b76465fcd01db23804e04634ea124a66dc860a51d9dd9b744"
+  }
+ },
  "preview_freeze": {
-  "status": "SCOPE FROZEN; final integrated candidate NOT BUILT/NOT CERTIFIED",
+  "status": "Historical scope-freeze snapshot; local candidate now built separately, final release certification still PENDING",
   "issue_snapshot": "2026-10-26T08:56:18Z",
   "direction": "Stop free-ranging audits and coverage-driven repairs; qualify one installable offline Preview",
   "admission_rule": "Only wrong data/source association, data loss/unauthorized fees, core journey blockage, or install/upgrade/recovery/mandatory-gate blockers",
@@ -279,7 +342,7 @@
   "ui_bundle_sha256": "673b71cada579965b331f62f9c6659330f6ee5da0149257964cf437adf49370b",
   "host_shortcut": "PASS in real Obsidian 1.14.5 using trusted CDP: Ctrl+Enter -> exactly one forced-deep entry and retrieve --deep -> injected failure card -> actual Retry -> recovery -> ordinary Enter search; blur/close release; only the new input binds after rerender"
  },
- "evidence_strength": "Current source-integrity fix: actual generated PDF/CLI red-to-green plus15 affected tests. No new installed wheel or UI acceptance. Workflow641/1 and real-host A/B remain at historical_workflow_ab_verification; earlier stages keep original identities. Preview scope is frozen, certification incomplete.",
+ "evidence_strength": "Local candidate9ead: fresh offline noneditable install,299 product/237 canonical Python matches, paired wheel/bundle, NEW641/1 plugin and167/1 bounded Python gates,9 installed CLI checks. Not managed Setup/two UI journeys/full H/release. Public product5aa and historical phases retain their separate identities.",
  "expected_rejections": {
   "empty_result": "no red Console (expected state)",
   "missing_memory_db": "missing-memory-index card; metadata search only; zero runAction; zero new Console",

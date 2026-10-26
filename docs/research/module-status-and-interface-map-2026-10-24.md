@@ -4,7 +4,7 @@
 
 当前进入 **Integration & Release Stabilization**：冻结既有 `PFResult`、Probe v2、Action Registry、NDJSON 和 `PaperForgeClient` 契约，不扩功能或新增控制内核；先收口上游集成，再以同一最终源码、wheel、插件 bundle 和宿主做统一候选认证，独立处置发布风险。本文是证据与计划的投影，任务状态以 GitHub Issue、发布接受以 CI/owner 门禁为准。
 
-当前产品提交：**`5aa440ed14eb4eb856467fb439eb06f52ec61f78`**，本轮基线 `6c99f22e36d0707666c6a7d4208df3e1ca70cd34`。方向已切换为末节“Offline Preview 范围冻结”，停止自由扫库与覆盖率驱动扩修；本轮仅纳入一项已复现的错误来源核验。`2137cea9` 的 A/B 产品及 `6c99f22e` 证据保留历史身份，后续纯文档提交不改变产品身份。public 分支仍不是 master/Release，不能绕过 #352/#354 整体合并；未改变上游 PR、未合并、发布或恢复收费调用。新 Python 修复尚无最终集成 wheel，旧 wheel 不再称当前候选。
+public 分支的产品修复提交仍为 **`5aa440ed14eb4eb856467fb439eb06f52ec61f78`**；本轮已在同一 worktree 的独立本地分支 `integration/offline-preview-356` 完成祖先集成，固定候选源码为 **`9ead0993290812f0575236fbe81b7620f658189d`**，见末节。本地候选已配对构建和包级验证，但不是 master/Release，也未通过完整 H 或两次 UI 旅程。既有 PR/master 未改，整合分支未推送；public 只追加证据与历史身份说明。旧阶段产物/收据保留，不冒充当前候选或正式发行。
 
 ## 模块责任表
 
@@ -470,7 +470,7 @@ JSONL authority 读回：`logs/reading-log.jsonl`（1 行，`verified:false`）�
 
 Windows x64；Obsidian **1.14.5 / Electron 37.6.0 / Chromium 138.0.7204.251**，宿主二进制 hash 见 manifest。独立 HOME/profile/Vault，autoSync=false；两篇 BBT 条目和两份 PDF 均为声明合成，不复制真实用户文献，也未运行 hardcoded 共享 sandbox builder。
 
-后端使用已有专用 Python3.12.8 的依赖，加明确声明的临时 runtime-wrapper seam 指向冻结 wheel 解包目录；**237/237 Python 文件匹配当前源码**。wheel SHA256 `0d58ff6f75a8937ecbcd30fb48b786281f280b74c777cbfa71ec5ae4b8790c66`。实际 CLI、distribution 和插件版本均为 **2.0.0rc5**；源码模块 `__version__` 常量为 2.0.0，未混称为握手结果。没有原地重装、发布 pointer 或新的安装认证。
+本历史阶段使用已有专用 Python3.12.8 的依赖，加声明的 runtime-wrapper 指向冻结 wheel；当时 237/237 Python 文件匹配，wheel SHA256 为 `0d58ff6f75a8937ecbcd30fb48b786281f280b74c777cbfa71ec5ae4b8790c66`，实际 CLI/distribution/插件均观察为 2.0.0rc5。**更正独立身份探针**：另一次直接 `python -c` 未固定 cwd，`package` 实际指向主 checkout，虽然 distribution metadata 来自冻结目录；其 2.0.0 不是候选源码常量，旧说法撤回，原始收据保留。wrapper/字节校验与该探针分开看待；新候选已在 checkout 外用 `-I` 核实实际 site-packages 的 module/distribution 都为 2.0.0rc5。该历史阶段仍不是新的 managed 安装认证。
 
 Node 外部 TCP guard、Python socket guard、Null keyring、Chromium offline/dead proxy 生效；没有真实 OCR/Embedding/模型或费用调用。本轮未改 Python 产品，不重跑也不冒称新的 Python suite；历史 221/3 仍仅属历史。
 
@@ -483,7 +483,7 @@ Node 外部 TCP guard、Python socket guard、Null keyring、Chromium offline/de
 3. 完整 H/原生 GPU 根因、上游集成、最终 source/wheel/bundle/host 发行组合、旧分发依赖及跨版本升级门仍独立未接受；未操作 #352/#354、master 或正式发布。
 4. 真实服务终态、OCR 内容质量、Embedding/Agent 质量、事故费用/留存/凭据轮换仍需独立证据与授权，远端继续冻结。Console 帮助定位模块/阶段/错误类别，不保证单行自动确定所有根因。
 
-## Offline Preview 范围冻结（2026-10-26，候选尚未形成）
+## Offline Preview 范围冻结（2026-10-26，历史决策快照）
 
 采纳用户新的停止条件：**不追求全仓无 Bug；以一个固定、可安装候选在声明环境中两次独立完成核心任务为目标。** 不再派自由扫描任务，不以测试数增长衡量产品进度。只准入错误数据/来源、数据丢失/越权收费、核心任务阻断，以及安装/升级/恢复/正式门禁阻断；其他 Findings 排队。
 
@@ -524,4 +524,34 @@ Node 外部 TCP guard、Python socket guard、Null keyring、Chromium offline/de
 
 **停止条件**：两次主流程均通过、主要 CI 与完整必需 H 门通过、无未解释的数据/授权 P0、产物身份一致，且故障真实可报告并不破坏已有数据。达到后停止本轮维护开发，进入实际用户试用；当前尚未达到，不能称“离线 Preview 已发布/已认证”。
 
-**下一步唯一主线**：在允许调整上游 PR/最终门禁的权限边界内完成依赖集成 → 从最终树构建唯一候选 → 两次主流程认证。当前仍未获得真实合并、PR 改 base/Ready 或新 CI 的额外授权，本次只做本地冲突模拟、安全修复与冻结记录；不把权限边界解释为技术失败。
+该冻结快照确定的主线是：依赖集成 → 唯一配对候选 → 两次主流程认证。后续本地集成/构建已完成，见下节；真实 PR 改 base/Ready、合入 master 和新增 CI 仍未获得额外授权，不把权限边界解释为技术失败。
+
+## 本地统一候选已构建（2026-10-26，LOCAL PACKAGE VERIFIED）
+
+基线 public `59b89729`，Issue #356 快照 `2026-10-26T09:46:37Z`；没有新建 worktree。父代理唯一写入，四个只读小任务提供打包/gate recipe 与资产/证据核对；错误 cwd、包名和证据边界的建议由父代理依据实际文件/metadata 裁定，不直接采信。
+
+本地分支从 public 建立；#354 `605be45d` 已为祖先，随后正常合入最新 #352 `de434c1b`（本地 merge `3d7500d4`）及 master `a856f84f`（本地 merge `9ead0993`）。两次均无内容冲突；最终四个上游 ref 都是祖先，较 public 仅 `CHANGELOG.md` 多一行，未新增产品实现。此前直接 master 模拟的冲突并未原样发生在这条顺序中。正常 gate/hook 均保留，不改现有 PR/base/Ready，不合入 master。
+
+| 固定资产 | 实际身份 |
+|---|---|
+| 源码 | `9ead0993290812f0575236fbe81b7620f658189d`，仅本地整合分支 |
+| wheel | `paperforge-2.0.0rc5-py3-none-any.whl`；SHA256 `5f0c40217610311c4edb6d76d1ae693ca4e9ace521088b2d275c1ffadbdbe1bc` |
+| 插件 bundle | SHA256 `d964fd7e2a7b65b2633cbaa191458edd27452874784517d80ea2c0290fac47d2`；与 wheel 内 main.js 及单独资产逐字节一致 |
+
+构建从该提交的 tracked-source archive 取包输入，复用本地 node_modules 编译后移除 staging junction，再以 `uv build --offline` 构建；不混入旧 build/egg-info/依赖目录。原始提交的预构建 JS 有 94 个 CRLF、hash 为 `7491393a…`，**重新编译的 canonical 源与历史 working-tree 构建都得到 d964fd7e**，不是两个不同的新 bundle。源码归档时间固定到 SOURCE_DATE_EPOCH。wheel 内 237 个 Python 文件与 canonical archive 一致；工作树 236 个字节一致，`core/next_actions.py` 仅 EOL 不同，未冒称全部 raw bytes 相同。
+
+### 实际运行结果
+
+- fresh 非 editable venv，Windows Python3.12.8，本机缓存离线安装 `[vector]`；35 个 distribution，`uv pip check` 全兼容，PyMuPDF1.28.2。实际 module/distribution/插件版本均为 2.0.0rc5，module 路径位于该候选 site-packages；299 个安装产品文件逐字节匹配 wheel。声明的 runtime pins 固定 34 个依赖版本，不是跨平台 hash-lock 或完整离线 wheelhouse。
+- 集成插件完整本地门：**641 passed / 1 skipped**（32 files passed / 1 skipped）；真实 Python 子进程指定 fresh candidate，Node 外部 TCP guard 与 Python socket guard 生效。typecheck/production build 通过，未用历史 641/1 冒充本次运行。
+- Python 串行范围门：Registry/reconcile、最终 OCR HTTP scope/cancellation、进度/状态、研究记录来源共 **167 passed / 1 skipped**。该门输出保存为明确标注的工具回执转录；不是全 Python suite 或真实提供商验收。
+- 在 checkout 外执行安装候选的 **9 条真实 CLI 检查**（每条 fresh process）：保存 → 用途关键词命中同一记录 → exact_text 对应物理页2；重叠引文 ambiguous/count2 与错页 mismatch 均拒绝；人工确认为 confirmed，不是程序文本匹配。均为生成 PDF/合成 Vault，包含预期 exit1 的拒绝检查；不计为两条完整用户旅程。
+- 依赖中 `httpx2/httpcore2` 已由实际安装的 OpenAI/HTTPX metadata 声明，且 pip check clean；未认定为拼写错误，也未验证提供商兼容性。构建输出的 license-table deprecation 只是已记录警告，不顺带扩修。
+
+### 保留与未证明边界
+
+本机仅保留 `TRIAL_ROOT/module-interface-356-offline-preview/candidate/` 中一套 wheel、四个插件资产、runtime constraints、candidate.json、checksums.txt，以及小型原始/转录证据。构建 staging、临时 venv、合成 Vault/HOME、测试 temp 已退役；共享旧 venv/node_modules/cache 未清理，临时 runtime 路径仅为历史身份。
+
+**本次没有 managed Setup/pointer 发布、升级/恢复或新的真实 Obsidian 用户旅程。** 完整 H/主要 CI、两次独立七步 UI 验收、跨机依赖可获得性和分发物侧收费能力禁用仍 PENDING；测试 guard 不在 wheel 内，不能把测试环境断网说成产品已强制离线。候选仅本机留存，整合分支未推送，未发布/关闭 Issue/恢复提供商调用。
+
+当前本地包仍沿用源码版本 2.0.0rc5、由 source/hash 区分，**不能假定既有 rc5 环境会因替换同版本 wheel 自动升级**；正式试用前应沿既有版本流程确定可区分的候选身份，或验证现有显式重装入口。不能混放多个同版本 wheel，也不以本次 fresh venv 成功替代这个升级边界。
