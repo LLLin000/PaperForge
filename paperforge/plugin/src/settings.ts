@@ -812,9 +812,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
       this.display();
 
+      let setupClientOwnsFailure = false;
       try {
         await this.plugin.saveSettings();
         const client = this.getClient();
+        setupClientOwnsFailure = true;
         const handle = client.setup(
           {
             systemDir: settings.system_dir?.trim() || "System",
@@ -851,6 +853,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           this.display();
           return;
         }
+        setupClientOwnsFailure = false;
         this._setupOperation = "idle";
         this._setupFeedback =
           envOverridden.length > 0
@@ -860,15 +863,16 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         this._probeModule("library");
         this.display();
       } catch (error) {
-        // Only non-stream local failures reach here (saveSettings and the
-        // small local throw above are already handled): keep one safe
-        // diagnostic without the Error payload.
-        traceConsoleError({
-          op: "library.setup",
-          stage: "local",
-          code: "backend_error",
-          exitCode: null,
-        });
+        // The shared client owns startup rejections as well as resolved
+        // stream failures. Only pre/post-stream local failures belong here.
+        if (!setupClientOwnsFailure) {
+          traceConsoleError({
+            op: "library.setup",
+            stage: "local",
+            code: "backend_error",
+            exitCode: null,
+          });
+        }
         this._setupOperation = "failed";
         this._setupFeedback = t("setup_library_config_failed");
         this.display();

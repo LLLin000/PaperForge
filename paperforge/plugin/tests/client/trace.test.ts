@@ -212,6 +212,34 @@ describe("traceConsoleError", () => {
     }
   });
 
+  it.each([
+    { scenario: "malformed", code: "protocol_error", exitCode: 0 },
+    { scenario: "startup", code: "ECONNREFUSED", exitCode: null },
+    { scenario: "contradiction", code: "protocol_contradiction", exitCode: 2 },
+    { scenario: "contradiction", code: "protocol_contradiction", exitCode: null },
+  ])("diagnoses render authority $scenario at exit $exitCode once without discarding the actual exit", async ({ scenario, code, exitCode }) => {
+    const transport = new MockTransport();
+    const client = new PaperForgeClient({ transport });
+    transport.executeHandler = () => {
+      if (scenario === "malformed") return "PRIVATE_INVALID_JSON";
+      throw Object.assign(new Error("PRIVATE_PROCESS"), {
+        code: scenario === "startup" ? code : undefined,
+        exitCode,
+        stdout: scenario === "contradiction" ? JSON.stringify({ ok: true, papers: [] }) : "",
+      });
+    };
+    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      await expect(client.renderReconcileStaging("P1")).rejects.toMatchObject({ code, exitCode });
+      expect(errors).toHaveBeenCalledOnce();
+      expect(String(errors.mock.calls[0][0])).toContain(`code=${code}`);
+      expect(String(errors.mock.calls[0][0])).toContain(`exit=${exitCode ?? "?"}`);
+      expect(JSON.stringify(errors.mock.calls)).not.toContain("PRIVATE_");
+    } finally {
+      errors.mockRestore();
+    }
+  });
+
   it("suppresses expected states: unconfigured/disabled/empty/cancelled are not Console errors", () => {
     const seen: unknown[][] = [];
     const orig = console.error;

@@ -1072,6 +1072,14 @@ export class PaperForgeClient {
         label?: string;
         provenance_persisted?: boolean;
       }>(["versions", "restore", "--key", key, "--label", label, "--json"]);
+      if (data?.provenance_persisted === false) {
+        traceConsoleError({
+          op: "versions.restore.provenance",
+          stage: "result",
+          code: "restore.provenance_not_persisted",
+          exitCode: 0,
+        });
+      }
       return {
         target_path: data?.target_path ?? "",
         label: data?.label ?? label,
@@ -1551,23 +1559,48 @@ export class PaperForgeClient {
    * Python decision must survive as a normal authority response — only a
    * genuine spawn/protocol failure may surface as an exception. */
   private async _executeStructuredJson<T>(argv: string[]): Promise<T> {
+    let raw: string;
+    let exitCode: number | null = 0;
+    let transportFailed = false;
     try {
-      const raw = await this._executeRaw(argv);
-      return JSON.parse(raw) as T;
+      raw = await this._executeRaw(argv);
     } catch (err: unknown) {
-      const stdout =
-        err instanceof Error
-          ? ((err as unknown as { stdout?: unknown }).stdout ?? null)
-          : null;
-      if (typeof stdout === "string" && stdout.trim()) {
-        try {
-          return JSON.parse(stdout) as T;
-        } catch {
-          // fall through — stdout was not JSON
-        }
+      transportFailed = true;
+      exitCode = transportExitCode(err);
+      const stdout = err !== null && typeof err === "object" && "stdout" in err
+        ? err.stdout : null;
+      if (typeof stdout !== "string" || !stdout.trim()) {
+        traceConsoleError({
+          op: commandIdentity(argv), stage: "process",
+          code: rejectionCode(err) ?? "transport_error", exitCode,
+        });
+        throw err;
       }
-      throw err;
+      raw = stdout;
     }
+    let parsed: unknown;
+    let code: string | null = null;
+    try {
+      parsed = JSON.parse(raw);
+      if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+        code = "protocol_error";
+      }
+    } catch {
+      code = "protocol_error";
+    }
+    if (!code && transportFailed && parsed &&
+        typeof parsed === "object" && "ok" in parsed && parsed.ok === true) {
+      code = "protocol_contradiction";
+    }
+    if (code) {
+      traceConsoleError({ op: commandIdentity(argv), stage: "protocol", code, exitCode });
+      throw Object.assign(new Error("Backend returned invalid or contradictory authority JSON"), {
+        code, exitCode,
+      });
+    }
+    // Negative audit reports and mutation rejections are authority values,
+    // not PFResult failures; preserve them, including nonzero-exit reports.
+    return parsed as T;
   }
 
   async renderAudit(key?: string): Promise<RenderAuditDTO> {

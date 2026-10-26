@@ -968,10 +968,7 @@ export class OcrWorkspaceView extends ItemView {
             show.versions,
             show.current_label,
             show.current_path,
-            (label) =>
-              restoreClient
-                .versionsRestore(restoreKey, label)
-                .then(() => undefined),
+            (label) => restoreClient.versionsRestore(restoreKey, label),
             () => {
               this._loadPapers().then(() => {
                 if (!this._closed) this._render();
@@ -991,10 +988,7 @@ export class OcrWorkspaceView extends ItemView {
           backups,
           "",
           show.current_path,
-          (label) =>
-            restoreClient
-              .versionsRestore(restoreKey, label)
-              .then(() => undefined),
+          (label) => restoreClient.versionsRestore(restoreKey, label),
           () => {
             this._loadPapers().then(() => this._render());
           }
@@ -1258,7 +1252,8 @@ export class VersionRestoreModal extends Modal {
   private currentLabel: string;
   private paperKey: string;
   private currentPath: string;
-  private restore: (label: string) => Promise<void>;
+  private restore: (label: string) => ReturnType<PaperForgeClient["versionsRestore"]>;
+  private restoreFeedback: string | null = null;
   private selectedIdx: number = 0;
   private onRestored: (() => void) | null;
   private contentCache: Map<string, string> = new Map();
@@ -1270,7 +1265,7 @@ export class VersionRestoreModal extends Modal {
     versions: VersionEntryDTO[],
     currentLabel: string,
     currentPath: string,
-    restore: (label: string) => Promise<void>,
+    restore: (label: string) => ReturnType<PaperForgeClient["versionsRestore"]>,
     onRestored?: () => void
   ) {
     super(app);
@@ -1326,6 +1321,11 @@ export class VersionRestoreModal extends Modal {
   private renderAll() {
     const { contentEl } = this;
     contentEl.empty();
+    if (this.restoreFeedback) {
+      contentEl.createEl("p", {
+        cls: "pf-version-restore-status", text: this.restoreFeedback, attr: { role: "alert" },
+      });
+    }
 
     const layout = contentEl.createDiv({ cls: "pf-vr-layout" });
     const sidebar = layout.createDiv({ cls: "pf-vr-sidebar" });
@@ -1500,9 +1500,23 @@ export class VersionRestoreModal extends Modal {
     if (ver.label === this.currentLabel) return;
     try {
       // Python owns the copy AND the restore-provenance mutation.
-      await this.restore(ver.label);
-      new Notice(t("ocr_ws_detail_restore_done").replace("{label}", ver.label));
-      this.close();
+      const result = await this.restore(ver.label);
+      this.currentLabel = result.label;
+      if (result.provenance_persisted) {
+        this.restoreFeedback = null;
+        new Notice(t("ocr_ws_detail_restore_done").replace("{label}", ver.label));
+        this.close();
+      } else {
+        const message = t("version_restore_partial").replace("{label}", ver.label);
+        this.restoreFeedback = message;
+        this.contentCache.delete("__current__");
+        this.contentCache.delete(ver.label);
+        if (this.contentEl.isConnected) {
+          this.onOpen();
+        } else {
+          new Notice(message, 6000);
+        }
+      }
       this.onRestored?.();
     } catch (err: any) {
       new Notice("[!!] Restore failed: " + (err?.message || err), 6000);

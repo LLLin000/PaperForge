@@ -97,6 +97,7 @@ export class PaperForgeStatusView extends ItemView {
   // ── Search state ──
   // ── Version state ──
   _versionPapers: PaperVersionInfoDTO[] | null = null;
+  private _versionRestoreFeedback = new Map<string, string>();
   _versionsLoadError: string | null = null;
   _versionFilter: string = "";
   // ── Search state ──
@@ -191,19 +192,23 @@ export class PaperForgeStatusView extends ItemView {
     // Release the scoped Ctrl+Enter (focus-pushed; blur may never fire on
     // close, so pop unconditionally — never leaks a global chord). Also
     // detach the focus/blur listeners so a dead input cannot re-push.
+    this._resetSearchView();
+    this._cachedItems = null;
+    this._cachedStats = null;
+  }
+
+  private _resetSearchView(): void {
     this._unbindCtrlEnterInput();
     if (this._searchTimer) clearTimeout(this._searchTimer);
+    this._searchTimer = undefined;
     this._searchGeneration++;
+    this._searchContainer = null;
     this._searchInput = null;
     this._searchResultsEl = null;
     this._recordResultsEl = null;
-    // Reset search state
     this._searchState = "idle";
     this._searchResults = null;
     this._searchActiveIndex = -1;
-    this._searchTimer = undefined;
-    this._cachedItems = null;
-    this._cachedStats = null;
   }
 
   /* ---------------------------------------------------------------------- */
@@ -668,6 +673,7 @@ export class PaperForgeStatusView extends ItemView {
     this._currentFilePath = filePath;
     this._techDetailsExpanded = false;
     if (!this._contentEl) return;
+    this._resetSearchView();
     this._contentEl.empty();
     this._contentEl.removeClass("switching");
     this._renderModeHeader(mode);
@@ -1177,7 +1183,7 @@ export class PaperForgeStatusView extends ItemView {
               show.versions,
               show.current_label,
               show.current_path,
-              (label) => client.versionsRestore(k, label).then(() => undefined)
+              (label) => client.versionsRestore(k, label)
             ).open();
             return;
           }
@@ -1189,7 +1195,7 @@ export class PaperForgeStatusView extends ItemView {
               backups,
               "",
               show.current_path,
-              (label) => client.versionsRestore(k, label).then(() => undefined)
+              (label) => client.versionsRestore(k, label)
             ).open();
           }
         } catch (err: any) {
@@ -2330,6 +2336,7 @@ export class PaperForgeStatusView extends ItemView {
   /* ── Refresh current mode (called on index change, D-09, REFR-01) ── */
   async _refreshCurrentMode() {
     if (!this._currentMode || !this._contentEl) return;
+    this._resetSearchView();
     this._contentEl.empty();
     this._contentEl.addClass("switching");
     // Render-only: acquisition lives in _invalidateIndex/_loadDashboardData,
@@ -2383,6 +2390,7 @@ export class PaperForgeStatusView extends ItemView {
     this._currentFilePath = null;
     this._techDetailsExpanded = false;
     if (!this._contentEl) return;
+    this._resetSearchView();
     this._contentEl.empty();
     this._contentEl.removeClass("switching");
     this._renderModeHeader("versions");
@@ -2525,6 +2533,12 @@ export class PaperForgeStatusView extends ItemView {
         cls: "paperforge-version-timeline-header",
       });
       header.createEl("span", { cls: "pf-title", text: paper.title });
+      const restoreFeedback = this._versionRestoreFeedback.get(paper.key);
+      if (restoreFeedback) {
+        timelineArea.createEl("p", {
+          cls: "pf-version-restore-status", text: restoreFeedback, attr: { role: "alert" },
+        });
+      }
 
       if (paper.versions.length === 0) {
         timelineArea.createEl("div", {
@@ -2596,10 +2610,21 @@ export class PaperForgeStatusView extends ItemView {
             }
             try {
               // Python performs the copy AND persists restore_provenance.
-              await client.versionsRestore(paper.key, ver.label);
-              new Notice(
-                t("version_restore_done").replace("{label}", ver.label)
-              );
+              const result = await client.versionsRestore(paper.key, ver.label);
+              paper.current_label = result.label;
+              if (result.provenance_persisted) {
+                this._versionRestoreFeedback.delete(paper.key);
+                if (timelineArea.isConnected) renderTimeline(paper);
+                new Notice(t("version_restore_done").replace("{label}", ver.label));
+              } else {
+                const message = t("version_restore_partial").replace("{label}", ver.label);
+                this._versionRestoreFeedback.set(paper.key, message);
+                if (timelineArea.isConnected) {
+                  renderTimeline(paper);
+                } else {
+                  new Notice(message, 6000);
+                }
+              }
             } catch (err: any) {
               new Notice("[!!] Restore failed: " + (err?.message || err), 6000);
             }
