@@ -150,6 +150,74 @@ describe("Knowledge & Retrieval Domain Cutover (Ticket 05)", () => {
       expect(view._searchState).toBe("idle");
     });
 
+    function modeLifecycle(view: ReturnType<typeof makeDashboard>) {
+      const seam = view as unknown as PaperForgeStatusView;
+      Object.assign(seam, {
+        _contentEl: view._host,
+        _currentMode: "paper",
+        _currentFilePath: "A.md",
+        _currentPaperKey: null,
+        _renderModeHeader: () => {},
+        _renderBackendBanner: () => {},
+        _renderPaperMode: () => view.renderSearchSection(view._host),
+        _renderGlobalMode: () => view._host.createEl("h3", { text: "Library overview" }),
+      });
+      return seam;
+    }
+
+    it.each(["switch", "refresh"])(
+      "does not send an obsolete debounced query after a %s removes search",
+      async (transition) => {
+        vi.useFakeTimers();
+        const view = makeDashboard(client);
+        const seam = modeLifecycle(view);
+        try {
+          view._searchInput.value = "obsolete paper query";
+          view._searchInput.dispatchEvent(new Event("input"));
+          if (transition === "switch") await seam._switchMode("global", null);
+          else {
+            (seam as any)._currentMode = "global";
+            await seam._refreshCurrentMode();
+          }
+          await vi.advanceTimersByTimeAsync(250);
+          expect(transport.calls.filter((call) => call.argv[0] === "search")).toEqual([]);
+        } finally {
+          vi.useRealTimers();
+          view._host.remove();
+        }
+      }
+    );
+
+    it.each(["switch", "refresh"])(
+      "does not render an old paper reply after a %s and still accepts a new query",
+      async (transition) => {
+        const response = Promise.withResolvers<string>();
+        transport.executeHandler = (argv) => argv[0] !== "search"
+          ? JSON.stringify({ ok: true, data: { matches: [] } })
+          : argv[1] === "paper A marker" ? response.promise
+          : JSON.stringify({ ok: true, data: { matches: [{ title: "Current paper result" }] } });
+        const view = makeDashboard(client);
+        const seam = modeLifecycle(view);
+        try {
+          view._searchInput.value = "paper A marker";
+          const pending = view.executeSearch();
+          if (transition === "switch") await seam._switchMode("paper", "B.md");
+          else await seam._refreshCurrentMode();
+          response.resolve(JSON.stringify({
+            ok: true, data: { matches: [{ title: "Obsolete paper A result" }] },
+          }));
+          await pending;
+          expect(view._searchResultsEl.textContent).not.toContain("Obsolete paper A result");
+          view._searchInput.value = "paper B marker";
+          await view.executeSearch();
+          expect(view._searchResultsEl.textContent).toContain("Current paper result");
+        } finally {
+          response.resolve(JSON.stringify({ ok: true, data: { matches: [] } }));
+          view._host.remove();
+        }
+      }
+    );
+
     it("routes standard search through client.search and never spawns a child process", async () => {
       transport.executeHandler = (argv) => {
         return JSON.stringify({

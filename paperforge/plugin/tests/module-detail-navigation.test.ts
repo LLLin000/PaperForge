@@ -2342,6 +2342,43 @@ describe("Setup Stage 3 config truthfulness (no false success, #253)", () => {
     for (let i = 0; i < times; i++) await Promise.resolve();
   }
 
+  it.each(["ECONNREFUSED", "NO_PYTHON"])(
+    "keeps Stage2 startup rejection single-owned and setup states quiet (%s)",
+    async (code) => {
+      const { seam, client } = stageTab();
+      const transport = new MockTransport();
+      transport.streamHandler = () => ({
+        failSpawn: Object.assign(new Error("PRIVATE_STARTUP"), { code }),
+      });
+      const shared = new PaperForgeClient({ transport });
+      client.setup.mockImplementation(shared.setup.bind(shared));
+      const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+      try {
+        seam._applyLibraryConfiguration();
+        await vi.waitFor(() => expect(seam._setupOperation).toBe("failed"));
+        expect(errors).toHaveBeenCalledTimes(code === "NO_PYTHON" ? 0 : 1);
+        expect(JSON.stringify(errors.mock.calls)).not.toContain("PRIVATE_STARTUP");
+      } finally {
+        errors.mockRestore();
+      }
+    }
+  );
+
+  it("still diagnoses a Stage2 local settings-save failure before dispatch", async () => {
+    const { seam, plugin, client } = stageTab();
+    plugin.saveSettings = vi.fn().mockRejectedValue(new Error("PRIVATE_DISK_FAILURE"));
+    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      seam._applyLibraryConfiguration();
+      await vi.waitFor(() => expect(seam._setupOperation).toBe("failed"));
+      expect(client.setup).not.toHaveBeenCalled();
+      expect(errors).toHaveBeenCalledOnce();
+      expect(JSON.stringify(errors.mock.calls)).not.toContain("PRIVATE_DISK_FAILURE");
+    } finally {
+      errors.mockRestore();
+    }
+  });
+
   it("a failed config write fails the stage, names the key, and never runs setup", async () => {
     const { seam, plugin, client } = stageTab({
       configSet: vi

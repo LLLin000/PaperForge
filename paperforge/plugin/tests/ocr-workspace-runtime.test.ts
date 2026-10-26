@@ -8,11 +8,13 @@ import { describe, expect, it, vi } from "vitest";
 
 import "obsidian-test-mocks/jest-setup";
 import { setLanguage } from "../src/i18n";
+const { restoreNotices } = vi.hoisted(() => ({ restoreNotices: [] as string[] }));
 vi.mock("obsidian", () => {
   return {
     Notice: class {
       noticeEl: HTMLElement;
       constructor(msg: string) {
+        restoreNotices.push(msg);
         this.noticeEl = document.createElement("div");
         this.noticeEl.textContent = msg;
       }
@@ -35,13 +37,17 @@ vi.mock("obsidian", () => {
       open() {}
       close() {}
     },
+    Component: class {
+      load() {}
+      unload() {}
+    },
     WorkspaceLeaf: class {},
     MarkdownRenderer: { render: () => {} },
     Platform: {},
   };
 });
 
-import { OcrWorkspaceView } from "../src/views/ocr-workspace";
+import { OcrWorkspaceView, VersionRestoreModal } from "../src/views/ocr-workspace";
 import { PaperForgeClient } from "../src/client";
 import { WorkspaceLeaf } from "obsidian";
 import { MockTransport } from "./client/mock-transport";
@@ -82,6 +88,49 @@ function descriptorResponse(
 }
 
 describe("OcrWorkspaceView PaperForgeClient cutover", () => {
+  it.each([true, false, undefined])(
+    "keeps a restore with unconfirmed provenance visible instead of closing as success (persisted=%s)",
+    async (persisted) => {
+      const transport = new MockTransport();
+      transport.executeHandler = () => JSON.stringify({
+        ok: true, data: { target_path: "/vault/restored.md", label: "v1", provenance_persisted: persisted },
+      });
+      const client = new PaperForgeClient({ transport });
+      const modal = new VersionRestoreModal(
+        {}, "P1", [
+          { label: "v1", created_at: "2025-01-01T00:00:00Z", source: "pre-rebuild", fulltext_size: 28 },
+          { label: "v2", created_at: "2025-01-02T00:00:00Z", source: "pre-rebuild", fulltext_size: 28 },
+        ], "v2", "/vault/restored.md",
+        (label) => client.versionsRestore("P1", label)
+      );
+      document.body.appendChild(modal.contentEl);
+      modal.onOpen();
+      const close = vi.spyOn(modal, "close");
+      restoreNotices.length = 0;
+      const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+      try {
+        await (modal as any)._executeRestore({ label: "v1" });
+        if (persisted === true) {
+          expect(close).toHaveBeenCalledOnce();
+          expect(modal.contentEl.querySelector('[role="alert"]')).toBeNull();
+        } else {
+          expect(close).not.toHaveBeenCalled();
+          expect(modal.contentEl.querySelector('[role="alert"]')?.textContent).toContain("v1");
+          expect(restoreNotices).toEqual([]);
+          expect(modal.contentEl.querySelector(".pf-vr-entry--current .pf-vr-entry-label")?.textContent).toBe("v1");
+          (modal.contentEl.querySelector('.pf-vr-entry[data-idx="1"]') as HTMLElement).click();
+          expect(modal.contentEl.querySelector('[role="alert"]')?.textContent).toContain("v1");
+        }
+        expect(errors).toHaveBeenCalledTimes(persisted === false ? 1 : 0);
+        if (persisted === false) {
+          expect(String(errors.mock.calls[0][0])).toContain("code=restore.provenance_not_persisted");
+        }
+      } finally {
+        errors.mockRestore();
+        modal.contentEl.remove();
+      }
+    }
+  );
   it("refuses an empty paper selection instead of running the whole library", async () => {
     const transport = new MockTransport();
     transport.executeHandler = (argv) => descriptorResponse(argv[2]);
