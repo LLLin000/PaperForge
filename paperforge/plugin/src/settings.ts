@@ -215,6 +215,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
    *  Center.  Without this, leaving a deep wizard stage meant clicking
    *  "back" once per stage (#87 UX). */
   _goHome(): void {
+    if (this._setupOperation === "running") return;
     this.activeTab = "overview";
     this._selectedDetailModule = "";
     this._detailReturn = null;
@@ -508,6 +509,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     // republish the pointer or flip _setup_complete.
     this._runtimeAbortController = new AbortController();
     const signal = this._runtimeAbortController.signal;
+    let stopSetup: (() => void) | undefined;
+    let setupClientOwnsFailure = false;
     void (async () => {
       try {
         const vaultPath = this._getVaultBasePath();
@@ -540,7 +543,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         // through the #137 NDJSON stream (setup --json).
         const s = this.plugin.settings;
         await this.plugin.saveSettings();
+        signal.throwIfAborted();
         const client = this.getClient();
+        setupClientOwnsFailure = true;
         const handle = client.setup(
           {
             systemDir: s.system_dir?.trim() || "System",
@@ -562,7 +567,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             },
           }
         );
-        signal?.addEventListener("abort", () => handle.stop());
+        stopSetup = () => handle.stop();
+        signal.addEventListener("abort", stopSetup, { once: true });
+        if (signal.aborted) stopSetup();
         const outcome = await handle.outcome;
         if (!outcome.ok) {
           if (outcome.cancelled) {
@@ -577,6 +584,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
               : `Setup failed with exit code ${outcome.exitCode}`
           );
         }
+        setupClientOwnsFailure = false;
         this._setupOperation = "idle";
         this._setupCompleteBeforeJourney = null;
         // #260: the pointer now names the verified candidate — retire any
@@ -622,18 +630,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           this.display();
           return;
         }
-        // Ownership: install/handshake/local setup failures may be the sole
-        // terminal (bootstrap/handshake run outside the shared client
-        // stream). When the setup stream already owned the terminal, the
-        // client logged it — a failure carrying the client's stream outcome
-        // shape (exitCode + cancelled/protocolFailure) must not log twice.
-        // Post-stream local validation failures still log once here.
-        const looksLikeStreamOutcome =
-          error !== null &&
-          typeof error === "object" &&
-          (("exitCode" in error && "cancelled" in error) ||
-            "protocolFailure" in error);
-        if (!looksLikeStreamOutcome) {
+        // Bootstrap/local failures belong here; the shared client already
+        // owns setup-stream failures, including failures before spawn.
+        if (!setupClientOwnsFailure) {
           traceConsoleError({
             op: "foundation.setup",
             stage: "install",
@@ -655,7 +654,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         this._setupFailureDetail = this._formatSetupFailureWithHint(error);
         this.display();
       } finally {
-        this._runtimeAbortController = null;
+        if (stopSetup) signal.removeEventListener("abort", stopSetup);
+        if (this._runtimeAbortController?.signal === signal) this._runtimeAbortController = null;
       }
     })();
   }
@@ -2179,7 +2179,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       if (verb === "restore_backup" || actionId === "memory.restore_backup") {
         void this.getClient()
           .memoryRestoreBackup()
-          .catch(() => undefined)
+          .then(() => new Notice(t("memory_restore_done")))
+          .catch((error: unknown) => {
+            new Notice(t("memory_restore_failed").replace(
+              "{error}", error instanceof Error ? error.message : "Unknown error"
+            ), 6000);
+          })
           .finally(() => {
             this._refreshAllReadModels();
           });
@@ -3128,25 +3133,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           };
           this._updateCapabilityEnvelope(mod, setupEnvelope);
         } else {
-          // Ownership: the raw probe path has no typed-client terminal for
-          // transport/process failures, so keep one fixed diagnostic here.
-          // NO_PYTHON stays quiet (expected setup state, never red).
-          const errCode: unknown =
-            err !== null && typeof err === "object" && "code" in err
-              ? err.code
-              : undefined;
-          const code =
-            typeof errCode === "string" && errCode.length > 0
-              ? errCode
-              : "transport_error";
-          if (code !== "NO_PYTHON") {
-            traceConsoleError({
-              op: `probe.${mod}`,
-              stage: "process",
-              code,
-              exitCode: null,
-            });
-          }
           this._updateCapabilityEnvelope(mod, createInvalidEnvelope(mod));
         }
       });
@@ -4245,10 +4231,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
     renderActionButton(nav, {
       label: t("setup_nav_exit"),
+      disabled: this._setupOperation === "running",
       onClick: () => this._goHome(),
     });
     renderActionButton(nav, {
       label: t("setup_nav_back"),
+      disabled: this._setupOperation === "running",
       onClick: () => {
         this._setupFeedback = null;
         this._setupStage = 1;

@@ -181,11 +181,13 @@ export function runLongTask(
       stdio: ["pipe", "pipe", "pipe"],
     }
   );
+  executeChildRegistry.add(child);
   if (opts.closeStdin) child.stdin?.end();
 
   const parser = new NdjsonStreamParser();
   const events: NdjsonEvent[] = [];
   let hardKilled = false;
+  let settled = false;
   // A stop the user asked for: the token may be ignored because the child is
   // inside a phase with no safe point (a cold native import in the embed
   // prepare, #330), so the kill escalation ends it without a terminal event.
@@ -212,6 +214,8 @@ export function runLongTask(
 
   const outcome = new Promise<LongTaskOutcome>((resolve) => {
     child.on("close", (code: number | null) => {
+      settled = true;
+      executeChildRegistry.delete(child);
       clearTimeout(graceTimer);
       parser.finishEOF();
       // #269: the EOF signature must say HOW the child died, so a killed
@@ -225,14 +229,17 @@ export function runLongTask(
               .filter(Boolean)
               .join(", ")
           : "";
+      const terminal = events.find((event) => TERMINAL_EVENTS.has(event.event));
       resolve({
-        ok: !parser.protocolFailure && code === 0,
+        ok: !parser.protocolFailure && code === 0 &&
+          terminal?.event === "result" && terminal.result?.ok !== false,
         exitCode: code,
         // #330: a stop we wrote the token for stays a cancellation when the
         // child had to be killed before reaching a safe point (rc != 130). A
         // stop that lost the race must not relabel a finished build: it only
         // counts while no terminal event arrived.
-        cancelled: code === 130 || (stopRequested && !parser.terminalSeen),
+        cancelled: code === 130 || terminal?.event === "cancelled" ||
+          (stopRequested && !parser.terminalSeen),
         events,
         protocolFailure: parser.protocolFailure
           ? death
@@ -243,6 +250,8 @@ export function runLongTask(
       });
     });
     child.on("error", (err: Error) => {
+      settled = true;
+      executeChildRegistry.delete(child);
       clearTimeout(graceTimer);
       resolve({
         ok: false,
@@ -257,6 +266,7 @@ export function runLongTask(
 
   return {
     stop: () => {
+      if (settled || stopRequested) return;
       stopRequested = true;
       try {
         child.stdin?.write("PAPERFORGE_STOP\n");
@@ -362,13 +372,13 @@ const executeChildRegistry = new ExecuteChildRegistry();
 
 function reapExecuteChildrenImpl(): void {
   for (const child of [...executeChildRegistry]) {
-    hardKill(child);
+    if (child.exitCode == null && child.signalCode == null) hardKill(child);
     executeChildRegistry.delete(child);
   }
 }
 
 export class NodeProcessTransport implements Transport {
-  /** In-flight (non-streamed) execute child registry, keyed by child. */
+  /** In-flight Python children from both result and stream execution. */
   static executeChildren: ExecuteChildRegistry = executeChildRegistry;
   static executeChildRegistry: ExecuteChildRegistry = executeChildRegistry;
   static children: ExecuteChildRegistry = executeChildRegistry;
@@ -458,9 +468,9 @@ export class NodeProcessTransport implements Transport {
   /** Refuse to spawn an interpreter whose runtime is being replaced. */
   private _assertRuntimeNotInstalling(pythonPath: string): void {
     if (runtimeInstallInProgress(pythonPath)) {
-      throw new Error(
+      throw Object.assign(new Error(
         "PaperForge is installing its runtime right now — this will work again in a moment"
-      );
+      ), { code: "action.busy" });
     }
   }
 
@@ -596,45 +606,30 @@ export class NodeProcessTransport implements Transport {
     } | null = null;
 
     const outcomePromise = (async (): Promise<LongTaskOutcome> => {
-      let py: { path: string; args: string[] };
       try {
-        py = options?.pythonExe
+        const py = options?.pythonExe
           ? { path: options.pythonExe, args: [] }
           : await this.resolvePython();
-      } catch (err: any) {
-        const failure = err?.message || String(err);
-        queue.fail(err);
-        return {
-          ok: false,
-          exitCode: -1,
-          cancelled: false,
-          events: [],
-          protocolFailure: failure,
-        };
-      }
-
-      this._assertRuntimeNotInstalling(py.path);
-      longTaskHandle = runLongTask(py.path, py.args, this._vaultPath, argv, {
-        graceMs: options?.graceMs,
-        env: options?.env,
-        closeStdin: argv[0] === "setup",
-        spawnFn: this._spawnFn,
-        onEvent: (ev) => {
-          queue.push(ev);
-          options?.onEvent?.(ev);
-        },
-      });
-
-      if (stopped) {
-        longTaskHandle.stop();
-      }
-
-      try {
+        if (stopped) {
+          queue.finish();
+          return { ok: false, exitCode: null, cancelled: true, events: [] };
+        }
+        this._assertRuntimeNotInstalling(py.path);
+        longTaskHandle = runLongTask(py.path, py.args, this._vaultPath, argv, {
+          graceMs: options?.graceMs,
+          env: options?.env,
+          closeStdin: argv[0] === "setup",
+          spawnFn: this._spawnFn,
+          onEvent: (ev) => {
+            queue.push(ev);
+            options?.onEvent?.(ev);
+          },
+        });
         const outcome = await longTaskHandle.promise;
         queue.finish();
         return outcome;
-      } catch (err: any) {
-        queue.fail(err);
+      } catch (err) {
+        queue.fail(err instanceof Error ? err : new Error(String(err)));
         throw err;
       }
     })();

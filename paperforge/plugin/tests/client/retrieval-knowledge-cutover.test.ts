@@ -118,6 +118,38 @@ describe("Knowledge & Retrieval Domain Cutover (Ticket 05)", () => {
       return view;
     }
 
+    it("does not launch a debounced search after its view closes", async () => {
+      vi.useFakeTimers();
+      const view = makeDashboard(client);
+      try {
+        view._searchInput.value = "pending query";
+        view._searchInput.dispatchEvent(new Event("input"));
+        await (view as unknown as PaperForgeStatusView).onClose();
+        await vi.advanceTimersByTimeAsync(250);
+        expect(transport.calls.filter((call) => call.argv[0] === "search")).toEqual([]);
+      } finally {
+        vi.useRealTimers();
+        view._host.remove();
+      }
+    });
+
+    it("does not apply an in-flight search result to a closed view", async () => {
+      const response = Promise.withResolvers<string>();
+      transport.executeHandler = (argv) => argv[0] === "search"
+        ? response.promise : JSON.stringify({ ok: true, data: { matches: [] } });
+      const view = makeDashboard(client);
+      view._searchInput.value = "slow query";
+      const resultElement = view._searchResultsEl;
+      const pending = view.executeSearch();
+      await (view as unknown as PaperForgeStatusView).onClose();
+      view._host.remove();
+      const closedMarkup = resultElement.innerHTML;
+      response.resolve(JSON.stringify({ ok: true, data: { matches: [{ title: "Late result" }] } }));
+      await pending;
+      expect(resultElement.innerHTML).toBe(closedMarkup);
+      expect(view._searchState).toBe("idle");
+    });
+
     it("routes standard search through client.search and never spawns a child process", async () => {
       transport.executeHandler = (argv) => {
         return JSON.stringify({

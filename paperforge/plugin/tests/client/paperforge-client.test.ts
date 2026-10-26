@@ -505,6 +505,40 @@ describe("PaperForgeClient", () => {
       expect(client.activeOperationId).toBeNull();
     });
 
+    it("returns action.busy without replacing the current operation", async () => {
+      transport.executeHandler = () => JSON.stringify({
+        ok: true, data: { action_id: "ocr.run", execution_mode: "stream", availability: "available" },
+      });
+      transport.streamHandler = () => ({ delayMs: 50, events: [], outcome: { ok: true, exitCode: 0 } });
+      const active = client.streamOperation("first.operation", ["ocr", "run"]);
+      try {
+        const result = await client.runAction({ action_id: "ocr.run", scope: { kind: "papers", keys: ["A"] } });
+        expect(result.ok).toBe(false);
+        expect(result.payload).toMatchObject({ error: { code: "action.busy" } });
+        expect(client.activeOperationId).toBe("first.operation");
+        expect(transport.calls.filter((call) => call.kind === "stream")).toHaveLength(1);
+      } finally {
+        await active.outcome;
+      }
+      expect(client.isOperationActive()).toBe(false);
+    });
+
+    it("keeps a truncated action stream diagnosable without exposing raw output", async () => {
+      transport.executeHandler = () => JSON.stringify({
+        ok: true, data: { action_id: "ocr.run", execution_mode: "stream", availability: "available" },
+      });
+      transport.streamHandler = () => ({
+        events: [{ schema_version: 1, event: "start", operation: "ocr.run" }],
+        outcome: { ok: false, exitCode: 1 },
+        failProtocol: "PRIVATE_OUTPUT: EOF without terminal event",
+      });
+      const result = await client.runAction({ action_id: "ocr.run", scope: { kind: "papers", keys: ["A"] } });
+      expect(result.ok).toBe(false);
+      expect(result.payload).toMatchObject({ ok: false, error: { code: "protocol_failure" } });
+      expect(JSON.stringify(result)).not.toContain("PRIVATE_OUTPUT");
+      expect(client.isOperationActive()).toBe(false);
+    });
+
     it("releases OperationLock on error, failure, or cancellation", async () => {
       // 1. Error release
       transport.streamHandler = () => ({

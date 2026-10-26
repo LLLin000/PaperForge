@@ -119,6 +119,8 @@ export class OcrWorkspaceView extends ItemView {
   private _searchTimer: ReturnType<typeof setTimeout> | undefined;
   /** F-12: view-owned closed flag; gates late renders/streaming. Reset by onOpen(). */
   private _closed = false;
+  private _loadGeneration = 0;
+  private _loadState: "loading" | "ready" | "failed" | "setup_required" = "loading";
   /** #126 PR D: pagination — selection is per visible page. */
   private _page = 1;
 
@@ -170,6 +172,7 @@ export class OcrWorkspaceView extends ItemView {
       this._searchTimer = undefined;
     }
     this._closed = true;
+    this._loadGeneration++;
   }
 
   /* ── Data loading ── */
@@ -187,64 +190,77 @@ export class OcrWorkspaceView extends ItemView {
   }
 
   private async _loadPapers(): Promise<void> {
+    if (this._closed) return;
+    const generation = ++this._loadGeneration;
+    this._loadState = "loading";
+    this._render();
     this.actionDescriptors.clear();
     const client = this._getClient();
     if (!client) {
+      this._loadState = "setup_required";
       this.historicalActivity = null;
       this.papers = [];
       this.selectedKey = null;
       this.checkedKeys.clear();
       this._page = 1;
-      if (this.containerEl?.children?.[1]) this._refreshTable();
+      this._render();
       return;
     }
-    const [lineageResult, activityResult, rowsResult] = await Promise.all([
-      client.probe("lineage").catch(() => null),
-      client.probe("ocr").catch(() => null),
-      client.queryOcrPapers().catch(() => []),
-    ]);
-    const lineage = lineageResult as unknown as LineageProbe | null;
-    this.historicalActivity = activityResult?.historical_activity ?? null;
+    try {
+      const [lineageResult, activityResult, rowsResult] = await Promise.all([
+        client.probe("lineage"),
+        client.probe("ocr"),
+        client.queryOcrPapers(),
+      ]);
+      if (this._closed || generation !== this._loadGeneration) return;
+      const lineage = lineageResult as unknown as LineageProbe | null;
+      this.historicalActivity = activityResult?.historical_activity ?? null;
 
-    const prevByKey = new Map(this.papers.map((p) => [p.key, p]));
-    const lineagePapers = lineage?.papers ?? {};
-    this.papers = [];
-    for (const row of rowsResult as OcrPaperRow[]) {
-      const key = row.key;
-      if (!key) continue;
-      const prev = prevByKey.get(key);
-      const observed = lineagePapers[key];
-      const executionStatus = observed?.details?.ocr_execution?.local_status;
-      const status =
-        executionStatus === "running" || executionStatus === "processing"
-          ? "processing"
-          : executionStatus === "queued"
-            ? "queued"
-            : paperStatusFromLineage(
-                row.status ?? prev?.status ?? "pending",
-                observed
-              );
-      this.papers.push({
-        key,
-        title: row.title_full || row.title || key,
-        status,
-        pipelineVersion: row.version ?? prev?.pipelineVersion ?? "",
-        lastRun: row.finished_at ?? prev?.lastRun ?? "",
-        hasBackup: prev?.hasBackup ?? false,
-        authors: row.authors ?? prev?.authors ?? "",
-        year: row.year != null ? String(row.year) : (prev?.year ?? ""),
-        pages: row.pages != null ? String(row.pages) : (prev?.pages ?? ""),
-        backupCount: prev?.backupCount ?? 0,
-        canRedo: row.can_redo ?? prev?.canRedo ?? false,
-        canRebuild: row.can_rebuild ?? prev?.canRebuild ?? false,
-        recommendedAction:
-          row.recommended_action ?? prev?.recommendedAction ?? "",
-        fulltextPath: row.fulltext_path ?? prev?.fulltextPath ?? "",
-        ocrFinishedAt: row.finished_at ?? prev?.ocrFinishedAt ?? "",
-      });
+      const prevByKey = new Map(this.papers.map((p) => [p.key, p]));
+      const lineagePapers = lineage?.papers ?? {};
+      this.papers = [];
+      for (const row of rowsResult as OcrPaperRow[]) {
+        const key = row.key;
+        if (!key) continue;
+        const prev = prevByKey.get(key);
+        const observed = lineagePapers[key];
+        const executionStatus = observed?.details?.ocr_execution?.local_status;
+        const status =
+          executionStatus === "running" || executionStatus === "processing"
+            ? "processing"
+            : executionStatus === "queued"
+              ? "queued"
+              : paperStatusFromLineage(row.status ?? prev?.status ?? "pending", observed);
+        this.papers.push({
+          key,
+          title: row.title_full || row.title || key,
+          status,
+          pipelineVersion: row.version ?? prev?.pipelineVersion ?? "",
+          lastRun: row.finished_at ?? prev?.lastRun ?? "",
+          hasBackup: prev?.hasBackup ?? false,
+          authors: row.authors ?? prev?.authors ?? "",
+          year: row.year != null ? String(row.year) : (prev?.year ?? ""),
+          pages: row.pages != null ? String(row.pages) : (prev?.pages ?? ""),
+          backupCount: prev?.backupCount ?? 0,
+          canRedo: row.can_redo ?? prev?.canRedo ?? false,
+          canRebuild: row.can_rebuild ?? prev?.canRebuild ?? false,
+          recommendedAction: row.recommended_action ?? prev?.recommendedAction ?? "",
+          fulltextPath: row.fulltext_path ?? prev?.fulltextPath ?? "",
+          ocrFinishedAt: row.finished_at ?? prev?.ocrFinishedAt ?? "",
+        });
+      }
+      const availableKeys = new Set(this.papers.map((paper) => paper.key));
+      for (const key of this.checkedKeys) {
+        if (!availableKeys.has(key)) this.checkedKeys.delete(key);
+      }
+      if (this.selectedKey && !availableKeys.has(this.selectedKey)) this.selectedKey = null;
+      this._loadState = "ready";
+    } catch (error) {
+      if (this._closed || generation !== this._loadGeneration) return;
+      this._loadState = error !== null && typeof error === "object" &&
+        "code" in error && error.code === "NO_PYTHON" ? "setup_required" : "failed";
     }
-    this._page = 1;
-    this._refreshTable();
+    this._render();
   }
 
   /* ── Render ── */
@@ -258,6 +274,7 @@ export class OcrWorkspaceView extends ItemView {
     container.addClass("pf-ocr-workspace");
 
     this._renderHeader(container);
+    if (this._loadState !== "ready") return;
     this._renderActivity(container);
     this._renderToolbar(container);
     this._renderTable(container);
@@ -269,6 +286,7 @@ export class OcrWorkspaceView extends ItemView {
 
   /* ── Partial table refresh (preserves input focus) ── */
   private _refreshTable(): void {
+    if (this._closed || this._loadState !== "ready") return;
     const container = this.containerEl.children[1] as HTMLElement;
     const filtered = this._filteredPapers();
 
@@ -318,6 +336,16 @@ export class OcrWorkspaceView extends ItemView {
     const header = container.createDiv({ cls: "pf-ocr-ws-header" });
     header.createEl("h1", { text: t("ocr_ws_title") });
     header.createEl("p", { cls: "pf-ocr-ws-lede", text: t("ocr_ws_lede") });
+    if (this._loadState !== "ready") {
+      header.createEl("p", {
+        text: t(`ocr_ws_load_${this._loadState}`),
+        attr: { role: this._loadState === "failed" ? "alert" : "status" },
+      });
+      if (this._loadState !== "loading") {
+        const retry = header.createEl("button", { text: t("install_btn_retry") });
+        retry.addEventListener("click", () => { void this._loadPapers(); });
+      }
+    }
   }
   private _ensureActionDescriptor(actionId: OcrActionId): void {
     if (

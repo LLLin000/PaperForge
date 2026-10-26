@@ -25,7 +25,7 @@ import type {
   ActionScope,
 } from "./action-contract";
 import { buildActionArgv } from "./action-contract";
-import { commandIdentity, isTraceEnabled, traceConsoleError, traceRecord } from "./trace";
+import { commandIdentity, isTraceEnabled, rejectionCode, traceConsoleError, traceRecord } from "./trace";
 
 export interface PaperForgeClientOptions {
   transport: Transport;
@@ -549,6 +549,7 @@ export class PaperForgeClient {
         }
         return outcome;
       } catch (err: unknown) {
+        const code = rejectionCode(err) ?? "transport_error";
         // The transport-level promise can reject (spawn/stream teardown).
         // Keep the failure reachable from the diagnostics surface, and emit
         // the single stream terminal record (fixed metadata only; a
@@ -573,13 +574,13 @@ export class PaperForgeClient {
           ok: false,
           ms: Date.now() - streamStartedAt,
           epoch: this._epoch,
-          code: "transport_error",
+          code,
           detail: "exit=? events=0",
         });
         traceConsoleError({
           op: `${operationId} ${commandIdentity(argv)}`,
           stage: "stream",
-          code: "transport_error",
+          code,
           exitCode: null,
         });
         throw err;
@@ -625,20 +626,19 @@ export class PaperForgeClient {
     }
     const cacheKey = `probe:${module}:${options?.expectedVersion ?? ""}:${options?.lastOperationExitCode ?? ""}`;
     return this._cachedRead(cacheKey, 60000, async () => {
-      const raw = await this._executeRaw(
+      return this._executePfResult<ProbeEnvelope>(
         ["probe", module, "--json", ...extraArgs],
         // A module probe walks every paper's lineage (measured: 25s on a
         // 969-paper vault, plus cold-import cost on the first run after an
         // install) — the 120s default reported a false failure there.
         { timeoutMs: 300000 }
       );
-      return JSON.parse(raw) as ProbeEnvelope;
     });
   }
 
   async probeAll(): Promise<ProbeAllEnvelope> {
     return this._cachedRead("probe:all", 60000, async () => {
-      const raw = await this._executeRaw(
+      return this._executePfResult<ProbeAllEnvelope>(
         ["probe", "all", "--json"],
         // `probe all` walks every module's lineage in one process.  Measured
         // 145s on a 969-paper vault with a fresh venv (bytecode compilation
@@ -646,7 +646,6 @@ export class PaperForgeClient {
         // for every module — the module probe got this budget already.
         { timeoutMs: 300000 }
       );
-      return JSON.parse(raw) as ProbeAllEnvelope;
     });
   }
   // ── 2. Deficit Contract (reconcile) ───────────────────────────────────────
@@ -747,7 +746,8 @@ export class PaperForgeClient {
 
   private async _executePfResult<T>(
     argv: string[],
-    options?: ExecuteOptions
+    options?: ExecuteOptions,
+    unwrapData = true
   ): Promise<T> {
     // Layer split: the Transport owns process/exit semantics (rejects
     // non-zero exits), this client owns PFResult machine-protocol
@@ -871,7 +871,7 @@ export class PaperForgeClient {
         throw transportError;
       }
       // PFResult data is unwrapped; minimal envelopes retain their shape.
-      if ("data" in envelope) return envelope.data as T;
+      if (unwrapData && "data" in envelope) return envelope.data as T;
       return parsed as T;
     }
     // Preflight and other legacy surfaces return valid bare JSON.
@@ -1213,17 +1213,22 @@ export class PaperForgeClient {
     streamOptions?: StreamOptions
   ): Promise<ActionRunResult> {
     const desc = await this.describeAction(req.action_id);
-    if (desc?.availability && desc.availability !== ACTION_AVAILABLE) {
+    const localBusy = desc?.execution_mode === "stream" && this.isOperationActive();
+    if (localBusy || (desc?.availability && desc.availability !== ACTION_AVAILABLE)) {
+      const availability = localBusy ? "busy" : desc!.availability;
+      const reason = localBusy ? "Another operation is already active" : desc?.availability_reason;
+      traceRecord({ ts: Date.now(), kind: "error", op: `action.${req.action_id}`,
+        ok: false, code: availability === "busy" ? "action.busy" : "action.unavailable" });
       return {
         ok: false,
         payload: {
           ok: false,
           action_id: req.action_id,
-          availability: desc.availability,
-          availability_reason: desc.availability_reason,
+          availability,
+          availability_reason: reason,
           error: {
-            code: desc.availability === "busy" ? "action.busy" : "action.unavailable",
-            message: desc.availability_reason || desc.availability,
+            code: availability === "busy" ? "action.busy" : "action.unavailable",
+            message: reason || availability,
             details: {},
           },
         },
@@ -1237,26 +1242,38 @@ export class PaperForgeClient {
     const argv = buildActionArgv(actionReq);
 
     if (desc?.execution_mode === "stream") {
-      const handle = this.streamOperation(
-        `action.${req.action_id}`,
-        argv,
-        streamOptions
-      );
-      const outcome = await handle.outcome;
-      // Terminal Console output lives in streamOperation's wrapped outcome
-      // (single point) — emitting here too would double-report one failure.
-      const terminalEv = outcome.events.find(
-        (e) =>
-          e.event === "result" || e.event === "error" || e.event === "cancelled"
-      );
-      const payload =
-        (terminalEv?.result as Record<string, unknown> | null) ?? null;
-      return {
-        ok: outcome.ok,
-        payload,
-        exitCode: outcome.exitCode ?? (outcome.ok ? 0 : 1),
-        cancelled: outcome.cancelled,
-      };
+      try {
+        const handle = this.streamOperation(`action.${req.action_id}`, argv, streamOptions);
+        const outcome = await handle.outcome;
+        // streamOperation owns the single Console terminal; this adapter only
+        // preserves a safe machine-readable rejection for action consumers.
+        const terminalEv = outcome.events.find(
+          (event) => ["result", "error", "cancelled"].includes(event.event)
+        );
+        let payload = (terminalEv?.result as Record<string, unknown> | null) ?? null;
+        if (!outcome.ok && (outcome.protocolFailure || !payload)) {
+          const code = outcome.cancelled ? "action.cancelled"
+            : outcome.protocolFailure ? "protocol_failure" : "transport_error";
+          payload = { ok: false, error: { code, message: outcome.cancelled
+            ? "Operation cancelled"
+            : "Backend operation ended without a valid terminal result" } };
+        }
+        return {
+          ok: outcome.ok,
+          payload,
+          exitCode: outcome.exitCode ?? (outcome.ok ? 0 : 1),
+          cancelled: outcome.cancelled,
+        };
+      } catch (err) {
+        return {
+          ok: false,
+          payload: { ok: false, error: {
+            code: rejectionCode(err) ?? "transport_error",
+            message: err instanceof Error ? err.message : "Operation failed to start",
+          } },
+          exitCode: transportExitCode(err) ?? 1,
+        };
+      }
     }
 
     let raw: string;
@@ -1380,9 +1397,11 @@ export class PaperForgeClient {
   async sync(dryRun = false): Promise<Record<string, unknown>> {
     const argv = ["sync", "--json"];
     if (dryRun) argv.push("--dry-run");
-    const raw = await this._executeRaw(argv);
-    this.invalidateCache();
-    return JSON.parse(raw);
+    try {
+      return await this._executePfResult(argv, undefined, false);
+    } finally {
+      this.invalidateCache();
+    }
   }
 
   // ── 5. Queries & Search Gateway ───────────────────────────────────────────
@@ -1520,8 +1539,7 @@ export class PaperForgeClient {
       if (sortedKeys.length > 0) {
         argv.push("--keys", ...sortedKeys);
       }
-      const raw = await this._executeRaw(argv);
-      return ocrRowsFromPayload(JSON.parse(raw));
+      return ocrRowsFromPayload(await this._executePfResult(argv));
     });
   }
 

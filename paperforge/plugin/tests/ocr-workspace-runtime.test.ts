@@ -94,6 +94,38 @@ describe("OcrWorkspaceView PaperForgeClient cutover", () => {
     await actions._runOcrAction("ocr.run", []);
     expect(transport.calls).toEqual([]);
   });
+  it("drops a paper-list response after the workspace closes", async () => {
+    const rows = Promise.withResolvers<string>();
+    const transport = new MockTransport();
+    transport.executeHandler = (argv) => argv[0] === "ocr"
+      ? rows.promise : JSON.stringify({});
+    const view = makeView(new PaperForgeClient({ transport }));
+    const pending = (view as any)._loadPapers();
+    await view.onClose();
+    rows.resolve(JSON.stringify([{ key: "LATE", title: "Late paper" }]));
+    await pending;
+    expect((view as any).papers).toEqual([]);
+  });
+
+  it("does not submit paper selections removed by a refreshed library snapshot", async () => {
+    const transport = new MockTransport();
+    transport.executeHandler = (argv) => {
+      if (argv[0] === "ocr") return JSON.stringify([{ key: "CURRENT", title: "Current paper" }]);
+      if (argv[0] === "action") return descriptorResponse(argv[2]);
+      return JSON.stringify({});
+    };
+    transport.streamHandler = () => ({
+      events: [{ schema_version: 1, event: "result", operation: "ocr.run", result: { ok: true } }],
+      outcome: { ok: true, exitCode: 0 },
+    });
+    const view = makeView(new PaperForgeClient({ transport }));
+    (view as any).checkedKeys.add("REMOVED");
+    await (view as any)._loadPapers();
+    await (view as any)._runOcrAction("ocr.run", [...(view as any).checkedKeys]);
+    expect(transport.calls.filter((call) => call.kind === "stream")).toEqual([]);
+    expect((view as any).papers.map((paper: { key: string }) => paper.key)).toEqual(["CURRENT"]);
+  });
+
   it("preserves the lineage status of listed papers", async () => {
     const transport = new MockTransport();
     transport.executeHandler = (argv) => {

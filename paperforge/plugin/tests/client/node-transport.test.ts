@@ -58,6 +58,80 @@ describe("NodeProcessTransport", () => {
     });
   });
 
+  describe("terminal authority", () => {
+    it.each([
+      { event: "error", result: { ok: false }, cancelled: false },
+      { event: "result", result: { ok: false }, cancelled: false },
+      { event: "cancelled", result: { ok: false }, cancelled: true },
+    ])("does not turn $event into success when the child exits zero", async ({ event, result, cancelled }) => {
+      const child = new MockChildProcess();
+      const handle = runLongTask("python", [], vaultPath, ["action", "run", "ocr.run", "--json"], {
+        onEvent: () => undefined,
+        spawnFn: vi.fn().mockReturnValue(child),
+      });
+      child.stdout.emit("data", JSON.stringify({ schema_version: 1, event, operation: "ocr.run", result }) + "\n");
+      child.exitCode = 0;
+      child.emit("close", 0);
+      const outcome = await handle.promise;
+      expect(outcome.ok).toBe(false);
+      expect(outcome.cancelled).toBe(cancelled);
+      expect(outcome.exitCode).toBe(0);
+    });
+
+    it("reaps a live stream immediately when the plugin unloads", async () => {
+      const child = new MockChildProcess();
+      const handle = runLongTask("python", [], vaultPath, ["action", "run", "ocr.run", "--json"], {
+        onEvent: () => undefined,
+        spawnFn: vi.fn().mockReturnValue(child),
+      });
+      try {
+        NodeProcessTransport.reapAllExecuteChildren();
+        expect(child.kill).toHaveBeenCalledWith("SIGKILL");
+      } finally {
+        child.exitCode = 1;
+        child.emit("close", 1);
+        await handle.promise;
+      }
+    });
+  });
+
+  describe("stream startup lifecycle", () => {
+    it("does not spawn after cancellation during runtime resolution", async () => {
+      const runtime = Promise.withResolvers<{ path: string; args: string[] }>();
+      const child = new MockChildProcess();
+      const spawnFn = vi.fn().mockReturnValue(child);
+      const transport = new NodeProcessTransport({
+        vaultPath, spawnFn, resolveRuntime: () => runtime.promise,
+      });
+      const handle = transport.stream(["setup", "--json"]);
+      handle.stop();
+      runtime.resolve({ path: "python", args: [] });
+      await Promise.resolve();
+      await Promise.resolve();
+      try {
+        expect(spawnFn).not.toHaveBeenCalled();
+        const outcome = await handle.outcome;
+        expect(outcome.cancelled).toBe(true);
+        expect(outcome.exitCode).toBeNull();
+        expect(await handle.events[Symbol.asyncIterator]().next()).toMatchObject({ done: true });
+      } finally {
+        child.emit("close", 130);
+      }
+    });
+
+    it("settles both outcome and event consumers on runtime setup failure", async () => {
+      const transport = new NodeProcessTransport({
+        vaultPath,
+        resolveRuntime: async () => { throw Object.assign(new Error("setup required"), { code: "NO_PYTHON" }); },
+      });
+      const handle = transport.stream(["setup", "--json"]);
+      await Promise.all([
+        expect(handle.outcome).rejects.toMatchObject({ code: "NO_PYTHON" }),
+        expect(handle.events[Symbol.asyncIterator]().next()).rejects.toMatchObject({ code: "NO_PYTHON" }),
+      ]);
+    });
+  });
+
   describe("runLongTask stop escalation (#330)", () => {
     it("reports a user stop that needed the kill as cancelled, keeping the protocol note", async () => {
       const mockChild = new MockChildProcess();
