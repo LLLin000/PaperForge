@@ -493,7 +493,7 @@ Node 外部 TCP guard、Python socket guard、Null keyring、Chromium offline/de
 - 合成真实 PDF 的 `bridge bridge bridge` 中，引文 `bridge bridge` 有两处重叠命中；旧算法错误报告 `matched/occurrences=1`，实际 CLI source-check 返回 0。最小修复为字面量 lookahead 计数，保留现有 wire、路径/页码/hash/binding 和人工核验契约。
 - 旧记录不重写：同一 ID 的实时投影现在为 `ambiguous/occurrences=2`，source-check 返回 1；完整且唯一的三词引文仍 matched/返回 0。专用 Python3.12.8 + socket guard + 隔离 HOME 的来源/阅读记录 CLI 回归 **15 passed**，只新增一个现有测试文件中的行为用例。
 - 没有 TS 修改、重新安装或新增实机 UI 验收。641/1 是上一阶段未变 TS 的历史证据，不是新 Python 的整体验收。新修复前的 `0d58ff6f…` wheel 已不包含当前 Python 全量源码，不再宣称 237/237 当前匹配。
-- 本机 guard 未识别 Eval 中已执行的 gate 而阻止一次提交；随后正常在 Bash 记录同一 15 项门并提交，未绕过 hook。重复执行不计为第二次独立用户旅程。
+- 提交门禁判定先前记录不满足“最后修改后验收”而阻止一次提交，具体触发机制未调查；随后正常在 Bash 记录同一 15 项门并提交，未绕过 hook。重复执行不计为第二次独立用户旅程。
 
 ### 四个主工作包与两个独立队列
 

@@ -141,7 +141,7 @@
   "direction": "Stop free-ranging audits and coverage-driven repairs; qualify one installable offline Preview",
   "admission_rule": "Only wrong data/source association, data loss/unauthorized fees, core journey blockage, or install/upgrade/recovery/mandatory-gate blockers",
   "single_admitted_fix": "Real PDF overlap was falsely matched/count1 and source-check exit0. Literal lookahead yields ambiguous/count2 and exit1 for the same saved ID; unique full quote still matched/exit0. No authority rewrite or new wire state.",
-  "regression": "One new case in existing file; affected source-record gate15 passed. Normal Bash gate repeated only after hook did not recognize Eval gate, not counted as another independent journey.",
+  "regression": "One new case in existing file; affected source-record gate15 passed. Guard required a new post-mutation verification receipt; actual guard mechanism not investigated. Normal Bash gate then passed; repetition is not another independent journey.",
   "inspection_snapshot": {
    "public_commit": "6c99f22e36d0707666c6a7d4208df3e1ca70cd34",
    "master": "a856f84f6bac666cebe22226110530133f489e33",
