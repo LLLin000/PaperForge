@@ -4,7 +4,7 @@
 
 当前进入 **Integration & Release Stabilization**：冻结既有 `PFResult`、Probe v2、Action Registry、NDJSON 和 `PaperForgeClient` 契约，不扩功能或新增控制内核；先收口上游集成，再以同一最终源码、wheel、插件 bundle 和宿主做统一候选认证，独立处置发布风险。本文是证据与计划的投影，任务状态以 GitHub Issue、发布接受以 CI/owner 门禁为准。
 
-当前产品提交：**`f6775fd11c92c8b79667be8b3f883d4934ac0815`**，本轮基线 `f289608ca6c3b30c78b03d0f2acea5273db6e63a`，见末节“八方向状态续修”。`527d7960` 是前一轮 Scope 修复产品；`786924a0`、`f289608c` 是历史证据快照，`4cb51da8` 是历史安装基线，均不再称当前 HEAD。public 分支 `fix/module-interface-consistency-public` 的最新 HEAD 以 Git 引用为准；后续纯文档提交不改变产品身份。该分支不是 master/Release，不能绕过 #352/#354 依赖整体合并；未改变上游 PR、未合并、发布或恢复收费调用。
+当前产品提交：**`2137cea9bd54a9b3708bba614c4983f2f2865ecf`**，本轮基线 `5f7504ec7a837d5c1153697f9f84d38b75a33bc0`，见末节“流程与错误体验 A/B 有限修复”。`f6775fd1` 是上一轮八方向状态修复，`527d7960` 是此前 Scope 修复；历史证据提交与安装基线均不再称当前 HEAD。public 分支 `fix/module-interface-consistency-public` 的最新 HEAD 以 Git 引用为准；后续纯文档提交不改变产品身份。该分支不是 master/Release，不能绕过 #352/#354 依赖整体合并；未改变上游 PR、未合并、发布或恢复收费调用。
 
 ## 模块责任表
 
@@ -21,7 +21,7 @@
 | Embedding/语义检索 | `embedding/*`、`retrieval/gateway.py` | `embed status --json`、`runtime-health --json` | 没有调用提供商；未验证召回质量、付费范围及真实模型兼容性 |
 | 阅读/研究记录 | `memory/permanent.py` 中 JSONL 是 authority；`commands/reading_log.py`；插件 `views/research-record.ts` | `reading-log --search QUERY --json`、paper-context | 本轮真实隔离 UI：保存→非标题关键词命中具体记录→打开→追加纠正→默认排除旧引文→历史开关找回→重启持久，JSONL 与 correction 关系读回一致；另完成真实授权 PDF 引文的 exact_text 匹配与来源跳转。历史 #352/#354 真实库证据保留，不把本轮隔离库验收替代正式发布验收 |
 | 来源/页面定位 | 既有 reading-record source 校验与插件打开来源入口 | 记录 source check、原有来源测试 | 2026-10-26 真实授权 PDF 验收 PARTIAL PASS：隔离留存 `source-acceptance` 收据（真实授权副本的 PDF 字节/引文原文/BBT 路径均未入库）。状态机 matched（全 PDF 唯一命中，物理页 1/印刷页 248）→ 变异 SHA `0a7c7c4c…` 后 status=changed/`VALIDATION_ERROR` → 恢复原 SHA `467c800e…`（9 页）后 matched。错页 mismatch、user_confirmed/recorded 分支未验 |
-| 版本/回收/恢复 | `commands/versions.py`、`worker/trash.py`；删除通过 move+manifest | `versions list --json`、相关回归测试 | 2026-10-26 隔离副本实测：versions restore v1→render字节一致（provenance.label=v1）；trash_remove→restore_trash原路径字节一致（禁purge）。fixture为声明合成不冒充用户文献。生产 pointer/用户vault未碰 |
+| 版本/回收/恢复 | `commands/versions.py`、`worker/trash.py`；删除通过 move+manifest | `versions list --json`、相关回归测试 | 历史 CLI 已验证 versions/trash 字节保留；本轮论文面板真实版本历史 Modal 验证正文恢复但 provenance 未保存的持久提示、当前版本标记和正常恢复关闭/读回。直接 timeline 恢复及其他 Modal 适配器属 UNIT/源码覆盖，不冒充逐入口实机通过；失败元数据未被自动修复 |
 | Agent/技能 | `commands/agent_context.py`、部署入口与包内 skills | `probe help --json`、`agent-context --json` | 隔离副本实测 `agent-context`、skill deploy、重复 deploy 的 noop 保护、`pf_bootstrap.py --vault`；未改用户技能。无本地模型，远端仍冻结，模型驱动的实际研究任务 BLOCKED，不把部署或帮助成功当模型任务通过 |
 | 控制面/运维 | `reconcile.py` 是 next_actions 生产者；Registry 是动作策略 authority；maintenance 仅投影 | `probe all --json`、`reconcile --scope all --json`、`action list --json` | 实际拿到六个模块信封和九个动作；maintenance=ready 只表示没有维护项不表示所有模块可用。2026-10-26 runtime-health已修（vector层显式enabled事实，仅vector返回值加字段、_layer原API不变；disabled→safe_vector/vector_retrieve=false，层状态仍ok；见CHANGELOG与红/绿CLI收据） |
 | 插件/传输 | `client/node-transport.ts` 唯一进程 authority，`client/paperforge-client.ts` 唯一业务 client | client/transport/protocol-conformance 本地验证 | 本轮修复 result-mode 拒绝原因丢失和假成功；真实 Obsidian 故障演练的诊断复制/搜索错误显示已覆盖（缺索引卡 CTA 进详情零 runAction、genuine 失败脱敏单条 Console）。旧自由文本 console 调用点已在本轮续作 diff 中移除，当前 src 原始 `console.*` 只剩 `trace.ts` 两处（见下“日志隐私限制”），不再列为未修。本轮记录流实测：每次 genuine 失败恰好一条 Console 行（rr-step5 空页保存 1 行 → rr-step6 成功保存零新增 → rr-step10 来源核验失败第 2 行；无单操作双行，单终态规则成立） |
@@ -377,7 +377,7 @@ JSONL authority 读回：`logs/reading-log.jsonl`（1 行，`verified:false`）�
 3. 检查剩余 legacy 文本与 authority-JSON 端点的终态/Console 归属，保持合法审计报告与命令失败不同，不强制全部套同一种 decoder。
 4. 完整 H、最终集成/发行认证、真实提供商质量和费用继续独立；无新增 CI 或付费授权，不用本轮本地绿灯豁免。
 
-## 剩余缺口第二批分发（2026-10-26，只读定位完成）
+## 剩余缺口第二批分发（2026-10-26，历史定位快照）
 
 基线 `cbb7c84d9205bcdb37f99ead2479eb42dc2ec5e2`；Issue #356 快照 `2026-10-26T04:15:36Z`；父需求 #130、原 worktree/安全边界不变。五个只读 scout 已返回并保存原输出，父代理核对争议接缝；**本节没有新产品修改、运行时复现或测试通过声明**，产品与 626/1 证据仍绑定 `f6775fd1`。
 
@@ -389,11 +389,11 @@ JSONL authority 读回：`logs/reading-log.jsonl`（1 行，`verified:false`）�
 | 4 | Legacy/渲染：`_executeStructuredJson` 有意把合法负面 authority 报告作为值返回；audit/staging 还需区分真实拒绝、协议异常和合法审计失败 | 先核对真实后端 shape，再选最小共享错误归属；不把全部 `ok:false` 强制 throw。`read/reconcile/paperStatus` 当前无 src 消费者的项不优先扩建；backendVersion 的 View 实际有 `.catch`，不是未捕获 Promise |
 | 5 | 来源核验：读时重算 source_provenance，hash/内容变更会失效；recorded/user_confirmed 明确不等于程序文本匹配，暂未找到消费者自动标 verified 的漏洞 | 只补确有价值的覆盖：exact_text 在别页/多处匹配、printed_page 改动绑定，以及手工位置允许打开但不升级核验的分支；不改既有安全门或增加证据存储 |
 
-后续产品写入仍只有父代理；五份分发结果是 **INSPECTED**，不是五项已经修复。原始输出及父代理纠偏留在 `TRIAL_ROOT/module-interface-356-state-audit/remaining-triage/`。本次没有启动 CI、浏览器、Python 进程或服务商调用；完整 H、最终集成/发行和真实服务授权仍不动。
+上述为分发当时的 **INSPECTED** 快照，不是五项已经修复；后续已实施项目见末节。原始输出及父代理纠偏留在 `TRIAL_ROOT/module-interface-356-state-audit/remaining-triage/`。该定位阶段没有启动 CI、浏览器、Python 进程或服务商调用；完整 H、最终集成/发行和真实服务授权仍不动。
 
-## 全流程与错误体验收敛方案（PLANNED，2026-10-26）
+## 全流程与错误体验收敛方案（实施前设计基线，2026-10-26）
 
-用户要求把完整流程和错误提示理顺。本方案基于 `eda097a18451056baeff255b0ceb65c1240c0e6b`、Issue #356 快照 `2026-10-26T04:34:56Z`；仅为设计，未新增实现或验收通过。产品仍为 `f6775fd1`。任务状态以 Issue 为准；主 WIP、既有堆叠 PR、生产环境、CI/收费冻结不变。
+用户要求把完整流程和错误提示理顺。以下是实施前方案，基于 `eda097a18451056baeff255b0ceb65c1240c0e6b`、Issue #356 快照 `2026-10-26T04:34:56Z`；设计时产品为 `f6775fd1`。本轮 A/B 的实际交付与尚未证明的 C 阶段见末节，不能把整份方案标为完成。任务状态以 Issue 为准；主 WIP、既有堆叠 PR、生产环境、CI/收费冻结不变。
 
 ### 目标与主路径
 
@@ -445,3 +445,40 @@ JSONL authority 读回：`logs/reading-log.jsonl`（1 行，`verified:false`）�
 每项交付都记录：步骤/确认范围、实际请求与副作用集合、可见终态、恢复是否成功、Console 条数/脱敏、重启读回、源码/构建/部署/宿主身份。证据继续分 INSPECTED、UNIT、LIVE、BLOCKED；不靠 mock 回声、方法直调或重跑一次变绿冒充用户旅程。
 
 保持一个写入者；复用现有五份只读分发结果，不再重开全库泛查。实施时只跑相关 seam 检查，同一批最后一次产品变更后跑一次完整受影响本地门与真实宿主 smoke；旧代码未变的证据注明原身份后沿用。开发不逐小改等待 CI；最终集成的必需 CI、完整 H、统一 source/wheel/bundle/host 与 owner 发布门仍独立必需，不能豁免。真实 OCR/Embedding/模型及费用/留存验收继续另行授权。
+
+## 流程与错误体验 A/B 有限修复（LOCAL VERIFIED，2026-10-26）
+
+实施合同：Issue #356 / parent #130，Issue 快照 `2026-10-26T05:47:29Z`；基线 `5f7504ec7a837d5c1153697f9f84d38b75a33bc0`，产品 `2137cea9bd54a9b3708bba614c4983f2f2865ecf`。三份只读 scout 分别核对真实 audit wire、恢复响应兼容性和隔离宿主夹具；父代理为唯一写入者。未另建状态机、日志库、数据库或重试框架。
+
+| 修复接缝 | 当前行为 | 本轮证明等级 |
+|---|---|---|
+| 版本恢复部分成功 | 显式 false 与旧响应缺 flag 都不冒充完全成功；正文已恢复与来源记录未确认分开提示，当前版本标记跟随已确认复制结果，选择其他版本不丢警告；仅显式 false 记录一条安全子步骤诊断 | 真实论文面板 Modal：故意损坏合成 meta，恢复 v1 后字节一致、meta 未改、当前标记 v1、选 v2 警告仍在；移除夹具故障后恢复 v2，正常关闭且 provenance/字节读回一致。直接 timeline 同类状态为 UNIT，不冒充实机 |
+| Setup 启动失败日志归属 | client 已拥有启动失败时 View 不再重复记录；NO_PYTHON 仍静默，本地保存失败仍由本地记录一次 | 实际 client/MockTransport/Stage2 seam：ECONNREFUSED 一条、NO_PYTHON 零条、本地 saveSettings 失败一条；UNIT，非本轮真实安装验收 |
+| 搜索视图生命周期 | 关闭及真正替换搜索 DOM 的 mode-switch/refresh 共用既有清理接缝，作废防抖和旧回复；不杀其他共享任务 | UNIT 覆盖 switch/refresh；真实 Ctrl+O 切论文、Ctrl+W 关闭与重开后搜索通过，见下 |
+| render authority JSON | 保留合法 FAILED 审计和 ok:false mutation rejection 为值；启动失败、非 JSON/非对象和失败 transport 自报 ok:true 各有单条诊断，未知退出码也不能伪装成功 | 实际后端格式经源码核对；既有 client seam 覆盖合法负面报告与协议/进程负例。UNIT/INSPECTED，不宣称渲染内容质量已重验 |
+
+### 红绿与真实操作证据
+
+- 原始红例：首组 **8 failed / 2 passed**、render **3 failed**；实机发现后的当前版本标记红例、timeline 红例、未知退出码矛盾红例均保留。未知退出码红例保存为明确标注的工具回执转录，不伪装原始 stdout。
+- 最终离线插件门：**641 passed / 1 skipped**，32 files passed / 1 skipped；typecheck、build 和 whitespace 检查通过。新增 15 个行为/边界用例，未新增永久测试文件。中间 639/1 属旧阶段，未改写为最终门。
+- 最终构建/部署 bundle SHA256：`d964fd7e2a7b65b2633cbaa191458edd27452874784517d80ea2c0290fac47d2`。最终截图已实际查看。
+- 搜索使用真实本地 Python/FTS，不是 canned response：Alpha 实际命中 A；通过原生 Ctrl+O 打开 B，再发起 Beta 查询。夹具仅延迟真实结果交付；释放 A 后 B 仍 searching、旧 DOM 零回写；释放 B 后仅显示 B。另发起真实 Workflow 查询，原生 Ctrl+W 关闭活动面板，再释放结果：leaf=0、idle、引用清空、旧 DOM 零回写；从产品命令重开后 Beta Study 正常命中。四次实际 search argv 和后端结果私下留存。
+- 故障恢复演练只作用于合成 meta；正常恢复分支前由夹具移除损坏，**不是产品自动修复成功**。恢复警告是当前 View 的反馈，不承诺跨关闭/重启保留该 UI 消息。
+- 测试工具问题也保留：热重载后首次按钮 detached，重新观察稳定页面后点击成功；错误的 PFResult 根字段等待谓词与 raw page/tab.evaluate 的全局上下文差异造成等待超时，未重提恢复操作，未当作产品时延失败或稳定性通过。上下文差异已上报工具；后续等待只检查真实 DOM。
+
+### 身份、安全和清理
+
+Windows x64；Obsidian **1.14.5 / Electron 37.6.0 / Chromium 138.0.7204.251**，宿主二进制 hash 见 manifest。独立 HOME/profile/Vault，autoSync=false；两篇 BBT 条目和两份 PDF 均为声明合成，不复制真实用户文献，也未运行 hardcoded 共享 sandbox builder。
+
+后端使用已有专用 Python3.12.8 的依赖，加明确声明的临时 runtime-wrapper seam 指向冻结 wheel 解包目录；**237/237 Python 文件匹配当前源码**。wheel SHA256 `0d58ff6f75a8937ecbcd30fb48b786281f280b74c777cbfa71ec5ae4b8790c66`。实际 CLI、distribution 和插件版本均为 **2.0.0rc5**；源码模块 `__version__` 常量为 2.0.0，未混称为握手结果。没有原地重装、发布 pointer 或新的安装认证。
+
+Node 外部 TCP guard、Python socket guard、Null keyring、Chromium offline/dead proxy 生效；没有真实 OCR/Embedding/模型或费用调用。本轮未改 Python 产品，不重跑也不冒称新的 Python suite；历史 221/3 仍仅属历史。
+
+原始红绿日志、操作/源码收据、截图和清理回执保留于 `TRIAL_ROOT/module-interface-356-workflow-repair/`；公开 manifest 仅含身份、状态和 hash。已停止自己的宿主进程树并删除本轮临时 Vault/profile/wheel 解包目录，已有共享 venv/wheel/历史证据未动，asar hardlink 不冒算为释放空间。首次删除遇短暂 IndexedDB 文件锁的事实也保留。
+
+### 仍未完成，不与本批混算
+
+1. 设计 C 阶段：来源错页/多处匹配/printed-page 与手工核验状态等补充实机分支，以及更完整的失败/取消/结果未确认旅程；不是这次 641 项通过就全局验收。
+2. 本次截图仍可见中英文混排、默认笔记暴露技术属性与 key 标题；这是明确 UX 待改善，不宣称全流程已经流畅。
+3. 完整 H/原生 GPU 根因、上游集成、最终 source/wheel/bundle/host 发行组合、旧分发依赖及跨版本升级门仍独立未接受；未操作 #352/#354、master 或正式发布。
+4. 真实服务终态、OCR 内容质量、Embedding/Agent 质量、事故费用/留存/凭据轮换仍需独立证据与授权，远端继续冻结。Console 帮助定位模块/阶段/错误类别，不保证单行自动确定所有根因。
