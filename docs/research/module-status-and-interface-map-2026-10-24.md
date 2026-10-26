@@ -4,7 +4,7 @@
 
 当前进入 **Integration & Release Stabilization**：冻结既有 `PFResult`、Probe v2、Action Registry、NDJSON 和 `PaperForgeClient` 契约，不扩功能或新增控制内核；先收口上游集成，再以同一最终源码、wheel、插件 bundle 和宿主做统一候选认证，独立处置发布风险。本文是证据与计划的投影，任务状态以 GitHub Issue、发布接受以 CI/owner 门禁为准。
 
-身份口径：**产品提交 `527d796063cf1e4b5fd9a7e0fd7118aa9ea3259e`**；**身份口径修正时采用的证据快照 `786924a03e45451e46b6650dc21d6756b9c02484`**。`4cb51da8` 是历史安装验收基线，不是当前 HEAD；Scope 修复的测试基线为 `b1530c1c`，各阶段产物见机器可读证据清单。独立 public 分支 `fix/module-interface-consistency-public` 的最新 HEAD 以 Git 引用为准，后续纯文档提交不改变产品身份。该分支不是 master/Release，也不是可绕过 #352/#354 依赖整体合并的小修复；未改变这些上游 PR，未执行合并、发布或收费调用。
+当前产品提交：**`f6775fd11c92c8b79667be8b3f883d4934ac0815`**，本轮基线 `f289608ca6c3b30c78b03d0f2acea5273db6e63a`，见末节“八方向状态续修”。`527d7960` 是前一轮 Scope 修复产品；`786924a0`、`f289608c` 是历史证据快照，`4cb51da8` 是历史安装基线，均不再称当前 HEAD。public 分支 `fix/module-interface-consistency-public` 的最新 HEAD 以 Git 引用为准；后续纯文档提交不改变产品身份。该分支不是 master/Release，不能绕过 #352/#354 依赖整体合并；未改变上游 PR、未合并、发布或恢复收费调用。
 
 ## 模块责任表
 
@@ -39,7 +39,7 @@
 
 原 `BACKEND-FRONTEND-CONTRACT-MAPPING.md` 是设计蓝图，其示例不是逐字段的现行 schema；运行时代码和协议测试优先。例如实际 Probe 是 `reason: {code,text}` 与 `action: {primary: ...}`，不是蓝图示例中的扁平 `reason_code/action_primary`。
 
-### 本轮实际修复
+### 早期修复：result-mode 动作契约
 
 `PaperForgeClient.runAction()` 的 result 分支此前：
 
@@ -286,7 +286,7 @@ JSONL authority 读回：`logs/reading-log.jsonl`（1 行，`verified:false`）�
 
 ## Integration & Release Stabilization：执行契约（集成未执行；单次诊断进展见后节）
 
-计划建立时（`014953ca`）仅修正文档身份并整理收口方案，未新建集成分支、修改 #352/#354、合并或运行 CI。其后经用户明确授权，仅执行了一次 A01 单项诊断，结果见后节；不是完整 CI 或产品验收。#356 的产品提交仍为 `527d7960`，最终集成候选尚未产生。主工作树 WIP 和生产环境继续隔离。
+计划建立时（`014953ca`）仅修正文档身份并整理收口方案，未新建集成分支、修改 #352/#354、合并或运行 CI。其后经用户明确授权，仅执行了一次 A01 单项诊断，结果见后节；不是完整 CI 或产品验收。该计划与单次 A01 阶段的 #356 产品提交为 `527d7960`；最新有限状态续修见末节，最终 master 集成候选仍未产生。主工作树 WIP 和生产环境继续隔离。
 
 ### 1. 按依赖收敛，不整体合并 public 分支
 
@@ -330,7 +330,7 @@ JSONL authority 读回：`logs/reading-log.jsonl`（1 行，`verified:false`）�
 | 升级与来源核验覆盖不全 | 逐个声明实际支持的升级起点和宿主；来源错页、手工确认、仅记录位置等未覆盖分支继续标待验，不扩大“已匹配”或升级安全承诺 |
 | 真实 OCR / Embedding / 云端模型 | 继续冻结。服务商作业终态、费用、数据留存与凭据处置仍须独立证据；恢复前另行确认授权、单篇目标及付费/上传范围，离线安全测试通过不等于恢复许可 |
 
-下一可执行工程任务是关闭完整 H 阻断并准备 #352 的最终目标基线验收；不是新增 UI/状态抽象、Rust 重写、Evidence Engine，也不是自动合并 #354/#356 或发布。
+该集成计划仍需关闭完整 H 阻断并准备 #352 的最终目标基线验收；本轮另完成用户授权的有限状态续修，见末节。不新增 UI/状态抽象、Rust 重写或 Evidence Engine，不自动合并 #354/#356 或发布。
 
 ## A01 单次诊断：原生 GPU 退出证据（2026-10-25）
 
@@ -341,3 +341,38 @@ JSONL authority 读回：`logs/reading-log.jsonl`（1 行，`verified:false`）�
 - **诊断自身缺陷如实保留**：新增 beforeTest 把同步版本 getter 当 Promise 调用 `.catch()`，产生 TypeError；原 afterTest 也有同类调用。因此本次有采集 hook 污染，且旧版本字段为 null 不应全部归因为崩溃。已将 hook 改为兼容同步/异步读取，实际旧 hook 的负例和新 hook 的同步、异步、不可用分支在本地红→绿；没有把本地修复当作新 CI 通过，也不回填旧收据。
 - **仍未证明**：GPU 失败的底层诱因、是否存在插件触发关系、干净的 A01 通过、完整 H 通过。未添加 `--disable-gpu` 等绕过项，未将旧 Electron 标为不支持。后续只需针对同一宿主的 GPU 启动/沙箱/渲染配置做有判别力的调查，不再重复安装、同步、记录等已过路径；任何新远端诊断另需授权。
 - **单次权限已消耗**：诊断 workflow 改为手动触发，避免后续推送自动追加运行。原始日志留在私有证据库；公开 manifest 仅发布机器码、身份和四份原始日志 hash。产品源码、#352/#354、主 WIP、生产 pointer/凭据未改；收费 OCR/Embedding/模型继续冻结。
+
+## 八方向状态续修（2026-10-26，产品 f6775fd1）
+
+契约：Issue #356 的 `2026-10-26T02:01:13Z` 用户授权续作，父需求 #130；基线 `f289608c`，同一隔离 worktree/public 分支。八个只读 scout 盘点，父代理唯一写入，并按正确性/验收、可维护性两轴集中复核。所有方向均已检查，**不等于所有状态已实机验证**。
+
+统一的是既有跨层契约与错误归属，不是全应用一台状态机：Probe 描述模块可用性，Registry/runner 决定动作/范围，NDJSON 描述执行终态，client 管在途锁，View 管加载与关闭生命周期。未新建状态、日志、事件或存储框架。
+
+| 方向 | 本次结果与证据等级 | 保留边界 |
+|---|---|---|
+| 安装/运行时 | UNIT VERIFIED：保存设置期间取消，不再开始后续 setup；运行时返回首页不再伪装 idle；abort listener 清理 | 本轮没有重新安装/升级。旧正式资产安装证据保留原身份；Stage 2 已发出的配置写入没有新增事务取消承诺 |
+| 文献库/同步 | UNIT VERIFIED：sync 的 PFResult 拒绝保留 code/data/实际 exit；失败不再作为成功返回 | 原 166 篇验收为历史，不在本轮重跑；自动/手动同步并发策略未新增 |
+| OCR 列表/操作 | UNIT + LIVE：加载中、需配置、失败、真正空库区分；失败显示 Retry 而非 0 篇；关闭丢弃迟到列表；刷新移除失效选择，负例无 stream 提交 | LIVE 为声明合成空库及离线故障注入；不等于真实 OCR/上传/质量验收，后端 scope 未改 |
+| 搜索/Memory | UNIT VERIFIED：关闭清除防抖，不再发新搜索；在途回复不再改写已关闭 DOM | 本次空库 global dashboard 无搜索框，未把方法调用冒充真实搜索交互；当前两项关闭回归没有新增实机搜索证明。既有纸篇/Collection 搜索历史证据保留 |
+| 研究记录/来源 | INSPECTED + HISTORICAL VERIFIED：沿用 JSONL、稳定 ID、correction 与来源契约，无本轮产品改动 | 来源 wrong-page、user_confirmed/recorded 等未覆盖分支仍待验；没有因为审代码就补记 PASS |
+| 维护/恢复 | UNIT VERIFIED：Memory 备份恢复失败可见，后续成功重试有结果反馈 | 静态候选：版本恢复 `provenance_persisted:false` 的部分成功呈现仍需复现/裁定，本轮未改、不宣称通过 |
+| Transport/终态/锁 | UNIT + REAL PROCESS：error/cancelled/result.ok:false + exit0 不变成功；启动失败传给事件消费者；解析 runtime 期间 stop 不 spawn；busy 返回结构化拒绝；卸载回收真实流子进程并释放锁 | 本地停止不代表撤销云端已提交作业。无全进程/全 OS 崩溃恢复承诺 |
+| Console | UNIT + LIVE：probe/sync/OCR-list 复用既有 PFResult 入口；View 不重复记录同一 probe；一次故障一条脱敏 code/stage/exit，NO_PYTHON 与真实本地取消静默 | 不能据此保证 legacy 文本/authority-JSON 入口、局部文件打开和原生崩溃均被完整覆盖；原生 H 问题仍需独立日志/WER |
+
+### 红绿、实机与身份
+
+- 先复现 **19 个失败**：共享边界 10、启动生命周期 2、设置 3、关闭/失效选择 4；原始红输出保留。新增 probe 正/非零 exit 拒绝边界后，完整插件 **626 passed / 1 skipped**（32 文件通过、1 文件跳过），typecheck/build 通过；skip 不算 pass。后端 Python 未改，旧 `221 passed / 3 skipped` 不冒称新跑。
+- 本轮 frontend bundle：`a13eef8bd2ad32d83772d2c5782e5c6b2ddfed35faab7afd5779242797bb93a1`，部署件与工作树构建相同；Obsidian 1.14.5 / Electron 37.6.0 / Chromium 138.0.7204.251，独立 HOME/profile/Vault，autoSync=false，runner 为真实桌面 CDP。
+- LIVE：未发布 pointer 的合成 HOME 正确呈现 setup_required，零 Console/零子进程；声明的离线 transport 注入使 OCR list `ok:false + exit0` 出现失败卡，恰一条 `[PF]` Console；原生点击 Retry 后真实后端读取恢复正常空库，零新增错误。保存三张截图、读回/Console 收据。
+- REAL PROCESS：通过已有自定义 runtime/spawner 接缝启动仅 sleep 的真实 Python 子进程，等待 spawn 事件后卸载插件；进程 exit1、registry=0、active=false、outcome.cancelled=true、零 Console。首轮 fixture 在卸载前已超时结束，保留为**非卸载通过**；它实际验证了 exit0 无 terminal 仍为 protocol_failure，不删除此记录。
+- 身份前置发现旧私有 venv 有 3 个历史 Python 文件差异，未原地安装/修改。随后只在可删除测试目录展开既有冻结 wheel `0d58ff6f…`，237/237 Python 文件与当前源码一致，经**明确声明的测试 runtime-wrapper**复测真实列表；依赖仍用原独立 venv。此方法只证明源码绑定的离线接口 smoke，不冒充 managed runtime 首装/升级或统一发行候选。初始旧 venv 的 Retry 收据和最终精确 wheel 的读取分开标。
+- Chromium offline + 失效代理，Python 子进程重注入 socket guard，Null keyring、无凭据。无 OCR run/resume/redo、Embedding、模型、托管 CI、生产 pointer/数据或上游 PR 改动；未解除远端冻结。
+
+私有证据留在 `TRIAL_ROOT/module-interface-356-state-audit/`：八份 scout 输出、四组红日志、完整绿日志、source manifest、UI/子进程/历史差异收据。public manifest 仅含 hash、状态、计数、命令与限制。自建临时 profile/HOME/Vault/wheel 展开目录已移除（含 ASAR 硬链接的文件逻辑大小约 39 MB，不冒称等额实际释放空间）；原有环境/历史证据未删除。
+
+### 后续仍有价值的有限工作
+
+1. 对版本恢复“字节成功、provenance 未持久化”的部分成功做离线复现，再决定最小 UI/诊断修正。
+2. 补真实 paper/Collection 上下文的关闭在途搜索实机证据，盘清 global 模式的搜索入口，不为获得 PASS 人工调用 renderer。
+3. 检查剩余 legacy 文本与 authority-JSON 端点的终态/Console 归属，保持合法审计报告与命令失败不同，不强制全部套同一种 decoder。
+4. 完整 H、最终集成/发行认证、真实提供商质量和费用继续独立；无新增 CI 或付费授权，不用本轮本地绿灯豁免。
