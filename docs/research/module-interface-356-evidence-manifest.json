@@ -193,6 +193,21 @@
   "old_cells": "original old-on and old-off short controls passed with matching old bundle",
   "preservation": "frozen old evidence hashes unchanged; temporary diagnostic script restored byte-identically; patch and raw receipts retained privately"
  },
+ "workflow_error_plan": {
+  "status": "PLANNED; not implementation or acceptance",
+  "baseline": "eda097a18451056baeff255b0ceb65c1240c0e6b",
+  "issue_updated_at": "2026-10-26T04:34:56Z",
+  "report_section": "全流程与错误体验收敛方案（PLANNED，2026-10-26）",
+  "primary_journey": "Managed engine -> BBT connection -> library sync -> notes/PDF -> optional scoped OCR -> save research record -> retrieval/source -> restart recovery",
+  "execution_order": [
+   "Truthful partial results and one-owner startup/local/authority errors within the existing Issue356 scope",
+   "Reproduce then repair mode-switch/rerender and verify actual paper/Collection search lifecycle",
+   "Offline end-to-end normal/failure/partial/cancel/unconfirmed/restart acceptance, with exact artifact/host binding"
+  ],
+  "decisions": "Reuse existing protocol/authorities, not a global state machine/logger; preserve Stage2-close background continuation; no automatic paid/destructive/unknown-result write retries; legacy absent restore flag is unconfirmed rather than definite write failure",
+  "evidence": "Design only; previous product f6775fd1 and its local/runtime evidence are unchanged",
+  "release_limits": "No CI/provider authorization or release acceptance added; full H/integration/final artifact tuple and owner gate remain separate"
+ },
  "remaining_gap_triage": {
   "baseline": "cbb7c84d9205bcdb37f99ead2479eb42dc2ec5e2",
   "issue_updated_at": "2026-10-26T04:15:36Z",
