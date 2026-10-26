@@ -1,6 +1,6 @@
 {
- "artifact_provenance": "TRIAL_ROOT/module-interface-356-recovery/ (local-only, not committed); value fields below are hashes/codes/counts/commands only",
- "base_sha": "b1530c1cdc6778a546e16537fb0931299f2157b7",
+ "artifact_provenance": "TRIAL_ROOT/module-interface-356-state-audit/ for current continuation; historical recovery receipts remain unchanged. Local raw files are not committed; public fields are hashes/codes/counts/commands only.",
+ "base_sha": "f289608ca6c3b30c78b03d0f2acea5273db6e63a",
  "blocked": [
   "real OCR/Embedding/cloud-model tasks (remote frozen, no local model)",
   "full H host root-cause (A01 unknown; provenance-bound short-A/B completed, not full-H acceptance)"
@@ -79,6 +79,41 @@
   }
  },
  "current_verification": {
+  "commit": "f6775fd11c92c8b79667be8b3f883d4934ac0815",
+  "tested_base": "f289608ca6c3b30c78b03d0f2acea5273db6e63a",
+  "public_branch": "fix/module-interface-consistency-public",
+  "plugin": "626 passed / 1 skipped; 32 passed files / 1 skipped file",
+  "typecheck": "exit 0",
+  "build": "exit 0; post-changelog rebuild retained the deployed bundle hash",
+  "ui_bundle_sha256": "a13eef8bd2ad32d83772d2c5782e5c6b2ddfed35faab7afd5779242797bb93a1",
+  "python": "No Python product changes or new Python suite run; historical 221 passed / 3 skipped remains prior evidence only",
+  "backend_wheel_sha256": "0d58ff6f75a8937ecbcd30fb48b786281f280b74c777cbfa71ec5ae4b8790c66",
+  "backend_python_files_matching": 237,
+  "backend_python_files_mismatching": 0,
+  "backend_smoke_identity": "Final read used existing owned Python3.12.8 venv dependencies plus exact frozen wheel package through the declared temporary custom-runtime-wrapper seam. No in-place install or pointer publication; not managed-install or unified release acceptance.",
+  "host_profile": "Windows x64; Obsidian1.14.5 / Electron37.6.0 / Chromium138.0.7204.251; disposable HOME/profile/Vault; autoSync=false",
+  "runner_kind": "real desktop CDP for OCR UI; real local Python process for unload; existing Vitest production seams for other changed paths",
+  "host_artifact_sha256": {
+   "Obsidian.exe": "0ee4c57571ee0626ce2060c7bad7db5d5b0d2bb158d4099e66ddd32f388fae27",
+   "obsidian-1.14.5.asar": "3a349274f789b62c5b35ad19de10311909a94e8783033569c2210a4bac491780"
+  },
+  "hash_encoding": "Source hashes are tested working-tree file bytes on the declared Windows host; bundle hash is the actual built/deployed artifact",
+  "product_source_sha256": {
+   "paperforge/plugin/main.js": "a13eef8bd2ad32d83772d2c5782e5c6b2ddfed35faab7afd5779242797bb93a1",
+   "paperforge/plugin/src/client/transport.ts": "3799a1985881b254a7dae2f7142c12429f7dd307b62e859dbfb62f36ed9a6091",
+   "paperforge/plugin/src/client/node-transport.ts": "9cee61b17102beda053fb9dc575001c63ec9fc4cad006d46e24ecbe37a18e4e3",
+   "paperforge/plugin/src/client/paperforge-client.ts": "06587c4fd168f2b1019fc002bc6c4b7215f47e51f9bb8a6e3ea19a165d72c5cd",
+   "paperforge/plugin/src/settings.ts": "c0a4f1fe3c240283b22346e250e8cc484c2293395559ff4f887ef26091e58115",
+   "paperforge/plugin/src/i18n.ts": "64022896ff2c6f4a342a137264e931e277dcf7b1226d2479c758a0be021ae95e",
+   "paperforge/plugin/src/views/dashboard.ts": "7337611b2e41068e6eb3a402f45ffccafae78c4f04acc98e882abe05624a1ea7",
+   "paperforge/plugin/src/views/ocr-workspace.ts": "920f28b5958b1bc17de03c87fc4a9e1d259dccf46280242b70cc1aafc0e2e153",
+   "paperforge/plugin/src/views/modals.ts": "2c10a83c2133e2967f70e2431bc00ddbce553bc2f18de006411aa59f2aaba31f",
+   "paperforge/commands/ocr.py": "d6678be2f1a21776c3d090dc0fb9e512d480bc320695fd76cf82ca68a54d45a3",
+   "paperforge/core/next_actions.py": "39732a12ebfe75ee0b417801aed3abb371c3e2fda90a8a868b035a46e176f403",
+   "paperforge/memory/runtime_health.py": "28daec3bebaf0792b4eb02162d5496080f8e214fdcfd742264192509ced9cbe5"
+  }
+ },
+ "historical_scope_verification": {
   "build": "exit 0",
   "commit": "527d796063cf1e4b5fd9a7e0fd7118aa9ea3259e",
   "plugin": "603 passed / 1 skipped",
@@ -95,7 +130,7 @@
   "ui_bundle_sha256": "673b71cada579965b331f62f9c6659330f6ee5da0149257964cf437adf49370b",
   "host_shortcut": "PASS in real Obsidian 1.14.5 using trusted CDP: Ctrl+Enter -> exactly one forced-deep entry and retrieve --deep -> injected failure card -> actual Retry -> recovery -> ordinary Enter search; blur/close release; only the new input binds after rerender"
  },
- "evidence_strength": "gates are tool-receipt backed for TS/python/CLI/UI states listed; versions/trash/agent/embed-status/64-test summary is transcribed from agent tool receipts (remaining-local-acceptance.json, transcript-transcribed), not per-command replayable stdout; UI receipts are 8+10+4 synthetic/authorized screenshots + DOM/action/Console JSONs retained locally, none committed",
+ "evidence_strength": "Current continuation: 19 failing-before cases retained; full plugin 626/1 and typecheck/build tool receipts; actual OCR setup/failure/Retry/empty UI plus real local-stream unload. Search-close and setup/restore feedback are unit verified, not newly live verified. Historical CLI/UI/Python/source proofs retain their original identities and limits.",
  "expected_rejections": {
   "empty_result": "no red Console (expected state)",
   "missing_memory_db": "missing-memory-index card; metadata search only; zero runAction; zero new Console",
@@ -158,6 +193,45 @@
   "old_cells": "original old-on and old-off short controls passed with matching old bundle",
   "preservation": "frozen old evidence hashes unchanged; temporary diagnostic script restored byte-identically; patch and raw receipts retained privately"
  },
+ "state_audit_continuation": {
+  "issue_updated_at": "2026-10-26T02:01:13Z",
+  "read_only_audits": 8,
+  "writers": 1,
+  "review": "One consolidated parent review on acceptance/correctness and maintainability",
+  "new_failing_before_cases": 19,
+  "added_behavior_cases": 23,
+  "module_evidence": {
+   "installation": "UNIT VERIFIED: cancellation after settings save and running-navigation guard; no new live install",
+   "library_sync": "UNIT VERIFIED: authoritative failure preservation; historical real-library proof not rerun",
+   "ocr": "UNIT + LIVE: explicit list load states, real Retry, stale-selection/closed-view regressions; no provider execution",
+   "search_memory": "UNIT VERIFIED: debounce and in-flight close lifecycle; no new live search-close claim",
+   "research_records": "INSPECTED; unchanged product, historical record/source evidence only",
+   "maintenance_recovery": "UNIT VERIFIED: Memory restore failure and retry feedback; version provenance partial-success remains a static unverified candidate",
+   "transport": "UNIT + REAL PROCESS: terminal authority, startup stop/error, busy and unload child/lock cleanup",
+   "console": "UNIT + LIVE: shared PFResult/probe ownership; one redacted genuine failure; setup/cancel quiet; not blanket all-endpoint coverage"
+  },
+  "offline_controls": "Chromium offline + dead proxy; Python socket guard and Null keyring, sanitized HOME; no credentials/providers/CI",
+  "runtime_identity_history": "Initial historical venv had three existing file differences; no in-place repair. Final actual read used a frozen wheel package with 237/237 matches. Both phases retained, not combined into installation acceptance.",
+  "unload_negative_history": "First fixture expired before unload: NOT an unload pass; real EOF without terminal at exit0 correctly failed. Spawn-event-synchronized later local child was terminated, registry0/active=false/cancelled=true/Console0.",
+  "cleanup": "Own disposable profile/HOME/Vault/wheel package removed; historical assets/venv/raw receipts retained",
+  "remaining": [
+   "Version restore provenance_persisted:false partial-success UI needs reproduction/correctness decision",
+   "Live search close in an actual paper/Collection context; global empty dashboard has no search input",
+   "Remaining legacy text and authority-JSON terminal/Console coverage, without erasing valid diagnostic report semantics",
+   "Full H/native GPU cause, final master integration and release tuple, provider quality/billing remain separate unaccepted gates"
+  ],
+  "raw_receipt_sha256": {
+   "red-shared-boundary.txt": "7218cb1479894954e5bb5dae23c8ed3ec450b22f39696ecc601fa71fe82ce51b",
+   "red-stream-startup.txt": "09f05973ac4acf4f4ec3d47529376a7bcb4f74acf5d01c216e4ca6d4be5f6aed",
+   "red-settings-lifecycle.txt": "9fd27ebffb4565561731e0a21cc2fbc743ae7ac0479523e36786c4f4551f8c34",
+   "red-view-lifecycle.txt": "9af888f183c35fb54ba5c182f5dc706147f212b52e6630725fc9682757852566",
+   "green-full-plugin.txt": "eceafa9349ed543e77bc4105720d797530d09c061afdc240297bf3bfcce0d8c8",
+   "ui-and-source-receipt.json": "12dbc4b20ef5143ad7e3005da18ff446d411bb23a7d212ad6a20e47f2f568874",
+   "local-stream-unload.json": "cf658e61f7113ae1484c5430bc4bdde2b071c0379c9bd9c32eb06c904113715e",
+   "historical-venv-mismatch.json": "7165c88424497f4f145f3c288d68a32b7bda9a855894e69eca12398e0d3cd66d",
+   "first-unload-attempt.json": "b4146f5b3201eba860a1b280ee26593e5919a307499caf94d0f4571929e47623"
+  }
+ },
  "full_a01_single_diagnostic": {
   "status": "FAILED: native GPU fatal captured; diagnostic hook contamination retained; full H not accepted",
   "run_id": 40217042572,
@@ -205,7 +279,7 @@
   "physical_page": 1,
   "printed_page": "248"
  },
- "tested_base": "b1530c1cdc6778a546e16537fb0931299f2157b7",
- "tested_source_note": "Scope implementation tested as a dirty delta from tested_base and committed as 527d7960; current_verification binds that unchanged product tree, independently from later documentation-only publication",
- "ui_bundle_this_fix_note": "Scope cutover bundle 673b71cada579965b331f62f9c6659330f6ee5da0149257964cf437adf49370b was deployed and measured in the real host; installation proofs use the earlier fa650fdf frontend phase explicitly"
+ "tested_base": "f289608ca6c3b30c78b03d0f2acea5273db6e63a",
+ "tested_source_note": "Current state-consistency implementation was tested as a dirty delta from f289608c and committed as f6775fd1. historical_scope_verification retains the earlier 527d7960 / b1530c1c evidence, not current-product proof.",
+ "ui_bundle_this_fix_note": "Current state continuation built/deployed a13eef8bd2ad32d83772d2c5782e5c6b2ddfed35faab7afd5779242797bb93a1. Scope bundle673b71ca and installation bundlefa650fdf remain named historical phases, not rebranded."
 }
