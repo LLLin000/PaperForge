@@ -9,7 +9,6 @@ import {
   resolveRuntimeCommand,
 } from "../services/managed-runtime";
 import type { PythonResult } from "../services/python-bridge";
-import { traceConsoleError } from "../client/trace";
 
 // ── Interfaces ──
 
@@ -315,15 +314,6 @@ export function checkOrphanState(app: App, plugin: IPluginRef, vp: string) {
       }
     })
     .catch(() => {
-      // A failure to detect must stay visible as a user-facing Notice, not
-      // as "no orphans": the probe lineage path is raw (no typed-client
-      // terminal), so keep one fixed diagnostic without the raw error.
-      traceConsoleError({
-        op: "probe.lineage",
-        stage: "process",
-        code: "backend_error",
-        exitCode: null,
-      });
       new Notice("PaperForge: orphan detection failed");
     });
 }

@@ -63,7 +63,7 @@ export interface StreamHandle {
   events: AsyncIterable<NdjsonEvent>;
   /** Cooperative cancellation trigger. */
   stop: () => void;
-  /** Promise that resolves when the streaming task reaches terminal or exit. */
+  /** Settles at terminal/exit; startup failures reject with their machine code. */
   outcome: Promise<LongTaskOutcome>;
 }
 
@@ -86,15 +86,18 @@ export interface Transport {
  */
 export class AsyncEventQueue<T> implements AsyncIterable<T> {
   private _queue: T[] = [];
-  private _resolvers: ((value: IteratorResult<T>) => void)[] = [];
+  private _resolvers: {
+    resolve: (value: IteratorResult<T>) => void;
+    reject: (error: Error) => void;
+  }[] = [];
   private _done = false;
   private _error: Error | null = null;
 
   push(item: T): void {
     if (this._done) return;
     if (this._resolvers.length > 0) {
-      const resolve = this._resolvers.shift()!;
-      resolve({ value: item, done: false });
+      const pending = this._resolvers.shift()!;
+      pending.resolve({ value: item, done: false });
     } else {
       this._queue.push(item);
     }
@@ -104,8 +107,8 @@ export class AsyncEventQueue<T> implements AsyncIterable<T> {
     if (this._done) return;
     this._done = true;
     while (this._resolvers.length > 0) {
-      const resolve = this._resolvers.shift()!;
-      resolve({ value: undefined as unknown as T, done: true });
+      const pending = this._resolvers.shift()!;
+      pending.resolve({ value: undefined as unknown as T, done: true });
     }
   }
 
@@ -114,8 +117,7 @@ export class AsyncEventQueue<T> implements AsyncIterable<T> {
     this._error = err;
     this._done = true;
     while (this._resolvers.length > 0) {
-      const resolve = this._resolvers.shift()!;
-      resolve({ value: undefined as unknown as T, done: true });
+      this._resolvers.shift()!.reject(err);
     }
   }
 
@@ -132,8 +134,8 @@ export class AsyncEventQueue<T> implements AsyncIterable<T> {
             done: true,
           });
         }
-        return new Promise<IteratorResult<T>>((resolve) => {
-          this._resolvers.push(resolve);
+        return new Promise<IteratorResult<T>>((resolve, reject) => {
+          this._resolvers.push({ resolve, reject });
         });
       },
     };

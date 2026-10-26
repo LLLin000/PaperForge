@@ -192,6 +192,11 @@ export class PaperForgeStatusView extends ItemView {
     // close, so pop unconditionally — never leaks a global chord). Also
     // detach the focus/blur listeners so a dead input cannot re-push.
     this._unbindCtrlEnterInput();
+    if (this._searchTimer) clearTimeout(this._searchTimer);
+    this._searchGeneration++;
+    this._searchInput = null;
+    this._searchResultsEl = null;
+    this._recordResultsEl = null;
     // Reset search state
     this._searchState = "idle";
     this._searchResults = null;

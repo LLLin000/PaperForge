@@ -2065,6 +2065,55 @@ describe("Setup Stage 1 exit/cancel semantics (RC UX Seam Pass)", () => {
     expect(el.querySelector(".pf-setup-field--invalid")).not.toBeNull();
   });
 
+  it("does not publish setup after cancellation while settings are being saved", async () => {
+    const tab = makeTab();
+    const client = installOcrClient(tab);
+    client.setup = vi.fn(() => ({
+      stop: vi.fn(),
+      outcome: Promise.resolve({ ok: true, exitCode: 0 }),
+    }));
+    (tab as any)._ensureManagedRuntime = () => ({
+      installOnce: async () => ({ pythonPath: "/candidate/python.exe" }),
+      handshake: async () => ({ ok: true }),
+    });
+    (tab as any)._probeModule = () => {};
+    (tab.plugin as any).saveSettings = async () => {
+      (tab as any)._runtimeAbortController?.abort();
+    };
+    (tab.plugin as any).settings._setup_complete = false;
+    (tab as any)._installFoundation(true);
+    await vi.waitFor(() => expect((tab as any)._setupOperation).not.toBe("running"));
+    expect(client.setup).not.toHaveBeenCalled();
+    expect((tab.plugin as any).settings._setup_complete).toBe(false);
+    expect((tab as any)._setupOperation).toBe("idle");
+  });
+
+  it("does not turn an active setup into idle when navigating home", () => {
+    const tab = makeTab();
+    (tab as any)._setupOperation = "running";
+    (tab as any)._setupStage = 2;
+    (tab as any)._goHome();
+    expect((tab as any)._setupOperation).toBe("running");
+    expect((tab as any)._setupStage).toBe(2);
+  });
+
+  it("shows a failed memory backup restore and allows a successful retry", async () => {
+    const tab = makeTab();
+    const client = installOcrClient(tab);
+    (tab as any)._refreshAllReadModels = vi.fn();
+    client.memoryRestoreBackup = vi.fn()
+      .mockRejectedValueOnce(new Error("No backup available"))
+      .mockResolvedValueOnce({});
+    const primary = { verb: "restore_backup", action_id: "memory.restore_backup" };
+    const invoke = () => (tab as any)._runAllowedDispatch("memory", primary, {});
+    noticeCalls.length = 0;
+    invoke();
+    await vi.waitFor(() => expect(noticeCalls.some((n) => n.msg.includes("No backup available"))).toBe(true));
+    invoke();
+    await vi.waitFor(() => expect(noticeCalls.some((n) => /restored|恢复/i.test(n.msg))).toBe(true));
+    expect(client.memoryRestoreBackup).toHaveBeenCalledTimes(2);
+  });
+
   it("a successful reinstall returns to the Control Center instead of marching through the stages", async () => {
     const tab = makeTab();
     (tab as any)._setupReinstallRequested = true;

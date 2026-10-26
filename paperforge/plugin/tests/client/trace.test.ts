@@ -177,6 +177,41 @@ describe("traceConsoleError", () => {
     }
   });
 
+  it.each([
+    { operation: "sync", exitCode: 0 },
+    { operation: "sync", exitCode: 1 },
+    { operation: "ocr-list", exitCode: 0 },
+    { operation: "ocr-list", exitCode: 1 },
+    { operation: "probe", exitCode: 0 },
+    { operation: "probe", exitCode: 1 },
+    { operation: "probe-all", exitCode: 0 },
+    { operation: "probe-all", exitCode: 1 },
+  ])("preserves $operation rejection at exit $exitCode instead of hiding it as empty/success", async ({ operation, exitCode }) => {
+    const transport = new MockTransport();
+    const client = new PaperForgeClient({ transport });
+    const seen: unknown[][] = [];
+    const original = console.error;
+    console.error = (...args: unknown[]) => void seen.push(args);
+    transport.executeHandler = () => {
+      const stdout = JSON.stringify({ ok: false, data: { retryable: true }, error: {
+        code: "BACKEND_UNAVAILABLE", message: "PRIVATE_FAILURE", details: {},
+      } });
+      if (exitCode) throw Object.assign(new Error("PRIVATE_PROCESS"), { stdout, exitCode });
+      return stdout;
+    };
+    try {
+      const result = operation === "sync" ? client.sync()
+        : operation === "probe" ? client.probe("lineage")
+        : operation === "probe-all" ? client.probeAll() : client.queryOcrPapers();
+      await expect(result).rejects.toMatchObject({ code: "BACKEND_UNAVAILABLE", exitCode });
+      expect(seen).toHaveLength(1);
+      expect(String(seen[0][0])).toContain("code=BACKEND_UNAVAILABLE");
+      expect(JSON.stringify(seen)).not.toContain("PRIVATE_");
+    } finally {
+      console.error = original;
+    }
+  });
+
   it("suppresses expected states: unconfigured/disabled/empty/cancelled are not Console errors", () => {
     const seen: unknown[][] = [];
     const orig = console.error;
@@ -349,10 +384,11 @@ describe("traceConsoleError", () => {
       expect(String(seen[0][0])).toContain("op=diagnostic.copy");
       expect(String(seen[0][0])).toContain("stage=local");
 
-      const failingProbe = () => Promise.reject(new Error("lineage down"));
-      checkOrphanState({} as never, { getClient: () => ({ probe: failingProbe }) } as never, "/vault");
+      const failingTransport = new MockTransport();
+      failingTransport.executeHandler = () => { throw new Error("lineage down"); };
+      const probeClient = new PaperForgeClient({ transport: failingTransport });
+      checkOrphanState({} as never, { getClient: () => probeClient } as never, "/vault");
       await vi.waitFor(() => expect(seen.length).toBe(2));
-      expect(String(seen[1][0])).toContain("op=probe.lineage");
       expect(JSON.stringify(seen)).not.toMatch(/lineage down|\/vault|diagnostic-body/);
 
       seen.length = 0;
