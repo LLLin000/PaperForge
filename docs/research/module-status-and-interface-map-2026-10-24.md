@@ -376,3 +376,17 @@ JSONL authority 读回：`logs/reading-log.jsonl`（1 行，`verified:false`）�
 2. 补真实 paper/Collection 上下文的关闭在途搜索实机证据，盘清 global 模式的搜索入口，不为获得 PASS 人工调用 renderer。
 3. 检查剩余 legacy 文本与 authority-JSON 端点的终态/Console 归属，保持合法审计报告与命令失败不同，不强制全部套同一种 decoder。
 4. 完整 H、最终集成/发行认证、真实提供商质量和费用继续独立；无新增 CI 或付费授权，不用本轮本地绿灯豁免。
+
+## 剩余缺口第二批分发（2026-10-26，只读定位完成）
+
+基线 `cbb7c84d9205bcdb37f99ead2479eb42dc2ec5e2`；Issue #356 快照 `2026-10-26T04:15:36Z`；父需求 #130、原 worktree/安全边界不变。五个只读 scout 已返回并保存原输出，父代理核对争议接缝；**本节没有新产品修改、运行时复现或测试通过声明**，产品与 626/1 证据仍绑定 `f6775fd1`。
+
+| 顺序 | 分发方向与源码结果 | 最小后续工作，不重复已过验收 |
+|---|---|---|
+| 1 | 版本恢复：`commands/versions.py:368-419` 明确允许字节恢复成功、`provenance_persisted:false`；client 保留该 flag，但 modal 四个适配调用和 dashboard 直接入口丢弃结果/统一显示成功 | 后端坏 meta 的 false 分支已在既有测试覆盖，不必重跑证明其存在。新增 UI 负例，再保留返回值、提示“内容已恢复，来源元数据未保存”；不谎称回滚，不自动重试，不改变字节 authority |
+| 2 | 搜索：`onClose` 已清防抖/递增 generation；`dashboard.ts::_switchMode/_refreshCurrentMode` 替换 DOM 时没有同样失效处理，存在旧回复进入新上下文的源码风险 | 先用在途回复 + 正常切换论文/重渲染复现，再选共同生命周期接缝；补 paper/Collection 的真实输入→关闭实机证明。global 本来不渲染搜索，不人工调用 renderer 冒充用户入口 |
+| 3 | Setup：Stage 2 正常 `outcome.ok:false` 已避免 View 重复日志；但 rejected `handle.outcome` 经 client `:551-586` 记录并重抛，仍可能落入 settings `:862-871` 的第二次记录 | 针对启动 rejection 做一次精确负例，再复用 Stage 1 的错误归属模式；本地 saveSettings 失败仍须有日志。关闭设置当前继续后台执行，不未经产品决定新增取消/事务回滚 |
+| 4 | Legacy/渲染：`_executeStructuredJson` 有意把合法负面 authority 报告作为值返回；audit/staging 还需区分真实拒绝、协议异常和合法审计失败 | 先核对真实后端 shape，再选最小共享错误归属；不把全部 `ok:false` 强制 throw。`read/reconcile/paperStatus` 当前无 src 消费者的项不优先扩建；backendVersion 的 View 实际有 `.catch`，不是未捕获 Promise |
+| 5 | 来源核验：读时重算 source_provenance，hash/内容变更会失效；recorded/user_confirmed 明确不等于程序文本匹配，暂未找到消费者自动标 verified 的漏洞 | 只补确有价值的覆盖：exact_text 在别页/多处匹配、printed_page 改动绑定，以及手工位置允许打开但不升级核验的分支；不改既有安全门或增加证据存储 |
+
+后续产品写入仍只有父代理；五份分发结果是 **INSPECTED**，不是五项已经修复。原始输出及父代理纠偏留在 `TRIAL_ROOT/module-interface-356-state-audit/remaining-triage/`。本次没有启动 CI、浏览器、Python 进程或服务商调用；完整 H、最终集成/发行和真实服务授权仍不动。
