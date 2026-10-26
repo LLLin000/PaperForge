@@ -193,6 +193,28 @@
   "old_cells": "original old-on and old-off short controls passed with matching old bundle",
   "preservation": "frozen old evidence hashes unchanged; temporary diagnostic script restored byte-identically; patch and raw receipts retained privately"
  },
+ "remaining_gap_triage": {
+  "baseline": "cbb7c84d9205bcdb37f99ead2479eb42dc2ec5e2",
+  "issue_updated_at": "2026-10-26T04:15:36Z",
+  "product_unchanged": "f6775fd11c92c8b79667be8b3f883d4934ac0815",
+  "read_only_assignments_completed": 5,
+  "evidence_level": "INSPECTED ONLY; no new runtime reproduction or product-test pass",
+  "priority_order": [
+   "Version restore: preserve partial provenance persistence through all five UI call sites; backend false branch already covered, UI negative still needed",
+   "Search: reproduce mode-switch/rerender stale reply candidate; add legitimate paper/Collection live-close evidence",
+   "Stage2: reproduce rejected stream-outcome duplicate Console candidate, distinct from correctly handled resolved failure",
+   "Render/legacy: distinguish real rejection/protocol failure from valid negative authority reports before decoder changes",
+   "Source verification: fill wrong-page/duplicate-anchor/printed-page binding and manual-state coverage; no product patch currently justified"
+  ],
+  "parent_corrections": [
+   "Stage2 no-duplicate conclusion does not cover rejected handle.outcome; client rethrows after logging and outer settings catch logs again",
+   "backendVersion View has a catch; rejection is swallowed, not an uncaught Promise",
+   "Settings-close background continuation is current behavior, not an established cancellation defect",
+   "Recorded/user-confirmed locator navigation is not automatic program verification"
+  ],
+  "preservation": "Five original scout outputs and parent-adjudication.json kept under TRIAL_ROOT/module-interface-356-state-audit/remaining-triage/",
+  "limits": "No source changes, tests rerun, CI, host launch, provider operations, production changes or release acceptance"
+ },
  "state_audit_continuation": {
   "issue_updated_at": "2026-10-26T02:01:13Z",
   "read_only_audits": 8,
