@@ -32,6 +32,7 @@ def test_table_object_markdown_includes_image_and_caption() -> None:
         "page": 5,
         "caption": "Table 1. Results.",
         "image_relpath": "assets/tables/table_001.jpg",
+        "was_cropped": True,
         "confidence": 0.88,
     })
 
@@ -355,6 +356,7 @@ def test_table_object_markdown_renders_owned_notes() -> None:
         "page": 5,
         "caption": "Table 1. Results.",
         "image_relpath": "assets/tables/table_001.jpg",
+        "was_cropped": False,
         "note_texts": ["* p < 0.05", "Data are mean \u00b1 SD."],
     })
 
@@ -373,6 +375,7 @@ def test_table_object_markdown_renders_note_band_texts_in_notes_section() -> Non
             "caption": "Table 1. Results.",
             "image_relpath": "assets/tables/table_001.jpg",
             "note_texts": ["* p < 0.05", "Data are mean \u00b1 SD."],
+            "was_cropped": False,
             "note_match_reason": "note_band_geometry_match",
         }
     )
@@ -389,6 +392,7 @@ def test_table_caption_math_normalized() -> None:
         "formal_table_number": 1,
         "caption": "IC$ _{50} $ values ($ \\\\mu $M)",
         "image_relpath": "tables/table_001.jpg",
+        "was_cropped": False,
         "page": 1,
     })
     assert "$_{50}$" in md
@@ -1001,3 +1005,125 @@ def test_object_materialization_writes_failure_provenance_without_output_change(
     assert record["reason"] == "pdf_not_available"
     assert record["pdf_input"] == "missing"
     assert "![](../../assets/figures/figure_001.jpg)" not in markdown
+
+
+def test_table_without_crop_geometry_emits_no_dangling_image_ref(tmp_path: Path) -> None:
+    """A caption-only table inventory entry (no asset, no bbox) keeps its
+    header/caption/page but emits no image reference: the audit cannot
+    report a dangling asset for a file that was never materialized."""
+    from paperforge.worker.ocr_objects import extract_and_write_objects
+
+    figure_inventory: dict[str, Any] = {
+        "matched_figures": [],
+        "unmatched_assets": [],
+        "rejected_legends": [],
+        "figure_legends": [],
+        "figure_assets": [],
+        "official_figure_count": 0,
+        "unresolved_clusters": [],
+    }
+    table_inventory: dict[str, Any] = {
+        "tables": [
+            {
+                "caption_text": "Table 1 shows the demographic characteristics.",
+                "page": 3,
+                "has_asset": False,
+                "formal_table_number": 1,
+                "note_texts": [],
+                "note_match_reason": "",
+            }
+        ],
+        "unmatched_assets": [],
+    }
+    render_root = tmp_path / "render"
+
+    extract_and_write_objects(
+        pdf_path=None,
+        figure_inventory=figure_inventory,
+        table_inventory=table_inventory,
+        asset_root=tmp_path / "assets",
+        render_root=render_root,
+        page_dimensions_by_page={3: (600, 800)},
+        use_disk_page_cache=False,
+    )
+
+    markdown = (render_root / "tables" / "table_001.md").read_text(encoding="utf-8")
+    assert "# Table 1" in markdown
+    assert "Table 1 shows the demographic characteristics." in markdown
+    assert "*Page 3*" in markdown
+    assert "](" not in markdown
+    provenance = json.loads(
+        (render_root / "materialization.provenance.json").read_text(encoding="utf-8")
+    )
+    record = provenance["objects"][0]
+    assert record["status"] == "failed"
+    assert record["reason"] == "source_asset_unavailable"
+
+
+def test_table_without_geometry_preserves_provider_html_content(tmp_path: Path) -> None:
+    """Already-supported HTML/text stays visible with an explicit inability
+    marker: no table content is dropped when the image cannot be cropped."""
+    from paperforge.worker.ocr_objects import extract_and_write_objects
+
+    figure_inventory: dict[str, Any] = {
+        "matched_figures": [],
+        "unmatched_assets": [],
+        "rejected_legends": [],
+        "figure_legends": [],
+        "figure_assets": [],
+        "official_figure_count": 0,
+        "unresolved_clusters": [],
+    }
+    table_inventory: dict[str, Any] = {
+        "tables": [
+            {
+                "caption_text": "Table 3. Association results.",
+                "page": 3,
+                "has_asset": False,
+                "formal_table_number": 3,
+                "note_texts": [],
+                "note_match_reason": "",
+                "assistive_text": "<table><thead><tr><th>Group</th><th>n</th></tr></thead>"
+                "<tr><td>Treated</td><td>42</td></tr></table>",
+            }
+        ],
+        "unmatched_assets": [],
+    }
+    render_root = tmp_path / "render"
+
+    extract_and_write_objects(
+        pdf_path=None,
+        figure_inventory=figure_inventory,
+        table_inventory=table_inventory,
+        asset_root=tmp_path / "assets",
+        render_root=render_root,
+        page_dimensions_by_page={3: (600, 800)},
+        use_disk_page_cache=False,
+    )
+
+    markdown = (render_root / "tables" / "table_001.md").read_text(encoding="utf-8")
+    assert "# Table 3" in markdown
+    assert "Table 3. Association results." in markdown
+    assert "Table image unavailable" in markdown
+    assert "Group | n" in markdown
+    assert "Treated | 42" in markdown
+    assert "](" not in markdown
+
+
+def test_existing_table_object_markdown_keeps_image_when_cropped() -> None:
+    """The existing image/caption regression stays green: a materialized
+    crop keeps its reference alongside the preserved caption."""
+    from paperforge.worker.ocr_objects import render_table_object_markdown
+
+    md = render_table_object_markdown({
+        "table_id": "table_001",
+        "page": 5,
+        "caption": "Table 1. Results.",
+        "image_relpath": "assets/tables/table_001.jpg",
+        "was_cropped": True,
+        "confidence": 0.88,
+    })
+
+    assert "# Table 1" in md
+    assert "![](../../assets/tables/table_001.jpg)" in md
+    assert "Table 1. Results." in md

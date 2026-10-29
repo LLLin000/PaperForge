@@ -493,23 +493,134 @@ def _ocr_run_handler(ctx: ActionContext, request: ActionRequest) -> PFResult:
             data={"exit_code": rc, **settlement},
             successful_keys=successful,
         )
-    # rc == 1: some items are pending (server still processing — poll
-    # window ended) or failed.  Pending is NOT an error, it means re-run
-    # to continue polling; surface that instead of a bare 'unknown'.  The
-    # successful subset still propagates for downstream follow-ups (P0-3).
+    # rc == 1: blocked/failed/pending/busy are distinct terminals.  A blocked
+    # batch (HTTP 401 credential rejection, missing PDF, missing token) must
+    # never surface as a polling timeout — resuming it would spend quota on
+    # a job the provider already refused.  Only genuinely pending work
+    # keeps the poll-timeout instruction; it resumes without new uploads.
+    summary = settlement.get("summary", {}) if isinstance(settlement, dict) else {}
+    blocked_count = int(summary.get("blocked", 0) or 0)
+    failed_count = int(summary.get("failed", 0) or 0)
+    pending_count = int(summary.get("pending", 0) or 0)
+    failed_keys = list(sink.get("failed_keys", []) or [])
+    blocked_keys = sorted(
+        str(key)
+        for key, outcome in (outcomes or {}).items()
+        if outcome == "blocked"
+    )
+    unconfirmed = list(sink.get("unconfirmed_keys", []) or [])
+    rate_limited = list(sink.get("rate_limited_keys", []) or [])
+    if unconfirmed:
+        return PFResult(
+            ok=False,
+            command="action run",
+            version=PF_VERSION,
+            error=PFError(
+                code=ErrorCode.OCR_UPLOAD_FAILED,
+                message=(
+                    f"OCR 上传结果未确认（{', '.join(unconfirmed[:3])}）：请按论文和提交时间检查服务商任务列表（如有），"
+                    "然后联系 PaperForge 支持对账；未找到任务不代表上传失败。远端状态不明时，请勿重新提交或删除本地记录。 "
+                    "OCR submission unconfirmed; the provider may have accepted it. Check its task list if available, "
+                    "then contact PaperForge support. An absent match does not prove failure; do not resubmit or delete the local record."
+                ),
+                details={"failed_keys": unconfirmed},
+            ),
+            data={"exit_code": rc, **settlement, "pending_keys": sink.get("pending_keys", []),
+                  "failed_keys": failed_keys, "blocked_keys": blocked_keys},
+            successful_keys=successful,
+        )
+    result_unavailable = list(sink.get("result_unavailable_keys", []) or [])
+    if result_unavailable:
+        return PFResult(
+            ok=False,
+            command="action run",
+            version=PF_VERSION,
+            error=PFError(
+                code=ErrorCode.OCR_RESULT_INVALID,
+                message=(
+                    f"Remote OCR finished but its result could not be retrieved for {', '.join(result_unavailable[:3])}; "
+                    "check the provider before retrying. The original job identity is preserved."
+                ),
+                details={"failed_keys": result_unavailable},
+            ),
+            data={"exit_code": rc, **settlement, "pending_keys": sink.get("pending_keys", []),
+                  "failed_keys": failed_keys, "blocked_keys": blocked_keys},
+            successful_keys=successful,
+        )
+    if rate_limited and not pending_count:
+        return PFResult(
+            ok=False,
+            command="action run",
+            version=PF_VERSION,
+            error=PFError(
+                code=ErrorCode.OCR_RESULT_INVALID,
+                message="OCR provider rate limit or quota rejected the upload; check quota before retrying",
+                details={"failed_keys": rate_limited},
+            ),
+            data={"exit_code": rc, **settlement, "pending_keys": sink.get("pending_keys", []),
+                  "failed_keys": failed_keys, "blocked_keys": blocked_keys},
+            successful_keys=successful,
+        )
+    if blocked_count and not pending_count:
+        return PFResult(
+            ok=False,
+            command="action run",
+            version=PF_VERSION,
+            error=PFError(
+                code=ErrorCode.OCR_UPLOAD_FAILED,
+                message=(
+                    "OCR is blocked and needs credentials or source files before retry — "
+                    "check the failed keys, fix auth/PDF access, then re-run; "
+                    "nothing was re-uploaded by this result"
+                ),
+                details={"blocked_keys": blocked_keys, "failed_keys": failed_keys},
+            ),
+            data={
+                "exit_code": rc,
+                **settlement,
+                "pending_keys": sink.get("pending_keys", []),
+                "failed_keys": failed_keys,
+                "blocked_keys": blocked_keys,
+            },
+            successful_keys=successful,
+        )
+    if failed_count and not pending_count:
+        return PFResult(
+            ok=False,
+            command="action run",
+            version=PF_VERSION,
+            error=PFError(
+                code=ErrorCode.OCR_RESULT_INVALID,
+                message="OCR failed for some papers — fix the failed keys before re-running",
+                details={"failed_keys": failed_keys},
+            ),
+            data={
+                "exit_code": rc,
+                **settlement,
+                "pending_keys": sink.get("pending_keys", []),
+                "failed_keys": failed_keys,
+            },
+            successful_keys=successful,
+        )
     return PFResult(
         ok=False,
         command="action run",
         version=PF_VERSION,
         error=PFError(
             code=ErrorCode.OCR_POLL_TIMEOUT,
-            message="OCR: some items still processing on the server or failed — re-run to continue polling",
+            message=(
+                f"OCR has pending jobs and quota-rejected papers ({', '.join(rate_limited[:3])}); check status and quota before retrying"
+                if rate_limited else
+                f"OCR has pending jobs and failed or blocked papers ({', '.join(failed_keys[:3])}); check status and fix failures before retrying"
+                if failed_count or blocked_count else
+                "OCR: some items still processing on the server — re-run to continue polling without new uploads"
+            ),
         ),
         data={
             "exit_code": rc,
             **settlement,
             "pending_keys": sink.get("pending_keys", []),
-            "failed_keys": sink.get("failed_keys", []),
+            "failed_keys": failed_keys,
         },
         successful_keys=successful,
     )
@@ -1063,7 +1174,6 @@ NON_REGISTRY_ACTIONS: Mapping[str, str] = {
     "library.sync": "client.sync() (verb 'sync'), not a pipeline action",
     "memory.probe": "re-probe (verb 'probe')",
     "memory.restore_backup": "client.memoryRestoreBackup (verb 'restore_backup')",
-    "memory.upgrade_backend": "client.embedMigrate (verb 'rebuild_index')",
     "memory.install_vector_deps": "dependency install flow (verb 'install')",
     "ocr.probe": "re-probe (verb 'probe')",
     "ocr.enable": "setup guide at the module config step (verb 'set_config')",

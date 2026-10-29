@@ -105,7 +105,6 @@ PROBE_ACTION_IDS = frozenset(
         "memory.rebuild",
         "memory.restore_backup",
         "memory.install_vector_deps",
-        "memory.upgrade_backend",
         "embed.build",
         "embed.resume",
         "ocr.setup",

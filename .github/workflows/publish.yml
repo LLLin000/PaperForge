@@ -122,7 +122,7 @@ jobs:
         run: |
           # #120-fix (P0-3): --no-deps + bare import always fails on a
           # clean runner — openai/sqlite_vec live in the vector extras
-          # (ChromaDB is opt-in via [legacy-vector]), not in base deps.
+          # openai/sqlite_vec live in the vector extras, not in base deps.
           # Install the wheel WITH extras into
           # an isolated venv so the smoke proves wheel installability,
           # extras metadata, and the vector runtime all at once.

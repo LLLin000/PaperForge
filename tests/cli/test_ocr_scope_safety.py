@@ -300,3 +300,235 @@ def test_fresh_list_selection_reaches_only_selected_pdf(scope_vault, capsys):
     assert rc == 1  # Scripted provider stays pending, never successful OCR.
     assert uploads == ["SCOPE001"]
     assert not (paths["ocr"] / "SCOPE002").exists()
+
+
+def test_controlled_401_returns_blocked_not_poll_timeout(scope_vault, capsys) -> None:
+    """HTTP 401 is a credential rejection, not a poll window: the action
+    terminal must be blocked/actionable, never OCR_POLL_TIMEOUT with a
+    re-run-polling instruction.  Pending work is absent, so nothing may
+    claim a resumable poll; partial successes (none here) would survive."""
+    import requests
+
+    vault, _ = scope_vault
+
+    def rejected(request):
+        raise requests.exceptions.HTTPError(
+            "401 Client Error: Unauthorized",
+            response=type("R", (), {"status_code": 401, "text": "invalid token"})(),
+        )
+
+    with responses.RequestsMock(assert_all_requests_are_fired=False) as http:
+        http.add_callback(
+            responses.POST,
+            "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs",
+            callback=rejected,
+        )
+        rc = main([
+            "--vault", str(vault), "action", "run", "ocr.run",
+            "--scope", "papers", "--key", "SCOPE001",
+            "--confirm", "ocr.run", "--json",
+        ])
+    assert rc == 1
+    events = [json.loads(line) for line in capsys.readouterr().out.splitlines() if line.strip()]
+    terminal = next(e for e in events if e.get("event") in ("result", "error", "cancelled"))
+    result = terminal.get("result", {})
+    assert result.get("ok") is False
+    error = result.get("error", {}) or {}
+    assert error.get("code") != "OCR_POLL_TIMEOUT"
+    assert error.get("code") == "OCR_UPLOAD_FAILED"
+    assert "poll" not in str(error.get("message", "")).lower() or "before retry" in str(error.get("message", "")).lower()
+    data = result.get("data", {}) or {}
+    assert (data.get("summary", {}) or {}).get("blocked", 0) >= 1
+    assert (data.get("summary", {}) or {}).get("pending", 0) == 0
+    assert "SCOPE001" in (data.get("blocked_keys", []) or [])
+
+def test_unconfirmed_upload_never_resubmits(scope_vault, monkeypatch, capsys) -> None:
+    """A lost upload response may hide an accepted remote job."""
+    import requests
+
+    vault, _ = scope_vault
+    monkeypatch.setenv("PAPERFORGE_RETRY_MAX", "2")
+    monkeypatch.setenv("PAPERFORGE_RETRY_BACKOFF", "0")
+    calls = []
+
+    def dropped(request):
+        calls.append(1)
+        raise requests.ConnectionError("synthetic response disconnect")
+
+    argv = [
+        "--vault", str(vault), "action", "run", "ocr.run",
+        "--scope", "papers", "--key", "SCOPE001", "--confirm", "ocr.run", "--json",
+    ]
+    with responses.RequestsMock(assert_all_requests_are_fired=False) as http:
+        http.add_callback(responses.POST, "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs", callback=dropped)
+        assert main(argv) == 1
+        events = [json.loads(line) for line in capsys.readouterr().out.splitlines() if line.strip()]
+        terminal = next(e for e in events if e.get("event") in ("result", "error", "cancelled"))
+        message = terminal["result"]["error"]["message"].lower()
+        assert "unconfirmed" in message
+        assert "do not" in message
+        assert main(argv) == 1
+    assert len(calls) == 1
+    meta = json.loads((pipeline_paths(vault)["ocr"] / "SCOPE001" / "meta.json").read_text(encoding="utf8"))
+    assert meta["submission_state"] == "submitting"
+    assert not meta.get("ocr_job_id")
+
+
+def test_rate_limit_is_a_confirmed_rejection_not_poll_timeout(scope_vault, capsys) -> None:
+    vault, _ = scope_vault
+    with responses.RequestsMock(assert_all_requests_are_fired=False) as http:
+        http.post("https://paddleocr.aistudio-app.com/api/v2/ocr/jobs", status=429, json={"error": "quota"})
+        rc = main([
+            "--vault", str(vault), "action", "run", "ocr.run",
+            "--scope", "papers", "--key", "SCOPE001", "--confirm", "ocr.run", "--json",
+        ])
+        posts = [call for call in http.calls if call.request.method == "POST"]
+        assert len(posts) == 1
+    assert rc == 1
+    events = [json.loads(line) for line in capsys.readouterr().out.splitlines() if line.strip()]
+    result = next(e for e in events if e.get("event") in ("result", "error"))["result"]
+    assert result["error"]["code"] == "OCR_RESULT_INVALID"
+    assert "quota" in result["error"]["message"].lower()
+    assert "SCOPE001" in result["data"]["failed_keys"]
+    meta = json.loads((pipeline_paths(vault)["ocr"] / "SCOPE001" / "meta.json").read_text(encoding="utf8"))
+    assert meta["provider_error_status"] == 429
+    assert meta.get("submission_state") != "submitting"
+
+
+def test_rate_limit_with_pending_job_does_not_promise_safe_whole_batch_retry(scope_vault, capsys) -> None:
+    vault, _ = scope_vault
+    def submit(request):
+        if b"SCOPE001" in request.body:
+            return 429, {}, json.dumps({"error": "quota"})
+        return 202, {}, json.dumps({"data": {"jobId": "job-two"}})
+
+    with responses.RequestsMock(assert_all_requests_are_fired=False) as http:
+        http.add_callback(responses.POST, "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs", callback=submit)
+        http.get("https://paddleocr.aistudio-app.com/api/v2/ocr/jobs/job-two", json={"data": {"state": "running"}})
+        rc = main([
+            "--vault", str(vault), "action", "run", "ocr.run", "--scope", "papers",
+            "--key", "SCOPE001", "--key", "SCOPE002", "--confirm", "ocr.run", "--json",
+        ])
+    assert rc == 1
+    events = [json.loads(line) for line in capsys.readouterr().out.splitlines() if line.strip()]
+    result = next(e for e in events if e.get("event") in ("result", "error"))["result"]
+    assert "quota" in result["error"]["message"].lower()
+    assert "without new uploads" not in result["error"]["message"].lower()
+    assert "SCOPE001" in result["data"]["failed_keys"]
+    assert "SCOPE002" in result["data"]["pending_keys"]
+
+
+def test_timed_out_remote_job_keeps_identity_without_new_upload(scope_vault, monkeypatch) -> None:
+    vault, _ = scope_vault
+    monkeypatch.setenv("PAPERFORGE_ZOMBIE_TIMEOUT_MINUTES", "0")
+    monkeypatch.setattr("paperforge.worker.ocr._paper_timed_out", lambda _meta: True)
+    meta = pipeline_paths(vault)["ocr"] / "SCOPE001" / "meta.json"
+    meta.parent.mkdir(parents=True)
+    meta.write_text(json.dumps({
+        "zotero_key": "SCOPE001", "ocr_status": "queued", "ocr_job_id": "old-job",
+        "ocr_started_at": "2020-01-01T00:00:00+00:00", "submission_state": "submitted",
+    }), encoding="utf8")
+    argv = [
+        "--vault", str(vault), "action", "run", "ocr.run",
+        "--scope", "papers", "--key", "SCOPE001", "--confirm", "ocr.run", "--json",
+    ]
+    with responses.RequestsMock(assert_all_requests_are_fired=False) as http:
+        http.get("https://paddleocr.aistudio-app.com/api/v2/ocr/jobs/old-job", json={"data": {"state": "running"}})
+        assert main(argv) == 1
+        assert main(argv) == 1
+        assert not [call for call in http.calls if call.request.method == "POST"]
+    state = json.loads(meta.read_text(encoding="utf8"))
+    assert state["ocr_job_id"] == "old-job"
+    assert state["ocr_status"] in ("queued", "running")
+
+
+def test_missing_remote_result_never_resubmits_completed_job(scope_vault, capsys) -> None:
+    vault, _ = scope_vault
+    meta = pipeline_paths(vault)["ocr"] / "SCOPE001" / "meta.json"
+    meta.parent.mkdir(parents=True)
+    meta.write_text(json.dumps({
+        "zotero_key": "SCOPE001", "ocr_status": "queued", "ocr_job_id": "old-job",
+        "submission_state": "submitted",
+    }), encoding="utf8")
+    argv = [
+        "--vault", str(vault), "action", "run", "ocr.run",
+        "--scope", "papers", "--key", "SCOPE001", "--confirm", "ocr.run", "--json",
+    ]
+    with responses.RequestsMock(assert_all_requests_are_fired=False) as http:
+        http.get("https://paddleocr.aistudio-app.com/api/v2/ocr/jobs/old-job",
+                 json={"data": {"state": "done", "resultUrl": {"jsonUrl": "https://result.test/missing"}}})
+        http.get("https://result.test/missing", status=404)
+        assert main(argv) == 1
+        assert main(argv) == 1
+        assert not [call for call in http.calls if call.request.method == "POST"]
+    events = [json.loads(line) for line in capsys.readouterr().out.splitlines() if line.strip()]
+    terminals = [event["result"] for event in events if event.get("event") in ("result", "error")]
+    assert len(terminals) == 2
+    assert all(result["error"]["code"] == "OCR_RESULT_INVALID" for result in terminals)
+    assert all("result could not be retrieved" in result["error"]["message"] for result in terminals)
+    state = json.loads(meta.read_text(encoding="utf8"))
+    assert state["ocr_job_id"] == "old-job"
+    assert state["ocr_status"] == "queued"
+    assert state["error_stage"] == "result"
+
+
+def test_partial_success_survives_blocked_batch(scope_vault, capsys) -> None:
+    """SCOPE001 genuinely completes through provider done + fetch, then
+    SCOPE002 hits a 401 rejection in the same run: the terminal stays
+    blocked (never poll-timeout) and keeps the successful key."""
+    import requests
+
+    vault, pdfs = scope_vault
+    submitted: list[str] = []
+
+    def submit_or_done(request):
+        if b"SCOPE001" in request.body:
+            submitted.append("SCOPE001")
+            return 202, {"Content-Type": "application/json"}, json.dumps({"data": {"jobId": "job-SCOPE001"}})
+        raise requests.exceptions.HTTPError(
+            "401 Client Error: Unauthorized",
+            response=type("R", (), {"status_code": 401, "text": "invalid token"})(),
+        )
+
+    page = {
+        "layoutParsingResults": [{
+            "prunedResult": {
+                "width": 600, "height": 800,
+                "parsing_res_list": [
+                    {"block_label": "doc_title", "block_content": "Scope one", "block_bbox": [0, 0, 100, 20], "block_order": 0},
+                    {"block_label": "text", "block_content": "Body", "block_bbox": [0, 40, 100, 80], "block_order": 1},
+                ],
+            }
+        }]
+    }
+    result_text = json.dumps({"result": page})
+
+    with responses.RequestsMock(assert_all_requests_are_fired=False) as http:
+        http.add_callback(
+            responses.POST,
+            "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs",
+            callback=submit_or_done,
+        )
+        http.get(
+            "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs/job-SCOPE001",
+            json={"data": {"state": "done", "resultUrl": {"jsonUrl": "https://x/result-S1"}}},
+        )
+        http.get("https://x/result-S1", body=result_text)
+        rc = main([
+            "--vault", str(vault), "action", "run", "ocr.run",
+            "--scope", "papers", "--key", "SCOPE001", "--key", "SCOPE002",
+            "--confirm", "ocr.run", "--json",
+        ])
+    assert rc == 1
+    assert submitted == ["SCOPE001"]
+    events = [json.loads(line) for line in capsys.readouterr().out.splitlines() if line.strip()]
+    terminal = next(e for e in events if e.get("event") in ("result", "error", "cancelled"))
+    result = terminal.get("result", {}) or {}
+    assert (result.get("error", {}) or {}).get("code") == "OCR_UPLOAD_FAILED"
+    data = result.get("data", {}) or {}
+    assert "SCOPE002" in (data.get("blocked_keys", []) or [])
+    # PFResult.successful_keys is chain-internal and never serialized
+    # (core/result.py); the public settlement carries it as
+    # data.successful_keys via settlement_payload.
+    assert "SCOPE001" in (data.get("successful_keys", []) or [])
+    assert (data.get("summary", {}) or {}).get("pending", 0) == 0

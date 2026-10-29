@@ -145,7 +145,7 @@ const SUBCOMMANDS_BY_COMMAND: Record<string, Record<string, true>> = {
   config: { list: true, validate: true, migrate: true, set: true },
   auth: { status: true, set: true },
   memory: { status: true, "restore-backup": true, build: true, rebuild: true },
-  embed: { status: true, build: true, migrate: true, resume: true },
+  embed: { status: true, build: true, resume: true },
   versions: { list: true, show: true, backups: true, paths: true, restore: true },
   note: { "set-flag": true },
   ocr: { list: true },

@@ -49,7 +49,7 @@ import { OcrWorkspaceView } from "./views/ocr-workspace";
 import { PaperForgeConfirmModal } from "./views/modals";
 import { resolveVaultPaths } from "./services/runtime-paths";
 import {
-  setPathConfigSource,
+  applyPathConfigFromList,
   isConfigHydrated,
 } from "./services/runtime-paths";
 import {
@@ -484,31 +484,15 @@ export default class PaperForgePlugin extends Plugin {
         // legacy domain values from data.json (#142 §12 step 4/5).
         try {
           const list = await this.getClient().configList();
+          applyPathConfigFromList(this.settings, list.fields);
           const pick = (key: string) =>
             list.fields.find((f) => f.key === key)?.value;
-          const systemDir = String(pick("system_dir") ?? "");
-          const resourcesDir = String(pick("resources_dir") ?? "");
-          const literatureDir = String(pick("literature_dir") ?? "");
-          const baseDir = String(pick("base_dir") ?? "");
-          const zoteroDir = String(pick("zotero_data_dir") ?? "");
           const apiBase = String(pick("vector_db_api_base") ?? "");
           const apiModel = String(pick("vector_db_api_model") ?? "");
           const agentPlatform = String(pick("agent_platform") ?? "");
-          if (systemDir) this.settings.system_dir = systemDir;
-          if (resourcesDir) this.settings.resources_dir = resourcesDir;
-          if (literatureDir) this.settings.literature_dir = literatureDir;
-          if (baseDir) this.settings.base_dir = baseDir;
-          if (zoteroDir) this.settings.zotero_data_dir = zoteroDir;
           if (apiBase) this.settings.vector_db_api_base = apiBase;
           if (apiModel) this.settings.vector_db_api_model = apiModel;
           if (agentPlatform) this.settings.agent_platform = agentPlatform;
-          setPathConfigSource({
-            system_dir: systemDir || "System",
-            resources_dir: resourcesDir || "Resources",
-            literature_dir: literatureDir || "Literature",
-            base_dir: baseDir || "Bases",
-            _warning: null,
-          });
         } catch {
           /* mirrors keep prior values; canonical file is authoritative */
         }
@@ -642,18 +626,9 @@ export default class PaperForgePlugin extends Plugin {
     if (vaultPath) {
       try {
         const list = await this.getClient().configList();
+        applyPathConfigFromList(this.settings, list.fields);
         const pick = (key: string) =>
           list.fields.find((f) => f.key === key)?.value;
-        const systemDir = String(pick("system_dir") ?? "");
-        const resourcesDir = String(pick("resources_dir") ?? "");
-        const literatureDir = String(pick("literature_dir") ?? "");
-        const baseDir = String(pick("base_dir") ?? "");
-        const zoteroDir = String(pick("zotero_data_dir") ?? "");
-        if (systemDir) this.settings.system_dir = systemDir;
-        if (resourcesDir) this.settings.resources_dir = resourcesDir;
-        if (literatureDir) this.settings.literature_dir = literatureDir;
-        if (baseDir) this.settings.base_dir = baseDir;
-        if (zoteroDir) this.settings.zotero_data_dir = zoteroDir;
         // Provider fields are canonical config: mirrors hydrated for display,
         // mutations route through config set (#142).
         const apiBase = String(pick("vector_db_api_base") ?? "");
@@ -667,13 +642,6 @@ export default class PaperForgePlugin extends Plugin {
           (f) => f.key === "agent_platform"
         );
         this.agentPlatformChoices = platformField?.choices ?? [];
-        setPathConfigSource({
-          system_dir: systemDir || "System",
-          resources_dir: resourcesDir || "Resources",
-          literature_dir: literatureDir || "Literature",
-          base_dir: baseDir || "Bases",
-          _warning: null,
-        });
       } catch {
         // Display mirrors keep defaults until Python is reachable; actions
         // stay disabled until a fresh probe/config response (#144).

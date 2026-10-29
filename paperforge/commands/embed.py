@@ -13,12 +13,10 @@ from paperforge.core.errors import ErrorCode
 from paperforge.core.result import PFError, PFResult
 from paperforge.credentials import CredentialError
 from paperforge.embedding import (
-    delete_paper_vectors,
     get_embed_status,
     mark_vector_build_state,
     read_vector_build_state,
 )
-from paperforge.embedding._chroma import delete_paper_vectors_in_conn
 from paperforge.embedding.build_target import BuildTarget, ShadowBuild, verify_candidate
 from paperforge.embedding.dim_detect import ensure_vec_tables
 from paperforge.embedding.substrate import VECTOR_IDENTITY_VERSION, assess_vector_substrate
@@ -77,37 +75,6 @@ def run(args: argparse.Namespace) -> int:
                     print(f"  {k}: {v['status']} ({v['current']}/{v['total']})")
                 else:
                     print(f"  {k}: {v}")
-        return 0
-
-    if sub == "migrate":
-        from paperforge.embedding._chroma import (
-            LegacyVectorUnavailable,
-            migrate_chroma_to_vec0,
-        )
-
-        try:
-            count = migrate_chroma_to_vec0(vault)
-        except LegacyVectorUnavailable as exc:
-            fix = 'pip install "paperforge[vector,legacy-vector]"'
-            result = PFResult(
-                ok=False,
-                command="embed migrate",
-                version=PF_VERSION,
-                error=PFError(code=ErrorCode.PRECONDITION_FAILED, message=str(exc)),
-                data={"fix": fix},
-            )
-            if args.json:
-                print(result.to_json())
-            else:
-                print(f"Error: {exc}", file=sys.stderr)
-                print(f"Fix: {fix}", file=sys.stderr)
-            return 1
-
-        result = PFResult(ok=True, command="embed migrate", version=PF_VERSION, data={"migrated": count})
-        if args.json:
-            print(result.to_json())
-        else:
-            print(f"Migrated {count} vectors from ChromaDB to vec0")
         return 0
 
     # Build — M3-B: canonical preconditions from the SERVICE (package +

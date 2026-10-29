@@ -1132,6 +1132,50 @@ class TestVersionSpelling:
         assert data["reason"]["code"] == "installation.version_mismatch"
 
 
+    def test_stale_pointer_accepts_either_spelling(self, tmp_path, monkeypatch) -> None:
+        """RC4 pointer under an rc5 bundle compares through the release
+        spelling, not the raw package string: SemVer `2.0.0-rc.4` and
+        PEP 440 `2.0.0rc4` are the same release and must stay stale."""
+        from paperforge.commands import probe as probe_mod
+        from paperforge import runtime_pointer as pointer_mod
+
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
+        monkeypatch.setattr(probe_mod, "PAPERFORGE_VERSION", "2.0.0rc5")
+        monkeypatch.setattr(
+            pointer_mod, "read_pointer",
+            lambda: {
+                "python_path": str(tmp_path / "python"),
+                "environment_root": str(tmp_path),
+                "paperforge_version": "2.0.0-rc.4",
+                "schema_version": 1,
+            },
+        )
+
+        data = probe_mod.probe_installation(tmp_path, expected_version="2.0.0-rc.5")
+        assert data["reason"]["code"] == "installation.runtime_pointer_stale"
+
+        data = probe_mod.probe_installation(tmp_path, expected_version="2.0.0rc5")
+        assert data["reason"]["code"] == "installation.runtime_pointer_stale"
+
+
+    def test_probe_all_forwards_expected_version_to_installation(self, tmp_path, monkeypatch) -> None:
+        """`probe all` carries the plugin version: an RC4 pointer reads as
+        a stale-actionable mismatch inside the aggregate, never ready."""
+        from paperforge.commands import probe as probe_mod
+        from paperforge import runtime_pointer as pointer_mod
+
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        canonical_test_config(tmp_path, system_dir="99_System")
+        monkeypatch.setattr(pointer_mod, "read_pointer", lambda: None)
+
+        import io as _io
+        from contextlib import redirect_stdout
+
+        buf = _io.StringIO()
+        with redirect_stdout(buf):
+            assert probe_mod._run_probe_all(tmp_path, json_output=False, expected_version="0.0.0") == 0
+
 class TestOcrPriorityOrdering:
     """OCR probe priority: redo > run > rebuild > investigate (Issue #78 repair)."""
 
@@ -1538,7 +1582,7 @@ class TestMaintenanceProjection:
             if mod == "installation":
                 monkeypatch.setattr(
                     f"paperforge.commands.probe.probe_{mod}",
-                    lambda v: _error_env("installation", "runtime_not_found"),
+                    lambda v, expected_version=None: _error_env("installation", "runtime_not_found"),
                 )
             else:
                 monkeypatch.setattr(

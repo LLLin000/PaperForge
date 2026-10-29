@@ -141,6 +141,11 @@ class CliHost:
 
     def _env(self, extra: dict[str, str] | None) -> dict[str, str]:
         env = {**os.environ, "PAPERFORGE_VAULT": str(self.vault)}
+        # Inherited canonical credentials override the isolated test keyring.
+        # Only explicit fixture overrides below may supply test credentials.
+        for key in list(env):
+            if key.upper().startswith("PAPERFORGE_CREDENTIAL_"):
+                del env[key]
         # The child runs from the repository root (the package is importable
         # there) with the harness on the path so the isolated keyring backend
         # resolves; the vault is addressed by --vault, never by cwd.

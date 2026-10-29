@@ -116,11 +116,11 @@ class _OkResult:
     message = "ok"
 
 
-# ── Lean vector extra contract (#255) ───────────────────────────────────────
+# ── Lean vector contract (ChromaDB removed) ───────────────────────────────
 
 
-def test_vector_extras_and_probe_exclude_chromadb() -> None:
-    """ChromaDB is legacy-only; the core vector requirements stay lean."""
+def test_vector_extras_exclude_chromadb() -> None:
+    """No ChromaDB anywhere: not in the runtime probe, not in extras."""
     from pathlib import Path
 
     import tomllib
@@ -134,12 +134,11 @@ def test_vector_extras_and_probe_exclude_chromadb() -> None:
     data = tomllib.loads((repo_root / "pyproject.toml").read_text(encoding="utf-8"))
     extras = data["project"]["optional-dependencies"]
     assert extras["vector"] == ["openai>=1.0.0", "socksio>=1.0.0", "sqlite-vec>=0.1.0"]
-    assert any("chromadb" in dep for dep in extras["legacy-vector"])
+    assert "legacy-vector" not in extras
 
 
-def test_core_vector_imports_survive_without_chromadb() -> None:
-    """The embedding/backends packages import without ChromaDB; the backend
-    symbol stays lazy and names the legacy extra on access."""
+def test_vec_lifecycle_imports_without_chromadb() -> None:
+    """The vec0 lifecycle imports without ChromaDB; no Chroma symbols remain."""
     import subprocess
     import sys
     from pathlib import Path
@@ -156,17 +155,14 @@ class _BlockChroma:
 sys.meta_path.insert(0, _BlockChroma())
 
 import paperforge.embedding as embedding
-import paperforge.embedding.backends as backends
 
-assert embedding.get_vector_db_path is not None
-assert backends.VectorBackend is not None
+assert embedding.delete_paper_vectors is not None
+assert embedding.delete_paper_vectors_in_conn is not None
+assert not hasattr(embedding, "ChromaBackend")
+assert not hasattr(embedding, "get_collection")
+assert not hasattr(embedding, "get_vector_db_path")
+assert not hasattr(embedding, "migrate_chroma_to_vec0")
 assert "chromadb" not in sys.modules
-try:
-    backends.ChromaBackend
-except ImportError as exc:
-    assert "legacy-vector" in str(exc)
-else:
-    raise SystemExit("ChromaBackend resolved although chromadb is blocked")
 print("ok")
 """
     proc = subprocess.run(

@@ -327,8 +327,6 @@ def build_parser() -> argparse.ArgumentParser:
     )
     # #137: `embed stop` control-plane retired — no parser; cancellation is
     # the unified token (stdin PAPERFORGE_STOP / SIGINT / SIGTERM).
-    p_embed_migrate = p_embed_sp.add_parser("migrate", help="Migrate vectors from ChromaDB to vec0 tables")
-    p_embed_migrate.add_argument("--json", action="store_true")
 
 
     p_retrieve = sub.add_parser("retrieve", help="Semantic content retrieval across OCR fulltext")

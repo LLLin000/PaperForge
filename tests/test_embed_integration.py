@@ -27,7 +27,7 @@ EMBEDDING_DIM = 1536  # must match vec0 schema
 
 paperforge.config.pipeline_paths = _pp
 
-from paperforge.embedding._chroma import delete_paper_vectors
+from paperforge.embedding.vectors import delete_paper_vectors
 from paperforge.embedding.builder import (
     PaperEmbeddingJob,
     encode_paper_job,

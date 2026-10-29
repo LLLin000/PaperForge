@@ -243,7 +243,7 @@ jobs:
           cache: "npm"
           cache-dependency-path: paperforge/plugin/package-lock.json
       - name: Install package with test deps
-        run: pip install -e ".[test,vector,legacy-vector]"
+        run: pip install -e ".[test,vector]"
       # The architecture-audit collector cases drive ts_collect.js, which
       # requires `typescript`; without it those cases fail for a reason
       # unrelated to the code under test.
@@ -602,9 +602,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install package with test deps
-        # The full-suite job's extras: E05 migrates a legacy ChromaDB substrate, and
-        # a case that branched on an absent dependency would be a skip in disguise.
-        run: python -m pip install -e ".[test,vector,legacy-vector]"
+        run: python -m pip install -e ".[test,vector]"
       - name: Run the CLI-host acceptance cases
         shell: bash
         run: |

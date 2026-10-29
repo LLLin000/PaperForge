@@ -189,7 +189,6 @@ def _check_vector(vault: Path) -> dict:
 
 
 def _check_vector_backend(vault: Path) -> dict:
-    from paperforge.embedding._chroma import get_vector_db_path as _get_chroma_path
     from paperforge.embedding.build_state import read_vector_build_state
     from paperforge.memory.db import ensure_vec_extension, get_memory_db_path, open_live_reader
 
@@ -227,19 +226,6 @@ def _check_vector_backend(vault: Path) -> dict:
                     return _layer("ok", ["Vector DB ready (vec0)"])
         except Exception:
             pass
-
-    chroma_path = _get_chroma_path(vault) / "chroma.sqlite3"
-    if chroma_path.exists():
-        try:
-            import chromadb  # noqa: F401
-        except Exception as exc:  # noqa: BLE001 — report the optional failure
-            return _layer(
-                "degraded",
-                [f"ChromaDB runtime unavailable: {type(exc).__name__}: {exc}"],
-                "Repair vector runtime dependencies",
-                "paperforge repair --runtime --json",
-            )
-        return _layer("ok", ["Vector DB available (ChromaDB — upgrade recommended)"])
 
     return _layer(
         "degraded",

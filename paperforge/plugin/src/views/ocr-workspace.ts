@@ -1128,15 +1128,48 @@ export class OcrWorkspaceView extends ItemView {
       ) {
         new Notice(t("ocr_stopped_notice") || "Operation cancelled");
       } else {
+        const payload = (result.payload ?? {}) as {
+          availability_reason?: unknown;
+          error?: { code?: unknown; message?: unknown } | null;
+          data?: { blocked_keys?: unknown; pending_keys?: unknown; failed_keys?: unknown } | null;
+        };
+        const errCode =
+          payload.error && typeof payload.error.code === "string"
+            ? payload.error.code
+            : null;
+        const errMessage =
+          payload.error && typeof payload.error.message === "string"
+            ? payload.error.message
+            : null;
+        // Existing safe typed structured errors first: backend machine
+        // code/message carry the actionable distinction (blocked credential
+        // vs failed content vs pending poll).  availability_reason is only
+        // a preflight fallback; exit code alone never explains a rejection.
+        // No raw logs, argv, or secret-bearing payload fields are surfaced.
+        const blockedKeys = Array.isArray(payload.data?.blocked_keys)
+          ? payload.data.blocked_keys.map(String).slice(0, 3).join(", ")
+          : "";
+        const failedKeys = Array.isArray(payload.data?.failed_keys)
+          ? payload.data.failed_keys.map(String).slice(0, 3).join(", ")
+          : "";
         const reason =
-          typeof result.payload?.availability_reason === "string"
-            ? result.payload.availability_reason
-            : `exit code ${result.exitCode}`;
+          errCode === "OCR_UPLOAD_FAILED" && blockedKeys
+            ? `${errMessage ?? "OCR blocked — check credentials and source files before retry"} (${blockedKeys})`
+            : errCode === "OCR_RESULT_INVALID" && failedKeys
+              ? `${errMessage ?? "OCR failed"} (${failedKeys})`
+              : errMessage ??
+                (typeof payload.availability_reason === "string"
+                  ? payload.availability_reason
+                  : `exit code ${result.exitCode}`);
         new Notice(
           (t("ocr_error_notice") || "OCR error") + ": " + reason,
           8000
         );
       }
+      // The mutation settled: drop the cached paper snapshot first so
+      // readback cannot resurrect the pre-run statuses — the minimal
+      // invalidation seam (client epoch bump, no extra fetch here).
+      client.invalidateCache();
       const settingsTab = (this.plugin as any)?._settingTab;
       if (
         settingsTab &&

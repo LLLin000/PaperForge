@@ -129,9 +129,9 @@ function runtimeKey(rootDir: string): string {
  * `pythonPath` belongs to.
  *
  * Spawning that interpreter mid-install is a race Windows punishes: the UI
- * keeps probing modules (each probe imports the vector stack — chromadb
- * pulls kubernetes' thousands of files) while pip writes the same files, and
- * pip dies with WinError 32 against a handler the probe still holds.
+ * keeps probing modules (each probe imports the vector stack) while pip
+ * writes the same files, and pip dies with WinError 32 against a handler
+ * the probe still holds.
  */
 export function runtimeInstallInProgress(pythonPath: string): boolean {
   // …/runtime/venv-*/Scripts/python.exe → check the three enclosing levels.
@@ -419,8 +419,8 @@ export class RuntimeBootstrap {
    * already names `activeRoot`; a locked directory is retried next time.
    */
   retireUnusedRuntimes(activeRoot: string | null): string[] {
-    if (!this._fs.readdirSync) return [];
-    const keep = activeRoot ? path.resolve(activeRoot) : null;
+    if (!activeRoot || !this._fs.readdirSync) return [];
+    const keep = path.resolve(activeRoot);
     const removed: string[] = [];
     let entries: string[] = [];
     try {
@@ -428,10 +428,13 @@ export class RuntimeBootstrap {
     } catch {
       return removed;
     }
+    if (!entries.some((name) =>
+      /^venv(-|$)/.test(name) && path.resolve(this.rootDir, name) === keep
+    )) return removed;
     for (const name of entries) {
       if (!/^venv(-|$)/.test(name)) continue;
       const full = path.join(this.rootDir, name);
-      if (keep && path.resolve(full) === keep) continue;
+      if (path.resolve(full) === keep) continue;
       try {
         this._fs.rmSync(full, { recursive: true, force: true });
         removed.push(name);

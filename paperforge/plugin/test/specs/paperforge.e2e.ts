@@ -111,18 +111,6 @@ const E2E_SKIP_REGISTRY: Record<
     owner: "release-acceptance (#263)",
     window: "enabled by the H matrix job via PF_E2E_SETUP_POSITIVE=1",
   },
-  "legacy-missing-extension-skipped-chromadb-available": {
-    reason:
-      "ChromaDB is installed in the venv used to verify this branch, so the missing-extension path (LegacyVectorUnavailable) cannot be driven without uninstalling it; the branch is skipped in that environment",
-    owner: "real-machine verification (#265)",
-    window: "until a ChromaDB-free runtime is available for E05",
-  },
-  "e05-real-migration-needs-legacy-vector-runtime": {
-    reason:
-      "real legacy-vector migration needs both a chromadb runtime and the committed tests/sandbox/legacy-chroma store copied into the vault vector dir",
-    owner: "real-machine verification (#265)",
-    window: "until the legacy-vector runtime and fixture are present",
-  },
   "x06-429-job-level-resubmit-budget": {
     reason:
       "Job-level 429 handling resubmits the whole pipeline per attempt (about 3x a full run), which exceeds any practical e2e budget; bounded-retry accounting is asserted by the 5xx and drop modes. Deep 429 backoff semantics belong to the runtime-convergence backlog.",
