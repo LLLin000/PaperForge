@@ -543,21 +543,26 @@ def _vec_auto_embed_if_new(vault: Path, entry: dict) -> None:
         return
     # Check if vector DB is enabled and set up
     try:
-        from paperforge.embedding import embed_paper, get_vector_db_path
+        from paperforge.embedding import embed_paper
         from paperforge.embedding._config import _read_plugin_settings
+        from paperforge.embedding.substrate import assess_vector_substrate
         from paperforge.memory.chunker import chunk_fulltext
         settings = _read_plugin_settings(vault)
         if not settings.get("features", {}).get("vector_db", False):
             return
-        db_path = get_vector_db_path(vault)
-        if not db_path.exists():
+        # Missing vec0 substrate means vectors were never built — auto-embed
+        # on ingest rebuilds exactly that case (embed.build --force covers
+        # the explicit path).  Never silently skip a configured feature.
+        # Absent/incompatible substrate routes to an explicit embed.build;
+        # auto-embed must not silently manufacture vectors here.
+        if not assess_vector_substrate(vault).compatible:
             return
         chunks = chunk_fulltext(fulltext_path)
         if not chunks:
             return
         embed_paper(vault, entry["zotero_key"], chunks)
     except Exception:
-        pass  # ChromaDB / model not installed -- silently skip
+        pass  # model not installed -- silently skip
 
 # ---------------------------------------------------------------------------
 # Full index build

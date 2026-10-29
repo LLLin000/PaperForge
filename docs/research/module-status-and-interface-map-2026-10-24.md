@@ -6,6 +6,84 @@
 
 public 分支的产品修复提交仍为 **`5aa440ed14eb4eb856467fb439eb06f52ec61f78`**；本轮已在同一 worktree 的独立本地分支 `integration/offline-preview-356` 完成祖先集成，固定候选源码为 **`9ead0993290812f0575236fbe81b7620f658189d`**，见末节。本地候选已配对构建和包级验证，但不是 master/Release，也未通过完整 H 或两次 UI 旅程。既有 PR/master 未改，整合分支未推送；public 只追加证据与历史身份说明。旧阶段产物/收据保留，不冒充当前候选或正式发行。
 
+首次使用候选 `9ead099` 的两次隔离安装暴露路径投影未刷新：Python 配置为 `System`，向导却显示根目录下的 `PaperForge/exports`；两份原始失败证据保留。当前工作树修复在成功 setup 后重新读取 Python 配置并刷新既有投影；独立宿主通过 UI 将测试库目录改为 `TrialSystem` 后，配置读回和向导路径一致，无需重载。此宿主绿证是已安装运行时的路径修改，不等同于全新安装绿证；修复后最终候选身份和两次完整旅程仍待验证。真实 OCR/Embedding 继续冻结。
+
+隔离 B 试用库：正式索引 189 篇、29 个 Collection；首次观察 Obsidian 缓存 179 篇，完整重启后为 189 篇且 key 唯一。实际 PDF 可打开，研究记录保存并按非标题用途找回，重启后仍可打开；外部 Zotero PDF 自动带入记录时被来源校验拒绝，清空后仅保存为未核验记录。通过界面建立本地 Memory 后元数据搜索命中，向量索引未建立。重复同步从 UI 发起后观察到真实 client 的成功终态且仍有 189 个唯一 key；自动同步也启用，终态归属尚未独立隔离。两次完整同候选旅程、来源精确定位及最终升级仍未证明。
+
+隔离 A 继续使用原 `9ead099` bundle：打开实际 PDF、保存未核验记录并按用途找回；本地 Memory 构建后元数据检索命中。完整重启后 189 个唯一论文、`System` 设置及记录读回。A、B 的 bundle 不同，不能合称两次同候选通过。当前索引中的 164 个 PDF 解析路径均位于 Vault 外；来源核验要求 Vault 内且与索引路径一致，不能通过擅改索引或复制后冒称同一来源来验收。两台试用宿主均正常退出，私有证据保留；升级与精确来源验证仍未完成。
+
+未收口的修复风险：只读复查指出，路径配置未水合时 Setup 的 BBT 检测仍可能对错误投影目录执行创建；配置 readback 字段缺失时镜像可能被置空。这些是待修复和验证的风险，不以已有测试或路径修改实机证明覆盖。RC4 → 最终候选的升级、取消和恢复须在修复并固定对应 wheel/bundle 后独立验收；旧版本回执不代替最终候选证据。完整 H 和正式发布仍待独立门禁。
+
+后续本地修复：Setup 在路径尚未水合时不再展示或创建猜测的 exports 目录，复制与检测禁用；配置回读缺失必需目录时拒绝更新投影并显示失败。定向回归 86 项与 typecheck 通过；这不等于修复后全新安装、RC4 升级或取消恢复的宿主验收。软链接可用于打开外部 PDF，但当前来源核验会解析实际目标并拒绝指向 Vault 外的链接，不能将两者混为一谈。
+
+本轮发现并修复运行时清理安全问题：原 `retireUnusedRuntimes(null)` 会删除所有 `venv-*`，实文件系统回归复现；现仅当 active root 指向当前运行时目录中存在的 generation 时清理，其余情况全部保留。受影响的 managed-runtime 与 setup 回归 137 项通过，typecheck/build 通过；仍未实机执行最终候选的升级与取消。
+
+修复后插件完整离线回归 645 passed / 1 skipped。直接在工作树离线构建的试验 wheel 虽与当时 bundle 和 237 个 Python 文件逐字节一致，但包含 `skills/paperforge/scripts/__pycache__/pf_deep.cpython-312.pyc`，且源树未提交：该 wheel 已隔离，不能作为安装或发行候选。需从干净、身份固定的源码重新构建并检查完整归档后，才执行最终安装与升级验收。
+
+随后从已提交基线归档加明确记录的 5 个未提交文件哈希，在独立构建目录生成干净试验 wheel：237 个 Python 文件和 4 个插件资产与快照一致，归档内无 `.pyc`；wheel SHA256 `7a0a00aadf429afe9c66a44c6f120a61e13fd03d7a6bbe76f11c7b9baf21b6ab`，bundle SHA256 `3835d4ccd9c76686af7f57404ea8c625d3f23b97f1fdd582c7df0866a46ba8c0`。在独立 Python 3.11.15 venv 使用离线依赖安装，版本和模块路径核验、依赖检查、CLI `--help` 通过；这是未提交快照的包级 smoke，不是正式发行或 UI 安装／升级验收。
+
+后续隔离宿主的真实 UI 安装在 pip 阶段失败，pointer 未发布。此前“pip 把 legacy-vector 的 chromadb 自动纳入 vector”“system Python 3.14 导致 UI 安装失败”的归因均证据不足，现撤回；所读 wheel METADATA 明确将 chromadb 仅列为 legacy-vector。部分手动复现使用了错误 ABI、已有同版本安装或未隔离的工作目录，不能作为 UI 根因证据；全新环境没有旧运行时，也不能证明旧运行时保留。原始失败回执保留，需记录实际 UI 子进程解释器、受控环境和完整私有错误后再定因。不得通过补装 chromadb、跳过依赖或改变安装产品需求来制造通过。
+
+隔离宿主进程环境实测 `PIP_CONSTRAINT` 指向不存在的 `path-refresh/constraints.txt`；使用相同宿主环境执行 pip dry-run，返回无法打开该文件。此证据证明验收环境存在阻断，不证明先前 UI 每次失败均由此引起。用户另行决定移除 ChromaDB 及迁移入口，保留 sqlite-vec；当前未提交工作树的定向 Python 回归 112 项通过，插件定向回归 182 项、typecheck 和 bundle build 通过。CLI `embed --help` 显示 build/status；新配对 wheel、真实 UI 安装及升级尚未验证，不是正式发行验收。旧 Chroma 存储未删除；任何 embedding 重建可能产生费用，不自动执行。
+
+续验候选基于 `795792ce` 加未提交变更快照，wheel SHA256 `c01e94bf2a53f634669fc66553ea31b536426bb16c4f828e979794b03d708922`、bundle SHA256 `5f06cfe68445f599c6da9c3a7b1f0cad9159d1b36cfeecd656a24dedce7e5c9b`；235 个 wheel Python 文件与快照一致、无 `.pyc`、包依赖无 chromadb。Python 3.11 隔离 venv 从离线 wheelhouse 安装 `paperforge[vector]` 并通过 pip check；这不代表 managed UI 安装或升级通过。真实 Obsidian 1.14.5 隔离宿主已发起 UI 安装，观察时仍在运行、pointer 尚未发布；未作成功判定。OCR 与 embedding 凭据在系统 keyring 中显示 available，但未验证其身份或有效性；用户已允许指定 provider，真实请求与数据上传结果仍未验证。
+
+后续观察：隔离 Obsidian 1.14.5 的真实 Setup 安装达到“已就绪”，Python 发布的 pointer 指向隔离 HOME 内 candidate，安装的模块与 distribution 均为 `2.0.0rc5`；升级、取消及恢复尚未验收。用户授权后，仅提交一页合成 PDF：候选包的 `PaddleOCRProvider` 返回 queued → running → done，抓取结果 1 页；指定 SiliconFlow `Qwen/Qwen3-Embedding-4B` 对一条合成文本返回 HTTP 200、2560 维、8 prompt tokens。这是提供方连通性与 OCR provider API 测试，不是产品 OCR→向量构建→检索的端到端验收。已有 keyring 中的 embedding 凭据对指定服务返回 401，用户提供的凭据返回 200；密钥未写入本报告。
+
+真实文献计时续验（用户授权上传，隔离复制，未修改原 Zotero；候选 wheel/bundle 同上）：三篇文献同步 UI 客户端终态成功 2.674 秒；单篇 8 页 OCR UI 确认至本地 done 14.110 秒（meta 处理 8.005 秒）；两篇并行 UI 确认至两篇 done 31.324 秒（19 页 24.377 秒、2 页 27.365 秒）。三篇均一个 provider job、零重试、云端 GET done 与本地 done 一致，UI 显示已处理；未覆盖真实运行中/异常云状态 UI。同步后 memory CLI 0.321 秒，embedding CLI 重建 4.820 秒、3 篇 56 chunks，单篇 scoped deep retrieve CLI 2.048 秒、5 条属于指定论文；真实 UI 搜索观察到 5 张卡片但等待选择器写错，故无有效渲染耗时。OCR 离线模拟状态/取消回归 41 passed / 1 skipped，非真实云故障验收。`ocr status --batch` 对已完成批次显示 complete/0 unsettled；本次 `ocr-queue.json` 仍记录 4 条 pending，是快照观测，不推断其为权威或产品故障。单行合成样本首次 embedding 返回 0 篇/0 chunks，不能算向量功能通过。
+
+验收脚本失误必须保留：拦截 OCR `runAction` 时误以为其返回同步句柄，UI 报错但一条合成任务已提交并完成；后来单篇真实试验误选合成行，等待 252.739 秒后发现真实 PDF 未提交；修正行选择并在确认弹窗核对 scope 后才进行上述三篇真实任务。首次 UI 安装实际开始时间未捕获，不能报告安装耗时；RC4 升级、停止/恢复、真实 401/超时及收费操作的全量状态映射仍待验证。代码检查显示 `ocr-workspace.ts` 失败提示只读取 `availability_reason` 否则显示 exit code，而 OCR action 的 pending/failed 提示写在错误 message；取消提示是否引导状态查询/恢复也需真实或可靠集成验收，不将静态审查当实机失败。
+
+后续全流程续验：重启后的真实 Obsidian UI 深度检索在 3.496 秒渲染 5 张结果卡；同一论文上下文仍在，但卡片未包含该论文标题，故只记为 UI 查询渲染通过、结果范围未完全证明。隔离真实 PDF 打开耗时 0.252 秒；研究记录保存 0.737 秒，检索 0.948 秒，重启后打开 0.191 秒，记录内容和“来源未知/未核验”状态均保留。三篇真实 OCR 输出的 render audit 总耗时 5.668 秒：两篇 CLEAN，一篇 DEGRADED，2 个 P0 `render_dangling_asset_reference`，均为第 3 页缺失表格图片，诊断为 `source_asset_unavailable` / `pdf_input=missing`，建议 rerender。隔离验证确认同一 PDF locator 经 `resolve_pdf_path` 可解析为真实文件，但后处理后续阶段又从 `meta.source_pdf` 重新构造未解析路径；这是待修复的具体渲染根因，尚未改代码或重跑。
+
+RC4 升级续验：从官方 release 下载的 RC4 wheel 与 checksums 匹配，tar.gz 下载返回 `unexpected EOF` 且 checksum 不匹配，未使用 tar；RC4 wheel 的 vector extra 仍包含 ChromaDB。隔离 RC4 venv 安装首次 pip 运行超过 232 秒未终止，保留该超时证据并停止自有进程；使用 uv 离线补齐依赖后，RC4 import/version、pip check、Python setup pointer 发布均通过。真实 UI 读取到 RC4 pointer/runtime，但插件 bundle 为 RC5；重装按钮进入 Setup 后实际没有候选安装按钮，UI 随后显示基础环境已就绪却仍指向 RC4，未形成 RC4→RC5 upgrade PASS。不得把历史 B-upgrade 收据或当前 fresh install 代替本次候选升级。
+
+失败/取消边界：隔离 loopback provider 的 D04 cancel 与 J02 partial batch 均 VERIFIED，合计 80.153 秒（receipt 分别 52.560 秒、26.166 秒）；它们证明进程取消、单终态、部分成功和不重复提交，不证明真实云端故障 UI。真实云端本轮仅做成功任务和只读终态查询；未注入真实 401/429/超时/取消，未验证 UI 是否展示 pending 的“重新运行/状态-resume”指令。当前代码审查仍发现 action error message 与工作区 fallback notice 可能丢失具体原因；这保持为阻断项，不宣称完成。
+
+受控故障续验完成（实际 Obsidian/CLI 与 loopback HTTP，不冒称真实云失败）：UI 点击停止后 3.099 秒退出本地 watcher，provider 恰好 1 次提交，提示“已提交的服务端任务仍会继续，请查看 OCR 状态”；本地保持 running，`ocr status --batch` 显示 incomplete/1 job，切换受控服务到 done 后，CLI resume 6.614 秒完成且 submit count 仍为 1。UI 对外部 CLI resume 的结果未自动刷新，重启后才读回。新隔离 scope 的受控 HTTP 401 在 3.707 秒返回，本地 blocked，实际 UI 显示“已阻塞”；但 Action terminal 错误码是 `OCR_POLL_TIMEOUT`，message 建议重跑轮询，是已复现的错误指令分类，不只是代码推测。未通过此失败边界。
+
+PDF locator 修复已在源码实施并回归：只解析一次，在页渲染、span backfill、fingerprint 和 object materialization 复用同一真实文件，meta 仍保留原 locator；新增真实 PDF/wikilink/CWD 隔离行为测试，定向门禁 45 passed。真实载荷在另一个隔离副本离线 replay 6.663 秒，原来缺失的 PDF input 变为 available；但两个表格仍没有 asset/bbox，因此 0.474 秒 audit 仍为 DEGRADED/2 issues，不能声称缺图已修复。原候选 wheel/bundle 未重建，以上代码修复不能归入已安装候选的绿证；应在完整修复后重建新的配对候选重新验收。三篇原 PDF 与隔离输入 checksum 一致，原库未改；三篇原 OCR 的 raw/render/meta 和 cleared pending marker 均在重启后保留。
+
+本轮收口：任务“完成”表示执行测试并记录 verdict，不代表各门禁均通过。RC4→候选升级恢复 FAIL（重装入口未执行安装且仍读 RC4），渲染 FAIL（两条 P0 缺图），401 指令分类 FAIL（blocked 被包装为 poll-timeout）；这些故障不能因 45 项回归通过而降级或覆盖。PDF locator 子修复经一次 correctness/maintainability 审查，无 P0–P2 finding；仍未覆盖剩余表格 geometry/asset 缺口。记录/PDF/重启读取通过；UI 搜索可渲染但相关性与范围未完全验收。受控云异常/取消使用 loopback，真实云仅验证成功与终态读取，429/长超时未做实机证明。所有自有验收宿主正常退出，loopback 服务关闭，临时 keyring 文件删除，原系统 keyring 未改，完整逐步 timing 保留于隔离 trial `timings.json`。无 commit/push/CI/release；本 worktree 无 `PROJECT-MANAGEMENT.md`，未在主 checkout 替写台账。
+
+修复候选续验（不覆盖以上失败记录）：基于 `795792ce` 加未提交工作区快照，wheel SHA256 `0fe49344848bbc837655e2c5c59cb6db8801a138150fc539a59ee85fa4a168b3`，bundle SHA256 `7bf71064468f1c3cc5221b4814ee4df283cf3942d2f3a41616623be09c2180f2`；235 个 Python 文件与快照一致，无 `.pyc`。Python 定向回归 297 passed/1 skipped，插件定向回归 119 passed、typecheck/build 通过。保留的真实 OCR 载荷离线重放后 audit CLEAN、无悬空引用；缺少几何的对象保留真实文字，不能据此声称缺失的表格图像已恢复。
+
+隔离 Obsidian 1.14.5 的 RC4→候选实机：取消前发布时保留 RC4 pointer；随后经基础环境的“重新安装”发起安装，141.227 秒观察到 Python 发布 RC5 pointer，安装后版本与路径验证为 RC5，旧环境在发布后删除，控制中心返回就绪。重要限制：初始 RC4 后端仍被 RC5 控制中心显示为“已就绪”，显式重装入口可用，但自动提示版本不匹配尚未解决；取消点击自动化报错后 UI 已显示取消、pointer 未变，不能记作完整取消时序证明。候选受控 401 UI、真实 429/长超时和修复后完整双旅程仍未复验，不能宣布完整验收或正式发布。
+
+受控 401 续验：隔离 Obsidian 1.14.5 使用已安装的 `0fe493…` 后端及独立 bundle `fb493bd6abffe46394f31f162026c2fa2d13b71a8b0b95b1a5f279eac0d39da8`；合成 PDF 发往 loopback 401，无云请求。首轮发现 notice 虽显示 blocked 指令却缺论文 key：测试此前把 keys 放在 PFResult 顶层，实际 wire 位于 `data`。修正读取位置并按真实 wire 形状回归（改前 2 失败，改后插件定向 119 passed、typecheck/build 通过），重载插件后真实 UI 再执行一次受控请求，notice 显示合成论文 key 和凭据/源文件修复指令，列表显示阻塞；只证明 loopback 401，非真实云失败。宿主退出、loopback 关闭、临时 keyring 删除；该 bundle 尚未重新与 wheel 配对，不可与前一候选混称同一固定候选。
+
+RC4 初始误报的已证实原因：官方 RC4 wheel 的 `probe all` 忽略 `--expected-version`，即使 RC5 客户端正确传参，旧后端仍按 RC4 自身版本判断 ready；RC4 的单模块 installation probe 支持该参数。直接在 UI 补第二套版本判断会破坏 Python 权威与 aggregate/maintenance 同源约束，尚未实施此类绕过；应在保留单一权威与投影一致性的前提下修复升级检测并对同一新候选重新验收。
+
+本轮未提交修复与证据边界：官方 RC4 的 aggregate 忽略预期版本；插件改为调用既有 Python 单模块 versioned probe，不自行比较版本。隔离 Obsidian 对 RC4 fixture 已观察到 `installation.version_mismatch`，刷新后仍为 `action_required`；尚未用最终配对候选完成两次完整首装和升级旅程。安装发布成功后路径读取失败现单独提示，不再声称安装失败；该路径为定向测试，尚无实机故障注入证据。
+
+OCR 付费安全：真实 loopback 在收到 POST 后断开响应的源码实验，修复前收到 2 次 POST；修复后首次及再次运行均保持 1 次 POST，持久化 `submitting`，无 job id 时禁止自动重传。已有远程 job 的超时不再清除身份或重新上传；provider 结果获取失败（含 404）保留原 job，提示检查 provider。受控 429 的源码 CLI 实验为单次 POST、返回 quota 提示并包含论文 key。以上不是实际云端失败；用户可操作的未知提交结果人工恢复路径及真实 429/长超时仍待验收，不得以成功案例代替。
+
+未知提交恢复决策边界（只读核查）：上传响应丢失且无 job ID 时，`ocr status` 只能显示未知，`ocr resume` 有意排除此记录；现有 UI 未提供人工对账或重新绑定任务入口。不能因用户已检查 provider 就推断可以安全重传。方案：保持阻断，或由 Owner 批准新增具备人工确认及可靠论文—远端任务关联的恢复契约；推荐继续禁止自动重传并先明确 provider 可提供的关联证据。新增公开操作或持久化关联触及本 Goal 的 Owner 决策边界。
+
+Owner 决定：不需要自动重试或新增恢复 API；明确提示操作者下一步即可。保留未知态和禁止自动重传，提示按论文与提交时间检查服务商任务列表（如有），再联系 PaperForge 支持对账；没有匹配不证明上传失败，不要重传或删除本地记录。隔离 Obsidian 1.14.5 使用新配对 wheel `874f48624a448847f74059ac3690d9514d24aff41c331cb36b0dad891465981a`、bundle `d45c9679360dc344633df8fd20e280e9dfa644bdcbeb0ff499794b0ee664b2c3` 与合成凭据，实际选中未知态论文后 UI 显示上述中文步骤、不出现相反的重跑建议，提交标记保留；fixture 安装不是 managed-install 验收。该提示不意味着未知任务已自动恢复。
+
+同一新配对候选的真实宿主断连续验：loopback 收到合成 PDF 的 POST 后直接断开，UI 显示中文对账指引，状态保留 `submitting` 且无 job ID；同一 UI 再次操作和完整关闭重启后再操作，服务端 POST 累计均为 1。仅证明受控断连与重启场景，不代表长时间无响应、真实云或完整用户旅程通过；隔离宿主退出，loopback 与临时 keyring 已关闭。
+
+继承凭据的有限启动检查：同一新配对候选在隔离 Obsidian 中继承合成 OCR/Embedding 环境凭据，未点击远程操作，观察 20 秒；受控 OCR loopback 端点收到 0 GET、0 POST。仅覆盖这段启动窗口和 OCR 端点；未对 Embedding/其他网络目的地做全局监控，不证明完整 Preview 无任何未授权联网。
+
+随后在同一隔离候选分别将 OCR 和 Embedding 的配置端点指向受控 loopback，继承合成凭据后重启真实宿主且不点击远程操作；20 秒内两个端点共计 0 GET、0 POST。仅覆盖启动窗口与这两个配置端点，不能替代全部 Preview 旅程或全局网络审计；无真实凭据及真实 provider。
+
+配对候选补充故障证明：使用隔离 fixture 安装该 wheel（非 managed-install 验收），同一 bundle 在 Obsidian 1.14.5 对合成 PDF 分别发起受控 loopback 401 和 429：各 1 次 POST，真实 UI 对 401 显示已阻塞及凭据/源文件指引，对 429 显示失败及 quota 指引，均显示论文 key。候选 CLI 的 provider-result 404 在首次和再次运行后均只累计 1 次 POST，保留 job id、显示结果不可获取并要求检查 provider。均非真实云失败；宿主已退出、临时测试 keyring 和 loopback 已清理。
+
+本次最终源码门禁：Python 316 passed、1 skipped；插件 209 passed，typecheck/build 通过；一次复审无 P0–P2，较宽 OCR state-machine 测试曾有 3 个测试失败，未纳入该定向门禁，不得当成全套通过。隔离候选 wheel SHA256 `1345adffc677a25cf7a83bc90ea8642e338f48e83c1ea05f161feac07af22e8b`，bundle SHA256 `a0383fddb55d4c3e74927e879d15821ef12784191688ecf21481d56c59202684`；235 个 Python 文件及 wheel 中 bundle 与隔离源码快照逐字节一致。快照是 `795792ce` 加未提交 overlay，**不是最终 Git source SHA**；该新配对候选未完成真实 UI/双旅程、CI/H、RC4 升级及发布验收，不得标记 Preview 通过。上面的历史失败与各代不同候选证据继续保留。
+
+隔离 overlay 的本机 Python 全量尝试未通过：3553 passed、292 skipped、30 failed；并非 hosted CI。失败日志保留；修正测试解释器 PATH、启用 Python UTF-8 并在隔离测试 venv 用 ensurepip 补齐 pip 后，相关失败区域复验为 151 passed、1 failed。剩余 `test_partial_resume` 中 sync/index 为 6 篇，但 memory build 的 body units 为 0；源码 `memory/builder.py` 使用固定 `vault/System/PaperForge/ocr`，该测试将 OCR 置于已配置的 `99_System`。这是待修复或进一步确认的配置路径不一致，未证明 resume 通过，也未重新运行整个门禁。
+
+后续源码修复：memory builder 通过 `paperforge_paths(vault)["ocr"]` 使用配置目录；resume 夹具子进程改用 `sys.executable` 并检查退出码，保留原有断言。隔离 vault 的真实 CLI sync / memory build 对 `99_System` 观察到 6 篇、18 个 body units；resume、embedding resume 与 scoped memory 测试合计 21 passed。此修复尚未进入上述候选 wheel，也未重跑全量门禁或完成最终旅程。
+
+修复后隔离全量 Python 尝试：3626 passed、293 skipped、3 failed、4 errors；非 hosted CI。三项失败为隔离快照缺少 TypeScript 模块，四项 error 为禁止自动加载插件时未显式加载 mock/snapshot fixture。明确配置现有 TypeScript 的 `NODE_PATH` 并显式加载两个 pytest 插件后，相关文件定向复验 38 passed、2 skipped；不能将定向复验拼成全量通过。原日志均保留，完整同环境全量与 hosted CI/H 仍未验收。
+
+修正隔离环境后对同一源码 overlay 重新执行 Python `tests`：3633 passed、293 skipped，出口 0；允许 loopback、禁止其他 socket，显式加载 timeout/mock/snapshot 插件并使用现有 TypeScript。此结果不包括 hosted CI、H matrix 或真实 provider，跳过项不算验收通过；旧失败记录不删除。
+
+当前工作树插件全量 Vitest：653 passed、1 skipped；typecheck 通过。跳过项为真实安装进程强杀用例，不能算安装恢复通过；本机测试结果不替代最终候选的真实 UI 双旅程或 hosted CI。
+
+OCR state-machine 续验：原三处失败测试将纯文本写成 `.pdf`；locator 修复使真实 PDF 渲染使用该文件后暴露夹具无效。仅将三处夹具改为 PyMuPDF 生成的有效 PDF，未改断言；`tests/test_ocr_state_machine.py` 与 `tests/cli/test_ocr_scope_safety.py` 合计 51 passed。此前“base worktree 21 passed”的试跑从另一工作目录执行，未证明实际导入 base 实现，不作为基线结论。此为源码定向证据，不提升先前候选的验收等级。
+
 ## 模块责任表
 
 路径均相对于仓库根目录。表中的诊断命令前加 `python -m paperforge --vault <隔离 Vault>`，不是让用户在生产库执行写操作。

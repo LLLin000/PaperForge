@@ -6,6 +6,7 @@ import json
 import shutil
 import socketserver
 import subprocess
+import sys
 import threading
 from pathlib import Path
 
@@ -139,9 +140,9 @@ def resumed_vault(tmp_path, monkeypatch):
     CONTEXT[str(vault)] = {"httpd": httpd, "handler": handler_cls}
 
     env = {**__import__("os").environ, "PYTHONIOENCODING": "utf-8"}
-    pf = ["python", "-m", "paperforge", "--vault", str(vault)]
-    subprocess.run(pf + ["sync", "--json"], capture_output=True, text=True, encoding="utf-8", env=env)
-    subprocess.run(pf + ["memory", "build", "--json"], capture_output=True, text=True, encoding="utf-8", env=env)
+    pf = [sys.executable, "-m", "paperforge", "--vault", str(vault)]
+    subprocess.run(pf + ["sync", "--json"], capture_output=True, text=True, encoding="utf-8", env=env, check=True)
+    subprocess.run(pf + ["memory", "build", "--json"], capture_output=True, text=True, encoding="utf-8", env=env, check=True)
 
     yield vault
     httpd.shutdown()

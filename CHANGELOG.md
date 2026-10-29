@@ -14,6 +14,15 @@ All notable changes to PaperForge.
 
 ### Fixed
 
+- Build memory retrieval units from the configured OCR directory rather than a hardcoded system directory (#356).
+- Distinguish a published runtime or completed library setup from a subsequent path refresh failure (#356).
+- Prevent automatic duplicate OCR uploads when a submission response is lost; explain how to check and reconcile an unconfirmed submission without resubmitting or deleting its record. Retain existing remote job identities after local timeouts and show rate-limit rejection separately (#356).
+- Check installation compatibility with the Python versioned probe even when an older runtime ignores the version in its aggregate response; do not show Cancel after runtime publication (#356).
+- Show blocked and failed paper keys from the actual OCR action result data in workspace error notices (#356).
+- Refresh the existing Python-authoritative vault paths after successful setup and library configuration, so the first-use export location and subsequent path changes do not require a plugin reload (#356).
+- Preserve all managed runtime generations when the published active environment is missing or cannot be identified; cleanup requires an existing active runtime (#356).
+- Reuse the resolved source PDF throughout initial OCR postprocessing, including page rendering, span backfill and object extraction; vault-relative and wikilink locators no longer replace the resolved file mid-pipeline. Missing table source geometry can still require separate repair (#356).
+
 - Count overlapping exact-text occurrences when checking research-record PDF sources; repeated overlapping quotes remain ambiguous and cannot pass source navigation as a unique match, including previously saved records (#356).
 - Preserve partial version-restore results at all UI consumers: inline provenance warnings survive preview/paper reselection, current-version markers follow the confirmed restored content, and absent legacy metadata flags remain unconfirmed rather than definite write failures. Only explicit provenance persistence failure adds a single safe substep diagnostic (#356).
 - Invalidate view-owned search timers, replies and focused shortcuts when switching or refreshing dashboard content, including version mode; obsolete requests cannot update the next paper's results (#356).
@@ -35,11 +44,11 @@ All notable changes to PaperForge.
 - Label whole-library OCR impact and require user confirmation in the plugin. Offline synthetic regressions intercept the final multipart HTTP upload; no paid-provider acceptance is implied.
 - Discover freshly indexed papers in OCR Workspace before any OCR directory exists; retain historical OCR records and report PDF readiness without writing artifacts (#351). Switching back from an empty filter replaces the empty state with the matching rows.
 - Read existing notes through the Obsidian adapter when its file cache is cold. Refresh externally written notes without deleting/recreating them.
-- Separate saved OCR progress from a locally cancellable operation; preserve pending provider records without claiming remote termination. Resolve related English/Chinese status labels and consolidate consent-required follow-up notices without claiming vectors were built.
+- Compare the published runtime pointer through the release spelling so an RC4 pointer stays a stale actionable mismatch under an rc5 bundle; `probe all` and read-model refresh carry the plugin version, and Setup renders reinstall on stale/mismatch instead of dead-ending (#356).
+- Classify terminal OCR batches by settlement truth: blocked credential/source rejections surface `OCR_UPLOAD_FAILED` with failed/blocked keys and no re-upload, failures surface `OCR_RESULT_INVALID`, and only genuinely pending work keeps the poll-timeout resume instruction (#356). The Workspace shows the backend machine message first with actionable blocked/failed guidance naming the bounded keys, and drops the mutation snapshot before readback so resume refresh cannot resurrect stale statuses.
+- Keep table caption/text/notes visible when no crop geometry exists: table object markdown emits no dangling image reference for unmaterialized crops, preserves provider HTML/text content with an explicit inability marker, and audit stays strict (#356). The single HTML flattener keeps header (`th`) and data (`td`) cells with matching-tag pairs.
 
 ## 1.5.8 (2026-05-19)
-
-### Memory Layer (New)
 
 - SQLite + FTS5 database (`paperforge.db`) for fast paper metadata lookup
 - `paperforge memory build` / `memory status` / `search`

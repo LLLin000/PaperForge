@@ -896,21 +896,6 @@ describe("PaperForgeClient", () => {
       expect(statusCalls.length).toBe(2);
     });
 
-    it("embedMigrate emits its authority argv and invalidates the cache", async () => {
-      let reads = 0;
-      transport.executeHandler = (argv) => {
-        if (argv[0] === "embed" && argv[1] === "migrate")
-          return JSON.stringify({ ok: true, data: { migrated: 3 } });
-        reads += 1;
-        return JSON.stringify({ ok: true, data: { n: reads } });
-      };
-      const before = await client.embedStatus();
-      await client.embedMigrate();
-      const after = await client.embedStatus();
-      expect(transport.calls[1].argv).toEqual(["embed", "migrate", "--json"]);
-      expect(after).not.toEqual(before);
-    });
-
     it("memoryRestoreBackup and runtimeHealth emit their authority argv", async () => {
       transport.executeHandler = () => JSON.stringify({ ok: true, data: {} });
       await client.memoryRestoreBackup();
@@ -1067,6 +1052,29 @@ describe("PaperForgeClient", () => {
           },
         });
       await expect(client.configValidate()).rejects.toThrow("migrate first");
+    });
+  });
+
+  describe("probeAll expectedVersion", () => {
+    it("carries the plugin version into probe all and keys the cache by it", async () => {
+      const seen: string[][] = [];
+      transport.executeHandler = (argv) => {
+        seen.push([...argv]);
+        return JSON.stringify({ schema_version: 2, module: "all", modules: {} });
+      };
+
+      await client.probeAll({ expectedVersion: "2.0.0-rc.5" });
+      await client.probeAll({ expectedVersion: "2.0.0-rc.5" });
+      await client.probeAll({ expectedVersion: "2.0.0-rc.4" });
+
+      const probeCalls = seen.filter((argv) => argv.includes("probe") && argv.includes("all"));
+      expect(probeCalls).toHaveLength(2);
+      expect(probeCalls[0]).toEqual(
+        expect.arrayContaining(["probe", "all", "--json", "--expected-version", "2.0.0-rc.5"])
+      );
+      expect(probeCalls[1]).toEqual(
+        expect.arrayContaining(["probe", "all", "--json", "--expected-version", "2.0.0-rc.4"])
+      );
     });
   });
 });

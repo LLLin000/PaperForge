@@ -15,6 +15,9 @@ from PIL import Image
 
 from paperforge.worker.ocr_math import normalize_ocr_math_text
 
+from paperforge.worker.ocr_render import _table_html_to_lines
+
+
 _RENDER_LOCKS: dict[tuple[str, int], threading.Lock] = {}
 _RENDER_LOCKS_LOCK = threading.Lock()
 
@@ -72,7 +75,11 @@ def render_table_object_markdown(table: dict[str, Any]) -> str:
         table_id = str(int(m.group())) if m else table_id_raw
         label = f"Table {table_id}"
 
-    parts = [f"# {label}", "", f"![](../../{image_relpath})", ""]
+    cropped = bool(table.get("was_cropped", False))
+    parts = [f"# {label}", ""]
+    if cropped and image_relpath:
+        parts.append(f"![](../../{image_relpath})")
+        parts.append("")
     if caption:
         parts.append("## Caption")
         parts.append(normalize_ocr_math_text(caption))
@@ -81,6 +88,21 @@ def render_table_object_markdown(table: dict[str, Any]) -> str:
         parts.append("")
         parts.append("## Notes")
         parts.extend(note_texts)
+    assistive = str(table.get("assistive_text", "") or "").strip()
+    if assistive and not cropped:
+        # No crop geometry: the table source is absent as an image, but the
+        # provider-supplied cell HTML/text is real content and stays visible.
+        # An explicit marker names the inability to crop instead of hiding it.
+        parts.append("")
+        parts.append("> Table image unavailable: source asset geometry missing; showing extracted content below.")
+        parts.append("")
+        parts.append("## Extracted content")
+        if assistive.strip().lower().startswith("<table"):
+            for line in _table_html_to_lines(assistive):
+                if line.strip():
+                    parts.append(line)
+        else:
+            parts.append(normalize_ocr_math_text(assistive))
     if table.get("page"):
         parts.append("")
         parts.append(f"*Page {table['page']}*")
@@ -527,10 +549,12 @@ def _write_table_object_task(
         "page": page,
         "caption": caption,
         "image_relpath": asset_path_rel,
+        "was_cropped": was_cropped,
         "confidence": 0.85 if was_cropped else 0.4,
         "formal_table_number": data.get("formal_table_number"),
         "note_texts": data.get("note_texts", []),
         "note_match_reason": data.get("note_match_reason", ""),
+        "assistive_text": data.get("assistive_text", ""),
     })
     _write_object_markdown(md, render_dir / f"{tbl_id}.md")
     return _materialization_record(
@@ -822,6 +846,11 @@ def extract_and_write_objects(
                 "formal_table_number": table.get("formal_table_number") or table.get("table_number"),
                 "note_texts": table.get("note_texts", []),
                 "note_match_reason": table.get("note_match_reason", ""),
+                # Already-supported HTML/text representation: the provider
+                # payload carries table cell HTML as assistive text.  It is
+                # preserved verbatim so no table content is lost when no
+                # crop geometry exists to materialize an image.
+                "assistive_text": table.get("assistive_text", ""),
             },
         ))
 

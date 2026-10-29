@@ -52,9 +52,6 @@ vector = [
     "socksio>=1.0.0",
     "sqlite-vec>=0.1.0",
 ]
-legacy-vector = [
-    "chromadb>=0.5.0",
-]
 
 [project.scripts]
 paperforge = "paperforge.cli:main"

@@ -17,6 +17,14 @@ import requests
 
 from tests.conftest import canonical_test_config
 
+def _write_valid_pdf(path: Path) -> None:
+    import pymupdf
+
+    with pymupdf.open() as doc:
+        doc.new_page()
+        doc.save(path)
+
+
 
 @pytest.fixture(autouse=True)
 def _isolate_ocr_runtime(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -130,7 +138,7 @@ do_ocr: true
 
         # Real PDF file so resolve_pdf_path succeeds
         real_pdf = vault / "test.pdf"
-        real_pdf.write_text("PDF content")
+        _write_valid_pdf(real_pdf)
 
         mock_post = MagicMock()
         mock_post.return_value.json.return_value = {"data": {"jobId": "job-123"}}
@@ -238,7 +246,7 @@ do_ocr: true
 
         # Real PDF so resolve_pdf_path succeeds
         real_pdf = vault / "test2.pdf"
-        real_pdf.write_text("PDF content")
+        _write_valid_pdf(real_pdf)
 
         # Configure poll response: state=done
         poll_response = MagicMock()
@@ -1213,7 +1221,7 @@ class TestOcrEdgeCases:
         (exports / "骨科.json").write_text(
             json.dumps([{"key": key, "title": "T", "attachments": [{"contentType": "application/pdf", "path": "test.pdf"}]}]), encoding="utf-8"
         )
-        (vault / "test.pdf").write_text("PDF content")
+        _write_valid_pdf(vault / "test.pdf")
 
         # Build a minimal valid result payload
         page_result = {

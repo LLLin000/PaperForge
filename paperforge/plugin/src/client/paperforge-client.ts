@@ -636,10 +636,15 @@ export class PaperForgeClient {
     });
   }
 
-  async probeAll(): Promise<ProbeAllEnvelope> {
-    return this._cachedRead("probe:all", 60000, async () => {
+  async probeAll(options?: { expectedVersion?: string }): Promise<ProbeAllEnvelope> {
+    const extraArgs: string[] = [];
+    if (options?.expectedVersion) {
+      extraArgs.push("--expected-version", options.expectedVersion);
+    }
+    const cacheKey = `probe:all:${options?.expectedVersion ?? ""}`;
+    return this._cachedRead(cacheKey, 60000, async () => {
       return this._executePfResult<ProbeAllEnvelope>(
-        ["probe", "all", "--json"],
+        ["probe", "all", "--json", ...extraArgs],
         // `probe all` walks every module's lineage in one process.  Measured
         // 145s on a 969-paper vault with a fresh venv (bytecode compilation
         // dominates), so the old 120s default reported a false "检测失败"
@@ -979,16 +984,6 @@ export class PaperForgeClient {
         ["memory", "restore-backup", "--json"],
         { timeoutMs: 30000 }
       );
-    } finally {
-      this.invalidateCache();
-    }
-  }
-
-  async embedMigrate(): Promise<unknown> {
-    try {
-      return await this._executePfResult(["embed", "migrate", "--json"], {
-        timeoutMs: 600000,
-      });
     } finally {
       this.invalidateCache();
     }

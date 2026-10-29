@@ -104,7 +104,7 @@ const LANG: Record<string, Record<string, string>> = {
     feat_checking_btn: "Checking...",
 
     feat_deps_missing:
-      "Dependencies not installed. Required: chromadb, openai.",
+      "Dependencies not installed. Required: openai, sqlite-vec.",
 
     feat_key_rejected: "API key rejected.",
     feat_memory_desc:
@@ -359,7 +359,7 @@ const LANG: Record<string, Record<string, string>> = {
     retrieval_build_failed: "Build failed",
 
     retrieval_build_deps_missing:
-      "Dependencies missing. Install chromadb and openai.",
+      "Dependencies missing. Install openai and sqlite-vec.",
 
     retrieval_stop: "Stop",
     retrieval_no_python: "Python not found",
@@ -391,8 +391,6 @@ const LANG: Record<string, Record<string, string>> = {
       "Python 3.11+ upgrade requires a manual install (python.org or your package manager).",
     update_done: "PaperForge updated",
     update_failed: "Update failed",
-    migrate_done: "Backend migrated to sqlite-vec",
-    migrate_failed: "Backend migration failed",
     ocr_stop_batch: "Stop OCR batch",
     runtime_not_available: "Environment unavailable",
     md_unavailable_module: "Not available yet",
@@ -582,6 +580,7 @@ const LANG: Record<string, Record<string, string>> = {
     setup_library_configuring: "Saving and checking library configuration…",
     setup_library_config_failed:
       "Library configuration could not be verified. Check the paths, then try again.",
+    setup_library_refresh_failed: "Library setup succeeded, but its paths could not be refreshed. Return to the control center and refresh status before proceeding.",
     setup_library_config_env_override:
       "At runtime these settings are overridden by environment variables: {keys}",
     setup_reinstall_notice:
@@ -591,6 +590,7 @@ const LANG: Record<string, Record<string, string>> = {
       "Installation complete. Checking the updated environment.",
     setup_install_failed:
       "PaperForge could not be installed. Check the Python path, then try again.",
+    setup_published_refresh_failed: "The runtime was published, but setup could not refresh its paths. Return to the control center and refresh status before retrying.",
     setup_install_failed_detail: "Reason: {detail}",
     setup_fail_hint_generic:
       "Unknown failure — retry; copy the Support Diagnostic if it repeats",
@@ -910,8 +910,6 @@ const LANG: Record<string, Record<string, string>> = {
     // ── Smart Retrieval new state UX (Issue #104) ──
     sr_state_disabled: "Smart Retrieval is not enabled",
     sr_state_db_missing: "Memory database has not been built yet",
-    sr_state_upgrade_available:
-      "Your vector index uses the old ChromaDB backend",
     sr_state_build_failed: "The last vector build failed",
     sr_state_build_interrupted:
       "Vector index is partially built — resume to embed the remaining papers",
@@ -920,17 +918,11 @@ const LANG: Record<string, Record<string, string>> = {
     sr_build_failed_notice: "Vector index build failed: {detail}",
     sr_action_build: "Build Index",
     sr_action_rebuild: "Rebuild Index",
-    sr_action_upgrade: "Upgrade to vec0",
     sr_db_building: "Building",
     sr_db_partial: "Partially built",
     sr_db_failed: "Build failed",
     sr_db_corrupt: "Corrupted",
     sr_db_stale: "Index stale",
-    sr_upgrade_modal_title: "Upgrade Vector Index",
-    sr_upgrade_modal_description:
-      "This will rebuild your entire vector index using the new vec0 backend.",
-    sr_upgrade_modal_safety:
-      "Your existing ChromaDB data is preserved. This process requires an active API key and may incur API charges.",
     sr_api_key_notice:
       "API key not configured \u2014 search and retrieval are unavailable",
     sr_config_label: "Configuration",
@@ -1369,8 +1361,6 @@ const LANG: Record<string, Record<string, string>> = {
       "Python 3.11+ 升级需要手动安装(python.org 或包管理器)。",
     update_done: "PaperForge 已更新",
     update_failed: "更新失败",
-    migrate_done: "后端已迁移到 sqlite-vec",
-    migrate_failed: "后端迁移失败",
     ocr_stop_batch: "停止 OCR 批处理",
     runtime_not_available: "环境不可用",
     md_unavailable_module: "暂不可用",
@@ -1580,12 +1570,14 @@ const LANG: Record<string, Record<string, string>> = {
     setup_library_configured: "文献库配置已保存，正在检查连接。",
     setup_library_configuring: "正在保存并检查文献库配置…",
     setup_library_config_failed: "文献库配置无法验证。请检查路径后重试。",
+    setup_library_refresh_failed: "文献库设置已完成，但路径刷新失败。请返回控制中心刷新状态后再继续。",
     setup_library_config_env_override: "运行时以下设置被环境变量覆盖：{keys}",
     setup_reinstall_notice:
       "只重新安装本机的 PaperForge Python 包，不会改动文献库配置。",
     setup_installing: "正在安装并准备 PaperForge…",
     setup_install_complete: "安装完成，正在检查更新后的运行环境。",
     setup_install_failed: "PaperForge 安装未完成。请检查 Python 路径后重试。",
+    setup_published_refresh_failed: "运行环境已发布，但设置未能刷新路径。请返回控制中心刷新状态后再重试。",
     setup_install_failed_detail: "原因：{detail}",
     setup_fail_hint_generic: "未知错误——可重试；若反复出现请复制支持诊断",
     setup_fail_hint_network: "下载无法连接软件源——请检查网络/代理后重试",
@@ -1879,18 +1871,12 @@ const LANG: Record<string, Record<string, string>> = {
     // ── 智能检索新状态 UX (Issue #104) ──
     sr_state_disabled: "智能检索未启用",
     sr_state_db_missing: "记忆数据库尚未构建",
-    sr_state_upgrade_available: "向量索引使用旧版 ChromaDB 后端",
     sr_state_build_failed: "上次向量构建失败",
     sr_state_build_interrupted: "向量索引部分构建中——继续嵌入剩余论文",
     sr_state_identity_changed: "嵌入配置已变化——现有向量需重建",
     sr_build_failed_notice: "向量索引构建失败：{detail}",
     sr_action_build: "构建索引",
     sr_action_rebuild: "重建索引",
-    sr_action_upgrade: "升级到 vec0",
-    sr_upgrade_modal_title: "升级向量索引",
-    sr_upgrade_modal_description: "这将使用新的 vec0 后端重建整个向量索引。",
-    sr_upgrade_modal_safety:
-      "现有 ChromaDB 数据会得到保留。此过程需要有效的 API Key 并可能产生 API 费用。",
     sr_api_key_notice: "API Key 未配置 \u2014 搜索和检索不可用",
     sr_db_status: "数据库",
     sr_backend: "后端",

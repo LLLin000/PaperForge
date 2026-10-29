@@ -778,6 +778,29 @@ describe("RuntimeBootstrap", () => {
       expect(hs.reason).toContain("version mismatch");
     });
 
+    it("passes the fresh candidate while the stale pointer still names the old release", async () => {
+      // RC4 pointer under an rc5 candidate: the fresh child proves the
+      // NEW version while the pointer still names the OLD one.  The
+      // handshake passes the candidate — Python publishes the pointer
+      // after setup — and the Setup UI gate renders reinstall on the
+      // stale envelope instead of dead-ending on "ready".
+      const fsMock = createMockFs();
+      fsMock.existsSync.mockReturnValue(true);
+      const rt = makeBootstrap({
+        fs: fsMock,
+        execFile: makeExec("2.0.0rc5", {
+          kind: "envelope",
+          code: "installation.runtime_pointer_stale",
+        }),
+      });
+      const hs = await rt.handshake("2.0.0-rc.5", {
+        pythonPath: pythonPathFor(),
+        vaultPath: VAULT,
+      });
+      expect(hs.ok).toBe(true);
+      expect(hs.observedVersion).toBe("2.0.0-rc.5");
+    });
+
     it("fails closed on probe exec failure", async () => {
       const fsMock = createMockFs();
       fsMock.existsSync.mockReturnValue(true);
@@ -1013,6 +1036,16 @@ describe("Real filesystem single venv (#174)", () => {
     expect(fs.existsSync(path.join(tmpDir, "venv-1.0.0-bbb"))).toBe(true);
     expect(fs.existsSync(path.join(tmpDir, "cache"))).toBe(true);
     expect(fs.existsSync(path.join(tmpDir, "pointer.json"))).toBe(true);
+  });
+
+  it("preserves every runtime when the active pointer is unavailable", () => {
+    const rt = new RuntimeBootstrap({ runtimeDir: tmpDir, osPlatform: "win32", osArch: "x64" });
+    fs.mkdirSync(path.join(tmpDir, "venv-old"), { recursive: true });
+    fs.mkdirSync(path.join(tmpDir, "venv-new"), { recursive: true });
+    expect(rt.retireUnusedRuntimes(null)).toEqual([]);
+    expect(rt.retireUnusedRuntimes(path.join(tmpDir, "venv-missing"))).toEqual([]);
+    expect(fs.existsSync(path.join(tmpDir, "venv-old"))).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, "venv-new"))).toBe(true);
   });
 });
 

@@ -449,6 +449,114 @@ describe("OcrWorkspaceView PaperForgeClient cutover", () => {
   });
 });
 
+  it("surfaces the backend blocked machine error, not availability_reason or exit code", async () => {
+    const transport = new MockTransport();
+    transport.executeHandler = (argv) =>
+      argv[0] === "action" && argv[1] === "describe"
+        ? descriptorResponse(argv[2])
+        : JSON.stringify({});
+    transport.streamHandler = async () => ({
+      events: [
+        {
+          schema_version: 1,
+          event: "result",
+          operation: "ocr.run",
+          result: {
+            ok: false,
+            error: {
+              code: "OCR_UPLOAD_FAILED",
+              message: "OCR is blocked and needs credentials or source files before retry",
+            },
+            data: {
+              exit_code: 1,
+              summary: { blocked: 1, pending: 0 },
+              blocked_keys: ["K1"],
+            },
+          },
+        },
+      ],
+      // The mock derives outcome.ok from this field, not from the terminal
+      // event payload — mirror the real transport's failed terminal.
+      outcome: { ok: false, exitCode: 1 },
+    });
+    const view = makeView(new PaperForgeClient({ transport }));
+    (view as any)._loadPapers = vi.fn().mockResolvedValue(undefined);
+    restoreNotices.length = 0;
+
+    await (view as any)._runOcrAction("ocr.run", ["K1"], "run");
+
+    expect(restoreNotices.length).toBe(1);
+    expect(restoreNotices[0]).toContain("OCR is blocked");
+    expect(restoreNotices[0]).toContain("K1");
+    expect(restoreNotices[0]).not.toContain("exit code");
+  });
+
+  it("does not recommend resubmission for an unconfirmed upload in a partly blocked batch", async () => {
+    const transport = new MockTransport();
+    transport.executeHandler = (argv) =>
+      argv[0] === "action" && argv[1] === "describe"
+        ? descriptorResponse(argv[2])
+        : JSON.stringify({});
+    transport.streamHandler = async () => ({
+      events: [{
+        schema_version: 1,
+        event: "result",
+        operation: "ocr.run",
+        result: {
+          ok: false,
+          error: { code: "OCR_UPLOAD_FAILED", message: "Submission unconfirmed for K2; do not resubmit." },
+          data: { exit_code: 1, blocked_keys: ["K1"], pending_keys: ["K2"] },
+        },
+      }],
+      outcome: { ok: false, exitCode: 1 },
+    });
+    const view = makeView(new PaperForgeClient({ transport }));
+    (view as any)._loadPapers = vi.fn().mockResolvedValue(undefined);
+    restoreNotices.length = 0;
+    await (view as any)._runOcrAction("ocr.run", ["K1", "K2"], "run");
+    expect(restoreNotices[0]).toContain("do not resubmit");
+    expect(restoreNotices[0]).not.toContain("then re-run");
+  });
+
+  it("names the failed keys in the result-invalid notice instead of a keyless message", async () => {
+    const transport = new MockTransport();
+    transport.executeHandler = (argv) =>
+      argv[0] === "action" && argv[1] === "describe"
+        ? descriptorResponse(argv[2])
+        : JSON.stringify({});
+    transport.streamHandler = async () => ({
+      events: [
+        {
+          schema_version: 1,
+          event: "result",
+          operation: "ocr.run",
+          result: {
+            ok: false,
+            error: {
+              code: "OCR_RESULT_INVALID",
+              message: "OCR failed for some papers — fix the failed keys before re-running",
+            },
+            data: {
+              exit_code: 1,
+              summary: { failed: 1, pending: 0 },
+              failed_keys: ["K9"],
+            },
+          },
+        },
+      ],
+      outcome: { ok: false, exitCode: 1 },
+    });
+    const view = makeView(new PaperForgeClient({ transport }));
+    (view as any)._loadPapers = vi.fn().mockResolvedValue(undefined);
+    restoreNotices.length = 0;
+
+    await (view as any)._runOcrAction("ocr.run", ["K9"], "run");
+
+    expect(restoreNotices.length).toBe(1);
+    expect(restoreNotices[0]).toContain("K9");
+    expect(restoreNotices[0]).not.toContain("exit code");
+  });
+
 describe("OCR saved activity presentation", () => {
   it.each(["en", "zh"])(
     "keeps history distinct from a cancellable local operation (%s)",

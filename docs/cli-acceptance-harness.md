@@ -97,10 +97,9 @@ as covered.
 | `E01` | one action is described, preflighted and executed with visible effects | “executes an action through the client (memory.build)” |
 | `A06` | provider requests follow canonical config; a dead endpoint fails instead of falling back | “proves provider config authority through UI, restart, and a controlled embed request” |
 
-`E05` needs the optional `legacy-vector` runtime (chromadb), so job P installs
-`.[test,vector,legacy-vector]` — the extras the full-suite job already uses. A case
-that branched on an absent dependency would be a skip in disguise (R2), and a
-registered skip is what the H version has.
+`E05` (ChromaDB migration) has been retired with the ChromaDB removal: the
+legacy migration path no longer exists, and a vault with missing vectors is
+reported as rebuild-needed (`embed.build --force` / `--resume` rebuilds it).
 
 `E04`'s stop leg is verified **with a caveat the evidence pins down**: the stop is
 honoured at the build's next safe point, so a forced rebuild of one paper took 46 s

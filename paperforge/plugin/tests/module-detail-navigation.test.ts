@@ -274,17 +274,6 @@ vi.mock("../src/services/python-bridge", async (importOriginal) => {
   };
 });
 
-vi.mock("../src/services/runtime-paths", () => ({
-  resolveVaultPaths: () => ({}),
-  getMemoryRuntime: () => ({}),
-  getVectorRuntime: () => ({}),
-  getRuntimeHealth: () => ({}),
-  isMemoryReady: () => false,
-  isVectorReady: () => false,
-  getMemoryStatusText: () => "",
-  getVectorStatusText: () => "",
-  getCachedPython: () => ({ path: "/usr/bin/python3", extraArgs: [] }),
-}));
 
 vi.mock("../src/services/managed-runtime", () => ({
   ManagedRuntime: class {},
@@ -322,9 +311,15 @@ vi.mock("../src/services/progress-parser", () => ({
 
 import { createUnknownEnvelope, ProbeEnvelope } from "../src/constants";
 import { PaperForgeSettingTab } from "../src/settings";
-import { setLanguage } from "../src/i18n";
+import { setLanguage, t } from "../src/i18n";
 import { MockTransport } from "./client/mock-transport";
 import { PaperForgeClient } from "../src/client/paperforge-client";
+import { join } from "node:path";
+import {
+  isConfigHydrated,
+  resolveVaultPaths,
+  setPathConfigSource,
+} from "../src/services/runtime-paths";
 
 // ── Helpers ──
 function fakeApp() {
@@ -402,7 +397,6 @@ function fakePlugin(overrides: Record<string, unknown> = {}) {
       isOperationActive: vi.fn().mockReturnValue(false),
       cancelActiveOperation: vi.fn(),
       runtimeHealth: vi.fn(async () => ({})),
-      embedMigrate: vi.fn(async () => ({})),
       memoryRestoreBackup: vi.fn(async () => ({})),
       authSetSecret: vi.fn(async () => true),
       // Real reconcile wire (#222): data + a top-level next_actions list. The
@@ -495,7 +489,13 @@ function fakePlugin(overrides: Record<string, unknown> = {}) {
         schema_version: 2,
         revision: "sha256:test",
         unknown_keys: [],
-        fields: [],
+        fields: Object.entries({
+          system_dir: "System",
+          resources_dir: "Resources",
+          literature_dir: "Literature",
+          base_dir: "Bases",
+          zotero_data_dir: "",
+        }).map(([key, value]) => ({ key, value, stored_value: value })),
       }),
     }),
   };
@@ -535,7 +535,6 @@ function installOcrClient(
       payload: { status: "done" },
       exitCode: 0,
     }));
-  client.embedMigrate = vi.fn(async () => ({}));
   client.memoryRestoreBackup = vi.fn(async () => ({}));
   client.runtimeHealth = vi.fn(async () => ({}));
   client.authSetSecret = vi.fn(async () => true);
@@ -625,6 +624,9 @@ function polyfillObsidianDom(doc: Document) {
     ht.setAttr = function (name: string, value: string) {
       this.setAttribute(name, value);
     };
+    ht.addClass = function (name: string) {
+      this.classList.add(name);
+    };
     ht.appendText = function (text: string) {
       this.appendChild(doc.createTextNode(text));
     };
@@ -632,6 +634,7 @@ function polyfillObsidianDom(doc: Document) {
 }
 
 beforeEach(() => {
+  setPathConfigSource(null);
   dom = new JSDOM("<!DOCTYPE html><html><body></body></html>", {
     url: "http://localhost",
     pretendToBeVisual: true,
@@ -649,6 +652,42 @@ beforeEach(() => {
 
 afterEach(() => {
   dom.window.close();
+});
+
+it("keeps the versioned installation verdict when a legacy aggregate reports ready", async () => {
+  const tab = makeTab();
+  const ready = { ...createUnknownEnvelope("installation"), user_state: "ready",
+    capability_state: "ready", severity: "ok", reason: { code: "installation.ready", text: "Ready" } };
+  const mismatch = { ...ready, user_state: "action_required", capability_state: "needs_action",
+    severity: "warning", reason: { code: "installation.version_mismatch", text: "Update required" } };
+  const library = createUnknownEnvelope("library");
+  const client = {
+    invalidateCache: vi.fn(),
+    probeAll: vi.fn().mockResolvedValue({ modules: { installation: ready, library } }),
+    probe: vi.fn().mockResolvedValue(mismatch),
+  };
+  (tab as any)._client = client;
+  (tab as any)._refreshAllReadModels();
+  await vi.waitFor(() => expect((tab as any)._capabilityState.installation?.reason.code)
+    .toBe("installation.version_mismatch"));
+  expect(client.probe).toHaveBeenCalledWith("installation", { expectedVersion: "1.0.0" });
+  expect((tab as any)._capabilityState.library).toEqual(library);
+});
+
+it.each(["rejected", "malformed"])("fails closed when the versioned installation probe is %s", async (mode) => {
+  const tab = makeTab();
+  const ready = { ...createUnknownEnvelope("installation"), user_state: "ready",
+    capability_state: "ready", severity: "ok", reason: { code: "installation.ready", text: "Ready" } };
+  (tab as any)._capabilityState = { installation: ready };
+  (tab as any)._client = {
+    invalidateCache: vi.fn(),
+    probeAll: vi.fn().mockResolvedValue({ modules: { installation: ready } }),
+    probe: mode === "rejected" ? vi.fn().mockRejectedValue(new Error("unavailable"))
+      : vi.fn().mockResolvedValue({}),
+  };
+  (tab as any)._refreshAllReadModels();
+  await vi.waitFor(() => expect((tab as any)._capabilityState.installation?.reason.code)
+    .toBe("installation.invalid_response"));
 });
 
 // ════════════════════════════════ 1. Library Detail ════════════════════
@@ -1078,28 +1117,6 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
     } as any;
     (tab as any)._runAllowedDispatch("memory", primary, {} as any);
     expect((tab as any)._startSetupJourney).toHaveBeenCalledWith(3);
-  });
-
-  it("memory.upgrade_backend -> embed migrate (not local build)", () => {
-    const tab = makeTab();
-    const client = installOcrClient(tab);
-    const primary = {
-      action_id: "memory.upgrade_backend",
-      verb: "rebuild_index",
-      label: "Rebuild index",
-      command: "",
-      availability: "available",
-      safety_class: "destructive",
-      preservation_facts: [],
-      replacement_facts: [],
-      interruptible: true,
-      confirmation_required: true,
-      confirmation_prompt: "Backend upgrade",
-      scope: "module",
-      scope_count: 1,
-    } as any;
-    (tab as any)._runAllowedDispatch("memory", primary, {} as any);
-    expect(client.embedMigrate).toHaveBeenCalledOnce();
   });
 
   it("rebuild_derived -> dispatches ocr.rebuild_derived with scope all", () => {
@@ -2279,6 +2296,11 @@ describe("Setup Stage 3 config truthfulness (no false success, #253)", () => {
   /** Test seam: private tab members exercised below. */
   interface StageTabSeam {
     _applyLibraryConfiguration: () => void;
+    _installFoundation: (force: boolean) => void;
+    _ensureManagedRuntime: unknown;
+    _getVaultBasePath: () => string;
+    _renderSetupStageFoundation: (el: HTMLElement) => void;
+    _renderSetupStageLibrary: (el: HTMLElement) => void;
     _renderSetupStageOptionals: (el: HTMLElement) => void;
     _renderAgentDetail: (el: HTMLElement) => void;
     _setupOperation: string;
@@ -2437,6 +2459,19 @@ describe("Setup Stage 3 config truthfulness (no false success, #253)", () => {
     expect(client.setup).not.toHaveBeenCalled();
   });
 
+  it("rejects incomplete post-setup paths without clearing the existing projection", async () => {
+    const complete = { fields: Object.entries(WRITTEN).map(([key, value]) => ({ key, value, stored_value: value })) };
+    const incomplete = { fields: complete.fields.filter((field) => field.key !== "system_dir") };
+    const { seam, plugin } = stageTab({
+      configList: vi.fn().mockResolvedValueOnce(complete).mockResolvedValueOnce(incomplete),
+    });
+    setPathConfigSource({ system_dir: "OldSystem", resources_dir: "Resources", literature_dir: "Literature", base_dir: "Bases", _warning: null });
+    seam._applyLibraryConfiguration();
+    await vi.waitFor(() => expect(seam._setupOperation).toBe("failed"));
+    expect(resolveVaultPaths("/vault").exportsDir).toBe(join("/vault", "OldSystem", "PaperForge", "exports"));
+    expect(plugin.settings.system_dir).toBe("System");
+  });
+
   it("an environment override with a verified stored write does not block the stage", async () => {
     const { seam, client } = stageTab({
       configList: vi.fn().mockResolvedValue({
@@ -2465,17 +2500,102 @@ describe("Setup Stage 3 config truthfulness (no false success, #253)", () => {
     expect(seam._setupFeedback).toContain("overridden");
   });
 
-  it("success is only claimed after the read-back confirms every value", async () => {
-    const { seam, plugin, client } = stageTab();
-    seam._applyLibraryConfiguration();
-    await settle();
+  it("does not offer an export folder before canonical paths are available", () => {
+    const { seam } = stageTab();
+    const el = dom.window.document.createElement("div");
+    seam._renderSetupStageLibrary(el);
+    expect(el.querySelector(".pf-setup-path-value")?.textContent).not.toContain("/vault/PaperForge/exports");
+    const detect = Array.from(el.querySelectorAll("button")).find((b) => b.textContent === t("setup_bbt_detect"));
+    expect(detect?.disabled).toBe(true);
+  });
 
-    expect(client.configSet).toHaveBeenCalledTimes(Object.keys(WRITTEN).length);
-    expect(client.configList).toHaveBeenCalledTimes(1);
-    expect(plugin.saveSettings).toHaveBeenCalledTimes(1);
-    expect(client.setup).toHaveBeenCalledTimes(1);
-    expect(seam._setupOperation).toBe("idle");
-    expect(seam._setupFailureDetail).toBeNull();
+
+  it.each(["foundation", "library"])(
+    "%s setup refreshes canonical paths without reloading the plugin",
+    async (stage) => {
+      const { seam, plugin } = stageTab();
+      plugin.settings._setup_complete = false;
+      if (stage === "foundation") {
+        for (const key of Object.keys(WRITTEN)) plugin.settings[key] = "";
+      } else {
+        setPathConfigSource({
+          system_dir: "OldSystem",
+          resources_dir: "OldResources",
+          literature_dir: "OldLiterature",
+          base_dir: "OldBases",
+          _warning: null,
+        });
+      }
+      seam._ensureManagedRuntime = () => ({
+        installOnce: async () => ({ pythonPath: "/candidate/python" }),
+        handshake: async () => ({ ok: true }),
+      });
+      seam._getVaultBasePath = () => "/vault";
+
+      if (stage === "foundation") seam._installFoundation(false);
+      else seam._applyLibraryConfiguration();
+      await vi.waitFor(() => expect(seam._setupOperation).toBe("idle"));
+
+      expect(isConfigHydrated()).toBe(true);
+      expect(resolveVaultPaths("/vault").exportsDir).toBe(
+        join("/vault", WRITTEN.system_dir, "PaperForge", "exports")
+      );
+      expect(plugin.settings.system_dir).toBe(WRITTEN.system_dir);
+      expect(plugin.settings._setup_complete).toBe(false);
+    }
+  );
+
+  it.each(["foundation", "library"])(
+    "%s reports a post-setup path refresh failure without claiming setup failed",
+    async (stage) => {
+      const fields = Object.entries(WRITTEN).map(([key, value]) => ({ key, value, stored_value: value }));
+      const list = vi.fn();
+      if (stage === "library") list.mockResolvedValueOnce({ fields });
+      list.mockRejectedValue(new Error("refresh unavailable"));
+      const { seam, client } = stageTab({ configList: list });
+      seam._ensureManagedRuntime = () => ({
+        installOnce: async () => ({ pythonPath: "/candidate/python" }),
+        handshake: async () => ({ ok: true }),
+      });
+      seam._getVaultBasePath = () => "/vault";
+      if (stage === "foundation") seam._installFoundation(false);
+      else seam._applyLibraryConfiguration();
+      await vi.waitFor(() => expect(seam._setupOperation).toBe("failed"));
+      expect(client.setup).toHaveBeenCalledOnce();
+      expect(seam._setupFeedback).toBe(t(
+        stage === "foundation" ? "setup_published_refresh_failed" : "setup_library_refresh_failed"
+      ));
+    }
+  );
+
+  it("finishes published setup readback without offering Cancel or early Continue", async () => {
+    let finishRead: (result: unknown) => void = () => {};
+    const readback = new Promise((resolve) => { finishRead = resolve; });
+    const { seam, plugin, client } = stageTab({
+      configList: vi.fn().mockReturnValue(readback),
+    });
+    plugin.settings._setup_complete = false;
+    seam._ensureManagedRuntime = () => ({
+      installOnce: async () => ({ pythonPath: "/candidate/python" }),
+      handshake: async () => ({ ok: true }),
+    });
+    seam._getVaultBasePath = () => "/vault";
+    seam._capabilityState = {
+      installation: { ...createUnknownEnvelope("installation"), user_state: "ready" },
+    };
+    seam._installFoundation(false);
+    await vi.waitFor(() => expect(client.configList).toHaveBeenCalled());
+    try {
+      const el = dom.window.document.createElement("div");
+      seam._renderSetupStageFoundation(el);
+      const buttons = Array.from(el.querySelectorAll("button"));
+      expect(buttons.some((button) => button.textContent === t("setup_nav_cancel"))).toBe(false);
+      expect(buttons.find((button) => button.textContent === t("setup_nav_continue"))?.disabled).toBe(true);
+      expect(plugin.settings._setup_complete).toBe(false);
+    } finally {
+      finishRead({ fields: Object.entries(WRITTEN).map(([key, value]) => ({ key, value })) });
+      await vi.waitFor(() => expect(seam._setupOperation).toBe("idle"));
+    }
   });
 
   it("a rejected agent_platform change never displays saved and reverts the select", async () => {

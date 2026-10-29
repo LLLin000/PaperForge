@@ -72,6 +72,10 @@ import { getDisclosureState, toggleDisclosureState } from "./utils/disclosure";
 import { stripCredentialEnv } from "./services/secret-storage";
 import { processProgressChunk } from "./services/progress-parser";
 import type { ActionRequest } from "./client/action-contract";
+import {
+  applyPathConfigFromList,
+  resolveVaultPaths,
+} from "./services/runtime-paths";
 
 // ── Interface ──
 
@@ -511,6 +515,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const signal = this._runtimeAbortController.signal;
     let stopSetup: (() => void) | undefined;
     let setupClientOwnsFailure = false;
+    let runtimePublished = false;
     void (async () => {
       try {
         const vaultPath = this._getVaultBasePath();
@@ -584,7 +589,16 @@ export class PaperForgeSettingTab extends PluginSettingTab {
               : `Setup failed with exit code ${outcome.exitCode}`
           );
         }
+        runtimePublished = true;
         setupClientOwnsFailure = false;
+        // Setup has published the runtime; cancellation can no longer undo it.
+        if (this._runtimeAbortController?.signal === signal) {
+          this._runtimeAbortController = null;
+        }
+        this.display();
+        const listed = await client.configList();
+        setupClientOwnsFailure = false;
+        applyPathConfigFromList(this.plugin.settings, listed.fields);
         this._setupOperation = "idle";
         this._setupCompleteBeforeJourney = null;
         // #260: the pointer now names the verified candidate — retire any
@@ -615,6 +629,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         this._setupFeedback = t("setup_install_complete");
         this.display();
       } catch (error) {
+        if (runtimePublished) {
+          this._setupOperation = "failed";
+          this._setupFeedback = t("setup_published_refresh_failed");
+          this.display();
+          return;
+        }
         const isAbort =
           signal.aborted ||
           (typeof error === "object" &&
@@ -733,6 +753,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     // #142 / C0: mutations route through the typed config commands; the
     // plugin never writes paperforge.json.
     void (async () => {
+      let libraryConfigured = false;
       // A rejected write is a fact: collect every failure so a partial
       // configuration can never continue into `setup` as if it were saved.
       const problems: Array<{ key: string; reason: string }> = [];
@@ -853,7 +874,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           this.display();
           return;
         }
+        libraryConfigured = true;
         setupClientOwnsFailure = false;
+        const listed = await client.configList();
+        setupClientOwnsFailure = false;
+        applyPathConfigFromList(this.plugin.settings, listed.fields);
         this._setupOperation = "idle";
         this._setupFeedback =
           envOverridden.length > 0
@@ -874,7 +899,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           });
         }
         this._setupOperation = "failed";
-        this._setupFeedback = t("setup_library_config_failed");
+        this._setupFeedback = t(libraryConfigured ? "setup_library_refresh_failed" : "setup_library_config_failed");
         this.display();
       }
     })();
@@ -2151,9 +2176,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     } else if (mod === "memory") {
       if (verb === "run" || verb === "rebuild_index") {
         // embed.build / embed.resume (probe: missing/failed/interrupted
-        // vector index) → remote embed rebuild/resume; memory.upgrade_backend
-        // → ChromaDB→sqlite-vec migration; memory.build / memory.rebuild →
-        // the local memory build.
+        // vector index) → remote embed rebuild/resume; memory.build /
+        // memory.rebuild → the local memory build.
         if (actionId === "embed.build") {
           this._dispatchMemoryBuild("embed", "force", "embed.build");
         } else if (actionId === "embed.resume") {
@@ -2164,8 +2188,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         ) {
           // probe-owned legal local memory actions — exact ID, no substitution
           this._dispatchMemoryBuild("build", undefined, actionId);
-        } else if (actionId === "memory.upgrade_backend") {
-          this._runBackendMigration();
         } else {
           // fail-closed: never substitute an unknown memory action (#05 corrective)
           new Notice(
@@ -2271,23 +2293,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       });
   }
 
-  /** #174 RC: ChromaDB -> sqlite-vec backend migration (embed migrate). */
-  _runBackendMigration(): void {
-    void this.getClient()
-      .embedMigrate()
-      .then(() => {
-        new Notice(t("migrate_done") || "Backend migrated to sqlite-vec");
-        this._refreshAllReadModels();
-      })
-      .catch((err: Error) => {
-        new Notice(
-          (t("migrate_failed") || "Backend migration failed") +
-            ": " +
-            (err.message || "unknown error")
-        );
-        this._refreshAllReadModels();
-      });
-  }
   /** Dispatch OCR actions through the shared PaperForgeClient (#07 step 3):
    * the same canonical action registry, #137 NDJSON progress, availability
    * gating, and cooperative Stop the OCR Workspace uses — no second
@@ -3690,11 +3695,22 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     for (const mod of CAPABILITY_MODULES) {
       this._probing.add(mod);
     }
-    void this.getClient()
-      .probeAll()
-      .then((data) => {
+    const client = this.getClient();
+    // Older runtimes accept expected-version on the installation probe but
+    // ignore it in probe all. Keep Python's versioned verdict authoritative.
+    void Promise.all([
+      client.probeAll({ expectedVersion: this.plugin.manifest?.version }),
+      client.probe("installation", { expectedVersion: this.plugin.manifest?.version })
+        .catch(() => createInvalidEnvelope("installation")),
+    ])
+      .then(([data, installation]) => {
         this._probing.clear();
-        for (const [mod, env] of Object.entries(data.modules ?? {})) {
+        const modules = {
+          ...data.modules,
+          installation: isValidEnvelope(installation, "installation")
+            ? installation : createInvalidEnvelope("installation"),
+        };
+        for (const [mod, env] of Object.entries(modules)) {
           if (isValidEnvelope(env, mod as CapabilityModule)) {
             this._updateCapabilityEnvelope(
               mod as CapabilityModule,
@@ -3725,6 +3741,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         this._lastOrphanCount = orphanCount;
       })
       .catch(() => {
+        this._updateCapabilityEnvelope("installation", createInvalidEnvelope("installation"));
         this._probing.clear();
         this.display();
       });
@@ -3940,7 +3957,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       // user_state was `ready`).
       if (
         this._setupReinstallRequested ||
-        env.reason.code === "installation.version_mismatch"
+        env.reason.code === "installation.version_mismatch" ||
+        env.reason.code === "installation.runtime_pointer_stale"
       ) {
         containerEl.createEl("p", {
           cls: "pf-setup-warn",
@@ -3968,7 +3986,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             this._setupFeedback = null;
             this._installFoundation(
               this._setupReinstallRequested ||
-                env.reason.code === "installation.version_mismatch"
+                env.reason.code === "installation.version_mismatch" ||
+                env.reason.code === "installation.runtime_pointer_stale"
             );
           },
         });
@@ -3980,16 +3999,15 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     //    the AbortController (installOnce deletes the half-installed venv).
     //  - idle/failed: "Later" exits the wizard; _setup_complete stays false
     //    so reopening Settings resumes at this exact stage.
-    if (this._setupOperation === "running") {
+    if (this._setupOperation === "running" && this._runtimeAbortController) {
       renderActionButton(nav, {
         label: t("setup_nav_cancel"),
         onClick: () => {
           this._runtimeAbortController?.abort();
-          // The install chain's catch(finally) handles UI settle; keep the
-          // button live so repeated clicks are harmless.
+          // Keep the button live so repeated clicks are harmless.
         },
       });
-    } else {
+    } else if (this._setupOperation !== "running") {
       renderActionButton(nav, {
         label: t("setup_nav_exit"),
         onClick: () => this._goHome(),
@@ -3997,7 +4015,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
     renderActionButton(nav, {
       label: t("setup_nav_continue"),
-      disabled: env.user_state !== "ready",
+      disabled: env.user_state !== "ready" || this._setupOperation === "running",
       onClick: () => {
         this._setupFeedback = null;
         this._setupStage = 2;
@@ -4113,7 +4131,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       text: t("setup_bbt_title") || "BBT JSON Export",
     });
     const vp = (this.app.vault.adapter as any).basePath as string;
-    const paths = require("./services/runtime-paths").resolveVaultPaths(vp);
+    const paths = resolveVaultPaths(vp);
     importSection.createEl("p", {
       cls: "pf-setup-form-intro",
       text:
@@ -4128,12 +4146,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     });
     pathRow.createEl("code", {
       cls: "pf-setup-path-value",
-      text: paths.exportsDir,
+      text: paths.configWarning ? t("setup_library_config_failed") : paths.exportsDir,
     });
     const copyBtn = pathRow.createEl("button", {
       cls: "pf-btn pf-btn-secondary",
       text: t("setup_bbt_copy") || "Copy",
     });
+    copyBtn.disabled = !!paths.configWarning;
     copyBtn.addEventListener("click", () => {
       navigator.clipboard.writeText(paths.exportsDir);
       new Notice(t("setup_bbt_copied") || "Path copied");
@@ -4193,6 +4212,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
     // Shared: update Continue from BBT file state
     const _refreshBbtStatus = () => {
+      if (paths.configWarning) {
+        detectStatus.setText(t("setup_library_config_failed"));
+        return;
+      }
       try {
         if (!fs.existsSync(paths.exportsDir))
           fs.mkdirSync(paths.exportsDir, { recursive: true });
@@ -4224,12 +4247,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       }
     };
 
-    detectRow
-      .createEl("button", {
-        cls: "pf-btn pf-btn-primary",
-        text: t("setup_bbt_detect") || "Detect",
-      })
-      .addEventListener("click", _refreshBbtStatus);
+    const detect = detectRow.createEl("button", {
+      cls: "pf-btn pf-btn-primary",
+      text: t("setup_bbt_detect") || "Detect",
+    });
+    detect.disabled = !!paths.configWarning;
+    detect.addEventListener("click", _refreshBbtStatus);
 
     // ── Navigation (at the very bottom) ──
 

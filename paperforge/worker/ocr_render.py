@@ -227,9 +227,12 @@ def _table_html_to_lines(text: str) -> list[str]:
     rows = re.findall(r"<tr[^>]*>(.*?)</tr>", text, flags=re.IGNORECASE | re.DOTALL)
     lines: list[str] = []
     for row in rows:
+        # Header AND data cells: provider payloads emit <th> header rows.
+        # The closing tag backreference enforces matching pairs, so a
+        # mismatched <th>x</td> never produces a false cell.
         cells = [
-            unescape(re.sub(r"<[^>]+>", "", cell)).strip()
-            for cell in re.findall(r"<td[^>]*>(.*?)</td>", row, flags=re.IGNORECASE | re.DOTALL)
+            unescape(re.sub(r"<[^>]+>", "", body)).strip()
+            for _tag, body in re.findall(r"<t([dh])[^>]*>(.*?)</t\1>", row, flags=re.IGNORECASE | re.DOTALL)
         ]
         cells = [cell for cell in cells if cell]
         if not cells:

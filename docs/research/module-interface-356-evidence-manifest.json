@@ -1,6 +1,23 @@
 {
  "artifact_provenance": "Local integrated candidate receipts: TRIAL_ROOT/module-interface-356-offline-preview/. Earlier freeze/source-integrity, workflow A/B, state-audit and recovery receipts keep their original identities. Raw files remain private; public evidence contains identities/status/hashes only.",
  "base_sha": "6c99f22e36d0707666c6a7d4208df3e1ca70cd34",
+ "uncommitted_ocr_safety_continuation": {
+  "base_sha": "795792ce15397ea8575d0511279d48dc30210849",
+  "source_identity": "uncommitted overlay; no final source SHA",
+  "prior_paired_wheel_sha256": "1345adffc677a25cf7a83bc90ea8642e338f48e83c1ea05f161feac07af22e8b",
+  "paired_bundle_sha256": "a0383fddb55d4c3e74927e879d15821ef12784191688ecf21481d56c59202684",
+  "source_regression": "51 passed: test_ocr_state_machine.py and test_ocr_scope_safety.py after replacing invalid fake PDF bytes with valid synthetic PDFs; original failure retained in module report",
+  "local_static": "version-check and ruff executed steps passed with isolated interpreter PATH; dependency installation skipped. Initial run failed with Python SRE module mismatch due to inherited interpreter environment; preserved as environment failure, not product pass. Hosted CI and full H not run.",
+  "live_loopback": "Prior paired wheel and bundle: controlled 401 and 429 each one POST with actionable key-specific real Obsidian UI; CLI result-404 preserves job ID with no repeat POST. Not real provider evidence.",
+  "owner_guidance_decision": "No automatic retry or new recovery API; show concrete next steps. Real Obsidian 1.14.5 on an isolated fixture-installed wheel 874f48624a448847f74059ac3690d9514d24aff41c331cb36b0dad891465981a and bundle d45c9679360dc344633df8fd20e280e9dfa644bdcbeb0ff499794b0ee664b2c3 displayed Chinese operator instructions and preserved submitting state. Not managed-install or full journey evidence.",
+  "disconnect_host": "Same 874f/d45c pair: loopback received one synthetic POST then disconnected; another UI attempt and a further attempt after real host restart left total POSTs at one and submission_state=submitting. No real provider.",
+  "ambient_credentials": "Same pair: synthetic inherited OCR and embedding credentials, both provider endpoints redirected to loopback. Idle real-host startup window 20 seconds, observed 0 GET and 0 POST to those endpoints; not whole-journey or global network evidence.",
+  "local_full_python_attempt": "Guarded isolated overlay: 3553 passed, 292 skipped, 30 failed. With corrected UTF-8, interpreter PATH and offline ensurepip, affected areas: 151 passed, one failed partial-resume proof. Sync indexed six fixture papers, memory build produced zero body units; builder uses hardcoded System while fixture config uses 99_System. Root cause requires resolution. Not hosted CI; no full rerun.",
+  "memory_path_repair": "Uncommitted source uses configured OCR root; fixture uses sys.executable and checks setup return codes. CLI fixture observed 6 papers and 18 body units; resume and scoped-memory tests 21 passed. Earlier wheel does not contain repair. Subsequent guarded full attempt: 3626 passed, 293 skipped, 3 failed, 4 errors; missing TypeScript and fixture plugins. Related files with corrected prerequisites: 38 passed, 2 skipped; not equivalent to a full pass.",
+  "local_python_corrected": "Isolated overlay, offline guard and explicitly configured test plugins/typescript: 3633 passed, 293 skipped; exit 0. Not hosted CI, H matrix, or real-provider evidence; skips are not acceptance passes.",
+  "local_plugin_full": "Working-tree Vitest 653 passed, 1 skipped; typecheck passed. Real installer process-kill case was skipped; not real-host complete-journey or hosted CI evidence.",
+  "blocked": "Final committed candidate, independent complete journeys and full CI/H require further work. Unknown submission remains safely unconfirmed per owner decision. Earlier artifacts retain their own identities."
+ },
  "blocked": [
   "real OCR/Embedding/cloud-model tasks (remote frozen, no local model)",
   "full H host root-cause (A01 unknown; provenance-bound short-A/B completed, not full-H acceptance)"
