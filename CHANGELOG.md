@@ -14,9 +14,10 @@ All notable changes to PaperForge.
 
 ### Fixed
 
+- Run managed-runtime child processes from the owned runtime root rather than OS temp paths, so a missing `TEMP` directory cannot prevent venv creation (#356).
 - Build memory retrieval units from the configured OCR directory rather than a hardcoded system directory (#356).
 - Distinguish a published runtime or completed library setup from a subsequent path refresh failure (#356).
-- Prevent automatic duplicate OCR uploads when a submission response is lost; explain how to check and reconcile an unconfirmed submission without resubmitting or deleting its record. Retain existing remote job identities after local timeouts and show rate-limit rejection separately (#356).
+- Classify explicit OCR HTTP 401/403 refusals as blocked; keep ambiguous submissions without a confirmed job ID for reconciliation, with no automatic resubmission or record deletion. Retain remote job IDs after local timeouts and report rate-limit rejection separately (#356).
 - Check installation compatibility with the Python versioned probe even when an older runtime ignores the version in its aggregate response; do not show Cancel after runtime publication (#356).
 - Show blocked and failed paper keys from the actual OCR action result data in workspace error notices (#356).
 - Refresh the existing Python-authoritative vault paths after successful setup and library configuration, so the first-use export location and subsequent path changes do not require a plugin reload (#356).

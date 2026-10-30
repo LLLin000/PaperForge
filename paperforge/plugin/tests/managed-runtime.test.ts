@@ -7,6 +7,11 @@
  * resolution from the pointer.
  */
 
+import {
+  execFile as cpExecFile,
+  execFileSync as cpExecFileSync,
+} from "child_process";
+
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as path from "path";
 import * as os from "os";
@@ -319,6 +324,110 @@ describe("RuntimeBootstrap", () => {
         AbortError
       );
     });
+  });
+  describe("installOnce() with a missing TEMP directory", () => {
+    it.skipIf(process.platform !== "win32")(
+      "creates the candidate venv from the managed runtime directory",
+      async () => {
+        let pythonPath: string | null = null;
+        for (const [command, args] of [
+          ["py", ["-3", "-c", "import sys; print(sys.executable)"]],
+          ["python", ["-c", "import sys; print(sys.executable)"]],
+        ] as const) {
+          try {
+            const resolved = cpExecFileSync(command, args, {
+              encoding: "utf8",
+              timeout: 5000,
+            }).trim();
+            if (path.isAbsolute(resolved) && fs.existsSync(resolved)) {
+              pythonPath = resolved;
+              break;
+            }
+          } catch {
+            // Try the next system interpreter name.
+          }
+        }
+        if (!pythonPath) {
+          throw new Error("Python 3.11+ is required for this Windows test");
+        }
+
+        const validTemp = [
+          process.env.TMP,
+          process.env.TEMP,
+          process.cwd(),
+        ].find(
+          (candidate): candidate is string =>
+            Boolean(candidate) && fs.existsSync(candidate)
+        );
+        if (!validTemp) throw new Error("No existing temp directory found");
+        const testRoot = fs.mkdtempSync(
+          path.join(validTemp, "paperforge-runtime-cwd-")
+        );
+        const missingTemp = path.join(testRoot, "missing-temp");
+        const runtimeDir = path.join(testRoot, "runtime");
+        const originalTemp = process.env.TEMP;
+        const originalTmp = process.env.TMP;
+        const originalTmpdir = process.env.TMPDIR;
+        const realExecFile = cpExecFile as unknown as ExecFileFn;
+
+        try {
+          process.env.TEMP = missingTemp;
+          process.env.TMP = validTemp;
+          delete process.env.TMPDIR;
+          expect(path.resolve(os.tmpdir())).toBe(path.resolve(missingTemp));
+
+          const execFile: ExecFileFn = (command, args, opts, callback) => {
+            if (args[0] === "-m" && args[1] === "venv") {
+              return realExecFile(command, args, opts, callback);
+            }
+            if (args[0] === "-m" && args[1] === "pip") {
+              callback(null, "", "");
+              return undefined;
+            }
+            if (args[0] === "-I" && args[1] === "-c") {
+              callback(null, "1.3.0", "");
+              return undefined;
+            }
+            throw new Error(
+              `Unexpected process call: ${command} ${args.join(" ")}`
+            );
+          };
+          const execFileSync: ExecFileSyncFn = (command, args, opts) => {
+            if (command === pythonPath) {
+              return cpExecFileSync(command, args, {
+                encoding: opts.encoding,
+                timeout: opts.timeout,
+              }) as string;
+            }
+            return "";
+          };
+          const runtime = new RuntimeBootstrap({
+            runtimeDir,
+            osPlatform: "win32",
+            osArch: "x64",
+            execFile,
+            execFileSync,
+          });
+
+          const result = await runtime.installOnce(
+            "1.3.0",
+            undefined,
+            pythonPath
+          );
+          expect(result.observedVersion).toBe("1.3.0");
+          expect(fs.existsSync(result.pythonPath)).toBe(true);
+        } finally {
+          if (originalTemp === undefined) delete process.env.TEMP;
+          else process.env.TEMP = originalTemp;
+          if (originalTmp === undefined) delete process.env.TMP;
+          else process.env.TMP = originalTmp;
+          if (originalTmpdir === undefined) delete process.env.TMPDIR;
+          else process.env.TMPDIR = originalTmpdir;
+          fs.rmSync(testRoot, { recursive: true, force: true });
+        }
+      },
+      30_000
+    );
   });
 
   // ── installOnce: configured interpreter (wizard "Python executable") ──
@@ -1039,11 +1148,17 @@ describe("Real filesystem single venv (#174)", () => {
   });
 
   it("preserves every runtime when the active pointer is unavailable", () => {
-    const rt = new RuntimeBootstrap({ runtimeDir: tmpDir, osPlatform: "win32", osArch: "x64" });
+    const rt = new RuntimeBootstrap({
+      runtimeDir: tmpDir,
+      osPlatform: "win32",
+      osArch: "x64",
+    });
     fs.mkdirSync(path.join(tmpDir, "venv-old"), { recursive: true });
     fs.mkdirSync(path.join(tmpDir, "venv-new"), { recursive: true });
     expect(rt.retireUnusedRuntimes(null)).toEqual([]);
-    expect(rt.retireUnusedRuntimes(path.join(tmpDir, "venv-missing"))).toEqual([]);
+    expect(rt.retireUnusedRuntimes(path.join(tmpDir, "venv-missing"))).toEqual(
+      []
+    );
     expect(fs.existsSync(path.join(tmpDir, "venv-old"))).toBe(true);
     expect(fs.existsSync(path.join(tmpDir, "venv-new"))).toBe(true);
   });

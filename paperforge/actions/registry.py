@@ -493,11 +493,10 @@ def _ocr_run_handler(ctx: ActionContext, request: ActionRequest) -> PFResult:
             data={"exit_code": rc, **settlement},
             successful_keys=successful,
         )
-    # rc == 1: blocked/failed/pending/busy are distinct terminals.  A blocked
-    # batch (HTTP 401 credential rejection, missing PDF, missing token) must
-    # never surface as a polling timeout — resuming it would spend quota on
-    # a job the provider already refused.  Only genuinely pending work
-    # keeps the poll-timeout instruction; it resumes without new uploads.
+    # rc == 1: blocked/failed/pending/busy are distinct terminals.  Explicit
+    # HTTP 401/403 upload denials, missing PDF, and missing token are blocked;
+    # only genuinely pending work keeps the poll-timeout instruction.
+    # Resuming a blocked batch would spend quota on a job the provider refused.
     summary = settlement.get("summary", {}) if isinstance(settlement, dict) else {}
     blocked_count = int(summary.get("blocked", 0) or 0)
     failed_count = int(summary.get("failed", 0) or 0)

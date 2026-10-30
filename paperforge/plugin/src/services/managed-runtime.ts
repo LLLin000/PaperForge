@@ -428,9 +428,13 @@ export class RuntimeBootstrap {
     } catch {
       return removed;
     }
-    if (!entries.some((name) =>
-      /^venv(-|$)/.test(name) && path.resolve(this.rootDir, name) === keep
-    )) return removed;
+    if (
+      !entries.some(
+        (name) =>
+          /^venv(-|$)/.test(name) && path.resolve(this.rootDir, name) === keep
+      )
+    )
+      return removed;
     for (const name of entries) {
       if (!/^venv(-|$)/.test(name)) continue;
       const full = path.join(this.rootDir, name);
@@ -884,10 +888,10 @@ export class RuntimeBootstrap {
       {
         ...opts,
         encoding: "utf-8",
-        // Never inherit the app's CWD: a checkout in it would shadow the
-        // module being installed/verified (`python -m paperforge` from a
-        // repository root imports the source tree, not the runtime).
-        cwd: os.tmpdir(),
+        // Run children from the managed runtime root: it exists before
+        // installation and cannot inherit a stale/missing OS temp directory.
+        // It also stays outside the source checkout that could shadow imports.
+        cwd: this.rootDir,
       },
       (err, _stdout, stderr) => {
         if (err) {
@@ -1004,7 +1008,7 @@ export class RuntimeBootstrap {
     this._execFile(
       pythonPath,
       ["-I", "-c", "import paperforge; print(paperforge.__version__)"],
-      { timeout: 30000, signal, cwd: os.tmpdir() },
+      { timeout: 30000, signal, cwd: this.rootDir },
       (err, stdout) => {
         if (err) {
           reject(err);
@@ -1048,7 +1052,7 @@ export class RuntimeBootstrap {
         "--expected-version",
         expectedVersion,
       ],
-      { timeout: 30000, signal, cwd: os.tmpdir(), env },
+      { timeout: 30000, signal, cwd: this.rootDir, env },
       (err, stdout) => {
         if (err) {
           // Probe unavailable is not itself a handshake failure — the

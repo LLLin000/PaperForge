@@ -1558,7 +1558,7 @@ describe("PaperForge real-task e2e", function () {
           containerEl: HTMLElement;
           display(): void;
         };
-        settings: { _setup_complete?: boolean };
+        settings: { _setup_complete?: boolean; python_path?: string };
       };
       if (!plugin) throw new Error("paperforge plugin not loaded");
       plugin.settings._setup_complete = false;
@@ -1578,19 +1578,86 @@ describe("PaperForge real-task e2e", function () {
       setting.openTabById("paperforge");
       await new Promise<void>((resolve) => setTimeout(resolve, 1000));
       plugin._settingTab.display();
-      const install = Array.from(
-        plugin._settingTab.containerEl.querySelectorAll(
-          ".pf-setup-journey button.pf-action-btn"
-        )
-      ).find(
-        (button) =>
-          !button.hasAttribute("disabled") &&
-          /paperforge/i.test(button.textContent ?? "")
-      );
-      if (!install) {
-        throw new Error("first-use setup install action was not rendered");
+      // Opt-in explicit path exercises the configured-interpreter/missing-TEMP case.
+      const configuredPython = process.env.PF_E2E_SETUP_PYTHON_PATH?.trim();
+      if (configuredPython) {
+        const pythonInput =
+          plugin._settingTab.containerEl.querySelector<HTMLInputElement>(
+            'input[placeholder="python"]'
+          );
+        if (!pythonInput) {
+          throw new Error("Setup Wizard Python path input was not rendered");
+        }
+        pythonInput.value = configuredPython;
+        pythonInput.dispatchEvent(new Event("input", { bubbles: true }));
+        if (plugin.settings.python_path !== configuredPython) {
+          throw new Error(
+            "Setup Wizard did not accept the configured Python path"
+          );
+        }
       }
-      install.click();
+      const previousTempEnv = configuredPython
+        ? {
+            TEMP: process.env.TEMP,
+            TMP: process.env.TMP,
+            TMPDIR: process.env.TMPDIR,
+          }
+        : null;
+      if (previousTempEnv) {
+        const nodeFs = require("node:fs");
+        const nodeOs = require("node:os");
+        const nodePath = require("node:path");
+        const validTemp = [
+          process.env.TMP,
+          process.env.TEMP,
+          nodeOs.tmpdir(),
+        ].find(
+          (candidate): candidate is string =>
+            Boolean(candidate) && nodeFs.existsSync(candidate)
+        );
+        if (!validTemp) throw new Error("No existing temp directory found");
+        const missingTemp = nodePath.join(
+          validTemp,
+          `paperforge-e2e-missing-temp-${Date.now()}`
+        );
+        if (nodeFs.existsSync(missingTemp)) {
+          throw new Error("The E2E missing-temp path unexpectedly exists");
+        }
+        process.env.TMP = validTemp;
+        process.env.TEMP = missingTemp;
+        delete process.env.TMPDIR;
+        if (
+          nodePath.resolve(nodeOs.tmpdir()) !== nodePath.resolve(missingTemp)
+        ) {
+          throw new Error(
+            "The E2E process did not select the missing TEMP path"
+          );
+        }
+      }
+      try {
+        const install = Array.from(
+          plugin._settingTab.containerEl.querySelectorAll(
+            ".pf-setup-journey button.pf-action-btn"
+          )
+        ).find(
+          (button) =>
+            !button.hasAttribute("disabled") &&
+            /paperforge/i.test(button.textContent ?? "")
+        );
+        if (!install) {
+          throw new Error("first-use setup install action was not rendered");
+        }
+        install.click();
+      } finally {
+        // The runtime child is spawned synchronously by the click handler.
+        if (previousTempEnv) {
+          for (const key of ["TEMP", "TMP", "TMPDIR"] as const) {
+            const value = previousTempEnv[key];
+            if (value === undefined) delete process.env[key];
+            else process.env[key] = value;
+          }
+        }
+      }
     });
     await browser.waitUntil(
       async () => {
@@ -3299,7 +3366,8 @@ describe("PaperForge real-task e2e", function () {
       }
       return plugin.getDebugTrace();
     });
-    expect(trace).toContain("sync --json");
+    expect(trace).toContain("exec sync");
+    expect(trace).not.toContain("--json");
     expect(trace).toContain("versions show");
     expect(trace).toMatch(/timing detail=.*reconcile/);
   });
@@ -4472,6 +4540,8 @@ describe("PaperForge real-task e2e", function () {
         "blocked",
         "retryable_error",
       ]);
+      const ambiguousSubmission =
+        scenario === "5xx" || scenario === "drop" || scenario === "malformed";
       const stub = await startOcrStub("success", { scenario });
       try {
         await prepareOcrSandbox(stub.jobUrl);
@@ -4507,26 +4577,22 @@ describe("PaperForge real-task e2e", function () {
             try {
               const meta = JSON.parse(readFileSync(metaPath, "utf8")) as {
                 ocr_status?: string;
+                submission_state?: string;
+                ocr_job_id?: string;
               };
-              return (
-                terminalStates.has(String(meta.ocr_status ?? "")) &&
-                !(await operationActive())
-              );
+              const expectedOutcome = ambiguousSubmission
+                ? meta.ocr_status === "pending" &&
+                  meta.submission_state === "submitting" &&
+                  !meta.ocr_job_id
+                : terminalStates.has(String(meta.ocr_status ?? ""));
+              return expectedOutcome && !(await operationActive());
             } catch {
               return false;
             }
           },
           {
-            // Retryable modes walk the product's bounded exponential backoff
-            // (5 transport attempts up to ~30s apart) up to the job-attempt
-            // cap, so they legitimately take minutes; fatal modes fail fast.
-            timeout:
-              scenario === "401" ||
-              scenario === "403" ||
-              scenario === "malformed"
-                ? 120000
-                : 300000,
-            timeoutMsg: `OCR run for ${scenario} never reached a terminal state`,
+            timeout: 30000,
+            timeoutMsg: `OCR run for ${scenario} did not reach the expected safe outcome or release its operation lock`,
           }
         );
         const meta = JSON.parse(readFileSync(metaPath, "utf8")) as Record<
@@ -4535,18 +4601,41 @@ describe("PaperForge real-task e2e", function () {
         >;
         const status = String(meta.ocr_status ?? "");
         expect(successStates.has(status)).toBe(false);
-        // Retry accounting must stay bounded: job_attempt never exceeds the cap.
+        if (ambiguousSubmission) {
+          expect(status).toBe("pending");
+          expect(meta.submission_state).toBe("submitting");
+          expect(meta.ocr_job_id ?? "").toBe("");
+          expect(String(meta.error ?? "").toLowerCase()).toContain(
+            "unconfirmed"
+          );
+        } else {
+          expect(terminalStates.has(status)).toBe(true);
+          expect(status).toBe("blocked");
+          expect(meta.provider_error_status).toBe(Number(scenario));
+          expect(meta.submission_state).not.toBe("submitting");
+        }
         const attempts = Number(meta.job_attempt ?? meta.retry_count ?? 0);
         expect(attempts).toBeLessThanOrEqual(3);
-        await browser
-          .waitUntil(async () => !(await operationActive()), { timeout: 15000 })
-          .catch(() => undefined);
+        const postCount = stub.requests.filter(
+          (request) =>
+            request.method === "POST" &&
+            request.url.startsWith("/api/v2/ocr/jobs")
+        ).length;
+        expect(postCount).toBe(1);
+        expect(await operationActive()).toBe(false);
         appendEvidence("x06-provider-failure-modes.json", {
           case_id: `X06-${scenario}`,
-          variant: `provider ${scenario}: never success, bounded retries, honest terminal`,
+          variant: ambiguousSubmission
+            ? `provider ${scenario}: unconfirmed without job id; no resubmission`
+            : `provider ${scenario}: definitive access refusal is blocked`,
           required_layer: "H",
           status: "VERIFIED",
           scenario,
+          observed_status: status,
+          submission_state: meta.submission_state ?? null,
+          job_id_present: Boolean(meta.ocr_job_id),
+          post_count: postCount,
+          operation_active: false,
           recorded_at: new Date().toISOString(),
         });
       } finally {
