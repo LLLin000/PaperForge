@@ -3406,17 +3406,17 @@ def run_ocr(
                             _body = str(getattr(e.response, "text", ""))[:500]
                         except Exception:  # noqa: BLE001
                             pass
-                        if _status == 401:
+                        if _status in (401, 403):
                             meta.pop("submission_state", None)
                             meta["ocr_status"] = "blocked"
-                            meta["error"] = "PaddleOCR token invalid"
+                            meta["error"] = "PaddleOCR token invalid" if _status == 401 else "PaddleOCR access denied"
                             meta["error_stage"] = "auth"
-                            meta["provider_error_status"] = 401
+                            meta["provider_error_status"] = _status
                             meta["retry_count"] = 3
                             queue_row["queue_status"] = "blocked"
                             write_json(paths["ocr"] / key / "meta.json", meta)
                             changed += 1
-                            _diag(f"OCR: {key} blocked (invalid API token)")
+                            _diag(f"OCR: {key} blocked ({'invalid API token' if _status == 401 else 'access denied'})")
                             continue
                         if _status in (400, 429):
                             meta.pop("submission_state", None)

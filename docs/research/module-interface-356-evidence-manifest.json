@@ -18,6 +18,38 @@
   "local_plugin_full": "Working-tree Vitest 653 passed, 1 skipped; typecheck passed. Real installer process-kill case was skipped; not real-host complete-journey or hosted CI evidence.",
   "blocked": "Final committed candidate, independent complete journeys and full CI/H require further work. Unknown submission remains safely unconfirmed per owner decision. Earlier artifacts retain their own identities."
  },
+ "g3_trace_ocr_diagnostic": {
+  "issue_snapshot": "#356 updated_at 2026-10-28T15:48:10Z; parent #130",
+  "run_id": "40884914428",
+  "job_id": "123485929988",
+  "run_url": "https://github.com/LLLin000/PaperForge/actions/runs/40884914428/job/123485929988",
+  "candidate_ref": "v2.0.0-rc6-candidate at 42437546116a04c27efd917df94b0c845331e697",
+  "h_result": "failed; 28 passed, 5 failed, 2 skipped; two other H matrix jobs canceled",
+  "trace_root_cause": "E2E expected sync --json; actual trace was exec sync ok=true because commandIdentity intentionally removes flags",
+  "ocr_root_cause": "403 access denial fell through the ambiguous-submission path; 5xx/drop/malformed with no job ID correctly remain pending/submitting without resubmission",
+  "fix": "Trace assertion matches redacted command identity; 401/403 become blocked and clear submission_state; ambiguous no-job-ID cases remain unconfirmed",
+  "red_regression": "Before fix: 1 failed because HTTP 403 produced blocked=0 and pending=1; 401 plus drop/5xx/malformed passed. After fix: all 5 targeted cases passed.",
+  "local_verification": "Final pre-commit local gate: CPython 3.12.8 OCR state-machine + scope safety 54 passed; full plugin Vitest 654 passed/1 skipped; typecheck, production build, version sync passed; fresh offline noneditable wheel install and pip check passed; synthetic-vault installed-wheel CLI config-init/write/search returned the same record. Focused Ruff test-file check passed; whole worker/registry files retain 39 unrelated diagnostics.",
+  "production_lint": "Whole-file Ruff reports 39 existing diagnostics; none points to the new 401/403 branch or regression tests; unrelated formatting/lint was not rewritten",
+  "owner_version_decision": "Approved 2.0.0rc6; planned unique non-release candidate ref v2.0.0-rc6-candidate-2; not created",
+  "source_identity": "After approved no-git bump, current source is an uncommitted tracked overlay on 42437546116a04c27efd917df94b0c845331e697; wheel and bundle are built from a clean archive-plus-diff stage and locally verified, but commit-tree binding and new ref are pending. Existing local v2.0.0-rc6-candidate was not moved.",
+  "release_gate": "RC6 version-sync passes; G3 remains pending until an identity-bound candidate passes Hosted CI/H; G2 and G4 remain pending; no post-fix Hosted CI/H run"
+ },
+ "rc6_candidate": {
+  "base_sha": "42437546116a04c27efd917df94b0c845331e697",
+  "source_state": "Uncommitted overlay; 15 tracked files changed including plugin/.prettierignore; commit-tree binding pending",
+  "version": "2.0.0rc6",
+  "candidate_ref": "v2.0.0-rc6-candidate-2 (planned, not created; manual CI ref, not a publish tag)",
+  "wheel_sha256": "fba125f0b121f0c858523084fc6a57783607fff78b298fc5386b040b3f986990",
+  "bundle_sha256": "5191b5f7944efc917980ee71ac4ec50b96b6022076983d55174de678f2c771f7",
+  "plugin_manifest_sha256": "215cf6d0f82badb866804471d72fd7c615151fa2fbccef83432d4206ac69822a",
+  "build_provenance": "Wheel-only offline build from clean staging constructed from base git archive plus tracked diff; canonical main.js from the post-formatter npm production build was placed in staging. 235 Python sources and 9 plugin package entries match staging, 0 bytecode; seven working-tree Python files and plugin manifest/versions differ from stage only by CRLF/LF. sdist attempt timed out and was excluded.",
+  "local_python": "CPython 3.12.8 OCR state-machine + scope-safety tests: 54 passed; fresh offline noneditable install and pip check passed.",
+  "local_plugin": "Vitest 654 passed/1 skipped; typecheck and production build passed.",
+  "packaged_cli": "Final paired wheel installed noneditable in fresh CPython 3.12.8 venv, 35 runtime distributions; pip check passed. Isolated synthetic Vault: config init and reading-log write/search returned the same record. probe all --json with keyring.backends.null.Keyring and socket/DNS deny guard exited 0 and returned six module envelopes (installation pointer missing, library Zotero missing, OCR output/credential missing, memory DB missing, help ready, maintenance no-items). No provider call or production credential used; OCR notice text says API unreachable but is not remote-connectivity evidence.",
+  "hosted_ci": "Not dispatched; commit and candidate ref are pending.",
+  "certification": "G2 complete journeys/upgrade/recovery and G4 release/security remain pending; no release acceptance."
+ },
  "blocked": [
   "real OCR/Embedding/cloud-model tasks (remote frozen, no local model)",
   "full H host root-cause (A01 unknown; provenance-bound short-A/B completed, not full-H acceptance)"

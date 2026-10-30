@@ -4,7 +4,7 @@
 
 当前进入 **Integration & Release Stabilization**：冻结既有 `PFResult`、Probe v2、Action Registry、NDJSON 和 `PaperForgeClient` 契约，不扩功能或新增控制内核；先收口上游集成，再以同一最终源码、wheel、插件 bundle 和宿主做统一候选认证，独立处置发布风险。本文是证据与计划的投影，任务状态以 GitHub Issue、发布接受以 CI/owner 门禁为准。
 
-public 分支的产品修复提交仍为 **`5aa440ed14eb4eb856467fb439eb06f52ec61f78`**；本轮已在同一 worktree 的独立本地分支 `integration/offline-preview-356` 完成祖先集成，固定候选源码为 **`9ead0993290812f0575236fbe81b7620f658189d`**，见末节。本地候选已配对构建和包级验证，但不是 master/Release，也未通过完整 H 或两次 UI 旅程。既有 PR/master 未改，整合分支未推送；public 只追加证据与历史身份说明。旧阶段产物/收据保留，不冒充当前候选或正式发行。
+public 分支的产品修复提交仍为 **`5aa440ed14eb4eb856467fb439eb06f52ec61f78`**；本轮已在同一 worktree 的独立本地分支 `integration/offline-preview-356` 完成祖先集成，固定候选源码为 **`9ead0993290812f0575236fbe81b7620f658189d`**，见末节。本地候选已配对构建和包级验证，但不是 master/Release，也未通过完整 H 或两次 UI 旅程。既有 PR/master 未改，整合分支未推送；public 只追加证据与历史身份说明。旧阶段产物/收据保留，不冒充当前候选或正式发行。RC6 续作（2026-10-30）是另一条身份：基于 `42437546116a04c27efd917df94b0c845331e697` 的未提交 overlay，`2.0.0rc6` 配对 wheel/bundle 与离线 CLI smoke 已验证；source commit、新候选 ref 和 Hosted CI/H 尚未完成，详见末尾 G3 更新。
 
 首次使用候选 `9ead099` 的两次隔离安装暴露路径投影未刷新：Python 配置为 `System`，向导却显示根目录下的 `PaperForge/exports`；两份原始失败证据保留。当前工作树修复在成功 setup 后重新读取 Python 配置并刷新既有投影；独立宿主通过 UI 将测试库目录改为 `TrialSystem` 后，配置读回和向导路径一致，无需重载。此宿主绿证是已安装运行时的路径修改，不等同于全新安装绿证；修复后最终候选身份和两次完整旅程仍待验证。真实 OCR/Embedding 继续冻结。
 
@@ -633,3 +633,29 @@ Node 外部 TCP guard、Python socket guard、Null keyring、Chromium offline/de
 **本次没有 managed Setup/pointer 发布、升级/恢复或新的真实 Obsidian 用户旅程。** 完整 H/主要 CI、两次独立七步 UI 验收、跨机依赖可获得性和分发物侧收费能力禁用仍 PENDING；测试 guard 不在 wheel 内，不能把测试环境断网说成产品已强制离线。候选仅本机留存，整合分支未推送，未发布/关闭 Issue/恢复提供商调用。
 
 当前本地包仍沿用源码版本 2.0.0rc5、由 source/hash 区分，**不能假定既有 rc5 环境会因替换同版本 wheel 自动升级**；正式试用前应沿既有版本流程确定可区分的候选身份，或验证现有显式重装入口。不能混放多个同版本 wheel，也不以本次 fresh venv 成功替代这个升级边界。
+
+## G3 trace/OCR 阻断诊断与本地修复（2026-10-28）
+
+### 冻结失败证据
+
+- Hosted run `40884914428` 的 H job `123485929988` 失败：28 passed、5 failed、2 skipped；同矩阵另外两个 H job 被取消。运行基于 `v2.0.0-rc6-candidate` / `42437546116a04c27efd917df94b0c845331e697`。原始 CI 记录仍由 GitHub 保存：[run/job](https://github.com/LLLin000/PaperForge/actions/runs/40884914428/job/123485929988)。
+- Trace 失败来自过时的 E2E 断言：测试期待 `sync --json`，记录实际为 `exec sync ok=true`。`commandIdentity` 有意移除参数；产品 trace 行为不是故障。
+- OCR 测试把 403、5xx、连接断开和畸形响应都要求成终态。无 job ID 的 5xx/断连/畸形响应不能证明服务端未接单，原行为正确地保留 `pending` + `submission_state=submitting`、不重传；测试等待终态导致超时。403 是可确认的访问拒绝，但 worker 之前未单独处理，误落入未确认分支，是实际缺陷。
+
+### 修复与本地证据
+
+- Trace E2E 现在断言 `exec sync` 且明确禁止出现 `--json`；保留既有参数脱敏契约。
+- OCR worker 将 401/403 归类为 `blocked`，清除 `submission_state`，记录状态码并给出安全说明。E2E 分开检查 401/403、429 与 5xx/断连/畸形响应；无 job ID 的模糊提交仍须保持未确认，且只允许一次 POST。
+- 红测先出现 **1 failed / 4 passed**：403 被落为 `blocked=0, pending=1`；修复后定向 Python 回归 **5 passed / 28 deselected**。Trace 单测 **30 passed**，插件 typecheck 通过，新增 Python 测试文件的 `ruff check` 通过。
+- 对整份既有 worker/registry 文件运行 Ruff 仍报告 39 条 lint 诊断；没有一条指向本次新增分支或测试。未批量重排既有代码。
+
+### 未接受的门禁与身份
+
+- 本次只证明 trace/OCR 修复与本地 RC6 工件，不是 provider 或发布验收。新候选 Hosted CI/H 尚未运行；G2 两次完整七步旅程、升级/恢复，以及 G4 发行安全仍为 PENDING。
+- Owner 批准 canonical version `2.0.0rc6`；`scripts/bump.py 2.0.0rc6 --no-git` 和 `scripts/check_version_sync.py` 通过。当前有 15 个 tracked-file changes（含 `paperforge/plugin/.prettierignore`）；它让 pre-commit Prettier 忽略生成的 `main.js`，避免把 388.3KB 构建产物扩成 15,179 行空白格式变更。仍无 source commit。
+- 最终 wheel-only 离线构建来自干净 staging（base `git archive` + `git diff HEAD --binary`），并将经 `npm run build` 的 canonical `main.js` 放入 staging；wheel SHA256 `fba125f0b121f0c858523084fc6a57783607fff78b298fc5386b040b3f986990`。sdist 构建超时，未纳入候选。wheel 内 235 个 Python 源文件与 staging 一致、0 个 `.pyc/.pyo`；9 个 `paperforge/plugin/` 条目也与 staging 一致。相较 working tree，7 个 Python 文件及 plugin manifest/versions 仅有 CRLF/LF 差异；bundle 与 working-tree `main.js` 逐字节一致。commit-tree binding 仍待冻结后复核。
+- 配对插件 bundle `main.js` SHA256 `5191b5f7944efc917980ee71ac4ec50b96b6022076983d55174de678f2c771f7`，manifest SHA256 `215cf6d0f82badb866804471d72fd7c615151fa2fbccef83432d4206ac69822a`；wheel 内二者均与 clean stage 一致。
+- 最终本地源码门：独立 CPython 3.12.8 环境下 OCR state-machine + scope safety **54 passed**；插件 Vitest **654 passed / 1 skipped**；typecheck、production build、版本同步检查通过。Focused Ruff 测试文件检查通过；worker/registry 全文件仍有 39 条历史诊断，未顺带重写。
+- Fresh non-editable CPython 3.12.8 venv 离线安装最终配对 wheel（35 个运行 distributions），`uv pip check` 全部兼容。隔离 HOME/合成 Vault 中实际执行 `config init`、reading-log 写入及搜索，返回并找回同一条合成记录；未使用 provider 或生产凭据。
+- 同一最终 wheel 在隔离 Vault 执行 `probe all --json`：`NullKeyring` 与 socket/DNS deny guard 生效；六模块如实返回 installation=pointer missing、library=Zotero missing、OCR=无输出/无凭据、memory=DB missing、help=ready、maintenance=no items，进程 exit 0。OCR notice 原文为 “PaddleOCR API unreachable: OCR credential not found”；这是本地无凭据诊断，不是 provider 连通性证据，也不把整体状态记作 ready。
+- 当前 source 尚未 commit；既有本地 `v2.0.0-rc6-candidate` 未移动，新 ref `v2.0.0-rc6-candidate-2` 尚未创建。冻结后才可将 wheel/bundle 绑定到 commit SHA，并手动 dispatch Hosted CI/H；该 ref 不触发发布 workflow。G2/G4 与 hosted CI/H 仍为 PENDING。

@@ -302,19 +302,18 @@ def test_fresh_list_selection_reaches_only_selected_pdf(scope_vault, capsys):
     assert not (paths["ocr"] / "SCOPE002").exists()
 
 
-def test_controlled_401_returns_blocked_not_poll_timeout(scope_vault, capsys) -> None:
-    """HTTP 401 is a credential rejection, not a poll window: the action
-    terminal must be blocked/actionable, never OCR_POLL_TIMEOUT with a
-    re-run-polling instruction.  Pending work is absent, so nothing may
-    claim a resumable poll; partial successes (none here) would survive."""
+@pytest.mark.parametrize("status", [401, 403])
+def test_controlled_auth_denial_returns_blocked_not_poll_timeout(scope_vault, capsys, status) -> None:
+    """HTTP 401/403 refusals are blocked, not an uncertain polling window."""
     import requests
 
     vault, _ = scope_vault
+    reason = "Unauthorized" if status == 401 else "Forbidden"
 
     def rejected(request):
         raise requests.exceptions.HTTPError(
-            "401 Client Error: Unauthorized",
-            response=type("R", (), {"status_code": 401, "text": "invalid token"})(),
+            f"{status} Client Error: {reason}",
+            response=type("R", (), {"status_code": status, "text": reason})(),
         )
 
     with responses.RequestsMock(assert_all_requests_are_fired=False) as http:
@@ -323,11 +322,23 @@ def test_controlled_401_returns_blocked_not_poll_timeout(scope_vault, capsys) ->
             "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs",
             callback=rejected,
         )
-        rc = main([
-            "--vault", str(vault), "action", "run", "ocr.run",
-            "--scope", "papers", "--key", "SCOPE001",
-            "--confirm", "ocr.run", "--json",
-        ])
+        rc = main(
+            [
+                "--vault",
+                str(vault),
+                "action",
+                "run",
+                "ocr.run",
+                "--scope",
+                "papers",
+                "--key",
+                "SCOPE001",
+                "--confirm",
+                "ocr.run",
+                "--json",
+            ]
+        )
+        assert len([call for call in http.calls if call.request.method == "POST"]) == 1
     assert rc == 1
     events = [json.loads(line) for line in capsys.readouterr().out.splitlines() if line.strip()]
     terminal = next(e for e in events if e.get("event") in ("result", "error", "cancelled"))
@@ -336,14 +347,23 @@ def test_controlled_401_returns_blocked_not_poll_timeout(scope_vault, capsys) ->
     error = result.get("error", {}) or {}
     assert error.get("code") != "OCR_POLL_TIMEOUT"
     assert error.get("code") == "OCR_UPLOAD_FAILED"
-    assert "poll" not in str(error.get("message", "")).lower() or "before retry" in str(error.get("message", "")).lower()
+    assert (
+        "poll" not in str(error.get("message", "")).lower()
+        or "before retry" in str(error.get("message", "")).lower()
+    )
     data = result.get("data", {}) or {}
     assert (data.get("summary", {}) or {}).get("blocked", 0) >= 1
     assert (data.get("summary", {}) or {}).get("pending", 0) == 0
     assert "SCOPE001" in (data.get("blocked_keys", []) or [])
+    meta = json.loads((pipeline_paths(vault)["ocr"] / "SCOPE001" / "meta.json").read_text(encoding="utf8"))
+    assert meta["ocr_status"] == "blocked"
+    assert meta["provider_error_status"] == status
+    assert meta.get("submission_state") != "submitting"
 
-def test_unconfirmed_upload_never_resubmits(scope_vault, monkeypatch, capsys) -> None:
-    """A lost upload response may hide an accepted remote job."""
+
+@pytest.mark.parametrize("scenario", ["drop", "5xx", "malformed"])
+def test_unconfirmed_upload_never_resubmits(scope_vault, monkeypatch, capsys, scenario) -> None:
+    """A response without a job ID cannot prove the provider did not accept it."""
     import requests
 
     vault, _ = scope_vault
@@ -351,16 +371,34 @@ def test_unconfirmed_upload_never_resubmits(scope_vault, monkeypatch, capsys) ->
     monkeypatch.setenv("PAPERFORGE_RETRY_BACKOFF", "0")
     calls = []
 
-    def dropped(request):
+    def incomplete_response(request):
         calls.append(1)
-        raise requests.ConnectionError("synthetic response disconnect")
+        if scenario == "drop":
+            raise requests.ConnectionError("synthetic response disconnect")
+        if scenario == "5xx":
+            return 500, {"Content-Type": "application/json"}, '{"error":"temporary"}'
+        return 200, {"Content-Type": "application/json"}, "{ malformed json"
 
     argv = [
-        "--vault", str(vault), "action", "run", "ocr.run",
-        "--scope", "papers", "--key", "SCOPE001", "--confirm", "ocr.run", "--json",
+        "--vault",
+        str(vault),
+        "action",
+        "run",
+        "ocr.run",
+        "--scope",
+        "papers",
+        "--key",
+        "SCOPE001",
+        "--confirm",
+        "ocr.run",
+        "--json",
     ]
     with responses.RequestsMock(assert_all_requests_are_fired=False) as http:
-        http.add_callback(responses.POST, "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs", callback=dropped)
+        http.add_callback(
+            responses.POST,
+            "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs",
+            callback=incomplete_response,
+        )
         assert main(argv) == 1
         events = [json.loads(line) for line in capsys.readouterr().out.splitlines() if line.strip()]
         terminal = next(e for e in events if e.get("event") in ("result", "error", "cancelled"))
@@ -370,6 +408,7 @@ def test_unconfirmed_upload_never_resubmits(scope_vault, monkeypatch, capsys) ->
         assert main(argv) == 1
     assert len(calls) == 1
     meta = json.loads((pipeline_paths(vault)["ocr"] / "SCOPE001" / "meta.json").read_text(encoding="utf8"))
+    assert meta["ocr_status"] == "pending"
     assert meta["submission_state"] == "submitting"
     assert not meta.get("ocr_job_id")
 
