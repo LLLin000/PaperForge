@@ -40,7 +40,9 @@
   "source_state": "Committed 15-file RC6 source at 7837e8a1f6a0942f7251feef28d4e66924129096; wheel contents checked against fresh commit archive (main.js differs only by CRLF/LF)",
   "source_sha": "7837e8a1f6a0942f7251feef28d4e66924129096",
   "version": "2.0.0rc6",
-  "candidate_ref": "v2.0.0-rc6-candidate-2 (planned, not created; manual CI ref, not a publish tag)",
+  "candidate_ref": "v2.0.0-rc6-candidate-2 (annotated tag pushed; target 61faf6961b35e0ea5fa6564e8b7ebeed47bcca0a; not a release)",
+  "candidate_target_sha": "61faf6961b35e0ea5fa6564e8b7ebeed47bcca0a",
+  "candidate_tag_object_sha": "0ff22aa2fb4a1988ca028ca6a8d45d74b64cb4e8",
   "wheel_sha256": "fba125f0b121f0c858523084fc6a57783607fff78b298fc5386b040b3f986990",
   "bundle_sha256": "5191b5f7944efc917980ee71ac4ec50b96b6022076983d55174de678f2c771f7",
   "plugin_manifest_sha256": "215cf6d0f82badb866804471d72fd7c615151fa2fbccef83432d4206ac69822a",
@@ -49,7 +51,7 @@
   "local_python": "CPython 3.12.8 OCR state-machine + scope-safety tests: 54 passed; fresh offline noneditable install and pip check passed.",
   "local_plugin": "Vitest 654 passed/1 skipped; typecheck and production build passed.",
   "packaged_cli": "Final paired wheel installed noneditable in fresh CPython 3.12.8 venv, 35 runtime distributions; pip check passed. Isolated synthetic Vault: config init and reading-log write/search returned the same record. probe all --json with keyring.backends.null.Keyring and socket/DNS deny guard exited 0 and returned six module envelopes (installation pointer missing, library Zotero missing, OCR output/credential missing, memory DB missing, help ready, maintenance no-items). No provider call or production credential used; OCR notice text says API unreachable but is not remote-connectivity evidence.",
-  "hosted_ci": "Not dispatched; commit and candidate ref are pending.",
+  "hosted_ci": "Not dispatched; Issue #356 explicitly prohibits CI trigger/wait, and the earlier one-off A01 permission was consumed.",
   "certification": "G2 complete journeys/upgrade/recovery and G4 release/security remain pending; no release acceptance."
  },
  "blocked": [
