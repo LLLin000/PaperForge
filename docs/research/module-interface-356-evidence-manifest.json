@@ -52,11 +52,13 @@
   "local_plugin": "Vitest 654 passed/1 skipped; typecheck and production build passed.",
   "packaged_cli": "Final paired wheel installed noneditable in fresh CPython 3.12.8 venv, 35 runtime distributions; pip check passed. Isolated synthetic Vault: config init and reading-log write/search returned the same record. probe all --json with keyring.backends.null.Keyring and socket/DNS deny guard exited 0 and returned six module envelopes (installation pointer missing, library Zotero missing, OCR output/credential missing, memory DB missing, help ready, maintenance no-items). No provider call or production credential used; OCR notice text says API unreachable but is not remote-connectivity evidence.",
   "hosted_ci": "Not dispatched; Issue #356 explicitly prohibits CI trigger/wait, and the earlier one-off A01 permission was consumed.",
-  "certification": "G2 complete journeys/upgrade/recovery and G4 release/security remain pending; no release acceptance."
+  "certification": "G2 RC6 real-host journeys/upgrade/recovery not run; G3 Hosted CI/H not dispatched under Issue #356; G4 release/security not evaluated because its checklist/evidence matrix is absent. No release acceptance."
  },
  "blocked": [
   "real OCR/Embedding/cloud-model tasks (remote frozen, no local model)",
-  "full H host root-cause (A01 unknown; provenance-bound short-A/B completed, not full-H acceptance)"
+  "full H host root-cause (A01 unknown; provenance-bound short-A/B completed, not full-H acceptance)",
+  "G2 RC6 real-host journey/upgrade: no path-visible Obsidian executable or repo E2E cache; setup-positive runner writes a runtime pointer under os.homedir(), and no isolated host profile was staged",
+  "G4 RC6 security: no candidate.json or matrix.json exists in the current worktree; #356 does not define a candidate-specific checklist"
  ],
  "optional_unverified": [
   "physical hardware/OS-key delivery; software shortcut behavior is verified using trusted CDP input in the real Obsidian host"
