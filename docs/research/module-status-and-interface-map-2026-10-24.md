@@ -651,11 +651,11 @@ Node 外部 TCP guard、Python socket guard、Null keyring、Chromium offline/de
 
 ### 未接受的门禁与身份
 
-- 本次只证明 trace/OCR 修复与本地 RC6 工件，不是 provider 或发布验收。新候选 Hosted CI/H 尚未运行；G2 两次完整七步旅程、升级/恢复，以及 G4 发行安全仍为 PENDING。
+- 本次证明 trace/OCR 修复、RC6 wheel 与候选源码绑定；不代表 provider 或发行认证。Hosted CI/H 按 Issue #356 的禁止 CI trigger/wait 约束未执行；G2 两次完整旅程、升级/恢复和 G4 发行安全仍为 PENDING。
 - Owner 批准 canonical version `2.0.0rc6`；`scripts/bump.py 2.0.0rc6 --no-git` 和 `scripts/check_version_sync.py` 通过。15 个文件已提交到 `7837e8a1f6a0942f7251feef28d4e66924129096`。`paperforge/plugin/.prettierignore` 让 pre-commit Prettier 忽略生成的 `main.js`，避免把 388.3KB 构建产物扩成 15,179 行空白格式变更。
 - 最终 wheel-only 离线构建来自干净 staging（base `git archive` + tracked diff），并将经 `npm run build` 的 canonical `main.js` 放入 staging；wheel SHA256 `fba125f0b121f0c858523084fc6a57783607fff78b298fc5386b040b3f986990`。sdist 构建超时，未纳入候选。提交后用新鲜 `git archive 7837e8a1f6a0942f7251feef28d4e66924129096` 逐文件比对：297 个 wheel package entries 均存在且内容一致，唯一差异为 `paperforge/plugin/main.js` 的 CRLF/LF；其中 235 个 Python 源、9 个 plugin 文件，0 个 `.pyc/.pyo`。wheel 的 Python 源、版本 metadata 与 commit archive 一致。
 - wheel 内插件 `main.js` SHA256 `5191b5f7944efc917980ee71ac4ec50b96b6022076983d55174de678f2c771f7`，`manifest.json` SHA256 `215cf6d0f82badb866804471d72fd7c615151fa2fbccef83432d4206ac69822a`，`versions.json` SHA256 `1c4961c6e4b161c02e3309c13c7983c4c4de21f5c8608beb7c0310b19bfb599d`。bundle 只在 CRLF/LF 上与 Git archive 不同；manifest 与 versions 文件逐字节一致。
 - 最终本地源码门：独立 CPython 3.12.8 环境下 OCR state-machine + scope safety **54 passed**；插件 Vitest **654 passed / 1 skipped**；typecheck、production build、版本同步检查通过。Focused Ruff 测试文件检查通过；worker/registry 全文件仍有 39 条历史诊断，未顺带重写。
 - Fresh non-editable CPython 3.12.8 venv 离线安装最终配对 wheel（35 个运行 distributions），`pip check` 全部兼容。隔离 HOME/合成 Vault 中实际执行 `config init`、reading-log 写入及搜索，返回并找回同一条合成记录；未使用 provider 或生产凭据。
 - 同一最终 wheel 在隔离 Vault 执行 `probe all --json`：`NullKeyring` 与 socket/DNS deny guard 生效；六模块如实返回 installation=pointer missing、library=Zotero missing、OCR=无输出/无凭据、memory=DB missing、help=ready、maintenance=no items，进程 exit 0。OCR notice 原文为 “PaddleOCR API unreachable: OCR credential not found”；这是本地无凭据诊断，不是 provider 连通性证据，也不把整体状态记作 ready。
-- 当前 tag 尚未创建；既有本地 `v2.0.0-rc6-candidate` 未移动，新 ref `v2.0.0-rc6-candidate-2` 待创建。该 ref 用于手动 Hosted CI/H，不触发 release workflow。G2 两次完整旅程及升级/恢复、G4 发行安全仍为 PENDING。
+- 已创建并推送 annotated tag `v2.0.0-rc6-candidate-2`，GitHub tag object `0ff22aa2fb4a1988ca028ca6a8d45d74b64cb4e8` → target `61faf6961b35e0ea5fa6564e8b7ebeed47bcca0a`；包代码来源 commit 为 `7837e8a1f6a0942f7251feef28d4e66924129096`。GitHub API 已确认 tag ref/object。此 `v` 前缀 tag 不匹配 `publish.yml` 的数字 tag pattern；`ci.yml` 只对 main/master push 自动运行，因此该 tag push 不触发 CI/release。按 Issue #356 约束未 dispatch Hosted CI/H；G2/G4 仍 PENDING。
