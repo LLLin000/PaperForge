@@ -308,7 +308,7 @@ describe("Library & Render Quality Domain Cutover (Ticket 06)", () => {
         view._loadIndex = () => null;
         view._renderGlobalMode();
         const btn = Array.from(view._contentEl.querySelectorAll("button")).find(
-          (b) => b.textContent?.includes("Sync Library")
+          (b) => b.textContent?.includes("Sync library")
         );
         expect(btn).toBeDefined();
         await expectOnlyClientSync(() => btn?.click());
@@ -323,7 +323,7 @@ describe("Library & Render Quality Domain Cutover (Ticket 06)", () => {
         ];
         view._renderCollectionMode();
         const btn = Array.from(view._contentEl.querySelectorAll("button")).find(
-          (b) => b.textContent?.includes("Sync Library")
+          (b) => b.textContent?.includes("Sync library")
         );
         expect(btn).toBeDefined();
         await expectOnlyClientSync(() => btn?.click());

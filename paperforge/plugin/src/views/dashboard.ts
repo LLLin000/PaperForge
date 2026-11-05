@@ -75,6 +75,7 @@ export class PaperForgeStatusView extends ItemView {
   _cachedStats: any = null;
   _techDetailsExpanded = false;
   _paperforgeVersion = "";
+  private _showingLoadFailure = false;
   _dashboardPermissions: Record<string, boolean> = {};
   _headerTitle: HTMLElement | null = null;
   _versionBadge: HTMLElement | null = null;
@@ -248,19 +249,14 @@ export class PaperForgeStatusView extends ItemView {
       this._dashboardPermissions = data.permissions ?? {};
       // A recovered acquisition must not leave the old backend-failure
       // message hanging in the message bar.
-      if (
-        this._messageEl &&
-        this._messageEl.textContent &&
-        this._messageEl.textContent.startsWith("Cannot reach PaperForge CLI")
-      ) {
+      if (this._showingLoadFailure) {
+        this._showingLoadFailure = false;
         this._showMessage("", "idle");
       }
     } catch (_err) {
       if (!quiet && !this._cachedStats) {
-        this._showMessage(
-          "Cannot reach PaperForge CLI.\nMake sure paperforge is installed and in your PATH.",
-          "error"
-        );
+        this._showingLoadFailure = true;
+        this._showMessage(t("dash_cli_unreachable"), "error");
       }
     }
   }
@@ -662,16 +658,16 @@ export class PaperForgeStatusView extends ItemView {
     });
     snapshot.createEl("div", {
       cls: "paperforge-section-label",
-      text: "Library Snapshot",
+      text: t("dash_library_snapshot"),
     });
     const pills = snapshot.createEl("div", {
       cls: "paperforge-snapshot-pills",
     });
     const snapData = [
-      { value: totalPapers, label: "papers" },
-      { value: pdfReady, label: "PDFs ready" },
-      { value: ocrDone, label: "OCR done" },
-      { value: deepReadDone, label: "deep-read done" },
+      { value: totalPapers, label: t("dash_papers") },
+      { value: pdfReady, label: t("dash_pdfs_ready") },
+      { value: ocrDone, label: t("dash_ocr_done") },
+      { value: deepReadDone, label: t("dash_deep_read_done") },
     ];
     for (const s of snapData) {
       const pill = pills.createEl("div", { cls: "paperforge-snapshot-pill" });
@@ -689,7 +685,7 @@ export class PaperForgeStatusView extends ItemView {
     });
     statusSection.createEl("div", {
       cls: "paperforge-section-label",
-      text: "System Status",
+      text: t("dash_system_status"),
     });
     const statusGrid = statusSection.createEl("div", {
       cls: "paperforge-status-grid",
@@ -702,26 +698,26 @@ export class PaperForgeStatusView extends ItemView {
     const indexOk = indexItems.length > 0;
     this._renderSystemStatusRow(
       statusGrid,
-      "Index",
+      t("dash_row_index"),
       indexOk ? "healthy" : "missing",
       indexOk
         ? indexItems.length + " entries"
-        : "Index not loaded — run Sync Library"
+        : t("dash_index_not_loaded")
     );
     // Export health is Python's check_permissions().can_sync — the
     // host-local filesystem scan (Semantic Fact) is retired (#TB-2).
     const exportOk = this._dashboardPermissions.can_sync === true;
-    const exportDetail = exportOk ? "Exports detected" : "No exports found";
+    const exportDetail = exportOk ? t("dash_exports_detected") : t("dash_exports_missing");
     this._renderSystemStatusRow(
       statusGrid,
-      "Zotero Export",
+      t("dash_row_zotero"),
       exportOk ? "healthy" : "missing",
       exportDetail
     );
     const pfPlugin = (this.app as any).plugins?.plugins?.["paperforge"];
     const tokenRow = this._renderSystemStatusRow(
       statusGrid,
-      "OCR Token",
+      t("dash_row_ocr_token"),
       "checking",
       "Checking…"
     );
@@ -734,7 +730,7 @@ export class PaperForgeStatusView extends ItemView {
           dot?.classList.toggle("ok", available);
           dot?.classList.toggle("fail", !available);
           const detail = tokenRow.querySelector(".paperforge-status-detail");
-          if (detail) detail.textContent = available ? "Configured" : "Not set";
+          if (detail) detail.textContent = available ? t("dash_configured") : t("dash_not_set");
         },
         () => {
           if (!tokenRow.isConnected) return;
@@ -753,10 +749,10 @@ export class PaperForgeStatusView extends ItemView {
       | { capability_state?: string; reason?: { text?: string } }
       | undefined;
     const memOk = memEnv?.capability_state === "ready";
-    const memDetail = memEnv?.reason?.text ?? "Unknown";
+    const memDetail = memEnv?.reason?.text ?? t("dash_unknown");
     this._renderSystemStatusRow(
       statusGrid,
-      "Memory Layer",
+      t("dash_row_memory"),
       memOk ? "healthy" : "fail",
       memDetail
     );
@@ -788,7 +784,7 @@ export class PaperForgeStatusView extends ItemView {
       const doctorBtn = issueActions.createEl("button", {
         cls: "paperforge-contextual-btn",
       });
-      doctorBtn.createEl("span", { text: "Run Doctor" });
+      doctorBtn.createEl("span", { text: t("dash_run_doctor") });
       doctorBtn.addEventListener("click", () => {
         const action = ACTIONS.find((a) => a.id === "paperforge-doctor");
         if (action) this._runAction(action, doctorBtn);
@@ -796,7 +792,7 @@ export class PaperForgeStatusView extends ItemView {
       const repairBtn = issueActions.createEl("button", {
         cls: "paperforge-contextual-btn",
       });
-      repairBtn.createEl("span", { text: "Repair Issues" });
+      repairBtn.createEl("span", { text: t("dash_repair_issues") });
       repairBtn.addEventListener("click", () => {
         const action = ACTIONS.find((a) => a.id === "paperforge-repair");
         if (action) this._runAction(action, repairBtn);
@@ -807,7 +803,7 @@ export class PaperForgeStatusView extends ItemView {
     });
     actionsRow.createEl("div", {
       cls: "paperforge-section-label",
-      text: "Start Working",
+      text: t("dash_start_working"),
     });
     const btnsRow = actionsRow.createEl("div", {
       cls: "paperforge-global-actions-row",
@@ -819,7 +815,7 @@ export class PaperForgeStatusView extends ItemView {
       cls: "paperforge-contextual-btn-icon",
       text: "\uD83D\uDCC1",
     });
-    hubBtn.createEl("span", { text: "Open Literature Hub" });
+    hubBtn.createEl("span", { text: t("dash_open_hub") });
     hubBtn.addEventListener("click", () => {
       const baseDir = plugin?.settings?.base_dir || "Bases";
       const baseFolder = this.app.vault.getAbstractFileByPath(baseDir);
@@ -848,7 +844,7 @@ export class PaperForgeStatusView extends ItemView {
       cls: "paperforge-contextual-btn-icon",
       text: "\u21BB",
     });
-    globalSyncBtn.createEl("span", { text: "Sync Library" });
+    globalSyncBtn.createEl("span", { text: t("dash_sync_library") });
     globalSyncBtn.addEventListener("click", () => {
       void this._runLibrarySync();
     });
@@ -859,7 +855,7 @@ export class PaperForgeStatusView extends ItemView {
       cls: "paperforge-contextual-btn-icon",
       text: "\u229E",
     });
-    globalOcrBtn.createEl("span", { text: "Run OCR" });
+    globalOcrBtn.createEl("span", { text: t("dash_run_ocr") });
     globalOcrBtn.addEventListener("click", () => {
       const action = ACTIONS.find((a) => a.id === "paperforge-ocr");
       if (action) this._runAction(action, globalOcrBtn);
@@ -2085,7 +2081,7 @@ export class PaperForgeStatusView extends ItemView {
       cls: "paperforge-contextual-btn-icon",
       text: "\u229E",
     });
-    ocrActionBtn.createEl("span", { text: "Run OCR" });
+    ocrActionBtn.createEl("span", { text: t("dash_run_ocr") });
     ocrActionBtn.addEventListener("click", () => {
       const action = ACTIONS.find((a) => a.id === "paperforge-ocr");
       if (action) this._runAction(action, ocrActionBtn);
@@ -2097,7 +2093,7 @@ export class PaperForgeStatusView extends ItemView {
       cls: "paperforge-contextual-btn-icon",
       text: "\u21BB",
     });
-    syncBtn.createEl("span", { text: "Sync Library" });
+    syncBtn.createEl("span", { text: t("dash_sync_library") });
     syncBtn.addEventListener("click", () => {
       void this._runLibrarySync();
     });
@@ -3293,7 +3289,9 @@ export class PaperForgeStatusView extends ItemView {
       await plugin.app.workspace.revealLeaf(leaves[0]);
       return;
     }
-    const leaf = plugin.app.workspace.getRightLeaf(false) as WorkspaceLeaf;
+    // Main-area tab (same as the OCR workspace): a sidebar leaf has a fixed
+    // width, so the dashboard could not follow the window.
+    const leaf = plugin.app.workspace.getLeaf("tab") as WorkspaceLeaf;
     if (leaf) {
       await leaf.setViewState({
         type: VIEW_TYPE_PAPERFORGE,
