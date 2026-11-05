@@ -253,10 +253,15 @@ export class PaperForgeStatusView extends ItemView {
         this._showingLoadFailure = false;
         this._showMessage("", "idle");
       }
-    } catch (_err) {
+    } catch (err) {
       if (!quiet && !this._cachedStats) {
         this._showingLoadFailure = true;
-        this._showMessage(t("dash_cli_unreachable"), "error");
+        const message = err instanceof Error ? err.message : String(err);
+        const configMissing = /config\.not_found|config_missing/i.test(message);
+        this._showMessage(
+          configMissing ? t("dash_config_missing") : t("dash_cli_unreachable"),
+          "error"
+        );
       }
     }
   }
@@ -735,7 +740,7 @@ export class PaperForgeStatusView extends ItemView {
         () => {
           if (!tokenRow.isConnected) return;
           const detail = tokenRow.querySelector(".paperforge-status-detail");
-          if (detail) detail.textContent = "Status unavailable";
+          if (detail) detail.textContent = t("dash_status_unavailable");
         }
       );
     const vp2 =
@@ -746,10 +751,16 @@ export class PaperForgeStatusView extends ItemView {
     const memEnv = (
       plugin?.settings?.capabilityState as Record<string, unknown> | undefined
     )?.["memory"] as
-      | { capability_state?: string; reason?: { text?: string } }
+      | { capability_state?: string; reason?: { code?: string; text?: string } }
       | undefined;
     const memOk = memEnv?.capability_state === "ready";
-    const memDetail = memEnv?.reason?.text ?? t("dash_unknown");
+    const memReasonKey = "cc_reason_" + (memEnv?.reason?.code ?? "").replace(/\./g, "_");
+    const memReasonLocalized = t(memReasonKey);
+    const memDetail = memOk
+      ? t("dash_configured")
+      : memReasonLocalized !== memReasonKey
+        ? memReasonLocalized
+        : memEnv?.reason?.text ?? t("dash_unknown");
     this._renderSystemStatusRow(
       statusGrid,
       t("dash_row_memory"),
@@ -771,12 +782,12 @@ export class PaperForgeStatusView extends ItemView {
       if (!indexOk)
         issueList.createEl("div", {
           cls: "paperforge-issue-item",
-          text: "Index missing or corrupted",
+          text: t("dash_issue_index"),
         });
       if (!exportOk)
         issueList.createEl("div", {
           cls: "paperforge-issue-item",
-          text: "No Zotero export found",
+          text: t("dash_issue_exports"),
         });
       const issueActions = issueSection.createEl("div", {
         cls: "paperforge-issue-actions",
@@ -1489,7 +1500,7 @@ export class PaperForgeStatusView extends ItemView {
       container.dataset.loaded = "1";
       container.createEl("p", {
         cls: "pf-status-warn",
-        text: "Backend unavailable",
+        text: t("dash_backend_unavailable"),
       });
       return;
     }
@@ -1497,7 +1508,7 @@ export class PaperForgeStatusView extends ItemView {
     container.empty();
     const status = container.createEl("p", {
       cls: "pf-status-checking",
-      text: "Checking render consistency…",
+      text: t("dash_checking_render"),
     });
     try {
       const audit = await client.renderAudit(key);
@@ -1549,7 +1560,7 @@ export class PaperForgeStatusView extends ItemView {
     if (!cached) {
       const stageBtn = container.createEl("button", {
         cls: "pf-action-btn",
-        text: "Stage R/P proposals",
+        text: t("dash_stage_rp"),
       });
       stageBtn.addEventListener("click", () => {
         void this._loadQualityStaging(container, key, root);
@@ -1569,14 +1580,14 @@ export class PaperForgeStatusView extends ItemView {
       container.empty();
       container.createEl("p", {
         cls: "pf-status-warn",
-        text: "Backend unavailable",
+        text: t("dash_backend_unavailable"),
       });
       return;
     }
     container.empty();
     container.createEl("p", {
       cls: "pf-status-checking",
-      text: "Staging R/P proposals (isolated tmp root)…",
+      text: t("dash_staging_rp"),
     });
     try {
       const data = await client.renderReconcileStaging(key);
@@ -1606,7 +1617,7 @@ export class PaperForgeStatusView extends ItemView {
       (r) => typeof r["object_id"] === "string" && r["object_id"]
     );
     if (rRows.length > 0) {
-      container.createEl("h4", { text: "R exact repairs" });
+      container.createEl("h4", { text: t("dash_r_exact") });
       for (const r of rRows) {
         const objectId = String(r["object_id"]);
         const row = container.createDiv({ cls: "paperforge-quality-r-row" });
@@ -1621,7 +1632,7 @@ export class PaperForgeStatusView extends ItemView {
         }
         const promote = row.createEl("button", {
           cls: "pf-action-btn",
-          text: "Promote",
+          text: t("dash_promote"),
         });
         if (!staged) promote.disabled = true;
         promote.addEventListener("click", () => {
@@ -1641,7 +1652,7 @@ export class PaperForgeStatusView extends ItemView {
     );
     if (pRows.length > 0) {
       container.createEl("h4", {
-        text: "P proposals — review the candidate before accepting",
+        text: t("dash_p_review"),
       });
       for (const p of pRows) {
         const label = String(p["label"] ?? "");
@@ -1681,7 +1692,7 @@ export class PaperForgeStatusView extends ItemView {
         });
         const accept = card.createEl("button", {
           cls: "pf-action-btn",
-          text: "Accept",
+          text: t("dash_accept"),
         });
         if (p["staged"] !== true) accept.disabled = true;
         accept.addEventListener("click", () => {
@@ -1691,7 +1702,7 @@ export class PaperForgeStatusView extends ItemView {
     }
     if (rRows.length === 0 && pRows.length === 0) {
       container.createEl("p", {
-        text: "No staged R/P candidates for this paper.",
+        text: t("dash_no_candidates"),
       });
     }
   }
@@ -1719,7 +1730,7 @@ export class PaperForgeStatusView extends ItemView {
     img.onerror = () => (img.style.display = "none");
     const openBtn = wrap.createEl("button", {
       cls: "pf-action-btn paperforge-quality-preview-open",
-      text: "Open preview",
+      text: t("dash_open_preview"),
     });
     openBtn.addEventListener("click", () => {
       this._openExternalPath(previewPath);
@@ -1813,37 +1824,37 @@ export class PaperForgeStatusView extends ItemView {
     > = {
       sync: {
         label: "Sync Needed",
-        text: "This paper needs to be synced from Zotero. Click to run sync.",
+        text: t("dash_next_sync"),
         actionId: "paperforge-sync",
         icon: "\u21BB",
       },
       ocr: {
         label: "OCR Needed",
-        text: "Fulltext is missing but PDF is present. Click to run OCR.",
+        text: t("dash_next_ocr"),
         actionId: "paperforge-ocr",
         icon: "\u229E",
       },
       repair: {
         label: "Repair Needed",
-        text: "State divergence or path errors detected. Click to repair.",
+        text: t("dash_next_repair"),
         actionId: "paperforge-repair",
         icon: "\u21BA",
       },
       "rebuild index": {
         label: "Rebuild Needed",
-        text: "Index may be stale. Click to run sync to rebuild.",
+        text: t("dash_next_resync"),
         actionId: "paperforge-sync",
         icon: "\u21BB",
       },
       "/pf-deep": {
         label: "Ready for Deep Reading",
-        text: "Fulltext is ready. Copy /pf-deep command and run in your agent.",
+        text: t("dash_next_deep"),
         actionId: null,
         icon: "\uD83D\uDD0D",
       },
       ready: {
         label: "All Set",
-        text: "This paper is fully processed and ready for use.",
+        text: t("dash_next_done"),
         actionId: "ready",
         icon: "\u2713",
       },
@@ -1855,7 +1866,7 @@ export class PaperForgeStatusView extends ItemView {
     if (nextStep === "ready") card.addClass("ready");
     card.createEl("div", {
       cls: "paperforge-next-step-label",
-      text: "Recommended Next Step",
+      text: t("dash_recommended"),
     });
     card.createEl("div", { cls: "paperforge-next-step-text", text: info.text });
     if (info.actionId && info.actionId !== "ready") {
@@ -1978,7 +1989,7 @@ export class PaperForgeStatusView extends ItemView {
     });
     wfSection.createEl("div", {
       cls: "paperforge-section-label",
-      text: "Workflow Overview",
+      text: t("dash_workflow_overview"),
     });
     const funnel = wfSection.createEl("div", {
       cls: "paperforge-workflow-funnel",
@@ -2017,7 +2028,7 @@ export class PaperForgeStatusView extends ItemView {
       });
       ocrHeader.createEl("h4", {
         cls: "paperforge-ocr-title",
-        text: "OCR Pipeline",
+        text: t("dash_ocr_pipeline"),
       });
       const ocrBadge = ocrHeader.createEl("span", {
         cls: "paperforge-ocr-badge idle",
@@ -2406,7 +2417,7 @@ export class PaperForgeStatusView extends ItemView {
       if (diffs.length === 0) {
         compareArea.createEl("div", {
           cls: "paperforge-meta",
-          text: "No changes",
+          text: t("dash_no_changes"),
         });
         return;
       }
@@ -2468,7 +2479,7 @@ export class PaperForgeStatusView extends ItemView {
     });
     header.createEl("span", {
       cls: "pf-label",
-      text: "Search",
+      text: t("dash_search"),
     });
     const inputRow = this._searchContainer.createEl("div", {
       cls: "paperforge-search-input-row",
@@ -2893,7 +2904,7 @@ export class PaperForgeStatusView extends ItemView {
     if (results.length === 0) {
       this._searchResultsEl.createEl("div", {
         cls: "paperforge-search-empty",
-        text: "No results found.",
+        text: t("dash_no_results"),
       });
       return;
     }
@@ -3018,7 +3029,7 @@ export class PaperForgeStatusView extends ItemView {
           typeof score === "number" ? score.toFixed(3) : String(score);
         meta.createEl("span", {
           cls: "paperforge-search-result-score",
-          text: "Score: " + scoreText,
+          text: t("dash_score") + scoreText,
         });
       }
 
@@ -3225,7 +3236,7 @@ export class PaperForgeStatusView extends ItemView {
           modeName = this._currentPaperKey;
           this._modeContextEl.createEl("span", {
             cls: "paperforge-mode-warning",
-            text: "Not found in index",
+            text: t("dash_not_in_index"),
           });
         } else {
           modeName = "Unknown paper";
