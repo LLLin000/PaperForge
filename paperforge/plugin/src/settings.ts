@@ -143,6 +143,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   private _runtimeStatusVersion: string | null = null;
   private _runtimeStatusLoading = false;
   private _runtimePollTimer: ReturnType<typeof setInterval> | null = null;
+  /** Step id the guided library flow keeps expanded after an explicit edit. */
+  private _setupOpenStep: string | null = null;
   /** True while a library sync or memory build is in flight. */
   _libraryRunning: boolean = false;
   private _displayInProgress: boolean = false;
@@ -432,6 +434,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     this._setupStage = stage;
     this._setupOperation = "idle";
     this._setupFeedback = null;
+    this._setupOpenStep = null;
     this.plugin.settings._setup_complete = false;
     void this.plugin.saveSettings().then(() => this.display());
   }
@@ -502,6 +505,27 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         this._attemptedProbes.add("library");
         this._probeModule("library");
         this.display();
+
+        // Configuration alone cannot make the library ready: `sync` builds the
+        // canonical index from the BBT exports. Always run it — deciding from a
+        // just-requested probe races the async envelope update.
+        this._setupOperation = "running";
+        this._setupFeedback = t("setup_library_syncing");
+        this.display();
+        try {
+          await this.getClient().sync();
+        } catch (error) {
+          console.error("PaperForge library sync failed:", error);
+          this._setupOperation = "failed";
+          this._setupFeedback = t("setup_library_sync_failed");
+          this.display();
+          return;
+        }
+        this._attemptedProbes.add("library");
+        this._probeModule("library");
+        this._setupOperation = "idle";
+        this._setupFeedback = t("setup_library_configured");
+        this.display();
       } catch (error) {
         console.error("PaperForge library configuration failed:", error);
         this._setupOperation = "failed";
@@ -519,8 +543,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
 
     // ── Overview ──
-    /* Header */
-    containerEl.createEl("h2", { text: t("header_title") || "PaperForge" });
+    /* The plugin name and version are already in the tab header, so the
+       description stands alone rather than repeating the title. */
     containerEl.createEl("p", {
       text: t("desc"),
       cls: "paperforge-settings-desc",
@@ -758,7 +782,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     addCheck(
       t("foundation_vault_structure"),
       hasSystem ? "✓" : "✗",
-      hasSystem ? systemDir : t("foundation_vault_missing"),
+      hasSystem
+        ? path.posix.join(
+            this.plugin.settings.system_dir || "System",
+            "PaperForge"
+          )
+        : t("foundation_vault_missing"),
       hasSystem ? "pf-status-ok" : "pf-status-error"
     );
 
@@ -803,10 +832,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const migrateRight = migrateRow.createDiv({ cls: "pf-config-right" });
     const migrateBtn = migrateRight.createEl("button", {
       cls: "paperforge-refresh-btn",
-      text: "Migrate",
+      text: t("foundation_migrate_btn"),
     });
-    migrateBtn.title =
-      "One-time migration of Obsidian SecretStorage values into the keyring (auth set)";
+    migrateBtn.title = t("foundation_migrate_hint");
     migrateBtn.onclick = () => this._migrateLegacyCredentials(migrateBtn);
 
     // Obsidian version check removed (RC UX Seam): the previous block
@@ -2667,8 +2695,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this._probing.delete(mod);
       if (mod === "installation") {
         this._updateCapabilityEnvelope(mod, this._setupRequiredEnvelope());
-      } else {
+      } else if (mod === "help") {
+        // Help/docs do not need the runtime; keep the honest invalid state.
         this._updateCapabilityEnvelope(mod, createInvalidEnvelope(mod));
+      } else {
+        this._updateCapabilityEnvelope(mod, this._blockedByRuntimeEnvelope(mod));
       }
       return;
     }
@@ -2713,6 +2744,33 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       });
   }
 
+  /** A module cannot be probed until Foundation publishes a runtime: report
+   * that prerequisite instead of a bogus detection failure. */
+  private _blockedByRuntimeEnvelope(mod: CapabilityModule): ProbeEnvelope {
+    return {
+      schema_version: 2,
+      module: mod,
+      capability_state: "unknown",
+      activity_state: "idle",
+      activity_label: null,
+      activity_progress: null,
+      severity: "warning",
+      reason: {
+        code: "installation.required",
+        text: t("module_blocked_by_runtime"),
+      },
+      action: { primary: runtimeInstallAction(t("runtime_install_btn")) },
+      notices: [],
+      user_state: "setup_required",
+      capability_kind: mod === "library" ? "required" : "optional",
+      maintenance_eligible: false,
+      user_visible_failure: false,
+      user_impact: null,
+      updated_at: new Date().toISOString(),
+      ttl_seconds: 60,
+    };
+  }
+
   /** One installation envelope for "no usable runtime" — the plugin only
    * guides; installing/updating/repairing happens through the external CLI. */
   private _setupRequiredEnvelope(): ProbeEnvelope {
@@ -2749,12 +2807,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
     this._capabilityState[envelope.module] = envelope;
     this._persistCapabilityState();
-    if (
-      prev?.activity_state === "running" &&
-      envelope.activity_state !== "running"
-    ) {
-      new Notice(t("cc_notice_refreshed"), 3000);
-    }
     if (!this._displayInProgress) {
       this.display();
     }
@@ -3023,12 +3075,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const baselineChecking = [foundationEnv, libraryEnv].some(
       (env) => env.user_state === "checking"
     );
-    const needsAttention = Object.values(envelopes).filter(
-      (e) =>
-        e.user_state &&
-        e.user_state !== "ready" &&
-        e.user_state !== "not_enabled"
-    ).length;
 
     const summaryEl = cc.createEl("div", { cls: "pf-cc-summary" });
     const badgeCls = baselineReady
@@ -3047,29 +3093,36 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     });
 
     const summaryCopy = summaryEl.createDiv({ cls: "pf-cc-summary-copy" });
+    const foundationBlocked = !foundationReady && !baselineChecking;
     const summaryTitle = baselineReady
       ? t("cc_summary_ready")
       : baselineChecking
         ? t("cc_summary_checking")
-        : this.plugin.settings._setup_complete === false
-          ? t("cc_summary_incomplete")
-          : t("cc_summary_attention");
+        : foundationBlocked
+          ? t("cc_summary_setup_first")
+          : t("cc_summary_connect_library");
     const summaryBody = baselineReady
       ? t("cc_summary_ready_body")
       : baselineChecking
         ? t("cc_summary_checking_body")
-        : this.plugin.settings._setup_complete === false
-          ? t("cc_summary_incomplete_body")
-          : t("cc_summary_attention_body");
+        : foundationBlocked
+          ? t("module_blocked_by_runtime")
+          : t("cc_summary_connect_library_body");
     summaryCopy.createEl("strong", { text: summaryTitle });
     summaryCopy.createEl("span", { cls: "caption", text: summaryBody });
 
+    if (!baselineReady && !baselineChecking) {
+      const startStage = foundationReady ? 2 : 1;
+      renderActionButton(summaryEl, {
+        label:
+          this.plugin.settings._setup_complete === false
+            ? t("cc_start_setup")
+            : t("cc_continue_setup"),
+        onClick: () => this._startSetupJourney(startStage),
+      });
+    }
+
     const summaryMeta = summaryEl.createDiv({ cls: "pf-cc-summary-meta" });
-    const needItem = summaryMeta.createEl("span");
-    needItem.createEl("strong", { text: String(needsAttention) });
-    needItem.appendText(
-      " " + (t("cc_needs_attention") || "item needs attention")
-    );
 
     // Last checked time
     const latest = Object.values(envelopes)
@@ -3224,6 +3277,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   }
 
   _getModuleConsequence(mod: string, env: ProbeEnvelope): string {
+    // A missing runtime blocks every downstream module: say that instead of
+    // the generic "needs configuration" sentence for this module.
+    if (env.reason?.code === "installation.required") {
+      return env.reason.text || t("module_blocked_by_runtime");
+    }
     const state =
       env.user_state ??
       (env.capability_state === "ready" ? "ready" : "action_required");
@@ -3440,15 +3498,22 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       cls: "setting-item-description",
     });
     if (!ready) {
-      renderActionButton(containerEl, {
-        label:
-          action === "install"
-            ? t("runtime_install_btn")
-            : action === "update"
-              ? t("runtime_update_btn")
-              : t("runtime_repair_btn"),
-        onClick: () => this._launchRuntimeInstaller(action),
-      });
+      if (this._runtimePollTimer) {
+        containerEl.createEl("p", {
+          cls: "pf-setup-status",
+          text: t("runtime_installing"),
+        });
+      } else {
+        renderActionButton(containerEl, {
+          label:
+            action === "install"
+              ? t("runtime_install_btn")
+              : action === "update"
+                ? t("runtime_update_btn")
+                : t("runtime_repair_btn"),
+          onClick: () => this._launchRuntimeInstaller(action),
+        });
+      }
     }
     const manual = containerEl.createEl("details", {
       cls: "pf-runtime-manual",
@@ -3485,6 +3550,24 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     });
   }
 
+  /** Names of BBT JSON exports already present in the canonical folder. */
+  private _listBbtExports(exportsDir: string): string[] {
+    try {
+      if (!fs.existsSync(exportsDir)) fs.mkdirSync(exportsDir, { recursive: true });
+      return fs
+        .readdirSync(exportsDir)
+        .filter((f: string) => f.toLowerCase().endsWith(".json"))
+        .sort();
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Stage 2 is a guided flow, not a form: three required steps in order, the
+   * current one open, finished ones collapsed to a summary line.
+   *   1 Zotero directory → 2 BBT JSON export → 3 save + sync (library ready)
+   */
   _renderSetupStageLibrary(containerEl: HTMLElement): void {
     const env =
       this._capabilityState?.library ?? createUnknownEnvelope("library");
@@ -3498,24 +3581,43 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this._probeModule("library");
     }
 
+    const settings = this.plugin.settings;
+    const vaultPath = (this.app.vault.adapter as any).basePath as string;
+    // Same layout Python resolves: <vault>/<system_dir>/PaperForge/exports.
+    // Defaults apply before the config exists, so first-run never waits on
+    // hydration (which needs a config to read in the first place).
+    const exportsDir = path.join(
+      vaultPath,
+      settings.system_dir?.trim() || "System",
+      "PaperForge",
+      "exports"
+    );
+    const zotero = (settings.zotero_data_dir || "").trim();
+    const zoteroOk = !!zotero && fs.existsSync(zotero);
+    const bbtFiles = this._listBbtExports(exportsDir);
+    const bbtOk = bbtFiles.length > 0;
+    const libReady = env.user_state === "ready";
+    const running = this._setupOperation === "running";
+
     containerEl.createEl("h3", { text: t("setup_library_title") });
     containerEl.createEl("p", { text: t("setup_library_desc") });
-    renderStatusBadge(
-      containerEl,
-      env.user_state,
-      this._getUserStateLabel(env.user_state)
-    );
-    containerEl.createEl("p", {
-      text:
-        env.user_state === "ready"
-          ? t("setup_library_ready")
-          : this._getModuleConsequence("library", env),
-      cls: env.user_state === "ready" ? "pf-setup-ok" : "pf-setup-status",
-    });
+    if (libReady) {
+      containerEl.createEl("p", {
+        cls: "pf-setup-ok",
+        text: t("setup_library_ready"),
+      });
+    } else if (env.reason?.code !== "library.config_missing") {
+      // A fresh vault has nothing to diagnose: the three steps are the
+      // instruction, so only real failures get a consequence line.
+      containerEl.createEl("p", {
+        cls: "pf-setup-status",
+        text: this._getModuleConsequence("library", env),
+      });
+    }
     if (this._setupOperation === "running") {
       containerEl.createEl("p", {
         cls: "pf-setup-status",
-        text: t("setup_library_configuring"),
+        text: this._setupFeedback || t("setup_library_configuring"),
       });
     } else if (this._setupFeedback) {
       containerEl.createEl("p", {
@@ -3525,203 +3627,253 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       });
     }
 
-    const form = containerEl.createDiv({ cls: "pf-setup-library-form" });
-    form.createEl("p", {
-      cls: "pf-setup-form-intro",
-      text: t("setup_library_config_desc"),
-    });
-    const addField = (
-      parent: HTMLElement,
-      label: string,
-      key:
-        | "zotero_data_dir"
-        | "system_dir"
-        | "resources_dir"
-        | "literature_dir"
-        | "base_dir",
-      hint?: string
-    ) => {
-      const field = parent.createDiv({ cls: "pf-setup-field" });
-      field.createEl("label", { text: label });
-      if (hint) field.createEl("span", { cls: "caption", text: hint });
-      const input = field.createEl("input", {
-        cls: "pf-setup-input",
-        attr: { type: "text" },
-      }) as HTMLInputElement;
-      input.value = this.plugin.settings[key] || "";
-      input.addEventListener("input", () => {
-        this.plugin.settings[key] = input.value.trim();
-        this._debouncedSave();
-      });
-    };
-
-    addField(
-      form,
-      t("field_zotero_data"),
-      "zotero_data_dir",
-      t("setup_library_zotero_hint")
-    );
-    form.createEl("h4", { text: t("setup_library_folder_heading") });
-    const folders = form.createDiv({ cls: "pf-setup-folder-grid" });
-    addField(folders, t("dir_system"), "system_dir");
-    addField(folders, t("dir_resources"), "resources_dir");
-    addField(folders, t("dir_notes"), "literature_dir");
-    addField(folders, t("dir_base"), "base_dir");
-
-    const verify = form.createEl("button", {
-      cls: "pf-setup-verify",
-      text: t("setup_library_verify"),
-      attr: { type: "button" },
-    });
-    verify.disabled = this._setupOperation === "running";
-    verify.addEventListener("click", () => this._applyLibraryConfiguration());
-
-    // ── BBT JSON Export ──
-    const importSection = containerEl.createDiv({ cls: "pf-setup-import" });
-    importSection.createEl("h4", {
-      text: t("setup_bbt_title") || "BBT JSON Export",
-    });
-    const vp = (this.app.vault.adapter as any).basePath as string;
-    const paths = require("./services/runtime-paths").resolveVaultPaths(vp);
-    importSection.createEl("p", {
-      cls: "pf-setup-form-intro",
-      text:
-        t("setup_bbt_desc") ||
-        "Export your Zotero library as Better BibTeX JSON into the folder below. Enable 'Keep updated' for automatic re-exports.",
-    });
-    // Exports path
-    const pathRow = importSection.createDiv({ cls: "pf-setup-path-row" });
-    pathRow.createEl("span", {
-      cls: "pf-setup-path-label",
-      text: t("setup_bbt_path") || "Exports folder:",
-    });
-    pathRow.createEl("code", {
-      cls: "pf-setup-path-value",
-      text: paths.exportsDir,
-    });
-    const copyBtn = pathRow.createEl("button", {
-      cls: "pf-btn pf-btn-secondary",
-      text: t("setup_bbt_copy") || "Copy",
-    });
-    copyBtn.addEventListener("click", () => {
-      navigator.clipboard.writeText(paths.exportsDir);
-      new Notice(t("setup_bbt_copied") || "Path copied");
-    });
-
-    // Expandable guide
-    const guide = importSection.createEl("details", { cls: "pf-setup-guide" });
-    guide.createEl("summary", {
-      cls: "pf-setup-guide-summary",
-      text: t("setup_bbt_guide") || "How to export from Zotero \u2192",
-    });
-    const guideBody = guide.createDiv({ cls: "pf-setup-guide-body" });
-    const base =
-      "https://raw.githubusercontent.com/LLLin000/PaperForge/master/docs/help/images";
+    // Completion is monotonic: a ready library means its prerequisites held,
+    // even if the export folder was emptied or a path was edited afterwards.
     const steps = [
-      {
-        img: "bbt-plugin-installed.jpg",
-        title: t("setup_bbt_step1") || "1. Install Better BibTeX",
-        desc:
-          t("setup_bbt_step1_desc") ||
-          "In Zotero, go to Tools \u2192 Add-ons, search for Better BibTeX and install it. If you cannot find it, download from: https://github.com/retorquere/zotero-better-bibtex/releases/tag/v9.0.50",
-      },
-      {
-        img: "bbt-export-dialog.jpg",
-        title: t("setup_bbt_step2") || "2. Export with auto-update",
-        desc:
-          t("setup_bbt_step2_desc") ||
-          "Right-click your library or collection \u2192 Export Library\u2026 \u2192 choose 'Better BibTeX JSON' format. Check 'Keep updated'.",
-      },
-      {
-        img: "bbt-save-dialog.jpg",
-        title: t("setup_bbt_step3") || "3. Save to exports folder",
-        desc:
-          t("setup_bbt_step3_desc") ||
-          "Point the export destination to the folder above. Once saved, click 'Detect' below.",
-      },
+      { id: "zotero", title: t("setup_step_zotero"), done: zoteroOk || libReady },
+      { id: "bbt", title: t("setup_step_bbt"), done: bbtOk || libReady },
+      { id: "verify", title: t("setup_step_verify_title"), done: libReady },
     ];
-    for (const step of steps) {
-      const entry = guideBody.createDiv({ cls: "pf-setup-guide-step" });
-      entry.createEl("strong", { text: step.title });
-      entry.createEl("p", { text: step.desc });
-      const img = entry.createEl("img", {
-        attr: {
-          src: base + "/" + step.img,
-          alt: step.title,
-          loading: "lazy",
-          onerror: "this.style.display='none'",
-        },
+    const currentId = steps.find((step) => !step.done)?.id ?? null;
+    const openId = this._setupOpenStep ?? currentId;
+
+    const flow = containerEl.createDiv({ cls: "pf-setup-flow" });
+    for (const [index, step] of steps.entries()) {
+      const row = flow.createDiv({ cls: "pf-setup-flow-step" });
+      row.dataset.state = step.done ? "done" : step.id === currentId ? "current" : "pending";
+      const head = row.createDiv({ cls: "pf-setup-flow-head" });
+      head.createEl("span", { cls: "pf-step-num", text: String(index + 1) });
+      head.createEl("span", { cls: "pf-step-title", text: step.title });
+      head.createEl("span", {
+        cls: "pf-step-state",
+        text: step.done
+          ? "\u2713 " + t("setup_step_done")
+          : step.id === currentId
+            ? t("setup_step_todo")
+            : "",
       });
-      img.addClass("pf-setup-guide-img");
-    }
-    const detectRow = importSection.createDiv({ cls: "pf-setup-detect-row" });
-    const detectStatus = detectRow.createEl("span", {
-      cls: "pf-setup-detect-status",
-    });
-    const nav = containerEl.createDiv({ cls: "pf-setup-nav" });
-
-    // Shared: update Continue from BBT file state
-    const _refreshBbtStatus = () => {
-      try {
-        if (!fs.existsSync(paths.exportsDir))
-          fs.mkdirSync(paths.exportsDir, { recursive: true });
-        const files = fs
-          .readdirSync(paths.exportsDir)
-          .filter((f: string) => f.endsWith(".json"));
-        if (files.length === 0) {
-          detectStatus.setText(
-            t("setup_bbt_no_files") || "No JSON files found."
-          );
-        } else {
-          detectStatus.setText(
-            "\u2713 " + (t("setup_bbt_found") || "Found: ") + files.join(", ")
-          );
-        }
-        const contBtn = nav.querySelector(
-          ".pf-action-btn:last-child"
-        ) as HTMLButtonElement | null;
-        if (contBtn) {
-          const shouldDisable =
-            files.length === 0 ||
-            env.user_state !== "ready" ||
-            this._setupOperation === "running";
-          contBtn.disabled = shouldDisable;
-          contBtn.classList.toggle("pf-action-btn--disabled", shouldDisable);
-        }
-      } catch {
-        /* ignore */
+      if (!step.done && step.id !== currentId) {
+        row.createEl("p", {
+          cls: "caption pf-step-hint",
+          text: t("setup_step_" + step.id + "_desc"),
+        });
       }
-    };
 
-    detectRow
-      .createEl("button", {
-        cls: "pf-btn pf-btn-primary",
-        text: t("setup_bbt_detect") || "Detect",
-      })
-      .addEventListener("click", _refreshBbtStatus);
+      if (step.done && openId !== step.id) {
+        const summary = row.createDiv({ cls: "pf-setup-flow-summary" });
+        summary.createEl("span", {
+          text:
+            step.id === "zotero"
+              ? zotero
+              : step.id === "bbt"
+                ? bbtFiles.join(", ")
+                : [
+                    settings.system_dir || "System",
+                    settings.resources_dir || "Resources",
+                    settings.literature_dir || "Literature",
+                    settings.base_dir || "Bases",
+                  ].join(" · "),
+        });
+        summary
+          .createEl("button", {
+            cls: "pf-setup-flow-edit",
+            text: t("setup_step_edit"),
+            attr: { type: "button" },
+          })
+          .addEventListener("click", () => {
+            this._setupOpenStep = step.id;
+            this.display();
+          });
+        continue;
+      }
+      if (step.id !== currentId && !step.done && openId !== step.id) continue;
 
-    // ── Navigation (at the very bottom) ──
+      const body = row.createDiv({ cls: "pf-setup-flow-body" });
+      if (step.id === "zotero") {
+        body.createEl("p", {
+          cls: "caption",
+          text: t("setup_library_zotero_hint"),
+        });
+        const input = body.createEl("input", {
+          cls: "pf-setup-input",
+          attr: { type: "text", placeholder: t("setup_step_zotero_placeholder") },
+        }) as HTMLInputElement;
+        input.value = settings.zotero_data_dir || "";
+        input.addEventListener("change", () => {
+          settings.zotero_data_dir = input.value.trim();
+          this._setupOpenStep = null;
+          void this.plugin.saveSettings();
+          this.display();
+        });
+      } else if (step.id === "bbt") {
+        // Better BibTeX must write *into* this folder with "Keep updated":
+        // the index hash is computed from the files here, so a dragged copy
+        // would never follow later Zotero edits.
+        body.createEl("p", {
+          cls: "pf-setup-form-intro",
+          text: t("setup_bbt_export_hint"),
+        });
+        const targetRow = body.createDiv({ cls: "pf-setup-path-row" });
+        targetRow.createEl("code", {
+          cls: "pf-setup-path-value",
+          text: exportsDir,
+        });
+        targetRow
+          .createEl("button", {
+            cls: "pf-btn pf-btn-secondary",
+            text: t("setup_bbt_copy"),
+            attr: { type: "button" },
+          })
+          .addEventListener("click", () => {
+            void navigator.clipboard.writeText(exportsDir);
+            new Notice(t("setup_bbt_copied"));
+          });
+        targetRow
+          .createEl("button", {
+            cls: "pf-btn pf-btn-secondary",
+            text: t("setup_bbt_open_folder"),
+            attr: { type: "button" },
+          })
+          .addEventListener("click", () => {
+            try {
+              const { shell } = require("electron") as {
+                shell: { openPath: (p: string) => Promise<string> };
+              };
+              fs.mkdirSync(exportsDir, { recursive: true });
+              void shell.openPath(exportsDir);
+            } catch (error) {
+              console.error("PaperForge: cannot open the exports folder", error);
+              new Notice(exportsDir);
+            }
+          });
 
+        // Only an auto-updating export counts: the index hash is computed
+        // from the files in this folder, so a copied snapshot would silently
+        // go stale after the next Zotero edit.
+        body.createEl("p", {
+          cls: bbtOk ? "pf-setup-ok" : "pf-setup-status",
+          text: bbtOk
+            ? "\u2713 " + t("setup_bbt_found") + bbtFiles.join(", ")
+            : t("setup_bbt_missing"),
+        });
+        targetRow
+          .createEl("button", {
+            cls: "pf-btn pf-btn-secondary",
+            text: t("setup_bbt_recheck"),
+            attr: { type: "button" },
+          })
+          .addEventListener("click", () => {
+            this._setupOpenStep = null;
+            this.display();
+          });
+
+        const guide = body.createEl("details", { cls: "pf-setup-guide" });
+        guide.createEl("summary", { text: t("setup_bbt_guide") });
+        const guideBody = guide.createDiv({ cls: "pf-setup-guide-body" });
+        guideBody.createEl("p", {
+          cls: "pf-setup-form-intro",
+          text: t("setup_bbt_desc"),
+        });
+        const imageBase =
+          "https://raw.githubusercontent.com/LLLin000/PaperForge/master/docs/help/images";
+        const guideSteps = [
+          {
+            img: "bbt-plugin-installed.jpg",
+            title: t("setup_bbt_step1"),
+            desc: t("setup_bbt_step1_desc"),
+          },
+          {
+            img: "bbt-export-dialog.jpg",
+            title: t("setup_bbt_step2"),
+            desc: t("setup_bbt_step2_desc"),
+          },
+          {
+            img: "bbt-save-dialog.jpg",
+            title: t("setup_bbt_step3"),
+            desc: t("setup_bbt_step3_desc"),
+          },
+        ];
+        for (const item of guideSteps) {
+          const entry = guideBody.createDiv({ cls: "pf-setup-guide-step" });
+          entry.createEl("strong", { text: item.title });
+          entry.createEl("p", { text: item.desc });
+          entry
+            .createEl("img", {
+              attr: {
+                src: imageBase + "/" + item.img,
+                alt: item.title,
+                loading: "lazy",
+              },
+            })
+            .addClass("pf-setup-guide-img");
+        }
+      } else {
+        body.createEl("p", {
+          cls: "caption",
+          text: t("setup_library_folders_hint"),
+        });
+        const folders = body.createDiv({
+          cls: "pf-setup-folder-grid",
+        });
+        const folders_: Array<
+          [keyof typeof settings & ("system_dir" | "resources_dir" | "literature_dir" | "base_dir"), string, string, string]
+        > = [
+          ["system_dir", "dir_system", "System", "folder_help_system"],
+          ["resources_dir", "dir_resources", "Resources", "folder_help_resources"],
+          ["literature_dir", "dir_notes", "Literature", "folder_help_notes"],
+          ["base_dir", "dir_base", "Bases", "folder_help_base"],
+        ];
+        for (const [key, labelKey, fallback, helpKey] of folders_) {
+          const field = folders.createDiv({ cls: "pf-setup-field" });
+          field.createEl("label", { text: t(labelKey) });
+          const input = field.createEl("input", {
+            cls: "pf-setup-input",
+            attr: { type: "text", placeholder: fallback },
+          }) as HTMLInputElement;
+          input.value = settings[key] || "";
+          field.createEl("span", { cls: "caption", text: t(helpKey) });
+          input.addEventListener("input", () => {
+            settings[key] = input.value.trim();
+            this._debouncedSave();
+          });
+        }
+
+        const verify = body.createEl("button", {
+          cls: "pf-setup-verify",
+          text: t("setup_library_save_sync"),
+          attr: { type: "button" },
+        }) as HTMLButtonElement;
+        verify.disabled = running;
+        verify.addEventListener("click", () => this._applyLibraryConfiguration());
+      }
+    }
+
+    if (!libReady) {
+      containerEl.createEl("p", {
+        cls: "caption pf-setup-continue-hint",
+        text: t("setup_library_continue_hint"),
+      });
+    }
+    const nav = containerEl.createDiv({ cls: "pf-setup-nav" });
     renderActionButton(nav, {
       label: t("setup_nav_back"),
       onClick: () => {
         this._setupFeedback = null;
+        this._setupOpenStep = null;
         this._setupStage = 1;
         this.display();
       },
     });
     renderActionButton(nav, {
       label: t("setup_nav_continue"),
-      disabled: true,
+      disabled: !libReady || running,
       onClick: () => {
         this._setupFeedback = null;
+        this._setupOpenStep = null;
         this._setupStage = 3;
         this.display();
       },
     });
-
-    // Auto-run after nav buttons exist
-    _refreshBbtStatus();
   }
 
   /** #173 corrective: explicit, user-mediated SecretStorage → keyring
@@ -3749,7 +3901,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       btn.disabled = false;
     }
     if (results.length === 0) {
-      new Notice("No legacy credentials found in SecretStorage");
+      new Notice(t("migrate_none_found"));
     } else {
       results.forEach((line) => new Notice(line, 6000));
     }

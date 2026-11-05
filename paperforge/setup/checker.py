@@ -29,17 +29,26 @@ class SetupChecker:
         if py_version < self.MIN_PYTHON:
             issues.append(f"Python {py_version[0]}.{py_version[1]} < {self.MIN_PYTHON[0]}.{self.MIN_PYTHON[1]}")
 
-        # Check pip availability via python -m pip
+        # Check pip availability via python -m pip. A cold interpreter can take
+        # far longer than ten seconds on Windows (Defender), so a timeout is
+        # reported as inconclusive instead of a missing pip.
+        import subprocess
         pip_ok = False
+        pip_timed_out = False
         try:
-            import subprocess
-            r = subprocess.run([sys.executable, "-m", "pip", "--version"],
-                               capture_output=True, timeout=10)
+            r = subprocess.run(
+                [sys.executable, "-m", "pip", "--version"],
+                capture_output=True,
+                timeout=60,
+            )
             pip_ok = r.returncode == 0
+        except subprocess.TimeoutExpired:
+            pip_timed_out = True
         except Exception:
             pip_ok = False
         details["pip_found"] = pip_ok
-        if not pip_ok:
+        details["pip_check_timed_out"] = pip_timed_out
+        if not pip_ok and not pip_timed_out:
             issues.append("pip not found via python -m pip")
 
         # Check vault directory
