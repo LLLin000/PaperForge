@@ -875,8 +875,7 @@ export class PaperForgeStatusView extends ItemView {
     });
     card.createEl("div", {
       cls: "paperforge-setup-cta-body",
-      text:
-        "Install PaperForge Core outside Obsidian, then return here to configure this Vault.",
+      text: t("backend_missing_body"),
     });
     const btn = card.createEl("button", {
       cls: "paperforge-contextual-btn primary",

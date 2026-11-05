@@ -67,3 +67,6 @@ paperforge/plugin/test/vaults/e2e/
 
 # E2E acceptance evidence (per-run JSON; never committed)
 paperforge/plugin/test/evidence/
+
+# local pip cache created by test installs
+pip/cache/

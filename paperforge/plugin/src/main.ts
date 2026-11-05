@@ -566,7 +566,9 @@ export default class PaperForgePlugin extends Plugin {
   private _checkReleaseNotes() {
     const currentVersion = this.manifest.version;
     const seen = this.settings.last_seen_version;
-    if (seen === currentVersion) return;
+    // A fresh profile has no previous version to compare against: release
+    // notes for an upgrade they never ran are noise before first setup.
+    if (!seen || seen === currentVersion) return;
 
     const releaseNotesData = require("./release-notes.json");
     const versions = releaseNotesData.versions || [];
