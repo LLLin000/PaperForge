@@ -3,12 +3,33 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
+import subprocess
 import sys
 from collections.abc import Generator
 from pathlib import Path
 
 import pytest
+
+# Children must emit UTF-8 and parents must decode UTF-8: with a non-UTF-8
+# Windows locale (cp936) a child log line containing "—" made
+# subprocess.run(text=True) raise in its reader thread, leave stdout=None and
+# turn unrelated CLI tests red. Pin both sides here, once.
+os.environ.setdefault("PYTHONUTF8", "1")
+os.environ.setdefault("PYTHONIOENCODING", "utf-8")
+
+_real_subprocess_run = subprocess.run
+
+
+def _utf8_subprocess_run(*args, **kwargs):
+    if kwargs.get("text") or kwargs.get("universal_newlines"):
+        kwargs.setdefault("encoding", "utf-8")
+        kwargs.setdefault("errors", "replace")
+    return _real_subprocess_run(*args, **kwargs)
+
+
+subprocess.run = _utf8_subprocess_run  # noqa: PLW2901 — test-only shim
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:

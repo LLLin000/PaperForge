@@ -164,3 +164,83 @@ def test_runtime_status_runs_without_a_vault_or_pipeline(tmp_path: Path, monkeyp
 
     assert cli._run_cli(["runtime", "status", "--json"]) == 0
     assert '"runtime_state": "attention"' in capsys.readouterr().out
+
+
+def _installable(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr(runtime_installer, "_run", _fake_venv_run)
+    monkeypatch.setattr(
+        runtime_installer,
+        "_pip_install",
+        lambda python, spec, *, cwd: subprocess.CompletedProcess([str(python)], 0, "", ""),
+    )
+    monkeypatch.setattr(
+        runtime_installer,
+        "_fresh_verify",
+        lambda python, *, cwd=None: (True, "1.5.15", None),
+    )
+    monkeypatch.setattr(runtime_installer, "_vector_imports_ok", lambda python, *, cwd=None: True)
+
+
+def test_update_prunes_old_environments_but_keeps_one_previous(tmp_path: Path, monkeypatch) -> None:
+    _installable(tmp_path, monkeypatch)
+    runtime_dir = pointer_dir(tmp_path)
+    runtime_dir.mkdir(parents=True, exist_ok=True)
+
+    older = runtime_dir / "venv-1.0.0-aaaa"
+    previous = runtime_dir / "venv-1.4.0-bbbb"
+    for index, env in enumerate((older, previous)):
+        env.mkdir()
+        (env / "Scripts").mkdir()
+        marker = env / "marker"
+        marker.write_text("x", encoding="utf-8")
+        os.utime(marker, (index + 1, index + 1))
+
+    result = runtime_installer.install_runtime(
+        expected_version="1.5.15", home=tmp_path, base_python="python-test", force=True
+    )
+
+    assert result.ok is True
+    assert any(a.startswith("environments_pruned:") for a in result.actions_taken)
+    assert not older.exists(), "oldest environment should be pruned"
+    assert previous.exists(), "the newest previous environment is kept"
+    current = Path(result.environment_root)
+    assert current.exists()
+
+
+def test_prune_never_touches_the_published_environment(tmp_path: Path, monkeypatch) -> None:
+    _installable(tmp_path, monkeypatch)
+    runtime_dir = pointer_dir(tmp_path)
+    runtime_dir.mkdir(parents=True, exist_ok=True)
+    published = runtime_dir / "venv-current"
+    (published / "Scripts").mkdir(parents=True)
+    publish_pointer(
+        python_path=str(published / "Scripts" / "python.exe"),
+        environment_root=str(published),
+        paperforge_version="1.5.15",
+        home=tmp_path,
+    )
+
+    runtime_installer.install_runtime(
+        expected_version="1.5.15", home=tmp_path, base_python="python-test", force=True
+    )
+
+    assert published.exists()
+
+
+def test_interrupt_during_install_removes_candidate_and_keeps_pointer(tmp_path: Path, monkeypatch) -> None:
+    old_pointer = _old_pointer(tmp_path)
+    monkeypatch.setattr(runtime_installer, "_run", _fake_venv_run)
+
+    def interrupted(python, spec, *, cwd):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(runtime_installer, "_pip_install", interrupted)
+
+    with pytest.raises(KeyboardInterrupt):
+        runtime_installer.install_runtime(
+            expected_version="1.5.15", home=tmp_path, base_python="python-test"
+        )
+
+    assert read_pointer(home=tmp_path) == old_pointer
+    leftovers = [p for p in pointer_dir(tmp_path).iterdir() if p.name.startswith(".venv-candidate-")]
+    assert leftovers == []

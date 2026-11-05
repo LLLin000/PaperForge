@@ -12,6 +12,7 @@ maintenance_eligible, user_visible_failure, user_impact to envelopes.
 from __future__ import annotations
 
 import json
+import logging
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -36,6 +37,8 @@ LEGACY_PATH_KEYS = frozenset({
     "system_dir", "resources_dir", "literature_dir",
     "base_dir", "control_dir", "skill_dir", "command_dir",
 })
+
+logger = logging.getLogger(__name__)
 
 SUPPORTED_MODULES = frozenset({"installation", "library", "ocr", "memory", "help", "maintenance"})
 MAINTENANCE_CONSTITUENT_MODULES = ("installation", "library", "ocr", "memory", "help")
@@ -799,7 +802,12 @@ def ocr_pipeline_version_summary(vault: Path, rows) -> tuple[int, int]:
                     else:
                         papers_stale += 1
                 except Exception:
-                    pass
+                    # Count it as stale rather than dropping it: an unreadable
+                    # meta is a paper we cannot vouch for, not a non-paper.
+                    logger.warning(
+                        "unreadable OCR meta for %s; counted as stale", r.key
+                    )
+                    papers_stale += 1
     return papers_on_current, papers_stale
 
 
@@ -821,7 +829,14 @@ def paper_pipeline_versions(vault: Path, rows) -> list[dict[str, Any]]:
                         "last_pipeline_version": meta.get("ocr_pipeline_version"),
                     })
                 except Exception:
-                    pass
+                    logger.warning(
+                        "unreadable OCR meta detail for %s; reporting it unknown", r.key
+                    )
+                    per_paper.append({
+                        "key": r.key,
+                        "title": getattr(r, "title", ""),
+                        "last_pipeline_version": None,
+                    })
     return per_paper
 
 

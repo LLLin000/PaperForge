@@ -65,16 +65,16 @@ class CollectOutcome:
 
 def _git_state(repo: Path) -> RepositoryState:
     rev = subprocess.run(
-        ["git", "rev-parse", "HEAD"], capture_output=True, text=True, cwd=repo
+        ["git", "rev-parse", "HEAD"], capture_output=True, text=True, cwd=repo, timeout=30
     ).stdout.strip()
     porcelain = subprocess.run(
-        ["git", "status", "--porcelain"], capture_output=True, text=True, cwd=repo
+        ["git", "status", "--porcelain"], capture_output=True, text=True, cwd=repo, timeout=60
     ).stdout
     dirty = bool(porcelain)
     diff_digest = ""
     if dirty:
         diff = subprocess.run(
-            ["git", "diff"], capture_output=True, text=True, cwd=repo
+            ["git", "diff"], capture_output=True, text=True, cwd=repo, timeout=120
         ).stdout
         diff_digest = "sha256:" + hashlib.sha256(diff.encode("utf-8")).hexdigest()
     return RepositoryState(revision=rev, dirty=dirty, dirty_diff_digest=diff_digest)

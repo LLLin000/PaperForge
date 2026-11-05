@@ -192,27 +192,75 @@ def inspect_runtime(
     }
 
 
-def _discard_candidate(candidate: Path, runtime_dir: Path) -> None:
-    """Remove a failed candidate environment, but only one we created here.
+ENV_DIR_PREFIXES = (".venv-candidate-", "venv-")
+"""Directory names this installer owns inside the runtime root."""
 
-    Never ``rmtree(ignore_errors=True)``: the delete must name its target and
-    surface as a no-op (not a silent sweep) when the path is unexpected.
-    """
+
+def _managed_dir(target: Path, runtime_dir: Path) -> Path | None:
+    """Resolved *target* when it is an installer-owned environment dir."""
     try:
         root = runtime_dir.resolve()
-        target = candidate.resolve()
+        resolved = target.resolve()
     except OSError:
-        return
-    if root not in target.parents or not target.name.startswith(".venv-candidate-"):
-        return
+        return None
+    if root not in resolved.parents:
+        return None
+    if not resolved.name.startswith(ENV_DIR_PREFIXES):
+        return None
+    return resolved
+
+
+def _remove_environment(target: Path, runtime_dir: Path) -> bool:
+    """Delete one installer-owned environment; never a silent sweep."""
+    resolved = _managed_dir(target, runtime_dir)
+    if resolved is None:
+        return False
     try:
-        shutil.rmtree(target)
+        shutil.rmtree(resolved)
     except FileNotFoundError:
-        return
+        return False
     except OSError:
-        # Windows may still hold handles inside a half-created venv; the next
-        # install creates a fresh candidate and this one stays inert.
-        return
+        # Windows keeps handles inside a running venv; leave it for a later run.
+        return False
+    return True
+
+
+def _prune_environments(
+    runtime_dir: Path, current: Path, keep_previous: int = 1
+) -> int:
+    """Keep the published environment and the newest previous one.
+
+    Repeated updates otherwise accumulate a full venv (~400 MB) each. A
+    directory that cannot be removed (live process, permissions) is left in
+    place rather than forced.
+    """
+    current_resolved = _managed_dir(current, runtime_dir)
+    previous: list[tuple[float, Path]] = []
+    try:
+        entries = list(runtime_dir.iterdir())
+    except OSError:
+        return 0
+    for entry in entries:
+        if not entry.is_dir() or not entry.name.startswith(ENV_DIR_PREFIXES):
+            continue
+        resolved = _managed_dir(entry, runtime_dir)
+        if resolved is None or resolved == current_resolved:
+            continue
+        try:
+            previous.append((entry.stat().st_mtime, entry))
+        except OSError:
+            continue
+    previous.sort(reverse=True)
+    removed = 0
+    for _, stale in previous[keep_previous:]:
+        if _remove_environment(stale, runtime_dir):
+            removed += 1
+    return removed
+
+
+def _discard_candidate(candidate: Path, runtime_dir: Path) -> None:
+    """Remove a failed candidate environment (never a blanket delete)."""
+    _remove_environment(candidate, runtime_dir)
 
 
 def install_runtime(
@@ -323,6 +371,15 @@ def install_runtime(
             home=home,
         )
         installed = True
+        actions = [
+            "candidate_created",
+            "paperforge_installed",
+            "runtime_verified",
+            "pointer_published",
+        ]
+        pruned = _prune_environments(runtime_dir, candidate)
+        if pruned:
+            actions.append(f"environments_pruned:{pruned}")
         return RuntimeInstallResult(
             ok=True,
             code="runtime.ready",
@@ -331,7 +388,7 @@ def install_runtime(
             environment_root=str(candidate.resolve()),
             paperforge_version=observed,
             base_python=base_python,
-            actions_taken=["candidate_created", "paperforge_installed", "runtime_verified", "pointer_published"],
+            actions_taken=actions,
         )
     except RuntimeInstallError:
         raise
@@ -340,4 +397,3 @@ def install_runtime(
     finally:
         if not installed:
             _discard_candidate(candidate, runtime_dir)
-        # ponytail: retain prior runtime directories after pointer switch; live processes may still use them.
