@@ -562,7 +562,7 @@ const LANG: Record<string, Record<string, string>> = {
     setup_step_edit: "Edit",
     setup_step_zotero_desc: "The folder Zotero stores its database in.",
     setup_step_zotero_placeholder: "Zotero data directory path",
-    setup_step_bbt_desc: "Export as Better BibTeX JSON, then drop it in.",
+    setup_step_bbt_desc: "Export into the folder below and keep it updated.",
     setup_step_verify_title: "Configure folders",
     setup_step_verify_desc: "Check the folders, then save.",
     setup_library_folders_advanced: "Vault folders (defaults are pre-filled)",
@@ -586,6 +586,12 @@ const LANG: Record<string, Record<string, string>> = {
     setup_optionals_title: "Step 3: Optional Capabilities",
     setup_optionals_desc:
       "Choose only what you need. Skipped capabilities can be enabled later.",
+    setup_optional_needs_key: "Add an API key",
+    setup_optional_platform: "Platform: {platform}",
+    setup_optional_ocr_key_hint:
+      "Create an API key in the PaddleOCR console, then paste it here. OCR uploads your PDFs to that service.",
+    setup_optional_embedding_key_hint:
+      "Any OpenAI-compatible endpoint works: paste its key, then adjust model or base URL if needed.",
     setup_optional_saved: "Configuration saved securely.",
     setup_optional_save_failed:
       "Configuration could not be saved. Check Obsidian secure storage, then try again.",
@@ -1499,7 +1505,7 @@ const LANG: Record<string, Record<string, string>> = {
     setup_step_edit: "修改",
     setup_step_zotero_desc: "Zotero 存放数据库的文件夹。",
     setup_step_zotero_placeholder: "Zotero 数据目录路径",
-    setup_step_bbt_desc: "导出 Better BibTeX JSON，然后拖进来。",
+    setup_step_bbt_desc: "导出到下面的文件夹，并保持更新。",
     setup_step_verify_title: "配置文件夹",
     setup_step_verify_desc: "确认文件夹后保存。",
     setup_library_folders_advanced: "库内文件夹（已填默认值）",
@@ -1518,6 +1524,10 @@ const LANG: Record<string, Record<string, string>> = {
     setup_library_config_failed: "文献库配置无法验证。请检查路径后重试。",
     setup_optionals_title: "第 3 步：可选功能",
     setup_optionals_desc: "只选择需要的功能；跳过后仍可随时启用。",
+    setup_optional_needs_key: "需要填写 API 密钥",
+    setup_optional_platform: "平台：{platform}",
+    setup_optional_ocr_key_hint: "在 PaddleOCR 控制台创建 API Key 后填到这里；OCR 会把 PDF 上传到该服务。",
+    setup_optional_embedding_key_hint: "支持任意 OpenAI 兼容服务：填入密钥，必要时再改模型或 Base URL。",
     setup_optional_saved: "配置已安全保存。",
     setup_optional_save_failed:
       "配置无法保存。请检查 Obsidian 安全存储后重试。",
