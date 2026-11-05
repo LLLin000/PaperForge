@@ -424,6 +424,7 @@ const LANG: Record<string, Record<string, string>> = {
     md_library_connection: "Zotero connection",
     md_library_ready: "Zotero is connected and literature is up to date.",
     md_library_corpus: "Literature corpus",
+    md_library_orphans: "Orphans",
     md_library_last_sync: "Last successful sync",
     md_ocr_status: "OCR capability",
     md_status_refresh_hint:
@@ -532,6 +533,8 @@ const LANG: Record<string, Record<string, string>> = {
     setup_runtime_missing:
       "PaperForge Core is not installed yet. Press “Install runtime” below.",
     setup_runtime_refresh: "Refresh runtime status",
+    runtime_status_timeout:
+      "Runtime check timed out. Check the runtime from the terminal, or run the installer again.",
     runtime_installing:
       "Installing… this can take a few minutes. Leave the terminal window open; this panel updates by itself.",
     runtime_install_btn: "Install runtime",
@@ -612,6 +615,7 @@ const LANG: Record<string, Record<string, string>> = {
     setup_nav_later: "Later",
     setup_nav_complete: "Complete Setup",
     help_title: "Help",
+    help_section_label: "Getting around",
     help_eyebrow: "help",
     help_lede: "Open the relevant module, or copy a diagnostic for support.",
     help_intro: "Choose a task or copy a privacy-safe diagnostic for support.",
@@ -737,13 +741,15 @@ const LANG: Record<string, Record<string, string>> = {
     action_foundation_update: "Update PaperForge",
     action_foundation_repair: "Repair runtime",
     cc_reason_installation_ready: "PaperForge environment is set up correctly.",
-    cc_reason_config_missing:
-      "Configuration file is missing. Run setup to create one.",
     cc_reason_config_corrupt:
       "Configuration file is corrupt. Run setup to repair.",
+    cc_reason_config_missing:
+      "Configuration file is missing. Run setup to create one.",
     cc_reason_python_version_unsupported:
       "Python version is not supported. Install Python 3.11+.",
     cc_reason_help_ready: "Help documentation is available.",
+    cc_reason_memory_config_missing:
+      "Library configuration is missing — finish the setup wizard first.",
     cc_reason_docs_missing: "Help documentation is not yet installed.",
     cc_reason_placeholder:
       "Detection pending — will show live status once connected.",
@@ -1350,6 +1356,7 @@ const LANG: Record<string, Record<string, string>> = {
     cc_metric_papers: "文献数：",
     cc_checked_pending: "尚未检查",
     cc_eyebrow: "控制中心",
+    help_section_label: "使用指南",
     help_eyebrow: "帮助",
     cc_title: "文献工作流",
     cc_lede: "查看各项能力的运行状态、需要处理的事项，以及下一步该做什么。",
@@ -1386,6 +1393,7 @@ const LANG: Record<string, Record<string, string>> = {
     ocr_failed_notice: "OCR 未完成，请打开高级诊断查看详情。",
     md_library_ready: "Zotero 已连接，文献库已同步。",
     md_library_corpus: "文献语料库",
+    md_library_orphans: "孤立记录",
     md_library_last_sync: "上次成功同步",
     md_ocr_status: "OCR 功能",
     md_status_refresh_hint:
@@ -1479,6 +1487,7 @@ const LANG: Record<string, Record<string, string>> = {
       "PaperForge Core 需要更新。点下面的按钮更新或修复。",
     setup_runtime_missing: "PaperForge Core 尚未安装。点下面的「安装运行环境」即可。",
     setup_runtime_refresh: "刷新运行环境状态",
+    runtime_status_timeout: "运行环境检查超时。可在终端检查运行环境，或重新运行安装器。",
     runtime_installing: "正在安装…可能需要几分钟。请保持终端窗口开着，此面板会自动更新。",
     runtime_install_btn: "安装运行环境",
     runtime_update_btn: "更新运行环境",
@@ -1678,6 +1687,7 @@ const LANG: Record<string, Record<string, string>> = {
     cc_reason_python_version_unsupported:
       "Python 版本不受支持，请安装 Python 3.11+。",
     cc_reason_help_ready: "帮助文档已可用。",
+    cc_reason_memory_config_missing: "缺少文献库配置——请先完成设置向导。",
     cc_reason_docs_missing: "帮助文档尚未安装。",
     cc_reason_placeholder: "状态检测待接入，接入后将显示实时状态。",
     cc_reason_library_ready: "文献库已同步并建立索引。",
