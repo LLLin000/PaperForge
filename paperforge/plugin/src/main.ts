@@ -1,5 +1,5 @@
 import type { ActionRequest } from "./client/action-contract";
-import { Plugin, addIcon, Notice, Modal, Setting, App } from "obsidian";
+import { Plugin, Notice, Modal, Setting, App } from "obsidian";
 
 /** Thin confirm modal for the one-time plugin-assisted config migration. */
 class ConfirmMigrationModal extends Modal {
@@ -32,7 +32,6 @@ import {
   VIEW_TYPE_PAPERFORGE,
   VIEW_TYPE_OCR_WORKSPACE,
   PF_ICON_ID,
-  PF_RIBBON_SVG,
   ACTIONS,
   DEFAULT_SETTINGS,
   PaperForgeSettings,
@@ -219,9 +218,6 @@ export default class PaperForgePlugin extends Plugin {
       (leaf) => new OcrWorkspaceView(leaf, this)
     );
 
-    try {
-      addIcon(PF_ICON_ID, PF_RIBBON_SVG);
-    } catch (_) {}
     this.addRibbonIcon(PF_ICON_ID, "PaperForge Dashboard", () =>
       PaperForgeStatusView.open(this as any)
     );

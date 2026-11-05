@@ -8056,3 +8056,54 @@ input.pf-ocr-ws-search-input::placeholder {
   line-height: 1.5;
   color: var(--text-faint);
 }
+
+/* ── Dashboard responsiveness ────────────────────────────────────────────
+   Flex children default to min-width:auto, so long status rows and pill
+   groups forced a ~380px min-content width and the panel could not shrink.
+   ────────────────────────────────────────────────────────────────────── */
+.paperforge-status-panel > * {
+  min-width: 0;
+}
+.paperforge-global-view {
+  width: 100%;
+  min-width: 0;
+}
+.paperforge-status-row {
+  flex-wrap: wrap;
+  row-gap: 2px;
+}
+.paperforge-status-label {
+  min-width: 0;
+  flex: 0 1 auto;
+}
+.paperforge-status-detail {
+  min-width: 0;
+  flex: 1 1 100%;
+  overflow-wrap: anywhere;
+}
+@media (min-width: 420px) {
+  .paperforge-status-detail {
+    flex: 1 1 auto;
+  }
+}
+.paperforge-snapshot-pills {
+  min-width: 0;
+}
+@container pfpanel (max-width: 420px) {
+  .paperforge-snapshot-pills {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .paperforge-snapshot-pill {
+    min-width: 0;
+  }
+  .paperforge-snapshot-value {
+    font-size: 18px;
+  }
+}
+.paperforge-issue-summary,
+.paperforge-library-snapshot,
+.paperforge-system-status {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

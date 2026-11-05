@@ -34,9 +34,9 @@ export type {
 
 export const VIEW_TYPE_PAPERFORGE = "paperforge-status";
 export const VIEW_TYPE_OCR_WORKSPACE = "paperforge-ocr-workspace";
-export const PF_ICON_ID = "paperforge";
-export const PF_RIBBON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path><line x1="8" y1="7" x2="16" y2="7"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>`;
-
+// Built-in Lucide id: a custom addIcon(<svg>) string renders a nested SVG
+// inside Obsidian's wrapper and collapses to a tiny box in the ribbon.
+export const PF_ICON_ID = "book-open";
 // ── Action definitions ──
 
 export interface ActionDef {

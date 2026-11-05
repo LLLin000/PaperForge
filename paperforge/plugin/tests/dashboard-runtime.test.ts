@@ -302,7 +302,7 @@ describe("PaperForgeStatusView.onOpen production lifecycle (Step 5 wiring correc
     expect(view._getCachedIndex()).toEqual([]);
     expect(view._cachedStats).toBeNull();
     expect(view.containerEl.textContent).toContain(
-      "Cannot reach PaperForge CLI"
+      "PaperForge Core did not answer"
     );
     await view.onClose();
   });
@@ -335,7 +335,7 @@ describe("PaperForgeStatusView.onOpen production lifecycle (Step 5 wiring correc
     });
     expect(view._cachedStats).toBeNull();
     expect(view.containerEl.textContent).toContain(
-      "Cannot reach PaperForge CLI"
+      "PaperForge Core did not answer"
     );
 
     // backend recovers; the top Refresh button is the natural recovery action
@@ -350,7 +350,7 @@ describe("PaperForgeStatusView.onOpen production lifecycle (Step 5 wiring correc
     expect(view._dashboardPermissions).toEqual({ can_sync: true });
     // the stale failure message no longer hangs in the message bar
     expect(view.containerEl.textContent).not.toContain(
-      "Cannot reach PaperForge CLI"
+      "PaperForge Core did not answer"
     );
     await view.onClose();
   });

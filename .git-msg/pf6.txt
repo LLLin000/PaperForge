@@ -1,0 +1,16 @@
+fix(dashboard): resizable panel, real ribbon icon, localized chrome
+
+- Ribbon: addIcon(<svg string>) made Obsidian wrap the SVG in another <svg>
+  (viewBox 0 0 100 100), so the icon collapsed. Use the built-in book-open
+  icon and drop the custom registration.
+- Dashboard: it opened in a fixed-width right-sidebar leaf and its flex
+  children defaulted to min-width:auto, forcing a ~380px min-content width.
+  It now opens as a main tab and reflows from 300px to full width
+  (verified scrollWidth == clientWidth at 300 / 382 / 982px).
+- Dashboard chrome is localized: banner, section labels, snapshot pills,
+  system rows and action buttons; issue titles still come from the backend.
+- The failure banner is tracked by a flag instead of matching its English
+  text, so a recovered load clears it.
+
+Verification: plugin 439/439, tsc clean, bundle 339.4kb; live checks in the
+persistent UI lab (ribbon markup, panel measurements, screenshots).
