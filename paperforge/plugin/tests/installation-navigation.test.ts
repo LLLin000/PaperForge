@@ -164,10 +164,6 @@ import {
 } from "../src/constants";
 import { t, setLanguage } from "../src/i18n";
 import { PaperForgeSettingTab } from "../src/settings";
-import {
-  RuntimeBootstrap,
-  resolveRuntimeCommand,
-} from "../src/services/managed-runtime";
 import { App } from "obsidian";
 import { JSDOM } from "jsdom";
 
@@ -214,7 +210,7 @@ describe("i18n navigation strings", () => {
     try {
       document.documentElement.lang = "zh-CN";
       setLanguage({ vault: {} } as any);
-      expect(t("tab_overview")).toBe("主页");
+      expect(t("tab_overview")).toBe("概览");
     } finally {
       document.documentElement.lang = previous;
       setLanguage({ vault: { getConfig: () => "en" } } as any);
@@ -728,15 +724,6 @@ beforeEach(() => {
   clearNoticeCalls();
 });
 
-// ── 12. Issue #77 Finding 1: Canonical ManagedRuntime root ──
-
-describe("canonical RuntimeBootstrap root (Finding 1)", () => {
-  it("uses ~/.paperforge/runtime without triplet suffix", () => {
-    const rt = new RuntimeBootstrap();
-    // The mocked os.homedir() returns "/home/user", so the canonical root is:
-    expect(rt.rootDir).toBe("/home/user/.paperforge/runtime");
-  });
-});
 
 // ── 13. Issue #77 Finding 4: Localized reason parity ──
 
@@ -828,41 +815,6 @@ describe("runtime warnings and platformAction rendering (Finding 5)", () => {
   });
 });
 
-// ── 15. Issue #77 Defect 1: Remove duplicate root/triplet caller path ──
-//   Tests that _ensureManagedRuntime delegates to ManagedRuntime's own defaults
-//   rather than hard-coding rootDir/platform/arch.
-
-describe("_ensureManagedRuntime canonical root delegation (Defect 1)", () => {
-  it("returns same rootDir and triplet as a bare ManagedRuntime instance", () => {
-    const app: Record<string, unknown> = {
-      vault: { adapter: { basePath: "/test/vault" } },
-    };
-    const plugin: Record<string, unknown> = {
-      settings: {},
-      manifest: { version: "2.1.0" },
-      saveSettings: vi.fn(),
-      loadSettings: vi.fn(),
-      readPaperforgeJson: () => ({}),
-      savePaperforgeJson: vi.fn(),
-    };
-    const tab = new PaperForgeSettingTab(
-      app as unknown as import("obsidian").App,
-      plugin
-    );
-
-    // First call creates the cached runtime — capture it
-    const rt = tab._ensureManagedRuntime();
-
-    // ManagedRuntime's defaults (with mocked os.homedir=/home/user).
-    // Triplet comes from process.platform/process.arch (ManagedRuntime reads
-    // process, not the os module) — assert dynamically so this passes on any
-    // runner (Linux CI failed with hardcoded win32-x64).
-    expect(rt.rootDir).toBe("/home/user/.paperforge/runtime");
-
-    // Verify singleton caching works
-    expect(tab._ensureManagedRuntime()).toBe(rt);
-  });
-});
 
 // ── 17. Issue #77 Defect 4: Help card navigation ──
 //   Exercise real _handleCardNavigation('help') through PaperForgeSettingTab.
@@ -1067,10 +1019,6 @@ describe("Issue #77: Back button focus restoration in real DOM", () => {
     globalThis.document.body.appendChild(containerEl);
     tab.containerEl = containerEl;
 
-    // Provide a mock RuntimeBootstrap (#174: pointer-only read)
-    tab._managedRuntime = {
-      readPointer: () => null,
-    } as unknown as RuntimeBootstrap;
 
     // Provide capability envelopes so the control-center cards render
     const envelope = {
@@ -1410,12 +1358,6 @@ describe("Issue #77 RED Gap 2: installation null-resolver produces setup envelop
       plugin
     );
 
-    // Mock _resolveRuntimeCommand to return null (first-run, no Python)
-    const origResolve = tab._resolveRuntimeCommand as unknown as (
-      vp: string
-    ) => { path: string; args: string[] } | null;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (tab as any)._resolveRuntimeCommand = () => null;
 
     // Spy on _updateCapabilityEnvelope to capture the envelope
     let capturedEnvelope: Record<string, unknown> | null = null;
@@ -1435,15 +1377,16 @@ describe("Issue #77 RED Gap 2: installation null-resolver produces setup envelop
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (tab as any)._probeModule("installation");
 
-    // Assert: envelope action primary verb is "setup", not "probe"
+    // Assert: the envelope's primary action is the runtime installer, not a
+    // probe — and not the vault-setup wizard, which requires a ready runtime.
     expect(capturedEnvelope).not.toBeNull();
     const primary = (capturedEnvelope as Record<string, unknown>)
       .action as Record<string, unknown>;
     expect(primary).toBeDefined();
     const primaryAction = primary.primary as Record<string, unknown>;
     expect(primaryAction).toBeDefined();
-    expect(primaryAction.verb).toBe("setup");
-    expect(primaryAction.label).toContain("Setup");
+    expect(primaryAction.verb).toBe("install");
+    expect(primaryAction.action_id).toBe("installation.install_runtime");
   });
 });
 

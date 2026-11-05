@@ -50,6 +50,46 @@ def vector_extras_present() -> bool:
     return True
 
 
+def vector_extras_missing() -> list[str]:
+    """Modules from the vector capability set that cannot be imported."""
+    missing: list[str] = []
+    for module in VECTOR_CAPABILITY_IMPORTS:
+        try:
+            __import__(module)
+        except Exception:
+            missing.append(module)
+    return missing
+
+
+def check_runtime_dependencies() -> "SetupStepResult":
+    """Report missing runtime extras without installing anything.
+
+    Installation is owned by ``paperforge runtime install``; vault setup only
+    validates and reports.
+    """
+    from paperforge.core.errors import ErrorCode
+    from paperforge.setup import SetupStepResult
+
+    missing = vector_extras_missing()
+    if missing:
+        return SetupStepResult(
+            step="runtime_dependencies",
+            ok=False,
+            message=(
+                "Runtime dependencies are missing: "
+                + ", ".join(missing)
+                + ". Run `paperforge runtime repair` outside Obsidian."
+            ),
+            error=ErrorCode.VALIDATION_ERROR.value,
+            details={"missing": missing},
+        )
+    return SetupStepResult(
+        step="runtime_dependencies",
+        ok=True,
+        message="Runtime dependencies are available",
+    )
+
+
 def verify_runtime_in_child(python_path: str | None = None) -> tuple[bool, str]:
     """Verify the complete vector runtime in a fresh interpreter."""
     executable = python_path or sys.executable

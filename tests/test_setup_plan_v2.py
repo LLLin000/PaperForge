@@ -683,10 +683,8 @@ class TestCliHeadlessViaSetupPlan:
         assert pf.exists(), "paperforge.json must exist after headless --skip-checks"
 
 
-class TestSetupPlan174Semantics:
-    """#174 corrective: machine and human paths share ONE success semantics —
-    pointer publication happens before terminal success and only when every
-    step passed; failure is rc 1 in BOTH modes."""
+class TestSetupPlanFailureSemantics:
+    """Setup failures return nonzero in human and machine-facing modes."""
 
     def test_json_failure_returns_nonzero(self, tmp_path: Path) -> None:
         """json_output mode must NOT swallow failures (was rc 0 before the
@@ -703,46 +701,6 @@ class TestSetupPlan174Semantics:
             rc = plan.execute(json_output=True)
         assert rc == 1, f"json failure must be rc 1, got {rc}"
 
-    def test_pointer_published_only_on_full_success(
-        self, tmp_path: Path, monkeypatch
-    ) -> None:
-        """Publication is part of lifecycle success: present after an all-ok
-        run, absent when any step fails (both modes)."""
-        import contextlib as _cl
-        import io as _io
-
-        from paperforge.setup.plan import SetupPlan
-        from paperforge.runtime_pointer import read_pointer
-
-        plan = SetupPlan(tmp_path, config={"system_dir": "System"})
-        buf = _io.StringIO()
-        with _cl.redirect_stdout(buf):
-            assert plan.execute() == 0
-        assert read_pointer(home=tmp_path) is None  # pointer lives under real home
-        # full success through a real home captured via monkeypatch
-        monkeypatch.setattr("paperforge.runtime_pointer.Path.home",
-                            lambda: tmp_path)
-        with _cl.redirect_stdout(buf):
-            assert plan.execute() == 0
-        assert read_pointer(home=tmp_path) is not None
-
-    def test_pointer_absent_on_failure(self, tmp_path: Path, monkeypatch) -> None:
-        """A failing step must NOT publish even though some steps passed."""
-        import contextlib as _cl
-        import io as _io
-
-        from paperforge.setup.plan import SetupPlan
-        from paperforge.runtime_pointer import read_pointer
-
-        monkeypatch.setattr("paperforge.runtime_pointer.Path.home",
-                            lambda: tmp_path)
-        (tmp_path / "paperforge.json").write_text("{corrupt", encoding="utf-8")
-        plan = SetupPlan(tmp_path, config={"system_dir": "System"})
-        buf = _io.StringIO()
-        with _cl.redirect_stdout(buf):
-            rc = plan.execute()
-        assert rc == 1
-        assert read_pointer(home=tmp_path) is None
 
 
 class TestSetupNdjson174:
@@ -825,27 +783,18 @@ class TestSetupCancellation174:
         assert events.count("result") + events.count("error") == 0
 
 
-class TestSetupAgentPhaseCancellation174:
-    """RC UX Seam P0: cancellation arriving DURING the agent phase must
-    yield a `cancelled` terminal (rc 130) and MUST NOT publish the runtime
-    pointer — even though SIGTERM only sets a cooperative flag and the
-    agent loop is between steps."""
+class TestSetupAgentPhaseCancellation:
+    """Cancellation during the agent phase emits a cancelled terminal (rc 130)."""
 
-    def test_cancellation_during_agent_phase_never_publishes(
+    def test_cancellation_during_agent_phase_emits_cancelled_terminal(
         self, tmp_path: Path, monkeypatch
     ) -> None:
         import paperforge.setup.plan as plan_mod
         import paperforge.setup.agent as agent_mod
 
-        published: list[dict] = []
-        monkeypatch.setattr(
-            "paperforge.runtime_pointer.publish_pointer",
-            lambda **kw: published.append(kw),
-        )
 
-        # Cooperative token: flag flips to True while the FIRST agent step
-        # is executing — exactly the window that used to slip through
-        # (agent loop had no _is_stopped() check and publish had no gate).
+        # Flip the cooperative cancellation token during the first agent
+        # step; SetupPlan must stop before attempting any later step.
         stop = {"flag": False}
         monkeypatch.setattr(
             "paperforge.core.cancellation.make_cancellation_token",
@@ -870,4 +819,3 @@ class TestSetupAgentPhaseCancellation174:
         )
         rc = plan.execute(ndjson=True)
         assert rc == 130, f"agent-phase cancellation must exit 130, got {rc}"
-        assert published == [], "cancelled setup must never publish the pointer"

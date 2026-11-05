@@ -4,10 +4,6 @@ import * as path from "path";
 import * as https from "https";
 import { t } from "../i18n";
 import { PaperForgeSettings } from "../constants";
-import {
-  RuntimeBootstrap,
-  resolveRuntimeCommand,
-} from "../services/managed-runtime";
 import type { PythonResult } from "../services/python-bridge";
 import { shouldBlockStep3 } from "./step3-gate";
 
@@ -134,7 +130,7 @@ export class PaperForgeOrphanModal extends Modal {
       const tags = hdr.createEl("span", { cls: "paperforge-orphan-tags" });
       tags.createEl("span", {
         cls: "paperforge-tag " + (o.has_pdf ? "tag-pdf" : "tag-nopdf"),
-        text: o.has_pdf ? "PDF" : "no PDF",
+        text: o.has_pdf ? t("modal_pdf_badge") : t("modal_no_pdf_badge"),
       });
       if (o.collection_path)
         tags.createEl("span", {
@@ -174,7 +170,7 @@ export class PaperForgeOrphanModal extends Modal {
     });
     this._selectAllBtn = btnRow.createEl("button", {
       cls: "paperforge-step-btn",
-      text: "Deselect all",
+      text: t("modal_deselect_all"),
     });
     this._selectAllBtn.addEventListener("click", () => {
       const allSel = this.orphans.every((o) => o._selected);
@@ -184,11 +180,11 @@ export class PaperForgeOrphanModal extends Modal {
 
     this._countEl = btnRow.createEl("button", {
       cls: "paperforge-step-btn mod-cta",
-      text: "Delete " + this.orphans.length + " selected",
+      text: t("modal_delete_selected").replace("{n}", String(this.orphans.length)),
     });
 
     btnRow
-      .createEl("button", { cls: "paperforge-step-btn", text: "Keep all" })
+      .createEl("button", { cls: "paperforge-step-btn", text: t("modal_keep_all") })
       .addEventListener("click", () => this.close());
     this._boundKeydown = (e: KeyboardEvent) =>
       _trapFocus(contentEl as unknown as HTMLElement, e);
@@ -597,7 +593,7 @@ export class PaperForgeIssueDraftModal extends Modal {
     const titleRow = contentEl.createEl("div", {
       cls: "paperforge-issue-draft-field",
     });
-    titleRow.createEl("label", { text: "Title" });
+    titleRow.createEl("label", { text: t("modal_issue_title_label") });
     const safeTitle = redactText(this._draft.title).clean;
     this._titleInput = titleRow.createEl("input", {
       cls: "paperforge-issue-draft-input",
@@ -607,7 +603,7 @@ export class PaperForgeIssueDraftModal extends Modal {
     const bodyRow = contentEl.createEl("div", {
       cls: "paperforge-issue-draft-field",
     });
-    bodyRow.createEl("label", { text: "Body" });
+    bodyRow.createEl("label", { text: t("modal_issue_body_label") });
     const safeBody = redactText(this._draft.body).clean;
     this._bodyTextarea = bodyRow.createEl("textarea", {
       cls: "paperforge-issue-draft-textarea",
@@ -642,7 +638,7 @@ export class PaperForgeIssueDraftModal extends Modal {
     });
     redactedEl.createEl("span", {
       text:
-        "Credentials, vault/Zotero paths, paper titles, paper content are excluded" +
+        t("modal_redaction_scope") +
         (redactions.length > 0
           ? " (" +
             redactions.map((r) => `${r.count} ${r.label}`).join(", ") +

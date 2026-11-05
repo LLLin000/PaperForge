@@ -87,3 +87,9 @@ paperforge/plugin/test/evidence/
 
 # CLI-host acceptance evidence (per-run JSON; never committed)
 tests/evidence/
+
+# local pip cache created by test installs
+pip/cache/
+
+# transient commit-message files
+.git-msg/

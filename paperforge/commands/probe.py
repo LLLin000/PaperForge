@@ -12,6 +12,7 @@ maintenance_eligible, user_visible_failure, user_impact to envelopes.
 from __future__ import annotations
 
 import json
+import logging
 import re
 import sys
 from datetime import datetime, timezone
@@ -37,6 +38,8 @@ LEGACY_PATH_KEYS = frozenset({
     "system_dir", "resources_dir", "literature_dir",
     "base_dir", "control_dir", "skill_dir", "command_dir",
 })
+
+logger = logging.getLogger(__name__)
 
 SUPPORTED_MODULES = frozenset({"installation", "library", "ocr", "memory", "help", "maintenance"})
 MAINTENANCE_CONSTITUENT_MODULES = ("installation", "library", "ocr", "memory", "help")
@@ -216,48 +219,7 @@ def normalize_release_version(version: str) -> str:
 
 
 def probe_installation(vault: Path, expected_version: str | None = None) -> dict[str, Any]:
-    pf_json = vault / "paperforge.json"
-
-    if not pf_json.exists():
-        return build_envelope(
-            module="installation", capability_state="missing_input", severity="warning",
-            reason_code="installation.config_missing",
-            reason_text="paperforge.json not found in vault",
-            user_state=USER_STATE_SETUP_REQUIRED, capability_kind=CAPABILITY_REQUIRED,
-            action_primary=build_action_primary(
-                action_id="foundation.setup", verb="setup", label="Install PaperForge",
-            ),
-            ttl_seconds=TTL_INSTALLATION,
-        )
-
-    try:
-        data = json.loads(pf_json.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return build_envelope(
-            module="installation", capability_state="unavailable", severity="error",
-            reason_code="installation.config_corrupt",
-            reason_text="paperforge.json is corrupt or invalid",
-            user_state=USER_STATE_SETUP_REQUIRED, capability_kind=CAPABILITY_REQUIRED,
-            maintenance_eligible=True,
-            action_primary=build_action_primary(
-                action_id="foundation.setup", verb="setup", label="Repair Installation",
-            ),
-            ttl_seconds=TTL_INSTALLATION,
-        )
-
-    if not _config_is_recognized(data):
-        return build_envelope(
-            module="installation", capability_state="unavailable", severity="error",
-            reason_code="installation.config_corrupt",
-            reason_text="paperforge.json has unrecognizable structure",
-            user_state=USER_STATE_SETUP_REQUIRED, capability_kind=CAPABILITY_REQUIRED,
-            maintenance_eligible=True,
-            action_primary=build_action_primary(
-                action_id="foundation.setup", verb="setup", label="Repair Installation",
-            ),
-            ttl_seconds=TTL_INSTALLATION,
-        )
-
+    """Probe the Python Core only; Vault configuration belongs to probe_library."""
     py_version = sys.version_info[:2]
     if py_version < MIN_PYTHON:
         return build_envelope(
@@ -289,13 +251,6 @@ def probe_installation(vault: Path, expected_version: str | None = None) -> dict
                 action_id="foundation.update",
                 verb="update",
                 label="Update PaperForge",
-                safety_class=SAFETY_DESTRUCTIVE,
-                confirmation_required=True,
-                confirmation_prompt=(
-                    "Update PaperForge\n\n"
-                    "Download and install the latest PaperForge version. "
-                    "This changes the installed runtime."
-                ),
             ),
             ttl_seconds=TTL_INSTALLATION,
         )
@@ -346,12 +301,8 @@ def probe_installation(vault: Path, expected_version: str | None = None) -> dict
             user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_REQUIRED,
             user_impact="Repair the PaperForge runtime before using it",
             action_primary=build_action_primary(
-                action_id="foundation.repair", verb="repair", label="Repair Runtime",
-                safety_class=SAFETY_DESTRUCTIVE, confirmation_required=True,
-                confirmation_prompt=(
-                    "Repair PaperForge runtime\n\n"
-                    "Rebuild the managed runtime and publish a verified pointer."
-                ),
+                action_id="foundation.update", verb="update", label="Repair Runtime",
+                confirmation_required=False,
             ),
             ttl_seconds=TTL_INSTALLATION,
         )
@@ -359,7 +310,7 @@ def probe_installation(vault: Path, expected_version: str | None = None) -> dict
     return build_envelope(
         module="installation", capability_state="ready", severity="ok",
         reason_code="installation.ready",
-        reason_text="PaperForge is installed, configured, and executable",
+        reason_text="PaperForge Core is installed and version-matched",
         user_state=USER_STATE_READY, capability_kind=CAPABILITY_REQUIRED,
         action_primary=None, ttl_seconds=TTL_INSTALLATION,
     )
@@ -948,7 +899,12 @@ def ocr_pipeline_version_summary(vault: Path, rows) -> tuple[int, int]:
                     else:
                         papers_stale += 1
                 except Exception:
-                    pass
+                    # Count it as stale rather than dropping it: an unreadable
+                    # meta is a paper we cannot vouch for, not a non-paper.
+                    logger.warning(
+                        "unreadable OCR meta for %s; counted as stale", r.key
+                    )
+                    papers_stale += 1
     return papers_on_current, papers_stale
 
 
@@ -970,7 +926,14 @@ def paper_pipeline_versions(vault: Path, rows) -> list[dict[str, Any]]:
                         "last_pipeline_version": meta.get("ocr_pipeline_version"),
                     })
                 except Exception:
-                    pass
+                    logger.warning(
+                        "unreadable OCR meta detail for %s; reporting it unknown", r.key
+                    )
+                    per_paper.append({
+                        "key": r.key,
+                        "title": getattr(r, "title", ""),
+                        "last_pipeline_version": None,
+                    })
     return per_paper
 
 
@@ -1291,9 +1254,9 @@ def _probe_memory_impl(vault: Path) -> dict[str, Any]:
                 return build_envelope(
                     module="memory", capability_state="needs_action", severity="warning",
                     reason_code="memory.dependencies_missing",
-                    reason_text=f"Smart Retrieval deps missing: {', '.join(_dep_missing)} — reinstall with paperforge[vector]",
+                    reason_text=f"Smart Retrieval deps missing: {', '.join(_dep_missing)} — run `paperforge runtime repair` outside Obsidian",
                     user_state=USER_STATE_ACTION_REQUIRED, capability_kind=CAPABILITY_OPTIONAL,
-                    notices=[{"kind": "warning", "text": f"Missing: {', '.join(_dep_missing)}. Reinstall the runtime with paperforge[vector]."}],
+                    notices=[{"kind": "warning", "text": f"Missing: {', '.join(_dep_missing)}. Restore the managed runtime with `paperforge runtime repair` outside Obsidian."}],
                     action_primary=build_action_primary(
                         action_id="memory.install_vector_deps", verb="install",
                         label="Install Smart Retrieval dependencies",
