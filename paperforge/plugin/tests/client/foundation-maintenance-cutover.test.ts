@@ -9,8 +9,9 @@
  *    top-level next_actions), and orphan detection reads the residual report
  *    that `library.prune` actually acts on.
  * 5. Maintenance actions execute via client.runAction() with dynamic descriptors and trigger cache invalidation.
- * 6. Production UI cutover seams: SettingTab._probeModule, SettingTab._installFoundation,
- *    checkOrphanState, and PaperForgeOrphanModal strictly use client and NEVER execFile.
+ * 6. Production UI cutover seams: SettingTab._probeModule and external
+ *    runtime guidance, checkOrphanState, and PaperForgeOrphanModal never
+ *    invoke direct `execFile`.
  */
 
 import "obsidian-test-mocks/jest-setup";
@@ -372,7 +373,7 @@ describe("Foundation & Maintenance Domain Cutover (Ticket 03)", () => {
 
       const mockPlugin = {
         manifest: { version: "1.11.4" },
-        settings: { python_path: "" },
+        settings: {},
         getClient: () => ({ probe: mockProbe }),
         saveSettings: vi.fn().mockResolvedValue(undefined),
       };
@@ -395,67 +396,6 @@ describe("Foundation & Maintenance Domain Cutover (Ticket 03)", () => {
       expect(mockExecFile).not.toHaveBeenCalled();
     });
 
-    it("SettingTab._installFoundation() calls client.setup with installed.pythonPath and NEVER calls _runSetupPython", async () => {
-      const mockSetup = vi.fn().mockReturnValue({
-        outcome: Promise.resolve({ ok: true, exitCode: 0 }),
-        stop: vi.fn(),
-      });
-      const mockRunSetupPython = vi.fn();
-
-      const mockPlugin = {
-        manifest: { version: "1.11.4" },
-        settings: {
-          system_dir: "System",
-          resources_dir: "Resources",
-          literature_dir: "Literature",
-          base_dir: "Bases",
-          agent_platform: "opencode",
-        },
-        getClient: () => ({
-          setup: mockSetup,
-          probe: vi.fn().mockResolvedValue({
-            schema_version: 2,
-            module: "installation",
-            capability_state: "ready",
-            activity_state: "idle",
-            user_state: "ready",
-            severity: "ok",
-            reason: { code: "installation.ready", text: "Ready" },
-            action: { primary: null },
-            updated_at: new Date().toISOString(),
-            ttl_seconds: 3600,
-          }),
-        }),
-        saveSettings: vi.fn().mockResolvedValue(undefined),
-      };
-
-      const tab = new PaperForgeSettingTab(
-        { vault: { adapter: { basePath: "/vault" } } } as any,
-        mockPlugin as any
-      );
-      (tab as any)._getVaultBasePath = () => "/vault";
-      (tab as any)._ensureManagedRuntime = () => ({
-        ensureRuntime: vi.fn().mockResolvedValue({
-          action: "install",
-          pythonPath: "/bootstrap/python.exe",
-          observedVersion: "1.0.0",
-        }),
-        readPointer: () => ({ pythonPath: "/bootstrap/python.exe" }),
-      });
-      (tab as any).display = vi.fn();
-
-      (tab as any)._installFoundation(false);
-
-      await Promise.resolve();
-      await Promise.resolve();
-      await Promise.resolve();
-
-      expect(mockSetup).toHaveBeenCalledWith(
-        expect.objectContaining({ modular: true }),
-        expect.objectContaining({ pythonExe: "/bootstrap/python.exe" })
-      );
-      expect(mockRunSetupPython).not.toHaveBeenCalled();
-    });
 
     it("checkOrphanState opens the modal from probe('lineage') residuals (#222)", async () => {
       // The residual report is Python's authority for "in a carrier, gone from

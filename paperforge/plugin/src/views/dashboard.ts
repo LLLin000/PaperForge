@@ -19,7 +19,10 @@ import {
 } from "../constants";
 import { t } from "../i18n";
 import { classifyError } from "../services/python-bridge";
-import { resolveRuntimeCommand } from "../services/managed-runtime";
+import {
+  readRuntimePointer,
+  resolveRuntimeCommand,
+} from "../services/managed-runtime";
 import { getDisclosureState, toggleDisclosureState } from "../utils/disclosure";
 import { checkOrphanState } from "./modals";
 import { orchestrateFromSync } from "../services/next-actions-bridge";
@@ -64,18 +67,8 @@ export class PaperForgeStatusView extends ItemView {
   }
 
   _resolvePython(): { path: string; args: string[] } | null {
-    // 1. Use custom python_path from plugin settings if set
-    const plugin = ((this.app as any).plugins.plugins as any)["paperforge"];
-    const customPath = plugin?.settings?.python_path?.trim();
-    if (customPath && require("fs").existsSync(customPath)) {
-      return { path: customPath, args: [] };
-    }
-    // 2. Fall back to managed runtime
-    const mr = plugin?.getManagedRuntime?.();
-    if (!mr) return null;
-    const run = resolveRuntimeCommand(mr.readPointer());
-    if (!run) return null;
-    return { path: run.command, args: [...run.args] };
+    const run = resolveRuntimeCommand(readRuntimePointer());
+    return run ? { path: run.command, args: [...run.args] } : null;
   }
   _leafChangeTimer: ReturnType<typeof setTimeout> | null = null;
   _ocrPrivacyShown = false;
@@ -873,20 +866,17 @@ export class PaperForgeStatusView extends ItemView {
     });
   }
 
-  /** #HW-UX P0-1: explicit backend-missing guidance on the homepage.
-   * The old behavior was a silent "Cannot reach PaperForge CLI" message with
-   * no path forward; now we surface a one-click Setup entry. */
+  /** Guide users to install the external Core, then return to configure this Vault. */
   private _renderBackendMissingCard(view: HTMLElement): void {
     const card = view.createEl("div", { cls: "paperforge-setup-cta" });
     card.createEl("div", {
       cls: "paperforge-setup-cta-title",
-      text: t("backend_missing_title") || "PaperForge engine not installed",
+      text: t("backend_missing_title") || "PaperForge Core not detected",
     });
     card.createEl("div", {
       cls: "paperforge-setup-cta-body",
       text:
-        t("backend_missing_body") ||
-        "The Python backend is required. Complete the setup wizard to install it.",
+        "Install PaperForge Core outside Obsidian, then return here to configure this Vault.",
     });
     const btn = card.createEl("button", {
       cls: "paperforge-contextual-btn primary",

@@ -120,7 +120,6 @@ export const ACTIONS: ActionDef[] = [
 // ── Settings ──
 
 export interface PaperForgeSettings {
-  python_path: string;
   vault_path: string;
   features: Record<string, boolean>;
   frozen_skills: Record<string, string>;
@@ -139,7 +138,6 @@ export interface PaperForgeSettings {
   capabilityState: Record<string, ProbeEnvelope>;
   autoSyncEnabled?: boolean;
   autoSyncIntervalSeconds?: number;
-  _python_path_stale?: boolean;
   _migrated_keys?: string[];
   _migration_warnings?: string[];
   _paddleocr_configured?: boolean;
@@ -156,7 +154,6 @@ export const DEFAULT_SETTINGS: PaperForgeSettings = {
   paddleocr_api_key: "",
   zotero_data_dir: "",
   agent_platform: "opencode",
-  python_path: "",
   features: {
     memory_layer: true,
     vector_db: false,
@@ -299,6 +296,26 @@ export function setupAction(): ActionPrimary {
     action_id: "foundation.setup",
     verb: "setup",
     label: "Open Setup Wizard",
+    availability: "available",
+    safety_class: "safe",
+    preservation_facts: [],
+    replacement_facts: [],
+    interruptible: true,
+    confirmation_required: false,
+    confirmation_prompt: null,
+    scope: "installation",
+    scope_count: 1,
+  };
+}
+
+/** Local (plugin-side) action for "no usable runtime": it opens the external
+ * installer. The backend never owns an install; the pointer is published by
+ * the installer, so this is presentation, not a Python action. */
+export function runtimeInstallAction(label: string): ActionPrimary {
+  return {
+    action_id: "installation.install_runtime",
+    verb: "install",
+    label,
     availability: "available",
     safety_class: "safe",
     preservation_facts: [],

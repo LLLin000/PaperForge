@@ -26,6 +26,7 @@ import {
   isReadyEnvelope,
   probeAction,
   setupAction,
+  runtimeInstallAction,
   validatePersistedEnvelopes,
   classifyCapabilityAction,
 } from "./constants";
@@ -64,12 +65,14 @@ import {
   type OrphanItem,
 } from "./views/modals";
 import {
-  RuntimeBootstrap,
+  readRuntimePointer,
   resolveRuntimeCommand,
 } from "./services/managed-runtime";
-import { getDisclosureState, toggleDisclosureState } from "./utils/disclosure";
+import type { RuntimeStatus } from "./client";
 import { stripCredentialEnv } from "./services/secret-storage";
 import { processProgressChunk } from "./services/progress-parser";
+import type { RuntimeInstallerAction } from "./services/runtime-installer-launcher";
+import { runtimeInstallerSteps } from "./services/runtime-installer-launcher";
 import type { ActionRequest } from "./client/action-contract";
 
 // ── Interface ──
@@ -80,7 +83,6 @@ interface ISettingPlugin {
   saveSettings(): Promise<void>;
   loadSettings(): Promise<void>;
   manifest: { version: string };
-  getManagedRuntime(): RuntimeBootstrap | null;
   [key: string]: any;
 }
 
@@ -96,9 +98,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   private _featurePanelsCollapsed: Record<string, unknown> = {};
   private _advCollapsed = true;
   private _refreshPending = false;
-  private _pythonInterpDescEl: HTMLElement | null = null;
-  private _customPathDescEl: HTMLElement | null = null;
-  private _checkEl: HTMLDivElement | null = null;
   activeTab = "overview";
   private _buildState: string = "idle";
   private _buildProgress: { current: number; total: number; key: string } = {
@@ -131,8 +130,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     memory: false,
     agent: false,
   };
-  /** Explicit reinstall stays inside the current setup journey. */
-  private _setupReinstallRequested = false;
   private _setupOperation: "idle" | "running" | "failed" = "idle";
   private _setupFeedback: string | null = null;
   /** RC UX Seam P1: user chose "Later" — pure session flag; reset on hide(). */
@@ -141,12 +138,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   _selectedDetailModule: string = "";
   /** Focus target id after re-render. */
   _focusTargetId: string | null = null;
-  /** AbortController for in-flight runtime ensure/install. */
-  private _runtimeAbortController: AbortController | null = null;
-  /** Cached RuntimeBootstrap singleton (rebuilt per display() on path change). */
-  private _managedRuntime: RuntimeBootstrap | null = null;
-  /** True while a runtime operation is in flight. */
-  private _runtimeBusy: boolean = false;
+  private _runtimeStatus: RuntimeStatus | null = null;
+  private _runtimeStatusError: string | null = null;
+  private _runtimeStatusVersion: string | null = null;
+  private _runtimeStatusLoading = false;
+  private _runtimePollTimer: ReturnType<typeof setInterval> | null = null;
   /** True while a library sync or memory build is in flight. */
   _libraryRunning: boolean = false;
   private _displayInProgress: boolean = false;
@@ -432,129 +428,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     return this._client!;
   }
 
-  private _startSetupJourney(
-    stage: 1 | 2 | 3 | 4 = 1,
-    reinstall = false
-  ): void {
+  private _startSetupJourney(stage: 1 | 2 | 3 | 4 = 1): void {
     this._setupStage = stage;
-    this._setupReinstallRequested = reinstall;
     this._setupOperation = "idle";
     this._setupFeedback = null;
     this.plugin.settings._setup_complete = false;
     void this.plugin.saveSettings().then(() => this.display());
   }
 
-  private _installFoundation(forceInstall: boolean): void {
-    if (this._setupOperation === "running") return;
-    this._setupOperation = "running";
-    this._setupFeedback = null;
-    this.display();
-
-    // #174: the Setup Journey no longer runs its own pip — the ONLY
-    // bootstrap install path is RuntimeBootstrap into
-    // ~/.paperforge/runtime/venv (ONE pinned paperforge[vector] install,
-    // never --user).  After install, `paperforge setup --json`
-    // (the #137 NDJSON machine stream) publishes the pointer — Python is
-    // the only writer.
-    // RC UX Seam: the whole chain is cancellable through one
-    // AbortController; a cancelled install must NOT republish the pointer
-    // or flip _setup_complete.  Only a venv THIS run created is removed on
-    // failure — a pre-existing runtime survives a failed upgrade.
-    this._runtimeAbortController = new AbortController();
-    const signal = this._runtimeAbortController.signal;
-    void (async () => {
-      try {
-        const vaultPath = this._getVaultBasePath();
-        const bootstrap = this._ensureManagedRuntime();
-        // #HW-UX: ensureRuntime inspects first — a current runtime is left
-        // alone, an older one is upgraded in place, an interrupted one is
-        // repaired, and only an empty machine gets a fresh venv.  The
-        // user's configured python_path is honored as the base interpreter.
-        const ensured = await bootstrap.ensureRuntime(
-          this.plugin.manifest.version,
-          {
-            vaultPath,
-            userPythonPath:
-              this.plugin.settings.python_path?.trim() || undefined,
-            signal,
-          }
-        );
-        const installed = { pythonPath: ensured.pythonPath };
-        // Post-runtime setup (config/vault/deps/agent) + pointer publication,
-        // through the #137 NDJSON stream (setup --json).
-        const s = this.plugin.settings;
-        await this.plugin.saveSettings();
-        const client = this.getClient();
-        const handle = client.setup(
-          {
-            systemDir: s.system_dir?.trim() || "System",
-            resourcesDir: s.resources_dir?.trim() || "Resources",
-            literatureDir: s.literature_dir?.trim() || "Literature",
-            baseDir: s.base_dir?.trim() || "Bases",
-            zoteroData: s.zotero_data_dir?.trim() || undefined,
-            agent: s.agent_platform || "opencode",
-            modular: true,
-          },
-          {
-            pythonExe: installed.pythonPath,
-            onEvent: (ev) => {
-              if (ev.event === "phase") {
-                this._setupFeedback = `${t("setup_installing") || "Installing"}: ${ev.phase ?? ""}`;
-                this.display();
-              }
-            },
-          }
-        );
-        signal?.addEventListener("abort", () => handle.stop());
-        const outcome = await handle.outcome;
-        if (!outcome.ok) {
-          if (outcome.cancelled) {
-            this._setupOperation = "idle";
-            this._setupFeedback = t("setup_install_cancelled");
-            this.display();
-            return;
-          }
-          throw new Error(
-            outcome.protocolFailure ||
-              `Setup failed with exit code ${outcome.exitCode}`
-          );
-        }
-        this._setupOperation = "idle";
-        this._setupReinstallRequested = false;
-        // #HW-UX: report what actually happened, so an upgrade or an
-        // in-place repair is distinguishable from a first install.
-        const base = t("setup_install_complete");
-        this._setupFeedback =
-          ensured.action === "none"
-            ? base
-            : `${base} (${ensured.action}, v${ensured.observedVersion})`;
-        this._probeModule("installation");
-        this._probeModule("help");
-        this.display();
-      } catch (error) {
-        const isAbort =
-          signal.aborted ||
-          (typeof error === "object" &&
-            error !== null &&
-            (error as { name?: unknown }).name === "AbortError");
-        if (isAbort) {
-          // User cancelled: keep the wizard in place, show a neutral
-          // message.  Never flip _setup_complete, never treat it as a
-          // failure state.
-          this._setupOperation = "idle";
-          this._setupFeedback = t("setup_install_cancelled");
-          this.display();
-          return;
-        }
-        console.error("PaperForge runtime installation failed:", error);
-        this._setupOperation = "failed";
-        this._setupFeedback = t("setup_install_failed");
-        this.display();
-      } finally {
-        this._runtimeAbortController = null;
-      }
-    })();
-  }
 
   private _applyLibraryConfiguration(): void {
     if (this._setupOperation === "running") return;
@@ -677,41 +558,135 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     return "";
   }
 
-  /** Ensure RuntimeBootstrap singleton is initialized for the current machine. */
-  private _ensureManagedRuntime(): RuntimeBootstrap {
-    if (this._managedRuntime) return this._managedRuntime;
-    this._managedRuntime =
-      this.plugin.getManagedRuntime?.() ?? new RuntimeBootstrap();
-    return this._managedRuntime;
+
+  private _resolveRuntimeCommand(): { path: string; args: string[] } | null {
+    const run = resolveRuntimeCommand(readRuntimePointer());
+    return run ? { path: run.command, args: [...run.args] } : null;
   }
 
-  /**
-   * Resolve python command via managed runtime exclusively.
-   * Returns null when managed runtime is not ready.
-   */
-  private _resolveRuntimeCommand(
-    vp: string
-  ): { path: string; args: string[] } | null {
-    // 1. Use custom python_path from settings if set
-    const customPath = this.plugin.settings.python_path?.trim();
-    if (customPath && fs.existsSync(customPath)) {
-      return { path: customPath, args: [] };
+  private _refreshRuntimeStatus(force = false): void {
+    const expectedVersion = this.plugin.manifest.version;
+    if (
+      this._runtimeStatusLoading ||
+      (!force && this._runtimeStatusVersion === expectedVersion)
+    ) {
+      return;
     }
-    // 2. Fall back to the published pointer (#174): only a pointer-backed
-    // runtime is usable — never an installed-but-unpublished one.
-    const run = resolveRuntimeCommand(
-      this._ensureManagedRuntime().readPointer()
+    this._runtimeStatusVersion = expectedVersion;
+    this._runtimeStatus = null;
+    this._runtimeStatusError = null;
+    const pointer = readRuntimePointer();
+    if (!pointer || !fs.existsSync(pointer.pythonPath)) {
+      // No published runtime: the persisted envelope is stale by definition.
+      const env = this._capabilityState?.installation;
+      if (
+        env &&
+        env.user_state === "ready" &&
+        env.activity_state !== "running"
+      ) {
+        this._capabilityState = this._capabilityState ?? {};
+        this._capabilityState.installation = this._setupRequiredEnvelope();
+      }
+      return;
+    }
+
+    this._runtimeStatusLoading = true;
+    void Promise.resolve()
+      .then(() => this.getClient().runtimeStatus(expectedVersion))
+      .then((status) => {
+        this._runtimeStatus = status;
+        const env = this._capabilityState?.installation;
+        if (
+          env &&
+          env.activity_state !== "running" &&
+          status.runtime_ready &&
+          env.user_state === "setup_required"
+        ) {
+          // The runtime is published now; the Python probe owns the new facts.
+          this._probeModule("installation");
+        }
+      })
+      .catch((error: unknown) => {
+        this._runtimeStatusError =
+          error instanceof Error ? error.message : String(error);
+      })
+      .finally(() => {
+        this._runtimeStatusLoading = false;
+        this.display();
+      });
+  }
+
+  private _runtimeInstallerCommand(
+    action: "install" | "update" | "repair" = "install"
+  ): string {
+    return runtimeInstallerSteps(action, this.plugin.manifest.version)
+      .map((step) => step.replace("{{python}}", "python"))
+      .join("\n");
+  }
+
+  /** The single entry point for runtime work, derived from the pointer state. */
+  private _currentRuntimeAction(): RuntimeInstallerAction {
+    const pointer = readRuntimePointer();
+    const runtime = this._runtimeStatus;
+    return !pointer
+      ? "install"
+      : runtime?.version_matches_expected === false
+        ? "update"
+        : "repair";
+  }
+
+  /** Open the external installer and watch the published pointer. */
+  private _launchRuntimeInstaller(action: RuntimeInstallerAction): void {
+    const result = this.getClient().launchRuntimeInstaller(
+      action,
+      this.plugin.manifest.version
     );
-    if (run) {
-      return { path: run.command, args: [...run.args] };
+    if (!result.ok) {
+      new Notice(
+        t("runtime_installer_failed").replace(
+          "{error}",
+          result.error ?? "unknown"
+        )
+      );
+      return;
     }
-    return null;
+    new Notice(t("runtime_installer_opened"), 8000);
+    this._pollRuntimeUntilReady();
+  }
+
+  /** Poll while the installer window runs; stop on ready or after 15 min. */
+  private _pollRuntimeUntilReady(): void {
+    if (this._runtimePollTimer) return;
+    const startedAt = Date.now();
+    this._runtimePollTimer = setInterval(() => {
+      if (this._runtimeStatus?.runtime_ready === true) {
+        this._stopRuntimePoll(true);
+        return;
+      }
+      if (Date.now() - startedAt > 15 * 60 * 1000) {
+        this._stopRuntimePoll(false);
+        return;
+      }
+      this._refreshRuntimeStatus(true);
+      this.display();
+    }, 3000);
+  }
+
+  private _stopRuntimePoll(ready: boolean): void {
+    if (this._runtimePollTimer) {
+      clearInterval(this._runtimePollTimer);
+      this._runtimePollTimer = null;
+    }
+    this._refreshRuntimeStatus(true);
+    this.display();
+    if (ready) new Notice(t("runtime_install_complete"));
   }
 
   /** Render the Installation detail view (Issue #77). */
   /** Render Foundation with the shared module-detail shell. */
   _renderInstallationDetail(containerEl: HTMLElement): void {
-    this._renderModuleDetailShell(containerEl, "installation");
+    this._renderModuleDetailShell(containerEl, "installation", false);
+    const pointer = readRuntimePointer();
     const env =
       this._capabilityState?.installation ??
       createUnknownEnvelope("installation");
@@ -727,6 +702,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           ? "pf-status-ok"
           : "setting-item-description",
     });
+    this._refreshRuntimeStatus();
+    const runtime = this._runtimeStatus;
+    const runtimeReady = runtime?.runtime_ready === true;
 
     // ── Comprehensive checks ──
     const checks = body.createDiv({ cls: "pf-config" });
@@ -752,19 +730,25 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       "pf-status-ok"
     );
 
-    // Python check — project the resolved runtime command (managed pointer
-    // first, then the explicit override), not a bare settings fallback.
-    const vp = (this.app.vault.adapter as any).basePath as string;
-    const pythonPath =
-      this._resolveRuntimeCommand(vp)?.path ??
-      (this.plugin.settings.python_path || "python");
+    const runtimeLabel = this._runtimeStatusLoading
+      ? t("runtime_status_checking")
+      : (runtime?.runtime_state ??
+        this._runtimeStatusError ??
+        (pointer
+          ? t("runtime_status_needs_attention")
+          : t("runtime_status_not_installed")));
     addCheck(
       t("foundation_python"),
-      env.user_state === "ready" ? "✓" : "—",
-      pythonPath,
-      env.user_state === "ready" ? "pf-status-ok" : "pf-status-checking"
+      runtimeReady ? "✓" : this._runtimeStatusLoading ? "…" : "—",
+      runtime?.python_path ?? pointer?.pythonPath ?? runtimeLabel,
+      runtimeReady
+        ? "pf-status-ok"
+        : this._runtimeStatusLoading
+          ? "pf-status-checking"
+          : "pf-status-warn"
     );
 
+    const vp = this._getVaultBasePath();
     // Vault structure
     const systemDir = path.join(
       vp,
@@ -830,22 +814,53 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     // is enforced by the manifest's minAppVersion at plugin load; Python-side
     // truth lives in the probe envelope, not a presentation-side constant.
 
-    // Python packages: projected from the probe envelope — the backend owns
-    // dependency truth (probe memory / embed status deps_installed).  The
-    // retired `import openai; import sqlite3` exec check ran against
-    // settings.python_path instead of the managed runtime and duplicated
-    // backend authority, so it is gone.
     addCheck(
       t("foundation_python_packages"),
-      env.user_state === "ready" ? "✓" : "—",
-      env.user_state === "ready"
-        ? t("check_bbt_ok") || "Ready"
-        : (env.reason?.text ?? "—"),
-      env.user_state === "ready" ? "pf-status-ok" : "pf-status-checking"
+      runtime?.vector_ready ? "✓" : this._runtimeStatusLoading ? "…" : "—",
+      runtime?.vector_ready
+        ? t("runtime_vector_ready")
+        : runtimeLabel,
+      runtime?.vector_ready
+        ? "pf-status-ok"
+        : this._runtimeStatusLoading
+          ? "pf-status-checking"
+          : "pf-status-warn"
     );
+    const runtimeAction: RuntimeInstallerAction = !pointer
+      ? "install"
+      : runtime?.version_matches_expected === false
+        ? "update"
+        : "repair";
+    if (!runtimeReady) {
+      renderActionButton(body, {
+        label:
+          runtimeAction === "install"
+            ? t("runtime_install_btn")
+            : runtimeAction === "update"
+              ? t("runtime_update_btn")
+              : t("runtime_repair_btn"),
+        onClick: () => this._launchRuntimeInstaller(runtimeAction),
+      });
+      body.createEl("p", {
+        text: t("runtime_installer_hint"),
+        cls: "setting-item-description",
+      });
+    }
+    const manual = body.createEl("details", { cls: "pf-runtime-manual" });
+    manual.createEl("summary", { text: t("runtime_manual_summary") });
+    manual.createEl("pre").createEl("code", {
+      text: this._runtimeInstallerCommand(runtimeAction),
+    });
 
-    // Action buttons
-    if (env.user_state !== "ready") {
+    // Sequential flow: the runtime is a hard prerequisite, so exactly one
+    // entry point is visible at a time — install first, configure the vault
+    // afterwards.
+    if (!runtimeReady) {
+      body.createEl("p", {
+        text: t("runtime_next_step_hint"),
+        cls: "setting-item-description",
+      });
+    } else if (env.user_state !== "ready") {
       new Setting(body)
         .setName(t("foundation_setup"))
         .setDesc(t("foundation_setup_desc"))
@@ -856,18 +871,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             .onClick(() => this._startSetupJourney(1))
         );
     }
-
-    // Reinstall button - triggers full setup wizard
-    new Setting(body)
-      .setName(t("foundation_reinstall"))
-      .setDesc(t("foundation_reinstall_desc"))
-      .addButton((btn) =>
-        btn
-          .setButtonText(t("foundation_reinstall_btn"))
-          .setWarning()
-          .onClick(() => this._startSetupJourney(1, true))
-      );
   }
+
 
   /** Render the Skills inventory for the selected agent platform. */
   private _renderSkillsList(containerEl: HTMLElement): void {
@@ -1760,12 +1765,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       if (mod === "library") {
         this._startSetupJourney(2);
       } else {
-        const reinstall =
-          mod === "installation" &&
-          env.reason.code === "installation.version_mismatch";
         this._startSetupJourney(
-          mod === "ocr" || mod === "memory" ? 3 : 1,
-          reinstall
+          mod === "ocr" || mod === "memory" ? 3 : 1
         );
       }
       return;
@@ -1778,25 +1779,26 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
     if (verb === "update") {
       if (actionId === "foundation.update") {
-        // Registered remote action (#174) — the confirm modal already ran
-        // (safety_class destructive + confirmation_required).  Dispatch
-        // through the action runner so Python policy stays the authority.
-        this._runUpdateAction();
+        this._launchRuntimeInstaller("update");
         return;
       }
-      // foundation.update_python: interpreter upgrade has NO automated path.
       new Notice(
         t("update_python_manual") ||
           "Python 3.11+ upgrade requires a manual install (python.org or your package manager)."
       );
-      this._probeModule(mod);
+      return;
+    }
+
+    if (
+      (verb === "install" || actionId === "installation.install_runtime") &&
+      mod === "installation"
+    ) {
+      this._launchRuntimeInstaller(this._currentRuntimeAction());
       return;
     }
 
     if (verb === "install" && actionId === "memory.install_vector_deps") {
-      // Smart Retrieval deps missing -> setup journey re-ensures
-      // paperforge[vector] in the runtime (ensure_runtime_dependencies).
-      this._startSetupJourney(3);
+      this._launchRuntimeInstaller("repair");
       return;
     }
 
@@ -1881,38 +1883,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       5000
     );
     this._probeModule(mod);
-  }
-  /** #174 RC: dispatch foundation.update through the action runner.
-   * The confirm modal already ran (destructive + confirmation_required);
-   * Python's perform_update owns policy + fresh-child verification. */
-  _runUpdateAction(): void {
-    // Dispatch through the canonical action runner — Python's
-    // perform_update owns policy + fresh-child verification; the client's
-    // OperationLock owns the single active operation.
-    void this.getClient()
-      .runAction({
-        action_id: "foundation.update",
-        scope: { kind: "all" },
-        confirm: "foundation.update",
-      })
-      .then((result) => {
-        if (result.ok) {
-          new Notice(t("update_done") || "PaperForge updated");
-        } else {
-          const reason =
-            typeof result.payload?.availability_reason === "string"
-              ? result.payload.availability_reason
-              : `exit code ${result.exitCode}`;
-          new Notice((t("update_failed") || "Update failed") + ": " + reason);
-        }
-        this._refreshAllReadModels();
-      })
-      .catch((err: Error) => {
-        new Notice(
-          (t("update_failed") || "Update failed") + ": " + err.message
-        );
-        this._refreshAllReadModels();
-      });
   }
 
   /** #174 RC: ChromaDB -> sqlite-vec backend migration (embed migrate). */
@@ -2692,34 +2662,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     };
     this._updateCapabilityEnvelope(mod, probing);
 
-    const vp = this._getVaultBasePath();
-    const resolved = this._resolveRuntimeCommand(vp);
+    const resolved = this._resolveRuntimeCommand();
     if (!resolved) {
       this._probing.delete(mod);
       if (mod === "installation") {
-        const setupEnvelope: ProbeEnvelope = {
-          schema_version: 2,
-          module: "installation",
-          capability_state: "unknown",
-          activity_state: "idle",
-          activity_label: null,
-          activity_progress: null,
-          severity: "error",
-          reason: {
-            code: "installation.no_python",
-            text: "No Python found. Run the Setup Wizard to install the managed runtime.",
-          },
-          action: { primary: setupAction() },
-          notices: [],
-          user_state: "setup_required",
-          capability_kind: "required",
-          maintenance_eligible: false,
-          user_visible_failure: true,
-          user_impact: "PaperForge cannot run without Python.",
-          updated_at: new Date().toISOString(),
-          ttl_seconds: 60,
-        };
-        this._updateCapabilityEnvelope(mod, setupEnvelope);
+        this._updateCapabilityEnvelope(mod, this._setupRequiredEnvelope());
       } else {
         this._updateCapabilityEnvelope(mod, createInvalidEnvelope(mod));
       }
@@ -2758,34 +2705,36 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             err.message?.includes("no managed runtime pointer") ||
             err.message?.includes("not ready"))
         ) {
-          const setupEnvelope: ProbeEnvelope = {
-            schema_version: 2,
-            module: "installation",
-            capability_state: "unknown",
-            activity_state: "idle",
-            activity_label: null,
-            activity_progress: null,
-            severity: "error",
-            reason: {
-              code: "installation.no_python",
-              text: "No Python found. Run the Setup Wizard to install the managed runtime.",
-            },
-            action: { primary: setupAction() },
-            notices: [],
-            user_state: "setup_required",
-            capability_kind: "required",
-            maintenance_eligible: false,
-            user_visible_failure: true,
-            user_impact: "PaperForge cannot run without Python.",
-            updated_at: new Date().toISOString(),
-            ttl_seconds: 60,
-          };
-          this._updateCapabilityEnvelope(mod, setupEnvelope);
+          this._updateCapabilityEnvelope(mod, this._setupRequiredEnvelope());
         } else {
           console.warn(`[PaperForge] Probe ${mod} failed:`, err.message);
           this._updateCapabilityEnvelope(mod, createInvalidEnvelope(mod));
         }
       });
+  }
+
+  /** One installation envelope for "no usable runtime" — the plugin only
+   * guides; installing/updating/repairing happens through the external CLI. */
+  private _setupRequiredEnvelope(): ProbeEnvelope {
+    return {
+      schema_version: 2,
+      module: "installation",
+      capability_state: "unknown",
+      activity_state: "idle",
+      activity_label: null,
+      activity_progress: null,
+      severity: "error",
+      reason: { code: "installation.no_python", text: t("runtime_not_ready_reason") },
+      action: { primary: runtimeInstallAction(t("runtime_install_btn")) },
+      notices: [],
+      user_state: "setup_required",
+      capability_kind: "required",
+      maintenance_eligible: false,
+      user_visible_failure: true,
+      user_impact: t("runtime_not_ready_impact"),
+      updated_at: new Date().toISOString(),
+      ttl_seconds: 60,
+    };
   }
 
   /** Update a single module envelope and refresh the display (#85: Last Known State). */
@@ -2798,9 +2747,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this._lastKnownState.set(mod, captureLastKnown(envelope));
     }
 
-    if (mod === "installation" && envelope.user_state === "ready") {
-      this._setupReinstallRequested = false;
-    }
     this._capabilityState[envelope.module] = envelope;
     this._persistCapabilityState();
     if (
@@ -3375,10 +3321,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   /** Open the orphan cleanup modal with the plugin-resolved python runtime
    * (never a hardcoded "python" — the real interpreter may be a venv). */
   private _openOrphanModal(orphans: { key: string; title?: string }[]): void {
-    const vp = (this.app.vault.adapter as unknown as { basePath?: string })
-      ?.basePath;
+    const vp = this._getVaultBasePath();
     if (!vp) return;
-    const run = this._resolveRuntimeCommand(vp);
+    const run = this._resolveRuntimeCommand();
     if (!run) {
       new Notice(t("next_action_runtime_unavailable"));
       return;
@@ -3467,134 +3412,73 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   }
 
   _renderSetupStageFoundation(containerEl: HTMLElement): void {
-    const env =
-      this._capabilityState?.installation ??
-      createUnknownEnvelope("installation");
-    const needsProbe =
-      (env.capability_state === "unknown" &&
-        env.updated_at === new Date(0).toISOString()) ||
-      (env.user_state === "detection_failed" &&
-        env.reason.code.endsWith(".stale"));
-    if (needsProbe && !this._attemptedProbes.has("installation")) {
-      this._attemptedProbes.add("installation");
-      this._probeModule("installation");
-    }
+    this._refreshRuntimeStatus();
+    const pointer = readRuntimePointer();
+    const runtime = this._runtimeStatus;
+    const ready = runtime?.runtime_ready === true;
+    const action = !pointer
+      ? "install"
+      : runtime?.version_matches_expected === false
+        ? "update"
+        : "repair";
+
     containerEl.createEl("h3", { text: t("setup_foundation_title") });
     containerEl.createEl("p", { text: t("setup_foundation_desc") });
-    const pythonField = containerEl.createDiv({ cls: "pf-setup-field" });
-    pythonField.createEl("label", { text: t("setup_foundation_python") });
-    pythonField.createEl("span", {
-      cls: "caption",
-      text: t("setup_foundation_python_hint"),
-    });
-    const pythonInput = pythonField.createEl("input", {
-      cls: "pf-setup-input",
-      attr: { type: "text", placeholder: "python" },
-    }) as HTMLInputElement;
-    pythonInput.value = this.plugin.settings.python_path || "";
-    pythonInput.addEventListener("input", () => {
-      this.plugin.settings.python_path = pythonInput.value.trim();
-      this._debouncedSave();
-    });
-    renderStatusBadge(
-      containerEl,
-      env.user_state,
-      this._getUserStateLabel(env.user_state)
-    );
     containerEl.createEl("p", {
-      text:
-        env.user_state === "ready"
-          ? t("setup_ready")
-          : this._getModuleConsequence("installation", env),
-      cls: env.user_state === "ready" ? "pf-setup-ok" : "pf-setup-status",
+      text: this._runtimeStatusLoading
+        ? t("setup_runtime_checking")
+        : ready
+          ? t("setup_runtime_ready")
+          : this._runtimeStatusError ??
+            (pointer
+              ? t("setup_runtime_attention")
+              : t("setup_runtime_missing")),
+      cls: ready ? "pf-setup-ok" : "pf-setup-status",
     });
-    if (this._setupOperation === "running") {
-      containerEl.createEl("p", {
-        cls: "pf-setup-status",
-        text: t("setup_installing"),
+    containerEl.createEl("p", {
+      text: t("runtime_installer_hint"),
+      cls: "setting-item-description",
+    });
+    if (!ready) {
+      renderActionButton(containerEl, {
+        label:
+          action === "install"
+            ? t("runtime_install_btn")
+            : action === "update"
+              ? t("runtime_update_btn")
+              : t("runtime_repair_btn"),
+        onClick: () => this._launchRuntimeInstaller(action),
       });
-    } else {
-      if (this._setupFeedback) {
-        containerEl.createEl("p", {
-          cls:
-            this._setupOperation === "failed" ? "pf-setup-warn" : "pf-setup-ok",
-          text: this._setupFeedback,
-        });
-      }
-      if (
-        env.user_state !== "ready" &&
-        (this._setupReinstallRequested ||
-          env.reason.code === "installation.version_mismatch")
-      ) {
-        containerEl.createEl("p", {
-          cls: "pf-setup-warn",
-          text: t("setup_reinstall_notice"),
-        });
-        renderActionButton(containerEl, {
-          label: t("foundation_reinstall_btn"),
-          onClick: () => this._installFoundation(true),
-        });
-      } else if (
-        env.user_state !== "ready" ||
-        this._setupOperation === "failed"
-      ) {
-        renderActionButton(containerEl, {
-          label: t("setup_foundation_install_btn"),
-          onClick: () => this._installFoundation(false),
-        });
-      }
-      // #HW-UX P0-3: on failure, always offer a retry button.
-      if (this._setupOperation === "failed") {
-        renderActionButton(containerEl, {
-          label: t("setup_retry_btn") || "Retry",
-          onClick: () => {
-            this._setupOperation = "idle";
-            this._setupFeedback = null;
-            this._installFoundation(
-              this._setupReinstallRequested ||
-                env.reason.code === "installation.version_mismatch"
-            );
-          },
-        });
-      }
     }
+    const manual = containerEl.createEl("details", {
+      cls: "pf-runtime-manual",
+    });
+    manual.createEl("summary", { text: t("runtime_manual_summary") });
+    manual.createEl("pre").createEl("code", {
+      text: this._runtimeInstallerCommand(action),
+    });
+    renderActionButton(containerEl, {
+      label: t("setup_runtime_refresh"),
+      onClick: () => {
+        this._refreshRuntimeStatus(true);
+        this.display();
+      },
+    });
+
     const nav = containerEl.createDiv({ cls: "pf-setup-nav" });
-    // RC UX Seam: Stage 1 must never trap the user.
-    //  - running: a real Cancel aborts the ensure/setup chain through the
-    //    AbortController (a venv this run created is removed; a
-    //    pre-existing runtime is kept).
-    //  - idle/failed: "Later" exits the wizard; _setup_complete stays false
-    //    so reopening Settings resumes at this exact stage.
-    if (this._setupOperation === "running") {
-      renderActionButton(nav, {
-        label: t("setup_nav_cancel"),
-        onClick: () => {
-          this._runtimeAbortController?.abort();
-          // The install chain's catch(finally) handles UI settle; keep the
-          // button live so repeated clicks are harmless.
-        },
-      });
-    } else {
-      renderActionButton(nav, {
-        label: t("setup_nav_later"),
-        onClick: () => {
-          this._setupOperation = "idle";
-          this._setupFeedback = null;
-          this._setupStage = 1;
-          this.activeTab = "overview";
-          // RC UX Seam P1: without this the display() gate
-          // (_setup_complete === false) would immediately re-render the
-          // journey and the user could never leave Stage 1.
-          this._setupJourneyDismissedForSession = true;
-          this.display();
-        },
-      });
-    }
+    renderActionButton(nav, {
+      label: t("setup_nav_later"),
+      onClick: () => {
+        this._setupStage = 1;
+        this.activeTab = "overview";
+        this._setupJourneyDismissedForSession = true;
+        this.display();
+      },
+    });
     renderActionButton(nav, {
       label: t("setup_nav_continue"),
-      disabled: env.user_state !== "ready",
+      disabled: !ready,
       onClick: () => {
-        this._setupFeedback = null;
         this._setupStage = 2;
         this.display();
       },

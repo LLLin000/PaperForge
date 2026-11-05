@@ -16,18 +16,6 @@ describe("classifyError", () => {
     expect(result.recoverable).toBe(true);
   });
 
-  it("classifies version-mismatch with sync-runtime action", () => {
-    const result = classifyError("version-mismatch");
-    expect(result.type).toBe("version_mismatch");
-    expect(result.recoverable).toBe(true);
-    expect(result.action).toBe("sync-runtime");
-  });
-
-  it("classifies pip-failed as pip_install_failure", () => {
-    const result = classifyError("pip-failed");
-    expect(result.type).toBe("pip_install_failure");
-    expect(result.recoverable).toBe(true);
-  });
 
   it("classifies ETIMEDOUT as timeout with retry action", () => {
     const result = classifyError("ETIMEDOUT");

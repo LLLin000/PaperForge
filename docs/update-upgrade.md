@@ -6,13 +6,24 @@
 
 Obsidian 社区插件浏览器自动更新。BRAT 安装用户同样自动检测更新。
 
-## Python 包更新
+## Python Core 更新与修复
+
+Core 的环境生命周期由终端中的独立 CLI 管理，Obsidian 插件只报告状态并读取 runtime pointer。
+
+将 `<NEW_PLUGIN_VERSION>` 替换为已安装插件的新版本，并使用同一个 Python 3.11+ 解释器：
 
 ```bash
-paperforge update
-# 或
-pip install --upgrade paperforge
+python -m pip install --user --upgrade "paperforge==<NEW_PLUGIN_VERSION>"
+python -m paperforge runtime update --expected-version <NEW_PLUGIN_VERSION>
 ```
+
+如果 Runtime 损坏或依赖缺失，运行：
+
+```bash
+python -m paperforge runtime repair --expected-version <PLUGIN_VERSION>
+```
+
+更新或修复后，在 Obsidian 设置中刷新 Runtime 状态。插件不执行 pip、venv、Core 更新或修复。
 
 ## 备份
 

@@ -84,7 +84,6 @@ function makePlugin(client: PaperForgeClient) {
     _lastSyncTime: string | null;
     _settingTab: { _refreshAllReadModels: (code?: number) => void } | null;
     getClient: () => PaperForgeClient;
-    _getPythonCommand: () => { path: string; args: string[] } | null;
     app: unknown;
   };
   plugin._autoSyncRunning = false;
@@ -92,7 +91,6 @@ function makePlugin(client: PaperForgeClient) {
   plugin._lastSyncTime = null;
   plugin._settingTab = { _refreshAllReadModels: vi.fn() };
   plugin.getClient = () => client;
-  plugin._getPythonCommand = () => ({ path: "py", args: ["-3"] });
   plugin.app = { vault: { adapter: { basePath: "/vault" } } };
   return plugin;
 }

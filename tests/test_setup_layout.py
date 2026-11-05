@@ -139,9 +139,8 @@ def test_checker_failure_blocks_all_mutation(tmp_path, monkeypatch) -> None:
             "create_zotero_junction": lambda self, p=None: SetupStepResult(step="zotero", ok=True),
         })(),
     )
-    monkeypatch.setattr("paperforge.setup.runtime.ensure_runtime_dependencies", lambda: ran.append("runtime") or SetupStepResult(step="runtime", ok=True))
+    monkeypatch.setattr("paperforge.setup.runtime.check_runtime_dependencies", lambda: ran.append("runtime") or SetupStepResult(step="runtime", ok=True))
     monkeypatch.setattr(plan_mod, "AgentInstaller", lambda vault, agent_type="opencode": type("A", (), {"steps": lambda self: iter([])})())
-    monkeypatch.setattr("paperforge.runtime_pointer.publish_pointer", lambda: ran.append("pointer"))
 
     rc = plan_mod.SetupPlan(vault, config={}).execute()
     assert rc == 1
@@ -162,19 +161,17 @@ def test_agent_substep_failure_stops_later_substeps(tmp_path, monkeypatch) -> No
         "create_directories": lambda self: SetupStepResult(step="vault", ok=True),
         "create_zotero_junction": lambda self, p=None: SetupStepResult(step="zotero", ok=True),
     })())
-    monkeypatch.setattr("paperforge.setup.runtime.ensure_runtime_dependencies", lambda: SetupStepResult(step="runtime", ok=True))
+    monkeypatch.setattr("paperforge.setup.runtime.check_runtime_dependencies", lambda: SetupStepResult(step="runtime", ok=True))
 
     def fake_steps(self):
         yield lambda: (ran.append("s1") or SetupStepResult(step="agent.s1", ok=False, message="deploy fail"))
         yield lambda: (ran.append("s2") or SetupStepResult(step="agent.s2", ok=True))
 
     monkeypatch.setattr(plan_mod, "AgentInstaller", lambda vault, agent_type="opencode": type("A", (), {"steps": fake_steps})())
-    monkeypatch.setattr("paperforge.runtime_pointer.publish_pointer", lambda: ran.append("pointer"))
 
     rc = plan_mod.SetupPlan(vault, config={}).execute()
     assert rc == 1
     assert ran == ["s1"], f"later substeps must not run after failure, ran={ran}"
-    assert "pointer" not in ran
 
 
 def test_skill_deploy_rejects_escape_paths(tmp_path) -> None:

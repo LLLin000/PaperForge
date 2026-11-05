@@ -7,6 +7,19 @@
 
 import { describe, it, expect, vi } from "vitest";
 import { EventEmitter } from "events";
+const runtimeState = vi.hoisted(() => ({ pythonPath: "C:/py/python.exe" }));
+vi.mock("../../src/services/managed-runtime", () => ({
+  readRuntimePointer: () =>
+    runtimeState.pythonPath
+      ? {
+          pythonPath: runtimeState.pythonPath,
+          environmentRoot: "C:/managed",
+          paperforgeVersion: "1.0.0",
+        }
+      : null,
+  resolveRuntimeCommand: (pointer: { pythonPath: string } | null) =>
+    pointer ? { command: pointer.pythonPath, args: [] } : null,
+}));
 import { NodeProcessTransport } from "../../src/client/node-transport";
 
 class MockStream extends EventEmitter {
@@ -28,40 +41,23 @@ describe("NodeProcessTransport", () => {
   const vaultPath = "C:/mock/vault";
 
   describe("resolvePython", () => {
-    it("prefers resolveRuntime override when provided", async () => {
-      const transport = new NodeProcessTransport({
-        vaultPath,
-        customPythonPath: "C:/settings/python.exe",
-        resolveRuntime: async () => ({
-          path: "C:/managed/python.exe",
-          args: ["-W", "ignore"],
-        }),
-      });
+    it("resolves only the Python-published runtime pointer", async () => {
+      runtimeState.pythonPath = "C:/managed/python.exe";
+      const transport = new NodeProcessTransport({ vaultPath });
 
-      const res = await transport.resolvePython();
-      expect(res.path).toBe("C:/managed/python.exe");
-      expect(res.args).toEqual(["-W", "ignore"]);
+      const result = await transport.resolvePython();
+      expect(result).toEqual({
+        path: "C:/managed/python.exe",
+        args: [],
+      });
     });
 
-    it("uses customPythonPath when resolveRuntime is absent", async () => {
-      const transport = new NodeProcessTransport({
-        vaultPath,
-        customPythonPath: "C:/settings/python.exe",
-      });
-
-      const res = await transport.resolvePython();
-      expect(res.path).toBe("C:/settings/python.exe");
-      expect(res.args).toEqual([]);
-    });
-
-    it("throws a clear error when python runtime cannot be resolved", async () => {
-      const transport = new NodeProcessTransport({
-        vaultPath,
-        resolveRuntime: async () => null,
-      });
+    it("shows the external installer command when the pointer is absent", async () => {
+      runtimeState.pythonPath = "";
+      const transport = new NodeProcessTransport({ vaultPath });
 
       await expect(transport.resolvePython()).rejects.toThrow(
-        /PaperForge Python runtime not ready/
+        /paperforge runtime install.*outside Obsidian/
       );
     });
   });
@@ -71,9 +67,9 @@ describe("NodeProcessTransport", () => {
       const mockChild = new MockChildProcess();
       const mockSpawn = vi.fn().mockReturnValue(mockChild);
 
+      runtimeState.pythonPath = "C:/py/python.exe";
       const transport = new NodeProcessTransport({
         vaultPath,
-        customPythonPath: "C:/py/python.exe",
         spawnFn: mockSpawn as any,
       });
 
@@ -103,9 +99,9 @@ describe("NodeProcessTransport", () => {
       const mockChild = new MockChildProcess();
       const mockSpawn = vi.fn().mockReturnValue(mockChild);
 
+      runtimeState.pythonPath = "C:/py/python.exe";
       const transport = new NodeProcessTransport({
         vaultPath,
-        customPythonPath: "C:/py/python.exe",
         spawnFn: mockSpawn as any,
       });
 
@@ -125,9 +121,9 @@ describe("NodeProcessTransport", () => {
       const mockChild = new MockChildProcess();
       const mockSpawn = vi.fn().mockReturnValue(mockChild);
 
+      runtimeState.pythonPath = "C:/py/python.exe";
       const transport = new NodeProcessTransport({
         vaultPath,
-        customPythonPath: "C:/py/python.exe",
         spawnFn: mockSpawn as any,
       });
       const execPromise = transport.execute(["failing", "command"]);
