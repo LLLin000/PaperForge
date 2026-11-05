@@ -77,6 +77,18 @@ import type { ActionRequest } from "./client/action-contract";
 
 // ── Interface ──
 
+/** Display names for the agent platforms Python offers. */
+const AGENT_PLATFORM_LABELS: Record<string, string> = {
+  opencode: "OpenCode",
+  claude: "Claude Code",
+  codex: "Codex",
+  cursor: "Cursor",
+  windsurf: "Windsurf",
+  github_copilot: "GitHub Copilot",
+  gemini: "Gemini CLI",
+};
+
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface ISettingPlugin {
   settings: PaperForgeSettings;
@@ -3482,8 +3494,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
     containerEl.createEl("h3", { text: t("setup_foundation_title") });
     containerEl.createEl("p", { text: t("setup_foundation_desc") });
+    // A published pointer with no status yet is still "checking": never offer
+    // repair/install before the status is known.
+    const statusUnknown =
+      !ready &&
+      (this._runtimeStatusLoading ||
+        (!!pointer && this._runtimeStatus === null && !this._runtimeStatusError));
     containerEl.createEl("p", {
-      text: this._runtimeStatusLoading
+      text: statusUnknown
         ? t("setup_runtime_checking")
         : ready
           ? t("setup_runtime_ready")
@@ -3493,11 +3511,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
               : t("setup_runtime_missing")),
       cls: ready ? "pf-setup-ok" : "pf-setup-status",
     });
-    containerEl.createEl("p", {
-      text: t("runtime_installer_hint"),
-      cls: "setting-item-description",
-    });
-    if (!ready) {
+    if (!ready && !statusUnknown) {
+      containerEl.createEl("p", {
+        text: t("runtime_installer_hint"),
+        cls: "setting-item-description",
+      });
       if (this._runtimePollTimer) {
         containerEl.createEl("p", {
           cls: "pf-setup-status",
@@ -3515,20 +3533,22 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         });
       }
     }
-    const manual = containerEl.createEl("details", {
-      cls: "pf-runtime-manual",
-    });
-    manual.createEl("summary", { text: t("runtime_manual_summary") });
-    manual.createEl("pre").createEl("code", {
-      text: this._runtimeInstallerCommand(action),
-    });
-    renderActionButton(containerEl, {
-      label: t("setup_runtime_refresh"),
-      onClick: () => {
-        this._refreshRuntimeStatus(true);
-        this.display();
-      },
-    });
+    if (!ready) {
+      const manual = containerEl.createEl("details", {
+        cls: "pf-runtime-manual",
+      });
+      manual.createEl("summary", { text: t("runtime_manual_summary") });
+      manual.createEl("pre").createEl("code", {
+        text: this._runtimeInstallerCommand(action),
+      });
+      renderActionButton(containerEl, {
+        label: t("setup_runtime_refresh"),
+        onClick: () => {
+          this._refreshRuntimeStatus(true);
+          this.display();
+        },
+      });
+    }
 
     const nav = containerEl.createDiv({ cls: "pf-setup-nav" });
     renderActionButton(nav, {
@@ -4067,15 +4087,36 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         text: opt.desc,
         cls: "pf-setup-optional-desc",
       });
+      // The chip states what the user must do next, not just "configured":
+      // a green "not configured" reads as done and is why people skip it.
+      const needsSecret = opt.id === "ocr" || opt.id === "memory";
       const status = copy.createEl("span", {
-        cls: "pf-setup-optional-state",
-        text: configured ? t("config_configured") : t("config_not_configured"),
+        cls:
+          "pf-setup-optional-state " +
+          (needsSecret && !configured
+            ? "pf-setup-optional-state--warn"
+            : "pf-setup-optional-state--ok"),
+        text:
+          opt.id === "agent"
+            ? t("setup_optional_platform").replace(
+                "{platform}",
+                AGENT_PLATFORM_LABELS[
+                  this.plugin.settings.agent_platform || "opencode"
+                ] ?? this.plugin.settings.agent_platform ?? "opencode"
+              )
+            : configured
+              ? t("config_configured")
+              : t("setup_optional_needs_key"),
       });
       if (!checkbox.checked) continue;
 
       const config = row.createDiv({ cls: "pf-setup-optional-config" });
       if (opt.id === "ocr") {
         config.createEl("label", { text: t("field_paddleocr") });
+        config.createEl("p", {
+          cls: "caption",
+          text: t("setup_optional_ocr_key_hint"),
+        });
         config.createEl("p", {
           cls: "caption",
           text: t("ocr_privacy_warning"),
@@ -4111,7 +4152,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         config.createEl("label", { text: t("feat_openai_key") });
         config.createEl("p", {
           cls: "caption",
-          text: t("feat_openai_key_desc"),
+          text: t("setup_optional_embedding_key_hint"),
         });
         const key = config.createEl("input", {
           cls: "pf-setup-input",
@@ -4173,21 +4214,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           text: t("feat_agent_platform_desc"),
         });
         const select = config.createEl("select") as HTMLSelectElement;
-        const setupPlatformLabels: Record<string, string> = {
-          opencode: "OpenCode",
-          claude: "Claude Code",
-          codex: "Codex",
-          cursor: "Cursor",
-          windsurf: "Windsurf",
-          github_copilot: "GitHub Copilot",
-          gemini: "Gemini CLI",
-        };
         const setupChoices = this.plugin.agentPlatformChoices.length
           ? this.plugin.agentPlatformChoices
-          : Object.keys(setupPlatformLabels);
+          : Object.keys(AGENT_PLATFORM_LABELS);
         for (const value of setupChoices) {
           const option = select.createEl("option", {
-            text: setupPlatformLabels[value] ?? value,
+            text: AGENT_PLATFORM_LABELS[value] ?? value,
             attr: { value },
           }) as HTMLOptionElement;
           option.selected = value === this.plugin.settings.agent_platform;

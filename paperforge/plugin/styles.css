@@ -7991,3 +7991,68 @@ input.pf-ocr-ws-search-input::placeholder {
   font-size: 12px;
   line-height: 1.6;
 }
+
+/* Optional features (stage 3): card rows, honest state chips. */
+.pf-setup-optional {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 10px;
+  background: var(--background-secondary);
+}
+.pf-setup-optional:has(input:checked) {
+  border-color: color-mix(in srgb, var(--interactive-accent) 50%, var(--background-modifier-border));
+  background: color-mix(in srgb, var(--interactive-accent) 5%, var(--background-secondary));
+}
+.pf-setup-optional > input[type="checkbox"] {
+  margin-top: 3px;
+  accent-color: var(--interactive-accent);
+}
+.pf-setup-optional-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.pf-setup-optional-label {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text-normal);
+  cursor: pointer;
+}
+.pf-setup-optional-desc {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+.pf-setup-optional-state {
+  font-size: 12px;
+  line-height: 1.5;
+}
+.pf-setup-optional-state--ok {
+  color: var(--text-success);
+}
+.pf-setup-optional-state--warn {
+  color: var(--text-warning);
+}
+.pf-setup-optional-config {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--background-modifier-border);
+}
+.pf-setup-optional-config label {
+  font-size: 13px;
+  font-weight: 600;
+}
+.pf-setup-optional-config .caption {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-faint);
+}
