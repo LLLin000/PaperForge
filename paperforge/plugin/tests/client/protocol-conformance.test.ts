@@ -5,9 +5,8 @@
  * Python side emits what this side parses, so every assertion here spawns
  * `python -m paperforge` and reads its real stdout, stderr and exit code.
  *
- * The interpreter is pinned through `resolveRuntime` because the managed
- * runtime pointer is machine-local; CI installs the package into the job's
- * Python for the same reason.
+ * The runtime pointer is a temporary schema-v1 fixture; the real interpreter
+ * is resolved before the test and invoked only through that pointer.
  *
  * A temp copy of the committed `test/vaults/simple` vault is used for every
  * case, so a command that unexpectedly writes cannot dirty the repository —
@@ -23,6 +22,7 @@ import {
   readFileSync,
   rmSync,
   statSync,
+  writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
@@ -100,12 +100,10 @@ const FROZEN_EVENTS = new Set([
 ]);
 const TERMINAL_EVENTS = new Set(["result", "error", "cancelled"]);
 
-/** Registry policy, measured from `action list --json` (9 actions). */
+/** Registry policy, measured from `action list --json` (7 actions). */
 const CONFIRMATION_REQUIRED = [
   "embed.build",
   "embed.resume",
-  "foundation.repair",
-  "foundation.update",
   "library.prune",
   "memory.build",
   "memory.rebuild",
@@ -114,7 +112,6 @@ const CONFIRMATION_REQUIRED = [
 const STREAM_ACTIONS = [
   "embed.build",
   "embed.resume",
-  "foundation.update",
   "ocr.rebuild_derived",
   "ocr.run",
 ];
@@ -138,20 +135,46 @@ function hashTree(root: string): string {
 }
 
 let vault = "";
+let runtimeHome = "";
+const originalHome = process.env.HOME;
+const originalUserProfile = process.env.USERPROFILE;
 let transport: NodeProcessTransport;
 
 beforeAll(() => {
+  runtimeHome = mkdtempSync(path.join(tmpdir(), "pf-runtime-home-"));
+  process.env.HOME = runtimeHome;
+  process.env.USERPROFILE = runtimeHome;
+  const runtimeDir = path.join(runtimeHome, ".paperforge", "runtime");
+  mkdirSync(runtimeDir, { recursive: true });
+  const pythonPath = execFileSync(
+    PYTHON,
+    ["-c", "import sys; print(sys.executable)"],
+    { encoding: "utf8", cwd: REPO_ROOT }
+  ).trim();
+  writeFileSync(
+    path.join(runtimeDir, "pointer.json"),
+    JSON.stringify({
+      schema_version: 1,
+      python_path: pythonPath,
+      environment_root: path.dirname(pythonPath),
+      paperforge_version: "test",
+    })
+  );
+
   vault = mkdtempSync(path.join(tmpdir(), "pf-protocol-"));
   cpSync(SIMPLE_VAULT, vault, { recursive: true });
-  transport = new NodeProcessTransport({
-    vaultPath: vault,
-    resolveRuntime: async () => ({ path: PYTHON, args: [] }),
-  });
+  transport = new NodeProcessTransport({ vaultPath: vault });
 });
 
 afterAll(() => {
   if (vault) rmSync(vault, { recursive: true, force: true });
+  if (runtimeHome) rmSync(runtimeHome, { recursive: true, force: true });
+  if (originalHome === undefined) delete process.env.HOME;
+  else process.env.HOME = originalHome;
+  if (originalUserProfile === undefined) delete process.env.USERPROFILE;
+  else process.env.USERPROFILE = originalUserProfile;
 });
+
 
 // Each case spawns the real CLI (some of them several times), so the default
 // 5s budget is not enough once the rest of the suite runs in parallel.
@@ -272,8 +295,6 @@ describe(
         [
           "embed.build",
           "embed.resume",
-          "foundation.repair",
-          "foundation.update",
           "library.prune",
           "memory.build",
           "memory.rebuild",

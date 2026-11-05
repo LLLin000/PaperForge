@@ -43,6 +43,7 @@ from paperforge.adapters.obsidian_frontmatter import (
     read_frontmatter_dict,
 )
 from paperforge.config import paperforge_paths
+from paperforge.core.io import write_text_atomic
 
 logger = logging.getLogger(__name__)
 
@@ -359,7 +360,7 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
                         count=1,
                         flags=re.MULTILINE,
                     )
-                    main_note_path.write_text(text, encoding="utf-8")
+                    write_text_atomic(main_note_path, text)
             except Exception:
                 pass  # alias will be injected on next full frontmatter_note pass
             break  # only one old file per key
@@ -514,16 +515,16 @@ def _build_entry(item: dict, vault: Path, paths: dict, domain: str, zotero_dir: 
                 new_fm_close = new_full.find("---\n", 4)
                 if new_fm_close != -1:
                     new_fm = new_full[: new_fm_close + 4]  # new frontmatter block with closing ---\n
-                    main_note_path.write_text(new_fm + body, encoding="utf-8")
+                    write_text_atomic(main_note_path, new_fm + body)
                 else:
-                    main_note_path.write_text(new_full, encoding="utf-8")
+                    write_text_atomic(main_note_path, new_full)
             else:
-                main_note_path.write_text(frontmatter_note(entry, text), encoding="utf-8")
+                write_text_atomic(main_note_path, frontmatter_note(entry, text))
     else:
         existing_text = fm_cached_text if not fm_was_main and fm_cached_text else (
             note_path.read_text(encoding="utf-8") if note_path.exists() else ""
         )
-        main_note_path.write_text(frontmatter_note(entry, existing_text), encoding="utf-8")
+        write_text_atomic(main_note_path, frontmatter_note(entry, existing_text))
 
     # Write per-workspace paper-meta.json (Phase 37: internal state outside frontmatter)
     write_paper_meta(workspace_dir, entry, paperforge_version=PAPERFORGE_VERSION)

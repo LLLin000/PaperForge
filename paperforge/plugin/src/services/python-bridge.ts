@@ -49,17 +49,6 @@ export function classifyError(errorCode: string): ErrorClassification {
       message: "PaperForge package not installed",
       recoverable: true,
     },
-    "version-mismatch": {
-      type: "version_mismatch",
-      message: "Plugin and package versions differ",
-      recoverable: true,
-      action: "sync-runtime",
-    },
-    "pip-failed": {
-      type: "pip_install_failure",
-      message: "pip install command failed",
-      recoverable: true,
-    },
     ETIMEDOUT: {
       type: "timeout",
       message: "Subprocess timed out",

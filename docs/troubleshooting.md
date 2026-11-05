@@ -12,13 +12,16 @@
 
 ---
 
-## "Sync Runtime" 不更新版本
+## Runtime 未安装、版本不匹配或依赖缺失
 
-插件可能调用了和终端不同的 Python。检查设置面板中的 Python Path。
+Obsidian 只读取机器级 runtime pointer，不会安装或升级 Core。使用与插件版本一致的 Python 3.11+ 解释器，在终端运行：
 
-如果仍不行，使用 `--no-cache-dir` 避开 pip 缓存。
+```bash
+python -m pip install --user --upgrade "paperforge==<PLUGIN_VERSION>"
+python -m paperforge runtime install --expected-version <PLUGIN_VERSION>
+```
 
-确认 `https://github.com/LLLin000/PaperForge` 可访问。
+已有 Runtime 需要更新时改用 `runtime update`；需要重建损坏环境时使用 `runtime repair`。完成后回到 Obsidian 设置刷新状态。`<PLUGIN_VERSION>` 来自插件 `manifest.json`。
 
 ---
 

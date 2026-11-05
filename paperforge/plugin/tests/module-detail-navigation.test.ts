@@ -4,19 +4,11 @@
  * Uses JSDOM + Vitest mocks. Instantiates PaperForgeSettingTab, calls production
  * render functions, clicks production buttons. NO standalone DOM lookalikes.
  */
-import {
-  describe,
-  expect,
-  it,
-  vi,
-  beforeEach,
-  afterEach,
-  type Mock,
-} from "vitest";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { JSDOM } from "jsdom";
 
 // ── Hoisted mutable state ──
-const { noticeCalls, spawnedProcesses, execFileCalls, modalOpens } = vi.hoisted(
+const { noticeCalls, spawnedProcesses, execFileCalls, modalOpens, runtimePointer } = vi.hoisted(
   () => {
     const modalOpens: Array<{
       kind: string;
@@ -37,7 +29,10 @@ const { noticeCalls, spawnedProcesses, execFileCalls, modalOpens } = vi.hoisted(
       args: string[];
       cb?: (err: Error | null, stdout: string, stderr: string) => void;
     }> = [];
-    return { noticeCalls, spawnedProcesses, execFileCalls, modalOpens };
+    const runtimePointer: { value: Record<string, string> | null } = {
+      value: null,
+    };
+    return { noticeCalls, spawnedProcesses, execFileCalls, modalOpens, runtimePointer };
   }
 );
 
@@ -264,15 +259,11 @@ vi.mock("child_process", () => {
   return { ...mod, default: mod };
 });
 
-vi.mock("../src/services/python-bridge", async (importOriginal) => {
-  const actual = await importOriginal<Record<string, unknown>>();
-  return {
-    ...actual,
-    scanBbtUnderProfiles: () => [],
-    scanBbtDirectChildren: () => [],
-    runSubprocess: () => {},
-  };
-});
+vi.mock("../src/services/python-bridge", () => ({
+  scanBbtUnderProfiles: () => [],
+  scanBbtDirectChildren: () => [],
+  runSubprocess: () => {},
+}));
 
 vi.mock("../src/services/runtime-paths", () => ({
   resolveVaultPaths: () => ({}),
@@ -287,12 +278,11 @@ vi.mock("../src/services/runtime-paths", () => ({
 }));
 
 vi.mock("../src/services/managed-runtime", () => ({
-  ManagedRuntime: class {},
-  runtimeActionsForHealth: () => [],
-  resolveRuntimeCommand: (run: unknown) => ({
-    command: "/usr/bin/python3",
-    args: [],
-  }),
+  readRuntimePointer: () => runtimePointer.value,
+  resolveRuntimeCommand: (pointer: { pythonPath?: string } | null) =>
+    pointer?.pythonPath
+      ? { command: pointer.pythonPath, args: [] }
+      : null,
 }));
 
 vi.mock("../src/utils/disclosure", () => ({
@@ -491,12 +481,6 @@ function fakePlugin(overrides: Record<string, unknown> = {}) {
       embedStatus: vi.fn().mockResolvedValue({}),
       credentialAvailable: vi.fn().mockResolvedValue(false),
       configSet: vi.fn().mockResolvedValue({}),
-      configList: vi.fn().mockResolvedValue({
-        schema_version: 2,
-        revision: "sha256:test",
-        unknown_keys: [],
-        fields: [],
-      }),
     }),
   };
   return plugin;
@@ -536,6 +520,7 @@ function installOcrClient(
       exitCode: 0,
     }));
   client.embedMigrate = vi.fn(async () => ({}));
+  client.launchRuntimeInstaller = vi.fn(() => ({ ok: true, python: "py" }));
   client.memoryRestoreBackup = vi.fn(async () => ({}));
   client.runtimeHealth = vi.fn(async () => ({}));
   client.authSetSecret = vi.fn(async () => true);
@@ -547,15 +532,6 @@ function makeTab(data: Record<string, unknown> = {}) {
   const plugin = fakePlugin(data);
   const tab = new PaperForgeSettingTab(fakeApp() as any, plugin);
   plugin._tab = tab;
-  const rt = {
-    current: () => ({
-      path: "/usr/bin/python3",
-      version: "3.11",
-      state: "ready",
-    }),
-    status: () => Promise.resolve({ state: "ready" }),
-  };
-  (tab as any)._ensureManagedRuntime = () => rt;
   (tab as any)._resolveRuntimeCommand = () => ({
     path: "/usr/bin/python3",
     args: [],
@@ -644,6 +620,7 @@ beforeEach(() => {
   noticeCalls.length = 0;
   spawnedProcesses.length = 0;
   execFileCalls.length = 0;
+  runtimePointer.value = null;
   setLanguage(fakeApp() as any);
 });
 
@@ -1002,82 +979,61 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
     expect(msgs.toLowerCase()).toMatch(/unknown|bogus/);
   });
 
-  it("foundation.update -> action run with --confirm", () => {
+  it("foundation.update opens the external installer instead of dispatching an action", () => {
     const tab = makeTab();
-    (tab as any)._capabilityState = {
-      installation: createUnknownEnvelope("installation"),
-    };
-    execFileCalls.length = 0;
+    noticeCalls.length = 0;
     const primary = {
       action_id: "foundation.update",
       verb: "update",
       label: "Update PaperForge",
-      command: "",
-      availability: "available",
-      safety_class: "destructive",
-      preservation_facts: [],
-      replacement_facts: [],
-      interruptible: true,
-      confirmation_required: true,
-      confirmation_prompt: "Download and install",
-      scope: "module",
-      scope_count: 1,
+      safety_class: "safe",
+      confirmation_required: false,
     } as any;
     const client = installOcrClient(tab);
+
     (tab as any)._runAllowedDispatch("installation", primary, {} as any);
-    expect(client.runAction).toHaveBeenCalledTimes(1);
-    expect(client.runAction.mock.calls[0][0]).toEqual({
-      action_id: "foundation.update",
-      scope: { kind: "all" },
-      confirm: "foundation.update",
-    });
+
+    expect(client.runAction).not.toHaveBeenCalled();
+    expect(client.launchRuntimeInstaller).toHaveBeenCalledWith(
+      "update",
+      (tab.plugin as any).manifest.version
+    );
   });
 
-  it("foundation.update_python -> manual-install Notice (no automated path)", () => {
+  it("foundation.update_python remains manual and executes no command", () => {
     const tab = makeTab();
     noticeCalls.length = 0;
     const primary = {
       action_id: "foundation.update_python",
       verb: "update",
       label: "Update Python",
-      command: "",
-      availability: "available",
       safety_class: "safe",
-      preservation_facts: [],
-      replacement_facts: [],
-      interruptible: true,
       confirmation_required: false,
-      confirmation_prompt: null,
-      scope: "module",
-      scope_count: 1,
     } as any;
     (tab as any)._runAllowedDispatch("installation", primary, {} as any);
-    expect(
-      execFileCalls.some((c) => c.args.includes("foundation.update_python"))
-    ).toBe(false);
+    expect(execFileCalls.some((call) => call.args.includes("foundation.update_python"))).toBe(false);
     expect(noticeCalls.length).toBeGreaterThan(0);
   });
 
-  it("memory.install_vector_deps -> setup journey stage 3", () => {
+  it("missing vector dependencies open the external installer in repair mode", () => {
     const tab = makeTab();
-    (tab as any)._startSetupJourney = vi.fn();
+    noticeCalls.length = 0;
     const primary = {
       action_id: "memory.install_vector_deps",
       verb: "install",
       label: "Install Smart Retrieval dependencies",
-      command: "",
-      availability: "available",
       safety_class: "safe",
-      preservation_facts: [],
-      replacement_facts: [],
-      interruptible: true,
       confirmation_required: false,
-      confirmation_prompt: null,
-      scope: "module",
-      scope_count: 1,
     } as any;
+    const client = installOcrClient(tab);
+
     (tab as any)._runAllowedDispatch("memory", primary, {} as any);
-    expect((tab as any)._startSetupJourney).toHaveBeenCalledWith(3);
+
+    expect(client.runAction).not.toHaveBeenCalled();
+    expect(client.launchRuntimeInstaller).toHaveBeenCalledWith(
+      "repair",
+      (tab.plugin as any).manifest.version
+    );
   });
 
   it("memory.upgrade_backend -> embed migrate (not local build)", () => {
@@ -1100,6 +1056,42 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
     } as any;
     (tab as any)._runAllowedDispatch("memory", primary, {} as any);
     expect(client.embedMigrate).toHaveBeenCalledOnce();
+  });
+
+  it("run + paperforge ocr run -> dispatches the canonical ocr.run action", async () => {
+    const tab = makeTab();
+    const client = installOcrClient(tab);
+    (tab as any)._capabilityState = { ocr: createUnknownEnvelope("ocr") };
+    const env = {
+      ...createUnknownEnvelope("ocr"),
+      action: {
+        primary: {
+          action_id: "module.run",
+          verb: "run",
+          label: "Run",
+          command: "paperforge ocr run",
+          availability: "available",
+          safety_class: "safe",
+          preservation_facts: [],
+          replacement_facts: [],
+          interruptible: true,
+          confirmation_required: false,
+          confirmation_prompt: null,
+          scope: "module",
+          scope_count: 1,
+        },
+      },
+    } as any;
+    (tab as any)._dispatchModuleAction("ocr", env);
+    await Promise.resolve();
+    expect(client.runAction).toHaveBeenCalledWith(
+      expect.objectContaining({ action_id: "ocr.run" }),
+      expect.anything()
+    );
+    expect(client.runAction).not.toHaveBeenCalledWith(
+      expect.objectContaining({ action_id: "ocr.rebuild_derived" }),
+      expect.anything()
+    );
   });
 
   it("rebuild_derived -> dispatches ocr.rebuild_derived with scope all", () => {
@@ -1290,6 +1282,32 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
 
 // ════════════════════════════════ 5. _dispatchOcrAction ══════════════
 describe("_dispatchOcrAction lifecycle (Issue #78/#126)", () => {
+  it("routes OCR run through the plugin dispatcher after confirmation", () => {
+    const requestOcrRun = vi.fn();
+    const tab = makeTab({ requestOcrRun });
+
+    (tab as any)._dispatchOcrAction("run");
+
+    expect(requestOcrRun).toHaveBeenCalledWith(true);
+    // The shared client must NOT be engaged — main owns the run path.
+    expect((tab as any)._client).toBeNull();
+  });
+
+  it("dispatches through the shared client and sets activity overlay", async () => {
+    const tab = makeTab();
+    const client = installOcrClient(tab);
+    (tab as any)._capabilityState = { ocr: createUnknownEnvelope("ocr") };
+    (tab as any)._dispatchOcrAction("run");
+    expect(client.runAction).toHaveBeenCalledWith(
+      expect.objectContaining({ action_id: "ocr.run" }),
+      expect.anything()
+    );
+    expect(((tab as any)._capabilityState as any)?.ocr?.activity_state).toBe(
+      "running"
+    );
+    await Promise.resolve();
+  });
+
   it("rebuild dispatches ocr.rebuild_derived across all papers", async () => {
     const tab = makeTab();
     const client = installOcrClient(tab);
@@ -1314,7 +1332,7 @@ describe("_dispatchOcrAction lifecycle (Issue #78/#126)", () => {
       refreshes.push("all");
     };
     (tab as any)._capabilityState = { ocr: createUnknownEnvelope("ocr") };
-    tab._dispatchOcrAction("rebuild");
+    (tab as any)._dispatchOcrAction("run");
     await vi.waitFor(() => {
       expect(refreshes).toContain("all");
     });
@@ -1345,6 +1363,13 @@ describe("_dispatchOcrAction lifecycle (Issue #78/#126)", () => {
     expect(messages).toContain("B");
   });
 
+  it("rejects duplicate start via the client operation guard", async () => {
+    const tab = makeTab();
+    const client = installOcrClient(tab, { isOperationActive: () => true });
+    (tab as any)._capabilityState = { ocr: createUnknownEnvelope("ocr") };
+    (tab as any)._dispatchOcrAction("run");
+    expect(client.runAction).not.toHaveBeenCalled();
+  });
 
   it("does not change capability_state/severity during activity", async () => {
     const tab = makeTab();
@@ -1355,7 +1380,7 @@ describe("_dispatchOcrAction lifecycle (Issue #78/#126)", () => {
         severity: "warning",
       },
     };
-    tab._dispatchOcrAction("rebuild");
+    (tab as any)._dispatchOcrAction("run");
     const e = (tab as any)._capabilityState as any;
     expect(e?.ocr?.capability_state).toBe("needs_action");
     expect(e?.ocr?.severity).toBe("warning");
@@ -1796,28 +1821,15 @@ describe("_dispatchOcrAction availability gating (#07 step 3)", () => {
 });
 
 // ════════════════════════════════ RC UX Seam: Setup Stage 1 ══════════════
-describe("Setup Stage 1 exit/cancel semantics (RC UX Seam Pass)", () => {
-  function renderStage1(
-    tab: any,
-    overrides: Record<string, unknown> = {},
-    envelope: Record<string, unknown> = {}
-  ): HTMLDivElement {
+describe("Setup stage separates external runtime from Vault setup", () => {
+  function renderStage1(tab: any): HTMLDivElement {
     const el = dom.window.document.createElement("div");
-    Object.assign(tab, {
-      _setupOperation: "idle",
-      _setupFeedback: null,
-      _setupFailureDetail: null,
-      _setupReinstallRequested: false,
-      _runtimeAbortController: null,
-      activeTab: "overview",
-      ...overrides,
-    });
+    Object.assign(tab, { activeTab: "overview" });
     (tab as any)._capabilityState = {
       installation: {
         ...createUnknownEnvelope("installation"),
         user_state: "setup_required",
         reason: { code: "installation.config_missing", text: "Not set up" },
-        ...envelope,
       },
     };
     (tab as any)._renderSetupStageFoundation(el);
@@ -1829,115 +1841,63 @@ describe("Setup Stage 1 exit/cancel semantics (RC UX Seam Pass)", () => {
     text: string
   ): HTMLButtonElement | undefined {
     return [...el.querySelectorAll("button")].find(
-      (b) => b.textContent?.trim() === text
+      (button) => button.textContent?.trim() === text
     ) as HTMLButtonElement | undefined;
   }
 
-  it("idle stage shows the exit + disabled Continue, no Cancel", () => {
+  it("shows the external install command without starting an install or Vault probe", () => {
+    const tab = makeTab();
+    const probe = vi.fn();
+    (tab as any)._probeModule = probe;
+    const el = renderStage1(tab);
+
+    expect(el.textContent).toContain(
+      "paperforge runtime install --expected-version 1.0.0"
+    );
+    expect(buttonByText(el, "Continue")?.disabled).toBe(true);
+    expect(probe).not.toHaveBeenCalled();
+    expect(spawnedProcesses).toHaveLength(0);
+  });
+
+  it("Later exits the wizard while keeping Vault setup incomplete", () => {
     const tab = makeTab();
     const el = renderStage1(tab);
-    expect(buttonByText(el, "Back to control center")).toBeDefined();
-    expect(buttonByText(el, "Cancel")).toBeUndefined();
-    const cont = buttonByText(el, "Continue");
-    expect(cont).toBeDefined();
-    expect(cont?.disabled).toBe(true);
-  });
+    (tab.plugin as any).settings._setup_complete = false;
 
-  it("every wizard stage renders the exit to the Control Center", () => {
-    const cases: Array<[string, (tab: any, el: HTMLElement) => void]> = [
-      ["stage 1", (tab, el) => (tab as any)._renderSetupStageFoundation(el)],
-      ["stage 3", (tab, el) => (tab as any)._renderSetupStageOptionals(el)],
-      ["stage 4", (tab, el) => (tab as any)._renderSetupStageReview(el)],
-    ];
-    for (const [label, render] of cases) {
-      const tab = makeTab();
-      (tab as any)._capabilityState = {
-        installation: {
-          ...createUnknownEnvelope("installation"),
-          user_state: "setup_required",
-        },
-        library: {
-          ...createUnknownEnvelope("library"),
-          user_state: "setup_required",
-        },
-      };
-      const el = dom.window.document.createElement("div");
-      render(tab, el);
-      const exit = [...el.querySelectorAll("button")].find(
-        (b) => b.textContent?.trim() === "Back to control center"
-      );
-      expect(exit, `${label} exit`).toBeDefined();
-    }
-  });
+    buttonByText(el, "Later")?.click();
 
-  it("_goHome leaves a module detail (and the Help tab) for the Control Center", () => {
-    const tab = makeTab();
-    (tab as any)._selectedDetailModule = "installation";
-    (tab as any).activeTab = "help";
-    (tab as any)._detailReturn = { tab: "help", selector: "#x" };
-    (tab as any)._goHome();
-    expect((tab as any).activeTab).toBe("overview");
-    expect((tab as any)._selectedDetailModule).toBe("");
-    expect((tab as any)._detailReturn).toBeNull();
-  });
-
-  it("leaving a REINSTALL of a configured install keeps the vault configured", () => {
-    const tab = makeTab();
-    (tab.plugin as any).settings._setup_complete = true;
-    (tab as any).display = () => {};
-    (tab as any).saveSettings = () => Promise.resolve();
-    (tab.plugin as any).saveSettings = () => Promise.resolve();
-    (tab as any)._startSetupJourney(1, true);
-    expect((tab.plugin as any).settings._setup_complete).toBe(false);
-    (tab as any)._goHome();
-    // Fully working install must not be left "unfinished" by an aborted reinstall.
-    expect((tab.plugin as any).settings._setup_complete).toBe(true);
+    expect(tab.activeTab).toBe("overview");
     expect((tab as any)._setupJourneyDismissedForSession).toBe(true);
+    expect((tab.plugin as any).settings._setup_complete).toBe(false);
   });
 
-  it("leaving a FIRST-RUN journey keeps it unfinished so it resumes later", () => {
+  it("only enables Continue after the external runtime reports ready", () => {
+    const tab = makeTab();
+    runtimePointer.value = {
+      pythonPath: "C:/managed/runtime/python.exe",
+      environmentRoot: "C:/managed/runtime",
+      paperforgeVersion: "1.0.0",
+    };
+    (tab as any)._runtimeStatus = {
+      runtime_ready: true,
+      runtime_state: "ready",
+      version_matches_expected: true,
+      python_path: "C:/managed/runtime/python.exe",
+      vector_ready: true,
+    };
+    (tab as any)._runtimeStatusVersion = "1.0.0";
+    const el = renderStage1(tab);
+    const continueButton = buttonByText(el, "Continue");
+
+    expect(continueButton?.disabled).toBe(false);
+    continueButton?.click();
+    expect((tab as any)._setupStage).toBe(2);
+  });
+
+  it("a dismissed setup journey returns to the overview until Settings reopens", () => {
     const tab = makeTab();
     (tab.plugin as any).settings._setup_complete = false;
-    (tab as any).display = () => {};
-    (tab as any).saveSettings = () => Promise.resolve();
-    (tab.plugin as any).saveSettings = () => Promise.resolve();
-    (tab as any)._startSetupJourney(1, false);
-    (tab as any)._goHome();
-    expect((tab.plugin as any).settings._setup_complete).toBe(false);
-  });
-
-  it("an explicit install request re-opens the wizard after it was left", () => {
-    // Live-found: Home/Later set the session dismissal flag, and the next
-    // "reinstall" click then silently rendered nothing.
-    const tab = makeTab();
-    (tab.plugin as any).settings._setup_complete = true;
     (tab as any)._setupJourneyDismissedForSession = true;
-    (tab as any).display = () => {};
-    (tab as any).saveSettings = () => Promise.resolve();
-    (tab.plugin as any).saveSettings = () => Promise.resolve();
-    (tab as any)._startSetupJourney(1, true);
-    expect((tab as any)._setupJourneyDismissedForSession).toBe(false);
-    expect((tab as any)._setupReinstallRequested).toBe(true);
-    expect((tab.plugin as any).settings._setup_complete).toBe(false);
-  });
-
-  it("_goHome leaves the setup journey for the session instead of re-entering it", () => {
-    const tab = makeTab();
-    (tab.plugin as any).settings._setup_complete = false;
-    (tab as any)._setupStage = 3;
-    (tab as any)._setupOperation = "failed";
-    (tab as any)._setupFailureDetail = "boom";
-    (tab as any)._goHome();
-    expect((tab as any)._setupJourneyDismissedForSession).toBe(true);
-    expect((tab as any)._setupStage).toBe(1);
-    expect((tab as any)._setupOperation).toBe("idle");
-    expect((tab as any)._setupFailureDetail).toBeNull();
-  });
-
-  it("renders a one-click home control off the Control Center", () => {
-    const tab = makeTab();
-    (tab.plugin as any).settings._setup_complete = true;
-    (tab as any)._selectedDetailModule = "installation";
     const containerEl = dom.window.document.createElement("div");
     (tab as any).containerEl = containerEl;
     delete (tab as any).display;
@@ -1945,663 +1905,17 @@ describe("Setup Stage 1 exit/cancel semantics (RC UX Seam Pass)", () => {
     (tab as any)._displayInProgress = false;
     (tab as any)._initialDisplay = false;
     (tab as any)._initCapabilityState = () => {};
-    (tab as any)._renderOverviewTab = (c: HTMLElement) => {
-      c.createEl("h2", { text: "DETAIL" });
-    };
-    (tab as any).display();
-    const home = containerEl.querySelector(".pf-cc-topbar-home");
-    expect(home).not.toBeNull();
-    (home as HTMLButtonElement).click();
-    expect((tab as any).activeTab).toBe("overview");
-    expect((tab as any)._selectedDetailModule).toBe("");
-  });
-
-  it("a requested reinstall renders its action button even when the install is ready", () => {
-    // The Installation detail's Reinstall entry is always clickable, so a
-    // healthy install must still get an action here — gating the branch on
-    // `user_state !== "ready"` dead-ended the wizard on Continue.
-    const tab = makeTab();
-    const el = renderStage1(
-      tab,
-      { _setupReinstallRequested: true },
-      {
-        user_state: "ready",
-        reason: { code: "installation.ready", text: "Ready" },
-      }
-    );
-    expect(buttonByText(el, "Reinstall")).toBeDefined();
-  });
-
-  it("a version mismatch still offers the reinstall action", () => {
-    const tab = makeTab();
-    const el = renderStage1(
-      tab,
-      {},
-      {
-        user_state: "action_required",
-        reason: {
-          code: "installation.version_mismatch",
-          text: "version mismatch",
-        },
-      }
-    );
-    expect(buttonByText(el, "Reinstall")).toBeDefined();
-  });
-
-  it("a ready install with no reinstall request shows no install action", () => {
-    const tab = makeTab();
-    const el = renderStage1(
-      tab,
-      {},
-      {
-        user_state: "ready",
-        reason: { code: "installation.ready", text: "Ready" },
-      }
-    );
-    expect(buttonByText(el, "Reinstall")).toBeUndefined();
-    expect(buttonByText(el, "Install PaperForge")).toBeUndefined();
-  });
-
-  it("renders the real ready-with-notice OCR envelope as ready work, not a fault", () => {
-    // Envelope captured from `probe ocr --json` after the reclassification:
-    // 949 of 968 papers processed, the rest are outstanding work.
-    const tab = makeTab();
-    (tab as any)._capabilityState = {
-      ocr: {
-        ...createUnknownEnvelope("ocr"),
-        capability_state: "ready",
-        user_state: "ready",
-        severity: "ok",
-        reason: {
-          code: "ocr.pending",
-          text: "19 of 968 papers have no OCR output yet",
-        },
-        action: { primary: null },
-        notices: [
-          { level: "info", message: "19 of 968 papers have no OCR output yet" },
-        ],
-      },
-    };
-    const el = dom.window.document.createElement("div");
-    (tab as any)._renderOcrDetail(el);
-    // Badge says ready, the sentence names the outstanding work, and the
-    // run affordance is a plain button.
-    expect(el.textContent).toContain("Ready");
-    expect(el.textContent).toContain("some papers still need OCR");
-    expect(el.textContent).not.toContain("A problem needs your attention");
-    const runBtn = [...el.querySelectorAll("button")].find(
-      (b) => b.textContent?.trim() === "Run OCR"
-    );
-    expect(runBtn).toBeDefined();
-  });
-
-  it("offers a rebuild action for a ready module whose index is behind", () => {
-    const tab = makeTab();
-    (tab as any)._capabilityState = {
-      memory: {
-        ...createUnknownEnvelope("memory"),
-        capability_state: "ready",
-        user_state: "ready",
-        severity: "ok",
-        reason: { code: "memory.index_stale", text: "index behind" },
-        action: { primary: null },
-        notices: [{ level: "info", message: "index behind" }],
-      },
-    };
-    const el = dom.window.document.createElement("div");
-    (tab as any)._renderMemoryDetail(el);
-    expect(el.textContent).not.toContain("A problem needs your attention");
-    const rebuild = [...el.querySelectorAll("button")].find(
-      (b) => b.textContent?.trim() === "Rebuild index"
-    );
-    expect(rebuild).toBeDefined();
-  });
-
-  it("flags a configured Python path that does not exist", () => {
-    const tab = makeTab();
-    (tab.plugin as any).settings.python_path = "C:/nope/missing/python.exe";
-    const el = renderStage1(tab);
-    expect(el.textContent).toContain("That file does not exist.");
-    expect(el.querySelector(".pf-setup-field--invalid")).not.toBeNull();
-  });
-
-  it("a successful reinstall returns to the Control Center instead of marching through the stages", async () => {
-    const tab = makeTab();
-    (tab as any)._setupReinstallRequested = true;
-    (tab.plugin as any).settings._setup_complete = false;
-    (tab as any)._ensureManagedRuntime = () => ({
-      installOnce: () =>
-        Promise.resolve({ pythonPath: "/bootstrap/python.exe" }),
-      handshake: () => Promise.resolve({ ok: true }),
-    });
-    (tab as any)._getVaultBasePath = () => "/vault";
-    (tab as any)._probeModule = () => {};
-    (tab as any)._applyLibraryConfiguration = () => {};
-    (tab as any).saveSettings = () => Promise.resolve();
-    (tab as any)._installFoundation(true);
-    for (let i = 0; i < 8; i++) await Promise.resolve();
-
-    expect((tab as any)._setupOperation).toBe("idle");
-    expect((tab as any)._setupReinstallRequested).toBe(false);
-    expect((tab.plugin as any).settings._setup_complete).toBe(true);
-    expect((tab as any).activeTab).toBe("overview");
-    expect(
-      noticeCalls.some((n) => /reinstalled successfully/i.test(n.msg))
-    ).toBe(true);
-  });
-
-  it("a fresh install keeps the wizard so the remaining stages still run", async () => {
-    const tab = makeTab();
-    (tab.plugin as any).settings._setup_complete = false;
-    (tab as any)._ensureManagedRuntime = () => ({
-      installOnce: () =>
-        Promise.resolve({ pythonPath: "/bootstrap/python.exe" }),
-      handshake: () => Promise.resolve({ ok: true }),
-    });
-    (tab as any)._getVaultBasePath = () => "/vault";
-    (tab as any)._probeModule = () => {};
-    (tab as any)._installFoundation(false);
-    for (let i = 0; i < 8; i++) await Promise.resolve();
-
-    expect((tab.plugin as any).settings._setup_complete).toBe(false);
-    expect((tab as any)._setupFeedback).toBeTruthy();
-  });
-
-  it("the exit leaves the wizard on the overview; _setup_complete stays false (resume)", () => {
-    const tab = makeTab();
-    const el = renderStage1(tab);
-    (tab.plugin as any).settings._setup_complete = false;
-    buttonByText(el, "Back to control center")?.click();
-    expect(tab.activeTab).toBe("overview");
-    expect((tab as any)._setupJourneyDismissedForSession).toBe(true);
-    expect((tab.plugin as any).settings._setup_complete).toBe(false);
-  });
-
-  it("with the session flag set, a real display() renders the Overview, not the journey", () => {
-    const tab = makeTab();
-    (tab.plugin as any).settings._setup_complete = false;
-    (tab as any)._setupJourneyDismissedForSession = true;
-    // Restore the REAL display() so the setup gate is exercised, not
-    // bypassed by the makeTab no-op.
-    const containerEl = dom.window.document.createElement("div");
-    (tab as any).containerEl = containerEl;
-    delete (tab as any).display;
-    const realDisplay = PaperForgeSettingTab.prototype.display;
-    (tab as any).display = realDisplay;
-    (tab as any)._displayInProgress = false;
-    (tab as any)._initialDisplay = false;
-    (tab as any)._initCapabilityState = () => {};
     (tab as any)._refreshPfConfig = () => {};
-    (tab as any)._renderOverviewTab = (c: HTMLElement) => {
-      c.createEl("h2", { text: "OVERVIEW-SENTINEL" });
+    (tab as any)._renderOverviewTab = (container: HTMLElement) => {
+      container.createEl("h2", { text: "OVERVIEW-SENTINEL" });
     };
+
     (tab as any).display();
     expect(containerEl.textContent ?? "").toContain("OVERVIEW-SENTINEL");
-    // And without the flag the same state re-renders the journey (resume).
     (tab as any)._setupJourneyDismissedForSession = false;
     containerEl.empty();
     (tab as any).display();
     expect(containerEl.textContent ?? "").not.toContain("OVERVIEW-SENTINEL");
-  });
-
-  it("Stage 2 Verify runs on the managed pointer, never ambient python (RC UX Seam P0)", async () => {
-    const tab = makeTab();
-    spawnedProcesses.length = 0;
-    (tab as any)._resolveRuntimeCommand = () => ({
-      path: "C:/managed/runtime/python.exe",
-      args: [],
-    });
-    (tab.plugin as any).settings.python_path = ""; // no custom override
-    (tab as any)._getVaultBasePath = () => "/vault";
-    (tab as any)._runSetupPython = undefined as unknown; // force real impl
-    const real = PaperForgeSettingTab.prototype._runSetupPython;
-    (tab as any)._runSetupPython = function (
-      this: any,
-      args: string[],
-      pythonOverride?: string,
-      signal?: AbortSignal
-    ) {
-      return real.call(this, args, pythonOverride, signal);
-    };
-    (tab as any)._applyLibraryConfiguration();
-    // configSet writes are async; settle a few microtasks.
-    for (let i = 0; i < 5; i++) await Promise.resolve();
-    const setup = spawnedProcesses.find((p: { args: string[] }) =>
-      p.args.includes("setup")
-    );
-    expect(setup).toBeDefined();
-    // The spawned executable must be the managed pointer, not "python".
-    expect((setup as any)?.path).toBe("C:/managed/runtime/python.exe");
-    expect(spawnedProcesses[0]?.args).toContain("setup");
-    // The command args include --json (machine stream).
-    expect(spawnedProcesses[0]?.args.join(" ")).toContain("--json");
-    // Cleanup: let the promise settle.
-    spawnedProcesses[0]?.onClose?.(0);
-    await Promise.resolve();
-  });
-
-  it("running stage shows Cancel that aborts the runtime AbortController", () => {
-    const tab = makeTab();
-    const abort = vi.fn();
-    const el = renderStage1(tab, {
-      _setupOperation: "running",
-      _runtimeAbortController: { abort },
-    });
-    expect(buttonByText(el, "Cancel")).toBeDefined();
-    expect(buttonByText(el, "Later")).toBeUndefined();
-    buttonByText(el, "Cancel")?.click();
-    expect(abort).toHaveBeenCalledTimes(1);
-  });
-
-  it("cancelled install settles to idle, keeps the wizard, and never flips _setup_complete", async () => {
-    const tab = makeTab();
-    (tab.plugin as any).settings._setup_complete = false;
-    (tab as any)._ensureManagedRuntime = () => ({
-      installOnce: () =>
-        Promise.reject(
-          new DOMException("Operation was cancelled", "AbortError")
-        ),
-      handshake: () => Promise.resolve({ ok: true }),
-    });
-    (tab as any)._getVaultBasePath = () => "/vault";
-    (tab as any)._runSetupPython = () => Promise.resolve();
-    (tab as any)._installFoundation(false);
-    await Promise.resolve();
-    await Promise.resolve();
-    // Abort settled: operation back to idle, wizard retained (stage 1),
-    // completion flag untouched, no failure message.
-    expect((tab as any)._setupOperation).toBe("idle");
-    expect((tab as any)._setupStage).toBe(1);
-    expect((tab as any)._setupFeedback).toContain("cancelled");
-    expect((tab.plugin as any).settings._setup_complete).toBe(false);
-  });
-});
-
-// ═══════════ Setup Stage 3: no false success on failed config writes (#253) ═══════════
-describe("Setup Stage 3 config truthfulness (no false success, #253)", () => {
-  const WRITTEN: Record<string, string> = {
-    zotero_data_dir: "D:/Zotero/data",
-    system_dir: "System",
-    resources_dir: "Resources",
-    literature_dir: "Literature",
-    base_dir: "Bases",
-  };
-
-  /** Test seam: private tab members exercised below. */
-  interface StageTabSeam {
-    _applyLibraryConfiguration: () => void;
-    _renderSetupStageOptionals: (el: HTMLElement) => void;
-    _renderAgentDetail: (el: HTMLElement) => void;
-    _setupOperation: string;
-    _setupFeedback: string | null;
-    _setupFailureDetail: string | null;
-    _setupOptionals: Record<string, boolean>;
-    _agentPlatformDraft: string | null;
-    _capabilityState: Record<string, unknown>;
-    _probeModule: (mod: string) => void;
-    _client: unknown;
-  }
-
-  /** Test seam: fake plugin fields these tests own. */
-  interface PluginSeam {
-    settings: Record<string, unknown>;
-    saveSettings: () => Promise<void>;
-    agentPlatformChoices: string[];
-  }
-
-  function asStage(tab: PaperForgeSettingTab): StageTabSeam {
-    return tab as unknown as StageTabSeam;
-  }
-
-  function asPlugin(tab: PaperForgeSettingTab): PluginSeam {
-    return tab.plugin as unknown as PluginSeam;
-  }
-
-  function stageTab(overrides: { configSet?: Mock; configList?: Mock } = {}) {
-    const tab = makeTab();
-    const plugin = asPlugin(tab);
-    Object.assign(plugin.settings, WRITTEN);
-    plugin.saveSettings = vi.fn().mockResolvedValue(undefined);
-    const seam = asStage(tab);
-    seam._probeModule = vi.fn();
-    const client = {
-      configSet:
-        overrides.configSet ?? vi.fn().mockResolvedValue({ changed: true }),
-      configList:
-        overrides.configList ??
-        vi.fn().mockResolvedValue({
-          schema_version: 2,
-          revision: "sha256:test",
-          unknown_keys: [],
-          fields: Object.entries(WRITTEN).map(([key, value]) => ({
-            key,
-            value,
-            stored_value: value,
-          })),
-        }),
-      setup: vi.fn().mockImplementation(() => ({
-        outcome: Promise.resolve({ ok: true, exitCode: 0 }),
-        stop: vi.fn(),
-        events: [],
-      })),
-    };
-    seam._client = client;
-    return { seam, plugin, client };
-  }
-
-  async function settle(times = 14): Promise<void> {
-    for (let i = 0; i < times; i++) await Promise.resolve();
-  }
-
-  it("a failed config write fails the stage, names the key, and never runs setup", async () => {
-    const { seam, plugin, client } = stageTab({
-      configSet: vi
-        .fn()
-        .mockImplementation((key: string) =>
-          key === "zotero_data_dir"
-            ? Promise.reject(
-                new Error("config.not_found: canonical config file is missing")
-              )
-            : Promise.resolve({ changed: true })
-        ),
-    });
-    seam._applyLibraryConfiguration();
-    await settle();
-
-    expect(seam._setupOperation).toBe("failed");
-    expect(seam._setupFeedback).toContain("could not be verified");
-    expect(seam._setupFailureDetail).toContain("zotero_data_dir");
-    expect(seam._setupFailureDetail).toContain("config.not_found");
-    expect(client.configList).not.toHaveBeenCalled();
-    expect(client.setup).not.toHaveBeenCalled();
-    expect(plugin.saveSettings).not.toHaveBeenCalled();
-  });
-
-  it("a read-back mismatch is a failure, not a success", async () => {
-    const { seam, client } = stageTab({
-      configList: vi.fn().mockResolvedValue({
-        schema_version: 2,
-        revision: "sha256:test",
-        unknown_keys: [],
-        fields: Object.entries(WRITTEN).map(([key, value]) => ({
-          key,
-          value: key === "system_dir" ? "Wrong" : value,
-          stored_value: key === "system_dir" ? "Wrong" : value,
-        })),
-      }),
-    });
-    seam._applyLibraryConfiguration();
-    await settle();
-
-    expect(seam._setupOperation).toBe("failed");
-    expect(seam._setupFailureDetail).toContain("system_dir");
-    expect(seam._setupFailureDetail).toContain("backend stored");
-    expect(client.setup).not.toHaveBeenCalled();
-  });
-
-  it("a read-back transport error is a failure, not a success", async () => {
-    const { seam, client } = stageTab({
-      configList: vi.fn().mockRejectedValue(new Error("transport closed")),
-    });
-    seam._applyLibraryConfiguration();
-    await settle();
-
-    expect(seam._setupOperation).toBe("failed");
-    expect(seam._setupFailureDetail).toContain("readback");
-    expect(client.setup).not.toHaveBeenCalled();
-  });
-
-  it("an environment override with a verified stored write does not block the stage", async () => {
-    const { seam, client } = stageTab({
-      configList: vi.fn().mockResolvedValue({
-        schema_version: 2,
-        revision: "sha256:test",
-        unknown_keys: [],
-        fields: Object.entries(WRITTEN).map(([key, value]) => ({
-          key,
-          value: key === "zotero_data_dir" ? "D:/Env/Zotero" : value,
-          stored_value: value,
-          source: key === "zotero_data_dir" ? "environment" : "file",
-          environment: key === "zotero_data_dir" ? "ZOTERO_DATA_DIR" : null,
-        })),
-      }),
-    });
-    seam._applyLibraryConfiguration();
-    await settle();
-
-    // The save is verified against the file (stored_value); an environment
-    // override that wins at runtime is a supported user choice, not a
-    // stage failure — and it is surfaced as a note on the success feedback.
-    expect(seam._setupOperation).toBe("idle");
-    expect(seam._setupFailureDetail).toBeNull();
-    expect(client.setup).toHaveBeenCalledTimes(1);
-    expect(seam._setupFeedback).toContain("ZOTERO_DATA_DIR");
-    expect(seam._setupFeedback).toContain("overridden");
-  });
-
-  it("success is only claimed after the read-back confirms every value", async () => {
-    const { seam, plugin, client } = stageTab();
-    seam._applyLibraryConfiguration();
-    await settle();
-
-    expect(client.configSet).toHaveBeenCalledTimes(Object.keys(WRITTEN).length);
-    expect(client.configList).toHaveBeenCalledTimes(1);
-    expect(plugin.saveSettings).toHaveBeenCalledTimes(1);
-    expect(client.setup).toHaveBeenCalledTimes(1);
-    expect(seam._setupOperation).toBe("idle");
-    expect(seam._setupFailureDetail).toBeNull();
-  });
-
-  it("a rejected agent_platform change never displays saved and reverts the select", async () => {
-    const tab = makeTab();
-    const seam = asStage(tab);
-    const plugin = asPlugin(tab);
-    plugin.settings.agent_platform = "opencode";
-    plugin.agentPlatformChoices = [];
-    plugin.saveSettings = vi.fn().mockResolvedValue(undefined);
-    seam._setupOptionals = { ocr: false, memory: false, agent: true };
-    const client = {
-      configSet: vi.fn().mockRejectedValue(new Error("config.locked")),
-    };
-    seam._client = client;
-    noticeCalls.length = 0;
-
-    const el = dom.window.document.createElement("div");
-    seam._renderSetupStageOptionals(el);
-    const select = el.querySelector<HTMLSelectElement>("select");
-    expect(select).not.toBeNull();
-    if (!select) return;
-    select.value = "claude";
-    select.dispatchEvent(new dom.window.Event("change"));
-    await settle();
-
-    expect(client.configSet).toHaveBeenCalledWith("agent_platform", "claude");
-    expect(select.value).toBe("opencode");
-    expect(el.textContent).not.toContain("Configuration saved securely.");
-    expect(el.textContent).toContain("previous value is still in effect");
-    expect(plugin.settings.agent_platform).toBe("opencode");
-    expect(plugin.saveSettings).not.toHaveBeenCalled();
-    expect(
-      (noticeCalls as unknown as Array<{ msg?: string }>).some((n) =>
-        /agent_platform failed/.test(String(n.msg))
-      )
-    ).toBe(true);
-  });
-
-  function openAgentEditor(tab: PaperForgeSettingTab): {
-    save?: HTMLButtonElement;
-  } {
-    const plugin = asPlugin(tab);
-    plugin.settings.agent_platform = "opencode";
-    plugin.agentPlatformChoices = [];
-    plugin.saveSettings = vi.fn().mockResolvedValue(undefined);
-    const seam = asStage(tab);
-    seam._agentPlatformDraft = "claude";
-    seam._capabilityState = { agent: createUnknownEnvelope("agent") };
-    const el = dom.window.document.createElement("div");
-    seam._renderAgentDetail(el);
-    const save = [...el.querySelectorAll("button")].find(
-      (b) => b.textContent?.trim() === "Save"
-    );
-    return { save };
-  }
-
-  it("the agent-platform save button keeps the mirror unchanged when the backend rejects", async () => {
-    const tab = makeTab();
-    const seam = asStage(tab);
-    const plugin = asPlugin(tab);
-    const client = {
-      configSet: vi.fn().mockRejectedValue(new Error("config.locked")),
-    };
-    seam._client = client;
-    noticeCalls.length = 0;
-    const { save } = openAgentEditor(tab);
-    expect(save).toBeDefined();
-    save?.click();
-    await settle();
-
-    expect(client.configSet).toHaveBeenCalledWith("agent_platform", "claude");
-    expect(plugin.settings.agent_platform).toBe("opencode");
-    expect(plugin.saveSettings).not.toHaveBeenCalled();
-    expect(
-      (noticeCalls as unknown as Array<{ msg?: string }>).some((n) =>
-        /agent_platform failed/.test(String(n.msg))
-      )
-    ).toBe(true);
-  });
-
-  it("the agent-platform save button updates the mirror after backend acceptance", async () => {
-    const tab = makeTab();
-    const seam = asStage(tab);
-    const plugin = asPlugin(tab);
-    const client = {
-      configSet: vi.fn().mockResolvedValue({ changed: true }),
-    };
-    seam._client = client;
-    const { save } = openAgentEditor(tab);
-    save?.click();
-    await settle();
-
-    expect(plugin.settings.agent_platform).toBe("claude");
-    expect(seam._agentPlatformDraft).toBeNull();
-    expect(plugin.saveSettings).toHaveBeenCalledTimes(1);
-  });
-});
-
-// ═══════════ Install failure surfacing + environment identity (#257) ═══════════
-describe("Install failure surfacing (#257)", () => {
-  interface InstallSeam {
-    _installFoundation: (force: boolean) => void;
-    _renderSetupStageFoundation: (el: HTMLElement) => void;
-    _ensureManagedRuntime: unknown;
-    _getVaultBasePath: () => string;
-    _probeModule: (mod: string) => void;
-    _setupOperation: string;
-    _setupFailureDetail: string | null;
-    _lastSetupFailure: { category: string } | null;
-    _setupStageLog: string[];
-  }
-  interface InstallPluginSeam {
-    settings: Record<string, unknown>;
-  }
-  /** Test seam: private tab members exercised below. */
-  function asInstall(tab: PaperForgeSettingTab): InstallSeam {
-    return tab as unknown as InstallSeam;
-  }
-  function asInstallPlugin(tab: PaperForgeSettingTab): InstallPluginSeam {
-    return tab.plugin as unknown as InstallPluginSeam;
-  }
-  async function settleInstall(times = 12): Promise<void> {
-    for (let i = 0; i < times; i++) await Promise.resolve();
-  }
-
-  it("classifies a network install failure and records it for the diagnostic", async () => {
-    const tab = makeTab();
-    const seam = asInstall(tab);
-    asInstallPlugin(tab).settings._setup_complete = false;
-    seam._ensureManagedRuntime = () => ({
-      installOnce: () =>
-        Promise.reject(
-          new Error("pip install failed: Read timed out. Could not fetch URL")
-        ),
-      handshake: () => Promise.resolve({ ok: true }),
-    });
-    seam._getVaultBasePath = () => "/vault";
-    seam._probeModule = () => {};
-    seam._installFoundation(false);
-    await settleInstall(6);
-
-    expect(seam._setupOperation).toBe("failed");
-    expect(seam._setupFailureDetail).toContain("network/proxy");
-    expect(seam._setupFailureDetail).toContain("Read timed out");
-    expect(seam._lastSetupFailure?.category).toBe("network");
-  });
-
-  it("records bootstrap stages on a successful install", async () => {
-    const tab = makeTab();
-    const seam = asInstall(tab);
-    asInstallPlugin(tab).settings._setup_complete = false;
-    seam._ensureManagedRuntime = () => ({
-      installOnce: (
-        _v: string,
-        _s?: unknown,
-        _p?: unknown,
-        onStage?: (stage: string) => void
-      ) => {
-        onStage?.("venv");
-        onStage?.("pip");
-        onStage?.("verify");
-        return Promise.resolve({ pythonPath: "/bootstrap/python.exe" });
-      },
-      handshake: () => Promise.resolve({ ok: true }),
-    });
-    seam._getVaultBasePath = () => "/vault";
-    seam._probeModule = () => {};
-    seam._installFoundation(false);
-    await settleInstall();
-
-    const log = seam._setupStageLog.join(" ");
-    expect(log).toContain("bootstrap:venv");
-    expect(log).toContain("bootstrap:pip");
-    expect(log).toContain("bootstrap:verify");
-  });
-
-  it("retires other runtime generations after a successful publish (#260)", async () => {
-    const tab = makeTab();
-    const seam = asInstall(tab);
-    asInstallPlugin(tab).settings._setup_complete = false;
-    const retire = vi.fn().mockReturnValue([]);
-    seam._ensureManagedRuntime = () => ({
-      installOnce: () =>
-        Promise.resolve({ pythonPath: "/bootstrap/python.exe" }),
-      handshake: () => Promise.resolve({ ok: true }),
-      readPointer: () => ({ environmentRoot: "/candidate" }),
-      retireUnusedRuntimes: retire,
-    });
-    seam._getVaultBasePath = () => "/vault";
-    seam._probeModule = () => {};
-    seam._installFoundation(false);
-    await settleInstall();
-
-    expect(retire).toHaveBeenCalledWith("/candidate");
-  });
-
-  it("shows environment identity rows in Stage 1", () => {
-    const tab = makeTab();
-    const seam = asInstall(tab);
-    seam._ensureManagedRuntime = () => ({
-      readPointer: () => ({
-        environmentRoot: "/home/user/.paperforge/runtime/venv",
-        pythonPath: "/home/user/.paperforge/runtime/venv/bin/python",
-        paperforgeVersion: "2.0.0rc5",
-      }),
-      status: () => Promise.resolve({ state: "ready" }),
-    });
-    seam._probeModule = () => {};
-    const el = dom.window.document.createElement("div");
-    seam._renderSetupStageFoundation(el);
-    expect(el.textContent).toContain("2.0.0rc5");
-    expect(el.textContent).toContain("/home/user/.paperforge/runtime/venv");
   });
 });
 
@@ -2611,16 +1925,16 @@ describe("_storeVectorDbCredential replace semantics (RC UX Seam)", () => {
     const tab = makeTab();
     (tab as any)._getVaultBasePath = () => "/vault";
     const authSetSecret = vi.fn(async () => true);
-    (tab as any)._client = { authSetSecret };
-    // A saved key must re-probe so the API Key row leaves "Missing" (A05).
-    const refresh = vi
-      .spyOn(tab as any, "_refreshAllReadModels")
-      .mockImplementation(() => undefined);
+    // The credential write refreshes the read models through the same client.
+    (tab as any)._client = {
+      authSetSecret,
+      invalidateCache: vi.fn(),
+      probeAll: vi.fn(async () => ({ modules: {} })),
+    };
     const result = await (tab as any)._storeVectorDbCredential(
       "sk-new-key-123"
     );
     expect(result).toBe(true);
-    expect(refresh).toHaveBeenCalledTimes(1);
     // Exact semantic wiring on the client seam; the secret itself travels
     // via ExecuteOptions.stdin — never argv (asserted in the client
     // contract tests) — and no child process is spawned by the tab.

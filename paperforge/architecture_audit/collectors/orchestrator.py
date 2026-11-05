@@ -63,21 +63,44 @@ class CollectOutcome:
     wrapper_hits: list[dict[str, Any]] = field(default_factory=list)
 
 
-def _git_state(repo: Path) -> RepositoryState:
-    rev = subprocess.run(
-        ["git", "rev-parse", "HEAD"], capture_output=True, text=True, cwd=repo
-    ).stdout.strip()
-    porcelain = subprocess.run(
-        ["git", "status", "--porcelain"], capture_output=True, text=True, cwd=repo
-    ).stdout
+def _git_state(repo: Path) -> tuple[RepositoryState, str | None]:
+    """Repository identity from git, or an explicit "unavailable" state.
+
+    The audit is a reporting tool: when git cannot be run (missing binary,
+    sandboxed PATH, not a repository) the survey must still be produced, with
+    the gap named in diagnostics rather than an exception.
+    """
+    try:
+        rev = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            capture_output=True, text=True, cwd=repo, timeout=30,
+        ).stdout.strip()
+        porcelain = subprocess.run(
+            ["git", "status", "--porcelain"],
+            capture_output=True, text=True, cwd=repo, timeout=60,
+        ).stdout
+    except (OSError, subprocess.SubprocessError) as exc:
+        return (
+            RepositoryState(revision="", dirty=False, dirty_diff_digest=""),
+            f"git state unavailable: {type(exc).__name__}: {exc}",
+        )
     dirty = bool(porcelain)
     diff_digest = ""
     if dirty:
-        diff = subprocess.run(
-            ["git", "diff"], capture_output=True, text=True, cwd=repo
-        ).stdout
+        try:
+            diff = subprocess.run(
+                ["git", "diff"], capture_output=True, text=True, cwd=repo, timeout=120,
+            ).stdout
+        except (OSError, subprocess.SubprocessError) as exc:
+            return (
+                RepositoryState(revision=rev, dirty=True, dirty_diff_digest=""),
+                f"git diff unavailable: {type(exc).__name__}: {exc}",
+            )
         diff_digest = "sha256:" + hashlib.sha256(diff.encode("utf-8")).hexdigest()
-    return RepositoryState(revision=rev, dirty=dirty, dirty_diff_digest=diff_digest)
+    return (
+        RepositoryState(revision=rev, dirty=dirty, dirty_diff_digest=diff_digest),
+        None,
+    )
 
 
 def _run_ts_collector(
@@ -156,6 +179,7 @@ def collect(
 ) -> CollectOutcome:
     """Deterministic collect -> merge -> validate -> reconcile. Pure file/process
     I/O; never imports project runtime code."""
+    repository_state, git_diag = _git_state(repo)
     outcome = CollectOutcome()
     registry = (
         python_registry if python_registry is not None else load_default_python_registry()
@@ -172,6 +196,8 @@ def collect(
     authority_facts, authority_diagnostics = collect_authority_facts(repo, contract)
     py_facts.extend(authority_facts)
     outcome.diagnostics.extend(authority_diagnostics)
+    if git_diag:
+        outcome.diagnostics.append(git_diag)
     py_errors: list[str] = []
     for root_rel in py_roots:
         root = repo / root_rel
@@ -260,7 +286,7 @@ def collect(
         parse_errors=tuple(py_errors),
         excluded_roots=tuple(sorted(_excluded_roots(repo, py_roots + ts_roots))),
         wrapper_summaries=to_wrapper_summaries(registry),
-        repository_state=_git_state(repo),
+        repository_state=repository_state,
         run_metadata={
             "tool_version": "1.0.0",
             "extractor_versions": {PY_EXTRACTOR: "1", TS_EXTRACTOR: "1"},

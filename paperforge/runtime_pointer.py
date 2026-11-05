@@ -1,22 +1,18 @@
-"""#143 runtime pointer — publication owned SOLELY by Python (#174 / F).
+"""Machine-wide PaperForge runtime pointer, published only by the external installer.
 
-`~/.paperforge/runtime/pointer.json` is the single convergence point for
-plugin-first and python-first installs:
+`~/.paperforge/runtime/pointer.json` is the machine-wide rendezvous point:
 
     {
       "schema_version": 1,
       "python_path": "<absolute executable>",
-      "environment_root": "<generic environment root>",
+      "environment_root": "<managed candidate environment>",
       "paperforge_version": "<version>"
     }
 
-- Single-writer authority: Python.  `paperforge setup` / `update` / `repair`
-  atomically publish the pointer (tmp + ``os.replace``); the plugin is a
-  reader only, forever.
-- Interrupted install ⇒ no pointer publication ⇒ next handshake fails ⇒ UI
-  offers install again, consent required.  No silent retry.
-- environment_root is generic (a python-first install may not run in a
-  venv) — no required ``venv_path``.
+- Only `paperforge runtime install|update|repair` publishes the pointer, after
+  candidate version and dependency verification.
+- Vault setup never publishes or mutates this pointer; Obsidian is a reader.
+- Failed candidates leave the currently published runtime untouched.
 """
 
 from __future__ import annotations

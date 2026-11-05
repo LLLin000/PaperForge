@@ -84,6 +84,20 @@ paperforge retrieve "<query>" --paper <KEY> --deep --json   # 单篇混合检索
 
 ## CLI 命令
 
+### `paperforge runtime` (machine-wide; no Vault required)
+
+The runtime CLI installs and verifies the machine-wide PaperForge Core independently of Obsidian and Vault configuration. Bootstrap the matching CLI package outside Obsidian, then run:
+
+```bash
+python -m pip install --user --upgrade "paperforge==<VERSION>"
+python -m paperforge runtime status --expected-version <VERSION> --json
+python -m paperforge runtime install --expected-version <VERSION>
+python -m paperforge runtime update --expected-version <VERSION>
+python -m paperforge runtime repair --expected-version <VERSION>
+```
+
+`install` leaves an already-ready runtime untouched. `update` publishes only a verified candidate; `repair` forces a fresh candidate. Failed candidates do not replace the active pointer. Python alone publishes the pointer.
+
 ### `paperforge paths`
 
 ```bash

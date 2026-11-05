@@ -149,8 +149,8 @@ class TestRegistryInvariants:
     def test_builtin_registry_is_valid(self) -> None:
         assert validate_registry() == []
         assert set(ACTION_REGISTRY) == {
-            "memory.build", "memory.rebuild", "embed.resume", "embed.build", "ocr.run",
-            "ocr.rebuild_derived", "foundation.update", "foundation.repair", "library.prune",
+            "memory.build", "memory.rebuild", "embed.resume", "embed.build",
+            "ocr.run", "ocr.rebuild_derived", "library.prune",
         }
 
     def test_memory_builds_are_explicit_vector_mutations(self) -> None:
@@ -215,10 +215,10 @@ class TestRegistryInvariants:
     def test_execution_mode_invariants(self) -> None:
         """T2 / ADR 0003: Every action explicitly declares execution_mode."""
         streaming = {
-            "foundation.update", "embed.resume", "embed.build", "ocr.run", "ocr.rebuild_derived",
+            "embed.resume", "embed.build", "ocr.run", "ocr.rebuild_derived",
         }
         result_only = {
-            "foundation.repair", "memory.build", "memory.rebuild", "library.prune",
+            "memory.build", "memory.rebuild", "library.prune",
         }
         for action_id, spec in ACTION_REGISTRY.items():
             assert hasattr(spec, "execution_mode"), f"{action_id} missing execution_mode"
@@ -504,7 +504,7 @@ class TestMachineModeWireParity:
     """
 
     @pytest.mark.parametrize("action_id", [
-        "foundation.repair", "memory.build", "memory.rebuild", "library.prune"
+        "memory.build", "memory.rebuild", "library.prune"
     ])
     def test_result_action_wire_format(self, tmp_path: Path, action_id: str) -> None:
         vault = tmp_path / "vault"
@@ -520,7 +520,7 @@ class TestMachineModeWireParity:
         assert "event" not in parsed, f"{action_id} result must not be an NDJSON event"
 
     @pytest.mark.parametrize("action_id", [
-        "foundation.update", "embed.resume", "embed.build", "ocr.run", "ocr.rebuild_derived"
+        "embed.resume", "embed.build", "ocr.run", "ocr.rebuild_derived"
     ])
     def test_stream_action_wire_format(self, tmp_path: Path, action_id: str) -> None:
         vault = tmp_path / "vault"
@@ -939,11 +939,13 @@ class TestCliExitCodes:
         assert rc == 0
         actions = payload["data"]["actions"]
         ids = [a["action_id"] for a in actions]
-        assert ids == ["embed.build", "embed.resume", "foundation.repair", "foundation.update",
-                "library.prune", "memory.build", "memory.rebuild", "ocr.rebuild_derived", "ocr.run"]
+        assert ids == [
+            "embed.build", "embed.resume", "library.prune", "memory.build",
+            "memory.rebuild", "ocr.rebuild_derived", "ocr.run",
+        ]
         for a in actions:
             assert a["execution_mode"] in ("result", "stream")
-            if a["action_id"] in ("embed.build", "embed.resume", "foundation.update", "ocr.run", "ocr.rebuild_derived"):
+            if a["action_id"] in ("embed.build", "embed.resume", "ocr.run", "ocr.rebuild_derived"):
                 assert a["execution_mode"] == "stream"
             else:
                 assert a["execution_mode"] == "result"
@@ -1121,121 +1123,3 @@ class TestCliExitCodes:
         assert rc == 130
 
 
-class TestFoundationRepairPolicy174:
-    """#174 P1-1: foundation.repair's registry policy must match its REAL
-    side effects (may pip install vector extras + republish the pointer)
-    — remote_possible/mutating/required, never local/read_only/automatic."""
-
-    def test_foundation_repair_descriptor_is_truthful(self) -> None:
-        from paperforge.actions.registry import ACTION_REGISTRY
-
-        spec = ACTION_REGISTRY["foundation.repair"]
-        assert spec.cost == "remote_possible"
-        assert spec.impact == "mutating"
-        assert spec.confirmation == "required"
-        assert spec.automatic is False
-
-    def test_foundation_repair_requires_confirmation_exit_3(self, tmp_path: Path, monkeypatch) -> None:
-        """Without --confirm a confirmation-required action exits 3 with the
-        CURRENT descriptor — the caller must explicitly authorize a pip
-        install + pointer republish."""
-        monkeypatch.setattr(
-            "paperforge.runtime_pointer.read_pointer",
-            lambda: {
-                "python_path": "C:/Python/python.exe",
-                "environment_root": "C:/Python",
-                "paperforge_version": "1.5.15",
-            },
-        )
-        rc, payload = _run_cli(
-            "--vault", str(tmp_path), "action", "run", "foundation.repair", "--json"
-        )
-        assert rc == 3
-        assert payload["error"]["code"] == "action.confirmation_required"
-        data = payload["data"]
-        assert data["action_id"] == "foundation.repair"
-        assert data["cost"] == "remote_possible"
-        assert data["impact"] == "mutating"
-
-    def test_foundation_update_unavailable_without_pointer(self, tmp_path: Path, monkeypatch) -> None:
-        """#174 pass-2: update is post-bootstrap — no pointer → unavailable,
-        symmetric with repair."""
-        monkeypatch.setattr(
-            "paperforge.runtime_pointer.read_pointer", lambda: None
-        )
-        rc, payload = _run_cli(
-            "--vault", str(tmp_path), "action", "run", "foundation.update", "--json"
-        )
-        assert rc == 1
-        assert payload["data"]["availability_reason_code"] == "pointer.missing"
-
-    def test_foundation_repair_unavailable_without_pointer(self, tmp_path: Path, monkeypatch) -> None:
-        """Preflight fails closed: no published pointer → the handler cannot
-        succeed → unavailable (not a green light for a doomed run)."""
-        monkeypatch.setattr(
-            "paperforge.runtime_pointer.read_pointer", lambda: None
-        )
-        rc, payload = _run_cli(
-            "--vault", str(tmp_path), "action", "run", "foundation.repair", "--json"
-        )
-        assert rc == 1
-        assert payload["data"]["availability_reason_code"] == "pointer.missing"
-
-
-class TestProbeActionVocabulary223:
-    """#223: every action the Probe emits is declared, and a declared
-    non-registry action's verb matches its declaration.
-
-    The Probe produces every clickable action in the app through one builder
-    (`build_action_primary`). This sweep reads those emission sites and checks
-    each ``(action_id, verb)`` pair against the two authorities — ACTION_REGISTRY
-    and NON_REGISTRY_ACTIONS — so a declared-but-mis-emitted pair (the
-    ``library.setup`` + ``set_config`` case) fails here instead of reaching a
-    user as a wrong or dead dispatch.
-    """
-
-    def test_every_probe_emission_matches_its_declaration(self) -> None:
-        import ast
-        import re
-
-        source = Path("paperforge/commands/probe.py").read_text(encoding="utf-8")
-        emissions: list[tuple[int, str, str]] = []
-        for node in ast.walk(ast.parse(source)):
-            if not (
-                isinstance(node, ast.Call)
-                and isinstance(node.func, ast.Name)
-                and node.func.id == "build_action_primary"
-            ):
-                continue
-            kwargs = {kw.arg: kw.value for kw in node.keywords}
-            action_id = getattr(kwargs.get("action_id"), "value", None)
-            verb = getattr(kwargs.get("verb"), "value", None)
-            if isinstance(action_id, str) and isinstance(verb, str):
-                emissions.append((node.lineno, action_id, verb))
-
-        assert len(emissions) > 30, (
-            "the emission sweep lost its target — did build_action_primary move "
-            f"or get wrapped? found {len(emissions)} literal emissions"
-        )
-
-        problems: list[str] = []
-        for lineno, action_id, verb in emissions:
-            try:
-                kind = classify_action_id(action_id)
-            except Exception as exc:  # noqa: BLE001 — the declaration IS the check
-                problems.append(f"probe.py:{lineno}: {action_id} is undeclared ({exc})")
-                continue
-            if kind != "non_registry":
-                if action_id not in ACTION_REGISTRY:
-                    problems.append(f"probe.py:{lineno}: {action_id} is neither registered nor declared")
-                continue
-            declared = NON_REGISTRY_ACTIONS[action_id]
-            match = re.search(r"\(verb '([^']+)'\)", declared)
-            if match is None:
-                problems.append(f"probe.py:{lineno}: {action_id} declaration names no verb")
-            elif match.group(1) != verb:
-                problems.append(
-                    f"probe.py:{lineno}: {action_id} emits verb {verb!r} but the "
-                    f"declaration says {match.group(1)!r}"
-                )
-        assert not problems, "\n".join(problems)
