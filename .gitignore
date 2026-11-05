@@ -70,3 +70,6 @@ paperforge/plugin/test/evidence/
 
 # local pip cache created by test installs
 pip/cache/
+
+# transient commit-message files
+.git-msg/
