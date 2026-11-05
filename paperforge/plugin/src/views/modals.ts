@@ -4,10 +4,6 @@ import * as path from "path";
 import * as https from "https";
 import { t } from "../i18n";
 import { PaperForgeSettings } from "../constants";
-import {
-  RuntimeBootstrap,
-  resolveRuntimeCommand,
-} from "../services/managed-runtime";
 import type { PythonResult } from "../services/python-bridge";
 import { shouldBlockStep3 } from "./step3-gate";
 

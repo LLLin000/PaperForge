@@ -16,7 +16,7 @@ ProgressCallback = Callable[[str], None]
 
 
 class SetupPlan:
-    """Orchestrate the setup lifecycle: check -> config -> vault -> deps -> agent."""
+    """Orchestrate Vault setup: check -> config -> vault -> runtime deps -> agent."""
 
     def __init__(
         self,
@@ -48,9 +48,8 @@ class SetupPlan:
         ndjson: bool,
         json_output: bool,
     ) -> int | None:
-        """Uniform step gate: None -> cancelled (rc130); not ok -> fail fast
-        (rc1, zero further mutation, no pointer publish).  Returns None to
-        continue."""
+        """Uniform step gate: None -> cancelled (rc130); failure stops before
+        subsequent Vault mutations. Returns None to continue."""
         if r is None:  # cooperative cancellation observed
             if ndjson:
                 return self._emit_ndjson_terminal("cancelled", results, ok=False, rc=130)
@@ -119,7 +118,6 @@ class SetupPlan:
         _gate = self._step_outcome(cfg_result, results, ndjson=ndjson, json_output=json_output)
         if _gate is not None:
             return _gate
-
         # Step 3: Vault initializer — layout comes from the SINGLE resolver
         # (resolve_paths), never from per-module defaults.
         self._log("Initializing vault structure...")
@@ -150,20 +148,15 @@ class SetupPlan:
         if _gate is not None:
             return _gate
 
-        # Step 4: #174 / #143 — dependency extras only. The runtime package
-        # is installed EXACTLY once by the bootstrap (plugin venv + ONE
-        # pinned install, or pip). Setup only ENSURES the [vector] extras
-        # the core features require; already present → no-op.  A duplicate
-        # package install here would reinstall the just-verified runtime
-        # and violate "one consent = one bootstrap install attempt".
-        from paperforge.setup.runtime import ensure_runtime_dependencies
+        # Step 4: validate runtime extras. Installation belongs to the
+        # independent `paperforge runtime` installer, never vault setup.
+        from paperforge.setup.runtime import check_runtime_dependencies
 
-        self._log("Ensuring runtime dependencies...")
-        dep_result = _run_step("runtime_dependencies", ensure_runtime_dependencies)
+        self._log("Checking runtime dependencies...")
+        dep_result = _run_step("runtime_dependencies", check_runtime_dependencies)
         _gate = self._step_outcome(dep_result, results, ndjson=ndjson, json_output=json_output)
         if _gate is not None:
             return _gate
-
         # Step 5: Agent installer — platform comes from the canonical config
         # (written above), never from a CLI default; omitted --agent keeps
         # the existing platform and deploys to ITS skill dir.
@@ -177,10 +170,6 @@ class SetupPlan:
             _effective_agent = self.agent_type or "opencode"
         agent = AgentInstaller(self.vault, agent_type=_effective_agent)
         for agent_step in agent.steps():
-            # RC UX Seam P0: cooperative cancellation must be checked
-            # BETWEEN agent sub-steps — a SIGTERM during agent deployment
-            # only sets the flag; without this gate the loop would finish
-            # and publish the pointer anyway.
             if _is_stopped():
                 cancelled = True
                 break
@@ -195,16 +184,12 @@ class SetupPlan:
                     item_id=agent_result.step,
                     status="ok" if agent_result.ok else "error",
                 )
-            # Fail fast between agent sub-steps: a failed sub-step stops the
-            # remaining deployment (zero further mutation).
             _gate = self._step_outcome(agent_result, results, ndjson=ndjson, json_output=json_output)
             if _gate is not None:
                 return _gate
-
         if cancelled or _is_stopped():
-            # The last gate: even if cancellation arrived after the agent
-            # loop finished (or mid publish), never publish the pointer on
-            # a cancelled setup.
+            # The final gate ensures a cancelled setup never reports success,
+            # even when cancellation arrives during the last agent step.
             cancelled = True
             if ndjson:
                 _restore()
@@ -220,18 +205,8 @@ class SetupPlan:
         ndjson: bool,
         json_output: bool,
     ) -> int:
-        """Shared terminal: publish pointer only when every executed step
-        passed, then emit the single result/error terminal."""
-        # Step 6 (#143 / #174): pointer publication — Python is the ONLY
-        # writer; publication is part of lifecycle success and MUST happen
-        # before any terminal success is emitted (human or machine).
+        """Shared terminal: emit success only when every setup step passed."""
         ok = all(r.ok for r in results) and not cancelled
-        if ok:
-            from paperforge.runtime_pointer import publish_pointer
-
-            publish_pointer()
-            self._log("Runtime pointer published")
-
         if ndjson:
             return self._emit_ndjson_terminal(
                 "result" if ok else "error", results, ok=ok, rc=0 if ok else 1

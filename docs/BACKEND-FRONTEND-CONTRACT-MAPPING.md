@@ -144,24 +144,28 @@ graph TD
     Client --> S1 & S2 & S3 & S4 & S5
 ```
 
-### Domain A: Foundation (Runtime, Setup, Config, Credentials)
-- **Scope**: Python environment health, vault directories, external tool connections, platform skills.
+### Domain A: Foundation (Core Runtime, Vault Setup, Config, Credentials)
+- **Scope**: machine-wide Python Core readiness plus per-Vault directories, external-tool connections, and platform skills. Runtime readiness and Vault configuration are independent.
 - **Backend Authorities**:
-  - `probe installation --json`
+  - `paperforge runtime status --expected-version <VERSION> --json` (machine-wide; no Vault required)
+  - `probe installation --json` (Core presence/version/dependency state)
   - `config list/get/set --json`
   - `auth status/set/delete --json`
-  - `setup --modular [--headless] --json` (NDJSON)
-  - `update --json`
-- **Setup Execution Sequence (`SetupPlan`)**:
+  - `setup --modular --json` (Vault configuration only; NDJSON)
+  - `paperforge runtime install|update|repair` (external installer lifecycle; not a plugin action)
+- **Runtime install sequence**:
   ```text
-  Step 1: SetupChecker (preconditions, Python >= 3.11)
+  external CLI: create candidate venv → install PaperForge Core + vector extras
+  → verify package version and required imports → atomically publish pointer
+  ```
+- **Vault setup sequence (`SetupPlan`)**:
+  ```text
+  Step 1: RuntimeDependencyCheck (read-only; fail with external installer guidance)
   Step 2: ConfigWriter (writes explicit CLI args to paperforge.json)
   Step 3: VaultInitializer (creates System/Resources/Literature/Bases + Zotero junction)
-  Step 4: ensure_runtime_dependencies (ensures vector extras without redundant reinstall)
-  Step 5: AgentInstaller (deploys platform-specific skills with cooperative cancellation)
-  Step 6: publish_pointer (~/.paperforge/runtime/active-runtime.json published ONLY on success)
+  Step 4: AgentInstaller (deploys platform-specific skills)
   ```
-- **Frontend Refactoring**: Views collect configuration inputs $\rightarrow$ trigger `setup` via `PaperForgeClient` $\rightarrow$ consume NDJSON progress bar $\rightarrow$ refresh via `probe installation`.
+- **Frontend**: Foundation reads the machine runtime pointer/status; the setup journey configures the current Vault and refreshes `probe library`. Neither path installs packages or publishes the pointer.
 
 ### Domain B: Library (Zotero, Collections, Document Index)
 - **Scope**: Literature catalog, Zotero database sync, paper records, PDF attachment presence.

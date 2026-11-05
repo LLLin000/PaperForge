@@ -28,8 +28,6 @@ class ConfirmMigrationModal extends Modal {
     });
   }
 }
-import * as fs from "fs";
-import * as path from "path";
 import {
   VIEW_TYPE_PAPERFORGE,
   VIEW_TYPE_OCR_WORKSPACE,
@@ -45,15 +43,11 @@ import { orchestrateFromSync } from "./services/next-actions-bridge";
 import { PaperForgeStatusView } from "./views/dashboard";
 import { OcrWorkspaceView } from "./views/ocr-workspace";
 import { PaperForgeConfirmModal } from "./views/modals";
-import { resolveVaultPaths } from "./services/runtime-paths";
 import {
+  resolveVaultPaths,
   setPathConfigSource,
   isConfigHydrated,
 } from "./services/runtime-paths";
-import {
-  RuntimeBootstrap,
-  resolveRuntimeCommand,
-} from "./services/managed-runtime";
 import { PaperForgeClient, NodeProcessTransport } from "./client";
 import { dumpTrace, setTraceEnabled } from "./client/trace";
 
@@ -74,7 +68,6 @@ export default class PaperForgePlugin extends Plugin {
   _memoryStatusText: string | null = null;
   _ocrProgress = { current: 0, total: 1, key: "" };
   private _settingTab: PaperForgeSettingTab | null = null;
-  private _managedRuntime: RuntimeBootstrap | null = null;
 
   private _client: PaperForgeClient | null = null;
 
@@ -85,18 +78,10 @@ export default class PaperForgePlugin extends Plugin {
           ?.basePath ?? "";
       const transport = new NodeProcessTransport({
         vaultPath,
-        customPythonPath: this.settings?.python_path,
-        resolveRuntime: async () => this._getPythonCommand(),
       });
       this._client = new PaperForgeClient({ transport });
     }
     return this._client;
-  }
-  getManagedRuntime(): RuntimeBootstrap {
-    if (!this._managedRuntime) {
-      this._managedRuntime = new RuntimeBootstrap();
-    }
-    return this._managedRuntime;
   }
 
   /** Diagnostic handle for the console: `app.plugins.plugins.paperforge
@@ -112,12 +97,6 @@ export default class PaperForgePlugin extends Plugin {
     await this.saveSettings();
   }
 
-  _getPythonCommand(): { path: string; args: string[] } | null {
-    // #174: pointer publication is the ONLY runtime truth — the plugin
-    // never uses an installed-but-unpublished runtime.
-    const run = resolveRuntimeCommand(this.getManagedRuntime().readPointer());
-    return run ? { path: run.command, args: [...run.args] } : null;
-  }
 
   /** One user-facing OCR run path for Settings, Dashboard, and commands. */
   requestOcrRun(confirmed = false): void {
@@ -572,10 +551,6 @@ export default class PaperForgePlugin extends Plugin {
       }
     }
 
-    if (this.settings.python_path && this.settings.python_path.trim()) {
-      const pp = this.settings.python_path.trim();
-      this.settings._python_path_stale = !fs.existsSync(pp);
-    }
   }
 
   async saveSettings() {

@@ -284,7 +284,7 @@ describe("PaperForgeClient", () => {
       expect(actions[0].execution_mode).toBe("stream");
     });
 
-    it("preserves confirm flag when running streaming action", async () => {
+    it("preserves confirm flag when running a streaming action", async () => {
       transport.executeHandler = (argv) => {
         if (argv.includes("describe")) {
           return JSON.stringify({
@@ -292,7 +292,7 @@ describe("PaperForgeClient", () => {
             command: "action.describe",
             version: "1.5.15",
             data: {
-              action_id: "foundation.update",
+              action_id: "embed.build",
               execution_mode: "stream",
             },
           });
@@ -308,12 +308,12 @@ describe("PaperForgeClient", () => {
             {
               schema_version: 1,
               event: "start",
-              operation: "action.foundation.update",
+              operation: "action.embed.build",
             },
             {
               schema_version: 1,
               event: "result",
-              operation: "action.foundation.update",
+              operation: "action.embed.build",
               result: { ok: true },
             },
           ],
@@ -322,15 +322,15 @@ describe("PaperForgeClient", () => {
       };
 
       const res = await client.runAction({
-        action_id: "foundation.update",
+        action_id: "embed.build",
         scope: { kind: "all" },
-        confirm: "foundation.update",
+        confirm: "embed.build",
       });
 
       expect(res.ok).toBe(true);
       expect(capturedArgv).toContain("--confirm");
       expect(capturedArgv[capturedArgv.indexOf("--confirm") + 1]).toBe(
-        "foundation.update"
+        "embed.build"
       );
     });
 

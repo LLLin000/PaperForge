@@ -1055,10 +1055,11 @@ describe("production-seam runtime dispatch", () => {
     expect(mockExecFile).not.toHaveBeenCalled();
     const env = tab._capabilityState?.["installation"];
     expect(env?.reason?.code).toBe("installation.no_python");
-    expect(env?.action?.primary?.verb).toBe("setup");
+    expect(env?.action?.primary?.verb).toBe("install");
+    expect(env?.action?.primary?.action_id).toBe("installation.install_runtime");
   });
 
-  it("RED Gap 2 follow-up: null resolver produces persistent setup envelope (installation.no_python + setup verb)", () => {
+  it("RED Gap 2 follow-up: null resolver produces persistent setup envelope (installation.no_python + install verb)", () => {
     (tab as any)._managedRuntime = null;
     mockResolveRuntimeCommand.mockReturnValue(null);
     mockGetCachedPython.mockReturnValue({
@@ -1072,7 +1073,8 @@ describe("production-seam runtime dispatch", () => {
     expect(mockExecFile).not.toHaveBeenCalled();
     const env = tab._capabilityState?.["installation"];
     expect(env?.reason?.code).toBe("installation.no_python");
-    expect(env?.action?.primary?.verb).toBe("setup");
+    expect(env?.action?.primary?.verb).toBe("install");
+    expect(env?.action?.primary?.action_id).toBe("installation.install_runtime");
   });
 
   it("managed absent and legacy empty path produces stale envelope without fallback warning", () => {

@@ -211,127 +211,48 @@ class TestEnvelopeContract:
         assert data["ttl_seconds"] == 3600
 
     def test_action_primary_full_fields_non_null(self, tmp_path: Path) -> None:
-        """Non-null action.primary has all required fields with correct types."""
-        tmp_path.mkdir(parents=True, exist_ok=True)
-        canonical_test_config(tmp_path, system_dir="99_System")
-        # Use the worktrees vault which has no paperforge.json → missing_input → has action
+        """A missing Vault config action has the full action schema."""
         empty_vault = tmp_path / "no_config"
         empty_vault.mkdir()
-        data = _run_probe("installation", empty_vault)
+        data = _run_probe("library", empty_vault)
         assert data["action"]["primary"] is not None
         _assert_action_primary_shape(data["action"]["primary"])
-
 
 # ---------------------------------------------------------------------------
 # Installation probe states
 # ---------------------------------------------------------------------------
 
 class TestInstallationProbe:
-    """State mapping for the installation module probe."""
+    """Installation reports machine-wide Core readiness, not Vault setup."""
 
-    def test_missing_paperforge_json(self, tmp_path: Path) -> None:
-        """No paperforge.json -> missing_input + set_config action."""
+    def test_missing_vault_config_does_not_block_core_readiness(self, tmp_path: Path) -> None:
         data = _run_probe("installation", tmp_path)
         assert data["module"] == "installation"
-        assert data["capability_state"] == "missing_input"
-        assert data["severity"] == "warning"
-        assert data["reason"]["code"] == "installation.config_missing"
-        assert data["action"]["primary"] is not None
-        _assert_action_primary_shape(data["action"]["primary"])
-        assert data["action"]["primary"]["verb"] == "setup"
-        assert data["action"]["primary"]["label"] == "Install PaperForge"
-
-    def test_corrupt_paperforge_json(self, tmp_path: Path) -> None:
-        """Invalid JSON in paperforge.json -> unavailable + setup action."""
-        (tmp_path / "paperforge.json").write_text("not valid json {{{", encoding="utf-8")
-        data = _run_probe("installation", tmp_path)
-        assert data["capability_state"] == "unavailable"
-        assert data["severity"] == "error"
-        assert data["reason"]["code"] == "installation.config_corrupt"
-        assert data["action"]["primary"] is not None
-        _assert_action_primary_shape(data["action"]["primary"])
-        assert data["action"]["primary"]["verb"] == "setup"
-
-    def test_empty_object_config_corrupt(self, tmp_path: Path) -> None:
-        """Empty dict {} → config_corrupt/unavailable."""
-        (tmp_path / "paperforge.json").write_text("{}", encoding="utf-8")
-        data = _run_probe("installation", tmp_path)
-        assert data["capability_state"] == "unavailable"
-        assert data["severity"] == "error"
-        assert data["reason"]["code"] == "installation.config_corrupt"
-        assert data["action"]["primary"] is not None
-        assert data["action"]["primary"]["verb"] == "setup"
-
-    def test_list_config_corrupt(self, tmp_path: Path) -> None:
-        """JSON array → config_corrupt/unavailable."""
-        (tmp_path / "paperforge.json").write_text('["a", "b"]', encoding="utf-8")
-        data = _run_probe("installation", tmp_path)
-        assert data["capability_state"] == "unavailable"
-        assert data["reason"]["code"] == "installation.config_corrupt"
-        assert data["action"]["primary"]["verb"] == "setup"
-
-    def test_primitive_config_corrupt(self, tmp_path: Path) -> None:
-        """JSON string/number/true → config_corrupt/unavailable."""
-        for content in ('"just a string"', '42', 'true'):
-            (tmp_path / "paperforge.json").write_text(content, encoding="utf-8")
-            data = _run_probe("installation", tmp_path)
-            assert data["capability_state"] == "unavailable", f"content={content}"
-            assert data["reason"]["code"] == "installation.config_corrupt"
-
-    def test_unrecognized_keys_config_valid(self, tmp_path: Path) -> None:
-        """#142: unknown non-secret keys are preserved, not corrupt — the
-        installation probe does not gate on vault config shape."""
-        (tmp_path / "paperforge.json").write_text(
-            json.dumps({"schema_version": 2, "vault_config": {}, "name": "Foo", "version": "1.0"}),
-            encoding="utf-8",
-        )
-        data = _run_probe("installation", tmp_path)
-        assert data["capability_state"] == "ready"
-
-    def test_v2_vault_config_accepted(self, tmp_path: Path) -> None:
-        """v2 format with vault_config is accepted as valid config."""
-        (tmp_path / "paperforge.json").write_text(
-            json.dumps({"vault_config": {"system_dir": "99_System"}}), encoding="utf-8",
-        )
-        data = _run_probe("installation", tmp_path)
-        assert data["capability_state"] == "ready"
-        assert data["reason"]["code"] == "installation.ready"
-
-    def test_legacy_path_keys_accepted(self, tmp_path: Path) -> None:
-        """Legacy format with at least one legacy path key is accepted."""
-        (tmp_path / "paperforge.json").write_text(
-            json.dumps({"system_dir": "99_System", "resources_dir": "Resources"}), encoding="utf-8",
-        )
-        data = _run_probe("installation", tmp_path)
-        assert data["capability_state"] == "ready"
-        assert data["reason"]["code"] == "installation.ready"
-
-    def test_ready_reason_code(self, tmp_path: Path) -> None:
-        """Ready state has correct reason code and null action."""
-        tmp_path.mkdir(parents=True, exist_ok=True)
-        canonical_test_config(tmp_path, system_dir="99_System")
-        data = _run_probe("installation", tmp_path)
         assert data["capability_state"] == "ready"
         assert data["severity"] == "ok"
         assert data["reason"]["code"] == "installation.ready"
         assert data["action"]["primary"] is None
 
-    def test_expected_version_mismatch_requires_update(self, tmp_path: Path) -> None:
-        """The plugin's expected package version gates installation readiness."""
-        tmp_path.mkdir(parents=True, exist_ok=True)
-        canonical_test_config(tmp_path, system_dir="99_System")
+    def test_corrupt_vault_config_does_not_block_core_readiness(self, tmp_path: Path) -> None:
+        (tmp_path / "paperforge.json").write_text(
+            "not valid json {{{", encoding="utf-8"
+        )
+        data = _run_probe("installation", tmp_path)
+        assert data["capability_state"] == "ready"
+        assert data["reason"]["code"] == "installation.ready"
+
+    def test_expected_version_mismatch_requires_external_update(self, tmp_path: Path) -> None:
         data = _run_probe(
             "installation", tmp_path, extra_args=["--expected-version", "0.0.0"],
         )
         assert data["capability_state"] == "needs_action"
         assert data["user_state"] == "action_required"
         assert data["reason"]["code"] == "installation.version_mismatch"
-        # #174: the mismatch action points at the REGISTERED foundation.update.
         assert data["action"]["primary"]["action_id"] == "foundation.update"
         assert data["action"]["primary"]["verb"] == "update"
-        # T8 (#169): command field deleted.
+        assert data["action"]["primary"]["safety_class"] == "safe"
+        assert data["action"]["primary"]["confirmation_required"] is False
         assert "command" not in data["action"]["primary"]
-
 
 # ---------------------------------------------------------------------------
 # Help probe states

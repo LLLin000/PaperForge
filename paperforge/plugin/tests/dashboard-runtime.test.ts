@@ -6,6 +6,16 @@
  */
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import "obsidian-test-mocks/jest-setup";
+const runtimePointer = vi.hoisted(() => ({
+  value: null as Record<string, string> | null,
+}));
+vi.mock("../src/services/managed-runtime", () => ({
+  readRuntimePointer: () => runtimePointer.value,
+  resolveRuntimeCommand: (pointer: { pythonPath?: string } | null) =>
+    pointer?.pythonPath
+      ? { command: pointer.pythonPath, args: [] }
+      : null,
+}));
 
 // Mock obsidian — minimal stubs needed to construct PaperForgeStatusView
 vi.mock("obsidian", () => {
@@ -55,16 +65,8 @@ vi.mock("obsidian", () => {
 
 import { PaperForgeStatusView } from "../src/views/dashboard";
 
-/** Mock pointer representing a published runtime (schema v1). */
-function readyPointer(pythonPath: string) {
-  return {
-    pythonPath,
-    environmentRoot: "/env",
-    paperforgeVersion: "1.3.0",
-  };
-}
 
-describe("PaperForgeStatusView._resolvePython", () => {
+describe("PaperForgeStatusView runtime pointer resolution", () => {
   let leaf: any;
   let app: any;
 
@@ -75,74 +77,37 @@ describe("PaperForgeStatusView._resolvePython", () => {
   beforeEach(() => {
     leaf = {};
     app = { plugins: { plugins: {} } };
+    runtimePointer.value = null;
   });
 
-  it("returns null when no paperforge plugin is registered", () => {
+  it("returns null when Python has not published a runtime pointer", () => {
     const view = createView();
     (view as any).app = app;
     expect((view as any)._resolvePython()).toBeNull();
   });
 
-  it("returns null when the registered plugin has no getManagedRuntime", () => {
-    app.plugins.plugins["paperforge"] = {};
+  it("uses the Python-published pointer without consulting the plugin registry", () => {
+    runtimePointer.value = {
+      pythonPath: "/opt/paperforge/venv/bin/python3",
+      environmentRoot: "/opt/paperforge/venv",
+      paperforgeVersion: "1.3.0",
+    };
     const view = createView();
     (view as any).app = app;
-    expect((view as any)._resolvePython()).toBeNull();
-  });
 
-  it("returns null when no pointer is published (installed-but-unpublished is NOT usable)", () => {
-    const mockRuntime = { readPointer: () => null };
-    app.plugins.plugins["paperforge"] = {
-      getManagedRuntime: () => mockRuntime,
-    };
-    const view = createView();
-    (view as any).app = app;
-    expect((view as any)._resolvePython()).toBeNull();
-  });
-
-  it("returns the singleton command when a pointer is published", () => {
-    const mockRuntime = {
-      readPointer: () => readyPointer("/opt/paperforge/venv/bin/python3"),
-    };
-    app.plugins.plugins["paperforge"] = {
-      getManagedRuntime: () => mockRuntime,
-    };
-    const view = createView();
-    (view as any).app = app;
-    const result = (view as any)._resolvePython();
-    expect(result).toEqual({
+    expect((view as any)._resolvePython()).toEqual({
       path: "/opt/paperforge/venv/bin/python3",
       args: [],
     });
   });
 
-  it("does NOT fall back to ambient 'python' when runtime is missing", () => {
-    // If there is no plugin with getManagedRuntime, result must be null
-    // rather than { path: "python", args: [] }
-    app.plugins.plugins["paperforge"] = {};
+  it("never falls back to ambient Python", () => {
     const view = createView();
     (view as any).app = app;
     const result = (view as any)._resolvePython();
-    expect(result).toBeNull();
-    // Specifically assert NOT { path: "python" }
-    expect(result).not.toEqual(expect.objectContaining({ path: "python" }));
-  });
 
-  it("passes args from the runtime command when present", () => {
-    // resolveRuntimeCommand always returns args: [] currently,
-    // but test the contract so it survives future changes
-    const mockRuntime = {
-      readPointer: () => readyPointer("/usr/bin/python3.11"),
-    };
-    app.plugins.plugins["paperforge"] = {
-      getManagedRuntime: () => mockRuntime,
-    };
-    const view = createView();
-    (view as any).app = app;
-    const result = (view as any)._resolvePython();
-    expect(result).toHaveProperty("path", "/usr/bin/python3.11");
-    expect(result).toHaveProperty("args");
-    expect(Array.isArray(result!.args)).toBe(true);
+    expect(result).toBeNull();
+    expect(result).not.toEqual(expect.objectContaining({ path: "python" }));
   });
 });
 

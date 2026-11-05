@@ -1291,11 +1291,3 @@ def run_status(vault: Path, verbose: bool = False, json_output: bool = False) ->
     return 0
 
 
-# =============================================================================
-# Update 功能
-# =============================================================================
-
-GITHUB_REPO = "LLLin000/PaperForge"
-GITHUB_ZIP = f"https://github.com/{GITHUB_REPO}/archive/refs/heads/master.zip"
-
-UPDATEABLE_PATHS = ["command", "scripts", "paperforge/skills", "paperforge/plugin"]

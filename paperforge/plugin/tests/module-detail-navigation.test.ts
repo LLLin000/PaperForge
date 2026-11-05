@@ -8,7 +8,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { JSDOM } from "jsdom";
 
 // ── Hoisted mutable state ──
-const { noticeCalls, spawnedProcesses, execFileCalls, modalOpens } = vi.hoisted(
+const { noticeCalls, spawnedProcesses, execFileCalls, modalOpens, runtimePointer } = vi.hoisted(
   () => {
     const modalOpens: Array<{
       kind: string;
@@ -29,7 +29,10 @@ const { noticeCalls, spawnedProcesses, execFileCalls, modalOpens } = vi.hoisted(
       args: string[];
       cb?: (err: Error | null, stdout: string, stderr: string) => void;
     }> = [];
-    return { noticeCalls, spawnedProcesses, execFileCalls, modalOpens };
+    const runtimePointer: { value: Record<string, string> | null } = {
+      value: null,
+    };
+    return { noticeCalls, spawnedProcesses, execFileCalls, modalOpens, runtimePointer };
   }
 );
 
@@ -275,12 +278,11 @@ vi.mock("../src/services/runtime-paths", () => ({
 }));
 
 vi.mock("../src/services/managed-runtime", () => ({
-  ManagedRuntime: class {},
-  runtimeActionsForHealth: () => [],
-  resolveRuntimeCommand: (run: unknown) => ({
-    command: "/usr/bin/python3",
-    args: [],
-  }),
+  readRuntimePointer: () => runtimePointer.value,
+  resolveRuntimeCommand: (pointer: { pythonPath?: string } | null) =>
+    pointer?.pythonPath
+      ? { command: pointer.pythonPath, args: [] }
+      : null,
 }));
 
 vi.mock("../src/utils/disclosure", () => ({
@@ -518,6 +520,7 @@ function installOcrClient(
       exitCode: 0,
     }));
   client.embedMigrate = vi.fn(async () => ({}));
+  client.launchRuntimeInstaller = vi.fn(() => ({ ok: true, python: "py" }));
   client.memoryRestoreBackup = vi.fn(async () => ({}));
   client.runtimeHealth = vi.fn(async () => ({}));
   client.authSetSecret = vi.fn(async () => true);
@@ -529,15 +532,6 @@ function makeTab(data: Record<string, unknown> = {}) {
   const plugin = fakePlugin(data);
   const tab = new PaperForgeSettingTab(fakeApp() as any, plugin);
   plugin._tab = tab;
-  const rt = {
-    current: () => ({
-      path: "/usr/bin/python3",
-      version: "3.11",
-      state: "ready",
-    }),
-    status: () => Promise.resolve({ state: "ready" }),
-  };
-  (tab as any)._ensureManagedRuntime = () => rt;
   (tab as any)._resolveRuntimeCommand = () => ({
     path: "/usr/bin/python3",
     args: [],
@@ -626,6 +620,7 @@ beforeEach(() => {
   noticeCalls.length = 0;
   spawnedProcesses.length = 0;
   execFileCalls.length = 0;
+  runtimePointer.value = null;
   setLanguage(fakeApp() as any);
 });
 
@@ -984,82 +979,61 @@ describe("_dispatchModuleAction allowlist (Issue #78)", () => {
     expect(msgs.toLowerCase()).toMatch(/unknown|bogus/);
   });
 
-  it("foundation.update -> action run with --confirm", () => {
+  it("foundation.update opens the external installer instead of dispatching an action", () => {
     const tab = makeTab();
-    (tab as any)._capabilityState = {
-      installation: createUnknownEnvelope("installation"),
-    };
-    execFileCalls.length = 0;
+    noticeCalls.length = 0;
     const primary = {
       action_id: "foundation.update",
       verb: "update",
       label: "Update PaperForge",
-      command: "",
-      availability: "available",
-      safety_class: "destructive",
-      preservation_facts: [],
-      replacement_facts: [],
-      interruptible: true,
-      confirmation_required: true,
-      confirmation_prompt: "Download and install",
-      scope: "module",
-      scope_count: 1,
+      safety_class: "safe",
+      confirmation_required: false,
     } as any;
     const client = installOcrClient(tab);
+
     (tab as any)._runAllowedDispatch("installation", primary, {} as any);
-    expect(client.runAction).toHaveBeenCalledTimes(1);
-    expect(client.runAction.mock.calls[0][0]).toEqual({
-      action_id: "foundation.update",
-      scope: { kind: "all" },
-      confirm: "foundation.update",
-    });
+
+    expect(client.runAction).not.toHaveBeenCalled();
+    expect(client.launchRuntimeInstaller).toHaveBeenCalledWith(
+      "update",
+      (tab.plugin as any).manifest.version
+    );
   });
 
-  it("foundation.update_python -> manual-install Notice (no automated path)", () => {
+  it("foundation.update_python remains manual and executes no command", () => {
     const tab = makeTab();
     noticeCalls.length = 0;
     const primary = {
       action_id: "foundation.update_python",
       verb: "update",
       label: "Update Python",
-      command: "",
-      availability: "available",
       safety_class: "safe",
-      preservation_facts: [],
-      replacement_facts: [],
-      interruptible: true,
       confirmation_required: false,
-      confirmation_prompt: null,
-      scope: "module",
-      scope_count: 1,
     } as any;
     (tab as any)._runAllowedDispatch("installation", primary, {} as any);
-    expect(
-      execFileCalls.some((c) => c.args.includes("foundation.update_python"))
-    ).toBe(false);
+    expect(execFileCalls.some((call) => call.args.includes("foundation.update_python"))).toBe(false);
     expect(noticeCalls.length).toBeGreaterThan(0);
   });
 
-  it("memory.install_vector_deps -> setup journey stage 3", () => {
+  it("missing vector dependencies open the external installer in repair mode", () => {
     const tab = makeTab();
-    (tab as any)._startSetupJourney = vi.fn();
+    noticeCalls.length = 0;
     const primary = {
       action_id: "memory.install_vector_deps",
       verb: "install",
       label: "Install Smart Retrieval dependencies",
-      command: "",
-      availability: "available",
       safety_class: "safe",
-      preservation_facts: [],
-      replacement_facts: [],
-      interruptible: true,
       confirmation_required: false,
-      confirmation_prompt: null,
-      scope: "module",
-      scope_count: 1,
     } as any;
+    const client = installOcrClient(tab);
+
     (tab as any)._runAllowedDispatch("memory", primary, {} as any);
-    expect((tab as any)._startSetupJourney).toHaveBeenCalledWith(3);
+
+    expect(client.runAction).not.toHaveBeenCalled();
+    expect(client.launchRuntimeInstaller).toHaveBeenCalledWith(
+      "repair",
+      (tab.plugin as any).manifest.version
+    );
   });
 
   it("memory.upgrade_backend -> embed migrate (not local build)", () => {
@@ -1847,20 +1821,10 @@ describe("_dispatchOcrAction availability gating (#07 step 3)", () => {
 });
 
 // ════════════════════════════════ RC UX Seam: Setup Stage 1 ══════════════
-describe("Setup Stage 1 exit/cancel semantics (RC UX Seam Pass)", () => {
-  function renderStage1(
-    tab: any,
-    overrides: Record<string, unknown> = {}
-  ): HTMLDivElement {
+describe("Setup stage separates external runtime from Vault setup", () => {
+  function renderStage1(tab: any): HTMLDivElement {
     const el = dom.window.document.createElement("div");
-    Object.assign(tab, {
-      _setupOperation: "idle",
-      _setupFeedback: null,
-      _setupReinstallRequested: false,
-      _runtimeAbortController: null,
-      activeTab: "overview",
-      ...overrides,
-    });
+    Object.assign(tab, { activeTab: "overview" });
     (tab as any)._capabilityState = {
       installation: {
         ...createUnknownEnvelope("installation"),
@@ -1877,126 +1841,81 @@ describe("Setup Stage 1 exit/cancel semantics (RC UX Seam Pass)", () => {
     text: string
   ): HTMLButtonElement | undefined {
     return [...el.querySelectorAll("button")].find(
-      (b) => b.textContent?.trim() === text
+      (button) => button.textContent?.trim() === text
     ) as HTMLButtonElement | undefined;
   }
 
-  it("idle stage shows Later (exit) + disabled Continue, no Cancel", () => {
+  it("shows the external install command without starting an install or Vault probe", () => {
     const tab = makeTab();
+    const probe = vi.fn();
+    (tab as any)._probeModule = probe;
     const el = renderStage1(tab);
-    expect(buttonByText(el, "Later")).toBeDefined();
-    expect(buttonByText(el, "Cancel")).toBeUndefined();
-    const cont = buttonByText(el, "Continue");
-    expect(cont).toBeDefined();
-    expect(cont?.disabled).toBe(true);
+
+    expect(el.textContent).toContain(
+      "paperforge runtime install --expected-version 1.0.0"
+    );
+    expect(buttonByText(el, "Continue")?.disabled).toBe(true);
+    expect(probe).not.toHaveBeenCalled();
+    expect(spawnedProcesses).toHaveLength(0);
   });
 
-  it("Later exits the wizard back to the overview; _setup_complete stays false (resume)", () => {
+  it("Later exits the wizard while keeping Vault setup incomplete", () => {
     const tab = makeTab();
     const el = renderStage1(tab);
     (tab.plugin as any).settings._setup_complete = false;
+
     buttonByText(el, "Later")?.click();
+
     expect(tab.activeTab).toBe("overview");
     expect((tab as any)._setupJourneyDismissedForSession).toBe(true);
     expect((tab.plugin as any).settings._setup_complete).toBe(false);
   });
 
-  it("with the session flag set, a real display() renders the Overview, not the journey", () => {
+  it("only enables Continue after the external runtime reports ready", () => {
+    const tab = makeTab();
+    runtimePointer.value = {
+      pythonPath: "C:/managed/runtime/python.exe",
+      environmentRoot: "C:/managed/runtime",
+      paperforgeVersion: "1.0.0",
+    };
+    (tab as any)._runtimeStatus = {
+      runtime_ready: true,
+      runtime_state: "ready",
+      version_matches_expected: true,
+      python_path: "C:/managed/runtime/python.exe",
+      vector_ready: true,
+    };
+    (tab as any)._runtimeStatusVersion = "1.0.0";
+    const el = renderStage1(tab);
+    const continueButton = buttonByText(el, "Continue");
+
+    expect(continueButton?.disabled).toBe(false);
+    continueButton?.click();
+    expect((tab as any)._setupStage).toBe(2);
+  });
+
+  it("a dismissed setup journey returns to the overview until Settings reopens", () => {
     const tab = makeTab();
     (tab.plugin as any).settings._setup_complete = false;
     (tab as any)._setupJourneyDismissedForSession = true;
-    // Restore the REAL display() so the setup gate is exercised, not
-    // bypassed by the makeTab no-op.
     const containerEl = dom.window.document.createElement("div");
     (tab as any).containerEl = containerEl;
     delete (tab as any).display;
-    const realDisplay = PaperForgeSettingTab.prototype.display;
-    (tab as any).display = realDisplay;
+    (tab as any).display = PaperForgeSettingTab.prototype.display;
     (tab as any)._displayInProgress = false;
     (tab as any)._initialDisplay = false;
     (tab as any)._initCapabilityState = () => {};
     (tab as any)._refreshPfConfig = () => {};
-    (tab as any)._renderOverviewTab = (c: HTMLElement) => {
-      c.createEl("h2", { text: "OVERVIEW-SENTINEL" });
+    (tab as any)._renderOverviewTab = (container: HTMLElement) => {
+      container.createEl("h2", { text: "OVERVIEW-SENTINEL" });
     };
+
     (tab as any).display();
     expect(containerEl.textContent ?? "").toContain("OVERVIEW-SENTINEL");
-    // And without the flag the same state re-renders the journey (resume).
     (tab as any)._setupJourneyDismissedForSession = false;
     containerEl.empty();
     (tab as any).display();
     expect(containerEl.textContent ?? "").not.toContain("OVERVIEW-SENTINEL");
-  });
-
-  it("Stage 2 Verify runs on the managed pointer, never ambient python (RC UX Seam P0)", async () => {
-    const tab = makeTab();
-    spawnedProcesses.length = 0;
-    (tab as any)._resolveRuntimeCommand = () => ({
-      path: "C:/managed/runtime/python.exe",
-      args: [],
-    });
-    (tab.plugin as any).settings.python_path = ""; // no custom override
-    (tab as any)._getVaultBasePath = () => "/vault";
-    (tab as any)._runSetupPython = undefined as unknown; // force real impl
-    const real = PaperForgeSettingTab.prototype._runSetupPython;
-    (tab as any)._runSetupPython = function (
-      this: any,
-      args: string[],
-      pythonOverride?: string,
-      signal?: AbortSignal
-    ) {
-      return real.call(this, args, pythonOverride, signal);
-    };
-    (tab as any)._applyLibraryConfiguration();
-    // configSet writes are async; settle a few microtasks.
-    for (let i = 0; i < 5; i++) await Promise.resolve();
-    const setup = spawnedProcesses.find((p: { args: string[] }) =>
-      p.args.includes("setup")
-    );
-    expect(setup).toBeDefined();
-    // The spawned executable must be the managed pointer, not "python".
-    expect((setup as any)?.path).toBe("C:/managed/runtime/python.exe");
-    expect(spawnedProcesses[0]?.args).toContain("setup");
-    // The command args include --json (machine stream).
-    expect(spawnedProcesses[0]?.args.join(" ")).toContain("--json");
-    // Cleanup: let the promise settle.
-    spawnedProcesses[0]?.onClose?.(0);
-    await Promise.resolve();
-  });
-
-  it("running stage shows Cancel that aborts the runtime AbortController", () => {
-    const tab = makeTab();
-    const abort = vi.fn();
-    const el = renderStage1(tab, {
-      _setupOperation: "running",
-      _runtimeAbortController: { abort },
-    });
-    expect(buttonByText(el, "Cancel")).toBeDefined();
-    expect(buttonByText(el, "Later")).toBeUndefined();
-    buttonByText(el, "Cancel")?.click();
-    expect(abort).toHaveBeenCalledTimes(1);
-  });
-
-  it("cancelled install settles to idle, keeps the wizard, and never flips _setup_complete", async () => {
-    const tab = makeTab();
-    (tab.plugin as any).settings._setup_complete = false;
-    (tab as any)._ensureManagedRuntime = () => ({
-      ensureRuntime: () =>
-        Promise.reject(
-          new DOMException("Operation was cancelled", "AbortError")
-        ),
-    });
-    (tab as any)._getVaultBasePath = () => "/vault";
-    (tab as any)._runSetupPython = () => Promise.resolve();
-    (tab as any)._installFoundation(false);
-    await Promise.resolve();
-    await Promise.resolve();
-    // Abort settled: operation back to idle, wizard retained (stage 1),
-    // completion flag untouched, no failure message.
-    expect((tab as any)._setupOperation).toBe("idle");
-    expect((tab as any)._setupStage).toBe(1);
-    expect((tab as any)._setupFeedback).toContain("cancelled");
-    expect((tab.plugin as any).settings._setup_complete).toBe(false);
   });
 });
 
