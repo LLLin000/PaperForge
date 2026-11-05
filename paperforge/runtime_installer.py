@@ -192,6 +192,29 @@ def inspect_runtime(
     }
 
 
+def _discard_candidate(candidate: Path, runtime_dir: Path) -> None:
+    """Remove a failed candidate environment, but only one we created here.
+
+    Never ``rmtree(ignore_errors=True)``: the delete must name its target and
+    surface as a no-op (not a silent sweep) when the path is unexpected.
+    """
+    try:
+        root = runtime_dir.resolve()
+        target = candidate.resolve()
+    except OSError:
+        return
+    if root not in target.parents or not target.name.startswith(".venv-candidate-"):
+        return
+    try:
+        shutil.rmtree(target)
+    except FileNotFoundError:
+        return
+    except OSError:
+        # Windows may still hold handles inside a half-created venv; the next
+        # install creates a fresh candidate and this one stays inert.
+        return
+
+
 def install_runtime(
     *,
     expected_version: str = __version__,
@@ -267,7 +290,11 @@ def install_runtime(
         try:
             pip = _pip_install(candidate_python, spec, cwd=runtime_dir)
         except (OSError, subprocess.SubprocessError) as exc:
-            raise RuntimeInstallError("runtime.pip_failed", "Failed to run pip in the candidate runtime.", str(exc)) from exc
+            raise RuntimeInstallError(
+                "runtime.pip_failed",
+                "Failed to run pip in the candidate runtime.",
+                str(exc),
+            ) from exc
         if pip.returncode != 0:
             raise RuntimeInstallError(
                 "runtime.pip_failed",
@@ -312,5 +339,5 @@ def install_runtime(
         raise RuntimeInstallError("runtime.install_failed", "Runtime installation failed.", str(exc)) from exc
     finally:
         if not installed:
-            shutil.rmtree(candidate, ignore_errors=True)
+            _discard_candidate(candidate, runtime_dir)
         # ponytail: retain prior runtime directories after pointer switch; live processes may still use them.
