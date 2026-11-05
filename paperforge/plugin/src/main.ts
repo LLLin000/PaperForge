@@ -9,20 +9,20 @@ class ConfirmMigrationModal extends Modal {
     private readonly onConfirm: () => Promise<void>
   ) {
     super(app);
-    this.setTitle("Migrate PaperForge configuration");
+    this.setTitle(t("migrate_modal_title"));
     this.contentEl.createEl("p", {
-      text: "Legacy configuration detected. Migration preview:",
+      text: t("migrate_modal_intro"),
     });
     const pre = this.contentEl.createEl("pre", { cls: "pf-migration-summary" });
     pre.setText(summary);
     this.contentEl.createEl("p", {
-      text: "Canonical values win on conflict. Credentials are never migrated through config.",
+      text: t("migrate_modal_rules"),
       cls: "setting-item-description",
     });
     const actions = this.contentEl.createDiv({ cls: "pf-modal-actions" });
-    const cancel = actions.createEl("button", { text: "Cancel" });
+    const cancel = actions.createEl("button", { text: t("migrate_modal_cancel") });
     cancel.addEventListener("click", () => this.close());
-    const go = actions.createEl("button", { text: "Migrate" });
+    const go = actions.createEl("button", { text: t("migrate_modal_confirm") });
     go.addEventListener("click", () => {
       void this.onConfirm().finally(() => this.close());
     });
