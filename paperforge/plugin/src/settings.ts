@@ -155,6 +155,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   private _runtimeStatusVersion: string | null = null;
   private _runtimeStatusLoading = false;
   private _runtimePollTimer: ReturnType<typeof setInterval> | null = null;
+  private _runtimeStatusWatchdog: ReturnType<typeof setTimeout> | null = null;
   /** Step id the guided library flow keeps expanded after an explicit edit. */
   private _setupOpenStep: string | null = null;
   /** True while a library sync or memory build is in flight. */
@@ -627,6 +628,15 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
 
     this._runtimeStatusLoading = true;
+    // A hung status call must not leave the panel without an action: after
+    // 20s give up and surface it as an error the user can act on.
+    if (this._runtimeStatusWatchdog) clearTimeout(this._runtimeStatusWatchdog);
+    this._runtimeStatusWatchdog = setTimeout(() => {
+      if (!this._runtimeStatusLoading) return;
+      this._runtimeStatusLoading = false;
+      this._runtimeStatusError = t("runtime_status_timeout");
+      this.display();
+    }, 20000);
     void Promise.resolve()
       .then(() => this.getClient().runtimeStatus(expectedVersion))
       .then((status) => {
@@ -647,6 +657,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           error instanceof Error ? error.message : String(error);
       })
       .finally(() => {
+        if (this._runtimeStatusWatchdog) {
+          clearTimeout(this._runtimeStatusWatchdog);
+          this._runtimeStatusWatchdog = null;
+        }
         this._runtimeStatusLoading = false;
         this.display();
       });
@@ -721,26 +735,34 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   /** Render the Installation detail view (Issue #77). */
   /** Render Foundation with the shared module-detail shell. */
   _renderInstallationDetail(containerEl: HTMLElement): void {
-    this._renderModuleDetailShell(containerEl, "installation", false);
+    // The shell renders the header first, so a stale "ready" envelope must be
+    // corrected before it runs: the pointer is the fact, the envelope a cache.
     const pointer = readRuntimePointer();
+    if (
+      !pointer &&
+      this._capabilityState?.installation?.user_state === "ready"
+    ) {
+      this._capabilityState = this._capabilityState ?? {};
+      this._capabilityState.installation = this._setupRequiredEnvelope();
+    }
+    this._renderModuleDetailShell(containerEl, "installation", false);
     const env =
       this._capabilityState?.installation ??
       createUnknownEnvelope("installation");
     const body = containerEl.createDiv({ cls: "pf-module-body" });
     body.createEl("h3", { text: t("md_foundation_overview") });
-    body.createEl("p", {
-      text:
-        env.user_state === "ready"
-          ? t("md_foundation_ready")
-          : this._getModuleConsequence("installation", env),
-      cls:
-        env.user_state === "ready"
-          ? "pf-status-ok"
-          : "setting-item-description",
-    });
     this._refreshRuntimeStatus();
     const runtime = this._runtimeStatus;
     const runtimeReady = runtime?.runtime_ready === true;
+    body.createEl("p", {
+      // "Verified" needs a live status, not a cached envelope: a failed or
+      // timed-out check must not read as "installed and verified".
+      text: runtimeReady
+        ? t("md_foundation_ready")
+        : this._runtimeStatusError ??
+          this._getModuleConsequence("installation", env),
+      cls: runtimeReady ? "pf-status-ok" : "setting-item-description",
+    });
 
     // ── Comprehensive checks ──
     const checks = body.createDiv({ cls: "pf-config" });
@@ -1131,7 +1153,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       });
     } else if (
       env.user_state !== "checking" &&
-      env.user_state !== "not_enabled"
+      env.user_state !== "not_enabled" &&
+      env.reason?.code !== "library.config_missing"
     ) {
       renderErrorAnatomy(body, {
         whatHappened:
@@ -1167,7 +1190,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         | undefined
     )?.orphan?.count;
     const orphanRow = facts.createDiv({ cls: "pf-module-fact" });
-    orphanRow.createEl("span", { text: "Orphans" });
+    orphanRow.createEl("span", { text: t("md_library_orphans") });
     orphanRow.createEl("span", {
       text:
         typeof orphanCount === "number"
@@ -1497,7 +1520,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       statusText = t("md_retrieval_ready");
       statusClass = "pf-status-ok";
     } else {
-      statusText = env.reason?.text ?? null;
+      statusText =
+        this._localizeReason(reasonCode, t("cc_module_memory")) ??
+        env.reason?.text ??
+        null;
       statusClass = "pf-status-warn";
     }
     if (statusText) {
@@ -1519,18 +1545,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       env.user_state !== "ready" &&
       env.user_state !== "not_enabled"
     ) {
-      const primary = env.action.primary;
-      const actionKey =
-        "action_" + (primary.action_id ?? primary.verb).replace(/[.-]/g, "_");
-      const actionLabel =
-        primary.label ||
-        (t(actionKey) !== actionKey
-          ? t(actionKey)
-          : t("cc_action_" + primary.verb) !== "cc_action_" + primary.verb
-            ? t("cc_action_" + primary.verb)
-            : t("cc_action_probe"));
       renderActionButton(body, {
-        label: actionLabel,
+        label: this._actionLabel(env.action.primary),
         onClick: () => this._dispatchModuleAction("memory", env),
       });
     }
@@ -1654,9 +1670,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         text: t("cc_badge_action_required") || "Action Required",
       });
       const impactText =
-        env.reason?.text ||
-        t("sr_impact_db_missing") ||
-        "Smart Retrieval needs an API key and vector index.";
+        this._localizeReason(env.reason?.code ?? "", t("cc_module_memory")) ??
+        env.reason?.text ??
+        t("sr_impact_db_missing");
       impact.createEl("p", { text: impactText });
     }
     // ── Advanced Status (collapsible, detailed diagnostics) ──
@@ -2381,7 +2397,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   _renderHelpTab(containerEl: HTMLElement): void {
     containerEl.createEl("div", {
       cls: "pf-cc-eyebrow",
-      text: t("help_eyebrow") || "help",
+      text: t("help_section_label"),
     });
     containerEl.createEl("h1", {
       cls: "pf-cc-title",
@@ -2847,6 +2863,17 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   /** Reason code → localized string via i18n key, or null if unmapped.
    *  Tries full dotted code normalized to underscores first (e.g. "installation.ready" → "cc_reason_installation_ready"),
    *  then falls back to bare code (e.g. "ready" → "cc_reason_ready"). */
+  /** Localized label for a backend action: the wire label is English. */
+  private _actionLabel(primary: ActionPrimary): string {
+    const idKey = "action_" + (primary.action_id ?? primary.verb).replace(/[.-]/g, "_");
+    const byId = t(idKey);
+    if (byId !== idKey) return byId;
+    const verbKey = "cc_action_" + primary.verb;
+    const byVerb = t(verbKey);
+    if (byVerb !== verbKey) return byVerb;
+    return primary.label;
+  }
+
   private _localizeReason(code: string, module: string): string | null {
     // Try full dotted code: "installation.ready" → "cc_reason_installation_ready"
     const fullKey = "cc_reason_" + code.replace(/\./g, "_");
@@ -3496,10 +3523,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     containerEl.createEl("p", { text: t("setup_foundation_desc") });
     // A published pointer with no status yet is still "checking": never offer
     // repair/install before the status is known.
+    // A status we could not obtain is not "ready": treat an error as an
+    // actionable not-ready state instead of leaving the panel without a button.
     const statusUnknown =
       !ready &&
+      !this._runtimeStatusError &&
       (this._runtimeStatusLoading ||
-        (!!pointer && this._runtimeStatus === null && !this._runtimeStatusError));
+        (!!pointer && this._runtimeStatus === null));
     containerEl.createEl("p", {
       text: statusUnknown
         ? t("setup_runtime_checking")
@@ -3533,22 +3563,22 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         });
       }
     }
-    if (!ready) {
-      const manual = containerEl.createEl("details", {
-        cls: "pf-runtime-manual",
-      });
-      manual.createEl("summary", { text: t("runtime_manual_summary") });
-      manual.createEl("pre").createEl("code", {
-        text: this._runtimeInstallerCommand(action),
-      });
-      renderActionButton(containerEl, {
-        label: t("setup_runtime_refresh"),
-        onClick: () => {
-          this._refreshRuntimeStatus(true);
-          this.display();
-        },
-      });
-    }
+    // Manual commands and re-check stay available even while the status is
+    // unknown: a stuck check must never leave the panel without an action.
+    const manual = containerEl.createEl("details", {
+      cls: "pf-runtime-manual",
+    });
+    manual.createEl("summary", { text: t("runtime_manual_summary") });
+    manual.createEl("pre").createEl("code", {
+      text: this._runtimeInstallerCommand(action),
+    });
+    renderActionButton(containerEl, {
+      label: t("setup_runtime_refresh"),
+      onClick: () => {
+        this._refreshRuntimeStatus(true);
+        this.display();
+      },
+    });
 
     const nav = containerEl.createDiv({ cls: "pf-setup-nav" });
     renderActionButton(nav, {
