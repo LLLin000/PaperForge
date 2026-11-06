@@ -1541,7 +1541,21 @@ def render_fulltext_markdown(
     pre_reference_reader_figures_emitted = False
 
     # Compute heading levels from span metadata font sizes when available
-    _HEADING_ROLES = {"section_heading", "subsection_heading", "sub_subsection_heading"}
+    _HEADING_ROLE_DEPTHS = {
+        "section_heading": 0,
+        "subsection_heading": 1,
+        "sub_subsection_heading": 2,
+    }
+    _HEADING_ROLES = set(_HEADING_ROLE_DEPTHS)
+    _minimum_heading_depth = min(
+        (_HEADING_ROLE_DEPTHS[block["role"]] for block in structured_blocks if block.get("role") in _HEADING_ROLE_DEPTHS),
+        default=0,
+    )
+    _has_numbered_headings = any(
+        block.get("role") in _HEADING_ROLE_DEPTHS
+        and _heading_number_depth_text(str(block.get("text") or "")) > 0
+        for block in structured_blocks
+    )
     heading_font_sizes: dict[int, float] = {}
     for i, block in enumerate(structured_blocks):
         if block.get("role") not in _HEADING_ROLES:
@@ -1880,7 +1894,16 @@ def render_fulltext_markdown(
                         lines.append("")
                     continue
             key = (int(block.get("page", 0) or 0), block.get("block_id"))
-            prefix = _heading_prefix_map.get(key)
+            role_depth = _HEADING_ROLE_DEPTHS.get(role)
+            if role_depth is not None:
+                number_depth = _heading_number_depth_text(text)
+                if number_depth:
+                    role_depth = max(role_depth, _minimum_heading_depth + number_depth - 1)
+                elif _has_numbered_headings:
+                    role_depth = min(role_depth, _minimum_heading_depth)
+                prefix = "#" * (2 + role_depth - _minimum_heading_depth)
+            else:
+                prefix = _heading_prefix_map.get(key)
             if prefix is None:
                 depth = _heading_number_depth_text(text)
                 prefix = "##" if depth <= 1 else "###"

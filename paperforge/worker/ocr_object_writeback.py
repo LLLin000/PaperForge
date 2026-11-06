@@ -56,15 +56,24 @@ def _mark_owned(block: dict, *, family: str, owner_id: str, owner_role: str, rea
     block["_object_writeback_phase"] = "post_inventory"
     block["_object_consumed"] = True
 
-def _score_side_adjacent_text_claim(block: dict, figure: dict) -> float:
-    """Score whether a text block is a side-adjacent figure note.
+def _score_side_adjacent_text_claim(
+    block: dict,
+    figure: dict,
+    *,
+    page_blocks: list[dict] = (),
+    page_figures: list[dict] = (),
+) -> float:
+    """Score a side-adjacent figure note using explicit evidence weights.
 
-    Returns confidence in [0, 1]. Threshold 0.9 is applied by caller.
+    Passing the mandatory geometric gates contributes 0.30. Text inside the
+    visual bbox adds 0.25; otherwise >=50% vertical overlap plus <=40px side
+    proximity adds 0.20. Matching caption font family/size adds 0.20, no
+    competing figure adds 0.15, and no visual/column boundary adds 0.10. If
+    caption style is unavailable, its weight is omitted and remaining score normalized.
     """
     bbox = block.get("bbox") or [0, 0, 0, 0]
     figure_bbox = figure.get("cluster_bbox") or figure.get("asset_bbox")
     if not figure_bbox or len(figure_bbox) < 4:
-        # Fallback: union bbox from matched_assets
         assets = figure.get("matched_assets") or []
         xs, ys = [], []
         for a in assets:
@@ -75,23 +84,129 @@ def _score_side_adjacent_text_claim(block: dict, figure: dict) -> float:
         figure_bbox = [min(xs), min(ys), max(xs), max(ys)] if xs else [0, 0, 0, 0]
     if len(bbox) < 4 or len(figure_bbox) < 4:
         return 0.0
-    same_page = int(block.get("page", 0) or 0) == int(figure.get("page", 0) or 0)
-    if not same_page:
+    page = int(block.get("page", 0) or 0)
+    if page != int(figure.get("page", 0) or 0):
         return 0.0
     y_overlap = max(0, min(bbox[3], figure_bbox[3]) - max(bbox[1], figure_bbox[1]))
     horizontal_gap = min(abs(figure_bbox[0] - bbox[2]), abs(bbox[0] - figure_bbox[2]))
     if y_overlap <= 0 or horizontal_gap > 40:
         return 0.0
-    role = str(block.get("role") or "")
-    if role in PROTECTED_ROLES:
+    if str(block.get("role") or "") in PROTECTED_ROLES:
         return 0.0
-    raw_label = str(block.get("raw_label") or "")
-    if raw_label != "text":
+    if str(block.get("raw_label") or "") != "text":
         return 0.0
     text = str(block.get("text") or "").strip()
     if not text or len(text.split()) > 80:
         return 0.0
-    return 0.92
+
+    score = 0.30
+    visual_bbox = figure.get("visual_bbox") or figure_bbox
+    in_visual = bool(block.get("_in_visual_container"))
+    if len(visual_bbox) >= 4:
+        in_visual |= (
+            bbox[0] >= visual_bbox[0] and bbox[1] >= visual_bbox[1]
+            and bbox[2] <= visual_bbox[2] and bbox[3] <= visual_bbox[3]
+        )
+    if in_visual:
+        score += 0.25
+    elif y_overlap >= (bbox[3] - bbox[1]) * 0.5 and horizontal_gap <= 40:
+        score += 0.20
+
+    caption_ids = {
+        str(value.get("block_id")) if isinstance(value, dict) else str(value)
+        for value in (
+            figure.get("matched_caption_blocks")
+            or figure.get("caption_blocks")
+            or [figure.get("legend_block_id")]
+        )
+        if value is not None
+    }
+    captions = [
+        candidate for candidate in page_blocks
+        if str(candidate.get("block_id")) in caption_ids
+        and candidate.get("role") in {"figure_caption", "figure_caption_candidate"}
+    ]
+    block_signature = block.get("span_signature") or {}
+    block_meta = block.get("span_metadata") or {}
+    if isinstance(block_meta, list):
+        block_meta = block_meta[0] if block_meta else {}
+    block_font = block_signature.get("font_family_norm") or block_meta.get("font") or block_meta.get("font_family")
+    block_size = block_signature.get("font_size_median")
+    if block_size is None:
+        block_size = block_meta.get("size")
+    style_matches = False
+    style_evaluable = False
+    for caption in captions:
+        signature = caption.get("span_signature") or {}
+        metadata = caption.get("span_metadata") or {}
+        if isinstance(metadata, list):
+            metadata = metadata[0] if metadata else {}
+        caption_font = signature.get("font_family_norm") or metadata.get("font") or metadata.get("font_family")
+        caption_size = signature.get("font_size_median")
+        if caption_size is None:
+            caption_size = metadata.get("size")
+        comparable = False
+        agrees = True
+        if block_font and caption_font:
+            comparable = True
+            agrees &= str(block_font).strip().lower() == str(caption_font).strip().lower()
+        if block_size is not None and caption_size is not None:
+            comparable = True
+            agrees &= abs(float(block_size) - float(caption_size)) <= 1.0
+        if comparable:
+            style_evaluable = True
+        if comparable and agrees:
+            style_matches = True
+            break
+    denominator = 1.0
+    if style_matches:
+        score += 0.20
+    elif not style_evaluable:
+        denominator -= 0.20
+
+    competing = False
+    for other in page_figures:
+        if other is figure or other.get("figure_id") == figure.get("figure_id"):
+            continue
+        if int(other.get("page", 0) or 0) != page:
+            continue
+        other_bbox = other.get("cluster_bbox") or other.get("asset_bbox")
+        if not other_bbox or len(other_bbox) < 4:
+            continue
+        other_y_overlap = max(0, min(bbox[3], other_bbox[3]) - max(bbox[1], other_bbox[1]))
+        other_gap = min(abs(other_bbox[0] - bbox[2]), abs(bbox[0] - other_bbox[2]))
+        if other_y_overlap > 0 and other_gap <= 40:
+            competing = True
+            break
+    if not competing:
+        score += 0.15
+
+    x1, x2 = sorted((bbox[2], figure_bbox[0])) if bbox[2] <= figure_bbox[0] else sorted((figure_bbox[2], bbox[0]))
+    separator = any(
+        candidate is not block
+        and int(candidate.get("page", 0) or 0) == page
+        and len(candidate.get("bbox") or []) >= 4
+        and candidate["bbox"][0] >= x1
+        and candidate["bbox"][2] <= x2
+        and max(0, min(candidate["bbox"][3], bbox[3], figure_bbox[3]) - max(candidate["bbox"][1], bbox[1], figure_bbox[1])) > 0
+        and (
+            candidate.get("raw_label") != "text"
+            or candidate.get("role") in {"figure_asset", "media_asset", "table_html"}
+            or candidate.get("_in_visual_container")
+        )
+        for candidate in page_blocks
+    )
+    page_width = float(block.get("page_width") or figure.get("page_width") or 0)
+    if not page_width:
+        page_width = max((float((candidate.get("bbox") or [0, 0, 0, 0])[2]) for candidate in page_blocks), default=0.0)
+    gutter = page_width / 2
+    crosses_column_boundary = (
+        page_width > 0 and x1 < gutter < x2
+        and max(bbox[2], figure_bbox[2]) - min(bbox[0], figure_bbox[0]) < page_width * 0.65
+    )
+    if not separator and not crosses_column_boundary:
+        score += 0.10
+    return round(min(1.0, score / denominator), 4)
 
 def apply_object_writebacks(
     *, structured_blocks: list[dict], figure_inventory: dict, table_inventory: dict
@@ -274,7 +389,12 @@ def apply_object_writebacks(
             # Skip already-owned blocks
             if block.get("_object_writeback_phase"):
                 continue
-            score = _score_side_adjacent_text_claim(block, fig)
+            score = _score_side_adjacent_text_claim(
+                block,
+                fig,
+                page_blocks=structured_blocks,
+                page_figures=figure_inventory.get("matched_figures", []),
+            )
             if score >= 0.9:
                 block["role"] = "figure_inner_text"
                 _mark_owned(
