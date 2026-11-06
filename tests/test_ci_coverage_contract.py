@@ -43,6 +43,7 @@ FAILURE_EVIDENCE_JOBS = (
     "python-suite",
     "e2e-tests",
     "cli-acceptance",
+    "cli-acceptance-heavy",
 )
 
 
@@ -106,6 +107,11 @@ def _all_test_files() -> set[str]:
 # hides every other file in that directory.
 _PYTEST_ARGS = re.compile(r"(?:python -m pytest|pytest)\s+(.*?)(?=\s--?\w|\Z)", re.S)
 _IGNORED = re.compile(r"--ignore[= ]\s*(tests/[\w/.\-]+)")
+# `pytest $(python scripts/ci_shard.py --shard N --of M)` names no paths on the
+# command line; the shard map partitions tests/ and tests/test_ci_shard_map.py
+# proves it, so the step is read as collecting the whole tree (minus its
+# --ignore flags).
+_SHARD_SELECTOR = "scripts/ci_shard.py"
 _MARKER_FILTER = re.compile(r"-m\s+['\"]?(\w+)")
 
 
@@ -131,6 +137,8 @@ def _pytest_steps(workflow_name: str) -> list[tuple[set[str], set[str]]]:
                         token.endswith("/") or token.endswith(".py")
                     ):
                         targets.add(token)
+            if _SHARD_SELECTOR in script:
+                targets.add("tests/")
             ignored = set()
             for raw in _IGNORED.findall(script):
                 normalised = raw if raw.endswith("/") or raw.endswith(".py") else raw + "/"

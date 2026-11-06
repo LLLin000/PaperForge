@@ -225,8 +225,17 @@ jobs:
   # because they have dedicated jobs (L4) or a dedicated workflow
   # (ci-chaos.yml) and running them twice buys nothing.
   python-suite:
-    name: L1b — Full Python Suite
+    name: L1b — Python Suite (shard ${{ matrix.shard }}/2)
     runs-on: ubuntu-latest
+    # The suite is throughput-bound (~3.8k tests, no dominant case), so it is
+    # split by a committed map instead of running longer on one runner:
+    # tests/ci-shards.json assigns each file a shard, balanced on collected
+    # test counts. `python scripts/ci_shard.py --write` regenerates it and
+    # tests/test_ci_shard_map.py fails when a new file is missing.
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -246,21 +255,29 @@ jobs:
         run: npm ci
         working-directory: paperforge/plugin
       - name: Verify architecture generator and golden fixture pins (#231)
+        if: matrix.shard == 0
         run: python -m pytest tests/test_architecture_audit_fixtures.py -q --tb=short --timeout=180 --junit-xml="$RUNNER_TEMP/paperforge-architecture-fixtures.xml"
-      - name: Run the full suite
+      # The --ignore flags are redundant with the shard map (it excludes those
+      # directories too); they stay so the coverage contract can read which
+      # directories this job does NOT own.
+      - name: Run this shard
         run: |
-          python -m pytest tests/ \
+          # 120 paths must not travel through command substitution: hand pytest
+          # a single @argfile token instead.
+          SHARD_ARGS=$(python scripts/ci_shard.py --shard ${{ matrix.shard }} --of 2 \
+            --args-file "$RUNNER_TEMP/shard-${{ matrix.shard }}.txt")
+          python -m pytest "$SHARD_ARGS" \
             --ignore=tests/e2e \
             --ignore=tests/audit \
             --ignore=tests/chaos \
             --ignore=tests/harness \
             -q --tb=short --timeout=180 \
-            --junit-xml="$RUNNER_TEMP/paperforge-python-suite.xml"
+            --junit-xml="$RUNNER_TEMP/paperforge-python-suite-${{ matrix.shard }}.xml"
       - name: Preserve first-failure Python-suite evidence
         if: ${{ failure() }}
         uses: actions/upload-artifact@v4
         with:
-          name: ci-failure-python-suite
+          name: ci-failure-python-suite-${{ matrix.shard }}
           path: ${{ runner.temp }}/paperforge-*.xml
           if-no-files-found: warn
           retention-days: 14
@@ -557,10 +574,18 @@ jobs:
         # The full-suite job's extras: E05 migrates a legacy ChromaDB substrate, and
         # a case that branched on an absent dependency would be a skip in disguise.
         run: python -m pip install -e ".[test,vector,legacy-vector]"
+      # Three cases own ~55% of this suite (measured: e04 52s, d05 52s, d04 48s
+      # of a 293s run). They are split into cli-acceptance-heavy; this job keeps
+      # the directory target, so a new harness file is collected here without
+      # touching the workflow.
       - name: Run the CLI-host acceptance cases
         shell: bash
         run: |
-          python -m pytest tests/harness/ -m harness -v --tb=short --timeout=600 \
+          python -m pytest tests/harness/ -m harness \
+            --ignore=tests/harness/test_e04_embed_stop.py \
+            --ignore=tests/harness/test_d05_ocr_redo.py \
+            --ignore=tests/harness/test_d04_ocr_stop.py \
+            -v --tb=short --timeout=600 \
             --junit-xml="$RUNNER_TEMP/paperforge-cli-acceptance.xml"
         env:
           PF_EVIDENCE_DIR: ${{ github.workspace }}/tests/evidence/cli-acceptance
@@ -583,6 +608,50 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  # The slow half of P, split so the two halves finish together instead of one
+  # job carrying every long case while the rest of CI waits for it.
+  cli-acceptance-heavy:
+    name: P — CLI-host acceptance (slow cases)
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install package with test deps
+        run: python -m pip install -e ".[test,vector,legacy-vector]"
+      - name: Run the slow CLI-host acceptance cases
+        shell: bash
+        run: |
+          python -m pytest \
+            tests/harness/test_e04_embed_stop.py \
+            tests/harness/test_d05_ocr_redo.py \
+            tests/harness/test_d04_ocr_stop.py \
+            -m harness -v --tb=short --timeout=600 \
+            --junit-xml="$RUNNER_TEMP/paperforge-cli-acceptance-heavy.xml"
+        env:
+          PF_EVIDENCE_DIR: ${{ github.workspace }}/tests/evidence/cli-acceptance
+      - name: Upload CLI-host acceptance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cli-acceptance-evidence-heavy
+          path: tests/evidence/cli-acceptance
+          if-no-files-found: error
+          retention-days: 14
+      - name: Preserve first-failure CLI-acceptance evidence
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-failure-cli-acceptance-heavy
+          path: |
+            ${{ runner.temp }}/paperforge-cli-acceptance-heavy.xml
+            tests/evidence/cli-acceptance
+          if-no-files-found: warn
+          retention-days: 14
+
   alls-green:
     name: All Checks Passed
     if: always()
@@ -592,6 +661,7 @@ jobs:
       - python-suite
       - j-matrix
       - cli-acceptance
+      - cli-acceptance-heavy
       - plugin-tests
       - e2e-tests
       - architecture-gate
