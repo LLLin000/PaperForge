@@ -46,6 +46,22 @@ FAILURE_EVIDENCE_JOBS = (
 )
 
 
+#: Host-matrix cells the Obsidian gate may not declare, each with the reason.
+#: A cell here is a known environment limit, not a passing gate: the entry exists
+#: so the omission is reviewable, and declaring the cell again fails this
+#: contract until the entry is deleted.
+KNOWN_LIMIT_HOST_CELLS: dict[tuple[str, str], str] = {
+    ("earliest", "earliest"): (
+        "that installer's app build loses its WebDriver renderer ~2 min into "
+        "A01 with 'disconnected: not connected to DevTools' (master run "
+        "41461698495 before this gate existed; 42204449196 after). H3 passes "
+        "inside the same cell, so plugin/backend are healthy; see ADR 0005"
+    ),
+    ("latest", "earliest"): (
+        "same installer build, same renderer disconnect; see ADR 0005"
+    ),
+}
+
 #: Files the merge gate does not collect, each with the reason it may stay out.
 #: Adding a file here is a claim that it need not gate; an empty reason fails.
 EXCLUDED_UNGATED: dict[str, str] = {
@@ -296,11 +312,20 @@ class TestFailureEvidence:
         # The last branch is the full declaration; earlier ones must be subsets
         # of it (a PR branch may only narrow the declared host matrix).
         declared = {(entry["app"], entry["installer"]) for entry in branches[-1]}
-        assert {
+        required = {
             ("earliest", "earliest"),
             ("latest", "latest"),
             ("latest", "earliest"),
-        } <= declared
+        }
+        for cell, reason in KNOWN_LIMIT_HOST_CELLS.items():
+            assert reason.strip(), f"{cell} is excluded without a reason"
+        # What remains required after the documented limits must be declared.
+        assert required - set(KNOWN_LIMIT_HOST_CELLS) <= declared
+        re_declared = set(KNOWN_LIMIT_HOST_CELLS) & declared
+        assert not re_declared, (
+            f"known-limit host cells are back in the matrix: {sorted(re_declared)}; "
+            "delete their entries once the crash is fixed"
+        )
         for branch in branches:
             narrowed = {(entry["app"], entry["installer"]) for entry in branch}
             assert narrowed <= declared, (
