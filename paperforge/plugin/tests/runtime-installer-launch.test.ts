@@ -1,12 +1,14 @@
 import { describe, it, expect, vi } from "vitest";
 import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
 
 import { NodeProcessTransport } from "../src/client/node-transport";
 import {
-  macInstallerScript,
+  installerRun,
+  posixInstallerScript,
   runtimeInstallerShellCommand,
   runtimeInstallerSteps,
-  terminalLaunch,
   windowsInstallerScript,
 } from "../src/services/runtime-installer-launcher";
 
@@ -34,30 +36,22 @@ describe("external runtime installer launcher", () => {
     expect(script).toContain(":paperforge_failed");
   });
 
-  it("opens a console that stays open on Windows", () => {
-    const launch = terminalLaunch("win32", {
-      comSpec: "C:\\cmd.exe",
-      scriptPath: "C:\\tmp\\installer.cmd",
-    });
-    expect(launch.command).toBe("C:\\cmd.exe");
-    expect(launch.args).toEqual([
-      "/c",
-      "start",
-      "",
-      "cmd.exe",
-      "/k",
-      "C:\\tmp\\installer.cmd",
-    ]);
-  });
-
-  it("runs the script through Terminal on macOS and a terminal on Linux", () => {
+  it("runs the script without a console (headless hosts must work)", () => {
     expect(
-      terminalLaunch("darwin", { scriptPath: "/tmp/installer.command" }).args
-    ).toEqual(["-a", "Terminal", "/tmp/installer.command"]);
-    expect(
-      terminalLaunch("linux", { scriptPath: "/tmp/installer.command" }).args
-    ).toEqual(["-e", "sh", "/tmp/installer.command"]);
-    expect(macInstallerScript("echo hi")).toContain("echo hi");
+      installerRun("win32", {
+        comSpec: "C:\\cmd.exe",
+        scriptPath: "C:\\tmp\\installer.cmd",
+      })
+    ).toEqual({ command: "C:\\cmd.exe", args: ["/c", "C:\\tmp\\installer.cmd"] });
+    expect(installerRun("linux", { scriptPath: "/tmp/installer.command" })).toEqual(
+      { command: "/bin/sh", args: ["/tmp/installer.command"] }
+    );
+    expect(installerRun("darwin", { scriptPath: "/tmp/installer.command" })).toEqual(
+      { command: "/bin/sh", args: ["/tmp/installer.command"] }
+    );
+    // POSIX script fails fast like the batch one.
+    expect(posixInstallerScript("first && second")).toContain("set -e");
+    expect(posixInstallerScript("echo hi")).toContain("echo hi");
   });
 
   // Windows-only: asserts the .cmd bootstrap, ComSpec launch and the `py`
@@ -74,11 +68,14 @@ describe("external runtime installer launcher", () => {
       vaultPath: "C:\\vault",
       spawnFn,
       execFileSyncFn,
+      installerLogPath: () => path.join(os.tmpdir(), "pf-installer-test.log"),
     });
 
     const result = transport.launchRuntimeInstaller("install", "1.5.15");
 
-    expect(result).toEqual({ ok: true, python: "py" });
+    expect(result.ok).toBe(true);
+    expect(result.python).toBe("py");
+    expect(result.logPath?.endsWith("pf-installer-test.log")).toBe(true);
     const [command, args] = (spawnFn as unknown as ReturnType<typeof vi.fn>).mock
       .calls[0] as [string, string[]];
     expect(command).toBe(process.env.ComSpec || "C:\\Windows\\System32\\cmd.exe");

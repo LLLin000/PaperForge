@@ -143,6 +143,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   _setupStage = 1;
   /** The next runtime action rebuilds the environment instead of reusing it. */
   private _setupReinstallRequested = false;
+  /** Log of the installer launched from this panel (null before any launch). */
+  private _installerLogPath: string | null = null;
   /** #87: Selected optional capabilities. */
   _setupOptionals: Record<string, boolean> = {
     ocr: false,
@@ -876,6 +878,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this.display();
       return;
     }
+    this._installerLogPath = result.logPath ?? null;
     new Notice(t("runtime_installer_opened"), 8000);
     if (this._setupOperation === "idle") this._setupOperation = "running";
     this._pollRuntimeUntilReady();
@@ -901,6 +904,17 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }, 3000);
   }
 
+  /** Last lines the detached installer wrote (empty when unreadable). */
+  private _installerLogTail(): string {
+    if (!this._installerLogPath) return "";
+    try {
+      const text = fs.readFileSync(this._installerLogPath, "utf-8");
+      return text.trim().split(/\r?\n/).slice(-6).join(" | ");
+    } catch {
+      return "";
+    }
+  }
+
   private _stopRuntimePoll(ready: boolean): void {
     if (this._runtimePollTimer) {
       clearInterval(this._runtimePollTimer);
@@ -911,7 +925,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       if (!ready) {
         // Say why the poll gave up: a template with an empty slot tells the
         // user nothing and hides the failing command's own message.
-        const detail = this._runtimeStatusError || this._setupFeedback || "";
+        const detail =
+          this._runtimeStatusError || this._installerLogTail() || "";
         this._setupFeedback = t("runtime_installer_failed").replace(
           "{error}",
           detail || "the runtime did not become ready in time"

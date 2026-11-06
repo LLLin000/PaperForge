@@ -3,12 +3,21 @@
  *
  * Authority split (unchanged): only the external installer creates/verifies
  * candidate environments and publishes the machine pointer. The plugin never
- * runs pip, never creates a venv, never writes the pointer — it only opens a
- * terminal that runs the installer, then polls the published pointer.
+ * runs pip, never creates a venv, never writes the pointer — it runs the
+ * installer script as a detached child and polls the published pointer.
+ *
+ * The script runs WITHOUT a console window: a terminal (`start`, `open -a
+ * Terminal`, `x-terminal-emulator`) only exists in an interactive desktop
+ * session, so headless hosts (CI, remote desktops, some sandboxes) could never
+ * finish a first-use install. Output goes to `installer.log`, which the
+ * wizard reads when the poll gives up.
  *
  * This module is pure command construction; the spawn itself stays in the
  * single child-process authority (`client/node-transport.ts`).
  */
+
+import * as os from "os";
+import * as path from "path";
 
 export type RuntimeInstallerAction = "install" | "update" | "repair";
 
@@ -37,7 +46,7 @@ export function runtimeInstallerShellCommand(
     .join(" && ");
 }
 
-/** Windows batch script — avoids every nested-quoting layer of `cmd /k`. */
+/** Windows batch script — avoids every nested-quoting layer of `cmd /c`. */
 export function windowsInstallerScript(shellCommand: string): string {
   const [first, second] = shellCommand.split(" && ");
   return [
@@ -54,39 +63,34 @@ export function windowsInstallerScript(shellCommand: string): string {
   ].join("\r\n");
 }
 
-/** POSIX script content for macOS Terminal windows. */
-export function macInstallerScript(shellCommand: string): string {
-  return `#!/bin/sh\n${shellCommand}\nprintf '\\n[done — press enter to close]'\nread _\n`;
+/** POSIX script: `set -e` gives the same fail-fast semantics as the batch. */
+export function posixInstallerScript(shellCommand: string): string {
+  return `#!/bin/sh\nset -e\n${shellCommand}\n`;
 }
 
-export interface TerminalLaunch {
+/** Where the detached installer writes its output. */
+export function installerLogPath(home = os.homedir()): string {
+  return path.join(home, ".paperforge", "runtime", "installer.log");
+}
+
+export interface InstallerRun {
   command: string;
   args: string[];
 }
 
 /**
- * Terminal that stays open after the command finishes, so the user can read
- * the installer output instead of watching a window vanish.
+ * Run the script directly. No `start` / Terminal.app / terminal emulator:
+ * those need an interactive session and fail silently elsewhere.
  */
-export function terminalLaunch(
+export function installerRun(
   platform: NodeJS.Platform,
   options: { comSpec?: string; scriptPath: string }
-): TerminalLaunch {
+): InstallerRun {
   if (platform === "win32") {
     return {
       command: options.comSpec || "C:\\Windows\\System32\\cmd.exe",
-      // start with an empty title argument, then cmd /k to keep the console.
-      args: ["/c", "start", "", "cmd.exe", "/k", options.scriptPath],
+      args: ["/c", options.scriptPath],
     };
   }
-  if (platform === "darwin") {
-    return {
-      command: "open",
-      args: ["-a", "Terminal", options.scriptPath],
-    };
-  }
-  return {
-    command: "x-terminal-emulator",
-    args: ["-e", "sh", options.scriptPath],
-  };
+  return { command: "/bin/sh", args: [options.scriptPath] };
 }
