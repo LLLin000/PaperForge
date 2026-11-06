@@ -39,6 +39,18 @@ export interface ActionDescriptor {
   label_code?: string;
   confirmation?: "none" | "required" | string;
 }
+export interface RuntimeStatus {
+  runtime_ready: boolean;
+  runtime_state: "ready" | "attention" | "missing" | string;
+  pointer_path: string;
+  pointer_version: string | null;
+  python_path: string | null;
+  python_exists: boolean;
+  paperforge_version: string | null;
+  version_matches_expected: boolean;
+  vector_ready: boolean;
+  installer: string;
+}
 
 export interface OcrPaperRow {
   key: string;
@@ -568,7 +580,36 @@ export class PaperForgeClient {
       return JSON.parse(raw) as ProbeAllEnvelope;
     });
   }
-  // ── 2. Deficit Contract (reconcile) ───────────────────────────────────────
+  /** Read managed runtime health without resolving or reading a Vault. */
+  async runtimeStatus(expectedVersion: string): Promise<RuntimeStatus> {
+    const raw = await this._executeRaw(
+      [
+        "runtime",
+        "status",
+        "--expected-version",
+        expectedVersion,
+        "--json",
+      ],
+      { timeoutMs: 30000 }
+    );
+    return JSON.parse(raw) as RuntimeStatus;
+  }
+
+  /** Open the external installer in a terminal. The plugin does not install
+   * anything itself — the installer owns creation, verification and the
+   * pointer; the UI only polls `runtimeStatus` afterwards. */
+  launchRuntimeInstaller(
+    action: "install" | "update" | "repair",
+    version: string
+  ): { ok: boolean; python?: string; error?: string; logPath?: string } {
+    if (typeof this._transport.launchRuntimeInstaller !== "function") {
+      return {
+        ok: false,
+        error: "This transport cannot launch the external installer.",
+      };
+    }
+    return this._transport.launchRuntimeInstaller(action, version);
+  }
 
   async reconcile(
     scope: "all" | "papers" = "all",

@@ -38,7 +38,7 @@ Two machine modes: single-result PFResult JSON and structured-stream NDJSON (sta
 
 ## § Bootstrap
 
-Plugin may create the first runnable Python environment; once PaperForge can execute, it never owns runtime lifecycle semantics or canonical runtime publication. `~/.paperforge/runtime/` with Python as sole pointer writer; verbs setup/update/repair; matrix is candidate until wheel+smoke gates; bootstrap is the last recovery boundary for an unrunnable runtime.
+The `paperforge runtime install|update|repair|status` CLI exclusively manages the machine-wide managed Core runtime. The matching bootstrap CLI package is installed separately from a terminal; the runtime CLI creates and verifies a candidate before publishing the Python-owned pointer. Obsidian reads that pointer and runs Core commands; it never installs the bootstrap package, creates venvs, invokes pip, updates, repairs, or publishes runtime state. `paperforge setup` configures one Vault only. Runtime readiness and per-Vault configuration are separate states.
 
 ## § Thin Client
 

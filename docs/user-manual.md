@@ -20,42 +20,37 @@ PaperForge 是一个 Obsidian 插件，把你 Vault 变成文献研究中心。�
 
 ### 2.1 前置条件
 
-你需要先确保系统中有以下工具：
+- **Obsidian 桌面版**
+- **Python 3.11+**（供独立的 PaperForge Core 安装器使用）
+- **Zotero 7** 和 **Better BibTeX**（使用文献同步功能时）
+- **PaddleOCR API Token**（使用云端 OCR 时配置；不是安装 Core 的条件）
 
-- **Zotero 7**（文献管理软件）
-- **Better BibTeX 插件**（Zotero 的导出插件）
-- **Python 3.10+**
-- **PaddleOCR API Token**（百度飞桨 OCR 服务）
+### 2.2 安装与初始化
 
-### 2.2 安装 Guide
+1. 安装并启用 PaperForge Obsidian 插件。
+2. 在系统终端安装与插件版本匹配的 bootstrap CLI 和 Core Runtime。将 `<PLUGIN_VERSION>` 替换为插件 `manifest.json` 中的版本；两条命令使用同一个 Python 3.11+ 解释器：
 
-1. 下载 PaperForge 插件，将 `main.js`、`manifest.json`、`styles.css` 放入 Vault 的 `.obsidian/plugins/paperforge/` 目录
-2. 在 Obsidian 的 Community Plugins 中搜索并启用 PaperForge
-3. 打开 PaperForge 设置：
+   ```bash
+   python -m pip install --user --upgrade "paperforge==<PLUGIN_VERSION>"
+   python -m paperforge runtime install --expected-version <PLUGIN_VERSION>
+   ```
 
-在 Obsidian 左侧 Ribbon 点击 PaperForge 图标，或使用命令面板搜索 `PaperForge: Dashboard`。
+   Windows 可将 `python` 替换为 `py -3.11`；macOS/Linux 可使用 `python3.11`。这些命令必须在 Obsidian 外运行。Core 安装器创建机器级受管环境并验证后发布 runtime pointer；插件不会创建 venv、运行 pip 或升级后端。
+3. 返回 Obsidian，打开 PaperForge 设置。Runtime 状态只表示 Core 是否已安装且与插件版本匹配；随后在当前 Vault 中完成目录、Zotero 与 Agent 配置。
 
-#### 步骤 1：安装标签页中配置
-
-打开设置后默认在「安装」标签页。你会看到：
-
-- **Runtime 状态**：显示插件版本和 Python 包的版本是否匹配
-- **Python 解释器**：系统会自动检测。你也可以手动指定路径（如 `C:\Python310\python.exe`）
-- **PaddleOCR API Key**：填写你从百度飞桨申请的 API Token
-- **安装向导**：首次安装点击 `开始安装`，会自动检测环境并引导你完成配置
-
-安装向导会自动帮你：
+安装向导负责当前 Vault 的业务配置：
 
 - 在 Vault 中创建 PaperForge 目录结构（`System/PaperForge/`、`Resources/Literature/`、`Bases/` 等）
-- 检测 Python 环境
 - 检测 Zotero 和 Better BibTeX
 - 配置 Zotero 数据目录
-- 选择你的 AI Agent 平台（OpenCode / Claude Code / Cursor 等）
-- **部署 Agent Skill 文件**：向导会根据你选择的平台，自动将 PaperForge Skill 部署到对应的 Vault 目录
+- 选择 AI Agent 平台（OpenCode / Claude Code / Cursor 等）
+- **部署 Agent Skill 文件**：向导按所选平台部署到对应 Vault 目录
+
+Core Runtime 是机器级环境，可供多个 Vault 使用；每个 Vault 的 `paperforge.json`、文献目录和同步设置仍独立。
 
 #### 步骤 2：Skills 查看
 
-在「功能」标签页的 Skills 区域，你可以看到哪些 Skill 已经部署到你的 Vault 中。每个 Skill 对应一个 SKILL.md 文件。你可以在这里关闭你不希望 Agent 使用的 Skill。这一页只是查看和管理，实际部署是在安装向导中完成的。
+在「功能」标签页的 Skills 区域，可以查看并管理已部署到当前 Vault 的 Skill。每个 Skill 对应一个 `SKILL.md` 文件。
 
 ### 2.3 配置 Better BibTeX 自动导出
 

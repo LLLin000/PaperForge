@@ -19,8 +19,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-from paperforge import __version__
-
 # Backward-compat imports (v2.1 modular setup)
 
 if sys.platform == "win32":
@@ -109,18 +107,6 @@ class EnvChecker:
             r.detail = f"缺少依赖: {', '.join(missing)}"
             r.action_required = True
         return r
-
-    def install_dependencies(self) -> bool:
-        deps = ["requests", "pymupdf", "pillow"]
-        try:
-            subprocess.run(
-                [sys.executable, "-m", "pip", "install"] + deps,
-                check=True, capture_output=True,
-                encoding="utf-8", errors="replace",
-            )
-            return True
-        except subprocess.CalledProcessError:
-            return False
 
     def check_vault(self) -> CheckResult:
         r = self.results["vault"]

@@ -26,6 +26,7 @@ import {
   isReadyEnvelope,
   probeAction,
   setupAction,
+  runtimeInstallAction,
   validatePersistedEnvelopes,
   classifyCapabilityAction,
 } from "./constants";
@@ -65,15 +66,32 @@ import {
   type OrphanItem,
 } from "./views/modals";
 import {
-  RuntimeBootstrap,
+  readRuntimePointer,
   resolveRuntimeCommand,
 } from "./services/managed-runtime";
-import { getDisclosureState, toggleDisclosureState } from "./utils/disclosure";
+import type { RuntimeStatus } from "./client";
 import { stripCredentialEnv } from "./services/secret-storage";
 import { processProgressChunk } from "./services/progress-parser";
+import type { RuntimeInstallerAction } from "./services/runtime-installer-launcher";
+import {
+  INSTALLER_FAILED_MARKER,
+  runtimeInstallerSteps,
+} from "./services/runtime-installer-launcher";
 import type { ActionRequest } from "./client/action-contract";
 
 // ── Interface ──
+
+/** Display names for the agent platforms Python offers. */
+const AGENT_PLATFORM_LABELS: Record<string, string> = {
+  opencode: "OpenCode",
+  claude: "Claude Code",
+  codex: "Codex",
+  cursor: "Cursor",
+  windsurf: "Windsurf",
+  github_copilot: "GitHub Copilot",
+  gemini: "Gemini CLI",
+};
+
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 interface ISettingPlugin {
@@ -81,7 +99,6 @@ interface ISettingPlugin {
   saveSettings(): Promise<void>;
   loadSettings(): Promise<void>;
   manifest: { version: string };
-  getManagedRuntime(): RuntimeBootstrap | null;
   [key: string]: any;
 }
 
@@ -97,9 +114,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   private _featurePanelsCollapsed: Record<string, unknown> = {};
   private _advCollapsed = true;
   private _refreshPending = false;
-  private _pythonInterpDescEl: HTMLElement | null = null;
-  private _customPathDescEl: HTMLElement | null = null;
-  private _checkEl: HTMLDivElement | null = null;
   activeTab = "overview";
   private _buildState: string = "idle";
   private _buildProgress: { current: number; total: number; key: string } = {
@@ -130,14 +144,16 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   _setupView: "overview" | "module-detail" = "overview";
   /** #87: Setup Journey current stage (1-4). */
   _setupStage = 1;
+  /** The next runtime action rebuilds the environment instead of reusing it. */
+  private _setupReinstallRequested = false;
+  /** Log of the installer launched from this panel (null before any launch). */
+  private _installerLogPath: string | null = null;
   /** #87: Selected optional capabilities. */
   _setupOptionals: Record<string, boolean> = {
     ocr: false,
     memory: false,
     agent: false,
   };
-  /** Explicit reinstall stays inside the current setup journey. */
-  private _setupReinstallRequested = false;
   private _setupOperation: "idle" | "running" | "failed" = "idle";
   private _setupFeedback: string | null = null;
   /** Raw failure reason for the last install attempt (null when none). */
@@ -158,12 +174,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   _selectedDetailModule: string = "";
   /** Focus target id after re-render. */
   _focusTargetId: string | null = null;
-  /** AbortController for in-flight runtime ensure/install. */
-  private _runtimeAbortController: AbortController | null = null;
-  /** Cached RuntimeBootstrap singleton (rebuilt per display() on path change). */
-  private _managedRuntime: RuntimeBootstrap | null = null;
-  /** True while a runtime operation is in flight. */
-  private _runtimeBusy: boolean = false;
+  private _runtimeStatus: RuntimeStatus | null = null;
+  private _runtimeStatusError: string | null = null;
+  private _runtimeStatusVersion: string | null = null;
+  private _runtimeStatusLoading = false;
+  private _runtimePollTimer: ReturnType<typeof setInterval> | null = null;
+  private _runtimeStatusWatchdog: ReturnType<typeof setTimeout> | null = null;
+  /** Step id the guided library flow keeps expanded after an explicit edit. */
+  private _setupOpenStep: string | null = null;
   /** True while a library sync or memory build is in flight. */
   _libraryRunning: boolean = false;
   private _displayInProgress: boolean = false;
@@ -470,10 +488,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     return this._client!;
   }
 
-  private _startSetupJourney(
-    stage: 1 | 2 | 3 | 4 = 1,
-    reinstall = false
-  ): void {
+  private _startSetupJourney(stage: 1 | 2 | 3 | 4 = 1, reinstall = false): void {
     this._setupStage = stage;
     this._setupReinstallRequested = reinstall;
     this._setupOperation = "idle";
@@ -485,161 +500,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     this._setupJourneyDismissedForSession = false;
     this._setupCompleteBeforeJourney =
       this.plugin.settings._setup_complete !== false;
+    this._setupOpenStep = null;
     this.plugin.settings._setup_complete = false;
     void this.plugin.saveSettings().then(() => this.display());
   }
 
-  private _installFoundation(forceInstall: boolean): void {
-    if (this._setupOperation === "running") return;
-    this._setupOperation = "running";
-    this._setupFeedback = null;
-    this._setupFailureDetail = null;
-    this.display();
-
-    // #174: the Setup Journey no longer runs its own pip — the ONLY
-    // bootstrap install path is RuntimeBootstrap.installOnce into
-    // ~/.paperforge/runtime/venv (ONE pinned paperforge[vector] install,
-    // never --user).  After install, handshake → `paperforge setup --json`
-    // (the #137 NDJSON machine stream) publishes the pointer — Python is
-    // the only writer.
-    // RC UX Seam: the whole chain (install → handshake → setup) is
-    // cancellable through one AbortController; installOnce deletes the
-    // half-installed venv on abort, and a cancelled install must NOT
-    // republish the pointer or flip _setup_complete.
-    this._runtimeAbortController = new AbortController();
-    const signal = this._runtimeAbortController.signal;
-    void (async () => {
-      try {
-        const vaultPath = this._getVaultBasePath();
-        const bootstrap = this._ensureManagedRuntime();
-        // The wizard's "Python executable" field selects the base
-        // interpreter for the managed venv; empty falls back to discovery.
-        const baseInterpreter =
-          this.plugin.settings.python_path?.trim() || undefined;
-        const installed = await bootstrap.installOnce(
-          this.plugin.manifest.version,
-          signal,
-          baseInterpreter,
-          (stage) => {
-            this._recordSetupStage(`bootstrap:${stage}`);
-            this._setupFeedback = `${t("setup_installing")} · ${t(
-              "setup_install_phase_" + stage
-            )}`;
-            this.display();
-          }
-        );
-        const hs = await bootstrap.handshake(this.plugin.manifest.version, {
-          pythonPath: installed.pythonPath,
-          vaultPath,
-          signal,
-        });
-        if (!hs.ok) {
-          throw new Error(hs.reason ?? "handshake failed");
-        }
-        // Post-runtime setup (config/vault/deps/agent) + pointer publication,
-        // through the #137 NDJSON stream (setup --json).
-        const s = this.plugin.settings;
-        await this.plugin.saveSettings();
-        const client = this.getClient();
-        const handle = client.setup(
-          {
-            systemDir: s.system_dir?.trim() || "System",
-            resourcesDir: s.resources_dir?.trim() || "Resources",
-            literatureDir: s.literature_dir?.trim() || "Literature",
-            baseDir: s.base_dir?.trim() || "Bases",
-            zoteroData: s.zotero_data_dir?.trim() || undefined,
-            agent: s.agent_platform || "opencode",
-            modular: true,
-          },
-          {
-            pythonExe: installed.pythonPath,
-            onEvent: (ev) => {
-              if (ev.event === "phase") {
-                this._recordSetupStage(`setup:${ev.phase ?? ""}`);
-                this._setupFeedback = `${t("setup_installing") || "Installing"}: ${ev.phase ?? ""}`;
-                this.display();
-              }
-            },
-          }
-        );
-        signal?.addEventListener("abort", () => handle.stop());
-        const outcome = await handle.outcome;
-        if (!outcome.ok) {
-          if (outcome.cancelled) {
-            this._setupOperation = "idle";
-            this._setupFeedback = t("setup_install_cancelled");
-            this.display();
-            return;
-          }
-          throw new Error(
-            outcome.protocolFailure
-              ? `${outcome.protocolFailure} (exit=${outcome.exitCode}, cancelled=${outcome.cancelled})`
-              : `Setup failed with exit code ${outcome.exitCode}`
-          );
-        }
-        this._setupOperation = "idle";
-        this._setupCompleteBeforeJourney = null;
-        // #260: the pointer now names the verified candidate — retire any
-        // other runtime environment (best-effort; never the active one).
-        try {
-          const pointer = bootstrap.readPointer?.() ?? null;
-          bootstrap.retireUnusedRuntimes?.(pointer?.environmentRoot ?? null);
-        } catch {
-          // Housekeeping only: a retirement failure must never fail setup.
-        }
-        const wasReinstall = forceInstall || this._setupReinstallRequested;
-        this._setupReinstallRequested = false;
-        this._probeModule("installation");
-        this._probeModule("help");
-        if (wasReinstall) {
-          // The install was already configured before the user asked for a
-          // reinstall: do NOT march them through the remaining stages to
-          // re-verify configuration that has not changed.  Report success
-          // and hand them back to the Control Center.
-          this._setupFeedback = null;
-          this.plugin.settings._setup_complete = true;
-          this.activeTab = "overview";
-          await this.plugin.saveSettings();
-          new Notice(t("foundation_reinstall_ok"));
-          this.display();
-          return;
-        }
-        this._setupFeedback = t("setup_install_complete");
-        this.display();
-      } catch (error) {
-        const isAbort =
-          signal.aborted ||
-          (typeof error === "object" &&
-            error !== null &&
-            (error as { name?: unknown }).name === "AbortError");
-        if (isAbort) {
-          // User cancelled: keep the wizard in place, show a neutral
-          // message.  Never flip _setup_complete, never treat it as a
-          // failure state.
-          this._setupOperation = "idle";
-          this._setupFeedback = t("setup_install_cancelled");
-          this.display();
-          return;
-        }
-        console.error("PaperForge runtime installation failed:", error);
-        this._setupOperation = "failed";
-        this._setupFeedback = t("setup_install_failed");
-        // The generic line above blames the Python path for EVERY failure
-        // (pip, network, handshake). #257: classify it and keep both the
-        // actionable hint and the real reason visible.
-        const reason = this._formatSetupFailure(error);
-        this._lastSetupFailure = {
-          category: classifySetupFailure(reason).type,
-          reason,
-          at: new Date().toISOString(),
-        };
-        this._setupFailureDetail = this._formatSetupFailureWithHint(error);
-        this.display();
-      } finally {
-        this._runtimeAbortController = null;
-      }
-    })();
-  }
 
   /** One bounded line naming the real install failure (never the whole log). */
   private _formatSetupFailure(error: unknown): string {
@@ -830,6 +695,27 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         this._attemptedProbes.add("library");
         this._probeModule("library");
         this.display();
+
+        // Configuration alone cannot make the library ready: `sync` builds the
+        // canonical index from the BBT exports. Always run it — deciding from a
+        // just-requested probe races the async envelope update.
+        this._setupOperation = "running";
+        this._setupFeedback = t("setup_library_syncing");
+        this.display();
+        try {
+          await this.getClient().sync();
+        } catch (error) {
+          console.error("PaperForge library sync failed:", error);
+          this._setupOperation = "failed";
+          this._setupFeedback = t("setup_library_sync_failed");
+          this.display();
+          return;
+        }
+        this._attemptedProbes.add("library");
+        this._probeModule("library");
+        this._setupOperation = "idle";
+        this._setupFeedback = t("setup_library_configured");
+        this.display();
       } catch (error) {
         console.error("PaperForge library configuration failed:", error);
         this._setupOperation = "failed";
@@ -847,8 +733,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
 
     // ── Overview ──
-    /* No title block here: the settings nav and the control-center topbar
-       already name the plugin, and the page carries its own heading. */
+    /* The plugin name and version are already in the tab header, so the
+       description stands alone rather than repeating the title. */
+    containerEl.createEl("p", {
+      text: t("desc"),
+      cls: "paperforge-settings-desc",
+    });
 
     // Auto-probe stale/unknown modules BEFORE rendering so cards show "Checking..."
     for (const mod of CAPABILITY_MODULES) {
@@ -882,52 +772,212 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     return "";
   }
 
-  /** Ensure RuntimeBootstrap singleton is initialized for the current machine. */
-  private _ensureManagedRuntime(): RuntimeBootstrap {
-    if (this._managedRuntime) return this._managedRuntime;
-    this._managedRuntime =
-      this.plugin.getManagedRuntime?.() ?? new RuntimeBootstrap();
-    return this._managedRuntime;
+
+  private _resolveRuntimeCommand(): { path: string; args: string[] } | null {
+    const run = resolveRuntimeCommand(readRuntimePointer());
+    return run ? { path: run.command, args: [...run.args] } : null;
   }
 
-  /**
-   * Resolve python command via managed runtime exclusively.
-   * Returns null when managed runtime is not ready.
-   *
-   * The published pointer is the ONLY executable runtime authority (#174):
-   * a configured `python_path` selects the BASE interpreter for the
-   * bootstrap venv (see RuntimeBootstrap.installOnce), never a runtime to
-   * dispatch against — otherwise this surface would run a different
-   * interpreter than the shared client uses.
-   */
-  private _resolveRuntimeCommand(): { path: string; args: string[] } | null {
-    const run = resolveRuntimeCommand(
-      this._ensureManagedRuntime().readPointer()
-    );
-    if (run) {
-      return { path: run.command, args: [...run.args] };
+  private _refreshRuntimeStatus(force = false): void {
+    const expectedVersion = this.plugin.manifest.version;
+    if (
+      this._runtimeStatusLoading ||
+      (!force && this._runtimeStatusVersion === expectedVersion)
+    ) {
+      return;
     }
-    return null;
+    this._runtimeStatusVersion = expectedVersion;
+    this._runtimeStatus = null;
+    this._runtimeStatusError = null;
+    const pointer = readRuntimePointer();
+    if (!pointer || !fs.existsSync(pointer.pythonPath)) {
+      // No published runtime: the persisted envelope is stale by definition.
+      const env = this._capabilityState?.installation;
+      if (
+        env &&
+        env.user_state === "ready" &&
+        env.activity_state !== "running"
+      ) {
+        this._capabilityState = this._capabilityState ?? {};
+        this._capabilityState.installation = this._setupRequiredEnvelope();
+      }
+      return;
+    }
+
+    this._runtimeStatusLoading = true;
+    // A hung status call must not leave the panel without an action: after
+    // 20s give up and surface it as an error the user can act on.
+    if (this._runtimeStatusWatchdog) clearTimeout(this._runtimeStatusWatchdog);
+    this._runtimeStatusWatchdog = setTimeout(() => {
+      if (!this._runtimeStatusLoading) return;
+      this._runtimeStatusLoading = false;
+      this._runtimeStatusError = t("runtime_status_timeout");
+      this.display();
+    }, 20000);
+    void Promise.resolve()
+      .then(() => this.getClient().runtimeStatus(expectedVersion))
+      .then((status) => {
+        this._runtimeStatus = status;
+        const env = this._capabilityState?.installation;
+        if (
+          env &&
+          env.activity_state !== "running" &&
+          status.runtime_ready &&
+          env.user_state === "setup_required"
+        ) {
+          // The runtime is published now; the Python probe owns the new facts.
+          this._probeModule("installation");
+        }
+      })
+      .catch((error: unknown) => {
+        this._runtimeStatusError =
+          error instanceof Error ? error.message : String(error);
+      })
+      .finally(() => {
+        if (this._runtimeStatusWatchdog) {
+          clearTimeout(this._runtimeStatusWatchdog);
+          this._runtimeStatusWatchdog = null;
+        }
+        this._runtimeStatusLoading = false;
+        this.display();
+      });
+  }
+
+  private _runtimeInstallerCommand(
+    action: "install" | "update" | "repair" = "install"
+  ): string {
+    return runtimeInstallerSteps(action, this.plugin.manifest.version)
+      .map((step) => step.replace("{{python}}", "python"))
+      .join("\n");
+  }
+
+  /** The single entry point for runtime work, derived from the pointer state. */
+  private _currentRuntimeAction(): RuntimeInstallerAction {
+    const pointer = readRuntimePointer();
+    const runtime = this._runtimeStatus;
+    return !pointer
+      ? "install"
+      : runtime?.version_matches_expected === false
+        ? "update"
+        : "repair";
+  }
+
+  /** Open the external installer and watch the published pointer. */
+  private _launchRuntimeInstaller(action: RuntimeInstallerAction): void {
+    const result = this.getClient().launchRuntimeInstaller(
+      action,
+      this.plugin.manifest.version
+    );
+    if (!result.ok) {
+      const message = t("runtime_installer_failed").replace(
+        "{error}",
+        result.error ?? "unknown"
+      );
+      // A transient Notice is not an outcome: the wizard keeps the reason
+      // visible and stops pretending the operation is still running.
+      this._setupOperation = "failed";
+      this._setupFeedback = message;
+      new Notice(message);
+      this.display();
+      return;
+    }
+    this._installerLogPath = result.logPath ?? null;
+    new Notice(t("runtime_installer_opened"), 8000);
+    if (this._setupOperation === "idle") this._setupOperation = "running";
+    this._pollRuntimeUntilReady();
+    this.display();
+  }
+
+  /** Poll while the installer window runs; stop on ready or after 25 min
+   * (a cold candidate venv resolving the vector deps can take that long). */
+  private _pollRuntimeUntilReady(): void {
+    if (this._runtimePollTimer) return;
+    const startedAt = Date.now();
+    this._runtimePollTimer = setInterval(() => {
+      if (this._runtimeStatus?.runtime_ready === true) {
+        this._stopRuntimePoll(true);
+        return;
+      }
+      // The installer prints its own outcome: waiting out the full budget
+      // after it already died only hides the reason for 25 minutes.
+      if (this._installerLogTail().includes(INSTALLER_FAILED_MARKER)) {
+        this._stopRuntimePoll(false);
+        return;
+      }
+      if (Date.now() - startedAt > 25 * 60 * 1000) {
+        this._stopRuntimePoll(false);
+        return;
+      }
+      this._refreshRuntimeStatus(true);
+      this.display();
+    }, 3000);
+  }
+
+  /** Last lines the detached installer wrote (empty when unreadable). */
+  private _installerLogTail(): string {
+    if (!this._installerLogPath) return "";
+    try {
+      const text = fs.readFileSync(this._installerLogPath, "utf-8");
+      return text.trim().split(/\r?\n/).slice(-6).join(" | ");
+    } catch {
+      return "";
+    }
+  }
+
+  private _stopRuntimePoll(ready: boolean): void {
+    if (this._runtimePollTimer) {
+      clearInterval(this._runtimePollTimer);
+      this._runtimePollTimer = null;
+    }
+    if (this._setupOperation === "running") {
+      this._setupOperation = ready ? "idle" : "failed";
+      if (!ready) {
+        // Say why the poll gave up: a template with an empty slot tells the
+        // user nothing and hides the failing command's own message.
+        const detail =
+          this._runtimeStatusError || this._installerLogTail() || "";
+        this._setupFeedback = t("runtime_installer_failed").replace(
+          "{error}",
+          detail || "the runtime did not become ready in time"
+        );
+      }
+    }
+    if (ready) this._setupReinstallRequested = false;
+    this._refreshRuntimeStatus(true);
+    this.display();
+    if (ready) new Notice(t("runtime_install_complete"));
   }
 
   /** Render the Installation detail view (Issue #77). */
   /** Render Foundation with the shared module-detail shell. */
   _renderInstallationDetail(containerEl: HTMLElement): void {
-    this._renderModuleDetailShell(containerEl, "installation");
+    // The shell renders the header first, so a stale "ready" envelope must be
+    // corrected before it runs: the pointer is the fact, the envelope a cache.
+    const pointer = readRuntimePointer();
+    if (
+      !pointer &&
+      this._capabilityState?.installation?.user_state === "ready"
+    ) {
+      this._capabilityState = this._capabilityState ?? {};
+      this._capabilityState.installation = this._setupRequiredEnvelope();
+    }
+    this._renderModuleDetailShell(containerEl, "installation", false);
     const env =
       this._capabilityState?.installation ??
       createUnknownEnvelope("installation");
     const body = containerEl.createDiv({ cls: "pf-module-body" });
     body.createEl("h3", { text: t("md_foundation_overview") });
+    this._refreshRuntimeStatus();
+    const runtime = this._runtimeStatus;
+    const runtimeReady = runtime?.runtime_ready === true;
     body.createEl("p", {
-      text:
-        env.user_state === "ready"
-          ? t("md_foundation_ready")
-          : this._getModuleConsequence("installation", env),
-      cls:
-        env.user_state === "ready"
-          ? "pf-status-ok"
-          : "setting-item-description",
+      // "Verified" needs a live status, not a cached envelope: a failed or
+      // timed-out check must not read as "installed and verified".
+      text: runtimeReady
+        ? t("md_foundation_ready")
+        : this._runtimeStatusError ??
+          this._getModuleConsequence("installation", env),
+      cls: runtimeReady ? "pf-status-ok" : "setting-item-description",
     });
 
     // ── Comprehensive checks ──
@@ -954,19 +1004,25 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       "pf-status-ok"
     );
 
-    // Python check — the ACTIVE runtime is the published pointer (the same
-    // interpreter the shared client spawns).  Never render a configured
-    // path or a bare "python" here: the row must not name an interpreter
-    // that would never run.
-    const vp = (this.app.vault.adapter as any).basePath as string;
-    const pythonPath = this._resolveRuntimeCommand()?.path;
+    const runtimeLabel = this._runtimeStatusLoading
+      ? t("runtime_status_checking")
+      : (runtime?.runtime_state ??
+        this._runtimeStatusError ??
+        (pointer
+          ? t("runtime_status_needs_attention")
+          : t("runtime_status_not_installed")));
     addCheck(
       t("foundation_python"),
-      env.user_state === "ready" ? "✓" : "—",
-      pythonPath ?? t("foundation_python_unresolved"),
-      env.user_state === "ready" ? "pf-status-ok" : "pf-status-checking"
+      runtimeReady ? "✓" : this._runtimeStatusLoading ? "…" : "—",
+      runtime?.python_path ?? pointer?.pythonPath ?? runtimeLabel,
+      runtimeReady
+        ? "pf-status-ok"
+        : this._runtimeStatusLoading
+          ? "pf-status-checking"
+          : "pf-status-warn"
     );
 
+    const vp = this._getVaultBasePath();
     // Vault structure
     const systemDir = path.join(
       vp,
@@ -976,7 +1032,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     addCheck(
       t("foundation_vault_structure"),
       hasSystem ? "✓" : "✗",
-      hasSystem ? systemDir : t("foundation_vault_missing"),
+      hasSystem
+        ? path.posix.join(
+            this.plugin.settings.system_dir || "System",
+            "PaperForge"
+          )
+        : t("foundation_vault_missing"),
       hasSystem ? "pf-status-ok" : "pf-status-error"
     );
 
@@ -1013,38 +1074,71 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
     // #173 corrective: explicit SecretStorage → keyring migration bridge.
     // User-mediated, one-time; runtime never reads SecretStorage.
-    const migrateSetting = new Setting(checks)
-      .setName(t("md_foundation_legacy_migrate"))
-      .setDesc(t("md_foundation_legacy_migrate_desc"))
-      .addButton((btn) =>
-        btn
-          .setButtonText(t("md_foundation_legacy_migrate_btn"))
-          .setTooltip(t("md_foundation_legacy_migrate_desc"))
-          .onClick(() => this._migrateLegacyCredentials(btn.buttonEl))
-      );
-    migrateSetting.settingEl.classList.add("pf-config-row");
+    const migrateRow = checks.createDiv({ cls: "pf-config-row" });
+    migrateRow.createEl("span", {
+      cls: "pf-config-key",
+      text: t("md_foundation_legacy_migrate") ?? "Migrate legacy credentials",
+    });
+    const migrateRight = migrateRow.createDiv({ cls: "pf-config-right" });
+    const migrateBtn = migrateRight.createEl("button", {
+      cls: "paperforge-refresh-btn",
+      text: t("foundation_migrate_btn"),
+    });
+    migrateBtn.title = t("foundation_migrate_hint");
+    migrateBtn.onclick = () => this._migrateLegacyCredentials(migrateBtn);
 
     // Obsidian version check removed (RC UX Seam): the previous block
     // hardcoded `obsidianOk = true` — a false green. Obsidian compatibility
     // is enforced by the manifest's minAppVersion at plugin load; Python-side
     // truth lives in the probe envelope, not a presentation-side constant.
 
-    // Python packages: projected from the probe envelope — the backend owns
-    // dependency truth (probe memory / embed status deps_installed).  The
-    // retired `import openai; import sqlite3` exec check ran against
-    // settings.python_path instead of the managed runtime and duplicated
-    // backend authority, so it is gone.
     addCheck(
       t("foundation_python_packages"),
-      env.user_state === "ready" ? "✓" : "—",
-      env.user_state === "ready"
-        ? t("check_bbt_ok") || "Ready"
-        : (env.reason?.text ?? "—"),
-      env.user_state === "ready" ? "pf-status-ok" : "pf-status-checking"
+      runtime?.vector_ready ? "✓" : this._runtimeStatusLoading ? "…" : "—",
+      runtime?.vector_ready
+        ? t("runtime_vector_ready")
+        : runtimeLabel,
+      runtime?.vector_ready
+        ? "pf-status-ok"
+        : this._runtimeStatusLoading
+          ? "pf-status-checking"
+          : "pf-status-warn"
     );
+    const runtimeAction: RuntimeInstallerAction = !pointer
+      ? "install"
+      : runtime?.version_matches_expected === false
+        ? "update"
+        : "repair";
+    if (!runtimeReady) {
+      renderActionButton(body, {
+        label:
+          runtimeAction === "install"
+            ? t("runtime_install_btn")
+            : runtimeAction === "update"
+              ? t("runtime_update_btn")
+              : t("runtime_repair_btn"),
+        onClick: () => this._launchRuntimeInstaller(runtimeAction),
+      });
+      body.createEl("p", {
+        text: t("runtime_installer_hint"),
+        cls: "setting-item-description",
+      });
+    }
+    const manual = body.createEl("details", { cls: "pf-runtime-manual" });
+    manual.createEl("summary", { text: t("runtime_manual_summary") });
+    manual.createEl("pre").createEl("code", {
+      text: this._runtimeInstallerCommand(runtimeAction),
+    });
 
-    // Action buttons
-    if (env.user_state !== "ready") {
+    // Sequential flow: the runtime is a hard prerequisite, so exactly one
+    // entry point is visible at a time — install first, configure the vault
+    // afterwards.
+    if (!runtimeReady) {
+      body.createEl("p", {
+        text: t("runtime_next_step_hint"),
+        cls: "setting-item-description",
+      });
+    } else if (env.user_state !== "ready") {
       new Setting(body)
         .setName(t("foundation_setup"))
         .setDesc(t("foundation_setup_desc"))
@@ -1055,18 +1149,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             .onClick(() => this._startSetupJourney(1))
         );
     }
-
-    // Reinstall button - triggers full setup wizard
-    new Setting(body)
-      .setName(t("foundation_reinstall"))
-      .setDesc(t("foundation_reinstall_desc"))
-      .addButton((btn) =>
-        btn
-          .setButtonText(t("foundation_reinstall_btn"))
-          .setWarning()
-          .onClick(() => this._startSetupJourney(1, true))
-      );
   }
+
 
   /** Render the Skills inventory for the selected agent platform. */
   private _renderSkillsList(containerEl: HTMLElement): void {
@@ -1295,7 +1379,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       });
     } else if (
       env.user_state !== "checking" &&
-      env.user_state !== "not_enabled"
+      env.user_state !== "not_enabled" &&
+      env.reason?.code !== "library.config_missing"
     ) {
       renderErrorAnatomy(body, {
         whatHappened:
@@ -1331,7 +1416,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         | undefined
     )?.orphan?.count;
     const orphanRow = facts.createDiv({ cls: "pf-module-fact" });
-    orphanRow.createEl("span", { text: "Orphans" });
+    orphanRow.createEl("span", { text: t("md_library_orphans") });
     orphanRow.createEl("span", {
       text:
         typeof orphanCount === "number"
@@ -1680,7 +1765,10 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       statusText = t("md_retrieval_ready");
       statusClass = "pf-status-ok";
     } else {
-      statusText = env.reason?.text ?? null;
+      statusText =
+        this._localizeReason(reasonCode, t("cc_module_memory")) ??
+        env.reason?.text ??
+        null;
       statusClass = "pf-status-warn";
     }
     if (statusText) {
@@ -1714,18 +1802,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       env.user_state !== "ready" &&
       env.user_state !== "not_enabled"
     ) {
-      const primary = env.action.primary;
-      const actionKey =
-        "action_" + (primary.action_id ?? primary.verb).replace(/[.-]/g, "_");
-      const actionLabel =
-        primary.label ||
-        (t(actionKey) !== actionKey
-          ? t(actionKey)
-          : t("cc_action_" + primary.verb) !== "cc_action_" + primary.verb
-            ? t("cc_action_" + primary.verb)
-            : t("cc_action_probe"));
       renderActionButton(body, {
-        label: actionLabel,
+        label: this._actionLabel(env.action.primary),
         onClick: () => this._dispatchModuleAction("memory", env),
       });
     }
@@ -1858,9 +1936,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         text: t("cc_badge_action_required") || "Action Required",
       });
       const impactText =
-        env.reason?.text ||
-        t("sr_impact_db_missing") ||
-        "Smart Retrieval needs an API key and vector index.";
+        this._localizeReason(env.reason?.code ?? "", t("cc_module_memory")) ??
+        env.reason?.text ??
+        t("sr_impact_db_missing");
       impact.createEl("p", { text: impactText });
     }
     // ── Advanced Status (collapsible, detailed diagnostics) ──
@@ -2013,12 +2091,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       if (mod === "library") {
         this._startSetupJourney(2);
       } else {
-        const reinstall =
-          mod === "installation" &&
-          env.reason.code === "installation.version_mismatch";
         this._startSetupJourney(
-          mod === "ocr" || mod === "memory" ? 3 : 1,
-          reinstall
+          mod === "ocr" || mod === "memory" ? 3 : 1
         );
       }
       return;
@@ -2031,18 +2105,21 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
     if (verb === "update") {
       if (actionId === "foundation.update") {
-        // Registered remote action (#174) — the confirm modal already ran
-        // (safety_class destructive + confirmation_required).  Dispatch
-        // through the action runner so Python policy stays the authority.
-        this._runUpdateAction();
+        this._launchRuntimeInstaller("update");
         return;
       }
-      // foundation.update_python: interpreter upgrade has NO automated path.
       new Notice(
         t("update_python_manual") ||
           "Python 3.11+ upgrade requires a manual install (python.org or your package manager)."
       );
-      this._probeModule(mod);
+      return;
+    }
+
+    if (
+      (verb === "install" || actionId === "installation.install_runtime") &&
+      mod === "installation"
+    ) {
+      this._launchRuntimeInstaller(this._currentRuntimeAction());
       return;
     }
 
@@ -2057,9 +2134,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }
 
     if (verb === "install" && actionId === "memory.install_vector_deps") {
-      // Smart Retrieval deps missing -> setup journey re-ensures
-      // paperforge[vector] in the runtime (ensure_runtime_dependencies).
-      this._startSetupJourney(3);
+      this._launchRuntimeInstaller("repair");
       return;
     }
 
@@ -2159,38 +2234,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     );
     this._probeModule(mod);
   }
-  /** #174 RC: dispatch foundation.update through the action runner.
-   * The confirm modal already ran (destructive + confirmation_required);
-   * Python's perform_update owns policy + fresh-child verification. */
-  _runUpdateAction(): void {
-    // Dispatch through the canonical action runner — Python's
-    // perform_update owns policy + fresh-child verification; the client's
-    // OperationLock owns the single active operation.
-    void this.getClient()
-      .runAction({
-        action_id: "foundation.update",
-        scope: { kind: "all" },
-        confirm: "foundation.update",
-      })
-      .then((result) => {
-        if (result.ok) {
-          new Notice(t("update_done") || "PaperForge updated");
-        } else {
-          const reason =
-            typeof result.payload?.availability_reason === "string"
-              ? result.payload.availability_reason
-              : `exit code ${result.exitCode}`;
-          new Notice((t("update_failed") || "Update failed") + ": " + reason);
-        }
-        this._refreshAllReadModels();
-      })
-      .catch((err: Error) => {
-        new Notice(
-          (t("update_failed") || "Update failed") + ": " + err.message
-        );
-        this._refreshAllReadModels();
-      });
-  }
 
   /** #223: dispatch foundation.repair through the action runner.
    * Registered action, same shape as foundation.update: the confirm modal
@@ -2246,8 +2289,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
    * gating, and cooperative Stop the OCR Workspace uses — no second
    * child-process owner. */
   _dispatchOcrAction(mode: "run" | "rebuild"): void {
-    if (mode === "run") {
-      void this.plugin.requestOcrRun?.({ kind: "all" });
+    if (mode === "run" && typeof this.plugin.requestOcrRun === "function") {
+      // The probe-owned confirmation already ran in _dispatchModuleAction.
+      this.plugin.requestOcrRun(true);
       return;
     }
     const client = this.getClient();
@@ -2677,8 +2721,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
 
   /** Render the Help tab — fetches Markdown from GitHub for live-editable docs. */
   _renderHelpTab(containerEl: HTMLElement): void {
-    containerEl.createEl("h2", {
-      cls: "pf-cc-heading",
+    containerEl.createEl("div", {
+      cls: "pf-cc-eyebrow",
+      text: t("help_section_label"),
+    });
+    containerEl.createEl("h1", {
+      cls: "pf-cc-title",
       text: t("help_title") || "Help",
     });
     containerEl.createEl("p", {
@@ -3000,31 +3048,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     if (!resolved) {
       this._probing.delete(mod);
       if (mod === "installation") {
-        const setupEnvelope: ProbeEnvelope = {
-          schema_version: 2,
-          module: "installation",
-          capability_state: "unknown",
-          activity_state: "idle",
-          activity_label: null,
-          activity_progress: null,
-          severity: "error",
-          reason: {
-            code: "installation.no_python",
-            text: "No Python found. Run the Setup Wizard to install the managed runtime.",
-          },
-          action: { primary: setupAction() },
-          notices: [],
-          user_state: "setup_required",
-          capability_kind: "required",
-          maintenance_eligible: false,
-          user_visible_failure: true,
-          user_impact: "PaperForge cannot run without Python.",
-          updated_at: new Date().toISOString(),
-          ttl_seconds: 60,
-        };
-        this._updateCapabilityEnvelope(mod, setupEnvelope);
-      } else {
+        this._updateCapabilityEnvelope(mod, this._setupRequiredEnvelope());
+      } else if (mod === "help") {
+        // Help/docs do not need the runtime; keep the honest invalid state.
         this._updateCapabilityEnvelope(mod, createInvalidEnvelope(mod));
+      } else {
+        this._updateCapabilityEnvelope(mod, this._blockedByRuntimeEnvelope(mod));
       }
       return;
     }
@@ -3061,34 +3090,63 @@ export class PaperForgeSettingTab extends PluginSettingTab {
             err.message?.includes("no managed runtime pointer") ||
             err.message?.includes("not ready"))
         ) {
-          const setupEnvelope: ProbeEnvelope = {
-            schema_version: 2,
-            module: "installation",
-            capability_state: "unknown",
-            activity_state: "idle",
-            activity_label: null,
-            activity_progress: null,
-            severity: "error",
-            reason: {
-              code: "installation.no_python",
-              text: "No Python found. Run the Setup Wizard to install the managed runtime.",
-            },
-            action: { primary: setupAction() },
-            notices: [],
-            user_state: "setup_required",
-            capability_kind: "required",
-            maintenance_eligible: false,
-            user_visible_failure: true,
-            user_impact: "PaperForge cannot run without Python.",
-            updated_at: new Date().toISOString(),
-            ttl_seconds: 60,
-          };
-          this._updateCapabilityEnvelope(mod, setupEnvelope);
+          this._updateCapabilityEnvelope(mod, this._setupRequiredEnvelope());
         } else {
           console.warn(`[PaperForge] Probe ${mod} failed:`, err.message);
           this._updateCapabilityEnvelope(mod, createInvalidEnvelope(mod));
         }
       });
+  }
+
+  /** A module cannot be probed until Foundation publishes a runtime: report
+   * that prerequisite instead of a bogus detection failure. */
+  private _blockedByRuntimeEnvelope(mod: CapabilityModule): ProbeEnvelope {
+    return {
+      schema_version: 2,
+      module: mod,
+      capability_state: "unknown",
+      activity_state: "idle",
+      activity_label: null,
+      activity_progress: null,
+      severity: "warning",
+      reason: {
+        code: "installation.required",
+        text: t("module_blocked_by_runtime"),
+      },
+      action: { primary: runtimeInstallAction(t("runtime_install_btn")) },
+      notices: [],
+      user_state: "setup_required",
+      capability_kind: mod === "library" ? "required" : "optional",
+      maintenance_eligible: false,
+      user_visible_failure: false,
+      user_impact: null,
+      updated_at: new Date().toISOString(),
+      ttl_seconds: 60,
+    };
+  }
+
+  /** One installation envelope for "no usable runtime" — the plugin only
+   * guides; installing/updating/repairing happens through the external CLI. */
+  private _setupRequiredEnvelope(): ProbeEnvelope {
+    return {
+      schema_version: 2,
+      module: "installation",
+      capability_state: "unknown",
+      activity_state: "idle",
+      activity_label: null,
+      activity_progress: null,
+      severity: "error",
+      reason: { code: "installation.no_python", text: t("runtime_not_ready_reason") },
+      action: { primary: runtimeInstallAction(t("runtime_install_btn")) },
+      notices: [],
+      user_state: "setup_required",
+      capability_kind: "required",
+      maintenance_eligible: false,
+      user_visible_failure: true,
+      user_impact: t("runtime_not_ready_impact"),
+      updated_at: new Date().toISOString(),
+      ttl_seconds: 60,
+    };
   }
 
   /** Update a single module envelope and refresh the display (#85: Last Known State). */
@@ -3101,17 +3159,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this._lastKnownState.set(mod, captureLastKnown(envelope));
     }
 
-    if (mod === "installation" && envelope.user_state === "ready") {
-      this._setupReinstallRequested = false;
-    }
     this._capabilityState[envelope.module] = envelope;
     this._persistCapabilityState();
-    if (
-      prev?.activity_state === "running" &&
-      envelope.activity_state !== "running"
-    ) {
-      new Notice(t("cc_notice_refreshed"), 3000);
-    }
     if (!this._displayInProgress) {
       this.display();
     }
@@ -3140,6 +3189,17 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   /** Reason code → localized string via i18n key, or null if unmapped.
    *  Tries full dotted code normalized to underscores first (e.g. "installation.ready" → "cc_reason_installation_ready"),
    *  then falls back to bare code (e.g. "ready" → "cc_reason_ready"). */
+  /** Localized label for a backend action: the wire label is English. */
+  private _actionLabel(primary: ActionPrimary): string {
+    const idKey = "action_" + (primary.action_id ?? primary.verb).replace(/[.-]/g, "_");
+    const byId = t(idKey);
+    if (byId !== idKey) return byId;
+    const verbKey = "cc_action_" + primary.verb;
+    const byVerb = t(verbKey);
+    if (byVerb !== verbKey) return byVerb;
+    return primary.label;
+  }
+
   private _localizeReason(code: string, module: string): string | null {
     // Try full dotted code: "installation.ready" → "cc_reason_installation_ready"
     const fullKey = "cc_reason_" + code.replace(/\./g, "_");
@@ -3379,12 +3439,6 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const baselineChecking = [foundationEnv, libraryEnv].some(
       (env) => env.user_state === "checking"
     );
-    const needsAttention = Object.values(envelopes).filter(
-      (e) =>
-        e.user_state &&
-        e.user_state !== "ready" &&
-        e.user_state !== "not_enabled"
-    ).length;
 
     const summaryEl = cc.createEl("div", { cls: "pf-cc-summary" });
     const badgeCls = baselineReady
@@ -3403,29 +3457,36 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     });
 
     const summaryCopy = summaryEl.createDiv({ cls: "pf-cc-summary-copy" });
+    const foundationBlocked = !foundationReady && !baselineChecking;
     const summaryTitle = baselineReady
       ? t("cc_summary_ready")
       : baselineChecking
         ? t("cc_summary_checking")
-        : this.plugin.settings._setup_complete === false
-          ? t("cc_summary_incomplete")
-          : t("cc_summary_attention");
+        : foundationBlocked
+          ? t("cc_summary_setup_first")
+          : t("cc_summary_connect_library");
     const summaryBody = baselineReady
       ? t("cc_summary_ready_body")
       : baselineChecking
         ? t("cc_summary_checking_body")
-        : this.plugin.settings._setup_complete === false
-          ? t("cc_summary_incomplete_body")
-          : t("cc_summary_attention_body");
+        : foundationBlocked
+          ? t("module_blocked_by_runtime")
+          : t("cc_summary_connect_library_body");
     summaryCopy.createEl("strong", { text: summaryTitle });
     summaryCopy.createEl("span", { cls: "caption", text: summaryBody });
 
+    if (!baselineReady && !baselineChecking) {
+      const startStage = foundationReady ? 2 : 1;
+      renderActionButton(summaryEl, {
+        label:
+          this.plugin.settings._setup_complete === false
+            ? t("cc_start_setup")
+            : t("cc_continue_setup"),
+        onClick: () => this._startSetupJourney(startStage),
+      });
+    }
+
     const summaryMeta = summaryEl.createDiv({ cls: "pf-cc-summary-meta" });
-    const needItem = summaryMeta.createEl("span");
-    needItem.createEl("strong", { text: String(needsAttention) });
-    needItem.appendText(
-      " " + (t("cc_needs_attention") || "item needs attention")
-    );
 
     // Last checked time
     const latest = Object.values(envelopes)
@@ -3580,6 +3641,11 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   }
 
   _getModuleConsequence(mod: string, env: ProbeEnvelope): string {
+    // A missing runtime blocks every downstream module: say that instead of
+    // the generic "needs configuration" sentence for this module.
+    if (env.reason?.code === "installation.required") {
+      return env.reason.text || t("module_blocked_by_runtime");
+    }
     const state =
       env.user_state ??
       (env.capability_state === "ready" ? "ready" : "action_required");
@@ -3683,8 +3749,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   /** Open the orphan cleanup modal with the plugin-resolved python runtime
    * (never a hardcoded "python" — the real interpreter may be a venv). */
   private _openOrphanModal(orphans: { key: string; title?: string }[]): void {
-    const vp = (this.app.vault.adapter as unknown as { basePath?: string })
-      ?.basePath;
+    const vp = this._getVaultBasePath();
     if (!vp) return;
     const run = this._resolveRuntimeCommand();
     if (!run) {
@@ -3711,14 +3776,14 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this._capabilityState ?? {},
       this._lastKnownState
     );
-    const pointer = this._ensureManagedRuntime().readPointer?.() ?? null;
+    const pointer = readRuntimePointer();
     const diag: DiagnosticInput = {
       pluginVersion,
       modules,
       environment: {
-        managedRuntime: this._diagnosticPath(pointer?.environmentRoot),
+        managedRuntime: this._diagnosticPath(pointer?.environmentRoot ?? null),
         runtimeVersion: pointer?.paperforgeVersion ?? null,
-        pythonSetting: this._diagnosticPath(this.plugin.settings.python_path),
+        pythonSetting: null,
       },
       lastSetupFailure: this._lastSetupFailure,
       recentInstallStages: [...this._setupStageLog],
@@ -3783,179 +3848,120 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   }
 
   _renderSetupStageFoundation(containerEl: HTMLElement): void {
-    const env =
-      this._capabilityState?.installation ??
-      createUnknownEnvelope("installation");
-    const needsProbe =
-      (env.capability_state === "unknown" &&
-        env.updated_at === new Date(0).toISOString()) ||
-      (env.user_state === "detection_failed" &&
-        env.reason.code.endsWith(".stale"));
-    if (needsProbe && !this._attemptedProbes.has("installation")) {
-      this._attemptedProbes.add("installation");
-      this._probeModule("installation");
-    }
+    this._refreshRuntimeStatus();
+    const pointer = readRuntimePointer();
+    const runtime = this._runtimeStatus;
+    const ready = runtime?.runtime_ready === true;
+    const action: RuntimeInstallerAction = this._setupReinstallRequested
+      ? "repair"
+      : !pointer
+        ? "install"
+        : runtime?.version_matches_expected === false
+          ? "update"
+          : "repair";
+
     containerEl.createEl("h3", { text: t("setup_foundation_title") });
     containerEl.createEl("p", { text: t("setup_foundation_desc") });
-    const pythonField = containerEl.createDiv({ cls: "pf-setup-field" });
-    pythonField.createEl("label", { text: t("setup_foundation_python") });
-    pythonField.createEl("span", {
-      cls: "caption",
-      text: t("setup_foundation_python_hint"),
-    });
-    const pythonInput = pythonField.createEl("input", {
-      cls: "pf-setup-input",
-      attr: { type: "text", placeholder: "python" },
-    }) as HTMLInputElement;
-    pythonInput.value = this.plugin.settings.python_path || "";
-    const pythonHint = pythonField.createEl("span", {
-      cls: "caption pf-setup-input-validation",
-    });
-    const refreshPythonValidation = () => {
-      const value = pythonInput.value.trim();
-      if (!value) {
-        pythonHint.setText("");
-        pythonField.classList.toggle("pf-setup-field--invalid", false);
-        return;
-      }
-      const exists = fs.existsSync(value);
-      pythonHint.setText(exists ? "" : t("setup_foundation_python_missing"));
-      pythonField.classList.toggle("pf-setup-field--invalid", !exists);
-    };
-    pythonInput.addEventListener("input", () => {
-      this.plugin.settings.python_path = pythonInput.value.trim();
-      refreshPythonValidation();
-      this._debouncedSave();
-    });
-    refreshPythonValidation();
-    renderStatusBadge(
-      containerEl,
-      env.user_state,
-      this._getUserStateLabel(env.user_state)
-    );
+    // A published pointer with no status yet is still "checking": never offer
+    // repair/install before the status is known.
+    // A status we could not obtain is not "ready": treat an error as an
+    // actionable not-ready state instead of leaving the panel without a button.
+    const statusUnknown =
+      !ready &&
+      !this._runtimeStatusError &&
+      (this._runtimeStatusLoading ||
+        (!!pointer && this._runtimeStatus === null));
     containerEl.createEl("p", {
-      text:
-        env.user_state === "ready"
-          ? t("setup_ready")
-          : this._getModuleConsequence("installation", env),
-      cls: env.user_state === "ready" ? "pf-setup-ok" : "pf-setup-status",
+      text: statusUnknown
+        ? t("setup_runtime_checking")
+        : ready
+          ? t("setup_runtime_ready")
+          : this._runtimeStatusError ??
+            (pointer
+              ? t("setup_runtime_attention")
+              : t("setup_runtime_missing")),
+      cls: ready ? "pf-setup-ok" : "pf-setup-status",
     });
-    // #257: environment identity — pointer facts and the advanced Python base
-    // are visible here instead of only existing on disk.
-    const pointer = this._ensureManagedRuntime().readPointer?.() ?? null;
-    const identity = containerEl.createDiv({ cls: "pf-setup-identity" });
-    identity.createEl("p", {
-      cls: "caption",
-      text: `${t("setup_identity_runtime")}: ${
-        pointer ? pointer.environmentRoot : t("setup_identity_not_published")
-      }`,
-    });
-    identity.createEl("p", {
-      cls: "caption",
-      text: `${t("setup_identity_version")}: ${
-        pointer ? pointer.paperforgeVersion : "—"
-      }`,
-    });
-    identity.createEl("p", {
-      cls: "caption",
-      text: `${t("setup_identity_python")}: ${
-        this.plugin.settings.python_path?.trim() || t("setup_identity_auto")
-      }`,
-    });
-    if (this._setupOperation === "running") {
+    // A requested reinstall is an explicit action even when the runtime is
+    // healthy: the user asked to rebuild it, so the button must be there.
+    if (this._setupReinstallRequested || (!ready && !statusUnknown)) {
       containerEl.createEl("p", {
-        cls: "pf-setup-status",
-        text: t("setup_installing"),
+        text: t("runtime_installer_hint"),
+        cls: "setting-item-description",
       });
-    } else {
-      if (this._setupFeedback) {
+      if (this._runtimePollTimer) {
         containerEl.createEl("p", {
-          cls:
-            this._setupOperation === "failed" ? "pf-setup-warn" : "pf-setup-ok",
-          text: this._setupFeedback,
+          cls: "pf-setup-status",
+          text: t("runtime_installing"),
         });
-      }
-      if (this._setupOperation === "failed" && this._setupFailureDetail) {
-        containerEl.createEl("p", {
-          cls: "pf-setup-failure-detail",
-          text: t("setup_install_failed_detail").replace(
-            "{detail}",
-            this._setupFailureDetail
-          ),
-        });
-      }
-      // The install chain still runs when the local install is healthy —
-      // a requested reinstall MUST render its action button instead of
-      // dead-ending on "Continue" (the previous gate hid it whenever
-      // user_state was `ready`).
-      if (
-        this._setupReinstallRequested ||
-        env.reason.code === "installation.version_mismatch"
-      ) {
-        containerEl.createEl("p", {
-          cls: "pf-setup-warn",
-          text: t("setup_reinstall_notice"),
-        });
+      } else {
         renderActionButton(containerEl, {
-          label: t("foundation_reinstall_btn"),
-          onClick: () => this._installFoundation(true),
-        });
-      } else if (
-        env.user_state !== "ready" ||
-        this._setupOperation === "failed"
-      ) {
-        renderActionButton(containerEl, {
-          label: t("setup_foundation_install_btn"),
-          onClick: () => this._installFoundation(false),
-        });
-      }
-      // #HW-UX P0-3: on failure, always offer a retry button.
-      if (this._setupOperation === "failed") {
-        renderActionButton(containerEl, {
-          label: t("setup_retry_btn") || "Retry",
-          onClick: () => {
-            this._setupOperation = "idle";
-            this._setupFeedback = null;
-            this._installFoundation(
-              this._setupReinstallRequested ||
-                env.reason.code === "installation.version_mismatch"
-            );
-          },
+          label: this._setupReinstallRequested
+            ? t("runtime_reinstall_btn")
+            : action === "install"
+              ? t("runtime_install_btn")
+              : action === "update"
+                ? t("runtime_update_btn")
+                : t("runtime_repair_btn"),
+          onClick: () => this._launchRuntimeInstaller(action),
         });
       }
     }
+    // Manual commands and re-check stay available even while the status is
+    // unknown: a stuck check must never leave the panel without an action.
+    const manual = containerEl.createEl("details", {
+      cls: "pf-runtime-manual",
+    });
+    manual.createEl("summary", { text: t("runtime_manual_summary") });
+    manual.createEl("pre").createEl("code", {
+      text: this._runtimeInstallerCommand(action),
+    });
+    renderActionButton(containerEl, {
+      label: t("setup_runtime_refresh"),
+      onClick: () => {
+        this._refreshRuntimeStatus(true);
+        this.display();
+      },
+    });
+
     const nav = containerEl.createDiv({ cls: "pf-setup-nav" });
-    // RC UX Seam: Stage 1 must never trap the user.
-    //  - running: a real Cancel aborts installOnce/handshake/setup through
-    //    the AbortController (installOnce deletes the half-installed venv).
-    //  - idle/failed: "Later" exits the wizard; _setup_complete stays false
-    //    so reopening Settings resumes at this exact stage.
-    if (this._setupOperation === "running") {
-      renderActionButton(nav, {
-        label: t("setup_nav_cancel"),
-        onClick: () => {
-          this._runtimeAbortController?.abort();
-          // The install chain's catch(finally) handles UI settle; keep the
-          // button live so repeated clicks are harmless.
-        },
-      });
-    } else {
-      renderActionButton(nav, {
-        label: t("setup_nav_exit"),
-        onClick: () => this._goHome(),
-      });
-    }
+    renderActionButton(nav, {
+      label: t("setup_nav_later"),
+      onClick: () => {
+        this._setupStage = 1;
+        this.activeTab = "overview";
+        this._setupJourneyDismissedForSession = true;
+        this.display();
+      },
+    });
     renderActionButton(nav, {
       label: t("setup_nav_continue"),
-      disabled: env.user_state !== "ready",
+      disabled: !ready,
       onClick: () => {
-        this._setupFeedback = null;
         this._setupStage = 2;
         this.display();
       },
     });
   }
 
+  /** Names of BBT JSON exports already present in the canonical folder. */
+  private _listBbtExports(exportsDir: string): string[] {
+    try {
+      if (!fs.existsSync(exportsDir)) fs.mkdirSync(exportsDir, { recursive: true });
+      return fs
+        .readdirSync(exportsDir)
+        .filter((f: string) => f.toLowerCase().endsWith(".json"))
+        .sort();
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Stage 2 is a guided flow, not a form: three required steps in order, the
+   * current one open, finished ones collapsed to a summary line.
+   *   1 Zotero directory → 2 BBT JSON export → 3 save + sync (library ready)
+   */
   _renderSetupStageLibrary(containerEl: HTMLElement): void {
     const env =
       this._capabilityState?.library ?? createUnknownEnvelope("library");
@@ -3969,24 +3975,43 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this._probeModule("library");
     }
 
+    const settings = this.plugin.settings;
+    const vaultPath = (this.app.vault.adapter as any).basePath as string;
+    // Same layout Python resolves: <vault>/<system_dir>/PaperForge/exports.
+    // Defaults apply before the config exists, so first-run never waits on
+    // hydration (which needs a config to read in the first place).
+    const exportsDir = path.join(
+      vaultPath,
+      settings.system_dir?.trim() || "System",
+      "PaperForge",
+      "exports"
+    );
+    const zotero = (settings.zotero_data_dir || "").trim();
+    const zoteroOk = !!zotero && fs.existsSync(zotero);
+    const bbtFiles = this._listBbtExports(exportsDir);
+    const bbtOk = bbtFiles.length > 0;
+    const libReady = env.user_state === "ready";
+    const running = this._setupOperation === "running";
+
     containerEl.createEl("h3", { text: t("setup_library_title") });
     containerEl.createEl("p", { text: t("setup_library_desc") });
-    renderStatusBadge(
-      containerEl,
-      env.user_state,
-      this._getUserStateLabel(env.user_state)
-    );
-    containerEl.createEl("p", {
-      text:
-        env.user_state === "ready"
-          ? t("setup_library_ready")
-          : this._getModuleConsequence("library", env),
-      cls: env.user_state === "ready" ? "pf-setup-ok" : "pf-setup-status",
-    });
+    if (libReady) {
+      containerEl.createEl("p", {
+        cls: "pf-setup-ok",
+        text: t("setup_library_ready"),
+      });
+    } else if (env.reason?.code !== "library.config_missing") {
+      // A fresh vault has nothing to diagnose: the three steps are the
+      // instruction, so only real failures get a consequence line.
+      containerEl.createEl("p", {
+        cls: "pf-setup-status",
+        text: this._getModuleConsequence("library", env),
+      });
+    }
     if (this._setupOperation === "running") {
       containerEl.createEl("p", {
         cls: "pf-setup-status",
-        text: t("setup_library_configuring"),
+        text: this._setupFeedback || t("setup_library_configuring"),
       });
     } else if (this._setupFeedback) {
       containerEl.createEl("p", {
@@ -3996,193 +4021,243 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       });
     }
 
+    // A failure the user must act on: the reason is rendered, never only
+    // logged — "+ Add" with no explanation is the report that started this.
     if (this._setupOperation === "failed" && this._setupFailureDetail) {
       containerEl.createEl("p", {
         cls: "pf-setup-failure-detail",
-        text: t("setup_install_failed_detail").replace(
-          "{detail}",
-          this._setupFailureDetail
-        ),
+        text: this._setupFailureDetail,
       });
     }
 
-    const form = containerEl.createDiv({ cls: "pf-setup-library-form" });
-    form.createEl("p", {
-      cls: "pf-setup-form-intro",
-      text: t("setup_library_config_desc"),
-    });
-    const addField = (
-      parent: HTMLElement,
-      label: string,
-      key:
-        | "zotero_data_dir"
-        | "system_dir"
-        | "resources_dir"
-        | "literature_dir"
-        | "base_dir",
-      hint?: string
-    ) => {
-      const field = parent.createDiv({ cls: "pf-setup-field" });
-      field.createEl("label", { text: label });
-      if (hint) field.createEl("span", { cls: "caption", text: hint });
-      const input = field.createEl("input", {
-        cls: "pf-setup-input",
-        attr: { type: "text", "data-pf-testid": "setup-path-" + key },
-      }) as HTMLInputElement;
-      input.value = this.plugin.settings[key] || "";
-      input.addEventListener("input", () => {
-        this.plugin.settings[key] = input.value.trim();
-        this._debouncedSave();
-      });
-    };
-
-    addField(
-      form,
-      t("field_zotero_data"),
-      "zotero_data_dir",
-      t("setup_library_zotero_hint")
-    );
-    form.createEl("h4", { text: t("setup_library_folder_heading") });
-    const folders = form.createDiv({ cls: "pf-setup-folder-grid" });
-    addField(folders, t("dir_system"), "system_dir");
-    addField(folders, t("dir_resources"), "resources_dir");
-    addField(folders, t("dir_notes"), "literature_dir");
-    addField(folders, t("dir_base"), "base_dir");
-
-    const verify = form.createEl("button", {
-      cls: "pf-setup-verify",
-      text: t("setup_library_verify"),
-      attr: { type: "button", "data-pf-testid": "setup-library-save" },
-    });
-    verify.disabled = this._setupOperation === "running";
-    verify.addEventListener("click", () => this._applyLibraryConfiguration());
-
-    // ── BBT JSON Export ──
-    const importSection = containerEl.createDiv({ cls: "pf-setup-import" });
-    importSection.createEl("h4", {
-      text: t("setup_bbt_title") || "BBT JSON Export",
-    });
-    const vp = (this.app.vault.adapter as any).basePath as string;
-    const paths = require("./services/runtime-paths").resolveVaultPaths(vp);
-    importSection.createEl("p", {
-      cls: "pf-setup-form-intro",
-      text:
-        t("setup_bbt_desc") ||
-        "Export your Zotero library as Better BibTeX JSON into the folder below. Enable 'Keep updated' for automatic re-exports.",
-    });
-    // Exports path
-    const pathRow = importSection.createDiv({ cls: "pf-setup-path-row" });
-    pathRow.createEl("span", {
-      cls: "pf-setup-path-label",
-      text: t("setup_bbt_path") || "Exports folder:",
-    });
-    pathRow.createEl("code", {
-      cls: "pf-setup-path-value",
-      text: paths.exportsDir,
-    });
-    const copyBtn = pathRow.createEl("button", {
-      cls: "pf-btn pf-btn-secondary",
-      text: t("setup_bbt_copy") || "Copy",
-    });
-    copyBtn.addEventListener("click", () => {
-      navigator.clipboard.writeText(paths.exportsDir);
-      new Notice(t("setup_bbt_copied") || "Path copied");
-    });
-
-    // Expandable guide
-    const guide = importSection.createEl("details", { cls: "pf-setup-guide" });
-    guide.createEl("summary", {
-      cls: "pf-setup-guide-summary",
-      text: t("setup_bbt_guide") || "How to export from Zotero \u2192",
-    });
-    const guideBody = guide.createDiv({ cls: "pf-setup-guide-body" });
-    const base =
-      "https://raw.githubusercontent.com/LLLin000/PaperForge/master/docs/help/images";
+    // Completion is monotonic: a ready library means its prerequisites held,
+    // even if the export folder was emptied or a path was edited afterwards.
     const steps = [
-      {
-        img: "bbt-plugin-installed.jpg",
-        title: t("setup_bbt_step1") || "1. Install Better BibTeX",
-        desc:
-          t("setup_bbt_step1_desc") ||
-          "In Zotero, go to Tools \u2192 Add-ons, search for Better BibTeX and install it. If you cannot find it, download from: https://github.com/retorquere/zotero-better-bibtex/releases/tag/v9.0.50",
-      },
-      {
-        img: "bbt-export-dialog.jpg",
-        title: t("setup_bbt_step2") || "2. Export with auto-update",
-        desc:
-          t("setup_bbt_step2_desc") ||
-          "Right-click your library or collection \u2192 Export Library\u2026 \u2192 choose 'Better BibTeX JSON' format. Check 'Keep updated'.",
-      },
-      {
-        img: "bbt-save-dialog.jpg",
-        title: t("setup_bbt_step3") || "3. Save to exports folder",
-        desc:
-          t("setup_bbt_step3_desc") ||
-          "Point the export destination to the folder above. Once saved, click 'Detect' below.",
-      },
+      { id: "zotero", title: t("setup_step_zotero"), done: zoteroOk || libReady },
+      { id: "bbt", title: t("setup_step_bbt"), done: bbtOk || libReady },
+      { id: "verify", title: t("setup_step_verify_title"), done: libReady },
     ];
-    for (const step of steps) {
-      const entry = guideBody.createDiv({ cls: "pf-setup-guide-step" });
-      entry.createEl("strong", { text: step.title });
-      entry.createEl("p", { text: step.desc });
-      const img = entry.createEl("img", {
-        attr: {
-          src: base + "/" + step.img,
-          alt: step.title,
-          loading: "lazy",
-          onerror: "this.style.display='none'",
-        },
+    const currentId = steps.find((step) => !step.done)?.id ?? null;
+    const openId = this._setupOpenStep ?? currentId;
+
+    const flow = containerEl.createDiv({ cls: "pf-setup-flow" });
+    for (const [index, step] of steps.entries()) {
+      const row = flow.createDiv({ cls: "pf-setup-flow-step" });
+      row.dataset.state = step.done ? "done" : step.id === currentId ? "current" : "pending";
+      const head = row.createDiv({ cls: "pf-setup-flow-head" });
+      head.createEl("span", { cls: "pf-step-num", text: String(index + 1) });
+      head.createEl("span", { cls: "pf-step-title", text: step.title });
+      head.createEl("span", {
+        cls: "pf-step-state",
+        text: step.done
+          ? "\u2713 " + t("setup_step_done")
+          : step.id === currentId
+            ? t("setup_step_todo")
+            : "",
       });
-      img.addClass("pf-setup-guide-img");
-    }
-    const detectRow = importSection.createDiv({ cls: "pf-setup-detect-row" });
-    const detectStatus = detectRow.createEl("span", {
-      cls: "pf-setup-detect-status",
-    });
-    const nav = containerEl.createDiv({ cls: "pf-setup-nav" });
-
-    // Shared: update Continue from BBT file state
-    const _refreshBbtStatus = () => {
-      try {
-        if (!fs.existsSync(paths.exportsDir))
-          fs.mkdirSync(paths.exportsDir, { recursive: true });
-        const files = fs
-          .readdirSync(paths.exportsDir)
-          .filter((f: string) => f.endsWith(".json"));
-        if (files.length === 0) {
-          detectStatus.setText(
-            t("setup_bbt_no_files") || "No JSON files found."
-          );
-        } else {
-          detectStatus.setText(
-            "\u2713 " + (t("setup_bbt_found") || "Found: ") + files.join(", ")
-          );
-        }
-        const contBtn = nav.querySelector(
-          ".pf-action-btn:last-child"
-        ) as HTMLButtonElement | null;
-        if (contBtn) {
-          const shouldDisable =
-            files.length === 0 ||
-            env.user_state !== "ready" ||
-            this._setupOperation === "running";
-          contBtn.disabled = shouldDisable;
-          contBtn.classList.toggle("pf-action-btn--disabled", shouldDisable);
-        }
-      } catch {
-        /* ignore */
+      if (!step.done && step.id !== currentId) {
+        row.createEl("p", {
+          cls: "caption pf-step-hint",
+          text: t("setup_step_" + step.id + "_desc"),
+        });
       }
-    };
 
-    detectRow
-      .createEl("button", {
-        cls: "pf-btn pf-btn-primary",
-        text: t("setup_bbt_detect") || "Detect",
-      })
-      .addEventListener("click", _refreshBbtStatus);
+      if (step.done && openId !== step.id) {
+        const summary = row.createDiv({ cls: "pf-setup-flow-summary" });
+        summary.createEl("span", {
+          text:
+            step.id === "zotero"
+              ? zotero
+              : step.id === "bbt"
+                ? bbtFiles.join(", ")
+                : [
+                    settings.system_dir || "System",
+                    settings.resources_dir || "Resources",
+                    settings.literature_dir || "Literature",
+                    settings.base_dir || "Bases",
+                  ].join(" · "),
+        });
+        summary
+          .createEl("button", {
+            cls: "pf-setup-flow-edit",
+            text: t("setup_step_edit"),
+            attr: { type: "button" },
+          })
+          .addEventListener("click", () => {
+            this._setupOpenStep = step.id;
+            this.display();
+          });
+        continue;
+      }
+      if (step.id !== currentId && !step.done && openId !== step.id) continue;
 
-    // ── Navigation (at the very bottom) ──
+      const body = row.createDiv({ cls: "pf-setup-flow-body" });
+      if (step.id === "zotero") {
+        body.createEl("p", {
+          cls: "caption",
+          text: t("setup_library_zotero_hint"),
+        });
+        const input = body.createEl("input", {
+          cls: "pf-setup-input",
+          attr: { type: "text", placeholder: t("setup_step_zotero_placeholder") },
+        }) as HTMLInputElement;
+        input.value = settings.zotero_data_dir || "";
+        input.addEventListener("change", () => {
+          settings.zotero_data_dir = input.value.trim();
+          this._setupOpenStep = null;
+          void this.plugin.saveSettings();
+          this.display();
+        });
+      } else if (step.id === "bbt") {
+        // Better BibTeX must write *into* this folder with "Keep updated":
+        // the index hash is computed from the files here, so a dragged copy
+        // would never follow later Zotero edits.
+        body.createEl("p", {
+          cls: "pf-setup-form-intro",
+          text: t("setup_bbt_export_hint"),
+        });
+        const targetRow = body.createDiv({ cls: "pf-setup-path-row" });
+        targetRow.createEl("code", {
+          cls: "pf-setup-path-value",
+          text: exportsDir,
+        });
+        targetRow
+          .createEl("button", {
+            cls: "pf-btn pf-btn-secondary",
+            text: t("setup_bbt_copy"),
+            attr: { type: "button" },
+          })
+          .addEventListener("click", () => {
+            void navigator.clipboard.writeText(exportsDir);
+            new Notice(t("setup_bbt_copied"));
+          });
+        targetRow
+          .createEl("button", {
+            cls: "pf-btn pf-btn-secondary",
+            text: t("setup_bbt_open_folder"),
+            attr: { type: "button" },
+          })
+          .addEventListener("click", () => {
+            try {
+              const { shell } = require("electron") as {
+                shell: { openPath: (p: string) => Promise<string> };
+              };
+              fs.mkdirSync(exportsDir, { recursive: true });
+              void shell.openPath(exportsDir);
+            } catch (error) {
+              console.error("PaperForge: cannot open the exports folder", error);
+              new Notice(exportsDir);
+            }
+          });
 
+        // Only an auto-updating export counts: the index hash is computed
+        // from the files in this folder, so a copied snapshot would silently
+        // go stale after the next Zotero edit.
+        body.createEl("p", {
+          cls: bbtOk ? "pf-setup-ok" : "pf-setup-status",
+          text: bbtOk
+            ? "\u2713 " + t("setup_bbt_found") + bbtFiles.join(", ")
+            : t("setup_bbt_missing"),
+        });
+        targetRow
+          .createEl("button", {
+            cls: "pf-btn pf-btn-secondary",
+            text: t("setup_bbt_recheck"),
+            attr: { type: "button" },
+          })
+          .addEventListener("click", () => {
+            this._setupOpenStep = null;
+            this.display();
+          });
+
+        const guide = body.createEl("details", { cls: "pf-setup-guide" });
+        guide.createEl("summary", { text: t("setup_bbt_guide") });
+        const guideBody = guide.createDiv({ cls: "pf-setup-guide-body" });
+        guideBody.createEl("p", {
+          cls: "pf-setup-form-intro",
+          text: t("setup_bbt_desc"),
+        });
+        const imageBase =
+          "https://raw.githubusercontent.com/LLLin000/PaperForge/master/docs/help/images";
+        const guideSteps = [
+          {
+            img: "bbt-plugin-installed.jpg",
+            title: t("setup_bbt_step1"),
+            desc: t("setup_bbt_step1_desc"),
+          },
+          {
+            img: "bbt-export-dialog.jpg",
+            title: t("setup_bbt_step2"),
+            desc: t("setup_bbt_step2_desc"),
+          },
+          {
+            img: "bbt-save-dialog.jpg",
+            title: t("setup_bbt_step3"),
+            desc: t("setup_bbt_step3_desc"),
+          },
+        ];
+        for (const item of guideSteps) {
+          const entry = guideBody.createDiv({ cls: "pf-setup-guide-step" });
+          entry.createEl("strong", { text: item.title });
+          entry.createEl("p", { text: item.desc });
+          entry
+            .createEl("img", {
+              attr: {
+                src: imageBase + "/" + item.img,
+                alt: item.title,
+                loading: "lazy",
+              },
+            })
+            .addClass("pf-setup-guide-img");
+        }
+      } else {
+        body.createEl("p", {
+          cls: "caption",
+          text: t("setup_library_folders_hint"),
+        });
+        const folders = body.createDiv({
+          cls: "pf-setup-folder-grid",
+        });
+        const folders_: Array<
+          [keyof typeof settings & ("system_dir" | "resources_dir" | "literature_dir" | "base_dir"), string, string, string]
+        > = [
+          ["system_dir", "dir_system", "System", "folder_help_system"],
+          ["resources_dir", "dir_resources", "Resources", "folder_help_resources"],
+          ["literature_dir", "dir_notes", "Literature", "folder_help_notes"],
+          ["base_dir", "dir_base", "Bases", "folder_help_base"],
+        ];
+        for (const [key, labelKey, fallback, helpKey] of folders_) {
+          const field = folders.createDiv({ cls: "pf-setup-field" });
+          field.createEl("label", { text: t(labelKey) });
+          const input = field.createEl("input", {
+            cls: "pf-setup-input",
+            attr: { type: "text", placeholder: fallback },
+          }) as HTMLInputElement;
+          input.value = settings[key] || "";
+          field.createEl("span", { cls: "caption", text: t(helpKey) });
+          input.addEventListener("input", () => {
+            settings[key] = input.value.trim();
+            this._debouncedSave();
+          });
+        }
+
+        const verify = body.createEl("button", {
+          cls: "pf-setup-verify",
+          text: t("setup_library_save_sync"),
+          attr: { type: "button" },
+        }) as HTMLButtonElement;
+        verify.disabled = running;
+        verify.addEventListener("click", () => this._applyLibraryConfiguration());
+      }
+    }
+
+    if (!libReady) {
+      containerEl.createEl("p", {
+        cls: "caption pf-setup-continue-hint",
+        text: t("setup_library_continue_hint"),
+      });
+    }
+    const nav = containerEl.createDiv({ cls: "pf-setup-nav" });
     renderActionButton(nav, {
       label: t("setup_nav_exit"),
       onClick: () => this._goHome(),
@@ -4191,22 +4266,21 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       label: t("setup_nav_back"),
       onClick: () => {
         this._setupFeedback = null;
+        this._setupOpenStep = null;
         this._setupStage = 1;
         this.display();
       },
     });
     renderActionButton(nav, {
       label: t("setup_nav_continue"),
-      disabled: true,
+      disabled: !libReady || running,
       onClick: () => {
         this._setupFeedback = null;
+        this._setupOpenStep = null;
         this._setupStage = 3;
         this.display();
       },
     });
-
-    // Auto-run after nav buttons exist
-    _refreshBbtStatus();
   }
 
   /** #173 corrective: explicit, user-mediated SecretStorage → keyring
@@ -4234,7 +4308,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       btn.disabled = false;
     }
     if (results.length === 0) {
-      new Notice("No legacy credentials found in SecretStorage");
+      new Notice(t("migrate_none_found"));
     } else {
       results.forEach((line) => new Notice(line, 6000));
     }
@@ -4403,15 +4477,36 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         text: opt.desc,
         cls: "pf-setup-optional-desc",
       });
+      // The chip states what the user must do next, not just "configured":
+      // a green "not configured" reads as done and is why people skip it.
+      const needsSecret = opt.id === "ocr" || opt.id === "memory";
       const status = copy.createEl("span", {
-        cls: "pf-setup-optional-state",
-        text: configured ? t("config_configured") : t("config_not_configured"),
+        cls:
+          "pf-setup-optional-state " +
+          (needsSecret && !configured
+            ? "pf-setup-optional-state--warn"
+            : "pf-setup-optional-state--ok"),
+        text:
+          opt.id === "agent"
+            ? t("setup_optional_platform").replace(
+                "{platform}",
+                AGENT_PLATFORM_LABELS[
+                  this.plugin.settings.agent_platform || "opencode"
+                ] ?? this.plugin.settings.agent_platform ?? "opencode"
+              )
+            : configured
+              ? t("config_configured")
+              : t("setup_optional_needs_key"),
       });
       if (!checkbox.checked) continue;
 
       const config = row.createDiv({ cls: "pf-setup-optional-config" });
       if (opt.id === "ocr") {
         config.createEl("label", { text: t("field_paddleocr") });
+        config.createEl("p", {
+          cls: "caption",
+          text: t("setup_optional_ocr_key_hint"),
+        });
         config.createEl("p", {
           cls: "caption",
           text: t("ocr_privacy_warning"),
@@ -4447,7 +4542,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         config.createEl("label", { text: t("feat_openai_key") });
         config.createEl("p", {
           cls: "caption",
-          text: t("feat_openai_key_desc"),
+          text: t("setup_optional_embedding_key_hint"),
         });
         const key = config.createEl("input", {
           cls: "pf-setup-input",
@@ -4509,21 +4604,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           text: t("feat_agent_platform_desc"),
         });
         const select = config.createEl("select") as HTMLSelectElement;
-        const setupPlatformLabels: Record<string, string> = {
-          opencode: "OpenCode",
-          claude: "Claude Code",
-          codex: "Codex",
-          cursor: "Cursor",
-          windsurf: "Windsurf",
-          github_copilot: "GitHub Copilot",
-          gemini: "Gemini CLI",
-        };
         const setupChoices = this.plugin.agentPlatformChoices.length
           ? this.plugin.agentPlatformChoices
-          : Object.keys(setupPlatformLabels);
+          : Object.keys(AGENT_PLATFORM_LABELS);
         for (const value of setupChoices) {
           const option = select.createEl("option", {
-            text: setupPlatformLabels[value] ?? value,
+            text: AGENT_PLATFORM_LABELS[value] ?? value,
             attr: { value },
           }) as HTMLOptionElement;
           option.selected = value === this.plugin.settings.agent_platform;

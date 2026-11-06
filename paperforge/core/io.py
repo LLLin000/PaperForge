@@ -17,6 +17,14 @@ def write_json_atomic(path: Path, data) -> None:
     tmp.replace(path)
 
 
+def write_text_atomic(path: Path, text: str) -> None:
+    """Write text atomically (temp + replace) so a crash cannot truncate it."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(text, encoding="utf-8")
+    tmp.replace(path)
+
+
 def write_json(path: Path, data) -> None:
     """Write data as JSON, creating parent directories as needed."""
     write_json_atomic(path, data)

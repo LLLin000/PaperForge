@@ -15,6 +15,7 @@
  */
 
 import { execFileSync, spawn, type ChildProcess } from "child_process";
+import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import {
@@ -28,10 +29,17 @@ import {
 } from "./transport";
 import { stripCredentialEnv } from "../services/secret-storage";
 import {
-  RuntimeBootstrap,
+  readRuntimePointer,
   resolveRuntimeCommand,
-  runtimeInstallInProgress,
 } from "../services/managed-runtime";
+import {
+  installerLogPath,
+  installerRun,
+  posixInstallerScript,
+  runtimeInstallerShellCommand,
+  windowsInstallerScript,
+  type RuntimeInstallerAction,
+} from "../services/runtime-installer-launcher";
 
 const KNOWN_EVENTS: ReadonlySet<string> = new Set([
   "start",
@@ -335,17 +343,36 @@ export function paperforgeEnrichedEnv(): Record<string, string | undefined> {
   } else if (plat === "linux") {
     extras.push("/usr/local/bin", "/usr/bin", `${home}/.local/bin`);
   }
-  const cur = env.PATH || "";
+  // Children resolve binaries through PATH only. A GUI host can start with a
+  // PATH that is empty or stripped to nothing usable (menu-launched apps on
+  // macOS/Linux, some sandboxes); the installer then fails with "not
+  // recognized" even though probing from this process worked. Keep a floor.
+  const floor =
+    plat === "win32"
+      ? "C:\\Windows\\System32;C:\\Windows"
+      : "/usr/local/bin:/usr/bin:/bin";
+  const cur = env.PATH || process.env.PATH || floor;
   env.PATH = [...extras, cur].filter(Boolean).join(path.delimiter);
   return stripCredentialEnv(env) as Record<string, string | undefined>;
 }
 
 export interface NodeProcessTransportOptions {
   vaultPath: string;
-  /** Override for python runtime resolution (useful for tests or custom wrappers). */
-  resolveRuntime?: () => Promise<{ path: string; args: string[] } | null>;
   /** Child process spawner (default: child_process.spawn). */
   spawnFn?: typeof spawn;
+  /** Version probe (default: child_process.execFileSync). */
+  execFileSyncFn?: typeof execFileSync;
+  /** Installer log destination (tests point this at a temp file). */
+  installerLogPath?: () => string;
+}
+
+/** Interpreter names to probe, most specific first. */
+export function basePythonCandidates(
+  platform: NodeJS.Platform = process.platform
+): string[] {
+  return platform === "win32"
+    ? ["py", "python3", "python"]
+    : ["python3", "python"];
 }
 
 export class ExecuteChildRegistry extends Set<ChildProcess> {
@@ -377,16 +404,64 @@ export class NodeProcessTransport implements Transport {
   static _childRegistry: ExecuteChildRegistry = executeChildRegistry;
 
   private readonly _vaultPath: string;
-  private readonly _resolveRuntime?: () => Promise<{
-    path: string;
-    args: string[];
-  } | null>;
   private readonly _spawnFn: typeof spawn;
+  private readonly _execFileSyncFn: typeof execFileSync;
+  private readonly _installerLogPath: () => string;
 
   constructor(options: NodeProcessTransportOptions) {
     this._vaultPath = options.vaultPath;
-    this._resolveRuntime = options.resolveRuntime;
     this._spawnFn = options.spawnFn ?? spawn;
+    this._execFileSyncFn = options.execFileSyncFn ?? execFileSync;
+    this._installerLogPath = options.installerLogPath ?? installerLogPath;
+  }
+
+  /** Resolve the interpreter from Python's published runtime pointer. */
+  async resolvePython(): Promise<{ path: string; args: string[] }> {
+    const cmd = resolveRuntimeCommand(readRuntimePointer());
+    if (cmd) return { path: cmd.command, args: [...cmd.args] };
+
+    throw new Error(
+      "PaperForge runtime not ready. Run `paperforge runtime install` outside Obsidian."
+    );
+  }
+
+  /** First schooled interpreter that reports Python >= 3.11, returned as an
+   * ABSOLUTE executable path.
+   *
+   * The name that probes successfully (`py`, a PATH shim) is not necessarily
+   * resolvable by the installer's child `cmd`, which runs with the redacted
+   * environment: on a hosted runner `py --version` works from Node while
+   * `cmd /c ... py ...` answers "'py' is not recognized". Embedding
+   * `sys.executable` keeps the script PATH-independent. */
+  discoverBasePython(): string | null {
+    for (const candidate of basePythonCandidates()) {
+      try {
+        const out = this._execFileSyncFn(candidate, ["--version"], {
+          timeout: 5000,
+          windowsHide: true,
+          encoding: "utf-8",
+        });
+        const match = /Python\s+(\d+)\.(\d+)/.exec(String(out));
+        if (!match || Number(match[1]) < 3 || Number(match[2]) < 11) continue;
+        try {
+          const exe = String(
+            this._execFileSyncFn(
+              candidate,
+              ["-c", "import sys;print(sys.executable)"],
+              { timeout: 5000, windowsHide: true, encoding: "utf-8" }
+            )
+          ).trim();
+          return exe || candidate;
+        } catch {
+          // Version probe worked but the path probe did not: the bare name is
+          // still better than nothing (a PATH that worked for this process).
+          return candidate;
+        }
+      } catch {
+        // candidate absent — try the next one
+      }
+    }
+    return null;
   }
 
   static reapExecuteChildren(): void {
@@ -447,41 +522,70 @@ export class NodeProcessTransport implements Transport {
   }
 
   /**
-   * Resolve active python interpreter.
-   *
-   * ONE authority: the published runtime pointer (#174), reached through the
-   * injected resolver.  There is deliberately no second rule — a
-   * configured `python_path` selects the bootstrap venv's base interpreter,
-   * it is not a dispatch target, and the frontend never falls back to an
-   * ambient `python`.
+   * Open the external installer in a terminal window: pip --user installs the
+   * CLI, then the CLI creates/verifies the runtime and publishes the pointer.
+   * Obsidian only watches the pointer; it never installs anything itself.
    */
-  /** Refuse to spawn an interpreter whose runtime is being replaced. */
-  private _assertRuntimeNotInstalling(pythonPath: string): void {
-    if (runtimeInstallInProgress(pythonPath)) {
-      throw new Error(
-        "PaperForge is installing its runtime right now — this will work again in a moment"
-      );
+  launchRuntimeInstaller(
+    action: RuntimeInstallerAction,
+    version: string
+  ): { ok: boolean; python?: string; error?: string; logPath?: string } {
+    const python = this.discoverBasePython();
+    if (!python) {
+      return {
+        ok: false,
+        error:
+          "No Python 3.11+ found. Install Python from python.org, then retry.",
+      };
+    }
+    const shellCommand = runtimeInstallerShellCommand(python, action, version);
+    const scriptPath = this._writeInstallerScript(
+      process.platform === "win32"
+        ? windowsInstallerScript(shellCommand)
+        : posixInstallerScript(shellCommand),
+      process.platform === "win32" ? "cmd" : "command"
+    );
+    const run = installerRun(process.platform, {
+      comSpec: process.env.ComSpec,
+      scriptPath,
+    });
+    const logPath = this._installerLogPath();
+    let log: number | undefined;
+    try {
+      fs.mkdirSync(path.dirname(logPath), { recursive: true });
+      log = fs.openSync(logPath, "a");
+      const child = this._spawnFn(run.command, run.args, {
+        // Never cwd into the vault: a leftover shell holding the vault would
+        // lock the user's notes directory.
+        cwd: os.tmpdir(),
+        shell: false,
+        detached: true,
+        stdio: ["ignore", log, log],
+        windowsHide: true,
+        env: paperforgeEnrichedEnv(),
+      });
+      child.unref?.();
+      return { ok: true, python, logPath };
+    } catch (err) {
+      return { ok: false, error: `Failed to start the installer: ${err}` };
+    } finally {
+      if (log !== undefined) fs.closeSync(log);
     }
   }
 
-  async resolvePython(): Promise<{ path: string; args: string[] }> {
-    if (this._resolveRuntime) {
-      const resolved = await this._resolveRuntime();
-      if (resolved?.path) return resolved;
-    } else {
-      // No injected resolver (tests, embedders): read the pointer directly.
-      const run = resolveRuntimeCommand(new RuntimeBootstrap().readPointer());
-      if (run) return { path: run.command, args: [...run.args] };
-    }
-    throw new Error(
-      "PaperForge Python runtime not ready. Please complete setup or configure python_path."
+  /** A script file keeps the platform terminal free of nested quoting. */
+  private _writeInstallerScript(content: string, extension: string): string {
+    const file = path.join(
+      os.tmpdir(),
+      `paperforge-runtime-${Date.now()}.${extension}`
     );
+    fs.writeFileSync(file, content, { encoding: "utf-8", mode: 0o755 });
+    return file;
   }
   async execute(argv: string[], options?: ExecuteOptions): Promise<string> {
     const py = options?.pythonExe
-      ? { path: options.pythonExe, args: [] }
+      ? { path: options.pythonExe, args: [] as string[] }
       : await this.resolvePython();
-    this._assertRuntimeNotInstalling(py.path);
     const env = options?.env ?? paperforgeEnrichedEnv();
     const timeout = options?.timeoutMs ?? 120000;
 
@@ -608,8 +712,7 @@ export class NodeProcessTransport implements Transport {
         };
       }
 
-      this._assertRuntimeNotInstalling(py.path);
-      longTaskHandle = runLongTask(py.path, py.args, this._vaultPath, argv, {
+        longTaskHandle = runLongTask(py.path, py.args, this._vaultPath, argv, {
         graceMs: options?.graceMs,
         env: options?.env,
         closeStdin: argv[0] === "setup",

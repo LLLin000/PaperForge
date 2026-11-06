@@ -13,6 +13,7 @@ import * as path from "path";
 import { VIEW_TYPE_OCR_WORKSPACE } from "../constants";
 import { t } from "../i18n";
 import { PaperForgeConfirmModal } from "./modals";
+import { PaperForgeStatusView } from "./dashboard";
 import {
   PaperForgeClient,
   type ActionDescriptor,
@@ -631,10 +632,43 @@ export class OcrWorkspaceView extends ItemView {
 
   private _buildTableBody(vp: HTMLElement, page: OcrPaper[]): void {
     if (page.length === 0) {
-      vp.createDiv({
-        cls: "pf-ocr-ws-empty pf-visible",
-        text: t("ocr_ws_no_papers"),
-      });
+      // "No OCR data" is the wrong story when the library itself is empty or
+      // a filter hides everything: say which one it is and offer the next step.
+      const total = this.papers.length;
+      const empty = vp.createDiv({ cls: "pf-ocr-ws-empty pf-visible" });
+      if (total === 0) {
+        empty.createEl("p", { text: t("ocr_ws_empty_no_papers") });
+        empty.createEl("p", {
+          cls: "caption",
+          text: t("ocr_ws_empty_hint"),
+        });
+        const btn = empty.createEl("button", {
+          cls: "pf-action-btn",
+          text: t("ocr_ws_open_dashboard"),
+        });
+        btn.addEventListener("click", () => {
+          void PaperForgeStatusView.open(this.plugin);
+        });
+      } else {
+        empty.createEl("p", { text: t("ocr_ws_empty_no_match") });
+        empty.createEl("p", {
+          cls: "caption",
+          text: t("ocr_ws_empty_clear_filters"),
+        });
+        const btn = empty.createEl("button", {
+          cls: "pf-action-btn",
+          text: t("ocr_ws_clear_filters"),
+        });
+        btn.addEventListener("click", () => {
+          this.filter = "all";
+          this.versionFilter = null;
+          this._searchQuery = "";
+          this.selectedKey = null;
+          this.checkedKeys.clear();
+          this._page = 1;
+          this._render();
+        });
+      }
       return;
     }
     const table = vp.createEl("table", { cls: "pf-ocr-ws-table" });

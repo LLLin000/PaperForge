@@ -5466,6 +5466,87 @@
   grid-template-columns: 1fr 1fr;
   gap: var(--size-4-3);
 }
+.pf-setup-flow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-2);
+  margin-top: var(--size-4-3);
+}
+.pf-setup-flow-step {
+  border-left: 2px solid var(--background-modifier-border);
+  padding: 0 0 0 var(--size-4-3);
+}
+.pf-setup-flow-step[data-state="current"] {
+  border-left-color: var(--interactive-accent);
+}
+.pf-setup-flow-step[data-state="done"] {
+  border-left-color: var(--text-success);
+}
+.pf-setup-flow-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--size-4-2);
+}
+.pf-step-num {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+.pf-step-title {
+  font-weight: 600;
+  color: var(--text-normal);
+}
+.pf-step-state {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+.pf-setup-flow-step[data-state="done"] .pf-step-state {
+  color: var(--text-success);
+}
+.pf-setup-flow-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-2);
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  word-break: break-all;
+}
+.pf-setup-flow-edit {
+  border: none;
+  background: none;
+  color: var(--text-accent);
+  font-size: var(--font-ui-smaller);
+  cursor: pointer;
+  padding: 0;
+}
+.pf-setup-flow-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-2);
+  margin: var(--size-4-2) 0 0;
+}
+.pf-setup-import .pf-setup-dropzone,
+.pf-setup-flow-body .pf-setup-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--size-4-2);
+  margin: var(--size-4-2) 0;
+  padding: var(--size-4-5) var(--size-4-4);
+  border: 1px dashed var(--background-modifier-border-hover);
+  border-radius: var(--radius-s);
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 120ms, background 120ms;
+}
+.pf-setup-import .pf-setup-dropzone:hover,
+.pf-setup-import .pf-setup-dropzone--active {
+  border-color: var(--interactive-accent);
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
 .pf-setup-library-form .pf-setup-verify {
   align-self: flex-start;
   min-height: 30px;
@@ -7455,4 +7536,620 @@ input.pf-ocr-ws-search-input::placeholder {
 .paperforge-modal.pf-vr-modal {
   padding: 0;
   overflow: hidden;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Setup flow polish (install → library) — typographic hierarchy + cards.
+   Theme-driven: every color comes from Obsidian variables.
+   ───────────────────────────────────────────────────────────────────────── */
+.pf-setup-progress {
+  display: flex;
+  gap: 6px;
+  margin: 4px 0 20px;
+  flex-wrap: wrap;
+}
+.pf-setup-step {
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--background-modifier-border);
+  color: var(--text-muted);
+  background: var(--background-secondary);
+  line-height: 1.6;
+}
+.pf-setup-step--active {
+  color: var(--text-accent);
+  border-color: color-mix(in srgb, var(--text-accent) 45%, var(--background-modifier-border));
+  background: color-mix(in srgb, var(--text-accent) 10%, transparent);
+  font-weight: 600;
+}
+.pf-setup-step--done {
+  color: var(--text-success);
+  border-color: color-mix(in srgb, var(--text-success) 35%, var(--background-modifier-border));
+  background: color-mix(in srgb, var(--text-success) 8%, transparent);
+}
+
+.pf-setup-body h3 {
+  margin: 0 0 6px;
+  font-size: 17px;
+  font-weight: var(--font-semibold);
+  letter-spacing: -0.01em;
+}
+.pf-setup-body > p {
+  margin: 0 0 8px;
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  line-height: 1.5;
+}
+
+.pf-setup-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+}
+.pf-setup-flow-step {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: var(--background-secondary);
+  transition: border-color 120ms ease, background 120ms ease;
+}
+.pf-setup-flow-step[data-state="current"] {
+  border-color: color-mix(in srgb, var(--interactive-accent) 55%, var(--background-modifier-border));
+  background: color-mix(in srgb, var(--interactive-accent) 5%, var(--background-secondary));
+}
+.pf-setup-flow-step[data-state="pending"] {
+  opacity: 0.7;
+}
+.pf-setup-flow-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.pf-step-num {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--background-modifier-border);
+  color: var(--text-muted);
+}
+.pf-setup-flow-step[data-state="current"] .pf-step-num {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+.pf-setup-flow-step[data-state="done"] .pf-step-num {
+  background: color-mix(in srgb, var(--text-success) 20%, transparent);
+  color: var(--text-success);
+}
+.pf-step-title {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text-normal);
+}
+.pf-step-state {
+  margin-left: auto;
+  font-size: 11.5px;
+  color: var(--text-faint);
+  letter-spacing: 0.02em;
+}
+.pf-setup-flow-step[data-state="current"] .pf-step-state {
+  color: var(--text-accent);
+}
+.pf-setup-flow-step[data-state="done"] .pf-step-state {
+  color: var(--text-success);
+}
+.pf-step-hint {
+  margin: 6px 0 0 32px;
+  font-size: 12.5px;
+  color: var(--text-faint);
+}
+.pf-setup-flow-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0 0 32px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  word-break: break-all;
+}
+.pf-setup-flow-step .pf-setup-flow-edit,
+.pf-setup-flow-step button.pf-setup-flow-edit {
+  flex: 0 0 auto;
+  border: none;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  padding: 0;
+  margin: 0;
+  min-height: 0;
+  height: auto;
+  color: var(--text-accent);
+  font-size: 12.5px;
+  line-height: 1.4;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.pf-setup-flow-step .pf-setup-flow-edit:hover {
+  background: none;
+  color: var(--text-accent-hover, var(--text-accent));
+}
+.pf-setup-flow-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--background-modifier-border);
+}
+
+.pf-setup-flow-body .pf-setup-input,
+.pf-setup-flow-body input.pf-setup-input {
+  width: 100%;
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background: var(--background-primary);
+  color: var(--text-normal);
+  font-size: var(--font-ui-small);
+  box-sizing: border-box;
+}
+.pf-setup-flow-body .pf-setup-input:focus {
+  outline: none;
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--interactive-accent) 25%, transparent);
+}
+
+.pf-setup-flow-body .pf-setup-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 16px;
+  border: 1.5px dashed var(--background-modifier-border-hover);
+  border-radius: 8px;
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+  text-align: center;
+  cursor: pointer;
+  background: var(--background-primary);
+  transition: border-color 120ms ease, background 120ms ease;
+}
+.pf-setup-flow-body .pf-setup-dropzone:hover,
+.pf-setup-flow-body .pf-setup-dropzone--active {
+  border-color: var(--interactive-accent);
+  background: color-mix(in srgb, var(--interactive-accent) 6%, var(--background-primary));
+  color: var(--text-normal);
+}
+
+.pf-setup-flow-body .pf-setup-path-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 0;
+}
+.pf-setup-flow-body .pf-setup-path-value {
+  flex: 1 1 240px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--background-modifier-hover);
+  color: var(--text-muted);
+  font-family: var(--font-monospace);
+  font-size: 11.5px;
+}
+.pf-setup-flow-body .pf-btn {
+  min-height: 28px;
+  padding: 2px 10px;
+  font-size: 12.5px;
+  border-radius: 6px;
+}
+
+.pf-setup-flow-body .pf-setup-verify {
+  align-self: flex-start;
+  min-height: 32px;
+  padding: 6px 16px;
+  border: 1px solid var(--interactive-accent);
+  border-radius: 6px;
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  font-size: var(--font-ui-small);
+  font-weight: 500;
+  cursor: pointer;
+}
+.pf-setup-flow-body .pf-setup-verify:hover:not(:disabled) {
+  opacity: 0.9;
+}
+.pf-setup-flow-body .pf-setup-verify:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pf-setup-folder-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+.pf-setup-field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-normal);
+}
+.pf-setup-field .caption {
+  font-size: 12px;
+  color: var(--text-faint);
+  line-height: 1.45;
+}
+
+.pf-setup-nav {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 20px;
+  padding-top: 14px;
+  border-top: 1px solid var(--background-modifier-border);
+}
+.pf-setup-nav .pf-action-btn {
+  min-height: 32px;
+  padding: 6px 16px;
+  border-radius: 6px;
+}
+.pf-setup-nav .pf-action-btn:last-child:not(:disabled) {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+.pf-setup-continue-hint {
+  margin: 12px 0 0;
+  font-size: 12.5px;
+  color: var(--text-faint);
+}
+
+/* Control-center summary: one statement, one action. */
+.pf-control-center .pf-cc-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 10px;
+  background: var(--background-secondary);
+}
+.pf-control-center .pf-cc-summary-badge {
+  align-self: flex-start;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 1.7;
+  border: 1px solid transparent;
+}
+.pf-control-center .pf-cc-summary-badge--ready {
+  color: var(--text-success);
+  border-color: color-mix(in srgb, var(--text-success) 35%, transparent);
+  background: color-mix(in srgb, var(--text-success) 10%, transparent);
+}
+.pf-control-center .pf-cc-summary-badge--attention {
+  color: var(--text-warning);
+  border-color: color-mix(in srgb, var(--text-warning) 40%, transparent);
+  background: color-mix(in srgb, var(--text-warning) 10%, transparent);
+}
+.pf-control-center .pf-cc-summary-badge--checking {
+  color: var(--text-muted);
+  border-color: var(--background-modifier-border);
+  background: var(--background-modifier-hover);
+}
+.pf-control-center .pf-cc-summary .pf-action-btn {
+  align-self: flex-start;
+}
+.pf-control-center .pf-cc-summary-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.pf-control-center .pf-cc-summary-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pf-control-center .pf-cc-summary-copy strong {
+  font-size: 15px;
+  font-weight: 600;
+}
+.pf-control-center .pf-cc-summary-copy .caption {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+.pf-control-center .pf-cc-summary .pf-action-btn {
+  min-height: 32px;
+  padding: 6px 16px;
+  border-radius: 6px;
+}
+.pf-control-center .pf-cc-summary-meta {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+/* ── Setup flow: strict indentation + type scale ─────────────────────────
+   Body content aligns under the step title (32px), not under the badge.
+   Sizes: title 15/600 · state 11.5 · body 13 · meta 12.5 · code 12. */
+.pf-setup-flow-step {
+  padding: 14px 16px;
+}
+.pf-setup-flow-head {
+  gap: 10px;
+  min-height: 22px;
+}
+.pf-step-title {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.pf-step-state {
+  font-size: 11.5px;
+  line-height: 1.35;
+}
+.pf-step-hint {
+  margin: 4px 0 0 32px;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.pf-setup-flow-summary {
+  margin: 4px 0 0 32px;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.pf-setup-flow-body {
+  margin: 10px 0 0 32px;
+  padding-top: 10px;
+  gap: 8px;
+}
+.pf-setup-flow-body > p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.pf-setup-flow-body .pf-setup-form-intro {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+.pf-setup-flow-body .pf-setup-status,
+.pf-setup-flow-body .pf-setup-ok,
+.pf-setup-flow-body .pf-setup-warn {
+  font-size: 12.5px;
+  line-height: 1.55;
+  margin: 0;
+}
+.pf-setup-flow-body .pf-setup-path-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 0;
+}
+.pf-setup-flow-body .pf-setup-path-value {
+  flex: 1 1 260px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  padding: 0 10px;
+  border-radius: 6px;
+  background: var(--background-modifier-hover);
+  color: var(--text-muted);
+  font-family: var(--font-monospace);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pf-setup-flow-body .pf-setup-path-row .pf-btn {
+  flex: 0 0 auto;
+  height: 28px;
+  min-height: 28px;
+  padding: 0 10px;
+  font-size: 12.5px;
+  border-radius: 6px;
+  line-height: 1;
+}
+.pf-setup-flow-body summary {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.pf-setup-flow-body .pf-setup-guide {
+  margin: 0;
+}
+.pf-setup-flow-body .pf-setup-guide-body {
+  padding: 8px 0 0;
+}
+.pf-setup-flow-body .pf-setup-guide-step p {
+  margin: 2px 0 8px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+.pf-setup-flow-body .pf-setup-guide-step strong {
+  font-size: 13px;
+  font-weight: 600;
+}
+.pf-setup-flow-body .pf-setup-field {
+  gap: 4px;
+}
+.pf-setup-flow-body .pf-setup-folder-grid {
+  gap: 10px 12px;
+}
+.pf-setup-flow-body .caption {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-faint);
+}
+.pf-setup-flow-body .pf-setup-verify {
+  height: 32px;
+  padding: 0 16px;
+  font-size: 13px;
+  line-height: 1;
+}
+.pf-setup-continue-hint {
+  margin: 12px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-faint);
+}
+/* Stage 1 keeps the same rhythm. */
+.pf-setup-body > h3 {
+  font-size: 17px;
+  margin-bottom: 6px;
+}
+.pf-setup-body > p {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-muted);
+  margin: 0 0 8px;
+}
+.pf-setup-body > pre {
+  margin: 8px 0;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--background-modifier-hover);
+  overflow-x: auto;
+}
+.pf-setup-body > pre code {
+  font-family: var(--font-monospace);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* Optional features (stage 3): card rows, honest state chips. */
+.pf-setup-optional {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 10px;
+  background: var(--background-secondary);
+}
+.pf-setup-optional:has(input:checked) {
+  border-color: color-mix(in srgb, var(--interactive-accent) 50%, var(--background-modifier-border));
+  background: color-mix(in srgb, var(--interactive-accent) 5%, var(--background-secondary));
+}
+.pf-setup-optional > input[type="checkbox"] {
+  margin-top: 3px;
+  accent-color: var(--interactive-accent);
+}
+.pf-setup-optional-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.pf-setup-optional-label {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text-normal);
+  cursor: pointer;
+}
+.pf-setup-optional-desc {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+.pf-setup-optional-state {
+  font-size: 12px;
+  line-height: 1.5;
+}
+.pf-setup-optional-state--ok {
+  color: var(--text-success);
+}
+.pf-setup-optional-state--warn {
+  color: var(--text-warning);
+}
+.pf-setup-optional-config {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--background-modifier-border);
+}
+.pf-setup-optional-config label {
+  font-size: 13px;
+  font-weight: 600;
+}
+.pf-setup-optional-config .caption {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-faint);
+}
+
+/* ── Dashboard responsiveness ────────────────────────────────────────────
+   Flex children default to min-width:auto, so long status rows and pill
+   groups forced a ~380px min-content width and the panel could not shrink.
+   ────────────────────────────────────────────────────────────────────── */
+.paperforge-status-panel > * {
+  min-width: 0;
+}
+.paperforge-global-view {
+  width: 100%;
+  min-width: 0;
+}
+.paperforge-status-row {
+  flex-wrap: wrap;
+  row-gap: 2px;
+}
+.paperforge-status-label {
+  min-width: 0;
+  flex: 0 1 auto;
+}
+.paperforge-status-detail {
+  min-width: 0;
+  flex: 1 1 100%;
+  overflow-wrap: anywhere;
+}
+@media (min-width: 420px) {
+  .paperforge-status-detail {
+    flex: 1 1 auto;
+  }
+}
+.paperforge-snapshot-pills {
+  min-width: 0;
+}
+@container pfpanel (max-width: 420px) {
+  .paperforge-snapshot-pills {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .paperforge-snapshot-pill {
+    min-width: 0;
+  }
+  .paperforge-snapshot-value {
+    font-size: 18px;
+  }
+}
+.paperforge-issue-summary,
+.paperforge-library-snapshot,
+.paperforge-system-status {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }

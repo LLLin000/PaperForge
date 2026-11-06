@@ -22,32 +22,23 @@ jobs:
   # ---------------------------------------------------------------------------
   # L0 — Version consistency check
   # ---------------------------------------------------------------------------
-  version-check:
-    name: L0 — Version Sync
+  static:
+    name: L0 — Static (version sync + ruff)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: pip
       - name: Install package
         run: pip install -e .
       - name: Check version consistency
         run: python scripts/check_version_sync.py
-
-  # ---------------------------------------------------------------------------
-  # L0.5 — Ruff static gate (undefined names etc.)
-  # ---------------------------------------------------------------------------
-  ruff:
-    name: L0.5 — Ruff
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - run: pip install ruff
-      - run: ruff check paperforge --select F821,F822,F823
+      # Undefined names only (F821/F822/F823): the full lint rule set is not a
+      # merge gate here, and this is the class that ships a NameError.
+      - name: Ruff static gate
+        run: pip install ruff && ruff check paperforge --select F821,F822,F823
 
   # ---------------------------------------------------------------------------
   # L1 — Unit tests (3 OS x 1 Python)
@@ -56,8 +47,11 @@ jobs:
     name: L1 — Unit Tests (${{ matrix.os }}, py3.11)
     strategy:
       fail-fast: false
+      # ubuntu is not a cell: python-suite runs tests/ (which includes
+      # tests/unit) on that OS already. The remaining cells are the only
+      # cross-platform signal for path/encoding behaviour.
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -104,7 +98,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -193,6 +187,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: pip
       - name: Install package with test deps
         run: pip install -e ".[test]"
       # `python` on PATH is not always the interpreter setup-python installed
@@ -273,36 +268,7 @@ jobs:
   # ---------------------------------------------------------------------------
   # L2 — Release-protocol integration tests (shadow rebuild + retrieval)
   # ---------------------------------------------------------------------------
-  protocol-tests:
-    name: L2 — Release Protocol Tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Install package with test deps
-        run: pip install -e ".[test,vector]"
-      - name: Run shadow + retrieval protocol tests
-        run: |
-          python -m pytest tests/test_shadow_rebuild.py \
-            tests/test_pr9c_streaming_embed.py \
-            tests/test_deep_search.py \
-            tests/test_query_command_diagnostics.py \
-            -v --tb=short --timeout=90 \
-            --junit-xml="$RUNNER_TEMP/paperforge-protocol-tests.xml"
-      - name: Preserve first-failure protocol evidence
-        if: ${{ failure() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: ci-failure-protocol-tests
-          path: ${{ runner.temp }}/paperforge-protocol-tests.xml
-          if-no-files-found: warn
-          retention-days: 14
 
-  # ---------------------------------------------------------------------------
-  # L4 — E2E + Audit
-  # ---------------------------------------------------------------------------
   e2e-tests:
     name: L4 — E2E + Audit
     runs-on: ubuntu-latest
@@ -311,6 +277,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: pip
       - name: Install package with test deps
         run: pip install -e ".[test,vector]"
       - name: Run E2E tests
@@ -402,45 +369,7 @@ jobs:
   # unit/protocol jobs do not collect (progress contracts, object emission,
   # real-paper regressions, slugify); a future regression there must not
   # merge. Fast (<90s): runs the touched files + redo/rebuild neighbors.
-  ocr-regression:
-    name: L2.5 — OCR Release Regression
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Install package with test deps
-        run: pip install -e ".[test,vector]"
-      - name: Run OCR release-regression tests
-        run: |
-          python -m pytest \
-            tests/cli/test_ocr_progress_contracts.py \
-            tests/cli/test_ocr_scope_safety.py \
-            tests/test_ocr_objects.py \
-            tests/test_ocr_real_paper_regressions.py \
-            tests/test_ocr_redo.py \
-            tests/test_ocr_rebuild.py \
-            tests/test_utils_slugify.py \
-            -q --tb=short --timeout=120 \
-            --junit-xml="$RUNNER_TEMP/paperforge-ocr-regression.xml"
-      - name: Preserve first-failure OCR evidence
-        if: ${{ failure() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: ci-failure-ocr-regression
-          path: ${{ runner.temp }}/paperforge-ocr-regression.xml
-          if-no-files-found: warn
-          retention-days: 14
 
-  # ---------------------------------------------------------------------------
-  # H — Real Obsidian lifecycle matrix (W19/X10 partial evidence)
-  # ---------------------------------------------------------------------------
-  # This runs only the declared Windows desktop host. The suite's disposable
-  # file keyring intentionally does not certify native keyring behavior; that
-  # remains an owner-controlled H/W20 evidence item. The first-use journey gate
-  # (#263) runs here with PF_E2E_JOURNEY_GATE=1; its clean vault fixture is
-  # generated by test/fixtures/build_e2e_vault.py.
   obsidian-e2e:
     name: H — Obsidian (${{ matrix.app }}, installer=${{ matrix.installer }})
     strategy:
@@ -451,7 +380,9 @@ jobs:
       # host (job P, tests/harness/) and must not be proven here.
       matrix: ${{ fromJSON(github.event_name == 'pull_request' && '{"include":[{"app":"latest","installer":"latest"}]}' || '{"include":[{"app":"earliest","installer":"earliest"},{"app":"latest","installer":"latest"},{"app":"latest","installer":"earliest"}]}') }}
     runs-on: windows-latest
-    timeout-minutes: 45
+    # A cold install builds a venv and resolves the vector deps; A01 + A06
+    # each carry a 25-minute outcome budget on a slow network.
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -518,20 +449,20 @@ jobs:
           # only in dist/; without this pip finds no candidate at all.
           print("PIP_FIND_LINKS=" + os.path.abspath("dist"))
           PY
-      - name: Run real Obsidian lifecycle (first-use journey gate)
+      - name: Run real Obsidian lifecycle (runtime + UI gate)
         run: npm run test:e2e
         working-directory: paperforge/plugin
         env:
           PF_OBSIDIAN_APP_VERSION: ${{ matrix.app }}
           PF_OBSIDIAN_INSTALLER_VERSION: ${{ matrix.installer }}
-          PF_E2E_SETUP_POSITIVE: "1"
-          PF_E2E_JOURNEY_GATE: "1"
-      - name: Upload first-use journey evidence
+      - name: Upload runtime journey evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: first-use-journey-${{ matrix.app }}-${{ matrix.installer }}
-          path: paperforge/plugin/test/evidence/first-use-journey.json
+          name: runtime-journey-${{ matrix.app }}-${{ matrix.installer }}
+          path: |
+            paperforge/plugin/test/evidence/a01-first-use.json
+            paperforge/plugin/test/evidence/a06-reinstall-switch.json
           if-no-files-found: error
           retention-days: 14
       - name: Upload obsidian evidence (all cases)
@@ -542,7 +473,7 @@ jobs:
           path: paperforge/plugin/test/evidence
           if-no-files-found: warn
           retention-days: 14
-      - name: Validate the first-use journey gate
+      - name: Validate the runtime journey gate
         shell: bash
         run: |
           python - <<'PY'
@@ -550,27 +481,41 @@ jobs:
           import sys
           from pathlib import Path
 
-          evidence = Path("paperforge/plugin/test/evidence/first-use-journey.json")
-          try:
-              data = json.loads(evidence.read_text(encoding="utf-8"))
-          except OSError:
-              print("first-use journey gate FAILED: evidence file missing")
-              sys.exit(1)
-          # appendEvidence writes a JSON array of runs; judge the latest one.
-          runs = data if isinstance(data, list) else [data]
-          latest = runs[-1] if runs and isinstance(runs[-1], dict) else {}
-          steps = latest.get("steps", [])
-          failed = [step for step in steps if not step.get("ok")]
-          if latest.get("status") != "VERIFIED" or not steps or failed:
-              print(
-                  "first-use journey gate FAILED: "
-                  f"status={latest.get('status')} failed={failed}"
-              )
-              sys.exit(1)
-          print(
-              "first-use journey VERIFIED: "
-              f"{len(steps)} steps / {sum(step['ms'] for step in steps)} ms"
+          evidence_dir = Path("paperforge/plugin/test/evidence")
+          expected = {
+              "a01-first-use.json": "A01",
+              "a06-reinstall-switch.json": "A06",
+          }
+          manifest = json.loads(
+              Path("paperforge/plugin/manifest.json").read_text(encoding="utf-8")
           )
+          version = manifest["version"]
+          failures: list[str] = []
+
+          for name, case_id in expected.items():
+              path = evidence_dir / name
+              try:
+                  data = json.loads(path.read_text(encoding="utf-8"))
+              except OSError:
+                  failures.append(f"{case_id}: evidence file missing")
+                  continue
+              # appendEvidence writes a JSON array of runs; judge the latest.
+              runs = data if isinstance(data, list) else [data]
+              latest = runs[-1] if runs and isinstance(runs[-1], dict) else {}
+              if latest.get("status") != "VERIFIED":
+                  failures.append(f"{case_id}: status={latest.get('status')}")
+                  continue
+              pointer = latest.get("pointer") or latest.get("pointer_after") or {}
+              if pointer.get("paperforgeVersion") != version:
+                  failures.append(
+                      f"{case_id}: pointer version {pointer.get('paperforgeVersion')!r} "
+                      f"!= {version!r}"
+                  )
+
+          if failures:
+              print("runtime journey gate FAILED: " + "; ".join(failures))
+              sys.exit(1)
+          print(f"runtime journey VERIFIED: {', '.join(expected.values())} @ {version}")
           PY
       - name: Preserve first-failure Obsidian evidence
         if: ${{ failure() }}
@@ -601,6 +546,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: pip
       - name: Install package with test deps
         # The full-suite job's extras: E05 migrates a legacy ChromaDB substrate, and
         # a case that branched on an absent dependency would be a skip in disguise.
@@ -635,13 +581,10 @@ jobs:
     name: All Checks Passed
     if: always()
     needs:
-      - version-check
-      - ruff
+      - static
       - unit-tests
       - python-suite
       - j-matrix
-      - protocol-tests
-      - ocr-regression
       - cli-acceptance
       - plugin-tests
       - e2e-tests

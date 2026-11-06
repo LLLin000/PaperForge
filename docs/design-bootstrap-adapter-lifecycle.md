@@ -1,12 +1,16 @@
-# Bootstrap Adapter and Setup/Update/Repair Lifecycle
+# Historical: Bootstrap Adapter and Setup/Update/Repair Lifecycle
 
 > Date: 2026-08-09
-> Status: **ACCEPTED — ARCHITECTURE FROZEN** (decision [#143](https://github.com/LLLin000/PaperForge/issues/143))
+> Status: **SUPERSEDED** by the external Core installer boundary in [`adr/python-core-authority.md`](adr/python-core-authority.md#bootstrap)
 > Research: [#156](https://github.com/LLLin000/PaperForge/issues/156), Reconciliation: [#147](https://github.com/LLLin000/PaperForge/issues/147), Action contract: [#145](https://github.com/LLLin000/PaperForge/issues/145), Progress protocol: [#137](https://github.com/LLLin000/PaperForge/issues/137)
 
-## 0. Core invariant
+> **Current boundary:** `paperforge runtime install|update|repair|status` exclusively manages the machine-wide managed Core runtime: it creates candidate environments, installs Core dependencies, verifies them, and publishes `~/.paperforge/runtime/pointer.json`. The bootstrap CLI package itself is installed separately from a terminal. Obsidian only reads the pointer, launches Core, and configures each Vault. Sections below preserve the earlier #143 decision as historical context; do not use them as the current implementation contract.
 
-> **The plugin may create the first runnable Python environment, but once PaperForge can execute, it never again owns runtime lifecycle semantics or canonical runtime publication.**
+## 0. Historical core invariant
+
+> **Earlier #143 decision:** The plugin may create the first runnable Python environment, but once PaperForge can execute, it never again owns runtime lifecycle semantics or canonical runtime publication.
+
+This document preserves the earlier decision for traceability; the historical sections below do not override the current boundary above.
 
 This is not "ManagedRuntime v2 under a new name": `managed-runtime.ts` is migration source, not target.
 

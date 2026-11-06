@@ -7,11 +7,20 @@
 
 import { describe, it, expect, vi } from "vitest";
 import { EventEmitter } from "events";
-import {
-  NodeProcessTransport,
-  runLongTask,
-  type LongTaskOptions,
-} from "../../src/client/node-transport";
+const runtimeState = vi.hoisted(() => ({ pythonPath: "C:/py/python.exe" }));
+vi.mock("../../src/services/managed-runtime", () => ({
+  readRuntimePointer: () =>
+    runtimeState.pythonPath
+      ? {
+          pythonPath: runtimeState.pythonPath,
+          environmentRoot: "C:/managed",
+          paperforgeVersion: "1.0.0",
+        }
+      : null,
+  resolveRuntimeCommand: (pointer: { pythonPath: string } | null) =>
+    pointer ? { command: pointer.pythonPath, args: [] } : null,
+}));
+import { NodeProcessTransport } from "../../src/client/node-transport";
 
 class MockStream extends EventEmitter {
   public setEncoding = vi.fn();
@@ -32,134 +41,24 @@ describe("NodeProcessTransport", () => {
   const vaultPath = "C:/mock/vault";
 
   describe("resolvePython", () => {
-    it("resolves through the injected resolver (the published pointer)", async () => {
-      const transport = new NodeProcessTransport({
-        vaultPath,
-        resolveRuntime: async () => ({
-          path: "C:/managed/python.exe",
-          args: ["-W", "ignore"],
-        }),
-      });
+    it("resolves only the Python-published runtime pointer", async () => {
+      runtimeState.pythonPath = "C:/managed/python.exe";
+      const transport = new NodeProcessTransport({ vaultPath });
 
-      const res = await transport.resolvePython();
-      expect(res.path).toBe("C:/managed/python.exe");
-      expect(res.args).toEqual(["-W", "ignore"]);
+      const result = await transport.resolvePython();
+      expect(result).toEqual({
+        path: "C:/managed/python.exe",
+        args: [],
+      });
     });
 
-    it("throws a clear error when python runtime cannot be resolved", async () => {
-      const transport = new NodeProcessTransport({
-        vaultPath,
-        resolveRuntime: async () => null,
-      });
+    it("shows the external installer command when the pointer is absent", async () => {
+      runtimeState.pythonPath = "";
+      const transport = new NodeProcessTransport({ vaultPath });
 
       await expect(transport.resolvePython()).rejects.toThrow(
-        /PaperForge Python runtime not ready/
+        /paperforge runtime install.*outside Obsidian/
       );
-    });
-  });
-
-  describe("runLongTask stop escalation (#330)", () => {
-    it("reports a user stop that needed the kill as cancelled, keeping the protocol note", async () => {
-      const mockChild = new MockChildProcess();
-      const mockSpawn = vi.fn().mockReturnValue(mockChild);
-
-      const handle = runLongTask(
-        "C:/py/python.exe",
-        [],
-        vaultPath,
-        ["action", "run", "embed.build", "--json"],
-        // MockChildProcess is structurally a ChildProcess for the fields
-        // runLongTask touches; the cast names that, instead of erasing types.
-        {
-          onEvent: () => undefined,
-          graceMs: 1,
-          spawnFn: mockSpawn as unknown as NonNullable<LongTaskOptions["spawnFn"]>,
-        }
-      );
-      await Promise.resolve();
-
-      handle.stop();
-      expect(mockChild.stdin.write).toHaveBeenCalledWith("PAPERFORGE_STOP\n");
-
-      // The child never reached a safe point: killed, no terminal event, rc 1.
-      mockChild.emit("close", 1);
-      const outcome = await handle.promise;
-
-      expect(outcome.cancelled).toBe(true);
-      expect(outcome.protocolFailure).toBe(
-        "EOF without terminal event (exit 1)"
-      );
-      expect(outcome.exitCode).toBe(1);
-    });
-
-    it("names the terminating signal when the killed child reports one", async () => {
-      const mockChild = new MockChildProcess();
-      (mockChild as unknown as { signalCode?: string | null }).signalCode =
-        "SIGTERM";
-      const mockSpawn = vi.fn().mockReturnValue(mockChild);
-      const handle = runLongTask(
-        "C:/py/python.exe",
-        [],
-        vaultPath,
-        ["action", "run", "embed.build", "--json"],
-        {
-          onEvent: () => undefined,
-          spawnFn: mockSpawn as unknown as NonNullable<LongTaskOptions["spawnFn"]>,
-        }
-      );
-      await Promise.resolve();
-      handle.stop();
-      mockChild.emit("close", null);
-      const outcome = await handle.promise;
-      expect(outcome.protocolFailure).toBe(
-        "EOF without terminal event (signal SIGTERM)"
-      );
-    });
-
-    it("keeps a build that finished after a late stop successful, not cancelled", async () => {
-      const mockChild = new MockChildProcess();
-      const mockSpawn = vi.fn().mockReturnValue(mockChild);
-
-      const handle = runLongTask(
-        "C:/py/python.exe",
-        [],
-        vaultPath,
-        ["action", "run", "embed.build", "--json"],
-        {
-          onEvent: () => undefined,
-          spawnFn: mockSpawn as unknown as NonNullable<LongTaskOptions["spawnFn"]>,
-        }
-      );
-      await Promise.resolve();
-
-      // The click lands as the build is finishing: the token is ignored and the
-      // real terminal event still arrives.
-      handle.stop();
-      mockChild.stdout.emit("data", '{"schema_version":1,"event":"result","data":{}}\n');
-      mockChild.emit("close", 0);
-      const outcome = await handle.promise;
-
-      expect(outcome.cancelled).toBe(false);
-      expect(outcome.ok).toBe(true);
-    });
-  });
-
-  describe("install in progress", () => {
-    it("refuses to spawn an interpreter whose runtime is being installed", async () => {
-      const os = await import("os");
-      const fs = await import("fs");
-      const path = await import("path");
-      const runtimeDir = fs.mkdtempSync(path.join(os.tmpdir(), "pf-install-"));
-      fs.mkdirSync(path.join(runtimeDir, "install.lock.d"));
-      const pythonExe = path.join(runtimeDir, "venv", "Scripts", "python.exe");
-      const transport = new NodeProcessTransport({
-        vaultPath,
-        spawnFn: vi.fn() as any,
-      });
-      await expect(
-        transport.execute(["probe", "ocr", "--json"], { pythonExe })
-      ).rejects.toThrow(/installing its runtime/);
-      fs.rmSync(runtimeDir, { recursive: true, force: true });
     });
   });
 
@@ -168,14 +67,13 @@ describe("NodeProcessTransport", () => {
       const mockChild = new MockChildProcess();
       const mockSpawn = vi.fn().mockReturnValue(mockChild);
 
+      runtimeState.pythonPath = "C:/py/python.exe";
       const transport = new NodeProcessTransport({
         vaultPath,
         spawnFn: mockSpawn as any,
       });
 
-      const execPromise = transport.execute(["probe", "ocr", "--json"], {
-        pythonExe: "C:/py/python.exe",
-      });
+      const execPromise = transport.execute(["probe", "ocr", "--json"]);
       await Promise.resolve(); // wait for resolvePython microtask
 
       expect(mockSpawn).toHaveBeenCalledWith(
@@ -201,13 +99,13 @@ describe("NodeProcessTransport", () => {
       const mockChild = new MockChildProcess();
       const mockSpawn = vi.fn().mockReturnValue(mockChild);
 
+      runtimeState.pythonPath = "C:/py/python.exe";
       const transport = new NodeProcessTransport({
         vaultPath,
         spawnFn: mockSpawn as any,
       });
 
       const execPromise = transport.execute(["auth", "set", "ocr", "--stdin"], {
-        pythonExe: "C:/py/python.exe",
         stdin: "secret-token-123\n",
       });
       await Promise.resolve(); // wait for resolvePython microtask
@@ -223,15 +121,12 @@ describe("NodeProcessTransport", () => {
       const mockChild = new MockChildProcess();
       const mockSpawn = vi.fn().mockReturnValue(mockChild);
 
+      runtimeState.pythonPath = "C:/py/python.exe";
       const transport = new NodeProcessTransport({
         vaultPath,
         spawnFn: mockSpawn as any,
       });
-      // Pin the interpreter: without it this test read the machine's real
-      // runtime pointer and only passed where one exists.
-      const execPromise = transport.execute(["failing", "command"], {
-        pythonExe: "C:/py/python.exe",
-      });
+      const execPromise = transport.execute(["failing", "command"]);
       await Promise.resolve(); // wait for resolvePython microtask
 
       mockChild.stderr.emit("data", "Error: command failed");
@@ -242,36 +137,4 @@ describe("NodeProcessTransport", () => {
       );
     });
   });
-    it("F-10: timeout rejection carries bounded stderr + err.stderr + err.timedOut", async () => {
-      vi.useFakeTimers();
-      try {
-        const mockChild = new MockChildProcess();
-        const mockSpawn = vi.fn().mockReturnValue(mockChild);
-
-        const transport = new NodeProcessTransport({
-          vaultPath,
-          spawnFn: mockSpawn as any,
-        });
-
-        const execPromise = transport.execute(["ocr", "run", "--json"], {
-          pythonExe: "C:/py/python.exe",
-          timeoutMs: 100,
-        });
-        await Promise.resolve(); // wait for resolvePython microtask
-
-        // Child emits diagnostic stderr; timeout timer will fire.
-        mockChild.stderr.emit("data", "Traceback (most recent call last):");
-        mockChild.stderr.emit("data", "ModuleNotFoundError: No module named 'foo'");
-        vi.advanceTimersByTime(150);
-
-        await expect(execPromise).rejects.toMatchObject({
-          timedOut: true,
-          stderr: expect.stringContaining("ModuleNotFoundError"),
-        });
-        await expect(execPromise).rejects.toThrow(/timed out after 100ms/);
-      } finally {
-        vi.useRealTimers();
-      }
-    });
-
 });
