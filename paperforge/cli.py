@@ -1,8 +1,8 @@
 """paperforge.cli — PaperForge command-line interface.
 
-Exposes `paperforge paths`, `paperforge status`, `paperforge sync`,
-`paperforge ocr`, `paperforge ocr --diagnose`, `paperforge deep-reading`,
-`paperforge repair`, and `paperforge doctor`.
+Exposes machine-wide `paperforge runtime install|update|repair|status` plus
+Vault-scoped commands including `paths`, `status`, `sync`, `ocr`,
+`deep-reading`, `repair`, `doctor`, and `setup`.
 
 Backward-compatible aliases (deprecated): `selection-sync`, `index-refresh`,
 `ocr run`, `ocr doctor`.
@@ -208,19 +208,10 @@ def build_parser() -> argparse.ArgumentParser:
     p_df.add_argument("--json", action="store_true", help="Output as PFResult JSON")
 
     # repair
-    p_repair = sub.add_parser(
-        "repair",
-        help="Repair divergent literature notes (or the runtime with --runtime)",
-    )
-    p_repair.add_argument(
-        "--runtime",
-        action="store_true",
-        help="Runtime lifecycle repair (#143) — re-ensure deps + re-publish the pointer",
-    )
+    p_repair = sub.add_parser("repair", help="Repair divergent literature notes")
     p_repair.add_argument("--fix", action="store_true", help="Actually apply repairs instead of dry-run")
     p_repair.add_argument("--fix-paths", action="store_true", help="Re-resolve PDF paths for items with path_error")
     p_repair.add_argument("--json", action="store_true", help="Output result as JSON (PFResult envelope)")
-
     # ocr (unified)
     p_ocr = sub.add_parser("ocr", help="OCR operations")
     p_ocr.add_argument(
@@ -487,13 +478,6 @@ def build_parser() -> argparse.ArgumentParser:
     doctor_p = sub.add_parser("doctor", help="Validate PaperForge setup and configuration")
     doctor_p.add_argument("--json", action="store_true", help="Output JSON")
 
-    # update
-    p_update = sub.add_parser("update", help="Update PaperForge to the latest version")
-    p_update.add_argument(
-        "--json",
-        action="store_true",
-        help="Emit the #137 NDJSON machine stream with cooperative cancellation",
-    )
 
     # setup wizard
     p_setup = sub.add_parser("setup", help="Set up PaperForge in a vault (use --headless for non-interactive)")
@@ -762,8 +746,31 @@ def build_parser() -> argparse.ArgumentParser:
         help="Expected PaperForge package version; installation probe reports a mismatch",
     )
 
-    return parser
 
+    # Runtime lifecycle is independent of any Obsidian vault.
+    p_runtime = sub.add_parser(
+        "runtime",
+        help="Install, update, repair, or inspect the managed PaperForge runtime",
+    )
+    runtime_sub = p_runtime.add_subparsers(dest="runtime_action", required=True)
+    for action, description in (
+        ("install", "Install the PaperForge runtime if it is not already ready"),
+        ("update", "Install the version matching this PaperForge CLI"),
+        ("repair", "Build and verify a fresh runtime without changing the active one on failure"),
+    ):
+        command = runtime_sub.add_parser(action, help=description)
+        command.add_argument("--expected-version", metavar="VERSION")
+        command.add_argument("--base-python", metavar="PYTHON")
+        command.add_argument("--wheel", metavar="WHEEL", help="Install an explicit .whl file")
+        command.add_argument("--json", action="store_true", help="Output result as JSON")
+
+    p_runtime_status = runtime_sub.add_parser(
+        "status", help="Report the active managed runtime without changing it"
+    )
+    p_runtime_status.add_argument("--expected-version", metavar="VERSION")
+    p_runtime_status.add_argument("--base-python", metavar="PYTHON")
+    p_runtime_status.add_argument("--json", action="store_true", help="Output result as JSON")
+    return parser
 
 # ---------------------------------------------------------------------------
 # OCR doctor command (kept for backward compat / test patching)
@@ -818,6 +825,9 @@ def _run_cli(argv: list[str] | None = None) -> int:
     from paperforge.core import timing
 
     timing.set_command(str(args.command))
+    if args.command == "runtime":
+        configure_logging(verbose=getattr(args, "verbose", False))
+        return _run_runtime_command(args)
 
     # Resolve/import worker modules only for commands that actually need them.
     lightweight_commands = {
@@ -825,8 +835,7 @@ def _run_cli(argv: list[str] | None = None) -> int:
         "context", "repair", "dashboard", "memory", "embed", "retrieve",
         "query-plan", "prune", "paper-status", "paper-context", "reading-log",
         "project-log", "search", "agent-context", "runtime-health", "doctor",
-        "update", "setup", "selection-sync", "index-refresh", "base-refresh",
-        "read",
+        "setup", "selection-sync", "index-refresh", "base-refresh", "read",
         "paper-lookup", "content-discovery", "paper-navigation", "scoped-fetch",
         "probe",
     }
@@ -955,16 +964,6 @@ def _run_cli(argv: list[str] | None = None) -> int:
         return context.run(args)
 
     if args.command == "repair":
-        if getattr(args, "runtime", False):
-            # #174 / #143: runtime lifecycle repair is a DIFFERENT
-            # operation from literature repair.  NDJSON + cancel when
-            # --json is set; otherwise human result.
-            from paperforge.worker.runtime_repair import perform_runtime_repair
-
-            result = perform_runtime_repair(ndjson=getattr(args, "json", False))
-            if result.get("cancelled"):
-                return 130
-            return 0 if result["ok"] else 1
         from paperforge.commands import repair
 
         return repair.run(args)
@@ -1114,20 +1113,6 @@ def _run_cli(argv: list[str] | None = None) -> int:
             kw["json_output"] = True
         return run_doctor(vault, **kw)
 
-    if args.command == "update":
-        from paperforge.worker.update import run_update
-
-        if getattr(args, "json", False):
-            # #174 P0-4: perform_update emits the full #137 stream
-            # (start/phase/exactly-one terminal); the CLI maps rc only.
-            from paperforge.worker.update import perform_update
-
-            result = perform_update(vault, ndjson=True)
-            if result.get("cancelled"):
-                return 130
-            return 0 if result["ok"] else 1
-
-        return run_update(vault)
 
     if args.command == "setup":
         # Shared config builder: only EXPLICIT CLI args are written.  An
@@ -1184,6 +1169,60 @@ def _run_cli(argv: list[str] | None = None) -> int:
 
     print(f"Error: unknown command {args.command}", file=sys.stderr)
     return 1
+
+def _run_runtime_command(args: argparse.Namespace) -> int:
+    """Manage only the pointer-owned machine runtime, outside any vault."""
+    from paperforge import __version__
+    from paperforge.runtime_installer import (
+        RuntimeInstallError,
+        inspect_runtime,
+        install_runtime,
+    )
+
+    action = args.runtime_action
+    expected_version = args.expected_version or __version__
+    base_python = args.base_python
+    json_output = bool(args.json)
+
+    try:
+        if action == "status":
+            result = inspect_runtime(
+                expected_version=expected_version,
+                base_python=base_python,
+            )
+            if json_output:
+                print(json.dumps(result, ensure_ascii=False, indent=2))
+            else:
+                print(f"runtime_ready: {result['runtime_ready']}")
+                print(f"runtime_state: {result['runtime_state']}")
+                print(f"pointer: {result['pointer_path']}")
+                print(f"paperforge: {result['paperforge_version']}")
+                print(f"python: {result['python_path']}")
+            # Status is a successful inspection even when the runtime needs
+            # user action; callers read the structured state to decide.
+            return 0
+
+        result = install_runtime(
+            expected_version=expected_version,
+            base_python=base_python,
+            force=action == "repair",
+            wheel=Path(args.wheel) if args.wheel else None,
+        )
+        if json_output:
+            print(json.dumps(result.to_dict(), ensure_ascii=False, indent=2))
+        else:
+            print(result.message)
+            print(f"python: {result.python_path}")
+            print(f"paperforge: {result.paperforge_version}")
+        return 0
+    except RuntimeInstallError as exc:
+        if json_output:
+            print(json.dumps(exc.to_dict(), ensure_ascii=False, indent=2))
+        else:
+            print(f"Error: {exc.message}", file=sys.stderr)
+            if exc.detail:
+                print(exc.detail, file=sys.stderr)
+        return 1
 
 
 # ---------------------------------------------------------------------------

@@ -1,5 +1,5 @@
 import type { ActionRequest, ActionScope } from "./client/action-contract";
-import { Plugin, addIcon, Notice, Modal, Setting, App } from "obsidian";
+import { Plugin, Notice, Modal, Setting, App } from "obsidian";
 
 /** Thin confirm modal for the one-time plugin-assisted config migration. */
 class ConfirmMigrationModal extends Modal {
@@ -9,53 +9,49 @@ class ConfirmMigrationModal extends Modal {
     private readonly onConfirm: () => Promise<void>
   ) {
     super(app);
-    this.setTitle("Migrate PaperForge configuration");
+    this.setTitle(t("migrate_modal_title"));
     this.contentEl.createEl("p", {
-      text: "Legacy configuration detected. Migration preview:",
+      text: t("migrate_modal_intro"),
     });
     const pre = this.contentEl.createEl("pre", { cls: "pf-migration-summary" });
     pre.setText(summary);
     this.contentEl.createEl("p", {
-      text: "Canonical values win on conflict. Credentials are never migrated through config.",
+      text: t("migrate_modal_rules"),
       cls: "setting-item-description",
     });
     const actions = this.contentEl.createDiv({ cls: "pf-modal-actions" });
-    const cancel = actions.createEl("button", { text: "Cancel" });
+    const cancel = actions.createEl("button", { text: t("migrate_modal_cancel") });
     cancel.addEventListener("click", () => this.close());
-    const go = actions.createEl("button", {
-      text: "Migrate",
-      attr: { "data-pf-testid": "migrate-config-confirm" },
-    });
+    const go = actions.createEl("button", { text: t("migrate_modal_confirm") });
     go.addEventListener("click", () => {
       void this.onConfirm().finally(() => this.close());
     });
   }
 }
-import * as path from "path";
 import {
   VIEW_TYPE_PAPERFORGE,
   VIEW_TYPE_OCR_WORKSPACE,
   PF_ICON_ID,
-  PF_RIBBON_SVG,
   ACTIONS,
   DEFAULT_SETTINGS,
   PaperForgeSettings,
 } from "./constants";
 import { t, setLanguage } from "./i18n";
+import {
+  readRuntimePointer,
+  resolveRuntimeCommand,
+  type PointerInfo,
+} from "./services/managed-runtime";
 import { PaperForgeSettingTab } from "./settings";
 import { orchestrateFromSync } from "./services/next-actions-bridge";
 import { PaperForgeStatusView } from "./views/dashboard";
 import { OcrWorkspaceView } from "./views/ocr-workspace";
 import { PaperForgeConfirmModal } from "./views/modals";
-import { resolveVaultPaths } from "./services/runtime-paths";
 import {
+  resolveVaultPaths,
   setPathConfigSource,
   isConfigHydrated,
 } from "./services/runtime-paths";
-import {
-  RuntimeBootstrap,
-  resolveRuntimeCommand,
-} from "./services/managed-runtime";
 import { PaperForgeClient, NodeProcessTransport } from "./client";
 import { dumpTrace, setTraceEnabled } from "./client/trace";
 
@@ -76,7 +72,6 @@ export default class PaperForgePlugin extends Plugin {
   _memoryStatusText: string | null = null;
   _ocrProgress = { current: 0, total: 1, key: "" };
   private _settingTab: PaperForgeSettingTab | null = null;
-  private _managedRuntime: RuntimeBootstrap | null = null;
 
   private _client: PaperForgeClient | null = null;
 
@@ -87,20 +82,26 @@ export default class PaperForgePlugin extends Plugin {
           ?.basePath ?? "";
       const transport = new NodeProcessTransport({
         vaultPath,
-        // #174: the published pointer is the single runtime authority. A
-        // configured python_path is the BASE interpreter for the bootstrap
-        // venv (RuntimeBootstrap.installOnce), never a dispatch target.
-        resolveRuntime: async () => this._getPythonCommand(),
       });
       this._client = new PaperForgeClient({ transport });
     }
     return this._client;
   }
-  getManagedRuntime(): RuntimeBootstrap {
-    if (!this._managedRuntime) {
-      this._managedRuntime = new RuntimeBootstrap();
-    }
-    return this._managedRuntime;
+
+  /** Read-only view of the Python-published runtime pointer.
+   *
+   * The pointer is the only runtime truth (#174): the plugin never resolves an
+   * installed-but-unpublished environment. Nothing here creates or changes
+   * runtime state — installation is the CLI's job. */
+  getManagedRuntime(): { readPointer(): PointerInfo | null } {
+    return { readPointer: () => readRuntimePointer() };
+  }
+
+  /** Resolved backend command for diagnostics, or null when no pointer is
+   * published yet. */
+  _getPythonCommand(): { path: string; args: string[] } | null {
+    const run = resolveRuntimeCommand(readRuntimePointer());
+    return run ? { path: run.command, args: [...run.args] } : null;
   }
 
   /** Diagnostic handle for the console: `app.plugins.plugins.paperforge
@@ -116,12 +117,6 @@ export default class PaperForgePlugin extends Plugin {
     await this.saveSettings();
   }
 
-  _getPythonCommand(): { path: string; args: string[] } | null {
-    // #174: pointer publication is the ONLY runtime truth — the plugin
-    // never uses an installed-but-unpublished runtime.
-    const run = resolveRuntimeCommand(this.getManagedRuntime().readPointer());
-    return run ? { path: run.command, args: [...run.args] } : null;
-  }
 
   /** One user-facing OCR run path for Settings, Dashboard, and commands. */
   async requestOcrRun(scope: ActionScope = { kind: "all" }): Promise<void> {
@@ -281,9 +276,6 @@ export default class PaperForgePlugin extends Plugin {
       (leaf) => new OcrWorkspaceView(leaf, this)
     );
 
-    try {
-      addIcon(PF_ICON_ID, PF_RIBBON_SVG);
-    } catch (_) {}
     this.addRibbonIcon(PF_ICON_ID, "PaperForge Dashboard", () =>
       PaperForgeStatusView.open(this as any)
     );
@@ -634,6 +626,7 @@ export default class PaperForgePlugin extends Plugin {
         // stay disabled until a fresh probe/config response (#144).
       }
     }
+
   }
 
   async saveSettings() {
@@ -649,7 +642,9 @@ export default class PaperForgePlugin extends Plugin {
   private _checkReleaseNotes() {
     const currentVersion = this.manifest.version;
     const seen = this.settings.last_seen_version;
-    if (seen === currentVersion) return;
+    // A fresh profile has no previous version to compare against: release
+    // notes for an upgrade they never ran are noise before first setup.
+    if (!seen || seen === currentVersion) return;
 
     const releaseNotesData = require("./release-notes.json");
     const versions = releaseNotesData.versions || [];

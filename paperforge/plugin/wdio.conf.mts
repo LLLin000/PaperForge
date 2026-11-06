@@ -93,7 +93,11 @@ export const config: WebdriverIO.Config = {
   // suite to one case while keeping the real harness and sandbox.
   mochaOpts: {
     ui: "bdd",
-    timeout: 600000,
+    // One wrapper timer bounds BOTH the test and every single command, so this
+    // value (not the per-test budget) is what caps `waitUntil`. A cold A01/A06
+    // install builds a venv and resolves the vector deps from the index; on a
+    // slow network that legitimately exceeds ten minutes.
+    timeout: 1800000,
     ...(process.env.PF_E2E_GREP ? { grep: process.env.PF_E2E_GREP } : {}),
   },
   logLevel: "warn",

@@ -32,14 +32,16 @@ TESTS_DIR = REPO_ROOT / "tests"
 #: The merge gate. Only these workflows can block a pull request; a file
 #: collected solely by a scheduled workflow is *not* gated.
 GATING_WORKFLOW = "ci.yml"
+#: Jobs whose failure evidence is uploaded. `protocol-tests` and
+#: `ocr-regression` were folded into `python-suite` (2026-11-06): they named
+#: files that job already runs on the same OS, so a second job only paid for a
+#: checkout. Their files remain collected, which this contract verifies.
 FAILURE_EVIDENCE_JOBS = (
     "unit-tests",
     "j-matrix",
     "plugin-tests",
     "python-suite",
-    "protocol-tests",
     "e2e-tests",
-    "ocr-regression",
     "cli-acceptance",
 )
 

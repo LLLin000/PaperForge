@@ -62,18 +62,42 @@ If you need beta versions or the plugin hasn't appeared in search yet:
 
 ---
 
-## 2. Install the Python Package
+## 2. Install PaperForge Core (outside Obsidian)
 
-After enabling the plugin, open the PaperForge settings tab. You'll see a **Runtime Status** section:
+The Obsidian plugin does not install Python or manage packages. Install the
+matching bootstrap CLI from a terminal, then use it to create and verify the
+managed Core runtime:
 
+```bash
+python -m pip install --user --upgrade "paperforge==<PLUGIN_VERSION>"
+python -m paperforge runtime install --expected-version <PLUGIN_VERSION>
 ```
-Plugin v1.5.0 → Python Package v1.5.0 ✓ Matched
+
+Replace `<PLUGIN_VERSION>` with the version in the installed plugin's
+`manifest.json`. Use the same Python 3.11+ executable for both commands
+(`py -3.11 -m ...` on Windows or `python3.11 -m ...` on macOS/Linux).
+The installer creates a separate runtime under `~/.paperforge/runtime/` and
+publishes its pointer only after verification.
+
+Then open PaperForge in Obsidian. The plugin reads the runtime pointer and
+configures the current Vault; it never runs `pip` or creates the Python
+environment. One installed Core can serve multiple Vaults.
+
+If the plugin version changes, install the matching bootstrap CLI and update
+the managed runtime from a terminal:
+
+```bash
+python -m pip install --user --upgrade "paperforge==<NEW_PLUGIN_VERSION>"
+python -m paperforge runtime update --expected-version <NEW_PLUGIN_VERSION>
 ```
 
-- If it says "Not installed" → click **Open Wizard** to re-run the setup process
-- If it says "Mismatch" → the Python package auto-updates when the plugin updates. If it didn't succeed, click **Update Runtime** to manually trigger
+For a broken runtime, run this from the same terminal:
 
----
+```bash
+python -m paperforge runtime repair --expected-version <PLUGIN_VERSION>
+```
+
+Do not run these lifecycle commands from an Obsidian plugin action.
 
 ## 3. Quickstart
 

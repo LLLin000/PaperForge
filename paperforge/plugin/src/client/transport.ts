@@ -48,12 +48,14 @@ export interface ExecuteOptions {
   timeoutMs?: number;
   stdin?: string;
   env?: Record<string, string | undefined>;
+  /** Explicit interpreter, bypassing the published runtime pointer. */
   pythonExe?: string;
 }
 
 export interface StreamOptions {
   graceMs?: number;
   env?: Record<string, string | undefined>;
+  /** Explicit interpreter, bypassing the published runtime pointer. */
   pythonExe?: string;
   onEvent?: (event: NdjsonEvent) => void;
 }
@@ -78,6 +80,15 @@ export interface Transport {
    * Launch a PaperForge subcommand in streaming mode (#137 NDJSON).
    */
   stream(argv: string[], options?: StreamOptions): StreamHandle;
+
+  /**
+   * Open the external runtime installer in a terminal window. Optional: only
+   * hosts that can spawn a visible console (desktop) implement it.
+   */
+  launchRuntimeInstaller?(
+    action: "install" | "update" | "repair",
+    version: string
+  ): { ok: boolean; python?: string; error?: string };
 }
 
 /**
