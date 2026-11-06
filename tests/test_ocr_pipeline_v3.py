@@ -9,6 +9,67 @@ def test_ocr_pipeline_v3_enabled_defaults_true(monkeypatch) -> None:
 
     assert _ocr_pipeline_v3_enabled() is True
 
+def test_producer_pre_matches_before_inventory_and_writes_candidate_artifact(tmp_path, monkeypatch) -> None:
+    import json
+    from types import SimpleNamespace
+    from tests.conftest import canonical_test_config
+    from paperforge.worker import ocr
+
+    canonical_test_config(tmp_path)
+    key = "TESTV3A"
+    calls = []
+    rows = [{"block_id": "c1", "page": 1, "role": "body_paragraph", "seed_role": "body_paragraph"}]
+    doc = SimpleNamespace(source_frontmatter_anchors=None)
+
+    monkeypatch.setenv("OCR_PIPELINE_V3", "1")
+    monkeypatch.setattr(ocr, "build_raw_blocks_for_result_lines", lambda *a, **k: [{"raw_label": "text"}])
+    monkeypatch.setattr(ocr, "build_structured_blocks", lambda *a, **k: (rows, doc))
+
+    def pre_match(blocks, **kwargs):
+        calls.append("pre")
+        blocks[0]["role_candidate"] = "figure_caption_candidate"
+        return blocks, doc
+
+    monkeypatch.setattr("paperforge.worker.ocr_pre_match_normalize.pre_match_normalize", pre_match)
+    monkeypatch.setattr(ocr, "build_figure_inventory", lambda *a, **k: calls.append("figure") or (_ for _ in ()).throw(RuntimeError("stop")))
+    try:
+        ocr.postprocess_ocr_result(tmp_path, key, [], meta={})
+    except RuntimeError as exc:
+        assert str(exc) == "stop"
+
+    assert calls == ["pre", "figure"]
+    artifacts = ocr.artifact_paths_for_key(tmp_path, key)
+    stored = json.loads(artifacts.blocks_structured.read_text(encoding="utf-8").splitlines()[0])
+    assert stored["role_candidate"] == "figure_caption_candidate"
+
+
+def test_producer_skips_pre_match_when_v3_is_disabled(tmp_path, monkeypatch) -> None:
+    from types import SimpleNamespace
+    from tests.conftest import canonical_test_config
+    from paperforge.worker import ocr
+
+    canonical_test_config(tmp_path)
+    calls = []
+    monkeypatch.setenv("OCR_PIPELINE_V3", "0")
+    monkeypatch.setattr(ocr, "build_raw_blocks_for_result_lines", lambda *a, **k: [{"raw_label": "text"}])
+    monkeypatch.setattr(
+        ocr, "build_structured_blocks",
+        lambda *a, **k: ([{"block_id": "c1", "page": 1, "role": "body_paragraph"}], SimpleNamespace()),
+    )
+    monkeypatch.setattr(
+        "paperforge.worker.ocr_pre_match_normalize.pre_match_normalize",
+        lambda *a, **k: calls.append("pre"),
+    )
+    monkeypatch.setattr(
+        ocr, "build_figure_inventory",
+        lambda *a, **k: calls.append("figure") or (_ for _ in ()).throw(RuntimeError("stop")),
+    )
+    try:
+        ocr.postprocess_ocr_result(tmp_path, "TESTV3B", [], meta={})
+    except RuntimeError as exc:
+        assert str(exc) == "stop"
+    assert calls == ["figure"]
+
 
 def test_ocr_pipeline_v3_enabled_truthy(monkeypatch) -> None:
     from paperforge.worker.ocr import _ocr_pipeline_v3_enabled
