@@ -186,8 +186,8 @@ def test_update_prunes_old_environments_but_keeps_one_previous(tmp_path: Path, m
     runtime_dir = pointer_dir(tmp_path)
     runtime_dir.mkdir(parents=True, exist_ok=True)
 
-    older = runtime_dir / "venv-1.0.0-aaaa"
-    previous = runtime_dir / "venv-1.4.0-bbbb"
+    older = runtime_dir / ".venv-candidate-1.0.0-aaaa"
+    previous = runtime_dir / ".venv-candidate-1.4.0-bbbb"
     for index, env in enumerate((older, previous)):
         env.mkdir()
         (env / "Scripts").mkdir()
@@ -211,7 +211,7 @@ def test_prune_never_touches_the_published_environment(tmp_path: Path, monkeypat
     _installable(tmp_path, monkeypatch)
     runtime_dir = pointer_dir(tmp_path)
     runtime_dir.mkdir(parents=True, exist_ok=True)
-    published = runtime_dir / "venv-current"
+    published = runtime_dir / ".venv-candidate-current"
     (published / "Scripts").mkdir(parents=True)
     publish_pointer(
         python_path=str(published / "Scripts" / "python.exe"),
@@ -244,3 +244,57 @@ def test_interrupt_during_install_removes_candidate_and_keeps_pointer(tmp_path: 
     assert read_pointer(home=tmp_path) == old_pointer
     leftovers = [p for p in pointer_dir(tmp_path).iterdir() if p.name.startswith(".venv-candidate-")]
     assert leftovers == []
+
+# ── install concurrency and prune scope (2026-11-06) ────────────────────────
+
+def test_install_lock_blocks_a_second_installer(tmp_path):
+    """Two clicks must not build competing candidates."""
+    from paperforge.runtime_installer import install_lock
+
+    with install_lock(tmp_path):
+        with pytest.raises(Exception) as excinfo:
+            with install_lock(tmp_path):
+                pass
+    assert "already running" in str(excinfo.value).lower()
+    # Released on the way out of the context manager.
+    with install_lock(tmp_path):
+        pass
+
+
+def test_install_lock_recovers_a_stale_lock(tmp_path):
+    import os
+    import time
+
+    from paperforge.runtime_installer import LOCK_NAME, install_lock
+
+    path = tmp_path / LOCK_NAME
+    path.write_text("999999 0\n", encoding="utf-8")
+    old = time.time() - 7200
+    os.utime(path, (old, old))
+    with install_lock(tmp_path):
+        pass
+    assert not path.exists()
+
+
+def test_prune_never_deletes_a_foreign_environment(tmp_path):
+    """`venv-*` belongs to the old TypeScript bootstrap or to the user."""
+    import os
+
+    from paperforge.runtime_installer import _prune_environments
+
+    runtime_dir = tmp_path / "runtime"
+    runtime_dir.mkdir()
+    ours_old = runtime_dir / ".venv-candidate-old"
+    ours_new = runtime_dir / ".venv-candidate-new"
+    foreign = runtime_dir / "venv-user-owned"
+    for d in (ours_old, ours_new, foreign):
+        d.mkdir()
+    for i, d in enumerate((ours_old, ours_new, foreign)):
+        os.utime(d, (1_600_000_000 + i, 1_600_000_000 + i))
+
+    removed = _prune_environments(runtime_dir, ours_new, keep_previous=0)
+
+    assert removed == 1
+    assert not ours_old.exists()
+    assert ours_new.exists()
+    assert foreign.exists(), "prune must never touch a directory it did not create"

@@ -15,7 +15,9 @@ import sys
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+import contextlib
+import time
+from typing import Any, Iterator
 
 from paperforge import __version__
 from paperforge.runtime_pointer import pointer_dir, pointer_path, publish_pointer, read_pointer
@@ -68,6 +70,53 @@ def parse_python_version(output: str) -> tuple[int, ...] | None:
     if not match:
         return None
     return tuple(int(part) for part in match.groups() if part is not None)
+
+
+LOCK_NAME = "install.lock"
+#: A lock older than this is a crashed run (pids are not portable), not a live
+#: installer; a candidate build never takes that long on a working network.
+LOCK_STALE_SECONDS = 3600
+
+
+@contextlib.contextmanager
+def install_lock(runtime_dir: Path) -> Iterator[Path]:
+    """Hold the machine-wide install lock for the duration of the block.
+
+    The plugin can be clicked twice, or two Obsidian windows can race; a second
+    installer would build a second candidate and prune the first one's result.
+    """
+    path = runtime_dir / LOCK_NAME
+    try:
+        fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+    except FileExistsError:
+        try:
+            age = time.time() - path.stat().st_mtime
+        except OSError:
+            age = 0.0
+        if age < LOCK_STALE_SECONDS:
+            raise RuntimeInstallError(
+                "runtime.install_in_progress",
+                "Another PaperForge runtime install is already running.",
+                f"lock: {path}",
+            ) from None
+        try:
+            path.unlink()
+        except OSError as exc:
+            raise RuntimeInstallError(
+                "runtime.install_locked",
+                "A stale runtime install lock could not be cleared.",
+                f"{path}: {exc}",
+            ) from exc
+        fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+    try:
+        os.write(fd, f"{os.getpid()} {int(time.time())}\n".encode())
+        os.close(fd)
+        yield path
+    finally:
+        try:
+            path.unlink()
+        except OSError:
+            pass
 
 
 def _run(
@@ -195,7 +244,10 @@ def inspect_runtime(
     }
 
 
-ENV_DIR_PREFIXES = (".venv-candidate-", "venv-")
+#: Only directories this installer created may be pruned. A bare `venv-*`
+#: prefix used to be included; those belong to the old TypeScript bootstrap and
+#: to users, and deleting them removed environments nobody asked us to touch.
+ENV_DIR_PREFIXES = (".venv-candidate-",)
 """Directory names this installer owns inside the runtime root."""
 
 
@@ -267,6 +319,38 @@ def _discard_candidate(candidate: Path, runtime_dir: Path) -> None:
 
 
 def install_runtime(
+    *,
+    expected_version: str = __version__,
+    home: Path | None = None,
+    base_python: str | None = None,
+    force: bool = False,
+    wheel: Path | None = None,
+) -> RuntimeInstallResult:
+    """Install under the machine-wide lock.
+
+    Two clicks (or two Obsidian windows) must not build competing candidates:
+    the loser would prune the winner's environment.
+    """
+    runtime_dir = pointer_dir(home)
+    try:
+        runtime_dir.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        raise RuntimeInstallError(
+            "runtime.directory_failed",
+            "Cannot create the managed PaperForge runtime directory.",
+            str(exc),
+        ) from exc
+    with install_lock(runtime_dir):
+        return _install_runtime_locked(
+            expected_version=expected_version,
+            home=home,
+            base_python=base_python,
+            force=force,
+            wheel=wheel,
+        )
+
+
+def _install_runtime_locked(
     *,
     expected_version: str = __version__,
     home: Path | None = None,
