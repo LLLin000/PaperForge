@@ -2116,6 +2116,7 @@ def postprocess_ocr_result(
     if meta is None:
         meta = read_json(meta_path) if meta_path.exists() else {}
     from paperforge.worker.ocr_versions import OCR_PIPELINE_VERSION
+    meta["normalize_mode"] = "seed_only" if _ocr_pipeline_v3_enabled() else "legacy"
     meta["ocr_pipeline_version"] = OCR_PIPELINE_VERSION
     source_pdf = Path(meta.get("source_pdf", "")) if meta.get("source_pdf") else None
     pdf_doc = None
@@ -2214,8 +2215,14 @@ def postprocess_ocr_result(
         structure_output_dir=artifacts.blocks_structured.parent,
         normalize_mode=normalize_mode,
     )
-    if _ocr_pipeline_v3_enabled():
+    if normalize_mode == "seed_only":
         from paperforge.worker.ocr_pre_match_normalize import pre_match_normalize
+
+        structured, doc_structure = pre_match_normalize(
+            structured,
+            source_frontmatter_anchors=getattr(doc_structure, "source_frontmatter_anchors", None),
+            document_structure=doc_structure,
+        )
     write_structured_blocks_jsonl(artifacts.blocks_structured, structured)
     # Write role-level span profiles
     from paperforge.worker.ocr_profiles import write_role_span_profiles

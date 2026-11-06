@@ -177,6 +177,11 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
 
     all_raw_blocks = list(read_jsonl(artifacts.blocks_raw))
     ocr_meta = read_json(artifacts.meta_json) if artifacts.meta_json.exists() else {}
+    from paperforge.worker.ocr import _ocr_pipeline_v3_enabled
+
+    normalize_mode = ocr_meta.get("normalize_mode") or (
+        "seed_only" if _ocr_pipeline_v3_enabled() else "legacy"
+    )
 
     # ── Phase 1: clean raw blocks and span backfill ──
     def _phase1_span_and_lines() -> dict:
@@ -348,7 +353,9 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
             all_raw_blocks,
             source_metadata=source_meta,
             structure_output_dir=artifacts.blocks_structured.parent,
+            normalize_mode=normalize_mode,
         )
+        artifacts.blocks_structured.parent.mkdir(parents=True, exist_ok=True)
 
         from paperforge.worker.ocr_profiles import write_role_span_profiles
 
@@ -384,6 +391,7 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
         structured: list[dict],
         page_pdf_lines_by_page: dict[int, list[dict]],
         source_meta: dict,
+        doc_structure,
     ) -> dict:
         """Build figure and table inventories, run bio passes, resolve conflicts."""
         from paperforge.worker.ocr_figures import (
@@ -391,6 +399,14 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
             write_back_figure_roles,
             write_figure_inventory,
         )
+        if normalize_mode == "seed_only":
+            from paperforge.worker.ocr_pre_match_normalize import pre_match_normalize
+
+            structured, doc_structure = pre_match_normalize(
+                structured,
+                source_frontmatter_anchors=getattr(doc_structure, "source_frontmatter_anchors", None),
+                document_structure=doc_structure,
+            )
 
         figure_inventory = build_figure_inventory(structured, page_pdf_lines_by_page=page_pdf_lines_by_page)
         write_back_figure_roles(figure_inventory, structured)
@@ -424,6 +440,17 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
 
         resolve_media_asset_conflicts(figure_inventory, table_inventory)
         attach_ownership_conflicts(figure_inventory, table_inventory)
+
+        if normalize_mode == "seed_only":
+            from paperforge.worker.ocr_post_match_normalize import post_match_normalize
+
+            structured, doc_structure = post_match_normalize(
+                structured,
+                figure_inventory,
+                table_inventory,
+                document_structure=doc_structure,
+                source_frontmatter_anchors=getattr(doc_structure, "source_frontmatter_anchors", None),
+            )
 
         from paperforge.worker.ocr_object_writeback import apply_object_writebacks
 
@@ -584,7 +611,7 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
     resolved = phase2_result["resolved"]
     source_meta = phase2_result["source_meta"]
 
-    phase3_result = _phase3_figure_tables(structured, page_pdf_lines_by_page, source_meta)
+    phase3_result = _phase3_figure_tables(structured, page_pdf_lines_by_page, source_meta, doc_structure)
     figure_inventory = phase3_result["figure_inventory"]
     table_inventory = phase3_result["table_inventory"]
     reader_payload = phase3_result["reader_payload"]

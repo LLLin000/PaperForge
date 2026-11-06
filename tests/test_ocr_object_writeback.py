@@ -110,6 +110,16 @@ def test_side_adjacent_text_claims_are_written_for_matched_figure() -> None:
             "raw_label": "text",
             "bbox": [191, 1022, 514, 1083],
             "text": "Age in years - 67:52.8",
+            "span_metadata": {"font": "Arial", "size": 10},
+        },
+        {
+            "block_id": "cap1",
+            "page": 8,
+            "role": "figure_caption",
+            "raw_label": "text",
+            "bbox": [534, 1340, 978, 1370],
+            "text": "Figure 1. Caption.",
+            "span_metadata": {"font": "Arial", "size": 10},
         },
         {
             "block_id": "asset1",
@@ -125,6 +135,7 @@ def test_side_adjacent_text_claims_are_written_for_matched_figure() -> None:
             {
                 "page": 8,
                 "figure_id": "figure_a001",
+                "legend_block_id": "cap1",
                 "matched_assets": [{"block_id": "asset1", "bbox": [534, 976, 978, 1334]}],
                 "asset_block_ids": ["asset1"],
                 "cluster_bbox": [534, 976, 978, 1334],
@@ -146,6 +157,98 @@ def test_side_adjacent_text_claims_are_written_for_matched_figure() -> None:
     assert "txt1" in figure_inventory["matched_figures"][0]["associated_text_block_ids"]
     assert any(c["owner_id"] == "figure_a001" and c["owner_role"] == "inner_text" for c in report["claims"])
 
+
+def test_side_adjacent_score_requires_container_caption_and_uncontested_layout() -> None:
+    from paperforge.worker.ocr_object_writeback import _score_side_adjacent_text_claim
+
+    block = {
+        "block_id": "note",
+        "page": 1,
+        "raw_label": "text",
+        "role": "body_paragraph",
+        "text": "Panel note",
+        "bbox": [80, 150, 90, 180],
+        "span_metadata": {"font": "Arial", "size": 10},
+    }
+    figure = {
+        "figure_id": "fig1",
+        "page": 1,
+        "cluster_bbox": [100, 100, 300, 300],
+        "legend_block_id": "cap",
+    }
+    caption = {
+        "block_id": "cap",
+        "page": 1,
+        "role": "figure_caption",
+        "span_metadata": {"font": "Arial", "size": 10},
+    }
+
+    weak_block = {**block, "bbox": [80, 70, 90, 110]}
+    weak_score = _score_side_adjacent_text_claim(weak_block, figure)
+    assert 0 <= weak_score < 0.9
+    assert _score_side_adjacent_text_claim(block, figure, page_blocks=[block, caption]) >= 0.9
+
+    body_paragraph = {
+        "block_id": "gap_text",
+        "page": 1,
+        "role": "body_paragraph",
+        "raw_label": "text",
+        "bbox": [92, 150, 98, 180],
+    }
+    assert _score_side_adjacent_text_claim(
+        block, figure, page_blocks=[block, caption, body_paragraph]
+    ) >= 0.9
+
+    competitor = {"figure_id": "fig2", "cluster_bbox": [30, 100, 70, 300], "page": 1}
+    competitor_score = _score_side_adjacent_text_claim(
+        block,
+        figure,
+        page_blocks=[block, caption],
+        page_figures=[figure, competitor],
+    )
+    assert competitor_score < 0.9
+
+    visual_separator = {
+        "block_id": "separator",
+        "page": 1,
+        "raw_label": "image",
+        "bbox": [92, 150, 98, 180],
+    }
+    separator_score = _score_side_adjacent_text_claim(
+        block,
+        figure,
+        page_blocks=[block, caption, visual_separator],
+    )
+    assert separator_score < 0.9
+
+
+
+def test_side_adjacent_claim_with_missing_caption_uses_available_evidence() -> None:
+    from paperforge.worker.ocr_object_writeback import apply_object_writebacks
+
+    note = {
+        "block_id": "note",
+        "page": 1,
+        "role": "body_paragraph",
+        "raw_label": "text",
+        "text": "Panel note",
+        "bbox": [80, 150, 90, 180],
+        "_in_visual_container": True,
+    }
+    figure = {
+        "figure_id": "fig1",
+        "page": 1,
+        "cluster_bbox": [100, 100, 300, 300],
+    }
+    report = apply_object_writebacks(
+        structured_blocks=[note],
+        figure_inventory={"matched_figures": [figure]},
+        table_inventory={"tables": []},
+    )
+
+    assert note["role"] == "figure_inner_text"
+    assert note["_object_owner_id"] == "fig1"
+    assert report["claims"][0]["confidence"] >= 0.9
 
 def test_protected_roles_are_never_stolen_by_side_adjacent_claims() -> None:
     from paperforge.worker.ocr_object_writeback import apply_object_writebacks
