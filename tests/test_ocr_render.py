@@ -31,8 +31,31 @@ def test_render_fulltext_markdown_preserves_role_heading_prefixes() -> None:
         reader_payload={},
     )
 
-    # With font-size-based level, a single 12pt bold subsection_heading gets ##
+    # Subsection is the shallowest heading role in this document.
     assert "## Methods" in md
+
+
+def test_render_heading_prefixes_follow_heading_roles() -> None:
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    structured = [
+        {"page": 1, "block_id": "h1", "role": "section_heading", "text": "Results", "span_metadata": {"size": 10}},
+        {"page": 1, "block_id": "h2", "role": "subsection_heading", "text": "Findings", "span_metadata": {"size": 20}},
+        {"page": 1, "block_id": "h3", "role": "sub_subsection_heading", "text": "Details", "span_metadata": {"size": 30}},
+    ]
+    md = render_fulltext_markdown(
+        structured_blocks=structured,
+        resolved_metadata={},
+        figure_inventory={"matched_figures": [], "unmatched_assets": [], "unresolved_clusters": []},
+        table_inventory={"tables": [], "unmatched_assets": []},
+        page_count=1,
+        document_structure=None,
+        reader_payload={},
+    )
+
+    assert "## Results" in md
+    assert "### Findings" in md
+    assert "#### Details" in md
 
 
 def test_render_fulltext_markdown_suppresses_cross_page_caption_on_legend_page() -> None:
