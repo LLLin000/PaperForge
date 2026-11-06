@@ -417,8 +417,14 @@ export class NodeProcessTransport implements Transport {
     );
   }
 
-  /** First system interpreter that reports Python >= 3.11 (bare command names
-   * work; `py` resolves through the launcher). */
+  /** First schooled interpreter that reports Python >= 3.11, returned as an
+   * ABSOLUTE executable path.
+   *
+   * The name that probes successfully (`py`, a PATH shim) is not necessarily
+   * resolvable by the installer's child `cmd`, which runs with the redacted
+   * environment: on a hosted runner `py --version` works from Node while
+   * `cmd /c ... py ...` answers "'py' is not recognized". Embedding
+   * `sys.executable` keeps the script PATH-independent. */
   discoverBasePython(): string | null {
     for (const candidate of basePythonCandidates()) {
       try {
@@ -428,7 +434,19 @@ export class NodeProcessTransport implements Transport {
           encoding: "utf-8",
         });
         const match = /Python\s+(\d+)\.(\d+)/.exec(String(out));
-        if (match && Number(match[1]) >= 3 && Number(match[2]) >= 11) {
+        if (!match || Number(match[1]) < 3 || Number(match[2]) < 11) continue;
+        try {
+          const exe = String(
+            this._execFileSyncFn(
+              candidate,
+              ["-c", "import sys;print(sys.executable)"],
+              { timeout: 5000, windowsHide: true, encoding: "utf-8" }
+            )
+          ).trim();
+          return exe || candidate;
+        } catch {
+          // Version probe worked but the path probe did not: the bare name is
+          // still better than nothing (a PATH that worked for this process).
           return candidate;
         }
       } catch {

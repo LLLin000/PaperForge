@@ -73,7 +73,10 @@ import type { RuntimeStatus } from "./client";
 import { stripCredentialEnv } from "./services/secret-storage";
 import { processProgressChunk } from "./services/progress-parser";
 import type { RuntimeInstallerAction } from "./services/runtime-installer-launcher";
-import { runtimeInstallerSteps } from "./services/runtime-installer-launcher";
+import {
+  INSTALLER_FAILED_MARKER,
+  runtimeInstallerSteps,
+} from "./services/runtime-installer-launcher";
 import type { ActionRequest } from "./client/action-contract";
 
 // ── Interface ──
@@ -893,6 +896,12 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     this._runtimePollTimer = setInterval(() => {
       if (this._runtimeStatus?.runtime_ready === true) {
         this._stopRuntimePoll(true);
+        return;
+      }
+      // The installer prints its own outcome: waiting out the full budget
+      // after it already died only hides the reason for 25 minutes.
+      if (this._installerLogTail().includes(INSTALLER_FAILED_MARKER)) {
+        this._stopRuntimePoll(false);
         return;
       }
       if (Date.now() - startedAt > 25 * 60 * 1000) {

@@ -58,15 +58,31 @@ export function windowsInstallerScript(shellCommand: string): string {
     ":paperforge_failed",
     "echo.",
     "echo [PaperForge] Installer step failed. Fix the error above and retry.",
+    "goto :paperforge_exit",
     ":paperforge_done",
+    "echo [PaperForge] Installer finished.",
+    ":paperforge_exit",
     "",
   ].join("\r\n");
 }
 
-/** POSIX script: `set -e` gives the same fail-fast semantics as the batch. */
+/** POSIX script: same fail-fast semantics and the same terminal markers. */
 export function posixInstallerScript(shellCommand: string): string {
-  return `#!/bin/sh\nset -e\n${shellCommand}\n`;
+  return [
+    "#!/bin/sh",
+    `if ${shellCommand}; then`,
+    '  echo "[PaperForge] Installer finished."',
+    "else",
+    '  echo "[PaperForge] Installer step failed. Fix the error above and retry."',
+    "  exit 1",
+    "fi",
+    "",
+  ].join("\n");
 }
+
+/** Markers the poll watches for, so a dead installer is detected at once. */
+export const INSTALLER_FINISHED_MARKER = "[PaperForge] Installer finished.";
+export const INSTALLER_FAILED_MARKER = "[PaperForge] Installer step failed.";
 
 /** Where the detached installer writes its output. */
 export function installerLogPath(home = os.homedir()): string {

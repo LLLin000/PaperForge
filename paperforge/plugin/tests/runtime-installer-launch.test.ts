@@ -50,8 +50,17 @@ describe("external runtime installer launcher", () => {
       { command: "/bin/sh", args: ["/tmp/installer.command"] }
     );
     // POSIX script fails fast like the batch one.
-    expect(posixInstallerScript("first && second")).toContain("set -e");
+    expect(posixInstallerScript("echo hi")).toContain(
+      "[PaperForge] Installer finished."
+    );
+    expect(posixInstallerScript("echo hi")).toContain(
+      "if echo hi; then"
+    );
     expect(posixInstallerScript("echo hi")).toContain("echo hi");
+    // The batch prints the same markers the wizard polls for.
+    expect(windowsInstallerScript("first && second")).toContain(
+      "[PaperForge] Installer finished."
+    );
   });
 
   // Windows-only: asserts the .cmd bootstrap, ComSpec launch and the `py`
@@ -60,8 +69,9 @@ describe("external runtime installer launcher", () => {
     "launches the installer without resolving a published runtime",
     () => {
     const spawnFn = vi.fn(() => ({ unref: vi.fn() })) as never;
-    const execFileSyncFn = vi.fn((cmd: string) => {
+    const execFileSyncFn = vi.fn((cmd: string, args: string[]) => {
       if (cmd !== "py") throw new Error("missing");
+      if (args[0] === "-c") return "C:\\Python312\\python.exe";
       return "Python 3.12.4";
     }) as never;
     const transport = new NodeProcessTransport({
@@ -74,7 +84,10 @@ describe("external runtime installer launcher", () => {
     const result = transport.launchRuntimeInstaller("install", "1.5.15");
 
     expect(result.ok).toBe(true);
-    expect(result.python).toBe("py");
+    // The installer script must embed the ABSOLUTE interpreter: a bare `py`
+    // is not resolvable by the child cmd on hosts where only Node's PATH has
+    // the launcher shim (the CI failure that motivated this).
+    expect(result.python).toBe("C:\\Python312\\python.exe");
     expect(result.logPath?.endsWith("pf-installer-test.log")).toBe(true);
     const [command, args] = (spawnFn as unknown as ReturnType<typeof vi.fn>).mock
       .calls[0] as [string, string[]];
@@ -83,7 +96,9 @@ describe("external runtime installer launcher", () => {
     expect(scriptPath.endsWith(".cmd")).toBe(true);
     const script = fs.readFileSync(scriptPath, "utf-8");
     expect(script).toContain("paperforge runtime install --expected-version 1.5.15");
-    expect(script).toContain("py -m pip install --user --upgrade paperforge==1.5.15");
+    expect(script).toContain(
+      "C:\\Python312\\python.exe -m pip install --user --upgrade paperforge==1.5.15"
+    );
       fs.rmSync(scriptPath, { force: true });
     }
   );
