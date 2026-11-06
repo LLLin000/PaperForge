@@ -580,19 +580,34 @@ export class PaperForgeClient {
       return JSON.parse(raw) as ProbeAllEnvelope;
     });
   }
-  /** Read managed runtime health without resolving or reading a Vault. */
+  /** Read managed runtime health without resolving or reading a Vault.
+   *
+   * One retry: the first status call after a fresh publish can fail on a cold
+   * venv (bytecode compilation, an antivirus scan), and painting a working
+   * runtime as broken is worse than a 500 ms delay.
+   */
   async runtimeStatus(expectedVersion: string): Promise<RuntimeStatus> {
-    const raw = await this._executeRaw(
-      [
-        "runtime",
-        "status",
-        "--expected-version",
-        expectedVersion,
-        "--json",
-      ],
-      { timeoutMs: 30000 }
-    );
-    return JSON.parse(raw) as RuntimeStatus;
+    const argv = [
+      "runtime",
+      "status",
+      "--expected-version",
+      expectedVersion,
+      "--json",
+    ];
+    try {
+      return JSON.parse(
+        await this._executeRaw(argv, { timeoutMs: 30000 })
+      ) as RuntimeStatus;
+    } catch (first) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      try {
+        return JSON.parse(
+          await this._executeRaw(argv, { timeoutMs: 30000 })
+        ) as RuntimeStatus;
+      } catch {
+        throw first;
+      }
+    }
   }
 
   /** Open the external installer in a terminal. The plugin does not install
