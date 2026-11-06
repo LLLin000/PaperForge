@@ -21,7 +21,10 @@ from paperforge import __version__
 from paperforge.runtime_pointer import pointer_dir, pointer_path, publish_pointer, read_pointer
 
 MIN_PYTHON = (3, 11)
-_VECTOR_IMPORTS = ("openai", "chromadb", "sqlite_vec")
+# The `vector` extra installs exactly these; `chromadb` is the opt-in
+# `legacy-vector` extra and must never be required of a managed runtime
+# (the same split as paperforge.setup.runtime.VECTOR_CAPABILITY_IMPORTS).
+_VECTOR_IMPORTS = ("openai", "sqlite_vec")
 _PYTHON_VERSION_RE = re.compile(r"Python\s+(\d+)\.(\d+)(?:\.(\d+))?")
 
 

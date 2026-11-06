@@ -606,8 +606,9 @@ const LANG: Record<string, Record<string, string>> = {
     runtime_installing:
       "Installing… this can take a few minutes. Leave the terminal window open; this panel updates by itself.",
     runtime_install_btn: "Install PaperForge runtime",
-    runtime_update_btn: "Update runtime",
-    runtime_repair_btn: "Repair runtime",
+    runtime_reinstall_btn: "Reinstall PaperForge runtime",
+    runtime_update_btn: "Update PaperForge runtime",
+    runtime_repair_btn: "Repair PaperForge runtime",
     runtime_installer_hint:
       "Opens a terminal window that runs the PaperForge installer. Obsidian itself stays read-only.",
     runtime_manual_summary: "Manual install commands",
@@ -1687,9 +1688,10 @@ const LANG: Record<string, Record<string, string>> = {
     setup_runtime_refresh: "刷新运行环境状态",
     runtime_status_timeout: "运行环境检查超时。可在终端检查运行环境，或重新运行安装器。",
     runtime_installing: "正在安装…可能需要几分钟。请保持终端窗口开着，此面板会自动更新。",
-    runtime_install_btn: "安装运行环境",
-    runtime_update_btn: "更新运行环境",
-    runtime_repair_btn: "修复运行环境",
+    runtime_install_btn: "安装 PaperForge 运行环境",
+    runtime_reinstall_btn: "重新安装 PaperForge 运行环境",
+    runtime_update_btn: "更新 PaperForge 运行环境",
+    runtime_repair_btn: "修复 PaperForge 运行环境",
     runtime_installer_hint:
       "会打开一个终端窗口运行 PaperForge 安装器；Obsidian 本身只读取运行环境。",
     runtime_manual_summary: "手动安装命令",

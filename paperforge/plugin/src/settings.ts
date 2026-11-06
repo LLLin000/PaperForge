@@ -141,6 +141,8 @@ export class PaperForgeSettingTab extends PluginSettingTab {
   _setupView: "overview" | "module-detail" = "overview";
   /** #87: Setup Journey current stage (1-4). */
   _setupStage = 1;
+  /** The next runtime action rebuilds the environment instead of reusing it. */
+  private _setupReinstallRequested = false;
   /** #87: Selected optional capabilities. */
   _setupOptionals: Record<string, boolean> = {
     ocr: false,
@@ -481,8 +483,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     return this._client!;
   }
 
-  private _startSetupJourney(stage: 1 | 2 | 3 | 4 = 1): void {
+  private _startSetupJourney(stage: 1 | 2 | 3 | 4 = 1, reinstall = false): void {
     this._setupStage = stage;
+    this._setupReinstallRequested = reinstall;
     this._setupOperation = "idle";
     this._setupFeedback = null;
     this._setupFailureDetail = null;
@@ -861,19 +864,26 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       this.plugin.manifest.version
     );
     if (!result.ok) {
-      new Notice(
-        t("runtime_installer_failed").replace(
-          "{error}",
-          result.error ?? "unknown"
-        )
+      const message = t("runtime_installer_failed").replace(
+        "{error}",
+        result.error ?? "unknown"
       );
+      // A transient Notice is not an outcome: the wizard keeps the reason
+      // visible and stops pretending the operation is still running.
+      this._setupOperation = "failed";
+      this._setupFeedback = message;
+      new Notice(message);
+      this.display();
       return;
     }
     new Notice(t("runtime_installer_opened"), 8000);
+    if (this._setupOperation === "idle") this._setupOperation = "running";
     this._pollRuntimeUntilReady();
+    this.display();
   }
 
-  /** Poll while the installer window runs; stop on ready or after 15 min. */
+  /** Poll while the installer window runs; stop on ready or after 25 min
+   * (a cold candidate venv resolving the vector deps can take that long). */
   private _pollRuntimeUntilReady(): void {
     if (this._runtimePollTimer) return;
     const startedAt = Date.now();
@@ -882,7 +892,7 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         this._stopRuntimePoll(true);
         return;
       }
-      if (Date.now() - startedAt > 15 * 60 * 1000) {
+      if (Date.now() - startedAt > 25 * 60 * 1000) {
         this._stopRuntimePoll(false);
         return;
       }
@@ -896,6 +906,19 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       clearInterval(this._runtimePollTimer);
       this._runtimePollTimer = null;
     }
+    if (this._setupOperation === "running") {
+      this._setupOperation = ready ? "idle" : "failed";
+      if (!ready) {
+        // Say why the poll gave up: a template with an empty slot tells the
+        // user nothing and hides the failing command's own message.
+        const detail = this._runtimeStatusError || this._setupFeedback || "";
+        this._setupFeedback = t("runtime_installer_failed").replace(
+          "{error}",
+          detail || "the runtime did not become ready in time"
+        );
+      }
+    }
+    if (ready) this._setupReinstallRequested = false;
     this._refreshRuntimeStatus(true);
     this.display();
     if (ready) new Notice(t("runtime_install_complete"));
@@ -3805,11 +3828,13 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     const pointer = readRuntimePointer();
     const runtime = this._runtimeStatus;
     const ready = runtime?.runtime_ready === true;
-    const action = !pointer
-      ? "install"
-      : runtime?.version_matches_expected === false
-        ? "update"
-        : "repair";
+    const action: RuntimeInstallerAction = this._setupReinstallRequested
+      ? "repair"
+      : !pointer
+        ? "install"
+        : runtime?.version_matches_expected === false
+          ? "update"
+          : "repair";
 
     containerEl.createEl("h3", { text: t("setup_foundation_title") });
     containerEl.createEl("p", { text: t("setup_foundation_desc") });
@@ -3833,7 +3858,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
               : t("setup_runtime_missing")),
       cls: ready ? "pf-setup-ok" : "pf-setup-status",
     });
-    if (!ready && !statusUnknown) {
+    // A requested reinstall is an explicit action even when the runtime is
+    // healthy: the user asked to rebuild it, so the button must be there.
+    if (this._setupReinstallRequested || (!ready && !statusUnknown)) {
       containerEl.createEl("p", {
         text: t("runtime_installer_hint"),
         cls: "setting-item-description",
@@ -3845,8 +3872,9 @@ export class PaperForgeSettingTab extends PluginSettingTab {
         });
       } else {
         renderActionButton(containerEl, {
-          label:
-            action === "install"
+          label: this._setupReinstallRequested
+            ? t("runtime_reinstall_btn")
+            : action === "install"
               ? t("runtime_install_btn")
               : action === "update"
                 ? t("runtime_update_btn")
