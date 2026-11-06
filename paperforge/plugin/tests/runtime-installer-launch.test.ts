@@ -3,7 +3,7 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 
-import { NodeProcessTransport } from "../src/client/node-transport";
+import { NodeProcessTransport, paperforgeEnrichedEnv } from "../src/client/node-transport";
 import {
   installerRun,
   posixInstallerScript,
@@ -102,6 +102,20 @@ describe("external runtime installer launcher", () => {
       fs.rmSync(scriptPath, { force: true });
     }
   );
+
+  it("keeps a usable PATH for the installer child", () => {
+    const saved = process.env.PATH;
+    try {
+      delete process.env.PATH;
+      const env = paperforgeEnrichedEnv();
+      expect(env.PATH && env.PATH.length > 0).toBe(true);
+      // Never an empty string: a child with PATH="" resolves nothing.
+      expect(env.PATH).not.toBe("");
+    } finally {
+      if (saved === undefined) delete process.env.PATH;
+      else process.env.PATH = saved;
+    }
+  });
 
   it("reports a missing interpreter instead of installing anything", () => {
     const spawnFn = vi.fn() as never;
