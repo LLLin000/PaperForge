@@ -33,10 +33,11 @@ import {
   resolveRuntimeCommand,
 } from "../services/managed-runtime";
 import {
+  bootstrapPythonSource,
   installerLogPath,
   installerRun,
+  installerShellCommand,
   posixInstallerScript,
-  runtimeInstallerShellCommand,
   windowsInstallerScript,
   type RuntimeInstallerAction,
 } from "../services/runtime-installer-launcher";
@@ -538,7 +539,19 @@ export class NodeProcessTransport implements Transport {
           "No Python 3.11+ found. Install Python from python.org, then retry.",
       };
     }
-    const shellCommand = runtimeInstallerShellCommand(python, action, version);
+    // The bootstrap step makes the CLI exist (and skips pip when it already
+    // does); the CLI then owns the runtime. A source checkout or a private
+    // wheelhouse only needs PIP_FIND_LINKS in the environment.
+    const bootstrapPath = this._writeInstallerScript(
+      bootstrapPythonSource(version),
+      "bootstrap.py"
+    );
+    const shellCommand = installerShellCommand(
+      python,
+      action,
+      version,
+      bootstrapPath
+    );
     const scriptPath = this._writeInstallerScript(
       process.platform === "win32"
         ? windowsInstallerScript(shellCommand)
@@ -553,6 +566,13 @@ export class NodeProcessTransport implements Transport {
     let log: number | undefined;
     try {
       fs.mkdirSync(path.dirname(logPath), { recursive: true });
+      try {
+        if (fs.statSync(logPath).size > 1_048_576) {
+          fs.renameSync(logPath, `${logPath}.1`);
+        }
+      } catch {
+        // No log yet, or a rename the antivirus held open: appending still works.
+      }
       log = fs.openSync(logPath, "a");
       const child = this._spawnFn(run.command, run.args, {
         // Never cwd into the vault: a leftover shell holding the vault would
@@ -577,7 +597,9 @@ export class NodeProcessTransport implements Transport {
   private _writeInstallerScript(content: string, extension: string): string {
     const file = path.join(
       os.tmpdir(),
-      `paperforge-runtime-${Date.now()}.${extension}`
+      `paperforge-runtime-${Date.now()}-${Math.random()
+        .toString(36)
+        .slice(2, 8)}.${extension}`
     );
     fs.writeFileSync(file, content, { encoding: "utf-8", mode: 0o755 });
     return file;

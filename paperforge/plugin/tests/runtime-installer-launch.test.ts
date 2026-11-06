@@ -5,7 +5,9 @@ import * as path from "path";
 
 import { NodeProcessTransport, paperforgeEnrichedEnv } from "../src/client/node-transport";
 import {
+  bootstrapPythonSource,
   installerRun,
+  installerShellCommand,
   posixInstallerScript,
   runtimeInstallerShellCommand,
   runtimeInstallerSteps,
@@ -96,12 +98,51 @@ describe("external runtime installer launcher", () => {
     expect(scriptPath.endsWith(".cmd")).toBe(true);
     const script = fs.readFileSync(scriptPath, "utf-8");
     expect(script).toContain("paperforge runtime install --expected-version 1.5.15");
-    expect(script).toContain(
-      "C:\\Python312\\python.exe -m pip install --user --upgrade paperforge==1.5.15"
+    // pip lives in the bootstrap file now: it is skipped when the CLI is
+    // already importable at this version.
+    const bootstrapMatch = script.match(
+      /(?:"([^"]+\.bootstrap\.py)")|(\S+\.bootstrap\.py)/
     );
+    expect(bootstrapMatch).toBeTruthy();
+    const bootstrap =
+      (bootstrapMatch?.[1] ?? bootstrapMatch?.[2]) as string;
+    const bootstrapSource = fs.readFileSync(bootstrap, "utf-8");
+    expect(bootstrapSource).toContain('"pip"');
+    expect(bootstrapSource).toContain('"--user"');
+    expect(bootstrapSource).toContain('"paperforge==" + VERSION');
+    fs.rmSync(bootstrap, { force: true });
       fs.rmSync(scriptPath, { force: true });
     }
   );
+
+  it("skips the pip step when the CLI is already at the target version", () => {
+    const source = bootstrapPythonSource("2.0.0rc5");
+    // The version is baked in and compared before any pip call.
+    expect(source).toContain('VERSION = "2.0.0rc5"');
+    expect(source).toContain('if installed == VERSION:');
+    expect(source).toContain('raise SystemExit(0)');
+    // PEP 668 interpreters get the only flag that makes --user legal there.
+    expect(source).toContain("EXTERNALLY-MANAGED");
+    expect(source).toContain("--break-system-packages");
+    // The install target is still the user site of the discovered interpreter.
+    expect(source).toContain('"--user"');
+  });
+
+  it("runs the bootstrap before the CLI install step", () => {
+    const command = installerShellCommand(
+      "C:\\Python\\python.exe",
+      "install",
+      "2.0.0rc5",
+      "C:\\Temp\\bootstrap.py"
+    );
+    const [first, second] = command.split(" && ");
+    expect(first).toContain("C:\\Temp\\bootstrap.py");
+    expect(second).toContain("-m paperforge runtime install");
+    // A python path with spaces must stay one token.
+    expect(
+      installerShellCommand("C:\\Program Files\\Py\\python.exe", "update", "1.0.0", "/tmp/b.py")
+    ).toContain('"C:\\Program Files\\Py\\python.exe" /tmp/b.py');
+  });
 
   it("keeps a usable PATH for the installer child", () => {
     const saved = process.env.PATH;

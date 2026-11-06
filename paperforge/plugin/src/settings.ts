@@ -913,6 +913,30 @@ export class PaperForgeSettingTab extends PluginSettingTab {
     }, 3000);
   }
 
+  /** The installer's current phase, read from its log ("" before it starts). */
+  private _installerProgressLine(): string {
+    if (!this._installerLogPath) return "";
+    try {
+      const lines = fs
+        .readFileSync(this._installerLogPath, "utf-8")
+        .split(/\r?\n/)
+        .filter((line) => line.trim());
+      for (let i = lines.length - 1; i >= 0 && i > lines.length - 60; i -= 1) {
+        const line = lines[i].trim();
+        if (
+          /^\[PaperForge\]|^Collecting |^Installing collected|^Building wheel|^Downloading |^Successfully installed|^Created wheel/.test(
+            line
+          )
+        ) {
+          return line.slice(0, 160);
+        }
+      }
+    } catch {
+      // The log appears only once the installer starts.
+    }
+    return "";
+  }
+
   /** Last lines the detached installer wrote (empty when unreadable). */
   private _installerLogTail(): string {
     if (!this._installerLogPath) return "";
@@ -3894,6 +3918,15 @@ export class PaperForgeSettingTab extends PluginSettingTab {
           cls: "pf-setup-status",
           text: t("runtime_installing"),
         });
+        // pip spends minutes downloading; naming the current phase is the
+        // difference between "stuck" and "working" for the user.
+        const progress = this._installerProgressLine();
+        if (progress) {
+          containerEl.createEl("p", {
+            cls: "setting-item-description",
+            text: progress,
+          });
+        }
       } else {
         renderActionButton(containerEl, {
           label: this._setupReinstallRequested
