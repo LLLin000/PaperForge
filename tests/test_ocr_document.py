@@ -2730,14 +2730,14 @@ def test_reading_segments_single_column() -> None:
     ]
     profile = PageLayoutProfile(column_count=1, column_boundaries=[400.0], layout_type="single_column")
 
-    segments = _build_page_reading_segments(page_blocks, profile, page_idx_offset=10)
+    segments = _build_page_reading_segments(page_blocks, profile, page_indices=[10, 11, 12])
 
     assert len(segments) == 1
     seg = segments[0]
     assert seg.page == 1
     assert seg.column_index == 0
     # blocks sorted by y ascending: index 2 (y=100), 1 (y=200), 0 (y=300)
-    # global indices: 10+2=12, 10+1=11, 10+0=10
+    # Original-index list maps input positions to global indices.
     assert seg.block_indices == [12, 11, 10]
     assert seg.semantic_hint == "body"
     assert seg.y_bottom > seg.y_top
@@ -2763,7 +2763,7 @@ def test_reading_segments_two_column() -> None:
         layout_type="two_column",
     )
 
-    segments = _build_page_reading_segments(page_blocks, profile, page_idx_offset=5)
+    segments = _build_page_reading_segments(page_blocks, profile, page_indices=[5, 6, 7, 8])
 
     assert len(segments) == 2
     # Left column first

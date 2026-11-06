@@ -1796,14 +1796,14 @@ def _get_column_index_by_boundaries(x_center: float, boundaries: list[float]) ->
 def _build_page_reading_segments(
     page_blocks: list[dict],
     page_profile: PageLayoutProfile | None,
-    page_idx_offset: int,
+    page_indices: list[int],
 ) -> list[ReadingSegment]:
     if not page_blocks:
         return []
     page = page_blocks[0].get("page", 0) or 0
     if page_profile is None or page_profile.column_count <= 1:
-        sorted_blocks = sorted(enumerate(page_blocks), key=lambda x: _block_y_top(x[1]))
-        indices = [page_idx_offset + i for i, _ in sorted_blocks]
+        sorted_blocks = sorted(enumerate(page_blocks), key=lambda x: (_block_y_top(x[1]), str(x[1].get("block_id") or "")))
+        indices = [page_indices[i] for i, _ in sorted_blocks]
         y_top = min(_block_y_top(b) for b in page_blocks)
         y_bottom = max(_block_y_bottom(b) for b in page_blocks)
         hint = _classify_segment_hint(page_blocks)
@@ -1830,8 +1830,8 @@ def _build_page_reading_segments(
     segments: list[ReadingSegment] = []
     for col in sorted(col_blocks):
         items = col_blocks[col]
-        items.sort(key=lambda x: _block_y_top(x[1]))
-        indices = [page_idx_offset + i for i, _ in items]
+        items.sort(key=lambda x: (_block_y_top(x[1]), str(x[1].get("block_id") or "")))
+        indices = [page_indices[i] for i, _ in items]
         col_blocks_only = [b for _, b in items]
         y_top = min(_block_y_top(b) for b in col_blocks_only)
         y_bottom = max(_block_y_bottom(b) for b in col_blocks_only)
@@ -1869,11 +1869,11 @@ def _build_tail_reading_order(
     segments: list[ReadingSegment] = []
     for page in sorted(by_page):
         page_items = by_page[page]
-        page_items.sort(key=lambda x: x[0])
-        page_idx_offset = page_items[0][0]
+        page_items.sort(key=lambda x: (_block_y_top(x[1]), str(x[1].get("block_id") or "")))
+        original_indices = [item[0] for item in page_items]
         page_blocks_only = [item[1] for item in page_items]
         profile = page_layouts.get(page)
-        page_segments = _build_page_reading_segments(page_blocks_only, profile, page_idx_offset)
+        page_segments = _build_page_reading_segments(page_blocks_only, profile, original_indices)
         segments.extend(page_segments)
     return segments
 
@@ -3018,6 +3018,17 @@ def analyze_document_structure(blocks: list[dict]) -> DocumentStructure:
     return ds
 
 
+def _page_widths_by_page(blocks: list[dict]) -> dict[int, float]:
+    widths: dict[int, float] = {}
+    for block in blocks:
+        page = int(block.get("page", 0) or 0)
+        bbox = block.get("bbox") or block.get("block_bbox") or []
+        explicit = float(block.get("page_width") or 0)
+        extent = float(bbox[2]) if len(bbox) >= 4 else 0.0
+        widths[page] = max(widths.get(page, 0.0), explicit or extent)
+    return widths
+
+
 def compute_layout_facts(blocks: list[dict]) -> list[dict]:
     facts: list[dict] = []
     band_seq = 0
@@ -3036,6 +3047,7 @@ def compute_layout_facts(blocks: list[dict]) -> list[dict]:
             float(bbox[1]) if len(bbox) >= 2 else 0.0,
         )
 
+    page_widths = _page_widths_by_page(blocks)
     for block in sorted(blocks, key=_sort_key):
         page = int(block.get("page", 0) or 0)
         bbox = block.get("bbox") or [0, 0, 0, 0]
@@ -3052,13 +3064,15 @@ def compute_layout_facts(blocks: list[dict]) -> list[dict]:
             layout_region = "side_insert"
         else:
             layout_region = "body_flow"
-        col_key = 0 if len(bbox) < 4 else (0 if float(bbox[0]) < 600 else 1)
+        page_width = page_widths.get(page, 0.0)
+        col_key = 0 if len(bbox) < 4 or page_width <= 0 or (float(bbox[0]) + float(bbox[2])) / 2 < page_width / 2 else 1
         key = (page, layout_region, col_key)
         if key != last_key:
             band_seq += 1
             last_key = key
         facts.append(
             {
+                "page": page,
                 "block_id": str(block.get("block_id") or ""),
                 "reading_band_id": f"band_{band_seq:03d}",
                 "display_cluster_candidate_id": f"disp_{page}_{col_key}" if layout_region == "display_zone" else "",
@@ -3078,6 +3092,20 @@ def compute_layout_facts(blocks: list[dict]) -> list[dict]:
             }
         )
     return facts
+def _attach_layout_facts(blocks: list[dict]) -> None:
+    fact_by_id = {
+        (row["page"], row["block_id"]): row
+        for row in compute_layout_facts(blocks)
+        if row.get("block_id")
+    }
+    for block in blocks:
+        fact = fact_by_id.get((int(block.get("page", 0) or 0), str(block.get("block_id") or "")))
+        if fact:
+            for key in ("reading_band_id", "display_cluster_candidate_id", "layout_region",
+                        "boundary_before", "boundary_after", "bridge_eligible"):
+                block[key] = fact[key]
+
+
 
 
 def _apply_zone_labels(blocks: list[dict], region_bus: dict[str, dict] | None) -> None:
@@ -3372,41 +3400,72 @@ def _merge_box_content(blocks: list[dict]) -> None:
          "reference_heading", "backmatter_heading", "figure_caption_candidate", "table_caption_candidate"}
     )
 
-    for idx, block in enumerate(blocks):
+    page_widths = _page_widths_by_page(blocks)
+    ordered = sorted(blocks, key=lambda item: (item.get("page", 0), _block_y_top(item), str(item.get("block_id") or "")))
+    for block in ordered:
         text = (block.get("text") or "").strip()
         if not _BOX_HEADING_PATTERN.match(text):
             continue
-        role = block.get("role", "")
-        if role not in {"structured_insert", "paragraph_title", "subsection_heading"}:
+        if block.get("role", "") not in {"structured_insert", "paragraph_title", "subsection_heading"}:
             continue
-        # Found a box heading — collect following body content
+        heading_bbox = block.get("bbox") or block.get("block_bbox") or []
+        if len(heading_bbox) < 4:
+            continue
+        page = block.get("page")
+        page_width = page_widths.get(int(page or 0), 0.0)
+        gutter = page_width * 0.05
+        heading_column = 0 if (heading_bbox[0] + heading_bbox[2]) / 2 < page_width / 2 else 1
         parts = [text]
-        consumed: list[int] = []
-        for j in range(idx + 1, len(blocks)):
-            next_block = blocks[j]
-            next_role = next_block.get("role", "")
-            next_text = (next_block.get("text") or "").strip()
-            if not next_text:
+        consumed: list[dict] = []
+        previous_bottom = float(heading_bbox[3])
+        # A gap up to 1.5 line-heights tolerates OCR baseline variation without bridging paragraphs.
+        line_height = max(1.0, float(heading_bbox[3]) - float(heading_bbox[1]))
+        found_heading = False
+        for candidate in ordered:
+            if candidate is block:
+                found_heading = True
                 continue
-            actual_role = next_role if next_role not in {"unknown_structural", "noise"} else next_block.get("seed_role", "")
-            if actual_role in _BOX_STOP_ROLES:
+            if not found_heading or candidate.get("page") != page:
+                continue
+            candidate_bbox = candidate.get("bbox") or candidate.get("block_bbox") or []
+            if len(candidate_bbox) < 4 or float(candidate_bbox[1]) < float(heading_bbox[3]):
+                continue
+            candidate_role = candidate.get("role", "")
+            if candidate_role not in _BOX_BODY_ROLES:
                 break
-            if next_role not in _BOX_BODY_ROLES:
+            candidate_text = (candidate.get("text") or "").strip()
+            if not candidate_text:
+                continue
+            candidate_column = 0 if (candidate_bbox[0] + candidate_bbox[2]) / 2 < page_width / 2 else 1
+            if candidate_column != heading_column:
+                continue
+            if heading_bbox[2] - heading_bbox[0] > page_width * 0.6:
+                frame_left = float(heading_bbox[0]) - gutter
+                frame_right = float(heading_bbox[2]) + gutter
+            else:
+                frame_left = float(heading_bbox[0]) - gutter
+                frame_right = (page_width / 2 if heading_column == 0 else page_width) + gutter
+                if not (abs(float(candidate_bbox[0]) - float(heading_bbox[0])) <= gutter or
+                        float(heading_bbox[0]) <= float(candidate_bbox[0]) <= float(heading_bbox[2])):
+                    continue
+            if candidate_bbox[0] < frame_left or candidate_bbox[2] > frame_right:
+                continue
+            gap = float(candidate_bbox[1]) - previous_bottom
+            if gap < 0 or gap > line_height * 1.5:
                 break
-            parts.append(next_text)
-            consumed.append(j)
-
+            parts.append(candidate_text)
+            consumed.append(candidate)
+            previous_bottom = float(candidate_bbox[3])
+            line_height = max(line_height, float(candidate_bbox[3]) - float(candidate_bbox[1]))
         if len(parts) <= 1:
             continue
-
-        container = "\n".join(parts)
-        block["_container_text"] = container
-        for cj in consumed:
-            blocks[cj]["role"] = "noise"
-            blocks[cj]["render_default"] = False
-            if not blocks[cj].get("_decision_log"):
-                blocks[cj]["_decision_log"] = []
-            blocks[cj]["_decision_log"].append({
+        block["_container_text"] = "\n".join(parts)
+        for consumed_block in consumed:
+            consumed_block["render_default"] = False
+            consumed_block["_container_of"] = str(block.get("block_id") or "")
+            if not consumed_block.get("_decision_log"):
+                consumed_block["_decision_log"] = []
+            consumed_block["_decision_log"].append({
                 "stage": "box_content_merge",
                 "reason": f"consumed by box heading '{text[:60]}'"
             })
@@ -5441,19 +5500,7 @@ def normalize_document_structure(
                 block.setdefault("evidence", []).extend(resolved.evidence)
 
     try:
-        layout_facts = compute_layout_facts(blocks)
-        fact_by_id = {row["block_id"]: row for row in layout_facts if row.get("block_id")}
-        for block in blocks:
-            block_id = str(block.get("block_id") or "")
-            fact = fact_by_id.get(block_id)
-            if not fact:
-                continue
-            block["reading_band_id"] = fact["reading_band_id"]
-            block["display_cluster_candidate_id"] = fact["display_cluster_candidate_id"]
-            block["layout_region"] = fact["layout_region"]
-            block["boundary_before"] = fact["boundary_before"]
-            block["boundary_after"] = fact["boundary_after"]
-            block["bridge_eligible"] = fact["bridge_eligible"]
+        _attach_layout_facts(blocks)
     except Exception:
         pass
 
