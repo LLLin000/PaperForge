@@ -343,7 +343,15 @@ export function paperforgeEnrichedEnv(): Record<string, string | undefined> {
   } else if (plat === "linux") {
     extras.push("/usr/local/bin", "/usr/bin", `${home}/.local/bin`);
   }
-  const cur = env.PATH || "";
+  // Children resolve binaries through PATH only. A GUI host can start with a
+  // PATH that is empty or stripped to nothing usable (menu-launched apps on
+  // macOS/Linux, some sandboxes); the installer then fails with "not
+  // recognized" even though probing from this process worked. Keep a floor.
+  const floor =
+    plat === "win32"
+      ? "C:\\Windows\\System32;C:\\Windows"
+      : "/usr/local/bin:/usr/bin:/bin";
+  const cur = env.PATH || process.env.PATH || floor;
   env.PATH = [...extras, cur].filter(Boolean).join(path.delimiter);
   return stripCredentialEnv(env) as Record<string, string | undefined>;
 }
