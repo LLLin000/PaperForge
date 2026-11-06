@@ -421,7 +421,7 @@ const LANG: Record<string, Record<string, string>> = {
       "Credentials, vault/Zotero paths, paper titles and paper content are excluded",
     backend_missing_title: "PaperForge Core not detected",
     backend_missing_body:
-      "Open Settings → Foundation and press “Install runtime”. PaperForge then installs itself in a terminal window; come back here when it is ready.",
+      "Open Settings → Foundation and press “Install runtime”. PaperForge installs itself in the background; come back here when it is ready.",
     backend_missing_btn: "Open Setup",
     // ── Control Center redesign (#83–#93) ──
     cc_module_foundation: "Foundation",
@@ -604,13 +604,13 @@ const LANG: Record<string, Record<string, string>> = {
     runtime_status_timeout:
       "Runtime check timed out. Check the runtime from the terminal, or run the installer again.",
     runtime_installing:
-      "Installing… this can take a few minutes. Leave the terminal window open; this panel updates by itself.",
+      "Installing… this can take a few minutes. Keep Obsidian open; this panel updates by itself.",
     runtime_install_btn: "Install PaperForge runtime",
     runtime_reinstall_btn: "Reinstall PaperForge runtime",
     runtime_update_btn: "Update PaperForge runtime",
     runtime_repair_btn: "Repair PaperForge runtime",
     runtime_installer_hint:
-      "Opens a terminal window that runs the PaperForge installer. Obsidian itself stays read-only.",
+      "Runs the PaperForge installer in the background. Obsidian itself stays read-only.",
     runtime_manual_summary: "Manual install commands",
     runtime_installer_opened:
       "Installer opened. This panel updates once the runtime is published.",
@@ -1495,7 +1495,7 @@ const LANG: Record<string, Record<string, string>> = {
     modal_redaction_scope: "已排除凭据、库/Zotero 路径、论文标题与正文",
     backend_missing_title: "未检测到 PaperForge Core",
     backend_missing_body:
-      "打开 设置 → 基础环境，点「安装运行环境」。PaperForge 会在一个终端窗口里自行安装，就绪后回到这里继续。",
+      "打开 设置 → 基础环境，点「安装运行环境」。PaperForge 会在后台自行安装，就绪后回到这里继续。",
     backend_missing_btn: "打开设置",
     version_restore_confirm: "确认将 {paper} 恢复到 {label}？",
     version_restore_done: "已恢复到 {label}",
@@ -1687,13 +1687,13 @@ const LANG: Record<string, Record<string, string>> = {
     setup_runtime_missing: "PaperForge Core 尚未安装。点下面的「安装运行环境」即可。",
     setup_runtime_refresh: "刷新运行环境状态",
     runtime_status_timeout: "运行环境检查超时。可在终端检查运行环境，或重新运行安装器。",
-    runtime_installing: "正在安装…可能需要几分钟。请保持终端窗口开着，此面板会自动更新。",
+    runtime_installing: "正在安装…可能需要几分钟。保持 Obsidian 打开即可，此面板会自动更新。",
     runtime_install_btn: "安装 PaperForge 运行环境",
     runtime_reinstall_btn: "重新安装 PaperForge 运行环境",
     runtime_update_btn: "更新 PaperForge 运行环境",
     runtime_repair_btn: "修复 PaperForge 运行环境",
     runtime_installer_hint:
-      "会打开一个终端窗口运行 PaperForge 安装器；Obsidian 本身只读取运行环境。",
+      "会在后台运行 PaperForge 安装器；Obsidian 本身只读取运行环境。",
     runtime_manual_summary: "手动安装命令",
     runtime_installer_opened: "已打开安装器。运行环境发布后此面板会自动更新。",
     runtime_installer_failed: "无法打开安装器：{error}",
