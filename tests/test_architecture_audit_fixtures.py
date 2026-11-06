@@ -69,7 +69,7 @@ class TestFixtureIntegrity:
         # its pinned source bytes are unchanged. The #127/#129 sources were
         # re-pinned at the current live revision after later source edits.
         expected_revisions = {
-            "golden_126_ocr_rebuild": "dea041db",
+            "golden_126_ocr_rebuild": "d246cd24",
             "golden_127_sync_embed": "75c3c41d",
             "golden_129_display_restore": "1196278e",
         }

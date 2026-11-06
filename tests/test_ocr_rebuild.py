@@ -145,9 +145,51 @@ def test_run_derived_rebuild_writes_structured_blocks_once(tmp_path: Path, monke
         json.dumps({"title": "Example Title"}),
         encoding="utf-8",
     )
-    (paper_root / "meta.json").write_text(json.dumps({"source_pdf": ""}), encoding="utf-8")
+    (paper_root / "meta.json").write_text(
+        json.dumps({"source_pdf": "", "normalize_mode": "seed_only"}), encoding="utf-8"
+    )
 
     writes = {"count": 0}
+    import paperforge.worker.ocr_blocks as blocks
+    import paperforge.worker.ocr_figures as figures
+    import paperforge.worker.ocr_pre_match_normalize as pre
+    import paperforge.worker.ocr_post_match_normalize as post
+    import paperforge.worker.ocr_object_writeback as writeback
+
+    events = []
+    original_build = blocks.build_structured_blocks
+    original_pre = pre.pre_match_normalize
+    original_post = post.post_match_normalize
+    original_inventory = figures.build_figure_inventory
+    original_writeback = writeback.apply_object_writebacks
+    build_kwargs = {}
+
+    def _build(*args, **kwargs):
+        build_kwargs.update(kwargs)
+        events.append("build")
+        return original_build(*args, **kwargs)
+
+    def _pre(*args, **kwargs):
+        events.append("pre")
+        return original_pre(*args, **kwargs)
+
+    def _inventory(*args, **kwargs):
+        events.append("inventory")
+        return original_inventory(*args, **kwargs)
+
+    def _post(*args, **kwargs):
+        events.append("post")
+        return original_post(*args, **kwargs)
+
+    def _writeback(**kwargs):
+        events.append("writeback")
+        return original_writeback(**kwargs)
+
+    monkeypatch.setattr(blocks, "build_structured_blocks", _build)
+    monkeypatch.setattr(pre, "pre_match_normalize", _pre)
+    monkeypatch.setattr(figures, "build_figure_inventory", _inventory)
+    monkeypatch.setattr(post, "post_match_normalize", _post)
+    monkeypatch.setattr(writeback, "apply_object_writebacks", _writeback)
 
     def _counting_write(*args, **kwargs):
         writes["count"] += 1
@@ -162,6 +204,8 @@ def test_run_derived_rebuild_writes_structured_blocks_once(tmp_path: Path, monke
 
 
     assert result["rebuild_count"] == 1
+    assert build_kwargs["normalize_mode"] == "seed_only"
+    assert events.index("build") < events.index("pre") < events.index("inventory") < events.index("post") < events.index("writeback")
     assert writes["count"] == 1
 
 
