@@ -601,7 +601,7 @@ export class PaperForgeClient {
   launchRuntimeInstaller(
     action: "install" | "update" | "repair",
     version: string
-  ): { ok: boolean; python?: string; error?: string } {
+  ): { ok: boolean; python?: string; error?: string; logPath?: string } {
     if (typeof this._transport.launchRuntimeInstaller !== "function") {
       return {
         ok: false,

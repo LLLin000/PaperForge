@@ -33,9 +33,10 @@ import {
   resolveRuntimeCommand,
 } from "../services/managed-runtime";
 import {
-  macInstallerScript,
+  installerLogPath,
+  installerRun,
+  posixInstallerScript,
   runtimeInstallerShellCommand,
-  terminalLaunch,
   windowsInstallerScript,
   type RuntimeInstallerAction,
 } from "../services/runtime-installer-launcher";
@@ -353,6 +354,8 @@ export interface NodeProcessTransportOptions {
   spawnFn?: typeof spawn;
   /** Version probe (default: child_process.execFileSync). */
   execFileSyncFn?: typeof execFileSync;
+  /** Installer log destination (tests point this at a temp file). */
+  installerLogPath?: () => string;
 }
 
 /** Interpreter names to probe, most specific first. */
@@ -395,11 +398,13 @@ export class NodeProcessTransport implements Transport {
   private readonly _vaultPath: string;
   private readonly _spawnFn: typeof spawn;
   private readonly _execFileSyncFn: typeof execFileSync;
+  private readonly _installerLogPath: () => string;
 
   constructor(options: NodeProcessTransportOptions) {
     this._vaultPath = options.vaultPath;
     this._spawnFn = options.spawnFn ?? spawn;
     this._execFileSyncFn = options.execFileSyncFn ?? execFileSync;
+    this._installerLogPath = options.installerLogPath ?? installerLogPath;
   }
 
   /** Resolve the interpreter from Python's published runtime pointer. */
@@ -498,7 +503,7 @@ export class NodeProcessTransport implements Transport {
   launchRuntimeInstaller(
     action: RuntimeInstallerAction,
     version: string
-  ): { ok: boolean; python?: string; error?: string } {
+  ): { ok: boolean; python?: string; error?: string; logPath?: string } {
     const python = this.discoverBasePython();
     if (!python) {
       return {
@@ -511,28 +516,34 @@ export class NodeProcessTransport implements Transport {
     const scriptPath = this._writeInstallerScript(
       process.platform === "win32"
         ? windowsInstallerScript(shellCommand)
-        : macInstallerScript(shellCommand),
+        : posixInstallerScript(shellCommand),
       process.platform === "win32" ? "cmd" : "command"
     );
-    const launch = terminalLaunch(process.platform, {
+    const run = installerRun(process.platform, {
       comSpec: process.env.ComSpec,
       scriptPath,
     });
+    const logPath = this._installerLogPath();
+    let log: number | undefined;
     try {
-      const child = this._spawnFn(launch.command, launch.args, {
-        // Never cwd into the vault: the console stays open, and a leftover
-        // shell holding the vault would lock the user's notes directory.
+      fs.mkdirSync(path.dirname(logPath), { recursive: true });
+      log = fs.openSync(logPath, "a");
+      const child = this._spawnFn(run.command, run.args, {
+        // Never cwd into the vault: a leftover shell holding the vault would
+        // lock the user's notes directory.
         cwd: os.tmpdir(),
         shell: false,
         detached: true,
-        stdio: "ignore",
-        windowsHide: false,
+        stdio: ["ignore", log, log],
+        windowsHide: true,
         env: paperforgeEnrichedEnv(),
       });
       child.unref?.();
-      return { ok: true, python };
+      return { ok: true, python, logPath };
     } catch (err) {
-      return { ok: false, error: `Failed to open the installer: ${err}` };
+      return { ok: false, error: `Failed to start the installer: ${err}` };
+    } finally {
+      if (log !== undefined) fs.closeSync(log);
     }
   }
 
