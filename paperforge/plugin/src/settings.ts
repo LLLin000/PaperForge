@@ -3969,6 +3969,15 @@ export class PaperForgeSettingTab extends PluginSettingTab {
       });
     }
 
+    // A failure the user must act on: the reason is rendered, never only
+    // logged — "+ Add" with no explanation is the report that started this.
+    if (this._setupOperation === "failed" && this._setupFailureDetail) {
+      containerEl.createEl("p", {
+        cls: "pf-setup-failure-detail",
+        text: this._setupFailureDetail,
+      });
+    }
+
     // Completion is monotonic: a ready library means its prerequisites held,
     // even if the export folder was emptied or a path was edited afterwards.
     const steps = [

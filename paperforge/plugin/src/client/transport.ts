@@ -48,11 +48,15 @@ export interface ExecuteOptions {
   timeoutMs?: number;
   stdin?: string;
   env?: Record<string, string | undefined>;
+  /** Explicit interpreter, bypassing the published runtime pointer. */
+  pythonExe?: string;
 }
 
 export interface StreamOptions {
   graceMs?: number;
   env?: Record<string, string | undefined>;
+  /** Explicit interpreter, bypassing the published runtime pointer. */
+  pythonExe?: string;
   onEvent?: (event: NdjsonEvent) => void;
 }
 

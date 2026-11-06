@@ -546,7 +546,9 @@ export class NodeProcessTransport implements Transport {
     return file;
   }
   async execute(argv: string[], options?: ExecuteOptions): Promise<string> {
-    const py = await this.resolvePython();
+    const py = options?.pythonExe
+      ? { path: options.pythonExe, args: [] as string[] }
+      : await this.resolvePython();
     const env = options?.env ?? paperforgeEnrichedEnv();
     const timeout = options?.timeoutMs ?? 120000;
 
@@ -658,7 +660,9 @@ export class NodeProcessTransport implements Transport {
     const outcomePromise = (async (): Promise<LongTaskOutcome> => {
       let py: { path: string; args: string[] };
       try {
-        py = await this.resolvePython();
+        py = options?.pythonExe
+          ? { path: options.pythonExe, args: [] }
+          : await this.resolvePython();
       } catch (err: any) {
         const failure = err?.message || String(err);
         queue.fail(err);

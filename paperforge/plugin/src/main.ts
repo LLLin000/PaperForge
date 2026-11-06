@@ -37,6 +37,11 @@ import {
   PaperForgeSettings,
 } from "./constants";
 import { t, setLanguage } from "./i18n";
+import {
+  readRuntimePointer,
+  resolveRuntimeCommand,
+  type PointerInfo,
+} from "./services/managed-runtime";
 import { PaperForgeSettingTab } from "./settings";
 import { orchestrateFromSync } from "./services/next-actions-bridge";
 import { PaperForgeStatusView } from "./views/dashboard";
@@ -81,6 +86,22 @@ export default class PaperForgePlugin extends Plugin {
       this._client = new PaperForgeClient({ transport });
     }
     return this._client;
+  }
+
+  /** Read-only view of the Python-published runtime pointer.
+   *
+   * The pointer is the only runtime truth (#174): the plugin never resolves an
+   * installed-but-unpublished environment. Nothing here creates or changes
+   * runtime state — installation is the CLI's job. */
+  getManagedRuntime(): { readPointer(): PointerInfo | null } {
+    return { readPointer: () => readRuntimePointer() };
+  }
+
+  /** Resolved backend command for diagnostics, or null when no pointer is
+   * published yet. */
+  _getPythonCommand(): { path: string; args: string[] } | null {
+    const run = resolveRuntimeCommand(readRuntimePointer());
+    return run ? { path: run.command, args: [...run.args] } : null;
   }
 
   /** Diagnostic handle for the console: `app.plugins.plugins.paperforge
