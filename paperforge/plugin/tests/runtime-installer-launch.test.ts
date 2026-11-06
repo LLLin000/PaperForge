@@ -60,7 +60,11 @@ describe("external runtime installer launcher", () => {
     expect(macInstallerScript("echo hi")).toContain("echo hi");
   });
 
-  it("launches the installer without resolving a published runtime", () => {
+  // Windows-only: asserts the .cmd bootstrap, ComSpec launch and the `py`
+  // launcher candidate. The Linux/macOS script shapes are covered above.
+  it.runIf(process.platform === "win32")(
+    "launches the installer without resolving a published runtime",
+    () => {
     const spawnFn = vi.fn(() => ({ unref: vi.fn() })) as never;
     const execFileSyncFn = vi.fn((cmd: string) => {
       if (cmd !== "py") throw new Error("missing");
@@ -83,8 +87,9 @@ describe("external runtime installer launcher", () => {
     const script = fs.readFileSync(scriptPath, "utf-8");
     expect(script).toContain("paperforge runtime install --expected-version 1.5.15");
     expect(script).toContain("py -m pip install --user --upgrade paperforge==1.5.15");
-    fs.rmSync(scriptPath, { force: true });
-  });
+      fs.rmSync(scriptPath, { force: true });
+    }
+  );
 
   it("reports a missing interpreter instead of installing anything", () => {
     const spawnFn = vi.fn() as never;

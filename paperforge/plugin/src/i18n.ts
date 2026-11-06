@@ -605,7 +605,7 @@ const LANG: Record<string, Record<string, string>> = {
       "Runtime check timed out. Check the runtime from the terminal, or run the installer again.",
     runtime_installing:
       "Installing… this can take a few minutes. Leave the terminal window open; this panel updates by itself.",
-    runtime_install_btn: "Install runtime",
+    runtime_install_btn: "Install PaperForge runtime",
     runtime_update_btn: "Update runtime",
     runtime_repair_btn: "Repair runtime",
     runtime_installer_hint:
