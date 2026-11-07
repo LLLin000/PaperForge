@@ -1081,3 +1081,46 @@ def test_numbered_heading_does_not_promote_unnumbered_siblings() -> None:
     assert "## 1 Introduction" in md
     assert "### Study population" in md
     assert "### Statistical analysis" in md
+
+def _render_with_backmatter(blocks, backmatter_page):
+    from paperforge.worker.ocr_document import DocumentStructure, PagePosition
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    return render_fulltext_markdown(
+        structured_blocks=blocks,
+        resolved_metadata={},
+        figure_inventory={"matched_figures": [], "unmatched_assets": [], "unresolved_clusters": []},
+        table_inventory={"tables": [], "unmatched_assets": []},
+        page_count=3,
+        document_structure=DocumentStructure(backmatter_start=PagePosition(page=backmatter_page, y=0.0)),
+        reader_payload={},
+        return_events=True,
+    )
+
+
+def test_backmatter_top_level_heading_matches_body_section_size() -> None:
+    """Acknowledgments at body-section size is top level, whatever its role."""
+    blocks = [
+        {"page": 1, "block_id": "h1", "role": "section_heading", "text": "Results",
+         "render_default": True, "span_metadata": {"size": 12.0}},
+        {"page": 2, "block_id": "ack", "role": "sub_subsection_heading", "text": "Acknowledgments",
+         "render_default": True, "span_metadata": {"size": 12.0}},
+    ]
+    out = _render_with_backmatter(blocks, backmatter_page=2)
+    md = out.markdown if hasattr(out, "markdown") else out
+    assert "## Acknowledgments" in md
+    events = getattr(out, "heading_events", [])
+    ack = next(e for e in events if e["title"] == "Acknowledgments")
+    assert ack["markdown_level"] == len("##")
+
+
+def test_backmatter_subheading_keeps_role_depth_when_smaller() -> None:
+    blocks = [
+        {"page": 1, "block_id": "h1", "role": "section_heading", "text": "Results",
+         "render_default": True, "span_metadata": {"size": 12.0}},
+        {"page": 2, "block_id": "sub", "role": "sub_subsection_heading", "text": "Supplementary Methods",
+         "render_default": True, "span_metadata": {"size": 9.0}},
+    ]
+    out = _render_with_backmatter(blocks, backmatter_page=2)
+    md = out.markdown if hasattr(out, "markdown") else out
+    assert "#### Supplementary Methods" in md
