@@ -139,6 +139,19 @@ def assess_page(
         evidence["missing_uids"] = len(set(expected) - planned)
         return PageAcceptance(page.page, STATUS_REJECT, fallback_reason="uid_set_mismatch", evidence=evidence)
 
+    # Coverage as a set is not enough: `order` is what a consumer applies, so it
+    # must be a strict permutation of the page's blocks — one entry each.
+    if (
+        len(page.order) != len(expected)
+        or len(set(page.order)) != len(expected)
+        or set(page.order) != set(expected)
+    ):
+        evidence["order_length"] = len(page.order)
+        evidence["order_unique"] = len(set(page.order))
+        return PageAcceptance(
+            page.page, STATUS_REJECT, fallback_reason="order_not_a_permutation", evidence=evidence
+        )
+
     owners = _uid_regions(page)
     duplicated = sorted(uid for uid, regions in owners.items() if len(regions) > 1)
     if duplicated:

@@ -152,7 +152,18 @@ def build_region_tree(refs: list[BlockRef], page: int) -> list[Region]:
         if split is not None:
             left_uids = {item[1] for item in centers[:split]}
             right_uids = {item[1] for item in centers[split:]}
-            if len(left_uids) >= 2 and len(right_uids) >= 2:
+            # Two clusters are columns only if their horizontal ranges are
+            # (almost) disjoint. A single-column page still yields the largest
+            # centre gap between a wide heading and a narrower paragraph, but
+            # the two groups then overlap in x almost completely.
+            left_span = [min(ref.bbox[0] for ref in members if ref.uid in left_uids),
+                         max(ref.bbox[2] for ref in members if ref.uid in left_uids)]
+            right_span = [min(ref.bbox[0] for ref in members if ref.uid in right_uids),
+                          max(ref.bbox[2] for ref in members if ref.uid in right_uids)]
+            overlap = max(0.0, min(left_span[1], right_span[1]) - max(left_span[0], right_span[0]))
+            narrowest = max(min(left_span[1] - left_span[0], right_span[1] - right_span[0]), 1.0)
+            separated = overlap <= narrowest * 0.2
+            if len(left_uids) >= 2 and len(right_uids) >= 2 and separated:
                 # Two blocks either side is enough to read column-major: keeping
                 # them in one region interleaves the columns by y, which is the
                 # one order that is never right for a two-column band.
