@@ -242,6 +242,12 @@
   "tests/test_sync_timing.py": 0,
   "tests/test_x04_kill_terminal.py": 1,
   "tests/unit/memory/test_context.py": 0,
-  "tests/cli/test_contract_helpers.py": 1
+  "tests/cli/test_contract_helpers.py": 1,
+  "tests/test_layout_plan.py": 1,
+  "tests/test_layout_regions.py": 1,
+  "tests/test_layout_reading.py": 1,
+  "tests/test_layout_conflicts.py": 1,
+  "tests/test_layout_evaluate.py": 1,
+  "tests/test_layout_real_papers.py": 1
  }
 }
