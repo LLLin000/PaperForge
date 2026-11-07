@@ -252,6 +252,7 @@
   "tests/test_layout_quality_gate.py": 1,
   "tests/test_layout_acceptance.py": 1,
   "tests/test_layout_shadow.py": 1,
-  "tests/test_layout_evidence.py": 1
+  "tests/test_layout_evidence.py": 1,
+  "tests/test_layout_reading_diagnosis.py": 1
  }
 }
