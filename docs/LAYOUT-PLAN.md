@@ -314,6 +314,48 @@ stopping at C1. Re-opening C2 requires either (a) a page class where the plan
 proposes an order the renderer does not already produce, or (b) accepting the
 scope-blocked pages, which is a different, higher-risk change.
 
+## Figure/table candidate evidence graph (F1)
+
+`scripts/dev/figure_evidence_graph.py` builds a read-only graph that explains
+association decisions without changing inventory:
+
+- nodes: `caption`, `asset`, `group` (one per inventory figure/table);
+- edges: `caption_group` (MATCHED/HOLD from inventory state), `group_asset`
+  (MATCHED), `caption_asset` candidates (CANDIDATE within an 18%-of-page
+  diagonal window, UNRESOLVED when block identity is duplicated);
+- evidence per edge: `same_region` (region id/kind), `same_column`, centre
+  distance, edge gap, page;
+- conflicts: `caption_multiple_groups`, `asset_multiple_groups`,
+  `group_without_caption`, `caption_without_candidate_asset`,
+  `duplicate_identity` (UNDETERMINED).
+
+Pass provenance is copied only when the inventory carries it (`proposed_by`,
+`score`); nothing is invented and no pass is re-run. Scores from different
+passes are kept side by side, never summed.
+
+### Result (40 papers)
+
+| Status | Edges |
+|---|---:|
+| MATCHED | 997 |
+| CANDIDATE | 331 |
+| HOLD | 0 |
+| UNRESOLVED | 0 |
+| UNDETERMINED | 0 |
+
+| Conflict | Count |
+|---|---:|
+| `caption_without_candidate_asset` | 14 |
+| `asset_multiple_groups` | 1 |
+
+The single cross-group claim is a figure group and a table group both claiming
+`asset:4:8` on `2BYRLKQS` — exactly the kind of cross-type competition F2 would
+need to arbitrate. The 14 captions without a candidate asset are the first
+concrete candidates for a missing-figure review, not proof of a miss.
+
+The graph is a review surface: it can say the current match is questionable, it
+cannot change it.
+
 ### Known limits
 
 - Running heads and folios are placed last; a paper whose body starts in the top 8% keeps those blocks in the body flow (they are not margin unless their role is furniture).
