@@ -134,7 +134,7 @@ def test_box_merge_requires_an_explicit_page_width() -> None:
 
     blocks = [
         {"page": 1, "block_id": "box", "role": "structured_insert", "text": "Box 1", "bbox": [70, 100, 220, 130]},
-        {"page": 1, "block_id": "body", "role": "body_paragraph", "text": "Box body.", "bbox": [70, 140, 500, 180]},
+        {"page": 1, "block_id": "body", "role": "body_paragraph", "text": "Box body.", "bbox": [70, 140, 220, 180]},
     ]
     _merge_box_content(blocks)
 
