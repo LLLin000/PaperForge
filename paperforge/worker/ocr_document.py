@@ -3413,6 +3413,10 @@ def _merge_box_content(blocks: list[dict]) -> None:
             continue
         page = block.get("page")
         page_width = page_widths.get(int(page or 0), 0.0)
+        if page_width <= 0:
+            # Without a page width the column test is meaningless; merging on
+            # list order alone is exactly the failure this guard replaces.
+            continue
         gutter = page_width * 0.05
         heading_column = 0 if (heading_bbox[0] + heading_bbox[2]) / 2 < page_width / 2 else 1
         parts = [text]
@@ -3430,14 +3434,16 @@ def _merge_box_content(blocks: list[dict]) -> None:
             candidate_bbox = candidate.get("bbox") or candidate.get("block_bbox") or []
             if len(candidate_bbox) < 4 or float(candidate_bbox[1]) < float(heading_bbox[3]):
                 continue
+            # Column first: a caption or heading in the OTHER column is not a
+            # stop signal for this box, it is simply not part of its flow.
+            candidate_column = 0 if (candidate_bbox[0] + candidate_bbox[2]) / 2 < page_width / 2 else 1
+            if candidate_column != heading_column:
+                continue
             candidate_role = candidate.get("role", "")
             if candidate_role not in _BOX_BODY_ROLES:
                 break
             candidate_text = (candidate.get("text") or "").strip()
             if not candidate_text:
-                continue
-            candidate_column = 0 if (candidate_bbox[0] + candidate_bbox[2]) / 2 < page_width / 2 else 1
-            if candidate_column != heading_column:
                 continue
             if heading_bbox[2] - heading_bbox[0] > page_width * 0.6:
                 frame_left = float(heading_bbox[0]) - gutter

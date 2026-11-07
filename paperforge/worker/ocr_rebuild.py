@@ -357,6 +357,19 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
         )
         artifacts.blocks_structured.parent.mkdir(parents=True, exist_ok=True)
 
+        # Producer parity: the pre-match stage runs before metadata resolution
+        # and before the structured artifact is written, so the persisted rows
+        # carry role_candidate.
+        if normalize_mode == "seed_only":
+            from paperforge.worker.ocr_pre_match_normalize import pre_match_normalize
+
+            structured, doc_structure = pre_match_normalize(
+                structured,
+                source_frontmatter_anchors=getattr(doc_structure, "source_frontmatter_anchors", None),
+                document_structure=doc_structure,
+            )
+        write_structured_blocks_jsonl(artifacts.blocks_structured, structured)
+
         from paperforge.worker.ocr_profiles import write_role_span_profiles
 
         write_role_span_profiles(structured, artifacts.blocks_structured.parent)
@@ -399,15 +412,6 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
             write_back_figure_roles,
             write_figure_inventory,
         )
-        if normalize_mode == "seed_only":
-            from paperforge.worker.ocr_pre_match_normalize import pre_match_normalize
-
-            structured, doc_structure = pre_match_normalize(
-                structured,
-                source_frontmatter_anchors=getattr(doc_structure, "source_frontmatter_anchors", None),
-                document_structure=doc_structure,
-            )
-
         figure_inventory = build_figure_inventory(structured, page_pdf_lines_by_page=page_pdf_lines_by_page)
         write_back_figure_roles(figure_inventory, structured)
 
@@ -472,6 +476,11 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
             "figure_inventory": figure_inventory,
             "table_inventory": table_inventory,
             "reader_payload": reader_payload,
+            # post_match_normalize returns new row objects; without these the
+            # render/health phases would read the pre-match rows while the disk
+            # artifact already holds the committed ones.
+            "structured": structured,
+            "doc_structure": doc_structure,
         }
 
     # ── Phase 4: objects, render, health ──
@@ -612,6 +621,8 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
     source_meta = phase2_result["source_meta"]
 
     phase3_result = _phase3_figure_tables(structured, page_pdf_lines_by_page, source_meta, doc_structure)
+    structured = phase3_result["structured"]
+    doc_structure = phase3_result["doc_structure"]
     figure_inventory = phase3_result["figure_inventory"]
     table_inventory = phase3_result["table_inventory"]
     reader_payload = phase3_result["reader_payload"]

@@ -1898,9 +1898,9 @@ def render_fulltext_markdown(
             if role_depth is not None:
                 number_depth = _heading_number_depth_text(text)
                 if number_depth:
+                    # A number only states its own depth; it must not promote
+                    # every unnumbered heading in the document.
                     role_depth = max(role_depth, _minimum_heading_depth + number_depth - 1)
-                elif _has_numbered_headings:
-                    role_depth = min(role_depth, _minimum_heading_depth)
                 prefix = "#" * (2 + role_depth - _minimum_heading_depth)
             else:
                 prefix = _heading_prefix_map.get(key)
