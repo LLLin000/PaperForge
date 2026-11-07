@@ -1571,6 +1571,26 @@ def render_fulltext_markdown(
             sz = span.get("size")
             if sz:
                 heading_font_sizes[id(block)] = float(sz)
+    # A backmatter heading whose type size matches the body's top-level heading
+    # size is a top-level backmatter section (Acknowledgments, Disclosures, …).
+    # The role classifier frequently nests it under the last body section, so
+    # the renderer restores the level from that typographic evidence instead of
+    # rewriting the role. Backmatter sub-headings keep their role depth.
+    _tail_anchor = getattr(document_structure, "references_start", None) or getattr(
+        document_structure, "backmatter_start", None
+    )
+    _backmatter_page = _tail_anchor.page if _tail_anchor else None
+    _body_heading_sizes = [
+        heading_font_sizes[id(block)]
+        for block in structured_blocks
+        if id(block) in heading_font_sizes
+        and (_backmatter_page is None or int(block.get("page", 0) or 0) < _backmatter_page)
+    ]
+    _top_heading_size = (
+        max(_body_heading_sizes)
+        if _body_heading_sizes
+        else (max(heading_font_sizes.values()) if heading_font_sizes else None)
+    )
     block_heading_prefix: dict[int, str] = {}
     _heading_prefix_map: dict[tuple, str] = {}
     if heading_font_sizes:
@@ -1901,6 +1921,14 @@ def render_fulltext_markdown(
                     # A number only states its own depth; it must not promote
                     # every unnumbered heading in the document.
                     role_depth = max(role_depth, _minimum_heading_depth + number_depth - 1)
+                elif (
+                    _backmatter_page is not None
+                    and int(block.get("page", 0) or 0) >= _backmatter_page
+                    and _top_heading_size is not None
+                    and id(block) in heading_font_sizes
+                    and abs(heading_font_sizes[id(block)] - _top_heading_size) <= 0.5
+                ):
+                    role_depth = _minimum_heading_depth
                 prefix = "#" * (2 + role_depth - _minimum_heading_depth)
             else:
                 prefix = _heading_prefix_map.get(key)

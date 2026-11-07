@@ -127,3 +127,29 @@ def test_box_merge_ignores_non_body_blocks_in_the_other_column() -> None:
     assert blocks[0].get("_container_text") == "Box 1\nStill box content."
     assert blocks[2].get("_container_of") == "box"
     assert blocks[2]["role"] == "body_paragraph"
+
+def test_box_merge_requires_an_explicit_page_width() -> None:
+    """A bbox-derived width is not evidence of the page's column geometry."""
+    from paperforge.worker.ocr_document import _merge_box_content
+
+    blocks = [
+        {"page": 1, "block_id": "box", "role": "structured_insert", "text": "Box 1", "bbox": [70, 100, 220, 130]},
+        {"page": 1, "block_id": "body", "role": "body_paragraph", "text": "Box body.", "bbox": [70, 140, 500, 180]},
+    ]
+    _merge_box_content(blocks)
+
+    assert "_container_text" not in blocks[0]
+    assert blocks[1].get("_container_of") is None
+
+
+def test_box_merge_merges_when_the_page_width_is_explicit() -> None:
+    from paperforge.worker.ocr_document import _merge_box_content
+
+    blocks = [
+        {"page": 1, "block_id": "box", "role": "structured_insert", "text": "Box 1", "bbox": [70, 100, 220, 130], "page_width": 1200},
+        {"page": 1, "block_id": "body", "role": "body_paragraph", "text": "Box body.", "bbox": [70, 140, 500, 180], "page_width": 1200},
+    ]
+    _merge_box_content(blocks)
+
+    assert blocks[0].get("_container_text") == "Box 1\nBox body."
+    assert blocks[1].get("_container_of") == "box"
