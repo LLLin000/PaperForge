@@ -248,6 +248,7 @@
   "tests/test_layout_reading.py": 1,
   "tests/test_layout_conflicts.py": 1,
   "tests/test_layout_evaluate.py": 1,
-  "tests/test_layout_real_papers.py": 1
+  "tests/test_layout_real_papers.py": 1,
+  "tests/test_layout_quality_gate.py": 1
  }
 }

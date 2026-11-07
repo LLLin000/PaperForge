@@ -111,8 +111,18 @@ def evaluate_plan(
                 if cap and ast and cap.bbox and ast.bbox and height > 0:
                     cap_y = (cap.bbox[1] + cap.bbox[3]) / 2
                     asset_y = (ast.bbox[1] + ast.bbox[3]) / 2
-                    if abs(cap_y - asset_y) > height * 0.02:
-                        suspicious.append({"page": asset_page, "caption": caption_uid, "asset": asset_uid})
+                    ratio = abs(cap_y - asset_y) / height
+                    if ratio > 0.02:
+                        suspicious.append(
+                            {
+                                "page": asset_page,
+                                "caption": caption_uid,
+                                "asset": asset_uid,
+                                "caption_bbox": list(cap.bbox),
+                                "asset_bbox": list(ast.bbox),
+                                "distance_ratio": round(ratio, 4),
+                            }
+                        )
         result["figure_caption"] = {"matched": matched, "suspicious": suspicious}
     if table_inventory is not None:
         result["table_inventory"] = {"tables": len(table_inventory.get("tables", []))}

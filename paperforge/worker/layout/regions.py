@@ -48,9 +48,15 @@ def build_region_tree(refs: list[BlockRef], page: int) -> list[Region]:
     # becomes one region that the reading graph emits after the body.
     margin_top = height * 0.08
     margin_bottom = height * 0.92
+    # Geometry alone is not enough: body text and section headings reach into
+    # the top/bottom band on real pages, and moving them to the end of the page
+    # is a content-order error. Only furniture-like roles are treated as margin.
+    _furniture_roles = {"noise", "footnote", "frontmatter_noise"}
     margin_refs = [
         ref for ref in boxed
-        if (ref.center_y is not None) and (ref.center_y < margin_top or ref.center_y > margin_bottom)
+        if (ref.center_y is not None)
+        and (ref.center_y < margin_top or ref.center_y > margin_bottom)
+        and (ref.role or "") in _furniture_roles
     ]
     margin_uids = {ref.uid for ref in margin_refs}
     content = [ref for ref in boxed if ref.uid not in margin_uids]
