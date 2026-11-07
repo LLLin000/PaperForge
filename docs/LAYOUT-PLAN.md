@@ -273,6 +273,46 @@ Two observations from building it:
 
 The 195 suspicious pairs were never treated as 195 errors; this script exists to
 turn them into a 50-case set a human can review.
+## Reading-order diagnosis (R1)
+
+`scripts/dev/layout_reading_diagnosis.py` compares three sequences per page —
+the renderer's input order, the plan's proposed order, and the order the
+renderer actually emits — and attributes every page to one of five categories.
+
+| Category | Meaning |
+|---|---|
+| `already_correct` | plan order equals the renderer's input order (nothing to change) |
+| `gate_blocked` | plan order differs, page not accepted (reason recorded) |
+| `scope_blocked` | plan order differs, accepted, page excluded by the shadow scope |
+| `non_emitting_only` | differences exist only among blocks the renderer suppresses |
+| `real_change_candidate` | the emitted event order differs |
+
+### Result (40 papers, 587 pages, final blocks)
+
+| Gate | already_correct | gate_blocked | scope_blocked | non_emitting_only | real_change |
+|---|---:|---:|---:|---:|---:|
+| 0.80 (production candidate) | 5 | 535 | 38 | 9 | **0** |
+| 0.70 (diagnostic) | 5 | 363 | 144 | 75 | **0** |
+
+**Zero pages change the emitted reading order at either threshold.** Lowering
+the gate moves pages from `gate_blocked` into `scope_blocked` /
+`non_emitting_only`; it does not create a single visible change. The plan's
+column-major order already coincides with what the renderer produces, so the
+plan's 605 disagreements with the raw OCR order are gains the renderer had
+already made independently.
+
+The only untested pockets are the 144 scope-blocked pages at 0.70 — figure/
+table/backmatter-heavy pages the shadow deliberately leaves on the baseline
+path — and the 75 pages whose differences are only in suppressed blocks.
+
+### Decision
+
+C2 (production reading-order takeover) is **NO-GO on this corpus**: there is no
+page where the plan would change what a reader sees, so a switch would add risk
+without benefit. The evidence does not support lowering the gate; it supports
+stopping at C1. Re-opening C2 requires either (a) a page class where the plan
+proposes an order the renderer does not already produce, or (b) accepting the
+scope-blocked pages, which is a different, higher-risk change.
 
 ### Known limits
 
