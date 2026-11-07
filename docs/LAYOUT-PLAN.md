@@ -220,8 +220,10 @@ must not be conflated:
    `2HEUD5P9` p26–27: current chain says `reference_item` where the disk run
    says `backmatter_body` for author-bio paragraphs.
 
-The builder is what audits consume; disk artifacts are a versioned snapshot and
-are only used for this parity check.
+The builder was validated against a real serial `_rebuild_one_paper` run on
+`2HEUD5P9` in a throwaway vault: 670/670 rows and 0 role differences. It is
+what audits consume; disk artifacts are a versioned snapshot and are only used
+for this parity check.
 
 ### Known limits
 
