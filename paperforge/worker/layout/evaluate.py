@@ -87,18 +87,36 @@ def evaluate_plan(
             for region in page.regions:
                 for uid in region.members:
                     region_for[uid] = (region.region_id, region.parent_id)
-        uid_by_block = {(ref.page, ref.block_id): ref.uid for ref in refs}
+        # `(page, block_id)` repeats in real OCR output; a duplicate key would
+        # silently point at the wrong block. Ambiguous keys are undetermined.
+        uid_by_block: dict[tuple[int, str], str] = {}
+        ambiguous_keys: set[tuple[int, str]] = set()
+        for ref in refs:
+            key = (ref.page, ref.block_id)
+            if key in uid_by_block and uid_by_block[key] != ref.uid:
+                ambiguous_keys.add(key)
+                continue
+            uid_by_block[key] = ref.uid
+        for key in ambiguous_keys:
+            uid_by_block.pop(key, None)
         matched = 0
+        undetermined = 0
         suspicious = []
         for figure in figure_inventory.get("matched_figures", []):
             caption_block = figure.get("legend_block_id", figure.get("block_id", ""))
-            caption_uid = uid_by_block.get((int(figure.get("page", 0) or 0), str(caption_block)))
+            caption_key = (int(figure.get("page", 0) or 0), str(caption_block))
+            caption_uid = uid_by_block.get(caption_key)
             if caption_uid is None:
+                if caption_key in ambiguous_keys:
+                    undetermined += 1
                 continue
             for asset in figure.get("matched_assets", figure.get("assets", [])):
                 asset_page = int(asset.get("page", figure.get("page", 0)) or 0)
-                asset_uid = uid_by_block.get((asset_page, str(asset.get("block_id", ""))))
+                asset_key = (asset_page, str(asset.get("block_id", "")))
+                asset_uid = uid_by_block.get(asset_key)
                 if asset_uid is None:
+                    if asset_key in ambiguous_keys:
+                        undetermined += 1
                     continue
                 matched += 1
                 cap_region = region_for.get(caption_uid)
@@ -123,7 +141,11 @@ def evaluate_plan(
                                 "distance_ratio": round(ratio, 4),
                             }
                         )
-        result["figure_caption"] = {"matched": matched, "suspicious": suspicious}
+        result["figure_caption"] = {
+            "matched": matched,
+            "suspicious": suspicious,
+            "undetermined": undetermined,
+        }
     if table_inventory is not None:
         result["table_inventory"] = {"tables": len(table_inventory.get("tables", []))}
     return result

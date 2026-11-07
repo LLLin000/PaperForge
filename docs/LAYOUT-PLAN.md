@@ -67,6 +67,71 @@ Interpretation: the plan removes every order violation its own regions define, k
 
 The audited sample is small (6 pages, chosen where the plan disagrees most). It is enough to reject "the plan is simply better" and to name the failure class that remains: multi-panel figures whose labels are separate blocks, and DOI/URL lines inside figure bands.
 
+## Production acceptance (C0)
+
+`layout/acceptance.py` is the only door between the plan and production. It
+does not compute layout; it decides whether a page's plan order may replace the
+current order, and says no by default.
+
+```python
+from paperforge.worker.layout import build_layout_plan, assess_plan
+
+plan = build_layout_plan(blocks)          # final structured blocks
+for result in assess_plan(plan, blocks):  # ACCEPT / HOLD / REJECT
+    ...
+```
+
+| Field | Meaning |
+|---|---|
+| `status` | `ACCEPT` / `HOLD` / `REJECT` |
+| `accepted_order` | uid sequence, only when `ACCEPT` |
+| `fallback_reason` | `identity_mismatch`, `uid_set_mismatch`, `duplicate_membership`, `hold_conflict`, `hold_decision`, `low_confidence`, `undecided_blocks` |
+| `source_mapping` | uid → index in the blocks list, verified against the plan fingerprint |
+| `held_blocks` | blocks whose position must not be taken from the plan |
+| `evidence` | counts and the threshold the decision used |
+
+### Rules
+
+- **REJECT** when the plan cannot describe the input at all: unknown plan
+  version, uid-set mismatch, a uid claimed by two regions, a missing
+  fingerprint, or a block whose fingerprint changed after planning. The
+  fingerprint (`page | block_id | bbox | role | text`) is what makes positional
+  uids safe to bridge back to blocks.
+- **HOLD** when the page is described but not confidently: any hold-severity or
+  order-blocking conflict (`ambiguous_column`, `missing_geometry`,
+  `overlapping_membership`, `container_leak`), any `hold` decision, any body
+  decision below `min_confidence`, or a body block no decision touches.
+- **ACCEPT** otherwise. Margins are furniture: they are excluded from the
+  threshold and kept at the end of `accepted_order`, so applying the order
+  loses nothing.
+
+`min_confidence` defaults to 0.80: same-region (0.85) and band-boundary (0.80)
+evidence pass, a 0.70 column hand-off does not. That is deliberate — the
+hand-off is exactly the part Phase B cannot prove yet.
+
+### Measured on the 40-paper corpus (587 pages)
+
+| Threshold | ACCEPT | HOLD | accepted blocks | dominant hold reasons |
+|---|---:|---:|---:|---|
+| 0.80 (default) | 56 pages (9.5%) | 531 | 914 / 10,430 (8.8%) | `low_confidence` 369, `hold_conflict` 114, `hold_decision` 48 |
+| 0.85 | 17 pages | 570 | 149 / 10,430 | `low_confidence` 408 |
+
+No page was REJECTed on real data: the plan and the blocks it is asked about
+always came from the same run.
+
+This is the C0 answer to "how much could take over today": about 9% of pages,
+and only where every ordering claim on the page is geometry-confident. C1 must
+shadow-render those pages on final structured blocks and diff them; C2 gates
+the switch behind `OCR_LAYOUT_ORDER_MODE`.
+
+### Figure/caption identity
+
+`evaluate.py` no longer keys figure/caption lookups by `(page, block_id)` alone:
+duplicate ids make `(page, block_id) → uid` ambiguous, so those keys are
+dropped and counted as `figure_caption.undetermined` instead of being
+attributed to the wrong block. The 195 suspicious pairs remain distance
+observations, not ownership decisions.
+
 ### Known limits
 
 - Running heads and folios are placed last; a paper whose body starts in the top 8% keeps those blocks in the body flow (they are not margin unless their role is furniture).
