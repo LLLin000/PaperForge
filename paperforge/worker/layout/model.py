@@ -17,6 +17,7 @@ Design rules:
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -45,6 +46,19 @@ SEVERITY_WARN = "warn"
 SEVERITY_HOLD = "hold"
 
 
+def block_fingerprint(page: int, block_id: str, bbox: tuple[float, ...] | None, role: str | None, text: str) -> str:
+    """Stable content identity for the plan↔block bridge.
+
+    UIDs are positional, so they cannot prove that a plan still refers to the
+    same blocks. The acceptance layer recomputes this over the final structured
+    blocks and refuses to take over when a block was inserted, removed or
+    edited between planning and consumption.
+    """
+    geometry = "" if bbox is None else ",".join(f"{value:.1f}" for value in bbox)
+    payload = f"{page}|{block_id}|{geometry}|{role or ''}|{text}"
+    return hashlib.sha1(payload.encode()).hexdigest()[:16]
+
+
 @dataclass(frozen=True)
 class BlockRef:
     """One OCR block, reduced to what layout reasoning needs."""
@@ -58,6 +72,7 @@ class BlockRef:
     text_len: int
     page_width: float
     page_height: float
+    fingerprint: str = ""
 
     @property
     def is_wide(self) -> bool:
@@ -141,6 +156,9 @@ class LayoutPlan:
     version: int = PLAN_VERSION
     pages: list[PagePlan] = field(default_factory=list)
     stats: dict[str, Any] = field(default_factory=dict)
+    # uid → block fingerprint, captured when the plan was built. The acceptance
+    # layer compares it against the blocks it is asked to take over.
+    identities: dict[str, str] = field(default_factory=dict)
 
     def region_by_id(self, region_id: str) -> Region | None:
         for page in self.pages:
@@ -153,6 +171,7 @@ class LayoutPlan:
         return {
             "version": self.version,
             "stats": self.stats,
+            "identities": dict(sorted(self.identities.items())),
             "pages": [
                 {
                     "page": page.page,
@@ -256,4 +275,5 @@ class LayoutPlan:
             version=int(payload.get("version", PLAN_VERSION)),
             pages=pages,
             stats=dict(payload.get("stats", {})),
+            identities=dict(payload.get("identities", {})),
         )
