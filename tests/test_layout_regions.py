@@ -87,9 +87,9 @@ def test_margin_bands_hold_running_heads_and_folios() -> None:
     from paperforge.worker.layout.model import REGION_MARGIN
 
     refs = [
-        BlockRef("h", 1, "h", (60, 20, 500, 40), 0, "body_paragraph", 20, 1000, 1400),
+        BlockRef("h", 1, "h", (60, 20, 500, 40), 0, "noise", 20, 1000, 1400),
         BlockRef("b", 1, "b", (60, 200, 900, 400), 1, "body_paragraph", 200, 1000, 1400),
-        BlockRef("f", 1, "f", (450, 1360, 500, 1380), 2, "body_paragraph", 3, 1000, 1400),
+        BlockRef("f", 1, "f", (450, 1360, 500, 1380), 2, "footnote", 3, 1000, 1400),
     ]
     regions = build_region_tree(refs, 1)
     margin = [region for region in regions if region.kind == REGION_MARGIN]
@@ -97,3 +97,20 @@ def test_margin_bands_hold_running_heads_and_folios() -> None:
     assert set(margin[0].members) == {"h", "f"}
     content = [uid for region in regions if region.kind != REGION_MARGIN for uid in region.members]
     assert content == ["b"]
+
+
+def test_margin_requires_a_furniture_role() -> None:
+    """Body text at the page edge stays in the body flow, not in the margin."""
+    from paperforge.worker.layout.model import REGION_MARGIN
+
+    refs = [
+        BlockRef("head", 1, "head", (60, 20, 500, 40), 0, "noise", 20, 1000, 1400),
+        BlockRef("body", 1, "body", (60, 25, 600, 60), 1, "body_paragraph", 120, 1000, 1400),
+        BlockRef("mid", 1, "mid", (60, 400, 600, 900), 2, "body_paragraph", 400, 1000, 1400),
+    ]
+    regions = build_region_tree(refs, 1)
+    margin = [region for region in regions if region.kind == REGION_MARGIN]
+    assert len(margin) == 1
+    assert margin[0].members == ("head",)
+    body_regions = [uid for region in regions if region.kind == "column" for uid in region.members]
+    assert set(body_regions) == {"body", "mid"}
