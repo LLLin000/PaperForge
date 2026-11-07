@@ -21,7 +21,7 @@ import hashlib
 from dataclasses import dataclass, field
 from typing import Any
 
-PLAN_VERSION = 1
+PLAN_VERSION = 2
 
 # Region kinds
 REGION_FULL_WIDTH = "full_width"
@@ -46,16 +46,33 @@ SEVERITY_WARN = "warn"
 SEVERITY_HOLD = "hold"
 
 
-def block_fingerprint(page: int, block_id: str, bbox: tuple[float, ...] | None, role: str | None, text: str) -> str:
-    """Stable content identity for the plan↔block bridge.
+def block_fingerprint(
+    page: int,
+    block_id: str,
+    bbox: tuple[float, ...] | None,
+    role: str | None,
+    text: str,
+    *,
+    render_default: object = None,
+    index_default: object = None,
+    owner_id: object = None,
+) -> str:
+    """Stable identity for the plan↔block bridge.
 
     UIDs are positional, so they cannot prove that a plan still refers to the
     same blocks. The acceptance layer recomputes this over the final structured
     blocks and refuses to take over when a block was inserted, removed or
     edited between planning and consumption.
+
+    Render-relevant flags are part of the payload: a reordered block whose
+    `render_default` or object ownership changed is not the same input for the
+    renderer, even when its text and geometry did not move.
     """
     geometry = "" if bbox is None else ",".join(f"{value:.1f}" for value in bbox)
-    payload = f"{page}|{block_id}|{geometry}|{role or ''}|{text}"
+    payload = (
+        f"{page}|{block_id}|{geometry}|{role or ''}|{text}"
+        f"|{render_default!r}|{index_default!r}|{owner_id!r}"
+    )
     return hashlib.sha1(payload.encode()).hexdigest()[:16]
 
 

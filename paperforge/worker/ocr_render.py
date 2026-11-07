@@ -1,19 +1,17 @@
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass
 from html import unescape
 from pathlib import Path
-from dataclasses import dataclass
-from typing import Any
 
+from paperforge.worker.ocr_banding import LayoutBandEstimate, decide_usable_content
 from paperforge.worker.ocr_document import (
     _TAIL_ROLES,
     DocumentStructure,
     _estimate_noise_bands,
     _get_column,
-    _is_in_usable_content,
 )
-from paperforge.worker.ocr_banding import LayoutBandEstimate, decide_usable_content
 from paperforge.worker.ocr_math import normalize_ocr_math_text
 from paperforge.worker.ocr_pdf_spans import _BACKFILL_OVERLAP_REJECT_THRESHOLD, _backfill_coverage_in_existing
 from paperforge.worker.ocr_roles import FRONTMATTER_NOISE
@@ -901,6 +899,34 @@ def _force_reference_heading_before_same_page_refs(page_blocks: list[dict]) -> l
     after = [b for b in page_blocks[heading_idx + 1:] if b.get("role") not in ref_roles]
 
     return before + [first_heading] + sorted(refs, key=_ref_number_sort_key) + after
+def _apply_layout_order(blocks: list[dict], layout_order: dict[int, list[int]]) -> list[dict]:
+    """Reorder each listed page to the shadow plan's source-index sequence.
+
+    Pages without an entry keep the renderer's own order. Blocks with no source
+    index (or one the plan does not mention) keep their relative position after
+    the listed ones, so nothing can be dropped.
+    """
+    groups: dict[int | None, list[dict]] = {}
+    page_sequence: list[int | None] = []
+    for block in blocks:
+        page = block.get("page")
+        if page not in groups:
+            groups[page] = []
+            page_sequence.append(page)
+        groups[page].append(block)
+
+    ordered: list[dict] = []
+    for page in page_sequence:
+        page_blocks = groups[page]
+        requested = layout_order.get(page) if isinstance(page, int) else None
+        if not requested:
+            ordered.extend(page_blocks)
+            continue
+        rank = {source: position for position, source in enumerate(requested)}
+        ordered.extend(sorted(page_blocks, key=lambda block: rank.get(block.get("_layout_source_index"), len(rank))))
+    return ordered
+
+
 def _order_tail_blocks(
     blocks: list[dict], style_profiles: dict | None = None, *, has_verified_reference_zone: bool = False
 ) -> list[dict]:
@@ -918,7 +944,7 @@ def _order_tail_blocks(
     if not blocks:
         return blocks
 
-    from paperforge.worker.ocr_banding import estimate_layout_bands, choose_runtime_bands, LayoutBandEstimate
+    from paperforge.worker.ocr_banding import LayoutBandEstimate, choose_runtime_bands, estimate_layout_bands
 
     legacy_header_band, legacy_footer_band = _estimate_noise_bands(blocks)
     robust_estimate = estimate_layout_bands(blocks)
@@ -1232,9 +1258,7 @@ def _collect_frontmatter_fallback_fields(
         elif role == "doi" and not has_doi:
             # Only accept clean DOI lines
             cleaned = norm.strip().lower()
-            if cleaned.startswith("doi:") or cleaned.startswith("doi "):
-                fallback_doi = norm
-            elif "/" in norm and not any(c in norm for c in ("\n", "  ")):
+            if cleaned.startswith("doi:") or cleaned.startswith("doi ") or "/" in norm and not any(c in norm for c in ("\n", "  ")):
                 fallback_doi = norm
 
     result: dict[str, list[str] | str] = {}
@@ -1281,6 +1305,7 @@ def render_fulltext_markdown(
     document_structure: DocumentStructure | None = None,
     reader_payload: dict | None = None,
     return_events: bool = False,
+    layout_order: dict[int, list[int]] | None = None,
 ) -> str | RenderOutput:
     lines: list[str] = []
     heading_events: list[dict] = []
@@ -1691,6 +1716,12 @@ def render_fulltext_markdown(
                 block["role"] = new_role
                 block["role_confidence"] = new_blocks[i].get("role_confidence", block.get("role_confidence", 0.5))
 
+    if layout_order is not None:
+        # Shadow-only override. The index survives `_convert_footnotes_to_callouts`
+        # because that function copies the dict; `id(block)` would not.
+        for source_index, block in enumerate(structured_blocks):
+            block["_layout_source_index"] = source_index
+
     structured_blocks = _convert_footnotes_to_callouts(structured_blocks)
 
     style_profiles = _build_heading_style_profiles(structured_blocks)
@@ -1755,6 +1786,9 @@ def render_fulltext_markdown(
         ordered_blocks = _order_tail_blocks(
             structured_blocks, style_profiles=style_profiles, has_verified_reference_zone=has_ref_zone
         )
+
+    if layout_order:
+        ordered_blocks = _apply_layout_order(ordered_blocks, layout_order)
 
     for block in ordered_blocks:
         role = block.get("role", "")
@@ -2120,6 +2154,7 @@ def render_fulltext_markdown(
 
 
 import datetime as _dt
+
 from paperforge.worker.ocr_fulltext_state import (
     atomic_replace_text,
     compute_disk_fulltext_hash,
