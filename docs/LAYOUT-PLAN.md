@@ -184,6 +184,57 @@ merged. C1 also confirmed `accepted_order` is a strict permutation (rejected
 otherwise) and that the fingerprint covers `render_default`, `index_default`
 and `_object_owner_id`.
 
+## Evidence baseline (R0)
+
+`scripts/dev/layout_evidence.py::build_final_view` is the single read-only
+replay of the derived rebuild's phases 2–3: structured(seed) → pre-match →
+figure matching + role writeback → residual author-bio cleanup → post-reference
+cleanup/prune → reader synthesis → table inventory → media/ownership conflict
+resolution → post-match → object writebacks → table role writeback. Every audit
+in this round consumes it.
+
+`scripts/dev/layout_evidence_parity.py` compares it against the disk artifacts
+(`structure/blocks.structured.jsonl`, both inventories).
+
+### What the comparison shows (5 papers)
+
+| Key | rows mem/disk | role | owner | fig/table claims |
+|---|---|---|---|---|
+| `2332GHPT` | 193/193 | 0 | 0 | 0/0 |
+| `2AGGSMVQ` | 122/122 | 4 | 4 | 0/0 |
+| `24A2QUAH` | 222/222 | 0 | 0 | 0/0 |
+| `2HEUD5P9` | 670/670 | 4 | 0 | 0/0 |
+| `27MFWJWJ` | 255/255 | 0 | 0 | 0/0 |
+
+Row identity is exact everywhere. Field-level drift has two causes, and they
+must not be conflated:
+
+1. **Version drift.** `role_candidate` and `zone` are absent from artifacts
+   written by older code (papers OCR'd in June/July). This is not a stage gap:
+   production writes `blocks.structured.jsonl` twice — once after pre-match and
+   again after object writebacks — so the final rows are on disk whenever the
+   same code wrote them.
+2. **Value gaps that need review.** `2AGGSMVQ` p3/p4: the disk run classified
+   four body paragraphs as `figure_inner_text` owned by `figure_003`/`figure_006`
+   (the Phase A swallowing defect); the current chain leaves them as body text.
+   `2HEUD5P9` p26–27: current chain says `reference_item` where the disk run
+   says `backmatter_body` for author-bio paragraphs.
+
+The builder was validated against a real serial `_rebuild_one_paper` run on
+`2HEUD5P9` in a throwaway vault: 670/670 rows and 0 role differences. It is
+what audits consume; disk artifacts are a versioned snapshot and are only used
+for this parity check.
+
+Across the 40-paper corpus: row identity matches on every paper, figure claims
+match on every paper, and only 19 rows differ in value (8 role, 11 owner).
+Three patterns:
+
+| pattern | rows | reading |
+|---|---:|---|
+| `body_paragraph → figure_inner_text` (owned by a figure) | 4 | older disk output swallowed body text into figures; current chain does not |
+| `reference_item → backmatter_body` on author-bio paragraphs | 4 | current chain labels bios as references; the older output's `backmatter_body` looks more correct — flagged as a possible current-code regression |
+| `None → ""` / `None → figure_00X` on object owners | 11 | same swallowing pattern plus an empty-string owner normalisation |
+
 ### Known limits
 
 - Running heads and folios are placed last; a paper whose body starts in the top 8% keeps those blocks in the body flow (they are not margin unless their role is furniture).
