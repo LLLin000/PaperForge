@@ -44,34 +44,24 @@ _SCOPE_BLOCKED_ROLES = frozenset(
 )
 
 
-def load_final_blocks(paper_dir: Path) -> tuple[list[dict], dict, dict, dict, dict]:
-    """Rebuild the blocks the production renderer actually consumes."""
-    from paperforge.worker.ocr_blocks import build_structured_blocks
-    from paperforge.worker.ocr_figure_reader import synthesize_reader_figures
-    from paperforge.worker.ocr_figures import build_figure_inventory
-    from paperforge.worker.ocr_object_writeback import apply_object_writebacks
-    from paperforge.worker.ocr_post_match_normalize import post_match_normalize
-    from paperforge.worker.ocr_pre_match_normalize import pre_match_normalize
-    from paperforge.worker.ocr_tables import build_table_inventory
+def load_final_blocks(paper_dir: Path) -> tuple[list[dict], dict, object, dict, dict, dict]:
+    """The blocks the production renderer sees, via the shared evidence builder.
 
-    raw_path = paper_dir / "canonical" / "blocks.raw.jsonl"
-    raw_blocks = [json.loads(line) for line in raw_path.read_text(encoding="utf-8").splitlines() if line.strip()]
-    metadata_path = paper_dir / "raw" / "source_metadata.json"
-    metadata = json.loads(metadata_path.read_text(encoding="utf-8")) if metadata_path.is_file() else {}
+    R0 established that this must mirror `_rebuild_one_paper` phases 2–3
+    (including bio cleanup, reader synthesis, conflict resolution and table role
+    writeback); `scripts/dev/layout_evidence.py` is the single definition.
+    """
+    from layout_evidence import build_final_view
 
-    blocks, document = build_structured_blocks(raw_blocks, source_metadata=metadata, normalize_mode="seed_only")
-    anchors = getattr(document, "source_frontmatter_anchors", None)
-    blocks, document = pre_match_normalize(
-        blocks, source_frontmatter_anchors=anchors, document_structure=document
+    view = build_final_view(paper_dir)
+    return (
+        view.blocks,
+        view.metadata,
+        view.document_structure,
+        view.figure_inventory,
+        view.table_inventory,
+        view.reader_payload,
     )
-    figures = build_figure_inventory(blocks)
-    tables = build_table_inventory(blocks)
-    blocks, document = post_match_normalize(
-        blocks, figures, tables, document_structure=document, source_frontmatter_anchors=anchors
-    )
-    apply_object_writebacks(structured_blocks=blocks, figure_inventory=figures, table_inventory=tables)
-    reader_payload = synthesize_reader_figures(figures, structured_blocks=blocks)
-    return blocks, metadata, document, figures, tables, reader_payload
 
 
 def page_in_scope(page, blocks_by_page: dict[int, list[dict]]) -> tuple[bool, str]:
