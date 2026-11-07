@@ -1058,3 +1058,26 @@ def test_frontmatter_doi_fallback_only_when_metadata_empty() -> None:
         reader_payload={},
     )
     assert "**DOI:** 10.1234/example" in md
+
+def test_numbered_heading_does_not_promote_unnumbered_siblings() -> None:
+    """A number states its own depth; it must not lift every other heading."""
+    from paperforge.worker.ocr_render import render_fulltext_markdown
+
+    structured = [
+        {"page": 1, "block_id": "h1", "role": "section_heading", "text": "1 Introduction"},
+        {"page": 1, "block_id": "h2", "role": "subsection_heading", "text": "Study population"},
+        {"page": 1, "block_id": "h3", "role": "subsection_heading", "text": "Statistical analysis"},
+    ]
+    md = render_fulltext_markdown(
+        structured_blocks=structured,
+        resolved_metadata={},
+        figure_inventory={"matched_figures": [], "unmatched_assets": [], "unresolved_clusters": []},
+        table_inventory={"tables": [], "unmatched_assets": []},
+        page_count=1,
+        document_structure=None,
+        reader_payload={},
+    )
+
+    assert "## 1 Introduction" in md
+    assert "### Study population" in md
+    assert "### Statistical analysis" in md

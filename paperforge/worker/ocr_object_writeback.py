@@ -56,20 +56,24 @@ def _mark_owned(block: dict, *, family: str, owner_id: str, owner_role: str, rea
     block["_object_writeback_phase"] = "post_inventory"
     block["_object_consumed"] = True
 
-def _score_side_adjacent_text_claim(
+def _side_adjacent_evidence(
     block: dict,
     figure: dict,
     *,
     page_blocks: list[dict] = (),
     page_figures: list[dict] = (),
-) -> float:
-    """Score a side-adjacent figure note using explicit evidence weights.
+) -> tuple[float, float]:
+    """(evidence_score, evidence_coverage) for a side-adjacent figure note.
 
     Passing the mandatory geometric gates contributes 0.30. Text inside the
     visual bbox adds 0.25; otherwise >=50% vertical overlap plus <=40px side
     proximity adds 0.20. Matching caption font family/size adds 0.20, no
     competing figure adds 0.15, and no visual/column boundary adds 0.10. If
-    caption style is unavailable, its weight is omitted and remaining score normalized.
+    caption style is unavailable, its weight is removed from the denominator.
+
+    `evidence_score` is a decision input over *available* evidence, not a
+    calibrated probability; `evidence_coverage` records how much of the factor
+    set could be evaluated and is written next to the claim.
     """
     bbox = block.get("bbox") or [0, 0, 0, 0]
     figure_bbox = figure.get("cluster_bbox") or figure.get("asset_bbox")
@@ -83,21 +87,21 @@ def _score_side_adjacent_text_claim(
                 ys.extend([ab[1], ab[3]])
         figure_bbox = [min(xs), min(ys), max(xs), max(ys)] if xs else [0, 0, 0, 0]
     if len(bbox) < 4 or len(figure_bbox) < 4:
-        return 0.0
+        return 0.0, 0.0
     page = int(block.get("page", 0) or 0)
     if page != int(figure.get("page", 0) or 0):
-        return 0.0
+        return 0.0, 0.0
     y_overlap = max(0, min(bbox[3], figure_bbox[3]) - max(bbox[1], figure_bbox[1]))
     horizontal_gap = min(abs(figure_bbox[0] - bbox[2]), abs(bbox[0] - figure_bbox[2]))
     if y_overlap <= 0 or horizontal_gap > 40:
-        return 0.0
+        return 0.0, 0.0
     if str(block.get("role") or "") in PROTECTED_ROLES:
-        return 0.0
+        return 0.0, 0.0
     if str(block.get("raw_label") or "") != "text":
-        return 0.0
+        return 0.0, 0.0
     text = str(block.get("text") or "").strip()
     if not text or len(text.split()) > 80:
-        return 0.0
+        return 0.0, 0.0
 
     score = 0.30
     visual_bbox = figure.get("visual_bbox") or figure_bbox
@@ -124,6 +128,7 @@ def _score_side_adjacent_text_claim(
     captions = [
         candidate for candidate in page_blocks
         if str(candidate.get("block_id")) in caption_ids
+        and int(candidate.get("page", 0) or 0) == page
         and candidate.get("role") in {"figure_caption", "figure_caption_candidate"}
     ]
     block_signature = block.get("span_signature") or {}
@@ -206,7 +211,20 @@ def _score_side_adjacent_text_claim(
     )
     if not separator and not crosses_column_boundary:
         score += 0.10
-    return round(min(1.0, score / denominator), 4)
+    return round(min(1.0, score / denominator), 4), denominator
+
+
+def _score_side_adjacent_text_claim(
+    block: dict,
+    figure: dict,
+    *,
+    page_blocks: list[dict] = (),
+    page_figures: list[dict] = (),
+) -> float:
+    """Backwards-compatible float view of `_side_adjacent_evidence`."""
+    return _side_adjacent_evidence(
+        block, figure, page_blocks=page_blocks, page_figures=page_figures
+    )[0]
 
 def apply_object_writebacks(
     *, structured_blocks: list[dict], figure_inventory: dict, table_inventory: dict
@@ -389,7 +407,7 @@ def apply_object_writebacks(
             # Skip already-owned blocks
             if block.get("_object_writeback_phase"):
                 continue
-            score = _score_side_adjacent_text_claim(
+            score, coverage = _side_adjacent_evidence(
                 block,
                 fig,
                 page_blocks=structured_blocks,
@@ -425,6 +443,7 @@ def apply_object_writebacks(
                     "owner_role": claim.owner_role,
                     "association_reason": claim.association_reason,
                     "confidence": claim.confidence,
+                    "evidence_coverage": coverage,
                     "source_phase": claim.source_phase,
                     "source_block_ids": list(claim.source_block_ids),
                 })

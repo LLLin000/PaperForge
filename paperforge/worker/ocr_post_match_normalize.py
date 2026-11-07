@@ -17,6 +17,12 @@ def _sync_render_index_defaults(rows: list[dict]) -> None:
     """Mirror the legacy build_structured_blocks post-normalize sync."""
     for row in rows:
         role = row.get("role", "")
+        if row.get("_container_of"):
+            # Consumed by a Box callout: the container renders the text, the
+            # child must stay suppressed regardless of its own role.
+            row["render_default"] = False
+            row["index_default"] = role not in _CANDIDATE_ROLES
+            continue
         if row.get("_suppressed_heading"):
             row["render_default"] = False
             row["index_default"] = False
@@ -67,6 +73,12 @@ def post_match_normalize(
         live["role_candidate"] = live.get("role_candidate") or shadow.get("role")
         live["render_default"] = shadow.get("render_default", live.get("render_default"))
         live["index_default"] = shadow.get("index_default", live.get("index_default"))
+        # Box ownership is a shadow-normalize product; without it the renderer
+        # both drops the callout text and re-renders the children as body.
+        if shadow.get("_container_text") is not None:
+            live["_container_text"] = shadow["_container_text"]
+        if shadow.get("_container_of"):
+            live["_container_of"] = shadow["_container_of"]
     # Rescue: document-context corrections (same as legacy build_structured_blocks)
     paper_context: dict = {}
     if len(live_rows) >= 10:
