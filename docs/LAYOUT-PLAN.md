@@ -33,21 +33,44 @@ Selection used pages with mixed full-width/column content or three or more OCR c
 | Measure | Result |
 |---|---|
 | Blocks described | 10,430 / 10,430 (0 duplicated, 0 missing) |
-| Margin blocks | 1,988 (19%) |
+| Margin blocks (furniture roles only) | 1,767 (16.9%) |
 | Right-to-left column jumps, OCR order | 287 |
 | Right-to-left column jumps, plan order | 0 |
-| Adjacent pairs agreeing with OCR order | 9,222 / 9,843 (93.7%) |
-| Plan/OCR inversions | 621 |
-| `cross_column_jump` conflicts | 240 across 26 pages |
-| `ambiguous_column` (hold severity) | 164 |
+| Adjacent pairs agreeing with OCR order | 9,261 / 9,843 (94.1%) |
+| Plan/OCR inversions | 582 |
+| `ambiguous_column` (severity hold) | 201 blocks (keep their OCR position) |
 | `container_leak` | 3 |
-| Figure/caption pairs judged by the inventory | 606 matched, 191 with caption and asset more than 2% of the page height apart inside the same region |
+| Figure/caption pairs judged by the inventory | 606 matched, 195 flagged (64 at 5–15% of page height, 131 >15%) |
 
-Interpretation: the plan removes every order violation that its own regions define, keeps every block, and disagrees with the OCR order on about 6.6% of adjacent pairs. Disagreement is expected where OCR jumps columns (181 cases) and where a table interrupts a column. It is not evidence of correctness by itself — the plan's value is that each disagreement carries a region, a decision and a confidence, so a reviewer can check the claim instead of re-deriving the page.
+Interpretation: the plan removes every order violation its own regions define, keeps every block, and disagrees with the OCR order on about 5.9% of adjacent pairs. Agreement is not accuracy — the plan can be right where OCR is wrong — so the quality gate audits disagreements on real pages instead of optimising this number.
+
+## Quality gate (2026-11)
+
+| Gate | Result |
+|---|---|
+| Reading confidence inherits region evidence | yes: every `before` decision is capped by the confidence of the regions it touches (2,267 of 9,843 decisions now sit below 0.70) |
+| Margin only holds furniture | margin requires roles `noise` / `footnote` / `frontmatter_noise`; before this gate 2 body paragraphs and 2 section headings ("2. Methods", a 3.2 subsection) were moved to the page end |
+| Row-quantised ordering | labels on one visual row are ordered left-to-right (1% of page height tolerance); 621 → 571 inversions, and it fixed a β-TCP / β-TCP+PEMF flip seen on `28ALPCY7` p17 |
+| Figure/caption triage | `scripts/dev/layout_figcaption_audit.py` buckets the flagged pairs instead of re-matching them |
+| Disagreement triage | `scripts/dev/layout_regression_triage.py` lists every plan/OCR disagreement with regions, confidence and structural tags |
+
+### Visual audit (by the main agent, on rendered PDF pages)
+
+| Page | Verdict |
+|---|---|
+| `27MFWJWJ` p9 | plan worse: panel labels read (b, c, a) instead of (a, b, c), and DOI lines move after later body text |
+| `28ALPCY7` p17 | plan better after the row fix: `β-TCP` before `β-TCP+PEMF`, running head deferred |
+| `2E4EPHN2` p8 | tie: both orders match the visible figure/legend flow |
+| `2JG7RKFN` p1 | tie for body text; sidebar boxes (citation, dates, check-for-updates) differ, all furniture |
+| `38W7XV4F` p7 | tie: identical order |
+| `2H8MZ27H` p6 | tie at page level: 12-panel figure and both columns match; differences are panel-label placement |
+
+The audited sample is small (6 pages, chosen where the plan disagrees most). It is enough to reject "the plan is simply better" and to name the failure class that remains: multi-panel figures whose labels are separate blocks, and DOI/URL lines inside figure bands.
 
 ### Known limits
 
-- Running heads and folios are treated as furniture for the whole page band; a page whose body really starts in the top 8% would lose those blocks from the body path (they stay in coverage).
-- Column detection needs at least two blocks per side and a 3% gutter. Weak splits (two blocks per side) are assumed column-major at confidence 0.5; the alternative — one region ordered by y — interleaves the two columns, which is never right. On the 40-paper set this raised adjacent-pair agreement from 93.4% to 93.7% (646 → 621 inversions), improving 21 papers and worsening 8.
+- Running heads and folios are placed last; a paper whose body starts in the top 8% keeps those blocks in the body flow (they are not margin unless their role is furniture).
+- Column detection needs at least two blocks per side and a 3% gutter; weak splits are assumed column-major at confidence 0.5.
 - Staggered columns (one column starts above the other) produce HOLD instead of an order.
 - Figure/caption proximity is reported, not used to re-decide ownership. Phase C is where the inventory starts feeding structure decisions.
+- The evaluation input is rebuilt from `canonical/blocks.raw.jsonl` (seed roles + pre-match), not the production `structure/blocks.structured.jsonl`; the report says so and must not be read as a render-parity measurement.

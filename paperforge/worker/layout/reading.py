@@ -22,8 +22,18 @@ from .model import (
 
 
 def _key(uid: str, refs: dict[str, BlockRef]) -> tuple[float, float, str]:
-    bbox = refs[uid].bbox
-    return (bbox[1], bbox[0], uid) if bbox is not None else (float("inf"), float("inf"), uid)
+    """Reading order inside one region.
+
+    Y is quantised into 1%-of-page-height rows before X is compared: labels
+    that sit on the same visual row differ by a few pixels in `bbox` (baseline
+    jitter), and ordering them by raw Y flips them left-to-right.
+    """
+    ref = refs[uid]
+    bbox = ref.bbox
+    if bbox is None:
+        return (float("inf"), float("inf"), uid)
+    row = round(bbox[1] / max(ref.page_height * 0.01, 1.0))
+    return (row, bbox[0], uid)
 
 
 def _heading(ref: BlockRef) -> bool:
@@ -121,6 +131,11 @@ def build_reading_order(
             confidence, reason = 0.7, "column hand-off supported by band geometry"
         else:
             confidence, reason = 0.8, "cross-region band boundary"
+        if relation == RELATION_BEFORE:
+            region_confidence = min(first_region.confidence, second_region.confidence)
+            if region_confidence < confidence:
+                confidence = region_confidence
+                reason += f" (region confidence {region_confidence:.2f})"
         decisions.append(OrderDecision(before, after, relation, confidence, reason))
         if relation == RELATION_HOLD:
             for uid in (before, after):
