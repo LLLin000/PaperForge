@@ -112,3 +112,18 @@ def test_box_merge_rejects_body_beyond_column_right_bound() -> None:
     _merge_box_content(blocks)
     assert "_container_text" not in blocks[0]
     assert blocks[1]["role"] == "body_paragraph"
+
+def test_box_merge_ignores_non_body_blocks_in_the_other_column() -> None:
+    """A right-column caption below a left-column Box must not end the merge."""
+    from paperforge.worker.ocr_document import _merge_box_content
+
+    blocks = [
+        {"page": 1, "block_id": "box", "role": "structured_insert", "text": "Box 1", "bbox": [70, 100, 220, 130], "page_width": 1200},
+        {"page": 1, "block_id": "right-caption", "role": "figure_caption", "text": "Figure 2.", "bbox": [650, 140, 1100, 170], "page_width": 1200},
+        {"page": 1, "block_id": "left-body", "role": "body_paragraph", "text": "Still box content.", "bbox": [70, 140, 560, 180], "page_width": 1200},
+    ]
+    _merge_box_content(blocks)
+
+    assert blocks[0].get("_container_text") == "Box 1\nStill box content."
+    assert blocks[2].get("_container_of") == "box"
+    assert blocks[2]["role"] == "body_paragraph"

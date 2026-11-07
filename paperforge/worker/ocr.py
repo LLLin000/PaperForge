@@ -2207,7 +2207,9 @@ def postprocess_ocr_result(
         # Recover empty OCR text using the same source PDF
         backfill_missing_text_from_pdf(all_raw_blocks, source_pdf_path)
 
-    write_raw_blocks_jsonl(artifacts.blocks_raw, all_raw_blocks)
+    from paperforge.worker import ocr_blocks as _ocr_blocks
+
+    _ocr_blocks.write_raw_blocks_jsonl(artifacts.blocks_raw, all_raw_blocks)
     normalize_mode = "seed_only" if _ocr_pipeline_v3_enabled() else "legacy"
     structured, doc_structure = build_structured_blocks(
         all_raw_blocks,
@@ -2223,7 +2225,7 @@ def postprocess_ocr_result(
             source_frontmatter_anchors=getattr(doc_structure, "source_frontmatter_anchors", None),
             document_structure=doc_structure,
         )
-    write_structured_blocks_jsonl(artifacts.blocks_structured, structured)
+    _ocr_blocks.write_structured_blocks_jsonl(artifacts.blocks_structured, structured)
     # Write role-level span profiles
     from paperforge.worker.ocr_profiles import write_role_span_profiles
 
@@ -2299,7 +2301,7 @@ def postprocess_ocr_result(
 
     # Re-persist structured blocks with writeback roles (table_html, figure_asset)
     # ponytail: writes entire list again; if throughput matters, write only changed blocks
-    write_structured_blocks_jsonl(artifacts.blocks_structured, structured)
+    _ocr_blocks.write_structured_blocks_jsonl(artifacts.blocks_structured, structured)
 
     # --- Phase 2: object artifacts ---
     from paperforge.worker.ocr_objects import extract_and_write_objects

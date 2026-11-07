@@ -1062,7 +1062,15 @@ def test_section_heading_renders_with_prefix() -> None:
     assert "## 1 Introduction" in md, f"Expected ## prefix, got: {md[:200]}"
 
 
-def test_unumbered_subsection_headings_use_double_hash_by_default() -> None:
+def test_mixed_numbering_keeps_role_and_number_agreement() -> None:
+    """Role depth is authoritative; a number only states its own depth.
+
+    This fixture used to expect `## Introduction` because one numbered heading
+    promoted every unnumbered heading in the document. That rule also flattened
+    an unnumbered subsection nested under a numbered section (`1 Introduction`
+    followed by `Study population` became `##`), which is the case the role
+    authority removes; see the review follow-up.
+    """
     from paperforge.worker.ocr_render import render_fulltext_markdown
 
     blocks = [
@@ -1078,7 +1086,7 @@ def test_unumbered_subsection_headings_use_double_hash_by_default() -> None:
     )
 
     lines = md.splitlines()
-    assert "## Introduction" in lines
+    assert "### Introduction" in lines
     assert "### 2.5 Electrical stimulation" in lines
 
 

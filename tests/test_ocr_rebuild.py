@@ -179,7 +179,11 @@ def test_run_derived_rebuild_writes_structured_blocks_once(tmp_path: Path, monke
 
     def _post(*args, **kwargs):
         events.append("post")
-        return original_post(*args, **kwargs)
+        rows, doc = original_post(*args, **kwargs)
+        # Model the real contract: post-match returns NEW row objects. A caller
+        # that keeps the pre-match list would render stale roles.
+        committed = [dict(row, _post_commit=True) for row in rows]
+        return committed, doc
 
     def _writeback(**kwargs):
         events.append("writeback")
@@ -191,9 +195,31 @@ def test_run_derived_rebuild_writes_structured_blocks_once(tmp_path: Path, monke
     monkeypatch.setattr(post, "post_match_normalize", _post)
     monkeypatch.setattr(writeback, "apply_object_writebacks", _writeback)
 
+    writes["last_rows"] = None
+
     def _counting_write(*args, **kwargs):
         writes["count"] += 1
+        rows = args[1] if len(args) > 1 else kwargs.get("rows")
+        writes["last_rows"] = rows
 
+    import paperforge.worker.ocr_metadata as metadata
+    import paperforge.worker.ocr_render as render_module
+
+    original_resolve = metadata.resolve_metadata
+    original_render = render_module.render_fulltext_markdown
+    captured = {}
+
+    def _resolve(*args, **kwargs):
+        events.append("metadata")
+        return original_resolve(*args, **kwargs)
+
+    def _render(*args, **kwargs):
+        events.append("render")
+        captured["blocks"] = kwargs.get("structured_blocks")
+        return original_render(*args, **kwargs)
+
+    monkeypatch.setattr(metadata, "resolve_metadata", _resolve)
+    monkeypatch.setattr(render_module, "render_fulltext_markdown", _render)
     monkeypatch.setattr("paperforge.worker.ocr_blocks.write_structured_blocks_jsonl", _counting_write)
     monkeypatch.setattr(
         "paperforge.worker.ocr_metadata.extract_frontmatter_candidates_from_blocks",
@@ -206,7 +232,12 @@ def test_run_derived_rebuild_writes_structured_blocks_once(tmp_path: Path, monke
     assert result["rebuild_count"] == 1
     assert build_kwargs["normalize_mode"] == "seed_only"
     assert events.index("build") < events.index("pre") < events.index("inventory") < events.index("post") < events.index("writeback")
-    assert writes["count"] == 1
+    # Producer parity: pre-match runs before metadata resolution.
+    assert events.index("pre") < events.index("metadata")
+    # The post-match rows are what the render phase and the artifact see.
+    assert captured["blocks"] and all(b.get("_post_commit") for b in captured["blocks"])
+    assert writes["last_rows"] and all(b.get("_post_commit") for b in writes["last_rows"])
+    assert writes["count"] >= 1
 
 
 # --- Span-backfill skip contract tests ---

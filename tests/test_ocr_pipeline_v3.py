@@ -430,3 +430,39 @@ def test_v3_real_paper_parity_matches_legacy_contract(key: str, tmp_path) -> Non
     assert _count_truthy(v3["rows"], "index_default") == _count_truthy(legacy["rows"], "index_default")
     assert len(v3["fig"].get("matched_figures", [])) == len(legacy["fig"].get("matched_figures", []))
     assert len(v3["tab"].get("tables", [])) == len(legacy["tab"].get("tables", []))
+
+def test_post_match_commits_box_container_ownership(monkeypatch) -> None:
+    """Box merge happens in the shadow pass; the live rows must inherit it.
+
+    Otherwise the renderer drops `_container_text` and re-renders the consumed
+    children as body paragraphs (duplicated text).
+    """
+    from types import SimpleNamespace
+
+    import paperforge.worker.ocr_post_match_normalize as post
+
+    rows = [
+        {"block_id": "box", "page": 1, "role": "structured_insert", "seed_role": "structured_insert"},
+        {"block_id": "child", "page": 1, "role": "body_paragraph", "seed_role": "body_paragraph"},
+    ]
+
+    def _shadow(blocks, **kwargs):
+        shadow = [dict(b) for b in blocks]
+        shadow[0]["_container_text"] = "Box 1: Summary\nBox body"
+        shadow[1]["_container_of"] = "box"
+        shadow[1]["render_default"] = False
+        return SimpleNamespace(source_frontmatter_anchors={}), shadow
+
+    monkeypatch.setattr(post, "normalize_document_structure", _shadow)
+    monkeypatch.setattr(post, "build_role_span_profiles", lambda rows: {})
+
+    live, _doc = post.post_match_normalize(
+        rows, {}, {}, document_structure=SimpleNamespace(source_frontmatter_anchors={})
+    )
+
+    owner = next(r for r in live if r["block_id"] == "box")
+    child = next(r for r in live if r["block_id"] == "child")
+    assert owner["_container_text"].startswith("Box 1")
+    assert child["_container_of"] == "box"
+    # _sync_render_index_defaults must not resurrect a consumed child.
+    assert child["render_default"] is False
