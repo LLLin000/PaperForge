@@ -235,6 +235,44 @@ Three patterns:
 | `reference_item → backmatter_body` on author-bio paragraphs | 4 | current chain labels bios as references; the older output's `backmatter_body` looks more correct — flagged as a possible current-code regression |
 | `None → ""` / `None → figure_00X` on object owners | 11 | same swallowing pattern plus an empty-string owner normalisation |
 
+## Figure/table error audit (F0)
+
+`scripts/dev/figure_table_error_audit.py` builds a bounded, deterministic
+review set. It never decides that a pair is wrong: every case is
+`UNREVIEWED`, with the caption, candidate assets, current inventory state,
+distance and edge-gap evidence, layout region kind, and any pass provenance the
+inventory carries.
+
+Strata: suspicious pairs by centre-distance bucket, matched-pair negative
+controls, the five known ghost cases, and table caption/asset cases. The quota
+is global per stratum, so the review set stays bounded regardless of corpus
+size; ghost cases are spread one per paper.
+
+### Result (40-paper corpus + all five ghost keys)
+
+| Stratum | Cases |
+|---|---:|
+| 2–5% | 0 |
+| 5–15% | 10 |
+| >15% | 10 |
+| normal control | 10 |
+| ghost | 10 |
+| table | 10 |
+
+Two observations from building it:
+
+1. **The 2–5% band is empty.** `evaluate_plan` flags pairs beyond 2% of page
+   height; matched captions under a figure routinely exceed that because the
+   metric measures centre-to-centre distance, which grows with figure height.
+   The audit therefore records an `edge_gap_ratio` (nearest caption/object edges)
+   next to the centre distance; adjacency, not centre distance, is what tells
+   "caption under a tall figure" from "caption associated with the wrong
+   object".
+2. **Ghost coverage needs the ghost papers explicitly.** Three of the five ghost
+   keys are outside the 40-paper sample, so the audit always unions them in.
+
+The 195 suspicious pairs were never treated as 195 errors; this script exists to
+turn them into a 50-case set a human can review.
 ## Reading-order diagnosis (R1)
 
 `scripts/dev/layout_reading_diagnosis.py` compares three sequences per page —
