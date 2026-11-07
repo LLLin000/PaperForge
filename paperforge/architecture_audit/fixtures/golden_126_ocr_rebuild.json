@@ -95,10 +95,10 @@
         "effect_kind": "materialization_build",
         "evidence": {
           "file": "paperforge/worker/ocr_rebuild.py",
-          "file_digest": "sha256:50022d47ee4d6af8d8e1779db856d4adc88ce0ef5985281d8debe54fa67a6d32",
+          "file_digest": "sha256:53d5e0a236c00e20fcf4667345677eb72b4e6a28b776aa3c7ca08db1671ae2b2",
           "symbol": "run_derived_rebuild_for_keys",
-          "line_start": 733,
-          "line_end": 788,
+          "line_start": 744,
+          "line_end": 799,
           "extractor": "python_ast",
           "epistemic_status": "observed_static",
           "confidence": "exact"
@@ -112,21 +112,21 @@
         "via_publication_protocol": false,
         "evidence": {
           "file": "paperforge/worker/ocr_rebuild.py",
-          "file_digest": "sha256:50022d47ee4d6af8d8e1779db856d4adc88ce0ef5985281d8debe54fa67a6d32",
+          "file_digest": "sha256:53d5e0a236c00e20fcf4667345677eb72b4e6a28b776aa3c7ca08db1671ae2b2",
           "symbol": "run_derived_rebuild_for_keys",
-          "line_start": 733,
-          "line_end": 788,
+          "line_start": 744,
+          "line_end": 799,
           "extractor": "python_ast",
           "epistemic_status": "observed_static",
           "confidence": "exact"
         }
       }
     ],
-    "source_digest": "sha256:ab6108a7d4d9e7ef6e6c238264fc23de7377ef70b7430b42b330c8286150bd70",
+    "source_digest": "sha256:f18ddaadf13972f0c4c6358ca7a31d3692d0caf349e4024e8fff033e61706cb4",
     "parse_errors": [],
     "excluded_roots": [],
     "run_metadata": {
-      "repository_revision": "d246cd24",
+      "repository_revision": "636876fc",
       "repository_dirty": false,
       "tool_version": "1.0.0",
       "extractor_versions": {
