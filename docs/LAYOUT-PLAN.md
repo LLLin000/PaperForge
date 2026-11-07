@@ -225,6 +225,16 @@ The builder was validated against a real serial `_rebuild_one_paper` run on
 what audits consume; disk artifacts are a versioned snapshot and are only used
 for this parity check.
 
+Across the 40-paper corpus: row identity matches on every paper, figure claims
+match on every paper, and only 19 rows differ in value (8 role, 11 owner).
+Three patterns:
+
+| pattern | rows | reading |
+|---|---:|---|
+| `body_paragraph → figure_inner_text` (owned by a figure) | 4 | older disk output swallowed body text into figures; current chain does not |
+| `reference_item → backmatter_body` on author-bio paragraphs | 4 | current chain labels bios as references; the older output's `backmatter_body` looks more correct — flagged as a possible current-code regression |
+| `None → ""` / `None → figure_00X` on object owners | 11 | same swallowing pattern plus an empty-string owner normalisation |
+
 ### Known limits
 
 - Running heads and folios are placed last; a paper whose body starts in the top 8% keeps those blocks in the body flow (they are not margin unless their role is furniture).
