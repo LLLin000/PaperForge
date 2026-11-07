@@ -41,7 +41,7 @@ Selection used pages with mixed full-width/column content or three or more OCR c
 | `cross_column_jump` conflicts | 181 across 26 pages |
 | `ambiguous_column` (hold severity) | 164 |
 | `container_leak` | 3 |
-| Figure/caption pairs judged by the inventory | 606 matched, 191 with caption and asset in different regions |
+| Figure/caption pairs judged by the inventory | 606 matched, 191 with caption and asset more than 2% of the page height apart inside the same region |
 
 Interpretation: the plan removes every order violation that its own regions define, keeps every block, and disagrees with the OCR order on about 6.6% of adjacent pairs. Disagreement is expected where OCR jumps columns (181 cases) and where a table interrupts a column. It is not evidence of correctness by itself — the plan's value is that each disagreement carries a region, a decision and a confidence, so a reviewer can check the claim instead of re-deriving the page.
 
