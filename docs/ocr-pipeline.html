@@ -18,6 +18,8 @@
     --hold: #7a2f6f;
     --hold-soft: #f6e8f4;
     --code: #f3f3f2;
+    --error: #c0392b;
+    --info: #0b6bcb;
     --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
   }
   @media (prefers-color-scheme: dark) {
@@ -34,6 +36,8 @@
       --hold: #d9a3d0;
       --hold-soft: #33232f;
       --code: #242428;
+      --error: #ff6b5e;
+      --info: #6fb3ff;
     }
   }
   * { box-sizing: border-box; }
@@ -290,8 +294,8 @@
   <text class="lbl-s" x="36" y="78">canonical → structure → render</text>
 
   <rect class="box box-accent" x="330" y="30" width="300" height="70" rx="7"/>
-  <text class="lbl" x="346" y="56">structure/blocks.structured.jsonl</text>
-  <text class="lbl-s" x="346" y="78">只读输入</text>
+  <text class="lbl" x="346" y="52">canonical/blocks.raw.jsonl</text>
+  <text class="lbl-s" x="346" y="74">重建 seed 角色 + pre_match 后作为输入</text>
 
   <rect class="box box-hold" x="690" y="30" width="290" height="70" rx="7"/>
   <text class="lbl" x="706" y="56">layout/（只读）</text>
@@ -320,11 +324,11 @@
 <h3>它在 40 篇复杂版式论文上的实测（587 页，10,430 块）</h3>
 <table>
   <tr><th>指标</th><th>结果</th><th>说明</th></tr>
-  <tr><td>块覆盖</td><td>10,430 / 10,430</td><td>缺失 0、重复 0；1,988 块是页眉页脚，单独计入</td></tr>
+  <tr><td>块覆盖</td><td>10,430 / 10,430</td><td>缺失 0、重复 0；1,767 块是页眉页脚，单独计入</td></tr>
   <tr><td>右→左跨栏跳跃</td><td>OCR 287 处 / 计划 0 处</td><td>计划按栏序读取，不再跨栏折返</td></tr>
-  <tr><td>与 OCR 相邻顺序一致</td><td>93.7%（621 / 9,843 处不同）</td><td>这是“一致率”，不是“准确率”</td></tr>
-  <tr><td>检测到的 OCR 跨栏冲突</td><td>240 处</td><td>计划认为这些位置 OCR 顺序跳栏</td></tr>
-  <tr><td>HOLD（无法判定）</td><td>184 块</td><td>贴着栏缝，保留 OCR 位置而不是猜</td></tr>
+  <tr><td>与 OCR 相邻顺序一致</td><td>94.1%（582 / 9,843 处不同）</td><td>这只是“与 OCR 的一致率”，不是准确率；质量闸门另有人工核验</td></tr>
+  <tr><td>检测到的 OCR 跨栏冲突</td><td>244 处</td><td>计划认为这些位置 OCR 顺序跳栏</td></tr>
+  <tr><td>HOLD（无法判定）</td><td>201 块</td><td>严重度 hold；保留 OCR 位置，不进入高置信顺序</td></tr>
 </table>
 
 <figure class="cmp">
@@ -335,6 +339,8 @@
 
 <div class="callout hold">
   <strong>为什么 HOLD 重要</strong>：版面证据不足时强行排序，等于把不确定性变成错误。计划把这类块单独标出，留给后续阶段或人工，而不是“看起来完整”。
+  <br><br>
+  <strong>质量闸门还发现了两件事</strong>：① 阅读判定现在继承区域置信度——两栏各 2 块的弱分栏只能给出 0.50 置信，不允许包装成 0.70 的“跨栏交接”；② 页眉页脚只接受 noise/footnote 类角色，正文段落和小节标题即使落在页面 8% 带内也留在正文流里（此前有 2 个正文段落和 2 个小节标题被当成家具移到页尾）。
 </div>
 
 <h2>6. 不变量清单</h2>
