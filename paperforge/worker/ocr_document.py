@@ -3018,6 +3018,24 @@ def analyze_document_structure(blocks: list[dict]) -> DocumentStructure:
     return ds
 
 
+def _explicit_page_widths(blocks: list[dict]) -> dict[int, float]:
+    """Page widths stated by the OCR layer itself (no bbox fallback).
+
+    `_page_widths_by_page` estimates from the widest recognised bbox, which is
+    fine for banding but wrong for column ownership: a page whose right column
+    was not detected would look like a narrow single-column page. Box merging
+    therefore requires the explicit value.
+    """
+    widths: dict[int, float] = {}
+    for block in blocks:
+        width = float(block.get("page_width") or 0)
+        if width <= 0:
+            continue
+        page = int(block.get("page", 0) or 0)
+        widths[page] = max(widths.get(page, 0.0), width)
+    return widths
+
+
 def _page_widths_by_page(blocks: list[dict]) -> dict[int, float]:
     widths: dict[int, float] = {}
     for block in blocks:
@@ -3400,7 +3418,7 @@ def _merge_box_content(blocks: list[dict]) -> None:
          "reference_heading", "backmatter_heading", "figure_caption_candidate", "table_caption_candidate"}
     )
 
-    page_widths = _page_widths_by_page(blocks)
+    page_widths = _explicit_page_widths(blocks)
     ordered = sorted(blocks, key=lambda item: (item.get("page", 0), _block_y_top(item), str(item.get("block_id") or "")))
     for block in ordered:
         text = (block.get("text") or "").strip()
