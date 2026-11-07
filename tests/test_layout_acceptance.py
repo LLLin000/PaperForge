@@ -212,3 +212,23 @@ def test_figure_caption_identity_is_undetermined_when_block_ids_repeat() -> None
     caption = metrics["figure_caption"]
     assert caption["matched"] == 0
     assert caption["undetermined"] >= 1
+
+
+def test_plan_survives_json_round_trip() -> None:
+    """A serialized plan keeps its identities, so acceptance still works."""
+    blocks = _single_column_page()
+    plan = build_layout_plan(blocks)
+    restored = plan.__class__.from_dict(plan.to_dict())
+
+    result = assess_page(restored, restored.pages[0], blocks)
+    assert result.status == STATUS_ACCEPT
+    assert restored.identities == plan.identities
+
+
+def test_plan_without_identities_cannot_take_over() -> None:
+    blocks = _single_column_page()
+    plan = build_layout_plan(blocks)
+    plan.identities = {}
+    result = assess_page(plan, plan.pages[0], blocks)
+    assert result.status == STATUS_REJECT
+    assert result.fallback_reason == "missing_identity"
