@@ -86,7 +86,16 @@ def collect_block_refs(blocks: list[dict]) -> list[BlockRef]:
                     text_len=len(text.strip()),
                     page_width=width,
                     page_height=height,
-                    fingerprint=block_fingerprint(page, block_id, bbox, block.get("role"), text),
+                    fingerprint=block_fingerprint(
+                        page,
+                        block_id,
+                        bbox,
+                        block.get("role"),
+                        text,
+                        render_default=block.get("render_default"),
+                        index_default=block.get("index_default"),
+                        owner_id=block.get("_object_owner_id"),
+                    ),
                 )
             )
     return refs

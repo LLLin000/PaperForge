@@ -36,9 +36,9 @@ Selection used pages with mixed full-width/column content or three or more OCR c
 | Margin blocks (furniture roles only) | 1,767 (16.9%) |
 | Right-to-left column jumps, OCR order | 287 |
 | Right-to-left column jumps, plan order | 0 |
-| Adjacent pairs agreeing with OCR order | 9,261 / 9,843 (94.1%) |
-| Plan/OCR inversions | 582 |
-| `ambiguous_column` (severity hold) | 201 blocks (keep their OCR position) |
+| Adjacent pairs agreeing with OCR order | 9,238 / 9,843 (93.9%) |
+| Plan/OCR inversions | 605 |
+| `ambiguous_column` (severity hold) | 114 blocks (keep their OCR position) |
 | `container_leak` | 3 |
 | Figure/caption pairs judged by the inventory | 606 matched, 195 flagged (64 at 5–15% of page height, 131 >15%) |
 
@@ -131,6 +131,58 @@ duplicate ids make `(page, block_id) → uid` ambiguous, so those keys are
 dropped and counted as `figure_caption.undetermined` instead of being
 attributed to the wrong block. The 195 suspicious pairs remain distance
 observations, not ownership decisions.
+
+## Shadow render (C1)
+
+`scripts/dev/layout_shadow_render.py` builds the **final** structured blocks
+(post-match + object writebacks), asks the acceptance gate, and renders the
+same document twice with the existing renderer:
+
+- baseline: `layout_order=None`, the renderer's own order;
+- shadow: accepted, in-scope pages follow the plan's order;
+- the same run also renders with `layout_order={}` and asserts it is a no-op.
+
+Nothing is written to the OCR vault; the report is the only output.
+
+### Renderer seam
+
+`render_fulltext_markdown(..., layout_order=...)` is the only production
+change. It is off by default. Blocks are stamped with `_layout_source_index`
+*before* `_convert_footnotes_to_callouts`, because that function replaces block
+dicts and `id(block)` cannot be used for mapping. The override is applied
+after the renderer's own tail ordering and before the body traversal, and only
+for pages listed in the map.
+
+Scope for now: pages with a container region, a reference/backmatter role, or
+an object-owning block stay on the baseline path.
+
+### Measured (40 papers, 587 pages, final blocks)
+
+| Threshold | ACCEPT | in scope | changed pages | markdown | block multiset | headings | empty override |
+|---|---:|---:|---:|---|---|---|---|
+| 0.80 (default) | 48 | 9 | **0** | equal | equal | equal | no-op |
+| 0.70 (diagnostic, not adopted) | 224 | 76 | **0** | equal | equal | equal | n/a |
+
+C1 result: with the gate as designed, no accepted page changes what the
+renderer emits — the plan order coincides with the renderer's own order on
+those pages. Complex two-column pages are HOLD, so the reading-order benefit is
+not yet observable.
+
+### What C1 found in the region builder
+
+The first shadow run at 0.70 showed 16 changed pages and one heading-order
+regression (`38W7XV4F` p15: a level-4 heading before its level-3 parent). The
+cause was a single-column page split into two "columns" — headings in one,
+paragraphs in the other — because column detection compared **centres** and a
+wide heading's centre differs from a narrow paragraph's. Splitting now also
+requires the two clusters' horizontal ranges to be (almost) disjoint; the
+single-column pages stay one region, and the regression disappears.
+
+Cost: adjacent-pair agreement moved 94.1% → 93.9% (582 → 605 inversions across
+the corpus) because a few pages that were split before are now correctly
+merged. C1 also confirmed `accepted_order` is a strict permutation (rejected
+otherwise) and that the fingerprint covers `render_default`, `index_default`
+and `_object_owner_id`.
 
 ### Known limits
 
