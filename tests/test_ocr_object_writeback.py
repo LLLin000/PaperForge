@@ -360,3 +360,57 @@ def test_contained_figure_text_stamps_ownership_evidence() -> None:
     assert inner["_object_consumed"] is True
     assert "inner1" in figure_inventory["matched_figures"][0].get("consumed_block_ids", [])
     assert any(c["owner_id"] == "fig1" and c["association_reason"] == "contained" for c in report["claims"])
+
+def test_side_adjacent_claim_records_evidence_coverage() -> None:
+    """A normalised score must not be reported as a calibrated probability."""
+    from paperforge.worker.ocr_object_writeback import _side_adjacent_evidence, apply_object_writebacks
+
+    note = {
+        "block_id": "note",
+        "page": 1,
+        "role": "body_paragraph",
+        "raw_label": "text",
+        "text": "Panel note",
+        "bbox": [80, 150, 90, 180],
+        "_in_visual_container": True,
+    }
+    figure = {"figure_id": "fig1", "page": 1, "cluster_bbox": [100, 100, 300, 300]}
+
+    score, coverage = _side_adjacent_evidence(note, figure)
+    assert score >= 0.9
+    assert coverage < 1.0, "caption style was not evaluable; coverage must say so"
+
+    report = apply_object_writebacks(
+        structured_blocks=[note],
+        figure_inventory={"matched_figures": [figure]},
+        table_inventory={"tables": []},
+    )
+    claim = report["claims"][0]
+    assert claim["confidence"] >= 0.9
+    assert claim["evidence_coverage"] == coverage
+
+
+def test_side_adjacent_caption_style_is_page_scoped() -> None:
+    """A same-id caption on another page must not supply style evidence."""
+    from paperforge.worker.ocr_object_writeback import _side_adjacent_evidence
+
+    note = {
+        "block_id": "note",
+        "page": 1,
+        "role": "body_paragraph",
+        "raw_label": "text",
+        "text": "Panel note",
+        "bbox": [80, 150, 90, 180],
+        "_in_visual_container": True,
+        "span_metadata": {"font": "Arial", "size": 10},
+    }
+    figure = {"figure_id": "fig1", "page": 1, "cluster_bbox": [100, 100, 300, 300], "legend_block_id": "cap"}
+    caption_other_page = {
+        "block_id": "cap",
+        "page": 2,
+        "role": "figure_caption",
+        "span_metadata": {"font": "Arial", "size": 10},
+    }
+
+    _score, coverage = _side_adjacent_evidence(note, figure, page_blocks=[note, caption_other_page])
+    assert coverage < 1.0, "the caption was on another page; style is not evaluable"
