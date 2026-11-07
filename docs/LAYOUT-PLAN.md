@@ -36,9 +36,9 @@ Selection used pages with mixed full-width/column content or three or more OCR c
 | Margin blocks | 1,988 (19%) |
 | Right-to-left column jumps, OCR order | 287 |
 | Right-to-left column jumps, plan order | 0 |
-| Adjacent pairs agreeing with OCR order | 9,197 / 9,843 (93.4%) |
-| Plan/OCR inversions | 646 |
-| `cross_column_jump` conflicts | 181 across 26 pages |
+| Adjacent pairs agreeing with OCR order | 9,222 / 9,843 (93.7%) |
+| Plan/OCR inversions | 621 |
+| `cross_column_jump` conflicts | 240 across 26 pages |
 | `ambiguous_column` (hold severity) | 164 |
 | `container_leak` | 3 |
 | Figure/caption pairs judged by the inventory | 606 matched, 191 with caption and asset more than 2% of the page height apart inside the same region |
@@ -48,6 +48,6 @@ Interpretation: the plan removes every order violation that its own regions defi
 ### Known limits
 
 - Running heads and folios are treated as furniture for the whole page band; a page whose body really starts in the top 8% would lose those blocks from the body path (they stay in coverage).
-- Column detection needs at least three blocks per side; sparse bands stay single-column at confidence 0.5.
+- Column detection needs at least two blocks per side and a 3% gutter. Weak splits (two blocks per side) are assumed column-major at confidence 0.5; the alternative — one region ordered by y — interleaves the two columns, which is never right. On the 40-paper set this raised adjacent-pair agreement from 93.4% to 93.7% (646 → 621 inversions), improving 21 papers and worsening 8.
 - Staggered columns (one column starts above the other) produce HOLD instead of an order.
 - Figure/caption proximity is reported, not used to re-decide ownership. Phase C is where the inventory starts feeding structure decisions.

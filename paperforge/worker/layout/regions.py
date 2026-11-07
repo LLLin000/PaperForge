@@ -146,13 +146,18 @@ def build_region_tree(refs: list[BlockRef], page: int) -> list[Region]:
         if split is not None:
             left_uids = {item[1] for item in centers[:split]}
             right_uids = {item[1] for item in centers[split:]}
-            if len(left_uids) >= 3 and len(right_uids) >= 3:
+            if len(left_uids) >= 2 and len(right_uids) >= 2:
+                # Two blocks either side is enough to read column-major: keeping
+                # them in one region interleaves the columns by y, which is the
+                # one order that is never right for a two-column band.
                 groups = [[ref for ref in members if ref.uid in left_uids],
                           [ref for ref in members if ref.uid in right_uids]]
-                confidence = 0.75
+                confidence = 0.75 if min(len(left_uids), len(right_uids)) >= 3 else 0.5
+                if confidence < 0.75:
+                    evidence += ("two blocks per column; column order assumed",)
             else:
                 confidence = 0.5
-                evidence += ("gutter clusters below 3-block threshold",)
+                evidence += ("gutter clusters below 2-block threshold or overlapping",)
         if not members:
             continue
         for group in groups:
