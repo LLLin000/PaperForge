@@ -13,7 +13,7 @@ from collections.abc import Iterable
 from typing import Any
 
 from .conflicts import detect_conflicts
-from .model import BlockRef, LayoutPlan, PagePlan
+from .model import BlockRef, LayoutPlan, PagePlan, block_fingerprint
 from .reading import build_reading_order
 from .regions import build_region_tree
 
@@ -73,17 +73,20 @@ def collect_block_refs(blocks: list[dict]) -> list[BlockRef]:
         ordered = sorted(entries, key=sort_key)
         for position, (raw_index, block) in enumerate(ordered):
             text = str(block.get("text") or "")
+            bbox = _bbox_tuple(block)
+            block_id = str(block.get("block_id") or "")
             refs.append(
                 BlockRef(
                     uid=f"p{page}:{position:04d}",
                     page=page,
-                    block_id=str(block.get("block_id") or ""),
-                    bbox=_bbox_tuple(block),
+                    block_id=block_id,
+                    bbox=bbox,
                     raw_index=raw_index,
                     role=block.get("role"),
                     text_len=len(text.strip()),
                     page_width=width,
                     page_height=height,
+                    fingerprint=block_fingerprint(page, block_id, bbox, block.get("role"), text),
                 )
             )
     return refs
@@ -136,4 +139,5 @@ def build_layout_plan(blocks: list[dict]) -> LayoutPlan:
         stats["conflicts"] += len(conflicts)
 
     plan.stats = stats
+    plan.identities = {ref.uid: ref.fingerprint for ref in refs}
     return plan

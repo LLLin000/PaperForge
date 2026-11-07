@@ -9,6 +9,7 @@ The contract lives in :mod:`paperforge.worker.layout.model`; the entry point is
 :func:`paperforge.worker.layout.plan.build_layout_plan`.
 """
 
+from .acceptance import PageAcceptance, assess_page, assess_plan
 from .model import (
     BlockRef,
     Conflict,
@@ -28,4 +29,7 @@ __all__ = [
     "Region",
     "build_layout_plan",
     "collect_block_refs",
+    "PageAcceptance",
+    "assess_page",
+    "assess_plan",
 ]
