@@ -593,7 +593,7 @@
   ],
   "classification": "CAPTION_MISCLASSIFIED",
   "confidence": "high",
-  "evidence": "old text is body prose referencing figures ('Figure 1a and Figure S2 show the fabrication process...'), not a figure caption; caption classification prevents association",
+  "evidence": "old text is body prose referencing figures, not a figure caption; caption classification prevents association",
   "proposed_action": "fix caption classification",
   "overlay_image": "docs/evidence/m2a/8CCATQE3/page_overlay_figure_s001.jpg",
   "thumbnail_paths": [
