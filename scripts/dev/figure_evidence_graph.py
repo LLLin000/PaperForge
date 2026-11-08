@@ -248,8 +248,14 @@ def build_graph(view: Any, key: str = "") -> dict[str, Any]:
         for ai, asset in assets:
             evidence = edge_evidence(caption, asset, ci, ai)
             distance = evidence["distance_ratio"]
-            if distance is None or distance > 0.25:
+            gap = evidence["edge_gap_ratio"]
+            # Centre distance alone hides a large figure directly above its
+            # caption; adjacency also qualifies a candidate.
+            if distance is None:
                 continue
+            if distance > 0.25 and (gap is None or gap > 0.05):
+                continue
+            evidence["candidate_basis"] = "centre" if distance <= 0.25 else "edge_gap"
             anid = node_ids[(ai, "asset")][0]
             if any(e["source"] in matched_groups and e["target"] == anid and e["relation"] == "group_asset"
                    for e in edges):
