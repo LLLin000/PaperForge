@@ -1,0 +1,365 @@
+{
+  "key": "CYJLYG56",
+  "old_target": "render/figures/figure_003_continued_p007_b12.md",
+  "old_id": "figure_003_continued_p007_b12",
+  "page": 7,
+  "meta_pages": 11,
+  "old_inventory": {
+    "figure_id": "figure_003_continued_p007_b12",
+    "figure_namespace": "main",
+    "figure_number": 3,
+    "legend_block_id": "12",
+    "page": 7,
+    "text": "FIGURE 3: Continued.",
+    "matched_assets": [
+      {
+        "block_id": 7,
+        "bbox": [
+          302,
+          361,
+          481,
+          622
+        ],
+        "page": 6
+      },
+      {
+        "block_id": 10,
+        "bbox": [
+          549,
+          376,
+          716,
+          652
+        ],
+        "page": 6
+      },
+      {
+        "block_id": 7,
+        "bbox": [
+          197,
+          710,
+          600,
+          1201
+        ],
+        "page": 7
+      },
+      {
+        "block_id": 8,
+        "bbox": [
+          613,
+          711,
+          798,
+          968
+        ],
+        "page": 7
+      },
+      {
+        "block_id": 10,
+        "bbox": [
+          824,
+          711,
+          1006,
+          936
+        ],
+        "page": 7
+      },
+      {
+        "block_id": 8,
+        "bbox": [
+          200,
+          425,
+          455,
+          584
+        ],
+        "page": 9
+      },
+      {
+        "block_id": 10,
+        "bbox": [
+          482,
+          426,
+          729,
+          582
+        ],
+        "page": 9
+      }
+    ],
+    "asset_block_ids": [
+      "10",
+      "7",
+      "8"
+    ],
+    "settlement_type": "continuation_same_page",
+    "confidence": 1.0,
+    "match_score": {
+      "score": 1.0,
+      "decision": "matched",
+      "evidence": [
+        "same_page",
+        "x_overlap",
+        "nearby_y",
+        "caption_above_or_below",
+        "multi_asset_coherence_bonus"
+      ]
+    },
+    "flags": [
+      "continuation"
+    ],
+    "bridge_block_ids": [],
+    "continuation_of": "figure_003",
+    "is_continuation": true,
+    "consumed_block_ids": [
+      "7",
+      "10",
+      "8"
+    ]
+  },
+  "old_render_exists": true,
+  "old_asset_exists": false,
+  "old_asset_path": null,
+  "new_figures_on_page": [],
+  "caption_candidate_rows": [
+    {
+      "block_id": 6,
+      "role": "figure_caption",
+      "bbox": [
+        94,
+        409,
+        1105,
+        667
+      ],
+      "text": "FIGURE 2: Extraction of DS-EVs and validation of its effect on cartilage regeneration (a) classical spherical structure with phospholipid molecular layer observed by DS-EVs in TEM; (b) NTA particle size analysis: the mean diameter of DS-EVs is 130.6 nm; (c) detection of DANCR + SMSC-EVs surface anti"
+    },
+    {
+      "block_id": 12,
+      "role": "figure_caption",
+      "bbox": [
+        517,
+        1227,
+        682,
+        1248
+      ],
+      "text": "FIGURE 3: Continued."
+    }
+  ],
+  "unmatched_assets_page": [],
+  "raw_page_blocks": [
+    {
+      "block_id": 0,
+      "bbox": [
+        98,
+        86,
+        565,
+        110
+      ],
+      "role": null,
+      "text": "Journal of Tissue Engineering and Regenerative Medicine"
+    },
+    {
+      "block_id": 1,
+      "bbox": [
+        1087,
+        87,
+        1101,
+        107
+      ],
+      "role": null,
+      "text": "7"
+    },
+    {
+      "block_id": 2,
+      "bbox": [
+        345,
+        144,
+        541,
+        353
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 3,
+      "bbox": [
+        430,
+        373,
+        453,
+        392
+      ],
+      "role": null,
+      "text": "(h)"
+    },
+    {
+      "block_id": 4,
+      "bbox": [
+        587,
+        147,
+        764,
+        363
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 5,
+      "bbox": [
+        666,
+        373,
+        686,
+        392
+      ],
+      "role": null,
+      "text": "(i)"
+    },
+    {
+      "block_id": 6,
+      "bbox": [
+        94,
+        409,
+        1105,
+        667
+      ],
+      "role": null,
+      "text": "FIGURE 2: Extraction of DS-EVs and validation of its effect on cartilage regeneration (a) classical spherical structure with phospholipid molecular layer observed by DS-EVs in TEM; (b) NTA particle si"
+    },
+    {
+      "block_id": 7,
+      "bbox": [
+        197,
+        710,
+        600,
+        1201
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 8,
+      "bbox": [
+        613,
+        711,
+        798,
+        968
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 9,
+      "bbox": [
+        380,
+        1204,
+        401,
+        1223
+      ],
+      "role": null,
+      "text": "(a)"
+    },
+    {
+      "block_id": 10,
+      "bbox": [
+        824,
+        711,
+        1006,
+        936
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 11,
+      "bbox": [
+        695,
+        1203,
+        717,
+        1223
+      ],
+      "role": null,
+      "text": "(b)"
+    },
+    {
+      "block_id": 12,
+      "bbox": [
+        517,
+        1227,
+        682,
+        1248
+      ],
+      "role": null,
+      "text": "FIGURE 3: Continued."
+    },
+    {
+      "block_id": 13,
+      "bbox": [
+        905,
+        1203,
+        926,
+        1224
+      ],
+      "role": null,
+      "text": "(c)"
+    },
+    {
+      "block_id": 14,
+      "bbox": [
+        1164,
+        30,
+        1181,
+        1569
+      ],
+      "role": null,
+      "text": "jerm, 2023, 1, Downloaded from https://onlinelibrary.wiley.com/doi/10.1155/2023/5539194 by Shandong University Library, Wiley Online Library on [05/02/2026]. See the Terms and Conditions (https://onli"
+    }
+  ],
+  "embed_lines": [
+    {
+      "line": 94,
+      "text": "![[render/figures/figure_003_continued_p007_b12.md]]"
+    }
+  ],
+  "bbox_overlap": [],
+  "bbox_unavailable": false,
+  "claimed_by_new": [],
+  "lost_bboxes": [
+    {
+      "block_id": 7,
+      "bbox": [
+        302,
+        361,
+        481,
+        622
+      ]
+    },
+    {
+      "block_id": 10,
+      "bbox": [
+        549,
+        376,
+        716,
+        652
+      ]
+    },
+    {
+      "block_id": 8,
+      "bbox": [
+        613,
+        711,
+        798,
+        968
+      ]
+    }
+  ],
+  "unmatched_bboxes": [],
+  "owner_evidence": [],
+  "classification": "REAL_ASSOCIATION_FAILURE",
+  "confidence": "high",
+  "evidence": "partial coverage: lost old bboxes [7, 10, 8]; claimed by new [none]",
+  "proposed_action": "fix new association",
+  "overlay_image": "docs/evidence/m2a/CYJLYG56/page_overlay_figure_003_continued_p007_b12.jpg",
+  "thumbnail_paths": [
+    "docs/evidence/m2a/CYJLYG56/figure_003_continued_p007_b12_old_asset_bbox_0.png",
+    "docs/evidence/m2a/CYJLYG56/figure_003_continued_p007_b12_old_asset_bbox_1.png",
+    "docs/evidence/m2a/CYJLYG56/figure_003_continued_p007_b12_old_asset_bbox_2.png",
+    "docs/evidence/m2a/CYJLYG56/figure_003_continued_p007_b12_old_asset_bbox_5.png",
+    "docs/evidence/m2a/CYJLYG56/figure_003_continued_p007_b12_old_asset_bbox_6.png"
+  ],
+  "contact_sheet": "docs/evidence/m2a/CYJLYG56/contact_sheet_figure_003_continued_p007_b12.jpg"
+}

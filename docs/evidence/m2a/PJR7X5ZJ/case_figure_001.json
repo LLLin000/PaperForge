@@ -1,0 +1,359 @@
+{
+  "key": "PJR7X5ZJ",
+  "old_target": "render/figures/figure_001.md",
+  "old_id": "figure_001",
+  "page": 2,
+  "meta_pages": 5,
+  "old_inventory": {
+    "figure_id": "figure_001",
+    "figure_namespace": "main",
+    "figure_number": 1,
+    "legend_block_id": "6",
+    "page": 2,
+    "text": "Figure 1. Close-up view of Bankart Tack (Bionx Implants, Ltd.) before implantation.",
+    "matched_assets": [
+      {
+        "block_id": 5,
+        "bbox": [
+          99,
+          980,
+          580,
+          1408
+        ],
+        "page": 2
+      }
+    ],
+    "asset_block_ids": [
+      "5"
+    ],
+    "settlement_type": "same_page",
+    "confidence": 0.955,
+    "match_score": {
+      "score": 0.955,
+      "decision": "matched",
+      "evidence": [
+        "same_page",
+        "x_overlap",
+        "nearby_y",
+        "caption_above_or_below"
+      ]
+    },
+    "flags": [],
+    "bridge_block_ids": [],
+    "consumed_block_ids": [
+      "5"
+    ]
+  },
+  "old_render_exists": true,
+  "old_asset_exists": true,
+  "old_asset_path": "D:\\L\\OB\\Literature-hub\\System\\PaperForge\\ocr\\PJR7X5ZJ\\assets\\figures\\figure_001.jpg",
+  "new_figures_on_page": [
+    {
+      "figure_id": "figure_002",
+      "figure_number": 2,
+      "page": 2,
+      "text": "Figure 2. A, magnetic resonance image displaying tack debris in the axillary recess; B, an axial MRI showing synovial thickening as well as tack debris.",
+      "matched_assets": [
+        {
+          "block_id": 5,
+          "bbox": [
+            99,
+            980,
+            580,
+            1408
+          ],
+          "page": 2
+        },
+        {
+          "block_id": 7,
+          "bbox": [
+            627,
+            161,
+            1107,
+            566
+          ],
+          "page": 2
+        },
+        {
+          "block_id": 8,
+          "bbox": [
+            627,
+            584,
+            1107,
+            1022
+          ],
+          "page": 2
+        }
+      ]
+    }
+  ],
+  "caption_candidate_rows": [
+    {
+      "block_id": 6,
+      "role": "figure_caption",
+      "bbox": [
+        95,
+        1430,
+        583,
+        1476
+      ],
+      "text": "Figure 1. Close-up view of Bankart Tack (Bionx Implants, Ltd.) before implantation."
+    },
+    {
+      "block_id": 9,
+      "role": "figure_caption",
+      "bbox": [
+        621,
+        1043,
+        1111,
+        1111
+      ],
+      "text": "Figure 2. A, magnetic resonance image displaying tack debris in the axillary recess; B, an axial MRI showing synovial thickening as well as tack debris."
+    }
+  ],
+  "unmatched_assets_page": [],
+  "raw_page_blocks": [
+    {
+      "block_id": 0,
+      "bbox": [
+        97,
+        107,
+        130,
+        125
+      ],
+      "role": null,
+      "text": "644"
+    },
+    {
+      "block_id": 1,
+      "bbox": [
+        157,
+        107,
+        261,
+        127
+      ],
+      "role": null,
+      "text": "Freehill et al."
+    },
+    {
+      "block_id": 2,
+      "bbox": [
+        824,
+        107,
+        1110,
+        128
+      ],
+      "role": null,
+      "text": "American Journal of Sports Medicine"
+    },
+    {
+      "block_id": 3,
+      "bbox": [
+        93,
+        154,
+        585,
+        487
+      ],
+      "role": null,
+      "text": "tion with use of PLLA tacks (Bankart Tack, Bionx Implants, Ltd., Blue Bell, Pennsylvania) during a 2-year period (Fig. 1). Of the 52 patients who received the implant, 24 underwent stabilization for a"
+    },
+    {
+      "block_id": 4,
+      "bbox": [
+        94,
+        488,
+        586,
+        932
+      ],
+      "role": null,
+      "text": "Subsequently, 10 patients (19%), including 5 men and 5 women, with an average age of 30 years (range, 15 to 48), experienced a clinically significant postoperative reaction. Four of these patients had"
+    },
+    {
+      "block_id": 5,
+      "bbox": [
+        99,
+        980,
+        580,
+        1408
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 6,
+      "bbox": [
+        95,
+        1430,
+        583,
+        1476
+      ],
+      "role": null,
+      "text": "Figure 1. Close-up view of Bankart Tack (Bionx Implants, Ltd.) before implantation."
+    },
+    {
+      "block_id": 7,
+      "bbox": [
+        627,
+        161,
+        1107,
+        566
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 8,
+      "bbox": [
+        627,
+        584,
+        1107,
+        1022
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 9,
+      "bbox": [
+        621,
+        1043,
+        1111,
+        1111
+      ],
+      "role": null,
+      "text": "Figure 2. A, magnetic resonance image displaying tack debris in the axillary recess; B, an axial MRI showing synovial thickening as well as tack debris."
+    },
+    {
+      "block_id": 10,
+      "bbox": [
+        622,
+        1182,
+        1113,
+        1319
+      ],
+      "role": null,
+      "text": "tation (Fig. 3). Associated full-thickness chondral defects were also visualized in three patients (Fig. 4). Retrospectively, there were no identifiable factors to distinguish the patients who had ful"
+    },
+    {
+      "block_id": 11,
+      "bbox": [
+        621,
+        1319,
+        1114,
+        1477
+      ],
+      "role": null,
+      "text": "Treatment consisted of arthroscopic evaluation with use of standard anterior, posterior, and lateral portals. Extensive debridement of the glenohumeral joint was performed, including a complete synove"
+    }
+  ],
+  "embed_lines": [
+    {
+      "line": 38,
+      "text": "![[render/figures/figure_001.md]]"
+    }
+  ],
+  "bbox_overlap": [
+    {
+      "old_block": 5,
+      "old_bbox": [
+        99,
+        980,
+        580,
+        1408
+      ],
+      "new_figure": "figure_002",
+      "new_block": 5,
+      "new_bbox": [
+        99,
+        980,
+        580,
+        1408
+      ],
+      "iou": 1.0
+    },
+    {
+      "old_block": 5,
+      "old_bbox": [
+        99,
+        980,
+        580,
+        1408
+      ],
+      "new_figure": "figure_002",
+      "new_block": 7,
+      "new_bbox": [
+        627,
+        161,
+        1107,
+        566
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 5,
+      "old_bbox": [
+        99,
+        980,
+        580,
+        1408
+      ],
+      "new_figure": "figure_002",
+      "new_block": 8,
+      "new_bbox": [
+        627,
+        584,
+        1107,
+        1022
+      ],
+      "iou": 0.0
+    }
+  ],
+  "bbox_unavailable": false,
+  "claimed_by_new": [
+    {
+      "old_block": 5,
+      "old_bbox": [
+        99,
+        980,
+        580,
+        1408
+      ],
+      "new_figure": "figure_002",
+      "new_block": 5,
+      "iou": 1.0
+    }
+  ],
+  "lost_bboxes": [],
+  "unmatched_bboxes": [],
+  "owner_evidence": [
+    {
+      "old_block": 5,
+      "old_bbox": [
+        99,
+        980,
+        580,
+        1408
+      ],
+      "old_caption_block": 6,
+      "old_caption_distance": 22,
+      "old_caption_horizontal_gap": 0.5,
+      "old_caption_adjacent": true,
+      "claimed_by_figure": "figure_002",
+      "claimed_by_caption_block": 9,
+      "claimed_by_caption_distance": 0,
+      "claimed_by_caption_horizontal_gap": 526.5,
+      "claimed_by_caption_adjacent": false
+    }
+  ],
+  "classification": "REAL_ASSOCIATION_FAILURE",
+  "confidence": "high",
+  "evidence": "new figure figure_002 overclaims bbox adjacent to old caption; remove its claim and attach to old figure",
+  "proposed_action": "fix new association",
+  "overlay_image": "docs/evidence/m2a/PJR7X5ZJ/page_overlay_figure_001.jpg",
+  "thumbnail_paths": [
+    "docs/evidence/m2a/PJR7X5ZJ/figure_001_old_asset.jpg",
+    "docs/evidence/m2a/PJR7X5ZJ/figure_001_old_asset_bbox_0.png",
+    "docs/evidence/m2a/PJR7X5ZJ/figure_001_old_asset_bbox_0.png"
+  ],
+  "contact_sheet": "docs/evidence/m2a/PJR7X5ZJ/contact_sheet_figure_001.jpg"
+}

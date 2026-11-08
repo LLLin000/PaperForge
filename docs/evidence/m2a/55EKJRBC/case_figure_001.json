@@ -1,0 +1,536 @@
+{
+  "key": "55EKJRBC",
+  "old_target": "render/figures/figure_001.md",
+  "old_id": "figure_001",
+  "page": 3,
+  "meta_pages": 11,
+  "old_inventory": {
+    "figure_id": "figure_001",
+    "figure_namespace": "main",
+    "figure_number": 1,
+    "legend_block_id": "23",
+    "page": 3,
+    "text": "Fig 1 | Different study design and approaches to develop and evaluate the performance of a multivariable prediction model (D=development; V=validation (evaluation)). Adapted from Collins GS, Reitsma JB, Altman DG, Moons KGM. Transparent reporting of a multivariable prediction model for individual prognosis or diagnosis (TRIPOD): the TRIPOD statement. BMJ 2015;350:g7594. $ ^{17} $ *A study can include more than one analysis type the advantages and disadvantages of several strategies in detail.",
+    "matched_assets": [
+      {
+        "block_id": 4,
+        "bbox": [
+          99,
+          141,
+          652,
+          1475
+        ],
+        "page": 3
+      }
+    ],
+    "asset_block_ids": [
+      "4"
+    ],
+    "settlement_type": "same_page",
+    "confidence": 0.855,
+    "match_score": {
+      "score": 0.855,
+      "decision": "matched",
+      "evidence": [
+        "same_page",
+        "x_overlap",
+        "nearby_y"
+      ]
+    },
+    "flags": [],
+    "bridge_block_ids": [],
+    "consumed_block_ids": [
+      "4",
+      "1",
+      "2",
+      "3",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9",
+      "10",
+      "11",
+      "12",
+      "13",
+      "14",
+      "15",
+      "16",
+      "17",
+      "18",
+      "19",
+      "20",
+      "21",
+      "22"
+    ],
+    "associated_text_block_ids": [
+      "1",
+      "2",
+      "3",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9",
+      "10",
+      "11",
+      "12",
+      "13",
+      "14",
+      "15",
+      "16",
+      "17",
+      "18",
+      "19",
+      "20",
+      "21",
+      "22"
+    ]
+  },
+  "old_render_exists": true,
+  "old_asset_exists": true,
+  "old_asset_path": "D:\\L\\OB\\Literature-hub\\System\\PaperForge\\ocr\\55EKJRBC\\assets\\figures\\figure_001.jpg",
+  "new_figures_on_page": [],
+  "caption_candidate_rows": [
+    {
+      "block_id": 23,
+      "role": "figure_caption_candidate",
+      "bbox": [
+        64,
+        1387,
+        683,
+        1511
+      ],
+      "text": "Fig 1 | Different study design and approaches to develop and evaluate the performance of a multivariable prediction model (D=development; V=validation (evaluation)). Adapted from Collins GS, Reitsma JB, Altman DG, Moons KGM. Transparent reporting of a multivariable prediction model for individual pr"
+    }
+  ],
+  "unmatched_assets_page": [
+    {
+      "block_id": 4,
+      "bbox": [
+        99,
+        141,
+        652,
+        1475
+      ],
+      "raw_label": "image"
+    }
+  ],
+  "raw_page_blocks": [
+    {
+      "block_id": 0,
+      "bbox": [
+        661,
+        59,
+        1121,
+        83
+      ],
+      "role": null,
+      "text": "RESEARCH METHODS AND REPORTING"
+    },
+    {
+      "block_id": 1,
+      "bbox": [
+        558,
+        142,
+        622,
+        178
+      ],
+      "role": null,
+      "text": "Analysis type $ ^{*} $"
+    },
+    {
+      "block_id": 2,
+      "bbox": [
+        248,
+        186,
+        580,
+        225
+      ],
+      "role": null,
+      "text": "Model developed using all available data and its apparent performance evaluated on all of the same data"
+    },
+    {
+      "block_id": 3,
+      "bbox": [
+        236,
+        243,
+        612,
+        299
+      ],
+      "role": null,
+      "text": "Model developed using all available data and its performance evaluated using resampling, such as bootstrapping, k-fold cross validation (internal validation)"
+    },
+    {
+      "block_id": 4,
+      "bbox": [
+        99,
+        141,
+        652,
+        1475
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 5,
+      "bbox": [
+        260,
+        319,
+        568,
+        391
+      ],
+      "role": null,
+      "text": "Model developed using all available data gathered from multiple clusters (eg, studies, practices, hospitals), and its performance evaluated using internal-external cross validation"
+    },
+    {
+      "block_id": 6,
+      "bbox": [
+        270,
+        410,
+        558,
+        466
+      ],
+      "role": null,
+      "text": "Model developed on random subset of available data, and its performance evaluated using remaining data (internal validation)"
+    },
+    {
+      "block_id": 7,
+      "bbox": [
+        250,
+        485,
+        579,
+        558
+      ],
+      "role": null,
+      "text": "Model developed on non-random subset of available data (eg, split by time or geography/centres), and its performance evaluated using remaining data (internal validation)"
+    },
+    {
+      "block_id": 8,
+      "bbox": [
+        244,
+        576,
+        585,
+        614
+      ],
+      "role": null,
+      "text": "Model developed on one dataset, and its performance evaluated in separate dataset (external validation)"
+    },
+    {
+      "block_id": 9,
+      "bbox": [
+        277,
+        634,
+        552,
+        670
+      ],
+      "role": null,
+      "text": "Performance of existing (published) model evaluated in other data (external validation)"
+    },
+    {
+      "block_id": 10,
+      "bbox": [
+        137,
+        678,
+        199,
+        713
+      ],
+      "role": null,
+      "text": "Analysis type"
+    },
+    {
+      "block_id": 11,
+      "bbox": [
+        151,
+        723,
+        588,
+        762
+      ],
+      "role": null,
+      "text": "• Unless sample size is very large and model complexity low, model performance will typically be too optimistic"
+    },
+    {
+      "block_id": 12,
+      "bbox": [
+        165,
+        773,
+        621,
+        826
+      ],
+      "role": null,
+      "text": "• Replaying all modelling steps (eg, in bootstrap or k-fold cross validation) may not be computationally possible or practically feasible (eg, computationally intensive parameter tuning)\n- For k-fold "
+    },
+    {
+      "block_id": 13,
+      "bbox": [
+        165,
+        825,
+        558,
+        862
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 14,
+      "bbox": [
+        161,
+        875,
+        612,
+        930
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 15,
+      "bbox": [
+        165,
+        944,
+        598,
+        996
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 16,
+      "bbox": [
+        165,
+        996,
+        580,
+        1031
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 17,
+      "bbox": [
+        165,
+        1027,
+        611,
+        1085
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 18,
+      "bbox": [
+        166,
+        1097,
+        607,
+        1149
+      ],
+      "role": null,
+      "text": "• Reduces sample size for model development (increasing risk of overfitting), and a test set that might be too small to reliably evaluate performance\n• Problems arise when time or centre effects are o"
+    },
+    {
+      "block_id": 19,
+      "bbox": [
+        165,
+        1148,
+        591,
+        1185
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 20,
+      "bbox": [
+        165,
+        1199,
+        613,
+        1251
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 21,
+      "bbox": [
+        164,
+        1250,
+        617,
+        1306
+      ],
+      "role": null,
+      "text": "At point of model development, holding out a separate dataset (unless development data is sufficiently large) can be viewed as inefficient (a waste of available data that could be used for developing "
+    },
+    {
+      "block_id": 22,
+      "bbox": [
+        149,
+        1316,
+        615,
+        1372
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 23,
+      "bbox": [
+        64,
+        1387,
+        683,
+        1511
+      ],
+      "role": null,
+      "text": "Fig 1 | Different study design and approaches to develop and evaluate the performance of a multivariable prediction model (D=development; V=validation (evaluation)). Adapted from Collins GS, Reitsma J"
+    },
+    {
+      "block_id": 24,
+      "bbox": [
+        710,
+        141,
+        1125,
+        187
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 25,
+      "bbox": [
+        711,
+        209,
+        894,
+        231
+      ],
+      "role": null,
+      "text": "Apparent performance"
+    },
+    {
+      "block_id": 26,
+      "bbox": [
+        710,
+        232,
+        1127,
+        639
+      ],
+      "role": null,
+      "text": "The simplest approach is to use all the available data to develop a prediction model and then directly evaluate its performance in exactly the same data (often referred to as apparent performance). Cl"
+    },
+    {
+      "block_id": 27,
+      "bbox": [
+        709,
+        638,
+        1128,
+        1362
+      ],
+      "role": null,
+      "text": "To illustrate apparent performance, we consider a logistic regression model for predicting in-hospital mortality within 28 days of trauma injury in patients with an acute myocardial infarction using d"
+    },
+    {
+      "block_id": 28,
+      "bbox": [
+        712,
+        1382,
+        823,
+        1404
+      ],
+      "role": null,
+      "text": "Random split"
+    },
+    {
+      "block_id": 29,
+      "bbox": [
+        710,
+        1405,
+        1127,
+        1520
+      ],
+      "role": null,
+      "text": "Randomly splitting a dataset is often erroneously perceived as a methodological strength—it is not. Authors also often label the two datasets (created by splitting) as independent; despite no overlap "
+    },
+    {
+      "block_id": 30,
+      "bbox": [
+        65,
+        1544,
+        481,
+        1563
+      ],
+      "role": null,
+      "text": "thebmj | BMJ2024:384:e074819 | doi:10.1136/bmj-2023-074819"
+    },
+    {
+      "block_id": 31,
+      "bbox": [
+        1112,
+        1546,
+        1125,
+        1563
+      ],
+      "role": null,
+      "text": "3"
+    }
+  ],
+  "embed_lines": [
+    {
+      "line": 80,
+      "text": "![[render/figures/figure_001.md]]"
+    }
+  ],
+  "bbox_overlap": [
+    {
+      "old_block": 4,
+      "old_bbox": [
+        99,
+        141,
+        652,
+        1475
+      ],
+      "new_figure": "UNMATCHED",
+      "new_block": 4,
+      "new_bbox": [
+        99,
+        141,
+        652,
+        1475
+      ],
+      "iou": 1.0
+    }
+  ],
+  "bbox_unavailable": false,
+  "claimed_by_new": [],
+  "lost_bboxes": [
+    {
+      "block_id": 4,
+      "bbox": [
+        99,
+        141,
+        652,
+        1475
+      ]
+    }
+  ],
+  "unmatched_bboxes": [
+    {
+      "block_id": 4,
+      "bbox": [
+        99,
+        141,
+        652,
+        1475
+      ],
+      "unmatched_block": 4
+    }
+  ],
+  "owner_evidence": [],
+  "classification": "REAL_ASSOCIATION_FAILURE",
+  "confidence": "high",
+  "evidence": "partial coverage: lost old bboxes [4]; claimed by new [none]",
+  "proposed_action": "fix new association",
+  "overlay_image": "docs/evidence/m2a/55EKJRBC/page_overlay_figure_001.jpg",
+  "thumbnail_paths": [
+    "docs/evidence/m2a/55EKJRBC/figure_001_old_asset.jpg",
+    "docs/evidence/m2a/55EKJRBC/figure_001_old_asset_bbox_0.png",
+    "docs/evidence/m2a/55EKJRBC/figure_001_old_asset_bbox_0.png"
+  ],
+  "contact_sheet": "docs/evidence/m2a/55EKJRBC/contact_sheet_figure_001.jpg"
+}

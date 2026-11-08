@@ -1,0 +1,365 @@
+{
+  "key": "8PLQZKGN",
+  "old_target": "render/figures/figure_007.md",
+  "old_id": "figure_007",
+  "page": 12,
+  "meta_pages": 19,
+  "old_inventory": {
+    "figure_id": "figure_007",
+    "figure_number": 7,
+    "figure_namespace": "main",
+    "page": 12,
+    "text": "Fig. 7 | GelMa/Mg/DMF MSs promotes tissue repair and reconstruction in osteoporosis by inhibiting pyroptosis and remodeling the IME. Coronal images of the cranial defect after H&E staining A and Masson staining B 8 weeks after surgery. Scale bars: 100 µm. C Coronal images of the cranial defect after TRAP staining 8 weeks after surgery for the cranial defect. Scale bars: 100 µm and 20 µm. Coronal images of the cranial defect after immunohistochemistry for OCN D and GSDMD F 8 weeks after surgery f",
+    "matched_assets": [
+      {
+        "page": 12,
+        "block_id": "132",
+        "bbox": null
+      }
+    ],
+    "asset_block_ids": [
+      "132"
+    ],
+    "settlement_type": "accepted_proposal",
+    "confidence": 1.0
+  },
+  "old_render_exists": true,
+  "old_asset_exists": true,
+  "old_asset_path": "D:\\L\\OB\\Literature-hub\\System\\PaperForge\\ocr\\8PLQZKGN\\assets\\figures\\figure_007.jpg",
+  "new_figures_on_page": [],
+  "caption_candidate_rows": [],
+  "unmatched_assets_page": [
+    {
+      "block_id": 2,
+      "bbox": [
+        134,
+        90,
+        844,
+        375
+      ],
+      "raw_label": "image"
+    },
+    {
+      "block_id": 3,
+      "bbox": [
+        850,
+        111,
+        1068,
+        373
+      ],
+      "raw_label": "chart"
+    },
+    {
+      "block_id": 4,
+      "bbox": [
+        132,
+        378,
+        843,
+        665
+      ],
+      "raw_label": "image"
+    },
+    {
+      "block_id": 5,
+      "bbox": [
+        848,
+        393,
+        1067,
+        649
+      ],
+      "raw_label": "chart"
+    },
+    {
+      "block_id": 6,
+      "bbox": [
+        141,
+        669,
+        1059,
+        909
+      ],
+      "raw_label": "chart"
+    },
+    {
+      "block_id": 7,
+      "bbox": [
+        141,
+        915,
+        840,
+        1295
+      ],
+      "raw_label": "image"
+    },
+    {
+      "block_id": 8,
+      "bbox": [
+        844,
+        925,
+        1067,
+        1287
+      ],
+      "raw_label": "image"
+    }
+  ],
+  "raw_page_blocks": [
+    {
+      "block_id": 0,
+      "bbox": [
+        76,
+        45,
+        146,
+        68
+      ],
+      "role": null,
+      "text": "Article"
+    },
+    {
+      "block_id": 1,
+      "bbox": [
+        789,
+        48,
+        1125,
+        68
+      ],
+      "role": null,
+      "text": "https://doi.org/10.1038/s41467-025-63456-5"
+    },
+    {
+      "block_id": 2,
+      "bbox": [
+        134,
+        90,
+        844,
+        375
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 3,
+      "bbox": [
+        850,
+        111,
+        1068,
+        373
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 4,
+      "bbox": [
+        132,
+        378,
+        843,
+        665
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 5,
+      "bbox": [
+        848,
+        393,
+        1067,
+        649
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 6,
+      "bbox": [
+        141,
+        669,
+        1059,
+        909
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 7,
+      "bbox": [
+        141,
+        915,
+        840,
+        1295
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 8,
+      "bbox": [
+        844,
+        925,
+        1067,
+        1287
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 9,
+      "bbox": [
+        73,
+        1338,
+        594,
+        1489
+      ],
+      "role": null,
+      "text": "Moreover, ELISA analysis of the serum samples revealed reduced the levels of inflammatory cytokines (IL-1 $ \\beta $, IL-18, IFN- $ \\gamma $, and TNF- $ \\alpha $) and increased the levels of anti-infla"
+    },
+    {
+      "block_id": 10,
+      "bbox": [
+        606,
+        1337,
+        1128,
+        1489
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 11,
+      "bbox": [
+        76,
+        1524,
+        370,
+        1544
+      ],
+      "role": null,
+      "text": "Nature Communications | (2025)16:8127"
+    },
+    {
+      "block_id": 12,
+      "bbox": [
+        1104,
+        1526,
+        1126,
+        1544
+      ],
+      "role": null,
+      "text": "12"
+    }
+  ],
+  "embed_lines": [
+    {
+      "line": 160,
+      "text": "![[render/figures/figure_007.md]]"
+    }
+  ],
+  "bbox_overlap": [
+    {
+      "old_block": "132",
+      "old_bbox": null,
+      "new_figure": "UNMATCHED",
+      "new_block": 2,
+      "new_bbox": [
+        134,
+        90,
+        844,
+        375
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": "132",
+      "old_bbox": null,
+      "new_figure": "UNMATCHED",
+      "new_block": 3,
+      "new_bbox": [
+        850,
+        111,
+        1068,
+        373
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": "132",
+      "old_bbox": null,
+      "new_figure": "UNMATCHED",
+      "new_block": 4,
+      "new_bbox": [
+        132,
+        378,
+        843,
+        665
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": "132",
+      "old_bbox": null,
+      "new_figure": "UNMATCHED",
+      "new_block": 5,
+      "new_bbox": [
+        848,
+        393,
+        1067,
+        649
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": "132",
+      "old_bbox": null,
+      "new_figure": "UNMATCHED",
+      "new_block": 6,
+      "new_bbox": [
+        141,
+        669,
+        1059,
+        909
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": "132",
+      "old_bbox": null,
+      "new_figure": "UNMATCHED",
+      "new_block": 7,
+      "new_bbox": [
+        141,
+        915,
+        840,
+        1295
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": "132",
+      "old_bbox": null,
+      "new_figure": "UNMATCHED",
+      "new_block": 8,
+      "new_bbox": [
+        844,
+        925,
+        1067,
+        1287
+      ],
+      "iou": 0.0
+    }
+  ],
+  "bbox_unavailable": true,
+  "claimed_by_new": [],
+  "lost_bboxes": [],
+  "unmatched_bboxes": [],
+  "owner_evidence": [],
+  "classification": "REAL_ASSOCIATION_FAILURE",
+  "confidence": "medium",
+  "evidence": "old asset bbox unavailable; unmatched asset bboxes cover the page and no caption row was associated",
+  "proposed_action": "fix new association",
+  "overlay_image": "docs/evidence/m2a/8PLQZKGN/page_overlay_figure_007.jpg",
+  "thumbnail_paths": [
+    "docs/evidence/m2a/8PLQZKGN/figure_007_old_asset.jpg",
+    "docs/evidence/m2a/8PLQZKGN/figure_007_unmatched_asset_0.png",
+    "docs/evidence/m2a/8PLQZKGN/figure_007_unmatched_asset_2.png",
+    "docs/evidence/m2a/8PLQZKGN/figure_007_unmatched_asset_4.png",
+    "docs/evidence/m2a/8PLQZKGN/figure_007_unmatched_asset_5.png"
+  ],
+  "contact_sheet": "docs/evidence/m2a/8PLQZKGN/contact_sheet_figure_007.jpg"
+}

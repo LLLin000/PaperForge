@@ -1,0 +1,564 @@
+{
+  "key": "F5CHZH3H",
+  "old_target": "render/figures/figure_044.md",
+  "old_id": "figure_044",
+  "page": 37,
+  "meta_pages": 50,
+  "old_inventory": {
+    "figure_id": "figure_044",
+    "figure_namespace": "main",
+    "figure_number": 44,
+    "legend_block_id": "10",
+    "page": 37,
+    "text": "Fig. 44a–e showed the presence of nanoparticles in the histological section of the synovial joint of the treated rats [205]. The buildup of nanoparticles were seen in the interstitial spaces between the osseous structures that enclose the cartilage. Additionally, the absence of macrophage infiltration validated the biocompatibility of the produced KNN NPs, indicating that they do not affect the articulate cartilage and there is no substantial indication of synovial hyperplasia (Fig. 44c, d, e) [205].",
+    "matched_assets": [
+      {
+        "block_id": 2,
+        "bbox": [
+          98,
+          104,
+          498,
+          408
+        ],
+        "page": 37
+      },
+      {
+        "block_id": 4,
+        "bbox": [
+          510,
+          203,
+          993,
+          404
+        ],
+        "page": 37
+      },
+      {
+        "block_id": 6,
+        "bbox": [
+          409,
+          416,
+          677,
+          772
+        ],
+        "page": 37
+      }
+    ],
+    "asset_block_ids": [
+      "2",
+      "4",
+      "6"
+    ],
+    "settlement_type": "same_page",
+    "confidence": 0.85,
+    "match_score": {
+      "score": 0.85,
+      "decision": "matched",
+      "evidence": [
+        "same_page",
+        "distance_clustered",
+        "safe_auto_match"
+      ]
+    },
+    "flags": [],
+    "bridge_block_ids": [],
+    "consumed_block_ids": [
+      "2",
+      "4",
+      "6"
+    ]
+  },
+  "old_render_exists": true,
+  "old_asset_exists": false,
+  "old_asset_path": null,
+  "new_figures_on_page": [
+    {
+      "figure_id": "figure_038",
+      "figure_number": 38,
+      "page": 37,
+      "text": "Fig. 38. (1) Osteoblast-like MG-63 relative viability (MTT assay after 1, 3, and 7 days in the presence of 90HA-10KNN-CSL, 10HA-90KNN-CSL, and CSL dry sponges and 90HA-10KNN-CSLG, 10HA-90KNN-CSLG, and CSLg gels; the statistical analysis: two-tailed Student's test * p ≤ 0.05, ** p ≤ 0.01, *** p ≤ 0.0",
+      "matched_assets": [
+        {
+          "block_id": 2,
+          "bbox": [
+            98,
+            104,
+            498,
+            408
+          ],
+          "page": 37
+        },
+        {
+          "block_id": 4,
+          "bbox": [
+            510,
+            203,
+            993,
+            404
+          ],
+          "page": 37
+        },
+        {
+          "block_id": 6,
+          "bbox": [
+            409,
+            416,
+            677,
+            772
+          ],
+          "page": 37
+        }
+      ]
+    }
+  ],
+  "caption_candidate_rows": [
+    {
+      "block_id": 7,
+      "role": "figure_caption",
+      "bbox": [
+        71,
+        791,
+        1017,
+        929
+      ],
+      "text": "Fig. 38. (1) Osteoblast-like MG-63 relative viability (MTT assay after 1, 3, and 7 days in the presence of 90HA-10KNN-CSL, 10HA-90KNN-CSL, and CSL dry sponges and 90HA-10KNN-CSLG, 10HA-90KNN-CSLG, and CSLg gels; the statistical analysis: two-tailed Student's test * p ≤ 0.05, ** p ≤ 0.01, *** p ≤ 0.0"
+    },
+    {
+      "block_id": 10,
+      "role": "figure_caption_candidate",
+      "bbox": [
+        72,
+        1224,
+        1015,
+        1307
+      ],
+      "text": "Fig. 44a–e showed the presence of nanoparticles in the histological section of the synovial joint of the treated rats [205]. The buildup of nanoparticles were seen in the interstitial spaces between the osseous structures that enclose the cartilage. Additionally, the absence of macrophage infiltrati"
+    }
+  ],
+  "unmatched_assets_page": [],
+  "raw_page_blocks": [
+    {
+      "block_id": 0,
+      "bbox": [
+        76,
+        67,
+        150,
+        83
+      ],
+      "role": null,
+      "text": "M. Thu et al."
+    },
+    {
+      "block_id": 1,
+      "bbox": [
+        742,
+        67,
+        1016,
+        84
+      ],
+      "role": null,
+      "text": "Progress in Materials Science 152 (2025) 101448"
+    },
+    {
+      "block_id": 2,
+      "bbox": [
+        98,
+        104,
+        498,
+        408
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 3,
+      "bbox": [
+        514,
+        144,
+        537,
+        169
+      ],
+      "role": null,
+      "text": "B"
+    },
+    {
+      "block_id": 4,
+      "bbox": [
+        510,
+        203,
+        993,
+        404
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 5,
+      "bbox": [
+        376,
+        422,
+        402,
+        449
+      ],
+      "role": null,
+      "text": "C"
+    },
+    {
+      "block_id": 6,
+      "bbox": [
+        409,
+        416,
+        677,
+        772
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 7,
+      "bbox": [
+        71,
+        791,
+        1017,
+        929
+      ],
+      "role": null,
+      "text": "Fig. 38. (1) Osteoblast-like MG-63 relative viability (MTT assay after 1, 3, and 7 days in the presence of 90HA-10KNN-CSL, 10HA-90KNN-CSL, and CSL dry sponges and 90HA-10KNN-CSLG, 10HA-90KNN-CSLG, and"
+    },
+    {
+      "block_id": 8,
+      "bbox": [
+        72,
+        952,
+        1016,
+        1096
+      ],
+      "role": null,
+      "text": "Studies have shown that exposure to highly concentrated NPs might result in irregular heart rhythm and could lead to edema in the endothelial cells of the heart and cardiac dysfunction [273–277]. It w"
+    },
+    {
+      "block_id": 9,
+      "bbox": [
+        72,
+        1098,
+        1016,
+        1222
+      ],
+      "role": null,
+      "text": "The kidney sections of KNN particulate treated rats demonstrated intact nephric tubules without vacuolar degeneration in the cortex, comparable to control rats [205]. Fig. 42 shows normal renal cortex"
+    },
+    {
+      "block_id": 10,
+      "bbox": [
+        72,
+        1224,
+        1015,
+        1307
+      ],
+      "role": null,
+      "text": "Fig. 44a–e showed the presence of nanoparticles in the histological section of the synovial joint of the treated rats [205]. The buildup of nanoparticles were seen in the interstitial spaces between t"
+    },
+    {
+      "block_id": 11,
+      "bbox": [
+        72,
+        1308,
+        1014,
+        1349
+      ],
+      "role": null,
+      "text": "It seems that KNN has promise for producing positive outcomes, while further research is required to get conclusive findings on the effects of KNN-based ceramics on inflammatory cytokines and histolog"
+    },
+    {
+      "block_id": 12,
+      "bbox": [
+        535,
+        1404,
+        553,
+        1418
+      ],
+      "role": null,
+      "text": "37"
+    }
+  ],
+  "embed_lines": [
+    {
+      "line": 420,
+      "text": "![[render/figures/figure_044.md]]"
+    }
+  ],
+  "bbox_overlap": [
+    {
+      "old_block": 2,
+      "old_bbox": [
+        98,
+        104,
+        498,
+        408
+      ],
+      "new_figure": "figure_038",
+      "new_block": 2,
+      "new_bbox": [
+        98,
+        104,
+        498,
+        408
+      ],
+      "iou": 1.0
+    },
+    {
+      "old_block": 2,
+      "old_bbox": [
+        98,
+        104,
+        498,
+        408
+      ],
+      "new_figure": "figure_038",
+      "new_block": 4,
+      "new_bbox": [
+        510,
+        203,
+        993,
+        404
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 2,
+      "old_bbox": [
+        98,
+        104,
+        498,
+        408
+      ],
+      "new_figure": "figure_038",
+      "new_block": 6,
+      "new_bbox": [
+        409,
+        416,
+        677,
+        772
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 4,
+      "old_bbox": [
+        510,
+        203,
+        993,
+        404
+      ],
+      "new_figure": "figure_038",
+      "new_block": 2,
+      "new_bbox": [
+        98,
+        104,
+        498,
+        408
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 4,
+      "old_bbox": [
+        510,
+        203,
+        993,
+        404
+      ],
+      "new_figure": "figure_038",
+      "new_block": 4,
+      "new_bbox": [
+        510,
+        203,
+        993,
+        404
+      ],
+      "iou": 1.0
+    },
+    {
+      "old_block": 4,
+      "old_bbox": [
+        510,
+        203,
+        993,
+        404
+      ],
+      "new_figure": "figure_038",
+      "new_block": 6,
+      "new_bbox": [
+        409,
+        416,
+        677,
+        772
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 6,
+      "old_bbox": [
+        409,
+        416,
+        677,
+        772
+      ],
+      "new_figure": "figure_038",
+      "new_block": 2,
+      "new_bbox": [
+        98,
+        104,
+        498,
+        408
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 6,
+      "old_bbox": [
+        409,
+        416,
+        677,
+        772
+      ],
+      "new_figure": "figure_038",
+      "new_block": 4,
+      "new_bbox": [
+        510,
+        203,
+        993,
+        404
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 6,
+      "old_bbox": [
+        409,
+        416,
+        677,
+        772
+      ],
+      "new_figure": "figure_038",
+      "new_block": 6,
+      "new_bbox": [
+        409,
+        416,
+        677,
+        772
+      ],
+      "iou": 1.0
+    }
+  ],
+  "bbox_unavailable": false,
+  "claimed_by_new": [
+    {
+      "old_block": 2,
+      "old_bbox": [
+        98,
+        104,
+        498,
+        408
+      ],
+      "new_figure": "figure_038",
+      "new_block": 2,
+      "iou": 1.0
+    },
+    {
+      "old_block": 4,
+      "old_bbox": [
+        510,
+        203,
+        993,
+        404
+      ],
+      "new_figure": "figure_038",
+      "new_block": 4,
+      "iou": 1.0
+    },
+    {
+      "old_block": 6,
+      "old_bbox": [
+        409,
+        416,
+        677,
+        772
+      ],
+      "new_figure": "figure_038",
+      "new_block": 6,
+      "iou": 1.0
+    }
+  ],
+  "lost_bboxes": [],
+  "unmatched_bboxes": [],
+  "owner_evidence": [
+    {
+      "old_block": 2,
+      "old_bbox": [
+        98,
+        104,
+        498,
+        408
+      ],
+      "old_caption_block": 10,
+      "old_caption_distance": 816,
+      "old_caption_horizontal_gap": 245.5,
+      "old_caption_adjacent": false,
+      "claimed_by_figure": "figure_038",
+      "claimed_by_caption_block": 7,
+      "claimed_by_caption_distance": 383,
+      "claimed_by_caption_horizontal_gap": 246.0,
+      "claimed_by_caption_adjacent": false
+    },
+    {
+      "old_block": 4,
+      "old_bbox": [
+        510,
+        203,
+        993,
+        404
+      ],
+      "old_caption_block": 10,
+      "old_caption_distance": 820,
+      "old_caption_horizontal_gap": 208.0,
+      "old_caption_adjacent": false,
+      "claimed_by_figure": "figure_038",
+      "claimed_by_caption_block": 7,
+      "claimed_by_caption_distance": 387,
+      "claimed_by_caption_horizontal_gap": 207.5,
+      "claimed_by_caption_adjacent": false
+    },
+    {
+      "old_block": 6,
+      "old_bbox": [
+        409,
+        416,
+        677,
+        772
+      ],
+      "old_caption_block": 10,
+      "old_caption_distance": 452,
+      "old_caption_horizontal_gap": 0.5,
+      "old_caption_adjacent": false,
+      "claimed_by_figure": "figure_038",
+      "claimed_by_caption_block": 7,
+      "claimed_by_caption_distance": 19,
+      "claimed_by_caption_horizontal_gap": 1.0,
+      "claimed_by_caption_adjacent": true
+    }
+  ],
+  "classification": "OLD_MISMATCH",
+  "confidence": "medium",
+  "evidence": "old caption is not adjacent to old bbox while another caption is; old association likely wrong",
+  "proposed_action": "no action (old wrong)",
+  "overlay_image": "docs/evidence/m2a/F5CHZH3H/page_overlay_figure_044.jpg",
+  "thumbnail_paths": [
+    "docs/evidence/m2a/F5CHZH3H/figure_044_old_asset_bbox_0.png",
+    "docs/evidence/m2a/F5CHZH3H/figure_044_old_asset_bbox_1.png",
+    "docs/evidence/m2a/F5CHZH3H/figure_044_old_asset_bbox_2.png",
+    "docs/evidence/m2a/F5CHZH3H/figure_044_old_asset_bbox_0.png",
+    "docs/evidence/m2a/F5CHZH3H/figure_044_old_asset_bbox_1.png",
+    "docs/evidence/m2a/F5CHZH3H/figure_044_old_asset_bbox_2.png"
+  ],
+  "contact_sheet": "docs/evidence/m2a/F5CHZH3H/contact_sheet_figure_044.jpg"
+}

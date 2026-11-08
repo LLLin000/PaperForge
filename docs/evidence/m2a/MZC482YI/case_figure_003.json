@@ -1,0 +1,341 @@
+{
+  "key": "MZC482YI",
+  "old_target": "render/figures/figure_003.md",
+  "old_id": "figure_003",
+  "page": 3,
+  "meta_pages": 6,
+  "old_inventory": {
+    "figure_id": "figure_003",
+    "figure_namespace": "main",
+    "figure_number": 3,
+    "legend_block_id": "3",
+    "page": 3,
+    "text": "Figure 3 Illustration shows the critical shoulder angle (CSA) measurement. The CSA is defined as a line connecting the superior and inferior bony margins of the glenoid and an intersecting line drawn from the inferior bony margin of the glenoid to the most lateral border of the acromion. $ ^{12} $",
+    "matched_assets": [
+      {
+        "block_id": 2,
+        "bbox": [
+          92,
+          113,
+          537,
+          732
+        ],
+        "page": 3
+      }
+    ],
+    "asset_block_ids": [
+      "2"
+    ],
+    "settlement_type": "same_page",
+    "confidence": 0.955,
+    "match_score": {
+      "score": 0.955,
+      "decision": "matched",
+      "evidence": [
+        "same_page",
+        "x_overlap",
+        "nearby_y",
+        "caption_above_or_below"
+      ]
+    },
+    "flags": [],
+    "bridge_block_ids": [],
+    "consumed_block_ids": [
+      "2"
+    ]
+  },
+  "old_render_exists": true,
+  "old_asset_exists": false,
+  "old_asset_path": null,
+  "new_figures_on_page": [
+    {
+      "figure_id": "figure_004",
+      "figure_number": 4,
+      "page": 3,
+      "text": "Figure 4 Measuring glenoid inclination using the β-angle on an X-ray image: The β-angle is measured from the angle formed by a line along the floor of the supraspinatus fossa and the glenoid fossa line. $ ^{10} $",
+      "matched_assets": [
+        {
+          "block_id": 2,
+          "bbox": [
+            92,
+            113,
+            537,
+            732
+          ],
+          "page": 3
+        },
+        {
+          "block_id": 7,
+          "bbox": [
+            618,
+            112,
+            1062,
+            559
+          ],
+          "page": 3
+        }
+      ]
+    }
+  ],
+  "caption_candidate_rows": [
+    {
+      "block_id": 3,
+      "role": "figure_caption",
+      "bbox": [
+        71,
+        751,
+        557,
+        861
+      ],
+      "text": "Figure 3 Illustration shows the critical shoulder angle (CSA) measurement. The CSA is defined as a line connecting the superior and inferior bony margins of the glenoid and an intersecting line drawn from the inferior bony margin of the glenoid to the most lateral border of the acromion. $ ^{12} $"
+    },
+    {
+      "block_id": 8,
+      "role": "figure_caption",
+      "bbox": [
+        596,
+        575,
+        1084,
+        663
+      ],
+      "text": "Figure 4 Measuring glenoid inclination using the β-angle on an X-ray image: The β-angle is measured from the angle formed by a line along the floor of the supraspinatus fossa and the glenoid fossa line. $ ^{10} $"
+    }
+  ],
+  "unmatched_assets_page": [],
+  "raw_page_blocks": [
+    {
+      "block_id": 0,
+      "bbox": [
+        74,
+        65,
+        119,
+        86
+      ],
+      "role": null,
+      "text": "1950"
+    },
+    {
+      "block_id": 1,
+      "bbox": [
+        938,
+        64,
+        1081,
+        88
+      ],
+      "role": null,
+      "text": "M. Daggett et al."
+    },
+    {
+      "block_id": 2,
+      "bbox": [
+        92,
+        113,
+        537,
+        732
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 3,
+      "bbox": [
+        71,
+        751,
+        557,
+        861
+      ],
+      "role": null,
+      "text": "Figure 3 Illustration shows the critical shoulder angle (CSA) measurement. The CSA is defined as a line connecting the superior and inferior bony margins of the glenoid and an intersecting line drawn "
+    },
+    {
+      "block_id": 4,
+      "bbox": [
+        70,
+        919,
+        560,
+        1117
+      ],
+      "role": null,
+      "text": "The glenoid inclination was then measured on the CT scan using the validated Glenosys 3-D software. $ ^{23} $ After segmentation and reformatting, the software program determines the planes of the sca"
+    },
+    {
+      "block_id": 5,
+      "bbox": [
+        71,
+        1141,
+        167,
+        1165
+      ],
+      "role": null,
+      "text": "Statistics"
+    },
+    {
+      "block_id": 6,
+      "bbox": [
+        70,
+        1192,
+        560,
+        1412
+      ],
+      "role": null,
+      "text": "Regression analysis was used to analyze the relationship between CSA and glenoid inclination. The Mann-Whitney U test was used to compare the CSA on AP radiographs between the osteoarthritis (A1 group"
+    },
+    {
+      "block_id": 7,
+      "bbox": [
+        618,
+        112,
+        1062,
+        559
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 8,
+      "bbox": [
+        596,
+        575,
+        1084,
+        663
+      ],
+      "role": null,
+      "text": "Figure 4 Measuring glenoid inclination using the β-angle on an X-ray image: The β-angle is measured from the angle formed by a line along the floor of the supraspinatus fossa and the glenoid fossa lin"
+    },
+    {
+      "block_id": 9,
+      "bbox": [
+        597,
+        688,
+        680,
+        713
+      ],
+      "role": null,
+      "text": "Results"
+    },
+    {
+      "block_id": 10,
+      "bbox": [
+        594,
+        742,
+        1084,
+        956
+      ],
+      "role": null,
+      "text": "A statistically significant correlation was found between the glenoid inclination and the CSA in both groups. Glenoid inclination demonstrated a linear relationship to the CSA ( $ R^{2} = 0.7426 $, P "
+    },
+    {
+      "block_id": 11,
+      "bbox": [
+        594,
+        958,
+        1084,
+        1148
+      ],
+      "role": null,
+      "text": "There were distinct differences in the CSA between the 2 groups. Patients in the A1 group had a mean CSA of  $ 27.7^{\\circ} $ (standard deviation [SD],  $ 3.4^{\\circ} $; range,  $ 17^{\\circ}-33^{\\circ"
+    },
+    {
+      "block_id": 12,
+      "bbox": [
+        594,
+        1150,
+        1084,
+        1414
+      ],
+      "role": null,
+      "text": "There were also distinct differences of glenoid inclination between the 2 groups. As measured in the 3-D software, the A1 group had a mean glenoid inclination of 4.7° (SD, 5.6°, range, -9° to 13°), an"
+    }
+  ],
+  "embed_lines": [
+    {
+      "line": 63,
+      "text": "![[render/figures/figure_003.md]]"
+    }
+  ],
+  "bbox_overlap": [
+    {
+      "old_block": 2,
+      "old_bbox": [
+        92,
+        113,
+        537,
+        732
+      ],
+      "new_figure": "figure_004",
+      "new_block": 2,
+      "new_bbox": [
+        92,
+        113,
+        537,
+        732
+      ],
+      "iou": 1.0
+    },
+    {
+      "old_block": 2,
+      "old_bbox": [
+        92,
+        113,
+        537,
+        732
+      ],
+      "new_figure": "figure_004",
+      "new_block": 7,
+      "new_bbox": [
+        618,
+        112,
+        1062,
+        559
+      ],
+      "iou": 0.0
+    }
+  ],
+  "bbox_unavailable": false,
+  "claimed_by_new": [
+    {
+      "old_block": 2,
+      "old_bbox": [
+        92,
+        113,
+        537,
+        732
+      ],
+      "new_figure": "figure_004",
+      "new_block": 2,
+      "iou": 1.0
+    }
+  ],
+  "lost_bboxes": [],
+  "unmatched_bboxes": [],
+  "owner_evidence": [
+    {
+      "old_block": 2,
+      "old_bbox": [
+        92,
+        113,
+        537,
+        732
+      ],
+      "old_caption_block": 3,
+      "old_caption_distance": 19,
+      "old_caption_horizontal_gap": 0.5,
+      "old_caption_adjacent": true,
+      "claimed_by_figure": "figure_004",
+      "claimed_by_caption_block": 8,
+      "claimed_by_caption_distance": 0,
+      "claimed_by_caption_horizontal_gap": 525.5,
+      "claimed_by_caption_adjacent": false
+    }
+  ],
+  "classification": "REAL_ASSOCIATION_FAILURE",
+  "confidence": "high",
+  "evidence": "new figure figure_004 overclaims bbox adjacent to old caption; remove its claim and attach to old figure",
+  "proposed_action": "fix new association",
+  "overlay_image": "docs/evidence/m2a/MZC482YI/page_overlay_figure_003.jpg",
+  "thumbnail_paths": [
+    "docs/evidence/m2a/MZC482YI/figure_003_old_asset_bbox_0.png",
+    "docs/evidence/m2a/MZC482YI/figure_003_old_asset_bbox_0.png"
+  ],
+  "contact_sheet": "docs/evidence/m2a/MZC482YI/contact_sheet_figure_003.jpg"
+}

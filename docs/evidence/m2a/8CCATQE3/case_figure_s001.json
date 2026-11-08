@@ -1,0 +1,608 @@
+{
+  "key": "8CCATQE3",
+  "old_target": "render/figures/figure_s001.md",
+  "old_id": "figure_s001",
+  "page": 3,
+  "meta_pages": 10,
+  "old_inventory": {
+    "figure_id": "figure_s001",
+    "figure_namespace": "supplementary",
+    "figure_number": 1,
+    "legend_block_id": "9",
+    "page": 3,
+    "text": "Figure 1a and Figure S2 (Supporting Information) show the fabrication process for the coiled PDA/CNT yarn (CPCY) that is the stretchable energy harvesting electrode in the CM-twistron harvester (Scheme 1b). A vertically-grown CNT forest was synthesized on a silicon wafer by using chemical vapor deposition (Figure S2a(i), Supporting Information).[29,30] Two CNT sheet layers were horizontally drawn from a side wall of this forest (Figure S2a(ii), Supporting Information), stacked together so they shared the same CNT alignment direction, and then twist inserted under mechanical load while one sheet-stack end was not torsionally tethered (Figure S2a(iii), Supporting Information). The non-tethering enables preparation of CNT yarn that has low density since it contains little yarn twist (Figure S2a(iv), Supporting Information).[26] This low-density CNT yarn was then immersed in a solution of dopamine and tris-HCl buffer to self-polymerize the dopamine while the PDA was inserted into the CNT yarn (Figure 1a). Figure 1b provides spectroscopic evidence that self-polymerization dopamine has been incorporated into the CNT yarn. The peaks at 1615, 1327, and 1028 cm $ ^{-1} $ correspond to catechol aromatic rings, methylene groups, and C–N stretching vibrations, respectively.[31–33] These functional groups within the PDA confer hydrophilicity to the CNT yarn in the cell growth medium, as shown in Figure 1b inset. The intrinsic contact angle measured on a flat PDA coated surface was 21.1° and 16.3° for advancing and receding angle, respectively. Due to the hydrophilicity of PDA and the porous structure of a CNT yarn, water wicks into the hydrophilic porous matrix resulting in fully wetting surface with 0° of water contact angle.[34] Scanning electron microscope (SEM) and energy dispersive spectrometer (EDS) images of the cross-section of PDA-incorporated CNT yarn (PDA/CNT yarn) show that the PDA is evenly incorporated within the CNT yarn (Figure 1c). The incorporated PDA remains in the CNT yarn when the much further twist needed to generate a fully coiled CPCY is provided (Figures S2b and S3, Supporting Information).",
+    "matched_assets": [
+      {
+        "block_id": 3,
+        "bbox": [
+          238,
+          153,
+          564,
+          318
+        ],
+        "page": 3
+      },
+      {
+        "block_id": 5,
+        "bbox": [
+          257,
+          325,
+          551,
+          474
+        ],
+        "page": 3
+      },
+      {
+        "block_id": 6,
+        "bbox": [
+          582,
+          155,
+          960,
+          461
+        ],
+        "page": 3
+      }
+    ],
+    "asset_block_ids": [
+      "3",
+      "5",
+      "6"
+    ],
+    "settlement_type": "same_page",
+    "confidence": 0.85,
+    "match_score": {
+      "score": 0.85,
+      "decision": "matched",
+      "evidence": [
+        "same_page",
+        "distance_clustered",
+        "safe_auto_match"
+      ]
+    },
+    "flags": [],
+    "bridge_block_ids": [],
+    "consumed_block_ids": [
+      "3",
+      "5",
+      "6"
+    ]
+  },
+  "old_render_exists": true,
+  "old_asset_exists": false,
+  "old_asset_path": null,
+  "new_figures_on_page": [
+    {
+      "figure_id": "figure_main_p003_b7",
+      "figure_number": null,
+      "page": 3,
+      "text": "Scheme 1. Structure and components diagram of FESA. Schematic illustration showing a) overall structure and conceptual illustration of FESA for the proliferation and differentiation of cells, including b) CM-twistron energy harvesters, c) conductive scaffold, d) elastomer sealing body, and e) cell c",
+      "matched_assets": [
+        {
+          "block_id": 3,
+          "bbox": [
+            238,
+            153,
+            564,
+            318
+          ],
+          "page": 3
+        },
+        {
+          "block_id": 5,
+          "bbox": [
+            257,
+            325,
+            551,
+            474
+          ],
+          "page": 3
+        },
+        {
+          "block_id": 6,
+          "bbox": [
+            582,
+            155,
+            960,
+            461
+          ],
+          "page": 3
+        }
+      ]
+    }
+  ],
+  "caption_candidate_rows": [
+    {
+      "block_id": 7,
+      "role": "figure_caption",
+      "bbox": [
+        96,
+        485,
+        1100,
+        544
+      ],
+      "text": "Scheme 1. Structure and components diagram of FESA. Schematic illustration showing a) overall structure and conceptual illustration of FESA for the proliferation and differentiation of cells, including b) CM-twistron energy harvesters, c) conductive scaffold, d) elastomer sealing body, and e) cell c"
+    },
+    {
+      "block_id": 9,
+      "role": "figure_caption_candidate",
+      "bbox": [
+        96,
+        627,
+        588,
+        1378
+      ],
+      "text": "Figure 1a and Figure S2 (Supporting Information) show the fabrication process for the coiled PDA/CNT yarn (CPCY) that is the stretchable energy harvesting electrode in the CM-twistron harvester (Scheme 1b). A vertically-grown CNT forest was synthesized on a silicon wafer by using chemical vapor depo"
+    }
+  ],
+  "unmatched_assets_page": [],
+  "raw_page_blocks": [
+    {
+      "block_id": 0,
+      "bbox": [
+        97,
+        45,
+        346,
+        117
+      ],
+      "role": null,
+      "text": "ADVANCED SCIENCE NEWS\nwww.advancedsciencenews.com"
+    },
+    {
+      "block_id": 1,
+      "bbox": [
+        966,
+        42,
+        1097,
+        117
+      ],
+      "role": null,
+      "text": "ADVANCED FUNCTIONAL MATERIALS w.afm-journal.de"
+    },
+    {
+      "block_id": 2,
+      "bbox": [
+        242,
+        153,
+        267,
+        175
+      ],
+      "role": null,
+      "text": "(a)"
+    },
+    {
+      "block_id": 3,
+      "bbox": [
+        238,
+        153,
+        564,
+        318
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 4,
+      "bbox": [
+        585,
+        155,
+        610,
+        177
+      ],
+      "role": null,
+      "text": "(b)"
+    },
+    {
+      "block_id": 5,
+      "bbox": [
+        257,
+        325,
+        551,
+        474
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 6,
+      "bbox": [
+        582,
+        155,
+        960,
+        461
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 7,
+      "bbox": [
+        96,
+        485,
+        1100,
+        544
+      ],
+      "role": null,
+      "text": "Scheme 1. Structure and components diagram of FESA. Schematic illustration showing a) overall structure and conceptual illustration of FESA for the proliferation and differentiation of cells, includin"
+    },
+    {
+      "block_id": 8,
+      "bbox": [
+        95,
+        588,
+        509,
+        610
+      ],
+      "role": null,
+      "text": "2.2. Fabrication and Harvesting Performances of CPCY"
+    },
+    {
+      "block_id": 9,
+      "bbox": [
+        96,
+        627,
+        588,
+        1378
+      ],
+      "role": null,
+      "text": "Figure 1a and Figure S2 (Supporting Information) show the fabrication process for the coiled PDA/CNT yarn (CPCY) that is the stretchable energy harvesting electrode in the CM-twistron harvester (Schem"
+    },
+    {
+      "block_id": 10,
+      "bbox": [
+        95,
+        1378,
+        588,
+        1443
+      ],
+      "role": null,
+      "text": "Figure 1d illustrates mechanical energy harvesting during stretch and release of the twistron harvester that consists of CPCY as a CM-twistron electrode, a Pt mesh as a non-deformed counter electrode,"
+    },
+    {
+      "block_id": 11,
+      "bbox": [
+        604,
+        587,
+        1098,
+        959
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 12,
+      "bbox": [
+        604,
+        962,
+        1099,
+        1445
+      ],
+      "role": null,
+      "text": "To clarify the energy harvesting mechanism for the CM-twistron harvester as shown in Figure 1d, it is necessary to verify the physical absorption of ions in CPCY. The physical absorption of ions as a "
+    },
+    {
+      "block_id": 13,
+      "bbox": [
+        98,
+        1487,
+        315,
+        1505
+      ],
+      "role": null,
+      "text": "Adv. Funct. Mater. 2024, 34, 2315279"
+    },
+    {
+      "block_id": 14,
+      "bbox": [
+        530,
+        1484,
+        665,
+        1507
+      ],
+      "role": null,
+      "text": "2315279 (3 of 10)"
+    },
+    {
+      "block_id": 15,
+      "bbox": [
+        937,
+        1487,
+        1096,
+        1506
+      ],
+      "role": null,
+      "text": "© 2024 Wiley-VCH GmbH"
+    },
+    {
+      "block_id": 16,
+      "bbox": [
+        1155,
+        30,
+        1172,
+        1533
+      ],
+      "role": null,
+      "text": "16163028, 2024, 33, Downloaded from https://advanced.onlinelibrary.wiley.com/dat/10.1002/adfm.202315279 by Shandong University Library, Wiley Online Library on [28/02/2026]. See the Terms and Conditio"
+    }
+  ],
+  "embed_lines": [
+    {
+      "line": 44,
+      "text": "![[render/figures/figure_s001.md]]"
+    }
+  ],
+  "bbox_overlap": [
+    {
+      "old_block": 3,
+      "old_bbox": [
+        238,
+        153,
+        564,
+        318
+      ],
+      "new_figure": "figure_main_p003_b7",
+      "new_block": 3,
+      "new_bbox": [
+        238,
+        153,
+        564,
+        318
+      ],
+      "iou": 1.0
+    },
+    {
+      "old_block": 3,
+      "old_bbox": [
+        238,
+        153,
+        564,
+        318
+      ],
+      "new_figure": "figure_main_p003_b7",
+      "new_block": 5,
+      "new_bbox": [
+        257,
+        325,
+        551,
+        474
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 3,
+      "old_bbox": [
+        238,
+        153,
+        564,
+        318
+      ],
+      "new_figure": "figure_main_p003_b7",
+      "new_block": 6,
+      "new_bbox": [
+        582,
+        155,
+        960,
+        461
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 5,
+      "old_bbox": [
+        257,
+        325,
+        551,
+        474
+      ],
+      "new_figure": "figure_main_p003_b7",
+      "new_block": 3,
+      "new_bbox": [
+        238,
+        153,
+        564,
+        318
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 5,
+      "old_bbox": [
+        257,
+        325,
+        551,
+        474
+      ],
+      "new_figure": "figure_main_p003_b7",
+      "new_block": 5,
+      "new_bbox": [
+        257,
+        325,
+        551,
+        474
+      ],
+      "iou": 1.0
+    },
+    {
+      "old_block": 5,
+      "old_bbox": [
+        257,
+        325,
+        551,
+        474
+      ],
+      "new_figure": "figure_main_p003_b7",
+      "new_block": 6,
+      "new_bbox": [
+        582,
+        155,
+        960,
+        461
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 6,
+      "old_bbox": [
+        582,
+        155,
+        960,
+        461
+      ],
+      "new_figure": "figure_main_p003_b7",
+      "new_block": 3,
+      "new_bbox": [
+        238,
+        153,
+        564,
+        318
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 6,
+      "old_bbox": [
+        582,
+        155,
+        960,
+        461
+      ],
+      "new_figure": "figure_main_p003_b7",
+      "new_block": 5,
+      "new_bbox": [
+        257,
+        325,
+        551,
+        474
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 6,
+      "old_bbox": [
+        582,
+        155,
+        960,
+        461
+      ],
+      "new_figure": "figure_main_p003_b7",
+      "new_block": 6,
+      "new_bbox": [
+        582,
+        155,
+        960,
+        461
+      ],
+      "iou": 1.0
+    }
+  ],
+  "bbox_unavailable": false,
+  "claimed_by_new": [
+    {
+      "old_block": 3,
+      "old_bbox": [
+        238,
+        153,
+        564,
+        318
+      ],
+      "new_figure": "figure_main_p003_b7",
+      "new_block": 3,
+      "iou": 1.0
+    },
+    {
+      "old_block": 5,
+      "old_bbox": [
+        257,
+        325,
+        551,
+        474
+      ],
+      "new_figure": "figure_main_p003_b7",
+      "new_block": 5,
+      "iou": 1.0
+    },
+    {
+      "old_block": 6,
+      "old_bbox": [
+        582,
+        155,
+        960,
+        461
+      ],
+      "new_figure": "figure_main_p003_b7",
+      "new_block": 6,
+      "iou": 1.0
+    }
+  ],
+  "lost_bboxes": [],
+  "unmatched_bboxes": [],
+  "owner_evidence": [
+    {
+      "old_block": 3,
+      "old_bbox": [
+        238,
+        153,
+        564,
+        318
+      ],
+      "old_caption_block": 9,
+      "old_caption_distance": 309,
+      "old_caption_horizontal_gap": 59.0,
+      "old_caption_adjacent": false,
+      "claimed_by_figure": "figure_main_p003_b7",
+      "claimed_by_caption_block": null,
+      "claimed_by_caption_distance": null,
+      "claimed_by_caption_horizontal_gap": null,
+      "claimed_by_caption_adjacent": false
+    },
+    {
+      "old_block": 5,
+      "old_bbox": [
+        257,
+        325,
+        551,
+        474
+      ],
+      "old_caption_block": 9,
+      "old_caption_distance": 153,
+      "old_caption_horizontal_gap": 62.0,
+      "old_caption_adjacent": true,
+      "claimed_by_figure": "figure_main_p003_b7",
+      "claimed_by_caption_block": null,
+      "claimed_by_caption_distance": null,
+      "claimed_by_caption_horizontal_gap": null,
+      "claimed_by_caption_adjacent": false
+    },
+    {
+      "old_block": 6,
+      "old_bbox": [
+        582,
+        155,
+        960,
+        461
+      ],
+      "old_caption_block": 9,
+      "old_caption_distance": 166,
+      "old_caption_horizontal_gap": 429.0,
+      "old_caption_adjacent": false,
+      "claimed_by_figure": "figure_main_p003_b7",
+      "claimed_by_caption_block": null,
+      "claimed_by_caption_distance": null,
+      "claimed_by_caption_horizontal_gap": null,
+      "claimed_by_caption_adjacent": false
+    }
+  ],
+  "classification": "CAPTION_MISCLASSIFIED",
+  "confidence": "high",
+  "evidence": "old text is body prose referencing figures ('Figure 1a and Figure S2 show the fabrication process...'), not a figure caption; caption classification prevents association",
+  "proposed_action": "fix caption classification",
+  "overlay_image": "docs/evidence/m2a/8CCATQE3/page_overlay_figure_s001.jpg",
+  "thumbnail_paths": [
+    "docs/evidence/m2a/8CCATQE3/figure_s001_old_asset_bbox_0.png",
+    "docs/evidence/m2a/8CCATQE3/figure_s001_old_asset_bbox_1.png",
+    "docs/evidence/m2a/8CCATQE3/figure_s001_old_asset_bbox_2.png",
+    "docs/evidence/m2a/8CCATQE3/figure_s001_old_asset_bbox_0.png",
+    "docs/evidence/m2a/8CCATQE3/figure_s001_old_asset_bbox_1.png",
+    "docs/evidence/m2a/8CCATQE3/figure_s001_old_asset_bbox_2.png"
+  ],
+  "contact_sheet": "docs/evidence/m2a/8CCATQE3/contact_sheet_figure_s001.jpg"
+}

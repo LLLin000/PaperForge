@@ -1,0 +1,236 @@
+{
+  "key": "WV2FF4NV",
+  "old_target": "render/figures/figure_010.md",
+  "old_id": "figure_010",
+  "page": 15,
+  "meta_pages": 21,
+  "old_inventory": {
+    "figure_id": "figure_010",
+    "figure_namespace": "main",
+    "figure_number": 10,
+    "legend_block_id": "5",
+    "page": 15,
+    "text": "Fig. 10 Histological scores for evaluation of osteochondral repair. A Scores for overall defect evaluation. B Scores for subchondral bone evaluation. C Scores for cartilage evaluation. Compared to the Blank group, scores for all parameters except bone morphology were significantly higher in the EMF group. Data are shown as median (inter quartile range (IQR)) (n=5). # indicates no significant difference, *p<0.05, **p<0.01, ***p<0.001 compared to blank group. The bold horizontal indicates no significant difference among groups under its coverage.",
+    "matched_assets": [
+      {
+        "block_id": 2,
+        "bbox": [
+          114,
+          178,
+          1071,
+          1080
+        ],
+        "page": 15
+      }
+    ],
+    "asset_block_ids": [
+      "2"
+    ],
+    "settlement_type": "same_page",
+    "confidence": 0.955,
+    "match_score": {
+      "score": 0.955,
+      "decision": "matched",
+      "evidence": [
+        "same_page",
+        "x_overlap",
+        "nearby_y",
+        "caption_above_or_below"
+      ]
+    },
+    "flags": [],
+    "bridge_block_ids": [],
+    "consumed_block_ids": [
+      "2"
+    ]
+  },
+  "old_render_exists": true,
+  "old_asset_exists": false,
+  "old_asset_path": null,
+  "new_figures_on_page": [
+    {
+      "figure_id": "figure_009",
+      "figure_number": 9,
+      "page": 15,
+      "text": "Fig. 9 Histological analysis of newly formed tissue at 12 weeks post-surgery. The staining of hematoxylin and eosin (H&E), toluidine blue (T-B), and Safranin O-fast green (S-F) showed that there was obvious defect in the Blank group, little neocartilage in cell-free groups, and evident repair in cel",
+      "matched_assets": [
+        {
+          "block_id": 2,
+          "bbox": [
+            114,
+            178,
+            1071,
+            1080
+          ],
+          "page": 15
+        }
+      ]
+    }
+  ],
+  "caption_candidate_rows": [
+    {
+      "block_id": 3,
+      "role": "figure_caption",
+      "bbox": [
+        119,
+        1084,
+        1034,
+        1188
+      ],
+      "text": "Fig. 9 Histological analysis of newly formed tissue at 12 weeks post-surgery. The staining of hematoxylin and eosin (H&E), toluidine blue (T-B), and Safranin O-fast green (S-F) showed that there was obvious defect in the Blank group, little neocartilage in cell-free groups, and evident repair in cel"
+    },
+    {
+      "block_id": 5,
+      "role": "figure_caption_candidate",
+      "bbox": [
+        119,
+        1359,
+        1062,
+        1445
+      ],
+      "text": "Fig. 10 Histological scores for evaluation of osteochondral repair. A Scores for overall defect evaluation. B Scores for subchondral bone evaluation. C Scores for cartilage evaluation. Compared to the Blank group, scores for all parameters except bone morphology were significantly higher in the EMF "
+    }
+  ],
+  "unmatched_assets_page": [],
+  "raw_page_blocks": [
+    {
+      "block_id": 0,
+      "bbox": [
+        109,
+        63,
+        409,
+        85
+      ],
+      "role": null,
+      "text": "Yan et al. Stem Cell Res Ther (2021) 12:572"
+    },
+    {
+      "block_id": 1,
+      "bbox": [
+        985,
+        64,
+        1080,
+        86
+      ],
+      "role": null,
+      "text": "Page 15 of 21"
+    },
+    {
+      "block_id": 2,
+      "bbox": [
+        114,
+        178,
+        1071,
+        1080
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 3,
+      "bbox": [
+        119,
+        1084,
+        1034,
+        1188
+      ],
+      "role": null,
+      "text": "Fig. 9 Histological analysis of newly formed tissue at 12 weeks post-surgery. The staining of hematoxylin and eosin (H&E), toluidine blue (T-B), and Safranin O-fast green (S-F) showed that there was o"
+    },
+    {
+      "block_id": 4,
+      "bbox": [
+        121,
+        1341,
+        293,
+        1362
+      ],
+      "role": null,
+      "text": "(See figure on next page.)"
+    },
+    {
+      "block_id": 5,
+      "bbox": [
+        119,
+        1359,
+        1062,
+        1445
+      ],
+      "role": null,
+      "text": "Fig. 10 Histological scores for evaluation of osteochondral repair. A Scores for overall defect evaluation. B Scores for subchondral bone evaluation. C Scores for cartilage evaluation. Compared to the"
+    }
+  ],
+  "embed_lines": [
+    {
+      "line": 196,
+      "text": "![[render/figures/figure_010.md]]"
+    }
+  ],
+  "bbox_overlap": [
+    {
+      "old_block": 2,
+      "old_bbox": [
+        114,
+        178,
+        1071,
+        1080
+      ],
+      "new_figure": "figure_009",
+      "new_block": 2,
+      "new_bbox": [
+        114,
+        178,
+        1071,
+        1080
+      ],
+      "iou": 1.0
+    }
+  ],
+  "bbox_unavailable": false,
+  "claimed_by_new": [
+    {
+      "old_block": 2,
+      "old_bbox": [
+        114,
+        178,
+        1071,
+        1080
+      ],
+      "new_figure": "figure_009",
+      "new_block": 2,
+      "iou": 1.0
+    }
+  ],
+  "lost_bboxes": [],
+  "unmatched_bboxes": [],
+  "owner_evidence": [
+    {
+      "old_block": 2,
+      "old_bbox": [
+        114,
+        178,
+        1071,
+        1080
+      ],
+      "old_caption_block": 5,
+      "old_caption_distance": 279,
+      "old_caption_horizontal_gap": 2.0,
+      "old_caption_adjacent": false,
+      "claimed_by_figure": "figure_009",
+      "claimed_by_caption_block": 3,
+      "claimed_by_caption_distance": 4,
+      "claimed_by_caption_horizontal_gap": 16.0,
+      "claimed_by_caption_adjacent": true
+    }
+  ],
+  "classification": "OLD_MISMATCH",
+  "confidence": "medium",
+  "evidence": "old caption is not adjacent to old bbox while another caption is; old association likely wrong",
+  "proposed_action": "no action (old wrong)",
+  "overlay_image": "docs/evidence/m2a/WV2FF4NV/page_overlay_figure_010.jpg",
+  "thumbnail_paths": [
+    "docs/evidence/m2a/WV2FF4NV/figure_010_old_asset_bbox_0.png",
+    "docs/evidence/m2a/WV2FF4NV/figure_010_old_asset_bbox_0.png"
+  ],
+  "contact_sheet": "docs/evidence/m2a/WV2FF4NV/contact_sheet_figure_010.jpg"
+}

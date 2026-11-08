@@ -1,0 +1,343 @@
+{
+  "key": "XU3QKIPZ",
+  "old_target": "render/figures/figure_004.md",
+  "old_id": "figure_004",
+  "page": 4,
+  "meta_pages": 9,
+  "old_inventory": {
+    "figure_id": "figure_004",
+    "figure_namespace": "main",
+    "figure_number": 4,
+    "legend_block_id": "5",
+    "page": 4,
+    "text": "Fig. 4. Effect of IL-1 $ \\beta $ and/or signal transduction inhibitors on the regulation of MMP mRNA levels by electrical stimulation. For the groups labeled None, Neomycin, Verapamil and Cyclosporin, n = 12; for all other groups, n = 6. (A) MMP-1 expression. * denotes P < 0.0001, NS = not significant (P > 0.99); ** denotes unstimulated groups not significantly different from each other (P > 0.22); † denotes stimulated groups not significantly different from each other (P > 0.55). (B) MMP-3 expression. * denotes P < 0.0001, NS = not significant (P > 0.99); ** denotes unstimulated groups not significantly different from each other (P > 0.47); † denotes stimulated groups not significantly different from each other (P > 0.12). (C) MMP-13 expression. * denotes P < 0.0001, NS = not significant (P > 0.99); ** denotes unstimulated groups not significantly different from each other (P > 0.89). † denotes stimulated groups not significantly different from each other (P > 0.89).",
+    "matched_assets": [
+      {
+        "block_id": 2,
+        "bbox": [
+          265,
+          145,
+          961,
+          626
+        ],
+        "page": 4
+      },
+      {
+        "block_id": 3,
+        "bbox": [
+          264,
+          658,
+          965,
+          1138
+        ],
+        "page": 4
+      }
+    ],
+    "asset_block_ids": [
+      "2",
+      "3"
+    ],
+    "settlement_type": "same_page",
+    "confidence": 0.85,
+    "match_score": {
+      "score": 0.85,
+      "decision": "matched",
+      "evidence": [
+        "same_page",
+        "distance_clustered",
+        "safe_auto_match"
+      ]
+    },
+    "flags": [],
+    "bridge_block_ids": [],
+    "consumed_block_ids": [
+      "2",
+      "3"
+    ]
+  },
+  "old_render_exists": true,
+  "old_asset_exists": false,
+  "old_asset_path": null,
+  "new_figures_on_page": [
+    {
+      "figure_id": "figure_003",
+      "figure_number": 3,
+      "page": 4,
+      "text": "Fig. 3. Effect of signal transduction inhibitors on the regulation of aggrecan and type II collagen mRNA levels by electrical stimulation. For the groups labeled None, Neomycin, Verapamil and Cyclosporin, n=12; for all other groups, n=6. (A) Aggrecan expression. * denotes  $ P<0.0001 $, NS = not sig",
+      "matched_assets": [
+        {
+          "block_id": 2,
+          "bbox": [
+            265,
+            145,
+            961,
+            626
+          ],
+          "page": 4
+        },
+        {
+          "block_id": 3,
+          "bbox": [
+            264,
+            658,
+            965,
+            1138
+          ],
+          "page": 4
+        }
+      ]
+    }
+  ],
+  "caption_candidate_rows": [
+    {
+      "block_id": 4,
+      "role": "figure_caption",
+      "bbox": [
+        119,
+        1156,
+        1108,
+        1272
+      ],
+      "text": "Fig. 3. Effect of signal transduction inhibitors on the regulation of aggrecan and type II collagen mRNA levels by electrical stimulation. For the groups labeled None, Neomycin, Verapamil and Cyclosporin, n=12; for all other groups, n=6. (A) Aggrecan expression. * denotes  $ P<0.0001 $, NS = not sig"
+    },
+    {
+      "block_id": 5,
+      "role": "figure_caption_candidate",
+      "bbox": [
+        121,
+        1339,
+        1107,
+        1482
+      ],
+      "text": "Fig. 4. Effect of IL-1 $ \\beta $ and/or signal transduction inhibitors on the regulation of MMP mRNA levels by electrical stimulation. For the groups labeled None, Neomycin, Verapamil and Cyclosporin, n = 12; for all other groups, n = 6. (A) MMP-1 expression. * denotes P < 0.0001, NS = not significa"
+    }
+  ],
+  "unmatched_assets_page": [],
+  "raw_page_blocks": [
+    {
+      "block_id": 0,
+      "bbox": [
+        122,
+        93,
+        158,
+        112
+      ],
+      "role": null,
+      "text": "400"
+    },
+    {
+      "block_id": 1,
+      "bbox": [
+        495,
+        94,
+        1108,
+        116
+      ],
+      "role": null,
+      "text": "J. Xu et al.: Signal transduction in electrically stimulated chondrocytes"
+    },
+    {
+      "block_id": 2,
+      "bbox": [
+        265,
+        145,
+        961,
+        626
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 3,
+      "bbox": [
+        264,
+        658,
+        965,
+        1138
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 4,
+      "bbox": [
+        119,
+        1156,
+        1108,
+        1272
+      ],
+      "role": null,
+      "text": "Fig. 3. Effect of signal transduction inhibitors on the regulation of aggrecan and type II collagen mRNA levels by electrical stimulation. For the groups labeled None, Neomycin, Verapamil and Cyclospo"
+    },
+    {
+      "block_id": 5,
+      "bbox": [
+        121,
+        1339,
+        1107,
+        1482
+      ],
+      "role": null,
+      "text": "Fig. 4. Effect of IL-1 $ \\beta $ and/or signal transduction inhibitors on the regulation of MMP mRNA levels by electrical stimulation. For the groups labeled None, Neomycin, Verapamil and Cyclosporin,"
+    }
+  ],
+  "embed_lines": [
+    {
+      "line": 80,
+      "text": "![[render/figures/figure_004.md]]"
+    }
+  ],
+  "bbox_overlap": [
+    {
+      "old_block": 2,
+      "old_bbox": [
+        265,
+        145,
+        961,
+        626
+      ],
+      "new_figure": "figure_003",
+      "new_block": 2,
+      "new_bbox": [
+        265,
+        145,
+        961,
+        626
+      ],
+      "iou": 1.0
+    },
+    {
+      "old_block": 2,
+      "old_bbox": [
+        265,
+        145,
+        961,
+        626
+      ],
+      "new_figure": "figure_003",
+      "new_block": 3,
+      "new_bbox": [
+        264,
+        658,
+        965,
+        1138
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 3,
+      "old_bbox": [
+        264,
+        658,
+        965,
+        1138
+      ],
+      "new_figure": "figure_003",
+      "new_block": 2,
+      "new_bbox": [
+        265,
+        145,
+        961,
+        626
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 3,
+      "old_bbox": [
+        264,
+        658,
+        965,
+        1138
+      ],
+      "new_figure": "figure_003",
+      "new_block": 3,
+      "new_bbox": [
+        264,
+        658,
+        965,
+        1138
+      ],
+      "iou": 1.0
+    }
+  ],
+  "bbox_unavailable": false,
+  "claimed_by_new": [
+    {
+      "old_block": 2,
+      "old_bbox": [
+        265,
+        145,
+        961,
+        626
+      ],
+      "new_figure": "figure_003",
+      "new_block": 2,
+      "iou": 1.0
+    },
+    {
+      "old_block": 3,
+      "old_bbox": [
+        264,
+        658,
+        965,
+        1138
+      ],
+      "new_figure": "figure_003",
+      "new_block": 3,
+      "iou": 1.0
+    }
+  ],
+  "lost_bboxes": [],
+  "unmatched_bboxes": [],
+  "owner_evidence": [
+    {
+      "old_block": 2,
+      "old_bbox": [
+        265,
+        145,
+        961,
+        626
+      ],
+      "old_caption_block": 5,
+      "old_caption_distance": 713,
+      "old_caption_horizontal_gap": 1.0,
+      "old_caption_adjacent": false,
+      "claimed_by_figure": "figure_003",
+      "claimed_by_caption_block": 4,
+      "claimed_by_caption_distance": 530,
+      "claimed_by_caption_horizontal_gap": 0.5,
+      "claimed_by_caption_adjacent": false
+    },
+    {
+      "old_block": 3,
+      "old_bbox": [
+        264,
+        658,
+        965,
+        1138
+      ],
+      "old_caption_block": 5,
+      "old_caption_distance": 201,
+      "old_caption_horizontal_gap": 0.5,
+      "old_caption_adjacent": false,
+      "claimed_by_figure": "figure_003",
+      "claimed_by_caption_block": 4,
+      "claimed_by_caption_distance": 18,
+      "claimed_by_caption_horizontal_gap": 1.0,
+      "claimed_by_caption_adjacent": true
+    }
+  ],
+  "classification": "OLD_MISMATCH",
+  "confidence": "medium",
+  "evidence": "old caption is not adjacent to old bbox while another caption is; old association likely wrong",
+  "proposed_action": "no action (old wrong)",
+  "overlay_image": "docs/evidence/m2a/XU3QKIPZ/page_overlay_figure_004.jpg",
+  "thumbnail_paths": [
+    "docs/evidence/m2a/XU3QKIPZ/figure_004_old_asset_bbox_0.png",
+    "docs/evidence/m2a/XU3QKIPZ/figure_004_old_asset_bbox_1.png",
+    "docs/evidence/m2a/XU3QKIPZ/figure_004_old_asset_bbox_0.png",
+    "docs/evidence/m2a/XU3QKIPZ/figure_004_old_asset_bbox_1.png"
+  ],
+  "contact_sheet": "docs/evidence/m2a/XU3QKIPZ/contact_sheet_figure_004.jpg"
+}

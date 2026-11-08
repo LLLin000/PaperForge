@@ -1,0 +1,365 @@
+{
+  "key": "TJHT3UBI",
+  "old_target": "render/figures/figure_010.md",
+  "old_id": "figure_010",
+  "page": 12,
+  "meta_pages": 28,
+  "old_inventory": {
+    "figure_id": "figure_010",
+    "figure_namespace": "main",
+    "figure_number": 10,
+    "legend_block_id": "11",
+    "page": 12,
+    "text": "Fig. 10 (a) Complexation method for forming MPN composites. NPs, nanoparticles. Reproduced with permission from ref. 69. Copyright 2023, Xu et al., published by Wiley-VCH GmbH. (b) Coordination-driven rapid complexation of MPN-dopamine-modified hyaluronic acid (HAd) DOX nanoparticle composites using a turbulent mixing device. Reproduced with permission from ref. 78. Copyright 2019, Royal Society of Chemistry. (c) Synthesis and NIR-triggered actuation (reversible bending-unbending) of MPN-PNIPAAm composite hydrogels. Adapted with permission from ref. 42. Copyright 2021, American Chemical Society.",
+    "matched_assets": [
+      {
+        "block_id": 8,
+        "bbox": [
+          620,
+          88,
+          1091,
+          981
+        ],
+        "page": 12
+      }
+    ],
+    "asset_block_ids": [
+      "8"
+    ],
+    "settlement_type": "same_page",
+    "confidence": 0.855,
+    "match_score": {
+      "score": 0.855,
+      "decision": "matched",
+      "evidence": [
+        "same_page",
+        "x_overlap",
+        "nearby_y"
+      ]
+    },
+    "flags": [],
+    "bridge_block_ids": [],
+    "consumed_block_ids": [
+      "8",
+      "4"
+    ],
+    "associated_text_block_ids": [
+      "4"
+    ]
+  },
+  "old_render_exists": true,
+  "old_asset_exists": false,
+  "old_asset_path": null,
+  "new_figures_on_page": [
+    {
+      "figure_id": "figure_009",
+      "figure_number": 9,
+      "page": 12,
+      "text": "Fig. 9 Strategies for fabricating MPN composites: (a) complexation; (b) template coating; and (c) postmodification. (a) and (c) Adapted with permission from ref. 15. Copyright 2023, Springer Nature Limited.",
+      "matched_assets": [
+        {
+          "block_id": 2,
+          "bbox": [
+            97,
+            103,
+            568,
+            738
+          ],
+          "page": 12
+        },
+        {
+          "block_id": 8,
+          "bbox": [
+            620,
+            88,
+            1091,
+            981
+          ],
+          "page": 12
+        }
+      ]
+    }
+  ],
+  "caption_candidate_rows": [
+    {
+      "block_id": 3,
+      "role": "figure_caption",
+      "bbox": [
+        80,
+        752,
+        588,
+        815
+      ],
+      "text": "Fig. 9 Strategies for fabricating MPN composites: (a) complexation; (b) template coating; and (c) postmodification. (a) and (c) Adapted with permission from ref. 15. Copyright 2023, Springer Nature Limited."
+    },
+    {
+      "block_id": 11,
+      "role": "figure_caption",
+      "bbox": [
+        599,
+        973,
+        1110,
+        1156
+      ],
+      "text": "Fig. 10 (a) Complexation method for forming MPN composites. NPs, nanoparticles. Reproduced with permission from ref. 69. Copyright 2023, Xu et al., published by Wiley-VCH GmbH. (b) Coordination-driven rapid complexation of MPN-dopamine-modified hyaluronic acid (HAd) DOX nanoparticle composites using"
+    }
+  ],
+  "unmatched_assets_page": [],
+  "raw_page_blocks": [
+    {
+      "block_id": 0,
+      "bbox": [
+        83,
+        50,
+        217,
+        71
+      ],
+      "role": null,
+      "text": "Chem Soc Rev"
+    },
+    {
+      "block_id": 1,
+      "bbox": [
+        965,
+        50,
+        1108,
+        71
+      ],
+      "role": null,
+      "text": "Tutorial Review"
+    },
+    {
+      "block_id": 2,
+      "bbox": [
+        97,
+        103,
+        568,
+        738
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 3,
+      "bbox": [
+        80,
+        752,
+        588,
+        815
+      ],
+      "role": null,
+      "text": "Fig. 9 Strategies for fabricating MPN composites: (a) complexation; (b) template coating; and (c) postmodification. (a) and (c) Adapted with permission from ref. 15. Copyright 2023, Springer Nature Li"
+    },
+    {
+      "block_id": 4,
+      "bbox": [
+        78,
+        862,
+        588,
+        958
+      ],
+      "role": null,
+      "text": "components, including anticancer drugs and proteins with diverse molecular weights and isoelectric points (e.g., horseradish peroxidase (HRP)), were readily incorporated into these nanoparticles to fo"
+    },
+    {
+      "block_id": 5,
+      "bbox": [
+        78,
+        959,
+        588,
+        1292
+      ],
+      "role": null,
+      "text": "The physicochemical characteristics of MPN composite particles can be precisely modulated by manipulating the assembly conditions (e.g., type and concentration of building blocks). For example, a coor"
+    },
+    {
+      "block_id": 6,
+      "bbox": [
+        78,
+        1293,
+        588,
+        1439
+      ],
+      "role": null,
+      "text": "Metal–phenolic complexation also allows for the fabrication of bulk composite materials (e.g., supramolecular gels). $ ^{88} $ For example, high ratios of Ti $ ^{4+} $ to TA (e.g., 5:1) in N,N-dimethy"
+    },
+    {
+      "block_id": 7,
+      "bbox": [
+        625,
+        105,
+        643,
+        124
+      ],
+      "role": null,
+      "text": "a"
+    },
+    {
+      "block_id": 8,
+      "bbox": [
+        620,
+        88,
+        1091,
+        981
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 9,
+      "bbox": [
+        624,
+        366,
+        645,
+        391
+      ],
+      "role": null,
+      "text": "b"
+    },
+    {
+      "block_id": 10,
+      "bbox": [
+        624,
+        756,
+        645,
+        776
+      ],
+      "role": null,
+      "text": "C"
+    },
+    {
+      "block_id": 11,
+      "bbox": [
+        599,
+        973,
+        1110,
+        1156
+      ],
+      "role": null,
+      "text": "Fig. 10 (a) Complexation method for forming MPN composites. NPs, nanoparticles. Reproduced with permission from ref. 69. Copyright 2023, Xu et al., published by Wiley-VCH GmbH. (b) Coordination-driven"
+    },
+    {
+      "block_id": 12,
+      "bbox": [
+        599,
+        1196,
+        1112,
+        1438
+      ],
+      "role": null,
+      "text": "composites allow for the continuous release of drugs, highlighting significant potential as drug delivery systems.⁹⁰ MPN composite gels also display temperature- and pH-sensitive properties via direct"
+    },
+    {
+      "block_id": 13,
+      "bbox": [
+        81,
+        1493,
+        456,
+        1514
+      ],
+      "role": null,
+      "text": "10810 | Chem. Soc. Rev., 2024, 53, 10800-10826"
+    },
+    {
+      "block_id": 14,
+      "bbox": [
+        710,
+        1494,
+        1108,
+        1514
+      ],
+      "role": null,
+      "text": "This journal is © The Royal Society of Chemistry 2024"
+    }
+  ],
+  "embed_lines": [
+    {
+      "line": 179,
+      "text": "![[render/figures/figure_010.md]]"
+    }
+  ],
+  "bbox_overlap": [
+    {
+      "old_block": 8,
+      "old_bbox": [
+        620,
+        88,
+        1091,
+        981
+      ],
+      "new_figure": "figure_009",
+      "new_block": 2,
+      "new_bbox": [
+        97,
+        103,
+        568,
+        738
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 8,
+      "old_bbox": [
+        620,
+        88,
+        1091,
+        981
+      ],
+      "new_figure": "figure_009",
+      "new_block": 8,
+      "new_bbox": [
+        620,
+        88,
+        1091,
+        981
+      ],
+      "iou": 1.0
+    }
+  ],
+  "bbox_unavailable": false,
+  "claimed_by_new": [
+    {
+      "old_block": 8,
+      "old_bbox": [
+        620,
+        88,
+        1091,
+        981
+      ],
+      "new_figure": "figure_009",
+      "new_block": 8,
+      "iou": 1.0
+    }
+  ],
+  "lost_bboxes": [],
+  "unmatched_bboxes": [],
+  "owner_evidence": [
+    {
+      "old_block": 8,
+      "old_bbox": [
+        620,
+        88,
+        1091,
+        981
+      ],
+      "old_caption_block": 11,
+      "old_caption_distance": 0,
+      "old_caption_horizontal_gap": 1.0,
+      "old_caption_adjacent": true,
+      "claimed_by_figure": "figure_009",
+      "claimed_by_caption_block": 3,
+      "claimed_by_caption_distance": 0,
+      "claimed_by_caption_horizontal_gap": 521.5,
+      "claimed_by_caption_adjacent": false
+    }
+  ],
+  "classification": "REAL_ASSOCIATION_FAILURE",
+  "confidence": "high",
+  "evidence": "new figure figure_009 overclaims bbox adjacent to old caption; remove its claim and attach to old figure",
+  "proposed_action": "fix new association",
+  "overlay_image": "docs/evidence/m2a/TJHT3UBI/page_overlay_figure_010.jpg",
+  "thumbnail_paths": [
+    "docs/evidence/m2a/TJHT3UBI/figure_010_new_figure_009_asset_0.png"
+  ],
+  "contact_sheet": "docs/evidence/m2a/TJHT3UBI/contact_sheet_figure_010.jpg"
+}

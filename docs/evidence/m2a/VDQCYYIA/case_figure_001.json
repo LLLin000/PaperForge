@@ -1,0 +1,641 @@
+{
+  "key": "VDQCYYIA",
+  "old_target": "render/figures/figure_001.md",
+  "old_id": "figure_001",
+  "page": 4,
+  "meta_pages": 13,
+  "old_inventory": {
+    "figure_id": "figure_001",
+    "figure_namespace": "main",
+    "figure_number": 1,
+    "legend_block_id": "5",
+    "page": 4,
+    "text": "Fig. 1. Immunohistochemistry for aggrecan (A), type II (B) and type I (C) collagens of bovine chondrocytes cultured in monolayers. Nuclei were counterstained by hematoxylin.",
+    "matched_assets": [
+      {
+        "block_id": 2,
+        "bbox": [
+          90,
+          150,
+          544,
+          508
+        ],
+        "page": 4
+      },
+      {
+        "block_id": 3,
+        "bbox": [
+          90,
+          524,
+          544,
+          882
+        ],
+        "page": 4
+      },
+      {
+        "block_id": 4,
+        "bbox": [
+          90,
+          895,
+          544,
+          1256
+        ],
+        "page": 4
+      }
+    ],
+    "asset_block_ids": [
+      "2",
+      "3",
+      "4"
+    ],
+    "settlement_type": "same_page",
+    "confidence": 1.0,
+    "match_score": {
+      "score": 1.0,
+      "decision": "matched",
+      "evidence": [
+        "same_page",
+        "x_overlap",
+        "nearby_y",
+        "caption_above_or_below",
+        "multi_asset_coherence_bonus"
+      ]
+    },
+    "flags": [],
+    "bridge_block_ids": [],
+    "consumed_block_ids": [
+      "2",
+      "3",
+      "4"
+    ]
+  },
+  "old_render_exists": true,
+  "old_asset_exists": false,
+  "old_asset_path": null,
+  "new_figures_on_page": [
+    {
+      "figure_id": "figure_003",
+      "figure_number": 3,
+      "page": 4,
+      "text": "Figure 3(A) shows the immunoblot signals of A₁, A₂ₐ and A₂ᵦ adenosine receptors in bovine chondrocytes and fibroblast-like synoviocytes in the absence and in the presence of PEMF. The intensity of each band in immunoblot assay was quantified using molecular analyst/PC densitometry software (Bio-Rad)",
+      "matched_assets": [
+        {
+          "block_id": 2,
+          "bbox": [
+            90,
+            150,
+            544,
+            508
+          ],
+          "page": 4
+        },
+        {
+          "block_id": 3,
+          "bbox": [
+            90,
+            524,
+            544,
+            882
+          ],
+          "page": 4
+        },
+        {
+          "block_id": 4,
+          "bbox": [
+            90,
+            895,
+            544,
+            1256
+          ],
+          "page": 4
+        },
+        {
+          "block_id": 7,
+          "bbox": [
+            601,
+            148,
+            1064,
+            845
+          ],
+          "page": 4
+        }
+      ]
+    }
+  ],
+  "caption_candidate_rows": [
+    {
+      "block_id": 5,
+      "role": "figure_caption",
+      "bbox": [
+        80,
+        1279,
+        554,
+        1338
+      ],
+      "text": "Fig. 1. Immunohistochemistry for aggrecan (A), type II (B) and type I (C) collagens of bovine chondrocytes cultured in monolayers. Nuclei were counterstained by hematoxylin."
+    },
+    {
+      "block_id": 8,
+      "role": "figure_caption",
+      "bbox": [
+        594,
+        863,
+        1070,
+        975
+      ],
+      "text": "Fig. 2. Expression of vimentin in synovial fibroblasts (A) (original magnification 20×). Analysis of CD14 mRNA expression (B upper panel) in macrophages (MC) and in bovine fibroblast-like synoviocytes (FS). M is 100 bp DNA ladder (Biolabs). One microgram of total RNA was loaded for lane and stained "
+    },
+    {
+      "block_id": 10,
+      "role": "figure_caption_candidate",
+      "bbox": [
+        594,
+        1030,
+        1071,
+        1312
+      ],
+      "text": "Figure 3(A) shows the immunoblot signals of A₁, A₂ₐ and A₂ᵦ adenosine receptors in bovine chondrocytes and fibroblast-like synoviocytes in the absence and in the presence of PEMF. The intensity of each band in immunoblot assay was quantified using molecular analyst/PC densitometry software (Bio-Rad)"
+    }
+  ],
+  "unmatched_assets_page": [],
+  "raw_page_blocks": [
+    {
+      "block_id": 0,
+      "bbox": [
+        81,
+        93,
+        443,
+        116
+      ],
+      "role": null,
+      "text": "Osteoarthritis and Cartilage Vol. 16, No. 3"
+    },
+    {
+      "block_id": 1,
+      "bbox": [
+        1033,
+        93,
+        1068,
+        112
+      ],
+      "role": null,
+      "text": "295"
+    },
+    {
+      "block_id": 2,
+      "bbox": [
+        90,
+        150,
+        544,
+        508
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 3,
+      "bbox": [
+        90,
+        524,
+        544,
+        882
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 4,
+      "bbox": [
+        90,
+        895,
+        544,
+        1256
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 5,
+      "bbox": [
+        80,
+        1279,
+        554,
+        1338
+      ],
+      "role": null,
+      "text": "Fig. 1. Immunohistochemistry for aggrecan (A), type II (B) and type I (C) collagens of bovine chondrocytes cultured in monolayers. Nuclei were counterstained by hematoxylin."
+    },
+    {
+      "block_id": 6,
+      "bbox": [
+        79,
+        1379,
+        555,
+        1484
+      ],
+      "role": null,
+      "text": "showed the expression of vimentin, the main intermediate filament protein in mesenchymal cells and synovial fibroblast [Fig. 2(A)]. Results obtained by RT-PCR showed the absence of CD14, thus indicati"
+    },
+    {
+      "block_id": 7,
+      "bbox": [
+        601,
+        148,
+        1064,
+        845
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 8,
+      "bbox": [
+        594,
+        863,
+        1070,
+        975
+      ],
+      "role": null,
+      "text": "Fig. 2. Expression of vimentin in synovial fibroblasts (A) (original magnification 20×). Analysis of CD14 mRNA expression (B upper panel) in macrophages (MC) and in bovine fibroblast-like synoviocytes"
+    },
+    {
+      "block_id": 9,
+      "bbox": [
+        596,
+        1001,
+        745,
+        1021
+      ],
+      "role": null,
+      "text": "WESTERN BLOTTING"
+    },
+    {
+      "block_id": 10,
+      "bbox": [
+        594,
+        1030,
+        1071,
+        1312
+      ],
+      "role": null,
+      "text": "Figure 3(A) shows the immunoblot signals of A₁, A₂ₐ and A₂ᵦ adenosine receptors in bovine chondrocytes and fibroblast-like synoviocytes in the absence and in the presence of PEMF. The intensity of eac"
+    },
+    {
+      "block_id": 11,
+      "bbox": [
+        593,
+        1352,
+        995,
+        1390
+      ],
+      "role": null,
+      "text": "SATURATION BINDING EXPERIMENTS IN BOVINE CHONDROCYTES AND FIBROBLAST-LIKE SYNOVIOCYTES"
+    },
+    {
+      "block_id": 12,
+      "bbox": [
+        593,
+        1401,
+        1070,
+        1483
+      ],
+      "role": null,
+      "text": "A series of experiments were carried out to determine the effect of PEMFs on the binding parameters of  $ A_1 $,  $ A_{2A} $,  $ A_{2B} $ and  $ A_3 $ adenosine receptors in bovine chondrocytes and fi"
+    }
+  ],
+  "embed_lines": [
+    {
+      "line": 109,
+      "text": "![[render/figures/figure_001.md]]"
+    }
+  ],
+  "bbox_overlap": [
+    {
+      "old_block": 2,
+      "old_bbox": [
+        90,
+        150,
+        544,
+        508
+      ],
+      "new_figure": "figure_003",
+      "new_block": 2,
+      "new_bbox": [
+        90,
+        150,
+        544,
+        508
+      ],
+      "iou": 1.0
+    },
+    {
+      "old_block": 2,
+      "old_bbox": [
+        90,
+        150,
+        544,
+        508
+      ],
+      "new_figure": "figure_003",
+      "new_block": 3,
+      "new_bbox": [
+        90,
+        524,
+        544,
+        882
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 2,
+      "old_bbox": [
+        90,
+        150,
+        544,
+        508
+      ],
+      "new_figure": "figure_003",
+      "new_block": 4,
+      "new_bbox": [
+        90,
+        895,
+        544,
+        1256
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 2,
+      "old_bbox": [
+        90,
+        150,
+        544,
+        508
+      ],
+      "new_figure": "figure_003",
+      "new_block": 7,
+      "new_bbox": [
+        601,
+        148,
+        1064,
+        845
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 3,
+      "old_bbox": [
+        90,
+        524,
+        544,
+        882
+      ],
+      "new_figure": "figure_003",
+      "new_block": 2,
+      "new_bbox": [
+        90,
+        150,
+        544,
+        508
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 3,
+      "old_bbox": [
+        90,
+        524,
+        544,
+        882
+      ],
+      "new_figure": "figure_003",
+      "new_block": 3,
+      "new_bbox": [
+        90,
+        524,
+        544,
+        882
+      ],
+      "iou": 1.0
+    },
+    {
+      "old_block": 3,
+      "old_bbox": [
+        90,
+        524,
+        544,
+        882
+      ],
+      "new_figure": "figure_003",
+      "new_block": 4,
+      "new_bbox": [
+        90,
+        895,
+        544,
+        1256
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 3,
+      "old_bbox": [
+        90,
+        524,
+        544,
+        882
+      ],
+      "new_figure": "figure_003",
+      "new_block": 7,
+      "new_bbox": [
+        601,
+        148,
+        1064,
+        845
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 4,
+      "old_bbox": [
+        90,
+        895,
+        544,
+        1256
+      ],
+      "new_figure": "figure_003",
+      "new_block": 2,
+      "new_bbox": [
+        90,
+        150,
+        544,
+        508
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 4,
+      "old_bbox": [
+        90,
+        895,
+        544,
+        1256
+      ],
+      "new_figure": "figure_003",
+      "new_block": 3,
+      "new_bbox": [
+        90,
+        524,
+        544,
+        882
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 4,
+      "old_bbox": [
+        90,
+        895,
+        544,
+        1256
+      ],
+      "new_figure": "figure_003",
+      "new_block": 4,
+      "new_bbox": [
+        90,
+        895,
+        544,
+        1256
+      ],
+      "iou": 1.0
+    },
+    {
+      "old_block": 4,
+      "old_bbox": [
+        90,
+        895,
+        544,
+        1256
+      ],
+      "new_figure": "figure_003",
+      "new_block": 7,
+      "new_bbox": [
+        601,
+        148,
+        1064,
+        845
+      ],
+      "iou": 0.0
+    }
+  ],
+  "bbox_unavailable": false,
+  "claimed_by_new": [
+    {
+      "old_block": 2,
+      "old_bbox": [
+        90,
+        150,
+        544,
+        508
+      ],
+      "new_figure": "figure_003",
+      "new_block": 2,
+      "iou": 1.0
+    },
+    {
+      "old_block": 3,
+      "old_bbox": [
+        90,
+        524,
+        544,
+        882
+      ],
+      "new_figure": "figure_003",
+      "new_block": 3,
+      "iou": 1.0
+    },
+    {
+      "old_block": 4,
+      "old_bbox": [
+        90,
+        895,
+        544,
+        1256
+      ],
+      "new_figure": "figure_003",
+      "new_block": 4,
+      "iou": 1.0
+    }
+  ],
+  "lost_bboxes": [],
+  "unmatched_bboxes": [],
+  "owner_evidence": [
+    {
+      "old_block": 2,
+      "old_bbox": [
+        90,
+        150,
+        544,
+        508
+      ],
+      "old_caption_block": 5,
+      "old_caption_distance": 771,
+      "old_caption_horizontal_gap": 0.0,
+      "old_caption_adjacent": false,
+      "claimed_by_figure": "figure_003",
+      "claimed_by_caption_block": 10,
+      "claimed_by_caption_distance": 522,
+      "claimed_by_caption_horizontal_gap": 515.5,
+      "claimed_by_caption_adjacent": false
+    },
+    {
+      "old_block": 3,
+      "old_bbox": [
+        90,
+        524,
+        544,
+        882
+      ],
+      "old_caption_block": 5,
+      "old_caption_distance": 397,
+      "old_caption_horizontal_gap": 0.0,
+      "old_caption_adjacent": false,
+      "claimed_by_figure": "figure_003",
+      "claimed_by_caption_block": 10,
+      "claimed_by_caption_distance": 148,
+      "claimed_by_caption_horizontal_gap": 515.5,
+      "claimed_by_caption_adjacent": false
+    },
+    {
+      "old_block": 4,
+      "old_bbox": [
+        90,
+        895,
+        544,
+        1256
+      ],
+      "old_caption_block": 5,
+      "old_caption_distance": 23,
+      "old_caption_horizontal_gap": 0.0,
+      "old_caption_adjacent": true,
+      "claimed_by_figure": "figure_003",
+      "claimed_by_caption_block": 10,
+      "claimed_by_caption_distance": 0,
+      "claimed_by_caption_horizontal_gap": 515.5,
+      "claimed_by_caption_adjacent": false
+    }
+  ],
+  "classification": "REAL_ASSOCIATION_FAILURE",
+  "confidence": "high",
+  "evidence": "new figure figure_003 overclaims bbox adjacent to old caption; remove its claim and attach to old figure",
+  "proposed_action": "fix new association",
+  "overlay_image": "docs/evidence/m2a/VDQCYYIA/page_overlay_figure_001.jpg",
+  "thumbnail_paths": [
+    "docs/evidence/m2a/VDQCYYIA/figure_001_old_asset_bbox_0.png",
+    "docs/evidence/m2a/VDQCYYIA/figure_001_old_asset_bbox_1.png",
+    "docs/evidence/m2a/VDQCYYIA/figure_001_old_asset_bbox_2.png",
+    "docs/evidence/m2a/VDQCYYIA/figure_001_old_asset_bbox_0.png",
+    "docs/evidence/m2a/VDQCYYIA/figure_001_old_asset_bbox_1.png",
+    "docs/evidence/m2a/VDQCYYIA/figure_001_old_asset_bbox_2.png"
+  ],
+  "contact_sheet": "docs/evidence/m2a/VDQCYYIA/contact_sheet_figure_001.jpg"
+}

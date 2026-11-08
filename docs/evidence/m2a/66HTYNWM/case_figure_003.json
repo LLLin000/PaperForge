@@ -1,0 +1,352 @@
+{
+  "key": "66HTYNWM",
+  "old_target": "render/figures/figure_003.md",
+  "old_id": "figure_003",
+  "page": 3,
+  "meta_pages": 9,
+  "old_inventory": {
+    "figure_id": "figure_003",
+    "figure_namespace": "main",
+    "figure_number": 3,
+    "legend_block_id": "11",
+    "page": 3,
+    "text": "Figure 3. The critical shoulder angle (CSA) is formed by a line connecting the inferior with the superior border of the glenoid fossa and another line connecting the inferior border of the glenoid with the most inferolateral point of the acromion. The acromial index (AI) is the distance from the glenoid plane to the lateral border of the acromion (GA) divided by the distance from the glenoid plane to the most lateral aspect of the humeral head (GH).",
+    "matched_assets": [
+      {
+        "block_id": 10,
+        "bbox": [
+          615,
+          142,
+          1096,
+          646
+        ],
+        "page": 3
+      }
+    ],
+    "asset_block_ids": [
+      "10"
+    ],
+    "settlement_type": "same_page",
+    "confidence": 0.955,
+    "match_score": {
+      "score": 0.955,
+      "decision": "matched",
+      "evidence": [
+        "same_page",
+        "x_overlap",
+        "nearby_y",
+        "caption_above_or_below"
+      ]
+    },
+    "flags": [],
+    "bridge_block_ids": [],
+    "consumed_block_ids": [
+      "10"
+    ]
+  },
+  "old_render_exists": true,
+  "old_asset_exists": true,
+  "old_asset_path": "D:\\L\\OB\\Literature-hub\\System\\PaperForge\\ocr\\66HTYNWM\\assets\\figures\\figure_003.jpg",
+  "new_figures_on_page": [
+    {
+      "figure_id": "figure_002",
+      "figure_number": 2,
+      "page": 3,
+      "text": "Figure 2. Repair configuration after arthroscopic rotator cuff repair with a double-row (suture bridge) technique.",
+      "matched_assets": [
+        {
+          "block_id": 10,
+          "bbox": [
+            615,
+            142,
+            1096,
+            646
+          ],
+          "page": 3
+        },
+        {
+          "block_id": 3,
+          "bbox": [
+            72,
+            141,
+            554,
+            551
+          ],
+          "page": 3
+        }
+      ]
+    }
+  ],
+  "caption_candidate_rows": [
+    {
+      "block_id": 4,
+      "role": "figure_caption",
+      "bbox": [
+        66,
+        576,
+        561,
+        621
+      ],
+      "text": "Figure 2. Repair configuration after arthroscopic rotator cuff repair with a double-row (suture bridge) technique."
+    },
+    {
+      "block_id": 11,
+      "role": "figure_caption",
+      "bbox": [
+        607,
+        670,
+        1103,
+        849
+      ],
+      "text": "Figure 3. The critical shoulder angle (CSA) is formed by a line connecting the inferior with the superior border of the glenoid fossa and another line connecting the inferior border of the glenoid with the most inferolateral point of the acromion. The acromial index (AI) is the distance from the gle"
+    }
+  ],
+  "unmatched_assets_page": [],
+  "raw_page_blocks": [
+    {
+      "block_id": 0,
+      "bbox": [
+        67,
+        66,
+        305,
+        88
+      ],
+      "role": null,
+      "text": "AJSM Vol. XX, No. X, XXXX"
+    },
+    {
+      "block_id": 1,
+      "bbox": [
+        783,
+        66,
+        1075,
+        89
+      ],
+      "role": null,
+      "text": "Large CSA Increases Tendon Retear"
+    },
+    {
+      "block_id": 2,
+      "bbox": [
+        1087,
+        68,
+        1101,
+        86
+      ],
+      "role": null,
+      "text": "3"
+    },
+    {
+      "block_id": 3,
+      "bbox": [
+        72,
+        141,
+        554,
+        551
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 4,
+      "bbox": [
+        66,
+        576,
+        561,
+        621
+      ],
+      "role": null,
+      "text": "Figure 2. Repair configuration after arthroscopic rotator cuff repair with a double-row (suture bridge) technique."
+    },
+    {
+      "block_id": 5,
+      "bbox": [
+        65,
+        655,
+        562,
+        833
+      ],
+      "role": null,
+      "text": "a line connecting the superior and inferior bone margins of the glenoid and a line drawn from the inferior bony margin of the glenoid to the most lateral border of the acromion. AI was measured with t"
+    },
+    {
+      "block_id": 6,
+      "bbox": [
+        67,
+        861,
+        348,
+        885
+      ],
+      "role": null,
+      "text": "Clinical Function Assessments"
+    },
+    {
+      "block_id": 7,
+      "bbox": [
+        65,
+        900,
+        563,
+        1167
+      ],
+      "role": null,
+      "text": "The Constant-Murley score, American Shoulder and Elbow Surgeons (ASES) shoulder evaluation form, and modified University of California at Los Angeles (UCLA) score were used for the functional assessme"
+    },
+    {
+      "block_id": 8,
+      "bbox": [
+        67,
+        1194,
+        345,
+        1218
+      ],
+      "role": null,
+      "text": "MRI Scan and Image Analysis"
+    },
+    {
+      "block_id": 9,
+      "bbox": [
+        65,
+        1233,
+        562,
+        1455
+      ],
+      "role": null,
+      "text": "Imaging was performed with a 3.0-T MRI scanner (MAGNETOM Verio, A Tim System; Siemens), with the patient in a relaxed extended position. All participants had at least 1 hour of rest before the MRI sca"
+    },
+    {
+      "block_id": 10,
+      "bbox": [
+        615,
+        142,
+        1096,
+        646
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 11,
+      "bbox": [
+        607,
+        670,
+        1103,
+        849
+      ],
+      "role": null,
+      "text": "Figure 3. The critical shoulder angle (CSA) is formed by a line connecting the inferior with the superior border of the glenoid fossa and another line connecting the inferior border of the glenoid wit"
+    },
+    {
+      "block_id": 12,
+      "bbox": [
+        606,
+        882,
+        1103,
+        1256
+      ],
+      "role": null,
+      "text": "The MRI evaluation focused on 2 measurements based on oblique coronal short time inversion recovery images. First, postoperative cuff integrity was classified into 5 categories according to a previous"
+    },
+    {
+      "block_id": 13,
+      "bbox": [
+        606,
+        1256,
+        1104,
+        1455
+      ],
+      "role": null,
+      "text": "Second, the signal intensity was calculated at the rotator cuff tendon site as well as the background site approximately 2 cm anterior to the shoulder) with a circle region of interest (Figure 4). To "
+    }
+  ],
+  "embed_lines": [
+    {
+      "line": 79,
+      "text": "![[render/figures/figure_003.md]]"
+    }
+  ],
+  "bbox_overlap": [
+    {
+      "old_block": 10,
+      "old_bbox": [
+        615,
+        142,
+        1096,
+        646
+      ],
+      "new_figure": "figure_002",
+      "new_block": 10,
+      "new_bbox": [
+        615,
+        142,
+        1096,
+        646
+      ],
+      "iou": 1.0
+    },
+    {
+      "old_block": 10,
+      "old_bbox": [
+        615,
+        142,
+        1096,
+        646
+      ],
+      "new_figure": "figure_002",
+      "new_block": 3,
+      "new_bbox": [
+        72,
+        141,
+        554,
+        551
+      ],
+      "iou": 0.0
+    }
+  ],
+  "bbox_unavailable": false,
+  "claimed_by_new": [
+    {
+      "old_block": 10,
+      "old_bbox": [
+        615,
+        142,
+        1096,
+        646
+      ],
+      "new_figure": "figure_002",
+      "new_block": 10,
+      "iou": 1.0
+    }
+  ],
+  "lost_bboxes": [],
+  "unmatched_bboxes": [],
+  "owner_evidence": [
+    {
+      "old_block": 10,
+      "old_bbox": [
+        615,
+        142,
+        1096,
+        646
+      ],
+      "old_caption_block": 11,
+      "old_caption_distance": 24,
+      "old_caption_horizontal_gap": 0.5,
+      "old_caption_adjacent": true,
+      "claimed_by_figure": "figure_002",
+      "claimed_by_caption_block": 4,
+      "claimed_by_caption_distance": 0,
+      "claimed_by_caption_horizontal_gap": 542.0,
+      "claimed_by_caption_adjacent": false
+    }
+  ],
+  "classification": "REAL_ASSOCIATION_FAILURE",
+  "confidence": "high",
+  "evidence": "new figure figure_002 overclaims bbox adjacent to old caption; remove its claim and attach to old figure",
+  "proposed_action": "fix new association",
+  "overlay_image": "docs/evidence/m2a/66HTYNWM/page_overlay_figure_003.jpg",
+  "thumbnail_paths": [
+    "docs/evidence/m2a/66HTYNWM/figure_003_old_asset.jpg",
+    "docs/evidence/m2a/66HTYNWM/figure_003_new_figure_002_asset_1.png"
+  ],
+  "contact_sheet": "docs/evidence/m2a/66HTYNWM/contact_sheet_figure_003.jpg"
+}

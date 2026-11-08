@@ -1,0 +1,385 @@
+{
+  "key": "3QYCST4E",
+  "old_target": "render/figures/figure_003.md",
+  "old_id": "figure_003",
+  "page": 3,
+  "meta_pages": 5,
+  "old_inventory": {
+    "figure_id": "figure_003",
+    "figure_namespace": "main",
+    "figure_number": 3,
+    "legend_block_id": "11",
+    "page": 3,
+    "text": "Figure 3. Anatomical distribution of the localized full-thickness cartilage defects of the knees (n = 203).",
+    "matched_assets": [
+      {
+        "block_id": 10,
+        "bbox": [
+          624,
+          170,
+          1107,
+          725
+        ],
+        "page": 3
+      }
+    ],
+    "asset_block_ids": [
+      "10"
+    ],
+    "settlement_type": "same_page",
+    "confidence": 0.955,
+    "match_score": {
+      "score": 0.955,
+      "decision": "matched",
+      "evidence": [
+        "same_page",
+        "x_overlap",
+        "nearby_y",
+        "caption_above_or_below"
+      ]
+    },
+    "flags": [],
+    "bridge_block_ids": [],
+    "consumed_block_ids": [
+      "10"
+    ]
+  },
+  "old_render_exists": true,
+  "old_asset_exists": true,
+  "old_asset_path": "D:\\L\\OB\\Literature-hub\\System\\PaperForge\\ocr\\3QYCST4E\\assets\\figures\\figure_003.jpg",
+  "new_figures_on_page": [
+    {
+      "figure_id": "figure_002",
+      "figure_number": 2,
+      "page": 3,
+      "text": "Figure 2. Different types of localized cartilage lesions (n = 203) of the knee. A, Localized partial-thickness cartilage lesions 44%; B, Osteochondritis dissecans lesions 9%; C, Localized full-thickness cartilage lesions 47%.",
+      "matched_assets": [
+        {
+          "block_id": 10,
+          "bbox": [
+            624,
+            170,
+            1107,
+            725
+          ],
+          "page": 3
+        },
+        {
+          "block_id": 3,
+          "bbox": [
+            114,
+            166,
+            556,
+            609
+          ],
+          "page": 3
+        }
+      ]
+    }
+  ],
+  "caption_candidate_rows": [
+    {
+      "block_id": 4,
+      "role": "figure_caption",
+      "bbox": [
+        86,
+        629,
+        579,
+        719
+      ],
+      "text": "Figure 2. Different types of localized cartilage lesions (n = 203) of the knee. A, Localized partial-thickness cartilage lesions 44%; B, Osteochondritis dissecans lesions 9%; C, Localized full-thickness cartilage lesions 47%."
+    },
+    {
+      "block_id": 11,
+      "role": "figure_caption",
+      "bbox": [
+        624,
+        749,
+        1115,
+        794
+      ],
+      "text": "Figure 3. Anatomical distribution of the localized full-thickness cartilage defects of the knees (n = 203)."
+    }
+  ],
+  "unmatched_assets_page": [],
+  "raw_page_blocks": [
+    {
+      "block_id": 0,
+      "bbox": [
+        89,
+        88,
+        246,
+        110
+      ],
+      "role": null,
+      "text": "Vol. 32, No. 1, 2004"
+    },
+    {
+      "block_id": 1,
+      "bbox": [
+        672,
+        88,
+        1069,
+        111
+      ],
+      "role": null,
+      "text": "Articular Cartilage Lesions in Knee Arthroscopies"
+    },
+    {
+      "block_id": 2,
+      "bbox": [
+        1082,
+        89,
+        1117,
+        109
+      ],
+      "role": null,
+      "text": "213"
+    },
+    {
+      "block_id": 3,
+      "bbox": [
+        114,
+        166,
+        556,
+        609
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 4,
+      "bbox": [
+        86,
+        629,
+        579,
+        719
+      ],
+      "role": null,
+      "text": "Figure 2. Different types of localized cartilage lesions (n = 203) of the knee. A, Localized partial-thickness cartilage lesions 44%; B, Osteochondritis dissecans lesions 9%; C, Localized full-thickne"
+    },
+    {
+      "block_id": 5,
+      "bbox": [
+        85,
+        752,
+        580,
+        796
+      ],
+      "role": null,
+      "text": "Chicago, Illinois). All percentages are given without any decimals."
+    },
+    {
+      "block_id": 6,
+      "bbox": [
+        87,
+        832,
+        183,
+        855
+      ],
+      "role": null,
+      "text": "RESULTS"
+    },
+    {
+      "block_id": 7,
+      "bbox": [
+        85,
+        873,
+        580,
+        1182
+      ],
+      "role": null,
+      "text": "Articular cartilage changes were noted in 66% of the knees. A localized cartilage lesion in combination with degenerative changes was diagnosed in 5% (n = 47) of knees. Localized cartilage lesions wit"
+    },
+    {
+      "block_id": 8,
+      "bbox": [
+        85,
+        1182,
+        580,
+        1358
+      ],
+      "role": null,
+      "text": "A full-thickness cartilage defect with a square area of more than  $ 2 \\, cm^2 $ was observed in 6% ( $ n = 62 $) of all the knees. Thirty-one of these 62 patients had a cartilage lesion as their only"
+    },
+    {
+      "block_id": 9,
+      "bbox": [
+        85,
+        1358,
+        581,
+        1470
+      ],
+      "role": null,
+      "text": "Of all patients (N = 993), an acute traumatic onset of the knee symptoms was reported in 59% and a more gradual nontraumatic onset in 41%. Sports participation was the most commonly associated activit"
+    },
+    {
+      "block_id": 10,
+      "bbox": [
+        624,
+        170,
+        1107,
+        725
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 11,
+      "bbox": [
+        624,
+        749,
+        1115,
+        794
+      ],
+      "role": null,
+      "text": "Figure 3. Anatomical distribution of the localized full-thickness cartilage defects of the knees (n = 203)."
+    },
+    {
+      "block_id": 12,
+      "bbox": [
+        623,
+        834,
+        1117,
+        900
+      ],
+      "role": null,
+      "text": "most frequent (Fig. 4). An x-ray examination was performed in 93% of the knees, and radiographic degenerative changes were noted in 13% of all the knees."
+    },
+    {
+      "block_id": 13,
+      "bbox": [
+        624,
+        900,
+        1118,
+        1010
+      ],
+      "role": null,
+      "text": "Previous arthroscopic procedures had been performed in 28% of the knees, most commonly a meniscal resection or an ACL reconstruction. Median time period from injury to the current arthroscopic procedu"
+    },
+    {
+      "block_id": 14,
+      "bbox": [
+        624,
+        1010,
+        1118,
+        1207
+      ],
+      "role": null,
+      "text": "Pain was reported with a median value of 40 on a Visual Analog Scale in which 0 was no pain at all and 100 represented the worst pain the patient could imagine. Seventy-three percent of all the patien"
+    },
+    {
+      "block_id": 15,
+      "bbox": [
+        623,
+        1208,
+        1119,
+        1339
+      ],
+      "role": null,
+      "text": "Table 2 shows the different diagnosis groups and the number of cases with concomitant localized cartilage lesion. Patellar dislocation had the highest frequency of associated cartilage lesion (57%) fo"
+    },
+    {
+      "block_id": 16,
+      "bbox": [
+        623,
+        1340,
+        1120,
+        1473
+      ],
+      "role": null,
+      "text": "Most of the patients with localized cartilage lesions were in younger age groups (median age 30 years), as illustrated in Figure 6. In the patients younger than 45 years of age, the finding of articul"
+    }
+  ],
+  "embed_lines": [
+    {
+      "line": 65,
+      "text": "![[render/figures/figure_003.md]]"
+    }
+  ],
+  "bbox_overlap": [
+    {
+      "old_block": 10,
+      "old_bbox": [
+        624,
+        170,
+        1107,
+        725
+      ],
+      "new_figure": "figure_002",
+      "new_block": 10,
+      "new_bbox": [
+        624,
+        170,
+        1107,
+        725
+      ],
+      "iou": 1.0
+    },
+    {
+      "old_block": 10,
+      "old_bbox": [
+        624,
+        170,
+        1107,
+        725
+      ],
+      "new_figure": "figure_002",
+      "new_block": 3,
+      "new_bbox": [
+        114,
+        166,
+        556,
+        609
+      ],
+      "iou": 0.0
+    }
+  ],
+  "bbox_unavailable": false,
+  "claimed_by_new": [
+    {
+      "old_block": 10,
+      "old_bbox": [
+        624,
+        170,
+        1107,
+        725
+      ],
+      "new_figure": "figure_002",
+      "new_block": 10,
+      "iou": 1.0
+    }
+  ],
+  "lost_bboxes": [],
+  "unmatched_bboxes": [],
+  "owner_evidence": [
+    {
+      "old_block": 10,
+      "old_bbox": [
+        624,
+        170,
+        1107,
+        725
+      ],
+      "old_caption_block": 11,
+      "old_caption_distance": 24,
+      "old_caption_horizontal_gap": 4.0,
+      "old_caption_adjacent": true,
+      "claimed_by_figure": "figure_002",
+      "claimed_by_caption_block": 4,
+      "claimed_by_caption_distance": 0,
+      "claimed_by_caption_horizontal_gap": 533.0,
+      "claimed_by_caption_adjacent": false
+    }
+  ],
+  "classification": "REAL_ASSOCIATION_FAILURE",
+  "confidence": "high",
+  "evidence": "new figure figure_002 overclaims bbox adjacent to old caption; remove its claim and attach to old figure",
+  "proposed_action": "remove Figure 2 claim, attach to Figure 3",
+  "overlay_image": "docs/evidence/m2a/3QYCST4E/page_overlay_figure_003.jpg",
+  "thumbnail_paths": [
+    "docs/evidence/m2a/3QYCST4E/figure_003_old_asset.jpg",
+    "docs/evidence/m2a/3QYCST4E/figure_003_new_figure_002_asset_1.png"
+  ],
+  "contact_sheet": "docs/evidence/m2a/3QYCST4E/contact_sheet_figure_003.jpg"
+}

@@ -1,0 +1,475 @@
+{
+  "key": "M8CNKCIZ",
+  "old_target": "render/figures/figure_006.md",
+  "old_id": "figure_006",
+  "page": 4,
+  "meta_pages": 5,
+  "old_inventory": {
+    "figure_id": "figure_006",
+    "figure_namespace": "main",
+    "figure_number": 6,
+    "legend_block_id": "15",
+    "page": 4,
+    "text": "Fig. 6. — MR T2W TSE fat-sat coronal image of the right shoulder joint showing Partial-external surface-rotator cuff tear.",
+    "matched_assets": [
+      {
+        "block_id": 14,
+        "bbox": [
+          680,
+          677,
+          1137,
+          1139
+        ],
+        "page": 4
+      }
+    ],
+    "asset_block_ids": [
+      "14"
+    ],
+    "settlement_type": "same_page",
+    "confidence": 0.955,
+    "match_score": {
+      "score": 0.955,
+      "decision": "matched",
+      "evidence": [
+        "same_page",
+        "x_overlap",
+        "nearby_y",
+        "caption_above_or_below"
+      ]
+    },
+    "flags": [],
+    "bridge_block_ids": [],
+    "consumed_block_ids": [
+      "14"
+    ]
+  },
+  "old_render_exists": true,
+  "old_asset_exists": false,
+  "old_asset_path": null,
+  "new_figures_on_page": [
+    {
+      "figure_id": "figure_005",
+      "figure_number": 5,
+      "page": 4,
+      "text": "Fig. 5. — Plane X-ray of the right shoulder joint AP view showing greater tuberosity sclerosis.",
+      "matched_assets": [
+        {
+          "block_id": 12,
+          "bbox": [
+            681,
+            229,
+            1136,
+            574
+          ],
+          "page": 4
+        },
+        {
+          "block_id": 4,
+          "bbox": [
+            170,
+            228,
+            625,
+            871
+          ],
+          "page": 4
+        }
+      ]
+    },
+    {
+      "figure_id": "figure_004",
+      "figure_number": 4,
+      "page": 4,
+      "text": "Fig. 4. — MR T2W TSE fat-sat coronal image of the left shoulder joint showing full thickness rotator cuff tears.",
+      "matched_assets": [
+        {
+          "block_id": 14,
+          "bbox": [
+            680,
+            677,
+            1137,
+            1139
+          ],
+          "page": 4
+        }
+      ]
+    }
+  ],
+  "caption_candidate_rows": [
+    {
+      "block_id": 5,
+      "role": "figure_caption",
+      "bbox": [
+        166,
+        882,
+        628,
+        927
+      ],
+      "text": "Fig. 4. — MR T2W TSE fat-sat coronal image of the left shoulder joint showing full thickness rotator cuff tears."
+    },
+    {
+      "block_id": 13,
+      "role": "figure_caption",
+      "bbox": [
+        678,
+        585,
+        1139,
+        631
+      ],
+      "text": "Fig. 5. — Plane X-ray of the right shoulder joint AP view showing greater tuberosity sclerosis."
+    },
+    {
+      "block_id": 15,
+      "role": "figure_caption",
+      "bbox": [
+        676,
+        1155,
+        1140,
+        1221
+      ],
+      "text": "Fig. 6. — MR T2W TSE fat-sat coronal image of the right shoulder joint showing Partial-external surface-rotator cuff tear."
+    }
+  ],
+  "unmatched_assets_page": [],
+  "raw_page_blocks": [
+    {
+      "block_id": 0,
+      "bbox": [
+        639,
+        2,
+        669,
+        28
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 1,
+      "bbox": [
+        1,
+        821,
+        29,
+        855
+      ],
+      "role": null,
+      "text": "⊕"
+    },
+    {
+      "block_id": 2,
+      "bbox": [
+        322,
+        168,
+        986,
+        190
+      ],
+      "role": null,
+      "text": "GREATER TUBEROSITY SCLEROSIS: A RADIO-GRAPHIC SIGN OF ROTATOR CUFF TEAR?"
+    },
+    {
+      "block_id": 3,
+      "bbox": [
+        1100,
+        166,
+        1139,
+        188
+      ],
+      "role": null,
+      "text": "419"
+    },
+    {
+      "block_id": 4,
+      "bbox": [
+        170,
+        228,
+        625,
+        871
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 5,
+      "bbox": [
+        166,
+        882,
+        628,
+        927
+      ],
+      "role": null,
+      "text": "Fig. 4. — MR T2W TSE fat-sat coronal image of the left shoulder joint showing full thickness rotator cuff tears."
+    },
+    {
+      "block_id": 6,
+      "bbox": [
+        166,
+        985,
+        630,
+        1113
+      ],
+      "role": null,
+      "text": "According to Wohlwend et al., when evaluating a shoulder, the greater tuberosity should be carefully examined; if abnormal, the level of suspicion should be high while if normal, this had a high predi"
+    },
+    {
+      "block_id": 7,
+      "bbox": [
+        167,
+        1115,
+        629,
+        1165
+      ],
+      "role": null,
+      "text": "Mack et al. (4) found bilateral affection in 6% of their symptomatic patients."
+    },
+    {
+      "block_id": 8,
+      "bbox": [
+        167,
+        1272,
+        628,
+        1321
+      ],
+      "role": null,
+      "text": "Plain radio-graphic findings were commonly associated with cuff 116 tears."
+    },
+    {
+      "block_id": 9,
+      "bbox": [
+        166,
+        1167,
+        629,
+        1217
+      ],
+      "role": null,
+      "text": "In the current study, we found bilateral affection in 86 cases (21.6%)."
+    },
+    {
+      "block_id": 10,
+      "bbox": [
+        166,
+        1219,
+        629,
+        1270
+      ],
+      "role": null,
+      "text": "Most literature studies were of a retrospective design, similar to the present study."
+    },
+    {
+      "block_id": 11,
+      "bbox": [
+        165,
+        1323,
+        631,
+        1455
+      ],
+      "role": null,
+      "text": "Cysts of the greater and lesser tuberosity were increasingly reported. In the study by Wissman et al., (8) lesser tuberosity cysts were associated with partial or complete subscapularis tear. Cyst loc"
+    },
+    {
+      "block_id": 12,
+      "bbox": [
+        681,
+        229,
+        1136,
+        574
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 13,
+      "bbox": [
+        678,
+        585,
+        1139,
+        631
+      ],
+      "role": null,
+      "text": "Fig. 5. — Plane X-ray of the right shoulder joint AP view showing greater tuberosity sclerosis."
+    },
+    {
+      "block_id": 14,
+      "bbox": [
+        680,
+        677,
+        1137,
+        1139
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 15,
+      "bbox": [
+        676,
+        1155,
+        1140,
+        1221
+      ],
+      "role": null,
+      "text": "Fig. 6. — MR T2W TSE fat-sat coronal image of the right shoulder joint showing Partial-external surface-rotator cuff tear."
+    },
+    {
+      "block_id": 16,
+      "bbox": [
+        676,
+        1244,
+        1140,
+        1295
+      ],
+      "role": null,
+      "text": "located in the tuberosity associated with more severe tendon tears. (8)"
+    },
+    {
+      "block_id": 17,
+      "bbox": [
+        675,
+        1297,
+        1141,
+        1453
+      ],
+      "role": null,
+      "text": "Abnormally decreased acromion-humeral distance was reported to be associated with cuff tear. Patients with rotator cuff disease also presented with osteopenic changes of the greater tuberosity. Injury"
+    },
+    {
+      "block_id": 18,
+      "bbox": [
+        1279,
+        823,
+        1307,
+        854
+      ],
+      "role": null,
+      "text": "⊕"
+    },
+    {
+      "block_id": 19,
+      "bbox": [
+        771,
+        1497,
+        1140,
+        1520
+      ],
+      "role": null,
+      "text": "Acta Orthopaedica Belgica, Vol. 83 - 3 - 2017"
+    },
+    {
+      "block_id": 20,
+      "bbox": [
+        640,
+        1649,
+        667,
+        1675
+      ],
+      "role": null,
+      "text": "⚫"
+    }
+  ],
+  "embed_lines": [
+    {
+      "line": 98,
+      "text": "![[render/figures/figure_006.md]]"
+    }
+  ],
+  "bbox_overlap": [
+    {
+      "old_block": 14,
+      "old_bbox": [
+        680,
+        677,
+        1137,
+        1139
+      ],
+      "new_figure": "figure_005",
+      "new_block": 12,
+      "new_bbox": [
+        681,
+        229,
+        1136,
+        574
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 14,
+      "old_bbox": [
+        680,
+        677,
+        1137,
+        1139
+      ],
+      "new_figure": "figure_005",
+      "new_block": 4,
+      "new_bbox": [
+        170,
+        228,
+        625,
+        871
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 14,
+      "old_bbox": [
+        680,
+        677,
+        1137,
+        1139
+      ],
+      "new_figure": "figure_004",
+      "new_block": 14,
+      "new_bbox": [
+        680,
+        677,
+        1137,
+        1139
+      ],
+      "iou": 1.0
+    }
+  ],
+  "bbox_unavailable": false,
+  "claimed_by_new": [
+    {
+      "old_block": 14,
+      "old_bbox": [
+        680,
+        677,
+        1137,
+        1139
+      ],
+      "new_figure": "figure_004",
+      "new_block": 14,
+      "iou": 1.0
+    }
+  ],
+  "lost_bboxes": [],
+  "unmatched_bboxes": [],
+  "owner_evidence": [
+    {
+      "old_block": 14,
+      "old_bbox": [
+        680,
+        677,
+        1137,
+        1139
+      ],
+      "old_caption_block": 15,
+      "old_caption_distance": 16,
+      "old_caption_horizontal_gap": 0.5,
+      "old_caption_adjacent": true,
+      "claimed_by_figure": "figure_004",
+      "claimed_by_caption_block": 5,
+      "claimed_by_caption_distance": 0,
+      "claimed_by_caption_horizontal_gap": 511.5,
+      "claimed_by_caption_adjacent": false
+    }
+  ],
+  "classification": "REAL_ASSOCIATION_FAILURE",
+  "confidence": "high",
+  "evidence": "new figure figure_004 overclaims bbox adjacent to old caption; remove its claim and attach to old figure",
+  "proposed_action": "fix new association",
+  "overlay_image": "docs/evidence/m2a/M8CNKCIZ/page_overlay_figure_006.jpg",
+  "thumbnail_paths": [
+    "docs/evidence/m2a/M8CNKCIZ/figure_006_new_figure_005_asset_1.png"
+  ],
+  "contact_sheet": "docs/evidence/m2a/M8CNKCIZ/contact_sheet_figure_006.jpg"
+}

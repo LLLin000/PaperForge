@@ -1,0 +1,358 @@
+{
+  "key": "FX7PTWSK",
+  "old_target": "render/figures/figure_004.md",
+  "old_id": "figure_004",
+  "page": 5,
+  "meta_pages": 10,
+  "old_inventory": {
+    "figure_id": "figure_004",
+    "figure_namespace": "main",
+    "figure_number": 4,
+    "legend_block_id": "11",
+    "page": 5,
+    "text": "Fig 4. Measurement of the thickness of the muscle belly of the anterior, middle, and posterior deltoid (arrows counterclockwise starting from the top) on a transverse magnetic resonance imaging scan with the arm at the side in neutral rotation. At the level of the coracoid tip, the anterior and posterior deltoid volume was measured along a section of line B, which is parallel to the glenoid plane (line A) and passes through the center of the humeral head. The middle deltoid muscle volume was measured along a section of line C, which is perpendicular to line A and also passes through the center of the humeral head.",
+    "matched_assets": [
+      {
+        "block_id": 10,
+        "bbox": [
+          626,
+          893,
+          1082,
+          1219
+        ],
+        "page": 5
+      }
+    ],
+    "asset_block_ids": [
+      "10"
+    ],
+    "settlement_type": "same_page",
+    "confidence": 0.955,
+    "match_score": {
+      "score": 0.955,
+      "decision": "matched",
+      "evidence": [
+        "same_page",
+        "x_overlap",
+        "nearby_y",
+        "caption_above_or_below"
+      ]
+    },
+    "flags": [],
+    "bridge_block_ids": [],
+    "consumed_block_ids": [
+      "10"
+    ]
+  },
+  "old_render_exists": true,
+  "old_asset_exists": false,
+  "old_asset_path": null,
+  "new_figures_on_page": [
+    {
+      "figure_id": "figure_003",
+      "figure_number": 3,
+      "page": 5,
+      "text": "Fig 3. Measurement of the thickness of the proximal deltoid origin on magnetic resonance imaging scans in the scapular plane. (A) The proximal deltoid origin was divided into 4 zones: anterior acromion (Z 1), anterior third of the lateral acromial border (Z 2), middle third of the lateral acromial b",
+      "matched_assets": [
+        {
+          "block_id": 10,
+          "bbox": [
+            626,
+            893,
+            1082,
+            1219
+          ],
+          "page": 5
+        },
+        {
+          "block_id": 3,
+          "bbox": [
+            105,
+            111,
+            557,
+            748
+          ],
+          "page": 5
+        },
+        {
+          "block_id": 4,
+          "bbox": [
+            104,
+            758,
+            561,
+            1079
+          ],
+          "page": 5
+        }
+      ]
+    }
+  ],
+  "caption_candidate_rows": [
+    {
+      "block_id": 5,
+      "role": "figure_caption",
+      "bbox": [
+        82,
+        1088,
+        579,
+        1309
+      ],
+      "text": "Fig 3. Measurement of the thickness of the proximal deltoid origin on magnetic resonance imaging scans in the scapular plane. (A) The proximal deltoid origin was divided into 4 zones: anterior acromion (Z 1), anterior third of the lateral acromial border (Z 2), middle third of the lateral acromial b"
+    },
+    {
+      "block_id": 11,
+      "role": "figure_caption",
+      "bbox": [
+        605,
+        1228,
+        1103,
+        1449
+      ],
+      "text": "Fig 4. Measurement of the thickness of the muscle belly of the anterior, middle, and posterior deltoid (arrows counterclockwise starting from the top) on a transverse magnetic resonance imaging scan with the arm at the side in neutral rotation. At the level of the coracoid tip, the anterior and post"
+    }
+  ],
+  "unmatched_assets_page": [],
+  "raw_page_blocks": [
+    {
+      "block_id": 0,
+      "bbox": [
+        451,
+        23,
+        716,
+        50
+      ],
+      "role": null,
+      "text": "ARTICLE IN PRESS"
+    },
+    {
+      "block_id": 1,
+      "bbox": [
+        367,
+        62,
+        822,
+        82
+      ],
+      "role": null,
+      "text": "SAFETY OF ARTHROSCOPIC LATERAL ACROMIOPLASTY"
+    },
+    {
+      "block_id": 2,
+      "bbox": [
+        1086,
+        63,
+        1100,
+        81
+      ],
+      "role": null,
+      "text": "5"
+    },
+    {
+      "block_id": 3,
+      "bbox": [
+        105,
+        111,
+        557,
+        748
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 4,
+      "bbox": [
+        104,
+        758,
+        561,
+        1079
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 5,
+      "bbox": [
+        82,
+        1088,
+        579,
+        1309
+      ],
+      "role": null,
+      "text": "Fig 3. Measurement of the thickness of the proximal deltoid origin on magnetic resonance imaging scans in the scapular plane. (A) The proximal deltoid origin was divided into 4 zones: anterior acromio"
+    },
+    {
+      "block_id": 6,
+      "bbox": [
+        82,
+        1352,
+        581,
+        1448
+      ],
+      "role": null,
+      "text": "tear. In 17 patients (35%) only the SSP tendon was affected, and in 4 patients (8%) only the SSC tendon was affected. The SSP tear extended into the SSC tendon in 22 cases (45%) and into the ISP tendo"
+    },
+    {
+      "block_id": 7,
+      "bbox": [
+        604,
+        109,
+        1104,
+        325
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 8,
+      "bbox": [
+        607,
+        343,
+        778,
+        365
+      ],
+      "role": null,
+      "text": "Clinical Outcome"
+    },
+    {
+      "block_id": 9,
+      "bbox": [
+        605,
+        369,
+        1103,
+        823
+      ],
+      "role": null,
+      "text": "Clinical outcomes are summarized in Table 3. At a mean follow-up of 30 months (range, 12-47 months), the mean absolute and relative Constant scores had improved from 59 points (range, 10-92 points; 95"
+    },
+    {
+      "block_id": 10,
+      "bbox": [
+        626,
+        893,
+        1082,
+        1219
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 11,
+      "bbox": [
+        605,
+        1228,
+        1103,
+        1449
+      ],
+      "role": null,
+      "text": "Fig 4. Measurement of the thickness of the muscle belly of the anterior, middle, and posterior deltoid (arrows counterclockwise starting from the top) on a transverse magnetic resonance imaging scan w"
+    }
+  ],
+  "embed_lines": [
+    {
+      "line": 72,
+      "text": "![[render/figures/figure_004.md]]"
+    }
+  ],
+  "bbox_overlap": [
+    {
+      "old_block": 10,
+      "old_bbox": [
+        626,
+        893,
+        1082,
+        1219
+      ],
+      "new_figure": "figure_003",
+      "new_block": 10,
+      "new_bbox": [
+        626,
+        893,
+        1082,
+        1219
+      ],
+      "iou": 1.0
+    },
+    {
+      "old_block": 10,
+      "old_bbox": [
+        626,
+        893,
+        1082,
+        1219
+      ],
+      "new_figure": "figure_003",
+      "new_block": 3,
+      "new_bbox": [
+        105,
+        111,
+        557,
+        748
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 10,
+      "old_bbox": [
+        626,
+        893,
+        1082,
+        1219
+      ],
+      "new_figure": "figure_003",
+      "new_block": 4,
+      "new_bbox": [
+        104,
+        758,
+        561,
+        1079
+      ],
+      "iou": 0.0
+    }
+  ],
+  "bbox_unavailable": false,
+  "claimed_by_new": [
+    {
+      "old_block": 10,
+      "old_bbox": [
+        626,
+        893,
+        1082,
+        1219
+      ],
+      "new_figure": "figure_003",
+      "new_block": 10,
+      "iou": 1.0
+    }
+  ],
+  "lost_bboxes": [],
+  "unmatched_bboxes": [],
+  "owner_evidence": [
+    {
+      "old_block": 10,
+      "old_bbox": [
+        626,
+        893,
+        1082,
+        1219
+      ],
+      "old_caption_block": 11,
+      "old_caption_distance": 9,
+      "old_caption_horizontal_gap": 0.0,
+      "old_caption_adjacent": true,
+      "claimed_by_figure": "figure_003",
+      "claimed_by_caption_block": 5,
+      "claimed_by_caption_distance": 0,
+      "claimed_by_caption_horizontal_gap": 523.5,
+      "claimed_by_caption_adjacent": false
+    }
+  ],
+  "classification": "REAL_ASSOCIATION_FAILURE",
+  "confidence": "high",
+  "evidence": "new figure figure_003 overclaims bbox adjacent to old caption; remove its claim and attach to old figure",
+  "proposed_action": "fix new association",
+  "overlay_image": "docs/evidence/m2a/FX7PTWSK/page_overlay_figure_004.jpg",
+  "thumbnail_paths": [
+    "docs/evidence/m2a/FX7PTWSK/figure_004_new_figure_003_asset_1.png",
+    "docs/evidence/m2a/FX7PTWSK/figure_004_new_figure_003_asset_2.png"
+  ],
+  "contact_sheet": "docs/evidence/m2a/FX7PTWSK/contact_sheet_figure_004.jpg"
+}
