@@ -156,3 +156,50 @@ def test_fulltext_ignores_malformed_reserved_mapping_rows(tmp_path: Path) -> Non
     assert result["patches"]
     assert all(patch["op"] == "INSERT" for patch in result["patches"])
     assert all(patch["object_id"] == "figure_001" for patch in result["patches"])
+
+
+def test_object_delivery_audit_flags_missing_orphan_and_duplicate_embeds(tmp_path: Path) -> None:
+    paper = tmp_path / "ocr" / "DELIVERYAUDIT"
+    (paper / "structure").mkdir(parents=True)
+    (paper / "render" / "figures").mkdir(parents=True)
+    (paper / "structure" / "figure_inventory.json").write_text(
+        json.dumps({"matched_figures": [{"figure_id": "figure_001", "page": 4}]}),
+        encoding="utf-8",
+    )
+    (paper / "render" / "figures" / "orphan_001.md").write_text("orphan", encoding="utf-8")
+    (paper / "fulltext.md").write_text(
+        "![[render/figures/missing_001.md]]\n"
+        "![[render/figures/orphan_001.md]]\n"
+        "![[render/figures/figure_001.md]]\n![[render/figures/figure_001.md]]\n",
+        encoding="utf-8",
+    )
+
+    issues = fulltext_reconcile(tmp_path / "ocr", "DELIVERYAUDIT")["issues"]
+    assert any(i["type"] == "embed_missing_target" and i["object_id"] == "missing_001" for i in issues)
+    assert any(i["type"] == "orphan_embedded" and i["object_id"] == "orphan_001" for i in issues)
+    assert any(i["type"] == "duplicate_embed" and i["object_id"] == "figure_001" for i in issues)
+    assert any(i["type"] == "canonical_md_missing" and i["object_id"] == "figure_001" for i in issues)
+
+
+def test_object_delivery_audit_flags_missing_table_md_and_embed(tmp_path: Path) -> None:
+    paper = tmp_path / "ocr" / "TABLEDELIVERY"
+    (paper / "structure").mkdir(parents=True)
+    (paper / "render" / "figures").mkdir(parents=True)
+    (paper / "render" / "tables").mkdir(parents=True)
+    (paper / "structure" / "figure_inventory.json").write_text(
+        json.dumps({"matched_figures": []}), encoding="utf-8"
+    )
+    (paper / "structure" / "table_inventory.json").write_text(
+        json.dumps({"tables": [{"table_id": "table_001", "page": 2}]}), encoding="utf-8"
+    )
+    (paper / "fulltext.md").write_text(
+        "![[render/tables/table_002.md]]\n![[render/tables/table_002.md]]\n",
+        encoding="utf-8",
+    )
+
+    issues = fulltext_reconcile(tmp_path / "ocr", "TABLEDELIVERY")["issues"]
+    types = [(i["type"], i.get("object_id")) for i in issues]
+    assert ("table_md_missing", "table_001") in types
+    assert ("table_embed_missing", "table_001") in types
+    assert ("embed_missing_target", "table_002") in types
+    assert ("table_embed_duplicate", "table_002") in types

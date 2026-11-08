@@ -55,13 +55,11 @@ def run_association_stage(
         post_ref_bio_cleanup(figures, structured, ref_start_page=ref_start_page)
         prune_figure_inventory_after_bio(figures)
 
-    reader_payload = synthesize_reader_figures(figures, structured_blocks=structured)
-
     tables = build_table_inventory(structured)
-    # Conflict resolution must happen before post-match: it is the only place
-    # that decides which side owns a contested asset.
+    # Reader synthesis consumes the inventory after conflict arbitration.
     resolve_media_asset_conflicts(figures, tables, structured=structured)
     attach_ownership_conflicts(figures, tables)
+    reader_payload = synthesize_reader_figures(figures, structured_blocks=structured)
     return ObjectStageResult(figures=figures, tables=tables, reader_payload=reader_payload)
 
 
