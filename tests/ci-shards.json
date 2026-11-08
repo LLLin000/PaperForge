@@ -255,6 +255,8 @@
   "tests/test_layout_evidence.py": 1,
   "tests/test_figure_table_error_audit.py": 0,
   "tests/test_layout_reading_diagnosis.py": 0,
-  "tests/test_figure_evidence_graph.py": 0
+  "tests/test_figure_evidence_graph.py": 0,
+  "tests/test_ocr_bio_post_ref.py": 0,
+  "tests/test_ocr_post_match_bio_guard.py": 0
  }
 }
