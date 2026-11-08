@@ -34,6 +34,17 @@ def _geometry_key(page: int, block_id: str, bbox: list[float] | None) -> tuple:
     return page, str(block_id), tuple(bbox or ())
 
 
+def _gap_to(caption: dict, target_bbox: list[float] | None) -> float | None:
+    if target_bbox is None:
+        return None
+    cap = _bbox(caption)
+    height = float(caption.get("page_height", 0) or 0)
+    if cap is None or height <= 0:
+        return None
+    gap = max(0.0, target_bbox[1] - cap[3], cap[1] - target_bbox[3])
+    return round(gap / height, 4)
+
+
 def _edge_gap_ratio(caption: dict, blocks: list[dict], page: int) -> float | None:
     """Nearest caption/object edge gap, in page heights.
 
@@ -65,7 +76,7 @@ def _edge_gap_ratio(caption: dict, blocks: list[dict], page: int) -> float | Non
 
 def _case(key: str, stratum: str, page: int, caption: dict, blocks: list[dict],
           region_kind: str | None, ratio: float | None, matched_figure_id: str | None,
-          inventory_entry: dict | None) -> dict[str, Any]:
+          inventory_entry: dict | None, target_asset_bbox: list[float] | None = None) -> dict[str, Any]:
     box = _bbox(caption) or []
     candidates = []
     for block in blocks:
@@ -86,7 +97,10 @@ def _case(key: str, stratum: str, page: int, caption: dict, blocks: list[dict],
         "inventory_state": {"matched_figure_id": matched_figure_id,
                             "state": "matched" if matched_figure_id else "unmatched"},
         "distance_ratio": round(ratio, 4) if ratio is not None else None,
-        "edge_gap_ratio": _edge_gap_ratio(caption, blocks, page),
+        # Gap to the asset the inventory actually matched, when there is one;
+        # "nearest asset" alone cannot tell whether the match is plausible.
+        "matched_edge_gap_ratio": _gap_to(caption, target_asset_bbox),
+        "nearest_edge_gap_ratio": _edge_gap_ratio(caption, blocks, page),
         "layout_region_kind": region_kind,
         **provenance,
     }
@@ -121,9 +135,12 @@ def build_cases(key: str, blocks: list[dict], figure_inventory: dict, table_inve
                 inventory_by_pair[(captions[0].uid, assets[0].uid)] = entry
 
     def add(stratum: str, caption: dict, page: int, ratio: float | None,
-            inv: dict | None = None, region: str | None = None) -> None:
+            inv: dict | None = None, region: str | None = None,
+            target_asset_bbox: list[float] | None = None) -> None:
         matched_id = (inv or {}).get("figure_id") if inv else None
-        buckets[stratum].append(_case(key, stratum, page, caption, blocks, region, ratio, matched_id, inv))
+        buckets[stratum].append(
+            _case(key, stratum, page, caption, blocks, region, ratio, matched_id, inv, target_asset_bbox)
+        )
 
     for pair in evaluation.get("figure_caption", {}).get("suspicious", []):
         caption = by_uid.get(pair.get("caption"))
@@ -133,7 +150,9 @@ def build_cases(key: str, blocks: list[dict], figure_inventory: dict, table_inve
         page = int(pair.get("page", caption.get("page", 0)) or 0)
         uid = pair.get("caption")
         inv = inventory_by_pair.get((uid, pair.get("asset")))
-        add(bucket(ratio), caption, page, ratio, inv, page_region.get(page, {}).get(uid))
+        matched_asset = by_uid.get(pair.get("asset"))
+        add(bucket(ratio), caption, page, ratio, inv, page_region.get(page, {}).get(uid),
+            _bbox(matched_asset or {}))
 
     for inv in figure_inventory.get("matched_figures", []):
         capid = inv.get("legend_block_id", inv.get("block_id", ""))
@@ -155,7 +174,7 @@ def build_cases(key: str, blocks: list[dict], figure_inventory: dict, table_inve
                 ratio = abs(cap_y - asset_y) / height
                 gap = max(0.0, asset_box[1] - cap_box[3], cap_box[1] - asset_box[3]) / height
                 if gap <= 0.02:
-                    add("normal_control", caption, page, ratio, inv)
+                    add("normal_control", caption, page, ratio, inv, target_asset_bbox=list(asset_box))
 
     ghost = key in GHOST_KEYS
     if ghost:
