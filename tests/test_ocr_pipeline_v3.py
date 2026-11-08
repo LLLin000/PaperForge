@@ -31,7 +31,10 @@ def test_producer_pre_matches_before_inventory_and_writes_candidate_artifact(tmp
         return blocks, doc
 
     monkeypatch.setattr("paperforge.worker.ocr_pre_match_normalize.pre_match_normalize", pre_match)
-    monkeypatch.setattr(ocr, "build_figure_inventory", lambda *a, **k: calls.append("figure") or (_ for _ in ()).throw(RuntimeError("stop")))
+    monkeypatch.setattr(
+        "paperforge.worker.ocr_figures.build_figure_inventory",
+        lambda *a, **k: calls.append("figure") or (_ for _ in ()).throw(RuntimeError("stop")),
+    )
     try:
         ocr.postprocess_ocr_result(tmp_path, key, [], meta={})
     except RuntimeError as exc:
@@ -61,7 +64,7 @@ def test_producer_skips_pre_match_when_v3_is_disabled(tmp_path, monkeypatch) -> 
         lambda *a, **k: calls.append("pre"),
     )
     monkeypatch.setattr(
-        ocr, "build_figure_inventory",
+        "paperforge.worker.ocr_figures.build_figure_inventory",
         lambda *a, **k: calls.append("figure") or (_ for _ in ()).throw(RuntimeError("stop")),
     )
     try:

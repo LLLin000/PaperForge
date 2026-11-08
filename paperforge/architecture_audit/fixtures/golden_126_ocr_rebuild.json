@@ -1,138 +1,138 @@
 {
-  "contract": {
-    "schema_version": 1,
-    "asset_groups": [
-      "library",
-      "ocr_raw",
-      "ocr_derived",
-      "retrieval",
-      "vectors"
+ "contract": {
+  "schema_version": 1,
+  "asset_groups": [
+   "library",
+   "ocr_raw",
+   "ocr_derived",
+   "retrieval",
+   "vectors"
+  ],
+  "publication_units": [
+   {
+    "unit_id": "ocr_derived.generation",
+    "asset_group": "ocr_derived",
+    "publication_authority": "ocr.publisher",
+    "authorized_writers": [
+     "ocr.postprocess",
+     "ocr.rebuild",
+     "ocr.legacy_backfill"
+    ]
+   }
+  ],
+  "operations": [
+   "ocr_rebuild",
+   "memory_build",
+   "embed_build_resume"
+  ],
+  "required_extractors": [
+   "python_ast"
+  ],
+  "rules": [
+   {
+    "rule_id": "remote_intent.embed_resume",
+    "kind": "remote_intent",
+    "subject": "embed_build_resume",
+    "lifecycle": "planned",
+    "enforcement": "blocking",
+    "effective_after": {
+     "issue": "#126"
+    },
+    "accepted_intent_modes": [
+     "direct_invocation",
+     "ui_modal",
+     "explicit_flag",
+     "interactive_prompt"
     ],
-    "publication_units": [
-      {
-        "unit_id": "ocr_derived.generation",
-        "asset_group": "ocr_derived",
-        "publication_authority": "ocr.publisher",
-        "authorized_writers": [
-          "ocr.postprocess",
-          "ocr.rebuild",
-          "ocr.legacy_backfill"
-        ]
-      }
-    ],
-    "operations": [
-      "ocr_rebuild",
-      "memory_build",
-      "embed_build_resume"
-    ],
-    "required_extractors": [
-      "python_ast"
-    ],
-    "rules": [
-      {
-        "rule_id": "remote_intent.embed_resume",
-        "kind": "remote_intent",
-        "subject": "embed_build_resume",
-        "lifecycle": "planned",
-        "enforcement": "blocking",
-        "effective_after": {
-          "issue": "#126"
-        },
-        "accepted_intent_modes": [
-          "direct_invocation",
-          "ui_modal",
-          "explicit_flag",
-          "interactive_prompt"
-        ],
-        "description": "embed build --resume after rebuild requires explicit user confirmation"
-      },
-      {
-        "rule_id": "publication.hash_marker",
-        "kind": "publication_marker",
-        "subject": "ocr_derived.generation",
-        "lifecycle": "planned",
-        "enforcement": "blocking",
-        "effective_after": {
-          "issue": "#126"
-        },
-        "description": "derived publication uses pending marker + atomic result-hash.txt"
-      },
-      {
-        "rule_id": "publication.authority",
-        "kind": "publication_authority",
-        "subject": "ocr_derived.generation",
-        "lifecycle": "active",
-        "enforcement": "blocking",
-        "description": "one publication authority per unit"
-      },
-      {
-        "rule_id": "signal.rebuild_progress",
-        "kind": "signal_consumer",
-        "subject": "OCR_REBUILD_PROGRESS",
-        "lifecycle": "planned",
-        "enforcement": "blocking",
-        "effective_after": {
-          "issue": "#126"
-        },
-        "description": "every rebuild emits START/RESULT/PROGRESS/DONE"
-      }
-    ],
-    "exceptions": []
-  },
-  "survey": {
-    "schema_version": 1,
-    "scope": "paperforge",
-    "coverage": [
-      {
-        "extractor": "python_ast",
-        "status": "complete"
-      }
-    ],
-    "facts": [
-      {
-        "kind": "effect",
-        "operation_id": "ocr_rebuild",
-        "effect_kind": "materialization_build",
-        "evidence": {
-          "file": "paperforge/worker/ocr_rebuild.py",
-          "file_digest": "sha256:53d5e0a236c00e20fcf4667345677eb72b4e6a28b776aa3c7ca08db1671ae2b2",
-          "symbol": "run_derived_rebuild_for_keys",
-          "line_start": 744,
-          "line_end": 799,
-          "extractor": "python_ast",
-          "epistemic_status": "observed_static",
-          "confidence": "exact"
-        }
-      },
-      {
-        "kind": "canonical_write",
-        "unit_id": "ocr_derived.generation",
-        "actor_kind": "worker",
-        "writer_id": "ocr.rebuild",
-        "via_publication_protocol": false,
-        "evidence": {
-          "file": "paperforge/worker/ocr_rebuild.py",
-          "file_digest": "sha256:53d5e0a236c00e20fcf4667345677eb72b4e6a28b776aa3c7ca08db1671ae2b2",
-          "symbol": "run_derived_rebuild_for_keys",
-          "line_start": 744,
-          "line_end": 799,
-          "extractor": "python_ast",
-          "epistemic_status": "observed_static",
-          "confidence": "exact"
-        }
-      }
-    ],
-    "source_digest": "sha256:f18ddaadf13972f0c4c6358ca7a31d3692d0caf349e4024e8fff033e61706cb4",
-    "parse_errors": [],
-    "excluded_roots": [],
-    "run_metadata": {
-      "repository_revision": "636876fc",
-      "repository_dirty": false,
-      "tool_version": "1.0.0",
-      "extractor_versions": {
-        "python_ast": "1"
-      },
-      "generated_at": "2026-08-05T00:00:00Z"
+    "description": "embed build --resume after rebuild requires explicit user confirmation"
+   },
+   {
+    "rule_id": "publication.hash_marker",
+    "kind": "publication_marker",
+    "subject": "ocr_derived.generation",
+    "lifecycle": "planned",
+    "enforcement": "blocking",
+    "effective_after": {
+     "issue": "#126"
+    },
+    "description": "derived publication uses pending marker + atomic result-hash.txt"
+   },
+   {
+    "rule_id": "publication.authority",
+    "kind": "publication_authority",
+    "subject": "ocr_derived.generation",
+    "lifecycle": "active",
+    "enforcement": "blocking",
+    "description": "one publication authority per unit"
+   },
+   {
+    "rule_id": "signal.rebuild_progress",
+    "kind": "signal_consumer",
+    "subject": "OCR_REBUILD_PROGRESS",
+    "lifecycle": "planned",
+    "enforcement": "blocking",
+    "effective_after": {
+     "issue": "#126"
+    },
+    "description": "every rebuild emits START/RESULT/PROGRESS/DONE"
+   }
+  ],
+  "exceptions": []
+ },
+ "survey": {
+  "schema_version": 1,
+  "scope": "paperforge",
+  "coverage": [
+   {
+    "extractor": "python_ast",
+    "status": "complete"
+   }
+  ],
+  "facts": [
+   {
+    "kind": "effect",
+    "operation_id": "ocr_rebuild",
+    "effect_kind": "materialization_build",
+    "evidence": {
+     "file": "paperforge/worker/ocr_rebuild.py",
+     "file_digest": "sha256:ae74ce127f25c45f49e393fd3bcde1e4171660514e0be49971f78a837e9b9003",
+     "symbol": "run_derived_rebuild_for_keys",
+     "line_start": 718,
+     "line_end": 769,
+     "extractor": "python_ast",
+     "epistemic_status": "observed_static",
+     "confidence": "exact"
     }
+   },
+   {
+    "kind": "canonical_write",
+    "unit_id": "ocr_derived.generation",
+    "actor_kind": "worker",
+    "writer_id": "ocr.rebuild",
+    "via_publication_protocol": false,
+    "evidence": {
+     "file": "paperforge/worker/ocr_rebuild.py",
+     "file_digest": "sha256:ae74ce127f25c45f49e393fd3bcde1e4171660514e0be49971f78a837e9b9003",
+     "symbol": "run_derived_rebuild_for_keys",
+     "line_start": 718,
+     "line_end": 769,
+     "extractor": "python_ast",
+     "epistemic_status": "observed_static",
+     "confidence": "exact"
+    }
+   }
+  ],
+  "source_digest": "sha256:355c97271b887cec2e637d0985bc70c73594973aa203b0e7f4933d3d5ecea99e",
+  "parse_errors": [],
+  "excluded_roots": [],
+  "run_metadata": {
+   "repository_revision": "d86a6afd",
+   "repository_dirty": false,
+   "tool_version": "1.0.0",
+   "extractor_versions": {
+    "python_ast": "1"
+   },
+   "generated_at": "2026-08-05T00:00:00Z"
   }
+ }
 }

@@ -154,20 +154,13 @@ from paperforge.worker.ocr_errors import (
     OCRPostprocessError,
     classify_ocr_error,
 )
-from paperforge.worker.ocr_figures import (
-    build_figure_inventory,
-    write_figure_inventory,
-)
+from paperforge.worker.ocr_figures import write_figure_inventory
 from paperforge.worker.ocr_metadata import (
     extract_frontmatter_candidates,
     resolve_metadata,
     write_resolved_metadata,
 )
-from paperforge.worker.ocr_tables import (
-    build_table_inventory,
-    write_table_inventory,
-)
-from paperforge.worker.ocr_object_writeback import apply_object_writebacks
+from paperforge.worker.ocr_tables import write_table_inventory
 from paperforge.worker.sync import (
     load_control_actions,
     load_export_rows,
@@ -2118,7 +2111,9 @@ def postprocess_ocr_result(
     from paperforge.worker.ocr_versions import OCR_PIPELINE_VERSION
     meta["normalize_mode"] = "seed_only" if _ocr_pipeline_v3_enabled() else "legacy"
     meta["ocr_pipeline_version"] = OCR_PIPELINE_VERSION
-    source_pdf = Path(meta.get("source_pdf", "")) if meta.get("source_pdf") else None
+    from paperforge.pdf_resolver import resolve_source_pdf
+
+    source_pdf = resolve_source_pdf(vault, meta.get("source_pdf"))
     pdf_doc = None
     try:
         if source_pdf and source_pdf.exists():
@@ -2135,30 +2130,8 @@ def postprocess_ocr_result(
     # --- Phase 1: raw metadata and source metadata ---
     artifacts = artifact_paths_for_key(vault, key)
 
-    # raw_meta.json
-    source_pdf_path = Path(meta.get("source_pdf", "")) if meta.get("source_pdf") else None
-    # Locator → real file (wikilink / vault-relative / storage: /
-    # storage-KEY-dir fallback) so the fingerprint is the ACTUAL PDF
-    # identity, never the placeholder.  The path is a locator; bytes are
-    # the identity (ADR-0002 §5 #1).
-    if source_pdf_path is not None:
-        try:
-            from paperforge.pdf_resolver import resolve_pdf_path
-
-            _zotero_dir = None
-            _cfg = {}
-            try:
-                _cfg = read_json(vault / "paperforge.json") if (vault / "paperforge.json").exists() else {}
-            except Exception:
-                pass
-            _zd = _cfg.get("zotero_data_dir", "") or _cfg.get("zotero_link", "")
-            if _zd:
-                _zotero_dir = Path(_zd)
-            resolved = resolve_pdf_path(str(source_pdf_path), True, vault, _zotero_dir)
-            if resolved:
-                source_pdf_path = Path(resolved)
-        except Exception:  # noqa: BLE001 — keep locator; fp degrades to unknown
-            pass
+    # raw_meta.json — the resolved file is the PDF identity, not the locator
+    source_pdf_path = source_pdf
     pdf_fingerprint = (
         compute_pdf_fingerprint(source_pdf_path) if source_pdf_path and source_pdf_path.exists() else "unknown"
     )
@@ -2194,7 +2167,6 @@ def postprocess_ocr_result(
     artifacts.blocks_structured.parent.mkdir(parents=True, exist_ok=True)
     all_raw_blocks = build_raw_blocks_for_result_lines(key, all_results)
 
-    source_pdf_path = Path(meta.get("source_pdf", "")) if meta.get("source_pdf") else None
     if source_pdf_path and source_pdf_path.exists():
         from paperforge.worker.ocr_pdf_spans import (
             backfill_missing_text_from_pdf,
@@ -2243,37 +2215,28 @@ def postprocess_ocr_result(
     )
     write_resolved_metadata(metadata_dir / "resolved_metadata.json", resolved)
 
-    figure_inventory = build_figure_inventory(structured)
+    from paperforge.worker.ocr_object_stage import commit_object_roles, run_association_stage
 
-    # --- Author bio: residual figure inventory cleanup (Pass B, P1) ---
-    from paperforge.worker.ocr_bio import (
-        residual_author_bio_pass,
-        post_ref_bio_cleanup,
-        prune_figure_inventory_after_bio,
-        _resolve_ref_start_page,
-    )
-    residual_author_bio_pass(
-        figure_inventory, structured,
-        include_ambiguous=False, include_weak_matched=False,
-    )
+    # Figure matching uses PDF text lines as evidence; rebuild computes them in
+    # phase 1, first parse must pass the same evidence or the two paths can
+    # disagree on the same page.
+    page_pdf_lines_by_page: dict[int, list[dict]] = {}
+    if source_pdf_path and source_pdf_path.exists():
+        try:
+            from paperforge.worker.ocr_pdf_spans import extract_pdf_lines_normalized
 
-    # --- Author bio: post-ref bio cleanup (Pass C, P0) ---
-    ref_start_page = _resolve_ref_start_page(structured)
-    if ref_start_page is not None:
-        post_ref_bio_cleanup(figure_inventory, structured, ref_start_page=ref_start_page)
-        prune_figure_inventory_after_bio(figure_inventory)
+            page_pdf_lines_by_page = extract_pdf_lines_normalized(source_pdf_path)
+        except Exception:  # missing/corrupt PDF must not fail OCR
+            page_pdf_lines_by_page = {}
 
-    # --- Phase 2a: reader figure synthesis ---
-    from paperforge.worker.ocr_figure_reader import synthesize_reader_figures
-
-    reader_payload = synthesize_reader_figures(figure_inventory, structured_blocks=structured)
+    stage = run_association_stage(structured, page_pdf_lines_by_page=page_pdf_lines_by_page or None)
+    figure_inventory, table_inventory = stage.figures, stage.tables
+    reader_payload = stage.reader_payload
     reader_figures_dir = ocr_root / "structure"
     reader_figures_dir.mkdir(parents=True, exist_ok=True)
     write_json(reader_figures_dir / "reader_figures.json", reader_payload)
 
-    # --- Phase 2: table inventory ---
-    table_inventory = build_table_inventory(structured)
-    # --- Phase 2: object writeback ---
+    # --- Phase 2: object writeback (after post-match commits roles) ---
     if _ocr_pipeline_v3_enabled():
         from paperforge.worker.ocr_post_match_normalize import post_match_normalize
 
@@ -2285,11 +2248,7 @@ def postprocess_ocr_result(
             source_frontmatter_anchors=getattr(doc_structure, "source_frontmatter_anchors", None),
         )
 
-    apply_object_writebacks(
-        structured_blocks=structured,
-        figure_inventory=figure_inventory,
-        table_inventory=table_inventory,
-    )
+    commit_object_roles(structured, figure_inventory, table_inventory)
     write_figure_inventory(
         artifacts.blocks_structured.parent / "figure_inventory.json",
         figure_inventory,

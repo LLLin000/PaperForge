@@ -251,6 +251,26 @@ def _crop_asset_from_pdf(
                 return finish(CropResult(False, "crop", "crop_write_failed"))
         # fall through if page rendering failed
 
+    # ── 1b. Out-of-range page fallback ──
+    # Rebuild mode renders from the PDF so it stays deterministic, but an OCR
+    # page can exceed the PDF page count (a supplement replaced the main file).
+    # In that case an existing cached page image is better evidence than a
+    # silently missing asset.
+    if not use_disk_page_cache and page_cache_dir is not None and not rotation_deg:
+        cached_page_image = _find_cached_page_image(page_cache_dir, page_num)
+        if cached_page_image is not None:
+            try:
+                from paperforge.worker.ocr import crop_block_asset
+            except ImportError:
+                return finish(CropResult(False, "crop", "crop_dependency_missing"))
+            try:
+                ok = crop_block_asset(cached_page_image, list(numeric_bbox), dst)
+            except Exception:
+                return finish(CropResult(False, "crop", "crop_failed"))
+            return finish(
+                CropResult(bool(ok), "materialize" if ok else "crop", "success" if ok else "crop_failed")
+            )
+
     # ── 2. Disk page cache path (only when use_disk_page_cache=True) ──
     if use_disk_page_cache and page_cache_dir is not None and not rotation_deg:
         cached_page_image = _find_cached_page_image(page_cache_dir, page_num)
@@ -661,14 +681,17 @@ def extract_and_write_objects(
     orphans_asset_dir = asset_root / "orphans"
     figures_render_dir = render_root / "figures"
     tables_render_dir = render_root / "tables"
-    page_cache_dir = (asset_root.parent / "pages") if use_disk_page_cache else None
+    # The cache directory is always *readable* so a rebuild can crop an OCR
+    # page that the configured PDF no longer contains; rebuild mode only skips
+    # creating/refreshing cache files.
+    page_cache_dir = asset_root.parent / "pages"
     for d in (
         figures_asset_dir,
         tables_asset_dir,
         orphans_asset_dir,
         figures_render_dir,
         tables_render_dir,
-        *(page_cache_dir is not None and [page_cache_dir] or []),
+        *(use_disk_page_cache and [page_cache_dir] or []),
     ):
         d.mkdir(parents=True, exist_ok=True)
 

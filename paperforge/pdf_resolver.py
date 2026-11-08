@@ -25,6 +25,49 @@ def _first_pdf_in_storage_dir(storage_key: str, zotero_dir: Path | None) -> str:
     return str(pdfs[0]) if pdfs else ""
 
 
+def resolve_source_pdf(vault_root: Path, locator: str | None) -> Path | None:
+    """Resolve a stored ``source_pdf`` locator to a readable PDF path.
+
+    This is the one resolution both OCR entries (first parse and derived
+    rebuild) use, so they read the same PDF evidence: absolute paths,
+    ``[[vault]]`` wikilinks, vault-relative paths and ``storage:`` locators
+    are all resolved through the configured Zotero data directory.
+    """
+    if not locator:
+        return None
+    zotero_dir: Path | None = None
+    config_path = Path(vault_root) / "paperforge.json"
+    if config_path.exists():
+        try:
+            import json
+
+            config = json.loads(config_path.read_text(encoding="utf-8"))
+            configured = config.get("zotero_data_dir") or config.get("zotero_link") or ""
+            if configured:
+                zotero_dir = Path(configured)
+        except (OSError, ValueError):
+            zotero_dir = None
+    resolved = resolve_pdf_path(str(locator), True, Path(vault_root), zotero_dir)
+    candidate = Path(resolved) if resolved else None
+    if candidate is None:
+        raw = str(locator).strip()
+        if raw.startswith("[[") and raw.endswith("]]"):
+            raw = raw[2:-2]
+        direct = Path(raw)
+        if direct.exists():
+            candidate = direct
+    if candidate is None:
+        return None
+    try:
+        import pymupdf
+
+        with pymupdf.open(str(candidate)):
+            pass
+    except Exception:  # noqa: BLE001 — unreadable files are not PDF evidence
+        return None
+    return candidate
+
+
 def resolve_pdf_path(
     pdf_path: str,
     has_pdf: bool,

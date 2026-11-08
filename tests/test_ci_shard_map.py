@@ -8,17 +8,31 @@ command to run.
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 MAP_PATH = REPO_ROOT / "tests" / "ci-shards.json"
 
 
+def _tracked() -> set[str] | None:
+    proc = subprocess.run(
+        ["git", "-C", str(REPO_ROOT), "ls-files", "-z", "--", "tests"],
+        capture_output=True,
+        text=True,
+    )
+    if proc.returncode != 0:
+        return None
+    return {path for path in proc.stdout.split("\0") if path}
+
+
 def _suite_files() -> set[str]:
+    tracked = _tracked()
     return {
         p.relative_to(REPO_ROOT).as_posix()
         for p in (REPO_ROOT / "tests").rglob("test_*.py")
         if "__pycache__" not in p.parts
+        and (tracked is None or p.relative_to(REPO_ROOT).as_posix() in tracked)
         and not p.relative_to(REPO_ROOT).as_posix().startswith(
             ("tests/e2e/", "tests/audit/", "tests/chaos/", "tests/harness/")
         )
