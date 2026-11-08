@@ -391,6 +391,44 @@ Three measurement defects were fixed so F2 does not inherit them:
    (`centre` / `edge_gap`). Candidates 331 → 359; `caption_without_candidate_asset`
    14 → 3.
 
+## Author-bio role divergence (review)
+
+The R0 parity run flagged four rows in `2HEUD5P9` where the replay said
+`reference_item` and the (older) disk output said `backmatter_body`. The
+investigation found a real classification defect, not version drift:
+
+- The five tail blocks are author biographies ("… is now a postdoctoral fellow
+  in Professor …", "… is a professor at …").
+- `post_ref_bio_cleanup` only inspected `reference_item` / `reference_heading` /
+  `figure_caption` / `structured_insert_candidate` and required text score ≥ 4
+  with ≥ 2 categories. At that stage the bios were `footnote` / `body_paragraph`,
+  so they were never candidates.
+- `post_match_normalize` then rewrote them through the reference-zone fallback
+  to `reference_item`, which is a zone default, not a semantic decision. The
+  same paper's first bio (outside the zone) stayed `body_paragraph` — the same
+  content type received two different roles.
+
+Fix (production, narrow):
+
+1. `post_ref_bio_cleanup` now also inspects tail prose (`footnote`,
+   `body_paragraph`) and reference items whose `seed_role` was prose, with a
+   relaxed threshold (score ≥ 3, ≥ 1 category). Real references are still
+   excluded by `_looks_like_reference`, and correspondence/address blocks are
+   excluded explicitly (the first attempt misclassified "Address correspondence
+   to: … University of Kansas" as a bio).
+2. `post_match_normalize` keeps `backmatter_body` for a block already tagged
+   `author_bio`; the specific bio decision outranks the zone default.
+
+Measured on the 40-paper corpus: 4 blocks change role (all in `2HEUD5P9`), the
+rebuilt render has the same character multiset and same length as the old
+output, and the shadow render still reports zero changed pages and no markdown,
+multiset or heading regressions. Parity for `2HEUD5P9` now matches the disk
+output; the remaining role gaps (`27MSS3VH` 2, `28JLIHLS` 1, `3FQYMMXS` 1) are
+the older disk's figure-swallowing rows, already known.
+
+The C2 freeze is unchanged: this is a classification fix, not a reading-order
+takeover.
+
 ### Known limits
 
 - Running heads and folios are placed last; a paper whose body starts in the top 8% keeps those blocks in the body flow (they are not margin unless their role is furniture).
