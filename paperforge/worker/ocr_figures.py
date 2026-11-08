@@ -254,14 +254,21 @@ def _validate_page_local_caption_grammar(
         prefix_start = text[: m.start(1)]
         return prefix_start.strip().lower().replace(".", "").replace(":", "").replace(" ", "")
 
-    legend_by_id: dict[str, dict] = {}
+    legend_by_id: dict[tuple, dict] = {}
     for leg in legends:
-        legend_by_id[str(leg.get("block_id", ""))] = leg
+        legend_by_id[(int(leg.get("page", 0) or 0), str(leg.get("block_id", "")))] = leg
 
     page_grammar: dict[int, set[str]] = {}
     for h in hypotheses:
         lid = str(h.get("legend_block_id", ""))
-        leg = legend_by_id.get(lid)
+        hp = h.get("page")
+        leg = legend_by_id.get((int(hp) if hp is not None else None, lid))
+        if leg is None:
+            # fallback by block_id
+            for (pp, bb), ll in legend_by_id.items():
+                if bb == lid:
+                    leg = ll
+                    break
         if leg is None:
             continue
         page = int(leg.get("page", 0) or 0)
@@ -271,7 +278,13 @@ def _validate_page_local_caption_grammar(
 
     for h in hypotheses:
         lid = str(h.get("legend_block_id", ""))
-        leg = legend_by_id.get(lid)
+        hp = h.get("page")
+        leg = legend_by_id.get((int(hp) if hp is not None else None, lid))
+        if leg is None:
+            for (pp, bb), ll in legend_by_id.items():
+                if bb == lid:
+                    leg = ll
+                    break
         if leg is None:
             h["grammar_status"] = "deferred"
             h["grammar_reason"] = "legend not found"
@@ -3092,10 +3105,16 @@ def _settle_cross_page_reserved_objects(
         else:
             failed_legend_ids.add(lid)
 
-    # Build set of already-matched legend IDs to prevent double-matching
-    _used_legend_ids: set[str] = {
-        str(m.get("legend_block_id", "")) for m in matched_figures if m.get("legend_block_id")
-    }
+    # Build set of already-matched legend IDs (page-qualified) to prevent double-matching
+    _used_legend_ids: set[tuple] = set()
+    for m in matched_figures:
+        lid = m.get("legend_block_id")
+        if not lid:
+            continue
+        lp = m.get("legend_page")
+        if lp is None:
+            lp = m.get("page")
+        _used_legend_ids.add((lp, str(lid)))
 
     # reserved groups look forward
     for gid in sorted(reserved_group_ids):
@@ -3112,7 +3131,7 @@ def _settle_cross_page_reserved_objects(
                 [
                     leg
                     for leg in legends
-                    if str(leg.get("block_id", "")) not in _used_legend_ids
+                    if (int(leg.get("page", 0) or 0), str(leg.get("block_id", ""))) not in _used_legend_ids
                     and (int(leg.get("page", 0) or 0), str(leg.get("block_id", ""))) not in failed_legend_ids
                     and int(leg.get("page", 0) or 0) == np
                     and _is_strong_numbered_legend(leg)
@@ -3268,9 +3287,15 @@ def _infer_missing_main_figure_numbers(
         }:
             continue
         item_text = str(item.get("text", ""))
+        legend_page = item.get("legend_page")
+        if legend_page is None:
+            legend_page = item.get("page")
         legend_text = ""
         for entry in inventory.get("figure_legends", []):
             if str(entry.get("block_id", "")) == str(legend_block_id):
+                ep = entry.get("page")
+                if legend_page is not None and ep is not None and int(ep) != int(legend_page):
+                    continue
                 legend_text = str(entry.get("text", ""))
                 break
         combined = item_text + " " + legend_text
@@ -3560,7 +3585,15 @@ def build_figure_inventory_vnext(
             FinalAccountingPass,
         ],
     )
-    matched_ids = {str(m.get("legend_block_id", "")) for m in state.matches}
+    matched_ids = set()
+    for m in state.matches:
+        lid = m.get("legend_block_id")
+        if not lid:
+            continue
+        mp = m.get("legend_page")
+        if mp is None:
+            mp = m.get("page")
+        matched_ids.add((mp, str(lid)))
 
     # #122: suppress dominated 0-asset / identity-mismatched ghosts at the
     # final emission seam — matched_figures must not carry entries that a
@@ -3580,7 +3613,8 @@ def build_figure_inventory_vnext(
         "matched_figures": kept_matches,
         "ambiguous_figures": [],
         "unmatched_legends": [
-            b for b in candidate_index.deduped_legends if str(b.get("block_id", "")) not in matched_ids
+            b for b in candidate_index.deduped_legends
+            if (_resource_page(b) if False else (b.get("page") if b.get("page") is not None else b.get("page_num")), str(b.get("block_id", ""))) not in matched_ids
         ],
         "unmatched_assets": [
             a

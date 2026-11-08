@@ -42,11 +42,14 @@ class LocatorBridgePass:
         _unmatched_by_number: dict[tuple[str, int], list[dict]] = {}
 
         # Collect block_ids already claimed as legends by prior matches
-        matched_legend_ids: set[str] = set()
+        matched_legend_ids: set[tuple] = set()
         for m in state.matches:
             lid = m.get("legend_block_id")
             if lid:
-                matched_legend_ids.add(str(lid))
+                mp = m.get("legend_page")
+                if mp is None:
+                    mp = m.get("page")
+                matched_legend_ids.add((mp, str(lid)))
 
         # Scan deduped_legends (formal legends)
         for leg in state.candidate_index.deduped_legends:
@@ -55,7 +58,8 @@ class LocatorBridgePass:
             if fn is None:
                 continue
             bid = str(leg.get("block_id", ""))
-            if bid in matched_legend_ids:
+            leg_page = _resource_page(leg)
+            if (leg_page, bid) in matched_legend_ids:
                 continue
             ns = ocr_figures._extract_figure_namespace(leg_text)
             _unmatched_by_number.setdefault((ns, fn), []).append(leg)
@@ -67,7 +71,8 @@ class LocatorBridgePass:
             if fn is None:
                 continue
             bid = str(leg.get("block_id", ""))
-            if bid in matched_legend_ids:
+            leg_page = _resource_page(leg)
+            if (leg_page, bid) in matched_legend_ids:
                 continue
             ns = ocr_figures._extract_figure_namespace(leg_text)
             key = (ns, fn)
