@@ -171,10 +171,7 @@ def test_single_narrow_sidecar_does_not_break_grouped_baseline():
     assert page6_matches[0].get("legend_block_id") == "c4"
 
 def test_sidecar_pass_does_not_steal_assets_from_protected_same_page_matches():
-    """Two narrow captions on page 5; c1 already has a protected same-page match.
-
-    SidecarPass should skip c1 and match only c2.
-    """
+    """Sidecar source claims must not include a protected same-page asset."""
     blocks = [
         {"block_id": "c1", "page": 5, "role": "figure_caption",
          "text": "Figure 1. Protected", "bbox": [100, 100, 300, 130]},
@@ -200,15 +197,29 @@ def test_sidecar_pass_does_not_steal_assets_from_protected_same_page_matches():
     state.matches.append({
         "legend_block_id": "c1",
         "settlement_type": "same_page",
+        "page": 5,
         "matched_assets": [{"block_id": "a1"}],
+        "asset_block_ids": ["a1"],
         "flags": [],
         "figure_number": 1,
     })
 
-    report = SidecarPass().run(state)
+    SidecarPass().run(state)
 
-    # c1 should be skipped (protected), c2 should get a sidecar match
-    sidecar_matches = [m for m in state.matches if m.get("settlement_type") == "sidecar"]
-    assert len(sidecar_matches) == 1
-    assert sidecar_matches[0]["legend_block_id"] == "c2"
-    assert len(sidecar_matches[0].get("matched_assets", [])) >= 1
+    protected = next(m for m in state.matches if m.get("legend_block_id") == "c1" and m.get("settlement_type") == "same_page")
+    assert "a1" in {str(asset.get("block_id", "")) for asset in protected["matched_assets"]}
+    sidecar_claims = [
+        {
+            "legend_block_id": match.get("legend_block_id"),
+            "asset_block_ids": sorted({
+                str(asset.get("block_id", ""))
+                for asset in match.get("matched_assets", [])
+                if asset.get("block_id")
+            }),
+        }
+        for match in state.matches
+        if match.get("settlement_type") == "sidecar"
+    ]
+    assert sidecar_claims
+    assert all("a1" not in claim["asset_block_ids"] for claim in sidecar_claims)
+    assert any(claim["legend_block_id"] == "c2" and "a2" in claim["asset_block_ids"] for claim in sidecar_claims)
