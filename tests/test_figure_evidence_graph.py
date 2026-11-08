@@ -52,3 +52,21 @@ def test_json_keys_are_stable():
     assert list(graph) == ["key", "nodes", "edges", "conflicts"]
     assert all(list(node) == ["id", "type", "page", "block_id", "bbox", "role", "text"]
                for node in graph["nodes"] if node["type"] != "group")
+
+
+def test_table_without_asset_is_hold_not_matched():
+    blocks = [block("c", "table_caption", 1, 1), block("t", "table_asset", 1, 20)]
+    inv = {"tables": [{"table_id": "t1", "caption_block_id": "c", "page": 1, "has_asset": False}]}
+    graph = build_graph(view(blocks, tables=inv))
+    caption_edges = [e for e in graph["edges"] if e["relation"] == "caption_group"]
+    assert caption_edges and all(e["status"] == "HOLD" for e in caption_edges)
+    assert caption_edges[0]["evidence"]["status_reason"] == "no_asset"
+    assert not any(e["status"] == "MATCHED" and e["relation"] == "caption_group" for e in graph["edges"])
+
+
+def test_spatial_candidates_are_marked_as_such():
+    blocks = [block("cap", "figure_caption", 10, 10), block("a1", "figure_asset", 10, 24)]
+    graph = build_graph(view(blocks, {"matched_figures": []}))
+    candidates = [e for e in graph["edges"] if e["relation"] == "caption_asset"]
+    assert candidates
+    assert all(e["origin"] == "spatial" and e["proposed_by"] == "spatial_proximity" for e in candidates)

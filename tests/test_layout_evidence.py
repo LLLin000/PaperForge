@@ -65,3 +65,24 @@ def test_parity_reports_matching_and_drifting_rows(tmp_path: Path) -> None:
     # is that the report is well-formed and names differences when they exist.
     assert report["rows"]["disk"] == 2
     assert set(report) >= {"rows", "identity", "field_diffs", "figure_claims", "table_claims", "trace"}
+
+
+def test_table_claims_follow_asset_and_segments() -> None:
+    parity = _module("layout_evidence_parity", "scripts/dev/layout_evidence_parity.py")
+    inventory = {
+        "tables": [
+            {
+                "table_id": "t1",
+                "page": 3,
+                "asset_block_id": "5",
+                "has_asset": True,
+                "segments": [
+                    {"page": 3, "asset_block_id": "5"},
+                    {"page": 4, "asset_block_id": "9"},
+                ],
+            }
+        ]
+    }
+    claims = parity._table_claims(inventory)
+    assert claims[("t1", 3, "5")] == 2  # primary asset + first segment
+    assert claims[("t1", 4, "9")] == 1

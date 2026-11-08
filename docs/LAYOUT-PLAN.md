@@ -335,13 +335,12 @@ passes are kept side by side, never summed.
 
 ### Result (40 papers)
 
-| Status | Edges |
-|---|---:|
-| MATCHED | 997 |
-| CANDIDATE | 331 |
-| HOLD | 0 |
-| UNRESOLVED | 0 |
-| UNDETERMINED | 0 |
+| Status | Edges | Origin |
+|---|---:|---|
+| MATCHED | 967 | inventory |
+| HOLD | 30 | inventory (`no_asset`) |
+| CANDIDATE | 331 | `spatial_proximity` |
+| UNRESOLVED / UNDETERMINED | 0 | — |
 
 | Conflict | Count |
 |---|---:|
@@ -355,6 +354,25 @@ concrete candidates for a missing-figure review, not proof of a miss.
 
 The graph is a review surface: it can say the current match is questionable, it
 cannot change it.
+
+### Evidence-contract corrections (before F2)
+
+Three measurement defects were fixed so F2 does not inherit them:
+
+1. **Table claim parity** counted `table.members`, a field the inventory does
+   not use; it reported zero differences for every paper. Claims now come from
+   `asset_block_id` plus per-page `segments`. With that, 5 of 40 papers show
+   real claim drift (e.g. `3EFCZ7BB` 2 vs 6), which is version drift between the
+   in-memory replay and the disk snapshot, now visible instead of masked.
+2. **Figure/caption edge gap** measured the nearest asset on the page, not the
+   matched one. Cases now record `matched_edge_gap_ratio` (target asset) and
+   `nearest_edge_gap_ratio` separately; 30 of the 50 audit cases have a matched
+   target to measure.
+3. **Graph status** marked every inventory table `MATCHED`, including tables
+   with no asset. `MATCHED` now requires a resolved asset; assetless entries are
+   `HOLD` with `status_reason: no_asset` (30 edges). Spatial candidates carry
+   `origin: spatial` and `proposed_by: spatial_proximity`, so they are never
+   mistaken for proposals from a pairing pass.
 
 ### Known limits
 

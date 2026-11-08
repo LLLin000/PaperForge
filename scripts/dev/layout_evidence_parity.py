@@ -49,10 +49,24 @@ def _figure_claims(inventory: dict) -> Counter:
 
 
 def _table_claims(inventory: dict) -> Counter:
+    """Table claims the way the inventory actually stores them.
+
+    Tables do not expose a `members` list; ownership is `asset_block_id` plus
+    the per-page `segments`. Claiming from `members` reported zero differences
+    for every paper, which is a coverage bug, not parity.
+    """
     claims = Counter()
     for table in inventory.get("tables", []):
-        for member in table.get("members", []) or []:
-            claims[(str(table.get("table_id")), int(table.get("page", 0) or 0), str(member.get("block_id")))] += 1
+        key = str(table.get("table_id") or table.get("caption_block_id") or "")
+        page = int(table.get("page", 0) or 0)
+        asset_id = table.get("asset_block_id")
+        if asset_id is not None:
+            claims[(key, page, str(asset_id))] += 1
+        for segment in table.get("segments", []) or []:
+            segment_asset = segment.get("asset_block_id")
+            if segment_asset is None:
+                continue
+            claims[(key, int(segment.get("page", page) or page), str(segment_asset))] += 1
     return claims
 
 
