@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import logging
-
 import contextlib
 import itertools
+import logging
 import re
 from dataclasses import asdict
 from pathlib import Path
@@ -16,7 +15,7 @@ from paperforge.worker.ocr_scores import score_figure_caption, score_figure_matc
 _FIGURE_NUMBER_PATTERN = re.compile(
     r"(?:Figure|Fig\.?|Supplementary\s+Figure|Supplementary\s+Fig\.?|"
     r"Extended\s+Data\s+Figure|Extended\s+Data\s+Fig\.?|图|圖|ͼ)"
-    r"\s*(?:(?P<prefix>[A-Z])\.?\s*)?(?P<number>\d+(?:\.\d+)?)",
+    r"\s*(?:(?P<prefix>[A-Z])\.?\s*)?(?P<number>\d+(?:\.\d+)?(?:[-–—]\d+(?:\.\d+)?)?)",
     flags=re.IGNORECASE,
 )
 
@@ -154,10 +153,9 @@ def _looks_like_inline_figure_mention(text: str, block: dict | None = None) -> b
 def _extract_figure_number(text: str) -> int | None:
     m = _FIGURE_NUMBER_PATTERN.search(text)
     if m:
+        number_match = re.match(r"\d+(?:\.\d+)?", m.group("number") or "")
         try:
-            num_str = m.group("number")
-            if num_str is not None:
-                return int(float(num_str))
+            return int(float(number_match.group(0))) if number_match else None
         except (ValueError, TypeError):
             pass
     return None
@@ -189,6 +187,8 @@ def _extract_figure_marker(text: str) -> dict:
             "namespace": "main",
             "number": None,
             "number_text": "",
+            "figure_label": "",
+            "display_label": "",
             "prefix": None,
             "alpha_prefix": None,
             "has_s": False,
@@ -197,21 +197,31 @@ def _extract_figure_marker(text: str) -> dict:
             "has_s_prefix": False,
             "marker_text": "",
         }
-
     prefix_raw = m.group("prefix")
     prefix = (prefix_raw or "").upper() or None
     number_raw = m.group("number")
+    number_match = re.match(r"\d+(?:\.\d+)?", number_raw or "")
     try:
-        number = int(float(number_raw))
+        number = int(float(number_match.group(0))) if number_match else None
     except (ValueError, TypeError):
         number = None
 
     namespace = _extract_figure_namespace(text, prefix)
 
+    figure_label = f"{prefix or ''}{(number_raw or '').replace('–', '-').replace('—', '-')}"
+    marker_prefix = "Figure"
+    if re.search(r"supplementary", m.group(0), re.IGNORECASE):
+        marker_prefix = "Supplementary Figure"
+    elif re.search(r"extended\s+data", m.group(0), re.IGNORECASE):
+        marker_prefix = "Extended Data Figure"
+    elif any(char in m.group(0) for char in "图圖ͼ"):
+        marker_prefix = "图"
     return {
         "namespace": namespace,
         "number": number,
         "number_text": number_raw or "",
+        "figure_label": figure_label,
+        "display_label": f"{marker_prefix} {figure_label}".strip(),
         "prefix": prefix,
         "alpha_prefix": prefix if prefix and prefix != "S" else None,
         "has_s": prefix == "S",
@@ -244,14 +254,21 @@ def _validate_page_local_caption_grammar(
         prefix_start = text[: m.start(1)]
         return prefix_start.strip().lower().replace(".", "").replace(":", "").replace(" ", "")
 
-    legend_by_id: dict[str, dict] = {}
+    legend_by_id: dict[tuple, dict] = {}
     for leg in legends:
-        legend_by_id[str(leg.get("block_id", ""))] = leg
+        legend_by_id[(int(leg.get("page", 0) or 0), str(leg.get("block_id", "")))] = leg
 
     page_grammar: dict[int, set[str]] = {}
     for h in hypotheses:
         lid = str(h.get("legend_block_id", ""))
-        leg = legend_by_id.get(lid)
+        hp = h.get("page")
+        leg = legend_by_id.get((int(hp) if hp is not None else None, lid))
+        if leg is None:
+            # fallback by block_id
+            for (pp, bb), ll in legend_by_id.items():
+                if bb == lid:
+                    leg = ll
+                    break
         if leg is None:
             continue
         page = int(leg.get("page", 0) or 0)
@@ -261,7 +278,13 @@ def _validate_page_local_caption_grammar(
 
     for h in hypotheses:
         lid = str(h.get("legend_block_id", ""))
-        leg = legend_by_id.get(lid)
+        hp = h.get("page")
+        leg = legend_by_id.get((int(hp) if hp is not None else None, lid))
+        if leg is None:
+            for (pp, bb), ll in legend_by_id.items():
+                if bb == lid:
+                    leg = ll
+                    break
         if leg is None:
             h["grammar_status"] = "deferred"
             h["grammar_reason"] = "legend not found"
@@ -293,10 +316,253 @@ def _format_figure_id(namespace: str, number: int, alpha_prefix: str | None = No
     if namespace == "extended_data":
         return f"figure_ed{number:03d}"
     if namespace == "appendix":
-        if not alpha_prefix:
-            alpha_prefix = "x"  # fallback, should not happen
-        return f"figure_{alpha_prefix.lower()}{number:03d}"
+        return f"figure_{(alpha_prefix or 'x').lower()}{number:03d}"
     return f"figure_{number:03d}"
+
+def _finalize_figure_identities(figure_inventory: dict) -> None:
+    """Assign stable IDs, collapse repeated claims, and hold caption conflicts."""
+    matched = figure_inventory.get("matched_figures", [])
+    conflicts = figure_inventory.setdefault("identity_conflicts", [])
+    kept: list[dict] = []
+    bases: dict[tuple[str, str], dict] = {}
+    used_ids: dict[str, tuple[int, str]] = {}
+    def claim_record(item: dict, asset_ids: list[str]) -> dict:
+        return {
+            "settlement_type": item.get("settlement_type"),
+            "legend_block_id": item.get("legend_block_id", ""),
+            "asset_block_ids": list(asset_ids),
+        }
+
+    for entry in sorted(matched, key=lambda item: bool(item.get("is_continuation"))):
+        marker = _extract_figure_marker(str(entry.get("text", "") or ""))
+        namespace = str(entry.get("figure_namespace") or marker["namespace"])
+        label = marker["figure_label"]
+        entry["figure_namespace"] = namespace
+        entry["figure_label"] = label
+        entry["display_label"] = marker["display_label"]
+        entry["figure_number"] = marker["number"]
+
+        if entry.get("is_continuation"):
+            base = bases.get((namespace, label))
+            if base is None:
+                base = next(
+                    (
+                        item
+                        for item in kept
+                        if item.get("figure_namespace") == namespace and item.get("figure_label") == label
+                    ),
+                    None,
+                )
+            if base is not None:
+                seen_assets = {str(a.get("block_id", "")) for a in base.get("matched_assets", [])}
+                for asset in entry.get("matched_assets", []):
+                    bid = str(asset.get("block_id", ""))
+                    if bid not in seen_assets:
+                        base.setdefault("matched_assets", []).append(asset)
+                        seen_assets.add(bid)
+                base["asset_block_ids"] = list(dict.fromkeys(
+                    [*base.get("asset_block_ids", []), *entry.get("asset_block_ids", [])]
+                ))
+                base.setdefault("continued_from", []).append(entry.get("legend_block_id"))
+                base.setdefault("flags", []).append("continuation")
+                base_claims = base.setdefault(
+                    "claims",
+                    [
+                        claim_record(
+                            base,
+                            sorted(
+                                {
+                                    str(a.get("block_id", ""))
+                                    for a in base.get("matched_assets", [])
+                                    if a.get("block_id")
+                                }
+                            )
+                            or sorted(str(b) for b in base.get("asset_block_ids", []) if b),
+                        )
+                    ],
+                )
+                continuation_assets = sorted(
+                    {str(a.get("block_id", "")) for a in entry.get("matched_assets", []) if a.get("block_id")}
+                )
+                continuation_claim = claim_record(
+                    entry,
+                    continuation_assets or sorted(str(b) for b in entry.get("asset_block_ids", []) if b),
+                )
+                if continuation_claim not in base_claims:
+                    base_claims.append(continuation_claim)
+                continue
+
+        asset_ids = sorted({str(a.get("block_id", "")) for a in entry.get("matched_assets", []) if a.get("block_id")})
+        if not asset_ids:
+            asset_ids = sorted(str(b) for b in entry.get("asset_block_ids", []) if b)
+        if not asset_ids and entry.get("settlement_type") in {"sequence", "sequence_match"}:
+            entry["hold_reason"] = entry.get("hold_reason") or "assetless_sequence_match"
+            figure_inventory.setdefault("held_figures", []).append(entry)
+            unmatched = figure_inventory.setdefault("unmatched_legends", [])
+            if not any(str(item.get("block_id", "")) == str(entry.get("legend_block_id", "")) for item in unmatched):
+                unmatched.append({
+                    "block_id": entry.get("legend_block_id", ""),
+                    "page": entry.get("legend_page", entry.get("page", 0)),
+                    "text": entry.get("text", ""),
+                })
+            continue
+        page = int(entry.get("page", 0) or 0)
+        block_id = str(entry.get("legend_block_id", "") or "")
+        group = str(entry.get("group_id") or entry.get("group_identity") or ",".join(asset_ids))
+        caption_identity = " ".join(str(entry.get("text", "") or "").split()).casefold()
+        same_page_label = None if not label else next((item for item in kept if (
+            item.get("figure_namespace"), item.get("figure_label"),
+            int(item.get("page", 0) or 0),
+        ) == (namespace, label, page)), None)
+        if same_page_label is not None:
+            kept_caption = " ".join(str(same_page_label.get("text", "") or "").split()).casefold()
+            if kept_caption != caption_identity:
+                conflicts.append({
+                    "type": "identity_conflict",
+                    "status": "HOLD",
+                    "figure_label": label,
+                    "figure_namespace": namespace,
+                    "page": page,
+                    "kept_legend_block_id": same_page_label.get("legend_block_id"),
+                    "conflicting_legend_block_id": block_id,
+                    "kept_asset_block_ids": sorted({str(a.get("block_id", "")) for a in same_page_label.get("matched_assets", []) if a.get("block_id")}),  # noqa: E501
+                    "conflicting_asset_block_ids": asset_ids,
+                })
+                continue
+            kept_asset_ids = sorted({
+                str(a.get("block_id", "")) for a in same_page_label.get("matched_assets", []) if a.get("block_id")
+            }) or sorted(str(b) for b in same_page_label.get("asset_block_ids", []) if b)
+            claims = same_page_label.setdefault("claims", [claim_record(same_page_label, kept_asset_ids)])
+            incoming_claim = claim_record(entry, asset_ids)
+            if incoming_claim not in claims:
+                claims.append(incoming_claim)
+
+            kept_set, incoming_set = set(kept_asset_ids), set(asset_ids)
+            chosen_ids = kept_set | incoming_set
+            overlap_conflict = False
+            if kept_set & incoming_set:
+                if kept_set < incoming_set:
+                    chosen_ids = kept_set
+                    overclaim = incoming_claim
+                    reason = "strict_superset_asset_claim"
+                elif incoming_set < kept_set:
+                    chosen_ids = incoming_set
+                    overclaim = claim_record(same_page_label, kept_asset_ids)
+                    reason = "strict_superset_asset_claim"
+                elif not (kept_set <= incoming_set or incoming_set <= kept_set):
+                    chosen_ids = min((kept_set, incoming_set), key=len)
+                    overlap_conflict = True
+                    reason = "partially_overlapping_asset_claims"
+                else:
+                    reason = ""
+                if reason == "strict_superset_asset_claim":
+                    same_page_label.setdefault("overclaims", []).append({
+                        "claim": overclaim,
+                        "reason": reason,
+                    })
+                elif overlap_conflict:
+                    conflicts.append({
+                        "type": "identity_conflict",
+                        "status": "HOLD",
+                        "reason": reason,
+                        "figure_label": label,
+                        "figure_namespace": namespace,
+                        "page": page,
+                        "legend_block_id": block_id,
+                        "claims": [claim_record(same_page_label, kept_asset_ids), incoming_claim],
+                    })
+
+            assets_by_id = {
+                str(asset.get("block_id", "")): asset
+                for source in (same_page_label.get("matched_assets", []), entry.get("matched_assets", []))
+                for asset in source if asset.get("block_id")
+            }
+            same_page_label["matched_assets"] = [
+                assets_by_id[asset_id] for asset_id in sorted(chosen_ids) if asset_id in assets_by_id
+            ]
+            same_page_label["asset_block_ids"] = sorted(chosen_ids)
+            for field in ("flags", "group_evidence", "bridge_block_ids"):
+                same_page_label[field] = list(dict.fromkeys(
+                    [*same_page_label.get(field, []), *entry.get(field, [])]
+                ))
+            boxes = [
+                a.get("bbox") for a in same_page_label.get("matched_assets", [])
+                if len(a.get("bbox") or []) >= 4
+            ]
+            if boxes:
+                same_page_label["cluster_bbox"] = [
+                    min(box[0] for box in boxes), min(box[1] for box in boxes),
+                    max(box[2] for box in boxes), max(box[3] for box in boxes),
+                ]
+            same_page_label["asset_pages"] = sorted({
+                int(a.get("page", page) or page) for a in same_page_label.get("matched_assets", [])
+            })
+            base_group = str(same_page_label.get("group_id") or same_page_label.get("group_identity") or ",".join(kept_asset_ids))  # noqa: E501
+            merged_groups = same_page_label.setdefault("merged_group_ids", [])
+            for group_id in (base_group, group):
+                if group_id and group_id not in merged_groups:
+                    merged_groups.append(group_id)
+            if entry.get("settlement_type") in {"composite_parent", "sidecar"}:
+                same_page_label["settlement_type"] = entry["settlement_type"]
+            continue
+
+        if not label:
+            base_id = f"figure_{namespace}_p{page:03d}_b{re.sub(r'[^a-zA-Z0-9_-]+', '-', block_id) or 'unknown'}"
+        else:
+            prefix = marker["prefix"]
+            numeric_label = label[len(prefix):] if prefix and label.startswith(prefix) else label
+            if re.fullmatch(r"\d+", numeric_label):
+                base_id = _format_figure_id(namespace, int(numeric_label), alpha_prefix=marker["alpha_prefix"])
+            else:
+                id_prefix = {
+                    "main": "figure_",
+                    "supplementary": "figure_s",
+                    "extended_data": "figure_ed",
+                    "appendix": f"figure_{(marker['alpha_prefix'] or 'x').lower()}",
+                }.get(namespace, f"figure_{namespace}_")
+                parts = re.split(r"[.-]", numeric_label)
+                if parts and parts[0].isdigit():
+                    parts[0] = f"{int(parts[0]):03d}"
+                base_id = id_prefix + "_".join(parts)
+
+        anchor = (page, block_id)
+        figure_id = base_id
+        if figure_id in used_ids:
+            previous_anchor = used_ids[figure_id]
+            if previous_anchor == anchor:
+                previous = next(item for item in kept if item.get("figure_id") == figure_id)
+                conflicts.append({
+                    "type": "identity_conflict",
+                    "status": "HOLD",
+                    "figure_label": label,
+                    "figure_namespace": namespace,
+                    "legend_block_id": block_id,
+                    "reason": "same_identity_anchor_claimed_by_competing_objects",
+                    "kept_asset_block_ids": sorted({str(a.get("block_id", "")) for a in previous.get("matched_assets", []) if a.get("block_id")}),  # noqa: E501
+                    "conflicting_asset_block_ids": asset_ids,
+                })
+                continue
+            suffix_block = re.sub(r"[^a-zA-Z0-9_-]+", "-", block_id) or "unknown"
+            figure_id = f"{base_id}_p{page:03d}_b{suffix_block}"
+            conflicts.append({
+                "type": "identity_conflict",
+                "status": "CONFLICT",
+                "figure_label": label,
+                "figure_namespace": namespace,
+                "kept_figure_id": base_id,
+                "figure_id": figure_id,
+                "first_anchor": {"page": previous_anchor[0], "legend_block_id": previous_anchor[1]},
+                "conflicting_anchor": {"page": page, "legend_block_id": block_id},
+            })
+        entry["figure_id"] = figure_id
+        entry["claims"] = [claim_record(entry, asset_ids)]
+        used_ids[figure_id] = anchor
+        kept.append(entry)
+        if label:
+            bases.setdefault((namespace, label), entry)
+
+    figure_inventory["matched_figures"] = kept
+    figure_inventory["official_figure_count"] = len(kept)
 
 
 def _page_assets_strict_ok(page_legends: list[dict], page_assets_count: int, full_captions_on_page: set[str]) -> bool:
@@ -2839,10 +3105,16 @@ def _settle_cross_page_reserved_objects(
         else:
             failed_legend_ids.add(lid)
 
-    # Build set of already-matched legend IDs to prevent double-matching
-    _used_legend_ids: set[str] = {
-        str(m.get("legend_block_id", "")) for m in matched_figures if m.get("legend_block_id")
-    }
+    # Build set of already-matched legend IDs (page-qualified) to prevent double-matching
+    _used_legend_ids: set[tuple] = set()
+    for m in matched_figures:
+        lid = m.get("legend_block_id")
+        if not lid:
+            continue
+        lp = m.get("legend_page")
+        if lp is None:
+            lp = m.get("page")
+        _used_legend_ids.add((lp, str(lid)))
 
     # reserved groups look forward
     for gid in sorted(reserved_group_ids):
@@ -2859,7 +3131,7 @@ def _settle_cross_page_reserved_objects(
                 [
                     leg
                     for leg in legends
-                    if str(leg.get("block_id", "")) not in _used_legend_ids
+                    if (int(leg.get("page", 0) or 0), str(leg.get("block_id", ""))) not in _used_legend_ids
                     and (int(leg.get("page", 0) or 0), str(leg.get("block_id", ""))) not in failed_legend_ids
                     and int(leg.get("page", 0) or 0) == np
                     and _is_strong_numbered_legend(leg)
@@ -2932,22 +3204,6 @@ def _settle_cross_page_reserved_objects(
             }
         )
 
-
-def _resolve_figure_id_collisions(figure_inventory: dict) -> None:
-    _collision_seen: dict[str, int] = {}
-    for _fig in (
-        *figure_inventory.get("matched_figures", []),
-        *figure_inventory.get("held_figures", []),
-        *figure_inventory.get("ambiguous_figures", []),
-    ):
-        _fig_id = _fig.get("figure_id", "")
-        if not _fig_id:
-            continue
-        if _fig_id in _collision_seen:
-            _collision_seen[_fig_id] += 1
-            _fig["figure_id"] = f"figure_{'s' * _collision_seen[_fig_id]}{_fig_id.removeprefix('figure_')}"
-        else:
-            _collision_seen[_fig_id] = 0
 
 
 def _coerce_int_figure_number(value) -> int | None:
@@ -3031,9 +3287,15 @@ def _infer_missing_main_figure_numbers(
         }:
             continue
         item_text = str(item.get("text", ""))
+        legend_page = item.get("legend_page")
+        if legend_page is None:
+            legend_page = item.get("page")
         legend_text = ""
         for entry in inventory.get("figure_legends", []):
             if str(entry.get("block_id", "")) == str(legend_block_id):
+                ep = entry.get("page")
+                if legend_page is not None and ep is not None and int(ep) != int(legend_page):
+                    continue
                 legend_text = str(entry.get("text", ""))
                 break
         combined = item_text + " " + legend_text
@@ -3276,6 +3538,7 @@ def build_figure_inventory_vnext(
     from .ocr_figure_vnext_classic_seq_pass import ClassicSequentialPass, UnresolvedClusterConsolidation
     from .ocr_figure_vnext_composite_pass import CompositeParentPass
     from .ocr_figure_vnext_group_seq_pass import GroupSequentialPass
+    from .ocr_figure_vnext_locator_pass import LocatorBridgePass
     from .ocr_figure_vnext_passes import (
         ContinuationCaptionPass,
         CrossPageReservationPass,
@@ -3284,7 +3547,6 @@ def build_figure_inventory_vnext(
         _resource_page,
     )
     from .ocr_figure_vnext_sidecar_pass import SidecarPass
-    from .ocr_figure_vnext_locator_pass import LocatorBridgePass
     from .ocr_figure_vnext_state import FigurePipelineState, OwnershipLedger
 
     # Recover figure heading prefix from PDF text layer for OCR-missed captions
@@ -3323,7 +3585,15 @@ def build_figure_inventory_vnext(
             FinalAccountingPass,
         ],
     )
-    matched_ids = {str(m.get("legend_block_id", "")) for m in state.matches}
+    matched_ids = set()
+    for m in state.matches:
+        lid = m.get("legend_block_id")
+        if not lid:
+            continue
+        mp = m.get("legend_page")
+        if mp is None:
+            mp = m.get("page")
+        matched_ids.add((mp, str(lid)))
 
     # #122: suppress dominated 0-asset / identity-mismatched ghosts at the
     # final emission seam — matched_figures must not carry entries that a
@@ -3343,7 +3613,8 @@ def build_figure_inventory_vnext(
         "matched_figures": kept_matches,
         "ambiguous_figures": [],
         "unmatched_legends": [
-            b for b in candidate_index.deduped_legends if str(b.get("block_id", "")) not in matched_ids
+            b for b in candidate_index.deduped_legends
+            if (_resource_page(b) if False else (b.get("page") if b.get("page") is not None else b.get("page_num")), str(b.get("block_id", ""))) not in matched_ids
         ],
         "unmatched_assets": [
             a
@@ -3374,6 +3645,7 @@ def build_figure_inventory_vnext(
 
         _recover_missing_figure_numbers_from_assets(result, page_pdf_lines_by_page)
 
+    _finalize_figure_identities(result)
     return result
 
 
@@ -5347,8 +5619,8 @@ def build_figure_inventory_legacy(
         inventory,
     )
 
-    _resolve_figure_id_collisions(inventory)
 
+    _finalize_figure_identities(inventory)
     return inventory
 
 

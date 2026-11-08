@@ -10,8 +10,17 @@ def _resource_page(block: dict) -> int | None:
     return int(page) if page is not None else None
 
 
-def _is_legend_matched(legend_block_id: str, matches: list[dict]) -> bool:
-    return any(m.get("legend_block_id") == legend_block_id for m in matches)
+def _is_legend_matched(legend_block_id: str, legend_page, matches: list[dict]) -> bool:
+    for m in matches:
+        if m.get("legend_block_id") != legend_block_id:
+            continue
+        mp = m.get("legend_page")
+        if mp is None:
+            mp = m.get("page")
+        if legend_page is not None and mp is not None and int(mp) != int(legend_page):
+            continue
+        return True
+    return False
 
 
 def _numbered_legends_on_page(page: int, legends: list[dict], extract_fn) -> list[dict]:
@@ -52,7 +61,7 @@ class CompositeParentPass:
                 continue  # only numbered legends
 
             legend_block_id = str(legend.get("block_id", ""))
-            if _is_legend_matched(legend_block_id, state.matches):
+            if _is_legend_matched(legend_block_id, legend_page, state.matches):
                 continue
 
             # --- find composite parent candidates on same page ---
@@ -183,9 +192,20 @@ class CompositeParentPass:
             if _resource_page(a) == page and str(a.get("block_id", "")) in asset_ids
         ]
         legend_text = next(
-            str(b.get("text", ""))
-            for b in state.candidate_index.deduped_legends
-            if str(b.get("block_id", "")) == legend.block_id
+            (
+                str(b.get("text", ""))
+                for b in state.candidate_index.deduped_legends
+                if str(b.get("block_id", "")) == legend.block_id
+                and _resource_page(b) == page
+            ),
+            next(
+                (
+                    str(b.get("text", ""))
+                    for b in state.candidate_index.deduped_legends
+                    if str(b.get("block_id", "")) == legend.block_id
+                ),
+                "",
+            ),
         )
         namespace = ocr_figures._extract_figure_namespace(legend_text)
         figure_id = ocr_figures._format_figure_id(namespace, figure_no)

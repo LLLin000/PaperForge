@@ -11,6 +11,30 @@ from paperforge.worker.ocr_figure_vnext_state import FigurePipelineState, Owners
 from paperforge.worker.ocr_figure_vnext_types import ResourceRef
 
 
+def _add_base_figure(state, number: int, page: int) -> None:
+    asset_id = f"base-a{number}"
+    state.matches.append({
+        "figure_id": f"figure_{number:03d}",
+        "figure_namespace": "main",
+        "figure_number": number,
+        "legend_block_id": f"base-c{number}",
+        "page": page,
+        "text": f"Figure {number}. Main caption.",
+        "matched_assets": [{"block_id": asset_id, "page": page}],
+        "asset_block_ids": [asset_id],
+        "settlement_type": "same_page",
+        "flags": [],
+    })
+
+
+def _finalize_figure_matches(state) -> None:
+    from paperforge.worker.ocr_figures import _finalize_figure_identities
+
+    inventory = {"matched_figures": state.matches}
+    _finalize_figure_identities(inventory)
+    state.matches[:] = inventory["matched_figures"]
+
+
 def test_primary_same_page_pass_matches_single_safe_group():
     blocks = [
         {"block_id": "c1", "page": 1, "role": "figure_caption", "text": "Figure 1. Caption", "bbox": [0, 100, 200, 150]},
@@ -243,7 +267,7 @@ def test_cont_caption_detected_and_marked_in_candidate_index():
 
 
 def test_cont_caption_matches_same_page_visual_group(monkeypatch):
-    """ContinuationCaptionPass matches continuation legend to same-page group with unique ID."""
+    """Continuation evidence and assets attach to the base figure identity."""
     blocks = [
         {"block_id": "c1", "page": 1, "role": "figure_caption", "text": "Figure 1. (Continued) More details.", "bbox": [0, 300, 500, 350]},
         {"block_id": "a1", "page": 1, "role": "figure_asset", "bbox": [0, 0, 200, 90], "raw_label": "image"},
@@ -268,21 +292,22 @@ def test_cont_caption_matches_same_page_visual_group(monkeypatch):
     )
 
     state = FigurePipelineState(corpus=corpus, candidate_index=index, ledger=OwnershipLedger())
+    _add_base_figure(state, 1, 1)
     report = ContinuationCaptionPass().run(state)
+    _finalize_figure_matches(state)
 
     assert len(report.accepted) == 1
     assert len(state.matches) == 1
     match = state.matches[0]
-    assert match["is_continuation"] is True
-    assert match["continuation_of"] == "figure_001"
-    assert match["figure_id"].startswith("figure_001_continued_")
-    assert match["settlement_type"] == "continuation_same_page"
-    assert match["figure_number"] == 1
-    assert match["continuation_of"] != match["figure_id"]
+    assert match["figure_id"] == "figure_001"
+    assert match["continued_from"] == ["c1"]
+    assert {"base-a1", "a1"} <= {asset["block_id"] for asset in match["matched_assets"]}
+    assert any(claim["legend_block_id"] == "c1" for claim in match["claims"])
+    assert any(claim["settlement_type"] == "continuation_same_page" for claim in match["claims"])
 
 
-def test_cont_caption_has_unique_id_not_base_figure_id(monkeypatch):
-    """Each continuation match gets a unique figure_id, not the base figure_id."""
+def test_continuations_reuse_base_figure_ids(monkeypatch):
+    """Distinct continuation claims merge into their existing base figures."""
     # Different pages so asset-claim competition doesn't cause one to lose all groups
     blocks = [
         {"block_id": "c1", "page": 1, "role": "figure_caption", "text": "Figure 1. (Continued) More details.", "bbox": [0, 300, 500, 350]},
@@ -315,20 +340,25 @@ def test_cont_caption_has_unique_id_not_base_figure_id(monkeypatch):
     )
 
     state = FigurePipelineState(corpus=corpus, candidate_index=index, ledger=OwnershipLedger())
+    _add_base_figure(state, 1, 1)
+    _add_base_figure(state, 2, 2)
     report = ContinuationCaptionPass().run(state)
+    _finalize_figure_matches(state)
 
     assert len(report.accepted) == 2
     assert len(state.matches) == 2
-    ids = [m["figure_id"] for m in state.matches]
-    assert len(set(ids)) == 2, "each continuation figure_id must be unique"
-    for match in state.matches:
-        assert match["is_continuation"] is True
-        assert match["continuation_of"] != match["figure_id"]
-        assert "_continued_" in match["figure_id"]
+    by_id = {match["figure_id"]: match for match in state.matches}
+    assert set(by_id) == {"figure_001", "figure_002"}
+    for number, asset_id in ((1, "a1"), (2, "a2")):
+        match = by_id[f"figure_{number:03d}"]
+        assert match["continued_from"]
+        assert any(claim["settlement_type"] == "continuation_same_page" for claim in match["claims"])
+        assert asset_id in {asset["block_id"] for asset in match["matched_assets"]}
+        assert f"base-a{number}" in {asset["block_id"] for asset in match["matched_assets"]}
 
 
-def test_cont_caption_cross_page_links_correctly():
-    """ContinuationCaptionPass matches continuation legend cross-page (page+1)."""
+def test_cont_caption_cross_page_links_into_base_figure():
+    """Cross-page continuation evidence and assets stay on the base figure."""
     blocks = [
         {"block_id": "c1", "page": 1, "role": "figure_caption", "text": "Figure 1. (Continued) More details.", "bbox": [0, 100, 500, 150]},
         {"block_id": "a1", "page": 2, "role": "figure_asset", "bbox": [0, 0, 200, 90], "raw_label": "image"},
@@ -344,15 +374,17 @@ def test_cont_caption_cross_page_links_correctly():
     ]
 
     state = FigurePipelineState(corpus=corpus, candidate_index=index, ledger=OwnershipLedger())
+    _add_base_figure(state, 1, 1)
     report = ContinuationCaptionPass().run(state)
+    _finalize_figure_matches(state)
 
     assert len(report.accepted) == 1
     assert len(state.matches) == 1
     match = state.matches[0]
-    assert match["is_continuation"] is True
-    assert match["continuation_of"] == "figure_001"
-    assert match["figure_id"].startswith("figure_001_continued_")
-    assert match["settlement_type"] == "continuation_cross_page"
+    assert match["figure_id"] == "figure_001"
+    assert match["continued_from"] == ["c1"]
+    assert "a1" in {asset["block_id"] for asset in match["matched_assets"]}
+    assert any(claim["settlement_type"] == "continuation_cross_page" for claim in match["claims"])
 
 
 def test_primary_same_page_pass_skips_continuation_legends(monkeypatch):
