@@ -462,7 +462,14 @@ def post_ref_bio_cleanup(
             continue
 
         role = block.get("role", "")
-        if role not in {"reference_item", "reference_heading", "figure_caption", "structured_insert_candidate"}:
+        prose_roles = {"footnote", "body_paragraph"}
+        if role not in {
+            "reference_item",
+            "reference_heading",
+            "figure_caption",
+            "structured_insert_candidate",
+            *prose_roles,
+        }:
             continue
 
         text = str(block.get("text", "") or "")
@@ -483,8 +490,27 @@ def post_ref_bio_cleanup(
         if _looks_like_reference(text):
             continue
 
+        # Correspondence/address blocks are not biographies; clearing their
+        # zone would pull a mailing address into the body.
+        lowered = text.strip().lower()
+        if lowered.startswith(("correspondence", "address correspondence", "corresponding author")) or (
+            "correspondence to" in lowered[:120]
+        ):
+            continue
+
         score, categories = _bio_text_score(text)
-        if score < 4 or len(categories) < 2:
+        # The reference partition rewrites prose blocks to reference_item; a
+        # block whose seed role was prose is still prose for this decision.
+        prose_origin = role in prose_roles or (
+            role == "reference_item" and block.get("seed_role") in prose_roles
+        )
+        if prose_origin:
+            # A tail paragraph with a career/institution sentence is a bio even
+            # when it only matches one category; formal references are already
+            # excluded by `_looks_like_reference` above.
+            if score < 3 or len(categories) < 1:
+                continue
+        elif score < 4 or len(categories) < 2:
             continue
 
         # Override role
