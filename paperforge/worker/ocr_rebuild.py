@@ -407,43 +407,16 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
         doc_structure,
     ) -> dict:
         """Build figure and table inventories, run bio passes, resolve conflicts."""
-        from paperforge.worker.ocr_figures import (
-            build_figure_inventory,
-            write_back_figure_roles,
-            write_figure_inventory,
-        )
-        figure_inventory = build_figure_inventory(structured, page_pdf_lines_by_page=page_pdf_lines_by_page)
-        write_back_figure_roles(figure_inventory, structured)
+        from paperforge.worker.ocr_figures import write_figure_inventory
+        from paperforge.worker.ocr_object_stage import commit_object_roles, run_association_stage
+        from paperforge.worker.ocr_tables import write_table_inventory
 
-        from paperforge.worker.ocr_bio import (
-            residual_author_bio_pass,
-            post_ref_bio_cleanup,
-            prune_figure_inventory_after_bio,
-            _resolve_ref_start_page,
-        )
-        residual_author_bio_pass(
-            figure_inventory, structured,
-            include_ambiguous=False, include_weak_matched=False,
-        )
-        ref_start_page = _resolve_ref_start_page(structured)
-        if ref_start_page is not None:
-            post_ref_bio_cleanup(figure_inventory, structured, ref_start_page=ref_start_page)
-            prune_figure_inventory_after_bio(figure_inventory)
-
-        from paperforge.worker.ocr_figure_reader import synthesize_reader_figures
-
-        reader_payload = synthesize_reader_figures(figure_inventory, structured_blocks=structured)
+        stage = run_association_stage(structured, page_pdf_lines_by_page=page_pdf_lines_by_page)
+        figure_inventory, table_inventory = stage.figures, stage.tables
+        reader_payload = stage.reader_payload
         reader_figures_dir = paper_root / "structure"
         reader_figures_dir.mkdir(parents=True, exist_ok=True)
         write_json(reader_figures_dir / "reader_figures.json", reader_payload)
-
-        from paperforge.worker.ocr_tables import build_table_inventory, write_back_table_roles, write_table_inventory
-
-        table_inventory = build_table_inventory(structured)
-        from paperforge.worker.ocr_figures import attach_ownership_conflicts, resolve_media_asset_conflicts
-
-        resolve_media_asset_conflicts(figure_inventory, table_inventory)
-        attach_ownership_conflicts(figure_inventory, table_inventory)
 
         if normalize_mode == "seed_only":
             from paperforge.worker.ocr_post_match_normalize import post_match_normalize
@@ -456,16 +429,8 @@ def _rebuild_one_paper(vault: Path, key: str) -> dict:
                 source_frontmatter_anchors=getattr(doc_structure, "source_frontmatter_anchors", None),
             )
 
-        from paperforge.worker.ocr_object_writeback import apply_object_writebacks
-
-        apply_object_writebacks(
-            structured_blocks=structured,
-            figure_inventory=figure_inventory,
-            table_inventory=table_inventory,
-        )
-
+        commit_object_roles(structured, figure_inventory, table_inventory)
         write_figure_inventory(artifacts.blocks_structured.parent / "figure_inventory.json", figure_inventory)
-        write_back_table_roles(table_inventory, structured)
         write_table_inventory(artifacts.blocks_structured.parent / "table_inventory.json", table_inventory)
 
         # ponytail: writes entire list again; if throughput matters, write only changed blocks
