@@ -39,13 +39,18 @@ class LegendBundlePass:
         report = PassReport(pass_name=self.name)
 
         # ----- 1. Compute unmatched legends -----
-        matched_legend_ids = {
-            str(m.get("legend_block_id", ""))
-            for m in state.matches
-        }
+        matched_legend_ids = set()
+        for m in state.matches:
+            lid = m.get("legend_block_id")
+            if not lid:
+                continue
+            mp = m.get("legend_page")
+            if mp is None:
+                mp = m.get("page")
+            matched_legend_ids.add((mp, str(lid)))
         unmatched_legends = [
             leg for leg in state.candidate_index.deduped_legends
-            if str(leg.get("block_id", "")) not in matched_legend_ids
+            if (_resource_page(leg), str(leg.get("block_id", ""))) not in matched_legend_ids
         ]
 
         # ----- 2. Compute unmatched assets (not owned by ledger) -----
