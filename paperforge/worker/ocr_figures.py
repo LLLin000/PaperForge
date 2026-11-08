@@ -1492,7 +1492,6 @@ def _score_legend_to_group(
                             if y[3] < x[1]:
                                 return x[1] - y[3]
                             return 0
-                        _cur_gap = _vgap(legend_bbox, _grp_bbox)
                         _nearer = False
                         for _other in (page_blocks or []):
                             if _other is legend:
@@ -1507,7 +1506,7 @@ def _score_legend_to_group(
                             # A same-column caption directly adjacent to the asset
                             # (small vertical gap) beats a cross-column caption
                             # that merely overlaps it vertically.
-                            if _vgap(_obbox, _grp_bbox) <= 40:
+                            if _vgap(_obbox, _grp_bbox) <= max(24.0, page_height * 0.03):
                                 _nearer = True
                                 break
                         if _nearer:
