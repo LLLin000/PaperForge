@@ -5701,6 +5701,164 @@ def _is_table_kind(block: dict) -> bool:
     return role in {"table_html", "table_asset"} or raw_label in {"table", "table_image"}
 
 
+_TABLE_ASSET_FIELDS = (
+    "asset_block_id",
+    "asset_bbox",
+    "assistive_text",
+    "segments",
+    "render_bbox",
+    "render_rotation_deg",
+    "match_score",
+    "match_status",
+    "consumed_block_ids",
+    "bridge_block_ids",
+    "has_asset",
+)
+
+
+def _table_asset_snapshot(table: dict) -> dict:
+    return {field: table.get(field) for field in _TABLE_ASSET_FIELDS}
+
+
+def _migrate_table_asset(
+    table: dict,
+    asset_block: dict,
+    caption_block: dict | None,
+    *,
+    page: int,
+    evidence: dict,
+    reason: str,
+) -> None:
+    """Move a table to another asset atomically.
+
+    ``asset_block_id`` is not the only field the crop consumes: ``asset_bbox``,
+    ``segments``, ``render_bbox``, ``match_score``, ``consumed_block_ids`` and
+    ``bridge_block_ids`` all describe the same asset. Leaving any of them on the
+    old block makes the table inventory say one thing and the rendered crop do
+    another, so they move together (or are cleared) and the previous state is
+    preserved in ``asset_switch``.
+    """
+    from paperforge.worker.ocr_scores import score_table_match
+    from paperforge.worker.ocr_tables import _table_has_rotated_content
+
+    before = _table_asset_snapshot(table)
+    old_block_id = str(table.get("asset_block_id", ""))
+    new_block_id = str(asset_block.get("block_id", ""))
+    bbox = list(asset_block.get("bbox") or [])
+    is_continuation = bool(table.get("is_continuation"))
+
+    score = (
+        score_table_match(caption_block, asset_block, is_continuation=is_continuation)
+        if caption_block
+        else {"score": 0.0, "matched_asset_id": new_block_id, "decision": "reassigned", "evidence": []}
+    )
+    score["decision"] = "reassigned_after_conflict"
+    score["previous_asset_block_id"] = old_block_id
+
+    render_bbox = None
+    render_rotation_deg = 0
+    rotation = _table_has_rotated_content(asset_block)
+    if rotation:
+        caption_bbox = list((caption_block or {}).get("bbox") or [])
+        if len(caption_bbox) >= 4 and len(bbox) >= 4:
+            render_bbox = [
+                min(caption_bbox[0], bbox[0]),
+                min(caption_bbox[1], bbox[1]),
+                max(caption_bbox[2], bbox[2]),
+                max(caption_bbox[3], bbox[3]),
+            ]
+            render_rotation_deg = rotation
+
+    consumed = [
+        block_id
+        for block_id in (table.get("consumed_block_ids") or [])
+        if str(block_id) != old_block_id
+    ]
+    if new_block_id and new_block_id not in {str(block_id) for block_id in consumed}:
+        consumed.append(new_block_id)
+
+    table.update(
+        {
+            "asset_block_id": new_block_id,
+            "asset_bbox": bbox,
+            "assistive_text": str(asset_block.get("text") or ""),
+            "segments": [
+                {
+                    "page": page,
+                    "asset_block_id": new_block_id,
+                    "asset_bbox": bbox,
+                    "is_continuation": is_continuation,
+                }
+            ],
+            "render_bbox": render_bbox,
+            "render_rotation_deg": render_rotation_deg,
+            "match_score": score,
+            "match_status": (
+                "matched" if float(score.get("score", 0.0) or 0.0) >= 0.6 else "matched_low_confidence"
+            ),
+            "consumed_block_ids": consumed,
+            "bridge_block_ids": [
+                block_id
+                for block_id in (table.get("bridge_block_ids") or [])
+                if str(block_id) != old_block_id
+            ],
+            "has_asset": True,
+        }
+    )
+    table["asset_switch"] = {
+        "reason": reason,
+        "from": before,
+        "to": _table_asset_snapshot(table),
+        "evidence": evidence,
+    }
+
+
+def _withdraw_table_asset(
+    table: dict,
+    *,
+    old_block_id: str,
+    evidence: dict,
+    reason: str,
+) -> None:
+    """Drop a contested asset and keep an auditable withdrawn claim."""
+    before = _table_asset_snapshot(table)
+    table.update(
+        {
+            "asset_block_id": "",
+            "asset_bbox": [],
+            "assistive_text": "",
+            "segments": [],
+            "render_bbox": None,
+            "render_rotation_deg": 0,
+            "match_score": {
+                "score": 0.0,
+                "matched_asset_id": "",
+                "decision": "withdrawn_after_conflict",
+                "previous_asset_block_id": old_block_id,
+                "evidence": [reason],
+            },
+            "match_status": "ambiguous",
+            "consumed_block_ids": [
+                block_id
+                for block_id in (table.get("consumed_block_ids") or [])
+                if str(block_id) != old_block_id
+            ],
+            "bridge_block_ids": [
+                block_id
+                for block_id in (table.get("bridge_block_ids") or [])
+                if str(block_id) != old_block_id
+            ],
+            "has_asset": False,
+        }
+    )
+    table["asset_switch"] = {
+        "reason": reason,
+        "from": before,
+        "to": _table_asset_snapshot(table),
+        "evidence": evidence,
+    }
+
+
 def _cross_type_arbitration(
     fig: dict,
     table: dict,
@@ -5754,24 +5912,37 @@ def _cross_type_arbitration(
         if gap is not None and gap <= close:
             candidates.append((gap, str(block.get("block_id", ""))))
     candidates.sort()
+    evidence = {"figure_gap": round(figure_gap, 4), "table_gap": round(table_gap, 4)}
     if len(candidates) == 1:
-        table["asset_block_id"] = candidates[0][1]
-        table["has_asset"] = True
-        return {
-            "page": page,
-            "block_id": str(asset_block_id),
-            "winner": "figure",
-            "table_reassigned_to": candidates[0][1],
-            "evidence": {"figure_gap": round(figure_gap, 4), "table_gap": round(table_gap, 4)},
-        }
-    table["has_asset"] = False
-    table["asset_block_id"] = None
+        target_block = blocks.get((page, candidates[0][1]))
+        if target_block is not None and table_caption is not None:
+            _migrate_table_asset(
+                table,
+                target_block,
+                table_caption,
+                page=page,
+                evidence=evidence,
+                reason="cross_type_conflict_table_asset_reassigned",
+            )
+            return {
+                "page": page,
+                "block_id": str(asset_block_id),
+                "winner": "figure",
+                "table_reassigned_to": candidates[0][1],
+                "evidence": evidence,
+            }
+    _withdraw_table_asset(
+        table,
+        old_block_id=str(asset_block_id),
+        evidence=evidence,
+        reason="cross_type_conflict_no_unique_table_asset",
+    )
     return {
         "page": page,
         "block_id": str(asset_block_id),
         "winner": "figure",
         "table_reassigned_to": None,
-        "evidence": {"figure_gap": round(figure_gap, 4), "table_gap": round(table_gap, 4)},
+        "evidence": evidence,
     }
 
 
@@ -5848,6 +6019,23 @@ def _build_ownership_conflicts(figure_inventory: dict, table_inventory: dict) ->
                 "block_id": block_id,
                 "conflict_type": "ownership_conflict",
                 "owners": ["figure", "table"],
+            }
+        )
+    for table in table_inventory.get("tables", []):
+        switch = table.get("asset_switch") or {}
+        previous = switch.get("from") or {}
+        old_block_id = previous.get("asset_block_id")
+        if not old_block_id or (switch.get("to") or {}).get("asset_block_id"):
+            continue
+        conflicts.append(
+            {
+                "page": int(table.get("page", 0) or 0),
+                "block_id": str(old_block_id),
+                "asset_page_id": [int(table.get("page", 0) or 0), str(old_block_id)],
+                "conflict_type": "ownership_withdrawn",
+                "owners": ["figure"],
+                "caption_block_id": str(table.get("caption_block_id", "")),
+                "reason": switch.get("reason", ""),
             }
         )
     return conflicts
