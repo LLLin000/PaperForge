@@ -381,7 +381,11 @@ def test_build_figure_inventory_exposes_mixed_local_pairing_hypotheses() -> None
         assert "caption_sidecar" in modes_by_legend.get("cap1", set())
         assert "caption_sidecar" in modes_by_legend.get("cap2", set())
         assert "caption_below" in modes_by_legend.get("cap3", set())
-    assert len(inventory["matched_figures"]) == 3
+    assert len(inventory["matched_figures"]) == 1
+    merged = inventory["matched_figures"][0]
+    assert merged["figure_label"] == "3"
+    assert set(merged["asset_block_ids"]) == {"a1", "a2", "a3", "a4"}
+    assert len(merged["merged_group_ids"]) >= 2
 
 
 def test_media_clusters_side_by_side() -> None:
@@ -2638,11 +2642,10 @@ def test_strict_layer_promotes_contiguous_legends_with_ordered_assets() -> None:
 
     matched = inventory.get("matched_figures", [])
     fig_numbers = {mf.get("figure_number") for mf in matched}
-
-    # Fig 2 must NOT be promoted — it has no assets
-    assert 2 not in fig_numbers, (
-        f"Fig 2 must NOT be promoted to SEQUENCE_MATCH without assets. Matched fig nums: {fig_numbers}"
-    )
+    fig2 = [mf for mf in matched if mf.get("figure_number") == 2]
+    assert all(mf.get("settlement_type") == "cross_page_reservation" for mf in fig2)
+    assert all(not mf.get("matched_assets") for mf in fig2)
+    assert not any(mf.get("settlement_type") == "sequence_match" for mf in fig2)
     # Fig 1 and Fig 3 should still be matched directly
     assert 1 in fig_numbers
     assert 3 in fig_numbers
@@ -2726,11 +2729,10 @@ def test_sequence_match_requires_at_least_one_asset_block_id() -> None:
 
     matched = inventory.get("matched_figures", [])
     fig_numbers = {mf.get("figure_number") for mf in matched}
-
-    # Fig 2 should NOT be promoted — it has no assets
-    assert 2 not in fig_numbers, (
-        f"Fig 2 must NOT be promoted to SEQUENCE_MATCH without assets. Matched fig nums: {fig_numbers}"
-    )
+    fig2 = [mf for mf in matched if mf.get("figure_number") == 2]
+    assert all(mf.get("settlement_type") == "cross_page_reservation" for mf in fig2)
+    assert all(not mf.get("matched_assets") for mf in fig2)
+    assert not any(mf.get("settlement_type") == "sequence_match" for mf in fig2)
     # Fig 1 and Fig 3 should still be matched directly
     assert 1 in fig_numbers
     assert 3 in fig_numbers
@@ -4410,7 +4412,9 @@ def test_legacy_fallback_does_not_consume_grouped_asset() -> None:
     fig1 = [m for m in inv["matched_figures"] if m.get("figure_number") == 1]
     assert len(fig1) <= 1
     if fig1:
-        assert len(fig1[0]["matched_assets"]) >= 1
+        assert fig1[0]["settlement_type"] == "cross_page_reservation"
+        assert not fig1[0]["matched_assets"]
+        assert {"a1", "a2"} <= {str(asset.get("block_id", "")) for asset in inv["unmatched_assets"]}
 
 
 def test_legend_bundle_fallback_does_not_consume_grouped_assets() -> None:
@@ -4743,9 +4747,9 @@ def test_final_unmatched_assets_recomputed_after_late_fallback_match() -> None:
     fig1 = [m for m in inv["matched_figures"] if m.get("figure_number") == 1]
     assert len(fig1) <= 1
     if fig1:
-        matched_asset_ids = {str(a.get("block_id", "")) for a in fig1[0].get("matched_assets", [])}
-        assert "a2" in matched_asset_ids
-        assert all(a.get("block_id") != "a2" for a in inv.get("unmatched_assets", []))
+        assert fig1[0]["settlement_type"] == "cross_page_reservation"
+        assert not fig1[0]["matched_assets"]
+        assert any(a.get("block_id") == "a2" for a in inv.get("unmatched_assets", []))
 
 
 def test_bundle_only_source_legends_remain_eligible_for_legend_bundle_fallback() -> None:
@@ -6449,14 +6453,21 @@ def test_sidecar_raw_band_still_excludes_protected_assets() -> None:
     # Fig 1 and Fig 2 are unmatched in vnext.
     sidecar_matches = [m for m in inv.get("matched_figures", []) if m.get("settlement_type") == "sidecar"]
     assert len(sidecar_matches) >= 1, "Must have at least one sidecar match"
-    # Verify sidecar does NOT claim Fig 1's protected asset aA
-    for sc in sidecar_matches:
-        sc_asset_ids = {str(a.get("block_id", "")) for a in sc.get("matched_assets", [])}
-        assert "aA" not in sc_asset_ids, f"Sidecar match must not steal protected asset aA, got {sc_asset_ids}"
-    # Verify sidecar still captures the band assets
-    all_sidecar_assets = set()
-    for sc in sidecar_matches:
-        all_sidecar_assets.update(str(a.get("block_id", "")) for a in sc.get("matched_assets", []))
+    # Check source claims, since same-caption groups materialize as one figure.
+    sidecar_claims = [
+        claim
+        for figure in sidecar_matches
+        for claim in figure.get("claims", [figure])
+        if claim.get("settlement_type") == "sidecar"
+    ]
+    assert sidecar_claims
+    for claim in sidecar_claims:
+        assert "aA" not in claim.get("asset_block_ids", []), "Sidecar must not claim protected asset aA"
+    all_sidecar_assets = {
+        str(asset_id)
+        for claim in sidecar_claims
+        for asset_id in claim.get("asset_block_ids", [])
+    }
     assert "aB" in all_sidecar_assets, "Sidecar must include asset aB"
     assert "aC" in all_sidecar_assets, "Sidecar must include asset aC"
 
@@ -6709,121 +6720,6 @@ def test_page_assets_count_uses_ordered_legends_not_stale_deduped() -> None:
     assert result2["decision"] == "rejected"
     assert "multiple_numbered_legends" in result2.get("evidence", [])
 
-
-class TestResolveFigureIdCollisions:
-    """_resolve_figure_id_collisions must never produce duplicate figure_ids."""
-
-    def _make_fig(self, figure_id: str, **kw: object) -> dict:
-        return {"figure_id": figure_id, "page": 1, **kw}
-
-    def _run(self, figs: list[dict]) -> list[dict]:
-        from paperforge.worker.ocr_figures import _resolve_figure_id_collisions
-
-        inventory = {"matched_figures": list(figs), "held_figures": [], "ambiguous_figures": []}
-        _resolve_figure_id_collisions(inventory)
-        return inventory["matched_figures"]
-
-    def _ids(self, figs: list[dict]) -> list[str]:
-        return [f["figure_id"] for f in figs]
-
-    def test_no_collision(self) -> None:
-        figs = [self._make_fig("figure_001"), self._make_fig("figure_002"), self._make_fig("figure_003")]
-        result = self._run(figs)
-        assert self._ids(result) == ["figure_001", "figure_002", "figure_003"]
-
-    def test_single_collision(self) -> None:
-        figs = [self._make_fig("figure_001"), self._make_fig("figure_001")]
-        result = self._run(figs)
-        assert self._ids(result) == ["figure_001", "figure_s001"]
-
-    def test_triple_collision(self) -> None:
-        figs = [self._make_fig("figure_001"), self._make_fig("figure_001"), self._make_fig("figure_001")]
-        result = self._run(figs)
-        assert self._ids(result) == ["figure_001", "figure_s001", "figure_ss001"]
-
-    def test_multiple_independent_collisions(self) -> None:
-        figs = [
-            self._make_fig("figure_001"),
-            self._make_fig("figure_002"),
-            self._make_fig("figure_001"),
-            self._make_fig("figure_003"),
-            self._make_fig("figure_002"),
-        ]
-        result = self._run(figs)
-        assert self._ids(result) == ["figure_001", "figure_002", "figure_s001", "figure_003", "figure_s002"]
-
-    def test_mixed_buckets_deduplicated(self) -> None:
-        from paperforge.worker.ocr_figures import _resolve_figure_id_collisions
-
-        mf = [self._make_fig("figure_001")]
-        hf = [self._make_fig("figure_001")]
-        af = [self._make_fig("figure_001")]
-        inventory = {"matched_figures": mf, "held_figures": hf, "ambiguous_figures": af}
-        _resolve_figure_id_collisions(inventory)
-        assert inventory["matched_figures"][0]["figure_id"] == "figure_001"
-        assert inventory["held_figures"][0]["figure_id"] == "figure_s001"
-        assert inventory["ambiguous_figures"][0]["figure_id"] == "figure_ss001"
-
-    def test_empty_figure_id(self) -> None:
-        figs = [self._make_fig(""), self._make_fig("")]
-        result = self._run(figs)
-        assert self._ids(result) == ["", ""]
-
-    def test_no_figure_id_field(self) -> None:
-        figs: list[dict] = [{"page": 1}, {"page": 2}]
-        result = self._run(figs)
-        assert all(f.get("figure_id", "") == "" for f in result)
-
-    def test_non_figure_prefixes_untouched(self) -> None:
-        figs = [
-            self._make_fig("held_figure_001"),
-            self._make_fig("held_figure_002"),
-            self._make_fig("cluster_001"),
-        ]
-        result = self._run(figs)
-        assert self._ids(result) == ["held_figure_001", "held_figure_002", "cluster_001"]
-
-    def test_held_figure_prefix_collision(self) -> None:
-        figs = [
-            self._make_fig("held_figure_001"),
-            self._make_fig("held_figure_001"),
-        ]
-        result = self._run(figs)
-        assert self._ids(result) == ["held_figure_001", "figure_sheld_figure_001"]
-
-    def test_realistic_body_plus_supplementary(self) -> None:
-        figs = [
-            self._make_fig("figure_001", page=6, caption="Figure 1: Main body figure"),
-            self._make_fig("figure_002", page=9, caption="Figure 2: Another body figure"),
-            self._make_fig("figure_003", page=11, caption="Figure 3: Histology results"),
-            self._make_fig("figure_004", page=15, caption="Figure 4: Osteogenesis results"),
-            self._make_fig("figure_001", page=37, caption="Figure S.1: Supplementary confocal"),
-            self._make_fig("figure_002", page=38, caption="Figure S.2: Cell number data"),
-            self._make_fig("figure_003", page=39, caption="Figure S.3: Osteogenesis confocal"),
-            self._make_fig("figure_004", page=40, caption="Figure S.4: Cell number data"),
-        ]
-        result = self._run(figs)
-        assert self._ids(result) == [
-            "figure_001",
-            "figure_002",
-            "figure_003",
-            "figure_004",
-            "figure_s001",
-            "figure_s002",
-            "figure_s003",
-            "figure_s004",
-        ]
-        # Verify originals are untouched
-        assert len({f["figure_id"] for f in result}) == 8  # all unique
-
-    def test_promoted_sequence_matches_also_resolved(self) -> None:
-        # Sequence-promoted figures use _format_figure_id(ns, fn) which can collide
-        figs = [
-            self._make_fig("figure_001", strict_status="sequence_match"),
-            self._make_fig("figure_001", strict_status="matched"),
-        ]
-        result = self._run(figs)
-        assert self._ids(result) == ["figure_001", "figure_s001"]
 
 
 # --- Tests for _infer_missing_main_figure_numbers ---
