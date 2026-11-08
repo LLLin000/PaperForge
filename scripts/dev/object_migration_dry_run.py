@@ -1057,25 +1057,36 @@ def _bundle(plan_path: str, out_dir: str, vault: Path, external_refs: bool) -> N
     safe_retarget = 0
     ambiguous_embed_holds = 0
     assetless_embed_deletes = 0
+    retarget_changing = 0
+    retarget_occurrences = 0
+    embed_noop_occurrences = 0
+    delete_by_kind = Counter()
+    delete_by_reason = Counter()
     for p in plans:
         for op in p.get("operations", []):
             op_counts[op.get("op")] += 1
             if op.get("status") == STATUS_REQUIRES_APPROVAL:
                 approval_total += 1
             if op.get("op") == "retarget":
-                retarget += 1
-                safe_retarget += 1
+                occ = int(op.get("occurrences", 1) or 1)
+                if op.get("old_path") != op.get("new_path"):
+                    retarget += 1
+                    safe_retarget += 1
+                    retarget_changing += 1
+                    retarget_occurrences += occ
+                else:
+                    embed_noop_occurrences += occ
             if op.get("op") == "rename":
                 safe_rename += 1
+            if op.get("op") == "delete_candidate":
+                delete_by_kind[op.get("kind")] += 1
+                delete_by_reason[op.get("reason")] += 1
         for h in p.get("holds", []):
             holds_total += 1
             if h.get("code") == STATUS_M2_REVIEW:
                 m2_total += 1
             if h.get("code") == "AMBIGUOUS_EMBED":
                 ambiguous_embed_holds += 1
-            if h.get("code") in {"RESERVED_OR_ASSETLESS", "UNMAPPED_ASSETLESS", "UNMAPPED_TABLE", "CAPTION_ABSENT"}:
-                pass
-        # assetless embed deletes: embed delete_candidate ops
         for op in p.get("operations", []):
             if op.get("op") == "delete_candidate" and op.get("kind") == "embed" and op.get("status") == STATUS_REQUIRES_APPROVAL:
                 assetless_embed_deletes += 1
@@ -1099,9 +1110,13 @@ def _bundle(plan_path: str, out_dir: str, vault: Path, external_refs: bool) -> N
         "backup_files": backup_files,
         "safe_rename_ops": safe_rename,
         "retarget_ops": retarget,
-        "safe_retarget_ops": safe_retarget,
+        "retarget_unique_paths": retarget_changing,
+        "retarget_occurrences": retarget_occurrences,
+        "embed_mapped_noop_occurrences": embed_noop_occurrences,
         "ambiguous_embed_holds": ambiguous_embed_holds,
         "assetless_embed_deletes": assetless_embed_deletes,
+        "delete_by_kind": dict(delete_by_kind),
+        "delete_by_reason": dict(delete_by_reason),
     }
     # top hold reasons
     hold_reasons = Counter()

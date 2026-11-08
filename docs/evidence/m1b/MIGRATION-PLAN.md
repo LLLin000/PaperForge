@@ -34,10 +34,28 @@ python scripts/dev/object_migration_dry_run.py --bundle-plan plan.jsonl --bundle
   "hold_papers": 40,
   "backup_files": 6210,
   "safe_rename_ops": 416,
-  "retarget_ops": 6484,
-  "safe_retarget_ops": 6484,
+  "retarget_ops": 243,
+  "retarget_unique_paths": 243,
+  "retarget_occurrences": 244,
+  "embed_mapped_noop_occurrences": 6249,
   "ambiguous_embed_holds": 31,
   "assetless_embed_deletes": 73,
+  "delete_by_kind": {
+    "figure": 214,
+    "orphan": 108,
+    "embed": 73,
+    "table": 6
+  },
+  "delete_by_reason": {
+    "unmapped_assetless": 36,
+    "orphan no longer inventoried": 108,
+    "reserved_or_assetless": 135,
+    "old table has no new counterpart": 6,
+    "superseded by several new objects; old file cannot be mapped 1:1": 47,
+    "unmapped_table": 2,
+    "many_to_one collision": 52,
+    "identity_mapping_lost": 15
+  },
   "top_hold_reasons": [
     [
       "RESERVED_OR_ASSETLESS",
