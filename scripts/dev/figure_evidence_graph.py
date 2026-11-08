@@ -61,17 +61,31 @@ def _distance(a: dict, b: dict, dims: tuple[float, float]) -> tuple[float | None
 
 
 def _inventory_entries(figures: dict, tables: dict) -> list[dict]:
+    """Inventory entries with an honest status.
+
+    A table (or figure) that has a caption but no resolved asset is not a
+    MATCHED pair; marking it MATCHED inflated the status counts in the first
+    version of this graph.
+    """
     entries = []
     for name in ("matched_figures", "held_figures", "ambiguous_figures"):
         status = "MATCHED" if name == "matched_figures" else "HOLD"
         for item in figures.get(name, []):
-            entries.append({**item, "_status": status, "kind": "figure",
+            assets = item.get("matched_assets", item.get("assets", [])) or []
+            has_asset = bool(assets) or bool(item.get("asset_block_id"))
+            entry_status = status if has_asset else "HOLD"
+            reason = None if has_asset else "no_asset"
+            entries.append({**item, "_status": entry_status, "_status_reason": reason, "kind": "figure",
                             "group_key": str(item.get("figure_id", ""))})
     for name in ("tables", "held_tables"):
         status = "MATCHED" if name == "tables" else "HOLD"
         for item in tables.get(name, []):
+            has_asset = bool(item.get("has_asset")) and bool(item.get("asset_block_id"))
+            entry_status = status if has_asset else "HOLD"
+            reason = None if has_asset else ("no_asset" if not item.get("asset_block_id") else "unresolved_asset")
             group_key = item.get("table_id") or item.get("caption_block_id")
-            entries.append({**item, "_status": status, "kind": "table", "group_key": str(group_key or "")})
+            entries.append({**item, "_status": entry_status, "_status_reason": reason, "kind": "table",
+                            "group_key": str(group_key or "")})
     return entries
 
 
@@ -167,13 +181,31 @@ def build_graph(view: Any, key: str = "") -> dict[str, Any]:
         status: str,
         entry: dict | None = None,
         evidence: dict | None = None,
+        origin: str = "inventory",
+        proposed_by: str | None = None,
     ):
-        edges.append({"source": src, "target": dst, "relation": relation, "proposed_by":
-                      (entry or {}).get("proposed_by", (entry or {}).get("match_pass", "inventory")),
-                      "score": (entry or {}).get("score"), "status": status,
-                      "evidence": evidence or {"same_region": {"value": None, "region_id": None, "region_kind": None},
-                                               "same_column": None, "distance_ratio": None, "edge_gap_ratio": None,
-                                               "page": (entry or {}).get("page")}})
+        edge_evidence = evidence or {
+            "same_region": {"value": None, "region_id": None, "region_kind": None},
+            "same_column": None,
+            "distance_ratio": None,
+            "edge_gap_ratio": None,
+            "page": (entry or {}).get("page"),
+        }
+        edge_evidence = dict(edge_evidence)
+        status_reason = (entry or {}).get("_status_reason")
+        if status_reason:
+            edge_evidence["status_reason"] = status_reason
+        edges.append({
+            "source": src,
+            "target": dst,
+            "relation": relation,
+            "proposed_by": proposed_by
+            or (entry or {}).get("proposed_by", (entry or {}).get("match_pass", "inventory")),
+            "origin": origin,
+            "score": (entry or {}).get("score"),
+            "status": status,
+            "evidence": edge_evidence,
+        })
 
     groups_claiming_asset: dict[str, set[str]] = defaultdict(set)
     caption_groups: dict[str, set[str]] = defaultdict(set)
@@ -216,14 +248,28 @@ def build_graph(view: Any, key: str = "") -> dict[str, Any]:
         for ai, asset in assets:
             evidence = edge_evidence(caption, asset, ci, ai)
             distance = evidence["distance_ratio"]
-            if distance is None or distance > 0.25:
+            gap = evidence["edge_gap_ratio"]
+            # Centre distance alone hides a large figure directly above its
+            # caption; adjacency also qualifies a candidate.
+            if distance is None:
                 continue
+            if distance > 0.25 and (gap is None or gap > 0.05):
+                continue
+            evidence["candidate_basis"] = "centre" if distance <= 0.25 else "edge_gap"
             anid = node_ids[(ai, "asset")][0]
             if any(e["source"] in matched_groups and e["target"] == anid and e["relation"] == "group_asset"
                    for e in edges):
                 continue
             duplicate = dup_counts[_identity(caption)] > 1 or dup_counts[_identity(asset)] > 1
-            add_edge(cnid, anid, "caption_asset", "UNDETERMINED" if duplicate else "CANDIDATE", evidence=evidence)
+            add_edge(
+                cnid,
+                anid,
+                "caption_asset",
+                "UNDETERMINED" if duplicate else "CANDIDATE",
+                evidence=evidence,
+                origin="spatial",
+                proposed_by="spatial_proximity",
+            )
             caption_candidates[cnid].add(anid)
     # Attach direct competition edges from captions to all inventory groups associated via captions/assets.
     for cnid, gids in caption_groups.items():
