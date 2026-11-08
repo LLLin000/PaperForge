@@ -174,7 +174,12 @@ class CrossPageReservationPass:
             if page is None:
                 continue
             # Skip legends already matched by same-page primary
-            if any(str(m.get("legend_block_id", "")) == str(legend.get("block_id", "")) for m in state.matches):
+            _legend_page = _resource_page(legend)
+            if any(
+                str(m.get("legend_block_id", "")) == str(legend.get("block_id", ""))
+                and (m.get("legend_page") if m.get("legend_page") is not None else m.get("page")) == _legend_page
+                for m in state.matches
+            ):
                 continue
             # Find forward groups (page > legend page)
             forward_groups = [
@@ -218,14 +223,26 @@ class CrossPageSettlementPass:
         for reservation in state.reservations:
             legend = reservation["legends"][0]
             group = reservation["groups"][0]
+            # Skip settlement for legends whose block_id is already matched on
+            # another page (page-blind duplicate guard for cross-page fallback).
+            if any(
+                str(m.get("legend_block_id", "")) == str(legend.block_id)
+                for m in state.matches
+            ):
+                continue
             state.ledger.transition_reserved_group_to_claimed(group, owner=legend, reason="cross_page_settlement")
 
             # Look up the actual legend block to extract namespace/number/alpha_prefix
             legend_text = ""
             for leg in state.candidate_index.deduped_legends:
-                if str(leg.get("block_id", "")) == str(legend.block_id):
+                if str(leg.get("block_id", "")) == str(legend.block_id) and _resource_page(leg) == legend.page:
                     legend_text = str(leg.get("text", ""))
                     break
+            if not legend_text:
+                for leg in state.candidate_index.deduped_legends:
+                    if str(leg.get("block_id", "")) == str(legend.block_id):
+                        legend_text = str(leg.get("text", ""))
+                        break
             marker = ocr_figures._extract_figure_marker(legend_text)
             if marker["number"] is not None and marker["namespace"] == "appendix":
                 # Appendix: use schema-derived ID (no collision risk with main).
@@ -394,9 +411,14 @@ class ContinuationCaptionPass:
         page = legend.page
         legend_text = ""
         for leg in state.candidate_index.deduped_legends:
-            if str(leg.get("block_id", "")) == str(legend.block_id):
+            if str(leg.get("block_id", "")) == str(legend.block_id) and _resource_page(leg) == page:
                 legend_text = str(leg.get("text", ""))
                 break
+        if not legend_text:
+            for leg in state.candidate_index.deduped_legends:
+                if str(leg.get("block_id", "")) == str(legend.block_id):
+                    legend_text = str(leg.get("text", ""))
+                    break
         marker = ocr_figures._extract_figure_marker(legend_text)
         namespace = marker["namespace"]
         base_number = proposal.figure_no
@@ -406,16 +428,16 @@ class ContinuationCaptionPass:
             base_number,
             alpha_prefix=marker["alpha_prefix"],
         )
-        # Unique continuation ID
-        continuation_id = base_figure_id + f"_continued_p{page:03d}_b{legend.block_id}"
         asset_ids = {str(r.block_id) for r in proposal.assets}
+        asset_pages = {r.page for r in proposal.assets}
         matched_assets = [
             ocr_figures._project_asset_record(a)
             for a in state.corpus.raw_assets
             if str(a.get("block_id", "")) in asset_ids
+            and (_resource_page(a) in asset_pages or not asset_pages)
         ]
         return {
-            "figure_id": continuation_id,
+            "figure_id": base_figure_id,
             "figure_namespace": namespace,
             "figure_number": base_number,
             "legend_block_id": legend.block_id,
@@ -432,7 +454,7 @@ class ContinuationCaptionPass:
             },
             "flags": ["continuation"],
             "bridge_block_ids": [],
-            "continuation_of": base_figure_id,
+            "continued_from": base_figure_id,
             "is_continuation": True,
         }
 

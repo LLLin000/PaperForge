@@ -53,9 +53,14 @@ class SidecarPass:
                 # For single-caption entries (37-like rescue), skip if already
                 # matched by any earlier pass — this rescue is only a last resort
                 # for captions the primary pass entirely missed.
+                _caption_page = _resource_page(caption)
                 if len(narrow_captions) == 1:
                     already_matched = any(
                         str(m.get("legend_block_id", "")) == cid
+                        and (
+                            (m.get("legend_page") if m.get("legend_page") is not None else m.get("page"))
+                            == _caption_page
+                        )
                         for m in state.matches
                     )
                     if already_matched:
@@ -67,6 +72,14 @@ class SidecarPass:
                     for match in state.matches:
                         if (
                             str(match.get("legend_block_id", "")) == cid
+                            and (
+                                (
+                                    match.get("legend_page")
+                                    if match.get("legend_page") is not None
+                                    else match.get("page")
+                                )
+                                == _caption_page
+                            )
                             and ocr_figures._has_protected_figure_ownership(match)
                         ):
                             protected = True

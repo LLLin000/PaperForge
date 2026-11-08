@@ -100,18 +100,22 @@ class GroupSequentialPass:
             if ap is not None:
                 assets_by_page_id[(ap, str(ast.get("block_id", "")))] = ast
 
-        # ----- 4. Track already-matched legend ids -----
-        matched_legend_ids: set[str] = set()
+        # ----- 4. Track already-matched legend ids (page-qualified) -----
+        matched_legend_ids: set[tuple] = set()
         for m in state.matches:
             lid = m.get("legend_block_id")
             if lid:
-                matched_legend_ids.add(str(lid))
+                mp = m.get("legend_page")
+                if mp is None:
+                    mp = m.get("page")
+                matched_legend_ids.add((mp, str(lid)))
 
         # ----- 5. Process each unmatched numbered legend -----
         deduped_legends = state.candidate_index.deduped_legends or []
         for legend in deduped_legends:
             lid = str(legend.get("block_id", ""))
-            if lid in matched_legend_ids:
+            lg_page = _resource_page(legend)
+            if (lg_page, lid) in matched_legend_ids:
                 continue
 
             lg_page = _resource_page(legend)

@@ -30,17 +30,17 @@ def _get_render_lock(page_cache_dir: Path, page_num: int) -> threading.Lock:
 def render_figure_object_markdown(figure: dict[str, Any]) -> str:
     caption = figure.get("caption", "")
     image_relpath = figure.get("image_relpath", "")
-
-    # Extract figure number for the title
-    figure_id = figure.get("figure_id", "")
-    if figure_id.startswith("unresolved_cluster_") or figure_id.startswith("cluster_"):
-        label = "Unresolved Figure Candidate"
-    elif figure_id and not figure_id.startswith("orphan_"):
-        m = re.search(r"\d+", figure_id)
-        num = str(int(m.group())) if m else figure_id
-        label = f"Figure {num}"
-    else:
-        label = "Orphan Media"
+    label = figure.get("display_label")
+    if not label:
+        figure_id = figure.get("figure_id", "")
+        if figure_id.startswith("unresolved_cluster_") or figure_id.startswith("cluster_"):
+            label = "Unresolved Figure Candidate"
+        elif figure_id and not figure_id.startswith("orphan_"):
+            m = re.search(r"\d+", figure_id)
+            num = str(int(m.group())) if m else figure_id
+            label = f"Figure {num}"
+        else:
+            label = "Orphan Media"
 
     was_cropped = figure.get("was_cropped", True)
     parts = [f"# {label}", ""]
@@ -55,7 +55,6 @@ def render_figure_object_markdown(figure: dict[str, Any]) -> str:
         parts.append(f"*Page {figure['page']}*")
     parts.append("")
     parts.append("---")
-
     return "\n".join(parts)
 
 
@@ -482,6 +481,7 @@ def _write_figure_object_task(
 
     md = render_figure_object_markdown({
         "figure_id": fig_id,
+        "display_label": data.get("display_label"),
         "page": page,
         "caption": caption,
         "image_relpath": asset_path_rel,
@@ -716,10 +716,22 @@ def extract_and_write_objects(
 
     # ---- Serial phase: build task list with stable IDs ----
     tasks: list[tuple[str, dict[str, Any]]] = []
+    scheduled_figure_ids: set[str] = set()
+    figure_collisions = figure_inventory.setdefault("identity_collisions", [])
 
     # Matched figures
     for i, match in enumerate(figure_inventory.get("matched_figures", [])):
         fig_id = match.get("figure_id", f"figure_{i + 1:03d}")
+        if fig_id in scheduled_figure_ids:
+            figure_collisions.append({
+                "type": "identity_collision",
+                "status": "HARD_FAILURE",
+                "figure_id": fig_id,
+                "artifact_paths": [f"assets/figures/{fig_id}.jpg", f"render/figures/{fig_id}.md"],
+                "legend_block_id": match.get("legend_block_id"),
+            })
+            continue
+        scheduled_figure_ids.add(fig_id)
         caption_text = match.get("text", "")
         page = match.get("page", 0)
         page_width, page_height = _page_dims(page)
@@ -768,6 +780,7 @@ def extract_and_write_objects(
                 "crop_bbox": crop_bbox,
                 "rotation_deg": rotation_deg,
                 "matched_assets": match.get("matched_assets", []),
+                "display_label": match.get("display_label"),
                 "caption": caption_text,
                 "asset_path_rel": f"assets/figures/{fig_id}.jpg",
                 "confidence": match.get("confidence", 0.5),
@@ -777,6 +790,15 @@ def extract_and_write_objects(
     # Unresolved figure clusters
     for i, cluster in enumerate(figure_inventory.get("unresolved_clusters", [])):
         cluster_id = cluster.get("cluster_id") or f"unresolved_cluster_{i + 1:03d}"
+        if cluster_id in scheduled_figure_ids:
+            figure_collisions.append({
+                "type": "identity_collision",
+                "status": "HARD_FAILURE",
+                "figure_id": cluster_id,
+                "artifact_paths": [f"assets/figures/{cluster_id}.jpg", f"render/figures/{cluster_id}.md"],
+            })
+            continue
+        scheduled_figure_ids.add(cluster_id)
         page = cluster.get("page", 0)
         page_width, page_height = _page_dims(page)
         bbox = cluster.get("cluster_bbox", [0, 0, 0, 0])
