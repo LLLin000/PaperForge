@@ -8315,3 +8315,42 @@ def test_display_zone_caption_not_rejected_as_inline_ref() -> None:
     ]
     inventory = build_figure_inventory(blocks)
     assert len(inventory.get("matched_figures", [])) >= 1
+
+
+def test_cross_column_caption_rejected_when_nearer_same_column_caption_exists():
+    from paperforge.worker.ocr_figures import _score_legend_to_group
+
+    # group in right column (band 1)
+    group = {
+        "group_type": "single_asset",
+        "page": 1,
+        "media_blocks": [{"page": 1, "bbox": [624, 170, 1107, 725], "block_id": "a"}],
+        "cluster_bbox": [624, 170, 1107, 725],
+    }
+    # far caption in left column claiming the right-column asset
+    far_cap = {"page": 1, "bbox": [86, 629, 579, 719], "text": "Figure 2. x", "block_id": "cap_far", "role": "figure_caption"}
+    # nearer caption in same (right) column directly below asset
+    near_cap = {"page": 1, "bbox": [624, 749, 1115, 794], "text": "Figure 3. y", "block_id": "cap_near", "role": "figure_caption"}
+    page_blocks = [far_cap, near_cap, {"page": 1, "bbox": [624, 170, 1107, 725], "role": "figure_asset", "block_id": "a"}]
+    result = _score_legend_to_group(
+        far_cap, group, caption_score={"score": 0.5}, page_width=1200, page_blocks=page_blocks
+    )
+    assert result["decision"] == "rejected", result
+
+
+def test_multi_panel_spanning_group_not_overcorrected():
+    from paperforge.worker.ocr_figures import _score_legend_to_group
+
+    # group spans both columns (group_band None) -> column check skipped
+    group = {
+        "group_type": "distance_cluster",
+        "page": 1,
+        "media_blocks": [
+            {"page": 1, "bbox": [114, 166, 556, 609], "block_id": "a"},
+            {"page": 1, "bbox": [624, 170, 1107, 725], "block_id": "b"},
+        ],
+        "cluster_bbox": [114, 166, 1107, 725],
+    }
+    cap = {"page": 1, "bbox": [86, 629, 579, 719], "text": "Figure 2. x", "block_id": "cap", "role": "figure_caption"}
+    result = _score_legend_to_group(cap, group, caption_score={"score": 0.9}, page_width=1200, page_blocks=[cap])
+    assert result["decision"] != "rejected", result
