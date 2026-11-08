@@ -360,11 +360,27 @@ def _finalize_figure_identities(figure_inventory: dict) -> None:
                     if bid not in seen_assets:
                         base.setdefault("matched_assets", []).append(asset)
                         seen_assets.add(bid)
-                base["asset_block_ids"] = list(dict.fromkeys(
-                    [*base.get("asset_block_ids", []), *entry.get("asset_block_ids", [])]
-                ))
-                base.setdefault("continued_from", []).append(entry.get("legend_block_id"))
-                base.setdefault("flags", []).append("continuation")
+                base["asset_block_ids"] = list(
+                    dict.fromkeys(
+                        [str(b) for b in base.get("asset_block_ids", []) if b]
+                        + [str(b) for b in entry.get("asset_block_ids", []) if b]
+                        + sorted(seen_assets)
+                    )
+                )
+                _continued = base.get("continued_from")
+                if isinstance(_continued, list):
+                    _continued.append(entry.get("legend_block_id"))
+                elif _continued:
+                    base["continued_from"] = [_continued, entry.get("legend_block_id")]
+                else:
+                    base["continued_from"] = [entry.get("legend_block_id")]
+                _flags = base.get("flags")
+                if isinstance(_flags, list):
+                    _flags.append("continuation")
+                elif _flags:
+                    base["flags"] = [_flags, "continuation"]
+                else:
+                    base["flags"] = ["continuation"]
                 base_claims = base.setdefault(
                     "claims",
                     [
