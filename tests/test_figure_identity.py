@@ -216,3 +216,40 @@ def test_duplicate_artifact_id_aborts_before_dispatch(tmp_path, monkeypatch) -> 
     assert dispatched == []
     assert figures["identity_collisions"][0]["type"] == "identity_collision"
     assert figures["identity_collisions"][0]["status"] == "HARD_FAILURE"
+
+
+def test_continuation_merge_tolerates_scalar_legacy_fields() -> None:
+    from paperforge.worker.ocr_figures import _finalize_figure_identities
+
+    inventory = {
+        "matched_figures": [
+            {
+                "figure_id": "figure_001",
+                "figure_namespace": "main",
+                "page": 2,
+                "legend_block_id": "5",
+                "text": "Figure 1. Caption",
+                "matched_assets": [{"block_id": "a1"}],
+                "continued_from": "legacy-string",
+                "flags": "continuation",
+            },
+            {
+                "figure_id": "figure_001_continued",
+                "figure_namespace": "main",
+                "page": 3,
+                "legend_block_id": "7",
+                "text": "Figure 1 continued. Caption",
+                "is_continuation": True,
+                "matched_assets": [{"block_id": "a2"}],
+            },
+        ]
+    }
+
+    _finalize_figure_identities(inventory)
+
+    assert len(inventory["matched_figures"]) == 1
+    entry = inventory["matched_figures"][0]
+    assert isinstance(entry["continued_from"], list)
+    assert "legacy-string" in entry["continued_from"]
+    assert isinstance(entry["flags"], list)
+    assert entry["asset_block_ids"] == ["a1", "a2"]
