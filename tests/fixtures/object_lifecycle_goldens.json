@@ -1,0 +1,177 @@
+{
+ "schema_version": 1,
+ "frozen_at": "2026-11-08",
+ "master": "fcd3dc96",
+ "vault": "read-only corpus under System/PaperForge/ocr",
+ "note": "Reviewed facts for E1-E4. Tests that need the vault read it read-only and skip when absent.",
+ "cases": [
+  {
+   "key": "SRNJDAA2",
+   "issue": "composite figure numbering",
+   "facts": {
+    "captions": [
+     "Figure 11-1",
+     "Figure 11-2",
+     "Figure 11-3",
+     "Figure 11-4",
+     "Figure 11-5",
+     "Figure 11-6",
+     "Figure 11-7"
+    ],
+    "baseline_figure_entries": 25,
+    "baseline_unique_ids": 1,
+    "baseline_render_md": 1
+   },
+   "expect": {
+    "distinct_objects_for_distinct_captions": true,
+    "no_duplicate_figure_ids": true,
+    "unique_artifact_paths": true
+   },
+   "phase": "E1"
+  },
+  {
+   "key": "DJLIAZT7",
+   "issue": "large identity collisions",
+   "facts": {
+    "baseline_figure_entries": 63,
+    "duplicate_ids": {
+     "figure_005": 14,
+     "figure_004": 10,
+     "figure_003": 14,
+     "figure_002": 23
+    }
+   },
+   "expect": {
+    "no_duplicate_figure_ids": true,
+    "continuation_merged_not_duplicated": true
+   },
+   "phase": "E1"
+  },
+  {
+   "key": "388XI46Q",
+   "pages": [
+    14,
+    15
+   ],
+   "issue": "figure on previous page, caption at top of next",
+   "facts": {
+    "page14_asset_bbox_ocr": [
+     118,
+     122,
+     1069,
+     1356
+    ],
+    "page15_caption": "Fig. 5 (a) Immunofluorescence..."
+   },
+   "expect": {
+    "figure_5_matched_to_page14_asset": true,
+    "caption_matches_its_own_page": true,
+    "figure_rendered_in_fulltext": true
+   },
+   "phase": "E2"
+  },
+  {
+   "key": "2AZ2EGQB",
+   "pages": [
+    9
+   ],
+   "issue": "side-by-side caption and figure",
+   "facts": {
+    "caption_bbox_ocr": [
+     96,
+     114,
+     327,
+     256
+    ],
+    "asset_bbox_ocr": [
+     373,
+     119,
+     1092,
+     762
+    ]
+   },
+   "expect": {
+    "figure_matched": true,
+    "no_vertical_only_rule": true
+   },
+   "phase": "E2"
+  },
+  {
+   "key": "2BYRLKQS",
+   "pages": [
+    4
+   ],
+   "issue": "figure/table cross-type competition",
+   "facts": {
+    "table_caption_block": "2",
+    "figure_caption_block": "9",
+    "contested_asset_block": "8",
+    "table_asset_block": "3"
+   },
+   "expect": {
+    "table_asset_block_id": "3",
+    "figure_asset_block_id": "8",
+    "ownership_conflicts": []
+   },
+   "phase": "E2"
+  },
+  {
+   "key": "28ALPCY7",
+   "pages": [
+    20
+   ],
+   "issue": "caption without any asset",
+   "expect": {
+    "no_fabricated_asset": true,
+    "status_in": [
+     "HOLD",
+     "UNMATCHED"
+    ]
+   },
+   "phase": "E2"
+  },
+  {
+   "key": "2HEUD5P9",
+   "issue": "ownership and body protection",
+   "expect": {
+    "owned_blocks_keep_role": true,
+    "no_body_text_swallowed_into_figures": true
+   },
+   "phase": "E3"
+  },
+  {
+   "key": "2ZBAK9VY",
+   "issue": "supplement PDF shorter than OCR page count",
+   "facts": {
+    "ocr_pages": 12,
+    "pdf_pages": 8
+   },
+   "expect": {
+    "figure_003_crop_present": true,
+    "crop_source": "page_cache_fallback"
+   },
+   "phase": "E3"
+  }
+ ],
+ "metrics_baseline_952": {
+  "papers": 952,
+  "figures": 5697,
+  "tables": 1766,
+  "papers_with_duplicate_figure_ids": 181,
+  "duplicate_id_extra_entries": 355,
+  "orphan_md": 16953,
+  "papers_with_orphans": 892,
+  "orphan_embedded": 0,
+  "figures_without_assets": 418,
+  "figures_without_number": 447,
+  "tables_without_asset": 293,
+  "tables_with_html": 1432,
+  "tables_with_notes": 121,
+  "tables_continuation": 146,
+  "unmatched_assets": 1519,
+  "unmatched_assets_large_ge5pct": 460,
+  "health_caption_without_media": 563,
+  "health_empty_table": 293,
+  "health_ambiguous_table_match": 215
+ }
+}
