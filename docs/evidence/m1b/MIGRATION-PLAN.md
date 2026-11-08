@@ -277,7 +277,7 @@ python scripts/dev/object_migration_dry_run.py --bundle-plan plan.jsonl --bundle
 
 ## Limits
 - Table id pairing is by order when anchors do not match.
-- 42 assetless/legacy removals are REQUIRES_APPROVAL, not confirmed misses.
+- 56 reserved_or_assetless embed removals + 15 identity_mapping_lost + 2 unmapped_table (embed), and 79 reserved figure files, are REQUIRES_APPROVAL, not confirmed misses.
 - 27 caption_present_unmatched cases are M2_REVIEW_REQUIRED, not confirmed misses.
 - Filesystem and SQLite effects are not atomic; restore+verify rollback.
 
