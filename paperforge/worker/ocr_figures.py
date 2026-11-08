@@ -1478,17 +1478,51 @@ def _score_legend_to_group(
             _gap = max(0.0, _gb[0]-legend_bbox[2], legend_bbox[0]-_gb[2])
             if _vo/_mh >= 0.5 and _gap <= page_width*0.05:
                 _side_adjacent_ok = True
-    if not legend.get("_rotated_caption_prematch") and not _side_adjacent_ok:
-        group_band = group.get("column_band")
-        if group_band is None:
-            group_band = _group_column_band(group.get("media_blocks", []), page_width)
-        legend_band = _column_band_id(legend_bbox, page_width)
-        if legend_band is not None and group_band is not None and legend_band != group_band:
-            return {
-                "score": 0.0,
-                "decision": "rejected",
-                "evidence": ["column_incompatible: legend band=" + str(legend_band) + " group band=" + str(group_band)],
-            }
+                # Cross-column side-adjacent bypass must not steal an asset
+                _legend_band = _column_band_id(legend_bbox, page_width)
+                _group_band = group.get("column_band")
+                if _group_band is None:
+                    _group_band = _group_column_band(group.get("media_blocks", []), page_width)
+                if _legend_band is not None and _group_band is not None and _legend_band != _group_band:
+                    _grp_bbox = group.get("cluster_bbox") or group.get("bbox") or [0, 0, 0, 0]
+                    if len(_grp_bbox) >= 4:
+                        def _vgap(x, y):
+                            if x[3] < y[1]:
+                                return y[1] - x[3]
+                            if y[3] < x[1]:
+                                return x[1] - y[3]
+                            return 0
+                        _cur_gap = _vgap(legend_bbox, _grp_bbox)
+                        _nearer = False
+                        for _other in (page_blocks or []):
+                            if _other is legend:
+                                continue
+                            if _match_role(_other) not in {"figure_caption", "figure_caption_candidate"}:
+                                continue
+                            _obbox = _other.get("bbox") or _other.get("block_bbox") or [0, 0, 0, 0]
+                            if len(_obbox) < 4:
+                                continue
+                            if _column_band_id(_obbox, page_width) != _group_band:
+                                continue
+                            # A same-column caption directly adjacent to the asset
+                            # (small vertical gap) beats a cross-column caption
+                            # that merely overlaps it vertically.
+                            if _vgap(_obbox, _grp_bbox) <= 40:
+                                _nearer = True
+                                break
+                        if _nearer:
+                            _side_adjacent_ok = False
+        if not legend.get("_rotated_caption_prematch") and not _side_adjacent_ok:
+            group_band = group.get("column_band")
+            if group_band is None:
+                group_band = _group_column_band(group.get("media_blocks", []), page_width)
+            legend_band = _column_band_id(legend_bbox, page_width)
+            if legend_band is not None and group_band is not None and legend_band != group_band:
+                return {
+                    "score": 0.0,
+                    "decision": "rejected",
+                    "evidence": ["column_incompatible: legend band=" + str(legend_band) + " group band=" + str(group_band)],
+                }
 
 
     # --- Short caption geometry rescue ---
