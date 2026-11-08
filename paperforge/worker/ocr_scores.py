@@ -131,6 +131,7 @@ def score_figure_match(
     caption_text_supported: bool = False,
     family_supported: bool = False,
     zone_supported: bool = False,
+    page_width: float = 1200.0,
 ) -> dict:
     legend_bbox = legend.get("bbox") or legend.get("block_bbox") or [0, 0, 0, 0]
     asset_bbox = asset.get("bbox") or asset.get("block_bbox") or [0, 0, 0, 0]
@@ -158,6 +159,15 @@ def score_figure_match(
             has_x_overlap = True
             score += 0.20
             evidence.append("adjacent_x")
+    if len(legend_bbox) >= 4 and len(asset_bbox) >= 4 and "side_adjacent" not in evidence:
+        v_overlap = max(0.0, min(legend_bbox[3], asset_bbox[3]) - max(legend_bbox[1], asset_bbox[1]))
+        min_h = max(1.0, min(legend_bbox[3] - legend_bbox[1], asset_bbox[3] - asset_bbox[1]))
+        v_ratio = v_overlap / min_h
+        gap = max(0.0, asset_bbox[0] - legend_bbox[2], legend_bbox[0] - asset_bbox[2])
+        if v_ratio >= 0.5 and gap <= float(page_width) * 0.05:
+            has_x_overlap = True
+            score += 0.20
+            evidence.append("side_adjacent")
     if len(legend_bbox) >= 4 and len(asset_bbox) >= 4:
         vertical_gap = min(abs(legend_bbox[1] - asset_bbox[3]), abs(asset_bbox[1] - legend_bbox[3]))
         if vertical_gap <= 300:

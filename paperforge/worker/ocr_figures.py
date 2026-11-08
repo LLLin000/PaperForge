@@ -1446,8 +1446,23 @@ def _score_legend_to_group(
 ) -> dict:
     # Column compatibility check -- must run before safe_auto_match
     # Skip for rotated captions (side captions sit in different column by design)
-    if not legend.get("_rotated_caption_prematch"):
-        legend_bbox = legend.get("bbox") or legend.get("block_bbox") or [0, 0, 0, 0]
+    legend_bbox = legend.get("bbox") or legend.get("block_bbox") or [0, 0, 0, 0]
+    # Side-by-side rescue: same visual row, horizontal gap <= 5% page width is
+    # allowed even across column bands.
+    _side_adjacent_ok = False
+    if len(legend_bbox) >= 4:
+        _gb = group.get("cluster_bbox") or group.get("bbox") or [0,0,0,0]
+        if not _gb or len(_gb) < 4:
+            _mb = group.get("media_blocks", [])
+            if _mb:
+                _gb = _mb[0].get("bbox") or [0,0,0,0]
+        if len(_gb) >= 4:
+            _vo = max(0.0, min(legend_bbox[3], _gb[3]) - max(legend_bbox[1], _gb[1]))
+            _mh = max(1.0, min(legend_bbox[3]-legend_bbox[1], _gb[3]-_gb[1]))
+            _gap = max(0.0, _gb[0]-legend_bbox[2], legend_bbox[0]-_gb[2])
+            if _vo/_mh >= 0.5 and _gap <= page_width*0.05:
+                _side_adjacent_ok = True
+    if not legend.get("_rotated_caption_prematch") and not _side_adjacent_ok:
         group_band = group.get("column_band")
         if group_band is None:
             group_band = _group_column_band(group.get("media_blocks", []), page_width)
@@ -1544,6 +1559,7 @@ def _score_legend_to_group(
             caption_text_supported=caption_text_supported,
             family_supported=family_supported,
             zone_supported=zone_supported,
+            page_width=page_width,
         )
         if num_assets >= 2 and match_score.get("score", 0) > 0:
             match_score = dict(match_score)
@@ -1594,6 +1610,7 @@ def _score_legend_to_group(
             caption_text_supported=caption_text_supported,
             family_supported=family_supported,
             zone_supported=zone_supported,
+            page_width=page_width,
         )
 
     cluster_bbox = group.get("cluster_bbox", [0, 0, 0, 0])
@@ -1605,6 +1622,7 @@ def _score_legend_to_group(
         caption_text_supported=caption_text_supported,
         family_supported=family_supported,
         zone_supported=zone_supported,
+        page_width=page_width,
     )
     num_assets = len(group.get("media_blocks", []))
     if num_assets > 1 and match_score.get("score", 0) > 0:
@@ -6692,6 +6710,7 @@ def _score_legend_to_asset_with_orientation(
     caption_text_supported: bool = False,
     family_supported: bool = False,
     zone_supported: bool = False,
+    page_width: float = 1200.0,
 ) -> dict:
     normalized = _prepare_rotated_caption_normalization(legend, asset)
     if normalized is not None:
@@ -6707,6 +6726,7 @@ def _score_legend_to_asset_with_orientation(
             caption_text_supported=caption_text_supported,
             family_supported=family_supported,
             zone_supported=zone_supported,
+            page_width=page_width,
         )
         match_score = dict(match_score)
         match_score.setdefault("evidence", []).append("rotated_caption_normalized")
@@ -6721,6 +6741,7 @@ def _score_legend_to_asset_with_orientation(
         caption_text_supported=caption_text_supported,
         family_supported=family_supported,
         zone_supported=zone_supported,
+        page_width=page_width,
     )
 
 
