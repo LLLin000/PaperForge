@@ -38,11 +38,40 @@ def test_association_stage_runs_the_documented_order(monkeypatch) -> None:
     assert calls == [
         "build_figure_inventory",
         "write_back_figure_roles",
-        "synthesize_reader_figures",
         "build_table_inventory",
         "resolve_media_asset_conflicts",
         "attach_ownership_conflicts",
+        "synthesize_reader_figures",
     ]
+
+
+def test_reader_synthesis_receives_post_arbitration_inventory(monkeypatch) -> None:
+    captured: list[dict] = []
+    figures = {
+        "matched_figures": [{"figure_id": "figure-1", "asset_block_ids": ["asset-1"]}],
+        "unmatched_assets": [],
+        "unresolved_clusters": [],
+    }
+
+    monkeypatch.setattr(figures_module, "build_figure_inventory", lambda *args, **kwargs: figures)
+    monkeypatch.setattr(figures_module, "write_back_figure_roles", lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        figures_module,
+        "resolve_media_asset_conflicts",
+        lambda inventory, *args, **kwargs: inventory["matched_figures"][0]["asset_block_ids"].clear(),
+    )
+    monkeypatch.setattr(figures_module, "attach_ownership_conflicts", lambda *args, **kwargs: None)
+    monkeypatch.setattr(tables_module, "build_table_inventory", lambda *args, **kwargs: {"tables": []})
+    monkeypatch.setattr(
+        reader_module,
+        "synthesize_reader_figures",
+        lambda inventory, **kwargs: captured.append(inventory) or {"reader_figures": []},
+    )
+    monkeypatch.setattr(ocr_object_stage, "_resolve_ref_start_page", lambda blocks: None, raising=False)
+
+    ocr_object_stage.run_association_stage([])
+
+    assert captured[0]["matched_figures"][0]["asset_block_ids"] == []
 
 
 def test_commit_applies_writeback_before_table_roles(monkeypatch) -> None:
