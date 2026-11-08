@@ -67,7 +67,18 @@ def post_match_normalize(
         source_frontmatter_anchors=source_frontmatter_anchors,
     )
     for live, shadow in zip(live_rows, shadow_rows):
-        live["role"] = shadow.get("role", live.get("role"))
+        live_role = live.get("role")
+        shadow_role = shadow.get("role", live_role)
+        # A block the bio cleanup classified as a biography is not a reference
+        # item; the reference-zone fallback must not undo that decision.
+        if (
+            live.get("_object_owner_family") == "author_bio"
+            and live_role == "backmatter_body"
+            and shadow_role != "backmatter_body"
+        ):
+            shadow_role = "backmatter_body"
+            live["render_default"] = True
+        live["role"] = shadow_role
         live["role_source"] = shadow.get("role_source", live.get("role_source"))
         live["role_confidence"] = shadow.get("role_confidence", live.get("role_confidence"))
         live["role_candidate"] = live.get("role_candidate") or shadow.get("role")
