@@ -1,4 +1,7 @@
 from __future__ import annotations
+
+from collections import Counter
+
 import pytest
 
 
@@ -423,14 +426,51 @@ def _count_truthy(rows: list[dict], field: str) -> int:
     return sum(1 for block in rows if block.get(field))
 
 
+_COMMITTED_OBJECT_ROLES = {"figure_caption", "figure_asset", "table_caption", "table_html"}
+_UPGRADEABLE_LEGACY_ROLES = {
+    "figure_caption_candidate",
+    "table_caption_candidate",
+    "unknown_structural",
+    "media_asset",
+    "figure_inner_text",
+}
+
+
 @pytest.mark.parametrize("key", ["DWQQK2YB", "VAMSAZMG", "PJBMGVTF", "37LK5T97", "8CCATQE3", "5MAW65YD"])
 def test_v3_real_paper_parity_matches_legacy_contract(key: str, tmp_path) -> None:
     legacy = _run_legacy_fixture_pipeline(key, tmp_path)
     v3 = _run_v3_fixture_pipeline(key, tmp_path)
 
-    assert _role_counter(v3["rows"]) == _role_counter(legacy["rows"])
-    assert _count_truthy(v3["rows"], "render_default") == _count_truthy(legacy["rows"], "render_default")
-    assert _count_truthy(v3["rows"], "index_default") == _count_truthy(legacy["rows"], "index_default")
+    # Post-match protection may only upgrade a block the inventory already
+    # committed from a legacy candidate/undecided role to that committed role
+    # (P1). Anything else is a regression.
+    v3_by_key = {(r.get("page"), str(r.get("block_id"))): r for r in v3["rows"]}
+    legacy_by_key = {(r.get("page"), str(r.get("block_id"))): r for r in legacy["rows"]}
+    assert set(v3_by_key) == set(legacy_by_key)
+    diverged = set()
+    for block_key, legacy_row in legacy_by_key.items():
+        v3_row = v3_by_key[block_key]
+        legacy_role = str(legacy_row.get("role") or "")
+        v3_role = str(v3_row.get("role") or "")
+        if legacy_role == v3_role:
+            continue
+        diverged.add(block_key)
+        assert v3_role in _COMMITTED_OBJECT_ROLES, (key, block_key, legacy_role, v3_role)
+        assert legacy_role in _UPGRADEABLE_LEGACY_ROLES, (key, block_key, legacy_role, v3_role)
+
+    expected_roles = {
+        block_key: (
+            str(v3_by_key[block_key].get("role") or "")
+            if block_key in diverged
+            else str(row.get("role") or "")
+        )
+        for block_key, row in legacy_by_key.items()
+    }
+    assert _role_counter(v3["rows"]) == Counter(expected_roles.values())
+    for field_name in ("render_default", "index_default"):
+        v3_flag = {k: bool(r.get(field_name)) for k, r in v3_by_key.items() if k not in diverged}
+        legacy_flag = {k: bool(r.get(field_name)) for k, r in legacy_by_key.items() if k not in diverged}
+        assert v3_flag == legacy_flag, (key, field_name)
     assert len(v3["fig"].get("matched_figures", [])) == len(legacy["fig"].get("matched_figures", []))
     assert len(v3["tab"].get("tables", [])) == len(legacy["tab"].get("tables", []))
 
