@@ -1,0 +1,434 @@
+{
+  "key": "6GB9I9KG",
+  "old_target": "render/figures/figure_002.md",
+  "old_id": "figure_002",
+  "page": 5,
+  "meta_pages": 11,
+  "old_inventory": {
+    "figure_id": "figure_002",
+    "figure_namespace": "main",
+    "figure_number": 2,
+    "legend_block_id": "3",
+    "page": 5,
+    "text": "Fig. 2 EDS spectra of each samples",
+    "matched_assets": [
+      {
+        "block_id": 2,
+        "bbox": [
+          125,
+          173,
+          565,
+          509
+        ],
+        "page": 5
+      }
+    ],
+    "asset_block_ids": [
+      "2"
+    ],
+    "settlement_type": "same_page",
+    "confidence": 0.955,
+    "match_score": {
+      "score": 0.955,
+      "decision": "matched",
+      "evidence": [
+        "same_page",
+        "x_overlap",
+        "nearby_y",
+        "caption_above_or_below"
+      ]
+    },
+    "flags": [],
+    "bridge_block_ids": [],
+    "consumed_block_ids": [
+      "2"
+    ]
+  },
+  "old_render_exists": true,
+  "old_asset_exists": true,
+  "old_asset_path": "D:\\L\\OB\\Literature-hub\\System\\PaperForge\\ocr\\6GB9I9KG\\assets\\figures\\figure_002.jpg",
+  "new_figures_on_page": [
+    {
+      "figure_id": "figure_004",
+      "figure_number": 4,
+      "page": 5,
+      "text": "Fig. 4 Viability of HGFs after co-culture on samples for 1, 3 and 5 d. Numbers 5 indicates a statistically significant difference vs. EPD-60 (p < 0.05)",
+      "matched_assets": [
+        {
+          "block_id": 2,
+          "bbox": [
+            125,
+            173,
+            565,
+            509
+          ],
+          "page": 5
+        },
+        {
+          "block_id": 9,
+          "bbox": [
+            621,
+            174,
+            1063,
+            459
+          ],
+          "page": 5
+        }
+      ]
+    },
+    {
+      "figure_id": "figure_003",
+      "figure_number": 3,
+      "page": 5,
+      "text": "Fig. 3 XRD spectra of each samples",
+      "matched_assets": [
+        {
+          "block_id": 7,
+          "bbox": [
+            124,
+            1123,
+            564,
+            1414
+          ],
+          "page": 5
+        }
+      ]
+    }
+  ],
+  "caption_candidate_rows": [
+    {
+      "block_id": 3,
+      "role": "figure_caption",
+      "bbox": [
+        120,
+        514,
+        357,
+        535
+      ],
+      "text": "Fig. 2 EDS spectra of each samples"
+    },
+    {
+      "block_id": 8,
+      "role": "figure_caption",
+      "bbox": [
+        120,
+        1421,
+        360,
+        1442
+      ],
+      "text": "Fig. 3 XRD spectra of each samples"
+    },
+    {
+      "block_id": 10,
+      "role": "figure_caption",
+      "bbox": [
+        615,
+        462,
+        1050,
+        522
+      ],
+      "text": "Fig. 4 Viability of HGFs after co-culture on samples for 1, 3 and 5 d. Numbers 5 indicates a statistically significant difference vs. EPD-60 (p < 0.05)"
+    }
+  ],
+  "unmatched_assets_page": [],
+  "raw_page_blocks": [
+    {
+      "block_id": 0,
+      "bbox": [
+        109,
+        63,
+        581,
+        85
+      ],
+      "role": null,
+      "text": "Fan et al. Journal of Orthopaedic Surgery and Research (2023) 18:901"
+    },
+    {
+      "block_id": 1,
+      "bbox": [
+        993,
+        64,
+        1081,
+        86
+      ],
+      "role": null,
+      "text": "Page 5 of 10"
+    },
+    {
+      "block_id": 2,
+      "bbox": [
+        125,
+        173,
+        565,
+        509
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 3,
+      "bbox": [
+        120,
+        514,
+        357,
+        535
+      ],
+      "role": null,
+      "text": "Fig. 2 EDS spectra of each samples"
+    },
+    {
+      "block_id": 4,
+      "bbox": [
+        106,
+        597,
+        585,
+        695
+      ],
+      "role": null,
+      "text": "time relative to the peaks of O, Ca, and Ti. XRD found TiO₂ from all samples (Fig. 3). MgO was detected from EPD-15 to EPD-60, with increasing peak intensities with EPD time relative to those of TiO₂."
+    },
+    {
+      "block_id": 5,
+      "bbox": [
+        108,
+        718,
+        261,
+        741
+      ],
+      "role": null,
+      "text": "Cytocompatibility"
+    },
+    {
+      "block_id": 6,
+      "bbox": [
+        106,
+        743,
+        586,
+        1081
+      ],
+      "role": null,
+      "text": "Figure 4 depicts the relative survival rates of HGF cells cultured on various surfaces. Between 1 and 5 d, the relative survival rate of each group increased with the time of culture. At each time poi"
+    },
+    {
+      "block_id": 7,
+      "bbox": [
+        124,
+        1123,
+        564,
+        1414
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 8,
+      "bbox": [
+        120,
+        1421,
+        360,
+        1442
+      ],
+      "role": null,
+      "text": "Fig. 3 XRD spectra of each samples"
+    },
+    {
+      "block_id": 9,
+      "bbox": [
+        621,
+        174,
+        1063,
+        459
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 10,
+      "bbox": [
+        615,
+        462,
+        1050,
+        522
+      ],
+      "role": null,
+      "text": "Fig. 4 Viability of HGFs after co-culture on samples for 1, 3 and 5 d. Numbers 5 indicates a statistically significant difference vs. EPD-60 (p < 0.05)"
+    },
+    {
+      "block_id": 11,
+      "bbox": [
+        602,
+        573,
+        1082,
+        668
+      ],
+      "role": null,
+      "text": "rate≥70% is considered non-cytotoxic. Based on this criterion, EPD-60 was cytotoxic (survival rate=65%) only on day 1. No other group was found cytotoxic at any time point."
+    },
+    {
+      "block_id": 12,
+      "bbox": [
+        602,
+        668,
+        1084,
+        910
+      ],
+      "role": null,
+      "text": "Live/Dead staining of samples cultured for 5 d (Fig. 5) revealed a small number of dead cells (red pixels) on EPD-15 to EPD-60, with increasing numbers with the EPD time. After culture for 5 d, the ca"
+    },
+    {
+      "block_id": 13,
+      "bbox": [
+        604,
+        958,
+        780,
+        980
+      ],
+      "role": null,
+      "text": "Antibacterial activity"
+    },
+    {
+      "block_id": 14,
+      "bbox": [
+        603,
+        983,
+        1082,
+        1316
+      ],
+      "role": null,
+      "text": "Figure 7a shows representative photographs of the bacterial colonies formed on agar plates 1 d after inoculation of diluted P. gingivalis suspensions derived from each group after co-culture for 72 h."
+    },
+    {
+      "block_id": 15,
+      "bbox": [
+        603,
+        1318,
+        1082,
+        1439
+      ],
+      "role": null,
+      "text": "At 24 h (Fig. 7c), the SOD activity measured from the 5 groups were  $ 4.2 \\pm 0.2 $,  $ 1.4 \\pm 1.3 $,  $ 1.4 \\pm 1.0 $,  $ 1.3 \\pm 0.1 $, and  $ 1.0 \\pm 0.5 $, units, respectively. The differences b"
+    },
+    {
+      "block_id": 16,
+      "bbox": [
+        239,
+        1537,
+        949,
+        1565
+      ],
+      "role": null,
+      "text": "Content courtesy of Springer Nature, terms of use apply. Rights reserved."
+    }
+  ],
+  "embed_lines": [
+    {
+      "line": 112,
+      "text": "![[render/figures/figure_002.md]]"
+    }
+  ],
+  "bbox_overlap": [
+    {
+      "old_block": 2,
+      "old_bbox": [
+        125,
+        173,
+        565,
+        509
+      ],
+      "new_figure": "figure_004",
+      "new_block": 2,
+      "new_bbox": [
+        125,
+        173,
+        565,
+        509
+      ],
+      "iou": 1.0
+    },
+    {
+      "old_block": 2,
+      "old_bbox": [
+        125,
+        173,
+        565,
+        509
+      ],
+      "new_figure": "figure_004",
+      "new_block": 9,
+      "new_bbox": [
+        621,
+        174,
+        1063,
+        459
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 2,
+      "old_bbox": [
+        125,
+        173,
+        565,
+        509
+      ],
+      "new_figure": "figure_003",
+      "new_block": 7,
+      "new_bbox": [
+        124,
+        1123,
+        564,
+        1414
+      ],
+      "iou": 0.0
+    }
+  ],
+  "bbox_unavailable": false,
+  "claimed_by_new": [
+    {
+      "old_block": 2,
+      "old_bbox": [
+        125,
+        173,
+        565,
+        509
+      ],
+      "new_figure": "figure_004",
+      "new_block": 2,
+      "iou": 1.0
+    }
+  ],
+  "lost_bboxes": [],
+  "unmatched_bboxes": [],
+  "owner_evidence": [
+    {
+      "old_block": 2,
+      "old_bbox": [
+        125,
+        173,
+        565,
+        509
+      ],
+      "old_caption_block": 3,
+      "old_caption_distance": 5,
+      "old_caption_horizontal_gap": 106.5,
+      "old_caption_adjacent": true,
+      "claimed_by_figure": "figure_004",
+      "claimed_by_caption_block": 10,
+      "claimed_by_caption_distance": 0,
+      "claimed_by_caption_horizontal_gap": 487.5,
+      "claimed_by_caption_adjacent": false
+    }
+  ],
+  "classification": "REAL_ASSOCIATION_FAILURE",
+  "confidence": "high",
+  "evidence": "new figure figure_004 overclaims bbox adjacent to old caption; remove its claim and attach to old figure",
+  "proposed_action": "fix new association",
+  "overlay_image": "docs/evidence/m2a/6GB9I9KG/page_overlay_figure_002.jpg",
+  "thumbnail_paths": [
+    "docs/evidence/m2a/6GB9I9KG/figure_002_old_asset.jpg",
+    "docs/evidence/m2a/6GB9I9KG/figure_002_old_asset_bbox_0.png",
+    "docs/evidence/m2a/6GB9I9KG/figure_002_old_asset_bbox_0.png",
+    "docs/evidence/m2a/6GB9I9KG/figure_002_new_figure_003_asset_0.png"
+  ],
+  "contact_sheet": "docs/evidence/m2a/6GB9I9KG/contact_sheet_figure_002.jpg"
+}

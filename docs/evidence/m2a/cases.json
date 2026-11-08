@@ -1,0 +1,3679 @@
+{
+  "generated": "2026-11-08",
+  "total_cases": 31,
+  "counts": {
+    "REAL_ASSOCIATION_FAILURE": 26,
+    "OLD_MISMATCH": 3,
+    "IDENTITY_MAPPING": 1,
+    "CAPTION_MISCLASSIFIED": 1
+  },
+  "cases": [
+    {
+      "key": "28JLIHLS",
+      "old_id": "figure_005",
+      "page": 4,
+      "old_asset_exists": true,
+      "new_candidates": [
+        "figure_006",
+        "figure_007"
+      ],
+      "classification": "REAL_ASSOCIATION_FAILURE",
+      "confidence": "high",
+      "evidence": "partial coverage: lost old bboxes [0, 2]; claimed by new [6]",
+      "bbox_overlap": [
+        {
+          "old_block": 0,
+          "old_bbox": [
+            123,
+            70,
+            598,
+            352
+          ],
+          "new_figure": "figure_006",
+          "new_block": 6,
+          "new_bbox": [
+            622,
+            68,
+            1104,
+            331
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 0,
+          "old_bbox": [
+            123,
+            70,
+            598,
+            352
+          ],
+          "new_figure": "figure_007",
+          "new_block": 12,
+          "new_bbox": [
+            621,
+            1035,
+            1103,
+            1323
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 2,
+          "old_bbox": [
+            121,
+            390,
+            595,
+            689
+          ],
+          "new_figure": "figure_006",
+          "new_block": 6,
+          "new_bbox": [
+            622,
+            68,
+            1104,
+            331
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 2,
+          "old_bbox": [
+            121,
+            390,
+            595,
+            689
+          ],
+          "new_figure": "figure_007",
+          "new_block": 12,
+          "new_bbox": [
+            621,
+            1035,
+            1103,
+            1323
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 6,
+          "old_bbox": [
+            622,
+            68,
+            1104,
+            331
+          ],
+          "new_figure": "figure_006",
+          "new_block": 6,
+          "new_bbox": [
+            622,
+            68,
+            1104,
+            331
+          ],
+          "iou": 1.0
+        },
+        {
+          "old_block": 6,
+          "old_bbox": [
+            622,
+            68,
+            1104,
+            331
+          ],
+          "new_figure": "figure_007",
+          "new_block": 12,
+          "new_bbox": [
+            621,
+            1035,
+            1103,
+            1323
+          ],
+          "iou": 0.0
+        }
+      ],
+      "bbox_unavailable": false,
+      "claimed_by_new": [
+        {
+          "old_block": 6,
+          "old_bbox": [
+            622,
+            68,
+            1104,
+            331
+          ],
+          "new_figure": "figure_006",
+          "new_block": 6,
+          "iou": 1.0
+        }
+      ],
+      "lost_bboxes": [
+        {
+          "block_id": 0,
+          "bbox": [
+            123,
+            70,
+            598,
+            352
+          ]
+        },
+        {
+          "block_id": 2,
+          "bbox": [
+            121,
+            390,
+            595,
+            689
+          ]
+        }
+      ],
+      "unmatched_bboxes": [],
+      "owner_evidence": [
+        {
+          "old_block": 6,
+          "old_bbox": [
+            622,
+            68,
+            1104,
+            331
+          ],
+          "old_caption_block": 3,
+          "old_caption_distance": 379,
+          "old_caption_horizontal_gap": 502.5,
+          "old_caption_adjacent": false,
+          "claimed_by_figure": "figure_006",
+          "claimed_by_caption_block": 7,
+          "claimed_by_caption_distance": 15,
+          "claimed_by_caption_horizontal_gap": 2.0,
+          "claimed_by_caption_adjacent": true
+        }
+      ],
+      "proposed_action": "fix new association",
+      "overlay_image": "docs/evidence/m2a/28JLIHLS/page_overlay_figure_005.jpg",
+      "case_json": "docs/evidence/m2a/28JLIHLS/case_figure_005.json"
+    },
+    {
+      "key": "3QYCST4E",
+      "old_id": "figure_003",
+      "page": 3,
+      "old_asset_exists": true,
+      "new_candidates": [
+        "figure_002"
+      ],
+      "classification": "REAL_ASSOCIATION_FAILURE",
+      "confidence": "high",
+      "evidence": "new figure figure_002 overclaims bbox adjacent to old caption; remove its claim and attach to old figure",
+      "bbox_overlap": [
+        {
+          "old_block": 10,
+          "old_bbox": [
+            624,
+            170,
+            1107,
+            725
+          ],
+          "new_figure": "figure_002",
+          "new_block": 10,
+          "new_bbox": [
+            624,
+            170,
+            1107,
+            725
+          ],
+          "iou": 1.0
+        },
+        {
+          "old_block": 10,
+          "old_bbox": [
+            624,
+            170,
+            1107,
+            725
+          ],
+          "new_figure": "figure_002",
+          "new_block": 3,
+          "new_bbox": [
+            114,
+            166,
+            556,
+            609
+          ],
+          "iou": 0.0
+        }
+      ],
+      "bbox_unavailable": false,
+      "claimed_by_new": [
+        {
+          "old_block": 10,
+          "old_bbox": [
+            624,
+            170,
+            1107,
+            725
+          ],
+          "new_figure": "figure_002",
+          "new_block": 10,
+          "iou": 1.0
+        }
+      ],
+      "lost_bboxes": [],
+      "unmatched_bboxes": [],
+      "owner_evidence": [
+        {
+          "old_block": 10,
+          "old_bbox": [
+            624,
+            170,
+            1107,
+            725
+          ],
+          "old_caption_block": 11,
+          "old_caption_distance": 24,
+          "old_caption_horizontal_gap": 4.0,
+          "old_caption_adjacent": true,
+          "claimed_by_figure": "figure_002",
+          "claimed_by_caption_block": 4,
+          "claimed_by_caption_distance": 0,
+          "claimed_by_caption_horizontal_gap": 533.0,
+          "claimed_by_caption_adjacent": false
+        }
+      ],
+      "proposed_action": "remove Figure 2 claim, attach to Figure 3",
+      "overlay_image": "docs/evidence/m2a/3QYCST4E/page_overlay_figure_003.jpg",
+      "case_json": "docs/evidence/m2a/3QYCST4E/case_figure_003.json"
+    },
+    {
+      "key": "55EKJRBC",
+      "old_id": "figure_001",
+      "page": 3,
+      "old_asset_exists": true,
+      "new_candidates": [],
+      "classification": "REAL_ASSOCIATION_FAILURE",
+      "confidence": "high",
+      "evidence": "partial coverage: lost old bboxes [4]; claimed by new [none]",
+      "bbox_overlap": [
+        {
+          "old_block": 4,
+          "old_bbox": [
+            99,
+            141,
+            652,
+            1475
+          ],
+          "new_figure": "UNMATCHED",
+          "new_block": 4,
+          "new_bbox": [
+            99,
+            141,
+            652,
+            1475
+          ],
+          "iou": 1.0
+        }
+      ],
+      "bbox_unavailable": false,
+      "claimed_by_new": [],
+      "lost_bboxes": [
+        {
+          "block_id": 4,
+          "bbox": [
+            99,
+            141,
+            652,
+            1475
+          ]
+        }
+      ],
+      "unmatched_bboxes": [
+        {
+          "block_id": 4,
+          "bbox": [
+            99,
+            141,
+            652,
+            1475
+          ],
+          "unmatched_block": 4
+        }
+      ],
+      "owner_evidence": [],
+      "proposed_action": "fix new association",
+      "overlay_image": "docs/evidence/m2a/55EKJRBC/page_overlay_figure_001.jpg",
+      "case_json": "docs/evidence/m2a/55EKJRBC/case_figure_001.json"
+    },
+    {
+      "key": "66HTYNWM",
+      "old_id": "figure_003",
+      "page": 3,
+      "old_asset_exists": true,
+      "new_candidates": [
+        "figure_002"
+      ],
+      "classification": "REAL_ASSOCIATION_FAILURE",
+      "confidence": "high",
+      "evidence": "new figure figure_002 overclaims bbox adjacent to old caption; remove its claim and attach to old figure",
+      "bbox_overlap": [
+        {
+          "old_block": 10,
+          "old_bbox": [
+            615,
+            142,
+            1096,
+            646
+          ],
+          "new_figure": "figure_002",
+          "new_block": 10,
+          "new_bbox": [
+            615,
+            142,
+            1096,
+            646
+          ],
+          "iou": 1.0
+        },
+        {
+          "old_block": 10,
+          "old_bbox": [
+            615,
+            142,
+            1096,
+            646
+          ],
+          "new_figure": "figure_002",
+          "new_block": 3,
+          "new_bbox": [
+            72,
+            141,
+            554,
+            551
+          ],
+          "iou": 0.0
+        }
+      ],
+      "bbox_unavailable": false,
+      "claimed_by_new": [
+        {
+          "old_block": 10,
+          "old_bbox": [
+            615,
+            142,
+            1096,
+            646
+          ],
+          "new_figure": "figure_002",
+          "new_block": 10,
+          "iou": 1.0
+        }
+      ],
+      "lost_bboxes": [],
+      "unmatched_bboxes": [],
+      "owner_evidence": [
+        {
+          "old_block": 10,
+          "old_bbox": [
+            615,
+            142,
+            1096,
+            646
+          ],
+          "old_caption_block": 11,
+          "old_caption_distance": 24,
+          "old_caption_horizontal_gap": 0.5,
+          "old_caption_adjacent": true,
+          "claimed_by_figure": "figure_002",
+          "claimed_by_caption_block": 4,
+          "claimed_by_caption_distance": 0,
+          "claimed_by_caption_horizontal_gap": 542.0,
+          "claimed_by_caption_adjacent": false
+        }
+      ],
+      "proposed_action": "fix new association",
+      "overlay_image": "docs/evidence/m2a/66HTYNWM/page_overlay_figure_003.jpg",
+      "case_json": "docs/evidence/m2a/66HTYNWM/case_figure_003.json"
+    },
+    {
+      "key": "6GB9I9KG",
+      "old_id": "figure_002",
+      "page": 5,
+      "old_asset_exists": true,
+      "new_candidates": [
+        "figure_004",
+        "figure_003"
+      ],
+      "classification": "REAL_ASSOCIATION_FAILURE",
+      "confidence": "high",
+      "evidence": "new figure figure_004 overclaims bbox adjacent to old caption; remove its claim and attach to old figure",
+      "bbox_overlap": [
+        {
+          "old_block": 2,
+          "old_bbox": [
+            125,
+            173,
+            565,
+            509
+          ],
+          "new_figure": "figure_004",
+          "new_block": 2,
+          "new_bbox": [
+            125,
+            173,
+            565,
+            509
+          ],
+          "iou": 1.0
+        },
+        {
+          "old_block": 2,
+          "old_bbox": [
+            125,
+            173,
+            565,
+            509
+          ],
+          "new_figure": "figure_004",
+          "new_block": 9,
+          "new_bbox": [
+            621,
+            174,
+            1063,
+            459
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 2,
+          "old_bbox": [
+            125,
+            173,
+            565,
+            509
+          ],
+          "new_figure": "figure_003",
+          "new_block": 7,
+          "new_bbox": [
+            124,
+            1123,
+            564,
+            1414
+          ],
+          "iou": 0.0
+        }
+      ],
+      "bbox_unavailable": false,
+      "claimed_by_new": [
+        {
+          "old_block": 2,
+          "old_bbox": [
+            125,
+            173,
+            565,
+            509
+          ],
+          "new_figure": "figure_004",
+          "new_block": 2,
+          "iou": 1.0
+        }
+      ],
+      "lost_bboxes": [],
+      "unmatched_bboxes": [],
+      "owner_evidence": [
+        {
+          "old_block": 2,
+          "old_bbox": [
+            125,
+            173,
+            565,
+            509
+          ],
+          "old_caption_block": 3,
+          "old_caption_distance": 5,
+          "old_caption_horizontal_gap": 106.5,
+          "old_caption_adjacent": true,
+          "claimed_by_figure": "figure_004",
+          "claimed_by_caption_block": 10,
+          "claimed_by_caption_distance": 0,
+          "claimed_by_caption_horizontal_gap": 487.5,
+          "claimed_by_caption_adjacent": false
+        }
+      ],
+      "proposed_action": "fix new association",
+      "overlay_image": "docs/evidence/m2a/6GB9I9KG/page_overlay_figure_002.jpg",
+      "case_json": "docs/evidence/m2a/6GB9I9KG/case_figure_002.json"
+    },
+    {
+      "key": "8PLQZKGN",
+      "old_id": "figure_005",
+      "page": 9,
+      "old_asset_exists": true,
+      "new_candidates": [],
+      "classification": "REAL_ASSOCIATION_FAILURE",
+      "confidence": "medium",
+      "evidence": "old asset bbox unavailable; unmatched asset bboxes cover the page and no caption row was associated",
+      "bbox_overlap": [
+        {
+          "old_block": "178",
+          "old_bbox": null,
+          "new_figure": "UNMATCHED",
+          "new_block": 3,
+          "new_bbox": [
+            178,
+            124,
+            466,
+            347
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": "178",
+          "old_bbox": null,
+          "new_figure": "UNMATCHED",
+          "new_block": 4,
+          "new_bbox": [
+            467,
+            151,
+            1019,
+            384
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": "178",
+          "old_bbox": null,
+          "new_figure": "UNMATCHED",
+          "new_block": 5,
+          "new_bbox": [
+            194,
+            353,
+            388,
+            508
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": "178",
+          "old_bbox": null,
+          "new_figure": "UNMATCHED",
+          "new_block": 6,
+          "new_bbox": [
+            202,
+            517,
+            395,
+            684
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": "178",
+          "old_bbox": null,
+          "new_figure": "UNMATCHED",
+          "new_block": 7,
+          "new_bbox": [
+            423,
+            391,
+            1017,
+            865
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": "178",
+          "old_bbox": null,
+          "new_figure": "UNMATCHED",
+          "new_block": 8,
+          "new_bbox": [
+            197,
+            692,
+            451,
+            850
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": "178",
+          "old_bbox": null,
+          "new_figure": "UNMATCHED",
+          "new_block": 9,
+          "new_bbox": [
+            194,
+            856,
+            459,
+            1122
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": "178",
+          "old_bbox": null,
+          "new_figure": "UNMATCHED",
+          "new_block": 10,
+          "new_bbox": [
+            465,
+            872,
+            1023,
+            1003
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": "178",
+          "old_bbox": null,
+          "new_figure": "UNMATCHED",
+          "new_block": 11,
+          "new_bbox": [
+            178,
+            1125,
+            466,
+            1292
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": "178",
+          "old_bbox": null,
+          "new_figure": "UNMATCHED",
+          "new_block": 12,
+          "new_bbox": [
+            484,
+            1014,
+            1018,
+            1296
+          ],
+          "iou": 0.0
+        }
+      ],
+      "bbox_unavailable": true,
+      "claimed_by_new": [],
+      "lost_bboxes": [],
+      "unmatched_bboxes": [],
+      "owner_evidence": [],
+      "proposed_action": "fix new association",
+      "overlay_image": "docs/evidence/m2a/8PLQZKGN/page_overlay_figure_005.jpg",
+      "case_json": "docs/evidence/m2a/8PLQZKGN/case_figure_005.json"
+    },
+    {
+      "key": "8PLQZKGN",
+      "old_id": "figure_007",
+      "page": 12,
+      "old_asset_exists": true,
+      "new_candidates": [],
+      "classification": "REAL_ASSOCIATION_FAILURE",
+      "confidence": "medium",
+      "evidence": "old asset bbox unavailable; unmatched asset bboxes cover the page and no caption row was associated",
+      "bbox_overlap": [
+        {
+          "old_block": "132",
+          "old_bbox": null,
+          "new_figure": "UNMATCHED",
+          "new_block": 2,
+          "new_bbox": [
+            134,
+            90,
+            844,
+            375
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": "132",
+          "old_bbox": null,
+          "new_figure": "UNMATCHED",
+          "new_block": 3,
+          "new_bbox": [
+            850,
+            111,
+            1068,
+            373
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": "132",
+          "old_bbox": null,
+          "new_figure": "UNMATCHED",
+          "new_block": 4,
+          "new_bbox": [
+            132,
+            378,
+            843,
+            665
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": "132",
+          "old_bbox": null,
+          "new_figure": "UNMATCHED",
+          "new_block": 5,
+          "new_bbox": [
+            848,
+            393,
+            1067,
+            649
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": "132",
+          "old_bbox": null,
+          "new_figure": "UNMATCHED",
+          "new_block": 6,
+          "new_bbox": [
+            141,
+            669,
+            1059,
+            909
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": "132",
+          "old_bbox": null,
+          "new_figure": "UNMATCHED",
+          "new_block": 7,
+          "new_bbox": [
+            141,
+            915,
+            840,
+            1295
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": "132",
+          "old_bbox": null,
+          "new_figure": "UNMATCHED",
+          "new_block": 8,
+          "new_bbox": [
+            844,
+            925,
+            1067,
+            1287
+          ],
+          "iou": 0.0
+        }
+      ],
+      "bbox_unavailable": true,
+      "claimed_by_new": [],
+      "lost_bboxes": [],
+      "unmatched_bboxes": [],
+      "owner_evidence": [],
+      "proposed_action": "fix new association",
+      "overlay_image": "docs/evidence/m2a/8PLQZKGN/page_overlay_figure_007.jpg",
+      "case_json": "docs/evidence/m2a/8PLQZKGN/case_figure_007.json"
+    },
+    {
+      "key": "9TW98JH8",
+      "old_id": "figure_001",
+      "page": 2,
+      "old_asset_exists": false,
+      "new_candidates": [
+        "figure_003",
+        "figure_002"
+      ],
+      "classification": "REAL_ASSOCIATION_FAILURE",
+      "confidence": "high",
+      "evidence": "new figure figure_003 overclaims bbox adjacent to old caption; remove its claim and attach to old figure",
+      "bbox_overlap": [
+        {
+          "old_block": 2,
+          "old_bbox": [
+            89,
+            117,
+            882,
+            344
+          ],
+          "new_figure": "figure_003",
+          "new_block": 2,
+          "new_bbox": [
+            89,
+            117,
+            882,
+            344
+          ],
+          "iou": 1.0
+        }
+      ],
+      "bbox_unavailable": false,
+      "claimed_by_new": [
+        {
+          "old_block": 2,
+          "old_bbox": [
+            89,
+            117,
+            882,
+            344
+          ],
+          "new_figure": "figure_003",
+          "new_block": 2,
+          "iou": 1.0
+        }
+      ],
+      "lost_bboxes": [],
+      "unmatched_bboxes": [],
+      "owner_evidence": [
+        {
+          "old_block": 2,
+          "old_bbox": [
+            89,
+            117,
+            882,
+            344
+          ],
+          "old_caption_block": 5,
+          "old_caption_distance": 42,
+          "old_caption_horizontal_gap": 69.5,
+          "old_caption_adjacent": true,
+          "claimed_by_figure": "figure_003",
+          "claimed_by_caption_block": 3,
+          "claimed_by_caption_distance": 0,
+          "claimed_by_caption_horizontal_gap": 235.0,
+          "claimed_by_caption_adjacent": true
+        }
+      ],
+      "proposed_action": "fix new association",
+      "overlay_image": "docs/evidence/m2a/9TW98JH8/page_overlay_figure_001.jpg",
+      "case_json": "docs/evidence/m2a/9TW98JH8/case_figure_001.json"
+    },
+    {
+      "key": "BAUEIRRM",
+      "old_id": "figure_001",
+      "page": 2,
+      "old_asset_exists": false,
+      "new_candidates": [
+        "figure_002"
+      ],
+      "classification": "REAL_ASSOCIATION_FAILURE",
+      "confidence": "high",
+      "evidence": "new figure figure_002 overclaims bbox adjacent to old caption; remove its claim and attach to old figure",
+      "bbox_overlap": [
+        {
+          "old_block": 6,
+          "old_bbox": [
+            69,
+            1015,
+            564,
+            1342
+          ],
+          "new_figure": "figure_002",
+          "new_block": 12,
+          "new_bbox": [
+            667,
+            604,
+            1037,
+            945
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 6,
+          "old_bbox": [
+            69,
+            1015,
+            564,
+            1342
+          ],
+          "new_figure": "figure_002",
+          "new_block": 6,
+          "new_bbox": [
+            69,
+            1015,
+            564,
+            1342
+          ],
+          "iou": 1.0
+        }
+      ],
+      "bbox_unavailable": false,
+      "claimed_by_new": [
+        {
+          "old_block": 6,
+          "old_bbox": [
+            69,
+            1015,
+            564,
+            1342
+          ],
+          "new_figure": "figure_002",
+          "new_block": 6,
+          "iou": 1.0
+        }
+      ],
+      "lost_bboxes": [],
+      "unmatched_bboxes": [],
+      "owner_evidence": [
+        {
+          "old_block": 6,
+          "old_bbox": [
+            69,
+            1015,
+            564,
+            1342
+          ],
+          "old_caption_block": 8,
+          "old_caption_distance": 33,
+          "old_caption_horizontal_gap": 2.0,
+          "old_caption_adjacent": true,
+          "claimed_by_figure": "figure_002",
+          "claimed_by_caption_block": 13,
+          "claimed_by_caption_distance": 0,
+          "claimed_by_caption_horizontal_gap": 534.5,
+          "claimed_by_caption_adjacent": false
+        }
+      ],
+      "proposed_action": "fix new association",
+      "overlay_image": "docs/evidence/m2a/BAUEIRRM/page_overlay_figure_001.jpg",
+      "case_json": "docs/evidence/m2a/BAUEIRRM/case_figure_001.json"
+    },
+    {
+      "key": "CAYP5AKS",
+      "old_id": "figure_003",
+      "page": 9,
+      "old_asset_exists": false,
+      "new_candidates": [],
+      "classification": "REAL_ASSOCIATION_FAILURE",
+      "confidence": "high",
+      "evidence": "partial coverage: lost old bboxes [9]; claimed by new [none]",
+      "bbox_overlap": [
+        {
+          "old_block": 9,
+          "old_bbox": [
+            74,
+            830,
+            1086,
+            870
+          ],
+          "new_figure": "UNMATCHED",
+          "new_block": 9,
+          "new_bbox": [
+            74,
+            830,
+            1086,
+            870
+          ],
+          "iou": 1.0
+        }
+      ],
+      "bbox_unavailable": false,
+      "claimed_by_new": [],
+      "lost_bboxes": [
+        {
+          "block_id": 9,
+          "bbox": [
+            74,
+            830,
+            1086,
+            870
+          ]
+        }
+      ],
+      "unmatched_bboxes": [
+        {
+          "block_id": 9,
+          "bbox": [
+            74,
+            830,
+            1086,
+            870
+          ],
+          "unmatched_block": 9
+        }
+      ],
+      "owner_evidence": [],
+      "proposed_action": "fix new association",
+      "overlay_image": "docs/evidence/m2a/CAYP5AKS/page_overlay_figure_003.jpg",
+      "case_json": "docs/evidence/m2a/CAYP5AKS/case_figure_003.json"
+    },
+    {
+      "key": "EXNS5AG2",
+      "old_id": "figure_003",
+      "page": 5,
+      "old_asset_exists": true,
+      "new_candidates": [
+        "figure_004"
+      ],
+      "classification": "REAL_ASSOCIATION_FAILURE",
+      "confidence": "high",
+      "evidence": "new figure figure_004 overclaims bbox adjacent to old caption; remove its claim and attach to old figure",
+      "bbox_overlap": [
+        {
+          "old_block": 2,
+          "old_bbox": [
+            114,
+            113,
+            572,
+            471
+          ],
+          "new_figure": "figure_004",
+          "new_block": 2,
+          "new_bbox": [
+            114,
+            113,
+            572,
+            471
+          ],
+          "iou": 1.0
+        },
+        {
+          "old_block": 2,
+          "old_bbox": [
+            114,
+            113,
+            572,
+            471
+          ],
+          "new_figure": "figure_004",
+          "new_block": 7,
+          "new_bbox": [
+            640,
+            113,
+            1103,
+            396
+          ],
+          "iou": 0.0
+        }
+      ],
+      "bbox_unavailable": false,
+      "claimed_by_new": [
+        {
+          "old_block": 2,
+          "old_bbox": [
+            114,
+            113,
+            572,
+            471
+          ],
+          "new_figure": "figure_004",
+          "new_block": 2,
+          "iou": 1.0
+        }
+      ],
+      "lost_bboxes": [],
+      "unmatched_bboxes": [],
+      "owner_evidence": [
+        {
+          "old_block": 2,
+          "old_bbox": [
+            114,
+            113,
+            572,
+            471
+          ],
+          "old_caption_block": 3,
+          "old_caption_distance": 11,
+          "old_caption_horizontal_gap": 2.5,
+          "old_caption_adjacent": true,
+          "claimed_by_figure": "figure_004",
+          "claimed_by_caption_block": 8,
+          "claimed_by_caption_distance": 0,
+          "claimed_by_caption_horizontal_gap": 528.0,
+          "claimed_by_caption_adjacent": false
+        }
+      ],
+      "proposed_action": "fix new association",
+      "overlay_image": "docs/evidence/m2a/EXNS5AG2/page_overlay_figure_003.jpg",
+      "case_json": "docs/evidence/m2a/EXNS5AG2/case_figure_003.json"
+    },
+    {
+      "key": "F5CHZH3H",
+      "old_id": "figure_044",
+      "page": 37,
+      "old_asset_exists": false,
+      "new_candidates": [
+        "figure_038"
+      ],
+      "classification": "OLD_MISMATCH",
+      "confidence": "medium",
+      "evidence": "old caption is not adjacent to old bbox while another caption is; old association likely wrong",
+      "bbox_overlap": [
+        {
+          "old_block": 2,
+          "old_bbox": [
+            98,
+            104,
+            498,
+            408
+          ],
+          "new_figure": "figure_038",
+          "new_block": 2,
+          "new_bbox": [
+            98,
+            104,
+            498,
+            408
+          ],
+          "iou": 1.0
+        },
+        {
+          "old_block": 2,
+          "old_bbox": [
+            98,
+            104,
+            498,
+            408
+          ],
+          "new_figure": "figure_038",
+          "new_block": 4,
+          "new_bbox": [
+            510,
+            203,
+            993,
+            404
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 2,
+          "old_bbox": [
+            98,
+            104,
+            498,
+            408
+          ],
+          "new_figure": "figure_038",
+          "new_block": 6,
+          "new_bbox": [
+            409,
+            416,
+            677,
+            772
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 4,
+          "old_bbox": [
+            510,
+            203,
+            993,
+            404
+          ],
+          "new_figure": "figure_038",
+          "new_block": 2,
+          "new_bbox": [
+            98,
+            104,
+            498,
+            408
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 4,
+          "old_bbox": [
+            510,
+            203,
+            993,
+            404
+          ],
+          "new_figure": "figure_038",
+          "new_block": 4,
+          "new_bbox": [
+            510,
+            203,
+            993,
+            404
+          ],
+          "iou": 1.0
+        },
+        {
+          "old_block": 4,
+          "old_bbox": [
+            510,
+            203,
+            993,
+            404
+          ],
+          "new_figure": "figure_038",
+          "new_block": 6,
+          "new_bbox": [
+            409,
+            416,
+            677,
+            772
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 6,
+          "old_bbox": [
+            409,
+            416,
+            677,
+            772
+          ],
+          "new_figure": "figure_038",
+          "new_block": 2,
+          "new_bbox": [
+            98,
+            104,
+            498,
+            408
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 6,
+          "old_bbox": [
+            409,
+            416,
+            677,
+            772
+          ],
+          "new_figure": "figure_038",
+          "new_block": 4,
+          "new_bbox": [
+            510,
+            203,
+            993,
+            404
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 6,
+          "old_bbox": [
+            409,
+            416,
+            677,
+            772
+          ],
+          "new_figure": "figure_038",
+          "new_block": 6,
+          "new_bbox": [
+            409,
+            416,
+            677,
+            772
+          ],
+          "iou": 1.0
+        }
+      ],
+      "bbox_unavailable": false,
+      "claimed_by_new": [
+        {
+          "old_block": 2,
+          "old_bbox": [
+            98,
+            104,
+            498,
+            408
+          ],
+          "new_figure": "figure_038",
+          "new_block": 2,
+          "iou": 1.0
+        },
+        {
+          "old_block": 4,
+          "old_bbox": [
+            510,
+            203,
+            993,
+            404
+          ],
+          "new_figure": "figure_038",
+          "new_block": 4,
+          "iou": 1.0
+        },
+        {
+          "old_block": 6,
+          "old_bbox": [
+            409,
+            416,
+            677,
+            772
+          ],
+          "new_figure": "figure_038",
+          "new_block": 6,
+          "iou": 1.0
+        }
+      ],
+      "lost_bboxes": [],
+      "unmatched_bboxes": [],
+      "owner_evidence": [
+        {
+          "old_block": 2,
+          "old_bbox": [
+            98,
+            104,
+            498,
+            408
+          ],
+          "old_caption_block": 10,
+          "old_caption_distance": 816,
+          "old_caption_horizontal_gap": 245.5,
+          "old_caption_adjacent": false,
+          "claimed_by_figure": "figure_038",
+          "claimed_by_caption_block": 7,
+          "claimed_by_caption_distance": 383,
+          "claimed_by_caption_horizontal_gap": 246.0,
+          "claimed_by_caption_adjacent": false
+        },
+        {
+          "old_block": 4,
+          "old_bbox": [
+            510,
+            203,
+            993,
+            404
+          ],
+          "old_caption_block": 10,
+          "old_caption_distance": 820,
+          "old_caption_horizontal_gap": 208.0,
+          "old_caption_adjacent": false,
+          "claimed_by_figure": "figure_038",
+          "claimed_by_caption_block": 7,
+          "claimed_by_caption_distance": 387,
+          "claimed_by_caption_horizontal_gap": 207.5,
+          "claimed_by_caption_adjacent": false
+        },
+        {
+          "old_block": 6,
+          "old_bbox": [
+            409,
+            416,
+            677,
+            772
+          ],
+          "old_caption_block": 10,
+          "old_caption_distance": 452,
+          "old_caption_horizontal_gap": 0.5,
+          "old_caption_adjacent": false,
+          "claimed_by_figure": "figure_038",
+          "claimed_by_caption_block": 7,
+          "claimed_by_caption_distance": 19,
+          "claimed_by_caption_horizontal_gap": 1.0,
+          "claimed_by_caption_adjacent": true
+        }
+      ],
+      "proposed_action": "no action (old wrong)",
+      "overlay_image": "docs/evidence/m2a/F5CHZH3H/page_overlay_figure_044.jpg",
+      "case_json": "docs/evidence/m2a/F5CHZH3H/case_figure_044.json"
+    },
+    {
+      "key": "FB48C9EL",
+      "old_id": "figure_009",
+      "page": 9,
+      "old_asset_exists": false,
+      "new_candidates": [
+        "figure_008"
+      ],
+      "classification": "REAL_ASSOCIATION_FAILURE",
+      "confidence": "high",
+      "evidence": "new figure figure_008 overclaims bbox adjacent to old caption; remove its claim and attach to old figure",
+      "bbox_overlap": [
+        {
+          "old_block": 12,
+          "old_bbox": [
+            608,
+            107,
+            1098,
+            521
+          ],
+          "new_figure": "figure_008",
+          "new_block": 12,
+          "new_bbox": [
+            608,
+            107,
+            1098,
+            521
+          ],
+          "iou": 1.0
+        },
+        {
+          "old_block": 12,
+          "old_bbox": [
+            608,
+            107,
+            1098,
+            521
+          ],
+          "new_figure": "figure_008",
+          "new_block": 2,
+          "new_bbox": [
+            70,
+            107,
+            552,
+            222
+          ],
+          "iou": 0.0
+        }
+      ],
+      "bbox_unavailable": false,
+      "claimed_by_new": [
+        {
+          "old_block": 12,
+          "old_bbox": [
+            608,
+            107,
+            1098,
+            521
+          ],
+          "new_figure": "figure_008",
+          "new_block": 12,
+          "iou": 1.0
+        }
+      ],
+      "lost_bboxes": [],
+      "unmatched_bboxes": [],
+      "owner_evidence": [
+        {
+          "old_block": 12,
+          "old_bbox": [
+            608,
+            107,
+            1098,
+            521
+          ],
+          "old_caption_block": 13,
+          "old_caption_distance": 15,
+          "old_caption_horizontal_gap": 0.0,
+          "old_caption_adjacent": true,
+          "claimed_by_figure": "figure_008",
+          "claimed_by_caption_block": 3,
+          "claimed_by_caption_distance": 0,
+          "claimed_by_caption_horizontal_gap": 538.5,
+          "claimed_by_caption_adjacent": false
+        }
+      ],
+      "proposed_action": "fix new association",
+      "overlay_image": "docs/evidence/m2a/FB48C9EL/page_overlay_figure_009.jpg",
+      "case_json": "docs/evidence/m2a/FB48C9EL/case_figure_009.json"
+    },
+    {
+      "key": "FC72S4K9",
+      "old_id": "figure_005",
+      "page": 5,
+      "old_asset_exists": false,
+      "new_candidates": [
+        "figure_006",
+        "figure_004"
+      ],
+      "classification": "REAL_ASSOCIATION_FAILURE",
+      "confidence": "high",
+      "evidence": "new figure figure_006 overclaims bbox adjacent to old caption; remove its claim and attach to old figure",
+      "bbox_overlap": [
+        {
+          "old_block": 4,
+          "old_bbox": [
+            106,
+            590,
+            570,
+            1100
+          ],
+          "new_figure": "figure_006",
+          "new_block": 4,
+          "new_bbox": [
+            106,
+            590,
+            570,
+            1100
+          ],
+          "iou": 1.0
+        },
+        {
+          "old_block": 4,
+          "old_bbox": [
+            106,
+            590,
+            570,
+            1100
+          ],
+          "new_figure": "figure_006",
+          "new_block": 8,
+          "new_bbox": [
+            617,
+            590,
+            1083,
+            949
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 4,
+          "old_bbox": [
+            106,
+            590,
+            570,
+            1100
+          ],
+          "new_figure": "figure_004",
+          "new_block": 2,
+          "new_bbox": [
+            174,
+            115,
+            1019,
+            490
+          ],
+          "iou": 0.0
+        }
+      ],
+      "bbox_unavailable": false,
+      "claimed_by_new": [
+        {
+          "old_block": 4,
+          "old_bbox": [
+            106,
+            590,
+            570,
+            1100
+          ],
+          "new_figure": "figure_006",
+          "new_block": 4,
+          "iou": 1.0
+        }
+      ],
+      "lost_bboxes": [],
+      "unmatched_bboxes": [],
+      "owner_evidence": [
+        {
+          "old_block": 4,
+          "old_bbox": [
+            106,
+            590,
+            570,
+            1100
+          ],
+          "old_caption_block": 5,
+          "old_caption_distance": 31,
+          "old_caption_horizontal_gap": 135.0,
+          "old_caption_adjacent": true,
+          "claimed_by_figure": "figure_006",
+          "claimed_by_caption_block": 9,
+          "claimed_by_caption_distance": 0,
+          "claimed_by_caption_horizontal_gap": 511.0,
+          "claimed_by_caption_adjacent": false
+        }
+      ],
+      "proposed_action": "fix new association",
+      "overlay_image": "docs/evidence/m2a/FC72S4K9/page_overlay_figure_005.jpg",
+      "case_json": "docs/evidence/m2a/FC72S4K9/case_figure_005.json"
+    },
+    {
+      "key": "FU5SNSPA",
+      "old_id": "figure_006",
+      "page": 6,
+      "old_asset_exists": true,
+      "new_candidates": [
+        "figure_005"
+      ],
+      "classification": "REAL_ASSOCIATION_FAILURE",
+      "confidence": "high",
+      "evidence": "new figure figure_005 overclaims bbox adjacent to old caption; remove its claim and attach to old figure",
+      "bbox_overlap": [
+        {
+          "old_block": 11,
+          "old_bbox": [
+            609,
+            143,
+            1063,
+            582
+          ],
+          "new_figure": "figure_005",
+          "new_block": 11,
+          "new_bbox": [
+            609,
+            143,
+            1063,
+            582
+          ],
+          "iou": 1.0
+        },
+        {
+          "old_block": 11,
+          "old_bbox": [
+            609,
+            143,
+            1063,
+            582
+          ],
+          "new_figure": "figure_005",
+          "new_block": 3,
+          "new_bbox": [
+            176,
+            145,
+            480,
+            464
+          ],
+          "iou": 0.0
+        }
+      ],
+      "bbox_unavailable": false,
+      "claimed_by_new": [
+        {
+          "old_block": 11,
+          "old_bbox": [
+            609,
+            143,
+            1063,
+            582
+          ],
+          "new_figure": "figure_005",
+          "new_block": 11,
+          "iou": 1.0
+        }
+      ],
+      "lost_bboxes": [],
+      "unmatched_bboxes": [],
+      "owner_evidence": [
+        {
+          "old_block": 11,
+          "old_bbox": [
+            609,
+            143,
+            1063,
+            582
+          ],
+          "old_caption_block": 12,
+          "old_caption_distance": 24,
+          "old_caption_horizontal_gap": 1.5,
+          "old_caption_adjacent": true,
+          "claimed_by_figure": "figure_005",
+          "claimed_by_caption_block": 5,
+          "claimed_by_caption_distance": 0,
+          "claimed_by_caption_horizontal_gap": 503.5,
+          "claimed_by_caption_adjacent": false
+        }
+      ],
+      "proposed_action": "fix new association",
+      "overlay_image": "docs/evidence/m2a/FU5SNSPA/page_overlay_figure_006.jpg",
+      "case_json": "docs/evidence/m2a/FU5SNSPA/case_figure_006.json"
+    },
+    {
+      "key": "FX7PTWSK",
+      "old_id": "figure_004",
+      "page": 5,
+      "old_asset_exists": false,
+      "new_candidates": [
+        "figure_003"
+      ],
+      "classification": "REAL_ASSOCIATION_FAILURE",
+      "confidence": "high",
+      "evidence": "new figure figure_003 overclaims bbox adjacent to old caption; remove its claim and attach to old figure",
+      "bbox_overlap": [
+        {
+          "old_block": 10,
+          "old_bbox": [
+            626,
+            893,
+            1082,
+            1219
+          ],
+          "new_figure": "figure_003",
+          "new_block": 10,
+          "new_bbox": [
+            626,
+            893,
+            1082,
+            1219
+          ],
+          "iou": 1.0
+        },
+        {
+          "old_block": 10,
+          "old_bbox": [
+            626,
+            893,
+            1082,
+            1219
+          ],
+          "new_figure": "figure_003",
+          "new_block": 3,
+          "new_bbox": [
+            105,
+            111,
+            557,
+            748
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 10,
+          "old_bbox": [
+            626,
+            893,
+            1082,
+            1219
+          ],
+          "new_figure": "figure_003",
+          "new_block": 4,
+          "new_bbox": [
+            104,
+            758,
+            561,
+            1079
+          ],
+          "iou": 0.0
+        }
+      ],
+      "bbox_unavailable": false,
+      "claimed_by_new": [
+        {
+          "old_block": 10,
+          "old_bbox": [
+            626,
+            893,
+            1082,
+            1219
+          ],
+          "new_figure": "figure_003",
+          "new_block": 10,
+          "iou": 1.0
+        }
+      ],
+      "lost_bboxes": [],
+      "unmatched_bboxes": [],
+      "owner_evidence": [
+        {
+          "old_block": 10,
+          "old_bbox": [
+            626,
+            893,
+            1082,
+            1219
+          ],
+          "old_caption_block": 11,
+          "old_caption_distance": 9,
+          "old_caption_horizontal_gap": 0.0,
+          "old_caption_adjacent": true,
+          "claimed_by_figure": "figure_003",
+          "claimed_by_caption_block": 5,
+          "claimed_by_caption_distance": 0,
+          "claimed_by_caption_horizontal_gap": 523.5,
+          "claimed_by_caption_adjacent": false
+        }
+      ],
+      "proposed_action": "fix new association",
+      "overlay_image": "docs/evidence/m2a/FX7PTWSK/page_overlay_figure_004.jpg",
+      "case_json": "docs/evidence/m2a/FX7PTWSK/case_figure_004.json"
+    },
+    {
+      "key": "IKYZIAFS",
+      "old_id": "figure_002",
+      "page": 2,
+      "old_asset_exists": true,
+      "new_candidates": [
+        "figure_003"
+      ],
+      "classification": "REAL_ASSOCIATION_FAILURE",
+      "confidence": "high",
+      "evidence": "new figure figure_003 overclaims bbox adjacent to old caption; remove its claim and attach to old figure",
+      "bbox_overlap": [
+        {
+          "old_block": 3,
+          "old_bbox": [
+            71,
+            143,
+            552,
+            499
+          ],
+          "new_figure": "figure_003",
+          "new_block": 10,
+          "new_bbox": [
+            614,
+            143,
+            1093,
+            503
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 3,
+          "old_bbox": [
+            71,
+            143,
+            552,
+            499
+          ],
+          "new_figure": "figure_003",
+          "new_block": 11,
+          "new_bbox": [
+            611,
+            535,
+            1092,
+            890
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 3,
+          "old_bbox": [
+            71,
+            143,
+            552,
+            499
+          ],
+          "new_figure": "figure_003",
+          "new_block": 3,
+          "new_bbox": [
+            71,
+            143,
+            552,
+            499
+          ],
+          "iou": 1.0
+        },
+        {
+          "old_block": 3,
+          "old_bbox": [
+            71,
+            143,
+            552,
+            499
+          ],
+          "new_figure": "figure_003",
+          "new_block": 5,
+          "new_bbox": [
+            70,
+            583,
+            552,
+            938
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 5,
+          "old_bbox": [
+            70,
+            583,
+            552,
+            938
+          ],
+          "new_figure": "figure_003",
+          "new_block": 10,
+          "new_bbox": [
+            614,
+            143,
+            1093,
+            503
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 5,
+          "old_bbox": [
+            70,
+            583,
+            552,
+            938
+          ],
+          "new_figure": "figure_003",
+          "new_block": 11,
+          "new_bbox": [
+            611,
+            535,
+            1092,
+            890
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 5,
+          "old_bbox": [
+            70,
+            583,
+            552,
+            938
+          ],
+          "new_figure": "figure_003",
+          "new_block": 3,
+          "new_bbox": [
+            71,
+            143,
+            552,
+            499
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 5,
+          "old_bbox": [
+            70,
+            583,
+            552,
+            938
+          ],
+          "new_figure": "figure_003",
+          "new_block": 5,
+          "new_bbox": [
+            70,
+            583,
+            552,
+            938
+          ],
+          "iou": 1.0
+        }
+      ],
+      "bbox_unavailable": false,
+      "claimed_by_new": [
+        {
+          "old_block": 3,
+          "old_bbox": [
+            71,
+            143,
+            552,
+            499
+          ],
+          "new_figure": "figure_003",
+          "new_block": 3,
+          "iou": 1.0
+        },
+        {
+          "old_block": 5,
+          "old_bbox": [
+            70,
+            583,
+            552,
+            938
+          ],
+          "new_figure": "figure_003",
+          "new_block": 5,
+          "iou": 1.0
+        }
+      ],
+      "lost_bboxes": [],
+      "unmatched_bboxes": [],
+      "owner_evidence": [
+        {
+          "old_block": 3,
+          "old_bbox": [
+            71,
+            143,
+            552,
+            499
+          ],
+          "old_caption_block": 6,
+          "old_caption_distance": 449,
+          "old_caption_horizontal_gap": 3.5,
+          "old_caption_adjacent": false,
+          "claimed_by_figure": "figure_003",
+          "claimed_by_caption_block": 12,
+          "claimed_by_caption_distance": 405,
+          "claimed_by_caption_horizontal_gap": 541.0,
+          "claimed_by_caption_adjacent": false
+        },
+        {
+          "old_block": 5,
+          "old_bbox": [
+            70,
+            583,
+            552,
+            938
+          ],
+          "old_caption_block": 6,
+          "old_caption_distance": 10,
+          "old_caption_horizontal_gap": 4.0,
+          "old_caption_adjacent": true,
+          "claimed_by_figure": "figure_003",
+          "claimed_by_caption_block": 12,
+          "claimed_by_caption_distance": 0,
+          "claimed_by_caption_horizontal_gap": 541.5,
+          "claimed_by_caption_adjacent": false
+        }
+      ],
+      "proposed_action": "fix new association",
+      "overlay_image": "docs/evidence/m2a/IKYZIAFS/page_overlay_figure_002.jpg",
+      "case_json": "docs/evidence/m2a/IKYZIAFS/case_figure_002.json"
+    },
+    {
+      "key": "J97KY85B",
+      "old_id": "figure_001",
+      "page": 2,
+      "old_asset_exists": true,
+      "new_candidates": [
+        "figure_003"
+      ],
+      "classification": "REAL_ASSOCIATION_FAILURE",
+      "confidence": "high",
+      "evidence": "new figure figure_003 overclaims bbox adjacent to old caption; remove its claim and attach to old figure",
+      "bbox_overlap": [
+        {
+          "old_block": 4,
+          "old_bbox": [
+            100,
+            975,
+            554,
+            1371
+          ],
+          "new_figure": "figure_003",
+          "new_block": 4,
+          "new_bbox": [
+            100,
+            975,
+            554,
+            1371
+          ],
+          "iou": 1.0
+        },
+        {
+          "old_block": 4,
+          "old_bbox": [
+            100,
+            975,
+            554,
+            1371
+          ],
+          "new_figure": "figure_003",
+          "new_block": 6,
+          "new_bbox": [
+            610,
+            237,
+            1065,
+            577
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 4,
+          "old_bbox": [
+            100,
+            975,
+            554,
+            1371
+          ],
+          "new_figure": "figure_003",
+          "new_block": 8,
+          "new_bbox": [
+            610,
+            669,
+            1064,
+            1064
+          ],
+          "iou": 0.0
+        }
+      ],
+      "bbox_unavailable": false,
+      "claimed_by_new": [
+        {
+          "old_block": 4,
+          "old_bbox": [
+            100,
+            975,
+            554,
+            1371
+          ],
+          "new_figure": "figure_003",
+          "new_block": 4,
+          "iou": 1.0
+        }
+      ],
+      "lost_bboxes": [],
+      "unmatched_bboxes": [],
+      "owner_evidence": [
+        {
+          "old_block": 4,
+          "old_bbox": [
+            100,
+            975,
+            554,
+            1371
+          ],
+          "old_caption_block": 5,
+          "old_caption_distance": 22,
+          "old_caption_horizontal_gap": 0.5,
+          "old_caption_adjacent": true,
+          "claimed_by_figure": "figure_003",
+          "claimed_by_caption_block": 9,
+          "claimed_by_caption_distance": 0,
+          "claimed_by_caption_horizontal_gap": 509.5,
+          "claimed_by_caption_adjacent": false
+        }
+      ],
+      "proposed_action": "fix new association",
+      "overlay_image": "docs/evidence/m2a/J97KY85B/page_overlay_figure_001.jpg",
+      "case_json": "docs/evidence/m2a/J97KY85B/case_figure_001.json"
+    },
+    {
+      "key": "M8CNKCIZ",
+      "old_id": "figure_006",
+      "page": 4,
+      "old_asset_exists": false,
+      "new_candidates": [
+        "figure_005",
+        "figure_004"
+      ],
+      "classification": "REAL_ASSOCIATION_FAILURE",
+      "confidence": "high",
+      "evidence": "new figure figure_004 overclaims bbox adjacent to old caption; remove its claim and attach to old figure",
+      "bbox_overlap": [
+        {
+          "old_block": 14,
+          "old_bbox": [
+            680,
+            677,
+            1137,
+            1139
+          ],
+          "new_figure": "figure_005",
+          "new_block": 12,
+          "new_bbox": [
+            681,
+            229,
+            1136,
+            574
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 14,
+          "old_bbox": [
+            680,
+            677,
+            1137,
+            1139
+          ],
+          "new_figure": "figure_005",
+          "new_block": 4,
+          "new_bbox": [
+            170,
+            228,
+            625,
+            871
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 14,
+          "old_bbox": [
+            680,
+            677,
+            1137,
+            1139
+          ],
+          "new_figure": "figure_004",
+          "new_block": 14,
+          "new_bbox": [
+            680,
+            677,
+            1137,
+            1139
+          ],
+          "iou": 1.0
+        }
+      ],
+      "bbox_unavailable": false,
+      "claimed_by_new": [
+        {
+          "old_block": 14,
+          "old_bbox": [
+            680,
+            677,
+            1137,
+            1139
+          ],
+          "new_figure": "figure_004",
+          "new_block": 14,
+          "iou": 1.0
+        }
+      ],
+      "lost_bboxes": [],
+      "unmatched_bboxes": [],
+      "owner_evidence": [
+        {
+          "old_block": 14,
+          "old_bbox": [
+            680,
+            677,
+            1137,
+            1139
+          ],
+          "old_caption_block": 15,
+          "old_caption_distance": 16,
+          "old_caption_horizontal_gap": 0.5,
+          "old_caption_adjacent": true,
+          "claimed_by_figure": "figure_004",
+          "claimed_by_caption_block": 5,
+          "claimed_by_caption_distance": 0,
+          "claimed_by_caption_horizontal_gap": 511.5,
+          "claimed_by_caption_adjacent": false
+        }
+      ],
+      "proposed_action": "fix new association",
+      "overlay_image": "docs/evidence/m2a/M8CNKCIZ/page_overlay_figure_006.jpg",
+      "case_json": "docs/evidence/m2a/M8CNKCIZ/case_figure_006.json"
+    },
+    {
+      "key": "MZC482YI",
+      "old_id": "figure_003",
+      "page": 3,
+      "old_asset_exists": false,
+      "new_candidates": [
+        "figure_004"
+      ],
+      "classification": "REAL_ASSOCIATION_FAILURE",
+      "confidence": "high",
+      "evidence": "new figure figure_004 overclaims bbox adjacent to old caption; remove its claim and attach to old figure",
+      "bbox_overlap": [
+        {
+          "old_block": 2,
+          "old_bbox": [
+            92,
+            113,
+            537,
+            732
+          ],
+          "new_figure": "figure_004",
+          "new_block": 2,
+          "new_bbox": [
+            92,
+            113,
+            537,
+            732
+          ],
+          "iou": 1.0
+        },
+        {
+          "old_block": 2,
+          "old_bbox": [
+            92,
+            113,
+            537,
+            732
+          ],
+          "new_figure": "figure_004",
+          "new_block": 7,
+          "new_bbox": [
+            618,
+            112,
+            1062,
+            559
+          ],
+          "iou": 0.0
+        }
+      ],
+      "bbox_unavailable": false,
+      "claimed_by_new": [
+        {
+          "old_block": 2,
+          "old_bbox": [
+            92,
+            113,
+            537,
+            732
+          ],
+          "new_figure": "figure_004",
+          "new_block": 2,
+          "iou": 1.0
+        }
+      ],
+      "lost_bboxes": [],
+      "unmatched_bboxes": [],
+      "owner_evidence": [
+        {
+          "old_block": 2,
+          "old_bbox": [
+            92,
+            113,
+            537,
+            732
+          ],
+          "old_caption_block": 3,
+          "old_caption_distance": 19,
+          "old_caption_horizontal_gap": 0.5,
+          "old_caption_adjacent": true,
+          "claimed_by_figure": "figure_004",
+          "claimed_by_caption_block": 8,
+          "claimed_by_caption_distance": 0,
+          "claimed_by_caption_horizontal_gap": 525.5,
+          "claimed_by_caption_adjacent": false
+        }
+      ],
+      "proposed_action": "fix new association",
+      "overlay_image": "docs/evidence/m2a/MZC482YI/page_overlay_figure_003.jpg",
+      "case_json": "docs/evidence/m2a/MZC482YI/case_figure_003.json"
+    },
+    {
+      "key": "PJR7X5ZJ",
+      "old_id": "figure_001",
+      "page": 2,
+      "old_asset_exists": true,
+      "new_candidates": [
+        "figure_002"
+      ],
+      "classification": "REAL_ASSOCIATION_FAILURE",
+      "confidence": "high",
+      "evidence": "new figure figure_002 overclaims bbox adjacent to old caption; remove its claim and attach to old figure",
+      "bbox_overlap": [
+        {
+          "old_block": 5,
+          "old_bbox": [
+            99,
+            980,
+            580,
+            1408
+          ],
+          "new_figure": "figure_002",
+          "new_block": 5,
+          "new_bbox": [
+            99,
+            980,
+            580,
+            1408
+          ],
+          "iou": 1.0
+        },
+        {
+          "old_block": 5,
+          "old_bbox": [
+            99,
+            980,
+            580,
+            1408
+          ],
+          "new_figure": "figure_002",
+          "new_block": 7,
+          "new_bbox": [
+            627,
+            161,
+            1107,
+            566
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 5,
+          "old_bbox": [
+            99,
+            980,
+            580,
+            1408
+          ],
+          "new_figure": "figure_002",
+          "new_block": 8,
+          "new_bbox": [
+            627,
+            584,
+            1107,
+            1022
+          ],
+          "iou": 0.0
+        }
+      ],
+      "bbox_unavailable": false,
+      "claimed_by_new": [
+        {
+          "old_block": 5,
+          "old_bbox": [
+            99,
+            980,
+            580,
+            1408
+          ],
+          "new_figure": "figure_002",
+          "new_block": 5,
+          "iou": 1.0
+        }
+      ],
+      "lost_bboxes": [],
+      "unmatched_bboxes": [],
+      "owner_evidence": [
+        {
+          "old_block": 5,
+          "old_bbox": [
+            99,
+            980,
+            580,
+            1408
+          ],
+          "old_caption_block": 6,
+          "old_caption_distance": 22,
+          "old_caption_horizontal_gap": 0.5,
+          "old_caption_adjacent": true,
+          "claimed_by_figure": "figure_002",
+          "claimed_by_caption_block": 9,
+          "claimed_by_caption_distance": 0,
+          "claimed_by_caption_horizontal_gap": 526.5,
+          "claimed_by_caption_adjacent": false
+        }
+      ],
+      "proposed_action": "fix new association",
+      "overlay_image": "docs/evidence/m2a/PJR7X5ZJ/page_overlay_figure_001.jpg",
+      "case_json": "docs/evidence/m2a/PJR7X5ZJ/case_figure_001.json"
+    },
+    {
+      "key": "S9UMIF83",
+      "old_id": "figure_003",
+      "page": 2,
+      "old_asset_exists": false,
+      "new_candidates": [
+        "figure_001",
+        "figure_004",
+        "figure_002"
+      ],
+      "classification": "REAL_ASSOCIATION_FAILURE",
+      "confidence": "high",
+      "evidence": "new figure figure_001 overclaims bbox adjacent to old caption; remove its claim and attach to old figure",
+      "bbox_overlap": [
+        {
+          "old_block": 9,
+          "old_bbox": [
+            631,
+            602,
+            914,
+            889
+          ],
+          "new_figure": "figure_001",
+          "new_block": 3,
+          "new_bbox": [
+            128,
+            481,
+            514,
+            765
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 9,
+          "old_bbox": [
+            631,
+            602,
+            914,
+            889
+          ],
+          "new_figure": "figure_001",
+          "new_block": 9,
+          "new_bbox": [
+            631,
+            602,
+            914,
+            889
+          ],
+          "iou": 1.0
+        },
+        {
+          "old_block": 9,
+          "old_bbox": [
+            631,
+            602,
+            914,
+            889
+          ],
+          "new_figure": "figure_004",
+          "new_block": 11,
+          "new_bbox": [
+            631,
+            1031,
+            898,
+            1314
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 9,
+          "old_bbox": [
+            631,
+            602,
+            914,
+            889
+          ],
+          "new_figure": "figure_002",
+          "new_block": 7,
+          "new_bbox": [
+            631,
+            175,
+            888,
+            460
+          ],
+          "iou": 0.0
+        }
+      ],
+      "bbox_unavailable": false,
+      "claimed_by_new": [
+        {
+          "old_block": 9,
+          "old_bbox": [
+            631,
+            602,
+            914,
+            889
+          ],
+          "new_figure": "figure_001",
+          "new_block": 9,
+          "iou": 1.0
+        }
+      ],
+      "lost_bboxes": [],
+      "unmatched_bboxes": [],
+      "owner_evidence": [
+        {
+          "old_block": 9,
+          "old_bbox": [
+            631,
+            602,
+            914,
+            889
+          ],
+          "old_caption_block": 10,
+          "old_caption_distance": 25,
+          "old_caption_horizontal_gap": 90.0,
+          "old_caption_adjacent": true,
+          "claimed_by_figure": "figure_001",
+          "claimed_by_caption_block": 4,
+          "claimed_by_caption_distance": 0,
+          "claimed_by_caption_horizontal_gap": 411.5,
+          "claimed_by_caption_adjacent": false
+        }
+      ],
+      "proposed_action": "fix new association",
+      "overlay_image": "docs/evidence/m2a/S9UMIF83/page_overlay_figure_003.jpg",
+      "case_json": "docs/evidence/m2a/S9UMIF83/case_figure_003.json"
+    },
+    {
+      "key": "TJHT3UBI",
+      "old_id": "figure_010",
+      "page": 12,
+      "old_asset_exists": false,
+      "new_candidates": [
+        "figure_009"
+      ],
+      "classification": "REAL_ASSOCIATION_FAILURE",
+      "confidence": "high",
+      "evidence": "new figure figure_009 overclaims bbox adjacent to old caption; remove its claim and attach to old figure",
+      "bbox_overlap": [
+        {
+          "old_block": 8,
+          "old_bbox": [
+            620,
+            88,
+            1091,
+            981
+          ],
+          "new_figure": "figure_009",
+          "new_block": 2,
+          "new_bbox": [
+            97,
+            103,
+            568,
+            738
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 8,
+          "old_bbox": [
+            620,
+            88,
+            1091,
+            981
+          ],
+          "new_figure": "figure_009",
+          "new_block": 8,
+          "new_bbox": [
+            620,
+            88,
+            1091,
+            981
+          ],
+          "iou": 1.0
+        }
+      ],
+      "bbox_unavailable": false,
+      "claimed_by_new": [
+        {
+          "old_block": 8,
+          "old_bbox": [
+            620,
+            88,
+            1091,
+            981
+          ],
+          "new_figure": "figure_009",
+          "new_block": 8,
+          "iou": 1.0
+        }
+      ],
+      "lost_bboxes": [],
+      "unmatched_bboxes": [],
+      "owner_evidence": [
+        {
+          "old_block": 8,
+          "old_bbox": [
+            620,
+            88,
+            1091,
+            981
+          ],
+          "old_caption_block": 11,
+          "old_caption_distance": 0,
+          "old_caption_horizontal_gap": 1.0,
+          "old_caption_adjacent": true,
+          "claimed_by_figure": "figure_009",
+          "claimed_by_caption_block": 3,
+          "claimed_by_caption_distance": 0,
+          "claimed_by_caption_horizontal_gap": 521.5,
+          "claimed_by_caption_adjacent": false
+        }
+      ],
+      "proposed_action": "fix new association",
+      "overlay_image": "docs/evidence/m2a/TJHT3UBI/page_overlay_figure_010.jpg",
+      "case_json": "docs/evidence/m2a/TJHT3UBI/case_figure_010.json"
+    },
+    {
+      "key": "VDQCYYIA",
+      "old_id": "figure_001",
+      "page": 4,
+      "old_asset_exists": false,
+      "new_candidates": [
+        "figure_003"
+      ],
+      "classification": "REAL_ASSOCIATION_FAILURE",
+      "confidence": "high",
+      "evidence": "new figure figure_003 overclaims bbox adjacent to old caption; remove its claim and attach to old figure",
+      "bbox_overlap": [
+        {
+          "old_block": 2,
+          "old_bbox": [
+            90,
+            150,
+            544,
+            508
+          ],
+          "new_figure": "figure_003",
+          "new_block": 2,
+          "new_bbox": [
+            90,
+            150,
+            544,
+            508
+          ],
+          "iou": 1.0
+        },
+        {
+          "old_block": 2,
+          "old_bbox": [
+            90,
+            150,
+            544,
+            508
+          ],
+          "new_figure": "figure_003",
+          "new_block": 3,
+          "new_bbox": [
+            90,
+            524,
+            544,
+            882
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 2,
+          "old_bbox": [
+            90,
+            150,
+            544,
+            508
+          ],
+          "new_figure": "figure_003",
+          "new_block": 4,
+          "new_bbox": [
+            90,
+            895,
+            544,
+            1256
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 2,
+          "old_bbox": [
+            90,
+            150,
+            544,
+            508
+          ],
+          "new_figure": "figure_003",
+          "new_block": 7,
+          "new_bbox": [
+            601,
+            148,
+            1064,
+            845
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 3,
+          "old_bbox": [
+            90,
+            524,
+            544,
+            882
+          ],
+          "new_figure": "figure_003",
+          "new_block": 2,
+          "new_bbox": [
+            90,
+            150,
+            544,
+            508
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 3,
+          "old_bbox": [
+            90,
+            524,
+            544,
+            882
+          ],
+          "new_figure": "figure_003",
+          "new_block": 3,
+          "new_bbox": [
+            90,
+            524,
+            544,
+            882
+          ],
+          "iou": 1.0
+        },
+        {
+          "old_block": 3,
+          "old_bbox": [
+            90,
+            524,
+            544,
+            882
+          ],
+          "new_figure": "figure_003",
+          "new_block": 4,
+          "new_bbox": [
+            90,
+            895,
+            544,
+            1256
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 3,
+          "old_bbox": [
+            90,
+            524,
+            544,
+            882
+          ],
+          "new_figure": "figure_003",
+          "new_block": 7,
+          "new_bbox": [
+            601,
+            148,
+            1064,
+            845
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 4,
+          "old_bbox": [
+            90,
+            895,
+            544,
+            1256
+          ],
+          "new_figure": "figure_003",
+          "new_block": 2,
+          "new_bbox": [
+            90,
+            150,
+            544,
+            508
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 4,
+          "old_bbox": [
+            90,
+            895,
+            544,
+            1256
+          ],
+          "new_figure": "figure_003",
+          "new_block": 3,
+          "new_bbox": [
+            90,
+            524,
+            544,
+            882
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 4,
+          "old_bbox": [
+            90,
+            895,
+            544,
+            1256
+          ],
+          "new_figure": "figure_003",
+          "new_block": 4,
+          "new_bbox": [
+            90,
+            895,
+            544,
+            1256
+          ],
+          "iou": 1.0
+        },
+        {
+          "old_block": 4,
+          "old_bbox": [
+            90,
+            895,
+            544,
+            1256
+          ],
+          "new_figure": "figure_003",
+          "new_block": 7,
+          "new_bbox": [
+            601,
+            148,
+            1064,
+            845
+          ],
+          "iou": 0.0
+        }
+      ],
+      "bbox_unavailable": false,
+      "claimed_by_new": [
+        {
+          "old_block": 2,
+          "old_bbox": [
+            90,
+            150,
+            544,
+            508
+          ],
+          "new_figure": "figure_003",
+          "new_block": 2,
+          "iou": 1.0
+        },
+        {
+          "old_block": 3,
+          "old_bbox": [
+            90,
+            524,
+            544,
+            882
+          ],
+          "new_figure": "figure_003",
+          "new_block": 3,
+          "iou": 1.0
+        },
+        {
+          "old_block": 4,
+          "old_bbox": [
+            90,
+            895,
+            544,
+            1256
+          ],
+          "new_figure": "figure_003",
+          "new_block": 4,
+          "iou": 1.0
+        }
+      ],
+      "lost_bboxes": [],
+      "unmatched_bboxes": [],
+      "owner_evidence": [
+        {
+          "old_block": 2,
+          "old_bbox": [
+            90,
+            150,
+            544,
+            508
+          ],
+          "old_caption_block": 5,
+          "old_caption_distance": 771,
+          "old_caption_horizontal_gap": 0.0,
+          "old_caption_adjacent": false,
+          "claimed_by_figure": "figure_003",
+          "claimed_by_caption_block": 10,
+          "claimed_by_caption_distance": 522,
+          "claimed_by_caption_horizontal_gap": 515.5,
+          "claimed_by_caption_adjacent": false
+        },
+        {
+          "old_block": 3,
+          "old_bbox": [
+            90,
+            524,
+            544,
+            882
+          ],
+          "old_caption_block": 5,
+          "old_caption_distance": 397,
+          "old_caption_horizontal_gap": 0.0,
+          "old_caption_adjacent": false,
+          "claimed_by_figure": "figure_003",
+          "claimed_by_caption_block": 10,
+          "claimed_by_caption_distance": 148,
+          "claimed_by_caption_horizontal_gap": 515.5,
+          "claimed_by_caption_adjacent": false
+        },
+        {
+          "old_block": 4,
+          "old_bbox": [
+            90,
+            895,
+            544,
+            1256
+          ],
+          "old_caption_block": 5,
+          "old_caption_distance": 23,
+          "old_caption_horizontal_gap": 0.0,
+          "old_caption_adjacent": true,
+          "claimed_by_figure": "figure_003",
+          "claimed_by_caption_block": 10,
+          "claimed_by_caption_distance": 0,
+          "claimed_by_caption_horizontal_gap": 515.5,
+          "claimed_by_caption_adjacent": false
+        }
+      ],
+      "proposed_action": "fix new association",
+      "overlay_image": "docs/evidence/m2a/VDQCYYIA/page_overlay_figure_001.jpg",
+      "case_json": "docs/evidence/m2a/VDQCYYIA/case_figure_001.json"
+    },
+    {
+      "key": "WV2FF4NV",
+      "old_id": "figure_010",
+      "page": 15,
+      "old_asset_exists": false,
+      "new_candidates": [
+        "figure_009"
+      ],
+      "classification": "OLD_MISMATCH",
+      "confidence": "medium",
+      "evidence": "old caption is not adjacent to old bbox while another caption is; old association likely wrong",
+      "bbox_overlap": [
+        {
+          "old_block": 2,
+          "old_bbox": [
+            114,
+            178,
+            1071,
+            1080
+          ],
+          "new_figure": "figure_009",
+          "new_block": 2,
+          "new_bbox": [
+            114,
+            178,
+            1071,
+            1080
+          ],
+          "iou": 1.0
+        }
+      ],
+      "bbox_unavailable": false,
+      "claimed_by_new": [
+        {
+          "old_block": 2,
+          "old_bbox": [
+            114,
+            178,
+            1071,
+            1080
+          ],
+          "new_figure": "figure_009",
+          "new_block": 2,
+          "iou": 1.0
+        }
+      ],
+      "lost_bboxes": [],
+      "unmatched_bboxes": [],
+      "owner_evidence": [
+        {
+          "old_block": 2,
+          "old_bbox": [
+            114,
+            178,
+            1071,
+            1080
+          ],
+          "old_caption_block": 5,
+          "old_caption_distance": 279,
+          "old_caption_horizontal_gap": 2.0,
+          "old_caption_adjacent": false,
+          "claimed_by_figure": "figure_009",
+          "claimed_by_caption_block": 3,
+          "claimed_by_caption_distance": 4,
+          "claimed_by_caption_horizontal_gap": 16.0,
+          "claimed_by_caption_adjacent": true
+        }
+      ],
+      "proposed_action": "no action (old wrong)",
+      "overlay_image": "docs/evidence/m2a/WV2FF4NV/page_overlay_figure_010.jpg",
+      "case_json": "docs/evidence/m2a/WV2FF4NV/case_figure_010.json"
+    },
+    {
+      "key": "XU3QKIPZ",
+      "old_id": "figure_004",
+      "page": 4,
+      "old_asset_exists": false,
+      "new_candidates": [
+        "figure_003"
+      ],
+      "classification": "OLD_MISMATCH",
+      "confidence": "medium",
+      "evidence": "old caption is not adjacent to old bbox while another caption is; old association likely wrong",
+      "bbox_overlap": [
+        {
+          "old_block": 2,
+          "old_bbox": [
+            265,
+            145,
+            961,
+            626
+          ],
+          "new_figure": "figure_003",
+          "new_block": 2,
+          "new_bbox": [
+            265,
+            145,
+            961,
+            626
+          ],
+          "iou": 1.0
+        },
+        {
+          "old_block": 2,
+          "old_bbox": [
+            265,
+            145,
+            961,
+            626
+          ],
+          "new_figure": "figure_003",
+          "new_block": 3,
+          "new_bbox": [
+            264,
+            658,
+            965,
+            1138
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 3,
+          "old_bbox": [
+            264,
+            658,
+            965,
+            1138
+          ],
+          "new_figure": "figure_003",
+          "new_block": 2,
+          "new_bbox": [
+            265,
+            145,
+            961,
+            626
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 3,
+          "old_bbox": [
+            264,
+            658,
+            965,
+            1138
+          ],
+          "new_figure": "figure_003",
+          "new_block": 3,
+          "new_bbox": [
+            264,
+            658,
+            965,
+            1138
+          ],
+          "iou": 1.0
+        }
+      ],
+      "bbox_unavailable": false,
+      "claimed_by_new": [
+        {
+          "old_block": 2,
+          "old_bbox": [
+            265,
+            145,
+            961,
+            626
+          ],
+          "new_figure": "figure_003",
+          "new_block": 2,
+          "iou": 1.0
+        },
+        {
+          "old_block": 3,
+          "old_bbox": [
+            264,
+            658,
+            965,
+            1138
+          ],
+          "new_figure": "figure_003",
+          "new_block": 3,
+          "iou": 1.0
+        }
+      ],
+      "lost_bboxes": [],
+      "unmatched_bboxes": [],
+      "owner_evidence": [
+        {
+          "old_block": 2,
+          "old_bbox": [
+            265,
+            145,
+            961,
+            626
+          ],
+          "old_caption_block": 5,
+          "old_caption_distance": 713,
+          "old_caption_horizontal_gap": 1.0,
+          "old_caption_adjacent": false,
+          "claimed_by_figure": "figure_003",
+          "claimed_by_caption_block": 4,
+          "claimed_by_caption_distance": 530,
+          "claimed_by_caption_horizontal_gap": 0.5,
+          "claimed_by_caption_adjacent": false
+        },
+        {
+          "old_block": 3,
+          "old_bbox": [
+            264,
+            658,
+            965,
+            1138
+          ],
+          "old_caption_block": 5,
+          "old_caption_distance": 201,
+          "old_caption_horizontal_gap": 0.5,
+          "old_caption_adjacent": false,
+          "claimed_by_figure": "figure_003",
+          "claimed_by_caption_block": 4,
+          "claimed_by_caption_distance": 18,
+          "claimed_by_caption_horizontal_gap": 1.0,
+          "claimed_by_caption_adjacent": true
+        }
+      ],
+      "proposed_action": "no action (old wrong)",
+      "overlay_image": "docs/evidence/m2a/XU3QKIPZ/page_overlay_figure_004.jpg",
+      "case_json": "docs/evidence/m2a/XU3QKIPZ/case_figure_004.json"
+    },
+    {
+      "key": "Y9NEE9D2",
+      "old_id": "figure_007",
+      "page": 5,
+      "old_asset_exists": false,
+      "new_candidates": [
+        "figure_009",
+        "figure_008"
+      ],
+      "classification": "REAL_ASSOCIATION_FAILURE",
+      "confidence": "high",
+      "evidence": "new figure figure_009 overclaims bbox adjacent to old caption; remove its claim and attach to old figure",
+      "bbox_overlap": [
+        {
+          "old_block": 2,
+          "old_bbox": [
+            96,
+            133,
+            553,
+            717
+          ],
+          "new_figure": "figure_009",
+          "new_block": 2,
+          "new_bbox": [
+            96,
+            133,
+            553,
+            717
+          ],
+          "iou": 1.0
+        },
+        {
+          "old_block": 2,
+          "old_bbox": [
+            96,
+            133,
+            553,
+            717
+          ],
+          "new_figure": "figure_009",
+          "new_block": 6,
+          "new_bbox": [
+            636,
+            134,
+            1090,
+            583
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 2,
+          "old_bbox": [
+            96,
+            133,
+            553,
+            717
+          ],
+          "new_figure": "figure_008",
+          "new_block": 4,
+          "new_bbox": [
+            97,
+            850,
+            553,
+            1435
+          ],
+          "iou": 0.0
+        }
+      ],
+      "bbox_unavailable": false,
+      "claimed_by_new": [
+        {
+          "old_block": 2,
+          "old_bbox": [
+            96,
+            133,
+            553,
+            717
+          ],
+          "new_figure": "figure_009",
+          "new_block": 2,
+          "iou": 1.0
+        }
+      ],
+      "lost_bboxes": [],
+      "unmatched_bboxes": [],
+      "owner_evidence": [
+        {
+          "old_block": 2,
+          "old_bbox": [
+            96,
+            133,
+            553,
+            717
+          ],
+          "old_caption_block": 3,
+          "old_caption_distance": 17,
+          "old_caption_horizontal_gap": 1.0,
+          "old_caption_adjacent": true,
+          "claimed_by_figure": "figure_009",
+          "claimed_by_caption_block": 7,
+          "claimed_by_caption_distance": 0,
+          "claimed_by_caption_horizontal_gap": 538.5,
+          "claimed_by_caption_adjacent": false
+        }
+      ],
+      "proposed_action": "fix new association",
+      "overlay_image": "docs/evidence/m2a/Y9NEE9D2/page_overlay_figure_007.jpg",
+      "case_json": "docs/evidence/m2a/Y9NEE9D2/case_figure_007.json"
+    },
+    {
+      "key": "388XI46Q",
+      "old_id": "figure_005",
+      "page": 15,
+      "old_asset_exists": false,
+      "new_candidates": [],
+      "classification": "REAL_ASSOCIATION_FAILURE",
+      "confidence": "medium",
+      "evidence": "control: Figure 5 remains unmatched in replay; association fix candidate",
+      "bbox_overlap": [],
+      "bbox_unavailable": false,
+      "claimed_by_new": [],
+      "lost_bboxes": [],
+      "unmatched_bboxes": [],
+      "owner_evidence": [],
+      "proposed_action": "fix new association",
+      "overlay_image": "docs/evidence/m2a/388XI46Q/page_overlay_figure_005.jpg",
+      "case_json": "docs/evidence/m2a/388XI46Q/case_figure_005.json"
+    },
+    {
+      "key": "28ALPCY7",
+      "old_id": "figure_reserved_009",
+      "page": 20,
+      "old_asset_exists": false,
+      "new_candidates": [
+        "figure_006"
+      ],
+      "classification": "IDENTITY_MAPPING",
+      "confidence": "high",
+      "evidence": "control: assetless Figure 6 remains assetless in replay; no action needed",
+      "bbox_overlap": [],
+      "bbox_unavailable": false,
+      "claimed_by_new": [],
+      "lost_bboxes": [],
+      "unmatched_bboxes": [],
+      "owner_evidence": [],
+      "proposed_action": "no action (control/identity)",
+      "overlay_image": "docs/evidence/m2a/28ALPCY7/page_overlay_figure_reserved_009.jpg",
+      "case_json": "docs/evidence/m2a/28ALPCY7/case_figure_reserved_009.json"
+    },
+    {
+      "key": "8CCATQE3",
+      "old_id": "figure_s001",
+      "page": 3,
+      "old_asset_exists": false,
+      "new_candidates": [
+        "figure_main_p003_b7"
+      ],
+      "classification": "CAPTION_MISCLASSIFIED",
+      "confidence": "high",
+      "evidence": "old text is body prose referencing figures ('Figure 1a and Figure S2 show the fabrication process...'), not a figure caption; caption classification prevents association",
+      "bbox_overlap": [
+        {
+          "old_block": 3,
+          "old_bbox": [
+            238,
+            153,
+            564,
+            318
+          ],
+          "new_figure": "figure_main_p003_b7",
+          "new_block": 3,
+          "new_bbox": [
+            238,
+            153,
+            564,
+            318
+          ],
+          "iou": 1.0
+        },
+        {
+          "old_block": 3,
+          "old_bbox": [
+            238,
+            153,
+            564,
+            318
+          ],
+          "new_figure": "figure_main_p003_b7",
+          "new_block": 5,
+          "new_bbox": [
+            257,
+            325,
+            551,
+            474
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 3,
+          "old_bbox": [
+            238,
+            153,
+            564,
+            318
+          ],
+          "new_figure": "figure_main_p003_b7",
+          "new_block": 6,
+          "new_bbox": [
+            582,
+            155,
+            960,
+            461
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 5,
+          "old_bbox": [
+            257,
+            325,
+            551,
+            474
+          ],
+          "new_figure": "figure_main_p003_b7",
+          "new_block": 3,
+          "new_bbox": [
+            238,
+            153,
+            564,
+            318
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 5,
+          "old_bbox": [
+            257,
+            325,
+            551,
+            474
+          ],
+          "new_figure": "figure_main_p003_b7",
+          "new_block": 5,
+          "new_bbox": [
+            257,
+            325,
+            551,
+            474
+          ],
+          "iou": 1.0
+        },
+        {
+          "old_block": 5,
+          "old_bbox": [
+            257,
+            325,
+            551,
+            474
+          ],
+          "new_figure": "figure_main_p003_b7",
+          "new_block": 6,
+          "new_bbox": [
+            582,
+            155,
+            960,
+            461
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 6,
+          "old_bbox": [
+            582,
+            155,
+            960,
+            461
+          ],
+          "new_figure": "figure_main_p003_b7",
+          "new_block": 3,
+          "new_bbox": [
+            238,
+            153,
+            564,
+            318
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 6,
+          "old_bbox": [
+            582,
+            155,
+            960,
+            461
+          ],
+          "new_figure": "figure_main_p003_b7",
+          "new_block": 5,
+          "new_bbox": [
+            257,
+            325,
+            551,
+            474
+          ],
+          "iou": 0.0
+        },
+        {
+          "old_block": 6,
+          "old_bbox": [
+            582,
+            155,
+            960,
+            461
+          ],
+          "new_figure": "figure_main_p003_b7",
+          "new_block": 6,
+          "new_bbox": [
+            582,
+            155,
+            960,
+            461
+          ],
+          "iou": 1.0
+        }
+      ],
+      "bbox_unavailable": false,
+      "claimed_by_new": [
+        {
+          "old_block": 3,
+          "old_bbox": [
+            238,
+            153,
+            564,
+            318
+          ],
+          "new_figure": "figure_main_p003_b7",
+          "new_block": 3,
+          "iou": 1.0
+        },
+        {
+          "old_block": 5,
+          "old_bbox": [
+            257,
+            325,
+            551,
+            474
+          ],
+          "new_figure": "figure_main_p003_b7",
+          "new_block": 5,
+          "iou": 1.0
+        },
+        {
+          "old_block": 6,
+          "old_bbox": [
+            582,
+            155,
+            960,
+            461
+          ],
+          "new_figure": "figure_main_p003_b7",
+          "new_block": 6,
+          "iou": 1.0
+        }
+      ],
+      "lost_bboxes": [],
+      "unmatched_bboxes": [],
+      "owner_evidence": [
+        {
+          "old_block": 3,
+          "old_bbox": [
+            238,
+            153,
+            564,
+            318
+          ],
+          "old_caption_block": 9,
+          "old_caption_distance": 309,
+          "old_caption_horizontal_gap": 59.0,
+          "old_caption_adjacent": false,
+          "claimed_by_figure": "figure_main_p003_b7",
+          "claimed_by_caption_block": null,
+          "claimed_by_caption_distance": null,
+          "claimed_by_caption_horizontal_gap": null,
+          "claimed_by_caption_adjacent": false
+        },
+        {
+          "old_block": 5,
+          "old_bbox": [
+            257,
+            325,
+            551,
+            474
+          ],
+          "old_caption_block": 9,
+          "old_caption_distance": 153,
+          "old_caption_horizontal_gap": 62.0,
+          "old_caption_adjacent": true,
+          "claimed_by_figure": "figure_main_p003_b7",
+          "claimed_by_caption_block": null,
+          "claimed_by_caption_distance": null,
+          "claimed_by_caption_horizontal_gap": null,
+          "claimed_by_caption_adjacent": false
+        },
+        {
+          "old_block": 6,
+          "old_bbox": [
+            582,
+            155,
+            960,
+            461
+          ],
+          "old_caption_block": 9,
+          "old_caption_distance": 166,
+          "old_caption_horizontal_gap": 429.0,
+          "old_caption_adjacent": false,
+          "claimed_by_figure": "figure_main_p003_b7",
+          "claimed_by_caption_block": null,
+          "claimed_by_caption_distance": null,
+          "claimed_by_caption_horizontal_gap": null,
+          "claimed_by_caption_adjacent": false
+        }
+      ],
+      "proposed_action": "fix caption classification",
+      "overlay_image": "docs/evidence/m2a/8CCATQE3/page_overlay_figure_s001.jpg",
+      "case_json": "docs/evidence/m2a/8CCATQE3/case_figure_s001.json"
+    },
+    {
+      "key": "CYJLYG56",
+      "old_id": "figure_003_continued_p007_b12",
+      "page": 7,
+      "old_asset_exists": false,
+      "new_candidates": [],
+      "classification": "REAL_ASSOCIATION_FAILURE",
+      "confidence": "high",
+      "evidence": "partial coverage: lost old bboxes [7, 10, 8]; claimed by new [none]",
+      "bbox_overlap": [],
+      "bbox_unavailable": false,
+      "claimed_by_new": [],
+      "lost_bboxes": [
+        {
+          "block_id": 7,
+          "bbox": [
+            302,
+            361,
+            481,
+            622
+          ]
+        },
+        {
+          "block_id": 10,
+          "bbox": [
+            549,
+            376,
+            716,
+            652
+          ]
+        },
+        {
+          "block_id": 8,
+          "bbox": [
+            613,
+            711,
+            798,
+            968
+          ]
+        }
+      ],
+      "unmatched_bboxes": [],
+      "owner_evidence": [],
+      "proposed_action": "fix new association",
+      "overlay_image": "docs/evidence/m2a/CYJLYG56/page_overlay_figure_003_continued_p007_b12.jpg",
+      "case_json": "docs/evidence/m2a/CYJLYG56/case_figure_003_continued_p007_b12.json"
+    }
+  ]
+}

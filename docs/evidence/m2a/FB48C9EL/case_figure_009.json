@@ -1,0 +1,401 @@
+{
+  "key": "FB48C9EL",
+  "old_target": "render/figures/figure_009.md",
+  "old_id": "figure_009",
+  "page": 9,
+  "meta_pages": 11,
+  "old_inventory": {
+    "figure_id": "figure_009",
+    "figure_namespace": "main",
+    "figure_number": 9,
+    "legend_block_id": "13",
+    "page": 9,
+    "text": "Fig. 9. Western blotting for collagen type II (A) and decorin (B) using 15 and 20 μg of protein per sample, respectively. Alpha-chain of collagen II (120 kDa); beta-chain of collagen II (200 kDa); GF: glycosylated form of decorin (110–60 kDa); NGF: nonglycanated form of decorin (49 kDa). Glyceraldehyde 3-phosphate dehydrogenase (GAPDH) (C) western blotting bands corresponding to control (CG) 7 d (a), 14 days (b), 28 days (c) and treated (TG) groups at 7 d, 14 d (e) and 28 d (f) days after injury.",
+    "matched_assets": [
+      {
+        "block_id": 12,
+        "bbox": [
+          608,
+          107,
+          1098,
+          521
+        ],
+        "page": 9
+      }
+    ],
+    "asset_block_ids": [
+      "12"
+    ],
+    "settlement_type": "same_page",
+    "confidence": 0.955,
+    "match_score": {
+      "score": 0.955,
+      "decision": "matched",
+      "evidence": [
+        "same_page",
+        "x_overlap",
+        "nearby_y",
+        "caption_above_or_below"
+      ]
+    },
+    "flags": [],
+    "bridge_block_ids": [],
+    "consumed_block_ids": [
+      "12",
+      "4",
+      "6"
+    ],
+    "associated_text_block_ids": [
+      "4",
+      "6"
+    ]
+  },
+  "old_render_exists": true,
+  "old_asset_exists": false,
+  "old_asset_path": null,
+  "new_figures_on_page": [
+    {
+      "figure_id": "figure_008",
+      "figure_number": 8,
+      "page": 9,
+      "text": "Fig. 8. Zymogram of the analysis of the latent (72 kDa), intermediate (68 kDa) and active (62 kDa) isoforms of MMP-2 in the different groups. Observe the presence of the three isoforms in the two groups and at all time points. The bands seen in the treated group (TG) at 14 days are more intense than",
+      "matched_assets": [
+        {
+          "block_id": 12,
+          "bbox": [
+            608,
+            107,
+            1098,
+            521
+          ],
+          "page": 9
+        },
+        {
+          "block_id": 2,
+          "bbox": [
+            70,
+            107,
+            552,
+            222
+          ],
+          "page": 9
+        }
+      ]
+    }
+  ],
+  "caption_candidate_rows": [
+    {
+      "block_id": 3,
+      "role": "figure_caption",
+      "bbox": [
+        58,
+        243,
+        571,
+        331
+      ],
+      "text": "Fig. 8. Zymogram of the analysis of the latent (72 kDa), intermediate (68 kDa) and active (62 kDa) isoforms of MMP-2 in the different groups. Observe the presence of the three isoforms in the two groups and at all time points. The bands seen in the treated group (TG) at 14 days are more intense than"
+    },
+    {
+      "block_id": 13,
+      "role": "figure_caption",
+      "bbox": [
+        596,
+        536,
+        1110,
+        643
+      ],
+      "text": "Fig. 9. Western blotting for collagen type II (A) and decorin (B) using 15 and 20 μg of protein per sample, respectively. Alpha-chain of collagen II (120 kDa); beta-chain of collagen II (200 kDa); GF: glycosylated form of decorin (110–60 kDa); NGF: nonglycanated form of decorin (49 kDa). Glyceraldeh"
+    }
+  ],
+  "unmatched_assets_page": [],
+  "raw_page_blocks": [
+    {
+      "block_id": 0,
+      "bbox": [
+        61,
+        71,
+        89,
+        87
+      ],
+      "role": null,
+      "text": "232"
+    },
+    {
+      "block_id": 1,
+      "bbox": [
+        403,
+        71,
+        767,
+        88
+      ],
+      "role": null,
+      "text": "E.P. Tangerino Filho et al. / Tissue and Cell 48 (2016) 224–234"
+    },
+    {
+      "block_id": 2,
+      "bbox": [
+        70,
+        107,
+        552,
+        222
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 3,
+      "bbox": [
+        58,
+        243,
+        571,
+        331
+      ],
+      "role": null,
+      "text": "Fig. 8. Zymogram of the analysis of the latent (72 kDa), intermediate (68 kDa) and active (62 kDa) isoforms of MMP-2 in the different groups. Observe the presence of the three isoforms in the two grou"
+    },
+    {
+      "block_id": 4,
+      "bbox": [
+        60,
+        348,
+        571,
+        433
+      ],
+      "role": null,
+      "text": "At 14 and 28 days, a significantly larger number of positive markings were observed in TG when compared to CG. At the same time, the number of positive markings increased gradually in TG over the peri"
+    },
+    {
+      "block_id": 5,
+      "bbox": [
+        60,
+        459,
+        254,
+        479
+      ],
+      "role": null,
+      "text": "3.3. Biochemical analysis"
+    },
+    {
+      "block_id": 6,
+      "bbox": [
+        58,
+        500,
+        570,
+        647
+      ],
+      "role": null,
+      "text": "The amount of GAGs increased gradually in CG and TG over the period studied, but significantly higher levels were observed in TG samples at 14 and 28 days when compared to CG. The amount of hydroxypro"
+    },
+    {
+      "block_id": 7,
+      "bbox": [
+        59,
+        647,
+        571,
+        772
+      ],
+      "role": null,
+      "text": "Zymography for MMP-2 detected three isoforms in all groups and at all time points. No significant difference was observed for the latent or intermediate isoform in any of the samples. On the other han"
+    },
+    {
+      "block_id": 8,
+      "bbox": [
+        58,
+        773,
+        571,
+        1005
+      ],
+      "role": null,
+      "text": "In Western blotting analysis, band densitometry indicated no significant difference in the amount of the  $ \\alpha $- and  $ \\beta $-chains of type II collagen between groups or time points. In relati"
+    },
+    {
+      "block_id": 9,
+      "bbox": [
+        59,
+        1030,
+        177,
+        1050
+      ],
+      "role": null,
+      "text": "4. Discussion"
+    },
+    {
+      "block_id": 10,
+      "bbox": [
+        58,
+        1072,
+        571,
+        1386
+      ],
+      "role": null,
+      "text": "The repair of non-articular cartilage defects has been little studied and knowledge of this process is important to improve the treatment of these injuries in clinical practice. Studies investigating "
+    },
+    {
+      "block_id": 11,
+      "bbox": [
+        58,
+        1387,
+        571,
+        1492
+      ],
+      "role": null,
+      "text": "The model used in the present study was based on the protocol described by Costa et al. (2009). Additionally, we analyzed the effect of microcurrent therapy on the repair dynamics of auricular cartila"
+    },
+    {
+      "block_id": 12,
+      "bbox": [
+        608,
+        107,
+        1098,
+        521
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 13,
+      "bbox": [
+        596,
+        536,
+        1110,
+        643
+      ],
+      "role": null,
+      "text": "Fig. 9. Western blotting for collagen type II (A) and decorin (B) using 15 and 20 μg of protein per sample, respectively. Alpha-chain of collagen II (120 kDa); beta-chain of collagen II (200 kDa); GF:"
+    },
+    {
+      "block_id": 14,
+      "bbox": [
+        596,
+        654,
+        1110,
+        758
+      ],
+      "role": null,
+      "text": "after 28 days of observation. These findings agree with Clark et al. (1998) who used an in vivo model of excisional injuries induced in the outer ear of mice with 6 weeks, suggesting that electrical s"
+    },
+    {
+      "block_id": 15,
+      "bbox": [
+        596,
+        759,
+        1111,
+        1009
+      ],
+      "role": null,
+      "text": "On the other hand, an important finding of this study was the effect of microcurrent stimulation, increasing the number of connective tissue cells and GAG content and inducing earlier tissue organizat"
+    },
+    {
+      "block_id": 16,
+      "bbox": [
+        597,
+        1010,
+        1110,
+        1281
+      ],
+      "role": null,
+      "text": "Microcurrent stimulation also induces the proliferation and differentiation of mesenchymal cells, which are abundant in young animals (Nogami et al., 1982; Aaron et al., 2004; Akanji et al., 2008) and"
+    },
+    {
+      "block_id": 17,
+      "bbox": [
+        596,
+        1281,
+        1112,
+        1492
+      ],
+      "role": null,
+      "text": "The increased presence of granulocytes observed here in animals treated for 7 and 14 days corroborates the most known effects of treatment with low-frequency and low-amperage electrical currents, i.e."
+    }
+  ],
+  "embed_lines": [
+    {
+      "line": 175,
+      "text": "![[render/figures/figure_009.md]]"
+    }
+  ],
+  "bbox_overlap": [
+    {
+      "old_block": 12,
+      "old_bbox": [
+        608,
+        107,
+        1098,
+        521
+      ],
+      "new_figure": "figure_008",
+      "new_block": 12,
+      "new_bbox": [
+        608,
+        107,
+        1098,
+        521
+      ],
+      "iou": 1.0
+    },
+    {
+      "old_block": 12,
+      "old_bbox": [
+        608,
+        107,
+        1098,
+        521
+      ],
+      "new_figure": "figure_008",
+      "new_block": 2,
+      "new_bbox": [
+        70,
+        107,
+        552,
+        222
+      ],
+      "iou": 0.0
+    }
+  ],
+  "bbox_unavailable": false,
+  "claimed_by_new": [
+    {
+      "old_block": 12,
+      "old_bbox": [
+        608,
+        107,
+        1098,
+        521
+      ],
+      "new_figure": "figure_008",
+      "new_block": 12,
+      "iou": 1.0
+    }
+  ],
+  "lost_bboxes": [],
+  "unmatched_bboxes": [],
+  "owner_evidence": [
+    {
+      "old_block": 12,
+      "old_bbox": [
+        608,
+        107,
+        1098,
+        521
+      ],
+      "old_caption_block": 13,
+      "old_caption_distance": 15,
+      "old_caption_horizontal_gap": 0.0,
+      "old_caption_adjacent": true,
+      "claimed_by_figure": "figure_008",
+      "claimed_by_caption_block": 3,
+      "claimed_by_caption_distance": 0,
+      "claimed_by_caption_horizontal_gap": 538.5,
+      "claimed_by_caption_adjacent": false
+    }
+  ],
+  "classification": "REAL_ASSOCIATION_FAILURE",
+  "confidence": "high",
+  "evidence": "new figure figure_008 overclaims bbox adjacent to old caption; remove its claim and attach to old figure",
+  "proposed_action": "fix new association",
+  "overlay_image": "docs/evidence/m2a/FB48C9EL/page_overlay_figure_009.jpg",
+  "thumbnail_paths": [
+    "docs/evidence/m2a/FB48C9EL/figure_009_new_figure_008_asset_1.png"
+  ],
+  "contact_sheet": "docs/evidence/m2a/FB48C9EL/contact_sheet_figure_009.jpg"
+}

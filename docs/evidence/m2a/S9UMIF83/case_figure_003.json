@@ -1,0 +1,489 @@
+{
+  "key": "S9UMIF83",
+  "old_target": "render/figures/figure_003.md",
+  "old_id": "figure_003",
+  "page": 2,
+  "meta_pages": 9,
+  "old_inventory": {
+    "figure_id": "figure_003",
+    "figure_namespace": "main",
+    "figure_number": 3,
+    "legend_block_id": "10",
+    "page": 2,
+    "text": "Figure 3 Axial T1-weighted fat-saturated magnetic resonance arthrogram image shows normal anterior and posterior bands of inferior glenohumeral ligament (straight arrows). Posterior labrum is seen as normal hypointense structure (dashed arrow), anterior labrum is congenitally absent in this patient.",
+    "matched_assets": [
+      {
+        "block_id": 9,
+        "bbox": [
+          631,
+          602,
+          914,
+          889
+        ],
+        "page": 2
+      }
+    ],
+    "asset_block_ids": [
+      "9"
+    ],
+    "settlement_type": "same_page",
+    "confidence": 0.955,
+    "match_score": {
+      "score": 0.955,
+      "decision": "matched",
+      "evidence": [
+        "same_page",
+        "x_overlap",
+        "nearby_y",
+        "caption_above_or_below"
+      ]
+    },
+    "flags": [],
+    "bridge_block_ids": [],
+    "consumed_block_ids": [
+      "9"
+    ]
+  },
+  "old_render_exists": true,
+  "old_asset_exists": false,
+  "old_asset_path": null,
+  "new_figures_on_page": [
+    {
+      "figure_id": "figure_001",
+      "figure_number": 1,
+      "page": 2,
+      "text": "Figure 1 Normal T1-weighted TSE fat-saturated axial magnetic resonance arthrogram image. The anterior and posterior labrum appears as triangular hypointense structures (straight arrows). Normal middle glenohumeral ligament has been shown with an arrowhead. Note the long head of biceps tendon in the ",
+      "matched_assets": [
+        {
+          "block_id": 3,
+          "bbox": [
+            128,
+            481,
+            514,
+            765
+          ],
+          "page": 2
+        },
+        {
+          "block_id": 9,
+          "bbox": [
+            631,
+            602,
+            914,
+            889
+          ],
+          "page": 2
+        }
+      ]
+    },
+    {
+      "figure_id": "figure_004",
+      "figure_number": 4,
+      "page": 2,
+      "text": "Figure 4 Oblique sagittal T1-weighted fat-saturated magnetic resonance arthrogram image shows normal superior glenohumeral ligament (white dashed arrow), inferior to the intra-articular long head of biceps tendon (arrowhead). The middle glenohumeral ligament is seen as a long hypointense band (short",
+      "matched_assets": [
+        {
+          "block_id": 11,
+          "bbox": [
+            631,
+            1031,
+            898,
+            1314
+          ],
+          "page": 2
+        }
+      ]
+    },
+    {
+      "figure_id": "figure_002",
+      "figure_number": 2,
+      "page": 2,
+      "text": "Figure 2 Axial T1-weighted fat-saturated magnetic resonance arthrogram image shows normal superior glenohumeral ligament (straight arrow) running parallel to the coracoid concavity and the long head of biceps tendon (dashed arrow).",
+      "matched_assets": [
+        {
+          "block_id": 7,
+          "bbox": [
+            631,
+            175,
+            888,
+            460
+          ],
+          "page": 2
+        }
+      ]
+    }
+  ],
+  "caption_candidate_rows": [
+    {
+      "block_id": 4,
+      "role": "figure_caption",
+      "bbox": [
+        125,
+        791,
+        597,
+        895
+      ],
+      "text": "Figure 1 Normal T1-weighted TSE fat-saturated axial magnetic resonance arthrogram image. The anterior and posterior labrum appears as triangular hypointense structures (straight arrows). Normal middle glenohumeral ligament has been shown with an arrowhead. Note the long head of biceps tendon in the "
+    },
+    {
+      "block_id": 8,
+      "role": "figure_caption",
+      "bbox": [
+        626,
+        485,
+        1099,
+        568
+      ],
+      "text": "Figure 2 Axial T1-weighted fat-saturated magnetic resonance arthrogram image shows normal superior glenohumeral ligament (straight arrow) running parallel to the coracoid concavity and the long head of biceps tendon (dashed arrow)."
+    },
+    {
+      "block_id": 10,
+      "role": "figure_caption",
+      "bbox": [
+        626,
+        914,
+        1099,
+        997
+      ],
+      "text": "Figure 3 Axial T1-weighted fat-saturated magnetic resonance arthrogram image shows normal anterior and posterior bands of inferior glenohumeral ligament (straight arrows). Posterior labrum is seen as normal hypointense structure (dashed arrow), anterior labrum is congenitally absent in this patient."
+    },
+    {
+      "block_id": 12,
+      "role": "figure_caption",
+      "bbox": [
+        626,
+        1342,
+        1098,
+        1484
+      ],
+      "text": "Figure 4 Oblique sagittal T1-weighted fat-saturated magnetic resonance arthrogram image shows normal superior glenohumeral ligament (white dashed arrow), inferior to the intra-articular long head of biceps tendon (arrowhead). The middle glenohumeral ligament is seen as a long hypointense band (short"
+    }
+  ],
+  "unmatched_assets_page": [],
+  "raw_page_blocks": [
+    {
+      "block_id": 0,
+      "bbox": [
+        715,
+        120,
+        1074,
+        144
+      ],
+      "role": null,
+      "text": "Jana M et al. MRI in shoulder joint instability"
+    },
+    {
+      "block_id": 1,
+      "bbox": [
+        138,
+        183,
+        493,
+        208
+      ],
+      "role": null,
+      "text": "Table 1 Classification of glenohumeral instability"
+    },
+    {
+      "block_id": 2,
+      "bbox": [
+        131,
+        221,
+        592,
+        439
+      ],
+      "role": null,
+      "text": "<table><tr><td>Classification</td><td>Types of instability</td></tr><tr><td rowspan=\"3\">Anatomic</td><td>Anterior</td></tr><tr><td>Posterior</td></tr><tr><td>Multidirectional</td></tr><tr><td rowspan="
+    },
+    {
+      "block_id": 3,
+      "bbox": [
+        128,
+        481,
+        514,
+        765
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 4,
+      "bbox": [
+        125,
+        791,
+        597,
+        895
+      ],
+      "role": null,
+      "text": "Figure 1 Normal T1-weighted TSE fat-saturated axial magnetic resonance arthrogram image. The anterior and posterior labrum appears as triangular hypointense structures (straight arrows). Normal middle"
+    },
+    {
+      "block_id": 5,
+      "bbox": [
+        124,
+        930,
+        597,
+        1346
+      ],
+      "role": null,
+      "text": "genohumeral joint, the acromioclavicular joint and the sternoclavicular joint. The glenohumeral joint, a ball- and socket type of joint, is the main component of the shoulder girdle mechanism $ ^{[1]}"
+    },
+    {
+      "block_id": 6,
+      "bbox": [
+        123,
+        1345,
+        598,
+        1591
+      ],
+      "role": null,
+      "text": "Glenohumeral ligaments (superior, middle and inferior) are thickenings of the capsule of the glenohumeral joint. Normal glenohumeral ligaments appear as hypointense linear bands, best documented after"
+    },
+    {
+      "block_id": 7,
+      "bbox": [
+        631,
+        175,
+        888,
+        460
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 8,
+      "bbox": [
+        626,
+        485,
+        1099,
+        568
+      ],
+      "role": null,
+      "text": "Figure 2 Axial T1-weighted fat-saturated magnetic resonance arthrogram image shows normal superior glenohumeral ligament (straight arrow) running parallel to the coracoid concavity and the long head o"
+    },
+    {
+      "block_id": 9,
+      "bbox": [
+        631,
+        602,
+        914,
+        889
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 10,
+      "bbox": [
+        626,
+        914,
+        1099,
+        997
+      ],
+      "role": null,
+      "text": "Figure 3 Axial T1-weighted fat-saturated magnetic resonance arthrogram image shows normal anterior and posterior bands of inferior glenohumeral ligament (straight arrows). Posterior labrum is seen as "
+    },
+    {
+      "block_id": 11,
+      "bbox": [
+        631,
+        1031,
+        898,
+        1314
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 12,
+      "bbox": [
+        626,
+        1342,
+        1098,
+        1484
+      ],
+      "role": null,
+      "text": "Figure 4 Oblique sagittal T1-weighted fat-saturated magnetic resonance arthrogram image shows normal superior glenohumeral ligament (white dashed arrow), inferior to the intra-articular long head of b"
+    },
+    {
+      "block_id": 13,
+      "bbox": [
+        625,
+        1518,
+        1099,
+        1591
+      ],
+      "role": null,
+      "text": "the IGHL are better visualized on oblique axial scan with the shoulder in abduction and external rotation (ABER) $ ^{[3,4]} $. Inferior labral-ligamentous abnormalities"
+    },
+    {
+      "block_id": 14,
+      "bbox": [
+        128,
+        1621,
+        192,
+        1676
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 15,
+      "bbox": [
+        215,
+        1652,
+        399,
+        1674
+      ],
+      "role": null,
+      "text": "WJRⅠwww.wjgnet.com"
+    },
+    {
+      "block_id": 16,
+      "bbox": [
+        597,
+        1653,
+        626,
+        1672
+      ],
+      "role": null,
+      "text": "225"
+    },
+    {
+      "block_id": 17,
+      "bbox": [
+        791,
+        1652,
+        1089,
+        1674
+      ],
+      "role": null,
+      "text": "September 28, 2011 | Volume 3 | Issue 9"
+    }
+  ],
+  "embed_lines": [
+    {
+      "line": 43,
+      "text": "![[render/figures/figure_003.md]]"
+    }
+  ],
+  "bbox_overlap": [
+    {
+      "old_block": 9,
+      "old_bbox": [
+        631,
+        602,
+        914,
+        889
+      ],
+      "new_figure": "figure_001",
+      "new_block": 3,
+      "new_bbox": [
+        128,
+        481,
+        514,
+        765
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 9,
+      "old_bbox": [
+        631,
+        602,
+        914,
+        889
+      ],
+      "new_figure": "figure_001",
+      "new_block": 9,
+      "new_bbox": [
+        631,
+        602,
+        914,
+        889
+      ],
+      "iou": 1.0
+    },
+    {
+      "old_block": 9,
+      "old_bbox": [
+        631,
+        602,
+        914,
+        889
+      ],
+      "new_figure": "figure_004",
+      "new_block": 11,
+      "new_bbox": [
+        631,
+        1031,
+        898,
+        1314
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 9,
+      "old_bbox": [
+        631,
+        602,
+        914,
+        889
+      ],
+      "new_figure": "figure_002",
+      "new_block": 7,
+      "new_bbox": [
+        631,
+        175,
+        888,
+        460
+      ],
+      "iou": 0.0
+    }
+  ],
+  "bbox_unavailable": false,
+  "claimed_by_new": [
+    {
+      "old_block": 9,
+      "old_bbox": [
+        631,
+        602,
+        914,
+        889
+      ],
+      "new_figure": "figure_001",
+      "new_block": 9,
+      "iou": 1.0
+    }
+  ],
+  "lost_bboxes": [],
+  "unmatched_bboxes": [],
+  "owner_evidence": [
+    {
+      "old_block": 9,
+      "old_bbox": [
+        631,
+        602,
+        914,
+        889
+      ],
+      "old_caption_block": 10,
+      "old_caption_distance": 25,
+      "old_caption_horizontal_gap": 90.0,
+      "old_caption_adjacent": true,
+      "claimed_by_figure": "figure_001",
+      "claimed_by_caption_block": 4,
+      "claimed_by_caption_distance": 0,
+      "claimed_by_caption_horizontal_gap": 411.5,
+      "claimed_by_caption_adjacent": false
+    }
+  ],
+  "classification": "REAL_ASSOCIATION_FAILURE",
+  "confidence": "high",
+  "evidence": "new figure figure_001 overclaims bbox adjacent to old caption; remove its claim and attach to old figure",
+  "proposed_action": "fix new association",
+  "overlay_image": "docs/evidence/m2a/S9UMIF83/page_overlay_figure_003.jpg",
+  "thumbnail_paths": [
+    "docs/evidence/m2a/S9UMIF83/figure_003_new_figure_001_asset_0.png"
+  ],
+  "contact_sheet": "docs/evidence/m2a/S9UMIF83/contact_sheet_figure_003.jpg"
+}

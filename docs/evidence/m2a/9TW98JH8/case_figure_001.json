@@ -1,0 +1,353 @@
+{
+  "key": "9TW98JH8",
+  "old_target": "render/figures/figure_001.md",
+  "old_id": "figure_001",
+  "page": 2,
+  "meta_pages": 5,
+  "old_inventory": {
+    "figure_id": "figure_001",
+    "figure_namespace": "main",
+    "figure_number": 1,
+    "legend_block_id": "5",
+    "page": 2,
+    "text": "Figure 1. 4 levels of oblique-sagittal cross-sections of frozen shoulders (scapula viewed from the back).",
+    "matched_assets": [
+      {
+        "block_id": 2,
+        "bbox": [
+          89,
+          117,
+          882,
+          344
+        ],
+        "page": 2
+      }
+    ],
+    "asset_block_ids": [
+      "2"
+    ],
+    "settlement_type": "same_page",
+    "confidence": 0.955,
+    "match_score": {
+      "score": 0.955,
+      "decision": "matched",
+      "evidence": [
+        "same_page",
+        "x_overlap",
+        "nearby_y",
+        "caption_above_or_below"
+      ]
+    },
+    "flags": [],
+    "bridge_block_ids": [],
+    "consumed_block_ids": [
+      "2"
+    ]
+  },
+  "old_render_exists": true,
+  "old_asset_exists": false,
+  "old_asset_path": null,
+  "new_figures_on_page": [
+    {
+      "figure_id": "figure_003",
+      "figure_number": 3,
+      "page": 2,
+      "text": "Figure 3. Position of the lateral attachment of the supraspinatus muscle in its fossa from an above view.",
+      "matched_assets": [
+        {
+          "block_id": 2,
+          "bbox": [
+            89,
+            117,
+            882,
+            344
+          ],
+          "page": 2
+        }
+      ]
+    },
+    {
+      "figure_id": "figure_002",
+      "figure_number": 2,
+      "page": 2,
+      "text": "Figure 2. Calculation of the ratio O/M between osseous (O) and muscular (M) limits of the supraspinatus fossa on an oblique-sagittal anatomical slice.",
+      "matched_assets": []
+    }
+  ],
+  "caption_candidate_rows": [
+    {
+      "block_id": 3,
+      "role": "figure_caption",
+      "bbox": [
+        557,
+        275,
+        884,
+        309
+      ],
+      "text": "Figure 3. Position of the lateral attachment of the supraspinatus muscle in its fossa from an above view."
+    },
+    {
+      "block_id": 4,
+      "role": "figure_caption",
+      "bbox": [
+        410,
+        329,
+        886,
+        364
+      ],
+      "text": "Figure 2. Calculation of the ratio O/M between osseous (O) and muscular (M) limits of the supraspinatus fossa on an oblique-sagittal anatomical slice."
+    },
+    {
+      "block_id": 5,
+      "role": "figure_caption",
+      "bbox": [
+        252,
+        386,
+        580,
+        421
+      ],
+      "text": "Figure 1. 4 levels of oblique-sagittal cross-sections of frozen shoulders (scapula viewed from the back)."
+    }
+  ],
+  "unmatched_assets_page": [],
+  "raw_page_blocks": [
+    {
+      "block_id": 0,
+      "bbox": [
+        83,
+        28,
+        388,
+        49
+      ],
+      "role": null,
+      "text": "Acta Orthop Scand 1996; 67 (3): 264–268"
+    },
+    {
+      "block_id": 1,
+      "bbox": [
+        853,
+        30,
+        884,
+        48
+      ],
+      "role": null,
+      "text": "265"
+    },
+    {
+      "block_id": 2,
+      "bbox": [
+        89,
+        117,
+        882,
+        344
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 3,
+      "bbox": [
+        557,
+        275,
+        884,
+        309
+      ],
+      "role": null,
+      "text": "Figure 3. Position of the lateral attachment of the supraspinatus muscle in its fossa from an above view."
+    },
+    {
+      "block_id": 4,
+      "bbox": [
+        410,
+        329,
+        886,
+        364
+      ],
+      "role": null,
+      "text": "Figure 2. Calculation of the ratio O/M between osseous (O) and muscular (M) limits of the supraspinatus fossa on an oblique-sagittal anatomical slice."
+    },
+    {
+      "block_id": 5,
+      "bbox": [
+        252,
+        386,
+        580,
+        421
+      ],
+      "role": null,
+      "text": "Figure 1. 4 levels of oblique-sagittal cross-sections of frozen shoulders (scapula viewed from the back)."
+    },
+    {
+      "block_id": 6,
+      "bbox": [
+        82,
+        456,
+        477,
+        700
+      ],
+      "role": null,
+      "text": "muscular fibers and the aponeurosis attached to the bone. To define the lateral limit of this attachment, the distances were recorded between this limit and 3 defined landmarks: A, bottom of the scapu"
+    },
+    {
+      "block_id": 7,
+      "bbox": [
+        83,
+        717,
+        250,
+        739
+      ],
+      "role": null,
+      "text": "Radioclinical study"
+    },
+    {
+      "block_id": 8,
+      "bbox": [
+        82,
+        745,
+        477,
+        1076
+      ],
+      "role": null,
+      "text": "A prospective clinical and MRI study was then carried out on 55 persons divided into 3 groups. Group I consisted of 15 asymptomatic volunteers: 5 men and 10 women, mean age 45 (14–74) years. Group II "
+    },
+    {
+      "block_id": 9,
+      "bbox": [
+        83,
+        1077,
+        479,
+        1320
+      ],
+      "role": null,
+      "text": "At the time of surgery, the size of the tear was anatomically described in both the sagittal and coronal planes, independently of the size of the patient. In the sagittal plane, the lesions were class"
+    },
+    {
+      "block_id": 10,
+      "bbox": [
+        492,
+        456,
+        887,
+        634
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 11,
+      "bbox": [
+        492,
+        633,
+        887,
+        922
+      ],
+      "role": null,
+      "text": "All MRI images were obtained with a 1Tesla unit (Magneton Impact, Siemens, Germany) The patient lay supine in a pain-free position, with the arm in neutral rotation along the chest and a curved loop s"
+    },
+    {
+      "block_id": 12,
+      "bbox": [
+        493,
+        923,
+        888,
+        1009
+      ],
+      "role": null,
+      "text": "The quantitative analysis was then performed on the spin-echo T1-weighted oblique-sagittal images (TR: 480ms, TE: 12ms, FOV:  $ 250 \\times 250 $, matrix:  $ 380 \\times 512 $)."
+    },
+    {
+      "block_id": 13,
+      "bbox": [
+        493,
+        1012,
+        889,
+        1275
+      ],
+      "role": null,
+      "text": "To evaluate the atrophy of the supraspinatus muscle, we calculated the occupation ratio (R) of the supraspinatus fossa by the muscle belly. This analysis was based on the ratio between the surface of "
+    },
+    {
+      "block_id": 14,
+      "bbox": [
+        494,
+        1276,
+        889,
+        1319
+      ],
+      "role": null,
+      "text": "The correlation and relative error between the results achieved by the 3 readers were calculated and"
+    }
+  ],
+  "embed_lines": [
+    {
+      "line": 50,
+      "text": "![[render/figures/figure_001.md]]"
+    }
+  ],
+  "bbox_overlap": [
+    {
+      "old_block": 2,
+      "old_bbox": [
+        89,
+        117,
+        882,
+        344
+      ],
+      "new_figure": "figure_003",
+      "new_block": 2,
+      "new_bbox": [
+        89,
+        117,
+        882,
+        344
+      ],
+      "iou": 1.0
+    }
+  ],
+  "bbox_unavailable": false,
+  "claimed_by_new": [
+    {
+      "old_block": 2,
+      "old_bbox": [
+        89,
+        117,
+        882,
+        344
+      ],
+      "new_figure": "figure_003",
+      "new_block": 2,
+      "iou": 1.0
+    }
+  ],
+  "lost_bboxes": [],
+  "unmatched_bboxes": [],
+  "owner_evidence": [
+    {
+      "old_block": 2,
+      "old_bbox": [
+        89,
+        117,
+        882,
+        344
+      ],
+      "old_caption_block": 5,
+      "old_caption_distance": 42,
+      "old_caption_horizontal_gap": 69.5,
+      "old_caption_adjacent": true,
+      "claimed_by_figure": "figure_003",
+      "claimed_by_caption_block": 3,
+      "claimed_by_caption_distance": 0,
+      "claimed_by_caption_horizontal_gap": 235.0,
+      "claimed_by_caption_adjacent": true
+    }
+  ],
+  "classification": "REAL_ASSOCIATION_FAILURE",
+  "confidence": "high",
+  "evidence": "new figure figure_003 overclaims bbox adjacent to old caption; remove its claim and attach to old figure",
+  "proposed_action": "fix new association",
+  "overlay_image": "docs/evidence/m2a/9TW98JH8/page_overlay_figure_001.jpg",
+  "thumbnail_paths": [
+    "docs/evidence/m2a/9TW98JH8/figure_001_old_asset_bbox_0.png",
+    "docs/evidence/m2a/9TW98JH8/figure_001_old_asset_bbox_0.png"
+  ],
+  "contact_sheet": "docs/evidence/m2a/9TW98JH8/contact_sheet_figure_001.jpg"
+}

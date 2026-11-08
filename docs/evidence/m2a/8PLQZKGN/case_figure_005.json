@@ -1,0 +1,495 @@
+{
+  "key": "8PLQZKGN",
+  "old_target": "render/figures/figure_005.md",
+  "old_id": "figure_005",
+  "page": 9,
+  "meta_pages": 19,
+  "old_inventory": {
+    "figure_id": "figure_005",
+    "figure_number": 5,
+    "figure_namespace": "main",
+    "page": 9,
+    "text": "Fig. 5 | Regulation of the pyroptosis-induced IME facilitates the phosphorylation of ERK in osteoclasts. A The GelMa/Mg/DMF MSs coordinate bone homeostasis by inhibiting the pyroptosis of BMSCs, thereby suppressing the activity of BMDMs. (created with BioRender.com) B TRAP staining of BMDMs after 7 days. Scale bars: 50 µm. C Quantification of the number of nuclei per osteoclast (n = 5 independent experiments). D SEM images of BMDMs on the surface of bovine bone slices after 7 days of incubation.",
+    "matched_assets": [
+      {
+        "page": 9,
+        "block_id": "178",
+        "bbox": null
+      }
+    ],
+    "asset_block_ids": [
+      "178"
+    ],
+    "settlement_type": "accepted_proposal",
+    "confidence": 1.0
+  },
+  "old_render_exists": true,
+  "old_asset_exists": true,
+  "old_asset_path": "D:\\L\\OB\\Literature-hub\\System\\PaperForge\\ocr\\8PLQZKGN\\assets\\figures\\figure_005.jpg",
+  "new_figures_on_page": [],
+  "caption_candidate_rows": [],
+  "unmatched_assets_page": [
+    {
+      "block_id": 3,
+      "bbox": [
+        178,
+        124,
+        466,
+        347
+      ],
+      "raw_label": "image"
+    },
+    {
+      "block_id": 4,
+      "bbox": [
+        467,
+        151,
+        1019,
+        384
+      ],
+      "raw_label": "image"
+    },
+    {
+      "block_id": 5,
+      "bbox": [
+        194,
+        353,
+        388,
+        508
+      ],
+      "raw_label": "chart"
+    },
+    {
+      "block_id": 6,
+      "bbox": [
+        202,
+        517,
+        395,
+        684
+      ],
+      "raw_label": "chart"
+    },
+    {
+      "block_id": 7,
+      "bbox": [
+        423,
+        391,
+        1017,
+        865
+      ],
+      "raw_label": "chart"
+    },
+    {
+      "block_id": 8,
+      "bbox": [
+        197,
+        692,
+        451,
+        850
+      ],
+      "raw_label": "chart"
+    },
+    {
+      "block_id": 9,
+      "bbox": [
+        194,
+        856,
+        459,
+        1122
+      ],
+      "raw_label": "chart"
+    },
+    {
+      "block_id": 10,
+      "bbox": [
+        465,
+        872,
+        1023,
+        1003
+      ],
+      "raw_label": "image"
+    },
+    {
+      "block_id": 11,
+      "bbox": [
+        178,
+        1125,
+        466,
+        1292
+      ],
+      "raw_label": "image"
+    },
+    {
+      "block_id": 12,
+      "bbox": [
+        484,
+        1014,
+        1018,
+        1296
+      ],
+      "raw_label": "image"
+    }
+  ],
+  "raw_page_blocks": [
+    {
+      "block_id": 0,
+      "bbox": [
+        76,
+        45,
+        146,
+        68
+      ],
+      "role": null,
+      "text": "Article"
+    },
+    {
+      "block_id": 1,
+      "bbox": [
+        789,
+        48,
+        1125,
+        68
+      ],
+      "role": null,
+      "text": "https://doi.org/10.1038/s41467-025-63456-5"
+    },
+    {
+      "block_id": 2,
+      "bbox": [
+        177,
+        107,
+        193,
+        124
+      ],
+      "role": null,
+      "text": "A"
+    },
+    {
+      "block_id": 3,
+      "bbox": [
+        178,
+        124,
+        466,
+        347
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 4,
+      "bbox": [
+        467,
+        151,
+        1019,
+        384
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 5,
+      "bbox": [
+        194,
+        353,
+        388,
+        508
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 6,
+      "bbox": [
+        202,
+        517,
+        395,
+        684
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 7,
+      "bbox": [
+        423,
+        391,
+        1017,
+        865
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 8,
+      "bbox": [
+        197,
+        692,
+        451,
+        850
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 9,
+      "bbox": [
+        194,
+        856,
+        459,
+        1122
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 10,
+      "bbox": [
+        465,
+        872,
+        1023,
+        1003
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 11,
+      "bbox": [
+        178,
+        1125,
+        466,
+        1292
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 12,
+      "bbox": [
+        484,
+        1014,
+        1018,
+        1296
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 13,
+      "bbox": [
+        73,
+        1337,
+        593,
+        1401
+      ],
+      "role": null,
+      "text": "The Mg $ ^{2+} $ released by GelMa/Mg/DMF MSs not only stimulated osteoblast activity but also generated alkaline substances that regulated the IME, thereby inhibiting osteoclast activity $ ^{63,64} $"
+    },
+    {
+      "block_id": 14,
+      "bbox": [
+        74,
+        1402,
+        595,
+        1489
+      ],
+      "role": null,
+      "text": "RNA sequencing was performed on co-cultured BMDMs, with the LPS group serving as the control, to further explore the mechanism of BMDM activation. The volcano plot and differential gene heatmap reveal"
+    },
+    {
+      "block_id": 15,
+      "bbox": [
+        605,
+        1338,
+        1128,
+        1489
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 16,
+      "bbox": [
+        76,
+        1524,
+        370,
+        1544
+      ],
+      "role": null,
+      "text": "Nature Communications | (2025)16:8127"
+    },
+    {
+      "block_id": 17,
+      "bbox": [
+        1109,
+        1526,
+        1125,
+        1543
+      ],
+      "role": null,
+      "text": "9"
+    }
+  ],
+  "embed_lines": [
+    {
+      "line": 106,
+      "text": "![[render/figures/figure_005.md]]"
+    }
+  ],
+  "bbox_overlap": [
+    {
+      "old_block": "178",
+      "old_bbox": null,
+      "new_figure": "UNMATCHED",
+      "new_block": 3,
+      "new_bbox": [
+        178,
+        124,
+        466,
+        347
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": "178",
+      "old_bbox": null,
+      "new_figure": "UNMATCHED",
+      "new_block": 4,
+      "new_bbox": [
+        467,
+        151,
+        1019,
+        384
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": "178",
+      "old_bbox": null,
+      "new_figure": "UNMATCHED",
+      "new_block": 5,
+      "new_bbox": [
+        194,
+        353,
+        388,
+        508
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": "178",
+      "old_bbox": null,
+      "new_figure": "UNMATCHED",
+      "new_block": 6,
+      "new_bbox": [
+        202,
+        517,
+        395,
+        684
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": "178",
+      "old_bbox": null,
+      "new_figure": "UNMATCHED",
+      "new_block": 7,
+      "new_bbox": [
+        423,
+        391,
+        1017,
+        865
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": "178",
+      "old_bbox": null,
+      "new_figure": "UNMATCHED",
+      "new_block": 8,
+      "new_bbox": [
+        197,
+        692,
+        451,
+        850
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": "178",
+      "old_bbox": null,
+      "new_figure": "UNMATCHED",
+      "new_block": 9,
+      "new_bbox": [
+        194,
+        856,
+        459,
+        1122
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": "178",
+      "old_bbox": null,
+      "new_figure": "UNMATCHED",
+      "new_block": 10,
+      "new_bbox": [
+        465,
+        872,
+        1023,
+        1003
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": "178",
+      "old_bbox": null,
+      "new_figure": "UNMATCHED",
+      "new_block": 11,
+      "new_bbox": [
+        178,
+        1125,
+        466,
+        1292
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": "178",
+      "old_bbox": null,
+      "new_figure": "UNMATCHED",
+      "new_block": 12,
+      "new_bbox": [
+        484,
+        1014,
+        1018,
+        1296
+      ],
+      "iou": 0.0
+    }
+  ],
+  "bbox_unavailable": true,
+  "claimed_by_new": [],
+  "lost_bboxes": [],
+  "unmatched_bboxes": [],
+  "owner_evidence": [],
+  "classification": "REAL_ASSOCIATION_FAILURE",
+  "confidence": "medium",
+  "evidence": "old asset bbox unavailable; unmatched asset bboxes cover the page and no caption row was associated",
+  "proposed_action": "fix new association",
+  "overlay_image": "docs/evidence/m2a/8PLQZKGN/page_overlay_figure_005.jpg",
+  "thumbnail_paths": [
+    "docs/evidence/m2a/8PLQZKGN/figure_005_old_asset.jpg",
+    "docs/evidence/m2a/8PLQZKGN/figure_005_unmatched_asset_0.png",
+    "docs/evidence/m2a/8PLQZKGN/figure_005_unmatched_asset_1.png",
+    "docs/evidence/m2a/8PLQZKGN/figure_005_unmatched_asset_2.png",
+    "docs/evidence/m2a/8PLQZKGN/figure_005_unmatched_asset_3.png",
+    "docs/evidence/m2a/8PLQZKGN/figure_005_unmatched_asset_4.png",
+    "docs/evidence/m2a/8PLQZKGN/figure_005_unmatched_asset_5.png",
+    "docs/evidence/m2a/8PLQZKGN/figure_005_unmatched_asset_6.png",
+    "docs/evidence/m2a/8PLQZKGN/figure_005_unmatched_asset_6.png",
+    "docs/evidence/m2a/8PLQZKGN/figure_005_unmatched_asset_6.png",
+    "docs/evidence/m2a/8PLQZKGN/figure_005_unmatched_asset_6.png"
+  ],
+  "contact_sheet": "docs/evidence/m2a/8PLQZKGN/contact_sheet_figure_005.jpg"
+}

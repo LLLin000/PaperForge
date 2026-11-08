@@ -1,0 +1,320 @@
+{
+  "key": "EXNS5AG2",
+  "old_target": "render/figures/figure_003.md",
+  "old_id": "figure_003",
+  "page": 5,
+  "meta_pages": 7,
+  "old_inventory": {
+    "figure_id": "figure_003",
+    "figure_namespace": "main",
+    "figure_number": 3,
+    "legend_block_id": "3",
+    "page": 5,
+    "text": "Figure 3 The ossification of the humeral bone defects caused by the vented PEEK anchors at the 1-year follow-up assessment according to Barber et al. $ ^{2} $ The diagram shows the relative incidence for each type, including the 95% confidence interval. The numbers overlaid on the graph represent the absolute numbers.",
+    "matched_assets": [
+      {
+        "block_id": 2,
+        "bbox": [
+          114,
+          113,
+          572,
+          471
+        ],
+        "page": 5
+      }
+    ],
+    "asset_block_ids": [
+      "2"
+    ],
+    "settlement_type": "same_page",
+    "confidence": 0.955,
+    "match_score": {
+      "score": 0.955,
+      "decision": "matched",
+      "evidence": [
+        "same_page",
+        "x_overlap",
+        "nearby_y",
+        "caption_above_or_below"
+      ]
+    },
+    "flags": [],
+    "bridge_block_ids": [],
+    "consumed_block_ids": [
+      "2"
+    ]
+  },
+  "old_render_exists": true,
+  "old_asset_exists": true,
+  "old_asset_path": "D:\\L\\OB\\Literature-hub\\System\\PaperForge\\ocr\\EXNS5AG2\\assets\\figures\\figure_003.jpg",
+  "new_figures_on_page": [
+    {
+      "figure_id": "figure_004",
+      "figure_number": 4,
+      "page": 5,
+      "text": "Figure 4 The size of the humeral bone defect caused by vented PEEK anchors at the 1-year follow-up assessment according to Ruiz Ibán. $ ^{10} $ The diagram shows the relative incidence for each type, including the 95% confidence interval. The numbers overlaid on the graph represent the absolute numb",
+      "matched_assets": [
+        {
+          "block_id": 2,
+          "bbox": [
+            114,
+            113,
+            572,
+            471
+          ],
+          "page": 5
+        },
+        {
+          "block_id": 7,
+          "bbox": [
+            640,
+            113,
+            1103,
+            396
+          ],
+          "page": 5
+        }
+      ]
+    }
+  ],
+  "caption_candidate_rows": [
+    {
+      "block_id": 3,
+      "role": "figure_caption",
+      "bbox": [
+        101,
+        482,
+        590,
+        592
+      ],
+      "text": "Figure 3 The ossification of the humeral bone defects caused by the vented PEEK anchors at the 1-year follow-up assessment according to Barber et al. $ ^{2} $ The diagram shows the relative incidence for each type, including the 95% confidence interval. The numbers overlaid on the graph represent th"
+    },
+    {
+      "block_id": 8,
+      "role": "figure_caption",
+      "bbox": [
+        626,
+        409,
+        1116,
+        521
+      ],
+      "text": "Figure 4 The size of the humeral bone defect caused by vented PEEK anchors at the 1-year follow-up assessment according to Ruiz Ibán. $ ^{10} $ The diagram shows the relative incidence for each type, including the 95% confidence interval. The numbers overlaid on the graph represent the absolute numb"
+    }
+  ],
+  "unmatched_assets_page": [],
+  "raw_page_blocks": [
+    {
+      "block_id": 0,
+      "bbox": [
+        103,
+        65,
+        459,
+        88
+      ],
+      "role": null,
+      "text": "Cyst formation in arthroscopic remplissage"
+    },
+    {
+      "block_id": 1,
+      "bbox": [
+        1079,
+        65,
+        1113,
+        86
+      ],
+      "role": null,
+      "text": "337"
+    },
+    {
+      "block_id": 2,
+      "bbox": [
+        114,
+        113,
+        572,
+        471
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 3,
+      "bbox": [
+        101,
+        482,
+        590,
+        592
+      ],
+      "role": null,
+      "text": "Figure 3 The ossification of the humeral bone defects caused by the vented PEEK anchors at the 1-year follow-up assessment according to Barber et al. $ ^{2} $ The diagram shows the relative incidence "
+    },
+    {
+      "block_id": 4,
+      "bbox": [
+        100,
+        636,
+        590,
+        707
+      ],
+      "role": null,
+      "text": "less than 10% of anchors. Full bony ingrowth can be expected in one-third of anchors, and another third will have at least partial cancellous bone ingrowth."
+    },
+    {
+      "block_id": 5,
+      "bbox": [
+        101,
+        708,
+        591,
+        923
+      ],
+      "role": null,
+      "text": "The remplissage technique, developed by E. Wolf in 2008, $ ^{19} $ is a capsulotenodesis of the infraspinatus tendon over an HSD. The procedure is widely popular for managing HSDs, as it effectively r"
+    },
+    {
+      "block_id": 6,
+      "bbox": [
+        100,
+        925,
+        592,
+        1451
+      ],
+      "role": null,
+      "text": "Metallic anchors in instability surgery are an option from which most surgeons shy away, as chondral lesions associated with malpositioned or exposed anchors can be fearsome. $ ^{20} $ The use of abso"
+    },
+    {
+      "block_id": 7,
+      "bbox": [
+        640,
+        113,
+        1103,
+        396
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 8,
+      "bbox": [
+        626,
+        409,
+        1116,
+        521
+      ],
+      "role": null,
+      "text": "Figure 4 The size of the humeral bone defect caused by vented PEEK anchors at the 1-year follow-up assessment according to Ruiz Ibán. $ ^{10} $ The diagram shows the relative incidence for each type, "
+    },
+    {
+      "block_id": 9,
+      "bbox": [
+        626,
+        589,
+        1116,
+        900
+      ],
+      "role": null,
+      "text": "The concept of open-architecture or vented anchors was introduced for rotator cuff repair with 2 specific aims: first, to provide access to the deep part of the cancellous humeral bone at the footprin"
+    },
+    {
+      "block_id": 10,
+      "bbox": [
+        626,
+        900,
+        1117,
+        1451
+      ],
+      "role": null,
+      "text": "The advantage of using a coil-type open-architecture anchor design made of PEEK can be appreciated in our study. Although clinical outcomes at 1-year follow-up are of little importance in instability,"
+    }
+  ],
+  "embed_lines": [
+    {
+      "line": 113,
+      "text": "![[render/figures/figure_003.md]]"
+    }
+  ],
+  "bbox_overlap": [
+    {
+      "old_block": 2,
+      "old_bbox": [
+        114,
+        113,
+        572,
+        471
+      ],
+      "new_figure": "figure_004",
+      "new_block": 2,
+      "new_bbox": [
+        114,
+        113,
+        572,
+        471
+      ],
+      "iou": 1.0
+    },
+    {
+      "old_block": 2,
+      "old_bbox": [
+        114,
+        113,
+        572,
+        471
+      ],
+      "new_figure": "figure_004",
+      "new_block": 7,
+      "new_bbox": [
+        640,
+        113,
+        1103,
+        396
+      ],
+      "iou": 0.0
+    }
+  ],
+  "bbox_unavailable": false,
+  "claimed_by_new": [
+    {
+      "old_block": 2,
+      "old_bbox": [
+        114,
+        113,
+        572,
+        471
+      ],
+      "new_figure": "figure_004",
+      "new_block": 2,
+      "iou": 1.0
+    }
+  ],
+  "lost_bboxes": [],
+  "unmatched_bboxes": [],
+  "owner_evidence": [
+    {
+      "old_block": 2,
+      "old_bbox": [
+        114,
+        113,
+        572,
+        471
+      ],
+      "old_caption_block": 3,
+      "old_caption_distance": 11,
+      "old_caption_horizontal_gap": 2.5,
+      "old_caption_adjacent": true,
+      "claimed_by_figure": "figure_004",
+      "claimed_by_caption_block": 8,
+      "claimed_by_caption_distance": 0,
+      "claimed_by_caption_horizontal_gap": 528.0,
+      "claimed_by_caption_adjacent": false
+    }
+  ],
+  "classification": "REAL_ASSOCIATION_FAILURE",
+  "confidence": "high",
+  "evidence": "new figure figure_004 overclaims bbox adjacent to old caption; remove its claim and attach to old figure",
+  "proposed_action": "fix new association",
+  "overlay_image": "docs/evidence/m2a/EXNS5AG2/page_overlay_figure_003.jpg",
+  "thumbnail_paths": [
+    "docs/evidence/m2a/EXNS5AG2/figure_003_old_asset.jpg",
+    "docs/evidence/m2a/EXNS5AG2/figure_003_old_asset_bbox_0.png",
+    "docs/evidence/m2a/EXNS5AG2/figure_003_old_asset_bbox_0.png"
+  ],
+  "contact_sheet": "docs/evidence/m2a/EXNS5AG2/contact_sheet_figure_003.jpg"
+}

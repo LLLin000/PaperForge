@@ -1,0 +1,548 @@
+{
+  "key": "IKYZIAFS",
+  "old_target": "render/figures/figure_002.md",
+  "old_id": "figure_002",
+  "page": 2,
+  "meta_pages": 3,
+  "old_inventory": {
+    "figure_id": "figure_002",
+    "figure_namespace": "main",
+    "figure_number": 2,
+    "legend_block_id": "6",
+    "page": 2,
+    "text": "Figure 2. Radiograph taken 8 months after surgery with osteolysis in the humeral head (arrows).",
+    "matched_assets": [
+      {
+        "block_id": 3,
+        "bbox": [
+          71,
+          143,
+          552,
+          499
+        ],
+        "page": 2
+      },
+      {
+        "block_id": 5,
+        "bbox": [
+          70,
+          583,
+          552,
+          938
+        ],
+        "page": 2
+      }
+    ],
+    "asset_block_ids": [
+      "3",
+      "5"
+    ],
+    "settlement_type": "same_page",
+    "confidence": 1.0,
+    "match_score": {
+      "score": 1.0,
+      "decision": "matched",
+      "evidence": [
+        "same_page",
+        "x_overlap",
+        "nearby_y",
+        "caption_above_or_below",
+        "multi_asset_coherence_bonus"
+      ]
+    },
+    "flags": [],
+    "bridge_block_ids": [],
+    "consumed_block_ids": [
+      "3",
+      "5"
+    ]
+  },
+  "old_render_exists": true,
+  "old_asset_exists": true,
+  "old_asset_path": "D:\\L\\OB\\Literature-hub\\System\\PaperForge\\ocr\\IKYZIAFS\\assets\\figures\\figure_002.jpg",
+  "new_figures_on_page": [
+    {
+      "figure_id": "figure_003",
+      "figure_number": 3,
+      "page": 2,
+      "text": "Figure 3. A, 16-month postoperative radiograph with no change in the osteolytic lesion appearance. B, axillary lateral at 16-month follow-up with no osteolytic changes in the glenoid.",
+      "matched_assets": [
+        {
+          "block_id": 10,
+          "bbox": [
+            614,
+            143,
+            1093,
+            503
+          ],
+          "page": 2
+        },
+        {
+          "block_id": 11,
+          "bbox": [
+            611,
+            535,
+            1092,
+            890
+          ],
+          "page": 2
+        },
+        {
+          "block_id": 3,
+          "bbox": [
+            71,
+            143,
+            552,
+            499
+          ],
+          "page": 2
+        },
+        {
+          "block_id": 5,
+          "bbox": [
+            70,
+            583,
+            552,
+            938
+          ],
+          "page": 2
+        }
+      ]
+    }
+  ],
+  "caption_candidate_rows": [
+    {
+      "block_id": 4,
+      "role": "figure_caption",
+      "bbox": [
+        70,
+        510,
+        560,
+        556
+      ],
+      "text": "Figure 1. An AP radiograph of the right shoulder taken preoperatively."
+    },
+    {
+      "block_id": 6,
+      "role": "figure_caption",
+      "bbox": [
+        70,
+        948,
+        560,
+        994
+      ],
+      "text": "Figure 2. Radiograph taken 8 months after surgery with osteolysis in the humeral head (arrows)."
+    },
+    {
+      "block_id": 12,
+      "role": "figure_caption",
+      "bbox": [
+        606,
+        904,
+        1099,
+        972
+      ],
+      "text": "Figure 3. A, 16-month postoperative radiograph with no change in the osteolytic lesion appearance. B, axillary lateral at 16-month follow-up with no osteolytic changes in the glenoid."
+    }
+  ],
+  "unmatched_assets_page": [],
+  "raw_page_blocks": [
+    {
+      "block_id": 0,
+      "bbox": [
+        71,
+        70,
+        227,
+        92
+      ],
+      "role": null,
+      "text": "Vol. 33, No. 5, 2005"
+    },
+    {
+      "block_id": 1,
+      "bbox": [
+        762,
+        71,
+        1050,
+        93
+      ],
+      "role": null,
+      "text": "Osteolysis After Rotator Cuff Repair"
+    },
+    {
+      "block_id": 2,
+      "bbox": [
+        1065,
+        72,
+        1098,
+        90
+      ],
+      "role": null,
+      "text": "743"
+    },
+    {
+      "block_id": 3,
+      "bbox": [
+        71,
+        143,
+        552,
+        499
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 4,
+      "bbox": [
+        70,
+        510,
+        560,
+        556
+      ],
+      "role": null,
+      "text": "Figure 1. An AP radiograph of the right shoulder taken preoperatively."
+    },
+    {
+      "block_id": 5,
+      "bbox": [
+        70,
+        583,
+        552,
+        938
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 6,
+      "bbox": [
+        70,
+        948,
+        560,
+        994
+      ],
+      "role": null,
+      "text": "Figure 2. Radiograph taken 8 months after surgery with osteolysis in the humeral head (arrows)."
+    },
+    {
+      "block_id": 7,
+      "bbox": [
+        70,
+        1040,
+        199,
+        1063
+      ],
+      "role": null,
+      "text": "DISCUSSION"
+    },
+    {
+      "block_id": 8,
+      "bbox": [
+        67,
+        1082,
+        562,
+        1346
+      ],
+      "role": null,
+      "text": "A trend toward absorbable fixation for shoulder abnormality has developed in an effort to decrease the possible complications of nonabsorbable implants, such as migration of metal into the articular s"
+    },
+    {
+      "block_id": 9,
+      "bbox": [
+        68,
+        1347,
+        563,
+        1458
+      ],
+      "role": null,
+      "text": "Rotator cuff repairs were evaluated comparing bioabsorbable screws (Arthrex Headed Bio-Corkscrews) with metal suture anchors (Mitek Rotator Cuff QuickAnchors, Mitek Surgical Products, Norwood, Mass) i"
+    },
+    {
+      "block_id": 10,
+      "bbox": [
+        614,
+        143,
+        1093,
+        503
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 11,
+      "bbox": [
+        611,
+        535,
+        1092,
+        890
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 12,
+      "bbox": [
+        606,
+        904,
+        1099,
+        972
+      ],
+      "role": null,
+      "text": "Figure 3. A, 16-month postoperative radiograph with no change in the osteolytic lesion appearance. B, axillary lateral at 16-month follow-up with no osteolytic changes in the glenoid."
+    },
+    {
+      "block_id": 13,
+      "bbox": [
+        605,
+        1017,
+        1100,
+        1216
+      ],
+      "role": null,
+      "text": "higher rate of repeat surgery with the bioabsorbable screws. They did not specifically address osteolytic changes in either group. They did note a focal foreign body giant cell reaction in 1 failed re"
+    },
+    {
+      "block_id": 14,
+      "bbox": [
+        605,
+        1215,
+        1100,
+        1461
+      ],
+      "role": null,
+      "text": "Although most instances of a foreign body reaction resulting in synovitis have been correlated to PGA, Freehill et al noted a relatively high percentage of synovitis after PLLA tack fixation for arthr"
+    }
+  ],
+  "embed_lines": [
+    {
+      "line": 36,
+      "text": "![[render/figures/figure_002.md]]"
+    }
+  ],
+  "bbox_overlap": [
+    {
+      "old_block": 3,
+      "old_bbox": [
+        71,
+        143,
+        552,
+        499
+      ],
+      "new_figure": "figure_003",
+      "new_block": 10,
+      "new_bbox": [
+        614,
+        143,
+        1093,
+        503
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 3,
+      "old_bbox": [
+        71,
+        143,
+        552,
+        499
+      ],
+      "new_figure": "figure_003",
+      "new_block": 11,
+      "new_bbox": [
+        611,
+        535,
+        1092,
+        890
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 3,
+      "old_bbox": [
+        71,
+        143,
+        552,
+        499
+      ],
+      "new_figure": "figure_003",
+      "new_block": 3,
+      "new_bbox": [
+        71,
+        143,
+        552,
+        499
+      ],
+      "iou": 1.0
+    },
+    {
+      "old_block": 3,
+      "old_bbox": [
+        71,
+        143,
+        552,
+        499
+      ],
+      "new_figure": "figure_003",
+      "new_block": 5,
+      "new_bbox": [
+        70,
+        583,
+        552,
+        938
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 5,
+      "old_bbox": [
+        70,
+        583,
+        552,
+        938
+      ],
+      "new_figure": "figure_003",
+      "new_block": 10,
+      "new_bbox": [
+        614,
+        143,
+        1093,
+        503
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 5,
+      "old_bbox": [
+        70,
+        583,
+        552,
+        938
+      ],
+      "new_figure": "figure_003",
+      "new_block": 11,
+      "new_bbox": [
+        611,
+        535,
+        1092,
+        890
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 5,
+      "old_bbox": [
+        70,
+        583,
+        552,
+        938
+      ],
+      "new_figure": "figure_003",
+      "new_block": 3,
+      "new_bbox": [
+        71,
+        143,
+        552,
+        499
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 5,
+      "old_bbox": [
+        70,
+        583,
+        552,
+        938
+      ],
+      "new_figure": "figure_003",
+      "new_block": 5,
+      "new_bbox": [
+        70,
+        583,
+        552,
+        938
+      ],
+      "iou": 1.0
+    }
+  ],
+  "bbox_unavailable": false,
+  "claimed_by_new": [
+    {
+      "old_block": 3,
+      "old_bbox": [
+        71,
+        143,
+        552,
+        499
+      ],
+      "new_figure": "figure_003",
+      "new_block": 3,
+      "iou": 1.0
+    },
+    {
+      "old_block": 5,
+      "old_bbox": [
+        70,
+        583,
+        552,
+        938
+      ],
+      "new_figure": "figure_003",
+      "new_block": 5,
+      "iou": 1.0
+    }
+  ],
+  "lost_bboxes": [],
+  "unmatched_bboxes": [],
+  "owner_evidence": [
+    {
+      "old_block": 3,
+      "old_bbox": [
+        71,
+        143,
+        552,
+        499
+      ],
+      "old_caption_block": 6,
+      "old_caption_distance": 449,
+      "old_caption_horizontal_gap": 3.5,
+      "old_caption_adjacent": false,
+      "claimed_by_figure": "figure_003",
+      "claimed_by_caption_block": 12,
+      "claimed_by_caption_distance": 405,
+      "claimed_by_caption_horizontal_gap": 541.0,
+      "claimed_by_caption_adjacent": false
+    },
+    {
+      "old_block": 5,
+      "old_bbox": [
+        70,
+        583,
+        552,
+        938
+      ],
+      "old_caption_block": 6,
+      "old_caption_distance": 10,
+      "old_caption_horizontal_gap": 4.0,
+      "old_caption_adjacent": true,
+      "claimed_by_figure": "figure_003",
+      "claimed_by_caption_block": 12,
+      "claimed_by_caption_distance": 0,
+      "claimed_by_caption_horizontal_gap": 541.5,
+      "claimed_by_caption_adjacent": false
+    }
+  ],
+  "classification": "REAL_ASSOCIATION_FAILURE",
+  "confidence": "high",
+  "evidence": "new figure figure_003 overclaims bbox adjacent to old caption; remove its claim and attach to old figure",
+  "proposed_action": "fix new association",
+  "overlay_image": "docs/evidence/m2a/IKYZIAFS/page_overlay_figure_002.jpg",
+  "thumbnail_paths": [
+    "docs/evidence/m2a/IKYZIAFS/figure_002_old_asset.jpg",
+    "docs/evidence/m2a/IKYZIAFS/figure_002_old_asset_bbox_0.png",
+    "docs/evidence/m2a/IKYZIAFS/figure_002_old_asset_bbox_1.png",
+    "docs/evidence/m2a/IKYZIAFS/figure_002_old_asset_bbox_0.png",
+    "docs/evidence/m2a/IKYZIAFS/figure_002_old_asset_bbox_1.png"
+  ],
+  "contact_sheet": "docs/evidence/m2a/IKYZIAFS/contact_sheet_figure_002.jpg"
+}

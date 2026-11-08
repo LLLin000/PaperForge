@@ -1,0 +1,403 @@
+{
+  "key": "J97KY85B",
+  "old_target": "render/figures/figure_001.md",
+  "old_id": "figure_001",
+  "page": 2,
+  "meta_pages": 4,
+  "old_inventory": {
+    "figure_id": "figure_001",
+    "figure_namespace": "main",
+    "figure_number": 1,
+    "legend_block_id": "5",
+    "page": 2,
+    "text": "Fig. 1. — Antero-posterior radiograph with externally rotated arm showing osteolysis around the absorbable anchor positioned in the superior pole of the glenoid.",
+    "matched_assets": [
+      {
+        "block_id": 4,
+        "bbox": [
+          100,
+          975,
+          554,
+          1371
+        ],
+        "page": 2
+      }
+    ],
+    "asset_block_ids": [
+      "4"
+    ],
+    "settlement_type": "same_page",
+    "confidence": 0.955,
+    "match_score": {
+      "score": 0.955,
+      "decision": "matched",
+      "evidence": [
+        "same_page",
+        "x_overlap",
+        "nearby_y",
+        "caption_above_or_below"
+      ]
+    },
+    "flags": [],
+    "bridge_block_ids": [],
+    "consumed_block_ids": [
+      "4"
+    ]
+  },
+  "old_render_exists": true,
+  "old_asset_exists": true,
+  "old_asset_path": "D:\\L\\OB\\Literature-hub\\System\\PaperForge\\ocr\\J97KY85B\\assets\\figures\\figure_001.jpg",
+  "new_figures_on_page": [
+    {
+      "figure_id": "figure_003",
+      "figure_number": 3,
+      "page": 2,
+      "text": "Fig. 3. — Arthroscopic view of the superior pole of the glenoid, from a posterior portal, showing a bony hole (star).",
+      "matched_assets": [
+        {
+          "block_id": 4,
+          "bbox": [
+            100,
+            975,
+            554,
+            1371
+          ],
+          "page": 2
+        },
+        {
+          "block_id": 6,
+          "bbox": [
+            610,
+            237,
+            1065,
+            577
+          ],
+          "page": 2
+        },
+        {
+          "block_id": 8,
+          "bbox": [
+            610,
+            669,
+            1064,
+            1064
+          ],
+          "page": 2
+        }
+      ]
+    }
+  ],
+  "caption_candidate_rows": [
+    {
+      "block_id": 5,
+      "role": "figure_caption",
+      "bbox": [
+        98,
+        1393,
+        557,
+        1456
+      ],
+      "text": "Fig. 1. — Antero-posterior radiograph with externally rotated arm showing osteolysis around the absorbable anchor positioned in the superior pole of the glenoid."
+    },
+    {
+      "block_id": 7,
+      "role": "figure_caption",
+      "bbox": [
+        607,
+        600,
+        1066,
+        643
+      ],
+      "text": "Fig. 2. — CT-scan: coronal view showing osteolysis of the glenoid."
+    },
+    {
+      "block_id": 9,
+      "role": "figure_caption",
+      "bbox": [
+        607,
+        1086,
+        1066,
+        1130
+      ],
+      "text": "Fig. 3. — Arthroscopic view of the superior pole of the glenoid, from a posterior portal, showing a bony hole (star)."
+    }
+  ],
+  "unmatched_assets_page": [],
+  "raw_page_blocks": [
+    {
+      "block_id": 0,
+      "bbox": [
+        101,
+        174,
+        140,
+        197
+      ],
+      "role": null,
+      "text": "108"
+    },
+    {
+      "block_id": 1,
+      "bbox": [
+        540,
+        178,
+        630,
+        198
+      ],
+      "role": null,
+      "text": "M. SPOLITI"
+    },
+    {
+      "block_id": 2,
+      "bbox": [
+        96,
+        236,
+        557,
+        341
+      ],
+      "role": null,
+      "text": "were found. There was no evidence of instability. The O'Brien test and the crank test were positive. Plain radiographs were practically normal. MRI scans showed a SLAP lesion."
+    },
+    {
+      "block_id": 3,
+      "bbox": [
+        97,
+        342,
+        559,
+        942
+      ],
+      "role": null,
+      "text": "Appropriate conservative therapy, including non-steroidal anti-inflammatory drugs, physiotherapy and rest, was started without result. Subsequently, the patient underwent an arthroscopy, which reveale"
+    },
+    {
+      "block_id": 4,
+      "bbox": [
+        100,
+        975,
+        554,
+        1371
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 5,
+      "bbox": [
+        98,
+        1393,
+        557,
+        1456
+      ],
+      "role": null,
+      "text": "Fig. 1. — Antero-posterior radiograph with externally rotated arm showing osteolysis around the absorbable anchor positioned in the superior pole of the glenoid."
+    },
+    {
+      "block_id": 6,
+      "bbox": [
+        610,
+        237,
+        1065,
+        577
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 7,
+      "bbox": [
+        607,
+        600,
+        1066,
+        643
+      ],
+      "role": null,
+      "text": "Fig. 2. — CT-scan: coronal view showing osteolysis of the glenoid."
+    },
+    {
+      "block_id": 8,
+      "bbox": [
+        610,
+        669,
+        1064,
+        1064
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 9,
+      "bbox": [
+        607,
+        1086,
+        1066,
+        1130
+      ],
+      "role": null,
+      "text": "Fig. 3. — Arthroscopic view of the superior pole of the glenoid, from a posterior portal, showing a bony hole (star)."
+    },
+    {
+      "block_id": 10,
+      "bbox": [
+        607,
+        1173,
+        1066,
+        1224
+      ],
+      "role": null,
+      "text": "from the bony defect in the superior pole of the glenoid showed a foreign body granuloma."
+    },
+    {
+      "block_id": 11,
+      "bbox": [
+        607,
+        1225,
+        1068,
+        1300
+      ],
+      "role": null,
+      "text": "At follow-up, 6 months later, the patient was symptom free and there was no evidence of recurrence."
+    },
+    {
+      "block_id": 12,
+      "bbox": [
+        767,
+        1327,
+        910,
+        1352
+      ],
+      "role": null,
+      "text": "DISCUSSION"
+    },
+    {
+      "block_id": 13,
+      "bbox": [
+        606,
+        1380,
+        1068,
+        1458
+      ],
+      "role": null,
+      "text": "Bioabsorbable anchors are commonly used in rotator cuff and labral arthroscopic repair, for soft-tissue attachment to bone. The use of bio-"
+    },
+    {
+      "block_id": 14,
+      "bbox": [
+        98,
+        1500,
+        467,
+        1525
+      ],
+      "role": null,
+      "text": "Acta Orthopaedica Belgica, Vol. 73 - 1 - 2007"
+    }
+  ],
+  "embed_lines": [
+    {
+      "line": 32,
+      "text": "![[render/figures/figure_001.md]]"
+    }
+  ],
+  "bbox_overlap": [
+    {
+      "old_block": 4,
+      "old_bbox": [
+        100,
+        975,
+        554,
+        1371
+      ],
+      "new_figure": "figure_003",
+      "new_block": 4,
+      "new_bbox": [
+        100,
+        975,
+        554,
+        1371
+      ],
+      "iou": 1.0
+    },
+    {
+      "old_block": 4,
+      "old_bbox": [
+        100,
+        975,
+        554,
+        1371
+      ],
+      "new_figure": "figure_003",
+      "new_block": 6,
+      "new_bbox": [
+        610,
+        237,
+        1065,
+        577
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 4,
+      "old_bbox": [
+        100,
+        975,
+        554,
+        1371
+      ],
+      "new_figure": "figure_003",
+      "new_block": 8,
+      "new_bbox": [
+        610,
+        669,
+        1064,
+        1064
+      ],
+      "iou": 0.0
+    }
+  ],
+  "bbox_unavailable": false,
+  "claimed_by_new": [
+    {
+      "old_block": 4,
+      "old_bbox": [
+        100,
+        975,
+        554,
+        1371
+      ],
+      "new_figure": "figure_003",
+      "new_block": 4,
+      "iou": 1.0
+    }
+  ],
+  "lost_bboxes": [],
+  "unmatched_bboxes": [],
+  "owner_evidence": [
+    {
+      "old_block": 4,
+      "old_bbox": [
+        100,
+        975,
+        554,
+        1371
+      ],
+      "old_caption_block": 5,
+      "old_caption_distance": 22,
+      "old_caption_horizontal_gap": 0.5,
+      "old_caption_adjacent": true,
+      "claimed_by_figure": "figure_003",
+      "claimed_by_caption_block": 9,
+      "claimed_by_caption_distance": 0,
+      "claimed_by_caption_horizontal_gap": 509.5,
+      "claimed_by_caption_adjacent": false
+    }
+  ],
+  "classification": "REAL_ASSOCIATION_FAILURE",
+  "confidence": "high",
+  "evidence": "new figure figure_003 overclaims bbox adjacent to old caption; remove its claim and attach to old figure",
+  "proposed_action": "fix new association",
+  "overlay_image": "docs/evidence/m2a/J97KY85B/page_overlay_figure_001.jpg",
+  "thumbnail_paths": [
+    "docs/evidence/m2a/J97KY85B/figure_001_old_asset.jpg",
+    "docs/evidence/m2a/J97KY85B/figure_001_old_asset_bbox_0.png",
+    "docs/evidence/m2a/J97KY85B/figure_001_old_asset_bbox_0.png"
+  ],
+  "contact_sheet": "docs/evidence/m2a/J97KY85B/contact_sheet_figure_001.jpg"
+}

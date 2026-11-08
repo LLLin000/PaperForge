@@ -1,0 +1,385 @@
+{
+  "key": "BAUEIRRM",
+  "old_target": "render/figures/figure_001.md",
+  "old_id": "figure_001",
+  "page": 2,
+  "meta_pages": 4,
+  "old_inventory": {
+    "figure_id": "figure_001",
+    "figure_namespace": "main",
+    "figure_number": 1,
+    "legend_block_id": "8",
+    "page": 2,
+    "text": "Figure 1 – A) Schematic representation of the resultant force that acts on the humeral head when there is a minor lateral projection of the acromion. B) Representation of the resultant force when the insertion of the deltoid is more lateral.",
+    "matched_assets": [
+      {
+        "block_id": 6,
+        "bbox": [
+          69,
+          1015,
+          564,
+          1342
+        ],
+        "page": 2
+      }
+    ],
+    "asset_block_ids": [
+      "6"
+    ],
+    "settlement_type": "same_page",
+    "confidence": 0.955,
+    "match_score": {
+      "score": 0.955,
+      "decision": "matched",
+      "evidence": [
+        "same_page",
+        "x_overlap",
+        "nearby_y",
+        "caption_above_or_below"
+      ]
+    },
+    "flags": [],
+    "bridge_block_ids": [],
+    "consumed_block_ids": [
+      "6"
+    ]
+  },
+  "old_render_exists": true,
+  "old_asset_exists": false,
+  "old_asset_path": null,
+  "new_figures_on_page": [
+    {
+      "figure_id": "figure_002",
+      "figure_number": 2,
+      "page": 2,
+      "text": "Figure 2 – Radiographic image of the right shoulder, in anteroposterior view, after scanning with the millimeter ruler used to calibrate the software. From this, the acromion index (AI) is demonstrated: this is obtained as the ratio between the distance from the glenoid cavity to the lateral edge of",
+      "matched_assets": [
+        {
+          "block_id": 12,
+          "bbox": [
+            667,
+            604,
+            1037,
+            945
+          ],
+          "page": 2
+        },
+        {
+          "block_id": 6,
+          "bbox": [
+            69,
+            1015,
+            564,
+            1342
+          ],
+          "page": 2
+        }
+      ]
+    }
+  ],
+  "caption_candidate_rows": [
+    {
+      "block_id": 7,
+      "role": "figure_caption",
+      "bbox": [
+        64,
+        1352,
+        429,
+        1371
+      ],
+      "text": "FR – resultant force; Fa – ascendant force; Fc – compressive force"
+    },
+    {
+      "block_id": 8,
+      "role": "figure_caption",
+      "bbox": [
+        62,
+        1375,
+        575,
+        1466
+      ],
+      "text": "Figure 1 – A) Schematic representation of the resultant force that acts on the humeral head when there is a minor lateral projection of the acromion. B) Representation of the resultant force when the insertion of the deltoid is more lateral."
+    },
+    {
+      "block_id": 13,
+      "role": "figure_caption",
+      "bbox": [
+        594,
+        951,
+        1108,
+        1085
+      ],
+      "text": "Figure 2 – Radiographic image of the right shoulder, in anteroposterior view, after scanning with the millimeter ruler used to calibrate the software. From this, the acromion index (AI) is demonstrated: this is obtained as the ratio between the distance from the glenoid cavity to the lateral edge of"
+    }
+  ],
+  "unmatched_assets_page": [],
+  "raw_page_blocks": [
+    {
+      "block_id": 0,
+      "bbox": [
+        66,
+        125,
+        98,
+        144
+      ],
+      "role": null,
+      "text": "152"
+    },
+    {
+      "block_id": 1,
+      "bbox": [
+        61,
+        187,
+        576,
+        463
+      ],
+      "role": null,
+      "text": "against the glenoid cavity will be (Figure 1). It might be imagined that a greater ascending force component (Fa) would favor subacromial impact and, consequently, degenerative changes to the supraspi"
+    },
+    {
+      "block_id": 2,
+      "bbox": [
+        61,
+        464,
+        576,
+        604
+      ],
+      "role": null,
+      "text": "Our study had the aim of evaluating the shape of the acromion, and specifically its lateral projection, using methodology similar to that of Van Nüffel and Nijs $ ^{9} $ and Itoi $ ^{*} $, with radiog"
+    },
+    {
+      "block_id": 3,
+      "bbox": [
+        62,
+        630,
+        382,
+        659
+      ],
+      "role": null,
+      "text": "SAMPLE AND METHODS"
+    },
+    {
+      "block_id": 4,
+      "bbox": [
+        61,
+        672,
+        575,
+        838
+      ],
+      "role": null,
+      "text": "Radiographs from patients who undergone operations performed by the Shoulder and Elbow Surgery Group of the Department of Orthopedics and Traumatology, School of Medical Sciences, Santa Casa de Miseri"
+    },
+    {
+      "block_id": 5,
+      "bbox": [
+        61,
+        840,
+        576,
+        981
+      ],
+      "role": null,
+      "text": "The shoulder radiographs were standardized and only those that had been produced with correction for anteversion of the glenoid cavity were used. The arm was radiographed in a resting position alongsi"
+    },
+    {
+      "block_id": 6,
+      "bbox": [
+        69,
+        1015,
+        564,
+        1342
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 7,
+      "bbox": [
+        64,
+        1352,
+        429,
+        1371
+      ],
+      "role": null,
+      "text": "FR – resultant force; Fa – ascendant force; Fc – compressive force"
+    },
+    {
+      "block_id": 8,
+      "bbox": [
+        62,
+        1375,
+        575,
+        1466
+      ],
+      "role": null,
+      "text": "Figure 1 – A) Schematic representation of the resultant force that acts on the humeral head when there is a minor lateral projection of the acromion. B) Representation of the resultant force when the "
+    },
+    {
+      "block_id": 9,
+      "bbox": [
+        593,
+        188,
+        1108,
+        298
+      ],
+      "role": null,
+      "text": "tral position or with internal rotation. According to the study published by Nyffeler et al $ ^{(2)} $, there is no difference in measuring the acromiale index with the shoulder in neutral position of"
+    },
+    {
+      "block_id": 10,
+      "bbox": [
+        593,
+        299,
+        1110,
+        577
+      ],
+      "role": null,
+      "text": "Two measurements were made on these radiographic images, taking the reference points to be the plane of the glenoid cavity, the lateral extremity of the humeral head and the lateral extremity of the a"
+    },
+    {
+      "block_id": 11,
+      "bbox": [
+        64,
+        1502,
+        571,
+        1526
+      ],
+      "role": null,
+      "text": " $ ^{*} $ Personal communication from Professor Itoi Eiji. Búzios, 2008."
+    },
+    {
+      "block_id": 12,
+      "bbox": [
+        667,
+        604,
+        1037,
+        945
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 13,
+      "bbox": [
+        594,
+        951,
+        1108,
+        1085
+      ],
+      "role": null,
+      "text": "Figure 2 – Radiographic image of the right shoulder, in anteroposterior view, after scanning with the millimeter ruler used to calibrate the software. From this, the acromion index (AI) is demonstrate"
+    },
+    {
+      "block_id": 14,
+      "bbox": [
+        593,
+        1118,
+        1110,
+        1529
+      ],
+      "role": null,
+      "text": "There was no concern regarding the distance between the ampoule of the X-ray apparatus and the radiographic film, since it was an index and changes to the parameters would not interfere with the resul"
+    },
+    {
+      "block_id": 15,
+      "bbox": [
+        65,
+        1559,
+        250,
+        1577
+      ],
+      "role": null,
+      "text": "Rev Bras Ortop. 2010;45(2):151-4"
+    }
+  ],
+  "embed_lines": [
+    {
+      "line": 39,
+      "text": "![[render/figures/figure_001.md]]"
+    }
+  ],
+  "bbox_overlap": [
+    {
+      "old_block": 6,
+      "old_bbox": [
+        69,
+        1015,
+        564,
+        1342
+      ],
+      "new_figure": "figure_002",
+      "new_block": 12,
+      "new_bbox": [
+        667,
+        604,
+        1037,
+        945
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 6,
+      "old_bbox": [
+        69,
+        1015,
+        564,
+        1342
+      ],
+      "new_figure": "figure_002",
+      "new_block": 6,
+      "new_bbox": [
+        69,
+        1015,
+        564,
+        1342
+      ],
+      "iou": 1.0
+    }
+  ],
+  "bbox_unavailable": false,
+  "claimed_by_new": [
+    {
+      "old_block": 6,
+      "old_bbox": [
+        69,
+        1015,
+        564,
+        1342
+      ],
+      "new_figure": "figure_002",
+      "new_block": 6,
+      "iou": 1.0
+    }
+  ],
+  "lost_bboxes": [],
+  "unmatched_bboxes": [],
+  "owner_evidence": [
+    {
+      "old_block": 6,
+      "old_bbox": [
+        69,
+        1015,
+        564,
+        1342
+      ],
+      "old_caption_block": 8,
+      "old_caption_distance": 33,
+      "old_caption_horizontal_gap": 2.0,
+      "old_caption_adjacent": true,
+      "claimed_by_figure": "figure_002",
+      "claimed_by_caption_block": 13,
+      "claimed_by_caption_distance": 0,
+      "claimed_by_caption_horizontal_gap": 534.5,
+      "claimed_by_caption_adjacent": false
+    }
+  ],
+  "classification": "REAL_ASSOCIATION_FAILURE",
+  "confidence": "high",
+  "evidence": "new figure figure_002 overclaims bbox adjacent to old caption; remove its claim and attach to old figure",
+  "proposed_action": "fix new association",
+  "overlay_image": "docs/evidence/m2a/BAUEIRRM/page_overlay_figure_001.jpg",
+  "thumbnail_paths": [
+    "docs/evidence/m2a/BAUEIRRM/figure_001_old_asset_bbox_0.png",
+    "docs/evidence/m2a/BAUEIRRM/figure_001_old_asset_bbox_0.png"
+  ],
+  "contact_sheet": "docs/evidence/m2a/BAUEIRRM/contact_sheet_figure_001.jpg"
+}

@@ -1,0 +1,400 @@
+{
+  "key": "Y9NEE9D2",
+  "old_target": "render/figures/figure_007.md",
+  "old_id": "figure_007",
+  "page": 5,
+  "meta_pages": 8,
+  "old_inventory": {
+    "figure_id": "figure_007",
+    "figure_namespace": "main",
+    "figure_number": 7,
+    "legend_block_id": "3",
+    "page": 5,
+    "text": "Figure 7 Measurement of the coracoid height (CH) involves the distance from the inferior edge of the coracoid from the center of the glenoid.",
+    "matched_assets": [
+      {
+        "block_id": 2,
+        "bbox": [
+          96,
+          133,
+          553,
+          717
+        ],
+        "page": 5
+      }
+    ],
+    "asset_block_ids": [
+      "2"
+    ],
+    "settlement_type": "same_page",
+    "confidence": 0.955,
+    "match_score": {
+      "score": 0.955,
+      "decision": "matched",
+      "evidence": [
+        "same_page",
+        "x_overlap",
+        "nearby_y",
+        "caption_above_or_below"
+      ]
+    },
+    "flags": [],
+    "bridge_block_ids": [],
+    "consumed_block_ids": [
+      "2"
+    ]
+  },
+  "old_render_exists": true,
+  "old_asset_exists": false,
+  "old_asset_path": null,
+  "new_figures_on_page": [
+    {
+      "figure_id": "figure_009",
+      "figure_number": 9,
+      "page": 5,
+      "text": "Figure 9 Measurement of the critical shoulder angle involves the angle between the line parallel to the glenoid and the line from the inferior most aspect of the glenoid to the lateral most edge of the acromion.",
+      "matched_assets": [
+        {
+          "block_id": 2,
+          "bbox": [
+            96,
+            133,
+            553,
+            717
+          ],
+          "page": 5
+        },
+        {
+          "block_id": 6,
+          "bbox": [
+            636,
+            134,
+            1090,
+            583
+          ],
+          "page": 5
+        }
+      ]
+    },
+    {
+      "figure_id": "figure_008",
+      "figure_number": 8,
+      "page": 5,
+      "text": "Figure 8 Measurement of the posterior acromial height (PAH) involves the distance from the posterior inferior edge of the acromion from the center of the glenoid.",
+      "matched_assets": [
+        {
+          "block_id": 4,
+          "bbox": [
+            97,
+            850,
+            553,
+            1435
+          ],
+          "page": 5
+        }
+      ]
+    }
+  ],
+  "caption_candidate_rows": [
+    {
+      "block_id": 3,
+      "role": "figure_caption",
+      "bbox": [
+        70,
+        734,
+        581,
+        773
+      ],
+      "text": "Figure 7 Measurement of the coracoid height (CH) involves the distance from the inferior edge of the coracoid from the center of the glenoid."
+    },
+    {
+      "block_id": 5,
+      "role": "figure_caption",
+      "bbox": [
+        71,
+        1454,
+        580,
+        1491
+      ],
+      "text": "Figure 8 Measurement of the posterior acromial height (PAH) involves the distance from the posterior inferior edge of the acromion from the center of the glenoid."
+    },
+    {
+      "block_id": 7,
+      "role": "figure_caption",
+      "bbox": [
+        607,
+        601,
+        1119,
+        656
+      ],
+      "text": "Figure 9 Measurement of the critical shoulder angle involves the angle between the line parallel to the glenoid and the line from the inferior most aspect of the glenoid to the lateral most edge of the acromion."
+    }
+  ],
+  "unmatched_assets_page": [],
+  "raw_page_blocks": [
+    {
+      "block_id": 0,
+      "bbox": [
+        72,
+        92,
+        273,
+        112
+      ],
+      "role": null,
+      "text": "C.D. Lopez, J. Ding, E.C. Bixby et al."
+    },
+    {
+      "block_id": 1,
+      "bbox": [
+        902,
+        92,
+        1119,
+        111
+      ],
+      "role": null,
+      "text": "JSES International 4 (2020) 772–779"
+    },
+    {
+      "block_id": 2,
+      "bbox": [
+        96,
+        133,
+        553,
+        717
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 3,
+      "bbox": [
+        70,
+        734,
+        581,
+        773
+      ],
+      "role": null,
+      "text": "Figure 7 Measurement of the coracoid height (CH) involves the distance from the inferior edge of the coracoid from the center of the glenoid."
+    },
+    {
+      "block_id": 4,
+      "bbox": [
+        97,
+        850,
+        553,
+        1435
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 5,
+      "bbox": [
+        71,
+        1454,
+        580,
+        1491
+      ],
+      "role": null,
+      "text": "Figure 8 Measurement of the posterior acromial height (PAH) involves the distance from the posterior inferior edge of the acromion from the center of the glenoid."
+    },
+    {
+      "block_id": 6,
+      "bbox": [
+        636,
+        134,
+        1090,
+        583
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 7,
+      "bbox": [
+        607,
+        601,
+        1119,
+        656
+      ],
+      "role": null,
+      "text": "Figure 9 Measurement of the critical shoulder angle involves the angle between the line parallel to the glenoid and the line from the inferior most aspect of the glenoid to the lateral most edge of th"
+    },
+    {
+      "block_id": 8,
+      "bbox": [
+        607,
+        692,
+        1120,
+        881
+      ],
+      "role": null,
+      "text": "also a significant association between a larger ACT and the presence of instability (OR = 1.144; 95% CI = 1.053-1.243; P = .001) (Table IV). However, there was a significant negative association betwe"
+    },
+    {
+      "block_id": 9,
+      "bbox": [
+        609,
+        900,
+        947,
+        922
+      ],
+      "role": null,
+      "text": "Factors associated with severity of instability"
+    },
+    {
+      "block_id": 10,
+      "bbox": [
+        606,
+        942,
+        1120,
+        1175
+      ],
+      "role": null,
+      "text": "No significant association was found between number of dislocations and any of the measured anatomic measurements or patient covariates, including patient age, level of sport competition, dislocation "
+    },
+    {
+      "block_id": 11,
+      "bbox": [
+        609,
+        1193,
+        701,
+        1213
+      ],
+      "role": null,
+      "text": "Discussion"
+    },
+    {
+      "block_id": 12,
+      "bbox": [
+        606,
+        1235,
+        1120,
+        1488
+      ],
+      "role": null,
+      "text": "To our knowledge, this is the first study to measure the coracoacromial arch anatomy of patients with anterior shoulder instability and evaluate the relationship between shoulder arch morphology and t"
+    },
+    {
+      "block_id": 13,
+      "bbox": [
+        583,
+        1502,
+        609,
+        1518
+      ],
+      "role": null,
+      "text": "776"
+    }
+  ],
+  "embed_lines": [
+    {
+      "line": 99,
+      "text": "![[render/figures/figure_007.md]]"
+    }
+  ],
+  "bbox_overlap": [
+    {
+      "old_block": 2,
+      "old_bbox": [
+        96,
+        133,
+        553,
+        717
+      ],
+      "new_figure": "figure_009",
+      "new_block": 2,
+      "new_bbox": [
+        96,
+        133,
+        553,
+        717
+      ],
+      "iou": 1.0
+    },
+    {
+      "old_block": 2,
+      "old_bbox": [
+        96,
+        133,
+        553,
+        717
+      ],
+      "new_figure": "figure_009",
+      "new_block": 6,
+      "new_bbox": [
+        636,
+        134,
+        1090,
+        583
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 2,
+      "old_bbox": [
+        96,
+        133,
+        553,
+        717
+      ],
+      "new_figure": "figure_008",
+      "new_block": 4,
+      "new_bbox": [
+        97,
+        850,
+        553,
+        1435
+      ],
+      "iou": 0.0
+    }
+  ],
+  "bbox_unavailable": false,
+  "claimed_by_new": [
+    {
+      "old_block": 2,
+      "old_bbox": [
+        96,
+        133,
+        553,
+        717
+      ],
+      "new_figure": "figure_009",
+      "new_block": 2,
+      "iou": 1.0
+    }
+  ],
+  "lost_bboxes": [],
+  "unmatched_bboxes": [],
+  "owner_evidence": [
+    {
+      "old_block": 2,
+      "old_bbox": [
+        96,
+        133,
+        553,
+        717
+      ],
+      "old_caption_block": 3,
+      "old_caption_distance": 17,
+      "old_caption_horizontal_gap": 1.0,
+      "old_caption_adjacent": true,
+      "claimed_by_figure": "figure_009",
+      "claimed_by_caption_block": 7,
+      "claimed_by_caption_distance": 0,
+      "claimed_by_caption_horizontal_gap": 538.5,
+      "claimed_by_caption_adjacent": false
+    }
+  ],
+  "classification": "REAL_ASSOCIATION_FAILURE",
+  "confidence": "high",
+  "evidence": "new figure figure_009 overclaims bbox adjacent to old caption; remove its claim and attach to old figure",
+  "proposed_action": "fix new association",
+  "overlay_image": "docs/evidence/m2a/Y9NEE9D2/page_overlay_figure_007.jpg",
+  "thumbnail_paths": [
+    "docs/evidence/m2a/Y9NEE9D2/figure_007_old_asset_bbox_0.png",
+    "docs/evidence/m2a/Y9NEE9D2/figure_007_old_asset_bbox_0.png",
+    "docs/evidence/m2a/Y9NEE9D2/figure_007_new_figure_008_asset_0.png"
+  ],
+  "contact_sheet": "docs/evidence/m2a/Y9NEE9D2/contact_sheet_figure_007.jpg"
+}

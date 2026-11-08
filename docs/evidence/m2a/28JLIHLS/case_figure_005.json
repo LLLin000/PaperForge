@@ -1,0 +1,521 @@
+{
+  "key": "28JLIHLS",
+  "old_target": "render/figures/figure_005.md",
+  "old_id": "figure_005",
+  "page": 4,
+  "meta_pages": 7,
+  "old_inventory": {
+    "figure_id": "figure_005",
+    "figure_namespace": "main",
+    "figure_number": 5,
+    "legend_block_id": "3",
+    "page": 4,
+    "text": "Fig. 5 Effect of inositol phospholipid pathway inhibitors on chondrocyte motility. (a) Directed velocity of chondrocytes after exposure to U-73122 or vehicle (DMSO). * indicates p < 0.0001 relative to the vehicle no-field group and ** indicates p < 0.0001 relative to both the applied-field vehicle group and U-73122 no-field group. (b) Directed velocity of chondrocytes after exposure to neomycin and control media (i.e., serum supplemented DMEM). * indicates p < 0.0001 relative to the neomycin no-field group and ** indicates p < 0.0001 with respect to the applied-field control medium group and p = 0.03 with respect to the neomycin no-field group. The number in the parentheses indicates the number of cells studied.",
+    "matched_assets": [
+      {
+        "block_id": 0,
+        "bbox": [
+          123,
+          70,
+          598,
+          352
+        ],
+        "page": 4
+      },
+      {
+        "block_id": 2,
+        "bbox": [
+          121,
+          390,
+          595,
+          689
+        ],
+        "page": 4
+      },
+      {
+        "block_id": 6,
+        "bbox": [
+          622,
+          68,
+          1104,
+          331
+        ],
+        "page": 4
+      }
+    ],
+    "asset_block_ids": [
+      "0",
+      "2",
+      "6"
+    ],
+    "settlement_type": "same_page",
+    "confidence": 1.0,
+    "match_score": {
+      "score": 1.0,
+      "decision": "matched",
+      "evidence": [
+        "same_page",
+        "x_overlap",
+        "nearby_y",
+        "caption_above_or_below",
+        "multi_asset_coherence_bonus"
+      ]
+    },
+    "flags": [],
+    "bridge_block_ids": [],
+    "consumed_block_ids": [
+      "0",
+      "2",
+      "6"
+    ]
+  },
+  "old_render_exists": true,
+  "old_asset_exists": true,
+  "old_asset_path": "D:\\L\\OB\\Literature-hub\\System\\PaperForge\\ocr\\28JLIHLS\\assets\\figures\\figure_005.jpg",
+  "new_figures_on_page": [
+    {
+      "figure_id": "figure_006",
+      "figure_number": 6,
+      "page": 4,
+      "text": "Fig. 6 Net displacement graph of chondrocytes in studies performed using 6 V/cm for one hour in serum-free DMEM at  $ \\sim37^{\\circ} $C. (a) Directed cathodal migration was observed in the applied-field group. (b) No-field applied cells exhibited random migration. The radial axes of the polar plots ",
+      "matched_assets": [
+        {
+          "block_id": 6,
+          "bbox": [
+            622,
+            68,
+            1104,
+            331
+          ],
+          "page": 4
+        }
+      ]
+    },
+    {
+      "figure_id": "figure_007",
+      "figure_number": 7,
+      "page": 4,
+      "text": "Fig. 7 Effect of temperature on chondrocyte motility. Cell migration at ~37°C was enhanced twofold over similar studies conducted at room temperature. * indicates  $ p<0.0001 $ relative to ~37°C no-field group and ** indicates  $ p<0.0001 $ with respect to both the ~37°C applied-field group and the ",
+      "matched_assets": [
+        {
+          "block_id": 12,
+          "bbox": [
+            621,
+            1035,
+            1103,
+            1323
+          ],
+          "page": 4
+        }
+      ]
+    }
+  ],
+  "caption_candidate_rows": [
+    {
+      "block_id": 3,
+      "role": "figure_caption",
+      "bbox": [
+        115,
+        710,
+        606,
+        933
+      ],
+      "text": "Fig. 5 Effect of inositol phospholipid pathway inhibitors on chondrocyte motility. (a) Directed velocity of chondrocytes after exposure to U-73122 or vehicle (DMSO). * indicates p < 0.0001 relative to the vehicle no-field group and ** indicates p < 0.0001 relative to both the applied-field vehicle g"
+    },
+    {
+      "block_id": 7,
+      "role": "figure_caption",
+      "bbox": [
+        616,
+        346,
+        1106,
+        479
+      ],
+      "text": "Fig. 6 Net displacement graph of chondrocytes in studies performed using 6 V/cm for one hour in serum-free DMEM at  $ \\sim37^{\\circ} $C. (a) Directed cathodal migration was observed in the applied-field group. (b) No-field applied cells exhibited random migration. The radial axes of the polar plots "
+    },
+    {
+      "block_id": 13,
+      "role": "figure_caption",
+      "bbox": [
+        618,
+        1335,
+        1108,
+        1467
+      ],
+      "text": "Fig. 7 Effect of temperature on chondrocyte motility. Cell migration at ~37°C was enhanced twofold over similar studies conducted at room temperature. * indicates  $ p<0.0001 $ relative to ~37°C no-field group and ** indicates  $ p<0.0001 $ with respect to both the ~37°C applied-field group and the "
+    }
+  ],
+  "unmatched_assets_page": [],
+  "raw_page_blocks": [
+    {
+      "block_id": 0,
+      "bbox": [
+        123,
+        70,
+        598,
+        352
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 1,
+      "bbox": [
+        120,
+        334,
+        158,
+        367
+      ],
+      "role": null,
+      "text": "(a)"
+    },
+    {
+      "block_id": 2,
+      "bbox": [
+        121,
+        390,
+        595,
+        689
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 3,
+      "bbox": [
+        115,
+        710,
+        606,
+        933
+      ],
+      "role": null,
+      "text": "Fig. 5 Effect of inositol phospholipid pathway inhibitors on chondrocyte motility. (a) Directed velocity of chondrocytes after exposure to U-73122 or vehicle (DMSO). * indicates p < 0.0001 relative to"
+    },
+    {
+      "block_id": 4,
+      "bbox": [
+        114,
+        975,
+        604,
+        1197
+      ],
+      "role": null,
+      "text": "were also not different (p = 0.13). Under the influence of an applied field neomycin appears to promote anodal migration, see Fig. 5(b). The directed velocity for the neomycin applied field group,  $ "
+    },
+    {
+      "block_id": 5,
+      "bbox": [
+        114,
+        1205,
+        604,
+        1467
+      ],
+      "role": null,
+      "text": "Serum-Free Studies. Cathodally directed migration was also observed in serum-free studies, see Fig. 6. The directed velocity for 6 V/cm applied in the absence of serum was  $ -3.63 \\pm 6.82 $  $ \\mu $"
+    },
+    {
+      "block_id": 6,
+      "bbox": [
+        622,
+        68,
+        1104,
+        331
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 7,
+      "bbox": [
+        616,
+        346,
+        1106,
+        479
+      ],
+      "role": null,
+      "text": "Fig. 6 Net displacement graph of chondrocytes in studies performed using 6 V/cm for one hour in serum-free DMEM at  $ \\sim37^{\\circ} $C. (a) Directed cathodal migration was observed in the applied-fie"
+    },
+    {
+      "block_id": 8,
+      "bbox": [
+        618,
+        516,
+        1105,
+        577
+      ],
+      "role": null,
+      "text": "−0.6317±0.99 for the applied field, serum-free group, whereas sine(φ) for the no-field, serum-free control was 0.437±0.99 (p<0.0001)."
+    },
+    {
+      "block_id": 9,
+      "bbox": [
+        614,
+        591,
+        1110,
+        834
+      ],
+      "role": null,
+      "text": "Temperature Studies. Significant cathodic migration was observed at room temperature and at  $ \\sim37^{\\circ} $C (p<0.0001 for both), with cells moving nearly twofold faster at physiologic temperature"
+    },
+    {
+      "block_id": 10,
+      "bbox": [
+        620,
+        844,
+        718,
+        867
+      ],
+      "role": null,
+      "text": "Discussion"
+    },
+    {
+      "block_id": 11,
+      "bbox": [
+        617,
+        873,
+        1107,
+        997
+      ],
+      "role": null,
+      "text": "In the present investigation, we report for the first time that cultured chondrocytes exhibit cathodal migration under field strengths demonstrated previously to elicit galvanotaxis in other cell type"
+    },
+    {
+      "block_id": 12,
+      "bbox": [
+        621,
+        1035,
+        1103,
+        1323
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 13,
+      "bbox": [
+        618,
+        1335,
+        1108,
+        1467
+      ],
+      "role": null,
+      "text": "Fig. 7 Effect of temperature on chondrocyte motility. Cell migration at ~37°C was enhanced twofold over similar studies conducted at room temperature. * indicates  $ p<0.0001 $ relative to ~37°C no-fi"
+    },
+    {
+      "block_id": 14,
+      "bbox": [
+        118,
+        1491,
+        353,
+        1513
+      ],
+      "role": null,
+      "text": "264 / Vol. 122, JUNE 2000"
+    },
+    {
+      "block_id": 15,
+      "bbox": [
+        873,
+        1490,
+        1106,
+        1513
+      ],
+      "role": null,
+      "text": "Transactions of the ASME"
+    },
+    {
+      "block_id": 16,
+      "bbox": [
+        17,
+        1563,
+        1035,
+        1581
+      ],
+      "role": null,
+      "text": "Downloaded From: http://biomechanical.asmedigitalcollection.asme.org/ on 01/29/2016 Terms of Use: http://www.asme.org/about-asme/terms-of-use"
+    }
+  ],
+  "embed_lines": [
+    {
+      "line": 94,
+      "text": "![[render/figures/figure_005.md]]"
+    }
+  ],
+  "bbox_overlap": [
+    {
+      "old_block": 0,
+      "old_bbox": [
+        123,
+        70,
+        598,
+        352
+      ],
+      "new_figure": "figure_006",
+      "new_block": 6,
+      "new_bbox": [
+        622,
+        68,
+        1104,
+        331
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 0,
+      "old_bbox": [
+        123,
+        70,
+        598,
+        352
+      ],
+      "new_figure": "figure_007",
+      "new_block": 12,
+      "new_bbox": [
+        621,
+        1035,
+        1103,
+        1323
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 2,
+      "old_bbox": [
+        121,
+        390,
+        595,
+        689
+      ],
+      "new_figure": "figure_006",
+      "new_block": 6,
+      "new_bbox": [
+        622,
+        68,
+        1104,
+        331
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 2,
+      "old_bbox": [
+        121,
+        390,
+        595,
+        689
+      ],
+      "new_figure": "figure_007",
+      "new_block": 12,
+      "new_bbox": [
+        621,
+        1035,
+        1103,
+        1323
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 6,
+      "old_bbox": [
+        622,
+        68,
+        1104,
+        331
+      ],
+      "new_figure": "figure_006",
+      "new_block": 6,
+      "new_bbox": [
+        622,
+        68,
+        1104,
+        331
+      ],
+      "iou": 1.0
+    },
+    {
+      "old_block": 6,
+      "old_bbox": [
+        622,
+        68,
+        1104,
+        331
+      ],
+      "new_figure": "figure_007",
+      "new_block": 12,
+      "new_bbox": [
+        621,
+        1035,
+        1103,
+        1323
+      ],
+      "iou": 0.0
+    }
+  ],
+  "bbox_unavailable": false,
+  "claimed_by_new": [
+    {
+      "old_block": 6,
+      "old_bbox": [
+        622,
+        68,
+        1104,
+        331
+      ],
+      "new_figure": "figure_006",
+      "new_block": 6,
+      "iou": 1.0
+    }
+  ],
+  "lost_bboxes": [
+    {
+      "block_id": 0,
+      "bbox": [
+        123,
+        70,
+        598,
+        352
+      ]
+    },
+    {
+      "block_id": 2,
+      "bbox": [
+        121,
+        390,
+        595,
+        689
+      ]
+    }
+  ],
+  "unmatched_bboxes": [],
+  "owner_evidence": [
+    {
+      "old_block": 6,
+      "old_bbox": [
+        622,
+        68,
+        1104,
+        331
+      ],
+      "old_caption_block": 3,
+      "old_caption_distance": 379,
+      "old_caption_horizontal_gap": 502.5,
+      "old_caption_adjacent": false,
+      "claimed_by_figure": "figure_006",
+      "claimed_by_caption_block": 7,
+      "claimed_by_caption_distance": 15,
+      "claimed_by_caption_horizontal_gap": 2.0,
+      "claimed_by_caption_adjacent": true
+    }
+  ],
+  "classification": "REAL_ASSOCIATION_FAILURE",
+  "confidence": "high",
+  "evidence": "partial coverage: lost old bboxes [0, 2]; claimed by new [6]",
+  "proposed_action": "fix new association",
+  "overlay_image": "docs/evidence/m2a/28JLIHLS/page_overlay_figure_005.jpg",
+  "thumbnail_paths": [
+    "docs/evidence/m2a/28JLIHLS/figure_005_old_asset.jpg",
+    "docs/evidence/m2a/28JLIHLS/figure_005_old_asset_bbox_0.png",
+    "docs/evidence/m2a/28JLIHLS/figure_005_old_asset_bbox_1.png"
+  ],
+  "contact_sheet": "docs/evidence/m2a/28JLIHLS/contact_sheet_figure_005.jpg"
+}

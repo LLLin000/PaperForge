@@ -1,0 +1,378 @@
+{
+  "key": "FC72S4K9",
+  "old_target": "render/figures/figure_005.md",
+  "old_id": "figure_005",
+  "page": 5,
+  "meta_pages": 10,
+  "old_inventory": {
+    "figure_id": "figure_005",
+    "figure_namespace": "main",
+    "figure_number": 5,
+    "legend_block_id": "5",
+    "page": 5,
+    "text": "Fig. 5 Medial acromion spurs",
+    "matched_assets": [
+      {
+        "block_id": 4,
+        "bbox": [
+          106,
+          590,
+          570,
+          1100
+        ],
+        "page": 5
+      }
+    ],
+    "asset_block_ids": [
+      "4"
+    ],
+    "settlement_type": "same_page",
+    "confidence": 0.955,
+    "match_score": {
+      "score": 0.955,
+      "decision": "matched",
+      "evidence": [
+        "same_page",
+        "x_overlap",
+        "nearby_y",
+        "caption_above_or_below"
+      ]
+    },
+    "flags": [],
+    "bridge_block_ids": [],
+    "consumed_block_ids": [
+      "4"
+    ]
+  },
+  "old_render_exists": true,
+  "old_asset_exists": false,
+  "old_asset_path": null,
+  "new_figures_on_page": [
+    {
+      "figure_id": "figure_006",
+      "figure_number": 6,
+      "page": 5,
+      "text": "Fig. 6 Osteoarthritis of the acromioclavicular joint with narrowing of joint and spurring of medial acromion",
+      "matched_assets": [
+        {
+          "block_id": 4,
+          "bbox": [
+            106,
+            590,
+            570,
+            1100
+          ],
+          "page": 5
+        },
+        {
+          "block_id": 8,
+          "bbox": [
+            617,
+            590,
+            1083,
+            949
+          ],
+          "page": 5
+        }
+      ]
+    },
+    {
+      "figure_id": "figure_004",
+      "figure_number": 4,
+      "page": 5,
+      "text": "Fig. 4 Lateral spurs in three different patients: bird beak type (A + B) and heel type (C)",
+      "matched_assets": [
+        {
+          "block_id": 2,
+          "bbox": [
+            174,
+            115,
+            1019,
+            490
+          ],
+          "page": 5
+        }
+      ]
+    }
+  ],
+  "caption_candidate_rows": [
+    {
+      "block_id": 3,
+      "role": "figure_caption",
+      "bbox": [
+        96,
+        525,
+        699,
+        548
+      ],
+      "text": "Fig. 4 Lateral spurs in three different patients: bird beak type (A + B) and heel type (C)"
+    },
+    {
+      "block_id": 5,
+      "role": "figure_caption",
+      "bbox": [
+        97,
+        1131,
+        309,
+        1153
+      ],
+      "text": "Fig. 5 Medial acromion spurs"
+    },
+    {
+      "block_id": 9,
+      "role": "figure_caption",
+      "bbox": [
+        606,
+        981,
+        1092,
+        1024
+      ],
+      "text": "Fig. 6 Osteoarthritis of the acromioclavicular joint with narrowing of joint and spurring of medial acromion"
+    }
+  ],
+  "unmatched_assets_page": [],
+  "raw_page_blocks": [
+    {
+      "block_id": 0,
+      "bbox": [
+        99,
+        62,
+        366,
+        83
+      ],
+      "role": null,
+      "text": "Skeletal Radiology (2025) 54:2087–2096"
+    },
+    {
+      "block_id": 1,
+      "bbox": [
+        1054,
+        63,
+        1090,
+        82
+      ],
+      "role": null,
+      "text": "2091"
+    },
+    {
+      "block_id": 2,
+      "bbox": [
+        174,
+        115,
+        1019,
+        490
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 3,
+      "bbox": [
+        96,
+        525,
+        699,
+        548
+      ],
+      "role": null,
+      "text": "Fig. 4 Lateral spurs in three different patients: bird beak type (A + B) and heel type (C)"
+    },
+    {
+      "block_id": 4,
+      "bbox": [
+        106,
+        590,
+        570,
+        1100
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 5,
+      "bbox": [
+        97,
+        1131,
+        309,
+        1153
+      ],
+      "role": null,
+      "text": "Fig. 5 Medial acromion spurs"
+    },
+    {
+      "block_id": 6,
+      "bbox": [
+        98,
+        1187,
+        183,
+        1212
+      ],
+      "role": null,
+      "text": "Results"
+    },
+    {
+      "block_id": 7,
+      "bbox": [
+        95,
+        1239,
+        582,
+        1416
+      ],
+      "role": null,
+      "text": "We have previously described the flow chart [13]. In brief, we received a questionnaire from 1039 (57.6%) out of 1803 patients registered in our project database. A total of 850 (81.8%) of the 1039 qu"
+    },
+    {
+      "block_id": 8,
+      "bbox": [
+        617,
+        590,
+        1083,
+        949
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 9,
+      "bbox": [
+        606,
+        981,
+        1092,
+        1024
+      ],
+      "role": null,
+      "text": "Fig. 6 Osteoarthritis of the acromioclavicular joint with narrowing of joint and spurring of medial acromion"
+    },
+    {
+      "block_id": 10,
+      "bbox": [
+        606,
+        1088,
+        1094,
+        1437
+      ],
+      "role": null,
+      "text": "female) with a mean age of 48.2 years (SD = 8.84). Out of the 825 patients, 50 (5.9%) of the radiographic examinations did not include an outlet view. The median time between radiographic examination "
+    },
+    {
+      "block_id": 11,
+      "bbox": [
+        1002,
+        1471,
+        1092,
+        1497
+      ],
+      "role": null,
+      "text": ""
+    }
+  ],
+  "embed_lines": [
+    {
+      "line": 71,
+      "text": "![[render/figures/figure_005.md]]"
+    }
+  ],
+  "bbox_overlap": [
+    {
+      "old_block": 4,
+      "old_bbox": [
+        106,
+        590,
+        570,
+        1100
+      ],
+      "new_figure": "figure_006",
+      "new_block": 4,
+      "new_bbox": [
+        106,
+        590,
+        570,
+        1100
+      ],
+      "iou": 1.0
+    },
+    {
+      "old_block": 4,
+      "old_bbox": [
+        106,
+        590,
+        570,
+        1100
+      ],
+      "new_figure": "figure_006",
+      "new_block": 8,
+      "new_bbox": [
+        617,
+        590,
+        1083,
+        949
+      ],
+      "iou": 0.0
+    },
+    {
+      "old_block": 4,
+      "old_bbox": [
+        106,
+        590,
+        570,
+        1100
+      ],
+      "new_figure": "figure_004",
+      "new_block": 2,
+      "new_bbox": [
+        174,
+        115,
+        1019,
+        490
+      ],
+      "iou": 0.0
+    }
+  ],
+  "bbox_unavailable": false,
+  "claimed_by_new": [
+    {
+      "old_block": 4,
+      "old_bbox": [
+        106,
+        590,
+        570,
+        1100
+      ],
+      "new_figure": "figure_006",
+      "new_block": 4,
+      "iou": 1.0
+    }
+  ],
+  "lost_bboxes": [],
+  "unmatched_bboxes": [],
+  "owner_evidence": [
+    {
+      "old_block": 4,
+      "old_bbox": [
+        106,
+        590,
+        570,
+        1100
+      ],
+      "old_caption_block": 5,
+      "old_caption_distance": 31,
+      "old_caption_horizontal_gap": 135.0,
+      "old_caption_adjacent": true,
+      "claimed_by_figure": "figure_006",
+      "claimed_by_caption_block": 9,
+      "claimed_by_caption_distance": 0,
+      "claimed_by_caption_horizontal_gap": 511.0,
+      "claimed_by_caption_adjacent": false
+    }
+  ],
+  "classification": "REAL_ASSOCIATION_FAILURE",
+  "confidence": "high",
+  "evidence": "new figure figure_006 overclaims bbox adjacent to old caption; remove its claim and attach to old figure",
+  "proposed_action": "fix new association",
+  "overlay_image": "docs/evidence/m2a/FC72S4K9/page_overlay_figure_005.jpg",
+  "thumbnail_paths": [
+    "docs/evidence/m2a/FC72S4K9/figure_005_old_asset_bbox_0.png",
+    "docs/evidence/m2a/FC72S4K9/figure_005_old_asset_bbox_0.png",
+    "docs/evidence/m2a/FC72S4K9/figure_005_new_figure_004_asset_0.png"
+  ],
+  "contact_sheet": "docs/evidence/m2a/FC72S4K9/contact_sheet_figure_005.jpg"
+}

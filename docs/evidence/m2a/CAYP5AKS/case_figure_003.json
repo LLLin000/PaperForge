@@ -1,0 +1,392 @@
+{
+  "key": "CAYP5AKS",
+  "old_target": "render/figures/figure_003.md",
+  "old_id": "figure_003",
+  "page": 9,
+  "meta_pages": 24,
+  "old_inventory": {
+    "figure_id": "figure_003",
+    "figure_namespace": "main",
+    "figure_number": 3,
+    "legend_block_id": "16",
+    "page": 9,
+    "text": "Fig. 3 | The translational vector for tissue-engineered cartilage products.\nThe translational vector is the process from research and development to clinical use, and it requires the fulfilment of multiple steps in the domains of regulation, manufacturing, and funding and intellectual property (IP). a. The aspects of the translational vector must be coordinated in parallel as they influence each other simultaneously in an interconnected manner. For example, an investigator might only be able to secure the appropriate funding to conduct costly clinical trials after IP is established. b. In the USA, the multiple successive steps of regulatory approval required for development of biologics or devices for cartilage tissue engineering are managed by the Center for Biologics Evaluation and Research (CBER) or the Center for Devices and Radiological Health (CDRH), respectively. c. Successive stages in the manufacture of tissue-engineered cartilage products (for use in animal studies, clinical trials and clinical-grade products) are each subject to specific manufacturing quality requirements. d. Translation of a product from research to clinical use requires escalating funding and appropriate management of IP. BLA, Biologics License Application; GLP, Good Laboratory Practice; GMP, Good Manufacturing Practice; IDE, Investigational Device Exemption; IND, Investigational New Drug; PMA, Premarket Approval.",
+    "matched_assets": [
+      {
+        "block_id": 9,
+        "bbox": [
+          74,
+          830,
+          1086,
+          870
+        ],
+        "page": 9
+      }
+    ],
+    "asset_block_ids": [
+      "9"
+    ],
+    "settlement_type": "same_page",
+    "confidence": 0.755,
+    "match_score": {
+      "score": 0.755,
+      "decision": "matched",
+      "evidence": [
+        "same_page",
+        "x_overlap",
+        "caption_above_or_below"
+      ]
+    },
+    "flags": [],
+    "bridge_block_ids": [],
+    "consumed_block_ids": [
+      "9"
+    ]
+  },
+  "old_render_exists": true,
+  "old_asset_exists": false,
+  "old_asset_path": null,
+  "new_figures_on_page": [],
+  "caption_candidate_rows": [
+    {
+      "block_id": 10,
+      "role": "figure_caption",
+      "bbox": [
+        76,
+        894,
+        178,
+        915
+      ],
+      "text": "b Regulatory"
+    },
+    {
+      "block_id": 12,
+      "role": "figure_caption",
+      "bbox": [
+        76,
+        1053,
+        201,
+        1072
+      ],
+      "text": "C Manufacturing"
+    },
+    {
+      "block_id": 14,
+      "role": "figure_caption",
+      "bbox": [
+        76,
+        1193,
+        330,
+        1215
+      ],
+      "text": "d Funding and intellectual property"
+    },
+    {
+      "block_id": 16,
+      "role": "figure_caption_candidate",
+      "bbox": [
+        73,
+        1315,
+        591,
+        1495
+      ],
+      "text": "Fig. 3 | The translational vector for tissue-engineered cartilage products.\nThe translational vector is the process from research and development to clinical use, and it requires the fulfilment of multiple steps in the domains of regulation, manufacturing, and funding and intellectual property (IP)."
+    }
+  ],
+  "unmatched_assets_page": [
+    {
+      "block_id": 9,
+      "bbox": [
+        74,
+        830,
+        1086,
+        870
+      ],
+      "raw_label": "image"
+    }
+  ],
+  "raw_page_blocks": [
+    {
+      "block_id": 0,
+      "bbox": [
+        77,
+        80,
+        308,
+        115
+      ],
+      "role": null,
+      "text": "Review article"
+    },
+    {
+      "block_id": 1,
+      "bbox": [
+        73,
+        223,
+        594,
+        548
+      ],
+      "role": null,
+      "text": "approach involved modification of chondrocytes to secrete anti-inflammatory cytokines in response to mechanical stimuli $ ^{[4]} $. Specifically, by harnessing the osmotically sensitive TRPV4 signalli"
+    },
+    {
+      "block_id": 2,
+      "bbox": [
+        74,
+        565,
+        509,
+        589
+      ],
+      "role": null,
+      "text": "Translation of cartilage tissue engineering"
+    },
+    {
+      "block_id": 3,
+      "bbox": [
+        73,
+        591,
+        594,
+        765
+      ],
+      "role": null,
+      "text": "Once a tissue-engineered cartilage treatment is developed in vitro, there are many aspects of the translational vector that must be overcome before clinical application (Fig. 3). Here, we provide an o"
+    },
+    {
+      "block_id": 4,
+      "bbox": [
+        605,
+        223,
+        1125,
+        267
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 5,
+      "bbox": [
+        607,
+        288,
+        790,
+        309
+      ],
+      "role": null,
+      "text": "Large-animal studies"
+    },
+    {
+      "block_id": 6,
+      "bbox": [
+        605,
+        309,
+        1128,
+        676
+      ],
+      "role": null,
+      "text": "To proceed through the translational vector, cartilage implants should be evaluated for safety and efficacy in orthotopic large-animal models before first-in-human studies can be conducted. Selected l"
+    },
+    {
+      "block_id": 7,
+      "bbox": [
+        605,
+        675,
+        1127,
+        764
+      ],
+      "role": null,
+      "text": "If preliminary orthotopic studies are successful, pivotal large-animal studies to support an FDA application for clinical trials can be conducted. Pivotal studies have additional requirements, includi"
+    },
+    {
+      "block_id": 8,
+      "bbox": [
+        76,
+        801,
+        237,
+        820
+      ],
+      "role": null,
+      "text": "a Translational vector"
+    },
+    {
+      "block_id": 9,
+      "bbox": [
+        74,
+        830,
+        1086,
+        870
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 10,
+      "bbox": [
+        76,
+        894,
+        178,
+        915
+      ],
+      "role": null,
+      "text": "b Regulatory"
+    },
+    {
+      "block_id": 11,
+      "bbox": [
+        73,
+        919,
+        1082,
+        1019
+      ],
+      "role": null,
+      "text": "<table><tr><td>CBER biologics pathway</td><td>IND-enabling studies</td><td>IND filing</td><td>Clinical studies</td><td>BLA filing</td><td>Approval for marketing</td><td>Post-marketing research</td></t"
+    },
+    {
+      "block_id": 12,
+      "bbox": [
+        76,
+        1053,
+        201,
+        1072
+      ],
+      "role": null,
+      "text": "C Manufacturing"
+    },
+    {
+      "block_id": 13,
+      "bbox": [
+        74,
+        1077,
+        1083,
+        1163
+      ],
+      "role": null,
+      "text": "<table><tr><td>Establishment of cell banks</td><td>Establishment of cell bank for animal studies</td><td>Establishment of cell bank for clinical trials</td><td>Manufacturing clinical-grade cell therap"
+    },
+    {
+      "block_id": 14,
+      "bbox": [
+        76,
+        1193,
+        330,
+        1215
+      ],
+      "role": null,
+      "text": "d Funding and intellectual property"
+    },
+    {
+      "block_id": 15,
+      "bbox": [
+        74,
+        1220,
+        1086,
+        1294
+      ],
+      "role": null,
+      "text": "<table><tr><td>Establishment of IP</td><td>File provisional patent application</td><td>File patent application</td><td>Publication of patent application</td><td>Patent granted</td></tr><tr><td>Funding"
+    },
+    {
+      "block_id": 16,
+      "bbox": [
+        73,
+        1315,
+        591,
+        1495
+      ],
+      "role": null,
+      "text": "Fig. 3 | The translational vector for tissue-engineered cartilage products.\nThe translational vector is the process from research and development to clinical use, and it requires the fulfilment of mul"
+    },
+    {
+      "block_id": 17,
+      "bbox": [
+        606,
+        1312,
+        1114,
+        1494
+      ],
+      "role": null,
+      "text": ""
+    },
+    {
+      "block_id": 18,
+      "bbox": [
+        75,
+        1523,
+        565,
+        1543
+      ],
+      "role": null,
+      "text": "Nature Reviews Rheumatology | Volume 20 | June 2024 | 323-346"
+    },
+    {
+      "block_id": 19,
+      "bbox": [
+        1092,
+        1524,
+        1125,
+        1543
+      ],
+      "role": null,
+      "text": "331"
+    }
+  ],
+  "embed_lines": [
+    {
+      "line": 156,
+      "text": "![[render/figures/figure_003.md]]"
+    }
+  ],
+  "bbox_overlap": [
+    {
+      "old_block": 9,
+      "old_bbox": [
+        74,
+        830,
+        1086,
+        870
+      ],
+      "new_figure": "UNMATCHED",
+      "new_block": 9,
+      "new_bbox": [
+        74,
+        830,
+        1086,
+        870
+      ],
+      "iou": 1.0
+    }
+  ],
+  "bbox_unavailable": false,
+  "claimed_by_new": [],
+  "lost_bboxes": [
+    {
+      "block_id": 9,
+      "bbox": [
+        74,
+        830,
+        1086,
+        870
+      ]
+    }
+  ],
+  "unmatched_bboxes": [
+    {
+      "block_id": 9,
+      "bbox": [
+        74,
+        830,
+        1086,
+        870
+      ],
+      "unmatched_block": 9
+    }
+  ],
+  "owner_evidence": [],
+  "classification": "REAL_ASSOCIATION_FAILURE",
+  "confidence": "high",
+  "evidence": "partial coverage: lost old bboxes [9]; claimed by new [none]",
+  "proposed_action": "fix new association",
+  "overlay_image": "docs/evidence/m2a/CAYP5AKS/page_overlay_figure_003.jpg",
+  "thumbnail_paths": [
+    "docs/evidence/m2a/CAYP5AKS/figure_003_old_asset_bbox_0.png",
+    "docs/evidence/m2a/CAYP5AKS/figure_003_old_asset_bbox_0.png"
+  ],
+  "contact_sheet": "docs/evidence/m2a/CAYP5AKS/contact_sheet_figure_003.jpg"
+}
