@@ -478,6 +478,39 @@ a guarded cross-type correction (a table whose asset role is a figure asset,
 with a same-page table asset adjacent); corpus impact is one paper. It is
 recorded here as a candidate for a separate PR, not implemented.
 
+## One object-association sequence (P0-A)
+
+First parse and derived rebuild ran different figure/table sequences. The
+missing first-parse calls were not cosmetic: without
+`resolve_media_asset_conflicts` the same page could keep a cross-type claim
+depending on which path wrote it last.
+
+`paperforge/worker/ocr_object_stage.py` now owns the order:
+
+```
+build_figure_inventory → write_back_figure_roles → residual bio cleanup
+→ post-reference bio cleanup/prune → reader synthesis → build_table_inventory
+→ resolve_media_asset_conflicts → attach_ownership_conflicts
+```
+
+| Call | first parse (before) | rebuild (before) | both (now) |
+|---|---|---|---|
+| `write_back_figure_roles` | no | yes | yes |
+| bio cleanup | yes | yes | yes |
+| reader synthesis | yes | yes | yes |
+| `resolve_media_asset_conflicts` | **no** | yes | yes |
+| `attach_ownership_conflicts` | no | yes | yes |
+| table role writeback | via writeback only | explicit | `commit_object_roles` |
+
+`commit_object_roles` applies `apply_object_writebacks` then
+`write_back_table_roles`, so writeback stays the single consumer of object
+claims. First parse also passes `page_pdf_lines_by_page` to figure matching,
+which it used to skip.
+
+Validation: the shared replay matches a real serial `_rebuild_one_paper` on all
+40 corpus papers — 0 row differences and 0 claim differences between figure and
+table inventories (PDF absent, same evidence).
+
 ### Known limits
 
 - Running heads and folios are placed last; a paper whose body starts in the top 8% keeps those blocks in the body flow (they are not margin unless their role is furniture).
