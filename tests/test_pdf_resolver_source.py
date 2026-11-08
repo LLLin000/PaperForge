@@ -5,13 +5,26 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pymupdf
+
 from paperforge.pdf_resolver import resolve_source_pdf
 
 
 def _pdf(path: Path) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(b"%PDF-1.4 fake bytes")
+    doc = pymupdf.open()
+    doc.new_page()
+    doc.save(str(path))
+    doc.close()
     return path
+
+
+def test_unreadable_pdf_is_not_evidence(tmp_path: Path) -> None:
+    vault = tmp_path / "vault"
+    (vault / "System" / "Zotero" / "storage" / "ABCD1234").mkdir(parents=True)
+    broken = vault / "System" / "Zotero" / "storage" / "ABCD1234" / "paper.pdf"
+    broken.write_bytes(b"%PDF-1.4 not really a pdf")
+    assert resolve_source_pdf(vault, "[[System/Zotero/storage/ABCD1234/paper.pdf]]") is None
 
 
 def test_absolute_path_resolves(tmp_path: Path) -> None:
