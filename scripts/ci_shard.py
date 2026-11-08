@@ -36,12 +36,33 @@ EXCLUDED_PREFIXES = (
 )
 
 
+def _tracked_test_files() -> set[str] | None:
+    """Files git knows about; CI only ever sees the committed tree.
+
+    Local-only test files (``.git/info/exclude``) must not enter the map: CI
+    would report them as vanished and fail every shard.
+    """
+    try:
+        proc = subprocess.run(
+            ["git", "-C", str(REPO_ROOT), "ls-files", "-z", "--", "tests"],
+            capture_output=True,
+            text=True,
+        )
+    except OSError:
+        return None
+    if proc.returncode != 0:
+        return None
+    return {path for path in proc.stdout.split("\0") if path}
+
+
 def suite_files() -> list[str]:
     """Every test file the full-suite job runs."""
+    tracked = _tracked_test_files()
     return sorted(
         p.relative_to(REPO_ROOT).as_posix()
         for p in (REPO_ROOT / "tests").rglob("test_*.py")
         if "__pycache__" not in p.parts
+        and (tracked is None or p.relative_to(REPO_ROOT).as_posix() in tracked)
         and not any(
             p.relative_to(REPO_ROOT).as_posix().startswith(pre)
             for pre in EXCLUDED_PREFIXES
@@ -79,10 +100,12 @@ def _collected_counts() -> dict[str, int]:
 
 def write_map(shards: int) -> int:
     """Balance files across shards (greedy LPT on collected test counts)."""
-    counts = _collected_counts()
+    files = suite_files()
+    allowed = set(files)
+    counts = {file: count for file, count in _collected_counts().items() if file in allowed}
     # Helper modules match test_*.py but collect nothing; pin them to a shard
     # anyway so the map stays a partition of the tree.
-    for file in suite_files():
+    for file in files:
         counts.setdefault(file, 0)
     load = {i: 0 for i in range(shards)}
     assigned: dict[str, int] = {}
