@@ -5666,11 +5666,128 @@ def _figure_ownership_strength(fig: dict) -> tuple[int, int]:
     return (explicit, strong)
 
 
-def resolve_media_asset_conflicts(figure_inventory: dict, table_inventory: dict) -> list[dict]:
+def _blocks_by_key(structured: list[dict]) -> dict[tuple[int, str], dict]:
+    by_key: dict[tuple[int, str], dict] = {}
+    for block in structured:
+        try:
+            page = int(block.get("page", 0) or 0)
+        except (TypeError, ValueError):
+            continue
+        key = (page, str(block.get("block_id", "")))
+        by_key.setdefault(key, block)
+    return by_key
+
+
+def _block_bbox(block: dict | None) -> list[float] | None:
+    if not block:
+        return None
+    bbox = block.get("bbox") or block.get("block_bbox") or []
+    return list(bbox) if len(bbox) >= 4 else None
+
+
+def _edge_gap(caption: dict | None, asset: dict | None, page_height: float) -> float | None:
+    cap_box = _block_bbox(caption)
+    asset_box = _block_bbox(asset)
+    if cap_box is None or asset_box is None or page_height <= 0:
+        return None
+    gap = max(0.0, asset_box[1] - cap_box[3], cap_box[1] - asset_box[3])
+    return gap / page_height
+
+
+def _is_table_kind(block: dict) -> bool:
+    """Table-ness from pre-writeback evidence, not from a post-match role."""
+    role = str(block.get("role") or "").lower()
+    raw_label = str(block.get("raw_label") or "").lower()
+    return role in {"table_html", "table_asset"} or raw_label in {"table", "table_image"}
+
+
+def _cross_type_arbitration(
+    fig: dict,
+    table: dict,
+    asset_id: tuple[int, str],
+    structured: list[dict],
+    figure_inventory: dict,
+    table_inventory: dict,
+) -> dict | None:
+    """Break a weak/weak tie with caption-adjacency evidence.
+
+    Returns a resolution record, or None when the evidence is not decisive.
+    The loser never keeps the contested asset: it moves to a unique same-page
+    table asset, or loses the asset. Figures are not re-attached here — a
+    dropped figure claim is more visible than a dropped table claim.
+    """
+    blocks = _blocks_by_key(structured)
+    page, asset_block_id = asset_id
+    asset = blocks.get((page, str(asset_block_id)))
+    if asset is None:
+        return None
+    height = float(asset.get("page_height", 0) or 0)
+    figure_caption = blocks.get((int(fig.get("page", 0) or 0), str(fig.get("legend_block_id", ""))))
+    table_caption = blocks.get((int(table.get("page", 0) or 0), str(table.get("caption_block_id", ""))))
+    figure_gap = _edge_gap(figure_caption, asset, height)
+    table_gap = _edge_gap(table_caption, asset, height)
+    if figure_gap is None or table_gap is None:
+        return None
+    close, far = 0.05, 0.12
+    if not (min(figure_gap, table_gap) <= close and max(figure_gap, table_gap) >= far):
+        return None
+
+    figure_owns = figure_gap <= table_gap
+    if not figure_owns:
+        # Only the table side has a narrow reattachment rule today.
+        return None
+
+    figure_owned = _collect_figure_owned_asset_ids(figure_inventory)
+    table_owned = _collect_table_owned_asset_ids(table_inventory)
+    candidates = []
+    for block in structured:
+        try:
+            block_page = int(block.get("page", 0) or 0)
+        except (TypeError, ValueError):
+            continue
+        if block_page != page or not _is_table_kind(block):
+            continue
+        candidate_key = _asset_page_id(page, block.get("block_id", ""))
+        if candidate_key is None or candidate_key in figure_owned or candidate_key in table_owned:
+            continue
+        gap = _edge_gap(table_caption, block, height)
+        if gap is not None and gap <= close:
+            candidates.append((gap, str(block.get("block_id", ""))))
+    candidates.sort()
+    if len(candidates) == 1:
+        table["asset_block_id"] = candidates[0][1]
+        table["has_asset"] = True
+        return {
+            "page": page,
+            "block_id": str(asset_block_id),
+            "winner": "figure",
+            "table_reassigned_to": candidates[0][1],
+            "evidence": {"figure_gap": round(figure_gap, 4), "table_gap": round(table_gap, 4)},
+        }
+    table["has_asset"] = False
+    table["asset_block_id"] = None
+    return {
+        "page": page,
+        "block_id": str(asset_block_id),
+        "winner": "figure",
+        "table_reassigned_to": None,
+        "evidence": {"figure_gap": round(figure_gap, 4), "table_gap": round(table_gap, 4)},
+    }
+
+
+def resolve_media_asset_conflicts(
+    figure_inventory: dict,
+    table_inventory: dict,
+    *,
+    structured: list[dict] | None = None,
+) -> list[dict]:
     """Arbitrate shared assets between figure and table inventories.
 
-    Only resolves clear asymmetric cases (explicit+strong vs weak).
-    Equal-strength weak/weak stays unresolved — surfaced in ownership_conflicts.
+    Strong asymmetric cases resolve as before. A weak/weak tie is broken by
+    caption adjacency when `structured` is supplied: the asset goes to the
+    caption that actually touches it, and the losing table either moves to a
+    unique same-page table asset or loses the asset. Everything else stays
+    unresolved and is surfaced in ownership_conflicts.
     Returns list of resolution records.
     """
     resolutions: list[dict] = []
@@ -5704,6 +5821,13 @@ def resolve_media_asset_conflicts(figure_inventory: dict, table_inventory: dict)
             kept_figures.append(fig)
             continue
 
+        tie = None
+        if structured:
+            tie = _cross_type_arbitration(fig, table, conflict_id, structured, figure_inventory, table_inventory)
+        if tie is not None:
+            resolutions.append(tie)
+            kept_figures.append(fig)
+            continue
         kept_figures.append(fig)  # weak/weak, no resolution
 
     figure_inventory["matched_figures"] = kept_figures
