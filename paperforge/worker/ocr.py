@@ -2111,7 +2111,9 @@ def postprocess_ocr_result(
     from paperforge.worker.ocr_versions import OCR_PIPELINE_VERSION
     meta["normalize_mode"] = "seed_only" if _ocr_pipeline_v3_enabled() else "legacy"
     meta["ocr_pipeline_version"] = OCR_PIPELINE_VERSION
-    source_pdf = Path(meta.get("source_pdf", "")) if meta.get("source_pdf") else None
+    from paperforge.pdf_resolver import resolve_source_pdf
+
+    source_pdf = resolve_source_pdf(vault, meta.get("source_pdf"))
     pdf_doc = None
     try:
         if source_pdf and source_pdf.exists():
@@ -2128,30 +2130,8 @@ def postprocess_ocr_result(
     # --- Phase 1: raw metadata and source metadata ---
     artifacts = artifact_paths_for_key(vault, key)
 
-    # raw_meta.json
-    source_pdf_path = Path(meta.get("source_pdf", "")) if meta.get("source_pdf") else None
-    # Locator → real file (wikilink / vault-relative / storage: /
-    # storage-KEY-dir fallback) so the fingerprint is the ACTUAL PDF
-    # identity, never the placeholder.  The path is a locator; bytes are
-    # the identity (ADR-0002 §5 #1).
-    if source_pdf_path is not None:
-        try:
-            from paperforge.pdf_resolver import resolve_pdf_path
-
-            _zotero_dir = None
-            _cfg = {}
-            try:
-                _cfg = read_json(vault / "paperforge.json") if (vault / "paperforge.json").exists() else {}
-            except Exception:
-                pass
-            _zd = _cfg.get("zotero_data_dir", "") or _cfg.get("zotero_link", "")
-            if _zd:
-                _zotero_dir = Path(_zd)
-            resolved = resolve_pdf_path(str(source_pdf_path), True, vault, _zotero_dir)
-            if resolved:
-                source_pdf_path = Path(resolved)
-        except Exception:  # noqa: BLE001 — keep locator; fp degrades to unknown
-            pass
+    # raw_meta.json — the resolved file is the PDF identity, not the locator
+    source_pdf_path = source_pdf
     pdf_fingerprint = (
         compute_pdf_fingerprint(source_pdf_path) if source_pdf_path and source_pdf_path.exists() else "unknown"
     )
@@ -2187,7 +2167,6 @@ def postprocess_ocr_result(
     artifacts.blocks_structured.parent.mkdir(parents=True, exist_ok=True)
     all_raw_blocks = build_raw_blocks_for_result_lines(key, all_results)
 
-    source_pdf_path = Path(meta.get("source_pdf", "")) if meta.get("source_pdf") else None
     if source_pdf_path and source_pdf_path.exists():
         from paperforge.worker.ocr_pdf_spans import (
             backfill_missing_text_from_pdf,

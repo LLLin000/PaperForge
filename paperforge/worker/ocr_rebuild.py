@@ -20,13 +20,22 @@ def _resolve_source_pdf_for_rebuild(vault: Path, key: str, meta: dict) -> Path |
     """Resolve a usable source PDF path for span backfill.
 
     Resolution order:
-    1. meta['source_pdf'] if exists and file exists
+    1. meta['source_pdf'] through the shared resolver (absolute path, wikilink,
+       vault-relative, ``storage:`` locator) — the same resolution first parse
+       uses, so both entries see the same PDF evidence
     2. Zotero storage lookup: {vault}/zotero/storage/{key}/*.pdf
     3. paper dir: {vault}/System/PaperForge/ocr/{key}/source.pdf
     """
-    source = meta.get("source_pdf") or ""
-    if source and Path(source).exists():
-        return Path(source)
+    source = str(meta.get("source_pdf") or "")
+    if source:
+        try:
+            from paperforge.pdf_resolver import resolve_source_pdf
+
+            resolved = resolve_source_pdf(vault, source)
+            if resolved:
+                return resolved
+        except Exception:  # noqa: BLE001 — locator resolution must never block rebuild
+            pass
 
     storage_dir = vault / "zotero" / "storage" / key
     if storage_dir.exists():
