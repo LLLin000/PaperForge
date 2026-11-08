@@ -571,6 +571,27 @@ Result on `2BYRLKQS` p4: figure 1 keeps block 8, table 2 moves to block 3,
 `ownership_conflicts` empty. Corpus impact over the 40-paper set: exactly this
 one resolution.
 
+## Post-match consumes ownership (P1)
+
+`post_match_normalize` re-runs the document shadow, the role rescue and the
+tail settlement after figure/table matching has committed ownership. Those steps
+are free to classify body text, but a block the inventory already assigned to a
+figure or table keeps that role: roles are protected from the pre-writeback
+inventory facts (`figure_caption`, `figure_asset`, `table_caption`,
+`table_html`), not from `_object_owner_id`, which is only written later by
+`apply_object_writebacks`. A disagreement is recorded in
+`_post_match_role_override` for the audit instead of being applied.
+
+Protection is refused, not guessed, when `(page, block_id)` is duplicated in the
+rows or when the figure and table inventories both claim the block with
+different roles (`_post_match_role_ambiguous` records the reason). The conflict
+resolver owns contested objects.
+
+Corpus check over the 40-paper set: 978 safe inventory claims, 1 contested key,
+and 13 role corrections in 8 papers — captions/assets that matching had already
+committed but normalize left as candidates. Rendered markdown is byte-identical
+with and without the guard on all 8 papers.
+
 ### Known limits
 
 - Running heads and folios are placed last; a paper whose body starts in the top 8% keeps those blocks in the body flow (they are not margin unless their role is furniture).

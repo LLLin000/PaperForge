@@ -52,6 +52,33 @@ def _sync_render_index_defaults(rows: list[dict]) -> None:
                 row["index_default"] = False
 
 
+def _claimed_role_keys(rows: list[dict]) -> dict[tuple[int, str], str]:
+    claimed: dict[tuple[int, str], str] = {}
+    for row in rows:
+        if not row.get("_object_owner_id"):
+            continue
+        claimed[(int(row.get("page", 0) or 0), str(row.get("block_id", "")))] = str(row.get("role") or "")
+    return claimed
+
+
+def _reassert_claimed_roles(rows: list[dict], claimed: dict[tuple[int, str], str]) -> None:
+    """Ownership outranks normalization: a claimed block keeps its object role.
+
+    The normalize shadow and the tail settlement are free to classify body text;
+    they do not get to un-claim a caption or an asset that figure/table matching
+    already committed. Any disagreement is recorded for the audit, not applied.
+    """
+    for row in rows:
+        key = (int(row.get("page", 0) or 0), str(row.get("block_id", "")))
+        expected = claimed.get(key)
+        if expected is None:
+            continue
+        actual = str(row.get("role") or "")
+        if actual != expected:
+            row["_post_match_role_override"] = {"role": actual, "expected": expected}
+        row["role"] = expected
+
+
 def post_match_normalize(
     rows: list[dict],
     figure_inventory: dict,
@@ -62,6 +89,7 @@ def post_match_normalize(
 ) -> tuple[list[dict], DocumentStructure]:
     """Shadow normalize rows, commit final roles, run tail settlement."""
     live_rows = [dict(row) for row in rows]
+    claimed_roles = _claimed_role_keys(live_rows)
     shadow_doc, shadow_rows = normalize_document_structure(
         [dict(row) for row in rows],
         source_frontmatter_anchors=source_frontmatter_anchors,
@@ -101,5 +129,7 @@ def post_match_normalize(
             live_rows, paper_context["role_profiles"], shadow_doc
         )
     settle_tail_and_backmatter(structured_blocks=live_rows, document_structure=shadow_doc)
+    if claimed_roles:
+        _reassert_claimed_roles(live_rows, claimed_roles)
     _sync_render_index_defaults(live_rows)
     return live_rows, shadow_doc
