@@ -198,7 +198,9 @@ def test_markdown_heading_uses_display_label() -> None:
     assert markdown.startswith("# Figure 11-1\n")
 
 
-def test_duplicate_artifact_id_is_recorded_before_dispatch(tmp_path, monkeypatch) -> None:
+def test_duplicate_artifact_id_aborts_before_dispatch(tmp_path, monkeypatch) -> None:
+    import pytest
+
     import paperforge.worker.ocr_objects as objects
 
     dispatched = []
@@ -207,9 +209,10 @@ def test_duplicate_artifact_id_is_recorded_before_dispatch(tmp_path, monkeypatch
         {"figure_id": "same", "page": 1, "text": "Figure 1", "matched_assets": []},
         {"figure_id": "same", "page": 2, "text": "Figure 2", "matched_assets": []},
     ]}
-    objects.extract_and_write_objects(
-        None, figures, {"tables": [], "unmatched_assets": []}, tmp_path / "assets", tmp_path / "render",
-    )
-    assert dispatched == ["same"]
+    with pytest.raises(objects.MaterializationCollisionError):
+        objects.extract_and_write_objects(
+            None, figures, {"tables": [], "unmatched_assets": []}, tmp_path / "assets", tmp_path / "render",
+        )
+    assert dispatched == []
     assert figures["identity_collisions"][0]["type"] == "identity_collision"
     assert figures["identity_collisions"][0]["status"] == "HARD_FAILURE"

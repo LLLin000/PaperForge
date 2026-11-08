@@ -73,6 +73,11 @@ Observation → Candidate → Association → Ownership → Identity
    traceable; a broken link is a reconciliation failure.
 5. No silent overwrite: a duplicate artifact path aborts the write and records
    the conflict.
+6. Materialization is transactional: build the complete manifest, validate that
+   every target path is unique, render into a staging directory, validate the
+   staged files, then swap directories with a journal. Any failure (collision,
+   staging error, commit error, interruption) leaves the previous artifacts
+   byte-identical; recovery restores the backups before the next run.
 
 ## Table invariants (E4)
 
