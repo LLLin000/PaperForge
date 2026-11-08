@@ -48,13 +48,24 @@ def resolve_source_pdf(vault_root: Path, locator: str | None) -> Path | None:
         except (OSError, ValueError):
             zotero_dir = None
     resolved = resolve_pdf_path(str(locator), True, Path(vault_root), zotero_dir)
-    if resolved:
-        return Path(resolved)
-    raw = str(locator).strip()
-    if raw.startswith("[[") and raw.endswith("]]"):
-        raw = raw[2:-2]
-    direct = Path(raw)
-    return direct if direct.exists() else None
+    candidate = Path(resolved) if resolved else None
+    if candidate is None:
+        raw = str(locator).strip()
+        if raw.startswith("[[") and raw.endswith("]]"):
+            raw = raw[2:-2]
+        direct = Path(raw)
+        if direct.exists():
+            candidate = direct
+    if candidate is None:
+        return None
+    try:
+        import pymupdf
+
+        with pymupdf.open(str(candidate)):
+            pass
+    except Exception:  # noqa: BLE001 — unreadable files are not PDF evidence
+        return None
+    return candidate
 
 
 def resolve_pdf_path(
