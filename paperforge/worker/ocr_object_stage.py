@@ -60,7 +60,7 @@ def run_association_stage(
     tables = build_table_inventory(structured)
     # Conflict resolution must happen before post-match: it is the only place
     # that decides which side owns a contested asset.
-    resolve_media_asset_conflicts(figures, tables)
+    resolve_media_asset_conflicts(figures, tables, structured=structured)
     attach_ownership_conflicts(figures, tables)
     return ObjectStageResult(figures=figures, tables=tables, reader_payload=reader_payload)
 

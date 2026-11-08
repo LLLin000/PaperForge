@@ -547,6 +547,30 @@ Measured on the 40-paper corpus (all PDFs resolvable):
 The run found one real divergence (`2ZBAK9VY`: a supplement PDF with 8 pages
 against 12 OCR pages) which is what the cache fallback above fixes.
 
+## Cross-type asset claims (P0-B)
+
+`resolve_media_asset_conflicts` used to leave every figure/table tie unresolved
+unless one side was explicit and strong. `2BYRLKQS` p4: figure 1 (legend block 9)
+and table 2 (caption block 2) both claimed block 8, strengths tied at (1,1), so
+block 8 was reported as `asset_multiple_groups` while the table's own
+`table_html` block 3 sat unclaimed.
+
+The resolver now breaks a weak/weak tie with caption adjacency when blocks are
+supplied:
+
+- edge gap figure caption → asset `0.0025` vs table caption → asset `0.4956`;
+- winner must be ≤ `0.05` (5% page height) and the loser ≥ `0.12`;
+- the losing table moves only to a **unique** same-page table-kind block
+  (`role`/`raw_label` table evidence, not the post-match role) within `0.05` of
+  its caption and unclaimed by any figure or table; otherwise it loses the asset
+  (`has_asset = False`) and the conflict remains visible;
+- figure claims are never re-attached this way — a dropped figure is riskier
+  than a dropped table claim.
+
+Result on `2BYRLKQS` p4: figure 1 keeps block 8, table 2 moves to block 3,
+`ownership_conflicts` empty. Corpus impact over the 40-paper set: exactly this
+one resolution.
+
 ### Known limits
 
 - Running heads and folios are placed last; a paper whose body starts in the top 8% keeps those blocks in the body flow (they are not margin unless their role is furniture).
