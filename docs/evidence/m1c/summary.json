@@ -1,0 +1,82 @@
+{
+  "papers": 952,
+  "status_counts": {
+    "READY": 803,
+    "REQUIRES_APPROVAL": 98,
+    "M2_REVIEW_REQUIRED": 10,
+    "HOLD": 41
+  },
+  "op_counts": {
+    "materialize_objects": 952,
+    "keep": 27790,
+    "rewrite": 5466,
+    "create": 23859,
+    "rename": 417,
+    "retarget": 243,
+    "delete_candidate": 400
+  },
+  "holds_total": 230,
+  "collisions_total": 27,
+  "dangling_total": 0,
+  "requires_approval_ops": 400,
+  "m2_review_ops": 11,
+  "hold_papers": 41,
+  "backup_files": 6210,
+  "safe_rename_ops": 417,
+  "retarget_ops": 243,
+  "retarget_unique_paths": 243,
+  "retarget_occurrences": 244,
+  "embed_mapped_noop_occurrences": 6267,
+  "ambiguous_embed_holds": 31,
+  "assetless_embed_deletes": 73,
+  "delete_by_kind": {
+    "figure": 213,
+    "orphan": 108,
+    "embed": 73,
+    "table": 6
+  },
+  "delete_by_reason": {
+    "unmapped_assetless": 35,
+    "orphan no longer inventoried": 108,
+    "reserved_or_assetless": 135,
+    "old table has no new counterpart": 6,
+    "superseded by several new objects; old file cannot be mapped 1:1": 47,
+    "unmapped_table": 2,
+    "many_to_one collision": 52,
+    "identity_mapping_lost": 15
+  },
+  "top_hold_reasons": [
+    [
+      "RESERVED_OR_ASSETLESS",
+      77
+    ],
+    [
+      "MANY_TO_ONE",
+      52
+    ],
+    [
+      "AMBIGUOUS_OLD_ID",
+      31
+    ],
+    [
+      "AMBIGUOUS_EMBED",
+      31
+    ],
+    [
+      "UNMAPPED_ASSETLESS",
+      28
+    ],
+    [
+      "M2_REVIEW_REQUIRED",
+      11
+    ]
+  ],
+  "external_refs_count": 200,
+  "external_refs_capped": true,
+  "embed_delete_ops": 73,
+  "embed_delete_reasons": {
+    "reserved_or_assetless": 56,
+    "identity_mapping_lost": 15,
+    "unmapped_table": 2
+  }
+}
