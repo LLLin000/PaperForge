@@ -20,10 +20,10 @@ python scripts/dev/object_migration_dry_run.py --bundle-plan plan.jsonl --bundle
   "op_counts": {
     "materialize_objects": 952,
     "keep": 27764,
-    "retarget": 6484,
     "rewrite": 5466,
     "create": 23848,
     "rename": 416,
+    "retarget": 243,
     "delete_candidate": 401
   },
   "holds_total": 249,
@@ -37,7 +37,7 @@ python scripts/dev/object_migration_dry_run.py --bundle-plan plan.jsonl --bundle
   "retarget_ops": 243,
   "retarget_unique_paths": 243,
   "retarget_occurrences": 244,
-  "embed_mapped_noop_occurrences": 6249,
+  "embed_mapped_noop_occurrences": 0,
   "ambiguous_embed_holds": 31,
   "assetless_embed_deletes": 73,
   "delete_by_kind": {
