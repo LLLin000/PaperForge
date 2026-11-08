@@ -429,6 +429,55 @@ the older disk's figure-swallowing rows, already known.
 The C2 freeze is unchanged: this is a classification fix, not a reading-order
 takeover.
 
+## F2A: conflict review (before any joint matching)
+
+`scripts/dev/figure_conflict_review.py` turns conflicts and the audit sample
+into review records: the current inventory decision, the concrete alternatives
+(`keep`, `switch_asset`, `attach_table_asset`, `new_group`, `no_asset`) with an
+ordinal confidence, and the evidence behind them (caption type signal, asset
+roles, layout region/column, centre distance, matched and nearest edge gaps,
+inventory `match_score` / `candidate_assets`). Every record is `UNREVIEWED`;
+the tool never decides that a pairing is wrong.
+
+Rules that keep the list reviewable:
+
+- switch candidates must be on the caption's page;
+- caption type and asset role are cross-checked: a table offering a
+  `figure_asset` is a cross-type proposal, while a table offering `table_html`
+  is role-consistent and rated higher;
+- a table that holds a figure/media asset is included even though the inventory
+  says `has_asset` (that is exactly the cross-type case);
+- one alternative per (decision, target).
+
+### Result (40 papers, 186 cases)
+
+| Decision | Alternatives |
+|---|---:|
+| `switch_asset` | 359 (21 high, 339 medium, 39 low) |
+| `attach_table_asset` | 40 |
+| `new_group` | 80 |
+| `keep` | 71 |
+| `no_asset` | 186 (one per case, as the fallback) |
+
+Visual review of the conflict set (the PDFs, not the scores):
+
+| Finding | Count |
+|---|---|
+| Caption-without-candidate that were adjacency artefacts (asset present) | 11 / 14 |
+| Genuine missing assets (`28ALPCY7` p20 Figure 6, `388XI46Q` p9 Fig. 2) | 2 |
+| Caption-role misclassification (biography as `figure_caption_candidate`) | 1 |
+| Real cross-type mismatch (`2BYRLKQS` p4 table 1 → figure image; gap 0.50 vs 0.004 for Figure 1) | 1 |
+
+### F2B decision
+
+A general joint-matching optimizer is **not justified** by this evidence: one
+reproducible cross-type mismatch and two missing assets in 40 papers is not a
+regression class, and the two missing assets cannot be fixed by re-matching —
+the objects are absent from the inventory. The only defensible narrow change is
+a guarded cross-type correction (a table whose asset role is a figure asset,
+with a same-page table asset adjacent); corpus impact is one paper. It is
+recorded here as a candidate for a separate PR, not implemented.
+
 ### Known limits
 
 - Running heads and folios are placed last; a paper whose body starts in the top 8% keeps those blocks in the body flow (they are not margin unless their role is furniture).
