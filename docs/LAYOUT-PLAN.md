@@ -478,6 +478,75 @@ a guarded cross-type correction (a table whose asset role is a figure asset,
 with a same-page table asset adjacent); corpus impact is one paper. It is
 recorded here as a candidate for a separate PR, not implemented.
 
+## One object-association sequence (P0-A)
+
+First parse and derived rebuild ran different figure/table sequences. The
+missing first-parse calls were not cosmetic: without
+`resolve_media_asset_conflicts` the same page could keep a cross-type claim
+depending on which path wrote it last.
+
+`paperforge/worker/ocr_object_stage.py` now owns the order:
+
+```
+build_figure_inventory → write_back_figure_roles → residual bio cleanup
+→ post-reference bio cleanup/prune → reader synthesis → build_table_inventory
+→ resolve_media_asset_conflicts → attach_ownership_conflicts
+```
+
+| Call | first parse (before) | rebuild (before) | both (now) |
+|---|---|---|---|
+| `write_back_figure_roles` | no | yes | yes |
+| bio cleanup | yes | yes | yes |
+| reader synthesis | yes | yes | yes |
+| `resolve_media_asset_conflicts` | **no** | yes | yes |
+| `attach_ownership_conflicts` | no | yes | yes |
+| table role writeback | via writeback only | explicit | `commit_object_roles` |
+
+`commit_object_roles` applies `apply_object_writebacks` then
+`write_back_table_roles`, so writeback stays the single consumer of object
+claims. First parse also passes `page_pdf_lines_by_page` to figure matching,
+which it used to skip.
+
+Validation: the shared replay matches a real serial `_rebuild_one_paper` on all
+40 corpus papers — 0 row differences and 0 claim differences between figure and
+table inventories (PDF absent, same evidence).
+
+### Two-entry equality with PDF evidence
+
+The shared stage fixed the call order, but the two entries still resolved the
+PDF differently, which changed *evidence*: first parse resolved the stored
+`source_pdf` locator and then re-read `meta["source_pdf"]` before span backfill,
+so `[[vault]]` wikilinks and `storage:` locators skipped PDF text evidence
+(`span_metadata`, missing-text recovery, PDF lines). Rebuild never resolved
+those locators at all. That is why 821 of 952 corpus papers report weak span
+coverage (0%) while their PDFs are present.
+
+`pdf_resolver.resolve_source_pdf()` is now the one resolution both entries use.
+First parse resolves once and reuses the path for page rendering, the
+fingerprint, span backfill, missing-text recovery and figure matching; rebuild
+uses the same helper before its legacy fallbacks. Rebuild also falls back to the
+cached page image when an OCR page exceeds the configured PDF (a supplement can
+replace the main file), instead of silently emitting no asset.
+
+`scripts/dev/ocr_two_entry_parity.py` verifies the contract end to end: it
+replays `postprocess_ocr_result` from `json/result.json` and then runs
+`_rebuild_one_paper` on the same input, PDF and metadata in a throwaway vault,
+comparing roles, render flags, ownership, figure/table asset claims, ownership
+resolutions/conflicts, rendered markdown and asset files.
+
+Measured on the 40-paper corpus (all PDFs resolvable):
+
+| Comparison | Result |
+|---|---|
+| Final rows (role, render/index flags, owner) | 40/40 identical |
+| Figure/table asset claims | 40/40 identical |
+| Ownership resolutions and conflicts | 40/40 identical |
+| Rendered markdown | 40/40 identical |
+| Asset files (names + bytes) | 40/40 identical |
+
+The run found one real divergence (`2ZBAK9VY`: a supplement PDF with 8 pages
+against 12 OCR pages) which is what the cache fallback above fixes.
+
 ### Known limits
 
 - Running heads and folios are placed last; a paper whose body starts in the top 8% keeps those blocks in the body flow (they are not margin unless their role is furniture).
