@@ -406,8 +406,6 @@ class ContinuationCaptionPass:
             base_number,
             alpha_prefix=marker["alpha_prefix"],
         )
-        # Unique continuation ID
-        continuation_id = base_figure_id + f"_continued_p{page:03d}_b{legend.block_id}"
         asset_ids = {str(r.block_id) for r in proposal.assets}
         matched_assets = [
             ocr_figures._project_asset_record(a)
@@ -415,7 +413,7 @@ class ContinuationCaptionPass:
             if str(a.get("block_id", "")) in asset_ids
         ]
         return {
-            "figure_id": continuation_id,
+            "figure_id": base_figure_id,
             "figure_namespace": namespace,
             "figure_number": base_number,
             "legend_block_id": legend.block_id,
@@ -432,7 +430,7 @@ class ContinuationCaptionPass:
             },
             "flags": ["continuation"],
             "bridge_block_ids": [],
-            "continuation_of": base_figure_id,
+            "continued_from": base_figure_id,
             "is_continuation": True,
         }
 
