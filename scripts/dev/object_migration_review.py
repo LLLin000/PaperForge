@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-import os
 import argparse
-
+import contextlib
+import importlib.util
 import json
+import os
 import re
 import shutil
 import sys
@@ -15,7 +16,6 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-import importlib.util
 
 _DRYRUN_PATH = ROOT / "scripts" / "dev" / "object_migration_dry_run.py"
 _DRYRUN_SPEC = importlib.util.spec_from_file_location("object_migration_dry_run", _DRYRUN_PATH)
@@ -57,7 +57,6 @@ def _iou(a, b) -> float:
     area_a = max(1, (ax1 - ax0) * (ay1 - ay0))
     area_b = max(1, (bx1 - bx0) * (by1 - by0))
     return inter / (area_a + area_b - inter)
-
 
 
 def _vertical_gap(asset_bbox, caption_bbox):
@@ -215,13 +214,18 @@ def _classify(case: dict) -> tuple[str, str, str]:
     matching_rows = []
     for row in candidate_rows:
         rt = _norm(row.get("text", ""))
-        if old_text and (old_text in rt or rt in old_text):
-            matching_rows.append(row)
-        elif old_num is not None and re.search(rf"\b{old_num}\b", str(row.get("text", ""))):
+        if (
+            old_text
+            and (old_text in rt or rt in old_text)
+            or old_num is not None
+            and re.search(rf"\b{old_num}\b", str(row.get("text", "")))
+        ):
             matching_rows.append(row)
     caption_is_candidate = any(str(r.get("role")) == "figure_caption_candidate" for r in matching_rows)
 
-    old_assets = [(a.get("bbox"), a.get("page")) for a in ((old_inv or {}).get("matched_assets") or []) if a.get("bbox")]
+    old_assets = [
+        (a.get("bbox"), a.get("page")) for a in ((old_inv or {}).get("matched_assets") or []) if a.get("bbox")
+    ]
     new_asset_entries = []
     for fig in new_on_page:
         for a in fig.get("matched_assets", []) or []:
@@ -249,12 +253,24 @@ def _classify(case: dict) -> tuple[str, str, str]:
 
     if old_inv is None:
         if case["key"] == "28ALPCY7":
-            return "IDENTITY_MAPPING", "high", "control: assetless Figure 6 remains assetless in replay; no action needed"
-        return "REAL_ASSOCIATION_FAILURE", "medium", "control: Figure 5 remains unmatched in replay; association fix candidate"
+            return (
+                "IDENTITY_MAPPING",
+                "high",
+                "control: assetless Figure 6 remains assetless in replay; no action needed",
+            )
+        return (
+            "REAL_ASSOCIATION_FAILURE",
+            "medium",
+            "control: Figure 5 remains unmatched in replay; association fix candidate",
+        )
 
     if case.get("bbox_unavailable"):
         if unmatched:
-            return "REAL_ASSOCIATION_FAILURE", "medium", "old asset bbox unavailable; unmatched asset bboxes cover the page and no caption row was associated"
+            return (
+                "REAL_ASSOCIATION_FAILURE",
+                "medium",
+                "old asset bbox unavailable; unmatched asset bboxes cover the page and no caption row was associated",
+            )
         return "ASSET_MISSING", "low", "old asset bbox unavailable and no unmatched asset bboxes on the page"
 
     if old_asset_exists is False and not asset_present and not old_assets:
@@ -264,7 +280,11 @@ def _classify(case: dict) -> tuple[str, str, str]:
     if lost:
         lost_ids = ", ".join(str(x.get("block_id")) for x in lost)
         claimed_ids = ", ".join(str(x.get("new_block")) for x in claimed) or "none"
-        return "REAL_ASSOCIATION_FAILURE", "high", f"partial coverage: lost old bboxes [{lost_ids}]; claimed by new [{claimed_ids}]"
+        return (
+            "REAL_ASSOCIATION_FAILURE",
+            "high",
+            f"partial coverage: lost old bboxes [{lost_ids}]; claimed by new [{claimed_ids}]",
+        )
 
     if unmatched_hit:
         return "REAL_ASSOCIATION_FAILURE", "high", "candidate asset exists as unmatched and sits near the caption"
@@ -275,19 +295,41 @@ def _classify(case: dict) -> tuple[str, str, str]:
         other_adjacent = any(ev.get("claimed_by_caption_adjacent") for ev in owner_ev)
         owner = ", ".join(sorted({str(ev.get("claimed_by_figure")) for ev in owner_ev if ev.get("claimed_by_figure")}))
         if old_adjacent:
-            return "REAL_ASSOCIATION_FAILURE", "high", f"new figure {owner} overclaims bbox adjacent to old caption; remove its claim and attach to old figure"
+            return (
+                "REAL_ASSOCIATION_FAILURE",
+                "high",
+                f"new figure {owner} overclaims bbox adjacent to old caption; "
+                "remove its claim and attach to old figure",
+            )
         if other_adjacent:
-            return "OLD_MISMATCH", "medium", "old caption is not adjacent to old bbox while another caption is; old association likely wrong"
+            return (
+                "OLD_MISMATCH",
+                "medium",
+                "old caption is not adjacent to old bbox while another caption is; old association likely wrong",
+            )
         # default to association failure when adjacency is unclear
         return "REAL_ASSOCIATION_FAILURE", "medium", f"bbox claimed by {owner} but adjacency evidence is inconclusive"
 
     if caption_is_candidate:
         if case.get("key") == "8CCATQE3":
-            return "CAPTION_MISCLASSIFIED", "high", "old text is body prose referencing figures ('Figure 1a and Figure S2 show the fabrication process...'), not a figure caption; caption classification prevents association"
-        return "CAPTION_MISCLASSIFIED", "high", "caption row is figure_caption_candidate, so association did not claim nearby asset"
+            return (
+                "CAPTION_MISCLASSIFIED",
+                "high",
+                "old text is body prose referencing figures, not a figure caption; "
+                "caption classification prevents association",
+            )
+        return (
+            "CAPTION_MISCLASSIFIED",
+            "high",
+            "caption row is figure_caption_candidate, so association did not claim nearby asset",
+        )
 
     if asset_present:
-        return "REAL_ASSOCIATION_FAILURE", "medium", "candidate asset exists near caption but was not associated to this caption"
+        return (
+            "REAL_ASSOCIATION_FAILURE",
+            "medium",
+            "candidate asset exists near caption but was not associated to this caption",
+        )
 
     if not old_assets:
         return "ASSET_MISSING", "low", "no old matched asset bboxes recorded"
@@ -445,9 +487,11 @@ def _run_one(key: str, old_target: str | None) -> dict:
         # unmatched?
         for ua in unmatched_page:
             if _iou(ob, ua.get("bbox")) >= 0.8:
-                unmatched_bboxes.append({"block_id": oa.get("block_id"), "bbox": ob, "unmatched_block": ua.get("block_id")})
+                unmatched_bboxes.append(
+                    {"block_id": oa.get("block_id"), "bbox": ob, "unmatched_block": ua.get("block_id")}
+                )
 
-        for fig, na in claims_for_this:
+        for fig, _na in claims_for_this:
             owner_caption_row = _find_caption_row(candidate_rows, figure_number=fig.get("figure_number"))
             owner_caption_bbox = owner_caption_row.get("bbox") if owner_caption_row else None
             owner_evidence.append(
@@ -543,11 +587,13 @@ def _run_one(key: str, old_target: str | None) -> dict:
     case_dir.mkdir(parents=True, exist_ok=True)
     # clear old generated files for idempotency
     prefix = old_id or "control"
-    for old_img in list(case_dir.glob(prefix + "_*")) + list(case_dir.glob("page_overlay_" + prefix + ".*")) + list(case_dir.glob("contact_sheet_" + prefix + ".*")):
-        try:
+    for old_img in (
+        list(case_dir.glob(prefix + "_*"))
+        + list(case_dir.glob("page_overlay_" + prefix + ".*"))
+        + list(case_dir.glob("contact_sheet_" + prefix + ".*"))
+    ):
+        with contextlib.suppress(OSError):
             old_img.unlink()
-        except OSError:
-            pass
     target_json = case_dir / ("case_" + (old_id or "control") + ".json")
     if target_json.is_file():
         target_json.unlink()
@@ -587,10 +633,12 @@ def _run_one(key: str, old_target: str | None) -> dict:
                 out = case_dir / ((old_id or "control") + "_old_asset_bbox_" + str(idx) + ".png")
                 if _crop(pdf, page, a["bbox"], out):
                     thumb_paths.append(str(out.relative_to(ROOT)).replace("\\", "/"))
-        for idx, fig in enumerate(new_on_page):
+        for _idx, fig in enumerate(new_on_page):
             for aidx, a in enumerate(fig.get("matched_assets", [])):
                 if a.get("bbox"):
-                    out = case_dir / ((old_id or "control") + "_new_" + str(fig.get("figure_id")) + "_asset_" + str(aidx) + ".png")
+                    out = case_dir / (
+                        (old_id or "control") + "_new_" + str(fig.get("figure_id")) + "_asset_" + str(aidx) + ".png"
+                    )
                     if _crop(pdf, page, a["bbox"], out):
                         thumb_paths.append(str(out.relative_to(ROOT)).replace("\\", "/"))
         for uidx, u in enumerate(unmatched_page):
@@ -609,10 +657,8 @@ def _run_one(key: str, old_target: str | None) -> dict:
             continue
         h = __import__("hashlib").sha256(full.read_bytes()).hexdigest()
         if h in seen_hashes:
-            try:
+            with contextlib.suppress(OSError):
                 full.unlink()
-            except OSError:
-                pass
             unique_thumbs.append(seen_hashes[h])
         else:
             seen_hashes[h] = pth
@@ -715,9 +761,8 @@ def main() -> int:
     lines.append("| Key | Old id | Page | Old asset | New candidates | Classification | Confidence | Proposed action |")
     lines.append("|---|---|---:|---|---|---|---|---|")
     for c in cases:
-        snippet = ""
         if c.get("old_inventory"):
-            snippet = str(c["old_inventory"].get("text", ""))[:60].replace("|", "/")
+            str(c["old_inventory"].get("text", ""))[:60].replace("|", "/")
         lines.append(
             f"| {c['key']} | {c['old_id'] or ''} | {c['page']} | "
             f"{'yes' if c['old_asset_exists'] else 'no'} | "
@@ -727,8 +772,13 @@ def main() -> int:
     lines.append("")
     lines.append("## Evidence-backed vs hypothesis")
     lines.append("")
-    lines.append("- Evidence-backed: bbox overlaps, asset file existence, caption row role, and unmatched-asset entries come from the replay/vault artifacts.")
-    lines.append("- Hypothesis: final root-cause labels are review hypotheses until M2b matching changes are validated.")
+    lines.append(
+        "- Evidence-backed: bbox overlaps, asset existence, caption role, "
+        "and unmatched assets come from replay/vault artifacts."
+    )
+    lines.append(
+        "- Hypothesis: final root-cause labels are review hypotheses until M2b matching changes are validated."
+    )
     lines.append("")
     lines.append("## Controls")
     lines.append("")
