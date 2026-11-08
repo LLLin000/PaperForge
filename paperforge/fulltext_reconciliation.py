@@ -24,6 +24,37 @@ _EMBED_RE = re.compile(
     r"([a-zA-Z_][a-zA-Z0-9_]*)"
     r"\.md\]\]"
 )
+_TABLE_EMBED_RE = re.compile(r"!\[\[render/tables/([a-zA-Z_][a-zA-Z0-9_]*)\.md\]\]")
+
+
+def _inventory_rows(path: Path, key: str) -> list[dict[str, Any]]:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError):
+        return []
+    rows = value.get(key) if isinstance(value, dict) else None
+    if isinstance(rows, list) and key == "tables":
+        rows = [
+            {**row, "table_id": row.get("table_id") or row.get("table_uid") or f"table_{index:03d}"}
+            for index, row in enumerate(rows, 1) if isinstance(row, dict)
+        ]
+    return [row for row in rows if isinstance(row, dict)] if isinstance(rows, list) else []
+
+
+def _object_paths(rows: list[dict[str, Any]], id_key: str, directory: Path) -> dict[str, Path]:
+    return {
+        str(row[id_key]): directory / f"{row[id_key]}.md"
+        for row in rows
+        if row.get(id_key) not in (None, "")
+    }
+
+
+def _line_number(text: str, offset: int) -> int:
+    return text.count("\n", 0, offset) + 1
+
+
+def _is_orphan_target(target: str) -> bool:
+    return target.startswith(("orphan_", "unresolved_cluster_"))
 
 
 def _canonical_figure_ids(inv: dict[str, Any]) -> list[str]:
@@ -382,6 +413,81 @@ def fulltext_reconcile(
     mutation_blocked = bool(
         canonical_id_conflicts or not fulltext_available or not inventory_available
     )
+    if fulltext_available:
+        fig_rows = inv.get("matched_figures") or []
+        figure_paths = _object_paths(
+            [row for row in fig_rows if isinstance(row, dict)],
+            "figure_id",
+            render_fig_dir,
+        )
+        table_rows = _inventory_rows(root / "structure" / "table_inventory.json", "tables")
+        table_dir = root / "render" / "tables"
+        table_paths = _object_paths(table_rows, "table_id", table_dir)
+        figure_embeds = list(_EMBED_RE.finditer(fulltext))
+        table_embeds = list(_TABLE_EMBED_RE.finditer(fulltext))
+        for object_id, path in figure_paths.items():
+            row = next(row for row in fig_rows if isinstance(row, dict) and str(row.get("figure_id")) == object_id)
+            if not path.is_file():
+                issues.append({"type": "canonical_md_missing", "object_id": object_id,
+                               "page": row.get("page"), "render_path": str(path.relative_to(root))})
+        for object_id, path in table_paths.items():
+            row = next(row for row in table_rows if str(row.get("table_id")) == object_id)
+            if not path.is_file():
+                issues.append({"type": "table_md_missing", "object_id": object_id,
+                               "page": row.get("page"), "render_path": str(path.relative_to(root))})
+        for directory, ids in ((render_fig_dir, set(figure_paths)), (table_dir, set(table_paths))):
+            if directory.is_dir():
+                for path in directory.glob("*.md"):
+                    if path.stem not in ids and not _is_orphan_target(path.stem):
+                        issues.append({"type": "stale_canonical_md", "object_id": path.stem,
+                                       "render_path": str(path.relative_to(root))})
+        figure_target_set = set(figure_paths)
+        embedded_figure_ids = {match.group(1) for match in figure_embeds}
+        rows_by_id: dict[str, list[dict[str, Any]]] = {}
+        for row in fig_rows:
+            if isinstance(row, dict) and row.get("figure_id"):
+                rows_by_id.setdefault(str(row["figure_id"]), []).append(row)
+        for object_id, rows in rows_by_id.items():
+            if object_id not in embedded_figure_ids:
+                has_assets = any(row.get("matched_assets") or row.get("asset_block_ids") for row in rows)
+                issues.append({
+                    "type": "missing_embed_for_asset_object" if has_assets else "assetless_not_delivered",
+                    "object_id": object_id,
+                    "page": rows[0].get("page"),
+                })
+        for match in figure_embeds:
+            target = match.group(1)
+            line = _line_number(fulltext, match.start())
+            if not (render_fig_dir / f"{target}.md").is_file():
+                figure_row = next((row for row in fig_rows if str(row.get("figure_id")) == target), {})
+                issues.append({"type": "embed_missing_target", "object_id": target,
+                               "page": figure_row.get("page"), "source_line": line,
+                               "render_path": f"render/figures/{target}.md"})
+            if _is_orphan_target(target) or (
+                target not in figure_target_set and (render_fig_dir / f"{target}.md").is_file()
+            ):
+                issues.append({"type": "orphan_embedded", "object_id": target, "source_line": line})
+        for match in table_embeds:
+            target = match.group(1)
+            if not (table_dir / f"{target}.md").is_file():
+                table_row = next((row for row in table_rows if str(row.get("table_id")) == target), {})
+                issues.append({"type": "embed_missing_target", "object_id": target,
+                               "page": table_row.get("page"),
+                               "source_line": _line_number(fulltext, match.start()),
+                               "render_path": f"render/tables/{target}.md"})
+        for matches, duplicate_type in ((figure_embeds, "duplicate_embed"),
+                                        (table_embeds, "table_embed_duplicate")):
+            counts: dict[str, list[Any]] = {}
+            for match in matches:
+                counts.setdefault(match.group(1), []).append(match)
+            for target, occurrences in counts.items():
+                if len(occurrences) > 1:
+                    issues.append({"type": duplicate_type, "object_id": target, "count": len(occurrences),
+                                   "source_line": _line_number(fulltext, occurrences[1].start())})
+        for object_id, row in ((str(row.get("table_id")), row) for row in table_rows if row.get("table_id")):
+            if not any(match.group(1) == object_id for match in table_embeds):
+                issues.append({"type": "table_embed_missing", "object_id": object_id, "page": row.get("page")})
+
     if mutation_blocked:
         patches = []
 
