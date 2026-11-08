@@ -280,3 +280,6 @@ python scripts/dev/object_migration_dry_run.py --bundle-plan plan.jsonl --bundle
 - 42 assetless/legacy removals are REQUIRES_APPROVAL, not confirmed misses.
 - 27 caption_present_unmatched cases are M2_REVIEW_REQUIRED, not confirmed misses.
 - Filesystem and SQLite effects are not atomic; restore+verify rollback.
+
+## How to read this
+Retarget rows are reference-equivalence evidence, not text edits to apply: the migration rebuilds each paper, so `fulltext.md` is replaced wholesale and embeds are regenerated from the new inventory. 399 report occurrences -> 244 safe changing occurrences / 243 unique paths; 6,249 occurrences are unchanged mappings; 155 occurrences were downgraded to ambiguous/many-to-one HOLDs. 433 report renames -> 416 plan renames (17 downgraded). Delete breakdown: figure 214 = unmapped_assetless 36 + reserved_or_assetless 79 + superseded 47 + many_to_one 52; orphan 108; table 6; embed 73 = reserved_or_assetless 56 + identity_mapping_lost 15 + unmapped_table 2. M2 review scope: 29 holds across 28 papers (27 original report cases + 8CCATQE3 figure_s001 + CYJLYG56 figure_003_continued_p007_b12; 8PLQZKGN has two cases). 56 reserved_or_assetless embed removals are REQUIRES_APPROVAL (42 from report plus 14 previously retargeted many-to-one); 79 figure file removals also reserved/assetless.

@@ -26,7 +26,7 @@
   "retarget_ops": 243,
   "retarget_unique_paths": 243,
   "retarget_occurrences": 244,
-  "embed_mapped_noop_occurrences": 0,
+  "embed_mapped_noop_occurrences": 6249,
   "ambiguous_embed_holds": 31,
   "assetless_embed_deletes": 73,
   "delete_by_kind": {
@@ -72,5 +72,16 @@
     ]
   ],
   "external_refs_count": 200,
-  "external_refs_capped": true
+  "external_refs_capped": true,
+  "embed_delete_reasons": {
+    "reserved_or_assetless": 56,
+    "identity_mapping_lost": 15,
+    "unmapped_table": 2
+  },
+  "figure_delete_reasons": {
+    "unmapped_assetless": 36,
+    "reserved_or_assetless": 79,
+    "superseded": 47,
+    "many_to_one": 52
+  }
 }
