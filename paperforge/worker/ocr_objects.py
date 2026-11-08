@@ -4,6 +4,7 @@ import contextlib
 import json
 import os
 import re
+import tempfile
 import threading
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -656,87 +657,186 @@ def _write_materialization_provenance(render_root: Path, records: list[dict[str,
 
 
 
-def extract_and_write_objects(
-    pdf_path: Path | None,
+class MaterializationError(RuntimeError):
+    """Materialization failed; the existing object artifacts are unchanged."""
+
+
+class MaterializationCollisionError(MaterializationError):
+    """Two objects would write the same path; nothing is written or removed."""
+
+
+class MaterializationCommitError(MaterializationError):
+    """The staged commit failed and the previous artifacts were restored."""
+
+
+_MANAGED_ASSET_DIRS = ("figures", "tables", "orphans")
+_MANAGED_RENDER_DIRS = ("figures", "tables")
+
+
+def _journal_path(paper_root: Path) -> Path:
+    return paper_root / ".materialization-journal.json"
+
+
+def _remove_path(path: Path) -> None:
+    if path.is_dir() and not path.is_symlink():
+        import shutil
+
+        with contextlib.suppress(OSError):
+            shutil.rmtree(path)
+    else:
+        with contextlib.suppress(OSError):
+            path.unlink()
+
+
+def _recover_materialization_journal(paper_root: Path) -> None:
+    """Restore the previous artifacts if a commit was interrupted.
+
+    The journal is written before any target is touched. A target is either the
+    old directory (backup missing), the new one (backup present) or missing
+    (backup present); restoring every backup reverses the interrupted commit.
+    """
+    journal_path = _journal_path(paper_root)
+    if not journal_path.is_file():
+        return
+    try:
+        journal = json.loads(journal_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        with contextlib.suppress(OSError):
+            journal_path.unlink()
+        return
+    status = str(journal.get("status") or "")
+    stage_root = Path(str(journal.get("stage_root") or ""))
+    backup_root = Path(str(journal.get("backup_root") or ""))
+    if status == "committing":
+        for entry in reversed(journal.get("targets") or []):
+            target = Path(str(entry.get("target") or ""))
+            backup = Path(str(entry.get("backup") or ""))
+            if backup.exists():
+                _remove_path(target)
+                target.parent.mkdir(parents=True, exist_ok=True)
+                with contextlib.suppress(OSError):
+                    backup.rename(target)
+    with contextlib.suppress(OSError):
+        journal_path.unlink()
+    _remove_path(stage_root)
+    _remove_path(backup_root)
+
+
+def _commit_staged_objects(
+    *,
+    paper_root: Path,
+    stage_root: Path,
+    staged_targets: list[tuple[Path, Path]],
+    provenance: tuple[Path, Path] | None,
+) -> None:
+    """Swap staged directories/files into place; roll back on any failure."""
+    import uuid
+
+    token = uuid.uuid4().hex[:12]
+    backup_root = paper_root / f".materialization-backup-{token}"
+    targets = [
+        {"target": str(target), "backup": str(backup_root / str(index))}
+        for index, (target, _staged) in enumerate(staged_targets)
+    ]
+    if provenance is not None:
+        targets.append(
+            {"target": str(provenance[0]), "backup": str(backup_root / "provenance")}
+        )
+    journal = _journal_path(paper_root)
+    payload = {
+        "schema_version": 1,
+        "token": token,
+        "status": "committing",
+        "stage_root": str(stage_root),
+        "backup_root": str(backup_root),
+        "targets": targets,
+    }
+    paper_root.mkdir(parents=True, exist_ok=True)
+    backup_root.mkdir()
+    _write_json_atomic(journal, payload)
+    moved: list[tuple[Path, Path]] = []
+    try:
+        pairs = list(staged_targets)
+        if provenance is not None:
+            pairs.append(provenance)
+        for index, (target, staged) in enumerate(pairs):
+            backup = backup_root / (str(index) if index < len(staged_targets) else "provenance")
+            target.parent.mkdir(parents=True, exist_ok=True)
+            if target.exists():
+                target.rename(backup)
+            moved.append((target, backup))
+            if not staged.exists():
+                raise FileNotFoundError(f"staged artifact missing: {staged}")
+            staged.rename(target)
+        payload["status"] = "committed"
+        _write_json_atomic(journal, payload)
+    except Exception as exc:  # noqa: BLE001 — roll back every swap
+        for target, backup in reversed(moved):
+            try:
+                if target.exists():
+                    _remove_path(target)
+                if backup.exists():
+                    backup.rename(target)
+            except OSError:
+                pass
+        with contextlib.suppress(OSError):
+            journal.unlink()
+        _remove_path(stage_root)
+        _remove_path(backup_root)
+        raise MaterializationCommitError(f"materialization commit rolled back: {exc}") from exc
+    with contextlib.suppress(OSError):
+        journal.unlink()
+    _remove_path(backup_root)
+    _remove_path(stage_root)
+
+
+def _write_json_atomic(path: Path, payload: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(f"{path.name}.tmp")
+    tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    tmp.replace(path)
+
+
+def _build_object_tasks(
     figure_inventory: dict[str, Any],
     table_inventory: dict[str, Any],
-    asset_root: Path,
-    render_root: Path,
-    *,
-    page_dimensions_by_page: dict[int, tuple[int, int]] | None = None,
-    structured_blocks: list[dict] | None = None,
-    use_disk_page_cache: bool = True,
-) -> None:
-    """Extract figure/table asset crops from PDF and write object markdown.
+    page_dimensions_by_page: dict[int, tuple[int, int]],
+) -> tuple[list[tuple[str, dict[str, Any]]], list[dict[str, Any]]]:
+    """Build the task list without touching any file."""
+    collisions: list[dict[str, Any]] = []
+    tasks: list[tuple[str, dict[str, Any]]] = []
+    scheduled_ids: set[str] = set()
 
-    When use_disk_page_cache=False (rebuild mode), no pages/page_XXX.jpg
-    files are created or read — all rendering goes through an in-memory
-    PageRenderContext for determinism.
-    """
-    # Validation-first figure matching may retain held figures in inventory,
-    # but object emission remains limited to matched figures and unresolved
-    # media clusters until figure evidence is sufficient.
-    figures_asset_dir = asset_root / "figures"
-    tables_asset_dir = asset_root / "tables"
-    orphans_asset_dir = asset_root / "orphans"
-    figures_render_dir = render_root / "figures"
-    tables_render_dir = render_root / "tables"
-    # The cache directory is always *readable* so a rebuild can crop an OCR
-    # page that the configured PDF no longer contains; rebuild mode only skips
-    # creating/refreshing cache files.
-    page_cache_dir = asset_root.parent / "pages"
-    for d in (
-        figures_asset_dir,
-        tables_asset_dir,
-        orphans_asset_dir,
-        figures_render_dir,
-        tables_render_dir,
-        *(use_disk_page_cache and [page_cache_dir] or []),
-    ):
-        d.mkdir(parents=True, exist_ok=True)
-
-    for stale_dir, pattern in (
-        (figures_asset_dir, "*.jpg"),
-        (tables_asset_dir, "*.jpg"),
-        (orphans_asset_dir, "*.jpg"),
-        (figures_render_dir, "*.md"),
-        (tables_render_dir, "*.md"),
-    ):
-        for stale in stale_dir.glob(pattern):
-            with contextlib.suppress(Exception):
-                stale.unlink()
-    with contextlib.suppress(Exception):
-        (render_root / "materialization.provenance.json").unlink()
-
-    if page_dimensions_by_page is None:
-        page_dimensions_by_page = {}
+    def _claim(object_id: str, paths: list[str], legend: Any) -> bool:
+        if object_id in scheduled_ids:
+            collisions.append(
+                {
+                    "type": "identity_collision",
+                    "status": "HARD_FAILURE",
+                    "figure_id": object_id,
+                    "artifact_paths": paths,
+                    "legend_block_id": legend,
+                }
+            )
+            return False
+        scheduled_ids.add(object_id)
+        return True
 
     def _page_dims(page_num: int) -> tuple[int, int]:
         return page_dimensions_by_page.get(page_num, (0, 0))
 
-    # ---- Serial phase: build task list with stable IDs ----
-    tasks: list[tuple[str, dict[str, Any]]] = []
-    scheduled_figure_ids: set[str] = set()
-    figure_collisions = figure_inventory.setdefault("identity_collisions", [])
-
-    # Matched figures
     for i, match in enumerate(figure_inventory.get("matched_figures", [])):
-        fig_id = match.get("figure_id", f"figure_{i + 1:03d}")
-        if fig_id in scheduled_figure_ids:
-            figure_collisions.append({
-                "type": "identity_collision",
-                "status": "HARD_FAILURE",
-                "figure_id": fig_id,
-                "artifact_paths": [f"assets/figures/{fig_id}.jpg", f"render/figures/{fig_id}.md"],
-                "legend_block_id": match.get("legend_block_id"),
-            })
+        fig_id = str(match.get("figure_id") or f"figure_{i + 1:03d}")
+        if not _claim(
+            fig_id,
+            [f"assets/figures/{fig_id}.jpg", f"render/figures/{fig_id}.md"],
+            match.get("legend_block_id"),
+        ):
             continue
-        scheduled_figure_ids.add(fig_id)
         caption_text = match.get("text", "")
         page = match.get("page", 0)
         page_width, page_height = _page_dims(page)
         rotation_deg = int(match.get("rotation_correction_deg", 0) or 0)
-
         crop_bbox = match.get("cluster_bbox") or [0, 0, 0, 0]
         if not (len(crop_bbox) == 4 and all(v > 0 for v in crop_bbox)):
             asset_bboxes = [
@@ -751,206 +851,270 @@ def extract_and_write_objects(
                     max(b[2] for b in asset_bboxes),
                     max(b[3] for b in asset_bboxes),
                 ]
+        tasks.append(
+            (
+                "figure",
+                {
+                    "fig_id": fig_id,
+                    "page": page,
+                    "page_width": page_width,
+                    "page_height": page_height,
+                    "crop_bbox": crop_bbox,
+                    "rotation_deg": rotation_deg,
+                    "matched_assets": match.get("matched_assets", []),
+                    "display_label": match.get("display_label"),
+                    "caption": caption_text,
+                    "asset_path_rel": f"assets/figures/{fig_id}.jpg",
+                    "confidence": match.get("confidence", 0.5),
+                },
+            )
+        )
 
-        if structured_blocks and len(crop_bbox) == 4 and all(v > 0 for v in crop_bbox):
-            for blk in structured_blocks:
-                if blk.get("role") != "figure_inner_text":
-                    continue
-                if str(blk.get("_object_owner_id", "")) != str(fig_id):
-                    continue
-                if int(blk.get("page", 0) or 0) != int(page or 0):
-                    continue
-                bb = blk.get("bbox") or [0, 0, 0, 0]
-                if len(bb) < 4 or not all(v > 0 for v in bb):
-                    continue
-                crop_bbox = [
-                    min(crop_bbox[0], bb[0]),
-                    min(crop_bbox[1], bb[1]),
-                    max(crop_bbox[2], bb[2]),
-                    max(crop_bbox[3], bb[3]),
-                ]
-
-        tasks.append((
-            "figure",
-            {
-                "fig_id": fig_id,
-                "page": page,
-                "page_width": page_width,
-                "page_height": page_height,
-                "crop_bbox": crop_bbox,
-                "rotation_deg": rotation_deg,
-                "matched_assets": match.get("matched_assets", []),
-                "display_label": match.get("display_label"),
-                "caption": caption_text,
-                "asset_path_rel": f"assets/figures/{fig_id}.jpg",
-                "confidence": match.get("confidence", 0.5),
-            },
-        ))
-
-    # Unresolved figure clusters
     for i, cluster in enumerate(figure_inventory.get("unresolved_clusters", [])):
-        cluster_id = cluster.get("cluster_id") or f"unresolved_cluster_{i + 1:03d}"
-        if cluster_id in scheduled_figure_ids:
-            figure_collisions.append({
-                "type": "identity_collision",
-                "status": "HARD_FAILURE",
-                "figure_id": cluster_id,
-                "artifact_paths": [f"assets/figures/{cluster_id}.jpg", f"render/figures/{cluster_id}.md"],
-            })
+        cluster_id = str(cluster.get("cluster_id") or f"unresolved_cluster_{i + 1:03d}")
+        if not _claim(
+            cluster_id,
+            [f"assets/figures/{cluster_id}.jpg", f"render/figures/{cluster_id}.md"],
+            None,
+        ):
             continue
-        scheduled_figure_ids.add(cluster_id)
         page = cluster.get("page", 0)
         page_width, page_height = _page_dims(page)
-        bbox = cluster.get("cluster_bbox", [0, 0, 0, 0])
+        tasks.append(
+            (
+                "figure",
+                {
+                    "fig_id": cluster_id,
+                    "page": page,
+                    "page_width": page_width,
+                    "page_height": page_height,
+                    "crop_bbox": cluster.get("cluster_bbox", [0, 0, 0, 0]),
+                    "rotation_deg": 0,
+                    "matched_assets": [],
+                    "caption": "",
+                    "asset_path_rel": f"assets/figures/{cluster_id}.jpg",
+                    "confidence": 0.45,
+                },
+            )
+        )
 
-        tasks.append((
-            "figure",
-            {
-                "fig_id": cluster_id,
-                "page": page,
-                "page_width": page_width,
-                "page_height": page_height,
-                "crop_bbox": bbox,
-                "rotation_deg": 0,
-                "matched_assets": [],
-                "caption": "",
-                "asset_path_rel": f"assets/figures/{cluster_id}.jpg",
-                "confidence": 0.45,
-            },
-        ))
-
-# Allocate stable orphan IDs across figure + table orphans.
     orphan_index = 0
 
-    # Figure unmatched assets as orphans
-    for asset in figure_inventory.get("unmatched_assets", []):
+    def _add_orphan(asset: dict[str, Any]) -> None:
+        nonlocal orphan_index
         orphan_index += 1
         orphan_id = f"orphan_{orphan_index:03d}"
         page = asset.get("page", 0)
         page_width, page_height = _page_dims(page)
-        bbox = asset.get("bbox", [0, 0, 0, 0])
+        tasks.append(
+            (
+                "orphan",
+                {
+                    "orphan_id": orphan_id,
+                    "page": page,
+                    "page_width": page_width,
+                    "page_height": page_height,
+                    "bbox": asset.get("bbox", [0, 0, 0, 0]),
+                    "asset_path_rel": f"assets/orphans/{orphan_id}.jpg",
+                },
+            )
+        )
 
-        tasks.append((
-            "orphan",
-            {
-                "orphan_id": orphan_id,
-                "page": page,
-                "page_width": page_width,
-                "page_height": page_height,
-                "bbox": bbox,
-                "asset_path_rel": f"assets/orphans/{orphan_id}.jpg",
-            },
-        ))
+    for asset in figure_inventory.get("unmatched_assets", []):
+        _add_orphan(asset)
 
-    # Tables
     for i, table in enumerate(table_inventory.get("tables", [])):
         tbl_id = f"table_{i + 1:03d}"
-        caption_text = table.get("caption_text", "")
         page = table.get("page", 0)
         page_width, page_height = _page_dims(page)
-        asset_bbox = table.get("asset_bbox", [0, 0, 0, 0])
-        crop_bbox = table.get("render_bbox") or asset_bbox
-        rotation_deg = table.get("render_rotation_deg", 0) or 0
+        crop_bbox = table.get("render_bbox") or table.get("asset_bbox", [0, 0, 0, 0])
+        tasks.append(
+            (
+                "table",
+                {
+                    "tbl_id": tbl_id,
+                    "page": page,
+                    "page_width": page_width,
+                    "page_height": page_height,
+                    "crop_bbox": crop_bbox,
+                    "rotation_deg": table.get("render_rotation_deg", 0) or 0,
+                    "caption": table.get("caption_text", ""),
+                    "has_asset": table.get("has_asset", False),
+                    "asset_path_rel": f"assets/tables/{tbl_id}.jpg",
+                    "formal_table_number": table.get("formal_table_number") or table.get("table_number"),
+                    "note_texts": table.get("note_texts", []),
+                    "note_match_reason": table.get("note_match_reason", ""),
+                },
+            )
+        )
 
-        tasks.append((
-            "table",
-            {
-                "tbl_id": tbl_id,
-                "page": page,
-                "page_width": page_width,
-                "page_height": page_height,
-                "crop_bbox": crop_bbox,
-                "rotation_deg": rotation_deg,
-                "caption": caption_text,
-                "has_asset": table.get("has_asset", False),
-                "asset_path_rel": f"assets/tables/{tbl_id}.jpg",
-                "formal_table_number": table.get("formal_table_number") or table.get("table_number"),
-                "note_texts": table.get("note_texts", []),
-                "note_match_reason": table.get("note_match_reason", ""),
-            },
-        ))
-
-    # Table unmatched assets as orphans (continue from figure orphan index)
     for asset in table_inventory.get("unmatched_assets", []):
-        orphan_index += 1
-        orphan_id = f"orphan_{orphan_index:03d}"
-        page = asset.get("page", 0)
-        page_width, page_height = _page_dims(page)
-        bbox = asset.get("bbox", [0, 0, 0, 0])
+        _add_orphan(asset)
 
-        tasks.append((
-            "orphan",
-            {
-                "orphan_id": orphan_id,
-                "page": page,
-                "page_width": page_width,
-                "page_height": page_height,
-                "bbox": bbox,
-                "asset_path_rel": f"assets/orphans/{orphan_id}.jpg",
-            },
-        ))
+    return tasks, collisions
 
-    # ---- Parallel phase: dispatch crops and markdown writes ----
 
-    doc = None
-    page_render_ctx = None
-    if pdf_path and pdf_path.exists():
-        try:
-            import pymupdf
-            doc = pymupdf.open(str(pdf_path))
-            page_render_ctx = PageRenderContext(doc)
-        except Exception:
-            pass
+def extract_and_write_objects(
+    pdf_path: Path | None,
+    figure_inventory: dict[str, Any],
+    table_inventory: dict[str, Any],
+    asset_root: Path,
+    render_root: Path,
+    *,
+    page_dimensions_by_page: dict[int, tuple[int, int]] | None = None,
+    structured_blocks: list[dict] | None = None,
+    use_disk_page_cache: bool = True,
+    dry_run: bool = False,
+) -> dict[str, Any] | None:
+    """Materialize figure/table objects transactionally.
 
-    max_workers = min(2, os.cpu_count() or 4)
-    records: list[dict[str, Any]] = []
+    Collision or write failures abort before any target is replaced; staged
+    outputs are committed only after the whole manifest validates. ``dry_run``
+    returns the manifest without touching the filesystem.
+    """
+    figure_inventory = figure_inventory if isinstance(figure_inventory, dict) else {}
+    table_inventory = table_inventory if isinstance(table_inventory, dict) else {}
+    paper_root = asset_root.parent
+    _recover_materialization_journal(paper_root)
+
+    page_dimensions_by_page = page_dimensions_by_page or {}
+    tasks, collisions = _build_object_tasks(
+        figure_inventory, table_inventory, page_dimensions_by_page
+    )
+    if collisions:
+        figure_inventory.setdefault("identity_collisions", []).extend(collisions)
+        details = collisions[0]
+        raise MaterializationCollisionError(
+            f"duplicate object artifact path for {details['figure_id']}: {details['artifact_paths']}"
+        )
+
+    figure_ids = {str(data["fig_id"]) for task_type, data in tasks if task_type == "figure"}
+    table_ids = {str(data["tbl_id"]) for task_type, data in tasks if task_type == "table"}
+    orphan_ids = {str(data["orphan_id"]) for task_type, data in tasks if task_type == "orphan"}
+    manifest = {
+        "figures": sorted(figure_ids),
+        "tables": sorted(table_ids),
+        "orphans": sorted(orphan_ids),
+        "assets": [str(asset_root / "figures" / f"{oid}.jpg") for oid in sorted(figure_ids)]
+        + [str(asset_root / "tables" / f"{oid}.jpg") for oid in sorted(table_ids)]
+        + [str(asset_root / "orphans" / f"{oid}.jpg") for oid in sorted(orphan_ids)],
+        "render": [str(render_root / "figures" / f"{oid}.md") for oid in sorted(figure_ids | orphan_ids)]
+        + [str(render_root / "tables" / f"{oid}.md") for oid in sorted(table_ids)],
+    }
+    all_targets = manifest["assets"] + manifest["render"]
+    if len(set(all_targets)) != len(all_targets):
+        raise MaterializationCollisionError("manifest contains duplicate target paths")
+    if dry_run:
+        return manifest
+
+    stage_root = Path(tempfile.mkdtemp(prefix=".materialization-stage-", dir=paper_root))
     try:
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = []
-            for task_type, data in tasks:
-                if task_type == "figure":
-                    futures.append(executor.submit(
-                        _write_figure_object_task,
-                        data,
-                        pdf_path=pdf_path,
-                        page_cache_dir=page_cache_dir,
-                        page_render_context=page_render_ctx,
-                        use_disk_page_cache=use_disk_page_cache,
-                        asset_dir=figures_asset_dir,
-                        render_dir=figures_render_dir,
-                    ))
-                elif task_type == "table":
-                    futures.append(executor.submit(
-                        _write_table_object_task,
-                        data,
-                        pdf_path=pdf_path,
-                        page_cache_dir=page_cache_dir,
-                        page_render_context=page_render_ctx,
-                        use_disk_page_cache=use_disk_page_cache,
-                        asset_dir=tables_asset_dir,
-                        render_dir=tables_render_dir,
-                    ))
-                elif task_type == "orphan":
-                    futures.append(executor.submit(
-                        _write_orphan_object_task,
-                        data,
-                        pdf_path=pdf_path,
-                        page_cache_dir=page_cache_dir,
-                        page_render_context=page_render_ctx,
-                        use_disk_page_cache=use_disk_page_cache,
-                        asset_dir=orphans_asset_dir,
-                        render_dir=figures_render_dir,
-                    ))
+        stage_assets = stage_root / "assets"
+        stage_render = stage_root / "render"
+        for name in _MANAGED_ASSET_DIRS:
+            (stage_assets / name).mkdir(parents=True, exist_ok=True)
+        for name in _MANAGED_RENDER_DIRS:
+            (stage_render / name).mkdir(parents=True, exist_ok=True)
+        page_cache_dir = asset_root.parent / "pages"
+        if use_disk_page_cache:
+            page_cache_dir.mkdir(parents=True, exist_ok=True)
 
-            for future in as_completed(futures):
-                record = future.result()
-                if isinstance(record, dict):
-                    records.append(record)
-    finally:
-        if doc is not None:
+        doc = None
+        page_render_ctx = None
+        if pdf_path and pdf_path.exists():
             try:
-                doc.close()
+                import pymupdf
+
+                doc = pymupdf.open(str(pdf_path))
+                page_render_ctx = PageRenderContext(doc)
             except Exception:
                 pass
+        max_workers = min(2, os.cpu_count() or 4)
+        records: list[dict[str, Any]] = []
+        try:
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                futures = []
+                for task_type, data in tasks:
+                    if task_type == "figure":
+                        futures.append(
+                            executor.submit(
+                                _write_figure_object_task,
+                                data,
+                                pdf_path=pdf_path,
+                                page_cache_dir=page_cache_dir,
+                                page_render_context=page_render_ctx,
+                                use_disk_page_cache=use_disk_page_cache,
+                                asset_dir=stage_assets / "figures",
+                                render_dir=stage_render / "figures",
+                            )
+                        )
+                    elif task_type == "table":
+                        futures.append(
+                            executor.submit(
+                                _write_table_object_task,
+                                data,
+                                pdf_path=pdf_path,
+                                page_cache_dir=page_cache_dir,
+                                page_render_context=page_render_ctx,
+                                use_disk_page_cache=use_disk_page_cache,
+                                asset_dir=stage_assets / "tables",
+                                render_dir=stage_render / "tables",
+                            )
+                        )
+                    elif task_type == "orphan":
+                        futures.append(
+                            executor.submit(
+                                _write_orphan_object_task,
+                                data,
+                                pdf_path=pdf_path,
+                                page_cache_dir=page_cache_dir,
+                                page_render_context=page_render_ctx,
+                                use_disk_page_cache=use_disk_page_cache,
+                                asset_dir=stage_assets / "orphans",
+                                render_dir=stage_render / "figures",
+                            )
+                        )
+                for future in as_completed(futures):
+                    record = future.result()
+                    if isinstance(record, dict):
+                        records.append(record)
+        finally:
+            if doc is not None:
+                with contextlib.suppress(Exception):
+                    doc.close()
 
-    _write_materialization_provenance(render_root, records)
+        for staged in (stage_assets, stage_render):
+            for path in staged.rglob("*"):
+                if path.is_file() and path.stat().st_size == 0:
+                    raise MaterializationError(f"staged artifact is empty: {path}")
+        staged_render_ids = {path.stem for path in (stage_render / "figures").glob("*.md")} | {
+            path.stem for path in (stage_render / "tables").glob("*.md")
+        }
+        missing_render = (figure_ids | table_ids | orphan_ids) - staged_render_ids
+        if missing_render:
+            raise MaterializationError(f"staged markdown missing for: {sorted(missing_render)}")
+
+        _write_materialization_provenance(stage_render, records)
+        provenance_stage = stage_render / "materialization.provenance.json"
+        provenance_target = render_root / "materialization.provenance.json"
+
+        staged_targets: list[tuple[Path, Path]] = [
+            (asset_root / "figures", stage_assets / "figures"),
+            (asset_root / "tables", stage_assets / "tables"),
+            (asset_root / "orphans", stage_assets / "orphans"),
+            (render_root / "figures", stage_render / "figures"),
+            (render_root / "tables", stage_render / "tables"),
+        ]
+        _commit_staged_objects(
+            paper_root=paper_root,
+            stage_root=stage_root,
+            staged_targets=staged_targets,
+            provenance=(provenance_target, provenance_stage) if provenance_stage.is_file() else None,
+        )
+    except MaterializationError:
+        _remove_path(stage_root)
+        raise
+    except Exception as exc:  # noqa: BLE001 — nothing was committed
+        _remove_path(stage_root)
+        raise MaterializationError(f"object materialization failed: {exc}") from exc
+    return None
