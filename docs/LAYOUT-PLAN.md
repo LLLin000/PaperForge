@@ -511,6 +511,42 @@ Validation: the shared replay matches a real serial `_rebuild_one_paper` on all
 40 corpus papers — 0 row differences and 0 claim differences between figure and
 table inventories (PDF absent, same evidence).
 
+### Two-entry equality with PDF evidence
+
+The shared stage fixed the call order, but the two entries still resolved the
+PDF differently, which changed *evidence*: first parse resolved the stored
+`source_pdf` locator and then re-read `meta["source_pdf"]` before span backfill,
+so `[[vault]]` wikilinks and `storage:` locators skipped PDF text evidence
+(`span_metadata`, missing-text recovery, PDF lines). Rebuild never resolved
+those locators at all. That is why 821 of 952 corpus papers report weak span
+coverage (0%) while their PDFs are present.
+
+`pdf_resolver.resolve_source_pdf()` is now the one resolution both entries use.
+First parse resolves once and reuses the path for page rendering, the
+fingerprint, span backfill, missing-text recovery and figure matching; rebuild
+uses the same helper before its legacy fallbacks. Rebuild also falls back to the
+cached page image when an OCR page exceeds the configured PDF (a supplement can
+replace the main file), instead of silently emitting no asset.
+
+`scripts/dev/ocr_two_entry_parity.py` verifies the contract end to end: it
+replays `postprocess_ocr_result` from `json/result.json` and then runs
+`_rebuild_one_paper` on the same input, PDF and metadata in a throwaway vault,
+comparing roles, render flags, ownership, figure/table asset claims, ownership
+resolutions/conflicts, rendered markdown and asset files.
+
+Measured on the 40-paper corpus (all PDFs resolvable):
+
+| Comparison | Result |
+|---|---|
+| Final rows (role, render/index flags, owner) | 40/40 identical |
+| Figure/table asset claims | 40/40 identical |
+| Ownership resolutions and conflicts | 40/40 identical |
+| Rendered markdown | 40/40 identical |
+| Asset files (names + bytes) | 40/40 identical |
+
+The run found one real divergence (`2ZBAK9VY`: a supplement PDF with 8 pages
+against 12 OCR pages) which is what the cache fallback above fixes.
+
 ### Known limits
 
 - Running heads and folios are placed last; a paper whose body starts in the top 8% keeps those blocks in the body flow (they are not margin unless their role is furniture).
