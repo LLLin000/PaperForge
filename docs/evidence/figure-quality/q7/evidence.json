@@ -1,0 +1,181 @@
+{
+  "schema_version": 1,
+  "case": "28JLIHLS",
+  "source": {
+    "title": "Chondrocyte Translocation Response to Direct Current Electric Fields",
+    "doi": "10.1115/1.429661",
+    "pdf_pages": 7,
+    "pdf_path_read_only": "D:/L/Med/Research/99_System/Zotero/storage/8VI3RB4K/Chao 等 - 2000 - Chondrocyte Translocation Response to Direct Current Electric Fields.pdf",
+    "block_sources_read_only": [
+      "D:/L/OB/Literature-hub/System/PaperForge/ocr/28JLIHLS/canonical/blocks.raw.jsonl",
+      "D:/L/OB/Literature-hub/System/PaperForge/ocr/28JLIHLS/structure/blocks.structured.jsonl"
+    ],
+    "bbox_coordinate_system": "OCR page coordinates; page_width=1224, page_height=1584",
+    "render_scale": 2.0,
+    "rendered_pages": [
+      "28JLIHLS/page_001_annotated.png",
+      "28JLIHLS/page_002_annotated.png",
+      "28JLIHLS/page_003_annotated.png",
+      "28JLIHLS/page_004_annotated.png",
+      "28JLIHLS/page_005_annotated.png",
+      "28JLIHLS/page_006_annotated.png",
+      "28JLIHLS/page_007_annotated.png"
+    ],
+    "overlay_key": {
+      "red": "figure asset block bbox",
+      "green": "figure caption block bbox"
+    }
+  },
+  "figures": [
+    {
+      "figure": 5,
+      "caption": {
+        "page": 4,
+        "block_id": 3,
+        "bbox": [115, 710, 606, 933],
+        "text": "Fig. 5 Effect of inositol phospholipid pathway inhibitors on chondrocyte motility. (a) Directed velocity of chondrocytes after exposure to U-73122 or vehicle (DMSO). * indicates p < 0.0001 relative to the vehicle no-field group and ** indicates p < 0.0001 relative to both the applied-field vehicle group and U-73122 no-field group. (b) Directed velocity of chondrocytes after exposure to neomycin and control media (i.e., serum supplemented DMEM). * indicates p < 0.0001 relative to the neomycin no-field group and ** indicates p < 0.0001 with respect to the applied-field control medium group and p = 0.03 with respect to the neomycin no-field group. The number in parentheses indicates the number of cells studied."
+      },
+      "candidate_assets": [
+        {
+          "page": 4,
+          "block_id": 0,
+          "raw_label": "chart",
+          "bbox": [123, 70, 598, 352],
+          "recommended_owner": "Figure 5",
+          "evidence": "Upper bar chart in the left column; vertically grouped with p4/b2 and panel (a) label. Same column as Fig. 5 caption.",
+          "crop": "28JLIHLS/page_004_block_00_asset_crop.png"
+        },
+        {
+          "page": 4,
+          "block_id": 2,
+          "raw_label": "chart",
+          "bbox": [121, 390, 595, 689],
+          "recommended_owner": "Figure 5",
+          "evidence": "Lower bar chart in the same left-column two-panel group, panel (b); directly above p4/b3 caption.",
+          "crop": "28JLIHLS/page_004_block_02_asset_crop.png"
+        },
+        {
+          "page": 4,
+          "block_id": 6,
+          "raw_label": "image",
+          "bbox": [622, 68, 1104, 331],
+          "recommended_owner": "Figure 6",
+          "evidence": "Rendered asset is a pair of polar plots labeled (a)/(b), matching the Fig. 6 caption directly below; different column from Fig. 5.",
+          "crop": "28JLIHLS/page_004_block_06_asset_crop.png"
+        }
+      ],
+      "bbox_relationships": [
+        {
+          "from": "p4/b0",
+          "to": "p4/b2",
+          "vertical_gap": 38,
+          "center_x_difference": 2.5,
+          "units": "OCR page coordinates"
+        },
+        {
+          "from": "p4/b2",
+          "to": "p4/b3 caption",
+          "vertical_gap": 21,
+          "center_x_difference": 2.5,
+          "units": "OCR page coordinates"
+        },
+        {
+          "from": "p4/b0",
+          "to": "p4/b3 caption",
+          "vertical_gap": 358,
+          "center_x_difference": 0.0,
+          "units": "OCR page coordinates"
+        },
+        {
+          "from": "p4/b6",
+          "to": "p4/b3 caption",
+          "vertical_gap": 379,
+          "center_x_difference": 502.5,
+          "units": "OCR page coordinates; far-right-column asset is not adjacent to Fig. 5 caption"
+        }
+      ],
+      "recommended_owner_set": ["p4/b0", "p4/b2"],
+      "block_6_arbitration": {
+        "decision": "Figure 6 only; not Figure 5, not shared, not HOLD",
+        "visual_proof": "p4 render and p4/b6 crop show two polar plots labeled (a)/(b); p4/b7 caption describes two polar plots and is immediately below b6 in the same right column.",
+        "confidence": "high"
+      },
+      "confidence": "high",
+      "recommended_next_action": "FIX: associate p4/b0 and p4/b2 with Figure 5; exclude p4/b6. No merge performed."
+    },
+    {
+      "figure": 6,
+      "caption": {
+        "page": 4,
+        "block_id": 7,
+        "bbox": [616, 346, 1106, 479],
+        "text": "Fig. 6 Net displacement graph of chondrocytes in studies performed using 6 V/cm for one hour in serum-free DMEM at ~37°C. (a) Directed cathodal migration was observed in the applied-field group. (b) No-field applied cells exhibited random migration. The radial axes of the polar plots are in microns, n = number of cells, + and - indicate the anode and cathode, respectively. Each open circle represents a single cell."
+      },
+      "candidate_assets": [
+        {
+          "page": 4,
+          "block_id": 6,
+          "raw_label": "image",
+          "bbox": [622, 68, 1104, 331],
+          "recommended_owner": "Figure 6",
+          "evidence": "Contains both captioned plots (a)/(b); same-column vertical gap to caption is 15 OCR-coordinate units.",
+          "crop": "28JLIHLS/page_004_block_06_asset_crop.png"
+        }
+      ],
+      "bbox_relationships": [
+        {
+          "from": "p4/b6",
+          "to": "p4/b7 caption",
+          "vertical_gap": 15,
+          "center_x_difference": 2.0,
+          "units": "OCR page coordinates"
+        }
+      ],
+      "p5_continuation_search": {
+        "blocks_examined": "p5/b0 through p5/b11; full p5 render",
+        "figure_asset_blocks": [],
+        "figure_caption_blocks": [],
+        "image_or_panel_found": false,
+        "bbox": null,
+        "result": "No continuation panel/image or corresponding p5 block/bbox found."
+      },
+      "recommended_complete_asset_set": ["p4/b6"],
+      "confidence": "high",
+      "recommended_next_action": "FIX: associate p4/b6 only. The claimed p5 continuation is unsupported by this source PDF; request the alternate source if one is intended. No merge performed."
+    },
+    {
+      "figure": 9,
+      "caption": null,
+      "candidate_assets": [],
+      "search": {
+        "raw_blocks_caption_matches": [],
+        "structured_blocks_caption_matches": [],
+        "pdf_page_text_caption_matches": [],
+        "pages_searched": [1, 2, 3, 4, 5, 6, 7],
+        "pdf_figure_asset_blocks": [
+          {"page": 2, "block_id": 0, "bbox": [123, 76, 587, 368]},
+          {"page": 2, "block_id": 1, "bbox": [119, 399, 602, 636]},
+          {"page": 3, "block_id": 0, "bbox": [143, 73, 575, 235]},
+          {"page": 3, "block_id": 5, "bbox": [127, 993, 593, 1353]},
+          {"page": 3, "block_id": 15, "bbox": [637, 824, 1088, 1304]},
+          {"page": 4, "block_id": 0, "bbox": [123, 70, 598, 352]},
+          {"page": 4, "block_id": 2, "bbox": [121, 390, 595, 689]},
+          {"page": 4, "block_id": 6, "bbox": [622, 68, 1104, 331]},
+          {"page": 4, "block_id": 12, "bbox": [621, 1035, 1103, 1323]}
+        ],
+        "source_pdf_caption_numbers_found": [1, 2, 3, 4, 5, 6, 7],
+        "missing_to_identify_alleged_figure": [
+          "A source page containing a Fig. 9 caption or image",
+          "The caption/asset page and block IDs",
+          "The corresponding asset bboxes and visual evidence connecting multi-page panels"
+        ]
+      },
+      "status": "HOLD: insufficient visual evidence",
+      "confidence": {
+        "absence_in_supplied_pdf": "high",
+        "ownership_of_alleged_external_figure": "none"
+      },
+      "recommended_next_action": "HOLD until the source page/PDF with a Fig. 9 anchor and its asset blocks is supplied; do not assign or merge assets."
+    }
+  ]
+}
