@@ -1,0 +1,149 @@
+{
+ "dry_run": {
+  "key": "SRNJDAA2",
+  "identity": {
+   "old": {
+    "entries": 25,
+    "unique_ids": 1,
+    "duplicate_extra": 24
+   },
+   "new": {
+    "entries": 21,
+    "unique_ids": 21,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_011": "figure_011_26"
+   },
+   "renamed": [
+    [
+     "figure_011",
+     "figure_011_26"
+    ]
+   ],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 27,
+   "new_render_files": 94,
+   "render_added": [
+    "assets/figures/figure_011_1.jpg",
+    "assets/figures/figure_011_11.jpg",
+    "assets/figures/figure_011_12.jpg",
+    "assets/figures/figure_011_14.jpg",
+    "assets/figures/figure_011_15.jpg",
+    "assets/figures/figure_011_17.jpg",
+    "assets/figures/figure_011_18.jpg",
+    "assets/figures/figure_011_2.jpg",
+    "assets/figures/figure_011_20.jpg",
+    "assets/figures/figure_011_21.jpg",
+    "assets/figures/figure_011_22.jpg",
+    "assets/figures/figure_011_23.jpg",
+    "assets/figures/figure_011_24.jpg",
+    "assets/figures/figure_011_25.jpg",
+    "assets/figures/figure_011_26.jpg",
+    "assets/figures/figure_011_3.jpg",
+    "assets/figures/figure_011_5.jpg",
+    "assets/figures/figure_011_6.jpg",
+    "assets/figures/figure_011_7.jpg",
+    "assets/figures/figure_011_8.jpg",
+    "assets/figures/figure_011_9.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/orphans/orphan_013.jpg",
+    "assets/orphans/orphan_014.jpg",
+    "assets/orphans/orphan_015.jpg",
+    "assets/orphans/orphan_016.jpg",
+    "assets/orphans/orphan_017.jpg",
+    "assets/orphans/orphan_018.jpg",
+    "assets/orphans/orphan_019.jpg",
+    "assets/orphans/orphan_020.jpg",
+    "assets/orphans/orphan_021.jpg",
+    "assets/orphans/orphan_022.jpg",
+    "assets/orphans/orphan_023.jpg",
+    "assets/orphans/orphan_024.jpg",
+    "assets/orphans/orphan_025.jpg",
+    "assets/orphans/orphan_026.jpg",
+    "render/figures/figure_011_1.md",
+    "render/figures/figure_011_11.md",
+    "render/figures/figure_011_12.md",
+    "render/figures/figure_011_14.md",
+    "render/figures/figure_011_15.md",
+    "render/figures/figure_011_17.md",
+    "render/figures/figure_011_18.md",
+    "render/figures/figure_011_2.md",
+    "render/figures/figure_011_20.md",
+    "render/figures/figure_011_21.md",
+    "render/figures/figure_011_22.md",
+    "render/figures/figure_011_23.md",
+    "render/figures/figure_011_24.md",
+    "render/figures/figure_011_25.md",
+    "render/figures/figure_011_26.md",
+    "render/figures/figure_011_3.md",
+    "render/figures/figure_011_5.md",
+    "render/figures/figure_011_6.md",
+    "render/figures/figure_011_7.md",
+    "render/figures/figure_011_8.md",
+    "render/figures/figure_011_9.md"
+   ],
+   "render_removed": [
+    "render/figures/figure_011.md"
+   ],
+   "embeds": 1,
+   "embeds_retargeted": 1,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 0,
+   "new_tables": 0,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 188,
+   "new_rows": 188,
+   "role_removed": {
+    "body_paragraph": 1,
+    "figure_caption": 1,
+    "figure_asset": 1,
+    "ocr_text_missing": 1
+   },
+   "role_added": {
+    "figure_inner_text": 3,
+    "media_asset": 1
+   },
+   "old_body_chars": 18517,
+   "new_body_chars": 18651,
+   "old_text_chars": 23788,
+   "new_text_chars": 23788,
+   "old_fulltext_chars": 20518
+  },
+  "new_manifest": {
+   "figures": 21,
+   "tables": 0,
+   "orphans": 26
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "SRNJDAA2",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 23788,
+  "new_text_chars": 23788,
+  "old_entries": 25,
+  "new_entries": 21
+ }
+}

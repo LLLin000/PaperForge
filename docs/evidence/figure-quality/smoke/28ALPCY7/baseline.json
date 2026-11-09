@@ -1,0 +1,153 @@
+{
+ "dry_run": {
+  "key": "28ALPCY7",
+  "identity": {
+   "old": {
+    "entries": 10,
+    "unique_ids": 9,
+    "duplicate_extra": 1
+   },
+   "new": {
+    "entries": 9,
+    "unique_ids": 9,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005",
+    "figure_007": "figure_007",
+    "figure_008": "figure_008",
+    "figure_009": "figure_009",
+    "figure_reserved_009": "figure_006"
+   },
+   "renamed": [
+    [
+     "figure_reserved_009",
+     "figure_006"
+    ]
+   ],
+   "unmapped_old_ids": [],
+   "claims_changed": [
+    {
+     "old_id": "figure_005",
+     "old_assets": [
+      "3",
+      "4",
+      "5",
+      "6"
+     ],
+     "new_id": "figure_005",
+     "new_assets": [
+      "10",
+      "3",
+      "4",
+      "5",
+      "6",
+      "9"
+     ]
+    }
+   ]
+  },
+  "delivery": {
+   "old_render_files": 73,
+   "new_render_files": 112,
+   "render_added": [
+    "assets/figures/figure_006.jpg",
+    "assets/orphans/orphan_026.jpg",
+    "assets/orphans/orphan_027.jpg",
+    "assets/orphans/orphan_028.jpg",
+    "assets/orphans/orphan_029.jpg",
+    "assets/orphans/orphan_030.jpg",
+    "assets/orphans/orphan_031.jpg",
+    "assets/orphans/orphan_032.jpg",
+    "assets/orphans/orphan_033.jpg",
+    "assets/orphans/orphan_034.jpg",
+    "assets/orphans/orphan_035.jpg",
+    "assets/orphans/orphan_036.jpg",
+    "assets/orphans/orphan_037.jpg",
+    "assets/orphans/orphan_038.jpg",
+    "assets/orphans/orphan_039.jpg",
+    "assets/orphans/orphan_040.jpg",
+    "assets/orphans/orphan_041.jpg",
+    "assets/orphans/orphan_042.jpg",
+    "assets/orphans/orphan_043.jpg",
+    "assets/orphans/orphan_044.jpg",
+    "render/figures/figure_006.md",
+    "render/figures/orphan_026.md",
+    "render/figures/orphan_027.md",
+    "render/figures/orphan_028.md",
+    "render/figures/orphan_029.md",
+    "render/figures/orphan_030.md",
+    "render/figures/orphan_031.md",
+    "render/figures/orphan_032.md",
+    "render/figures/orphan_033.md",
+    "render/figures/orphan_034.md",
+    "render/figures/orphan_035.md",
+    "render/figures/orphan_036.md",
+    "render/figures/orphan_037.md",
+    "render/figures/orphan_038.md",
+    "render/figures/orphan_039.md",
+    "render/figures/orphan_040.md",
+    "render/figures/orphan_041.md",
+    "render/figures/orphan_042.md",
+    "render/figures/orphan_043.md",
+    "render/figures/orphan_044.md"
+   ],
+   "render_removed": [
+    "render/figures/figure_reserved_009.md"
+   ],
+   "embeds": 11,
+   "embeds_retargeted": 1,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 2,
+   "new_tables": 2,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 346,
+   "new_rows": 346,
+   "role_removed": {
+    "unknown_structural": 3,
+    "structured_insert": 1,
+    "figure_caption_candidate": 2,
+    "reference_item": 10,
+    "table_caption_candidate": 1
+   },
+   "role_added": {
+    "noise": 10,
+    "authors": 1,
+    "paper_title": 1,
+    "body_paragraph": 2,
+    "abstract_body": 1,
+    "figure_caption": 2
+   },
+   "old_body_chars": 26879,
+   "new_body_chars": 27000,
+   "old_text_chars": 56021,
+   "new_text_chars": 56021,
+   "old_fulltext_chars": 42997
+  },
+  "new_manifest": {
+   "figures": 10,
+   "tables": 2,
+   "orphans": 44
+  },
+  "new_orphans": 12
+ },
+ "structural": {
+  "key": "28ALPCY7",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 1,
+  "text_decrease": false,
+  "old_text_chars": 56021,
+  "new_text_chars": 56021,
+  "old_entries": 10,
+  "new_entries": 9
+ }
+}
