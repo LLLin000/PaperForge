@@ -3276,6 +3276,26 @@ def test_figure_caption_candidate_body_prose_negative_control_demoted() -> None:
     _resolve_ambiguous_candidates(blocks, ds, {})
     assert blocks[0]["role"] == "body_paragraph"
 
+def test_figure_caption_candidate_body_prose_with_panel_markers_demoted() -> None:
+    """Body prose containing (a)/(b) markers must still be demoted."""
+    from paperforge.worker.ocr_document import (
+        DocumentStructure,
+        _resolve_ambiguous_candidates,
+    )
+
+    blocks = [
+        {
+            "page": 3,
+            "role": "figure_caption_candidate",
+            "text": "The treatment (a) reduced swelling. The second cohort (b) improved. "
+            "These findings suggest a novel mechanism.",
+            "bbox": [100, 200, 500, 230],
+        },
+    ]
+    ds = DocumentStructure(body_end_page=5)
+    _resolve_ambiguous_candidates(blocks, ds, {})
+    assert blocks[0]["role"] == "body_paragraph"
+
 
 def test_figure_caption_candidate_promoted_near_media() -> None:
     """figure_caption_candidate near media -> figure_caption."""
