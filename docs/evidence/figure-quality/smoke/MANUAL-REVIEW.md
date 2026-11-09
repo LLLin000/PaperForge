@@ -25,6 +25,15 @@ They are not pipeline fixes yet.
 
 Marked as a difficult item for a later pass; no action in this round.
 
+## Q7 evidence follow-up (2026-11-09)
+
+Read-only review of the supplied 7-page PDF (`10.1115/1.429661`) found:
+
+- Figure 5 owners: p4/b0 + p4/b2; p4/b6 is a two-panel polar-plot asset directly above the Figure 6 caption, so it belongs to **Figure 6**, not Figure 5.
+- Figure 6: no p5 continuation exists in this PDF; the supported asset set is p4/b6 only.
+- Figure 9: no caption or image on any of the 7 pages; **HOLD** until a source page/PDF is supplied.
+- The manual notes about a Figure 6 p5 continuation and a Figure 9 multi-page figure could not be reproduced against this source. See `docs/evidence/figure-quality/q7/REPORT.md`.
+
 ## Next use
 
 These rows are the seed for the dev-set checks: composite split, figure-inner
