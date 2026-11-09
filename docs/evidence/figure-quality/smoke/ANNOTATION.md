@@ -47,12 +47,12 @@ The original agent-only results above are retained unchanged. The scoring harnes
 
 | Key | Agent-only association P/R | Manual-adjusted association P/R | Adjusted crop fail | Adjusted delivery fail | Figure-count delta |
 |---|---:|---:|---:|---:|---:|
-| 3QYCST4E | 0.86 / 0.67 | 0.86 / 0.60 | 2 | 1 | -1 |
+| 3QYCST4E | 0.86 / 0.67 | 0.88 / 0.70 | 2 | 1 | -1 |
 | 28JLIHLS | 1.00 / 0.70 | 1.00 / 0.78 | 1 | 3 | -2 |
 
-Manual-adjusted smoke totals: association P 0.93 / R 0.91 / F1 0.92 (same net association balance), crop failures 11, delivery failures 9, one unknown asset identity (28JLIHLS Figure 9) excluded from association denominators.
+Manual-adjusted smoke totals after Q5: association P 0.931 / R 0.913 / F1 0.922; crop failures 11, delivery failures 9, one unknown asset identity (28JLIHLS Figure 9) excluded from association denominators. The pre-Q5 manual totals were P 0.93 / R 0.91 (3QYCST4E P/R 0.86/0.60); Q5 resolved the Figure 1B FN.
 
-For 3QYCST4E, Figure 1B contributes one asset-association FN; its caption candidate is replaced by the manual missing-figure row rather than double-counted. For 28JLIHLS, Figure 2's crop is a confirmed failure; Figure 5 contributes two FN (expected blocks 0 and 2; contested block 6 stays HOLD); Figure 6 has a confirmed delivery/ownership failure with the next-page asset identity unknown; Figure 9 is a missing figure with unknown assets. The prior numbers in the table above are the agent-only baseline.
+For 3QYCST4E, Q5 now delivers Figure 1B (figure_001B, asset 8), resolving that FN; the manual row is a TP. For 28JLIHLS, Figure 2's crop remains a confirmed failure; Figure 5 expects blocks 0/2 (Q7 assigns block 6 to Figure 6); Q7 found no p5 continuation for Figure 6 in the supplied PDF, and Figure 9 remains HOLD with unknown assets. The prior numbers in the table above are the agent-only baseline.
 
 ## Manual review addendum (user, 2026-11-09)
 
