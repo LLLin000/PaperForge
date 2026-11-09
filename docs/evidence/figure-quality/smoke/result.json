@@ -1496,48 +1496,48 @@
  "scores": {
   "28ALPCY7": {
    "total_labels": 9,
-   "reviewed": 0,
-   "unreviewed": 9,
+   "reviewed": 9,
+   "unreviewed": 0,
    "crop_failures": 0,
    "delivery_failures": 0,
    "caption_failures": 0,
    "panel_failures": 0,
    "association": {
-    "tp": 0,
+    "tp": 22,
     "fp": 0,
-    "fn": 0,
+    "fn": 1,
     "precision": 1.0,
-    "recall": 1.0,
-    "f1": 1.0
+    "recall": 0.9565217391304348,
+    "f1": 0.9777777777777777
    }
   },
   "28JLIHLS": {
    "total_labels": 7,
-   "reviewed": 0,
-   "unreviewed": 7,
+   "reviewed": 7,
+   "unreviewed": 0,
    "crop_failures": 0,
    "delivery_failures": 0,
    "caption_failures": 0,
    "panel_failures": 0,
    "association": {
-    "tp": 0,
+    "tp": 7,
     "fp": 0,
-    "fn": 0,
+    "fn": 3,
     "precision": 1.0,
-    "recall": 1.0,
-    "f1": 1.0
+    "recall": 0.7,
+    "f1": 0.8235294117647058
    }
   },
   "2AZ2EGQB": {
    "total_labels": 4,
-   "reviewed": 0,
-   "unreviewed": 4,
-   "crop_failures": 0,
+   "reviewed": 4,
+   "unreviewed": 0,
+   "crop_failures": 1,
    "delivery_failures": 0,
    "caption_failures": 0,
-   "panel_failures": 0,
+   "panel_failures": 1,
    "association": {
-    "tp": 0,
+    "tp": 4,
     "fp": 0,
     "fn": 0,
     "precision": 1.0,
@@ -1547,14 +1547,14 @@
   },
   "2BYRLKQS": {
    "total_labels": 4,
-   "reviewed": 0,
-   "unreviewed": 4,
+   "reviewed": 4,
+   "unreviewed": 0,
    "crop_failures": 0,
    "delivery_failures": 0,
    "caption_failures": 0,
    "panel_failures": 0,
    "association": {
-    "tp": 0,
+    "tp": 4,
     "fp": 0,
     "fn": 0,
     "precision": 1.0,
@@ -1563,15 +1563,15 @@
    }
   },
   "2HEUD5P9": {
-   "total_labels": 8,
-   "reviewed": 0,
-   "unreviewed": 8,
+   "total_labels": 7,
+   "reviewed": 7,
+   "unreviewed": 0,
    "crop_failures": 0,
    "delivery_failures": 0,
    "caption_failures": 0,
    "panel_failures": 0,
    "association": {
-    "tp": 0,
+    "tp": 74,
     "fp": 0,
     "fn": 0,
     "precision": 1.0,
@@ -1580,88 +1580,88 @@
    }
   },
   "388XI46Q": {
-   "total_labels": 13,
-   "reviewed": 0,
-   "unreviewed": 13,
+   "total_labels": 12,
+   "reviewed": 12,
+   "unreviewed": 0,
    "crop_failures": 0,
    "delivery_failures": 0,
    "caption_failures": 0,
    "panel_failures": 0,
    "association": {
-    "tp": 0,
+    "tp": 27,
     "fp": 0,
-    "fn": 0,
+    "fn": 5,
     "precision": 1.0,
-    "recall": 1.0,
-    "f1": 1.0
+    "recall": 0.84375,
+    "f1": 0.9152542372881356
    }
   },
   "3QYCST4E": {
    "total_labels": 8,
-   "reviewed": 0,
-   "unreviewed": 8,
-   "crop_failures": 0,
+   "reviewed": 8,
+   "unreviewed": 0,
+   "crop_failures": 2,
    "delivery_failures": 0,
-   "caption_failures": 0,
+   "caption_failures": 2,
    "panel_failures": 0,
    "association": {
-    "tp": 0,
-    "fp": 0,
-    "fn": 0,
-    "precision": 1.0,
-    "recall": 1.0,
-    "f1": 1.0
+    "tp": 6,
+    "fp": 1,
+    "fn": 3,
+    "precision": 0.8571428571428571,
+    "recall": 0.6666666666666666,
+    "f1": 0.75
    }
   },
   "55EKJRBC": {
-   "total_labels": 6,
-   "reviewed": 0,
-   "unreviewed": 6,
+   "total_labels": 5,
+   "reviewed": 5,
+   "unreviewed": 0,
    "crop_failures": 0,
    "delivery_failures": 0,
    "caption_failures": 0,
    "panel_failures": 0,
    "association": {
-    "tp": 0,
+    "tp": 4,
     "fp": 0,
-    "fn": 0,
+    "fn": 1,
     "precision": 1.0,
-    "recall": 1.0,
-    "f1": 1.0
+    "recall": 0.8,
+    "f1": 0.8888888888888888
    }
   },
   "DJLIAZT7": {
    "total_labels": 66,
-   "reviewed": 0,
-   "unreviewed": 66,
-   "crop_failures": 0,
+   "reviewed": 19,
+   "unreviewed": 47,
+   "crop_failures": 7,
    "delivery_failures": 0,
    "caption_failures": 0,
    "panel_failures": 0,
    "association": {
-    "tp": 0,
-    "fp": 0,
+    "tp": 19,
+    "fp": 8,
     "fn": 0,
-    "precision": 1.0,
+    "precision": 0.7037037037037037,
     "recall": 1.0,
-    "f1": 1.0
+    "f1": 0.8260869565217391
    }
   },
   "SRNJDAA2": {
    "total_labels": 26,
-   "reviewed": 0,
-   "unreviewed": 26,
+   "reviewed": 26,
+   "unreviewed": 0,
    "crop_failures": 0,
-   "delivery_failures": 0,
-   "caption_failures": 0,
-   "panel_failures": 0,
+   "delivery_failures": 5,
+   "caption_failures": 1,
+   "panel_failures": 2,
    "association": {
-    "tp": 0,
-    "fp": 0,
-    "fn": 0,
-    "precision": 1.0,
-    "recall": 1.0,
-    "f1": 1.0
+    "tp": 20,
+    "fp": 5,
+    "fn": 6,
+    "precision": 0.8,
+    "recall": 0.7692307692307693,
+    "f1": 0.7843137254901961
    }
   }
  }
