@@ -109,6 +109,100 @@
   "old_text_chars": 46970,
   "new_text_chars": 46970,
   "old_entries": 6,
-  "new_entries": 6
+  "new_entries": 6,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 4,
+     "block_id": 7,
+     "text": "Fig. 6 Net displacement graph of chondrocytes in studies performed using 6 V/cm for one hour in serum-free DMEM at  $ \\sim37^{\\circ} $C. (a) Directed cathodal migration was observed in the applied-field group. (b) No-field applied cells exhibited random migration. The radial axes of the polar plots "
+    }
+   ],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 2,
+     "text": "Fig. 1 Schematic diagram of the galvanotaxis chamber and system. (a) Exploded view of the parallel-plate chamber that permits real-time visualization of migrating cells cultured on a glass slide; (b) Schematic of the galvanotaxis circuit configuration. Current from a power supply is transmitted via "
+    },
+    {
+     "page": 3,
+     "block_id": 1,
+     "text": "Fig. 2 A series of Hoffman contrast images (10×, digitally magnified 400 percent) of a chondrocyte at t=0, 30 and 60 minutes after a DC electric field was turned on (field strength of 6 V/cm). The cell exhibits migration toward the cathode, extension of cytoplasmic processes, in serum supplemented D"
+    },
+    {
+     "page": 3,
+     "block_id": 6,
+     "text": "Fig. 3 A Hoffman contrast image (10×) of cells that have been subjected to 6 V/cm for 4.5 hours in serum-supplemented DMEM at room temperature (~25°C). With increasing duration of field application, some chondrocytes exhibit alignment that is perpendicular to the applied field."
+    },
+    {
+     "page": 3,
+     "block_id": 16,
+     "text": "Fig. 4 Net displacement graphs of chondrocytes after one hour for applied field strengths of 0, 2, 4 and 6 V/cm. The conducting solution was serum supplemented DMEM and studies were performed at ~37°C. The radial axes are in microns, n = number of cells, + and - indicate the anode and cathode, respe"
+    },
+    {
+     "page": 4,
+     "block_id": 3,
+     "text": "Fig. 5 Effect of inositol phospholipid pathway inhibitors on chondrocyte motility. (a) Directed velocity of chondrocytes after exposure to U-73122 or vehicle (DMSO). * indicates p < 0.0001 relative to the vehicle no-field group and ** indicates p < 0.0001 relative to both the applied-field vehicle g"
+    },
+    {
+     "page": 4,
+     "block_id": 7,
+     "text": "Fig. 6 Net displacement graph of chondrocytes in studies performed using 6 V/cm for one hour in serum-free DMEM at  $ \\sim37^{\\circ} $C. (a) Directed cathodal migration was observed in the applied-field group. (b) No-field applied cells exhibited random migration. The radial axes of the polar plots "
+    },
+    {
+     "page": 4,
+     "block_id": 13,
+     "text": "Fig. 7 Effect of temperature on chondrocyte motility. Cell migration at ~37°C was enhanced twofold over similar studies conducted at room temperature. * indicates  $ p<0.0001 $ relative to ~37°C no-field group and ** indicates  $ p<0.0001 $ with respect to both the ~37°C applied-field group and the "
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [
+   {
+    "page": 4,
+    "block_id": 7,
+    "text": "Fig. 6 Net displacement graph of chondrocytes in studies performed using 6 V/cm for one hour in serum-free DMEM at  $ \\sim37^{\\circ} $C. (a) Directed cathodal migration was observed in the applied-field group. (b) No-field applied cells exhibited random migration. The radial axes of the polar plots "
+   }
+  ],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 2,
+    "text": "Fig. 1 Schematic diagram of the galvanotaxis chamber and system. (a) Exploded view of the parallel-plate chamber that permits real-time visualization of migrating cells cultured on a glass slide; (b) Schematic of the galvanotaxis circuit configuration. Current from a power supply is transmitted via "
+   },
+   {
+    "page": 3,
+    "block_id": 1,
+    "text": "Fig. 2 A series of Hoffman contrast images (10×, digitally magnified 400 percent) of a chondrocyte at t=0, 30 and 60 minutes after a DC electric field was turned on (field strength of 6 V/cm). The cell exhibits migration toward the cathode, extension of cytoplasmic processes, in serum supplemented D"
+   },
+   {
+    "page": 3,
+    "block_id": 6,
+    "text": "Fig. 3 A Hoffman contrast image (10×) of cells that have been subjected to 6 V/cm for 4.5 hours in serum-supplemented DMEM at room temperature (~25°C). With increasing duration of field application, some chondrocytes exhibit alignment that is perpendicular to the applied field."
+   },
+   {
+    "page": 3,
+    "block_id": 16,
+    "text": "Fig. 4 Net displacement graphs of chondrocytes after one hour for applied field strengths of 0, 2, 4 and 6 V/cm. The conducting solution was serum supplemented DMEM and studies were performed at ~37°C. The radial axes are in microns, n = number of cells, + and - indicate the anode and cathode, respe"
+   },
+   {
+    "page": 4,
+    "block_id": 3,
+    "text": "Fig. 5 Effect of inositol phospholipid pathway inhibitors on chondrocyte motility. (a) Directed velocity of chondrocytes after exposure to U-73122 or vehicle (DMSO). * indicates p < 0.0001 relative to the vehicle no-field group and ** indicates p < 0.0001 relative to both the applied-field vehicle g"
+   },
+   {
+    "page": 4,
+    "block_id": 7,
+    "text": "Fig. 6 Net displacement graph of chondrocytes in studies performed using 6 V/cm for one hour in serum-free DMEM at  $ \\sim37^{\\circ} $C. (a) Directed cathodal migration was observed in the applied-field group. (b) No-field applied cells exhibited random migration. The radial axes of the polar plots "
+   },
+   {
+    "page": 4,
+    "block_id": 13,
+    "text": "Fig. 7 Effect of temperature on chondrocyte motility. Cell migration at ~37°C was enhanced twofold over similar studies conducted at room temperature. * indicates  $ p<0.0001 $ relative to ~37°C no-field group and ** indicates  $ p<0.0001 $ with respect to both the ~37°C applied-field group and the "
+   }
+  ]
  }
 }

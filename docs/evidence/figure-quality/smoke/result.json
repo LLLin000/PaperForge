@@ -26,7 +26,192 @@
     "old_text_chars": 56021,
     "new_text_chars": 56021,
     "old_entries": 10,
-    "new_entries": 9
+    "new_entries": 9,
+    "unmatched": {
+     "legends": [],
+     "assets": [
+      {
+       "page": 25,
+       "bbox": [
+        178,
+        154,
+        1010,
+        426
+       ]
+      },
+      {
+       "page": 25,
+       "bbox": [
+        179,
+        491,
+        1010,
+        766
+       ]
+      },
+      {
+       "page": 25,
+       "bbox": [
+        180,
+        829,
+        1009,
+        1107
+       ]
+      },
+      {
+       "page": 25,
+       "bbox": [
+        179,
+        1168,
+        1009,
+        1444
+       ]
+      },
+      {
+       "page": 26,
+       "bbox": [
+        180,
+        146,
+        1010,
+        770
+       ]
+      },
+      {
+       "page": 26,
+       "bbox": [
+        180,
+        858,
+        1009,
+        1478
+       ]
+      },
+      {
+       "page": 36,
+       "bbox": [
+        221,
+        554,
+        943,
+        884
+       ]
+      },
+      {
+       "page": 36,
+       "bbox": [
+        303,
+        938,
+        587,
+        1088
+       ]
+      },
+      {
+       "page": 36,
+       "bbox": [
+        617,
+        933,
+        860,
+        1094
+       ]
+      },
+      {
+       "page": 36,
+       "bbox": [
+        634,
+        1102,
+        878,
+        1191
+       ]
+      },
+      {
+       "page": 36,
+       "bbox": [
+        269,
+        1224,
+        539,
+        1422
+       ]
+      },
+      {
+       "page": 36,
+       "bbox": [
+        674,
+        1224,
+        925,
+        1425
+       ]
+      }
+     ],
+     "caption_candidates": [
+      {
+       "page": 12,
+       "block_id": 8,
+       "text": "Figure 1. SEM images of 3D-printed β-TCP scaffolds: the top panels are (a) 100×, (b) 240× and show that the diameter of the bar is approximately 170±10 microns. The bars are arranged vertically, which forms square pores with a side length of 219±17 microns. The lower panels are (c) 1500× and (d) 300"
+      },
+      {
+       "page": 13,
+       "block_id": 10,
+       "text": "Figure 2. LIVE/DEAD staining of rADSCs cultured on scaffolds in ordinary medium for 24, 48 or 72 hours. Live cells are stained green and dead cells are stained red. In the low power field of vision, the ratios of live/dead rADSCs at 24, 48 and 72 hours are 4.36 (a, 109/25), 5.81 (b, 343/59) and 7.60"
+      },
+      {
+       "page": 15,
+       "block_id": 4,
+       "text": "Figure 3. CCK-8 analysis after culture for 1, 4, or 7 days on TCPS or  $ \\beta $-TCP scaffolds. After 1 day of culture, the proliferation rate of rADSCs cultured on  $ \\beta $-TCP scaffolds was significantly higher than that of cells cultured on TCPS ( $ **p<0.01 $). After 4 days of culture, the pro"
+      },
+      {
+       "page": 16,
+       "block_id": 4,
+       "text": "Figure 4. ALP activity analysis of rADSCs after culture in osteogenic induction medium for 14 days. The activity of ALP in the TCPS+PEMF and  $ \\beta $-TCP groups was similar, and a significant difference was found between the TCPS+PEMF and TCPS groups (*p<0.05) and between the  $ \\beta $-TCP and TC"
+      },
+      {
+       "page": 17,
+       "block_id": 7,
+       "text": "β-TCP"
+      },
+      {
+       "page": 17,
+       "block_id": 8,
+       "text": "β-TCP+PEMF"
+      },
+      {
+       "page": 17,
+       "block_id": 11,
+       "text": "Figure 5. ALP staining of rADSCs after culture in osteogenic induction medium for 14 days. (a), (b) rADSCs exposed to PEMF and cultured on TCPS. (c), (d) rADSCs not exposed to PEMF and cultured on TCPS. (e) rADSCs not exposed to PEMF and cultured on  $ \\beta $-TCP. (f) rADSCs exposed to PEMF and cul"
+      },
+      {
+       "page": 19,
+       "block_id": 4,
+       "text": "ALP"
+      },
+      {
+       "page": 19,
+       "block_id": 6,
+       "text": "Runx2"
+      },
+      {
+       "page": 19,
+       "block_id": 8,
+       "text": "OPN"
+      },
+      {
+       "page": 20,
+       "block_id": 3,
+       "text": "Figure 6. qRT-PCR analysis was used to evaluate the expression of osteogenesis-related genes in rADSCs cultured in osteogenic induction medium for 7, 14 or 21 days. (a) The expression of ALPin the  $ \\beta $-TCP+PEMF group remained the highest (*p<0.05) after 7, 14 and 21 days in culture. The expres"
+      },
+      {
+       "page": 22,
+       "block_id": 4,
+       "text": "Figure 7. 3D reconstruction of the imaging data of SD rats after 0, 4, 8 and 12 weeks of rearing.\nThe rats in the PEMF group were treated with PEMFs for 2 hours per day, whereas the rats in the without PEMF group were not exposed to PEMFs."
+      },
+      {
+       "page": 23,
+       "block_id": 5,
+       "text": "Figure 8. Bone mineral density analysis based on micro-CT data was used to detect the growth of skull defects in SD rats after 12 weeks of rearing. The BMD values of the defect site of rats in the  $ \\beta $-TCP+PEMF group were the highest ( $ ^{**}p<0.01 $), and the BMD measurements of rats in the "
+      },
+      {
+       "page": 27,
+       "block_id": 5,
+       "text": "Figure 9. HE staining of the cranial defects of rats after 12 weeks of rearing. (A), (E) Rats"
+      }
+     ]
+    }
    }
   },
   {
@@ -42,7 +227,54 @@
     "old_text_chars": 46970,
     "new_text_chars": 46970,
     "old_entries": 6,
-    "new_entries": 6
+    "new_entries": 6,
+    "unmatched": {
+     "legends": [
+      {
+       "page": 4,
+       "block_id": 7,
+       "text": "Fig. 6 Net displacement graph of chondrocytes in studies performed using 6 V/cm for one hour in serum-free DMEM at  $ \\sim37^{\\circ} $C. (a) Directed cathodal migration was observed in the applied-field group. (b) No-field applied cells exhibited random migration. The radial axes of the polar plots "
+      }
+     ],
+     "assets": [],
+     "caption_candidates": [
+      {
+       "page": 2,
+       "block_id": 2,
+       "text": "Fig. 1 Schematic diagram of the galvanotaxis chamber and system. (a) Exploded view of the parallel-plate chamber that permits real-time visualization of migrating cells cultured on a glass slide; (b) Schematic of the galvanotaxis circuit configuration. Current from a power supply is transmitted via "
+      },
+      {
+       "page": 3,
+       "block_id": 1,
+       "text": "Fig. 2 A series of Hoffman contrast images (10×, digitally magnified 400 percent) of a chondrocyte at t=0, 30 and 60 minutes after a DC electric field was turned on (field strength of 6 V/cm). The cell exhibits migration toward the cathode, extension of cytoplasmic processes, in serum supplemented D"
+      },
+      {
+       "page": 3,
+       "block_id": 6,
+       "text": "Fig. 3 A Hoffman contrast image (10×) of cells that have been subjected to 6 V/cm for 4.5 hours in serum-supplemented DMEM at room temperature (~25°C). With increasing duration of field application, some chondrocytes exhibit alignment that is perpendicular to the applied field."
+      },
+      {
+       "page": 3,
+       "block_id": 16,
+       "text": "Fig. 4 Net displacement graphs of chondrocytes after one hour for applied field strengths of 0, 2, 4 and 6 V/cm. The conducting solution was serum supplemented DMEM and studies were performed at ~37°C. The radial axes are in microns, n = number of cells, + and - indicate the anode and cathode, respe"
+      },
+      {
+       "page": 4,
+       "block_id": 3,
+       "text": "Fig. 5 Effect of inositol phospholipid pathway inhibitors on chondrocyte motility. (a) Directed velocity of chondrocytes after exposure to U-73122 or vehicle (DMSO). * indicates p < 0.0001 relative to the vehicle no-field group and ** indicates p < 0.0001 relative to both the applied-field vehicle g"
+      },
+      {
+       "page": 4,
+       "block_id": 7,
+       "text": "Fig. 6 Net displacement graph of chondrocytes in studies performed using 6 V/cm for one hour in serum-free DMEM at  $ \\sim37^{\\circ} $C. (a) Directed cathodal migration was observed in the applied-field group. (b) No-field applied cells exhibited random migration. The radial axes of the polar plots "
+      },
+      {
+       "page": 4,
+       "block_id": 13,
+       "text": "Fig. 7 Effect of temperature on chondrocyte motility. Cell migration at ~37°C was enhanced twofold over similar studies conducted at room temperature. * indicates  $ p<0.0001 $ relative to ~37°C no-field group and ** indicates  $ p<0.0001 $ with respect to both the ~37°C applied-field group and the "
+      }
+     ]
+    }
    }
   },
   {
@@ -58,7 +290,70 @@
     "old_text_chars": 57671,
     "new_text_chars": 57671,
     "old_entries": 2,
-    "new_entries": 4
+    "new_entries": 4,
+    "unmatched": {
+     "legends": [],
+     "assets": [
+      {
+       "page": 6,
+       "bbox": [
+        675,
+        118,
+        1072,
+        483
+       ]
+      },
+      {
+       "page": 6,
+       "bbox": [
+        688,
+        499,
+        1091,
+        738
+       ]
+      },
+      {
+       "page": 8,
+       "bbox": [
+        374,
+        117,
+        1089,
+        436
+       ]
+      },
+      {
+       "page": 9,
+       "bbox": [
+        373,
+        119,
+        1092,
+        762
+       ]
+      }
+     ],
+     "caption_candidates": [
+      {
+       "page": 3,
+       "block_id": 10,
+       "text": "Fig. 1 Cartilage schematic representation with matrix composition and matrix constituents. SZ: Superficial Zone, MZ: Middle Zone, DZ: Deep Zone, and SB: Subchondral Bone. Figure created partially with Biorender.com"
+      },
+      {
+       "page": 6,
+       "block_id": 2,
+       "text": "Fig. 2 Schematic representation of A cell-seeded scaffold, B Rotating wall vessel bioreactor, C Spinner flask bioreactor, and D Flow perfusion bioreactor"
+      },
+      {
+       "page": 8,
+       "block_id": 2,
+       "text": "Fig. 3 Schematic representation of mechanical stimulation for tissue engineering constructs"
+      },
+      {
+       "page": 9,
+       "block_id": 2,
+       "text": "Fig. 4 Schematic representation of electrical stimulation with an interval and a continuous step signal input for tissue engineering constructs. Figure partially created with Biorender.com"
+      }
+     ]
+    }
    }
   },
   {
@@ -74,7 +369,33 @@
     "old_text_chars": 41679,
     "new_text_chars": 41679,
     "old_entries": 4,
-    "new_entries": 4
+    "new_entries": 4,
+    "unmatched": {
+     "legends": [],
+     "assets": [],
+     "caption_candidates": [
+      {
+       "page": 4,
+       "block_id": 9,
+       "text": "Figure 1 Photomicrographs of longitudinal sections of the xiphoid cartilage defect area in 45-day-old male rats. A-C: Control group; D-F: group submitted to microcurrent stimulation (20 µA/5 min). Specimens were collected 7 (A and D), 21 (B and E), and 35 (C and F) days after experimental injury. Se"
+      },
+      {
+       "page": 5,
+       "block_id": 3,
+       "text": "Figure 2 Photomicrographs of sections stained with picrosirius-hematoxylin and analyzed by bright-field microscopy under polarized light (D-F and J-L). A-F: Control group; G-L: treated group. Specimens were collected 7 (A, D, G, and J), 21 (B, E, H, and K) and 35 (C, F, I, and L) days after experime"
+      },
+      {
+       "page": 5,
+       "block_id": 5,
+       "text": "Figure 3 Electron photomicrographs of the xiphoid cartilage defect area in 45-day-old male rats. A-C: Control group; D-F: group submitted to microcurrent stimulation (20 μA/5 min). Specimens were collected 7 (A and D), 21 (B and E), and 35 (C and F) days after experimental injury. The samples were f"
+      },
+      {
+       "page": 6,
+       "block_id": 10,
+       "text": "Figure 4 Electron photomicrographs of sections from control (A-C) and treated (D-F) animals stained with cuprolinic blue for the detection of proteoglycans (PG). Specimens were collected 7 (A and D), 21 (B and E), and 35 (C and F) days after experimental injury. (*) Fibroblastic cell; (▶) – positive"
+      }
+     ]
+    }
    }
   },
   {
@@ -90,7 +411,164 @@
     "old_text_chars": 142349,
     "new_text_chars": 142349,
     "old_entries": 7,
-    "new_entries": 7
+    "new_entries": 7,
+    "unmatched": {
+     "legends": [],
+     "assets": [
+      {
+       "page": 12,
+       "bbox": [
+        155,
+        147,
+        1087,
+        407
+       ]
+      },
+      {
+       "page": 12,
+       "bbox": [
+        122,
+        419,
+        1071,
+        617
+       ]
+      },
+      {
+       "page": 12,
+       "bbox": [
+        138,
+        631,
+        1071,
+        802
+       ]
+      },
+      {
+       "page": 12,
+       "bbox": [
+        108,
+        823,
+        966,
+        901
+       ]
+      },
+      {
+       "page": 12,
+       "bbox": [
+        157,
+        923,
+        725,
+        1177
+       ]
+      },
+      {
+       "page": 12,
+       "bbox": [
+        830,
+        918,
+        1028,
+        1103
+       ]
+      },
+      {
+       "page": 12,
+       "bbox": [
+        160,
+        1209,
+        445,
+        1394
+       ]
+      },
+      {
+       "page": 12,
+       "bbox": [
+        458,
+        1181,
+        729,
+        1409
+       ]
+      },
+      {
+       "page": 12,
+       "bbox": [
+        804,
+        1121,
+        1040,
+        1265
+       ]
+      },
+      {
+       "page": 12,
+       "bbox": [
+        803,
+        1276,
+        1041,
+        1420
+       ]
+      }
+     ],
+     "caption_candidates": [
+      {
+       "page": 3,
+       "block_id": 3,
+       "text": "Figure 1. The schematic diagram of bioactive materials and advanced techniques to regulate the stem cell fate with specific cellular and molecular mechanism for the application of bone tissue engineering."
+      },
+      {
+       "page": 4,
+       "block_id": 18,
+       "text": "(1)"
+      },
+      {
+       "page": 4,
+       "block_id": 25,
+       "text": "Figure 2. A) In vivo bone regeneration efficacy of whitlockite (WH: Ca $ _{18} $Mg $ _{2} $(HPO $ _{4} $) $ _{2} $(PO $ _{4} $) $ _{12} $) embedded 3D cryogel implants after 6 weeks of subcutaneous injection, each group of cryogels rendered by the micro-CT program as grey areas indicated the amount "
+      },
+      {
+       "page": 9,
+       "block_id": 26,
+       "text": "Figure 3. A) Biomimetic melt electrowritten lattice and bioglass particle reinforced hydrogel scaffolds were fabricated. B) The weight percents of Ca, P, and Ca/P ratio for all the scaffolds. C) FTIR curves of formed HAp on scaffolds. $ ^{[87]} $ Copyright 2022, Elsevier. D) Representative SEM image"
+      },
+      {
+       "page": 13,
+       "block_id": 6,
+       "text": "Figure 4. A) Scheme showing MgGA MOF and PLGA/Mg-GA MOF scaffold preparation. B) ALP staining of hBMSCs in the extracts. C) ARS staining of hBMSCs in the extracts. $ ^{[112]} $ Copyright 2022, Elsevier. D) Schematic of fabrication of the PCL/Col/ZIF-8 composite membrane for guided bone regeneration."
+      },
+      {
+       "page": 13,
+       "block_id": 13,
+       "text": "4 W"
+      },
+      {
+       "page": 13,
+       "block_id": 15,
+       "text": "8 W"
+      },
+      {
+       "page": 13,
+       "block_id": 26,
+       "text": "(1)"
+      },
+      {
+       "page": 13,
+       "block_id": 39,
+       "text": "Figure 5. A) ALP staining and ARS staining of Control, Let-7d, LDH and LDH/let-7d groups on day 7 and day 14, respectively. Scale bars: 500  $ \\mu $m. B) LDH/let-7d-incorporated fibrin scaffolds promoted the subcutaneous ectopic osteogenesis of BMSCs in nude mice. Representative reconstructed micro-"
+      },
+      {
+       "page": 15,
+       "block_id": 25,
+       "text": "Figure 6. A,B) SEM image of scaffolds after soaking in SBF for 5 days (A1, A2: MBG/SF scaffold; B1, B2: MBG/PCL scaffold) and EDS spectra (A3: MBG/SF scaffold; B3:MBG/PCL scaffold). C) The relative expression of BMP-2, BSP, COL-1 and OCN of hBMSCs cultured on MBG/SF and MBG/PCL scaffolds for 7 and 1"
+      },
+      {
+       "page": 19,
+       "block_id": 3,
+       "text": "Figure 7. A,B) Water contact angle measurement for the Ti6Al4V substrate (A1) and Ti6Al4V substrate with BaTiO₃ coating (B1); Surface CLSM images of the Ti6Al4V substrate (A2) and Ti6Al4V substrate with BaTiO₃ coating (B2). C) Fluorescence staining of BMSCs (red, Rhodamine-phalloidin for F-actin; bl"
+      },
+      {
+       "page": 21,
+       "block_id": 17,
+       "text": "Figure 8. A) Schematic illustration of the procedure to fabricate BP@BMP2 electrospun fibrous scaffolds and the effect of recruiting osteoblasts and releasing calcium-free phosphate therapy for promoting bone physiological regeneration in vivo. B) Radiological analysis in vivo. Representative microC"
+      }
+     ]
+    }
    }
   },
   {
@@ -106,7 +584,103 @@
     "old_text_chars": 89489,
     "new_text_chars": 89489,
     "old_entries": 11,
-    "new_entries": 10
+    "new_entries": 10,
+    "unmatched": {
+     "legends": [
+      {
+       "page": 19,
+       "block_id": 6,
+       "text": "finite element modeling. (k) Scatter plot of filler particle distribution. (l) Results of the finite element stress analysis. (Statistical significance was set as ***p<0.001, **p<0.01 and *p<0.05)"
+      }
+     ],
+     "assets": [
+      {
+       "page": 1,
+       "bbox": [
+        1030,
+        142,
+        1088,
+        199
+       ]
+      },
+      {
+       "page": 14,
+       "bbox": [
+        118,
+        122,
+        1069,
+        1356
+       ]
+      }
+     ],
+     "caption_candidates": [
+      {
+       "page": 3,
+       "block_id": 5,
+       "text": "Fig. 1 Schematic illustration of decoupling electro-priming from implantation strategy for functional hyaline chondrogenesis"
+      },
+      {
+       "page": 8,
+       "block_id": 26,
+       "text": "1"
+      },
+      {
+       "page": 9,
+       "block_id": 4,
+       "text": "Fig. 2 (a) Schematic and (b) photograph of the electrical stimulation chamber. (c) Suspension stability, AFM and SEM characterization of the fillers (From left to right: GO, PANI-GO, PDA-PANI-GO). (d) Zeta potential results. (e) FTIR, (r) XRD and (g) UV-Vis characterization of the fillers. (h) Elect"
+      },
+      {
+       "page": 10,
+       "block_id": 8,
+       "text": "Fig. 3 (a) CCK-8 assay, (b) hemocompatibility and (c) Tissue compatibility of GelMA and GelMA/PDA-PAni-GO hydrogels. (d) Heatmap of electrical conductivity uniformity of conductive hydrogels (10⁻² S/m). (e) Simulation of electric field intensity between paired graphite electrodes in conductive hydro"
+      },
+      {
+       "page": 13,
+       "block_id": 10,
+       "text": "Fig. 4 (a) Schematic diagram of the electrical stimulation process. (b) Detection of Col II and GAGs content under different voltages. (c-d) 3D immunofluorescence confocal detection chondrogenic differentiation indicators at (c) day 14 and (d) 28. (e) GAG content determination"
+      },
+      {
+       "page": 13,
+       "block_id": 13,
+       "text": "tion. (f) HYP content determination. (g) Western bolt results, from top to bottom are the results at day 14 and day 28, respectively. (Statistical significance was set as ***p<0.001, **p<0.01 and *p<0.05)"
+      },
+      {
+       "page": 15,
+       "block_id": 4,
+       "text": "Fig. 5 (a) Immunofluorescence detection of cellular inflammatory response (IL-1β). (b) Record of GelMA hydrogel lysis process. (c) Live-Dead assessment after hydrogel dissolution-recoating. (d) Quantitative analysis of IL-1β immunofluorescence. (e) Concentration of IL-6 and (f) IL-8 in cell culture "
+      },
+      {
+       "page": 16,
+       "block_id": 5,
+       "text": "Fig. 6 A(a-b) Results of PCA and Pearson correlation analysis. (c) Volcano plot of differentially expressed genes. (d) GO CC, (e) KEGG and (f) Metabolism-related pathway bubble plots. (g) GSEA enrichment results. (h) Western blot results of MAPK pathway activation by electrical stimulation. (i-j) Pr"
+      },
+      {
+       "page": 16,
+       "block_id": 9,
+       "text": "culture medium. (k) Confocal fluorescence results of intracellular proline concentration. (l) RT-qPCR analysis of chondrogenic differentiation-related genes. (m) Schematic of mechanism analysis. (Statistical significance was set as ***p<0.001, **p<0.01 and *p<0.05)"
+      },
+      {
+       "page": 17,
+       "block_id": 10,
+       "text": "Fig. 7 (a) Schematic diagram of the animal experimental procedure. (b) Demonstration of the injectability of the hydrogel. (c) Practical application of hydrogel during the animal experiment. (d) Postopera-"
+      },
+      {
+       "page": 17,
+       "block_id": 11,
+       "text": "tive presentation of the cartilage defect and its macroscopic view of repair. (e) ICRS score for cartilage repair at 8 weeks. (Statistical significance was set as ***p<0.001, **p<0.01 and *p<0.05)"
+      },
+      {
+       "page": 19,
+       "block_id": 5,
+       "text": "Fig. 8 (a) H&E, (b) TB and (c) SO/FG staining of tissue sections. (d) Sirius Red staining of tissue sections. (e) IL-1β, (f) Col II, (g) Mmp13 and (h) Runx2 immunofluorescence staining of tissue sections. (i) Quantitative results of section staining. (j) Schematic diagram of the"
+      },
+      {
+       "page": 19,
+       "block_id": 6,
+       "text": "finite element modeling. (k) Scatter plot of filler particle distribution. (l) Results of the finite element stress analysis. (Statistical significance was set as ***p<0.001, **p<0.01 and *p<0.05)"
+      }
+     ]
+    }
    }
   },
   {
@@ -122,7 +696,64 @@
     "old_text_chars": 18278,
     "new_text_chars": 18278,
     "old_entries": 6,
-    "new_entries": 5
+    "new_entries": 5,
+    "unmatched": {
+     "legends": [
+      {
+       "page": 5,
+       "block_id": 7,
+       "text": "An Overview of the Association of the Localized Cartilage Damage to the Specific Diagnosis in This Material $ ^{a} $"
+      }
+     ],
+     "assets": [],
+     "caption_candidates": [
+      {
+       "page": 2,
+       "block_id": 4,
+       "text": "Figure 1A. International Cartilage Repair Society evaluation form showing the grid map of the knee. Published with permission from the ICRS."
+      },
+      {
+       "page": 2,
+       "block_id": 9,
+       "text": "Figure 1B. Anatomical grading of the depth of the cartilage injury according to the International Cartilage Repair Society. Published with permission from the ICRS."
+      },
+      {
+       "page": 3,
+       "block_id": 4,
+       "text": "Figure 2. Different types of localized cartilage lesions (n = 203) of the knee. A, Localized partial-thickness cartilage lesions 44%; B, Osteochondritis dissecans lesions 9%; C, Localized full-thickness cartilage lesions 47%."
+      },
+      {
+       "page": 3,
+       "block_id": 11,
+       "text": "Figure 3. Anatomical distribution of the localized full-thickness cartilage defects of the knees (n = 203)."
+      },
+      {
+       "page": 4,
+       "block_id": 5,
+       "text": "Figure 4. Cause of injury and a distribution of the different sports according to the knee injuries in this material caused by athletic activity (49%). N = 993."
+      },
+      {
+       "page": 4,
+       "block_id": 9,
+       "text": "Figure 5. Performed knee arthroscopic procedures (N = 993)."
+      },
+      {
+       "page": 4,
+       "block_id": 11,
+       "text": "Figure 6. Number of localized cartilage lesions including the osteochondritis dissecans lesions (n = 203) in the different age groups. Median age of this group is 30 years."
+      },
+      {
+       "page": 5,
+       "block_id": 4,
+       "text": "Activity Level Among the Patients (N = 993)"
+      },
+      {
+       "page": 5,
+       "block_id": 7,
+       "text": "An Overview of the Association of the Localized Cartilage Damage to the Specific Diagnosis in This Material $ ^{a} $"
+      }
+     ]
+    }
    }
   },
   {
@@ -138,7 +769,59 @@
     "old_text_chars": 71046,
     "new_text_chars": 71046,
     "old_entries": 5,
-    "new_entries": 4
+    "new_entries": 4,
+    "unmatched": {
+     "legends": [
+      {
+       "page": 8,
+       "block_id": 11,
+       "text": "Fig 6 | Internal-external cross validation of the ISARIC (International Severe Acute Respiratory and Emerging Infection Consortium) 4C model. Adapted from Gupta et al. $ ^{2} $ Estimates and confidence intervals taken from original paper where they were reported to two decimal places."
+      }
+     ],
+     "assets": [
+      {
+       "page": 1,
+       "bbox": [
+        64,
+        139,
+        261,
+        219
+       ]
+      }
+     ],
+     "caption_candidates": [
+      {
+       "page": 3,
+       "block_id": 23,
+       "text": "Fig 1 | Different study design and approaches to develop and evaluate the performance of a multivariable prediction model (D=development; V=validation (evaluation)). Adapted from Collins GS, Reitsma JB, Altman DG, Moons KGM. Transparent reporting of a multivariable prediction model for individual pr"
+      },
+      {
+       "page": 5,
+       "block_id": 10,
+       "text": "Fig 2 | Variability and overestimation of apparent performance compared to large sample performance, for a model to predict in-hospital mortality within 28 days of trauma injury with increasing sample size of the model development study.  $ \\hat{c} $ denotes the apparent performance estimate and  $ "
+      },
+      {
+       "page": 6,
+       "block_id": 2,
+       "text": "Fig 3 | Variability and overestimation of the apparent and internal (split sample and bootstrap) validation performance compared with the large sample performance, for a model to predict in-hospital mortality within 28 days of trauma injury with increasing sample size of the model development study."
+      },
+      {
+       "page": 7,
+       "block_id": 4,
+       "text": "Fig 4 | Graphical illustration of k-fold cross validation. Non-shaded parts used for model development; shaded part used for testing"
+      },
+      {
+       "page": 8,
+       "block_id": 4,
+       "text": "Fig 5 | Graphical illustration of internal-external cross validation. Non-shaded parts used for model development; shaded part used for testing"
+      },
+      {
+       "page": 8,
+       "block_id": 11,
+       "text": "Fig 6 | Internal-external cross validation of the ISARIC (International Severe Acute Respiratory and Emerging Infection Consortium) 4C model. Adapted from Gupta et al. $ ^{2} $ Estimates and confidence intervals taken from original paper where they were reported to two decimal places."
+      }
+     ]
+    }
    }
   },
   {
@@ -154,7 +837,393 @@
     "old_text_chars": 67277,
     "new_text_chars": 67277,
     "old_entries": 63,
-    "new_entries": 48
+    "new_entries": 48,
+    "unmatched": {
+     "legends": [],
+     "assets": [],
+     "caption_candidates": [
+      {
+       "page": 14,
+       "block_id": 5,
+       "text": "图 1-1 本文技术路线"
+      },
+      {
+       "page": 17,
+       "block_id": 3,
+       "text": "图2-1 卷积神经网络结构图"
+      },
+      {
+       "page": 18,
+       "block_id": 2,
+       "text": "图2-2 卷积核计算示意图"
+      },
+      {
+       "page": 18,
+       "block_id": 6,
+       "text": "图 2-3 Tanh 函数图像"
+      },
+      {
+       "page": 19,
+       "block_id": 3,
+       "text": "图 2-4 Sigmoid 函数图像"
+      },
+      {
+       "page": 19,
+       "block_id": 9,
+       "text": "图 2-5 ReLU 函数图像"
+      },
+      {
+       "page": 20,
+       "block_id": 7,
+       "text": "（a）最大池化示意图"
+      },
+      {
+       "page": 20,
+       "block_id": 8,
+       "text": "（b）平均池化示意图"
+      },
+      {
+       "page": 20,
+       "block_id": 9,
+       "text": "图2-6 最大池化、平均池化示意图"
+      },
+      {
+       "page": 21,
+       "block_id": 9,
+       "text": "图2-7 全连接层的网络结构图"
+      },
+      {
+       "page": 22,
+       "block_id": 2,
+       "text": "图2-8 丢弃法的工作流程示意图"
+      },
+      {
+       "page": 23,
+       "block_id": 5,
+       "text": "图 2-9 VGG16 网络结构图"
+      },
+      {
+       "page": 24,
+       "block_id": 2,
+       "text": "（a）层数较少网络残差结构"
+      },
+      {
+       "page": 24,
+       "block_id": 4,
+       "text": "（b）层数较多网络残差结构"
+      },
+      {
+       "page": 24,
+       "block_id": 5,
+       "text": "图 2-10 残差结构"
+      },
+      {
+       "page": 25,
+       "block_id": 3,
+       "text": "图 2-11 深度卷积示意图"
+      },
+      {
+       "page": 25,
+       "block_id": 6,
+       "text": "图 2-12 逐点卷积运算示意图"
+      },
+      {
+       "page": 26,
+       "block_id": 3,
+       "text": "图 2-13 UNet 网络结构"
+      },
+      {
+       "page": 27,
+       "block_id": 3,
+       "text": "图 2-14 PSPNet 网络结构"
+      },
+      {
+       "page": 28,
+       "block_id": 2,
+       "text": "图 2-15 DeepLab v3+网络结构"
+      },
+      {
+       "page": 28,
+       "block_id": 7,
+       "text": "图 2-16 CBAM 结构原理图"
+      },
+      {
+       "page": 29,
+       "block_id": 2,
+       "text": "图 2-17 CBAM 通道注意力模块"
+      },
+      {
+       "page": 29,
+       "block_id": 5,
+       "text": "图 2-18 CBAM 空间注意力模块"
+      },
+      {
+       "page": 31,
+       "block_id": 2,
+       "text": "图 2-19 使用 ImageNet 进行迁移学习示意图"
+      },
+      {
+       "page": 32,
+       "block_id": 2,
+       "text": "图 2-20 髋关节数据集样本"
+      },
+      {
+       "page": 32,
+       "block_id": 7,
+       "text": "图 2-21 脊椎数据集样本"
+      },
+      {
+       "page": 35,
+       "block_id": 2,
+       "text": "图 3-1 VGG16 迁移 UNet 网络结构"
+      },
+      {
+       "page": 35,
+       "block_id": 5,
+       "text": "图 3-2 VGG16 迁移 UNet 网络结构具体层结构"
+      },
+      {
+       "page": 36,
+       "block_id": 3,
+       "text": "图 3-3 模型权重调整示意图"
+      },
+      {
+       "page": 37,
+       "block_id": 2,
+       "text": "图 3-4 CLAHE 算法预处理前"
+      },
+      {
+       "page": 37,
+       "block_id": 4,
+       "text": "图 3-5 CLAHE 算法预处理后"
+      },
+      {
+       "page": 38,
+       "block_id": 3,
+       "text": "图 3-6 图像加灰条数据增强方法前"
+      },
+      {
+       "page": 38,
+       "block_id": 5,
+       "text": "图3-7 图像加灰条数据方法增强后"
+      },
+      {
+       "page": 39,
+       "block_id": 9,
+       "text": "表3-1 混淆矩阵"
+      },
+      {
+       "page": 40,
+       "block_id": 8,
+       "text": "图3-8 二类别平均交并比示意图"
+      },
+      {
+       "page": 40,
+       "block_id": 13,
+       "text": "表3-2 硬件配置表"
+      },
+      {
+       "page": 42,
+       "block_id": 1,
+       "text": "表3-3 不同迁移方法髋关节实验结果"
+      },
+      {
+       "page": 43,
+       "block_id": 2,
+       "text": "图 3-9 不同迁移方法髋关节 mIoU 指标结果"
+      },
+      {
+       "page": 43,
+       "block_id": 5,
+       "text": "图 3-10 不同迁移方法髋关节分割预测示例"
+      },
+      {
+       "page": 44,
+       "block_id": 2,
+       "text": "图3-11 髋关节像素点类别混淆矩阵"
+      },
+      {
+       "page": 44,
+       "block_id": 4,
+       "text": "表3-4 各经典模型髋关节数据集实验结果"
+      },
+      {
+       "page": 44,
+       "block_id": 8,
+       "text": "图3-12 各经典模型髋关节预测对比图"
+      },
+      {
+       "page": 45,
+       "block_id": 4,
+       "text": "表3-5 不同迁移方法脊椎实验结果"
+      },
+      {
+       "page": 46,
+       "block_id": 2,
+       "text": "图 3-13 不同迁移方法脊椎 mIoU 指标结果"
+      },
+      {
+       "page": 46,
+       "block_id": 5,
+       "text": "图 3-14 不同迁移方法脊椎分割预测示例"
+      },
+      {
+       "page": 47,
+       "block_id": 5,
+       "text": "图3-15 脊椎分割像素点类别混淆矩阵"
+      },
+      {
+       "page": 47,
+       "block_id": 7,
+       "text": "表3-6 各经典模型脊椎数据集实验结果"
+      },
+      {
+       "page": 48,
+       "block_id": 2,
+       "text": "图 3-16 各经典模型脊椎预测对比图"
+      },
+      {
+       "page": 50,
+       "block_id": 6,
+       "text": "图 4-1 改进迁移 UNet 网络模型结构"
+      },
+      {
+       "page": 51,
+       "block_id": 2,
+       "text": "图 4-2 改进迁移 UNet 网络模型结构具体层结构"
+      },
+      {
+       "page": 52,
+       "block_id": 2,
+       "text": "图 4-3 极化注意力机制结构"
+      },
+      {
+       "page": 53,
+       "block_id": 3,
+       "text": "图 4-4 信息聚合模块和信息聚合模块最后一层的结构"
+      },
+      {
+       "page": 53,
+       "block_id": 8,
+       "text": "表4-1 髋关节不同注意力机制 UNet 实验结果"
+      },
+      {
+       "page": 54,
+       "block_id": 4,
+       "text": "图 4-5 不同注意力模型髋关节 mIoU 指标"
+      },
+      {
+       "page": 55,
+       "block_id": 2,
+       "text": "图 4-6 不同注意力机制 UNet 与本文算法髋关节预测对比结果"
+      },
+      {
+       "page": 55,
+       "block_id": 6,
+       "text": "图 4-7 本文算法在髋关节验证集上的像素点类别混淆矩阵"
+      },
+      {
+       "page": 56,
+       "block_id": 1,
+       "text": "表4-2 脊椎不同注意力机制 UNet 实验结果"
+      },
+      {
+       "page": 56,
+       "block_id": 5,
+       "text": "图 4-8 不同注意力机制模型脊椎 mIoU 指标"
+      },
+      {
+       "page": 57,
+       "block_id": 2,
+       "text": "图 4-9 不同注意力机制 UNet 与本文算法脊椎预测对比结果"
+      },
+      {
+       "page": 57,
+       "block_id": 5,
+       "text": "图4-10 本文算法在脊椎验证集上的像素点类别混淆矩阵"
+      },
+      {
+       "page": 61,
+       "block_id": 2,
+       "text": "图 5-1 诊断系统架构"
+      },
+      {
+       "page": 61,
+       "block_id": 6,
+       "text": "图 5-2 骨科影像诊断系统功能模块图"
+      },
+      {
+       "page": 62,
+       "block_id": 6,
+       "text": "图 5-3 系统流程图"
+      },
+      {
+       "page": 63,
+       "block_id": 2,
+       "text": "图 5-4 数据库实体关系图"
+      },
+      {
+       "page": 63,
+       "block_id": 4,
+       "text": "表5-1 用户表内具体设计"
+      },
+      {
+       "page": 63,
+       "block_id": 7,
+       "text": "表5-2 历史记录表内具体设计"
+      },
+      {
+       "page": 64,
+       "block_id": 6,
+       "text": "图 5-5 系统登录主界面"
+      },
+      {
+       "page": 65,
+       "block_id": 3,
+       "text": "图 5-6 系统主界面"
+      },
+      {
+       "page": 65,
+       "block_id": 6,
+       "text": "图5-7 历史记录界面"
+      },
+      {
+       "page": 66,
+       "block_id": 3,
+       "text": "图5-8 患者个人信息建档"
+      },
+      {
+       "page": 66,
+       "block_id": 6,
+       "text": "图5-9 患者图像选择界面"
+      },
+      {
+       "page": 67,
+       "block_id": 3,
+       "text": "图 5-10 选中图像后界面"
+      },
+      {
+       "page": 67,
+       "block_id": 6,
+       "text": "图 5-11 预测结果展示界面"
+      },
+      {
+       "page": 68,
+       "block_id": 3,
+       "text": "图 5-12 诊断系统调用预测网络程序的 UML 时序图"
+      },
+      {
+       "page": 69,
+       "block_id": 2,
+       "text": "图 5-13 历史记录展示界面"
+      },
+      {
+       "page": 69,
+       "block_id": 6,
+       "text": "图 5-14 登出后界面"
+      }
+     ]
+    }
    }
   },
   {
@@ -170,7 +1239,143 @@
     "old_text_chars": 23788,
     "new_text_chars": 23788,
     "old_entries": 25,
-    "new_entries": 21
+    "new_entries": 21,
+    "unmatched": {
+     "legends": [],
+     "assets": [],
+     "caption_candidates": [
+      {
+       "page": 2,
+       "block_id": 4,
+       "text": "Figure 11-1. Bending piezoelectricity of bone."
+      },
+      {
+       "page": 2,
+       "block_id": 11,
+       "text": "Figure 11-2. Shear piezoelectricity of bone."
+      },
+      {
+       "page": 3,
+       "block_id": 5,
+       "text": "Figure 11-3. Direct piezoelectric effect in bone."
+      },
+      {
+       "page": 3,
+       "block_id": 10,
+       "text": "Figure 11-4. Converse piezoelectric effect in bone."
+      },
+      {
+       "page": 4,
+       "block_id": 4,
+       "text": "Figure 11-5. Tensile piezoelectricity of bone."
+      },
+      {
+       "page": 5,
+       "block_id": 6,
+       "text": "Figure 11-6. Temperature and hydration dependence of shear piezoelectric constant  $ d_{14} $ for bone."
+      },
+      {
+       "page": 6,
+       "block_id": 3,
+       "text": "Figure 11-7. Temperature and hydration dependence of piezoelectric constant for decalcified bone."
+      },
+      {
+       "page": 7,
+       "block_id": 3,
+       "text": "Figure 11-8. Chemical structure of poly- $ \\gamma $-methyl-glutamate."
+      },
+      {
+       "page": 8,
+       "block_id": 3,
+       "text": "Figure 11-9. Two molecular conformations of polypeptides."
+      },
+      {
+       "page": 8,
+       "block_id": 10,
+       "text": "Figure 11-10. Chemical structure of polyvinylidene fluoride."
+      },
+      {
+       "page": 9,
+       "block_id": 4,
+       "text": "Figure 11-11. Hysteresis loops of electric displacement and piezoelectric constant for polyvinylidene fluoride."
+      },
+      {
+       "page": 10,
+       "block_id": 5,
+       "text": "Figure 11-12. Chemical structure of Teflon $ ^{\\circledR} $"
+      },
+      {
+       "page": 10,
+       "block_id": 7,
+       "text": "Figure 11-13. Teflon $ ^{\\circledR} $ electret film wrapped around the femur of rabbit."
+      },
+      {
+       "page": 10,
+       "block_id": 12,
+       "text": "Figure 11-14. X-ray photograph of the femur of rabbit with Teflon electret film taken four weeks after operation."
+      },
+      {
+       "page": 11,
+       "block_id": 3,
+       "text": "Figure 11-15: A film of poly- $ \\gamma $-methyl-L-glutamate fixed around the femur of rat."
+      },
+      {
+       "page": 11,
+       "block_id": 5,
+       "text": "Figure 11-16. X-ray photograph of the femur of rat with a piezoelectric film of poly-γ-methyl-L-glutamate on right side and with an electret film of Teflon at left side, observed ten, sixteen, and thirty-eight days after operation."
+      },
+      {
+       "page": 12,
+       "block_id": 3,
+       "text": "Figure 11-17. Cylindrical piezoelectric film is placed between the gap made by cutting the fibula."
+      },
+      {
+       "page": 13,
+       "block_id": 3,
+       "text": "Figure 11-18. X-ray photograph taken three weeks after a PMLG film was placed in the gap on right side fibula of rabbit."
+      },
+      {
+       "page": 13,
+       "block_id": 5,
+       "text": "Figure 11-19. X-ray photograph taken three weeks after a collagen film was placed in the gap of right side fibula of rabbit."
+      },
+      {
+       "page": 14,
+       "block_id": 3,
+       "text": "Figure 11-20. Histogram of callus formed on the collagen film."
+      },
+      {
+       "page": 14,
+       "block_id": 8,
+       "text": "Figure 11-21. A film of polyvinylidene piezoelectric film covers a half circumference of femur of monkey. Courtesy of Dr. H. Suzuki."
+      },
+      {
+       "page": 15,
+       "block_id": 7,
+       "text": "Figure 11-22. Photographs taken six weeks after PVDF film was placed on the femur of monkey. Courtesy of Dr. H. Suzuki."
+      },
+      {
+       "page": 16,
+       "block_id": 4,
+       "text": "Figure 11-23. The number of resorption cavities six weeks after applying PVDF film on femur and mandible of monkey. Courtesy of Dr. H. Suzuki."
+      },
+      {
+       "page": 17,
+       "block_id": 4,
+       "text": "Figure 11-24. The number of secondary osteons six weeks after applying PVDF film on femur and mandible of monkey. Courtesy of Dr. H. Suzuki."
+      },
+      {
+       "page": 18,
+       "block_id": 3,
+       "text": "Figure 11-25. Comparison of the piezoelectric effect in bone, tendon, PMG, and PVDF."
+      },
+      {
+       "page": 18,
+       "block_id": 8,
+       "text": "Figure 11-26. An equivalent circuit of PVDF film implanted in body tissues."
+      }
+     ]
+    }
    }
   }
  ],
@@ -184,7 +1389,192 @@
    "old_text_chars": 56021,
    "new_text_chars": 56021,
    "old_entries": 10,
-   "new_entries": 9
+   "new_entries": 9,
+   "unmatched": {
+    "legends": [],
+    "assets": [
+     {
+      "page": 25,
+      "bbox": [
+       178,
+       154,
+       1010,
+       426
+      ]
+     },
+     {
+      "page": 25,
+      "bbox": [
+       179,
+       491,
+       1010,
+       766
+      ]
+     },
+     {
+      "page": 25,
+      "bbox": [
+       180,
+       829,
+       1009,
+       1107
+      ]
+     },
+     {
+      "page": 25,
+      "bbox": [
+       179,
+       1168,
+       1009,
+       1444
+      ]
+     },
+     {
+      "page": 26,
+      "bbox": [
+       180,
+       146,
+       1010,
+       770
+      ]
+     },
+     {
+      "page": 26,
+      "bbox": [
+       180,
+       858,
+       1009,
+       1478
+      ]
+     },
+     {
+      "page": 36,
+      "bbox": [
+       221,
+       554,
+       943,
+       884
+      ]
+     },
+     {
+      "page": 36,
+      "bbox": [
+       303,
+       938,
+       587,
+       1088
+      ]
+     },
+     {
+      "page": 36,
+      "bbox": [
+       617,
+       933,
+       860,
+       1094
+      ]
+     },
+     {
+      "page": 36,
+      "bbox": [
+       634,
+       1102,
+       878,
+       1191
+      ]
+     },
+     {
+      "page": 36,
+      "bbox": [
+       269,
+       1224,
+       539,
+       1422
+      ]
+     },
+     {
+      "page": 36,
+      "bbox": [
+       674,
+       1224,
+       925,
+       1425
+      ]
+     }
+    ],
+    "caption_candidates": [
+     {
+      "page": 12,
+      "block_id": 8,
+      "text": "Figure 1. SEM images of 3D-printed β-TCP scaffolds: the top panels are (a) 100×, (b) 240× and show that the diameter of the bar is approximately 170±10 microns. The bars are arranged vertically, which forms square pores with a side length of 219±17 microns. The lower panels are (c) 1500× and (d) 300"
+     },
+     {
+      "page": 13,
+      "block_id": 10,
+      "text": "Figure 2. LIVE/DEAD staining of rADSCs cultured on scaffolds in ordinary medium for 24, 48 or 72 hours. Live cells are stained green and dead cells are stained red. In the low power field of vision, the ratios of live/dead rADSCs at 24, 48 and 72 hours are 4.36 (a, 109/25), 5.81 (b, 343/59) and 7.60"
+     },
+     {
+      "page": 15,
+      "block_id": 4,
+      "text": "Figure 3. CCK-8 analysis after culture for 1, 4, or 7 days on TCPS or  $ \\beta $-TCP scaffolds. After 1 day of culture, the proliferation rate of rADSCs cultured on  $ \\beta $-TCP scaffolds was significantly higher than that of cells cultured on TCPS ( $ **p<0.01 $). After 4 days of culture, the pro"
+     },
+     {
+      "page": 16,
+      "block_id": 4,
+      "text": "Figure 4. ALP activity analysis of rADSCs after culture in osteogenic induction medium for 14 days. The activity of ALP in the TCPS+PEMF and  $ \\beta $-TCP groups was similar, and a significant difference was found between the TCPS+PEMF and TCPS groups (*p<0.05) and between the  $ \\beta $-TCP and TC"
+     },
+     {
+      "page": 17,
+      "block_id": 7,
+      "text": "β-TCP"
+     },
+     {
+      "page": 17,
+      "block_id": 8,
+      "text": "β-TCP+PEMF"
+     },
+     {
+      "page": 17,
+      "block_id": 11,
+      "text": "Figure 5. ALP staining of rADSCs after culture in osteogenic induction medium for 14 days. (a), (b) rADSCs exposed to PEMF and cultured on TCPS. (c), (d) rADSCs not exposed to PEMF and cultured on TCPS. (e) rADSCs not exposed to PEMF and cultured on  $ \\beta $-TCP. (f) rADSCs exposed to PEMF and cul"
+     },
+     {
+      "page": 19,
+      "block_id": 4,
+      "text": "ALP"
+     },
+     {
+      "page": 19,
+      "block_id": 6,
+      "text": "Runx2"
+     },
+     {
+      "page": 19,
+      "block_id": 8,
+      "text": "OPN"
+     },
+     {
+      "page": 20,
+      "block_id": 3,
+      "text": "Figure 6. qRT-PCR analysis was used to evaluate the expression of osteogenesis-related genes in rADSCs cultured in osteogenic induction medium for 7, 14 or 21 days. (a) The expression of ALPin the  $ \\beta $-TCP+PEMF group remained the highest (*p<0.05) after 7, 14 and 21 days in culture. The expres"
+     },
+     {
+      "page": 22,
+      "block_id": 4,
+      "text": "Figure 7. 3D reconstruction of the imaging data of SD rats after 0, 4, 8 and 12 weeks of rearing.\nThe rats in the PEMF group were treated with PEMFs for 2 hours per day, whereas the rats in the without PEMF group were not exposed to PEMFs."
+     },
+     {
+      "page": 23,
+      "block_id": 5,
+      "text": "Figure 8. Bone mineral density analysis based on micro-CT data was used to detect the growth of skull defects in SD rats after 12 weeks of rearing. The BMD values of the defect site of rats in the  $ \\beta $-TCP+PEMF group were the highest ( $ ^{**}p<0.01 $), and the BMD measurements of rats in the "
+     },
+     {
+      "page": 27,
+      "block_id": 5,
+      "text": "Figure 9. HE staining of the cranial defects of rats after 12 weeks of rearing. (A), (E) Rats"
+     }
+    ]
+   }
   },
   {
    "key": "28JLIHLS",
@@ -195,7 +1585,54 @@
    "old_text_chars": 46970,
    "new_text_chars": 46970,
    "old_entries": 6,
-   "new_entries": 6
+   "new_entries": 6,
+   "unmatched": {
+    "legends": [
+     {
+      "page": 4,
+      "block_id": 7,
+      "text": "Fig. 6 Net displacement graph of chondrocytes in studies performed using 6 V/cm for one hour in serum-free DMEM at  $ \\sim37^{\\circ} $C. (a) Directed cathodal migration was observed in the applied-field group. (b) No-field applied cells exhibited random migration. The radial axes of the polar plots "
+     }
+    ],
+    "assets": [],
+    "caption_candidates": [
+     {
+      "page": 2,
+      "block_id": 2,
+      "text": "Fig. 1 Schematic diagram of the galvanotaxis chamber and system. (a) Exploded view of the parallel-plate chamber that permits real-time visualization of migrating cells cultured on a glass slide; (b) Schematic of the galvanotaxis circuit configuration. Current from a power supply is transmitted via "
+     },
+     {
+      "page": 3,
+      "block_id": 1,
+      "text": "Fig. 2 A series of Hoffman contrast images (10×, digitally magnified 400 percent) of a chondrocyte at t=0, 30 and 60 minutes after a DC electric field was turned on (field strength of 6 V/cm). The cell exhibits migration toward the cathode, extension of cytoplasmic processes, in serum supplemented D"
+     },
+     {
+      "page": 3,
+      "block_id": 6,
+      "text": "Fig. 3 A Hoffman contrast image (10×) of cells that have been subjected to 6 V/cm for 4.5 hours in serum-supplemented DMEM at room temperature (~25°C). With increasing duration of field application, some chondrocytes exhibit alignment that is perpendicular to the applied field."
+     },
+     {
+      "page": 3,
+      "block_id": 16,
+      "text": "Fig. 4 Net displacement graphs of chondrocytes after one hour for applied field strengths of 0, 2, 4 and 6 V/cm. The conducting solution was serum supplemented DMEM and studies were performed at ~37°C. The radial axes are in microns, n = number of cells, + and - indicate the anode and cathode, respe"
+     },
+     {
+      "page": 4,
+      "block_id": 3,
+      "text": "Fig. 5 Effect of inositol phospholipid pathway inhibitors on chondrocyte motility. (a) Directed velocity of chondrocytes after exposure to U-73122 or vehicle (DMSO). * indicates p < 0.0001 relative to the vehicle no-field group and ** indicates p < 0.0001 relative to both the applied-field vehicle g"
+     },
+     {
+      "page": 4,
+      "block_id": 7,
+      "text": "Fig. 6 Net displacement graph of chondrocytes in studies performed using 6 V/cm for one hour in serum-free DMEM at  $ \\sim37^{\\circ} $C. (a) Directed cathodal migration was observed in the applied-field group. (b) No-field applied cells exhibited random migration. The radial axes of the polar plots "
+     },
+     {
+      "page": 4,
+      "block_id": 13,
+      "text": "Fig. 7 Effect of temperature on chondrocyte motility. Cell migration at ~37°C was enhanced twofold over similar studies conducted at room temperature. * indicates  $ p<0.0001 $ relative to ~37°C no-field group and ** indicates  $ p<0.0001 $ with respect to both the ~37°C applied-field group and the "
+     }
+    ]
+   }
   },
   {
    "key": "2AZ2EGQB",
@@ -206,7 +1643,70 @@
    "old_text_chars": 57671,
    "new_text_chars": 57671,
    "old_entries": 2,
-   "new_entries": 4
+   "new_entries": 4,
+   "unmatched": {
+    "legends": [],
+    "assets": [
+     {
+      "page": 6,
+      "bbox": [
+       675,
+       118,
+       1072,
+       483
+      ]
+     },
+     {
+      "page": 6,
+      "bbox": [
+       688,
+       499,
+       1091,
+       738
+      ]
+     },
+     {
+      "page": 8,
+      "bbox": [
+       374,
+       117,
+       1089,
+       436
+      ]
+     },
+     {
+      "page": 9,
+      "bbox": [
+       373,
+       119,
+       1092,
+       762
+      ]
+     }
+    ],
+    "caption_candidates": [
+     {
+      "page": 3,
+      "block_id": 10,
+      "text": "Fig. 1 Cartilage schematic representation with matrix composition and matrix constituents. SZ: Superficial Zone, MZ: Middle Zone, DZ: Deep Zone, and SB: Subchondral Bone. Figure created partially with Biorender.com"
+     },
+     {
+      "page": 6,
+      "block_id": 2,
+      "text": "Fig. 2 Schematic representation of A cell-seeded scaffold, B Rotating wall vessel bioreactor, C Spinner flask bioreactor, and D Flow perfusion bioreactor"
+     },
+     {
+      "page": 8,
+      "block_id": 2,
+      "text": "Fig. 3 Schematic representation of mechanical stimulation for tissue engineering constructs"
+     },
+     {
+      "page": 9,
+      "block_id": 2,
+      "text": "Fig. 4 Schematic representation of electrical stimulation with an interval and a continuous step signal input for tissue engineering constructs. Figure partially created with Biorender.com"
+     }
+    ]
+   }
   },
   {
    "key": "2BYRLKQS",
@@ -217,7 +1717,33 @@
    "old_text_chars": 41679,
    "new_text_chars": 41679,
    "old_entries": 4,
-   "new_entries": 4
+   "new_entries": 4,
+   "unmatched": {
+    "legends": [],
+    "assets": [],
+    "caption_candidates": [
+     {
+      "page": 4,
+      "block_id": 9,
+      "text": "Figure 1 Photomicrographs of longitudinal sections of the xiphoid cartilage defect area in 45-day-old male rats. A-C: Control group; D-F: group submitted to microcurrent stimulation (20 µA/5 min). Specimens were collected 7 (A and D), 21 (B and E), and 35 (C and F) days after experimental injury. Se"
+     },
+     {
+      "page": 5,
+      "block_id": 3,
+      "text": "Figure 2 Photomicrographs of sections stained with picrosirius-hematoxylin and analyzed by bright-field microscopy under polarized light (D-F and J-L). A-F: Control group; G-L: treated group. Specimens were collected 7 (A, D, G, and J), 21 (B, E, H, and K) and 35 (C, F, I, and L) days after experime"
+     },
+     {
+      "page": 5,
+      "block_id": 5,
+      "text": "Figure 3 Electron photomicrographs of the xiphoid cartilage defect area in 45-day-old male rats. A-C: Control group; D-F: group submitted to microcurrent stimulation (20 μA/5 min). Specimens were collected 7 (A and D), 21 (B and E), and 35 (C and F) days after experimental injury. The samples were f"
+     },
+     {
+      "page": 6,
+      "block_id": 10,
+      "text": "Figure 4 Electron photomicrographs of sections from control (A-C) and treated (D-F) animals stained with cuprolinic blue for the detection of proteoglycans (PG). Specimens were collected 7 (A and D), 21 (B and E), and 35 (C and F) days after experimental injury. (*) Fibroblastic cell; (▶) – positive"
+     }
+    ]
+   }
   },
   {
    "key": "2HEUD5P9",
@@ -228,7 +1754,164 @@
    "old_text_chars": 142349,
    "new_text_chars": 142349,
    "old_entries": 7,
-   "new_entries": 7
+   "new_entries": 7,
+   "unmatched": {
+    "legends": [],
+    "assets": [
+     {
+      "page": 12,
+      "bbox": [
+       155,
+       147,
+       1087,
+       407
+      ]
+     },
+     {
+      "page": 12,
+      "bbox": [
+       122,
+       419,
+       1071,
+       617
+      ]
+     },
+     {
+      "page": 12,
+      "bbox": [
+       138,
+       631,
+       1071,
+       802
+      ]
+     },
+     {
+      "page": 12,
+      "bbox": [
+       108,
+       823,
+       966,
+       901
+      ]
+     },
+     {
+      "page": 12,
+      "bbox": [
+       157,
+       923,
+       725,
+       1177
+      ]
+     },
+     {
+      "page": 12,
+      "bbox": [
+       830,
+       918,
+       1028,
+       1103
+      ]
+     },
+     {
+      "page": 12,
+      "bbox": [
+       160,
+       1209,
+       445,
+       1394
+      ]
+     },
+     {
+      "page": 12,
+      "bbox": [
+       458,
+       1181,
+       729,
+       1409
+      ]
+     },
+     {
+      "page": 12,
+      "bbox": [
+       804,
+       1121,
+       1040,
+       1265
+      ]
+     },
+     {
+      "page": 12,
+      "bbox": [
+       803,
+       1276,
+       1041,
+       1420
+      ]
+     }
+    ],
+    "caption_candidates": [
+     {
+      "page": 3,
+      "block_id": 3,
+      "text": "Figure 1. The schematic diagram of bioactive materials and advanced techniques to regulate the stem cell fate with specific cellular and molecular mechanism for the application of bone tissue engineering."
+     },
+     {
+      "page": 4,
+      "block_id": 18,
+      "text": "(1)"
+     },
+     {
+      "page": 4,
+      "block_id": 25,
+      "text": "Figure 2. A) In vivo bone regeneration efficacy of whitlockite (WH: Ca $ _{18} $Mg $ _{2} $(HPO $ _{4} $) $ _{2} $(PO $ _{4} $) $ _{12} $) embedded 3D cryogel implants after 6 weeks of subcutaneous injection, each group of cryogels rendered by the micro-CT program as grey areas indicated the amount "
+     },
+     {
+      "page": 9,
+      "block_id": 26,
+      "text": "Figure 3. A) Biomimetic melt electrowritten lattice and bioglass particle reinforced hydrogel scaffolds were fabricated. B) The weight percents of Ca, P, and Ca/P ratio for all the scaffolds. C) FTIR curves of formed HAp on scaffolds. $ ^{[87]} $ Copyright 2022, Elsevier. D) Representative SEM image"
+     },
+     {
+      "page": 13,
+      "block_id": 6,
+      "text": "Figure 4. A) Scheme showing MgGA MOF and PLGA/Mg-GA MOF scaffold preparation. B) ALP staining of hBMSCs in the extracts. C) ARS staining of hBMSCs in the extracts. $ ^{[112]} $ Copyright 2022, Elsevier. D) Schematic of fabrication of the PCL/Col/ZIF-8 composite membrane for guided bone regeneration."
+     },
+     {
+      "page": 13,
+      "block_id": 13,
+      "text": "4 W"
+     },
+     {
+      "page": 13,
+      "block_id": 15,
+      "text": "8 W"
+     },
+     {
+      "page": 13,
+      "block_id": 26,
+      "text": "(1)"
+     },
+     {
+      "page": 13,
+      "block_id": 39,
+      "text": "Figure 5. A) ALP staining and ARS staining of Control, Let-7d, LDH and LDH/let-7d groups on day 7 and day 14, respectively. Scale bars: 500  $ \\mu $m. B) LDH/let-7d-incorporated fibrin scaffolds promoted the subcutaneous ectopic osteogenesis of BMSCs in nude mice. Representative reconstructed micro-"
+     },
+     {
+      "page": 15,
+      "block_id": 25,
+      "text": "Figure 6. A,B) SEM image of scaffolds after soaking in SBF for 5 days (A1, A2: MBG/SF scaffold; B1, B2: MBG/PCL scaffold) and EDS spectra (A3: MBG/SF scaffold; B3:MBG/PCL scaffold). C) The relative expression of BMP-2, BSP, COL-1 and OCN of hBMSCs cultured on MBG/SF and MBG/PCL scaffolds for 7 and 1"
+     },
+     {
+      "page": 19,
+      "block_id": 3,
+      "text": "Figure 7. A,B) Water contact angle measurement for the Ti6Al4V substrate (A1) and Ti6Al4V substrate with BaTiO₃ coating (B1); Surface CLSM images of the Ti6Al4V substrate (A2) and Ti6Al4V substrate with BaTiO₃ coating (B2). C) Fluorescence staining of BMSCs (red, Rhodamine-phalloidin for F-actin; bl"
+     },
+     {
+      "page": 21,
+      "block_id": 17,
+      "text": "Figure 8. A) Schematic illustration of the procedure to fabricate BP@BMP2 electrospun fibrous scaffolds and the effect of recruiting osteoblasts and releasing calcium-free phosphate therapy for promoting bone physiological regeneration in vivo. B) Radiological analysis in vivo. Representative microC"
+     }
+    ]
+   }
   },
   {
    "key": "388XI46Q",
@@ -239,7 +1922,103 @@
    "old_text_chars": 89489,
    "new_text_chars": 89489,
    "old_entries": 11,
-   "new_entries": 10
+   "new_entries": 10,
+   "unmatched": {
+    "legends": [
+     {
+      "page": 19,
+      "block_id": 6,
+      "text": "finite element modeling. (k) Scatter plot of filler particle distribution. (l) Results of the finite element stress analysis. (Statistical significance was set as ***p<0.001, **p<0.01 and *p<0.05)"
+     }
+    ],
+    "assets": [
+     {
+      "page": 1,
+      "bbox": [
+       1030,
+       142,
+       1088,
+       199
+      ]
+     },
+     {
+      "page": 14,
+      "bbox": [
+       118,
+       122,
+       1069,
+       1356
+      ]
+     }
+    ],
+    "caption_candidates": [
+     {
+      "page": 3,
+      "block_id": 5,
+      "text": "Fig. 1 Schematic illustration of decoupling electro-priming from implantation strategy for functional hyaline chondrogenesis"
+     },
+     {
+      "page": 8,
+      "block_id": 26,
+      "text": "1"
+     },
+     {
+      "page": 9,
+      "block_id": 4,
+      "text": "Fig. 2 (a) Schematic and (b) photograph of the electrical stimulation chamber. (c) Suspension stability, AFM and SEM characterization of the fillers (From left to right: GO, PANI-GO, PDA-PANI-GO). (d) Zeta potential results. (e) FTIR, (r) XRD and (g) UV-Vis characterization of the fillers. (h) Elect"
+     },
+     {
+      "page": 10,
+      "block_id": 8,
+      "text": "Fig. 3 (a) CCK-8 assay, (b) hemocompatibility and (c) Tissue compatibility of GelMA and GelMA/PDA-PAni-GO hydrogels. (d) Heatmap of electrical conductivity uniformity of conductive hydrogels (10⁻² S/m). (e) Simulation of electric field intensity between paired graphite electrodes in conductive hydro"
+     },
+     {
+      "page": 13,
+      "block_id": 10,
+      "text": "Fig. 4 (a) Schematic diagram of the electrical stimulation process. (b) Detection of Col II and GAGs content under different voltages. (c-d) 3D immunofluorescence confocal detection chondrogenic differentiation indicators at (c) day 14 and (d) 28. (e) GAG content determination"
+     },
+     {
+      "page": 13,
+      "block_id": 13,
+      "text": "tion. (f) HYP content determination. (g) Western bolt results, from top to bottom are the results at day 14 and day 28, respectively. (Statistical significance was set as ***p<0.001, **p<0.01 and *p<0.05)"
+     },
+     {
+      "page": 15,
+      "block_id": 4,
+      "text": "Fig. 5 (a) Immunofluorescence detection of cellular inflammatory response (IL-1β). (b) Record of GelMA hydrogel lysis process. (c) Live-Dead assessment after hydrogel dissolution-recoating. (d) Quantitative analysis of IL-1β immunofluorescence. (e) Concentration of IL-6 and (f) IL-8 in cell culture "
+     },
+     {
+      "page": 16,
+      "block_id": 5,
+      "text": "Fig. 6 A(a-b) Results of PCA and Pearson correlation analysis. (c) Volcano plot of differentially expressed genes. (d) GO CC, (e) KEGG and (f) Metabolism-related pathway bubble plots. (g) GSEA enrichment results. (h) Western blot results of MAPK pathway activation by electrical stimulation. (i-j) Pr"
+     },
+     {
+      "page": 16,
+      "block_id": 9,
+      "text": "culture medium. (k) Confocal fluorescence results of intracellular proline concentration. (l) RT-qPCR analysis of chondrogenic differentiation-related genes. (m) Schematic of mechanism analysis. (Statistical significance was set as ***p<0.001, **p<0.01 and *p<0.05)"
+     },
+     {
+      "page": 17,
+      "block_id": 10,
+      "text": "Fig. 7 (a) Schematic diagram of the animal experimental procedure. (b) Demonstration of the injectability of the hydrogel. (c) Practical application of hydrogel during the animal experiment. (d) Postopera-"
+     },
+     {
+      "page": 17,
+      "block_id": 11,
+      "text": "tive presentation of the cartilage defect and its macroscopic view of repair. (e) ICRS score for cartilage repair at 8 weeks. (Statistical significance was set as ***p<0.001, **p<0.01 and *p<0.05)"
+     },
+     {
+      "page": 19,
+      "block_id": 5,
+      "text": "Fig. 8 (a) H&E, (b) TB and (c) SO/FG staining of tissue sections. (d) Sirius Red staining of tissue sections. (e) IL-1β, (f) Col II, (g) Mmp13 and (h) Runx2 immunofluorescence staining of tissue sections. (i) Quantitative results of section staining. (j) Schematic diagram of the"
+     },
+     {
+      "page": 19,
+      "block_id": 6,
+      "text": "finite element modeling. (k) Scatter plot of filler particle distribution. (l) Results of the finite element stress analysis. (Statistical significance was set as ***p<0.001, **p<0.01 and *p<0.05)"
+     }
+    ]
+   }
   },
   {
    "key": "3QYCST4E",
@@ -250,7 +2029,64 @@
    "old_text_chars": 18278,
    "new_text_chars": 18278,
    "old_entries": 6,
-   "new_entries": 5
+   "new_entries": 5,
+   "unmatched": {
+    "legends": [
+     {
+      "page": 5,
+      "block_id": 7,
+      "text": "An Overview of the Association of the Localized Cartilage Damage to the Specific Diagnosis in This Material $ ^{a} $"
+     }
+    ],
+    "assets": [],
+    "caption_candidates": [
+     {
+      "page": 2,
+      "block_id": 4,
+      "text": "Figure 1A. International Cartilage Repair Society evaluation form showing the grid map of the knee. Published with permission from the ICRS."
+     },
+     {
+      "page": 2,
+      "block_id": 9,
+      "text": "Figure 1B. Anatomical grading of the depth of the cartilage injury according to the International Cartilage Repair Society. Published with permission from the ICRS."
+     },
+     {
+      "page": 3,
+      "block_id": 4,
+      "text": "Figure 2. Different types of localized cartilage lesions (n = 203) of the knee. A, Localized partial-thickness cartilage lesions 44%; B, Osteochondritis dissecans lesions 9%; C, Localized full-thickness cartilage lesions 47%."
+     },
+     {
+      "page": 3,
+      "block_id": 11,
+      "text": "Figure 3. Anatomical distribution of the localized full-thickness cartilage defects of the knees (n = 203)."
+     },
+     {
+      "page": 4,
+      "block_id": 5,
+      "text": "Figure 4. Cause of injury and a distribution of the different sports according to the knee injuries in this material caused by athletic activity (49%). N = 993."
+     },
+     {
+      "page": 4,
+      "block_id": 9,
+      "text": "Figure 5. Performed knee arthroscopic procedures (N = 993)."
+     },
+     {
+      "page": 4,
+      "block_id": 11,
+      "text": "Figure 6. Number of localized cartilage lesions including the osteochondritis dissecans lesions (n = 203) in the different age groups. Median age of this group is 30 years."
+     },
+     {
+      "page": 5,
+      "block_id": 4,
+      "text": "Activity Level Among the Patients (N = 993)"
+     },
+     {
+      "page": 5,
+      "block_id": 7,
+      "text": "An Overview of the Association of the Localized Cartilage Damage to the Specific Diagnosis in This Material $ ^{a} $"
+     }
+    ]
+   }
   },
   {
    "key": "55EKJRBC",
@@ -261,7 +2097,59 @@
    "old_text_chars": 71046,
    "new_text_chars": 71046,
    "old_entries": 5,
-   "new_entries": 4
+   "new_entries": 4,
+   "unmatched": {
+    "legends": [
+     {
+      "page": 8,
+      "block_id": 11,
+      "text": "Fig 6 | Internal-external cross validation of the ISARIC (International Severe Acute Respiratory and Emerging Infection Consortium) 4C model. Adapted from Gupta et al. $ ^{2} $ Estimates and confidence intervals taken from original paper where they were reported to two decimal places."
+     }
+    ],
+    "assets": [
+     {
+      "page": 1,
+      "bbox": [
+       64,
+       139,
+       261,
+       219
+      ]
+     }
+    ],
+    "caption_candidates": [
+     {
+      "page": 3,
+      "block_id": 23,
+      "text": "Fig 1 | Different study design and approaches to develop and evaluate the performance of a multivariable prediction model (D=development; V=validation (evaluation)). Adapted from Collins GS, Reitsma JB, Altman DG, Moons KGM. Transparent reporting of a multivariable prediction model for individual pr"
+     },
+     {
+      "page": 5,
+      "block_id": 10,
+      "text": "Fig 2 | Variability and overestimation of apparent performance compared to large sample performance, for a model to predict in-hospital mortality within 28 days of trauma injury with increasing sample size of the model development study.  $ \\hat{c} $ denotes the apparent performance estimate and  $ "
+     },
+     {
+      "page": 6,
+      "block_id": 2,
+      "text": "Fig 3 | Variability and overestimation of the apparent and internal (split sample and bootstrap) validation performance compared with the large sample performance, for a model to predict in-hospital mortality within 28 days of trauma injury with increasing sample size of the model development study."
+     },
+     {
+      "page": 7,
+      "block_id": 4,
+      "text": "Fig 4 | Graphical illustration of k-fold cross validation. Non-shaded parts used for model development; shaded part used for testing"
+     },
+     {
+      "page": 8,
+      "block_id": 4,
+      "text": "Fig 5 | Graphical illustration of internal-external cross validation. Non-shaded parts used for model development; shaded part used for testing"
+     },
+     {
+      "page": 8,
+      "block_id": 11,
+      "text": "Fig 6 | Internal-external cross validation of the ISARIC (International Severe Acute Respiratory and Emerging Infection Consortium) 4C model. Adapted from Gupta et al. $ ^{2} $ Estimates and confidence intervals taken from original paper where they were reported to two decimal places."
+     }
+    ]
+   }
   },
   {
    "key": "DJLIAZT7",
@@ -272,7 +2160,393 @@
    "old_text_chars": 67277,
    "new_text_chars": 67277,
    "old_entries": 63,
-   "new_entries": 48
+   "new_entries": 48,
+   "unmatched": {
+    "legends": [],
+    "assets": [],
+    "caption_candidates": [
+     {
+      "page": 14,
+      "block_id": 5,
+      "text": "图 1-1 本文技术路线"
+     },
+     {
+      "page": 17,
+      "block_id": 3,
+      "text": "图2-1 卷积神经网络结构图"
+     },
+     {
+      "page": 18,
+      "block_id": 2,
+      "text": "图2-2 卷积核计算示意图"
+     },
+     {
+      "page": 18,
+      "block_id": 6,
+      "text": "图 2-3 Tanh 函数图像"
+     },
+     {
+      "page": 19,
+      "block_id": 3,
+      "text": "图 2-4 Sigmoid 函数图像"
+     },
+     {
+      "page": 19,
+      "block_id": 9,
+      "text": "图 2-5 ReLU 函数图像"
+     },
+     {
+      "page": 20,
+      "block_id": 7,
+      "text": "（a）最大池化示意图"
+     },
+     {
+      "page": 20,
+      "block_id": 8,
+      "text": "（b）平均池化示意图"
+     },
+     {
+      "page": 20,
+      "block_id": 9,
+      "text": "图2-6 最大池化、平均池化示意图"
+     },
+     {
+      "page": 21,
+      "block_id": 9,
+      "text": "图2-7 全连接层的网络结构图"
+     },
+     {
+      "page": 22,
+      "block_id": 2,
+      "text": "图2-8 丢弃法的工作流程示意图"
+     },
+     {
+      "page": 23,
+      "block_id": 5,
+      "text": "图 2-9 VGG16 网络结构图"
+     },
+     {
+      "page": 24,
+      "block_id": 2,
+      "text": "（a）层数较少网络残差结构"
+     },
+     {
+      "page": 24,
+      "block_id": 4,
+      "text": "（b）层数较多网络残差结构"
+     },
+     {
+      "page": 24,
+      "block_id": 5,
+      "text": "图 2-10 残差结构"
+     },
+     {
+      "page": 25,
+      "block_id": 3,
+      "text": "图 2-11 深度卷积示意图"
+     },
+     {
+      "page": 25,
+      "block_id": 6,
+      "text": "图 2-12 逐点卷积运算示意图"
+     },
+     {
+      "page": 26,
+      "block_id": 3,
+      "text": "图 2-13 UNet 网络结构"
+     },
+     {
+      "page": 27,
+      "block_id": 3,
+      "text": "图 2-14 PSPNet 网络结构"
+     },
+     {
+      "page": 28,
+      "block_id": 2,
+      "text": "图 2-15 DeepLab v3+网络结构"
+     },
+     {
+      "page": 28,
+      "block_id": 7,
+      "text": "图 2-16 CBAM 结构原理图"
+     },
+     {
+      "page": 29,
+      "block_id": 2,
+      "text": "图 2-17 CBAM 通道注意力模块"
+     },
+     {
+      "page": 29,
+      "block_id": 5,
+      "text": "图 2-18 CBAM 空间注意力模块"
+     },
+     {
+      "page": 31,
+      "block_id": 2,
+      "text": "图 2-19 使用 ImageNet 进行迁移学习示意图"
+     },
+     {
+      "page": 32,
+      "block_id": 2,
+      "text": "图 2-20 髋关节数据集样本"
+     },
+     {
+      "page": 32,
+      "block_id": 7,
+      "text": "图 2-21 脊椎数据集样本"
+     },
+     {
+      "page": 35,
+      "block_id": 2,
+      "text": "图 3-1 VGG16 迁移 UNet 网络结构"
+     },
+     {
+      "page": 35,
+      "block_id": 5,
+      "text": "图 3-2 VGG16 迁移 UNet 网络结构具体层结构"
+     },
+     {
+      "page": 36,
+      "block_id": 3,
+      "text": "图 3-3 模型权重调整示意图"
+     },
+     {
+      "page": 37,
+      "block_id": 2,
+      "text": "图 3-4 CLAHE 算法预处理前"
+     },
+     {
+      "page": 37,
+      "block_id": 4,
+      "text": "图 3-5 CLAHE 算法预处理后"
+     },
+     {
+      "page": 38,
+      "block_id": 3,
+      "text": "图 3-6 图像加灰条数据增强方法前"
+     },
+     {
+      "page": 38,
+      "block_id": 5,
+      "text": "图3-7 图像加灰条数据方法增强后"
+     },
+     {
+      "page": 39,
+      "block_id": 9,
+      "text": "表3-1 混淆矩阵"
+     },
+     {
+      "page": 40,
+      "block_id": 8,
+      "text": "图3-8 二类别平均交并比示意图"
+     },
+     {
+      "page": 40,
+      "block_id": 13,
+      "text": "表3-2 硬件配置表"
+     },
+     {
+      "page": 42,
+      "block_id": 1,
+      "text": "表3-3 不同迁移方法髋关节实验结果"
+     },
+     {
+      "page": 43,
+      "block_id": 2,
+      "text": "图 3-9 不同迁移方法髋关节 mIoU 指标结果"
+     },
+     {
+      "page": 43,
+      "block_id": 5,
+      "text": "图 3-10 不同迁移方法髋关节分割预测示例"
+     },
+     {
+      "page": 44,
+      "block_id": 2,
+      "text": "图3-11 髋关节像素点类别混淆矩阵"
+     },
+     {
+      "page": 44,
+      "block_id": 4,
+      "text": "表3-4 各经典模型髋关节数据集实验结果"
+     },
+     {
+      "page": 44,
+      "block_id": 8,
+      "text": "图3-12 各经典模型髋关节预测对比图"
+     },
+     {
+      "page": 45,
+      "block_id": 4,
+      "text": "表3-5 不同迁移方法脊椎实验结果"
+     },
+     {
+      "page": 46,
+      "block_id": 2,
+      "text": "图 3-13 不同迁移方法脊椎 mIoU 指标结果"
+     },
+     {
+      "page": 46,
+      "block_id": 5,
+      "text": "图 3-14 不同迁移方法脊椎分割预测示例"
+     },
+     {
+      "page": 47,
+      "block_id": 5,
+      "text": "图3-15 脊椎分割像素点类别混淆矩阵"
+     },
+     {
+      "page": 47,
+      "block_id": 7,
+      "text": "表3-6 各经典模型脊椎数据集实验结果"
+     },
+     {
+      "page": 48,
+      "block_id": 2,
+      "text": "图 3-16 各经典模型脊椎预测对比图"
+     },
+     {
+      "page": 50,
+      "block_id": 6,
+      "text": "图 4-1 改进迁移 UNet 网络模型结构"
+     },
+     {
+      "page": 51,
+      "block_id": 2,
+      "text": "图 4-2 改进迁移 UNet 网络模型结构具体层结构"
+     },
+     {
+      "page": 52,
+      "block_id": 2,
+      "text": "图 4-3 极化注意力机制结构"
+     },
+     {
+      "page": 53,
+      "block_id": 3,
+      "text": "图 4-4 信息聚合模块和信息聚合模块最后一层的结构"
+     },
+     {
+      "page": 53,
+      "block_id": 8,
+      "text": "表4-1 髋关节不同注意力机制 UNet 实验结果"
+     },
+     {
+      "page": 54,
+      "block_id": 4,
+      "text": "图 4-5 不同注意力模型髋关节 mIoU 指标"
+     },
+     {
+      "page": 55,
+      "block_id": 2,
+      "text": "图 4-6 不同注意力机制 UNet 与本文算法髋关节预测对比结果"
+     },
+     {
+      "page": 55,
+      "block_id": 6,
+      "text": "图 4-7 本文算法在髋关节验证集上的像素点类别混淆矩阵"
+     },
+     {
+      "page": 56,
+      "block_id": 1,
+      "text": "表4-2 脊椎不同注意力机制 UNet 实验结果"
+     },
+     {
+      "page": 56,
+      "block_id": 5,
+      "text": "图 4-8 不同注意力机制模型脊椎 mIoU 指标"
+     },
+     {
+      "page": 57,
+      "block_id": 2,
+      "text": "图 4-9 不同注意力机制 UNet 与本文算法脊椎预测对比结果"
+     },
+     {
+      "page": 57,
+      "block_id": 5,
+      "text": "图4-10 本文算法在脊椎验证集上的像素点类别混淆矩阵"
+     },
+     {
+      "page": 61,
+      "block_id": 2,
+      "text": "图 5-1 诊断系统架构"
+     },
+     {
+      "page": 61,
+      "block_id": 6,
+      "text": "图 5-2 骨科影像诊断系统功能模块图"
+     },
+     {
+      "page": 62,
+      "block_id": 6,
+      "text": "图 5-3 系统流程图"
+     },
+     {
+      "page": 63,
+      "block_id": 2,
+      "text": "图 5-4 数据库实体关系图"
+     },
+     {
+      "page": 63,
+      "block_id": 4,
+      "text": "表5-1 用户表内具体设计"
+     },
+     {
+      "page": 63,
+      "block_id": 7,
+      "text": "表5-2 历史记录表内具体设计"
+     },
+     {
+      "page": 64,
+      "block_id": 6,
+      "text": "图 5-5 系统登录主界面"
+     },
+     {
+      "page": 65,
+      "block_id": 3,
+      "text": "图 5-6 系统主界面"
+     },
+     {
+      "page": 65,
+      "block_id": 6,
+      "text": "图5-7 历史记录界面"
+     },
+     {
+      "page": 66,
+      "block_id": 3,
+      "text": "图5-8 患者个人信息建档"
+     },
+     {
+      "page": 66,
+      "block_id": 6,
+      "text": "图5-9 患者图像选择界面"
+     },
+     {
+      "page": 67,
+      "block_id": 3,
+      "text": "图 5-10 选中图像后界面"
+     },
+     {
+      "page": 67,
+      "block_id": 6,
+      "text": "图 5-11 预测结果展示界面"
+     },
+     {
+      "page": 68,
+      "block_id": 3,
+      "text": "图 5-12 诊断系统调用预测网络程序的 UML 时序图"
+     },
+     {
+      "page": 69,
+      "block_id": 2,
+      "text": "图 5-13 历史记录展示界面"
+     },
+     {
+      "page": 69,
+      "block_id": 6,
+      "text": "图 5-14 登出后界面"
+     }
+    ]
+   }
   },
   {
    "key": "SRNJDAA2",
@@ -283,7 +2557,143 @@
    "old_text_chars": 23788,
    "new_text_chars": 23788,
    "old_entries": 25,
-   "new_entries": 21
+   "new_entries": 21,
+   "unmatched": {
+    "legends": [],
+    "assets": [],
+    "caption_candidates": [
+     {
+      "page": 2,
+      "block_id": 4,
+      "text": "Figure 11-1. Bending piezoelectricity of bone."
+     },
+     {
+      "page": 2,
+      "block_id": 11,
+      "text": "Figure 11-2. Shear piezoelectricity of bone."
+     },
+     {
+      "page": 3,
+      "block_id": 5,
+      "text": "Figure 11-3. Direct piezoelectric effect in bone."
+     },
+     {
+      "page": 3,
+      "block_id": 10,
+      "text": "Figure 11-4. Converse piezoelectric effect in bone."
+     },
+     {
+      "page": 4,
+      "block_id": 4,
+      "text": "Figure 11-5. Tensile piezoelectricity of bone."
+     },
+     {
+      "page": 5,
+      "block_id": 6,
+      "text": "Figure 11-6. Temperature and hydration dependence of shear piezoelectric constant  $ d_{14} $ for bone."
+     },
+     {
+      "page": 6,
+      "block_id": 3,
+      "text": "Figure 11-7. Temperature and hydration dependence of piezoelectric constant for decalcified bone."
+     },
+     {
+      "page": 7,
+      "block_id": 3,
+      "text": "Figure 11-8. Chemical structure of poly- $ \\gamma $-methyl-glutamate."
+     },
+     {
+      "page": 8,
+      "block_id": 3,
+      "text": "Figure 11-9. Two molecular conformations of polypeptides."
+     },
+     {
+      "page": 8,
+      "block_id": 10,
+      "text": "Figure 11-10. Chemical structure of polyvinylidene fluoride."
+     },
+     {
+      "page": 9,
+      "block_id": 4,
+      "text": "Figure 11-11. Hysteresis loops of electric displacement and piezoelectric constant for polyvinylidene fluoride."
+     },
+     {
+      "page": 10,
+      "block_id": 5,
+      "text": "Figure 11-12. Chemical structure of Teflon $ ^{\\circledR} $"
+     },
+     {
+      "page": 10,
+      "block_id": 7,
+      "text": "Figure 11-13. Teflon $ ^{\\circledR} $ electret film wrapped around the femur of rabbit."
+     },
+     {
+      "page": 10,
+      "block_id": 12,
+      "text": "Figure 11-14. X-ray photograph of the femur of rabbit with Teflon electret film taken four weeks after operation."
+     },
+     {
+      "page": 11,
+      "block_id": 3,
+      "text": "Figure 11-15: A film of poly- $ \\gamma $-methyl-L-glutamate fixed around the femur of rat."
+     },
+     {
+      "page": 11,
+      "block_id": 5,
+      "text": "Figure 11-16. X-ray photograph of the femur of rat with a piezoelectric film of poly-γ-methyl-L-glutamate on right side and with an electret film of Teflon at left side, observed ten, sixteen, and thirty-eight days after operation."
+     },
+     {
+      "page": 12,
+      "block_id": 3,
+      "text": "Figure 11-17. Cylindrical piezoelectric film is placed between the gap made by cutting the fibula."
+     },
+     {
+      "page": 13,
+      "block_id": 3,
+      "text": "Figure 11-18. X-ray photograph taken three weeks after a PMLG film was placed in the gap on right side fibula of rabbit."
+     },
+     {
+      "page": 13,
+      "block_id": 5,
+      "text": "Figure 11-19. X-ray photograph taken three weeks after a collagen film was placed in the gap of right side fibula of rabbit."
+     },
+     {
+      "page": 14,
+      "block_id": 3,
+      "text": "Figure 11-20. Histogram of callus formed on the collagen film."
+     },
+     {
+      "page": 14,
+      "block_id": 8,
+      "text": "Figure 11-21. A film of polyvinylidene piezoelectric film covers a half circumference of femur of monkey. Courtesy of Dr. H. Suzuki."
+     },
+     {
+      "page": 15,
+      "block_id": 7,
+      "text": "Figure 11-22. Photographs taken six weeks after PVDF film was placed on the femur of monkey. Courtesy of Dr. H. Suzuki."
+     },
+     {
+      "page": 16,
+      "block_id": 4,
+      "text": "Figure 11-23. The number of resorption cavities six weeks after applying PVDF film on femur and mandible of monkey. Courtesy of Dr. H. Suzuki."
+     },
+     {
+      "page": 17,
+      "block_id": 4,
+      "text": "Figure 11-24. The number of secondary osteons six weeks after applying PVDF film on femur and mandible of monkey. Courtesy of Dr. H. Suzuki."
+     },
+     {
+      "page": 18,
+      "block_id": 3,
+      "text": "Figure 11-25. Comparison of the piezoelectric effect in bone, tendon, PMG, and PVDF."
+     },
+     {
+      "page": 18,
+      "block_id": 8,
+      "text": "Figure 11-26. An equivalent circuit of PVDF film implanted in body tissues."
+     }
+    ]
+   }
   }
  ],
  "totals": {
@@ -310,9 +2720,9 @@
    }
   },
   "28JLIHLS": {
-   "total_labels": 6,
+   "total_labels": 7,
    "reviewed": 0,
-   "unreviewed": 6,
+   "unreviewed": 7,
    "crop_failures": 0,
    "delivery_failures": 0,
    "caption_failures": 0,
@@ -378,9 +2788,9 @@
    }
   },
   "388XI46Q": {
-   "total_labels": 10,
+   "total_labels": 11,
    "reviewed": 0,
-   "unreviewed": 10,
+   "unreviewed": 11,
    "crop_failures": 0,
    "delivery_failures": 0,
    "caption_failures": 0,
@@ -395,9 +2805,9 @@
    }
   },
   "3QYCST4E": {
-   "total_labels": 5,
+   "total_labels": 6,
    "reviewed": 0,
-   "unreviewed": 5,
+   "unreviewed": 6,
    "crop_failures": 0,
    "delivery_failures": 0,
    "caption_failures": 0,
@@ -412,9 +2822,9 @@
    }
   },
   "55EKJRBC": {
-   "total_labels": 4,
+   "total_labels": 5,
    "reviewed": 0,
-   "unreviewed": 4,
+   "unreviewed": 5,
    "crop_failures": 0,
    "delivery_failures": 0,
    "caption_failures": 0,

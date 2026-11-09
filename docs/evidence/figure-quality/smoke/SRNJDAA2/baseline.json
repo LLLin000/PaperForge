@@ -144,6 +144,278 @@
   "old_text_chars": 23788,
   "new_text_chars": 23788,
   "old_entries": 25,
-  "new_entries": 21
+  "new_entries": 21,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 4,
+     "text": "Figure 11-1. Bending piezoelectricity of bone."
+    },
+    {
+     "page": 2,
+     "block_id": 11,
+     "text": "Figure 11-2. Shear piezoelectricity of bone."
+    },
+    {
+     "page": 3,
+     "block_id": 5,
+     "text": "Figure 11-3. Direct piezoelectric effect in bone."
+    },
+    {
+     "page": 3,
+     "block_id": 10,
+     "text": "Figure 11-4. Converse piezoelectric effect in bone."
+    },
+    {
+     "page": 4,
+     "block_id": 4,
+     "text": "Figure 11-5. Tensile piezoelectricity of bone."
+    },
+    {
+     "page": 5,
+     "block_id": 6,
+     "text": "Figure 11-6. Temperature and hydration dependence of shear piezoelectric constant  $ d_{14} $ for bone."
+    },
+    {
+     "page": 6,
+     "block_id": 3,
+     "text": "Figure 11-7. Temperature and hydration dependence of piezoelectric constant for decalcified bone."
+    },
+    {
+     "page": 7,
+     "block_id": 3,
+     "text": "Figure 11-8. Chemical structure of poly- $ \\gamma $-methyl-glutamate."
+    },
+    {
+     "page": 8,
+     "block_id": 3,
+     "text": "Figure 11-9. Two molecular conformations of polypeptides."
+    },
+    {
+     "page": 8,
+     "block_id": 10,
+     "text": "Figure 11-10. Chemical structure of polyvinylidene fluoride."
+    },
+    {
+     "page": 9,
+     "block_id": 4,
+     "text": "Figure 11-11. Hysteresis loops of electric displacement and piezoelectric constant for polyvinylidene fluoride."
+    },
+    {
+     "page": 10,
+     "block_id": 5,
+     "text": "Figure 11-12. Chemical structure of Teflon $ ^{\\circledR} $"
+    },
+    {
+     "page": 10,
+     "block_id": 7,
+     "text": "Figure 11-13. Teflon $ ^{\\circledR} $ electret film wrapped around the femur of rabbit."
+    },
+    {
+     "page": 10,
+     "block_id": 12,
+     "text": "Figure 11-14. X-ray photograph of the femur of rabbit with Teflon electret film taken four weeks after operation."
+    },
+    {
+     "page": 11,
+     "block_id": 3,
+     "text": "Figure 11-15: A film of poly- $ \\gamma $-methyl-L-glutamate fixed around the femur of rat."
+    },
+    {
+     "page": 11,
+     "block_id": 5,
+     "text": "Figure 11-16. X-ray photograph of the femur of rat with a piezoelectric film of poly-γ-methyl-L-glutamate on right side and with an electret film of Teflon at left side, observed ten, sixteen, and thirty-eight days after operation."
+    },
+    {
+     "page": 12,
+     "block_id": 3,
+     "text": "Figure 11-17. Cylindrical piezoelectric film is placed between the gap made by cutting the fibula."
+    },
+    {
+     "page": 13,
+     "block_id": 3,
+     "text": "Figure 11-18. X-ray photograph taken three weeks after a PMLG film was placed in the gap on right side fibula of rabbit."
+    },
+    {
+     "page": 13,
+     "block_id": 5,
+     "text": "Figure 11-19. X-ray photograph taken three weeks after a collagen film was placed in the gap of right side fibula of rabbit."
+    },
+    {
+     "page": 14,
+     "block_id": 3,
+     "text": "Figure 11-20. Histogram of callus formed on the collagen film."
+    },
+    {
+     "page": 14,
+     "block_id": 8,
+     "text": "Figure 11-21. A film of polyvinylidene piezoelectric film covers a half circumference of femur of monkey. Courtesy of Dr. H. Suzuki."
+    },
+    {
+     "page": 15,
+     "block_id": 7,
+     "text": "Figure 11-22. Photographs taken six weeks after PVDF film was placed on the femur of monkey. Courtesy of Dr. H. Suzuki."
+    },
+    {
+     "page": 16,
+     "block_id": 4,
+     "text": "Figure 11-23. The number of resorption cavities six weeks after applying PVDF film on femur and mandible of monkey. Courtesy of Dr. H. Suzuki."
+    },
+    {
+     "page": 17,
+     "block_id": 4,
+     "text": "Figure 11-24. The number of secondary osteons six weeks after applying PVDF film on femur and mandible of monkey. Courtesy of Dr. H. Suzuki."
+    },
+    {
+     "page": 18,
+     "block_id": 3,
+     "text": "Figure 11-25. Comparison of the piezoelectric effect in bone, tendon, PMG, and PVDF."
+    },
+    {
+     "page": 18,
+     "block_id": 8,
+     "text": "Figure 11-26. An equivalent circuit of PVDF film implanted in body tissues."
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 4,
+    "text": "Figure 11-1. Bending piezoelectricity of bone."
+   },
+   {
+    "page": 2,
+    "block_id": 11,
+    "text": "Figure 11-2. Shear piezoelectricity of bone."
+   },
+   {
+    "page": 3,
+    "block_id": 5,
+    "text": "Figure 11-3. Direct piezoelectric effect in bone."
+   },
+   {
+    "page": 3,
+    "block_id": 10,
+    "text": "Figure 11-4. Converse piezoelectric effect in bone."
+   },
+   {
+    "page": 4,
+    "block_id": 4,
+    "text": "Figure 11-5. Tensile piezoelectricity of bone."
+   },
+   {
+    "page": 5,
+    "block_id": 6,
+    "text": "Figure 11-6. Temperature and hydration dependence of shear piezoelectric constant  $ d_{14} $ for bone."
+   },
+   {
+    "page": 6,
+    "block_id": 3,
+    "text": "Figure 11-7. Temperature and hydration dependence of piezoelectric constant for decalcified bone."
+   },
+   {
+    "page": 7,
+    "block_id": 3,
+    "text": "Figure 11-8. Chemical structure of poly- $ \\gamma $-methyl-glutamate."
+   },
+   {
+    "page": 8,
+    "block_id": 3,
+    "text": "Figure 11-9. Two molecular conformations of polypeptides."
+   },
+   {
+    "page": 8,
+    "block_id": 10,
+    "text": "Figure 11-10. Chemical structure of polyvinylidene fluoride."
+   },
+   {
+    "page": 9,
+    "block_id": 4,
+    "text": "Figure 11-11. Hysteresis loops of electric displacement and piezoelectric constant for polyvinylidene fluoride."
+   },
+   {
+    "page": 10,
+    "block_id": 5,
+    "text": "Figure 11-12. Chemical structure of Teflon $ ^{\\circledR} $"
+   },
+   {
+    "page": 10,
+    "block_id": 7,
+    "text": "Figure 11-13. Teflon $ ^{\\circledR} $ electret film wrapped around the femur of rabbit."
+   },
+   {
+    "page": 10,
+    "block_id": 12,
+    "text": "Figure 11-14. X-ray photograph of the femur of rabbit with Teflon electret film taken four weeks after operation."
+   },
+   {
+    "page": 11,
+    "block_id": 3,
+    "text": "Figure 11-15: A film of poly- $ \\gamma $-methyl-L-glutamate fixed around the femur of rat."
+   },
+   {
+    "page": 11,
+    "block_id": 5,
+    "text": "Figure 11-16. X-ray photograph of the femur of rat with a piezoelectric film of poly-γ-methyl-L-glutamate on right side and with an electret film of Teflon at left side, observed ten, sixteen, and thirty-eight days after operation."
+   },
+   {
+    "page": 12,
+    "block_id": 3,
+    "text": "Figure 11-17. Cylindrical piezoelectric film is placed between the gap made by cutting the fibula."
+   },
+   {
+    "page": 13,
+    "block_id": 3,
+    "text": "Figure 11-18. X-ray photograph taken three weeks after a PMLG film was placed in the gap on right side fibula of rabbit."
+   },
+   {
+    "page": 13,
+    "block_id": 5,
+    "text": "Figure 11-19. X-ray photograph taken three weeks after a collagen film was placed in the gap of right side fibula of rabbit."
+   },
+   {
+    "page": 14,
+    "block_id": 3,
+    "text": "Figure 11-20. Histogram of callus formed on the collagen film."
+   },
+   {
+    "page": 14,
+    "block_id": 8,
+    "text": "Figure 11-21. A film of polyvinylidene piezoelectric film covers a half circumference of femur of monkey. Courtesy of Dr. H. Suzuki."
+   },
+   {
+    "page": 15,
+    "block_id": 7,
+    "text": "Figure 11-22. Photographs taken six weeks after PVDF film was placed on the femur of monkey. Courtesy of Dr. H. Suzuki."
+   },
+   {
+    "page": 16,
+    "block_id": 4,
+    "text": "Figure 11-23. The number of resorption cavities six weeks after applying PVDF film on femur and mandible of monkey. Courtesy of Dr. H. Suzuki."
+   },
+   {
+    "page": 17,
+    "block_id": 4,
+    "text": "Figure 11-24. The number of secondary osteons six weeks after applying PVDF film on femur and mandible of monkey. Courtesy of Dr. H. Suzuki."
+   },
+   {
+    "page": 18,
+    "block_id": 3,
+    "text": "Figure 11-25. Comparison of the piezoelectric effect in bone, tendon, PMG, and PVDF."
+   },
+   {
+    "page": 18,
+    "block_id": 8,
+    "text": "Figure 11-26. An equivalent circuit of PVDF film implanted in body tissues."
+   }
+  ]
  }
 }

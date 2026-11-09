@@ -91,6 +91,120 @@
   "old_text_chars": 18278,
   "new_text_chars": 18278,
   "old_entries": 6,
-  "new_entries": 5
+  "new_entries": 5,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 5,
+     "block_id": 7,
+     "text": "An Overview of the Association of the Localized Cartilage Damage to the Specific Diagnosis in This Material $ ^{a} $"
+    }
+   ],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 4,
+     "text": "Figure 1A. International Cartilage Repair Society evaluation form showing the grid map of the knee. Published with permission from the ICRS."
+    },
+    {
+     "page": 2,
+     "block_id": 9,
+     "text": "Figure 1B. Anatomical grading of the depth of the cartilage injury according to the International Cartilage Repair Society. Published with permission from the ICRS."
+    },
+    {
+     "page": 3,
+     "block_id": 4,
+     "text": "Figure 2. Different types of localized cartilage lesions (n = 203) of the knee. A, Localized partial-thickness cartilage lesions 44%; B, Osteochondritis dissecans lesions 9%; C, Localized full-thickness cartilage lesions 47%."
+    },
+    {
+     "page": 3,
+     "block_id": 11,
+     "text": "Figure 3. Anatomical distribution of the localized full-thickness cartilage defects of the knees (n = 203)."
+    },
+    {
+     "page": 4,
+     "block_id": 5,
+     "text": "Figure 4. Cause of injury and a distribution of the different sports according to the knee injuries in this material caused by athletic activity (49%). N = 993."
+    },
+    {
+     "page": 4,
+     "block_id": 9,
+     "text": "Figure 5. Performed knee arthroscopic procedures (N = 993)."
+    },
+    {
+     "page": 4,
+     "block_id": 11,
+     "text": "Figure 6. Number of localized cartilage lesions including the osteochondritis dissecans lesions (n = 203) in the different age groups. Median age of this group is 30 years."
+    },
+    {
+     "page": 5,
+     "block_id": 4,
+     "text": "Activity Level Among the Patients (N = 993)"
+    },
+    {
+     "page": 5,
+     "block_id": 7,
+     "text": "An Overview of the Association of the Localized Cartilage Damage to the Specific Diagnosis in This Material $ ^{a} $"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [
+   {
+    "page": 5,
+    "block_id": 7,
+    "text": "An Overview of the Association of the Localized Cartilage Damage to the Specific Diagnosis in This Material $ ^{a} $"
+   }
+  ],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 4,
+    "text": "Figure 1A. International Cartilage Repair Society evaluation form showing the grid map of the knee. Published with permission from the ICRS."
+   },
+   {
+    "page": 2,
+    "block_id": 9,
+    "text": "Figure 1B. Anatomical grading of the depth of the cartilage injury according to the International Cartilage Repair Society. Published with permission from the ICRS."
+   },
+   {
+    "page": 3,
+    "block_id": 4,
+    "text": "Figure 2. Different types of localized cartilage lesions (n = 203) of the knee. A, Localized partial-thickness cartilage lesions 44%; B, Osteochondritis dissecans lesions 9%; C, Localized full-thickness cartilage lesions 47%."
+   },
+   {
+    "page": 3,
+    "block_id": 11,
+    "text": "Figure 3. Anatomical distribution of the localized full-thickness cartilage defects of the knees (n = 203)."
+   },
+   {
+    "page": 4,
+    "block_id": 5,
+    "text": "Figure 4. Cause of injury and a distribution of the different sports according to the knee injuries in this material caused by athletic activity (49%). N = 993."
+   },
+   {
+    "page": 4,
+    "block_id": 9,
+    "text": "Figure 5. Performed knee arthroscopic procedures (N = 993)."
+   },
+   {
+    "page": 4,
+    "block_id": 11,
+    "text": "Figure 6. Number of localized cartilage lesions including the osteochondritis dissecans lesions (n = 203) in the different age groups. Median age of this group is 30 years."
+   },
+   {
+    "page": 5,
+    "block_id": 4,
+    "text": "Activity Level Among the Patients (N = 993)"
+   },
+   {
+    "page": 5,
+    "block_id": 7,
+    "text": "An Overview of the Association of the Localized Cartilage Damage to the Specific Diagnosis in This Material $ ^{a} $"
+   }
+  ]
  }
 }

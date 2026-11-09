@@ -79,6 +79,58 @@
   "old_text_chars": 41679,
   "new_text_chars": 41679,
   "old_entries": 4,
-  "new_entries": 4
+  "new_entries": 4,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 4,
+     "block_id": 9,
+     "text": "Figure 1 Photomicrographs of longitudinal sections of the xiphoid cartilage defect area in 45-day-old male rats. A-C: Control group; D-F: group submitted to microcurrent stimulation (20 µA/5 min). Specimens were collected 7 (A and D), 21 (B and E), and 35 (C and F) days after experimental injury. Se"
+    },
+    {
+     "page": 5,
+     "block_id": 3,
+     "text": "Figure 2 Photomicrographs of sections stained with picrosirius-hematoxylin and analyzed by bright-field microscopy under polarized light (D-F and J-L). A-F: Control group; G-L: treated group. Specimens were collected 7 (A, D, G, and J), 21 (B, E, H, and K) and 35 (C, F, I, and L) days after experime"
+    },
+    {
+     "page": 5,
+     "block_id": 5,
+     "text": "Figure 3 Electron photomicrographs of the xiphoid cartilage defect area in 45-day-old male rats. A-C: Control group; D-F: group submitted to microcurrent stimulation (20 μA/5 min). Specimens were collected 7 (A and D), 21 (B and E), and 35 (C and F) days after experimental injury. The samples were f"
+    },
+    {
+     "page": 6,
+     "block_id": 10,
+     "text": "Figure 4 Electron photomicrographs of sections from control (A-C) and treated (D-F) animals stained with cuprolinic blue for the detection of proteoglycans (PG). Specimens were collected 7 (A and D), 21 (B and E), and 35 (C and F) days after experimental injury. (*) Fibroblastic cell; (▶) – positive"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 4,
+    "block_id": 9,
+    "text": "Figure 1 Photomicrographs of longitudinal sections of the xiphoid cartilage defect area in 45-day-old male rats. A-C: Control group; D-F: group submitted to microcurrent stimulation (20 µA/5 min). Specimens were collected 7 (A and D), 21 (B and E), and 35 (C and F) days after experimental injury. Se"
+   },
+   {
+    "page": 5,
+    "block_id": 3,
+    "text": "Figure 2 Photomicrographs of sections stained with picrosirius-hematoxylin and analyzed by bright-field microscopy under polarized light (D-F and J-L). A-F: Control group; G-L: treated group. Specimens were collected 7 (A, D, G, and J), 21 (B, E, H, and K) and 35 (C, F, I, and L) days after experime"
+   },
+   {
+    "page": 5,
+    "block_id": 5,
+    "text": "Figure 3 Electron photomicrographs of the xiphoid cartilage defect area in 45-day-old male rats. A-C: Control group; D-F: group submitted to microcurrent stimulation (20 μA/5 min). Specimens were collected 7 (A and D), 21 (B and E), and 35 (C and F) days after experimental injury. The samples were f"
+   },
+   {
+    "page": 6,
+    "block_id": 10,
+    "text": "Figure 4 Electron photomicrographs of sections from control (A-C) and treated (D-F) animals stained with cuprolinic blue for the detection of proteoglycans (PG). Specimens were collected 7 (A and D), 21 (B and E), and 35 (C and F) days after experimental injury. (*) Fibroblastic cell; (▶) – positive"
+   }
+  ]
  }
 }

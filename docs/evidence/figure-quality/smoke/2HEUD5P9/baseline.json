@@ -222,6 +222,320 @@
   "old_text_chars": 142349,
   "new_text_chars": 142349,
   "old_entries": 7,
-  "new_entries": 7
+  "new_entries": 7,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 12,
+     "bbox": [
+      155,
+      147,
+      1087,
+      407
+     ]
+    },
+    {
+     "page": 12,
+     "bbox": [
+      122,
+      419,
+      1071,
+      617
+     ]
+    },
+    {
+     "page": 12,
+     "bbox": [
+      138,
+      631,
+      1071,
+      802
+     ]
+    },
+    {
+     "page": 12,
+     "bbox": [
+      108,
+      823,
+      966,
+      901
+     ]
+    },
+    {
+     "page": 12,
+     "bbox": [
+      157,
+      923,
+      725,
+      1177
+     ]
+    },
+    {
+     "page": 12,
+     "bbox": [
+      830,
+      918,
+      1028,
+      1103
+     ]
+    },
+    {
+     "page": 12,
+     "bbox": [
+      160,
+      1209,
+      445,
+      1394
+     ]
+    },
+    {
+     "page": 12,
+     "bbox": [
+      458,
+      1181,
+      729,
+      1409
+     ]
+    },
+    {
+     "page": 12,
+     "bbox": [
+      804,
+      1121,
+      1040,
+      1265
+     ]
+    },
+    {
+     "page": 12,
+     "bbox": [
+      803,
+      1276,
+      1041,
+      1420
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 3,
+     "text": "Figure 1. The schematic diagram of bioactive materials and advanced techniques to regulate the stem cell fate with specific cellular and molecular mechanism for the application of bone tissue engineering."
+    },
+    {
+     "page": 4,
+     "block_id": 18,
+     "text": "(1)"
+    },
+    {
+     "page": 4,
+     "block_id": 25,
+     "text": "Figure 2. A) In vivo bone regeneration efficacy of whitlockite (WH: Ca $ _{18} $Mg $ _{2} $(HPO $ _{4} $) $ _{2} $(PO $ _{4} $) $ _{12} $) embedded 3D cryogel implants after 6 weeks of subcutaneous injection, each group of cryogels rendered by the micro-CT program as grey areas indicated the amount "
+    },
+    {
+     "page": 9,
+     "block_id": 26,
+     "text": "Figure 3. A) Biomimetic melt electrowritten lattice and bioglass particle reinforced hydrogel scaffolds were fabricated. B) The weight percents of Ca, P, and Ca/P ratio for all the scaffolds. C) FTIR curves of formed HAp on scaffolds. $ ^{[87]} $ Copyright 2022, Elsevier. D) Representative SEM image"
+    },
+    {
+     "page": 13,
+     "block_id": 6,
+     "text": "Figure 4. A) Scheme showing MgGA MOF and PLGA/Mg-GA MOF scaffold preparation. B) ALP staining of hBMSCs in the extracts. C) ARS staining of hBMSCs in the extracts. $ ^{[112]} $ Copyright 2022, Elsevier. D) Schematic of fabrication of the PCL/Col/ZIF-8 composite membrane for guided bone regeneration."
+    },
+    {
+     "page": 13,
+     "block_id": 13,
+     "text": "4 W"
+    },
+    {
+     "page": 13,
+     "block_id": 15,
+     "text": "8 W"
+    },
+    {
+     "page": 13,
+     "block_id": 26,
+     "text": "(1)"
+    },
+    {
+     "page": 13,
+     "block_id": 39,
+     "text": "Figure 5. A) ALP staining and ARS staining of Control, Let-7d, LDH and LDH/let-7d groups on day 7 and day 14, respectively. Scale bars: 500  $ \\mu $m. B) LDH/let-7d-incorporated fibrin scaffolds promoted the subcutaneous ectopic osteogenesis of BMSCs in nude mice. Representative reconstructed micro-"
+    },
+    {
+     "page": 15,
+     "block_id": 25,
+     "text": "Figure 6. A,B) SEM image of scaffolds after soaking in SBF for 5 days (A1, A2: MBG/SF scaffold; B1, B2: MBG/PCL scaffold) and EDS spectra (A3: MBG/SF scaffold; B3:MBG/PCL scaffold). C) The relative expression of BMP-2, BSP, COL-1 and OCN of hBMSCs cultured on MBG/SF and MBG/PCL scaffolds for 7 and 1"
+    },
+    {
+     "page": 19,
+     "block_id": 3,
+     "text": "Figure 7. A,B) Water contact angle measurement for the Ti6Al4V substrate (A1) and Ti6Al4V substrate with BaTiO₃ coating (B1); Surface CLSM images of the Ti6Al4V substrate (A2) and Ti6Al4V substrate with BaTiO₃ coating (B2). C) Fluorescence staining of BMSCs (red, Rhodamine-phalloidin for F-actin; bl"
+    },
+    {
+     "page": 21,
+     "block_id": 17,
+     "text": "Figure 8. A) Schematic illustration of the procedure to fabricate BP@BMP2 electrospun fibrous scaffolds and the effect of recruiting osteoblasts and releasing calcium-free phosphate therapy for promoting bone physiological regeneration in vivo. B) Radiological analysis in vivo. Representative microC"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 12,
+    "bbox": [
+     155,
+     147,
+     1087,
+     407
+    ]
+   },
+   {
+    "page": 12,
+    "bbox": [
+     122,
+     419,
+     1071,
+     617
+    ]
+   },
+   {
+    "page": 12,
+    "bbox": [
+     138,
+     631,
+     1071,
+     802
+    ]
+   },
+   {
+    "page": 12,
+    "bbox": [
+     108,
+     823,
+     966,
+     901
+    ]
+   },
+   {
+    "page": 12,
+    "bbox": [
+     157,
+     923,
+     725,
+     1177
+    ]
+   },
+   {
+    "page": 12,
+    "bbox": [
+     830,
+     918,
+     1028,
+     1103
+    ]
+   },
+   {
+    "page": 12,
+    "bbox": [
+     160,
+     1209,
+     445,
+     1394
+    ]
+   },
+   {
+    "page": 12,
+    "bbox": [
+     458,
+     1181,
+     729,
+     1409
+    ]
+   },
+   {
+    "page": 12,
+    "bbox": [
+     804,
+     1121,
+     1040,
+     1265
+    ]
+   },
+   {
+    "page": 12,
+    "bbox": [
+     803,
+     1276,
+     1041,
+     1420
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 3,
+    "block_id": 3,
+    "text": "Figure 1. The schematic diagram of bioactive materials and advanced techniques to regulate the stem cell fate with specific cellular and molecular mechanism for the application of bone tissue engineering."
+   },
+   {
+    "page": 4,
+    "block_id": 18,
+    "text": "(1)"
+   },
+   {
+    "page": 4,
+    "block_id": 25,
+    "text": "Figure 2. A) In vivo bone regeneration efficacy of whitlockite (WH: Ca $ _{18} $Mg $ _{2} $(HPO $ _{4} $) $ _{2} $(PO $ _{4} $) $ _{12} $) embedded 3D cryogel implants after 6 weeks of subcutaneous injection, each group of cryogels rendered by the micro-CT program as grey areas indicated the amount "
+   },
+   {
+    "page": 9,
+    "block_id": 26,
+    "text": "Figure 3. A) Biomimetic melt electrowritten lattice and bioglass particle reinforced hydrogel scaffolds were fabricated. B) The weight percents of Ca, P, and Ca/P ratio for all the scaffolds. C) FTIR curves of formed HAp on scaffolds. $ ^{[87]} $ Copyright 2022, Elsevier. D) Representative SEM image"
+   },
+   {
+    "page": 13,
+    "block_id": 6,
+    "text": "Figure 4. A) Scheme showing MgGA MOF and PLGA/Mg-GA MOF scaffold preparation. B) ALP staining of hBMSCs in the extracts. C) ARS staining of hBMSCs in the extracts. $ ^{[112]} $ Copyright 2022, Elsevier. D) Schematic of fabrication of the PCL/Col/ZIF-8 composite membrane for guided bone regeneration."
+   },
+   {
+    "page": 13,
+    "block_id": 13,
+    "text": "4 W"
+   },
+   {
+    "page": 13,
+    "block_id": 15,
+    "text": "8 W"
+   },
+   {
+    "page": 13,
+    "block_id": 26,
+    "text": "(1)"
+   },
+   {
+    "page": 13,
+    "block_id": 39,
+    "text": "Figure 5. A) ALP staining and ARS staining of Control, Let-7d, LDH and LDH/let-7d groups on day 7 and day 14, respectively. Scale bars: 500  $ \\mu $m. B) LDH/let-7d-incorporated fibrin scaffolds promoted the subcutaneous ectopic osteogenesis of BMSCs in nude mice. Representative reconstructed micro-"
+   },
+   {
+    "page": 15,
+    "block_id": 25,
+    "text": "Figure 6. A,B) SEM image of scaffolds after soaking in SBF for 5 days (A1, A2: MBG/SF scaffold; B1, B2: MBG/PCL scaffold) and EDS spectra (A3: MBG/SF scaffold; B3:MBG/PCL scaffold). C) The relative expression of BMP-2, BSP, COL-1 and OCN of hBMSCs cultured on MBG/SF and MBG/PCL scaffolds for 7 and 1"
+   },
+   {
+    "page": 19,
+    "block_id": 3,
+    "text": "Figure 7. A,B) Water contact angle measurement for the Ti6Al4V substrate (A1) and Ti6Al4V substrate with BaTiO₃ coating (B1); Surface CLSM images of the Ti6Al4V substrate (A2) and Ti6Al4V substrate with BaTiO₃ coating (B2). C) Fluorescence staining of BMSCs (red, Rhodamine-phalloidin for F-actin; bl"
+   },
+   {
+    "page": 21,
+    "block_id": 17,
+    "text": "Figure 8. A) Schematic illustration of the procedure to fabricate BP@BMP2 electrospun fibrous scaffolds and the effect of recruiting osteoblasts and releasing calcium-free phosphate therapy for promoting bone physiological regeneration in vivo. B) Radiological analysis in vivo. Representative microC"
+   }
+  ]
  }
 }

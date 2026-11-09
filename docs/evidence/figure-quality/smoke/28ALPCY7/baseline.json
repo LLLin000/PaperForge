@@ -148,6 +148,376 @@
   "old_text_chars": 56021,
   "new_text_chars": 56021,
   "old_entries": 10,
-  "new_entries": 9
+  "new_entries": 9,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 25,
+     "bbox": [
+      178,
+      154,
+      1010,
+      426
+     ]
+    },
+    {
+     "page": 25,
+     "bbox": [
+      179,
+      491,
+      1010,
+      766
+     ]
+    },
+    {
+     "page": 25,
+     "bbox": [
+      180,
+      829,
+      1009,
+      1107
+     ]
+    },
+    {
+     "page": 25,
+     "bbox": [
+      179,
+      1168,
+      1009,
+      1444
+     ]
+    },
+    {
+     "page": 26,
+     "bbox": [
+      180,
+      146,
+      1010,
+      770
+     ]
+    },
+    {
+     "page": 26,
+     "bbox": [
+      180,
+      858,
+      1009,
+      1478
+     ]
+    },
+    {
+     "page": 36,
+     "bbox": [
+      221,
+      554,
+      943,
+      884
+     ]
+    },
+    {
+     "page": 36,
+     "bbox": [
+      303,
+      938,
+      587,
+      1088
+     ]
+    },
+    {
+     "page": 36,
+     "bbox": [
+      617,
+      933,
+      860,
+      1094
+     ]
+    },
+    {
+     "page": 36,
+     "bbox": [
+      634,
+      1102,
+      878,
+      1191
+     ]
+    },
+    {
+     "page": 36,
+     "bbox": [
+      269,
+      1224,
+      539,
+      1422
+     ]
+    },
+    {
+     "page": 36,
+     "bbox": [
+      674,
+      1224,
+      925,
+      1425
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 12,
+     "block_id": 8,
+     "text": "Figure 1. SEM images of 3D-printed β-TCP scaffolds: the top panels are (a) 100×, (b) 240× and show that the diameter of the bar is approximately 170±10 microns. The bars are arranged vertically, which forms square pores with a side length of 219±17 microns. The lower panels are (c) 1500× and (d) 300"
+    },
+    {
+     "page": 13,
+     "block_id": 10,
+     "text": "Figure 2. LIVE/DEAD staining of rADSCs cultured on scaffolds in ordinary medium for 24, 48 or 72 hours. Live cells are stained green and dead cells are stained red. In the low power field of vision, the ratios of live/dead rADSCs at 24, 48 and 72 hours are 4.36 (a, 109/25), 5.81 (b, 343/59) and 7.60"
+    },
+    {
+     "page": 15,
+     "block_id": 4,
+     "text": "Figure 3. CCK-8 analysis after culture for 1, 4, or 7 days on TCPS or  $ \\beta $-TCP scaffolds. After 1 day of culture, the proliferation rate of rADSCs cultured on  $ \\beta $-TCP scaffolds was significantly higher than that of cells cultured on TCPS ( $ **p<0.01 $). After 4 days of culture, the pro"
+    },
+    {
+     "page": 16,
+     "block_id": 4,
+     "text": "Figure 4. ALP activity analysis of rADSCs after culture in osteogenic induction medium for 14 days. The activity of ALP in the TCPS+PEMF and  $ \\beta $-TCP groups was similar, and a significant difference was found between the TCPS+PEMF and TCPS groups (*p<0.05) and between the  $ \\beta $-TCP and TC"
+    },
+    {
+     "page": 17,
+     "block_id": 7,
+     "text": "β-TCP"
+    },
+    {
+     "page": 17,
+     "block_id": 8,
+     "text": "β-TCP+PEMF"
+    },
+    {
+     "page": 17,
+     "block_id": 11,
+     "text": "Figure 5. ALP staining of rADSCs after culture in osteogenic induction medium for 14 days. (a), (b) rADSCs exposed to PEMF and cultured on TCPS. (c), (d) rADSCs not exposed to PEMF and cultured on TCPS. (e) rADSCs not exposed to PEMF and cultured on  $ \\beta $-TCP. (f) rADSCs exposed to PEMF and cul"
+    },
+    {
+     "page": 19,
+     "block_id": 4,
+     "text": "ALP"
+    },
+    {
+     "page": 19,
+     "block_id": 6,
+     "text": "Runx2"
+    },
+    {
+     "page": 19,
+     "block_id": 8,
+     "text": "OPN"
+    },
+    {
+     "page": 20,
+     "block_id": 3,
+     "text": "Figure 6. qRT-PCR analysis was used to evaluate the expression of osteogenesis-related genes in rADSCs cultured in osteogenic induction medium for 7, 14 or 21 days. (a) The expression of ALPin the  $ \\beta $-TCP+PEMF group remained the highest (*p<0.05) after 7, 14 and 21 days in culture. The expres"
+    },
+    {
+     "page": 22,
+     "block_id": 4,
+     "text": "Figure 7. 3D reconstruction of the imaging data of SD rats after 0, 4, 8 and 12 weeks of rearing.\nThe rats in the PEMF group were treated with PEMFs for 2 hours per day, whereas the rats in the without PEMF group were not exposed to PEMFs."
+    },
+    {
+     "page": 23,
+     "block_id": 5,
+     "text": "Figure 8. Bone mineral density analysis based on micro-CT data was used to detect the growth of skull defects in SD rats after 12 weeks of rearing. The BMD values of the defect site of rats in the  $ \\beta $-TCP+PEMF group were the highest ( $ ^{**}p<0.01 $), and the BMD measurements of rats in the "
+    },
+    {
+     "page": 27,
+     "block_id": 5,
+     "text": "Figure 9. HE staining of the cranial defects of rats after 12 weeks of rearing. (A), (E) Rats"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 25,
+    "bbox": [
+     178,
+     154,
+     1010,
+     426
+    ]
+   },
+   {
+    "page": 25,
+    "bbox": [
+     179,
+     491,
+     1010,
+     766
+    ]
+   },
+   {
+    "page": 25,
+    "bbox": [
+     180,
+     829,
+     1009,
+     1107
+    ]
+   },
+   {
+    "page": 25,
+    "bbox": [
+     179,
+     1168,
+     1009,
+     1444
+    ]
+   },
+   {
+    "page": 26,
+    "bbox": [
+     180,
+     146,
+     1010,
+     770
+    ]
+   },
+   {
+    "page": 26,
+    "bbox": [
+     180,
+     858,
+     1009,
+     1478
+    ]
+   },
+   {
+    "page": 36,
+    "bbox": [
+     221,
+     554,
+     943,
+     884
+    ]
+   },
+   {
+    "page": 36,
+    "bbox": [
+     303,
+     938,
+     587,
+     1088
+    ]
+   },
+   {
+    "page": 36,
+    "bbox": [
+     617,
+     933,
+     860,
+     1094
+    ]
+   },
+   {
+    "page": 36,
+    "bbox": [
+     634,
+     1102,
+     878,
+     1191
+    ]
+   },
+   {
+    "page": 36,
+    "bbox": [
+     269,
+     1224,
+     539,
+     1422
+    ]
+   },
+   {
+    "page": 36,
+    "bbox": [
+     674,
+     1224,
+     925,
+     1425
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 12,
+    "block_id": 8,
+    "text": "Figure 1. SEM images of 3D-printed β-TCP scaffolds: the top panels are (a) 100×, (b) 240× and show that the diameter of the bar is approximately 170±10 microns. The bars are arranged vertically, which forms square pores with a side length of 219±17 microns. The lower panels are (c) 1500× and (d) 300"
+   },
+   {
+    "page": 13,
+    "block_id": 10,
+    "text": "Figure 2. LIVE/DEAD staining of rADSCs cultured on scaffolds in ordinary medium for 24, 48 or 72 hours. Live cells are stained green and dead cells are stained red. In the low power field of vision, the ratios of live/dead rADSCs at 24, 48 and 72 hours are 4.36 (a, 109/25), 5.81 (b, 343/59) and 7.60"
+   },
+   {
+    "page": 15,
+    "block_id": 4,
+    "text": "Figure 3. CCK-8 analysis after culture for 1, 4, or 7 days on TCPS or  $ \\beta $-TCP scaffolds. After 1 day of culture, the proliferation rate of rADSCs cultured on  $ \\beta $-TCP scaffolds was significantly higher than that of cells cultured on TCPS ( $ **p<0.01 $). After 4 days of culture, the pro"
+   },
+   {
+    "page": 16,
+    "block_id": 4,
+    "text": "Figure 4. ALP activity analysis of rADSCs after culture in osteogenic induction medium for 14 days. The activity of ALP in the TCPS+PEMF and  $ \\beta $-TCP groups was similar, and a significant difference was found between the TCPS+PEMF and TCPS groups (*p<0.05) and between the  $ \\beta $-TCP and TC"
+   },
+   {
+    "page": 17,
+    "block_id": 7,
+    "text": "β-TCP"
+   },
+   {
+    "page": 17,
+    "block_id": 8,
+    "text": "β-TCP+PEMF"
+   },
+   {
+    "page": 17,
+    "block_id": 11,
+    "text": "Figure 5. ALP staining of rADSCs after culture in osteogenic induction medium for 14 days. (a), (b) rADSCs exposed to PEMF and cultured on TCPS. (c), (d) rADSCs not exposed to PEMF and cultured on TCPS. (e) rADSCs not exposed to PEMF and cultured on  $ \\beta $-TCP. (f) rADSCs exposed to PEMF and cul"
+   },
+   {
+    "page": 19,
+    "block_id": 4,
+    "text": "ALP"
+   },
+   {
+    "page": 19,
+    "block_id": 6,
+    "text": "Runx2"
+   },
+   {
+    "page": 19,
+    "block_id": 8,
+    "text": "OPN"
+   },
+   {
+    "page": 20,
+    "block_id": 3,
+    "text": "Figure 6. qRT-PCR analysis was used to evaluate the expression of osteogenesis-related genes in rADSCs cultured in osteogenic induction medium for 7, 14 or 21 days. (a) The expression of ALPin the  $ \\beta $-TCP+PEMF group remained the highest (*p<0.05) after 7, 14 and 21 days in culture. The expres"
+   },
+   {
+    "page": 22,
+    "block_id": 4,
+    "text": "Figure 7. 3D reconstruction of the imaging data of SD rats after 0, 4, 8 and 12 weeks of rearing.\nThe rats in the PEMF group were treated with PEMFs for 2 hours per day, whereas the rats in the without PEMF group were not exposed to PEMFs."
+   },
+   {
+    "page": 23,
+    "block_id": 5,
+    "text": "Figure 8. Bone mineral density analysis based on micro-CT data was used to detect the growth of skull defects in SD rats after 12 weeks of rearing. The BMD values of the defect site of rats in the  $ \\beta $-TCP+PEMF group were the highest ( $ ^{**}p<0.01 $), and the BMD measurements of rats in the "
+   },
+   {
+    "page": 27,
+    "block_id": 5,
+    "text": "Figure 9. HE staining of the cranial defects of rats after 12 weeks of rearing. (A), (E) Rats"
+   }
+  ]
  }
 }

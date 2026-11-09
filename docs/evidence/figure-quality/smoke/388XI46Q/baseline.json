@@ -113,6 +113,198 @@
   "old_text_chars": 89489,
   "new_text_chars": 89489,
   "old_entries": 11,
-  "new_entries": 10
+  "new_entries": 10,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 19,
+     "block_id": 6,
+     "text": "finite element modeling. (k) Scatter plot of filler particle distribution. (l) Results of the finite element stress analysis. (Statistical significance was set as ***p<0.001, **p<0.01 and *p<0.05)"
+    }
+   ],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      1030,
+      142,
+      1088,
+      199
+     ]
+    },
+    {
+     "page": 14,
+     "bbox": [
+      118,
+      122,
+      1069,
+      1356
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 5,
+     "text": "Fig. 1 Schematic illustration of decoupling electro-priming from implantation strategy for functional hyaline chondrogenesis"
+    },
+    {
+     "page": 8,
+     "block_id": 26,
+     "text": "1"
+    },
+    {
+     "page": 9,
+     "block_id": 4,
+     "text": "Fig. 2 (a) Schematic and (b) photograph of the electrical stimulation chamber. (c) Suspension stability, AFM and SEM characterization of the fillers (From left to right: GO, PANI-GO, PDA-PANI-GO). (d) Zeta potential results. (e) FTIR, (r) XRD and (g) UV-Vis characterization of the fillers. (h) Elect"
+    },
+    {
+     "page": 10,
+     "block_id": 8,
+     "text": "Fig. 3 (a) CCK-8 assay, (b) hemocompatibility and (c) Tissue compatibility of GelMA and GelMA/PDA-PAni-GO hydrogels. (d) Heatmap of electrical conductivity uniformity of conductive hydrogels (10⁻² S/m). (e) Simulation of electric field intensity between paired graphite electrodes in conductive hydro"
+    },
+    {
+     "page": 13,
+     "block_id": 10,
+     "text": "Fig. 4 (a) Schematic diagram of the electrical stimulation process. (b) Detection of Col II and GAGs content under different voltages. (c-d) 3D immunofluorescence confocal detection chondrogenic differentiation indicators at (c) day 14 and (d) 28. (e) GAG content determination"
+    },
+    {
+     "page": 13,
+     "block_id": 13,
+     "text": "tion. (f) HYP content determination. (g) Western bolt results, from top to bottom are the results at day 14 and day 28, respectively. (Statistical significance was set as ***p<0.001, **p<0.01 and *p<0.05)"
+    },
+    {
+     "page": 15,
+     "block_id": 4,
+     "text": "Fig. 5 (a) Immunofluorescence detection of cellular inflammatory response (IL-1β). (b) Record of GelMA hydrogel lysis process. (c) Live-Dead assessment after hydrogel dissolution-recoating. (d) Quantitative analysis of IL-1β immunofluorescence. (e) Concentration of IL-6 and (f) IL-8 in cell culture "
+    },
+    {
+     "page": 16,
+     "block_id": 5,
+     "text": "Fig. 6 A(a-b) Results of PCA and Pearson correlation analysis. (c) Volcano plot of differentially expressed genes. (d) GO CC, (e) KEGG and (f) Metabolism-related pathway bubble plots. (g) GSEA enrichment results. (h) Western blot results of MAPK pathway activation by electrical stimulation. (i-j) Pr"
+    },
+    {
+     "page": 16,
+     "block_id": 9,
+     "text": "culture medium. (k) Confocal fluorescence results of intracellular proline concentration. (l) RT-qPCR analysis of chondrogenic differentiation-related genes. (m) Schematic of mechanism analysis. (Statistical significance was set as ***p<0.001, **p<0.01 and *p<0.05)"
+    },
+    {
+     "page": 17,
+     "block_id": 10,
+     "text": "Fig. 7 (a) Schematic diagram of the animal experimental procedure. (b) Demonstration of the injectability of the hydrogel. (c) Practical application of hydrogel during the animal experiment. (d) Postopera-"
+    },
+    {
+     "page": 17,
+     "block_id": 11,
+     "text": "tive presentation of the cartilage defect and its macroscopic view of repair. (e) ICRS score for cartilage repair at 8 weeks. (Statistical significance was set as ***p<0.001, **p<0.01 and *p<0.05)"
+    },
+    {
+     "page": 19,
+     "block_id": 5,
+     "text": "Fig. 8 (a) H&E, (b) TB and (c) SO/FG staining of tissue sections. (d) Sirius Red staining of tissue sections. (e) IL-1β, (f) Col II, (g) Mmp13 and (h) Runx2 immunofluorescence staining of tissue sections. (i) Quantitative results of section staining. (j) Schematic diagram of the"
+    },
+    {
+     "page": 19,
+     "block_id": 6,
+     "text": "finite element modeling. (k) Scatter plot of filler particle distribution. (l) Results of the finite element stress analysis. (Statistical significance was set as ***p<0.001, **p<0.01 and *p<0.05)"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [
+   {
+    "page": 19,
+    "block_id": 6,
+    "text": "finite element modeling. (k) Scatter plot of filler particle distribution. (l) Results of the finite element stress analysis. (Statistical significance was set as ***p<0.001, **p<0.01 and *p<0.05)"
+   }
+  ],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     1030,
+     142,
+     1088,
+     199
+    ]
+   },
+   {
+    "page": 14,
+    "bbox": [
+     118,
+     122,
+     1069,
+     1356
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 3,
+    "block_id": 5,
+    "text": "Fig. 1 Schematic illustration of decoupling electro-priming from implantation strategy for functional hyaline chondrogenesis"
+   },
+   {
+    "page": 8,
+    "block_id": 26,
+    "text": "1"
+   },
+   {
+    "page": 9,
+    "block_id": 4,
+    "text": "Fig. 2 (a) Schematic and (b) photograph of the electrical stimulation chamber. (c) Suspension stability, AFM and SEM characterization of the fillers (From left to right: GO, PANI-GO, PDA-PANI-GO). (d) Zeta potential results. (e) FTIR, (r) XRD and (g) UV-Vis characterization of the fillers. (h) Elect"
+   },
+   {
+    "page": 10,
+    "block_id": 8,
+    "text": "Fig. 3 (a) CCK-8 assay, (b) hemocompatibility and (c) Tissue compatibility of GelMA and GelMA/PDA-PAni-GO hydrogels. (d) Heatmap of electrical conductivity uniformity of conductive hydrogels (10⁻² S/m). (e) Simulation of electric field intensity between paired graphite electrodes in conductive hydro"
+   },
+   {
+    "page": 13,
+    "block_id": 10,
+    "text": "Fig. 4 (a) Schematic diagram of the electrical stimulation process. (b) Detection of Col II and GAGs content under different voltages. (c-d) 3D immunofluorescence confocal detection chondrogenic differentiation indicators at (c) day 14 and (d) 28. (e) GAG content determination"
+   },
+   {
+    "page": 13,
+    "block_id": 13,
+    "text": "tion. (f) HYP content determination. (g) Western bolt results, from top to bottom are the results at day 14 and day 28, respectively. (Statistical significance was set as ***p<0.001, **p<0.01 and *p<0.05)"
+   },
+   {
+    "page": 15,
+    "block_id": 4,
+    "text": "Fig. 5 (a) Immunofluorescence detection of cellular inflammatory response (IL-1β). (b) Record of GelMA hydrogel lysis process. (c) Live-Dead assessment after hydrogel dissolution-recoating. (d) Quantitative analysis of IL-1β immunofluorescence. (e) Concentration of IL-6 and (f) IL-8 in cell culture "
+   },
+   {
+    "page": 16,
+    "block_id": 5,
+    "text": "Fig. 6 A(a-b) Results of PCA and Pearson correlation analysis. (c) Volcano plot of differentially expressed genes. (d) GO CC, (e) KEGG and (f) Metabolism-related pathway bubble plots. (g) GSEA enrichment results. (h) Western blot results of MAPK pathway activation by electrical stimulation. (i-j) Pr"
+   },
+   {
+    "page": 16,
+    "block_id": 9,
+    "text": "culture medium. (k) Confocal fluorescence results of intracellular proline concentration. (l) RT-qPCR analysis of chondrogenic differentiation-related genes. (m) Schematic of mechanism analysis. (Statistical significance was set as ***p<0.001, **p<0.01 and *p<0.05)"
+   },
+   {
+    "page": 17,
+    "block_id": 10,
+    "text": "Fig. 7 (a) Schematic diagram of the animal experimental procedure. (b) Demonstration of the injectability of the hydrogel. (c) Practical application of hydrogel during the animal experiment. (d) Postopera-"
+   },
+   {
+    "page": 17,
+    "block_id": 11,
+    "text": "tive presentation of the cartilage defect and its macroscopic view of repair. (e) ICRS score for cartilage repair at 8 weeks. (Statistical significance was set as ***p<0.001, **p<0.01 and *p<0.05)"
+   },
+   {
+    "page": 19,
+    "block_id": 5,
+    "text": "Fig. 8 (a) H&E, (b) TB and (c) SO/FG staining of tissue sections. (d) Sirius Red staining of tissue sections. (e) IL-1β, (f) Col II, (g) Mmp13 and (h) Runx2 immunofluorescence staining of tissue sections. (i) Quantitative results of section staining. (j) Schematic diagram of the"
+   },
+   {
+    "page": 19,
+    "block_id": 6,
+    "text": "finite element modeling. (k) Scatter plot of filler particle distribution. (l) Results of the finite element stress analysis. (Statistical significance was set as ***p<0.001, **p<0.01 and *p<0.05)"
+   }
+  ]
  }
 }
