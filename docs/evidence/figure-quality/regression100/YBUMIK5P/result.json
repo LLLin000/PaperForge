@@ -1,0 +1,130 @@
+{
+ "key": "YBUMIK5P",
+ "passed": true,
+ "figures": 7,
+ "structural": {
+  "key": "YBUMIK5P",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 97808,
+  "new_text_chars": 97808,
+  "old_entries": 7,
+  "new_entries": 7,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      102,
+      409,
+      144,
+      451
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      627,
+      409,
+      667,
+      452
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      548,
+      490,
+      575,
+      513
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      862,
+      491,
+      886,
+      513
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      637,
+      539,
+      1105,
+      790
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      1025,
+      1351,
+      1111,
+      1471
+     ]
+    },
+    {
+     "page": 17,
+     "bbox": [
+      633,
+      867,
+      752,
+      1509
+     ]
+    },
+    {
+     "page": 17,
+     "bbox": [
+      949,
+      1415,
+      1090,
+      1497
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 4,
+     "text": "Figure 1. Alluvial diagram illustrating the diverse effects of electrical stimulus parameters on cellular responses in cartilage tissue engineering applications. The diagram visualizes the relationship among the coupling method, electric field strength, frequency, and observed cellular behavior acro"
+    },
+    {
+     "page": 3,
+     "block_id": 7,
+     "text": "Figure 2. Synthesis and characterization of GF. (a) Schematic illustrating the synthesis of CVD GF on a nickel (Ni) foam template. Graphene/nickel foam (Gr/Nickel) is coated with poly(methyl methacrylate) (PMMA) to maintain integrity during Ni etching in 3 M HCl. After Ni removal, PMMA is dissolved "
+    },
+    {
+     "page": 4,
+     "block_id": 12,
+     "text": "Figure 3. Custom-designed electrical stimulus chambers for direct electrical stimulus in vitro. (a) Three-dimensional CAD renderings of the DLP printed electrical stimulus chambers. (b) Images illustrating various components of the assembled chambers: (i) Platinum coated tungsten wires are secured i"
+    },
+    {
+     "page": 6,
+     "block_id": 4,
+     "text": "Figure 4. Comparative cellular architecture of GF in ESCs and CCs. (a) Cellular imaging on graphene foam: (i) bright-field microscopy reveals the scaffold's structure, (ii) Hoechst 33342 staining (blue) highlights nuclei distribution, and (iii) an overlay of (i) and (ii) illustrates nuclei alignment"
+    },
+    {
+     "page": 7,
+     "block_id": 22,
+     "text": "Figure 5. Mechanical characterization of GF-cell composites post ES. Bar plots illustrating the results of dynamic mechanical analysis following 14 days of cell culture with 7 days of direct electrical stimulation applied to ATDCS cells cultured on GF. (a) Stress–strain phase shift, (b) stress relax"
+    },
+    {
+     "page": 8,
+     "block_id": 10,
+     "text": "Figure 6. Structural dynamics and cellular interactions in GF-cell constructs. (a) Box plots illustrating the significant changes in thickness before (GF bioscaffolds) and after (GF-cell composites) cell culture. (b) SEM image depicting cells bridging structural branch cracks within GF. (c) Comparat"
+    },
+    {
+     "page": 10,
+     "block_id": 5,
+     "text": "Figure 7. Estimated cell count and representative nuclei staining for each ES condition. (a) Bar graph showing estimated cell count (# of cells/mm³) within GF samples subjected to different ES conditions: 0, 20, 40, and 60 mV. One-way ANOVA indicates a statistically significant effect of ES on cell "
+    }
+   ]
+  }
+ }
+}

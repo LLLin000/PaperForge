@@ -1,0 +1,37 @@
+{
+ "key": "YQIC2RDL",
+ "passed": true,
+ "figures": 3,
+ "structural": {
+  "key": "YQIC2RDL",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 24313,
+  "new_text_chars": 24313,
+  "old_entries": 3,
+  "new_entries": 3,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 4,
+     "text": "Figure 1 Overview of the assessed radiologic parameter. (A) The acromion index was determined by the ratio of the distance from the glenoid plane to the acromion (GA) with the distance from the glenoid plane to the lateral aspect of the humeral head (GH). (B) The lateral acromion angle was assessed "
+    },
+    {
+     "page": 4,
+     "block_id": 7,
+     "text": "Figure 2 Receiver operating characteristic (ROC) curves for the acromion index (AI) in red and the critical shoulder angle (CSA) in blue. The reference line is indicated in green."
+    },
+    {
+     "page": 4,
+     "block_id": 9,
+     "text": "Figure 3 Receiver operating characteristic (ROC) curves for the lateral acromion angle (LAA) in red and the critical shoulder angle (CSA) in blue. The reference line is indicated in green."
+    }
+   ]
+  }
+ }
+}

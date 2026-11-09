@@ -1,0 +1,951 @@
+{
+  "stratification": {
+    "association": [
+      "25K5KZAQ",
+      "38W7XV4F",
+      "6QNRHRKX",
+      "7M6FIW4V"
+    ],
+    "caption_recall": [
+      "2BFG5P6B",
+      "4M64NZEC",
+      "6GB9I9KG",
+      "8K39NHUQ"
+    ],
+    "crop_panel": [
+      "2BB8VM5W",
+      "5S7UI34M",
+      "6U9LYKHZ",
+      "7RQXMGUF"
+    ],
+    "page_assembly": [
+      "AEQBENVW",
+      "BL8ABQ2A",
+      "D444D4S5",
+      "GNPKTNCD"
+    ],
+    "no_signal": [
+      "9RDDDJF6",
+      "FXHMTH48",
+      "H6DI4BNH",
+      "SR6EDMUV"
+    ],
+    "delivery_followup": [
+      "M36WA39N"
+    ]
+  },
+  "reviewed": true,
+  "papers": 21,
+  "figures": 42,
+  "review_method": "Manual visual review of 42 replay-rendered crops/page contexts with captions across 21 papers. Diagnostic flags were used only to stratify sampling; root-cause labels were assigned by visual comparison. Includes no-signal controls and targeted delivery-gap follow-up.",
+  "cases": [
+    {
+      "key": "25K5KZAQ",
+      "figure_id": "figure_005",
+      "page": 9,
+      "caption": "Fig. 5. scRNA-seq analysis of the repaired interface tissues in BMCH-TSPC group. (A) Uniform manifold approximation and projection (UMAP) plot showing the unbiased clustering results. (B) UMAP plot showing the unbiased clustering of tendon-bone cell lineages. (C) Predicted differentiation stages for each cluster. (D) Heatmap showing DEG in each major cluster (left panel). Bubble diagram showing enriched GO terms (right panel). (E) Dotplot showing gene expression levels across clusters. (F) Differentiation trajectory of subpopulations predicted by Monocle2. (G) Heatmap showing gene expressions profiles along the pseudotime of two distinct trajectories (left panel). Expression of genes visualized on differentiation trajectory (right panel). (H) Representative H&E and SO-FG staining images at 2 weeks post-surgery. Scale bar = 100 μm. (I) Representative immunofluorescence staining images for COL2 and SOX9 at 2 weeks post-surgery. Scale bar = 100 μm.",
+      "asset_blocks": [
+        "4",
+        "8",
+        "9",
+        "12",
+        "14"
+      ],
+      "image": "25K5KZAQ\\figure_005_asset0.jpg",
+      "flags": [
+        "association",
+        "crop_panel"
+      ],
+      "review_status": "reviewed",
+      "reviewer": "Q12 independent visual review",
+      "root_cause": "no-defect",
+      "review_note": "Reviewed rendered crop and caption; visual content and claimed caption are consistent, with no visible association, crop/panel, or page-assembly defect.",
+      "stratum": "association"
+    },
+    {
+      "key": "25K5KZAQ",
+      "figure_id": "figure_004",
+      "page": 8,
+      "caption": "Fig. 4. Cell-laden biomimetic hydrogel promoted histological structure restoration. (A) Representative histological staining images (H&E, SO-FG, TB and Masson) of different groups. Scale bar = 100 μm. (B) Representative immunofluorescence staining images for COL2 and SOX9 of different groups. Scale bar = 50 μm. (C) Histological score, the area of newly formed fibrocartilage, and the area of COL2 of different groups.",
+      "asset_blocks": [
+        "2",
+        "4",
+        "5",
+        "6"
+      ],
+      "image": "25K5KZAQ\\figure_004_asset0.jpg",
+      "flags": [
+        "association",
+        "crop_panel"
+      ],
+      "review_status": "reviewed",
+      "reviewer": "Q12 independent visual review",
+      "root_cause": "no-defect",
+      "review_note": "Reviewed rendered crop and caption; visual content and claimed caption are consistent, with no visible association, crop/panel, or page-assembly defect.",
+      "stratum": "association"
+    },
+    {
+      "key": "38W7XV4F",
+      "figure_id": "figure_006",
+      "page": 7,
+      "caption": "Figure 6. Interaction zones of NTZ and ABZ drugs on GlG6PD::6PGL protein. (A) Close up of the NADP⁺ catalytic site of GlG6PD::6PGL with NTZ and (B) ABZ. (C) Close-up of the NADP⁺ structural site of GlG6PD::6PGL with NTZ; and (D) ABZ. The NTZ and ABZ compounds are shown in blue and violet, respectively. H bonds are represented by dotted lines, amino acids are indicated by bold letters.",
+      "asset_blocks": [
+        "10",
+        "11",
+        "13",
+        "14"
+      ],
+      "image": "38W7XV4F\\figure_006_asset0.jpg",
+      "flags": [
+        "association",
+        "crop_panel",
+        "page_assembly"
+      ],
+      "review_status": "reviewed",
+      "reviewer": "Q12 independent visual review",
+      "root_cause": "no-defect",
+      "review_note": "Reviewed rendered crop and caption; visual content and claimed caption are consistent, with no visible association, crop/panel, or page-assembly defect.",
+      "stratum": "association"
+    },
+    {
+      "key": "38W7XV4F",
+      "figure_id": "figure_005",
+      "page": 7,
+      "caption": "Figure 5. Prediction of the interaction zones between NTZ and ABZ on the GlG6PD::6PGL protein. (A) General view of the binding sites of NTZ and ABZ with GlG6PD::6PGL. (B) Closer view of the orthosteric site (near active site) of the G6PD domain. (C) Structural NADP⁺ binding site zone. The NADP⁺ and G6P molecules are shown in light blue and yellow color, respectively; NTZ and ABZ are shown in blue and violet, respectively.",
+      "asset_blocks": [
+        "4",
+        "5",
+        "6"
+      ],
+      "image": "38W7XV4F\\figure_005_asset0.jpg",
+      "flags": [
+        "association",
+        "crop_panel",
+        "page_assembly"
+      ],
+      "review_status": "reviewed",
+      "reviewer": "Q12 independent visual review",
+      "root_cause": "no-defect",
+      "review_note": "Reviewed rendered crop and caption; visual content and claimed caption are consistent, with no visible association, crop/panel, or page-assembly defect.",
+      "stratum": "association"
+    },
+    {
+      "key": "6QNRHRKX",
+      "figure_id": "figure_unknown_000",
+      "page": 2,
+      "caption": "Bar graph representation of the acromio-humeral interval in sixty normal patients.",
+      "asset_blocks": [
+        "5",
+        "8"
+      ],
+      "image": "6QNRHRKX\\page_002.jpg",
+      "flags": [
+        "caption_recall",
+        "association",
+        "crop_panel",
+        "page_assembly",
+        "delivery"
+      ],
+      "review_status": "reviewed",
+      "reviewer": "Q12 independent visual review",
+      "root_cause": "delivery",
+      "review_note": "PDF page visually contains the panels and caption, but replay has no delivered asset/render for this figure.",
+      "stratum": "association"
+    },
+    {
+      "key": "6QNRHRKX",
+      "figure_id": "figure_unknown_001",
+      "page": 3,
+      "caption": "Standard antero-posterior radiographs demonstrating four cases of narrowed acromio-humeral intervals in patients with known rotator cuff tears.",
+      "asset_blocks": [
+        "4",
+        "6",
+        "8",
+        "10"
+      ],
+      "image": "6QNRHRKX\\page_003.jpg",
+      "flags": [
+        "caption_recall",
+        "association",
+        "crop_panel",
+        "page_assembly",
+        "delivery"
+      ],
+      "review_status": "reviewed",
+      "reviewer": "Q12 independent visual review",
+      "root_cause": "delivery",
+      "review_note": "PDF page visually contains the panels and caption, but replay has no delivered asset/render for this figure.",
+      "stratum": "association"
+    },
+    {
+      "key": "7M6FIW4V",
+      "figure_id": "figure_003",
+      "page": 8,
+      "caption": "Fig. 3. Systematic review and evidence level assessment of candidate drug.",
+      "asset_blocks": [
+        "2"
+      ],
+      "image": "7M6FIW4V\\figure_003_asset0.jpg",
+      "flags": [
+        "caption_recall",
+        "association",
+        "crop_panel",
+        "page_assembly"
+      ],
+      "review_status": "reviewed",
+      "reviewer": "Q12 independent visual review",
+      "root_cause": "no-defect",
+      "review_note": "Reviewed rendered crop and caption; visual content and claimed caption are consistent, with no visible association, crop/panel, or page-assembly defect.",
+      "stratum": "association"
+    },
+    {
+      "key": "7M6FIW4V",
+      "figure_id": "figure_001",
+      "page": 6,
+      "caption": "Fig. 1. Study design of multiplex transcriptional drug prediction and drug reranking.",
+      "asset_blocks": [
+        "7"
+      ],
+      "image": "7M6FIW4V\\figure_001_asset0.jpg",
+      "flags": [
+        "caption_recall",
+        "association",
+        "crop_panel",
+        "page_assembly"
+      ],
+      "review_status": "reviewed",
+      "reviewer": "Q12 independent visual review",
+      "root_cause": "no-defect",
+      "review_note": "Reviewed rendered crop and caption; visual content and claimed caption are consistent, with no visible association, crop/panel, or page-assembly defect.",
+      "stratum": "association"
+    },
+    {
+      "key": "2BFG5P6B",
+      "figure_id": "figure_006",
+      "page": 9,
+      "caption": "Figure 6. Case study of a high-impact athlete treated with autologous chondrocyte transplantation (A). Image taken 4 months after injury for a full-thickness lesion of the weightbearing femoral condyle (B). Second-look arthroscopy at 1 year demonstrated complete restoration of the articular cartilage surface (C). After returning to high-impact sports at the preinjury level, magnetic resonance imaging evaluation 4 years postoperatively showed a maintained repair cartilage while continuing to participate in high-impact athletics (D).",
+      "asset_blocks": [
+        "2"
+      ],
+      "image": "2BFG5P6B\\figure_006_asset0.jpg",
+      "flags": [
+        "caption_recall",
+        "association"
+      ],
+      "review_status": "reviewed",
+      "reviewer": "Q12 independent visual review",
+      "root_cause": "no-defect",
+      "review_note": "Reviewed rendered crop and caption; visual content and claimed caption are consistent, with no visible association, crop/panel, or page-assembly defect.",
+      "stratum": "caption_recall"
+    },
+    {
+      "key": "2BFG5P6B",
+      "figure_id": "figure_005",
+      "page": 8,
+      "caption": "Figure 5. Technique of mosaicplasty using osteochondral cylinder harvest from the peripheral trochlea (A) and press-fit insertion into the cartilage defect in a mosaic pattern with recreation of the condylar convexity (B).",
+      "asset_blocks": [
+        "2"
+      ],
+      "image": "2BFG5P6B\\figure_005_asset0.jpg",
+      "flags": [
+        "caption_recall",
+        "association"
+      ],
+      "review_status": "reviewed",
+      "reviewer": "Q12 independent visual review",
+      "root_cause": "no-defect",
+      "review_note": "Reviewed rendered crop and caption; visual content and claimed caption are consistent, with no visible association, crop/panel, or page-assembly defect.",
+      "stratum": "caption_recall"
+    },
+    {
+      "key": "4M64NZEC",
+      "figure_id": "figure_003",
+      "page": 3,
+      "caption": "图 3 FS 患者及健康人 AR 影像特征及测量示意图",
+      "asset_blocks": [
+        "19",
+        "21",
+        "24"
+      ],
+      "image": "4M64NZEC\\figure_003_asset0.jpg",
+      "flags": [
+        "caption_recall",
+        "page_assembly"
+      ],
+      "review_status": "reviewed",
+      "reviewer": "Q12 independent visual review",
+      "root_cause": "no-defect",
+      "review_note": "Reviewed rendered crop and caption; visual content and claimed caption are consistent, with no visible association, crop/panel, or page-assembly defect.",
+      "stratum": "caption_recall"
+    },
+    {
+      "key": "4M64NZEC",
+      "figure_id": "figure_002",
+      "page": 3,
+      "caption": "注：（a）CHL 增厚（箭头）；（b）CHL 未见增厚（箭头）；（c）CHL 测量示意（箭头）。\n图 2 FS 患者及健康人 CHL 影像特征及测量示意图",
+      "asset_blocks": [
+        "12",
+        "14",
+        "16"
+      ],
+      "image": "4M64NZEC\\figure_002_asset0.jpg",
+      "flags": [
+        "caption_recall",
+        "page_assembly"
+      ],
+      "review_status": "reviewed",
+      "reviewer": "Q12 independent visual review",
+      "root_cause": "no-defect",
+      "review_note": "Reviewed rendered crop and caption; visual content and claimed caption are consistent, with no visible association, crop/panel, or page-assembly defect.",
+      "stratum": "caption_recall"
+    },
+    {
+      "key": "6GB9I9KG",
+      "figure_id": "figure_006",
+      "page": 6,
+      "caption": "Fig. 6 Low and high-power fluorescence micrographs of HGFs seeded on samples after co-culture for 5 d. HGFs stained for cykoskeleton fibers (green pixels) and nuclei (blue pixels). All low-power scale bars: 20 μm; all high-power scale bar: 100 μm. White circles: regions shown at a higher power view in lower panel",
+      "asset_blocks": [
+        "4"
+      ],
+      "image": "6GB9I9KG\\figure_006_asset0.jpg",
+      "flags": [
+        "caption_recall",
+        "association",
+        "crop_panel"
+      ],
+      "review_status": "reviewed",
+      "reviewer": "Q12 independent visual review",
+      "root_cause": "no-defect",
+      "review_note": "Reviewed rendered crop and caption; visual content and claimed caption are consistent, with no visible association, crop/panel, or page-assembly defect.",
+      "stratum": "caption_recall"
+    },
+    {
+      "key": "6GB9I9KG",
+      "figure_id": "figure_005",
+      "page": 6,
+      "caption": "Fig. 5 Fluorescent micrographs of Live/Dead-stained HGFs seeded on samples after co-culture for 5 d. Red pixels: dead cells; green pixels: viable cells. All scale bars: 50  $ \\mu $m. White circles: dead cells",
+      "asset_blocks": [
+        "2"
+      ],
+      "image": "6GB9I9KG\\figure_005_asset0.jpg",
+      "flags": [
+        "caption_recall",
+        "association",
+        "crop_panel"
+      ],
+      "review_status": "reviewed",
+      "reviewer": "Q12 independent visual review",
+      "root_cause": "no-defect",
+      "review_note": "Reviewed rendered crop and caption; visual content and claimed caption are consistent, with no visible association, crop/panel, or page-assembly defect.",
+      "stratum": "caption_recall"
+    },
+    {
+      "key": "8K39NHUQ",
+      "figure_id": "figure_004",
+      "page": 10,
+      "caption": "Figure 4. (A) Swelling curves and (B) swelling rates of the PVA/PVDF/Ag composite hydrogels dehydrated with different concentrations of ethanol in PBS buffer solution (37 °C, pH = 7.4).",
+      "asset_blocks": [
+        "10",
+        "11"
+      ],
+      "image": "8K39NHUQ\\figure_004_asset0.jpg",
+      "flags": [
+        "caption_recall",
+        "association",
+        "crop_panel"
+      ],
+      "review_status": "reviewed",
+      "reviewer": "Q12 independent visual review",
+      "root_cause": "no-defect",
+      "review_note": "Reviewed rendered crop and caption; visual content and claimed caption are consistent, with no visible association, crop/panel, or page-assembly defect.",
+      "stratum": "caption_recall"
+    },
+    {
+      "key": "8K39NHUQ",
+      "figure_id": "figure_003",
+      "page": 10,
+      "caption": "Figure 3. (A) XRD patterns of PVA/PVDF and PVA/PVDF/Ag hydrogels. (B) FT-IR spectra of PVA/PVDF and PVA/PVDF/Ag hydrogels. (C–E) Piezoelectric responses of PVA/PVDF hydrogels with 0.3% (C), 0.45% (D), and 0.6% (E) silver nanowires.",
+      "asset_blocks": [
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ],
+      "image": "8K39NHUQ\\figure_003_asset0.jpg",
+      "flags": [
+        "caption_recall",
+        "association",
+        "crop_panel"
+      ],
+      "review_status": "reviewed",
+      "reviewer": "Q12 independent visual review",
+      "root_cause": "no-defect",
+      "review_note": "Reviewed rendered crop and caption; visual content and claimed caption are consistent, with no visible association, crop/panel, or page-assembly defect.",
+      "stratum": "caption_recall"
+    },
+    {
+      "key": "2BB8VM5W",
+      "figure_id": "figure_008",
+      "page": 14,
+      "caption": "FIGURE 8 | In vivo cartilage regeneration in a rat osteochondral defect model. a) Schematic illustration showing the osteochondral defect and scaffold implantation. b) Macroscopic images of cartilage defects at 6 and 12 weeks post-implantation across different treatment groups (Control, Defect, IR, PLLA, MXene, and MXene+IR); scale bar: 5 mm. c) Quantitative macroscopic scoring of defect regeneration at 6 and 12 weeks across different treatment groups. d) Safranin O/Fast Green staining of regenerated cartilage at 6 and 12 weeks showing glycosaminoglycan deposition; scale bar: 1 mm. e) Quantitative histological evaluation using the International Cartilage Repair Society (ICRS) scoring system at 6 and 12 weeks across different treatment groups. f) Type II collagen immunohistochemical staining at 6 and 12 weeks demonstrating cartilage-specific matrix formation; scale bar: 1 mm. g) Quantitative analysis of COL2 staining in cartilage. Asterisks indicate statistical significance ( $ *p < 0.05 $,  $ **p < 0.01 $,  $ ***p < 0.001 $). n = 5 per group.",
+      "asset_blocks": [
+        "0"
+      ],
+      "image": "2BB8VM5W\\figure_008_asset0.jpg",
+      "flags": [
+        "crop_panel"
+      ],
+      "review_status": "reviewed",
+      "reviewer": "Q12 independent visual review",
+      "root_cause": "no-defect",
+      "review_note": "Reviewed rendered crop and caption; visual content and claimed caption are consistent, with no visible association, crop/panel, or page-assembly defect.",
+      "stratum": "crop_panel"
+    },
+    {
+      "key": "2BB8VM5W",
+      "figure_id": "figure_004",
+      "page": 7,
+      "caption": "FIGURE 4 | Photothermal performance characterization of the PLLA/MXene composite scaffolds. a) Infrared thermal images of scaffolds with different MXene concentrations (0%, 0.5%, 1.0%, and 1.5% w/w) under NIR laser irradiation (808 nm, 1 W/cm²) over 10 min, showing temperature changes at different time points. b) Temperature-time curves during NIR irradiation for scaffolds with varying MXene contents. c) In vivo infrared thermography of implantation sites in a rat cartilage defect model under NIR laser irradiation (808 nm, 1 W/cm²) for 15 min, comparing the control, PLLA scaffold, and 1.5% MXene scaffold groups. d Quantitative analysis of temperature changes at the implantation sites over time for the three groups.",
+      "asset_blocks": [
+        "0"
+      ],
+      "image": "2BB8VM5W\\figure_004_asset0.jpg",
+      "flags": [
+        "crop_panel"
+      ],
+      "review_status": "reviewed",
+      "reviewer": "Q12 independent visual review",
+      "root_cause": "no-defect",
+      "review_note": "Reviewed rendered crop and caption; visual content and claimed caption are consistent, with no visible association, crop/panel, or page-assembly defect.",
+      "stratum": "crop_panel"
+    },
+    {
+      "key": "5S7UI34M",
+      "figure_id": "figure_007",
+      "page": 13,
+      "caption": "FIGURE 7",
+      "asset_blocks": [
+        "3",
+        "5",
+        "6",
+        "7",
+        "9",
+        "10",
+        "11",
+        "12",
+        "14",
+        "15"
+      ],
+      "image": "5S7UI34M\\figure_007_asset0.jpg",
+      "flags": [
+        "association",
+        "crop_panel"
+      ],
+      "review_status": "reviewed",
+      "reviewer": "Q12 independent visual review",
+      "root_cause": "no-defect",
+      "review_note": "Reviewed rendered crop and caption; visual content and claimed caption are consistent, with no visible association, crop/panel, or page-assembly defect.",
+      "stratum": "crop_panel"
+    },
+    {
+      "key": "5S7UI34M",
+      "figure_id": "figure_009",
+      "page": 16,
+      "caption": "FIGURE 9\nOther applications of PVA-based hydrogels; (A) Schematic and photographs of the synthesis of PVA-based hydrogels for microneedle patches; (B) Schematic and photographs of microneedle patch application (Chen S. Y. et al., 2022); (C) PVA-based hydrogel for gastric retention device, which can be rapidly dissolved in the stomach and retained for a long period of time up to 30 days (Liu et al., 2019); (D) Gastric retention device in porcine stomach with X-ray photographs and drug release profile (Liu et al., 2017).",
+      "asset_blocks": [
+        "2"
+      ],
+      "image": "5S7UI34M\\figure_009_asset0.jpg",
+      "flags": [
+        "association",
+        "crop_panel"
+      ],
+      "review_status": "reviewed",
+      "reviewer": "Q12 independent visual review",
+      "root_cause": "no-defect",
+      "review_note": "Reviewed rendered crop and caption; visual content and claimed caption are consistent, with no visible association, crop/panel, or page-assembly defect.",
+      "stratum": "crop_panel"
+    },
+    {
+      "key": "6U9LYKHZ",
+      "figure_id": "figure_006",
+      "page": 12,
+      "caption": "FIGURE 6 Application of PS nanomaterials in antibacterial SDT. (a) TEM image and atomic structure of  $ WS_{2} $ NFs. (b) Antibacterial SDT of  $ WS_{2} $ NFs against Escherichia coli. (c) Mechanism of Au@BTO in antibacterial SDT. (d) Antibacterial SDT of Au@BTO against E. coli and Staphylococcus aureus. (e) Photographs of the infected wounds during therapy. (f) Images of NIH-3T3 cell migration. (g) Schematic diagram and (h) mechanism of HNTM-MoS $ _{2} $ in antibacterial SDT. (a, b) Reproduced with permission. $ ^{[120]} $ Copyright 2018, Elsevier. (d–f) Reproduced with permission. $ ^{[102]} $ Copyright 2021, Elsevier. (g) Reproduced with permission. $ ^{[105]} $ Copyright 2022, American Chemical Society. PS, piezoelectric semiconductor; SDT, sonodynamic therapy.",
+      "asset_blocks": [
+        "3"
+      ],
+      "image": "6U9LYKHZ\\figure_006_asset0.jpg",
+      "flags": [
+        "association",
+        "crop_panel"
+      ],
+      "review_status": "reviewed",
+      "reviewer": "Q12 independent visual review",
+      "root_cause": "no-defect",
+      "review_note": "Reviewed rendered crop and caption; visual content and claimed caption are consistent, with no visible association, crop/panel, or page-assembly defect.",
+      "stratum": "crop_panel"
+    },
+    {
+      "key": "6U9LYKHZ",
+      "figure_id": "figure_001",
+      "page": 3,
+      "caption": "FIGURE 1 Crystal and stacking structure of piezoelectric semiconductors (PSs). (a) Perovskite BaTiO₃. (b) Wurtzite ZnO. (c) Schematic diagram of MoS₂ structure of 1T, 2H and 3R phases. (c) Reproduced with permission.[37] Copyright 2021, Elsevier.",
+      "asset_blocks": [
+        "9"
+      ],
+      "image": "6U9LYKHZ\\figure_001_asset0.jpg",
+      "flags": [
+        "association",
+        "crop_panel"
+      ],
+      "review_status": "reviewed",
+      "reviewer": "Q12 independent visual review",
+      "root_cause": "no-defect",
+      "review_note": "Reviewed rendered crop and caption; visual content and claimed caption are consistent, with no visible association, crop/panel, or page-assembly defect.",
+      "stratum": "crop_panel"
+    },
+    {
+      "key": "7RQXMGUF",
+      "figure_id": "figure_006",
+      "page": 12,
+      "caption": "FIGURE 6 | BA and BMP loaded coacervate can effectively treat bone bacterial infection in beagle dogs. (a) Schematic illustration of establishing the beagle dog tibial bacterial infection model and subsequent treatments. (b) Images (left), X-ray images (mid) and 3D reconstruction images (right) of tibiae after different treatments. Red circles indicate periosteal reaction caused by infection. (c,d) Quantitative analysis of (c) bone volume (BV)/total volume (TV) ratio and (d) bone mineral density of dog tibiae (n = 3). (e) Spread plate results and (f) bacterial colony counts of tibial tissue homogenate (n = 3). (g) Blood test of white blood cells (WBC) and lymphocyte (Lym) (n = 3). (h) Gram staining results of the histological sections. (i) H&E staining results of the histological sections, black arrows indicate inflammatory cells. Data are presented as mean ± standard deviation. Student’s t test was used for statistical analysis between two groups, one-way ANOVA with Tukey’s post hoc testing was used for statistical analysis among three groups, *p < 0.05, **p < 0.01.",
+      "asset_blocks": [
+        "0",
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "image": "7RQXMGUF\\figure_006_asset0.jpg",
+      "flags": [
+        "crop_panel"
+      ],
+      "review_status": "reviewed",
+      "reviewer": "Q12 independent visual review",
+      "root_cause": "no-defect",
+      "review_note": "Reviewed rendered crop and caption; visual content and claimed caption are consistent, with no visible association, crop/panel, or page-assembly defect.",
+      "stratum": "crop_panel"
+    },
+    {
+      "key": "7RQXMGUF",
+      "figure_id": "figure_005",
+      "page": 10,
+      "caption": "FIGURE 5 | BA and BMP loaded coacervate can regulate the inflammatory reaction and promote osteogenic induction. (a) Schematic illustration of the inflammatory reaction and osteogenic induction associated with infections. (b) Immunohistochemistry staining of TNF- $ \\alpha $ and IL-10 after different treatments. (c) Quantitative analysis of positive cells via the immunohistochemistry staining of TNF- $ \\alpha $ and IL-10 (n  $ \\geq $ 4). (d) ELISA result of TNF- $ \\alpha $ and IL-10 of bony tissues (n  $ \\geq $ 4). (e) Immunohistochemistry staining of Col1a1 after different treatments. (f) Quantitative analysis of positive cells in immunohistochemistry staining of Col1a1 (n = 8). (g) Masson staining result of the histological sections of different group. Data are presented as mean  $ \\pm $ standard deviation. One-way ANOVA with Tukey's post hoc testing was used for statistical analysis,  $ ^{*}p < 0.05 $,  $ ^{***}p < 0.001 $,  $ ^{****}p < 0.0001 $.",
+      "asset_blocks": [
+        "1",
+        "2",
+        "4",
+        "5",
+        "7",
+        "8",
+        "10",
+        "13"
+      ],
+      "image": "7RQXMGUF\\figure_005_asset0.jpg",
+      "flags": [
+        "crop_panel"
+      ],
+      "review_status": "reviewed",
+      "reviewer": "Q12 independent visual review",
+      "root_cause": "no-defect",
+      "review_note": "Reviewed rendered crop and caption; visual content and claimed caption are consistent, with no visible association, crop/panel, or page-assembly defect.",
+      "stratum": "crop_panel"
+    },
+    {
+      "key": "AEQBENVW",
+      "figure_id": "figure_003",
+      "page": 4,
+      "caption": "Figure 3. (A) The inhibition zone of S. aureus using GA-NPs. (B) The inhibition zone of MRSA using GA-NPs. (C) The inhibition zone of S. aureus using GA. (D) The inhibition zone of MRSA using GA. (E) The inhibition zone of S. aureus using linezolid. (F) The inhibition zone of MRSA using linezolid.",
+      "asset_blocks": [
+        "11",
+        "13",
+        "15"
+      ],
+      "image": "AEQBENVW\\figure_003_asset0.jpg",
+      "flags": [
+        "association",
+        "page_assembly"
+      ],
+      "review_status": "reviewed",
+      "reviewer": "Q12 independent visual review",
+      "root_cause": "no-defect",
+      "review_note": "Reviewed rendered crop and caption; visual content and claimed caption are consistent, with no visible association, crop/panel, or page-assembly defect.",
+      "stratum": "page_assembly"
+    },
+    {
+      "key": "AEQBENVW",
+      "figure_id": "figure_001",
+      "page": 3,
+      "caption": "Figure 1. (A): Physical characterization of GANPs using UV-visible spectrophotometer. (B): DLS of GANPs. (C): Zeta potential of GANPs (D): TEM of GANPs.",
+      "asset_blocks": [
+        "4",
+        "7"
+      ],
+      "image": "AEQBENVW\\figure_001_asset0.jpg",
+      "flags": [
+        "association",
+        "page_assembly"
+      ],
+      "review_status": "reviewed",
+      "reviewer": "Q12 independent visual review",
+      "root_cause": "no-defect",
+      "review_note": "Reviewed rendered crop and caption; visual content and claimed caption are consistent, with no visible association, crop/panel, or page-assembly defect.",
+      "stratum": "page_assembly"
+    },
+    {
+      "key": "BL8ABQ2A",
+      "figure_id": "figure_001",
+      "page": 3,
+      "caption": "Figure 1. (A) In situ metal ion gel formation. (B) XPS spectroscopy of the AM₁₀ hydrogel in the presence of Ca²⁺, Zn²⁺, and Ni²⁺ metal ions. (C) FESEM images of the AM₁₀ hydrogel (i) in the absence of any metal ions and in the presence of (ii) Ca²⁺, (iii) Zn²⁺, (iv) Ni²⁺ metal ions. (D) Distribution of (i) Ca²⁺, (ii) Zn²⁺, and (iii) Ni²⁺ metal ions, revealed from EDS mapping in the AM₁₀-Mⁿ⁺ hydrogel (where Mⁿ⁺ represents the metal ions, namely, Ca²⁺, Zn²⁺, and Ni²⁺).",
+      "asset_blocks": [
+        "3"
+      ],
+      "image": "BL8ABQ2A\\figure_001_asset0.jpg",
+      "flags": [
+        "association",
+        "crop_panel",
+        "page_assembly"
+      ],
+      "review_status": "reviewed",
+      "reviewer": "Q12 independent visual review",
+      "root_cause": "no-defect",
+      "review_note": "Reviewed rendered crop and caption; visual content and claimed caption are consistent, with no visible association, crop/panel, or page-assembly defect.",
+      "stratum": "page_assembly"
+    },
+    {
+      "key": "BL8ABQ2A",
+      "figure_id": "figure_012",
+      "page": 15,
+      "caption": "Figure 12. (A) SE<sub>r</sub>, (B) SE<sub>A</sub>, (C) SE<sub>R</sub> of AM<sub>20</sub> hydrogels before and after incorporation of different metal ions (Ca<sup>2+</sup>, Ni<sup>2+</sup>, and Zn<sup>2+</sup>). variation of (D) SE<sub>r</sub>, (E) SE<sub>A</sub>, (F) SE<sub>R</sub> of AM<sub>20</sub>-Ca<sup>2+</sup> hydrogels at different water content; (G) the EMI shielding mechanism of metal ion cross-linked hydrogels mainly includes factors such as polarization loss of water molecule, conductive loss due to migration of charge species, and scattering from porous network; variations of (H) SE<sub>r</sub>, (I) SE<sub>R</sub>, (J) SE<sub>A</sub> of AM<sub>20</sub>-Ca<sup>2+</sup> hydrogels after stretching and pressing. Here, SE<sub>r</sub>, SE<sub>R</sub>, and SE<sub>A</sub> represent the total shielding efficiency, reflection-based shielding efficiency, and absorption-based shielding efficiency.",
+      "asset_blocks": [
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "10",
+        "11",
+        "12",
+        "13"
+      ],
+      "image": "BL8ABQ2A\\figure_012_asset0.jpg",
+      "flags": [
+        "association",
+        "crop_panel",
+        "page_assembly"
+      ],
+      "review_status": "reviewed",
+      "reviewer": "Q12 independent visual review",
+      "root_cause": "no-defect",
+      "review_note": "Reviewed rendered crop and caption; visual content and claimed caption are consistent, with no visible association, crop/panel, or page-assembly defect.",
+      "stratum": "page_assembly"
+    },
+    {
+      "key": "D444D4S5",
+      "figure_id": "figure_001",
+      "page": 3,
+      "caption": "Fig. 1. Schematic diagram of the structure a) and function b) of the proposed tissue battery.",
+      "asset_blocks": [
+        "2"
+      ],
+      "image": "D444D4S5\\figure_001_asset0.jpg",
+      "flags": [
+        "association",
+        "crop_panel",
+        "page_assembly"
+      ],
+      "review_status": "reviewed",
+      "reviewer": "Q12 independent visual review",
+      "root_cause": "no-defect",
+      "review_note": "Reviewed rendered crop and caption; visual content and claimed caption are consistent, with no visible association, crop/panel, or page-assembly defect.",
+      "stratum": "page_assembly"
+    },
+    {
+      "key": "D444D4S5",
+      "figure_id": "figure_006",
+      "page": 10,
+      "caption": "Fig. 6. Detection of the cartilage repair status. (a) Medical applications of implantable tissue batteries. (b and c) Model of the knee joint in PBS solution and force simulation of knee cartilage under 1000 N. (d and e) Model and signal intensity of the tissue battery during degradation without and with cell proliferation, respectively. (f) Optical images, SEM images, and corresponding signals after degradation in PBS solution for 4, 12, and 20 weeks. (g) Optical images, H&E staining results, toluidine blue staining results, and corresponding signals of the repaired cartilage after 4, 12, and 20 weeks.",
+      "asset_blocks": [
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7"
+      ],
+      "image": "D444D4S5\\figure_006_asset0.jpg",
+      "flags": [
+        "association",
+        "crop_panel",
+        "page_assembly"
+      ],
+      "review_status": "reviewed",
+      "reviewer": "Q12 independent visual review",
+      "root_cause": "no-defect",
+      "review_note": "Reviewed rendered crop and caption; visual content and claimed caption are consistent, with no visible association, crop/panel, or page-assembly defect.",
+      "stratum": "page_assembly"
+    },
+    {
+      "key": "GNPKTNCD",
+      "figure_id": "figure_004",
+      "page": 11,
+      "caption": "Fig. 4. A) Detection of the level of Ca²⁺ inside ADSCs using Fluo-4 AM fluorescent probe. Scale bar = 100 μm. B) Alcian blue staining of monolayer ADSCs with different treatments for 7 and 14 days. Scale bar = 100 μm. C) HIF-1α staining of ADSCs following different treatments. Scale bar = 100 μm. D) Immunofluorescence staining of type II collagen (red) and nuclei (blue, Hoechst) deposition by ADSCs. Scale bar = 100 μm. (For interpretation of the references to color in this figure legend, the reader is referred to the Web version of this article.)",
+      "asset_blocks": [
+        "2"
+      ],
+      "image": "GNPKTNCD\\figure_004_asset0.jpg",
+      "flags": [
+        "association",
+        "crop_panel",
+        "page_assembly"
+      ],
+      "review_status": "reviewed",
+      "reviewer": "Q12 independent visual review",
+      "root_cause": "no-defect",
+      "review_note": "Reviewed rendered crop and caption; visual content and claimed caption are consistent, with no visible association, crop/panel, or page-assembly defect.",
+      "stratum": "page_assembly"
+    },
+    {
+      "key": "GNPKTNCD",
+      "figure_id": "figure_006",
+      "page": 15,
+      "caption": "Fig. 6. A) Comparison of images before and after injection of Piezo-MnO₂ motors (top) and PBS (bottom) into the joints of MIA-rats under US (yellow box marks the joint cavity area). B) H&E staining images of rat knee joint tissues. Scale bar = 50 μm. C) Synovitis score in rats (n = 5; mean ± SD). D) Safranin O-fast green staining images of rat knee joint tissues. Scale bar = 100 μm. E) OARSI score in rats (n = 5; mean ± SD). F) qRT-PCR analysis of TGF-β1, MMP3, COL2A1, and ACAN in cartilage tissues. (n = 5; mean ± SD). (*p < 0.05, **p < 0.01). G) The expression of COL2A1 proteins in the joint tissues detected by Immunohistochemistry. Scale bar = 100 μm. H) HIF-1α proteins in the joint tissues detected by Immunohistochemistry. Scale bar = 50 μm. (For interpretation of the references to color in this figure legend, the reader is referred to the Web version of this article.)",
+      "asset_blocks": [
+        "3",
+        "7",
+        "8",
+        "9",
+        "10",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "19",
+        "20",
+        "21",
+        "22",
+        "24"
+      ],
+      "image": "GNPKTNCD\\figure_006_asset0.jpg",
+      "flags": [
+        "association",
+        "crop_panel",
+        "page_assembly"
+      ],
+      "review_status": "reviewed",
+      "reviewer": "Q12 independent visual review",
+      "root_cause": "no-defect",
+      "review_note": "Reviewed rendered crop and caption; visual content and claimed caption are consistent, with no visible association, crop/panel, or page-assembly defect.",
+      "stratum": "page_assembly"
+    },
+    {
+      "key": "9RDDDJF6",
+      "figure_id": "figure_003",
+      "page": 5,
+      "caption": "Fig. 3. Marrow edema in greater tuberosity associated with a small full thickness tear at the most anterior portion of the insertion of the supraspinatus tendon in a 46 year old woman with chronic pain with no history of trauma. Fat-suppressed coronal  $ T_{2} $-weighted fast spin-echo image shows marrow edema in greater tuberosity (short arrow). A small full thickness tear is seen at insertion of supraspinatus tendon (long arrow). Note subdeltoid-subacromial bursal fluid (curved arrow).",
+      "asset_blocks": [
+        "2"
+      ],
+      "image": "9RDDDJF6\\figure_003_asset0.jpg",
+      "flags": [
+        "no_defect"
+      ],
+      "review_status": "reviewed",
+      "reviewer": "Q12 independent visual review",
+      "root_cause": "no-defect",
+      "review_note": "Reviewed rendered crop and caption; visual content and claimed caption are consistent, with no visible association, crop/panel, or page-assembly defect.",
+      "stratum": "no_signal"
+    },
+    {
+      "key": "9RDDDJF6",
+      "figure_id": "figure_002",
+      "page": 4,
+      "caption": "Fig. 2. Avulsion of greater tuberosity in 73-year-old woman with history of multiple falls. The most recent fall was two weeks prior to MR examination. (a) Fat-suppressed  $ T_{2} $-weighted fast spin-echo axial image shows edema in greater tuberosity (white arrow) with fluid in subdeltoid-subacromial bursa (dark arrow). Avulsed bone fragments (curved arrow) are seen attached to the rotator cuff (arrowheads). (b) Axial CT image at similar location as (a) shows avulsed bone fragments (curved arrow). The defect at the greater tuberosity is not shown.",
+      "asset_blocks": [
+        "2",
+        "4"
+      ],
+      "image": "9RDDDJF6\\figure_002_asset0.jpg",
+      "flags": [
+        "no_defect"
+      ],
+      "review_status": "reviewed",
+      "reviewer": "Q12 independent visual review",
+      "root_cause": "no-defect",
+      "review_note": "Reviewed rendered crop and caption; visual content and claimed caption are consistent, with no visible association, crop/panel, or page-assembly defect.",
+      "stratum": "no_signal"
+    },
+    {
+      "key": "FXHMTH48",
+      "figure_id": "figure_003",
+      "page": 2,
+      "caption": "Figure 3 The completed repair creates a buttress on the articular surface.",
+      "asset_blocks": [
+        "11"
+      ],
+      "image": "FXHMTH48\\figure_003_asset0.jpg",
+      "flags": [
+        "no_defect"
+      ],
+      "review_status": "reviewed",
+      "reviewer": "Q12 independent visual review",
+      "root_cause": "no-defect",
+      "review_note": "Reviewed rendered crop and caption; visual content and claimed caption are consistent, with no visible association, crop/panel, or page-assembly defect.",
+      "stratum": "no_signal"
+    },
+    {
+      "key": "FXHMTH48",
+      "figure_id": "figure_002",
+      "page": 2,
+      "caption": "Figure 2 Once the anchor is in place, the sutures should freely slide to allow placement of a slipknot.",
+      "asset_blocks": [
+        "9"
+      ],
+      "image": "FXHMTH48\\figure_002_asset0.jpg",
+      "flags": [
+        "no_defect"
+      ],
+      "review_status": "reviewed",
+      "reviewer": "Q12 independent visual review",
+      "root_cause": "no-defect",
+      "review_note": "Reviewed rendered crop and caption; visual content and claimed caption are consistent, with no visible association, crop/panel, or page-assembly defect.",
+      "stratum": "no_signal"
+    },
+    {
+      "key": "H6DI4BNH",
+      "figure_id": "figure_003",
+      "page": 4,
+      "caption": "FIGURE 3. DeNovo ET shown at necropsy and histologically with safranin O staining. Photograph from http://www.istotech.com/denovo-et-orthopaedics.html.",
+      "asset_blocks": [
+        "5"
+      ],
+      "image": "H6DI4BNH\\figure_003_asset0.jpg",
+      "flags": [
+        "no_defect"
+      ],
+      "review_status": "reviewed",
+      "reviewer": "Q12 independent visual review",
+      "root_cause": "no-defect",
+      "review_note": "Reviewed rendered crop and caption; visual content and claimed caption are consistent, with no visible association, crop/panel, or page-assembly defect.",
+      "stratum": "no_signal"
+    },
+    {
+      "key": "H6DI4BNH",
+      "figure_id": "figure_002",
+      "page": 3,
+      "caption": "FIGURE 2. Representative sagittal MRI after implantation of a 2.0 cm (anterior posterior) NeoCart patch. A and C, Cartilage sensitive 1.5T MRI at 1 year (arrow) and with T2 mapping. B and D, Same patient at 2 years. Images courtesy of Dennis Crawford, MD, PhD, and Hollis Potter, MD. MRI indicates magnetic resonance imaging.",
+      "asset_blocks": [
+        "9"
+      ],
+      "image": "H6DI4BNH\\figure_002_asset0.jpg",
+      "flags": [
+        "no_defect"
+      ],
+      "review_status": "reviewed",
+      "reviewer": "Q12 independent visual review",
+      "root_cause": "no-defect",
+      "review_note": "Reviewed rendered crop and caption; visual content and claimed caption are consistent, with no visible association, crop/panel, or page-assembly defect.",
+      "stratum": "no_signal"
+    },
+    {
+      "key": "SR6EDMUV",
+      "figure_id": "figure_005",
+      "page": 5,
+      "caption": "Figure 5 Significant effect of increasing age to increasing rotator cuff disease.",
+      "asset_blocks": [
+        "5"
+      ],
+      "image": "SR6EDMUV\\figure_005_asset0.jpg",
+      "flags": [
+        "no_defect"
+      ],
+      "review_status": "reviewed",
+      "reviewer": "Q12 independent visual review",
+      "root_cause": "no-defect",
+      "review_note": "Reviewed rendered crop and caption; visual content and claimed caption are consistent, with no visible association, crop/panel, or page-assembly defect.",
+      "stratum": "no_signal"
+    },
+    {
+      "key": "SR6EDMUV",
+      "figure_id": "figure_004",
+      "page": 5,
+      "caption": "Figure 4 Significant effect of decreasing lateral acromion angle to increasing supraspinatus tendon disease.",
+      "asset_blocks": [
+        "3"
+      ],
+      "image": "SR6EDMUV\\figure_004_asset0.jpg",
+      "flags": [
+        "no_defect"
+      ],
+      "review_status": "reviewed",
+      "reviewer": "Q12 independent visual review",
+      "root_cause": "no-defect",
+      "review_note": "Reviewed rendered crop and caption; visual content and claimed caption are consistent, with no visible association, crop/panel, or page-assembly defect.",
+      "stratum": "no_signal"
+    },
+    {
+      "key": "M36WA39N",
+      "figure_id": "figure_005_continued_p010_b19",
+      "page": 10,
+      "caption": "FIGURE 5 | Expression of inflammation-related markers and immunofluorescence analysis of NF- $ \\kappa $B p65 in chondrocytes. (A–D) The relative protein expressions were detected in the control (CG), IL-1 $ \\beta $ group, IL-1 $ \\beta $ + irisin (5 ng/ml), and IL-1 $ \\beta $ + irisin (10 ng/ml) groups. Chondrocytes were preincubated with different concentrations of irisin (0, 5, or 10 ng/ml) and treated with IL-1 $ \\beta $ (10 ng/ml) for 24 h. The levels of expression of ADAMTS-5 and MMP-13 were increased after treatment with IL-1 $ \\beta $, whereas decreased after treatment with irisin. In addition, irisin-treated chondrocytes could partially recover the expression of chondrocyte-specific collagen II. The phosphorylation of PI3K, Akt, and NF- $ \\kappa $B p65 was significantly suppressed in the irisin-treated group compared with that in the IL-1 $ \\beta $ group. (E) Relative mRNA (Continued)",
+      "asset_blocks": [
+        "5",
+        "9",
+        "3",
+        "5",
+        "12",
+        "3",
+        "5",
+        "8",
+        "9",
+        "11",
+        "12",
+        "13",
+        "15",
+        "17",
+        "18",
+        "5",
+        "8",
+        "13",
+        "15"
+      ],
+      "image": "M36WA39N\\page_010.jpg",
+      "flags": [
+        "association",
+        "crop_panel",
+        "page_assembly",
+        "delivery"
+      ],
+      "review_status": "reviewed",
+      "reviewer": "Q12 independent visual review",
+      "root_cause": "delivery",
+      "review_note": "PDF page visually contains the panels and caption, but replay has no delivered asset/render for this figure.",
+      "stratum": "delivery_followup"
+    },
+    {
+      "key": "M36WA39N",
+      "figure_id": "figure_007",
+      "page": 13,
+      "caption": "FIGURE 7 | Therapeutic effects of irisin on OA during treadmill exercise via the inhibition of the PI3K/Akt/NF- $ \\kappa $B signaling pathway and pyroptosis in chondrocytes.\nIrisin is secreted during appropriate treadmill exercise and then released into the blood, eventually reaching the knee articular cavity to play its role in inhibiting inflammation and pyroptosis. Exercise-induced irisin interaction with chondrocytes leads to the downregulation of inflammatory responses and suppression of cartilage matrix degradation, subsequently inhibiting pyroptosis in chondrocytes. In addition, irisin inhibits chondrocyte inflammation and inflammation-related pyroptosis in IL-1 $ \\beta $-induced OA chondrocytes by inhibiting the PI3K/Akt/NF- $ \\kappa $B signaling pathway.",
+      "asset_blocks": [
+        "2"
+      ],
+      "image": "M36WA39N\\figure_007_asset0.jpg",
+      "flags": [
+        "association",
+        "crop_panel",
+        "page_assembly",
+        "delivery"
+      ],
+      "review_status": "reviewed",
+      "reviewer": "Q12 independent visual review",
+      "root_cause": "no-defect",
+      "review_note": "Reviewed rendered crop and caption; visual content and claimed caption are consistent, with no visible association, crop/panel, or page-assembly defect.",
+      "stratum": "delivery_followup"
+    }
+  ]
+}

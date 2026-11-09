@@ -1,0 +1,73 @@
+{
+ "key": "KUR9PBJC",
+ "passed": true,
+ "figures": 6,
+ "structural": {
+  "key": "KUR9PBJC",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 90147,
+  "new_text_chars": 90147,
+  "old_entries": 6,
+  "new_entries": 6,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 9,
+     "block_id": 12,
+     "text": "rig. 2. Schematic illustration of electrospinning processes used to produce composite nanofibers by (A) blend spinning (B) using two different spinnerets (C) core–shell spinning (D) multilayered nanofiber spinning."
+    }
+   ],
+   "assets": [
+    {
+     "page": 9,
+     "bbox": [
+      186,
+      830,
+      1042,
+      1393
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 6,
+     "block_id": 11,
+     "text": "Fig. 1. Stress–strain curve for electrospun nanofibers of (A) Chitosan versus PCL/Chitosan (B) Gelatin versus PCL/Gelatin. Reproduced from Authors' own publication in Tissue Engineering Part A (Mary Ann Liebert Publishers) 14, 1787 (2008)."
+    },
+    {
+     "page": 9,
+     "block_id": 8,
+     "text": "IP: 128.135.12.127 On: Sun, 12 Oct 2014 21:27 Copyright: American Scientific Publishers"
+    },
+    {
+     "page": 9,
+     "block_id": 12,
+     "text": "rig. 2. Schematic illustration of electrospinning processes used to produce composite nanofibers by (A) blend spinning (B) using two different spinnerets (C) core–shell spinning (D) multilayered nanofiber spinning."
+    },
+    {
+     "page": 10,
+     "block_id": 4,
+     "text": "Fig. 3. Schematic illustration of simultaneous 'electrospin-electrospray' set up used in our lab to fabricate nanoparticle functionalized nanofibers."
+    },
+    {
+     "page": 10,
+     "block_id": 13,
+     "text": "Fig. 4. SEM images of (A) aligned PCL/gelatin nanofibers (B) orientation of C17.2 cells along the direction of orientation of PCL/gelatin nanofibers. Details regarding the work are published in Ref. [23], L. G. Mobarakeh et al., Biomaterials (Elsevier Publications) 29, 4532 (2008). © 2008."
+    },
+    {
+     "page": 12,
+     "block_id": 4,
+     "text": "Fig. 5. SEM images of nanofibers and cellular interaction with nanofibers (A) PLCL/Collagen nanofibers (B) rat cardiomyocytes on PLCL/Collagen nanofibers (C) PCL/Collagen nanofibers (D) Schwann cells on PCL/Collagen nanofibers (E) PLLA/Collagen/HA nanofibers (F) hFOB on PLLA/HA/Collagen nanofibers. "
+    },
+    {
+     "page": 15,
+     "block_id": 3,
+     "text": "Fig. 6. SEM images of polyaniline or polypyrrole containing composite electrospun nanofibers (A) PLLA/PAN (B) PCL/Gelatin/PAN (C) PEO/PPy (D) PCL/PPy."
+    }
+   ]
+  }
+ }
+}

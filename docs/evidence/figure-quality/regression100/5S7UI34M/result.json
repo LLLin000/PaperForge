@@ -1,0 +1,82 @@
+{
+ "key": "5S7UI34M",
+ "passed": true,
+ "figures": 10,
+ "structural": {
+  "key": "5S7UI34M",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 121856,
+  "new_text_chars": 121856,
+  "old_entries": 9,
+  "new_entries": 10,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      97,
+      268,
+      242,
+      294
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 4,
+     "block_id": 3,
+     "text": "FIGURE 1\nPhysical cross-linking methods for PVA-based hydrogels. (A) PVA hydrogel prepared by F-T method, the number of F-T cycles can affect the structure and properties of the hydrogel (Stauffer and Peppast, 1992); (B) Principle of salting method (Wu et al., 2021); (C) Principle of directional fre"
+    },
+    {
+     "page": 6,
+     "block_id": 8,
+     "text": "FIGURE 2\n(A) PVA-based hydrogel cross-linked by glutaraldehyde (Pei et al., 2021); (B) PVA-based hydrogel cross-linked by borax (Songfeng et al., 2020); (C) PVA-SA copolymer hydrogel (Shen et al., 2022)."
+    },
+    {
+     "page": 8,
+     "block_id": 15,
+     "text": "FIGURE 3\n(A) Schematic diagram of PVA-based hydrogel synthesis (Branco et al., 2022); (B) PVA-based hydrogel has good flexibility; (C) Annealing can enhance the mechanical strength of hydrogel (Chen et al., 2018); (D) PVA-based hydrogel can be used as articular cartilage contact surface with good tr"
+    },
+    {
+     "page": 10,
+     "block_id": 3,
+     "text": "FIGURE 4\n(A,B) PVA-based hydrogel doped with Al³⁺ or Ca²⁺, the metal ions can make the hydrogel have good ionic conductivity (Gan et al., 2021; Lu L. et al., 2022); (C) The application of organic solvents enables the hydrogel to maintain good electrical conductivity in low-temperature environments a"
+    },
+    {
+     "page": 11,
+     "block_id": 21,
+     "text": "FIGURE 5\nProperties and applications of PVA-based hydrogels in flexible sensing. (A) Ionically conductive PVA-based hydrogels can sensitively and reproducibly convert motion signals into electrical signals (Zhang L. et al., 2022); (B) Sweat sensors prepared using PVA-based hydrogels can respond to N"
+    },
+    {
+     "page": 12,
+     "block_id": 25,
+     "text": "FIGURE 6\nMethods to enhance the mechanical properties of conductive PVA-based hydrogels; (A) Salt precipitation, especially immersion in Na₂SO₄ solution can substantially enhance the toughness of hydrogels (Wu et al., 2021); (B) Starch/PVA dual-network hydrogels possess good tensile properties and t"
+    },
+    {
+     "page": 13,
+     "block_id": 16,
+     "text": "FIGURE 7"
+    },
+    {
+     "page": 13,
+     "block_id": 17,
+     "text": "FIGURE 7\nReversible chemical bonding and non-covalent interactions can confer good self-healing properties to PVA-based hydrogels. (A) Self-healing photographs and pattern diagrams of PVA-based hydrogels enriched with borate ester bonding and hydrogen bonding (Qin et al., 2022); (B) Schematic illust"
+    },
+    {
+     "page": 15,
+     "block_id": 3,
+     "text": "FIGURE 8\n(A) PVA-based hydrogels can be affixed to chronic wounds and slowly release drugs under NIR light stimulation (Su et al., 2023); (B) PVA-based hydrogels can promote hydrogel wound healing (Liu et al., 2023); (C) PVA-based hydrogels can be copolymerized with antimicrobial active materials to"
+    },
+    {
+     "page": 16,
+     "block_id": 3,
+     "text": "FIGURE 9\nOther applications of PVA-based hydrogels; (A) Schematic and photographs of the synthesis of PVA-based hydrogels for microneedle patches; (B) Schematic and photographs of microneedle patch application (Chen S. Y. et al., 2022); (C) PVA-based hydrogel for gastric retention device, which can "
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,47 @@
+{
+ "key": "8LI35S8T",
+ "passed": true,
+ "figures": 3,
+ "structural": {
+  "key": "8LI35S8T",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 46112,
+  "new_text_chars": 46112,
+  "old_entries": 3,
+  "new_entries": 3,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      1019,
+      220,
+      1077,
+      277
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 7,
+     "text": "Fig. 1 Biogenesis, biomarkers, and cargos of exosomes. A Endocytosis and plasma membrane invagination enable extracellular constituents and cell surface proteins to invade cells. Early endosomes are formed when a plasmalemma buds and fuses with the endoplasmic reticulum, trans Golgi body, and mitoch"
+    },
+    {
+     "page": 5,
+     "block_id": 3,
+     "text": "Fig. 2 Macrophages can be induced to an activated inflammatory phenotype by exosomes secreted by MSCs/TSCs. Exosomes regulate the inflammation process after tendon injury to facilitate proper healing through M1 down-regulation and M2 up-regulation, which alleviate inflammation and determine whether "
+    },
+    {
+     "page": 6,
+     "block_id": 3,
+     "text": "Fig. 3 Proliferation and migration of tenocytes can be promoted by exosomes in a dose-dependent manner via PI3K/AKT and MAPK/ERK1/2 signaling pathways. Exosomes also decrease the apoptosis of tenocytes. MMP and TIMP released by exosomes are the most important factors in aiding the healing process. T"
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,311 @@
+{
+ "dry_run": {
+  "key": "LFCUIEIX",
+  "identity": {
+   "old": {
+    "entries": 6,
+    "unique_ids": 6,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 6,
+    "unique_ids": 6,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005",
+    "figure_reserved_005": "figure_figure_p002_b5"
+   },
+   "renamed": [
+    [
+     "figure_reserved_005",
+     "figure_figure_p002_b5"
+    ]
+   ],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 43,
+   "new_render_files": 86,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/figures/figure_005.jpg",
+    "assets/figures/figure_figure_p002_b5.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/orphans/orphan_013.jpg",
+    "assets/orphans/orphan_014.jpg",
+    "assets/orphans/orphan_015.jpg",
+    "assets/orphans/orphan_016.jpg",
+    "assets/orphans/orphan_017.jpg",
+    "assets/orphans/orphan_018.jpg",
+    "assets/orphans/orphan_019.jpg",
+    "assets/orphans/orphan_020.jpg",
+    "assets/orphans/orphan_021.jpg",
+    "assets/orphans/orphan_022.jpg",
+    "assets/orphans/orphan_023.jpg",
+    "assets/orphans/orphan_024.jpg",
+    "assets/orphans/orphan_025.jpg",
+    "assets/orphans/orphan_026.jpg",
+    "assets/orphans/orphan_027.jpg",
+    "assets/orphans/orphan_028.jpg",
+    "assets/orphans/orphan_029.jpg",
+    "assets/orphans/orphan_030.jpg",
+    "assets/orphans/orphan_031.jpg",
+    "assets/orphans/orphan_032.jpg",
+    "assets/orphans/orphan_033.jpg",
+    "assets/orphans/orphan_034.jpg",
+    "assets/orphans/orphan_035.jpg",
+    "assets/orphans/orphan_036.jpg",
+    "assets/orphans/orphan_037.jpg",
+    "render/figures/figure_figure_p002_b5.md"
+   ],
+   "render_removed": [
+    "render/figures/figure_reserved_005.md"
+   ],
+   "embeds": 5,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 0,
+   "new_tables": 0,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 208,
+   "new_rows": 208,
+   "role_removed": {
+    "unknown_structural": 3,
+    "figure_caption_candidate": 1
+   },
+   "role_added": {
+    "figure_caption": 1,
+    "section_heading": 1,
+    "subsection_heading": 2
+   },
+   "old_body_chars": 21063,
+   "new_body_chars": 21063,
+   "old_text_chars": 39159,
+   "new_text_chars": 39159,
+   "old_fulltext_chars": 35537
+  },
+  "new_manifest": {
+   "figures": 6,
+   "tables": 0,
+   "orphans": 37
+  },
+  "new_orphans": 6
+ },
+ "structural": {
+  "key": "LFCUIEIX",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 39159,
+  "new_text_chars": 39159,
+  "old_entries": 6,
+  "new_entries": 6,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      120,
+      442,
+      161,
+      484
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      644,
+      441,
+      687,
+      486
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      564,
+      522,
+      594,
+      548
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      880,
+      523,
+      904,
+      547
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      757,
+      572,
+      1124,
+      838
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      1044,
+      1369,
+      1129,
+      1488
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 5,
+     "text": "Scheme 1. Schematic Illustration of the Formation Mechanism of the PVA-PANa Gel"
+    },
+    {
+     "page": 2,
+     "block_id": 16,
+     "text": "Figure 1. Preparation process of PVA-PANa gel. (a) The scheme for the preparation process of PVA-PANa gel. Swelling behavior along with time (b) and the UV–vis spectrum (c) of PVA-PANa gel, respectively (insets as the photo of PVA-PANa gel). (d) Digital photos of dyed PVA-PANa gel molding by differe"
+    },
+    {
+     "page": 3,
+     "block_id": 10,
+     "text": "Figure 2. Basic characterizations of the PVA–PANa gel. (a) The ATR-FTIR spectra of PVA (black line), PANa (red line), and PVA–PANa gel (blue line). (b) The temperature-dependent ATR-FTIR spectra of the PVA–PANa gel. (c) The high resolution XPS spectra (P 2p) of the PANa (red line) and PVA–PANa gel ("
+    },
+    {
+     "page": 3,
+     "block_id": 20,
+     "text": "Figure 3. Mechanical properties of PVA–PANa gel. (a) Tensile stress–strain curves of PVA–PANa gel, and the inset is the digital photo of holding a heavy object through the hydrogel. (b) The stress response of the hydrogel under tensile strain from 10% to 120% each for six cycles. (c) Compressive str"
+    },
+    {
+     "page": 4,
+     "block_id": 10,
+     "text": "Figure 4. Antiswelling performance of PVA–PANa gel. (a) Diagram of experimental device for compression cycle test in salt solutions (inset as the SEM image of dried PVA–PANa gel). (b) Swelling behavior of PVA–PANa gel in 0.9% NaCl (red line) and PBS buffer solution (blue line) by mass change. Compre"
+    },
+    {
+     "page": 5,
+     "block_id": 10,
+     "text": "Figure 5. Conductive property and the strain sensing performance. (a) The scheme for illustrating the mechanism of ionic conductivity. (b) The photo of hydrogel-based electronic finger drawing on a cellphone screen. (c) The resistive change of the PVA–PANa gel along with the tensile strain. (d) The "
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     120,
+     442,
+     161,
+     484
+    ]
+   },
+   {
+    "page": 1,
+    "bbox": [
+     644,
+     441,
+     687,
+     486
+    ]
+   },
+   {
+    "page": 1,
+    "bbox": [
+     564,
+     522,
+     594,
+     548
+    ]
+   },
+   {
+    "page": 1,
+    "bbox": [
+     880,
+     523,
+     904,
+     547
+    ]
+   },
+   {
+    "page": 1,
+    "bbox": [
+     757,
+     572,
+     1124,
+     838
+    ]
+   },
+   {
+    "page": 1,
+    "bbox": [
+     1044,
+     1369,
+     1129,
+     1488
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 5,
+    "text": "Scheme 1. Schematic Illustration of the Formation Mechanism of the PVA-PANa Gel"
+   },
+   {
+    "page": 2,
+    "block_id": 16,
+    "text": "Figure 1. Preparation process of PVA-PANa gel. (a) The scheme for the preparation process of PVA-PANa gel. Swelling behavior along with time (b) and the UV–vis spectrum (c) of PVA-PANa gel, respectively (insets as the photo of PVA-PANa gel). (d) Digital photos of dyed PVA-PANa gel molding by differe"
+   },
+   {
+    "page": 3,
+    "block_id": 10,
+    "text": "Figure 2. Basic characterizations of the PVA–PANa gel. (a) The ATR-FTIR spectra of PVA (black line), PANa (red line), and PVA–PANa gel (blue line). (b) The temperature-dependent ATR-FTIR spectra of the PVA–PANa gel. (c) The high resolution XPS spectra (P 2p) of the PANa (red line) and PVA–PANa gel ("
+   },
+   {
+    "page": 3,
+    "block_id": 20,
+    "text": "Figure 3. Mechanical properties of PVA–PANa gel. (a) Tensile stress–strain curves of PVA–PANa gel, and the inset is the digital photo of holding a heavy object through the hydrogel. (b) The stress response of the hydrogel under tensile strain from 10% to 120% each for six cycles. (c) Compressive str"
+   },
+   {
+    "page": 4,
+    "block_id": 10,
+    "text": "Figure 4. Antiswelling performance of PVA–PANa gel. (a) Diagram of experimental device for compression cycle test in salt solutions (inset as the SEM image of dried PVA–PANa gel). (b) Swelling behavior of PVA–PANa gel in 0.9% NaCl (red line) and PBS buffer solution (blue line) by mass change. Compre"
+   },
+   {
+    "page": 5,
+    "block_id": 10,
+    "text": "Figure 5. Conductive property and the strain sensing performance. (a) The scheme for illustrating the mechanism of ionic conductivity. (b) The photo of hydrogel-based electronic finger drawing on a cellphone screen. (c) The resistive change of the PVA–PANa gel along with the tensile strain. (d) The "
+   }
+  ]
+ }
+}

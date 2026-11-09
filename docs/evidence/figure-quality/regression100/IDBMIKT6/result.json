@@ -1,0 +1,143 @@
+{
+ "key": "IDBMIKT6",
+ "passed": true,
+ "figures": 4,
+ "structural": {
+  "key": "IDBMIKT6",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 41123,
+  "new_text_chars": 41123,
+  "old_entries": 4,
+  "new_entries": 4,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 4,
+     "bbox": [
+      328,
+      123,
+      598,
+      301
+     ]
+    },
+    {
+     "page": 4,
+     "bbox": [
+      308,
+      362,
+      675,
+      563
+     ]
+    },
+    {
+     "page": 4,
+     "bbox": [
+      309,
+      632,
+      675,
+      832
+     ]
+    },
+    {
+     "page": 5,
+     "bbox": [
+      309,
+      117,
+      666,
+      384
+     ]
+    },
+    {
+     "page": 9,
+     "bbox": [
+      309,
+      99,
+      394,
+      132
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 4,
+     "block_id": 1,
+     "text": "A. MIC"
+    },
+    {
+     "page": 4,
+     "block_id": 3,
+     "text": "B. Cefazolin MBC"
+    },
+    {
+     "page": 4,
+     "block_id": 5,
+     "text": "C. WLBU2 MBC"
+    },
+    {
+     "page": 4,
+     "block_id": 7,
+     "text": "D. WLBU2 MBC Early Dose Response"
+    },
+    {
+     "page": 4,
+     "block_id": 8,
+     "text": "E. WLBU2 Exhaustion"
+    },
+    {
+     "page": 4,
+     "block_id": 11,
+     "text": "Figure 1. (A–E) Antimicrobial activity of cefazolin and WLBU2 against planktonic methicillin-sensitive S. aureus (SH1000). (A) Minimum inhibitory concentration (MIC) of cefazolin and WLBU2 determined by serial dilutions of antibiotics added to SH1000 plated at  $ 0.5 \\times 10^{6} $ CFU and overnigh"
+    },
+    {
+     "page": 5,
+     "block_id": 1,
+     "text": "A. In Vitro Biofilms 10xMIC"
+    },
+    {
+     "page": 5,
+     "block_id": 3,
+     "text": "B. Treated Rods Culture Test"
+    },
+    {
+     "page": 5,
+     "block_id": 5,
+     "text": "Figure 2. (A–B) Antimicrobial activity of cefazolin and WLBU2 against S. aureus biofilm. (A) Mature biofilms grown on Kirschner wire treated with cefazolin or WLBU2 at 10xMIC, CFU analysis shows cefazolin failed to clear 99.9% after 24 hours while WLBU2 sterilized Kirschner wire after 30 minutes, re"
+    },
+    {
+     "page": 6,
+     "block_id": 1,
+     "text": "A. 6 Hour Time Point"
+    },
+    {
+     "page": 6,
+     "block_id": 3,
+     "text": "B. 0.5 Hour Time Point"
+    },
+    {
+     "page": 6,
+     "block_id": 8,
+     "text": "Figure 3. (A–H) Further evaluation of differences in cefazolin and WLBU2 bactericidal action against SH1000. (A) Planktonic SH1000 treated with cefazolin or WLBU2 at 10xMIC after pretreatment with 12.5 μg/ml CCCP, significant increase in percent survival in cefazolin group but not in WLBU2 group. (B"
+    },
+    {
+     "page": 7,
+     "block_id": 1,
+     "text": "A. Implant Biofilms"
+    },
+    {
+     "page": 7,
+     "block_id": 3,
+     "text": "B. Femur Homogenate"
+    },
+    {
+     "page": 7,
+     "block_id": 5,
+     "text": "Figure 4. (A–B) Periprosthetic joint infection (PJI) murine model testing bactericidal efficacy of WLBU2 in vivo. Mice received Kirschner wire implant up femoral canal and  $ 1 \\times 10^{6} $ CFUs of SH1000 injected into knee joint. Groups received log increases in WLBU2 intraperitoneally twice a d"
+    }
+   ]
+  }
+ }
+}

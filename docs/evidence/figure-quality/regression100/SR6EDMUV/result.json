@@ -1,0 +1,47 @@
+{
+ "key": "SR6EDMUV",
+ "passed": true,
+ "figures": 5,
+ "structural": {
+  "key": "SR6EDMUV",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 27572,
+  "new_text_chars": 27572,
+  "old_entries": 5,
+  "new_entries": 5,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 10,
+     "text": "Figure 1 Superior view of right glenohumeral joint noting oblique coronal MRI cut just posterior to acromioclavicular joint used to measure lateral acromion angle."
+    },
+    {
+     "page": 3,
+     "block_id": 4,
+     "text": "Figure 2 A, lateral acromion angle formed by intersection of line parallel to acromion undersurface and second line parallel to farthest lateral extension of superior and inferior bony glenoid. B, Coronal magnetic resonance image (repetition time, 2000 msec; echo time, 20 msec) of right glenohumeral"
+    },
+    {
+     "page": 4,
+     "block_id": 4,
+     "text": "Figure 3 Significant effect of decreasing lateral acromion angle to increasing rotator cuff disease."
+    },
+    {
+     "page": 5,
+     "block_id": 4,
+     "text": "Figure 4 Significant effect of decreasing lateral acromion angle to increasing supraspinatus tendon disease."
+    },
+    {
+     "page": 5,
+     "block_id": 6,
+     "text": "Figure 5 Significant effect of increasing age to increasing rotator cuff disease."
+    }
+   ]
+  }
+ }
+}

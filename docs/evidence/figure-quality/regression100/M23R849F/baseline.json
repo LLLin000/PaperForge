@@ -1,0 +1,365 @@
+{
+ "dry_run": {
+  "key": "M23R849F",
+  "identity": {
+   "old": {
+    "entries": 10,
+    "unique_ids": 10,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 10,
+    "unique_ids": 10,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005",
+    "figure_006": "figure_006",
+    "figure_007": "figure_007",
+    "figure_008": "figure_008",
+    "figure_009": "figure_009",
+    "figure_010": "figure_010"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 92,
+   "new_render_files": 188,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/figures/figure_005.jpg",
+    "assets/figures/figure_006.jpg",
+    "assets/figures/figure_007.jpg",
+    "assets/figures/figure_008.jpg",
+    "assets/figures/figure_009.jpg",
+    "assets/figures/figure_010.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/orphans/orphan_013.jpg",
+    "assets/orphans/orphan_014.jpg",
+    "assets/orphans/orphan_015.jpg",
+    "assets/orphans/orphan_016.jpg",
+    "assets/orphans/orphan_017.jpg",
+    "assets/orphans/orphan_018.jpg",
+    "assets/orphans/orphan_019.jpg",
+    "assets/orphans/orphan_020.jpg",
+    "assets/orphans/orphan_021.jpg",
+    "assets/orphans/orphan_022.jpg",
+    "assets/orphans/orphan_023.jpg",
+    "assets/orphans/orphan_024.jpg",
+    "assets/orphans/orphan_025.jpg",
+    "assets/orphans/orphan_026.jpg",
+    "assets/orphans/orphan_027.jpg",
+    "assets/orphans/orphan_028.jpg",
+    "assets/orphans/orphan_029.jpg",
+    "assets/orphans/orphan_030.jpg",
+    "assets/orphans/orphan_031.jpg",
+    "assets/orphans/orphan_032.jpg",
+    "assets/orphans/orphan_033.jpg",
+    "assets/orphans/orphan_034.jpg",
+    "assets/orphans/orphan_035.jpg",
+    "assets/orphans/orphan_036.jpg",
+    "assets/orphans/orphan_037.jpg",
+    "assets/orphans/orphan_038.jpg",
+    "assets/orphans/orphan_039.jpg",
+    "assets/orphans/orphan_040.jpg",
+    "assets/orphans/orphan_041.jpg",
+    "assets/orphans/orphan_042.jpg",
+    "assets/orphans/orphan_043.jpg",
+    "assets/orphans/orphan_044.jpg",
+    "assets/orphans/orphan_045.jpg",
+    "assets/orphans/orphan_046.jpg",
+    "assets/orphans/orphan_047.jpg",
+    "assets/orphans/orphan_048.jpg",
+    "assets/orphans/orphan_049.jpg",
+    "assets/orphans/orphan_050.jpg",
+    "assets/orphans/orphan_051.jpg",
+    "assets/orphans/orphan_052.jpg",
+    "assets/orphans/orphan_053.jpg",
+    "assets/orphans/orphan_054.jpg",
+    "assets/orphans/orphan_055.jpg",
+    "assets/orphans/orphan_056.jpg",
+    "assets/orphans/orphan_057.jpg",
+    "assets/orphans/orphan_058.jpg",
+    "assets/orphans/orphan_059.jpg",
+    "assets/orphans/orphan_060.jpg",
+    "assets/orphans/orphan_061.jpg",
+    "assets/orphans/orphan_062.jpg",
+    "assets/orphans/orphan_063.jpg",
+    "assets/orphans/orphan_064.jpg",
+    "assets/orphans/orphan_065.jpg",
+    "assets/orphans/orphan_066.jpg",
+    "assets/orphans/orphan_067.jpg",
+    "assets/orphans/orphan_068.jpg",
+    "assets/orphans/orphan_069.jpg",
+    "assets/orphans/orphan_070.jpg",
+    "assets/orphans/orphan_071.jpg",
+    "assets/orphans/orphan_072.jpg",
+    "assets/orphans/orphan_073.jpg",
+    "assets/orphans/orphan_074.jpg",
+    "assets/orphans/orphan_075.jpg",
+    "assets/orphans/orphan_076.jpg",
+    "assets/orphans/orphan_077.jpg",
+    "assets/orphans/orphan_078.jpg",
+    "assets/orphans/orphan_079.jpg",
+    "assets/orphans/orphan_080.jpg",
+    "assets/orphans/orphan_081.jpg",
+    "assets/orphans/orphan_082.jpg",
+    "assets/orphans/orphan_083.jpg",
+    "assets/orphans/orphan_084.jpg",
+    "render/figures/orphan_083.md",
+    "render/figures/orphan_084.md"
+   ],
+   "render_removed": [],
+   "embeds": 10,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 0,
+   "new_tables": 0,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 368,
+   "new_rows": 368,
+   "role_removed": {
+    "unknown_structural": 1,
+    "structured_insert": 1,
+    "reference_item": 4
+   },
+   "role_added": {
+    "noise": 3,
+    "section_heading": 2,
+    "backmatter_body": 1
+   },
+   "old_body_chars": 40329,
+   "new_body_chars": 41282,
+   "old_text_chars": 69379,
+   "new_text_chars": 69379,
+   "old_fulltext_chars": 56169
+  },
+  "new_manifest": {
+   "figures": 10,
+   "tables": 0,
+   "orphans": 84
+  },
+  "new_orphans": 4
+ },
+ "structural": {
+  "key": "M23R849F",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 69379,
+  "new_text_chars": 69379,
+  "old_entries": 10,
+  "new_entries": 10,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 15,
+     "bbox": [
+      627,
+      1023,
+      827,
+      1279
+     ]
+    },
+    {
+     "page": 16,
+     "bbox": [
+      103,
+      111,
+      305,
+      359
+     ]
+    },
+    {
+     "page": 16,
+     "bbox": [
+      104,
+      490,
+      304,
+      745
+     ]
+    },
+    {
+     "page": 16,
+     "bbox": [
+      627,
+      322,
+      828,
+      579
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 6,
+     "text": "FIGURE 1 Cellular stimulation with triboelectric nanogenerators."
+    },
+    {
+     "page": 3,
+     "block_id": 3,
+     "text": "FIGURE 2 Five working modes of triboelectric nanogenerators (TENGs). (A) Vertical contact-separation (CS) mode. (B) Lateral sliding (LS) mode. (C) Single-electrode (SE) mode. (D) Freestanding triboelectric-layer (FT) mode. (E) DC triboelectric nanogenerator (DC-TENG)."
+    },
+    {
+     "page": 5,
+     "block_id": 3,
+     "text": "FIGURE 3 Effects of ES generated by triboelectric nanogenerators (TENGs) on cell alignment. (A) Structural design of BD-TENGs, with images of the appearance and nanostructure of the BDP film. (B) Schematic illustration of the self-powered nerve cell stimulation system. (C) Cell alignment analysis. ("
+    },
+    {
+     "page": 5,
+     "block_id": 5,
+     "text": "FIGURE 4 Effects of ES generated by triboelectric nanogenerators (TENGs) on cell migration. (A) Structural design of BD-iTENGs with a section view and top view. (B) Working principle of the BD-iTENGs. (C) In vivo degradation evaluation of BD-iTENGs. (D) Fluorescence microscopy images of cell migrati"
+    },
+    {
+     "page": 7,
+     "block_id": 27,
+     "text": "FIGURE 5 Effects of ES generated by triboelectric nanogenerators (TENGs) on cell secretion. (A) Structural design of a motion-activated electric stimulation device (m-ESD). (B) Geometric parameters and working principle of the m-ESD. (C) Evaluation of HF proliferation after treatment. (D) Expression"
+    },
+    {
+     "page": 8,
+     "block_id": 9,
+     "text": "FIGURE 6 Effects of ES generated by triboelectric nanogenerators (TENGs) on changing cell membrane permeability. (A) Schematic illustration of a TENG-driven high-throughput electroporation system. (B) Images and electrical field distribution of the Ag NW-modified PPy microfoam. (C) Biomolecular deli"
+    },
+    {
+     "page": 9,
+     "block_id": 16,
+     "text": "FIGURE 7 Effects of ES generated by triboelectric nanogenerators (TENGs) on cell proliferation. (A) Structural design and working principle of GOM-SF-based TENGs. (B) Output performances of GOM-SF-based TENGs. (C) Schematic illustration of the ES acting on neural cells in vitro. (D) Optical electron"
+    },
+    {
+     "page": 10,
+     "block_id": 32,
+     "text": "FIGURE 8 Effects of ES generated by triboelectric nanogenerators (TENGs) on cell differentiation. (A) Structural design of TENGs with an image of friction layers. (B) Working principle of TENGs. (C) Output performances of TENGs. (D) Schematic illustration of experimental devices. (E) Evaluation of i"
+    },
+    {
+     "page": 12,
+     "block_id": 15,
+     "text": "FIGURE 9 Effects of ES generated by triboelectric nanogenerators (TENGs) on cell reprogramming. (A) SEM images of microfibers made from GO suspension PEDOT solution at different concentrations. (B) Schematic illustration of the TENGs self-powered ES-assisted neural differentiation system. (C) Merged"
+    },
+    {
+     "page": 12,
+     "block_id": 27,
+     "text": "FIGURE 10 Effects of ES generated by triboelectric nanogenerators (TENGs) on cell rejuvenation. (A) Schematic illustration and working principle of a pulsed triboelectric nanogenerator (P-TENG). (B) Fluorescence staining of BMSCs and their expression products. (C) Expression levels of p53, p21, and "
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 15,
+    "bbox": [
+     627,
+     1023,
+     827,
+     1279
+    ]
+   },
+   {
+    "page": 16,
+    "bbox": [
+     103,
+     111,
+     305,
+     359
+    ]
+   },
+   {
+    "page": 16,
+    "bbox": [
+     104,
+     490,
+     304,
+     745
+    ]
+   },
+   {
+    "page": 16,
+    "bbox": [
+     627,
+     322,
+     828,
+     579
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 6,
+    "text": "FIGURE 1 Cellular stimulation with triboelectric nanogenerators."
+   },
+   {
+    "page": 3,
+    "block_id": 3,
+    "text": "FIGURE 2 Five working modes of triboelectric nanogenerators (TENGs). (A) Vertical contact-separation (CS) mode. (B) Lateral sliding (LS) mode. (C) Single-electrode (SE) mode. (D) Freestanding triboelectric-layer (FT) mode. (E) DC triboelectric nanogenerator (DC-TENG)."
+   },
+   {
+    "page": 5,
+    "block_id": 3,
+    "text": "FIGURE 3 Effects of ES generated by triboelectric nanogenerators (TENGs) on cell alignment. (A) Structural design of BD-TENGs, with images of the appearance and nanostructure of the BDP film. (B) Schematic illustration of the self-powered nerve cell stimulation system. (C) Cell alignment analysis. ("
+   },
+   {
+    "page": 5,
+    "block_id": 5,
+    "text": "FIGURE 4 Effects of ES generated by triboelectric nanogenerators (TENGs) on cell migration. (A) Structural design of BD-iTENGs with a section view and top view. (B) Working principle of the BD-iTENGs. (C) In vivo degradation evaluation of BD-iTENGs. (D) Fluorescence microscopy images of cell migrati"
+   },
+   {
+    "page": 7,
+    "block_id": 27,
+    "text": "FIGURE 5 Effects of ES generated by triboelectric nanogenerators (TENGs) on cell secretion. (A) Structural design of a motion-activated electric stimulation device (m-ESD). (B) Geometric parameters and working principle of the m-ESD. (C) Evaluation of HF proliferation after treatment. (D) Expression"
+   },
+   {
+    "page": 8,
+    "block_id": 9,
+    "text": "FIGURE 6 Effects of ES generated by triboelectric nanogenerators (TENGs) on changing cell membrane permeability. (A) Schematic illustration of a TENG-driven high-throughput electroporation system. (B) Images and electrical field distribution of the Ag NW-modified PPy microfoam. (C) Biomolecular deli"
+   },
+   {
+    "page": 9,
+    "block_id": 16,
+    "text": "FIGURE 7 Effects of ES generated by triboelectric nanogenerators (TENGs) on cell proliferation. (A) Structural design and working principle of GOM-SF-based TENGs. (B) Output performances of GOM-SF-based TENGs. (C) Schematic illustration of the ES acting on neural cells in vitro. (D) Optical electron"
+   },
+   {
+    "page": 10,
+    "block_id": 32,
+    "text": "FIGURE 8 Effects of ES generated by triboelectric nanogenerators (TENGs) on cell differentiation. (A) Structural design of TENGs with an image of friction layers. (B) Working principle of TENGs. (C) Output performances of TENGs. (D) Schematic illustration of experimental devices. (E) Evaluation of i"
+   },
+   {
+    "page": 12,
+    "block_id": 15,
+    "text": "FIGURE 9 Effects of ES generated by triboelectric nanogenerators (TENGs) on cell reprogramming. (A) SEM images of microfibers made from GO suspension PEDOT solution at different concentrations. (B) Schematic illustration of the TENGs self-powered ES-assisted neural differentiation system. (C) Merged"
+   },
+   {
+    "page": 12,
+    "block_id": 27,
+    "text": "FIGURE 10 Effects of ES generated by triboelectric nanogenerators (TENGs) on cell rejuvenation. (A) Schematic illustration and working principle of a pulsed triboelectric nanogenerator (P-TENG). (B) Fluorescence staining of BMSCs and their expression products. (C) Expression levels of p53, p21, and "
+   }
+  ]
+ }
+}

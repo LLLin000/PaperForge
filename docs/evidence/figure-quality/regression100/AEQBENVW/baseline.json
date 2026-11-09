@@ -1,0 +1,389 @@
+{
+ "dry_run": {
+  "key": "AEQBENVW",
+  "identity": {
+   "old": {
+    "entries": 9,
+    "unique_ids": 8,
+    "duplicate_extra": 1
+   },
+   "new": {
+    "entries": 8,
+    "unique_ids": 8,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005",
+    "figure_006": "figure_006",
+    "figure_007": "figure_007",
+    "figure_008": "figure_008"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": [
+    {
+     "old_id": "figure_007",
+     "old_assets": [
+      "7"
+     ],
+     "new_id": "figure_007",
+     "new_assets": [
+      "11",
+      "7"
+     ]
+    }
+   ]
+  },
+  "delivery": {
+   "old_render_files": 41,
+   "new_render_files": 82,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/figures/figure_005.jpg",
+    "assets/figures/figure_006.jpg",
+    "assets/figures/figure_007.jpg",
+    "assets/figures/figure_008.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/orphans/orphan_013.jpg",
+    "assets/orphans/orphan_014.jpg",
+    "assets/orphans/orphan_015.jpg",
+    "assets/orphans/orphan_016.jpg",
+    "assets/orphans/orphan_017.jpg",
+    "assets/orphans/orphan_018.jpg",
+    "assets/orphans/orphan_019.jpg",
+    "assets/orphans/orphan_020.jpg",
+    "assets/orphans/orphan_021.jpg",
+    "assets/orphans/orphan_022.jpg",
+    "assets/orphans/orphan_023.jpg",
+    "assets/orphans/orphan_024.jpg",
+    "assets/orphans/orphan_025.jpg",
+    "assets/orphans/orphan_026.jpg",
+    "assets/orphans/orphan_027.jpg",
+    "assets/orphans/orphan_028.jpg",
+    "assets/orphans/orphan_029.jpg",
+    "assets/orphans/orphan_030.jpg",
+    "assets/tables/table_001.jpg",
+    "assets/tables/table_002.jpg",
+    "assets/tables/table_003.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 9,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 3,
+   "new_tables": 3,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 201,
+   "new_rows": 201,
+   "role_removed": {
+    "frontmatter_support": 1,
+    "reference_item": 7,
+    "backmatter_body": 1
+   },
+   "role_added": {
+    "noise": 5,
+    "body_paragraph": 4
+   },
+   "old_body_chars": 21880,
+   "new_body_chars": 23453,
+   "old_text_chars": 43867,
+   "new_text_chars": 43867,
+   "old_fulltext_chars": 39446
+  },
+  "new_manifest": {
+   "figures": 8,
+   "tables": 3,
+   "orphans": 30
+  },
+  "new_orphans": 9
+ },
+ "structural": {
+  "key": "AEQBENVW",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 43867,
+  "new_text_chars": 43867,
+  "old_entries": 9,
+  "new_entries": 8,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      69,
+      794,
+      178,
+      830
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      69,
+      1313,
+      185,
+      1354
+     ]
+    },
+    {
+     "page": 3,
+     "bbox": [
+      170,
+      226,
+      553,
+      598
+     ]
+    },
+    {
+     "page": 3,
+     "bbox": [
+      172,
+      700,
+      538,
+      1020
+     ]
+    },
+    {
+     "page": 4,
+     "bbox": [
+      338,
+      827,
+      642,
+      1025
+     ]
+    },
+    {
+     "page": 4,
+     "bbox": [
+      337,
+      1045,
+      642,
+      1232
+     ]
+    },
+    {
+     "page": 4,
+     "bbox": [
+      337,
+      1255,
+      642,
+      1444
+     ]
+    },
+    {
+     "page": 7,
+     "bbox": [
+      92,
+      464,
+      536,
+      782
+     ]
+    },
+    {
+     "page": 7,
+     "bbox": [
+      92,
+      879,
+      537,
+      1196
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 8,
+     "text": "Figure 1. (A): Physical characterization of GANPs using UV-visible spectrophotometer. (B): DLS of GANPs. (C): Zeta potential of GANPs (D): TEM of GANPs."
+    },
+    {
+     "page": 3,
+     "block_id": 10,
+     "text": "Figure 2. The cytotoxicity of GA-NPs against Vero and BHK cell lines. The data are presented as the mean ± standard deviation of the three independent experiments,  $ ^{*}p < 0.05 $ vs. NC group."
+    },
+    {
+     "page": 4,
+     "block_id": 16,
+     "text": "Figure 3. (A) The inhibition zone of S. aureus using GA-NPs. (B) The inhibition zone of MRSA using GA-NPs. (C) The inhibition zone of S. aureus using GA. (D) The inhibition zone of MRSA using GA. (E) The inhibition zone of S. aureus using linezolid. (F) The inhibition zone of MRSA using linezolid."
+    },
+    {
+     "page": 5,
+     "block_id": 12,
+     "text": "Figure 4. Kill-time assays: (A) GA-NPs against Staphylococcus aureus; (B) GA-NPs against MRSA. The data are presented as the mean ± standard deviation of the three independent experiments."
+    },
+    {
+     "page": 6,
+     "block_id": 4,
+     "text": "Figure 5. The effect of GA-NP concentrations (in  $ \\mu $g/mL) on the viability of S. aureus and methicillin-sensitive Staphylococcus aureus biofilms compared to non-therapy with GA-NPs. The data are presented as the mean  $ \\pm $ standard deviation of the three independent experiments, and  $ * $ s"
+    },
+    {
+     "page": 6,
+     "block_id": 8,
+     "text": "Figure 6. The ATPase activity of S. aureus and MRSA membrane vesicles in the presence of GA-NPs and DCCD (0.4 μg). The control was without NP addition. Each point represents the mean ± SD (n = 3). And * shows statistically significant differences at p < 0.05 vs. NC group."
+    },
+    {
+     "page": 7,
+     "block_id": 12,
+     "text": "Figure 7. The relative gene expressions of blaR1, blaZ, mecA, and mecR1 in S. aureus and MRSA after growth at sub-concentrations of GA-NPs. The relative gene expressions of (A) blaR1, (B) blaZ, (C) mecA, and (D) mecR1 were reduced in a dose-dependent manner. The data are presented as the mean ± stan"
+    },
+    {
+     "page": 8,
+     "block_id": 4,
+     "text": "Figure 8. The expression of PBP2a in MRSA culture in the existence of different concentrations of GA-NPs. Each point represents the mean  $ \\pm $ SD (n = 3)."
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     69,
+     794,
+     178,
+     830
+    ]
+   },
+   {
+    "page": 1,
+    "bbox": [
+     69,
+     1313,
+     185,
+     1354
+    ]
+   },
+   {
+    "page": 3,
+    "bbox": [
+     170,
+     226,
+     553,
+     598
+    ]
+   },
+   {
+    "page": 3,
+    "bbox": [
+     172,
+     700,
+     538,
+     1020
+    ]
+   },
+   {
+    "page": 4,
+    "bbox": [
+     338,
+     827,
+     642,
+     1025
+    ]
+   },
+   {
+    "page": 4,
+    "bbox": [
+     337,
+     1045,
+     642,
+     1232
+    ]
+   },
+   {
+    "page": 4,
+    "bbox": [
+     337,
+     1255,
+     642,
+     1444
+    ]
+   },
+   {
+    "page": 7,
+    "bbox": [
+     92,
+     464,
+     536,
+     782
+    ]
+   },
+   {
+    "page": 7,
+    "bbox": [
+     92,
+     879,
+     537,
+     1196
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 3,
+    "block_id": 8,
+    "text": "Figure 1. (A): Physical characterization of GANPs using UV-visible spectrophotometer. (B): DLS of GANPs. (C): Zeta potential of GANPs (D): TEM of GANPs."
+   },
+   {
+    "page": 3,
+    "block_id": 10,
+    "text": "Figure 2. The cytotoxicity of GA-NPs against Vero and BHK cell lines. The data are presented as the mean ± standard deviation of the three independent experiments,  $ ^{*}p < 0.05 $ vs. NC group."
+   },
+   {
+    "page": 4,
+    "block_id": 16,
+    "text": "Figure 3. (A) The inhibition zone of S. aureus using GA-NPs. (B) The inhibition zone of MRSA using GA-NPs. (C) The inhibition zone of S. aureus using GA. (D) The inhibition zone of MRSA using GA. (E) The inhibition zone of S. aureus using linezolid. (F) The inhibition zone of MRSA using linezolid."
+   },
+   {
+    "page": 5,
+    "block_id": 12,
+    "text": "Figure 4. Kill-time assays: (A) GA-NPs against Staphylococcus aureus; (B) GA-NPs against MRSA. The data are presented as the mean ± standard deviation of the three independent experiments."
+   },
+   {
+    "page": 6,
+    "block_id": 4,
+    "text": "Figure 5. The effect of GA-NP concentrations (in  $ \\mu $g/mL) on the viability of S. aureus and methicillin-sensitive Staphylococcus aureus biofilms compared to non-therapy with GA-NPs. The data are presented as the mean  $ \\pm $ standard deviation of the three independent experiments, and  $ * $ s"
+   },
+   {
+    "page": 6,
+    "block_id": 8,
+    "text": "Figure 6. The ATPase activity of S. aureus and MRSA membrane vesicles in the presence of GA-NPs and DCCD (0.4 μg). The control was without NP addition. Each point represents the mean ± SD (n = 3). And * shows statistically significant differences at p < 0.05 vs. NC group."
+   },
+   {
+    "page": 7,
+    "block_id": 12,
+    "text": "Figure 7. The relative gene expressions of blaR1, blaZ, mecA, and mecR1 in S. aureus and MRSA after growth at sub-concentrations of GA-NPs. The relative gene expressions of (A) blaR1, (B) blaZ, (C) mecA, and (D) mecR1 were reduced in a dose-dependent manner. The data are presented as the mean ± stan"
+   },
+   {
+    "page": 8,
+    "block_id": 4,
+    "text": "Figure 8. The expression of PBP2a in MRSA culture in the existence of different concentrations of GA-NPs. Each point represents the mean  $ \\pm $ SD (n = 3)."
+   }
+  ]
+ }
+}

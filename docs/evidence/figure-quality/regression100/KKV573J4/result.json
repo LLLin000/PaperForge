@@ -1,0 +1,57 @@
+{
+ "key": "KKV573J4",
+ "passed": true,
+ "figures": 6,
+ "structural": {
+  "key": "KKV573J4",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 54718,
+  "new_text_chars": 54718,
+  "old_entries": 6,
+  "new_entries": 6,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 4,
+     "block_id": 17,
+     "text": "Figure 1 nsPEFs and ghrelin promote chondrogenesis of MSCs. A, Schematic representation of MSCs being stimulated by nsPEFs and ghrelin. B, Quantitative RT-PCR for the expression of Sox9, Col2, and Acan of pellet cultured MSCs after 14 d of chondrogenic differentiation. n=4 per group, normalized to t"
+    },
+    {
+     "page": 5,
+     "block_id": 6,
+     "text": "Figure 2 Ghrelin and nsPEFs exert different effects on the stem cell potency of MSCs. A and B, Quantitative RT-PCR analyses of the gene expression levels of Oct4 (A) and Nanog (B) of pellet-cultured MSCs after 3 d of chondrogenic differentiation. n=4 per group, normalized to the control group. C and"
+    },
+    {
+     "page": 6,
+     "block_id": 6,
+     "text": "Figure 3 Ghrelin and nsPEFs promote de novo cartilage regeneration. Articular cartilage defects of 1.5 mm depth and 1.5 mm diameter were created in the knee joints of SD rats.  $ 5 \\times 10^{5} $ cells were delivered to the defects with alginate hydrogel, and cartilage samples were collected at 12 "
+    },
+    {
+     "page": 7,
+     "block_id": 10,
+     "text": "GO"
+    },
+    {
+     "page": 7,
+     "block_id": 13,
+     "text": "Figure 4 ERK, JNK and STAT3 signaling pathways were activated by nsPEFs and ghrelin. A–C, Western blot analysis of (A) pERK/ERK, (B) pJNK/JNK and (C) pSTAT3/STAT3 within pellet-cultured MSCs after 1 d of chondrogenic differentiation. n=4 per group. D and E, RNA sequencing results of ghrelin treatmen"
+    },
+    {
+     "page": 8,
+     "block_id": 8,
+     "text": "Figure 5 Inhibition of ERK/JNK/STAT3 signaling blocked the chondrogenic differentiation. A, Schematic representation of MSCs being stimulated by ghrelin following nsPEFs, in the presence of inhibitor. The inhibitor was temporarily removed during nsPEFs stimulation. i, inhibitors; n, nsPEFs; G, ghrel"
+    },
+    {
+     "page": 9,
+     "block_id": 3,
+     "text": "Figure 6 Schematic illustration of the possible mechanisms of chondrogenesis induced by nsPEFs and ghrelin in MSCs."
+    }
+   ]
+  }
+ }
+}

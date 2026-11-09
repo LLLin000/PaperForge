@@ -1,0 +1,206 @@
+{
+ "dry_run": {
+  "key": "64AWS4SU",
+  "identity": {
+   "old": {
+    "entries": 5,
+    "unique_ids": 5,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 6,
+    "unique_ids": 6,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_005": "figure_005",
+    "figure_006": "figure_006",
+    "figure_007": "figure_007",
+    "figure_reserved_004": "figure_002"
+   },
+   "renamed": [
+    [
+     "figure_reserved_004",
+     "figure_002"
+    ]
+   ],
+   "unmapped_old_ids": [],
+   "claims_changed": [
+    {
+     "old_id": "figure_005",
+     "old_assets": [
+      "10",
+      "13",
+      "15",
+      "17"
+     ],
+     "new_id": "figure_005",
+     "new_assets": [
+      "13",
+      "17"
+     ]
+    }
+   ]
+  },
+  "delivery": {
+   "old_render_files": 30,
+   "new_render_files": 34,
+   "render_added": [
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/tables/table_002.jpg",
+    "render/figures/figure_002.md",
+    "render/figures/figure_004.md"
+   ],
+   "render_removed": [
+    "render/figures/figure_reserved_004.md"
+   ],
+   "embeds": 6,
+   "embeds_retargeted": 1,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 2,
+   "new_tables": 2,
+   "claim_changes": [
+    {
+     "page": 4,
+     "caption": "4",
+     "old": "8",
+     "new": "5"
+    }
+   ]
+  },
+  "content": {
+   "old_rows": 135,
+   "new_rows": 135,
+   "role_removed": {
+    "unknown_structural": 1,
+    "structured_insert": 1,
+    "backmatter_body": 1
+   },
+   "role_added": {
+    "authors": 1,
+    "frontmatter_noise": 1,
+    "body_paragraph": 1
+   },
+   "old_body_chars": 18614,
+   "new_body_chars": 18665,
+   "old_text_chars": 33020,
+   "new_text_chars": 33020,
+   "old_fulltext_chars": 27779
+  },
+  "new_manifest": {
+   "figures": 6,
+   "tables": 2,
+   "orphans": 9
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "64AWS4SU",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 33020,
+  "new_text_chars": 33020,
+  "old_entries": 5,
+  "new_entries": 6,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 3,
+     "block_id": 14,
+     "text": "Figure 3: Images showing a large cystic collection around a lateral row bioanchor with anchor breakage. (a) Sagittal and (b) Coronal T2-weighted images"
+    }
+   ],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 15,
+     "text": "Figure 1: Sagittal T2-weighted images shows the high signal intensity of the lateral row bioanchors surrounded by the low signal intensity bone sclerosis that gives the bioanchors a \"fried egg\" appearance"
+    },
+    {
+     "page": 3,
+     "block_id": 12,
+     "text": "Figure 2: The high signal intensity of a lateral row bioanchor surrounded by isointense granulation tissue and low signal intensity bone sclerosis. (a) Sagittal and (b) Coronal T2-weighted images"
+    },
+    {
+     "page": 3,
+     "block_id": 14,
+     "text": "Figure 3: Images showing a large cystic collection around a lateral row bioanchor with anchor breakage. (a) Sagittal and (b) Coronal T2-weighted images"
+    },
+    {
+     "page": 3,
+     "block_id": 16,
+     "text": "Figure 4: Coronal image showing a medial row bioanchor (arrow)"
+    },
+    {
+     "page": 3,
+     "block_id": 18,
+     "text": "Figure 5: Coronal image of fluid accumulation around a medial row bioanchor"
+    },
+    {
+     "page": 4,
+     "block_id": 9,
+     "text": "Figure 6: Axial image showing mechanical failure at the junction between the shaft and the eyelet of a lateral row bioanchor"
+    },
+    {
+     "page": 4,
+     "block_id": 13,
+     "text": "Figure 7: Serial magnetic resonance imaging showing a decrease in the high signal intensity surrounding lateral row anchors at 8 months"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [
+   {
+    "page": 3,
+    "block_id": 14,
+    "text": "Figure 3: Images showing a large cystic collection around a lateral row bioanchor with anchor breakage. (a) Sagittal and (b) Coronal T2-weighted images"
+   }
+  ],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 15,
+    "text": "Figure 1: Sagittal T2-weighted images shows the high signal intensity of the lateral row bioanchors surrounded by the low signal intensity bone sclerosis that gives the bioanchors a \"fried egg\" appearance"
+   },
+   {
+    "page": 3,
+    "block_id": 12,
+    "text": "Figure 2: The high signal intensity of a lateral row bioanchor surrounded by isointense granulation tissue and low signal intensity bone sclerosis. (a) Sagittal and (b) Coronal T2-weighted images"
+   },
+   {
+    "page": 3,
+    "block_id": 14,
+    "text": "Figure 3: Images showing a large cystic collection around a lateral row bioanchor with anchor breakage. (a) Sagittal and (b) Coronal T2-weighted images"
+   },
+   {
+    "page": 3,
+    "block_id": 16,
+    "text": "Figure 4: Coronal image showing a medial row bioanchor (arrow)"
+   },
+   {
+    "page": 3,
+    "block_id": 18,
+    "text": "Figure 5: Coronal image of fluid accumulation around a medial row bioanchor"
+   },
+   {
+    "page": 4,
+    "block_id": 9,
+    "text": "Figure 6: Axial image showing mechanical failure at the junction between the shaft and the eyelet of a lateral row bioanchor"
+   },
+   {
+    "page": 4,
+    "block_id": 13,
+    "text": "Figure 7: Serial magnetic resonance imaging showing a decrease in the high signal intensity surrounding lateral row anchors at 8 months"
+   }
+  ]
+ }
+}

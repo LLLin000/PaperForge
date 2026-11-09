@@ -1,0 +1,107 @@
+{
+ "key": "LFCUIEIX",
+ "passed": true,
+ "figures": 6,
+ "structural": {
+  "key": "LFCUIEIX",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 39159,
+  "new_text_chars": 39159,
+  "old_entries": 6,
+  "new_entries": 6,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      120,
+      442,
+      161,
+      484
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      644,
+      441,
+      687,
+      486
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      564,
+      522,
+      594,
+      548
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      880,
+      523,
+      904,
+      547
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      757,
+      572,
+      1124,
+      838
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      1044,
+      1369,
+      1129,
+      1488
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 5,
+     "text": "Scheme 1. Schematic Illustration of the Formation Mechanism of the PVA-PANa Gel"
+    },
+    {
+     "page": 2,
+     "block_id": 16,
+     "text": "Figure 1. Preparation process of PVA-PANa gel. (a) The scheme for the preparation process of PVA-PANa gel. Swelling behavior along with time (b) and the UV–vis spectrum (c) of PVA-PANa gel, respectively (insets as the photo of PVA-PANa gel). (d) Digital photos of dyed PVA-PANa gel molding by differe"
+    },
+    {
+     "page": 3,
+     "block_id": 10,
+     "text": "Figure 2. Basic characterizations of the PVA–PANa gel. (a) The ATR-FTIR spectra of PVA (black line), PANa (red line), and PVA–PANa gel (blue line). (b) The temperature-dependent ATR-FTIR spectra of the PVA–PANa gel. (c) The high resolution XPS spectra (P 2p) of the PANa (red line) and PVA–PANa gel ("
+    },
+    {
+     "page": 3,
+     "block_id": 20,
+     "text": "Figure 3. Mechanical properties of PVA–PANa gel. (a) Tensile stress–strain curves of PVA–PANa gel, and the inset is the digital photo of holding a heavy object through the hydrogel. (b) The stress response of the hydrogel under tensile strain from 10% to 120% each for six cycles. (c) Compressive str"
+    },
+    {
+     "page": 4,
+     "block_id": 10,
+     "text": "Figure 4. Antiswelling performance of PVA–PANa gel. (a) Diagram of experimental device for compression cycle test in salt solutions (inset as the SEM image of dried PVA–PANa gel). (b) Swelling behavior of PVA–PANa gel in 0.9% NaCl (red line) and PBS buffer solution (blue line) by mass change. Compre"
+    },
+    {
+     "page": 5,
+     "block_id": 10,
+     "text": "Figure 5. Conductive property and the strain sensing performance. (a) The scheme for illustrating the mechanism of ionic conductivity. (b) The photo of hydrogel-based electronic finger drawing on a cellphone screen. (c) The resistive change of the PVA–PANa gel along with the tensile strain. (d) The "
+    }
+   ]
+  }
+ }
+}

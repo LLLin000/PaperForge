@@ -1,0 +1,37 @@
+{
+ "key": "H6DI4BNH",
+ "passed": true,
+ "figures": 3,
+ "structural": {
+  "key": "H6DI4BNH",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 29049,
+  "new_text_chars": 29049,
+  "old_entries": 3,
+  "new_entries": 3,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 3,
+     "text": "FIGURE 1. NeoCart cartoon depicting process from biopsy to implantation. Figure courtesy of Dennis Crawford, MD, PhD."
+    },
+    {
+     "page": 3,
+     "block_id": 10,
+     "text": "FIGURE 2. Representative sagittal MRI after implantation of a 2.0 cm (anterior posterior) NeoCart patch. A and C, Cartilage sensitive 1.5T MRI at 1 year (arrow) and with T2 mapping. B and D, Same patient at 2 years. Images courtesy of Dennis Crawford, MD, PhD, and Hollis Potter, MD. MRI indicates ma"
+    },
+    {
+     "page": 4,
+     "block_id": 6,
+     "text": "FIGURE 3. DeNovo ET shown at necropsy and histologically with safranin O staining. Photograph from http://www.istotech.com/denovo-et-orthopaedics.html."
+    }
+   ]
+  }
+ }
+}

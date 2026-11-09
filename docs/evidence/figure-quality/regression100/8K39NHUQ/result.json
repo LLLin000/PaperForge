@@ -1,0 +1,135 @@
+{
+ "key": "8K39NHUQ",
+ "passed": true,
+ "figures": 9,
+ "structural": {
+  "key": "8K39NHUQ",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 62535,
+  "new_text_chars": 62535,
+  "old_entries": 9,
+  "new_entries": 9,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      69,
+      1313,
+      185,
+      1354
+     ]
+    },
+    {
+     "page": 7,
+     "bbox": [
+      346,
+      868,
+      688,
+      1157
+     ]
+    },
+    {
+     "page": 7,
+     "bbox": [
+      335,
+      1156,
+      688,
+      1448
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 7,
+     "block_id": 6,
+     "text": "Figure 1A. shows the FT-IR characteristic peaks of PVA and PVDF. For PVA, the peaks at 3337 cm $ ^{-1} $, 2943 cm $ ^{-1} $ and 1093 cm $ ^{-1} $ corresponded to the stretching vibration peak of -OH [18], the asymmetrical stretching vibration peak of -CH $ _2 $ and the stretching vibration peak of C"
+    },
+    {
+     "page": 7,
+     "block_id": 11,
+     "text": "Figure 1. FT-IR analysis and swelling behaviors of the hydrogels. (A) FI-IR spectra of pure PVA and PVDF. (B) FT-IR spectra of PVA/PVDF composite hydrogels. (C) Swelling curves of hydrogels in PBS buffer solution at  $ 37\\,^{\\circ}\\mathrm{C} $, pH = 7.4. (D) Swelling ratio of hydrogels and images of"
+    },
+    {
+     "page": 8,
+     "block_id": 9,
+     "text": "Figure 2. Piezoelectric responses of PVA/PVDF composite hydrogels."
+    },
+    {
+     "page": 10,
+     "block_id": 7,
+     "text": "Figure 3. (A) XRD patterns of PVA/PVDF and PVA/PVDF/Ag hydrogels. (B) FT-IR spectra of PVA/PVDF and PVA/PVDF/Ag hydrogels. (C–E) Piezoelectric responses of PVA/PVDF hydrogels with 0.3% (C), 0.45% (D), and 0.6% (E) silver nanowires."
+    },
+    {
+     "page": 10,
+     "block_id": 12,
+     "text": "Figure 4. (A) Swelling curves and (B) swelling rates of the PVA/PVDF/Ag composite hydrogels dehydrated with different concentrations of ethanol in PBS buffer solution (37 °C, pH = 7.4)."
+    },
+    {
+     "page": 11,
+     "block_id": 15,
+     "text": "Figure 5. Dynamic rheology behaviors and mechanical properties of the PVA/PVDF/Ag composite hydrogels. (A) G′, G′′ and tan δ change with frequency. T = 25 °C, strain = 1%. (B) Compression process images of PVA/PVDF/Ag composite hydrogels. (C) Stress-strain curves of PVA/PVDF/Ag composite hydrogels u"
+    },
+    {
+     "page": 12,
+     "block_id": 5,
+     "text": "Figure 6A,B shows the SEM images of silver nanowires and PVA15%/PVDF15%/Ag hydrogels. It can be seen that the length of the Ag-NWs obtained was about 5–15 µm. At the same time, the as-obtained hydrogel had a three-dimensional network structure with a pore size range of 10 to 50 µm, and both PVA and "
+    },
+    {
+     "page": 12,
+     "block_id": 10,
+     "text": "Figure 6. (A) SEM images of silver nanowires. (B) SEM images of PVA/PVDF/Ag composite hydrogels. (C–F) EDS mapping images of double-layer hydrogel. (C–F) have the same scale as (B)."
+    },
+    {
+     "page": 13,
+     "block_id": 6,
+     "text": "Figure 7. Cytotoxicity and antibacterial properties of PVA/PVDF/HA/Ag composite hydrogels. (A) Proliferative activity of L929 cells co-cultured with PVA/PVDF/HA/Ag composite hydrogels at 1 day, 3 days, 5 days, and 7 days. (B) Live/dead staining of L929 cells co-cultured with hydrogel after 7 days (a"
+    },
+    {
+     "page": 14,
+     "block_id": 10,
+     "text": "Figure 8. (A) Photos of the hemolysis assay of composite hydrogels. (B) Hemolysis rate of the composite hydrogels. (C,D) Degradation rate of composite hydrogels in PBS buffer solution (pH = 7.4) and in PBS buffer solutions with trypsin, respectively ( $ ^{**} $ p < 0.01)."
+    },
+    {
+     "page": 14,
+     "block_id": 11,
+     "text": "Figure 8C,D shows the results of in vitro degradation of hydrogel materials. It can be seen that the material basically did not degrade very well in the environment of both PBS buffer (pH = 7.4) and trypsin solutions. Generally speaking, the degradation principle of"
+    },
+    {
+     "page": 15,
+     "block_id": 6,
+     "text": "PVA/HA"
+    },
+    {
+     "page": 15,
+     "block_id": 7,
+     "text": "PVA/PVDF/Ag/HA"
+    },
+    {
+     "page": 15,
+     "block_id": 10,
+     "text": "Blank"
+    },
+    {
+     "page": 15,
+     "block_id": 12,
+     "text": "PVA/HA"
+    },
+    {
+     "page": 15,
+     "block_id": 16,
+     "text": "PVA/PVDF/Ag/HA"
+    },
+    {
+     "page": 15,
+     "block_id": 22,
+     "text": "Figure 9. (A) Osteochondral defect model in rabbits. (B) Macroscopic images of knees repaired after 12 weeks (C,D). Histological analysis of the repaired knees after 12 weeks. (C) Toluidine blue staining. (D) Hematoxylin and eosin staining. (E) (International Cartilage Repair Society) scores of blan"
+    }
+   ]
+  }
+ }
+}

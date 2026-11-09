@@ -1,0 +1,62 @@
+{
+ "key": "7RQXMGUF",
+ "passed": true,
+ "figures": 7,
+ "structural": {
+  "key": "7RQXMGUF",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 65726,
+  "new_text_chars": 65726,
+  "old_entries": 7,
+  "new_entries": 7,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 18,
+     "text": "FIGURE 1 | Systematic screening reveals the PEG-alkyl coacervate as the optimal candidate for in vivo translation. (a) Drug-laden coacervate effectively infiltrates biofilm barriers to eradicate S. aureus infection in a large-animal osteomyelitis model. (b) Schematic illustration comparing the stabi"
+    },
+    {
+     "page": 5,
+     "block_id": 22,
+     "text": "f Molecular weight-dependent compartmentalization"
+    },
+    {
+     "page": 5,
+     "block_id": 40,
+     "text": "1"
+    },
+    {
+     "page": 5,
+     "block_id": 47,
+     "text": "FIGURE 2 | Fluidic, infiltrative, and drug-loading properties of PEG-alkyl coacervate. (a) The PEG-alkyl coacervate exhibits injectable, water-immiscible, and fluidic characteristics. (b) Rheological behavior characterized by frequency sweep test. (c) Schematic showing coacervate infiltration into p"
+    },
+    {
+     "page": 7,
+     "block_id": 15,
+     "text": "FIGURE 3 | BA loaded coacervate exhibits long-term anti-bacterial effect and osteogenesis effect. (a) Illustration of the experiment to evaluate the long-term antibacterial effect of BA-laden coacervate (BA@coacervate) cocultured with bacterial suspension, which was removed for bactericidal analysis"
+    },
+    {
+     "page": 9,
+     "block_id": 12,
+     "text": "FIGURE 4 | BA and BMP loaded coacervate demonstrates prolonged effect of bacterial elimination in bones. (a) Schematic illustration of establishing the mouse tibial bacterial infection model and subsequent treatments. (b) Images (left) and X-ray images (right) of tibiae after different treatment. (c"
+    },
+    {
+     "page": 10,
+     "block_id": 14,
+     "text": "FIGURE 5 | BA and BMP loaded coacervate can regulate the inflammatory reaction and promote osteogenic induction. (a) Schematic illustration of the inflammatory reaction and osteogenic induction associated with infections. (b) Immunohistochemistry staining of TNF- $ \\alpha $ and IL-10 after different"
+    },
+    {
+     "page": 12,
+     "block_id": 6,
+     "text": "FIGURE 6 | BA and BMP loaded coacervate can effectively treat bone bacterial infection in beagle dogs. (a) Schematic illustration of establishing the beagle dog tibial bacterial infection model and subsequent treatments. (b) Images (left), X-ray images (mid) and 3D reconstruction images (right) of t"
+    }
+   ]
+  }
+ }
+}

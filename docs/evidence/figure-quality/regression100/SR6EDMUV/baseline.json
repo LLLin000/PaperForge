@@ -1,0 +1,148 @@
+{
+ "dry_run": {
+  "key": "SR6EDMUV",
+  "identity": {
+   "old": {
+    "entries": 5,
+    "unique_ids": 5,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 5,
+    "unique_ids": 5,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 12,
+   "new_render_files": 24,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/figures/figure_005.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/tables/table_001.jpg",
+    "assets/tables/table_002.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 7,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 2,
+   "new_tables": 2,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 101,
+   "new_rows": 101,
+   "role_removed": {
+    "unknown_structural": 1
+   },
+   "role_added": {
+    "authors": 1
+   },
+   "old_body_chars": 19766,
+   "new_body_chars": 19766,
+   "old_text_chars": 27572,
+   "new_text_chars": 27572,
+   "old_fulltext_chars": 24156
+  },
+  "new_manifest": {
+   "figures": 5,
+   "tables": 2,
+   "orphans": 5
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "SR6EDMUV",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 27572,
+  "new_text_chars": 27572,
+  "old_entries": 5,
+  "new_entries": 5,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 10,
+     "text": "Figure 1 Superior view of right glenohumeral joint noting oblique coronal MRI cut just posterior to acromioclavicular joint used to measure lateral acromion angle."
+    },
+    {
+     "page": 3,
+     "block_id": 4,
+     "text": "Figure 2 A, lateral acromion angle formed by intersection of line parallel to acromion undersurface and second line parallel to farthest lateral extension of superior and inferior bony glenoid. B, Coronal magnetic resonance image (repetition time, 2000 msec; echo time, 20 msec) of right glenohumeral"
+    },
+    {
+     "page": 4,
+     "block_id": 4,
+     "text": "Figure 3 Significant effect of decreasing lateral acromion angle to increasing rotator cuff disease."
+    },
+    {
+     "page": 5,
+     "block_id": 4,
+     "text": "Figure 4 Significant effect of decreasing lateral acromion angle to increasing supraspinatus tendon disease."
+    },
+    {
+     "page": 5,
+     "block_id": 6,
+     "text": "Figure 5 Significant effect of increasing age to increasing rotator cuff disease."
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 10,
+    "text": "Figure 1 Superior view of right glenohumeral joint noting oblique coronal MRI cut just posterior to acromioclavicular joint used to measure lateral acromion angle."
+   },
+   {
+    "page": 3,
+    "block_id": 4,
+    "text": "Figure 2 A, lateral acromion angle formed by intersection of line parallel to acromion undersurface and second line parallel to farthest lateral extension of superior and inferior bony glenoid. B, Coronal magnetic resonance image (repetition time, 2000 msec; echo time, 20 msec) of right glenohumeral"
+   },
+   {
+    "page": 4,
+    "block_id": 4,
+    "text": "Figure 3 Significant effect of decreasing lateral acromion angle to increasing rotator cuff disease."
+   },
+   {
+    "page": 5,
+    "block_id": 4,
+    "text": "Figure 4 Significant effect of decreasing lateral acromion angle to increasing supraspinatus tendon disease."
+   },
+   {
+    "page": 5,
+    "block_id": 6,
+    "text": "Figure 5 Significant effect of increasing age to increasing rotator cuff disease."
+   }
+  ]
+ }
+}

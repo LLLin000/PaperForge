@@ -1,0 +1,37 @@
+{
+ "key": "XIR7ZJ6F",
+ "passed": true,
+ "figures": 3,
+ "structural": {
+  "key": "XIR7ZJ6F",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 98453,
+  "new_text_chars": 98453,
+  "old_entries": 3,
+  "new_entries": 3,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 3,
+     "text": "Fig. 1 Several internal or external physical and chemical clues affect stem cell fate and can derive osteogenesis or chondrogenesis in osteochondral scaffolds. Created with BioRender.com"
+    },
+    {
+     "page": 5,
+     "block_id": 6,
+     "text": "Fig. 2 Some of the signaling pathways activated through mechanical forces in stem cells, affecting cell commitment into osteoblasts/chondrocytes. Created with BioRender.com"
+    },
+    {
+     "page": 6,
+     "block_id": 8,
+     "text": "Fig. 3 Physical and chemical clues controlling stem cell fate toward osteogenesis and chondrogenesis. Created with BioRender.com"
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,47 @@
+{
+ "key": "ZKQII63V",
+ "passed": true,
+ "figures": 3,
+ "structural": {
+  "key": "ZKQII63V",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 35026,
+  "new_text_chars": 35026,
+  "old_entries": 3,
+  "new_entries": 3,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 8,
+     "text": "Fig. 1. Zones of articular cartilage."
+    },
+    {
+     "page": 4,
+     "block_id": 3,
+     "text": "Fig. 2. Osteochondral allograft. (A) Preoperative MRI demonstrating full-thickness defect of the medial femoral condyle. (B) Arthroscopic image of the full thickness defect measuring  $ 18 \\, mm \\times 18 \\, mm $. (C) Final image after osteochondral allograft placed, press fit, and fixed with bioabs"
+    },
+    {
+     "page": 7,
+     "block_id": 7,
+     "text": "right knee arthroscopy"
+    },
+    {
+     "page": 7,
+     "block_id": 10,
+     "text": "right knee arthroscopy"
+    },
+    {
+     "page": 7,
+     "block_id": 14,
+     "text": "Fig. 3. DeNovo NT. (A) Full-thickness articular cartilage defect of the patella. (B) After placement of DeNovo NT. (C) Follow-up MRI."
+    }
+   ]
+  }
+ }
+}

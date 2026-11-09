@@ -1,0 +1,98 @@
+{
+ "key": "6VQX3P7I",
+ "passed": true,
+ "figures": 6,
+ "structural": {
+  "key": "6VQX3P7I",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 69932,
+  "new_text_chars": 69932,
+  "old_entries": 6,
+  "new_entries": 6,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      974,
+      251,
+      1032,
+      310
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      974,
+      409,
+      1027,
+      443
+     ]
+    },
+    {
+     "page": 7,
+     "bbox": [
+      666,
+      250,
+      942,
+      527
+     ]
+    },
+    {
+     "page": 12,
+     "bbox": [
+      252,
+      248,
+      694,
+      520
+     ]
+    },
+    {
+     "page": 12,
+     "bbox": [
+      248,
+      572,
+      708,
+      881
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 5,
+     "block_id": 3,
+     "text": "Fig. 1: Flow chart of the study design. AKI: acute kidney injury; CKD: chronic kidney disease; ML: machine learning; PICU: pediatric intensive care unit; RF: random forest; SHAP: SHapley Additive explanation."
+    },
+    {
+     "page": 7,
+     "block_id": 5,
+     "text": "Fig. 2: Performance of ML models to predict AKI. (A) ROC curves of the top five best-performing ML models. (B) AUCs of the top five best-performing ML models with varied numbers of features. (C) AUC, sensitivity, specificity, and F1 score of the RF model with varied numbers of features. AdaBoost: ad"
+    },
+    {
+     "page": 8,
+     "block_id": 12,
+     "text": "Fig. 3: Global model explanation by the SHAP method. (A) SHAP summary bar plot. (B) SHAP summary dot plot. The probability of AKI development increases with the SHAP value of a feature. A dot is made for SHAP value in the model for each single patient, so each patient has one dot on the line for eac"
+    },
+    {
+     "page": 9,
+     "block_id": 12,
+     "text": "Fig. 4: Local model explanation by the SHAP method. (A–F) Waterfall plot and evolution of risks contributed by each feature for individual child at low (A–C) or high (D–F) risk of developing AKI: A and D represented the individual child towards the \"AKI\" class, and B and E represented the individual"
+    },
+    {
+     "page": 10,
+     "block_id": 6,
+     "text": "Fig. 5: Convenient application for clinical utility. The convenient application of the final RF model with 8 features is available for AKI prediction. When entering actual values of the 8 features, this application automatically displays the probability of 85.31%. Meanwhile, the force plot for indiv"
+    },
+    {
+     "page": 12,
+     "block_id": 5,
+     "text": "Fig. 6: Comparison of the incidence rate and clinical variables according to the final model and KDIGO criteria. (A) Flow chart describing 1823 children subgrouped according to the final model and KDIGO criteria. AKI was defined based on serum creatinine and urine output in accordance with the KDIGO"
+    }
+   ]
+  }
+ }
+}

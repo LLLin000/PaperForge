@@ -1,0 +1,234 @@
+{
+ "dry_run": {
+  "key": "4M64NZEC",
+  "identity": {
+   "old": {
+    "entries": 5,
+    "unique_ids": 5,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 5,
+    "unique_ids": 5,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_reserved_004": "figure_figure_p003_b6"
+   },
+   "renamed": [
+    [
+     "figure_reserved_004",
+     "figure_figure_p003_b6"
+    ]
+   ],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 15,
+   "new_render_files": 36,
+   "render_added": [
+    "assets/figures/figure_figure_p003_b6.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/orphans/orphan_013.jpg",
+    "render/figures/figure_figure_p003_b6.md",
+    "render/figures/orphan_004.md",
+    "render/figures/orphan_005.md",
+    "render/figures/orphan_006.md",
+    "render/figures/orphan_007.md",
+    "render/figures/orphan_008.md",
+    "render/figures/orphan_009.md",
+    "render/figures/orphan_010.md",
+    "render/figures/orphan_011.md",
+    "render/figures/orphan_012.md",
+    "render/figures/orphan_013.md"
+   ],
+   "render_removed": [
+    "render/figures/figure_reserved_004.md"
+   ],
+   "embeds": 5,
+   "embeds_retargeted": 1,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 0,
+   "new_tables": 0,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 118,
+   "new_rows": 118,
+   "role_removed": {
+    "unknown_structural": 5,
+    "frontmatter_noise": 1,
+    "reference_item": 3,
+    "figure_inner_text": 1,
+    "figure_caption_candidate": 9
+   },
+   "role_added": {
+    "paper_title": 1,
+    "body_paragraph": 2,
+    "subsection_heading": 7,
+    "figure_caption": 9
+   },
+   "old_body_chars": 4727,
+   "new_body_chars": 4963,
+   "old_text_chars": 14569,
+   "new_text_chars": 14569,
+   "old_fulltext_chars": 12473
+  },
+  "new_manifest": {
+   "figures": 5,
+   "tables": 0,
+   "orphans": 13
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "4M64NZEC",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 14569,
+  "new_text_chars": 14569,
+  "old_entries": 5,
+  "new_entries": 5,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 3,
+     "block_id": 22,
+     "text": "注：（a）AR 增厚（箭头）；（b）AR 未见增厚（箭头）；（c）AR 测量示意（箭头）。"
+    },
+    {
+     "page": 4,
+     "block_id": 7,
+     "text": "注：（a）IGHL增厚（箭头）；（b）IGHL未见增厚（箭头）；（c）IGHL测量示意（箭头）。"
+    }
+   ],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 4,
+     "text": "表 1 2 位阅片者的 ICC 评估"
+    },
+    {
+     "page": 3,
+     "block_id": 6,
+     "text": "表 2 两组 CHL、AR、IGHL 厚度比较  $ (\\bar{x} \\pm s, \\text{mm}) $"
+    },
+    {
+     "page": 3,
+     "block_id": 8,
+     "text": "表 3 CHL、AR、IGHL 增厚对 FS 的诊断效能"
+    },
+    {
+     "page": 3,
+     "block_id": 11,
+     "text": "图 1 CHL、AR、IGHL 增厚诊断 FS 的 ROC 曲线"
+    },
+    {
+     "page": 3,
+     "block_id": 18,
+     "text": "注：（a）CHL 增厚（箭头）；（b）CHL 未见增厚（箭头）；（c）CHL 测量示意（箭头）。\n图 2 FS 患者及健康人 CHL 影像特征及测量示意图"
+    },
+    {
+     "page": 3,
+     "block_id": 22,
+     "text": "注：（a）AR 增厚（箭头）；（b）AR 未见增厚（箭头）；（c）AR 测量示意（箭头）。"
+    },
+    {
+     "page": 3,
+     "block_id": 26,
+     "text": "图 3 FS 患者及健康人 AR 影像特征及测量示意图"
+    },
+    {
+     "page": 4,
+     "block_id": 7,
+     "text": "注：（a）IGHL增厚（箭头）；（b）IGHL未见增厚（箭头）；（c）IGHL测量示意（箭头）。"
+    },
+    {
+     "page": 4,
+     "block_id": 9,
+     "text": "图 4 FS 患者及健康人 IGHL 影像特征及测量示意图"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [
+   {
+    "page": 3,
+    "block_id": 22,
+    "text": "注：（a）AR 增厚（箭头）；（b）AR 未见增厚（箭头）；（c）AR 测量示意（箭头）。"
+   },
+   {
+    "page": 4,
+    "block_id": 7,
+    "text": "注：（a）IGHL增厚（箭头）；（b）IGHL未见增厚（箭头）；（c）IGHL测量示意（箭头）。"
+   }
+  ],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 3,
+    "block_id": 4,
+    "text": "表 1 2 位阅片者的 ICC 评估"
+   },
+   {
+    "page": 3,
+    "block_id": 6,
+    "text": "表 2 两组 CHL、AR、IGHL 厚度比较  $ (\\bar{x} \\pm s, \\text{mm}) $"
+   },
+   {
+    "page": 3,
+    "block_id": 8,
+    "text": "表 3 CHL、AR、IGHL 增厚对 FS 的诊断效能"
+   },
+   {
+    "page": 3,
+    "block_id": 11,
+    "text": "图 1 CHL、AR、IGHL 增厚诊断 FS 的 ROC 曲线"
+   },
+   {
+    "page": 3,
+    "block_id": 18,
+    "text": "注：（a）CHL 增厚（箭头）；（b）CHL 未见增厚（箭头）；（c）CHL 测量示意（箭头）。\n图 2 FS 患者及健康人 CHL 影像特征及测量示意图"
+   },
+   {
+    "page": 3,
+    "block_id": 22,
+    "text": "注：（a）AR 增厚（箭头）；（b）AR 未见增厚（箭头）；（c）AR 测量示意（箭头）。"
+   },
+   {
+    "page": 3,
+    "block_id": 26,
+    "text": "图 3 FS 患者及健康人 AR 影像特征及测量示意图"
+   },
+   {
+    "page": 4,
+    "block_id": 7,
+    "text": "注：（a）IGHL增厚（箭头）；（b）IGHL未见增厚（箭头）；（c）IGHL测量示意（箭头）。"
+   },
+   {
+    "page": 4,
+    "block_id": 9,
+    "text": "图 4 FS 患者及健康人 IGHL 影像特征及测量示意图"
+   }
+  ]
+ }
+}

@@ -1,0 +1,145 @@
+{
+ "dry_run": {
+  "key": "ZKQII63V",
+  "identity": {
+   "old": {
+    "entries": 3,
+    "unique_ids": 3,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 3,
+    "unique_ids": 3,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 8,
+   "new_render_files": 16,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 3,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 0,
+   "new_tables": 0,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 158,
+   "new_rows": 158,
+   "role_removed": {
+    "structured_insert": 3,
+    "figure_caption_candidate": 2
+   },
+   "role_added": {
+    "body_paragraph": 2,
+    "section_heading": 1,
+    "figure_caption": 2
+   },
+   "old_body_chars": 21723,
+   "new_body_chars": 21981,
+   "old_text_chars": 35026,
+   "new_text_chars": 35026,
+   "old_fulltext_chars": 34193
+  },
+  "new_manifest": {
+   "figures": 3,
+   "tables": 0,
+   "orphans": 5
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "ZKQII63V",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 35026,
+  "new_text_chars": 35026,
+  "old_entries": 3,
+  "new_entries": 3,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 8,
+     "text": "Fig. 1. Zones of articular cartilage."
+    },
+    {
+     "page": 4,
+     "block_id": 3,
+     "text": "Fig. 2. Osteochondral allograft. (A) Preoperative MRI demonstrating full-thickness defect of the medial femoral condyle. (B) Arthroscopic image of the full thickness defect measuring  $ 18 \\, mm \\times 18 \\, mm $. (C) Final image after osteochondral allograft placed, press fit, and fixed with bioabs"
+    },
+    {
+     "page": 7,
+     "block_id": 7,
+     "text": "right knee arthroscopy"
+    },
+    {
+     "page": 7,
+     "block_id": 10,
+     "text": "right knee arthroscopy"
+    },
+    {
+     "page": 7,
+     "block_id": 14,
+     "text": "Fig. 3. DeNovo NT. (A) Full-thickness articular cartilage defect of the patella. (B) After placement of DeNovo NT. (C) Follow-up MRI."
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 8,
+    "text": "Fig. 1. Zones of articular cartilage."
+   },
+   {
+    "page": 4,
+    "block_id": 3,
+    "text": "Fig. 2. Osteochondral allograft. (A) Preoperative MRI demonstrating full-thickness defect of the medial femoral condyle. (B) Arthroscopic image of the full thickness defect measuring  $ 18 \\, mm \\times 18 \\, mm $. (C) Final image after osteochondral allograft placed, press fit, and fixed with bioabs"
+   },
+   {
+    "page": 7,
+    "block_id": 7,
+    "text": "right knee arthroscopy"
+   },
+   {
+    "page": 7,
+    "block_id": 10,
+    "text": "right knee arthroscopy"
+   },
+   {
+    "page": 7,
+    "block_id": 14,
+    "text": "Fig. 3. DeNovo NT. (A) Full-thickness articular cartilage defect of the patella. (B) After placement of DeNovo NT. (C) Follow-up MRI."
+   }
+  ]
+ }
+}

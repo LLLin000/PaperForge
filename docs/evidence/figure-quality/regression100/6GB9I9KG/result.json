@@ -1,0 +1,97 @@
+{
+ "key": "6GB9I9KG",
+ "passed": true,
+ "figures": 8,
+ "structural": {
+  "key": "6GB9I9KG",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 38691,
+  "new_text_chars": 38691,
+  "old_entries": 8,
+  "new_entries": 8,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 8,
+     "block_id": 3,
+     "text": "Fig. 8 SEM micrographs of EPD-0 and EPD-60 after co-culture with P. gingivalis for 72 h. White circles: P. gingivalis cells"
+    }
+   ],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      1019,
+      220,
+      1077,
+      278
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      114,
+      1349,
+      331,
+      1408
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 4,
+     "block_id": 6,
+     "text": "EPD-30"
+    },
+    {
+     "page": 4,
+     "block_id": 13,
+     "text": "Fig. 1 a–j SEM images of each sample. a, b EPD-0; c, d EPD-15; e, f EPD-30; g, h EPD-45; i, j EPD-60"
+    },
+    {
+     "page": 5,
+     "block_id": 3,
+     "text": "Fig. 2 EDS spectra of each samples"
+    },
+    {
+     "page": 5,
+     "block_id": 8,
+     "text": "Fig. 3 XRD spectra of each samples"
+    },
+    {
+     "page": 5,
+     "block_id": 10,
+     "text": "Fig. 4 Viability of HGFs after co-culture on samples for 1, 3 and 5 d. Numbers 5 indicates a statistically significant difference vs. EPD-60 (p < 0.05)"
+    },
+    {
+     "page": 6,
+     "block_id": 3,
+     "text": "Fig. 5 Fluorescent micrographs of Live/Dead-stained HGFs seeded on samples after co-culture for 5 d. Red pixels: dead cells; green pixels: viable cells. All scale bars: 50  $ \\mu $m. White circles: dead cells"
+    },
+    {
+     "page": 6,
+     "block_id": 5,
+     "text": "Fig. 6 Low and high-power fluorescence micrographs of HGFs seeded on samples after co-culture for 5 d. HGFs stained for cykoskeleton fibers (green pixels) and nuclei (blue pixels). All low-power scale bars: 20 μm; all high-power scale bar: 100 μm. White circles: regions shown at a higher power view "
+    },
+    {
+     "page": 7,
+     "block_id": 4,
+     "text": "Fig. 7 a Representative photographs of colonies formed on samples after co-culture with P. gingivalis for 24 h; b bacterial colony numbers, numbers 2, 3, 4 indicate statistically significant differences (p < 0.05) vs. EPD-30, EPD-45, and EPD-60, respectively; c SOD activity value. Numbers 2, 3, 4, 5"
+    },
+    {
+     "page": 8,
+     "block_id": 3,
+     "text": "Fig. 8 SEM micrographs of EPD-0 and EPD-60 after co-culture with P. gingivalis for 72 h. White circles: P. gingivalis cells"
+    },
+    {
+     "page": 8,
+     "block_id": 4,
+     "text": "Fig. 9 Micrographs of samples after Live/Dead fluorescent staining on co-cultured with P. gingivalis for 10 h. Red pixels: dead P. gingivalis cells; green pixels: viable P. gingivalis cells. All scale bars: 100  $ \\mu $m"
+    }
+   ]
+  }
+ }
+}

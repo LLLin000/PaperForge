@@ -1,0 +1,58 @@
+{
+ "key": "RQILSL2A",
+ "passed": true,
+ "figures": 5,
+ "structural": {
+  "key": "RQILSL2A",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 44512,
+  "new_text_chars": 44512,
+  "old_entries": 6,
+  "new_entries": 5,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 9,
+     "block_id": 0,
+     "text": "FIGURE 5 | MIL-101(Fe) combined with PEMF alleviates OA development in mice. (A, B) Representative images and quantification of immunofluorescence staining of Collagen Type II in the knee joints of mice. n=5. (C) Representative images of Safranin O/fast green staining. (D) OARSI score. (E) Represent"
+    }
+   ],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 5,
+     "block_id": 11,
+     "text": "FIGURE 1 | Synthesis and characterizations of MIL-101(Fe). (A) Schematic diagram of the MIL-101(Fe) synthesis process. (B) SEM of MIL-101(Fe). (C) The PXRD pattern of MIL-101(Fe). (D) The changes of FT-IR spectra in MIL-101(Fe). (E) The UV-Vis absorption spectra analysis of MIL-101(Fe)."
+    },
+    {
+     "page": 5,
+     "block_id": 18,
+     "text": "FIGURE 2 | Schematic diagram of the primary chondrocyte experiments and biocompatibility of MIL-101(Fe). (A) Schematic diagram of the primary chondrocyte experiments. (B) Effects of different concentrations of MIL-101(Fe) on cell viability for 24h. (C) Effects of MIL-101(Fe) at a concentration of 10"
+    },
+    {
+     "page": 6,
+     "block_id": 28,
+     "text": "FIGURE 3 | MIL-101(Fe) combined with PEMF ameliorates chondrocyte necroptosis through the RIP1/RIP3/MLKL pathway in human primary chondrocytes (A, B) p-RIP1, RIP1, p-RIP3, RIP3, p-MLKL, and MLKL protein expression revealed by Western blotting. n=5. (C) RT-PCR analysis of Sox9, ACAN, Col 2a1, RUNX2, "
+    },
+    {
+     "page": 7,
+     "block_id": 11,
+     "text": "FIGURE 4 | MIL-101(Fe) combined with PEMF ameliorates chondrocyte necroptosis through the RIP1/RIP3/MLKL pathway in mice (A–C) Representative images and quantification of immunofluorescence staining of p-RIP1, RIP1, p-RIP3, RIP3, p-MLKL, and MLKL in the knee joints of mice. n=5. (D) TEM of chondrocy"
+    },
+    {
+     "page": 8,
+     "block_id": 20,
+     "text": "FIGURE 5 | Legend on next page."
+    },
+    {
+     "page": 9,
+     "block_id": 0,
+     "text": "FIGURE 5 | MIL-101(Fe) combined with PEMF alleviates OA development in mice. (A, B) Representative images and quantification of immunofluorescence staining of Collagen Type II in the knee joints of mice. n=5. (C) Representative images of Safranin O/fast green staining. (D) OARSI score. (E) Represent"
+    }
+   ]
+  }
+ }
+}

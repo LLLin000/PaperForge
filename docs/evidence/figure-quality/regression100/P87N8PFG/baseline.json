@@ -1,0 +1,438 @@
+{
+ "dry_run": {
+  "key": "P87N8PFG",
+  "identity": {
+   "old": {
+    "entries": 16,
+    "unique_ids": 16,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 16,
+    "unique_ids": 16,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_003": "figure_003",
+    "figure_005": "figure_005",
+    "figure_006": "figure_006",
+    "figure_007": "figure_007",
+    "figure_008": "figure_008",
+    "figure_009": "figure_009",
+    "figure_010": "figure_010",
+    "figure_011": "figure_011",
+    "figure_012": "figure_012",
+    "figure_014": "figure_014",
+    "figure_015": "figure_015",
+    "figure_016": "figure_016",
+    "figure_017": "figure_017",
+    "figure_018": "figure_018",
+    "figure_019": "figure_019"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 67,
+   "new_render_files": 134,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_005.jpg",
+    "assets/figures/figure_006.jpg",
+    "assets/figures/figure_007.jpg",
+    "assets/figures/figure_008.jpg",
+    "assets/figures/figure_009.jpg",
+    "assets/figures/figure_010.jpg",
+    "assets/figures/figure_011.jpg",
+    "assets/figures/figure_012.jpg",
+    "assets/figures/figure_014.jpg",
+    "assets/figures/figure_015.jpg",
+    "assets/figures/figure_016.jpg",
+    "assets/figures/figure_017.jpg",
+    "assets/figures/figure_018.jpg",
+    "assets/figures/figure_019.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/orphans/orphan_013.jpg",
+    "assets/orphans/orphan_014.jpg",
+    "assets/orphans/orphan_015.jpg",
+    "assets/orphans/orphan_016.jpg",
+    "assets/orphans/orphan_017.jpg",
+    "assets/orphans/orphan_018.jpg",
+    "assets/orphans/orphan_019.jpg",
+    "assets/orphans/orphan_020.jpg",
+    "assets/orphans/orphan_021.jpg",
+    "assets/orphans/orphan_022.jpg",
+    "assets/orphans/orphan_023.jpg",
+    "assets/orphans/orphan_024.jpg",
+    "assets/orphans/orphan_025.jpg",
+    "assets/orphans/orphan_026.jpg",
+    "assets/orphans/orphan_027.jpg",
+    "assets/orphans/orphan_028.jpg",
+    "assets/orphans/orphan_029.jpg",
+    "assets/orphans/orphan_030.jpg",
+    "assets/orphans/orphan_031.jpg",
+    "assets/orphans/orphan_032.jpg",
+    "assets/orphans/orphan_033.jpg",
+    "assets/orphans/orphan_034.jpg",
+    "assets/orphans/orphan_035.jpg",
+    "assets/orphans/orphan_036.jpg",
+    "assets/orphans/orphan_037.jpg",
+    "assets/orphans/orphan_038.jpg",
+    "assets/orphans/orphan_039.jpg",
+    "assets/orphans/orphan_040.jpg",
+    "assets/orphans/orphan_041.jpg",
+    "assets/orphans/orphan_042.jpg",
+    "assets/orphans/orphan_043.jpg",
+    "assets/orphans/orphan_044.jpg",
+    "assets/orphans/orphan_045.jpg",
+    "assets/orphans/orphan_046.jpg",
+    "assets/orphans/orphan_047.jpg",
+    "assets/orphans/orphan_048.jpg",
+    "assets/orphans/orphan_049.jpg",
+    "assets/orphans/orphan_050.jpg",
+    "assets/tables/table_001.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 17,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 1,
+   "new_tables": 1,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 337,
+   "new_rows": 337,
+   "role_removed": {
+    "structured_insert": 1,
+    "figure_caption_candidate": 2
+   },
+   "role_added": {
+    "frontmatter_noise": 1,
+    "figure_caption": 2
+   },
+   "old_body_chars": 47085,
+   "new_body_chars": 47085,
+   "old_text_chars": 80136,
+   "new_text_chars": 80136,
+   "old_fulltext_chars": 65279
+  },
+  "new_manifest": {
+   "figures": 16,
+   "tables": 1,
+   "orphans": 50
+  },
+  "new_orphans": 1
+ },
+ "structural": {
+  "key": "P87N8PFG",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 80136,
+  "new_text_chars": 80136,
+  "old_entries": 16,
+  "new_entries": 16,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 3,
+     "block_id": 3,
+     "text": "Figure 2. Various TA-based MPNs. (A) Fe $ ^{III} $-TA nanoparticles. (B) Fe $ ^{III} $-TA capsules. (C) Fe $ ^{III} $-TA coating film. (D) Fe $ ^{III} $-TA cryogel. (E) Various applications of TA-based MPNs. (A) Adapted with permission from [11], copyright 2018 Springer Nature Limited. (B) Adapted w"
+    },
+    {
+     "page": 5,
+     "block_id": 5,
+     "text": "Figure 4. Preparation of various MPNs from different metals. a) Schematic illustrations of synthesized MPNs. b) Periodic table. c) DIC images of different MPN capsules. Scale bars are 5  $ \\mu $m. Adapted with permission from [25], copyright 2014 Angewandte Chemie International Edit."
+    },
+    {
+     "page": 12,
+     "block_id": 11,
+     "text": "Figure 13. Cell compatibility evaluation of five Ti samples. Adapted with permission from [47], copyright 2020 Elsevier B.V."
+    }
+   ],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      851,
+      134,
+      1111,
+      180
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 6,
+     "text": "Figure 1. Chemical structures of different groups of polyphenols."
+    },
+    {
+     "page": 3,
+     "block_id": 3,
+     "text": "Figure 2. Various TA-based MPNs. (A) Fe $ ^{III} $-TA nanoparticles. (B) Fe $ ^{III} $-TA capsules. (C) Fe $ ^{III} $-TA coating film. (D) Fe $ ^{III} $-TA cryogel. (E) Various applications of TA-based MPNs. (A) Adapted with permission from [11], copyright 2018 Springer Nature Limited. (B) Adapted w"
+    },
+    {
+     "page": 3,
+     "block_id": 5,
+     "text": "Figure 3. Various MPN systems based on different phenolic ligands. (A) Gallic acid (GA), pyrogallol (PG), and pyrocatechol (PC). (B) Cyclodextrin catechol (CC), cyclodextrin galloyl (CG). (C) Various flavonoids including myricetin, quercetin, fisetin, and luteolin. (D) Copolymerization of dopamine m"
+    },
+    {
+     "page": 5,
+     "block_id": 5,
+     "text": "Figure 4. Preparation of various MPNs from different metals. a) Schematic illustrations of synthesized MPNs. b) Periodic table. c) DIC images of different MPN capsules. Scale bars are 5  $ \\mu $m. Adapted with permission from [25], copyright 2014 Angewandte Chemie International Edit."
+    },
+    {
+     "page": 5,
+     "block_id": 7,
+     "text": "Figure 5. Schematic illustration of the MPN preparation through one-step and multistep assembly. (A) One-step assembly of Fe $ ^{III} $ and TA. Adapted with permission from [15], copyright 2014 Angewandte Chemie International Edition. (B) Multi-step assembly of Fe $ ^{III} $ and TA. Adapted with per"
+    },
+    {
+     "page": 6,
+     "block_id": 3,
+     "text": "Figure 6. Novel, rust-mediated continuous MPN assembly process compared with the conventional assembly. Adapted with permission from [31], copyright 2017 Wiley Online Library."
+    },
+    {
+     "page": 8,
+     "block_id": 6,
+     "text": "Figure 7. Template-mediated preparation of MPNs. (A) Schematic illustration of the fabrication process of DOX-loaded MPN capsules and release mechanism of DOX from MPN capsules. Adapted with permission from [33], copyright 2015 Wiley Online Library. (B) The formation of npFe $ ^{III} $-TA RPs by rep"
+    },
+    {
+     "page": 8,
+     "block_id": 8,
+     "text": "Figure 8. Interfacial supramolecular self-assembly for MPNs. (A) One-pot self-assembly based on the electrooxidation of Fe $ ^{III} $ in Fe $ ^{III} $. Adapted with permission from [38], copyright 2017 American Chemical Society. (B) Biphasic interfacial supramolecular self-assembly of Fe $ ^{III} $ "
+    },
+    {
+     "page": 9,
+     "block_id": 6,
+     "text": "Figure 9. Various shapes of MPNs. (A) Schematic illustration of Fe $ ^{III} $-TA networks forming different shapes. (B) Films. (C) Nanoparticles. (D) Capsules. (E) Ellipsoidal particles. (F) Mesoporous particles. (A) Adapted with permission from [39], copyright 2018 American Chemical Society. (B, E)"
+    },
+    {
+     "page": 9,
+     "block_id": 8,
+     "text": "Figure 10. SEM and TEM images of (A) PCs, (B) PCs@MPN and (C) Meso-MPN particles. Adapted with permission from [41], copyright 2019 American Chemical Society."
+    },
+    {
+     "page": 10,
+     "block_id": 10,
+     "text": "Figure 11. Influence of salt concentration on Fe $ ^{III} $-TA film thickness. Adapted with permission from [44], copyright 2017 American Chemical Society."
+    },
+    {
+     "page": 11,
+     "block_id": 11,
+     "text": "Figure 12. (A) Cytotoxicity evaluation of various Fe-phenolic network composites to NIH-3T3 fibroblasts. Adapted with permission from [45], copyright 2020 Elsevier B.V. (B) Morphology assessment of MC3T3-E1 cells seeded on Mg-phenolic networks for 1 and 3 days. Adapted with permission from [46], cop"
+    },
+    {
+     "page": 12,
+     "block_id": 4,
+     "text": "Ti"
+    },
+    {
+     "page": 12,
+     "block_id": 6,
+     "text": "AHTi-TA"
+    },
+    {
+     "page": 12,
+     "block_id": 11,
+     "text": "Figure 13. Cell compatibility evaluation of five Ti samples. Adapted with permission from [47], copyright 2020 Elsevier B.V."
+    },
+    {
+     "page": 12,
+     "block_id": 14,
+     "text": "iB"
+    },
+    {
+     "page": 12,
+     "block_id": 18,
+     "text": "Figure 14. (A, B) Preparation scheme and bio-distribution studies of Ti-Tannic hydrogel. Adapted with permission from [50], copyright 2019 Royal Society of Chemistry. (C, D) Preparation scheme and in vivo assessment of inflammation and toxicity of the Fe-based phenolic capsules. Adapted with permiss"
+    },
+    {
+     "page": 13,
+     "block_id": 13,
+     "text": "Figure 15. (A) Representative brightness mode (B-mode) and contrast-enhanced ultrasound (CEU) images of mouse livers over time ex vivo. Adapted with permission from [35], copyright 2015 Wiley Online Library. (B) Fluorescence spectra and images of capsule suspensions of Eu $ ^{III} $-TTA-TA and Tb $ "
+    },
+    {
+     "page": 14,
+     "block_id": 3,
+     "text": "Figure 16. (A) Formation and dual-responsive disassembly of a BPN film for controlled anticancer drug delivery. Adapted with permission from [66], copyright 2015 Wiley Online Library. (B) Formulation of nanoparticles and the ROS enhanced chemotherapy mechanism of lipid oxidation and DNA damage to en"
+    },
+    {
+     "page": 15,
+     "block_id": 21,
+     "text": "Figure 17. Photothermal evaluation of different MPNs. (A) Cu $ ^{II} $TA, Mn $ ^{II} $TA, Ni $ ^{II} $TA, Gd $ ^{III} $TA, Ru $ ^{III} $TA, V $ ^{II} $TA, and Fe $ ^{III} $TA (100  $ \\mu $g mL $ ^{-1} $, metal/TA = 3.15, 2 W cm $ ^{-2} $). Adapted with permission from [12], copyright 2018 American C"
+    },
+    {
+     "page": 16,
+     "block_id": 9,
+     "text": "Figure 18. Radiotherapy based on MPNs. (A) Schematic illustration of synthesized Hb@Hf-Ce6 nanoparticles for radiotherapy, radiodynamic-immunotherapy to eradicate primary and remote tumors. Adapted with permission from [79], copyright 2020 Wiley Online Library. (B) Schematic illustration of GRD prep"
+    },
+    {
+     "page": 17,
+     "block_id": 3,
+     "text": "Figure 19. (A) Chemical structures and cartoon illustration of the building blocks (EGCG, Pt-OH, PEG-b-PPOH) used for the preparation of PTCG NPs to realize chemo/chemo-dynamic therapy. Adapted with permission from [82], copyright 2019 Wiley Online Library. (B) Schematic illustration showing the con"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [
+   {
+    "page": 3,
+    "block_id": 3,
+    "text": "Figure 2. Various TA-based MPNs. (A) Fe $ ^{III} $-TA nanoparticles. (B) Fe $ ^{III} $-TA capsules. (C) Fe $ ^{III} $-TA coating film. (D) Fe $ ^{III} $-TA cryogel. (E) Various applications of TA-based MPNs. (A) Adapted with permission from [11], copyright 2018 Springer Nature Limited. (B) Adapted w"
+   },
+   {
+    "page": 5,
+    "block_id": 5,
+    "text": "Figure 4. Preparation of various MPNs from different metals. a) Schematic illustrations of synthesized MPNs. b) Periodic table. c) DIC images of different MPN capsules. Scale bars are 5  $ \\mu $m. Adapted with permission from [25], copyright 2014 Angewandte Chemie International Edit."
+   },
+   {
+    "page": 12,
+    "block_id": 11,
+    "text": "Figure 13. Cell compatibility evaluation of five Ti samples. Adapted with permission from [47], copyright 2020 Elsevier B.V."
+   }
+  ],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     851,
+     134,
+     1111,
+     180
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 6,
+    "text": "Figure 1. Chemical structures of different groups of polyphenols."
+   },
+   {
+    "page": 3,
+    "block_id": 3,
+    "text": "Figure 2. Various TA-based MPNs. (A) Fe $ ^{III} $-TA nanoparticles. (B) Fe $ ^{III} $-TA capsules. (C) Fe $ ^{III} $-TA coating film. (D) Fe $ ^{III} $-TA cryogel. (E) Various applications of TA-based MPNs. (A) Adapted with permission from [11], copyright 2018 Springer Nature Limited. (B) Adapted w"
+   },
+   {
+    "page": 3,
+    "block_id": 5,
+    "text": "Figure 3. Various MPN systems based on different phenolic ligands. (A) Gallic acid (GA), pyrogallol (PG), and pyrocatechol (PC). (B) Cyclodextrin catechol (CC), cyclodextrin galloyl (CG). (C) Various flavonoids including myricetin, quercetin, fisetin, and luteolin. (D) Copolymerization of dopamine m"
+   },
+   {
+    "page": 5,
+    "block_id": 5,
+    "text": "Figure 4. Preparation of various MPNs from different metals. a) Schematic illustrations of synthesized MPNs. b) Periodic table. c) DIC images of different MPN capsules. Scale bars are 5  $ \\mu $m. Adapted with permission from [25], copyright 2014 Angewandte Chemie International Edit."
+   },
+   {
+    "page": 5,
+    "block_id": 7,
+    "text": "Figure 5. Schematic illustration of the MPN preparation through one-step and multistep assembly. (A) One-step assembly of Fe $ ^{III} $ and TA. Adapted with permission from [15], copyright 2014 Angewandte Chemie International Edition. (B) Multi-step assembly of Fe $ ^{III} $ and TA. Adapted with per"
+   },
+   {
+    "page": 6,
+    "block_id": 3,
+    "text": "Figure 6. Novel, rust-mediated continuous MPN assembly process compared with the conventional assembly. Adapted with permission from [31], copyright 2017 Wiley Online Library."
+   },
+   {
+    "page": 8,
+    "block_id": 6,
+    "text": "Figure 7. Template-mediated preparation of MPNs. (A) Schematic illustration of the fabrication process of DOX-loaded MPN capsules and release mechanism of DOX from MPN capsules. Adapted with permission from [33], copyright 2015 Wiley Online Library. (B) The formation of npFe $ ^{III} $-TA RPs by rep"
+   },
+   {
+    "page": 8,
+    "block_id": 8,
+    "text": "Figure 8. Interfacial supramolecular self-assembly for MPNs. (A) One-pot self-assembly based on the electrooxidation of Fe $ ^{III} $ in Fe $ ^{III} $. Adapted with permission from [38], copyright 2017 American Chemical Society. (B) Biphasic interfacial supramolecular self-assembly of Fe $ ^{III} $ "
+   },
+   {
+    "page": 9,
+    "block_id": 6,
+    "text": "Figure 9. Various shapes of MPNs. (A) Schematic illustration of Fe $ ^{III} $-TA networks forming different shapes. (B) Films. (C) Nanoparticles. (D) Capsules. (E) Ellipsoidal particles. (F) Mesoporous particles. (A) Adapted with permission from [39], copyright 2018 American Chemical Society. (B, E)"
+   },
+   {
+    "page": 9,
+    "block_id": 8,
+    "text": "Figure 10. SEM and TEM images of (A) PCs, (B) PCs@MPN and (C) Meso-MPN particles. Adapted with permission from [41], copyright 2019 American Chemical Society."
+   },
+   {
+    "page": 10,
+    "block_id": 10,
+    "text": "Figure 11. Influence of salt concentration on Fe $ ^{III} $-TA film thickness. Adapted with permission from [44], copyright 2017 American Chemical Society."
+   },
+   {
+    "page": 11,
+    "block_id": 11,
+    "text": "Figure 12. (A) Cytotoxicity evaluation of various Fe-phenolic network composites to NIH-3T3 fibroblasts. Adapted with permission from [45], copyright 2020 Elsevier B.V. (B) Morphology assessment of MC3T3-E1 cells seeded on Mg-phenolic networks for 1 and 3 days. Adapted with permission from [46], cop"
+   },
+   {
+    "page": 12,
+    "block_id": 4,
+    "text": "Ti"
+   },
+   {
+    "page": 12,
+    "block_id": 6,
+    "text": "AHTi-TA"
+   },
+   {
+    "page": 12,
+    "block_id": 11,
+    "text": "Figure 13. Cell compatibility evaluation of five Ti samples. Adapted with permission from [47], copyright 2020 Elsevier B.V."
+   },
+   {
+    "page": 12,
+    "block_id": 14,
+    "text": "iB"
+   },
+   {
+    "page": 12,
+    "block_id": 18,
+    "text": "Figure 14. (A, B) Preparation scheme and bio-distribution studies of Ti-Tannic hydrogel. Adapted with permission from [50], copyright 2019 Royal Society of Chemistry. (C, D) Preparation scheme and in vivo assessment of inflammation and toxicity of the Fe-based phenolic capsules. Adapted with permiss"
+   },
+   {
+    "page": 13,
+    "block_id": 13,
+    "text": "Figure 15. (A) Representative brightness mode (B-mode) and contrast-enhanced ultrasound (CEU) images of mouse livers over time ex vivo. Adapted with permission from [35], copyright 2015 Wiley Online Library. (B) Fluorescence spectra and images of capsule suspensions of Eu $ ^{III} $-TTA-TA and Tb $ "
+   },
+   {
+    "page": 14,
+    "block_id": 3,
+    "text": "Figure 16. (A) Formation and dual-responsive disassembly of a BPN film for controlled anticancer drug delivery. Adapted with permission from [66], copyright 2015 Wiley Online Library. (B) Formulation of nanoparticles and the ROS enhanced chemotherapy mechanism of lipid oxidation and DNA damage to en"
+   },
+   {
+    "page": 15,
+    "block_id": 21,
+    "text": "Figure 17. Photothermal evaluation of different MPNs. (A) Cu $ ^{II} $TA, Mn $ ^{II} $TA, Ni $ ^{II} $TA, Gd $ ^{III} $TA, Ru $ ^{III} $TA, V $ ^{II} $TA, and Fe $ ^{III} $TA (100  $ \\mu $g mL $ ^{-1} $, metal/TA = 3.15, 2 W cm $ ^{-2} $). Adapted with permission from [12], copyright 2018 American C"
+   },
+   {
+    "page": 16,
+    "block_id": 9,
+    "text": "Figure 18. Radiotherapy based on MPNs. (A) Schematic illustration of synthesized Hb@Hf-Ce6 nanoparticles for radiotherapy, radiodynamic-immunotherapy to eradicate primary and remote tumors. Adapted with permission from [79], copyright 2020 Wiley Online Library. (B) Schematic illustration of GRD prep"
+   },
+   {
+    "page": 17,
+    "block_id": 3,
+    "text": "Figure 19. (A) Chemical structures and cartoon illustration of the building blocks (EGCG, Pt-OH, PEG-b-PPOH) used for the preparation of PTCG NPs to realize chemo/chemo-dynamic therapy. Adapted with permission from [82], copyright 2019 Wiley Online Library. (B) Schematic illustration showing the con"
+   }
+  ]
+ }
+}

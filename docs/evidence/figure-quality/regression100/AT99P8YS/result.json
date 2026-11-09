@@ -1,0 +1,67 @@
+{
+ "key": "AT99P8YS",
+ "passed": true,
+ "figures": 3,
+ "structural": {
+  "key": "AT99P8YS",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 61872,
+  "new_text_chars": 61872,
+  "old_entries": 3,
+  "new_entries": 3,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 5,
+     "text": "Figure 1. Workflow of Radiomic Feature Extraction"
+    },
+    {
+     "page": 9,
+     "block_id": 6,
+     "text": "Figure 2. Clinical-Radiomic Nomogram for Predicting Lymph Node Metastasis"
+    },
+    {
+     "page": 9,
+     "block_id": 9,
+     "text": "Nomogram to estimate ALN in the subgroup of patients with 2 lymph node metastases"
+    },
+    {
+     "page": 9,
+     "block_id": 11,
+     "text": "D Nomogram to estimate ALN in the subgroup of patients with 3 or more lymph node metastases"
+    },
+    {
+     "page": 10,
+     "block_id": 4,
+     "text": "Figure 3. Clinical-Radiomic Nomogram for Predicting Disease-Free Survival (DFS)"
+    },
+    {
+     "page": 10,
+     "block_id": 5,
+     "text": "A DFS according to nomogram in development cohort"
+    },
+    {
+     "page": 10,
+     "block_id": 7,
+     "text": "B DFS according to nomogram in validation cohort"
+    },
+    {
+     "page": 10,
+     "block_id": 9,
+     "text": "C Nomogram estimated DFS in development cohort"
+    },
+    {
+     "page": 10,
+     "block_id": 11,
+     "text": "D Nomogram estimated DFS in validation cohort"
+    }
+   ]
+  }
+ }
+}

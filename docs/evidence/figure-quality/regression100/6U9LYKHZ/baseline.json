@@ -1,0 +1,317 @@
+{
+ "dry_run": {
+  "key": "6U9LYKHZ",
+  "identity": {
+   "old": {
+    "entries": 6,
+    "unique_ids": 6,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 6,
+    "unique_ids": 6,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005",
+    "figure_006": "figure_006"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 42,
+   "new_render_files": 80,
+   "render_added": [
+    "assets/orphans/orphan_014.jpg",
+    "assets/orphans/orphan_015.jpg",
+    "assets/orphans/orphan_016.jpg",
+    "assets/orphans/orphan_017.jpg",
+    "assets/orphans/orphan_018.jpg",
+    "assets/orphans/orphan_019.jpg",
+    "assets/orphans/orphan_020.jpg",
+    "assets/orphans/orphan_021.jpg",
+    "assets/orphans/orphan_022.jpg",
+    "assets/orphans/orphan_023.jpg",
+    "assets/orphans/orphan_024.jpg",
+    "assets/orphans/orphan_025.jpg",
+    "assets/orphans/orphan_026.jpg",
+    "assets/orphans/orphan_027.jpg",
+    "assets/orphans/orphan_028.jpg",
+    "assets/orphans/orphan_029.jpg",
+    "assets/orphans/orphan_030.jpg",
+    "assets/orphans/orphan_031.jpg",
+    "assets/orphans/orphan_032.jpg",
+    "render/figures/orphan_014.md",
+    "render/figures/orphan_015.md",
+    "render/figures/orphan_016.md",
+    "render/figures/orphan_017.md",
+    "render/figures/orphan_018.md",
+    "render/figures/orphan_019.md",
+    "render/figures/orphan_020.md",
+    "render/figures/orphan_021.md",
+    "render/figures/orphan_022.md",
+    "render/figures/orphan_023.md",
+    "render/figures/orphan_024.md",
+    "render/figures/orphan_025.md",
+    "render/figures/orphan_026.md",
+    "render/figures/orphan_027.md",
+    "render/figures/orphan_028.md",
+    "render/figures/orphan_029.md",
+    "render/figures/orphan_030.md",
+    "render/figures/orphan_031.md",
+    "render/figures/orphan_032.md"
+   ],
+   "render_removed": [],
+   "embeds": 8,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 2,
+   "new_tables": 2,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 376,
+   "new_rows": 376,
+   "role_removed": {
+    "frontmatter_noise": 1,
+    "structured_insert": 1,
+    "reference_item": 7
+   },
+   "role_added": {
+    "noise": 4,
+    "section_heading": 2,
+    "body_paragraph": 3
+   },
+   "old_body_chars": 41311,
+   "new_body_chars": 44413,
+   "old_text_chars": 71890,
+   "new_text_chars": 71890,
+   "old_fulltext_chars": 60061
+  },
+  "new_manifest": {
+   "figures": 6,
+   "tables": 2,
+   "orphans": 32
+  },
+  "new_orphans": 7
+ },
+ "structural": {
+  "key": "6U9LYKHZ",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 71890,
+  "new_text_chars": 71890,
+  "old_entries": 6,
+  "new_entries": 6,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 16,
+     "bbox": [
+      102,
+      160,
+      246,
+      344
+     ]
+    },
+    {
+     "page": 16,
+     "bbox": [
+      104,
+      449,
+      248,
+      634
+     ]
+    },
+    {
+     "page": 16,
+     "bbox": [
+      107,
+      737,
+      247,
+      919
+     ]
+    },
+    {
+     "page": 16,
+     "bbox": [
+      107,
+      1055,
+      248,
+      1225
+     ]
+    },
+    {
+     "page": 16,
+     "bbox": [
+      628,
+      105,
+      769,
+      282
+     ]
+    },
+    {
+     "page": 16,
+     "bbox": [
+      628,
+      393,
+      769,
+      576
+     ]
+    },
+    {
+     "page": 16,
+     "bbox": [
+      628,
+      839,
+      769,
+      1026
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 10,
+     "text": "FIGURE 1 Crystal and stacking structure of piezoelectric semiconductors (PSs). (a) Perovskite BaTiO₃. (b) Wurtzite ZnO. (c) Schematic diagram of MoS₂ structure of 1T, 2H and 3R phases. (c) Reproduced with permission.[37] Copyright 2021, Elsevier."
+    },
+    {
+     "page": 4,
+     "block_id": 15,
+     "text": "FIGURE 2 Schematic illustration of photocatalysis and piezo-catalysis based on the cavitation effect. (a) Schematic of the cavitation effect under US irradiation. (b) ROS generation during photocatalysis. (c) The release and (d) adsorption of free charges in the solution under compressive stress and"
+    },
+    {
+     "page": 6,
+     "block_id": 10,
+     "text": "FIGURE 3 Band structure diagrams of the piezoelectric semiconductors (PSs) at the interface. (a) PS-electrolyte contact interface. (b) Metal-PS contact interface. (c) Type-II and (d) Z-scheme contact interfaces."
+    },
+    {
+     "page": 9,
+     "block_id": 15,
+     "text": "FIGURE 4 Applications of PS nanomaterials in SDT of cancer. (a) Schematic illustration of cancer SDT and band tilting of  $ Cu_{2-x}O $-BTO. (b) Tumor growth curves after different treatments. ( $ *** $p<0.001,  $ ** $p<0.01) (c) TEM image and (d) schematic illustration on energy band of BP nanoshee"
+    },
+    {
+     "page": 10,
+     "block_id": 18,
+     "text": "FIGURE 5 Application of PS heterojunctions in cancer SDT. (a) Schematic illustration of Au@BP nanohybrid in cancer SDT, and (b) fluorescence of SOSG under US. (c) Mechanism for enhanced ROS generation by D-ZnOₓ·Gd. (d) Adsorption energies of O₂ and H₂O on ZnO and D-ZnOₓ·Gd, respectively. (e) Schemat"
+    },
+    {
+     "page": 12,
+     "block_id": 4,
+     "text": "FIGURE 6 Application of PS nanomaterials in antibacterial SDT. (a) TEM image and atomic structure of  $ WS_{2} $ NFs. (b) Antibacterial SDT of  $ WS_{2} $ NFs against Escherichia coli. (c) Mechanism of Au@BTO in antibacterial SDT. (d) Antibacterial SDT of Au@BTO against E. coli and Staphylococcus au"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 16,
+    "bbox": [
+     102,
+     160,
+     246,
+     344
+    ]
+   },
+   {
+    "page": 16,
+    "bbox": [
+     104,
+     449,
+     248,
+     634
+    ]
+   },
+   {
+    "page": 16,
+    "bbox": [
+     107,
+     737,
+     247,
+     919
+    ]
+   },
+   {
+    "page": 16,
+    "bbox": [
+     107,
+     1055,
+     248,
+     1225
+    ]
+   },
+   {
+    "page": 16,
+    "bbox": [
+     628,
+     105,
+     769,
+     282
+    ]
+   },
+   {
+    "page": 16,
+    "bbox": [
+     628,
+     393,
+     769,
+     576
+    ]
+   },
+   {
+    "page": 16,
+    "bbox": [
+     628,
+     839,
+     769,
+     1026
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 3,
+    "block_id": 10,
+    "text": "FIGURE 1 Crystal and stacking structure of piezoelectric semiconductors (PSs). (a) Perovskite BaTiO₃. (b) Wurtzite ZnO. (c) Schematic diagram of MoS₂ structure of 1T, 2H and 3R phases. (c) Reproduced with permission.[37] Copyright 2021, Elsevier."
+   },
+   {
+    "page": 4,
+    "block_id": 15,
+    "text": "FIGURE 2 Schematic illustration of photocatalysis and piezo-catalysis based on the cavitation effect. (a) Schematic of the cavitation effect under US irradiation. (b) ROS generation during photocatalysis. (c) The release and (d) adsorption of free charges in the solution under compressive stress and"
+   },
+   {
+    "page": 6,
+    "block_id": 10,
+    "text": "FIGURE 3 Band structure diagrams of the piezoelectric semiconductors (PSs) at the interface. (a) PS-electrolyte contact interface. (b) Metal-PS contact interface. (c) Type-II and (d) Z-scheme contact interfaces."
+   },
+   {
+    "page": 9,
+    "block_id": 15,
+    "text": "FIGURE 4 Applications of PS nanomaterials in SDT of cancer. (a) Schematic illustration of cancer SDT and band tilting of  $ Cu_{2-x}O $-BTO. (b) Tumor growth curves after different treatments. ( $ *** $p<0.001,  $ ** $p<0.01) (c) TEM image and (d) schematic illustration on energy band of BP nanoshee"
+   },
+   {
+    "page": 10,
+    "block_id": 18,
+    "text": "FIGURE 5 Application of PS heterojunctions in cancer SDT. (a) Schematic illustration of Au@BP nanohybrid in cancer SDT, and (b) fluorescence of SOSG under US. (c) Mechanism for enhanced ROS generation by D-ZnOₓ·Gd. (d) Adsorption energies of O₂ and H₂O on ZnO and D-ZnOₓ·Gd, respectively. (e) Schemat"
+   },
+   {
+    "page": 12,
+    "block_id": 4,
+    "text": "FIGURE 6 Application of PS nanomaterials in antibacterial SDT. (a) TEM image and atomic structure of  $ WS_{2} $ NFs. (b) Antibacterial SDT of  $ WS_{2} $ NFs against Escherichia coli. (c) Mechanism of Au@BTO in antibacterial SDT. (d) Antibacterial SDT of Au@BTO against E. coli and Staphylococcus au"
+   }
+  ]
+ }
+}

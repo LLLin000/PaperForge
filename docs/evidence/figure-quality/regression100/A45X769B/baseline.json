@@ -1,0 +1,255 @@
+{
+ "dry_run": {
+  "key": "A45X769B",
+  "identity": {
+   "old": {
+    "entries": 6,
+    "unique_ids": 6,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 6,
+    "unique_ids": 6,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005",
+    "figure_reserved_005": "figure_figure_p006_b2"
+   },
+   "renamed": [
+    [
+     "figure_reserved_005",
+     "figure_figure_p006_b2"
+    ]
+   ],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 25,
+   "new_render_files": 50,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/figures/figure_005.jpg",
+    "assets/figures/figure_figure_p006_b2.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/orphans/orphan_013.jpg",
+    "assets/orphans/orphan_014.jpg",
+    "assets/orphans/orphan_015.jpg",
+    "assets/orphans/orphan_016.jpg",
+    "assets/orphans/orphan_017.jpg",
+    "assets/orphans/orphan_018.jpg",
+    "assets/orphans/orphan_019.jpg",
+    "render/figures/figure_figure_p006_b2.md"
+   ],
+   "render_removed": [
+    "render/figures/figure_reserved_005.md"
+   ],
+   "embeds": 5,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 0,
+   "new_tables": 0,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 203,
+   "new_rows": 203,
+   "role_removed": {
+    "frontmatter_noise": 1,
+    "figure_caption_candidate": 4,
+    "reference_item": 3
+   },
+   "role_added": {
+    "section_heading": 1,
+    "noise": 2,
+    "subsection_heading": 1,
+    "figure_caption": 4
+   },
+   "old_body_chars": 43720,
+   "new_body_chars": 43720,
+   "old_text_chars": 60750,
+   "new_text_chars": 60750,
+   "old_fulltext_chars": 53861
+  },
+  "new_manifest": {
+   "figures": 6,
+   "tables": 0,
+   "orphans": 19
+  },
+  "new_orphans": 1
+ },
+ "structural": {
+  "key": "A45X769B",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 60750,
+  "new_text_chars": 60750,
+  "old_entries": 6,
+  "new_entries": 6,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 2,
+     "bbox": [
+      992,
+      354,
+      1051,
+      414
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 7,
+     "text": "Fig. 1. Engineering osteochondral tissue using magnetically-aligned glycosylated SPIONs. (A) SPIONs are conjugated with heparin to produce a glycosylated corona that can efficiently sequester and release growth factors. (B) An external magnetic field is used to field-align glycosylated SPIONs in a h"
+    },
+    {
+     "page": 6,
+     "block_id": 2,
+     "text": "Biophysical characterization of glycosylated SPIONs (mean  $ \\pm $ standard deviation)."
+    },
+    {
+     "page": 6,
+     "block_id": 13,
+     "text": "Fig. 2. Magnetic field alignment of SPIONs. (A) Finite element modeling of the magnetic field strength and distribution. (B) Time-lapse images showing the magnetic field alignment of SPIONs (brown) in water, with a clear transition from a biphasic stack to a smooth gradient. (C) Bright field microsc"
+    },
+    {
+     "page": 7,
+     "block_id": 13,
+     "text": "(+) BMP-2 Loaded SPIONs"
+    },
+    {
+     "page": 7,
+     "block_id": 15,
+     "text": "(-) BMP-2 Loaded SPIONs"
+    },
+    {
+     "page": 7,
+     "block_id": 17,
+     "text": "Magnetically Aligned Gradient"
+    },
+    {
+     "page": 7,
+     "block_id": 19,
+     "text": "Biphasic Layered Stack"
+    },
+    {
+     "page": 7,
+     "block_id": 20,
+     "text": "Fig. 3. BMP-2 release and action in agarose hydrogels. (A) An ELISA was used to detect the release of BMP-2 from glycosylated SPIONs immobilized in 1 wt% agarose, over a period of 28 days. (mean ± S.D., n = 3). The BMP-2 release profile from agarose to the surrounding medium was fitted using the Kor"
+    },
+    {
+     "page": 8,
+     "block_id": 10,
+     "text": "Collagen Type I"
+    },
+    {
+     "page": 8,
+     "block_id": 15,
+     "text": "Fig. 4. Gene and protein expression in osteochondral tissue engineering. (A) Gene expression of five osteogenic genes at the bone region of the tissue, compared to the cartilage region. Comparison of differences were made using a one sample t-test after heteroscedasticity in the dataset was addresse"
+    },
+    {
+     "page": 9,
+     "block_id": 14,
+     "text": "Fig. 5. Mineralization and mechanical analysis of engineered osteochondral tissue. (A) Alizarin Red S staining of calcium deposits (red) and Alcian Blue staining of sulfated glycosaminoglycan (blue) in engineered osteochondral constructs showed mineralization specifically at the bone end of the tiss"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 2,
+    "bbox": [
+     992,
+     354,
+     1051,
+     414
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 3,
+    "block_id": 7,
+    "text": "Fig. 1. Engineering osteochondral tissue using magnetically-aligned glycosylated SPIONs. (A) SPIONs are conjugated with heparin to produce a glycosylated corona that can efficiently sequester and release growth factors. (B) An external magnetic field is used to field-align glycosylated SPIONs in a h"
+   },
+   {
+    "page": 6,
+    "block_id": 2,
+    "text": "Biophysical characterization of glycosylated SPIONs (mean  $ \\pm $ standard deviation)."
+   },
+   {
+    "page": 6,
+    "block_id": 13,
+    "text": "Fig. 2. Magnetic field alignment of SPIONs. (A) Finite element modeling of the magnetic field strength and distribution. (B) Time-lapse images showing the magnetic field alignment of SPIONs (brown) in water, with a clear transition from a biphasic stack to a smooth gradient. (C) Bright field microsc"
+   },
+   {
+    "page": 7,
+    "block_id": 13,
+    "text": "(+) BMP-2 Loaded SPIONs"
+   },
+   {
+    "page": 7,
+    "block_id": 15,
+    "text": "(-) BMP-2 Loaded SPIONs"
+   },
+   {
+    "page": 7,
+    "block_id": 17,
+    "text": "Magnetically Aligned Gradient"
+   },
+   {
+    "page": 7,
+    "block_id": 19,
+    "text": "Biphasic Layered Stack"
+   },
+   {
+    "page": 7,
+    "block_id": 20,
+    "text": "Fig. 3. BMP-2 release and action in agarose hydrogels. (A) An ELISA was used to detect the release of BMP-2 from glycosylated SPIONs immobilized in 1 wt% agarose, over a period of 28 days. (mean ± S.D., n = 3). The BMP-2 release profile from agarose to the surrounding medium was fitted using the Kor"
+   },
+   {
+    "page": 8,
+    "block_id": 10,
+    "text": "Collagen Type I"
+   },
+   {
+    "page": 8,
+    "block_id": 15,
+    "text": "Fig. 4. Gene and protein expression in osteochondral tissue engineering. (A) Gene expression of five osteogenic genes at the bone region of the tissue, compared to the cartilage region. Comparison of differences were made using a one sample t-test after heteroscedasticity in the dataset was addresse"
+   },
+   {
+    "page": 9,
+    "block_id": 14,
+    "text": "Fig. 5. Mineralization and mechanical analysis of engineered osteochondral tissue. (A) Alizarin Red S staining of calcium deposits (red) and Alcian Blue staining of sulfated glycosaminoglycan (blue) in engineered osteochondral constructs showed mineralization specifically at the bone end of the tiss"
+   }
+  ]
+ }
+}

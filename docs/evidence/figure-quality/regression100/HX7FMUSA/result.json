@@ -1,0 +1,32 @@
+{
+ "key": "HX7FMUSA",
+ "passed": true,
+ "figures": 2,
+ "structural": {
+  "key": "HX7FMUSA",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 21258,
+  "new_text_chars": 21258,
+  "old_entries": 2,
+  "new_entries": 2,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 4,
+     "text": "Fig. 1 The original description from Hamada et al. [3] depicting the pathomechanics leading to radiographic changes in massive rotator cuff tears. IR = internal rotation; GH = glenohumeral. (Published with permission from Wolters Kluwer from Hamada K, Fukuda H, Mikasa M, Kobayashi Y. Roentgenographi"
+    },
+    {
+     "page": 3,
+     "block_id": 4,
+     "text": "Fig. 2A–E The radiographs show the different stages of Hamada's classification of massive rotator cuff tears. (A) Grade 1 is characterized by a preserved acromiohumeral interval. (B) Grade 2 shows an acromiohumeral interval less than 5 mm. (C) Grade 3 shows the development of acromial acetabilizatio"
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,323 @@
+{
+ "dry_run": {
+  "key": "HN4758MP",
+  "identity": {
+   "old": {
+    "entries": 6,
+    "unique_ids": 6,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 6,
+    "unique_ids": 6,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005",
+    "figure_006": "figure_006",
+    "figure_007": "figure_007",
+    "figure_reserved_005": "figure_002"
+   },
+   "renamed": [
+    [
+     "figure_reserved_005",
+     "figure_002"
+    ]
+   ],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 34,
+   "new_render_files": 68,
+   "render_added": [
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/figures/figure_005.jpg",
+    "assets/figures/figure_006.jpg",
+    "assets/figures/figure_007.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/orphans/orphan_013.jpg",
+    "assets/orphans/orphan_014.jpg",
+    "assets/orphans/orphan_015.jpg",
+    "assets/orphans/orphan_016.jpg",
+    "assets/orphans/orphan_017.jpg",
+    "assets/orphans/orphan_018.jpg",
+    "assets/orphans/orphan_019.jpg",
+    "assets/orphans/orphan_020.jpg",
+    "assets/orphans/orphan_021.jpg",
+    "assets/orphans/orphan_022.jpg",
+    "assets/orphans/orphan_023.jpg",
+    "assets/orphans/orphan_024.jpg",
+    "assets/orphans/orphan_025.jpg",
+    "assets/orphans/orphan_026.jpg",
+    "assets/orphans/orphan_027.jpg",
+    "assets/tables/table_001.jpg",
+    "render/figures/figure_002.md"
+   ],
+   "render_removed": [
+    "render/figures/figure_reserved_005.md"
+   ],
+   "embeds": 7,
+   "embeds_retargeted": 1,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 1,
+   "new_tables": 1,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 329,
+   "new_rows": 329,
+   "role_removed": {
+    "unknown_structural": 1,
+    "structured_insert": 1,
+    "figure_caption_candidate": 1,
+    "reference_item": 4
+   },
+   "role_added": {
+    "noise": 4,
+    "abstract_body": 1,
+    "body_paragraph": 1,
+    "figure_caption": 1
+   },
+   "old_body_chars": 35436,
+   "new_body_chars": 35569,
+   "old_text_chars": 61203,
+   "new_text_chars": 61203,
+   "old_fulltext_chars": 50734
+  },
+  "new_manifest": {
+   "figures": 6,
+   "tables": 1,
+   "orphans": 27
+  },
+  "new_orphans": 7
+ },
+ "structural": {
+  "key": "HN4758MP",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 61203,
+  "new_text_chars": 61203,
+  "old_entries": 6,
+  "new_entries": 6,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 15,
+     "bbox": [
+      169,
+      777,
+      600,
+      1095
+     ]
+    },
+    {
+     "page": 15,
+     "bbox": [
+      604,
+      775,
+      1034,
+      1094
+     ]
+    },
+    {
+     "page": 15,
+     "bbox": [
+      171,
+      1103,
+      600,
+      1424
+     ]
+    },
+    {
+     "page": 15,
+     "bbox": [
+      604,
+      1101,
+      1034,
+      1424
+     ]
+    },
+    {
+     "page": 16,
+     "bbox": [
+      126,
+      1166,
+      576,
+      1528
+     ]
+    },
+    {
+     "page": 16,
+     "bbox": [
+      591,
+      1168,
+      1059,
+      1533
+     ]
+    },
+    {
+     "page": 30,
+     "bbox": [
+      140,
+      273,
+      918,
+      994
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 17,
+     "block_id": 3,
+     "text": "Fig 2: a) FT-IR spectra PB and PB-BT hybrids show no significant interactions and b) DSC thermograms of the pure PB and it's various nanohybrid and demonstrate the comparable melting point with pure PB at around 155 °C and"
+    },
+    {
+     "page": 18,
+     "block_id": 8,
+     "text": "Fig.3. a&b) shows the mechanical properties of pure PB and PB-B Tnanohybrid scaffolds. The ultimate force and modulus are developing by increasing concentration of BT and the composites for the better mechanical properties than pure PB. c&d) The graphs show the degradation pattern of pure PB and its"
+    },
+    {
+     "page": 19,
+     "block_id": 10,
+     "text": "Fig.4.a) The data obtained from protein adhesion performs in pure PHBV and its nanocomposites with BaTiO₃. Scaffolds are showing protein adsorption property. b) Percentage of haemolysis of the sample, all scaffolds are showing % hemolysis less than 2 %.. c) Optical images of hemolysis assay, maximum"
+    },
+    {
+     "page": 21,
+     "block_id": 4,
+     "text": "Fig.5: Piezoelectric coefficients of PB and its various nanohybrids. PB20-BT20 shows enhancing coefficient and almost four times greater than PB."
+    },
+    {
+     "page": 23,
+     "block_id": 9,
+     "text": "Fig.6: a) The bar diagram shows chondrocytes cell viability and proliferation on the scaffolds for the incubation time intervals of 24, 48, and 72 hours through MTT assay. b) Differentiate chondrocyte cell adhesion on pure PB and its composites with BT in terms of optical density. The absorption val"
+    },
+    {
+     "page": 25,
+     "block_id": 9,
+     "text": "Fig. 7: a) The bright field, fluorescence (Propidium iodide-PI stained) and merged images presented from left to right of chondrocytes incubated in poled and unpoled scaffolds of pure PB (20%) and 20PB-20BT nanohybrid for 24 hrs. The polarised nanohybrid shows higher cell density with respect to pol"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 15,
+    "bbox": [
+     169,
+     777,
+     600,
+     1095
+    ]
+   },
+   {
+    "page": 15,
+    "bbox": [
+     604,
+     775,
+     1034,
+     1094
+    ]
+   },
+   {
+    "page": 15,
+    "bbox": [
+     171,
+     1103,
+     600,
+     1424
+    ]
+   },
+   {
+    "page": 15,
+    "bbox": [
+     604,
+     1101,
+     1034,
+     1424
+    ]
+   },
+   {
+    "page": 16,
+    "bbox": [
+     126,
+     1166,
+     576,
+     1528
+    ]
+   },
+   {
+    "page": 16,
+    "bbox": [
+     591,
+     1168,
+     1059,
+     1533
+    ]
+   },
+   {
+    "page": 30,
+    "bbox": [
+     140,
+     273,
+     918,
+     994
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 17,
+    "block_id": 3,
+    "text": "Fig 2: a) FT-IR spectra PB and PB-BT hybrids show no significant interactions and b) DSC thermograms of the pure PB and it's various nanohybrid and demonstrate the comparable melting point with pure PB at around 155 °C and"
+   },
+   {
+    "page": 18,
+    "block_id": 8,
+    "text": "Fig.3. a&b) shows the mechanical properties of pure PB and PB-B Tnanohybrid scaffolds. The ultimate force and modulus are developing by increasing concentration of BT and the composites for the better mechanical properties than pure PB. c&d) The graphs show the degradation pattern of pure PB and its"
+   },
+   {
+    "page": 19,
+    "block_id": 10,
+    "text": "Fig.4.a) The data obtained from protein adhesion performs in pure PHBV and its nanocomposites with BaTiO₃. Scaffolds are showing protein adsorption property. b) Percentage of haemolysis of the sample, all scaffolds are showing % hemolysis less than 2 %.. c) Optical images of hemolysis assay, maximum"
+   },
+   {
+    "page": 21,
+    "block_id": 4,
+    "text": "Fig.5: Piezoelectric coefficients of PB and its various nanohybrids. PB20-BT20 shows enhancing coefficient and almost four times greater than PB."
+   },
+   {
+    "page": 23,
+    "block_id": 9,
+    "text": "Fig.6: a) The bar diagram shows chondrocytes cell viability and proliferation on the scaffolds for the incubation time intervals of 24, 48, and 72 hours through MTT assay. b) Differentiate chondrocyte cell adhesion on pure PB and its composites with BT in terms of optical density. The absorption val"
+   },
+   {
+    "page": 25,
+    "block_id": 9,
+    "text": "Fig. 7: a) The bright field, fluorescence (Propidium iodide-PI stained) and merged images presented from left to right of chondrocytes incubated in poled and unpoled scaffolds of pure PB (20%) and 20PB-20BT nanohybrid for 24 hrs. The polarised nanohybrid shows higher cell density with respect to pol"
+   }
+  ]
+ }
+}

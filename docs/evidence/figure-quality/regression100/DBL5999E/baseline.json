@@ -1,0 +1,155 @@
+{
+ "dry_run": {
+  "key": "DBL5999E",
+  "identity": {
+   "old": {
+    "entries": 2,
+    "unique_ids": 2,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 2,
+    "unique_ids": 2,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 30,
+   "new_render_files": 60,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/orphans/orphan_013.jpg",
+    "assets/orphans/orphan_014.jpg",
+    "assets/orphans/orphan_015.jpg",
+    "assets/orphans/orphan_016.jpg",
+    "assets/orphans/orphan_017.jpg",
+    "assets/orphans/orphan_018.jpg",
+    "assets/orphans/orphan_019.jpg",
+    "assets/orphans/orphan_020.jpg",
+    "assets/orphans/orphan_021.jpg",
+    "assets/orphans/orphan_022.jpg",
+    "assets/orphans/orphan_023.jpg",
+    "assets/orphans/orphan_024.jpg",
+    "assets/orphans/orphan_025.jpg",
+    "assets/tables/table_001.jpg",
+    "assets/tables/table_002.jpg",
+    "assets/tables/table_003.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 3,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 3,
+   "new_tables": 3,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 202,
+   "new_rows": 202,
+   "role_removed": {
+    "unknown_structural": 2,
+    "backmatter_body": 2
+   },
+   "role_added": {
+    "authors": 2,
+    "body_paragraph": 2
+   },
+   "old_body_chars": 24799,
+   "new_body_chars": 25508,
+   "old_text_chars": 52824,
+   "new_text_chars": 52824,
+   "old_fulltext_chars": 40409
+  },
+  "new_manifest": {
+   "figures": 2,
+   "tables": 3,
+   "orphans": 25
+  },
+  "new_orphans": 1
+ },
+ "structural": {
+  "key": "DBL5999E",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 52824,
+  "new_text_chars": 52824,
+  "old_entries": 2,
+  "new_entries": 2,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      1044,
+      144,
+      1099,
+      202
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 4,
+     "block_id": 16,
+     "text": "FIGURE 1 | Microcalorimetry analysis of methicillin-resistant Staphylococcus aureus (MRSA) ATCC 43300 (upper row) and methicillin-susceptible S. aureus (MSSA) ATCC 29213 (bottom row) biofilms treated simultaneously with Sb-1 phage and sub-minimum biofilm bactericidal concentration (MBBC) concentrati"
+    },
+    {
+     "page": 5,
+     "block_id": 12,
+     "text": "FIGURE 2 | Microcalorimetry analysis of MRSA ATCC 43300 (upper row) and MSSA ATCC 29213 (bottom row) biofilms after staggered application of Sb-1 phage for 24 h followed by 24 h exposure to sub-MBBC concentrations of antibiotics. Each curve shows the heat produced by viable bacteria present in the b"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     1044,
+     144,
+     1099,
+     202
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 4,
+    "block_id": 16,
+    "text": "FIGURE 1 | Microcalorimetry analysis of methicillin-resistant Staphylococcus aureus (MRSA) ATCC 43300 (upper row) and methicillin-susceptible S. aureus (MSSA) ATCC 29213 (bottom row) biofilms treated simultaneously with Sb-1 phage and sub-minimum biofilm bactericidal concentration (MBBC) concentrati"
+   },
+   {
+    "page": 5,
+    "block_id": 12,
+    "text": "FIGURE 2 | Microcalorimetry analysis of MRSA ATCC 43300 (upper row) and MSSA ATCC 29213 (bottom row) biofilms after staggered application of Sb-1 phage for 24 h followed by 24 h exposure to sub-MBBC concentrations of antibiotics. Each curve shows the heat produced by viable bacteria present in the b"
+   }
+  ]
+ }
+}

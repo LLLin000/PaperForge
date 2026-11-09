@@ -1,0 +1,283 @@
+{
+ "dry_run": {
+  "key": "6QNRHRKX",
+  "identity": {
+   "old": {
+    "entries": 3,
+    "unique_ids": 3,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 4,
+    "unique_ids": 4,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_reserved_002": "figure_002",
+    "figure_unknown_000": "figure_main_p002_b7",
+    "figure_unknown_001": ""
+   },
+   "renamed": [
+    [
+     "figure_reserved_002",
+     "figure_002"
+    ],
+    [
+     "figure_unknown_000",
+     "figure_main_p002_b7"
+    ]
+   ],
+   "unmapped_old_ids": [
+    "figure_unknown_001"
+   ],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 9,
+   "new_render_files": 24,
+   "render_added": [
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/figures/figure_006.jpg",
+    "assets/figures/figure_main_p002_b7.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "render/figures/figure_002.md",
+    "render/figures/figure_004.md",
+    "render/figures/figure_006.md",
+    "render/figures/figure_main_p002_b7.md",
+    "render/figures/orphan_003.md",
+    "render/figures/orphan_004.md",
+    "render/figures/orphan_005.md",
+    "render/figures/orphan_006.md",
+    "render/figures/orphan_007.md",
+    "render/figures/orphan_008.md"
+   ],
+   "render_removed": [
+    "assets/figures/figure_unknown_000.jpg",
+    "assets/figures/figure_unknown_001.jpg",
+    "render/figures/figure_reserved_002.md",
+    "render/figures/figure_unknown_000.md",
+    "render/figures/figure_unknown_001.md"
+   ],
+   "embeds": 1,
+   "embeds_retargeted": 1,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 0,
+   "new_tables": 0,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 75,
+   "new_rows": 75,
+   "role_removed": {
+    "figure_caption_candidate": 2
+   },
+   "role_added": {
+    "figure_caption": 2
+   },
+   "old_body_chars": 5655,
+   "new_body_chars": 5655,
+   "old_text_chars": 9189,
+   "new_text_chars": 9189,
+   "old_fulltext_chars": 8499
+  },
+  "new_manifest": {
+   "figures": 4,
+   "tables": 0,
+   "orphans": 8
+  },
+  "new_orphans": 1
+ },
+ "structural": {
+  "key": "6QNRHRKX",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 9189,
+  "new_text_chars": 9189,
+  "old_entries": 3,
+  "new_entries": 4,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 2,
+     "block_id": 9,
+     "text": "Fig. 3"
+    },
+    {
+     "page": 2,
+     "block_id": 10,
+     "text": "Bar graph representation of acromio-humeral interval in fifty-nine patients with known rotator cuff tears."
+    },
+    {
+     "page": 3,
+     "block_id": 7,
+     "text": "Fig. 5"
+    },
+    {
+     "page": 3,
+     "block_id": 11,
+     "text": "Fig. 7"
+    },
+    {
+     "page": 3,
+     "block_id": 12,
+     "text": "Standard antero-posterior radiographs demonstrating four cases of narrowed acromio-humeral intervals in patients with known rotator cuff tears."
+    }
+   ],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      223,
+      794,
+      567,
+      1183
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 6,
+     "text": "Fig. 2"
+    },
+    {
+     "page": 2,
+     "block_id": 7,
+     "text": "Bar graph representation of the acromio-humeral interval in sixty normal patients."
+    },
+    {
+     "page": 2,
+     "block_id": 9,
+     "text": "Fig. 3"
+    },
+    {
+     "page": 2,
+     "block_id": 10,
+     "text": "Bar graph representation of acromio-humeral interval in fifty-nine patients with known rotator cuff tears."
+    },
+    {
+     "page": 3,
+     "block_id": 5,
+     "text": "Fig. 4"
+    },
+    {
+     "page": 3,
+     "block_id": 7,
+     "text": "Fig. 5"
+    },
+    {
+     "page": 3,
+     "block_id": 9,
+     "text": "Fig. 6"
+    },
+    {
+     "page": 3,
+     "block_id": 11,
+     "text": "Fig. 7"
+    },
+    {
+     "page": 3,
+     "block_id": 12,
+     "text": "Standard antero-posterior radiographs demonstrating four cases of narrowed acromio-humeral intervals in patients with known rotator cuff tears."
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [
+   {
+    "page": 2,
+    "block_id": 9,
+    "text": "Fig. 3"
+   },
+   {
+    "page": 2,
+    "block_id": 10,
+    "text": "Bar graph representation of acromio-humeral interval in fifty-nine patients with known rotator cuff tears."
+   },
+   {
+    "page": 3,
+    "block_id": 7,
+    "text": "Fig. 5"
+   },
+   {
+    "page": 3,
+    "block_id": 11,
+    "text": "Fig. 7"
+   },
+   {
+    "page": 3,
+    "block_id": 12,
+    "text": "Standard antero-posterior radiographs demonstrating four cases of narrowed acromio-humeral intervals in patients with known rotator cuff tears."
+   }
+  ],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     223,
+     794,
+     567,
+     1183
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 6,
+    "text": "Fig. 2"
+   },
+   {
+    "page": 2,
+    "block_id": 7,
+    "text": "Bar graph representation of the acromio-humeral interval in sixty normal patients."
+   },
+   {
+    "page": 2,
+    "block_id": 9,
+    "text": "Fig. 3"
+   },
+   {
+    "page": 2,
+    "block_id": 10,
+    "text": "Bar graph representation of acromio-humeral interval in fifty-nine patients with known rotator cuff tears."
+   },
+   {
+    "page": 3,
+    "block_id": 5,
+    "text": "Fig. 4"
+   },
+   {
+    "page": 3,
+    "block_id": 7,
+    "text": "Fig. 5"
+   },
+   {
+    "page": 3,
+    "block_id": 9,
+    "text": "Fig. 6"
+   },
+   {
+    "page": 3,
+    "block_id": 11,
+    "text": "Fig. 7"
+   },
+   {
+    "page": 3,
+    "block_id": 12,
+    "text": "Standard antero-posterior radiographs demonstrating four cases of narrowed acromio-humeral intervals in patients with known rotator cuff tears."
+   }
+  ]
+ }
+}

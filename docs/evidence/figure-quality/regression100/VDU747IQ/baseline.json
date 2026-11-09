@@ -1,0 +1,213 @@
+{
+ "dry_run": {
+  "key": "VDU747IQ",
+  "identity": {
+   "old": {
+    "entries": 3,
+    "unique_ids": 3,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 3,
+    "unique_ids": 3,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": [
+    {
+     "old_id": "figure_003",
+     "old_assets": [
+      "11",
+      "12",
+      "2",
+      "4",
+      "6",
+      "8"
+     ],
+     "new_id": "figure_003",
+     "new_assets": [
+      "12",
+      "4",
+      "8"
+     ]
+    }
+   ]
+  },
+  "delivery": {
+   "old_render_files": 14,
+   "new_render_files": 34,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/tables/table_001.jpg",
+    "assets/tables/table_002.jpg",
+    "render/figures/orphan_010.md",
+    "render/figures/orphan_011.md",
+    "render/figures/orphan_012.md"
+   ],
+   "render_removed": [],
+   "embeds": 4,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 2,
+   "new_tables": 2,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 172,
+   "new_rows": 172,
+   "role_removed": {
+    "unknown_structural": 1,
+    "frontmatter_noise": 1,
+    "figure_asset": 3,
+    "backmatter_body": 2
+   },
+   "role_added": {
+    "body_paragraph": 3,
+    "subsection_heading": 1,
+    "media_asset": 3
+   },
+   "old_body_chars": 25883,
+   "new_body_chars": 27074,
+   "old_text_chars": 44391,
+   "new_text_chars": 44391,
+   "old_fulltext_chars": 35880
+  },
+  "new_manifest": {
+   "figures": 3,
+   "tables": 2,
+   "orphans": 12
+  },
+  "new_orphans": 3
+ },
+ "structural": {
+  "key": "VDU747IQ",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 44391,
+  "new_text_chars": 44391,
+  "old_entries": 3,
+  "new_entries": 3,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 6,
+     "bbox": [
+      308,
+      101,
+      629,
+      388
+     ]
+    },
+    {
+     "page": 6,
+     "bbox": [
+      308,
+      409,
+      628,
+      692
+     ]
+    },
+    {
+     "page": 6,
+     "bbox": [
+      307,
+      714,
+      638,
+      989
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 9,
+     "text": "Fig. 1. Flow diagram of study design. ARCR, arthroscopic rotator cuff repair."
+    },
+    {
+     "page": 5,
+     "block_id": 4,
+     "text": "Fig. 2. The graph showed nomogram for predicting the risk of Re-tear."
+    },
+    {
+     "page": 6,
+     "block_id": 13,
+     "text": "Fig. 3. Model validation using ROC curves (A, B), calibration plots (C, D), and decision curve analysis (DCA) (E, F) in the training and validation sets."
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 6,
+    "bbox": [
+     308,
+     101,
+     629,
+     388
+    ]
+   },
+   {
+    "page": 6,
+    "bbox": [
+     308,
+     409,
+     628,
+     692
+    ]
+   },
+   {
+    "page": 6,
+    "bbox": [
+     307,
+     714,
+     638,
+     989
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 3,
+    "block_id": 9,
+    "text": "Fig. 1. Flow diagram of study design. ARCR, arthroscopic rotator cuff repair."
+   },
+   {
+    "page": 5,
+    "block_id": 4,
+    "text": "Fig. 2. The graph showed nomogram for predicting the risk of Re-tear."
+   },
+   {
+    "page": 6,
+    "block_id": 13,
+    "text": "Fig. 3. Model validation using ROC curves (A, B), calibration plots (C, D), and decision curve analysis (DCA) (E, F) in the training and validation sets."
+   }
+  ]
+ }
+}

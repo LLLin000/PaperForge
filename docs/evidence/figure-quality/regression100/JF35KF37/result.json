@@ -1,0 +1,52 @@
+{
+ "key": "JF35KF37",
+ "passed": true,
+ "figures": 6,
+ "structural": {
+  "key": "JF35KF37",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 51882,
+  "new_text_chars": 51882,
+  "old_entries": 6,
+  "new_entries": 6,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 4,
+     "block_id": 26,
+     "text": "FIGURE 1 The setup used for applying electrical stimulation (ES). (a) Schematic diagram of interdigital electrode ( $ 10 \\times 10 $ mm) with 0.5 mm width and spacing. (b) Scanning electron microscopy (SEM) of interdigital electrode. Scale bar: 500  $ \\mu $m. (c) Cyclic voltametric (CV) curves from "
+    },
+    {
+     "page": 5,
+     "block_id": 13,
+     "text": "FIGURE 2 Polarization phenotype of bone marrow-derived macrophages (BMDMs) after applying electrical stimulation (ES) in the absence of cytokines. (a) Immunofluorescence images of inducible nitric oxide synthase (iNOS; green), CD206 (red) and 4',6-diamidino-2-phenylindole (blue). Scale bar: 50  $ \\m"
+    },
+    {
+     "page": 6,
+     "block_id": 20,
+     "text": "FIGURE 3 Polarization phenotype of bone marrow-derived macrophages (BMDMs) after applying electrical stimulation (ES) with square wave at low frequency (1 Hz), but with different voltages. (a) The immunofluorescence images of inducible nitric oxide synthase (iNOS; green), CD206 (red) and 4',6-diamid"
+    },
+    {
+     "page": 7,
+     "block_id": 11,
+     "text": "FIGURE 4 Polarization phenotype of bone marrow-derived macrophages (BMDMs) after applying electrical stimulation (ES) with sine wave at low frequency (1 Hz), but with different voltages. (a) Immunofluorescence images of inducible nitric oxide synthase (iNOS; green), CD206 (red) and 4',6-diamidino-2-"
+    },
+    {
+     "page": 8,
+     "block_id": 7,
+     "text": "FIGURE 5 Polarization phenotype of bone marrow-derived macrophages (BMDMs) after applying electrical stimulation (ES) with different frequencies under suitable voltage (500 mV). After 3 days of culture, the Immunofluorescence images of inducible nitric oxide synthase (iNOS; green), CD206 (red) and 4"
+    },
+    {
+     "page": 9,
+     "block_id": 29,
+     "text": "FIGURE 6 Cell membrane receptors, intracellular ion concentration and polarization related gene expressions after application of square or sine wave electrical stimulation (ES; 500 mV, 1 Hz). (a) Relative mRNA expression of polarization inducing genes IL-4Rα, TLR4, and IFN-γR. The total mRNA was ext"
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,37 @@
+{
+ "key": "9RDDDJF6",
+ "passed": true,
+ "figures": 3,
+ "structural": {
+  "key": "9RDDDJF6",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 20728,
+  "new_text_chars": 20728,
+  "old_entries": 3,
+  "new_entries": 3,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 12,
+     "text": "Fig. 1. Marrow edema in greater tuberosity associated with a small full thickness tear at the most anterior portion of the insertion of the supraspinatus tendon in a 47-year-old man who fell from a ladder two months prior to MR examination. (a) Fat-suppressed coronal-oblique  $ T_{2} $-weighted fast"
+    },
+    {
+     "page": 4,
+     "block_id": 6,
+     "text": "Fig. 2. Avulsion of greater tuberosity in 73-year-old woman with history of multiple falls. The most recent fall was two weeks prior to MR examination. (a) Fat-suppressed  $ T_{2} $-weighted fast spin-echo axial image shows edema in greater tuberosity (white arrow) with fluid in subdeltoid-subacromi"
+    },
+    {
+     "page": 5,
+     "block_id": 3,
+     "text": "Fig. 3. Marrow edema in greater tuberosity associated with a small full thickness tear at the most anterior portion of the insertion of the supraspinatus tendon in a 46 year old woman with chronic pain with no history of trauma. Fat-suppressed coronal  $ T_{2} $-weighted fast spin-echo image shows m"
+    }
+   ]
+  }
+ }
+}

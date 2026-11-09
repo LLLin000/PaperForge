@@ -1,0 +1,72 @@
+{
+ "key": "QSIYVSBS",
+ "passed": true,
+ "figures": 7,
+ "structural": {
+  "key": "QSIYVSBS",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 46972,
+  "new_text_chars": 46972,
+  "old_entries": 8,
+  "new_entries": 7,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 3,
+     "text": "Fig. 1 Schematic illustration of the experimental setup"
+    },
+    {
+     "page": 5,
+     "block_id": 2,
+     "text": "A Percentage of live cells (1h)"
+    },
+    {
+     "page": 5,
+     "block_id": 5,
+     "text": "Fig. 2 Effects of nsPEFs on MSC apoptosis and viability. a Fold changes of live cells by flow cytometry of Annexin V-FITC/PI double stained cell, compared with the control group (non-pulsed samples). n=4. b Cell count as quantified by Kit-8 assay at day 1. n=4 for each group. Cell count was expresse"
+    },
+    {
+     "page": 5,
+     "block_id": 18,
+     "text": "Fig. 3 Pre-conditioning with nsPEFs promoted chondrogenic differentiation of MSCs in vitro. a Expression level for SOX9, COL II, COL I, COL X, ACAN, and COL II/I. n = 5 for each group, compared with the control group (non-pulsed samples). The data was normalized by setting the non-nsPEFs control gro"
+    },
+    {
+     "page": 7,
+     "block_id": 3,
+     "text": "Control"
+    },
+    {
+     "page": 7,
+     "block_id": 26,
+     "text": "COLI"
+    },
+    {
+     "page": 7,
+     "block_id": 33,
+     "text": "Fig. 4 nsPEF-preconditioned MSCs enhanced cartilage regeneration in vivo. a Macroscopic view of cartilage repair. b ICRS Macroscopic score of joint. n = 6 per group. c Safranin o-fast green staining, Alcian blue staining, immunohistochemical staining of sections for collagen type II, collagen type I"
+    },
+    {
+     "page": 8,
+     "block_id": 16,
+     "text": "Fig. 5 nsPEFs activated JNK, CREB, and STAT3 signaling pathways. a Western blot analysis for JNK, p-JNK with inhibitors for phosphorylation of JNK (BI-78D3), and CREB (BAPTA-AM). b Phosphorylation ratio for JNK with inhibitors, n = 5. c Western blot analysis for CREB, p-CREB with inhibitors for phos"
+    },
+    {
+     "page": 9,
+     "block_id": 14,
+     "text": "Fig. 6 nsPEFs promoted MSC chondrogenic differentiation through JNK/CREB-STAT3 signaling pathway. Expression levels for SOX9, COL II, COL I, COL X, and ACAN in the absence or presence of inhibitors of either phosphorylation of CREB, JNK, or STAT3, or combination of them with (a) condition A, 10 ns a"
+    },
+    {
+     "page": 10,
+     "block_id": 3,
+     "text": "Fig. 7 Schematic illustration of the possible signaling pathways induced by nsPEFs in MSCs"
+    }
+   ]
+  }
+ }
+}

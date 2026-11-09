@@ -1,0 +1,47 @@
+{
+ "key": "I42Y93C4",
+ "passed": true,
+ "figures": 4,
+ "structural": {
+  "key": "I42Y93C4",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 18443,
+  "new_text_chars": 18443,
+  "old_entries": 4,
+  "new_entries": 4,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 11,
+     "text": "Figure 1. Illustration depicts the three acromial shapes: flat (type 1), smoothly curved (type 2), and hooked (type 3). A = anterior, P = posterior."
+    },
+    {
+     "page": 2,
+     "block_id": 18,
+     "text": "Figure 2. Sagittal oblique MR image (2,000/40) in a 30-year-old man demonstrates a flat (type 1) acromion. A = anterior."
+    },
+    {
+     "page": 2,
+     "block_id": 20,
+     "text": "Figure 3. Sagittal oblique MR image (2,000/40) in a 29-year-old man demonstrates a smoothly curved (type 2) acromion. A = anterior."
+    },
+    {
+     "page": 2,
+     "block_id": 22,
+     "text": "Figure 4. Sagittal oblique MR image (2,000/40) in a 58-year-old woman demonstrates a hooked (type 3) acromion. A = anterior."
+    },
+    {
+     "page": 3,
+     "block_id": 0,
+     "text": "Acromial Morphology by Group"
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,103 @@
+{
+ "dry_run": {
+  "key": "NXYBYPAH",
+  "identity": {
+   "old": {
+    "entries": 2,
+    "unique_ids": 2,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 2,
+    "unique_ids": 2,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 4,
+   "new_render_files": 8,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 2,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 0,
+   "new_tables": 0,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 70,
+   "new_rows": 70,
+   "role_removed": {},
+   "role_added": {},
+   "old_body_chars": 11222,
+   "new_body_chars": 11222,
+   "old_text_chars": 18592,
+   "new_text_chars": 18592,
+   "old_fulltext_chars": 17146
+  },
+  "new_manifest": {
+   "figures": 2,
+   "tables": 0,
+   "orphans": 2
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "NXYBYPAH",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 18592,
+  "new_text_chars": 18592,
+  "old_entries": 2,
+  "new_entries": 2,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 4,
+     "text": "Figure 1 A, Measurement of acromiohumeral distance on conventional radiographs. The first proximal line is placed upon the sclerotic line, representing the \"roof\" at the undersurface of the acromion. The second line is drawn parallel to the first tangentially to the most superior point of the humera"
+    },
+    {
+     "page": 3,
+     "block_id": 4,
+     "text": "Figure 2 Linear regression plot for acromiohumeral distance (AHD) values measured on conventional radiographs (XR) and magnetic resonance imaging (MRI) scans. The corresponding values were not strongly correlated; however, they were still stronger than when diagnoses other than rotator cuff tears we"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 4,
+    "text": "Figure 1 A, Measurement of acromiohumeral distance on conventional radiographs. The first proximal line is placed upon the sclerotic line, representing the \"roof\" at the undersurface of the acromion. The second line is drawn parallel to the first tangentially to the most superior point of the humera"
+   },
+   {
+    "page": 3,
+    "block_id": 4,
+    "text": "Figure 2 Linear regression plot for acromiohumeral distance (AHD) values measured on conventional radiographs (XR) and magnetic resonance imaging (MRI) scans. The corresponding values were not strongly correlated; however, they were still stronger than when diagnoses other than rotator cuff tears we"
+   }
+  ]
+ }
+}

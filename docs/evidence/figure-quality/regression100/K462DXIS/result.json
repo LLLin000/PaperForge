@@ -1,0 +1,47 @@
+{
+ "key": "K462DXIS",
+ "passed": true,
+ "figures": 0,
+ "structural": {
+  "key": "K462DXIS",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 46943,
+  "new_text_chars": 46943,
+  "old_entries": 0,
+  "new_entries": 0,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      414,
+      438,
+      789,
+      803
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 11,
+     "block_id": 2,
+     "text": "Trock 1994"
+    },
+    {
+     "page": 11,
+     "block_id": 4,
+     "text": "Trock 1993"
+    },
+    {
+     "page": 12,
+     "block_id": 0,
+     "text": "Trock 1993 (Continued)"
+    }
+   ]
+  }
+ }
+}

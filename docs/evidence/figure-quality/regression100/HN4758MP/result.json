@@ -1,0 +1,116 @@
+{
+ "key": "HN4758MP",
+ "passed": true,
+ "figures": 6,
+ "structural": {
+  "key": "HN4758MP",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 61203,
+  "new_text_chars": 61203,
+  "old_entries": 6,
+  "new_entries": 6,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 15,
+     "bbox": [
+      169,
+      777,
+      600,
+      1095
+     ]
+    },
+    {
+     "page": 15,
+     "bbox": [
+      604,
+      775,
+      1034,
+      1094
+     ]
+    },
+    {
+     "page": 15,
+     "bbox": [
+      171,
+      1103,
+      600,
+      1424
+     ]
+    },
+    {
+     "page": 15,
+     "bbox": [
+      604,
+      1101,
+      1034,
+      1424
+     ]
+    },
+    {
+     "page": 16,
+     "bbox": [
+      126,
+      1166,
+      576,
+      1528
+     ]
+    },
+    {
+     "page": 16,
+     "bbox": [
+      591,
+      1168,
+      1059,
+      1533
+     ]
+    },
+    {
+     "page": 30,
+     "bbox": [
+      140,
+      273,
+      918,
+      994
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 17,
+     "block_id": 3,
+     "text": "Fig 2: a) FT-IR spectra PB and PB-BT hybrids show no significant interactions and b) DSC thermograms of the pure PB and it's various nanohybrid and demonstrate the comparable melting point with pure PB at around 155 °C and"
+    },
+    {
+     "page": 18,
+     "block_id": 8,
+     "text": "Fig.3. a&b) shows the mechanical properties of pure PB and PB-B Tnanohybrid scaffolds. The ultimate force and modulus are developing by increasing concentration of BT and the composites for the better mechanical properties than pure PB. c&d) The graphs show the degradation pattern of pure PB and its"
+    },
+    {
+     "page": 19,
+     "block_id": 10,
+     "text": "Fig.4.a) The data obtained from protein adhesion performs in pure PHBV and its nanocomposites with BaTiO₃. Scaffolds are showing protein adsorption property. b) Percentage of haemolysis of the sample, all scaffolds are showing % hemolysis less than 2 %.. c) Optical images of hemolysis assay, maximum"
+    },
+    {
+     "page": 21,
+     "block_id": 4,
+     "text": "Fig.5: Piezoelectric coefficients of PB and its various nanohybrids. PB20-BT20 shows enhancing coefficient and almost four times greater than PB."
+    },
+    {
+     "page": 23,
+     "block_id": 9,
+     "text": "Fig.6: a) The bar diagram shows chondrocytes cell viability and proliferation on the scaffolds for the incubation time intervals of 24, 48, and 72 hours through MTT assay. b) Differentiate chondrocyte cell adhesion on pure PB and its composites with BT in terms of optical density. The absorption val"
+    },
+    {
+     "page": 25,
+     "block_id": 9,
+     "text": "Fig. 7: a) The bright field, fluorescence (Propidium iodide-PI stained) and merged images presented from left to right of chondrocytes incubated in poled and unpoled scaffolds of pure PB (20%) and 20PB-20BT nanohybrid for 24 hrs. The polarised nanohybrid shows higher cell density with respect to pol"
+    }
+   ]
+  }
+ }
+}

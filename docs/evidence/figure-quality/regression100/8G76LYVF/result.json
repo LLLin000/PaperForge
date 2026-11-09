@@ -1,0 +1,87 @@
+{
+ "key": "8G76LYVF",
+ "passed": true,
+ "figures": 8,
+ "structural": {
+  "key": "8G76LYVF",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 66156,
+  "new_text_chars": 66156,
+  "old_entries": 8,
+  "new_entries": 8,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 4,
+     "text": "Figure 1. A schematic diagram depicting the process of biomimetic mineralized tendon slices fabrication and bone tunnel implantation."
+    },
+    {
+     "page": 4,
+     "block_id": 6,
+     "text": "EDS"
+    },
+    {
+     "page": 4,
+     "block_id": 30,
+     "text": "TEM"
+    },
+    {
+     "page": 4,
+     "block_id": 35,
+     "text": "Figure 2. Characteristics of normal and mineralized tendon slices. A) 1nerogravimetric analysis (1GA). B) 1ne mineral content or normal and mineralized tendon slices (n=3). C, D) Quantitative analysis of elements. E, F) The chemical and physical characteristics of normal and mineralized tendon slice"
+    },
+    {
+     "page": 6,
+     "block_id": 19,
+     "text": "Figure 3. The proliferation and osteogenic differentiation ability of cells on the normal and mineralized tendon slices. A, B) Live/dead cells staining and fluorescence intensity ratio of C3H/10T1/2 after culture on the normal and mineralized tendon slices n = 3. Scale bar = 200 μm. C) The prolifera"
+    },
+    {
+     "page": 7,
+     "block_id": 5,
+     "text": "C GO_Biological_Process (Downregulation in MT group)"
+    },
+    {
+     "page": 7,
+     "block_id": 19,
+     "text": "Figure 4. RNA-seq analysis of the cells cultured on normal and mineralized tendon slices. A) Volcano plot of gene expression (M-tendon versus N-tendon; fold change,  $ \\geq2 $; q value < 0.05). B) Heat map of osteogenesis and tenogenesis related genes. C, D) GO analysis of differentially expressed g"
+    },
+    {
+     "page": 8,
+     "block_id": 3,
+     "text": "Figure 5. Biocompatibility and ectopic ossification of normal and mineralized tendon slices in vivo. A–C) Representative micro-CT images and quantitative analysis of results. D,E) HE and MASSON staining of samples. Scale bar = 50 μm. F) Immunofluorescent staining of RUNX2 and BMP2. Scale bar = 50 μm"
+    },
+    {
+     "page": 9,
+     "block_id": 4,
+     "text": "CON"
+    },
+    {
+     "page": 9,
+     "block_id": 6,
+     "text": "N-tendon"
+    },
+    {
+     "page": 9,
+     "block_id": 7,
+     "text": "M-tendon"
+    },
+    {
+     "page": 9,
+     "block_id": 12,
+     "text": "Figure 6. Micro-CT analysis after graft implantation in a tendon-bone integration model. A) Scheme of operation procedure. B) The horizontal section, coronal section and vertical section bone tunnels were measured, and the 3D images were reconstructed. C) Quantitative analysis of neo-bone in bone tu"
+    },
+    {
+     "page": 10,
+     "block_id": 4,
+     "text": "Figure 7. Histological analysis of the tendon-bone integration process. A–C) HE, MASSON, and Safranin O staining of bone tunnel section after 4 weeks of implantation. Scale bar = 200 µm in (A) Scale bar = 40 µm in (B,C). D–F) Immunofluorescent staining of COL1A1, BMP2, and TNMD in the control, norma"
+    }
+   ]
+  }
+ }
+}

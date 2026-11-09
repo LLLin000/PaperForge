@@ -1,0 +1,233 @@
+{
+ "dry_run": {
+  "key": "AT99P8YS",
+  "identity": {
+   "old": {
+    "entries": 3,
+    "unique_ids": 3,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 3,
+    "unique_ids": 3,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": [
+    {
+     "old_id": "figure_002",
+     "old_assets": [
+      "10",
+      "12",
+      "7",
+      "8"
+     ],
+     "new_id": "figure_002",
+     "new_assets": [
+      "10",
+      "7"
+     ]
+    },
+    {
+     "old_id": "figure_003",
+     "old_assets": [
+      "10",
+      "13",
+      "6",
+      "8"
+     ],
+     "new_id": "figure_003",
+     "new_assets": [
+      "10",
+      "6"
+     ]
+    }
+   ]
+  },
+  "delivery": {
+   "old_render_files": 15,
+   "new_render_files": 34,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/unresolved_cluster_001.jpg",
+    "assets/figures/unresolved_cluster_002.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/tables/table_001.jpg",
+    "assets/tables/table_002.jpg",
+    "assets/tables/table_003.jpg",
+    "assets/tables/table_004.jpg",
+    "assets/tables/table_005.jpg",
+    "render/figures/unresolved_cluster_001.md",
+    "render/figures/unresolved_cluster_002.md"
+   ],
+   "render_removed": [],
+   "embeds": 8,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 5,
+   "new_tables": 5,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 268,
+   "new_rows": 268,
+   "role_removed": {
+    "unknown_structural": 2,
+    "body_paragraph": 1,
+    "structured_insert": 1,
+    "figure_asset": 4,
+    "figure_caption_candidate": 5,
+    "frontmatter_noise": 1
+   },
+   "role_added": {
+    "paper_title": 1,
+    "abstract_heading": 1,
+    "abstract_body": 1,
+    "section_heading": 1,
+    "figure_caption": 5,
+    "media_asset": 4,
+    "reference_item": 1
+   },
+   "old_body_chars": 29487,
+   "new_body_chars": 29085,
+   "old_text_chars": 61872,
+   "new_text_chars": 61872,
+   "old_fulltext_chars": 40978
+  },
+  "new_manifest": {
+   "figures": 5,
+   "tables": 5,
+   "orphans": 7
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "AT99P8YS",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 61872,
+  "new_text_chars": 61872,
+  "old_entries": 3,
+  "new_entries": 3,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 5,
+     "text": "Figure 1. Workflow of Radiomic Feature Extraction"
+    },
+    {
+     "page": 9,
+     "block_id": 6,
+     "text": "Figure 2. Clinical-Radiomic Nomogram for Predicting Lymph Node Metastasis"
+    },
+    {
+     "page": 9,
+     "block_id": 9,
+     "text": "Nomogram to estimate ALN in the subgroup of patients with 2 lymph node metastases"
+    },
+    {
+     "page": 9,
+     "block_id": 11,
+     "text": "D Nomogram to estimate ALN in the subgroup of patients with 3 or more lymph node metastases"
+    },
+    {
+     "page": 10,
+     "block_id": 4,
+     "text": "Figure 3. Clinical-Radiomic Nomogram for Predicting Disease-Free Survival (DFS)"
+    },
+    {
+     "page": 10,
+     "block_id": 5,
+     "text": "A DFS according to nomogram in development cohort"
+    },
+    {
+     "page": 10,
+     "block_id": 7,
+     "text": "B DFS according to nomogram in validation cohort"
+    },
+    {
+     "page": 10,
+     "block_id": 9,
+     "text": "C Nomogram estimated DFS in development cohort"
+    },
+    {
+     "page": 10,
+     "block_id": 11,
+     "text": "D Nomogram estimated DFS in validation cohort"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 3,
+    "block_id": 5,
+    "text": "Figure 1. Workflow of Radiomic Feature Extraction"
+   },
+   {
+    "page": 9,
+    "block_id": 6,
+    "text": "Figure 2. Clinical-Radiomic Nomogram for Predicting Lymph Node Metastasis"
+   },
+   {
+    "page": 9,
+    "block_id": 9,
+    "text": "Nomogram to estimate ALN in the subgroup of patients with 2 lymph node metastases"
+   },
+   {
+    "page": 9,
+    "block_id": 11,
+    "text": "D Nomogram to estimate ALN in the subgroup of patients with 3 or more lymph node metastases"
+   },
+   {
+    "page": 10,
+    "block_id": 4,
+    "text": "Figure 3. Clinical-Radiomic Nomogram for Predicting Disease-Free Survival (DFS)"
+   },
+   {
+    "page": 10,
+    "block_id": 5,
+    "text": "A DFS according to nomogram in development cohort"
+   },
+   {
+    "page": 10,
+    "block_id": 7,
+    "text": "B DFS according to nomogram in validation cohort"
+   },
+   {
+    "page": 10,
+    "block_id": 9,
+    "text": "C Nomogram estimated DFS in development cohort"
+   },
+   {
+    "page": 10,
+    "block_id": 11,
+    "text": "D Nomogram estimated DFS in validation cohort"
+   }
+  ]
+ }
+}

@@ -1,0 +1,21 @@
+{
+ "key": "BQLPT7T3",
+ "passed": true,
+ "figures": 0,
+ "structural": {
+  "key": "BQLPT7T3",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 28194,
+  "new_text_chars": 28194,
+  "old_entries": 0,
+  "new_entries": 0,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": []
+  }
+ }
+}

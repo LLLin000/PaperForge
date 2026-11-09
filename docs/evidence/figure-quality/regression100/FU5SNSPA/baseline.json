@@ -1,0 +1,187 @@
+{
+ "dry_run": {
+  "key": "FU5SNSPA",
+  "identity": {
+   "old": {
+    "entries": 7,
+    "unique_ids": 7,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 7,
+    "unique_ids": 7,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005",
+    "figure_006": "figure_006",
+    "figure_007": "figure_007"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 43,
+   "new_render_files": 46,
+   "render_added": [
+    "assets/tables/table_003.jpg",
+    "assets/tables/table_004.jpg",
+    "assets/tables/table_005.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 9,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 5,
+   "new_tables": 5,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 184,
+   "new_rows": 184,
+   "role_removed": {
+    "unknown_structural": 1,
+    "figure_inner_text": 1,
+    "figure_caption_candidate": 1
+   },
+   "role_added": {
+    "authors": 1,
+    "abstract_body": 1,
+    "figure_caption": 1
+   },
+   "old_body_chars": 28404,
+   "new_body_chars": 28297,
+   "old_text_chars": 47558,
+   "new_text_chars": 47558,
+   "old_fulltext_chars": 36879
+  },
+  "new_manifest": {
+   "figures": 7,
+   "tables": 5,
+   "orphans": 11
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "FU5SNSPA",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 47558,
+  "new_text_chars": 47558,
+  "old_entries": 7,
+  "new_entries": 7,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 8,
+     "block_id": 9,
+     "text": "Grade 1 Grade 2 Grade 3 Grade 4 Grade 5"
+    }
+   ],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 13,
+     "text": "Fig. 1 A flow diagram of the study is shown here."
+    },
+    {
+     "page": 4,
+     "block_id": 12,
+     "text": "Fig. 2 A T2 weighted frontal MRI of the shoulder showing periimplant fluid is presented here. (A) Grade 1, no periimplant fluid, (B) slight periimplant fluid, (C) continuous line of fluid < 1 mm thick, (D) continuous line of fluid > 1 mm thick."
+    },
+    {
+     "page": 5,
+     "block_id": 4,
+     "text": "Fig. 3 A T2 weighted axial MRI of the shoulder displaying the measurement technique of tunnel width and length is shown here. The longitudinal central axis of each anchor was marked; three measurements were performed at 5 mm apart perpendicular to this central axis, respectively."
+    },
+    {
+     "page": 5,
+     "block_id": 13,
+     "text": "Fig. 4 The biodegradation degrees, according to Hanevald [17], of all suture anchors (n = 84) are presented here. Grade 1: clearly visible structure; Grade 2: visible structure; Grade 3: partial visible; Grad 4: not visible structure."
+    },
+    {
+     "page": 6,
+     "block_id": 5,
+     "text": "Fig. 5 The periimplant fluid film formation degrees, according to Hanevald [17], of all suture anchors (n = 84) are shown here. Grade 1: no periimplant fluid; Grade 2: slight periimplant fluid; Grade 3: continuous line of fluid < 1 mm thick; Grade 4: continuous line of fluid > 1 mm thick."
+    },
+    {
+     "page": 6,
+     "block_id": 12,
+     "text": "Fig. 6 A T2 weighted coronal MRI scan of the shoulder showing one minor osteolysis, involving a Corkscrew suture anchor is shown here."
+    },
+    {
+     "page": 8,
+     "block_id": 9,
+     "text": "Grade 1 Grade 2 Grade 3 Grade 4 Grade 5"
+    },
+    {
+     "page": 8,
+     "block_id": 10,
+     "text": "Fig. 7 Tendon integrity degrees, according to Sugaya classification [35], of all patients (n = 25) are presented here. Grade 1: sufficient thickness, homogeneous tendon; Grade 2: sufficient thickness, partial high-intensity from within the tendon; Grade 3: insufficient thickness without discontinuit"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [
+   {
+    "page": 8,
+    "block_id": 9,
+    "text": "Grade 1 Grade 2 Grade 3 Grade 4 Grade 5"
+   }
+  ],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 13,
+    "text": "Fig. 1 A flow diagram of the study is shown here."
+   },
+   {
+    "page": 4,
+    "block_id": 12,
+    "text": "Fig. 2 A T2 weighted frontal MRI of the shoulder showing periimplant fluid is presented here. (A) Grade 1, no periimplant fluid, (B) slight periimplant fluid, (C) continuous line of fluid < 1 mm thick, (D) continuous line of fluid > 1 mm thick."
+   },
+   {
+    "page": 5,
+    "block_id": 4,
+    "text": "Fig. 3 A T2 weighted axial MRI of the shoulder displaying the measurement technique of tunnel width and length is shown here. The longitudinal central axis of each anchor was marked; three measurements were performed at 5 mm apart perpendicular to this central axis, respectively."
+   },
+   {
+    "page": 5,
+    "block_id": 13,
+    "text": "Fig. 4 The biodegradation degrees, according to Hanevald [17], of all suture anchors (n = 84) are presented here. Grade 1: clearly visible structure; Grade 2: visible structure; Grade 3: partial visible; Grad 4: not visible structure."
+   },
+   {
+    "page": 6,
+    "block_id": 5,
+    "text": "Fig. 5 The periimplant fluid film formation degrees, according to Hanevald [17], of all suture anchors (n = 84) are shown here. Grade 1: no periimplant fluid; Grade 2: slight periimplant fluid; Grade 3: continuous line of fluid < 1 mm thick; Grade 4: continuous line of fluid > 1 mm thick."
+   },
+   {
+    "page": 6,
+    "block_id": 12,
+    "text": "Fig. 6 A T2 weighted coronal MRI scan of the shoulder showing one minor osteolysis, involving a Corkscrew suture anchor is shown here."
+   },
+   {
+    "page": 8,
+    "block_id": 9,
+    "text": "Grade 1 Grade 2 Grade 3 Grade 4 Grade 5"
+   },
+   {
+    "page": 8,
+    "block_id": 10,
+    "text": "Fig. 7 Tendon integrity degrees, according to Sugaya classification [35], of all patients (n = 25) are presented here. Grade 1: sufficient thickness, homogeneous tendon; Grade 2: sufficient thickness, partial high-intensity from within the tendon; Grade 3: insufficient thickness without discontinuit"
+   }
+  ]
+ }
+}

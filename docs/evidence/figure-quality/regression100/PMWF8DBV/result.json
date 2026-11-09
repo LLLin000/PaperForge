@@ -1,0 +1,81 @@
+{
+ "key": "PMWF8DBV",
+ "passed": true,
+ "figures": 8,
+ "structural": {
+  "key": "PMWF8DBV",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 95987,
+  "new_text_chars": 95987,
+  "old_entries": 8,
+  "new_entries": 8,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      933,
+      505,
+      1038,
+      541
+     ]
+    },
+    {
+     "page": 26,
+     "bbox": [
+      154,
+      1335,
+      321,
+      1393
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 4,
+     "text": "Figure 1. Macro-, micro- and molecular structure of bacterial cellulose (BC) membrane. Molecular structure image adapted from [2]."
+    },
+    {
+     "page": 3,
+     "block_id": 14,
+     "text": "Figure 2. Trend of annual publications considering BC for 2010–2020 period. Search engine is Web of Science Core Collection and search terms (a), ‘bacterial cellulose’ (b), ‘bacterial cellulose’ AND ‘medicine’, (c) and ‘bacterial cellulose’ AND ‘medicine’ AND ‘review’."
+    },
+    {
+     "page": 4,
+     "block_id": 5,
+     "text": "Figure 3. Schematic illustration of biosynthesis of BC/potato starch (PS) composites and experimental design in fabrication of tissue engineered urethra. Reprinted with permission from Ref. [10] Copyright (2016) American Chemical Society."
+    },
+    {
+     "page": 6,
+     "block_id": 4,
+     "text": "Figure 4. Chemical modifications of BC. Reprinted with permission from [23]. Copyright (2017) Elsevier."
+    },
+    {
+     "page": 9,
+     "block_id": 3,
+     "text": "Figure 5. Processing of BC crystals by acid hydrolysis and cationic surface modification of sulfated BC by physical adsorption using amines and amine-containing polymers. Reprinted with permission from [25]. Copyright (2018) American Chemical Society."
+    },
+    {
+     "page": 13,
+     "block_id": 8,
+     "text": "Figure 6. BC used as basement membrane in BBB model. Reprinted with permission from [99]. Copyright (2019) Elsevier."
+    },
+    {
+     "page": 18,
+     "block_id": 6,
+     "text": "Figure 7. BC included into (a) esterase biosensor and (b) glucose oxidase biosensor. Reprinted with permission from (a) [129] and (b) [130]. Copyright (2016) American Chemical Society and (2018) Elsevier."
+    },
+    {
+     "page": 19,
+     "block_id": 3,
+     "text": "Figure 8. Physical de-hydration method for inclusion of photosensitiser  $ C_{60} $ in BC for photodynamic therapy in cancer treatment. Reprinted with permission from [136]. Copyright (2018) The Royal Society of Chemistry."
+    }
+   ]
+  }
+ }
+}

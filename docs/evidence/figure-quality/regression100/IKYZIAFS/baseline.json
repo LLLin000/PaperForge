@@ -1,0 +1,120 @@
+{
+ "dry_run": {
+  "key": "IKYZIAFS",
+  "identity": {
+   "old": {
+    "entries": 2,
+    "unique_ids": 2,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 2,
+    "unique_ids": 2,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_002": "figure_002",
+    "figure_003": "figure_003"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 12,
+   "new_render_files": 12,
+   "render_added": [],
+   "render_removed": [],
+   "embeds": 2,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 0,
+   "new_tables": 0,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 49,
+   "new_rows": 49,
+   "role_removed": {},
+   "role_added": {},
+   "old_body_chars": 7683,
+   "new_body_chars": 7683,
+   "old_text_chars": 11865,
+   "new_text_chars": 11865,
+   "old_fulltext_chars": 11307
+  },
+  "new_manifest": {
+   "figures": 2,
+   "tables": 0,
+   "orphans": 4
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "IKYZIAFS",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 11865,
+  "new_text_chars": 11865,
+  "old_entries": 2,
+  "new_entries": 2,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 2,
+     "block_id": 4,
+     "text": "Figure 1. An AP radiograph of the right shoulder taken preoperatively."
+    }
+   ],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 4,
+     "text": "Figure 1. An AP radiograph of the right shoulder taken preoperatively."
+    },
+    {
+     "page": 2,
+     "block_id": 6,
+     "text": "Figure 2. Radiograph taken 8 months after surgery with osteolysis in the humeral head (arrows)."
+    },
+    {
+     "page": 2,
+     "block_id": 12,
+     "text": "Figure 3. A, 16-month postoperative radiograph with no change in the osteolytic lesion appearance. B, axillary lateral at 16-month follow-up with no osteolytic changes in the glenoid."
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [
+   {
+    "page": 2,
+    "block_id": 4,
+    "text": "Figure 1. An AP radiograph of the right shoulder taken preoperatively."
+   }
+  ],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 4,
+    "text": "Figure 1. An AP radiograph of the right shoulder taken preoperatively."
+   },
+   {
+    "page": 2,
+    "block_id": 6,
+    "text": "Figure 2. Radiograph taken 8 months after surgery with osteolysis in the humeral head (arrows)."
+   },
+   {
+    "page": 2,
+    "block_id": 12,
+    "text": "Figure 3. A, 16-month postoperative radiograph with no change in the osteolytic lesion appearance. B, axillary lateral at 16-month follow-up with no osteolytic changes in the glenoid."
+   }
+  ]
+ }
+}

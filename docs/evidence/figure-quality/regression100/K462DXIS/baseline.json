@@ -1,0 +1,151 @@
+{
+ "dry_run": {
+  "key": "K462DXIS",
+  "identity": {
+   "old": {
+    "entries": 0,
+    "unique_ids": 0,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 0,
+    "unique_ids": 0,
+    "duplicate_extra": 0
+   },
+   "mapping": {},
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 12,
+   "new_render_files": 24,
+   "render_added": [
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 0,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 0,
+   "new_tables": 0,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 242,
+   "new_rows": 242,
+   "role_removed": {
+    "unknown_structural": 17,
+    "reference_item": 4,
+    "backmatter_heading": 1,
+    "figure_caption_candidate": 3
+   },
+   "role_added": {
+    "paper_title": 1,
+    "body_paragraph": 4,
+    "abstract_body": 5,
+    "subsection_heading": 10,
+    "reference_heading": 1,
+    "backmatter_boundary_candidate": 1,
+    "figure_caption": 3
+   },
+   "old_body_chars": 28836,
+   "new_body_chars": 30113,
+   "old_text_chars": 46943,
+   "new_text_chars": 46943,
+   "old_fulltext_chars": 32667
+  },
+  "new_manifest": {
+   "figures": 0,
+   "tables": 0,
+   "orphans": 12
+  },
+  "new_orphans": 1
+ },
+ "structural": {
+  "key": "K462DXIS",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 46943,
+  "new_text_chars": 46943,
+  "old_entries": 0,
+  "new_entries": 0,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      414,
+      438,
+      789,
+      803
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 11,
+     "block_id": 2,
+     "text": "Trock 1994"
+    },
+    {
+     "page": 11,
+     "block_id": 4,
+     "text": "Trock 1993"
+    },
+    {
+     "page": 12,
+     "block_id": 0,
+     "text": "Trock 1993 (Continued)"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     414,
+     438,
+     789,
+     803
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 11,
+    "block_id": 2,
+    "text": "Trock 1994"
+   },
+   {
+    "page": 11,
+    "block_id": 4,
+    "text": "Trock 1993"
+   },
+   {
+    "page": 12,
+    "block_id": 0,
+    "text": "Trock 1993 (Continued)"
+   }
+  ]
+ }
+}

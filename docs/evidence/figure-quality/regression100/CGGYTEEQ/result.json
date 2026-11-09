@@ -1,0 +1,63 @@
+{
+ "key": "CGGYTEEQ",
+ "passed": true,
+ "figures": 5,
+ "structural": {
+  "key": "CGGYTEEQ",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 65379,
+  "new_text_chars": 65379,
+  "old_entries": 5,
+  "new_entries": 5,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 6,
+     "block_id": 2,
+     "text": "Fig 4 | Forest plots of extracted performance statistics of the additive EuroSCORE in the case study (to predict all cause mortality at 30 days in patients undergoing coronary artery bypass grafting). Part A shows forest plot of study specific C statistics (all 95% confidence intervals estimated on "
+    }
+   ],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 9,
+     "text": "Fig 1 | Flowchart for systematically reviewing and, if considered appropriate, meta-analysis of the validation studies of a prediction model. CHARMS=checklist for critical appraisal and data extraction for systematic reviews of prediction modelling studies; PROBAST=prediction model risk of bias asse"
+    },
+    {
+     "page": 3,
+     "block_id": 17,
+     "text": "Fig 2 | Overall judgment for risk of bias of included articles in the case study (predictive performance of the EuroSCORE for all cause mortality at 30 days in patients undergoing coronary artery bypass grafting). Study references listed in appendix 2. Study participants domain=design of the include"
+    },
+    {
+     "page": 4,
+     "block_id": 5,
+     "text": "Sometimes, the distribution of the linear predictor is reported separately for different subgroups. For instance, in one paper the mean ( $ \\mu $) and standard deviation of the additive EuroSCORE was reported for 3440 patients undergoing on-pump coronary bypass grafting (3.26±2.45) and for 1140 pati"
+    },
+    {
+     "page": 4,
+     "block_id": 11,
+     "text": "Fig 3 | Estimation of the standard deviation of the linear predictor as a way to quantify case mix variation within a study"
+    },
+    {
+     "page": 6,
+     "block_id": 2,
+     "text": "Fig 4 | Forest plots of extracted performance statistics of the additive EuroSCORE in the case study (to predict all cause mortality at 30 days in patients undergoing coronary artery bypass grafting). Part A shows forest plot of study specific C statistics (all 95% confidence intervals estimated on "
+    },
+    {
+     "page": 8,
+     "block_id": 3,
+     "text": "Standard deviation of patient age"
+    },
+    {
+     "page": 8,
+     "block_id": 6,
+     "text": "Fig 5 | Results from random effects meta-regression models in the case study (predictive performance of the EuroSCORE for all cause mortality at 30 days in patients undergoing coronary artery bypass grafting). Solid lines=regression lines; dashed lines=95% confidence intervals; dots=included validat"
+    }
+   ]
+  }
+ }
+}

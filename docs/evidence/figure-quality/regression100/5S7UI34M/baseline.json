@@ -1,0 +1,347 @@
+{
+ "dry_run": {
+  "key": "5S7UI34M",
+  "identity": {
+   "old": {
+    "entries": 9,
+    "unique_ids": 9,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 10,
+    "unique_ids": 10,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005",
+    "figure_006": "figure_006",
+    "figure_007": "figure_007",
+    "figure_008": "figure_008",
+    "figure_009": "figure_009"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": [
+    {
+     "old_id": "figure_007",
+     "old_assets": [
+      "10",
+      "11",
+      "12",
+      "14",
+      "15",
+      "3",
+      "5",
+      "6",
+      "7",
+      "9"
+     ],
+     "new_id": "figure_007",
+     "new_assets": [
+      "11",
+      "12",
+      "3",
+      "6"
+     ]
+    }
+   ]
+  },
+  "delivery": {
+   "old_render_files": 26,
+   "new_render_files": 134,
+   "render_added": [
+    "assets/figures/figure_007_p013_b17.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/orphans/orphan_013.jpg",
+    "assets/orphans/orphan_014.jpg",
+    "assets/orphans/orphan_015.jpg",
+    "assets/orphans/orphan_016.jpg",
+    "assets/orphans/orphan_017.jpg",
+    "assets/orphans/orphan_018.jpg",
+    "assets/orphans/orphan_019.jpg",
+    "assets/orphans/orphan_020.jpg",
+    "assets/orphans/orphan_021.jpg",
+    "assets/orphans/orphan_022.jpg",
+    "assets/orphans/orphan_023.jpg",
+    "assets/orphans/orphan_024.jpg",
+    "assets/orphans/orphan_025.jpg",
+    "assets/orphans/orphan_026.jpg",
+    "assets/orphans/orphan_027.jpg",
+    "assets/orphans/orphan_028.jpg",
+    "assets/orphans/orphan_029.jpg",
+    "assets/orphans/orphan_030.jpg",
+    "assets/orphans/orphan_031.jpg",
+    "assets/orphans/orphan_032.jpg",
+    "assets/orphans/orphan_033.jpg",
+    "assets/orphans/orphan_034.jpg",
+    "assets/orphans/orphan_035.jpg",
+    "assets/orphans/orphan_036.jpg",
+    "assets/orphans/orphan_037.jpg",
+    "assets/orphans/orphan_038.jpg",
+    "assets/orphans/orphan_039.jpg",
+    "assets/orphans/orphan_040.jpg",
+    "assets/orphans/orphan_041.jpg",
+    "assets/orphans/orphan_042.jpg",
+    "assets/orphans/orphan_043.jpg",
+    "assets/orphans/orphan_044.jpg",
+    "assets/orphans/orphan_045.jpg",
+    "assets/orphans/orphan_046.jpg",
+    "assets/orphans/orphan_047.jpg",
+    "assets/orphans/orphan_048.jpg",
+    "assets/orphans/orphan_049.jpg",
+    "assets/orphans/orphan_050.jpg",
+    "assets/orphans/orphan_051.jpg",
+    "assets/orphans/orphan_052.jpg",
+    "assets/orphans/orphan_053.jpg",
+    "assets/orphans/orphan_054.jpg",
+    "assets/orphans/orphan_055.jpg",
+    "render/figures/figure_007_p013_b17.md",
+    "render/figures/orphan_003.md",
+    "render/figures/orphan_004.md",
+    "render/figures/orphan_005.md",
+    "render/figures/orphan_006.md",
+    "render/figures/orphan_007.md",
+    "render/figures/orphan_008.md",
+    "render/figures/orphan_009.md",
+    "render/figures/orphan_010.md",
+    "render/figures/orphan_011.md",
+    "render/figures/orphan_012.md",
+    "render/figures/orphan_013.md",
+    "render/figures/orphan_014.md",
+    "render/figures/orphan_015.md",
+    "render/figures/orphan_016.md",
+    "render/figures/orphan_017.md",
+    "render/figures/orphan_018.md",
+    "render/figures/orphan_019.md",
+    "render/figures/orphan_020.md",
+    "render/figures/orphan_021.md",
+    "render/figures/orphan_022.md",
+    "render/figures/orphan_023.md",
+    "render/figures/orphan_024.md",
+    "render/figures/orphan_025.md",
+    "render/figures/orphan_026.md",
+    "render/figures/orphan_027.md",
+    "render/figures/orphan_028.md",
+    "render/figures/orphan_029.md",
+    "render/figures/orphan_030.md",
+    "render/figures/orphan_031.md",
+    "render/figures/orphan_032.md",
+    "render/figures/orphan_033.md",
+    "render/figures/orphan_034.md",
+    "render/figures/orphan_035.md",
+    "render/figures/orphan_036.md",
+    "render/figures/orphan_037.md",
+    "render/figures/orphan_038.md",
+    "render/figures/orphan_039.md",
+    "render/figures/orphan_040.md",
+    "render/figures/orphan_041.md",
+    "render/figures/orphan_042.md",
+    "render/figures/orphan_043.md",
+    "render/figures/orphan_044.md",
+    "render/figures/orphan_045.md",
+    "render/figures/orphan_046.md",
+    "render/figures/orphan_047.md",
+    "render/figures/orphan_048.md",
+    "render/figures/orphan_049.md",
+    "render/figures/orphan_050.md",
+    "render/figures/orphan_051.md",
+    "render/figures/orphan_052.md",
+    "render/figures/orphan_053.md",
+    "render/figures/orphan_054.md",
+    "render/figures/orphan_055.md"
+   ],
+   "render_removed": [],
+   "embeds": 11,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 2,
+   "new_tables": 2,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 519,
+   "new_rows": 519,
+   "role_removed": {
+    "frontmatter_noise": 1,
+    "figure_caption_candidate": 8,
+    "reference_item": 5,
+    "backmatter_heading": 1
+   },
+   "role_added": {
+    "section_heading": 1,
+    "body_paragraph": 5,
+    "figure_caption": 8,
+    "backmatter_heading_candidate": 1
+   },
+   "old_body_chars": 57128,
+   "new_body_chars": 60029,
+   "old_text_chars": 121856,
+   "new_text_chars": 121856,
+   "old_fulltext_chars": 109202
+  },
+  "new_manifest": {
+   "figures": 10,
+   "tables": 2,
+   "orphans": 55
+  },
+  "new_orphans": 1
+ },
+ "structural": {
+  "key": "5S7UI34M",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 121856,
+  "new_text_chars": 121856,
+  "old_entries": 9,
+  "new_entries": 10,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      97,
+      268,
+      242,
+      294
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 4,
+     "block_id": 3,
+     "text": "FIGURE 1\nPhysical cross-linking methods for PVA-based hydrogels. (A) PVA hydrogel prepared by F-T method, the number of F-T cycles can affect the structure and properties of the hydrogel (Stauffer and Peppast, 1992); (B) Principle of salting method (Wu et al., 2021); (C) Principle of directional fre"
+    },
+    {
+     "page": 6,
+     "block_id": 8,
+     "text": "FIGURE 2\n(A) PVA-based hydrogel cross-linked by glutaraldehyde (Pei et al., 2021); (B) PVA-based hydrogel cross-linked by borax (Songfeng et al., 2020); (C) PVA-SA copolymer hydrogel (Shen et al., 2022)."
+    },
+    {
+     "page": 8,
+     "block_id": 15,
+     "text": "FIGURE 3\n(A) Schematic diagram of PVA-based hydrogel synthesis (Branco et al., 2022); (B) PVA-based hydrogel has good flexibility; (C) Annealing can enhance the mechanical strength of hydrogel (Chen et al., 2018); (D) PVA-based hydrogel can be used as articular cartilage contact surface with good tr"
+    },
+    {
+     "page": 10,
+     "block_id": 3,
+     "text": "FIGURE 4\n(A,B) PVA-based hydrogel doped with Al³⁺ or Ca²⁺, the metal ions can make the hydrogel have good ionic conductivity (Gan et al., 2021; Lu L. et al., 2022); (C) The application of organic solvents enables the hydrogel to maintain good electrical conductivity in low-temperature environments a"
+    },
+    {
+     "page": 11,
+     "block_id": 21,
+     "text": "FIGURE 5\nProperties and applications of PVA-based hydrogels in flexible sensing. (A) Ionically conductive PVA-based hydrogels can sensitively and reproducibly convert motion signals into electrical signals (Zhang L. et al., 2022); (B) Sweat sensors prepared using PVA-based hydrogels can respond to N"
+    },
+    {
+     "page": 12,
+     "block_id": 25,
+     "text": "FIGURE 6\nMethods to enhance the mechanical properties of conductive PVA-based hydrogels; (A) Salt precipitation, especially immersion in Na₂SO₄ solution can substantially enhance the toughness of hydrogels (Wu et al., 2021); (B) Starch/PVA dual-network hydrogels possess good tensile properties and t"
+    },
+    {
+     "page": 13,
+     "block_id": 16,
+     "text": "FIGURE 7"
+    },
+    {
+     "page": 13,
+     "block_id": 17,
+     "text": "FIGURE 7\nReversible chemical bonding and non-covalent interactions can confer good self-healing properties to PVA-based hydrogels. (A) Self-healing photographs and pattern diagrams of PVA-based hydrogels enriched with borate ester bonding and hydrogen bonding (Qin et al., 2022); (B) Schematic illust"
+    },
+    {
+     "page": 15,
+     "block_id": 3,
+     "text": "FIGURE 8\n(A) PVA-based hydrogels can be affixed to chronic wounds and slowly release drugs under NIR light stimulation (Su et al., 2023); (B) PVA-based hydrogels can promote hydrogel wound healing (Liu et al., 2023); (C) PVA-based hydrogels can be copolymerized with antimicrobial active materials to"
+    },
+    {
+     "page": 16,
+     "block_id": 3,
+     "text": "FIGURE 9\nOther applications of PVA-based hydrogels; (A) Schematic and photographs of the synthesis of PVA-based hydrogels for microneedle patches; (B) Schematic and photographs of microneedle patch application (Chen S. Y. et al., 2022); (C) PVA-based hydrogel for gastric retention device, which can "
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     97,
+     268,
+     242,
+     294
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 4,
+    "block_id": 3,
+    "text": "FIGURE 1\nPhysical cross-linking methods for PVA-based hydrogels. (A) PVA hydrogel prepared by F-T method, the number of F-T cycles can affect the structure and properties of the hydrogel (Stauffer and Peppast, 1992); (B) Principle of salting method (Wu et al., 2021); (C) Principle of directional fre"
+   },
+   {
+    "page": 6,
+    "block_id": 8,
+    "text": "FIGURE 2\n(A) PVA-based hydrogel cross-linked by glutaraldehyde (Pei et al., 2021); (B) PVA-based hydrogel cross-linked by borax (Songfeng et al., 2020); (C) PVA-SA copolymer hydrogel (Shen et al., 2022)."
+   },
+   {
+    "page": 8,
+    "block_id": 15,
+    "text": "FIGURE 3\n(A) Schematic diagram of PVA-based hydrogel synthesis (Branco et al., 2022); (B) PVA-based hydrogel has good flexibility; (C) Annealing can enhance the mechanical strength of hydrogel (Chen et al., 2018); (D) PVA-based hydrogel can be used as articular cartilage contact surface with good tr"
+   },
+   {
+    "page": 10,
+    "block_id": 3,
+    "text": "FIGURE 4\n(A,B) PVA-based hydrogel doped with Al³⁺ or Ca²⁺, the metal ions can make the hydrogel have good ionic conductivity (Gan et al., 2021; Lu L. et al., 2022); (C) The application of organic solvents enables the hydrogel to maintain good electrical conductivity in low-temperature environments a"
+   },
+   {
+    "page": 11,
+    "block_id": 21,
+    "text": "FIGURE 5\nProperties and applications of PVA-based hydrogels in flexible sensing. (A) Ionically conductive PVA-based hydrogels can sensitively and reproducibly convert motion signals into electrical signals (Zhang L. et al., 2022); (B) Sweat sensors prepared using PVA-based hydrogels can respond to N"
+   },
+   {
+    "page": 12,
+    "block_id": 25,
+    "text": "FIGURE 6\nMethods to enhance the mechanical properties of conductive PVA-based hydrogels; (A) Salt precipitation, especially immersion in Na₂SO₄ solution can substantially enhance the toughness of hydrogels (Wu et al., 2021); (B) Starch/PVA dual-network hydrogels possess good tensile properties and t"
+   },
+   {
+    "page": 13,
+    "block_id": 16,
+    "text": "FIGURE 7"
+   },
+   {
+    "page": 13,
+    "block_id": 17,
+    "text": "FIGURE 7\nReversible chemical bonding and non-covalent interactions can confer good self-healing properties to PVA-based hydrogels. (A) Self-healing photographs and pattern diagrams of PVA-based hydrogels enriched with borate ester bonding and hydrogen bonding (Qin et al., 2022); (B) Schematic illust"
+   },
+   {
+    "page": 15,
+    "block_id": 3,
+    "text": "FIGURE 8\n(A) PVA-based hydrogels can be affixed to chronic wounds and slowly release drugs under NIR light stimulation (Su et al., 2023); (B) PVA-based hydrogels can promote hydrogel wound healing (Liu et al., 2023); (C) PVA-based hydrogels can be copolymerized with antimicrobial active materials to"
+   },
+   {
+    "page": 16,
+    "block_id": 3,
+    "text": "FIGURE 9\nOther applications of PVA-based hydrogels; (A) Schematic and photographs of the synthesis of PVA-based hydrogels for microneedle patches; (B) Schematic and photographs of microneedle patch application (Chen S. Y. et al., 2022); (C) PVA-based hydrogel for gastric retention device, which can "
+   }
+  ]
+ }
+}

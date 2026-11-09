@@ -1,0 +1,412 @@
+{
+ "dry_run": {
+  "key": "8K39NHUQ",
+  "identity": {
+   "old": {
+    "entries": 9,
+    "unique_ids": 9,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 9,
+    "unique_ids": 9,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005",
+    "figure_006": "figure_006",
+    "figure_007": "figure_007",
+    "figure_008": "figure_008",
+    "figure_009": "figure_009"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": [
+    {
+     "old_id": "figure_001",
+     "old_assets": [
+      "10",
+      "7",
+      "8",
+      "9"
+     ],
+     "new_id": "figure_001",
+     "new_assets": [
+      "10",
+      "8"
+     ]
+    },
+    {
+     "old_id": "figure_009",
+     "old_assets": [
+      "13",
+      "14",
+      "17",
+      "18",
+      "19",
+      "20",
+      "21",
+      "8"
+     ],
+     "new_id": "figure_009",
+     "new_assets": [
+      "13",
+      "14",
+      "19",
+      "20",
+      "21"
+     ]
+    }
+   ]
+  },
+  "delivery": {
+   "old_render_files": 48,
+   "new_render_files": 102,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/figures/figure_005.jpg",
+    "assets/figures/figure_006.jpg",
+    "assets/figures/figure_007.jpg",
+    "assets/figures/figure_008.jpg",
+    "assets/figures/figure_009.jpg",
+    "assets/figures/unresolved_cluster_001.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/orphans/orphan_013.jpg",
+    "assets/orphans/orphan_014.jpg",
+    "assets/orphans/orphan_015.jpg",
+    "assets/orphans/orphan_016.jpg",
+    "assets/orphans/orphan_017.jpg",
+    "assets/orphans/orphan_018.jpg",
+    "assets/orphans/orphan_019.jpg",
+    "assets/orphans/orphan_020.jpg",
+    "assets/orphans/orphan_021.jpg",
+    "assets/orphans/orphan_022.jpg",
+    "assets/orphans/orphan_023.jpg",
+    "assets/orphans/orphan_024.jpg",
+    "assets/orphans/orphan_025.jpg",
+    "assets/orphans/orphan_026.jpg",
+    "assets/orphans/orphan_027.jpg",
+    "assets/orphans/orphan_028.jpg",
+    "assets/orphans/orphan_029.jpg",
+    "assets/orphans/orphan_030.jpg",
+    "assets/orphans/orphan_031.jpg",
+    "assets/orphans/orphan_032.jpg",
+    "assets/orphans/orphan_033.jpg",
+    "assets/orphans/orphan_034.jpg",
+    "assets/orphans/orphan_035.jpg",
+    "assets/orphans/orphan_036.jpg",
+    "assets/orphans/orphan_037.jpg",
+    "assets/orphans/orphan_038.jpg",
+    "assets/orphans/orphan_039.jpg",
+    "assets/tables/table_001.jpg",
+    "assets/tables/table_002.jpg",
+    "render/figures/orphan_038.md",
+    "render/figures/orphan_039.md",
+    "render/figures/unresolved_cluster_001.md"
+   ],
+   "render_removed": [],
+   "embeds": 11,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 2,
+   "new_tables": 2,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 252,
+   "new_rows": 252,
+   "role_removed": {
+    "frontmatter_noise": 2,
+    "body_paragraph": 1,
+    "figure_asset": 5,
+    "reference_item": 3
+   },
+   "role_added": {
+    "noise": 3,
+    "media_asset": 5,
+    "figure_caption_candidate": 2,
+    "figure_caption": 1
+   },
+   "old_body_chars": 40478,
+   "new_body_chars": 38401,
+   "old_text_chars": 62535,
+   "new_text_chars": 62535,
+   "old_fulltext_chars": 54339
+  },
+  "new_manifest": {
+   "figures": 10,
+   "tables": 2,
+   "orphans": 39
+  },
+  "new_orphans": 3
+ },
+ "structural": {
+  "key": "8K39NHUQ",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 62535,
+  "new_text_chars": 62535,
+  "old_entries": 9,
+  "new_entries": 9,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      69,
+      1313,
+      185,
+      1354
+     ]
+    },
+    {
+     "page": 7,
+     "bbox": [
+      346,
+      868,
+      688,
+      1157
+     ]
+    },
+    {
+     "page": 7,
+     "bbox": [
+      335,
+      1156,
+      688,
+      1448
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 7,
+     "block_id": 6,
+     "text": "Figure 1A. shows the FT-IR characteristic peaks of PVA and PVDF. For PVA, the peaks at 3337 cm $ ^{-1} $, 2943 cm $ ^{-1} $ and 1093 cm $ ^{-1} $ corresponded to the stretching vibration peak of -OH [18], the asymmetrical stretching vibration peak of -CH $ _2 $ and the stretching vibration peak of C"
+    },
+    {
+     "page": 7,
+     "block_id": 11,
+     "text": "Figure 1. FT-IR analysis and swelling behaviors of the hydrogels. (A) FI-IR spectra of pure PVA and PVDF. (B) FT-IR spectra of PVA/PVDF composite hydrogels. (C) Swelling curves of hydrogels in PBS buffer solution at  $ 37\\,^{\\circ}\\mathrm{C} $, pH = 7.4. (D) Swelling ratio of hydrogels and images of"
+    },
+    {
+     "page": 8,
+     "block_id": 9,
+     "text": "Figure 2. Piezoelectric responses of PVA/PVDF composite hydrogels."
+    },
+    {
+     "page": 10,
+     "block_id": 7,
+     "text": "Figure 3. (A) XRD patterns of PVA/PVDF and PVA/PVDF/Ag hydrogels. (B) FT-IR spectra of PVA/PVDF and PVA/PVDF/Ag hydrogels. (C–E) Piezoelectric responses of PVA/PVDF hydrogels with 0.3% (C), 0.45% (D), and 0.6% (E) silver nanowires."
+    },
+    {
+     "page": 10,
+     "block_id": 12,
+     "text": "Figure 4. (A) Swelling curves and (B) swelling rates of the PVA/PVDF/Ag composite hydrogels dehydrated with different concentrations of ethanol in PBS buffer solution (37 °C, pH = 7.4)."
+    },
+    {
+     "page": 11,
+     "block_id": 15,
+     "text": "Figure 5. Dynamic rheology behaviors and mechanical properties of the PVA/PVDF/Ag composite hydrogels. (A) G′, G′′ and tan δ change with frequency. T = 25 °C, strain = 1%. (B) Compression process images of PVA/PVDF/Ag composite hydrogels. (C) Stress-strain curves of PVA/PVDF/Ag composite hydrogels u"
+    },
+    {
+     "page": 12,
+     "block_id": 5,
+     "text": "Figure 6A,B shows the SEM images of silver nanowires and PVA15%/PVDF15%/Ag hydrogels. It can be seen that the length of the Ag-NWs obtained was about 5–15 µm. At the same time, the as-obtained hydrogel had a three-dimensional network structure with a pore size range of 10 to 50 µm, and both PVA and "
+    },
+    {
+     "page": 12,
+     "block_id": 10,
+     "text": "Figure 6. (A) SEM images of silver nanowires. (B) SEM images of PVA/PVDF/Ag composite hydrogels. (C–F) EDS mapping images of double-layer hydrogel. (C–F) have the same scale as (B)."
+    },
+    {
+     "page": 13,
+     "block_id": 6,
+     "text": "Figure 7. Cytotoxicity and antibacterial properties of PVA/PVDF/HA/Ag composite hydrogels. (A) Proliferative activity of L929 cells co-cultured with PVA/PVDF/HA/Ag composite hydrogels at 1 day, 3 days, 5 days, and 7 days. (B) Live/dead staining of L929 cells co-cultured with hydrogel after 7 days (a"
+    },
+    {
+     "page": 14,
+     "block_id": 10,
+     "text": "Figure 8. (A) Photos of the hemolysis assay of composite hydrogels. (B) Hemolysis rate of the composite hydrogels. (C,D) Degradation rate of composite hydrogels in PBS buffer solution (pH = 7.4) and in PBS buffer solutions with trypsin, respectively ( $ ^{**} $ p < 0.01)."
+    },
+    {
+     "page": 14,
+     "block_id": 11,
+     "text": "Figure 8C,D shows the results of in vitro degradation of hydrogel materials. It can be seen that the material basically did not degrade very well in the environment of both PBS buffer (pH = 7.4) and trypsin solutions. Generally speaking, the degradation principle of"
+    },
+    {
+     "page": 15,
+     "block_id": 6,
+     "text": "PVA/HA"
+    },
+    {
+     "page": 15,
+     "block_id": 7,
+     "text": "PVA/PVDF/Ag/HA"
+    },
+    {
+     "page": 15,
+     "block_id": 10,
+     "text": "Blank"
+    },
+    {
+     "page": 15,
+     "block_id": 12,
+     "text": "PVA/HA"
+    },
+    {
+     "page": 15,
+     "block_id": 16,
+     "text": "PVA/PVDF/Ag/HA"
+    },
+    {
+     "page": 15,
+     "block_id": 22,
+     "text": "Figure 9. (A) Osteochondral defect model in rabbits. (B) Macroscopic images of knees repaired after 12 weeks (C,D). Histological analysis of the repaired knees after 12 weeks. (C) Toluidine blue staining. (D) Hematoxylin and eosin staining. (E) (International Cartilage Repair Society) scores of blan"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     69,
+     1313,
+     185,
+     1354
+    ]
+   },
+   {
+    "page": 7,
+    "bbox": [
+     346,
+     868,
+     688,
+     1157
+    ]
+   },
+   {
+    "page": 7,
+    "bbox": [
+     335,
+     1156,
+     688,
+     1448
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 7,
+    "block_id": 6,
+    "text": "Figure 1A. shows the FT-IR characteristic peaks of PVA and PVDF. For PVA, the peaks at 3337 cm $ ^{-1} $, 2943 cm $ ^{-1} $ and 1093 cm $ ^{-1} $ corresponded to the stretching vibration peak of -OH [18], the asymmetrical stretching vibration peak of -CH $ _2 $ and the stretching vibration peak of C"
+   },
+   {
+    "page": 7,
+    "block_id": 11,
+    "text": "Figure 1. FT-IR analysis and swelling behaviors of the hydrogels. (A) FI-IR spectra of pure PVA and PVDF. (B) FT-IR spectra of PVA/PVDF composite hydrogels. (C) Swelling curves of hydrogels in PBS buffer solution at  $ 37\\,^{\\circ}\\mathrm{C} $, pH = 7.4. (D) Swelling ratio of hydrogels and images of"
+   },
+   {
+    "page": 8,
+    "block_id": 9,
+    "text": "Figure 2. Piezoelectric responses of PVA/PVDF composite hydrogels."
+   },
+   {
+    "page": 10,
+    "block_id": 7,
+    "text": "Figure 3. (A) XRD patterns of PVA/PVDF and PVA/PVDF/Ag hydrogels. (B) FT-IR spectra of PVA/PVDF and PVA/PVDF/Ag hydrogels. (C–E) Piezoelectric responses of PVA/PVDF hydrogels with 0.3% (C), 0.45% (D), and 0.6% (E) silver nanowires."
+   },
+   {
+    "page": 10,
+    "block_id": 12,
+    "text": "Figure 4. (A) Swelling curves and (B) swelling rates of the PVA/PVDF/Ag composite hydrogels dehydrated with different concentrations of ethanol in PBS buffer solution (37 °C, pH = 7.4)."
+   },
+   {
+    "page": 11,
+    "block_id": 15,
+    "text": "Figure 5. Dynamic rheology behaviors and mechanical properties of the PVA/PVDF/Ag composite hydrogels. (A) G′, G′′ and tan δ change with frequency. T = 25 °C, strain = 1%. (B) Compression process images of PVA/PVDF/Ag composite hydrogels. (C) Stress-strain curves of PVA/PVDF/Ag composite hydrogels u"
+   },
+   {
+    "page": 12,
+    "block_id": 5,
+    "text": "Figure 6A,B shows the SEM images of silver nanowires and PVA15%/PVDF15%/Ag hydrogels. It can be seen that the length of the Ag-NWs obtained was about 5–15 µm. At the same time, the as-obtained hydrogel had a three-dimensional network structure with a pore size range of 10 to 50 µm, and both PVA and "
+   },
+   {
+    "page": 12,
+    "block_id": 10,
+    "text": "Figure 6. (A) SEM images of silver nanowires. (B) SEM images of PVA/PVDF/Ag composite hydrogels. (C–F) EDS mapping images of double-layer hydrogel. (C–F) have the same scale as (B)."
+   },
+   {
+    "page": 13,
+    "block_id": 6,
+    "text": "Figure 7. Cytotoxicity and antibacterial properties of PVA/PVDF/HA/Ag composite hydrogels. (A) Proliferative activity of L929 cells co-cultured with PVA/PVDF/HA/Ag composite hydrogels at 1 day, 3 days, 5 days, and 7 days. (B) Live/dead staining of L929 cells co-cultured with hydrogel after 7 days (a"
+   },
+   {
+    "page": 14,
+    "block_id": 10,
+    "text": "Figure 8. (A) Photos of the hemolysis assay of composite hydrogels. (B) Hemolysis rate of the composite hydrogels. (C,D) Degradation rate of composite hydrogels in PBS buffer solution (pH = 7.4) and in PBS buffer solutions with trypsin, respectively ( $ ^{**} $ p < 0.01)."
+   },
+   {
+    "page": 14,
+    "block_id": 11,
+    "text": "Figure 8C,D shows the results of in vitro degradation of hydrogel materials. It can be seen that the material basically did not degrade very well in the environment of both PBS buffer (pH = 7.4) and trypsin solutions. Generally speaking, the degradation principle of"
+   },
+   {
+    "page": 15,
+    "block_id": 6,
+    "text": "PVA/HA"
+   },
+   {
+    "page": 15,
+    "block_id": 7,
+    "text": "PVA/PVDF/Ag/HA"
+   },
+   {
+    "page": 15,
+    "block_id": 10,
+    "text": "Blank"
+   },
+   {
+    "page": 15,
+    "block_id": 12,
+    "text": "PVA/HA"
+   },
+   {
+    "page": 15,
+    "block_id": 16,
+    "text": "PVA/PVDF/Ag/HA"
+   },
+   {
+    "page": 15,
+    "block_id": 22,
+    "text": "Figure 9. (A) Osteochondral defect model in rabbits. (B) Macroscopic images of knees repaired after 12 weeks (C,D). Histological analysis of the repaired knees after 12 weeks. (C) Toluidine blue staining. (D) Hematoxylin and eosin staining. (E) (International Cartilage Repair Society) scores of blan"
+   }
+  ]
+ }
+}

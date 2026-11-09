@@ -1,0 +1,63 @@
+{
+ "key": "64AWS4SU",
+ "passed": true,
+ "figures": 6,
+ "structural": {
+  "key": "64AWS4SU",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 33020,
+  "new_text_chars": 33020,
+  "old_entries": 5,
+  "new_entries": 6,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 3,
+     "block_id": 14,
+     "text": "Figure 3: Images showing a large cystic collection around a lateral row bioanchor with anchor breakage. (a) Sagittal and (b) Coronal T2-weighted images"
+    }
+   ],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 15,
+     "text": "Figure 1: Sagittal T2-weighted images shows the high signal intensity of the lateral row bioanchors surrounded by the low signal intensity bone sclerosis that gives the bioanchors a \"fried egg\" appearance"
+    },
+    {
+     "page": 3,
+     "block_id": 12,
+     "text": "Figure 2: The high signal intensity of a lateral row bioanchor surrounded by isointense granulation tissue and low signal intensity bone sclerosis. (a) Sagittal and (b) Coronal T2-weighted images"
+    },
+    {
+     "page": 3,
+     "block_id": 14,
+     "text": "Figure 3: Images showing a large cystic collection around a lateral row bioanchor with anchor breakage. (a) Sagittal and (b) Coronal T2-weighted images"
+    },
+    {
+     "page": 3,
+     "block_id": 16,
+     "text": "Figure 4: Coronal image showing a medial row bioanchor (arrow)"
+    },
+    {
+     "page": 3,
+     "block_id": 18,
+     "text": "Figure 5: Coronal image of fluid accumulation around a medial row bioanchor"
+    },
+    {
+     "page": 4,
+     "block_id": 9,
+     "text": "Figure 6: Axial image showing mechanical failure at the junction between the shaft and the eyelet of a lateral row bioanchor"
+    },
+    {
+     "page": 4,
+     "block_id": 13,
+     "text": "Figure 7: Serial magnetic resonance imaging showing a decrease in the high signal intensity surrounding lateral row anchors at 8 months"
+    }
+   ]
+  }
+ }
+}

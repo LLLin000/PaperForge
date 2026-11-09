@@ -1,0 +1,47 @@
+{
+ "key": "6CHW4STK",
+ "passed": true,
+ "figures": 3,
+ "structural": {
+  "key": "6CHW4STK",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 30657,
+  "new_text_chars": 30657,
+  "old_entries": 3,
+  "new_entries": 3,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      1030,
+      132,
+      1089,
+      190
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 4,
+     "block_id": 2,
+     "text": "Fig. 1 Classification of the bone defects caused by all-suture anchors at 1-year follow-up. The diagram shows the relative incidence for each type, including the 95% confidence interval. The numbers overlaid on the graph represent the absolute numbers"
+    },
+    {
+     "page": 4,
+     "block_id": 4,
+     "text": "Fig. 2 Frequency histogram of the volumes of the bone defects caused by all-suture anchors at 1-year follow-up. No anchor caused a bone defect larger than 100 mm $ ^{3} $. The 16 anchors in which the bone filled completely the drill tunnel can be clearly seen at the left of the histogram"
+    },
+    {
+     "page": 5,
+     "block_id": 1,
+     "text": "Fig. 3 Schematic representation of a sagittal view of a right glenoid with the clock lines dividing the different glenoid edge zones. The table shows the total numbers of anchors placed in each zone and the number that developed each bone defect type. Numbers in parentheses show the percentage with "
+    }
+   ]
+  }
+ }
+}

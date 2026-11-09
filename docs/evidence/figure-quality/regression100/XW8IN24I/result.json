@@ -1,0 +1,82 @@
+{
+ "key": "XW8IN24I",
+ "passed": true,
+ "figures": 12,
+ "structural": {
+  "key": "XW8IN24I",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 64298,
+  "new_text_chars": 64298,
+  "old_entries": 14,
+  "new_entries": 12,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 4,
+     "block_id": 9,
+     "text": "Fig. 1. Multiple examination tests have been described to evaluating the rotator cuff. Tests for the supraspinatus include the empty can (Jobe) test (A) and the drop arm sign (B). The Jobe test is performed by abducting the arm in the plane of the scapula, internally rotating the shoulder and having"
+    },
+    {
+     "page": 5,
+     "block_id": 3,
+     "text": "Fig. 2. Examiner performs the Neer impingement test with the right arm stabilizing the scapula while passively raising the arm."
+    },
+    {
+     "page": 6,
+     "block_id": 3,
+     "text": "Fig. 3. Examiner performs the Hawkins test by passively applying an internal rotation force to the arm with  $ 90^{\\circ} $ of forward flexion/abduction and the elbow flexed to  $ 90^{\\circ} $."
+    },
+    {
+     "page": 6,
+     "block_id": 13,
+     "text": "Fig. 4. The Bigliani Classification of acromial morphology, demonstrating a Type I or flat acromion (A), a Type II or curved acromion (B), and a Type III or hooked acromion (C). (From Bright, A., Torpey, B., Magid, D. et al. Reliability of radiographic evaluation for acromial morphology. Skeletal Ra"
+    },
+    {
+     "page": 7,
+     "block_id": 3,
+     "text": "Fig. 5. Example of the CSA measured as the angle of the glenoid plane from the inferior pole of the glenoid to the lateral edge of the acromion."
+    },
+    {
+     "page": 7,
+     "block_id": 9,
+     "text": "Fig. 6. Radiographic image of the sharpened lateral acromion morphology (A), with the ILAA measured at  $ 40^{\\circ} $ (B), consistent with an SLAM sign. (From Amit P, Paluch AJ, Baring T. Sharpened lateral acromion morphology (SLAM sign) as an indicator of rotator cuff tear: a retrospective matched"
+    },
+    {
+     "page": 11,
+     "block_id": 10,
+     "text": "Fig. 7. Intraoperative arthroscopic view of the (A) posterior labrum fraying and the (B) articular side of the infraspinatus demonstrating fraying and degeneration in a patient with internal impingement. These are original images from the senior author."
+    },
+    {
+     "page": 13,
+     "block_id": 3,
+     "text": "Fig. 8. Examiner performs the posterior impingement test by placing the arm in  $ 90^{\\circ} $ to  $ 110^{\\circ} $ of abduction and maximally externally rotated to recreate the late cocking phase. The arm is then extended  $ 10^{\\circ} $ to  $ 15^{\\circ} $ and pain in this position is considered a p"
+    },
+    {
+     "page": 14,
+     "block_id": 3,
+     "text": "Fig. 9. Examiner performs the relocation sign by applying a posteriorly directed force on the proximal humerus, which should relieve pain."
+    },
+    {
+     "page": 15,
+     "block_id": 3,
+     "text": "Fig. 10. MRI arthrogram of the patient in Fig. 2, which demonstrates (A) fraying of the posterior labrum on an axial slice, as well as (B, C) a posterosuperior osseous cyst seen on the axial and coronal slices, as well as (D) degenerative tearing of the posterosuperior rotator cuff tissue."
+    },
+    {
+     "page": 16,
+     "block_id": 3,
+     "text": "Fig. 11. Examiner performs the coracoid impingement test by placing the shoulder passively in a position of cross-arm adduction, forward elevation, and internal rotation to bring the lesser tuberosity in contact with the coracoid. A positive test produces a painful clicking in the anterior shoulder."
+    },
+    {
+     "page": 17,
+     "block_id": 3,
+     "text": "Fig. 12. Axial MRI image showing subcoracoid impingement. The arrowhead depicts the subscapularis with intrasubstance tendinosis, and the arrow demonstrates the elongated coracoid and decreased coracohumeral distance. (From Freehill, Michael Q. MD. Coracoid Impingement: Diagnosis and Treatment. Amer"
+    }
+   ]
+  }
+ }
+}

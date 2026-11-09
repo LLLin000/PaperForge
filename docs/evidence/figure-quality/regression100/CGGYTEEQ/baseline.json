@@ -1,0 +1,196 @@
+{
+ "dry_run": {
+  "key": "CGGYTEEQ",
+  "identity": {
+   "old": {
+    "entries": 5,
+    "unique_ids": 5,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 5,
+    "unique_ids": 5,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_005": "figure_005",
+    "figure_reserved_004": "figure_figure_p004_b5"
+   },
+   "renamed": [
+    [
+     "figure_reserved_004",
+     "figure_figure_p004_b5"
+    ]
+   ],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 13,
+   "new_render_files": 26,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_005.jpg",
+    "assets/figures/figure_figure_p004_b5.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/tables/table_001.jpg",
+    "assets/tables/table_002.jpg",
+    "render/figures/figure_figure_p004_b5.md"
+   ],
+   "render_removed": [
+    "render/figures/figure_reserved_004.md"
+   ],
+   "embeds": 6,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 2,
+   "new_tables": 2,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 233,
+   "new_rows": 233,
+   "role_removed": {
+    "frontmatter_noise": 1,
+    "structured_insert": 2,
+    "figure_caption_candidate": 2,
+    "reference_item": 5,
+    "backmatter_body": 1
+   },
+   "role_added": {
+    "noise": 2,
+    "body_paragraph": 6,
+    "subsection_heading": 1,
+    "figure_caption": 2
+   },
+   "old_body_chars": 33634,
+   "new_body_chars": 35536,
+   "old_text_chars": 65379,
+   "new_text_chars": 65379,
+   "old_fulltext_chars": 46213
+  },
+  "new_manifest": {
+   "figures": 5,
+   "tables": 2,
+   "orphans": 6
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "CGGYTEEQ",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 65379,
+  "new_text_chars": 65379,
+  "old_entries": 5,
+  "new_entries": 5,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 6,
+     "block_id": 2,
+     "text": "Fig 4 | Forest plots of extracted performance statistics of the additive EuroSCORE in the case study (to predict all cause mortality at 30 days in patients undergoing coronary artery bypass grafting). Part A shows forest plot of study specific C statistics (all 95% confidence intervals estimated on "
+    }
+   ],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 9,
+     "text": "Fig 1 | Flowchart for systematically reviewing and, if considered appropriate, meta-analysis of the validation studies of a prediction model. CHARMS=checklist for critical appraisal and data extraction for systematic reviews of prediction modelling studies; PROBAST=prediction model risk of bias asse"
+    },
+    {
+     "page": 3,
+     "block_id": 17,
+     "text": "Fig 2 | Overall judgment for risk of bias of included articles in the case study (predictive performance of the EuroSCORE for all cause mortality at 30 days in patients undergoing coronary artery bypass grafting). Study references listed in appendix 2. Study participants domain=design of the include"
+    },
+    {
+     "page": 4,
+     "block_id": 5,
+     "text": "Sometimes, the distribution of the linear predictor is reported separately for different subgroups. For instance, in one paper the mean ( $ \\mu $) and standard deviation of the additive EuroSCORE was reported for 3440 patients undergoing on-pump coronary bypass grafting (3.26±2.45) and for 1140 pati"
+    },
+    {
+     "page": 4,
+     "block_id": 11,
+     "text": "Fig 3 | Estimation of the standard deviation of the linear predictor as a way to quantify case mix variation within a study"
+    },
+    {
+     "page": 6,
+     "block_id": 2,
+     "text": "Fig 4 | Forest plots of extracted performance statistics of the additive EuroSCORE in the case study (to predict all cause mortality at 30 days in patients undergoing coronary artery bypass grafting). Part A shows forest plot of study specific C statistics (all 95% confidence intervals estimated on "
+    },
+    {
+     "page": 8,
+     "block_id": 3,
+     "text": "Standard deviation of patient age"
+    },
+    {
+     "page": 8,
+     "block_id": 6,
+     "text": "Fig 5 | Results from random effects meta-regression models in the case study (predictive performance of the EuroSCORE for all cause mortality at 30 days in patients undergoing coronary artery bypass grafting). Solid lines=regression lines; dashed lines=95% confidence intervals; dots=included validat"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [
+   {
+    "page": 6,
+    "block_id": 2,
+    "text": "Fig 4 | Forest plots of extracted performance statistics of the additive EuroSCORE in the case study (to predict all cause mortality at 30 days in patients undergoing coronary artery bypass grafting). Part A shows forest plot of study specific C statistics (all 95% confidence intervals estimated on "
+   }
+  ],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 9,
+    "text": "Fig 1 | Flowchart for systematically reviewing and, if considered appropriate, meta-analysis of the validation studies of a prediction model. CHARMS=checklist for critical appraisal and data extraction for systematic reviews of prediction modelling studies; PROBAST=prediction model risk of bias asse"
+   },
+   {
+    "page": 3,
+    "block_id": 17,
+    "text": "Fig 2 | Overall judgment for risk of bias of included articles in the case study (predictive performance of the EuroSCORE for all cause mortality at 30 days in patients undergoing coronary artery bypass grafting). Study references listed in appendix 2. Study participants domain=design of the include"
+   },
+   {
+    "page": 4,
+    "block_id": 5,
+    "text": "Sometimes, the distribution of the linear predictor is reported separately for different subgroups. For instance, in one paper the mean ( $ \\mu $) and standard deviation of the additive EuroSCORE was reported for 3440 patients undergoing on-pump coronary bypass grafting (3.26±2.45) and for 1140 pati"
+   },
+   {
+    "page": 4,
+    "block_id": 11,
+    "text": "Fig 3 | Estimation of the standard deviation of the linear predictor as a way to quantify case mix variation within a study"
+   },
+   {
+    "page": 6,
+    "block_id": 2,
+    "text": "Fig 4 | Forest plots of extracted performance statistics of the additive EuroSCORE in the case study (to predict all cause mortality at 30 days in patients undergoing coronary artery bypass grafting). Part A shows forest plot of study specific C statistics (all 95% confidence intervals estimated on "
+   },
+   {
+    "page": 8,
+    "block_id": 3,
+    "text": "Standard deviation of patient age"
+   },
+   {
+    "page": 8,
+    "block_id": 6,
+    "text": "Fig 5 | Results from random effects meta-regression models in the case study (predictive performance of the EuroSCORE for all cause mortality at 30 days in patients undergoing coronary artery bypass grafting). Solid lines=regression lines; dashed lines=95% confidence intervals; dots=included validat"
+   }
+  ]
+ }
+}

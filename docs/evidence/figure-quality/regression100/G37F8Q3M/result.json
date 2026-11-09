@@ -1,0 +1,27 @@
+{
+ "key": "G37F8Q3M",
+ "passed": true,
+ "figures": 1,
+ "structural": {
+  "key": "G37F8Q3M",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 36612,
+  "new_text_chars": 36612,
+  "old_entries": 1,
+  "new_entries": 1,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 12,
+     "text": "Fig. 1. Measurement of muscle atrophy by Warner et al. is based on oblique sagittal plane image medial to coracoid process. A line is drawn from the edge of the coracoid to the inferior scapular tip, from the inferior tip of the scapula to the spine, and from the scapular spine to the coracoid proce"
+    }
+   ]
+  }
+ }
+}

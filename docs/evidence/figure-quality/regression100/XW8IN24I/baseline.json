@@ -1,0 +1,267 @@
+{
+ "dry_run": {
+  "key": "XW8IN24I",
+  "identity": {
+   "old": {
+    "entries": 14,
+    "unique_ids": 12,
+    "duplicate_extra": 2
+   },
+   "new": {
+    "entries": 12,
+    "unique_ids": 12,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005",
+    "figure_006": "figure_006",
+    "figure_007": "figure_007",
+    "figure_008": "figure_008",
+    "figure_009": "figure_009",
+    "figure_010": "figure_010",
+    "figure_011": "figure_011",
+    "figure_012": "figure_012"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": [
+    {
+     "old_id": "figure_004",
+     "old_assets": [
+      "10",
+      "12",
+      "8"
+     ],
+     "new_id": "figure_004",
+     "new_assets": [
+      "10",
+      "8"
+     ]
+    }
+   ]
+  },
+  "delivery": {
+   "old_render_files": 33,
+   "new_render_files": 66,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/figures/figure_005.jpg",
+    "assets/figures/figure_006.jpg",
+    "assets/figures/figure_007.jpg",
+    "assets/figures/figure_008.jpg",
+    "assets/figures/figure_009.jpg",
+    "assets/figures/figure_010.jpg",
+    "assets/figures/figure_011.jpg",
+    "assets/figures/figure_012.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/orphans/orphan_013.jpg",
+    "assets/orphans/orphan_014.jpg",
+    "assets/orphans/orphan_015.jpg",
+    "assets/orphans/orphan_016.jpg",
+    "assets/orphans/orphan_017.jpg",
+    "assets/orphans/orphan_018.jpg",
+    "assets/orphans/orphan_019.jpg",
+    "assets/orphans/orphan_020.jpg",
+    "assets/orphans/orphan_021.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 12,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 0,
+   "new_tables": 0,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 313,
+   "new_rows": 313,
+   "role_removed": {
+    "unknown_structural": 1,
+    "body_paragraph": 5,
+    "structured_insert": 2,
+    "figure_asset": 1
+   },
+   "role_added": {
+    "authors": 1,
+    "frontmatter_noise": 1,
+    "section_heading": 1,
+    "media_asset": 1,
+    "reference_item": 5
+   },
+   "old_body_chars": 37998,
+   "new_body_chars": 36451,
+   "old_text_chars": 64298,
+   "new_text_chars": 64298,
+   "old_fulltext_chars": 59107
+  },
+  "new_manifest": {
+   "figures": 12,
+   "tables": 0,
+   "orphans": 21
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "XW8IN24I",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 64298,
+  "new_text_chars": 64298,
+  "old_entries": 14,
+  "new_entries": 12,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 4,
+     "block_id": 9,
+     "text": "Fig. 1. Multiple examination tests have been described to evaluating the rotator cuff. Tests for the supraspinatus include the empty can (Jobe) test (A) and the drop arm sign (B). The Jobe test is performed by abducting the arm in the plane of the scapula, internally rotating the shoulder and having"
+    },
+    {
+     "page": 5,
+     "block_id": 3,
+     "text": "Fig. 2. Examiner performs the Neer impingement test with the right arm stabilizing the scapula while passively raising the arm."
+    },
+    {
+     "page": 6,
+     "block_id": 3,
+     "text": "Fig. 3. Examiner performs the Hawkins test by passively applying an internal rotation force to the arm with  $ 90^{\\circ} $ of forward flexion/abduction and the elbow flexed to  $ 90^{\\circ} $."
+    },
+    {
+     "page": 6,
+     "block_id": 13,
+     "text": "Fig. 4. The Bigliani Classification of acromial morphology, demonstrating a Type I or flat acromion (A), a Type II or curved acromion (B), and a Type III or hooked acromion (C). (From Bright, A., Torpey, B., Magid, D. et al. Reliability of radiographic evaluation for acromial morphology. Skeletal Ra"
+    },
+    {
+     "page": 7,
+     "block_id": 3,
+     "text": "Fig. 5. Example of the CSA measured as the angle of the glenoid plane from the inferior pole of the glenoid to the lateral edge of the acromion."
+    },
+    {
+     "page": 7,
+     "block_id": 9,
+     "text": "Fig. 6. Radiographic image of the sharpened lateral acromion morphology (A), with the ILAA measured at  $ 40^{\\circ} $ (B), consistent with an SLAM sign. (From Amit P, Paluch AJ, Baring T. Sharpened lateral acromion morphology (SLAM sign) as an indicator of rotator cuff tear: a retrospective matched"
+    },
+    {
+     "page": 11,
+     "block_id": 10,
+     "text": "Fig. 7. Intraoperative arthroscopic view of the (A) posterior labrum fraying and the (B) articular side of the infraspinatus demonstrating fraying and degeneration in a patient with internal impingement. These are original images from the senior author."
+    },
+    {
+     "page": 13,
+     "block_id": 3,
+     "text": "Fig. 8. Examiner performs the posterior impingement test by placing the arm in  $ 90^{\\circ} $ to  $ 110^{\\circ} $ of abduction and maximally externally rotated to recreate the late cocking phase. The arm is then extended  $ 10^{\\circ} $ to  $ 15^{\\circ} $ and pain in this position is considered a p"
+    },
+    {
+     "page": 14,
+     "block_id": 3,
+     "text": "Fig. 9. Examiner performs the relocation sign by applying a posteriorly directed force on the proximal humerus, which should relieve pain."
+    },
+    {
+     "page": 15,
+     "block_id": 3,
+     "text": "Fig. 10. MRI arthrogram of the patient in Fig. 2, which demonstrates (A) fraying of the posterior labrum on an axial slice, as well as (B, C) a posterosuperior osseous cyst seen on the axial and coronal slices, as well as (D) degenerative tearing of the posterosuperior rotator cuff tissue."
+    },
+    {
+     "page": 16,
+     "block_id": 3,
+     "text": "Fig. 11. Examiner performs the coracoid impingement test by placing the shoulder passively in a position of cross-arm adduction, forward elevation, and internal rotation to bring the lesser tuberosity in contact with the coracoid. A positive test produces a painful clicking in the anterior shoulder."
+    },
+    {
+     "page": 17,
+     "block_id": 3,
+     "text": "Fig. 12. Axial MRI image showing subcoracoid impingement. The arrowhead depicts the subscapularis with intrasubstance tendinosis, and the arrow demonstrates the elongated coracoid and decreased coracohumeral distance. (From Freehill, Michael Q. MD. Coracoid Impingement: Diagnosis and Treatment. Amer"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 4,
+    "block_id": 9,
+    "text": "Fig. 1. Multiple examination tests have been described to evaluating the rotator cuff. Tests for the supraspinatus include the empty can (Jobe) test (A) and the drop arm sign (B). The Jobe test is performed by abducting the arm in the plane of the scapula, internally rotating the shoulder and having"
+   },
+   {
+    "page": 5,
+    "block_id": 3,
+    "text": "Fig. 2. Examiner performs the Neer impingement test with the right arm stabilizing the scapula while passively raising the arm."
+   },
+   {
+    "page": 6,
+    "block_id": 3,
+    "text": "Fig. 3. Examiner performs the Hawkins test by passively applying an internal rotation force to the arm with  $ 90^{\\circ} $ of forward flexion/abduction and the elbow flexed to  $ 90^{\\circ} $."
+   },
+   {
+    "page": 6,
+    "block_id": 13,
+    "text": "Fig. 4. The Bigliani Classification of acromial morphology, demonstrating a Type I or flat acromion (A), a Type II or curved acromion (B), and a Type III or hooked acromion (C). (From Bright, A., Torpey, B., Magid, D. et al. Reliability of radiographic evaluation for acromial morphology. Skeletal Ra"
+   },
+   {
+    "page": 7,
+    "block_id": 3,
+    "text": "Fig. 5. Example of the CSA measured as the angle of the glenoid plane from the inferior pole of the glenoid to the lateral edge of the acromion."
+   },
+   {
+    "page": 7,
+    "block_id": 9,
+    "text": "Fig. 6. Radiographic image of the sharpened lateral acromion morphology (A), with the ILAA measured at  $ 40^{\\circ} $ (B), consistent with an SLAM sign. (From Amit P, Paluch AJ, Baring T. Sharpened lateral acromion morphology (SLAM sign) as an indicator of rotator cuff tear: a retrospective matched"
+   },
+   {
+    "page": 11,
+    "block_id": 10,
+    "text": "Fig. 7. Intraoperative arthroscopic view of the (A) posterior labrum fraying and the (B) articular side of the infraspinatus demonstrating fraying and degeneration in a patient with internal impingement. These are original images from the senior author."
+   },
+   {
+    "page": 13,
+    "block_id": 3,
+    "text": "Fig. 8. Examiner performs the posterior impingement test by placing the arm in  $ 90^{\\circ} $ to  $ 110^{\\circ} $ of abduction and maximally externally rotated to recreate the late cocking phase. The arm is then extended  $ 10^{\\circ} $ to  $ 15^{\\circ} $ and pain in this position is considered a p"
+   },
+   {
+    "page": 14,
+    "block_id": 3,
+    "text": "Fig. 9. Examiner performs the relocation sign by applying a posteriorly directed force on the proximal humerus, which should relieve pain."
+   },
+   {
+    "page": 15,
+    "block_id": 3,
+    "text": "Fig. 10. MRI arthrogram of the patient in Fig. 2, which demonstrates (A) fraying of the posterior labrum on an axial slice, as well as (B, C) a posterosuperior osseous cyst seen on the axial and coronal slices, as well as (D) degenerative tearing of the posterosuperior rotator cuff tissue."
+   },
+   {
+    "page": 16,
+    "block_id": 3,
+    "text": "Fig. 11. Examiner performs the coracoid impingement test by placing the shoulder passively in a position of cross-arm adduction, forward elevation, and internal rotation to bring the lesser tuberosity in contact with the coracoid. A positive test produces a painful clicking in the anterior shoulder."
+   },
+   {
+    "page": 17,
+    "block_id": 3,
+    "text": "Fig. 12. Axial MRI image showing subcoracoid impingement. The arrowhead depicts the subscapularis with intrasubstance tendinosis, and the arrow demonstrates the elongated coracoid and decreased coracohumeral distance. (From Freehill, Michael Q. MD. Coracoid Impingement: Diagnosis and Treatment. Amer"
+   }
+  ]
+ }
+}

@@ -1,0 +1,97 @@
+{
+ "key": "N8FPLYZ3",
+ "passed": true,
+ "figures": 9,
+ "structural": {
+  "key": "N8FPLYZ3",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 66058,
+  "new_text_chars": 66058,
+  "old_entries": 9,
+  "new_entries": 9,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 4,
+     "block_id": 7,
+     "text": "Figure 1 illustrates the FTIR spectra of the as-synthesised Fe₃O₄ NPs and Fe₃O₄@C nanocomposites. Assignments of the major absorption bands observed at 436 and 570 cm⁻¹ in the spectrum of the parent magnetite NPs (a) are the characteristic peak of the intrinsic stretching vibrations modes for Fe–O b"
+    }
+   ],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      70,
+      1314,
+      187,
+      1358
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      70,
+      825,
+      176,
+      861
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 5,
+     "block_id": 3,
+     "text": "Figure 1. FTIR spectra for (a) Fe_{3}O_{4} NPs; (b) Fe_{3}O_{4}@C-T_{190}t_{3}; (c) Fe_{3}O_{4}@C-T_{190}t_{4}; (d) Fe_{3}O_{4}@C-T_{190}t_{5}."
+    },
+    {
+     "page": 6,
+     "block_id": 4,
+     "text": "Figure 2. X-ray diffraction patterns of (a) Fe₃O₄ NPs; (b) Fe₃O₄@C-T₁₉₀t₃; (c) Fe₃O₄@C-T₁₉₀t₄; (d) Fe₃O₄@C-T₁₉₀t₅."
+    },
+    {
+     "page": 6,
+     "block_id": 5,
+     "text": "The crystallite sizes ( $ D_{hkl} $) of the nanocomposite samples were determined using the well-known Scherrer equation (Equation (1)):"
+    },
+    {
+     "page": 7,
+     "block_id": 7,
+     "text": "Figure 3. TGA/DTG curves for (a) Fe_{3}O_{4}@C-T_{190}t_{3}; (b) Fe_{3}O_{4}@C-T_{190}t_{4}; (c) Fe_{3}O_{4}@C-T_{190}t_{5}; (d) Fe_{3}O_{4} NPs."
+    },
+    {
+     "page": 8,
+     "block_id": 4,
+     "text": "Figure 4a–l compares the SEM micrographs of the as-synthesised Fe₃O₄@C nanocomposites and Fe₃O₄ NPs at low and high magnifications together with their EDX spectra. The SEM micrographs of Fe₃O₄@C-T₁₉₀t₃ (Figure 4a,b) and Fe₃O₄@C-T₁₉₀t₅ nanocomposites (Figure 4g,h) revealed the conspicuous formation o"
+    },
+    {
+     "page": 9,
+     "block_id": 14,
+     "text": "Figure 4. SEM images with different resolutions (30 k×, 120 k×) and EDX elemental composition of Fe₃O₄@C-T₁₉₀t₃ (a–c), Fe₃O₄@C-T₁₉₀t₄ (d–f), Fe₃O₄@C-T₁₉₀t₅ (g–i), and Fe₃O₄ NPs (j–l), respectively."
+    },
+    {
+     "page": 10,
+     "block_id": 7,
+     "text": "Figure 5. TEM images with different resolutions (12.5 k×, 100 k×) and particle size distributions of Fe₃O₄@C-T₁₉₀t₃ (a–c), Fe₃O₄@C-T₁₉₀t₄ (d–f), Fe₃O₄@C-T₁₉₀t₅ (g–i), and Fe₃O₄ NPs (j–l), respectively."
+    },
+    {
+     "page": 12,
+     "block_id": 6,
+     "text": "Figure 6. BET nitrogen adsorption–desorption hysteresis curves and linear isotherms (in the inset) of (a) Fe₃O₄@C-T₁₉₀t₃; (b) Fe₃O₄@C-T₁₉₀t₄; (c) Fe₃O₄@C-T₁₉₀t₅; (d) Fe₃O₄ NPs."
+    },
+    {
+     "page": 13,
+     "block_id": 6,
+     "text": "Figure 7. Effects of reaction time on the (a) surface area, (b) pore volume, (c) pore diameter and (d) crystallite or grain size of Fe₃O₄@C-T₁₉₀t₃, Fe₃O₄@C-T₁₉₀t₄ and Fe₃O₄@C-T₁₉₀t₅ nanocomposites obtained by hydrothermal synthesis."
+    },
+    {
+     "page": 15,
+     "block_id": 4,
+     "text": "Figure 8. Tukey and Fisher tests of differences in means at 95% confidence intervals for (a,b) surface area, (c,d) pore volume, and (e,f) pore diameter of Fe₃O₄@C nanocomposite samples obtained at various hydrothermal reaction times, respectively."
+    }
+   ]
+  }
+ }
+}

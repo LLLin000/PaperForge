@@ -1,0 +1,192 @@
+{
+ "key": "7TG7U4U4",
+ "passed": true,
+ "figures": 20,
+ "structural": {
+  "key": "7TG7U4U4",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 334888,
+  "new_text_chars": 334888,
+  "old_entries": 20,
+  "new_entries": 20,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      102,
+      345,
+      143,
+      387
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      627,
+      346,
+      667,
+      388
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      549,
+      425,
+      576,
+      449
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      862,
+      426,
+      885,
+      449
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      831,
+      476,
+      1110,
+      761
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      1027,
+      1352,
+      1110,
+      1470
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 4,
+     "text": "Figure 1. Overview of piezoelectric biomaterials: from materials, to design, to manufacturing and applications."
+    },
+    {
+     "page": 4,
+     "block_id": 4,
+     "text": "Figure 2. Principles of the piezoelectric effect. A) Illustration of the relationships among dielectric, piezoelectric, pyroelectric, and ferroelectric materials. B) Schematic of the direct piezoelectric effect and converse piezoelectric effect. C) Illustration of the piezoelectric mode for transver"
+    },
+    {
+     "page": 5,
+     "block_id": 4,
+     "text": "Figure 3. Comparison of piezoelectric biomaterials with synthetic piezoceramics and polymers."
+    },
+    {
+     "page": 6,
+     "block_id": 7,
+     "text": "Figure 4. Schematic of the advantages and categories of piezoelectric biomaterials. Reproduced with permission. $ ^{53} $ Copyright 2023, Springer Nature. Reproduced with permission. $ ^{54} $ Copyright 2019, American Physical Society. Reproduced with permission. $ ^{55} $ Copyright 2011, Wiley-VCH."
+    },
+    {
+     "page": 8,
+     "block_id": 11,
+     "text": "Computation-aided design"
+    },
+    {
+     "page": 8,
+     "block_id": 21,
+     "text": "C High-Throughput calculations"
+    },
+    {
+     "page": 8,
+     "block_id": 26,
+     "text": "Intermolecular interactions"
+    },
+    {
+     "page": 8,
+     "block_id": 29,
+     "text": "Figure 5. Computational studies of piezoelectric biomaterials. A) Piezoelectric coefficient calculation of glycine. (a) Molecular structure and dipoles of  $ \\beta $-glycine. (b) Molecular structure and dipoles of  $ \\gamma $-glycine. (c) Calculated piezoelectric strain constants for  $ \\beta $-glyc"
+    },
+    {
+     "page": 10,
+     "block_id": 8,
+     "text": "Figure 6. Molecular engineering of piezoelectric biomaterials. A) H/F substitution strategy for HFPD molecular crystal design. (a) Molecular structure of PVDF. Reproduced with permission.  $ ^{230,231} $ Copyright 2022, Wiley-VCH. (b) Packing view of 2D hydrogen bond layers of HFPD crystals along th"
+    },
+    {
+     "page": 14,
+     "block_id": 9,
+     "text": "Figure 7. Mechanical force-driven methods for fabricating piezoelectric biomaterials. (a) Mechanical exfoliation of soft tissues using peeling force. (a) Schematic of van der Waals layered collagen fiber network in SIS soft tissue mechanically exfoliated by adhesive tape. (b) Cross-sectional SEM ima"
+    },
+    {
+     "page": 17,
+     "block_id": 5,
+     "text": "Figure 8. Tip-induced electric field-driven methods for fabricating piezoelectric biomaterials. A) Electrospinning technique. (a) Schematic of electrospun single-component PBLG fibers. Reproduced with permission. $ ^{98} $ Copyright 2011, Wiley-VCH. (b) Schematic of the electrospun glycine-PLLA nano"
+    },
+    {
+     "page": 19,
+     "block_id": 6,
+     "text": "Figure 9. Parallel-plate electric field-driven methods for fabricating piezoelectric biomaterials. A) Electric field-assisted epitaxial growth of vertically aligned FF microrod arrays. (a) Schematic of the epitaxial growth process. (b) Cross-sectional SEM image of the vertically aligned FF microrods"
+    },
+    {
+     "page": 21,
+     "block_id": 4,
+     "text": "Figure 10. Magnetic field-driven methods for fabricating piezoelectric biomaterials. A) AFM topography images of FF nanotube residues obtained after evaporation of HFIP-water solution droplets under magnetic fields of 0 T (left) and 12 T (right). Reproduced with permission. $ ^{322} $ Copyright 2007"
+    },
+    {
+     "page": 22,
+     "block_id": 4,
+     "text": "Figure 11. Thermally driven methods for fabricating piezoelectric biomaterials. A) PVD technique. (a) Schematic of the PVD process of peptide nanotube arrays. (b) Surface topography and (c) cross-sectional SEM images of peptide nanotube arrays. Reproduced with permission. $ ^{327} $ Copyright 2009, "
+    },
+    {
+     "page": 24,
+     "block_id": 8,
+     "text": "Figure 12. Sensors based on piezoelectric biomaterials. A) Implantable piezoelectric sensor for assessing the progress of motor function recovery in nerve injury repair. (a) Schematic illustration of the PBPS sensor implanted in rats and the construction of the sensor. (b) Photographs showing the wi"
+    },
+    {
+     "page": 25,
+     "block_id": 4,
+     "text": "Figure 13. Actuators and acoustic transducers based on piezoelectric biomaterials. A) Biodegradable ultrasonic transducer for opening the BBB. (a) Schematic of the implantation of the transducer on the mouse brain. (b) Treatment results of GBM tumor delivery of chemotherapeutic drug to the brain fac"
+    },
+    {
+     "page": 27,
+     "block_id": 20,
+     "text": "Figure 14. Energy harvesters based on piezoelectric biomaterials. A) Wood sponge PEH. Voltage output of (a) the native wood and (b) the wood sponge. Insets are the corresponding SEM images. Reproduced with permission.  $ ^{366} $ Copyright 2020, American Chemical Society. B) Horizontally assembled F"
+    },
+    {
+     "page": 28,
+     "block_id": 4,
+     "text": "Figure 15. Filtration based on piezoelectric biomaterials. A) Photograph and schematic of the self-charging face mask using a PLLA nanofiber membrane as the filter. B) Working principle and two main filtration mechanisms of the mask: mechanical filtration of large particles and electrostatic adsorpt"
+    },
+    {
+     "page": 29,
+     "block_id": 4,
+     "text": "Figure 16. Tissue engineering based on piezoelectric biomaterials. (a) Bone regeneration based on natural piezoelectric collagen scaffolds. (a) Schematic showing bone regeneration after ultrasound treatment of the PiezoCol collagen scaffolds implanted under the skin. (b) Comprehensive schematic of t"
+    },
+    {
+     "page": 32,
+     "block_id": 5,
+     "text": "Figure 17. Neuromodulation based on piezoelectric materials. A) Deep brain stimulation (DBS). (a) Schematic of the Sm-PUEH device for DBS. Reproduced with permission. $ ^{404} $ Copyright 2022, American Association for the Advancement of Science. (b) Schematic of the nanoparticle for blood–brain bar"
+    },
+    {
+     "page": 33,
+     "block_id": 9,
+     "text": "Figure 18. Piezocatalytic ROS medicine. A) Schematic of energy band theory of piezocatalytic. Reproduced with permission. $ ^{405} $ Copyright 2023, Wiley-VCH. B) Schematic of screen charge theory of piezocatalytic. Reproduced with permission. $ ^{406} $ Copyright 2020, Springer Nature. C) Schematic"
+    },
+    {
+     "page": 35,
+     "block_id": 4,
+     "text": "Figure 19. Piezocatalytic materials synthesis. A) Schematic of split of water with piezoelectric PMN–PT cantilevers. Reproduced with permission. $ ^{415} $ Copyright 2012, Wiley-VCH. B) Schematic of thiol–ene cross-linking by midfrequency vibration of ZnO nanoparticles. Reproduced with permission. $"
+    },
+    {
+     "page": 39,
+     "block_id": 4,
+     "text": "Figure 20. Challenges and perspectives."
+    }
+   ]
+  }
+ }
+}

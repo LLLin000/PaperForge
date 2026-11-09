@@ -1,0 +1,205 @@
+{
+ "dry_run": {
+  "key": "KPYGKKHB",
+  "identity": {
+   "old": {
+    "entries": 7,
+    "unique_ids": 7,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 7,
+    "unique_ids": 7,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005",
+    "figure_006": "figure_006",
+    "figure_reserved_006": "figure_figure_p005_b2"
+   },
+   "renamed": [
+    [
+     "figure_reserved_006",
+     "figure_figure_p005_b2"
+    ]
+   ],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 17,
+   "new_render_files": 34,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/figures/figure_005.jpg",
+    "assets/figures/figure_006.jpg",
+    "assets/figures/figure_figure_p005_b2.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/tables/table_001.jpg",
+    "render/figures/figure_figure_p005_b2.md"
+   ],
+   "render_removed": [
+    "render/figures/figure_reserved_006.md"
+   ],
+   "embeds": 8,
+   "embeds_retargeted": 1,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 1,
+   "new_tables": 1,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 291,
+   "new_rows": 291,
+   "role_removed": {
+    "frontmatter_noise": 1,
+    "figure_caption_candidate": 1
+   },
+   "role_added": {
+    "section_heading": 1,
+    "figure_caption": 1
+   },
+   "old_body_chars": 38475,
+   "new_body_chars": 38475,
+   "old_text_chars": 61244,
+   "new_text_chars": 61244,
+   "old_fulltext_chars": 51585
+  },
+  "new_manifest": {
+   "figures": 7,
+   "tables": 1,
+   "orphans": 9
+  },
+  "new_orphans": 1
+ },
+ "structural": {
+  "key": "KPYGKKHB",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 61244,
+  "new_text_chars": 61244,
+  "old_entries": 7,
+  "new_entries": 7,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      1001,
+      356,
+      1058,
+      413
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 3,
+     "text": "Fig. 1. Schematic of the piezoelectric effect resulting from material compression."
+    },
+    {
+     "page": 3,
+     "block_id": 3,
+     "text": "Fig. 2. Observing the piezoelectric effects around us in electronic devices, biomedical devices, and natural biological systems [11]."
+    },
+    {
+     "page": 4,
+     "block_id": 16,
+     "text": "Fig. 3. Stimulatory pathway toward musculoskeletal tissue regeneration."
+    },
+    {
+     "page": 5,
+     "block_id": 2,
+     "text": "Summary of piezoelectric material applications in musculoskeletal tissue engineering."
+    },
+    {
+     "page": 6,
+     "block_id": 3,
+     "text": "Fig. 4. Proposed molecular pathway of piezoelectricity in stimulating bone tissue regeneration [103]."
+    },
+    {
+     "page": 8,
+     "block_id": 3,
+     "text": "Fig. 5. Schematic depicting the relationship between angiogenesis and osteogenesis during ossification [144]."
+    },
+    {
+     "page": 9,
+     "block_id": 13,
+     "text": "Fig. 6. Illustration of an osteochondral unit's varying biochemical gradient [148]. The figure shows differences in cell density and orientation, extracellular matrix organization, vascularity, and porosity."
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     1001,
+     356,
+     1058,
+     413
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 3,
+    "text": "Fig. 1. Schematic of the piezoelectric effect resulting from material compression."
+   },
+   {
+    "page": 3,
+    "block_id": 3,
+    "text": "Fig. 2. Observing the piezoelectric effects around us in electronic devices, biomedical devices, and natural biological systems [11]."
+   },
+   {
+    "page": 4,
+    "block_id": 16,
+    "text": "Fig. 3. Stimulatory pathway toward musculoskeletal tissue regeneration."
+   },
+   {
+    "page": 5,
+    "block_id": 2,
+    "text": "Summary of piezoelectric material applications in musculoskeletal tissue engineering."
+   },
+   {
+    "page": 6,
+    "block_id": 3,
+    "text": "Fig. 4. Proposed molecular pathway of piezoelectricity in stimulating bone tissue regeneration [103]."
+   },
+   {
+    "page": 8,
+    "block_id": 3,
+    "text": "Fig. 5. Schematic depicting the relationship between angiogenesis and osteogenesis during ossification [144]."
+   },
+   {
+    "page": 9,
+    "block_id": 13,
+    "text": "Fig. 6. Illustration of an osteochondral unit's varying biochemical gradient [148]. The figure shows differences in cell density and orientation, extracellular matrix organization, vascularity, and porosity."
+   }
+  ]
+ }
+}

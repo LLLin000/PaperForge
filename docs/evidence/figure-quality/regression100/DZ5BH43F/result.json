@@ -1,0 +1,58 @@
+{
+ "key": "DZ5BH43F",
+ "passed": true,
+ "figures": 3,
+ "structural": {
+  "key": "DZ5BH43F",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 43060,
+  "new_text_chars": 43060,
+  "old_entries": 3,
+  "new_entries": 3,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 5,
+     "block_id": 1,
+     "text": "Kim et al. Importance of Anteroposterior Coverage of the Acromion Clinics in Orthopedic Surgery • Vol. 14, No. 4, 2022 • www.ecios.org"
+    },
+    {
+     "page": 7,
+     "block_id": 1,
+     "text": "Kim et al. Importance of Anteroposterior Coverage of the Acromion Clinics in Orthopedic Surgery • Vol. 14, No. 4, 2022 • www.ecios.org"
+    }
+   ],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 4,
+     "text": "Fig. 1. Lateral coverage of the acromion. (A) The critical shoulder angle was measured as the angle between the line connecting the upper and lower margins of the glenoid fossa and the line drawn from the lower margin of the glenoid to the most inferolateral point of the acromion. (B) The lateral ac"
+    },
+    {
+     "page": 3,
+     "block_id": 8,
+     "text": "Fig. 2. Anteroposterior coverage of the acromion. (A) The acromial tilt was measured as the angle between the line connecting the posteriorinferior and anteroinferior points of the acromion and the line connecting the posteriorinferior point of the acromion and the coracoid inferior border. (B) The "
+    },
+    {
+     "page": 4,
+     "block_id": 3,
+     "text": "Fig. 3. Glenoid coverage. (A) The anterior coverage was calculated by measuring the angle between the line drawn from the center of the glenoid to the anterior end of the acromion and the line extending in the scapular plane. (B) The posterior coverage was calculated by measuring the angle between t"
+    },
+    {
+     "page": 5,
+     "block_id": 1,
+     "text": "Kim et al. Importance of Anteroposterior Coverage of the Acromion Clinics in Orthopedic Surgery • Vol. 14, No. 4, 2022 • www.ecios.org"
+    },
+    {
+     "page": 7,
+     "block_id": 1,
+     "text": "Kim et al. Importance of Anteroposterior Coverage of the Acromion Clinics in Orthopedic Surgery • Vol. 14, No. 4, 2022 • www.ecios.org"
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,107 @@
+{
+ "key": "M36WA39N",
+ "passed": true,
+ "figures": 7,
+ "structural": {
+  "key": "M36WA39N",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 77804,
+  "new_text_chars": 77804,
+  "old_entries": 7,
+  "new_entries": 7,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      1042,
+      144,
+      1099,
+      201
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 3,
+     "text": "FIGURE 1 | Expression of irisin is downregulated in the damaged area of the articular cartilage in patients with knee osteoarthritis (OA). (A) Plain radiograph of patients with knee osteoarthritis (OA) (n = 12). Black arrow indicate areas with more severe osteoarthritis. Anterior–posterior (A-P). (B"
+    },
+    {
+     "page": 7,
+     "block_id": 11,
+     "text": "FIGURE 2 | Treadmill exercise protocols established for the OA rat model and ELISA of serum and synovial fluid irisin concentrations in rats during the study period.\n(A) The different intensities of treadmill exercise for OA rats were based on the following protocols: speeds of 15.9, 19.2, and 26.8 "
+    },
+    {
+     "page": 8,
+     "block_id": 2,
+     "text": "Sprague-Dawley Rat"
+    },
+    {
+     "page": 8,
+     "block_id": 7,
+     "text": "FIGURE 3 | Histological evaluation and imaging examination of tibiofemoral joints of OA rats under different treadmill exercise protocols. OA model was confirmed using plain radiography, computed tomography (CT), and magnetic resonance imaging (MRI) (A). Histological analysis was evaluated using hem"
+    },
+    {
+     "page": 9,
+     "block_id": 3,
+     "text": "CG"
+    },
+    {
+     "page": 9,
+     "block_id": 4,
+     "text": "OAG"
+    },
+    {
+     "page": 9,
+     "block_id": 5,
+     "text": "OAL"
+    },
+    {
+     "page": 9,
+     "block_id": 6,
+     "text": "OAM"
+    },
+    {
+     "page": 9,
+     "block_id": 22,
+     "text": "FIGURE 4 | Immunohistochemical staining in OA rats subjected to different treadmill exercise protocols. (A,B) The expression of collagen II in CG, OAM, and OAL was higher than that in OAH and OAG. (A,C) The percentage of MMP-13 positive cells in CG and OAM was lower than that in OAH, OAG, and OAL. ("
+    },
+    {
+     "page": 10,
+     "block_id": 6,
+     "text": "C IL-1β(10ng/ml) — + 5ng/ml 10ng/ml Irisin(ng/ml) —"
+    },
+    {
+     "page": 10,
+     "block_id": 16,
+     "text": "IL-1β+Irisin(5ng/ml)"
+    },
+    {
+     "page": 10,
+     "block_id": 19,
+     "text": "FIGURE 5 | Expression of inflammation-related markers and immunofluorescence analysis of NF- $ \\kappa $B p65 in chondrocytes. (A–D) The relative protein expressions were detected in the control (CG), IL-1 $ \\beta $ group, IL-1 $ \\beta $ + irisin (5 ng/ml), and IL-1 $ \\beta $ + irisin (10 ng/ml) grou"
+    },
+    {
+     "page": 11,
+     "block_id": 2,
+     "text": "FIGURE 5 | expression of collagen II, ADAMTS-5, and MMP-13. The expression of IL-1β-induced inflammatory genes was inhibited by irisin in a dose-independent manner. (F) Effects of irisin on the nuclear translocation of NF-κB p65. Chondrocytes were immunostained using anti-NF-κB p65 rabbit antibody ("
+    },
+    {
+     "page": 11,
+     "block_id": 16,
+     "text": "FIGURE 6 | Irisin affects IL-1 $ \\beta $-induced chondrocyte pyroptosis and inhibition of NLRP3/caspase-1 changes cellular morphology. (A) Effects of irisin on IL-1 $ \\beta $-induced chondrocyte pyroptosis. (B) Representative TEM images of cellular morphological changes, such as cell swelling, cell "
+    },
+    {
+     "page": 13,
+     "block_id": 3,
+     "text": "FIGURE 7 | Therapeutic effects of irisin on OA during treadmill exercise via the inhibition of the PI3K/Akt/NF- $ \\kappa $B signaling pathway and pyroptosis in chondrocytes.\nIrisin is secreted during appropriate treadmill exercise and then released into the blood, eventually reaching the knee articu"
+    }
+   ]
+  }
+ }
+}

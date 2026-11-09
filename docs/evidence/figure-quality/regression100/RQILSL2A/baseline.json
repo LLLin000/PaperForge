@@ -1,0 +1,259 @@
+{
+ "dry_run": {
+  "key": "RQILSL2A",
+  "identity": {
+   "old": {
+    "entries": 6,
+    "unique_ids": 5,
+    "duplicate_extra": 1
+   },
+   "new": {
+    "entries": 5,
+    "unique_ids": 5,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": [
+    {
+     "old_id": "figure_003",
+     "old_assets": [
+      "14",
+      "17",
+      "20",
+      "22",
+      "26",
+      "27",
+      "8",
+      "9"
+     ],
+     "new_id": "figure_003",
+     "new_assets": [
+      "1",
+      "10",
+      "11",
+      "14",
+      "15",
+      "17",
+      "18",
+      "19",
+      "20",
+      "21",
+      "22",
+      "23",
+      "25",
+      "26",
+      "27",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9"
+     ]
+    }
+   ]
+  },
+  "delivery": {
+   "old_render_files": 58,
+   "new_render_files": 116,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/figures/figure_005.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/orphans/orphan_013.jpg",
+    "assets/orphans/orphan_014.jpg",
+    "assets/orphans/orphan_015.jpg",
+    "assets/orphans/orphan_016.jpg",
+    "assets/orphans/orphan_017.jpg",
+    "assets/orphans/orphan_018.jpg",
+    "assets/orphans/orphan_019.jpg",
+    "assets/orphans/orphan_020.jpg",
+    "assets/orphans/orphan_021.jpg",
+    "assets/orphans/orphan_022.jpg",
+    "assets/orphans/orphan_023.jpg",
+    "assets/orphans/orphan_024.jpg",
+    "assets/orphans/orphan_025.jpg",
+    "assets/orphans/orphan_026.jpg",
+    "assets/orphans/orphan_027.jpg",
+    "assets/orphans/orphan_028.jpg",
+    "assets/orphans/orphan_029.jpg",
+    "assets/orphans/orphan_030.jpg",
+    "assets/orphans/orphan_031.jpg",
+    "assets/orphans/orphan_032.jpg",
+    "assets/orphans/orphan_033.jpg",
+    "assets/orphans/orphan_034.jpg",
+    "assets/orphans/orphan_035.jpg",
+    "assets/orphans/orphan_036.jpg",
+    "assets/orphans/orphan_037.jpg",
+    "assets/orphans/orphan_038.jpg",
+    "assets/orphans/orphan_039.jpg",
+    "assets/orphans/orphan_040.jpg",
+    "assets/orphans/orphan_041.jpg",
+    "assets/orphans/orphan_042.jpg",
+    "assets/orphans/orphan_043.jpg",
+    "assets/orphans/orphan_044.jpg",
+    "assets/orphans/orphan_045.jpg",
+    "assets/orphans/orphan_046.jpg",
+    "assets/orphans/orphan_047.jpg",
+    "assets/orphans/orphan_048.jpg",
+    "assets/orphans/orphan_049.jpg",
+    "assets/orphans/orphan_050.jpg",
+    "assets/orphans/orphan_051.jpg",
+    "assets/orphans/orphan_052.jpg",
+    "assets/tables/table_001.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 6,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 1,
+   "new_tables": 1,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 235,
+   "new_rows": 235,
+   "role_removed": {
+    "unknown_structural": 2,
+    "figure_caption_candidate": 1,
+    "reference_item": 2
+   },
+   "role_added": {
+    "noise": 2,
+    "authors": 1,
+    "subsection_heading": 1,
+    "figure_caption": 1
+   },
+   "old_body_chars": 24995,
+   "new_body_chars": 24995,
+   "old_text_chars": 44512,
+   "new_text_chars": 44512,
+   "old_fulltext_chars": 39814
+  },
+  "new_manifest": {
+   "figures": 5,
+   "tables": 1,
+   "orphans": 52
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "RQILSL2A",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 44512,
+  "new_text_chars": 44512,
+  "old_entries": 6,
+  "new_entries": 5,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 9,
+     "block_id": 0,
+     "text": "FIGURE 5 | MIL-101(Fe) combined with PEMF alleviates OA development in mice. (A, B) Representative images and quantification of immunofluorescence staining of Collagen Type II in the knee joints of mice. n=5. (C) Representative images of Safranin O/fast green staining. (D) OARSI score. (E) Represent"
+    }
+   ],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 5,
+     "block_id": 11,
+     "text": "FIGURE 1 | Synthesis and characterizations of MIL-101(Fe). (A) Schematic diagram of the MIL-101(Fe) synthesis process. (B) SEM of MIL-101(Fe). (C) The PXRD pattern of MIL-101(Fe). (D) The changes of FT-IR spectra in MIL-101(Fe). (E) The UV-Vis absorption spectra analysis of MIL-101(Fe)."
+    },
+    {
+     "page": 5,
+     "block_id": 18,
+     "text": "FIGURE 2 | Schematic diagram of the primary chondrocyte experiments and biocompatibility of MIL-101(Fe). (A) Schematic diagram of the primary chondrocyte experiments. (B) Effects of different concentrations of MIL-101(Fe) on cell viability for 24h. (C) Effects of MIL-101(Fe) at a concentration of 10"
+    },
+    {
+     "page": 6,
+     "block_id": 28,
+     "text": "FIGURE 3 | MIL-101(Fe) combined with PEMF ameliorates chondrocyte necroptosis through the RIP1/RIP3/MLKL pathway in human primary chondrocytes (A, B) p-RIP1, RIP1, p-RIP3, RIP3, p-MLKL, and MLKL protein expression revealed by Western blotting. n=5. (C) RT-PCR analysis of Sox9, ACAN, Col 2a1, RUNX2, "
+    },
+    {
+     "page": 7,
+     "block_id": 11,
+     "text": "FIGURE 4 | MIL-101(Fe) combined with PEMF ameliorates chondrocyte necroptosis through the RIP1/RIP3/MLKL pathway in mice (A–C) Representative images and quantification of immunofluorescence staining of p-RIP1, RIP1, p-RIP3, RIP3, p-MLKL, and MLKL in the knee joints of mice. n=5. (D) TEM of chondrocy"
+    },
+    {
+     "page": 8,
+     "block_id": 20,
+     "text": "FIGURE 5 | Legend on next page."
+    },
+    {
+     "page": 9,
+     "block_id": 0,
+     "text": "FIGURE 5 | MIL-101(Fe) combined with PEMF alleviates OA development in mice. (A, B) Representative images and quantification of immunofluorescence staining of Collagen Type II in the knee joints of mice. n=5. (C) Representative images of Safranin O/fast green staining. (D) OARSI score. (E) Represent"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [
+   {
+    "page": 9,
+    "block_id": 0,
+    "text": "FIGURE 5 | MIL-101(Fe) combined with PEMF alleviates OA development in mice. (A, B) Representative images and quantification of immunofluorescence staining of Collagen Type II in the knee joints of mice. n=5. (C) Representative images of Safranin O/fast green staining. (D) OARSI score. (E) Represent"
+   }
+  ],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 5,
+    "block_id": 11,
+    "text": "FIGURE 1 | Synthesis and characterizations of MIL-101(Fe). (A) Schematic diagram of the MIL-101(Fe) synthesis process. (B) SEM of MIL-101(Fe). (C) The PXRD pattern of MIL-101(Fe). (D) The changes of FT-IR spectra in MIL-101(Fe). (E) The UV-Vis absorption spectra analysis of MIL-101(Fe)."
+   },
+   {
+    "page": 5,
+    "block_id": 18,
+    "text": "FIGURE 2 | Schematic diagram of the primary chondrocyte experiments and biocompatibility of MIL-101(Fe). (A) Schematic diagram of the primary chondrocyte experiments. (B) Effects of different concentrations of MIL-101(Fe) on cell viability for 24h. (C) Effects of MIL-101(Fe) at a concentration of 10"
+   },
+   {
+    "page": 6,
+    "block_id": 28,
+    "text": "FIGURE 3 | MIL-101(Fe) combined with PEMF ameliorates chondrocyte necroptosis through the RIP1/RIP3/MLKL pathway in human primary chondrocytes (A, B) p-RIP1, RIP1, p-RIP3, RIP3, p-MLKL, and MLKL protein expression revealed by Western blotting. n=5. (C) RT-PCR analysis of Sox9, ACAN, Col 2a1, RUNX2, "
+   },
+   {
+    "page": 7,
+    "block_id": 11,
+    "text": "FIGURE 4 | MIL-101(Fe) combined with PEMF ameliorates chondrocyte necroptosis through the RIP1/RIP3/MLKL pathway in mice (A–C) Representative images and quantification of immunofluorescence staining of p-RIP1, RIP1, p-RIP3, RIP3, p-MLKL, and MLKL in the knee joints of mice. n=5. (D) TEM of chondrocy"
+   },
+   {
+    "page": 8,
+    "block_id": 20,
+    "text": "FIGURE 5 | Legend on next page."
+   },
+   {
+    "page": 9,
+    "block_id": 0,
+    "text": "FIGURE 5 | MIL-101(Fe) combined with PEMF alleviates OA development in mice. (A, B) Representative images and quantification of immunofluorescence staining of Collagen Type II in the knee joints of mice. n=5. (C) Representative images of Safranin O/fast green staining. (D) OARSI score. (E) Represent"
+   }
+  ]
+ }
+}

@@ -1,0 +1,511 @@
+{
+ "dry_run": {
+  "key": "BL8ABQ2A",
+  "identity": {
+   "old": {
+    "entries": 13,
+    "unique_ids": 13,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 13,
+    "unique_ids": 13,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005",
+    "figure_006": "figure_006",
+    "figure_007": "figure_007",
+    "figure_008": "figure_008",
+    "figure_009": "figure_009",
+    "figure_010": "figure_010",
+    "figure_011": "figure_011",
+    "figure_012": "figure_012",
+    "figure_reserved_012": "figure_figure_p002_b3"
+   },
+   "renamed": [
+    [
+     "figure_reserved_012",
+     "figure_figure_p002_b3"
+    ]
+   ],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 112,
+   "new_render_files": 224,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/figures/figure_005.jpg",
+    "assets/figures/figure_006.jpg",
+    "assets/figures/figure_007.jpg",
+    "assets/figures/figure_008.jpg",
+    "assets/figures/figure_009.jpg",
+    "assets/figures/figure_010.jpg",
+    "assets/figures/figure_011.jpg",
+    "assets/figures/figure_012.jpg",
+    "assets/figures/figure_figure_p002_b3.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/orphans/orphan_013.jpg",
+    "assets/orphans/orphan_014.jpg",
+    "assets/orphans/orphan_015.jpg",
+    "assets/orphans/orphan_016.jpg",
+    "assets/orphans/orphan_017.jpg",
+    "assets/orphans/orphan_018.jpg",
+    "assets/orphans/orphan_019.jpg",
+    "assets/orphans/orphan_020.jpg",
+    "assets/orphans/orphan_021.jpg",
+    "assets/orphans/orphan_022.jpg",
+    "assets/orphans/orphan_023.jpg",
+    "assets/orphans/orphan_024.jpg",
+    "assets/orphans/orphan_025.jpg",
+    "assets/orphans/orphan_026.jpg",
+    "assets/orphans/orphan_027.jpg",
+    "assets/orphans/orphan_028.jpg",
+    "assets/orphans/orphan_029.jpg",
+    "assets/orphans/orphan_030.jpg",
+    "assets/orphans/orphan_031.jpg",
+    "assets/orphans/orphan_032.jpg",
+    "assets/orphans/orphan_033.jpg",
+    "assets/orphans/orphan_034.jpg",
+    "assets/orphans/orphan_035.jpg",
+    "assets/orphans/orphan_036.jpg",
+    "assets/orphans/orphan_037.jpg",
+    "assets/orphans/orphan_038.jpg",
+    "assets/orphans/orphan_039.jpg",
+    "assets/orphans/orphan_040.jpg",
+    "assets/orphans/orphan_041.jpg",
+    "assets/orphans/orphan_042.jpg",
+    "assets/orphans/orphan_043.jpg",
+    "assets/orphans/orphan_044.jpg",
+    "assets/orphans/orphan_045.jpg",
+    "assets/orphans/orphan_046.jpg",
+    "assets/orphans/orphan_047.jpg",
+    "assets/orphans/orphan_048.jpg",
+    "assets/orphans/orphan_049.jpg",
+    "assets/orphans/orphan_050.jpg",
+    "assets/orphans/orphan_051.jpg",
+    "assets/orphans/orphan_052.jpg",
+    "assets/orphans/orphan_053.jpg",
+    "assets/orphans/orphan_054.jpg",
+    "assets/orphans/orphan_055.jpg",
+    "assets/orphans/orphan_056.jpg",
+    "assets/orphans/orphan_057.jpg",
+    "assets/orphans/orphan_058.jpg",
+    "assets/orphans/orphan_059.jpg",
+    "assets/orphans/orphan_060.jpg",
+    "assets/orphans/orphan_061.jpg",
+    "assets/orphans/orphan_062.jpg",
+    "assets/orphans/orphan_063.jpg",
+    "assets/orphans/orphan_064.jpg",
+    "assets/orphans/orphan_065.jpg",
+    "assets/orphans/orphan_066.jpg",
+    "assets/orphans/orphan_067.jpg",
+    "assets/orphans/orphan_068.jpg",
+    "assets/orphans/orphan_069.jpg",
+    "assets/orphans/orphan_070.jpg",
+    "assets/orphans/orphan_071.jpg",
+    "assets/orphans/orphan_072.jpg",
+    "assets/orphans/orphan_073.jpg",
+    "assets/orphans/orphan_074.jpg",
+    "assets/orphans/orphan_075.jpg",
+    "assets/orphans/orphan_076.jpg",
+    "assets/orphans/orphan_077.jpg",
+    "assets/orphans/orphan_078.jpg",
+    "assets/orphans/orphan_079.jpg",
+    "assets/orphans/orphan_080.jpg",
+    "assets/orphans/orphan_081.jpg",
+    "assets/orphans/orphan_082.jpg",
+    "assets/orphans/orphan_083.jpg",
+    "assets/orphans/orphan_084.jpg",
+    "assets/orphans/orphan_085.jpg",
+    "assets/orphans/orphan_086.jpg",
+    "assets/orphans/orphan_087.jpg",
+    "assets/orphans/orphan_088.jpg",
+    "assets/orphans/orphan_089.jpg",
+    "assets/orphans/orphan_090.jpg",
+    "assets/orphans/orphan_091.jpg",
+    "assets/orphans/orphan_092.jpg",
+    "assets/orphans/orphan_093.jpg",
+    "assets/orphans/orphan_094.jpg",
+    "assets/orphans/orphan_095.jpg",
+    "assets/orphans/orphan_096.jpg",
+    "assets/orphans/orphan_097.jpg",
+    "assets/orphans/orphan_098.jpg",
+    "assets/orphans/orphan_099.jpg",
+    "render/figures/figure_figure_p002_b3.md"
+   ],
+   "render_removed": [
+    "render/figures/figure_reserved_012.md"
+   ],
+   "embeds": 13,
+   "embeds_retargeted": 1,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 0,
+   "new_tables": 0,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 429,
+   "new_rows": 429,
+   "role_removed": {
+    "unknown_structural": 3,
+    "figure_caption_candidate": 1
+   },
+   "role_added": {
+    "section_heading": 2,
+    "figure_caption": 1,
+    "subsection_heading": 1
+   },
+   "old_body_chars": 62250,
+   "new_body_chars": 62250,
+   "old_text_chars": 97914,
+   "new_text_chars": 97914,
+   "old_fulltext_chars": 88016
+  },
+  "new_manifest": {
+   "figures": 13,
+   "tables": 0,
+   "orphans": 99
+  },
+  "new_orphans": 9
+ },
+ "structural": {
+  "key": "BL8ABQ2A",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 97914,
+  "new_text_chars": 97914,
+  "old_entries": 13,
+  "new_entries": 13,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      102,
+      409,
+      144,
+      451
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      626,
+      409,
+      667,
+      452
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      548,
+      489,
+      576,
+      513
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      862,
+      490,
+      886,
+      514
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      638,
+      536,
+      1110,
+      809
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      1024,
+      1350,
+      1112,
+      1472
+     ]
+    },
+    {
+     "page": 2,
+     "bbox": [
+      196,
+      175,
+      1016,
+      640
+     ]
+    },
+    {
+     "page": 20,
+     "bbox": [
+      633,
+      869,
+      752,
+      1510
+     ]
+    },
+    {
+     "page": 20,
+     "bbox": [
+      948,
+      1414,
+      1093,
+      1500
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 3,
+     "text": "Scheme 1. Synthesis of Metal Ion Crosslinking of Poly(AM-co-MA) Hydrogels and Depiction of Various Chemical Linking within the Hydrogel"
+    },
+    {
+     "page": 3,
+     "block_id": 4,
+     "text": "Figure 1. (A) In situ metal ion gel formation. (B) XPS spectroscopy of the AM₁₀ hydrogel in the presence of Ca²⁺, Zn²⁺, and Ni²⁺ metal ions. (C) FESEM images of the AM₁₀ hydrogel (i) in the absence of any metal ions and in the presence of (ii) Ca²⁺, (iii) Zn²⁺, (iv) Ni²⁺ metal ions. (D) Distribution"
+    },
+    {
+     "page": 4,
+     "block_id": 13,
+     "text": "Figure 2. (A) Tensile stress strain diagram, (B) tensile strength and elastic modulus, (C) fracture strain and work of fracture, (D) compressive stress strain diagram, (E) compressive strength of AM₁₀-Ca²⁺, AM₁₀-Ni²⁺, AM₁₀-Zn²⁺, and AM₁₀ hydrogels. (F) Photograph of compressive deformation of AM₁₀-C"
+    },
+    {
+     "page": 5,
+     "block_id": 10,
+     "text": "Figure 3. (A,B) Force–displacement curves of notched and unnotched AM_{20}-Ca^{2+} hydrogels, respectively. (C,D) Force–displacement curves of notched and unnotched AM_{20} hydrogels, respectively. (E) Fracture energy of AM_{20}-Ca^{2+} and AM_{20} hydrogels. (F) Schematic representation of crack pr"
+    },
+    {
+     "page": 6,
+     "block_id": 6,
+     "text": "Figure 4. (A) Cyclic tensile loading and unloading experiments of the AM_{20}-Ca^{2+} hydrogel. (B) Dissipated energy under the hysteresis loop and total energy dissipation during cyclic loading and unloading experiments at different strain %. (C) Energy dissipation mechanism of the AM_{20}-Ca^{2+} "
+    },
+    {
+     "page": 7,
+     "block_id": 12,
+     "text": "Figure 5. Cyclic tensile loading—unloading experiments of the AM₂₀-Ca²⁺ hydrogel: (A) Self-recovery at 0 min, (B) self-recovery at 2 min, (C) self-recovery at 5 min, and (D) self-recovery at 10 min. (E) Relative energy dissipation when the second loading cycle was started at different time intervals"
+    },
+    {
+     "page": 8,
+     "block_id": 8,
+     "text": "Figure 6. (A) Adhesion of the AM_{20}-Ca^{2+} hydrogel with different substrates like skin, plastic, glass, wood, metal, rubber and paper. (B) Force vs displacement graphs for lap shear tests. (C) Adhesive strengths on different surfaces. (D) Repeated adhesion strength of the AM_{20}-Ca^{2+} hydroge"
+    },
+    {
+     "page": 9,
+     "block_id": 8,
+     "text": "Figure 7. (A) Photographs of AM₂₀ and AM₂₀-Ca²⁺ hydrogels after keeping at −15 °C for 24 h. After 24 h, AM₂₀ lost its flexibility, whereas the AM₂₀-Ca²⁺ hydrogel still maintained its flexibility due to its antifreezing properties. (B) Photographs of the AM₂₀-Ca²⁺ hydrogel after keeping at −15 °C for"
+    },
+    {
+     "page": 10,
+     "block_id": 17,
+     "text": "Figure 8. (A) Schematic representation of the self-healing mechanism in the hydrogel. (B) Self-healing process of the AM₂₀-Ca²⁺ hydrogel. A rectangular piece of hydrogel was cut into two halves, one part stained with dye, then rejoined and kept for some time for self-healing. The self-healed gel cou"
+    },
+    {
+     "page": 11,
+     "block_id": 13,
+     "text": "Figure 9. (A) Demonstration of conductive nature of the AM₂₀-Ca²⁺ hydrogel at room temperature (25 °C) and subambient temperature (-15 °C). Connecting with a battery (using the mentioned circuit), the hydrogel was able to light up an LED both in ambient and subambient environments. (B) The Nyquist p"
+    },
+    {
+     "page": 12,
+     "block_id": 13,
+     "text": "Figure 10. The AM_{20}-Ca^{2+} hydrogel-based strain sensor for human motion detection. The relative resistance change in response to the bending of (A) finger, (B) elbow, (C) knee, and (D) wrist. (E) Morse code for representing the English alphabet and numerical numbers. (F) Representation of Morse"
+    },
+    {
+     "page": 13,
+     "block_id": 14,
+     "text": "Figure 11. (A) Schematic of the solid electrolyte-based supercapacitor device and its charging–discharging mechanism. (B) Cyclic voltammetry (CV) curve. (C) Variation of specific capacitance with scan rate. (D) Galvanostatic charge–discharge (GCD) profile. (E) Specific capacitance and Coulombic effi"
+    },
+    {
+     "page": 15,
+     "block_id": 14,
+     "text": "Figure 12. (A) SE<sub>r</sub>, (B) SE<sub>A</sub>, (C) SE<sub>R</sub> of AM<sub>20</sub> hydrogels before and after incorporation of different metal ions (Ca<sup>2+</sup>, Ni<sup>2+</sup>, and Zn<sup>2+</sup>). variation of (D) SE<sub>r</sub>, (E) SE<sub>A</sub>, (F) SE<sub>R</sub> of AM<sub>20</sub"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     102,
+     409,
+     144,
+     451
+    ]
+   },
+   {
+    "page": 1,
+    "bbox": [
+     626,
+     409,
+     667,
+     452
+    ]
+   },
+   {
+    "page": 1,
+    "bbox": [
+     548,
+     489,
+     576,
+     513
+    ]
+   },
+   {
+    "page": 1,
+    "bbox": [
+     862,
+     490,
+     886,
+     514
+    ]
+   },
+   {
+    "page": 1,
+    "bbox": [
+     638,
+     536,
+     1110,
+     809
+    ]
+   },
+   {
+    "page": 1,
+    "bbox": [
+     1024,
+     1350,
+     1112,
+     1472
+    ]
+   },
+   {
+    "page": 2,
+    "bbox": [
+     196,
+     175,
+     1016,
+     640
+    ]
+   },
+   {
+    "page": 20,
+    "bbox": [
+     633,
+     869,
+     752,
+     1510
+    ]
+   },
+   {
+    "page": 20,
+    "bbox": [
+     948,
+     1414,
+     1093,
+     1500
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 3,
+    "text": "Scheme 1. Synthesis of Metal Ion Crosslinking of Poly(AM-co-MA) Hydrogels and Depiction of Various Chemical Linking within the Hydrogel"
+   },
+   {
+    "page": 3,
+    "block_id": 4,
+    "text": "Figure 1. (A) In situ metal ion gel formation. (B) XPS spectroscopy of the AM₁₀ hydrogel in the presence of Ca²⁺, Zn²⁺, and Ni²⁺ metal ions. (C) FESEM images of the AM₁₀ hydrogel (i) in the absence of any metal ions and in the presence of (ii) Ca²⁺, (iii) Zn²⁺, (iv) Ni²⁺ metal ions. (D) Distribution"
+   },
+   {
+    "page": 4,
+    "block_id": 13,
+    "text": "Figure 2. (A) Tensile stress strain diagram, (B) tensile strength and elastic modulus, (C) fracture strain and work of fracture, (D) compressive stress strain diagram, (E) compressive strength of AM₁₀-Ca²⁺, AM₁₀-Ni²⁺, AM₁₀-Zn²⁺, and AM₁₀ hydrogels. (F) Photograph of compressive deformation of AM₁₀-C"
+   },
+   {
+    "page": 5,
+    "block_id": 10,
+    "text": "Figure 3. (A,B) Force–displacement curves of notched and unnotched AM_{20}-Ca^{2+} hydrogels, respectively. (C,D) Force–displacement curves of notched and unnotched AM_{20} hydrogels, respectively. (E) Fracture energy of AM_{20}-Ca^{2+} and AM_{20} hydrogels. (F) Schematic representation of crack pr"
+   },
+   {
+    "page": 6,
+    "block_id": 6,
+    "text": "Figure 4. (A) Cyclic tensile loading and unloading experiments of the AM_{20}-Ca^{2+} hydrogel. (B) Dissipated energy under the hysteresis loop and total energy dissipation during cyclic loading and unloading experiments at different strain %. (C) Energy dissipation mechanism of the AM_{20}-Ca^{2+} "
+   },
+   {
+    "page": 7,
+    "block_id": 12,
+    "text": "Figure 5. Cyclic tensile loading—unloading experiments of the AM₂₀-Ca²⁺ hydrogel: (A) Self-recovery at 0 min, (B) self-recovery at 2 min, (C) self-recovery at 5 min, and (D) self-recovery at 10 min. (E) Relative energy dissipation when the second loading cycle was started at different time intervals"
+   },
+   {
+    "page": 8,
+    "block_id": 8,
+    "text": "Figure 6. (A) Adhesion of the AM_{20}-Ca^{2+} hydrogel with different substrates like skin, plastic, glass, wood, metal, rubber and paper. (B) Force vs displacement graphs for lap shear tests. (C) Adhesive strengths on different surfaces. (D) Repeated adhesion strength of the AM_{20}-Ca^{2+} hydroge"
+   },
+   {
+    "page": 9,
+    "block_id": 8,
+    "text": "Figure 7. (A) Photographs of AM₂₀ and AM₂₀-Ca²⁺ hydrogels after keeping at −15 °C for 24 h. After 24 h, AM₂₀ lost its flexibility, whereas the AM₂₀-Ca²⁺ hydrogel still maintained its flexibility due to its antifreezing properties. (B) Photographs of the AM₂₀-Ca²⁺ hydrogel after keeping at −15 °C for"
+   },
+   {
+    "page": 10,
+    "block_id": 17,
+    "text": "Figure 8. (A) Schematic representation of the self-healing mechanism in the hydrogel. (B) Self-healing process of the AM₂₀-Ca²⁺ hydrogel. A rectangular piece of hydrogel was cut into two halves, one part stained with dye, then rejoined and kept for some time for self-healing. The self-healed gel cou"
+   },
+   {
+    "page": 11,
+    "block_id": 13,
+    "text": "Figure 9. (A) Demonstration of conductive nature of the AM₂₀-Ca²⁺ hydrogel at room temperature (25 °C) and subambient temperature (-15 °C). Connecting with a battery (using the mentioned circuit), the hydrogel was able to light up an LED both in ambient and subambient environments. (B) The Nyquist p"
+   },
+   {
+    "page": 12,
+    "block_id": 13,
+    "text": "Figure 10. The AM_{20}-Ca^{2+} hydrogel-based strain sensor for human motion detection. The relative resistance change in response to the bending of (A) finger, (B) elbow, (C) knee, and (D) wrist. (E) Morse code for representing the English alphabet and numerical numbers. (F) Representation of Morse"
+   },
+   {
+    "page": 13,
+    "block_id": 14,
+    "text": "Figure 11. (A) Schematic of the solid electrolyte-based supercapacitor device and its charging–discharging mechanism. (B) Cyclic voltammetry (CV) curve. (C) Variation of specific capacitance with scan rate. (D) Galvanostatic charge–discharge (GCD) profile. (E) Specific capacitance and Coulombic effi"
+   },
+   {
+    "page": 15,
+    "block_id": 14,
+    "text": "Figure 12. (A) SE<sub>r</sub>, (B) SE<sub>A</sub>, (C) SE<sub>R</sub> of AM<sub>20</sub> hydrogels before and after incorporation of different metal ions (Ca<sup>2+</sup>, Ni<sup>2+</sup>, and Zn<sup>2+</sup>). variation of (D) SE<sub>r</sub>, (E) SE<sub>A</sub>, (F) SE<sub>R</sub> of AM<sub>20</sub"
+   }
+  ]
+ }
+}

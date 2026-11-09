@@ -1,0 +1,93 @@
+{
+ "key": "H4B6CQLA",
+ "passed": true,
+ "figures": 8,
+ "structural": {
+  "key": "H4B6CQLA",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 67240,
+  "new_text_chars": 67240,
+  "old_entries": 9,
+  "new_entries": 8,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 5,
+     "block_id": 3,
+     "text": "Fig. 3. Boundary conditions applied to the finite element model."
+    }
+   ],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      1001,
+      297,
+      1059,
+      354
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 7,
+     "text": "Fig. 1. Right: an example how the measurements were taken within each histological image Left: distances measured in histological images."
+    },
+    {
+     "page": 3,
+     "block_id": 9,
+     "text": "Fig. 2. Schematic representation of the 2D finite element geometry with the scaffold implanted in the articular cartilage defect, including a zoomed area showing a representation of the modeled collagen fibers. Deep Zone (DZ), Transitional Zone (TZ) and Superficial Zone (SZ)."
+    },
+    {
+     "page": 5,
+     "block_id": 3,
+     "text": "Fig. 3. Boundary conditions applied to the finite element model."
+    },
+    {
+     "page": 5,
+     "block_id": 5,
+     "text": "Fig. 4. Angle  $ \\theta $ of the primary collagen fibers with respect to the normalize height. Deep Zone (DZ), Transitional Zone (TZ) and Superficial Zone (SZ)."
+    },
+    {
+     "page": 6,
+     "block_id": 3,
+     "text": "Fig. 5. Flow chart of the employed algorithm."
+    },
+    {
+     "page": 7,
+     "block_id": 3,
+     "text": "Fig. 6. One week (left) and one month (right) after the implantation of the scaffold. a & c) Zoomed areas of the osteoclast (*) and osteoblast cells (arrow) under the scaffold, b) Zoomed area of the big isogenous groups of chondrocyte cells (arrow heads) at the cartilage tissue surrounding the scaff"
+    },
+    {
+     "page": 7,
+     "block_id": 4,
+     "text": "Distances of the new and native tissue."
+    },
+    {
+     "page": 8,
+     "block_id": 8,
+     "text": "Fig. 7. Three months (left) and 12 months (right) after scaffold implantation. a) Zoomed area of the big isogenous groups of chondrocyte cells (arrow heads) at the cartilage tissue surrounding the scaffold. b) Zoomed area of the new bone regenerating (*). Bar: 500 μm. c) Zoomed area of the regenerat"
+    },
+    {
+     "page": 9,
+     "block_id": 3,
+     "text": "Fig. 8. Tissue differentiation and collagen fiber orientation throughout the simulation. Only one set of fibers is shown in the figure, the model also included the mirror fibers of the ones shown in the image. By the fourth month, when the cartilage is formed the fibers are disorganized. By the end "
+    },
+    {
+     "page": 10,
+     "block_id": 3,
+     "text": "Fig. 9. Young's modulus of the subchondral and trabecular bone tissues throughout the time studied. The Young's modulus gets more or less rigid, accordingly to the bone remodeling algorithm."
+    },
+    {
+     "page": 12,
+     "block_id": 2,
+     "text": "(continued)"
+    }
+   ]
+  }
+ }
+}
