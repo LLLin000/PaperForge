@@ -327,14 +327,36 @@ def _finalize_figure_identities(figure_inventory: dict) -> None:
     kept: list[dict] = []
     bases: dict[tuple[str, str], dict] = {}
     used_ids: dict[str, tuple[int, str]] = {}
+    asset_owners: dict[tuple[int, str], tuple[str, str, str, str, str]] = {}
     def claim_record(item: dict, asset_ids: list[str]) -> dict:
         return {
             "settlement_type": item.get("settlement_type"),
             "legend_block_id": item.get("legend_block_id", ""),
             "asset_block_ids": list(asset_ids),
         }
+    original_positions = {id(item): index for index, item in enumerate(matched)}
+    legends_by_anchor = {
+        (int(legend.get("page", 0) or 0), str(legend.get("block_id", ""))): legend
+        for legend in figure_inventory.get("figure_legends", [])
+    }
 
-    for entry in sorted(matched, key=lambda item: bool(item.get("is_continuation"))):
+    def identity_sort_key(item: dict) -> tuple:
+        page = int(item.get("legend_page", item.get("page", 0)) or 0)
+        block_id = str(item.get("legend_block_id", "") or "")
+        legend = legends_by_anchor.get((page, block_id), {})
+        bbox = legend.get("bbox") or item.get("legend_bbox") or []
+        return (
+            bool(item.get("is_continuation")),
+            page,
+            bbox[1] if len(bbox) >= 4 else float("inf"),
+            bbox[0] if len(bbox) >= 4 else float("inf"),
+            block_id,
+            str(item.get("figure_id", "")),
+            " ".join(str(item.get("text", "") or "").split()).casefold(),
+            tuple(sorted(str(asset.get("block_id", "")) for asset in item.get("matched_assets", []))),
+        )
+
+    for entry in sorted(matched, key=identity_sort_key):
         marker = _extract_figure_marker(str(entry.get("text", "") or ""))
         namespace = str(entry.get("figure_namespace") or marker["namespace"])
         label = marker["figure_label"]
@@ -427,25 +449,69 @@ def _finalize_figure_identities(figure_inventory: dict) -> None:
         block_id = str(entry.get("legend_block_id", "") or "")
         group = str(entry.get("group_id") or entry.get("group_identity") or ",".join(asset_ids))
         caption_identity = " ".join(str(entry.get("text", "") or "").split()).casefold()
+        ownership_identity = (namespace, label, caption_identity)
+        asset_pages = {
+            str(asset.get("block_id", "")): int(asset.get("page", page) or page)
+            for asset in entry.get("matched_assets", [])
+            if asset.get("block_id")
+        }
+        rejected_asset_ids = [
+            asset_id for asset_id in asset_ids
+            if (owner := asset_owners.get((asset_pages.get(asset_id, page), asset_id))) is not None
+            and owner[:3] != ownership_identity
+        ]
+        if rejected_asset_ids:
+            conflicts.append({
+                "type": "identity_conflict",
+                "status": "HOLD",
+                "reason": "asset_already_owned_by_different_caption",
+                "figure_label": label,
+                "figure_namespace": namespace,
+                "page": page,
+                "legend_block_id": block_id,
+                "rejected_asset_block_ids": rejected_asset_ids,
+                "winning_claims": [
+                    {
+                        "asset_block_id": asset_id,
+                        "legend_block_id": asset_owners[(asset_pages.get(asset_id, page), asset_id)][3],
+                        "figure_label": asset_owners[(asset_pages.get(asset_id, page), asset_id)][1],
+                        "caption": asset_owners[(asset_pages.get(asset_id, page), asset_id)][4],
+                    }
+                    for asset_id in rejected_asset_ids
+                ],
+            })
+            asset_ids = [asset_id for asset_id in asset_ids if asset_id not in rejected_asset_ids]
+            entry["matched_assets"] = [
+                asset for asset in entry.get("matched_assets", [])
+                if str(asset.get("block_id", "")) in asset_ids
+            ]
+            entry["asset_block_ids"] = list(asset_ids)
         same_page_label = None if not label else next((item for item in kept if (
             item.get("figure_namespace"), item.get("figure_label"),
             int(item.get("page", 0) or 0),
-        ) == (namespace, label, page)), None)
-        if same_page_label is not None:
-            kept_caption = " ".join(str(same_page_label.get("text", "") or "").split()).casefold()
-            if kept_caption != caption_identity:
+        ) == (namespace, label, page) and
+            " ".join(str(item.get("text", "") or "").split()).casefold() == caption_identity), None)
+        if same_page_label is None and label:
+            different_caption = next((item for item in kept if (
+                item.get("figure_namespace"), item.get("figure_label"),
+                int(item.get("page", 0) or 0),
+            ) == (namespace, label, page)), None)
+            if different_caption is not None:
                 conflicts.append({
                     "type": "identity_conflict",
                     "status": "HOLD",
                     "figure_label": label,
                     "figure_namespace": namespace,
                     "page": page,
-                    "kept_legend_block_id": same_page_label.get("legend_block_id"),
+                    "kept_legend_block_id": different_caption.get("legend_block_id"),
                     "conflicting_legend_block_id": block_id,
-                    "kept_asset_block_ids": sorted({str(a.get("block_id", "")) for a in same_page_label.get("matched_assets", []) if a.get("block_id")}),  # noqa: E501
+                    "kept_asset_block_ids": sorted({
+                        str(a.get("block_id", "")) for a in different_caption.get("matched_assets", [])
+                        if a.get("block_id")
+                    }),
                     "conflicting_asset_block_ids": asset_ids,
                 })
-                continue
+        if same_page_label is not None:
             kept_asset_ids = sorted({
                 str(a.get("block_id", "")) for a in same_page_label.get("matched_assets", []) if a.get("block_id")
             }) or sorted(str(b) for b in same_page_label.get("asset_block_ids", []) if b)
@@ -498,6 +564,15 @@ def _finalize_figure_identities(figure_inventory: dict) -> None:
                 assets_by_id[asset_id] for asset_id in sorted(chosen_ids) if asset_id in assets_by_id
             ]
             same_page_label["asset_block_ids"] = sorted(chosen_ids)
+            for asset_id in chosen_ids:
+                asset = assets_by_id.get(asset_id, {})
+                asset_owners[(int(asset.get("page", page) or page), asset_id)] = (
+                    namespace,
+                    label,
+                    caption_identity,
+                    str(same_page_label.get("legend_block_id", block_id) or block_id),
+                    str(same_page_label.get("text", "") or ""),
+                )
             for field in ("flags", "group_evidence", "bridge_block_ids"):
                 same_page_label[field] = list(dict.fromkeys(
                     [*same_page_label.get(field, []), *entry.get(field, [])]
@@ -579,8 +654,13 @@ def _finalize_figure_identities(figure_inventory: dict) -> None:
         entry["claims"] = [claim_record(entry, asset_ids)]
         used_ids[figure_id] = anchor
         kept.append(entry)
+        for asset_id in asset_ids:
+            asset_owners[(asset_pages.get(asset_id, page), asset_id)] = (
+                namespace, label, caption_identity, block_id, str(entry.get("text", "") or "")
+            )
         if label:
             bases.setdefault((namespace, label), entry)
+    kept.sort(key=lambda item: (bool(item.get("is_continuation")), original_positions[id(item)]))
 
     figure_inventory["matched_figures"] = kept
     figure_inventory["official_figure_count"] = len(kept)
