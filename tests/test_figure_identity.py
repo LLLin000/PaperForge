@@ -236,7 +236,40 @@ def test_same_label_with_different_caption_on_page_keeps_distinct_identities() -
     assert [[asset["block_id"] for asset in figure["matched_assets"]] for figure in figures] == [
         ["asset-a"], ["asset-b"],
     ]
-    assert inventory["identity_conflicts"][0]["status"] == "HOLD"
+    conflict = inventory["identity_conflicts"][0]
+    assert conflict["status"] == "RESOLVED_UNIQUE_IDENTITY"
+    assert conflict["delivery_allowed"] is True
+
+
+def test_superset_shrink_releases_asset_for_later_caption() -> None:
+    a1 = {"block_id": "a1", "page": 1, "bbox": [10, 10, 50, 50]}
+    a2 = {"block_id": "a2", "page": 1, "bbox": [10, 60, 50, 100]}
+    first = _entry("Figure 4: same caption", "cap4a", "a1")
+    first["matched_assets"] = [a1, a2]
+    first["asset_block_ids"] = ["a1", "a2"]
+    shrink = _entry("Figure 4: same caption", "cap4b", "a2")
+    shrink["matched_assets"] = [a2]
+    shrink["asset_block_ids"] = ["a2"]
+    fifth = _entry("Figure 5: later caption", "cap5", "a1")
+    inventory = {
+        "figure_legends": [
+            {"block_id": "cap4a", "page": 1, "bbox": [10, 110, 200, 130]},
+            {"block_id": "cap4b", "page": 1, "bbox": [10, 140, 200, 160]},
+            {"block_id": "cap5", "page": 1, "bbox": [10, 200, 200, 220]},
+        ],
+        "matched_figures": [fifth, first, shrink],
+    }
+
+    _finalize_figure_identities(inventory)
+
+    by_label = {str(f.get("figure_label")): f for f in inventory["matched_figures"]}
+    assert by_label["4"]["asset_block_ids"] == ["a2"]
+    assert by_label["5"]["asset_block_ids"] == ["a1"]
+    assert not any(
+        conflict.get("reason") == "asset_already_owned_by_different_caption"
+        and "a1" in conflict.get("rejected_asset_block_ids", [])
+        for conflict in inventory.get("identity_conflicts", [])
+    )
 
 
 def test_continuation_merges_assets_into_base_identity() -> None:
