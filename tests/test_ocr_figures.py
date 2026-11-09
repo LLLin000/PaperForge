@@ -8354,3 +8354,118 @@ def test_multi_panel_spanning_group_not_overcorrected():
     cap = {"page": 1, "bbox": [86, 629, 579, 719], "text": "Figure 2. x", "block_id": "cap", "role": "figure_caption"}
     result = _score_legend_to_group(cap, group, caption_score={"score": 0.9}, page_width=1200, page_blocks=[cap])
     assert result["decision"] != "rejected", result
+
+
+def test_unique_next_page_caption_claims_previous_page_asset():
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {
+            "block_id": "cap",
+            "page": 15,
+            "role": "figure_caption_candidate",
+            "text": "Figure 5. Immunofluorescence detection of cellular inflammatory response.",
+            "bbox": [80, 113, 583, 357],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+        {
+            "block_id": "img",
+            "page": 14,
+            "role": "media_asset",
+            "raw_label": "chart",
+            "text": "",
+            "bbox": [118, 122, 1069, 1356],
+            "page_width": 1200,
+            "page_height": 1600,
+        },
+    ]
+    inventory = build_figure_inventory(blocks)
+
+    figure = next(item for item in inventory["matched_figures"] if item.get("figure_number") == 5)
+    assert [asset["block_id"] for asset in figure["matched_assets"]] == ["img"]
+    assert figure["asset_pages"] == [14]
+    assert not any(item.get("block_id") == "cap" for item in inventory["unmatched_legends"])
+
+
+def test_competing_next_page_captions_do_not_claim_previous_page_asset():
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {
+            "block_id": "cap1",
+            "page": 15,
+            "role": "figure_caption_candidate",
+            "text": "Figure 1. Immunofluorescence assay results.",
+            "bbox": [80, 113, 583, 220],
+        },
+        {
+            "block_id": "cap2",
+            "page": 15,
+            "role": "figure_caption_candidate",
+            "text": "Figure 2. Cell viability results.",
+            "bbox": [80, 230, 583, 357],
+        },
+        {
+            "block_id": "img",
+            "page": 14,
+            "role": "media_asset",
+            "raw_label": "chart",
+            "text": "",
+            "bbox": [118, 122, 1069, 1356],
+        },
+    ]
+    inventory = build_figure_inventory(blocks)
+
+    assert not inventory["matched_figures"]
+    assert {item.get("block_id") for item in inventory["unmatched_legends"]} == {"cap1", "cap2"}
+
+
+def test_body_figure_mention_does_not_claim_adjacent_image_region():
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    blocks = [
+        {
+            "block_id": "body",
+            "page": 15,
+            "role": "body_paragraph",
+            "text": "Figure 1 shows the response.",
+            "bbox": [80, 113, 583, 357],
+        },
+        {
+            "block_id": "img",
+            "page": 14,
+            "role": "media_asset",
+            "raw_label": "chart",
+            "text": "",
+            "bbox": [118, 122, 1069, 1356],
+        },
+    ]
+    inventory = build_figure_inventory(blocks)
+
+    assert not inventory["matched_figures"]
+    assert not any(
+        asset.get("block_id") == "img"
+        for figure in inventory["matched_figures"]
+        for asset in figure.get("matched_assets", [])
+    )
+
+
+def test_assetless_same_page_figure_remains_unmatched():
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    inventory = build_figure_inventory(
+        [
+            {
+                "block_id": "cap",
+                "page": 1,
+                "role": "figure_caption_candidate",
+                "text": "Figure 6. A representative cell morphology image.",
+                "bbox": [80, 113, 583, 357],
+            }
+        ]
+    )
+
+    assert not inventory["matched_figures"]
+    assert any(item.get("block_id") == "cap" for item in inventory["unmatched_legends"])
+
