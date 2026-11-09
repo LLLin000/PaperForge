@@ -41,23 +41,30 @@ python scripts/dev/figure_quality_eval.py --set smoke --score \
 
 `labels.jsonl` rows are the source of truth; `result.json` contains the per-case scores. Unreviewed rows are ignored by scoring. No pipeline or vault changes were made.
 
-## Scoring with manual findings
+## Lifecycle-aware scoring
 
-The original agent-only results above are retained unchanged. The scoring harness now reports `agent_only` and `manual_adjusted` separately; manual values are an overlay, not edits to `labels.jsonl`. `null` manual values remain unknown and do not count as passes. Unknown asset/page identities are not converted into association false negatives.
+Agent-only values are scored from `labels.jsonl`; human-verified values use only `status=confirmed` user findings. The cohorts are never mixed. `null` stays unknown (not a pass), and only confirmed findings contribute human failures or association false negatives. Superseded and disputed records remain auditable but are excluded from confirmed-failure metrics.
 
-| Key | Agent-only association P/R | Manual-adjusted association P/R | Adjusted crop fail | Adjusted delivery fail | Figure-count delta |
-|---|---:|---:|---:|---:|---:|
-| 3QYCST4E | 0.86 / 0.67 | 0.88 / 0.70 | 2 | 1 | -1 |
-| 28JLIHLS | 1.00 / 0.70 | 1.00 / 0.78 | 1 | 3 | -2 |
+| Key | Metric set | Association P/R | FN | Crop failures | Delivery failures | Unknown |
+|---|---|---:|---:|---:|---:|---:|
+| 3QYCST4E | Agent-scored | 0.86 / 0.67 | 3 | 2 | 0 | 0 |
+| 3QYCST4E | Human-verified | n/a (0 findings) | 0 | 0 | 0 | 0 |
+| 28JLIHLS | Agent-scored | 1.00 / 0.70 | 3 | 0 | 0 | 0 |
+| 28JLIHLS | Human-verified | 1.00 / 0.33 | 2 | 0 | 1 | 4 |
 
-Manual-adjusted smoke totals after Q5: association P 0.931 / R 0.913 / F1 0.922; crop failures 11, delivery failures 9, one unknown asset identity (28JLIHLS Figure 9) excluded from association denominators. The pre-Q5 manual totals were P 0.93 / R 0.91 (3QYCST4E P/R 0.86/0.60); Q5 resolved the Figure 1B FN.
+For 28JLIHLS, four records have at least one unknown measurement: one unknown expected asset identity, three unknown crop values, one unknown delivery value, and four unknown panel values (field counts overlap). Unknown is not a pass; only the two confirmed records contribute to human-verified failure metrics. The Q5-era manual-adjusted 3QYCST4E score was P/R 0.88/0.70, crop failures 2, delivery failures 1; after Q5, Figure 1B is delivered (asset 8), so that stale failure is superseded and excluded. The old 28JLIHLS manual-adjusted score was P/R 1.00/0.78, crop failures 1, delivery failures 3; lifecycle scoring now excludes the disputed Figure 2 crop and stale cross-page/Figure 9 delivery claims. Figure 5 remains confirmed (expected p4/b0+b2); Figure 6 is confirmed as p4/b6 only.
 
-For 3QYCST4E, Q5 now delivers Figure 1B (figure_001B, asset 8), resolving that FN; the manual row is a TP. For 28JLIHLS, Figure 2's crop remains a confirmed failure; Figure 5 expects blocks 0/2 (Q7 assigns block 6 to Figure 6); Q7 found no p5 continuation for Figure 6 in the supplied PDF, and Figure 9 remains HOLD with unknown assets. The prior numbers in the table above are the agent-only baseline.
+| Finding | Lifecycle | Reason / evidence |
+|---|---|---|
+| 3QYCST4E figure_001B | Superseded | Q5 / PR #401 delivered figure_001B, asset 8. |
+| 28JLIHLS figure_002 crop | Disputed | Q6 / PR #402 evidence reports no 24h/72h text; caption says t=0, 30, 60. The finding does not count as a crop failure. |
+| 28JLIHLS figure_005 | Confirmed | Q7 supports p4/b0+b2; block 6 belongs to Figure 6. |
+| 28JLIHLS figure_006 cross-page merge | Superseded | Q7 supports p4/b6 only; no p5 continuation. |
+| 28JLIHLS figure_006 asset | Confirmed | Q7 supports expected asset {6}. |
+| 28JLIHLS figure_009 multi-page merge | Disputed | Q7 found no Fig. 9 caption/image in the supplied PDF; external ownership remains unknown. |
 
-## Manual review addendum (user, 2026-11-09)
+Detailed counts and the three cohort objects (`agent_scored`, `human_verified`, `unknown`) are stored in `result.json`. The original agent-only smoke-set totals above are unchanged; this lifecycle overlay does not rewrite agent labels or infer a pass from missing evidence.
 
-The user visually reviewed the smoke set; see `MANUAL-REVIEW.md` and `manual_findings.jsonl`. Overrides:
+## Manual review provenance
 
-- **3QYCST4E**: Figure 1B (caption block 9, asset block 8, p2) is missing; 1A/1B need a composite split.
-- **28JLIHLS**: Figure 2 crop drops the `24h`/`72h` annotations (crop_ok overridden to false); Figure 5 caption remains unassociated; Figure 6 needs a p4→p5 cross-page merge; Figure 9 spans pages and is not merged.
-- **SRNJDAA2**: deferred as a difficult item.
+Original notes are preserved in `MANUAL-REVIEW.md`; lifecycle status and evidence references are recorded in `manual_findings.jsonl`. Q7 source review is documented in `../q7/REPORT.md` and `../q7/evidence.json`.

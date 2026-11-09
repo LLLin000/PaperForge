@@ -94,7 +94,7 @@ def test_diff_results():
     assert d["regressed"] == ["B"]
 
 
-def test_manual_findings_override_and_missing_figure_count():
+def test_manual_findings_score_without_mutating_agent_labels():
     labels = [{"key": "28JLIHLS", "figure_id": "figure_002", "reviewer": "agent",
                "expected_owner": "0", "current_assets": "0", "crop_ok": True,
                "delivery_ok": True, "caption_ok": True, "panels_ok": True}]
@@ -107,11 +107,10 @@ def test_manual_findings_override_and_missing_figure_count():
     ]
     original = json.dumps(labels)
     score = module.score_labels(labels, {"figures": []}, findings, "28JLIHLS")
-    assert score["crop_failures"] == 1
-    assert score["manual_overrides"][0]["agent_value"] is True
-    assert score["manual_overrides"][0]["finding_id"] == "crop"
-    assert score["association"]["fn"] == 2
-    assert score["delivery_failures"] == 1
+    assert score["agent_scored"]["crop_failures"] == 0
+    assert score["human_verified"]["crop_failures"] == 1
+    assert score["human_verified"]["association"]["fn"] == 1
+    assert score["human_verified"]["delivery_failures"] == 1
     assert json.dumps(labels) == original
 
 
@@ -122,3 +121,54 @@ def test_unknown_manual_values_do_not_become_pass():
     score = module.score_labels(labels, {"figures": []}, [finding], "K")
     assert score["crop_failures"] == 0
     assert score["known"]["crop_ok"] == 0
+def test_lifecycle_scoring_separates_human_and_excludes_stale_findings():
+    labels = [{"key": "K", "figure_id": "f1", "reviewer": "agent", "expected_owner": "1",
+               "crop_ok": True, "delivery_ok": True}]
+    findings = [
+        {"id": "confirmed", "key": "K", "status": "confirmed", "figure": "f1",
+         "expected_asset_blocks": [1], "actual_asset_blocks": [1], "crop_ok": False,
+         "delivery_ok": None, "panel_ok": None},
+        {"id": "superseded", "key": "K", "status": "superseded", "figure": "old",
+         "missing_figure": True, "expected_asset_blocks": [8], "crop_ok": False,
+         "delivery_ok": False},
+        {"id": "disputed", "key": "K", "status": "disputed", "figure": "unknown",
+         "missing_figure": True, "expected_asset_blocks": None, "crop_ok": False,
+         "delivery_ok": False},
+    ]
+    original = json.dumps(findings)
+    score = module.score_labels(labels, {"figures": [
+        {"figure_id": "f1", "matched_assets": [{"block_id": 1}]},
+    ]}, findings, "K")
+    assert score["agent_scored"]["crop_failures"] == 0
+    assert score["human_verified"]["crop_failures"] == 1
+    assert score["human_verified"]["delivery_failures"] == 0
+    assert score["human_verified"]["association"]["fn"] == 0
+    assert score["unknown"]["delivery_ok"] == 1
+    assert score["superseded"] == score["disputed"] == 1
+    assert score["lifecycle_counts"]["confirmed"] == 1
+    assert json.dumps(findings) == original
+
+
+def test_unknown_human_association_is_not_a_pass():
+    finding = {"id": "unknown", "key": "K", "status": "confirmed", "figure": "f1",
+               "expected_asset_blocks": None, "crop_ok": None, "delivery_ok": None}
+    score = module.score_labels([], {"figures": []}, [finding], "K")
+    assert score["unknown"]["expected_asset_blocks"] == 1
+    assert score["human_verified"]["association"]["unknown_expected"] == 1
+    assert score["human_verified"]["association"]["fn"] == 0
+
+def test_manual_findings_lifecycle_preserves_source_records():
+    path = ROOT / "docs" / "evidence" / "figure-quality" / "smoke" / "manual_findings.jsonl"
+    findings = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+    by_id = {finding["id"]: finding for finding in findings}
+    original_ids = {
+        "manual-3QYCST4E-figure_001B", "manual-28JLIHLS-figure_002",
+        "manual-28JLIHLS-figure_005", "manual-28JLIHLS-figure_006",
+        "manual-28JLIHLS-figure_009",
+    }
+    assert original_ids <= by_id.keys()
+    assert all(by_id[finding_id]["recorded_at"] == "2026-11-09" for finding_id in original_ids)
+    assert all({"status", "superseded_by", "reason", "resolved_at", "evidence_refs"} <= finding.keys()
+               for finding in findings)
+    assert {finding["status"] for finding in findings} <= {"confirmed", "superseded", "disputed"}
+    assert by_id["manual-28JLIHLS-figure_005"]["status"] == "confirmed"
