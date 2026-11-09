@@ -1,0 +1,283 @@
+[
+  {
+    "key": "28JLIHLS",
+    "from": "M2_REVIEW_REQUIRED",
+    "to": "READY",
+    "reason": "The prior M2/unmatched-caption hold is resolved in the new replay; the caption now has a deterministic figure match.",
+    "old_hold_codes": [
+      "M2_REVIEW_REQUIRED"
+    ],
+    "new_hold_codes": [],
+    "old_delete_reasons": [],
+    "new_delete_reasons": []
+  },
+  {
+    "key": "3QYCST4E",
+    "from": "READY",
+    "to": "HOLD",
+    "reason": "New replay splits an old figure identity across multiple candidates; deterministic file/embed mapping is unavailable, so the paper is held.",
+    "old_hold_codes": [],
+    "new_hold_codes": [
+      "AMBIGUOUS_EMBED",
+      "AMBIGUOUS_OLD_ID"
+    ],
+    "old_delete_reasons": [],
+    "new_delete_reasons": [
+      "superseded by several new objects; old file cannot be mapped 1:1"
+    ]
+  },
+  {
+    "key": "6QNRHRKX",
+    "from": "READY",
+    "to": "REQUIRES_APPROVAL",
+    "reason": "New replay leaves assetless old figure IDs unmapped; delete candidates require approval, changing READY to approval-required.",
+    "old_hold_codes": [],
+    "new_hold_codes": [
+      "UNMAPPED_ASSETLESS"
+    ],
+    "old_delete_reasons": [],
+    "new_delete_reasons": [
+      "unmapped_assetless"
+    ]
+  },
+  {
+    "key": "7IYXQ4WM",
+    "from": "REQUIRES_APPROVAL",
+    "to": "READY",
+    "reason": "Previously approval-gated reserved/assetless or orphan candidates disappear under the new replay; no delete candidate remains.",
+    "old_hold_codes": [
+      "RESERVED_OR_ASSETLESS"
+    ],
+    "new_hold_codes": [],
+    "old_delete_reasons": [
+      "reserved_or_assetless"
+    ],
+    "new_delete_reasons": []
+  },
+  {
+    "key": "7ZZN6PUW",
+    "from": "REQUIRES_APPROVAL",
+    "to": "READY",
+    "reason": "Previously approval-gated reserved/assetless or orphan candidates disappear under the new replay; no delete candidate remains.",
+    "old_hold_codes": [
+      "RESERVED_OR_ASSETLESS"
+    ],
+    "new_hold_codes": [],
+    "old_delete_reasons": [
+      "reserved_or_assetless"
+    ],
+    "new_delete_reasons": []
+  },
+  {
+    "key": "8CCATQE3",
+    "from": "M2_REVIEW_REQUIRED",
+    "to": "READY",
+    "reason": "The prior M2/unmatched-caption hold is resolved in the new replay; the many-to-one figure ownership collision is also gone.",
+    "old_hold_codes": [
+      "M2_REVIEW_REQUIRED",
+      "MANY_TO_ONE"
+    ],
+    "new_hold_codes": [],
+    "old_delete_reasons": [
+      "many_to_one collision"
+    ],
+    "new_delete_reasons": []
+  },
+  {
+    "key": "8UC452EE",
+    "from": "REQUIRES_APPROVAL",
+    "to": "READY",
+    "reason": "Previously approval-gated reserved/assetless or orphan candidates disappear under the new replay; no delete candidate remains.",
+    "old_hold_codes": [
+      "RESERVED_OR_ASSETLESS"
+    ],
+    "new_hold_codes": [],
+    "old_delete_reasons": [
+      "reserved_or_assetless"
+    ],
+    "new_delete_reasons": []
+  },
+  {
+    "key": "97M7HFCD",
+    "from": "REQUIRES_APPROVAL",
+    "to": "READY",
+    "reason": "Previously approval-gated reserved/assetless or orphan candidates disappear under the new replay; no delete candidate remains.",
+    "old_hold_codes": [
+      "RESERVED_OR_ASSETLESS"
+    ],
+    "new_hold_codes": [],
+    "old_delete_reasons": [
+      "reserved_or_assetless"
+    ],
+    "new_delete_reasons": []
+  },
+  {
+    "key": "A98BQ6YU",
+    "from": "REQUIRES_APPROVAL",
+    "to": "READY",
+    "reason": "Previously approval-gated reserved/assetless or orphan candidates disappear under the new replay; no delete candidate remains.",
+    "old_hold_codes": [],
+    "new_hold_codes": [],
+    "old_delete_reasons": [
+      "orphan no longer inventoried"
+    ],
+    "new_delete_reasons": []
+  },
+  {
+    "key": "CKU5UHFW",
+    "from": "READY",
+    "to": "HOLD",
+    "reason": "New replay splits an old figure identity across multiple candidates; deterministic file/embed mapping is unavailable, so the paper is held.",
+    "old_hold_codes": [],
+    "new_hold_codes": [
+      "AMBIGUOUS_EMBED",
+      "AMBIGUOUS_OLD_ID"
+    ],
+    "old_delete_reasons": [],
+    "new_delete_reasons": [
+      "superseded by several new objects; old file cannot be mapped 1:1"
+    ]
+  },
+  {
+    "key": "DR6FGTCA",
+    "from": "REQUIRES_APPROVAL",
+    "to": "READY",
+    "reason": "Previously approval-gated reserved/assetless or orphan candidates disappear under the new replay; no delete candidate remains.",
+    "old_hold_codes": [],
+    "new_hold_codes": [],
+    "old_delete_reasons": [
+      "orphan no longer inventoried"
+    ],
+    "new_delete_reasons": []
+  },
+  {
+    "key": "HIU4F3V4",
+    "from": "REQUIRES_APPROVAL",
+    "to": "READY",
+    "reason": "Previously approval-gated reserved/assetless or orphan candidates disappear under the new replay; no delete candidate remains.",
+    "old_hold_codes": [
+      "RESERVED_OR_ASSETLESS"
+    ],
+    "new_hold_codes": [],
+    "old_delete_reasons": [
+      "reserved_or_assetless"
+    ],
+    "new_delete_reasons": []
+  },
+  {
+    "key": "KY76CCC7",
+    "from": "READY",
+    "to": "HOLD",
+    "reason": "New replay splits an old figure identity across multiple candidates; deterministic file/embed mapping is unavailable, so the paper is held.",
+    "old_hold_codes": [],
+    "new_hold_codes": [
+      "AMBIGUOUS_EMBED",
+      "AMBIGUOUS_OLD_ID"
+    ],
+    "old_delete_reasons": [],
+    "new_delete_reasons": [
+      "superseded by several new objects; old file cannot be mapped 1:1"
+    ]
+  },
+  {
+    "key": "LYEFATEN",
+    "from": "REQUIRES_APPROVAL",
+    "to": "HOLD",
+    "reason": "New replay splits an old figure identity across multiple candidates; deterministic file/embed mapping is unavailable, so the paper is held.",
+    "old_hold_codes": [
+      "RESERVED_OR_ASSETLESS"
+    ],
+    "new_hold_codes": [
+      "AMBIGUOUS_EMBED",
+      "AMBIGUOUS_OLD_ID",
+      "RESERVED_OR_ASSETLESS"
+    ],
+    "old_delete_reasons": [
+      "orphan no longer inventoried",
+      "reserved_or_assetless"
+    ],
+    "new_delete_reasons": [
+      "orphan no longer inventoried",
+      "reserved_or_assetless",
+      "superseded by several new objects; old file cannot be mapped 1:1"
+    ]
+  },
+  {
+    "key": "PZ8B59K4",
+    "from": "REQUIRES_APPROVAL",
+    "to": "READY",
+    "reason": "Previously approval-gated reserved/assetless or orphan candidates disappear under the new replay; no delete candidate remains.",
+    "old_hold_codes": [
+      "RESERVED_OR_ASSETLESS"
+    ],
+    "new_hold_codes": [],
+    "old_delete_reasons": [
+      "reserved_or_assetless"
+    ],
+    "new_delete_reasons": []
+  },
+  {
+    "key": "U96H2WCT",
+    "from": "READY",
+    "to": "HOLD",
+    "reason": "New replay splits an old figure identity across multiple candidates; deterministic file/embed mapping is unavailable, so the paper is held.",
+    "old_hold_codes": [],
+    "new_hold_codes": [
+      "AMBIGUOUS_EMBED",
+      "AMBIGUOUS_OLD_ID"
+    ],
+    "old_delete_reasons": [],
+    "new_delete_reasons": [
+      "superseded by several new objects; old file cannot be mapped 1:1"
+    ]
+  },
+  {
+    "key": "WJNEHSQD",
+    "from": "REQUIRES_APPROVAL",
+    "to": "READY",
+    "reason": "Previously approval-gated reserved/assetless or orphan candidates disappear under the new replay; no delete candidate remains.",
+    "old_hold_codes": [
+      "RESERVED_OR_ASSETLESS"
+    ],
+    "new_hold_codes": [],
+    "old_delete_reasons": [
+      "reserved_or_assetless"
+    ],
+    "new_delete_reasons": []
+  },
+  {
+    "key": "XBSC5X2H",
+    "from": "REQUIRES_APPROVAL",
+    "to": "HOLD",
+    "reason": "New replay splits an old figure identity across multiple candidates; deterministic file/embed mapping is unavailable, so the paper is held.",
+    "old_hold_codes": [
+      "RESERVED_OR_ASSETLESS"
+    ],
+    "new_hold_codes": [
+      "AMBIGUOUS_EMBED",
+      "AMBIGUOUS_OLD_ID",
+      "RESERVED_OR_ASSETLESS"
+    ],
+    "old_delete_reasons": [
+      "reserved_or_assetless"
+    ],
+    "new_delete_reasons": [
+      "reserved_or_assetless",
+      "superseded by several new objects; old file cannot be mapped 1:1"
+    ]
+  },
+  {
+    "key": "XU3QKIPZ",
+    "from": "M2_REVIEW_REQUIRED",
+    "to": "REQUIRES_APPROVAL",
+    "reason": "The prior unmatched-caption M2 hold is resolved; remaining orphan cleanup is a delete candidate requiring approval.",
+    "old_hold_codes": [
+      "M2_REVIEW_REQUIRED"
+    ],
+    "new_hold_codes": [],
+    "old_delete_reasons": [],
+    "new_delete_reasons": [
+      "orphan no longer inventoried"
+    ]
+  }
+]
