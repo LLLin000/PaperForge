@@ -148,7 +148,11 @@ def test_recovery_restores_old_directories_after_interrupted_commit(tmp_path: Pa
     assert not backup.parent.exists()
 
 
-def test_dry_run_builds_manifest_without_writing(tmp_path: Path) -> None:
+def test_dry_run_builds_manifest_without_touching_stale_journal(tmp_path: Path) -> None:
+    journal = tmp_path / ".materialization-journal.json"
+    journal.write_text("{ malformed stale journal }", encoding="utf-8")
+    original = journal.read_bytes()
+
     manifest = objects.extract_and_write_objects(
         None,
         _figure(),
@@ -162,3 +166,4 @@ def test_dry_run_builds_manifest_without_writing(tmp_path: Path) -> None:
     assert any(path.endswith("figure_001.md") for path in manifest["render"])
     assert not (tmp_path / "assets").exists()
     assert not (tmp_path / "render").exists()
+    assert journal.read_bytes() == original

@@ -29,6 +29,29 @@ def _make_paper(tmp_path: Path, files: list[str]) -> Path:
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_bytes(rel.encode())
     return paper
+def test_delivery_gate_checks_assets_and_renders_for_manifest_ids(tmp_path: Path):
+    paper = tmp_path / "paper"
+    manifest = {
+        "figures": ["figure_new", "missing_asset", "missing_render"],
+        "assets": [
+            str(paper / "assets/figures/figure_new.jpg"),
+            str(paper / "assets/figures/missing_render.jpg"),
+        ],
+        "render": [
+            str(paper / "render/figures/figure_new.md"),
+            str(paper / "render/figures/missing_asset.md"),
+        ],
+    }
+
+    result = module._delivery_diff(paper, manifest, {}, {}, [], [])
+
+    assert result["manifest_delivery"] == {
+        "figure_ids": ["figure_new", "missing_asset", "missing_render"],
+        "missing_assets": ["missing_asset"],
+        "missing_renders": ["missing_render"],
+    }
+
+
 
 
 def test_plan_unique_rename_hash_backup(tmp_path):
