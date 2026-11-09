@@ -259,7 +259,98 @@
   "old_entries": 63,
   "new_entries": 48,
   "unmatched": {
-   "legends": [],
+   "legends": [
+    {
+     "page": 18,
+     "block_id": 6,
+     "text": "图 2-3 Tanh 函数图像"
+    },
+    {
+     "page": 25,
+     "block_id": 6,
+     "text": "图 2-12 逐点卷积运算示意图"
+    },
+    {
+     "page": 29,
+     "block_id": 5,
+     "text": "图 2-18 CBAM 空间注意力模块"
+    },
+    {
+     "page": 35,
+     "block_id": 5,
+     "text": "图 3-2 VGG16 迁移 UNet 网络结构具体层结构"
+    },
+    {
+     "page": 37,
+     "block_id": 4,
+     "text": "图 3-5 CLAHE 算法预处理后"
+    },
+    {
+     "page": 38,
+     "block_id": 5,
+     "text": "图3-7 图像加灰条数据方法增强后"
+    },
+    {
+     "page": 43,
+     "block_id": 5,
+     "text": "图 3-10 不同迁移方法髋关节分割预测示例"
+    },
+    {
+     "page": 44,
+     "block_id": 4,
+     "text": "表3-4 各经典模型髋关节数据集实验结果"
+    },
+    {
+     "page": 46,
+     "block_id": 5,
+     "text": "图 3-14 不同迁移方法脊椎分割预测示例"
+    },
+    {
+     "page": 47,
+     "block_id": 7,
+     "text": "表3-6 各经典模型脊椎数据集实验结果"
+    },
+    {
+     "page": 53,
+     "block_id": 8,
+     "text": "表4-1 髋关节不同注意力机制 UNet 实验结果"
+    },
+    {
+     "page": 55,
+     "block_id": 6,
+     "text": "图 4-7 本文算法在髋关节验证集上的像素点类别混淆矩阵"
+    },
+    {
+     "page": 57,
+     "block_id": 5,
+     "text": "图4-10 本文算法在脊椎验证集上的像素点类别混淆矩阵"
+    },
+    {
+     "page": 61,
+     "block_id": 6,
+     "text": "图 5-2 骨科影像诊断系统功能模块图"
+    },
+    {
+     "page": 65,
+     "block_id": 6,
+     "text": "图5-7 历史记录界面"
+    },
+    {
+     "page": 66,
+     "block_id": 6,
+     "text": "图5-9 患者图像选择界面"
+    },
+    {
+     "page": 67,
+     "block_id": 6,
+     "text": "图 5-11 预测结果展示界面"
+    },
+    {
+     "page": 69,
+     "block_id": 6,
+     "text": "图 5-14 登出后界面"
+    }
+   ],
    "assets": [],
    "caption_candidates": [
     {
@@ -646,7 +737,98 @@
   }
  },
  "unmatched": {
-  "legends": [],
+  "legends": [
+   {
+    "page": 18,
+    "block_id": 6,
+    "text": "图 2-3 Tanh 函数图像"
+   },
+   {
+    "page": 25,
+    "block_id": 6,
+    "text": "图 2-12 逐点卷积运算示意图"
+   },
+   {
+    "page": 29,
+    "block_id": 5,
+    "text": "图 2-18 CBAM 空间注意力模块"
+   },
+   {
+    "page": 35,
+    "block_id": 5,
+    "text": "图 3-2 VGG16 迁移 UNet 网络结构具体层结构"
+   },
+   {
+    "page": 37,
+    "block_id": 4,
+    "text": "图 3-5 CLAHE 算法预处理后"
+   },
+   {
+    "page": 38,
+    "block_id": 5,
+    "text": "图3-7 图像加灰条数据方法增强后"
+   },
+   {
+    "page": 43,
+    "block_id": 5,
+    "text": "图 3-10 不同迁移方法髋关节分割预测示例"
+   },
+   {
+    "page": 44,
+    "block_id": 4,
+    "text": "表3-4 各经典模型髋关节数据集实验结果"
+   },
+   {
+    "page": 46,
+    "block_id": 5,
+    "text": "图 3-14 不同迁移方法脊椎分割预测示例"
+   },
+   {
+    "page": 47,
+    "block_id": 7,
+    "text": "表3-6 各经典模型脊椎数据集实验结果"
+   },
+   {
+    "page": 53,
+    "block_id": 8,
+    "text": "表4-1 髋关节不同注意力机制 UNet 实验结果"
+   },
+   {
+    "page": 55,
+    "block_id": 6,
+    "text": "图 4-7 本文算法在髋关节验证集上的像素点类别混淆矩阵"
+   },
+   {
+    "page": 57,
+    "block_id": 5,
+    "text": "图4-10 本文算法在脊椎验证集上的像素点类别混淆矩阵"
+   },
+   {
+    "page": 61,
+    "block_id": 6,
+    "text": "图 5-2 骨科影像诊断系统功能模块图"
+   },
+   {
+    "page": 65,
+    "block_id": 6,
+    "text": "图5-7 历史记录界面"
+   },
+   {
+    "page": 66,
+    "block_id": 6,
+    "text": "图5-9 患者图像选择界面"
+   },
+   {
+    "page": 67,
+    "block_id": 6,
+    "text": "图 5-11 预测结果展示界面"
+   },
+   {
+    "page": 69,
+    "block_id": 6,
+    "text": "图 5-14 登出后界面"
+   }
+  ],
   "assets": [],
   "caption_candidates": [
    {

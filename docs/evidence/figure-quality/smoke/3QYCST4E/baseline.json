@@ -95,6 +95,16 @@
   "unmatched": {
    "legends": [
     {
+     "page": 4,
+     "block_id": 9,
+     "text": "Figure 5. Performed knee arthroscopic procedures (N = 993)."
+    },
+    {
+     "page": 5,
+     "block_id": 4,
+     "text": "Activity Level Among the Patients (N = 993)"
+    },
+    {
      "page": 5,
      "block_id": 7,
      "text": "An Overview of the Association of the Localized Cartilage Damage to the Specific Diagnosis in This Material $ ^{a} $"
@@ -152,6 +162,16 @@
  },
  "unmatched": {
   "legends": [
+   {
+    "page": 4,
+    "block_id": 9,
+    "text": "Figure 5. Performed knee arthroscopic procedures (N = 993)."
+   },
+   {
+    "page": 5,
+    "block_id": 4,
+    "text": "Activity Level Among the Patients (N = 993)"
+   },
    {
     "page": 5,
     "block_id": 7,

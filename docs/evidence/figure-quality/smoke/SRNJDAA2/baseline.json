@@ -146,7 +146,33 @@
   "old_entries": 25,
   "new_entries": 21,
   "unmatched": {
-   "legends": [],
+   "legends": [
+    {
+     "page": 1,
+     "block_id": 6,
+     "text": "Figure 11-3 shows the linear relationship between polarization  $ (P_x) $ and mechanical stress  $ (T_{yz}) $ for dried bone. The slope gives the piezoelectric constant  $ (d_{14}) $, which is about 0.2 pC/N."
+    },
+    {
+     "page": 8,
+     "block_id": 10,
+     "text": "Figure 11-10. Chemical structure of polyvinylidene fluoride."
+    },
+    {
+     "page": 10,
+     "block_id": 7,
+     "text": "Figure 11-13. Teflon $ ^{\\circledR} $ electret film wrapped around the femur of rabbit."
+    },
+    {
+     "page": 11,
+     "block_id": 5,
+     "text": "Figure 11-16. X-ray photograph of the femur of rat with a piezoelectric film of poly-γ-methyl-L-glutamate on right side and with an electret film of Teflon at left side, observed ten, sixteen, and thirty-eight days after operation."
+    },
+    {
+     "page": 13,
+     "block_id": 5,
+     "text": "Figure 11-19. X-ray photograph taken three weeks after a collagen film was placed in the gap of right side fibula of rabbit."
+    }
+   ],
    "assets": [],
    "caption_candidates": [
     {
@@ -283,7 +309,33 @@
   }
  },
  "unmatched": {
-  "legends": [],
+  "legends": [
+   {
+    "page": 1,
+    "block_id": 6,
+    "text": "Figure 11-3 shows the linear relationship between polarization  $ (P_x) $ and mechanical stress  $ (T_{yz}) $ for dried bone. The slope gives the piezoelectric constant  $ (d_{14}) $, which is about 0.2 pC/N."
+   },
+   {
+    "page": 8,
+    "block_id": 10,
+    "text": "Figure 11-10. Chemical structure of polyvinylidene fluoride."
+   },
+   {
+    "page": 10,
+    "block_id": 7,
+    "text": "Figure 11-13. Teflon $ ^{\\circledR} $ electret film wrapped around the femur of rabbit."
+   },
+   {
+    "page": 11,
+    "block_id": 5,
+    "text": "Figure 11-16. X-ray photograph of the femur of rat with a piezoelectric film of poly-γ-methyl-L-glutamate on right side and with an electret film of Teflon at left side, observed ten, sixteen, and thirty-eight days after operation."
+   },
+   {
+    "page": 13,
+    "block_id": 5,
+    "text": "Figure 11-19. X-ray photograph taken three weeks after a collagen film was placed in the gap of right side fibula of rabbit."
+   }
+  ],
   "assets": [],
   "caption_candidates": [
    {
