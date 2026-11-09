@@ -8295,6 +8295,24 @@ def test_figure_range_body_reference_with_asset_rejected() -> None:
     assert unmatched == 0, f"Expected 0 unmatched legends, got {unmatched}"
 
 
+
+
+def test_body_figure_1a_reference_is_not_promoted_to_caption() -> None:
+    from paperforge.worker.ocr_figures import build_figure_inventory
+
+    inventory = build_figure_inventory([{
+        "block_id": "body-1",
+        "role": "body_paragraph",
+        "page": 1,
+        "text": "Figure 1A shows the measured outcome.",
+        "bbox": [100, 500, 700, 530],
+        "page_width": 1200,
+        "page_height": 1700,
+        "zone": "body_zone",
+    }])
+
+    assert not inventory.get("matched_figures", [])
+    assert not inventory.get("unmatched_legends", [])
 def test_display_zone_caption_not_rejected_as_inline_ref() -> None:
     """Display zone legend_like caption 'Figure 3 shows...' is kept."""
     from paperforge.worker.ocr_figures import build_figure_inventory

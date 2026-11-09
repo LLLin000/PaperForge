@@ -15,7 +15,7 @@ from paperforge.worker.ocr_scores import score_figure_caption, score_figure_matc
 _FIGURE_NUMBER_PATTERN = re.compile(
     r"(?:Figure|Fig\.?|Supplementary\s+Figure|Supplementary\s+Fig\.?|"
     r"Extended\s+Data\s+Figure|Extended\s+Data\s+Fig\.?|图|圖|ͼ)"
-    r"\s*(?:(?P<prefix>[A-Z])\.?\s*)?(?P<number>\d+(?:\.\d+)?(?:[-–—]\d+(?:\.\d+)?)?)",
+    r"\s*(?:(?P<prefix>[A-Z])\.?\s*)?(?P<number>\d+(?:\.\d+)?(?:[-–—]\d+(?:\.\d+)?)?)(?P<alpha_suffix>(?-i:[A-Z]))?",
     flags=re.IGNORECASE,
 )
 
@@ -208,7 +208,8 @@ def _extract_figure_marker(text: str) -> dict:
 
     namespace = _extract_figure_namespace(text, prefix)
 
-    figure_label = f"{prefix or ''}{(number_raw or '').replace('–', '-').replace('—', '-')}"
+    alpha_suffix = m.group("alpha_suffix") or ""
+    figure_label = f"{prefix or ''}{(number_raw or '').replace('–', '-').replace('—', '-')}{alpha_suffix}"
     marker_prefix = "Figure"
     if re.search(r"supplementary", m.group(0), re.IGNORECASE):
         marker_prefix = "Supplementary Figure"
@@ -527,8 +528,12 @@ def _finalize_figure_identities(figure_inventory: dict) -> None:
         else:
             prefix = marker["prefix"]
             numeric_label = label[len(prefix):] if prefix and label.startswith(prefix) else label
-            if re.fullmatch(r"\d+", numeric_label):
-                base_id = _format_figure_id(namespace, int(numeric_label), alpha_prefix=marker["alpha_prefix"])
+            numeric_match = re.fullmatch(r"(\d+)([A-Z]?)", numeric_label)
+            if numeric_match:
+                suffix = "" if numeric_match.group(2) == "A" else numeric_match.group(2)
+                base_id = _format_figure_id(
+                    namespace, int(numeric_match.group(1)), alpha_prefix=marker["alpha_prefix"]
+                ) + suffix
             else:
                 id_prefix = {
                     "main": "figure_",
