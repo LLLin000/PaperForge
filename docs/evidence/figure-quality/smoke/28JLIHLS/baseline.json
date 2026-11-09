@@ -1,0 +1,114 @@
+{
+ "dry_run": {
+  "key": "28JLIHLS",
+  "identity": {
+   "old": {
+    "entries": 6,
+    "unique_ids": 6,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 6,
+    "unique_ids": 6,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "",
+    "figure_007": "figure_007"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [
+    "figure_005"
+   ],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 20,
+   "new_render_files": 34,
+   "render_added": [
+    "assets/figures/figure_006.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "render/figures/figure_006.md",
+    "render/figures/orphan_004.md",
+    "render/figures/orphan_005.md",
+    "render/figures/orphan_006.md",
+    "render/figures/orphan_007.md",
+    "render/figures/orphan_008.md",
+    "render/figures/orphan_009.md",
+    "render/figures/orphan_010.md"
+   ],
+   "render_removed": [
+    "assets/figures/figure_005.jpg",
+    "render/figures/figure_005.md"
+   ],
+   "embeds": 7,
+   "embeds_retargeted": 1,
+   "embeds_missing_new_id": [
+    {
+     "kind": "figures",
+     "old_target": "render/figures/figure_005.md",
+     "new_id": "",
+     "reason": "caption_present_unmatched"
+    }
+   ]
+  },
+  "tables": {
+   "old_tables": 1,
+   "new_tables": 1,
+   "claim_changes": [
+    {
+     "page": 3,
+     "caption": "7",
+     "old": "9",
+     "new": ""
+    }
+   ]
+  },
+  "content": {
+   "old_rows": 161,
+   "new_rows": 161,
+   "role_removed": {
+    "figure_asset": 2,
+    "figure_inner_text": 2,
+    "reference_item": 1
+   },
+   "role_added": {
+    "body_paragraph": 2,
+    "noise": 1,
+    "media_asset": 2
+   },
+   "old_body_chars": 25234,
+   "new_body_chars": 25554,
+   "old_text_chars": 46970,
+   "new_text_chars": 46970,
+   "old_fulltext_chars": 41844
+  },
+  "new_manifest": {
+   "figures": 6,
+   "tables": 1,
+   "orphans": 10
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "28JLIHLS",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 1,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 46970,
+  "new_text_chars": 46970,
+  "old_entries": 6,
+  "new_entries": 6
+ }
+}

@@ -1,0 +1,83 @@
+{
+ "dry_run": {
+  "key": "2AZ2EGQB",
+  "identity": {
+   "old": {
+    "entries": 2,
+    "unique_ids": 2,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 4,
+    "unique_ids": 4,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 18,
+   "new_render_files": 20,
+   "render_added": [
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "render/figures/figure_003.md",
+    "render/figures/figure_004.md"
+   ],
+   "render_removed": [
+    "assets/orphans/orphan_006.jpg",
+    "render/figures/orphan_006.md"
+   ],
+   "embeds": 3,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 1,
+   "new_tables": 1,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 223,
+   "new_rows": 223,
+   "role_removed": {
+    "non_body_insert": 3,
+    "structured_insert": 1,
+    "media_asset": 2,
+    "backmatter_body": 1
+   },
+   "role_added": {
+    "unknown_structural": 3,
+    "body_paragraph": 2,
+    "figure_asset": 2
+   },
+   "old_body_chars": 36034,
+   "new_body_chars": 36234,
+   "old_text_chars": 57671,
+   "new_text_chars": 57671,
+   "old_fulltext_chars": 54045
+  },
+  "new_manifest": {
+   "figures": 4,
+   "tables": 1,
+   "orphans": 5
+  },
+  "new_orphans": 2
+ },
+ "structural": {
+  "key": "2AZ2EGQB",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 57671,
+  "new_text_chars": 57671,
+  "old_entries": 2,
+  "new_entries": 4
+ }
+}

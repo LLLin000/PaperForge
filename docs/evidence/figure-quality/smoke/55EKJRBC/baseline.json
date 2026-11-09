@@ -1,0 +1,98 @@
+{
+ "dry_run": {
+  "key": "55EKJRBC",
+  "identity": {
+   "old": {
+    "entries": 5,
+    "unique_ids": 5,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 4,
+    "unique_ids": 4,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [
+    "figure_001"
+   ],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 30,
+   "new_render_files": 30,
+   "render_added": [
+    "assets/orphans/orphan_011.jpg",
+    "render/figures/orphan_011.md"
+   ],
+   "render_removed": [
+    "assets/figures/figure_001.jpg",
+    "render/figures/figure_001.md"
+   ],
+   "embeds": 5,
+   "embeds_retargeted": 1,
+   "embeds_missing_new_id": [
+    {
+     "kind": "figures",
+     "old_target": "render/figures/figure_001.md",
+     "new_id": "",
+     "reason": "caption_present_unmatched"
+    }
+   ]
+  },
+  "tables": {
+   "old_tables": 0,
+   "new_tables": 0,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 241,
+   "new_rows": 241,
+   "role_removed": {
+    "noise": 4,
+    "body_paragraph": 3,
+    "structured_insert": 4,
+    "figure_inner_text": 9,
+    "figure_asset": 1,
+    "backmatter_body": 1
+   },
+   "role_added": {
+    "media_asset": 1,
+    "authors": 1,
+    "ocr_text_missing": 8,
+    "subsection_heading": 4,
+    "figure_caption_candidate": 1,
+    "reference_item": 7
+   },
+   "old_body_chars": 35478,
+   "new_body_chars": 36214,
+   "old_text_chars": 71046,
+   "new_text_chars": 71046,
+   "old_fulltext_chars": 52612
+  },
+  "new_manifest": {
+   "figures": 4,
+   "tables": 0,
+   "orphans": 11
+  },
+  "new_orphans": 2
+ },
+ "structural": {
+  "key": "55EKJRBC",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 1,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 71046,
+  "new_text_chars": 71046,
+  "old_entries": 5,
+  "new_entries": 4
+ }
+}
