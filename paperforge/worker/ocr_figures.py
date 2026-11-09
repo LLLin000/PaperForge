@@ -463,7 +463,8 @@ def _finalize_figure_identities(figure_inventory: dict) -> None:
         if rejected_asset_ids:
             conflicts.append({
                 "type": "identity_conflict",
-                "status": "HOLD",
+                "status": "RESOLVED_EXCLUSIVE_OWNER",
+                "delivery_allowed": True,
                 "reason": "asset_already_owned_by_different_caption",
                 "figure_label": label,
                 "figure_namespace": namespace,
@@ -499,7 +500,8 @@ def _finalize_figure_identities(figure_inventory: dict) -> None:
             if different_caption is not None:
                 conflicts.append({
                     "type": "identity_conflict",
-                    "status": "HOLD",
+                    "status": "RESOLVED_UNIQUE_IDENTITY",
+                    "delivery_allowed": True,
                     "figure_label": label,
                     "figure_namespace": namespace,
                     "page": page,
@@ -547,6 +549,7 @@ def _finalize_figure_identities(figure_inventory: dict) -> None:
                     conflicts.append({
                         "type": "identity_conflict",
                         "status": "HOLD",
+                        "delivery_allowed": True,
                         "reason": reason,
                         "figure_label": label,
                         "figure_namespace": namespace,
@@ -564,6 +567,14 @@ def _finalize_figure_identities(figure_inventory: dict) -> None:
                 assets_by_id[asset_id] for asset_id in sorted(chosen_ids) if asset_id in assets_by_id
             ]
             same_page_label["asset_block_ids"] = sorted(chosen_ids)
+            # A strict-superset shrink releases assets the merged figure no
+            # longer claims, so a different caption can own them later.
+            for released_id in set(kept_asset_ids) - chosen_ids:
+                released_asset = assets_by_id.get(released_id, {})
+                released_key = (int(released_asset.get("page", page) or page), released_id)
+                owner = asset_owners.get(released_key)
+                if owner is not None and owner[:3] == ownership_identity:
+                    asset_owners.pop(released_key, None)
             for asset_id in chosen_ids:
                 asset = assets_by_id.get(asset_id, {})
                 asset_owners[(int(asset.get("page", page) or page), asset_id)] = (
