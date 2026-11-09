@@ -185,17 +185,33 @@ def _render_page_with_overlays(
             for bbox, color, label in overlays:
                 if not bbox or len(bbox) != 4:
                     continue
-                x0, y0, x1, y1 = [int(v * scale) for v in bbox]
+                x0, y0, x1, y1 = [int(v) for v in bbox]
+                x0 = max(0, min(img.width, x0))
+                y0 = max(0, min(img.height, y0))
+                x1 = max(0, min(img.width, x1))
+                y1 = max(0, min(img.height, y1))
                 draw.rectangle((x0, y0, x1, y1), outline=color, width=3)
                 draw.text((x0, max(0, y0 - 12)), str(label), fill=color)
-        if img.width > 1200:
-            ratio = 1200 / img.width
-            img = img.resize((1200, int(img.height * ratio)))
-        img.save(out_path, "JPEG", quality=55, optimize=True)
+        if img.width > 700:
+            ratio = 700 / img.width
+            img = img.resize((700, int(img.height * ratio)))
+        img.save(out_path, "JPEG", quality=35, optimize=True)
         doc.close()
 
 
-def _overlay_crop(pdf_path: Path, page_num: int, bbox: list, out_path: Path, scale: float = 1.0) -> None:
+def ocr_to_pdf_bbox(bbox, ocr_width, ocr_height, pdf_width, pdf_height):
+    sx = pdf_width / ocr_width if ocr_width else 1.0
+    sy = pdf_height / ocr_height if ocr_height else 1.0
+    return [bbox[0] * sx, bbox[1] * sy, bbox[2] * sx, bbox[3] * sy]
+
+
+def render_scale_for_page(ocr_width, ocr_height, pdf_width, pdf_height):
+    if not pdf_width:
+        return 1.0
+    return (ocr_width or pdf_width) / pdf_width
+
+
+def _overlay_crop(pdf_path, page_num, bbox, out_path, scale=1.0):
     if fitz is None or Image is None:
         return
     doc = fitz.open(str(pdf_path))
@@ -204,14 +220,16 @@ def _overlay_crop(pdf_path: Path, page_num: int, bbox: list, out_path: Path, sca
         return
     page = doc[page_num - 1]
     mat = fitz.Matrix(scale, scale)
-    # crop manually
-    full = page.get_pixmap(matrix=mat)
-    img = Image.frombytes("RGB", [full.width, full.height], full.samples)
-    x0, y0, x1, y1 = [int(v * scale) for v in bbox]
+    pix = page.get_pixmap(matrix=mat)
+    img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+    x0, y0, x1, y1 = [int(v) for v in bbox]
     x0, y0 = max(0, x0), max(0, y0)
     x1, y1 = min(img.width, x1), min(img.height, y1)
     crop = img.crop((x0, y0, x1, y1))
-    crop.save(out_path, "JPEG", quality=55, optimize=True)
+    if crop.width > 400:
+        ratio = 400 / crop.width
+        crop = crop.resize((400, int(crop.height * ratio)))
+    crop.save(out_path, "JPEG", quality=35, optimize=True)
     doc.close()
 
 
@@ -313,6 +331,13 @@ def run_key(vault: Path, ocr_root: Path, key: str, out_dir: Path) -> dict[str, A
     unmatched_assets = inv.get("unmatched_assets", []) or []
     caption_rows = [r for r in replay_rows if str(r.get("role")) in {"figure_caption", "figure_caption_candidate"}]
 
+    page_ocr_size = {}
+    for source in (replay_rows, unmatched_legends, unmatched_assets, caption_rows):
+        for item in source:
+            pg = item.get("page")
+            if pg and item.get("page_width") and item.get("page_height") and pg not in page_ocr_size:
+                page_ocr_size[pg] = (item.get("page_width"), item.get("page_height"))
+
     pages = set(
         int(f.get("page", 0) or 0)
         for f in replay_figures
@@ -335,28 +360,39 @@ def run_key(vault: Path, ocr_root: Path, key: str, out_dir: Path) -> dict[str, A
             if out_path.is_file():
                 continue
             overlays = []
-            # matched figure assets
             for f in replay_figures:
                 for a in (f.get("matched_assets") or []):
                     if int(a.get("page", 0) or 0) == pg and a.get("bbox"):
                         overlays.append((a.get("bbox"), (0, 0, 255), str(f.get("figure_id"))))
-            # unmatched assets
             for a in unmatched_assets:
                 if int(a.get("page", 0) or 0) == pg and a.get("bbox"):
                     overlays.append((a.get("bbox"), (255, 140, 0), "unmatched_asset"))
-            # unmatched legends
             for u in unmatched_legends:
                 if int(u.get("page", 0) or 0) == pg and u.get("bbox"):
                     overlays.append((u.get("bbox"), (255, 0, 0), "unmatched_legend"))
-            # caption candidate rows
             for r in caption_rows:
                 if int(r.get("page", 0) or 0) == pg and r.get("bbox"):
                     overlays.append((r.get("bbox"), (0, 180, 0), "caption_candidate"))
-            _render_page_with_overlays(pdf, pg, overlays, out_path)
+            ocr_w, ocr_h = page_ocr_size.get(pg, (None, None))
+            doc = fitz.open(str(pdf))
+            page = doc[pg - 1]
+            if not ocr_w:
+                ocr_w, ocr_h = page.rect.width, page.rect.height
+            scale = render_scale_for_page(ocr_w, ocr_h, page.rect.width, page.rect.height)
+            doc.close()
+            _render_page_with_overlays(pdf, pg, overlays, out_path, scale)
 
         for f in replay_figures:
             fid = str(f.get("figure_id"))
             pg = int(f.get("page", 0) or 0)
+            ocr_w, ocr_h = page_ocr_size.get(pg, (None, None))
+            if pdf is not None:
+                doc = fitz.open(str(pdf))
+                page = doc[pg - 1]
+                if not ocr_w:
+                    ocr_w, ocr_h = page.rect.width, page.rect.height
+                scale = render_scale_for_page(ocr_w, ocr_h, page.rect.width, page.rect.height)
+                doc.close()
             for ai, a in enumerate(f.get("matched_assets") or []):
                 bbox = a.get("bbox")
                 if bbox and len(bbox) == 4:
@@ -364,7 +400,7 @@ def run_key(vault: Path, ocr_root: Path, key: str, out_dir: Path) -> dict[str, A
                     if not crop_path.is_file():
                         import contextlib
                         with contextlib.suppress(Exception):
-                            _overlay_crop(pdf, pg, bbox, crop_path)
+                            _overlay_crop(pdf, pg, bbox, crop_path, scale)
 
     baseline = structural_baseline(key, entry, ocr_root)
     baseline["unmatched"] = {
