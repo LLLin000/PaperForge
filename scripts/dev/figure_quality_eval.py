@@ -34,7 +34,7 @@ OCR_DEFAULT = None
 SET_DIR = ROOT / "docs" / "evidence" / "figure-quality" / "sets"
 OUT_ROOT = ROOT / "docs" / "evidence" / "figure-quality"
 
-LABEL_FIELDS = ["key", "figure_id", "page", "expected_owner", "caption_ok",
+LABEL_FIELDS = ["key", "figure_id", "page", "expected_owner", "current_assets", "caption_ok",
                 "panels_ok", "crop_ok", "delivery_ok", "notes", "reviewer", "reviewed_at"]
 
 
@@ -215,12 +215,12 @@ def run_key(vault: Path, ocr_root: Path, key: str, out_dir: Path) -> dict[str, A
                 str(a.get("block_id")) for a in (f.get("matched_assets") or [])
                 if a.get("block_id") is not None
             ]
-            expected = " ".join(asset_ids)
             row = {
                 "key": key,
                 "figure_id": str(f.get("figure_id")),
                 "page": int(f.get("page", 0) or 0),
-                "expected_owner": expected,
+                "expected_owner": "",
+                "current_assets": " ".join(asset_ids),
                 "caption_ok": None,
                 "panels_ok": None,
                 "crop_ok": None,
