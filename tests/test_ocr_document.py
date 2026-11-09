@@ -3233,6 +3233,67 @@ def test_figure_caption_candidate_demoted_in_body() -> None:
     ]
     ds = DocumentStructure(body_end_page=5)
     _resolve_ambiguous_candidates(blocks, ds, {})
+
+def test_figure_caption_candidate_multi_panel_caption_not_demoted() -> None:
+    """Long multi-panel figure caption must not be demoted to body_paragraph."""
+    from paperforge.worker.ocr_document import (
+        DocumentStructure,
+        _resolve_ambiguous_candidates,
+    )
+
+    blocks = [
+        {
+            "page": 3,
+            "role": "figure_caption_candidate",
+            "text": "Fig. 5 (a) Immunofluorescence detection of cellular response. "
+            "(b) Record of lysis process. (c) Live-Dead assessment. "
+            "(d) Quantitative analysis. (Statistical significance was set as ***p<0.001.)",
+            "bbox": [100, 200, 500, 230],
+        },
+    ]
+    ds = DocumentStructure(body_end_page=5)
+    _resolve_ambiguous_candidates(blocks, ds, {})
+    assert blocks[0]["role"] != "body_paragraph"
+
+
+def test_figure_caption_candidate_body_prose_negative_control_demoted() -> None:
+    """Body prose that references a figure must still be demoted."""
+    from paperforge.worker.ocr_document import (
+        DocumentStructure,
+        _resolve_ambiguous_candidates,
+    )
+
+    blocks = [
+        {
+            "page": 3,
+            "role": "figure_caption_candidate",
+            "text": "Fig. 26c addresses a limiting case. The trend reverses at higher "
+            "concentrations. This is consistent with prior work.",
+            "bbox": [100, 200, 500, 230],
+        },
+    ]
+    ds = DocumentStructure(body_end_page=5)
+    _resolve_ambiguous_candidates(blocks, ds, {})
+    assert blocks[0]["role"] == "body_paragraph"
+
+def test_figure_caption_candidate_body_prose_with_panel_markers_demoted() -> None:
+    """Body prose containing (a)/(b) markers must still be demoted."""
+    from paperforge.worker.ocr_document import (
+        DocumentStructure,
+        _resolve_ambiguous_candidates,
+    )
+
+    blocks = [
+        {
+            "page": 3,
+            "role": "figure_caption_candidate",
+            "text": "The treatment (a) reduced swelling. The second cohort (b) improved. "
+            "These findings suggest a novel mechanism.",
+            "bbox": [100, 200, 500, 230],
+        },
+    ]
+    ds = DocumentStructure(body_end_page=5)
+    _resolve_ambiguous_candidates(blocks, ds, {})
     assert blocks[0]["role"] == "body_paragraph"
 
 
