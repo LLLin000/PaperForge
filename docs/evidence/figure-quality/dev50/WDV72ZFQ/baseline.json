@@ -1,0 +1,181 @@
+{
+ "dry_run": {
+  "key": "WDV72ZFQ",
+  "identity": {
+   "old": {
+    "entries": 6,
+    "unique_ids": 5,
+    "duplicate_extra": 1
+   },
+   "new": {
+    "entries": 5,
+    "unique_ids": 5,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": [
+    {
+     "old_id": "figure_002",
+     "old_assets": [
+      "7",
+      "9"
+     ],
+     "new_id": "figure_002",
+     "new_assets": [
+      "13",
+      "14",
+      "15",
+      "16",
+      "7",
+      "9"
+     ]
+    }
+   ]
+  },
+  "delivery": {
+   "old_render_files": 23,
+   "new_render_files": 46,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/figures/figure_005.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/tables/table_001.jpg",
+    "assets/tables/table_002.jpg",
+    "assets/tables/table_003.jpg",
+    "assets/tables/table_004.jpg",
+    "assets/tables/table_005.jpg",
+    "assets/tables/table_006.jpg",
+    "assets/tables/table_007.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 6,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 7,
+   "new_tables": 7,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 417,
+   "new_rows": 417,
+   "role_removed": {
+    "authors": 1,
+    "body_paragraph": 2,
+    "frontmatter_noise": 2,
+    "subsection_heading": 1,
+    "reference_item": 4
+   },
+   "role_added": {
+    "noise": 4,
+    "figure_inner_text": 6
+   },
+   "old_body_chars": 57968,
+   "new_body_chars": 55451,
+   "old_text_chars": 108528,
+   "new_text_chars": 108528,
+   "old_fulltext_chars": 81738
+  },
+  "new_manifest": {
+   "figures": 5,
+   "tables": 7,
+   "orphans": 11
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "WDV72ZFQ",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 108528,
+  "new_text_chars": 108528,
+  "old_entries": 6,
+  "new_entries": 5,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 3,
+     "text": "Figure 1. Different types of inks used in 3D printed electronics."
+    },
+    {
+     "page": 2,
+     "block_id": 17,
+     "text": "Figure 2. a) Metallic nanoparticles suspended in a liquid medium, b) organic additives prevent nanoparticles contact with each other, and c) initial contact with neighboring metallic nanoparticles."
+    },
+    {
+     "page": 3,
+     "block_id": 3,
+     "text": "Figure 3. Parameters of metallic nanoparticle inks. $ ^{[15]} $"
+    },
+    {
+     "page": 3,
+     "block_id": 8,
+     "text": "Figure 4. Choice of metallic nanoparticles for metallic nanoparticle inks."
+    },
+    {
+     "page": 16,
+     "block_id": 3,
+     "text": "Figure 5. Ideal essential properties of inks, printers, and sintering process for progress in 3D printed electronics."
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 3,
+    "text": "Figure 1. Different types of inks used in 3D printed electronics."
+   },
+   {
+    "page": 2,
+    "block_id": 17,
+    "text": "Figure 2. a) Metallic nanoparticles suspended in a liquid medium, b) organic additives prevent nanoparticles contact with each other, and c) initial contact with neighboring metallic nanoparticles."
+   },
+   {
+    "page": 3,
+    "block_id": 3,
+    "text": "Figure 3. Parameters of metallic nanoparticle inks. $ ^{[15]} $"
+   },
+   {
+    "page": 3,
+    "block_id": 8,
+    "text": "Figure 4. Choice of metallic nanoparticles for metallic nanoparticle inks."
+   },
+   {
+    "page": 16,
+    "block_id": 3,
+    "text": "Figure 5. Ideal essential properties of inks, printers, and sintering process for progress in 3D printed electronics."
+   }
+  ]
+ }
+}

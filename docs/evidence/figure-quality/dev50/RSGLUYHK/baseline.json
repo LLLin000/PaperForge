@@ -1,0 +1,236 @@
+{
+ "dry_run": {
+  "key": "RSGLUYHK",
+  "identity": {
+   "old": {
+    "entries": 8,
+    "unique_ids": 8,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 8,
+    "unique_ids": 8,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005",
+    "figure_006": "figure_006",
+    "figure_007": "figure_007",
+    "figure_008": "figure_008"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 47,
+   "new_render_files": 94,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/figures/figure_005.jpg",
+    "assets/figures/figure_006.jpg",
+    "assets/figures/figure_007.jpg",
+    "assets/figures/figure_008.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/orphans/orphan_013.jpg",
+    "assets/orphans/orphan_014.jpg",
+    "assets/orphans/orphan_015.jpg",
+    "assets/orphans/orphan_016.jpg",
+    "assets/orphans/orphan_017.jpg",
+    "assets/orphans/orphan_018.jpg",
+    "assets/orphans/orphan_019.jpg",
+    "assets/orphans/orphan_020.jpg",
+    "assets/orphans/orphan_021.jpg",
+    "assets/orphans/orphan_022.jpg",
+    "assets/orphans/orphan_023.jpg",
+    "assets/orphans/orphan_024.jpg",
+    "assets/orphans/orphan_025.jpg",
+    "assets/orphans/orphan_026.jpg",
+    "assets/orphans/orphan_027.jpg",
+    "assets/orphans/orphan_028.jpg",
+    "assets/orphans/orphan_029.jpg",
+    "assets/orphans/orphan_030.jpg",
+    "assets/orphans/orphan_031.jpg",
+    "assets/orphans/orphan_032.jpg",
+    "assets/orphans/orphan_033.jpg",
+    "assets/orphans/orphan_034.jpg",
+    "assets/orphans/orphan_035.jpg",
+    "assets/orphans/orphan_036.jpg",
+    "assets/orphans/orphan_037.jpg",
+    "assets/orphans/orphan_038.jpg",
+    "assets/orphans/orphan_039.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 8,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 0,
+   "new_tables": 0,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 243,
+   "new_rows": 243,
+   "role_removed": {
+    "reference_item": 1
+   },
+   "role_added": {
+    "body_paragraph": 1
+   },
+   "old_body_chars": 22463,
+   "new_body_chars": 22523,
+   "old_text_chars": 36528,
+   "new_text_chars": 36528,
+   "old_fulltext_chars": 30157
+  },
+  "new_manifest": {
+   "figures": 8,
+   "tables": 0,
+   "orphans": 39
+  },
+  "new_orphans": 1
+ },
+ "structural": {
+  "key": "RSGLUYHK",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 36528,
+  "new_text_chars": 36528,
+  "old_entries": 8,
+  "new_entries": 8,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      85,
+      274,
+      277,
+      308
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 11,
+     "text": "Fig. 1 A schematic illustration of the preparation process and formation mechanism of the HP(AAm/AA)–CS–Fe $ ^{3+} $ hydrogel."
+    },
+    {
+     "page": 3,
+     "block_id": 32,
+     "text": "Fig. 2 (a) Tensile stress–strain curves, and (b) the corresponding stress and toughness of HP(AAm/AA)–CS hydrogels with different mass ratios of CS/(CS + AAm + AA); (c) tensile stress–strain curves with different Fe $ ^{3+} $ ion concentrations, and (d) corresponding stress and toughness; (e) tensil"
+    },
+    {
+     "page": 4,
+     "block_id": 10,
+     "text": "Fig. 3 (a) FTIR spectra of HP(AAm/AA)–CS and HP(AAm/AA)–CS–Fe $ ^{3+} $ hydrogels; and (b) UV–vis spectra of HP(AAm/AA)–CS–Fe $ ^{3+} $ hydrogels with different soaking times."
+    },
+    {
+     "page": 4,
+     "block_id": 23,
+     "text": "Fig. 4 (a and b) Tensile and compression cycling tests, respectively, on the HP(AAm/AA)–CS and HP(AAm/AA)–CS–Fe $ ^{3+} $ hydrogels; (c) tensile cyclic loading–unloading curves after different resting times of the HP(AAm/AA)–CS–Fe $ ^{3+} $ hydrogel at room temperature, and (d) the corresponding rec"
+    },
+    {
+     "page": 5,
+     "block_id": 13,
+     "text": "Fig. 5 (a and b) Dynamic storage modulus ( $ G' $) and loss modulus ( $ G'' $) of HP(AAm/AA)–CS and HP(AAm/AA)–CS–Fe $ ^{3+} $ hydrogels as a function of (a) strain and (b) frequency. (c) Self-recovery testing of HP(AAm/AA)–CS–Fe $ ^{3+} $ via time sweep measurement. (d and e) Loading demonstration "
+    },
+    {
+     "page": 5,
+     "block_id": 30,
+     "text": "Fig. 6 (a) Diagram showing the extent of swelling after 25 days, and (b) swelling curves of HP(AAm/AA)-CS and HP(AAm/AA)-CS-Fe³⁺ hydrogels in deionized water. (c) Swelling behavior of the HP(AAm/AA)-CS-Fe³⁺ hydrogel in different pH solutions, and (d) swelling behavior of the HP(AAm/AA)-CS-Fe³⁺ hydro"
+    },
+    {
+     "page": 6,
+     "block_id": 17,
+     "text": "Fig. 7 (a) Conductive properties of HP(AAm/AA)–CS–Fe $ ^{3+} $ hydrogel after different soaking times; (b) relative resistance changes for the HP(AAm/AA)–CS–Fe $ ^{3+} $ hydrogel under various tensile strains (0–500%); (c and d) relative resistance changes of the HP(AAm/AA)–CS–Fe $ ^{3+} $ hydrogel "
+    },
+    {
+     "page": 6,
+     "block_id": 30,
+     "text": "Fig. 8 (a–d) Relative resistance change for HP(AAm/AA)–CS–Fe $ ^{3+} $ hydrogel strain sensors applied to various parts of the human body under different bending conditions: (a) neck, (b) elbow joint, (c) wrist, and (d) knee. (e) Relative resistance change for the underwater stretching of the HP(AAm"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     85,
+     274,
+     277,
+     308
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 11,
+    "text": "Fig. 1 A schematic illustration of the preparation process and formation mechanism of the HP(AAm/AA)–CS–Fe $ ^{3+} $ hydrogel."
+   },
+   {
+    "page": 3,
+    "block_id": 32,
+    "text": "Fig. 2 (a) Tensile stress–strain curves, and (b) the corresponding stress and toughness of HP(AAm/AA)–CS hydrogels with different mass ratios of CS/(CS + AAm + AA); (c) tensile stress–strain curves with different Fe $ ^{3+} $ ion concentrations, and (d) corresponding stress and toughness; (e) tensil"
+   },
+   {
+    "page": 4,
+    "block_id": 10,
+    "text": "Fig. 3 (a) FTIR spectra of HP(AAm/AA)–CS and HP(AAm/AA)–CS–Fe $ ^{3+} $ hydrogels; and (b) UV–vis spectra of HP(AAm/AA)–CS–Fe $ ^{3+} $ hydrogels with different soaking times."
+   },
+   {
+    "page": 4,
+    "block_id": 23,
+    "text": "Fig. 4 (a and b) Tensile and compression cycling tests, respectively, on the HP(AAm/AA)–CS and HP(AAm/AA)–CS–Fe $ ^{3+} $ hydrogels; (c) tensile cyclic loading–unloading curves after different resting times of the HP(AAm/AA)–CS–Fe $ ^{3+} $ hydrogel at room temperature, and (d) the corresponding rec"
+   },
+   {
+    "page": 5,
+    "block_id": 13,
+    "text": "Fig. 5 (a and b) Dynamic storage modulus ( $ G' $) and loss modulus ( $ G'' $) of HP(AAm/AA)–CS and HP(AAm/AA)–CS–Fe $ ^{3+} $ hydrogels as a function of (a) strain and (b) frequency. (c) Self-recovery testing of HP(AAm/AA)–CS–Fe $ ^{3+} $ via time sweep measurement. (d and e) Loading demonstration "
+   },
+   {
+    "page": 5,
+    "block_id": 30,
+    "text": "Fig. 6 (a) Diagram showing the extent of swelling after 25 days, and (b) swelling curves of HP(AAm/AA)-CS and HP(AAm/AA)-CS-Fe³⁺ hydrogels in deionized water. (c) Swelling behavior of the HP(AAm/AA)-CS-Fe³⁺ hydrogel in different pH solutions, and (d) swelling behavior of the HP(AAm/AA)-CS-Fe³⁺ hydro"
+   },
+   {
+    "page": 6,
+    "block_id": 17,
+    "text": "Fig. 7 (a) Conductive properties of HP(AAm/AA)–CS–Fe $ ^{3+} $ hydrogel after different soaking times; (b) relative resistance changes for the HP(AAm/AA)–CS–Fe $ ^{3+} $ hydrogel under various tensile strains (0–500%); (c and d) relative resistance changes of the HP(AAm/AA)–CS–Fe $ ^{3+} $ hydrogel "
+   },
+   {
+    "page": 6,
+    "block_id": 30,
+    "text": "Fig. 8 (a–d) Relative resistance change for HP(AAm/AA)–CS–Fe $ ^{3+} $ hydrogel strain sensors applied to various parts of the human body under different bending conditions: (a) neck, (b) elbow joint, (c) wrist, and (d) knee. (e) Relative resistance change for the underwater stretching of the HP(AAm"
+   }
+  ]
+ }
+}

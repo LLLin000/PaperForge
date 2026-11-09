@@ -1,0 +1,407 @@
+{
+ "dry_run": {
+  "key": "IN8LEK6F",
+  "identity": {
+   "old": {
+    "entries": 14,
+    "unique_ids": 14,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 14,
+    "unique_ids": 14,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005",
+    "figure_006": "figure_006",
+    "figure_007": "figure_007",
+    "figure_008": "figure_008",
+    "figure_009": "figure_009",
+    "figure_010": "figure_010",
+    "figure_011": "figure_011",
+    "figure_012": "figure_012",
+    "figure_013": "figure_013",
+    "figure_014": "figure_014"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": [
+    {
+     "old_id": "figure_006",
+     "old_assets": [
+      "2",
+      "3",
+      "4",
+      "5"
+     ],
+     "new_id": "figure_006",
+     "new_assets": [
+      "3",
+      "5"
+     ]
+    }
+   ]
+  },
+  "delivery": {
+   "old_render_files": 46,
+   "new_render_files": 96,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/figures/figure_005.jpg",
+    "assets/figures/figure_006.jpg",
+    "assets/figures/figure_007.jpg",
+    "assets/figures/figure_008.jpg",
+    "assets/figures/figure_009.jpg",
+    "assets/figures/figure_010.jpg",
+    "assets/figures/figure_011.jpg",
+    "assets/figures/figure_012.jpg",
+    "assets/figures/figure_013.jpg",
+    "assets/figures/figure_014.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/orphans/orphan_013.jpg",
+    "assets/orphans/orphan_014.jpg",
+    "assets/orphans/orphan_015.jpg",
+    "assets/orphans/orphan_016.jpg",
+    "assets/orphans/orphan_017.jpg",
+    "assets/orphans/orphan_018.jpg",
+    "assets/orphans/orphan_019.jpg",
+    "assets/orphans/orphan_020.jpg",
+    "assets/orphans/orphan_021.jpg",
+    "assets/orphans/orphan_022.jpg",
+    "assets/orphans/orphan_023.jpg",
+    "assets/orphans/orphan_024.jpg",
+    "assets/orphans/orphan_025.jpg",
+    "assets/orphans/orphan_026.jpg",
+    "assets/orphans/orphan_027.jpg",
+    "assets/orphans/orphan_028.jpg",
+    "assets/orphans/orphan_029.jpg",
+    "assets/orphans/orphan_030.jpg",
+    "assets/orphans/orphan_031.jpg",
+    "assets/tables/table_001.jpg",
+    "assets/tables/table_002.jpg",
+    "assets/tables/table_003.jpg",
+    "render/figures/orphan_030.md",
+    "render/figures/orphan_031.md"
+   ],
+   "render_removed": [],
+   "embeds": 15,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 3,
+   "new_tables": 3,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 179,
+   "new_rows": 179,
+   "role_removed": {
+    "frontmatter_noise": 1,
+    "figure_asset": 2,
+    "reference_item": 2,
+    "backmatter_body": 1
+   },
+   "role_added": {
+    "noise": 2,
+    "media_asset": 2,
+    "body_paragraph": 2
+   },
+   "old_body_chars": 32203,
+   "new_body_chars": 32639,
+   "old_text_chars": 55163,
+   "new_text_chars": 55163,
+   "old_fulltext_chars": 43557
+  },
+  "new_manifest": {
+   "figures": 14,
+   "tables": 3,
+   "orphans": 31
+  },
+  "new_orphans": 5
+ },
+ "structural": {
+  "key": "IN8LEK6F",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 55163,
+  "new_text_chars": 55163,
+  "old_entries": 14,
+  "new_entries": 14,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      69,
+      937,
+      177,
+      973
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      69,
+      1313,
+      185,
+      1353
+     ]
+    },
+    {
+     "page": 8,
+     "bbox": [
+      125,
+      193,
+      592,
+      567
+     ]
+    },
+    {
+     "page": 8,
+     "bbox": [
+      125,
+      570,
+      594,
+      942
+     ]
+    },
+    {
+     "page": 12,
+     "bbox": [
+      116,
+      1009,
+      536,
+      1390
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 3,
+     "text": "Figure 1. A biomechanical example of how bone responds to physical forces, demonstrating relationships between strain amplitude and frequency on bone mass. An optimal relationship has been found in this model with hypertrophy (blue) and atrophy (red) occurring with increased and decreased strain, re"
+    },
+    {
+     "page": 2,
+     "block_id": 6,
+     "text": "Figure 2. Anteroposterior radiographs of the human proximal femur showing the response to physiological loading (A) and osteoporosis (B). (A) In the normal femoral head, trabeculae align along lines of weight-bearing stress and tissue strain patterns. Compressive trabeculae (open arrows) transmit st"
+    },
+    {
+     "page": 3,
+     "block_id": 4,
+     "text": "Figure 3. Bone cells functioning in concert in developing and mature bone. Trichrome hematoxylin and eosin stain with silver nitrate showing calcified tissue (black) and unmineralized osteoid (green). (A) Bone cells form a functional syncytium in which gap junction channels provide direct intercellu"
+    },
+    {
+     "page": 5,
+     "block_id": 3,
+     "text": "Figure 4. Rat growth plate stained with Safranin O, hematoxylin and eosin, and silver nitrate. The growth plate provides an example of physiological endochondral bone formation. The cartilage precursor (pink Safranin O stain) undergoes calcification (black) and then ingrowth of microvasculature, whi"
+    },
+    {
+     "page": 6,
+     "block_id": 3,
+     "text": "Figure 5. DBM model of endochondral ossification. (A) Implantation of DBM granules subcutaneously along the thoracic musculature of CD rats. The implantation of DBM granules results in a temporally predictable sequence of mesenchymal stem/stromal cell infiltration, chondrogenesis, endochondral calci"
+    },
+    {
+     "page": 8,
+     "block_id": 6,
+     "text": "Figure 6. ECM molecules with exposure to PEMFs. (A) Trichrome Safranin O histochemistry of unexposed control ossicles. Gray homogeneous areas are DBM particles (40×). (B) Histochemistry showing increased ECM deposition of aggrecan (dark Safranin O red staining) in ossicles exposed to PEMFs (40×). (C"
+    },
+    {
+     "page": 9,
+     "block_id": 4,
+     "text": "Figure 7. Coordinated proteoglycan and glycosaminoglycan reduction with the onset of calcification. As is typical of physiologic examples of endochondral bone formation, chondrogenesis ceases and chondroid matrix is removed with the onset of calcification. This biphasic process leads to ossification"
+    },
+    {
+     "page": 11,
+     "block_id": 3,
+     "text": "Figure 8. Stimulation of chondrogenesis in endochondral bone formation by PEMFs. Peak of chondrogenesis occurs on day 8 of development in both exposed and unexposed ossicles, with significant increase in aggrecan content in PEMF-exposed ossicles. However, in both exposed and unexposed ossicles, prot"
+    },
+    {
+     "page": 11,
+     "block_id": 6,
+     "text": "Figure 9. Increase in bioactive TGF- $ \\beta $ protein (pg/mg ossicle) with PEMF stimulation. Significant increases are seen at days 2, 6, and 8 of development (<0.05). TGF- $ \\beta $ protein is increased in prechondrogenic and early chondrogenic tissue with a decrease on day 8 just prior to matrix "
+    },
+    {
+     "page": 12,
+     "block_id": 6,
+     "text": "Figure 10. Immunohistochemistry of TGF- $ \\beta1 $ synthesis with PEMF exposure. (A) Unexposed ossicles showing propidium iodide staining nuclei (red) and no TGF- $ \\beta1 $ staining in the ECM (40 $ \\times $). (B) PEMF-stimulated ossicles showing TGF- $ \\beta1 $ synthesized by chondrocytes in areas"
+    },
+    {
+     "page": 12,
+     "block_id": 9,
+     "text": "Figure 11. Coordinated chondrogenesis and TGF- $ \\beta $. (A) In control (unexposed) ossicles, TGF- $ \\beta $ protein synthesis is coincident with glycosaminoglycans (GAGs) preceding and during chondrogenesis and decreases with the onset of calcification. (B) In PEMF-exposed ossicles, an increase in"
+    },
+    {
+     "page": 14,
+     "block_id": 6,
+     "text": "Figure 12. MAPK phosphorylation with PEMF exposure. Western blot analysis of the MAP Kinase proteins JNK, ERK, and p38, as well as their phosphorylated counterparts, indicates that of the three, only JNK is affected by exposure to PEMFs. Basal levels of JNK protein are expressed consistently with no"
+    },
+    {
+     "page": 15,
+     "block_id": 3,
+     "text": "AP-1 Binding"
+    },
+    {
+     "page": 15,
+     "block_id": 5,
+     "text": "Figure 13. PEMFs increase AP-1 binding to TGF- $ \\beta $. Electromobility shift assay (EMSA) of nuclear extracts demonstrating binding of the transcription factor AP-1. At all time points, the binding in the PEMF-exposed ossicles was significantly higher, indicating an increased level of transcripti"
+    },
+    {
+     "page": 15,
+     "block_id": 8,
+     "text": "Figure 14. Immunohistochemistry with goat polyclonal anti-c-Jun antibody conjugated to horseradish peroxidase. Diaminobenzidine was used as a chromogen and produces a brown color, demonstrating expression of c-Jun upon a background of collagenous connective tissue (blue and purple). (A) Without PEMF"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     69,
+     937,
+     177,
+     973
+    ]
+   },
+   {
+    "page": 1,
+    "bbox": [
+     69,
+     1313,
+     185,
+     1353
+    ]
+   },
+   {
+    "page": 8,
+    "bbox": [
+     125,
+     193,
+     592,
+     567
+    ]
+   },
+   {
+    "page": 8,
+    "bbox": [
+     125,
+     570,
+     594,
+     942
+    ]
+   },
+   {
+    "page": 12,
+    "bbox": [
+     116,
+     1009,
+     536,
+     1390
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 3,
+    "text": "Figure 1. A biomechanical example of how bone responds to physical forces, demonstrating relationships between strain amplitude and frequency on bone mass. An optimal relationship has been found in this model with hypertrophy (blue) and atrophy (red) occurring with increased and decreased strain, re"
+   },
+   {
+    "page": 2,
+    "block_id": 6,
+    "text": "Figure 2. Anteroposterior radiographs of the human proximal femur showing the response to physiological loading (A) and osteoporosis (B). (A) In the normal femoral head, trabeculae align along lines of weight-bearing stress and tissue strain patterns. Compressive trabeculae (open arrows) transmit st"
+   },
+   {
+    "page": 3,
+    "block_id": 4,
+    "text": "Figure 3. Bone cells functioning in concert in developing and mature bone. Trichrome hematoxylin and eosin stain with silver nitrate showing calcified tissue (black) and unmineralized osteoid (green). (A) Bone cells form a functional syncytium in which gap junction channels provide direct intercellu"
+   },
+   {
+    "page": 5,
+    "block_id": 3,
+    "text": "Figure 4. Rat growth plate stained with Safranin O, hematoxylin and eosin, and silver nitrate. The growth plate provides an example of physiological endochondral bone formation. The cartilage precursor (pink Safranin O stain) undergoes calcification (black) and then ingrowth of microvasculature, whi"
+   },
+   {
+    "page": 6,
+    "block_id": 3,
+    "text": "Figure 5. DBM model of endochondral ossification. (A) Implantation of DBM granules subcutaneously along the thoracic musculature of CD rats. The implantation of DBM granules results in a temporally predictable sequence of mesenchymal stem/stromal cell infiltration, chondrogenesis, endochondral calci"
+   },
+   {
+    "page": 8,
+    "block_id": 6,
+    "text": "Figure 6. ECM molecules with exposure to PEMFs. (A) Trichrome Safranin O histochemistry of unexposed control ossicles. Gray homogeneous areas are DBM particles (40×). (B) Histochemistry showing increased ECM deposition of aggrecan (dark Safranin O red staining) in ossicles exposed to PEMFs (40×). (C"
+   },
+   {
+    "page": 9,
+    "block_id": 4,
+    "text": "Figure 7. Coordinated proteoglycan and glycosaminoglycan reduction with the onset of calcification. As is typical of physiologic examples of endochondral bone formation, chondrogenesis ceases and chondroid matrix is removed with the onset of calcification. This biphasic process leads to ossification"
+   },
+   {
+    "page": 11,
+    "block_id": 3,
+    "text": "Figure 8. Stimulation of chondrogenesis in endochondral bone formation by PEMFs. Peak of chondrogenesis occurs on day 8 of development in both exposed and unexposed ossicles, with significant increase in aggrecan content in PEMF-exposed ossicles. However, in both exposed and unexposed ossicles, prot"
+   },
+   {
+    "page": 11,
+    "block_id": 6,
+    "text": "Figure 9. Increase in bioactive TGF- $ \\beta $ protein (pg/mg ossicle) with PEMF stimulation. Significant increases are seen at days 2, 6, and 8 of development (<0.05). TGF- $ \\beta $ protein is increased in prechondrogenic and early chondrogenic tissue with a decrease on day 8 just prior to matrix "
+   },
+   {
+    "page": 12,
+    "block_id": 6,
+    "text": "Figure 10. Immunohistochemistry of TGF- $ \\beta1 $ synthesis with PEMF exposure. (A) Unexposed ossicles showing propidium iodide staining nuclei (red) and no TGF- $ \\beta1 $ staining in the ECM (40 $ \\times $). (B) PEMF-stimulated ossicles showing TGF- $ \\beta1 $ synthesized by chondrocytes in areas"
+   },
+   {
+    "page": 12,
+    "block_id": 9,
+    "text": "Figure 11. Coordinated chondrogenesis and TGF- $ \\beta $. (A) In control (unexposed) ossicles, TGF- $ \\beta $ protein synthesis is coincident with glycosaminoglycans (GAGs) preceding and during chondrogenesis and decreases with the onset of calcification. (B) In PEMF-exposed ossicles, an increase in"
+   },
+   {
+    "page": 14,
+    "block_id": 6,
+    "text": "Figure 12. MAPK phosphorylation with PEMF exposure. Western blot analysis of the MAP Kinase proteins JNK, ERK, and p38, as well as their phosphorylated counterparts, indicates that of the three, only JNK is affected by exposure to PEMFs. Basal levels of JNK protein are expressed consistently with no"
+   },
+   {
+    "page": 15,
+    "block_id": 3,
+    "text": "AP-1 Binding"
+   },
+   {
+    "page": 15,
+    "block_id": 5,
+    "text": "Figure 13. PEMFs increase AP-1 binding to TGF- $ \\beta $. Electromobility shift assay (EMSA) of nuclear extracts demonstrating binding of the transcription factor AP-1. At all time points, the binding in the PEMF-exposed ossicles was significantly higher, indicating an increased level of transcripti"
+   },
+   {
+    "page": 15,
+    "block_id": 8,
+    "text": "Figure 14. Immunohistochemistry with goat polyclonal anti-c-Jun antibody conjugated to horseradish peroxidase. Diaminobenzidine was used as a chromogen and produces a brown color, demonstrating expression of c-Jun upon a background of collagenous connective tissue (blue and purple). (A) Without PEMF"
+   }
+  ]
+ }
+}

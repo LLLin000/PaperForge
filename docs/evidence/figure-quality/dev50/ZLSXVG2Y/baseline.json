@@ -1,0 +1,185 @@
+{
+ "dry_run": {
+  "key": "ZLSXVG2Y",
+  "identity": {
+   "old": {
+    "entries": 4,
+    "unique_ids": 4,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 4,
+    "unique_ids": 4,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 18,
+   "new_render_files": 36,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/tables/table_001.jpg",
+    "assets/tables/table_002.jpg",
+    "assets/tables/table_003.jpg",
+    "assets/tables/table_004.jpg",
+    "assets/tables/table_005.jpg",
+    "assets/tables/table_006.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 10,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 6,
+   "new_tables": 6,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 354,
+   "new_rows": 354,
+   "role_removed": {
+    "frontmatter_noise": 1,
+    "frontmatter_support": 1,
+    "reference_item": 7,
+    "backmatter_body": 1
+   },
+   "role_added": {
+    "noise": 7,
+    "body_paragraph": 3
+   },
+   "old_body_chars": 61358,
+   "new_body_chars": 61845,
+   "old_text_chars": 103623,
+   "new_text_chars": 103623,
+   "old_fulltext_chars": 96562
+  },
+  "new_manifest": {
+   "figures": 4,
+   "tables": 6,
+   "orphans": 8
+  },
+  "new_orphans": 2
+ },
+ "structural": {
+  "key": "ZLSXVG2Y",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 103623,
+  "new_text_chars": 103623,
+  "old_entries": 4,
+  "new_entries": 4,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      69,
+      864,
+      178,
+      901
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      69,
+      1313,
+      185,
+      1354
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 3,
+     "text": "Figure 1. Schematic illustration of how proteins can be bioengineered to be used as smart materials for tissue engineering (Adapted with permission from [9] copyright 2020 Elsevier. Ltd.)."
+    },
+    {
+     "page": 10,
+     "block_id": 3,
+     "text": "Figure 2. PLMC composite scaffold SME on filling bone screw hole (modified from [92] and created using Adobe Illustrator)."
+    },
+    {
+     "page": 11,
+     "block_id": 3,
+     "text": "Figure 3. Preparation of pH-sensitive SMP with SME (created using Adobe Illustrator)."
+    },
+    {
+     "page": 15,
+     "block_id": 5,
+     "text": "Figure 4. Self-healing hydrogels process happening in circular hydrogels which has been cut into several pieces (created using Adobe Illustrator)."
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     69,
+     864,
+     178,
+     901
+    ]
+   },
+   {
+    "page": 1,
+    "bbox": [
+     69,
+     1313,
+     185,
+     1354
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 3,
+    "block_id": 3,
+    "text": "Figure 1. Schematic illustration of how proteins can be bioengineered to be used as smart materials for tissue engineering (Adapted with permission from [9] copyright 2020 Elsevier. Ltd.)."
+   },
+   {
+    "page": 10,
+    "block_id": 3,
+    "text": "Figure 2. PLMC composite scaffold SME on filling bone screw hole (modified from [92] and created using Adobe Illustrator)."
+   },
+   {
+    "page": 11,
+    "block_id": 3,
+    "text": "Figure 3. Preparation of pH-sensitive SMP with SME (created using Adobe Illustrator)."
+   },
+   {
+    "page": 15,
+    "block_id": 5,
+    "text": "Figure 4. Self-healing hydrogels process happening in circular hydrogels which has been cut into several pieces (created using Adobe Illustrator)."
+   }
+  ]
+ }
+}

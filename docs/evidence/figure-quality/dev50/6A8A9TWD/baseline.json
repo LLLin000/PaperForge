@@ -1,0 +1,183 @@
+{
+ "dry_run": {
+  "key": "6A8A9TWD",
+  "identity": {
+   "old": {
+    "entries": 5,
+    "unique_ids": 4,
+    "duplicate_extra": 1
+   },
+   "new": {
+    "entries": 4,
+    "unique_ids": 4,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_reserved_004": "figure_001",
+    "figure_s002": "figure_s002",
+    "figure_s003": "figure_s003",
+    "figure_s004": "figure_s004"
+   },
+   "renamed": [
+    [
+     "figure_reserved_004",
+     "figure_001"
+    ]
+   ],
+   "unmapped_old_ids": [],
+   "claims_changed": [
+    {
+     "old_id": "figure_reserved_004",
+     "old_assets": [],
+     "new_id": "figure_001",
+     "new_assets": [
+      "2"
+     ]
+    },
+    {
+     "old_id": "figure_s002",
+     "old_assets": [
+      "2"
+     ],
+     "new_id": "figure_s002",
+     "new_assets": [
+      "10"
+     ]
+    }
+   ]
+  },
+  "delivery": {
+   "old_render_files": 27,
+   "new_render_files": 28,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "render/figures/figure_001.md"
+   ],
+   "render_removed": [
+    "render/figures/figure_reserved_004.md"
+   ],
+   "embeds": 3,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 0,
+   "new_tables": 0,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 151,
+   "new_rows": 151,
+   "role_removed": {
+    "figure_caption_candidate": 4
+   },
+   "role_added": {
+    "figure_caption": 4
+   },
+   "old_body_chars": 19700,
+   "new_body_chars": 19700,
+   "old_text_chars": 37085,
+   "new_text_chars": 37092,
+   "old_fulltext_chars": 31864
+  },
+  "new_manifest": {
+   "figures": 4,
+   "tables": 0,
+   "orphans": 10
+  },
+  "new_orphans": 1
+ },
+ "structural": {
+  "key": "6A8A9TWD",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 37085,
+  "new_text_chars": 37092,
+  "old_entries": 5,
+  "new_entries": 4,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 7,
+     "bbox": [
+      614,
+      205,
+      657,
+      247
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 3,
+     "text": "Fig. 1\nIllustrations depicting the mortise-tenon joint structure used in ancient Chinese architecture."
+    },
+    {
+     "page": 2,
+     "block_id": 11,
+     "text": "Figs. 2A, 2-B, and 2-C Schematic diagrams illustrating the arthroscopic inlay Bristow procedure. Fig. 2-A Coracoid plug preparation. Fig. 2-B Appearance of the trough in the glenoid. Fig. 2-C Coracoid plug fixation into the trough in the glenoid."
+    },
+    {
+     "page": 4,
+     "block_id": 4,
+     "text": "Fig. 3"
+    },
+    {
+     "page": 4,
+     "block_id": 5,
+     "text": "Figs. 3-A through 3-F Representative 3D CT images of coracoid block positioning and healing after arthroscopic inlay Bristow procedure fixed with a screw.\nFigs. 3-A and 3-B Axial view (Fig. 3-A) and en face view (Fig. 3-B) demonstrating perfect coracoid positioning (below the equator) and healing 6 "
+    },
+    {
+     "page": 4,
+     "block_id": 11,
+     "text": "Figs. 4-A, 4-B, and 4-C Representative on face view of 3D-CT images showing osteolysis of coracoid grafts at the time of the latest follow-up. Fig. 4-A Grade 0: the cone of the screw head is buried in the coracoid bone graft. Fig. 4-B Grade 1: only the screw head is exposed outside the coracoid bone"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 7,
+    "bbox": [
+     614,
+     205,
+     657,
+     247
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 3,
+    "text": "Fig. 1\nIllustrations depicting the mortise-tenon joint structure used in ancient Chinese architecture."
+   },
+   {
+    "page": 2,
+    "block_id": 11,
+    "text": "Figs. 2A, 2-B, and 2-C Schematic diagrams illustrating the arthroscopic inlay Bristow procedure. Fig. 2-A Coracoid plug preparation. Fig. 2-B Appearance of the trough in the glenoid. Fig. 2-C Coracoid plug fixation into the trough in the glenoid."
+   },
+   {
+    "page": 4,
+    "block_id": 4,
+    "text": "Fig. 3"
+   },
+   {
+    "page": 4,
+    "block_id": 5,
+    "text": "Figs. 3-A through 3-F Representative 3D CT images of coracoid block positioning and healing after arthroscopic inlay Bristow procedure fixed with a screw.\nFigs. 3-A and 3-B Axial view (Fig. 3-A) and en face view (Fig. 3-B) demonstrating perfect coracoid positioning (below the equator) and healing 6 "
+   },
+   {
+    "page": 4,
+    "block_id": 11,
+    "text": "Figs. 4-A, 4-B, and 4-C Representative on face view of 3D-CT images showing osteolysis of coracoid grafts at the time of the latest follow-up. Fig. 4-A Grade 0: the cone of the screw head is buried in the coracoid bone graft. Fig. 4-B Grade 1: only the screw head is exposed outside the coracoid bone"
+   }
+  ]
+ }
+}

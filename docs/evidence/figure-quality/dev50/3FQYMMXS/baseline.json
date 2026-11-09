@@ -1,0 +1,417 @@
+{
+ "dry_run": {
+  "key": "3FQYMMXS",
+  "identity": {
+   "old": {
+    "entries": 10,
+    "unique_ids": 10,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 10,
+    "unique_ids": 10,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005",
+    "figure_007": "figure_007",
+    "figure_008": "figure_008",
+    "figure_009": "figure_009",
+    "figure_reserved_008": "figure_figure_p003_b3",
+    "figure_reserved_009": "figure_006"
+   },
+   "renamed": [
+    [
+     "figure_reserved_008",
+     "figure_figure_p003_b3"
+    ],
+    [
+     "figure_reserved_009",
+     "figure_006"
+    ]
+   ],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 52,
+   "new_render_files": 104,
+   "render_added": [
+    "assets/figures/figure_006.jpg",
+    "assets/figures/figure_figure_p003_b3.jpg",
+    "assets/orphans/orphan_017.jpg",
+    "assets/orphans/orphan_018.jpg",
+    "assets/orphans/orphan_019.jpg",
+    "assets/orphans/orphan_020.jpg",
+    "assets/orphans/orphan_021.jpg",
+    "assets/orphans/orphan_022.jpg",
+    "assets/orphans/orphan_023.jpg",
+    "assets/orphans/orphan_024.jpg",
+    "assets/orphans/orphan_025.jpg",
+    "assets/orphans/orphan_026.jpg",
+    "assets/orphans/orphan_027.jpg",
+    "assets/orphans/orphan_028.jpg",
+    "assets/orphans/orphan_029.jpg",
+    "assets/orphans/orphan_030.jpg",
+    "assets/orphans/orphan_031.jpg",
+    "assets/orphans/orphan_032.jpg",
+    "assets/orphans/orphan_033.jpg",
+    "assets/orphans/orphan_034.jpg",
+    "assets/orphans/orphan_035.jpg",
+    "assets/orphans/orphan_036.jpg",
+    "assets/orphans/orphan_037.jpg",
+    "assets/orphans/orphan_038.jpg",
+    "assets/orphans/orphan_039.jpg",
+    "assets/orphans/orphan_040.jpg",
+    "assets/orphans/orphan_041.jpg",
+    "render/figures/figure_006.md",
+    "render/figures/figure_figure_p003_b3.md",
+    "render/figures/orphan_017.md",
+    "render/figures/orphan_018.md",
+    "render/figures/orphan_019.md",
+    "render/figures/orphan_020.md",
+    "render/figures/orphan_021.md",
+    "render/figures/orphan_022.md",
+    "render/figures/orphan_023.md",
+    "render/figures/orphan_024.md",
+    "render/figures/orphan_025.md",
+    "render/figures/orphan_026.md",
+    "render/figures/orphan_027.md",
+    "render/figures/orphan_028.md",
+    "render/figures/orphan_029.md",
+    "render/figures/orphan_030.md",
+    "render/figures/orphan_031.md",
+    "render/figures/orphan_032.md",
+    "render/figures/orphan_033.md",
+    "render/figures/orphan_034.md",
+    "render/figures/orphan_035.md",
+    "render/figures/orphan_036.md",
+    "render/figures/orphan_037.md",
+    "render/figures/orphan_038.md",
+    "render/figures/orphan_039.md",
+    "render/figures/orphan_040.md",
+    "render/figures/orphan_041.md"
+   ],
+   "render_removed": [
+    "render/figures/figure_reserved_008.md",
+    "render/figures/figure_reserved_009.md"
+   ],
+   "embeds": 11,
+   "embeds_retargeted": 2,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 1,
+   "new_tables": 1,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 231,
+   "new_rows": 231,
+   "role_removed": {
+    "non_body_insert": 13,
+    "figure_inner_text": 2,
+    "figure_caption_candidate": 2
+   },
+   "role_added": {
+    "unknown_structural": 11,
+    "body_paragraph": 4,
+    "figure_caption": 2
+   },
+   "old_body_chars": 31282,
+   "new_body_chars": 32167,
+   "old_text_chars": 47851,
+   "new_text_chars": 47851,
+   "old_fulltext_chars": 41416
+  },
+  "new_manifest": {
+   "figures": 10,
+   "tables": 1,
+   "orphans": 41
+  },
+  "new_orphans": 8
+ },
+ "structural": {
+  "key": "3FQYMMXS",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 47851,
+  "new_text_chars": 47851,
+  "old_entries": 10,
+  "new_entries": 10,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      121,
+      362,
+      160,
+      404
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      645,
+      362,
+      687,
+      405
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      300,
+      444,
+      328,
+      468
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      565,
+      444,
+      593,
+      466
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      880,
+      443,
+      904,
+      466
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      317,
+      496,
+      932,
+      584
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      324,
+      591,
+      929,
+      766
+     ]
+    },
+    {
+     "page": 3,
+     "bbox": [
+      244,
+      191,
+      1008,
+      534
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 3,
+     "text": "Scheme 1. (a) Formation Process of a Double-Network PEGDA/Short-Chain CS Hydrogel. (b) Rupture and Recovery of the N-Glucosamine-anion Ionic Coordination under Relaxation and Stretching"
+    },
+    {
+     "page": 4,
+     "block_id": 4,
+     "text": "Figure 1. (a–d) Photographs of the proposed double-network PEGDA/short-chain CS hydrogel (scale bars: 2 mm). (a) Tensile deformation of the 3 + 2 sample (length × width = 1 mm × 10 mm) with two knots; the left image shows the initial state, and the right image displays the deformed state. (b) Eight-"
+    },
+    {
+     "page": 4,
+     "block_id": 9,
+     "text": "Figure 2. (a, b) Tensile and compressive stress–strain curves of the 3 + 2 sample, respectively. (c–e) Tensile stress–strain diagrams. (c) 3 + 2 samples at different immersion times. (d) 3 + 1, 3 + 2, and 3 + 3 samples in which the only changes were to the PEGDA content. (e) 4 + 2, 3 + 2, and 2 + 2 "
+    },
+    {
+     "page": 5,
+     "block_id": 10,
+     "text": "Figure 3. (a, b) Loading–unloading tests under tension and compression, respectively. (c, d) Diagrams of dissipated coefficient and dissipated energy corresponding to panels (a) and (b), respectively. (e, f) Loading–unloading tests with relaxation time under tension and compression, respectively."
+    },
+    {
+     "page": 6,
+     "block_id": 7,
+     "text": "Figure 4. (a, b) Five successive loading-unloading tests under tension and compression, respectively."
+    },
+    {
+     "page": 6,
+     "block_id": 12,
+     "text": "Figure 5. Comparison between our work and previous studies on biocompatible hydrogels in terms of the elastic modulus, tensile elongation at rupture, and printability; the comparison includes materials such as all-silk fibroin hydrogel, $ ^{29} $ chitosan (CS) gel, $ ^{30} $ alginate/gelatin gel, $ "
+    },
+    {
+     "page": 7,
+     "block_id": 14,
+     "text": "Figure 6. (a, b) Schematic illustrations of the pregei extrusion and subsequent cross-linking step, respectively. (c) Diagram of the extrusion pressures of the 2 + 2, 3 + 2, and 4 + 2 samples. (d–i) Series of rheological tests: (d, g) viscosity–shear rate plots; (e, f) rheological diagrams of the st"
+    },
+    {
+     "page": 7,
+     "block_id": 16,
+     "text": "Figure 7. (a–e) Series of photographs (scale bars: 2 mm): (a) tripods, pyramids, and graphene scaffolds with hexagonal holes (from left to right); (b, c) thin mesh faces and 0.19 mm-thick hollow tubes; and (d, e) photographs of hollow tubes with different heights and thicknesses."
+    },
+    {
+     "page": 8,
+     "block_id": 5,
+     "text": "Figure 8. (a–c) In vitro biocompatibility test: (a) cell proliferation; (b) adhesion staining of mBMSCs on the fifth day by DAPI/F-actin (green represents the cytoskeleton and blue represents the nucleus; scale bar: 50  $ \\mu $m); and (c) live/dead staining of mBMSCs on the fifth day (green represen"
+    },
+    {
+     "page": 8,
+     "block_id": 13,
+     "text": "b 50"
+    },
+    {
+     "page": 8,
+     "block_id": 18,
+     "text": "Figure 9. (a) Conductivity of the double-network PEGDA/CS as the ionic cross-linking time changed. (b) Variation of the resistance ratio ( $ \\Delta R/R_{0} $) due to the cyclic compression. (c, d) LED bulb lights up after circuit was powered."
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     121,
+     362,
+     160,
+     404
+    ]
+   },
+   {
+    "page": 1,
+    "bbox": [
+     645,
+     362,
+     687,
+     405
+    ]
+   },
+   {
+    "page": 1,
+    "bbox": [
+     300,
+     444,
+     328,
+     468
+    ]
+   },
+   {
+    "page": 1,
+    "bbox": [
+     565,
+     444,
+     593,
+     466
+    ]
+   },
+   {
+    "page": 1,
+    "bbox": [
+     880,
+     443,
+     904,
+     466
+    ]
+   },
+   {
+    "page": 1,
+    "bbox": [
+     317,
+     496,
+     932,
+     584
+    ]
+   },
+   {
+    "page": 1,
+    "bbox": [
+     324,
+     591,
+     929,
+     766
+    ]
+   },
+   {
+    "page": 3,
+    "bbox": [
+     244,
+     191,
+     1008,
+     534
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 3,
+    "block_id": 3,
+    "text": "Scheme 1. (a) Formation Process of a Double-Network PEGDA/Short-Chain CS Hydrogel. (b) Rupture and Recovery of the N-Glucosamine-anion Ionic Coordination under Relaxation and Stretching"
+   },
+   {
+    "page": 4,
+    "block_id": 4,
+    "text": "Figure 1. (a–d) Photographs of the proposed double-network PEGDA/short-chain CS hydrogel (scale bars: 2 mm). (a) Tensile deformation of the 3 + 2 sample (length × width = 1 mm × 10 mm) with two knots; the left image shows the initial state, and the right image displays the deformed state. (b) Eight-"
+   },
+   {
+    "page": 4,
+    "block_id": 9,
+    "text": "Figure 2. (a, b) Tensile and compressive stress–strain curves of the 3 + 2 sample, respectively. (c–e) Tensile stress–strain diagrams. (c) 3 + 2 samples at different immersion times. (d) 3 + 1, 3 + 2, and 3 + 3 samples in which the only changes were to the PEGDA content. (e) 4 + 2, 3 + 2, and 2 + 2 "
+   },
+   {
+    "page": 5,
+    "block_id": 10,
+    "text": "Figure 3. (a, b) Loading–unloading tests under tension and compression, respectively. (c, d) Diagrams of dissipated coefficient and dissipated energy corresponding to panels (a) and (b), respectively. (e, f) Loading–unloading tests with relaxation time under tension and compression, respectively."
+   },
+   {
+    "page": 6,
+    "block_id": 7,
+    "text": "Figure 4. (a, b) Five successive loading-unloading tests under tension and compression, respectively."
+   },
+   {
+    "page": 6,
+    "block_id": 12,
+    "text": "Figure 5. Comparison between our work and previous studies on biocompatible hydrogels in terms of the elastic modulus, tensile elongation at rupture, and printability; the comparison includes materials such as all-silk fibroin hydrogel, $ ^{29} $ chitosan (CS) gel, $ ^{30} $ alginate/gelatin gel, $ "
+   },
+   {
+    "page": 7,
+    "block_id": 14,
+    "text": "Figure 6. (a, b) Schematic illustrations of the pregei extrusion and subsequent cross-linking step, respectively. (c) Diagram of the extrusion pressures of the 2 + 2, 3 + 2, and 4 + 2 samples. (d–i) Series of rheological tests: (d, g) viscosity–shear rate plots; (e, f) rheological diagrams of the st"
+   },
+   {
+    "page": 7,
+    "block_id": 16,
+    "text": "Figure 7. (a–e) Series of photographs (scale bars: 2 mm): (a) tripods, pyramids, and graphene scaffolds with hexagonal holes (from left to right); (b, c) thin mesh faces and 0.19 mm-thick hollow tubes; and (d, e) photographs of hollow tubes with different heights and thicknesses."
+   },
+   {
+    "page": 8,
+    "block_id": 5,
+    "text": "Figure 8. (a–c) In vitro biocompatibility test: (a) cell proliferation; (b) adhesion staining of mBMSCs on the fifth day by DAPI/F-actin (green represents the cytoskeleton and blue represents the nucleus; scale bar: 50  $ \\mu $m); and (c) live/dead staining of mBMSCs on the fifth day (green represen"
+   },
+   {
+    "page": 8,
+    "block_id": 13,
+    "text": "b 50"
+   },
+   {
+    "page": 8,
+    "block_id": 18,
+    "text": "Figure 9. (a) Conductivity of the double-network PEGDA/CS as the ionic cross-linking time changed. (b) Variation of the resistance ratio ( $ \\Delta R/R_{0} $) due to the cyclic compression. (c, d) LED bulb lights up after circuit was powered."
+   }
+  ]
+ }
+}

@@ -1,0 +1,477 @@
+{
+ "dry_run": {
+  "key": "53B47JM8",
+  "identity": {
+   "old": {
+    "entries": 4,
+    "unique_ids": 4,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 5,
+    "unique_ids": 5,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 32,
+   "new_render_files": 92,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/orphans/orphan_013.jpg",
+    "assets/orphans/orphan_014.jpg",
+    "assets/orphans/orphan_015.jpg",
+    "assets/orphans/orphan_016.jpg",
+    "assets/orphans/orphan_017.jpg",
+    "assets/orphans/orphan_018.jpg",
+    "assets/orphans/orphan_019.jpg",
+    "assets/orphans/orphan_020.jpg",
+    "assets/orphans/orphan_021.jpg",
+    "assets/orphans/orphan_022.jpg",
+    "assets/orphans/orphan_023.jpg",
+    "assets/orphans/orphan_024.jpg",
+    "assets/orphans/orphan_025.jpg",
+    "assets/orphans/orphan_026.jpg",
+    "assets/orphans/orphan_027.jpg",
+    "assets/orphans/orphan_028.jpg",
+    "assets/orphans/orphan_029.jpg",
+    "assets/orphans/orphan_030.jpg",
+    "assets/orphans/orphan_031.jpg",
+    "assets/orphans/orphan_032.jpg",
+    "assets/orphans/orphan_033.jpg",
+    "assets/orphans/orphan_034.jpg",
+    "assets/orphans/orphan_035.jpg",
+    "assets/orphans/orphan_036.jpg",
+    "assets/orphans/orphan_037.jpg",
+    "assets/orphans/orphan_038.jpg",
+    "assets/orphans/orphan_039.jpg",
+    "assets/orphans/orphan_040.jpg",
+    "assets/orphans/orphan_041.jpg",
+    "render/figures/figure_001.md",
+    "render/figures/orphan_013.md",
+    "render/figures/orphan_014.md",
+    "render/figures/orphan_015.md",
+    "render/figures/orphan_016.md",
+    "render/figures/orphan_017.md",
+    "render/figures/orphan_018.md",
+    "render/figures/orphan_019.md",
+    "render/figures/orphan_020.md",
+    "render/figures/orphan_021.md",
+    "render/figures/orphan_022.md",
+    "render/figures/orphan_023.md",
+    "render/figures/orphan_024.md",
+    "render/figures/orphan_025.md",
+    "render/figures/orphan_026.md",
+    "render/figures/orphan_027.md",
+    "render/figures/orphan_028.md",
+    "render/figures/orphan_029.md",
+    "render/figures/orphan_030.md",
+    "render/figures/orphan_031.md",
+    "render/figures/orphan_032.md",
+    "render/figures/orphan_033.md",
+    "render/figures/orphan_034.md",
+    "render/figures/orphan_035.md",
+    "render/figures/orphan_036.md",
+    "render/figures/orphan_037.md",
+    "render/figures/orphan_038.md",
+    "render/figures/orphan_039.md",
+    "render/figures/orphan_040.md",
+    "render/figures/orphan_041.md"
+   ],
+   "render_removed": [],
+   "embeds": 4,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 0,
+   "new_tables": 0,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 273,
+   "new_rows": 273,
+   "role_removed": {
+    "non_body_insert": 2,
+    "media_asset": 1,
+    "body_paragraph": 1,
+    "reference_item": 5,
+    "figure_caption_candidate": 5
+   },
+   "role_added": {
+    "unknown_structural": 2,
+    "abstract_body": 1,
+    "subsection_heading": 1,
+    "figure_asset": 1,
+    "figure_caption": 9
+   },
+   "old_body_chars": 46718,
+   "new_body_chars": 45456,
+   "old_text_chars": 68369,
+   "new_text_chars": 68369,
+   "old_fulltext_chars": 59789
+  },
+  "new_manifest": {
+   "figures": 5,
+   "tables": 0,
+   "orphans": 41
+  },
+  "new_orphans": 5
+ },
+ "structural": {
+  "key": "53B47JM8",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 68369,
+  "new_text_chars": 68369,
+  "old_entries": 4,
+  "new_entries": 5,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 11,
+     "block_id": 3,
+     "text": "Yang Liu received his Ph.D degree from Peking University in 2018. He is now a postdoc researcher in the Department of Mechanical Engineering, University of Connecticut. His research interest focuses on the design and evaluation of biodegradable metals and polymers for tissue regeneration."
+    },
+    {
+     "page": 11,
+     "block_id": 6,
+     "text": "Xiaonan Xin, MD, Ph.D, Currently, an Assistant Research Professor at University of Connecticut Health. She has worked in the field of skeletal biology and regeneration. In her studies, she has established mouse calvarial bone defect model to test the osteogenic potential of implanted materials or ce"
+    },
+    {
+     "page": 11,
+     "block_id": 12,
+     "text": "Joemart Ian Contreras has a degree in biomedical engineering with a concentration in bioinstrumentation from the University of Connecticut. He is currently pursuing a master's degree in biomedical engineering from the University of Connecticut in pursuit of a future career in clinical engineering an"
+    },
+    {
+     "page": 11,
+     "block_id": 13,
+     "text": "Dr. David Rowe received his MD from the University of Vermont. Currently he is a Professor of Reconstructive Sciences at UConn Health and the Director of the Center for Regenerative Medicine and Skeletal Development. His lab works in the field of skeletal biology and regeneration and has established"
+    },
+    {
+     "page": 11,
+     "block_id": 15,
+     "text": "Dr. Sharareh Emadi finished her Ph.D. at the Pasteur Institute in France, specializing in Cardiovascular Pharmacology. She is currently an Assistant Professor-In-Residence in the department of Biomedical Engineering at the University of Connecticut. Her current focus is on molecular, biochemical, an"
+    },
+    {
+     "page": 11,
+     "block_id": 17,
+     "text": "Dr. Kevin Lo is an Assistant Professor of Medicine at UConn Health. He has held editorial positions on several prestigious journals including PLoS ONE. His research programs include musculoskeletal regeneration using inductive small molecules and osteotropic nanoscale drug delivery systems. He has a"
+    },
+    {
+     "page": 11,
+     "block_id": 19,
+     "text": "Jayla Millender is an honors undergraduate student at the University of Connecticut pursuing degrees in Africana Studies and Molecular and Cellular Biology. Her research focuses on the development of synthetic bone grafts using biodegradable materials."
+    }
+   ],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      1001,
+      297,
+      1059,
+      354
+     ]
+    },
+    {
+     "page": 11,
+     "bbox": [
+      74,
+      362,
+      216,
+      563
+     ]
+    },
+    {
+     "page": 11,
+     "bbox": [
+      74,
+      1137,
+      217,
+      1337
+     ]
+    },
+    {
+     "page": 11,
+     "bbox": [
+      74,
+      620,
+      216,
+      821
+     ]
+    },
+    {
+     "page": 11,
+     "bbox": [
+      74,
+      878,
+      217,
+      1079
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 14,
+     "text": "Fig. 1. The use of biodegradable piezoelectric PLLA nanofibers in combination with non-invasive ultrasound (US) to produce well-controlled, on-demand and stable surface charge (i.e. electrical stimulation or ES) for bone regeneration. The piezoelectric PLLA nanofiber tissue-scaffold serves as a remo"
+    },
+    {
+     "page": 6,
+     "block_id": 6,
+     "text": "Fig. 2. Characterization of the microstructure and piezoelectric performance of the PLLA nanofiber mats under applied ultrasound (US). a. Schematic of the electrospinning setup used to fabricate the PLLA films and scanning electron microscope (SEM) images showing PLLA nanofiber alignment with differ"
+    },
+    {
+     "page": 6,
+     "block_id": 17,
+     "text": "Fig. 3. Osteogenic differentiation of stem cells, grown on the piezoelectric PLLA nanofiber scaffold under applied US in vitro. a. A simple schematic demonstrates our setup for seeding adipose stem cells (ADCs) onto the scaffolds and treating them with US. The applied US induces controllable acousti"
+    },
+    {
+     "page": 7,
+     "block_id": 8,
+     "text": "Fig. 4. Osteogenic activity of reporter bone marrow stem cells (BMSCs) when grown on the electrospun PLLA scaffolds with US treatment. a. Schematic to demonstrate the progressive expression from BSP to DMP and changes in fluorescence that accompany this transition. b. Fluorescent microscope images o"
+    },
+    {
+     "page": 8,
+     "block_id": 14,
+     "text": "Fig. 5. Representative histology sections of the mouse calvarial bone showing details of bone formation and cell migration into the defects for the groups of piezo-scaffold (3000 rpm) and non-piezo. scaffold (300 rpm) under the same application of US. a is a simplified schematic of our in vivo exper"
+    },
+    {
+     "page": 10,
+     "block_id": 51,
+     "text": "Eli J. Curry is currently pursuing his Ph.D. in Biomedical Engineering at the University of Connecticut. He also received his B.S. in Biomedical Engineering at the University of Connecticut (2016). His doctoral research is on the development of wireless, biodegradable polymer-based piezoelectric dev"
+    },
+    {
+     "page": 10,
+     "block_id": 53,
+     "text": "Thinh T. Le received his M.S. degree of mechanical engineering from the Catholic University of America, US in 2017. He is currently pursuing Ph.D. degree in Mechanical Engineering Department, University of Connecticut. His research interest focused on implantable biodegradable ultrasonic devices, pi"
+    },
+    {
+     "page": 11,
+     "block_id": 3,
+     "text": "Yang Liu received his Ph.D degree from Peking University in 2018. He is now a postdoc researcher in the Department of Mechanical Engineering, University of Connecticut. His research interest focuses on the design and evaluation of biodegradable metals and polymers for tissue regeneration."
+    },
+    {
+     "page": 11,
+     "block_id": 6,
+     "text": "Xiaonan Xin, MD, Ph.D, Currently, an Assistant Research Professor at University of Connecticut Health. She has worked in the field of skeletal biology and regeneration. In her studies, she has established mouse calvarial bone defect model to test the osteogenic potential of implanted materials or ce"
+    },
+    {
+     "page": 11,
+     "block_id": 7,
+     "text": "Shunyi Li received her B.S.E. degree in Biomedical Engineering with a Materials Science and Engineering minor from the University of Connecticut in 2020. Currently, she is entering the medical device industry as an engineer. Previously, she worked as a research assistant in Professor Thanh Nguyen's "
+    },
+    {
+     "page": 11,
+     "block_id": 12,
+     "text": "Joemart Ian Contreras has a degree in biomedical engineering with a concentration in bioinstrumentation from the University of Connecticut. He is currently pursuing a master's degree in biomedical engineering from the University of Connecticut in pursuit of a future career in clinical engineering an"
+    },
+    {
+     "page": 11,
+     "block_id": 13,
+     "text": "Dr. David Rowe received his MD from the University of Vermont. Currently he is a Professor of Reconstructive Sciences at UConn Health and the Director of the Center for Regenerative Medicine and Skeletal Development. His lab works in the field of skeletal biology and regeneration and has established"
+    },
+    {
+     "page": 11,
+     "block_id": 15,
+     "text": "Dr. Sharareh Emadi finished her Ph.D. at the Pasteur Institute in France, specializing in Cardiovascular Pharmacology. She is currently an Assistant Professor-In-Residence in the department of Biomedical Engineering at the University of Connecticut. Her current focus is on molecular, biochemical, an"
+    },
+    {
+     "page": 11,
+     "block_id": 16,
+     "text": "Casey E. Bednarz received her B.S. degree in Physiology and Neurobiology from the University of Connecticut in 2019. She is currently working full time and planning to go back and to school to pursue a masters degree."
+    },
+    {
+     "page": 11,
+     "block_id": 17,
+     "text": "Dr. Kevin Lo is an Assistant Professor of Medicine at UConn Health. He has held editorial positions on several prestigious journals including PLoS ONE. His research programs include musculoskeletal regeneration using inductive small molecules and osteotropic nanoscale drug delivery systems. He has a"
+    },
+    {
+     "page": 11,
+     "block_id": 19,
+     "text": "Jayla Millender is an honors undergraduate student at the University of Connecticut pursuing degrees in Africana Studies and Molecular and Cellular Biology. Her research focuses on the development of synthetic bone grafts using biodegradable materials."
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [
+   {
+    "page": 11,
+    "block_id": 3,
+    "text": "Yang Liu received his Ph.D degree from Peking University in 2018. He is now a postdoc researcher in the Department of Mechanical Engineering, University of Connecticut. His research interest focuses on the design and evaluation of biodegradable metals and polymers for tissue regeneration."
+   },
+   {
+    "page": 11,
+    "block_id": 6,
+    "text": "Xiaonan Xin, MD, Ph.D, Currently, an Assistant Research Professor at University of Connecticut Health. She has worked in the field of skeletal biology and regeneration. In her studies, she has established mouse calvarial bone defect model to test the osteogenic potential of implanted materials or ce"
+   },
+   {
+    "page": 11,
+    "block_id": 12,
+    "text": "Joemart Ian Contreras has a degree in biomedical engineering with a concentration in bioinstrumentation from the University of Connecticut. He is currently pursuing a master's degree in biomedical engineering from the University of Connecticut in pursuit of a future career in clinical engineering an"
+   },
+   {
+    "page": 11,
+    "block_id": 13,
+    "text": "Dr. David Rowe received his MD from the University of Vermont. Currently he is a Professor of Reconstructive Sciences at UConn Health and the Director of the Center for Regenerative Medicine and Skeletal Development. His lab works in the field of skeletal biology and regeneration and has established"
+   },
+   {
+    "page": 11,
+    "block_id": 15,
+    "text": "Dr. Sharareh Emadi finished her Ph.D. at the Pasteur Institute in France, specializing in Cardiovascular Pharmacology. She is currently an Assistant Professor-In-Residence in the department of Biomedical Engineering at the University of Connecticut. Her current focus is on molecular, biochemical, an"
+   },
+   {
+    "page": 11,
+    "block_id": 17,
+    "text": "Dr. Kevin Lo is an Assistant Professor of Medicine at UConn Health. He has held editorial positions on several prestigious journals including PLoS ONE. His research programs include musculoskeletal regeneration using inductive small molecules and osteotropic nanoscale drug delivery systems. He has a"
+   },
+   {
+    "page": 11,
+    "block_id": 19,
+    "text": "Jayla Millender is an honors undergraduate student at the University of Connecticut pursuing degrees in Africana Studies and Molecular and Cellular Biology. Her research focuses on the development of synthetic bone grafts using biodegradable materials."
+   }
+  ],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     1001,
+     297,
+     1059,
+     354
+    ]
+   },
+   {
+    "page": 11,
+    "bbox": [
+     74,
+     362,
+     216,
+     563
+    ]
+   },
+   {
+    "page": 11,
+    "bbox": [
+     74,
+     1137,
+     217,
+     1337
+    ]
+   },
+   {
+    "page": 11,
+    "bbox": [
+     74,
+     620,
+     216,
+     821
+    ]
+   },
+   {
+    "page": 11,
+    "bbox": [
+     74,
+     878,
+     217,
+     1079
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 14,
+    "text": "Fig. 1. The use of biodegradable piezoelectric PLLA nanofibers in combination with non-invasive ultrasound (US) to produce well-controlled, on-demand and stable surface charge (i.e. electrical stimulation or ES) for bone regeneration. The piezoelectric PLLA nanofiber tissue-scaffold serves as a remo"
+   },
+   {
+    "page": 6,
+    "block_id": 6,
+    "text": "Fig. 2. Characterization of the microstructure and piezoelectric performance of the PLLA nanofiber mats under applied ultrasound (US). a. Schematic of the electrospinning setup used to fabricate the PLLA films and scanning electron microscope (SEM) images showing PLLA nanofiber alignment with differ"
+   },
+   {
+    "page": 6,
+    "block_id": 17,
+    "text": "Fig. 3. Osteogenic differentiation of stem cells, grown on the piezoelectric PLLA nanofiber scaffold under applied US in vitro. a. A simple schematic demonstrates our setup for seeding adipose stem cells (ADCs) onto the scaffolds and treating them with US. The applied US induces controllable acousti"
+   },
+   {
+    "page": 7,
+    "block_id": 8,
+    "text": "Fig. 4. Osteogenic activity of reporter bone marrow stem cells (BMSCs) when grown on the electrospun PLLA scaffolds with US treatment. a. Schematic to demonstrate the progressive expression from BSP to DMP and changes in fluorescence that accompany this transition. b. Fluorescent microscope images o"
+   },
+   {
+    "page": 8,
+    "block_id": 14,
+    "text": "Fig. 5. Representative histology sections of the mouse calvarial bone showing details of bone formation and cell migration into the defects for the groups of piezo-scaffold (3000 rpm) and non-piezo. scaffold (300 rpm) under the same application of US. a is a simplified schematic of our in vivo exper"
+   },
+   {
+    "page": 10,
+    "block_id": 51,
+    "text": "Eli J. Curry is currently pursuing his Ph.D. in Biomedical Engineering at the University of Connecticut. He also received his B.S. in Biomedical Engineering at the University of Connecticut (2016). His doctoral research is on the development of wireless, biodegradable polymer-based piezoelectric dev"
+   },
+   {
+    "page": 10,
+    "block_id": 53,
+    "text": "Thinh T. Le received his M.S. degree of mechanical engineering from the Catholic University of America, US in 2017. He is currently pursuing Ph.D. degree in Mechanical Engineering Department, University of Connecticut. His research interest focused on implantable biodegradable ultrasonic devices, pi"
+   },
+   {
+    "page": 11,
+    "block_id": 3,
+    "text": "Yang Liu received his Ph.D degree from Peking University in 2018. He is now a postdoc researcher in the Department of Mechanical Engineering, University of Connecticut. His research interest focuses on the design and evaluation of biodegradable metals and polymers for tissue regeneration."
+   },
+   {
+    "page": 11,
+    "block_id": 6,
+    "text": "Xiaonan Xin, MD, Ph.D, Currently, an Assistant Research Professor at University of Connecticut Health. She has worked in the field of skeletal biology and regeneration. In her studies, she has established mouse calvarial bone defect model to test the osteogenic potential of implanted materials or ce"
+   },
+   {
+    "page": 11,
+    "block_id": 7,
+    "text": "Shunyi Li received her B.S.E. degree in Biomedical Engineering with a Materials Science and Engineering minor from the University of Connecticut in 2020. Currently, she is entering the medical device industry as an engineer. Previously, she worked as a research assistant in Professor Thanh Nguyen's "
+   },
+   {
+    "page": 11,
+    "block_id": 12,
+    "text": "Joemart Ian Contreras has a degree in biomedical engineering with a concentration in bioinstrumentation from the University of Connecticut. He is currently pursuing a master's degree in biomedical engineering from the University of Connecticut in pursuit of a future career in clinical engineering an"
+   },
+   {
+    "page": 11,
+    "block_id": 13,
+    "text": "Dr. David Rowe received his MD from the University of Vermont. Currently he is a Professor of Reconstructive Sciences at UConn Health and the Director of the Center for Regenerative Medicine and Skeletal Development. His lab works in the field of skeletal biology and regeneration and has established"
+   },
+   {
+    "page": 11,
+    "block_id": 15,
+    "text": "Dr. Sharareh Emadi finished her Ph.D. at the Pasteur Institute in France, specializing in Cardiovascular Pharmacology. She is currently an Assistant Professor-In-Residence in the department of Biomedical Engineering at the University of Connecticut. Her current focus is on molecular, biochemical, an"
+   },
+   {
+    "page": 11,
+    "block_id": 16,
+    "text": "Casey E. Bednarz received her B.S. degree in Physiology and Neurobiology from the University of Connecticut in 2019. She is currently working full time and planning to go back and to school to pursue a masters degree."
+   },
+   {
+    "page": 11,
+    "block_id": 17,
+    "text": "Dr. Kevin Lo is an Assistant Professor of Medicine at UConn Health. He has held editorial positions on several prestigious journals including PLoS ONE. His research programs include musculoskeletal regeneration using inductive small molecules and osteotropic nanoscale drug delivery systems. He has a"
+   },
+   {
+    "page": 11,
+    "block_id": 19,
+    "text": "Jayla Millender is an honors undergraduate student at the University of Connecticut pursuing degrees in Africana Studies and Molecular and Cellular Biology. Her research focuses on the development of synthetic bone grafts using biodegradable materials."
+   }
+  ]
+ }
+}

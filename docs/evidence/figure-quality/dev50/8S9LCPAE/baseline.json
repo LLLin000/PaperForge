@@ -1,0 +1,250 @@
+{
+ "dry_run": {
+  "key": "8S9LCPAE",
+  "identity": {
+   "old": {
+    "entries": 4,
+    "unique_ids": 4,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 4,
+    "unique_ids": 4,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005",
+    "figure_006": "figure_006"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 17,
+   "new_render_files": 34,
+   "render_added": [
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/figures/figure_005.jpg",
+    "assets/figures/figure_006.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/tables/table_001.jpg",
+    "assets/tables/table_002.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 5,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 2,
+   "new_tables": 2,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 150,
+   "new_rows": 150,
+   "role_removed": {
+    "unknown_structural": 1,
+    "frontmatter_noise": 1,
+    "figure_caption_candidate": 2,
+    "reference_item": 3
+   },
+   "role_added": {
+    "noise": 2,
+    "section_heading": 1,
+    "subsection_heading": 2,
+    "figure_caption": 2
+   },
+   "old_body_chars": 15285,
+   "new_body_chars": 15285,
+   "old_text_chars": 32325,
+   "new_text_chars": 32325,
+   "old_fulltext_chars": 24175
+  },
+  "new_manifest": {
+   "figures": 4,
+   "tables": 2,
+   "orphans": 11
+  },
+  "new_orphans": 1
+ },
+ "structural": {
+  "key": "8S9LCPAE",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 32325,
+  "new_text_chars": 32325,
+  "old_entries": 4,
+  "new_entries": 4,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 3,
+     "block_id": 3,
+     "text": "Fig. 1. Proton density-weighted fat-suppressed images in the coronal plane (A, B) and T2-weighted images in the sagittal plane (C) of the left shoulder of a 52-year-old male revealed high-signal intensity changes (HSIC) in the joint capsule (arrow) without rotator cuff tear. Asterisk indicates the l"
+    },
+    {
+     "page": 3,
+     "block_id": 5,
+     "text": "Fig. 2. Proton density-weighted fat-suppressed images in the coronal plane (A, B) and T2-weighted images in the sagittal plane (C) of the right shoulder of a 54-year-old male revealed high-signal intensity changes (HSIC) (arrow) in the joint capsule with a partial-thickness bursal side tear in the s"
+    },
+    {
+     "page": 5,
+     "block_id": 11,
+     "text": "Logistic regression analysis of factors related to high signal intensity change in joint capsule."
+    },
+    {
+     "page": 5,
+     "block_id": 18,
+     "text": "Comparison of the relation between HSIC and night pain within the rotator cuff injuries."
+    }
+   ],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      1010,
+      355,
+      1070,
+      414
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 3,
+     "text": "Fig. 1. Proton density-weighted fat-suppressed images in the coronal plane (A, B) and T2-weighted images in the sagittal plane (C) of the left shoulder of a 52-year-old male revealed high-signal intensity changes (HSIC) in the joint capsule (arrow) without rotator cuff tear. Asterisk indicates the l"
+    },
+    {
+     "page": 3,
+     "block_id": 5,
+     "text": "Fig. 2. Proton density-weighted fat-suppressed images in the coronal plane (A, B) and T2-weighted images in the sagittal plane (C) of the right shoulder of a 54-year-old male revealed high-signal intensity changes (HSIC) (arrow) in the joint capsule with a partial-thickness bursal side tear in the s"
+    },
+    {
+     "page": 3,
+     "block_id": 7,
+     "text": "Fig. 3. Proton density-weighted fat-suppressed images in the coronal plane (A, B) and T2-weighted images in the sagittal plane (C) of the right shoulder of a 61-year-old male revealed high-signal intensity changes (HSIC) (arrow) in the joint capsule with a full-thickness bursal side tear in the supr"
+    },
+    {
+     "page": 4,
+     "block_id": 3,
+     "text": "Fig. 4. Measurement of the HSIC: Case of articular side partial thickness rotator cuff tear, 51-year-old male, Rt. shoulder. A ROI was placed in the joint capsule (A) and LHB tendon (B) on the coronal section of fat-saturated proton density-weighted fat-suppressed images in the coronal plane."
+    },
+    {
+     "page": 4,
+     "block_id": 5,
+     "text": "Fig. 5. Flow diagram of the study."
+    },
+    {
+     "page": 5,
+     "block_id": 7,
+     "text": "Fig. 6. Comparison of HSIC ratio. The ratio of positive HSIC was significantly higher (p < 0.001) than those of the other groups."
+    },
+    {
+     "page": 5,
+     "block_id": 11,
+     "text": "Logistic regression analysis of factors related to high signal intensity change in joint capsule."
+    },
+    {
+     "page": 5,
+     "block_id": 18,
+     "text": "Comparison of the relation between HSIC and night pain within the rotator cuff injuries."
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [
+   {
+    "page": 3,
+    "block_id": 3,
+    "text": "Fig. 1. Proton density-weighted fat-suppressed images in the coronal plane (A, B) and T2-weighted images in the sagittal plane (C) of the left shoulder of a 52-year-old male revealed high-signal intensity changes (HSIC) in the joint capsule (arrow) without rotator cuff tear. Asterisk indicates the l"
+   },
+   {
+    "page": 3,
+    "block_id": 5,
+    "text": "Fig. 2. Proton density-weighted fat-suppressed images in the coronal plane (A, B) and T2-weighted images in the sagittal plane (C) of the right shoulder of a 54-year-old male revealed high-signal intensity changes (HSIC) (arrow) in the joint capsule with a partial-thickness bursal side tear in the s"
+   },
+   {
+    "page": 5,
+    "block_id": 11,
+    "text": "Logistic regression analysis of factors related to high signal intensity change in joint capsule."
+   },
+   {
+    "page": 5,
+    "block_id": 18,
+    "text": "Comparison of the relation between HSIC and night pain within the rotator cuff injuries."
+   }
+  ],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     1010,
+     355,
+     1070,
+     414
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 3,
+    "block_id": 3,
+    "text": "Fig. 1. Proton density-weighted fat-suppressed images in the coronal plane (A, B) and T2-weighted images in the sagittal plane (C) of the left shoulder of a 52-year-old male revealed high-signal intensity changes (HSIC) in the joint capsule (arrow) without rotator cuff tear. Asterisk indicates the l"
+   },
+   {
+    "page": 3,
+    "block_id": 5,
+    "text": "Fig. 2. Proton density-weighted fat-suppressed images in the coronal plane (A, B) and T2-weighted images in the sagittal plane (C) of the right shoulder of a 54-year-old male revealed high-signal intensity changes (HSIC) (arrow) in the joint capsule with a partial-thickness bursal side tear in the s"
+   },
+   {
+    "page": 3,
+    "block_id": 7,
+    "text": "Fig. 3. Proton density-weighted fat-suppressed images in the coronal plane (A, B) and T2-weighted images in the sagittal plane (C) of the right shoulder of a 61-year-old male revealed high-signal intensity changes (HSIC) (arrow) in the joint capsule with a full-thickness bursal side tear in the supr"
+   },
+   {
+    "page": 4,
+    "block_id": 3,
+    "text": "Fig. 4. Measurement of the HSIC: Case of articular side partial thickness rotator cuff tear, 51-year-old male, Rt. shoulder. A ROI was placed in the joint capsule (A) and LHB tendon (B) on the coronal section of fat-saturated proton density-weighted fat-suppressed images in the coronal plane."
+   },
+   {
+    "page": 4,
+    "block_id": 5,
+    "text": "Fig. 5. Flow diagram of the study."
+   },
+   {
+    "page": 5,
+    "block_id": 7,
+    "text": "Fig. 6. Comparison of HSIC ratio. The ratio of positive HSIC was significantly higher (p < 0.001) than those of the other groups."
+   },
+   {
+    "page": 5,
+    "block_id": 11,
+    "text": "Logistic regression analysis of factors related to high signal intensity change in joint capsule."
+   },
+   {
+    "page": 5,
+    "block_id": 18,
+    "text": "Comparison of the relation between HSIC and night pain within the rotator cuff injuries."
+   }
+  ]
+ }
+}

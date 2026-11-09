@@ -1,0 +1,174 @@
+{
+ "dry_run": {
+  "key": "VVIT8SVK",
+  "identity": {
+   "old": {
+    "entries": 5,
+    "unique_ids": 5,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 5,
+    "unique_ids": 5,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 16,
+   "new_render_files": 32,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/figures/figure_005.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/tables/table_001.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 5,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 1,
+   "new_tables": 1,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 174,
+   "new_rows": 174,
+   "role_removed": {
+    "frontmatter_noise": 1,
+    "reference_item": 2
+   },
+   "role_added": {
+    "noise": 2,
+    "section_heading": 1
+   },
+   "old_body_chars": 29801,
+   "new_body_chars": 29801,
+   "old_text_chars": 49456,
+   "new_text_chars": 49456,
+   "old_fulltext_chars": 45326
+  },
+  "new_manifest": {
+   "figures": 5,
+   "tables": 1,
+   "orphans": 10
+  },
+  "new_orphans": 1
+ },
+ "structural": {
+  "key": "VVIT8SVK",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 49456,
+  "new_text_chars": 49456,
+  "old_entries": 5,
+  "new_entries": 5,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      1066,
+      354,
+      1125,
+      413
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 3,
+     "text": "Fig. 1. Study design – right and left tibial plateaus were collected from two cadaveric donors (asymptomatic for OA) and from four patients who underwent total knee replacements. A top-view image was captured for each sample and a position grid was superimposed to precisely define test locations for"
+    },
+    {
+     "page": 5,
+     "block_id": 3,
+     "text": "Fig. 2. Representative mappings of different assessments of human tibial plateaus. The top row represents a less-degenerated right tibial plateau while the bottom row represents a more-degenerated one. A) Top view images of a less and a more-degenerated tibial plateau; B) Visual assessment mapping ("
+    },
+    {
+     "page": 5,
+     "block_id": 9,
+     "text": "Fig. 3. Box Plot graphs showing different assessments (electromechanical QP, cartilage thickness and subchondral bone plate thickness) according to the ICRS grading (0, 1 and 2). Box Plots displays median values (central horizontal line), first and third quartiles (box) and  $ 1.5 \\times $ interquar"
+    },
+    {
+     "page": 6,
+     "block_id": 3,
+     "text": "Fig. 4. Receiver operating characteristic (ROC) curves and comparison between the area below the ROC curves (accuracy) are produced from the raw data of the electromechanical QP, the subchondral bone plate thickness and the cartilage thickness to distinguish between normal cartilage (ICRS = 0) and t"
+    },
+    {
+     "page": 6,
+     "block_id": 5,
+     "text": "Fig. 5. Effect sizes for electromechanical QP, subchondral bone plate thickness and cartilage thickness assessments. Effect sizes were calculated as the difference of means between the normal region (ICRS grade 0) and each of the early degenerated regions (transitional-I, region ICRS grade 1, transi"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     1066,
+     354,
+     1125,
+     413
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 3,
+    "block_id": 3,
+    "text": "Fig. 1. Study design – right and left tibial plateaus were collected from two cadaveric donors (asymptomatic for OA) and from four patients who underwent total knee replacements. A top-view image was captured for each sample and a position grid was superimposed to precisely define test locations for"
+   },
+   {
+    "page": 5,
+    "block_id": 3,
+    "text": "Fig. 2. Representative mappings of different assessments of human tibial plateaus. The top row represents a less-degenerated right tibial plateau while the bottom row represents a more-degenerated one. A) Top view images of a less and a more-degenerated tibial plateau; B) Visual assessment mapping ("
+   },
+   {
+    "page": 5,
+    "block_id": 9,
+    "text": "Fig. 3. Box Plot graphs showing different assessments (electromechanical QP, cartilage thickness and subchondral bone plate thickness) according to the ICRS grading (0, 1 and 2). Box Plots displays median values (central horizontal line), first and third quartiles (box) and  $ 1.5 \\times $ interquar"
+   },
+   {
+    "page": 6,
+    "block_id": 3,
+    "text": "Fig. 4. Receiver operating characteristic (ROC) curves and comparison between the area below the ROC curves (accuracy) are produced from the raw data of the electromechanical QP, the subchondral bone plate thickness and the cartilage thickness to distinguish between normal cartilage (ICRS = 0) and t"
+   },
+   {
+    "page": 6,
+    "block_id": 5,
+    "text": "Fig. 5. Effect sizes for electromechanical QP, subchondral bone plate thickness and cartilage thickness assessments. Effect sizes were calculated as the difference of means between the normal region (ICRS grade 0) and each of the early degenerated regions (transitional-I, region ICRS grade 1, transi"
+   }
+  ]
+ }
+}

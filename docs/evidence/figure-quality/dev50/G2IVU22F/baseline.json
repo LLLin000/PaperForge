@@ -1,0 +1,176 @@
+{
+ "dry_run": {
+  "key": "G2IVU22F",
+  "identity": {
+   "old": {
+    "entries": 5,
+    "unique_ids": 5,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 5,
+    "unique_ids": 5,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_s002": "figure_s002",
+    "figure_s005": "figure_s005"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 16,
+   "new_render_files": 32,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/figures/figure_s002.jpg",
+    "assets/figures/figure_s005.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/tables/table_001.jpg",
+    "assets/tables/table_002.jpg",
+    "assets/tables/table_003.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 8,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 3,
+   "new_tables": 3,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 170,
+   "new_rows": 170,
+   "role_removed": {
+    "frontmatter_noise": 1,
+    "body_paragraph": 1,
+    "reference_item": 1
+   },
+   "role_added": {
+    "section_heading": 1,
+    "abstract_body": 1,
+    "subsection_heading": 1
+   },
+   "old_body_chars": 33569,
+   "new_body_chars": 32438,
+   "old_text_chars": 60813,
+   "new_text_chars": 60813,
+   "old_fulltext_chars": 49833
+  },
+  "new_manifest": {
+   "figures": 5,
+   "tables": 3,
+   "orphans": 8
+  },
+  "new_orphans": 1
+ },
+ "structural": {
+  "key": "G2IVU22F",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 60813,
+  "new_text_chars": 60813,
+  "old_entries": 5,
+  "new_entries": 5,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      1001,
+      333,
+      1059,
+      390
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 4,
+     "block_id": 5,
+     "text": "Fig. 1. Sequence similarity of lysostaphin Lsp222 to sequences of selected peptidoglycan hydrolases, and the genetic context of Lsp222 encoding gene compared with one of its closest homologues, lysostaphin Ls. (A) The sequence of Lsp222 displays high percentage of identity and similarity to other st"
+    },
+    {
+     "page": 4,
+     "block_id": 11,
+     "text": "Fig. 2. Activity of lysostaphins, LSp222 and LSs, and their relative activity towards different strains and species from Staphylococcus genus. Green colour scale depicts  $ Log_{2} $ of the activity (given in numbers). The exact activities are shown in Supplementary Materials Table S2. Blue/red scal"
+    },
+    {
+     "page": 5,
+     "block_id": 4,
+     "text": "Fig. 3. Lysostaphins, LSp222 (☐) and LSs (∆), exhibit different activities towards different strains and species of staphylococci (S. pseudintermedius 222, the producer of LSp222; type strains: S. capitis 27840, S. muscae 2406 and S. pulvereri 2443). Bacterial suspensions were mixed with tested lyso"
+    },
+    {
+     "page": 6,
+     "block_id": 4,
+     "text": "Fig. 4. Composition and activity of hybrid variants of lysostaphins. (A) Schematic representation of lysostaphins LSp222 (P) and LSs (S), and domain swapped hybrid variants (CAT, catalytic domain, LNK, the linker, and CWT, substrate binding domain; PPS, PSS, SSP and SPP denote the respective hybrid "
+    },
+    {
+     "page": 6,
+     "block_id": 7,
+     "text": "Fig. 5. Activity of hybrid variants of lysostaphins against selected strains and species from Staphylococcus genus. Green colour scale depicts  $ \\log_{2} $ of the activity (given in numbers). Activities are provided in Supplementary Materials Table S3. Blue/red colour scale shows relative activitie"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     1001,
+     333,
+     1059,
+     390
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 4,
+    "block_id": 5,
+    "text": "Fig. 1. Sequence similarity of lysostaphin Lsp222 to sequences of selected peptidoglycan hydrolases, and the genetic context of Lsp222 encoding gene compared with one of its closest homologues, lysostaphin Ls. (A) The sequence of Lsp222 displays high percentage of identity and similarity to other st"
+   },
+   {
+    "page": 4,
+    "block_id": 11,
+    "text": "Fig. 2. Activity of lysostaphins, LSp222 and LSs, and their relative activity towards different strains and species from Staphylococcus genus. Green colour scale depicts  $ Log_{2} $ of the activity (given in numbers). The exact activities are shown in Supplementary Materials Table S2. Blue/red scal"
+   },
+   {
+    "page": 5,
+    "block_id": 4,
+    "text": "Fig. 3. Lysostaphins, LSp222 (☐) and LSs (∆), exhibit different activities towards different strains and species of staphylococci (S. pseudintermedius 222, the producer of LSp222; type strains: S. capitis 27840, S. muscae 2406 and S. pulvereri 2443). Bacterial suspensions were mixed with tested lyso"
+   },
+   {
+    "page": 6,
+    "block_id": 4,
+    "text": "Fig. 4. Composition and activity of hybrid variants of lysostaphins. (A) Schematic representation of lysostaphins LSp222 (P) and LSs (S), and domain swapped hybrid variants (CAT, catalytic domain, LNK, the linker, and CWT, substrate binding domain; PPS, PSS, SSP and SPP denote the respective hybrid "
+   },
+   {
+    "page": 6,
+    "block_id": 7,
+    "text": "Fig. 5. Activity of hybrid variants of lysostaphins against selected strains and species from Staphylococcus genus. Green colour scale depicts  $ \\log_{2} $ of the activity (given in numbers). Activities are provided in Supplementary Materials Table S3. Blue/red colour scale shows relative activitie"
+   }
+  ]
+ }
+}

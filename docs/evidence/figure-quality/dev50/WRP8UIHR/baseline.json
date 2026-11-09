@@ -1,0 +1,94 @@
+{
+ "dry_run": {
+  "key": "WRP8UIHR",
+  "identity": {
+   "old": {
+    "entries": 1,
+    "unique_ids": 1,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 1,
+    "unique_ids": 1,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 2,
+   "new_render_files": 4,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/orphans/orphan_001.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 1,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 0,
+   "new_tables": 0,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 87,
+   "new_rows": 87,
+   "role_removed": {
+    "figure_inner_text": 1
+   },
+   "role_added": {
+    "body_paragraph": 1
+   },
+   "old_body_chars": 9808,
+   "new_body_chars": 10227,
+   "old_text_chars": 20363,
+   "new_text_chars": 20363,
+   "old_fulltext_chars": 16415
+  },
+  "new_manifest": {
+   "figures": 1,
+   "tables": 0,
+   "orphans": 1
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "WRP8UIHR",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 20363,
+  "new_text_chars": 20363,
+  "old_entries": 1,
+  "new_entries": 1,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 4,
+     "text": "Fig. 1 This diagram shows the Bigliani classification of acromial morphology: (A), Type I (flat); (B), Type II (curved); and (C), Type III (hooked). Reprinted with permission from Bright AS, Torpey B, Magid D, Codd T, McFarland EG. Reliability of radiographic evaluation for acromial morphology. Skel"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 4,
+    "text": "Fig. 1 This diagram shows the Bigliani classification of acromial morphology: (A), Type I (flat); (B), Type II (curved); and (C), Type III (hooked). Reprinted with permission from Bright AS, Torpey B, Magid D, Codd T, McFarland EG. Reliability of radiographic evaluation for acromial morphology. Skel"
+   }
+  ]
+ }
+}

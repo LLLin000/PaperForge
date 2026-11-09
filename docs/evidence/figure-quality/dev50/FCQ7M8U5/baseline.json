@@ -1,0 +1,109 @@
+{
+ "dry_run": {
+  "key": "FCQ7M8U5",
+  "identity": {
+   "old": {
+    "entries": 2,
+    "unique_ids": 2,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 2,
+    "unique_ids": 2,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 6,
+   "new_render_files": 12,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/tables/table_001.jpg",
+    "assets/tables/table_002.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 4,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 2,
+   "new_tables": 2,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 133,
+   "new_rows": 133,
+   "role_removed": {
+    "unknown_structural": 1
+   },
+   "role_added": {
+    "authors": 1
+   },
+   "old_body_chars": 21342,
+   "new_body_chars": 21342,
+   "old_text_chars": 34380,
+   "new_text_chars": 34380,
+   "old_fulltext_chars": 28918
+  },
+  "new_manifest": {
+   "figures": 2,
+   "tables": 2,
+   "orphans": 2
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "FCQ7M8U5",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 34380,
+  "new_text_chars": 34380,
+  "old_entries": 2,
+  "new_entries": 2,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 6,
+     "text": "Fig. 1 A flow diagram of the participant inclusion process is shown."
+    },
+    {
+     "page": 5,
+     "block_id": 11,
+     "text": "Fig. 2 The activation ratios of four shoulder muscles in patients with SAPS and controls are shown. LD = latissimus dorsi; TM = teres major; PM = pectoralis major; DM = deltoid muscle"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 3,
+    "block_id": 6,
+    "text": "Fig. 1 A flow diagram of the participant inclusion process is shown."
+   },
+   {
+    "page": 5,
+    "block_id": 11,
+    "text": "Fig. 2 The activation ratios of four shoulder muscles in patients with SAPS and controls are shown. LD = latissimus dorsi; TM = teres major; PM = pectoralis major; DM = deltoid muscle"
+   }
+  ]
+ }
+}

@@ -1,0 +1,209 @@
+{
+ "dry_run": {
+  "key": "VK2XSGFY",
+  "identity": {
+   "old": {
+    "entries": 3,
+    "unique_ids": 3,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 3,
+    "unique_ids": 3,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_reserved_002": "figure_001"
+   },
+   "renamed": [
+    [
+     "figure_reserved_002",
+     "figure_001"
+    ]
+   ],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 35,
+   "new_render_files": 36,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "render/figures/figure_001.md"
+   ],
+   "render_removed": [
+    "render/figures/figure_reserved_002.md"
+   ],
+   "embeds": 13,
+   "embeds_retargeted": 1,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 10,
+   "new_tables": 10,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 217,
+   "new_rows": 217,
+   "role_removed": {
+    "unknown_structural": 1,
+    "figure_caption_candidate": 4,
+    "reference_item": 2
+   },
+   "role_added": {
+    "authors": 1,
+    "table_html": 2,
+    "figure_caption": 4
+   },
+   "old_body_chars": 27447,
+   "new_body_chars": 27447,
+   "old_text_chars": 85936,
+   "new_text_chars": 85936,
+   "old_fulltext_chars": 41200
+  },
+  "new_manifest": {
+   "figures": 3,
+   "tables": 10,
+   "orphans": 5
+  },
+  "new_orphans": 1
+ },
+ "structural": {
+  "key": "VK2XSGFY",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 85936,
+  "new_text_chars": 85936,
+  "old_entries": 3,
+  "new_entries": 3,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 20,
+     "block_id": 0,
+     "text": "Appendix Table 2. MINORS Criteria in All Included Studies"
+    },
+    {
+     "page": 21,
+     "block_id": 2,
+     "text": "Appendix Table 3. Level of Evidence of All Included Studies"
+    }
+   ],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      1050,
+      212,
+      1099,
+      262
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 6,
+     "block_id": 5,
+     "text": "Fig 1. Preferred Reporting Items for Systematic Reviews and Meta-analyses (PRISMA) flow diagram showing study identification, screening, eligibility, and inclusion or exclusion. (LoE, level of evidence.)"
+    },
+    {
+     "page": 6,
+     "block_id": 8,
+     "text": "RCR Retear Rates of All Included Studies"
+    },
+    {
+     "page": 6,
+     "block_id": 10,
+     "text": "Fig 2. Unweighted box plot of rotator cuff repair (RCR) retear rates created from individual study retear rates (blue) and weighted box plot accounting for individual study sample sizes (gray). Whiskers represent the maximum and minimum reported retear rates and the top and bottom borders of the box"
+    },
+    {
+     "page": 14,
+     "block_id": 3,
+     "text": "Fig 3. Critical shoulder angle calculation on anteroposterior shoulder radiographs. (A) The acromiohumeral distance is the distance between the superior humerus and inferior acromion (blue line). (B) The critical shoulder angle is measured as the angle formed between a line connecting the lateral bo"
+    },
+    {
+     "page": 20,
+     "block_id": 0,
+     "text": "Appendix Table 2. MINORS Criteria in All Included Studies"
+    },
+    {
+     "page": 20,
+     "block_id": 4,
+     "text": "A. DARBANDI ET AL."
+    },
+    {
+     "page": 21,
+     "block_id": 2,
+     "text": "Appendix Table 3. Level of Evidence of All Included Studies"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [
+   {
+    "page": 20,
+    "block_id": 0,
+    "text": "Appendix Table 2. MINORS Criteria in All Included Studies"
+   },
+   {
+    "page": 21,
+    "block_id": 2,
+    "text": "Appendix Table 3. Level of Evidence of All Included Studies"
+   }
+  ],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     1050,
+     212,
+     1099,
+     262
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 6,
+    "block_id": 5,
+    "text": "Fig 1. Preferred Reporting Items for Systematic Reviews and Meta-analyses (PRISMA) flow diagram showing study identification, screening, eligibility, and inclusion or exclusion. (LoE, level of evidence.)"
+   },
+   {
+    "page": 6,
+    "block_id": 8,
+    "text": "RCR Retear Rates of All Included Studies"
+   },
+   {
+    "page": 6,
+    "block_id": 10,
+    "text": "Fig 2. Unweighted box plot of rotator cuff repair (RCR) retear rates created from individual study retear rates (blue) and weighted box plot accounting for individual study sample sizes (gray). Whiskers represent the maximum and minimum reported retear rates and the top and bottom borders of the box"
+   },
+   {
+    "page": 14,
+    "block_id": 3,
+    "text": "Fig 3. Critical shoulder angle calculation on anteroposterior shoulder radiographs. (A) The acromiohumeral distance is the distance between the superior humerus and inferior acromion (blue line). (B) The critical shoulder angle is measured as the angle formed between a line connecting the lateral bo"
+   },
+   {
+    "page": 20,
+    "block_id": 0,
+    "text": "Appendix Table 2. MINORS Criteria in All Included Studies"
+   },
+   {
+    "page": 20,
+    "block_id": 4,
+    "text": "A. DARBANDI ET AL."
+   },
+   {
+    "page": 21,
+    "block_id": 2,
+    "text": "Appendix Table 3. Level of Evidence of All Included Studies"
+   }
+  ]
+ }
+}

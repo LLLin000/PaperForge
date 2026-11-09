@@ -1,0 +1,303 @@
+{
+ "dry_run": {
+  "key": "XVGX9U4V",
+  "identity": {
+   "old": {
+    "entries": 14,
+    "unique_ids": 14,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 14,
+    "unique_ids": 14,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005",
+    "figure_006": "figure_006",
+    "figure_007": "figure_007",
+    "figure_008": "figure_008",
+    "figure_009": "figure_009",
+    "figure_010": "figure_010",
+    "figure_011": "figure_011",
+    "figure_012": "figure_012",
+    "figure_013": "figure_013",
+    "figure_014": "figure_014"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 40,
+   "new_render_files": 86,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/figures/figure_005.jpg",
+    "assets/figures/figure_006.jpg",
+    "assets/figures/figure_007.jpg",
+    "assets/figures/figure_008.jpg",
+    "assets/figures/figure_009.jpg",
+    "assets/figures/figure_010.jpg",
+    "assets/figures/figure_011.jpg",
+    "assets/figures/figure_012.jpg",
+    "assets/figures/figure_013.jpg",
+    "assets/figures/figure_014.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/orphans/orphan_013.jpg",
+    "assets/orphans/orphan_014.jpg",
+    "assets/orphans/orphan_015.jpg",
+    "assets/orphans/orphan_016.jpg",
+    "assets/orphans/orphan_017.jpg",
+    "assets/orphans/orphan_018.jpg",
+    "assets/orphans/orphan_019.jpg",
+    "assets/orphans/orphan_020.jpg",
+    "assets/orphans/orphan_021.jpg",
+    "assets/orphans/orphan_022.jpg",
+    "assets/orphans/orphan_023.jpg",
+    "assets/orphans/orphan_024.jpg",
+    "assets/orphans/orphan_025.jpg",
+    "assets/orphans/orphan_026.jpg",
+    "assets/orphans/orphan_027.jpg",
+    "assets/orphans/orphan_028.jpg",
+    "assets/orphans/orphan_029.jpg",
+    "render/figures/orphan_027.md",
+    "render/figures/orphan_028.md",
+    "render/figures/orphan_029.md"
+   ],
+   "render_removed": [],
+   "embeds": 14,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 0,
+   "new_tables": 0,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 655,
+   "new_rows": 655,
+   "role_removed": {
+    "frontmatter_noise": 1,
+    "reference_item": 3
+   },
+   "role_added": {
+    "noise": 3,
+    "body_paragraph": 1
+   },
+   "old_body_chars": 77749,
+   "new_body_chars": 77794,
+   "old_text_chars": 128203,
+   "new_text_chars": 128203,
+   "old_fulltext_chars": 115920
+  },
+  "new_manifest": {
+   "figures": 14,
+   "tables": 0,
+   "orphans": 29
+  },
+  "new_orphans": 1
+ },
+ "structural": {
+  "key": "XVGX9U4V",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 128203,
+  "new_text_chars": 128203,
+  "old_entries": 14,
+  "new_entries": 14,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      470,
+      952,
+      584,
+      1067
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 3,
+     "text": "Figure 1. The human body consists of various elastic, tough, and electroactive tissues under the action of a dynamic environment. The ideal tissue engineering scaffold therefore needs to satisfy a variety of mechanical and electrical demands to enable the generation of readily implemented tissue tra"
+    },
+    {
+     "page": 3,
+     "block_id": 5,
+     "text": "Figure 2. A variety of approaches are currently being used to develop the much-needed multifunctional tissue engineering scaffolds. Nanoreinforced hydrogels stand as promising and convenient materials for this application given their range of properties including increased bioactivity, conductivity,"
+    },
+    {
+     "page": 5,
+     "block_id": 3,
+     "text": "Figure 3. Engineering of an osteon-like, cell-laden hydrogel as discussed in Section 2.1. a) Schematic representation of the formation of hydroxyapatite nanoparticles in GelMA. b) Schematic representation of the UV-microfabrication procedure employed in the generation of the osteon-like microstructu"
+    },
+    {
+     "page": 6,
+     "block_id": 5,
+     "text": "Figure 4. Chemical structures of nanoclay platelets currently used for various biomedical engineering applications. Nanoclays are basically ultrathin ( $ \\approx $1 nm thick) platelets with a dual charge that makes it easy to dissolve and incorporate into almost any existing hydrogel matrix."
+    },
+    {
+     "page": 7,
+     "block_id": 4,
+     "text": "Figure 5. A growth-factor-free solution $ ^{[15]} $ to bone-tissue engineering. a) Schematic representation of Laponite incorporation into GelMA. b) Mechanical data showing Laponite-facilitated reinforcement of GelMA, leading to a compressive Young's modulus nearly four times that of pure GelMA. c) "
+    },
+    {
+     "page": 8,
+     "block_id": 8,
+     "text": "Figure 6. A nanoreinforced and self-healing hydrogel. a,b) Schematic representation of the noncovalent and reversible bonding between hydroxyapatite nanoparticles and hyaluronan-bisphosphonate. c) Photographs showing the adhesion strength of the nanoreinforced hydroxyapatite-based hydrogel with mine"
+    },
+    {
+     "page": 10,
+     "block_id": 10,
+     "text": "Figure 7. Tissue-engineering applications of carbon-based nanocomposite hydrogels. Over the years, graphene sheets and CNTs have been used as nanofillers in hydrogels intended for use in neural, cardiac, and skeletal-muscle tissue engineering."
+    },
+    {
+     "page": 13,
+     "block_id": 4,
+     "text": "Figure 8. Gold-nanorod-based hydrogels for cardiac tissue engineering. a) Schematic representation of the fabrication process of hybrid nanocomposite hydrogels. b,c,d) The hybrid hydrogels displayed low impedance and almost 3-fold increase in Young's modulus as compared to pure GelMA hydrogels. e) T"
+    },
+    {
+     "page": 14,
+     "block_id": 9,
+     "text": "Figure 9. Multilayered GO-based cellular-sheets for cardiac tissue engineering. a) Schematic representation of the layer-by-layer assembly onto GO-GelMA. b) Confocal images demonstrating the formation of a multilayered cell-sheet consisting of cardiac and endothelial cells. c) Cells in the multilaye"
+    },
+    {
+     "page": 15,
+     "block_id": 11,
+     "text": "Figure 10. GO-based hydrogels have been used as elastomeric and conductive fillers for skeletal muscle tissue engineering. a,b) GO incorporation into the hydrogel significantly improved the twisting and stretching properties of the hybrid gel. c,d) The hybrid gel could reconnect explanted abdominal "
+    },
+    {
+     "page": 17,
+     "block_id": 9,
+     "text": "Figure 11. CNTs have also been used as printable ink for 3D flexible electronics. a) Schematic illustrating the printing of conductive circuits from a CNT-based ink. b) 3D-printed CNT circuits embedded within a cell-laden GelMA hydrogel. c) 3D-encapsulated cardiac cells were healthy and expressing s"
+    },
+    {
+     "page": 18,
+     "block_id": 8,
+     "text": "Figure 12. Merging nanoelectronics with living cells – a roadmap to a cyborganic future. a) Schematics of the fabrication procedure for silicon nanowires and an optical image showing the fibers and nanoelectronics in the hybrid scaffold. b) Confocal image of encapsulated cardiac cells expressing sar"
+    },
+    {
+     "page": 20,
+     "block_id": 5,
+     "text": "Figure 13. Vertically aligned CNT microarrays inside GelMA can yield controlled and improved actuation of cardiac-based bioactuators. a) Schematic showing the concepts behind the fabrication of the hybrid bioactuator. b) Cardiac cells were healthy and expressing important markers. Cells within the d"
+    },
+    {
+     "page": 21,
+     "block_id": 3,
+     "text": "Figure 14. Emerging trends and future directions. a) 3D printing of hybrid neural circuits for neuron-to-machine interfaces. b) The potential application of cell-laden conductors in cyborganics. c) Use of 3D-printed neural circuits and cyborg skeletal muscle to generate advanced biorobots."
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     470,
+     952,
+     584,
+     1067
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 3,
+    "block_id": 3,
+    "text": "Figure 1. The human body consists of various elastic, tough, and electroactive tissues under the action of a dynamic environment. The ideal tissue engineering scaffold therefore needs to satisfy a variety of mechanical and electrical demands to enable the generation of readily implemented tissue tra"
+   },
+   {
+    "page": 3,
+    "block_id": 5,
+    "text": "Figure 2. A variety of approaches are currently being used to develop the much-needed multifunctional tissue engineering scaffolds. Nanoreinforced hydrogels stand as promising and convenient materials for this application given their range of properties including increased bioactivity, conductivity,"
+   },
+   {
+    "page": 5,
+    "block_id": 3,
+    "text": "Figure 3. Engineering of an osteon-like, cell-laden hydrogel as discussed in Section 2.1. a) Schematic representation of the formation of hydroxyapatite nanoparticles in GelMA. b) Schematic representation of the UV-microfabrication procedure employed in the generation of the osteon-like microstructu"
+   },
+   {
+    "page": 6,
+    "block_id": 5,
+    "text": "Figure 4. Chemical structures of nanoclay platelets currently used for various biomedical engineering applications. Nanoclays are basically ultrathin ( $ \\approx $1 nm thick) platelets with a dual charge that makes it easy to dissolve and incorporate into almost any existing hydrogel matrix."
+   },
+   {
+    "page": 7,
+    "block_id": 4,
+    "text": "Figure 5. A growth-factor-free solution $ ^{[15]} $ to bone-tissue engineering. a) Schematic representation of Laponite incorporation into GelMA. b) Mechanical data showing Laponite-facilitated reinforcement of GelMA, leading to a compressive Young's modulus nearly four times that of pure GelMA. c) "
+   },
+   {
+    "page": 8,
+    "block_id": 8,
+    "text": "Figure 6. A nanoreinforced and self-healing hydrogel. a,b) Schematic representation of the noncovalent and reversible bonding between hydroxyapatite nanoparticles and hyaluronan-bisphosphonate. c) Photographs showing the adhesion strength of the nanoreinforced hydroxyapatite-based hydrogel with mine"
+   },
+   {
+    "page": 10,
+    "block_id": 10,
+    "text": "Figure 7. Tissue-engineering applications of carbon-based nanocomposite hydrogels. Over the years, graphene sheets and CNTs have been used as nanofillers in hydrogels intended for use in neural, cardiac, and skeletal-muscle tissue engineering."
+   },
+   {
+    "page": 13,
+    "block_id": 4,
+    "text": "Figure 8. Gold-nanorod-based hydrogels for cardiac tissue engineering. a) Schematic representation of the fabrication process of hybrid nanocomposite hydrogels. b,c,d) The hybrid hydrogels displayed low impedance and almost 3-fold increase in Young's modulus as compared to pure GelMA hydrogels. e) T"
+   },
+   {
+    "page": 14,
+    "block_id": 9,
+    "text": "Figure 9. Multilayered GO-based cellular-sheets for cardiac tissue engineering. a) Schematic representation of the layer-by-layer assembly onto GO-GelMA. b) Confocal images demonstrating the formation of a multilayered cell-sheet consisting of cardiac and endothelial cells. c) Cells in the multilaye"
+   },
+   {
+    "page": 15,
+    "block_id": 11,
+    "text": "Figure 10. GO-based hydrogels have been used as elastomeric and conductive fillers for skeletal muscle tissue engineering. a,b) GO incorporation into the hydrogel significantly improved the twisting and stretching properties of the hybrid gel. c,d) The hybrid gel could reconnect explanted abdominal "
+   },
+   {
+    "page": 17,
+    "block_id": 9,
+    "text": "Figure 11. CNTs have also been used as printable ink for 3D flexible electronics. a) Schematic illustrating the printing of conductive circuits from a CNT-based ink. b) 3D-printed CNT circuits embedded within a cell-laden GelMA hydrogel. c) 3D-encapsulated cardiac cells were healthy and expressing s"
+   },
+   {
+    "page": 18,
+    "block_id": 8,
+    "text": "Figure 12. Merging nanoelectronics with living cells – a roadmap to a cyborganic future. a) Schematics of the fabrication procedure for silicon nanowires and an optical image showing the fibers and nanoelectronics in the hybrid scaffold. b) Confocal image of encapsulated cardiac cells expressing sar"
+   },
+   {
+    "page": 20,
+    "block_id": 5,
+    "text": "Figure 13. Vertically aligned CNT microarrays inside GelMA can yield controlled and improved actuation of cardiac-based bioactuators. a) Schematic showing the concepts behind the fabrication of the hybrid bioactuator. b) Cardiac cells were healthy and expressing important markers. Cells within the d"
+   },
+   {
+    "page": 21,
+    "block_id": 3,
+    "text": "Figure 14. Emerging trends and future directions. a) 3D printing of hybrid neural circuits for neuron-to-machine interfaces. b) The potential application of cell-laden conductors in cyborganics. c) Use of 3D-printed neural circuits and cyborg skeletal muscle to generate advanced biorobots."
+   }
+  ]
+ }
+}

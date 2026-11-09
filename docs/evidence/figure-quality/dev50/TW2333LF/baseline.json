@@ -1,0 +1,203 @@
+{
+ "dry_run": {
+  "key": "TW2333LF",
+  "identity": {
+   "old": {
+    "entries": 6,
+    "unique_ids": 6,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 6,
+    "unique_ids": 6,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005",
+    "figure_006": "figure_006"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 25,
+   "new_render_files": 50,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/figures/figure_005.jpg",
+    "assets/figures/figure_006.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/orphans/orphan_013.jpg",
+    "assets/orphans/orphan_014.jpg",
+    "assets/orphans/orphan_015.jpg",
+    "assets/orphans/orphan_016.jpg",
+    "assets/orphans/orphan_017.jpg",
+    "assets/tables/table_001.jpg",
+    "assets/tables/table_002.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 7,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 2,
+   "new_tables": 2,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 312,
+   "new_rows": 312,
+   "role_removed": {
+    "frontmatter_noise": 1,
+    "backmatter_body": 1
+   },
+   "role_added": {
+    "body_paragraph": 2
+   },
+   "old_body_chars": 48718,
+   "new_body_chars": 48942,
+   "old_text_chars": 90704,
+   "new_text_chars": 90704,
+   "old_fulltext_chars": 77609
+  },
+  "new_manifest": {
+   "figures": 6,
+   "tables": 2,
+   "orphans": 17
+  },
+  "new_orphans": 1
+ },
+ "structural": {
+  "key": "TW2333LF",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 90704,
+  "new_text_chars": 90704,
+  "old_entries": 6,
+  "new_entries": 6,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      1029,
+      202,
+      1088,
+      259
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 6,
+     "text": "Figure 1. Schematic diagram of biodegradable and biocompatible nanofiber-based materials fabrication and applications."
+    },
+    {
+     "page": 5,
+     "block_id": 2,
+     "text": "Figure 2. The fabrication techniques of biodegradable and biocompatible nanofiber-based materials. Electrospinning technique (a1) SEM images show PLLA nanofiber alignment with 4000 rpm collection speeds. Reproduced with permission from Ref.¹⁰ Copyright 2020, Proceedings of the National Academy of Sc"
+    },
+    {
+     "page": 9,
+     "block_id": 2,
+     "text": "(a) Micro-sol electrospinning"
+    },
+    {
+     "page": 9,
+     "block_id": 7,
+     "text": "Figure 3. (a) The preparation of VEGF-loaded electrospinning membranes by hyaluronan (HA) micro-sol electrospinning and the mechanism of formation of core–shell structure. (b) Schematic illustration of bionic nanofiber mat for periosteal and bone regeneration. (c) General evaluation of in vivo perfo"
+    },
+    {
+     "page": 10,
+     "block_id": 10,
+     "text": "Figure 4. (a) Scheme of the atorvastatin calcium and poly(L-lactide-co-caprolactone) core-shell nanofiber-covered stent to treat aneurysms and promote reendothelialization. (b) Nanofiber mesh-covered stent and expanded nanofiber mesh-covered stent. Reproduced with permission from Ref. 77. Copyright "
+    },
+    {
+     "page": 11,
+     "block_id": 2,
+     "text": "Figure 5. (a) Application of the biodegradable piezoelectric PLLA nanofibers on a wound in combination with external ultrasound (US) to produce controllable surface charge for wound healing and prevention of bacterial infections. (b) The sequential depiction of the different steps in the PLLA nanofi"
+    },
+    {
+     "page": 12,
+     "block_id": 3,
+     "text": "Figure 6. (a) Scheme of PLLA nanofibers with highly controllable and excellent piezoelectric performance for biodegradable implanted piezoelectric devices. (b) PLLA nanofiber transducer for the BBB opening and drug delivering. Reproduced with permission from Ref. 10. Copyright 2019, Proceedings of t"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     1029,
+     202,
+     1088,
+     259
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 6,
+    "text": "Figure 1. Schematic diagram of biodegradable and biocompatible nanofiber-based materials fabrication and applications."
+   },
+   {
+    "page": 5,
+    "block_id": 2,
+    "text": "Figure 2. The fabrication techniques of biodegradable and biocompatible nanofiber-based materials. Electrospinning technique (a1) SEM images show PLLA nanofiber alignment with 4000 rpm collection speeds. Reproduced with permission from Ref.¹⁰ Copyright 2020, Proceedings of the National Academy of Sc"
+   },
+   {
+    "page": 9,
+    "block_id": 2,
+    "text": "(a) Micro-sol electrospinning"
+   },
+   {
+    "page": 9,
+    "block_id": 7,
+    "text": "Figure 3. (a) The preparation of VEGF-loaded electrospinning membranes by hyaluronan (HA) micro-sol electrospinning and the mechanism of formation of core–shell structure. (b) Schematic illustration of bionic nanofiber mat for periosteal and bone regeneration. (c) General evaluation of in vivo perfo"
+   },
+   {
+    "page": 10,
+    "block_id": 10,
+    "text": "Figure 4. (a) Scheme of the atorvastatin calcium and poly(L-lactide-co-caprolactone) core-shell nanofiber-covered stent to treat aneurysms and promote reendothelialization. (b) Nanofiber mesh-covered stent and expanded nanofiber mesh-covered stent. Reproduced with permission from Ref. 77. Copyright "
+   },
+   {
+    "page": 11,
+    "block_id": 2,
+    "text": "Figure 5. (a) Application of the biodegradable piezoelectric PLLA nanofibers on a wound in combination with external ultrasound (US) to produce controllable surface charge for wound healing and prevention of bacterial infections. (b) The sequential depiction of the different steps in the PLLA nanofi"
+   },
+   {
+    "page": 12,
+    "block_id": 3,
+    "text": "Figure 6. (a) Scheme of PLLA nanofibers with highly controllable and excellent piezoelectric performance for biodegradable implanted piezoelectric devices. (b) PLLA nanofiber transducer for the BBB opening and drug delivering. Reproduced with permission from Ref. 10. Copyright 2019, Proceedings of t"
+   }
+  ]
+ }
+}

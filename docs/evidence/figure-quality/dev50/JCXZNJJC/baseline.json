@@ -1,0 +1,141 @@
+{
+ "dry_run": {
+  "key": "JCXZNJJC",
+  "identity": {
+   "old": {
+    "entries": 1,
+    "unique_ids": 1,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 1,
+    "unique_ids": 1,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 5,
+   "new_render_files": 10,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 1,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 0,
+   "new_tables": 0,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 120,
+   "new_rows": 120,
+   "role_removed": {
+    "frontmatter_noise": 1,
+    "figure_caption_candidate": 1
+   },
+   "role_added": {
+    "section_heading": 1,
+    "figure_caption": 1
+   },
+   "old_body_chars": 14555,
+   "new_body_chars": 14555,
+   "old_text_chars": 28403,
+   "new_text_chars": 28403,
+   "old_fulltext_chars": 25235
+  },
+  "new_manifest": {
+   "figures": 1,
+   "tables": 0,
+   "orphans": 4
+  },
+  "new_orphans": 1
+ },
+ "structural": {
+  "key": "JCXZNJJC",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 28403,
+  "new_text_chars": 28403,
+  "old_entries": 1,
+  "new_entries": 1,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 4,
+     "block_id": 2,
+     "text": "Relationships of patient characteristics and acromial radiographic characteristics in the rotator cuff tear groups."
+    }
+   ],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      1000,
+      355,
+      1059,
+      412
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 3,
+     "text": "Figure 1 (a) The oblique coronal section of an MRI image showing measurement of the CAL thickness at the acromial undersurface. The CAL thickness was measured at the lateral margin of the acromion at the insertion of the CAL. A vertical line was drawn at the thickest point of the CAL insertion. (b) "
+    },
+    {
+     "page": 4,
+     "block_id": 2,
+     "text": "Relationships of patient characteristics and acromial radiographic characteristics in the rotator cuff tear groups."
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [
+   {
+    "page": 4,
+    "block_id": 2,
+    "text": "Relationships of patient characteristics and acromial radiographic characteristics in the rotator cuff tear groups."
+   }
+  ],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     1000,
+     355,
+     1059,
+     412
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 3,
+    "block_id": 3,
+    "text": "Figure 1 (a) The oblique coronal section of an MRI image showing measurement of the CAL thickness at the acromial undersurface. The CAL thickness was measured at the lateral margin of the acromion at the insertion of the CAL. A vertical line was drawn at the thickest point of the CAL insertion. (b) "
+   },
+   {
+    "page": 4,
+    "block_id": 2,
+    "text": "Relationships of patient characteristics and acromial radiographic characteristics in the rotator cuff tear groups."
+   }
+  ]
+ }
+}

@@ -1,0 +1,104 @@
+{
+ "dry_run": {
+  "key": "3CEUN7T3",
+  "identity": {
+   "old": {
+    "entries": 0,
+    "unique_ids": 0,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 0,
+    "unique_ids": 0,
+    "duplicate_extra": 0
+   },
+   "mapping": {},
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 8,
+   "new_render_files": 8,
+   "render_added": [],
+   "render_removed": [],
+   "embeds": 2,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 2,
+   "new_tables": 2,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 154,
+   "new_rows": 154,
+   "role_removed": {
+    "figure_inner_text": 1,
+    "structured_insert": 1,
+    "non_body_insert": 1,
+    "reference_item": 3,
+    "backmatter_body": 1
+   },
+   "role_added": {
+    "noise": 3,
+    "unknown_structural": 2,
+    "body_paragraph": 1,
+    "abstract_body": 1
+   },
+   "old_body_chars": 24056,
+   "new_body_chars": 23761,
+   "old_text_chars": 45255,
+   "new_text_chars": 45255,
+   "old_fulltext_chars": 36092
+  },
+  "new_manifest": {
+   "figures": 0,
+   "tables": 2,
+   "orphans": 2
+  },
+  "new_orphans": 1
+ },
+ "structural": {
+  "key": "3CEUN7T3",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 45255,
+  "new_text_chars": 45255,
+  "old_entries": 0,
+  "new_entries": 0,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      1030,
+      132,
+      1089,
+      190
+     ]
+    }
+   ],
+   "caption_candidates": []
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     1030,
+     132,
+     1089,
+     190
+    ]
+   }
+  ],
+  "caption_candidates": []
+ }
+}

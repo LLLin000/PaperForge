@@ -1,0 +1,493 @@
+{
+ "dry_run": {
+  "key": "SKXTCE6M",
+  "identity": {
+   "old": {
+    "entries": 17,
+    "unique_ids": 17,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 17,
+    "unique_ids": 17,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005",
+    "figure_006": "figure_006",
+    "figure_007": "figure_007",
+    "figure_008": "figure_008",
+    "figure_009": "figure_009",
+    "figure_010": "figure_010",
+    "figure_011": "figure_011",
+    "figure_012": "figure_012",
+    "figure_013": "figure_013",
+    "figure_014": "figure_014",
+    "figure_reserved_014": "figure_figure_p003_b9",
+    "figure_reserved_015": "figure_figure_p011_b2",
+    "figure_reserved_016": "figure_figure_p015_b4"
+   },
+   "renamed": [
+    [
+     "figure_reserved_014",
+     "figure_figure_p003_b9"
+    ],
+    [
+     "figure_reserved_015",
+     "figure_figure_p011_b2"
+    ],
+    [
+     "figure_reserved_016",
+     "figure_figure_p015_b4"
+    ]
+   ],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 59,
+   "new_render_files": 118,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/figures/figure_005.jpg",
+    "assets/figures/figure_006.jpg",
+    "assets/figures/figure_007.jpg",
+    "assets/figures/figure_008.jpg",
+    "assets/figures/figure_009.jpg",
+    "assets/figures/figure_010.jpg",
+    "assets/figures/figure_011.jpg",
+    "assets/figures/figure_012.jpg",
+    "assets/figures/figure_013.jpg",
+    "assets/figures/figure_014.jpg",
+    "assets/figures/figure_figure_p003_b9.jpg",
+    "assets/figures/figure_figure_p011_b2.jpg",
+    "assets/figures/figure_figure_p015_b4.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/orphans/orphan_013.jpg",
+    "assets/orphans/orphan_014.jpg",
+    "assets/orphans/orphan_015.jpg",
+    "assets/orphans/orphan_016.jpg",
+    "assets/orphans/orphan_017.jpg",
+    "assets/orphans/orphan_018.jpg",
+    "assets/orphans/orphan_019.jpg",
+    "assets/orphans/orphan_020.jpg",
+    "assets/orphans/orphan_021.jpg",
+    "assets/orphans/orphan_022.jpg",
+    "assets/orphans/orphan_023.jpg",
+    "assets/orphans/orphan_024.jpg",
+    "assets/orphans/orphan_025.jpg",
+    "assets/orphans/orphan_026.jpg",
+    "assets/orphans/orphan_027.jpg",
+    "assets/orphans/orphan_028.jpg",
+    "assets/orphans/orphan_029.jpg",
+    "assets/orphans/orphan_030.jpg",
+    "assets/orphans/orphan_031.jpg",
+    "assets/orphans/orphan_032.jpg",
+    "assets/orphans/orphan_033.jpg",
+    "assets/orphans/orphan_034.jpg",
+    "assets/orphans/orphan_035.jpg",
+    "assets/orphans/orphan_036.jpg",
+    "assets/orphans/orphan_037.jpg",
+    "assets/orphans/orphan_038.jpg",
+    "assets/tables/table_001.jpg",
+    "assets/tables/table_002.jpg",
+    "assets/tables/table_003.jpg",
+    "assets/tables/table_004.jpg",
+    "render/figures/figure_figure_p003_b9.md",
+    "render/figures/figure_figure_p011_b2.md",
+    "render/figures/figure_figure_p015_b4.md"
+   ],
+   "render_removed": [
+    "render/figures/figure_reserved_014.md",
+    "render/figures/figure_reserved_015.md",
+    "render/figures/figure_reserved_016.md"
+   ],
+   "embeds": 18,
+   "embeds_retargeted": 1,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 4,
+   "new_tables": 4,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 722,
+   "new_rows": 722,
+   "role_removed": {
+    "unknown_structural": 2,
+    "frontmatter_noise": 1,
+    "figure_caption_candidate": 10
+   },
+   "role_added": {
+    "section_heading": 1,
+    "figure_caption": 10,
+    "subsection_heading": 2
+   },
+   "old_body_chars": 91133,
+   "new_body_chars": 91133,
+   "old_text_chars": 208098,
+   "new_text_chars": 208098,
+   "old_fulltext_chars": 172467
+  },
+  "new_manifest": {
+   "figures": 17,
+   "tables": 4,
+   "orphans": 38
+  },
+  "new_orphans": 1
+ },
+ "structural": {
+  "key": "SKXTCE6M",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 208098,
+  "new_text_chars": 208098,
+  "old_entries": 17,
+  "new_entries": 17,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 8,
+     "block_id": 3,
+     "text": "Summary of hydrogels' investigations with various mechanical properties and crosslinking methods in CR."
+    },
+    {
+     "page": 23,
+     "block_id": 2,
+     "text": "A summary of biophysical stimuli on the hydrogels for cartilage tissue repair."
+    }
+   ],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      1001,
+      297,
+      1058,
+      353
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 11,
+     "text": "Fig. 1. Schematic illustration of approach employing hydrogels in cartilage tissue regeneration and different hydrogels designed to be placed at the injury site within the knee joint. Implantable hydrogel scaffolds produced via 3D-bioprinting that provide a structured support for tissue regeneration"
+    },
+    {
+     "page": 3,
+     "block_id": 3,
+     "text": "Fig. 2. Schematic illustration of key parameters in designing hydrogels for CR, including hydrogel components, mechanical properties, biodegradability, porosity and interconnectivity, and integration with adjacent native tissue. Additionally, it highlights other essential factors such as stratified-"
+    },
+    {
+     "page": 3,
+     "block_id": 9,
+     "text": "A summary of hydrogels with different polymer types and their features for CR."
+    },
+    {
+     "page": 4,
+     "block_id": 5,
+     "text": "Fig. 3. A) Schematic illustration of the synthesis of RGD-SF-DNA microspheres and their use in creating cartilage organoid precursor and CR. Reproduced under the terms of the CC BY-NC-ND 4.0 license [17]. Copyright 2024, The Authors, published by Elsevier. B) Schematic illustration of a cartilage la"
+    },
+    {
+     "page": 5,
+     "block_id": 3,
+     "text": "(Ⅰ)"
+    },
+    {
+     "page": 5,
+     "block_id": 4,
+     "text": "(Ⅱ)"
+    },
+    {
+     "page": 5,
+     "block_id": 11,
+     "text": "(Ⅰ)"
+    },
+    {
+     "page": 5,
+     "block_id": 12,
+     "text": "(II)"
+    },
+    {
+     "page": 5,
+     "block_id": 16,
+     "text": "Fig. 4. A) (I) Synthesis of dopamine methacrylate and its oligomers (ODMA). (II) Mechanical behavior of the ODMA-GelMA hydrogel. Reproduced with permission [51]. Copyright 2018, Royal Society of Chemistry. B) (I) Formation of injectable PEG-Col/SF DN network by covalent cross-linking of PEG-Tz and C"
+    },
+    {
+     "page": 6,
+     "block_id": 9,
+     "text": "(Ⅱ)"
+    },
+    {
+     "page": 6,
+     "block_id": 17,
+     "text": "(Ⅱ)"
+    },
+    {
+     "page": 6,
+     "block_id": 26,
+     "text": "(III)"
+    },
+    {
+     "page": 6,
+     "block_id": 29,
+     "text": "Fig. 5. A) (I) F-actin structures in MSCs on S-PAAm gels with different stiffness. (II) Gene expression of Col 2a1, Agc, Sox9 and Sca1 in MSCs after 1 week on PS (control) and S-PAAm gels. Reproduced with permission $ ^{[79]} $. Copyright 2013, Elsevier Ltd. B) (I) DNA and GAG quantification. (II) H"
+    },
+    {
+     "page": 8,
+     "block_id": 3,
+     "text": "Summary of hydrogels' investigations with various mechanical properties and crosslinking methods in CR."
+    },
+    {
+     "page": 9,
+     "block_id": 10,
+     "text": "Fig. 6. A) Developing hierarchical porous biomimetic hydroxyapatite scaffolds using DIW technique. (I) incorporating Gel microspheres as sacrificial templates, and SEM images of the filaments, showing the concave pores after Gel microspheres dissolve partially. Reproduced under the terms of the CC B"
+    },
+    {
+     "page": 10,
+     "block_id": 10,
+     "text": "Fig. 7. Schematic illustration of the steps for bioprinting and different printing methods. (A) An extrusion printer dispensing cell-loaded solutions or hydrogels by air pressure or hand force, (B) an inkjet printer drops small bioink droplets to build a tissue layer by layer, and (C) a laser-assist"
+    },
+    {
+     "page": 11,
+     "block_id": 2,
+     "text": "Summary of hydrogels' investigations with different pore sizes and porosity for CR."
+    },
+    {
+     "page": 11,
+     "block_id": 6,
+     "text": "Fig. 8. A) Schematic illustration of bilayered scaffolds with two pore sizes for cartilage repair. Post-implantation, they swell from bone marrow blood, allowing BMSC infiltration before pore closure, while the upper layer houses BMSCs. Reproduced with permission [156]. Copyright 2024, Elsevier B.V."
+    },
+    {
+     "page": 12,
+     "block_id": 9,
+     "text": "(Ⅱ)"
+    },
+    {
+     "page": 12,
+     "block_id": 11,
+     "text": "Fig. 9. A) Design of a DEX-UPy hydrogel for multi-tissue complex regeneration. (I) schematic illustration of DEX-UPy hydrogel formation and the mechanisms of the shear-thinning and self-recovery properties. (II) Formation of DEX-UPy hydrogel, its injectability and self-integrating property. Reproduc"
+    },
+    {
+     "page": 14,
+     "block_id": 3,
+     "text": "Fig. 10. Schematic illustration of the anatomical structure of AC with four histological zones. The extracellular matrix (ECM) of AC is a complex assembly of Col II and PGs. This intricate composition influences the alignment of Col fibers, cellular density, and cytomorphology, fostering a cartilage"
+    },
+    {
+     "page": 15,
+     "block_id": 4,
+     "text": "A summary of cartilage scaffolds with different stratified strategies and regional characteristics of the cartilage region."
+    },
+    {
+     "page": 17,
+     "block_id": 10,
+     "text": "Fig. 11. Schematic illustration of A) The function of the TGF- $ \\beta1 $-affinity peptide modified dynamic proteinaceous hydrogel (Pep-GelSH) in in-situ CR. Reproduced with permission [260]. Copyright 2024, published by John Wiley and Sons. B) The fabrication of the composite hydrogel loaded with B"
+    },
+    {
+     "page": 20,
+     "block_id": 6,
+     "text": "Fig. 12. Schematic illustration of different A) mechanical stimuli on cell-encapsulated hydrogels. Cells experience compressive, tensile, and shear stresses due to external mechanical stimuli. Compressive and tensile forces act perpendicularly to the cell membrane, whereas shear stress causes a chan"
+    },
+    {
+     "page": 21,
+     "block_id": 3,
+     "text": "Fig. 13. A) Schematic illustration of ADA-Gel-PPy:PSS conductive hydrogel formation. I) ADA-Gel hydrogel precursor with varying Py and PSS molarities is made. II) After 3D-printing, PPy is formed by oxidizing Py in FeCl₃ solution. III) Final ADA-Gel-PPy:PSS scaffolds are cross-linked with Ca²⁺ and m"
+    },
+    {
+     "page": 22,
+     "block_id": 3,
+     "text": "Fig. 14. Schematic illustration of Alg-DA/Ac- $ \\beta $-CD/Gel hydrogels design and pulsed electromagnetic field use in vitro and in vivo. Reproduced under the terms of the CC BY-NC-ND 4.0 license [334]. Copyright 2023, The Authors, published by Elsevier."
+    },
+    {
+     "page": 23,
+     "block_id": 2,
+     "text": "A summary of biophysical stimuli on the hydrogels for cartilage tissue repair."
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [
+   {
+    "page": 8,
+    "block_id": 3,
+    "text": "Summary of hydrogels' investigations with various mechanical properties and crosslinking methods in CR."
+   },
+   {
+    "page": 23,
+    "block_id": 2,
+    "text": "A summary of biophysical stimuli on the hydrogels for cartilage tissue repair."
+   }
+  ],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     1001,
+     297,
+     1058,
+     353
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 11,
+    "text": "Fig. 1. Schematic illustration of approach employing hydrogels in cartilage tissue regeneration and different hydrogels designed to be placed at the injury site within the knee joint. Implantable hydrogel scaffolds produced via 3D-bioprinting that provide a structured support for tissue regeneration"
+   },
+   {
+    "page": 3,
+    "block_id": 3,
+    "text": "Fig. 2. Schematic illustration of key parameters in designing hydrogels for CR, including hydrogel components, mechanical properties, biodegradability, porosity and interconnectivity, and integration with adjacent native tissue. Additionally, it highlights other essential factors such as stratified-"
+   },
+   {
+    "page": 3,
+    "block_id": 9,
+    "text": "A summary of hydrogels with different polymer types and their features for CR."
+   },
+   {
+    "page": 4,
+    "block_id": 5,
+    "text": "Fig. 3. A) Schematic illustration of the synthesis of RGD-SF-DNA microspheres and their use in creating cartilage organoid precursor and CR. Reproduced under the terms of the CC BY-NC-ND 4.0 license [17]. Copyright 2024, The Authors, published by Elsevier. B) Schematic illustration of a cartilage la"
+   },
+   {
+    "page": 5,
+    "block_id": 3,
+    "text": "(Ⅰ)"
+   },
+   {
+    "page": 5,
+    "block_id": 4,
+    "text": "(Ⅱ)"
+   },
+   {
+    "page": 5,
+    "block_id": 11,
+    "text": "(Ⅰ)"
+   },
+   {
+    "page": 5,
+    "block_id": 12,
+    "text": "(II)"
+   },
+   {
+    "page": 5,
+    "block_id": 16,
+    "text": "Fig. 4. A) (I) Synthesis of dopamine methacrylate and its oligomers (ODMA). (II) Mechanical behavior of the ODMA-GelMA hydrogel. Reproduced with permission [51]. Copyright 2018, Royal Society of Chemistry. B) (I) Formation of injectable PEG-Col/SF DN network by covalent cross-linking of PEG-Tz and C"
+   },
+   {
+    "page": 6,
+    "block_id": 9,
+    "text": "(Ⅱ)"
+   },
+   {
+    "page": 6,
+    "block_id": 17,
+    "text": "(Ⅱ)"
+   },
+   {
+    "page": 6,
+    "block_id": 26,
+    "text": "(III)"
+   },
+   {
+    "page": 6,
+    "block_id": 29,
+    "text": "Fig. 5. A) (I) F-actin structures in MSCs on S-PAAm gels with different stiffness. (II) Gene expression of Col 2a1, Agc, Sox9 and Sca1 in MSCs after 1 week on PS (control) and S-PAAm gels. Reproduced with permission $ ^{[79]} $. Copyright 2013, Elsevier Ltd. B) (I) DNA and GAG quantification. (II) H"
+   },
+   {
+    "page": 8,
+    "block_id": 3,
+    "text": "Summary of hydrogels' investigations with various mechanical properties and crosslinking methods in CR."
+   },
+   {
+    "page": 9,
+    "block_id": 10,
+    "text": "Fig. 6. A) Developing hierarchical porous biomimetic hydroxyapatite scaffolds using DIW technique. (I) incorporating Gel microspheres as sacrificial templates, and SEM images of the filaments, showing the concave pores after Gel microspheres dissolve partially. Reproduced under the terms of the CC B"
+   },
+   {
+    "page": 10,
+    "block_id": 10,
+    "text": "Fig. 7. Schematic illustration of the steps for bioprinting and different printing methods. (A) An extrusion printer dispensing cell-loaded solutions or hydrogels by air pressure or hand force, (B) an inkjet printer drops small bioink droplets to build a tissue layer by layer, and (C) a laser-assist"
+   },
+   {
+    "page": 11,
+    "block_id": 2,
+    "text": "Summary of hydrogels' investigations with different pore sizes and porosity for CR."
+   },
+   {
+    "page": 11,
+    "block_id": 6,
+    "text": "Fig. 8. A) Schematic illustration of bilayered scaffolds with two pore sizes for cartilage repair. Post-implantation, they swell from bone marrow blood, allowing BMSC infiltration before pore closure, while the upper layer houses BMSCs. Reproduced with permission [156]. Copyright 2024, Elsevier B.V."
+   },
+   {
+    "page": 12,
+    "block_id": 9,
+    "text": "(Ⅱ)"
+   },
+   {
+    "page": 12,
+    "block_id": 11,
+    "text": "Fig. 9. A) Design of a DEX-UPy hydrogel for multi-tissue complex regeneration. (I) schematic illustration of DEX-UPy hydrogel formation and the mechanisms of the shear-thinning and self-recovery properties. (II) Formation of DEX-UPy hydrogel, its injectability and self-integrating property. Reproduc"
+   },
+   {
+    "page": 14,
+    "block_id": 3,
+    "text": "Fig. 10. Schematic illustration of the anatomical structure of AC with four histological zones. The extracellular matrix (ECM) of AC is a complex assembly of Col II and PGs. This intricate composition influences the alignment of Col fibers, cellular density, and cytomorphology, fostering a cartilage"
+   },
+   {
+    "page": 15,
+    "block_id": 4,
+    "text": "A summary of cartilage scaffolds with different stratified strategies and regional characteristics of the cartilage region."
+   },
+   {
+    "page": 17,
+    "block_id": 10,
+    "text": "Fig. 11. Schematic illustration of A) The function of the TGF- $ \\beta1 $-affinity peptide modified dynamic proteinaceous hydrogel (Pep-GelSH) in in-situ CR. Reproduced with permission [260]. Copyright 2024, published by John Wiley and Sons. B) The fabrication of the composite hydrogel loaded with B"
+   },
+   {
+    "page": 20,
+    "block_id": 6,
+    "text": "Fig. 12. Schematic illustration of different A) mechanical stimuli on cell-encapsulated hydrogels. Cells experience compressive, tensile, and shear stresses due to external mechanical stimuli. Compressive and tensile forces act perpendicularly to the cell membrane, whereas shear stress causes a chan"
+   },
+   {
+    "page": 21,
+    "block_id": 3,
+    "text": "Fig. 13. A) Schematic illustration of ADA-Gel-PPy:PSS conductive hydrogel formation. I) ADA-Gel hydrogel precursor with varying Py and PSS molarities is made. II) After 3D-printing, PPy is formed by oxidizing Py in FeCl₃ solution. III) Final ADA-Gel-PPy:PSS scaffolds are cross-linked with Ca²⁺ and m"
+   },
+   {
+    "page": 22,
+    "block_id": 3,
+    "text": "Fig. 14. Schematic illustration of Alg-DA/Ac- $ \\beta $-CD/Gel hydrogels design and pulsed electromagnetic field use in vitro and in vivo. Reproduced under the terms of the CC BY-NC-ND 4.0 license [334]. Copyright 2023, The Authors, published by Elsevier."
+   },
+   {
+    "page": 23,
+    "block_id": 2,
+    "text": "A summary of biophysical stimuli on the hydrogels for cartilage tissue repair."
+   }
+  ]
+ }
+}

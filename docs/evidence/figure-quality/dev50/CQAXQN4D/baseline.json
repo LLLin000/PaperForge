@@ -1,0 +1,132 @@
+{
+ "dry_run": {
+  "key": "CQAXQN4D",
+  "identity": {
+   "old": {
+    "entries": 4,
+    "unique_ids": 4,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 4,
+    "unique_ids": 4,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 11,
+   "new_render_files": 22,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/tables/table_001.jpg",
+    "assets/tables/table_002.jpg",
+    "assets/tables/table_003.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 7,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 3,
+   "new_tables": 3,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 217,
+   "new_rows": 217,
+   "role_removed": {},
+   "role_added": {},
+   "old_body_chars": 32418,
+   "new_body_chars": 32418,
+   "old_text_chars": 67944,
+   "new_text_chars": 67944,
+   "old_fulltext_chars": 57183
+  },
+  "new_manifest": {
+   "figures": 4,
+   "tables": 3,
+   "orphans": 4
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "CQAXQN4D",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 67944,
+  "new_text_chars": 67944,
+  "old_entries": 4,
+  "new_entries": 4,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 3,
+     "text": "FIGURE 1: Chemical structures of various conductive polymers [12]."
+    },
+    {
+     "page": 7,
+     "block_id": 3,
+     "text": "FIGURE 2: BMSCs were cultured on hydrogels with different concentrations of MWCNT to examine the effect of MWCNT concentration on cell morphology. Green represents the cytoskeleton and blue represents the nucleus [70]."
+    },
+    {
+     "page": 8,
+     "block_id": 4,
+     "text": "FIGURE 3: (a)  $ C_{2}C_{12} $ cells morphology cultured on GG (A), (B), and (C) and PANi-GG spongy-like hydrogels (D), (E), and (F). (b)  $ C_{2}C_{12} $ immunostaining with antimycosin after 7 days of culture on GG (A) and PANi-GG spongy-like hydrogels (B) [77]. Copyright © 2018, American Chemical"
+    },
+    {
+     "page": 9,
+     "block_id": 3,
+     "text": "FIGURE 4: Schematic demonstration of the novel injectable gel with continuous phosphate ion release and electrical responsiveness to promote cell osteogenesis and bone regeneration [4]. Copyright © 2020 American Chemical Society."
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 3,
+    "block_id": 3,
+    "text": "FIGURE 1: Chemical structures of various conductive polymers [12]."
+   },
+   {
+    "page": 7,
+    "block_id": 3,
+    "text": "FIGURE 2: BMSCs were cultured on hydrogels with different concentrations of MWCNT to examine the effect of MWCNT concentration on cell morphology. Green represents the cytoskeleton and blue represents the nucleus [70]."
+   },
+   {
+    "page": 8,
+    "block_id": 4,
+    "text": "FIGURE 3: (a)  $ C_{2}C_{12} $ cells morphology cultured on GG (A), (B), and (C) and PANi-GG spongy-like hydrogels (D), (E), and (F). (b)  $ C_{2}C_{12} $ immunostaining with antimycosin after 7 days of culture on GG (A) and PANi-GG spongy-like hydrogels (B) [77]. Copyright © 2018, American Chemical"
+   },
+   {
+    "page": 9,
+    "block_id": 3,
+    "text": "FIGURE 4: Schematic demonstration of the novel injectable gel with continuous phosphate ion release and electrical responsiveness to promote cell osteogenesis and bone regeneration [4]. Copyright © 2020 American Chemical Society."
+   }
+  ]
+ }
+}

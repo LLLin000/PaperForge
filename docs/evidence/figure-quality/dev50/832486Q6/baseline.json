@@ -1,0 +1,285 @@
+{
+ "dry_run": {
+  "key": "832486Q6",
+  "identity": {
+   "old": {
+    "entries": 10,
+    "unique_ids": 10,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 10,
+    "unique_ids": 10,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005",
+    "figure_006": "figure_006",
+    "figure_007": "figure_007",
+    "figure_008": "figure_008",
+    "figure_009": "figure_009",
+    "figure_010": "figure_010"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 52,
+   "new_render_files": 52,
+   "render_added": [],
+   "render_removed": [],
+   "embeds": 10,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 0,
+   "new_tables": 0,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 175,
+   "new_rows": 175,
+   "role_removed": {
+    "unknown_structural": 4,
+    "figure_caption_candidate": 19,
+    "reference_item": 1
+   },
+   "role_added": {
+    "paper_title": 3,
+    "authors": 1,
+    "figure_caption": 19,
+    "subsection_heading": 1
+   },
+   "old_body_chars": 3967,
+   "new_body_chars": 3967,
+   "old_text_chars": 11652,
+   "new_text_chars": 11652,
+   "old_fulltext_chars": 7525
+  },
+  "new_manifest": {
+   "figures": 10,
+   "tables": 0,
+   "orphans": 16
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "832486Q6",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 11652,
+  "new_text_chars": 11652,
+  "old_entries": 10,
+  "new_entries": 10,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 1,
+     "block_id": 18,
+     "text": "图 1 下肢康复机器人结构"
+    },
+    {
+     "page": 2,
+     "block_id": 3,
+     "text": "图2 控制流程"
+    },
+    {
+     "page": 2,
+     "block_id": 10,
+     "text": "图 3 采集系统框图"
+    },
+    {
+     "page": 2,
+     "block_id": 16,
+     "text": "图4 加速度滤波"
+    },
+    {
+     "page": 3,
+     "block_id": 13,
+     "text": "表1 传感器加权因子值"
+    },
+    {
+     "page": 3,
+     "block_id": 19,
+     "text": "表2 特征向量分类器"
+    },
+    {
+     "page": 3,
+     "block_id": 27,
+     "text": "图 5 PM 法的系统框图"
+    },
+    {
+     "page": 3,
+     "block_id": 33,
+     "text": "表3 分类器训练验证精度"
+    },
+    {
+     "page": 4,
+     "block_id": 5,
+     "text": "图 6 单关节 PID 控制框图"
+    },
+    {
+     "page": 4,
+     "block_id": 8,
+     "text": "(a) 两类 PID 响应曲线"
+    },
+    {
+     "page": 4,
+     "block_id": 10,
+     "text": "(b) 两类 PID 突变曲线"
+    },
+    {
+     "page": 4,
+     "block_id": 11,
+     "text": "图 7 两类控制器的响应速度和稳态精度"
+    },
+    {
+     "page": 4,
+     "block_id": 17,
+     "text": "图 8 髋关节追踪对比仿真曲线"
+    },
+    {
+     "page": 4,
+     "block_id": 22,
+     "text": "(a) 髋关节驱动数据曲线"
+    },
+    {
+     "page": 4,
+     "block_id": 24,
+     "text": "(b) 髋关节被动运动轨迹曲线"
+    },
+    {
+     "page": 4,
+     "block_id": 25,
+     "text": "图 9 髋关节运动曲线"
+    },
+    {
+     "page": 5,
+     "block_id": 2,
+     "text": "(a)膝关节驱动数据曲线"
+    },
+    {
+     "page": 5,
+     "block_id": 4,
+     "text": "(b)膝关节被动运动轨迹曲线"
+    },
+    {
+     "page": 5,
+     "block_id": 5,
+     "text": "图 10 膝关节运动曲线"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 1,
+    "block_id": 18,
+    "text": "图 1 下肢康复机器人结构"
+   },
+   {
+    "page": 2,
+    "block_id": 3,
+    "text": "图2 控制流程"
+   },
+   {
+    "page": 2,
+    "block_id": 10,
+    "text": "图 3 采集系统框图"
+   },
+   {
+    "page": 2,
+    "block_id": 16,
+    "text": "图4 加速度滤波"
+   },
+   {
+    "page": 3,
+    "block_id": 13,
+    "text": "表1 传感器加权因子值"
+   },
+   {
+    "page": 3,
+    "block_id": 19,
+    "text": "表2 特征向量分类器"
+   },
+   {
+    "page": 3,
+    "block_id": 27,
+    "text": "图 5 PM 法的系统框图"
+   },
+   {
+    "page": 3,
+    "block_id": 33,
+    "text": "表3 分类器训练验证精度"
+   },
+   {
+    "page": 4,
+    "block_id": 5,
+    "text": "图 6 单关节 PID 控制框图"
+   },
+   {
+    "page": 4,
+    "block_id": 8,
+    "text": "(a) 两类 PID 响应曲线"
+   },
+   {
+    "page": 4,
+    "block_id": 10,
+    "text": "(b) 两类 PID 突变曲线"
+   },
+   {
+    "page": 4,
+    "block_id": 11,
+    "text": "图 7 两类控制器的响应速度和稳态精度"
+   },
+   {
+    "page": 4,
+    "block_id": 17,
+    "text": "图 8 髋关节追踪对比仿真曲线"
+   },
+   {
+    "page": 4,
+    "block_id": 22,
+    "text": "(a) 髋关节驱动数据曲线"
+   },
+   {
+    "page": 4,
+    "block_id": 24,
+    "text": "(b) 髋关节被动运动轨迹曲线"
+   },
+   {
+    "page": 4,
+    "block_id": 25,
+    "text": "图 9 髋关节运动曲线"
+   },
+   {
+    "page": 5,
+    "block_id": 2,
+    "text": "(a)膝关节驱动数据曲线"
+   },
+   {
+    "page": 5,
+    "block_id": 4,
+    "text": "(b)膝关节被动运动轨迹曲线"
+   },
+   {
+    "page": 5,
+    "block_id": 5,
+    "text": "图 10 膝关节运动曲线"
+   }
+  ]
+ }
+}

@@ -1,0 +1,107 @@
+{
+ "dry_run": {
+  "key": "EGY463YC",
+  "identity": {
+   "old": {
+    "entries": 2,
+    "unique_ids": 2,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 2,
+    "unique_ids": 2,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 8,
+   "new_render_files": 16,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/tables/table_001.jpg",
+    "assets/tables/table_002.jpg",
+    "assets/tables/table_003.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 4,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 3,
+   "new_tables": 3,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 156,
+   "new_rows": 156,
+   "role_removed": {},
+   "role_added": {},
+   "old_body_chars": 15734,
+   "new_body_chars": 15734,
+   "old_text_chars": 48413,
+   "new_text_chars": 48413,
+   "old_fulltext_chars": 34074
+  },
+  "new_manifest": {
+   "figures": 2,
+   "tables": 3,
+   "orphans": 3
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "EGY463YC",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 48413,
+  "new_text_chars": 48413,
+  "old_entries": 2,
+  "new_entries": 2,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 13,
+     "text": "FIG. 1. The schema of the applications of PEMF (A) In vitro system. Culture plates are placed on the stand surrounded by coils, which generates electromagnetic fields. (B) In vivo system. Small animals are placed in a cage, and PEMF is applied to the animal's whole body. PEMF, pulsed electromagnetic"
+    },
+    {
+     "page": 8,
+     "block_id": 10,
+     "text": "FIG. 2. The mechanisms of PEMF for cartilage regeneration. PEMF upregulates the expression of TGF and BMPs to increase cell proliferation, osteogenesis, and chondrogenesis. PEMF inhibits pro-inflammatory cytokines through adenosine receptors A2A and A3. BMPs, bone morphogenetic proteins."
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 13,
+    "text": "FIG. 1. The schema of the applications of PEMF (A) In vitro system. Culture plates are placed on the stand surrounded by coils, which generates electromagnetic fields. (B) In vivo system. Small animals are placed in a cage, and PEMF is applied to the animal's whole body. PEMF, pulsed electromagnetic"
+   },
+   {
+    "page": 8,
+    "block_id": 10,
+    "text": "FIG. 2. The mechanisms of PEMF for cartilage regeneration. PEMF upregulates the expression of TGF and BMPs to increase cell proliferation, osteogenesis, and chondrogenesis. PEMF inhibits pro-inflammatory cytokines through adenosine receptors A2A and A3. BMPs, bone morphogenetic proteins."
+   }
+  ]
+ }
+}
