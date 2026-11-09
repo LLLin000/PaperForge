@@ -659,7 +659,7 @@
   {
    "key": "3QYCST4E",
    "passed": true,
-   "figures": 5,
+   "figures": 6,
    "structural": {
     "key": "3QYCST4E",
     "unique_ids_ok": true,
@@ -669,7 +669,7 @@
     "old_text_chars": 18278,
     "new_text_chars": 18278,
     "old_entries": 6,
-    "new_entries": 5,
+    "new_entries": 6,
     "unmatched": {
      "legends": [
       {
@@ -2122,13 +2122,13 @@
     ],
     "figure_count_delta": -1,
     "association": {
-     "tp": 6,
+     "tp": 7,
      "fp": 1,
-     "fn": 4,
+     "fn": 3,
      "unknown_expected": 0,
-     "precision": 0.8571428571428571,
-     "recall": 0.6,
-     "f1": 0.7058823529411765
+     "precision": 0.875,
+     "recall": 0.7,
+     "f1": 0.7777777777777778
     }
    }
   },
