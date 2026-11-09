@@ -40,3 +40,11 @@ python scripts/dev/figure_quality_eval.py --set smoke --score \
 ```
 
 `labels.jsonl` rows are the source of truth; `result.json` contains the per-case scores. Unreviewed rows are ignored by scoring. No pipeline or vault changes were made.
+
+## Manual review addendum (user, 2026-11-09)
+
+The user visually reviewed the smoke set; see `MANUAL-REVIEW.md` and `manual_findings.jsonl`. Overrides:
+
+- **3QYCST4E**: Figure 1B (caption block 9, asset block 8, p2) is missing; 1A/1B need a composite split.
+- **28JLIHLS**: Figure 2 crop drops the `24h`/`72h` annotations (crop_ok overridden to false); Figure 5 caption remains unassociated; Figure 6 needs a p4→p5 cross-page merge; Figure 9 spans pages and is not merged.
+- **SRNJDAA2**: deferred as a difficult item.
