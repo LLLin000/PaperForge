@@ -78,6 +78,96 @@
   "old_text_chars": 57671,
   "new_text_chars": 57671,
   "old_entries": 2,
-  "new_entries": 4
+  "new_entries": 4,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 6,
+     "bbox": [
+      675,
+      118,
+      1072,
+      483
+     ]
+    },
+    {
+     "page": 6,
+     "bbox": [
+      688,
+      499,
+      1091,
+      738
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 10,
+     "text": "Fig. 1 Cartilage schematic representation with matrix composition and matrix constituents. SZ: Superficial Zone, MZ: Middle Zone, DZ: Deep Zone, and SB: Subchondral Bone. Figure created partially with Biorender.com"
+    },
+    {
+     "page": 6,
+     "block_id": 2,
+     "text": "Fig. 2 Schematic representation of A cell-seeded scaffold, B Rotating wall vessel bioreactor, C Spinner flask bioreactor, and D Flow perfusion bioreactor"
+    },
+    {
+     "page": 8,
+     "block_id": 2,
+     "text": "Fig. 3 Schematic representation of mechanical stimulation for tissue engineering constructs"
+    },
+    {
+     "page": 9,
+     "block_id": 2,
+     "text": "Fig. 4 Schematic representation of electrical stimulation with an interval and a continuous step signal input for tissue engineering constructs. Figure partially created with Biorender.com"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 6,
+    "bbox": [
+     675,
+     118,
+     1072,
+     483
+    ]
+   },
+   {
+    "page": 6,
+    "bbox": [
+     688,
+     499,
+     1091,
+     738
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 3,
+    "block_id": 10,
+    "text": "Fig. 1 Cartilage schematic representation with matrix composition and matrix constituents. SZ: Superficial Zone, MZ: Middle Zone, DZ: Deep Zone, and SB: Subchondral Bone. Figure created partially with Biorender.com"
+   },
+   {
+    "page": 6,
+    "block_id": 2,
+    "text": "Fig. 2 Schematic representation of A cell-seeded scaffold, B Rotating wall vessel bioreactor, C Spinner flask bioreactor, and D Flow perfusion bioreactor"
+   },
+   {
+    "page": 8,
+    "block_id": 2,
+    "text": "Fig. 3 Schematic representation of mechanical stimulation for tissue engineering constructs"
+   },
+   {
+    "page": 9,
+    "block_id": 2,
+    "text": "Fig. 4 Schematic representation of electrical stimulation with an interval and a continuous step signal input for tissue engineering constructs. Figure partially created with Biorender.com"
+   }
+  ]
  }
 }

@@ -93,6 +93,128 @@
   "old_text_chars": 71046,
   "new_text_chars": 71046,
   "old_entries": 5,
-  "new_entries": 4
+  "new_entries": 4,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 8,
+     "block_id": 11,
+     "text": "Fig 6 | Internal-external cross validation of the ISARIC (International Severe Acute Respiratory and Emerging Infection Consortium) 4C model. Adapted from Gupta et al. $ ^{2} $ Estimates and confidence intervals taken from original paper where they were reported to two decimal places."
+    }
+   ],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      64,
+      139,
+      261,
+      219
+     ]
+    },
+    {
+     "page": 3,
+     "bbox": [
+      99,
+      141,
+      652,
+      1475
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 23,
+     "text": "Fig 1 | Different study design and approaches to develop and evaluate the performance of a multivariable prediction model (D=development; V=validation (evaluation)). Adapted from Collins GS, Reitsma JB, Altman DG, Moons KGM. Transparent reporting of a multivariable prediction model for individual pr"
+    },
+    {
+     "page": 5,
+     "block_id": 10,
+     "text": "Fig 2 | Variability and overestimation of apparent performance compared to large sample performance, for a model to predict in-hospital mortality within 28 days of trauma injury with increasing sample size of the model development study.  $ \\hat{c} $ denotes the apparent performance estimate and  $ "
+    },
+    {
+     "page": 6,
+     "block_id": 2,
+     "text": "Fig 3 | Variability and overestimation of the apparent and internal (split sample and bootstrap) validation performance compared with the large sample performance, for a model to predict in-hospital mortality within 28 days of trauma injury with increasing sample size of the model development study."
+    },
+    {
+     "page": 7,
+     "block_id": 4,
+     "text": "Fig 4 | Graphical illustration of k-fold cross validation. Non-shaded parts used for model development; shaded part used for testing"
+    },
+    {
+     "page": 8,
+     "block_id": 4,
+     "text": "Fig 5 | Graphical illustration of internal-external cross validation. Non-shaded parts used for model development; shaded part used for testing"
+    },
+    {
+     "page": 8,
+     "block_id": 11,
+     "text": "Fig 6 | Internal-external cross validation of the ISARIC (International Severe Acute Respiratory and Emerging Infection Consortium) 4C model. Adapted from Gupta et al. $ ^{2} $ Estimates and confidence intervals taken from original paper where they were reported to two decimal places."
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [
+   {
+    "page": 8,
+    "block_id": 11,
+    "text": "Fig 6 | Internal-external cross validation of the ISARIC (International Severe Acute Respiratory and Emerging Infection Consortium) 4C model. Adapted from Gupta et al. $ ^{2} $ Estimates and confidence intervals taken from original paper where they were reported to two decimal places."
+   }
+  ],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     64,
+     139,
+     261,
+     219
+    ]
+   },
+   {
+    "page": 3,
+    "bbox": [
+     99,
+     141,
+     652,
+     1475
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 3,
+    "block_id": 23,
+    "text": "Fig 1 | Different study design and approaches to develop and evaluate the performance of a multivariable prediction model (D=development; V=validation (evaluation)). Adapted from Collins GS, Reitsma JB, Altman DG, Moons KGM. Transparent reporting of a multivariable prediction model for individual pr"
+   },
+   {
+    "page": 5,
+    "block_id": 10,
+    "text": "Fig 2 | Variability and overestimation of apparent performance compared to large sample performance, for a model to predict in-hospital mortality within 28 days of trauma injury with increasing sample size of the model development study.  $ \\hat{c} $ denotes the apparent performance estimate and  $ "
+   },
+   {
+    "page": 6,
+    "block_id": 2,
+    "text": "Fig 3 | Variability and overestimation of the apparent and internal (split sample and bootstrap) validation performance compared with the large sample performance, for a model to predict in-hospital mortality within 28 days of trauma injury with increasing sample size of the model development study."
+   },
+   {
+    "page": 7,
+    "block_id": 4,
+    "text": "Fig 4 | Graphical illustration of k-fold cross validation. Non-shaded parts used for model development; shaded part used for testing"
+   },
+   {
+    "page": 8,
+    "block_id": 4,
+    "text": "Fig 5 | Graphical illustration of internal-external cross validation. Non-shaded parts used for model development; shaded part used for testing"
+   },
+   {
+    "page": 8,
+    "block_id": 11,
+    "text": "Fig 6 | Internal-external cross validation of the ISARIC (International Severe Acute Respiratory and Emerging Infection Consortium) 4C model. Adapted from Gupta et al. $ ^{2} $ Estimates and confidence intervals taken from original paper where they were reported to two decimal places."
+   }
+  ]
  }
 }

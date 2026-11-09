@@ -257,6 +257,960 @@
   "old_text_chars": 67277,
   "new_text_chars": 67277,
   "old_entries": 63,
-  "new_entries": 48
+  "new_entries": 48,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 18,
+     "block_id": 6,
+     "text": "图 2-3 Tanh 函数图像"
+    },
+    {
+     "page": 25,
+     "block_id": 6,
+     "text": "图 2-12 逐点卷积运算示意图"
+    },
+    {
+     "page": 29,
+     "block_id": 5,
+     "text": "图 2-18 CBAM 空间注意力模块"
+    },
+    {
+     "page": 35,
+     "block_id": 5,
+     "text": "图 3-2 VGG16 迁移 UNet 网络结构具体层结构"
+    },
+    {
+     "page": 37,
+     "block_id": 4,
+     "text": "图 3-5 CLAHE 算法预处理后"
+    },
+    {
+     "page": 38,
+     "block_id": 5,
+     "text": "图3-7 图像加灰条数据方法增强后"
+    },
+    {
+     "page": 43,
+     "block_id": 5,
+     "text": "图 3-10 不同迁移方法髋关节分割预测示例"
+    },
+    {
+     "page": 44,
+     "block_id": 4,
+     "text": "表3-4 各经典模型髋关节数据集实验结果"
+    },
+    {
+     "page": 46,
+     "block_id": 5,
+     "text": "图 3-14 不同迁移方法脊椎分割预测示例"
+    },
+    {
+     "page": 47,
+     "block_id": 7,
+     "text": "表3-6 各经典模型脊椎数据集实验结果"
+    },
+    {
+     "page": 53,
+     "block_id": 8,
+     "text": "表4-1 髋关节不同注意力机制 UNet 实验结果"
+    },
+    {
+     "page": 55,
+     "block_id": 6,
+     "text": "图 4-7 本文算法在髋关节验证集上的像素点类别混淆矩阵"
+    },
+    {
+     "page": 57,
+     "block_id": 5,
+     "text": "图4-10 本文算法在脊椎验证集上的像素点类别混淆矩阵"
+    },
+    {
+     "page": 61,
+     "block_id": 6,
+     "text": "图 5-2 骨科影像诊断系统功能模块图"
+    },
+    {
+     "page": 65,
+     "block_id": 6,
+     "text": "图5-7 历史记录界面"
+    },
+    {
+     "page": 66,
+     "block_id": 6,
+     "text": "图5-9 患者图像选择界面"
+    },
+    {
+     "page": 67,
+     "block_id": 6,
+     "text": "图 5-11 预测结果展示界面"
+    },
+    {
+     "page": 69,
+     "block_id": 6,
+     "text": "图 5-14 登出后界面"
+    }
+   ],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 14,
+     "block_id": 5,
+     "text": "图 1-1 本文技术路线"
+    },
+    {
+     "page": 17,
+     "block_id": 3,
+     "text": "图2-1 卷积神经网络结构图"
+    },
+    {
+     "page": 18,
+     "block_id": 2,
+     "text": "图2-2 卷积核计算示意图"
+    },
+    {
+     "page": 18,
+     "block_id": 6,
+     "text": "图 2-3 Tanh 函数图像"
+    },
+    {
+     "page": 19,
+     "block_id": 3,
+     "text": "图 2-4 Sigmoid 函数图像"
+    },
+    {
+     "page": 19,
+     "block_id": 9,
+     "text": "图 2-5 ReLU 函数图像"
+    },
+    {
+     "page": 20,
+     "block_id": 7,
+     "text": "（a）最大池化示意图"
+    },
+    {
+     "page": 20,
+     "block_id": 8,
+     "text": "（b）平均池化示意图"
+    },
+    {
+     "page": 20,
+     "block_id": 9,
+     "text": "图2-6 最大池化、平均池化示意图"
+    },
+    {
+     "page": 21,
+     "block_id": 9,
+     "text": "图2-7 全连接层的网络结构图"
+    },
+    {
+     "page": 22,
+     "block_id": 2,
+     "text": "图2-8 丢弃法的工作流程示意图"
+    },
+    {
+     "page": 23,
+     "block_id": 5,
+     "text": "图 2-9 VGG16 网络结构图"
+    },
+    {
+     "page": 24,
+     "block_id": 2,
+     "text": "（a）层数较少网络残差结构"
+    },
+    {
+     "page": 24,
+     "block_id": 4,
+     "text": "（b）层数较多网络残差结构"
+    },
+    {
+     "page": 24,
+     "block_id": 5,
+     "text": "图 2-10 残差结构"
+    },
+    {
+     "page": 25,
+     "block_id": 3,
+     "text": "图 2-11 深度卷积示意图"
+    },
+    {
+     "page": 25,
+     "block_id": 6,
+     "text": "图 2-12 逐点卷积运算示意图"
+    },
+    {
+     "page": 26,
+     "block_id": 3,
+     "text": "图 2-13 UNet 网络结构"
+    },
+    {
+     "page": 27,
+     "block_id": 3,
+     "text": "图 2-14 PSPNet 网络结构"
+    },
+    {
+     "page": 28,
+     "block_id": 2,
+     "text": "图 2-15 DeepLab v3+网络结构"
+    },
+    {
+     "page": 28,
+     "block_id": 7,
+     "text": "图 2-16 CBAM 结构原理图"
+    },
+    {
+     "page": 29,
+     "block_id": 2,
+     "text": "图 2-17 CBAM 通道注意力模块"
+    },
+    {
+     "page": 29,
+     "block_id": 5,
+     "text": "图 2-18 CBAM 空间注意力模块"
+    },
+    {
+     "page": 31,
+     "block_id": 2,
+     "text": "图 2-19 使用 ImageNet 进行迁移学习示意图"
+    },
+    {
+     "page": 32,
+     "block_id": 2,
+     "text": "图 2-20 髋关节数据集样本"
+    },
+    {
+     "page": 32,
+     "block_id": 7,
+     "text": "图 2-21 脊椎数据集样本"
+    },
+    {
+     "page": 35,
+     "block_id": 2,
+     "text": "图 3-1 VGG16 迁移 UNet 网络结构"
+    },
+    {
+     "page": 35,
+     "block_id": 5,
+     "text": "图 3-2 VGG16 迁移 UNet 网络结构具体层结构"
+    },
+    {
+     "page": 36,
+     "block_id": 3,
+     "text": "图 3-3 模型权重调整示意图"
+    },
+    {
+     "page": 37,
+     "block_id": 2,
+     "text": "图 3-4 CLAHE 算法预处理前"
+    },
+    {
+     "page": 37,
+     "block_id": 4,
+     "text": "图 3-5 CLAHE 算法预处理后"
+    },
+    {
+     "page": 38,
+     "block_id": 3,
+     "text": "图 3-6 图像加灰条数据增强方法前"
+    },
+    {
+     "page": 38,
+     "block_id": 5,
+     "text": "图3-7 图像加灰条数据方法增强后"
+    },
+    {
+     "page": 39,
+     "block_id": 9,
+     "text": "表3-1 混淆矩阵"
+    },
+    {
+     "page": 40,
+     "block_id": 8,
+     "text": "图3-8 二类别平均交并比示意图"
+    },
+    {
+     "page": 40,
+     "block_id": 13,
+     "text": "表3-2 硬件配置表"
+    },
+    {
+     "page": 42,
+     "block_id": 1,
+     "text": "表3-3 不同迁移方法髋关节实验结果"
+    },
+    {
+     "page": 43,
+     "block_id": 2,
+     "text": "图 3-9 不同迁移方法髋关节 mIoU 指标结果"
+    },
+    {
+     "page": 43,
+     "block_id": 5,
+     "text": "图 3-10 不同迁移方法髋关节分割预测示例"
+    },
+    {
+     "page": 44,
+     "block_id": 2,
+     "text": "图3-11 髋关节像素点类别混淆矩阵"
+    },
+    {
+     "page": 44,
+     "block_id": 4,
+     "text": "表3-4 各经典模型髋关节数据集实验结果"
+    },
+    {
+     "page": 44,
+     "block_id": 8,
+     "text": "图3-12 各经典模型髋关节预测对比图"
+    },
+    {
+     "page": 45,
+     "block_id": 4,
+     "text": "表3-5 不同迁移方法脊椎实验结果"
+    },
+    {
+     "page": 46,
+     "block_id": 2,
+     "text": "图 3-13 不同迁移方法脊椎 mIoU 指标结果"
+    },
+    {
+     "page": 46,
+     "block_id": 5,
+     "text": "图 3-14 不同迁移方法脊椎分割预测示例"
+    },
+    {
+     "page": 47,
+     "block_id": 5,
+     "text": "图3-15 脊椎分割像素点类别混淆矩阵"
+    },
+    {
+     "page": 47,
+     "block_id": 7,
+     "text": "表3-6 各经典模型脊椎数据集实验结果"
+    },
+    {
+     "page": 48,
+     "block_id": 2,
+     "text": "图 3-16 各经典模型脊椎预测对比图"
+    },
+    {
+     "page": 50,
+     "block_id": 6,
+     "text": "图 4-1 改进迁移 UNet 网络模型结构"
+    },
+    {
+     "page": 51,
+     "block_id": 2,
+     "text": "图 4-2 改进迁移 UNet 网络模型结构具体层结构"
+    },
+    {
+     "page": 52,
+     "block_id": 2,
+     "text": "图 4-3 极化注意力机制结构"
+    },
+    {
+     "page": 53,
+     "block_id": 3,
+     "text": "图 4-4 信息聚合模块和信息聚合模块最后一层的结构"
+    },
+    {
+     "page": 53,
+     "block_id": 8,
+     "text": "表4-1 髋关节不同注意力机制 UNet 实验结果"
+    },
+    {
+     "page": 54,
+     "block_id": 4,
+     "text": "图 4-5 不同注意力模型髋关节 mIoU 指标"
+    },
+    {
+     "page": 55,
+     "block_id": 2,
+     "text": "图 4-6 不同注意力机制 UNet 与本文算法髋关节预测对比结果"
+    },
+    {
+     "page": 55,
+     "block_id": 6,
+     "text": "图 4-7 本文算法在髋关节验证集上的像素点类别混淆矩阵"
+    },
+    {
+     "page": 56,
+     "block_id": 1,
+     "text": "表4-2 脊椎不同注意力机制 UNet 实验结果"
+    },
+    {
+     "page": 56,
+     "block_id": 5,
+     "text": "图 4-8 不同注意力机制模型脊椎 mIoU 指标"
+    },
+    {
+     "page": 57,
+     "block_id": 2,
+     "text": "图 4-9 不同注意力机制 UNet 与本文算法脊椎预测对比结果"
+    },
+    {
+     "page": 57,
+     "block_id": 5,
+     "text": "图4-10 本文算法在脊椎验证集上的像素点类别混淆矩阵"
+    },
+    {
+     "page": 61,
+     "block_id": 2,
+     "text": "图 5-1 诊断系统架构"
+    },
+    {
+     "page": 61,
+     "block_id": 6,
+     "text": "图 5-2 骨科影像诊断系统功能模块图"
+    },
+    {
+     "page": 62,
+     "block_id": 6,
+     "text": "图 5-3 系统流程图"
+    },
+    {
+     "page": 63,
+     "block_id": 2,
+     "text": "图 5-4 数据库实体关系图"
+    },
+    {
+     "page": 63,
+     "block_id": 4,
+     "text": "表5-1 用户表内具体设计"
+    },
+    {
+     "page": 63,
+     "block_id": 7,
+     "text": "表5-2 历史记录表内具体设计"
+    },
+    {
+     "page": 64,
+     "block_id": 6,
+     "text": "图 5-5 系统登录主界面"
+    },
+    {
+     "page": 65,
+     "block_id": 3,
+     "text": "图 5-6 系统主界面"
+    },
+    {
+     "page": 65,
+     "block_id": 6,
+     "text": "图5-7 历史记录界面"
+    },
+    {
+     "page": 66,
+     "block_id": 3,
+     "text": "图5-8 患者个人信息建档"
+    },
+    {
+     "page": 66,
+     "block_id": 6,
+     "text": "图5-9 患者图像选择界面"
+    },
+    {
+     "page": 67,
+     "block_id": 3,
+     "text": "图 5-10 选中图像后界面"
+    },
+    {
+     "page": 67,
+     "block_id": 6,
+     "text": "图 5-11 预测结果展示界面"
+    },
+    {
+     "page": 68,
+     "block_id": 3,
+     "text": "图 5-12 诊断系统调用预测网络程序的 UML 时序图"
+    },
+    {
+     "page": 69,
+     "block_id": 2,
+     "text": "图 5-13 历史记录展示界面"
+    },
+    {
+     "page": 69,
+     "block_id": 6,
+     "text": "图 5-14 登出后界面"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [
+   {
+    "page": 18,
+    "block_id": 6,
+    "text": "图 2-3 Tanh 函数图像"
+   },
+   {
+    "page": 25,
+    "block_id": 6,
+    "text": "图 2-12 逐点卷积运算示意图"
+   },
+   {
+    "page": 29,
+    "block_id": 5,
+    "text": "图 2-18 CBAM 空间注意力模块"
+   },
+   {
+    "page": 35,
+    "block_id": 5,
+    "text": "图 3-2 VGG16 迁移 UNet 网络结构具体层结构"
+   },
+   {
+    "page": 37,
+    "block_id": 4,
+    "text": "图 3-5 CLAHE 算法预处理后"
+   },
+   {
+    "page": 38,
+    "block_id": 5,
+    "text": "图3-7 图像加灰条数据方法增强后"
+   },
+   {
+    "page": 43,
+    "block_id": 5,
+    "text": "图 3-10 不同迁移方法髋关节分割预测示例"
+   },
+   {
+    "page": 44,
+    "block_id": 4,
+    "text": "表3-4 各经典模型髋关节数据集实验结果"
+   },
+   {
+    "page": 46,
+    "block_id": 5,
+    "text": "图 3-14 不同迁移方法脊椎分割预测示例"
+   },
+   {
+    "page": 47,
+    "block_id": 7,
+    "text": "表3-6 各经典模型脊椎数据集实验结果"
+   },
+   {
+    "page": 53,
+    "block_id": 8,
+    "text": "表4-1 髋关节不同注意力机制 UNet 实验结果"
+   },
+   {
+    "page": 55,
+    "block_id": 6,
+    "text": "图 4-7 本文算法在髋关节验证集上的像素点类别混淆矩阵"
+   },
+   {
+    "page": 57,
+    "block_id": 5,
+    "text": "图4-10 本文算法在脊椎验证集上的像素点类别混淆矩阵"
+   },
+   {
+    "page": 61,
+    "block_id": 6,
+    "text": "图 5-2 骨科影像诊断系统功能模块图"
+   },
+   {
+    "page": 65,
+    "block_id": 6,
+    "text": "图5-7 历史记录界面"
+   },
+   {
+    "page": 66,
+    "block_id": 6,
+    "text": "图5-9 患者图像选择界面"
+   },
+   {
+    "page": 67,
+    "block_id": 6,
+    "text": "图 5-11 预测结果展示界面"
+   },
+   {
+    "page": 69,
+    "block_id": 6,
+    "text": "图 5-14 登出后界面"
+   }
+  ],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 14,
+    "block_id": 5,
+    "text": "图 1-1 本文技术路线"
+   },
+   {
+    "page": 17,
+    "block_id": 3,
+    "text": "图2-1 卷积神经网络结构图"
+   },
+   {
+    "page": 18,
+    "block_id": 2,
+    "text": "图2-2 卷积核计算示意图"
+   },
+   {
+    "page": 18,
+    "block_id": 6,
+    "text": "图 2-3 Tanh 函数图像"
+   },
+   {
+    "page": 19,
+    "block_id": 3,
+    "text": "图 2-4 Sigmoid 函数图像"
+   },
+   {
+    "page": 19,
+    "block_id": 9,
+    "text": "图 2-5 ReLU 函数图像"
+   },
+   {
+    "page": 20,
+    "block_id": 7,
+    "text": "（a）最大池化示意图"
+   },
+   {
+    "page": 20,
+    "block_id": 8,
+    "text": "（b）平均池化示意图"
+   },
+   {
+    "page": 20,
+    "block_id": 9,
+    "text": "图2-6 最大池化、平均池化示意图"
+   },
+   {
+    "page": 21,
+    "block_id": 9,
+    "text": "图2-7 全连接层的网络结构图"
+   },
+   {
+    "page": 22,
+    "block_id": 2,
+    "text": "图2-8 丢弃法的工作流程示意图"
+   },
+   {
+    "page": 23,
+    "block_id": 5,
+    "text": "图 2-9 VGG16 网络结构图"
+   },
+   {
+    "page": 24,
+    "block_id": 2,
+    "text": "（a）层数较少网络残差结构"
+   },
+   {
+    "page": 24,
+    "block_id": 4,
+    "text": "（b）层数较多网络残差结构"
+   },
+   {
+    "page": 24,
+    "block_id": 5,
+    "text": "图 2-10 残差结构"
+   },
+   {
+    "page": 25,
+    "block_id": 3,
+    "text": "图 2-11 深度卷积示意图"
+   },
+   {
+    "page": 25,
+    "block_id": 6,
+    "text": "图 2-12 逐点卷积运算示意图"
+   },
+   {
+    "page": 26,
+    "block_id": 3,
+    "text": "图 2-13 UNet 网络结构"
+   },
+   {
+    "page": 27,
+    "block_id": 3,
+    "text": "图 2-14 PSPNet 网络结构"
+   },
+   {
+    "page": 28,
+    "block_id": 2,
+    "text": "图 2-15 DeepLab v3+网络结构"
+   },
+   {
+    "page": 28,
+    "block_id": 7,
+    "text": "图 2-16 CBAM 结构原理图"
+   },
+   {
+    "page": 29,
+    "block_id": 2,
+    "text": "图 2-17 CBAM 通道注意力模块"
+   },
+   {
+    "page": 29,
+    "block_id": 5,
+    "text": "图 2-18 CBAM 空间注意力模块"
+   },
+   {
+    "page": 31,
+    "block_id": 2,
+    "text": "图 2-19 使用 ImageNet 进行迁移学习示意图"
+   },
+   {
+    "page": 32,
+    "block_id": 2,
+    "text": "图 2-20 髋关节数据集样本"
+   },
+   {
+    "page": 32,
+    "block_id": 7,
+    "text": "图 2-21 脊椎数据集样本"
+   },
+   {
+    "page": 35,
+    "block_id": 2,
+    "text": "图 3-1 VGG16 迁移 UNet 网络结构"
+   },
+   {
+    "page": 35,
+    "block_id": 5,
+    "text": "图 3-2 VGG16 迁移 UNet 网络结构具体层结构"
+   },
+   {
+    "page": 36,
+    "block_id": 3,
+    "text": "图 3-3 模型权重调整示意图"
+   },
+   {
+    "page": 37,
+    "block_id": 2,
+    "text": "图 3-4 CLAHE 算法预处理前"
+   },
+   {
+    "page": 37,
+    "block_id": 4,
+    "text": "图 3-5 CLAHE 算法预处理后"
+   },
+   {
+    "page": 38,
+    "block_id": 3,
+    "text": "图 3-6 图像加灰条数据增强方法前"
+   },
+   {
+    "page": 38,
+    "block_id": 5,
+    "text": "图3-7 图像加灰条数据方法增强后"
+   },
+   {
+    "page": 39,
+    "block_id": 9,
+    "text": "表3-1 混淆矩阵"
+   },
+   {
+    "page": 40,
+    "block_id": 8,
+    "text": "图3-8 二类别平均交并比示意图"
+   },
+   {
+    "page": 40,
+    "block_id": 13,
+    "text": "表3-2 硬件配置表"
+   },
+   {
+    "page": 42,
+    "block_id": 1,
+    "text": "表3-3 不同迁移方法髋关节实验结果"
+   },
+   {
+    "page": 43,
+    "block_id": 2,
+    "text": "图 3-9 不同迁移方法髋关节 mIoU 指标结果"
+   },
+   {
+    "page": 43,
+    "block_id": 5,
+    "text": "图 3-10 不同迁移方法髋关节分割预测示例"
+   },
+   {
+    "page": 44,
+    "block_id": 2,
+    "text": "图3-11 髋关节像素点类别混淆矩阵"
+   },
+   {
+    "page": 44,
+    "block_id": 4,
+    "text": "表3-4 各经典模型髋关节数据集实验结果"
+   },
+   {
+    "page": 44,
+    "block_id": 8,
+    "text": "图3-12 各经典模型髋关节预测对比图"
+   },
+   {
+    "page": 45,
+    "block_id": 4,
+    "text": "表3-5 不同迁移方法脊椎实验结果"
+   },
+   {
+    "page": 46,
+    "block_id": 2,
+    "text": "图 3-13 不同迁移方法脊椎 mIoU 指标结果"
+   },
+   {
+    "page": 46,
+    "block_id": 5,
+    "text": "图 3-14 不同迁移方法脊椎分割预测示例"
+   },
+   {
+    "page": 47,
+    "block_id": 5,
+    "text": "图3-15 脊椎分割像素点类别混淆矩阵"
+   },
+   {
+    "page": 47,
+    "block_id": 7,
+    "text": "表3-6 各经典模型脊椎数据集实验结果"
+   },
+   {
+    "page": 48,
+    "block_id": 2,
+    "text": "图 3-16 各经典模型脊椎预测对比图"
+   },
+   {
+    "page": 50,
+    "block_id": 6,
+    "text": "图 4-1 改进迁移 UNet 网络模型结构"
+   },
+   {
+    "page": 51,
+    "block_id": 2,
+    "text": "图 4-2 改进迁移 UNet 网络模型结构具体层结构"
+   },
+   {
+    "page": 52,
+    "block_id": 2,
+    "text": "图 4-3 极化注意力机制结构"
+   },
+   {
+    "page": 53,
+    "block_id": 3,
+    "text": "图 4-4 信息聚合模块和信息聚合模块最后一层的结构"
+   },
+   {
+    "page": 53,
+    "block_id": 8,
+    "text": "表4-1 髋关节不同注意力机制 UNet 实验结果"
+   },
+   {
+    "page": 54,
+    "block_id": 4,
+    "text": "图 4-5 不同注意力模型髋关节 mIoU 指标"
+   },
+   {
+    "page": 55,
+    "block_id": 2,
+    "text": "图 4-6 不同注意力机制 UNet 与本文算法髋关节预测对比结果"
+   },
+   {
+    "page": 55,
+    "block_id": 6,
+    "text": "图 4-7 本文算法在髋关节验证集上的像素点类别混淆矩阵"
+   },
+   {
+    "page": 56,
+    "block_id": 1,
+    "text": "表4-2 脊椎不同注意力机制 UNet 实验结果"
+   },
+   {
+    "page": 56,
+    "block_id": 5,
+    "text": "图 4-8 不同注意力机制模型脊椎 mIoU 指标"
+   },
+   {
+    "page": 57,
+    "block_id": 2,
+    "text": "图 4-9 不同注意力机制 UNet 与本文算法脊椎预测对比结果"
+   },
+   {
+    "page": 57,
+    "block_id": 5,
+    "text": "图4-10 本文算法在脊椎验证集上的像素点类别混淆矩阵"
+   },
+   {
+    "page": 61,
+    "block_id": 2,
+    "text": "图 5-1 诊断系统架构"
+   },
+   {
+    "page": 61,
+    "block_id": 6,
+    "text": "图 5-2 骨科影像诊断系统功能模块图"
+   },
+   {
+    "page": 62,
+    "block_id": 6,
+    "text": "图 5-3 系统流程图"
+   },
+   {
+    "page": 63,
+    "block_id": 2,
+    "text": "图 5-4 数据库实体关系图"
+   },
+   {
+    "page": 63,
+    "block_id": 4,
+    "text": "表5-1 用户表内具体设计"
+   },
+   {
+    "page": 63,
+    "block_id": 7,
+    "text": "表5-2 历史记录表内具体设计"
+   },
+   {
+    "page": 64,
+    "block_id": 6,
+    "text": "图 5-5 系统登录主界面"
+   },
+   {
+    "page": 65,
+    "block_id": 3,
+    "text": "图 5-6 系统主界面"
+   },
+   {
+    "page": 65,
+    "block_id": 6,
+    "text": "图5-7 历史记录界面"
+   },
+   {
+    "page": 66,
+    "block_id": 3,
+    "text": "图5-8 患者个人信息建档"
+   },
+   {
+    "page": 66,
+    "block_id": 6,
+    "text": "图5-9 患者图像选择界面"
+   },
+   {
+    "page": 67,
+    "block_id": 3,
+    "text": "图 5-10 选中图像后界面"
+   },
+   {
+    "page": 67,
+    "block_id": 6,
+    "text": "图 5-11 预测结果展示界面"
+   },
+   {
+    "page": 68,
+    "block_id": 3,
+    "text": "图 5-12 诊断系统调用预测网络程序的 UML 时序图"
+   },
+   {
+    "page": 69,
+    "block_id": 2,
+    "text": "图 5-13 历史记录展示界面"
+   },
+   {
+    "page": 69,
+    "block_id": 6,
+    "text": "图 5-14 登出后界面"
+   }
+  ]
  }
 }
