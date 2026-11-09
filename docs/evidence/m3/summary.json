@@ -1,0 +1,267 @@
+{
+  "selected_ready": [
+    "3QYCST4E",
+    "2BYRLKQS",
+    "2332GHPT",
+    "23T2B8ZX",
+    "24A2QUAH",
+    "24EZZ7CS",
+    "24YKLTHQ",
+    "25K5KZAQ",
+    "26WC6NT7",
+    "27MFWJWJ"
+  ],
+  "refused": [
+    {
+      "key": "28JLIHLS",
+      "status": "M2_REVIEW_REQUIRED"
+    },
+    {
+      "key": "2UIPV93M",
+      "status": "HOLD"
+    },
+    {
+      "key": "28ALPCY7",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "28JLIHLS",
+      "status": "M2_REVIEW_REQUIRED",
+      "reason": "status_refused"
+    },
+    {
+      "key": "2UIPV93M",
+      "status": "HOLD",
+      "reason": "status_refused"
+    },
+    {
+      "key": "28ALPCY7",
+      "status": "REQUIRES_APPROVAL",
+      "reason": "status_refused"
+    }
+  ],
+  "gate_refusals": [
+    {
+      "key": "28JLIHLS",
+      "status": "M2_REVIEW_REQUIRED",
+      "reason": "status_refused"
+    },
+    {
+      "key": "2UIPV93M",
+      "status": "HOLD",
+      "reason": "status_refused"
+    },
+    {
+      "key": "28ALPCY7",
+      "status": "REQUIRES_APPROVAL",
+      "reason": "status_refused"
+    }
+  ],
+  "clean_run": [
+    {
+      "key": "3QYCST4E",
+      "status": "ok",
+      "rebuild": {
+        "key": "3QYCST4E",
+        "status": "ok"
+      },
+      "validation": {
+        "ok": true,
+        "errors": []
+      }
+    },
+    {
+      "key": "2BYRLKQS",
+      "status": "ok",
+      "rebuild": {
+        "key": "2BYRLKQS",
+        "status": "ok"
+      },
+      "validation": {
+        "ok": true,
+        "errors": []
+      }
+    },
+    {
+      "key": "2332GHPT",
+      "status": "ok",
+      "rebuild": {
+        "key": "2332GHPT",
+        "status": "ok"
+      },
+      "validation": {
+        "ok": true,
+        "errors": []
+      }
+    },
+    {
+      "key": "23T2B8ZX",
+      "status": "ok",
+      "rebuild": {
+        "key": "23T2B8ZX",
+        "status": "ok"
+      },
+      "validation": {
+        "ok": true,
+        "errors": []
+      }
+    },
+    {
+      "key": "24A2QUAH",
+      "status": "ok",
+      "rebuild": {
+        "key": "24A2QUAH",
+        "status": "ok"
+      },
+      "validation": {
+        "ok": true,
+        "errors": []
+      }
+    },
+    {
+      "key": "24EZZ7CS",
+      "status": "ok",
+      "rebuild": {
+        "key": "24EZZ7CS",
+        "status": "ok"
+      },
+      "validation": {
+        "ok": true,
+        "errors": []
+      }
+    },
+    {
+      "key": "24YKLTHQ",
+      "status": "ok",
+      "rebuild": {
+        "key": "24YKLTHQ",
+        "status": "ok"
+      },
+      "validation": {
+        "ok": true,
+        "errors": []
+      }
+    },
+    {
+      "key": "25K5KZAQ",
+      "status": "ok",
+      "rebuild": {
+        "key": "25K5KZAQ",
+        "status": "ok"
+      },
+      "validation": {
+        "ok": true,
+        "errors": []
+      }
+    },
+    {
+      "key": "26WC6NT7",
+      "status": "ok",
+      "rebuild": {
+        "key": "26WC6NT7",
+        "status": "ok"
+      },
+      "validation": {
+        "ok": true,
+        "errors": []
+      }
+    },
+    {
+      "key": "27MFWJWJ",
+      "status": "ok",
+      "rebuild": {
+        "key": "27MFWJWJ",
+        "status": "ok"
+      },
+      "validation": {
+        "ok": true,
+        "errors": []
+      }
+    }
+  ],
+  "faults": {
+    "kill": {
+      "interrupted": true,
+      "pending_before": true,
+      "leftovers_before": [],
+      "proc_rc": 1,
+      "rebuild": {
+        "key": "3QYCST4E",
+        "status": "ok"
+      },
+      "validation": {
+        "ok": true,
+        "errors": []
+      },
+      "matches_clean": true
+    },
+    "write_error": {
+      "first": {
+        "status": "exception",
+        "error": "object materialization failed: ENOSPC"
+      },
+      "rerun": {
+        "key": "3QYCST4E",
+        "status": "ok"
+      },
+      "validation": {
+        "ok": true,
+        "errors": []
+      },
+      "old_byte_identical": true,
+      "leftovers": []
+    },
+    "interrupted_commit": {
+      "restored_old": true,
+      "rebuild": {
+        "key": "3QYCST4E",
+        "status": "ok"
+      },
+      "validation": {
+        "ok": true,
+        "errors": []
+      }
+    },
+    "concurrent": {
+      "returncodes": [
+        0,
+        0
+      ],
+      "stdout": [
+        "{'key': '3QYCST4E', 'status': 'ok'}\n",
+        "{'key': '3QYCST4E', 'status': 'ok'}\n"
+      ],
+      "stderr": [
+        "D:\\programs\\Python\\Lib\\site-packages\\requests\\__init__.py:113: RequestsDependencyWarning: urllib3 (2.7.0) or chardet (7.4.3)/charset_normalizer (3.4.7) doesn't match a supported version!\n  warnings.wa",
+        "D:\\programs\\Python\\Lib\\site-packages\\requests\\__init__.py:113: RequestsDependencyWarning: urllib3 (2.7.0) or chardet (7.4.3)/charset_normalizer (3.4.7) doesn't match a supported version!\n  warnings.wa"
+      ],
+      "validation": {
+        "ok": true,
+        "errors": []
+      },
+      "matches_clean": false,
+      "duplicate_ids": false,
+      "success_count": 2
+    },
+    "corrupt": {
+      "detected_before": true,
+      "errors_before": [
+        "json_parse:figure_inventory.json:Expecting property name enclosed in double quotes: line 1 column 2 (char 1)",
+        "figure_inventory_parse:Expecting property name enclosed in double quotes: line 1 column 2 (char 1)",
+        "dangling_fulltext_target:render/figures/figure_001.md"
+      ],
+      "rebuild": {
+        "key": "3QYCST4E",
+        "status": "ok"
+      },
+      "valid_after": true,
+      "matches_clean": true
+    }
+  },
+  "idempotent": {
+    "before": "616b375f49df935b6da244ef96cfaacd87d8149425ab1a389f5b4579e9bb742c",
+    "after": "616b375f49df935b6da244ef96cfaacd87d8149425ab1a389f5b4579e9bb742c",
+    "equal": true
+  },
+  "source_untouched": true
+}
