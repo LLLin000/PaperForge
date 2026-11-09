@@ -252,7 +252,23 @@ def _delivery_diff(
                     "new_id": mapping.get(object_id, object_id),
                 }
             )
+    manifest_figure_ids = set(map(str, manifest.get("figures", [])))
+    manifest_asset_ids = {
+        Path(value).stem
+        for value in manifest.get("assets", [])
+        if Path(value).parent.name == "figures"
+    }
+    manifest_render_ids = {
+        Path(value).stem
+        for value in manifest.get("render", [])
+        if Path(value).parent.name == "figures"
+    }
     return {
+        "manifest_delivery": {
+            "figure_ids": sorted(manifest_figure_ids),
+            "missing_assets": sorted(manifest_figure_ids - manifest_asset_ids),
+            "missing_renders": sorted(manifest_figure_ids - manifest_render_ids),
+        },
         "old_render_files": len(old_render),
         "new_render_files": len(new_render),
         "render_added": sorted(new_render - old_render),

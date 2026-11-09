@@ -181,10 +181,13 @@ def structural_baseline(key: str, dry_entry: dict[str, Any], ocr_root: Path) -> 
             pending = len(d.get("held_figures", []) or []) + len(d.get("unresolved_clusters", []) or [])
         except Exception:
             pending = 0
+    manifest_delivery = delivery.get("manifest_delivery", {})
     return {
         "key": key,
         "unique_ids_ok": bool(unique_ok),
         "dangling_fulltext_targets": dangling,
+        "missing_manifest_assets": list(manifest_delivery.get("missing_assets", [])),
+        "missing_manifest_renders": list(manifest_delivery.get("missing_renders", [])),
         "pending_markers": pending,
         "text_decrease": bool(text_decrease),
         "old_text_chars": content.get("old_text_chars"),
@@ -474,7 +477,11 @@ def run_key(vault: Path, ocr_root: Path, key: str, out_dir: Path) -> dict[str, A
     case_result = {
         "key": key,
         "passed": not (
-            entry.get("error") or baseline.get("text_decrease") or baseline.get("dangling_fulltext_targets")
+            entry.get("error")
+            or baseline.get("text_decrease")
+            or baseline.get("dangling_fulltext_targets")
+            or baseline.get("missing_manifest_assets")
+            or baseline.get("missing_manifest_renders")
         ),
         "figures": len(replay_figures),
         "structural": baseline,

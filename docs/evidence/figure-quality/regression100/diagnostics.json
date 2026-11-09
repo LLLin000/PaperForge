@@ -1,0 +1,71 @@
+{
+  "set": "regression",
+  "decision": "GO",
+  "delivery_gate": "replay_manifest_scheduled_ids_and_paths",
+  "regression100": {
+    "papers": 100,
+    "replay_errors": 0,
+    "unique_ids_ok_papers": 100,
+    "missing_manifest_assets": 0,
+    "missing_manifest_renders": 0,
+    "dangling_fulltext_targets": 0,
+    "text_decrease_papers": 0,
+    "pre_migration_source_pending_markers": 0,
+    "replay_unresolved_inventory_clusters": 4,
+    "replay_unresolved_inventory_cluster_papers": 3,
+    "table_claim_changes": 2,
+    "table_claim_change_papers": ["64AWS4SU", "G5QGQ9PB"]
+  },
+  "reclassified_source_id_delivery_findings": [
+    {
+      "key": "6QNRHRKX",
+      "classification": "old_id_mapping_and_split",
+      "old_ids": ["figure_unknown_000", "figure_unknown_001"],
+      "replay_ids": ["figure_main_p002_b7", "figure_004", "figure_006"],
+      "scheduled_pairs": [
+        ["assets/figures/figure_main_p002_b7.jpg", "render/figures/figure_main_p002_b7.md"],
+        ["assets/figures/figure_004.jpg", "render/figures/figure_004.md"],
+        ["assets/figures/figure_006.jpg", "render/figures/figure_006.md"]
+      ],
+      "missing_assets": [],
+      "missing_renders": []
+    },
+    {
+      "key": "M36WA39N",
+      "classification": "old_id_rename",
+      "old_id": "figure_005_continued_p010_b19",
+      "replay_id": "figure_005",
+      "scheduled_pairs": [
+        ["assets/figures/figure_005.jpg", "render/figures/figure_005.md"]
+      ],
+      "missing_assets": [],
+      "missing_renders": []
+    }
+  ],
+  "pending_marker_classification": {
+    "kind": "unresolved_cluster_inventory_flags",
+    "unpublished_starts": false,
+    "affects_delivery_gate": false,
+    "records": [
+      {"key": "6GB9I9KG", "cluster_id": "unresolved_cluster_001", "page": 4},
+      {"key": "8K39NHUQ", "cluster_id": "unresolved_cluster_001", "page": 15},
+      {"key": "AT99P8YS", "cluster_id": "unresolved_cluster_001", "page": 9},
+      {"key": "AT99P8YS", "cluster_id": "unresolved_cluster_002", "page": 10}
+    ]
+  },
+  "smoke10": {
+    "passed": 9,
+    "failed": 1,
+    "failure": {"key": "55EKJRBC", "dangling_fulltext_targets": 1},
+    "missing_manifest_assets": 0,
+    "missing_manifest_renders": 0,
+    "nonunique_id_papers": [],
+    "text_decrease_papers": []
+  },
+  "materialization_journal_audit": {
+    "scope": "100 regression paper folders",
+    "post_run_files_found": 0,
+    "pre_run_state_known": false,
+    "note": "A prior dry-run was executed before the dry-run recovery guard; recovery may remove a stale journal, so the post-run audit cannot establish pre-run presence."
+  }
+}

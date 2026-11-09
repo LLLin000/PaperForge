@@ -975,7 +975,8 @@ def extract_and_write_objects(
     figure_inventory = figure_inventory if isinstance(figure_inventory, dict) else {}
     table_inventory = table_inventory if isinstance(table_inventory, dict) else {}
     paper_root = asset_root.parent
-    _recover_materialization_journal(paper_root)
+    if not dry_run:
+        _recover_materialization_journal(paper_root)
 
     page_dimensions_by_page = page_dimensions_by_page or {}
     tasks, collisions = _build_object_tasks(
