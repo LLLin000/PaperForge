@@ -1287,6 +1287,20 @@ def _cluster_semantic_page_assets(
         if px != py:
             parent[py] = px
 
+    same_column_neighbors: set[int] = set()
+    for i, a in enumerate(page_assets):
+        ab = a.get("bbox", [0, 0, 0, 0])
+        a_band = _column_band_id(ab, page_width)
+        for j in range(i + 1, len(page_assets)):
+            b = page_assets[j]
+            bb = b.get("bbox", [0, 0, 0, 0])
+            if a_band is None or a_band != _column_band_id(bb, page_width):
+                continue
+            h_gap = max(0.0, bb[0] - ab[2], ab[0] - bb[2])
+            v_gap = max(0.0, bb[1] - ab[3], ab[1] - bb[3])
+            if h_gap <= h_threshold and v_gap <= v_threshold and not _has_text_separator(a, b, page_blocks):
+                same_column_neighbors.update((i, j))
+
     for i in range(len(page_assets)):
         for j in range(i + 1, len(page_assets)):
             a, b = page_assets[i], page_assets[j]
@@ -1295,12 +1309,22 @@ def _cluster_semantic_page_assets(
 
             h_gap = max(0.0, bb[0] - ab[2], ab[0] - bb[2])
             v_gap = max(0.0, bb[1] - ab[3], ab[1] - bb[3])
-
-            if h_gap > h_threshold:
-                continue
-            if v_gap > v_threshold:
+            if h_gap > h_threshold or v_gap > v_threshold:
                 continue
             if _has_text_separator(a, b, page_blocks):
+                continue
+
+            # Keep a cross-column pair unless either asset belongs to a
+            # separate same-column panel stack.
+            a_band = _column_band_id(ab, page_width)
+            b_band = _column_band_id(bb, page_width)
+            if (
+                h_gap > 0
+                and a_band is not None
+                and b_band is not None
+                and a_band != b_band
+                and (i in same_column_neighbors or j in same_column_neighbors)
+            ):
                 continue
 
             union(i, j)
