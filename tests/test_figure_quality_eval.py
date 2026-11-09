@@ -31,8 +31,8 @@ def test_frozen_sets_counts_and_disjoint():
 
 def test_scoring_math():
     labels = [
-        {"figure_id": "f1", "expected_owner": "a b", "reviewer": "r", "crop_ok": True, "delivery_ok": True, "caption_ok": True, "panels_ok": True},
-        {"figure_id": "f2", "expected_owner": "c", "reviewer": "r", "crop_ok": False, "delivery_ok": True, "caption_ok": True, "panels_ok": True},
+        {"figure_id": "f1", "expected_owner": "a b", "current_assets": "a x", "reviewer": "r", "crop_ok": True, "delivery_ok": True, "caption_ok": True, "panels_ok": True},
+        {"figure_id": "f2", "expected_owner": "c", "current_assets": "c", "reviewer": "r", "crop_ok": False, "delivery_ok": True, "caption_ok": True, "panels_ok": True},
     ]
     replay = {"figures": [
         {"figure_id": "f1", "matched_assets": [{"block_id": "a"}, {"block_id": "x"}]},
