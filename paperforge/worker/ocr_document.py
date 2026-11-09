@@ -4436,8 +4436,11 @@ def _detect_non_body_insert_clusters(
 def _looks_like_figure_narrative_prose(text: str) -> bool:
     """Detect narrative prose blocks that start with Fig. but are not formal legends."""
     # Real multi-panel captions (e.g. "Fig. 5 (a) ... (b) ...") legitimately
-    # contain many sentences; do not treat them as narrative prose.
-    if re.search(r"\([a-z](?:\s*,\s*[a-z])*\)", text or "", re.I):
+    # contain many sentences; do not treat them as narrative prose. Only bypass
+    # when the block starts as a figure caption with panel markers.
+    if re.search(r"^\s*(?:Fig\.?|Figure)\s*\d", text or "", re.I) and re.search(
+        r"\([a-z](?:\s*,\s*[a-z])*\)", text or "", re.I
+    ):
         return False
     sentence_count = text.count(". ") + text.count(".\n")
     if sentence_count >= 2:
