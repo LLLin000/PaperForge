@@ -84,13 +84,14 @@ class GroupSequentialPass:
 
         # Numbered legends per page (used by _score_legend_to_group for same-page scoring)
         per_page_legend_count: dict[int, int] = {}
-        for leg in (state.candidate_index.deduped_legends or []):
+        per_page_caption_count: dict[int, int] = {}
+        for leg in state.candidate_index.deduped_legends or []:
             lp = _resource_page(leg)
             if lp is not None:
+                per_page_caption_count[lp] = per_page_caption_count.get(lp, 0) + 1
                 text = str(leg.get("text", "") or "")
                 if ocr_figures._extract_figure_number(text) is not None:
                     per_page_legend_count[lp] = per_page_legend_count.get(lp, 0) + 1
-
         # ----- 3. Filtered asset lookup (page, block_id) -> asset dict -----
         raw_assets = getattr(state.corpus, "raw_assets", []) or []
         filtered_assets = ocr_figures._filter_figure_assets(raw_assets)
@@ -183,7 +184,8 @@ class GroupSequentialPass:
             if best_group is None and next_page:
                 best_group = next_page[0]
 
-            # (c) Previous-page with guard
+            # (c) Previous-page match, requiring the existing guard or a unique
+            # high-confidence caption and one substantial preceding asset.
             if best_group is None and prev_page:
                 first_bid = (
                     str(prev_page[0]["asset_block_ids"][0])
@@ -193,9 +195,31 @@ class GroupSequentialPass:
                 first_asset = assets_by_page_id.get(
                     (int(prev_page[0].get("page", 0) or 0), first_bid)
                 )
-                if first_asset and ocr_figures._allow_previous_page_sequential_match(legend, first_asset):
+                safe_unique_previous_asset = (
+                    first_asset
+                    and len(prev_page) == 1
+                    and per_page_caption_count.get(lg_page, 0) == 1
+                    and per_page_caption_count.get(lg_page - 1, 0) == 0
+                    and (legend.get("bbox") or [0, 0, 0, 0])[1]
+                    <= float(legend.get("page_height") or page_height_map.get(lg_page, 1600)) * 0.2
+                    and (first_asset.get("bbox") or [0, 0, 0, 0])[2]
+                    - (first_asset.get("bbox") or [0, 0, 0, 0])[0]
+                    >= float(first_asset.get("page_width") or page_width) * 0.6
+                    and (first_asset.get("bbox") or [0, 0, 0, 0])[3]
+                    - (first_asset.get("bbox") or [0, 0, 0, 0])[1]
+                    >= float(first_asset.get("page_height") or page_height_map.get(lg_page - 1, 1600)) * 0.5
+                    and ocr_figures.score_figure_caption(
+                        legend,
+                        nearby_media=True,
+                        caption_style_match=False,
+                        body_prose_likelihood=False,
+                    ).get("score", 0.0) >= 0.7
+                )
+                if first_asset and (
+                    ocr_figures._allow_previous_page_sequential_match(legend, first_asset)
+                    or safe_unique_previous_asset
+                ):
                     best_group = prev_page[0]
-
             if best_group is None:
                 continue
 
