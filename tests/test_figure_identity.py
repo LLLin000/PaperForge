@@ -152,6 +152,42 @@ def test_partial_asset_overlap_keeps_smaller_claim_and_records_hold() -> None:
     assert inventory["identity_conflicts"][0]["reason"] == "partially_overlapping_asset_claims"
 
 
+def test_figure_number_suffixes_are_distinct_identities() -> None:
+    inventory = {"matched_figures": [
+        _entry("Figure 1A: first caption", "caption-a", "asset-3", page=2),
+        _entry("Figure 1B: second caption", "caption-b", "asset-8", page=2),
+    ]}
+
+    _finalize_figure_identities(inventory)
+
+    figures = inventory["matched_figures"]
+    assert [figure["figure_id"] for figure in figures] == ["figure_001", "figure_001B"]
+    assert [figure["figure_label"] for figure in figures] == ["1A", "1B"]
+    assert [[asset["block_id"] for asset in figure["matched_assets"]] for figure in figures] == [
+        ["asset-3"], ["asset-8"],
+    ]
+    assert inventory["identity_conflicts"] == []
+
+
+def test_parenthesized_lowercase_panel_notation_is_one_figure() -> None:
+    marker = _extract_figure_marker("Figure 1(a): panel caption")
+
+    assert marker["figure_label"] == "1"
+    inventory = {"matched_figures": [_entry("Figure 1(a): panel caption", "caption", "asset")]}
+    _finalize_figure_identities(inventory)
+    assert [figure["figure_id"] for figure in inventory["matched_figures"]] == ["figure_001"]
+
+
+def test_unrelated_numbered_figures_keep_legacy_ids() -> None:
+    inventory = {"matched_figures": [
+        _entry("Figure 1: caption", "caption-1", "asset-1"),
+        _entry("Figure 2: caption", "caption-2", "asset-2"),
+    ]}
+    _finalize_figure_identities(inventory)
+
+    assert [figure["figure_id"] for figure in inventory["matched_figures"]] == ["figure_001", "figure_002"]
+
+
 def test_same_label_with_different_caption_on_page_is_held() -> None:
     inventory = {"matched_figures": [
         _entry("Figure 4: first caption", "caption-a", "asset-a"),
