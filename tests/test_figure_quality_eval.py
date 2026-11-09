@@ -92,3 +92,33 @@ def test_diff_results():
     d = module.diff_results(prev, curr)
     assert d["fixed"] == ["A"]
     assert d["regressed"] == ["B"]
+
+
+def test_manual_findings_override_and_missing_figure_count():
+    labels = [{"key": "28JLIHLS", "figure_id": "figure_002", "reviewer": "agent",
+               "expected_owner": "0", "current_assets": "0", "crop_ok": True,
+               "delivery_ok": True, "caption_ok": True, "panels_ok": True}]
+    findings = [
+        {"id": "crop", "key": "28JLIHLS", "status": "confirmed", "source": "user-manual",
+         "figure": "figure_002", "crop_ok": False, "recorded_at": "2026-11-09"},
+        {"id": "missing", "key": "28JLIHLS", "status": "confirmed", "source": "user-manual",
+         "figure": "figure_009", "missing_figure": True, "expected_asset_blocks": [8],
+         "actual_asset_blocks": [], "delivery_ok": False, "recorded_at": "2026-11-09"},
+    ]
+    original = json.dumps(labels)
+    score = module.score_labels(labels, {"figures": []}, findings, "28JLIHLS")
+    assert score["crop_failures"] == 1
+    assert score["manual_overrides"][0]["agent_value"] is True
+    assert score["manual_overrides"][0]["finding_id"] == "crop"
+    assert score["association"]["fn"] == 2
+    assert score["delivery_failures"] == 1
+    assert json.dumps(labels) == original
+
+
+def test_unknown_manual_values_do_not_become_pass():
+    labels = [{"figure_id": "figure_002", "reviewer": "agent", "crop_ok": None}]
+    finding = {"id": "unknown", "key": "K", "status": "confirmed", "source": "user-manual",
+               "figure": "figure_002", "crop_ok": None, "recorded_at": "now"}
+    score = module.score_labels(labels, {"figures": []}, [finding], "K")
+    assert score["crop_failures"] == 0
+    assert score["known"]["crop_ok"] == 0
