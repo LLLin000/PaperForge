@@ -191,26 +191,36 @@ def test_unrelated_numbered_figures_keep_legacy_ids() -> None:
 
 
 
-def test_figure_two_cannot_claim_figure_ones_same_page_asset() -> None:
-    figure_one_asset = {"block_id": "figure-one-asset", "page": 2, "bbox": [0, 0, 10, 10]}
-    figure_two_asset = {"block_id": "figure-two-asset", "page": 2, "bbox": [0, 20, 10, 30]}
+def test_figure_two_cannot_claim_figure_ones_same_page_asset_in_input_order() -> None:
+    figure_one_asset = {"block_id": "figure-one-asset", "page": 2, "bbox": [262, 180, 922, 647]}
+    figure_two_asset = {"block_id": "figure-two-asset", "page": 2, "bbox": [81, 992, 1108, 1387]}
+    figure_one = _entry("Figure 1: first", "caption-1", "figure-one-asset", page=2)
+    figure_one["matched_assets"] = [figure_one_asset]
     figure_two = _entry("Figure 2: second", "caption-2", "figure-one-asset", page=2)
     figure_two["matched_assets"] = [figure_one_asset, figure_two_asset]
     figure_two["asset_block_ids"] = ["figure-one-asset", "figure-two-asset"]
-    inventory = {"matched_figures": [
-        _entry("Figure 1: first", "caption-1", "figure-one-asset", page=2),
-        figure_two,
-    ]}
+    inventory = {
+        "figure_legends": [
+            {"block_id": "caption-1", "page": 2, "bbox": [258, 675, 898, 696]},
+            {"block_id": "caption-2", "page": 2, "bbox": [79, 1416, 1114, 1464]},
+        ],
+        "matched_figures": [figure_two, figure_one],
+    }
 
     _finalize_figure_identities(inventory)
 
-    figures = inventory["matched_figures"]
-    assert [figure["figure_id"] for figure in figures] == ["figure_001", "figure_002"]
-    assert [figure["asset_block_ids"] for figure in figures] == [
-        ["figure-one-asset"], ["figure-two-asset"],
-    ]
-    assert inventory["identity_conflicts"][0]["reason"] == "asset_already_owned_by_different_caption"
-
+    figures = {figure["figure_id"]: figure for figure in inventory["matched_figures"]}
+    assert figures["figure_001"]["asset_block_ids"] == ["figure-one-asset"]
+    assert figures["figure_002"]["asset_block_ids"] == ["figure-two-asset"]
+    conflict = inventory["identity_conflicts"][0]
+    assert conflict["reason"] == "asset_already_owned_by_different_caption"
+    assert conflict["rejected_asset_block_ids"] == ["figure-one-asset"]
+    assert conflict["winning_claims"] == [{
+        "asset_block_id": "figure-one-asset",
+        "legend_block_id": "caption-1",
+        "figure_label": "1",
+        "caption": "Figure 1: first",
+    }]
 
 def test_same_label_with_different_caption_on_page_keeps_distinct_identities() -> None:
     inventory = {"matched_figures": [

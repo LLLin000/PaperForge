@@ -327,15 +327,36 @@ def _finalize_figure_identities(figure_inventory: dict) -> None:
     kept: list[dict] = []
     bases: dict[tuple[str, str], dict] = {}
     used_ids: dict[str, tuple[int, str]] = {}
-    asset_owners: dict[tuple[int, str], tuple[str, str, str]] = {}
+    asset_owners: dict[tuple[int, str], tuple[str, str, str, str, str]] = {}
     def claim_record(item: dict, asset_ids: list[str]) -> dict:
         return {
             "settlement_type": item.get("settlement_type"),
             "legend_block_id": item.get("legend_block_id", ""),
             "asset_block_ids": list(asset_ids),
         }
+    original_positions = {id(item): index for index, item in enumerate(matched)}
+    legends_by_anchor = {
+        (int(legend.get("page", 0) or 0), str(legend.get("block_id", ""))): legend
+        for legend in figure_inventory.get("figure_legends", [])
+    }
 
-    for entry in sorted(matched, key=lambda item: bool(item.get("is_continuation"))):
+    def identity_sort_key(item: dict) -> tuple:
+        page = int(item.get("legend_page", item.get("page", 0)) or 0)
+        block_id = str(item.get("legend_block_id", "") or "")
+        legend = legends_by_anchor.get((page, block_id), {})
+        bbox = legend.get("bbox") or item.get("legend_bbox") or []
+        return (
+            bool(item.get("is_continuation")),
+            page,
+            bbox[1] if len(bbox) >= 4 else float("inf"),
+            bbox[0] if len(bbox) >= 4 else float("inf"),
+            block_id,
+            str(item.get("figure_id", "")),
+            " ".join(str(item.get("text", "") or "").split()).casefold(),
+            tuple(sorted(str(asset.get("block_id", "")) for asset in item.get("matched_assets", []))),
+        )
+
+    for entry in sorted(matched, key=identity_sort_key):
         marker = _extract_figure_marker(str(entry.get("text", "") or ""))
         namespace = str(entry.get("figure_namespace") or marker["namespace"])
         label = marker["figure_label"]
@@ -437,7 +458,7 @@ def _finalize_figure_identities(figure_inventory: dict) -> None:
         rejected_asset_ids = [
             asset_id for asset_id in asset_ids
             if (owner := asset_owners.get((asset_pages.get(asset_id, page), asset_id))) is not None
-            and owner != ownership_identity
+            and owner[:3] != ownership_identity
         ]
         if rejected_asset_ids:
             conflicts.append({
@@ -449,6 +470,15 @@ def _finalize_figure_identities(figure_inventory: dict) -> None:
                 "page": page,
                 "legend_block_id": block_id,
                 "rejected_asset_block_ids": rejected_asset_ids,
+                "winning_claims": [
+                    {
+                        "asset_block_id": asset_id,
+                        "legend_block_id": asset_owners[(asset_pages.get(asset_id, page), asset_id)][3],
+                        "figure_label": asset_owners[(asset_pages.get(asset_id, page), asset_id)][1],
+                        "caption": asset_owners[(asset_pages.get(asset_id, page), asset_id)][4],
+                    }
+                    for asset_id in rejected_asset_ids
+                ],
             })
             asset_ids = [asset_id for asset_id in asset_ids if asset_id not in rejected_asset_ids]
             entry["matched_assets"] = [
@@ -536,7 +566,13 @@ def _finalize_figure_identities(figure_inventory: dict) -> None:
             same_page_label["asset_block_ids"] = sorted(chosen_ids)
             for asset_id in chosen_ids:
                 asset = assets_by_id.get(asset_id, {})
-                asset_owners[(int(asset.get("page", page) or page), asset_id)] = ownership_identity
+                asset_owners[(int(asset.get("page", page) or page), asset_id)] = (
+                    namespace,
+                    label,
+                    caption_identity,
+                    str(same_page_label.get("legend_block_id", block_id) or block_id),
+                    str(same_page_label.get("text", "") or ""),
+                )
             for field in ("flags", "group_evidence", "bridge_block_ids"):
                 same_page_label[field] = list(dict.fromkeys(
                     [*same_page_label.get(field, []), *entry.get(field, [])]
@@ -619,9 +655,12 @@ def _finalize_figure_identities(figure_inventory: dict) -> None:
         used_ids[figure_id] = anchor
         kept.append(entry)
         for asset_id in asset_ids:
-            asset_owners[(asset_pages.get(asset_id, page), asset_id)] = ownership_identity
+            asset_owners[(asset_pages.get(asset_id, page), asset_id)] = (
+                namespace, label, caption_identity, block_id, str(entry.get("text", "") or "")
+            )
         if label:
             bases.setdefault((namespace, label), entry)
+    kept.sort(key=lambda item: (bool(item.get("is_continuation")), original_positions[id(item)]))
 
     figure_inventory["matched_figures"] = kept
     figure_inventory["official_figure_count"] = len(kept)
