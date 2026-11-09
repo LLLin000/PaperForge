@@ -188,13 +188,44 @@ def test_unrelated_numbered_figures_keep_legacy_ids() -> None:
     assert [figure["figure_id"] for figure in inventory["matched_figures"]] == ["figure_001", "figure_002"]
 
 
-def test_same_label_with_different_caption_on_page_is_held() -> None:
+
+
+
+def test_figure_two_cannot_claim_figure_ones_same_page_asset() -> None:
+    figure_one_asset = {"block_id": "figure-one-asset", "page": 2, "bbox": [0, 0, 10, 10]}
+    figure_two_asset = {"block_id": "figure-two-asset", "page": 2, "bbox": [0, 20, 10, 30]}
+    figure_two = _entry("Figure 2: second", "caption-2", "figure-one-asset", page=2)
+    figure_two["matched_assets"] = [figure_one_asset, figure_two_asset]
+    figure_two["asset_block_ids"] = ["figure-one-asset", "figure-two-asset"]
+    inventory = {"matched_figures": [
+        _entry("Figure 1: first", "caption-1", "figure-one-asset", page=2),
+        figure_two,
+    ]}
+
+    _finalize_figure_identities(inventory)
+
+    figures = inventory["matched_figures"]
+    assert [figure["figure_id"] for figure in figures] == ["figure_001", "figure_002"]
+    assert [figure["asset_block_ids"] for figure in figures] == [
+        ["figure-one-asset"], ["figure-two-asset"],
+    ]
+    assert inventory["identity_conflicts"][0]["reason"] == "asset_already_owned_by_different_caption"
+
+
+def test_same_label_with_different_caption_on_page_keeps_distinct_identities() -> None:
     inventory = {"matched_figures": [
         _entry("Figure 4: first caption", "caption-a", "asset-a"),
         _entry("Figure 4: conflicting caption", "caption-b", "asset-b"),
     ]}
     _finalize_figure_identities(inventory)
-    assert len(inventory["matched_figures"]) == 1
+    figures = inventory["matched_figures"]
+    assert len(figures) == 2
+    assert [figure["figure_id"] for figure in figures] == [
+        "figure_004", "figure_004_p001_bcaption-b",
+    ]
+    assert [[asset["block_id"] for asset in figure["matched_assets"]] for figure in figures] == [
+        ["asset-a"], ["asset-b"],
+    ]
     assert inventory["identity_conflicts"][0]["status"] == "HOLD"
 
 
