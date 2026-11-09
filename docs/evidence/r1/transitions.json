@@ -1,0 +1,665 @@
+[
+  {
+    "key": "28JLIHLS",
+    "from": "M2_REVIEW_REQUIRED",
+    "to": "REQUIRES_APPROVAL",
+    "frozen_plan_status": "READY",
+    "reason": "Q9 restores figure 5/6, but the page 3 Table 1 replay has no unique asset (ambiguous); approval required rather than READY. Table review requires approval: page 3 caption 7 asset 9 → none: Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "table_claims": [
+      {
+        "page": 3,
+        "caption_block_id": "7",
+        "old_asset_block_id": "9",
+        "new_asset_block_id": null,
+        "classification": "BLOCKING"
+      }
+    ],
+    "old_hold_codes": [
+      "M2_REVIEW_REQUIRED"
+    ],
+    "new_hold_codes": []
+  },
+  {
+    "key": "3EFCZ7BB",
+    "from": "READY",
+    "to": "REQUIRES_APPROVAL",
+    "frozen_plan_status": "READY",
+    "reason": "Table review requires approval: page 9 caption 3 asset 4 → none: Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.; page 11 caption 3 asset 4 → none: Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "table_claims": [
+      {
+        "page": 9,
+        "caption_block_id": "3",
+        "old_asset_block_id": "4",
+        "new_asset_block_id": null,
+        "classification": "BLOCKING"
+      },
+      {
+        "page": 11,
+        "caption_block_id": "3",
+        "old_asset_block_id": "4",
+        "new_asset_block_id": null,
+        "classification": "BLOCKING"
+      }
+    ],
+    "old_hold_codes": [],
+    "new_hold_codes": []
+  },
+  {
+    "key": "3FDT9652",
+    "from": "READY",
+    "to": "REQUIRES_APPROVAL",
+    "frozen_plan_status": "READY",
+    "reason": "Table review requires approval: page 4 caption 2 asset 3 → none: Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.; page 5 caption 8 asset 9 → none: Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "table_claims": [
+      {
+        "page": 4,
+        "caption_block_id": "2",
+        "old_asset_block_id": "3",
+        "new_asset_block_id": null,
+        "classification": "BLOCKING"
+      },
+      {
+        "page": 5,
+        "caption_block_id": "8",
+        "old_asset_block_id": "9",
+        "new_asset_block_id": null,
+        "classification": "BLOCKING"
+      }
+    ],
+    "old_hold_codes": [],
+    "new_hold_codes": []
+  },
+  {
+    "key": "3NRZ95DB",
+    "from": "READY",
+    "to": "REQUIRES_APPROVAL",
+    "frozen_plan_status": "READY",
+    "reason": "Table review requires approval: page 3 caption 6 asset 7 → none: Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "table_claims": [
+      {
+        "page": 3,
+        "caption_block_id": "6",
+        "old_asset_block_id": "7",
+        "new_asset_block_id": null,
+        "classification": "BLOCKING"
+      }
+    ],
+    "old_hold_codes": [],
+    "new_hold_codes": []
+  },
+  {
+    "key": "3QYCST4E",
+    "from": "READY",
+    "to": "HOLD",
+    "reason": "New replay splits an old figure identity across multiple candidates; deterministic file/embed mapping is unavailable, so the paper is held.",
+    "old_hold_codes": [],
+    "new_hold_codes": [
+      "AMBIGUOUS_EMBED",
+      "AMBIGUOUS_OLD_ID"
+    ],
+    "old_delete_reasons": [],
+    "new_delete_reasons": [
+      "superseded by several new objects; old file cannot be mapped 1:1"
+    ]
+  },
+  {
+    "key": "4CBS2KKE",
+    "from": "READY",
+    "to": "REQUIRES_APPROVAL",
+    "frozen_plan_status": "READY",
+    "reason": "Table review requires approval: page 4 caption 6 asset none → 2: Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "table_claims": [
+      {
+        "page": 4,
+        "caption_block_id": "6",
+        "old_asset_block_id": null,
+        "new_asset_block_id": "2",
+        "classification": "BLOCKING"
+      }
+    ],
+    "old_hold_codes": [],
+    "new_hold_codes": []
+  },
+  {
+    "key": "4KCHGV2Z",
+    "from": "READY",
+    "to": "REQUIRES_APPROVAL",
+    "frozen_plan_status": "READY",
+    "reason": "Table review requires approval: page 7 caption 16 asset 14 → none: Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "table_claims": [
+      {
+        "page": 7,
+        "caption_block_id": "16",
+        "old_asset_block_id": "14",
+        "new_asset_block_id": null,
+        "classification": "BLOCKING"
+      }
+    ],
+    "old_hold_codes": [],
+    "new_hold_codes": []
+  },
+  {
+    "key": "4PFR9M5N",
+    "from": "READY",
+    "to": "REQUIRES_APPROVAL",
+    "frozen_plan_status": "READY",
+    "reason": "Table review requires approval: page 7 caption 4 asset 5 → none: Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "table_claims": [
+      {
+        "page": 7,
+        "caption_block_id": "4",
+        "old_asset_block_id": "5",
+        "new_asset_block_id": null,
+        "classification": "BLOCKING"
+      }
+    ],
+    "old_hold_codes": [],
+    "new_hold_codes": []
+  },
+  {
+    "key": "5VMA7WNE",
+    "from": "READY",
+    "to": "REQUIRES_APPROVAL",
+    "frozen_plan_status": "READY",
+    "reason": "Table review requires approval: page 4 caption 3 asset 4 → none: Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "table_claims": [
+      {
+        "page": 4,
+        "caption_block_id": "3",
+        "old_asset_block_id": "4",
+        "new_asset_block_id": null,
+        "classification": "BLOCKING"
+      }
+    ],
+    "old_hold_codes": [],
+    "new_hold_codes": []
+  },
+  {
+    "key": "6QNRHRKX",
+    "from": "READY",
+    "to": "REQUIRES_APPROVAL",
+    "reason": "New replay leaves assetless old figure IDs unmapped; delete candidates require approval, changing READY to approval-required.",
+    "old_hold_codes": [],
+    "new_hold_codes": [
+      "UNMAPPED_ASSETLESS"
+    ],
+    "old_delete_reasons": [],
+    "new_delete_reasons": [
+      "unmapped_assetless"
+    ]
+  },
+  {
+    "key": "6ZWKUPCU",
+    "from": "READY",
+    "to": "REQUIRES_APPROVAL",
+    "frozen_plan_status": "READY",
+    "reason": "Table review requires approval: page 6 caption 3 asset 4 → none: Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "table_claims": [
+      {
+        "page": 6,
+        "caption_block_id": "3",
+        "old_asset_block_id": "4",
+        "new_asset_block_id": null,
+        "classification": "BLOCKING"
+      }
+    ],
+    "old_hold_codes": [],
+    "new_hold_codes": []
+  },
+  {
+    "key": "7IYXQ4WM",
+    "from": "REQUIRES_APPROVAL",
+    "to": "READY",
+    "reason": "Previously approval-gated reserved/assetless or orphan candidates disappear under the new replay; no delete candidate remains.",
+    "old_hold_codes": [
+      "RESERVED_OR_ASSETLESS"
+    ],
+    "new_hold_codes": [],
+    "old_delete_reasons": [
+      "reserved_or_assetless"
+    ],
+    "new_delete_reasons": []
+  },
+  {
+    "key": "7ZZN6PUW",
+    "from": "REQUIRES_APPROVAL",
+    "to": "READY",
+    "reason": "Previously approval-gated reserved/assetless or orphan candidates disappear under the new replay; no delete candidate remains.",
+    "old_hold_codes": [
+      "RESERVED_OR_ASSETLESS"
+    ],
+    "new_hold_codes": [],
+    "old_delete_reasons": [
+      "reserved_or_assetless"
+    ],
+    "new_delete_reasons": []
+  },
+  {
+    "key": "87KJHGP8",
+    "from": "READY",
+    "to": "REQUIRES_APPROVAL",
+    "frozen_plan_status": "READY",
+    "reason": "Table review requires approval: page 6 caption 4 asset 6 → 5: Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "table_claims": [
+      {
+        "page": 6,
+        "caption_block_id": "4",
+        "old_asset_block_id": "6",
+        "new_asset_block_id": "5",
+        "classification": "BLOCKING"
+      }
+    ],
+    "old_hold_codes": [],
+    "new_hold_codes": []
+  },
+  {
+    "key": "8CCATQE3",
+    "from": "M2_REVIEW_REQUIRED",
+    "to": "READY",
+    "reason": "The prior M2/unmatched-caption hold is resolved in the new replay; the many-to-one figure ownership collision is also gone.",
+    "old_hold_codes": [
+      "M2_REVIEW_REQUIRED",
+      "MANY_TO_ONE"
+    ],
+    "new_hold_codes": [],
+    "old_delete_reasons": [
+      "many_to_one collision"
+    ],
+    "new_delete_reasons": []
+  },
+  {
+    "key": "8UC452EE",
+    "from": "REQUIRES_APPROVAL",
+    "to": "READY",
+    "reason": "Previously approval-gated reserved/assetless or orphan candidates disappear under the new replay; no delete candidate remains.",
+    "old_hold_codes": [
+      "RESERVED_OR_ASSETLESS"
+    ],
+    "new_hold_codes": [],
+    "old_delete_reasons": [
+      "reserved_or_assetless"
+    ],
+    "new_delete_reasons": []
+  },
+  {
+    "key": "97M7HFCD",
+    "from": "REQUIRES_APPROVAL",
+    "to": "READY",
+    "reason": "Previously approval-gated reserved/assetless or orphan candidates disappear under the new replay; no delete candidate remains.",
+    "old_hold_codes": [
+      "RESERVED_OR_ASSETLESS"
+    ],
+    "new_hold_codes": [],
+    "old_delete_reasons": [
+      "reserved_or_assetless"
+    ],
+    "new_delete_reasons": []
+  },
+  {
+    "key": "A98BQ6YU",
+    "from": "REQUIRES_APPROVAL",
+    "to": "READY",
+    "reason": "Previously approval-gated reserved/assetless or orphan candidates disappear under the new replay; no delete candidate remains.",
+    "old_hold_codes": [],
+    "new_hold_codes": [],
+    "old_delete_reasons": [
+      "orphan no longer inventoried"
+    ],
+    "new_delete_reasons": []
+  },
+  {
+    "key": "AQM3M257",
+    "from": "READY",
+    "to": "REQUIRES_APPROVAL",
+    "frozen_plan_status": "READY",
+    "reason": "Table review requires approval: page 6 caption 1 asset 11 → none: Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "table_claims": [
+      {
+        "page": 6,
+        "caption_block_id": "1",
+        "old_asset_block_id": "11",
+        "new_asset_block_id": null,
+        "classification": "BLOCKING"
+      }
+    ],
+    "old_hold_codes": [],
+    "new_hold_codes": []
+  },
+  {
+    "key": "CKU5UHFW",
+    "from": "READY",
+    "to": "HOLD",
+    "reason": "New replay splits an old figure identity across multiple candidates; deterministic file/embed mapping is unavailable, so the paper is held.",
+    "old_hold_codes": [],
+    "new_hold_codes": [
+      "AMBIGUOUS_EMBED",
+      "AMBIGUOUS_OLD_ID"
+    ],
+    "old_delete_reasons": [],
+    "new_delete_reasons": [
+      "superseded by several new objects; old file cannot be mapped 1:1"
+    ]
+  },
+  {
+    "key": "CPQ47TBV",
+    "from": "READY",
+    "to": "REQUIRES_APPROVAL",
+    "frozen_plan_status": "READY",
+    "reason": "Table review requires approval: page 5 caption 2 asset 4 → 3: Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "table_claims": [
+      {
+        "page": 5,
+        "caption_block_id": "2",
+        "old_asset_block_id": "4",
+        "new_asset_block_id": "3",
+        "classification": "BLOCKING"
+      }
+    ],
+    "old_hold_codes": [],
+    "new_hold_codes": []
+  },
+  {
+    "key": "DLVSVU49",
+    "from": "READY",
+    "to": "REQUIRES_APPROVAL",
+    "frozen_plan_status": "READY",
+    "reason": "Table review requires approval: page 6 caption 7 asset 2 → none: Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "table_claims": [
+      {
+        "page": 6,
+        "caption_block_id": "7",
+        "old_asset_block_id": "2",
+        "new_asset_block_id": null,
+        "classification": "BLOCKING"
+      }
+    ],
+    "old_hold_codes": [],
+    "new_hold_codes": []
+  },
+  {
+    "key": "DR6FGTCA",
+    "from": "REQUIRES_APPROVAL",
+    "to": "READY",
+    "reason": "Previously approval-gated reserved/assetless or orphan candidates disappear under the new replay; no delete candidate remains.",
+    "old_hold_codes": [],
+    "new_hold_codes": [],
+    "old_delete_reasons": [
+      "orphan no longer inventoried"
+    ],
+    "new_delete_reasons": []
+  },
+  {
+    "key": "FRU2XUGJ",
+    "from": "READY",
+    "to": "REQUIRES_APPROVAL",
+    "frozen_plan_status": "READY",
+    "reason": "Table review requires approval: page 4 caption 5 asset 12 → none: Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "table_claims": [
+      {
+        "page": 4,
+        "caption_block_id": "5",
+        "old_asset_block_id": "12",
+        "new_asset_block_id": null,
+        "classification": "BLOCKING"
+      }
+    ],
+    "old_hold_codes": [],
+    "new_hold_codes": []
+  },
+  {
+    "key": "HIU4F3V4",
+    "from": "REQUIRES_APPROVAL",
+    "to": "READY",
+    "reason": "Previously approval-gated reserved/assetless or orphan candidates disappear under the new replay; no delete candidate remains.",
+    "old_hold_codes": [
+      "RESERVED_OR_ASSETLESS"
+    ],
+    "new_hold_codes": [],
+    "old_delete_reasons": [
+      "reserved_or_assetless"
+    ],
+    "new_delete_reasons": []
+  },
+  {
+    "key": "J2U9DWNW",
+    "from": "READY",
+    "to": "REQUIRES_APPROVAL",
+    "frozen_plan_status": "READY",
+    "reason": "Table review requires approval: page 4 caption 2 asset 5 → 3: Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "table_claims": [
+      {
+        "page": 4,
+        "caption_block_id": "2",
+        "old_asset_block_id": "5",
+        "new_asset_block_id": "3",
+        "classification": "BLOCKING"
+      }
+    ],
+    "old_hold_codes": [],
+    "new_hold_codes": []
+  },
+  {
+    "key": "KG7A5K5V",
+    "from": "READY",
+    "to": "REQUIRES_APPROVAL",
+    "frozen_plan_status": "READY",
+    "reason": "Table review requires approval: page 4 caption 14 asset 3 → none: Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "table_claims": [
+      {
+        "page": 4,
+        "caption_block_id": "14",
+        "old_asset_block_id": "3",
+        "new_asset_block_id": null,
+        "classification": "BLOCKING"
+      }
+    ],
+    "old_hold_codes": [],
+    "new_hold_codes": []
+  },
+  {
+    "key": "KY76CCC7",
+    "from": "READY",
+    "to": "HOLD",
+    "reason": "New replay splits an old figure identity across multiple candidates; deterministic file/embed mapping is unavailable, so the paper is held.",
+    "old_hold_codes": [],
+    "new_hold_codes": [
+      "AMBIGUOUS_EMBED",
+      "AMBIGUOUS_OLD_ID"
+    ],
+    "old_delete_reasons": [],
+    "new_delete_reasons": [
+      "superseded by several new objects; old file cannot be mapped 1:1"
+    ]
+  },
+  {
+    "key": "LYEFATEN",
+    "from": "REQUIRES_APPROVAL",
+    "to": "HOLD",
+    "reason": "New replay splits an old figure identity across multiple candidates; deterministic file/embed mapping is unavailable, so the paper is held.",
+    "old_hold_codes": [
+      "RESERVED_OR_ASSETLESS"
+    ],
+    "new_hold_codes": [
+      "AMBIGUOUS_EMBED",
+      "AMBIGUOUS_OLD_ID",
+      "RESERVED_OR_ASSETLESS"
+    ],
+    "old_delete_reasons": [
+      "orphan no longer inventoried",
+      "reserved_or_assetless"
+    ],
+    "new_delete_reasons": [
+      "orphan no longer inventoried",
+      "reserved_or_assetless",
+      "superseded by several new objects; old file cannot be mapped 1:1"
+    ]
+  },
+  {
+    "key": "P9D6GZ9M",
+    "from": "READY",
+    "to": "REQUIRES_APPROVAL",
+    "frozen_plan_status": "READY",
+    "reason": "Table review requires approval: page 3 caption 17 asset 7 → none: Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "table_claims": [
+      {
+        "page": 3,
+        "caption_block_id": "17",
+        "old_asset_block_id": "7",
+        "new_asset_block_id": null,
+        "classification": "BLOCKING"
+      }
+    ],
+    "old_hold_codes": [],
+    "new_hold_codes": []
+  },
+  {
+    "key": "PZ8B59K4",
+    "from": "REQUIRES_APPROVAL",
+    "to": "READY",
+    "reason": "Previously approval-gated reserved/assetless or orphan candidates disappear under the new replay; no delete candidate remains.",
+    "old_hold_codes": [
+      "RESERVED_OR_ASSETLESS"
+    ],
+    "new_hold_codes": [],
+    "old_delete_reasons": [
+      "reserved_or_assetless"
+    ],
+    "new_delete_reasons": []
+  },
+  {
+    "key": "QUJ3AS6S",
+    "from": "READY",
+    "to": "REQUIRES_APPROVAL",
+    "frozen_plan_status": "READY",
+    "reason": "Table review requires approval: page 5 caption 6 asset 10 → 7: Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "table_claims": [
+      {
+        "page": 5,
+        "caption_block_id": "6",
+        "old_asset_block_id": "10",
+        "new_asset_block_id": "7",
+        "classification": "BLOCKING"
+      }
+    ],
+    "old_hold_codes": [],
+    "new_hold_codes": []
+  },
+  {
+    "key": "S9UMIF83",
+    "from": "READY",
+    "to": "REQUIRES_APPROVAL",
+    "frozen_plan_status": "READY",
+    "reason": "Table review requires approval: page 3 caption 1 asset 3 → 2: Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "table_claims": [
+      {
+        "page": 3,
+        "caption_block_id": "1",
+        "old_asset_block_id": "3",
+        "new_asset_block_id": "2",
+        "classification": "BLOCKING"
+      }
+    ],
+    "old_hold_codes": [],
+    "new_hold_codes": []
+  },
+  {
+    "key": "TNK4V5PF",
+    "from": "READY",
+    "to": "REQUIRES_APPROVAL",
+    "frozen_plan_status": "READY",
+    "reason": "Table review requires approval: page 4 caption 11 asset 18 → none: Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "table_claims": [
+      {
+        "page": 4,
+        "caption_block_id": "11",
+        "old_asset_block_id": "18",
+        "new_asset_block_id": null,
+        "classification": "BLOCKING"
+      }
+    ],
+    "old_hold_codes": [],
+    "new_hold_codes": []
+  },
+  {
+    "key": "U96H2WCT",
+    "from": "READY",
+    "to": "HOLD",
+    "reason": "New replay splits an old figure identity across multiple candidates; deterministic file/embed mapping is unavailable, so the paper is held.",
+    "old_hold_codes": [],
+    "new_hold_codes": [
+      "AMBIGUOUS_EMBED",
+      "AMBIGUOUS_OLD_ID"
+    ],
+    "old_delete_reasons": [],
+    "new_delete_reasons": [
+      "superseded by several new objects; old file cannot be mapped 1:1"
+    ]
+  },
+  {
+    "key": "WDRU6TDV",
+    "from": "READY",
+    "to": "REQUIRES_APPROVAL",
+    "frozen_plan_status": "READY",
+    "reason": "Table review requires approval: page 3 caption 9 asset 2 → none: Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "table_claims": [
+      {
+        "page": 3,
+        "caption_block_id": "9",
+        "old_asset_block_id": "2",
+        "new_asset_block_id": null,
+        "classification": "BLOCKING"
+      }
+    ],
+    "old_hold_codes": [],
+    "new_hold_codes": []
+  },
+  {
+    "key": "WJNEHSQD",
+    "from": "REQUIRES_APPROVAL",
+    "to": "READY",
+    "reason": "Previously approval-gated reserved/assetless or orphan candidates disappear under the new replay; no delete candidate remains.",
+    "old_hold_codes": [
+      "RESERVED_OR_ASSETLESS"
+    ],
+    "new_hold_codes": [],
+    "old_delete_reasons": [
+      "reserved_or_assetless"
+    ],
+    "new_delete_reasons": []
+  },
+  {
+    "key": "XBSC5X2H",
+    "from": "REQUIRES_APPROVAL",
+    "to": "HOLD",
+    "reason": "New replay splits an old figure identity across multiple candidates; deterministic file/embed mapping is unavailable, so the paper is held.",
+    "old_hold_codes": [
+      "RESERVED_OR_ASSETLESS"
+    ],
+    "new_hold_codes": [
+      "AMBIGUOUS_EMBED",
+      "AMBIGUOUS_OLD_ID",
+      "RESERVED_OR_ASSETLESS"
+    ],
+    "old_delete_reasons": [
+      "reserved_or_assetless"
+    ],
+    "new_delete_reasons": [
+      "reserved_or_assetless",
+      "superseded by several new objects; old file cannot be mapped 1:1"
+    ]
+  },
+  {
+    "key": "XU3QKIPZ",
+    "from": "M2_REVIEW_REQUIRED",
+    "to": "REQUIRES_APPROVAL",
+    "reason": "The prior unmatched-caption M2 hold is resolved; remaining orphan cleanup is a delete candidate requiring approval.",
+    "old_hold_codes": [
+      "M2_REVIEW_REQUIRED"
+    ],
+    "new_hold_codes": [],
+    "old_delete_reasons": [],
+    "new_delete_reasons": [
+      "orphan no longer inventoried"
+    ]
+  }
+]
