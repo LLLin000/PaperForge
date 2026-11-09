@@ -56,7 +56,7 @@ def filter_reviewed(labels: list[dict[str, Any]]) -> list[dict[str, Any]]:
 def score_association(labels: list[dict[str, Any]], replay_figures: list[dict[str, Any]]) -> dict[str, Any]:
     """Precision/recall of figure->asset association against reviewed labels."""
     by_id = {str(f.get("figure_id")): f for f in replay_figures}
-    tp = fp = fn = 0
+    tp = fp = fn = unknown = 0
     for lb in filter_reviewed(labels):
         fid = str(lb.get("figure_id"))
         rf = by_id.get(fid, {})
@@ -64,7 +64,10 @@ def score_association(labels: list[dict[str, Any]], replay_figures: list[dict[st
             str(a.get("block_id")) for a in (rf.get("matched_assets") or [])
             if a.get("block_id") is not None
         }
-        expected_raw = lb.get("expected_owner", "")
+        expected_raw = lb.get("expected_owner")
+        if expected_raw is None:
+            unknown += 1
+            continue
         if isinstance(expected_raw, (list, tuple)):
             expected = {str(x) for x in expected_raw}
         else:
@@ -74,23 +77,108 @@ def score_association(labels: list[dict[str, Any]], replay_figures: list[dict[st
         fn += len(expected - replay_assets)
     precision = tp / (tp + fp) if (tp + fp) else 1.0
     recall = tp / (tp + fn) if (tp + fn) else 1.0
-    return {"tp": tp, "fp": fp, "fn": fn, "precision": precision, "recall": recall,
+    return {"tp": tp, "fp": fp, "fn": fn, "unknown_expected": unknown,
+            "precision": precision, "recall": recall,
             "f1": (2 * tp / (2 * tp + fp + fn)) if (2 * tp + fp + fn) else 1.0}
 
 
-def score_labels(labels: list[dict[str, Any]], replay: dict[str, Any] | None = None) -> dict[str, Any]:
-    """Aggregate scoring; only reviewed rows count for visual metrics."""
-    rev = filter_reviewed(labels)
+def apply_manual_findings(
+    labels: list[dict[str, Any]], findings: list[dict[str, Any]], key: str
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Overlay confirmed manual values without modifying source label rows."""
+    rows = [dict(label) for label in labels]
+    overrides = []
+    for finding in findings:
+        if finding.get("key") != key or finding.get("status") != "confirmed":
+            continue
+        finding_pages = set(finding.get("pages") or [])
+        if finding.get("missing_figure") and finding.get("caption_block") is not None:
+            rows = [
+                lb for lb in rows
+                if not (
+                    lb.get("key") == key and lb.get("kind") == "unmatched_legend"
+                    and lb.get("block_id") == finding["caption_block"]
+                    and (not finding_pages or lb.get("page") in finding_pages)
+                )
+            ]
+        row = next((lb for lb in rows if lb.get("figure_id") == finding.get("figure")), None)
+        if row is None and finding.get("missing_figure"):
+            row = {
+                "key": key, "figure_id": finding.get("figure"), "reviewer": "user-manual",
+                "expected_owner": finding.get("expected_asset_blocks"), "current_assets": [],
+                "caption_ok": None, "panels_ok": finding.get("panel_ok"),
+                "crop_ok": finding.get("crop_ok"), "delivery_ok": finding.get("delivery_ok"),
+            }
+            rows.append(row)
+        if row is None:
+            continue
+        expected = finding.get("expected_asset_blocks")
+        actual = finding.get("actual_asset_blocks")
+        if expected is not None:
+            overrides.append({
+                "key": key, "figure": finding.get("figure"), "field": "expected_owner",
+                "agent_value": row.get("expected_owner"), "manual_value": expected,
+                "source": finding["source"], "finding_id": finding["id"],
+                "timestamp": finding["recorded_at"],
+            })
+            row["expected_owner"] = expected
+        if actual is not None:
+            row["current_assets"] = actual
+        if finding.get("missing_figure"):
+            row["current_assets"] = actual or []
+        for source_field, label_field in (
+            ("crop_ok", "crop_ok"), ("delivery_ok", "delivery_ok"), ("panel_ok", "panels_ok")
+        ):
+            value = finding.get(source_field)
+            if value is not None:
+                overrides.append({
+                    "key": key, "figure": finding.get("figure"), "field": label_field,
+                    "agent_value": row.get(label_field), "manual_value": value,
+                    "source": finding["source"], "finding_id": finding["id"],
+                    "timestamp": finding["recorded_at"],
+                })
+                row[label_field] = value
+        row["_manual_finding"] = finding
+    return rows, overrides
+
+
+def score_labels(
+    labels: list[dict[str, Any]], replay: dict[str, Any] | None = None,
+    manual_findings: list[dict[str, Any]] | None = None, key: str = "",
+) -> dict[str, Any]:
+    """Aggregate scoring; only known reviewed values count."""
+    agent_labels = [dict(label) for label in labels]
+    effective, overrides = (
+        apply_manual_findings(labels, manual_findings or [], key)
+        if manual_findings else (agent_labels, [])
+    )
+    rev = filter_reviewed(effective)
+    def failures(rows, field):
+        return sum(1 for lb in rows if lb.get(field) is False)
+    def known(rows, field):
+        return sum(1 for lb in rows if lb.get(field) is not None)
     out = {
-        "total_labels": len(labels),
+        "total_labels": len(effective),
         "reviewed": len(rev),
-        "unreviewed": len(labels) - len(rev),
-        "crop_failures": sum(1 for lb in rev if lb.get("crop_ok") is False),
-        "delivery_failures": sum(1 for lb in rev if lb.get("delivery_ok") is False),
-        "caption_failures": sum(1 for lb in rev if lb.get("caption_ok") is False),
-        "panel_failures": sum(1 for lb in rev if lb.get("panels_ok") is False),
+        "unreviewed": len(effective) - len(rev),
+        "crop_failures": failures(rev, "crop_ok"),
+        "delivery_failures": failures(rev, "delivery_ok"),
+        "caption_failures": failures(rev, "caption_ok"),
+        "panel_failures": failures(rev, "panels_ok"),
+        "known": {field: known(rev, field) for field in ("crop_ok", "delivery_ok", "caption_ok", "panels_ok")},
     }
-    if replay is not None:
+    if manual_findings is not None:
+        agent_score = score_labels(agent_labels, replay)
+        manual_assoc = score_association(rev, replay.get("figures", [])) if replay is not None else None
+        missing_findings = [
+            finding for finding in manual_findings
+            if finding.get("key") == key and finding.get("status") == "confirmed" and finding.get("missing_figure")
+        ]
+        out["agent_only"] = agent_score
+        out["manual_overrides"] = overrides
+        out["figure_count_delta"] = -len(missing_findings)
+        out["association"] = manual_assoc if manual_assoc is not None else score_association(rev, [])
+    elif replay is not None:
         out["association"] = score_association(rev, replay.get("figures", []))
     return out
 
@@ -475,22 +563,29 @@ def main() -> int:
         },
     }
 
-    # scoring from labels
+    # Score untouched agent labels and manual findings as separate metric sets.
+    findings_path = out_root / "manual_findings.jsonl"
+    manual_findings = (
+        [json.loads(line) for line in findings_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+        if findings_path.is_file() else []
+    )
     score_summary = {}
     for key in keys:
-        kdir = out_root / key
-        lp = kdir / "labels.jsonl"
-        labels = []
-        if lp.is_file():
-            labels = [json.loads(line) for line in lp.read_text(encoding="utf-8").splitlines() if line.strip()]
-        # replay figures
+        lp = out_root / key / "labels.jsonl"
+        labels = (
+            [json.loads(line) for line in lp.read_text(encoding="utf-8").splitlines() if line.strip()]
+            if lp.is_file() else []
+        )
         try:
-            new = DRY._new_replay(vault, ocr_root, key)
-            rf = new["figures"]
+            rf = DRY._new_replay(vault, ocr_root, key)["figures"]
         except Exception:
             rf = []
-        sc = score_labels(labels, {"figures": rf})
-        score_summary[key] = sc
+        replay = {"figures": rf}
+        score_summary[key] = {
+            "agent_only": score_labels(labels, replay),
+            "manual_adjusted": score_labels(labels, replay, manual_findings, key),
+        }
+
     result["scores"] = score_summary
 
     if args.previous:

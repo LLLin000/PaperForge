@@ -41,6 +41,19 @@ python scripts/dev/figure_quality_eval.py --set smoke --score \
 
 `labels.jsonl` rows are the source of truth; `result.json` contains the per-case scores. Unreviewed rows are ignored by scoring. No pipeline or vault changes were made.
 
+## Scoring with manual findings
+
+The original agent-only results above are retained unchanged. The scoring harness now reports `agent_only` and `manual_adjusted` separately; manual values are an overlay, not edits to `labels.jsonl`. `null` manual values remain unknown and do not count as passes. Unknown asset/page identities are not converted into association false negatives.
+
+| Key | Agent-only association P/R | Manual-adjusted association P/R | Adjusted crop fail | Adjusted delivery fail | Figure-count delta |
+|---|---:|---:|---:|---:|---:|
+| 3QYCST4E | 0.86 / 0.67 | 0.86 / 0.60 | 2 | 1 | -1 |
+| 28JLIHLS | 1.00 / 0.70 | 1.00 / 0.78 | 1 | 3 | -2 |
+
+Manual-adjusted smoke totals: association P 0.93 / R 0.91 / F1 0.92 (same net association balance), crop failures 11, delivery failures 9, one unknown asset identity (28JLIHLS Figure 9) excluded from association denominators.
+
+For 3QYCST4E, Figure 1B contributes one asset-association FN; its caption candidate is replaced by the manual missing-figure row rather than double-counted. For 28JLIHLS, Figure 2's crop is a confirmed failure; Figure 5 contributes two FN (expected blocks 0 and 2; contested block 6 stays HOLD); Figure 6 has a confirmed delivery/ownership failure with the next-page asset identity unknown; Figure 9 is a missing figure with unknown assets. The prior numbers in the table above are the agent-only baseline.
+
 ## Manual review addendum (user, 2026-11-09)
 
 The user visually reviewed the smoke set; see `MANUAL-REVIEW.md` and `manual_findings.jsonl`. Overrides:
