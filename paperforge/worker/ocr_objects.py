@@ -992,12 +992,23 @@ def extract_and_write_objects(
     figure_ids = {str(data["fig_id"]) for task_type, data in tasks if task_type == "figure"}
     table_ids = {str(data["tbl_id"]) for task_type, data in tasks if task_type == "table"}
     orphan_ids = {str(data["orphan_id"]) for task_type, data in tasks if task_type == "orphan"}
+    def _has_asset(data: dict[str, Any]) -> bool:
+        bbox = data.get("crop_bbox") or data.get("bbox") or []
+        return len(bbox) == 4 and all(value > 0 for value in bbox)
+    figure_asset_ids = {
+        str(data["fig_id"]) for task_type, data in tasks
+        if task_type == "figure" and _has_asset(data)
+    }
+    table_asset_ids = {
+        str(data["tbl_id"]) for task_type, data in tasks
+        if task_type == "table" and data.get("has_asset") and _has_asset(data)
+    }
     manifest = {
         "figures": sorted(figure_ids),
         "tables": sorted(table_ids),
         "orphans": sorted(orphan_ids),
-        "assets": [str(asset_root / "figures" / f"{oid}.jpg") for oid in sorted(figure_ids)]
-        + [str(asset_root / "tables" / f"{oid}.jpg") for oid in sorted(table_ids)]
+        "assets": [str(asset_root / "figures" / f"{oid}.jpg") for oid in sorted(figure_asset_ids)]
+        + [str(asset_root / "tables" / f"{oid}.jpg") for oid in sorted(table_asset_ids)]
         + [str(asset_root / "orphans" / f"{oid}.jpg") for oid in sorted(orphan_ids)],
         "render": [str(render_root / "figures" / f"{oid}.md") for oid in sorted(figure_ids | orphan_ids)]
         + [str(render_root / "tables" / f"{oid}.md") for oid in sorted(table_ids)],
