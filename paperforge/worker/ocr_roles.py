@@ -598,6 +598,10 @@ def _resolve_late_family_context(block: dict, families: dict | None) -> tuple[di
 def _looks_like_late_figure_narrative_prose(text: str) -> bool:
     if not text:
         return False
+    # Real multi-panel captions legitimately contain many sentences; not prose.
+    import re as _re
+    if _re.search(r"\([a-z](?:\s*,\s*[a-z])*\)", text or "", _re.I):
+        return False
     sentence_count = text.count(". ") + text.count(".\n")
     if sentence_count >= 2:
         return True
