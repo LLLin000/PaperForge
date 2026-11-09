@@ -54,6 +54,7 @@ All notable changes to PaperForge.
 - Pin `pymupdf<2`: 2.0 imports and activates its layout model (onnxruntime) at import time, which stalled OCR runs and broke imports on Windows; page counts and text extraction remain on 1.28.x.
 - Preserve uppercase alphabetic figure suffixes in caption identities, so same-page figures such as Figure 1A and Figure 1B retain separate captions and assets; parenthesized panel labels remain part of the base figure.
 - Keep cross-page figure reservations non-deliverable until page-qualified assets and crop evidence resolve; split shared same-page groups only when caption-band ownership uniquely covers every asset.
+- Extend matched figure crops to include owned inner-text blocks outside asset bounds without absorbing unowned nearby text.
 
 - Discover freshly indexed papers in OCR Workspace before any OCR directory exists; retain historical OCR records and report PDF readiness without writing artifacts (#351). Switching back from an empty filter replaces the empty state with the matching rows.
 - Read existing notes through the Obsidian adapter when its file cache is cold. Refresh externally written notes without deleting/recreating them.
