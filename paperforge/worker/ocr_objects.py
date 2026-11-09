@@ -801,8 +801,10 @@ def _build_object_tasks(
     figure_inventory: dict[str, Any],
     table_inventory: dict[str, Any],
     page_dimensions_by_page: dict[int, tuple[int, int]],
+    structured_blocks: list[dict] | None = None,
 ) -> tuple[list[tuple[str, dict[str, Any]]], list[dict[str, Any]]]:
-    """Build the task list without touching any file."""
+    """Build the task list without touching any file, extending figure crops to owned inner text."""
+    structured_blocks = structured_blocks or []
     collisions: list[dict[str, Any]] = []
     tasks: list[tuple[str, dict[str, Any]]] = []
     scheduled_ids: set[str] = set()
@@ -851,6 +853,24 @@ def _build_object_tasks(
                     max(b[2] for b in asset_bboxes),
                     max(b[3] for b in asset_bboxes),
                 ]
+        owned_text_bboxes = [
+            bbox
+            for block in structured_blocks
+            if str(block.get("_object_owner_id") or "") == fig_id
+            and block.get("_object_owner_family") == "figure"
+            and block.get("_object_owner_role") == "inner_text"
+            and int(block.get("page", 0) or 0) == int(page or 0)
+            and len(bbox := block.get("bbox") or []) >= 4
+            and all(value > 0 for value in bbox[:4])
+        ]
+        if owned_text_bboxes and len(crop_bbox) == 4 and all(value > 0 for value in crop_bbox):
+            bboxes = [crop_bbox, *owned_text_bboxes]
+            crop_bbox = [
+                min(bbox[0] for bbox in bboxes),
+                min(bbox[1] for bbox in bboxes),
+                max(bbox[2] for bbox in bboxes),
+                max(bbox[3] for bbox in bboxes),
+            ]
         tasks.append(
             (
                 "figure",
@@ -979,7 +999,7 @@ def extract_and_write_objects(
 
     page_dimensions_by_page = page_dimensions_by_page or {}
     tasks, collisions = _build_object_tasks(
-        figure_inventory, table_inventory, page_dimensions_by_page
+        figure_inventory, table_inventory, page_dimensions_by_page, structured_blocks
     )
     if collisions:
         figure_inventory.setdefault("identity_collisions", []).extend(collisions)

@@ -87,6 +87,70 @@ def test_render_figure_markdown_without_image_when_not_cropped() -> None:
     assert "![](../../assets/figures/figure_001.jpg)" not in md
 
 
+def test_figure_crop_includes_owned_time_labels_only() -> None:
+    from paperforge.worker.ocr_objects import _build_object_tasks
+
+    figures = {
+        "matched_figures": [
+            {
+                "figure_id": "figure_002",
+                "page": 3,
+                "cluster_bbox": [143, 73, 575, 235],
+                "matched_assets": [{"bbox": [143, 73, 575, 235]}],
+            },
+            {
+                "figure_id": "figure_003",
+                "page": 3,
+                "cluster_bbox": [700, 73, 900, 235],
+                "matched_assets": [{"bbox": [700, 73, 900, 235]}],
+            },
+        ]
+    }
+    blocks = [
+        {
+            "page": 3, "bbox": [125, 90, 142, 105], "text": "24h",
+            "_object_owner_family": "figure", "_object_owner_id": "figure_002",
+            "_object_owner_role": "inner_text",
+        },
+        {
+            "page": 3, "bbox": [576, 90, 598, 105], "text": "72h",
+            "_object_owner_family": "figure", "_object_owner_id": "figure_002",
+            "_object_owner_role": "inner_text",
+        },
+        {"page": 3, "bbox": [114, 255, 604, 383], "text": "Figure 2 caption"},
+        {"page": 3, "bbox": [113, 240, 604, 260], "text": "nearby body text"},
+    ]
+
+    tasks, _ = _build_object_tasks(figures, {"tables": []}, {}, blocks)
+    crops = {data["fig_id"]: data["crop_bbox"] for kind, data in tasks if kind == "figure"}
+
+    assert crops["figure_002"] == [125, 73, 598, 235]
+    assert crops["figure_003"] == [700, 73, 900, 235]
+
+
+def test_figure_crop_includes_owned_axis_or_scale_bar_label() -> None:
+    from paperforge.worker.ocr_objects import _build_object_tasks
+
+    figures = {
+        "matched_figures": [
+            {
+                "figure_id": "figure_axis",
+                "page": 1,
+                "cluster_bbox": [50, 50, 200, 200],
+                "matched_assets": [{"bbox": [50, 50, 200, 200]}],
+            }
+        ]
+    }
+    blocks = [{
+        "page": 1, "bbox": [30, 205, 70, 215], "text": "10 μm",
+        "_object_owner_family": "figure", "_object_owner_id": "figure_axis",
+        "_object_owner_role": "inner_text",
+    }]
+
+    tasks, _ = _build_object_tasks(figures, {"tables": []}, {}, blocks)
+    assert tasks[0][1]["crop_bbox"] == [30, 50, 200, 215]
+
+
 def test_legend_only_matched_figure_does_not_use_unmatched_assets(tmp_path: Path) -> None:
     from paperforge.worker.ocr_objects import extract_and_write_objects
 
