@@ -1,0 +1,76 @@
+{
+  "key": "27MFWJWJ",
+  "status": "failed",
+  "rebuild": {
+    "key": "27MFWJWJ",
+    "status": "ok"
+  },
+  "validation": {
+    "ok": false,
+    "errors": [
+      "plan_mismatch:planned_embed_missing:figure_005"
+    ],
+    "plan_mismatches": [
+      {
+        "object": "figure_005",
+        "reason": "planned_embed_missing",
+        "target": "render/figures/figure_005.md"
+      }
+    ],
+    "historical_baseline": {
+      "fulltext_chars": 44494,
+      "structured_rows": 255,
+      "structured_chars": 51084,
+      "structured_parse_errors": [],
+      "asset_files": [
+        "assets/figures/figure_001.jpg",
+        "assets/figures/figure_002.jpg",
+        "assets/figures/figure_003.jpg",
+        "assets/figures/figure_004.jpg",
+        "assets/figures/figure_005.jpg",
+        "assets/figures/figure_006.jpg",
+        "assets/figures/figure_007.jpg",
+        "assets/figures/figure_008.jpg",
+        "assets/figures/figure_009.jpg",
+        "assets/figures/figure_010.jpg",
+        "assets/figures/figure_011.jpg",
+        "assets/figures/figure_012.jpg",
+        "assets/orphans/orphan_001.jpg",
+        "assets/orphans/orphan_002.jpg",
+        "assets/orphans/orphan_003.jpg",
+        "assets/orphans/orphan_004.jpg"
+      ],
+      "render_files": [
+        "render/figures/figure_001.md",
+        "render/figures/figure_002.md",
+        "render/figures/figure_003.md",
+        "render/figures/figure_004.md",
+        "render/figures/figure_005.md",
+        "render/figures/figure_006.md",
+        "render/figures/figure_007.md",
+        "render/figures/figure_008.md",
+        "render/figures/figure_009.md",
+        "render/figures/figure_010.md",
+        "render/figures/figure_011.md",
+        "render/figures/figure_012.md",
+        "render/figures/orphan_001.md",
+        "render/figures/orphan_002.md",
+        "render/figures/orphan_003.md",
+        "render/figures/orphan_004.md"
+      ],
+      "embed_targets": [
+        "render/figures/figure_001.md",
+        "render/figures/figure_002.md",
+        "render/figures/figure_003.md",
+        "render/figures/figure_004.md",
+        "render/figures/figure_005.md",
+        "render/figures/figure_007.md",
+        "render/figures/figure_008.md",
+        "render/figures/figure_009.md",
+        "render/figures/figure_010.md",
+        "render/figures/figure_011.md",
+        "render/figures/figure_012.md"
+      ]
+    }
+  }
+}

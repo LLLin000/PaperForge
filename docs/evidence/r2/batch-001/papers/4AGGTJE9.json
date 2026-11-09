@@ -1,0 +1,33 @@
+{
+  "key": "4AGGTJE9",
+  "status": "failed",
+  "rebuild": {
+    "key": "4AGGTJE9",
+    "status": "ok"
+  },
+  "validation": {
+    "ok": false,
+    "errors": [
+      "historical_object_missing:render/figures/figure_001.md.edtz"
+    ],
+    "plan_mismatches": [],
+    "historical_baseline": {
+      "fulltext_chars": 8903,
+      "structured_rows": 44,
+      "structured_chars": 9376,
+      "structured_parse_errors": [],
+      "asset_files": [
+        "assets/figures/figure_001.jpg",
+        "assets/orphans/orphan_001.jpg"
+      ],
+      "render_files": [
+        "render/figures/figure_001.md",
+        "render/figures/figure_001.md.edtz",
+        "render/figures/orphan_001.md"
+      ],
+      "embed_targets": [
+        "render/figures/figure_001.md"
+      ]
+    }
+  }
+}

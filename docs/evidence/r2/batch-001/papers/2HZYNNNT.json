@@ -1,0 +1,107 @@
+{
+  "key": "2HZYNNNT",
+  "status": "failed",
+  "rebuild": {
+    "key": "2HZYNNNT",
+    "status": "ok"
+  },
+  "validation": {
+    "ok": false,
+    "errors": [
+      "historical_object_missing:render/figures/figure_004.md.edtz",
+      "historical_object_missing:render/figures/figure_001.md.edtz",
+      "historical_object_missing:render/figures/figure_002.md.edtz",
+      "historical_object_missing:render/figures/orphan_001.md.edtz",
+      "historical_object_missing:render/tables/table_001.md.edtz",
+      "historical_object_missing:render/figures/figure_005.md.edtz",
+      "historical_object_missing:render/tables/table_002.md.edtz",
+      "historical_object_missing:render/figures/figure_006.md.edtz",
+      "historical_object_missing:render/figures/figure_003.md.edtz",
+      "plan_mismatch:unplanned_figure:figure_006_p011_b15",
+      "plan_mismatch:asset_claim_mismatch:figure_006",
+      "plan_mismatch:planned_file_missing:figure_figure_p004_b20"
+    ],
+    "plan_mismatches": [
+      {
+        "object": "figure_006_p011_b15",
+        "reason": "unplanned_figure"
+      },
+      {
+        "object": "figure_006",
+        "reason": "asset_claim_mismatch",
+        "expected": [
+          "10",
+          "11",
+          "12",
+          "13",
+          "3",
+          "5",
+          "6",
+          "7"
+        ],
+        "actual": [
+          "10",
+          "11",
+          "3",
+          "6"
+        ]
+      },
+      {
+        "object": "figure_figure_p004_b20",
+        "reason": "planned_file_missing",
+        "path": "assets/figures/figure_figure_p004_b20.jpg"
+      }
+    ],
+    "historical_baseline": {
+      "fulltext_chars": 69547,
+      "structured_rows": 306,
+      "structured_chars": 76315,
+      "structured_parse_errors": [],
+      "asset_files": [
+        "assets/figures/figure_001.jpg",
+        "assets/figures/figure_002.jpg",
+        "assets/figures/figure_003.jpg",
+        "assets/figures/figure_004.jpg",
+        "assets/figures/figure_005.jpg",
+        "assets/figures/figure_006.jpg",
+        "assets/orphans/orphan_001.jpg",
+        "assets/orphans/orphan_002.jpg",
+        "assets/tables/table_001.jpg",
+        "assets/tables/table_002.jpg"
+      ],
+      "render_files": [
+        "render/figures/figure_001.md",
+        "render/figures/figure_001.md.edtz",
+        "render/figures/figure_002.md",
+        "render/figures/figure_002.md.edtz",
+        "render/figures/figure_003.md",
+        "render/figures/figure_003.md.edtz",
+        "render/figures/figure_004.md",
+        "render/figures/figure_004.md.edtz",
+        "render/figures/figure_005.md",
+        "render/figures/figure_005.md.edtz",
+        "render/figures/figure_006.md",
+        "render/figures/figure_006.md.edtz",
+        "render/figures/figure_reserved_006.md",
+        "render/figures/orphan_001.md",
+        "render/figures/orphan_001.md.edtz",
+        "render/figures/orphan_002.md",
+        "render/tables/table_001.md",
+        "render/tables/table_001.md.edtz",
+        "render/tables/table_002.md",
+        "render/tables/table_002.md.edtz"
+      ],
+      "embed_targets": [
+        "render/figures/figure_001.md",
+        "render/figures/figure_002.md",
+        "render/figures/figure_003.md",
+        "render/figures/figure_004.md",
+        "render/figures/figure_005.md",
+        "render/figures/figure_006.md",
+        "render/figures/figure_reserved_006.md",
+        "render/tables/table_001.md",
+        "render/tables/table_002.md"
+      ]
+    }
+  }
+}

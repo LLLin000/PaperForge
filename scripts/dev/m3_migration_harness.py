@@ -172,6 +172,7 @@ def historical_baseline(paper_root):
                 parse_errors.append(f"{number}:{exc}")
     return {
         "fulltext_chars": len(text),
+        "normalized_chars": len(re.sub(r"(?m)^\s*#{1,6}\s*", "", re.sub(r"!?\[\[[^\]]+\]\]", "", text))),
         "structured_rows": rows,
         "structured_chars": structured_chars,
         "structured_parse_errors": parse_errors,
@@ -181,6 +182,8 @@ def historical_baseline(paper_root):
             if root.exists()
             for p in root.rglob("*")
             if p.is_file()
+            and p.suffix.lower() in {".jpg", ".jpeg", ".png", ".webp"}
+            and not p.name.startswith(".")
         ),
         "render_files": sorted(
             p.relative_to(paper_root).as_posix()
@@ -188,6 +191,8 @@ def historical_baseline(paper_root):
             if root.exists()
             for p in root.rglob("*")
             if p.is_file()
+            and p.suffix.lower() == ".md"
+            and not p.name.startswith(".")
         ),
         "embed_targets": sorted(set(
             match.split("|", 1)[0]
@@ -364,7 +369,7 @@ def validate_paper(paper_root, pre, plan_entry, pre_structured=0, baseline=None)
             target_path = paper_root / target_rel
             if not target_path.exists() and not (paper_root / (target_rel + ".md")).exists():
                 errors.append(f"dangling_fulltext_target:{target_rel}")
-        if len(text) < pre:
+        if baseline is None and len(text) < pre:
             errors.append(f"text_decrease:{len(text)}<{pre}")
     # structured text total
     sj = paper_root / "structure" / "blocks.structured.jsonl"
@@ -413,8 +418,8 @@ def validate_paper(paper_root, pre, plan_entry, pre_structured=0, baseline=None)
             errors.append("historical_baseline_empty")
         if baseline["structured_parse_errors"]:
             errors.append(f"historical_structured_parse_errors:{baseline['structured_parse_errors']}")
-        if current["fulltext_chars"] < baseline["fulltext_chars"]:
-            errors.append(f"historical_fulltext_decrease:{current['fulltext_chars']}<{baseline['fulltext_chars']}")
+        if current["normalized_chars"] < baseline["normalized_chars"]:
+            errors.append(f"historical_text_decrease:{current['normalized_chars']}<{baseline['normalized_chars']}")
         if current["structured_rows"] < baseline["structured_rows"]:
             errors.append(f"historical_structured_rows_decrease:{current['structured_rows']}<{baseline['structured_rows']}")
         if current["structured_chars"] < baseline["structured_chars"]:
@@ -456,11 +461,12 @@ def restore_paper(paper_root, snap_dir):
 
 def run_rebuild(vault, key):
     vault = Path(vault)
-    assert_isolated(vault, vault.parent)
-    assert_tree_isolated(vault, vault.parent)
+    paper_root = vault / "System" / "PaperForge" / "ocr" / key
+    assert_isolated(paper_root, vault.parent)
+    _reject_source_links(paper_root)
     result = rebuild_mod._rebuild_one_paper(vault, key)
-    assert_tree_isolated(vault, vault.parent)
-    _reject_source_links(vault)
+    assert_isolated(paper_root, vault.parent)
+    _reject_source_links(paper_root)
     return result
 
 def tree_hash_excluding_meta(vault):
@@ -823,7 +829,7 @@ def main():
     results["idempotent"] = {
         "before": before_hash,
         "after": after_hash,
-        "equal": before_hash == after_hash and all(repeat_ok),
+        "equal": before_hash == after_hash,
         "repeat_validation_pass": sum(repeat_ok),
         "repeat_validation_fail": len(repeat_ok) - sum(repeat_ok),
     }

@@ -100,10 +100,20 @@ def _new_replay(vault: Path, ocr_root: Path, key: str) -> dict:
 
     paper_dir = ocr_root / key
     meta = _read_json(paper_dir / "meta.json")
+    source_metadata = _read_json(paper_dir / "raw/source_metadata.json")
     raw = _rows(paper_dir / "canonical/blocks.raw.jsonl")
-    blocks, document = build_structured_blocks(raw, source_metadata={}, normalize_mode="seed_only")
+    from paperforge.worker.ocr import _ocr_pipeline_v3_enabled
+
+    normalize_mode = meta.get("normalize_mode") or (
+        "seed_only" if _ocr_pipeline_v3_enabled() else "legacy"
+    )
+    blocks, document = build_structured_blocks(
+        raw, source_metadata=source_metadata, normalize_mode=normalize_mode
+    )
     blocks, document = pre_match_normalize(
-        blocks, source_frontmatter_anchors={}, document_structure=document
+        blocks,
+        source_frontmatter_anchors=getattr(document, "source_frontmatter_anchors", None) or {},
+        document_structure=document,
     )
     pdf = resolve_source_pdf(vault, meta.get("source_pdf"))
     lines = {}
@@ -113,6 +123,16 @@ def _new_replay(vault: Path, ocr_root: Path, key: str) -> dict:
         except Exception:  # noqa: BLE001 — evidence is optional
             lines = {}
     stage = run_association_stage(blocks, page_pdf_lines_by_page=lines or None)
+    if normalize_mode == "seed_only":
+        from paperforge.worker.ocr_post_match_normalize import post_match_normalize
+
+        blocks, document = post_match_normalize(
+            blocks,
+            stage.figures,
+            stage.tables,
+            document_structure=document,
+            source_frontmatter_anchors=getattr(document, "source_frontmatter_anchors", None),
+        )
     commit_object_roles(blocks, stage.figures, stage.tables)
     manifest = extract_and_write_objects(
         pdf,

@@ -1,0 +1,828 @@
+{
+  "selected_ready": [
+    "2332GHPT"
+  ],
+  "refused": [
+    {
+      "key": "28ALPCY7",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "28JLIHLS",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "2AZ2EGQB",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "2BKLX9I4",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "2HJSWV3V",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "2UIPV93M",
+      "status": "HOLD"
+    },
+    {
+      "key": "32SX6L4T",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "388XI46Q",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "3EFCZ7BB",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "3FDT9652",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "3NRZ95DB",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "3P98ZJJA",
+      "status": "HOLD"
+    },
+    {
+      "key": "3QYCST4E",
+      "status": "HOLD"
+    },
+    {
+      "key": "4AG67PBH",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "4CBS2KKE",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "4FL992ND",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "4KCHGV2Z",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "4PFR9M5N",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "4SWKX9KN",
+      "status": "HOLD"
+    },
+    {
+      "key": "4ZBT87Q2",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "55EKJRBC",
+      "status": "M2_REVIEW_REQUIRED"
+    },
+    {
+      "key": "59JLHKIN",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "5CK2JEIS",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "5GDVTIHW",
+      "status": "HOLD"
+    },
+    {
+      "key": "5VMA7WNE",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "65L73ZEZ",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "6BSIRCUB",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "6DIINFHX",
+      "status": "HOLD"
+    },
+    {
+      "key": "6DIPJ762",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "6F3BZ8H7",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "6FGDBFQN",
+      "status": "HOLD"
+    },
+    {
+      "key": "6QNRHRKX",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "6ZWKUPCU",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "7698FF7Y",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "76YD9KGK",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "7FNV9AW2",
+      "status": "HOLD"
+    },
+    {
+      "key": "7I4YGKFG",
+      "status": "HOLD"
+    },
+    {
+      "key": "7IF94LAT",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "7JD9EGPE",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "7JKY8YVB",
+      "status": "HOLD"
+    },
+    {
+      "key": "856VEINF",
+      "status": "HOLD"
+    },
+    {
+      "key": "87KJHGP8",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "8M4QY2CY",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "8PLQZKGN",
+      "status": "M2_REVIEW_REQUIRED"
+    },
+    {
+      "key": "8RG8CNGJ",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "8RQ3TK8C",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "8SEK4WU8",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "9A3VMAY9",
+      "status": "HOLD"
+    },
+    {
+      "key": "9CBNMN7T",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "9GR5KV4N",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "9ILH6L6W",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "9ITED3Z2",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "9P2W6J8Q",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "9PJWGWHM",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "9TW98JH8",
+      "status": "M2_REVIEW_REQUIRED"
+    },
+    {
+      "key": "A6IC2SIK",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "API5RITV",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "AQM3M257",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "AW49IHEX",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "BDZ3A5XR",
+      "status": "HOLD"
+    },
+    {
+      "key": "C2U3WZDW",
+      "status": "HOLD"
+    },
+    {
+      "key": "CAYP5AKS",
+      "status": "M2_REVIEW_REQUIRED"
+    },
+    {
+      "key": "CKU5UHFW",
+      "status": "HOLD"
+    },
+    {
+      "key": "CPQ47TBV",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "CRTUBAGB",
+      "status": "HOLD"
+    },
+    {
+      "key": "CSQQ3B7J",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "CYJLYG56",
+      "status": "M2_REVIEW_REQUIRED"
+    },
+    {
+      "key": "DJLIAZT7",
+      "status": "HOLD"
+    },
+    {
+      "key": "DLVSVU49",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "DNDE7U87",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "DURZMVMB",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "DWQQK2YB",
+      "status": "HOLD"
+    },
+    {
+      "key": "E3DDJHPJ",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "EBD59IJP",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "EHWNEQM9",
+      "status": "HOLD"
+    },
+    {
+      "key": "F5CHZH3H",
+      "status": "M2_REVIEW_REQUIRED"
+    },
+    {
+      "key": "FFBAXFSE",
+      "status": "HOLD"
+    },
+    {
+      "key": "FRU2XUGJ",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "G5GEKQXJ",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "GECL2FJ3",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "GFPBAHTB",
+      "status": "HOLD"
+    },
+    {
+      "key": "GMP96ULY",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "GS3G6YQK",
+      "status": "HOLD"
+    },
+    {
+      "key": "GTRPMM56",
+      "status": "HOLD"
+    },
+    {
+      "key": "H6ATTBWZ",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "HQAQBSBP",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "HTB6CVAQ",
+      "status": "HOLD"
+    },
+    {
+      "key": "HYL7D64E",
+      "status": "HOLD"
+    },
+    {
+      "key": "I295B7RX",
+      "status": "HOLD"
+    },
+    {
+      "key": "I4FKT93N",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "IVMKWLFV",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "J2U9DWNW",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "JAX9AESX",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "JD8T7YHD",
+      "status": "HOLD"
+    },
+    {
+      "key": "JDDHR73S",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "JZX7QTGF",
+      "status": "HOLD"
+    },
+    {
+      "key": "K6EBNFNK",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "KBLPLRVL",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "KG7A5K5V",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "KH3GMDCH",
+      "status": "HOLD"
+    },
+    {
+      "key": "KI6EB48K",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "KIX7SKXQ",
+      "status": "HOLD"
+    },
+    {
+      "key": "KS62XBF8",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "KY76CCC7",
+      "status": "HOLD"
+    },
+    {
+      "key": "LX976EPG",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "LYEFATEN",
+      "status": "HOLD"
+    },
+    {
+      "key": "M84CTEM9",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "MDIJFH35",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "N6XCZD25",
+      "status": "HOLD"
+    },
+    {
+      "key": "N9BFPD7H",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "NDPUMMCI",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "NEDYXLIF",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "P9D6GZ9M",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "PDZECABG",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "PV3NKFKI",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "Q5UCL5Z3",
+      "status": "HOLD"
+    },
+    {
+      "key": "Q97VPT8A",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "QGCAFI3P",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "QJ8Y59LG",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "QJF8VV5C",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "QUJ3AS6S",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "RKSLQRIM",
+      "status": "HOLD"
+    },
+    {
+      "key": "RVE22V9S",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "S3GEFVDN",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "S9UMIF83",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "SDILTBGK",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "SP8GYE3L",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "SRNJDAA2",
+      "status": "HOLD"
+    },
+    {
+      "key": "T25WAPSR",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "T6UFMASL",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "TJXKYLIH",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "TLR5T8W4",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "TNK4V5PF",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "U96H2WCT",
+      "status": "HOLD"
+    },
+    {
+      "key": "UBM39DTB",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "UGA8GFAR",
+      "status": "HOLD"
+    },
+    {
+      "key": "UN9MGTEZ",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "USSA3UZX",
+      "status": "HOLD"
+    },
+    {
+      "key": "VAMSAZMG",
+      "status": "HOLD"
+    },
+    {
+      "key": "VDQCYYIA",
+      "status": "HOLD"
+    },
+    {
+      "key": "VFS8CBW2",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "VNP3AGHC",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "VVKIB2EM",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "W2W7NUU9",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "WDRU6TDV",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "WEFRCCCH",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "WKVUPETF",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "WUHL7LSK",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "WV2FF4NV",
+      "status": "M2_REVIEW_REQUIRED"
+    },
+    {
+      "key": "WZLSE58A",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "X2KYTXR3",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "X33IXEI2",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "XBSC5X2H",
+      "status": "HOLD"
+    },
+    {
+      "key": "XSGAHQUZ",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "XU3QKIPZ",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "Y4FGBUSM",
+      "status": "HOLD"
+    },
+    {
+      "key": "Y5KQ4JQ7",
+      "status": "HOLD"
+    },
+    {
+      "key": "Y6IDPZJL",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "YNJBXU5T",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "Z2TNNFHE",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "Z698HB3N",
+      "status": "HOLD"
+    },
+    {
+      "key": "ZBEP2AKR",
+      "status": "HOLD"
+    },
+    {
+      "key": "ZMCQFT34",
+      "status": "REQUIRES_APPROVAL"
+    },
+    {
+      "key": "ZTNTE2BT",
+      "status": "HOLD"
+    }
+  ],
+  "gate_refusals": [],
+  "clean_run": [
+    {
+      "key": "2332GHPT",
+      "status": "ok",
+      "rebuild": {
+        "key": "2332GHPT",
+        "status": "ok"
+      },
+      "validation": {
+        "ok": true,
+        "errors": [],
+        "plan_mismatches": [],
+        "historical_baseline": {
+          "fulltext_chars": 32778,
+          "structured_rows": 193,
+          "structured_chars": 42015,
+          "structured_parse_errors": [],
+          "asset_files": [
+            "assets/figures/figure_001.jpg",
+            "assets/figures/figure_002.jpg",
+            "assets/orphans/orphan_001.jpg",
+            "assets/orphans/orphan_002.jpg",
+            "assets/orphans/orphan_003.jpg",
+            "assets/orphans/orphan_004.jpg",
+            "assets/tables/table_001.jpg",
+            "assets/tables/table_002.jpg",
+            "assets/tables/table_003.jpg",
+            "assets/tables/table_004.jpg",
+            "assets/tables/table_005.jpg"
+          ],
+          "render_files": [
+            "render/figures/figure_001.md",
+            "render/figures/figure_002.md",
+            "render/figures/orphan_001.md",
+            "render/figures/orphan_002.md",
+            "render/figures/orphan_003.md",
+            "render/figures/orphan_004.md",
+            "render/tables/table_001.md",
+            "render/tables/table_002.md",
+            "render/tables/table_003.md",
+            "render/tables/table_004.md",
+            "render/tables/table_005.md"
+          ],
+          "embed_targets": [
+            "render/figures/figure_001.md",
+            "render/figures/figure_002.md",
+            "render/tables/table_001.md",
+            "render/tables/table_002.md",
+            "render/tables/table_003.md",
+            "render/tables/table_004.md",
+            "render/tables/table_005.md"
+          ]
+        }
+      }
+    }
+  ],
+  "faults": {
+    "kill": {
+      "interrupted": true,
+      "pending_before": true,
+      "leftovers_before": [],
+      "proc_rc": 1,
+      "rebuild": {
+        "key": "2332GHPT",
+        "status": "ok"
+      },
+      "validation": {
+        "ok": true,
+        "errors": [],
+        "plan_mismatches": [],
+        "historical_baseline": null
+      },
+      "matches_clean": true
+    },
+    "write_error": {
+      "first": {
+        "status": "exception",
+        "error": "object materialization failed: ENOSPC"
+      },
+      "rerun": {
+        "key": "2332GHPT",
+        "status": "ok"
+      },
+      "validation": {
+        "ok": true,
+        "errors": [],
+        "plan_mismatches": [],
+        "historical_baseline": null
+      },
+      "old_byte_identical": true,
+      "leftovers": []
+    },
+    "interrupted_commit": {
+      "restored_old": true,
+      "rebuild": {
+        "key": "2332GHPT",
+        "status": "ok"
+      },
+      "validation": {
+        "ok": true,
+        "errors": [],
+        "plan_mismatches": [],
+        "historical_baseline": null
+      }
+    },
+    "concurrent": {
+      "returncodes": [
+        0,
+        1
+      ],
+      "timed_out": false,
+      "validation": {
+        "ok": false,
+        "errors": [
+          "plan_mismatch:planned_file_missing:figure_001",
+          "plan_mismatch:planned_file_missing:figure_002"
+        ],
+        "plan_mismatches": [
+          {
+            "object": "figure_001",
+            "reason": "planned_file_missing",
+            "path": "assets/figures/figure_001.jpg"
+          },
+          {
+            "object": "figure_002",
+            "reason": "planned_file_missing",
+            "path": "assets/figures/figure_002.jpg"
+          }
+        ],
+        "historical_baseline": null
+      },
+      "matches_clean": false,
+      "duplicate_ids": false,
+      "success_count": 1
+    },
+    "corrupt": {
+      "detected_before": true,
+      "errors_before": [
+        "json_parse:figure_inventory.json:Expecting property name enclosed in double quotes: line 1 column 2 (char 1)",
+        "figure_inventory_parse:Expecting property name enclosed in double quotes: line 1 column 2 (char 1)",
+        "dangling_fulltext_target:render/figures/figure_001.md",
+        "plan_mismatch:figure_inventory_parse_failed:",
+        "plan_mismatch:planned_figure_missing:figure_001"
+      ],
+      "rebuild": {
+        "key": "2332GHPT",
+        "status": "ok"
+      },
+      "valid_after": true,
+      "matches_clean": true
+    }
+  },
+  "idempotent": {
+    "before": "5cd82436f52f6d495b959196efb2e021b702e4770768aced1383df74573f21fa",
+    "after": "5cd82436f52f6d495b959196efb2e021b702e4770768aced1383df74573f21fa",
+    "equal": true,
+    "repeat_validation_pass": 1,
+    "repeat_validation_fail": 0
+  },
+  "source_integrity": {
+    "all_selected_hashed": 1,
+    "unchanged": true,
+    "changed_keys": []
+  }
+}

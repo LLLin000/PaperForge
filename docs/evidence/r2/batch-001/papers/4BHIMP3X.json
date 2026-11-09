@@ -1,0 +1,28 @@
+{
+  "key": "4BHIMP3X",
+  "status": "ok",
+  "rebuild": {
+    "key": "4BHIMP3X",
+    "status": "ok"
+  },
+  "validation": {
+    "ok": true,
+    "errors": [],
+    "plan_mismatches": [],
+    "historical_baseline": {
+      "fulltext_chars": 26035,
+      "structured_rows": 93,
+      "structured_chars": 28026,
+      "structured_parse_errors": [],
+      "asset_files": [
+        "assets/orphans/orphan_001.jpg",
+        "assets/orphans/orphan_002.jpg"
+      ],
+      "render_files": [
+        "render/figures/orphan_001.md",
+        "render/figures/orphan_002.md"
+      ],
+      "embed_targets": []
+    }
+  }
+}

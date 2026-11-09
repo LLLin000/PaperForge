@@ -1,0 +1,85 @@
+{
+  "key": "5465DGFT",
+  "status": "failed",
+  "rebuild": {
+    "key": "5465DGFT",
+    "status": "ok"
+  },
+  "validation": {
+    "ok": false,
+    "errors": [
+      "text_decrease:40560<40575",
+      "historical_fulltext_decrease:40560<40575",
+      "historical_object_missing:render/figures/figure_007.md.edtz",
+      "historical_object_missing:render/figures/figure_004.md.edtz",
+      "historical_object_missing:render/figures/figure_001.md.edtz",
+      "historical_object_missing:render/figures/figure_002.md.edtz",
+      "historical_object_missing:render/figures/figure_005.md.edtz",
+      "historical_object_missing:render/figures/figure_006.md.edtz",
+      "historical_object_missing:render/figures/figure_003.md.edtz",
+      "plan_mismatch:asset_claim_mismatch:figure_007"
+    ],
+    "plan_mismatches": [
+      {
+        "object": "figure_007",
+        "reason": "asset_claim_mismatch",
+        "expected": [
+          "10",
+          "11",
+          "12",
+          "13",
+          "6",
+          "7",
+          "8",
+          "9"
+        ],
+        "actual": [
+          "11",
+          "13",
+          "7",
+          "9"
+        ]
+      }
+    ],
+    "historical_baseline": {
+      "fulltext_chars": 40575,
+      "structured_rows": 300,
+      "structured_chars": 45860,
+      "structured_parse_errors": [],
+      "asset_files": [
+        "assets/figures/figure_001.jpg",
+        "assets/figures/figure_002.jpg",
+        "assets/figures/figure_003.jpg",
+        "assets/figures/figure_004.jpg",
+        "assets/figures/figure_005.jpg",
+        "assets/figures/figure_006.jpg",
+        "assets/figures/figure_007.jpg"
+      ],
+      "render_files": [
+        "render/figures/figure_001.md",
+        "render/figures/figure_001.md.edtz",
+        "render/figures/figure_002.md",
+        "render/figures/figure_002.md.edtz",
+        "render/figures/figure_003.md",
+        "render/figures/figure_003.md.edtz",
+        "render/figures/figure_004.md",
+        "render/figures/figure_004.md.edtz",
+        "render/figures/figure_005.md",
+        "render/figures/figure_005.md.edtz",
+        "render/figures/figure_006.md",
+        "render/figures/figure_006.md.edtz",
+        "render/figures/figure_007.md",
+        "render/figures/figure_007.md.edtz"
+      ],
+      "embed_targets": [
+        "render/figures/figure_001.md",
+        "render/figures/figure_002.md",
+        "render/figures/figure_003.md",
+        "render/figures/figure_004.md",
+        "render/figures/figure_005.md",
+        "render/figures/figure_006.md",
+        "render/figures/figure_007.md"
+      ]
+    }
+  }
+}

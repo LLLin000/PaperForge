@@ -1,0 +1,485 @@
+{
+  "key": "7M6FIW4V",
+  "status": "failed",
+  "rebuild": {
+    "key": "7M6FIW4V",
+    "status": "ok"
+  },
+  "validation": {
+    "ok": false,
+    "errors": [
+      "json_parse:document_structure.json:'utf-8' codec can't decode byte 0x88 in position 0: invalid start byte",
+      "historical_object_missing:render/figures/orphan_007.md.edtz",
+      "historical_object_missing:render/figures/orphan_003.md.edtz",
+      "historical_object_missing:render/figures/figure_007.md.edtz",
+      "historical_object_missing:render/figures/orphan_012.md.edtz",
+      "historical_object_missing:render/figures/orphan_010.md.edtz",
+      "historical_object_missing:render/figures/figure_003.md.edtz",
+      "historical_object_missing:render/figures/orphan_002.md.edtz",
+      "historical_object_missing:render/figures/orphan_013.md.edtz",
+      "historical_object_missing:render/figures/figure_004.md.edtz",
+      "historical_object_missing:render/figures/orphan_014.md.edtz",
+      "historical_object_missing:render/figures/unresolved_cluster_002.md.edtz",
+      "historical_object_missing:render/figures/orphan_001.md.edtz",
+      "historical_object_missing:render/figures/orphan_005.md.edtz",
+      "historical_object_missing:render/figures/orphan_009.md.edtz",
+      "historical_object_missing:render/figures/orphan_008.md.edtz",
+      "historical_object_missing:render/figures/unresolved_cluster_001.md.edtz",
+      "historical_object_missing:render/figures/figure_008.md.edtz",
+      "historical_object_missing:render/figures/orphan_006.md.edtz",
+      "historical_object_missing:render/figures/figure_009.md.edtz",
+      "historical_object_missing:render/figures/figure_006.md.edtz",
+      "historical_object_missing:render/figures/figure_001.md.edtz",
+      "historical_object_missing:render/figures/unresolved_cluster_003.md.edtz",
+      "historical_object_missing:render/figures/figure_005.md.edtz",
+      "historical_object_missing:render/figures/orphan_004.md.edtz",
+      "historical_object_missing:render/figures/figure_002.md.edtz",
+      "historical_object_missing:render/figures/orphan_011.md.edtz",
+      "plan_mismatch:planned_file_missing:figure_001",
+      "plan_mismatch:planned_file_missing:figure_003",
+      "plan_mismatch:planned_file_missing:figure_004",
+      "plan_mismatch:planned_file_missing:figure_005",
+      "plan_mismatch:planned_file_missing:figure_006",
+      "plan_mismatch:planned_file_missing:figure_007",
+      "plan_mismatch:planned_file_missing:figure_008",
+      "plan_mismatch:planned_file_missing:orphan_001",
+      "plan_mismatch:planned_file_missing:orphan_002",
+      "plan_mismatch:planned_file_missing:orphan_003",
+      "plan_mismatch:planned_file_missing:orphan_004",
+      "plan_mismatch:planned_file_missing:orphan_005",
+      "plan_mismatch:planned_file_missing:orphan_006",
+      "plan_mismatch:planned_file_missing:orphan_007",
+      "plan_mismatch:planned_file_missing:orphan_008",
+      "plan_mismatch:planned_file_missing:orphan_009",
+      "plan_mismatch:planned_file_missing:orphan_010",
+      "plan_mismatch:planned_file_missing:orphan_011",
+      "plan_mismatch:planned_file_missing:orphan_012",
+      "plan_mismatch:planned_file_missing:orphan_013",
+      "plan_mismatch:planned_file_missing:orphan_014",
+      "plan_mismatch:planned_file_missing:orphan_015",
+      "plan_mismatch:planned_file_missing:orphan_016",
+      "plan_mismatch:planned_file_missing:orphan_017",
+      "plan_mismatch:planned_file_missing:orphan_018",
+      "plan_mismatch:planned_file_missing:orphan_019",
+      "plan_mismatch:planned_file_missing:orphan_020",
+      "plan_mismatch:planned_file_missing:orphan_021",
+      "plan_mismatch:planned_file_missing:orphan_022",
+      "plan_mismatch:planned_file_missing:orphan_023",
+      "plan_mismatch:planned_file_missing:orphan_024",
+      "plan_mismatch:planned_file_missing:orphan_025",
+      "plan_mismatch:planned_file_missing:orphan_026",
+      "plan_mismatch:planned_file_missing:orphan_027",
+      "plan_mismatch:planned_file_missing:orphan_028",
+      "plan_mismatch:planned_file_missing:orphan_029",
+      "plan_mismatch:planned_file_missing:orphan_030",
+      "plan_mismatch:planned_file_missing:orphan_031",
+      "plan_mismatch:planned_file_missing:orphan_032",
+      "plan_mismatch:planned_file_missing:orphan_033",
+      "plan_mismatch:planned_file_missing:orphan_034",
+      "plan_mismatch:planned_file_missing:orphan_035",
+      "plan_mismatch:planned_file_missing:orphan_036",
+      "plan_mismatch:planned_file_missing:orphan_037",
+      "plan_mismatch:planned_file_missing:orphan_038",
+      "plan_mismatch:planned_file_missing:orphan_039",
+      "plan_mismatch:planned_file_missing:orphan_040",
+      "plan_mismatch:planned_file_missing:orphan_041",
+      "plan_mismatch:planned_file_missing:orphan_042",
+      "plan_mismatch:planned_file_missing:orphan_043",
+      "plan_mismatch:planned_file_missing:orphan_044",
+      "plan_mismatch:planned_file_missing:orphan_045",
+      "plan_mismatch:planned_file_missing:orphan_046",
+      "plan_mismatch:planned_file_missing:orphan_047",
+      "plan_mismatch:planned_file_missing:orphan_048",
+      "plan_mismatch:planned_file_missing:orphan_049",
+      "plan_mismatch:planned_file_missing:orphan_050"
+    ],
+    "plan_mismatches": [
+      {
+        "object": "figure_001",
+        "reason": "planned_file_missing",
+        "path": "assets/figures/figure_001.jpg"
+      },
+      {
+        "object": "figure_003",
+        "reason": "planned_file_missing",
+        "path": "assets/figures/figure_003.jpg"
+      },
+      {
+        "object": "figure_004",
+        "reason": "planned_file_missing",
+        "path": "assets/figures/figure_004.jpg"
+      },
+      {
+        "object": "figure_005",
+        "reason": "planned_file_missing",
+        "path": "assets/figures/figure_005.jpg"
+      },
+      {
+        "object": "figure_006",
+        "reason": "planned_file_missing",
+        "path": "assets/figures/figure_006.jpg"
+      },
+      {
+        "object": "figure_007",
+        "reason": "planned_file_missing",
+        "path": "assets/figures/figure_007.jpg"
+      },
+      {
+        "object": "figure_008",
+        "reason": "planned_file_missing",
+        "path": "assets/figures/figure_008.jpg"
+      },
+      {
+        "object": "orphan_001",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_001.jpg"
+      },
+      {
+        "object": "orphan_002",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_002.jpg"
+      },
+      {
+        "object": "orphan_003",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_003.jpg"
+      },
+      {
+        "object": "orphan_004",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_004.jpg"
+      },
+      {
+        "object": "orphan_005",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_005.jpg"
+      },
+      {
+        "object": "orphan_006",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_006.jpg"
+      },
+      {
+        "object": "orphan_007",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_007.jpg"
+      },
+      {
+        "object": "orphan_008",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_008.jpg"
+      },
+      {
+        "object": "orphan_009",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_009.jpg"
+      },
+      {
+        "object": "orphan_010",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_010.jpg"
+      },
+      {
+        "object": "orphan_011",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_011.jpg"
+      },
+      {
+        "object": "orphan_012",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_012.jpg"
+      },
+      {
+        "object": "orphan_013",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_013.jpg"
+      },
+      {
+        "object": "orphan_014",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_014.jpg"
+      },
+      {
+        "object": "orphan_015",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_015.jpg"
+      },
+      {
+        "object": "orphan_016",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_016.jpg"
+      },
+      {
+        "object": "orphan_017",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_017.jpg"
+      },
+      {
+        "object": "orphan_018",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_018.jpg"
+      },
+      {
+        "object": "orphan_019",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_019.jpg"
+      },
+      {
+        "object": "orphan_020",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_020.jpg"
+      },
+      {
+        "object": "orphan_021",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_021.jpg"
+      },
+      {
+        "object": "orphan_022",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_022.jpg"
+      },
+      {
+        "object": "orphan_023",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_023.jpg"
+      },
+      {
+        "object": "orphan_024",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_024.jpg"
+      },
+      {
+        "object": "orphan_025",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_025.jpg"
+      },
+      {
+        "object": "orphan_026",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_026.jpg"
+      },
+      {
+        "object": "orphan_027",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_027.jpg"
+      },
+      {
+        "object": "orphan_028",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_028.jpg"
+      },
+      {
+        "object": "orphan_029",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_029.jpg"
+      },
+      {
+        "object": "orphan_030",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_030.jpg"
+      },
+      {
+        "object": "orphan_031",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_031.jpg"
+      },
+      {
+        "object": "orphan_032",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_032.jpg"
+      },
+      {
+        "object": "orphan_033",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_033.jpg"
+      },
+      {
+        "object": "orphan_034",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_034.jpg"
+      },
+      {
+        "object": "orphan_035",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_035.jpg"
+      },
+      {
+        "object": "orphan_036",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_036.jpg"
+      },
+      {
+        "object": "orphan_037",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_037.jpg"
+      },
+      {
+        "object": "orphan_038",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_038.jpg"
+      },
+      {
+        "object": "orphan_039",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_039.jpg"
+      },
+      {
+        "object": "orphan_040",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_040.jpg"
+      },
+      {
+        "object": "orphan_041",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_041.jpg"
+      },
+      {
+        "object": "orphan_042",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_042.jpg"
+      },
+      {
+        "object": "orphan_043",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_043.jpg"
+      },
+      {
+        "object": "orphan_044",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_044.jpg"
+      },
+      {
+        "object": "orphan_045",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_045.jpg"
+      },
+      {
+        "object": "orphan_046",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_046.jpg"
+      },
+      {
+        "object": "orphan_047",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_047.jpg"
+      },
+      {
+        "object": "orphan_048",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_048.jpg"
+      },
+      {
+        "object": "orphan_049",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_049.jpg"
+      },
+      {
+        "object": "orphan_050",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_050.jpg"
+      }
+    ],
+    "historical_baseline": {
+      "fulltext_chars": 62844,
+      "structured_rows": 331,
+      "structured_chars": 81770,
+      "structured_parse_errors": [],
+      "asset_files": [],
+      "render_files": [
+        "render/figures/figure_001.md",
+        "render/figures/figure_001.md.edtz",
+        "render/figures/figure_002.md.edtz",
+        "render/figures/figure_003.md",
+        "render/figures/figure_003.md.edtz",
+        "render/figures/figure_004.md.edtz",
+        "render/figures/figure_005.md",
+        "render/figures/figure_005.md.edtz",
+        "render/figures/figure_006.md",
+        "render/figures/figure_006.md.edtz",
+        "render/figures/figure_007.md.edtz",
+        "render/figures/figure_008.md",
+        "render/figures/figure_008.md.edtz",
+        "render/figures/figure_009.md.edtz",
+        "render/figures/figure_reserved_007.md",
+        "render/figures/figure_reserved_008.md",
+        "render/figures/orphan_001.md",
+        "render/figures/orphan_001.md.edtz",
+        "render/figures/orphan_002.md",
+        "render/figures/orphan_002.md.edtz",
+        "render/figures/orphan_003.md",
+        "render/figures/orphan_003.md.edtz",
+        "render/figures/orphan_004.md",
+        "render/figures/orphan_004.md.edtz",
+        "render/figures/orphan_005.md",
+        "render/figures/orphan_005.md.edtz",
+        "render/figures/orphan_006.md",
+        "render/figures/orphan_006.md.edtz",
+        "render/figures/orphan_007.md",
+        "render/figures/orphan_007.md.edtz",
+        "render/figures/orphan_008.md",
+        "render/figures/orphan_008.md.edtz",
+        "render/figures/orphan_009.md",
+        "render/figures/orphan_009.md.edtz",
+        "render/figures/orphan_010.md",
+        "render/figures/orphan_010.md.edtz",
+        "render/figures/orphan_011.md",
+        "render/figures/orphan_011.md.edtz",
+        "render/figures/orphan_012.md",
+        "render/figures/orphan_012.md.edtz",
+        "render/figures/orphan_013.md",
+        "render/figures/orphan_013.md.edtz",
+        "render/figures/orphan_014.md",
+        "render/figures/orphan_014.md.edtz",
+        "render/figures/orphan_015.md",
+        "render/figures/orphan_016.md",
+        "render/figures/orphan_017.md",
+        "render/figures/orphan_018.md",
+        "render/figures/orphan_019.md",
+        "render/figures/orphan_020.md",
+        "render/figures/orphan_021.md",
+        "render/figures/orphan_022.md",
+        "render/figures/orphan_023.md",
+        "render/figures/orphan_024.md",
+        "render/figures/orphan_025.md",
+        "render/figures/orphan_026.md",
+        "render/figures/orphan_027.md",
+        "render/figures/orphan_028.md",
+        "render/figures/orphan_029.md",
+        "render/figures/orphan_030.md",
+        "render/figures/orphan_031.md",
+        "render/figures/orphan_032.md",
+        "render/figures/orphan_033.md",
+        "render/figures/orphan_034.md",
+        "render/figures/orphan_035.md",
+        "render/figures/orphan_036.md",
+        "render/figures/orphan_037.md",
+        "render/figures/orphan_038.md",
+        "render/figures/orphan_039.md",
+        "render/figures/orphan_040.md",
+        "render/figures/orphan_041.md",
+        "render/figures/orphan_042.md",
+        "render/figures/orphan_043.md",
+        "render/figures/orphan_044.md",
+        "render/figures/orphan_045.md",
+        "render/figures/orphan_046.md",
+        "render/figures/orphan_047.md",
+        "render/figures/orphan_048.md",
+        "render/figures/orphan_049.md",
+        "render/figures/orphan_050.md",
+        "render/figures/unresolved_cluster_001.md.edtz",
+        "render/figures/unresolved_cluster_002.md.edtz",
+        "render/figures/unresolved_cluster_003.md.edtz"
+      ],
+      "embed_targets": [
+        "render/figures/figure_001.md",
+        "render/figures/figure_003.md",
+        "render/figures/figure_005.md",
+        "render/figures/figure_006.md",
+        "render/figures/figure_008.md",
+        "render/figures/figure_reserved_007.md",
+        "render/figures/figure_reserved_008.md"
+      ]
+    }
+  }
+}

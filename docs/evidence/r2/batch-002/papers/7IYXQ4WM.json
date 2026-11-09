@@ -1,0 +1,95 @@
+{
+  "key": "7IYXQ4WM",
+  "status": "failed",
+  "rebuild": {
+    "key": "7IYXQ4WM",
+    "status": "ok"
+  },
+  "validation": {
+    "ok": false,
+    "errors": [
+      "historical_object_missing:render/figures/orphan_006.md.edtz",
+      "historical_object_missing:render/figures/orphan_003.md.edtz",
+      "historical_object_missing:render/figures/figure_001.md.edtz",
+      "historical_object_missing:render/figures/orphan_001.md.edtz",
+      "historical_object_missing:render/figures/figure_005.md.edtz",
+      "historical_object_missing:render/figures/orphan_005.md.edtz",
+      "historical_object_missing:render/figures/orphan_004.md.edtz",
+      "historical_object_missing:render/figures/figure_002.md.edtz",
+      "historical_object_missing:render/figures/figure_003.md.edtz",
+      "historical_object_missing:render/figures/orphan_002.md.edtz",
+      "historical_object_missing:render/figures/figure_004.md.edtz",
+      "plan_mismatch:unplanned_figure:figure_001",
+      "plan_mismatch:asset_claim_mismatch:figure_003",
+      "plan_mismatch:planned_file_missing:figure_002",
+      "plan_mismatch:unplanned_embed:figure_001"
+    ],
+    "plan_mismatches": [
+      {
+        "object": "figure_001",
+        "reason": "unplanned_figure"
+      },
+      {
+        "object": "figure_003",
+        "reason": "asset_claim_mismatch",
+        "expected": [
+          "2",
+          "3",
+          "5"
+        ],
+        "actual": [
+          "3",
+          "5"
+        ]
+      },
+      {
+        "object": "figure_002",
+        "reason": "planned_file_missing",
+        "path": "assets/figures/figure_002.jpg"
+      },
+      {
+        "object": "figure_001",
+        "reason": "unplanned_embed",
+        "target": "render/figures/figure_001.md"
+      }
+    ],
+    "historical_baseline": {
+      "fulltext_chars": 15368,
+      "structured_rows": 84,
+      "structured_chars": 17873,
+      "structured_parse_errors": [],
+      "asset_files": [
+        "assets/figures/figure_003.jpg",
+        "assets/figures/figure_004.jpg",
+        "assets/figures/figure_005.jpg",
+        "assets/orphans/orphan_001.jpg",
+        "assets/orphans/orphan_002.jpg"
+      ],
+      "render_files": [
+        "render/figures/figure_001.md.edtz",
+        "render/figures/figure_002.md.edtz",
+        "render/figures/figure_003.md",
+        "render/figures/figure_003.md.edtz",
+        "render/figures/figure_004.md",
+        "render/figures/figure_004.md.edtz",
+        "render/figures/figure_005.md",
+        "render/figures/figure_005.md.edtz",
+        "render/figures/figure_reserved_004.md",
+        "render/figures/orphan_001.md",
+        "render/figures/orphan_001.md.edtz",
+        "render/figures/orphan_002.md",
+        "render/figures/orphan_002.md.edtz",
+        "render/figures/orphan_003.md.edtz",
+        "render/figures/orphan_004.md.edtz",
+        "render/figures/orphan_005.md.edtz",
+        "render/figures/orphan_006.md.edtz"
+      ],
+      "embed_targets": [
+        "render/figures/figure_003.md",
+        "render/figures/figure_004.md",
+        "render/figures/figure_005.md",
+        "render/figures/figure_reserved_004.md"
+      ]
+    }
+  }
+}
