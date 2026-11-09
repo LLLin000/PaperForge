@@ -1,0 +1,571 @@
+{
+ "dry_run": {
+  "key": "7M6FIW4V",
+  "identity": {
+   "old": {
+    "entries": 9,
+    "unique_ids": 7,
+    "duplicate_extra": 2
+   },
+   "new": {
+    "entries": 7,
+    "unique_ids": 7,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_003": "figure_003",
+    "figure_005": "figure_005",
+    "figure_006": "figure_006",
+    "figure_008": "figure_008",
+    "figure_reserved_007": "figure_004",
+    "figure_reserved_008": "figure_007"
+   },
+   "renamed": [
+    [
+     "figure_reserved_007",
+     "figure_004"
+    ],
+    [
+     "figure_reserved_008",
+     "figure_007"
+    ]
+   ],
+   "unmapped_old_ids": [],
+   "claims_changed": [
+    {
+     "old_id": "figure_001",
+     "old_assets": [
+      "5"
+     ],
+     "new_id": "figure_001",
+     "new_assets": [
+      "2",
+      "3",
+      "5",
+      "7"
+     ]
+    }
+   ]
+  },
+  "delivery": {
+   "old_render_files": 57,
+   "new_render_files": 114,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/figures/figure_005.jpg",
+    "assets/figures/figure_006.jpg",
+    "assets/figures/figure_007.jpg",
+    "assets/figures/figure_008.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/orphans/orphan_013.jpg",
+    "assets/orphans/orphan_014.jpg",
+    "assets/orphans/orphan_015.jpg",
+    "assets/orphans/orphan_016.jpg",
+    "assets/orphans/orphan_017.jpg",
+    "assets/orphans/orphan_018.jpg",
+    "assets/orphans/orphan_019.jpg",
+    "assets/orphans/orphan_020.jpg",
+    "assets/orphans/orphan_021.jpg",
+    "assets/orphans/orphan_022.jpg",
+    "assets/orphans/orphan_023.jpg",
+    "assets/orphans/orphan_024.jpg",
+    "assets/orphans/orphan_025.jpg",
+    "assets/orphans/orphan_026.jpg",
+    "assets/orphans/orphan_027.jpg",
+    "assets/orphans/orphan_028.jpg",
+    "assets/orphans/orphan_029.jpg",
+    "assets/orphans/orphan_030.jpg",
+    "assets/orphans/orphan_031.jpg",
+    "assets/orphans/orphan_032.jpg",
+    "assets/orphans/orphan_033.jpg",
+    "assets/orphans/orphan_034.jpg",
+    "assets/orphans/orphan_035.jpg",
+    "assets/orphans/orphan_036.jpg",
+    "assets/orphans/orphan_037.jpg",
+    "assets/orphans/orphan_038.jpg",
+    "assets/orphans/orphan_039.jpg",
+    "assets/orphans/orphan_040.jpg",
+    "assets/orphans/orphan_041.jpg",
+    "assets/orphans/orphan_042.jpg",
+    "assets/orphans/orphan_043.jpg",
+    "assets/orphans/orphan_044.jpg",
+    "assets/orphans/orphan_045.jpg",
+    "assets/orphans/orphan_046.jpg",
+    "assets/orphans/orphan_047.jpg",
+    "assets/orphans/orphan_048.jpg",
+    "assets/orphans/orphan_049.jpg",
+    "assets/orphans/orphan_050.jpg",
+    "render/figures/figure_004.md",
+    "render/figures/figure_007.md"
+   ],
+   "render_removed": [
+    "render/figures/figure_reserved_007.md",
+    "render/figures/figure_reserved_008.md"
+   ],
+   "embeds": 7,
+   "embeds_retargeted": 2,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 0,
+   "new_tables": 0,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 331,
+   "new_rows": 331,
+   "role_removed": {
+    "unknown_structural": 1,
+    "frontmatter_noise": 1,
+    "figure_caption_candidate": 1,
+    "figure_inner_text": 2,
+    "reference_item": 1
+   },
+   "role_added": {
+    "section_heading": 1,
+    "subsection_heading": 2,
+    "figure_caption": 3
+   },
+   "old_body_chars": 45527,
+   "new_body_chars": 45527,
+   "old_text_chars": 81770,
+   "new_text_chars": 81770,
+   "old_fulltext_chars": 62844
+  },
+  "new_manifest": {
+   "figures": 7,
+   "tables": 0,
+   "orphans": 50
+  },
+  "new_orphans": 11
+ },
+ "structural": {
+  "key": "7M6FIW4V",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 81770,
+  "new_text_chars": 81770,
+  "old_entries": 9,
+  "new_entries": 7,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 7,
+     "block_id": 3,
+     "text": "Fig. 2. The performance of the top 30 reranking drugs in four drug prediction pipelines. Reranking score refers to the CoDReS aggregate score."
+    },
+    {
+     "page": 13,
+     "block_id": 3,
+     "text": "A, MR results for the relationship between potential drug targets and RCT. B, A sensitivity analysis was conducted to explore the potential influence of a specific SNP on the relationship between mTORC1-dependent circulating protein levels and RCT. C, Scatter graphs comparing the genetic association"
+    },
+    {
+     "page": 16,
+     "block_id": 2,
+     "text": "Fig. 9. mTOR-TKO mice exhibited enhanced resistance to tendinopathy."
+    },
+    {
+     "page": 16,
+     "block_id": 3,
+     "text": "A, Enrichment results for the differential genes between mTOR-TKO mice and WT mice. B, The enrichment map displays the pathways that are more abundant in tendinopathy patients compared to healthy control individuals, as well as in wild-type mice compared to mTOR-TKO mice. The nodes in the network sy"
+    }
+   ],
+   "assets": [
+    {
+     "page": 12,
+     "bbox": [
+      161,
+      150,
+      1028,
+      346
+     ]
+    },
+    {
+     "page": 12,
+     "bbox": [
+      161,
+      374,
+      1027,
+      569
+     ]
+    },
+    {
+     "page": 12,
+     "bbox": [
+      179,
+      613,
+      621,
+      1417
+     ]
+    },
+    {
+     "page": 12,
+     "bbox": [
+      655,
+      609,
+      1014,
+      1056
+     ]
+    },
+    {
+     "page": 12,
+     "bbox": [
+      655,
+      1091,
+      1015,
+      1417
+     ]
+    },
+    {
+     "page": 15,
+     "bbox": [
+      167,
+      117,
+      1020,
+      834
+     ]
+    },
+    {
+     "page": 15,
+     "bbox": [
+      172,
+      853,
+      511,
+      1127
+     ]
+    },
+    {
+     "page": 15,
+     "bbox": [
+      175,
+      852,
+      1013,
+      1128
+     ]
+    },
+    {
+     "page": 15,
+     "bbox": [
+      528,
+      852,
+      1014,
+      1124
+     ]
+    },
+    {
+     "page": 15,
+     "bbox": [
+      175,
+      1147,
+      568,
+      1385
+     ]
+    },
+    {
+     "page": 15,
+     "bbox": [
+      658,
+      1170,
+      997,
+      1424
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 11,
+     "text": "(continued)"
+    },
+    {
+     "page": 6,
+     "block_id": 8,
+     "text": "Fig. 1. Study design of multiplex transcriptional drug prediction and drug reranking."
+    },
+    {
+     "page": 7,
+     "block_id": 3,
+     "text": "Fig. 2. The performance of the top 30 reranking drugs in four drug prediction pipelines. Reranking score refers to the CoDReS aggregate score."
+    },
+    {
+     "page": 8,
+     "block_id": 3,
+     "text": "Fig. 3. Systematic review and evidence level assessment of candidate drug."
+    },
+    {
+     "page": 9,
+     "block_id": 4,
+     "text": "Fig. 4. Summary of candidate drugs with existing research evidence."
+    },
+    {
+     "page": 10,
+     "block_id": 6,
+     "text": "Fig. 5. Prediction of candidate drug efficacy with deep learning."
+    },
+    {
+     "page": 11,
+     "block_id": 4,
+     "text": "Drug target"
+    },
+    {
+     "page": 11,
+     "block_id": 6,
+     "text": "Fig. 6. Study design of MR based drug target evaluation."
+    },
+    {
+     "page": 13,
+     "block_id": 2,
+     "text": "Fig. 7. Genetic association of potential drug targets with RCT."
+    },
+    {
+     "page": 13,
+     "block_id": 3,
+     "text": "A, MR results for the relationship between potential drug targets and RCT. B, A sensitivity analysis was conducted to explore the potential influence of a specific SNP on the relationship between mTORC1-dependent circulating protein levels and RCT. C, Scatter graphs comparing the genetic association"
+    },
+    {
+     "page": 14,
+     "block_id": 5,
+     "text": "1 Before treatment"
+    },
+    {
+     "page": 14,
+     "block_id": 10,
+     "text": "4 Before sacrifice"
+    },
+    {
+     "page": 14,
+     "block_id": 23,
+     "text": "Fig. 8. In vivo assessment of sirolimus in a tendinopathy rat model. A, Overview of the In vivo study design. The rats were divided into 2 groups, receiving either sirolimus or PBS injection. B, Running distance of each group during the run-to-exhaustion test. C and D, HE staining and histological s"
+    },
+    {
+     "page": 16,
+     "block_id": 2,
+     "text": "Fig. 9. mTOR-TKO mice exhibited enhanced resistance to tendinopathy."
+    },
+    {
+     "page": 16,
+     "block_id": 3,
+     "text": "A, Enrichment results for the differential genes between mTOR-TKO mice and WT mice. B, The enrichment map displays the pathways that are more abundant in tendinopathy patients compared to healthy control individuals, as well as in wild-type mice compared to mTOR-TKO mice. The nodes in the network sy"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [
+   {
+    "page": 7,
+    "block_id": 3,
+    "text": "Fig. 2. The performance of the top 30 reranking drugs in four drug prediction pipelines. Reranking score refers to the CoDReS aggregate score."
+   },
+   {
+    "page": 13,
+    "block_id": 3,
+    "text": "A, MR results for the relationship between potential drug targets and RCT. B, A sensitivity analysis was conducted to explore the potential influence of a specific SNP on the relationship between mTORC1-dependent circulating protein levels and RCT. C, Scatter graphs comparing the genetic association"
+   },
+   {
+    "page": 16,
+    "block_id": 2,
+    "text": "Fig. 9. mTOR-TKO mice exhibited enhanced resistance to tendinopathy."
+   },
+   {
+    "page": 16,
+    "block_id": 3,
+    "text": "A, Enrichment results for the differential genes between mTOR-TKO mice and WT mice. B, The enrichment map displays the pathways that are more abundant in tendinopathy patients compared to healthy control individuals, as well as in wild-type mice compared to mTOR-TKO mice. The nodes in the network sy"
+   }
+  ],
+  "assets": [
+   {
+    "page": 12,
+    "bbox": [
+     161,
+     150,
+     1028,
+     346
+    ]
+   },
+   {
+    "page": 12,
+    "bbox": [
+     161,
+     374,
+     1027,
+     569
+    ]
+   },
+   {
+    "page": 12,
+    "bbox": [
+     179,
+     613,
+     621,
+     1417
+    ]
+   },
+   {
+    "page": 12,
+    "bbox": [
+     655,
+     609,
+     1014,
+     1056
+    ]
+   },
+   {
+    "page": 12,
+    "bbox": [
+     655,
+     1091,
+     1015,
+     1417
+    ]
+   },
+   {
+    "page": 15,
+    "bbox": [
+     167,
+     117,
+     1020,
+     834
+    ]
+   },
+   {
+    "page": 15,
+    "bbox": [
+     172,
+     853,
+     511,
+     1127
+    ]
+   },
+   {
+    "page": 15,
+    "bbox": [
+     175,
+     852,
+     1013,
+     1128
+    ]
+   },
+   {
+    "page": 15,
+    "bbox": [
+     528,
+     852,
+     1014,
+     1124
+    ]
+   },
+   {
+    "page": 15,
+    "bbox": [
+     175,
+     1147,
+     568,
+     1385
+    ]
+   },
+   {
+    "page": 15,
+    "bbox": [
+     658,
+     1170,
+     997,
+     1424
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 11,
+    "text": "(continued)"
+   },
+   {
+    "page": 6,
+    "block_id": 8,
+    "text": "Fig. 1. Study design of multiplex transcriptional drug prediction and drug reranking."
+   },
+   {
+    "page": 7,
+    "block_id": 3,
+    "text": "Fig. 2. The performance of the top 30 reranking drugs in four drug prediction pipelines. Reranking score refers to the CoDReS aggregate score."
+   },
+   {
+    "page": 8,
+    "block_id": 3,
+    "text": "Fig. 3. Systematic review and evidence level assessment of candidate drug."
+   },
+   {
+    "page": 9,
+    "block_id": 4,
+    "text": "Fig. 4. Summary of candidate drugs with existing research evidence."
+   },
+   {
+    "page": 10,
+    "block_id": 6,
+    "text": "Fig. 5. Prediction of candidate drug efficacy with deep learning."
+   },
+   {
+    "page": 11,
+    "block_id": 4,
+    "text": "Drug target"
+   },
+   {
+    "page": 11,
+    "block_id": 6,
+    "text": "Fig. 6. Study design of MR based drug target evaluation."
+   },
+   {
+    "page": 13,
+    "block_id": 2,
+    "text": "Fig. 7. Genetic association of potential drug targets with RCT."
+   },
+   {
+    "page": 13,
+    "block_id": 3,
+    "text": "A, MR results for the relationship between potential drug targets and RCT. B, A sensitivity analysis was conducted to explore the potential influence of a specific SNP on the relationship between mTORC1-dependent circulating protein levels and RCT. C, Scatter graphs comparing the genetic association"
+   },
+   {
+    "page": 14,
+    "block_id": 5,
+    "text": "1 Before treatment"
+   },
+   {
+    "page": 14,
+    "block_id": 10,
+    "text": "4 Before sacrifice"
+   },
+   {
+    "page": 14,
+    "block_id": 23,
+    "text": "Fig. 8. In vivo assessment of sirolimus in a tendinopathy rat model. A, Overview of the In vivo study design. The rats were divided into 2 groups, receiving either sirolimus or PBS injection. B, Running distance of each group during the run-to-exhaustion test. C and D, HE staining and histological s"
+   },
+   {
+    "page": 16,
+    "block_id": 2,
+    "text": "Fig. 9. mTOR-TKO mice exhibited enhanced resistance to tendinopathy."
+   },
+   {
+    "page": 16,
+    "block_id": 3,
+    "text": "A, Enrichment results for the differential genes between mTOR-TKO mice and WT mice. B, The enrichment map displays the pathways that are more abundant in tendinopathy patients compared to healthy control individuals, as well as in wild-type mice compared to mTOR-TKO mice. The nodes in the network sy"
+   }
+  ]
+ }
+}

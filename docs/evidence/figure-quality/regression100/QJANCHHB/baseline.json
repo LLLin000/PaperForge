@@ -1,0 +1,222 @@
+{
+ "dry_run": {
+  "key": "QJANCHHB",
+  "identity": {
+   "old": {
+    "entries": 6,
+    "unique_ids": 6,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 6,
+    "unique_ids": 6,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005",
+    "figure_006": "figure_006"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 19,
+   "new_render_files": 38,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/figures/figure_005.jpg",
+    "assets/figures/figure_006.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/tables/table_001.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 7,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 1,
+   "new_tables": 1,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 192,
+   "new_rows": 192,
+   "role_removed": {},
+   "role_added": {},
+   "old_body_chars": 31574,
+   "new_body_chars": 31574,
+   "old_text_chars": 47913,
+   "new_text_chars": 47913,
+   "old_fulltext_chars": 42755
+  },
+  "new_manifest": {
+   "figures": 6,
+   "tables": 1,
+   "orphans": 12
+  },
+  "new_orphans": 2
+ },
+ "structural": {
+  "key": "QJANCHHB",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 47913,
+  "new_text_chars": 47913,
+  "old_entries": 6,
+  "new_entries": 6,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 5,
+     "block_id": 4,
+     "text": "Sensitivity and Specificity of a Variety of Physical Examination Maneuvers for Acromioclavicular Degenerative Joint Disease $ ^{a} $"
+    }
+   ],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      563,
+      697,
+      621,
+      742
+     ]
+    },
+    {
+     "page": 2,
+     "bbox": [
+      1000,
+      146,
+      1099,
+      199
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 4,
+     "text": "Figure 1. Illustration of the acromioclavicular articulation, acromioclavicular ligaments, and coracoclavicular ligaments. (From Beitzel K, Obopilwe E, Chowaniec DM, et al. Biomechanical comparison of arthroscopic joint instability: suture button systems without biological augmentation. Am J Sports "
+    },
+    {
+     "page": 3,
+     "block_id": 9,
+     "text": "Figure 2. Illustration of the innervation of the acromioclavicular articulation. (Reprinted from the article “Injuries to the Acromioclavicular Joint” by DeLee, Drez, and Miller in the book Delee & Drez’s Orthopaedic Sports Medicine: Principles and Practice, p. 916, Copyright 2003, with permission f"
+    },
+    {
+     "page": 5,
+     "block_id": 4,
+     "text": "Sensitivity and Specificity of a Variety of Physical Examination Maneuvers for Acromioclavicular Degenerative Joint Disease $ ^{a} $"
+    },
+    {
+     "page": 5,
+     "block_id": 11,
+     "text": "Figure 3. Clinical photographs of the physical examination maneuvers used in the diagnosis of acromioclavicular degenerative joint disease. (A) Cross-body adduction stress test. (B) AC resisted extension test. (C) The O'Brien active compression test. (D) This maneuver is repeated with the arm in max"
+    },
+    {
+     "page": 6,
+     "block_id": 4,
+     "text": "Figure 4. (A) Magnetic resonance T2-weighted fat-suppressed image demonstrating end-stage degenerative joint disease of the acromioclavicular joint with osseous edema of the distal clavicle, a small joint effusion, osteophyte formation, diminishment of the joint space, and no appreciable cartilage o"
+    },
+    {
+     "page": 6,
+     "block_id": 11,
+     "text": "Figure 5. Sonographic image of a right acromioclavicular joint. The acromion can be seen on the left and the clavicle on the right. The joint can be injected under sonographic guidance using this view."
+    },
+    {
+     "page": 7,
+     "block_id": 8,
+     "text": "Figure 6. Clinical photograph of a patient in the beach chair position with the palpable landmarks and location for arthroscopic portals (labeled anterior, lateral, and posterior) outlined with a skin marker. The incision for open distal clavicle excision is marked with a dashed black line."
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [
+   {
+    "page": 5,
+    "block_id": 4,
+    "text": "Sensitivity and Specificity of a Variety of Physical Examination Maneuvers for Acromioclavicular Degenerative Joint Disease $ ^{a} $"
+   }
+  ],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     563,
+     697,
+     621,
+     742
+    ]
+   },
+   {
+    "page": 2,
+    "bbox": [
+     1000,
+     146,
+     1099,
+     199
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 3,
+    "block_id": 4,
+    "text": "Figure 1. Illustration of the acromioclavicular articulation, acromioclavicular ligaments, and coracoclavicular ligaments. (From Beitzel K, Obopilwe E, Chowaniec DM, et al. Biomechanical comparison of arthroscopic joint instability: suture button systems without biological augmentation. Am J Sports "
+   },
+   {
+    "page": 3,
+    "block_id": 9,
+    "text": "Figure 2. Illustration of the innervation of the acromioclavicular articulation. (Reprinted from the article “Injuries to the Acromioclavicular Joint” by DeLee, Drez, and Miller in the book Delee & Drez’s Orthopaedic Sports Medicine: Principles and Practice, p. 916, Copyright 2003, with permission f"
+   },
+   {
+    "page": 5,
+    "block_id": 4,
+    "text": "Sensitivity and Specificity of a Variety of Physical Examination Maneuvers for Acromioclavicular Degenerative Joint Disease $ ^{a} $"
+   },
+   {
+    "page": 5,
+    "block_id": 11,
+    "text": "Figure 3. Clinical photographs of the physical examination maneuvers used in the diagnosis of acromioclavicular degenerative joint disease. (A) Cross-body adduction stress test. (B) AC resisted extension test. (C) The O'Brien active compression test. (D) This maneuver is repeated with the arm in max"
+   },
+   {
+    "page": 6,
+    "block_id": 4,
+    "text": "Figure 4. (A) Magnetic resonance T2-weighted fat-suppressed image demonstrating end-stage degenerative joint disease of the acromioclavicular joint with osseous edema of the distal clavicle, a small joint effusion, osteophyte formation, diminishment of the joint space, and no appreciable cartilage o"
+   },
+   {
+    "page": 6,
+    "block_id": 11,
+    "text": "Figure 5. Sonographic image of a right acromioclavicular joint. The acromion can be seen on the left and the clavicle on the right. The joint can be injected under sonographic guidance using this view."
+   },
+   {
+    "page": 7,
+    "block_id": 8,
+    "text": "Figure 6. Clinical photograph of a patient in the beach chair position with the palpable landmarks and location for arthroscopic portals (labeled anterior, lateral, and posterior) outlined with a skin marker. The incision for open distal clavicle excision is marked with a dashed black line."
+   }
+  ]
+ }
+}

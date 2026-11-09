@@ -1,0 +1,399 @@
+{
+ "dry_run": {
+  "key": "YGH7VEX6",
+  "identity": {
+   "old": {
+    "entries": 12,
+    "unique_ids": 11,
+    "duplicate_extra": 1
+   },
+   "new": {
+    "entries": 12,
+    "unique_ids": 12,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005",
+    "figure_006": "figure_006",
+    "figure_008": "figure_008",
+    "figure_010": "figure_010",
+    "figure_011": "figure_011",
+    "figure_012": "figure_012",
+    "figure_014": "figure_014_p007_b14",
+    "figure_reserved_011": "figure_007"
+   },
+   "renamed": [
+    [
+     "figure_014",
+     "figure_014_p007_b14"
+    ],
+    [
+     "figure_reserved_011",
+     "figure_007"
+    ]
+   ],
+   "unmapped_old_ids": [],
+   "claims_changed": [
+    {
+     "old_id": "figure_008",
+     "old_assets": [
+      "11",
+      "12",
+      "13",
+      "6"
+     ],
+     "new_id": "figure_008",
+     "new_assets": [
+      "11",
+      "12",
+      "13"
+     ]
+    },
+    {
+     "old_id": "figure_014",
+     "old_assets": [
+      "12",
+      "13",
+      "8"
+     ],
+     "new_id": "figure_014_p007_b14",
+     "new_assets": [
+      "12",
+      "8"
+     ]
+    },
+    {
+     "old_id": "figure_reserved_011",
+     "old_assets": [],
+     "new_id": "figure_007",
+     "new_assets": [
+      "6"
+     ]
+    }
+   ]
+  },
+  "delivery": {
+   "old_render_files": 36,
+   "new_render_files": 74,
+   "render_added": [
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/figures/figure_005.jpg",
+    "assets/figures/figure_006.jpg",
+    "assets/figures/figure_007.jpg",
+    "assets/figures/figure_008.jpg",
+    "assets/figures/figure_010.jpg",
+    "assets/figures/figure_011.jpg",
+    "assets/figures/figure_012.jpg",
+    "assets/figures/figure_014.jpg",
+    "assets/figures/figure_014_p007_b14.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/orphans/orphan_013.jpg",
+    "assets/orphans/orphan_014.jpg",
+    "assets/orphans/orphan_015.jpg",
+    "assets/orphans/orphan_016.jpg",
+    "assets/orphans/orphan_017.jpg",
+    "assets/orphans/orphan_018.jpg",
+    "assets/orphans/orphan_019.jpg",
+    "assets/orphans/orphan_020.jpg",
+    "assets/orphans/orphan_021.jpg",
+    "assets/orphans/orphan_022.jpg",
+    "assets/orphans/orphan_023.jpg",
+    "assets/tables/table_001.jpg",
+    "assets/tables/table_002.jpg",
+    "render/figures/figure_007.md",
+    "render/figures/figure_014_p007_b14.md"
+   ],
+   "render_removed": [
+    "render/figures/figure_reserved_011.md"
+   ],
+   "embeds": 12,
+   "embeds_retargeted": 2,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 2,
+   "new_tables": 2,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 189,
+   "new_rows": 189,
+   "role_removed": {
+    "figure_asset": 1,
+    "figure_caption": 1,
+    "unknown_structural": 1,
+    "figure_inner_text": 2,
+    "reference_item": 1
+   },
+   "role_added": {
+    "noise": 1,
+    "paper_title": 1,
+    "media_asset": 1,
+    "body_paragraph": 2,
+    "figure_caption_candidate": 1
+   },
+   "old_body_chars": 16604,
+   "new_body_chars": 18581,
+   "old_text_chars": 31354,
+   "new_text_chars": 31354,
+   "old_fulltext_chars": 25183
+  },
+  "new_manifest": {
+   "figures": 12,
+   "tables": 2,
+   "orphans": 23
+  },
+  "new_orphans": 1
+ },
+ "structural": {
+  "key": "YGH7VEX6",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 31354,
+  "new_text_chars": 31354,
+  "old_entries": 12,
+  "new_entries": 12,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 2,
+     "block_id": 5,
+     "text": "Figure 1. The chemical structure of the self-oscillating gel without RGO."
+    },
+    {
+     "page": 6,
+     "block_id": 2,
+     "text": "Figure 9. The TEM micrographs of the prepared G4 gel."
+    },
+    {
+     "page": 6,
+     "block_id": 7,
+     "text": "Figure 11 shows the mechanical properties of the prepared gel. It can be seen that the rupture stress of the G2 sample reaches 4.1 MPa from Figure 11(a). Figure 11(b) shows the swollen gel and it is in good condition by compressed with different weights as in (c) and (d). Moreover, the gel also can "
+    },
+    {
+     "page": 7,
+     "block_id": 9,
+     "text": "Figure 13. The equilibrium swelling ratio of prepared gels in  $ \\mathrm{Ce(SO_{4})_{2}} $ and  $ \\mathrm{Ce_{2}(SO_{4})_{3}} $ solutions."
+    }
+   ],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      718,
+      500,
+      1105,
+      719
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 5,
+     "text": "Figure 1. The chemical structure of the self-oscillating gel without RGO."
+    },
+    {
+     "page": 2,
+     "block_id": 15,
+     "text": "Figure 2. The fabrication process of reduced graphene oxide."
+    },
+    {
+     "page": 3,
+     "block_id": 2,
+     "text": "Figure 3. Fabrication procedure of poly(AM-co-AA-co-Fe(phen) $ _{3} $)/RGO gels."
+    },
+    {
+     "page": 4,
+     "block_id": 11,
+     "text": "Figure 4. The FT-IR spectra of GO and RGO."
+    },
+    {
+     "page": 4,
+     "block_id": 13,
+     "text": "Figure 5. The FT-IR spectra of the gels."
+    },
+    {
+     "page": 5,
+     "block_id": 2,
+     "text": "Figure 6. The XPS spectra of the G4 gel."
+    },
+    {
+     "page": 5,
+     "block_id": 7,
+     "text": "Figure 7. The Raman spectra of the gels with different content of RGO and RGO."
+    },
+    {
+     "page": 5,
+     "block_id": 14,
+     "text": "Figure 8. The SEM images of the prepared gels."
+    },
+    {
+     "page": 6,
+     "block_id": 2,
+     "text": "Figure 9. The TEM micrographs of the prepared G4 gel."
+    },
+    {
+     "page": 6,
+     "block_id": 4,
+     "text": "Figure 10. The optical micrographs (OM) images of the gels."
+    },
+    {
+     "page": 6,
+     "block_id": 13,
+     "text": "Figure 11. Compressive stress-strain (a), the images of the original (b), compressed with different weights (c) and (d), stretched (e), twisted (f) and knotted (g) for the prepared G4 gel at 20 °C."
+    },
+    {
+     "page": 7,
+     "block_id": 5,
+     "text": "Figure 12. The electrical conductivity of the gels with different RGO content (a) and images of G4 gel for conductivity (b) and (c)."
+    },
+    {
+     "page": 7,
+     "block_id": 9,
+     "text": "Figure 13. The equilibrium swelling ratio of prepared gels in  $ \\mathrm{Ce(SO_{4})_{2}} $ and  $ \\mathrm{Ce_{2}(SO_{4})_{3}} $ solutions."
+    },
+    {
+     "page": 7,
+     "block_id": 11,
+     "text": "Figure 14 exhibits the redox potential diagram of the gel sample placed in the BZ solution free of catalyst at room temperature. When MA is used as the organic substrate of the BZ system, the BZ solution diffuses into the gel, and the chemical oscillation reaction to occur inside the gel. The Fe(phe"
+    },
+    {
+     "page": 7,
+     "block_id": 14,
+     "text": "Figure 14. The redox potential oscillation of the gel in the BZ solution at 25 °C ((a) G3 without RGO; (b) G3 gel). Composition of the BZ solution: 0.10 mol·L⁻¹ MA, 0.30 mol·L⁻¹ KBrO₃, and 0.35 mol·L⁻¹ H₂SO₄."
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [
+   {
+    "page": 2,
+    "block_id": 5,
+    "text": "Figure 1. The chemical structure of the self-oscillating gel without RGO."
+   },
+   {
+    "page": 6,
+    "block_id": 2,
+    "text": "Figure 9. The TEM micrographs of the prepared G4 gel."
+   },
+   {
+    "page": 6,
+    "block_id": 7,
+    "text": "Figure 11 shows the mechanical properties of the prepared gel. It can be seen that the rupture stress of the G2 sample reaches 4.1 MPa from Figure 11(a). Figure 11(b) shows the swollen gel and it is in good condition by compressed with different weights as in (c) and (d). Moreover, the gel also can "
+   },
+   {
+    "page": 7,
+    "block_id": 9,
+    "text": "Figure 13. The equilibrium swelling ratio of prepared gels in  $ \\mathrm{Ce(SO_{4})_{2}} $ and  $ \\mathrm{Ce_{2}(SO_{4})_{3}} $ solutions."
+   }
+  ],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     718,
+     500,
+     1105,
+     719
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 5,
+    "text": "Figure 1. The chemical structure of the self-oscillating gel without RGO."
+   },
+   {
+    "page": 2,
+    "block_id": 15,
+    "text": "Figure 2. The fabrication process of reduced graphene oxide."
+   },
+   {
+    "page": 3,
+    "block_id": 2,
+    "text": "Figure 3. Fabrication procedure of poly(AM-co-AA-co-Fe(phen) $ _{3} $)/RGO gels."
+   },
+   {
+    "page": 4,
+    "block_id": 11,
+    "text": "Figure 4. The FT-IR spectra of GO and RGO."
+   },
+   {
+    "page": 4,
+    "block_id": 13,
+    "text": "Figure 5. The FT-IR spectra of the gels."
+   },
+   {
+    "page": 5,
+    "block_id": 2,
+    "text": "Figure 6. The XPS spectra of the G4 gel."
+   },
+   {
+    "page": 5,
+    "block_id": 7,
+    "text": "Figure 7. The Raman spectra of the gels with different content of RGO and RGO."
+   },
+   {
+    "page": 5,
+    "block_id": 14,
+    "text": "Figure 8. The SEM images of the prepared gels."
+   },
+   {
+    "page": 6,
+    "block_id": 2,
+    "text": "Figure 9. The TEM micrographs of the prepared G4 gel."
+   },
+   {
+    "page": 6,
+    "block_id": 4,
+    "text": "Figure 10. The optical micrographs (OM) images of the gels."
+   },
+   {
+    "page": 6,
+    "block_id": 13,
+    "text": "Figure 11. Compressive stress-strain (a), the images of the original (b), compressed with different weights (c) and (d), stretched (e), twisted (f) and knotted (g) for the prepared G4 gel at 20 °C."
+   },
+   {
+    "page": 7,
+    "block_id": 5,
+    "text": "Figure 12. The electrical conductivity of the gels with different RGO content (a) and images of G4 gel for conductivity (b) and (c)."
+   },
+   {
+    "page": 7,
+    "block_id": 9,
+    "text": "Figure 13. The equilibrium swelling ratio of prepared gels in  $ \\mathrm{Ce(SO_{4})_{2}} $ and  $ \\mathrm{Ce_{2}(SO_{4})_{3}} $ solutions."
+   },
+   {
+    "page": 7,
+    "block_id": 11,
+    "text": "Figure 14 exhibits the redox potential diagram of the gel sample placed in the BZ solution free of catalyst at room temperature. When MA is used as the organic substrate of the BZ system, the BZ solution diffuses into the gel, and the chemical oscillation reaction to occur inside the gel. The Fe(phe"
+   },
+   {
+    "page": 7,
+    "block_id": 14,
+    "text": "Figure 14. The redox potential oscillation of the gel in the BZ solution at 25 °C ((a) G3 without RGO; (b) G3 gel). Composition of the BZ solution: 0.10 mol·L⁻¹ MA, 0.30 mol·L⁻¹ KBrO₃, and 0.35 mol·L⁻¹ H₂SO₄."
+   }
+  ]
+ }
+}

@@ -1,0 +1,171 @@
+{
+ "dry_run": {
+  "key": "DZ5BH43F",
+  "identity": {
+   "old": {
+    "entries": 3,
+    "unique_ids": 3,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 3,
+    "unique_ids": 3,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 13,
+   "new_render_files": 26,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 3,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 0,
+   "new_tables": 0,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 136,
+   "new_rows": 136,
+   "role_removed": {
+    "frontmatter_noise": 1,
+    "figure_caption_candidate": 2
+   },
+   "role_added": {
+    "body_paragraph": 1,
+    "figure_caption": 2
+   },
+   "old_body_chars": 20105,
+   "new_body_chars": 20177,
+   "old_text_chars": 43060,
+   "new_text_chars": 43060,
+   "old_fulltext_chars": 28485
+  },
+  "new_manifest": {
+   "figures": 3,
+   "tables": 0,
+   "orphans": 10
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "DZ5BH43F",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 43060,
+  "new_text_chars": 43060,
+  "old_entries": 3,
+  "new_entries": 3,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 5,
+     "block_id": 1,
+     "text": "Kim et al. Importance of Anteroposterior Coverage of the Acromion Clinics in Orthopedic Surgery • Vol. 14, No. 4, 2022 • www.ecios.org"
+    },
+    {
+     "page": 7,
+     "block_id": 1,
+     "text": "Kim et al. Importance of Anteroposterior Coverage of the Acromion Clinics in Orthopedic Surgery • Vol. 14, No. 4, 2022 • www.ecios.org"
+    }
+   ],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 4,
+     "text": "Fig. 1. Lateral coverage of the acromion. (A) The critical shoulder angle was measured as the angle between the line connecting the upper and lower margins of the glenoid fossa and the line drawn from the lower margin of the glenoid to the most inferolateral point of the acromion. (B) The lateral ac"
+    },
+    {
+     "page": 3,
+     "block_id": 8,
+     "text": "Fig. 2. Anteroposterior coverage of the acromion. (A) The acromial tilt was measured as the angle between the line connecting the posteriorinferior and anteroinferior points of the acromion and the line connecting the posteriorinferior point of the acromion and the coracoid inferior border. (B) The "
+    },
+    {
+     "page": 4,
+     "block_id": 3,
+     "text": "Fig. 3. Glenoid coverage. (A) The anterior coverage was calculated by measuring the angle between the line drawn from the center of the glenoid to the anterior end of the acromion and the line extending in the scapular plane. (B) The posterior coverage was calculated by measuring the angle between t"
+    },
+    {
+     "page": 5,
+     "block_id": 1,
+     "text": "Kim et al. Importance of Anteroposterior Coverage of the Acromion Clinics in Orthopedic Surgery • Vol. 14, No. 4, 2022 • www.ecios.org"
+    },
+    {
+     "page": 7,
+     "block_id": 1,
+     "text": "Kim et al. Importance of Anteroposterior Coverage of the Acromion Clinics in Orthopedic Surgery • Vol. 14, No. 4, 2022 • www.ecios.org"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [
+   {
+    "page": 5,
+    "block_id": 1,
+    "text": "Kim et al. Importance of Anteroposterior Coverage of the Acromion Clinics in Orthopedic Surgery • Vol. 14, No. 4, 2022 • www.ecios.org"
+   },
+   {
+    "page": 7,
+    "block_id": 1,
+    "text": "Kim et al. Importance of Anteroposterior Coverage of the Acromion Clinics in Orthopedic Surgery • Vol. 14, No. 4, 2022 • www.ecios.org"
+   }
+  ],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 3,
+    "block_id": 4,
+    "text": "Fig. 1. Lateral coverage of the acromion. (A) The critical shoulder angle was measured as the angle between the line connecting the upper and lower margins of the glenoid fossa and the line drawn from the lower margin of the glenoid to the most inferolateral point of the acromion. (B) The lateral ac"
+   },
+   {
+    "page": 3,
+    "block_id": 8,
+    "text": "Fig. 2. Anteroposterior coverage of the acromion. (A) The acromial tilt was measured as the angle between the line connecting the posteriorinferior and anteroinferior points of the acromion and the line connecting the posteriorinferior point of the acromion and the coracoid inferior border. (B) The "
+   },
+   {
+    "page": 4,
+    "block_id": 3,
+    "text": "Fig. 3. Glenoid coverage. (A) The anterior coverage was calculated by measuring the angle between the line drawn from the center of the glenoid to the anterior end of the acromion and the line extending in the scapular plane. (B) The posterior coverage was calculated by measuring the angle between t"
+   },
+   {
+    "page": 5,
+    "block_id": 1,
+    "text": "Kim et al. Importance of Anteroposterior Coverage of the Acromion Clinics in Orthopedic Surgery • Vol. 14, No. 4, 2022 • www.ecios.org"
+   },
+   {
+    "page": 7,
+    "block_id": 1,
+    "text": "Kim et al. Importance of Anteroposterior Coverage of the Acromion Clinics in Orthopedic Surgery • Vol. 14, No. 4, 2022 • www.ecios.org"
+   }
+  ]
+ }
+}

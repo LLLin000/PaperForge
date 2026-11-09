@@ -1,0 +1,173 @@
+{
+ "key": "XD2BPCMG",
+ "passed": true,
+ "figures": 8,
+ "structural": {
+  "key": "XD2BPCMG",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 133601,
+  "new_text_chars": 133601,
+  "old_entries": 11,
+  "new_entries": 8,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 7,
+     "block_id": 5,
+     "text": "(b) Signaling Pathways Regulating Chondrogenesis"
+    },
+    {
+     "page": 8,
+     "block_id": 6,
+     "text": "FIGURE 3 Cellular progression and molecular signaling in chondrogenesis. This figure depicts the cellular and molecular mechanisms governing chondrogenesis, a central process in cartilage formation and repair. (a) Illustrates the sequential differentiation of mesenchymal stem cells (MSCs) into hyper"
+    },
+    {
+     "page": 12,
+     "block_id": 8,
+     "text": "FIGURE 4 Combinatory approaches in tissue engineering for cartilage regeneration. (a) Provides an overview of key elements applied in cartilage-directed tissue engineering. Cell sources include chondrocytes, mesenchymal stem cells, and induced pluripotent stem cells.\nChondrogenic inducers comprise g"
+    },
+    {
+     "page": 15,
+     "block_id": 12,
+     "text": "FIGURE 5 Staining cartilage differentiation in different in vitro models. (a) In the monolayer culture model, mesenchymal stem cells (MSCs) are directly seeded onto cell culture plates, distributing uniformly across the wells. This setup allows for cell expansion and supports subsequent in vitro car"
+    },
+    {
+     "page": 19,
+     "block_id": 8,
+     "text": "FIGURE 7 Common molecular techniques employed in the assessment of cartilage differentiation. (a) Gene expression analysis. Three platforms are illustrated with their sample workflows, output characteristics, and relative costs: real-time polymerase chain reaction (PCR): uses total RNA to quantify t"
+    }
+   ],
+   "assets": [
+    {
+     "page": 11,
+     "bbox": [
+      918,
+      321,
+      958,
+      364
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 3,
+     "text": "(a) Cartilage distribution"
+    },
+    {
+     "page": 3,
+     "block_id": 39,
+     "text": "FIGURE 1 Legend on next page."
+    },
+    {
+     "page": 4,
+     "block_id": 12,
+     "text": "FIGURE 1 Cartilage types: anatomical distribution, microscopic features, and functional composition: This figure illustrates key distinctions among hyaline cartilage, fibrocartilage, and elastic cartilage. (a) Maps their anatomical localization: hyaline cartilage (green) is found in joints, the resp"
+    },
+    {
+     "page": 5,
+     "block_id": 5,
+     "text": "(b) Cartilage regeneration"
+    },
+    {
+     "page": 5,
+     "block_id": 7,
+     "text": "FIGURE 2 Legend on next page."
+    },
+    {
+     "page": 6,
+     "block_id": 13,
+     "text": "FIGURE 2 Zonal organization of cartilage and key mechanisms in cartilage regeneration. This figure illustrates the structural complexity of cartilage and its dynamic regenerative mechanisms. (a) Depicts the zonal architecture of cartilage tissue, highlighting the superficial, middle, deep, calcified"
+    },
+    {
+     "page": 7,
+     "block_id": 3,
+     "text": "(a) Chondrogenesis differentiation process"
+    },
+    {
+     "page": 7,
+     "block_id": 5,
+     "text": "(b) Signaling Pathways Regulating Chondrogenesis"
+    },
+    {
+     "page": 7,
+     "block_id": 7,
+     "text": "FIGURE 3 Legend on next page."
+    },
+    {
+     "page": 8,
+     "block_id": 6,
+     "text": "FIGURE 3 Cellular progression and molecular signaling in chondrogenesis. This figure depicts the cellular and molecular mechanisms governing chondrogenesis, a central process in cartilage formation and repair. (a) Illustrates the sequential differentiation of mesenchymal stem cells (MSCs) into hyper"
+    },
+    {
+     "page": 11,
+     "block_id": 42,
+     "text": "FIGURE 4 Legend on next page."
+    },
+    {
+     "page": 12,
+     "block_id": 8,
+     "text": "FIGURE 4 Combinatory approaches in tissue engineering for cartilage regeneration. (a) Provides an overview of key elements applied in cartilage-directed tissue engineering. Cell sources include chondrocytes, mesenchymal stem cells, and induced pluripotent stem cells.\nChondrogenic inducers comprise g"
+    },
+    {
+     "page": 14,
+     "block_id": 5,
+     "text": "(b) Micromass culture"
+    },
+    {
+     "page": 14,
+     "block_id": 8,
+     "text": "(c) Cell pellet culture"
+    },
+    {
+     "page": 14,
+     "block_id": 11,
+     "text": "FIGURE 5 Legend on next page."
+    },
+    {
+     "page": 15,
+     "block_id": 12,
+     "text": "FIGURE 5 Staining cartilage differentiation in different in vitro models. (a) In the monolayer culture model, mesenchymal stem cells (MSCs) are directly seeded onto cell culture plates, distributing uniformly across the wells. This setup allows for cell expansion and supports subsequent in vitro car"
+    },
+    {
+     "page": 16,
+     "block_id": 24,
+     "text": "(c) Full-thickness defect model"
+    },
+    {
+     "page": 16,
+     "block_id": 32,
+     "text": "FIGURE 6 Legend on next page."
+    },
+    {
+     "page": 17,
+     "block_id": 9,
+     "text": "FIGURE 6 Overview of animal models and cartilage defect types in regeneration research. (a) Animal models commonly employed in cartilage regeneration are compared across four criteria: translational relevance, ease of genetic modification, cartilage thickness, and relative cost. Illustrated species "
+    },
+    {
+     "page": 18,
+     "block_id": 3,
+     "text": "(a) Gene expression analysis"
+    },
+    {
+     "page": 18,
+     "block_id": 5,
+     "text": "(b) Protein expression analysis"
+    },
+    {
+     "page": 18,
+     "block_id": 8,
+     "text": "FIGURE 7 Legend on next page."
+    },
+    {
+     "page": 19,
+     "block_id": 8,
+     "text": "FIGURE 7 Common molecular techniques employed in the assessment of cartilage differentiation. (a) Gene expression analysis. Three platforms are illustrated with their sample workflows, output characteristics, and relative costs: real-time polymerase chain reaction (PCR): uses total RNA to quantify t"
+    }
+   ]
+  }
+ }
+}

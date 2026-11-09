@@ -1,0 +1,360 @@
+{
+ "dry_run": {
+  "key": "YBUMIK5P",
+  "identity": {
+   "old": {
+    "entries": 7,
+    "unique_ids": 7,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 7,
+    "unique_ids": 7,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005",
+    "figure_006": "figure_006",
+    "figure_007": "figure_007"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 53,
+   "new_render_files": 106,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/figures/figure_005.jpg",
+    "assets/figures/figure_006.jpg",
+    "assets/figures/figure_007.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/orphans/orphan_013.jpg",
+    "assets/orphans/orphan_014.jpg",
+    "assets/orphans/orphan_015.jpg",
+    "assets/orphans/orphan_016.jpg",
+    "assets/orphans/orphan_017.jpg",
+    "assets/orphans/orphan_018.jpg",
+    "assets/orphans/orphan_019.jpg",
+    "assets/orphans/orphan_020.jpg",
+    "assets/orphans/orphan_021.jpg",
+    "assets/orphans/orphan_022.jpg",
+    "assets/orphans/orphan_023.jpg",
+    "assets/orphans/orphan_024.jpg",
+    "assets/orphans/orphan_025.jpg",
+    "assets/orphans/orphan_026.jpg",
+    "assets/orphans/orphan_027.jpg",
+    "assets/orphans/orphan_028.jpg",
+    "assets/orphans/orphan_029.jpg",
+    "assets/orphans/orphan_030.jpg",
+    "assets/orphans/orphan_031.jpg",
+    "assets/orphans/orphan_032.jpg",
+    "assets/orphans/orphan_033.jpg",
+    "assets/orphans/orphan_034.jpg",
+    "assets/orphans/orphan_035.jpg",
+    "assets/orphans/orphan_036.jpg",
+    "assets/orphans/orphan_037.jpg",
+    "assets/orphans/orphan_038.jpg",
+    "assets/orphans/orphan_039.jpg",
+    "assets/orphans/orphan_040.jpg",
+    "assets/orphans/orphan_041.jpg",
+    "assets/orphans/orphan_042.jpg",
+    "assets/orphans/orphan_043.jpg",
+    "assets/orphans/orphan_044.jpg",
+    "assets/orphans/orphan_045.jpg",
+    "assets/tables/table_001.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 8,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 1,
+   "new_tables": 1,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 387,
+   "new_rows": 387,
+   "role_removed": {
+    "unknown_structural": 2,
+    "reference_item": 3
+   },
+   "role_added": {
+    "section_heading": 1,
+    "body_paragraph": 3,
+    "subsection_heading": 1
+   },
+   "old_body_chars": 55439,
+   "new_body_chars": 56577,
+   "old_text_chars": 97808,
+   "new_text_chars": 97808,
+   "old_fulltext_chars": 87018
+  },
+  "new_manifest": {
+   "figures": 7,
+   "tables": 1,
+   "orphans": 45
+  },
+  "new_orphans": 8
+ },
+ "structural": {
+  "key": "YBUMIK5P",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 97808,
+  "new_text_chars": 97808,
+  "old_entries": 7,
+  "new_entries": 7,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      102,
+      409,
+      144,
+      451
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      627,
+      409,
+      667,
+      452
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      548,
+      490,
+      575,
+      513
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      862,
+      491,
+      886,
+      513
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      637,
+      539,
+      1105,
+      790
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      1025,
+      1351,
+      1111,
+      1471
+     ]
+    },
+    {
+     "page": 17,
+     "bbox": [
+      633,
+      867,
+      752,
+      1509
+     ]
+    },
+    {
+     "page": 17,
+     "bbox": [
+      949,
+      1415,
+      1090,
+      1497
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 4,
+     "text": "Figure 1. Alluvial diagram illustrating the diverse effects of electrical stimulus parameters on cellular responses in cartilage tissue engineering applications. The diagram visualizes the relationship among the coupling method, electric field strength, frequency, and observed cellular behavior acro"
+    },
+    {
+     "page": 3,
+     "block_id": 7,
+     "text": "Figure 2. Synthesis and characterization of GF. (a) Schematic illustrating the synthesis of CVD GF on a nickel (Ni) foam template. Graphene/nickel foam (Gr/Nickel) is coated with poly(methyl methacrylate) (PMMA) to maintain integrity during Ni etching in 3 M HCl. After Ni removal, PMMA is dissolved "
+    },
+    {
+     "page": 4,
+     "block_id": 12,
+     "text": "Figure 3. Custom-designed electrical stimulus chambers for direct electrical stimulus in vitro. (a) Three-dimensional CAD renderings of the DLP printed electrical stimulus chambers. (b) Images illustrating various components of the assembled chambers: (i) Platinum coated tungsten wires are secured i"
+    },
+    {
+     "page": 6,
+     "block_id": 4,
+     "text": "Figure 4. Comparative cellular architecture of GF in ESCs and CCs. (a) Cellular imaging on graphene foam: (i) bright-field microscopy reveals the scaffold's structure, (ii) Hoechst 33342 staining (blue) highlights nuclei distribution, and (iii) an overlay of (i) and (ii) illustrates nuclei alignment"
+    },
+    {
+     "page": 7,
+     "block_id": 22,
+     "text": "Figure 5. Mechanical characterization of GF-cell composites post ES. Bar plots illustrating the results of dynamic mechanical analysis following 14 days of cell culture with 7 days of direct electrical stimulation applied to ATDCS cells cultured on GF. (a) Stress–strain phase shift, (b) stress relax"
+    },
+    {
+     "page": 8,
+     "block_id": 10,
+     "text": "Figure 6. Structural dynamics and cellular interactions in GF-cell constructs. (a) Box plots illustrating the significant changes in thickness before (GF bioscaffolds) and after (GF-cell composites) cell culture. (b) SEM image depicting cells bridging structural branch cracks within GF. (c) Comparat"
+    },
+    {
+     "page": 10,
+     "block_id": 5,
+     "text": "Figure 7. Estimated cell count and representative nuclei staining for each ES condition. (a) Bar graph showing estimated cell count (# of cells/mm³) within GF samples subjected to different ES conditions: 0, 20, 40, and 60 mV. One-way ANOVA indicates a statistically significant effect of ES on cell "
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     102,
+     409,
+     144,
+     451
+    ]
+   },
+   {
+    "page": 1,
+    "bbox": [
+     627,
+     409,
+     667,
+     452
+    ]
+   },
+   {
+    "page": 1,
+    "bbox": [
+     548,
+     490,
+     575,
+     513
+    ]
+   },
+   {
+    "page": 1,
+    "bbox": [
+     862,
+     491,
+     886,
+     513
+    ]
+   },
+   {
+    "page": 1,
+    "bbox": [
+     637,
+     539,
+     1105,
+     790
+    ]
+   },
+   {
+    "page": 1,
+    "bbox": [
+     1025,
+     1351,
+     1111,
+     1471
+    ]
+   },
+   {
+    "page": 17,
+    "bbox": [
+     633,
+     867,
+     752,
+     1509
+    ]
+   },
+   {
+    "page": 17,
+    "bbox": [
+     949,
+     1415,
+     1090,
+     1497
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 4,
+    "text": "Figure 1. Alluvial diagram illustrating the diverse effects of electrical stimulus parameters on cellular responses in cartilage tissue engineering applications. The diagram visualizes the relationship among the coupling method, electric field strength, frequency, and observed cellular behavior acro"
+   },
+   {
+    "page": 3,
+    "block_id": 7,
+    "text": "Figure 2. Synthesis and characterization of GF. (a) Schematic illustrating the synthesis of CVD GF on a nickel (Ni) foam template. Graphene/nickel foam (Gr/Nickel) is coated with poly(methyl methacrylate) (PMMA) to maintain integrity during Ni etching in 3 M HCl. After Ni removal, PMMA is dissolved "
+   },
+   {
+    "page": 4,
+    "block_id": 12,
+    "text": "Figure 3. Custom-designed electrical stimulus chambers for direct electrical stimulus in vitro. (a) Three-dimensional CAD renderings of the DLP printed electrical stimulus chambers. (b) Images illustrating various components of the assembled chambers: (i) Platinum coated tungsten wires are secured i"
+   },
+   {
+    "page": 6,
+    "block_id": 4,
+    "text": "Figure 4. Comparative cellular architecture of GF in ESCs and CCs. (a) Cellular imaging on graphene foam: (i) bright-field microscopy reveals the scaffold's structure, (ii) Hoechst 33342 staining (blue) highlights nuclei distribution, and (iii) an overlay of (i) and (ii) illustrates nuclei alignment"
+   },
+   {
+    "page": 7,
+    "block_id": 22,
+    "text": "Figure 5. Mechanical characterization of GF-cell composites post ES. Bar plots illustrating the results of dynamic mechanical analysis following 14 days of cell culture with 7 days of direct electrical stimulation applied to ATDCS cells cultured on GF. (a) Stress–strain phase shift, (b) stress relax"
+   },
+   {
+    "page": 8,
+    "block_id": 10,
+    "text": "Figure 6. Structural dynamics and cellular interactions in GF-cell constructs. (a) Box plots illustrating the significant changes in thickness before (GF bioscaffolds) and after (GF-cell composites) cell culture. (b) SEM image depicting cells bridging structural branch cracks within GF. (c) Comparat"
+   },
+   {
+    "page": 10,
+    "block_id": 5,
+    "text": "Figure 7. Estimated cell count and representative nuclei staining for each ES condition. (a) Bar graph showing estimated cell count (# of cells/mm³) within GF samples subjected to different ES conditions: 0, 20, 40, and 60 mV. One-way ANOVA indicates a statistically significant effect of ES on cell "
+   }
+  ]
+ }
+}

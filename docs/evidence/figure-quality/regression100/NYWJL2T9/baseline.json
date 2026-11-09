@@ -1,0 +1,169 @@
+{
+ "dry_run": {
+  "key": "NYWJL2T9",
+  "identity": {
+   "old": {
+    "entries": 4,
+    "unique_ids": 4,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 4,
+    "unique_ids": 4,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 20,
+   "new_render_files": 40,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/orphans/orphan_013.jpg",
+    "assets/orphans/orphan_014.jpg",
+    "assets/tables/table_001.jpg",
+    "assets/tables/table_002.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 4,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 2,
+   "new_tables": 2,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 164,
+   "new_rows": 164,
+   "role_removed": {
+    "unknown_structural": 1,
+    "figure_caption_candidate": 1
+   },
+   "role_added": {
+    "authors": 1,
+    "figure_caption": 1
+   },
+   "old_body_chars": 21243,
+   "new_body_chars": 21243,
+   "old_text_chars": 36991,
+   "new_text_chars": 36991,
+   "old_fulltext_chars": 29357
+  },
+  "new_manifest": {
+   "figures": 4,
+   "tables": 2,
+   "orphans": 14
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "NYWJL2T9",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 36991,
+  "new_text_chars": 36991,
+  "old_entries": 4,
+  "new_entries": 4,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 5,
+     "block_id": 1,
+     "text": "Diagnostic Value of Significant Quantitative and Qualitative Criteria for Diagnosis of Frozen Shoulder"
+    }
+   ],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 13,
+     "text": "Figure 1. Scheme of measurement. A, Thickest portion of CHL on sagittal oblique T1-weighted spin-echo images was measured perpendicular to CHL surface (arrowheads). B, Capsular thickness (small arrow) in rotator cuff interval was measured 1.5 cm anterolateral (thick dashed line) to base (thin dashed"
+    },
+    {
+     "page": 3,
+     "block_id": 7,
+     "text": "Figure 2. Sagittal oblique T1-weighted (700/12) image shows thickened CHL (arrows) in a 57-year-old patient with frozen shoulder. C = coracoid process."
+    },
+    {
+     "page": 4,
+     "block_id": 15,
+     "text": "Figure 3. Line drawings (top row) and corresponding sagittal oblique T1-weighted (600/12) images (bottom row) of subcoracoid fat triangle. Borders of the triangle (arrowheads) are defined anterosuperiorly by the coracoid process (C), superiorly by the CHL (arrow), and posteroinferiorly by the joint "
+    },
+    {
+     "page": 5,
+     "block_id": 1,
+     "text": "Diagnostic Value of Significant Quantitative and Qualitative Criteria for Diagnosis of Frozen Shoulder"
+    },
+    {
+     "page": 5,
+     "block_id": 8,
+     "text": "Figure 4. Sagittal oblique T1-weighted (700/12) image shows synovitis-like abnormality (arrowheads) with blurred borders and intermediate signal intensity at superior border of subscapularis tendon in a 55-year-old patient with frozen shoulder."
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [
+   {
+    "page": 5,
+    "block_id": 1,
+    "text": "Diagnostic Value of Significant Quantitative and Qualitative Criteria for Diagnosis of Frozen Shoulder"
+   }
+  ],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 13,
+    "text": "Figure 1. Scheme of measurement. A, Thickest portion of CHL on sagittal oblique T1-weighted spin-echo images was measured perpendicular to CHL surface (arrowheads). B, Capsular thickness (small arrow) in rotator cuff interval was measured 1.5 cm anterolateral (thick dashed line) to base (thin dashed"
+   },
+   {
+    "page": 3,
+    "block_id": 7,
+    "text": "Figure 2. Sagittal oblique T1-weighted (700/12) image shows thickened CHL (arrows) in a 57-year-old patient with frozen shoulder. C = coracoid process."
+   },
+   {
+    "page": 4,
+    "block_id": 15,
+    "text": "Figure 3. Line drawings (top row) and corresponding sagittal oblique T1-weighted (600/12) images (bottom row) of subcoracoid fat triangle. Borders of the triangle (arrowheads) are defined anterosuperiorly by the coracoid process (C), superiorly by the CHL (arrow), and posteroinferiorly by the joint "
+   },
+   {
+    "page": 5,
+    "block_id": 1,
+    "text": "Diagnostic Value of Significant Quantitative and Qualitative Criteria for Diagnosis of Frozen Shoulder"
+   },
+   {
+    "page": 5,
+    "block_id": 8,
+    "text": "Figure 4. Sagittal oblique T1-weighted (700/12) image shows synovitis-like abnormality (arrowheads) with blurred borders and intermediate signal intensity at superior border of subscapularis tendon in a 55-year-old patient with frozen shoulder."
+   }
+  ]
+ }
+}

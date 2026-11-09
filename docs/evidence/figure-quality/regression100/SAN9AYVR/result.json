@@ -1,0 +1,351 @@
+{
+ "key": "SAN9AYVR",
+ "passed": true,
+ "figures": 31,
+ "structural": {
+  "key": "SAN9AYVR",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 408548,
+  "new_text_chars": 408548,
+  "old_entries": 31,
+  "new_entries": 31,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      85,
+      276,
+      277,
+      309
+     ]
+    },
+    {
+     "page": 50,
+     "bbox": [
+      176,
+      237,
+      454,
+      361
+     ]
+    },
+    {
+     "page": 50,
+     "bbox": [
+      178,
+      364,
+      453,
+      485
+     ]
+    },
+    {
+     "page": 50,
+     "bbox": [
+      465,
+      238,
+      814,
+      487
+     ]
+    },
+    {
+     "page": 50,
+     "bbox": [
+      827,
+      237,
+      1014,
+      387
+     ]
+    },
+    {
+     "page": 50,
+     "bbox": [
+      826,
+      392,
+      1011,
+      486
+     ]
+    },
+    {
+     "page": 50,
+     "bbox": [
+      179,
+      496,
+      427,
+      690
+     ]
+    },
+    {
+     "page": 50,
+     "bbox": [
+      440,
+      502,
+      643,
+      678
+     ]
+    },
+    {
+     "page": 50,
+     "bbox": [
+      646,
+      510,
+      825,
+      677
+     ]
+    },
+    {
+     "page": 50,
+     "bbox": [
+      835,
+      504,
+      1014,
+      683
+     ]
+    },
+    {
+     "page": 50,
+     "bbox": [
+      177,
+      699,
+      664,
+      1032
+     ]
+    },
+    {
+     "page": 50,
+     "bbox": [
+      679,
+      697,
+      1015,
+      1033
+     ]
+    },
+    {
+     "page": 50,
+     "bbox": [
+      179,
+      1052,
+      496,
+      1398
+     ]
+    },
+    {
+     "page": 50,
+     "bbox": [
+      503,
+      1063,
+      731,
+      1229
+     ]
+    },
+    {
+     "page": 50,
+     "bbox": [
+      751,
+      1055,
+      998,
+      1231
+     ]
+    },
+    {
+     "page": 50,
+     "bbox": [
+      502,
+      1233,
+      745,
+      1395
+     ]
+    },
+    {
+     "page": 50,
+     "bbox": [
+      751,
+      1236,
+      996,
+      1394
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 8,
+     "text": "Dr Qiang Zhang is a postdoctoral fellow at the Department of Biomedical Engineering, CityU. He received his PhD in Biomedical Engineering from PolyU (2022) and Bachelor of Clinical Medicine (2016) and Master of Public Health (2018) from XJTU. He is trained as a scientist with interdisciplinary backg"
+    },
+    {
+     "page": 2,
+     "block_id": 12,
+     "text": "Xingcan Huang is currently a PhD student at the Department of Biomedical Engineering, City University of Hong Kong. He received his MPhil degree and bachelor's degree from Shandong University and Qingdao University in 2020 and 2017, respectively. His current research interests include flexible and s"
+    },
+    {
+     "page": 4,
+     "block_id": 9,
+     "text": "Fig. 1 The molecular and cellular-level changes activated by ES."
+    },
+    {
+     "page": 6,
+     "block_id": 4,
+     "text": "c. Redistribution of surface receptors, lipid rafts and actins"
+    },
+    {
+     "page": 6,
+     "block_id": 5,
+     "text": "Fig. 2 Possible mechanisms of cellular responses to ES. (a) Activation of signal transduction pathways. (b) Ion flow. (c) Redistribution of surface receptors, lipid rafts and actins. (d) Enhanced ATP synthesis."
+    },
+    {
+     "page": 7,
+     "block_id": 4,
+     "text": "Fig. 3 Typical ways to deliver ES for cell behavior regulation, including (a) direct coupling, (b) capacitive coupling, and (c) inducible coupling by utilization of an electromagnetic field."
+    },
+    {
+     "page": 8,
+     "block_id": 4,
+     "text": "Fig. 4 Novel in vitro ES platforms to regulate cell behaviors. (a) A TENG-based platform for suppressing in vitro cancer cell migration and in vivo tumor metastasis. $ ^{151} $ (i) Schematic illustrating the structure of a TENG-based platform. (ii) Schematic showing the current stimulation of a TENG"
+    },
+    {
+     "page": 10,
+     "block_id": 16,
+     "text": "Fig. 5 Stimulation electrode interface modelling. (a) Principle of stimulation with a neural interface. (b) The equivalent circuit model of the electrode–tissue interface and schematic of different charge injection mechanisms.¹⁸⁴ (c) A typical Bode plot for the EIS characterization of the interface,"
+    },
+    {
+     "page": 14,
+     "block_id": 10,
+     "text": "Fig. 6 Typical stimulation waveforms. (a) Pulsed waveform classification regarding the polarity, charge balance and interphase delay. $ ^{19} $ Adapted from ref. 19 with permission from Elsevier, copyright 2005. (b) Waveform classification regarding the phase symmetry."
+    },
+    {
+     "page": 16,
+     "block_id": 12,
+     "text": "Fig. 7 Design principles for ES systems with desirable physicochemical and biological performances. Key properties for development of ES systems, including (a) electrical performances such as high electrical conductivity and high capacitance; (b) mechanical properties such as rigorous strength, high"
+    },
+    {
+     "page": 17,
+     "block_id": 4,
+     "text": "Fig. 8 Common electroactive materials as building blocks for ES systems."
+    },
+    {
+     "page": 20,
+     "block_id": 16,
+     "text": "Fig. 9 Electroactive materials. (a) Mixed ionic/electronic conduction in PEDOT:PSS. $ ^{272} $ Reproduced from ref. 272 with permission from Springer Nature, copyright 2016. (b) High-performance graphene-fiber-based neural microelectrodes. $ ^{274} $ Reproduced from ref. 274 with permission from Joh"
+    },
+    {
+     "page": 23,
+     "block_id": 6,
+     "text": "Fig. 10 Mechanical properties. (a) A multilayer Au/Cr-PI construction showing excellent stretchability and compressibility. $ ^{305} $ Reproduced from ref. 305 with permission from John Wiley and Sons, copyright 2023. (b) Soft strain-insensitive bioelectronics featuring brittle materials involve und"
+    },
+    {
+     "page": 24,
+     "block_id": 13,
+     "text": "Fig. 11 Adhesion and biological properties. (a) (i) A photocurable hydrogel-based bioelectronic interface that (ii) could strongly bind to heart tissue and the electrode by complex physical and chemical interactions, enabling effective ES for over 8 days. $ ^{28} $ Reproduced from ref. 28 with permi"
+    },
+    {
+     "page": 26,
+     "block_id": 9,
+     "text": "Fig. 12 Biodegradable properties. (a) Schematic illustrations showing the representative in vivo degradation mechanisms of bioresorbable polymers, including (i) dissolution, (ii) enzymolysis, (iii) hydrolysis, and (iv) oxidative degradation. $ ^{552} $ Reproduced from ref. 352 with permission from A"
+    },
+    {
+     "page": 28,
+     "block_id": 11,
+     "text": "Fig. 13 Other key properties. (a) (i) A highly integrated breathable bioelectronic that (ii) could transport sweat via vertical and horizontal directions. $ ^{364} $ Reproduced from ref. 364 with permission from Springer Nature, copyright 2024. (b) (i) A bioadhesive electronic interface with anisotr"
+    },
+    {
+     "page": 30,
+     "block_id": 13,
+     "text": "Fig. 14 ES for skin healing. (a) ES waveforms of unidirectional current (charge-unbalanced) and bidirectional current.  $ ^{381} $ Reproduced from ref. 381 with permission from John Wiley and Sons, copyright 2021. (b) The self-powered enzymatic microneedle patch for chronic wound healing.  $ ^{376} "
+    },
+    {
+     "page": 33,
+     "block_id": 7,
+     "text": "Fig. 15 ES for muscle regeneration. (a) Injecting the hydrogel into the damaged muscle improved the tissue repair process (left). In vivo muscle-tissue conduction in the severe tissue defect model. Scale bar, 5 mm (top right). Images depict the sequential stages from the induction of VML injury to t"
+    },
+    {
+     "page": 35,
+     "block_id": 4,
+     "text": "Fig. 16 ES for bone regeneration. (a) Classification of ES based bone growth by the mechanism of operation and electrical energy delivery. $ ^{427} $ Reproduced from ref. 427 with permission from IEEE, copyright 2018. (b) Schematics of the biodegradable ES device, and X-ray radiographs on the bone f"
+    },
+    {
+     "page": 37,
+     "block_id": 12,
+     "text": "Fig. 17 ES for nerve regeneration. (a) Neurons and Schwann cells transition into a growth state, where motoneurons display chromatolytic changes such as the nucleus shifting to an eccentric position, indicative of heightened gene expression of various regeneration-associated genes (RAGs) in both neu"
+    },
+    {
+     "page": 39,
+     "block_id": 19,
+     "text": "Fig. 18 ES for drug delivery by iontophoresis. (a) The working principle of iontophoresis involves using a low electrical current to transport charged molecules on the skin's surface.⁴⁹⁰ Reproduced from ref. 490 with permission from Springer Nature, copyright 2021. (b) The concept and operational pr"
+    },
+    {
+     "page": 42,
+     "block_id": 9,
+     "text": "Fig. 19 ES for electroporation. (a) Schematic of a bulk electroporation system. The gap between the electrodes exceeds the size of a single cell by multiple orders of magnitude. $ ^{505} $ Reproduced from ref. 505 with permission from Royal Society of Chemistry, copyright 2016. (b) The schematic ill"
+    },
+    {
+     "page": 44,
+     "block_id": 12,
+     "text": "Fig. 20 Mechanism of ES on a neuron. (a) Schematic illustration of efferent neurons (left) and afferent (right) neurons and the flows of excitation. $ ^{4} $ (b) Representation and equivalent circuit modelling of ES of myelinated nerves. $ ^{4} $ (c) Illustration of current exiting the membrane wher"
+    },
+    {
+     "page": 45,
+     "block_id": 10,
+     "text": "Fig. 21 Deep brain stimulation (DBS). (a) Mechanisms of DBS. Stimulation induces the release of neurotransmitters, initiating calcium waves and the subsequent release of gliotransmitters, with DBS altering local field potentials in the subthalamic nucleus.⁵⁴⁵ Reproduced from ref. 546 with permission"
+    },
+    {
+     "page": 47,
+     "block_id": 19,
+     "text": "Fig. 22 Transcranial ES. (a) Diagram depicting the three configuration for transcutaneous (scalp), subcutaneous (skull) and epidural (dura) stimulation.⁵¹⁹ (b) Neuronal compartment orientation influences TES-induced excitability in four idealized neurons.⁵⁹⁴ (c) Five hypothesized mechanisms modulate"
+    },
+    {
+     "page": 49,
+     "block_id": 10,
+     "text": "Fig. 23 Electronics for cortical ES. (a) Schematic depiction of a graphene-based seizure sensor and epilepsy treatment stimulation sensors.⁵⁹⁰ Reproduced from ref. 599 with permission from John Wiley and Sons, copyright 2018. (b) A 3D array is applied directly onto the brain's surface.⁶⁰⁰ Reproduced"
+    },
+    {
+     "page": 51,
+     "block_id": 3,
+     "text": "Fig. 24 Spinal cord stimulation. (a) Photographs of a spinal implant and a 3D model obtained from high-resolution microcomputed tomography scans taken five weeks after the implant.⁶³⁰ Reproduced from ref. 630 with permission from Springer Nature, copyright 2016. (b) A cross-section image depicts the"
+    },
+    {
+     "page": 53,
+     "block_id": 4,
+     "text": "Fig. 25 Vagus nerve stimulation. (a) Demonstration of the vagal circuitry that connects the central and peripheral nervous systems. $ ^{649} $ Reproduced from ref. 649, originally published by and used with permission from Dove Medical Press Ltd. (b) Anatomical schematic illustrating the cervical an"
+    },
+    {
+     "page": 54,
+     "block_id": 8,
+     "text": "Fig. 26c addresses the challenge of designing self-rolled neural interfaces that can effectively match the complex shapes and movements of nerves. $ ^{30} $ This study presents a novel approach utilizing stretchable, flexible electronics crafted from liquid metal–polymer conductors and fabricated th"
+    },
+    {
+     "page": 55,
+     "block_id": 4,
+     "text": "Fig. 26 Bioelectronics for vagus nerve and peripheral nerve stimulation. (a) Photomicrographs show small vagus and peripheral nerves in rats alongside a schematic detailing how the flexible neural clip modulates nerve functions to control outputs from different organs or tissues. (i) VNS to regulate"
+    },
+    {
+     "page": 56,
+     "block_id": 17,
+     "text": "Fig. 27 Pacemaker. (a) This bioelectronic device is affixed to the epicardium using an adhesive hydrogel patch that enables recording of cardiac pressure and provides electrical therapy (left), which comprises a pressure-sensitive, active-matrix transistor array and biocompatible pacing electrodes, "
+    },
+    {
+     "page": 58,
+     "block_id": 6,
+     "text": "Fig. 28 Pain block. (a) Commonly targeted locations for ES used in blocking pain.⁶⁸⁰ (b) Hypothesized modes of action for analgesia induced by TENS.⁶⁸⁰ Adapted from ref. 680 with permission from Elsevier, copyright 2009. (c) Three different TENS approaches: conventional TENS, acupuncture-like TENS, "
+    },
+    {
+     "page": 61,
+     "block_id": 9,
+     "text": "Fig. 29 Tremor reduction. (a) The underlying mechanism by which ES can mitigate tremors involves the disruption of tremorgenic signals. (i) The signals originate from a central brain oscillator and reach motor neuron pools directly through the corticospinal tract or indirectly through interneurons. "
+    },
+    {
+     "page": 62,
+     "block_id": 11,
+     "text": "Fig. 30 Auditory, visual, smell and taste modulation by ES. (a) Auditory modulation. (i) A standard contemporary cochlear implant system transforms sound into electrical impulses, which are subsequently relayed to the auditory nerve. $ ^{717} $ Reproduced from ref. 717 with permission from Springer "
+    },
+    {
+     "page": 65,
+     "block_id": 4,
+     "text": "Fig. 31 Haptic modulation and human machine interfaces. (a) A schematic graph showing the electrotactile process where an electrode is attached on the fingertip. $ ^{776} $ Reproduced from ref. 775 with permission from Springer Nature, copyright 2022. (b) Sites on the median and ulnar nerves of an a"
+    }
+   ]
+  }
+ }
+}

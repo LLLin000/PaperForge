@@ -1,0 +1,125 @@
+{
+ "dry_run": {
+  "key": "9RDDDJF6",
+  "identity": {
+   "old": {
+    "entries": 3,
+    "unique_ids": 3,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 3,
+    "unique_ids": 3,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 8,
+   "new_render_files": 16,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 3,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 0,
+   "new_tables": 0,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 78,
+   "new_rows": 78,
+   "role_removed": {
+    "unknown_structural": 2,
+    "reference_item": 2
+   },
+   "role_added": {
+    "noise": 2,
+    "authors": 1,
+    "abstract_body": 1
+   },
+   "old_body_chars": 12607,
+   "new_body_chars": 12607,
+   "old_text_chars": 20728,
+   "new_text_chars": 20728,
+   "old_fulltext_chars": 16070
+  },
+  "new_manifest": {
+   "figures": 3,
+   "tables": 0,
+   "orphans": 5
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "9RDDDJF6",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 20728,
+  "new_text_chars": 20728,
+  "old_entries": 3,
+  "new_entries": 3,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 12,
+     "text": "Fig. 1. Marrow edema in greater tuberosity associated with a small full thickness tear at the most anterior portion of the insertion of the supraspinatus tendon in a 47-year-old man who fell from a ladder two months prior to MR examination. (a) Fat-suppressed coronal-oblique  $ T_{2} $-weighted fast"
+    },
+    {
+     "page": 4,
+     "block_id": 6,
+     "text": "Fig. 2. Avulsion of greater tuberosity in 73-year-old woman with history of multiple falls. The most recent fall was two weeks prior to MR examination. (a) Fat-suppressed  $ T_{2} $-weighted fast spin-echo axial image shows edema in greater tuberosity (white arrow) with fluid in subdeltoid-subacromi"
+    },
+    {
+     "page": 5,
+     "block_id": 3,
+     "text": "Fig. 3. Marrow edema in greater tuberosity associated with a small full thickness tear at the most anterior portion of the insertion of the supraspinatus tendon in a 46 year old woman with chronic pain with no history of trauma. Fat-suppressed coronal  $ T_{2} $-weighted fast spin-echo image shows m"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 12,
+    "text": "Fig. 1. Marrow edema in greater tuberosity associated with a small full thickness tear at the most anterior portion of the insertion of the supraspinatus tendon in a 47-year-old man who fell from a ladder two months prior to MR examination. (a) Fat-suppressed coronal-oblique  $ T_{2} $-weighted fast"
+   },
+   {
+    "page": 4,
+    "block_id": 6,
+    "text": "Fig. 2. Avulsion of greater tuberosity in 73-year-old woman with history of multiple falls. The most recent fall was two weeks prior to MR examination. (a) Fat-suppressed  $ T_{2} $-weighted fast spin-echo axial image shows edema in greater tuberosity (white arrow) with fluid in subdeltoid-subacromi"
+   },
+   {
+    "page": 5,
+    "block_id": 3,
+    "text": "Fig. 3. Marrow edema in greater tuberosity associated with a small full thickness tear at the most anterior portion of the insertion of the supraspinatus tendon in a 46 year old woman with chronic pain with no history of trauma. Fat-suppressed coronal  $ T_{2} $-weighted fast spin-echo image shows m"
+   }
+  ]
+ }
+}

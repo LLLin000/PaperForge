@@ -1,0 +1,125 @@
+{
+ "dry_run": {
+  "key": "NI2RP8UN",
+  "identity": {
+   "old": {
+    "entries": 0,
+    "unique_ids": 0,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 0,
+    "unique_ids": 0,
+    "duplicate_extra": 0
+   },
+   "mapping": {},
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 9,
+   "new_render_files": 10,
+   "render_added": [
+    "assets/tables/table_001.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 3,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 3,
+   "new_tables": 3,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 132,
+   "new_rows": 132,
+   "role_removed": {
+    "frontmatter_noise": 1,
+    "figure_caption_candidate": 1
+   },
+   "role_added": {
+    "section_heading": 1,
+    "figure_caption": 1
+   },
+   "old_body_chars": 16502,
+   "new_body_chars": 16502,
+   "old_text_chars": 33279,
+   "new_text_chars": 33279,
+   "old_fulltext_chars": 27668
+  },
+  "new_manifest": {
+   "figures": 0,
+   "tables": 3,
+   "orphans": 2
+  },
+  "new_orphans": 1
+ },
+ "structural": {
+  "key": "NI2RP8UN",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 33279,
+  "new_text_chars": 33279,
+  "old_entries": 0,
+  "new_entries": 0,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 4,
+     "block_id": 7,
+     "text": "Multivariate logistic regression analysis for postoperative recurrence."
+    }
+   ],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      1000,
+      355,
+      1059,
+      412
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 4,
+     "block_id": 7,
+     "text": "Multivariate logistic regression analysis for postoperative recurrence."
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [
+   {
+    "page": 4,
+    "block_id": 7,
+    "text": "Multivariate logistic regression analysis for postoperative recurrence."
+   }
+  ],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     1000,
+     355,
+     1059,
+     412
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 4,
+    "block_id": 7,
+    "text": "Multivariate logistic regression analysis for postoperative recurrence."
+   }
+  ]
+ }
+}

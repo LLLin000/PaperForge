@@ -1,0 +1,127 @@
+{
+ "dry_run": {
+  "key": "XIR7ZJ6F",
+  "identity": {
+   "old": {
+    "entries": 3,
+    "unique_ids": 3,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 3,
+    "unique_ids": 3,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 7,
+   "new_render_files": 14,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/tables/table_001.jpg",
+    "assets/tables/table_002.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 5,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 2,
+   "new_tables": 2,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 300,
+   "new_rows": 300,
+   "role_removed": {
+    "unknown_structural": 2,
+    "structured_insert": 1,
+    "body_paragraph": 1,
+    "backmatter_body": 1
+   },
+   "role_added": {
+    "authors": 1,
+    "frontmatter_noise": 1,
+    "subsection_heading": 1,
+    "reference_item": 2
+   },
+   "old_body_chars": 42149,
+   "new_body_chars": 41945,
+   "old_text_chars": 98453,
+   "new_text_chars": 98453,
+   "old_fulltext_chars": 84170
+  },
+  "new_manifest": {
+   "figures": 3,
+   "tables": 2,
+   "orphans": 2
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "XIR7ZJ6F",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 98453,
+  "new_text_chars": 98453,
+  "old_entries": 3,
+  "new_entries": 3,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 3,
+     "text": "Fig. 1 Several internal or external physical and chemical clues affect stem cell fate and can derive osteogenesis or chondrogenesis in osteochondral scaffolds. Created with BioRender.com"
+    },
+    {
+     "page": 5,
+     "block_id": 6,
+     "text": "Fig. 2 Some of the signaling pathways activated through mechanical forces in stem cells, affecting cell commitment into osteoblasts/chondrocytes. Created with BioRender.com"
+    },
+    {
+     "page": 6,
+     "block_id": 8,
+     "text": "Fig. 3 Physical and chemical clues controlling stem cell fate toward osteogenesis and chondrogenesis. Created with BioRender.com"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 3,
+    "block_id": 3,
+    "text": "Fig. 1 Several internal or external physical and chemical clues affect stem cell fate and can derive osteogenesis or chondrogenesis in osteochondral scaffolds. Created with BioRender.com"
+   },
+   {
+    "page": 5,
+    "block_id": 6,
+    "text": "Fig. 2 Some of the signaling pathways activated through mechanical forces in stem cells, affecting cell commitment into osteoblasts/chondrocytes. Created with BioRender.com"
+   },
+   {
+    "page": 6,
+    "block_id": 8,
+    "text": "Fig. 3 Physical and chemical clues controlling stem cell fate toward osteogenesis and chondrogenesis. Created with BioRender.com"
+   }
+  ]
+ }
+}

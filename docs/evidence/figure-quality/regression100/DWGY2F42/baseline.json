@@ -1,0 +1,112 @@
+{
+ "dry_run": {
+  "key": "DWGY2F42",
+  "identity": {
+   "old": {
+    "entries": 2,
+    "unique_ids": 2,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 2,
+    "unique_ids": 2,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 9,
+   "new_render_files": 18,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/tables/table_001.jpg",
+    "assets/tables/table_002.jpg",
+    "assets/tables/table_003.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 5,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 3,
+   "new_tables": 3,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 127,
+   "new_rows": 127,
+   "role_removed": {
+    "reference_item": 4
+   },
+   "role_added": {
+    "body_paragraph": 4
+   },
+   "old_body_chars": 13522,
+   "new_body_chars": 17954,
+   "old_text_chars": 31206,
+   "new_text_chars": 31206,
+   "old_fulltext_chars": 24709
+  },
+  "new_manifest": {
+   "figures": 2,
+   "tables": 3,
+   "orphans": 4
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "DWGY2F42",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 31206,
+  "new_text_chars": 31206,
+  "old_entries": 2,
+  "new_entries": 2,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 3,
+     "text": "Figure 1. Overview of parameters of acromial morphology.\nA. Acromial slope ( $ \\delta $) according to Bigliani et al. (1986) and Kitay et al. (1995)."
+    },
+    {
+     "page": 4,
+     "block_id": 6,
+     "text": "Figure 2. Box plots of significant differences in morphological parameters. Significant findings for acromial slope, lateral acromial angle, acromion index, and patient age. Group 1: controls; group 2: impingement; group 3: supraspinatus tendon tears."
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 3,
+    "text": "Figure 1. Overview of parameters of acromial morphology.\nA. Acromial slope ( $ \\delta $) according to Bigliani et al. (1986) and Kitay et al. (1995)."
+   },
+   {
+    "page": 4,
+    "block_id": 6,
+    "text": "Figure 2. Box plots of significant differences in morphological parameters. Significant findings for acromial slope, lateral acromial angle, acromion index, and patient age. Group 1: controls; group 2: impingement; group 3: supraspinatus tendon tears."
+   }
+  ]
+ }
+}

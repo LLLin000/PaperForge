@@ -1,0 +1,53 @@
+{
+ "key": "NYWJL2T9",
+ "passed": true,
+ "figures": 4,
+ "structural": {
+  "key": "NYWJL2T9",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 36991,
+  "new_text_chars": 36991,
+  "old_entries": 4,
+  "new_entries": 4,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 5,
+     "block_id": 1,
+     "text": "Diagnostic Value of Significant Quantitative and Qualitative Criteria for Diagnosis of Frozen Shoulder"
+    }
+   ],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 13,
+     "text": "Figure 1. Scheme of measurement. A, Thickest portion of CHL on sagittal oblique T1-weighted spin-echo images was measured perpendicular to CHL surface (arrowheads). B, Capsular thickness (small arrow) in rotator cuff interval was measured 1.5 cm anterolateral (thick dashed line) to base (thin dashed"
+    },
+    {
+     "page": 3,
+     "block_id": 7,
+     "text": "Figure 2. Sagittal oblique T1-weighted (700/12) image shows thickened CHL (arrows) in a 57-year-old patient with frozen shoulder. C = coracoid process."
+    },
+    {
+     "page": 4,
+     "block_id": 15,
+     "text": "Figure 3. Line drawings (top row) and corresponding sagittal oblique T1-weighted (600/12) images (bottom row) of subcoracoid fat triangle. Borders of the triangle (arrowheads) are defined anterosuperiorly by the coracoid process (C), superiorly by the CHL (arrow), and posteroinferiorly by the joint "
+    },
+    {
+     "page": 5,
+     "block_id": 1,
+     "text": "Diagnostic Value of Significant Quantitative and Qualitative Criteria for Diagnosis of Frozen Shoulder"
+    },
+    {
+     "page": 5,
+     "block_id": 8,
+     "text": "Figure 4. Sagittal oblique T1-weighted (700/12) image shows synovitis-like abnormality (arrowheads) with blurred borders and intermediate signal intensity at superior border of subscapularis tendon in a 55-year-old patient with frozen shoulder."
+    }
+   ]
+  }
+ }
+}

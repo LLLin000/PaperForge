@@ -1,0 +1,134 @@
+{
+ "dry_run": {
+  "key": "JEH6Q7P6",
+  "identity": {
+   "old": {
+    "entries": 3,
+    "unique_ids": 3,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 3,
+    "unique_ids": 3,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 10,
+   "new_render_files": 28,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/tables/table_001.jpg",
+    "assets/tables/table_002.jpg",
+    "assets/tables/table_003.jpg",
+    "assets/tables/table_004.jpg",
+    "render/figures/orphan_004.md",
+    "render/figures/orphan_005.md",
+    "render/figures/orphan_006.md",
+    "render/figures/orphan_007.md"
+   ],
+   "render_removed": [],
+   "embeds": 7,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 4,
+   "new_tables": 4,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 494,
+   "new_rows": 494,
+   "role_removed": {
+    "frontmatter_noise": 2,
+    "reference_item": 6
+   },
+   "role_added": {
+    "noise": 6,
+    "body_paragraph": 2
+   },
+   "old_body_chars": 68265,
+   "new_body_chars": 68394,
+   "old_text_chars": 115525,
+   "new_text_chars": 115525,
+   "old_fulltext_chars": 97412
+  },
+  "new_manifest": {
+   "figures": 3,
+   "tables": 4,
+   "orphans": 7
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "JEH6Q7P6",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 115525,
+  "new_text_chars": 115525,
+  "old_entries": 3,
+  "new_entries": 3,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 4,
+     "text": "Figure 1. Bone is an electroactive, electrosensitive and electroresponsive tissue."
+    },
+    {
+     "page": 6,
+     "block_id": 4,
+     "text": "Figure 2. Similarities in causative mechanisms of deficient bone regeneration under various disease conditions."
+    },
+    {
+     "page": 9,
+     "block_id": 4,
+     "text": "Figure 3. Putative mechanisms by which electroactive biomaterials or electrical stimuli promote bone regeneration under pathological conditions."
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 3,
+    "block_id": 4,
+    "text": "Figure 1. Bone is an electroactive, electrosensitive and electroresponsive tissue."
+   },
+   {
+    "page": 6,
+    "block_id": 4,
+    "text": "Figure 2. Similarities in causative mechanisms of deficient bone regeneration under various disease conditions."
+   },
+   {
+    "page": 9,
+    "block_id": 4,
+    "text": "Figure 3. Putative mechanisms by which electroactive biomaterials or electrical stimuli promote bone regeneration under pathological conditions."
+   }
+  ]
+ }
+}

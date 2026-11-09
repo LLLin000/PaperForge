@@ -1,0 +1,97 @@
+{
+ "key": "2BB8VM5W",
+ "passed": true,
+ "figures": 9,
+ "structural": {
+  "key": "2BB8VM5W",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 97339,
+  "new_text_chars": 97339,
+  "old_entries": 9,
+  "new_entries": 9,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 1,
+     "text": "FIGURE 1 | Construction of Origami-Structured PLLA/MXene Piezoelectric-Photothermal Scaffold and Its Dual Regulatory Mechanism for Cartilage Regeneration."
+    },
+    {
+     "page": 4,
+     "block_id": 15,
+     "text": "FIGURE 2 | Fabrication and characterization of PLLA/MXene piezoelectric composite membranes. a) Digital photograph of electrospun membranes with varying MXene contents (0%, 0.5%, 1.0%, and 1.5% w/w); scale bar: 1 cm. b) SEM images of MXene nanosheets at different magnifications; scale bars: 10  $ \\m"
+    },
+    {
+     "page": 6,
+     "block_id": 16,
+     "text": "FIGURE 3 | Design and construction of 3D piezoelectric scaffolds with origami structures. a,b) SEM images showing the uniform microgroove structures of the origami structure from surface and cross-sectional views; scale bar: 300  $ \\mu $m. c) Comparison of the output voltages of planar and origami-s"
+    },
+    {
+     "page": 7,
+     "block_id": 1,
+     "text": "FIGURE 4 | Photothermal performance characterization of the PLLA/MXene composite scaffolds. a) Infrared thermal images of scaffolds with different MXene concentrations (0%, 0.5%, 1.0%, and 1.5% w/w) under NIR laser irradiation (808 nm, 1 W/cm²) over 10 min, showing temperature changes at different t"
+    },
+    {
+     "page": 9,
+     "block_id": 15,
+     "text": "FIGURE 5 | Effect of piezoelectric and photothermal scaffolds on the chondrogenic differentiation of rat BMSCs. a–e) qPCR analysis of chondrogenic marker gene expression after 10 days: a COL2A1, b SOX9, c ACAN, d COL1A1, and e COL10A1. f) GAG content in different treatment groups. g) Type II collage"
+    },
+    {
+     "page": 10,
+     "block_id": 2,
+     "text": "37℃"
+    },
+    {
+     "page": 10,
+     "block_id": 7,
+     "text": "39℃"
+    },
+    {
+     "page": 10,
+     "block_id": 8,
+     "text": "41℃"
+    },
+    {
+     "page": 10,
+     "block_id": 17,
+     "text": "1.5%MXene"
+    },
+    {
+     "page": 10,
+     "block_id": 19,
+     "text": "1.5%MXene+P"
+    },
+    {
+     "page": 10,
+     "block_id": 23,
+     "text": "1.5%MXene+P+IR"
+    },
+    {
+     "page": 10,
+     "block_id": 29,
+     "text": "FIGURE 6 | Antiangiogenic effects of photothermal scaffolds on endothelial cells. a) Bright-field microscopy images showing endothelial cell network formation under different temperature conditions (37°C, 39°C, and 41°C); scale bar: 200 μm. b–e) Quantitative analysis of temperature-dependent effects"
+    },
+    {
+     "page": 12,
+     "block_id": 10,
+     "text": "FIGURE 7 | Transcriptome analysis and validation of the role of the TRPV4-PI3K-Akt signaling pathway in the piezoelectric and photothermal effects on BMSC chondrogenic differentiation. a) Volcano plot of differentially expressed genes in rat BMSCs cultured on 1.5% MXene scaffolds with piezoelectric "
+    },
+    {
+     "page": 14,
+     "block_id": 1,
+     "text": "FIGURE 8 | In vivo cartilage regeneration in a rat osteochondral defect model. a) Schematic illustration showing the osteochondral defect and scaffold implantation. b) Macroscopic images of cartilage defects at 6 and 12 weeks post-implantation across different treatment groups (Control, Defect, IR, "
+    },
+    {
+     "page": 16,
+     "block_id": 2,
+     "text": "FIGURE 9 | In vivo validation of vascular modulation and TRPV4 pathway activation. a) Representative immunofluorescence images showing CD31 (red) and EMCN (green) double staining for H-type vessels in the subchondral bone region at 6 and 12 weeks; scale bar: 200  $ \\mu $m. b) Quantitative analysis o"
+    }
+   ]
+  }
+ }
+}

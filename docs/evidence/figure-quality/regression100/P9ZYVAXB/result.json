@@ -1,0 +1,111 @@
+{
+ "key": "P9ZYVAXB",
+ "passed": true,
+ "figures": 4,
+ "structural": {
+  "key": "P9ZYVAXB",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 95659,
+  "new_text_chars": 95659,
+  "old_entries": 4,
+  "new_entries": 4,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      210,
+      790,
+      248,
+      831
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      210,
+      876,
+      249,
+      909
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      210,
+      961,
+      253,
+      998
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      209,
+      1047,
+      247,
+      1090
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      211,
+      1137,
+      252,
+      1182
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      210,
+      1219,
+      251,
+      1260
+     ]
+    },
+    {
+     "page": 2,
+     "bbox": [
+      158,
+      564,
+      889,
+      1172
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 8,
+     "text": "Stimuli"
+    },
+    {
+     "page": 3,
+     "block_id": 17,
+     "text": "Figure 1. Illustration of hierarchical structure of bone from macroscopic to nanoscopic levels. At the macroscopic level (a) Bone structure includes repeating osteon units within cortical bone (b) Collagen fibers and fibrils (c) Distinct nanopattern bone structures (D) Nanofibers (e) Nanotubes (f) N"
+    },
+    {
+     "page": 5,
+     "block_id": 4,
+     "text": "Figure 2. Schematic illustration of cellular signaling pathways activated by piezoelectric scaffolds. Reproduced from [20] under terms of a creative common attribution license (https://creativecommons.org/licenses/by/4.0/)."
+    },
+    {
+     "page": 12,
+     "block_id": 5,
+     "text": "Figure 3. Fluorescence images of live/dead assay of HOb cells on PCL scaffolds at day 7, 14, and 21 (a) and white-light images of Von Kossa-stained scaffolds at day 7, 14, 21, and 28 (b). Reused with permission from ref [132]."
+    },
+    {
+     "page": 13,
+     "block_id": 5,
+     "text": "Figure 4. TEM images of the composite material include: (a) An overview of BNNT, (b) A zoomed-in view of figure A (a), (c) BaTiO $ _{3} $ structures within the composite, (d) BN flakes, (e) BN with a triangular structure, and (f) BN forming nanofiber structures (a) and fluorescence images from the l"
+    }
+   ]
+  }
+ }
+}

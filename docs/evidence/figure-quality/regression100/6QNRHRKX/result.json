@@ -1,0 +1,103 @@
+{
+ "key": "6QNRHRKX",
+ "passed": true,
+ "figures": 4,
+ "structural": {
+  "key": "6QNRHRKX",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 9189,
+  "new_text_chars": 9189,
+  "old_entries": 3,
+  "new_entries": 4,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 2,
+     "block_id": 9,
+     "text": "Fig. 3"
+    },
+    {
+     "page": 2,
+     "block_id": 10,
+     "text": "Bar graph representation of acromio-humeral interval in fifty-nine patients with known rotator cuff tears."
+    },
+    {
+     "page": 3,
+     "block_id": 7,
+     "text": "Fig. 5"
+    },
+    {
+     "page": 3,
+     "block_id": 11,
+     "text": "Fig. 7"
+    },
+    {
+     "page": 3,
+     "block_id": 12,
+     "text": "Standard antero-posterior radiographs demonstrating four cases of narrowed acromio-humeral intervals in patients with known rotator cuff tears."
+    }
+   ],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      223,
+      794,
+      567,
+      1183
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 6,
+     "text": "Fig. 2"
+    },
+    {
+     "page": 2,
+     "block_id": 7,
+     "text": "Bar graph representation of the acromio-humeral interval in sixty normal patients."
+    },
+    {
+     "page": 2,
+     "block_id": 9,
+     "text": "Fig. 3"
+    },
+    {
+     "page": 2,
+     "block_id": 10,
+     "text": "Bar graph representation of acromio-humeral interval in fifty-nine patients with known rotator cuff tears."
+    },
+    {
+     "page": 3,
+     "block_id": 5,
+     "text": "Fig. 4"
+    },
+    {
+     "page": 3,
+     "block_id": 7,
+     "text": "Fig. 5"
+    },
+    {
+     "page": 3,
+     "block_id": 9,
+     "text": "Fig. 6"
+    },
+    {
+     "page": 3,
+     "block_id": 11,
+     "text": "Fig. 7"
+    },
+    {
+     "page": 3,
+     "block_id": 12,
+     "text": "Standard antero-posterior radiographs demonstrating four cases of narrowed acromio-humeral intervals in patients with known rotator cuff tears."
+    }
+   ]
+  }
+ }
+}

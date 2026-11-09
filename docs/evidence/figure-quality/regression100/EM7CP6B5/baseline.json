@@ -1,0 +1,226 @@
+{
+ "dry_run": {
+  "key": "EM7CP6B5",
+  "identity": {
+   "old": {
+    "entries": 8,
+    "unique_ids": 8,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 8,
+    "unique_ids": 8,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005",
+    "figure_006": "figure_006",
+    "figure_007": "figure_007",
+    "figure_008": "figure_008"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 36,
+   "new_render_files": 36,
+   "render_added": [],
+   "render_removed": [],
+   "embeds": 11,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 3,
+   "new_tables": 3,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 172,
+   "new_rows": 172,
+   "role_removed": {},
+   "role_added": {},
+   "old_body_chars": 29812,
+   "new_body_chars": 29812,
+   "old_text_chars": 53086,
+   "new_text_chars": 53086,
+   "old_fulltext_chars": 41975
+  },
+  "new_manifest": {
+   "figures": 8,
+   "tables": 3,
+   "orphans": 7
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "EM7CP6B5",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 53086,
+  "new_text_chars": 53086,
+  "old_entries": 8,
+  "new_entries": 8,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 6,
+     "block_id": 11,
+     "text": "Demographic and Clinical Characteristics of Patients $ ^{a} $"
+    },
+    {
+     "page": 7,
+     "block_id": 4,
+     "text": "Comparisons in Clinical Outcomes Between the 2 Surgical Groups $ ^{a} $"
+    },
+    {
+     "page": 8,
+     "block_id": 4,
+     "text": "Comparison of Radiological Outcomes Between the 2 Groups $ ^{a} $"
+    }
+   ],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 10,
+     "text": "Figure 1. Schematic outline of middle trapezius tendon (MTT) transfer. The inferior part of the MTT is harvested and transferred to the supraspinatus footprint beneath the undersurface of the acromion using an interpositional graft (red arrowheads). ISP, infraspinatus; UT, upper trapezius. (Reprinte"
+    },
+    {
+     "page": 3,
+     "block_id": 8,
+     "text": "Figure 2. Flowchart showing the patient selection for this study. FI, fatty infiltration; f/u, follow-up; IISST, isolated irreparable supraspinatus tendon tear; ISP, infraspinatus; MTT, middle trapezius transfer; N/A, not applicable; OA, osteoarthritis; SCR, superior capsular reconstruction; SSP, su"
+    },
+    {
+     "page": 4,
+     "block_id": 4,
+     "text": "Figure 3. (A) The fascia lata (FL) involving the thicker intermuscular septum and posterior tissue was harvested. (B) The FL was then folded twice to obtain a minimal graft thickness of 6 mm and was prepared and sutured using the Krackow method. (C) An arthroscopic image (asterisk) with side-to-side"
+    },
+    {
+     "page": 4,
+     "block_id": 6,
+     "text": "Figure 4. (A) The fascia lata (FL) strip is harvested  $ \\geq $4 cm and 15 cm in width and length, respectively, involving the intermuscular septum and posterior thicker tissue. (B) The harvested FL was folded once lengthwise, and No. 2 nonabsorbable sutures were applied on both edges of the graft."
+    },
+    {
+     "page": 5,
+     "block_id": 4,
+     "text": "Figure 5. (A) The exposed inferior part of the middle trapezius tendon (MTT) (asterisk) and the scapular spine (arrowheads) of the left shoulder. (B) Subsequently, the harvested MTT is prepared using nonabsorbable suture material along the inferior edge of the tendon."
+    },
+    {
+     "page": 5,
+     "block_id": 12,
+     "text": "Figure 6. (A) Arthroscopic image of the left shoulder from the lateral portal showing fascia lata (FL) interpositional graft (asterisk) and side-to-side suturing to the infraspinatus (ISP) tendon. (B) The FL and the middle trapezius tendon were secured together using No. 2 nonabsorbable sutures with"
+    },
+    {
+     "page": 6,
+     "block_id": 11,
+     "text": "Demographic and Clinical Characteristics of Patients $ ^{a} $"
+    },
+    {
+     "page": 7,
+     "block_id": 4,
+     "text": "Comparisons in Clinical Outcomes Between the 2 Surgical Groups $ ^{a} $"
+    },
+    {
+     "page": 7,
+     "block_id": 9,
+     "text": "Figure 7. (A) Preoperative plain radiography and (B) immediate operative radiography reveal no signs of bony erosion in the subacromial region. (C) Plain radiography and (D) MRI at 2 years postoperatively demonstrate the subacromial bone erosion (arrows) after SCR. MRI, magnetic resonance imaging; S"
+    },
+    {
+     "page": 7,
+     "block_id": 11,
+     "text": "Figure 8. (A, C) MRI scans of immediate postoperative intact graft (arrowheads) and (B, D) 2-year postoperative retear graft (arrowheads) of SCR and MTT transfer, respectively. MRI, magnetic resonance imaging; MTT, middle trapezius tendon; SCR, superior capsular reconstruction."
+    },
+    {
+     "page": 8,
+     "block_id": 4,
+     "text": "Comparison of Radiological Outcomes Between the 2 Groups $ ^{a} $"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [
+   {
+    "page": 6,
+    "block_id": 11,
+    "text": "Demographic and Clinical Characteristics of Patients $ ^{a} $"
+   },
+   {
+    "page": 7,
+    "block_id": 4,
+    "text": "Comparisons in Clinical Outcomes Between the 2 Surgical Groups $ ^{a} $"
+   },
+   {
+    "page": 8,
+    "block_id": 4,
+    "text": "Comparison of Radiological Outcomes Between the 2 Groups $ ^{a} $"
+   }
+  ],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 10,
+    "text": "Figure 1. Schematic outline of middle trapezius tendon (MTT) transfer. The inferior part of the MTT is harvested and transferred to the supraspinatus footprint beneath the undersurface of the acromion using an interpositional graft (red arrowheads). ISP, infraspinatus; UT, upper trapezius. (Reprinte"
+   },
+   {
+    "page": 3,
+    "block_id": 8,
+    "text": "Figure 2. Flowchart showing the patient selection for this study. FI, fatty infiltration; f/u, follow-up; IISST, isolated irreparable supraspinatus tendon tear; ISP, infraspinatus; MTT, middle trapezius transfer; N/A, not applicable; OA, osteoarthritis; SCR, superior capsular reconstruction; SSP, su"
+   },
+   {
+    "page": 4,
+    "block_id": 4,
+    "text": "Figure 3. (A) The fascia lata (FL) involving the thicker intermuscular septum and posterior tissue was harvested. (B) The FL was then folded twice to obtain a minimal graft thickness of 6 mm and was prepared and sutured using the Krackow method. (C) An arthroscopic image (asterisk) with side-to-side"
+   },
+   {
+    "page": 4,
+    "block_id": 6,
+    "text": "Figure 4. (A) The fascia lata (FL) strip is harvested  $ \\geq $4 cm and 15 cm in width and length, respectively, involving the intermuscular septum and posterior thicker tissue. (B) The harvested FL was folded once lengthwise, and No. 2 nonabsorbable sutures were applied on both edges of the graft."
+   },
+   {
+    "page": 5,
+    "block_id": 4,
+    "text": "Figure 5. (A) The exposed inferior part of the middle trapezius tendon (MTT) (asterisk) and the scapular spine (arrowheads) of the left shoulder. (B) Subsequently, the harvested MTT is prepared using nonabsorbable suture material along the inferior edge of the tendon."
+   },
+   {
+    "page": 5,
+    "block_id": 12,
+    "text": "Figure 6. (A) Arthroscopic image of the left shoulder from the lateral portal showing fascia lata (FL) interpositional graft (asterisk) and side-to-side suturing to the infraspinatus (ISP) tendon. (B) The FL and the middle trapezius tendon were secured together using No. 2 nonabsorbable sutures with"
+   },
+   {
+    "page": 6,
+    "block_id": 11,
+    "text": "Demographic and Clinical Characteristics of Patients $ ^{a} $"
+   },
+   {
+    "page": 7,
+    "block_id": 4,
+    "text": "Comparisons in Clinical Outcomes Between the 2 Surgical Groups $ ^{a} $"
+   },
+   {
+    "page": 7,
+    "block_id": 9,
+    "text": "Figure 7. (A) Preoperative plain radiography and (B) immediate operative radiography reveal no signs of bony erosion in the subacromial region. (C) Plain radiography and (D) MRI at 2 years postoperatively demonstrate the subacromial bone erosion (arrows) after SCR. MRI, magnetic resonance imaging; S"
+   },
+   {
+    "page": 7,
+    "block_id": 11,
+    "text": "Figure 8. (A, C) MRI scans of immediate postoperative intact graft (arrowheads) and (B, D) 2-year postoperative retear graft (arrowheads) of SCR and MTT transfer, respectively. MRI, magnetic resonance imaging; MTT, middle trapezius tendon; SCR, superior capsular reconstruction."
+   },
+   {
+    "page": 8,
+    "block_id": 4,
+    "text": "Comparison of Radiological Outcomes Between the 2 Groups $ ^{a} $"
+   }
+  ]
+ }
+}

@@ -1,0 +1,68 @@
+{
+ "key": "7CIULR7G",
+ "passed": true,
+ "figures": 3,
+ "structural": {
+  "key": "7CIULR7G",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 56149,
+  "new_text_chars": 56149,
+  "old_entries": 3,
+  "new_entries": 3,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 3,
+     "block_id": 3,
+     "text": "Figure I. PEMF modulates AMSC-derived exosomes in the incubator. PEMF = pulsed electromagnetic field; AMSC = adipose tissue-derived MSC."
+    },
+    {
+     "page": 9,
+     "block_id": 4,
+     "text": "PEMF = pulsed electromagnetic field; AMSC = adipose tissue derived MSC; ACLT = anterior cruciate ligament transaction; OARSI = Osteoarthritis Research Society International; OA = osteoarthritis."
+    }
+   ],
+   "assets": [
+    {
+     "page": 3,
+     "bbox": [
+      100,
+      159,
+      1049,
+      912
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 3,
+     "text": "Figure I. PEMF modulates AMSC-derived exosomes in the incubator. PEMF = pulsed electromagnetic field; AMSC = adipose tissue-derived MSC."
+    },
+    {
+     "page": 6,
+     "block_id": 15,
+     "text": "Figure 2. Characterization of AMSCs and AMSC-derived exosomes. (A) Flow cytometry analysis showed that AMSCs were positive for mesenchymal markers, including CD44 and CD90, but negative for CD34 and CD45. (B) The image of AMSCs, and the multilineage differentiation potential of AMSCs was demonstrate"
+    },
+    {
+     "page": 7,
+     "block_id": 18,
+     "text": "Figure 3. PEMF-regulated AMSC-derived exosomes attenuated IL-1β-induced downregulation of anabolic markers and upregulation of catabolic markers in cartilage degradation. (A) Immunofluorescence staining of chondrocytes and AMSC-derived exosomes (DiO) showed that exosomes gathered inside the chondroc"
+    },
+    {
+     "page": 9,
+     "block_id": 3,
+     "text": "Figure 4. PEMF-regulated AMSC-derived exosomes alleviate cartilage damage in ACLT-induced experimental osteoarthritis rats. (A) The micro-CT image of the transverse section of the epiphyseal proximal tibia of rats. (B) Images of H&E staining of knee joint specimens. The magnification is 200x. (C) OA"
+    },
+    {
+     "page": 9,
+     "block_id": 4,
+     "text": "PEMF = pulsed electromagnetic field; AMSC = adipose tissue derived MSC; ACLT = anterior cruciate ligament transaction; OARSI = Osteoarthritis Research Society International; OA = osteoarthritis."
+    }
+   ]
+  }
+ }
+}

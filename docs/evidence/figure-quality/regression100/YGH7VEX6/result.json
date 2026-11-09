@@ -1,0 +1,128 @@
+{
+ "key": "YGH7VEX6",
+ "passed": true,
+ "figures": 12,
+ "structural": {
+  "key": "YGH7VEX6",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 31354,
+  "new_text_chars": 31354,
+  "old_entries": 12,
+  "new_entries": 12,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 2,
+     "block_id": 5,
+     "text": "Figure 1. The chemical structure of the self-oscillating gel without RGO."
+    },
+    {
+     "page": 6,
+     "block_id": 2,
+     "text": "Figure 9. The TEM micrographs of the prepared G4 gel."
+    },
+    {
+     "page": 6,
+     "block_id": 7,
+     "text": "Figure 11 shows the mechanical properties of the prepared gel. It can be seen that the rupture stress of the G2 sample reaches 4.1 MPa from Figure 11(a). Figure 11(b) shows the swollen gel and it is in good condition by compressed with different weights as in (c) and (d). Moreover, the gel also can "
+    },
+    {
+     "page": 7,
+     "block_id": 9,
+     "text": "Figure 13. The equilibrium swelling ratio of prepared gels in  $ \\mathrm{Ce(SO_{4})_{2}} $ and  $ \\mathrm{Ce_{2}(SO_{4})_{3}} $ solutions."
+    }
+   ],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      718,
+      500,
+      1105,
+      719
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 5,
+     "text": "Figure 1. The chemical structure of the self-oscillating gel without RGO."
+    },
+    {
+     "page": 2,
+     "block_id": 15,
+     "text": "Figure 2. The fabrication process of reduced graphene oxide."
+    },
+    {
+     "page": 3,
+     "block_id": 2,
+     "text": "Figure 3. Fabrication procedure of poly(AM-co-AA-co-Fe(phen) $ _{3} $)/RGO gels."
+    },
+    {
+     "page": 4,
+     "block_id": 11,
+     "text": "Figure 4. The FT-IR spectra of GO and RGO."
+    },
+    {
+     "page": 4,
+     "block_id": 13,
+     "text": "Figure 5. The FT-IR spectra of the gels."
+    },
+    {
+     "page": 5,
+     "block_id": 2,
+     "text": "Figure 6. The XPS spectra of the G4 gel."
+    },
+    {
+     "page": 5,
+     "block_id": 7,
+     "text": "Figure 7. The Raman spectra of the gels with different content of RGO and RGO."
+    },
+    {
+     "page": 5,
+     "block_id": 14,
+     "text": "Figure 8. The SEM images of the prepared gels."
+    },
+    {
+     "page": 6,
+     "block_id": 2,
+     "text": "Figure 9. The TEM micrographs of the prepared G4 gel."
+    },
+    {
+     "page": 6,
+     "block_id": 4,
+     "text": "Figure 10. The optical micrographs (OM) images of the gels."
+    },
+    {
+     "page": 6,
+     "block_id": 13,
+     "text": "Figure 11. Compressive stress-strain (a), the images of the original (b), compressed with different weights (c) and (d), stretched (e), twisted (f) and knotted (g) for the prepared G4 gel at 20 °C."
+    },
+    {
+     "page": 7,
+     "block_id": 5,
+     "text": "Figure 12. The electrical conductivity of the gels with different RGO content (a) and images of G4 gel for conductivity (b) and (c)."
+    },
+    {
+     "page": 7,
+     "block_id": 9,
+     "text": "Figure 13. The equilibrium swelling ratio of prepared gels in  $ \\mathrm{Ce(SO_{4})_{2}} $ and  $ \\mathrm{Ce_{2}(SO_{4})_{3}} $ solutions."
+    },
+    {
+     "page": 7,
+     "block_id": 11,
+     "text": "Figure 14 exhibits the redox potential diagram of the gel sample placed in the BZ solution free of catalyst at room temperature. When MA is used as the organic substrate of the BZ system, the BZ solution diffuses into the gel, and the chemical oscillation reaction to occur inside the gel. The Fe(phe"
+    },
+    {
+     "page": 7,
+     "block_id": 14,
+     "text": "Figure 14. The redox potential oscillation of the gel in the BZ solution at 25 °C ((a) G3 without RGO; (b) G3 gel). Composition of the BZ solution: 0.10 mol·L⁻¹ MA, 0.30 mol·L⁻¹ KBrO₃, and 0.35 mol·L⁻¹ H₂SO₄."
+    }
+   ]
+  }
+ }
+}

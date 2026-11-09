@@ -1,0 +1,164 @@
+{
+ "dry_run": {
+  "key": "U96H2WCT",
+  "identity": {
+   "old": {
+    "entries": 4,
+    "unique_ids": 3,
+    "duplicate_extra": 1
+   },
+   "new": {
+    "entries": 4,
+    "unique_ids": 4,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001_p002_b8",
+    "figure_003": "figure_003",
+    "figure_reserved_003": "figure_002"
+   },
+   "renamed": [
+    [
+     "figure_001",
+     "figure_001_p002_b8"
+    ],
+    [
+     "figure_reserved_003",
+     "figure_002"
+    ]
+   ],
+   "unmapped_old_ids": [],
+   "claims_changed": [
+    {
+     "old_id": "figure_001",
+     "old_assets": [
+      "3"
+     ],
+     "new_id": "figure_001_p002_b8",
+     "new_assets": [
+      "9"
+     ]
+    }
+   ]
+  },
+  "delivery": {
+   "old_render_files": 13,
+   "new_render_files": 28,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_001_p002_b8.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/tables/table_001.jpg",
+    "assets/tables/table_002.jpg",
+    "render/figures/figure_001_p002_b8.md",
+    "render/figures/figure_002.md"
+   ],
+   "render_removed": [
+    "render/figures/figure_reserved_003.md"
+   ],
+   "embeds": 4,
+   "embeds_retargeted": 2,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 2,
+   "new_tables": 2,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 155,
+   "new_rows": 155,
+   "role_removed": {
+    "figure_caption": 2,
+    "reference_item": 1
+   },
+   "role_added": {
+    "figure_caption_candidate": 2,
+    "section_heading": 1
+   },
+   "old_body_chars": 23454,
+   "new_body_chars": 23454,
+   "old_text_chars": 40984,
+   "new_text_chars": 40984,
+   "old_fulltext_chars": 34355
+  },
+  "new_manifest": {
+   "figures": 4,
+   "tables": 2,
+   "orphans": 8
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "U96H2WCT",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 40984,
+  "new_text_chars": 40984,
+  "old_entries": 4,
+  "new_entries": 4,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 4,
+     "text": "Fig. 1-A\nThis chondral defect of the lateral femoral condyle measured  $ 16 \\times 14 \\, mm $ ( $ 2.2 \\, cm^{2} $). The patient had symptoms of locking and catching that limited her activity."
+    },
+    {
+     "page": 2,
+     "block_id": 8,
+     "text": "Fig. 1-B\nA loose piece of articular cartilage was found in the lateral compartment during the arthroscopy and was removed."
+    },
+    {
+     "page": 4,
+     "block_id": 3,
+     "text": "Fig. 2\n\nActivity rating scale.\nThis table shows\nthe sports activities\nand activity levels\nthat were recorded\npreoperatively and\npostoperatively at\nregular intervals.\nADL = activities of\ndaily living."
+    },
+    {
+     "page": 5,
+     "block_id": 5,
+     "text": "Fig. 3\nMean subjective total Noyes scores for each group annually during follow-up."
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 4,
+    "text": "Fig. 1-A\nThis chondral defect of the lateral femoral condyle measured  $ 16 \\times 14 \\, mm $ ( $ 2.2 \\, cm^{2} $). The patient had symptoms of locking and catching that limited her activity."
+   },
+   {
+    "page": 2,
+    "block_id": 8,
+    "text": "Fig. 1-B\nA loose piece of articular cartilage was found in the lateral compartment during the arthroscopy and was removed."
+   },
+   {
+    "page": 4,
+    "block_id": 3,
+    "text": "Fig. 2\n\nActivity rating scale.\nThis table shows\nthe sports activities\nand activity levels\nthat were recorded\npreoperatively and\npostoperatively at\nregular intervals.\nADL = activities of\ndaily living."
+   },
+   {
+    "page": 5,
+    "block_id": 5,
+    "text": "Fig. 3\nMean subjective total Noyes scores for each group annually during follow-up."
+   }
+  ]
+ }
+}

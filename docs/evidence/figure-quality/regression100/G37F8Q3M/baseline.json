@@ -1,0 +1,91 @@
+{
+ "dry_run": {
+  "key": "G37F8Q3M",
+  "identity": {
+   "old": {
+    "entries": 1,
+    "unique_ids": 1,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 1,
+    "unique_ids": 1,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 4,
+   "new_render_files": 4,
+   "render_added": [],
+   "render_removed": [],
+   "embeds": 2,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 1,
+   "new_tables": 1,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 115,
+   "new_rows": 115,
+   "role_removed": {
+    "frontmatter_noise": 1
+   },
+   "role_added": {
+    "body_paragraph": 1
+   },
+   "old_body_chars": 20464,
+   "new_body_chars": 20536,
+   "old_text_chars": 36612,
+   "new_text_chars": 36612,
+   "old_fulltext_chars": 31667
+  },
+  "new_manifest": {
+   "figures": 1,
+   "tables": 1,
+   "orphans": 0
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "G37F8Q3M",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 36612,
+  "new_text_chars": 36612,
+  "old_entries": 1,
+  "new_entries": 1,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 12,
+     "text": "Fig. 1. Measurement of muscle atrophy by Warner et al. is based on oblique sagittal plane image medial to coracoid process. A line is drawn from the edge of the coracoid to the inferior scapular tip, from the inferior tip of the scapula to the spine, and from the scapular spine to the coracoid proce"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 12,
+    "text": "Fig. 1. Measurement of muscle atrophy by Warner et al. is based on oblique sagittal plane image medial to coracoid process. A line is drawn from the edge of the coracoid to the inferior scapular tip, from the inferior tip of the scapula to the spine, and from the scapular spine to the coracoid proce"
+   }
+  ]
+ }
+}

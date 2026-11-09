@@ -1,0 +1,150 @@
+{
+ "dry_run": {
+  "key": "8LI35S8T",
+  "identity": {
+   "old": {
+    "entries": 3,
+    "unique_ids": 3,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 3,
+    "unique_ids": 3,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 11,
+   "new_render_files": 22,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/tables/table_001.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 3,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 1,
+   "new_tables": 1,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 176,
+   "new_rows": 176,
+   "role_removed": {
+    "unknown_structural": 3,
+    "structured_insert": 1,
+    "reference_item": 3
+   },
+   "role_added": {
+    "noise": 3,
+    "body_paragraph": 1,
+    "subsection_heading": 2,
+    "backmatter_heading_candidate": 1
+   },
+   "old_body_chars": 21399,
+   "new_body_chars": 21481,
+   "old_text_chars": 46112,
+   "new_text_chars": 46112,
+   "old_fulltext_chars": 36660
+  },
+  "new_manifest": {
+   "figures": 3,
+   "tables": 1,
+   "orphans": 7
+  },
+  "new_orphans": 1
+ },
+ "structural": {
+  "key": "8LI35S8T",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 46112,
+  "new_text_chars": 46112,
+  "old_entries": 3,
+  "new_entries": 3,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      1019,
+      220,
+      1077,
+      277
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 7,
+     "text": "Fig. 1 Biogenesis, biomarkers, and cargos of exosomes. A Endocytosis and plasma membrane invagination enable extracellular constituents and cell surface proteins to invade cells. Early endosomes are formed when a plasmalemma buds and fuses with the endoplasmic reticulum, trans Golgi body, and mitoch"
+    },
+    {
+     "page": 5,
+     "block_id": 3,
+     "text": "Fig. 2 Macrophages can be induced to an activated inflammatory phenotype by exosomes secreted by MSCs/TSCs. Exosomes regulate the inflammation process after tendon injury to facilitate proper healing through M1 down-regulation and M2 up-regulation, which alleviate inflammation and determine whether "
+    },
+    {
+     "page": 6,
+     "block_id": 3,
+     "text": "Fig. 3 Proliferation and migration of tenocytes can be promoted by exosomes in a dose-dependent manner via PI3K/AKT and MAPK/ERK1/2 signaling pathways. Exosomes also decrease the apoptosis of tenocytes. MMP and TIMP released by exosomes are the most important factors in aiding the healing process. T"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     1019,
+     220,
+     1077,
+     277
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 3,
+    "block_id": 7,
+    "text": "Fig. 1 Biogenesis, biomarkers, and cargos of exosomes. A Endocytosis and plasma membrane invagination enable extracellular constituents and cell surface proteins to invade cells. Early endosomes are formed when a plasmalemma buds and fuses with the endoplasmic reticulum, trans Golgi body, and mitoch"
+   },
+   {
+    "page": 5,
+    "block_id": 3,
+    "text": "Fig. 2 Macrophages can be induced to an activated inflammatory phenotype by exosomes secreted by MSCs/TSCs. Exosomes regulate the inflammation process after tendon injury to facilitate proper healing through M1 down-regulation and M2 up-regulation, which alleviate inflammation and determine whether "
+   },
+   {
+    "page": 6,
+    "block_id": 3,
+    "text": "Fig. 3 Proliferation and migration of tenocytes can be promoted by exosomes in a dose-dependent manner via PI3K/AKT and MAPK/ERK1/2 signaling pathways. Exosomes also decrease the apoptosis of tenocytes. MMP and TIMP released by exosomes are the most important factors in aiding the healing process. T"
+   }
+  ]
+ }
+}

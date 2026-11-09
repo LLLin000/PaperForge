@@ -1,0 +1,120 @@
+{
+ "dry_run": {
+  "key": "H6DI4BNH",
+  "identity": {
+   "old": {
+    "entries": 3,
+    "unique_ids": 3,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 3,
+    "unique_ids": 3,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 6,
+   "new_render_files": 12,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/tables/table_001.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 4,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 1,
+   "new_tables": 1,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 120,
+   "new_rows": 120,
+   "role_removed": {
+    "unknown_structural": 1
+   },
+   "role_added": {
+    "authors": 1
+   },
+   "old_body_chars": 20465,
+   "new_body_chars": 20465,
+   "old_text_chars": 29049,
+   "new_text_chars": 29049,
+   "old_fulltext_chars": 26430
+  },
+  "new_manifest": {
+   "figures": 3,
+   "tables": 1,
+   "orphans": 2
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "H6DI4BNH",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 29049,
+  "new_text_chars": 29049,
+  "old_entries": 3,
+  "new_entries": 3,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 3,
+     "text": "FIGURE 1. NeoCart cartoon depicting process from biopsy to implantation. Figure courtesy of Dennis Crawford, MD, PhD."
+    },
+    {
+     "page": 3,
+     "block_id": 10,
+     "text": "FIGURE 2. Representative sagittal MRI after implantation of a 2.0 cm (anterior posterior) NeoCart patch. A and C, Cartilage sensitive 1.5T MRI at 1 year (arrow) and with T2 mapping. B and D, Same patient at 2 years. Images courtesy of Dennis Crawford, MD, PhD, and Hollis Potter, MD. MRI indicates ma"
+    },
+    {
+     "page": 4,
+     "block_id": 6,
+     "text": "FIGURE 3. DeNovo ET shown at necropsy and histologically with safranin O staining. Photograph from http://www.istotech.com/denovo-et-orthopaedics.html."
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 3,
+    "block_id": 3,
+    "text": "FIGURE 1. NeoCart cartoon depicting process from biopsy to implantation. Figure courtesy of Dennis Crawford, MD, PhD."
+   },
+   {
+    "page": 3,
+    "block_id": 10,
+    "text": "FIGURE 2. Representative sagittal MRI after implantation of a 2.0 cm (anterior posterior) NeoCart patch. A and C, Cartilage sensitive 1.5T MRI at 1 year (arrow) and with T2 mapping. B and D, Same patient at 2 years. Images courtesy of Dennis Crawford, MD, PhD, and Hollis Potter, MD. MRI indicates ma"
+   },
+   {
+    "page": 4,
+    "block_id": 6,
+    "text": "FIGURE 3. DeNovo ET shown at necropsy and histologically with safranin O staining. Photograph from http://www.istotech.com/denovo-et-orthopaedics.html."
+   }
+  ]
+ }
+}

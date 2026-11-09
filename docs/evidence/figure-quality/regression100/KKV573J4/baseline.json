@@ -1,0 +1,202 @@
+{
+ "dry_run": {
+  "key": "KKV573J4",
+  "identity": {
+   "old": {
+    "entries": 6,
+    "unique_ids": 6,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 6,
+    "unique_ids": 6,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005",
+    "figure_006": "figure_006"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 41,
+   "new_render_files": 82,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/figures/figure_005.jpg",
+    "assets/figures/figure_006.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/orphans/orphan_013.jpg",
+    "assets/orphans/orphan_014.jpg",
+    "assets/orphans/orphan_015.jpg",
+    "assets/orphans/orphan_016.jpg",
+    "assets/orphans/orphan_017.jpg",
+    "assets/orphans/orphan_018.jpg",
+    "assets/orphans/orphan_019.jpg",
+    "assets/orphans/orphan_020.jpg",
+    "assets/orphans/orphan_021.jpg",
+    "assets/orphans/orphan_022.jpg",
+    "assets/orphans/orphan_023.jpg",
+    "assets/orphans/orphan_024.jpg",
+    "assets/orphans/orphan_025.jpg",
+    "assets/orphans/orphan_026.jpg",
+    "assets/orphans/orphan_027.jpg",
+    "assets/orphans/orphan_028.jpg",
+    "assets/orphans/orphan_029.jpg",
+    "assets/orphans/orphan_030.jpg",
+    "assets/orphans/orphan_031.jpg",
+    "assets/orphans/orphan_032.jpg",
+    "assets/orphans/orphan_033.jpg",
+    "assets/orphans/orphan_034.jpg",
+    "assets/tables/table_001.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 6,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 1,
+   "new_tables": 1,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 207,
+   "new_rows": 207,
+   "role_removed": {
+    "unknown_structural": 2,
+    "figure_caption_candidate": 1,
+    "reference_item": 2
+   },
+   "role_added": {
+    "noise": 2,
+    "subsection_heading": 2,
+    "figure_caption": 1
+   },
+   "old_body_chars": 33438,
+   "new_body_chars": 33438,
+   "old_text_chars": 54718,
+   "new_text_chars": 54718,
+   "old_fulltext_chars": 48894
+  },
+  "new_manifest": {
+   "figures": 6,
+   "tables": 1,
+   "orphans": 34
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "KKV573J4",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 54718,
+  "new_text_chars": 54718,
+  "old_entries": 6,
+  "new_entries": 6,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 4,
+     "block_id": 17,
+     "text": "Figure 1 nsPEFs and ghrelin promote chondrogenesis of MSCs. A, Schematic representation of MSCs being stimulated by nsPEFs and ghrelin. B, Quantitative RT-PCR for the expression of Sox9, Col2, and Acan of pellet cultured MSCs after 14 d of chondrogenic differentiation. n=4 per group, normalized to t"
+    },
+    {
+     "page": 5,
+     "block_id": 6,
+     "text": "Figure 2 Ghrelin and nsPEFs exert different effects on the stem cell potency of MSCs. A and B, Quantitative RT-PCR analyses of the gene expression levels of Oct4 (A) and Nanog (B) of pellet-cultured MSCs after 3 d of chondrogenic differentiation. n=4 per group, normalized to the control group. C and"
+    },
+    {
+     "page": 6,
+     "block_id": 6,
+     "text": "Figure 3 Ghrelin and nsPEFs promote de novo cartilage regeneration. Articular cartilage defects of 1.5 mm depth and 1.5 mm diameter were created in the knee joints of SD rats.  $ 5 \\times 10^{5} $ cells were delivered to the defects with alginate hydrogel, and cartilage samples were collected at 12 "
+    },
+    {
+     "page": 7,
+     "block_id": 10,
+     "text": "GO"
+    },
+    {
+     "page": 7,
+     "block_id": 13,
+     "text": "Figure 4 ERK, JNK and STAT3 signaling pathways were activated by nsPEFs and ghrelin. A–C, Western blot analysis of (A) pERK/ERK, (B) pJNK/JNK and (C) pSTAT3/STAT3 within pellet-cultured MSCs after 1 d of chondrogenic differentiation. n=4 per group. D and E, RNA sequencing results of ghrelin treatmen"
+    },
+    {
+     "page": 8,
+     "block_id": 8,
+     "text": "Figure 5 Inhibition of ERK/JNK/STAT3 signaling blocked the chondrogenic differentiation. A, Schematic representation of MSCs being stimulated by ghrelin following nsPEFs, in the presence of inhibitor. The inhibitor was temporarily removed during nsPEFs stimulation. i, inhibitors; n, nsPEFs; G, ghrel"
+    },
+    {
+     "page": 9,
+     "block_id": 3,
+     "text": "Figure 6 Schematic illustration of the possible mechanisms of chondrogenesis induced by nsPEFs and ghrelin in MSCs."
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 4,
+    "block_id": 17,
+    "text": "Figure 1 nsPEFs and ghrelin promote chondrogenesis of MSCs. A, Schematic representation of MSCs being stimulated by nsPEFs and ghrelin. B, Quantitative RT-PCR for the expression of Sox9, Col2, and Acan of pellet cultured MSCs after 14 d of chondrogenic differentiation. n=4 per group, normalized to t"
+   },
+   {
+    "page": 5,
+    "block_id": 6,
+    "text": "Figure 2 Ghrelin and nsPEFs exert different effects on the stem cell potency of MSCs. A and B, Quantitative RT-PCR analyses of the gene expression levels of Oct4 (A) and Nanog (B) of pellet-cultured MSCs after 3 d of chondrogenic differentiation. n=4 per group, normalized to the control group. C and"
+   },
+   {
+    "page": 6,
+    "block_id": 6,
+    "text": "Figure 3 Ghrelin and nsPEFs promote de novo cartilage regeneration. Articular cartilage defects of 1.5 mm depth and 1.5 mm diameter were created in the knee joints of SD rats.  $ 5 \\times 10^{5} $ cells were delivered to the defects with alginate hydrogel, and cartilage samples were collected at 12 "
+   },
+   {
+    "page": 7,
+    "block_id": 10,
+    "text": "GO"
+   },
+   {
+    "page": 7,
+    "block_id": 13,
+    "text": "Figure 4 ERK, JNK and STAT3 signaling pathways were activated by nsPEFs and ghrelin. A–C, Western blot analysis of (A) pERK/ERK, (B) pJNK/JNK and (C) pSTAT3/STAT3 within pellet-cultured MSCs after 1 d of chondrogenic differentiation. n=4 per group. D and E, RNA sequencing results of ghrelin treatmen"
+   },
+   {
+    "page": 8,
+    "block_id": 8,
+    "text": "Figure 5 Inhibition of ERK/JNK/STAT3 signaling blocked the chondrogenic differentiation. A, Schematic representation of MSCs being stimulated by ghrelin following nsPEFs, in the presence of inhibitor. The inhibitor was temporarily removed during nsPEFs stimulation. i, inhibitors; n, nsPEFs; G, ghrel"
+   },
+   {
+    "page": 9,
+    "block_id": 3,
+    "text": "Figure 6 Schematic illustration of the possible mechanisms of chondrogenesis induced by nsPEFs and ghrelin in MSCs."
+   }
+  ]
+ }
+}

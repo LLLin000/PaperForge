@@ -1,0 +1,118 @@
+{
+ "dry_run": {
+  "key": "US22T6CB",
+  "identity": {
+   "old": {
+    "entries": 2,
+    "unique_ids": 2,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 2,
+    "unique_ids": 2,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 15,
+   "new_render_files": 30,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/tables/table_001.jpg",
+    "assets/tables/table_002.jpg",
+    "assets/tables/table_003.jpg",
+    "assets/tables/table_004.jpg",
+    "assets/tables/table_005.jpg",
+    "assets/tables/table_006.jpg",
+    "assets/tables/table_007.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 5,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 7,
+   "new_tables": 7,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 113,
+   "new_rows": 113,
+   "role_removed": {
+    "body_paragraph": 2
+   },
+   "role_added": {
+    "reference_item": 2
+   },
+   "old_body_chars": 16006,
+   "new_body_chars": 15575,
+   "old_text_chars": 29838,
+   "new_text_chars": 29838,
+   "old_fulltext_chars": 23926
+  },
+  "new_manifest": {
+   "figures": 2,
+   "tables": 7,
+   "orphans": 6
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "US22T6CB",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 29838,
+  "new_text_chars": 29838,
+  "old_entries": 2,
+  "new_entries": 2,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 15,
+     "text": "Figure 1. Bone-based glenoid version angle. GBL: glenoid bone line, SL: scapular line, GBV: glenoid bone version."
+    },
+    {
+     "page": 3,
+     "block_id": 2,
+     "text": "Figure 2. Cartilage-based glenoid version angle. GCL: glenoid cartilage line, SL: scapular line, GCV: glenoid cartilage version."
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 15,
+    "text": "Figure 1. Bone-based glenoid version angle. GBL: glenoid bone line, SL: scapular line, GBV: glenoid bone version."
+   },
+   {
+    "page": 3,
+    "block_id": 2,
+    "text": "Figure 2. Cartilage-based glenoid version angle. GCL: glenoid cartilage line, SL: scapular line, GCV: glenoid cartilage version."
+   }
+  ]
+ }
+}

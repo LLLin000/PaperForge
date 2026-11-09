@@ -1,0 +1,128 @@
+{
+ "key": "38W7XV4F",
+ "passed": true,
+ "figures": 12,
+ "structural": {
+  "key": "38W7XV4F",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 65019,
+  "new_text_chars": 65019,
+  "old_entries": 12,
+  "new_entries": 12,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      68,
+      769,
+      178,
+      807
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      69,
+      1313,
+      185,
+      1354
+     ]
+    },
+    {
+     "page": 7,
+     "bbox": [
+      333,
+      959,
+      590,
+      1126
+     ]
+    },
+    {
+     "page": 7,
+     "bbox": [
+      332,
+      1153,
+      601,
+      1332
+     ]
+    },
+    {
+     "page": 14,
+     "bbox": [
+      161,
+      223,
+      571,
+      492
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 9,
+     "text": "Figure 1. GlG6PD::6PGL enzyme inactivation assays. (A) Nitazoxanide (2-acetyloloxy-N-(5-nitro-2thiazolyl)benzamide) consist of a nitrothiazole ring and a salicylic acid moiety connected by a peptide bond. Metronidazole (2-(2-methyl-5-nitroimidazol-1-yl)ethanol) is a nitroimidazole. Albendazole (meth"
+    },
+    {
+     "page": 4,
+     "block_id": 4,
+     "text": "Figure 2. Mechanisms of action of metronidazole and nitazoxanide. The mechanism of action of metronidazole (MTZ-NO₂) in G. lamblia depends on three enzymes—pyruvate ferredoxin oxidoreductase (PFOR), NADPH-dependent thioredoxin reductase (TrxR) and nitroreductase 1 (GlnR1)—which reduce MTZ to nitro r"
+    },
+    {
+     "page": 5,
+     "block_id": 4,
+     "text": "Figure 3. Inactivation of the fused GlG6PD::6PGL enzyme by NTZ. (A) The GlG6PD::6PGL enzyme was incubated with different concentrations of NTZ, and the residual activity was measured at the indicated times. (B) The second-order inactivation rate constant ( $ k_{2} $) was obtained by fitting the calc"
+    },
+    {
+     "page": 6,
+     "block_id": 4,
+     "text": "Figure 4. Fluorescence emission spectra of the GlG6PD::6PGL enzyme. (A) Intrinsic fluorescence and (B) extrinsic fluorescence ANS assays of the enzyme-free GlG6PD::6PGL or with NTZ, MTZ, and ABZ. The protein was adjusted to 0.1 mg/mL and incubated with 100  $ \\mu $M of each of the anti-giantial drug"
+    },
+    {
+     "page": 7,
+     "block_id": 7,
+     "text": "Figure 5. Prediction of the interaction zones between NTZ and ABZ on the GlG6PD::6PGL protein. (A) General view of the binding sites of NTZ and ABZ with GlG6PD::6PGL. (B) Closer view of the orthosteric site (near active site) of the G6PD domain. (C) Structural NADP⁺ binding site zone. The NADP⁺ and "
+    },
+    {
+     "page": 7,
+     "block_id": 15,
+     "text": "Figure 6. Interaction zones of NTZ and ABZ drugs on GlG6PD::6PGL protein. (A) Close up of the NADP⁺ catalytic site of GlG6PD::6PGL with NTZ and (B) ABZ. (C) Close-up of the NADP⁺ structural site of GlG6PD::6PGL with NTZ; and (D) ABZ. The NTZ and ABZ compounds are shown in blue and violet, respective"
+    },
+    {
+     "page": 9,
+     "block_id": 7,
+     "text": "Figure 7. Dynamic behavior of GlG6PD::6PGL antiparasitic drug complexes. (A) Time series of alpha carbon (Cα) RMSD values for all complexes. The cumulative histogram of RMSD distribution for each complex is plotted on the side. (B) Comparison of the radius of gyration (Rog) of each complex."
+    },
+    {
+     "page": 10,
+     "block_id": 8,
+     "text": "Figure 8. Correlated and anticorrelated GlG6PD::6PGL fluctuations and DCCM (cij) for complexes. (A,B) Representative color map of DCCM in the plane of all residue pairs evaluated for APO, ABZ  $ NADP^{+} $, and  $ NADP^{+}-NTZ $. The higher correlation of cij for residue pairs i–j is reflected by th"
+    },
+    {
+     "page": 11,
+     "block_id": 5,
+     "text": "Figure 9. Dynamic fluctuations of G6PD::6PGL anti-giantial drug complexes. (A) Time series of beta carbon ( $ C_{\\beta} $) RMSF by residue. (B) Ensemble of flexible region proteins. RMSF values are displayed as cofactors. Most flexible region (390-410) is indicated with an arrow."
+    },
+    {
+     "page": 12,
+     "block_id": 7,
+     "text": "Figure 10. Surface-accessible solvent area (SASA) calculation of tryptophan residues. (A) Tryptophan residue localization on the GlG6PD::6PGL structure. (B) SASA time series calculation for all complexes during 500 ns of MDS."
+    },
+    {
+     "page": 13,
+     "block_id": 4,
+     "text": "Figure 11. MMGBSA calculations of tryptophan solvation free energy of GlG6PD::6PGL. All computed energies are expressed as mean, and include the entropy calculated via normal mode analysis. Energies are presented in kcal·mol⁻¹ at a temperature of 298 K."
+    },
+    {
+     "page": 14,
+     "block_id": 5,
+     "text": "Figure 12. Cytotoxic effect of NTZ (A) and concomitant inhibition of cellular GlG6PD::6PGL (B). Data on the viability of G. lamblia and the activity of GlG6PD::6PGL. Cultures of G. lamblia trophozoites were exposed to a 4  $ \\mu $M concentration of NTZ. Values are presented as means ± SD from at lea"
+    }
+   ]
+  }
+ }
+}

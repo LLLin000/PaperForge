@@ -1,0 +1,292 @@
+{
+ "dry_run": {
+  "key": "P9ZYVAXB",
+  "identity": {
+   "old": {
+    "entries": 4,
+    "unique_ids": 4,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 4,
+    "unique_ids": 4,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 25,
+   "new_render_files": 50,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/orphans/orphan_013.jpg",
+    "assets/orphans/orphan_014.jpg",
+    "assets/orphans/orphan_015.jpg",
+    "assets/orphans/orphan_016.jpg",
+    "assets/orphans/orphan_017.jpg",
+    "assets/orphans/orphan_018.jpg",
+    "assets/orphans/orphan_019.jpg",
+    "assets/tables/table_001.jpg",
+    "assets/tables/table_002.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 5,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 2,
+   "new_tables": 2,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 363,
+   "new_rows": 363,
+   "role_removed": {
+    "unknown_structural": 1,
+    "figure_caption_candidate": 1,
+    "reference_item": 1
+   },
+   "role_added": {
+    "figure_caption": 1,
+    "section_heading": 1,
+    "subsection_heading": 1
+   },
+   "old_body_chars": 59213,
+   "new_body_chars": 59213,
+   "old_text_chars": 95659,
+   "new_text_chars": 95659,
+   "old_fulltext_chars": 90856
+  },
+  "new_manifest": {
+   "figures": 4,
+   "tables": 2,
+   "orphans": 19
+  },
+  "new_orphans": 7
+ },
+ "structural": {
+  "key": "P9ZYVAXB",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 95659,
+  "new_text_chars": 95659,
+  "old_entries": 4,
+  "new_entries": 4,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      210,
+      790,
+      248,
+      831
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      210,
+      876,
+      249,
+      909
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      210,
+      961,
+      253,
+      998
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      209,
+      1047,
+      247,
+      1090
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      211,
+      1137,
+      252,
+      1182
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      210,
+      1219,
+      251,
+      1260
+     ]
+    },
+    {
+     "page": 2,
+     "bbox": [
+      158,
+      564,
+      889,
+      1172
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 8,
+     "text": "Stimuli"
+    },
+    {
+     "page": 3,
+     "block_id": 17,
+     "text": "Figure 1. Illustration of hierarchical structure of bone from macroscopic to nanoscopic levels. At the macroscopic level (a) Bone structure includes repeating osteon units within cortical bone (b) Collagen fibers and fibrils (c) Distinct nanopattern bone structures (D) Nanofibers (e) Nanotubes (f) N"
+    },
+    {
+     "page": 5,
+     "block_id": 4,
+     "text": "Figure 2. Schematic illustration of cellular signaling pathways activated by piezoelectric scaffolds. Reproduced from [20] under terms of a creative common attribution license (https://creativecommons.org/licenses/by/4.0/)."
+    },
+    {
+     "page": 12,
+     "block_id": 5,
+     "text": "Figure 3. Fluorescence images of live/dead assay of HOb cells on PCL scaffolds at day 7, 14, and 21 (a) and white-light images of Von Kossa-stained scaffolds at day 7, 14, 21, and 28 (b). Reused with permission from ref [132]."
+    },
+    {
+     "page": 13,
+     "block_id": 5,
+     "text": "Figure 4. TEM images of the composite material include: (a) An overview of BNNT, (b) A zoomed-in view of figure A (a), (c) BaTiO $ _{3} $ structures within the composite, (d) BN flakes, (e) BN with a triangular structure, and (f) BN forming nanofiber structures (a) and fluorescence images from the l"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     210,
+     790,
+     248,
+     831
+    ]
+   },
+   {
+    "page": 1,
+    "bbox": [
+     210,
+     876,
+     249,
+     909
+    ]
+   },
+   {
+    "page": 1,
+    "bbox": [
+     210,
+     961,
+     253,
+     998
+    ]
+   },
+   {
+    "page": 1,
+    "bbox": [
+     209,
+     1047,
+     247,
+     1090
+    ]
+   },
+   {
+    "page": 1,
+    "bbox": [
+     211,
+     1137,
+     252,
+     1182
+    ]
+   },
+   {
+    "page": 1,
+    "bbox": [
+     210,
+     1219,
+     251,
+     1260
+    ]
+   },
+   {
+    "page": 2,
+    "bbox": [
+     158,
+     564,
+     889,
+     1172
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 8,
+    "text": "Stimuli"
+   },
+   {
+    "page": 3,
+    "block_id": 17,
+    "text": "Figure 1. Illustration of hierarchical structure of bone from macroscopic to nanoscopic levels. At the macroscopic level (a) Bone structure includes repeating osteon units within cortical bone (b) Collagen fibers and fibrils (c) Distinct nanopattern bone structures (D) Nanofibers (e) Nanotubes (f) N"
+   },
+   {
+    "page": 5,
+    "block_id": 4,
+    "text": "Figure 2. Schematic illustration of cellular signaling pathways activated by piezoelectric scaffolds. Reproduced from [20] under terms of a creative common attribution license (https://creativecommons.org/licenses/by/4.0/)."
+   },
+   {
+    "page": 12,
+    "block_id": 5,
+    "text": "Figure 3. Fluorescence images of live/dead assay of HOb cells on PCL scaffolds at day 7, 14, and 21 (a) and white-light images of Von Kossa-stained scaffolds at day 7, 14, 21, and 28 (b). Reused with permission from ref [132]."
+   },
+   {
+    "page": 13,
+    "block_id": 5,
+    "text": "Figure 4. TEM images of the composite material include: (a) An overview of BNNT, (b) A zoomed-in view of figure A (a), (c) BaTiO $ _{3} $ structures within the composite, (d) BN flakes, (e) BN with a triangular structure, and (f) BN forming nanofiber structures (a) and fluorescence images from the l"
+   }
+  ]
+ }
+}

@@ -1,0 +1,218 @@
+{
+ "key": "7M6FIW4V",
+ "passed": true,
+ "figures": 7,
+ "structural": {
+  "key": "7M6FIW4V",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 81770,
+  "new_text_chars": 81770,
+  "old_entries": 9,
+  "new_entries": 7,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 7,
+     "block_id": 3,
+     "text": "Fig. 2. The performance of the top 30 reranking drugs in four drug prediction pipelines. Reranking score refers to the CoDReS aggregate score."
+    },
+    {
+     "page": 13,
+     "block_id": 3,
+     "text": "A, MR results for the relationship between potential drug targets and RCT. B, A sensitivity analysis was conducted to explore the potential influence of a specific SNP on the relationship between mTORC1-dependent circulating protein levels and RCT. C, Scatter graphs comparing the genetic association"
+    },
+    {
+     "page": 16,
+     "block_id": 2,
+     "text": "Fig. 9. mTOR-TKO mice exhibited enhanced resistance to tendinopathy."
+    },
+    {
+     "page": 16,
+     "block_id": 3,
+     "text": "A, Enrichment results for the differential genes between mTOR-TKO mice and WT mice. B, The enrichment map displays the pathways that are more abundant in tendinopathy patients compared to healthy control individuals, as well as in wild-type mice compared to mTOR-TKO mice. The nodes in the network sy"
+    }
+   ],
+   "assets": [
+    {
+     "page": 12,
+     "bbox": [
+      161,
+      150,
+      1028,
+      346
+     ]
+    },
+    {
+     "page": 12,
+     "bbox": [
+      161,
+      374,
+      1027,
+      569
+     ]
+    },
+    {
+     "page": 12,
+     "bbox": [
+      179,
+      613,
+      621,
+      1417
+     ]
+    },
+    {
+     "page": 12,
+     "bbox": [
+      655,
+      609,
+      1014,
+      1056
+     ]
+    },
+    {
+     "page": 12,
+     "bbox": [
+      655,
+      1091,
+      1015,
+      1417
+     ]
+    },
+    {
+     "page": 15,
+     "bbox": [
+      167,
+      117,
+      1020,
+      834
+     ]
+    },
+    {
+     "page": 15,
+     "bbox": [
+      172,
+      853,
+      511,
+      1127
+     ]
+    },
+    {
+     "page": 15,
+     "bbox": [
+      175,
+      852,
+      1013,
+      1128
+     ]
+    },
+    {
+     "page": 15,
+     "bbox": [
+      528,
+      852,
+      1014,
+      1124
+     ]
+    },
+    {
+     "page": 15,
+     "bbox": [
+      175,
+      1147,
+      568,
+      1385
+     ]
+    },
+    {
+     "page": 15,
+     "bbox": [
+      658,
+      1170,
+      997,
+      1424
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 11,
+     "text": "(continued)"
+    },
+    {
+     "page": 6,
+     "block_id": 8,
+     "text": "Fig. 1. Study design of multiplex transcriptional drug prediction and drug reranking."
+    },
+    {
+     "page": 7,
+     "block_id": 3,
+     "text": "Fig. 2. The performance of the top 30 reranking drugs in four drug prediction pipelines. Reranking score refers to the CoDReS aggregate score."
+    },
+    {
+     "page": 8,
+     "block_id": 3,
+     "text": "Fig. 3. Systematic review and evidence level assessment of candidate drug."
+    },
+    {
+     "page": 9,
+     "block_id": 4,
+     "text": "Fig. 4. Summary of candidate drugs with existing research evidence."
+    },
+    {
+     "page": 10,
+     "block_id": 6,
+     "text": "Fig. 5. Prediction of candidate drug efficacy with deep learning."
+    },
+    {
+     "page": 11,
+     "block_id": 4,
+     "text": "Drug target"
+    },
+    {
+     "page": 11,
+     "block_id": 6,
+     "text": "Fig. 6. Study design of MR based drug target evaluation."
+    },
+    {
+     "page": 13,
+     "block_id": 2,
+     "text": "Fig. 7. Genetic association of potential drug targets with RCT."
+    },
+    {
+     "page": 13,
+     "block_id": 3,
+     "text": "A, MR results for the relationship between potential drug targets and RCT. B, A sensitivity analysis was conducted to explore the potential influence of a specific SNP on the relationship between mTORC1-dependent circulating protein levels and RCT. C, Scatter graphs comparing the genetic association"
+    },
+    {
+     "page": 14,
+     "block_id": 5,
+     "text": "1 Before treatment"
+    },
+    {
+     "page": 14,
+     "block_id": 10,
+     "text": "4 Before sacrifice"
+    },
+    {
+     "page": 14,
+     "block_id": 23,
+     "text": "Fig. 8. In vivo assessment of sirolimus in a tendinopathy rat model. A, Overview of the In vivo study design. The rats were divided into 2 groups, receiving either sirolimus or PBS injection. B, Running distance of each group during the run-to-exhaustion test. C and D, HE staining and histological s"
+    },
+    {
+     "page": 16,
+     "block_id": 2,
+     "text": "Fig. 9. mTOR-TKO mice exhibited enhanced resistance to tendinopathy."
+    },
+    {
+     "page": 16,
+     "block_id": 3,
+     "text": "A, Enrichment results for the differential genes between mTOR-TKO mice and WT mice. B, The enrichment map displays the pathways that are more abundant in tendinopathy patients compared to healthy control individuals, as well as in wild-type mice compared to mTOR-TKO mice. The nodes in the network sy"
+    }
+   ]
+  }
+ }
+}

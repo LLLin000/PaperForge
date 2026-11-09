@@ -1,0 +1,77 @@
+{
+ "key": "L5YS7JTA",
+ "passed": true,
+ "figures": 7,
+ "structural": {
+  "key": "L5YS7JTA",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 48731,
+  "new_text_chars": 48731,
+  "old_entries": 7,
+  "new_entries": 7,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 3,
+     "bbox": [
+      249,
+      113,
+      972,
+      1065
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 3,
+     "text": "Scheme 1. Preparation of Chitosan nanocomposites."
+    },
+    {
+     "page": 4,
+     "block_id": 3,
+     "text": "Fig. 1. Conductivity of Chitosan nanocomposites."
+    },
+    {
+     "page": 4,
+     "block_id": 13,
+     "text": "Fig. 2. (a) Tensile strength of the Chitosan nanocomposites. (b) Tensile stress. (c) Elastic modulus."
+    },
+    {
+     "page": 5,
+     "block_id": 3,
+     "text": "Fig. 3. XRD patterns of Chitosan, MWNT,  $ Fe_{3}O_{4} $, and Chitosan nanocomposites."
+    },
+    {
+     "page": 6,
+     "block_id": 4,
+     "text": "Fig. 4. (a) Thermograms of Chitosan nanocomposites. (b) Schematic representation of  $ S_{1} $,  $ S_{2} $ and  $ S_{3} $ for  $ A^{*} $ and  $ K^{*} $."
+    },
+    {
+     "page": 6,
+     "block_id": 9,
+     "text": "Fig. 5. Dynamical mechanical analysis of Chitosan nanocomposites."
+    },
+    {
+     "page": 6,
+     "block_id": 19,
+     "text": "Thermal parameters of the Chitosan nanocomposites."
+    },
+    {
+     "page": 7,
+     "block_id": 3,
+     "text": "Fig. 6. Raman spectra of Chitosan nanocomposites."
+    },
+    {
+     "page": 7,
+     "block_id": 14,
+     "text": "Fig. 7. FESEM images of fracture surfaces of Chitosan nanocomposites. FESEM images of 5%  $ Fe_{3}O_{4}/MWNT/Chitosan $ (a) to (b) and 5% MWNT/Chitosan nanocomposites (c) to (d)."
+    }
+   ]
+  }
+ }
+}

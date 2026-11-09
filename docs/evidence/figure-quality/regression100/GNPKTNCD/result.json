@@ -1,0 +1,81 @@
+{
+ "key": "GNPKTNCD",
+ "passed": true,
+ "figures": 7,
+ "structural": {
+  "key": "GNPKTNCD",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 90050,
+  "new_text_chars": 90050,
+  "old_entries": 7,
+  "new_entries": 7,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      1001,
+      297,
+      1059,
+      353
+     ]
+    },
+    {
+     "page": 2,
+     "bbox": [
+      140,
+      771,
+      1050,
+      1404
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 7,
+     "text": "Scheme 1. Schematic diagram of the in vivo therapeutic strategy for OA, featuring the use of Piezo-MnO $ _2 $ motors to intervene in cartilage degradation and inflammatory processes. The active Piezo-MnO $ _2 $ motors leveraged hypoxia relief and ES-mediated chondrogenesis to drive cartilage repair,"
+    },
+    {
+     "page": 7,
+     "block_id": 23,
+     "text": "Fig. 1. Characterization of Piezo-MnO₂ motors. A) a) TEM image of MSN. Scale bar = 100 nm. b) TEM image of MSN@BTO. Scale bar: 100 nm. B) a) SEM image of MSN@BTO/Wax. Scale bar = 1 μm. b) TEM image of Piezo-MnO₂ motors. Scale bar = 50 nm. c) Phase curve of Piezo-MnO₂ motors. D) Amplitude curve of Pi"
+    },
+    {
+     "page": 8,
+     "block_id": 12,
+     "text": "PBS"
+    },
+    {
+     "page": 8,
+     "block_id": 17,
+     "text": "Fig. 2. Piezo-MnO₂ motors actuation and enhanced deep penetration. A) Motion trajectories, B) mean velocities, C) accumulated distance, and D) MSD of Piezo-MnO₂ motors in PBS and SSF (n = 10). E. Enhanced penetration of active Piezo-MnO₂ motors in 3D MCSs. Scale bar = 100 μm."
+    },
+    {
+     "page": 10,
+     "block_id": 14,
+     "text": "Fig. 3. A) Intracellular uptake of Piezo-MnO₂ motors by ADSCs. Scale bar = 50 μm. B) Intracellular uptake of Piezo-MnO₂ motors by RAW264.7 cells. Scale bar = 50 μm. C) Intracellular H₂O₂ levels in ADSCs after different treatments. Scale bar = 50 μm. D) Intracellular H₂O₂ levels in RAW264.7 cells aft"
+    },
+    {
+     "page": 11,
+     "block_id": 3,
+     "text": "Fig. 4. A) Detection of the level of Ca²⁺ inside ADSCs using Fluo-4 AM fluorescent probe. Scale bar = 100 μm. B) Alcian blue staining of monolayer ADSCs with different treatments for 7 and 14 days. Scale bar = 100 μm. C) HIF-1α staining of ADSCs following different treatments. Scale bar = 100 μm. D)"
+    },
+    {
+     "page": 13,
+     "block_id": 19,
+     "text": "Fig. 5. A) Schematic illustration of the experimental design of in vivo treatment of MIA-rats. B) Quantitative measurements of BV/TV, Tb. Th, and Tb. Sp detected using Micro-CT (n = 4; mean ± SD). C) Representative 3D reconstruction and coronal section images of rat knee joint using Micro-CT (The in"
+    },
+    {
+     "page": 15,
+     "block_id": 26,
+     "text": "Fig. 6. A) Comparison of images before and after injection of Piezo-MnO₂ motors (top) and PBS (bottom) into the joints of MIA-rats under US (yellow box marks the joint cavity area). B) H&E staining images of rat knee joint tissues. Scale bar = 50 μm. C) Synovitis score in rats (n = 5; mean ± SD). D)"
+    }
+   ]
+  }
+ }
+}

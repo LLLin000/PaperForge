@@ -1,0 +1,37 @@
+{
+ "key": "62LTMCI8",
+ "passed": true,
+ "figures": 1,
+ "structural": {
+  "key": "62LTMCI8",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 80043,
+  "new_text_chars": 80043,
+  "old_entries": 1,
+  "new_entries": 1,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      69,
+      1313,
+      185,
+      1354
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 6,
+     "block_id": 3,
+     "text": "Figure 1. Electrically conductive hydrogels as a promising tool for the repair of articular cartilage defects caused by trauma or debilitating diseases such as osteoarthritis (top). These functional conductive hydrogels present several advantages for cartilage tissue engineering strategies (bottom)."
+    }
+   ]
+  }
+ }
+}

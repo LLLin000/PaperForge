@@ -1,0 +1,52 @@
+{
+ "key": "RC54NRW7",
+ "passed": true,
+ "figures": 6,
+ "structural": {
+  "key": "RC54NRW7",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 56978,
+  "new_text_chars": 56978,
+  "old_entries": 6,
+  "new_entries": 6,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 8,
+     "text": "Fig. 1. The bioreactor for mechanical stimulation. This four-station bioreactor was placed in a cell culture incubator and fully computer controlled (detailed description of applied movement and displacement in the text). Sterile glass bodies were placed over every single stimulation station to redu"
+    },
+    {
+     "page": 4,
+     "block_id": 3,
+     "text": "Fig.2. Setupandcourseofexperiment."
+    },
+    {
+     "page": 7,
+     "block_id": 17,
+     "text": "Fig. 3. Gene expression levels at day 21 post seeding; significant differences in gene expression of collagen 2/collagen1 for all mechanically loaded groups; tendency towards higher expression of PRG-4 in loaded group and in 3 mT combined stimulation group. Levels of matrixmetalloproteinases MMPs sh"
+    },
+    {
+     "page": 8,
+     "block_id": 3,
+     "text": "Fig. 4. GAG/DNA content in scaffold constructs and surrounding medium; stimulated groups have significant higher amounts of GAG/DNA (\\#P < 0.05). Mean  $ \\pm $ SEM, N = 8; statistical analysis with Kruskal–Wallis and Mann–Withney test,  $ *P < 0.05 $;  $ **P < 0.005 $."
+    },
+    {
+     "page": 8,
+     "block_id": 11,
+     "text": "Fig. 5. Adapted Remmele score values for IHC. Collagen 1 is mainly present in unstimulated control and lower intensity electromagnetic field groups (1 and 2 mT). Collagen 2 and aggrecan reached highest scores in combined stimulation groups. Mean ± SD of adapted Remmele score, nine fields of view eva"
+    },
+    {
+     "page": 9,
+     "block_id": 3,
+     "text": "Fig. 6. Exemplary histological pictures. Red scale bars equal 500 µm. A: Toluidine blue staining. A1: Combined stimulation (mechanical load + 3 mT). A2: Unstimulated control. Less staining in control, all visible cells present chondrocyte typical round phenotype. B: Aggrecan IHC. B1: Combined stimul"
+    }
+   ]
+  }
+ }
+}

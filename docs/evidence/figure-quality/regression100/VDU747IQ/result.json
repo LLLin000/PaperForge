@@ -1,0 +1,65 @@
+{
+ "key": "VDU747IQ",
+ "passed": true,
+ "figures": 3,
+ "structural": {
+  "key": "VDU747IQ",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 44391,
+  "new_text_chars": 44391,
+  "old_entries": 3,
+  "new_entries": 3,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 6,
+     "bbox": [
+      308,
+      101,
+      629,
+      388
+     ]
+    },
+    {
+     "page": 6,
+     "bbox": [
+      308,
+      409,
+      628,
+      692
+     ]
+    },
+    {
+     "page": 6,
+     "bbox": [
+      307,
+      714,
+      638,
+      989
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 9,
+     "text": "Fig. 1. Flow diagram of study design. ARCR, arthroscopic rotator cuff repair."
+    },
+    {
+     "page": 5,
+     "block_id": 4,
+     "text": "Fig. 2. The graph showed nomogram for predicting the risk of Re-tear."
+    },
+    {
+     "page": 6,
+     "block_id": 13,
+     "text": "Fig. 3. Model validation using ROC curves (A, B), calibration plots (C, D), and decision curve analysis (DCA) (E, F) in the training and validation sets."
+    }
+   ]
+  }
+ }
+}

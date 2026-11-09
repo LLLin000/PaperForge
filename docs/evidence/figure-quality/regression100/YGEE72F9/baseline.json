@@ -1,0 +1,151 @@
+{
+ "dry_run": {
+  "key": "YGEE72F9",
+  "identity": {
+   "old": {
+    "entries": 4,
+    "unique_ids": 4,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 4,
+    "unique_ids": 4,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_004": "figure_004",
+    "figure_reserved_003": "figure_003"
+   },
+   "renamed": [
+    [
+     "figure_reserved_003",
+     "figure_003"
+    ]
+   ],
+   "unmapped_old_ids": [],
+   "claims_changed": [
+    {
+     "old_id": "figure_002",
+     "old_assets": [
+      "1"
+     ],
+     "new_id": "figure_002",
+     "new_assets": []
+    },
+    {
+     "old_id": "figure_reserved_003",
+     "old_assets": [],
+     "new_id": "figure_003",
+     "new_assets": [
+      "1"
+     ]
+    }
+   ]
+  },
+  "delivery": {
+   "old_render_files": 15,
+   "new_render_files": 16,
+   "render_added": [
+    "assets/figures/figure_003.jpg",
+    "render/figures/figure_003.md"
+   ],
+   "render_removed": [
+    "render/figures/figure_reserved_003.md"
+   ],
+   "embeds": 5,
+   "embeds_retargeted": 1,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 1,
+   "new_tables": 1,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 79,
+   "new_rows": 79,
+   "role_removed": {
+    "frontmatter_support": 1
+   },
+   "role_added": {
+    "reference_item": 1
+   },
+   "old_body_chars": 12943,
+   "new_body_chars": 12867,
+   "old_text_chars": 21419,
+   "new_text_chars": 21419,
+   "old_fulltext_chars": 16277
+  },
+  "new_manifest": {
+   "figures": 4,
+   "tables": 1,
+   "orphans": 3
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "YGEE72F9",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 21419,
+  "new_text_chars": 21419,
+  "old_entries": 4,
+  "new_entries": 4,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 6,
+     "text": "Fig. 1. Serial follow-up magnetic resonance imagings (MRIs). (A) Initial preoperative MRI, T2-weighted coronal and sagittal images. A full-thickness tear of the supraspinatus tendon was observed with a medio-lateral retraction diameter of 2 cm. (B) Postoperative 6-month follow-up MRI shows an approx"
+    },
+    {
+     "page": 3,
+     "block_id": 2,
+     "text": "Fig. 2. Serial follow-up X-rays. The arrows indicate the cyst. The left-right arrows indicate the diameter of the cyst. (A) No bone abnormalities were noted on the preoperative X-ray. (B) A postoperative 3-month follow-up X-ray. An approximately  $ 5 \\times 5 $ mm cyst was observed at the medial anc"
+    },
+    {
+     "page": 3,
+     "block_id": 4,
+     "text": "Fig. 3. Intraoperative arthroscopic findings. (A) A 5.0-mm Paladin anchor (Bioabsorbable; CONMED, Utica, NY, USA) was used for medial row fixation. Rotator cuff repair was performed using the transosseous equivalent repair technique. (B) View from the additional arthroscopy performed at 4 years and "
+    },
+    {
+     "page": 4,
+     "block_id": 9,
+     "text": "Fig. 4. An ultrasonographic image at 20 months after surgery. Aspiration of subacromial effusion and corticosteroid injection were performed under sonographic guidance."
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 6,
+    "text": "Fig. 1. Serial follow-up magnetic resonance imagings (MRIs). (A) Initial preoperative MRI, T2-weighted coronal and sagittal images. A full-thickness tear of the supraspinatus tendon was observed with a medio-lateral retraction diameter of 2 cm. (B) Postoperative 6-month follow-up MRI shows an approx"
+   },
+   {
+    "page": 3,
+    "block_id": 2,
+    "text": "Fig. 2. Serial follow-up X-rays. The arrows indicate the cyst. The left-right arrows indicate the diameter of the cyst. (A) No bone abnormalities were noted on the preoperative X-ray. (B) A postoperative 3-month follow-up X-ray. An approximately  $ 5 \\times 5 $ mm cyst was observed at the medial anc"
+   },
+   {
+    "page": 3,
+    "block_id": 4,
+    "text": "Fig. 3. Intraoperative arthroscopic findings. (A) A 5.0-mm Paladin anchor (Bioabsorbable; CONMED, Utica, NY, USA) was used for medial row fixation. Rotator cuff repair was performed using the transosseous equivalent repair technique. (B) View from the additional arthroscopy performed at 4 years and "
+   },
+   {
+    "page": 4,
+    "block_id": 9,
+    "text": "Fig. 4. An ultrasonographic image at 20 months after surgery. Aspiration of subacromial effusion and corticosteroid injection were performed under sonographic guidance."
+   }
+  ]
+ }
+}

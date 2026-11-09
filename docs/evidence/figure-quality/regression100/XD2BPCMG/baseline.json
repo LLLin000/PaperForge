@@ -1,0 +1,501 @@
+{
+ "dry_run": {
+  "key": "XD2BPCMG",
+  "identity": {
+   "old": {
+    "entries": 11,
+    "unique_ids": 8,
+    "duplicate_extra": 3
+   },
+   "new": {
+    "entries": 8,
+    "unique_ids": 8,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005",
+    "figure_006": "figure_006",
+    "figure_007": "figure_007",
+    "figure_reserved_012": "figure_figure_p007_b3"
+   },
+   "renamed": [
+    [
+     "figure_reserved_012",
+     "figure_figure_p007_b3"
+    ]
+   ],
+   "unmapped_old_ids": [],
+   "claims_changed": [
+    {
+     "old_id": "figure_002",
+     "old_assets": [
+      "4"
+     ],
+     "new_id": "figure_002",
+     "new_assets": [
+      "4",
+      "6"
+     ]
+    },
+    {
+     "old_id": "figure_004",
+     "old_assets": [
+      "5"
+     ],
+     "new_id": "figure_004",
+     "new_assets": [
+      "10",
+      "21",
+      "24",
+      "31",
+      "33",
+      "34",
+      "35",
+      "36",
+      "37",
+      "38",
+      "39",
+      "40",
+      "41",
+      "5"
+     ]
+    },
+    {
+     "old_id": "figure_007",
+     "old_assets": [
+      "4"
+     ],
+     "new_id": "figure_007",
+     "new_assets": [
+      "4",
+      "7"
+     ]
+    }
+   ]
+  },
+  "delivery": {
+   "old_render_files": 50,
+   "new_render_files": 100,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/figures/figure_005.jpg",
+    "assets/figures/figure_006.jpg",
+    "assets/figures/figure_007.jpg",
+    "assets/figures/figure_figure_p007_b3.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/orphans/orphan_013.jpg",
+    "assets/orphans/orphan_014.jpg",
+    "assets/orphans/orphan_015.jpg",
+    "assets/orphans/orphan_016.jpg",
+    "assets/orphans/orphan_017.jpg",
+    "assets/orphans/orphan_018.jpg",
+    "assets/orphans/orphan_019.jpg",
+    "assets/orphans/orphan_020.jpg",
+    "assets/orphans/orphan_021.jpg",
+    "assets/orphans/orphan_022.jpg",
+    "assets/orphans/orphan_023.jpg",
+    "assets/orphans/orphan_024.jpg",
+    "assets/orphans/orphan_025.jpg",
+    "assets/orphans/orphan_026.jpg",
+    "assets/orphans/orphan_027.jpg",
+    "assets/orphans/orphan_028.jpg",
+    "assets/orphans/orphan_029.jpg",
+    "assets/orphans/orphan_030.jpg",
+    "assets/orphans/orphan_031.jpg",
+    "assets/orphans/orphan_032.jpg",
+    "assets/orphans/orphan_033.jpg",
+    "assets/orphans/orphan_034.jpg",
+    "assets/orphans/orphan_035.jpg",
+    "assets/orphans/orphan_036.jpg",
+    "assets/orphans/orphan_037.jpg",
+    "assets/orphans/orphan_038.jpg",
+    "assets/orphans/orphan_039.jpg",
+    "assets/orphans/orphan_040.jpg",
+    "assets/orphans/orphan_041.jpg",
+    "assets/tables/table_001.jpg",
+    "render/figures/figure_figure_p007_b3.md"
+   ],
+   "render_removed": [
+    "render/figures/figure_reserved_012.md"
+   ],
+   "embeds": 8,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 1,
+   "new_tables": 1,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 559,
+   "new_rows": 559,
+   "role_removed": {
+    "body_paragraph": 6,
+    "structured_insert": 1,
+    "figure_caption_candidate": 1,
+    "subsection_heading": 1,
+    "reference_item": 6
+   },
+   "role_added": {
+    "noise": 6,
+    "figure_caption": 8,
+    "figure_inner_text": 1
+   },
+   "old_body_chars": 76023,
+   "new_body_chars": 67216,
+   "old_text_chars": 133601,
+   "new_text_chars": 133601,
+   "old_fulltext_chars": 117070
+  },
+  "new_manifest": {
+   "figures": 8,
+   "tables": 1,
+   "orphans": 41
+  },
+  "new_orphans": 1
+ },
+ "structural": {
+  "key": "XD2BPCMG",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 133601,
+  "new_text_chars": 133601,
+  "old_entries": 11,
+  "new_entries": 8,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 7,
+     "block_id": 5,
+     "text": "(b) Signaling Pathways Regulating Chondrogenesis"
+    },
+    {
+     "page": 8,
+     "block_id": 6,
+     "text": "FIGURE 3 Cellular progression and molecular signaling in chondrogenesis. This figure depicts the cellular and molecular mechanisms governing chondrogenesis, a central process in cartilage formation and repair. (a) Illustrates the sequential differentiation of mesenchymal stem cells (MSCs) into hyper"
+    },
+    {
+     "page": 12,
+     "block_id": 8,
+     "text": "FIGURE 4 Combinatory approaches in tissue engineering for cartilage regeneration. (a) Provides an overview of key elements applied in cartilage-directed tissue engineering. Cell sources include chondrocytes, mesenchymal stem cells, and induced pluripotent stem cells.\nChondrogenic inducers comprise g"
+    },
+    {
+     "page": 15,
+     "block_id": 12,
+     "text": "FIGURE 5 Staining cartilage differentiation in different in vitro models. (a) In the monolayer culture model, mesenchymal stem cells (MSCs) are directly seeded onto cell culture plates, distributing uniformly across the wells. This setup allows for cell expansion and supports subsequent in vitro car"
+    },
+    {
+     "page": 19,
+     "block_id": 8,
+     "text": "FIGURE 7 Common molecular techniques employed in the assessment of cartilage differentiation. (a) Gene expression analysis. Three platforms are illustrated with their sample workflows, output characteristics, and relative costs: real-time polymerase chain reaction (PCR): uses total RNA to quantify t"
+    }
+   ],
+   "assets": [
+    {
+     "page": 11,
+     "bbox": [
+      918,
+      321,
+      958,
+      364
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 3,
+     "text": "(a) Cartilage distribution"
+    },
+    {
+     "page": 3,
+     "block_id": 39,
+     "text": "FIGURE 1 Legend on next page."
+    },
+    {
+     "page": 4,
+     "block_id": 12,
+     "text": "FIGURE 1 Cartilage types: anatomical distribution, microscopic features, and functional composition: This figure illustrates key distinctions among hyaline cartilage, fibrocartilage, and elastic cartilage. (a) Maps their anatomical localization: hyaline cartilage (green) is found in joints, the resp"
+    },
+    {
+     "page": 5,
+     "block_id": 5,
+     "text": "(b) Cartilage regeneration"
+    },
+    {
+     "page": 5,
+     "block_id": 7,
+     "text": "FIGURE 2 Legend on next page."
+    },
+    {
+     "page": 6,
+     "block_id": 13,
+     "text": "FIGURE 2 Zonal organization of cartilage and key mechanisms in cartilage regeneration. This figure illustrates the structural complexity of cartilage and its dynamic regenerative mechanisms. (a) Depicts the zonal architecture of cartilage tissue, highlighting the superficial, middle, deep, calcified"
+    },
+    {
+     "page": 7,
+     "block_id": 3,
+     "text": "(a) Chondrogenesis differentiation process"
+    },
+    {
+     "page": 7,
+     "block_id": 5,
+     "text": "(b) Signaling Pathways Regulating Chondrogenesis"
+    },
+    {
+     "page": 7,
+     "block_id": 7,
+     "text": "FIGURE 3 Legend on next page."
+    },
+    {
+     "page": 8,
+     "block_id": 6,
+     "text": "FIGURE 3 Cellular progression and molecular signaling in chondrogenesis. This figure depicts the cellular and molecular mechanisms governing chondrogenesis, a central process in cartilage formation and repair. (a) Illustrates the sequential differentiation of mesenchymal stem cells (MSCs) into hyper"
+    },
+    {
+     "page": 11,
+     "block_id": 42,
+     "text": "FIGURE 4 Legend on next page."
+    },
+    {
+     "page": 12,
+     "block_id": 8,
+     "text": "FIGURE 4 Combinatory approaches in tissue engineering for cartilage regeneration. (a) Provides an overview of key elements applied in cartilage-directed tissue engineering. Cell sources include chondrocytes, mesenchymal stem cells, and induced pluripotent stem cells.\nChondrogenic inducers comprise g"
+    },
+    {
+     "page": 14,
+     "block_id": 5,
+     "text": "(b) Micromass culture"
+    },
+    {
+     "page": 14,
+     "block_id": 8,
+     "text": "(c) Cell pellet culture"
+    },
+    {
+     "page": 14,
+     "block_id": 11,
+     "text": "FIGURE 5 Legend on next page."
+    },
+    {
+     "page": 15,
+     "block_id": 12,
+     "text": "FIGURE 5 Staining cartilage differentiation in different in vitro models. (a) In the monolayer culture model, mesenchymal stem cells (MSCs) are directly seeded onto cell culture plates, distributing uniformly across the wells. This setup allows for cell expansion and supports subsequent in vitro car"
+    },
+    {
+     "page": 16,
+     "block_id": 24,
+     "text": "(c) Full-thickness defect model"
+    },
+    {
+     "page": 16,
+     "block_id": 32,
+     "text": "FIGURE 6 Legend on next page."
+    },
+    {
+     "page": 17,
+     "block_id": 9,
+     "text": "FIGURE 6 Overview of animal models and cartilage defect types in regeneration research. (a) Animal models commonly employed in cartilage regeneration are compared across four criteria: translational relevance, ease of genetic modification, cartilage thickness, and relative cost. Illustrated species "
+    },
+    {
+     "page": 18,
+     "block_id": 3,
+     "text": "(a) Gene expression analysis"
+    },
+    {
+     "page": 18,
+     "block_id": 5,
+     "text": "(b) Protein expression analysis"
+    },
+    {
+     "page": 18,
+     "block_id": 8,
+     "text": "FIGURE 7 Legend on next page."
+    },
+    {
+     "page": 19,
+     "block_id": 8,
+     "text": "FIGURE 7 Common molecular techniques employed in the assessment of cartilage differentiation. (a) Gene expression analysis. Three platforms are illustrated with their sample workflows, output characteristics, and relative costs: real-time polymerase chain reaction (PCR): uses total RNA to quantify t"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [
+   {
+    "page": 7,
+    "block_id": 5,
+    "text": "(b) Signaling Pathways Regulating Chondrogenesis"
+   },
+   {
+    "page": 8,
+    "block_id": 6,
+    "text": "FIGURE 3 Cellular progression and molecular signaling in chondrogenesis. This figure depicts the cellular and molecular mechanisms governing chondrogenesis, a central process in cartilage formation and repair. (a) Illustrates the sequential differentiation of mesenchymal stem cells (MSCs) into hyper"
+   },
+   {
+    "page": 12,
+    "block_id": 8,
+    "text": "FIGURE 4 Combinatory approaches in tissue engineering for cartilage regeneration. (a) Provides an overview of key elements applied in cartilage-directed tissue engineering. Cell sources include chondrocytes, mesenchymal stem cells, and induced pluripotent stem cells.\nChondrogenic inducers comprise g"
+   },
+   {
+    "page": 15,
+    "block_id": 12,
+    "text": "FIGURE 5 Staining cartilage differentiation in different in vitro models. (a) In the monolayer culture model, mesenchymal stem cells (MSCs) are directly seeded onto cell culture plates, distributing uniformly across the wells. This setup allows for cell expansion and supports subsequent in vitro car"
+   },
+   {
+    "page": 19,
+    "block_id": 8,
+    "text": "FIGURE 7 Common molecular techniques employed in the assessment of cartilage differentiation. (a) Gene expression analysis. Three platforms are illustrated with their sample workflows, output characteristics, and relative costs: real-time polymerase chain reaction (PCR): uses total RNA to quantify t"
+   }
+  ],
+  "assets": [
+   {
+    "page": 11,
+    "bbox": [
+     918,
+     321,
+     958,
+     364
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 3,
+    "block_id": 3,
+    "text": "(a) Cartilage distribution"
+   },
+   {
+    "page": 3,
+    "block_id": 39,
+    "text": "FIGURE 1 Legend on next page."
+   },
+   {
+    "page": 4,
+    "block_id": 12,
+    "text": "FIGURE 1 Cartilage types: anatomical distribution, microscopic features, and functional composition: This figure illustrates key distinctions among hyaline cartilage, fibrocartilage, and elastic cartilage. (a) Maps their anatomical localization: hyaline cartilage (green) is found in joints, the resp"
+   },
+   {
+    "page": 5,
+    "block_id": 5,
+    "text": "(b) Cartilage regeneration"
+   },
+   {
+    "page": 5,
+    "block_id": 7,
+    "text": "FIGURE 2 Legend on next page."
+   },
+   {
+    "page": 6,
+    "block_id": 13,
+    "text": "FIGURE 2 Zonal organization of cartilage and key mechanisms in cartilage regeneration. This figure illustrates the structural complexity of cartilage and its dynamic regenerative mechanisms. (a) Depicts the zonal architecture of cartilage tissue, highlighting the superficial, middle, deep, calcified"
+   },
+   {
+    "page": 7,
+    "block_id": 3,
+    "text": "(a) Chondrogenesis differentiation process"
+   },
+   {
+    "page": 7,
+    "block_id": 5,
+    "text": "(b) Signaling Pathways Regulating Chondrogenesis"
+   },
+   {
+    "page": 7,
+    "block_id": 7,
+    "text": "FIGURE 3 Legend on next page."
+   },
+   {
+    "page": 8,
+    "block_id": 6,
+    "text": "FIGURE 3 Cellular progression and molecular signaling in chondrogenesis. This figure depicts the cellular and molecular mechanisms governing chondrogenesis, a central process in cartilage formation and repair. (a) Illustrates the sequential differentiation of mesenchymal stem cells (MSCs) into hyper"
+   },
+   {
+    "page": 11,
+    "block_id": 42,
+    "text": "FIGURE 4 Legend on next page."
+   },
+   {
+    "page": 12,
+    "block_id": 8,
+    "text": "FIGURE 4 Combinatory approaches in tissue engineering for cartilage regeneration. (a) Provides an overview of key elements applied in cartilage-directed tissue engineering. Cell sources include chondrocytes, mesenchymal stem cells, and induced pluripotent stem cells.\nChondrogenic inducers comprise g"
+   },
+   {
+    "page": 14,
+    "block_id": 5,
+    "text": "(b) Micromass culture"
+   },
+   {
+    "page": 14,
+    "block_id": 8,
+    "text": "(c) Cell pellet culture"
+   },
+   {
+    "page": 14,
+    "block_id": 11,
+    "text": "FIGURE 5 Legend on next page."
+   },
+   {
+    "page": 15,
+    "block_id": 12,
+    "text": "FIGURE 5 Staining cartilage differentiation in different in vitro models. (a) In the monolayer culture model, mesenchymal stem cells (MSCs) are directly seeded onto cell culture plates, distributing uniformly across the wells. This setup allows for cell expansion and supports subsequent in vitro car"
+   },
+   {
+    "page": 16,
+    "block_id": 24,
+    "text": "(c) Full-thickness defect model"
+   },
+   {
+    "page": 16,
+    "block_id": 32,
+    "text": "FIGURE 6 Legend on next page."
+   },
+   {
+    "page": 17,
+    "block_id": 9,
+    "text": "FIGURE 6 Overview of animal models and cartilage defect types in regeneration research. (a) Animal models commonly employed in cartilage regeneration are compared across four criteria: translational relevance, ease of genetic modification, cartilage thickness, and relative cost. Illustrated species "
+   },
+   {
+    "page": 18,
+    "block_id": 3,
+    "text": "(a) Gene expression analysis"
+   },
+   {
+    "page": 18,
+    "block_id": 5,
+    "text": "(b) Protein expression analysis"
+   },
+   {
+    "page": 18,
+    "block_id": 8,
+    "text": "FIGURE 7 Legend on next page."
+   },
+   {
+    "page": 19,
+    "block_id": 8,
+    "text": "FIGURE 7 Common molecular techniques employed in the assessment of cartilage differentiation. (a) Gene expression analysis. Three platforms are illustrated with their sample workflows, output characteristics, and relative costs: real-time polymerase chain reaction (PCR): uses total RNA to quantify t"
+   }
+  ]
+ }
+}

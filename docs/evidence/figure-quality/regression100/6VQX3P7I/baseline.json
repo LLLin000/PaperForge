@@ -1,0 +1,327 @@
+{
+ "dry_run": {
+  "key": "6VQX3P7I",
+  "identity": {
+   "old": {
+    "entries": 6,
+    "unique_ids": 6,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 6,
+    "unique_ids": 6,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005",
+    "figure_006": "figure_006"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": [
+    {
+     "old_id": "figure_002",
+     "old_assets": [
+      "2",
+      "3",
+      "4"
+     ],
+     "new_id": "figure_002",
+     "new_assets": [
+      "2",
+      "3"
+     ]
+    },
+    {
+     "old_id": "figure_006",
+     "old_assets": [
+      "2",
+      "3",
+      "4"
+     ],
+     "new_id": "figure_006",
+     "new_assets": [
+      "4"
+     ]
+    }
+   ]
+  },
+  "delivery": {
+   "old_render_files": 24,
+   "new_render_files": 78,
+   "render_added": [
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/orphans/orphan_013.jpg",
+    "assets/orphans/orphan_014.jpg",
+    "assets/orphans/orphan_015.jpg",
+    "assets/orphans/orphan_016.jpg",
+    "assets/orphans/orphan_017.jpg",
+    "assets/orphans/orphan_018.jpg",
+    "assets/orphans/orphan_019.jpg",
+    "assets/orphans/orphan_020.jpg",
+    "assets/orphans/orphan_021.jpg",
+    "assets/orphans/orphan_022.jpg",
+    "assets/orphans/orphan_023.jpg",
+    "assets/orphans/orphan_024.jpg",
+    "assets/orphans/orphan_025.jpg",
+    "assets/orphans/orphan_026.jpg",
+    "assets/orphans/orphan_027.jpg",
+    "assets/orphans/orphan_028.jpg",
+    "assets/orphans/orphan_029.jpg",
+    "assets/orphans/orphan_030.jpg",
+    "assets/orphans/orphan_031.jpg",
+    "render/figures/orphan_005.md",
+    "render/figures/orphan_006.md",
+    "render/figures/orphan_007.md",
+    "render/figures/orphan_008.md",
+    "render/figures/orphan_009.md",
+    "render/figures/orphan_010.md",
+    "render/figures/orphan_011.md",
+    "render/figures/orphan_012.md",
+    "render/figures/orphan_013.md",
+    "render/figures/orphan_014.md",
+    "render/figures/orphan_015.md",
+    "render/figures/orphan_016.md",
+    "render/figures/orphan_017.md",
+    "render/figures/orphan_018.md",
+    "render/figures/orphan_019.md",
+    "render/figures/orphan_020.md",
+    "render/figures/orphan_021.md",
+    "render/figures/orphan_022.md",
+    "render/figures/orphan_023.md",
+    "render/figures/orphan_024.md",
+    "render/figures/orphan_025.md",
+    "render/figures/orphan_026.md",
+    "render/figures/orphan_027.md",
+    "render/figures/orphan_028.md",
+    "render/figures/orphan_029.md",
+    "render/figures/orphan_030.md",
+    "render/figures/orphan_031.md"
+   ],
+   "render_removed": [],
+   "embeds": 8,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 2,
+   "new_tables": 2,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 277,
+   "new_rows": 277,
+   "role_removed": {
+    "non_body_insert": 1,
+    "structured_insert": 3,
+    "structured_insert_candidate": 1,
+    "figure_asset": 3,
+    "reference_item": 1
+   },
+   "role_added": {
+    "unknown_structural": 1,
+    "paper_title": 1,
+    "media_asset": 3,
+    "body_paragraph": 2,
+    "subsection_heading": 2
+   },
+   "old_body_chars": 39330,
+   "new_body_chars": 41554,
+   "old_text_chars": 69932,
+   "new_text_chars": 69932,
+   "old_fulltext_chars": 55744
+  },
+  "new_manifest": {
+   "figures": 6,
+   "tables": 2,
+   "orphans": 31
+  },
+  "new_orphans": 5
+ },
+ "structural": {
+  "key": "6VQX3P7I",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 69932,
+  "new_text_chars": 69932,
+  "old_entries": 6,
+  "new_entries": 6,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      974,
+      251,
+      1032,
+      310
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      974,
+      409,
+      1027,
+      443
+     ]
+    },
+    {
+     "page": 7,
+     "bbox": [
+      666,
+      250,
+      942,
+      527
+     ]
+    },
+    {
+     "page": 12,
+     "bbox": [
+      252,
+      248,
+      694,
+      520
+     ]
+    },
+    {
+     "page": 12,
+     "bbox": [
+      248,
+      572,
+      708,
+      881
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 5,
+     "block_id": 3,
+     "text": "Fig. 1: Flow chart of the study design. AKI: acute kidney injury; CKD: chronic kidney disease; ML: machine learning; PICU: pediatric intensive care unit; RF: random forest; SHAP: SHapley Additive explanation."
+    },
+    {
+     "page": 7,
+     "block_id": 5,
+     "text": "Fig. 2: Performance of ML models to predict AKI. (A) ROC curves of the top five best-performing ML models. (B) AUCs of the top five best-performing ML models with varied numbers of features. (C) AUC, sensitivity, specificity, and F1 score of the RF model with varied numbers of features. AdaBoost: ad"
+    },
+    {
+     "page": 8,
+     "block_id": 12,
+     "text": "Fig. 3: Global model explanation by the SHAP method. (A) SHAP summary bar plot. (B) SHAP summary dot plot. The probability of AKI development increases with the SHAP value of a feature. A dot is made for SHAP value in the model for each single patient, so each patient has one dot on the line for eac"
+    },
+    {
+     "page": 9,
+     "block_id": 12,
+     "text": "Fig. 4: Local model explanation by the SHAP method. (A–F) Waterfall plot and evolution of risks contributed by each feature for individual child at low (A–C) or high (D–F) risk of developing AKI: A and D represented the individual child towards the \"AKI\" class, and B and E represented the individual"
+    },
+    {
+     "page": 10,
+     "block_id": 6,
+     "text": "Fig. 5: Convenient application for clinical utility. The convenient application of the final RF model with 8 features is available for AKI prediction. When entering actual values of the 8 features, this application automatically displays the probability of 85.31%. Meanwhile, the force plot for indiv"
+    },
+    {
+     "page": 12,
+     "block_id": 5,
+     "text": "Fig. 6: Comparison of the incidence rate and clinical variables according to the final model and KDIGO criteria. (A) Flow chart describing 1823 children subgrouped according to the final model and KDIGO criteria. AKI was defined based on serum creatinine and urine output in accordance with the KDIGO"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     974,
+     251,
+     1032,
+     310
+    ]
+   },
+   {
+    "page": 1,
+    "bbox": [
+     974,
+     409,
+     1027,
+     443
+    ]
+   },
+   {
+    "page": 7,
+    "bbox": [
+     666,
+     250,
+     942,
+     527
+    ]
+   },
+   {
+    "page": 12,
+    "bbox": [
+     252,
+     248,
+     694,
+     520
+    ]
+   },
+   {
+    "page": 12,
+    "bbox": [
+     248,
+     572,
+     708,
+     881
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 5,
+    "block_id": 3,
+    "text": "Fig. 1: Flow chart of the study design. AKI: acute kidney injury; CKD: chronic kidney disease; ML: machine learning; PICU: pediatric intensive care unit; RF: random forest; SHAP: SHapley Additive explanation."
+   },
+   {
+    "page": 7,
+    "block_id": 5,
+    "text": "Fig. 2: Performance of ML models to predict AKI. (A) ROC curves of the top five best-performing ML models. (B) AUCs of the top five best-performing ML models with varied numbers of features. (C) AUC, sensitivity, specificity, and F1 score of the RF model with varied numbers of features. AdaBoost: ad"
+   },
+   {
+    "page": 8,
+    "block_id": 12,
+    "text": "Fig. 3: Global model explanation by the SHAP method. (A) SHAP summary bar plot. (B) SHAP summary dot plot. The probability of AKI development increases with the SHAP value of a feature. A dot is made for SHAP value in the model for each single patient, so each patient has one dot on the line for eac"
+   },
+   {
+    "page": 9,
+    "block_id": 12,
+    "text": "Fig. 4: Local model explanation by the SHAP method. (A–F) Waterfall plot and evolution of risks contributed by each feature for individual child at low (A–C) or high (D–F) risk of developing AKI: A and D represented the individual child towards the \"AKI\" class, and B and E represented the individual"
+   },
+   {
+    "page": 10,
+    "block_id": 6,
+    "text": "Fig. 5: Convenient application for clinical utility. The convenient application of the final RF model with 8 features is available for AKI prediction. When entering actual values of the 8 features, this application automatically displays the probability of 85.31%. Meanwhile, the force plot for indiv"
+   },
+   {
+    "page": 12,
+    "block_id": 5,
+    "text": "Fig. 6: Comparison of the incidence rate and clinical variables according to the final model and KDIGO criteria. (A) Flow chart describing 1823 children subgrouped according to the final model and KDIGO criteria. AKI was defined based on serum creatinine and urine output in accordance with the KDIGO"
+   }
+  ]
+ }
+}

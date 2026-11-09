@@ -1,0 +1,67 @@
+{
+ "key": "KPYGKKHB",
+ "passed": true,
+ "figures": 7,
+ "structural": {
+  "key": "KPYGKKHB",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 61244,
+  "new_text_chars": 61244,
+  "old_entries": 7,
+  "new_entries": 7,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      1001,
+      356,
+      1058,
+      413
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 3,
+     "text": "Fig. 1. Schematic of the piezoelectric effect resulting from material compression."
+    },
+    {
+     "page": 3,
+     "block_id": 3,
+     "text": "Fig. 2. Observing the piezoelectric effects around us in electronic devices, biomedical devices, and natural biological systems [11]."
+    },
+    {
+     "page": 4,
+     "block_id": 16,
+     "text": "Fig. 3. Stimulatory pathway toward musculoskeletal tissue regeneration."
+    },
+    {
+     "page": 5,
+     "block_id": 2,
+     "text": "Summary of piezoelectric material applications in musculoskeletal tissue engineering."
+    },
+    {
+     "page": 6,
+     "block_id": 3,
+     "text": "Fig. 4. Proposed molecular pathway of piezoelectricity in stimulating bone tissue regeneration [103]."
+    },
+    {
+     "page": 8,
+     "block_id": 3,
+     "text": "Fig. 5. Schematic depicting the relationship between angiogenesis and osteogenesis during ossification [144]."
+    },
+    {
+     "page": 9,
+     "block_id": 13,
+     "text": "Fig. 6. Illustration of an osteochondral unit's varying biochemical gradient [148]. The figure shows differences in cell density and orientation, extracellular matrix organization, vascularity, and porosity."
+    }
+   ]
+  }
+ }
+}

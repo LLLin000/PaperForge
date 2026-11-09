@@ -1,0 +1,190 @@
+{
+ "dry_run": {
+  "key": "G5QGQ9PB",
+  "identity": {
+   "old": {
+    "entries": 5,
+    "unique_ids": 5,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 5,
+    "unique_ids": 5,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 21,
+   "new_render_files": 42,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/figures/figure_005.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/tables/table_001.jpg",
+    "assets/tables/table_002.jpg",
+    "assets/tables/table_003.jpg",
+    "assets/tables/table_004.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 9,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 4,
+   "new_tables": 4,
+   "claim_changes": [
+    {
+     "page": 5,
+     "caption": "2",
+     "old": "9",
+     "new": "3"
+    }
+   ]
+  },
+  "content": {
+   "old_rows": 188,
+   "new_rows": 188,
+   "role_removed": {
+    "unknown_structural": 5,
+    "frontmatter_noise": 1,
+    "reference_item": 2
+   },
+   "role_added": {
+    "noise": 2,
+    "abstract_body": 1,
+    "body_paragraph": 1,
+    "subsection_heading": 3,
+    "backmatter_heading_candidate": 1
+   },
+   "old_body_chars": 22902,
+   "new_body_chars": 22932,
+   "old_text_chars": 45040,
+   "new_text_chars": 45040,
+   "old_fulltext_chars": 33631
+  },
+  "new_manifest": {
+   "figures": 5,
+   "tables": 4,
+   "orphans": 12
+  },
+  "new_orphans": 1
+ },
+ "structural": {
+  "key": "G5QGQ9PB",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 45040,
+  "new_text_chars": 45040,
+  "old_entries": 5,
+  "new_entries": 5,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      993,
+      227,
+      1078,
+      309
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 14,
+     "text": "Fig. 1 Calculate the distal clavicle–acromion coronal angle ( $ \\alpha $) and acromion coronal angle ( $ \\beta $) on a standardized true anteroposterior radiograph"
+    },
+    {
+     "page": 3,
+     "block_id": 10,
+     "text": "Fig. 2 Case 1: A 30-year-old man with left distal clavicle fracture treated with clavicular hook plate. a Preoperative radiography indicated Neer type I fracture of the distal clavicle. b distal clavicle–acromion coronal angle ( $ \\alpha $) and acromion coronal angle ( $ \\beta $) on X-ray films of u"
+    },
+    {
+     "page": 5,
+     "block_id": 10,
+     "text": "Fig. 3 a–g Cases 1 ~ 4, 6, and 8 ~ 9: Preoperative sagittal T2-weighted magnetic resonance (MR) imaging reveals the interruption of supraspinatus tendon continuity (white arrows)"
+    },
+    {
+     "page": 6,
+     "block_id": 3,
+     "text": "Fig. 4 Graphic presentation of impingement and RCL rates correlated with  $ \\alpha $ and  $ \\beta $ angles"
+    },
+    {
+     "page": 7,
+     "block_id": 20,
+     "text": "Fig. 5 a–c The situation of dynamically simulating the changes of contact position between the hook plate and large lateral acromion angle. a Take 45° α angle for example and length of hook as one unit of moment arm (MA). b The change of contact position (red dot) and fracture shift when pressing ho"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     993,
+     227,
+     1078,
+     309
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 14,
+    "text": "Fig. 1 Calculate the distal clavicle–acromion coronal angle ( $ \\alpha $) and acromion coronal angle ( $ \\beta $) on a standardized true anteroposterior radiograph"
+   },
+   {
+    "page": 3,
+    "block_id": 10,
+    "text": "Fig. 2 Case 1: A 30-year-old man with left distal clavicle fracture treated with clavicular hook plate. a Preoperative radiography indicated Neer type I fracture of the distal clavicle. b distal clavicle–acromion coronal angle ( $ \\alpha $) and acromion coronal angle ( $ \\beta $) on X-ray films of u"
+   },
+   {
+    "page": 5,
+    "block_id": 10,
+    "text": "Fig. 3 a–g Cases 1 ~ 4, 6, and 8 ~ 9: Preoperative sagittal T2-weighted magnetic resonance (MR) imaging reveals the interruption of supraspinatus tendon continuity (white arrows)"
+   },
+   {
+    "page": 6,
+    "block_id": 3,
+    "text": "Fig. 4 Graphic presentation of impingement and RCL rates correlated with  $ \\alpha $ and  $ \\beta $ angles"
+   },
+   {
+    "page": 7,
+    "block_id": 20,
+    "text": "Fig. 5 a–c The situation of dynamically simulating the changes of contact position between the hook plate and large lateral acromion angle. a Take 45° α angle for example and length of hook as one unit of moment arm (MA). b The change of contact position (red dot) and fracture shift when pressing ho"
+   }
+  ]
+ }
+}

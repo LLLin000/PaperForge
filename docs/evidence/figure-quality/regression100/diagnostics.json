@@ -1,0 +1,3177 @@
+{
+ "schema": "figure-quality.regression100.diagnostics.v1",
+ "set": "regression",
+ "source": "Independent read-only replay on frozen regression set; visual root-cause labels manually reviewed, diagnostic flags used only for stratification.",
+ "summary": {
+  "papers": 100,
+  "matched_figures": 552,
+  "replay_errors": 0,
+  "identity_unique_ids_passed": 100,
+  "identity_unique_id_failures": [],
+  "duplicate_figure_id_papers": 13,
+  "duplicate_figure_id_extra_entries": 18,
+  "replay_missing_assets": 3,
+  "replay_missing_renders": 3,
+  "replay_dangling_fulltext_targets": 0,
+  "text_decrease_papers": 0,
+  "pre_migration_source_pending_markers": 0,
+  "replay_pending_markers": 4,
+  "replay_pending_marker_papers": 3,
+  "table_claim_change_papers": 2,
+  "table_claim_changes": 2,
+  "unmatched_legend_items": 24,
+  "caption_candidate_rows": 59,
+  "unmatched_assets": 143,
+  "current_missing_assets_pre_migration": 364
+ },
+ "comparison_to_dev50": {
+  "dev50": {
+   "papers": 50,
+   "figures": 254,
+   "duplicate_figure_id_papers": 6,
+   "unmatched_legend_items": 17,
+   "unmatched_legend_papers": 11,
+   "unmatched_assets": 54,
+   "replay_missing_assets": 0,
+   "replay_missing_renders": 0,
+   "replay_dangling_fulltext_targets": 0,
+   "visual_sample_figures": 30,
+   "visually_confirmed_defects": 2,
+   "sample_defect_rate": 0.06666666666666667
+  },
+  "regression100": {
+   "papers": 100,
+   "figures": 552,
+   "duplicate_figure_id_papers": 13,
+   "unmatched_legend_items": 24,
+   "unmatched_assets": 143,
+   "replay_missing_assets": 3,
+   "replay_missing_renders": 3,
+   "replay_dangling_fulltext_targets": 0,
+   "visual_sample_figures": 42,
+   "visually_confirmed_defects": 3,
+   "sample_defect_rate": 0.07142857142857142
+  }
+ },
+ "visual_review": {
+  "papers": 21,
+  "figures": 42,
+  "root_causes": {
+   "no-defect": 39,
+   "delivery": 3
+  },
+  "strata": {
+   "association": [
+    "25K5KZAQ",
+    "38W7XV4F",
+    "6QNRHRKX",
+    "7M6FIW4V"
+   ],
+   "caption_recall": [
+    "2BFG5P6B",
+    "4M64NZEC",
+    "6GB9I9KG",
+    "8K39NHUQ"
+   ],
+   "crop_panel": [
+    "2BB8VM5W",
+    "5S7UI34M",
+    "6U9LYKHZ",
+    "7RQXMGUF"
+   ],
+   "page_assembly": [
+    "AEQBENVW",
+    "BL8ABQ2A",
+    "D444D4S5",
+    "GNPKTNCD"
+   ],
+   "no_signal": [
+    "9RDDDJF6",
+    "FXHMTH48",
+    "H6DI4BNH",
+    "SR6EDMUV"
+   ],
+   "delivery_followup": [
+    "M36WA39N"
+   ]
+  }
+ },
+ "replay_errors": [],
+ "table_claim_change_details_vs_current_master_baseline": [
+  {
+   "key": "64AWS4SU",
+   "count": 1,
+   "changes": [
+    {
+     "page": 4,
+     "caption": "4",
+     "old": "8",
+     "new": "5"
+    }
+   ]
+  },
+  {
+   "key": "G5QGQ9PB",
+   "count": 1,
+   "changes": [
+    {
+     "page": 5,
+     "caption": "2",
+     "old": "9",
+     "new": "3"
+    }
+   ]
+  }
+ ],
+ "papers": [
+  {
+   "key": "24A2QUAH",
+   "figures": 1,
+   "screening_buckets": [
+    "no_defect"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 0,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 70063,
+   "new_text_chars": 70063,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "25K5KZAQ",
+   "figures": 5,
+   "screening_buckets": [
+    "association",
+    "crop_panel"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 1,
+   "current_missing_assets_pre_migration": 0,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 47527,
+   "new_text_chars": 47527,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "2BB8VM5W",
+   "figures": 9,
+   "screening_buckets": [
+    "crop_panel"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 0,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 97339,
+   "new_text_chars": 97339,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "2BFG5P6B",
+   "figures": 5,
+   "screening_buckets": [
+    "caption_recall",
+    "association"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 1,
+   "unmatched_assets": 1,
+   "current_missing_assets_pre_migration": 0,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 66486,
+   "new_text_chars": 66486,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "38W7XV4F",
+   "figures": 12,
+   "screening_buckets": [
+    "association",
+    "crop_panel",
+    "page_assembly"
+   ],
+   "figure_claim_changes": 1,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 3,
+   "current_missing_assets_pre_migration": 0,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 65019,
+   "new_text_chars": 65019,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "4M64NZEC",
+   "figures": 5,
+   "screening_buckets": [
+    "caption_recall",
+    "page_assembly"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 2,
+   "caption_candidates": 2,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 0,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 14569,
+   "new_text_chars": 14569,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "5S7UI34M",
+   "figures": 9,
+   "screening_buckets": [
+    "association",
+    "crop_panel"
+   ],
+   "figure_claim_changes": 1,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 1,
+   "current_missing_assets_pre_migration": 0,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 121856,
+   "new_text_chars": 121856,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "62LTMCI8",
+   "figures": 1,
+   "screening_buckets": [
+    "association"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 1,
+   "current_missing_assets_pre_migration": 0,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 80043,
+   "new_text_chars": 80043,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "64AWS4SU",
+   "figures": 5,
+   "screening_buckets": [
+    "caption_recall",
+    "association",
+    "crop_panel",
+    "structural"
+   ],
+   "figure_claim_changes": 1,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 2,
+   "caption_candidates": 1,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 0,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 33020,
+   "new_text_chars": 33020,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": [
+    {
+     "page": 4,
+     "caption": "4",
+     "old": "8",
+     "new": "5"
+    }
+   ]
+  },
+  {
+   "key": "6CHW4STK",
+   "figures": 3,
+   "screening_buckets": [
+    "association"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 1,
+   "current_missing_assets_pre_migration": 0,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 30657,
+   "new_text_chars": 30657,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "6GB9I9KG",
+   "figures": 8,
+   "screening_buckets": [
+    "caption_recall",
+    "association",
+    "crop_panel"
+   ],
+   "figure_claim_changes": 1,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 1,
+   "unmatched_assets": 2,
+   "current_missing_assets_pre_migration": 0,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 38691,
+   "new_text_chars": 38691,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 1,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 1
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "6QNRHRKX",
+   "figures": 3,
+   "screening_buckets": [
+    "caption_recall",
+    "association",
+    "crop_panel",
+    "page_assembly",
+    "delivery"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 5,
+   "caption_candidates": 5,
+   "unmatched_assets": 1,
+   "current_missing_assets_pre_migration": 0,
+   "replay_delivery": {
+    "missing_assets": [
+     "figure_unknown_000",
+     "figure_unknown_001"
+    ],
+    "missing_renders": [
+     "figure_unknown_000",
+     "figure_unknown_001"
+    ],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 9189,
+   "new_text_chars": 9189,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "6U9LYKHZ",
+   "figures": 6,
+   "screening_buckets": [
+    "association",
+    "crop_panel"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 7,
+   "current_missing_assets_pre_migration": 0,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 71890,
+   "new_text_chars": 71890,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "6VQX3P7I",
+   "figures": 6,
+   "screening_buckets": [
+    "association",
+    "crop_panel"
+   ],
+   "figure_claim_changes": 2,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 2,
+   "current_missing_assets_pre_migration": 0,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 69932,
+   "new_text_chars": 69932,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "7CIULR7G",
+   "figures": 3,
+   "screening_buckets": [
+    "caption_recall",
+    "association",
+    "crop_panel",
+    "page_assembly"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 1,
+   "caption_candidates": 2,
+   "unmatched_assets": 1,
+   "current_missing_assets_pre_migration": 0,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 56149,
+   "new_text_chars": 56149,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "7M6FIW4V",
+   "figures": 9,
+   "screening_buckets": [
+    "caption_recall",
+    "association",
+    "crop_panel",
+    "page_assembly"
+   ],
+   "figure_claim_changes": 1,
+   "duplicate_figure_ids": {
+    "figure_001": 3
+   },
+   "unmatched_legends": 0,
+   "caption_candidates": 4,
+   "unmatched_assets": 11,
+   "current_missing_assets_pre_migration": 5,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 81770,
+   "new_text_chars": 81770,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "7RQXMGUF",
+   "figures": 7,
+   "screening_buckets": [
+    "crop_panel"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 0,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 65726,
+   "new_text_chars": 65726,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "7TG7U4U4",
+   "figures": 20,
+   "screening_buckets": [
+    "association",
+    "crop_panel"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 6,
+   "current_missing_assets_pre_migration": 20,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 334888,
+   "new_text_chars": 334888,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "7YMNESHF",
+   "figures": 2,
+   "screening_buckets": [
+    "association"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 2,
+   "current_missing_assets_pre_migration": 2,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 70544,
+   "new_text_chars": 70544,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "8G76LYVF",
+   "figures": 8,
+   "screening_buckets": [
+    "crop_panel"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 7,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 66156,
+   "new_text_chars": 66156,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "8K39NHUQ",
+   "figures": 9,
+   "screening_buckets": [
+    "caption_recall",
+    "association",
+    "crop_panel"
+   ],
+   "figure_claim_changes": 2,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 3,
+   "unmatched_assets": 1,
+   "current_missing_assets_pre_migration": 9,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 62535,
+   "new_text_chars": 62535,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 1,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 1
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "8LI35S8T",
+   "figures": 3,
+   "screening_buckets": [
+    "association"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 1,
+   "current_missing_assets_pre_migration": 3,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 46112,
+   "new_text_chars": 46112,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "9RDDDJF6",
+   "figures": 3,
+   "screening_buckets": [
+    "no_defect"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 3,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 20728,
+   "new_text_chars": 20728,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "A45X769B",
+   "figures": 6,
+   "screening_buckets": [
+    "association",
+    "crop_panel"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 1,
+   "current_missing_assets_pre_migration": 5,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 60750,
+   "new_text_chars": 60750,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "AEQBENVW",
+   "figures": 9,
+   "screening_buckets": [
+    "association",
+    "page_assembly"
+   ],
+   "figure_claim_changes": 1,
+   "duplicate_figure_ids": {
+    "figure_007": 2
+   },
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 9,
+   "current_missing_assets_pre_migration": 8,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 43867,
+   "new_text_chars": 43867,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "AT99P8YS",
+   "figures": 3,
+   "screening_buckets": [
+    "association",
+    "crop_panel"
+   ],
+   "figure_claim_changes": 2,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 3,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 61872,
+   "new_text_chars": 61872,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 2,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 2
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "BC95XMCB",
+   "figures": 1,
+   "screening_buckets": [
+    "no_defect"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 1,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 41667,
+   "new_text_chars": 41667,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "BL8ABQ2A",
+   "figures": 13,
+   "screening_buckets": [
+    "association",
+    "crop_panel",
+    "page_assembly"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 9,
+   "current_missing_assets_pre_migration": 12,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 97914,
+   "new_text_chars": 97914,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "BQLPT7T3",
+   "figures": 0,
+   "screening_buckets": [
+    "no_defect"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 0,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 28194,
+   "new_text_chars": 28194,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "CGGYTEEQ",
+   "figures": 5,
+   "screening_buckets": [
+    "caption_recall"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 1,
+   "caption_candidates": 1,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 4,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 65379,
+   "new_text_chars": 65379,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "D444D4S5",
+   "figures": 6,
+   "screening_buckets": [
+    "association",
+    "crop_panel",
+    "page_assembly"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 2,
+   "current_missing_assets_pre_migration": 6,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 68997,
+   "new_text_chars": 68997,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "DBL5999E",
+   "figures": 2,
+   "screening_buckets": [
+    "association",
+    "crop_panel"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 1,
+   "current_missing_assets_pre_migration": 2,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 52824,
+   "new_text_chars": 52824,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "DWGY2F42",
+   "figures": 2,
+   "screening_buckets": [
+    "crop_panel"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 2,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 31206,
+   "new_text_chars": 31206,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "DZ5BH43F",
+   "figures": 3,
+   "screening_buckets": [
+    "caption_recall",
+    "page_assembly"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 2,
+   "caption_candidates": 2,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 3,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 43060,
+   "new_text_chars": 43060,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "EM7CP6B5",
+   "figures": 8,
+   "screening_buckets": [
+    "caption_recall",
+    "crop_panel"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 3,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 0,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 53086,
+   "new_text_chars": 53086,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "ES23M9IS",
+   "figures": 2,
+   "screening_buckets": [
+    "caption_recall",
+    "association"
+   ],
+   "figure_claim_changes": 1,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 1,
+   "caption_candidates": 1,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 2,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 66359,
+   "new_text_chars": 66359,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "FU5SNSPA",
+   "figures": 7,
+   "screening_buckets": [
+    "caption_recall"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 1,
+   "caption_candidates": 1,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 0,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 47558,
+   "new_text_chars": 47558,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "FXHMTH48",
+   "figures": 3,
+   "screening_buckets": [
+    "no_defect"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 0,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 17350,
+   "new_text_chars": 17350,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "G37F8Q3M",
+   "figures": 1,
+   "screening_buckets": [
+    "no_defect"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 0,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 36612,
+   "new_text_chars": 36612,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "G5QGQ9PB",
+   "figures": 5,
+   "screening_buckets": [
+    "association",
+    "crop_panel",
+    "structural"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 1,
+   "current_missing_assets_pre_migration": 5,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 45040,
+   "new_text_chars": 45040,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": [
+    {
+     "page": 5,
+     "caption": "2",
+     "old": "9",
+     "new": "3"
+    }
+   ]
+  },
+  {
+   "key": "GNPKTNCD",
+   "figures": 7,
+   "screening_buckets": [
+    "association",
+    "crop_panel",
+    "page_assembly"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 2,
+   "current_missing_assets_pre_migration": 6,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 90050,
+   "new_text_chars": 90050,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "H497AGMU",
+   "figures": 6,
+   "screening_buckets": [
+    "association",
+    "crop_panel"
+   ],
+   "figure_claim_changes": 2,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 1,
+   "current_missing_assets_pre_migration": 6,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 49418,
+   "new_text_chars": 49418,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "H4B6CQLA",
+   "figures": 9,
+   "screening_buckets": [
+    "caption_recall",
+    "association"
+   ],
+   "figure_claim_changes": 1,
+   "duplicate_figure_ids": {
+    "figure_007": 2
+   },
+   "unmatched_legends": 0,
+   "caption_candidates": 1,
+   "unmatched_assets": 1,
+   "current_missing_assets_pre_migration": 8,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 67240,
+   "new_text_chars": 67240,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "H4GURFWI",
+   "figures": 9,
+   "screening_buckets": [
+    "caption_recall",
+    "association"
+   ],
+   "figure_claim_changes": 1,
+   "duplicate_figure_ids": {
+    "figure_006": 2
+   },
+   "unmatched_legends": 0,
+   "caption_candidates": 1,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 8,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 31044,
+   "new_text_chars": 31044,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "H6DI4BNH",
+   "figures": 3,
+   "screening_buckets": [
+    "no_defect"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 3,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 29049,
+   "new_text_chars": 29049,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "HJ5E5U49",
+   "figures": 0,
+   "screening_buckets": [
+    "association"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 1,
+   "current_missing_assets_pre_migration": 0,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 74950,
+   "new_text_chars": 74950,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "HN4758MP",
+   "figures": 6,
+   "screening_buckets": [
+    "caption_recall",
+    "association",
+    "crop_panel",
+    "page_assembly"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 1,
+   "unmatched_assets": 7,
+   "current_missing_assets_pre_migration": 5,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 61203,
+   "new_text_chars": 61203,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "HX7FMUSA",
+   "figures": 2,
+   "screening_buckets": [
+    "no_defect"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 2,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 21258,
+   "new_text_chars": 21258,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "I42Y93C4",
+   "figures": 4,
+   "screening_buckets": [
+    "caption_recall",
+    "association"
+   ],
+   "figure_claim_changes": 1,
+   "duplicate_figure_ids": {
+    "figure_003": 2
+   },
+   "unmatched_legends": 1,
+   "caption_candidates": 0,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 3,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 18443,
+   "new_text_chars": 18443,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "IDBMIKT6",
+   "figures": 4,
+   "screening_buckets": [
+    "association",
+    "crop_panel",
+    "page_assembly"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 5,
+   "current_missing_assets_pre_migration": 4,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 41123,
+   "new_text_chars": 41123,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "IKYZIAFS",
+   "figures": 2,
+   "screening_buckets": [
+    "caption_recall"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 1,
+   "caption_candidates": 1,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 0,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 11865,
+   "new_text_chars": 11865,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "IRK7NJLZ",
+   "figures": 2,
+   "screening_buckets": [
+    "no_defect"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 2,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 25914,
+   "new_text_chars": 25914,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "J5EGBT9H",
+   "figures": 0,
+   "screening_buckets": [
+    "no_defect"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 0,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 16427,
+   "new_text_chars": 16427,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "JEH6Q7P6",
+   "figures": 3,
+   "screening_buckets": [
+    "no_defect"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 3,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 115525,
+   "new_text_chars": 115525,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "JF35KF37",
+   "figures": 6,
+   "screening_buckets": [
+    "crop_panel"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 6,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 51882,
+   "new_text_chars": 51882,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "K462DXIS",
+   "figures": 0,
+   "screening_buckets": [
+    "association"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 1,
+   "current_missing_assets_pre_migration": 0,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 46943,
+   "new_text_chars": 46943,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "KKV573J4",
+   "figures": 6,
+   "screening_buckets": [
+    "crop_panel"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 6,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 54718,
+   "new_text_chars": 54718,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "KPYGKKHB",
+   "figures": 7,
+   "screening_buckets": [
+    "association"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 1,
+   "current_missing_assets_pre_migration": 6,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 61244,
+   "new_text_chars": 61244,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "KUR9PBJC",
+   "figures": 6,
+   "screening_buckets": [
+    "caption_recall",
+    "association"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 1,
+   "caption_candidates": 1,
+   "unmatched_assets": 1,
+   "current_missing_assets_pre_migration": 5,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 90147,
+   "new_text_chars": 90147,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "L5YS7JTA",
+   "figures": 7,
+   "screening_buckets": [
+    "association",
+    "crop_panel"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 1,
+   "current_missing_assets_pre_migration": 7,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 48731,
+   "new_text_chars": 48731,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "LFCUIEIX",
+   "figures": 6,
+   "screening_buckets": [
+    "association",
+    "crop_panel"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 6,
+   "current_missing_assets_pre_migration": 5,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 39159,
+   "new_text_chars": 39159,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "M23R849F",
+   "figures": 10,
+   "screening_buckets": [
+    "association",
+    "crop_panel",
+    "page_assembly"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 4,
+   "current_missing_assets_pre_migration": 10,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 69379,
+   "new_text_chars": 69379,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "M36WA39N",
+   "figures": 7,
+   "screening_buckets": [
+    "association",
+    "crop_panel",
+    "page_assembly",
+    "delivery"
+   ],
+   "figure_claim_changes": 1,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 1,
+   "current_missing_assets_pre_migration": 7,
+   "replay_delivery": {
+    "missing_assets": [
+     "figure_005_continued_p010_b19"
+    ],
+    "missing_renders": [
+     "figure_005_continued_p010_b19"
+    ],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 77804,
+   "new_text_chars": 77804,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "N8FPLYZ3",
+   "figures": 9,
+   "screening_buckets": [
+    "caption_recall",
+    "association",
+    "crop_panel"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 2,
+   "unmatched_assets": 2,
+   "current_missing_assets_pre_migration": 8,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 66058,
+   "new_text_chars": 66058,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "NI2RP8UN",
+   "figures": 0,
+   "screening_buckets": [
+    "caption_recall",
+    "association",
+    "page_assembly"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 1,
+   "caption_candidates": 1,
+   "unmatched_assets": 1,
+   "current_missing_assets_pre_migration": 0,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 33279,
+   "new_text_chars": 33279,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "NTBMW663",
+   "figures": 0,
+   "screening_buckets": [
+    "no_defect"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 0,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 16807,
+   "new_text_chars": 16807,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "NXYBYPAH",
+   "figures": 2,
+   "screening_buckets": [
+    "no_defect"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 2,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 18592,
+   "new_text_chars": 18592,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "NYWJL2T9",
+   "figures": 4,
+   "screening_buckets": [
+    "caption_recall",
+    "crop_panel"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 1,
+   "caption_candidates": 1,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 4,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 36991,
+   "new_text_chars": 36991,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "P87N8PFG",
+   "figures": 16,
+   "screening_buckets": [
+    "caption_recall",
+    "association",
+    "crop_panel"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 3,
+   "unmatched_assets": 1,
+   "current_missing_assets_pre_migration": 16,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 80136,
+   "new_text_chars": 80136,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "P9ZYVAXB",
+   "figures": 4,
+   "screening_buckets": [
+    "association",
+    "page_assembly"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 7,
+   "current_missing_assets_pre_migration": 4,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 95659,
+   "new_text_chars": 95659,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "PMWF8DBV",
+   "figures": 8,
+   "screening_buckets": [
+    "association",
+    "crop_panel",
+    "page_assembly"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 2,
+   "current_missing_assets_pre_migration": 8,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 95987,
+   "new_text_chars": 95987,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "QJANCHHB",
+   "figures": 6,
+   "screening_buckets": [
+    "caption_recall",
+    "association",
+    "crop_panel",
+    "page_assembly"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 1,
+   "unmatched_assets": 2,
+   "current_missing_assets_pre_migration": 6,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 47913,
+   "new_text_chars": 47913,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "QSIYVSBS",
+   "figures": 8,
+   "screening_buckets": [
+    "association",
+    "crop_panel"
+   ],
+   "figure_claim_changes": 1,
+   "duplicate_figure_ids": {
+    "figure_005": 2
+   },
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 7,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 46972,
+   "new_text_chars": 46972,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "R5IKNGWW",
+   "figures": 4,
+   "screening_buckets": [
+    "crop_panel"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 4,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 35424,
+   "new_text_chars": 35424,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "RC54NRW7",
+   "figures": 6,
+   "screening_buckets": [
+    "crop_panel"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 6,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 56978,
+   "new_text_chars": 56978,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "RKZ7NMMN",
+   "figures": 2,
+   "screening_buckets": [
+    "no_defect"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 0,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 24561,
+   "new_text_chars": 24561,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "RQILSL2A",
+   "figures": 6,
+   "screening_buckets": [
+    "caption_recall",
+    "association",
+    "crop_panel"
+   ],
+   "figure_claim_changes": 1,
+   "duplicate_figure_ids": {
+    "figure_003": 2
+   },
+   "unmatched_legends": 1,
+   "caption_candidates": 1,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 5,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 44512,
+   "new_text_chars": 44512,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "SAN9AYVR",
+   "figures": 31,
+   "screening_buckets": [
+    "caption_recall",
+    "association",
+    "crop_panel",
+    "page_assembly"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 1,
+   "unmatched_assets": 17,
+   "current_missing_assets_pre_migration": 0,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 408548,
+   "new_text_chars": 408548,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "SR6EDMUV",
+   "figures": 5,
+   "screening_buckets": [
+    "no_defect"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 5,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 27572,
+   "new_text_chars": 27572,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "SZYSZBNR",
+   "figures": 0,
+   "screening_buckets": [
+    "no_defect"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 0,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 45246,
+   "new_text_chars": 45246,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "T8J456SQ",
+   "figures": 12,
+   "screening_buckets": [
+    "caption_recall",
+    "association",
+    "crop_panel"
+   ],
+   "figure_claim_changes": 1,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 2,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 8,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 66009,
+   "new_text_chars": 66009,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "U96H2WCT",
+   "figures": 4,
+   "screening_buckets": [
+    "caption_recall",
+    "association"
+   ],
+   "figure_claim_changes": 1,
+   "duplicate_figure_ids": {
+    "figure_001": 2
+   },
+   "unmatched_legends": 0,
+   "caption_candidates": 2,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 2,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 40984,
+   "new_text_chars": 40984,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "US22T6CB",
+   "figures": 2,
+   "screening_buckets": [
+    "no_defect"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 2,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 29838,
+   "new_text_chars": 29838,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "V2UIKRGT",
+   "figures": 0,
+   "screening_buckets": [
+    "no_defect"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 0,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 26090,
+   "new_text_chars": 26090,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "VDU747IQ",
+   "figures": 3,
+   "screening_buckets": [
+    "association",
+    "crop_panel"
+   ],
+   "figure_claim_changes": 1,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 3,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 44391,
+   "new_text_chars": 44391,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "WINN9BKP",
+   "figures": 6,
+   "screening_buckets": [
+    "association",
+    "crop_panel"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {
+    "figure_002": 2
+   },
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 4,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 48453,
+   "new_text_chars": 48453,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "WML2NNFE",
+   "figures": 5,
+   "screening_buckets": [
+    "caption_recall",
+    "association",
+    "crop_panel",
+    "page_assembly"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 1,
+   "unmatched_assets": 3,
+   "current_missing_assets_pre_migration": 5,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 53079,
+   "new_text_chars": 53079,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "X5FJTVGP",
+   "figures": 2,
+   "screening_buckets": [
+    "no_defect"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 2,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 65063,
+   "new_text_chars": 65063,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "XD2BPCMG",
+   "figures": 11,
+   "screening_buckets": [
+    "caption_recall",
+    "association",
+    "crop_panel",
+    "page_assembly"
+   ],
+   "figure_claim_changes": 3,
+   "duplicate_figure_ids": {
+    "figure_004": 2,
+    "figure_007": 2,
+    "figure_002": 2
+   },
+   "unmatched_legends": 2,
+   "caption_candidates": 7,
+   "unmatched_assets": 1,
+   "current_missing_assets_pre_migration": 7,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 133601,
+   "new_text_chars": 133601,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "XIBL7H2B",
+   "figures": 7,
+   "screening_buckets": [
+    "association",
+    "crop_panel"
+   ],
+   "figure_claim_changes": 1,
+   "duplicate_figure_ids": {
+    "figure_004": 3
+   },
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 5,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 60139,
+   "new_text_chars": 60139,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "XIR7ZJ6F",
+   "figures": 3,
+   "screening_buckets": [
+    "no_defect"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 3,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 98453,
+   "new_text_chars": 98453,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "XW8IN24I",
+   "figures": 14,
+   "screening_buckets": [
+    "association",
+    "crop_panel"
+   ],
+   "figure_claim_changes": 1,
+   "duplicate_figure_ids": {
+    "figure_006": 2,
+    "figure_004": 2
+   },
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 12,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 64298,
+   "new_text_chars": 64298,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "YBUMIK5P",
+   "figures": 7,
+   "screening_buckets": [
+    "association",
+    "crop_panel",
+    "page_assembly"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 8,
+   "current_missing_assets_pre_migration": 7,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 97808,
+   "new_text_chars": 97808,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "YGEE72F9",
+   "figures": 4,
+   "screening_buckets": [
+    "association"
+   ],
+   "figure_claim_changes": 2,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 0,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 21419,
+   "new_text_chars": 21419,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "YGH7VEX6",
+   "figures": 12,
+   "screening_buckets": [
+    "caption_recall",
+    "association",
+    "crop_panel",
+    "page_assembly"
+   ],
+   "figure_claim_changes": 3,
+   "duplicate_figure_ids": {
+    "figure_002": 2
+   },
+   "unmatched_legends": 1,
+   "caption_candidates": 5,
+   "unmatched_assets": 1,
+   "current_missing_assets_pre_migration": 10,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 31354,
+   "new_text_chars": 31354,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "YQIC2RDL",
+   "figures": 3,
+   "screening_buckets": [
+    "no_defect"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 3,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 24313,
+   "new_text_chars": 24313,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "ZJF3HWRK",
+   "figures": 2,
+   "screening_buckets": [
+    "no_defect"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 0,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 25712,
+   "new_text_chars": 25712,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "ZKQII63V",
+   "figures": 3,
+   "screening_buckets": [
+    "no_defect"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 3,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 35026,
+   "new_text_chars": 35026,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "ZS3UFYRR",
+   "figures": 9,
+   "screening_buckets": [
+    "association",
+    "crop_panel"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 1,
+   "current_missing_assets_pre_migration": 9,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 49141,
+   "new_text_chars": 49141,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  },
+  {
+   "key": "ZZQSV6YW",
+   "figures": 2,
+   "screening_buckets": [
+    "no_defect"
+   ],
+   "figure_claim_changes": 0,
+   "duplicate_figure_ids": {},
+   "unmatched_legends": 0,
+   "caption_candidates": 0,
+   "unmatched_assets": 0,
+   "current_missing_assets_pre_migration": 0,
+   "replay_delivery": {
+    "missing_assets": [],
+    "missing_renders": [],
+    "dangling_fulltext_embeds": [],
+    "embeds_missing_new_id": []
+   },
+   "text_decrease": false,
+   "old_text_chars": 45832,
+   "new_text_chars": 45832,
+   "pending_markers": {
+    "pre_migration_source": 0,
+    "replay_inventory": 0,
+    "replay_held_figures": 0,
+    "replay_unresolved_clusters": 0
+   },
+   "table_claim_changes_vs_current_master_baseline": []
+  }
+ ]
+}

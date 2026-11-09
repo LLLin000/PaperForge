@@ -1,0 +1,62 @@
+{
+ "key": "H497AGMU",
+ "passed": true,
+ "figures": 6,
+ "structural": {
+  "key": "H497AGMU",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 49418,
+  "new_text_chars": 49418,
+  "old_entries": 6,
+  "new_entries": 6,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 2,
+     "bbox": [
+      83,
+      232,
+      189,
+      276
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 4,
+     "block_id": 4,
+     "text": "Figure 1. (a) Schematic figure of the electrospinning setup. The syringe needle and the first auxiliary ring electrode ( $ O_{aux} $) are connected to the high voltage potential ( $ U_{0} $). The electrical potential of the other two ring electrodes can be controlled by the potential divider, i.e. t"
+    },
+    {
+     "page": 8,
+     "block_id": 5,
+     "text": "Figure 2. Top: fibre diameter, effective pore diameter and area for top and bottom sides of the electrospun ears including mean  $ \\pm $ stdev. Pore diameter and area decrease along with the fibre diameter. D: statistical significance versus the opposite side, p < 0.01. Bottom: representative SEM im"
+    },
+    {
+     "page": 9,
+     "block_id": 7,
+     "text": "Figure 3. Manual deformation of the auricle-shaped constructs after 21 days in culture. The constructs return to their initial shape after manual deformation."
+    },
+    {
+     "page": 9,
+     "block_id": 11,
+     "text": "Figure 4. Investigation 1: biological and biochemical response. Total DNA and GAG content at days 1, 7, 14 and 21. DNA data was normalised to day 1, GAG data to day 7. Gene expression data of aggrecan (AGG), collagen type 1 and 2 (COL1, COL2) and matrix metalloproteinase 3 and 13 (MMP3, MMP13) using"
+    },
+    {
+     "page": 10,
+     "block_id": 4,
+     "text": "Figure 5. Representative histology section (thickness: 14  $ \\mu $m, H&E staining) of an electrospun ear scaffold after 21 days in culture. H&E stains ECM products such as collagen as well as cytoplasm red and cell nuclei blue. Cells stay mainly on top of the ear construct (left arrow) but start to "
+    },
+    {
+     "page": 10,
+     "block_id": 12,
+     "text": "Figure 6. Investigation 2: region-specific biological response and mechanical properties. Top: total DNA, COL and GAG content for all regions of interest at days 1, 7, 14 and 21. DNA data was normalised to day 1, GAG and COL data to day 7. Bottom: mechanical properties of the electrospun ears before"
+    }
+   ]
+  }
+ }
+}

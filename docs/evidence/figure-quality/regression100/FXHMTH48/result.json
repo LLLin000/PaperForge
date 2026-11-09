@@ -1,0 +1,37 @@
+{
+ "key": "FXHMTH48",
+ "passed": true,
+ "figures": 3,
+ "structural": {
+  "key": "FXHMTH48",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 17350,
+  "new_text_chars": 17350,
+  "old_entries": 3,
+  "new_entries": 3,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 4,
+     "text": "Figure 1 Anchor holes should be placed on the articular surface to avoid reattaching the capsuloligamentous complex to the glenoid neck."
+    },
+    {
+     "page": 2,
+     "block_id": 10,
+     "text": "Figure 2 Once the anchor is in place, the sutures should freely slide to allow placement of a slipknot."
+    },
+    {
+     "page": 2,
+     "block_id": 12,
+     "text": "Figure 3 The completed repair creates a buttress on the articular surface."
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,539 @@
+{
+ "dry_run": {
+  "key": "7TG7U4U4",
+  "identity": {
+   "old": {
+    "entries": 20,
+    "unique_ids": 20,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 20,
+    "unique_ids": 20,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005",
+    "figure_006": "figure_006",
+    "figure_007": "figure_007",
+    "figure_008": "figure_008",
+    "figure_009": "figure_009",
+    "figure_010": "figure_010",
+    "figure_011": "figure_011",
+    "figure_012": "figure_012",
+    "figure_013": "figure_013",
+    "figure_014": "figure_014",
+    "figure_015": "figure_015",
+    "figure_016": "figure_016",
+    "figure_017": "figure_017",
+    "figure_018": "figure_018",
+    "figure_019": "figure_019",
+    "figure_020": "figure_020"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 88,
+   "new_render_files": 176,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/figures/figure_005.jpg",
+    "assets/figures/figure_006.jpg",
+    "assets/figures/figure_007.jpg",
+    "assets/figures/figure_008.jpg",
+    "assets/figures/figure_009.jpg",
+    "assets/figures/figure_010.jpg",
+    "assets/figures/figure_011.jpg",
+    "assets/figures/figure_012.jpg",
+    "assets/figures/figure_013.jpg",
+    "assets/figures/figure_014.jpg",
+    "assets/figures/figure_015.jpg",
+    "assets/figures/figure_016.jpg",
+    "assets/figures/figure_017.jpg",
+    "assets/figures/figure_018.jpg",
+    "assets/figures/figure_019.jpg",
+    "assets/figures/figure_020.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/orphans/orphan_013.jpg",
+    "assets/orphans/orphan_014.jpg",
+    "assets/orphans/orphan_015.jpg",
+    "assets/orphans/orphan_016.jpg",
+    "assets/orphans/orphan_017.jpg",
+    "assets/orphans/orphan_018.jpg",
+    "assets/orphans/orphan_019.jpg",
+    "assets/orphans/orphan_020.jpg",
+    "assets/orphans/orphan_021.jpg",
+    "assets/orphans/orphan_022.jpg",
+    "assets/orphans/orphan_023.jpg",
+    "assets/orphans/orphan_024.jpg",
+    "assets/orphans/orphan_025.jpg",
+    "assets/orphans/orphan_026.jpg",
+    "assets/orphans/orphan_027.jpg",
+    "assets/orphans/orphan_028.jpg",
+    "assets/orphans/orphan_029.jpg",
+    "assets/orphans/orphan_030.jpg",
+    "assets/orphans/orphan_031.jpg",
+    "assets/orphans/orphan_032.jpg",
+    "assets/orphans/orphan_033.jpg",
+    "assets/orphans/orphan_034.jpg",
+    "assets/orphans/orphan_035.jpg",
+    "assets/orphans/orphan_036.jpg",
+    "assets/orphans/orphan_037.jpg",
+    "assets/orphans/orphan_038.jpg",
+    "assets/orphans/orphan_039.jpg",
+    "assets/orphans/orphan_040.jpg",
+    "assets/orphans/orphan_041.jpg",
+    "assets/orphans/orphan_042.jpg",
+    "assets/orphans/orphan_043.jpg",
+    "assets/orphans/orphan_044.jpg",
+    "assets/orphans/orphan_045.jpg",
+    "assets/orphans/orphan_046.jpg",
+    "assets/orphans/orphan_047.jpg",
+    "assets/orphans/orphan_048.jpg",
+    "assets/orphans/orphan_049.jpg",
+    "assets/orphans/orphan_050.jpg",
+    "assets/orphans/orphan_051.jpg",
+    "assets/orphans/orphan_052.jpg",
+    "assets/orphans/orphan_053.jpg",
+    "assets/orphans/orphan_054.jpg",
+    "assets/orphans/orphan_055.jpg",
+    "assets/orphans/orphan_056.jpg",
+    "assets/orphans/orphan_057.jpg",
+    "assets/orphans/orphan_058.jpg",
+    "assets/orphans/orphan_059.jpg",
+    "assets/orphans/orphan_060.jpg",
+    "assets/orphans/orphan_061.jpg",
+    "assets/orphans/orphan_062.jpg",
+    "assets/orphans/orphan_063.jpg",
+    "assets/orphans/orphan_064.jpg",
+    "assets/orphans/orphan_065.jpg",
+    "assets/tables/table_001.jpg",
+    "assets/tables/table_002.jpg",
+    "assets/tables/table_003.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 23,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 3,
+   "new_tables": 3,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 1226,
+   "new_rows": 1226,
+   "role_removed": {
+    "unknown_structural": 4,
+    "figure_caption_candidate": 3,
+    "backmatter_heading": 1,
+    "backmatter_body": 542
+   },
+   "role_added": {
+    "noise": 70,
+    "body_paragraph": 7,
+    "section_heading": 2,
+    "reference_item": 464,
+    "figure_caption": 3,
+    "ocr_text_missing": 1,
+    "subsection_heading": 2,
+    "backmatter_boundary_candidate": 1
+   },
+   "old_body_chars": 185836,
+   "new_body_chars": 187221,
+   "old_text_chars": 334888,
+   "new_text_chars": 334888,
+   "old_fulltext_chars": 297054
+  },
+  "new_manifest": {
+   "figures": 20,
+   "tables": 3,
+   "orphans": 65
+  },
+  "new_orphans": 6
+ },
+ "structural": {
+  "key": "7TG7U4U4",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 334888,
+  "new_text_chars": 334888,
+  "old_entries": 20,
+  "new_entries": 20,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      102,
+      345,
+      143,
+      387
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      627,
+      346,
+      667,
+      388
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      549,
+      425,
+      576,
+      449
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      862,
+      426,
+      885,
+      449
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      831,
+      476,
+      1110,
+      761
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      1027,
+      1352,
+      1110,
+      1470
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 4,
+     "text": "Figure 1. Overview of piezoelectric biomaterials: from materials, to design, to manufacturing and applications."
+    },
+    {
+     "page": 4,
+     "block_id": 4,
+     "text": "Figure 2. Principles of the piezoelectric effect. A) Illustration of the relationships among dielectric, piezoelectric, pyroelectric, and ferroelectric materials. B) Schematic of the direct piezoelectric effect and converse piezoelectric effect. C) Illustration of the piezoelectric mode for transver"
+    },
+    {
+     "page": 5,
+     "block_id": 4,
+     "text": "Figure 3. Comparison of piezoelectric biomaterials with synthetic piezoceramics and polymers."
+    },
+    {
+     "page": 6,
+     "block_id": 7,
+     "text": "Figure 4. Schematic of the advantages and categories of piezoelectric biomaterials. Reproduced with permission. $ ^{53} $ Copyright 2023, Springer Nature. Reproduced with permission. $ ^{54} $ Copyright 2019, American Physical Society. Reproduced with permission. $ ^{55} $ Copyright 2011, Wiley-VCH."
+    },
+    {
+     "page": 8,
+     "block_id": 11,
+     "text": "Computation-aided design"
+    },
+    {
+     "page": 8,
+     "block_id": 21,
+     "text": "C High-Throughput calculations"
+    },
+    {
+     "page": 8,
+     "block_id": 26,
+     "text": "Intermolecular interactions"
+    },
+    {
+     "page": 8,
+     "block_id": 29,
+     "text": "Figure 5. Computational studies of piezoelectric biomaterials. A) Piezoelectric coefficient calculation of glycine. (a) Molecular structure and dipoles of  $ \\beta $-glycine. (b) Molecular structure and dipoles of  $ \\gamma $-glycine. (c) Calculated piezoelectric strain constants for  $ \\beta $-glyc"
+    },
+    {
+     "page": 10,
+     "block_id": 8,
+     "text": "Figure 6. Molecular engineering of piezoelectric biomaterials. A) H/F substitution strategy for HFPD molecular crystal design. (a) Molecular structure of PVDF. Reproduced with permission.  $ ^{230,231} $ Copyright 2022, Wiley-VCH. (b) Packing view of 2D hydrogen bond layers of HFPD crystals along th"
+    },
+    {
+     "page": 14,
+     "block_id": 9,
+     "text": "Figure 7. Mechanical force-driven methods for fabricating piezoelectric biomaterials. (a) Mechanical exfoliation of soft tissues using peeling force. (a) Schematic of van der Waals layered collagen fiber network in SIS soft tissue mechanically exfoliated by adhesive tape. (b) Cross-sectional SEM ima"
+    },
+    {
+     "page": 17,
+     "block_id": 5,
+     "text": "Figure 8. Tip-induced electric field-driven methods for fabricating piezoelectric biomaterials. A) Electrospinning technique. (a) Schematic of electrospun single-component PBLG fibers. Reproduced with permission. $ ^{98} $ Copyright 2011, Wiley-VCH. (b) Schematic of the electrospun glycine-PLLA nano"
+    },
+    {
+     "page": 19,
+     "block_id": 6,
+     "text": "Figure 9. Parallel-plate electric field-driven methods for fabricating piezoelectric biomaterials. A) Electric field-assisted epitaxial growth of vertically aligned FF microrod arrays. (a) Schematic of the epitaxial growth process. (b) Cross-sectional SEM image of the vertically aligned FF microrods"
+    },
+    {
+     "page": 21,
+     "block_id": 4,
+     "text": "Figure 10. Magnetic field-driven methods for fabricating piezoelectric biomaterials. A) AFM topography images of FF nanotube residues obtained after evaporation of HFIP-water solution droplets under magnetic fields of 0 T (left) and 12 T (right). Reproduced with permission. $ ^{322} $ Copyright 2007"
+    },
+    {
+     "page": 22,
+     "block_id": 4,
+     "text": "Figure 11. Thermally driven methods for fabricating piezoelectric biomaterials. A) PVD technique. (a) Schematic of the PVD process of peptide nanotube arrays. (b) Surface topography and (c) cross-sectional SEM images of peptide nanotube arrays. Reproduced with permission. $ ^{327} $ Copyright 2009, "
+    },
+    {
+     "page": 24,
+     "block_id": 8,
+     "text": "Figure 12. Sensors based on piezoelectric biomaterials. A) Implantable piezoelectric sensor for assessing the progress of motor function recovery in nerve injury repair. (a) Schematic illustration of the PBPS sensor implanted in rats and the construction of the sensor. (b) Photographs showing the wi"
+    },
+    {
+     "page": 25,
+     "block_id": 4,
+     "text": "Figure 13. Actuators and acoustic transducers based on piezoelectric biomaterials. A) Biodegradable ultrasonic transducer for opening the BBB. (a) Schematic of the implantation of the transducer on the mouse brain. (b) Treatment results of GBM tumor delivery of chemotherapeutic drug to the brain fac"
+    },
+    {
+     "page": 27,
+     "block_id": 20,
+     "text": "Figure 14. Energy harvesters based on piezoelectric biomaterials. A) Wood sponge PEH. Voltage output of (a) the native wood and (b) the wood sponge. Insets are the corresponding SEM images. Reproduced with permission.  $ ^{366} $ Copyright 2020, American Chemical Society. B) Horizontally assembled F"
+    },
+    {
+     "page": 28,
+     "block_id": 4,
+     "text": "Figure 15. Filtration based on piezoelectric biomaterials. A) Photograph and schematic of the self-charging face mask using a PLLA nanofiber membrane as the filter. B) Working principle and two main filtration mechanisms of the mask: mechanical filtration of large particles and electrostatic adsorpt"
+    },
+    {
+     "page": 29,
+     "block_id": 4,
+     "text": "Figure 16. Tissue engineering based on piezoelectric biomaterials. (a) Bone regeneration based on natural piezoelectric collagen scaffolds. (a) Schematic showing bone regeneration after ultrasound treatment of the PiezoCol collagen scaffolds implanted under the skin. (b) Comprehensive schematic of t"
+    },
+    {
+     "page": 32,
+     "block_id": 5,
+     "text": "Figure 17. Neuromodulation based on piezoelectric materials. A) Deep brain stimulation (DBS). (a) Schematic of the Sm-PUEH device for DBS. Reproduced with permission. $ ^{404} $ Copyright 2022, American Association for the Advancement of Science. (b) Schematic of the nanoparticle for blood–brain bar"
+    },
+    {
+     "page": 33,
+     "block_id": 9,
+     "text": "Figure 18. Piezocatalytic ROS medicine. A) Schematic of energy band theory of piezocatalytic. Reproduced with permission. $ ^{405} $ Copyright 2023, Wiley-VCH. B) Schematic of screen charge theory of piezocatalytic. Reproduced with permission. $ ^{406} $ Copyright 2020, Springer Nature. C) Schematic"
+    },
+    {
+     "page": 35,
+     "block_id": 4,
+     "text": "Figure 19. Piezocatalytic materials synthesis. A) Schematic of split of water with piezoelectric PMN–PT cantilevers. Reproduced with permission. $ ^{415} $ Copyright 2012, Wiley-VCH. B) Schematic of thiol–ene cross-linking by midfrequency vibration of ZnO nanoparticles. Reproduced with permission. $"
+    },
+    {
+     "page": 39,
+     "block_id": 4,
+     "text": "Figure 20. Challenges and perspectives."
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     102,
+     345,
+     143,
+     387
+    ]
+   },
+   {
+    "page": 1,
+    "bbox": [
+     627,
+     346,
+     667,
+     388
+    ]
+   },
+   {
+    "page": 1,
+    "bbox": [
+     549,
+     425,
+     576,
+     449
+    ]
+   },
+   {
+    "page": 1,
+    "bbox": [
+     862,
+     426,
+     885,
+     449
+    ]
+   },
+   {
+    "page": 1,
+    "bbox": [
+     831,
+     476,
+     1110,
+     761
+    ]
+   },
+   {
+    "page": 1,
+    "bbox": [
+     1027,
+     1352,
+     1110,
+     1470
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 3,
+    "block_id": 4,
+    "text": "Figure 1. Overview of piezoelectric biomaterials: from materials, to design, to manufacturing and applications."
+   },
+   {
+    "page": 4,
+    "block_id": 4,
+    "text": "Figure 2. Principles of the piezoelectric effect. A) Illustration of the relationships among dielectric, piezoelectric, pyroelectric, and ferroelectric materials. B) Schematic of the direct piezoelectric effect and converse piezoelectric effect. C) Illustration of the piezoelectric mode for transver"
+   },
+   {
+    "page": 5,
+    "block_id": 4,
+    "text": "Figure 3. Comparison of piezoelectric biomaterials with synthetic piezoceramics and polymers."
+   },
+   {
+    "page": 6,
+    "block_id": 7,
+    "text": "Figure 4. Schematic of the advantages and categories of piezoelectric biomaterials. Reproduced with permission. $ ^{53} $ Copyright 2023, Springer Nature. Reproduced with permission. $ ^{54} $ Copyright 2019, American Physical Society. Reproduced with permission. $ ^{55} $ Copyright 2011, Wiley-VCH."
+   },
+   {
+    "page": 8,
+    "block_id": 11,
+    "text": "Computation-aided design"
+   },
+   {
+    "page": 8,
+    "block_id": 21,
+    "text": "C High-Throughput calculations"
+   },
+   {
+    "page": 8,
+    "block_id": 26,
+    "text": "Intermolecular interactions"
+   },
+   {
+    "page": 8,
+    "block_id": 29,
+    "text": "Figure 5. Computational studies of piezoelectric biomaterials. A) Piezoelectric coefficient calculation of glycine. (a) Molecular structure and dipoles of  $ \\beta $-glycine. (b) Molecular structure and dipoles of  $ \\gamma $-glycine. (c) Calculated piezoelectric strain constants for  $ \\beta $-glyc"
+   },
+   {
+    "page": 10,
+    "block_id": 8,
+    "text": "Figure 6. Molecular engineering of piezoelectric biomaterials. A) H/F substitution strategy for HFPD molecular crystal design. (a) Molecular structure of PVDF. Reproduced with permission.  $ ^{230,231} $ Copyright 2022, Wiley-VCH. (b) Packing view of 2D hydrogen bond layers of HFPD crystals along th"
+   },
+   {
+    "page": 14,
+    "block_id": 9,
+    "text": "Figure 7. Mechanical force-driven methods for fabricating piezoelectric biomaterials. (a) Mechanical exfoliation of soft tissues using peeling force. (a) Schematic of van der Waals layered collagen fiber network in SIS soft tissue mechanically exfoliated by adhesive tape. (b) Cross-sectional SEM ima"
+   },
+   {
+    "page": 17,
+    "block_id": 5,
+    "text": "Figure 8. Tip-induced electric field-driven methods for fabricating piezoelectric biomaterials. A) Electrospinning technique. (a) Schematic of electrospun single-component PBLG fibers. Reproduced with permission. $ ^{98} $ Copyright 2011, Wiley-VCH. (b) Schematic of the electrospun glycine-PLLA nano"
+   },
+   {
+    "page": 19,
+    "block_id": 6,
+    "text": "Figure 9. Parallel-plate electric field-driven methods for fabricating piezoelectric biomaterials. A) Electric field-assisted epitaxial growth of vertically aligned FF microrod arrays. (a) Schematic of the epitaxial growth process. (b) Cross-sectional SEM image of the vertically aligned FF microrods"
+   },
+   {
+    "page": 21,
+    "block_id": 4,
+    "text": "Figure 10. Magnetic field-driven methods for fabricating piezoelectric biomaterials. A) AFM topography images of FF nanotube residues obtained after evaporation of HFIP-water solution droplets under magnetic fields of 0 T (left) and 12 T (right). Reproduced with permission. $ ^{322} $ Copyright 2007"
+   },
+   {
+    "page": 22,
+    "block_id": 4,
+    "text": "Figure 11. Thermally driven methods for fabricating piezoelectric biomaterials. A) PVD technique. (a) Schematic of the PVD process of peptide nanotube arrays. (b) Surface topography and (c) cross-sectional SEM images of peptide nanotube arrays. Reproduced with permission. $ ^{327} $ Copyright 2009, "
+   },
+   {
+    "page": 24,
+    "block_id": 8,
+    "text": "Figure 12. Sensors based on piezoelectric biomaterials. A) Implantable piezoelectric sensor for assessing the progress of motor function recovery in nerve injury repair. (a) Schematic illustration of the PBPS sensor implanted in rats and the construction of the sensor. (b) Photographs showing the wi"
+   },
+   {
+    "page": 25,
+    "block_id": 4,
+    "text": "Figure 13. Actuators and acoustic transducers based on piezoelectric biomaterials. A) Biodegradable ultrasonic transducer for opening the BBB. (a) Schematic of the implantation of the transducer on the mouse brain. (b) Treatment results of GBM tumor delivery of chemotherapeutic drug to the brain fac"
+   },
+   {
+    "page": 27,
+    "block_id": 20,
+    "text": "Figure 14. Energy harvesters based on piezoelectric biomaterials. A) Wood sponge PEH. Voltage output of (a) the native wood and (b) the wood sponge. Insets are the corresponding SEM images. Reproduced with permission.  $ ^{366} $ Copyright 2020, American Chemical Society. B) Horizontally assembled F"
+   },
+   {
+    "page": 28,
+    "block_id": 4,
+    "text": "Figure 15. Filtration based on piezoelectric biomaterials. A) Photograph and schematic of the self-charging face mask using a PLLA nanofiber membrane as the filter. B) Working principle and two main filtration mechanisms of the mask: mechanical filtration of large particles and electrostatic adsorpt"
+   },
+   {
+    "page": 29,
+    "block_id": 4,
+    "text": "Figure 16. Tissue engineering based on piezoelectric biomaterials. (a) Bone regeneration based on natural piezoelectric collagen scaffolds. (a) Schematic showing bone regeneration after ultrasound treatment of the PiezoCol collagen scaffolds implanted under the skin. (b) Comprehensive schematic of t"
+   },
+   {
+    "page": 32,
+    "block_id": 5,
+    "text": "Figure 17. Neuromodulation based on piezoelectric materials. A) Deep brain stimulation (DBS). (a) Schematic of the Sm-PUEH device for DBS. Reproduced with permission. $ ^{404} $ Copyright 2022, American Association for the Advancement of Science. (b) Schematic of the nanoparticle for blood–brain bar"
+   },
+   {
+    "page": 33,
+    "block_id": 9,
+    "text": "Figure 18. Piezocatalytic ROS medicine. A) Schematic of energy band theory of piezocatalytic. Reproduced with permission. $ ^{405} $ Copyright 2023, Wiley-VCH. B) Schematic of screen charge theory of piezocatalytic. Reproduced with permission. $ ^{406} $ Copyright 2020, Springer Nature. C) Schematic"
+   },
+   {
+    "page": 35,
+    "block_id": 4,
+    "text": "Figure 19. Piezocatalytic materials synthesis. A) Schematic of split of water with piezoelectric PMN–PT cantilevers. Reproduced with permission. $ ^{415} $ Copyright 2012, Wiley-VCH. B) Schematic of thiol–ene cross-linking by midfrequency vibration of ZnO nanoparticles. Reproduced with permission. $"
+   },
+   {
+    "page": 39,
+    "block_id": 4,
+    "text": "Figure 20. Challenges and perspectives."
+   }
+  ]
+ }
+}

@@ -1,0 +1,76 @@
+{
+ "key": "D444D4S5",
+ "passed": true,
+ "figures": 6,
+ "structural": {
+  "key": "D444D4S5",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 68997,
+  "new_text_chars": 68997,
+  "old_entries": 6,
+  "new_entries": 6,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      1001,
+      297,
+      1059,
+      354
+     ]
+    },
+    {
+     "page": 14,
+     "bbox": [
+      75,
+      357,
+      218,
+      549
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 3,
+     "text": "Fig. 1. Schematic diagram of the structure a) and function b) of the proposed tissue battery."
+    },
+    {
+     "page": 4,
+     "block_id": 4,
+     "text": "HTPDMS"
+    },
+    {
+     "page": 4,
+     "block_id": 30,
+     "text": "Fig. 2. Properties of the proposed tissue battery. a) Optical image of the tissue battery. b) Schematic diagrams of PCL–PLGA-HA, PCL/PDMS/PCL-FA, and CA–CS–HA. c) Cross-sectional SEM and EDS images of the tissue battery (I, II, and III correspond to panels d, e, and f, respectively. d–f) SEM and EDS"
+    },
+    {
+     "page": 6,
+     "block_id": 17,
+     "text": "Fig. 3. working mecanism and performance improvement of the proposed sensor. a and b) Sensor signals for different materials and structures. c and d) Schematic diagrams of the working principle of the sensor. A and B represent two atoms of positive and negative friction layers. e) Surface morphology"
+    },
+    {
+     "page": 7,
+     "block_id": 18,
+     "text": "Fig. 4. Performance of the sensor. (a–c) Voltage of the sensor for different sensor areas, pressures, and frequencies. (d) Voltage (U) and power density (P = U^2/R) of the sensor as a function of the external load resistance (R). (e) Analysis of the charging performance of the sensor for different c"
+    },
+    {
+     "page": 9,
+     "block_id": 7,
+     "text": "Fig. 5. Tissue battery-driven cartilage repair accelerated under ES. (a) Schematic diagram illustrating the mechanism through which ES accelerates cartilage repair. b and (c) Photomicrographs of the cell density and cell viability of the control group, PCL-PLGA-HA group, and tissue battery obtained "
+    },
+    {
+     "page": 10,
+     "block_id": 8,
+     "text": "Fig. 6. Detection of the cartilage repair status. (a) Medical applications of implantable tissue batteries. (b and c) Model of the knee joint in PBS solution and force simulation of knee cartilage under 1000 N. (d and e) Model and signal intensity of the tissue battery during degradation without and"
+    }
+   ]
+  }
+ }
+}

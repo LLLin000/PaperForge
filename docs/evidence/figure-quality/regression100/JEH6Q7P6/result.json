@@ -1,0 +1,37 @@
+{
+ "key": "JEH6Q7P6",
+ "passed": true,
+ "figures": 3,
+ "structural": {
+  "key": "JEH6Q7P6",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 115525,
+  "new_text_chars": 115525,
+  "old_entries": 3,
+  "new_entries": 3,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 4,
+     "text": "Figure 1. Bone is an electroactive, electrosensitive and electroresponsive tissue."
+    },
+    {
+     "page": 6,
+     "block_id": 4,
+     "text": "Figure 2. Similarities in causative mechanisms of deficient bone regeneration under various disease conditions."
+    },
+    {
+     "page": 9,
+     "block_id": 4,
+     "text": "Figure 3. Putative mechanisms by which electroactive biomaterials or electrical stimuli promote bone regeneration under pathological conditions."
+    }
+   ]
+  }
+ }
+}

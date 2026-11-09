@@ -1,0 +1,169 @@
+{
+ "key": "BL8ABQ2A",
+ "passed": true,
+ "figures": 13,
+ "structural": {
+  "key": "BL8ABQ2A",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 97914,
+  "new_text_chars": 97914,
+  "old_entries": 13,
+  "new_entries": 13,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      102,
+      409,
+      144,
+      451
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      626,
+      409,
+      667,
+      452
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      548,
+      489,
+      576,
+      513
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      862,
+      490,
+      886,
+      514
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      638,
+      536,
+      1110,
+      809
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      1024,
+      1350,
+      1112,
+      1472
+     ]
+    },
+    {
+     "page": 2,
+     "bbox": [
+      196,
+      175,
+      1016,
+      640
+     ]
+    },
+    {
+     "page": 20,
+     "bbox": [
+      633,
+      869,
+      752,
+      1510
+     ]
+    },
+    {
+     "page": 20,
+     "bbox": [
+      948,
+      1414,
+      1093,
+      1500
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 3,
+     "text": "Scheme 1. Synthesis of Metal Ion Crosslinking of Poly(AM-co-MA) Hydrogels and Depiction of Various Chemical Linking within the Hydrogel"
+    },
+    {
+     "page": 3,
+     "block_id": 4,
+     "text": "Figure 1. (A) In situ metal ion gel formation. (B) XPS spectroscopy of the AM₁₀ hydrogel in the presence of Ca²⁺, Zn²⁺, and Ni²⁺ metal ions. (C) FESEM images of the AM₁₀ hydrogel (i) in the absence of any metal ions and in the presence of (ii) Ca²⁺, (iii) Zn²⁺, (iv) Ni²⁺ metal ions. (D) Distribution"
+    },
+    {
+     "page": 4,
+     "block_id": 13,
+     "text": "Figure 2. (A) Tensile stress strain diagram, (B) tensile strength and elastic modulus, (C) fracture strain and work of fracture, (D) compressive stress strain diagram, (E) compressive strength of AM₁₀-Ca²⁺, AM₁₀-Ni²⁺, AM₁₀-Zn²⁺, and AM₁₀ hydrogels. (F) Photograph of compressive deformation of AM₁₀-C"
+    },
+    {
+     "page": 5,
+     "block_id": 10,
+     "text": "Figure 3. (A,B) Force–displacement curves of notched and unnotched AM_{20}-Ca^{2+} hydrogels, respectively. (C,D) Force–displacement curves of notched and unnotched AM_{20} hydrogels, respectively. (E) Fracture energy of AM_{20}-Ca^{2+} and AM_{20} hydrogels. (F) Schematic representation of crack pr"
+    },
+    {
+     "page": 6,
+     "block_id": 6,
+     "text": "Figure 4. (A) Cyclic tensile loading and unloading experiments of the AM_{20}-Ca^{2+} hydrogel. (B) Dissipated energy under the hysteresis loop and total energy dissipation during cyclic loading and unloading experiments at different strain %. (C) Energy dissipation mechanism of the AM_{20}-Ca^{2+} "
+    },
+    {
+     "page": 7,
+     "block_id": 12,
+     "text": "Figure 5. Cyclic tensile loading—unloading experiments of the AM₂₀-Ca²⁺ hydrogel: (A) Self-recovery at 0 min, (B) self-recovery at 2 min, (C) self-recovery at 5 min, and (D) self-recovery at 10 min. (E) Relative energy dissipation when the second loading cycle was started at different time intervals"
+    },
+    {
+     "page": 8,
+     "block_id": 8,
+     "text": "Figure 6. (A) Adhesion of the AM_{20}-Ca^{2+} hydrogel with different substrates like skin, plastic, glass, wood, metal, rubber and paper. (B) Force vs displacement graphs for lap shear tests. (C) Adhesive strengths on different surfaces. (D) Repeated adhesion strength of the AM_{20}-Ca^{2+} hydroge"
+    },
+    {
+     "page": 9,
+     "block_id": 8,
+     "text": "Figure 7. (A) Photographs of AM₂₀ and AM₂₀-Ca²⁺ hydrogels after keeping at −15 °C for 24 h. After 24 h, AM₂₀ lost its flexibility, whereas the AM₂₀-Ca²⁺ hydrogel still maintained its flexibility due to its antifreezing properties. (B) Photographs of the AM₂₀-Ca²⁺ hydrogel after keeping at −15 °C for"
+    },
+    {
+     "page": 10,
+     "block_id": 17,
+     "text": "Figure 8. (A) Schematic representation of the self-healing mechanism in the hydrogel. (B) Self-healing process of the AM₂₀-Ca²⁺ hydrogel. A rectangular piece of hydrogel was cut into two halves, one part stained with dye, then rejoined and kept for some time for self-healing. The self-healed gel cou"
+    },
+    {
+     "page": 11,
+     "block_id": 13,
+     "text": "Figure 9. (A) Demonstration of conductive nature of the AM₂₀-Ca²⁺ hydrogel at room temperature (25 °C) and subambient temperature (-15 °C). Connecting with a battery (using the mentioned circuit), the hydrogel was able to light up an LED both in ambient and subambient environments. (B) The Nyquist p"
+    },
+    {
+     "page": 12,
+     "block_id": 13,
+     "text": "Figure 10. The AM_{20}-Ca^{2+} hydrogel-based strain sensor for human motion detection. The relative resistance change in response to the bending of (A) finger, (B) elbow, (C) knee, and (D) wrist. (E) Morse code for representing the English alphabet and numerical numbers. (F) Representation of Morse"
+    },
+    {
+     "page": 13,
+     "block_id": 14,
+     "text": "Figure 11. (A) Schematic of the solid electrolyte-based supercapacitor device and its charging–discharging mechanism. (B) Cyclic voltammetry (CV) curve. (C) Variation of specific capacitance with scan rate. (D) Galvanostatic charge–discharge (GCD) profile. (E) Specific capacitance and Coulombic effi"
+    },
+    {
+     "page": 15,
+     "block_id": 14,
+     "text": "Figure 12. (A) SE<sub>r</sub>, (B) SE<sub>A</sub>, (C) SE<sub>R</sub> of AM<sub>20</sub> hydrogels before and after incorporation of different metal ions (Ca<sup>2+</sup>, Ni<sup>2+</sup>, and Zn<sup>2+</sup>). variation of (D) SE<sub>r</sub>, (E) SE<sub>A</sub>, (F) SE<sub>R</sub> of AM<sub>20</sub"
+    }
+   ]
+  }
+ }
+}

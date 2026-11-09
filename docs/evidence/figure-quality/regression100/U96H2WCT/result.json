@@ -1,0 +1,42 @@
+{
+ "key": "U96H2WCT",
+ "passed": true,
+ "figures": 4,
+ "structural": {
+  "key": "U96H2WCT",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 40984,
+  "new_text_chars": 40984,
+  "old_entries": 4,
+  "new_entries": 4,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 4,
+     "text": "Fig. 1-A\nThis chondral defect of the lateral femoral condyle measured  $ 16 \\times 14 \\, mm $ ( $ 2.2 \\, cm^{2} $). The patient had symptoms of locking and catching that limited her activity."
+    },
+    {
+     "page": 2,
+     "block_id": 8,
+     "text": "Fig. 1-B\nA loose piece of articular cartilage was found in the lateral compartment during the arthroscopy and was removed."
+    },
+    {
+     "page": 4,
+     "block_id": 3,
+     "text": "Fig. 2\n\nActivity rating scale.\nThis table shows\nthe sports activities\nand activity levels\nthat were recorded\npreoperatively and\npostoperatively at\nregular intervals.\nADL = activities of\ndaily living."
+    },
+    {
+     "page": 5,
+     "block_id": 5,
+     "text": "Fig. 3\nMean subjective total Noyes scores for each group annually during follow-up."
+    }
+   ]
+  }
+ }
+}

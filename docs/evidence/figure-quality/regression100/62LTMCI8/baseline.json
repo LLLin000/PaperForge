@@ -1,0 +1,119 @@
+{
+ "dry_run": {
+  "key": "62LTMCI8",
+  "identity": {
+   "old": {
+    "entries": 1,
+    "unique_ids": 1,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 1,
+    "unique_ids": 1,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 18,
+   "new_render_files": 20,
+   "render_added": [
+    "assets/orphans/orphan_003.jpg",
+    "render/figures/orphan_003.md"
+   ],
+   "render_removed": [],
+   "embeds": 7,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 6,
+   "new_tables": 6,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 269,
+   "new_rows": 269,
+   "role_removed": {
+    "non_body_insert": 3,
+    "frontmatter_noise": 2,
+    "frontmatter_support": 1,
+    "reference_item": 6
+   },
+   "role_added": {
+    "unknown_structural": 3,
+    "body_paragraph": 3,
+    "noise": 6
+   },
+   "old_body_chars": 36516,
+   "new_body_chars": 36746,
+   "old_text_chars": 80043,
+   "new_text_chars": 80043,
+   "old_fulltext_chars": 72617
+  },
+  "new_manifest": {
+   "figures": 1,
+   "tables": 6,
+   "orphans": 3
+  },
+  "new_orphans": 1
+ },
+ "structural": {
+  "key": "62LTMCI8",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 80043,
+  "new_text_chars": 80043,
+  "old_entries": 1,
+  "new_entries": 1,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      69,
+      1313,
+      185,
+      1354
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 6,
+     "block_id": 3,
+     "text": "Figure 1. Electrically conductive hydrogels as a promising tool for the repair of articular cartilage defects caused by trauma or debilitating diseases such as osteoarthritis (top). These functional conductive hydrogels present several advantages for cartilage tissue engineering strategies (bottom)."
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     69,
+     1313,
+     185,
+     1354
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 6,
+    "block_id": 3,
+    "text": "Figure 1. Electrically conductive hydrogels as a promising tool for the repair of articular cartilage defects caused by trauma or debilitating diseases such as osteoarthritis (top). These functional conductive hydrogels present several advantages for cartilage tissue engineering strategies (bottom)."
+   }
+  ]
+ }
+}

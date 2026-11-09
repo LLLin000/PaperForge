@@ -1,0 +1,218 @@
+{
+ "dry_run": {
+  "key": "7CIULR7G",
+  "identity": {
+   "old": {
+    "entries": 3,
+    "unique_ids": 3,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 3,
+    "unique_ids": 3,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 12,
+   "new_render_files": 52,
+   "render_added": [
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/orphans/orphan_013.jpg",
+    "assets/orphans/orphan_014.jpg",
+    "assets/orphans/orphan_015.jpg",
+    "assets/orphans/orphan_016.jpg",
+    "assets/orphans/orphan_017.jpg",
+    "assets/orphans/orphan_018.jpg",
+    "assets/orphans/orphan_019.jpg",
+    "assets/orphans/orphan_020.jpg",
+    "assets/orphans/orphan_021.jpg",
+    "assets/orphans/orphan_022.jpg",
+    "render/figures/orphan_003.md",
+    "render/figures/orphan_004.md",
+    "render/figures/orphan_005.md",
+    "render/figures/orphan_006.md",
+    "render/figures/orphan_007.md",
+    "render/figures/orphan_008.md",
+    "render/figures/orphan_009.md",
+    "render/figures/orphan_010.md",
+    "render/figures/orphan_011.md",
+    "render/figures/orphan_012.md",
+    "render/figures/orphan_013.md",
+    "render/figures/orphan_014.md",
+    "render/figures/orphan_015.md",
+    "render/figures/orphan_016.md",
+    "render/figures/orphan_017.md",
+    "render/figures/orphan_018.md",
+    "render/figures/orphan_019.md",
+    "render/figures/orphan_020.md",
+    "render/figures/orphan_021.md",
+    "render/figures/orphan_022.md"
+   ],
+   "render_removed": [],
+   "embeds": 4,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 1,
+   "new_tables": 1,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 227,
+   "new_rows": 227,
+   "role_removed": {
+    "structured_insert": 1,
+    "figure_caption_candidate": 1
+   },
+   "role_added": {
+    "frontmatter_noise": 1,
+    "figure_caption": 1
+   },
+   "old_body_chars": 33556,
+   "new_body_chars": 33556,
+   "old_text_chars": 56149,
+   "new_text_chars": 56149,
+   "old_fulltext_chars": 51921
+  },
+  "new_manifest": {
+   "figures": 3,
+   "tables": 1,
+   "orphans": 22
+  },
+  "new_orphans": 1
+ },
+ "structural": {
+  "key": "7CIULR7G",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 56149,
+  "new_text_chars": 56149,
+  "old_entries": 3,
+  "new_entries": 3,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 3,
+     "block_id": 3,
+     "text": "Figure I. PEMF modulates AMSC-derived exosomes in the incubator. PEMF = pulsed electromagnetic field; AMSC = adipose tissue-derived MSC."
+    },
+    {
+     "page": 9,
+     "block_id": 4,
+     "text": "PEMF = pulsed electromagnetic field; AMSC = adipose tissue derived MSC; ACLT = anterior cruciate ligament transaction; OARSI = Osteoarthritis Research Society International; OA = osteoarthritis."
+    }
+   ],
+   "assets": [
+    {
+     "page": 3,
+     "bbox": [
+      100,
+      159,
+      1049,
+      912
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 3,
+     "text": "Figure I. PEMF modulates AMSC-derived exosomes in the incubator. PEMF = pulsed electromagnetic field; AMSC = adipose tissue-derived MSC."
+    },
+    {
+     "page": 6,
+     "block_id": 15,
+     "text": "Figure 2. Characterization of AMSCs and AMSC-derived exosomes. (A) Flow cytometry analysis showed that AMSCs were positive for mesenchymal markers, including CD44 and CD90, but negative for CD34 and CD45. (B) The image of AMSCs, and the multilineage differentiation potential of AMSCs was demonstrate"
+    },
+    {
+     "page": 7,
+     "block_id": 18,
+     "text": "Figure 3. PEMF-regulated AMSC-derived exosomes attenuated IL-1β-induced downregulation of anabolic markers and upregulation of catabolic markers in cartilage degradation. (A) Immunofluorescence staining of chondrocytes and AMSC-derived exosomes (DiO) showed that exosomes gathered inside the chondroc"
+    },
+    {
+     "page": 9,
+     "block_id": 3,
+     "text": "Figure 4. PEMF-regulated AMSC-derived exosomes alleviate cartilage damage in ACLT-induced experimental osteoarthritis rats. (A) The micro-CT image of the transverse section of the epiphyseal proximal tibia of rats. (B) Images of H&E staining of knee joint specimens. The magnification is 200x. (C) OA"
+    },
+    {
+     "page": 9,
+     "block_id": 4,
+     "text": "PEMF = pulsed electromagnetic field; AMSC = adipose tissue derived MSC; ACLT = anterior cruciate ligament transaction; OARSI = Osteoarthritis Research Society International; OA = osteoarthritis."
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [
+   {
+    "page": 3,
+    "block_id": 3,
+    "text": "Figure I. PEMF modulates AMSC-derived exosomes in the incubator. PEMF = pulsed electromagnetic field; AMSC = adipose tissue-derived MSC."
+   },
+   {
+    "page": 9,
+    "block_id": 4,
+    "text": "PEMF = pulsed electromagnetic field; AMSC = adipose tissue derived MSC; ACLT = anterior cruciate ligament transaction; OARSI = Osteoarthritis Research Society International; OA = osteoarthritis."
+   }
+  ],
+  "assets": [
+   {
+    "page": 3,
+    "bbox": [
+     100,
+     159,
+     1049,
+     912
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 3,
+    "block_id": 3,
+    "text": "Figure I. PEMF modulates AMSC-derived exosomes in the incubator. PEMF = pulsed electromagnetic field; AMSC = adipose tissue-derived MSC."
+   },
+   {
+    "page": 6,
+    "block_id": 15,
+    "text": "Figure 2. Characterization of AMSCs and AMSC-derived exosomes. (A) Flow cytometry analysis showed that AMSCs were positive for mesenchymal markers, including CD44 and CD90, but negative for CD34 and CD45. (B) The image of AMSCs, and the multilineage differentiation potential of AMSCs was demonstrate"
+   },
+   {
+    "page": 7,
+    "block_id": 18,
+    "text": "Figure 3. PEMF-regulated AMSC-derived exosomes attenuated IL-1β-induced downregulation of anabolic markers and upregulation of catabolic markers in cartilage degradation. (A) Immunofluorescence staining of chondrocytes and AMSC-derived exosomes (DiO) showed that exosomes gathered inside the chondroc"
+   },
+   {
+    "page": 9,
+    "block_id": 3,
+    "text": "Figure 4. PEMF-regulated AMSC-derived exosomes alleviate cartilage damage in ACLT-induced experimental osteoarthritis rats. (A) The micro-CT image of the transverse section of the epiphyseal proximal tibia of rats. (B) Images of H&E staining of knee joint specimens. The magnification is 200x. (C) OA"
+   },
+   {
+    "page": 9,
+    "block_id": 4,
+    "text": "PEMF = pulsed electromagnetic field; AMSC = adipose tissue derived MSC; ACLT = anterior cruciate ligament transaction; OARSI = Osteoarthritis Research Society International; OA = osteoarthritis."
+   }
+  ]
+ }
+}

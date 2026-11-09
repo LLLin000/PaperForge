@@ -1,0 +1,32 @@
+{
+ "key": "IRK7NJLZ",
+ "passed": true,
+ "figures": 2,
+ "structural": {
+  "key": "IRK7NJLZ",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 25914,
+  "new_text_chars": 25914,
+  "old_entries": 2,
+  "new_entries": 2,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 9,
+     "text": "Fig. 1. A supraspinatus outlet view demonstrating an acromial enthesophyte (black arrow)"
+    },
+    {
+     "page": 3,
+     "block_id": 9,
+     "text": "Fig. 2. An AP view revealing an acromial enthesophyte (outlined in black). The enthesophyte length (double arrowhead) and the enthesophyte-humeral distance (single arrowhead) are demonstrated."
+    }
+   ]
+  }
+ }
+}

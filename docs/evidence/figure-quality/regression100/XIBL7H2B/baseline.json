@@ -1,0 +1,242 @@
+{
+ "dry_run": {
+  "key": "XIBL7H2B",
+  "identity": {
+   "old": {
+    "entries": 7,
+    "unique_ids": 5,
+    "duplicate_extra": 2
+   },
+   "new": {
+    "entries": 5,
+    "unique_ids": 5,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": [
+    {
+     "old_id": "figure_004",
+     "old_assets": [
+      "7"
+     ],
+     "new_id": "figure_004",
+     "new_assets": [
+      "10",
+      "12",
+      "15",
+      "17",
+      "19",
+      "20",
+      "21",
+      "22",
+      "23",
+      "25",
+      "26",
+      "27",
+      "3",
+      "4",
+      "5",
+      "7"
+     ]
+    }
+   ]
+  },
+  "delivery": {
+   "old_render_files": 46,
+   "new_render_files": 92,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/figures/figure_005.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/orphans/orphan_013.jpg",
+    "assets/orphans/orphan_014.jpg",
+    "assets/orphans/orphan_015.jpg",
+    "assets/orphans/orphan_016.jpg",
+    "assets/orphans/orphan_017.jpg",
+    "assets/orphans/orphan_018.jpg",
+    "assets/orphans/orphan_019.jpg",
+    "assets/orphans/orphan_020.jpg",
+    "assets/orphans/orphan_021.jpg",
+    "assets/orphans/orphan_022.jpg",
+    "assets/orphans/orphan_023.jpg",
+    "assets/orphans/orphan_024.jpg",
+    "assets/orphans/orphan_025.jpg",
+    "assets/orphans/orphan_026.jpg",
+    "assets/orphans/orphan_027.jpg",
+    "assets/orphans/orphan_028.jpg",
+    "assets/orphans/orphan_029.jpg",
+    "assets/orphans/orphan_030.jpg",
+    "assets/orphans/orphan_031.jpg",
+    "assets/orphans/orphan_032.jpg",
+    "assets/orphans/orphan_033.jpg",
+    "assets/orphans/orphan_034.jpg",
+    "assets/orphans/orphan_035.jpg",
+    "assets/orphans/orphan_036.jpg",
+    "assets/orphans/orphan_037.jpg",
+    "assets/orphans/orphan_038.jpg",
+    "assets/orphans/orphan_039.jpg",
+    "assets/orphans/orphan_040.jpg",
+    "assets/orphans/orphan_041.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 5,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 0,
+   "new_tables": 0,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 289,
+   "new_rows": 289,
+   "role_removed": {
+    "frontmatter_noise": 2,
+    "figure_caption_candidate": 3,
+    "reference_item": 2
+   },
+   "role_added": {
+    "noise": 2,
+    "body_paragraph": 2,
+    "figure_caption": 3
+   },
+   "old_body_chars": 38271,
+   "new_body_chars": 38347,
+   "old_text_chars": 60139,
+   "new_text_chars": 60139,
+   "old_fulltext_chars": 48943
+  },
+  "new_manifest": {
+   "figures": 5,
+   "tables": 0,
+   "orphans": 41
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "XIBL7H2B",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 60139,
+  "new_text_chars": 60139,
+  "old_entries": 7,
+  "new_entries": 5,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 7,
+     "text": "Figure 1. Design, preparation, and application of TESs. A) Diagram of 3D printing for TES fabrication. B) The electricity generation principle of a single micropore in TESs. C) The schematic illustration of implanted TESs for cartilage regeneration. D) TESs degraded by surface erosion, resulting in "
+    },
+    {
+     "page": 4,
+     "block_id": 19,
+     "text": "Figure 2. Characterization and properties of TESs. A) The optical images of TESs prepared by 1, 5, and 10 wt% PPGs. The flexibility of a TES prepared by 5 wt% PPGS was exhibited. The B) voltage and the C) current output performance of TESs prepared by various 3D printing inks under a cyclic compress"
+    },
+    {
+     "page": 5,
+     "block_id": 19,
+     "text": "Figure 3. The electrical performance of TESs in moist environments. A) Schematic illustration of TESs generated electricity in vivo. The electrical output of TESs prepared by B) 1, C) 5, and D) 10 wt% PPGS in PBS, normal saline, and tissue fluid, and demonstrated their efficient generation of electr"
+    },
+    {
+     "page": 7,
+     "block_id": 14,
+     "text": "HE"
+    },
+    {
+     "page": 7,
+     "block_id": 16,
+     "text": "SO"
+    },
+    {
+     "page": 7,
+     "block_id": 18,
+     "text": "COL II"
+    },
+    {
+     "page": 7,
+     "block_id": 28,
+     "text": "Figure 4. TESs promote the construction and development of tissue-engineered cartilage. A) Schematic of the experimental design of tissue-engineered cartilage of PGS scaffold and TESs. Optical images of tissue-engineered cartilage cultured B) in vitro and C) in vivo after 4 weeks, respectively. Scal"
+    },
+    {
+     "page": 8,
+     "block_id": 8,
+     "text": "Figure 5. Cell-free TESs promote cartilage and subchondral bone regeneration in rabbits. A) Schematic of electrotherapy promotes cartilage regeneration via calcium signal in vivo. B) Macroscopic appearance of the full-thickness cartilage defect after 12 weeks post-surgery. C) Micro-CT evaluation of "
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 3,
+    "block_id": 7,
+    "text": "Figure 1. Design, preparation, and application of TESs. A) Diagram of 3D printing for TES fabrication. B) The electricity generation principle of a single micropore in TESs. C) The schematic illustration of implanted TESs for cartilage regeneration. D) TESs degraded by surface erosion, resulting in "
+   },
+   {
+    "page": 4,
+    "block_id": 19,
+    "text": "Figure 2. Characterization and properties of TESs. A) The optical images of TESs prepared by 1, 5, and 10 wt% PPGs. The flexibility of a TES prepared by 5 wt% PPGS was exhibited. The B) voltage and the C) current output performance of TESs prepared by various 3D printing inks under a cyclic compress"
+   },
+   {
+    "page": 5,
+    "block_id": 19,
+    "text": "Figure 3. The electrical performance of TESs in moist environments. A) Schematic illustration of TESs generated electricity in vivo. The electrical output of TESs prepared by B) 1, C) 5, and D) 10 wt% PPGS in PBS, normal saline, and tissue fluid, and demonstrated their efficient generation of electr"
+   },
+   {
+    "page": 7,
+    "block_id": 14,
+    "text": "HE"
+   },
+   {
+    "page": 7,
+    "block_id": 16,
+    "text": "SO"
+   },
+   {
+    "page": 7,
+    "block_id": 18,
+    "text": "COL II"
+   },
+   {
+    "page": 7,
+    "block_id": 28,
+    "text": "Figure 4. TESs promote the construction and development of tissue-engineered cartilage. A) Schematic of the experimental design of tissue-engineered cartilage of PGS scaffold and TESs. Optical images of tissue-engineered cartilage cultured B) in vitro and C) in vivo after 4 weeks, respectively. Scal"
+   },
+   {
+    "page": 8,
+    "block_id": 8,
+    "text": "Figure 5. Cell-free TESs promote cartilage and subchondral bone regeneration in rabbits. A) Schematic of electrotherapy promotes cartilage regeneration via calcium signal in vivo. B) Macroscopic appearance of the full-thickness cartilage defect after 12 weeks post-surgery. C) Micro-CT evaluation of "
+   }
+  ]
+ }
+}

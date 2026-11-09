@@ -1,0 +1,164 @@
+{
+ "dry_run": {
+  "key": "R5IKNGWW",
+  "identity": {
+   "old": {
+    "entries": 4,
+    "unique_ids": 4,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 4,
+    "unique_ids": 4,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 36,
+   "new_render_files": 72,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/orphans/orphan_013.jpg",
+    "assets/orphans/orphan_014.jpg",
+    "assets/orphans/orphan_015.jpg",
+    "assets/orphans/orphan_016.jpg",
+    "assets/orphans/orphan_017.jpg",
+    "assets/orphans/orphan_018.jpg",
+    "assets/orphans/orphan_019.jpg",
+    "assets/orphans/orphan_020.jpg",
+    "assets/orphans/orphan_021.jpg",
+    "assets/orphans/orphan_022.jpg",
+    "assets/orphans/orphan_023.jpg",
+    "assets/orphans/orphan_024.jpg",
+    "assets/orphans/orphan_025.jpg",
+    "assets/orphans/orphan_026.jpg",
+    "assets/orphans/orphan_027.jpg",
+    "assets/orphans/orphan_028.jpg",
+    "assets/orphans/orphan_029.jpg",
+    "assets/orphans/orphan_030.jpg",
+    "assets/orphans/orphan_031.jpg",
+    "assets/tables/table_001.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 4,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 1,
+   "new_tables": 1,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 160,
+   "new_rows": 160,
+   "role_removed": {
+    "frontmatter_noise": 1,
+    "reference_item": 7
+   },
+   "role_added": {
+    "noise": 4,
+    "section_heading": 1,
+    "body_paragraph": 3
+   },
+   "old_body_chars": 21104,
+   "new_body_chars": 22455,
+   "old_text_chars": 35424,
+   "new_text_chars": 35424,
+   "old_fulltext_chars": 30877
+  },
+  "new_manifest": {
+   "figures": 4,
+   "tables": 1,
+   "orphans": 31
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "R5IKNGWW",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 35424,
+  "new_text_chars": 35424,
+  "old_entries": 4,
+  "new_entries": 4,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 18,
+     "text": "Fig. 1. Photomicrographs of longitudinal sections of the xiphoid cartilage defect area in 90-day-old male rats. (a–c) Control group; (d–f) group submitted to microcurrent stimulation (20 µA/5 min). Specimens were collected 7 (a and d), 21 (b and e), and 35 (c and f) days after experimental injury. S"
+    },
+    {
+     "page": 4,
+     "block_id": 14,
+     "text": "Fig. 2. Photomicrographs of sections stained with picrosirius-hematoxylin and analyzed by bright-field microscopy under polarized light (d-f and j-l). (a-f) Control group; (g-l) treated group. Specimens were collected 7 (a, d, g, and j), 21 (b, e, h, and k) and 35 (c, f, i, and l) days after experim"
+    },
+    {
+     "page": 5,
+     "block_id": 10,
+     "text": "Fig. 3. Electron photomicrographs of the xiphoid cartilage defect area in 90-day-old male rats. (a–c) Control group; (d–f) group submitted to microcurrent stimulation (20 µA/5 min). Specimens were collected 7 (a and d), 21 (b and e), and 35 (c and f) days after experimental injury. The samples were "
+    },
+    {
+     "page": 5,
+     "block_id": 27,
+     "text": "Fig. 4. Electron photomicrographs of sections from control (a–c) and treated (d–f) animals stained with cuprolinic blue for the detection of proteoglycans (PG). Specimens were collected 7 (a and d), 21 (b and e), and 35 (c and f) days after experimental injury. (*) Connective tissue cell; (▶) – posi"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 18,
+    "text": "Fig. 1. Photomicrographs of longitudinal sections of the xiphoid cartilage defect area in 90-day-old male rats. (a–c) Control group; (d–f) group submitted to microcurrent stimulation (20 µA/5 min). Specimens were collected 7 (a and d), 21 (b and e), and 35 (c and f) days after experimental injury. S"
+   },
+   {
+    "page": 4,
+    "block_id": 14,
+    "text": "Fig. 2. Photomicrographs of sections stained with picrosirius-hematoxylin and analyzed by bright-field microscopy under polarized light (d-f and j-l). (a-f) Control group; (g-l) treated group. Specimens were collected 7 (a, d, g, and j), 21 (b, e, h, and k) and 35 (c, f, i, and l) days after experim"
+   },
+   {
+    "page": 5,
+    "block_id": 10,
+    "text": "Fig. 3. Electron photomicrographs of the xiphoid cartilage defect area in 90-day-old male rats. (a–c) Control group; (d–f) group submitted to microcurrent stimulation (20 µA/5 min). Specimens were collected 7 (a and d), 21 (b and e), and 35 (c and f) days after experimental injury. The samples were "
+   },
+   {
+    "page": 5,
+    "block_id": 27,
+    "text": "Fig. 4. Electron photomicrographs of sections from control (a–c) and treated (d–f) animals stained with cuprolinic blue for the detection of proteoglycans (PG). Specimens were collected 7 (a and d), 21 (b and e), and 35 (c and f) days after experimental injury. (*) Connective tissue cell; (▶) – posi"
+   }
+  ]
+ }
+}

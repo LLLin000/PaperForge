@@ -1,0 +1,37 @@
+{
+ "key": "ZZQSV6YW",
+ "passed": true,
+ "figures": 2,
+ "structural": {
+  "key": "ZZQSV6YW",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 45832,
+  "new_text_chars": 45832,
+  "old_entries": 2,
+  "new_entries": 2,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 20,
+     "text": "Measurements on anteroposterior and axillary radiographs. The true anteroposterior radiograph of the shoulder (Fig. 1-A) depicts the measurement of HGA-SI by drawing a best-fit circle on the humeral head with a line originating from the center of the circle parallel to the glenoid center peg. The HG"
+    },
+    {
+     "page": 3,
+     "block_id": 20,
+     "text": "Grading system for the Anchor Peg Glenoid implant. Grade 1 (Fig. 2-A) indicates marked osteolysis around the center peg (inset) of the glenoid component as identified by the radiopaque marker. Grade 2 (Fig. 2-B) is defined as bone integration to the edges of the flanges of the center peg (inset), bu"
+    },
+    {
+     "page": 4,
+     "block_id": 0,
+     "text": "e82（4）"
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,43 @@
+{
+ "key": "ES23M9IS",
+ "passed": true,
+ "figures": 2,
+ "structural": {
+  "key": "ES23M9IS",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 66359,
+  "new_text_chars": 66359,
+  "old_entries": 2,
+  "new_entries": 2,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 5,
+     "block_id": 3,
+     "text": "FIGURE 2: 3D-printing hydrogel coated by DNA-based nanotubes [74]."
+    }
+   ],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 5,
+     "text": "FIGURE 1: Schematic of the articular cartilage."
+    },
+    {
+     "page": 5,
+     "block_id": 3,
+     "text": "FIGURE 2: 3D-printing hydrogel coated by DNA-based nanotubes [74]."
+    },
+    {
+     "page": 5,
+     "block_id": 5,
+     "text": "FIGURE 3: 3D printing of scaffold including self-healing hydrogel and ferrogel [109]."
+    }
+   ]
+  }
+ }
+}

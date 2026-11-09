@@ -1,0 +1,116 @@
+{
+ "key": "6U9LYKHZ",
+ "passed": true,
+ "figures": 6,
+ "structural": {
+  "key": "6U9LYKHZ",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 71890,
+  "new_text_chars": 71890,
+  "old_entries": 6,
+  "new_entries": 6,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 16,
+     "bbox": [
+      102,
+      160,
+      246,
+      344
+     ]
+    },
+    {
+     "page": 16,
+     "bbox": [
+      104,
+      449,
+      248,
+      634
+     ]
+    },
+    {
+     "page": 16,
+     "bbox": [
+      107,
+      737,
+      247,
+      919
+     ]
+    },
+    {
+     "page": 16,
+     "bbox": [
+      107,
+      1055,
+      248,
+      1225
+     ]
+    },
+    {
+     "page": 16,
+     "bbox": [
+      628,
+      105,
+      769,
+      282
+     ]
+    },
+    {
+     "page": 16,
+     "bbox": [
+      628,
+      393,
+      769,
+      576
+     ]
+    },
+    {
+     "page": 16,
+     "bbox": [
+      628,
+      839,
+      769,
+      1026
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 10,
+     "text": "FIGURE 1 Crystal and stacking structure of piezoelectric semiconductors (PSs). (a) Perovskite BaTiO₃. (b) Wurtzite ZnO. (c) Schematic diagram of MoS₂ structure of 1T, 2H and 3R phases. (c) Reproduced with permission.[37] Copyright 2021, Elsevier."
+    },
+    {
+     "page": 4,
+     "block_id": 15,
+     "text": "FIGURE 2 Schematic illustration of photocatalysis and piezo-catalysis based on the cavitation effect. (a) Schematic of the cavitation effect under US irradiation. (b) ROS generation during photocatalysis. (c) The release and (d) adsorption of free charges in the solution under compressive stress and"
+    },
+    {
+     "page": 6,
+     "block_id": 10,
+     "text": "FIGURE 3 Band structure diagrams of the piezoelectric semiconductors (PSs) at the interface. (a) PS-electrolyte contact interface. (b) Metal-PS contact interface. (c) Type-II and (d) Z-scheme contact interfaces."
+    },
+    {
+     "page": 9,
+     "block_id": 15,
+     "text": "FIGURE 4 Applications of PS nanomaterials in SDT of cancer. (a) Schematic illustration of cancer SDT and band tilting of  $ Cu_{2-x}O $-BTO. (b) Tumor growth curves after different treatments. ( $ *** $p<0.001,  $ ** $p<0.01) (c) TEM image and (d) schematic illustration on energy band of BP nanoshee"
+    },
+    {
+     "page": 10,
+     "block_id": 18,
+     "text": "FIGURE 5 Application of PS heterojunctions in cancer SDT. (a) Schematic illustration of Au@BP nanohybrid in cancer SDT, and (b) fluorescence of SOSG under US. (c) Mechanism for enhanced ROS generation by D-ZnOₓ·Gd. (d) Adsorption energies of O₂ and H₂O on ZnO and D-ZnOₓ·Gd, respectively. (e) Schemat"
+    },
+    {
+     "page": 12,
+     "block_id": 4,
+     "text": "FIGURE 6 Application of PS nanomaterials in antibacterial SDT. (a) TEM image and atomic structure of  $ WS_{2} $ NFs. (b) Antibacterial SDT of  $ WS_{2} $ NFs against Escherichia coli. (c) Mechanism of Au@BTO in antibacterial SDT. (d) Antibacterial SDT of Au@BTO against E. coli and Staphylococcus au"
+    }
+   ]
+  }
+ }
+}

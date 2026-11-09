@@ -1,0 +1,218 @@
+{
+ "dry_run": {
+  "key": "H4GURFWI",
+  "identity": {
+   "old": {
+    "entries": 9,
+    "unique_ids": 8,
+    "duplicate_extra": 1
+   },
+   "new": {
+    "entries": 8,
+    "unique_ids": 8,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005",
+    "figure_006": "figure_006",
+    "figure_007": "figure_007",
+    "figure_008": "figure_008"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": [
+    {
+     "old_id": "figure_006",
+     "old_assets": [
+      "3"
+     ],
+     "new_id": "figure_006",
+     "new_assets": [
+      "2",
+      "3"
+     ]
+    }
+   ]
+  },
+  "delivery": {
+   "old_render_files": 19,
+   "new_render_files": 38,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/figures/figure_005.jpg",
+    "assets/figures/figure_006.jpg",
+    "assets/figures/figure_007.jpg",
+    "assets/figures/figure_008.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/tables/table_001.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 9,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 1,
+   "new_tables": 1,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 135,
+   "new_rows": 135,
+   "role_removed": {},
+   "role_added": {},
+   "old_body_chars": 17168,
+   "new_body_chars": 17168,
+   "old_text_chars": 31044,
+   "new_text_chars": 31044,
+   "old_fulltext_chars": 26554
+  },
+  "new_manifest": {
+   "figures": 8,
+   "tables": 1,
+   "orphans": 10
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "H4GURFWI",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 31044,
+  "new_text_chars": 31044,
+  "old_entries": 9,
+  "new_entries": 8,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 5,
+     "block_id": 3,
+     "text": "Contact Angles of Pure CNTs, Pure PCU, and CNT/PCU (1:2 by Weight Ratio)"
+    }
+   ],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 3,
+     "text": "Figure 1. (a) Electrode fabrication on carbon nanotube (CNT) polymer composite materials. (b) Controlled voltages were applied to the nanostructured surfaces to stimulate chondrocytes in growth media through a silver wire. PCU: polycarbonate urethane. [Color figure can be viewed in the online issue,"
+    },
+    {
+     "page": 3,
+     "block_id": 15,
+     "text": "Figure 2. Schematic of the electrical stimulation for generating transverse current using conductive CNT/PCU composites. [Color figure can be viewed in the online issue, which is available at www.interscience.wiley.com.]"
+    },
+    {
+     "page": 4,
+     "block_id": 3,
+     "text": "Figure 3. AFM images of the surface topography of: (a) smooth PCU and (b) very rough CNT/PCU composite surfaces. (c) FESEM image of bare PCU (bar is 500 nm). (d) FESEM image of CNT/PCU showing individual CNTs on the surface (bar is 500 nm). [Color figure can be viewed in the online issue, which is a"
+    },
+    {
+     "page": 4,
+     "block_id": 8,
+     "text": "Figure 4. Cross-sectional AFM image of the topography of: (a) PCU and (b) CNT/PCU composite surfaces. CNT composite surfaces showed very rough vertical structures due to PCU-coated CNTs. [Color figure can be viewed in the online issue, which is available at www.interscience.wiley.com.]"
+    },
+    {
+     "page": 5,
+     "block_id": 3,
+     "text": "Contact Angles of Pure CNTs, Pure PCU, and CNT/PCU (1:2 by Weight Ratio)"
+    },
+    {
+     "page": 5,
+     "block_id": 13,
+     "text": "Figure 5. Increased surface roughness for CNT/PCU composites versus increased surface energy for CNT/PCU composites (inset image shows change of hydrophilicity on CNT composites compared to pure PCU). This data showed that increased nanoroughness was directly related to greater surface energy. Note "
+    },
+    {
+     "page": 6,
+     "block_id": 4,
+     "text": "Figure 6. Fluorescence microscope images of chondrocytes at  $ 20\\times $. (a) Electrically nonstimulated CNT/PCU composites and (b) electrically stimulated (3 h) chondrocytes on CNT/PCU composites (seeding density was  $ 3500\\ cells/cm^{2} $). Cell staining was completed using DiO labeling. All bar"
+    },
+    {
+     "page": 6,
+     "block_id": 11,
+     "text": "Figure 7. Increased chondrocyte densities on electrically stimulated CNT/PCU composite surfaces (after 4 h of initial cell seeding). Nonstimulated CNT/PCU composites increased cell density compared to bare PCU. Greater cell density on stimulated CNT/PCU (6 h) was found compared with nonstimulated CN"
+    },
+    {
+     "page": 7,
+     "block_id": 3,
+     "text": "Figure 8. Increased chondrocyte densities after 2 days on electrically stimulated CNT/PCU composites. Longer exposure of electrical stimulation (6 h) showed greater cell densities (enhanced proliferation) than shorter (3 h) electrical stimulation exposure and nonstimulated composites. Values are mea"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [
+   {
+    "page": 5,
+    "block_id": 3,
+    "text": "Contact Angles of Pure CNTs, Pure PCU, and CNT/PCU (1:2 by Weight Ratio)"
+   }
+  ],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 3,
+    "block_id": 3,
+    "text": "Figure 1. (a) Electrode fabrication on carbon nanotube (CNT) polymer composite materials. (b) Controlled voltages were applied to the nanostructured surfaces to stimulate chondrocytes in growth media through a silver wire. PCU: polycarbonate urethane. [Color figure can be viewed in the online issue,"
+   },
+   {
+    "page": 3,
+    "block_id": 15,
+    "text": "Figure 2. Schematic of the electrical stimulation for generating transverse current using conductive CNT/PCU composites. [Color figure can be viewed in the online issue, which is available at www.interscience.wiley.com.]"
+   },
+   {
+    "page": 4,
+    "block_id": 3,
+    "text": "Figure 3. AFM images of the surface topography of: (a) smooth PCU and (b) very rough CNT/PCU composite surfaces. (c) FESEM image of bare PCU (bar is 500 nm). (d) FESEM image of CNT/PCU showing individual CNTs on the surface (bar is 500 nm). [Color figure can be viewed in the online issue, which is a"
+   },
+   {
+    "page": 4,
+    "block_id": 8,
+    "text": "Figure 4. Cross-sectional AFM image of the topography of: (a) PCU and (b) CNT/PCU composite surfaces. CNT composite surfaces showed very rough vertical structures due to PCU-coated CNTs. [Color figure can be viewed in the online issue, which is available at www.interscience.wiley.com.]"
+   },
+   {
+    "page": 5,
+    "block_id": 3,
+    "text": "Contact Angles of Pure CNTs, Pure PCU, and CNT/PCU (1:2 by Weight Ratio)"
+   },
+   {
+    "page": 5,
+    "block_id": 13,
+    "text": "Figure 5. Increased surface roughness for CNT/PCU composites versus increased surface energy for CNT/PCU composites (inset image shows change of hydrophilicity on CNT composites compared to pure PCU). This data showed that increased nanoroughness was directly related to greater surface energy. Note "
+   },
+   {
+    "page": 6,
+    "block_id": 4,
+    "text": "Figure 6. Fluorescence microscope images of chondrocytes at  $ 20\\times $. (a) Electrically nonstimulated CNT/PCU composites and (b) electrically stimulated (3 h) chondrocytes on CNT/PCU composites (seeding density was  $ 3500\\ cells/cm^{2} $). Cell staining was completed using DiO labeling. All bar"
+   },
+   {
+    "page": 6,
+    "block_id": 11,
+    "text": "Figure 7. Increased chondrocyte densities on electrically stimulated CNT/PCU composite surfaces (after 4 h of initial cell seeding). Nonstimulated CNT/PCU composites increased cell density compared to bare PCU. Greater cell density on stimulated CNT/PCU (6 h) was found compared with nonstimulated CN"
+   },
+   {
+    "page": 7,
+    "block_id": 3,
+    "text": "Figure 8. Increased chondrocyte densities after 2 days on electrically stimulated CNT/PCU composites. Longer exposure of electrical stimulation (6 h) showed greater cell densities (enhanced proliferation) than shorter (3 h) electrical stimulation exposure and nonstimulated composites. Values are mea"
+   }
+  ]
+ }
+}

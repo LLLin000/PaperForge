@@ -1,0 +1,68 @@
+{
+ "key": "2BFG5P6B",
+ "passed": true,
+ "figures": 5,
+ "structural": {
+  "key": "2BFG5P6B",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 66486,
+  "new_text_chars": 66486,
+  "old_entries": 5,
+  "new_entries": 5,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 2,
+     "block_id": 7,
+     "text": "Figure I. Diagram displaying the relationship between level of performance (response) and activity (dose) with performance and cartilage injury."
+    }
+   ],
+   "assets": [
+    {
+     "page": 2,
+     "bbox": [
+      614,
+      152,
+      1078,
+      467
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 7,
+     "text": "Figure I. Diagram displaying the relationship between level of performance (response) and activity (dose) with performance and cartilage injury."
+    },
+    {
+     "page": 5,
+     "block_id": 5,
+     "text": "Figure 2. Clinical algorithm for management of articular lesions in athletes."
+    },
+    {
+     "page": 5,
+     "block_id": 7,
+     "text": "Figure 3. Microfracture technique for articular cartilage repair with debridement of cartilage margins (A), removal of calcified cartilage (B), and systematic distribution of microfractures of the subchondral bone (C), resulting in formation of a pluripotent mesenchymal clot in the cartilage defect "
+    },
+    {
+     "page": 6,
+     "block_id": 10,
+     "text": "Figure 4. Technique of mosaicplasty using osteochondral cylinder harvest from the peripheral trochlea and press-fit insertion into the cartilage defect in a mosaic pattern with recreation of the condylar convexity."
+    },
+    {
+     "page": 8,
+     "block_id": 3,
+     "text": "Figure 5. Technique of mosaicplasty using osteochondral cylinder harvest from the peripheral trochlea (A) and press-fit insertion into the cartilage defect in a mosaic pattern with recreation of the condylar convexity (B)."
+    },
+    {
+     "page": 9,
+     "block_id": 3,
+     "text": "Figure 6. Case study of a high-impact athlete treated with autologous chondrocyte transplantation (A). Image taken 4 months after injury for a full-thickness lesion of the weightbearing femoral condyle (B). Second-look arthroscopy at 1 year demonstrated complete restoration of the articular cartilag"
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,42 @@
+{
+ "key": "R5IKNGWW",
+ "passed": true,
+ "figures": 4,
+ "structural": {
+  "key": "R5IKNGWW",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 35424,
+  "new_text_chars": 35424,
+  "old_entries": 4,
+  "new_entries": 4,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 18,
+     "text": "Fig. 1. Photomicrographs of longitudinal sections of the xiphoid cartilage defect area in 90-day-old male rats. (a–c) Control group; (d–f) group submitted to microcurrent stimulation (20 µA/5 min). Specimens were collected 7 (a and d), 21 (b and e), and 35 (c and f) days after experimental injury. S"
+    },
+    {
+     "page": 4,
+     "block_id": 14,
+     "text": "Fig. 2. Photomicrographs of sections stained with picrosirius-hematoxylin and analyzed by bright-field microscopy under polarized light (d-f and j-l). (a-f) Control group; (g-l) treated group. Specimens were collected 7 (a, d, g, and j), 21 (b, e, h, and k) and 35 (c, f, i, and l) days after experim"
+    },
+    {
+     "page": 5,
+     "block_id": 10,
+     "text": "Fig. 3. Electron photomicrographs of the xiphoid cartilage defect area in 90-day-old male rats. (a–c) Control group; (d–f) group submitted to microcurrent stimulation (20 µA/5 min). Specimens were collected 7 (a and d), 21 (b and e), and 35 (c and f) days after experimental injury. The samples were "
+    },
+    {
+     "page": 5,
+     "block_id": 27,
+     "text": "Fig. 4. Electron photomicrographs of sections from control (a–c) and treated (d–f) animals stained with cuprolinic blue for the detection of proteoglycans (PG). Specimens were collected 7 (a and d), 21 (b and e), and 35 (c and f) days after experimental injury. (*) Connective tissue cell; (▶) – posi"
+    }
+   ]
+  }
+ }
+}

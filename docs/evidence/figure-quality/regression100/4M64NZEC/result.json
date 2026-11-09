@@ -1,0 +1,78 @@
+{
+ "key": "4M64NZEC",
+ "passed": true,
+ "figures": 5,
+ "structural": {
+  "key": "4M64NZEC",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 14569,
+  "new_text_chars": 14569,
+  "old_entries": 5,
+  "new_entries": 5,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 3,
+     "block_id": 22,
+     "text": "注：（a）AR 增厚（箭头）；（b）AR 未见增厚（箭头）；（c）AR 测量示意（箭头）。"
+    },
+    {
+     "page": 4,
+     "block_id": 7,
+     "text": "注：（a）IGHL增厚（箭头）；（b）IGHL未见增厚（箭头）；（c）IGHL测量示意（箭头）。"
+    }
+   ],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 4,
+     "text": "表 1 2 位阅片者的 ICC 评估"
+    },
+    {
+     "page": 3,
+     "block_id": 6,
+     "text": "表 2 两组 CHL、AR、IGHL 厚度比较  $ (\\bar{x} \\pm s, \\text{mm}) $"
+    },
+    {
+     "page": 3,
+     "block_id": 8,
+     "text": "表 3 CHL、AR、IGHL 增厚对 FS 的诊断效能"
+    },
+    {
+     "page": 3,
+     "block_id": 11,
+     "text": "图 1 CHL、AR、IGHL 增厚诊断 FS 的 ROC 曲线"
+    },
+    {
+     "page": 3,
+     "block_id": 18,
+     "text": "注：（a）CHL 增厚（箭头）；（b）CHL 未见增厚（箭头）；（c）CHL 测量示意（箭头）。\n图 2 FS 患者及健康人 CHL 影像特征及测量示意图"
+    },
+    {
+     "page": 3,
+     "block_id": 22,
+     "text": "注：（a）AR 增厚（箭头）；（b）AR 未见增厚（箭头）；（c）AR 测量示意（箭头）。"
+    },
+    {
+     "page": 3,
+     "block_id": 26,
+     "text": "图 3 FS 患者及健康人 AR 影像特征及测量示意图"
+    },
+    {
+     "page": 4,
+     "block_id": 7,
+     "text": "注：（a）IGHL增厚（箭头）；（b）IGHL未见增厚（箭头）；（c）IGHL测量示意（箭头）。"
+    },
+    {
+     "page": 4,
+     "block_id": 9,
+     "text": "图 4 FS 患者及健康人 IGHL 影像特征及测量示意图"
+    }
+   ]
+  }
+ }
+}

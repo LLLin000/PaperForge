@@ -1,0 +1,215 @@
+{
+ "dry_run": {
+  "key": "H497AGMU",
+  "identity": {
+   "old": {
+    "entries": 6,
+    "unique_ids": 6,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 6,
+    "unique_ids": 6,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005",
+    "figure_006": "figure_006"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": [
+    {
+     "old_id": "figure_003",
+     "old_assets": [
+      "3",
+      "4",
+      "5",
+      "6"
+     ],
+     "new_id": "figure_003",
+     "new_assets": [
+      "3",
+      "4",
+      "5",
+      "6",
+      "8",
+      "9"
+     ]
+    },
+    {
+     "old_id": "figure_004",
+     "old_assets": [
+      "10",
+      "8",
+      "9"
+     ],
+     "new_id": "figure_004",
+     "new_assets": [
+      "10"
+     ]
+    }
+   ]
+  },
+  "delivery": {
+   "old_render_files": 21,
+   "new_render_files": 42,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/figures/figure_005.jpg",
+    "assets/figures/figure_006.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/orphans/orphan_013.jpg",
+    "assets/tables/table_001.jpg",
+    "assets/tables/table_002.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 8,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 2,
+   "new_tables": 2,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 240,
+   "new_rows": 240,
+   "role_removed": {},
+   "role_added": {},
+   "old_body_chars": 31162,
+   "new_body_chars": 31162,
+   "old_text_chars": 49418,
+   "new_text_chars": 49418,
+   "old_fulltext_chars": 44397
+  },
+  "new_manifest": {
+   "figures": 6,
+   "tables": 2,
+   "orphans": 13
+  },
+  "new_orphans": 1
+ },
+ "structural": {
+  "key": "H497AGMU",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 49418,
+  "new_text_chars": 49418,
+  "old_entries": 6,
+  "new_entries": 6,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 2,
+     "bbox": [
+      83,
+      232,
+      189,
+      276
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 4,
+     "block_id": 4,
+     "text": "Figure 1. (a) Schematic figure of the electrospinning setup. The syringe needle and the first auxiliary ring electrode ( $ O_{aux} $) are connected to the high voltage potential ( $ U_{0} $). The electrical potential of the other two ring electrodes can be controlled by the potential divider, i.e. t"
+    },
+    {
+     "page": 8,
+     "block_id": 5,
+     "text": "Figure 2. Top: fibre diameter, effective pore diameter and area for top and bottom sides of the electrospun ears including mean  $ \\pm $ stdev. Pore diameter and area decrease along with the fibre diameter. D: statistical significance versus the opposite side, p < 0.01. Bottom: representative SEM im"
+    },
+    {
+     "page": 9,
+     "block_id": 7,
+     "text": "Figure 3. Manual deformation of the auricle-shaped constructs after 21 days in culture. The constructs return to their initial shape after manual deformation."
+    },
+    {
+     "page": 9,
+     "block_id": 11,
+     "text": "Figure 4. Investigation 1: biological and biochemical response. Total DNA and GAG content at days 1, 7, 14 and 21. DNA data was normalised to day 1, GAG data to day 7. Gene expression data of aggrecan (AGG), collagen type 1 and 2 (COL1, COL2) and matrix metalloproteinase 3 and 13 (MMP3, MMP13) using"
+    },
+    {
+     "page": 10,
+     "block_id": 4,
+     "text": "Figure 5. Representative histology section (thickness: 14  $ \\mu $m, H&E staining) of an electrospun ear scaffold after 21 days in culture. H&E stains ECM products such as collagen as well as cytoplasm red and cell nuclei blue. Cells stay mainly on top of the ear construct (left arrow) but start to "
+    },
+    {
+     "page": 10,
+     "block_id": 12,
+     "text": "Figure 6. Investigation 2: region-specific biological response and mechanical properties. Top: total DNA, COL and GAG content for all regions of interest at days 1, 7, 14 and 21. DNA data was normalised to day 1, GAG and COL data to day 7. Bottom: mechanical properties of the electrospun ears before"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 2,
+    "bbox": [
+     83,
+     232,
+     189,
+     276
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 4,
+    "block_id": 4,
+    "text": "Figure 1. (a) Schematic figure of the electrospinning setup. The syringe needle and the first auxiliary ring electrode ( $ O_{aux} $) are connected to the high voltage potential ( $ U_{0} $). The electrical potential of the other two ring electrodes can be controlled by the potential divider, i.e. t"
+   },
+   {
+    "page": 8,
+    "block_id": 5,
+    "text": "Figure 2. Top: fibre diameter, effective pore diameter and area for top and bottom sides of the electrospun ears including mean  $ \\pm $ stdev. Pore diameter and area decrease along with the fibre diameter. D: statistical significance versus the opposite side, p < 0.01. Bottom: representative SEM im"
+   },
+   {
+    "page": 9,
+    "block_id": 7,
+    "text": "Figure 3. Manual deformation of the auricle-shaped constructs after 21 days in culture. The constructs return to their initial shape after manual deformation."
+   },
+   {
+    "page": 9,
+    "block_id": 11,
+    "text": "Figure 4. Investigation 1: biological and biochemical response. Total DNA and GAG content at days 1, 7, 14 and 21. DNA data was normalised to day 1, GAG data to day 7. Gene expression data of aggrecan (AGG), collagen type 1 and 2 (COL1, COL2) and matrix metalloproteinase 3 and 13 (MMP3, MMP13) using"
+   },
+   {
+    "page": 10,
+    "block_id": 4,
+    "text": "Figure 5. Representative histology section (thickness: 14  $ \\mu $m, H&E staining) of an electrospun ear scaffold after 21 days in culture. H&E stains ECM products such as collagen as well as cytoplasm red and cell nuclei blue. Cells stay mainly on top of the ear construct (left arrow) but start to "
+   },
+   {
+    "page": 10,
+    "block_id": 12,
+    "text": "Figure 6. Investigation 2: region-specific biological response and mechanical properties. Top: total DNA, COL and GAG content for all regions of interest at days 1, 7, 14 and 21. DNA data was normalised to day 1, GAG and COL data to day 7. Bottom: mechanical properties of the electrospun ears before"
+   }
+  ]
+ }
+}
