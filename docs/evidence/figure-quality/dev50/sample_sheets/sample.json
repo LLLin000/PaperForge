@@ -1,0 +1,723 @@
+{
+  "stratification": "10 papers × 3 figures; risk buckets and no-defect controls",
+  "reviewed": true,
+  "cases": [
+    {
+      "key": "3FQYMMXS",
+      "figure_id": "figure_001",
+      "page": 4,
+      "caption": "Figure 1. (a–d) Photographs of the proposed double-network PEGDA/short-chain CS hydrogel (scale bars: 2 mm). (a) Tensile deformation of the 3 + 2 sample (length × width = 1 mm × 10 mm) with two knots; the left image shows the initial state, and the right image displays the deformed state. (b) Eight-layer porous network obtained by 3D printing with a 0.26 mm needle. The left side shows the initial state, and the right side displays the curved state. (c) Photograph of the 3 + 2 sample subjected to a 1 kg weight. (d) 3D printed objects printed with a 0.27 mm needle.",
+      "asset_count": 1,
+      "asset_pages": [
+        4
+      ],
+      "case_flags": [
+        "association",
+        "crop_panel",
+        "page_assembly"
+      ],
+      "review_status": "reviewed_visual",
+      "root_cause": "no-defect",
+      "image": "3FQYMMXS/figure_001_asset0.jpg",
+      "legend_block_id": "4",
+      "asset_blocks": [
+        "3"
+      ],
+      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+    },
+    {
+      "key": "3FQYMMXS",
+      "figure_id": "figure_002",
+      "page": 4,
+      "caption": "Figure 2. (a, b) Tensile and compressive stress–strain curves of the 3 + 2 sample, respectively. (c–e) Tensile stress–strain diagrams. (c) 3 + 2 samples at different immersion times. (d) 3 + 1, 3 + 2, and 3 + 3 samples in which the only changes were to the PEGDA content. (e) 4 + 2, 3 + 2, and 2 + 2 samples in which the only changes were to the CS content.",
+      "asset_count": 1,
+      "asset_pages": [
+        4
+      ],
+      "case_flags": [
+        "association",
+        "crop_panel",
+        "page_assembly"
+      ],
+      "review_status": "reviewed_visual",
+      "root_cause": "no-defect",
+      "image": "3FQYMMXS/figure_002_asset0.jpg",
+      "legend_block_id": "9",
+      "asset_blocks": [
+        "8"
+      ],
+      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+    },
+    {
+      "key": "3FQYMMXS",
+      "figure_id": "figure_003",
+      "page": 5,
+      "caption": "Figure 3. (a, b) Loading–unloading tests under tension and compression, respectively. (c, d) Diagrams of dissipated coefficient and dissipated energy corresponding to panels (a) and (b), respectively. (e, f) Loading–unloading tests with relaxation time under tension and compression, respectively.",
+      "asset_count": 6,
+      "asset_pages": [
+        5,
+        5,
+        5,
+        5,
+        5,
+        5
+      ],
+      "case_flags": [
+        "association",
+        "crop_panel",
+        "page_assembly"
+      ],
+      "review_status": "reviewed_visual",
+      "root_cause": "no-defect",
+      "image": "3FQYMMXS/figure_003_asset0.jpg",
+      "legend_block_id": "10",
+      "asset_blocks": [
+        "3",
+        "4",
+        "5",
+        "6",
+        "8",
+        "9"
+      ],
+      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+    },
+    {
+      "key": "4CML4K3Y",
+      "figure_id": "figure_002",
+      "page": 5,
+      "caption": "Figure 2. Search algorithm used to identify and screen trials to be included in the review of publicly listed clinical trials.",
+      "asset_count": 1,
+      "asset_pages": [
+        5
+      ],
+      "case_flags": [
+        "caption_recall",
+        "association",
+        "page_assembly"
+      ],
+      "review_status": "reviewed_visual",
+      "root_cause": "no-defect",
+      "image": "4CML4K3Y/figure_002_asset0.jpg",
+      "legend_block_id": "3",
+      "asset_blocks": [
+        "2"
+      ],
+      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+    },
+    {
+      "key": "4CML4K3Y",
+      "figure_id": "figure_003",
+      "page": 5,
+      "caption": "Figure 3. Frequency among included studies of time point inclusion in follow-up.",
+      "asset_count": 1,
+      "asset_pages": [
+        5
+      ],
+      "case_flags": [
+        "caption_recall",
+        "association",
+        "page_assembly"
+      ],
+      "review_status": "reviewed_visual",
+      "root_cause": "no-defect",
+      "image": "4CML4K3Y/figure_003_asset0.jpg",
+      "legend_block_id": "5",
+      "asset_blocks": [
+        "4"
+      ],
+      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+    },
+    {
+      "key": "4CML4K3Y",
+      "figure_id": "figure_004",
+      "page": 6,
+      "caption": "Figure 4. Number of time points for patient evaluation in each individual study.",
+      "asset_count": 1,
+      "asset_pages": [
+        6
+      ],
+      "case_flags": [
+        "caption_recall",
+        "association",
+        "page_assembly"
+      ],
+      "review_status": "reviewed_visual",
+      "root_cause": "no-defect",
+      "image": "4CML4K3Y/figure_004_asset0.jpg",
+      "legend_block_id": "3",
+      "asset_blocks": [
+        "2"
+      ],
+      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+    },
+    {
+      "key": "53B47JM8",
+      "figure_id": "figure_002",
+      "page": 6,
+      "caption": "Fig. 2. Characterization of the microstructure and piezoelectric performance of the PLLA nanofiber mats under applied ultrasound (US). a. Schematic of the electrospinning setup used to fabricate the PLLA films and scanning electron microscope (SEM) images showing PLLA nanofiber alignment with different collection speeds. Scale bars are 20 μm. b. Simplified schematic showing the setup used for measuring the open circuit voltage of the films using a water bath and ultrasound produced at 40 kHz. c. Open circuit output voltage from PLLA sensors fabricated using films at different collector speeds under applied 40 kHz ultrasound. d. Peak output voltages from the PLLA sensors fabricated with 3000 rpm films under the same applied US over the course of 26 days. Films were conditioned in standard cell media solution at 37 °C, 5% CO₂ and measurements were taken every 2 days.",
+      "asset_count": 4,
+      "asset_pages": [
+        6,
+        6,
+        6,
+        6
+      ],
+      "case_flags": [
+        "caption_recall",
+        "association",
+        "crop_panel",
+        "page_assembly"
+      ],
+      "review_status": "reviewed_visual",
+      "root_cause": "no-defect",
+      "image": "53B47JM8/figure_002_asset0.jpg",
+      "legend_block_id": "6",
+      "asset_blocks": [
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+    },
+    {
+      "key": "53B47JM8",
+      "figure_id": "figure_003",
+      "page": 6,
+      "caption": "Fig. 3. Osteogenic differentiation of stem cells, grown on the piezoelectric PLLA nanofiber scaffold under applied US in vitro. a. A simple schematic demonstrates our setup for seeding adipose stem cells (ADCs) onto the scaffolds and treating them with US. The applied US induces controllable acoustic pressure, allowing the PLLA nanofiber films to generate electrical surface charge, which enhances osteogenesis from cultured cells. b. A quantitative comparison of ALP production by the cells in different treatment groups. c. Quantification of mineral formation levels from cells measured with an alizarin red assay. d and e are qPCR results illustrating expression levels of osteocalcin and osterix genes for different treatment groups, respectively. We used the two tailed t-test for statistical analysis. In the figure,  $ ^{*} $represents a significance level of 0.01,  $ ^{**} $represents a significance level of 0.001 and  $ ^{***} $represents a significance level of 0.0001.",
+      "asset_count": 5,
+      "asset_pages": [
+        6,
+        6,
+        6,
+        6,
+        6
+      ],
+      "case_flags": [
+        "caption_recall",
+        "association",
+        "crop_panel",
+        "page_assembly"
+      ],
+      "review_status": "reviewed_visual",
+      "root_cause": "no-defect",
+      "image": "53B47JM8/figure_003_asset0.jpg",
+      "legend_block_id": "17",
+      "asset_blocks": [
+        "10",
+        "13",
+        "14",
+        "15",
+        "16"
+      ],
+      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+    },
+    {
+      "key": "53B47JM8",
+      "figure_id": "figure_004",
+      "page": 7,
+      "caption": "Fig. 4. Osteogenic activity of reporter bone marrow stem cells (BMSCs) when grown on the electrospun PLLA scaffolds with US treatment. a. Schematic to demonstrate the progressive expression from BSP to DMP and changes in fluorescence that accompany this transition. b. Fluorescent microscope images of the cells seeded on different scaffolds after being subjected to different treatments as observed under the GFP channel (exposure time 100 ms) and cherry red channel (exposure time 1000 ms). c. and d. represent the fluorescent expressions quantitatively and provide a graphical comparison between each group. We used the two tailed t-test for statistical analysis. In the figure, * represents a significance level of 0.01, ** represents a significance level of 0.001 and *** represents a significance level of 0.0001.",
+      "asset_count": 3,
+      "asset_pages": [
+        7,
+        7,
+        7
+      ],
+      "case_flags": [
+        "caption_recall",
+        "association",
+        "crop_panel",
+        "page_assembly"
+      ],
+      "review_status": "reviewed_visual",
+      "root_cause": "no-defect",
+      "image": "53B47JM8/figure_004_asset0.jpg",
+      "legend_block_id": "8",
+      "asset_blocks": [
+        "5",
+        "6",
+        "7"
+      ],
+      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+    },
+    {
+      "key": "64GDU2A7",
+      "figure_id": "figure_001",
+      "page": 2,
+      "caption": "Fig. 1.—Three-dimensional reconstruction of acromion and clavicula with manually schematized acromioclavicular joint capsule (yellow), illustrating the three MRI slice positions: S-1, S-2, and S-3. S-3 already depicts most lateral part of joint capsule. Note that because of individual differences in acromial size, S-1 and S-2 are not always located directly next to each other.",
+      "asset_count": 1,
+      "asset_pages": [
+        2
+      ],
+      "case_flags": [
+        "caption_recall",
+        "association",
+        "crop_panel",
+        "page_assembly"
+      ],
+      "review_status": "reviewed_visual",
+      "root_cause": "no-defect",
+      "image": "64GDU2A7/figure_001_asset0.jpg",
+      "legend_block_id": "6",
+      "asset_blocks": [
+        "5"
+      ],
+      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+    },
+    {
+      "key": "64GDU2A7",
+      "figure_id": "figure_002",
+      "page": 3,
+      "caption": "Fig. 2.—Mathematic determination of acromial shape.",
+      "asset_count": 2,
+      "asset_pages": [
+        3,
+        3
+      ],
+      "case_flags": [
+        "caption_recall",
+        "association",
+        "crop_panel",
+        "page_assembly"
+      ],
+      "review_status": "reviewed_visual",
+      "root_cause": "no-defect",
+      "image": "64GDU2A7/figure_002_asset0.jpg",
+      "legend_block_id": "10",
+      "asset_blocks": [
+        "8",
+        "9"
+      ],
+      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+    },
+    {
+      "key": "64GDU2A7",
+      "figure_id": "figure_003",
+      "page": 4,
+      "caption": "Fig. 3.—41-year-old man with impingement syndrome of the shoulder.\n\nA–C, Both outlet view radiograph (A) and MR image (B) in position S-2 show flat type 1 acromion, which was also confirmed by 3D model (C) and intraoperatively.",
+      "asset_count": 3,
+      "asset_pages": [
+        4,
+        4,
+        4
+      ],
+      "case_flags": [
+        "caption_recall",
+        "association",
+        "crop_panel",
+        "page_assembly"
+      ],
+      "review_status": "reviewed_visual",
+      "root_cause": "no-defect",
+      "image": "64GDU2A7/figure_003_asset0.jpg",
+      "legend_block_id": "7",
+      "asset_blocks": [
+        "2",
+        "3",
+        "5"
+      ],
+      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+    },
+    {
+      "key": "8S9LCPAE",
+      "figure_id": "figure_003",
+      "page": 3,
+      "caption": "Fig. 3. Proton density-weighted fat-suppressed images in the coronal plane (A, B) and T2-weighted images in the sagittal plane (C) of the right shoulder of a 61-year-old male revealed high-signal intensity changes (HSIC) (arrow) in the joint capsule with a full-thickness bursal side tear in the supraspinatus muscle (arrowhead). Asterisk indicates LHB.",
+      "asset_count": 3,
+      "asset_pages": [
+        3,
+        3,
+        3
+      ],
+      "case_flags": [
+        "caption_recall",
+        "association",
+        "crop_panel",
+        "page_assembly"
+      ],
+      "review_status": "reviewed_visual",
+      "root_cause": "delivery",
+      "image": "8S9LCPAE/figure_003_asset0.jpg",
+      "legend_block_id": "7",
+      "asset_blocks": [
+        "2",
+        "4",
+        "6"
+      ],
+      "review_note": "Source-PDF figure visible in replay crop, but current assets/figures/<figure_id>.jpg is absent; render markdown exists."
+    },
+    {
+      "key": "8S9LCPAE",
+      "figure_id": "figure_004",
+      "page": 4,
+      "caption": "Fig. 4. Measurement of the HSIC: Case of articular side partial thickness rotator cuff tear, 51-year-old male, Rt. shoulder. A ROI was placed in the joint capsule (A) and LHB tendon (B) on the coronal section of fat-saturated proton density-weighted fat-suppressed images in the coronal plane.",
+      "asset_count": 1,
+      "asset_pages": [
+        4
+      ],
+      "case_flags": [
+        "caption_recall",
+        "association",
+        "crop_panel",
+        "page_assembly"
+      ],
+      "review_status": "reviewed_visual",
+      "root_cause": "delivery",
+      "image": "8S9LCPAE/figure_004_asset0.jpg",
+      "legend_block_id": "3",
+      "asset_blocks": [
+        "2"
+      ],
+      "review_note": "Source-PDF figure visible in replay crop, but current assets/figures/<figure_id>.jpg is absent; render markdown exists."
+    },
+    {
+      "key": "8S9LCPAE",
+      "figure_id": "figure_005",
+      "page": 4,
+      "caption": "Fig. 5. Flow diagram of the study.",
+      "asset_count": 1,
+      "asset_pages": [
+        4
+      ],
+      "case_flags": [
+        "caption_recall",
+        "association",
+        "crop_panel",
+        "page_assembly"
+      ],
+      "review_status": "reviewed_visual",
+      "root_cause": "delivery",
+      "image": "8S9LCPAE/figure_005_asset0.jpg",
+      "legend_block_id": "5",
+      "asset_blocks": [
+        "4"
+      ],
+      "review_note": "Source-PDF figure visible in replay crop, but current assets/figures/<figure_id>.jpg is absent; render markdown exists."
+    },
+    {
+      "key": "KG7A5K5V",
+      "figure_id": "figure_001",
+      "page": 3,
+      "caption": "Figure 1. Flow diagram showing the overall progress of this study. ASES, American Shoulder and Elbow Surgeons; MRI, magnetic resonance imaging; POD, postoperative day; pVAS, pain visual analog scale; ROM, range of motion; SANE, Single Assessment Numeric Evaluation.",
+      "asset_count": 1,
+      "asset_pages": [
+        3
+      ],
+      "case_flags": [
+        "caption_recall",
+        "association",
+        "structural"
+      ],
+      "review_status": "reviewed_visual",
+      "root_cause": "delivery",
+      "image": "KG7A5K5V/figure_001_asset0.jpg",
+      "legend_block_id": "4",
+      "asset_blocks": [
+        "3"
+      ],
+      "review_note": "Source-PDF figure visible in replay crop, but current assets/figures/<figure_id>.jpg is absent; render markdown exists."
+    },
+    {
+      "key": "KG7A5K5V",
+      "figure_id": "figure_002",
+      "page": 4,
+      "caption": "Figure 2. Classification of retears according to the retear location: (A) medial and (B) lateral. Asterisk, supraspinatus tendon; arrow, remnant tissue; arrowhead, tear site.",
+      "asset_count": 1,
+      "asset_pages": [
+        4
+      ],
+      "case_flags": [
+        "caption_recall",
+        "association",
+        "structural"
+      ],
+      "review_status": "reviewed_visual",
+      "root_cause": "delivery",
+      "image": "KG7A5K5V/figure_002_asset0.jpg",
+      "legend_block_id": "4",
+      "asset_blocks": [
+        "3"
+      ],
+      "review_note": "Source-PDF figure visible in replay crop, but current assets/figures/<figure_id>.jpg is absent; render markdown exists."
+    },
+    {
+      "key": "KG7A5K5V",
+      "figure_id": "figure_003",
+      "page": 6,
+      "caption": "Figure 3. Changes in scores according to each group: (A) pain visual analog scale (pVAS), (B) American Shoulder and Elbow Surgeons (ASES), and (C) Single Assessment Numeric Evaluation (SANE).  $ *P<.05 $.  $ **P<.001 $.",
+      "asset_count": 3,
+      "asset_pages": [
+        6,
+        6,
+        6
+      ],
+      "case_flags": [
+        "caption_recall",
+        "association",
+        "structural"
+      ],
+      "review_status": "reviewed_visual",
+      "root_cause": "delivery",
+      "image": "KG7A5K5V/figure_003_asset0.jpg",
+      "legend_block_id": "16",
+      "asset_blocks": [
+        "12",
+        "14",
+        "15"
+      ],
+      "review_note": "Source-PDF figure visible in replay crop, but current assets/figures/<figure_id>.jpg is absent; render markdown exists."
+    },
+    {
+      "key": "5MAW65YD",
+      "figure_id": "figure_001",
+      "page": 2,
+      "caption": "Fig.1. Experimental arrangement of photoacoustic measurement.",
+      "asset_count": 1,
+      "asset_pages": [
+        2
+      ],
+      "case_flags": [
+        "no_defect"
+      ],
+      "review_status": "reviewed_visual",
+      "root_cause": "no-defect",
+      "image": "5MAW65YD/figure_001_asset0.jpg",
+      "legend_block_id": "12",
+      "asset_blocks": [
+        "11"
+      ],
+      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+    },
+    {
+      "key": "5MAW65YD",
+      "figure_id": "figure_002",
+      "page": 3,
+      "caption": "Fig.2. SEM (scanning electron microscope) image of ACHMS (atelocollagen honeycomb-shaped) scaffold $ ^{(7)} $.",
+      "asset_count": 1,
+      "asset_pages": [
+        3
+      ],
+      "case_flags": [
+        "no_defect"
+      ],
+      "review_status": "reviewed_visual",
+      "root_cause": "no-defect",
+      "image": "5MAW65YD/figure_002_asset0.jpg",
+      "legend_block_id": "3",
+      "asset_blocks": [
+        "2"
+      ],
+      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+    },
+    {
+      "key": "5MAW65YD",
+      "figure_id": "figure_003",
+      "page": 3,
+      "caption": "Fig.3. Measured photoacoustic signal. Sample was gelatin of 25% in density.",
+      "asset_count": 1,
+      "asset_pages": [
+        3
+      ],
+      "case_flags": [
+        "no_defect"
+      ],
+      "review_status": "reviewed_visual",
+      "root_cause": "no-defect",
+      "image": "5MAW65YD/figure_003_asset0.jpg",
+      "legend_block_id": "6",
+      "asset_blocks": [
+        "5"
+      ],
+      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+    },
+    {
+      "key": "6A8A9TWD",
+      "figure_id": "figure_reserved_004",
+      "page": 2,
+      "caption": "Illustrations depicting the mortise-tenon joint structure used in ancient Chinese architecture.",
+      "asset_count": 0,
+      "asset_pages": [],
+      "case_flags": [
+        "association"
+      ],
+      "review_status": "reviewed_visual",
+      "root_cause": "no-defect",
+      "image": "6A8A9TWD/page_002.jpg",
+      "legend_block_id": "3",
+      "asset_blocks": [],
+      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+    },
+    {
+      "key": "6A8A9TWD",
+      "figure_id": "figure_s002",
+      "page": 2,
+      "caption": "Figs. 2A, 2-B, and 2-C Schematic diagrams illustrating the arthroscopic inlay Bristow procedure. Fig. 2-A Coracoid plug preparation. Fig. 2-B Appearance of the trough in the glenoid. Fig. 2-C Coracoid plug fixation into the trough in the glenoid.",
+      "asset_count": 1,
+      "asset_pages": [
+        2
+      ],
+      "case_flags": [
+        "association"
+      ],
+      "review_status": "reviewed_visual",
+      "root_cause": "grouping/association",
+      "image": "6A8A9TWD/figure_s002_asset0.jpg",
+      "legend_block_id": "11",
+      "asset_blocks": [
+        "10"
+      ],
+      "review_note": "Duplicate same-caption Figure 2 claim: two entries point to separate assets under one legend block; page 2 context shows one Figure 2 panel group."
+    },
+    {
+      "key": "6A8A9TWD",
+      "figure_id": "figure_s002",
+      "page": 2,
+      "caption": "Figs. 2A, 2-B, and 2-C Schematic diagrams illustrating the arthroscopic inlay Bristow procedure. Fig. 2-A Coracoid plug preparation. Fig. 2-B Appearance of the trough in the glenoid. Fig. 2-C Coracoid plug fixation into the trough in the glenoid.",
+      "asset_count": 1,
+      "asset_pages": [
+        2
+      ],
+      "case_flags": [
+        "association"
+      ],
+      "review_status": "reviewed_visual",
+      "root_cause": "grouping/association",
+      "image": "6A8A9TWD/figure_s002_asset0.jpg",
+      "legend_block_id": "11",
+      "asset_blocks": [
+        "2"
+      ],
+      "review_note": "Duplicate same-caption Figure 2 claim: two entries point to separate assets under one legend block; page 2 context shows one Figure 2 panel group."
+    },
+    {
+      "key": "832486Q6",
+      "figure_id": "figure_001",
+      "page": 1,
+      "caption": "图 1 下肢康复机器人结构",
+      "asset_count": 1,
+      "asset_pages": [
+        1
+      ],
+      "case_flags": [
+        "association"
+      ],
+      "review_status": "reviewed_visual",
+      "root_cause": "no-defect",
+      "image": "832486Q6/figure_001_asset0.jpg",
+      "legend_block_id": "18",
+      "asset_blocks": [
+        "16"
+      ],
+      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+    },
+    {
+      "key": "832486Q6",
+      "figure_id": "figure_002",
+      "page": 2,
+      "caption": "图2 控制流程",
+      "asset_count": 1,
+      "asset_pages": [
+        2
+      ],
+      "case_flags": [
+        "association"
+      ],
+      "review_status": "reviewed_visual",
+      "root_cause": "no-defect",
+      "image": "832486Q6/figure_002_asset0.jpg",
+      "legend_block_id": "3",
+      "asset_blocks": [
+        "2"
+      ],
+      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+    },
+    {
+      "key": "832486Q6",
+      "figure_id": "figure_003",
+      "page": 2,
+      "caption": "图 3 采集系统框图",
+      "asset_count": 1,
+      "asset_pages": [
+        2
+      ],
+      "case_flags": [
+        "association"
+      ],
+      "review_status": "reviewed_visual",
+      "root_cause": "no-defect",
+      "image": "832486Q6/figure_003_asset0.jpg",
+      "legend_block_id": "10",
+      "asset_blocks": [
+        "9"
+      ],
+      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+    },
+    {
+      "key": "XVGX9U4V",
+      "figure_id": "figure_001",
+      "page": 3,
+      "caption": "Figure 1. The human body consists of various elastic, tough, and electroactive tissues under the action of a dynamic environment. The ideal tissue engineering scaffold therefore needs to satisfy a variety of mechanical and electrical demands to enable the generation of readily implemented tissue transplants.",
+      "asset_count": 1,
+      "asset_pages": [
+        3
+      ],
+      "case_flags": [
+        "association",
+        "crop_panel"
+      ],
+      "review_status": "reviewed_visual",
+      "root_cause": "delivery",
+      "image": "XVGX9U4V/figure_001_asset0.jpg",
+      "legend_block_id": "3",
+      "asset_blocks": [
+        "2"
+      ],
+      "review_note": "Source-PDF figure visible in replay crop, but current assets/figures/<figure_id>.jpg is absent; render markdown exists."
+    },
+    {
+      "key": "XVGX9U4V",
+      "figure_id": "figure_002",
+      "page": 3,
+      "caption": "Figure 2. A variety of approaches are currently being used to develop the much-needed multifunctional tissue engineering scaffolds. Nanoreinforced hydrogels stand as promising and convenient materials for this application given their range of properties including increased bioactivity, conductivity, and mechanical strength.",
+      "asset_count": 1,
+      "asset_pages": [
+        3
+      ],
+      "case_flags": [
+        "association",
+        "crop_panel"
+      ],
+      "review_status": "reviewed_visual",
+      "root_cause": "delivery",
+      "image": "XVGX9U4V/figure_002_asset0.jpg",
+      "legend_block_id": "5",
+      "asset_blocks": [
+        "4"
+      ],
+      "review_note": "Source-PDF figure visible in replay crop, but current assets/figures/<figure_id>.jpg is absent; render markdown exists."
+    },
+    {
+      "key": "XVGX9U4V",
+      "figure_id": "figure_003",
+      "page": 5,
+      "caption": "Figure 3. Engineering of an osteon-like, cell-laden hydrogel as discussed in Section 2.1. a) Schematic representation of the formation of hydroxyapatite nanoparticles in GelMA. b) Schematic representation of the UV-microfabrication procedure employed in the generation of the osteon-like microstructures. c) Bright-field and fluorescence imaging of the resulting biomimetic osteon construct. c) Reproduced with permission. $ ^{[54]} $ Copyright 2015, American Chemical Society.",
+      "asset_count": 1,
+      "asset_pages": [
+        5
+      ],
+      "case_flags": [
+        "association",
+        "crop_panel"
+      ],
+      "review_status": "reviewed_visual",
+      "root_cause": "delivery",
+      "image": "XVGX9U4V/figure_003_asset0.jpg",
+      "legend_block_id": "3",
+      "asset_blocks": [
+        "2"
+      ],
+      "review_note": "Source-PDF figure visible in replay crop, but current assets/figures/<figure_id>.jpg is absent; render markdown exists."
+    }
+  ],
+  "review_method": "All 30 sampled crops/captions visually reviewed; page-context sheet checked for 6A8A9TWD duplicate Figure 2 association. Other 224 figure entries remain unreviewed."
+}

@@ -1,0 +1,415 @@
+{
+ "dry_run": {
+  "key": "WVB9LEFM",
+  "identity": {
+   "old": {
+    "entries": 15,
+    "unique_ids": 14,
+    "duplicate_extra": 1
+   },
+   "new": {
+    "entries": 14,
+    "unique_ids": 14,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005",
+    "figure_006": "figure_006",
+    "figure_007": "figure_007",
+    "figure_008": "figure_008",
+    "figure_009": "figure_009",
+    "figure_010": "figure_010",
+    "figure_011": "figure_011",
+    "figure_012": "figure_012",
+    "figure_reserved_013": "figure_figure_p007_b2",
+    "figure_reserved_014": "figure_figure_p008_b14"
+   },
+   "renamed": [
+    [
+     "figure_reserved_013",
+     "figure_figure_p007_b2"
+    ],
+    [
+     "figure_reserved_014",
+     "figure_figure_p008_b14"
+    ]
+   ],
+   "unmapped_old_ids": [],
+   "claims_changed": [
+    {
+     "old_id": "figure_005",
+     "old_assets": [
+      "11",
+      "12",
+      "13",
+      "14",
+      "5"
+     ],
+     "new_id": "figure_005",
+     "new_assets": [
+      "11",
+      "12",
+      "13",
+      "14",
+      "3",
+      "5",
+      "7",
+      "9"
+     ]
+    }
+   ]
+  },
+  "delivery": {
+   "old_render_files": 111,
+   "new_render_files": 222,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/figures/figure_005.jpg",
+    "assets/figures/figure_006.jpg",
+    "assets/figures/figure_007.jpg",
+    "assets/figures/figure_008.jpg",
+    "assets/figures/figure_009.jpg",
+    "assets/figures/figure_010.jpg",
+    "assets/figures/figure_011.jpg",
+    "assets/figures/figure_012.jpg",
+    "assets/figures/figure_figure_p007_b2.jpg",
+    "assets/figures/figure_figure_p008_b14.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/orphans/orphan_013.jpg",
+    "assets/orphans/orphan_014.jpg",
+    "assets/orphans/orphan_015.jpg",
+    "assets/orphans/orphan_016.jpg",
+    "assets/orphans/orphan_017.jpg",
+    "assets/orphans/orphan_018.jpg",
+    "assets/orphans/orphan_019.jpg",
+    "assets/orphans/orphan_020.jpg",
+    "assets/orphans/orphan_021.jpg",
+    "assets/orphans/orphan_022.jpg",
+    "assets/orphans/orphan_023.jpg",
+    "assets/orphans/orphan_024.jpg",
+    "assets/orphans/orphan_025.jpg",
+    "assets/orphans/orphan_026.jpg",
+    "assets/orphans/orphan_027.jpg",
+    "assets/orphans/orphan_028.jpg",
+    "assets/orphans/orphan_029.jpg",
+    "assets/orphans/orphan_030.jpg",
+    "assets/orphans/orphan_031.jpg",
+    "assets/orphans/orphan_032.jpg",
+    "assets/orphans/orphan_033.jpg",
+    "assets/orphans/orphan_034.jpg",
+    "assets/orphans/orphan_035.jpg",
+    "assets/orphans/orphan_036.jpg",
+    "assets/orphans/orphan_037.jpg",
+    "assets/orphans/orphan_038.jpg",
+    "assets/orphans/orphan_039.jpg",
+    "assets/orphans/orphan_040.jpg",
+    "assets/orphans/orphan_041.jpg",
+    "assets/orphans/orphan_042.jpg",
+    "assets/orphans/orphan_043.jpg",
+    "assets/orphans/orphan_044.jpg",
+    "assets/orphans/orphan_045.jpg",
+    "assets/orphans/orphan_046.jpg",
+    "assets/orphans/orphan_047.jpg",
+    "assets/orphans/orphan_048.jpg",
+    "assets/orphans/orphan_049.jpg",
+    "assets/orphans/orphan_050.jpg",
+    "assets/orphans/orphan_051.jpg",
+    "assets/orphans/orphan_052.jpg",
+    "assets/orphans/orphan_053.jpg",
+    "assets/orphans/orphan_054.jpg",
+    "assets/orphans/orphan_055.jpg",
+    "assets/orphans/orphan_056.jpg",
+    "assets/orphans/orphan_057.jpg",
+    "assets/orphans/orphan_058.jpg",
+    "assets/orphans/orphan_059.jpg",
+    "assets/orphans/orphan_060.jpg",
+    "assets/orphans/orphan_061.jpg",
+    "assets/orphans/orphan_062.jpg",
+    "assets/orphans/orphan_063.jpg",
+    "assets/orphans/orphan_064.jpg",
+    "assets/orphans/orphan_065.jpg",
+    "assets/orphans/orphan_066.jpg",
+    "assets/orphans/orphan_067.jpg",
+    "assets/orphans/orphan_068.jpg",
+    "assets/orphans/orphan_069.jpg",
+    "assets/orphans/orphan_070.jpg",
+    "assets/orphans/orphan_071.jpg",
+    "assets/orphans/orphan_072.jpg",
+    "assets/orphans/orphan_073.jpg",
+    "assets/orphans/orphan_074.jpg",
+    "assets/orphans/orphan_075.jpg",
+    "assets/orphans/orphan_076.jpg",
+    "assets/orphans/orphan_077.jpg",
+    "assets/orphans/orphan_078.jpg",
+    "assets/orphans/orphan_079.jpg",
+    "assets/orphans/orphan_080.jpg",
+    "assets/orphans/orphan_081.jpg",
+    "assets/orphans/orphan_082.jpg",
+    "assets/orphans/orphan_083.jpg",
+    "assets/orphans/orphan_084.jpg",
+    "assets/orphans/orphan_085.jpg",
+    "assets/orphans/orphan_086.jpg",
+    "assets/orphans/orphan_087.jpg",
+    "assets/orphans/orphan_088.jpg",
+    "assets/orphans/orphan_089.jpg",
+    "assets/orphans/orphan_090.jpg",
+    "assets/orphans/orphan_091.jpg",
+    "assets/orphans/orphan_092.jpg",
+    "assets/orphans/orphan_093.jpg",
+    "assets/orphans/orphan_094.jpg",
+    "assets/orphans/orphan_095.jpg",
+    "assets/orphans/orphan_096.jpg",
+    "assets/orphans/orphan_097.jpg",
+    "render/figures/figure_figure_p007_b2.md",
+    "render/figures/figure_figure_p008_b14.md"
+   ],
+   "render_removed": [
+    "render/figures/figure_reserved_013.md",
+    "render/figures/figure_reserved_014.md"
+   ],
+   "embeds": 12,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 0,
+   "new_tables": 0,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 620,
+   "new_rows": 620,
+   "role_removed": {
+    "frontmatter_noise": 2,
+    "figure_caption_candidate": 2
+   },
+   "role_added": {
+    "section_heading": 1,
+    "body_paragraph": 1,
+    "figure_caption": 2
+   },
+   "old_body_chars": 95094,
+   "new_body_chars": 96241,
+   "old_text_chars": 167754,
+   "new_text_chars": 167754,
+   "old_fulltext_chars": 150388
+  },
+  "new_manifest": {
+   "figures": 14,
+   "tables": 0,
+   "orphans": 97
+  },
+  "new_orphans": 1
+ },
+ "structural": {
+  "key": "WVB9LEFM",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 167754,
+  "new_text_chars": 167754,
+  "old_entries": 15,
+  "new_entries": 14,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      1001,
+      297,
+      1059,
+      353
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 4,
+     "text": "Fig. 1. The piezoelectric effect. A) The basic principle of the piezoelectric effect. B) Piezoelectricity in the human body, including tissues, organs and biomolecules. C) Historical timeline and milestones in the fields of piezotronics and piezo-phototronics."
+    },
+    {
+     "page": 5,
+     "block_id": 17,
+     "text": "Fig. 2. Commonly used one-dimensional piezoelectric materials. A) The perovskite structures and deformations. B) Micrographs of fibers obtained from the 18 wt% PVDF solution: a) SEM, scale bar: 1  $ \\mu $m and b) TEM images, scale bar: 200 nm."
+    },
+    {
+     "page": 7,
+     "block_id": 2,
+     "text": "Piezoelectric parameters and application scenarios of common piezoelectric materials."
+    },
+    {
+     "page": 7,
+     "block_id": 5,
+     "text": "Fig. 3. The classification and function of low-dimensional piezoelectric materials."
+    },
+    {
+     "page": 8,
+     "block_id": 13,
+     "text": "Fig. 4. PLLA-based low-dimensional piezoelectric materials are used for articular cartilage. A) Optical image and schematic of constructing the three-layered biodegradable piezoelectric PLLA nanofiber scaffold. The nanofiber orientations of the consecutive piezoelectric films are perpendicular to ea"
+    },
+    {
+     "page": 8,
+     "block_id": 14,
+     "text": "F-G) Reproduced with permission [94]. Copyright 2023, The Author(s). (For interpretation of the references to colour in this figure legend, the reader is referred to the Web version of this article.)"
+    },
+    {
+     "page": 9,
+     "block_id": 15,
+     "text": "Fig. 5. Adding different piezoelectric composites to the scaffold has good effects on improving piezoelectric performance, biocompatibility, and antibacterial and anti-inflammatory properties. A) A schematic diagram illustrating the manufacturing process and biological application of a three-dimensi"
+    },
+    {
+     "page": 10,
+     "block_id": 13,
+     "text": "Fig. 6. The role of graphene oxide (GO) and its derivatives in cartilage regeneration. A) A schematic diagram illustrating graphene oxide reinforcement enhances the piezoelectric and mechanical properties of poly(3-hydroxybutyrate-co-3-hydroxy valerate)-based nanofibrous scaffolds. B)(a) Piezoelectr"
+    },
+    {
+     "page": 11,
+     "block_id": 16,
+     "text": "Fig. 7. Bone composition, repair, and piezoelectric properties. A) The skeletal system contains osteoblasts, osteoclasts, osteocytes, and their progenitors, all sensitive to mechanical and electric stimuli. B-C) Piezoresponse (b, c) images of human adult tibia fragment obtained in the vicinity of th"
+    },
+    {
+     "page": 13,
+     "block_id": 5,
+     "text": "+ - Positive and negative ions"
+    },
+    {
+     "page": 13,
+     "block_id": 27,
+     "text": "Fig. 8. Thin-film piezoelectric materials for bone regeneration. A) Schematic of the osteogenic differentiation regulation by the electromechanical coupling of the TiO₂ @PVDF piezoelectric fiber membrane. B) Characterization of membranes of pure PVDF and TiO₂ @PVDF C) Osteogenic differentiation and "
+    },
+    {
+     "page": 15,
+     "block_id": 35,
+     "text": "Fig. 9. Piezoelectric scaffolds for bone regeneration. A) Representative histology sections of the mouse calvarial bone showing details of bone formation and cell migration into the defects for the groups of piezo-scaffold (3000 rpm) and non-piezo. scaffold (300 rpm) under the same application of US"
+    },
+    {
+     "page": 16,
+     "block_id": 3,
+     "text": "Fig. 10. Piezoelectric hydrogels for bone regeneration. A) Schematic representation of ZnO/RSF piezoelectric hydrogel in bone regeneration. B) HE, Masson's trichrome, and Goldner's trichrome staining of the bone defect 8 weeks after implantation of the CG/PHA/5%PBT piezoelectric hydrogel. C) Schemat"
+    },
+    {
+     "page": 17,
+     "block_id": 11,
+     "text": "Fig. 11. Low-dimensional piezoelectric materials are used for skeletal muscle. A) A schematic diagram illustrating piezoelectric nanocomposite bioink. B) Gene expression analyses of differentiating myoblasts embedded in the printed structures (non-doped and doped with 250 μg mL⁻¹ BTNPs) on day 1 and"
+    },
+    {
+     "page": 18,
+     "block_id": 26,
+     "text": "Fig. 12. Low-dimensional piezoelectric materials are used for wearable piezoelectric devices in sports medicine. A) Overview of the piezoelectric pressure sensor. (a) Schematic diagram showing the experimental setup for fabrication of PVDF-TrFE/MWCNTs nanofibers. (b) Image of electrospun PVDF-TrFE ("
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     1001,
+     297,
+     1059,
+     353
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 3,
+    "block_id": 4,
+    "text": "Fig. 1. The piezoelectric effect. A) The basic principle of the piezoelectric effect. B) Piezoelectricity in the human body, including tissues, organs and biomolecules. C) Historical timeline and milestones in the fields of piezotronics and piezo-phototronics."
+   },
+   {
+    "page": 5,
+    "block_id": 17,
+    "text": "Fig. 2. Commonly used one-dimensional piezoelectric materials. A) The perovskite structures and deformations. B) Micrographs of fibers obtained from the 18 wt% PVDF solution: a) SEM, scale bar: 1  $ \\mu $m and b) TEM images, scale bar: 200 nm."
+   },
+   {
+    "page": 7,
+    "block_id": 2,
+    "text": "Piezoelectric parameters and application scenarios of common piezoelectric materials."
+   },
+   {
+    "page": 7,
+    "block_id": 5,
+    "text": "Fig. 3. The classification and function of low-dimensional piezoelectric materials."
+   },
+   {
+    "page": 8,
+    "block_id": 13,
+    "text": "Fig. 4. PLLA-based low-dimensional piezoelectric materials are used for articular cartilage. A) Optical image and schematic of constructing the three-layered biodegradable piezoelectric PLLA nanofiber scaffold. The nanofiber orientations of the consecutive piezoelectric films are perpendicular to ea"
+   },
+   {
+    "page": 8,
+    "block_id": 14,
+    "text": "F-G) Reproduced with permission [94]. Copyright 2023, The Author(s). (For interpretation of the references to colour in this figure legend, the reader is referred to the Web version of this article.)"
+   },
+   {
+    "page": 9,
+    "block_id": 15,
+    "text": "Fig. 5. Adding different piezoelectric composites to the scaffold has good effects on improving piezoelectric performance, biocompatibility, and antibacterial and anti-inflammatory properties. A) A schematic diagram illustrating the manufacturing process and biological application of a three-dimensi"
+   },
+   {
+    "page": 10,
+    "block_id": 13,
+    "text": "Fig. 6. The role of graphene oxide (GO) and its derivatives in cartilage regeneration. A) A schematic diagram illustrating graphene oxide reinforcement enhances the piezoelectric and mechanical properties of poly(3-hydroxybutyrate-co-3-hydroxy valerate)-based nanofibrous scaffolds. B)(a) Piezoelectr"
+   },
+   {
+    "page": 11,
+    "block_id": 16,
+    "text": "Fig. 7. Bone composition, repair, and piezoelectric properties. A) The skeletal system contains osteoblasts, osteoclasts, osteocytes, and their progenitors, all sensitive to mechanical and electric stimuli. B-C) Piezoresponse (b, c) images of human adult tibia fragment obtained in the vicinity of th"
+   },
+   {
+    "page": 13,
+    "block_id": 5,
+    "text": "+ - Positive and negative ions"
+   },
+   {
+    "page": 13,
+    "block_id": 27,
+    "text": "Fig. 8. Thin-film piezoelectric materials for bone regeneration. A) Schematic of the osteogenic differentiation regulation by the electromechanical coupling of the TiO₂ @PVDF piezoelectric fiber membrane. B) Characterization of membranes of pure PVDF and TiO₂ @PVDF C) Osteogenic differentiation and "
+   },
+   {
+    "page": 15,
+    "block_id": 35,
+    "text": "Fig. 9. Piezoelectric scaffolds for bone regeneration. A) Representative histology sections of the mouse calvarial bone showing details of bone formation and cell migration into the defects for the groups of piezo-scaffold (3000 rpm) and non-piezo. scaffold (300 rpm) under the same application of US"
+   },
+   {
+    "page": 16,
+    "block_id": 3,
+    "text": "Fig. 10. Piezoelectric hydrogels for bone regeneration. A) Schematic representation of ZnO/RSF piezoelectric hydrogel in bone regeneration. B) HE, Masson's trichrome, and Goldner's trichrome staining of the bone defect 8 weeks after implantation of the CG/PHA/5%PBT piezoelectric hydrogel. C) Schemat"
+   },
+   {
+    "page": 17,
+    "block_id": 11,
+    "text": "Fig. 11. Low-dimensional piezoelectric materials are used for skeletal muscle. A) A schematic diagram illustrating piezoelectric nanocomposite bioink. B) Gene expression analyses of differentiating myoblasts embedded in the printed structures (non-doped and doped with 250 μg mL⁻¹ BTNPs) on day 1 and"
+   },
+   {
+    "page": 18,
+    "block_id": 26,
+    "text": "Fig. 12. Low-dimensional piezoelectric materials are used for wearable piezoelectric devices in sports medicine. A) Overview of the piezoelectric pressure sensor. (a) Schematic diagram showing the experimental setup for fabrication of PVDF-TrFE/MWCNTs nanofibers. (b) Image of electrospun PVDF-TrFE ("
+   }
+  ]
+ }
+}

@@ -1,0 +1,437 @@
+{
+ "dry_run": {
+  "key": "M8BNQFIV",
+  "identity": {
+   "old": {
+    "entries": 6,
+    "unique_ids": 6,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 6,
+    "unique_ids": 6,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005",
+    "figure_006": "figure_006"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": [
+    {
+     "old_id": "figure_001",
+     "old_assets": [
+      "10",
+      "13",
+      "14"
+     ],
+     "new_id": "figure_001",
+     "new_assets": [
+      "10",
+      "13"
+     ]
+    },
+    {
+     "old_id": "figure_003",
+     "old_assets": [
+      "4",
+      "5",
+      "7",
+      "8"
+     ],
+     "new_id": "figure_003",
+     "new_assets": [
+      "4",
+      "7"
+     ]
+    },
+    {
+     "old_id": "figure_006",
+     "old_assets": [
+      "3",
+      "4",
+      "5",
+      "6"
+     ],
+     "new_id": "figure_006",
+     "new_assets": [
+      "3",
+      "5"
+     ]
+    }
+   ]
+  },
+  "delivery": {
+   "old_render_files": 35,
+   "new_render_files": 80,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/figures/figure_005.jpg",
+    "assets/figures/figure_006.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/orphans/orphan_013.jpg",
+    "assets/orphans/orphan_014.jpg",
+    "assets/orphans/orphan_015.jpg",
+    "assets/orphans/orphan_016.jpg",
+    "assets/orphans/orphan_017.jpg",
+    "assets/orphans/orphan_018.jpg",
+    "assets/orphans/orphan_019.jpg",
+    "assets/orphans/orphan_020.jpg",
+    "assets/orphans/orphan_021.jpg",
+    "assets/orphans/orphan_022.jpg",
+    "assets/orphans/orphan_023.jpg",
+    "assets/orphans/orphan_024.jpg",
+    "assets/orphans/orphan_025.jpg",
+    "assets/orphans/orphan_026.jpg",
+    "assets/orphans/orphan_027.jpg",
+    "assets/orphans/orphan_028.jpg",
+    "assets/orphans/orphan_029.jpg",
+    "assets/orphans/orphan_030.jpg",
+    "assets/orphans/orphan_031.jpg",
+    "assets/orphans/orphan_032.jpg",
+    "assets/orphans/orphan_033.jpg",
+    "assets/tables/table_001.jpg",
+    "render/figures/orphan_029.md",
+    "render/figures/orphan_030.md",
+    "render/figures/orphan_031.md",
+    "render/figures/orphan_032.md",
+    "render/figures/orphan_033.md"
+   ],
+   "render_removed": [],
+   "embeds": 7,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 1,
+   "new_tables": 1,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 294,
+   "new_rows": 294,
+   "role_removed": {
+    "frontmatter_noise": 1,
+    "figure_asset": 5,
+    "reference_item": 1
+   },
+   "role_added": {
+    "media_asset": 5,
+    "body_paragraph": 2
+   },
+   "old_body_chars": 34217,
+   "new_body_chars": 34576,
+   "old_text_chars": 55754,
+   "new_text_chars": 55754,
+   "old_fulltext_chars": 51061
+  },
+  "new_manifest": {
+   "figures": 6,
+   "tables": 1,
+   "orphans": 33
+  },
+  "new_orphans": 11
+ },
+ "structural": {
+  "key": "M8BNQFIV",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 55754,
+  "new_text_chars": 55754,
+  "old_entries": 6,
+  "new_entries": 6,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      209,
+      949,
+      249,
+      991
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      209,
+      1036,
+      249,
+      1069
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      209,
+      1122,
+      254,
+      1158
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      210,
+      1208,
+      247,
+      1250
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      211,
+      1295,
+      251,
+      1342
+     ]
+    },
+    {
+     "page": 1,
+     "bbox": [
+      209,
+      1377,
+      250,
+      1421
+     ]
+    },
+    {
+     "page": 5,
+     "bbox": [
+      686,
+      618,
+      857,
+      1176
+     ]
+    },
+    {
+     "page": 12,
+     "bbox": [
+      503,
+      129,
+      852,
+      327
+     ]
+    },
+    {
+     "page": 12,
+     "bbox": [
+      502,
+      344,
+      854,
+      543
+     ]
+    },
+    {
+     "page": 15,
+     "bbox": [
+      490,
+      103,
+      852,
+      327
+     ]
+    },
+    {
+     "page": 15,
+     "bbox": [
+      492,
+      339,
+      853,
+      558
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 5,
+     "block_id": 15,
+     "text": "Figure 1. (a) A schematic representation of the two-dimensional axisymmetric domain and the applied boundary conditions is presented. (b) The finite element mesh of the culture system utilized for hydrogel stimulation is presented. (c) Flowchart illustrating the computational model implementation pr"
+    },
+    {
+     "page": 10,
+     "block_id": 4,
+     "text": "Figure 2. (a) Capacitive coupling electrical stimulation system. (b) Schematic representation of the capacitive coupling electrical stimulation system under culture conditions."
+    },
+    {
+     "page": 12,
+     "block_id": 9,
+     "text": "Figure 3. EF distribution in the capacitively coupled system. (a) Simulation of EF distribution with an applied voltage of 50 Vpp at 60 kHz. (b) Simulation of EF distribution with an applied voltage of 100 Vpp at 60 kHz."
+    },
+    {
+     "page": 13,
+     "block_id": 10,
+     "text": "Figure 4. (a) Microscopic image of the gelatin hydrogel. (b) SEM image internal morphology of the gelatin hydrogel. (c) Representative images from elemental composition of the gelatin hydrogel. (D) Elemental concentration of the primary elements presented in the carboxyl groups of the gelatin hydrog"
+    },
+    {
+     "page": 14,
+     "block_id": 10,
+     "text": "Figure 5. (a) Rheological assay displaying the variation of the storage modulus ( $ G' $) and loss modulus ( $ G'' $) as a function of strain in the crosslinked hydrogels. (b) FTIR spectra of pure gelatin, emphasizing its characteristic functional groups. (c) Raman spectra were obtained from a speci"
+    },
+    {
+     "page": 15,
+     "block_id": 7,
+     "text": "Figure 6. Effects of a 21-day capacitively coupled electrical stimulation on (a) cell proliferation and (b) GAGs concentration in controls and stimulated hydrogels."
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     209,
+     949,
+     249,
+     991
+    ]
+   },
+   {
+    "page": 1,
+    "bbox": [
+     209,
+     1036,
+     249,
+     1069
+    ]
+   },
+   {
+    "page": 1,
+    "bbox": [
+     209,
+     1122,
+     254,
+     1158
+    ]
+   },
+   {
+    "page": 1,
+    "bbox": [
+     210,
+     1208,
+     247,
+     1250
+    ]
+   },
+   {
+    "page": 1,
+    "bbox": [
+     211,
+     1295,
+     251,
+     1342
+    ]
+   },
+   {
+    "page": 1,
+    "bbox": [
+     209,
+     1377,
+     250,
+     1421
+    ]
+   },
+   {
+    "page": 5,
+    "bbox": [
+     686,
+     618,
+     857,
+     1176
+    ]
+   },
+   {
+    "page": 12,
+    "bbox": [
+     503,
+     129,
+     852,
+     327
+    ]
+   },
+   {
+    "page": 12,
+    "bbox": [
+     502,
+     344,
+     854,
+     543
+    ]
+   },
+   {
+    "page": 15,
+    "bbox": [
+     490,
+     103,
+     852,
+     327
+    ]
+   },
+   {
+    "page": 15,
+    "bbox": [
+     492,
+     339,
+     853,
+     558
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 5,
+    "block_id": 15,
+    "text": "Figure 1. (a) A schematic representation of the two-dimensional axisymmetric domain and the applied boundary conditions is presented. (b) The finite element mesh of the culture system utilized for hydrogel stimulation is presented. (c) Flowchart illustrating the computational model implementation pr"
+   },
+   {
+    "page": 10,
+    "block_id": 4,
+    "text": "Figure 2. (a) Capacitive coupling electrical stimulation system. (b) Schematic representation of the capacitive coupling electrical stimulation system under culture conditions."
+   },
+   {
+    "page": 12,
+    "block_id": 9,
+    "text": "Figure 3. EF distribution in the capacitively coupled system. (a) Simulation of EF distribution with an applied voltage of 50 Vpp at 60 kHz. (b) Simulation of EF distribution with an applied voltage of 100 Vpp at 60 kHz."
+   },
+   {
+    "page": 13,
+    "block_id": 10,
+    "text": "Figure 4. (a) Microscopic image of the gelatin hydrogel. (b) SEM image internal morphology of the gelatin hydrogel. (c) Representative images from elemental composition of the gelatin hydrogel. (D) Elemental concentration of the primary elements presented in the carboxyl groups of the gelatin hydrog"
+   },
+   {
+    "page": 14,
+    "block_id": 10,
+    "text": "Figure 5. (a) Rheological assay displaying the variation of the storage modulus ( $ G' $) and loss modulus ( $ G'' $) as a function of strain in the crosslinked hydrogels. (b) FTIR spectra of pure gelatin, emphasizing its characteristic functional groups. (c) Raman spectra were obtained from a speci"
+   },
+   {
+    "page": 15,
+    "block_id": 7,
+    "text": "Figure 6. Effects of a 21-day capacitively coupled electrical stimulation on (a) cell proliferation and (b) GAGs concentration in controls and stimulated hydrogels."
+   }
+  ]
+ }
+}

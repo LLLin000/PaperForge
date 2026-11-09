@@ -1,0 +1,197 @@
+{
+ "dry_run": {
+  "key": "9EQV3ABQ",
+  "identity": {
+   "old": {
+    "entries": 6,
+    "unique_ids": 6,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 6,
+    "unique_ids": 6,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005",
+    "figure_006": "figure_006",
+    "figure_reserved_005": "figure_003"
+   },
+   "renamed": [
+    [
+     "figure_reserved_005",
+     "figure_003"
+    ]
+   ],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 22,
+   "new_render_files": 44,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/figures/figure_005.jpg",
+    "assets/figures/figure_006.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/orphans/orphan_013.jpg",
+    "assets/orphans/orphan_014.jpg",
+    "assets/orphans/orphan_015.jpg",
+    "assets/orphans/orphan_016.jpg",
+    "render/figures/figure_003.md"
+   ],
+   "render_removed": [
+    "render/figures/figure_reserved_005.md"
+   ],
+   "embeds": 6,
+   "embeds_retargeted": 1,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 0,
+   "new_tables": 0,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 193,
+   "new_rows": 193,
+   "role_removed": {
+    "figure_caption_candidate": 1
+   },
+   "role_added": {
+    "figure_caption": 1
+   },
+   "old_body_chars": 28733,
+   "new_body_chars": 28733,
+   "old_text_chars": 48137,
+   "new_text_chars": 48137,
+   "old_fulltext_chars": 43829
+  },
+  "new_manifest": {
+   "figures": 6,
+   "tables": 0,
+   "orphans": 16
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "9EQV3ABQ",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 48137,
+  "new_text_chars": 48137,
+  "old_entries": 6,
+  "new_entries": 6,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 5,
+     "block_id": 18,
+     "text": "Fig. 1. Phenotypical characterization of isolated ASCs. Cells were labelled with fluorescein-isothiocyanate (FITC)- or phycoerythrin (PE)-conjugated specific antibodies, as reported respectively in the first (FITC) and in the other rows (PE) of the panel and examined by flow cytometry. Histograms sh"
+    },
+    {
+     "page": 6,
+     "block_id": 3,
+     "text": "Fig. 2. Effects of PEMFs on ALP activity in BMSCs grown in OM in the presence and in the absence of BMP-2 (50 ng/ml) at different differentiation times.  $ * $Statistical significance versus cells grown in OM.  $ {}^{\\circ} $Statistical significance versus cells grown in OM supplemented with BMP-2. "
+    },
+    {
+     "page": 6,
+     "block_id": 8,
+     "text": "Fig. 3. Effects of PEMFs on ALP activity in ASCs grown in OM in the presence and in the absence of BMP-2 (50 ng/ml) at different differentiation times.  $ * $Statistical significance versus cells grown in OM.  $ {}^{\\circ} $Statistical significance versus cells grown in OM supplemented with BMP-2.  "
+    },
+    {
+     "page": 6,
+     "block_id": 15,
+     "text": "Fig. 4. Effects of PEMFs on osteocalcin levels in BMSCs grown in OM in the presence and in the absence of BMP-2 (50 ng/ml) at different differentiation times.  $ * $Statistical significance versus cells grown in OM.  $ {}^{\\circ} $Statistical significance versus cells grown in OM supplemented with B"
+    },
+    {
+     "page": 7,
+     "block_id": 3,
+     "text": "Fig. 5. Effects of PEMFs on osteocalcin levels in ASCs grown in OM in the presence and in the absence of BMP-2 (50 ng/ml) at different differentiation times. Statistical significance versus cells grown in OM. Statistical significance versus cells grown in OM supplemented with BMP-2. Statistical sign"
+    },
+    {
+     "page": 7,
+     "block_id": 8,
+     "text": "BMSCs"
+    },
+    {
+     "page": 7,
+     "block_id": 9,
+     "text": "ASCs"
+    },
+    {
+     "page": 7,
+     "block_id": 13,
+     "text": "Fig. 6. Effects of PEMFs on matrix mineralization in BMSCs and ASCs grown in OM in the presence and in the absence of BMP-2, at Day 28 of osteogenic differentiation. A: Alizarin red staining. B: Quantification of calcium deposition in cells cultured in four-well plates by solubilization and spectrop"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 5,
+    "block_id": 18,
+    "text": "Fig. 1. Phenotypical characterization of isolated ASCs. Cells were labelled with fluorescein-isothiocyanate (FITC)- or phycoerythrin (PE)-conjugated specific antibodies, as reported respectively in the first (FITC) and in the other rows (PE) of the panel and examined by flow cytometry. Histograms sh"
+   },
+   {
+    "page": 6,
+    "block_id": 3,
+    "text": "Fig. 2. Effects of PEMFs on ALP activity in BMSCs grown in OM in the presence and in the absence of BMP-2 (50 ng/ml) at different differentiation times.  $ * $Statistical significance versus cells grown in OM.  $ {}^{\\circ} $Statistical significance versus cells grown in OM supplemented with BMP-2. "
+   },
+   {
+    "page": 6,
+    "block_id": 8,
+    "text": "Fig. 3. Effects of PEMFs on ALP activity in ASCs grown in OM in the presence and in the absence of BMP-2 (50 ng/ml) at different differentiation times.  $ * $Statistical significance versus cells grown in OM.  $ {}^{\\circ} $Statistical significance versus cells grown in OM supplemented with BMP-2.  "
+   },
+   {
+    "page": 6,
+    "block_id": 15,
+    "text": "Fig. 4. Effects of PEMFs on osteocalcin levels in BMSCs grown in OM in the presence and in the absence of BMP-2 (50 ng/ml) at different differentiation times.  $ * $Statistical significance versus cells grown in OM.  $ {}^{\\circ} $Statistical significance versus cells grown in OM supplemented with B"
+   },
+   {
+    "page": 7,
+    "block_id": 3,
+    "text": "Fig. 5. Effects of PEMFs on osteocalcin levels in ASCs grown in OM in the presence and in the absence of BMP-2 (50 ng/ml) at different differentiation times. Statistical significance versus cells grown in OM. Statistical significance versus cells grown in OM supplemented with BMP-2. Statistical sign"
+   },
+   {
+    "page": 7,
+    "block_id": 8,
+    "text": "BMSCs"
+   },
+   {
+    "page": 7,
+    "block_id": 9,
+    "text": "ASCs"
+   },
+   {
+    "page": 7,
+    "block_id": 13,
+    "text": "Fig. 6. Effects of PEMFs on matrix mineralization in BMSCs and ASCs grown in OM in the presence and in the absence of BMP-2, at Day 28 of osteogenic differentiation. A: Alizarin red staining. B: Quantification of calcium deposition in cells cultured in four-well plates by solubilization and spectrop"
+   }
+  ]
+ }
+}

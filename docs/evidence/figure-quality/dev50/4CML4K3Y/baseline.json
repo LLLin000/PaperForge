@@ -1,0 +1,318 @@
+{
+ "dry_run": {
+  "key": "4CML4K3Y",
+  "identity": {
+   "old": {
+    "entries": 8,
+    "unique_ids": 8,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 8,
+    "unique_ids": 8,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005",
+    "figure_006": "figure_006",
+    "figure_007": "figure_007",
+    "figure_008": "figure_008",
+    "figure_reserved_007": "figure_figure_p005_b6"
+   },
+   "renamed": [
+    [
+     "figure_reserved_007",
+     "figure_figure_p005_b6"
+    ]
+   ],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 36,
+   "new_render_files": 52,
+   "render_added": [
+    "assets/figures/figure_figure_p005_b6.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/tables/table_008.jpg",
+    "render/figures/figure_figure_p005_b6.md",
+    "render/figures/orphan_004.md",
+    "render/figures/orphan_005.md",
+    "render/figures/orphan_006.md",
+    "render/figures/orphan_007.md",
+    "render/figures/orphan_008.md",
+    "render/figures/orphan_009.md",
+    "render/figures/orphan_010.md"
+   ],
+   "render_removed": [
+    "render/figures/figure_reserved_007.md"
+   ],
+   "embeds": 14,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 8,
+   "new_tables": 8,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 219,
+   "new_rows": 219,
+   "role_removed": {
+    "structured_insert": 1,
+    "figure_caption_candidate": 6,
+    "table_caption_candidate": 1,
+    "reference_item": 1
+   },
+   "role_added": {
+    "frontmatter_noise": 1,
+    "body_paragraph": 2,
+    "figure_caption": 6
+   },
+   "old_body_chars": 25179,
+   "new_body_chars": 25393,
+   "old_text_chars": 62842,
+   "new_text_chars": 62842,
+   "old_fulltext_chars": 42897
+  },
+  "new_manifest": {
+   "figures": 8,
+   "tables": 8,
+   "orphans": 10
+  },
+  "new_orphans": 2
+ },
+ "structural": {
+  "key": "4CML4K3Y",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 62842,
+  "new_text_chars": 62842,
+  "old_entries": 8,
+  "new_entries": 8,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 4,
+     "block_id": 3,
+     "text": "Figure I. Search algorithm used to identify and screen studies to be included in the review of published literature."
+    },
+    {
+     "page": 13,
+     "block_id": 8,
+     "text": "Table A2. Information Regarding the Clinical Trials."
+    }
+   ],
+   "assets": [
+    {
+     "page": 3,
+     "bbox": [
+      117,
+      160,
+      1111,
+      733
+     ]
+    },
+    {
+     "page": 4,
+     "bbox": [
+      207,
+      153,
+      923,
+      802
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 4,
+     "block_id": 3,
+     "text": "Figure I. Search algorithm used to identify and screen studies to be included in the review of published literature."
+    },
+    {
+     "page": 5,
+     "block_id": 3,
+     "text": "Figure 2. Search algorithm used to identify and screen trials to be included in the review of publicly listed clinical trials."
+    },
+    {
+     "page": 5,
+     "block_id": 5,
+     "text": "Figure 3. Frequency among included studies of time point inclusion in follow-up."
+    },
+    {
+     "page": 5,
+     "block_id": 6,
+     "text": "Note: Total frequency values add up to greater than the number of studies as multiple studies had >1 time point for evaluation."
+    },
+    {
+     "page": 6,
+     "block_id": 3,
+     "text": "Figure 4. Number of time points for patient evaluation in each individual study."
+    },
+    {
+     "page": 6,
+     "block_id": 5,
+     "text": "Figure 5. Patient-reported outcome measures reported by each included study.\nKOOS = Knee Injury and Osteoarthritis Outcome Score; VAS = visual analog scale; WOMAC = Western Ontario and McMaster Universities\nOsteoarthritis Index Score; IKDC = International Knee Documentation Committee; SF = Short For"
+    },
+    {
+     "page": 9,
+     "block_id": 3,
+     "text": "Figure 6. Frequency among included clinical trials of time point inclusion in follow-up.\nNote: Total frequency values add up to greater than the number of studies as multiple studies had >1 time point for evaluation."
+    },
+    {
+     "page": 9,
+     "block_id": 5,
+     "text": "Figure 7. Number of time points for patient evaluation in each individual clinical trial. Pts = points."
+    },
+    {
+     "page": 10,
+     "block_id": 3,
+     "text": "Figure 8. Patient-reported outcome measures reported by each included clinical trial.\nKOOS = Knee Injury and Osteoarthritis Outcome Score; VAS = visual analog scale; WOMAC = Western Ontario and McMaster Universities\nOsteoarthritis Index Score; IKDC = International Knee Documentation Committee score;"
+    },
+    {
+     "page": 13,
+     "block_id": 2,
+     "text": "Table A1. (continued)"
+    },
+    {
+     "page": 13,
+     "block_id": 4,
+     "text": "Table A1. (continued)"
+    },
+    {
+     "page": 13,
+     "block_id": 8,
+     "text": "Table A2. Information Regarding the Clinical Trials."
+    },
+    {
+     "page": 14,
+     "block_id": 2,
+     "text": "Table A2. (continued)"
+    },
+    {
+     "page": 15,
+     "block_id": 2,
+     "text": "Table A2. (continued)"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [
+   {
+    "page": 4,
+    "block_id": 3,
+    "text": "Figure I. Search algorithm used to identify and screen studies to be included in the review of published literature."
+   },
+   {
+    "page": 13,
+    "block_id": 8,
+    "text": "Table A2. Information Regarding the Clinical Trials."
+   }
+  ],
+  "assets": [
+   {
+    "page": 3,
+    "bbox": [
+     117,
+     160,
+     1111,
+     733
+    ]
+   },
+   {
+    "page": 4,
+    "bbox": [
+     207,
+     153,
+     923,
+     802
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 4,
+    "block_id": 3,
+    "text": "Figure I. Search algorithm used to identify and screen studies to be included in the review of published literature."
+   },
+   {
+    "page": 5,
+    "block_id": 3,
+    "text": "Figure 2. Search algorithm used to identify and screen trials to be included in the review of publicly listed clinical trials."
+   },
+   {
+    "page": 5,
+    "block_id": 5,
+    "text": "Figure 3. Frequency among included studies of time point inclusion in follow-up."
+   },
+   {
+    "page": 5,
+    "block_id": 6,
+    "text": "Note: Total frequency values add up to greater than the number of studies as multiple studies had >1 time point for evaluation."
+   },
+   {
+    "page": 6,
+    "block_id": 3,
+    "text": "Figure 4. Number of time points for patient evaluation in each individual study."
+   },
+   {
+    "page": 6,
+    "block_id": 5,
+    "text": "Figure 5. Patient-reported outcome measures reported by each included study.\nKOOS = Knee Injury and Osteoarthritis Outcome Score; VAS = visual analog scale; WOMAC = Western Ontario and McMaster Universities\nOsteoarthritis Index Score; IKDC = International Knee Documentation Committee; SF = Short For"
+   },
+   {
+    "page": 9,
+    "block_id": 3,
+    "text": "Figure 6. Frequency among included clinical trials of time point inclusion in follow-up.\nNote: Total frequency values add up to greater than the number of studies as multiple studies had >1 time point for evaluation."
+   },
+   {
+    "page": 9,
+    "block_id": 5,
+    "text": "Figure 7. Number of time points for patient evaluation in each individual clinical trial. Pts = points."
+   },
+   {
+    "page": 10,
+    "block_id": 3,
+    "text": "Figure 8. Patient-reported outcome measures reported by each included clinical trial.\nKOOS = Knee Injury and Osteoarthritis Outcome Score; VAS = visual analog scale; WOMAC = Western Ontario and McMaster Universities\nOsteoarthritis Index Score; IKDC = International Knee Documentation Committee score;"
+   },
+   {
+    "page": 13,
+    "block_id": 2,
+    "text": "Table A1. (continued)"
+   },
+   {
+    "page": 13,
+    "block_id": 4,
+    "text": "Table A1. (continued)"
+   },
+   {
+    "page": 13,
+    "block_id": 8,
+    "text": "Table A2. Information Regarding the Clinical Trials."
+   },
+   {
+    "page": 14,
+    "block_id": 2,
+    "text": "Table A2. (continued)"
+   },
+   {
+    "page": 15,
+    "block_id": 2,
+    "text": "Table A2. (continued)"
+   }
+  ]
+ }
+}

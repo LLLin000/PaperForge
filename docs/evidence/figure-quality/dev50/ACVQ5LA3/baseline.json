@@ -1,0 +1,245 @@
+{
+ "dry_run": {
+  "key": "ACVQ5LA3",
+  "identity": {
+   "old": {
+    "entries": 6,
+    "unique_ids": 6,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 6,
+    "unique_ids": 6,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005",
+    "figure_reserved_005": "figure_figure_p004_b2"
+   },
+   "renamed": [
+    [
+     "figure_reserved_005",
+     "figure_figure_p004_b2"
+    ]
+   ],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 23,
+   "new_render_files": 46,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/figures/figure_005.jpg",
+    "assets/figures/figure_figure_p004_b2.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/orphans/orphan_013.jpg",
+    "assets/orphans/orphan_014.jpg",
+    "assets/orphans/orphan_015.jpg",
+    "assets/orphans/orphan_016.jpg",
+    "assets/orphans/orphan_017.jpg",
+    "render/figures/figure_figure_p004_b2.md"
+   ],
+   "render_removed": [
+    "render/figures/figure_reserved_005.md"
+   ],
+   "embeds": 5,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 0,
+   "new_tables": 0,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 214,
+   "new_rows": 214,
+   "role_removed": {
+    "unknown_structural": 1,
+    "frontmatter_noise": 1,
+    "figure_caption_candidate": 2,
+    "reference_item": 1
+   },
+   "role_added": {
+    "section_heading": 1,
+    "subsection_heading": 2,
+    "figure_caption": 2
+   },
+   "old_body_chars": 35538,
+   "new_body_chars": 35538,
+   "old_text_chars": 57888,
+   "new_text_chars": 57888,
+   "old_fulltext_chars": 51267
+  },
+  "new_manifest": {
+   "figures": 6,
+   "tables": 0,
+   "orphans": 17
+  },
+  "new_orphans": 1
+ },
+ "structural": {
+  "key": "ACVQ5LA3",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 57888,
+  "new_text_chars": 57888,
+  "old_entries": 6,
+  "new_entries": 6,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 2,
+     "block_id": 7,
+     "text": "Glass compositions and molar cobalt for calcium substitution (mol%)."
+    }
+   ],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      1001,
+      330,
+      1058,
+      386
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 7,
+     "text": "Glass compositions and molar cobalt for calcium substitution (mol%)."
+    },
+    {
+     "page": 4,
+     "block_id": 2,
+     "text": "Tailoring of glass compositions allows controlled release of cobalt ions into DMEM medium. Elemental concentrations of CoBG ionic dissolution products (Si, Ca, P and Co) in DMEM high glucose medium. CoBG particles were incubated in DMEM for 4 h under constant agitation. Ion release was measured by I"
+    },
+    {
+     "page": 4,
+     "block_id": 17,
+     "text": "Fig. 1. Increased HIF-1α protein abundance in the presence of CoBG. hMSCs were cultured for A) 4 h or B) 48 h in control (CTL), CoCl₂ or CoBG-conditioned medium. The protein abundance of HIF-1α was quantified by In-Cell Western and normalised to DNA. Data are expressed as mean ± SD of A) n = 4 and B"
+    },
+    {
+     "page": 5,
+     "block_id": 7,
+     "text": "Fig. 2. CoBG dose- and time-dependent effect on hMSC metabolic activity and cell abundance. hMSCs were exposed to CoBG-conditioned,  $ CoCl_{2} $ or control (CTL) medium. After 1, 4 and 7 days, A) MTT assay, B) CyQUANT $ ^{*} $ Direct Cell Proliferation Assay (both n = 3 using different donors) and "
+    },
+    {
+     "page": 6,
+     "block_id": 8,
+     "text": "Fig. 3. Cobalt dose-dependent reduction of sGAG production and release by hMSCs in pellet culture. hMSC pellets were cultured in CoBG-conditioned or control (CTL) medium for 21 days prior to quantification of A) DNA by Hoechst and B) sulphated glycosaminoglycans (sGAG) by DMMB. A, B) Data are expres"
+    },
+    {
+     "page": 7,
+     "block_id": 3,
+     "text": "Fig. 4. Reduced formation of cartilage-like tissue in the presence of CoBG. Prior to histological assessment, hMSCs were grown as pellets in CoBG-conditioned or control (CTL) medium in chondrogenic conditions for 21 days. Sulphated proteoglycan deposition in the extracellular matrix was assessed by "
+    },
+    {
+     "page": 8,
+     "block_id": 3,
+     "text": "GAGs"
+    },
+    {
+     "page": 8,
+     "block_id": 4,
+     "text": "Collagens"
+    },
+    {
+     "page": 8,
+     "block_id": 10,
+     "text": "Fig. 5. Extracellular matrix characterisation by Raman spectral imaging. Prior to imaging, pelleted hMSCs were exposed to CoBG-conditioned, 100 μM CoCl₂ or control (CTL) medium in chondrogenic conditions for 21 days. A) Bright field image of respective pellet sections along with pseudo-coloured imag"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [
+   {
+    "page": 2,
+    "block_id": 7,
+    "text": "Glass compositions and molar cobalt for calcium substitution (mol%)."
+   }
+  ],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     1001,
+     330,
+     1058,
+     386
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 7,
+    "text": "Glass compositions and molar cobalt for calcium substitution (mol%)."
+   },
+   {
+    "page": 4,
+    "block_id": 2,
+    "text": "Tailoring of glass compositions allows controlled release of cobalt ions into DMEM medium. Elemental concentrations of CoBG ionic dissolution products (Si, Ca, P and Co) in DMEM high glucose medium. CoBG particles were incubated in DMEM for 4 h under constant agitation. Ion release was measured by I"
+   },
+   {
+    "page": 4,
+    "block_id": 17,
+    "text": "Fig. 1. Increased HIF-1α protein abundance in the presence of CoBG. hMSCs were cultured for A) 4 h or B) 48 h in control (CTL), CoCl₂ or CoBG-conditioned medium. The protein abundance of HIF-1α was quantified by In-Cell Western and normalised to DNA. Data are expressed as mean ± SD of A) n = 4 and B"
+   },
+   {
+    "page": 5,
+    "block_id": 7,
+    "text": "Fig. 2. CoBG dose- and time-dependent effect on hMSC metabolic activity and cell abundance. hMSCs were exposed to CoBG-conditioned,  $ CoCl_{2} $ or control (CTL) medium. After 1, 4 and 7 days, A) MTT assay, B) CyQUANT $ ^{*} $ Direct Cell Proliferation Assay (both n = 3 using different donors) and "
+   },
+   {
+    "page": 6,
+    "block_id": 8,
+    "text": "Fig. 3. Cobalt dose-dependent reduction of sGAG production and release by hMSCs in pellet culture. hMSC pellets were cultured in CoBG-conditioned or control (CTL) medium for 21 days prior to quantification of A) DNA by Hoechst and B) sulphated glycosaminoglycans (sGAG) by DMMB. A, B) Data are expres"
+   },
+   {
+    "page": 7,
+    "block_id": 3,
+    "text": "Fig. 4. Reduced formation of cartilage-like tissue in the presence of CoBG. Prior to histological assessment, hMSCs were grown as pellets in CoBG-conditioned or control (CTL) medium in chondrogenic conditions for 21 days. Sulphated proteoglycan deposition in the extracellular matrix was assessed by "
+   },
+   {
+    "page": 8,
+    "block_id": 3,
+    "text": "GAGs"
+   },
+   {
+    "page": 8,
+    "block_id": 4,
+    "text": "Collagens"
+   },
+   {
+    "page": 8,
+    "block_id": 10,
+    "text": "Fig. 5. Extracellular matrix characterisation by Raman spectral imaging. Prior to imaging, pelleted hMSCs were exposed to CoBG-conditioned, 100 μM CoCl₂ or control (CTL) medium in chondrogenic conditions for 21 days. A) Bright field image of respective pellet sections along with pseudo-coloured imag"
+   }
+  ]
+ }
+}

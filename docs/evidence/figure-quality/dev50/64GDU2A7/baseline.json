@@ -1,0 +1,246 @@
+{
+ "dry_run": {
+  "key": "64GDU2A7",
+  "identity": {
+   "old": {
+    "entries": 6,
+    "unique_ids": 6,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 6,
+    "unique_ids": 6,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005",
+    "figure_reserved_005": "figure_figure_p003_b11"
+   },
+   "renamed": [
+    [
+     "figure_reserved_005",
+     "figure_figure_p003_b11"
+    ]
+   ],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 19,
+   "new_render_files": 44,
+   "render_added": [
+    "assets/figures/figure_figure_p003_b11.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/orphans/orphan_013.jpg",
+    "assets/orphans/orphan_014.jpg",
+    "assets/orphans/orphan_015.jpg",
+    "assets/orphans/orphan_016.jpg",
+    "render/figures/figure_figure_p003_b11.md",
+    "render/figures/orphan_005.md",
+    "render/figures/orphan_006.md",
+    "render/figures/orphan_007.md",
+    "render/figures/orphan_008.md",
+    "render/figures/orphan_009.md",
+    "render/figures/orphan_010.md",
+    "render/figures/orphan_011.md",
+    "render/figures/orphan_012.md",
+    "render/figures/orphan_013.md",
+    "render/figures/orphan_014.md",
+    "render/figures/orphan_015.md",
+    "render/figures/orphan_016.md"
+   ],
+   "render_removed": [
+    "render/figures/figure_reserved_005.md"
+   ],
+   "embeds": 5,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 0,
+   "new_tables": 0,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 102,
+   "new_rows": 102,
+   "role_removed": {
+    "unknown_structural": 2,
+    "figure_inner_text": 2,
+    "figure_caption_candidate": 2
+   },
+   "role_added": {
+    "authors": 2,
+    "body_paragraph": 2,
+    "figure_caption": 2
+   },
+   "old_body_chars": 14354,
+   "new_body_chars": 14764,
+   "old_text_chars": 22494,
+   "new_text_chars": 22494,
+   "old_fulltext_chars": 17313
+  },
+  "new_manifest": {
+   "figures": 6,
+   "tables": 0,
+   "orphans": 16
+  },
+  "new_orphans": 1
+ },
+ "structural": {
+  "key": "64GDU2A7",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 22494,
+  "new_text_chars": 22494,
+  "old_entries": 6,
+  "new_entries": 6,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 3,
+     "block_id": 16,
+     "text": "Note.—S-1 is the lateral acromial edge, S-2 is just lateral of the acromioclavicular joint, and S-3 is the lateral portion of the acromioclavicular joint. OP = intraoperative finding."
+    },
+    {
+     "page": 3,
+     "block_id": 18,
+     "text": "Note.—S-1 is the lateral acromial edge, S-2 is just lateral of the acromioclavicular joint, and S-3 is the lateral portion of the acromioclavicular joint."
+    }
+   ],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      456,
+      950,
+      525,
+      1021
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 6,
+     "text": "Fig. 1.—Three-dimensional reconstruction of acromion and clavicula with manually schematized acromioclavicular joint capsule (yellow), illustrating the three MRI slice positions: S-1, S-2, and S-3. S-3 already depicts most lateral part of joint capsule. Note that because of individual differences in"
+    },
+    {
+     "page": 3,
+     "block_id": 10,
+     "text": "Fig. 2.—Mathematic determination of acromial shape."
+    },
+    {
+     "page": 3,
+     "block_id": 11,
+     "text": "A. Line connecting most caudal points of acromial undersurface is drawn on parasagittal T2-weighted MR image, and with help of two orthogonal lines, acromion is divided into three segments of equal length."
+    },
+    {
+     "page": 3,
+     "block_id": 16,
+     "text": "Note.—S-1 is the lateral acromial edge, S-2 is just lateral of the acromioclavicular joint, and S-3 is the lateral portion of the acromioclavicular joint. OP = intraoperative finding."
+    },
+    {
+     "page": 3,
+     "block_id": 18,
+     "text": "Note.—S-1 is the lateral acromial edge, S-2 is just lateral of the acromioclavicular joint, and S-3 is the lateral portion of the acromioclavicular joint."
+    },
+    {
+     "page": 4,
+     "block_id": 7,
+     "text": "Fig. 3.—41-year-old man with impingement syndrome of the shoulder.\n\nA–C, Both outlet view radiograph (A) and MR image (B) in position S-2 show flat type 1 acromion, which was also confirmed by 3D model (C) and intraoperatively."
+    },
+    {
+     "page": 4,
+     "block_id": 16,
+     "text": "Fig. 4.—47-year-old woman with impingement syndrome of shoulder.\n\nA–C, Both outlet view radiograph (A) and MR image (B) in position S-2 show curved type 2 acromion, which is also confirmed by 3D-model (C) and intraoperatively."
+    },
+    {
+     "page": 5,
+     "block_id": 5,
+     "text": "Fig. 5.—63-year-old man with impingement syndrome of shoulder.\n\nA–C, Whereas outlet view radiograph (A) depicts curved acromion (type 2), MR image (B) in position S-1 reveals blunt acromial hook (type 3), which is also confirmed by 3D model (C) and intraoperatively."
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [
+   {
+    "page": 3,
+    "block_id": 16,
+    "text": "Note.—S-1 is the lateral acromial edge, S-2 is just lateral of the acromioclavicular joint, and S-3 is the lateral portion of the acromioclavicular joint. OP = intraoperative finding."
+   },
+   {
+    "page": 3,
+    "block_id": 18,
+    "text": "Note.—S-1 is the lateral acromial edge, S-2 is just lateral of the acromioclavicular joint, and S-3 is the lateral portion of the acromioclavicular joint."
+   }
+  ],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     456,
+     950,
+     525,
+     1021
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 6,
+    "text": "Fig. 1.—Three-dimensional reconstruction of acromion and clavicula with manually schematized acromioclavicular joint capsule (yellow), illustrating the three MRI slice positions: S-1, S-2, and S-3. S-3 already depicts most lateral part of joint capsule. Note that because of individual differences in"
+   },
+   {
+    "page": 3,
+    "block_id": 10,
+    "text": "Fig. 2.—Mathematic determination of acromial shape."
+   },
+   {
+    "page": 3,
+    "block_id": 11,
+    "text": "A. Line connecting most caudal points of acromial undersurface is drawn on parasagittal T2-weighted MR image, and with help of two orthogonal lines, acromion is divided into three segments of equal length."
+   },
+   {
+    "page": 3,
+    "block_id": 16,
+    "text": "Note.—S-1 is the lateral acromial edge, S-2 is just lateral of the acromioclavicular joint, and S-3 is the lateral portion of the acromioclavicular joint. OP = intraoperative finding."
+   },
+   {
+    "page": 3,
+    "block_id": 18,
+    "text": "Note.—S-1 is the lateral acromial edge, S-2 is just lateral of the acromioclavicular joint, and S-3 is the lateral portion of the acromioclavicular joint."
+   },
+   {
+    "page": 4,
+    "block_id": 7,
+    "text": "Fig. 3.—41-year-old man with impingement syndrome of the shoulder.\n\nA–C, Both outlet view radiograph (A) and MR image (B) in position S-2 show flat type 1 acromion, which was also confirmed by 3D model (C) and intraoperatively."
+   },
+   {
+    "page": 4,
+    "block_id": 16,
+    "text": "Fig. 4.—47-year-old woman with impingement syndrome of shoulder.\n\nA–C, Both outlet view radiograph (A) and MR image (B) in position S-2 show curved type 2 acromion, which is also confirmed by 3D-model (C) and intraoperatively."
+   },
+   {
+    "page": 5,
+    "block_id": 5,
+    "text": "Fig. 5.—63-year-old man with impingement syndrome of shoulder.\n\nA–C, Whereas outlet view radiograph (A) depicts curved acromion (type 2), MR image (B) in position S-1 reveals blunt acromial hook (type 3), which is also confirmed by 3D model (C) and intraoperatively."
+   }
+  ]
+ }
+}

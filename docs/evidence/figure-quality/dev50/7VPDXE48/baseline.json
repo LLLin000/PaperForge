@@ -1,0 +1,195 @@
+{
+ "dry_run": {
+  "key": "7VPDXE48",
+  "identity": {
+   "old": {
+    "entries": 6,
+    "unique_ids": 5,
+    "duplicate_extra": 1
+   },
+   "new": {
+    "entries": 5,
+    "unique_ids": 5,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": [
+    {
+     "old_id": "figure_002",
+     "old_assets": [
+      "5",
+      "9"
+     ],
+     "new_id": "figure_002",
+     "new_assets": [
+      "3",
+      "5",
+      "7",
+      "9"
+     ]
+    }
+   ]
+  },
+  "delivery": {
+   "old_render_files": 24,
+   "new_render_files": 48,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/figures/figure_005.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/orphans/orphan_013.jpg",
+    "assets/orphans/orphan_014.jpg",
+    "assets/orphans/orphan_015.jpg",
+    "assets/orphans/orphan_016.jpg",
+    "assets/orphans/orphan_017.jpg",
+    "assets/orphans/orphan_018.jpg",
+    "assets/orphans/orphan_019.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 5,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 0,
+   "new_tables": 0,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 184,
+   "new_rows": 184,
+   "role_removed": {
+    "unknown_structural": 1
+   },
+   "role_added": {
+    "section_heading": 1
+   },
+   "old_body_chars": 22045,
+   "new_body_chars": 22045,
+   "old_text_chars": 41832,
+   "new_text_chars": 41832,
+   "old_fulltext_chars": 38609
+  },
+  "new_manifest": {
+   "figures": 5,
+   "tables": 0,
+   "orphans": 19
+  },
+  "new_orphans": 1
+ },
+ "structural": {
+  "key": "7VPDXE48",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 41832,
+  "new_text_chars": 41832,
+  "old_entries": 6,
+  "new_entries": 5,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      776,
+      620,
+      1097,
+      887
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 14,
+     "text": "Figure 1. Characterization of the magnetic hydrogel. (A) Macroscopic photographs of magnetic GCF and nonmagnetic GC hydrogels. (B) FTIR spectra of the GCF and GC hydrogels. (C, D) Frequency and strain sweep studies of GCF and GC hydrogels. (E, F) SEM images of (E) GC and (F) GCF hydrogel."
+    },
+    {
+     "page": 4,
+     "block_id": 10,
+     "text": "Figure 2. Attachment and morphology of BMSCs cultured in scaffolds. SEM images of BMSCs grown on (A) coarse GC hydrogel and (B) GCF hydrogel. Scale bar, 50  $ \\mu $m. (C, D) H&E staining of BMSCs grown on (C) GC hydrogel and (D) GCF hydrogel."
+    },
+    {
+     "page": 5,
+     "block_id": 4,
+     "text": "Figure 3. Growth and proliferation of BMSCs on hydrogels. (A) GCF hydrogel showed minimal cytotoxicity to BMSCs in live–dead staining assay. BMSCs cells were grown on sliced hydrogel materials or the surface of cell culture plates with or without magnetic field for 14 days before dye staining. (B) P"
+    },
+    {
+     "page": 5,
+     "block_id": 6,
+     "text": "Figure 4. Magnetic field together with the hydrogel scaffold promotes chondrogenesis of BMSCs, as detected by toluidine staining and immunohistochemical staining for type II collagen. BMSCs ( $ 1 \\times 10^{6} $) were seeded and incubated in 6-well culture plates on sliced hydrogel materials or the "
+    },
+    {
+     "page": 6,
+     "block_id": 9,
+     "text": "Figure 5. Magnetic field together with the hydrogel scaffold promotes chondrogenesis of BMSCs cells, as detected by increased expression of chondrogenesis-specific markers. (A–C) Quantification of mRNA level of collagen II (A), aggrecan (B), and SOX9 (C) of BMSCs grown on different substrates with a"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     776,
+     620,
+     1097,
+     887
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 3,
+    "block_id": 14,
+    "text": "Figure 1. Characterization of the magnetic hydrogel. (A) Macroscopic photographs of magnetic GCF and nonmagnetic GC hydrogels. (B) FTIR spectra of the GCF and GC hydrogels. (C, D) Frequency and strain sweep studies of GCF and GC hydrogels. (E, F) SEM images of (E) GC and (F) GCF hydrogel."
+   },
+   {
+    "page": 4,
+    "block_id": 10,
+    "text": "Figure 2. Attachment and morphology of BMSCs cultured in scaffolds. SEM images of BMSCs grown on (A) coarse GC hydrogel and (B) GCF hydrogel. Scale bar, 50  $ \\mu $m. (C, D) H&E staining of BMSCs grown on (C) GC hydrogel and (D) GCF hydrogel."
+   },
+   {
+    "page": 5,
+    "block_id": 4,
+    "text": "Figure 3. Growth and proliferation of BMSCs on hydrogels. (A) GCF hydrogel showed minimal cytotoxicity to BMSCs in live–dead staining assay. BMSCs cells were grown on sliced hydrogel materials or the surface of cell culture plates with or without magnetic field for 14 days before dye staining. (B) P"
+   },
+   {
+    "page": 5,
+    "block_id": 6,
+    "text": "Figure 4. Magnetic field together with the hydrogel scaffold promotes chondrogenesis of BMSCs, as detected by toluidine staining and immunohistochemical staining for type II collagen. BMSCs ( $ 1 \\times 10^{6} $) were seeded and incubated in 6-well culture plates on sliced hydrogel materials or the "
+   },
+   {
+    "page": 6,
+    "block_id": 9,
+    "text": "Figure 5. Magnetic field together with the hydrogel scaffold promotes chondrogenesis of BMSCs cells, as detected by increased expression of chondrogenesis-specific markers. (A–C) Quantification of mRNA level of collagen II (A), aggrecan (B), and SOX9 (C) of BMSCs grown on different substrates with a"
+   }
+  ]
+ }
+}

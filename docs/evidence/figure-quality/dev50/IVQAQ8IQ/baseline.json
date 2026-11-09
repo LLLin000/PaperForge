@@ -1,0 +1,129 @@
+{
+ "dry_run": {
+  "key": "IVQAQ8IQ",
+  "identity": {
+   "old": {
+    "entries": 3,
+    "unique_ids": 3,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 3,
+    "unique_ids": 3,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 13,
+   "new_render_files": 26,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 3,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 0,
+   "new_tables": 0,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 258,
+   "new_rows": 258,
+   "role_removed": {
+    "paper_title": 1,
+    "body_paragraph": 1
+   },
+   "role_added": {
+    "authors": 1,
+    "abstract_body": 1
+   },
+   "old_body_chars": 36856,
+   "new_body_chars": 35740,
+   "old_text_chars": 55459,
+   "new_text_chars": 55459,
+   "old_fulltext_chars": 46780
+  },
+  "new_manifest": {
+   "figures": 3,
+   "tables": 0,
+   "orphans": 10
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "IVQAQ8IQ",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 55459,
+  "new_text_chars": 55459,
+  "old_entries": 3,
+  "new_entries": 3,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 6,
+     "block_id": 17,
+     "text": "Figure 1. (A) Preparation of a concentrated collagen@AgNPs solution and incorporation of resulting AgNPs within a crosslinked hydrogel. (a) Tubes AgNPs solution prepared as previously described were flash-frozen and freeze-dried for three days, resulting in a yellow powder (b). This is then reconsti"
+    },
+    {
+     "page": 7,
+     "block_id": 17,
+     "text": "Figure 2. (A) Number of human skin fibroblasts (top) or keratinocytes (bottom) per cm² counted on type I collagen hydrogels at different AgNPs concentration. Error bars correspond to the standard error obtained from the average of six counts. Cells were seeded onto the surface of hydrogels containin"
+    },
+    {
+     "page": 9,
+     "block_id": 10,
+     "text": "Figure 3. (A) Fold changes of inflammatory cytokines after 72 h implantation measured in mice homogenized skin tissues (p<0.05), see experimental. Error bars correspond to standard errors calculated from duplicates from three different arrays (total number of samples equal to 6). (B) Total silver co"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 6,
+    "block_id": 17,
+    "text": "Figure 1. (A) Preparation of a concentrated collagen@AgNPs solution and incorporation of resulting AgNPs within a crosslinked hydrogel. (a) Tubes AgNPs solution prepared as previously described were flash-frozen and freeze-dried for three days, resulting in a yellow powder (b). This is then reconsti"
+   },
+   {
+    "page": 7,
+    "block_id": 17,
+    "text": "Figure 2. (A) Number of human skin fibroblasts (top) or keratinocytes (bottom) per cm² counted on type I collagen hydrogels at different AgNPs concentration. Error bars correspond to the standard error obtained from the average of six counts. Cells were seeded onto the surface of hydrogels containin"
+   },
+   {
+    "page": 9,
+    "block_id": 10,
+    "text": "Figure 3. (A) Fold changes of inflammatory cytokines after 72 h implantation measured in mice homogenized skin tissues (p<0.05), see experimental. Error bars correspond to standard errors calculated from duplicates from three different arrays (total number of samples equal to 6). (B) Total silver co"
+   }
+  ]
+ }
+}

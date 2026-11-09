@@ -1,0 +1,97 @@
+{
+ "dry_run": {
+  "key": "5SF5MQJN",
+  "identity": {
+   "old": {
+    "entries": 1,
+    "unique_ids": 1,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 1,
+    "unique_ids": 1,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 8,
+   "new_render_files": 10,
+   "render_added": [
+    "assets/orphans/orphan_003.jpg",
+    "render/figures/orphan_003.md"
+   ],
+   "render_removed": [],
+   "embeds": 2,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 1,
+   "new_tables": 1,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 248,
+   "new_rows": 248,
+   "role_removed": {
+    "unknown_structural": 3,
+    "frontmatter_noise": 1
+   },
+   "role_added": {
+    "authors": 2,
+    "abstract_body": 1,
+    "paper_title": 1
+   },
+   "old_body_chars": 30240,
+   "new_body_chars": 29047,
+   "old_text_chars": 60756,
+   "new_text_chars": 60756,
+   "old_fulltext_chars": 56238
+  },
+  "new_manifest": {
+   "figures": 1,
+   "tables": 1,
+   "orphans": 3
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "5SF5MQJN",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 60756,
+  "new_text_chars": 60756,
+  "old_entries": 1,
+  "new_entries": 1,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 7,
+     "block_id": 6,
+     "text": "Fig. 1. Functional Tissue Engineering (FTE) Road Map. This road map was adapted from Ref. 113 and described the combination of PEMFs and tissue engineering to obtain effective tissue substitutes."
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 7,
+    "block_id": 6,
+    "text": "Fig. 1. Functional Tissue Engineering (FTE) Road Map. This road map was adapted from Ref. 113 and described the combination of PEMFs and tissue engineering to obtain effective tissue substitutes."
+   }
+  ]
+ }
+}

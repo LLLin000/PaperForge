@@ -1,0 +1,194 @@
+{
+ "dry_run": {
+  "key": "WDY4IMJB",
+  "identity": {
+   "old": {
+    "entries": 2,
+    "unique_ids": 2,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 2,
+    "unique_ids": 2,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 7,
+   "new_render_files": 14,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/tables/table_001.jpg",
+    "assets/tables/table_002.jpg",
+    "assets/tables/table_003.jpg",
+    "assets/tables/table_004.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 6,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 4,
+   "new_tables": 4,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 169,
+   "new_rows": 169,
+   "role_removed": {
+    "unknown_structural": 1,
+    "figure_caption_candidate": 1
+   },
+   "role_added": {
+    "authors": 1,
+    "figure_caption": 1
+   },
+   "old_body_chars": 23886,
+   "new_body_chars": 23886,
+   "old_text_chars": 47174,
+   "new_text_chars": 47174,
+   "old_fulltext_chars": 35072
+  },
+  "new_manifest": {
+   "figures": 2,
+   "tables": 4,
+   "orphans": 1
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "WDY4IMJB",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 47174,
+  "new_text_chars": 47174,
+  "old_entries": 2,
+  "new_entries": 2,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 5,
+     "block_id": 4,
+     "text": "Characteristics of the Incomplete Coverage Group Versus Complete Coverage Group $ ^{a} $"
+    },
+    {
+     "page": 6,
+     "block_id": 4,
+     "text": "Comparison of Matched Incomplete Coverage and Matched Complete Coverage Groups $ ^{a} $"
+    },
+    {
+     "page": 6,
+     "block_id": 8,
+     "text": "Comparison of Rotator Cuff Healing Between the Matched Incomplete and Complete Coverage Groups $ ^{a} $"
+    },
+    {
+     "page": 7,
+     "block_id": 4,
+     "text": "Functional Outcomes After Surgery: Comparison of Matched Incomplete Coverage and Matched Incomplete Coverage Groups $ ^{a} $"
+    }
+   ],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 10,
+     "text": "Figure 1. Rotator cuff repair with (A) incomplete and (B) complete footprint coverage."
+    },
+    {
+     "page": 3,
+     "block_id": 4,
+     "text": "Figure 2. Flowchart of patient exclusion and inclusion in the study."
+    },
+    {
+     "page": 5,
+     "block_id": 4,
+     "text": "Characteristics of the Incomplete Coverage Group Versus Complete Coverage Group $ ^{a} $"
+    },
+    {
+     "page": 6,
+     "block_id": 4,
+     "text": "Comparison of Matched Incomplete Coverage and Matched Complete Coverage Groups $ ^{a} $"
+    },
+    {
+     "page": 6,
+     "block_id": 8,
+     "text": "Comparison of Rotator Cuff Healing Between the Matched Incomplete and Complete Coverage Groups $ ^{a} $"
+    },
+    {
+     "page": 7,
+     "block_id": 4,
+     "text": "Functional Outcomes After Surgery: Comparison of Matched Incomplete Coverage and Matched Incomplete Coverage Groups $ ^{a} $"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [
+   {
+    "page": 5,
+    "block_id": 4,
+    "text": "Characteristics of the Incomplete Coverage Group Versus Complete Coverage Group $ ^{a} $"
+   },
+   {
+    "page": 6,
+    "block_id": 4,
+    "text": "Comparison of Matched Incomplete Coverage and Matched Complete Coverage Groups $ ^{a} $"
+   },
+   {
+    "page": 6,
+    "block_id": 8,
+    "text": "Comparison of Rotator Cuff Healing Between the Matched Incomplete and Complete Coverage Groups $ ^{a} $"
+   },
+   {
+    "page": 7,
+    "block_id": 4,
+    "text": "Functional Outcomes After Surgery: Comparison of Matched Incomplete Coverage and Matched Incomplete Coverage Groups $ ^{a} $"
+   }
+  ],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 10,
+    "text": "Figure 1. Rotator cuff repair with (A) incomplete and (B) complete footprint coverage."
+   },
+   {
+    "page": 3,
+    "block_id": 4,
+    "text": "Figure 2. Flowchart of patient exclusion and inclusion in the study."
+   },
+   {
+    "page": 5,
+    "block_id": 4,
+    "text": "Characteristics of the Incomplete Coverage Group Versus Complete Coverage Group $ ^{a} $"
+   },
+   {
+    "page": 6,
+    "block_id": 4,
+    "text": "Comparison of Matched Incomplete Coverage and Matched Complete Coverage Groups $ ^{a} $"
+   },
+   {
+    "page": 6,
+    "block_id": 8,
+    "text": "Comparison of Rotator Cuff Healing Between the Matched Incomplete and Complete Coverage Groups $ ^{a} $"
+   },
+   {
+    "page": 7,
+    "block_id": 4,
+    "text": "Functional Outcomes After Surgery: Comparison of Matched Incomplete Coverage and Matched Incomplete Coverage Groups $ ^{a} $"
+   }
+  ]
+ }
+}

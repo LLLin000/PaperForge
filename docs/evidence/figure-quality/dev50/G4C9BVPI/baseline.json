@@ -1,0 +1,113 @@
+{
+ "dry_run": {
+  "key": "G4C9BVPI",
+  "identity": {
+   "old": {
+    "entries": 0,
+    "unique_ids": 0,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 0,
+    "unique_ids": 0,
+    "duplicate_extra": 0
+   },
+   "mapping": {},
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 4,
+   "new_render_files": 4,
+   "render_added": [],
+   "render_removed": [],
+   "embeds": 0,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 0,
+   "new_tables": 0,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 68,
+   "new_rows": 68,
+   "role_removed": {
+    "figure_caption_candidate": 2,
+    "reference_item": 3
+   },
+   "role_added": {
+    "figure_caption": 2,
+    "subsection_heading": 3
+   },
+   "old_body_chars": 4517,
+   "new_body_chars": 4517,
+   "old_text_chars": 10215,
+   "new_text_chars": 10215,
+   "old_fulltext_chars": 7775
+  },
+  "new_manifest": {
+   "figures": 0,
+   "tables": 0,
+   "orphans": 2
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "G4C9BVPI",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 10215,
+  "new_text_chars": 10215,
+  "old_entries": 0,
+  "new_entries": 0,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 3,
+     "block_id": 5,
+     "text": "表2 两组VTE评估效率、评估正确率、VTE发生率比较"
+    }
+   ],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 2,
+     "text": "表1 两组患者一般资料比较"
+    },
+    {
+     "page": 3,
+     "block_id": 5,
+     "text": "表2 两组VTE评估效率、评估正确率、VTE发生率比较"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [
+   {
+    "page": 3,
+    "block_id": 5,
+    "text": "表2 两组VTE评估效率、评估正确率、VTE发生率比较"
+   }
+  ],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 2,
+    "text": "表1 两组患者一般资料比较"
+   },
+   {
+    "page": 3,
+    "block_id": 5,
+    "text": "表2 两组VTE评估效率、评估正确率、VTE发生率比较"
+   }
+  ]
+ }
+}

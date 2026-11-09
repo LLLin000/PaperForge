@@ -1,0 +1,363 @@
+{
+ "dry_run": {
+  "key": "VY8CRKCE",
+  "identity": {
+   "old": {
+    "entries": 10,
+    "unique_ids": 10,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 10,
+    "unique_ids": 10,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005",
+    "figure_006": "figure_006",
+    "figure_007": "figure_007",
+    "figure_008": "figure_008",
+    "figure_reserved_008": "figure_figure_p009_b11",
+    "figure_reserved_009": "figure_figure_p022_b2"
+   },
+   "renamed": [
+    [
+     "figure_reserved_008",
+     "figure_figure_p009_b11"
+    ],
+    [
+     "figure_reserved_009",
+     "figure_figure_p022_b2"
+    ]
+   ],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 44,
+   "new_render_files": 88,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/figures/figure_005.jpg",
+    "assets/figures/figure_006.jpg",
+    "assets/figures/figure_007.jpg",
+    "assets/figures/figure_008.jpg",
+    "assets/figures/figure_figure_p009_b11.jpg",
+    "assets/figures/figure_figure_p022_b2.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/orphans/orphan_013.jpg",
+    "assets/orphans/orphan_014.jpg",
+    "assets/orphans/orphan_015.jpg",
+    "assets/orphans/orphan_016.jpg",
+    "assets/orphans/orphan_017.jpg",
+    "assets/orphans/orphan_018.jpg",
+    "assets/orphans/orphan_019.jpg",
+    "assets/orphans/orphan_020.jpg",
+    "assets/orphans/orphan_021.jpg",
+    "assets/orphans/orphan_022.jpg",
+    "assets/orphans/orphan_023.jpg",
+    "assets/orphans/orphan_024.jpg",
+    "assets/tables/table_001.jpg",
+    "assets/tables/table_002.jpg",
+    "assets/tables/table_003.jpg",
+    "assets/tables/table_004.jpg",
+    "assets/tables/table_005.jpg",
+    "assets/tables/table_006.jpg",
+    "assets/tables/table_007.jpg",
+    "assets/tables/table_008.jpg",
+    "assets/tables/table_009.jpg",
+    "assets/tables/table_010.jpg",
+    "render/figures/figure_figure_p009_b11.md",
+    "render/figures/figure_figure_p022_b2.md"
+   ],
+   "render_removed": [
+    "render/figures/figure_reserved_008.md",
+    "render/figures/figure_reserved_009.md"
+   ],
+   "embeds": 20,
+   "embeds_retargeted": 2,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 10,
+   "new_tables": 10,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 1072,
+   "new_rows": 1072,
+   "role_removed": {
+    "frontmatter_noise": 1,
+    "figure_caption_candidate": 6
+   },
+   "role_added": {
+    "body_paragraph": 1,
+    "figure_caption": 6
+   },
+   "old_body_chars": 168124,
+   "new_body_chars": 168595,
+   "old_text_chars": 338501,
+   "new_text_chars": 338501,
+   "old_fulltext_chars": 299917
+  },
+  "new_manifest": {
+   "figures": 10,
+   "tables": 10,
+   "orphans": 24
+  },
+  "new_orphans": 1
+ },
+ "structural": {
+  "key": "VY8CRKCE",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 338501,
+  "new_text_chars": 338501,
+  "old_entries": 10,
+  "new_entries": 10,
+  "unmatched": {
+   "legends": [
+    {
+     "page": 17,
+     "block_id": 3,
+     "text": "Applications of piezoelectric materials in cartilage tissue engineering."
+    },
+    {
+     "page": 19,
+     "block_id": 3,
+     "text": "Applications of piezoelectric materials in neural tissue engineering."
+    }
+   ],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      1001,
+      297,
+      1059,
+      353
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 2,
+     "block_id": 10,
+     "text": "c) Longitudinal Expansion/Contraction"
+    },
+    {
+     "page": 2,
+     "block_id": 11,
+     "text": "d) Transverse Expansion/Contraction"
+    },
+    {
+     "page": 2,
+     "block_id": 13,
+     "text": "Parallel Shear"
+    },
+    {
+     "page": 2,
+     "block_id": 15,
+     "text": "f) Bending"
+    },
+    {
+     "page": 2,
+     "block_id": 23,
+     "text": "Fig. 1. a) Schematic of direct piezoelectric effect (left) and converse piezoelectric effect (right). b) Coordinate systems and direction of polarization/electric field of piezoelectric materials c) Longitudinal expansion/Contraction mode. d) Transverse expansion/Contraction mode. e) Parallel shear "
+    },
+    {
+     "page": 5,
+     "block_id": 3,
+     "text": "Fig. 2. a) Diagrams of the $\\alpha$, $\\beta$ and $\\gamma$ polymorphic phases of PVDF. Reproduced with permission from Ref. [69]. b) Representation of the four methods of phase transitions to obtain $\\beta$ phase of PVDF. Reproduced with permission from Ref. [71]. c) Overview of the processing, prope"
+    },
+    {
+     "page": 7,
+     "block_id": 7,
+     "text": "Piezoelectric properties of selected synthetic polymers."
+    },
+    {
+     "page": 9,
+     "block_id": 11,
+     "text": "Piezoelectric activity of different amino acids based in theoretical and experimental observations."
+    },
+    {
+     "page": 15,
+     "block_id": 3,
+     "text": "Fig. 3. Applications of piezoelectric materials in bone tissue engineering. a) Representation of the 3-step preparation (electrostatic spinning, homogenizing and freeze-drying) of piezoelectric CS/PHB@ZnO nanofiber-aerogel scaffold and its osteogenic effect driven by ultrasound. Reproduced with perm"
+    },
+    {
+     "page": 17,
+     "block_id": 3,
+     "text": "Applications of piezoelectric materials in cartilage tissue engineering."
+    },
+    {
+     "page": 18,
+     "block_id": 12,
+     "text": "Fig. 4. Applications of piezoelectric materials in cartilage tissue engineering. a) Ultrasound-responsive lubricating electroactive short fibers upregulate Sirt1 gene expression and restore mitochondrial quality control mechanisms resulting in repair of the hydration lubrication layer of cartilage a"
+    },
+    {
+     "page": 19,
+     "block_id": 3,
+     "text": "Applications of piezoelectric materials in neural tissue engineering."
+    },
+    {
+     "page": 20,
+     "block_id": 12,
+     "text": "Fig. 5. Applications of piezoelectric materials in neural tissue engineering. a) aligned piezoelectric nanofibers derived hydrogel barium titanate piezoelectric nanoparticles doped PVDF-TrFE nanofibers with aligned nanofiber orientation were used to fabricate an hydrogel with integrated bioactive dr"
+    },
+    {
+     "page": 22,
+     "block_id": 2,
+     "text": "Applications of piezoelectric materials in skeletal and cardiac tissue engineering."
+    },
+    {
+     "page": 23,
+     "block_id": 6,
+     "text": "Fig. 6. Applications of piezoelectric materials in skeletal and cardiac muscle tissue engineering. a) A piezoelectric elastomer was fabricated through random copolymerization to achieve low elastic modulus and stretchability similar to that of skeletal muscle. In vivo implantation and stimulation pr"
+    },
+    {
+     "page": 26,
+     "block_id": 12,
+     "text": "Fig. 7. Applications of piezoelectric materials in skin tissue engineering. a) A PVDF/sodium alginate scaffold was modified with zinc oxide nanoparticles. The scaffold has dual piezoelectric release in vertical and horizontal directions that stimulates cell proliferation and migration, collagen depo"
+    },
+    {
+     "page": 28,
+     "block_id": 7,
+     "text": "Fig. 8. Illustration of the main effects of the application of piezoelectric materials in tissue engineering of bone, cartilage, nerves, skeletal and cardiac muscle and skin, and proposed future approaches for improving the field of research."
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [
+   {
+    "page": 17,
+    "block_id": 3,
+    "text": "Applications of piezoelectric materials in cartilage tissue engineering."
+   },
+   {
+    "page": 19,
+    "block_id": 3,
+    "text": "Applications of piezoelectric materials in neural tissue engineering."
+   }
+  ],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     1001,
+     297,
+     1059,
+     353
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 2,
+    "block_id": 10,
+    "text": "c) Longitudinal Expansion/Contraction"
+   },
+   {
+    "page": 2,
+    "block_id": 11,
+    "text": "d) Transverse Expansion/Contraction"
+   },
+   {
+    "page": 2,
+    "block_id": 13,
+    "text": "Parallel Shear"
+   },
+   {
+    "page": 2,
+    "block_id": 15,
+    "text": "f) Bending"
+   },
+   {
+    "page": 2,
+    "block_id": 23,
+    "text": "Fig. 1. a) Schematic of direct piezoelectric effect (left) and converse piezoelectric effect (right). b) Coordinate systems and direction of polarization/electric field of piezoelectric materials c) Longitudinal expansion/Contraction mode. d) Transverse expansion/Contraction mode. e) Parallel shear "
+   },
+   {
+    "page": 5,
+    "block_id": 3,
+    "text": "Fig. 2. a) Diagrams of the $\\alpha$, $\\beta$ and $\\gamma$ polymorphic phases of PVDF. Reproduced with permission from Ref. [69]. b) Representation of the four methods of phase transitions to obtain $\\beta$ phase of PVDF. Reproduced with permission from Ref. [71]. c) Overview of the processing, prope"
+   },
+   {
+    "page": 7,
+    "block_id": 7,
+    "text": "Piezoelectric properties of selected synthetic polymers."
+   },
+   {
+    "page": 9,
+    "block_id": 11,
+    "text": "Piezoelectric activity of different amino acids based in theoretical and experimental observations."
+   },
+   {
+    "page": 15,
+    "block_id": 3,
+    "text": "Fig. 3. Applications of piezoelectric materials in bone tissue engineering. a) Representation of the 3-step preparation (electrostatic spinning, homogenizing and freeze-drying) of piezoelectric CS/PHB@ZnO nanofiber-aerogel scaffold and its osteogenic effect driven by ultrasound. Reproduced with perm"
+   },
+   {
+    "page": 17,
+    "block_id": 3,
+    "text": "Applications of piezoelectric materials in cartilage tissue engineering."
+   },
+   {
+    "page": 18,
+    "block_id": 12,
+    "text": "Fig. 4. Applications of piezoelectric materials in cartilage tissue engineering. a) Ultrasound-responsive lubricating electroactive short fibers upregulate Sirt1 gene expression and restore mitochondrial quality control mechanisms resulting in repair of the hydration lubrication layer of cartilage a"
+   },
+   {
+    "page": 19,
+    "block_id": 3,
+    "text": "Applications of piezoelectric materials in neural tissue engineering."
+   },
+   {
+    "page": 20,
+    "block_id": 12,
+    "text": "Fig. 5. Applications of piezoelectric materials in neural tissue engineering. a) aligned piezoelectric nanofibers derived hydrogel barium titanate piezoelectric nanoparticles doped PVDF-TrFE nanofibers with aligned nanofiber orientation were used to fabricate an hydrogel with integrated bioactive dr"
+   },
+   {
+    "page": 22,
+    "block_id": 2,
+    "text": "Applications of piezoelectric materials in skeletal and cardiac tissue engineering."
+   },
+   {
+    "page": 23,
+    "block_id": 6,
+    "text": "Fig. 6. Applications of piezoelectric materials in skeletal and cardiac muscle tissue engineering. a) A piezoelectric elastomer was fabricated through random copolymerization to achieve low elastic modulus and stretchability similar to that of skeletal muscle. In vivo implantation and stimulation pr"
+   },
+   {
+    "page": 26,
+    "block_id": 12,
+    "text": "Fig. 7. Applications of piezoelectric materials in skin tissue engineering. a) A PVDF/sodium alginate scaffold was modified with zinc oxide nanoparticles. The scaffold has dual piezoelectric release in vertical and horizontal directions that stimulates cell proliferation and migration, collagen depo"
+   },
+   {
+    "page": 28,
+    "block_id": 7,
+    "text": "Fig. 8. Illustration of the main effects of the application of piezoelectric materials in tissue engineering of bone, cartilage, nerves, skeletal and cardiac muscle and skin, and proposed future approaches for improving the field of research."
+   }
+  ]
+ }
+}

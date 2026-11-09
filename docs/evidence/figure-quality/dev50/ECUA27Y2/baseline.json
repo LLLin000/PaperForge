@@ -1,0 +1,261 @@
+{
+ "dry_run": {
+  "key": "ECUA27Y2",
+  "identity": {
+   "old": {
+    "entries": 10,
+    "unique_ids": 9,
+    "duplicate_extra": 1
+   },
+   "new": {
+    "entries": 9,
+    "unique_ids": 9,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004",
+    "figure_005": "figure_005",
+    "figure_006": "figure_006",
+    "figure_007": "figure_007",
+    "figure_008": "figure_008",
+    "figure_009": "figure_009"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": [
+    {
+     "old_id": "figure_009",
+     "old_assets": [
+      "11",
+      "5",
+      "9"
+     ],
+     "new_id": "figure_009",
+     "new_assets": [
+      "11",
+      "3",
+      "5",
+      "8",
+      "9"
+     ]
+    }
+   ]
+  },
+  "delivery": {
+   "old_render_files": 41,
+   "new_render_files": 82,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/figures/figure_005.jpg",
+    "assets/figures/figure_006.jpg",
+    "assets/figures/figure_007.jpg",
+    "assets/figures/figure_008.jpg",
+    "assets/figures/figure_009.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/orphans/orphan_011.jpg",
+    "assets/orphans/orphan_012.jpg",
+    "assets/orphans/orphan_013.jpg",
+    "assets/orphans/orphan_014.jpg",
+    "assets/orphans/orphan_015.jpg",
+    "assets/orphans/orphan_016.jpg",
+    "assets/orphans/orphan_017.jpg",
+    "assets/orphans/orphan_018.jpg",
+    "assets/orphans/orphan_019.jpg",
+    "assets/orphans/orphan_020.jpg",
+    "assets/orphans/orphan_021.jpg",
+    "assets/orphans/orphan_022.jpg",
+    "assets/orphans/orphan_023.jpg",
+    "assets/orphans/orphan_024.jpg",
+    "assets/orphans/orphan_025.jpg",
+    "assets/orphans/orphan_026.jpg",
+    "assets/orphans/orphan_027.jpg",
+    "assets/orphans/orphan_028.jpg",
+    "assets/orphans/orphan_029.jpg",
+    "assets/orphans/orphan_030.jpg",
+    "assets/orphans/orphan_031.jpg",
+    "assets/tables/table_001.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 10,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 1,
+   "new_tables": 1,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 285,
+   "new_rows": 285,
+   "role_removed": {
+    "unknown_structural": 2,
+    "frontmatter_noise": 1,
+    "reference_item": 1
+   },
+   "role_added": {
+    "section_heading": 1,
+    "subsection_heading": 3
+   },
+   "old_body_chars": 44684,
+   "new_body_chars": 44684,
+   "old_text_chars": 68955,
+   "new_text_chars": 68955,
+   "old_fulltext_chars": 62214
+  },
+  "new_manifest": {
+   "figures": 9,
+   "tables": 1,
+   "orphans": 31
+  },
+  "new_orphans": 1
+ },
+ "structural": {
+  "key": "ECUA27Y2",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 68955,
+  "new_text_chars": 68955,
+  "old_entries": 10,
+  "new_entries": 9,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      1001,
+      297,
+      1059,
+      353
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 3,
+     "block_id": 3,
+     "text": "Fig. 1. Schematic diagram. Preparation: ZnO/PCL composite scaffolds were prepared using MEW printing technology. Under the support of MEW's built-in electric field, the in-situ electret of the composite scaffolds were achieved. Implantation: Different groups of composite scaffolds were implanted int"
+    },
+    {
+     "page": 5,
+     "block_id": 13,
+     "text": "Fig. 2. Characterization of in-situ electret composite scaffolds prepared by MEW. (A) SEM images of composite scaffolds ZP0, ZP1, ZP5, and ZP10. EDS mapping image (B) and EDS spectrum (C) of ZP5. (D) Hydrophilicity testing of composite scaffolds. The tensile and compressive stress–strain curves (E) "
+    },
+    {
+     "page": 6,
+     "block_id": 17,
+     "text": "Fig. 3. Characterization of electrical properties of in-situ electret composite scaffolds prepared by MEW. (A) Schematic diagram of in-situ electret of composite scaffolds ZP0, ZP1, ZP5, and ZP10. (B) Zeta potential measurement of composite scaffolds. (C) Surface potential testing of composite scaff"
+    },
+    {
+     "page": 7,
+     "block_id": 13,
+     "text": "Fig. 4. Simulations and experiments on the electrical characteristics of in-situ electret composite scaffolds prepared by MEW. (A) Simulation results of in-situ electret of composite scaffolds ZP0, ZP1, ZP5, and ZP10. (B) Schematic diagram of adsorption of charged particles on in-situ electret scaff"
+    },
+    {
+     "page": 8,
+     "block_id": 5,
+     "text": "Fig. 5. Cell compatibility experiment of in situ electret composite scaffolds prepared by MEW. (A) CCK testing after inoculating BMSCs for 1, 4, and 7 days on composite scaffolds ZP0, ZP1, ZP5, and ZP10. (B) Under the action of the composite scaffolds, the BMSCs at the bottom of the culture dish wer"
+    },
+    {
+     "page": 9,
+     "block_id": 4,
+     "text": "Fig. 6. Induction of osteogenic differentiation of BMSCs using in situ electret composite scaffolds prepared by MEW. ALP staining (A) after 4 and 7 days and ARS staining (B) after 21 days of inoculation of BMSCs on composite scaffolds ZP0, ZP1, ZP5, and ZP10. (C) 4-day, 7-day ALP semi quantitative e"
+    },
+    {
+     "page": 10,
+     "block_id": 6,
+     "text": "Fig. 7. Immunomodulatory properties of paracrine products of BMSCs on in situ electret composite scaffolds prepared by MEW. (A) Schematic diagram of the osteogenic differentiation process of BMSCs regulated by M2 polarization of macrophages. Immunofluorescence staining of CD206 and iNOS in macrophag"
+    },
+    {
+     "page": 11,
+     "block_id": 3,
+     "text": "Fig. 8. The in situ electret composite scaffolds prepared by MEW promotes rat skull regeneration in vivo. (A) The reconstructed micro CT images show the regenerated bone around the defect that has not been treated and treated with composite scaffolds. (B) Quantitative analysis of the regenerated bon"
+    },
+    {
+     "page": 12,
+     "block_id": 12,
+     "text": "Fig. 9. The potential molecular mechanism of bone formation induced by composite scaffolds. (A) The fluorescence images of BMSCs dyed by Fluo-4 AM (green) after electrical simulation of composite scaffolds for 1, 2, and 3 days. Nuclei were signed by Hoechst standing (blue) in the fluorescence images"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     1001,
+     297,
+     1059,
+     353
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 3,
+    "block_id": 3,
+    "text": "Fig. 1. Schematic diagram. Preparation: ZnO/PCL composite scaffolds were prepared using MEW printing technology. Under the support of MEW's built-in electric field, the in-situ electret of the composite scaffolds were achieved. Implantation: Different groups of composite scaffolds were implanted int"
+   },
+   {
+    "page": 5,
+    "block_id": 13,
+    "text": "Fig. 2. Characterization of in-situ electret composite scaffolds prepared by MEW. (A) SEM images of composite scaffolds ZP0, ZP1, ZP5, and ZP10. EDS mapping image (B) and EDS spectrum (C) of ZP5. (D) Hydrophilicity testing of composite scaffolds. The tensile and compressive stress–strain curves (E) "
+   },
+   {
+    "page": 6,
+    "block_id": 17,
+    "text": "Fig. 3. Characterization of electrical properties of in-situ electret composite scaffolds prepared by MEW. (A) Schematic diagram of in-situ electret of composite scaffolds ZP0, ZP1, ZP5, and ZP10. (B) Zeta potential measurement of composite scaffolds. (C) Surface potential testing of composite scaff"
+   },
+   {
+    "page": 7,
+    "block_id": 13,
+    "text": "Fig. 4. Simulations and experiments on the electrical characteristics of in-situ electret composite scaffolds prepared by MEW. (A) Simulation results of in-situ electret of composite scaffolds ZP0, ZP1, ZP5, and ZP10. (B) Schematic diagram of adsorption of charged particles on in-situ electret scaff"
+   },
+   {
+    "page": 8,
+    "block_id": 5,
+    "text": "Fig. 5. Cell compatibility experiment of in situ electret composite scaffolds prepared by MEW. (A) CCK testing after inoculating BMSCs for 1, 4, and 7 days on composite scaffolds ZP0, ZP1, ZP5, and ZP10. (B) Under the action of the composite scaffolds, the BMSCs at the bottom of the culture dish wer"
+   },
+   {
+    "page": 9,
+    "block_id": 4,
+    "text": "Fig. 6. Induction of osteogenic differentiation of BMSCs using in situ electret composite scaffolds prepared by MEW. ALP staining (A) after 4 and 7 days and ARS staining (B) after 21 days of inoculation of BMSCs on composite scaffolds ZP0, ZP1, ZP5, and ZP10. (C) 4-day, 7-day ALP semi quantitative e"
+   },
+   {
+    "page": 10,
+    "block_id": 6,
+    "text": "Fig. 7. Immunomodulatory properties of paracrine products of BMSCs on in situ electret composite scaffolds prepared by MEW. (A) Schematic diagram of the osteogenic differentiation process of BMSCs regulated by M2 polarization of macrophages. Immunofluorescence staining of CD206 and iNOS in macrophag"
+   },
+   {
+    "page": 11,
+    "block_id": 3,
+    "text": "Fig. 8. The in situ electret composite scaffolds prepared by MEW promotes rat skull regeneration in vivo. (A) The reconstructed micro CT images show the regenerated bone around the defect that has not been treated and treated with composite scaffolds. (B) Quantitative analysis of the regenerated bon"
+   },
+   {
+    "page": 12,
+    "block_id": 12,
+    "text": "Fig. 9. The potential molecular mechanism of bone formation induced by composite scaffolds. (A) The fluorescence images of BMSCs dyed by Fluo-4 AM (green) after electrical simulation of composite scaffolds for 1, 2, and 3 days. Nuclei were signed by Hoechst standing (blue) in the fluorescence images"
+   }
+  ]
+ }
+}

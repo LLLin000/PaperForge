@@ -1,0 +1,98 @@
+{
+ "dry_run": {
+  "key": "HL2FUMPM",
+  "identity": {
+   "old": {
+    "entries": 1,
+    "unique_ids": 1,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 1,
+    "unique_ids": 1,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 2,
+   "new_render_files": 4,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/orphans/orphan_001.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 1,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 0,
+   "new_tables": 0,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 310,
+   "new_rows": 310,
+   "role_removed": {
+    "unknown_structural": 3,
+    "body_paragraph": 15
+   },
+   "role_added": {
+    "paper_title": 1,
+    "authors": 1,
+    "subsection_heading": 1,
+    "reference_item": 15
+   },
+   "old_body_chars": 36898,
+   "new_body_chars": 34568,
+   "old_text_chars": 68355,
+   "new_text_chars": 68355,
+   "old_fulltext_chars": 67156
+  },
+  "new_manifest": {
+   "figures": 1,
+   "tables": 0,
+   "orphans": 1
+  },
+  "new_orphans": 0
+ },
+ "structural": {
+  "key": "HL2FUMPM",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 68355,
+  "new_text_chars": 68355,
+  "old_entries": 1,
+  "new_entries": 1,
+  "unmatched": {
+   "legends": [],
+   "assets": [],
+   "caption_candidates": [
+    {
+     "page": 7,
+     "block_id": 8,
+     "text": "Fig. 1 The effects of electrical, magnetic, and mechanical stimulation on articular cartilage"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [],
+  "caption_candidates": [
+   {
+    "page": 7,
+    "block_id": 8,
+    "text": "Fig. 1 The effects of electrical, magnetic, and mechanical stimulation on articular cartilage"
+   }
+  ]
+ }
+}

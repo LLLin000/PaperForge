@@ -1,0 +1,182 @@
+{
+ "dry_run": {
+  "key": "DS2FR5FU",
+  "identity": {
+   "old": {
+    "entries": 4,
+    "unique_ids": 4,
+    "duplicate_extra": 0
+   },
+   "new": {
+    "entries": 4,
+    "unique_ids": 4,
+    "duplicate_extra": 0
+   },
+   "mapping": {
+    "figure_001": "figure_001",
+    "figure_002": "figure_002",
+    "figure_003": "figure_003",
+    "figure_004": "figure_004"
+   },
+   "renamed": [],
+   "unmapped_old_ids": [],
+   "claims_changed": []
+  },
+  "delivery": {
+   "old_render_files": 21,
+   "new_render_files": 42,
+   "render_added": [
+    "assets/figures/figure_001.jpg",
+    "assets/figures/figure_002.jpg",
+    "assets/figures/figure_003.jpg",
+    "assets/figures/figure_004.jpg",
+    "assets/orphans/orphan_001.jpg",
+    "assets/orphans/orphan_002.jpg",
+    "assets/orphans/orphan_003.jpg",
+    "assets/orphans/orphan_004.jpg",
+    "assets/orphans/orphan_005.jpg",
+    "assets/orphans/orphan_006.jpg",
+    "assets/orphans/orphan_007.jpg",
+    "assets/orphans/orphan_008.jpg",
+    "assets/orphans/orphan_009.jpg",
+    "assets/orphans/orphan_010.jpg",
+    "assets/tables/table_001.jpg",
+    "assets/tables/table_002.jpg",
+    "assets/tables/table_003.jpg",
+    "assets/tables/table_004.jpg",
+    "assets/tables/table_005.jpg",
+    "assets/tables/table_006.jpg",
+    "assets/tables/table_007.jpg"
+   ],
+   "render_removed": [],
+   "embeds": 11,
+   "embeds_retargeted": 0,
+   "embeds_missing_new_id": []
+  },
+  "tables": {
+   "old_tables": 7,
+   "new_tables": 7,
+   "claim_changes": []
+  },
+  "content": {
+   "old_rows": 217,
+   "new_rows": 217,
+   "role_removed": {
+    "unknown_structural": 1,
+    "frontmatter_noise": 1,
+    "reference_item": 2,
+    "backmatter_heading": 1
+   },
+   "role_added": {
+    "noise": 2,
+    "abstract_body": 1,
+    "body_paragraph": 1,
+    "backmatter_heading_candidate": 1
+   },
+   "old_body_chars": 23246,
+   "new_body_chars": 23277,
+   "old_text_chars": 69134,
+   "new_text_chars": 69134,
+   "old_fulltext_chars": 35974
+  },
+  "new_manifest": {
+   "figures": 4,
+   "tables": 7,
+   "orphans": 10
+  },
+  "new_orphans": 1
+ },
+ "structural": {
+  "key": "DS2FR5FU",
+  "unique_ids_ok": true,
+  "dangling_fulltext_targets": 0,
+  "pending_markers": 0,
+  "text_decrease": false,
+  "old_text_chars": 69134,
+  "new_text_chars": 69134,
+  "old_entries": 4,
+  "new_entries": 4,
+  "unmatched": {
+   "legends": [],
+   "assets": [
+    {
+     "page": 1,
+     "bbox": [
+      1018,
+      219,
+      1078,
+      278
+     ]
+    }
+   ],
+   "caption_candidates": [
+    {
+     "page": 4,
+     "block_id": 3,
+     "text": "Fig. 1 Flowchart showing the study selection process"
+    },
+    {
+     "page": 10,
+     "block_id": 4,
+     "text": "Fig. 2 Grouped bar charts showing the risk of bias and concern for applicability of the 21 included studies using the QUADAS-2 tool"
+    },
+    {
+     "page": 12,
+     "block_id": 3,
+     "text": "Fat obliteration of the rotator interval"
+    },
+    {
+     "page": 12,
+     "block_id": 10,
+     "text": "Fig. 3 Coupled Forest plots of pooled sensitivity and specificity showing MR features"
+    },
+    {
+     "page": 13,
+     "block_id": 3,
+     "text": "Fig. 4 Areas under the ROC curve (AUCs) of seven MR features for diagnosing adhesive capsulitis of the shoulder"
+    }
+   ]
+  }
+ },
+ "unmatched": {
+  "legends": [],
+  "assets": [
+   {
+    "page": 1,
+    "bbox": [
+     1018,
+     219,
+     1078,
+     278
+    ]
+   }
+  ],
+  "caption_candidates": [
+   {
+    "page": 4,
+    "block_id": 3,
+    "text": "Fig. 1 Flowchart showing the study selection process"
+   },
+   {
+    "page": 10,
+    "block_id": 4,
+    "text": "Fig. 2 Grouped bar charts showing the risk of bias and concern for applicability of the 21 included studies using the QUADAS-2 tool"
+   },
+   {
+    "page": 12,
+    "block_id": 3,
+    "text": "Fat obliteration of the rotator interval"
+   },
+   {
+    "page": 12,
+    "block_id": 10,
+    "text": "Fig. 3 Coupled Forest plots of pooled sensitivity and specificity showing MR features"
+   },
+   {
+    "page": 13,
+    "block_id": 3,
+    "text": "Fig. 4 Areas under the ROC curve (AUCs) of seven MR features for diagnosing adhesive capsulitis of the shoulder"
+   }
+  ]
+ }
+}
