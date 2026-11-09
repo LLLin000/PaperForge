@@ -34,7 +34,7 @@ OCR_DEFAULT = None
 SET_DIR = ROOT / "docs" / "evidence" / "figure-quality" / "sets"
 OUT_ROOT = ROOT / "docs" / "evidence" / "figure-quality"
 
-LABEL_FIELDS = ["key", "figure_id", "page", "expected_owner", "current_assets", "caption_ok",
+LABEL_FIELDS = ["key", "kind", "figure_id", "page", "block_id", "expected_owner", "current_assets", "caption_ok",
                 "panels_ok", "crop_ok", "delivery_ok", "notes", "reviewer", "reviewed_at"]
 
 
@@ -165,6 +165,36 @@ def _render_page_png(pdf_path: Path, page_num: int, out_path: Path, scale: float
     doc.close()
 
 
+def _render_page_with_overlays(
+    pdf_path: Path, page_num: int, overlays: list, out_path: Path, scale: float = 1.0
+) -> None:
+    if fitz is None or Image is None:
+        return
+    import contextlib
+    with contextlib.suppress(Exception):
+        doc = fitz.open(str(pdf_path))
+        if page_num - 1 >= len(doc):
+            doc.close()
+            return
+        page = doc[page_num - 1]
+        mat = fitz.Matrix(scale, scale)
+        pix = page.get_pixmap(matrix=mat)
+        img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+        draw = ImageDraw.Draw(img) if ImageDraw is not None else None
+        if draw is not None:
+            for bbox, color, label in overlays:
+                if not bbox or len(bbox) != 4:
+                    continue
+                x0, y0, x1, y1 = [int(v * scale) for v in bbox]
+                draw.rectangle((x0, y0, x1, y1), outline=color, width=3)
+                draw.text((x0, max(0, y0 - 12)), str(label), fill=color)
+        if img.width > 1200:
+            ratio = 1200 / img.width
+            img = img.resize((1200, int(img.height * ratio)))
+        img.save(out_path, "JPEG", quality=55, optimize=True)
+        doc.close()
+
+
 def _overlay_crop(pdf_path: Path, page_num: int, bbox: list, out_path: Path, scale: float = 1.0) -> None:
     if fitz is None or Image is None:
         return
@@ -189,6 +219,12 @@ def _vault_ocr_root(vault: Path, ocr_root: Path | None) -> Path:
     return ocr_root if ocr_root else vault / "System" / "PaperForge" / "ocr"
 
 
+def _review_inventory(replay_inventory: dict | None, paper_dir: Path) -> dict:
+    if replay_inventory is not None:
+        return replay_inventory
+    return DRY._read_json(paper_dir / "structure" / "figure_inventory.json")
+
+
 def run_key(vault: Path, ocr_root: Path, key: str, out_dir: Path) -> dict[str, Any]:
     paper_dir = ocr_root / key
     meta = DRY._read_json(paper_dir / "meta.json")
@@ -196,16 +232,24 @@ def run_key(vault: Path, ocr_root: Path, key: str, out_dir: Path) -> dict[str, A
     pdf = resolve_source_pdf(vault, meta.get("source_pdf"))
     entry = DRY.audit_key(vault, ocr_root, key, plan=False)
     # replay figures
+    replay_inventory = None
     try:
         new = DRY._new_replay(vault, ocr_root, key)
         replay_figures = new["figures"]
+        replay_rows = new.get("rows", [])
+        replay_inventory = new.get("figure_inventory")
     except Exception as exc:  # noqa: BLE001
         replay_figures = []
+        replay_rows = []
         entry["replay_error"] = f"{type(exc).__name__}: {exc}"
+    replay_inventory = _review_inventory(
+        replay_inventory, paper_dir
+    )
 
     kdir = out_dir / key
     kdir.mkdir(parents=True, exist_ok=True)
 
+    inv = replay_inventory
     # labels template
     labels_path = kdir / "labels.jsonl"
     if not labels_path.is_file():
@@ -217,6 +261,7 @@ def run_key(vault: Path, ocr_root: Path, key: str, out_dir: Path) -> dict[str, A
             ]
             row = {
                 "key": key,
+                "kind": "matched_figure",
                 "figure_id": str(f.get("figure_id")),
                 "page": int(f.get("page", 0) or 0),
                 "expected_owner": "",
@@ -230,16 +275,85 @@ def run_key(vault: Path, ocr_root: Path, key: str, out_dir: Path) -> dict[str, A
                 "reviewed_at": "",
             }
             lines.append(json.dumps(row, ensure_ascii=False))
+        # unmatched legend candidates
+        unmatched_label_rows = list(inv.get("unmatched_legends", []) or [])
+        seen_legend_blocks = {
+            str(row.get("block_id"))
+            for row in unmatched_label_rows
+            if row.get("block_id") is not None
+        }
+        for row in replay_rows:
+            if (
+                str(row.get("role")) == "figure_caption_candidate"
+                and str(row.get("block_id")) not in seen_legend_blocks
+            ):
+                unmatched_label_rows.append(row)
+                seen_legend_blocks.add(str(row.get("block_id")))
+        for u in unmatched_label_rows:
+            lines.append(json.dumps({
+                "key": key,
+                "kind": "unmatched_legend",
+                "figure_id": "",
+                "page": int(u.get("page", 0) or 0),
+                "block_id": u.get("block_id"),
+                "expected_owner": "",
+                "current_assets": "",
+                "caption_ok": None,
+                "panels_ok": None,
+                "crop_ok": None,
+                "delivery_ok": None,
+                "notes": "",
+                "reviewer": "",
+                "reviewed_at": "",
+            }, ensure_ascii=False))
         labels_path.write_text("\n".join(lines) + ("\n" if lines else ""), encoding="utf-8")
 
-    # per-figure crops + page overlays
+    inv = replay_inventory
+    unmatched_legends = inv.get("unmatched_legends", []) or []
+    unmatched_assets = inv.get("unmatched_assets", []) or []
+    caption_rows = [r for r in replay_rows if str(r.get("role")) in {"figure_caption", "figure_caption_candidate"}]
+
+    pages = set(
+        int(f.get("page", 0) or 0)
+        for f in replay_figures
+        if f.get("page")
+    )
+    # pages to render
+    for u in unmatched_legends:
+        if u.get("page"):
+            pages.add(int(u.get("page")))
+    for a in unmatched_assets:
+        if a.get("page"):
+            pages.add(int(a.get("page")))
+    for r in caption_rows:
+        if r.get("page"):
+            pages.add(int(r.get("page")))
+
     if pdf is not None:
-        # group figures by page
-        pages = sorted({int(f.get("page", 0) or 0) for f in replay_figures if f.get("page")})
-        for pg in pages:
+        for pg in sorted(pages):
             out_path = kdir / f"page_{pg:03d}.jpg"
-            if not out_path.is_file():
-                _render_page_png(pdf, pg, out_path)
+            if out_path.is_file():
+                continue
+            overlays = []
+            # matched figure assets
+            for f in replay_figures:
+                for a in (f.get("matched_assets") or []):
+                    if int(a.get("page", 0) or 0) == pg and a.get("bbox"):
+                        overlays.append((a.get("bbox"), (0, 0, 255), str(f.get("figure_id"))))
+            # unmatched assets
+            for a in unmatched_assets:
+                if int(a.get("page", 0) or 0) == pg and a.get("bbox"):
+                    overlays.append((a.get("bbox"), (255, 140, 0), "unmatched_asset"))
+            # unmatched legends
+            for u in unmatched_legends:
+                if int(u.get("page", 0) or 0) == pg and u.get("bbox"):
+                    overlays.append((u.get("bbox"), (255, 0, 0), "unmatched_legend"))
+            # caption candidate rows
+            for r in caption_rows:
+                if int(r.get("page", 0) or 0) == pg and r.get("bbox"):
+                    overlays.append((r.get("bbox"), (0, 180, 0), "caption_candidate"))
+            _render_page_with_overlays(pdf, pg, overlays, out_path)
+
         for f in replay_figures:
             fid = str(f.get("figure_id"))
             pg = int(f.get("page", 0) or 0)
@@ -253,8 +367,24 @@ def run_key(vault: Path, ocr_root: Path, key: str, out_dir: Path) -> dict[str, A
                             _overlay_crop(pdf, pg, bbox, crop_path)
 
     baseline = structural_baseline(key, entry, ocr_root)
+    baseline["unmatched"] = {
+        "legends": [
+            {"page": u.get("page"), "block_id": u.get("block_id"), "text": str(u.get("text", ""))[:300]}
+            for u in unmatched_legends
+        ],
+        "assets": [
+            {"page": a.get("page"), "bbox": a.get("bbox")} for a in unmatched_assets
+        ],
+        "caption_candidates": [
+            {"page": r.get("page"), "block_id": r.get("block_id"), "text": str(r.get("text", ""))[:300]}
+            for r in caption_rows
+        ],
+    }
     (kdir / "baseline.json").write_text(
-        json.dumps({"dry_run": entry, "structural": baseline}, ensure_ascii=False, indent=1),
+        json.dumps(
+            {"dry_run": entry, "structural": baseline, "unmatched": baseline["unmatched"]},
+            ensure_ascii=False, indent=1,
+        ),
         encoding="utf-8",
     )
 
@@ -294,17 +424,14 @@ def main() -> int:
     out_root.mkdir(parents=True, exist_ok=True)
 
     cases = []
-    baselines = []
     for key in keys:
         r = run_key(vault, ocr_root, key, out_root)
         cases.append(r["case"])
-        baselines.append(r["baseline"])
 
     result = {
         "set": set_name,
         "keys": keys,
         "cases": cases,
-        "baselines": baselines,
         "totals": {
             "papers": len(keys),
             "passed": sum(1 for c in cases if c.get("passed")),

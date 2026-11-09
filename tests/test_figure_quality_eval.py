@@ -67,6 +67,20 @@ def test_label_schema():
     assert set(sample) == expected
 
 
+def test_replay_inventory_takes_precedence(tmp_path):
+    paper_dir = tmp_path / "paper"
+    inventory_path = paper_dir / "structure" / "figure_inventory.json"
+    inventory_path.parent.mkdir(parents=True)
+    inventory_path.write_text(json.dumps({"unmatched_legends": [], "unmatched_assets": []}))
+    replay_inventory = {
+        "unmatched_legends": [{"page": 15, "block_id": 99, "text": "replayed caption"}],
+        "unmatched_assets": [{"page": 14, "bbox": [1, 2, 3, 4]}],
+    }
+    selected = module._review_inventory(replay_inventory, paper_dir)
+    assert selected is replay_inventory
+    assert selected["unmatched_legends"][0]["text"] == "replayed caption"
+
+
 def test_diff_results():
     prev = {"cases": [{"key": "A", "passed": False}, {"key": "B", "passed": True}]}
     curr = {"cases": [{"key": "A", "passed": True}, {"key": "B", "passed": False}]}
