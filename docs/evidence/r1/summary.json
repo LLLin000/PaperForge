@@ -1,8 +1,8 @@
 {
   "papers": 952,
   "status_counts": {
-    "READY": 809,
-    "REQUIRES_APPROVAL": 89,
+    "READY": 788,
+    "REQUIRES_APPROVAL": 110,
     "HOLD": 47,
     "M2_REVIEW_REQUIRED": 7
   },
@@ -72,5 +72,28 @@
     ]
   ],
   "external_refs_count": 200,
-  "external_refs_capped": true
+  "external_refs_capped": true,
+  "frozen_plan_status_counts": {
+    "READY": 809,
+    "REQUIRES_APPROVAL": 89,
+    "HOLD": 47,
+    "M2_REVIEW_REQUIRED": 7
+  },
+  "paper_status_basis": "frozen migration plan plus table-claim review overlay; plan.jsonl.gz retains raw frozen plan status",
+  "table_claim_review": {
+    "changed_claims": 36,
+    "affected_papers": 33,
+    "benign_corrected_claims": 7,
+    "blocking_claims": 29,
+    "blocking_papers": 27,
+    "papers_downgraded_from_ready": 21,
+    "blocking_papers_already_non_ready": 6,
+    "cause_counts": {
+      "Q9 Figure 5/6 restoration co-occurs, but direct causal link to table-match loss is not established.": 1,
+      "Q11-related figure/table shared-media evidence; no explicit Q5/Q9 attribution.": 10,
+      "No direct Q5/Q9/Q11 causal evidence found for this claim change.": 6,
+      "Q11-related ownership conflict; replay records cross_type_conflict_table_asset_reassigned.": 11,
+      "Q11-related ownership conflict; replay records cross_type_conflict_no_unique_table_asset.": 8
+    }
+  }
 }

@@ -1,0 +1,6035 @@
+[
+  {
+    "key": "28JLIHLS",
+    "status": "READY",
+    "page": 3,
+    "caption_block_id": "7",
+    "caption_text": "Table 1 Data from dose-response studies performed at  $ \\sim $37 $ ^{\\circ} $C with serum supplemented DMEM",
+    "old_asset_block_id": "9",
+    "new_asset_block_id": null,
+    "old_bbox": [
+      621,
+      111,
+      1105,
+      275
+    ],
+    "new_bbox": [],
+    "bbox_overlap": {
+      "intersects": false,
+      "intersection_area": 0,
+      "iou": 0.0
+    },
+    "old_asset_text": "<table><tr><td>Field strength (V/km)</td><td>Number of cells</td><td>Sine ( $ \\varphi $)</td><td>Speed ( $ \\mu $m/h)</td><td>Directed velocity ( $ \\mu $m/h)</td></tr><tr><td>0</td><td>108</td><td>0.26  $ \\pm $ 0.99</td><td>5.50  $ \\pm $ 4.65</td><td>0.95  $ \\pm $ 5.3</td></tr><tr><td>0.17</td><td>122</td><td>0.071  $ \\pm $ 0.96</td><td>7.04  $ \\pm ",
+    "new_asset_text": "",
+    "new_table_match_status": "ambiguous",
+    "new_table_match_score": {
+      "decision": "unmatched",
+      "evidence": [],
+      "matched_asset_id": "",
+      "score": 0.0
+    },
+    "asset_switch": null,
+    "old_nearby_figure_assets": [],
+    "new_nearby_figure_assets": [],
+    "figure_claim_changes": [
+      {
+        "old_id": "figure_005",
+        "old_assets": [
+          "0",
+          "2",
+          "6"
+        ],
+        "new_id": "figure_005",
+        "new_assets": [
+          "0",
+          "2"
+        ]
+      }
+    ],
+    "classification": "BLOCKING",
+    "old_asset_shared_with_figure": false,
+    "new_asset_shared_with_figure": false,
+    "new_bbox_overlaps_figure_media": false,
+    "blocking_reason": "Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "evidence_summary": "Unmatched/withdrawn/ambiguous table asset, low-confidence assignment, or old/new table media shares a block/overlaps figure media; not safe to infer paper-level delivery.",
+    "cause": "Q9 Figure 5/6 restoration co-occurs, but direct causal link to table-match loss is not established.",
+    "frozen_plan_status": "READY",
+    "audited_status": "REQUIRES_APPROVAL"
+  },
+  {
+    "key": "3EFCZ7BB",
+    "status": "READY",
+    "page": 9,
+    "caption_block_id": "3",
+    "caption_text": "Table 1. The summary of copolymers' solubility in different solvents.",
+    "old_asset_block_id": "4",
+    "new_asset_block_id": null,
+    "old_bbox": [
+      330,
+      376,
+      1116,
+      479
+    ],
+    "new_bbox": [],
+    "bbox_overlap": {
+      "intersects": false,
+      "intersection_area": 0,
+      "iou": 0.0
+    },
+    "old_asset_text": "<table><tr><td>Solvent</td><td>HFIP</td><td>DMF</td><td>THF</td><td>Ethanol</td><td>Acetone</td><td>$ CH_{2}Cl_{2} $</td></tr><tr><td>DPU</td><td>HD</td><td>HD</td><td>HD</td><td>HD</td><td>HD</td><td>D</td></tr><tr><td>DCPU</td><td>HD</td><td>HD</td><td>HD</td><td>D</td><td>D</td><td>D</td></tr><tr><td>PUAT</td><td>S</td><td>S</td><td>S</td><td>S<",
+    "new_asset_text": "",
+    "new_table_match_status": "ambiguous",
+    "new_table_match_score": {
+      "decision": "unmatched",
+      "evidence": [],
+      "matched_asset_id": "",
+      "score": 0.0
+    },
+    "asset_switch": null,
+    "old_nearby_figure_assets": [
+      {
+        "figure_id": "figure_007",
+        "block_id": "4",
+        "bbox": [
+          351,
+          418,
+          654,
+          662
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 18483,
+          "iou": 0.1354989113461919
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "new_nearby_figure_assets": [],
+    "figure_claim_changes": [
+      {
+        "old_id": "figure_005",
+        "old_assets": [
+          "5",
+          "8",
+          "9"
+        ],
+        "new_id": "figure_005",
+        "new_assets": [
+          "9"
+        ]
+      },
+      {
+        "old_id": "figure_007",
+        "old_assets": [
+          "10",
+          "4",
+          "6",
+          "9"
+        ],
+        "new_id": "figure_007",
+        "new_assets": [
+          "10",
+          "6"
+        ]
+      }
+    ],
+    "classification": "BLOCKING",
+    "old_asset_shared_with_figure": true,
+    "new_asset_shared_with_figure": false,
+    "new_bbox_overlaps_figure_media": false,
+    "blocking_reason": "Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "evidence_summary": "Unmatched/withdrawn/ambiguous table asset, low-confidence assignment, or old/new table media shares a block/overlaps figure media; not safe to infer paper-level delivery.",
+    "cause": "Q11-related figure/table shared-media evidence; no explicit Q5/Q9 attribution.",
+    "frozen_plan_status": "READY",
+    "audited_status": "REQUIRES_APPROVAL"
+  },
+  {
+    "key": "3EFCZ7BB",
+    "status": "READY",
+    "page": 11,
+    "caption_block_id": "3",
+    "caption_text": "Table 2. Conductivity of DCPU fibrous scaffolds.",
+    "old_asset_block_id": "4",
+    "new_asset_block_id": null,
+    "old_bbox": [
+      329,
+      746,
+      1117,
+      889
+    ],
+    "new_bbox": [],
+    "bbox_overlap": {
+      "intersects": false,
+      "intersection_area": 0,
+      "iou": 0.0
+    },
+    "old_asset_text": "<table><tr><td rowspan=\"2\">Sample</td><td colspan=\"2\">Conductivity (S/cm)</td></tr><tr><td>Dry State</td><td>Wet State</td></tr><tr><td>DCPU-R</td><td>$ 4.02 \\pm 0.75 \\times 10^{-10} $ b</td><td>$ 2.00 \\pm 0.10 \\times 10^{-5} $ b</td></tr><tr><td>DCPU-O</td><td>$ 7.15 \\pm 0.49 \\times 10^{-10} $</td><td>$ 4.09 \\pm 0.51 \\times 10^{-5} $</td></tr><tr>",
+    "new_asset_text": "",
+    "new_table_match_status": "ambiguous",
+    "new_table_match_score": {
+      "decision": "unmatched",
+      "evidence": [],
+      "matched_asset_id": "",
+      "score": 0.0
+    },
+    "asset_switch": null,
+    "old_nearby_figure_assets": [
+      {
+        "figure_id": "figure_007",
+        "block_id": "4",
+        "bbox": [
+          351,
+          418,
+          654,
+          662
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "new_nearby_figure_assets": [],
+    "figure_claim_changes": [
+      {
+        "old_id": "figure_005",
+        "old_assets": [
+          "5",
+          "8",
+          "9"
+        ],
+        "new_id": "figure_005",
+        "new_assets": [
+          "9"
+        ]
+      },
+      {
+        "old_id": "figure_007",
+        "old_assets": [
+          "10",
+          "4",
+          "6",
+          "9"
+        ],
+        "new_id": "figure_007",
+        "new_assets": [
+          "10",
+          "6"
+        ]
+      }
+    ],
+    "classification": "BLOCKING",
+    "old_asset_shared_with_figure": true,
+    "new_asset_shared_with_figure": false,
+    "new_bbox_overlaps_figure_media": false,
+    "blocking_reason": "Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "evidence_summary": "Unmatched/withdrawn/ambiguous table asset, low-confidence assignment, or old/new table media shares a block/overlaps figure media; not safe to infer paper-level delivery.",
+    "cause": "Q11-related figure/table shared-media evidence; no explicit Q5/Q9 attribution.",
+    "frozen_plan_status": "READY",
+    "audited_status": "REQUIRES_APPROVAL"
+  },
+  {
+    "key": "3FDT9652",
+    "status": "READY",
+    "page": 4,
+    "caption_block_id": "2",
+    "caption_text": "TABLE I: Classification of Rotator Cuff Integrity Seen at MRI After Surgery",
+    "old_asset_block_id": "3",
+    "new_asset_block_id": null,
+    "old_bbox": [
+      105,
+      208,
+      432,
+      423
+    ],
+    "new_bbox": [],
+    "bbox_overlap": {
+      "intersects": false,
+      "intersection_area": 0,
+      "iou": 0.0
+    },
+    "old_asset_text": "<table><tr><td>Sugaya Classification</td><td>No. (%) of Patients ( $ n = 83 $)</td></tr><tr><td>I</td><td>2 (2.4)</td></tr><tr><td>II</td><td>19 (22.9)</td></tr><tr><td>III</td><td>14 (16.9)</td></tr><tr><td>IV</td><td>10 (12.0)</td></tr><tr><td>V</td><td>38 (45.8)</td></tr><tr><td>Total</td><td>83 (100.0)</td></tr></table>",
+    "new_asset_text": "",
+    "new_table_match_status": "ambiguous",
+    "new_table_match_score": {
+      "decision": "unmatched",
+      "evidence": [],
+      "matched_asset_id": "",
+      "score": 0.0
+    },
+    "asset_switch": null,
+    "old_nearby_figure_assets": [
+      {
+        "figure_id": "figure_007",
+        "block_id": "3",
+        "bbox": [
+          454,
+          142,
+          783,
+          471
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      },
+      {
+        "figure_id": "figure_001",
+        "block_id": "3",
+        "bbox": [
+          455,
+          145,
+          781,
+          466
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "new_nearby_figure_assets": [
+      {
+        "figure_id": "figure_007_54",
+        "block_id": "3",
+        "bbox": [
+          454,
+          142,
+          783,
+          471
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      },
+      {
+        "figure_id": "figure_001",
+        "block_id": "3",
+        "bbox": [
+          455,
+          145,
+          781,
+          466
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "figure_claim_changes": [],
+    "classification": "BLOCKING",
+    "old_asset_shared_with_figure": true,
+    "new_asset_shared_with_figure": false,
+    "new_bbox_overlaps_figure_media": false,
+    "blocking_reason": "Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "evidence_summary": "Unmatched/withdrawn/ambiguous table asset, low-confidence assignment, or old/new table media shares a block/overlaps figure media; not safe to infer paper-level delivery.",
+    "cause": "Q11-related figure/table shared-media evidence; no explicit Q5/Q9 attribution.",
+    "frozen_plan_status": "READY",
+    "audited_status": "REQUIRES_APPROVAL"
+  },
+  {
+    "key": "3FDT9652",
+    "status": "READY",
+    "page": 5,
+    "caption_block_id": "8",
+    "caption_text": "TABLE 3: Univariable Analysis of Radiologic Finding Associated With Retear of Repaired Rotator Cuff",
+    "old_asset_block_id": "9",
+    "new_asset_block_id": null,
+    "old_bbox": [
+      423,
+      184,
+      1099,
+      797
+    ],
+    "new_bbox": [],
+    "bbox_overlap": {
+      "intersects": false,
+      "intersection_area": 0,
+      "iou": 0.0
+    },
+    "old_asset_text": "<table><tr><td>Variable</td><td>Odds Ratio (95% CI)</td><td>p $ ^{a} $</td></tr><tr><td>Sex</td><td>1.069 (0.996-1.147)</td><td>0.064</td></tr><tr><td>Age</td><td>1.300 (0.519-3.255)</td><td>0.575</td></tr><tr><td>Type of tear</td><td></td><td>0.184</td></tr><tr><td colspan=\"3\">Full-thickness partial-width tear</td></tr><tr><td>Full-thickness full-",
+    "new_asset_text": "",
+    "new_table_match_status": "ambiguous",
+    "new_table_match_score": {
+      "decision": "unmatched",
+      "evidence": [],
+      "matched_asset_id": "",
+      "score": 0.0
+    },
+    "asset_switch": null,
+    "old_nearby_figure_assets": [
+      {
+        "figure_id": "figure_005",
+        "block_id": "9",
+        "bbox": [
+          103,
+          959,
+          436,
+          1294
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "new_nearby_figure_assets": [
+      {
+        "figure_id": "figure_005_60",
+        "block_id": "9",
+        "bbox": [
+          103,
+          959,
+          436,
+          1294
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "figure_claim_changes": [],
+    "classification": "BLOCKING",
+    "old_asset_shared_with_figure": true,
+    "new_asset_shared_with_figure": false,
+    "new_bbox_overlaps_figure_media": false,
+    "blocking_reason": "Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "evidence_summary": "Unmatched/withdrawn/ambiguous table asset, low-confidence assignment, or old/new table media shares a block/overlaps figure media; not safe to infer paper-level delivery.",
+    "cause": "Q11-related figure/table shared-media evidence; no explicit Q5/Q9 attribution.",
+    "frozen_plan_status": "READY",
+    "audited_status": "REQUIRES_APPROVAL"
+  },
+  {
+    "key": "3NRZ95DB",
+    "status": "READY",
+    "page": 3,
+    "caption_block_id": "6",
+    "caption_text": "Table 1 Dimensions of each group of specimens",
+    "old_asset_block_id": "7",
+    "new_asset_block_id": null,
+    "old_bbox": [
+      612,
+      1036,
+      1098,
+      1152
+    ],
+    "new_bbox": [],
+    "bbox_overlap": {
+      "intersects": false,
+      "intersection_area": 0,
+      "iou": 0.0
+    },
+    "old_asset_text": "<table><tr><td>Sample size (mm) (diameter  $ \\times $ thickness)</td><td>Superficial zone</td><td>Middle zone</td><td>Deep zone</td></tr><tr><td>Group 1</td><td>$ 10.3 \\times 0.40 $</td><td>$ 10.4 \\times 0.41 $</td><td>$ 10.4 \\times 0.41 $</td></tr><tr><td>Group 2</td><td>$ 11.3 \\times 0.37 $</td><td>$ 11.2 \\times 0.37 $</td><td>$ 11.3 \\times 0.38 ",
+    "new_asset_text": "",
+    "new_table_match_status": "ambiguous",
+    "new_table_match_score": {
+      "decision": "unmatched",
+      "evidence": [],
+      "matched_asset_id": "",
+      "score": 0.0
+    },
+    "asset_switch": null,
+    "old_nearby_figure_assets": [
+      {
+        "figure_id": "figure_005",
+        "block_id": "7",
+        "bbox": [
+          609,
+          399,
+          934,
+          627
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "new_nearby_figure_assets": [
+      {
+        "figure_id": "figure_004",
+        "block_id": "7",
+        "bbox": [
+          609,
+          399,
+          934,
+          627
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "figure_claim_changes": [
+      {
+        "old_id": "figure_005",
+        "old_assets": [
+          "10",
+          "11",
+          "12",
+          "2",
+          "3",
+          "5",
+          "7",
+          "9"
+        ],
+        "new_id": "figure_005",
+        "new_assets": [
+          "10",
+          "11",
+          "12",
+          "2",
+          "5",
+          "9"
+        ]
+      },
+      {
+        "old_id": "figure_reserved_008",
+        "old_assets": [],
+        "new_id": "figure_004",
+        "new_assets": [
+          "3",
+          "7"
+        ]
+      }
+    ],
+    "classification": "BLOCKING",
+    "old_asset_shared_with_figure": true,
+    "new_asset_shared_with_figure": false,
+    "new_bbox_overlaps_figure_media": false,
+    "blocking_reason": "Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "evidence_summary": "Unmatched/withdrawn/ambiguous table asset, low-confidence assignment, or old/new table media shares a block/overlaps figure media; not safe to infer paper-level delivery.",
+    "cause": "Q11-related figure/table shared-media evidence; no explicit Q5/Q9 attribution.",
+    "frozen_plan_status": "READY",
+    "audited_status": "REQUIRES_APPROVAL"
+  },
+  {
+    "key": "4CBS2KKE",
+    "status": "READY",
+    "page": 4,
+    "caption_block_id": "6",
+    "caption_text": "Table 3. Histological scoring system according to Wakitani et al. (Wakitani et al., 1994)",
+    "old_asset_block_id": null,
+    "new_asset_block_id": "2",
+    "old_bbox": [],
+    "new_bbox": [
+      89,
+      261,
+      830,
+      1461
+    ],
+    "bbox_overlap": {
+      "intersects": false,
+      "intersection_area": 0,
+      "iou": 0.0
+    },
+    "old_asset_text": "",
+    "new_asset_text": "Wakitani scoring system",
+    "new_table_match_status": "matched_low_confidence",
+    "new_table_match_score": {
+      "score": 0.55,
+      "matched_asset_id": 2,
+      "decision": "ambiguous",
+      "evidence": [
+        "previous_page",
+        "x_overlap",
+        "asset_near_previous_page_bottom"
+      ]
+    },
+    "asset_switch": null,
+    "old_nearby_figure_assets": [
+      {
+        "figure_id": "figure_001",
+        "block_id": "2",
+        "bbox": [
+          89,
+          261,
+          830,
+          1461
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": true,
+          "intersection_area": 889200,
+          "iou": 1.0
+        }
+      }
+    ],
+    "new_nearby_figure_assets": [
+      {
+        "figure_id": "figure_001",
+        "block_id": "2",
+        "bbox": [
+          89,
+          261,
+          830,
+          1461
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": true,
+          "intersection_area": 889200,
+          "iou": 1.0
+        }
+      }
+    ],
+    "figure_claim_changes": [],
+    "classification": "BLOCKING",
+    "old_asset_shared_with_figure": false,
+    "new_asset_shared_with_figure": true,
+    "new_bbox_overlaps_figure_media": true,
+    "blocking_reason": "Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "evidence_summary": "Unmatched/withdrawn/ambiguous table asset, low-confidence assignment, or old/new table media shares a block/overlaps figure media; not safe to infer paper-level delivery.",
+    "cause": "Q11-related figure/table shared-media evidence; no explicit Q5/Q9 attribution.",
+    "frozen_plan_status": "READY",
+    "audited_status": "REQUIRES_APPROVAL"
+  },
+  {
+    "key": "4FL992ND",
+    "status": "REQUIRES_APPROVAL",
+    "page": 3,
+    "caption_block_id": "2",
+    "caption_text": "TABLE 1. Summary statistics of baseline risk factors in original complete group",
+    "old_asset_block_id": "3",
+    "new_asset_block_id": null,
+    "old_bbox": [
+      101,
+      177,
+      1118,
+      495
+    ],
+    "new_bbox": [],
+    "bbox_overlap": {
+      "intersects": false,
+      "intersection_area": 0,
+      "iou": 0.0
+    },
+    "old_asset_text": "<table><tr><td rowspan=\"2\">Factor</td><td colspan=\"5\">Multivariable logistic regression estimates</td></tr><tr><td>Prevalence</td><td>Coefficient</td><td>Standard error</td><td>Wald p value</td><td>Odds ratio</td></tr><tr><td>Intercept</td><td>-1.86</td><td>0.24</td><td>&lt;0.01</td><td></td><td></td></tr><tr><td>ST depression</td><td>0.25</td><td>",
+    "new_asset_text": "",
+    "new_table_match_status": "ambiguous",
+    "new_table_match_score": {
+      "decision": "unmatched",
+      "evidence": [],
+      "matched_asset_id": "",
+      "score": 0.0
+    },
+    "asset_switch": null,
+    "old_nearby_figure_assets": [
+      {
+        "figure_id": "figure_008",
+        "block_id": "3",
+        "bbox": [
+          496,
+          152,
+          737,
+          396
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 52779,
+          "iou": 0.16021260901372367
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "new_nearby_figure_assets": [
+      {
+        "figure_id": "figure_008",
+        "block_id": "3",
+        "bbox": [
+          496,
+          152,
+          737,
+          396
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 52779,
+          "iou": 0.16021260901372367
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "figure_claim_changes": [],
+    "classification": "BLOCKING",
+    "old_asset_shared_with_figure": true,
+    "new_asset_shared_with_figure": false,
+    "new_bbox_overlaps_figure_media": false,
+    "blocking_reason": "Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "evidence_summary": "Unmatched/withdrawn/ambiguous table asset, low-confidence assignment, or old/new table media shares a block/overlaps figure media; not safe to infer paper-level delivery.",
+    "cause": "Q11-related figure/table shared-media evidence; no explicit Q5/Q9 attribution.",
+    "frozen_plan_status": "REQUIRES_APPROVAL",
+    "audited_status": "REQUIRES_APPROVAL"
+  },
+  {
+    "key": "4KCHGV2Z",
+    "status": "READY",
+    "page": 7,
+    "caption_block_id": "16",
+    "caption_text": "Table 3. Size of full-thickness rotator cuff tears according to the acromial spur",
+    "old_asset_block_id": "14",
+    "new_asset_block_id": null,
+    "old_bbox": [
+      607,
+      860,
+      1092,
+      1161
+    ],
+    "new_bbox": [],
+    "bbox_overlap": {
+      "intersects": false,
+      "intersection_area": 0,
+      "iou": 0.0
+    },
+    "old_asset_text": "<table><tr><td>Classification of acromial spurs</td><td>Rotator cuff tear group (n = 106)</td><td>Control group (n = 102)</td><td>Total (n = 208)</td></tr><tr><td>Acromial spur</td><td>83 $ ^{*} $ (78%)</td><td>59 (58%)</td><td>142 (68%)</td></tr><tr><td colspan=\"4\">Coronal spur</td></tr><tr><td>Heel</td><td>59 $ ^{*} $ (56%)</td><td>36 (35%)</td><",
+    "new_asset_text": "",
+    "new_table_match_status": "ambiguous",
+    "new_table_match_score": {
+      "decision": "unmatched",
+      "evidence": [],
+      "matched_asset_id": "",
+      "score": 0.0
+    },
+    "asset_switch": null,
+    "old_nearby_figure_assets": [],
+    "new_nearby_figure_assets": [],
+    "figure_claim_changes": [
+      {
+        "old_id": "figure_004",
+        "old_assets": [
+          "4"
+        ],
+        "new_id": "figure_004",
+        "new_assets": []
+      },
+      {
+        "old_id": "figure_008",
+        "old_assets": [
+          "4",
+          "5",
+          "7",
+          "8",
+          "9"
+        ],
+        "new_id": "figure_008",
+        "new_assets": [
+          "4",
+          "7",
+          "9"
+        ]
+      },
+      {
+        "old_id": "figure_reserved_005",
+        "old_assets": [],
+        "new_id": "figure_001",
+        "new_assets": [
+          "13"
+        ]
+      }
+    ],
+    "classification": "BLOCKING",
+    "old_asset_shared_with_figure": false,
+    "new_asset_shared_with_figure": false,
+    "new_bbox_overlaps_figure_media": false,
+    "blocking_reason": "Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "evidence_summary": "Unmatched/withdrawn/ambiguous table asset, low-confidence assignment, or old/new table media shares a block/overlaps figure media; not safe to infer paper-level delivery.",
+    "cause": "No direct Q5/Q9/Q11 causal evidence found for this claim change.",
+    "frozen_plan_status": "READY",
+    "audited_status": "REQUIRES_APPROVAL"
+  },
+  {
+    "key": "4PFR9M5N",
+    "status": "READY",
+    "page": 7,
+    "caption_block_id": "4",
+    "caption_text": "Table 4\nGelation time of synthesized hydrogels.",
+    "old_asset_block_id": "5",
+    "new_asset_block_id": null,
+    "old_bbox": [
+      84,
+      149,
+      590,
+      254
+    ],
+    "new_bbox": [],
+    "bbox_overlap": {
+      "intersects": false,
+      "intersection_area": 0,
+      "iou": 0.0
+    },
+    "old_asset_text": "<table><tr><td>Hydrogel samples</td><td>Gelation time (second)</td></tr><tr><td>CS-BGP</td><td>30</td></tr><tr><td>CS-BGP-OP1</td><td>60</td></tr><tr><td>CS-BGP-OP2</td><td>150</td></tr><tr><td>CS-BGP-OP3</td><td>180</td></tr></table>",
+    "new_asset_text": "",
+    "new_table_match_status": "ambiguous",
+    "new_table_match_score": {
+      "decision": "unmatched",
+      "evidence": [],
+      "matched_asset_id": "",
+      "score": 0.0
+    },
+    "asset_switch": null,
+    "old_nearby_figure_assets": [],
+    "new_nearby_figure_assets": [],
+    "figure_claim_changes": [
+      {
+        "old_id": "figure_003",
+        "old_assets": [
+          "4",
+          "6"
+        ],
+        "new_id": "figure_003",
+        "new_assets": [
+          "6"
+        ]
+      }
+    ],
+    "classification": "BLOCKING",
+    "old_asset_shared_with_figure": false,
+    "new_asset_shared_with_figure": false,
+    "new_bbox_overlaps_figure_media": false,
+    "blocking_reason": "Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "evidence_summary": "Unmatched/withdrawn/ambiguous table asset, low-confidence assignment, or old/new table media shares a block/overlaps figure media; not safe to infer paper-level delivery.",
+    "cause": "No direct Q5/Q9/Q11 causal evidence found for this claim change.",
+    "frozen_plan_status": "READY",
+    "audited_status": "REQUIRES_APPROVAL"
+  },
+  {
+    "key": "5VMA7WNE",
+    "status": "READY",
+    "page": 4,
+    "caption_block_id": "3",
+    "caption_text": "Table 1 Primers designed for the real-time PCR analysis of several chondrogenic differentiation-related genes",
+    "old_asset_block_id": "4",
+    "new_asset_block_id": null,
+    "old_bbox": [
+      78,
+      125,
+      1107,
+      345
+    ],
+    "new_bbox": [],
+    "bbox_overlap": {
+      "intersects": false,
+      "intersection_area": 0,
+      "iou": 0.0
+    },
+    "old_asset_text": "<table><tr><td>Gene symbol</td><td>Sequence (5&#x27;-3&#x27;)</td><td>GeneBank accession no.</td></tr><tr><td rowspan=\"2\">COL2</td><td>CCTGTGCGACGACATAATCTGT</td><td rowspan=\"2\">AF027122</td></tr><tr><td>GGTCCTTTAGGTCCTACGATATCCT</td></tr><tr><td rowspan=\"2\">Aggrecan</td><td>GCTACGGAGACAAGGATGAGTTC</td><td rowspan=\"2\">L38480</td></tr><tr><td>CGTAAA",
+    "new_asset_text": "",
+    "new_table_match_status": "ambiguous",
+    "new_table_match_score": {
+      "decision": "unmatched",
+      "evidence": [],
+      "matched_asset_id": "",
+      "score": 0.0
+    },
+    "asset_switch": null,
+    "old_nearby_figure_assets": [],
+    "new_nearby_figure_assets": [],
+    "figure_claim_changes": [],
+    "classification": "BLOCKING",
+    "old_asset_shared_with_figure": false,
+    "new_asset_shared_with_figure": false,
+    "new_bbox_overlaps_figure_media": false,
+    "blocking_reason": "Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "evidence_summary": "Unmatched/withdrawn/ambiguous table asset, low-confidence assignment, or old/new table media shares a block/overlaps figure media; not safe to infer paper-level delivery.",
+    "cause": "No direct Q5/Q9/Q11 causal evidence found for this claim change.",
+    "frozen_plan_status": "READY",
+    "audited_status": "REQUIRES_APPROVAL"
+  },
+  {
+    "key": "64AWS4SU",
+    "status": "READY",
+    "page": 4,
+    "caption_block_id": "4",
+    "caption_text": "Table 2: The postoperative condition of the cuff as described by Sugaya et al. $ ^{3} $",
+    "old_asset_block_id": "8",
+    "new_asset_block_id": "5",
+    "old_bbox": [
+      168,
+      1042,
+      531,
+      1394
+    ],
+    "new_bbox": [
+      100,
+      635,
+      598,
+      1011
+    ],
+    "bbox_overlap": {
+      "intersects": false,
+      "intersection_area": 0,
+      "iou": 0.0
+    },
+    "old_asset_text": "",
+    "new_asset_text": "<table><tr><td>Type</td><td>Number of cuffs</td><td>Definition of type</td></tr><tr><td>1</td><td>4</td><td>Repaired cuff appears to have sufficient thickness compared to the normal cuff, with homogenously low intensity on each image</td></tr><tr><td>2</td><td>14</td><td>Sufficient thickness compared with normal cuff/associated with partial high in",
+    "new_table_match_status": "matched",
+    "new_table_match_score": {
+      "score": 0.6,
+      "matched_asset_id": 5,
+      "decision": "reassigned_after_conflict",
+      "evidence": [
+        "same_page",
+        "x_overlap"
+      ],
+      "previous_asset_block_id": "8"
+    },
+    "asset_switch": {
+      "reason": "cross_type_conflict_table_asset_reassigned",
+      "from": {
+        "asset_block_id": 8,
+        "asset_bbox": [
+          168,
+          1042,
+          531,
+          1394
+        ],
+        "assistive_text": "",
+        "segments": [
+          {
+            "page": 4,
+            "asset_block_id": 8,
+            "asset_bbox": [
+              168,
+              1042,
+              531,
+              1394
+            ],
+            "is_continuation": false
+          }
+        ],
+        "render_bbox": null,
+        "render_rotation_deg": 0,
+        "match_score": {
+          "score": 0.85,
+          "matched_asset_id": 8,
+          "decision": "matched",
+          "evidence": [
+            "same_page",
+            "x_overlap",
+            "asset_below_caption"
+          ]
+        },
+        "match_status": "matched",
+        "consumed_block_ids": [
+          "4",
+          8
+        ],
+        "bridge_block_ids": [],
+        "has_asset": true
+      },
+      "to": {
+        "asset_block_id": "5",
+        "asset_bbox": [
+          100,
+          635,
+          598,
+          1011
+        ],
+        "assistive_text": "<table><tr><td>Type</td><td>Number of cuffs</td><td>Definition of type</td></tr><tr><td>1</td><td>4</td><td>Repaired cuff appears to have sufficient thickness compared to the normal cuff, with homogenously low intensity on each image</td></tr><tr><td>2</td><td>14</td><td>Sufficient thickness compared with normal cuff/associated with partial high intensity area</td></tr><tr><td>3</td><td>47</td><td>Insufficient thickness with less than half the thickness when compared with normal cuff, but without discontinuity, suggesting a partial-thickness delaminated tear</td></tr><tr><td>4</td><td>6</td><td>Presence of a minor discontinuity in only 1 or 2 slices on both oblique coronal and sagittal images, suggesting a small, full-thickness tear</td></tr><tr><td>5</td><td>3</td><td>Presence of a major discontinuity observed in more than 2 slices on both oblique coronal and sagittal images, suggesting a medium or large, full-thickness tear</td></tr></table>",
+        "segments": [
+          {
+            "page": 4,
+            "asset_block_id": "5",
+            "asset_bbox": [
+              100,
+              635,
+              598,
+              1011
+            ],
+            "is_continuation": false
+          }
+        ],
+        "render_bbox": null,
+        "render_rotation_deg": 0,
+        "match_score": {
+          "score": 0.6,
+          "matched_asset_id": 5,
+          "decision": "reassigned_after_conflict",
+          "evidence": [
+            "same_page",
+            "x_overlap"
+          ],
+          "previous_asset_block_id": "8"
+        },
+        "match_status": "matched",
+        "consumed_block_ids": [
+          "4",
+          "5",
+          "5"
+        ],
+        "bridge_block_ids": [],
+        "has_asset": true
+      },
+      "evidence": {
+        "figure_gap": 0.0057,
+        "table_gap": 0.2554
+      }
+    },
+    "old_nearby_figure_assets": [
+      {
+        "figure_id": "figure_006",
+        "block_id": "8",
+        "bbox": [
+          168,
+          1042,
+          531,
+          1394
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 127776,
+          "iou": 1.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "new_nearby_figure_assets": [
+      {
+        "figure_id": "figure_006",
+        "block_id": "8",
+        "bbox": [
+          168,
+          1042,
+          531,
+          1394
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 127776,
+          "iou": 1.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "figure_claim_changes": [
+      {
+        "old_id": "figure_005",
+        "old_assets": [
+          "10",
+          "13",
+          "15",
+          "17"
+        ],
+        "new_id": "figure_005",
+        "new_assets": [
+          "13",
+          "17"
+        ]
+      }
+    ],
+    "classification": "BENIGN_CORRECTED",
+    "old_asset_shared_with_figure": true,
+    "new_asset_shared_with_figure": false,
+    "new_bbox_overlaps_figure_media": false,
+    "blocking_reason": null,
+    "evidence_summary": "Explicit cross-type table reassignment; old claim bbox belongs to figure media, replay destination is separate, table match is accepted, and no new figure/shared-media overlap.",
+    "cause": "Q11-related ownership conflict; replay records cross_type_conflict_table_asset_reassigned.",
+    "frozen_plan_status": "READY",
+    "audited_status": "READY"
+  },
+  {
+    "key": "6ZWKUPCU",
+    "status": "READY",
+    "page": 6,
+    "caption_block_id": "3",
+    "caption_text": "Table 2. Contact Angles of LM PLAP and EM PLAP\nCopolymer Thin Film from Different Solvents",
+    "old_asset_block_id": "4",
+    "new_asset_block_id": null,
+    "old_bbox": [
+      83,
+      124,
+      568,
+      343
+    ],
+    "new_bbox": [],
+    "bbox_overlap": {
+      "intersects": false,
+      "intersection_area": 0,
+      "iou": 0.0
+    },
+    "old_asset_text": "<table><tr><td>samples</td><td>contact angles (deg)</td></tr><tr><td>LM PLAPD dissolved in  $ CHCl_{3} $</td><td>98  $ \\pm $ 2</td></tr><tr><td>EM PLAPD dissolved in  $ CHCl_{3} $</td><td>92  $ \\pm $ 1</td></tr><tr><td>EM PLAPD dissolved in THF</td><td>90  $ \\pm $ 2</td></tr><tr><td>EM PLAPD dissolved in DMF</td><td>89  $ \\pm $ 2</td></tr><tr><td>E",
+    "new_asset_text": "",
+    "new_table_match_status": "ambiguous",
+    "new_table_match_score": {
+      "decision": "unmatched",
+      "evidence": [],
+      "matched_asset_id": "",
+      "score": 0.0
+    },
+    "asset_switch": null,
+    "old_nearby_figure_assets": [],
+    "new_nearby_figure_assets": [],
+    "figure_claim_changes": [],
+    "classification": "BLOCKING",
+    "old_asset_shared_with_figure": false,
+    "new_asset_shared_with_figure": false,
+    "new_bbox_overlaps_figure_media": false,
+    "blocking_reason": "Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "evidence_summary": "Unmatched/withdrawn/ambiguous table asset, low-confidence assignment, or old/new table media shares a block/overlaps figure media; not safe to infer paper-level delivery.",
+    "cause": "No direct Q5/Q9/Q11 causal evidence found for this claim change.",
+    "frozen_plan_status": "READY",
+    "audited_status": "REQUIRES_APPROVAL"
+  },
+  {
+    "key": "76YD9KGK",
+    "status": "REQUIRES_APPROVAL",
+    "page": 5,
+    "caption_block_id": "2",
+    "caption_text": "TABLE 2. Distribution of the Acromial Types in the Literature",
+    "old_asset_block_id": null,
+    "new_asset_block_id": "2",
+    "old_bbox": [],
+    "new_bbox": [
+      123,
+      162,
+      604,
+      534
+    ],
+    "bbox_overlap": {
+      "intersects": false,
+      "intersection_area": 0,
+      "iou": 0.0
+    },
+    "old_asset_text": "",
+    "new_asset_text": "TABLE 2. Distribution of the Acromial Types in the Literature",
+    "new_table_match_status": "matched_low_confidence",
+    "new_table_match_score": {
+      "score": 0.55,
+      "matched_asset_id": 2,
+      "decision": "ambiguous",
+      "evidence": [
+        "previous_page",
+        "x_overlap",
+        "caption_near_top"
+      ]
+    },
+    "asset_switch": null,
+    "old_nearby_figure_assets": [
+      {
+        "figure_id": "figure_003",
+        "block_id": "2",
+        "bbox": [
+          123,
+          161,
+          604,
+          668
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": true,
+          "intersection_area": 178932,
+          "iou": 0.7337278106508875
+        }
+      },
+      {
+        "figure_id": "figure_007",
+        "block_id": "2",
+        "bbox": [
+          123,
+          162,
+          604,
+          534
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": true,
+          "intersection_area": 178932,
+          "iou": 1.0
+        }
+      }
+    ],
+    "new_nearby_figure_assets": [
+      {
+        "figure_id": "figure_003",
+        "block_id": "2",
+        "bbox": [
+          123,
+          161,
+          604,
+          668
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": true,
+          "intersection_area": 178932,
+          "iou": 0.7337278106508875
+        }
+      },
+      {
+        "figure_id": "figure_007",
+        "block_id": "2",
+        "bbox": [
+          123,
+          162,
+          604,
+          534
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": true,
+          "intersection_area": 178932,
+          "iou": 1.0
+        }
+      }
+    ],
+    "figure_claim_changes": [],
+    "classification": "BLOCKING",
+    "old_asset_shared_with_figure": false,
+    "new_asset_shared_with_figure": true,
+    "new_bbox_overlaps_figure_media": true,
+    "blocking_reason": "Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "evidence_summary": "Unmatched/withdrawn/ambiguous table asset, low-confidence assignment, or old/new table media shares a block/overlaps figure media; not safe to infer paper-level delivery.",
+    "cause": "Q11-related figure/table shared-media evidence; no explicit Q5/Q9 attribution.",
+    "frozen_plan_status": "REQUIRES_APPROVAL",
+    "audited_status": "REQUIRES_APPROVAL"
+  },
+  {
+    "key": "87KJHGP8",
+    "status": "READY",
+    "page": 6,
+    "caption_block_id": "4",
+    "caption_text": "Table 1\nQuantities used for simulations in accordance with [88].",
+    "old_asset_block_id": "6",
+    "new_asset_block_id": "5",
+    "old_bbox": [
+      68,
+      1003,
+      564,
+      1341
+    ],
+    "new_bbox": [
+      123,
+      689,
+      513,
+      954
+    ],
+    "bbox_overlap": {
+      "intersects": false,
+      "intersection_area": 0,
+      "iou": 0.0
+    },
+    "old_asset_text": "",
+    "new_asset_text": "<table><tr><td>Parameter</td><td>Value</td></tr><tr><td>Ionic mobility  $ \\mu^{k} $</td><td>$ 3.9607 \\times 10^{-6} m^{2} s^{-1} V^{-1} $</td></tr><tr><td>Ionic diffusion coefficient  $ D^{k} $</td><td>$ 1.0 \\times 10^{-7} m^{2} s^{-1} $</td></tr><tr><td>Gas constant R</td><td>8.3143 J mol $ ^{-1} $ K $ ^{-1} $</td></tr><tr><td>Temperature T</td><t",
+    "new_table_match_status": "matched",
+    "new_table_match_score": {
+      "score": 0.6,
+      "matched_asset_id": 5,
+      "decision": "reassigned_after_conflict",
+      "evidence": [
+        "same_page",
+        "x_overlap"
+      ],
+      "previous_asset_block_id": "6"
+    },
+    "asset_switch": {
+      "reason": "cross_type_conflict_table_asset_reassigned",
+      "from": {
+        "asset_block_id": 6,
+        "asset_bbox": [
+          68,
+          1003,
+          564,
+          1341
+        ],
+        "assistive_text": "",
+        "segments": [
+          {
+            "page": 6,
+            "asset_block_id": 6,
+            "asset_bbox": [
+              68,
+              1003,
+              564,
+              1341
+            ],
+            "is_continuation": false
+          }
+        ],
+        "render_bbox": null,
+        "render_rotation_deg": 0,
+        "match_score": {
+          "score": 0.85,
+          "matched_asset_id": 6,
+          "decision": "matched",
+          "evidence": [
+            "same_page",
+            "x_overlap",
+            "asset_below_caption"
+          ]
+        },
+        "match_status": "matched",
+        "consumed_block_ids": [
+          "4",
+          6
+        ],
+        "bridge_block_ids": [],
+        "has_asset": true
+      },
+      "to": {
+        "asset_block_id": "5",
+        "asset_bbox": [
+          123,
+          689,
+          513,
+          954
+        ],
+        "assistive_text": "<table><tr><td>Parameter</td><td>Value</td></tr><tr><td>Ionic mobility  $ \\mu^{k} $</td><td>$ 3.9607 \\times 10^{-6} m^{2} s^{-1} V^{-1} $</td></tr><tr><td>Ionic diffusion coefficient  $ D^{k} $</td><td>$ 1.0 \\times 10^{-7} m^{2} s^{-1} $</td></tr><tr><td>Gas constant R</td><td>8.3143 J mol $ ^{-1} $ K $ ^{-1} $</td></tr><tr><td>Temperature T</td><td>298.0 K</td></tr><tr><td>Relative permittivity  $ \\varepsilon_{r} $</td><td>80.0</td></tr><tr><td>Vacuum permittivity  $ \\varepsilon_{o} $</td><td>$ 8.854 \\times 10^{-12} A sV^{-1} m^{-1} $</td></tr><tr><td>Faraday constant F</td><td>9.6487 C mol $ ^{-1} $</td></tr><tr><td>Ionic valence  $ z^{k} $</td><td>$ \\pm 1.0 $</td></tr><tr><td>Fixed charge valence  $ z^{f} $</td><td>-1.0</td></tr><tr><td>Lamé coefficient  $ 3\\lambda + 2\\mu $</td><td>$ 1.2 \\times 10^{5} Pa $</td></tr><tr><td>External electric potential  $ \\psi $</td><td>$ \\pm 100 mV $</td></tr><tr><td>Hydrogel dimensions</td><td>0.005  $ \\times $ 0.005 m $ ^{2} $</td></tr><tr><td>Solution bath dimensions</td><td>0.015  $ \\times $ 0.015 m $ ^{2} $</td></tr></table>",
+        "segments": [
+          {
+            "page": 6,
+            "asset_block_id": "5",
+            "asset_bbox": [
+              123,
+              689,
+              513,
+              954
+            ],
+            "is_continuation": false
+          }
+        ],
+        "render_bbox": null,
+        "render_rotation_deg": 0,
+        "match_score": {
+          "score": 0.6,
+          "matched_asset_id": 5,
+          "decision": "reassigned_after_conflict",
+          "evidence": [
+            "same_page",
+            "x_overlap"
+          ],
+          "previous_asset_block_id": "6"
+        },
+        "match_status": "matched",
+        "consumed_block_ids": [
+          "4",
+          "5",
+          "5"
+        ],
+        "bridge_block_ids": [],
+        "has_asset": true
+      },
+      "evidence": {
+        "figure_gap": 0.0088,
+        "table_gap": 0.1952
+      }
+    },
+    "old_nearby_figure_assets": [
+      {
+        "figure_id": "figure_002",
+        "block_id": "5",
+        "bbox": [
+          96,
+          409,
+          538,
+          557
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      },
+      {
+        "figure_id": "figure_005",
+        "block_id": "6",
+        "bbox": [
+          68,
+          1003,
+          564,
+          1341
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 167648,
+          "iou": 1.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      },
+      {
+        "figure_id": "figure_011",
+        "block_id": "5",
+        "bbox": [
+          617,
+          132,
+          1127,
+          466
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      },
+      {
+        "figure_id": "figure_010",
+        "block_id": "5",
+        "bbox": [
+          600,
+          142,
+          1106,
+          480
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      },
+      {
+        "figure_id": "figure_009",
+        "block_id": "6",
+        "bbox": [
+          629,
+          150,
+          1125,
+          485
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      },
+      {
+        "figure_id": "figure_006",
+        "block_id": "6",
+        "bbox": [
+          241,
+          436,
+          610,
+          732
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": true,
+          "intersection_area": 11696,
+          "iou": 0.058224394906361075
+        }
+      }
+    ],
+    "new_nearby_figure_assets": [
+      {
+        "figure_id": "figure_002",
+        "block_id": "5",
+        "bbox": [
+          96,
+          409,
+          538,
+          557
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      },
+      {
+        "figure_id": "figure_005",
+        "block_id": "6",
+        "bbox": [
+          68,
+          1003,
+          564,
+          1341
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 167648,
+          "iou": 1.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      },
+      {
+        "figure_id": "figure_011",
+        "block_id": "5",
+        "bbox": [
+          617,
+          132,
+          1127,
+          466
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      },
+      {
+        "figure_id": "figure_010",
+        "block_id": "5",
+        "bbox": [
+          600,
+          142,
+          1106,
+          480
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      },
+      {
+        "figure_id": "figure_009",
+        "block_id": "6",
+        "bbox": [
+          629,
+          150,
+          1125,
+          485
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      },
+      {
+        "figure_id": "figure_006",
+        "block_id": "6",
+        "bbox": [
+          241,
+          436,
+          610,
+          732
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": true,
+          "intersection_area": 11696,
+          "iou": 0.058224394906361075
+        }
+      }
+    ],
+    "figure_claim_changes": [],
+    "classification": "BLOCKING",
+    "old_asset_shared_with_figure": true,
+    "new_asset_shared_with_figure": true,
+    "new_bbox_overlaps_figure_media": true,
+    "blocking_reason": "Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "evidence_summary": "Unmatched/withdrawn/ambiguous table asset, low-confidence assignment, or old/new table media shares a block/overlaps figure media; not safe to infer paper-level delivery.",
+    "cause": "Q11-related ownership conflict; replay records cross_type_conflict_table_asset_reassigned.",
+    "frozen_plan_status": "READY",
+    "audited_status": "REQUIRES_APPROVAL"
+  },
+  {
+    "key": "9P2W6J8Q",
+    "status": "REQUIRES_APPROVAL",
+    "page": 9,
+    "caption_block_id": "2",
+    "caption_text": "Table A1\nThe Gene accession numbers of SULT1B1s used in the sequence alignment and phylogenetic tree.",
+    "old_asset_block_id": null,
+    "new_asset_block_id": "3",
+    "old_bbox": null,
+    "new_bbox": [
+      95,
+      169,
+      558,
+      409
+    ],
+    "bbox_overlap": {
+      "intersects": false,
+      "intersection_area": 0,
+      "iou": 0.0
+    },
+    "old_asset_text": "",
+    "new_asset_text": "<table><tr><td>Species</td><td>Gene accession number</td></tr><tr><td>Crassostrea gigas</td><td>XP 011446369.2</td></tr><tr><td>Crassostrea virginica</td><td>XP 022331976.1</td></tr><tr><td>Pecten maximus</td><td>XP 033736241.1</td></tr><tr><td>Mizuhopecten yessoensis</td><td>XP 021355133.1</td></tr><tr><td>Penaeus vannamei</td><td>ROT 81798.1</td>",
+    "new_table_match_status": "matched",
+    "new_table_match_score": {
+      "score": 0.85,
+      "matched_asset_id": 3,
+      "decision": "matched",
+      "evidence": [
+        "same_page",
+        "x_overlap",
+        "asset_below_caption"
+      ]
+    },
+    "asset_switch": null,
+    "old_nearby_figure_assets": [
+      {
+        "figure_id": "figure_004",
+        "block_id": "3",
+        "bbox": [
+          104,
+          127,
+          1078,
+          810
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": true,
+          "intersection_area": 108960,
+          "iou": 0.16325992430349326
+        }
+      },
+      {
+        "figure_id": "figure_007",
+        "block_id": "3",
+        "bbox": [
+          116,
+          111,
+          601,
+          451
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": true,
+          "intersection_area": 106080,
+          "iou": 0.6242203130516653
+        }
+      },
+      {
+        "figure_id": "figure_006",
+        "block_id": "3",
+        "bbox": [
+          137,
+          108,
+          596,
+          497
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": true,
+          "intersection_area": 101040,
+          "iou": 0.5356489654404631
+        }
+      }
+    ],
+    "new_nearby_figure_assets": [
+      {
+        "figure_id": "figure_007",
+        "block_id": "3",
+        "bbox": [
+          116,
+          111,
+          601,
+          451
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": true,
+          "intersection_area": 106080,
+          "iou": 0.6242203130516653
+        }
+      },
+      {
+        "figure_id": "figure_006",
+        "block_id": "3",
+        "bbox": [
+          137,
+          108,
+          596,
+          497
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": true,
+          "intersection_area": 101040,
+          "iou": 0.5356489654404631
+        }
+      },
+      {
+        "figure_id": "figure_004",
+        "block_id": "3",
+        "bbox": [
+          104,
+          127,
+          1078,
+          810
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": true,
+          "intersection_area": 108960,
+          "iou": 0.16325992430349326
+        }
+      }
+    ],
+    "figure_claim_changes": [],
+    "classification": "BLOCKING",
+    "old_asset_shared_with_figure": false,
+    "new_asset_shared_with_figure": true,
+    "new_bbox_overlaps_figure_media": true,
+    "blocking_reason": "Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "evidence_summary": "Unmatched/withdrawn/ambiguous table asset, low-confidence assignment, or old/new table media shares a block/overlaps figure media; not safe to infer paper-level delivery.",
+    "cause": "Q11-related figure/table shared-media evidence; no explicit Q5/Q9 attribution.",
+    "frozen_plan_status": "REQUIRES_APPROVAL",
+    "audited_status": "REQUIRES_APPROVAL"
+  },
+  {
+    "key": "A4T4TRT2",
+    "status": "READY",
+    "page": 4,
+    "caption_block_id": "0",
+    "caption_text": "Table 4. Relative risks of measured parameters for binary values",
+    "old_asset_block_id": "3",
+    "new_asset_block_id": "1",
+    "old_bbox": [
+      87,
+      434,
+      589,
+      843
+    ],
+    "new_bbox": [
+      90,
+      129,
+      1099,
+      347
+    ],
+    "bbox_overlap": {
+      "intersects": false,
+      "intersection_area": 0,
+      "iou": 0.0
+    },
+    "old_asset_text": "",
+    "new_asset_text": "<table><tr><td></td><td>Patients with rotator cuff pathology\\n(n=40)</td><td>Patients with normal MRI findings\\n(n=28)</td><td>OR (95% CI)</td><td>P</td></tr><tr><td>Acromio-humeral distance &lt;10.25 mm</td><td>33 (83%)</td><td>7 (25%)</td><td>14.142\\n(4.337-46.115)</td><td>&lt; 0.001</td></tr><tr><td>Coraco-humeral distance &lt;9.90 mm</td><td>32",
+    "new_table_match_status": "matched",
+    "new_table_match_score": {
+      "score": 0.6,
+      "matched_asset_id": 1,
+      "decision": "reassigned_after_conflict",
+      "evidence": [
+        "same_page",
+        "x_overlap"
+      ],
+      "previous_asset_block_id": "3"
+    },
+    "asset_switch": {
+      "reason": "cross_type_conflict_table_asset_reassigned",
+      "from": {
+        "asset_block_id": 3,
+        "asset_bbox": [
+          87,
+          434,
+          589,
+          843
+        ],
+        "assistive_text": "",
+        "segments": [
+          {
+            "page": 4,
+            "asset_block_id": 3,
+            "asset_bbox": [
+              87,
+              434,
+              589,
+              843
+            ],
+            "is_continuation": false
+          }
+        ],
+        "render_bbox": null,
+        "render_rotation_deg": 0,
+        "match_score": {
+          "score": 0.85,
+          "matched_asset_id": 3,
+          "decision": "matched",
+          "evidence": [
+            "same_page",
+            "x_overlap",
+            "asset_below_caption"
+          ]
+        },
+        "match_status": "matched",
+        "consumed_block_ids": [
+          "0",
+          3
+        ],
+        "bridge_block_ids": [],
+        "has_asset": true
+      },
+      "to": {
+        "asset_block_id": "1",
+        "asset_bbox": [
+          90,
+          129,
+          1099,
+          347
+        ],
+        "assistive_text": "<table><tr><td></td><td>Patients with rotator cuff pathology\\n(n=40)</td><td>Patients with normal MRI findings\\n(n=28)</td><td>OR (95% CI)</td><td>P</td></tr><tr><td>Acromio-humeral distance &lt;10.25 mm</td><td>33 (83%)</td><td>7 (25%)</td><td>14.142\\n(4.337-46.115)</td><td>&lt; 0.001</td></tr><tr><td>Coraco-humeral distance &lt;9.90 mm</td><td>32 (80%)</td><td>4 (14%)</td><td>24.000\\n(6.464-89.105)</td><td>&lt; 0.001</td></tr><tr><td>Coracoacromial arch angle &gt;127.08°</td><td>32 (80%)</td><td>2 (7%)</td><td>52.000\\n(10.151-266.371)</td><td>&lt; 0.001</td></tr></table>",
+        "segments": [
+          {
+            "page": 4,
+            "asset_block_id": "1",
+            "asset_bbox": [
+              90,
+              129,
+              1099,
+              347
+            ],
+            "is_continuation": false
+          }
+        ],
+        "render_bbox": null,
+        "render_rotation_deg": 0,
+        "match_score": {
+          "score": 0.6,
+          "matched_asset_id": 1,
+          "decision": "reassigned_after_conflict",
+          "evidence": [
+            "same_page",
+            "x_overlap"
+          ],
+          "previous_asset_block_id": "3"
+        },
+        "match_status": "matched",
+        "consumed_block_ids": [
+          "0",
+          "1",
+          "1"
+        ],
+        "bridge_block_ids": [],
+        "has_asset": true
+      },
+      "evidence": {
+        "figure_gap": 0.0071,
+        "table_gap": 0.191
+      }
+    },
+    "old_nearby_figure_assets": [
+      {
+        "figure_id": "figure_002",
+        "block_id": "3",
+        "bbox": [
+          87,
+          434,
+          589,
+          843
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 205318,
+          "iou": 1.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "new_nearby_figure_assets": [
+      {
+        "figure_id": "figure_002",
+        "block_id": "3",
+        "bbox": [
+          87,
+          434,
+          589,
+          843
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 205318,
+          "iou": 1.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "figure_claim_changes": [],
+    "classification": "BENIGN_CORRECTED",
+    "old_asset_shared_with_figure": true,
+    "new_asset_shared_with_figure": false,
+    "new_bbox_overlaps_figure_media": false,
+    "blocking_reason": null,
+    "evidence_summary": "Explicit cross-type table reassignment; old claim bbox belongs to figure media, replay destination is separate, table match is accepted, and no new figure/shared-media overlap.",
+    "cause": "Q11-related ownership conflict; replay records cross_type_conflict_table_asset_reassigned.",
+    "frozen_plan_status": "READY",
+    "audited_status": "READY"
+  },
+  {
+    "key": "API5RITV",
+    "status": "REQUIRES_APPROVAL",
+    "page": 50,
+    "caption_block_id": "3",
+    "caption_text": "Table of contents figure:",
+    "old_asset_block_id": null,
+    "new_asset_block_id": "4",
+    "old_bbox": null,
+    "new_bbox": [
+      338,
+      216,
+      417,
+      445
+    ],
+    "bbox_overlap": {
+      "intersects": false,
+      "intersection_area": 0,
+      "iou": 0.0
+    },
+    "old_asset_text": "",
+    "new_asset_text": "",
+    "new_table_match_status": "matched",
+    "new_table_match_score": {
+      "score": 0.85,
+      "matched_asset_id": 4,
+      "decision": "matched",
+      "evidence": [
+        "same_page",
+        "x_overlap",
+        "asset_below_caption"
+      ]
+    },
+    "asset_switch": null,
+    "old_nearby_figure_assets": [
+      {
+        "figure_id": "figure_002",
+        "block_id": "4",
+        "bbox": [
+          232,
+          370,
+          973,
+          864
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": true,
+          "intersection_area": 5925,
+          "iou": 0.015665485696155678
+        }
+      },
+      {
+        "figure_id": "figure_001",
+        "block_id": "4",
+        "bbox": [
+          190,
+          885,
+          1031,
+          1127
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      },
+      {
+        "figure_id": "figure_007",
+        "block_id": "4",
+        "bbox": [
+          201,
+          263,
+          602,
+          580
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": true,
+          "intersection_area": 14378,
+          "iou": 0.10989834135901552
+        }
+      },
+      {
+        "figure_id": "figure_006",
+        "block_id": "4",
+        "bbox": [
+          196,
+          366,
+          609,
+          676
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": true,
+          "intersection_area": 6241,
+          "iou": 0.04461681441235345
+        }
+      },
+      {
+        "figure_id": "figure_005",
+        "block_id": "4",
+        "bbox": [
+          621,
+          141,
+          1033,
+          456
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      },
+      {
+        "figure_id": "figure_004",
+        "block_id": "4",
+        "bbox": [
+          609,
+          140,
+          1025,
+          457
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      },
+      {
+        "figure_id": "figure_003",
+        "block_id": "4",
+        "bbox": [
+          621,
+          137,
+          924,
+          419
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "new_nearby_figure_assets": [
+      {
+        "figure_id": "figure_005",
+        "block_id": "4",
+        "bbox": [
+          621,
+          141,
+          1033,
+          456
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      },
+      {
+        "figure_id": "figure_004",
+        "block_id": "4",
+        "bbox": [
+          609,
+          140,
+          1025,
+          457
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      },
+      {
+        "figure_id": "figure_002",
+        "block_id": "4",
+        "bbox": [
+          232,
+          370,
+          973,
+          864
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": true,
+          "intersection_area": 5925,
+          "iou": 0.015665485696155678
+        }
+      },
+      {
+        "figure_id": "figure_001",
+        "block_id": "4",
+        "bbox": [
+          190,
+          885,
+          1031,
+          1127
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      },
+      {
+        "figure_id": "figure_007",
+        "block_id": "4",
+        "bbox": [
+          201,
+          263,
+          602,
+          580
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": true,
+          "intersection_area": 14378,
+          "iou": 0.10989834135901552
+        }
+      },
+      {
+        "figure_id": "figure_006",
+        "block_id": "4",
+        "bbox": [
+          196,
+          366,
+          609,
+          676
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": true,
+          "intersection_area": 6241,
+          "iou": 0.04461681441235345
+        }
+      },
+      {
+        "figure_id": "figure_003",
+        "block_id": "4",
+        "bbox": [
+          621,
+          137,
+          924,
+          419
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "figure_claim_changes": [],
+    "classification": "BLOCKING",
+    "old_asset_shared_with_figure": false,
+    "new_asset_shared_with_figure": true,
+    "new_bbox_overlaps_figure_media": true,
+    "blocking_reason": "Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "evidence_summary": "Unmatched/withdrawn/ambiguous table asset, low-confidence assignment, or old/new table media shares a block/overlaps figure media; not safe to infer paper-level delivery.",
+    "cause": "Q11-related figure/table shared-media evidence; no explicit Q5/Q9 attribution.",
+    "frozen_plan_status": "REQUIRES_APPROVAL",
+    "audited_status": "REQUIRES_APPROVAL"
+  },
+  {
+    "key": "AQM3M257",
+    "status": "READY",
+    "page": 6,
+    "caption_block_id": "1",
+    "caption_text": "Table 3 Quantitative evaluation of peri-implant osteolysis on MRI",
+    "old_asset_block_id": "11",
+    "new_asset_block_id": null,
+    "old_bbox": [
+      366,
+      758,
+      724,
+      1132
+    ],
+    "new_bbox": [],
+    "bbox_overlap": {
+      "intersects": false,
+      "intersection_area": 0,
+      "iou": 0.0
+    },
+    "old_asset_text": "",
+    "new_asset_text": "",
+    "new_table_match_status": "ambiguous",
+    "new_table_match_score": {
+      "score": 0.0,
+      "matched_asset_id": "",
+      "decision": "withdrawn_after_conflict",
+      "previous_asset_block_id": "11",
+      "evidence": [
+        "cross_type_conflict_no_unique_table_asset"
+      ]
+    },
+    "asset_switch": {
+      "reason": "cross_type_conflict_no_unique_table_asset",
+      "from": {
+        "asset_block_id": 11,
+        "asset_bbox": [
+          366,
+          758,
+          724,
+          1132
+        ],
+        "assistive_text": "",
+        "segments": [
+          {
+            "page": 6,
+            "asset_block_id": 11,
+            "asset_bbox": [
+              366,
+              758,
+              724,
+              1132
+            ],
+            "is_continuation": false
+          }
+        ],
+        "render_bbox": null,
+        "render_rotation_deg": 0,
+        "match_score": {
+          "score": 0.85,
+          "matched_asset_id": 11,
+          "decision": "matched",
+          "evidence": [
+            "same_page",
+            "x_overlap",
+            "asset_below_caption"
+          ]
+        },
+        "match_status": "matched",
+        "consumed_block_ids": [
+          "1",
+          11
+        ],
+        "bridge_block_ids": [],
+        "has_asset": true
+      },
+      "to": {
+        "asset_block_id": "",
+        "asset_bbox": [],
+        "assistive_text": "",
+        "segments": [],
+        "render_bbox": null,
+        "render_rotation_deg": 0,
+        "match_score": {
+          "score": 0.0,
+          "matched_asset_id": "",
+          "decision": "withdrawn_after_conflict",
+          "previous_asset_block_id": "11",
+          "evidence": [
+            "cross_type_conflict_no_unique_table_asset"
+          ]
+        },
+        "match_status": "ambiguous",
+        "consumed_block_ids": [
+          "1"
+        ],
+        "bridge_block_ids": [],
+        "has_asset": false
+      },
+      "evidence": {
+        "figure_gap": 0.0,
+        "table_gap": 0.3938
+      }
+    },
+    "old_nearby_figure_assets": [
+      {
+        "figure_id": "figure_004",
+        "block_id": "11",
+        "bbox": [
+          366,
+          758,
+          724,
+          1132
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 133892,
+          "iou": 1.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "new_nearby_figure_assets": [
+      {
+        "figure_id": "figure_004",
+        "block_id": "11",
+        "bbox": [
+          366,
+          758,
+          724,
+          1132
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 133892,
+          "iou": 1.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "figure_claim_changes": [],
+    "classification": "BLOCKING",
+    "old_asset_shared_with_figure": true,
+    "new_asset_shared_with_figure": false,
+    "new_bbox_overlaps_figure_media": false,
+    "blocking_reason": "Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "evidence_summary": "Unmatched/withdrawn/ambiguous table asset, low-confidence assignment, or old/new table media shares a block/overlaps figure media; not safe to infer paper-level delivery.",
+    "cause": "Q11-related ownership conflict; replay records cross_type_conflict_no_unique_table_asset.",
+    "frozen_plan_status": "READY",
+    "audited_status": "REQUIRES_APPROVAL"
+  },
+  {
+    "key": "CPQ47TBV",
+    "status": "READY",
+    "page": 5,
+    "caption_block_id": "2",
+    "caption_text": "Table 1 Basic information table",
+    "old_asset_block_id": "4",
+    "new_asset_block_id": "3",
+    "old_bbox": [
+      109,
+      517,
+      1082,
+      997
+    ],
+    "new_bbox": [
+      107,
+      190,
+      1078,
+      495
+    ],
+    "bbox_overlap": {
+      "intersects": false,
+      "intersection_area": 0,
+      "iou": 0.0
+    },
+    "old_asset_text": "",
+    "new_asset_text": "<table><tr><td>Author</td><td>Year</td><td>Country</td><td>Intervention</td><td>Sample size</td><td>Age</td><td>Gender</td><td>Lesion size</td><td>Follow-up time (month)</td></tr><tr><td rowspan=\"2\">Guney</td><td rowspan=\"2\">2015</td><td rowspan=\"2\">Turkey</td><td>MF_PRP</td><td>19/16</td><td>$ 38.5 \\pm 12.7 $</td><td>7/12</td><td rowspan=\"2\">&lt;2",
+    "new_table_match_status": "matched",
+    "new_table_match_score": {
+      "score": 0.6,
+      "matched_asset_id": 3,
+      "decision": "reassigned_after_conflict",
+      "evidence": [
+        "same_page",
+        "x_overlap"
+      ],
+      "previous_asset_block_id": "4"
+    },
+    "asset_switch": {
+      "reason": "cross_type_conflict_table_asset_reassigned",
+      "from": {
+        "asset_block_id": 4,
+        "asset_bbox": [
+          109,
+          517,
+          1082,
+          997
+        ],
+        "assistive_text": "",
+        "segments": [
+          {
+            "page": 5,
+            "asset_block_id": 4,
+            "asset_bbox": [
+              109,
+              517,
+              1082,
+              997
+            ],
+            "is_continuation": false
+          }
+        ],
+        "render_bbox": null,
+        "render_rotation_deg": 0,
+        "match_score": {
+          "score": 0.85,
+          "matched_asset_id": 4,
+          "decision": "matched",
+          "evidence": [
+            "same_page",
+            "x_overlap",
+            "asset_below_caption"
+          ]
+        },
+        "match_status": "matched",
+        "consumed_block_ids": [
+          "2",
+          4
+        ],
+        "bridge_block_ids": [],
+        "has_asset": true
+      },
+      "to": {
+        "asset_block_id": "3",
+        "asset_bbox": [
+          107,
+          190,
+          1078,
+          495
+        ],
+        "assistive_text": "<table><tr><td>Author</td><td>Year</td><td>Country</td><td>Intervention</td><td>Sample size</td><td>Age</td><td>Gender</td><td>Lesion size</td><td>Follow-up time (month)</td></tr><tr><td rowspan=\"2\">Guney</td><td rowspan=\"2\">2015</td><td rowspan=\"2\">Turkey</td><td>MF_PRP</td><td>19/16</td><td>$ 38.5 \\pm 12.7 $</td><td>7/12</td><td rowspan=\"2\">&lt;20 mm</td><td rowspan=\"2\">16.2 (12-24)</td></tr><tr><td>MF</td><td></td><td>$ 42.8 \\pm 14.7 $</td><td>9/7</td></tr><tr><td rowspan=\"3\">Gormeli</td><td rowspan=\"3\">2015</td><td rowspan=\"3\">Turkey</td><td>MF_PRP</td><td>13/14/13</td><td>$ 38.6 \\pm 9.1 $</td><td>5/8</td><td>$ 1.28 (0.52-1.4) cm^{{2}} $</td><td rowspan=\"3\">15.3</td></tr><tr><td>MF_HA</td><td></td><td>$ 39.7 \\pm 8.7 $</td><td>8/6</td><td>$ 1.24 (0.48-1.46) cm^{{2}} $</td></tr><tr><td>MF</td><td></td><td>$ 40.3 \\pm 9.4 $</td><td>8/5</td><td>$ 1.18 (0.46-1.38) cm^{{2}} $</td></tr><tr><td rowspan=\"2\">Lee</td><td rowspan=\"2\">2020</td><td rowspan=\"2\">Korea</td><td>MF_CS</td><td>31/29</td><td>$ 35.03 \\pm 15.69 $</td><td>15/16</td><td>$ 9.68 \\pm 7.19 cm^{{2}} $</td><td rowspan=\"2\">24</td></tr><tr><td>MF</td><td></td><td>$ 39.10 \\pm 14.86 $</td><td>13/16</td><td>$ 10.94 \\pm 1.19 cm^{{2}} $</td></tr><tr><td rowspan=\"2\">Reilingh</td><td rowspan=\"2\">2016</td><td rowspan=\"2\">Netherlands</td><td>MF_PEMF</td><td>36/32</td><td>$ 32 \\pm 10 $</td><td>20/16</td><td>$ 9 \\pm 4 mm $</td><td rowspan=\"2\">12</td></tr><tr><td>MF</td><td></td><td>$ 34 \\pm 7 $</td><td>21/11</td><td>$ 9 \\pm 3.5 mm $</td></tr><tr><td rowspan=\"2\">Doral</td><td rowspan=\"2\">2012</td><td rowspan=\"2\">Turkey</td><td>MF_HA</td><td>41/16</td><td>$ 40.5 \\pm 13.0 $</td><td rowspan=\"2\">29/28</td><td rowspan=\"2\">&lt;20 mm</td><td rowspan=\"2\">24</td></tr><tr><td>MF</td><td></td><td>$ 40.5 \\pm 13.0 $</td></tr><tr><td rowspan=\"2\">Shang</td><td rowspan=\"2\">2015</td><td rowspan=\"2\">China</td><td>MF_HA</td><td>17/18</td><td>$ 36.6 \\pm 10.7 $</td><td>11/6</td><td rowspan=\"2\">$ 1.4 \\pm 0.4 cm^{{2}} $</td><td rowspan=\"2\">$ 10.4 \\pm 1.3 10.7 \\pm 1.1 $</td></tr><tr><td>MF</td><td></td><td>$ 34.7 \\pm 8.7 $</td><td>12/6</td></tr></table>",
+        "segments": [
+          {
+            "page": 5,
+            "asset_block_id": "3",
+            "asset_bbox": [
+              107,
+              190,
+              1078,
+              495
+            ],
+            "is_continuation": false
+          }
+        ],
+        "render_bbox": null,
+        "render_rotation_deg": 0,
+        "match_score": {
+          "score": 0.6,
+          "matched_asset_id": 3,
+          "decision": "reassigned_after_conflict",
+          "evidence": [
+            "same_page",
+            "x_overlap"
+          ],
+          "previous_asset_block_id": "4"
+        },
+        "match_status": "matched",
+        "consumed_block_ids": [
+          "2",
+          "3",
+          "3"
+        ],
+        "bridge_block_ids": [],
+        "has_asset": true
+      },
+      "evidence": {
+        "figure_gap": 0.0145,
+        "table_gap": 0.2053
+      }
+    },
+    "old_nearby_figure_assets": [
+      {
+        "figure_id": "figure_002",
+        "block_id": "4",
+        "bbox": [
+          109,
+          517,
+          1082,
+          997
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 467040,
+          "iou": 1.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      },
+      {
+        "figure_id": "figure_004",
+        "block_id": "3",
+        "bbox": [
+          175,
+          223,
+          490,
+          503
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": true,
+          "intersection_area": 85680,
+          "iou": 0.2868669958985519
+        }
+      },
+      {
+        "figure_id": "figure_003",
+        "block_id": "3",
+        "bbox": [
+          175,
+          196,
+          488,
+          467
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": true,
+          "intersection_area": 84823,
+          "iou": 0.28641420877581
+        }
+      }
+    ],
+    "new_nearby_figure_assets": [
+      {
+        "figure_id": "figure_004",
+        "block_id": "3",
+        "bbox": [
+          175,
+          223,
+          490,
+          503
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": true,
+          "intersection_area": 85680,
+          "iou": 0.2868669958985519
+        }
+      },
+      {
+        "figure_id": "figure_003",
+        "block_id": "3",
+        "bbox": [
+          175,
+          196,
+          488,
+          467
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": true,
+          "intersection_area": 84823,
+          "iou": 0.28641420877581
+        }
+      },
+      {
+        "figure_id": "figure_002",
+        "block_id": "4",
+        "bbox": [
+          109,
+          517,
+          1082,
+          997
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 467040,
+          "iou": 1.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "figure_claim_changes": [],
+    "classification": "BLOCKING",
+    "old_asset_shared_with_figure": true,
+    "new_asset_shared_with_figure": true,
+    "new_bbox_overlaps_figure_media": true,
+    "blocking_reason": "Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "evidence_summary": "Unmatched/withdrawn/ambiguous table asset, low-confidence assignment, or old/new table media shares a block/overlaps figure media; not safe to infer paper-level delivery.",
+    "cause": "Q11-related ownership conflict; replay records cross_type_conflict_table_asset_reassigned.",
+    "frozen_plan_status": "READY",
+    "audited_status": "REQUIRES_APPROVAL"
+  },
+  {
+    "key": "DLVSVU49",
+    "status": "READY",
+    "page": 6,
+    "caption_block_id": "7",
+    "caption_text": "Table 2 shows the distribution of CSA, LAA, and AI values among individuals, which is important for understanding the structural features potentially associated with shoulder pathologies. Individuals with CSA values below 30 generally exhibit a lower risk of disease, while those with values between 30 and 35 degrees may have a moderate risk. CSA values above 35 may indicate a high risk and are often associated with issues such as shoulder impingement syndrome and rotator cuff tendinitis [24]. Individuals with an LAA value less than 45 degrees generally have a moderate to low risk, while values between 45 and 55 degrees are considered normal. LAA values above 55 are associated with a high-risk group and are commonly linked to rotator cuff pathologies [25]. AI values reflect acromion width; individuals with AI < 0.7 typically have a moderate to high risk, which may indicate pathological effects of a narrow acromion. Those with AI values between 0.7 and 1 have a normal risk level, while individuals with AI ≥ 1 have a wider acromion, which may increase the risk of shoulder pathologies [26]. Considering these values in clinical assessments is crucial for better understanding and managing potential issues in the shoulder joint. Table 3 also shows the mean, standard deviation, minimum, and maximum values for CSA, AI, and LAA. Figure 4 shows the measured CSA, AI, and LAA values on example images. The segmented acromion, glenoid, and humerus are shown in red. AI is a distance, while CSA and LAA are angles.",
+    "old_asset_block_id": "2",
+    "new_asset_block_id": null,
+    "old_bbox": [
+      336,
+      180,
+      980,
+      657
+    ],
+    "new_bbox": [],
+    "bbox_overlap": {
+      "intersects": false,
+      "intersection_area": 0,
+      "iou": 0.0
+    },
+    "old_asset_text": "",
+    "new_asset_text": "",
+    "new_table_match_status": "ambiguous",
+    "new_table_match_score": {
+      "score": 0.0,
+      "matched_asset_id": "",
+      "decision": "withdrawn_after_conflict",
+      "previous_asset_block_id": "2",
+      "evidence": [
+        "cross_type_conflict_no_unique_table_asset"
+      ]
+    },
+    "asset_switch": {
+      "reason": "cross_type_conflict_no_unique_table_asset",
+      "from": {
+        "asset_block_id": 2,
+        "asset_bbox": [
+          336,
+          180,
+          980,
+          657
+        ],
+        "assistive_text": "",
+        "segments": [
+          {
+            "page": 6,
+            "asset_block_id": 2,
+            "asset_bbox": [
+              336,
+              180,
+              980,
+              657
+            ],
+            "is_continuation": false
+          }
+        ],
+        "render_bbox": null,
+        "render_rotation_deg": 0,
+        "match_score": {
+          "score": 0.6,
+          "matched_asset_id": 2,
+          "decision": "matched",
+          "evidence": [
+            "same_page",
+            "x_overlap"
+          ]
+        },
+        "match_status": "matched",
+        "consumed_block_ids": [
+          "7",
+          2
+        ],
+        "bridge_block_ids": [],
+        "has_asset": true
+      },
+      "to": {
+        "asset_block_id": "",
+        "asset_bbox": [],
+        "assistive_text": "",
+        "segments": [],
+        "render_bbox": null,
+        "render_rotation_deg": 0,
+        "match_score": {
+          "score": 0.0,
+          "matched_asset_id": "",
+          "decision": "withdrawn_after_conflict",
+          "previous_asset_block_id": "2",
+          "evidence": [
+            "cross_type_conflict_no_unique_table_asset"
+          ]
+        },
+        "match_status": "ambiguous",
+        "consumed_block_ids": [
+          "7"
+        ],
+        "bridge_block_ids": [],
+        "has_asset": false
+      },
+      "evidence": {
+        "figure_gap": 0.0125,
+        "table_gap": 0.2643
+      }
+    },
+    "old_nearby_figure_assets": [
+      {
+        "figure_id": "figure_003",
+        "block_id": "2",
+        "bbox": [
+          336,
+          180,
+          980,
+          657
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 307188,
+          "iou": 1.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "new_nearby_figure_assets": [
+      {
+        "figure_id": "figure_003",
+        "block_id": "2",
+        "bbox": [
+          336,
+          180,
+          980,
+          657
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 307188,
+          "iou": 1.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "figure_claim_changes": [],
+    "classification": "BLOCKING",
+    "old_asset_shared_with_figure": true,
+    "new_asset_shared_with_figure": false,
+    "new_bbox_overlaps_figure_media": false,
+    "blocking_reason": "Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "evidence_summary": "Unmatched/withdrawn/ambiguous table asset, low-confidence assignment, or old/new table media shares a block/overlaps figure media; not safe to infer paper-level delivery.",
+    "cause": "Q11-related ownership conflict; replay records cross_type_conflict_no_unique_table_asset.",
+    "frozen_plan_status": "READY",
+    "audited_status": "REQUIRES_APPROVAL"
+  },
+  {
+    "key": "FRU2XUGJ",
+    "status": "READY",
+    "page": 4,
+    "caption_block_id": "5",
+    "caption_text": "Table 1 reports the results of histochemical score, FI, CT and SBT in all knee examined areas.",
+    "old_asset_block_id": "12",
+    "new_asset_block_id": null,
+    "old_bbox": [
+      124,
+      1062,
+      581,
+      1402
+    ],
+    "new_bbox": [],
+    "bbox_overlap": {
+      "intersects": false,
+      "intersection_area": 0,
+      "iou": 0.0
+    },
+    "old_asset_text": "",
+    "new_asset_text": "",
+    "new_table_match_status": "ambiguous",
+    "new_table_match_score": {
+      "score": 0.0,
+      "matched_asset_id": "",
+      "decision": "withdrawn_after_conflict",
+      "previous_asset_block_id": "12",
+      "evidence": [
+        "cross_type_conflict_no_unique_table_asset"
+      ]
+    },
+    "asset_switch": {
+      "reason": "cross_type_conflict_no_unique_table_asset",
+      "from": {
+        "asset_block_id": 12,
+        "asset_bbox": [
+          124,
+          1062,
+          581,
+          1402
+        ],
+        "assistive_text": "",
+        "segments": [
+          {
+            "page": 4,
+            "asset_block_id": 12,
+            "asset_bbox": [
+              124,
+              1062,
+              581,
+              1402
+            ],
+            "is_continuation": false
+          }
+        ],
+        "render_bbox": null,
+        "render_rotation_deg": 0,
+        "match_score": {
+          "score": 0.85,
+          "matched_asset_id": 12,
+          "decision": "matched",
+          "evidence": [
+            "same_page",
+            "x_overlap",
+            "asset_below_caption"
+          ]
+        },
+        "match_status": "matched",
+        "consumed_block_ids": [
+          "5",
+          12
+        ],
+        "bridge_block_ids": [],
+        "has_asset": true
+      },
+      "to": {
+        "asset_block_id": "",
+        "asset_bbox": [],
+        "assistive_text": "",
+        "segments": [],
+        "render_bbox": null,
+        "render_rotation_deg": 0,
+        "match_score": {
+          "score": 0.0,
+          "matched_asset_id": "",
+          "decision": "withdrawn_after_conflict",
+          "previous_asset_block_id": "12",
+          "evidence": [
+            "cross_type_conflict_no_unique_table_asset"
+          ]
+        },
+        "match_status": "ambiguous",
+        "consumed_block_ids": [
+          "5"
+        ],
+        "bridge_block_ids": [],
+        "has_asset": false
+      },
+      "evidence": {
+        "figure_gap": 0.0107,
+        "table_gap": 0.2607
+      }
+    },
+    "old_nearby_figure_assets": [
+      {
+        "figure_id": "figure_002",
+        "block_id": "12",
+        "bbox": [
+          124,
+          1062,
+          581,
+          1402
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 155380,
+          "iou": 1.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      },
+      {
+        "figure_id": "figure_003",
+        "block_id": "12",
+        "bbox": [
+          270,
+          1036,
+          941,
+          1423
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 105740,
+          "iou": 0.3418499468183126
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "new_nearby_figure_assets": [
+      {
+        "figure_id": "figure_002",
+        "block_id": "12",
+        "bbox": [
+          124,
+          1062,
+          581,
+          1402
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 155380,
+          "iou": 1.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      },
+      {
+        "figure_id": "figure_003",
+        "block_id": "12",
+        "bbox": [
+          270,
+          1036,
+          941,
+          1423
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 105740,
+          "iou": 0.3418499468183126
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "figure_claim_changes": [],
+    "classification": "BLOCKING",
+    "old_asset_shared_with_figure": true,
+    "new_asset_shared_with_figure": false,
+    "new_bbox_overlaps_figure_media": false,
+    "blocking_reason": "Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "evidence_summary": "Unmatched/withdrawn/ambiguous table asset, low-confidence assignment, or old/new table media shares a block/overlaps figure media; not safe to infer paper-level delivery.",
+    "cause": "Q11-related ownership conflict; replay records cross_type_conflict_no_unique_table_asset.",
+    "frozen_plan_status": "READY",
+    "audited_status": "REQUIRES_APPROVAL"
+  },
+  {
+    "key": "G5QGQ9PB",
+    "status": "READY",
+    "page": 5,
+    "caption_block_id": "2",
+    "caption_text": "Table 2 General clinical data of cases of distal clavicle fractures with common and large lateral acromion angle",
+    "old_asset_block_id": "9",
+    "new_asset_block_id": "3",
+    "old_bbox": [
+      255,
+      723,
+      940,
+      1400
+    ],
+    "new_bbox": [
+      108,
+      194,
+      1077,
+      313
+    ],
+    "bbox_overlap": {
+      "intersects": false,
+      "intersection_area": 0,
+      "iou": 0.0
+    },
+    "old_asset_text": "",
+    "new_asset_text": "<table><tr><td></td><td></td><td>N</td><td>Age, year</td><td>Sex, M/F</td><td>a</td><td>$ \\beta $</td><td>Neer type (I/II)</td><td>Total follow-up time (month)</td></tr><tr><td rowspan=\"3\">Cases with common lateral acromion angle</td><td>Group A</td><td>56</td><td>$ 39.4 \\pm 9.6 $</td><td>25/31</td><td>$ 16.65 \\pm 1.8 $</td><td>$ 83.34 \\pm 3.8 $</t",
+    "new_table_match_status": "matched",
+    "new_table_match_score": {
+      "score": 0.6,
+      "matched_asset_id": 3,
+      "decision": "reassigned_after_conflict",
+      "evidence": [
+        "same_page",
+        "x_overlap"
+      ],
+      "previous_asset_block_id": "9"
+    },
+    "asset_switch": {
+      "reason": "cross_type_conflict_table_asset_reassigned",
+      "from": {
+        "asset_block_id": 9,
+        "asset_bbox": [
+          255,
+          723,
+          940,
+          1400
+        ],
+        "assistive_text": "",
+        "segments": [
+          {
+            "page": 5,
+            "asset_block_id": 9,
+            "asset_bbox": [
+              255,
+              723,
+              940,
+              1400
+            ],
+            "is_continuation": false
+          }
+        ],
+        "render_bbox": null,
+        "render_rotation_deg": 0,
+        "match_score": {
+          "score": 0.85,
+          "matched_asset_id": 9,
+          "decision": "matched",
+          "evidence": [
+            "same_page",
+            "x_overlap",
+            "asset_below_caption"
+          ]
+        },
+        "match_status": "matched",
+        "consumed_block_ids": [
+          "2",
+          9
+        ],
+        "bridge_block_ids": [],
+        "has_asset": true
+      },
+      "to": {
+        "asset_block_id": "3",
+        "asset_bbox": [
+          108,
+          194,
+          1077,
+          313
+        ],
+        "assistive_text": "<table><tr><td></td><td></td><td>N</td><td>Age, year</td><td>Sex, M/F</td><td>a</td><td>$ \\beta $</td><td>Neer type (I/II)</td><td>Total follow-up time (month)</td></tr><tr><td rowspan=\"3\">Cases with common lateral acromion angle</td><td>Group A</td><td>56</td><td>$ 39.4 \\pm 9.6 $</td><td>25/31</td><td>$ 16.65 \\pm 1.8 $</td><td>$ 83.34 \\pm 3.8 $</td><td>11/45</td><td>$ 25.6 \\pm 1.2 $</td></tr><tr><td>Group B</td><td>21</td><td>$ 42.6 \\pm 10.1 $</td><td>12/9</td><td>$ 23.86 \\pm 2.1 $</td><td>$ 75.15 \\pm 3.2 $</td><td>4/17</td><td>$ 25.8 \\pm 1.1 $</td></tr><tr><td>Group C</td><td>16</td><td>$ 44.3 \\pm 9.3 $</td><td>9/7</td><td>$ 34.12 \\pm 2.5 $</td><td>$ 64.62 \\pm 4.3 $</td><td>2/14</td><td>$ 26.3 \\pm 1.2 $</td></tr></table>",
+        "segments": [
+          {
+            "page": 5,
+            "asset_block_id": "3",
+            "asset_bbox": [
+              108,
+              194,
+              1077,
+              313
+            ],
+            "is_continuation": false
+          }
+        ],
+        "render_bbox": null,
+        "render_rotation_deg": 0,
+        "match_score": {
+          "score": 0.6,
+          "matched_asset_id": 3,
+          "decision": "reassigned_after_conflict",
+          "evidence": [
+            "same_page",
+            "x_overlap"
+          ],
+          "previous_asset_block_id": "9"
+        },
+        "match_status": "matched",
+        "consumed_block_ids": [
+          "2",
+          "3",
+          "3"
+        ],
+        "bridge_block_ids": [],
+        "has_asset": true
+      },
+      "evidence": {
+        "figure_gap": 0.0095,
+        "table_gap": 0.3338
+      }
+    },
+    "old_nearby_figure_assets": [
+      {
+        "figure_id": "figure_003",
+        "block_id": "9",
+        "bbox": [
+          255,
+          723,
+          940,
+          1400
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 463745,
+          "iou": 1.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      },
+      {
+        "figure_id": "figure_002",
+        "block_id": "9",
+        "bbox": [
+          110,
+          857,
+          1073,
+          1389
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 364420,
+          "iou": 0.5958070175151764
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "new_nearby_figure_assets": [
+      {
+        "figure_id": "figure_003",
+        "block_id": "9",
+        "bbox": [
+          255,
+          723,
+          940,
+          1400
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 463745,
+          "iou": 1.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      },
+      {
+        "figure_id": "figure_002",
+        "block_id": "9",
+        "bbox": [
+          110,
+          857,
+          1073,
+          1389
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 364420,
+          "iou": 0.5958070175151764
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "figure_claim_changes": [],
+    "classification": "BENIGN_CORRECTED",
+    "old_asset_shared_with_figure": true,
+    "new_asset_shared_with_figure": false,
+    "new_bbox_overlaps_figure_media": false,
+    "blocking_reason": null,
+    "evidence_summary": "Explicit cross-type table reassignment; old claim bbox belongs to figure media, replay destination is separate, table match is accepted, and no new figure/shared-media overlap.",
+    "cause": "Q11-related ownership conflict; replay records cross_type_conflict_table_asset_reassigned.",
+    "frozen_plan_status": "READY",
+    "audited_status": "READY"
+  },
+  {
+    "key": "IVMKWLFV",
+    "status": "REQUIRES_APPROVAL",
+    "page": 3,
+    "caption_block_id": "8",
+    "caption_text": "Table 1 summarises the species, properties, and tissue engineering application of magnetic materials.",
+    "old_asset_block_id": "2",
+    "new_asset_block_id": null,
+    "old_bbox": [
+      153,
+      115,
+      1036,
+      871
+    ],
+    "new_bbox": [],
+    "bbox_overlap": {
+      "intersects": false,
+      "intersection_area": 0,
+      "iou": 0.0
+    },
+    "old_asset_text": "",
+    "new_asset_text": "",
+    "new_table_match_status": "ambiguous",
+    "new_table_match_score": {
+      "score": 0.0,
+      "matched_asset_id": "",
+      "decision": "withdrawn_after_conflict",
+      "previous_asset_block_id": "2",
+      "evidence": [
+        "cross_type_conflict_no_unique_table_asset"
+      ]
+    },
+    "asset_switch": {
+      "reason": "cross_type_conflict_no_unique_table_asset",
+      "from": {
+        "asset_block_id": 2,
+        "asset_bbox": [
+          153,
+          115,
+          1036,
+          871
+        ],
+        "assistive_text": "",
+        "segments": [
+          {
+            "page": 3,
+            "asset_block_id": 2,
+            "asset_bbox": [
+              153,
+              115,
+              1036,
+              871
+            ],
+            "is_continuation": false
+          }
+        ],
+        "render_bbox": null,
+        "render_rotation_deg": 0,
+        "match_score": {
+          "score": 0.6,
+          "matched_asset_id": 2,
+          "decision": "matched",
+          "evidence": [
+            "same_page",
+            "x_overlap"
+          ]
+        },
+        "match_status": "matched",
+        "consumed_block_ids": [
+          "8",
+          2,
+          "4"
+        ],
+        "bridge_block_ids": [],
+        "has_asset": true
+      },
+      "to": {
+        "asset_block_id": "",
+        "asset_bbox": [],
+        "assistive_text": "",
+        "segments": [],
+        "render_bbox": null,
+        "render_rotation_deg": 0,
+        "match_score": {
+          "score": 0.0,
+          "matched_asset_id": "",
+          "decision": "withdrawn_after_conflict",
+          "previous_asset_block_id": "2",
+          "evidence": [
+            "cross_type_conflict_no_unique_table_asset"
+          ]
+        },
+        "match_status": "ambiguous",
+        "consumed_block_ids": [
+          "8",
+          "4"
+        ],
+        "bridge_block_ids": [],
+        "has_asset": false
+      },
+      "evidence": {
+        "figure_gap": 0.0113,
+        "table_gap": 0.2897
+      }
+    },
+    "old_nearby_figure_assets": [
+      {
+        "figure_id": "figure_003",
+        "block_id": "2",
+        "bbox": [
+          252,
+          114,
+          932,
+          792
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 460360,
+          "iou": 0.6889265340572379
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      },
+      {
+        "figure_id": "figure_001",
+        "block_id": "2",
+        "bbox": [
+          153,
+          115,
+          1036,
+          871
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 667548,
+          "iou": 1.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "new_nearby_figure_assets": [
+      {
+        "figure_id": "figure_003",
+        "block_id": "2",
+        "bbox": [
+          252,
+          114,
+          932,
+          792
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 460360,
+          "iou": 0.6889265340572379
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      },
+      {
+        "figure_id": "figure_001",
+        "block_id": "2",
+        "bbox": [
+          153,
+          115,
+          1036,
+          871
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 667548,
+          "iou": 1.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "figure_claim_changes": [],
+    "classification": "BLOCKING",
+    "old_asset_shared_with_figure": true,
+    "new_asset_shared_with_figure": false,
+    "new_bbox_overlaps_figure_media": false,
+    "blocking_reason": "Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "evidence_summary": "Unmatched/withdrawn/ambiguous table asset, low-confidence assignment, or old/new table media shares a block/overlaps figure media; not safe to infer paper-level delivery.",
+    "cause": "Q11-related ownership conflict; replay records cross_type_conflict_no_unique_table_asset.",
+    "frozen_plan_status": "REQUIRES_APPROVAL",
+    "audited_status": "REQUIRES_APPROVAL"
+  },
+  {
+    "key": "J2U9DWNW",
+    "status": "READY",
+    "page": 4,
+    "caption_block_id": "2",
+    "caption_text": "Table I Characteristics of patients with retears after ARCR",
+    "old_asset_block_id": "5",
+    "new_asset_block_id": "3",
+    "old_bbox": [
+      82,
+      588,
+      545,
+      916
+    ],
+    "new_bbox": [
+      81,
+      138,
+      550,
+      502
+    ],
+    "bbox_overlap": {
+      "intersects": false,
+      "intersection_area": 0,
+      "iou": 0.0
+    },
+    "old_asset_text": "",
+    "new_asset_text": "<table><tr><td>Number of shoulders (patients)</td><td>41(41)</td></tr><tr><td>Mean age at surgery (y)</td><td>$ 68.9 \\pm 6.1 $</td></tr><tr><td rowspan=\"2\">Sex (Number (%))</td><td>Male: 23 (56.1)</td></tr><tr><td>Female: 18 (43.9)</td></tr><tr><td rowspan=\"2\">Number of shoulders on each side (Number (%))</td><td>Right: 26 (63.4)</td></tr><tr><td>L",
+    "new_table_match_status": "matched",
+    "new_table_match_score": {
+      "score": 0.6,
+      "matched_asset_id": 3,
+      "decision": "reassigned_after_conflict",
+      "evidence": [
+        "same_page",
+        "x_overlap"
+      ],
+      "previous_asset_block_id": "5"
+    },
+    "asset_switch": {
+      "reason": "cross_type_conflict_table_asset_reassigned",
+      "from": {
+        "asset_block_id": 5,
+        "asset_bbox": [
+          82,
+          588,
+          545,
+          916
+        ],
+        "assistive_text": "",
+        "segments": [
+          {
+            "page": 4,
+            "asset_block_id": 5,
+            "asset_bbox": [
+              82,
+              588,
+              545,
+              916
+            ],
+            "is_continuation": false
+          }
+        ],
+        "render_bbox": null,
+        "render_rotation_deg": 0,
+        "match_score": {
+          "score": 0.85,
+          "matched_asset_id": 5,
+          "decision": "matched",
+          "evidence": [
+            "same_page",
+            "x_overlap",
+            "asset_below_caption"
+          ]
+        },
+        "match_status": "matched",
+        "consumed_block_ids": [
+          "2",
+          5
+        ],
+        "bridge_block_ids": [],
+        "has_asset": true
+      },
+      "to": {
+        "asset_block_id": "3",
+        "asset_bbox": [
+          81,
+          138,
+          550,
+          502
+        ],
+        "assistive_text": "<table><tr><td>Number of shoulders (patients)</td><td>41(41)</td></tr><tr><td>Mean age at surgery (y)</td><td>$ 68.9 \\pm 6.1 $</td></tr><tr><td rowspan=\"2\">Sex (Number (%))</td><td>Male: 23 (56.1)</td></tr><tr><td>Female: 18 (43.9)</td></tr><tr><td rowspan=\"2\">Number of shoulders on each side (Number (%))</td><td>Right: 26 (63.4)</td></tr><tr><td>Left: 15 (36.6)</td></tr><tr><td>Mean postoperative follow-up period (mo)</td><td>$ 33.0 \\pm 11.0 $</td></tr><tr><td rowspan=\"4\">Tear size (Number (%))</td><td>Small: 0 (0)</td></tr><tr><td>Medium: 16 (39.0)</td></tr><tr><td>Large: 19 (46.3)</td></tr><tr><td>Massive: 6 (14.6)</td></tr><tr><td rowspan=\"2\">Surgical technique (Number (%))</td><td>Double-row: 5 (12.2)</td></tr><tr><td>Suture bridge: 36 (87.8)</td></tr></table>",
+        "segments": [
+          {
+            "page": 4,
+            "asset_block_id": "3",
+            "asset_bbox": [
+              81,
+              138,
+              550,
+              502
+            ],
+            "is_continuation": false
+          }
+        ],
+        "render_bbox": null,
+        "render_rotation_deg": 0,
+        "match_score": {
+          "score": 0.6,
+          "matched_asset_id": 3,
+          "decision": "reassigned_after_conflict",
+          "evidence": [
+            "same_page",
+            "x_overlap"
+          ],
+          "previous_asset_block_id": "5"
+        },
+        "match_status": "matched",
+        "consumed_block_ids": [
+          "2",
+          "3",
+          "3"
+        ],
+        "bridge_block_ids": [],
+        "has_asset": true
+      },
+      "evidence": {
+        "figure_gap": 0.0109,
+        "table_gap": 0.2835
+      }
+    },
+    "old_nearby_figure_assets": [
+      {
+        "figure_id": "figure_003",
+        "block_id": "3",
+        "bbox": [
+          164,
+          450,
+          550,
+          719
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 49911,
+          "iou": 0.24253718650838002
+        },
+        "overlap_new_table": {
+          "intersects": true,
+          "intersection_area": 20072,
+          "iou": 0.07887518763901005
+        }
+      },
+      {
+        "figure_id": "figure_003",
+        "block_id": "5",
+        "bbox": [
+          612,
+          451,
+          994,
+          718
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      },
+      {
+        "figure_id": "figure_002",
+        "block_id": "5",
+        "bbox": [
+          82,
+          588,
+          545,
+          916
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 151864,
+          "iou": 1.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "new_nearby_figure_assets": [
+      {
+        "figure_id": "figure_003",
+        "block_id": "3",
+        "bbox": [
+          164,
+          450,
+          550,
+          719
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 49911,
+          "iou": 0.24253718650838002
+        },
+        "overlap_new_table": {
+          "intersects": true,
+          "intersection_area": 20072,
+          "iou": 0.07887518763901005
+        }
+      },
+      {
+        "figure_id": "figure_003",
+        "block_id": "5",
+        "bbox": [
+          612,
+          451,
+          994,
+          718
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      },
+      {
+        "figure_id": "figure_002",
+        "block_id": "5",
+        "bbox": [
+          82,
+          588,
+          545,
+          916
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 151864,
+          "iou": 1.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "figure_claim_changes": [],
+    "classification": "BLOCKING",
+    "old_asset_shared_with_figure": true,
+    "new_asset_shared_with_figure": true,
+    "new_bbox_overlaps_figure_media": true,
+    "blocking_reason": "Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "evidence_summary": "Unmatched/withdrawn/ambiguous table asset, low-confidence assignment, or old/new table media shares a block/overlaps figure media; not safe to infer paper-level delivery.",
+    "cause": "Q11-related ownership conflict; replay records cross_type_conflict_table_asset_reassigned.",
+    "frozen_plan_status": "READY",
+    "audited_status": "REQUIRES_APPROVAL"
+  },
+  {
+    "key": "KG7A5K5V",
+    "status": "READY",
+    "page": 4,
+    "caption_block_id": "14",
+    "caption_text": "Table 3 presents the operative and postoperative characteristics. Double-row repair was performed in 25 patients (55.6%), and a lateral retear was observed in 10 patients (22.2%). There were 28 patients (62.2%) with a Sugaya grade 5 retear. Moreover, 23 patients (51.1%) had the same or larger retear size than the initial tear size.",
+    "old_asset_block_id": "3",
+    "new_asset_block_id": null,
+    "old_bbox": [
+      223,
+      143,
+      945,
+      575
+    ],
+    "new_bbox": [],
+    "bbox_overlap": {
+      "intersects": false,
+      "intersection_area": 0,
+      "iou": 0.0
+    },
+    "old_asset_text": "",
+    "new_asset_text": "",
+    "new_table_match_status": "ambiguous",
+    "new_table_match_score": {
+      "score": 0.0,
+      "matched_asset_id": "",
+      "decision": "withdrawn_after_conflict",
+      "previous_asset_block_id": "3",
+      "evidence": [
+        "cross_type_conflict_no_unique_table_asset"
+      ]
+    },
+    "asset_switch": {
+      "reason": "cross_type_conflict_no_unique_table_asset",
+      "from": {
+        "asset_block_id": 3,
+        "asset_bbox": [
+          223,
+          143,
+          945,
+          575
+        ],
+        "assistive_text": "",
+        "segments": [
+          {
+            "page": 4,
+            "asset_block_id": 3,
+            "asset_bbox": [
+              223,
+              143,
+              945,
+              575
+            ],
+            "is_continuation": false
+          }
+        ],
+        "render_bbox": null,
+        "render_rotation_deg": 0,
+        "match_score": {
+          "score": 0.6,
+          "matched_asset_id": 3,
+          "decision": "matched",
+          "evidence": [
+            "same_page",
+            "x_overlap"
+          ]
+        },
+        "match_status": "matched",
+        "consumed_block_ids": [
+          "14",
+          3
+        ],
+        "bridge_block_ids": [],
+        "has_asset": true
+      },
+      "to": {
+        "asset_block_id": "",
+        "asset_bbox": [],
+        "assistive_text": "",
+        "segments": [],
+        "render_bbox": null,
+        "render_rotation_deg": 0,
+        "match_score": {
+          "score": 0.0,
+          "matched_asset_id": "",
+          "decision": "withdrawn_after_conflict",
+          "previous_asset_block_id": "3",
+          "evidence": [
+            "cross_type_conflict_no_unique_table_asset"
+          ]
+        },
+        "match_status": "ambiguous",
+        "consumed_block_ids": [
+          "14"
+        ],
+        "bridge_block_ids": [],
+        "has_asset": false
+      },
+      "evidence": {
+        "figure_gap": 0.0185,
+        "table_gap": 0.302
+      }
+    },
+    "old_nearby_figure_assets": [
+      {
+        "figure_id": "figure_002",
+        "block_id": "3",
+        "bbox": [
+          223,
+          143,
+          945,
+          575
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 311904,
+          "iou": 1.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      },
+      {
+        "figure_id": "figure_001",
+        "block_id": "3",
+        "bbox": [
+          182,
+          147,
+          984,
+          763
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 309016,
+          "iou": 0.6218626740722852
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      },
+      {
+        "figure_id": "figure_004",
+        "block_id": "3",
+        "bbox": [
+          76,
+          144,
+          398,
+          387
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 42525,
+          "iou": 0.12233009708737864
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "new_nearby_figure_assets": [
+      {
+        "figure_id": "figure_002",
+        "block_id": "3",
+        "bbox": [
+          223,
+          143,
+          945,
+          575
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 311904,
+          "iou": 1.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      },
+      {
+        "figure_id": "figure_001",
+        "block_id": "3",
+        "bbox": [
+          182,
+          147,
+          984,
+          763
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 309016,
+          "iou": 0.6218626740722852
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      },
+      {
+        "figure_id": "figure_004",
+        "block_id": "3",
+        "bbox": [
+          76,
+          144,
+          398,
+          387
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 42525,
+          "iou": 0.12233009708737864
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "figure_claim_changes": [],
+    "classification": "BLOCKING",
+    "old_asset_shared_with_figure": true,
+    "new_asset_shared_with_figure": false,
+    "new_bbox_overlaps_figure_media": false,
+    "blocking_reason": "Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "evidence_summary": "Unmatched/withdrawn/ambiguous table asset, low-confidence assignment, or old/new table media shares a block/overlaps figure media; not safe to infer paper-level delivery.",
+    "cause": "Q11-related ownership conflict; replay records cross_type_conflict_no_unique_table_asset.",
+    "frozen_plan_status": "READY",
+    "audited_status": "REQUIRES_APPROVAL"
+  },
+  {
+    "key": "M84CTEM9",
+    "status": "REQUIRES_APPROVAL",
+    "page": 10,
+    "caption_block_id": "3",
+    "caption_text": "TABLE A1 Predictors of the Diagnosis of a Rotator Cuff Tear (Full Model) $ ^{a} $",
+    "old_asset_block_id": null,
+    "new_asset_block_id": "5",
+    "old_bbox": null,
+    "new_bbox": [
+      66,
+      193,
+      1098,
+      442
+    ],
+    "bbox_overlap": {
+      "intersects": false,
+      "intersection_area": 0,
+      "iou": 0.0
+    },
+    "old_asset_text": "",
+    "new_asset_text": "<table><tr><td></td><td>Odds Ratio (95% CI)</td></tr><tr><td>Age</td><td>1.02 (0.99-1.06)</td></tr><tr><td>External rotation strength ratio (affected vs contralateral shoulder)</td><td>1.21 (1.08-1.35)</td></tr><tr><td>SPADI score</td><td>1.00 (0.98-1.01)</td></tr><tr><td>Sex (male vs female)</td><td>1.98 (1.09-3.61)</td></tr><tr><td>Dominant shoul",
+    "new_table_match_status": "matched",
+    "new_table_match_score": {
+      "score": 0.85,
+      "matched_asset_id": 5,
+      "decision": "matched",
+      "evidence": [
+        "same_page",
+        "x_overlap",
+        "asset_below_caption"
+      ]
+    },
+    "asset_switch": null,
+    "old_nearby_figure_assets": [],
+    "new_nearby_figure_assets": [],
+    "figure_claim_changes": [],
+    "classification": "BENIGN_CORRECTED",
+    "old_asset_shared_with_figure": false,
+    "new_asset_shared_with_figure": false,
+    "new_bbox_overlaps_figure_media": false,
+    "blocking_reason": null,
+    "evidence_summary": "Replay table asset is independently matched and contains table HTML; no new figure/shared-media overlap.",
+    "cause": "No direct Q5/Q9/Q11 causal evidence found for this claim change.",
+    "frozen_plan_status": "REQUIRES_APPROVAL",
+    "audited_status": "REQUIRES_APPROVAL"
+  },
+  {
+    "key": "M84CTEM9",
+    "status": "REQUIRES_APPROVAL",
+    "page": 10,
+    "caption_block_id": "7",
+    "caption_text": "TABLE A2 Probability of a Rotator Cuff Tear for Selected Values of Predictive Variables",
+    "old_asset_block_id": null,
+    "new_asset_block_id": "9",
+    "old_bbox": null,
+    "new_bbox": [
+      66,
+      565,
+      1099,
+      734
+    ],
+    "bbox_overlap": {
+      "intersects": false,
+      "intersection_area": 0,
+      "iou": 0.0
+    },
+    "old_asset_text": "",
+    "new_asset_text": "<table><tr><td></td><td colspan=\"6\">Probability</td></tr><tr><td></td><td>5.0%</td><td>9.4%</td><td>18.4%</td><td>28.6%</td><td>32.4%</td><td>96.9%</td></tr><tr><td>External rotation strength  $ ratio^{a} $</td><td>1.1 (-)</td><td>1.1 (+)</td><td>1.1 (-)</td><td>0.0 (-)</td><td>1.1 (-)</td><td>0.0 (+)</td></tr><tr><td>Male sex</td><td>(-)</td><td>(",
+    "new_table_match_status": "matched",
+    "new_table_match_score": {
+      "score": 0.85,
+      "matched_asset_id": 9,
+      "decision": "matched",
+      "evidence": [
+        "same_page",
+        "x_overlap",
+        "asset_below_caption"
+      ]
+    },
+    "asset_switch": null,
+    "old_nearby_figure_assets": [],
+    "new_nearby_figure_assets": [],
+    "figure_claim_changes": [],
+    "classification": "BENIGN_CORRECTED",
+    "old_asset_shared_with_figure": false,
+    "new_asset_shared_with_figure": false,
+    "new_bbox_overlaps_figure_media": false,
+    "blocking_reason": null,
+    "evidence_summary": "Replay table asset is independently matched and contains table HTML; no new figure/shared-media overlap.",
+    "cause": "No direct Q5/Q9/Q11 causal evidence found for this claim change.",
+    "frozen_plan_status": "REQUIRES_APPROVAL",
+    "audited_status": "REQUIRES_APPROVAL"
+  },
+  {
+    "key": "P9D6GZ9M",
+    "status": "READY",
+    "page": 3,
+    "caption_block_id": "17",
+    "caption_text": "TABLE II GRADING OF OSTEO-ARTHROSIS IN METACARPO-PHALANGEAL JOINTS BY OBSERVERS A AND B",
+    "old_asset_block_id": "7",
+    "new_asset_block_id": null,
+    "old_bbox": [
+      732,
+      132,
+      939,
+      527
+    ],
+    "new_bbox": [],
+    "bbox_overlap": {
+      "intersects": false,
+      "intersection_area": 0,
+      "iou": 0.0
+    },
+    "old_asset_text": "",
+    "new_asset_text": "",
+    "new_table_match_status": "ambiguous",
+    "new_table_match_score": {
+      "score": 0.0,
+      "matched_asset_id": "",
+      "decision": "withdrawn_after_conflict",
+      "previous_asset_block_id": "7",
+      "evidence": [
+        "cross_type_conflict_no_unique_table_asset"
+      ]
+    },
+    "asset_switch": {
+      "reason": "cross_type_conflict_no_unique_table_asset",
+      "from": {
+        "asset_block_id": 7,
+        "asset_bbox": [
+          732,
+          132,
+          939,
+          527
+        ],
+        "assistive_text": "",
+        "segments": [
+          {
+            "page": 3,
+            "asset_block_id": 7,
+            "asset_bbox": [
+              732,
+              132,
+              939,
+              527
+            ],
+            "is_continuation": false
+          }
+        ],
+        "render_bbox": null,
+        "render_rotation_deg": 0,
+        "match_score": {
+          "score": 0.6,
+          "matched_asset_id": 7,
+          "decision": "matched",
+          "evidence": [
+            "same_page",
+            "x_overlap"
+          ]
+        },
+        "match_status": "matched",
+        "consumed_block_ids": [
+          "17",
+          7,
+          17,
+          18
+        ],
+        "bridge_block_ids": [],
+        "has_asset": true
+      },
+      "to": {
+        "asset_block_id": "",
+        "asset_bbox": [],
+        "assistive_text": "",
+        "segments": [],
+        "render_bbox": null,
+        "render_rotation_deg": 0,
+        "match_score": {
+          "score": 0.0,
+          "matched_asset_id": "",
+          "decision": "withdrawn_after_conflict",
+          "previous_asset_block_id": "7",
+          "evidence": [
+            "cross_type_conflict_no_unique_table_asset"
+          ]
+        },
+        "match_status": "ambiguous",
+        "consumed_block_ids": [
+          "17",
+          17,
+          18
+        ],
+        "bridge_block_ids": [],
+        "has_asset": false
+      },
+      "evidence": {
+        "figure_gap": 0.0301,
+        "table_gap": 0.1976
+      }
+    },
+    "old_nearby_figure_assets": [
+      {
+        "figure_id": "figure_003",
+        "block_id": "7",
+        "bbox": [
+          732,
+          132,
+          939,
+          527
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 81765,
+          "iou": 1.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "new_nearby_figure_assets": [
+      {
+        "figure_id": "figure_003",
+        "block_id": "7",
+        "bbox": [
+          732,
+          132,
+          939,
+          527
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 81765,
+          "iou": 1.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "figure_claim_changes": [
+      {
+        "old_id": "figure_006",
+        "old_assets": [
+          "11",
+          "13",
+          "15",
+          "17",
+          "4",
+          "5",
+          "6",
+          "8"
+        ],
+        "new_id": "figure_006",
+        "new_assets": [
+          "11",
+          "13",
+          "15",
+          "17"
+        ]
+      }
+    ],
+    "classification": "BLOCKING",
+    "old_asset_shared_with_figure": true,
+    "new_asset_shared_with_figure": false,
+    "new_bbox_overlaps_figure_media": false,
+    "blocking_reason": "Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "evidence_summary": "Unmatched/withdrawn/ambiguous table asset, low-confidence assignment, or old/new table media shares a block/overlaps figure media; not safe to infer paper-level delivery.",
+    "cause": "Q11-related ownership conflict; replay records cross_type_conflict_no_unique_table_asset.",
+    "frozen_plan_status": "READY",
+    "audited_status": "REQUIRES_APPROVAL"
+  },
+  {
+    "key": "QUJ3AS6S",
+    "status": "READY",
+    "page": 5,
+    "caption_block_id": "6",
+    "caption_text": "Table 6 Association of different acromial shapes with rotator cuff tear in the studied patients (n = 56).",
+    "old_asset_block_id": "10",
+    "new_asset_block_id": "7",
+    "old_bbox": [
+      100,
+      837,
+      556,
+      1105
+    ],
+    "new_bbox": [
+      95,
+      610,
+      1076,
+      734
+    ],
+    "bbox_overlap": {
+      "intersects": false,
+      "intersection_area": 0,
+      "iou": 0.0
+    },
+    "old_asset_text": "",
+    "new_asset_text": "<table><tr><td>Acromial shape</td><td>Partial thickness tear (n = 38; 67.9%)</td><td>Full thickness tear (n = 18; 32.1%)</td><td>Fisher&#x27;s exact test</td></tr><tr><td>Type I (n = 16)</td><td>12 (31.6%)</td><td>4 (22.2%)</td><td>0.541</td></tr><tr><td>Type II (n = 25)</td><td>19 (50.0%)</td><td>6 (33.3%)</td><td>0.376</td></tr><tr><td>Type III (",
+    "new_table_match_status": "matched",
+    "new_table_match_score": {
+      "score": 0.6,
+      "matched_asset_id": 7,
+      "decision": "reassigned_after_conflict",
+      "evidence": [
+        "same_page",
+        "x_overlap"
+      ],
+      "previous_asset_block_id": "10"
+    },
+    "asset_switch": {
+      "reason": "cross_type_conflict_table_asset_reassigned",
+      "from": {
+        "asset_block_id": 10,
+        "asset_bbox": [
+          100,
+          837,
+          556,
+          1105
+        ],
+        "assistive_text": "",
+        "segments": [
+          {
+            "page": 5,
+            "asset_block_id": 10,
+            "asset_bbox": [
+              100,
+              837,
+              556,
+              1105
+            ],
+            "is_continuation": false
+          }
+        ],
+        "render_bbox": null,
+        "render_rotation_deg": 0,
+        "match_score": {
+          "score": 0.85,
+          "matched_asset_id": 10,
+          "decision": "matched",
+          "evidence": [
+            "same_page",
+            "x_overlap",
+            "asset_below_caption"
+          ]
+        },
+        "match_status": "matched",
+        "consumed_block_ids": [
+          "6",
+          10
+        ],
+        "bridge_block_ids": [],
+        "has_asset": true
+      },
+      "to": {
+        "asset_block_id": "7",
+        "asset_bbox": [
+          95,
+          610,
+          1076,
+          734
+        ],
+        "assistive_text": "<table><tr><td>Acromial shape</td><td>Partial thickness tear (n = 38; 67.9%)</td><td>Full thickness tear (n = 18; 32.1%)</td><td>Fisher&#x27;s exact test</td></tr><tr><td>Type I (n = 16)</td><td>12 (31.6%)</td><td>4 (22.2%)</td><td>0.541</td></tr><tr><td>Type II (n = 25)</td><td>19 (50.0%)</td><td>6 (33.3%)</td><td>0.376</td></tr><tr><td>Type III (n = 13)</td><td>5 (13.2%)</td><td>8 (44.5%)</td><td>0.016 $ ^{*} $</td></tr><tr><td>Type IV (n = 2)</td><td>2 (5.2%)</td><td>0 (0%)</td><td>1.000</td></tr></table>",
+        "segments": [
+          {
+            "page": 5,
+            "asset_block_id": "7",
+            "asset_bbox": [
+              95,
+              610,
+              1076,
+              734
+            ],
+            "is_continuation": false
+          }
+        ],
+        "render_bbox": null,
+        "render_rotation_deg": 0,
+        "match_score": {
+          "score": 0.6,
+          "matched_asset_id": 7,
+          "decision": "reassigned_after_conflict",
+          "evidence": [
+            "same_page",
+            "x_overlap"
+          ],
+          "previous_asset_block_id": "10"
+        },
+        "match_status": "matched",
+        "consumed_block_ids": [
+          "6",
+          "7",
+          "7"
+        ],
+        "bridge_block_ids": [],
+        "has_asset": true
+      },
+      "evidence": {
+        "figure_gap": 0.012,
+        "table_gap": 0.1404
+      }
+    },
+    "old_nearby_figure_assets": [
+      {
+        "figure_id": "figure_004",
+        "block_id": "10",
+        "bbox": [
+          100,
+          837,
+          556,
+          1105
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 122208,
+          "iou": 1.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      },
+      {
+        "figure_id": "figure_008",
+        "block_id": "7",
+        "bbox": [
+          598,
+          878,
+          888,
+          1177
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "new_nearby_figure_assets": [
+      {
+        "figure_id": "figure_008",
+        "block_id": "7",
+        "bbox": [
+          598,
+          878,
+          888,
+          1177
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      },
+      {
+        "figure_id": "figure_004",
+        "block_id": "10",
+        "bbox": [
+          100,
+          837,
+          556,
+          1105
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 122208,
+          "iou": 1.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "figure_claim_changes": [],
+    "classification": "BLOCKING",
+    "old_asset_shared_with_figure": true,
+    "new_asset_shared_with_figure": true,
+    "new_bbox_overlaps_figure_media": false,
+    "blocking_reason": "Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "evidence_summary": "Unmatched/withdrawn/ambiguous table asset, low-confidence assignment, or old/new table media shares a block/overlaps figure media; not safe to infer paper-level delivery.",
+    "cause": "Q11-related ownership conflict; replay records cross_type_conflict_table_asset_reassigned.",
+    "frozen_plan_status": "READY",
+    "audited_status": "REQUIRES_APPROVAL"
+  },
+  {
+    "key": "S9UMIF83",
+    "status": "READY",
+    "page": 3,
+    "caption_block_id": "1",
+    "caption_text": "Table 2 Arthrographic techniques and their drawbacks",
+    "old_asset_block_id": "3",
+    "new_asset_block_id": "2",
+    "old_bbox": [
+      129,
+      667,
+      412,
+      950
+    ],
+    "new_bbox": [
+      130,
+      203,
+      1093,
+      620
+    ],
+    "bbox_overlap": {
+      "intersects": false,
+      "intersection_area": 0,
+      "iou": 0.0
+    },
+    "old_asset_text": "",
+    "new_asset_text": "<table><tr><td>Arthrographic technique</td><td>Procedure</td><td>Advantages</td><td>Drawbacks</td></tr><tr><td>Indirect</td><td>Intravenous injection of gadolinium and imaging 10 min after active exercise of the joint</td><td>SimpleDoes not involve intra-articular injection</td><td>Joint cavity distension not achieved; ligamentous pathologies not w",
+    "new_table_match_status": "matched",
+    "new_table_match_score": {
+      "score": 0.6,
+      "matched_asset_id": 2,
+      "decision": "reassigned_after_conflict",
+      "evidence": [
+        "same_page",
+        "x_overlap"
+      ],
+      "previous_asset_block_id": "3"
+    },
+    "asset_switch": {
+      "reason": "cross_type_conflict_table_asset_reassigned",
+      "from": {
+        "asset_block_id": 3,
+        "asset_bbox": [
+          129,
+          667,
+          412,
+          950
+        ],
+        "assistive_text": "",
+        "segments": [
+          {
+            "page": 3,
+            "asset_block_id": 3,
+            "asset_bbox": [
+              129,
+              667,
+              412,
+              950
+            ],
+            "is_continuation": false
+          }
+        ],
+        "render_bbox": null,
+        "render_rotation_deg": 0,
+        "match_score": {
+          "score": 0.85,
+          "matched_asset_id": 3,
+          "decision": "matched",
+          "evidence": [
+            "same_page",
+            "x_overlap",
+            "asset_below_caption"
+          ]
+        },
+        "match_status": "matched",
+        "consumed_block_ids": [
+          "1",
+          3
+        ],
+        "bridge_block_ids": [],
+        "has_asset": true
+      },
+      "to": {
+        "asset_block_id": "2",
+        "asset_bbox": [
+          130,
+          203,
+          1093,
+          620
+        ],
+        "assistive_text": "<table><tr><td>Arthrographic technique</td><td>Procedure</td><td>Advantages</td><td>Drawbacks</td></tr><tr><td>Indirect</td><td>Intravenous injection of gadolinium and imaging 10 min after active exercise of the joint</td><td>SimpleDoes not involve intra-articular injection</td><td>Joint cavity distension not achieved; ligamentous pathologies not well detected</td></tr><tr><td>Direct arthrography: anterior approach</td><td>Dilute gadolinium injected in the joint cavity through an anterior approach (US- or fluoroscopy-guided). Injection made through a point at the junction of the upper two-thirds and lower-third of anterior joint space</td><td>Adequate joint distension helps detection of labral and ligamentous pathologies better</td><td>Needs expertiseMay cause injury to the anterior stabilizing structuresCarries the risk of intra-articular infection (though rare)</td></tr><tr><td>Direct arthrography: posterior approach</td><td>Dilute gadolinium injected in the joint cavity through a posterior approach (US- or fluoroscopy-guided)</td><td>Adequate joint distension helps detection of labral and ligamentous pathologies betterMay be helpful in anterior instability, to avoid injury to anterior structures</td><td>Needs expertiseMay cause injury to posterior structuresCarries the risk of intra-articular infection (though rare)</td></tr><tr><td>Direct arthrography: anterosuperior approach</td><td>Dilute gadolinium injected in the joint cavity through an anterosuperior approach in the RCI (US- or fluoroscopy-guided)</td><td>Adequate joint distension helps detection of labral and ligamentous pathologies better</td><td>Needs expertiseMay cause injury to the rotator interval capsule</td></tr></table>",
+        "segments": [
+          {
+            "page": 3,
+            "asset_block_id": "2",
+            "asset_bbox": [
+              130,
+              203,
+              1093,
+              620
+            ],
+            "is_continuation": false
+          }
+        ],
+        "render_bbox": null,
+        "render_rotation_deg": 0,
+        "match_score": {
+          "score": 0.6,
+          "matched_asset_id": 2,
+          "decision": "reassigned_after_conflict",
+          "evidence": [
+            "same_page",
+            "x_overlap"
+          ],
+          "previous_asset_block_id": "3"
+        },
+        "match_status": "matched",
+        "consumed_block_ids": [
+          "1",
+          "2",
+          "2"
+        ],
+        "bridge_block_ids": [],
+        "has_asset": true
+      },
+      "evidence": {
+        "figure_gap": 0.0163,
+        "table_gap": 0.2672
+      }
+    },
+    "old_nearby_figure_assets": [
+      {
+        "figure_id": "figure_012",
+        "block_id": "2",
+        "bbox": [
+          130,
+          465,
+          432,
+          749
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 23124,
+          "iou": 0.16200878563471657
+        },
+        "overlap_new_table": {
+          "intersects": true,
+          "intersection_area": 46810,
+          "iou": 0.1062586118053522
+        }
+      },
+      {
+        "figure_id": "figure_019",
+        "block_id": "3",
+        "bbox": [
+          129,
+          624,
+          446,
+          908
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 68203,
+          "iou": 0.6692211079930137
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      },
+      {
+        "figure_id": "figure_016",
+        "block_id": "3",
+        "bbox": [
+          129,
+          603,
+          446,
+          889
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 62826,
+          "iou": 0.5821264767199444
+        },
+        "overlap_new_table": {
+          "intersects": true,
+          "intersection_area": 5372,
+          "iou": 0.011033950141826928
+        }
+      },
+      {
+        "figure_id": "figure_009",
+        "block_id": "3",
+        "bbox": [
+          129,
+          583,
+          430,
+          869
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 57166,
+          "iou": 0.5244154152409434
+        },
+        "overlap_new_table": {
+          "intersects": true,
+          "intersection_area": 11100,
+          "iou": 0.0232920720921107
+        }
+      },
+      {
+        "figure_id": "figure_001",
+        "block_id": "3",
+        "bbox": [
+          128,
+          481,
+          514,
+          765
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 27734,
+          "iou": 0.171219726013866
+        },
+        "overlap_new_table": {
+          "intersects": true,
+          "intersection_area": 53376,
+          "iou": 0.11658755971246279
+        }
+      },
+      {
+        "figure_id": "figure_005",
+        "block_id": "3",
+        "bbox": [
+          129,
+          667,
+          412,
+          950
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 80089,
+          "iou": 1.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "new_nearby_figure_assets": [
+      {
+        "figure_id": "figure_012",
+        "block_id": "2",
+        "bbox": [
+          130,
+          465,
+          432,
+          749
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 23124,
+          "iou": 0.16200878563471657
+        },
+        "overlap_new_table": {
+          "intersects": true,
+          "intersection_area": 46810,
+          "iou": 0.1062586118053522
+        }
+      },
+      {
+        "figure_id": "figure_019",
+        "block_id": "3",
+        "bbox": [
+          129,
+          624,
+          446,
+          908
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 68203,
+          "iou": 0.6692211079930137
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      },
+      {
+        "figure_id": "figure_016",
+        "block_id": "3",
+        "bbox": [
+          129,
+          603,
+          446,
+          889
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 62826,
+          "iou": 0.5821264767199444
+        },
+        "overlap_new_table": {
+          "intersects": true,
+          "intersection_area": 5372,
+          "iou": 0.011033950141826928
+        }
+      },
+      {
+        "figure_id": "figure_009",
+        "block_id": "3",
+        "bbox": [
+          129,
+          583,
+          430,
+          869
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 57166,
+          "iou": 0.5244154152409434
+        },
+        "overlap_new_table": {
+          "intersects": true,
+          "intersection_area": 11100,
+          "iou": 0.0232920720921107
+        }
+      },
+      {
+        "figure_id": "figure_001",
+        "block_id": "3",
+        "bbox": [
+          128,
+          481,
+          514,
+          765
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 27734,
+          "iou": 0.171219726013866
+        },
+        "overlap_new_table": {
+          "intersects": true,
+          "intersection_area": 53376,
+          "iou": 0.11658755971246279
+        }
+      },
+      {
+        "figure_id": "figure_005",
+        "block_id": "3",
+        "bbox": [
+          129,
+          667,
+          412,
+          950
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 80089,
+          "iou": 1.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "figure_claim_changes": [],
+    "classification": "BLOCKING",
+    "old_asset_shared_with_figure": true,
+    "new_asset_shared_with_figure": true,
+    "new_bbox_overlaps_figure_media": true,
+    "blocking_reason": "Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "evidence_summary": "Unmatched/withdrawn/ambiguous table asset, low-confidence assignment, or old/new table media shares a block/overlaps figure media; not safe to infer paper-level delivery.",
+    "cause": "Q11-related ownership conflict; replay records cross_type_conflict_table_asset_reassigned.",
+    "frozen_plan_status": "READY",
+    "audited_status": "REQUIRES_APPROVAL"
+  },
+  {
+    "key": "TNK4V5PF",
+    "status": "READY",
+    "page": 4,
+    "caption_block_id": "11",
+    "caption_text": "Table 2 and Fig. 3 show the modified O'Driscoll score results.",
+    "old_asset_block_id": "18",
+    "new_asset_block_id": null,
+    "old_bbox": [
+      306,
+      1062,
+      887,
+      1430
+    ],
+    "new_bbox": [],
+    "bbox_overlap": {
+      "intersects": false,
+      "intersection_area": 0,
+      "iou": 0.0
+    },
+    "old_asset_text": "",
+    "new_asset_text": "",
+    "new_table_match_status": "ambiguous",
+    "new_table_match_score": {
+      "score": 0.0,
+      "matched_asset_id": "",
+      "decision": "withdrawn_after_conflict",
+      "previous_asset_block_id": "18",
+      "evidence": [
+        "cross_type_conflict_no_unique_table_asset"
+      ]
+    },
+    "asset_switch": {
+      "reason": "cross_type_conflict_no_unique_table_asset",
+      "from": {
+        "asset_block_id": 18,
+        "asset_bbox": [
+          306,
+          1062,
+          887,
+          1430
+        ],
+        "assistive_text": "",
+        "segments": [
+          {
+            "page": 4,
+            "asset_block_id": 18,
+            "asset_bbox": [
+              306,
+              1062,
+              887,
+              1430
+            ],
+            "is_continuation": false
+          }
+        ],
+        "render_bbox": null,
+        "render_rotation_deg": 0,
+        "match_score": {
+          "score": 0.85,
+          "matched_asset_id": 18,
+          "decision": "matched",
+          "evidence": [
+            "same_page",
+            "x_overlap",
+            "asset_below_caption"
+          ]
+        },
+        "match_status": "matched",
+        "consumed_block_ids": [
+          "11",
+          18
+        ],
+        "bridge_block_ids": [],
+        "has_asset": true
+      },
+      "to": {
+        "asset_block_id": "",
+        "asset_bbox": [],
+        "assistive_text": "",
+        "segments": [],
+        "render_bbox": null,
+        "render_rotation_deg": 0,
+        "match_score": {
+          "score": 0.0,
+          "matched_asset_id": "",
+          "decision": "withdrawn_after_conflict",
+          "previous_asset_block_id": "18",
+          "evidence": [
+            "cross_type_conflict_no_unique_table_asset"
+          ]
+        },
+        "match_status": "ambiguous",
+        "consumed_block_ids": [
+          "11"
+        ],
+        "bridge_block_ids": [],
+        "has_asset": false
+      },
+      "evidence": {
+        "figure_gap": 0.0057,
+        "table_gap": 0.3772
+      }
+    },
+    "old_nearby_figure_assets": [
+      {
+        "figure_id": "figure_001",
+        "block_id": "18",
+        "bbox": [
+          306,
+          1062,
+          887,
+          1430
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 213808,
+          "iou": 1.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "new_nearby_figure_assets": [
+      {
+        "figure_id": "figure_001",
+        "block_id": "18",
+        "bbox": [
+          306,
+          1062,
+          887,
+          1430
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 213808,
+          "iou": 1.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "figure_claim_changes": [],
+    "classification": "BLOCKING",
+    "old_asset_shared_with_figure": true,
+    "new_asset_shared_with_figure": false,
+    "new_bbox_overlaps_figure_media": false,
+    "blocking_reason": "Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "evidence_summary": "Unmatched/withdrawn/ambiguous table asset, low-confidence assignment, or old/new table media shares a block/overlaps figure media; not safe to infer paper-level delivery.",
+    "cause": "Q11-related ownership conflict; replay records cross_type_conflict_no_unique_table_asset.",
+    "frozen_plan_status": "READY",
+    "audited_status": "REQUIRES_APPROVAL"
+  },
+  {
+    "key": "VVKIB2EM",
+    "status": "REQUIRES_APPROVAL",
+    "page": 10,
+    "caption_block_id": "2",
+    "caption_text": "Table 2 Mechanical properties of PEG $ _{2000} $-b-(PTh) $ _4 $/PCL and PEG $ _{6000} $-b-(PTh) $ _4 $/PCL electrospun nanofibers (n = 3).",
+    "old_asset_block_id": "14",
+    "new_asset_block_id": "4",
+    "old_bbox": [
+      64,
+      773,
+      570,
+      1210
+    ],
+    "new_bbox": [
+      65,
+      164,
+      1107,
+      242
+    ],
+    "bbox_overlap": {
+      "intersects": false,
+      "intersection_area": 0,
+      "iou": 0.0
+    },
+    "old_asset_text": "",
+    "new_asset_text": "<table><tr><td>Sample</td><td>Young&#x27;s modulus (MPa)</td><td>Tensile strength (MPa)</td><td>Elongation at break (%)</td></tr><tr><td>$ PEG_{2000} $-b-(Th) $ _4 $/PCL</td><td>121 \\pm 4.37</td><td>10.3 \\pm 0.71</td><td>46.2 \\pm 6.3</td></tr><tr><td>$ PEG_{6000} $-b-(PTh) $ _4 $/PCL</td><td>147 \\pm 6.19</td><td>8.8 \\pm 0.46</td><td>77.4 \\pm 9.2</t",
+    "new_table_match_status": "matched",
+    "new_table_match_score": {
+      "score": 0.85,
+      "matched_asset_id": 4,
+      "decision": "reassigned_after_conflict",
+      "evidence": [
+        "same_page",
+        "x_overlap",
+        "asset_below_caption"
+      ],
+      "previous_asset_block_id": "14"
+    },
+    "asset_switch": {
+      "reason": "cross_type_conflict_table_asset_reassigned",
+      "from": {
+        "asset_block_id": 14,
+        "asset_bbox": [
+          64,
+          773,
+          570,
+          1210
+        ],
+        "assistive_text": "",
+        "segments": [
+          {
+            "page": 10,
+            "asset_block_id": 14,
+            "asset_bbox": [
+              64,
+              773,
+              570,
+              1210
+            ],
+            "is_continuation": false
+          }
+        ],
+        "render_bbox": null,
+        "render_rotation_deg": 0,
+        "match_score": {
+          "score": 0.85,
+          "matched_asset_id": 14,
+          "decision": "matched",
+          "evidence": [
+            "same_page",
+            "x_overlap",
+            "asset_below_caption"
+          ]
+        },
+        "match_status": "matched",
+        "consumed_block_ids": [
+          "2",
+          14,
+          2,
+          3
+        ],
+        "bridge_block_ids": [],
+        "has_asset": true
+      },
+      "to": {
+        "asset_block_id": "4",
+        "asset_bbox": [
+          65,
+          164,
+          1107,
+          242
+        ],
+        "assistive_text": "<table><tr><td>Sample</td><td>Young&#x27;s modulus (MPa)</td><td>Tensile strength (MPa)</td><td>Elongation at break (%)</td></tr><tr><td>$ PEG_{2000} $-b-(Th) $ _4 $/PCL</td><td>121 \\pm 4.37</td><td>10.3 \\pm 0.71</td><td>46.2 \\pm 6.3</td></tr><tr><td>$ PEG_{6000} $-b-(PTh) $ _4 $/PCL</td><td>147 \\pm 6.19</td><td>8.8 \\pm 0.46</td><td>77.4 \\pm 9.2</td></tr></table>",
+        "segments": [
+          {
+            "page": 10,
+            "asset_block_id": "4",
+            "asset_bbox": [
+              65,
+              164,
+              1107,
+              242
+            ],
+            "is_continuation": false
+          }
+        ],
+        "render_bbox": null,
+        "render_rotation_deg": 0,
+        "match_score": {
+          "score": 0.85,
+          "matched_asset_id": 4,
+          "decision": "reassigned_after_conflict",
+          "evidence": [
+            "same_page",
+            "x_overlap",
+            "asset_below_caption"
+          ],
+          "previous_asset_block_id": "14"
+        },
+        "match_status": "matched",
+        "consumed_block_ids": [
+          "2",
+          2,
+          3,
+          "4",
+          "4"
+        ],
+        "bridge_block_ids": [],
+        "has_asset": true
+      },
+      "evidence": {
+        "figure_gap": 0.0101,
+        "table_gap": 0.3942
+      }
+    },
+    "old_nearby_figure_assets": [
+      {
+        "figure_id": "figure_013",
+        "block_id": "14",
+        "bbox": [
+          64,
+          773,
+          570,
+          1210
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 221122,
+          "iou": 1.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      },
+      {
+        "figure_id": "figure_009",
+        "block_id": "4",
+        "bbox": [
+          786,
+          128,
+          1121,
+          427
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": true,
+          "intersection_area": 25038,
+          "iou": 0.1600864433546671
+        }
+      },
+      {
+        "figure_id": "figure_007",
+        "block_id": "14",
+        "bbox": [
+          595,
+          1022,
+          984,
+          1451
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "new_nearby_figure_assets": [
+      {
+        "figure_id": "figure_013",
+        "block_id": "14",
+        "bbox": [
+          64,
+          773,
+          570,
+          1210
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 221122,
+          "iou": 1.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      },
+      {
+        "figure_id": "figure_009",
+        "block_id": "4",
+        "bbox": [
+          786,
+          128,
+          1121,
+          427
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": true,
+          "intersection_area": 25038,
+          "iou": 0.1600864433546671
+        }
+      },
+      {
+        "figure_id": "figure_007",
+        "block_id": "14",
+        "bbox": [
+          595,
+          1022,
+          984,
+          1451
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "figure_claim_changes": [
+      {
+        "old_id": "figure_013",
+        "old_assets": [
+          "21",
+          "22",
+          "23"
+        ],
+        "new_id": "figure_013",
+        "new_assets": [
+          "14",
+          "16",
+          "21",
+          "22",
+          "23"
+        ]
+      },
+      {
+        "old_id": "figure_015",
+        "old_assets": [
+          "10",
+          "11",
+          "6",
+          "7",
+          "9"
+        ],
+        "new_id": "figure_015",
+        "new_assets": [
+          "11",
+          "6",
+          "9"
+        ]
+      },
+      {
+        "old_id": "figure_017",
+        "old_assets": [
+          "0",
+          "10",
+          "7",
+          "8",
+          "9"
+        ],
+        "new_id": "figure_017",
+        "new_assets": [
+          "10",
+          "7",
+          "8",
+          "9"
+        ]
+      }
+    ],
+    "classification": "BLOCKING",
+    "old_asset_shared_with_figure": true,
+    "new_asset_shared_with_figure": true,
+    "new_bbox_overlaps_figure_media": true,
+    "blocking_reason": "Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "evidence_summary": "Unmatched/withdrawn/ambiguous table asset, low-confidence assignment, or old/new table media shares a block/overlaps figure media; not safe to infer paper-level delivery.",
+    "cause": "Q11-related ownership conflict; replay records cross_type_conflict_table_asset_reassigned.",
+    "frozen_plan_status": "REQUIRES_APPROVAL",
+    "audited_status": "REQUIRES_APPROVAL"
+  },
+  {
+    "key": "WDRU6TDV",
+    "status": "READY",
+    "page": 3,
+    "caption_block_id": "9",
+    "caption_text": "Table 1: Biological parameters",
+    "old_asset_block_id": "2",
+    "new_asset_block_id": null,
+    "old_bbox": [
+      94,
+      99,
+      437,
+      453
+    ],
+    "new_bbox": [],
+    "bbox_overlap": {
+      "intersects": false,
+      "intersection_area": 0,
+      "iou": 0.0
+    },
+    "old_asset_text": "",
+    "new_asset_text": "",
+    "new_table_match_status": "ambiguous",
+    "new_table_match_score": {
+      "score": 0.0,
+      "matched_asset_id": "",
+      "decision": "withdrawn_after_conflict",
+      "previous_asset_block_id": "2",
+      "evidence": [
+        "cross_type_conflict_no_unique_table_asset"
+      ]
+    },
+    "asset_switch": {
+      "reason": "cross_type_conflict_no_unique_table_asset",
+      "from": {
+        "asset_block_id": 2,
+        "asset_bbox": [
+          94,
+          99,
+          437,
+          453
+        ],
+        "assistive_text": "",
+        "segments": [
+          {
+            "page": 3,
+            "asset_block_id": 2,
+            "asset_bbox": [
+              94,
+              99,
+              437,
+              453
+            ],
+            "is_continuation": false
+          }
+        ],
+        "render_bbox": null,
+        "render_rotation_deg": 0,
+        "match_score": {
+          "score": 0.6,
+          "matched_asset_id": 2,
+          "decision": "matched",
+          "evidence": [
+            "same_page",
+            "x_overlap"
+          ]
+        },
+        "match_status": "matched",
+        "consumed_block_ids": [
+          "9",
+          2
+        ],
+        "bridge_block_ids": [],
+        "has_asset": true
+      },
+      "to": {
+        "asset_block_id": "",
+        "asset_bbox": [],
+        "assistive_text": "",
+        "segments": [],
+        "render_bbox": null,
+        "render_rotation_deg": 0,
+        "match_score": {
+          "score": 0.0,
+          "matched_asset_id": "",
+          "decision": "withdrawn_after_conflict",
+          "previous_asset_block_id": "2",
+          "evidence": [
+            "cross_type_conflict_no_unique_table_asset"
+          ]
+        },
+        "match_status": "ambiguous",
+        "consumed_block_ids": [
+          "9"
+        ],
+        "bridge_block_ids": [],
+        "has_asset": false
+      },
+      "evidence": {
+        "figure_gap": 0.012,
+        "table_gap": 0.2898
+      }
+    },
+    "old_nearby_figure_assets": [
+      {
+        "figure_id": "figure_006",
+        "block_id": "2",
+        "bbox": [
+          94,
+          99,
+          437,
+          453
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 121422,
+          "iou": 1.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      },
+      {
+        "figure_id": "figure_001",
+        "block_id": "2",
+        "bbox": [
+          104,
+          102,
+          780,
+          389
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 95571,
+          "iou": 0.4346843261485561
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "new_nearby_figure_assets": [
+      {
+        "figure_id": "figure_006",
+        "block_id": "2",
+        "bbox": [
+          94,
+          99,
+          437,
+          453
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 121422,
+          "iou": 1.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      },
+      {
+        "figure_id": "figure_001",
+        "block_id": "2",
+        "bbox": [
+          104,
+          102,
+          780,
+          389
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 95571,
+          "iou": 0.4346843261485561
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "figure_claim_changes": [],
+    "classification": "BLOCKING",
+    "old_asset_shared_with_figure": true,
+    "new_asset_shared_with_figure": false,
+    "new_bbox_overlaps_figure_media": false,
+    "blocking_reason": "Table claim remains unresolved or shares figure media; verify table asset identity and exclusive ownership before paper-level READY.",
+    "evidence_summary": "Unmatched/withdrawn/ambiguous table asset, low-confidence assignment, or old/new table media shares a block/overlaps figure media; not safe to infer paper-level delivery.",
+    "cause": "Q11-related ownership conflict; replay records cross_type_conflict_no_unique_table_asset.",
+    "frozen_plan_status": "READY",
+    "audited_status": "REQUIRES_APPROVAL"
+  },
+  {
+    "key": "Z73N29KR",
+    "status": "READY",
+    "page": 4,
+    "caption_block_id": "1",
+    "caption_text": "Table 1 Descriptive statistics of pQCT measurements",
+    "old_asset_block_id": "4",
+    "new_asset_block_id": "2",
+    "old_bbox": [
+      140,
+      410,
+      539,
+      801
+    ],
+    "new_bbox": [
+      343,
+      92,
+      1098,
+      351
+    ],
+    "bbox_overlap": {
+      "intersects": false,
+      "intersection_area": 0,
+      "iou": 0.0
+    },
+    "old_asset_text": "",
+    "new_asset_text": "<table><tr><td></td><td colspan=\"2\">Left humeri</td><td colspan=\"2\">Right humeri</td></tr><tr><td></td><td>Distal</td><td>Proximal</td><td>Distal</td><td>Proximal</td></tr><tr><td>All\\n(n = 88)</td><td>$ 0.252 \\pm 0.094 $</td><td>$ 0.126 \\pm 0.053 $</td><td>$ 0.259 \\pm 0.094 $</td><td>$ 0.117 \\pm 0.049 $</td></tr><tr><td>Gender\\nMale (n = 36)</td><",
+    "new_table_match_status": "matched_low_confidence",
+    "new_table_match_score": {
+      "score": 0.35,
+      "matched_asset_id": 2,
+      "decision": "reassigned_after_conflict",
+      "evidence": [
+        "same_page"
+      ],
+      "previous_asset_block_id": "4"
+    },
+    "asset_switch": {
+      "reason": "cross_type_conflict_table_asset_reassigned",
+      "from": {
+        "asset_block_id": 4,
+        "asset_bbox": [
+          140,
+          410,
+          539,
+          801
+        ],
+        "assistive_text": "",
+        "segments": [
+          {
+            "page": 4,
+            "asset_block_id": 4,
+            "asset_bbox": [
+              140,
+              410,
+              539,
+              801
+            ],
+            "is_continuation": false
+          }
+        ],
+        "render_bbox": null,
+        "render_rotation_deg": 0,
+        "match_score": {
+          "score": 0.85,
+          "matched_asset_id": 4,
+          "decision": "matched",
+          "evidence": [
+            "same_page",
+            "x_overlap",
+            "asset_below_caption"
+          ]
+        },
+        "match_status": "matched",
+        "consumed_block_ids": [
+          "1",
+          4
+        ],
+        "bridge_block_ids": [],
+        "has_asset": true
+      },
+      "to": {
+        "asset_block_id": "2",
+        "asset_bbox": [
+          343,
+          92,
+          1098,
+          351
+        ],
+        "assistive_text": "<table><tr><td></td><td colspan=\"2\">Left humeri</td><td colspan=\"2\">Right humeri</td></tr><tr><td></td><td>Distal</td><td>Proximal</td><td>Distal</td><td>Proximal</td></tr><tr><td>All\\n(n = 88)</td><td>$ 0.252 \\pm 0.094 $</td><td>$ 0.126 \\pm 0.053 $</td><td>$ 0.259 \\pm 0.094 $</td><td>$ 0.117 \\pm 0.049 $</td></tr><tr><td>Gender\\nMale (n = 36)</td><td>$ 0.300 \\pm 0.11 $</td><td>$ 0.151 \\pm 0.049 $</td><td>$ 0.317 \\pm 0.094 $</td><td>$ 0.144 \\pm 0.046 $</td></tr><tr><td>Female (n = 52)</td><td>$ 0.219 \\pm 0.065 $</td><td>$ 0.109 \\pm 0.05 $</td><td>$ 0.218 \\pm 0.071 $</td><td>$ 0.098 \\pm 0.043 $</td></tr><tr><td>Age\\n&lt; 70 years (n = 26)</td><td>$ 0.272 \\pm 0.087 $</td><td>$ 0.144 \\pm 0.055 $</td><td>$ 0.284 \\pm 0.09 $</td><td>$ 0.134 \\pm 0.054 $</td></tr><tr><td>&gt; 70 years (n = 62)</td><td>$ 0.244 \\pm 0.096 $</td><td>$ 0.118 \\pm 0.05 $</td><td>$ 0.248 \\pm 0.091 $</td><td>$ 0.109 \\pm 0.046 $</td></tr></table>",
+        "segments": [
+          {
+            "page": 4,
+            "asset_block_id": "2",
+            "asset_bbox": [
+              343,
+              92,
+              1098,
+              351
+            ],
+            "is_continuation": false
+          }
+        ],
+        "render_bbox": null,
+        "render_rotation_deg": 0,
+        "match_score": {
+          "score": 0.35,
+          "matched_asset_id": 2,
+          "decision": "reassigned_after_conflict",
+          "evidence": [
+            "same_page"
+          ],
+          "previous_asset_block_id": "4"
+        },
+        "match_status": "matched_low_confidence",
+        "consumed_block_ids": [
+          "1",
+          "2",
+          "2"
+        ],
+        "bridge_block_ids": [],
+        "has_asset": true
+      },
+      "evidence": {
+        "figure_gap": 0.0089,
+        "table_gap": 0.1803
+      }
+    },
+    "old_nearby_figure_assets": [
+      {
+        "figure_id": "figure_002",
+        "block_id": "4",
+        "bbox": [
+          99,
+          1065,
+          580,
+          1295
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      },
+      {
+        "figure_id": "figure_003",
+        "block_id": "4",
+        "bbox": [
+          140,
+          410,
+          539,
+          801
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 156009,
+          "iou": 1.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "new_nearby_figure_assets": [
+      {
+        "figure_id": "figure_002",
+        "block_id": "4",
+        "bbox": [
+          99,
+          1065,
+          580,
+          1295
+        ],
+        "overlap_old_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      },
+      {
+        "figure_id": "figure_003",
+        "block_id": "4",
+        "bbox": [
+          140,
+          410,
+          539,
+          801
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 156009,
+          "iou": 1.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "figure_claim_changes": [],
+    "classification": "BENIGN_CORRECTED",
+    "old_asset_shared_with_figure": true,
+    "new_asset_shared_with_figure": false,
+    "new_bbox_overlaps_figure_media": false,
+    "blocking_reason": null,
+    "evidence_summary": "Explicit cross-type table reassignment; old claim bbox belongs to figure media, replay destination is separate, table match is accepted, and no new figure/shared-media overlap.",
+    "cause": "Q11-related ownership conflict; replay records cross_type_conflict_table_asset_reassigned.",
+    "frozen_plan_status": "READY",
+    "audited_status": "READY"
+  },
+  {
+    "key": "ZFNT2XS7",
+    "status": "READY",
+    "page": 4,
+    "caption_block_id": "12",
+    "caption_text": "Table 2 Cartilage lesions' characteristics in the stimulated and in the control group",
+    "old_asset_block_id": "16",
+    "new_asset_block_id": "13",
+    "old_bbox": [
+      366,
+      1197,
+      1087,
+      1430
+    ],
+    "new_bbox": [
+      351,
+      933,
+      1090,
+      1106
+    ],
+    "bbox_overlap": {
+      "intersects": false,
+      "intersection_area": 0,
+      "iou": 0.0
+    },
+    "old_asset_text": "",
+    "new_asset_text": "<table><tr><td></td><td>Control n = 15</td><td>PEMFs therapy n = 15</td><td>p value</td></tr><tr><td>Side</td><td>10 right, 5 left</td><td>10 right, 5 left</td><td>n.s.</td></tr><tr><td>Location</td><td>12 femurs, 3 patellae</td><td>11 femurs, 4 patellae</td><td>n.s.</td></tr><tr><td>ICRS grade</td><td>3 grade III, 12 grade IV</td><td>2 grade III, ",
+    "new_table_match_status": "matched_low_confidence",
+    "new_table_match_score": {
+      "score": 0.35,
+      "matched_asset_id": 13,
+      "decision": "reassigned_after_conflict",
+      "evidence": [
+        "same_page"
+      ],
+      "previous_asset_block_id": "16"
+    },
+    "asset_switch": {
+      "reason": "cross_type_conflict_table_asset_reassigned",
+      "from": {
+        "asset_block_id": 16,
+        "asset_bbox": [
+          366,
+          1197,
+          1087,
+          1430
+        ],
+        "assistive_text": "",
+        "segments": [
+          {
+            "page": 4,
+            "asset_block_id": 16,
+            "asset_bbox": [
+              366,
+              1197,
+              1087,
+              1430
+            ],
+            "is_continuation": false
+          }
+        ],
+        "render_bbox": null,
+        "render_rotation_deg": 0,
+        "match_score": {
+          "score": 0.6,
+          "matched_asset_id": 16,
+          "decision": "matched",
+          "evidence": [
+            "same_page",
+            "asset_below_caption"
+          ]
+        },
+        "match_status": "matched",
+        "consumed_block_ids": [
+          "12",
+          16
+        ],
+        "bridge_block_ids": [],
+        "has_asset": true
+      },
+      "to": {
+        "asset_block_id": "13",
+        "asset_bbox": [
+          351,
+          933,
+          1090,
+          1106
+        ],
+        "assistive_text": "<table><tr><td></td><td>Control n = 15</td><td>PEMFs therapy n = 15</td><td>p value</td></tr><tr><td>Side</td><td>10 right, 5 left</td><td>10 right, 5 left</td><td>n.s.</td></tr><tr><td>Location</td><td>12 femurs, 3 patellae</td><td>11 femurs, 4 patellae</td><td>n.s.</td></tr><tr><td>ICRS grade</td><td>3 grade III, 12 grade IV</td><td>2 grade III, 13 grade IV</td><td>n.s.</td></tr><tr><td>Area ( $ cm^{2} $)</td><td>2.5  $ \\pm $ 0.5</td><td>2.4  $ \\pm $ 0.6</td><td>n.s.</td></tr><tr><td>Etiology</td><td>3 post-traumatic, 12 degenerative $ ^{{*}} $</td><td>6 post-traumatic, 9 degenerative $ ^{{*}} $</td><td>n.s.</td></tr></table>",
+        "segments": [
+          {
+            "page": 4,
+            "asset_block_id": "13",
+            "asset_bbox": [
+              351,
+              933,
+              1090,
+              1106
+            ],
+            "is_continuation": false
+          }
+        ],
+        "render_bbox": null,
+        "render_rotation_deg": 0,
+        "match_score": {
+          "score": 0.35,
+          "matched_asset_id": 13,
+          "decision": "reassigned_after_conflict",
+          "evidence": [
+            "same_page"
+          ],
+          "previous_asset_block_id": "16"
+        },
+        "match_status": "matched_low_confidence",
+        "consumed_block_ids": [
+          "12",
+          "13",
+          "13"
+        ],
+        "bridge_block_ids": [],
+        "has_asset": true
+      },
+      "evidence": {
+        "figure_gap": 0.0,
+        "table_gap": 0.1283
+      }
+    },
+    "old_nearby_figure_assets": [
+      {
+        "figure_id": "figure_002",
+        "block_id": "16",
+        "bbox": [
+          366,
+          1197,
+          1087,
+          1430
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 167993,
+          "iou": 1.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "new_nearby_figure_assets": [
+      {
+        "figure_id": "figure_002",
+        "block_id": "16",
+        "bbox": [
+          366,
+          1197,
+          1087,
+          1430
+        ],
+        "overlap_old_table": {
+          "intersects": true,
+          "intersection_area": 167993,
+          "iou": 1.0
+        },
+        "overlap_new_table": {
+          "intersects": false,
+          "intersection_area": 0,
+          "iou": 0.0
+        }
+      }
+    ],
+    "figure_claim_changes": [],
+    "classification": "BENIGN_CORRECTED",
+    "old_asset_shared_with_figure": true,
+    "new_asset_shared_with_figure": false,
+    "new_bbox_overlaps_figure_media": false,
+    "blocking_reason": null,
+    "evidence_summary": "Explicit cross-type table reassignment; old claim bbox belongs to figure media, replay destination is separate, table match is accepted, and no new figure/shared-media overlap.",
+    "cause": "Q11-related ownership conflict; replay records cross_type_conflict_table_asset_reassigned.",
+    "frozen_plan_status": "READY",
+    "audited_status": "READY"
+  }
+]
