@@ -61,11 +61,16 @@ def test_unreviewed_filtering():
     assert sc["unreviewed"] == 2
 
 
+def test_ocr_to_pdf_bbox_conversion():
+    bbox = [80, 113, 583, 357]
+    out = module.ocr_to_pdf_bbox(bbox, 1191, 1582, 596, 791)
+    assert [round(v) for v in out] == [40, 56, 292, 178]
+
+
 def test_label_schema():
     expected = set(module.LABEL_FIELDS)
     sample = {f: None for f in module.LABEL_FIELDS}
     assert set(sample) == expected
-
 
 def test_replay_inventory_takes_precedence(tmp_path):
     paper_dir = tmp_path / "paper"
