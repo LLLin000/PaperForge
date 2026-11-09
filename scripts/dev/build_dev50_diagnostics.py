@@ -72,23 +72,37 @@ def make_diagnostics(out: Path, vault: Path) -> dict:
             "structural": {"text_decrease": structural.get("text_decrease", False), "pending_markers": structural.get("pending_markers", 0), "table_claim_changes": len(tables.get("claim_changes", [])), "changed_figure_claims": len(claims), "old_text_chars": structural.get("old_text_chars"), "new_text_chars": structural.get("new_text_chars"), "role_changes": {"removed": content.get("role_removed", {}), "added": content.get("role_added", {})}},
         }
         concrete = {str(f.get("figure_id", "")) for f in matches if not str(f.get("figure_id", "")).startswith("figure_reserved")}
-        missing_assets = sorted(fid for fid in concrete if not (paper_dir / "assets" / "figures" / f"{fid}.jpg").is_file())
-        missing_renders = sorted(fid for fid in concrete if not (paper_dir / "render" / "figures" / f"{fid}.md").is_file())
+        current_backlog_assets = sorted(fid for fid in concrete if not (paper_dir / "assets" / "figures" / f"{fid}.jpg").is_file())
+        current_missing_renders = sorted(fid for fid in concrete if not (paper_dir / "render" / "figures" / f"{fid}.md").is_file())
         fulltext = paper_dir / "fulltext.md"
         embeds = re.findall(r"!\[\[render/(figures|tables)/([^\]]+)\]\]", fulltext.read_text(encoding="utf-8")) if fulltext.is_file() else []
-        dangling_embeds = sorted(f"{kind}/{target}" for kind, target in embeds if not (paper_dir / "render" / kind / target).is_file())
+        dangling_current_embeds = sorted(f"{kind}/{target}" for kind, target in embeds if not (paper_dir / "render" / kind / target).is_file())
+        added = set(delivery.get("render_added", []))
+        removed = set(delivery.get("render_removed", []))
+        def available(relative: str) -> bool:
+            return relative in added or (relative not in removed and (paper_dir / relative).is_file())
+        replay_missing_assets = sorted(fid for fid in concrete if not available(f"assets/figures/{fid}.jpg"))
+        replay_missing_renders = sorted(fid for fid in concrete if not available(f"render/figures/{fid}.md"))
+        mapping = dry.get("identity", {}).get("mapping", {})
+        replay_dangling_embeds = sorted(f"{kind}/{mapping.get(Path(target).stem, Path(target).stem)}.md" for kind, target in embeds if not available(f"render/{kind}/{mapping.get(Path(target).stem, Path(target).stem)}.md"))
+        replay_missing_embed_ids = delivery.get("embeds_missing_new_id", []) or []
         flags["page_assembly"]["asset_caption_page_mismatches"] = page_asset_mismatches
-        flags["delivery"].update({"missing_assets": missing_assets, "missing_renders": missing_renders, "dangling_fulltext_embeds": dangling_embeds, "reserved_assetless": sum(1 for f in matches if str(f.get("figure_id", "")).startswith("figure_reserved"))})
+        flags["delivery"].update({
+            "current_on_disk_backlog": {"missing_asset_files": current_backlog_assets, "missing_render_markdown": current_missing_renders, "dangling_embed_targets": dangling_current_embeds},
+            "replay_delivery": {"missing_assets": replay_missing_assets, "missing_renders": replay_missing_renders, "dangling_fulltext_embeds": replay_dangling_embeds, "embeds_missing_new_id": replay_missing_embed_ids},
+            "reserved_assetless": sum(1 for f in matches if str(f.get("figure_id", "")).startswith("figure_reserved")),
+            "render_added": len(added), "render_removed": len(removed), "manifest_figures": dry.get("new_manifest", {}).get("figures", 0),
+        })
         bucket_flags = [name for name in BUCKETS[:-1] if (
             (name == "caption_recall" and (unmatched_legends or candidates)) or
             (name == "association" and (unmatched_assets or claims or any(v > 1 for v in asset_owners.values()))) or
             (name == "crop_panel" and (near_edge or multipanel or multiasset)) or
             (name == "page_assembly" and (page_mismatch or cross_page or len(flags["page_assembly"]["multi_page_candidates"]) > 1)) or
-            (name == "delivery" and (flags["delivery"]["missing_assets"] or flags["delivery"]["missing_renders"] or flags["delivery"]["dangling_fulltext_embeds"] or flags["delivery"]["missing_embeds"] or flags["delivery"]["dangling_targets"] or flags["delivery"]["render_missing"])) or
+            (name == "delivery" and (flags["delivery"]["replay_delivery"]["missing_assets"] or flags["delivery"]["replay_delivery"]["missing_renders"] or flags["delivery"]["replay_delivery"]["dangling_fulltext_embeds"] or flags["delivery"]["replay_delivery"]["embeds_missing_new_id"])) or
             (name == "structural" and (flags["structural"]["text_decrease"] or flags["structural"]["pending_markers"] or flags["structural"]["table_claim_changes"]))
         )]
         duplicate_ids = {fid: count for fid, count in cand_counts.items() if count > 1}
-        papers.append({"key": key, "figures": len(matches), "unmatched_legends": len(unmatched_legends), "caption_candidates": len(candidates), "unmatched_assets": len(unmatched_assets), "near_edge_assets": len(near_edge), "multi_panel_single_asset": len(flags["crop_panel"]["multi_panel_single_asset"]), "large_multi_asset_groups": len(multiasset), "cross_page_claims": len(cross_page), "asset_caption_page_mismatches": len(page_asset_mismatches), "multi_page_candidate_pages": len(flags["page_assembly"]["multi_page_candidates"]), "claim_changes": len(claims), "duplicate_figure_ids": duplicate_ids, "duplicate_asset_owners": flags["association"]["duplicate_asset_owners"], "missing_assets": len(missing_assets), "missing_renders": len(missing_renders), "dangling_fulltext_embeds": len(dangling_embeds), "reserved_assetless": flags["delivery"]["reserved_assetless"], "missing_embeds": flags["delivery"]["missing_embeds"], "dangling_targets": flags["delivery"]["dangling_targets"], "text_decrease": bool(flags["structural"]["text_decrease"]), "pending_markers": flags["structural"]["pending_markers"], "table_claim_changes": flags["structural"]["table_claim_changes"], "buckets": bucket_flags or ["no_defect"], "diagnostics": flags})
+        papers.append({"key": key, "figures": len(matches), "unmatched_legends": len(unmatched_legends), "caption_candidates": len(candidates), "unmatched_assets": len(unmatched_assets), "near_edge_assets": len(near_edge), "multi_panel_single_asset": len(flags["crop_panel"]["multi_panel_single_asset"]), "large_multi_asset_groups": len(multiasset), "cross_page_claims": len(cross_page), "asset_caption_page_mismatches": len(page_asset_mismatches), "multi_page_candidate_pages": len(flags["page_assembly"]["multi_page_candidates"]), "claim_changes": len(claims), "duplicate_figure_ids": duplicate_ids, "duplicate_asset_owners": flags["association"]["duplicate_asset_owners"], "current_missing_assets": len(current_backlog_assets), "current_missing_renders": len(current_missing_renders), "current_dangling_embeds": len(dangling_current_embeds), "replay_missing_assets": len(replay_missing_assets), "replay_missing_renders": len(replay_missing_renders), "replay_dangling_embeds": len(replay_dangling_embeds), "replay_missing_embed_ids": len(replay_missing_embed_ids), "reserved_assetless": flags["delivery"]["reserved_assetless"], "text_decrease": bool(flags["structural"]["text_decrease"]), "pending_markers": flags["structural"]["pending_markers"], "table_claim_changes": flags["structural"]["table_claim_changes"], "buckets": bucket_flags or ["no_defect"], "diagnostics": flags})
         for f in matches:
             assets = f.get("matched_assets", [])
             figures.append({"key": key, "figure_id": str(f.get("figure_id", "")), "legend_block_id": str(f.get("legend_block_id", "")), "page": int(f.get("page", 0) or 0), "caption": str(f.get("text", "")), "asset_count": len(assets), "asset_blocks": [str(a.get("block_id", "")) for a in assets], "asset_pages": [int(a.get("page", f.get("page", 0)) or 0) for a in assets], "case_flags": bucket_flags or ["no_defect"], "review_status": "unreviewed", "root_cause": "unreviewed", "image": f"{key}/{f.get('figure_id')}_asset0.jpg" if assets else f"{key}/page_{int(f.get('page',0) or 0):03d}.jpg"})

@@ -23,7 +23,7 @@
       "asset_blocks": [
         "3"
       ],
-      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+      "review_note": "Inspected replay-rendered figure crop and caption; no visible replay quality defect."
     },
     {
       "key": "3FQYMMXS",
@@ -46,7 +46,7 @@
       "asset_blocks": [
         "8"
       ],
-      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+      "review_note": "Inspected replay-rendered figure crop and caption; no visible replay quality defect."
     },
     {
       "key": "3FQYMMXS",
@@ -79,7 +79,7 @@
         "8",
         "9"
       ],
-      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+      "review_note": "Inspected replay-rendered figure crop and caption; no visible replay quality defect."
     },
     {
       "key": "4CML4K3Y",
@@ -102,7 +102,7 @@
       "asset_blocks": [
         "2"
       ],
-      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+      "review_note": "Inspected replay-rendered figure crop and caption; no visible replay quality defect."
     },
     {
       "key": "4CML4K3Y",
@@ -125,7 +125,7 @@
       "asset_blocks": [
         "4"
       ],
-      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+      "review_note": "Inspected replay-rendered figure crop and caption; no visible replay quality defect."
     },
     {
       "key": "4CML4K3Y",
@@ -148,7 +148,7 @@
       "asset_blocks": [
         "2"
       ],
-      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+      "review_note": "Inspected replay-rendered figure crop and caption; no visible replay quality defect."
     },
     {
       "key": "53B47JM8",
@@ -178,7 +178,7 @@
         "4",
         "5"
       ],
-      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+      "review_note": "Inspected replay-rendered figure crop and caption; no visible replay quality defect."
     },
     {
       "key": "53B47JM8",
@@ -210,7 +210,7 @@
         "15",
         "16"
       ],
-      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+      "review_note": "Inspected replay-rendered figure crop and caption; no visible replay quality defect."
     },
     {
       "key": "53B47JM8",
@@ -238,7 +238,7 @@
         "6",
         "7"
       ],
-      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+      "review_note": "Inspected replay-rendered figure crop and caption; no visible replay quality defect."
     },
     {
       "key": "64GDU2A7",
@@ -262,7 +262,7 @@
       "asset_blocks": [
         "5"
       ],
-      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+      "review_note": "Inspected replay-rendered figure crop and caption; no visible replay quality defect."
     },
     {
       "key": "64GDU2A7",
@@ -288,7 +288,7 @@
         "8",
         "9"
       ],
-      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+      "review_note": "Inspected replay-rendered figure crop and caption; no visible replay quality defect."
     },
     {
       "key": "64GDU2A7",
@@ -316,7 +316,7 @@
         "3",
         "5"
       ],
-      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+      "review_note": "Inspected replay-rendered figure crop and caption; no visible replay quality defect."
     },
     {
       "key": "8S9LCPAE",
@@ -336,7 +336,7 @@
         "page_assembly"
       ],
       "review_status": "reviewed_visual",
-      "root_cause": "delivery",
+      "root_cause": "no-defect",
       "image": "8S9LCPAE/figure_003_asset0.jpg",
       "legend_block_id": "7",
       "asset_blocks": [
@@ -344,7 +344,7 @@
         "4",
         "6"
       ],
-      "review_note": "Source-PDF figure visible in replay crop, but current assets/figures/<figure_id>.jpg is absent; render markdown exists."
+      "review_note": "Current on-disk asset is absent pre-migration, but replay manifest includes the asset and render; treated as no replay defect."
     },
     {
       "key": "8S9LCPAE",
@@ -362,13 +362,13 @@
         "page_assembly"
       ],
       "review_status": "reviewed_visual",
-      "root_cause": "delivery",
+      "root_cause": "no-defect",
       "image": "8S9LCPAE/figure_004_asset0.jpg",
       "legend_block_id": "3",
       "asset_blocks": [
         "2"
       ],
-      "review_note": "Source-PDF figure visible in replay crop, but current assets/figures/<figure_id>.jpg is absent; render markdown exists."
+      "review_note": "Current on-disk asset is absent pre-migration, but replay manifest includes the asset and render; treated as no replay defect."
     },
     {
       "key": "8S9LCPAE",
@@ -386,13 +386,13 @@
         "page_assembly"
       ],
       "review_status": "reviewed_visual",
-      "root_cause": "delivery",
+      "root_cause": "no-defect",
       "image": "8S9LCPAE/figure_005_asset0.jpg",
       "legend_block_id": "5",
       "asset_blocks": [
         "4"
       ],
-      "review_note": "Source-PDF figure visible in replay crop, but current assets/figures/<figure_id>.jpg is absent; render markdown exists."
+      "review_note": "Current on-disk asset is absent pre-migration, but replay manifest includes the asset and render; treated as no replay defect."
     },
     {
       "key": "KG7A5K5V",
@@ -409,13 +409,13 @@
         "structural"
       ],
       "review_status": "reviewed_visual",
-      "root_cause": "delivery",
+      "root_cause": "no-defect",
       "image": "KG7A5K5V/figure_001_asset0.jpg",
       "legend_block_id": "4",
       "asset_blocks": [
         "3"
       ],
-      "review_note": "Source-PDF figure visible in replay crop, but current assets/figures/<figure_id>.jpg is absent; render markdown exists."
+      "review_note": "Current on-disk asset is absent pre-migration, but replay manifest includes the asset and render; treated as no replay defect."
     },
     {
       "key": "KG7A5K5V",
@@ -432,13 +432,13 @@
         "structural"
       ],
       "review_status": "reviewed_visual",
-      "root_cause": "delivery",
+      "root_cause": "no-defect",
       "image": "KG7A5K5V/figure_002_asset0.jpg",
       "legend_block_id": "4",
       "asset_blocks": [
         "3"
       ],
-      "review_note": "Source-PDF figure visible in replay crop, but current assets/figures/<figure_id>.jpg is absent; render markdown exists."
+      "review_note": "Current on-disk asset is absent pre-migration, but replay manifest includes the asset and render; treated as no replay defect."
     },
     {
       "key": "KG7A5K5V",
@@ -457,7 +457,7 @@
         "structural"
       ],
       "review_status": "reviewed_visual",
-      "root_cause": "delivery",
+      "root_cause": "no-defect",
       "image": "KG7A5K5V/figure_003_asset0.jpg",
       "legend_block_id": "16",
       "asset_blocks": [
@@ -465,7 +465,7 @@
         "14",
         "15"
       ],
-      "review_note": "Source-PDF figure visible in replay crop, but current assets/figures/<figure_id>.jpg is absent; render markdown exists."
+      "review_note": "Current on-disk asset is absent pre-migration, but replay manifest includes the asset and render; treated as no replay defect."
     },
     {
       "key": "5MAW65YD",
@@ -486,7 +486,7 @@
       "asset_blocks": [
         "11"
       ],
-      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+      "review_note": "Inspected replay-rendered figure crop and caption; no visible replay quality defect."
     },
     {
       "key": "5MAW65YD",
@@ -507,7 +507,7 @@
       "asset_blocks": [
         "2"
       ],
-      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+      "review_note": "Inspected replay-rendered figure crop and caption; no visible replay quality defect."
     },
     {
       "key": "5MAW65YD",
@@ -528,7 +528,7 @@
       "asset_blocks": [
         "5"
       ],
-      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+      "review_note": "Inspected replay-rendered figure crop and caption; no visible replay quality defect."
     },
     {
       "key": "6A8A9TWD",
@@ -545,7 +545,7 @@
       "image": "6A8A9TWD/page_002.jpg",
       "legend_block_id": "3",
       "asset_blocks": [],
-      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+      "review_note": "Inspected replay-rendered figure crop and caption; no visible replay quality defect."
     },
     {
       "key": "6A8A9TWD",
@@ -566,7 +566,7 @@
       "asset_blocks": [
         "10"
       ],
-      "review_note": "Duplicate same-caption Figure 2 claim: two entries point to separate assets under one legend block; page 2 context shows one Figure 2 panel group."
+      "review_note": "Two entries with the same figure_s002 ID and legend claim different page-2 assets; page context shows the earlier Figure 1 illustration incorrectly associated with Figure 2."
     },
     {
       "key": "6A8A9TWD",
@@ -587,7 +587,7 @@
       "asset_blocks": [
         "2"
       ],
-      "review_note": "Duplicate same-caption Figure 2 claim: two entries point to separate assets under one legend block; page 2 context shows one Figure 2 panel group."
+      "review_note": "Two entries with the same figure_s002 ID and legend claim different page-2 assets; page context shows the earlier Figure 1 illustration incorrectly associated with Figure 2."
     },
     {
       "key": "832486Q6",
@@ -608,7 +608,7 @@
       "asset_blocks": [
         "16"
       ],
-      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+      "review_note": "Inspected replay-rendered figure crop and caption; no visible replay quality defect."
     },
     {
       "key": "832486Q6",
@@ -629,7 +629,7 @@
       "asset_blocks": [
         "2"
       ],
-      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+      "review_note": "Inspected replay-rendered figure crop and caption; no visible replay quality defect."
     },
     {
       "key": "832486Q6",
@@ -650,7 +650,7 @@
       "asset_blocks": [
         "9"
       ],
-      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+      "review_note": "Inspected replay-rendered figure crop and caption; no visible replay quality defect."
     },
     {
       "key": "XVGX9U4V",
@@ -666,13 +666,13 @@
         "crop_panel"
       ],
       "review_status": "reviewed_visual",
-      "root_cause": "delivery",
+      "root_cause": "no-defect",
       "image": "XVGX9U4V/figure_001_asset0.jpg",
       "legend_block_id": "3",
       "asset_blocks": [
         "2"
       ],
-      "review_note": "Source-PDF figure visible in replay crop, but current assets/figures/<figure_id>.jpg is absent; render markdown exists."
+      "review_note": "Current on-disk asset is absent pre-migration, but replay manifest includes the asset and render; treated as no replay defect."
     },
     {
       "key": "XVGX9U4V",
@@ -688,13 +688,13 @@
         "crop_panel"
       ],
       "review_status": "reviewed_visual",
-      "root_cause": "delivery",
+      "root_cause": "no-defect",
       "image": "XVGX9U4V/figure_002_asset0.jpg",
       "legend_block_id": "5",
       "asset_blocks": [
         "4"
       ],
-      "review_note": "Source-PDF figure visible in replay crop, but current assets/figures/<figure_id>.jpg is absent; render markdown exists."
+      "review_note": "Current on-disk asset is absent pre-migration, but replay manifest includes the asset and render; treated as no replay defect."
     },
     {
       "key": "XVGX9U4V",
@@ -710,14 +710,14 @@
         "crop_panel"
       ],
       "review_status": "reviewed_visual",
-      "root_cause": "delivery",
+      "root_cause": "no-defect",
       "image": "XVGX9U4V/figure_003_asset0.jpg",
       "legend_block_id": "3",
       "asset_blocks": [
         "2"
       ],
-      "review_note": "Source-PDF figure visible in replay crop, but current assets/figures/<figure_id>.jpg is absent; render markdown exists."
+      "review_note": "Current on-disk asset is absent pre-migration, but replay manifest includes the asset and render; treated as no replay defect."
     }
   ],
-  "review_method": "All 30 sampled crops/captions visually reviewed; page-context sheet checked for 6A8A9TWD duplicate Figure 2 association. Other 224 figure entries remain unreviewed."
+  "review_method": "30 replay-rendered crops/captions across 10 papers; selected over risk signals and current-on-disk backlog. Page context checked for 6A8A9TWD duplicate Figure 2 claim. Other 224 figure records remain unreviewed."
 }

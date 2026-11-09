@@ -17,12 +17,14 @@
       "claim_changes": 0,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 0,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 0,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 0,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
@@ -63,9 +65,17 @@
           "new_orphans": 1,
           "manifest_figures": 0,
           "render_missing": false,
-          "missing_assets": [],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 0
         },
         "structural": {
@@ -108,12 +118,14 @@
       "claim_changes": 0,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 0,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 0,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 2,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
@@ -173,9 +185,17 @@
           "new_orphans": 8,
           "manifest_figures": 10,
           "render_missing": false,
-          "missing_assets": [],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 2
         },
         "structural": {
@@ -215,12 +235,14 @@
       "claim_changes": 0,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 0,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 0,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 0,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
@@ -261,9 +283,17 @@
           "new_orphans": 1,
           "manifest_figures": 6,
           "render_missing": false,
-          "missing_assets": [],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 0
         },
         "structural": {
@@ -306,12 +336,14 @@
       "claim_changes": 0,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 0,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 0,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 1,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
@@ -389,9 +421,17 @@
           "new_orphans": 2,
           "manifest_figures": 8,
           "render_missing": false,
-          "missing_assets": [],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 1
         },
         "structural": {
@@ -432,12 +472,14 @@
       "claim_changes": 0,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 0,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 0,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 0,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
@@ -609,9 +651,17 @@
           "new_orphans": 5,
           "manifest_figures": 5,
           "render_missing": false,
-          "missing_assets": [],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 0
         },
         "structural": {
@@ -655,12 +705,14 @@
       "claim_changes": 0,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 0,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 0,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 0,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
@@ -699,9 +751,17 @@
           "new_orphans": 0,
           "manifest_figures": 5,
           "render_missing": false,
-          "missing_assets": [],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 0
         },
         "structural": {
@@ -744,12 +804,14 @@
       "claim_changes": 0,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 0,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 0,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 0,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
@@ -788,9 +850,17 @@
           "new_orphans": 0,
           "manifest_figures": 1,
           "render_missing": false,
-          "missing_assets": [],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 0
         },
         "structural": {
@@ -829,12 +899,14 @@
       "claim_changes": 0,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 0,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 0,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 1,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
@@ -912,9 +984,17 @@
           "new_orphans": 1,
           "manifest_figures": 6,
           "render_missing": false,
-          "missing_assets": [],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 1
         },
         "structural": {
@@ -956,12 +1036,14 @@
         "figure_s002": 2
       },
       "duplicate_asset_owners": {},
-      "missing_assets": 0,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 0,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 1,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
@@ -1004,9 +1086,17 @@
           "new_orphans": 1,
           "manifest_figures": 4,
           "render_missing": false,
-          "missing_assets": [],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 1
         },
         "structural": {
@@ -1042,12 +1132,14 @@
       "claim_changes": 0,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 0,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 0,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 0,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
@@ -1088,9 +1180,17 @@
           "new_orphans": 1,
           "manifest_figures": 4,
           "render_missing": false,
-          "missing_assets": [],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 0
         },
         "structural": {
@@ -1124,19 +1224,20 @@
         "figure_002": 2
       },
       "duplicate_asset_owners": {},
-      "missing_assets": 5,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 5,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 0,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
       "buckets": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "diagnostics": {
         "caption_recall": {
@@ -1183,15 +1284,23 @@
           "new_orphans": 1,
           "manifest_figures": 5,
           "render_missing": false,
-          "missing_assets": [
-            "figure_001",
-            "figure_002",
-            "figure_003",
-            "figure_004",
-            "figure_005"
-          ],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [
+              "figure_001",
+              "figure_002",
+              "figure_003",
+              "figure_004",
+              "figure_005"
+            ],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 0
         },
         "structural": {
@@ -1227,12 +1336,14 @@
       "claim_changes": 0,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 0,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 0,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 0,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
@@ -1271,9 +1382,17 @@
           "new_orphans": 0,
           "manifest_figures": 10,
           "render_missing": false,
-          "missing_assets": [],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 0
         },
         "structural": {
@@ -1314,12 +1433,14 @@
       "claim_changes": 0,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 4,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 4,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 0,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
@@ -1327,8 +1448,7 @@
         "caption_recall",
         "association",
         "crop_panel",
-        "page_assembly",
-        "delivery"
+        "page_assembly"
       ],
       "diagnostics": {
         "caption_recall": {
@@ -1430,14 +1550,22 @@
           "new_orphans": 1,
           "manifest_figures": 4,
           "render_missing": false,
-          "missing_assets": [
-            "figure_003",
-            "figure_004",
-            "figure_005",
-            "figure_006"
-          ],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [
+              "figure_003",
+              "figure_004",
+              "figure_005",
+              "figure_006"
+            ],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 0
         },
         "structural": {
@@ -1479,18 +1607,19 @@
       "claim_changes": 0,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 4,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 4,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 2,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
       "buckets": [
-        "caption_recall",
-        "delivery"
+        "caption_recall"
       ],
       "diagnostics": {
         "caption_recall": {
@@ -1541,14 +1670,22 @@
           "new_orphans": 0,
           "manifest_figures": 6,
           "render_missing": false,
-          "missing_assets": [
-            "figure_001",
-            "figure_002",
-            "figure_003",
-            "figure_004"
-          ],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [
+              "figure_001",
+              "figure_002",
+              "figure_003",
+              "figure_004"
+            ],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 2
         },
         "structural": {
@@ -1587,18 +1724,19 @@
       "claim_changes": 0,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 5,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 5,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 1,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
       "buckets": [
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "diagnostics": {
         "caption_recall": {
@@ -1637,15 +1775,23 @@
           "new_orphans": 0,
           "manifest_figures": 6,
           "render_missing": false,
-          "missing_assets": [
-            "figure_001",
-            "figure_002",
-            "figure_004",
-            "figure_005",
-            "figure_006"
-          ],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [
+              "figure_001",
+              "figure_002",
+              "figure_004",
+              "figure_005",
+              "figure_006"
+            ],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 1
         },
         "structural": {
@@ -1681,20 +1827,21 @@
       "claim_changes": 0,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 5,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 5,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 1,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
       "buckets": [
         "caption_recall",
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "diagnostics": {
         "caption_recall": {
@@ -1752,15 +1899,23 @@
           "new_orphans": 1,
           "manifest_figures": 6,
           "render_missing": false,
-          "missing_assets": [
-            "figure_001",
-            "figure_002",
-            "figure_003",
-            "figure_004",
-            "figure_005"
-          ],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [
+              "figure_001",
+              "figure_002",
+              "figure_003",
+              "figure_004",
+              "figure_005"
+            ],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 1
         },
         "structural": {
@@ -1801,17 +1956,19 @@
       "claim_changes": 0,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 4,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 4,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 0,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
       "buckets": [
-        "delivery"
+        "no_defect"
       ],
       "diagnostics": {
         "caption_recall": {
@@ -1845,14 +2002,22 @@
           "new_orphans": 0,
           "manifest_figures": 4,
           "render_missing": false,
-          "missing_assets": [
-            "figure_001",
-            "figure_002",
-            "figure_003",
-            "figure_004"
-          ],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [
+              "figure_001",
+              "figure_002",
+              "figure_003",
+              "figure_004"
+            ],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 0
         },
         "structural": {
@@ -1884,18 +2049,19 @@
       "claim_changes": 0,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 2,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 2,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 0,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
       "buckets": [
-        "association",
-        "delivery"
+        "association"
       ],
       "diagnostics": {
         "caption_recall": {
@@ -1931,12 +2097,20 @@
           "new_orphans": 1,
           "manifest_figures": 2,
           "render_missing": false,
-          "missing_assets": [
-            "figure_001",
-            "figure_002"
-          ],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [
+              "figure_001",
+              "figure_002"
+            ],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 0
         },
         "structural": {
@@ -1974,18 +2148,19 @@
       "claim_changes": 0,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 4,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 4,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 0,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
       "buckets": [
-        "association",
-        "delivery"
+        "association"
       ],
       "diagnostics": {
         "caption_recall": {
@@ -2021,14 +2196,22 @@
           "new_orphans": 1,
           "manifest_figures": 4,
           "render_missing": false,
-          "missing_assets": [
-            "figure_001",
-            "figure_002",
-            "figure_003",
-            "figure_004"
-          ],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [
+              "figure_001",
+              "figure_002",
+              "figure_003",
+              "figure_004"
+            ],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 0
         },
         "structural": {
@@ -2072,19 +2255,20 @@
         "figure_009": 2
       },
       "duplicate_asset_owners": {},
-      "missing_assets": 9,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 9,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 0,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
       "buckets": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "diagnostics": {
         "caption_recall": {
@@ -2137,19 +2321,27 @@
           "new_orphans": 1,
           "manifest_figures": 9,
           "render_missing": false,
-          "missing_assets": [
-            "figure_001",
-            "figure_002",
-            "figure_003",
-            "figure_004",
-            "figure_005",
-            "figure_006",
-            "figure_007",
-            "figure_008",
-            "figure_009"
-          ],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [
+              "figure_001",
+              "figure_002",
+              "figure_003",
+              "figure_004",
+              "figure_005",
+              "figure_006",
+              "figure_007",
+              "figure_008",
+              "figure_009"
+            ],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 0
         },
         "structural": {
@@ -2188,17 +2380,19 @@
       "claim_changes": 0,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 2,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 2,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 0,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
       "buckets": [
-        "delivery"
+        "no_defect"
       ],
       "diagnostics": {
         "caption_recall": {
@@ -2232,12 +2426,20 @@
           "new_orphans": 0,
           "manifest_figures": 2,
           "render_missing": false,
-          "missing_assets": [
-            "figure_001",
-            "figure_002"
-          ],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [
+              "figure_001",
+              "figure_002"
+            ],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 0
         },
         "structural": {
@@ -2269,17 +2471,19 @@
       "claim_changes": 0,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 2,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 2,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 0,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
       "buckets": [
-        "delivery"
+        "no_defect"
       ],
       "diagnostics": {
         "caption_recall": {
@@ -2313,12 +2517,20 @@
           "new_orphans": 0,
           "manifest_figures": 2,
           "render_missing": false,
-          "missing_assets": [
-            "figure_001",
-            "figure_002"
-          ],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [
+              "figure_001",
+              "figure_002"
+            ],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 0
         },
         "structural": {
@@ -2354,18 +2566,19 @@
       "claim_changes": 0,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 5,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 5,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 0,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
       "buckets": [
-        "association",
-        "delivery"
+        "association"
       ],
       "diagnostics": {
         "caption_recall": {
@@ -2401,15 +2614,23 @@
           "new_orphans": 1,
           "manifest_figures": 5,
           "render_missing": false,
-          "missing_assets": [
-            "figure_001",
-            "figure_003",
-            "figure_004",
-            "figure_s002",
-            "figure_s005"
-          ],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [
+              "figure_001",
+              "figure_003",
+              "figure_004",
+              "figure_s002",
+              "figure_s005"
+            ],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 0
         },
         "structural": {
@@ -2449,18 +2670,19 @@
       "claim_changes": 0,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 2,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 2,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 0,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
       "buckets": [
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "diagnostics": {
         "caption_recall": {
@@ -2499,12 +2721,20 @@
           "new_orphans": 0,
           "manifest_figures": 2,
           "render_missing": false,
-          "missing_assets": [
-            "figure_001",
-            "figure_002"
-          ],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [
+              "figure_001",
+              "figure_002"
+            ],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 0
         },
         "structural": {
@@ -2536,12 +2766,14 @@
       "claim_changes": 0,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 0,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 0,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 0,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
@@ -2599,9 +2831,17 @@
           "new_orphans": 0,
           "manifest_figures": 0,
           "render_missing": false,
-          "missing_assets": [],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 0
         },
         "structural": {
@@ -2639,17 +2879,19 @@
       "claim_changes": 0,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 1,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 1,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 0,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
       "buckets": [
-        "delivery"
+        "no_defect"
       ],
       "diagnostics": {
         "caption_recall": {
@@ -2683,11 +2925,19 @@
           "new_orphans": 0,
           "manifest_figures": 1,
           "render_missing": false,
-          "missing_assets": [
-            "figure_001"
-          ],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [
+              "figure_001"
+            ],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 0
         },
         "structural": {
@@ -2727,20 +2977,21 @@
       "claim_changes": 1,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 14,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 14,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 0,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
       "buckets": [
         "association",
         "crop_panel",
-        "page_assembly",
-        "delivery"
+        "page_assembly"
       ],
       "diagnostics": {
         "caption_recall": {
@@ -2782,24 +3033,32 @@
           "new_orphans": 5,
           "manifest_figures": 14,
           "render_missing": false,
-          "missing_assets": [
-            "figure_001",
-            "figure_002",
-            "figure_003",
-            "figure_004",
-            "figure_005",
-            "figure_006",
-            "figure_007",
-            "figure_008",
-            "figure_009",
-            "figure_010",
-            "figure_011",
-            "figure_012",
-            "figure_013",
-            "figure_014"
-          ],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [
+              "figure_001",
+              "figure_002",
+              "figure_003",
+              "figure_004",
+              "figure_005",
+              "figure_006",
+              "figure_007",
+              "figure_008",
+              "figure_009",
+              "figure_010",
+              "figure_011",
+              "figure_012",
+              "figure_013",
+              "figure_014"
+            ],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 0
         },
         "structural": {
@@ -2840,18 +3099,19 @@
       "claim_changes": 0,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 3,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 3,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 0,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
       "buckets": [
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "diagnostics": {
         "caption_recall": {
@@ -2890,13 +3150,21 @@
           "new_orphans": 0,
           "manifest_figures": 3,
           "render_missing": false,
-          "missing_assets": [
-            "figure_001",
-            "figure_002",
-            "figure_003"
-          ],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [
+              "figure_001",
+              "figure_002",
+              "figure_003"
+            ],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 0
         },
         "structural": {
@@ -2934,12 +3202,14 @@
       "claim_changes": 0,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 6,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 6,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 1,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
@@ -2947,8 +3217,7 @@
         "caption_recall",
         "association",
         "crop_panel",
-        "page_assembly",
-        "delivery"
+        "page_assembly"
       ],
       "diagnostics": {
         "caption_recall": {
@@ -3032,16 +3301,24 @@
           "new_orphans": 3,
           "manifest_figures": 7,
           "render_missing": false,
-          "missing_assets": [
-            "figure_001",
-            "figure_002",
-            "figure_003",
-            "figure_004",
-            "figure_005",
-            "figure_007"
-          ],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [
+              "figure_001",
+              "figure_002",
+              "figure_003",
+              "figure_004",
+              "figure_005",
+              "figure_007"
+            ],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 1
         },
         "structural": {
@@ -3081,20 +3358,21 @@
       "claim_changes": 0,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 1,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 1,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 0,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
       "buckets": [
         "caption_recall",
         "association",
-        "page_assembly",
-        "delivery"
+        "page_assembly"
       ],
       "diagnostics": {
         "caption_recall": {
@@ -3148,11 +3426,19 @@
           "new_orphans": 1,
           "manifest_figures": 1,
           "render_missing": false,
-          "missing_assets": [
-            "figure_001"
-          ],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [
+              "figure_001"
+            ],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 0
         },
         "structural": {
@@ -3190,18 +3476,19 @@
       "claim_changes": 0,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 4,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 4,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 1,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 1,
       "buckets": [
         "caption_recall",
-        "delivery",
         "structural"
       ],
       "diagnostics": {
@@ -3255,14 +3542,22 @@
           "new_orphans": 0,
           "manifest_figures": 5,
           "render_missing": false,
-          "missing_assets": [
-            "figure_001",
-            "figure_002",
-            "figure_003",
-            "figure_004"
-          ],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [
+              "figure_001",
+              "figure_002",
+              "figure_003",
+              "figure_004"
+            ],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 1
         },
         "structural": {
@@ -3300,19 +3595,20 @@
       "claim_changes": 3,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 6,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 6,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 0,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
       "buckets": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "diagnostics": {
         "caption_recall": {
@@ -3365,16 +3661,24 @@
           "new_orphans": 11,
           "manifest_figures": 6,
           "render_missing": false,
-          "missing_assets": [
-            "figure_001",
-            "figure_002",
-            "figure_003",
-            "figure_004",
-            "figure_005",
-            "figure_006"
-          ],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [
+              "figure_001",
+              "figure_002",
+              "figure_003",
+              "figure_004",
+              "figure_005",
+              "figure_006"
+            ],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 0
         },
         "structural": {
@@ -3413,19 +3717,20 @@
       "claim_changes": 0,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 4,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 4,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 0,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
       "buckets": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "diagnostics": {
         "caption_recall": {
@@ -3470,14 +3775,22 @@
           "new_orphans": 1,
           "manifest_figures": 4,
           "render_missing": false,
-          "missing_assets": [
-            "figure_001",
-            "figure_002",
-            "figure_003",
-            "figure_004"
-          ],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [
+              "figure_001",
+              "figure_002",
+              "figure_003",
+              "figure_004"
+            ],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 0
         },
         "structural": {
@@ -3520,17 +3833,19 @@
       "claim_changes": 0,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 1,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 1,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 0,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
       "buckets": [
-        "delivery"
+        "no_defect"
       ],
       "diagnostics": {
         "caption_recall": {
@@ -3564,11 +3879,19 @@
           "new_orphans": 0,
           "manifest_figures": 1,
           "render_missing": false,
-          "missing_assets": [
-            "figure_001"
-          ],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [
+              "figure_001"
+            ],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 0
         },
         "structural": {
@@ -3604,12 +3927,14 @@
       "claim_changes": 0,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 0,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 0,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 0,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
@@ -3648,9 +3973,17 @@
           "new_orphans": 0,
           "manifest_figures": 0,
           "render_missing": false,
-          "missing_assets": [],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 0
         },
         "structural": {
@@ -3686,19 +4019,20 @@
       "duplicate_asset_owners": {
         "p2:b7": 2
       },
-      "missing_assets": 2,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 2,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 0,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
       "buckets": [
         "caption_recall",
-        "association",
-        "delivery"
+        "association"
       ],
       "diagnostics": {
         "caption_recall": {
@@ -3755,12 +4089,20 @@
           "new_orphans": 0,
           "manifest_figures": 2,
           "render_missing": false,
-          "missing_assets": [
-            "figure_001",
-            "figure_003"
-          ],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [
+              "figure_001",
+              "figure_003"
+            ],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 0
         },
         "structural": {
@@ -3798,19 +4140,20 @@
       "claim_changes": 0,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 8,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 8,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 0,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
       "buckets": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "diagnostics": {
         "caption_recall": {
@@ -3871,18 +4214,26 @@
           "new_orphans": 1,
           "manifest_figures": 8,
           "render_missing": false,
-          "missing_assets": [
-            "figure_001",
-            "figure_002",
-            "figure_003",
-            "figure_004",
-            "figure_005",
-            "figure_006",
-            "figure_007",
-            "figure_008"
-          ],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [
+              "figure_001",
+              "figure_002",
+              "figure_003",
+              "figure_004",
+              "figure_005",
+              "figure_006",
+              "figure_007",
+              "figure_008"
+            ],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 0
         },
         "structural": {
@@ -3918,20 +4269,21 @@
       "claim_changes": 0,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 14,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 14,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 3,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
       "buckets": [
         "caption_recall",
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "diagnostics": {
         "caption_recall": {
@@ -4009,24 +4361,32 @@
           "new_orphans": 1,
           "manifest_figures": 17,
           "render_missing": false,
-          "missing_assets": [
-            "figure_001",
-            "figure_002",
-            "figure_003",
-            "figure_004",
-            "figure_005",
-            "figure_006",
-            "figure_007",
-            "figure_008",
-            "figure_009",
-            "figure_010",
-            "figure_011",
-            "figure_012",
-            "figure_013",
-            "figure_014"
-          ],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [
+              "figure_001",
+              "figure_002",
+              "figure_003",
+              "figure_004",
+              "figure_005",
+              "figure_006",
+              "figure_007",
+              "figure_008",
+              "figure_009",
+              "figure_010",
+              "figure_011",
+              "figure_012",
+              "figure_013",
+              "figure_014"
+            ],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 3
         },
         "structural": {
@@ -4066,19 +4426,20 @@
       "claim_changes": 0,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 6,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 6,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 0,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
       "buckets": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "diagnostics": {
         "caption_recall": {
@@ -4123,16 +4484,24 @@
           "new_orphans": 1,
           "manifest_figures": 6,
           "render_missing": false,
-          "missing_assets": [
-            "figure_001",
-            "figure_002",
-            "figure_003",
-            "figure_004",
-            "figure_005",
-            "figure_006"
-          ],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [
+              "figure_001",
+              "figure_002",
+              "figure_003",
+              "figure_004",
+              "figure_005",
+              "figure_006"
+            ],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 0
         },
         "structural": {
@@ -4169,12 +4538,14 @@
       "claim_changes": 0,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 0,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 0,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 0,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
@@ -4235,9 +4606,17 @@
           "new_orphans": 2,
           "manifest_figures": 0,
           "render_missing": false,
-          "missing_assets": [],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 0
         },
         "structural": {
@@ -4276,12 +4655,14 @@
       "claim_changes": 0,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 0,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 0,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 1,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
@@ -4359,9 +4740,17 @@
           "new_orphans": 1,
           "manifest_figures": 3,
           "render_missing": false,
-          "missing_assets": [],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 1
         },
         "structural": {
@@ -4401,18 +4790,19 @@
       "claim_changes": 0,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 5,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 5,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 0,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
       "buckets": [
-        "association",
-        "delivery"
+        "association"
       ],
       "diagnostics": {
         "caption_recall": {
@@ -4448,15 +4838,23 @@
           "new_orphans": 1,
           "manifest_figures": 5,
           "render_missing": false,
-          "missing_assets": [
-            "figure_001",
-            "figure_002",
-            "figure_003",
-            "figure_004",
-            "figure_005"
-          ],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [
+              "figure_001",
+              "figure_002",
+              "figure_003",
+              "figure_004",
+              "figure_005"
+            ],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 0
         },
         "structural": {
@@ -4494,20 +4892,21 @@
       "claim_changes": 0,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 8,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 8,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 2,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
       "buckets": [
         "caption_recall",
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "diagnostics": {
         "caption_recall": {
@@ -4593,18 +4992,26 @@
           "new_orphans": 1,
           "manifest_figures": 10,
           "render_missing": false,
-          "missing_assets": [
-            "figure_001",
-            "figure_002",
-            "figure_003",
-            "figure_004",
-            "figure_005",
-            "figure_006",
-            "figure_007",
-            "figure_008"
-          ],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [
+              "figure_001",
+              "figure_002",
+              "figure_003",
+              "figure_004",
+              "figure_005",
+              "figure_006",
+              "figure_007",
+              "figure_008"
+            ],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 2
         },
         "structural": {
@@ -4644,19 +5051,20 @@
         "figure_002": 2
       },
       "duplicate_asset_owners": {},
-      "missing_assets": 5,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 5,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 0,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
       "buckets": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "diagnostics": {
         "caption_recall": {
@@ -4697,15 +5105,23 @@
           "new_orphans": 0,
           "manifest_figures": 5,
           "render_missing": false,
-          "missing_assets": [
-            "figure_001",
-            "figure_002",
-            "figure_003",
-            "figure_004",
-            "figure_005"
-          ],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [
+              "figure_001",
+              "figure_002",
+              "figure_003",
+              "figure_004",
+              "figure_005"
+            ],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 0
         },
         "structural": {
@@ -4746,18 +5162,19 @@
       "claim_changes": 0,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 2,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 2,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 0,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
       "buckets": [
-        "caption_recall",
-        "delivery"
+        "caption_recall"
       ],
       "diagnostics": {
         "caption_recall": {
@@ -4858,12 +5275,20 @@
           "new_orphans": 0,
           "manifest_figures": 2,
           "render_missing": false,
-          "missing_assets": [
-            "figure_001",
-            "figure_002"
-          ],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [
+              "figure_001",
+              "figure_002"
+            ],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 0
         },
         "structural": {
@@ -4901,17 +5326,19 @@
       "claim_changes": 0,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 1,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 1,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 0,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
       "buckets": [
-        "delivery"
+        "no_defect"
       ],
       "diagnostics": {
         "caption_recall": {
@@ -4945,11 +5372,19 @@
           "new_orphans": 0,
           "manifest_figures": 1,
           "render_missing": false,
-          "missing_assets": [
-            "figure_001"
-          ],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [
+              "figure_001"
+            ],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 0
         },
         "structural": {
@@ -4987,19 +5422,20 @@
         "figure_005": 2
       },
       "duplicate_asset_owners": {},
-      "missing_assets": 12,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 12,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 2,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
       "buckets": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "diagnostics": {
         "caption_recall": {
@@ -5072,22 +5508,30 @@
           "new_orphans": 1,
           "manifest_figures": 14,
           "render_missing": false,
-          "missing_assets": [
-            "figure_001",
-            "figure_002",
-            "figure_003",
-            "figure_004",
-            "figure_005",
-            "figure_006",
-            "figure_007",
-            "figure_008",
-            "figure_009",
-            "figure_010",
-            "figure_011",
-            "figure_012"
-          ],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [
+              "figure_001",
+              "figure_002",
+              "figure_003",
+              "figure_004",
+              "figure_005",
+              "figure_006",
+              "figure_007",
+              "figure_008",
+              "figure_009",
+              "figure_010",
+              "figure_011",
+              "figure_012"
+            ],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 2
         },
         "structural": {
@@ -5126,19 +5570,20 @@
       "claim_changes": 0,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 14,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 14,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 0,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
       "buckets": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "diagnostics": {
         "caption_recall": {
@@ -5182,24 +5627,32 @@
           "new_orphans": 1,
           "manifest_figures": 14,
           "render_missing": false,
-          "missing_assets": [
-            "figure_001",
-            "figure_002",
-            "figure_003",
-            "figure_004",
-            "figure_005",
-            "figure_006",
-            "figure_007",
-            "figure_008",
-            "figure_009",
-            "figure_010",
-            "figure_011",
-            "figure_012",
-            "figure_013",
-            "figure_014"
-          ],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [
+              "figure_001",
+              "figure_002",
+              "figure_003",
+              "figure_004",
+              "figure_005",
+              "figure_006",
+              "figure_007",
+              "figure_008",
+              "figure_009",
+              "figure_010",
+              "figure_011",
+              "figure_012",
+              "figure_013",
+              "figure_014"
+            ],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 0
         },
         "structural": {
@@ -5237,12 +5690,14 @@
       "claim_changes": 0,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 0,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 0,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 0,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
@@ -5281,9 +5736,17 @@
           "new_orphans": 0,
           "manifest_figures": 0,
           "render_missing": false,
-          "missing_assets": [],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 0
         },
         "structural": {
@@ -5319,18 +5782,19 @@
       "claim_changes": 0,
       "duplicate_figure_ids": {},
       "duplicate_asset_owners": {},
-      "missing_assets": 4,
-      "missing_renders": 0,
-      "dangling_fulltext_embeds": 0,
+      "current_missing_assets": 4,
+      "current_missing_renders": 0,
+      "current_dangling_embeds": 0,
+      "replay_missing_assets": 0,
+      "replay_missing_renders": 0,
+      "replay_dangling_embeds": 0,
+      "replay_missing_embed_ids": 0,
       "reserved_assetless": 0,
-      "missing_embeds": 0,
-      "dangling_targets": 0,
       "text_decrease": false,
       "pending_markers": 0,
       "table_claim_changes": 0,
       "buckets": [
-        "association",
-        "delivery"
+        "association"
       ],
       "diagnostics": {
         "caption_recall": {
@@ -5366,14 +5830,22 @@
           "new_orphans": 2,
           "manifest_figures": 4,
           "render_missing": false,
-          "missing_assets": [
-            "figure_001",
-            "figure_002",
-            "figure_003",
-            "figure_004"
-          ],
-          "missing_renders": [],
-          "dangling_fulltext_embeds": [],
+          "current_on_disk_backlog": {
+            "missing_asset_files": [
+              "figure_001",
+              "figure_002",
+              "figure_003",
+              "figure_004"
+            ],
+            "missing_render_markdown": [],
+            "dangling_embed_targets": []
+          },
+          "replay_delivery": {
+            "missing_assets": [],
+            "missing_renders": [],
+            "dangling_fulltext_embeds": [],
+            "embeds_missing_new_id": []
+          },
           "reserved_assetless": 0
         },
         "structural": {
@@ -5519,7 +5991,7 @@
       "review_status": "reviewed_visual",
       "root_cause": "no-defect",
       "image": "3FQYMMXS/figure_002_asset0.jpg",
-      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+      "review_note": "Inspected replay-rendered figure crop and caption; no visible replay quality defect."
     },
     {
       "key": "3FQYMMXS",
@@ -5542,7 +6014,7 @@
       "review_status": "reviewed_visual",
       "root_cause": "no-defect",
       "image": "3FQYMMXS/figure_001_asset0.jpg",
-      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+      "review_note": "Inspected replay-rendered figure crop and caption; no visible replay quality defect."
     },
     {
       "key": "3FQYMMXS",
@@ -5613,7 +6085,7 @@
       "review_status": "reviewed_visual",
       "root_cause": "no-defect",
       "image": "3FQYMMXS/figure_003_asset0.jpg",
-      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+      "review_note": "Inspected replay-rendered figure crop and caption; no visible replay quality defect."
     },
     {
       "key": "3FQYMMXS",
@@ -5880,7 +6352,7 @@
       "review_status": "reviewed_visual",
       "root_cause": "no-defect",
       "image": "4CML4K3Y/figure_004_asset0.jpg",
-      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+      "review_note": "Inspected replay-rendered figure crop and caption; no visible replay quality defect."
     },
     {
       "key": "4CML4K3Y",
@@ -5903,7 +6375,7 @@
       "review_status": "reviewed_visual",
       "root_cause": "no-defect",
       "image": "4CML4K3Y/figure_003_asset0.jpg",
-      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+      "review_note": "Inspected replay-rendered figure crop and caption; no visible replay quality defect."
     },
     {
       "key": "4CML4K3Y",
@@ -5926,7 +6398,7 @@
       "review_status": "reviewed_visual",
       "root_cause": "no-defect",
       "image": "4CML4K3Y/figure_002_asset0.jpg",
-      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+      "review_note": "Inspected replay-rendered figure crop and caption; no visible replay quality defect."
     },
     {
       "key": "4CML4K3Y",
@@ -5976,7 +6448,7 @@
       "review_status": "reviewed_visual",
       "root_cause": "no-defect",
       "image": "53B47JM8/figure_003_asset0.jpg",
-      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+      "review_note": "Inspected replay-rendered figure crop and caption; no visible replay quality defect."
     },
     {
       "key": "53B47JM8",
@@ -6006,7 +6478,7 @@
       "review_status": "reviewed_visual",
       "root_cause": "no-defect",
       "image": "53B47JM8/figure_002_asset0.jpg",
-      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+      "review_note": "Inspected replay-rendered figure crop and caption; no visible replay quality defect."
     },
     {
       "key": "53B47JM8",
@@ -6071,7 +6543,7 @@
       "review_status": "reviewed_visual",
       "root_cause": "no-defect",
       "image": "53B47JM8/figure_004_asset0.jpg",
-      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+      "review_note": "Inspected replay-rendered figure crop and caption; no visible replay quality defect."
     },
     {
       "key": "5MAW65YD",
@@ -6132,7 +6604,7 @@
       "review_status": "reviewed_visual",
       "root_cause": "no-defect",
       "image": "5MAW65YD/figure_003_asset0.jpg",
-      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+      "review_note": "Inspected replay-rendered figure crop and caption; no visible replay quality defect."
     },
     {
       "key": "5MAW65YD",
@@ -6153,7 +6625,7 @@
       "review_status": "reviewed_visual",
       "root_cause": "no-defect",
       "image": "5MAW65YD/figure_002_asset0.jpg",
-      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+      "review_note": "Inspected replay-rendered figure crop and caption; no visible replay quality defect."
     },
     {
       "key": "5MAW65YD",
@@ -6174,7 +6646,7 @@
       "review_status": "reviewed_visual",
       "root_cause": "no-defect",
       "image": "5MAW65YD/figure_001_asset0.jpg",
-      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+      "review_note": "Inspected replay-rendered figure crop and caption; no visible replay quality defect."
     },
     {
       "key": "5SF5MQJN",
@@ -6249,7 +6721,7 @@
       "review_status": "reviewed_visual",
       "root_cause": "no-defect",
       "image": "64GDU2A7/figure_003_asset0.jpg",
-      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+      "review_note": "Inspected replay-rendered figure crop and caption; no visible replay quality defect."
     },
     {
       "key": "64GDU2A7",
@@ -6273,7 +6745,7 @@
       "review_status": "reviewed_visual",
       "root_cause": "no-defect",
       "image": "64GDU2A7/figure_001_asset0.jpg",
-      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+      "review_note": "Inspected replay-rendered figure crop and caption; no visible replay quality defect."
     },
     {
       "key": "64GDU2A7",
@@ -6326,7 +6798,7 @@
       "review_status": "reviewed_visual",
       "root_cause": "no-defect",
       "image": "64GDU2A7/figure_002_asset0.jpg",
-      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+      "review_note": "Inspected replay-rendered figure crop and caption; no visible replay quality defect."
     },
     {
       "key": "64GDU2A7",
@@ -6410,7 +6882,7 @@
       "review_status": "reviewed_visual",
       "root_cause": "grouping/association",
       "image": "6A8A9TWD/figure_s002_asset0.jpg",
-      "review_note": "Duplicate same-caption Figure 2 claim: two entries point to separate assets under one legend block; page 2 context shows one Figure 2 panel group."
+      "review_note": "Two entries with the same figure_s002 ID and legend claim different page-2 assets; page context shows the earlier Figure 1 illustration incorrectly associated with Figure 2."
     },
     {
       "key": "6A8A9TWD",
@@ -6431,7 +6903,7 @@
       "review_status": "reviewed_visual",
       "root_cause": "grouping/association",
       "image": "6A8A9TWD/figure_s002_asset0.jpg",
-      "review_note": "Duplicate same-caption Figure 2 claim: two entries point to separate assets under one legend block; page 2 context shows one Figure 2 panel group."
+      "review_note": "Two entries with the same figure_s002 ID and legend claim different page-2 assets; page context shows the earlier Figure 1 illustration incorrectly associated with Figure 2."
     },
     {
       "key": "6A8A9TWD",
@@ -6448,7 +6920,7 @@
       "review_status": "reviewed_visual",
       "root_cause": "no-defect",
       "image": "6A8A9TWD/page_002.jpg",
-      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+      "review_note": "Inspected replay-rendered figure crop and caption; no visible replay quality defect."
     },
     {
       "key": "6X2YRE3V",
@@ -6549,8 +7021,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -6573,8 +7044,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -6597,8 +7067,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -6619,8 +7088,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -6647,8 +7115,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -6679,8 +7146,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -6829,7 +7295,7 @@
       "review_status": "reviewed_visual",
       "root_cause": "no-defect",
       "image": "832486Q6/figure_003_asset0.jpg",
-      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+      "review_note": "Inspected replay-rendered figure crop and caption; no visible replay quality defect."
     },
     {
       "key": "832486Q6",
@@ -6850,7 +7316,7 @@
       "review_status": "reviewed_visual",
       "root_cause": "no-defect",
       "image": "832486Q6/figure_002_asset0.jpg",
-      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+      "review_note": "Inspected replay-rendered figure crop and caption; no visible replay quality defect."
     },
     {
       "key": "832486Q6",
@@ -6871,7 +7337,7 @@
       "review_status": "reviewed_visual",
       "root_cause": "no-defect",
       "image": "832486Q6/figure_001_asset0.jpg",
-      "review_note": "Inspected figure crop and caption on the contact sheet; no visible association, grouping, crop, panel, or caption defect."
+      "review_note": "Inspected replay-rendered figure crop and caption; no visible replay quality defect."
     },
     {
       "key": "832486Q6",
@@ -6912,8 +7378,7 @@
         "caption_recall",
         "association",
         "crop_panel",
-        "page_assembly",
-        "delivery"
+        "page_assembly"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -6936,13 +7401,12 @@
         "caption_recall",
         "association",
         "crop_panel",
-        "page_assembly",
-        "delivery"
+        "page_assembly"
       ],
       "review_status": "reviewed_visual",
-      "root_cause": "delivery",
+      "root_cause": "no-defect",
       "image": "8S9LCPAE/figure_005_asset0.jpg",
-      "review_note": "Source-PDF figure visible in replay crop, but current assets/figures/<figure_id>.jpg is absent; render markdown exists."
+      "review_note": "Current on-disk asset is absent pre-migration, but replay manifest includes the asset and render; treated as no replay defect."
     },
     {
       "key": "8S9LCPAE",
@@ -6961,13 +7425,12 @@
         "caption_recall",
         "association",
         "crop_panel",
-        "page_assembly",
-        "delivery"
+        "page_assembly"
       ],
       "review_status": "reviewed_visual",
-      "root_cause": "delivery",
+      "root_cause": "no-defect",
       "image": "8S9LCPAE/figure_004_asset0.jpg",
-      "review_note": "Source-PDF figure visible in replay crop, but current assets/figures/<figure_id>.jpg is absent; render markdown exists."
+      "review_note": "Current on-disk asset is absent pre-migration, but replay manifest includes the asset and render; treated as no replay defect."
     },
     {
       "key": "8S9LCPAE",
@@ -6990,13 +7453,12 @@
         "caption_recall",
         "association",
         "crop_panel",
-        "page_assembly",
-        "delivery"
+        "page_assembly"
       ],
       "review_status": "reviewed_visual",
-      "root_cause": "delivery",
+      "root_cause": "no-defect",
       "image": "8S9LCPAE/figure_003_asset0.jpg",
-      "review_note": "Source-PDF figure visible in replay crop, but current assets/figures/<figure_id>.jpg is absent; render markdown exists."
+      "review_note": "Current on-disk asset is absent pre-migration, but replay manifest includes the asset and render; treated as no replay defect."
     },
     {
       "key": "8V5A2XIY",
@@ -7012,8 +7474,7 @@
         7
       ],
       "case_flags": [
-        "caption_recall",
-        "delivery"
+        "caption_recall"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -7033,8 +7494,7 @@
         5
       ],
       "case_flags": [
-        "caption_recall",
-        "delivery"
+        "caption_recall"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -7054,8 +7514,7 @@
         4
       ],
       "case_flags": [
-        "caption_recall",
-        "delivery"
+        "caption_recall"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -7077,8 +7536,7 @@
         6
       ],
       "case_flags": [
-        "caption_recall",
-        "delivery"
+        "caption_recall"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -7094,8 +7552,7 @@
       "asset_blocks": [],
       "asset_pages": [],
       "case_flags": [
-        "caption_recall",
-        "delivery"
+        "caption_recall"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -7111,8 +7568,7 @@
       "asset_blocks": [],
       "asset_pages": [],
       "case_flags": [
-        "caption_recall",
-        "delivery"
+        "caption_recall"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -7134,8 +7590,7 @@
         7
       ],
       "case_flags": [
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -7157,8 +7612,7 @@
         6
       ],
       "case_flags": [
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -7178,8 +7632,7 @@
         7
       ],
       "case_flags": [
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -7199,8 +7652,7 @@
         6
       ],
       "case_flags": [
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -7238,8 +7690,7 @@
         5
       ],
       "case_flags": [
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -7255,8 +7706,7 @@
       "asset_blocks": [],
       "asset_pages": [],
       "case_flags": [
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -7278,8 +7728,7 @@
       "case_flags": [
         "caption_recall",
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -7307,8 +7756,7 @@
       "case_flags": [
         "caption_recall",
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -7334,8 +7782,7 @@
       "case_flags": [
         "caption_recall",
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -7361,8 +7808,7 @@
       "case_flags": [
         "caption_recall",
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -7386,8 +7832,7 @@
       "case_flags": [
         "caption_recall",
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -7405,8 +7850,7 @@
       "case_flags": [
         "caption_recall",
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -7426,7 +7870,7 @@
         9
       ],
       "case_flags": [
-        "delivery"
+        "no_defect"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -7446,7 +7890,7 @@
         8
       ],
       "case_flags": [
-        "delivery"
+        "no_defect"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -7466,7 +7910,7 @@
         7
       ],
       "case_flags": [
-        "delivery"
+        "no_defect"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -7486,7 +7930,7 @@
         3
       ],
       "case_flags": [
-        "delivery"
+        "no_defect"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -7506,8 +7950,7 @@
         4
       ],
       "case_flags": [
-        "association",
-        "delivery"
+        "association"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -7529,8 +7972,7 @@
         3
       ],
       "case_flags": [
-        "association",
-        "delivery"
+        "association"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -7550,8 +7992,7 @@
         13
       ],
       "case_flags": [
-        "association",
-        "delivery"
+        "association"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -7571,8 +8012,7 @@
         12
       ],
       "case_flags": [
-        "association",
-        "delivery"
+        "association"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -7592,8 +8032,7 @@
         4
       ],
       "case_flags": [
-        "association",
-        "delivery"
+        "association"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -7615,8 +8054,7 @@
         10
       ],
       "case_flags": [
-        "association",
-        "delivery"
+        "association"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -7639,8 +8077,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -7665,8 +8102,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -7687,8 +8123,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -7709,8 +8144,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -7731,8 +8165,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -7755,8 +8188,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -7781,8 +8213,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -7813,8 +8244,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -7849,8 +8279,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -7883,8 +8312,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -7904,7 +8332,7 @@
         8
       ],
       "case_flags": [
-        "delivery"
+        "no_defect"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -7924,7 +8352,7 @@
         2
       ],
       "case_flags": [
-        "delivery"
+        "no_defect"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -7944,7 +8372,7 @@
         5
       ],
       "case_flags": [
-        "delivery"
+        "no_defect"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -7964,7 +8392,7 @@
         3
       ],
       "case_flags": [
-        "delivery"
+        "no_defect"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -7986,8 +8414,7 @@
         6
       ],
       "case_flags": [
-        "association",
-        "delivery"
+        "association"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -8011,8 +8438,7 @@
         4
       ],
       "case_flags": [
-        "association",
-        "delivery"
+        "association"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -8032,8 +8458,7 @@
         6
       ],
       "case_flags": [
-        "association",
-        "delivery"
+        "association"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -8053,8 +8478,7 @@
         5
       ],
       "case_flags": [
-        "association",
-        "delivery"
+        "association"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -8074,8 +8498,7 @@
         4
       ],
       "case_flags": [
-        "association",
-        "delivery"
+        "association"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -8095,8 +8518,7 @@
         3
       ],
       "case_flags": [
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -8126,8 +8548,7 @@
         5
       ],
       "case_flags": [
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -8147,7 +8568,7 @@
         7
       ],
       "case_flags": [
-        "delivery"
+        "no_defect"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -8171,8 +8592,7 @@
       "case_flags": [
         "association",
         "crop_panel",
-        "page_assembly",
-        "delivery"
+        "page_assembly"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -8196,8 +8616,7 @@
       "case_flags": [
         "association",
         "crop_panel",
-        "page_assembly",
-        "delivery"
+        "page_assembly"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -8221,8 +8640,7 @@
       "case_flags": [
         "association",
         "crop_panel",
-        "page_assembly",
-        "delivery"
+        "page_assembly"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -8244,8 +8662,7 @@
       "case_flags": [
         "association",
         "crop_panel",
-        "page_assembly",
-        "delivery"
+        "page_assembly"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -8267,8 +8684,7 @@
       "case_flags": [
         "association",
         "crop_panel",
-        "page_assembly",
-        "delivery"
+        "page_assembly"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -8290,8 +8706,7 @@
       "case_flags": [
         "association",
         "crop_panel",
-        "page_assembly",
-        "delivery"
+        "page_assembly"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -8313,8 +8728,7 @@
       "case_flags": [
         "association",
         "crop_panel",
-        "page_assembly",
-        "delivery"
+        "page_assembly"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -8336,8 +8750,7 @@
       "case_flags": [
         "association",
         "crop_panel",
-        "page_assembly",
-        "delivery"
+        "page_assembly"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -8359,8 +8772,7 @@
       "case_flags": [
         "association",
         "crop_panel",
-        "page_assembly",
-        "delivery"
+        "page_assembly"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -8382,8 +8794,7 @@
       "case_flags": [
         "association",
         "crop_panel",
-        "page_assembly",
-        "delivery"
+        "page_assembly"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -8405,8 +8816,7 @@
       "case_flags": [
         "association",
         "crop_panel",
-        "page_assembly",
-        "delivery"
+        "page_assembly"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -8428,8 +8838,7 @@
       "case_flags": [
         "association",
         "crop_panel",
-        "page_assembly",
-        "delivery"
+        "page_assembly"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -8455,8 +8864,7 @@
       "case_flags": [
         "association",
         "crop_panel",
-        "page_assembly",
-        "delivery"
+        "page_assembly"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -8484,8 +8892,7 @@
       "case_flags": [
         "association",
         "crop_panel",
-        "page_assembly",
-        "delivery"
+        "page_assembly"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -8507,8 +8914,7 @@
         9
       ],
       "case_flags": [
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -8536,8 +8942,7 @@
         7
       ],
       "case_flags": [
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -8561,8 +8966,7 @@
         6
       ],
       "case_flags": [
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -8587,8 +8991,7 @@
         "caption_recall",
         "association",
         "crop_panel",
-        "page_assembly",
-        "delivery"
+        "page_assembly"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -8613,8 +9016,7 @@
         "caption_recall",
         "association",
         "crop_panel",
-        "page_assembly",
-        "delivery"
+        "page_assembly"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -8643,8 +9045,7 @@
         "caption_recall",
         "association",
         "crop_panel",
-        "page_assembly",
-        "delivery"
+        "page_assembly"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -8671,8 +9072,7 @@
         "caption_recall",
         "association",
         "crop_panel",
-        "page_assembly",
-        "delivery"
+        "page_assembly"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -8701,8 +9101,7 @@
         "caption_recall",
         "association",
         "crop_panel",
-        "page_assembly",
-        "delivery"
+        "page_assembly"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -8731,8 +9130,7 @@
         "caption_recall",
         "association",
         "crop_panel",
-        "page_assembly",
-        "delivery"
+        "page_assembly"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -8751,8 +9149,7 @@
         "caption_recall",
         "association",
         "crop_panel",
-        "page_assembly",
-        "delivery"
+        "page_assembly"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -8774,8 +9171,7 @@
       "case_flags": [
         "caption_recall",
         "association",
-        "page_assembly",
-        "delivery"
+        "page_assembly"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -8796,13 +9192,12 @@
       ],
       "case_flags": [
         "caption_recall",
-        "delivery",
         "structural"
       ],
       "review_status": "reviewed_visual",
-      "root_cause": "delivery",
+      "root_cause": "no-defect",
       "image": "KG7A5K5V/figure_002_asset0.jpg",
-      "review_note": "Source-PDF figure visible in replay crop, but current assets/figures/<figure_id>.jpg is absent; render markdown exists."
+      "review_note": "Current on-disk asset is absent pre-migration, but replay manifest includes the asset and render; treated as no replay defect."
     },
     {
       "key": "KG7A5K5V",
@@ -8819,13 +9214,12 @@
       ],
       "case_flags": [
         "caption_recall",
-        "delivery",
         "structural"
       ],
       "review_status": "reviewed_visual",
-      "root_cause": "delivery",
+      "root_cause": "no-defect",
       "image": "KG7A5K5V/figure_001_asset0.jpg",
-      "review_note": "Source-PDF figure visible in replay crop, but current assets/figures/<figure_id>.jpg is absent; render markdown exists."
+      "review_note": "Current on-disk asset is absent pre-migration, but replay manifest includes the asset and render; treated as no replay defect."
     },
     {
       "key": "KG7A5K5V",
@@ -8846,7 +9240,6 @@
       ],
       "case_flags": [
         "caption_recall",
-        "delivery",
         "structural"
       ],
       "review_status": "unreviewed",
@@ -8872,13 +9265,12 @@
       ],
       "case_flags": [
         "caption_recall",
-        "delivery",
         "structural"
       ],
       "review_status": "reviewed_visual",
-      "root_cause": "delivery",
+      "root_cause": "no-defect",
       "image": "KG7A5K5V/figure_003_asset0.jpg",
-      "review_note": "Source-PDF figure visible in replay crop, but current assets/figures/<figure_id>.jpg is absent; render markdown exists."
+      "review_note": "Current on-disk asset is absent pre-migration, but replay manifest includes the asset and render; treated as no replay defect."
     },
     {
       "key": "KG7A5K5V",
@@ -8891,7 +9283,6 @@
       "asset_pages": [],
       "case_flags": [
         "caption_recall",
-        "delivery",
         "structural"
       ],
       "review_status": "unreviewed",
@@ -8913,8 +9304,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -8941,8 +9331,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -8969,8 +9358,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -8997,8 +9385,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -9025,8 +9412,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -9051,8 +9437,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -9079,8 +9464,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -9101,8 +9485,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -9123,8 +9506,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -9155,8 +9537,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -9176,7 +9557,7 @@
         4
       ],
       "case_flags": [
-        "delivery"
+        "no_defect"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -9199,8 +9580,7 @@
       ],
       "case_flags": [
         "caption_recall",
-        "association",
-        "delivery"
+        "association"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -9221,8 +9601,7 @@
       ],
       "case_flags": [
         "caption_recall",
-        "association",
-        "delivery"
+        "association"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -9243,8 +9622,7 @@
       ],
       "case_flags": [
         "caption_recall",
-        "association",
-        "delivery"
+        "association"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -9275,8 +9653,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -9307,8 +9684,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -9339,8 +9715,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -9367,8 +9742,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -9399,8 +9773,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -9423,8 +9796,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -9445,8 +9817,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -9477,8 +9848,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -9500,8 +9870,7 @@
       "case_flags": [
         "caption_recall",
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -9523,8 +9892,7 @@
       "case_flags": [
         "caption_recall",
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -9546,8 +9914,7 @@
       "case_flags": [
         "caption_recall",
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -9569,8 +9936,7 @@
       "case_flags": [
         "caption_recall",
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -9592,8 +9958,7 @@
       "case_flags": [
         "caption_recall",
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -9615,8 +9980,7 @@
       "case_flags": [
         "caption_recall",
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -9638,8 +10002,7 @@
       "case_flags": [
         "caption_recall",
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -9661,8 +10024,7 @@
       "case_flags": [
         "caption_recall",
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -9684,8 +10046,7 @@
       "case_flags": [
         "caption_recall",
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -9707,8 +10068,7 @@
       "case_flags": [
         "caption_recall",
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -9730,8 +10090,7 @@
       "case_flags": [
         "caption_recall",
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -9753,8 +10112,7 @@
       "case_flags": [
         "caption_recall",
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -9808,8 +10166,7 @@
       "case_flags": [
         "caption_recall",
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -9845,8 +10202,7 @@
       "case_flags": [
         "caption_recall",
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -9864,8 +10220,7 @@
       "case_flags": [
         "caption_recall",
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -9883,8 +10238,7 @@
       "case_flags": [
         "caption_recall",
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -9902,8 +10256,7 @@
       "case_flags": [
         "caption_recall",
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -9924,8 +10277,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -9946,8 +10298,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -9968,8 +10319,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -9992,8 +10342,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -10030,8 +10379,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -10060,8 +10408,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -10149,8 +10496,7 @@
         5
       ],
       "case_flags": [
-        "association",
-        "delivery"
+        "association"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -10170,8 +10516,7 @@
         6
       ],
       "case_flags": [
-        "association",
-        "delivery"
+        "association"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -10191,8 +10536,7 @@
         6
       ],
       "case_flags": [
-        "association",
-        "delivery"
+        "association"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -10212,8 +10556,7 @@
         5
       ],
       "case_flags": [
-        "association",
-        "delivery"
+        "association"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -10233,8 +10576,7 @@
         3
       ],
       "case_flags": [
-        "association",
-        "delivery"
+        "association"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -10256,8 +10598,7 @@
       "case_flags": [
         "caption_recall",
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -10279,8 +10620,7 @@
       "case_flags": [
         "caption_recall",
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -10302,8 +10642,7 @@
       "case_flags": [
         "caption_recall",
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -10339,8 +10678,7 @@
       "case_flags": [
         "caption_recall",
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -10364,8 +10702,7 @@
       "case_flags": [
         "caption_recall",
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -10405,8 +10742,7 @@
       "case_flags": [
         "caption_recall",
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -10436,8 +10772,7 @@
       "case_flags": [
         "caption_recall",
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -10475,8 +10810,7 @@
       "case_flags": [
         "caption_recall",
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -10494,8 +10828,7 @@
       "case_flags": [
         "caption_recall",
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -10513,8 +10846,7 @@
       "case_flags": [
         "caption_recall",
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -10541,8 +10873,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -10563,8 +10894,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -10585,8 +10915,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -10607,8 +10936,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -10629,8 +10957,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -10653,8 +10980,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -10674,8 +11000,7 @@
         3
       ],
       "case_flags": [
-        "caption_recall",
-        "delivery"
+        "caption_recall"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -10695,8 +11020,7 @@
         2
       ],
       "case_flags": [
-        "caption_recall",
-        "delivery"
+        "caption_recall"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -10716,7 +11040,7 @@
         2
       ],
       "case_flags": [
-        "delivery"
+        "no_defect"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -10741,8 +11065,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -10771,8 +11094,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -10793,8 +11115,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -10815,8 +11136,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -10837,8 +11157,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -10859,8 +11178,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -10901,8 +11219,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -10979,8 +11296,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -11035,8 +11351,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -11069,8 +11384,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -11103,8 +11417,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -11135,8 +11448,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -11163,8 +11475,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -11181,8 +11492,7 @@
       "asset_pages": [],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -11199,8 +11509,7 @@
       "asset_pages": [],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -11221,8 +11530,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -11243,8 +11551,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -11265,8 +11572,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -11287,8 +11593,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -11309,13 +11614,12 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "reviewed_visual",
-      "root_cause": "delivery",
+      "root_cause": "no-defect",
       "image": "XVGX9U4V/figure_003_asset0.jpg",
-      "review_note": "Source-PDF figure visible in replay crop, but current assets/figures/<figure_id>.jpg is absent; render markdown exists."
+      "review_note": "Current on-disk asset is absent pre-migration, but replay manifest includes the asset and render; treated as no replay defect."
     },
     {
       "key": "XVGX9U4V",
@@ -11332,13 +11636,12 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "reviewed_visual",
-      "root_cause": "delivery",
+      "root_cause": "no-defect",
       "image": "XVGX9U4V/figure_002_asset0.jpg",
-      "review_note": "Source-PDF figure visible in replay crop, but current assets/figures/<figure_id>.jpg is absent; render markdown exists."
+      "review_note": "Current on-disk asset is absent pre-migration, but replay manifest includes the asset and render; treated as no replay defect."
     },
     {
       "key": "XVGX9U4V",
@@ -11355,13 +11658,12 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "reviewed_visual",
-      "root_cause": "delivery",
+      "root_cause": "no-defect",
       "image": "XVGX9U4V/figure_001_asset0.jpg",
-      "review_note": "Source-PDF figure visible in replay crop, but current assets/figures/<figure_id>.jpg is absent; render markdown exists."
+      "review_note": "Current on-disk asset is absent pre-migration, but replay manifest includes the asset and render; treated as no replay defect."
     },
     {
       "key": "XVGX9U4V",
@@ -11380,8 +11682,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -11408,8 +11709,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -11434,8 +11734,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -11458,8 +11757,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -11482,8 +11780,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -11506,8 +11803,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -11530,8 +11826,7 @@
       ],
       "case_flags": [
         "association",
-        "crop_panel",
-        "delivery"
+        "crop_panel"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -11551,8 +11846,7 @@
         15
       ],
       "case_flags": [
-        "association",
-        "delivery"
+        "association"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -11572,8 +11866,7 @@
         11
       ],
       "case_flags": [
-        "association",
-        "delivery"
+        "association"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -11593,8 +11886,7 @@
         10
       ],
       "case_flags": [
-        "association",
-        "delivery"
+        "association"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
@@ -11614,8 +11906,7 @@
         3
       ],
       "case_flags": [
-        "association",
-        "delivery"
+        "association"
       ],
       "review_status": "unreviewed",
       "root_cause": "unreviewed",
