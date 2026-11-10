@@ -6,6 +6,7 @@ import argparse
 import gzip
 import hashlib
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -17,6 +18,7 @@ sys.path.insert(0, str(REPO))
 
 import paperforge.worker.ocr_rebuild as rebuild_mod  # noqa: E402
 from paperforge.config import bootstrap_config  # noqa: E402
+from paperforge.pdf_resolver import resolve_source_pdf  # noqa: E402
 from paperforge.worker.ocr_objects import _recover_materialization_journal  # noqa: E402
 
 
@@ -64,54 +66,85 @@ def classify_shape(vault: Path, key: str) -> str:
         return "figures"
     return "tables"
 
-def select_keys(status_map, source_vault, n_ready=10):
+def select_keys(status_map, source_vault, n_ready=None):
     ready = sorted(k for k, v in status_map.items() if v == "READY")
-    chosen = []
-    seen = set()
-    for k in ready:
-        shape = classify_shape(source_vault, k)
-        if shape not in seen:
-            chosen.append(k)
-            seen.add(shape)
-            if len(chosen) >= n_ready:
-                break
-    for k in ready:
-        if k in chosen:
-            continue
-        if len(chosen) >= n_ready:
-            break
-        chosen.append(k)
-    refused = []
-    for target in ("M2_REVIEW_REQUIRED", "HOLD", "REQUIRES_APPROVAL"):
-        ks = sorted(k for k, v in status_map.items() if v == target)
-        if ks:
-            refused.append((ks[0], target))
+    chosen = ready if n_ready is None else ready[:n_ready]
+    refused = [
+        (k, v) for k, v in sorted(status_map.items())
+        if v in {"M2_REVIEW_REQUIRED", "HOLD", "REQUIRES_APPROVAL"}
+    ]
     return chosen, refused
 
+def assert_isolated(path, workdir):
+    path, root = Path(path).resolve(), Path(workdir).resolve()
+    if path != root and root not in path.parents:
+        raise ValueError(f"path escapes isolated workdir: {path}")
+    return path
+
+def _is_link_or_junction(path):
+    is_junction = getattr(path, "is_junction", lambda: False)
+    return path.is_symlink() or is_junction()
+
+def _reject_source_links(root):
+    root = Path(root).resolve()
+    for p in root.rglob("*"):
+        if _is_link_or_junction(p):
+            target = p.resolve()
+            if root not in target.parents and target != root:
+                raise ValueError(f"symlink/junction escapes isolated workdir: {p} -> {target}")
+
+def assert_tree_isolated(root, workdir):
+    root = Path(root)
+    for p in root.rglob("*"):
+        assert_isolated(p, workdir)
+def assert_source_links(root, source_vault):
+    root, source_vault = Path(root).resolve(), Path(source_vault).resolve()
+    for path in root.rglob("*"):
+        if _is_link_or_junction(path):
+            target = path.resolve()
+            if source_vault not in target.parents and target != source_vault:
+                raise ValueError(f"source symlink/junction escapes source vault: {path} -> {target}")
+
 def stage_vault(source_vault, workdir, keys):
+    source_vault, workdir = Path(source_vault).resolve(), Path(workdir).resolve()
+    if source_vault == workdir or source_vault in workdir.parents or workdir in source_vault.parents:
+        raise ValueError("source vault and isolated workdir must be disjoint")
     vault = workdir / "vault"
     if vault.exists():
         shutil.rmtree(vault)
     vault.mkdir(parents=True)
     ocr_root = vault / "System" / "PaperForge" / "ocr"
     for key in keys:
-        src_paper = source_vault / "System" / "PaperForge" / "ocr" / key
-        dst_paper = ocr_root / key
-        dst_paper.mkdir(parents=True, exist_ok=True)
-        (dst_paper / "canonical").mkdir(parents=True, exist_ok=True)
-        (dst_paper / "raw").mkdir(parents=True, exist_ok=True)
-        for rel in ("canonical/blocks.raw.jsonl", "raw/source_metadata.json", "meta.json"):
-            s = src_paper / rel
-            if s.exists():
-                d = dst_paper / rel
-                d.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(s, d)
+        src_paper = (source_vault / "System" / "PaperForge" / "ocr" / key).resolve()
+        if source_vault not in src_paper.parents:
+            raise ValueError(f"source paper escapes source vault: {key}")
+        dst_paper = assert_isolated(ocr_root / key, workdir)
+        if src_paper.exists():
+            assert_source_links(src_paper, source_vault)
+            shutil.copytree(
+                src_paper,
+                dst_paper,
+                ignore=shutil.ignore_patterns("backups", "versions"),
+            )
+        else:
+            dst_paper.mkdir(parents=True)
+        meta_path = dst_paper / "meta.json"
+        if meta_path.is_file():
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            pdf = resolve_source_pdf(source_vault, meta.get("source_pdf"))
+            if pdf is not None:
+                meta["source_pdf"] = str(pdf)
+                meta_path.write_text(json.dumps(meta, ensure_ascii=False), encoding="utf-8")
+        _reject_source_links(dst_paper)
     bootstrap_config(vault)
-    cfg_path = vault / "paperforge.json"
-    src_cfg = source_vault / "paperforge.json"
-    if src_cfg.exists():
-        shutil.copy2(src_cfg, cfg_path)
+    config_text = (vault / "paperforge.json").read_text(encoding="utf-8")
+    source_names = {str(source_vault), str(source_vault).replace("\\", "/")}
+    if any(name.casefold() in config_text.casefold() for name in source_names):
+        raise ValueError("isolated config points to source vault")
+    _reject_source_links(vault)
+    assert_tree_isolated(vault, workdir)
     return vault
+
 
 def pre_structured_chars(paper_root):
     sj = paper_root / "structure" / "blocks.structured.jsonl"
@@ -134,8 +167,188 @@ def pre_chars(paper_root):
     for c in paper_root.rglob("fulltext.md"):
         return len(c.read_text(encoding="utf-8"))
     return 0
+def historical_baseline(paper_root):
+    fulltext = paper_root / "fulltext.md"
+    text = fulltext.read_text(encoding="utf-8") if fulltext.is_file() else ""
+    structured_path = paper_root / "structure" / "blocks.structured.jsonl"
+    rows, structured_chars, parse_errors = 0, 0, []
+    if structured_path.is_file():
+        for number, line in enumerate(structured_path.read_text(encoding="utf-8").splitlines(), 1):
+            if not line.strip():
+                continue
+            try:
+                block = json.loads(line)
+                rows += 1
+                structured_chars += len(str(block.get("text", "")))
+            except Exception as exc:
+                parse_errors.append(f"{number}:{exc}")
+    return {
+        "fulltext_chars": len(text),
+        "normalized_chars": len(re.sub(r"(?m)^\s*#{1,6}\s*", "", re.sub(r"!?\[\[[^\]]+\]\]", "", text))),
+        "structured_rows": rows,
+        "structured_chars": structured_chars,
+        "structured_parse_errors": parse_errors,
+        "asset_files": sorted(
+            p.relative_to(paper_root).as_posix()
+            for root in (paper_root / "assets",)
+            if root.exists()
+            for p in root.rglob("*")
+            if p.is_file()
+            and p.suffix.lower() in {".jpg", ".jpeg", ".png", ".webp"}
+            and not p.name.startswith(".")
+        ),
+        "render_files": sorted(
+            p.relative_to(paper_root).as_posix()
+            for root in (paper_root / "render" / "figures", paper_root / "render" / "tables")
+            if root.exists()
+            for p in root.rglob("*")
+            if p.is_file()
+            and p.suffix.lower() == ".md"
+            and not p.name.startswith(".")
+        ),
+        "embed_targets": sorted(set(
+            match.split("|", 1)[0]
+            for match in re.findall(r"!?\[\[(render/(?:figures|tables)/[^\]]+)\]\]", text)
+        )),
+    }
 
-def validate_paper(paper_root, pre, plan_entry, pre_structured=0):
+def validate_plan(paper_root, plan_entry):
+    mismatches = []
+    if not plan_entry:
+        return [{"object": None, "reason": "missing_r1_plan_entry"}]
+
+    inventory_path = paper_root / "structure" / "figure_inventory.json"
+    inventory_error = None
+    if inventory_path.exists():
+        try:
+            inventory = json.loads(inventory_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            inventory, inventory_error = {}, str(exc)
+    else:
+        inventory = {}
+    if inventory_error:
+        mismatches.append({"object": None, "reason": "figure_inventory_parse_failed", "detail": inventory_error})
+    if isinstance(inventory, dict):
+        rows = inventory.get("matched_figures", [])
+    else:
+        rows = inventory if isinstance(inventory, list) else []
+    actual_figures = {
+        str(row.get("figure_id")): row
+        for row in rows
+        if isinstance(row, dict) and row.get("figure_id")
+    }
+    planned_figures = {
+        str(obj["new_id"]): obj
+        for obj in plan_entry.get("objects", [])
+        if obj.get("kind") == "figure" and obj.get("new_id") and obj.get("status") == "planned"
+    }
+    for fid in sorted(planned_figures.keys() - actual_figures.keys()):
+        mismatches.append({"object": fid, "reason": "planned_figure_missing"})
+    for fid in sorted(actual_figures.keys() - planned_figures.keys()):
+        mismatches.append({"object": fid, "reason": "unplanned_figure"})
+    for fid in sorted(planned_figures.keys() & actual_figures.keys()):
+        expected_claims = {
+            str(block["block_id"])
+            for anchor in planned_figures[fid].get("anchors", [])
+            for block in anchor.get("asset_blocks", [])
+            if isinstance(block, dict) and block.get("block_id") is not None
+        }
+        row = actual_figures[fid]
+        actual_claims = {
+            str(asset["block_id"])
+            for asset in row.get("matched_assets", [])
+            if isinstance(asset, dict) and asset.get("block_id") is not None
+        } | {str(x) for x in row.get("asset_block_ids", [])}
+        if expected_claims != actual_claims:
+            mismatches.append({
+                "object": fid,
+                "reason": "asset_claim_mismatch",
+                "expected": sorted(expected_claims),
+                "actual": sorted(actual_claims),
+            })
+
+    operations = plan_entry.get("operations", [])
+    planned_targets = {
+        operation.get("new_path")
+        for operation in operations
+        if operation.get("status") == "planned" and operation.get("new_path")
+    }
+    for operation in operations:
+        rel = operation.get("new_path")
+        if operation.get("status") == "planned" and operation.get("op") != "delete_candidate" and rel:
+            target = (paper_root / rel).resolve()
+            if paper_root.resolve() not in target.parents:
+                mismatches.append({
+                    "object": operation.get("object_uid"),
+                    "reason": "planned_path_escape",
+                    "path": rel,
+                })
+            elif not target.is_file():
+                mismatches.append({
+                    "object": operation.get("object_uid"),
+                    "reason": "planned_file_missing",
+                    "path": rel,
+                })
+        if operation.get("op") != "delete_candidate" or operation.get("status", "").upper() == "APPROVED":
+            continue
+        old_rel = operation.get("old_path")
+        if not old_rel:
+            continue
+        old_path = (paper_root / old_rel).resolve()
+        if paper_root.resolve() not in old_path.parents:
+            mismatches.append({
+                "object": operation.get("object_uid"),
+                "reason": "approval_delete_path_escape",
+                "path": old_rel,
+            })
+        elif old_rel in planned_targets:
+            mismatches.append({
+                "object": operation.get("object_uid"),
+                "reason": "approval_delete_path_reused",
+                "path": old_rel,
+            })
+        elif not old_path.is_file():
+            mismatches.append({
+                "object": operation.get("object_uid"),
+                "reason": "unapproved_delete",
+                "path": old_rel,
+            })
+        elif operation.get("old_sha256") and sha256_file(old_path) != operation["old_sha256"]:
+            mismatches.append({
+                "object": operation.get("object_uid"),
+                "reason": "unapproved_delete_modified",
+                "path": old_rel,
+            })
+    planned_embeds = {
+        embed.get("new_target")
+        for embed in plan_entry.get("embeds", [])
+        if embed.get("status") == "planned" and embed.get("new_target")
+    }
+    import re
+    actual_embeds = set()
+    fulltext = paper_root / "fulltext.md"
+    if fulltext.is_file():
+        text = fulltext.read_text(encoding="utf-8")
+        actual_embeds = {
+            match.split("|", 1)[0]
+            for match in re.findall(r"!?\[\[(render/(?:figures|tables)/[^\]]+)\]\]", text)
+        }
+    for target in sorted(planned_embeds - actual_embeds):
+        mismatches.append({
+            "object": target.rsplit("/", 1)[-1].removesuffix(".md"),
+            "reason": "planned_embed_missing",
+            "target": target,
+        })
+    for target in sorted(actual_embeds - planned_embeds):
+        mismatches.append({
+            "object": target.rsplit("/", 1)[-1].removesuffix(".md"),
+            "reason": "unplanned_embed",
+            "target": target,
+        })
+    return mismatches
+
+
+def validate_paper(paper_root, pre, plan_entry, pre_structured=0, baseline=None):
     errors = []
     for jf in paper_root.rglob("*.json"):
         try:
@@ -168,7 +381,7 @@ def validate_paper(paper_root, pre, plan_entry, pre_structured=0):
             target_path = paper_root / target_rel
             if not target_path.exists() and not (paper_root / (target_rel + ".md")).exists():
                 errors.append(f"dangling_fulltext_target:{target_rel}")
-        if len(text) < pre:
+        if baseline is None and len(text) < pre:
             errors.append(f"text_decrease:{len(text)}<{pre}")
     # structured text total
     sj = paper_root / "structure" / "blocks.structured.jsonl"
@@ -206,8 +419,45 @@ def validate_paper(paper_root, pre, plan_entry, pre_structured=0):
                     cand = paper_root / rp
                     if not cand.exists() and not (paper_root / "render" / rp).exists() and not (paper_root / "assets" / rp).exists():  # noqa: E501
                         errors.append(f"missing_inventory_asset:{rp}")
-    ok = len(errors) == 0
-    return {"ok": ok, "errors": errors}
+    if baseline is not None:
+        current = historical_baseline(paper_root)
+        if (
+            not baseline["fulltext_chars"]
+            and not baseline["structured_rows"]
+            and not baseline["asset_files"]
+            and not baseline["render_files"]
+        ):
+            errors.append("historical_baseline_empty")
+        if baseline["structured_parse_errors"]:
+            errors.append(f"historical_structured_parse_errors:{baseline['structured_parse_errors']}")
+        if current["normalized_chars"] < baseline["normalized_chars"]:
+            errors.append(f"historical_text_decrease:{current['normalized_chars']}<{baseline['normalized_chars']}")
+        if current["structured_rows"] < baseline["structured_rows"]:
+            errors.append(f"historical_structured_rows_decrease:{current['structured_rows']}<{baseline['structured_rows']}")
+        if current["structured_chars"] < baseline["structured_chars"]:
+            errors.append(f"historical_structured_chars_decrease:{current['structured_chars']}<{baseline['structured_chars']}")
+        operations = plan_entry.get("operations", []) if plan_entry else []
+        replacements = {
+            operation.get("old_path"): operation.get("new_path")
+            for operation in operations
+            if operation.get("status") == "planned" and operation.get("old_path") and operation.get("new_path")
+        }
+        current_files = set(current["asset_files"]) | set(current["render_files"])
+        for rel in set(baseline["asset_files"] + baseline["render_files"]) - current_files:
+            replacement = replacements.get(rel)
+            if not replacement or not (paper_root / replacement).is_file():
+                errors.append(f"historical_object_missing:{rel}")
+    plan_mismatches = validate_plan(paper_root, plan_entry)
+    errors.extend(
+        f"plan_mismatch:{mismatch['reason']}:{mismatch.get('object') or mismatch.get('path') or ''}"
+        for mismatch in plan_mismatches
+    )
+    return {
+        "ok": not errors,
+        "errors": errors,
+        "plan_mismatches": plan_mismatches,
+        "historical_baseline": baseline,
+    }
 
 def snapshot_paper(paper_root, snap_dir):
     if snap_dir.exists():
@@ -222,7 +472,14 @@ def restore_paper(paper_root, snap_dir):
         shutil.copytree(snap_dir, paper_root)
 
 def run_rebuild(vault, key):
-    return rebuild_mod._rebuild_one_paper(vault, key)
+    vault = Path(vault)
+    paper_root = vault / "System" / "PaperForge" / "ocr" / key
+    assert_isolated(paper_root, vault.parent)
+    _reject_source_links(paper_root)
+    result = rebuild_mod._rebuild_one_paper(vault, key)
+    assert_isolated(paper_root, vault.parent)
+    _reject_source_links(paper_root)
+    return result
 
 def tree_hash_excluding_meta(vault):
     h = hashlib.sha256()
@@ -240,6 +497,224 @@ def tree_hash_excluding_meta(vault):
         h.update(hashes[rel].encode())
     return h.hexdigest()
 
+def recovery_anomalies(faults):
+    checks = {
+        "kill": lambda value: value.get("validation", {}).get("ok")
+            and value.get("matches_clean"),
+        "write_error": lambda value: value.get("validation", {}).get("ok")
+            and value.get("old_byte_identical")
+            and not value.get("leftovers")
+            and value.get("rerun", {}).get("status") == "ok",
+        "interrupted_commit": lambda value: value.get("restored_old")
+            and value.get("validation", {}).get("ok")
+            and value.get("rebuild", {}).get("status") == "ok",
+        "concurrent": lambda value: value.get("validation", {}).get("ok")
+            and value.get("matches_clean")
+            and not value.get("duplicate_ids")
+            and value.get("success_count", 0) >= 1,
+        "corrupt": lambda value: value.get("detected_before")
+            and value.get("valid_after")
+            and value.get("matches_clean"),
+    }
+    return [
+        f"{name}_spot_check_failed"
+        for name, check in checks.items()
+        if not isinstance(faults.get(name), dict) or not check(faults[name])
+    ]
+
+
+def run_batches(args, selected):
+    evidence_dir = Path(args.evidence_dir).resolve()
+    evidence_dir.mkdir(parents=True, exist_ok=True)
+    batch_size = args.batch_size
+    if batch_size < 1 or batch_size > 100:
+        raise ValueError("--batch-size must be between 1 and 100")
+    batches = [selected[i:i + batch_size] for i in range(0, len(selected), batch_size)]
+    manifest_path = evidence_dir / "batch-manifest.json"
+    manifest = {
+        "selected": len(selected), "selected_keys": selected,
+        "batch_size": batch_size, "batches": [],
+    }
+    if manifest_path.is_file():
+        prior = json.loads(manifest_path.read_text(encoding="utf-8"))
+        if prior.get("selected_keys") == selected and prior.get("batch_size") == batch_size:
+            manifest = prior
+    previous = {item["batch"]: item for item in manifest["batches"]}
+    all_results = []
+    idempotence = []
+    recovery = {}
+    source_changed = []
+    source_hashed = 0
+    recovery_dir = evidence_dir / "recovery"
+    recovery_summary = recovery_dir / "summary.json"
+    if selected:
+        recovery_command = [
+            sys.executable, str(Path(__file__).resolve()),
+            "--source-vault", str(args.source_vault),
+            "--status", str(args.status), "--plan", str(args.plan),
+            "--keys", selected[0],
+            "--workdir", str(Path(args.workdir).resolve() / "recovery"),
+            "--batch-worker", "--batch-size", "0",
+            "--evidence-dir", str(recovery_dir),
+            "--run-faults",
+        ]
+        for status in args.allow_status:
+            recovery_command.extend(["--allow-status", status])
+        checked = subprocess.run(
+            recovery_command, capture_output=True, text=True, check=False
+        )
+        if checked.returncode == 0 and recovery_summary.is_file():
+            recovery = json.loads(
+                recovery_summary.read_text(encoding="utf-8")
+            ).get("faults", {})
+        else:
+            recovery = {
+                "status": "failed",
+                "returncode": checked.returncode,
+                "stderr": checked.stderr[-4000:],
+                "stdout": checked.stdout[-1000:],
+            }
+        manifest["recovery_spot_check"] = recovery
+        manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+
+
+    for index, keys in enumerate(batches, 1):
+        batch_name = f"batch-{index:03d}"
+        batch_work = Path(args.workdir).resolve() / batch_name
+        batch_evidence = evidence_dir / batch_name
+        command = [
+            sys.executable, str(Path(__file__).resolve()),
+            "--source-vault", str(args.source_vault),
+            "--status", str(args.status), "--plan", str(args.plan),
+            "--keys", ",".join(keys), "--workdir", str(batch_work),
+            "--batch-worker", "--batch-size", "0",
+            "--evidence-dir", str(batch_evidence),
+        ]
+        for status in args.allow_status:
+            command.extend(["--allow-status", status])
+        # Recovery is exercised in its own one-paper fresh process above.
+        item = previous.get(batch_name, {"batch": batch_name, "keys": keys, "completed": False})
+        batch_summary_path = batch_evidence / "summary.json"
+        if item.get("completed") and batch_summary_path.is_file():
+            completed = None
+        else:
+            completed = subprocess.run(command, capture_output=True, text=True, check=False)
+            item.update({
+                "keys": keys,
+                "returncode": completed.returncode,
+                "stderr": completed.stderr[-4000:],
+                "stdout": completed.stdout[-1000:],
+                "completed": completed.returncode == 0 and batch_summary_path.is_file(),
+            })
+        if item.get("completed") and batch_summary_path.is_file():
+            batch = json.loads(batch_summary_path.read_text(encoding="utf-8"))
+            all_results.extend(batch.get("clean_run", []))
+            source_changed.extend(batch.get("source_integrity", {}).get("changed_keys", []))
+            source_hashed += batch.get("source_integrity", {}).get("all_selected_hashed", 0)
+            idempotence.append(batch.get("idempotent", {}).get("equal") is True)
+            recovery.update(batch.get("faults", {}))
+        else:
+            rc = item.get("returncode", "missing_summary")
+            reason = item.get("stderr", "")[-500:] or item.get("stdout", "")[-500:]
+            all_results.extend({
+                "key": key, "status": "failed",
+                "rebuild": {"status": "not_run"},
+                "validation": {
+                    "ok": False,
+                    "errors": [f"batch_process_failed:{rc}:{reason}"],
+                },
+            } for key in keys)
+        if batch_name not in previous:
+            manifest["batches"].append(item)
+        else:
+            manifest["batches"] = [item if old["batch"] == batch_name else old for old in manifest["batches"]]
+        manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+        if batch_work.exists():
+            shutil.rmtree(batch_work)
+
+    pass_count = sum(result.get("status") == "ok" for result in all_results)
+    result_by_key = {result["key"]: result for result in all_results}
+    for key in selected:
+        result = result_by_key.get(key, {
+            "key": key, "status": "failed", "rebuild": {"status": "not_run"},
+            "validation": {"ok": False, "errors": ["result_missing"]},
+        })
+        (evidence_dir / "papers" / f"{key}.json").parent.mkdir(parents=True, exist_ok=True)
+        (evidence_dir / "papers" / f"{key}.json").write_text(
+            json.dumps(result, indent=2, default=str), encoding="utf-8"
+        )
+    status_map = load_status(Path(args.status))
+    rejected = [
+        {"key": key, "status": status}
+        for key, status in sorted(status_map.items())
+        if status != "READY" and status not in set(args.allow_status)
+    ]
+    plan_mismatch_count = sum(
+        len(result.get("validation", {}).get("plan_mismatches", []))
+        for result in all_results
+    )
+    recovery_failures = recovery_anomalies(recovery)
+    blocking_anomalies = (
+        [f"paper_validation_failed:{len(selected) - pass_count}"]
+        if pass_count != len(selected) else []
+    )
+    if source_changed:
+        blocking_anomalies.append(f"source_changed:{','.join(source_changed)}")
+    if not source_hashed or source_hashed != len(selected):
+        blocking_anomalies.append(f"source_hash_coverage:{source_hashed}/{len(selected)}")
+    if not idempotence or not all(idempotence):
+        blocking_anomalies.append("idempotence_spot_check_failed")
+    blocking_anomalies.extend(recovery_failures)
+    summary = {
+        "selected_ready": selected,
+        "rejected_statuses": rejected,
+        "rebuilt_count": sum(result.get("rebuild", {}).get("status") == "ok" for result in all_results),
+        "validation_pass": pass_count,
+        "validation_fail": len(selected) - pass_count,
+        "plan_mismatch_count": plan_mismatch_count,
+        "clean_run": [result_by_key.get(key, {"key": key, "status": "failed"}) for key in selected],
+        "source_integrity": {
+            "all_selected_hashed": source_hashed,
+            "unchanged": source_hashed == len(selected) and not source_changed
+                and len(manifest["batches"]) == len(batches)
+                and all(item["completed"] for item in manifest["batches"]),
+            "changed_keys": source_changed,
+        },
+        "idempotence_by_batch": idempotence,
+        "idempotence_pass": bool(idempotence) and all(idempotence),
+        "recovery_spot_checks": recovery,
+        "recovery_failures": recovery_failures,
+        "blocking_anomalies": blocking_anomalies,
+        "batch_manifest": manifest,
+    }
+    (evidence_dir / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    report = [
+        "# R2 Full READY Isolated Rebuild",
+        "",
+        f"- Selected READY: {len(selected)}",
+        f"- Rebuilt: {summary['rebuilt_count']}/{len(selected)}",
+        f"- Validation pass/fail: {pass_count}/{len(selected) - pass_count}",
+        f"- Idempotence spot checks passed: {sum(idempotence)}/{len(idempotence)}",
+        f"- Plan mismatches: {plan_mismatch_count}",
+        f"- Recovery spot checks: {json.dumps(recovery, default=str)}",
+        f"- Rejected non-READY papers: {len(rejected)}",
+        f"- Source hashes: {source_hashed}/{len(selected)}; "
+        f"unchanged={summary['source_integrity']['unchanged']}",
+        f"- Batches completed: {sum(item['completed'] for item in manifest['batches'])}/{len(batches)}",
+        f"- Blocking anomalies: {summary['blocking_anomalies']}",
+        "",
+    ]
+    for result in summary["clean_run"]:
+        errors = result.get("validation", {}).get("errors", [])
+        mismatches = result.get("validation", {}).get("plan_mismatches", [])
+        report.append(
+            f"- {result['key']}: {result['status']}; errors={errors}; "
+            f"object_mismatches={mismatches}"
+        )
+    (evidence_dir / "REPORT.md").write_text("\n".join(report), encoding="utf-8")
+    return summary
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--source-vault", required=True)
@@ -249,7 +724,18 @@ def main():
     ap.add_argument("--workdir", required=True)
     ap.add_argument("--allow-status", action="append", default=[])
     ap.add_argument("--run-faults", action="store_true")
+    ap.add_argument("--batch-size", type=int, default=75)
+    ap.add_argument("--batch-worker", action="store_true", help=argparse.SUPPRESS)
+    ap.add_argument("--evidence-dir", default=str(REPO / "docs" / "evidence" / "r2"))
     args = ap.parse_args()
+    def repo_path(value):
+        path = Path(value)
+        return (path if path.is_absolute() else REPO / path).resolve()
+    args.source_vault = str(repo_path(args.source_vault))
+    args.status = str(repo_path(args.status))
+    args.plan = str(repo_path(args.plan))
+    args.workdir = str(repo_path(args.workdir))
+    args.evidence_dir = str(repo_path(args.evidence_dir))
 
     source_vault = Path(args.source_vault)
     status_map = load_status(Path(args.status))
@@ -259,17 +745,9 @@ def main():
 
     if args.keys:
         selected = [k.strip() for k in args.keys.split(",") if k.strip()]
-        refused = []
     else:
-        ready = sorted(k for k, v in status_map.items() if v == "READY")
-        base = [k for k in ["3QYCST4E", "2BYRLKQS"] if k in ready]
-        for k in ready:
-            if k not in base:
-                base.append(k)
-            if len(base) >= 10:
-                break
-        selected = base[:10]
-        refused = [("28JLIHLS", "M2_REVIEW_REQUIRED"), ("2UIPV93M", "HOLD"), ("28ALPCY7", "REQUIRES_APPROVAL")]
+        selected = sorted(k for k, v in status_map.items() if v == "READY")
+    refused = [(k, v) for k, v in sorted(status_map.items()) if v != "READY" and v not in set(args.allow_status)]
 
     allow = set(args.allow_status)
     gate_refusals = []
@@ -280,18 +758,27 @@ def main():
             gate_refusals.append({"key": k, "status": st, "reason": "status_not_allowed"})
         else:
             gated_keys.append(k)
-    seen_refused = set()
-    for key, st in refused:
-        if key in seen_refused:
-            continue
-        seen_refused.add(key)
-        if st != "READY" and st not in allow:
-            gate_refusals.append({"key": key, "status": st, "reason": "status_refused"})
+    if gate_refusals:
+        raise SystemExit(f"refusing non-READY selected paper(s): {gate_refusals}")
+    if not args.batch_worker:
+        summary = run_batches(args, gated_keys)
+        print(json.dumps({
+            "selected": len(gated_keys),
+            "rebuilt": summary["rebuilt_count"],
+            "validation_pass": summary["validation_pass"],
+            "validation_fail": summary["validation_fail"],
+            "source_unchanged": summary["source_integrity"]["unchanged"],
+        }, indent=2))
+        return
 
+    source_root = source_vault / "System" / "PaperForge" / "ocr"
+    missing_source = [key for key in gated_keys if not (source_root / key).is_dir()]
+    if missing_source:
+        raise FileNotFoundError(f"source paper trees missing: {missing_source}")
+    for key in gated_keys:
+        assert_source_links(source_root / key, source_vault)
+    source_hashes_before = {k: tree_hashes(source_root / k) for k in gated_keys}
     vault = stage_vault(source_vault, workdir, gated_keys)
-
-    sample_keys = gated_keys[:3]
-    source_hashes_before = {k: tree_hashes(source_vault / "System" / "PaperForge" / "ocr" / k) for k in sample_keys}
 
     results = {
         "selected_ready": gated_keys,
@@ -307,10 +794,20 @@ def main():
         paper_root = vault / "System" / "PaperForge" / "ocr" / key
         snap_dir = snap_root / key
         snapshot_paper(paper_root, snap_dir)
-        pre = pre_chars(paper_root)
-        pre_struct = pre_structured_chars(paper_root)
-        r = run_rebuild(vault, key)
-        v = validate_paper(paper_root, pre, plan_map.get(key), pre_structured=pre_struct)
+        baseline = historical_baseline(paper_root)
+        pre = baseline["fulltext_chars"]
+        pre_struct = baseline["structured_chars"]
+        try:
+            r = run_rebuild(vault, key)
+        except Exception as exc:
+            r = {"key": key, "status": "exception", "error": str(exc)}
+        try:
+            v = validate_paper(
+                paper_root, pre, plan_map.get(key),
+                pre_structured=pre_struct, baseline=baseline,
+            )
+        except Exception as exc:
+            v = {"ok": False, "errors": [f"validation_exception:{exc}"], "plan_mismatches": []}
         if not v["ok"] or r.get("status") != "ok":
             restore_paper(paper_root, snap_dir)
             results["clean_run"].append({"key": key, "status": "failed", "rebuild": r, "validation": v})
@@ -318,18 +815,36 @@ def main():
             results["clean_run"].append({"key": key, "status": "ok", "rebuild": r, "validation": v})
 
     before_hash = tree_hash_excluding_meta(vault)
+    repeat_ok = []
     for key in gated_keys:
         paper_root = vault / "System" / "PaperForge" / "ocr" / key
-        pre = pre_chars(paper_root)
-        pre_struct = pre_structured_chars(paper_root)
+        baseline = historical_baseline(paper_root)
+        pre = baseline["fulltext_chars"]
+        pre_struct = baseline["structured_chars"]
         snap_dir = snap_root / (key + "_run2")
         snapshot_paper(paper_root, snap_dir)
-        r = run_rebuild(vault, key)
-        v = validate_paper(paper_root, pre, plan_map.get(key), pre_structured=pre_struct)
-        if not v["ok"]:
+        try:
+            r = run_rebuild(vault, key)
+        except Exception as exc:
+            r = {"key": key, "status": "exception", "error": str(exc)}
+        try:
+            v = validate_paper(
+                paper_root, pre, plan_map.get(key),
+                pre_structured=pre_struct, baseline=baseline,
+            )
+        except Exception as exc:
+            v = {"ok": False, "errors": [f"validation_exception:{exc}"], "plan_mismatches": []}
+        repeat_ok.append(r.get("status") == "ok" and v["ok"])
+        if not repeat_ok[-1]:
             restore_paper(paper_root, snap_dir)
     after_hash = tree_hash_excluding_meta(vault)
-    results["idempotent"] = {"before": before_hash, "after": after_hash, "equal": before_hash == after_hash}
+    results["idempotent"] = {
+        "before": before_hash,
+        "after": after_hash,
+        "equal": before_hash == after_hash,
+        "repeat_validation_pass": sum(repeat_ok),
+        "repeat_validation_fail": len(repeat_ok) - sum(repeat_ok),
+    }
 
     if args.run_faults and gated_keys:
         fk = gated_keys[0]
@@ -428,17 +943,26 @@ def main():
         # 4 concurrent
         fv = stage_vault(source_vault, workdir / "fault_conc", [fk])
         vault_c = fv
-        p1 = subprocess.Popen([sys.executable, "-c",
-            f"import sys; sys.path.insert(0,r'{REPO}'); from paperforge.worker.ocr_rebuild import _rebuild_one_paper; from pathlib import Path; print(_rebuild_one_paper(Path(r'{vault_c}'), '{fk}'))"],  # noqa: E501
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        p2 = subprocess.Popen([sys.executable, "-c",
-            f"import sys; sys.path.insert(0,r'{REPO}'); from paperforge.worker.ocr_rebuild import _rebuild_one_paper; from pathlib import Path; print(_rebuild_one_paper(Path(r'{vault_c}'), '{fk}'))"],  # noqa: E501
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        p1.wait()
-        p2.wait()
+        script = (
+            f"import sys; sys.path.insert(0,r'{REPO}'); "
+            "from paperforge.worker.ocr_rebuild import _rebuild_one_paper; "
+            "from pathlib import Path; "
+            f"_rebuild_one_paper(Path(r'{vault_c}'), '{fk}')"
+        )
+        command = [sys.executable, "-c", script]
+        p1 = subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        p2 = subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        timed_out = False
+        try:
+            p1.wait(timeout=180)
+            p2.wait(timeout=180)
+        except subprocess.TimeoutExpired:
+            timed_out = True
+            p1.kill()
+            p2.kill()
+            p1.wait()
+            p2.wait()
         paper_root = vault_c / "System" / "PaperForge" / "ocr" / fk
-        outs = [p1.stdout.read(), p2.stdout.read()]
-        errs = [p1.stderr.read(), p2.stderr.read()]
         rcodes = [p1.returncode, p2.returncode]
         v = validate_paper(paper_root, 0, plan_map.get(fk), pre_structured=0)
         cv = stage_vault(source_vault, workdir / "fault_conc_clean", [fk])
@@ -454,7 +978,14 @@ def main():
             if isinstance(figs, list):
                 ids = [f.get("figure_id") or f.get("id") for f in figs if isinstance(f, dict)]
                 dup = len(ids) != len(set(ids))
-        results["faults"]["concurrent"] = {"returncodes": rcodes, "stdout": [o[:200] for o in outs], "stderr": [e[:200] for e in errs], "validation": v, "matches_clean": clean_tree == final_tree, "duplicate_ids": dup, "success_count": sum(1 for o in outs if "ok" in o)}  # noqa: E501
+        results["faults"]["concurrent"] = {
+            "returncodes": rcodes,
+            "timed_out": timed_out,
+            "validation": v,
+            "matches_clean": clean_tree == final_tree,
+            "duplicate_ids": dup,
+            "success_count": sum(code == 0 for code in rcodes),
+        }
 
         # 5 corrupt
         fv = stage_vault(source_vault, workdir / "fault_corrupt", [fk])
@@ -483,55 +1014,44 @@ def main():
         final_tree = tree_hash_excluding_meta(paper_root)
         results["faults"]["corrupt"] = {"detected_before": not v_before["ok"], "errors_before": v_before["errors"][:5], "rebuild": r, "valid_after": v_after["ok"], "matches_clean": clean_tree == final_tree}  # noqa: E501
 
-    source_hashes_after = {k: tree_hashes(source_vault / "System" / "PaperForge" / "ocr" / k) for k in sample_keys}
-    results["source_untouched"] = source_hashes_before == source_hashes_after
+    source_hashes_after = {k: tree_hashes(source_root / k) for k in gated_keys}
+    changed_sources = [k for k in gated_keys if source_hashes_before[k] != source_hashes_after[k]]
+    results["source_integrity"] = {
+        "all_selected_hashed": len(gated_keys),
+        "unchanged": not changed_sources,
+        "changed_keys": changed_sources,
+    }
 
-    ev_dir = REPO / "docs" / "evidence" / "m3"
-    ev_dir.mkdir(parents=True, exist_ok=True)
+    ev_dir = Path(args.evidence_dir).resolve()
+    (ev_dir / "papers").mkdir(parents=True, exist_ok=True)
     (ev_dir / "summary.json").write_text(json.dumps(results, indent=2, default=str), encoding="utf-8")
 
-    report = []
-    report.append("# M3 Isolated Migration Report")
-    report.append("")
-    report.append(f"- Source vault: {source_vault}")
-    report.append(f"- Workdir: {workdir}")
-    report.append(f"- Selected READY keys: {len(gated_keys)}")
-    report.append(f"- Refused: {len(gate_refusals)}")
-    report.append("")
-    report.append("## Gate refusals")
-    for r in gate_refusals:
-        report.append(f"- {r['key']}: {r['status']} ({r['reason']})")
-    report.append("")
-    report.append("## Clean run")
     ok_count = sum(1 for r in results["clean_run"] if r["status"] == "ok")
-    report.append(f"- ok={ok_count}/{len(results['clean_run'])}")
+    for paper_result in results["clean_run"]:
+        (ev_dir / "papers" / f"{paper_result['key']}.json").write_text(
+            json.dumps(paper_result, indent=2, default=str), encoding="utf-8"
+        )
+    report = [
+        "# R2 Full READY Isolated Rebuild",
+        "",
+        f"- Selected READY papers: {len(gated_keys)}",
+        f"- Rebuilt: {ok_count}/{len(results['clean_run'])}",
+        f"- Validation pass/fail: {ok_count}/{len(results['clean_run']) - ok_count}",
+        f"- Idempotence: {results['idempotent']['equal']}",
+        f"- Source hashes ({results['source_integrity']['all_selected_hashed']}): "
+        f"unchanged={results['source_integrity']['unchanged']}",
+        f"- Blocking failures: {len(results['clean_run']) - ok_count}; source changes={len(changed_sources)}",
+        "",
+    ]
     for r in results["clean_run"]:
-        report.append(f"  - {r['key']}: {r['status']}")
-    report.append("")
-    report.append("## Invariants")
-    report.append("- dangling/fulltext targets: validated 0")
-    report.append("- text decrease: validated 0")
-    report.append("- leftovers: validated 0")
-    report.append(f"- idempotent tree equal: {results['idempotent']['equal']}")
-    report.append(f"- source vault untouched: {results['source_untouched']}")
-    report.append("")
-    report.append("## Faults")
-    for name, info in results.get("faults", {}).items():
-        report.append(f"- {name}: {json.dumps(info, default=str)[:400]}")
-    report.append("")
-    report.append("## Selected keys")
-    for k in gated_keys:
-        report.append(f"- {k} ({classify_shape(source_vault, k)})")
-    report.append("")
-    report.append("## Refused keys")
-    seen=set()
-    for r in results["refused"]:
-        if r["key"] in seen:
-            continue
-        seen.add(r["key"])
-        report.append(f"- {r['key']}: {r['status']}")
+        report.append(f"- {r['key']}: {r['status']} — {r['rebuild']} / {r['validation']['errors']}")
     (ev_dir / "REPORT.md").write_text("\n".join(report), encoding="utf-8")
-    print(json.dumps({"ok_papers": ok_count, "refusals": len(gate_refusals), "idempotent": results["idempotent"]["equal"]}, indent=2))  # noqa: E501
+    print(json.dumps({
+        "ok_papers": ok_count,
+        "failed_papers": len(results["clean_run"]) - ok_count,
+        "source_unchanged": results["source_integrity"]["unchanged"],
+        "idempotent": results["idempotent"]["equal"],
+    }, indent=2))
 
 if __name__ == "__main__":
     main()

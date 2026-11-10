@@ -1,0 +1,46 @@
+{
+  "key": "5292L557",
+  "status": "failed",
+  "rebuild": {
+    "key": "5292L557",
+    "status": "ok"
+  },
+  "validation": {
+    "ok": false,
+    "errors": [
+      "text_decrease:21326<21360",
+      "historical_fulltext_decrease:21326<21360"
+    ],
+    "plan_mismatches": [],
+    "historical_baseline": {
+      "fulltext_chars": 21360,
+      "structured_rows": 175,
+      "structured_chars": 24053,
+      "structured_parse_errors": [],
+      "asset_files": [
+        "assets/figures/figure_001.jpg",
+        "assets/figures/figure_002.jpg",
+        "assets/orphans/orphan_001.jpg",
+        "assets/orphans/orphan_002.jpg",
+        "assets/orphans/orphan_003.jpg",
+        "assets/orphans/orphan_004.jpg",
+        "assets/orphans/orphan_005.jpg",
+        "assets/orphans/orphan_006.jpg"
+      ],
+      "render_files": [
+        "render/figures/figure_001.md",
+        "render/figures/figure_002.md",
+        "render/figures/orphan_001.md",
+        "render/figures/orphan_002.md",
+        "render/figures/orphan_003.md",
+        "render/figures/orphan_004.md",
+        "render/figures/orphan_005.md",
+        "render/figures/orphan_006.md"
+      ],
+      "embed_targets": [
+        "render/figures/figure_001.md",
+        "render/figures/figure_002.md"
+      ]
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "key": "63EYTG95",
+  "status": "ok",
+  "rebuild": {
+    "key": "63EYTG95",
+    "status": "ok"
+  },
+  "validation": {
+    "ok": true,
+    "errors": [],
+    "plan_mismatches": [],
+    "historical_baseline": {
+      "fulltext_chars": 2315,
+      "structured_rows": 10,
+      "structured_chars": 2909,
+      "structured_parse_errors": [],
+      "asset_files": [],
+      "render_files": [],
+      "embed_targets": []
+    }
+  }
+}

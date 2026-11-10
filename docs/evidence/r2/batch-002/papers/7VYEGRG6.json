@@ -1,0 +1,90 @@
+{
+  "key": "7VYEGRG6",
+  "status": "failed",
+  "rebuild": {
+    "key": "7VYEGRG6",
+    "status": "ok"
+  },
+  "validation": {
+    "ok": false,
+    "errors": [
+      "plan_mismatch:planned_file_missing:orphan_001",
+      "plan_mismatch:planned_file_missing:orphan_002",
+      "plan_mismatch:planned_file_missing:orphan_003",
+      "plan_mismatch:planned_file_missing:orphan_004",
+      "plan_mismatch:planned_file_missing:orphan_005",
+      "plan_mismatch:planned_file_missing:orphan_006",
+      "plan_mismatch:planned_file_missing:orphan_007",
+      "plan_mismatch:planned_file_missing:table_001",
+      "plan_mismatch:planned_file_missing:table_002"
+    ],
+    "plan_mismatches": [
+      {
+        "object": "orphan_001",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_001.jpg"
+      },
+      {
+        "object": "orphan_002",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_002.jpg"
+      },
+      {
+        "object": "orphan_003",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_003.jpg"
+      },
+      {
+        "object": "orphan_004",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_004.jpg"
+      },
+      {
+        "object": "orphan_005",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_005.jpg"
+      },
+      {
+        "object": "orphan_006",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_006.jpg"
+      },
+      {
+        "object": "orphan_007",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_007.jpg"
+      },
+      {
+        "object": "table_001",
+        "reason": "planned_file_missing",
+        "path": "assets/tables/table_001.jpg"
+      },
+      {
+        "object": "table_002",
+        "reason": "planned_file_missing",
+        "path": "assets/tables/table_002.jpg"
+      }
+    ],
+    "historical_baseline": {
+      "fulltext_chars": 71501,
+      "structured_rows": 307,
+      "structured_chars": 103274,
+      "structured_parse_errors": [],
+      "asset_files": [],
+      "render_files": [
+        "render/figures/orphan_001.md",
+        "render/figures/orphan_002.md",
+        "render/figures/orphan_003.md",
+        "render/figures/orphan_004.md",
+        "render/figures/orphan_005.md",
+        "render/figures/orphan_006.md",
+        "render/figures/orphan_007.md",
+        "render/tables/table_001.md",
+        "render/tables/table_002.md"
+      ],
+      "embed_targets": [
+        "render/tables/table_001.md"
+      ]
+    }
+  }
+}

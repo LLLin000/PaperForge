@@ -1,0 +1,22 @@
+{
+  "key": "2I7V3Y5B",
+  "status": "ok",
+  "rebuild": {
+    "key": "2I7V3Y5B",
+    "status": "ok"
+  },
+  "validation": {
+    "ok": true,
+    "errors": [],
+    "plan_mismatches": [],
+    "historical_baseline": {
+      "fulltext_chars": 38016,
+      "structured_rows": 131,
+      "structured_chars": 38178,
+      "structured_parse_errors": [],
+      "asset_files": [],
+      "render_files": [],
+      "embed_targets": []
+    }
+  }
+}

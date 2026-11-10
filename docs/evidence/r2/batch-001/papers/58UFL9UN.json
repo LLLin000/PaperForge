@@ -1,0 +1,76 @@
+{
+  "key": "58UFL9UN",
+  "status": "failed",
+  "rebuild": {
+    "key": "58UFL9UN",
+    "status": "ok"
+  },
+  "validation": {
+    "ok": false,
+    "errors": [
+      "text_decrease:58496<58507",
+      "historical_fulltext_decrease:58496<58507",
+      "historical_object_missing:render/figures/figure_004.md.edtz",
+      "historical_object_missing:render/figures/figure_001.md.edtz",
+      "historical_object_missing:render/figures/figure_002.md.edtz",
+      "historical_object_missing:render/figures/orphan_001.md.edtz",
+      "historical_object_missing:render/tables/table_001.md.edtz",
+      "historical_object_missing:render/tables/table_002.md.edtz",
+      "historical_object_missing:render/figures/figure_003.md.edtz",
+      "historical_object_missing:render/figures/orphan_002.md.edtz",
+      "plan_mismatch:planned_file_missing:figure_figure_p005_b7"
+    ],
+    "plan_mismatches": [
+      {
+        "object": "figure_figure_p005_b7",
+        "reason": "planned_file_missing",
+        "path": "assets/figures/figure_figure_p005_b7.jpg"
+      }
+    ],
+    "historical_baseline": {
+      "fulltext_chars": 58507,
+      "structured_rows": 269,
+      "structured_chars": 67598,
+      "structured_parse_errors": [],
+      "asset_files": [
+        "assets/figures/figure_001.jpg",
+        "assets/figures/figure_002.jpg",
+        "assets/figures/figure_003.jpg",
+        "assets/figures/figure_004.jpg",
+        "assets/orphans/orphan_001.jpg",
+        "assets/orphans/orphan_002.jpg",
+        "assets/orphans/orphan_003.jpg",
+        "assets/tables/table_001.jpg",
+        "assets/tables/table_002.jpg"
+      ],
+      "render_files": [
+        "render/figures/figure_001.md",
+        "render/figures/figure_001.md.edtz",
+        "render/figures/figure_002.md",
+        "render/figures/figure_002.md.edtz",
+        "render/figures/figure_003.md",
+        "render/figures/figure_003.md.edtz",
+        "render/figures/figure_004.md",
+        "render/figures/figure_004.md.edtz",
+        "render/figures/figure_reserved_004.md",
+        "render/figures/orphan_001.md",
+        "render/figures/orphan_001.md.edtz",
+        "render/figures/orphan_002.md",
+        "render/figures/orphan_002.md.edtz",
+        "render/figures/orphan_003.md",
+        "render/tables/table_001.md",
+        "render/tables/table_001.md.edtz",
+        "render/tables/table_002.md",
+        "render/tables/table_002.md.edtz"
+      ],
+      "embed_targets": [
+        "render/figures/figure_001.md",
+        "render/figures/figure_002.md",
+        "render/figures/figure_003.md",
+        "render/figures/figure_004.md",
+        "render/tables/table_001.md",
+        "render/tables/table_002.md"
+      ]
+    }
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "key": "26WC6NT7",
+  "status": "failed",
+  "rebuild": {
+    "key": "26WC6NT7",
+    "status": "ok"
+  },
+  "validation": {
+    "ok": false,
+    "errors": [
+      "historical_object_missing:render/tables/table_003.md.edtz",
+      "historical_object_missing:render/figures/figure_001.md.edtz",
+      "historical_object_missing:render/figures/figure_002.md.edtz",
+      "historical_object_missing:render/tables/table_001.md.edtz",
+      "historical_object_missing:render/tables/table_002.md.edtz",
+      "historical_object_missing:render/tables/table_004.md.edtz",
+      "historical_object_missing:render/figures/figure_003.md.edtz"
+    ],
+    "plan_mismatches": [],
+    "historical_baseline": {
+      "fulltext_chars": 59601,
+      "structured_rows": 220,
+      "structured_chars": 71726,
+      "structured_parse_errors": [],
+      "asset_files": [
+        "assets/figures/figure_001.jpg",
+        "assets/figures/figure_002.jpg",
+        "assets/figures/figure_003.jpg",
+        "assets/tables/table_001.jpg",
+        "assets/tables/table_002.jpg",
+        "assets/tables/table_003.jpg",
+        "assets/tables/table_004.jpg"
+      ],
+      "render_files": [
+        "render/figures/figure_001.md",
+        "render/figures/figure_001.md.edtz",
+        "render/figures/figure_002.md",
+        "render/figures/figure_002.md.edtz",
+        "render/figures/figure_003.md",
+        "render/figures/figure_003.md.edtz",
+        "render/tables/table_001.md",
+        "render/tables/table_001.md.edtz",
+        "render/tables/table_002.md",
+        "render/tables/table_002.md.edtz",
+        "render/tables/table_003.md",
+        "render/tables/table_003.md.edtz",
+        "render/tables/table_004.md",
+        "render/tables/table_004.md.edtz"
+      ],
+      "embed_targets": [
+        "render/figures/figure_001.md",
+        "render/figures/figure_002.md",
+        "render/figures/figure_003.md",
+        "render/tables/table_001.md",
+        "render/tables/table_002.md",
+        "render/tables/table_003.md",
+        "render/tables/table_004.md"
+      ]
+    }
+  }
+}

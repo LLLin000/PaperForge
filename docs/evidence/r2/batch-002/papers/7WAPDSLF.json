@@ -1,0 +1,137 @@
+{
+  "key": "7WAPDSLF",
+  "status": "failed",
+  "rebuild": {
+    "key": "7WAPDSLF",
+    "status": "ok"
+  },
+  "validation": {
+    "ok": false,
+    "errors": [
+      "plan_mismatch:planned_file_missing:figure_001",
+      "plan_mismatch:planned_file_missing:figure_002",
+      "plan_mismatch:planned_file_missing:figure_003",
+      "plan_mismatch:planned_file_missing:figure_004",
+      "plan_mismatch:planned_file_missing:figure_005",
+      "plan_mismatch:planned_file_missing:orphan_001",
+      "plan_mismatch:planned_file_missing:orphan_002",
+      "plan_mismatch:planned_file_missing:orphan_003",
+      "plan_mismatch:planned_file_missing:orphan_004",
+      "plan_mismatch:planned_file_missing:orphan_005",
+      "plan_mismatch:planned_file_missing:orphan_006",
+      "plan_mismatch:planned_file_missing:orphan_007",
+      "plan_mismatch:planned_file_missing:orphan_008",
+      "plan_mismatch:planned_file_missing:orphan_009",
+      "plan_mismatch:planned_file_missing:table_001"
+    ],
+    "plan_mismatches": [
+      {
+        "object": "figure_001",
+        "reason": "planned_file_missing",
+        "path": "assets/figures/figure_001.jpg"
+      },
+      {
+        "object": "figure_002",
+        "reason": "planned_file_missing",
+        "path": "assets/figures/figure_002.jpg"
+      },
+      {
+        "object": "figure_003",
+        "reason": "planned_file_missing",
+        "path": "assets/figures/figure_003.jpg"
+      },
+      {
+        "object": "figure_004",
+        "reason": "planned_file_missing",
+        "path": "assets/figures/figure_004.jpg"
+      },
+      {
+        "object": "figure_005",
+        "reason": "planned_file_missing",
+        "path": "assets/figures/figure_005.jpg"
+      },
+      {
+        "object": "orphan_001",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_001.jpg"
+      },
+      {
+        "object": "orphan_002",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_002.jpg"
+      },
+      {
+        "object": "orphan_003",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_003.jpg"
+      },
+      {
+        "object": "orphan_004",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_004.jpg"
+      },
+      {
+        "object": "orphan_005",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_005.jpg"
+      },
+      {
+        "object": "orphan_006",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_006.jpg"
+      },
+      {
+        "object": "orphan_007",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_007.jpg"
+      },
+      {
+        "object": "orphan_008",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_008.jpg"
+      },
+      {
+        "object": "orphan_009",
+        "reason": "planned_file_missing",
+        "path": "assets/orphans/orphan_009.jpg"
+      },
+      {
+        "object": "table_001",
+        "reason": "planned_file_missing",
+        "path": "assets/tables/table_001.jpg"
+      }
+    ],
+    "historical_baseline": {
+      "fulltext_chars": 43057,
+      "structured_rows": 180,
+      "structured_chars": 51064,
+      "structured_parse_errors": [],
+      "asset_files": [],
+      "render_files": [
+        "render/figures/figure_001.md",
+        "render/figures/figure_002.md",
+        "render/figures/figure_003.md",
+        "render/figures/figure_004.md",
+        "render/figures/figure_005.md",
+        "render/figures/orphan_001.md",
+        "render/figures/orphan_002.md",
+        "render/figures/orphan_003.md",
+        "render/figures/orphan_004.md",
+        "render/figures/orphan_005.md",
+        "render/figures/orphan_006.md",
+        "render/figures/orphan_007.md",
+        "render/figures/orphan_008.md",
+        "render/figures/orphan_009.md",
+        "render/tables/table_001.md"
+      ],
+      "embed_targets": [
+        "render/figures/figure_001.md",
+        "render/figures/figure_002.md",
+        "render/figures/figure_003.md",
+        "render/figures/figure_004.md",
+        "render/figures/figure_005.md",
+        "render/tables/table_001.md"
+      ]
+    }
+  }
+}

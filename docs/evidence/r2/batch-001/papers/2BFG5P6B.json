@@ -1,0 +1,64 @@
+{
+  "key": "2BFG5P6B",
+  "status": "failed",
+  "rebuild": {
+    "key": "2BFG5P6B",
+    "status": "ok"
+  },
+  "validation": {
+    "ok": false,
+    "errors": [
+      "historical_object_missing:render/figures/figure_004.md.edtz",
+      "historical_object_missing:render/figures/figure_002.md.edtz",
+      "historical_object_missing:render/figures/orphan_001.md.edtz",
+      "historical_object_missing:render/figures/figure_005.md.edtz",
+      "historical_object_missing:render/tables/table_001.md.edtz",
+      "historical_object_missing:render/figures/figure_006.md.edtz",
+      "historical_object_missing:render/figures/figure_003.md.edtz",
+      "historical_object_missing:render/figures/orphan_002.md.edtz"
+    ],
+    "plan_mismatches": [],
+    "historical_baseline": {
+      "fulltext_chars": 61393,
+      "structured_rows": 266,
+      "structured_chars": 66486,
+      "structured_parse_errors": [],
+      "asset_files": [
+        "assets/figures/figure_002.jpg",
+        "assets/figures/figure_003.jpg",
+        "assets/figures/figure_004.jpg",
+        "assets/figures/figure_005.jpg",
+        "assets/figures/figure_006.jpg",
+        "assets/orphans/orphan_001.jpg",
+        "assets/orphans/orphan_002.jpg",
+        "assets/tables/table_001.jpg"
+      ],
+      "render_files": [
+        "render/figures/figure_002.md",
+        "render/figures/figure_002.md.edtz",
+        "render/figures/figure_003.md",
+        "render/figures/figure_003.md.edtz",
+        "render/figures/figure_004.md",
+        "render/figures/figure_004.md.edtz",
+        "render/figures/figure_005.md",
+        "render/figures/figure_005.md.edtz",
+        "render/figures/figure_006.md",
+        "render/figures/figure_006.md.edtz",
+        "render/figures/orphan_001.md",
+        "render/figures/orphan_001.md.edtz",
+        "render/figures/orphan_002.md",
+        "render/figures/orphan_002.md.edtz",
+        "render/tables/table_001.md",
+        "render/tables/table_001.md.edtz"
+      ],
+      "embed_targets": [
+        "render/figures/figure_002.md",
+        "render/figures/figure_003.md",
+        "render/figures/figure_004.md",
+        "render/figures/figure_005.md",
+        "render/figures/figure_006.md",
+        "render/tables/table_001.md"
+      ]
+    }
+  }
+}

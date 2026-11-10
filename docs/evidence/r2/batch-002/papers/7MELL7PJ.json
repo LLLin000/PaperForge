@@ -1,0 +1,42 @@
+{
+  "key": "7MELL7PJ",
+  "status": "ok",
+  "rebuild": {
+    "key": "7MELL7PJ",
+    "status": "ok"
+  },
+  "validation": {
+    "ok": true,
+    "errors": [],
+    "plan_mismatches": [],
+    "historical_baseline": {
+      "fulltext_chars": 15453,
+      "structured_rows": 74,
+      "structured_chars": 16460,
+      "structured_parse_errors": [],
+      "asset_files": [
+        "assets/figures/figure_001.jpg",
+        "assets/figures/figure_002.jpg",
+        "assets/orphans/orphan_001.jpg",
+        "assets/orphans/orphan_002.jpg",
+        "assets/orphans/orphan_003.jpg",
+        "assets/orphans/orphan_004.jpg",
+        "assets/tables/table_001.jpg"
+      ],
+      "render_files": [
+        "render/figures/figure_001.md",
+        "render/figures/figure_002.md",
+        "render/figures/orphan_001.md",
+        "render/figures/orphan_002.md",
+        "render/figures/orphan_003.md",
+        "render/figures/orphan_004.md",
+        "render/tables/table_001.md"
+      ],
+      "embed_targets": [
+        "render/figures/figure_001.md",
+        "render/figures/figure_002.md",
+        "render/tables/table_001.md"
+      ]
+    }
+  }
+}
