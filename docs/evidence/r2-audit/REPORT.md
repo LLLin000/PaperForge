@@ -2,13 +2,20 @@
 
 ## Decision
 
-**R2 READY gate: GO.** All 793 READY papers now pass the unified validator:
-793 rebuilt, 793 pass, 0 plan mismatches, source unchanged, idempotence
-40/40 chunks.
+**R2e text-fidelity gate: NO-GO for 38 papers.** Historical R2d (793/793 pass)
+is preserved, but it used an over-broad `format_only` rule
+(`old in new or new in old`) and key+class waivers. R2e replaces both:
 
-This is not a threshold relaxation. Every waived text/structured-count error has
-a per-paper content audit (`content.json`) showing no true content loss. The
-only non-blocking residuals are recorded explicitly below.
+- 91 affected papers re-audited; **53 PASS / 38 HOLD**.
+- The 38 HOLD include `CHILQ4KJ`, `IH6K34R9`, and the Received/Accepted metadata
+  cases; their semantic text is not fully preserved.
+- Waivers are now bound to key, block identity, old/new text SHA-256, error
+  class, attribution, and evidence. A hash mismatch rejects the waiver
+  (`waiver_mismatch`).
+- Combined revised gate: **755 PASS / 38 HOLD**. The historical 793/793 is not
+  overwritten.
+- R2a JSON diagnostic fix, R2b block audit, R2c asset audit, Plan parity, source
+  integrity and idempotence remain valid.
 
 **Production migration: still NO-GO.** R3 visual acceptance and a production
 canary remain out of scope for this round.
@@ -39,7 +46,8 @@ Evidence: `docs/evidence/r2-audit/json.json`.
 - Audited 91 unique papers from `historical_text_decrease`,
   `structured_text_decrease`, `historical_structured_chars_decrease`, and
   `historical_object_missing`.
-- Result: **91 PASS / 0 HOLD; 0 true-loss blocks**.
+- Historical result: 91 PASS / 0 HOLD under the old substring rule. **This is
+  superseded by R2e**; the old rule misclassified real heading truncation.
 - Every changed block is a heading/role normalization, for example:
   - `Received 13 February; accepted 15 May 2006.` → `15 May 2006.`
   - `3.1. Three 10 Min ...` → `10 Min ...`
@@ -50,7 +58,7 @@ Evidence: `docs/evidence/r2-audit/json.json`.
   in R2d.
 
 Evidence: `docs/evidence/r2-audit/content.json`,
-`docs/evidence/r2-audit/waivers.json`.
+`docs/evidence/r2-audit/waivers-r2e.json`.
 
 ## R2c — historical asset preservation
 
@@ -84,6 +92,34 @@ Evidence: `docs/evidence/r2-audit/asset.json`.
 - Warnings: 1 `legacy_corrupt_asset_replaced`.
 
 Evidence: `docs/evidence/r2-audit/final-summary.json`.
+
+## R2e — corrected text-fidelity audit
+
+The old rule `format_only = old in new or new in old` accepted any substring
+deletion. It is removed. `format_only` now requires equality after stripping
+only Markdown markers, wiki embeds, leading section numbering, and whitespace.
+
+- 91 papers re-audited: **53 PASS / 38 HOLD**.
+- 11 changed blocks were reviewed individually. `CHILQ4KJ` p6 b12
+  (`3.4. Modulation of Piezo 1-Mediated ...` -> `1 Cells by Small Chemicals`)
+  is `text_change`, not format. `IH6K34R9` p13 b11 loses
+  `2.2. Three-Dimensional Printing ... for CTE`. Received/Accepted blocks are
+  `metadata_normalization`, still HOLD.
+- Fulltext is no longer assumed safe from block existence. Old fulltext
+  paragraphs absent from the rebuilt fulltext with token coverage < 0.8 are
+  recorded as `fulltext_loss` and HOLD.
+- Waivers are hash-bound. `waivers-r2e.json` binds each waiver to the paper
+  fulltext/structured SHA-256 and each changed block's old/new SHA-256. A
+  mutated hash produces `waiver_mismatch:<class>` and the error stays blocking.
+- 52 evidence-backed waivers remain; 38 papers have no waiver.
+- Revised combined gate: **755 PASS / 38 HOLD** (702 unaffected + 53 R2e pass).
+- R2e did not rerun all 793; it re-ran the 91 affected papers in isolated
+  vaults. Historical R2d evidence remains at
+  `docs/evidence/r2-audit/final-summary.json`.
+
+Evidence: `docs/evidence/r2-audit/content-r2e.json`,
+`docs/evidence/r2-audit/waivers-r2e.json`,
+`docs/evidence/r2-audit/final-summary-r2e.json`.
 
 ## Residual risks
 

@@ -12,6 +12,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import shutil
@@ -31,6 +32,35 @@ from paperforge.worker.ocr_rebuild import _rebuild_one_paper  # noqa: E402
 
 def norm(text: str) -> str:
     return re.sub(r"\s+", " ", str(text or "")).strip()
+
+
+def sha256_text(text: str) -> str:
+    return hashlib.sha256(str(text).encode("utf-8")).hexdigest()
+
+
+SECTION_NUMBER_RE = re.compile(r"^\s*(?:\d+(?:\.\d+)*\.?|[IVXLC]+\.?)\s+")
+
+
+def strip_format(text: str) -> str:
+    """Remove only syntax that cannot change semantic text: Markdown heading
+    markers, wiki embeds, leading section numbering, and whitespace."""
+    value = re.sub(r"(?m)^\s*#{1,6}\s*", "", str(text or ""))
+    value = re.sub(r"!?\[\[[^\]]+\]\]", "", value)
+    value = SECTION_NUMBER_RE.sub("", value)
+    return norm(value)
+
+
+def is_metadata_normalization(old: str, new: str) -> bool:
+    old_l = old.lower()
+    return old_l.startswith(("received", "accepted")) and bool(
+        re.search(r"\b(?:19|20)\d{2}\b", new)
+    )
+
+
+def paragraphs(text: str) -> list[str]:
+    value = re.sub(r"(?m)^\s*#{1,6}\s*", "", str(text or ""))
+    value = re.sub(r"!?\[\[[^\]]+\]\]", "", value)
+    return [norm(part) for part in re.split(r"\n\s*\n", value) if norm(part)]
 
 
 def read_blocks(path: Path) -> list[dict]:
@@ -93,12 +123,12 @@ def audit_one(vault: Path, key: str, workdir: Path) -> dict:
         new_by_text: dict[str, list[tuple[int, str]]] = {}
         for k, row in new_map.items():
             new_by_text.setdefault(norm(row.get("text")), []).append(k)
-        new_corpus = " ".join(norm(r.get("text")) for r in new_blocks)
 
         retained = moved = changed = removed = 0
         true_loss = []
         changed_detail = []
         removed_detail = []
+        moved_detail = []
         for k, old in old_map.items():
             old_text_block = norm(old.get("text"))
             if not old_text_block:
@@ -110,37 +140,57 @@ def audit_one(vault: Path, key: str, workdir: Path) -> dict:
                 changed += 1
                 new_text_block = norm(new_map[k].get("text"))
                 coverage = token_coverage(old_text_block, new_text_block)
+                if strip_format(old_text_block) == strip_format(new_text_block):
+                    attribution = "format_only"
+                elif is_metadata_normalization(old_text_block, new_text_block):
+                    attribution = "metadata_normalization"
+                elif old_text_block in new_by_text:
+                    attribution = "moved"
+                else:
+                    attribution = "text_change"
                 item = {
                     "page": k[0], "block_id": k[1],
                     "old_role": old.get("role"), "new_role": new_map[k].get("role"),
                     "old_text": old_text_block[:500], "new_text": new_text_block[:500],
+                    "old_sha256": sha256_text(old_text_block),
+                    "new_sha256": sha256_text(new_text_block),
                     "coverage": round(coverage, 3),
+                    "attribution": attribution,
+                    "moved_to": new_by_text.get(old_text_block, []),
                 }
-                item["format_only"] = old_text_block in new_text_block or new_text_block in old_text_block
                 changed_detail.append(item)
-                if not item["format_only"] and coverage < 0.8 and token_coverage(old_text_block, new_corpus) < 0.8:
+                if attribution not in {"format_only", "moved"}:
                     true_loss.append({"kind": "changed", **item})
                 continue
             if old_text_block in new_by_text:
                 moved += 1
+                moved_detail.append({
+                    "page": k[0], "block_id": k[1], "role": old.get("role"),
+                    "text": old_text_block[:500], "moved_to": new_by_text[old_text_block],
+                })
                 continue
             removed += 1
-            coverage = token_coverage(old_text_block, new_corpus)
             item = {
                 "page": k[0], "block_id": k[1], "role": old.get("role"),
-                "text": old_text_block[:500], "coverage_in_new_corpus": round(coverage, 3),
+                "text": old_text_block[:500],
+                "old_sha256": sha256_text(old_text_block),
             }
             removed_detail.append(item)
-            if coverage < 0.8:
-                true_loss.append({"kind": "removed", **item})
+            true_loss.append({"kind": "removed", **item})
 
-        if true_loss or any(
-            not item.get("format_only") and item["coverage"] < 0.8
-            for item in changed_detail
-        ):
-            verdict = "HOLD"
-        else:
-            verdict = "PASS"
+        old_paras = paragraphs(old_text)
+        new_norm_text = norm(re.sub(r"(?m)^\s*#{1,6}\s*", "", re.sub(r"!?\[\[[^\]]+\]\]", "", new_text)))
+        fulltext_loss = []
+        for para in old_paras:
+            if para in new_norm_text:
+                continue
+            coverage = token_coverage(para, new_norm_text)
+            if coverage < 0.8:
+                fulltext_loss.append({"text": para[:500], "sha256": sha256_text(para), "coverage": round(coverage, 3)})
+        if fulltext_loss:
+            true_loss.extend({"kind": "fulltext", **item} for item in fulltext_loss)
+
+        verdict = "HOLD" if true_loss else "PASS"
 
         return {
             "key": key,
@@ -149,11 +199,16 @@ def audit_one(vault: Path, key: str, workdir: Path) -> dict:
             "old_structured_chars": sum(len(str(r.get("text", ""))) for r in old_blocks),
             "new_structured_chars": sum(len(str(r.get("text", ""))) for r in new_blocks),
             "old_normalized_chars": old_norm, "new_normalized_chars": new_norm,
+            "old_fulltext_sha256": sha256_text(old_text), "new_fulltext_sha256": sha256_text(new_text),
+            "old_structured_sha256": sha256_text("\n".join(str(r.get("text", "")) for r in old_blocks)),
+            "new_structured_sha256": sha256_text("\n".join(str(r.get("text", "")) for r in new_blocks)),
             "retained": retained, "moved": moved, "changed": changed, "removed": removed,
+            "fulltext_loss": fulltext_loss,
             "true_loss_count": len(true_loss),
             "true_loss": true_loss,
             "changed_detail": changed_detail,
             "removed_detail": removed_detail,
+            "moved_detail": moved_detail,
             "verdict": verdict,
         }
     finally:

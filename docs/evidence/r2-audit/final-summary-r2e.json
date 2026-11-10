@@ -1,0 +1,455 @@
+{
+  "schema": "paperforge.r2e.final.v1",
+  "historical_r2d": {
+    "selected": 793,
+    "pass": 793,
+    "fail": 0,
+    "plan_mismatch": 0,
+    "source_integrity": {
+      "unchanged": true,
+      "chunks": 40
+    },
+    "idempotence": {
+      "passed_chunks": 40,
+      "chunks": 40
+    }
+  },
+  "r2e": {
+    "audited": 91,
+    "pass": 53,
+    "hold": 38,
+    "waivers": 52,
+    "changed_block_papers": [
+      "8M2YFJAX",
+      "CHILQ4KJ",
+      "CPQ47TBV",
+      "IH6K34R9",
+      "QPT4IGLD"
+    ],
+    "hold_keys": [
+      "5GYTWRPT",
+      "5PQ7DI4W",
+      "64IUPLY7",
+      "6A8A9TWD",
+      "7S5ZEVSK",
+      "7W9QLVMF",
+      "7ZZN6PUW",
+      "8M2YFJAX",
+      "C3KHPMQ9",
+      "C7WCW4NX",
+      "CHILQ4KJ",
+      "CPQ47TBV",
+      "CQG5WH2Y",
+      "DLW898UK",
+      "DS2FR5FU",
+      "FVZ3YE7P",
+      "H497AGMU",
+      "HIU4F3V4",
+      "HN4758MP",
+      "IH6K34R9",
+      "L623PH9P",
+      "NYWJL2T9",
+      "P36H92AX",
+      "P9D6GZ9M",
+      "P9ZYVAXB",
+      "PP76T2EY",
+      "PV3T4FWR",
+      "PX9XJURS",
+      "QPT4IGLD",
+      "QU4IAZ7E",
+      "TJHT3UBI",
+      "U3XAT3SD",
+      "U746UJ7G",
+      "V463BSDR",
+      "VK2XSGFY",
+      "XG8R37M7",
+      "XGT9Z257",
+      "YSBJVWTA"
+    ],
+    "hold_reasons": {
+      "5GYTWRPT": {
+        "verdict": "HOLD",
+        "true_loss": 1,
+        "fulltext_loss": 1,
+        "changed": []
+      },
+      "5PQ7DI4W": {
+        "verdict": "HOLD",
+        "true_loss": 1,
+        "fulltext_loss": 1,
+        "changed": []
+      },
+      "64IUPLY7": {
+        "verdict": "HOLD",
+        "true_loss": 1,
+        "fulltext_loss": 1,
+        "changed": []
+      },
+      "6A8A9TWD": {
+        "verdict": "HOLD",
+        "true_loss": 1,
+        "fulltext_loss": 1,
+        "changed": []
+      },
+      "7S5ZEVSK": {
+        "verdict": "HOLD",
+        "true_loss": 2,
+        "fulltext_loss": 2,
+        "changed": []
+      },
+      "7W9QLVMF": {
+        "verdict": "HOLD",
+        "true_loss": 2,
+        "fulltext_loss": 2,
+        "changed": []
+      },
+      "7ZZN6PUW": {
+        "verdict": "HOLD",
+        "true_loss": 2,
+        "fulltext_loss": 2,
+        "changed": []
+      },
+      "8M2YFJAX": {
+        "verdict": "HOLD",
+        "true_loss": 1,
+        "fulltext_loss": 0,
+        "changed": [
+          {
+            "page": 4,
+            "block_id": "9",
+            "old_role": "subsection_heading",
+            "new_role": "section_heading",
+            "old_text": "Received 13 February; accepted 15 May 2006.",
+            "new_text": "15 May 2006.",
+            "old_sha256": "2b9d6afcfce7ef2f39ac09666e834ae12697e6b56106a46e2ec2a4561434dbcd",
+            "new_sha256": "f432162f005c8deec26fb5050050651497b2978182fcd1ef44ad597daa1fecf9",
+            "coverage": 0.429,
+            "attribution": "metadata_normalization",
+            "moved_to": []
+          }
+        ]
+      },
+      "C3KHPMQ9": {
+        "verdict": "HOLD",
+        "true_loss": 3,
+        "fulltext_loss": 3,
+        "changed": []
+      },
+      "C7WCW4NX": {
+        "verdict": "HOLD",
+        "true_loss": 1,
+        "fulltext_loss": 1,
+        "changed": []
+      },
+      "CHILQ4KJ": {
+        "verdict": "HOLD",
+        "true_loss": 7,
+        "fulltext_loss": 0,
+        "changed": [
+          {
+            "page": 5,
+            "block_id": "5",
+            "old_role": "subsection_heading",
+            "new_role": "section_heading",
+            "old_text": "3.1. Three 10 Min ELF-PEMF Exposures per Day More Effectively Promoted Maturation of Osteoprogenitor Cells Than a Single 30 Min ELF-PEMF Exposure per Day",
+            "new_text": "10 Min ELF-PEMF Exposures per Day More Effectively Promoted Maturation of Osteoprogenitor Cells Than a Single 30 Min ELF-PEMF Exposure per Day",
+            "old_sha256": "9e3e31a59cb0a46f1a8e5030832f13237c32f88ff17c4f81013b15b090eac2e9",
+            "new_sha256": "a5906b700488176dec46f3803a7782525e9cb40eee2a4023a1774aaabe0a8ec8",
+            "coverage": 0.958,
+            "attribution": "text_change",
+            "moved_to": []
+          },
+          {
+            "page": 5,
+            "block_id": "8",
+            "old_role": "subsection_heading",
+            "new_role": "section_heading",
+            "old_text": "3.2. Intermittent Exposure to 16 Hz ELF-PEMF Induced Expression of Piezo 1 in SCP-1 Cells",
+            "new_text": "16 Hz ELF-PEMF Induced Expression of Piezo 1 in SCP-1 Cells",
+            "old_sha256": "eba3449487f173d9c23d26cd4cbefd4bd461c813083333a8f2f048c1208c1ca6",
+            "new_sha256": "28ef7c3c7fe3cfa1b93319ff69d76590cdee2c73addef6a751498eda44f86909",
+            "coverage": 0.786,
+            "attribution": "text_change",
+            "moved_to": []
+          },
+          {
+            "page": 5,
+            "block_id": "10",
+            "old_role": "subsection_heading",
+            "new_role": "section_heading",
+            "old_text": "3.3. The 16 Hz ELF-PEMF Exposure Pattern Affected Net- $ Ca^{2+} $ Influx in SCP-1 Cells",
+            "new_text": "16 Hz ELF-PEMF Exposure Pattern Affected Net- $ Ca^{2+} $ Influx in SCP-1 Cells",
+            "old_sha256": "3d06b3750d249fb343bb42c0bb887f2bda4e508da9844b8ed2c7aaf716815221",
+            "new_sha256": "f2b7434b1f251f034203f88ef16fedb53dcabf30e40593e86ab7d350c28fdd13",
+            "coverage": 0.929,
+            "attribution": "text_change",
+            "moved_to": []
+          },
+          {
+            "page": 6,
+            "block_id": "12",
+            "old_role": "subsection_heading",
+            "new_role": "section_heading",
+            "old_text": "3.4. Modulation of Piezo 1-Mediated $ Ca^{2+} $ Influx into SCP-1 Cells by Small Chemicals",
+            "new_text": "1 Cells by Small Chemicals",
+            "old_sha256": "7a1f600d225784fef83d9ce8e5d0f561cf270ba0dd44654b473d5a8ad193b751",
+            "new_sha256": "83701289f0f788ae8e6967ca2bd510862601a94f67d070cd071ded20d22b66e1",
+            "coverage": 0.333,
+            "attribution": "text_change",
+            "moved_to": []
+          },
+          {
+            "page": 6,
+            "block_id": "15",
+            "old_role": "subsection_heading",
+            "new_role": "section_heading",
+            "old_text": "3.5. The 16 Hz ELF-PEMF Exposure-Induced $ Ca^{2+} $ Influx Was Abolished by Antagonizing Piezo 1",
+            "new_text": "16 Hz ELF-PEMF Exposure-Induced $ Ca^{2+} $ Influx Was Abolished by Antagonizing Piezo 1",
+            "old_sha256": "981d36d0979788e340ff7a862fb0b6f0ca535432e8ccd863d860fddc9dfe9db8",
+            "new_sha256": "577c4a753a57f30791847138773a29dd0e5baf37356d1eeb028d3d02f4e5a6eb",
+            "coverage": 0.929,
+            "attribution": "text_change",
+            "moved_to": []
+          },
+          {
+            "page": 7,
+            "block_id": "17",
+            "old_role": "subsection_heading",
+            "new_role": "section_heading",
+            "old_text": "3.6. Pharmacological Activation of Piezo 1 Promoted Osteogenic Differentiation of SCP-1 Cells",
+            "new_text": "1 Promoted Osteogenic Differentiation of SCP-1 Cells",
+            "old_sha256": "5433461865fb3df9f1b4f37406ded39c1e175186f79f05a942b8c297d33ebd93",
+            "new_sha256": "57cc8c4dce1c4b8f917849ba106efcc74f6e27991826995e05569f4a063c84fe",
+            "coverage": 0.7,
+            "attribution": "text_change",
+            "moved_to": []
+          },
+          {
+            "page": 9,
+            "block_id": "2",
+            "old_role": "subsection_heading",
+            "new_role": "section_heading",
+            "old_text": "3.7. Pharmacological Inhibition of Piezo 1 Partly Abrogated the Positive Effects of 16 Hz ELF-PEMF Exposure on the Maturation of SCP-1 Cells",
+            "new_text": "1 Partly Abrogated the Positive Effects of 16 Hz ELF-PEMF Exposure on the Maturation of SCP-1 Cells",
+            "old_sha256": "6ccc8dece8bcf3553cbc83f7c3f3715f5cf48492152aa111fa75db04d367b003",
+            "new_sha256": "e09960f95dbde17c5503795e93e3571774d9f47e673d41539c0ab73c70a8e3d8",
+            "coverage": 0.857,
+            "attribution": "text_change",
+            "moved_to": []
+          }
+        ]
+      },
+      "CPQ47TBV": {
+        "verdict": "HOLD",
+        "true_loss": 1,
+        "fulltext_loss": 0,
+        "changed": [
+          {
+            "page": 9,
+            "block_id": "24",
+            "old_role": "subsection_heading",
+            "new_role": "section_heading",
+            "old_text": "Received: 3 March 2025 / Accepted: 9 April 2025",
+            "new_text": "9 April 2025",
+            "old_sha256": "bd45203a4d32bdbc2ffc5ba9f2f23b7a6813536b67d2c418afce540fe689e664",
+            "new_sha256": "13bc9139acc87065cfa4f58cd6751240e2521d2818f379b80757d39d2466392e",
+            "coverage": 0.5,
+            "attribution": "metadata_normalization",
+            "moved_to": []
+          }
+        ]
+      },
+      "CQG5WH2Y": {
+        "verdict": "HOLD",
+        "true_loss": 3,
+        "fulltext_loss": 3,
+        "changed": []
+      },
+      "DLW898UK": {
+        "verdict": "HOLD",
+        "true_loss": 4,
+        "fulltext_loss": 4,
+        "changed": []
+      },
+      "DS2FR5FU": {
+        "verdict": "HOLD",
+        "true_loss": 1,
+        "fulltext_loss": 1,
+        "changed": []
+      },
+      "FVZ3YE7P": {
+        "verdict": "HOLD",
+        "true_loss": 1,
+        "fulltext_loss": 1,
+        "changed": []
+      },
+      "H497AGMU": {
+        "verdict": "HOLD",
+        "true_loss": 3,
+        "fulltext_loss": 3,
+        "changed": []
+      },
+      "HIU4F3V4": {
+        "verdict": "HOLD",
+        "true_loss": 3,
+        "fulltext_loss": 3,
+        "changed": []
+      },
+      "HN4758MP": {
+        "verdict": "HOLD",
+        "true_loss": 4,
+        "fulltext_loss": 4,
+        "changed": []
+      },
+      "IH6K34R9": {
+        "verdict": "HOLD",
+        "true_loss": 1,
+        "fulltext_loss": 0,
+        "changed": [
+          {
+            "page": 13,
+            "block_id": "11",
+            "old_role": "subsection_heading",
+            "new_role": "subsection_heading",
+            "old_text": "2.2. Three-Dimensional Printing of Principal Animal-Derived Hydrogels for CTE 2.2.1. Land and Marine-Source Hyaluronic Acid, Collagen, Gelatin Hyaluronic Acid",
+            "new_text": "2.2.1. Land and Marine-Source Hyaluronic Acid, Collagen, Gelatin Hyaluronic Acid",
+            "old_sha256": "bb0d205cd75f0328087a31511780357e69970ca0bbedeffbfb209f67ab3550a0",
+            "new_sha256": "375efd866435d2f75d4af4da66d2c9d2e8e70e12ede947ad998367534cc6c24f",
+            "coverage": 0.5,
+            "attribution": "text_change",
+            "moved_to": []
+          }
+        ]
+      },
+      "L623PH9P": {
+        "verdict": "HOLD",
+        "true_loss": 2,
+        "fulltext_loss": 2,
+        "changed": []
+      },
+      "NYWJL2T9": {
+        "verdict": "HOLD",
+        "true_loss": 2,
+        "fulltext_loss": 2,
+        "changed": []
+      },
+      "P36H92AX": {
+        "verdict": "HOLD",
+        "true_loss": 1,
+        "fulltext_loss": 1,
+        "changed": []
+      },
+      "P9D6GZ9M": {
+        "verdict": "HOLD",
+        "true_loss": 6,
+        "fulltext_loss": 6,
+        "changed": []
+      },
+      "P9ZYVAXB": {
+        "verdict": "HOLD",
+        "true_loss": 2,
+        "fulltext_loss": 2,
+        "changed": []
+      },
+      "PP76T2EY": {
+        "verdict": "HOLD",
+        "true_loss": 1,
+        "fulltext_loss": 1,
+        "changed": []
+      },
+      "PV3T4FWR": {
+        "verdict": "HOLD",
+        "true_loss": 4,
+        "fulltext_loss": 4,
+        "changed": []
+      },
+      "PX9XJURS": {
+        "verdict": "HOLD",
+        "true_loss": 1,
+        "fulltext_loss": 1,
+        "changed": []
+      },
+      "QPT4IGLD": {
+        "verdict": "HOLD",
+        "true_loss": 1,
+        "fulltext_loss": 0,
+        "changed": [
+          {
+            "page": 18,
+            "block_id": "11",
+            "old_role": "subsection_heading",
+            "new_role": "section_heading",
+            "old_text": "Received: 24 February 2024 / Accepted: 3 July 2024",
+            "new_text": "3 July 2024",
+            "old_sha256": "7ef86774bd16952528e23cff4bf8e47c32af8e97a3a3f0b2ca2b2591382bd429",
+            "new_sha256": "77ef0e8254779991e91c9f1b28bdf8cc85bb79081934caf535329f71b539df54",
+            "coverage": 0.429,
+            "attribution": "metadata_normalization",
+            "moved_to": []
+          }
+        ]
+      },
+      "QU4IAZ7E": {
+        "verdict": "HOLD",
+        "true_loss": 1,
+        "fulltext_loss": 1,
+        "changed": []
+      },
+      "TJHT3UBI": {
+        "verdict": "HOLD",
+        "true_loss": 3,
+        "fulltext_loss": 3,
+        "changed": []
+      },
+      "U3XAT3SD": {
+        "verdict": "HOLD",
+        "true_loss": 1,
+        "fulltext_loss": 1,
+        "changed": []
+      },
+      "U746UJ7G": {
+        "verdict": "HOLD",
+        "true_loss": 1,
+        "fulltext_loss": 1,
+        "changed": []
+      },
+      "V463BSDR": {
+        "verdict": "HOLD",
+        "true_loss": 1,
+        "fulltext_loss": 1,
+        "changed": []
+      },
+      "VK2XSGFY": {
+        "verdict": "HOLD",
+        "true_loss": 2,
+        "fulltext_loss": 2,
+        "changed": []
+      },
+      "XG8R37M7": {
+        "verdict": "HOLD",
+        "true_loss": 6,
+        "fulltext_loss": 6,
+        "changed": []
+      },
+      "XGT9Z257": {
+        "verdict": "HOLD",
+        "true_loss": 21,
+        "fulltext_loss": 21,
+        "changed": []
+      },
+      "YSBJVWTA": {
+        "verdict": "HOLD",
+        "true_loss": 4,
+        "fulltext_loss": 4,
+        "changed": []
+      }
+    }
+  },
+  "combined": {
+    "unaffected_pass": 702,
+    "r2e_pass": 53,
+    "total_pass": 755,
+    "hold": 38
+  },
+  "note": "Historical R2d 793/793 is preserved. R2e re-audits the 91 affected papers; 38 remain HOLD and are not waived."
+}
