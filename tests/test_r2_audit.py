@@ -13,27 +13,30 @@ def test_format_only_requires_numbering_or_markdown_removal():
 
 def test_waiver_matches_only_exact_old_new_hashes():
     baseline = {
-        "fulltext_sha256": "old-full",
-        "structured_sha256": "old-struct",
-        "block_hashes": {"6:12": "old-block"},
+        "fulltext_sha256": "a" * 64,
+        "structured_sha256": "b" * 64,
+        "block_hashes": {"6:12": "c" * 64},
     }
     current = {
-        "fulltext_sha256": "new-full",
-        "structured_sha256": "new-struct",
-        "block_hashes": {"6:12": "new-block"},
+        "fulltext_sha256": "d" * 64,
+        "structured_sha256": "e" * 64,
+        "block_hashes": {"6:12": "f" * 64},
     }
     spec = {
-        "old_fulltext_sha256": "old-full",
-        "new_fulltext_sha256": "new-full",
-        "old_structured_sha256": "old-struct",
-        "new_structured_sha256": "new-struct",
-        "blocks": [{"page": 6, "block_id": "12", "old_sha256": "old-block", "new_sha256": "new-block"}],
+        "old_fulltext_sha256": "a" * 64,
+        "new_fulltext_sha256": "d" * 64,
+        "old_structured_sha256": "b" * 64,
+        "new_structured_sha256": "e" * 64,
+        "block_changes": True,
+        "blocks": [{"page": 6, "block_id": "12", "old_sha256": "c" * 64, "new_sha256": "f" * 64}],
+        "verdict": "PASS",
+        "evidence": "docs/evidence/r2-audit/content-r2e.json",
     }
     assert harness._waiver_matches(spec, baseline, current)
-    current["fulltext_sha256"] = "changed"
+    current["fulltext_sha256"] = "0" * 64
     assert not harness._waiver_matches(spec, baseline, current)
-    current["fulltext_sha256"] = "new-full"
-    current["block_hashes"]["6:12"] = "changed"
+    current["fulltext_sha256"] = "d" * 64
+    current["block_hashes"]["6:12"] = "0" * 64
     assert not harness._waiver_matches(spec, baseline, current)
 
 
@@ -47,3 +50,34 @@ def test_baseline_fulltext_length_is_not_overwritten_by_block_text(tmp_path: Pat
     )
     baseline = harness.historical_baseline(paper)
     assert baseline["fulltext_chars"] == len(fulltext)
+
+
+def test_waiver_rejects_empty_shell_and_missing_contract_fields():
+    baseline = {
+        "fulltext_sha256": "a" * 64,
+        "structured_sha256": "b" * 64,
+        "block_hashes": {},
+    }
+    current = {
+        "fulltext_sha256": "c" * 64,
+        "structured_sha256": "d" * 64,
+        "block_hashes": {},
+    }
+    assert not harness._waiver_matches({}, baseline, current)
+    valid = {
+        "old_fulltext_sha256": "a" * 64,
+        "new_fulltext_sha256": "c" * 64,
+        "old_structured_sha256": "b" * 64,
+        "new_structured_sha256": "d" * 64,
+        "block_changes": False,
+        "blocks": [],
+        "verdict": "PASS",
+        "evidence": "docs/evidence/r2-audit/content-r2e.json",
+    }
+    assert harness._waiver_matches(valid, baseline, current)
+    for key in ("old_fulltext_sha256", "verdict", "evidence"):
+        broken = dict(valid)
+        broken.pop(key)
+        assert not harness._waiver_matches(broken, baseline, current)
+    broken = dict(valid, block_changes=True)
+    assert not harness._waiver_matches(broken, baseline, current)

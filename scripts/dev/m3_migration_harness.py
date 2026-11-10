@@ -390,6 +390,21 @@ def _valid_image(path: Path) -> bool:
 def _waiver_matches(spec: dict, baseline: dict | None, current: dict) -> bool:
     if not baseline:
         return False
+    if spec.get("verdict") != "PASS" or not str(spec.get("evidence", "")).strip():
+        return False
+    if "block_changes" not in spec:
+        return False
+    required_hashes = (
+        "old_fulltext_sha256", "new_fulltext_sha256",
+        "old_structured_sha256", "new_structured_sha256",
+    )
+    if any(not re.fullmatch(r"[0-9a-f]{64}", str(spec.get(k, ""))) for k in required_hashes):
+        return False
+    blocks = spec.get("blocks", [])
+    if spec["block_changes"] and not blocks:
+        return False
+    if not spec["block_changes"] and blocks:
+        return False
     for old_key, new_key in (
         ("old_fulltext_sha256", "fulltext_sha256"),
         ("old_structured_sha256", "structured_sha256"),

@@ -2,18 +2,20 @@
 
 ## Decision
 
-**R2e text-fidelity gate: NO-GO for 38 papers.** Historical R2d (793/793 pass)
-is preserved, but it used an over-broad `format_only` rule
-(`old in new or new in old`) and key+class waivers. R2e replaces both:
+**R2f text-fidelity gate: 758 PASS / 35 HOLD.** Historical R2d (793/793 pass)
+is preserved, but it used an over-broad `format_only` rule and key+class
+waivers. R2e/R2f replace both:
 
-- 91 affected papers re-audited; **53 PASS / 38 HOLD**.
-- The 38 HOLD include `CHILQ4KJ`, `IH6K34R9`, and the Received/Accepted metadata
-  cases; their semantic text is not fully preserved.
-- Waivers are now bound to key, block identity, old/new text SHA-256, error
-  class, attribution, and evidence. A hash mismatch rejects the waiver
-  (`waiver_mismatch`).
-- Combined revised gate: **755 PASS / 38 HOLD**. The historical 793/793 is not
-  overwritten.
+- 91 affected papers re-audited: **53 PASS / 38 HOLD**.
+- R2f resolves three fulltext-only HOLD papers (`XGT9Z257`, `P9D6GZ9M`,
+  `XG8R37M7`) by paragraph attribution: moved blocks, figure inner text, or
+  page-marker noise. No unresolved paragraph remains in those three.
+- Remaining **35 HOLD**: 5 block-change papers (`CHILQ4KJ`, `IH6K34R9`,
+  `8M2YFJAX`, `CPQ47TBV`, `QPT4IGLD`) and 30 fulltext-only papers.
+- Waivers are hash-bound and fail-closed: all four SHA-256 fields, `verdict`,
+  `evidence`, and `block_changes` are required; an empty shell is rejected.
+- Combined revised gate: **758 PASS / 35 HOLD**. Migration eligibility overlay:
+  **754 READY**, 35 `TEXT_FIDELITY_HOLD`.
 - R2a JSON diagnostic fix, R2b block audit, R2c asset audit, Plan parity, source
   integrity and idempotence remain valid.
 
@@ -120,6 +122,19 @@ only Markdown markers, wiki embeds, leading section numbering, and whitespace.
 Evidence: `docs/evidence/r2-audit/content-r2e.json`,
 `docs/evidence/r2-audit/waivers-r2e.json`,
 `docs/evidence/r2-audit/final-summary-r2e.json`.
+
+## R2f — HOLD attribution (initial)
+
+- `XGT9Z257` (21 suspected paragraphs): 16 `moved_to_block`, 3
+  `moved_to_figure_inner_text`, 2 `page_marker_noise`; 0 unresolved.
+- `P9D6GZ9M` (6): all `moved_to_block`; 0 unresolved.
+- `XG8R37M7` (6): all `moved_to_block`; 0 unresolved.
+- These three are removed from `TEXT_FIDELITY_HOLD` and added back to PASS.
+- Remaining 35 HOLD need the same per-paragraph attribution; no threshold
+  relaxation.
+- Evidence: `docs/evidence/r2-audit/r2f-attribution.json`,
+  `docs/evidence/r2-audit/r2f-resolution.json`,
+  `docs/evidence/r2-audit/final-summary-r2f.json`.
 
 ## Residual risks
 
