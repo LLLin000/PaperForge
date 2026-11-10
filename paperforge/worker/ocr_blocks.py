@@ -339,6 +339,10 @@ def build_structured_blocks(
     if normalize_mode == "seed_only":
         for row in rows:
             row["role"] = row["seed_role"]
+        # document_structure.json is diagnostic, but it must not retain stale
+        # corrupt bytes from a previous lifecycle. Regenerate it here too.
+        if doc_structure and structure_output_dir:
+            _write_document_structure_json(doc_structure, structure_output_dir, rows)
         return rows, doc_structure
 
     # Normalize document structure (backmatter boundary, role regime, tail promotion)

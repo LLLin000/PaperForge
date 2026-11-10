@@ -1,0 +1,3668 @@
+{
+  "schema": "paperforge.r2.content_audit.v1",
+  "keys": 91,
+  "pass": 53,
+  "hold": 38,
+  "results": [
+    {
+      "key": "2ZBAK9VY",
+      "rebuild_status": "ok",
+      "old_blocks": 290,
+      "new_blocks": 290,
+      "old_structured_chars": 60776,
+      "new_structured_chars": 60776,
+      "old_normalized_chars": 48333,
+      "new_normalized_chars": 48099,
+      "old_fulltext_sha256": "6173559e767dbcec4ac9f67b2e20415f583d38f73dc73412b93e283db0d6ebfb",
+      "new_fulltext_sha256": "f5f5795c1bd79283626e13459464a3334aba4bd390b8ef7a3a8cefaa9c03221c",
+      "old_structured_sha256": "99d3ff44328c2d717526087274e9a117b46815c2fd63082fcd2976097bdc3242",
+      "new_structured_sha256": "99d3ff44328c2d717526087274e9a117b46815c2fd63082fcd2976097bdc3242",
+      "retained": 279,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "3YNSB8Z4",
+      "rebuild_status": "ok",
+      "old_blocks": 264,
+      "new_blocks": 264,
+      "old_structured_chars": 66551,
+      "new_structured_chars": 66551,
+      "old_normalized_chars": 57787,
+      "new_normalized_chars": 57505,
+      "old_fulltext_sha256": "6e31ea43600b7047aaa4ca49761daaab45a603f77fa2fb82fd6100e1a32f083f",
+      "new_fulltext_sha256": "96083374450fa419e510429200ae183488b3163cca8410d9299e9026ce9027f2",
+      "old_structured_sha256": "1807cb9bac3b40b6cc2649c89fafd84e3e017618c9337b244023b9bea6210e71",
+      "new_structured_sha256": "1807cb9bac3b40b6cc2649c89fafd84e3e017618c9337b244023b9bea6210e71",
+      "retained": 243,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "4CBS2KKE",
+      "rebuild_status": "ok",
+      "old_blocks": 136,
+      "new_blocks": 136,
+      "old_structured_chars": 42150,
+      "new_structured_chars": 42150,
+      "old_normalized_chars": 30509,
+      "new_normalized_chars": 30377,
+      "old_fulltext_sha256": "54aa67528946b64e9643c70af47e537ea914107c1e1292a79c854eab54354b70",
+      "new_fulltext_sha256": "7fe1d2ef2bcc7c3de63bcd71ff244fbb8e2ca540e4c28af201438a29de75b922",
+      "old_structured_sha256": "ae85e890e1585a894102c16afdf16fb4c42a1eacdb56ceacd820ff3f583a4a51",
+      "new_structured_sha256": "ae85e890e1585a894102c16afdf16fb4c42a1eacdb56ceacd820ff3f583a4a51",
+      "retained": 133,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "5GYTWRPT",
+      "rebuild_status": "ok",
+      "old_blocks": 215,
+      "new_blocks": 215,
+      "old_structured_chars": 32239,
+      "new_structured_chars": 32239,
+      "old_normalized_chars": 28661,
+      "new_normalized_chars": 27800,
+      "old_fulltext_sha256": "fc618953f38285c5c769550ff85d54b218de482445a6c63ada77070a50259714",
+      "new_fulltext_sha256": "e7086c53f302cd9e89fb230301cfbd39987c7751895336ff463976e2a423bb77",
+      "old_structured_sha256": "2f76f387b55c6134b53d1c727fa4a533b470cfe23856c4dfae55440479d418e0",
+      "new_structured_sha256": "2f76f387b55c6134b53d1c727fa4a533b470cfe23856c4dfae55440479d418e0",
+      "retained": 179,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [
+        {
+          "text": "As a natural polysaccharide, chitosan was non-cytotoxic, pH-sensitive and antiseptic, which has shown promise in drug delivery for several years [28–32]. We were curious about the functions of this gel. We then investigated the antiseptic property as well as the conductivity of PVA and PVA-CS-5-S gels. As Fig. 8a displayed, after 15 days culture, obvious mold growth was observed at the surface of PVA gel, while nothing appeared on the surface of PVA-CS-5-S gel, indicating good antiseptic propert",
+          "sha256": "72d24dfbb06c67c9631d3e6741601cf0777a70254bb8983c319816b0927acf96",
+          "coverage": 0.787
+        }
+      ],
+      "true_loss_count": 1,
+      "true_loss": [
+        {
+          "kind": "fulltext",
+          "text": "As a natural polysaccharide, chitosan was non-cytotoxic, pH-sensitive and antiseptic, which has shown promise in drug delivery for several years [28–32]. We were curious about the functions of this gel. We then investigated the antiseptic property as well as the conductivity of PVA and PVA-CS-5-S gels. As Fig. 8a displayed, after 15 days culture, obvious mold growth was observed at the surface of PVA gel, while nothing appeared on the surface of PVA-CS-5-S gel, indicating good antiseptic propert",
+          "sha256": "72d24dfbb06c67c9631d3e6741601cf0777a70254bb8983c319816b0927acf96",
+          "coverage": 0.787
+        }
+      ],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "HOLD"
+    },
+    {
+      "key": "5LTFIKGI",
+      "rebuild_status": "ok",
+      "old_blocks": 345,
+      "new_blocks": 345,
+      "old_structured_chars": 63645,
+      "new_structured_chars": 63645,
+      "old_normalized_chars": 60052,
+      "new_normalized_chars": 59325,
+      "old_fulltext_sha256": "bfca6cb23c1cb988a9edf1b2c8db2ba512afec447b013b8d28b56e59a81219e3",
+      "new_fulltext_sha256": "ff2a3e0150e54c8cda7da8ec251fea4dddf3378d327972568d7c9ce45322a3b1",
+      "old_structured_sha256": "3384afc8bb8c7021506f810b54d57d8cacbddd7f4403c607229063099c8e0a87",
+      "new_structured_sha256": "3384afc8bb8c7021506f810b54d57d8cacbddd7f4403c607229063099c8e0a87",
+      "retained": 270,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "5PQ7DI4W",
+      "rebuild_status": "ok",
+      "old_blocks": 187,
+      "new_blocks": 187,
+      "old_structured_chars": 57418,
+      "new_structured_chars": 57418,
+      "old_normalized_chars": 40751,
+      "new_normalized_chars": 40721,
+      "old_fulltext_sha256": "d890fb31937ed8bd39ca40edc2d91dab44b8195e5a82214accd7186fcee4e3f9",
+      "new_fulltext_sha256": "4fd150e3ace421b6590d2c6f6088cce0c252f6b1bfa941ddf48e3d35689c08ae",
+      "old_structured_sha256": "6b8bbccdd7ec5b5976d5219298ca98c37170e04e8413a5a8e5b5107c9ce456da",
+      "new_structured_sha256": "6b8bbccdd7ec5b5976d5219298ca98c37170e04e8413a5a8e5b5107c9ce456da",
+      "retained": 178,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [
+        {
+          "text": "> **Table Caption:** TABLE 1",
+          "sha256": "d5e2e8479b2de030517c463065848e3c3559203bfd96ce0ce0a6bdaf069845e9",
+          "coverage": 0.667
+        }
+      ],
+      "true_loss_count": 1,
+      "true_loss": [
+        {
+          "kind": "fulltext",
+          "text": "> **Table Caption:** TABLE 1",
+          "sha256": "d5e2e8479b2de030517c463065848e3c3559203bfd96ce0ce0a6bdaf069845e9",
+          "coverage": 0.667
+        }
+      ],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "HOLD"
+    },
+    {
+      "key": "64IUPLY7",
+      "rebuild_status": "ok",
+      "old_blocks": 77,
+      "new_blocks": 77,
+      "old_structured_chars": 13015,
+      "new_structured_chars": 13015,
+      "old_normalized_chars": 11025,
+      "new_normalized_chars": 10633,
+      "old_fulltext_sha256": "32cfbc2fa18f384f828c1bc5a231f251db0422d7b4d4e1f6227465308dbe3de6",
+      "new_fulltext_sha256": "a4f92b91d40be95da923e7aab366e72aff43a2cd2d9e797b3ae594ab8b717ed2",
+      "old_structured_sha256": "a7c62f7a67ec1e2dbc984094a33e64578b5a20814c3452ee7e0e37fd6573de7d",
+      "new_structured_sha256": "a7c62f7a67ec1e2dbc984094a33e64578b5a20814c3452ee7e0e37fd6573de7d",
+      "retained": 71,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [
+        {
+          "text": "were divided into four groups and the current was applied to three for one week periods beginning (1) the next day of culture preparation to the seventh day; (2) the eighth day to the 14th day; and (3) the 15th day to the 21st day. No current was applied to one group as control. All explants were removed on the 22nd day of culture, fixed in 10% neutral buffered formalin, stained with 0.25%",
+          "sha256": "b76324ca32134f1b828720e24092020b29c409277e90e9f34d0ae7e4433590f2",
+          "coverage": 0.729
+        }
+      ],
+      "true_loss_count": 1,
+      "true_loss": [
+        {
+          "kind": "fulltext",
+          "text": "were divided into four groups and the current was applied to three for one week periods beginning (1) the next day of culture preparation to the seventh day; (2) the eighth day to the 14th day; and (3) the 15th day to the 21st day. No current was applied to one group as control. All explants were removed on the 22nd day of culture, fixed in 10% neutral buffered formalin, stained with 0.25%",
+          "sha256": "b76324ca32134f1b828720e24092020b29c409277e90e9f34d0ae7e4433590f2",
+          "coverage": 0.729
+        }
+      ],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "HOLD"
+    },
+    {
+      "key": "6A8A9TWD",
+      "rebuild_status": "ok",
+      "old_blocks": 151,
+      "new_blocks": 151,
+      "old_structured_chars": 37085,
+      "new_structured_chars": 37085,
+      "old_normalized_chars": 31692,
+      "new_normalized_chars": 30635,
+      "old_fulltext_sha256": "07612a7eda638056f720f653bf0a4dacbf5d0585ac2c02944544a6350f6a481a",
+      "new_fulltext_sha256": "633066264edbcd69779e2a752c538cad9561e6c3a13d39be98fc33ed705ad04a",
+      "old_structured_sha256": "27b2ae25a4ee964c63af80050c0961581dc2e59589a8dd1c4607665479237edc",
+      "new_structured_sha256": "27b2ae25a4ee964c63af80050c0961581dc2e59589a8dd1c4607665479237edc",
+      "retained": 137,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [
+        {
+          "text": "The present study was approved by the institutional review board. Materials and Methods Patient Data",
+          "sha256": "9a7a6c4943aea9ef20e3adcd0fc1311b23be28fb67626c146e329cec23ecc8d6",
+          "coverage": 0.733
+        }
+      ],
+      "true_loss_count": 1,
+      "true_loss": [
+        {
+          "kind": "fulltext",
+          "text": "The present study was approved by the institutional review board. Materials and Methods Patient Data",
+          "sha256": "9a7a6c4943aea9ef20e3adcd0fc1311b23be28fb67626c146e329cec23ecc8d6",
+          "coverage": 0.733
+        }
+      ],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "HOLD"
+    },
+    {
+      "key": "7C8829BD",
+      "rebuild_status": "ok",
+      "old_blocks": 479,
+      "new_blocks": 479,
+      "old_structured_chars": 157726,
+      "new_structured_chars": 157726,
+      "old_normalized_chars": 124598,
+      "new_normalized_chars": 124115,
+      "old_fulltext_sha256": "14cee1e4f3b75df4973e3a7487f1bc1c59939fea2379738a2f71420ac0e83164",
+      "new_fulltext_sha256": "95cbf202af9a038580e22809b329009168c8f4e4fd1890e4127ef45a3167dffb",
+      "old_structured_sha256": "d2fe44338f764d819d1247396536369706d47784b2e74253e19bb85ac2ad3d7d",
+      "new_structured_sha256": "d2fe44338f764d819d1247396536369706d47784b2e74253e19bb85ac2ad3d7d",
+      "retained": 458,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "7S5ZEVSK",
+      "rebuild_status": "ok",
+      "old_blocks": 175,
+      "new_blocks": 175,
+      "old_structured_chars": 41452,
+      "new_structured_chars": 41452,
+      "old_normalized_chars": 33981,
+      "new_normalized_chars": 33901,
+      "old_fulltext_sha256": "6ab33e7c24cadef07083750496eaf2aa199d319252f765dd05e3ef6a2a8715e4",
+      "new_fulltext_sha256": "5e74811000ad985abf394cab1360ca7f382b1ba87a72c546d8af9efb50d95d0d",
+      "old_structured_sha256": "fff8e7f2ac30f9f7f29d5ebeee19ba698a5d053e11a3a92df64744ed4684ddf2",
+      "new_structured_sha256": "fff8e7f2ac30f9f7f29d5ebeee19ba698a5d053e11a3a92df64744ed4684ddf2",
+      "retained": 165,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [
+        {
+          "text": "2: partial or foci of signal hyperintensity",
+          "sha256": "4e42b84fdadfe5175eabe64f2ed538d16512d61286deafcea90382d7b93f53ef",
+          "coverage": 0.667
+        },
+        {
+          "text": "4: linear hyperintensity of the peri-articular soft tissues",
+          "sha256": "2e79c7693cf6f912f11f8f09403ff4acf427ae53bd11942522bbe927e7c446b9",
+          "coverage": 0.625
+        }
+      ],
+      "true_loss_count": 2,
+      "true_loss": [
+        {
+          "kind": "fulltext",
+          "text": "2: partial or foci of signal hyperintensity",
+          "sha256": "4e42b84fdadfe5175eabe64f2ed538d16512d61286deafcea90382d7b93f53ef",
+          "coverage": 0.667
+        },
+        {
+          "kind": "fulltext",
+          "text": "4: linear hyperintensity of the peri-articular soft tissues",
+          "sha256": "2e79c7693cf6f912f11f8f09403ff4acf427ae53bd11942522bbe927e7c446b9",
+          "coverage": 0.625
+        }
+      ],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "HOLD"
+    },
+    {
+      "key": "7TAVQQG2",
+      "rebuild_status": "ok",
+      "old_blocks": 261,
+      "new_blocks": 261,
+      "old_structured_chars": 57024,
+      "new_structured_chars": 57024,
+      "old_normalized_chars": 39827,
+      "new_normalized_chars": 39553,
+      "old_fulltext_sha256": "cb530cf452c7a61c64231dd70dcf4da27a8b43bde61fd8170190c6d292f4ee57",
+      "new_fulltext_sha256": "a6b712e263d66bee5bc5245d838bcdf890ad886fc2a3026c5fe27e926b03dd03",
+      "old_structured_sha256": "d69f58209594c6b0ecdb257271edbd8e97442d9176cce8ce1b3776dcc8e16597",
+      "new_structured_sha256": "d69f58209594c6b0ecdb257271edbd8e97442d9176cce8ce1b3776dcc8e16597",
+      "retained": 247,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "7W9QLVMF",
+      "rebuild_status": "ok",
+      "old_blocks": 444,
+      "new_blocks": 444,
+      "old_structured_chars": 111069,
+      "new_structured_chars": 111069,
+      "old_normalized_chars": 99445,
+      "new_normalized_chars": 99120,
+      "old_fulltext_sha256": "ab126068996fc8be27f802edf1b6831efc2fca401ea9080e21535409518d4eea",
+      "new_fulltext_sha256": "f507f563e3eea5d6aca92e13f2d21a96b78b356c744663845614a3a2edf9207a",
+      "old_structured_sha256": "3edcb260537f6efab2a44d7ffb8aa81b86b1c942ec1f433cd9485ef01dda6957",
+      "new_structured_sha256": "3edcb260537f6efab2a44d7ffb8aa81b86b1c942ec1f433cd9485ef01dda6957",
+      "retained": 399,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [
+        {
+          "text": "Cite this: DOI:10.1039/x0xx00000x",
+          "sha256": "9ae0ca8e1617d2dfabb538784c2b1c8029f450d92d3a0c26c90a4b11b4a467f9",
+          "coverage": 0.667
+        },
+        {
+          "text": "Received 00th January 2012, Accepted 00th January 2012 T.A. Banks $^{1,2}$, P. S. B. Luckman $^{3}$, J. E. Frith $^{1}$, and J. J. Cooper-White $^{1,4,5,*}$",
+          "sha256": "a3dfa022a115b5743f35a2020b758d6515b1dc0064f11766afaa4f593585fc2f",
+          "coverage": 0.357
+        }
+      ],
+      "true_loss_count": 2,
+      "true_loss": [
+        {
+          "kind": "fulltext",
+          "text": "Cite this: DOI:10.1039/x0xx00000x",
+          "sha256": "9ae0ca8e1617d2dfabb538784c2b1c8029f450d92d3a0c26c90a4b11b4a467f9",
+          "coverage": 0.667
+        },
+        {
+          "kind": "fulltext",
+          "text": "Received 00th January 2012, Accepted 00th January 2012 T.A. Banks $^{1,2}$, P. S. B. Luckman $^{3}$, J. E. Frith $^{1}$, and J. J. Cooper-White $^{1,4,5,*}$",
+          "sha256": "a3dfa022a115b5743f35a2020b758d6515b1dc0064f11766afaa4f593585fc2f",
+          "coverage": 0.357
+        }
+      ],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "HOLD"
+    },
+    {
+      "key": "7ZHJ43VI",
+      "rebuild_status": "ok",
+      "old_blocks": 168,
+      "new_blocks": 168,
+      "old_structured_chars": 43456,
+      "new_structured_chars": 43456,
+      "old_normalized_chars": 40136,
+      "new_normalized_chars": 38847,
+      "old_fulltext_sha256": "864c228f3db80dfd3f93939e4a461dd9e4e6d5c62d7e12a12f6300a990048f72",
+      "new_fulltext_sha256": "8cdfcad0b80d10c6d8d1ab2b384844f8b4f29fc4463a318d145f5a2626ba1a1b",
+      "old_structured_sha256": "8db5a55ade5ab7fe75140ad931d296a443389c306e2b3ad792b5ca68f175fc74",
+      "new_structured_sha256": "8db5a55ade5ab7fe75140ad931d296a443389c306e2b3ad792b5ca68f175fc74",
+      "retained": 145,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "7ZZN6PUW",
+      "rebuild_status": "ok",
+      "old_blocks": 181,
+      "new_blocks": 181,
+      "old_structured_chars": 36220,
+      "new_structured_chars": 36220,
+      "old_normalized_chars": 32238,
+      "new_normalized_chars": 31682,
+      "old_fulltext_sha256": "df5f86163cd607191cbaf631a798b6a19bd79a473af1712eed4ff5b9feac3f47",
+      "new_fulltext_sha256": "a893b61a05f5353dc267e7dabafcdebaf20d4d969a3b5b408d86b9904c6faaf7",
+      "old_structured_sha256": "e023eecff288620ae13783da40c68fdca79e9b0daed8b61c8cbafccf5f18ed54",
+      "new_structured_sha256": "e023eecff288620ae13783da40c68fdca79e9b0daed8b61c8cbafccf5f18ed54",
+      "retained": 177,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [
+        {
+          "text": "E-mail: bestmost83@naver.com Disclaimers:",
+          "sha256": "6db520e3292cb7d588117ff0bbc8536d284d900c9a57edaebf317496a29dc27b",
+          "coverage": 0.2
+        },
+        {
+          "text": "Funding: No funding was disclosed by the author(s).",
+          "sha256": "36c6b5a2d62ffff9117c524c639169a38eaa3e959e51b3b31681e45e93d78aaa",
+          "coverage": 0.625
+        }
+      ],
+      "true_loss_count": 2,
+      "true_loss": [
+        {
+          "kind": "fulltext",
+          "text": "E-mail: bestmost83@naver.com Disclaimers:",
+          "sha256": "6db520e3292cb7d588117ff0bbc8536d284d900c9a57edaebf317496a29dc27b",
+          "coverage": 0.2
+        },
+        {
+          "kind": "fulltext",
+          "text": "Funding: No funding was disclosed by the author(s).",
+          "sha256": "36c6b5a2d62ffff9117c524c639169a38eaa3e959e51b3b31681e45e93d78aaa",
+          "coverage": 0.625
+        }
+      ],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "HOLD"
+    },
+    {
+      "key": "832486Q6",
+      "rebuild_status": "ok",
+      "old_blocks": 175,
+      "new_blocks": 175,
+      "old_structured_chars": 11652,
+      "new_structured_chars": 11652,
+      "old_normalized_chars": 7100,
+      "new_normalized_chars": 6955,
+      "old_fulltext_sha256": "3868ee9d99211486ce0c66ca6052a5f50ec54d41c0a25a1e903af3304ba40372",
+      "new_fulltext_sha256": "646ebfa8d97048179b5658893f9e2d9957ed6b26ee19d310c414b80ffd0ff956",
+      "old_structured_sha256": "6e8c06d88bd1471122c7c427362a6ca9da8fd31ee3ef363e2441a8ba963174d3",
+      "new_structured_sha256": "6e8c06d88bd1471122c7c427362a6ca9da8fd31ee3ef363e2441a8ba963174d3",
+      "retained": 160,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "8CCATQE3",
+      "rebuild_status": "ok",
+      "old_blocks": 251,
+      "new_blocks": 251,
+      "old_structured_chars": 50925,
+      "new_structured_chars": 50925,
+      "old_normalized_chars": 39706,
+      "new_normalized_chars": 37605,
+      "old_fulltext_sha256": "ea7c8fe0d360a8a27d61d3ff3e57ce87dbe41f976563447e4e7bd7f33d0cf163",
+      "new_fulltext_sha256": "609036bc403fbc8ffe0b9b3d27f26ec08e153494ec86a3f38309384ae8d19b4e",
+      "old_structured_sha256": "e38a34419f2fd8ef225b557c141d5bfce34852f83843c18384bdaba6a9469cb4",
+      "new_structured_sha256": "e38a34419f2fd8ef225b557c141d5bfce34852f83843c18384bdaba6a9469cb4",
+      "retained": 211,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "8M2YFJAX",
+      "rebuild_status": "ok",
+      "old_blocks": 119,
+      "new_blocks": 120,
+      "old_structured_chars": 27731,
+      "new_structured_chars": 27730,
+      "old_normalized_chars": 23031,
+      "new_normalized_chars": 23031,
+      "old_fulltext_sha256": "9fe0439fdcf4fb5ce373bb62473657057a2d770acacd3613e5aa54acc67e997a",
+      "new_fulltext_sha256": "b6c9af4fa213e687f1a20fe667d66b5aad8b11ce35bbc3b876c43a22707f25ee",
+      "old_structured_sha256": "2683a738dd6eb0ea3af56d00425892c81f38325c700fc2bb622e382725fdbe88",
+      "new_structured_sha256": "55faf1eec621f3dc2cf61c017917b5fca3162902af72fc5840d94edbfc3b918e",
+      "retained": 90,
+      "moved": 0,
+      "changed": 1,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 1,
+      "true_loss": [
+        {
+          "kind": "changed",
+          "page": 4,
+          "block_id": "9",
+          "old_role": "subsection_heading",
+          "new_role": "section_heading",
+          "old_text": "Received 13 February; accepted 15 May 2006.",
+          "new_text": "15 May 2006.",
+          "old_sha256": "2b9d6afcfce7ef2f39ac09666e834ae12697e6b56106a46e2ec2a4561434dbcd",
+          "new_sha256": "f432162f005c8deec26fb5050050651497b2978182fcd1ef44ad597daa1fecf9",
+          "coverage": 0.429,
+          "attribution": "metadata_normalization",
+          "moved_to": []
+        }
+      ],
+      "changed_detail": [
+        {
+          "page": 4,
+          "block_id": "9",
+          "old_role": "subsection_heading",
+          "new_role": "section_heading",
+          "old_text": "Received 13 February; accepted 15 May 2006.",
+          "new_text": "15 May 2006.",
+          "old_sha256": "2b9d6afcfce7ef2f39ac09666e834ae12697e6b56106a46e2ec2a4561434dbcd",
+          "new_sha256": "f432162f005c8deec26fb5050050651497b2978182fcd1ef44ad597daa1fecf9",
+          "coverage": 0.429,
+          "attribution": "metadata_normalization",
+          "moved_to": []
+        }
+      ],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "HOLD"
+    },
+    {
+      "key": "8UC452EE",
+      "rebuild_status": "ok",
+      "old_blocks": 214,
+      "new_blocks": 214,
+      "old_structured_chars": 46713,
+      "new_structured_chars": 46713,
+      "old_normalized_chars": 41692,
+      "new_normalized_chars": 39032,
+      "old_fulltext_sha256": "7ea1961fa70da646f53788945986de4714116488d4669870171530e503716632",
+      "new_fulltext_sha256": "2cc0b3130d2e3057bf2cd63d44b6eac403893e3c4e914bee5c51156538066314",
+      "old_structured_sha256": "bcacc3285b508fd0863f20161648f973989d724b461747d235f7e5dec2108e02",
+      "new_structured_sha256": "bcacc3285b508fd0863f20161648f973989d724b461747d235f7e5dec2108e02",
+      "retained": 168,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "97M7HFCD",
+      "rebuild_status": "ok",
+      "old_blocks": 287,
+      "new_blocks": 287,
+      "old_structured_chars": 53013,
+      "new_structured_chars": 53013,
+      "old_normalized_chars": 44073,
+      "new_normalized_chars": 41471,
+      "old_fulltext_sha256": "e5e531d24b2dcbcab904d6f58c37b5955082b492c3298b43c768f46287a56400",
+      "new_fulltext_sha256": "7840a5b462ead81cbe28c28309438459fb0a7a4cfbf58418bb7efa8a85595b8b",
+      "old_structured_sha256": "214bf7919039882590a1388f6c936c4cce4fa955fdd33791de27b013c9aff8d5",
+      "new_structured_sha256": "214bf7919039882590a1388f6c936c4cce4fa955fdd33791de27b013c9aff8d5",
+      "retained": 205,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "A45X769B",
+      "rebuild_status": "ok",
+      "old_blocks": 203,
+      "new_blocks": 203,
+      "old_structured_chars": 60750,
+      "new_structured_chars": 60750,
+      "old_normalized_chars": 53598,
+      "new_normalized_chars": 53585,
+      "old_fulltext_sha256": "e7b3b409ea3a7c4cc78413ba5be261cfc0a04ad24b730a60d445e49074325566",
+      "new_fulltext_sha256": "c15a9931b2ceb46cda5a291fc94d7b51d3d48da948505a37d495325e4813e8bf",
+      "old_structured_sha256": "b2f0c0754d9f931d0214b13008183a087382af8a83ec5aba1a3d96b16ba35cdd",
+      "new_structured_sha256": "b2f0c0754d9f931d0214b13008183a087382af8a83ec5aba1a3d96b16ba35cdd",
+      "retained": 174,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "AEQBENVW",
+      "rebuild_status": "ok",
+      "old_blocks": 201,
+      "new_blocks": 201,
+      "old_structured_chars": 43867,
+      "new_structured_chars": 43867,
+      "old_normalized_chars": 39011,
+      "new_normalized_chars": 38991,
+      "old_fulltext_sha256": "885fcdbe67d236d94b0471aab545afa686b6ccafdca1ca59dd0a78196a9fea2e",
+      "new_fulltext_sha256": "a9ea506334d472c1d5461e7389b2426fa7e970b01ae4d6f82c0b1ac06cf53b77",
+      "old_structured_sha256": "8eeea62d3c3bfc8088ffc4c4ddb7e9c7d0bd3329738617825f6dcdeb430945c7",
+      "new_structured_sha256": "8eeea62d3c3bfc8088ffc4c4ddb7e9c7d0bd3329738617825f6dcdeb430945c7",
+      "retained": 175,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "AT99P8YS",
+      "rebuild_status": "ok",
+      "old_blocks": 268,
+      "new_blocks": 268,
+      "old_structured_chars": 61872,
+      "new_structured_chars": 61872,
+      "old_normalized_chars": 40658,
+      "new_normalized_chars": 40347,
+      "old_fulltext_sha256": "13be6122d8b13748f5da1de8df9ae6f60e4fb207053994ee7d137e88caa612ed",
+      "new_fulltext_sha256": "47348dd5e3c0288e80947813127ba854857fc0c1ca1fc8a9c45c929c8d79f4f4",
+      "old_structured_sha256": "f1fce2e0575d52a5cb96182bebc7800afb03a9ab923597ddac2f4596dff1faef",
+      "new_structured_sha256": "f1fce2e0575d52a5cb96182bebc7800afb03a9ab923597ddac2f4596dff1faef",
+      "retained": 255,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "BPVR2AQM",
+      "rebuild_status": "ok",
+      "old_blocks": 577,
+      "new_blocks": 577,
+      "old_structured_chars": 172555,
+      "new_structured_chars": 172555,
+      "old_normalized_chars": 135500,
+      "new_normalized_chars": 134571,
+      "old_fulltext_sha256": "d0f237e93f394d78602ba379c28d1a8a1eddfe96223399717be1da4e50b3fbca",
+      "new_fulltext_sha256": "a964477f6f6faf208c0bc90b3332f9e5a1b6902b9ed55382fa01c5515f66d970",
+      "old_structured_sha256": "b4a0c441a0c66d6eec5cb5ba601924c7dc6649e1385c1738ecd11c7b15fbe9ab",
+      "new_structured_sha256": "b4a0c441a0c66d6eec5cb5ba601924c7dc6649e1385c1738ecd11c7b15fbe9ab",
+      "retained": 537,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "C3KHPMQ9",
+      "rebuild_status": "ok",
+      "old_blocks": 199,
+      "new_blocks": 199,
+      "old_structured_chars": 42412,
+      "new_structured_chars": 42412,
+      "old_normalized_chars": 37719,
+      "new_normalized_chars": 36528,
+      "old_fulltext_sha256": "2e0b67d3742b674d03031cf21e996d2d7a200c657eb227c3de8c20afff58f4b6",
+      "new_fulltext_sha256": "f3a29db4a1ea23c534e50496984792e965cfb78dee230ca0c3f95aecad5a3e57",
+      "old_structured_sha256": "d4d316731b4a777d3347e6b7d5a8ecc7a7a4af4267c16f8e0aa8e82cd55a85e7",
+      "new_structured_sha256": "d4d316731b4a777d3347e6b7d5a8ecc7a7a4af4267c16f8e0aa8e82cd55a85e7",
+      "retained": 188,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [
+        {
+          "text": "Funding: This work was supported by the Office of the Assistant Secretary of Defense for Health Affairs, through the Peer Reviewed Medical Research Program, Discovery Award under Award No. W81XWH1810203 (BL). In addition, we acknowledge the use of the WVU Shared Research Facilities, we acknowledge the support of NIH grants 2U54GM104942-02, 5P20RR016477, U57GM104942, P30GM103488, P20GM109098, Introduction",
+          "sha256": "35141b72c308575a222073e505a4fb8b70162ba08a7952e245be7f87eddeb1ae",
+          "coverage": 0.491
+        },
+        {
+          "text": "and P20GM103434. Opinions, interpretations, conclusions, and recommendations are those of the authors and are not necessarily endorsed by the funding agencies.",
+          "sha256": "f2fdfb1791431764b8fa4a1190e476cc58f7b3970bbb620f14a9d398217f9cc6",
+          "coverage": 0.619
+        },
+        {
+          "text": "Competing interests: The authors have declared that no competing interests exist. Staphylococcus aureus (S. aureus) is the most frequently isolated microorganism in PJI [7]. The persistence of S. aureus in PJI is attributed to many factors, which include increasing antibiotic resistance [8], intracellular survival of bacteria [9–11], and formation of biofilms [12]. In particular, biofilms are believed to have a large role in the pathogenesis of PJI, as foreign medical devices, such as prostheses",
+          "sha256": "fe059b2d709af08d176f0f8d6b16d774fd538e83d079cd37d347fb6aeb83f778",
+          "coverage": 0.793
+        }
+      ],
+      "true_loss_count": 3,
+      "true_loss": [
+        {
+          "kind": "fulltext",
+          "text": "Funding: This work was supported by the Office of the Assistant Secretary of Defense for Health Affairs, through the Peer Reviewed Medical Research Program, Discovery Award under Award No. W81XWH1810203 (BL). In addition, we acknowledge the use of the WVU Shared Research Facilities, we acknowledge the support of NIH grants 2U54GM104942-02, 5P20RR016477, U57GM104942, P30GM103488, P20GM109098, Introduction",
+          "sha256": "35141b72c308575a222073e505a4fb8b70162ba08a7952e245be7f87eddeb1ae",
+          "coverage": 0.491
+        },
+        {
+          "kind": "fulltext",
+          "text": "and P20GM103434. Opinions, interpretations, conclusions, and recommendations are those of the authors and are not necessarily endorsed by the funding agencies.",
+          "sha256": "f2fdfb1791431764b8fa4a1190e476cc58f7b3970bbb620f14a9d398217f9cc6",
+          "coverage": 0.619
+        },
+        {
+          "kind": "fulltext",
+          "text": "Competing interests: The authors have declared that no competing interests exist. Staphylococcus aureus (S. aureus) is the most frequently isolated microorganism in PJI [7]. The persistence of S. aureus in PJI is attributed to many factors, which include increasing antibiotic resistance [8], intracellular survival of bacteria [9–11], and formation of biofilms [12]. In particular, biofilms are believed to have a large role in the pathogenesis of PJI, as foreign medical devices, such as prostheses",
+          "sha256": "fe059b2d709af08d176f0f8d6b16d774fd538e83d079cd37d347fb6aeb83f778",
+          "coverage": 0.793
+        }
+      ],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "HOLD"
+    },
+    {
+      "key": "C7WCW4NX",
+      "rebuild_status": "ok",
+      "old_blocks": 475,
+      "new_blocks": 475,
+      "old_structured_chars": 108214,
+      "new_structured_chars": 108214,
+      "old_normalized_chars": 92645,
+      "new_normalized_chars": 92558,
+      "old_fulltext_sha256": "9aa527114836f2b9c7a3d59661e35affd42a12d65eabf02e2099152e62912580",
+      "new_fulltext_sha256": "f2849c1da45b8c57b8389c743a72a160cf6c7d5d0509949aedbb6f6b50112a67",
+      "old_structured_sha256": "035d44e4bbf5367bab62c0d1070a222d6922ba678fcabd4ca08520f72c0324f8",
+      "new_structured_sha256": "035d44e4bbf5367bab62c0d1070a222d6922ba678fcabd4ca08520f72c0324f8",
+      "retained": 388,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [
+        {
+          "text": "Received 31 March 2025",
+          "sha256": "a64e49871919c0d17c8e94b0bc07ef5a4d5cb141c3cc5bec883626aa212b3a5a",
+          "coverage": 0.5
+        }
+      ],
+      "true_loss_count": 1,
+      "true_loss": [
+        {
+          "kind": "fulltext",
+          "text": "Received 31 March 2025",
+          "sha256": "a64e49871919c0d17c8e94b0bc07ef5a4d5cb141c3cc5bec883626aa212b3a5a",
+          "coverage": 0.5
+        }
+      ],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "HOLD"
+    },
+    {
+      "key": "CHILQ4KJ",
+      "rebuild_status": "ok",
+      "old_blocks": 208,
+      "new_blocks": 215,
+      "old_structured_chars": 45998,
+      "new_structured_chars": 45992,
+      "old_normalized_chars": 37943,
+      "new_normalized_chars": 38036,
+      "old_fulltext_sha256": "ece4cf101d0df4a8f814b4cbd1109b4fd135fb82bdddd4b2bb4bd2a8f523b3e3",
+      "new_fulltext_sha256": "ef9b11c9834059fa0b5abaa6ad8e4cdc118646146e7e0118c0996f2e7cfc16be",
+      "old_structured_sha256": "bcaf9ae1cd05f9e4486fbd6c23b8c3fd6872d751406c693508a288e13cd8ac45",
+      "new_structured_sha256": "eaf82b86a9d0b0804628c5210089218b3722f911a740da967f2c9b637c9d016d",
+      "retained": 161,
+      "moved": 0,
+      "changed": 7,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 7,
+      "true_loss": [
+        {
+          "kind": "changed",
+          "page": 5,
+          "block_id": "5",
+          "old_role": "subsection_heading",
+          "new_role": "section_heading",
+          "old_text": "3.1. Three 10 Min ELF-PEMF Exposures per Day More Effectively Promoted Maturation of Osteoprogenitor Cells Than a Single 30 Min ELF-PEMF Exposure per Day",
+          "new_text": "10 Min ELF-PEMF Exposures per Day More Effectively Promoted Maturation of Osteoprogenitor Cells Than a Single 30 Min ELF-PEMF Exposure per Day",
+          "old_sha256": "9e3e31a59cb0a46f1a8e5030832f13237c32f88ff17c4f81013b15b090eac2e9",
+          "new_sha256": "a5906b700488176dec46f3803a7782525e9cb40eee2a4023a1774aaabe0a8ec8",
+          "coverage": 0.958,
+          "attribution": "text_change",
+          "moved_to": []
+        },
+        {
+          "kind": "changed",
+          "page": 5,
+          "block_id": "8",
+          "old_role": "subsection_heading",
+          "new_role": "section_heading",
+          "old_text": "3.2. Intermittent Exposure to 16 Hz ELF-PEMF Induced Expression of Piezo 1 in SCP-1 Cells",
+          "new_text": "16 Hz ELF-PEMF Induced Expression of Piezo 1 in SCP-1 Cells",
+          "old_sha256": "eba3449487f173d9c23d26cd4cbefd4bd461c813083333a8f2f048c1208c1ca6",
+          "new_sha256": "28ef7c3c7fe3cfa1b93319ff69d76590cdee2c73addef6a751498eda44f86909",
+          "coverage": 0.786,
+          "attribution": "text_change",
+          "moved_to": []
+        },
+        {
+          "kind": "changed",
+          "page": 5,
+          "block_id": "10",
+          "old_role": "subsection_heading",
+          "new_role": "section_heading",
+          "old_text": "3.3. The 16 Hz ELF-PEMF Exposure Pattern Affected Net- $ Ca^{2+} $ Influx in SCP-1 Cells",
+          "new_text": "16 Hz ELF-PEMF Exposure Pattern Affected Net- $ Ca^{2+} $ Influx in SCP-1 Cells",
+          "old_sha256": "3d06b3750d249fb343bb42c0bb887f2bda4e508da9844b8ed2c7aaf716815221",
+          "new_sha256": "f2b7434b1f251f034203f88ef16fedb53dcabf30e40593e86ab7d350c28fdd13",
+          "coverage": 0.929,
+          "attribution": "text_change",
+          "moved_to": []
+        },
+        {
+          "kind": "changed",
+          "page": 6,
+          "block_id": "12",
+          "old_role": "subsection_heading",
+          "new_role": "section_heading",
+          "old_text": "3.4. Modulation of Piezo 1-Mediated $ Ca^{2+} $ Influx into SCP-1 Cells by Small Chemicals",
+          "new_text": "1 Cells by Small Chemicals",
+          "old_sha256": "7a1f600d225784fef83d9ce8e5d0f561cf270ba0dd44654b473d5a8ad193b751",
+          "new_sha256": "83701289f0f788ae8e6967ca2bd510862601a94f67d070cd071ded20d22b66e1",
+          "coverage": 0.333,
+          "attribution": "text_change",
+          "moved_to": []
+        },
+        {
+          "kind": "changed",
+          "page": 6,
+          "block_id": "15",
+          "old_role": "subsection_heading",
+          "new_role": "section_heading",
+          "old_text": "3.5. The 16 Hz ELF-PEMF Exposure-Induced $ Ca^{2+} $ Influx Was Abolished by Antagonizing Piezo 1",
+          "new_text": "16 Hz ELF-PEMF Exposure-Induced $ Ca^{2+} $ Influx Was Abolished by Antagonizing Piezo 1",
+          "old_sha256": "981d36d0979788e340ff7a862fb0b6f0ca535432e8ccd863d860fddc9dfe9db8",
+          "new_sha256": "577c4a753a57f30791847138773a29dd0e5baf37356d1eeb028d3d02f4e5a6eb",
+          "coverage": 0.929,
+          "attribution": "text_change",
+          "moved_to": []
+        },
+        {
+          "kind": "changed",
+          "page": 7,
+          "block_id": "17",
+          "old_role": "subsection_heading",
+          "new_role": "section_heading",
+          "old_text": "3.6. Pharmacological Activation of Piezo 1 Promoted Osteogenic Differentiation of SCP-1 Cells",
+          "new_text": "1 Promoted Osteogenic Differentiation of SCP-1 Cells",
+          "old_sha256": "5433461865fb3df9f1b4f37406ded39c1e175186f79f05a942b8c297d33ebd93",
+          "new_sha256": "57cc8c4dce1c4b8f917849ba106efcc74f6e27991826995e05569f4a063c84fe",
+          "coverage": 0.7,
+          "attribution": "text_change",
+          "moved_to": []
+        },
+        {
+          "kind": "changed",
+          "page": 9,
+          "block_id": "2",
+          "old_role": "subsection_heading",
+          "new_role": "section_heading",
+          "old_text": "3.7. Pharmacological Inhibition of Piezo 1 Partly Abrogated the Positive Effects of 16 Hz ELF-PEMF Exposure on the Maturation of SCP-1 Cells",
+          "new_text": "1 Partly Abrogated the Positive Effects of 16 Hz ELF-PEMF Exposure on the Maturation of SCP-1 Cells",
+          "old_sha256": "6ccc8dece8bcf3553cbc83f7c3f3715f5cf48492152aa111fa75db04d367b003",
+          "new_sha256": "e09960f95dbde17c5503795e93e3571774d9f47e673d41539c0ab73c70a8e3d8",
+          "coverage": 0.857,
+          "attribution": "text_change",
+          "moved_to": []
+        }
+      ],
+      "changed_detail": [
+        {
+          "page": 5,
+          "block_id": "5",
+          "old_role": "subsection_heading",
+          "new_role": "section_heading",
+          "old_text": "3.1. Three 10 Min ELF-PEMF Exposures per Day More Effectively Promoted Maturation of Osteoprogenitor Cells Than a Single 30 Min ELF-PEMF Exposure per Day",
+          "new_text": "10 Min ELF-PEMF Exposures per Day More Effectively Promoted Maturation of Osteoprogenitor Cells Than a Single 30 Min ELF-PEMF Exposure per Day",
+          "old_sha256": "9e3e31a59cb0a46f1a8e5030832f13237c32f88ff17c4f81013b15b090eac2e9",
+          "new_sha256": "a5906b700488176dec46f3803a7782525e9cb40eee2a4023a1774aaabe0a8ec8",
+          "coverage": 0.958,
+          "attribution": "text_change",
+          "moved_to": []
+        },
+        {
+          "page": 5,
+          "block_id": "8",
+          "old_role": "subsection_heading",
+          "new_role": "section_heading",
+          "old_text": "3.2. Intermittent Exposure to 16 Hz ELF-PEMF Induced Expression of Piezo 1 in SCP-1 Cells",
+          "new_text": "16 Hz ELF-PEMF Induced Expression of Piezo 1 in SCP-1 Cells",
+          "old_sha256": "eba3449487f173d9c23d26cd4cbefd4bd461c813083333a8f2f048c1208c1ca6",
+          "new_sha256": "28ef7c3c7fe3cfa1b93319ff69d76590cdee2c73addef6a751498eda44f86909",
+          "coverage": 0.786,
+          "attribution": "text_change",
+          "moved_to": []
+        },
+        {
+          "page": 5,
+          "block_id": "10",
+          "old_role": "subsection_heading",
+          "new_role": "section_heading",
+          "old_text": "3.3. The 16 Hz ELF-PEMF Exposure Pattern Affected Net- $ Ca^{2+} $ Influx in SCP-1 Cells",
+          "new_text": "16 Hz ELF-PEMF Exposure Pattern Affected Net- $ Ca^{2+} $ Influx in SCP-1 Cells",
+          "old_sha256": "3d06b3750d249fb343bb42c0bb887f2bda4e508da9844b8ed2c7aaf716815221",
+          "new_sha256": "f2b7434b1f251f034203f88ef16fedb53dcabf30e40593e86ab7d350c28fdd13",
+          "coverage": 0.929,
+          "attribution": "text_change",
+          "moved_to": []
+        },
+        {
+          "page": 6,
+          "block_id": "12",
+          "old_role": "subsection_heading",
+          "new_role": "section_heading",
+          "old_text": "3.4. Modulation of Piezo 1-Mediated $ Ca^{2+} $ Influx into SCP-1 Cells by Small Chemicals",
+          "new_text": "1 Cells by Small Chemicals",
+          "old_sha256": "7a1f600d225784fef83d9ce8e5d0f561cf270ba0dd44654b473d5a8ad193b751",
+          "new_sha256": "83701289f0f788ae8e6967ca2bd510862601a94f67d070cd071ded20d22b66e1",
+          "coverage": 0.333,
+          "attribution": "text_change",
+          "moved_to": []
+        },
+        {
+          "page": 6,
+          "block_id": "15",
+          "old_role": "subsection_heading",
+          "new_role": "section_heading",
+          "old_text": "3.5. The 16 Hz ELF-PEMF Exposure-Induced $ Ca^{2+} $ Influx Was Abolished by Antagonizing Piezo 1",
+          "new_text": "16 Hz ELF-PEMF Exposure-Induced $ Ca^{2+} $ Influx Was Abolished by Antagonizing Piezo 1",
+          "old_sha256": "981d36d0979788e340ff7a862fb0b6f0ca535432e8ccd863d860fddc9dfe9db8",
+          "new_sha256": "577c4a753a57f30791847138773a29dd0e5baf37356d1eeb028d3d02f4e5a6eb",
+          "coverage": 0.929,
+          "attribution": "text_change",
+          "moved_to": []
+        },
+        {
+          "page": 7,
+          "block_id": "17",
+          "old_role": "subsection_heading",
+          "new_role": "section_heading",
+          "old_text": "3.6. Pharmacological Activation of Piezo 1 Promoted Osteogenic Differentiation of SCP-1 Cells",
+          "new_text": "1 Promoted Osteogenic Differentiation of SCP-1 Cells",
+          "old_sha256": "5433461865fb3df9f1b4f37406ded39c1e175186f79f05a942b8c297d33ebd93",
+          "new_sha256": "57cc8c4dce1c4b8f917849ba106efcc74f6e27991826995e05569f4a063c84fe",
+          "coverage": 0.7,
+          "attribution": "text_change",
+          "moved_to": []
+        },
+        {
+          "page": 9,
+          "block_id": "2",
+          "old_role": "subsection_heading",
+          "new_role": "section_heading",
+          "old_text": "3.7. Pharmacological Inhibition of Piezo 1 Partly Abrogated the Positive Effects of 16 Hz ELF-PEMF Exposure on the Maturation of SCP-1 Cells",
+          "new_text": "1 Partly Abrogated the Positive Effects of 16 Hz ELF-PEMF Exposure on the Maturation of SCP-1 Cells",
+          "old_sha256": "6ccc8dece8bcf3553cbc83f7c3f3715f5cf48492152aa111fa75db04d367b003",
+          "new_sha256": "e09960f95dbde17c5503795e93e3571774d9f47e673d41539c0ab73c70a8e3d8",
+          "coverage": 0.857,
+          "attribution": "text_change",
+          "moved_to": []
+        }
+      ],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "HOLD"
+    },
+    {
+      "key": "CPQ47TBV",
+      "rebuild_status": "ok",
+      "old_blocks": 193,
+      "new_blocks": 194,
+      "old_structured_chars": 41209,
+      "new_structured_chars": 41208,
+      "old_normalized_chars": 36854,
+      "new_normalized_chars": 36854,
+      "old_fulltext_sha256": "7022d798324bb80faf098fc4bb27c12a5bdb55f8461db419ddccdf77b5a19723",
+      "new_fulltext_sha256": "4fafb42cb2e5db523f6716e438afe58255b189ccfd1d952df50c15adcbd20305",
+      "old_structured_sha256": "ed16a5d8a0ecbb2d7b533fc0043457646b0881e5482421e2eceaa59512ab1288",
+      "new_structured_sha256": "89e4ba9086149941142af6c72380559611226533fcf4e4a395dd0e28b51d1ada",
+      "retained": 161,
+      "moved": 0,
+      "changed": 1,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 1,
+      "true_loss": [
+        {
+          "kind": "changed",
+          "page": 9,
+          "block_id": "24",
+          "old_role": "subsection_heading",
+          "new_role": "section_heading",
+          "old_text": "Received: 3 March 2025 / Accepted: 9 April 2025",
+          "new_text": "9 April 2025",
+          "old_sha256": "bd45203a4d32bdbc2ffc5ba9f2f23b7a6813536b67d2c418afce540fe689e664",
+          "new_sha256": "13bc9139acc87065cfa4f58cd6751240e2521d2818f379b80757d39d2466392e",
+          "coverage": 0.5,
+          "attribution": "metadata_normalization",
+          "moved_to": []
+        }
+      ],
+      "changed_detail": [
+        {
+          "page": 9,
+          "block_id": "24",
+          "old_role": "subsection_heading",
+          "new_role": "section_heading",
+          "old_text": "Received: 3 March 2025 / Accepted: 9 April 2025",
+          "new_text": "9 April 2025",
+          "old_sha256": "bd45203a4d32bdbc2ffc5ba9f2f23b7a6813536b67d2c418afce540fe689e664",
+          "new_sha256": "13bc9139acc87065cfa4f58cd6751240e2521d2818f379b80757d39d2466392e",
+          "coverage": 0.5,
+          "attribution": "metadata_normalization",
+          "moved_to": []
+        }
+      ],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "HOLD"
+    },
+    {
+      "key": "CQG5WH2Y",
+      "rebuild_status": "ok",
+      "old_blocks": 287,
+      "new_blocks": 287,
+      "old_structured_chars": 56504,
+      "new_structured_chars": 56504,
+      "old_normalized_chars": 46272,
+      "new_normalized_chars": 46092,
+      "old_fulltext_sha256": "a3ae85041b42224cb92257990da3c060d9d40f70392c4b1d9a69440e08d2821c",
+      "new_fulltext_sha256": "34e660df62da848cd70b830d7c3e70e16438d70392f6e4737258c8b7b6de6f1c",
+      "old_structured_sha256": "73572d2bb3a8e8016d680dc5424d430745192c30d8b3043c1739b2997425b6f3",
+      "new_structured_sha256": "73572d2bb3a8e8016d680dc5424d430745192c30d8b3043c1739b2997425b6f3",
+      "retained": 265,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [
+        {
+          "text": "IP Address: 207.162.240.147 This content was downloaded on 14/07/2017 at 09:53",
+          "sha256": "30c00e58b924d8f125276322a84c08d079eaa3d24af86f179ac3774613d6310c",
+          "coverage": 0.588
+        },
+        {
+          "text": "Selvakumar $^{2}$, Amitava Bhattacharyya $^{1,5}$",
+          "sha256": "5206dd350f7ffa6cfec8ce9f622053b5afe7ed281e6da2cd8f56fd5a85518475",
+          "coverage": 0.667
+        },
+        {
+          "text": "E-mail: amitbha1912@gmail.com, abh@psgias.ac.in",
+          "sha256": "2589b13a5b14bcd53338fcd3b409c1a319942348c1864c2866d7833c918f46c5",
+          "coverage": 0.25
+        }
+      ],
+      "true_loss_count": 3,
+      "true_loss": [
+        {
+          "kind": "fulltext",
+          "text": "IP Address: 207.162.240.147 This content was downloaded on 14/07/2017 at 09:53",
+          "sha256": "30c00e58b924d8f125276322a84c08d079eaa3d24af86f179ac3774613d6310c",
+          "coverage": 0.588
+        },
+        {
+          "kind": "fulltext",
+          "text": "Selvakumar $^{2}$, Amitava Bhattacharyya $^{1,5}$",
+          "sha256": "5206dd350f7ffa6cfec8ce9f622053b5afe7ed281e6da2cd8f56fd5a85518475",
+          "coverage": 0.667
+        },
+        {
+          "kind": "fulltext",
+          "text": "E-mail: amitbha1912@gmail.com, abh@psgias.ac.in",
+          "sha256": "2589b13a5b14bcd53338fcd3b409c1a319942348c1864c2866d7833c918f46c5",
+          "coverage": 0.25
+        }
+      ],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "HOLD"
+    },
+    {
+      "key": "DLVSVU49",
+      "rebuild_status": "ok",
+      "old_blocks": 159,
+      "new_blocks": 159,
+      "old_structured_chars": 34310,
+      "new_structured_chars": 34310,
+      "old_normalized_chars": 28168,
+      "new_normalized_chars": 28166,
+      "old_fulltext_sha256": "102d1625cc3390e87805e8d5564312eca82b3e62d41619f553eb0b80df624225",
+      "new_fulltext_sha256": "a7029bfe3c3afdcea79b39316dbc45d3bf7cb71f5dbc505d86916bd99f074f19",
+      "old_structured_sha256": "a9532135541ba6ce922a5531c561274872cd7ff95dd74f4272f391eaa352c6fa",
+      "new_structured_sha256": "a9532135541ba6ce922a5531c561274872cd7ff95dd74f4272f391eaa352c6fa",
+      "retained": 146,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "DLW898UK",
+      "rebuild_status": "ok",
+      "old_blocks": 423,
+      "new_blocks": 423,
+      "old_structured_chars": 74208,
+      "new_structured_chars": 74208,
+      "old_normalized_chars": 66324,
+      "new_normalized_chars": 66205,
+      "old_fulltext_sha256": "dd10eb29962ead3e617e04f3eb54259ea45ac831f18bb2c825f24e7f560bb02c",
+      "new_fulltext_sha256": "f25ce05f507ce6d6f50fe70bea0bf613ae9c6a0b156d2a2a633fd279b9cde5d3",
+      "old_structured_sha256": "345b22faaf67d917a76ef82fdc6f3303e0dafe7207f9722859b552eb0169ab20",
+      "new_structured_sha256": "345b22faaf67d917a76ef82fdc6f3303e0dafe7207f9722859b552eb0169ab20",
+      "retained": 378,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [
+        {
+          "text": "E-mail: patrizia.diana@unipa.it",
+          "sha256": "c9e14d5bbf5b54eb6eb1b1116f194e29f58d16c2d66e054640990ca77af4897f",
+          "coverage": 0.6
+        },
+        {
+          "text": "[b] Prof. E. Giovannetti",
+          "sha256": "7c2a8028b44bace86a3c9542d56a06cf582ef220b2ea88128520c5b71b58ee32",
+          "coverage": 0.5
+        },
+        {
+          "text": "[c] Prof. E. Giovannetti",
+          "sha256": "c9833dc28e97d951ae227d3e9383a73ed2a659b04173c7dcfd66e5e319cf9177",
+          "coverage": 0.5
+        },
+        {
+          "text": "Fondazione Pisana per la Scienza",
+          "sha256": "1080a2abe1d870d2cf479b1db69c7a5e377fddbe617b81b1d599841af116f284",
+          "coverage": 0.0
+        }
+      ],
+      "true_loss_count": 4,
+      "true_loss": [
+        {
+          "kind": "fulltext",
+          "text": "E-mail: patrizia.diana@unipa.it",
+          "sha256": "c9e14d5bbf5b54eb6eb1b1116f194e29f58d16c2d66e054640990ca77af4897f",
+          "coverage": 0.6
+        },
+        {
+          "kind": "fulltext",
+          "text": "[b] Prof. E. Giovannetti",
+          "sha256": "7c2a8028b44bace86a3c9542d56a06cf582ef220b2ea88128520c5b71b58ee32",
+          "coverage": 0.5
+        },
+        {
+          "kind": "fulltext",
+          "text": "[c] Prof. E. Giovannetti",
+          "sha256": "c9833dc28e97d951ae227d3e9383a73ed2a659b04173c7dcfd66e5e319cf9177",
+          "coverage": 0.5
+        },
+        {
+          "kind": "fulltext",
+          "text": "Fondazione Pisana per la Scienza",
+          "sha256": "1080a2abe1d870d2cf479b1db69c7a5e377fddbe617b81b1d599841af116f284",
+          "coverage": 0.0
+        }
+      ],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "HOLD"
+    },
+    {
+      "key": "DR6FGTCA",
+      "rebuild_status": "ok",
+      "old_blocks": 261,
+      "new_blocks": 261,
+      "old_structured_chars": 56291,
+      "new_structured_chars": 56291,
+      "old_normalized_chars": 51295,
+      "new_normalized_chars": 51165,
+      "old_fulltext_sha256": "40c297e2c19443fdda3c3f4cbd8ebc5c9e6077f5f01b57c61970a0de01c5c008",
+      "new_fulltext_sha256": "b8eabe3c369b7a0a5aea5a9460dac068489d06d75f42813afc6187299d921cb3",
+      "old_structured_sha256": "89f165bd184e90862b9b2317beb3aad40f07df794a59f119240dafb995a3a6bd",
+      "new_structured_sha256": "89f165bd184e90862b9b2317beb3aad40f07df794a59f119240dafb995a3a6bd",
+      "retained": 216,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "DS2FR5FU",
+      "rebuild_status": "ok",
+      "old_blocks": 217,
+      "new_blocks": 217,
+      "old_structured_chars": 69134,
+      "new_structured_chars": 69134,
+      "old_normalized_chars": 35539,
+      "new_normalized_chars": 35498,
+      "old_fulltext_sha256": "030e7142b0b8847027629eb0e0436dc27ff78f010a006656972bc54ed4cad74d",
+      "new_fulltext_sha256": "b753c33e65984036350d9aa656c5ea59f1877023f2c2ca2add4bb3cb71f9f6ff",
+      "old_structured_sha256": "9c0a0128e17744a9d803fd585ec8e63f774ad150825054988399024f8000cd09",
+      "new_structured_sha256": "9c0a0128e17744a9d803fd585ec8e63f774ad150825054988399024f8000cd09",
+      "retained": 199,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [
+        {
+          "text": "> **Table Caption:** Table 1 Demographics",
+          "sha256": "632323b0bb3a28e6c57c7adcbccd2d98aa88c85a5800dc3fcdc402e4468f333d",
+          "coverage": 0.5
+        }
+      ],
+      "true_loss_count": 1,
+      "true_loss": [
+        {
+          "kind": "fulltext",
+          "text": "> **Table Caption:** Table 1 Demographics",
+          "sha256": "632323b0bb3a28e6c57c7adcbccd2d98aa88c85a5800dc3fcdc402e4468f333d",
+          "coverage": 0.5
+        }
+      ],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "HOLD"
+    },
+    {
+      "key": "EGY463YC",
+      "rebuild_status": "ok",
+      "old_blocks": 156,
+      "new_blocks": 156,
+      "old_structured_chars": 48413,
+      "new_structured_chars": 48413,
+      "old_normalized_chars": 33900,
+      "new_normalized_chars": 33732,
+      "old_fulltext_sha256": "d6238a2361994b08d6ee0b0ec15b980472a75ac5668870de31d211aa7c77f880",
+      "new_fulltext_sha256": "b40f579404fa3f565785251c74b0bc3c6373404572d5fa395a65fd1239712576",
+      "old_structured_sha256": "60366cb1fa0be4791b957e80a4b4ade0ce44c8e614503b80f1ff9570897ac486",
+      "new_structured_sha256": "60366cb1fa0be4791b957e80a4b4ade0ce44c8e614503b80f1ff9570897ac486",
+      "retained": 150,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "EYT6JLZU",
+      "rebuild_status": "ok",
+      "old_blocks": 132,
+      "new_blocks": 132,
+      "old_structured_chars": 26703,
+      "new_structured_chars": 26703,
+      "old_normalized_chars": 21909,
+      "new_normalized_chars": 20592,
+      "old_fulltext_sha256": "d1b2ec2f6212419536a54c946910b0f02b6394badf3b5291a403d61aa2d79131",
+      "new_fulltext_sha256": "33faa0aa6630e3003c9598b0d3f63cf2bd5d357cf5a1561afb67992cebd3343e",
+      "old_structured_sha256": "d58af3a133d92316e6b92363eadda4035b4e9c0725a2d256ab50cce9d9b76f50",
+      "new_structured_sha256": "d58af3a133d92316e6b92363eadda4035b4e9c0725a2d256ab50cce9d9b76f50",
+      "retained": 111,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "FRU2XUGJ",
+      "rebuild_status": "ok",
+      "old_blocks": 138,
+      "new_blocks": 138,
+      "old_structured_chars": 35154,
+      "new_structured_chars": 35154,
+      "old_normalized_chars": 30872,
+      "new_normalized_chars": 30512,
+      "old_fulltext_sha256": "f4b143c1d56955e7eb314aaa04c2ae40bb9f216458fd57e2f6bf25863bf8e9c2",
+      "new_fulltext_sha256": "f10aab340f328d71fbc24a20effd01514f2ed19a794f8282c35b2ce8b871bef7",
+      "old_structured_sha256": "c63513ff867e8eeb913b67e595edeef6f30c66c1dec69961bfec38319675dfe8",
+      "new_structured_sha256": "c63513ff867e8eeb913b67e595edeef6f30c66c1dec69961bfec38319675dfe8",
+      "retained": 128,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "FVZ3YE7P",
+      "rebuild_status": "ok",
+      "old_blocks": 364,
+      "new_blocks": 364,
+      "old_structured_chars": 55367,
+      "new_structured_chars": 55367,
+      "old_normalized_chars": 47054,
+      "new_normalized_chars": 46408,
+      "old_fulltext_sha256": "251d9d65a56c05a0c411fa5aec8a9f1dc0cda815fa42f87c0a89324638284c3d",
+      "new_fulltext_sha256": "802d8d45444afdf608666133a784029b89d245b2ad07653b41203bc83d1508ee",
+      "old_structured_sha256": "2ee736320ee258bc6c47f9500fa41bbf7c80745b3b867d2c1008b3ec322bf577",
+      "new_structured_sha256": "2ee736320ee258bc6c47f9500fa41bbf7c80745b3b867d2c1008b3ec322bf577",
+      "retained": 302,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [
+        {
+          "text": "where $\\mathrm{OD}_{\\mathrm{TX}-100}$,$\\mathrm{OD}_{\\mathrm{PBS}}$, and $\\mathrm{OD}_{\\mathrm{hydro}}$ represent the absorbance values of the TX-100 solution, PBS buffer, and hydrogel extracting solution. 2.9 Evaluation of antioxidant properties",
+          "sha256": "7b39463af27b9efdea5e25bb86443349768ff19d1b0079c99292f6f35835b522",
+          "coverage": 0.794
+        }
+      ],
+      "true_loss_count": 1,
+      "true_loss": [
+        {
+          "kind": "fulltext",
+          "text": "where $\\mathrm{OD}_{\\mathrm{TX}-100}$,$\\mathrm{OD}_{\\mathrm{PBS}}$, and $\\mathrm{OD}_{\\mathrm{hydro}}$ represent the absorbance values of the TX-100 solution, PBS buffer, and hydrogel extracting solution. 2.9 Evaluation of antioxidant properties",
+          "sha256": "7b39463af27b9efdea5e25bb86443349768ff19d1b0079c99292f6f35835b522",
+          "coverage": 0.794
+        }
+      ],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "HOLD"
+    },
+    {
+      "key": "G3IIG3AT",
+      "rebuild_status": "ok",
+      "old_blocks": 586,
+      "new_blocks": 586,
+      "old_structured_chars": 128756,
+      "new_structured_chars": 128756,
+      "old_normalized_chars": 112185,
+      "new_normalized_chars": 105400,
+      "old_fulltext_sha256": "5b29945029872ff1b937027c010abf5a5848faf15043eeef808ff4615210e0c4",
+      "new_fulltext_sha256": "8a44285cac541920179154d516f2ee7e00ae6a6780e547aec834ba2c64246069",
+      "old_structured_sha256": "8596c7b21d21baa47e8fac32b9aa4f085d184e8b8cbe7f54469b1d0aa130d8fc",
+      "new_structured_sha256": "8596c7b21d21baa47e8fac32b9aa4f085d184e8b8cbe7f54469b1d0aa130d8fc",
+      "retained": 472,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "GZ4BNT63",
+      "rebuild_status": "ok",
+      "old_blocks": 312,
+      "new_blocks": 312,
+      "old_structured_chars": 90785,
+      "new_structured_chars": 90785,
+      "old_normalized_chars": 77601,
+      "new_normalized_chars": 76475,
+      "old_fulltext_sha256": "cd6bfd25f88ea9399849f6472b9da3b0d621891e791214433951ac66ac8f4fa7",
+      "new_fulltext_sha256": "e8f6fcbc888cd32a0e7e1f78c899314a320310ba956f0662063075c69472315a",
+      "old_structured_sha256": "a20bcee3cc920c99e28dcb717d87b23a681b271c2f99c035166460249cc141f9",
+      "new_structured_sha256": "a20bcee3cc920c99e28dcb717d87b23a681b271c2f99c035166460249cc141f9",
+      "retained": 278,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "H497AGMU",
+      "rebuild_status": "ok",
+      "old_blocks": 240,
+      "new_blocks": 240,
+      "old_structured_chars": 49418,
+      "new_structured_chars": 49418,
+      "old_normalized_chars": 44043,
+      "new_normalized_chars": 43971,
+      "old_fulltext_sha256": "1e10641c26331c9fa2e9c73ab7192a0fea5d2bdba676b9171cd139d68d9d5e06",
+      "new_fulltext_sha256": "87ac80a5ef90df70588c4ede537f220dc44a8db72e994c6095bb5ad0718e0ebe",
+      "old_structured_sha256": "0fe9b065b83d3448f2a362c2ff3fdd826fdc654976159541d57d33ebbd2bbd80",
+      "new_structured_sha256": "0fe9b065b83d3448f2a362c2ff3fdd826fdc654976159541d57d33ebbd2bbd80",
+      "retained": 209,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [
+        {
+          "text": "REVISED 12 April 2016",
+          "sha256": "eb497d95f9ef2e1ee1197ab9db3ae43fdc6611a14e862accccf93b5a80d3e728",
+          "coverage": 0.5
+        },
+        {
+          "text": "PUBLISHED 12 May 2016",
+          "sha256": "320d37cdd00697d711a14ce6b7a37cfca8440f406bd0fcd7f7a2d05bed3db485",
+          "coverage": 0.75
+        },
+        {
+          "text": "E-mail: jowalser@ethz.ch",
+          "sha256": "8d45122699f630d5633a96b49198936038d91349469230873642ebba802419fc",
+          "coverage": 0.25
+        }
+      ],
+      "true_loss_count": 3,
+      "true_loss": [
+        {
+          "kind": "fulltext",
+          "text": "REVISED 12 April 2016",
+          "sha256": "eb497d95f9ef2e1ee1197ab9db3ae43fdc6611a14e862accccf93b5a80d3e728",
+          "coverage": 0.5
+        },
+        {
+          "kind": "fulltext",
+          "text": "PUBLISHED 12 May 2016",
+          "sha256": "320d37cdd00697d711a14ce6b7a37cfca8440f406bd0fcd7f7a2d05bed3db485",
+          "coverage": 0.75
+        },
+        {
+          "kind": "fulltext",
+          "text": "E-mail: jowalser@ethz.ch",
+          "sha256": "8d45122699f630d5633a96b49198936038d91349469230873642ebba802419fc",
+          "coverage": 0.25
+        }
+      ],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "HOLD"
+    },
+    {
+      "key": "H4B6CQLA",
+      "rebuild_status": "ok",
+      "old_blocks": 291,
+      "new_blocks": 291,
+      "old_structured_chars": 67240,
+      "new_structured_chars": 67240,
+      "old_normalized_chars": 57533,
+      "new_normalized_chars": 56747,
+      "old_fulltext_sha256": "247380159b7dae8600bd76089c4ee658e02b6e347e19ad766a3ed674bc07a7cb",
+      "new_fulltext_sha256": "2eb7e9dd5d1208aa695d095b19998d27a4a54101726e3b03d49dc46869fc08b9",
+      "old_structured_sha256": "94a3e204e1d63c66260409f408ab674660164daee6f0a4b3b470499609d76223",
+      "new_structured_sha256": "94a3e204e1d63c66260409f408ab674660164daee6f0a4b3b470499609d76223",
+      "retained": 267,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "HIU4F3V4",
+      "rebuild_status": "ok",
+      "old_blocks": 197,
+      "new_blocks": 197,
+      "old_structured_chars": 38281,
+      "new_structured_chars": 38281,
+      "old_normalized_chars": 29765,
+      "new_normalized_chars": 29394,
+      "old_fulltext_sha256": "46af3a61222794a4c152b5d467b4d223a56033a05f035aa3bbbc0e768bfbf3d8",
+      "new_fulltext_sha256": "bfc56c75102e2002db8951e7f8fa6ff82814efe91d889b7e58672967591e7006",
+      "old_structured_sha256": "7b117239bd3a9d493c4c31e5c7d3eab8bd2fbe7669c57d97817c1cf9f082a25b",
+      "new_structured_sha256": "7b117239bd3a9d493c4c31e5c7d3eab8bd2fbe7669c57d97817c1cf9f082a25b",
+      "retained": 186,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [
+        {
+          "text": "E-Mail Address: chunyanj@hotmail.com",
+          "sha256": "2c2d1d2276e14421bd0ce4addda586709458ca66832d4cc11c65bb6e7dc69639",
+          "coverage": 0.2
+        },
+        {
+          "text": "Short Running Title: Modified Patte's Classification",
+          "sha256": "2c8618396f406b7ad4ea50b7c854602d7c1c627f2f8bc382b6f6c996cd13c09c",
+          "coverage": 0.5
+        },
+        {
+          "text": "IRB and RCT information: none",
+          "sha256": "46792ff844a4ba3ad2a03e4c3abd4e6f497b2f92c7ffeb33124a4037f0326bfb",
+          "coverage": 0.6
+        }
+      ],
+      "true_loss_count": 3,
+      "true_loss": [
+        {
+          "kind": "fulltext",
+          "text": "E-Mail Address: chunyanj@hotmail.com",
+          "sha256": "2c2d1d2276e14421bd0ce4addda586709458ca66832d4cc11c65bb6e7dc69639",
+          "coverage": 0.2
+        },
+        {
+          "kind": "fulltext",
+          "text": "Short Running Title: Modified Patte's Classification",
+          "sha256": "2c8618396f406b7ad4ea50b7c854602d7c1c627f2f8bc382b6f6c996cd13c09c",
+          "coverage": 0.5
+        },
+        {
+          "kind": "fulltext",
+          "text": "IRB and RCT information: none",
+          "sha256": "46792ff844a4ba3ad2a03e4c3abd4e6f497b2f92c7ffeb33124a4037f0326bfb",
+          "coverage": 0.6
+        }
+      ],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "HOLD"
+    },
+    {
+      "key": "HN4758MP",
+      "rebuild_status": "ok",
+      "old_blocks": 329,
+      "new_blocks": 329,
+      "old_structured_chars": 61203,
+      "new_structured_chars": 61203,
+      "old_normalized_chars": 50313,
+      "new_normalized_chars": 50154,
+      "old_fulltext_sha256": "c83ae0bd449b20aa57826164a1c36a1e821ec7fb8a336d7265aa474b592eccc1",
+      "new_fulltext_sha256": "aeb8c8c481e4099b7004b7697ece784cf92a84c85f5d1e1ea97dc50c995ca9e2",
+      "old_structured_sha256": "faf5cabd9c3a3b7f29068497a82afdc7c78cc7f00f37e19e20e46836857c9791",
+      "new_structured_sha256": "faf5cabd9c3a3b7f29068497a82afdc7c78cc7f00f37e19e20e46836857c9791",
+      "retained": 305,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [
+        {
+          "text": "$^{*}$Corresponding Author",
+          "sha256": "a38922e0d41996e4cc97a705ef18c515d666eedd415e52da4993a22ae258f156",
+          "coverage": 0.0
+        },
+        {
+          "text": "Dr. Govinda Kapusetti",
+          "sha256": "5d53670e538c60d62f41b88b4434ac374f4576ed90f778119f328ea92a3c3e4d",
+          "coverage": 0.333
+        },
+        {
+          "text": "Gujarat, 380054, India",
+          "sha256": "0e42df138ff2155894de9ccfa4c6d6b76a76d5193dc9b1f1314359e11b2bb365",
+          "coverage": 0.667
+        },
+        {
+          "text": "E-mail:$\\underline{\\text{govindphysics@gmail.com}}$",
+          "sha256": "854f88a679f1592ab0508fabcc6bed0a6db6e39d32f49ab6f504971c714494f6",
+          "coverage": 0.167
+        }
+      ],
+      "true_loss_count": 4,
+      "true_loss": [
+        {
+          "kind": "fulltext",
+          "text": "$^{*}$Corresponding Author",
+          "sha256": "a38922e0d41996e4cc97a705ef18c515d666eedd415e52da4993a22ae258f156",
+          "coverage": 0.0
+        },
+        {
+          "kind": "fulltext",
+          "text": "Dr. Govinda Kapusetti",
+          "sha256": "5d53670e538c60d62f41b88b4434ac374f4576ed90f778119f328ea92a3c3e4d",
+          "coverage": 0.333
+        },
+        {
+          "kind": "fulltext",
+          "text": "Gujarat, 380054, India",
+          "sha256": "0e42df138ff2155894de9ccfa4c6d6b76a76d5193dc9b1f1314359e11b2bb365",
+          "coverage": 0.667
+        },
+        {
+          "kind": "fulltext",
+          "text": "E-mail:$\\underline{\\text{govindphysics@gmail.com}}$",
+          "sha256": "854f88a679f1592ab0508fabcc6bed0a6db6e39d32f49ab6f504971c714494f6",
+          "coverage": 0.167
+        }
+      ],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "HOLD"
+    },
+    {
+      "key": "IH6K34R9",
+      "rebuild_status": "ok",
+      "old_blocks": 349,
+      "new_blocks": 350,
+      "old_structured_chars": 125873,
+      "new_structured_chars": 125872,
+      "old_normalized_chars": 105335,
+      "new_normalized_chars": 105522,
+      "old_fulltext_sha256": "dc1a724955f4da1ce94a9e3ddafb7304fff1fae4227f7500af97a6e7cdf64ee7",
+      "new_fulltext_sha256": "1c7d5dbc49e6d6f7f711686820f70f7da277af9c8f3be9f65469a76a5445bac8",
+      "old_structured_sha256": "432fe00aab306f74940057e9a5cf7d78ccb7203fa586147cc3f40edd7d7c2e90",
+      "new_structured_sha256": "123d21292d6b45e29ac2a47d8f4368325a93e1770bee10740dadc81adf7f885c",
+      "retained": 326,
+      "moved": 0,
+      "changed": 1,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 1,
+      "true_loss": [
+        {
+          "kind": "changed",
+          "page": 13,
+          "block_id": "11",
+          "old_role": "subsection_heading",
+          "new_role": "subsection_heading",
+          "old_text": "2.2. Three-Dimensional Printing of Principal Animal-Derived Hydrogels for CTE 2.2.1. Land and Marine-Source Hyaluronic Acid, Collagen, Gelatin Hyaluronic Acid",
+          "new_text": "2.2.1. Land and Marine-Source Hyaluronic Acid, Collagen, Gelatin Hyaluronic Acid",
+          "old_sha256": "bb0d205cd75f0328087a31511780357e69970ca0bbedeffbfb209f67ab3550a0",
+          "new_sha256": "375efd866435d2f75d4af4da66d2c9d2e8e70e12ede947ad998367534cc6c24f",
+          "coverage": 0.5,
+          "attribution": "text_change",
+          "moved_to": []
+        }
+      ],
+      "changed_detail": [
+        {
+          "page": 13,
+          "block_id": "11",
+          "old_role": "subsection_heading",
+          "new_role": "subsection_heading",
+          "old_text": "2.2. Three-Dimensional Printing of Principal Animal-Derived Hydrogels for CTE 2.2.1. Land and Marine-Source Hyaluronic Acid, Collagen, Gelatin Hyaluronic Acid",
+          "new_text": "2.2.1. Land and Marine-Source Hyaluronic Acid, Collagen, Gelatin Hyaluronic Acid",
+          "old_sha256": "bb0d205cd75f0328087a31511780357e69970ca0bbedeffbfb209f67ab3550a0",
+          "new_sha256": "375efd866435d2f75d4af4da66d2c9d2e8e70e12ede947ad998367534cc6c24f",
+          "coverage": 0.5,
+          "attribution": "text_change",
+          "moved_to": []
+        }
+      ],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "HOLD"
+    },
+    {
+      "key": "IRJ68ZUP",
+      "rebuild_status": "ok",
+      "old_blocks": 354,
+      "new_blocks": 354,
+      "old_structured_chars": 127958,
+      "new_structured_chars": 127958,
+      "old_normalized_chars": 106702,
+      "new_normalized_chars": 105917,
+      "old_fulltext_sha256": "d11034ae57e8f2a21ecaf7797cb7f5b4407093a1aeae44162f8de4ce9611dcc2",
+      "new_fulltext_sha256": "489657feb4d64cc2138923a6a5ca0f61c605c8238ee808e82525473be69554b7",
+      "old_structured_sha256": "694e81abcc7270e15e979283dc0d8856adb5203cd837d835ee93c606bc72b626",
+      "new_structured_sha256": "694e81abcc7270e15e979283dc0d8856adb5203cd837d835ee93c606bc72b626",
+      "retained": 345,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "IVQAQ8IQ",
+      "rebuild_status": "ok",
+      "old_blocks": 258,
+      "new_blocks": 258,
+      "old_structured_chars": 55459,
+      "new_structured_chars": 55459,
+      "old_normalized_chars": 46583,
+      "new_normalized_chars": 46532,
+      "old_fulltext_sha256": "2605d6776991bf91e65034cb91c1374a20136b618b0243d2a29a72ed937f0cd2",
+      "new_fulltext_sha256": "e96cc8c7b2bf2ad20ca7a2eb47c97511c10150fe6f2ea404aeead8d3924b380d",
+      "old_structured_sha256": "1698c13e445a273d601122cc5d0548933de11b20a8ddcdb7d9c89b30bf212193",
+      "new_structured_sha256": "1698c13e445a273d601122cc5d0548933de11b20a8ddcdb7d9c89b30bf212193",
+      "retained": 239,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "JLFF4L85",
+      "rebuild_status": "ok",
+      "old_blocks": 803,
+      "new_blocks": 803,
+      "old_structured_chars": 241843,
+      "new_structured_chars": 241843,
+      "old_normalized_chars": 176529,
+      "new_normalized_chars": 173451,
+      "old_fulltext_sha256": "fbc7191d73165964d92d3a93a9e5096cabca0b2b0904265999381792abcbefc5",
+      "new_fulltext_sha256": "1a725c94542f6f0c0a0504cbd697fb490ca9f730108d7cab3c16e6f62009602b",
+      "old_structured_sha256": "2c27f0c831d8c1d1c569369bfc3657bd0111021633259101be8e69f8f56476d0",
+      "new_structured_sha256": "2c27f0c831d8c1d1c569369bfc3657bd0111021633259101be8e69f8f56476d0",
+      "retained": 784,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "KDPAF2QL",
+      "rebuild_status": "ok",
+      "old_blocks": 139,
+      "new_blocks": 139,
+      "old_structured_chars": 34329,
+      "new_structured_chars": 34329,
+      "old_normalized_chars": 22586,
+      "new_normalized_chars": 22509,
+      "old_fulltext_sha256": "030df3aafae48a25f66a4a8fd2c830572e7b449bd6985619c70aa18676a0ac8e",
+      "new_fulltext_sha256": "826de2c9f4f801b3cfab759ac124edb29c1775cb85f6561a7d03ad2c8a380523",
+      "old_structured_sha256": "d7a89946e4401ffe3b1b947cdc0bb2289fe70fea54666a1579f23d8997628d4d",
+      "new_structured_sha256": "d7a89946e4401ffe3b1b947cdc0bb2289fe70fea54666a1579f23d8997628d4d",
+      "retained": 123,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "L623PH9P",
+      "rebuild_status": "ok",
+      "old_blocks": 273,
+      "new_blocks": 273,
+      "old_structured_chars": 59871,
+      "new_structured_chars": 59871,
+      "old_normalized_chars": 53208,
+      "new_normalized_chars": 52551,
+      "old_fulltext_sha256": "b67b81fa346b9b492f20fe0d8c5c74a0b8e6f63af136e5f100153eff1a6356ee",
+      "new_fulltext_sha256": "4199329e9a20f11797a1e50adca772636b659530485652ecec12c191d8c70ffe",
+      "old_structured_sha256": "d97bd5a0c1e34be395dbac2fd77a274222ae855ba40cede711696cbb4b3f47ed",
+      "new_structured_sha256": "d97bd5a0c1e34be395dbac2fd77a274222ae855ba40cede711696cbb4b3f47ed",
+      "retained": 225,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [
+        {
+          "text": "where Ve is the exterior volume of each sample.",
+          "sha256": "ab89d41f3226949f41444e81758d60fc1a7a8e2bad8b592721be04093ff09d9f",
+          "coverage": 0.667
+        },
+        {
+          "text": "Degradation ratio (\\%)=(W₀-Wₜ)/W₀ × 100\\%,",
+          "sha256": "a21b8bd73f1ce76e2f27cc5d5de7d7ebddaec0a5c02f05742db6f93ee61ba9c4",
+          "coverage": 0.5
+        }
+      ],
+      "true_loss_count": 2,
+      "true_loss": [
+        {
+          "kind": "fulltext",
+          "text": "where Ve is the exterior volume of each sample.",
+          "sha256": "ab89d41f3226949f41444e81758d60fc1a7a8e2bad8b592721be04093ff09d9f",
+          "coverage": 0.667
+        },
+        {
+          "kind": "fulltext",
+          "text": "Degradation ratio (\\%)=(W₀-Wₜ)/W₀ × 100\\%,",
+          "sha256": "a21b8bd73f1ce76e2f27cc5d5de7d7ebddaec0a5c02f05742db6f93ee61ba9c4",
+          "coverage": 0.5
+        }
+      ],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "HOLD"
+    },
+    {
+      "key": "LISDYT7V",
+      "rebuild_status": "ok",
+      "old_blocks": 530,
+      "new_blocks": 530,
+      "old_structured_chars": 158364,
+      "new_structured_chars": 158364,
+      "old_normalized_chars": 146677,
+      "new_normalized_chars": 146437,
+      "old_fulltext_sha256": "0144e5c5d47e931636c335d87049e9a78409fcf5dc0ae0cb8f867d8b2b3434e1",
+      "new_fulltext_sha256": "58fb98049511cacb369c77f6f568f79ea5b3ee5d9cb8dd94061102b7f17d78c5",
+      "old_structured_sha256": "9b2cb5e87320512923e591c0ed16847a3ad9cfd5dd73f1c5d104353ed0c38bb4",
+      "new_structured_sha256": "9b2cb5e87320512923e591c0ed16847a3ad9cfd5dd73f1c5d104353ed0c38bb4",
+      "retained": 495,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "LSTHKPAE",
+      "rebuild_status": "ok",
+      "old_blocks": 281,
+      "new_blocks": 281,
+      "old_structured_chars": 74372,
+      "new_structured_chars": 74372,
+      "old_normalized_chars": 61884,
+      "new_normalized_chars": 64135,
+      "old_fulltext_sha256": "344a4ff5fe122e4dfddb6194dd6effe51b1b7ec1e84c16fecfdc43f39069faae",
+      "new_fulltext_sha256": "9672c574ca16f578284daeb5a89b78ded2ede48fd6fdb5dd2432d112b8defdca",
+      "old_structured_sha256": "13fbbba66e05bcc0dc90ac068f9b179e2235d06f7399b9a3b6391a84a9d8164c",
+      "new_structured_sha256": "13fbbba66e05bcc0dc90ac068f9b179e2235d06f7399b9a3b6391a84a9d8164c",
+      "retained": 235,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "M8BNQFIV",
+      "rebuild_status": "ok",
+      "old_blocks": 294,
+      "new_blocks": 294,
+      "old_structured_chars": 55754,
+      "new_structured_chars": 55754,
+      "old_normalized_chars": 50734,
+      "new_normalized_chars": 50655,
+      "old_fulltext_sha256": "afcfd46175cf16857e71026679c0b51cfc0f65a098daea077e26cf7fb65c1069",
+      "new_fulltext_sha256": "c1b2aa270800d34b76fb242b8a654e0754d5f6e035699531869923cc01079b3b",
+      "old_structured_sha256": "3444f0486726f1877220c21570f9398e9dedb5acef1db859586af8be16924943",
+      "new_structured_sha256": "3444f0486726f1877220c21570f9398e9dedb5acef1db859586af8be16924943",
+      "retained": 242,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "N8FPLYZ3",
+      "rebuild_status": "ok",
+      "old_blocks": 247,
+      "new_blocks": 247,
+      "old_structured_chars": 66058,
+      "new_structured_chars": 66058,
+      "old_normalized_chars": 57406,
+      "new_normalized_chars": 55501,
+      "old_fulltext_sha256": "5f414a30350f2e2f7f5298e9ac8e700d617b1be42151b2e7b1954e799c8ba9b2",
+      "new_fulltext_sha256": "c90ca6c737ea9cd410e69e8938509c63efa833835a8ffeefaaa3b10af7fb5932",
+      "old_structured_sha256": "6affeca81802637feb5c13d407a9635ac284c6db9345e5e8bfa78ebdd50c13d7",
+      "new_structured_sha256": "6affeca81802637feb5c13d407a9635ac284c6db9345e5e8bfa78ebdd50c13d7",
+      "retained": 218,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "NDPUMMCI",
+      "rebuild_status": "ok",
+      "old_blocks": 569,
+      "new_blocks": 569,
+      "old_structured_chars": 103754,
+      "new_structured_chars": 103754,
+      "old_normalized_chars": 85663,
+      "new_normalized_chars": 85582,
+      "old_fulltext_sha256": "411b76206c6b453a35fa42fcc3029ffb96410951dcf44c9e2e2e72e29745b8c6",
+      "new_fulltext_sha256": "2d34bb6ed04da6932bc9a969be12564905cb7713ff468e027bd84a5866b993fd",
+      "old_structured_sha256": "0b5d789c9ee3d78373f3d09d67d118445b4e6c4814033486ea4287a01ff5899a",
+      "new_structured_sha256": "0b5d789c9ee3d78373f3d09d67d118445b4e6c4814033486ea4287a01ff5899a",
+      "retained": 556,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "NJWU2G4V",
+      "rebuild_status": "ok",
+      "old_blocks": 190,
+      "new_blocks": 190,
+      "old_structured_chars": 54699,
+      "new_structured_chars": 54699,
+      "old_normalized_chars": 48912,
+      "new_normalized_chars": 46735,
+      "old_fulltext_sha256": "cc55e7d28232f5a0e504084f9929688211e22d79752c817b2e88f4bd8bddf867",
+      "new_fulltext_sha256": "36a84f895ce0130e4e111320be992a2d79993d15fd7285700da3f5bbe8214b81",
+      "old_structured_sha256": "60a733d1dc102c772ff6ee1f1e578fa0089200ce19a4a5d6556eefbffad4efda",
+      "new_structured_sha256": "60a733d1dc102c772ff6ee1f1e578fa0089200ce19a4a5d6556eefbffad4efda",
+      "retained": 171,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "NYWJL2T9",
+      "rebuild_status": "ok",
+      "old_blocks": 164,
+      "new_blocks": 164,
+      "old_structured_chars": 36991,
+      "new_structured_chars": 36991,
+      "old_normalized_chars": 29175,
+      "new_normalized_chars": 24493,
+      "old_fulltext_sha256": "523b1966e80055948af361f79fb65f2d6574f3b41c1efca7b33ff3a837e5080d",
+      "new_fulltext_sha256": "001e360f51e1737b2a85d6f01480b7c8e122d143479f5706589443250ca15d14",
+      "old_structured_sha256": "65293412f24a16485f24f1bb921d12d1774b5c6ecef57518403ee748ad01224a",
+      "new_structured_sha256": "65293412f24a16485f24f1bb921d12d1774b5c6ecef57518403ee748ad01224a",
+      "retained": 145,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [
+        {
+          "text": "Our institutional review board does not require its approval or informed consent for the review of patient records or images. Patient rights are protected by a law that requires patients to be informed at the time of examination about the possibility that their medical records and radiographs will be reviewed for scientific purposes.",
+          "sha256": "5b8792e8d349e8500ebedb72e9b90ca419d53a3d298c4c4c9b79bc77f758d484",
+          "coverage": 0.596
+        },
+        {
+          "text": "The patients' ages ranged from 31 to 77 years (mean, 54.7 years). The age range among women was 45–77 years (mean, 61.8 years) and among men was 31–63 years (mean, 52.1 years). Five patients had no history of trauma or prior surgery, 12 patients had prior shoulder trauma, and five patients developed frozen shoulder after shoulder surgery. None of the patients had diabetes mellitus or systemic inflammatory disease. All patients underwent conservative therapy before capsulotomy. The mean duration ",
+          "sha256": "cf0c708637614f7811556040e9090242aacefbfd3de1f4294a9447fd46bf6a15",
+          "coverage": 0.789
+        }
+      ],
+      "true_loss_count": 2,
+      "true_loss": [
+        {
+          "kind": "fulltext",
+          "text": "Our institutional review board does not require its approval or informed consent for the review of patient records or images. Patient rights are protected by a law that requires patients to be informed at the time of examination about the possibility that their medical records and radiographs will be reviewed for scientific purposes.",
+          "sha256": "5b8792e8d349e8500ebedb72e9b90ca419d53a3d298c4c4c9b79bc77f758d484",
+          "coverage": 0.596
+        },
+        {
+          "kind": "fulltext",
+          "text": "The patients' ages ranged from 31 to 77 years (mean, 54.7 years). The age range among women was 45–77 years (mean, 61.8 years) and among men was 31–63 years (mean, 52.1 years). Five patients had no history of trauma or prior surgery, 12 patients had prior shoulder trauma, and five patients developed frozen shoulder after shoulder surgery. None of the patients had diabetes mellitus or systemic inflammatory disease. All patients underwent conservative therapy before capsulotomy. The mean duration ",
+          "sha256": "cf0c708637614f7811556040e9090242aacefbfd3de1f4294a9447fd46bf6a15",
+          "coverage": 0.789
+        }
+      ],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "HOLD"
+    },
+    {
+      "key": "P36H92AX",
+      "rebuild_status": "ok",
+      "old_blocks": 184,
+      "new_blocks": 184,
+      "old_structured_chars": 48976,
+      "new_structured_chars": 48976,
+      "old_normalized_chars": 36316,
+      "new_normalized_chars": 30897,
+      "old_fulltext_sha256": "8758d289b61cbfa99968f03ce73fb1525413e2fc7ef46185b38fdf5baa3d8a7f",
+      "new_fulltext_sha256": "327d9be035c2405a208af6b53ef12287f4a861e515b474af225cbcf66b05de79",
+      "old_structured_sha256": "86b0562e7b0152dfe16e13d43f241cc29a49f117a09916bf3609d170a5185bb3",
+      "new_structured_sha256": "86b0562e7b0152dfe16e13d43f241cc29a49f117a09916bf3609d170a5185bb3",
+      "retained": 160,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [
+        {
+          "text": "This study was based on the Cochrane Review Methods, and reporting was conducted in accordance with the PRISMA (Preferred Reporting Items for Systematic Reviews and Meta-Analyses) statement. Controlled vocabulary and free text words (refer to Additional file 1) were used to search for articles published up until October 2019. Multiple databases, including MEDLINE, EMBASE, and the Cochrane Central Register of Controlled Trials, were searched to identify relevant studies regardless of language, pu",
+          "sha256": "488677fe83405e08b422d34419fd36b4d0d08a6ae044bcfb3f24ac9c72133fbc",
+          "coverage": 0.773
+        }
+      ],
+      "true_loss_count": 1,
+      "true_loss": [
+        {
+          "kind": "fulltext",
+          "text": "This study was based on the Cochrane Review Methods, and reporting was conducted in accordance with the PRISMA (Preferred Reporting Items for Systematic Reviews and Meta-Analyses) statement. Controlled vocabulary and free text words (refer to Additional file 1) were used to search for articles published up until October 2019. Multiple databases, including MEDLINE, EMBASE, and the Cochrane Central Register of Controlled Trials, were searched to identify relevant studies regardless of language, pu",
+          "sha256": "488677fe83405e08b422d34419fd36b4d0d08a6ae044bcfb3f24ac9c72133fbc",
+          "coverage": 0.773
+        }
+      ],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "HOLD"
+    },
+    {
+      "key": "P693AXY3",
+      "rebuild_status": "ok",
+      "old_blocks": 143,
+      "new_blocks": 143,
+      "old_structured_chars": 34582,
+      "new_structured_chars": 34582,
+      "old_normalized_chars": 28924,
+      "new_normalized_chars": 28709,
+      "old_fulltext_sha256": "f79a11cfa8b437156c4286a49523f6e4383889ce41e4506ff7a131416256906b",
+      "new_fulltext_sha256": "a1c61441788addc48e5ec7d33a8ff2e1fb107318448aba6772206e6ffd471237",
+      "old_structured_sha256": "9e8f6612584dae78e80c55a578683f2020642e085361a85bad0d2579d67a4dbd",
+      "new_structured_sha256": "9e8f6612584dae78e80c55a578683f2020642e085361a85bad0d2579d67a4dbd",
+      "retained": 125,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "P9D6GZ9M",
+      "rebuild_status": "ok",
+      "old_blocks": 150,
+      "new_blocks": 150,
+      "old_structured_chars": 20342,
+      "new_structured_chars": 20342,
+      "old_normalized_chars": 14770,
+      "new_normalized_chars": 13775,
+      "old_fulltext_sha256": "cbdd7b3a7b16a350975958a6dff35b51df07926d21be0285cd78291e23c14dcc",
+      "new_fulltext_sha256": "0d82f52163a90cae673f0a6d45f31a2972ee370e510a351289cb3c57cf08ebeb",
+      "old_structured_sha256": "f1dc814b3dc122c606b7d843eee2e3e793e517029aa658447ef2d333cd5d053e",
+      "new_structured_sha256": "f1dc814b3dc122c606b7d843eee2e3e793e517029aa658447ef2d333cd5d053e",
+      "retained": 129,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [
+        {
+          "text": "because of the importance of avoiding radiation hazard. For this reason it is seldom possible to take more than one view of each joint. The gradings for each joint in this study are, therefore, based on a single x ray view, as follows:",
+          "sha256": "8bd5108fa2f7447285c51f1a5be891651f55ebcb18c6680b7fa8cb1c3d134d10",
+          "coverage": 0.78
+        },
+        {
+          "text": "Hands - Postero-anterior",
+          "sha256": "ffee388d550235ccda269defdfad5cbcad48489a3a02d03b58c02d87f107b81b",
+          "coverage": 0.333
+        },
+        {
+          "text": "Cervical spine - Lateral",
+          "sha256": "876d795c80bfe805a8d9a3a048033475e6f67c4a66514998cebd9c0b2283da46",
+          "coverage": 0.667
+        },
+        {
+          "text": "Lumbar spine - Lateral",
+          "sha256": "580d3d242da2b406d9d41d874b60ef523d87dc9c74f04bfa3dd4d426a6209c41",
+          "coverage": 0.667
+        },
+        {
+          "text": "Hips - Antero-posterior",
+          "sha256": "bb0c857c1539380cb5529632aac2bec597a132d87fb73f938bfbd59563cee19a",
+          "coverage": 0.333
+        },
+        {
+          "text": "Knees - - Antero-posterior",
+          "sha256": "859d1c8c231fbe2d9a4aa49a5570d1eff671e8d30e29febffaac2159e827f3b2",
+          "coverage": 0.333
+        }
+      ],
+      "true_loss_count": 6,
+      "true_loss": [
+        {
+          "kind": "fulltext",
+          "text": "because of the importance of avoiding radiation hazard. For this reason it is seldom possible to take more than one view of each joint. The gradings for each joint in this study are, therefore, based on a single x ray view, as follows:",
+          "sha256": "8bd5108fa2f7447285c51f1a5be891651f55ebcb18c6680b7fa8cb1c3d134d10",
+          "coverage": 0.78
+        },
+        {
+          "kind": "fulltext",
+          "text": "Hands - Postero-anterior",
+          "sha256": "ffee388d550235ccda269defdfad5cbcad48489a3a02d03b58c02d87f107b81b",
+          "coverage": 0.333
+        },
+        {
+          "kind": "fulltext",
+          "text": "Cervical spine - Lateral",
+          "sha256": "876d795c80bfe805a8d9a3a048033475e6f67c4a66514998cebd9c0b2283da46",
+          "coverage": 0.667
+        },
+        {
+          "kind": "fulltext",
+          "text": "Lumbar spine - Lateral",
+          "sha256": "580d3d242da2b406d9d41d874b60ef523d87dc9c74f04bfa3dd4d426a6209c41",
+          "coverage": 0.667
+        },
+        {
+          "kind": "fulltext",
+          "text": "Hips - Antero-posterior",
+          "sha256": "bb0c857c1539380cb5529632aac2bec597a132d87fb73f938bfbd59563cee19a",
+          "coverage": 0.333
+        },
+        {
+          "kind": "fulltext",
+          "text": "Knees - - Antero-posterior",
+          "sha256": "859d1c8c231fbe2d9a4aa49a5570d1eff671e8d30e29febffaac2159e827f3b2",
+          "coverage": 0.333
+        }
+      ],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "HOLD"
+    },
+    {
+      "key": "P9ZYVAXB",
+      "rebuild_status": "ok",
+      "old_blocks": 363,
+      "new_blocks": 363,
+      "old_structured_chars": 95659,
+      "new_structured_chars": 95659,
+      "old_normalized_chars": 90596,
+      "new_normalized_chars": 90233,
+      "old_fulltext_sha256": "f7a9ef91122fd27863118932871b6480ea01616c6028640b156e61239e8b06c6",
+      "new_fulltext_sha256": "1f35deec3a31b16604935d278c37e71c19650d5a860e91e57da4472ac3f88cdd",
+      "old_structured_sha256": "e983443195efdc888a79d291326bfd29cdb3af4e72209a8db4b500ce2ca5df20",
+      "new_structured_sha256": "e983443195efdc888a79d291326bfd29cdb3af4e72209a8db4b500ce2ca5df20",
+      "retained": 321,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [
+        {
+          "text": "Received 1 April 2025",
+          "sha256": "e170bf08b61508cab3255b7fe1334624e90e362a1716786876e5b0deb5ede263",
+          "coverage": 0.667
+        },
+        {
+          "text": "issues are on the rise due to factors such as trauma, tumors, various infections, osteoporosis, congenital malformations, aging, and lack of physical activity, reducing quality of life and causing worldwide disability [1,2]. Conventional treatment methods for bone defects, including autografts, allografts, and",
+          "sha256": "bdfdbc92334ea9162e982bdf9549429bf78987ac9bf7bc15b4a46797d4df751e",
+          "coverage": 0.707
+        }
+      ],
+      "true_loss_count": 2,
+      "true_loss": [
+        {
+          "kind": "fulltext",
+          "text": "Received 1 April 2025",
+          "sha256": "e170bf08b61508cab3255b7fe1334624e90e362a1716786876e5b0deb5ede263",
+          "coverage": 0.667
+        },
+        {
+          "kind": "fulltext",
+          "text": "issues are on the rise due to factors such as trauma, tumors, various infections, osteoporosis, congenital malformations, aging, and lack of physical activity, reducing quality of life and causing worldwide disability [1,2]. Conventional treatment methods for bone defects, including autografts, allografts, and",
+          "sha256": "bdfdbc92334ea9162e982bdf9549429bf78987ac9bf7bc15b4a46797d4df751e",
+          "coverage": 0.707
+        }
+      ],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "HOLD"
+    },
+    {
+      "key": "PEPI5WG4",
+      "rebuild_status": "ok",
+      "old_blocks": 217,
+      "new_blocks": 217,
+      "old_structured_chars": 41124,
+      "new_structured_chars": 41124,
+      "old_normalized_chars": 36157,
+      "new_normalized_chars": 36029,
+      "old_fulltext_sha256": "46d491c566ef8b9e9171c301924eb4a93523e2b53413b45917777f50f436f85a",
+      "new_fulltext_sha256": "a6ac0d8c7130aa5b80825599376779ba58fcdd21d2f8d0fcf47b5a81a707f401",
+      "old_structured_sha256": "4a3df269e22af3aec12d8b4cd7e291b94f13b9ba446ff4eebde92e82129cceb2",
+      "new_structured_sha256": "4a3df269e22af3aec12d8b4cd7e291b94f13b9ba446ff4eebde92e82129cceb2",
+      "retained": 189,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "PP76T2EY",
+      "rebuild_status": "ok",
+      "old_blocks": 598,
+      "new_blocks": 598,
+      "old_structured_chars": 159741,
+      "new_structured_chars": 159741,
+      "old_normalized_chars": 132334,
+      "new_normalized_chars": 123013,
+      "old_fulltext_sha256": "5170cc1574b0c39e07343970554d899a06657569ec4d347d0eac8e6e8dee085e",
+      "new_fulltext_sha256": "0d1a86a7c08b54c6c6f05ae8a13a1baaa0908c7740e054b2b47d94e0dd178798",
+      "old_structured_sha256": "92eba8631a32be89cfad6aa28bfbff89fff2a1965afc8acd136d239339586c9c",
+      "new_structured_sha256": "92eba8631a32be89cfad6aa28bfbff89fff2a1965afc8acd136d239339586c9c",
+      "retained": 543,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [
+        {
+          "text": "The piezoelectric coefficient is not a scalar quantity but a third-rank tensor, reflecting the directional nature of piezoelectricity [38]. In the direct piezoelectric effect, polarization is described as a vector, while stress is represented as a symmetric second-rank tensor. In the converse effect, the electric field acts as a vector and strain as a second-rank tensor [37,38]. To simplify these relationships, the piezoelectric tensor is commonly expressed as a $3 \\times 6$ matrix ($d_{ij}$), w",
+          "sha256": "04b2c39fe30612eeaa7902c746ebe1f0977c286552db5cc2c35853c13da076ad",
+          "coverage": 0.759
+        }
+      ],
+      "true_loss_count": 1,
+      "true_loss": [
+        {
+          "kind": "fulltext",
+          "text": "The piezoelectric coefficient is not a scalar quantity but a third-rank tensor, reflecting the directional nature of piezoelectricity [38]. In the direct piezoelectric effect, polarization is described as a vector, while stress is represented as a symmetric second-rank tensor. In the converse effect, the electric field acts as a vector and strain as a second-rank tensor [37,38]. To simplify these relationships, the piezoelectric tensor is commonly expressed as a $3 \\times 6$ matrix ($d_{ij}$), w",
+          "sha256": "04b2c39fe30612eeaa7902c746ebe1f0977c286552db5cc2c35853c13da076ad",
+          "coverage": 0.759
+        }
+      ],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "HOLD"
+    },
+    {
+      "key": "PV3T4FWR",
+      "rebuild_status": "ok",
+      "old_blocks": 269,
+      "new_blocks": 269,
+      "old_structured_chars": 75718,
+      "new_structured_chars": 75718,
+      "old_normalized_chars": 52359,
+      "new_normalized_chars": 44897,
+      "old_fulltext_sha256": "e4ef0d410e97741c3487177b284b25c0a317f96cb6ea9a4a59b42b72c8ad4995",
+      "new_fulltext_sha256": "3df93c57f55175f2f8f13294c1560bfd3cede460bc49c1944e949c648037a63a",
+      "old_structured_sha256": "9443e9aa133d6c491870fc4f48dc80fcad0bb8cfbf766dedc31f7d63b942ec26",
+      "new_structured_sha256": "9443e9aa133d6c491870fc4f48dc80fcad0bb8cfbf766dedc31f7d63b942ec26",
+      "retained": 249,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [
+        {
+          "text": "We searched for relevant articles written in English or Spanish (considering the linguistic capabilities of the authors). Inclusion criteria consisted of studies of any level of evidence that reported radiographic outcomes of CC stabilization procedures and met at least 1 of the following requirements: (1) reporting the proportion of cases with clavicular TW, or (2) presenting absolute or relative measurements of clavicular TW. The following articles were not considered eligible for inclusion: (",
+          "sha256": "1ffef940920f86563904fd507bb694cfbb40ed97915048f7ba6529101c9a3d3a",
+          "coverage": 0.796
+        },
+        {
+          "text": "The study followed the PRISMA guidelines.$^{40,41}$The process of identifying relevant articles involved searching through electronic databases, including PubMed/Medline, Scopus, and EMBASE, using the following keywords: “acromioclavicular”, “coracoclavicular”, “tunnel”, and “widening”. Articles published from the databases’ inception until January 2023 were considered for this research. An extensive review of the existing literature was performed to identify the study eligibility criteria. Auto",
+          "sha256": "7b17f55ceb687af3ee482a0ec0adc83ae2c8bd1b5b73c9c43248f5b6214fbe7b",
+          "coverage": 0.745
+        },
+        {
+          "text": "After removing duplicate articles, we analyzed titles and abstracts and reviewed the full text. We assessed the agreement between reviewers on study inclusion using the $\\kappa$statistic. Disagreements were resolved through consensus with the assistance of a third author, a sports medicine fellowship-trained orthopedic surgeon (L.I.M.). We grouped studies based on the timing of surgery after injury into acute (<3 weeks), chronic (>3 weeks), and mixed (reporting overlapping results of acute and c",
+          "sha256": "78bfe032c32aa06f57d1a75506934df8d6cbfcd3f93e7adcb97e7e286b4fcab6",
+          "coverage": 0.795
+        },
+        {
+          "text": "Two reviewers (A.V.G. and A.F.A.) extracted and input data from the included articles into a Microsoft Excel spreadsheet. Comparisons were made between the data extracted from the reviewers to guarantee coherence throughout the process. The study information collected included, but was not limited to, publication details and patient characteristics, ACJ injury classification, mean time between injury and surgery, surgical details, and the radiographic protocol for evaluating TW.",
+          "sha256": "ca76515b450ab40fc96364fcdd7db32f0abaf60b8a9b90c1ee993abaf66f5094",
+          "coverage": 0.75
+        }
+      ],
+      "true_loss_count": 4,
+      "true_loss": [
+        {
+          "kind": "fulltext",
+          "text": "We searched for relevant articles written in English or Spanish (considering the linguistic capabilities of the authors). Inclusion criteria consisted of studies of any level of evidence that reported radiographic outcomes of CC stabilization procedures and met at least 1 of the following requirements: (1) reporting the proportion of cases with clavicular TW, or (2) presenting absolute or relative measurements of clavicular TW. The following articles were not considered eligible for inclusion: (",
+          "sha256": "1ffef940920f86563904fd507bb694cfbb40ed97915048f7ba6529101c9a3d3a",
+          "coverage": 0.796
+        },
+        {
+          "kind": "fulltext",
+          "text": "The study followed the PRISMA guidelines.$^{40,41}$The process of identifying relevant articles involved searching through electronic databases, including PubMed/Medline, Scopus, and EMBASE, using the following keywords: “acromioclavicular”, “coracoclavicular”, “tunnel”, and “widening”. Articles published from the databases’ inception until January 2023 were considered for this research. An extensive review of the existing literature was performed to identify the study eligibility criteria. Auto",
+          "sha256": "7b17f55ceb687af3ee482a0ec0adc83ae2c8bd1b5b73c9c43248f5b6214fbe7b",
+          "coverage": 0.745
+        },
+        {
+          "kind": "fulltext",
+          "text": "After removing duplicate articles, we analyzed titles and abstracts and reviewed the full text. We assessed the agreement between reviewers on study inclusion using the $\\kappa$statistic. Disagreements were resolved through consensus with the assistance of a third author, a sports medicine fellowship-trained orthopedic surgeon (L.I.M.). We grouped studies based on the timing of surgery after injury into acute (<3 weeks), chronic (>3 weeks), and mixed (reporting overlapping results of acute and c",
+          "sha256": "78bfe032c32aa06f57d1a75506934df8d6cbfcd3f93e7adcb97e7e286b4fcab6",
+          "coverage": 0.795
+        },
+        {
+          "kind": "fulltext",
+          "text": "Two reviewers (A.V.G. and A.F.A.) extracted and input data from the included articles into a Microsoft Excel spreadsheet. Comparisons were made between the data extracted from the reviewers to guarantee coherence throughout the process. The study information collected included, but was not limited to, publication details and patient characteristics, ACJ injury classification, mean time between injury and surgery, surgical details, and the radiographic protocol for evaluating TW.",
+          "sha256": "ca76515b450ab40fc96364fcdd7db32f0abaf60b8a9b90c1ee993abaf66f5094",
+          "coverage": 0.75
+        }
+      ],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "HOLD"
+    },
+    {
+      "key": "PX9XJURS",
+      "rebuild_status": "ok",
+      "old_blocks": 259,
+      "new_blocks": 259,
+      "old_structured_chars": 50509,
+      "new_structured_chars": 50509,
+      "old_normalized_chars": 41232,
+      "new_normalized_chars": 39394,
+      "old_fulltext_sha256": "5bd4c066689f0231bf8e4dd92025ff2408234ec9d9c52deb81ce58e398521444",
+      "new_fulltext_sha256": "1e2219e1fe7f2e09b76b558006d7c6d4acd301a7da0ede4012baec02f2bcac5d",
+      "old_structured_sha256": "eb1b4cfcad738ad64a663bcb13928db3a735d9785cda1adca220226ab61e21f8",
+      "new_structured_sha256": "eb1b4cfcad738ad64a663bcb13928db3a735d9785cda1adca220226ab61e21f8",
+      "retained": 182,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [
+        {
+          "text": "Figure 1a shows the schematic structure of a P-TENG with an electrostatic vibrator switch. The action of P-TENG is based on the sliding mode. A polymethyl methacrylate (PMMA) sheet with a thickness of 3 mm was used as the substrate to fabricate a P-TENG. A square Al foil with a side length of 5 cm and a thickness of 25 μm was used as a triboelectric layer. Two pieces of Cu foil with a thickness of 50 μm were used as two electrodes of P-TENG. A polytetrafluoroethylene (PTFE) film was attached to ",
+          "sha256": "46a2bf9327e9e21f9d0b3dae608d89c153e5fa1475b41098ac37706524e2c265",
+          "coverage": 0.71
+        }
+      ],
+      "true_loss_count": 1,
+      "true_loss": [
+        {
+          "kind": "fulltext",
+          "text": "Figure 1a shows the schematic structure of a P-TENG with an electrostatic vibrator switch. The action of P-TENG is based on the sliding mode. A polymethyl methacrylate (PMMA) sheet with a thickness of 3 mm was used as the substrate to fabricate a P-TENG. A square Al foil with a side length of 5 cm and a thickness of 25 μm was used as a triboelectric layer. Two pieces of Cu foil with a thickness of 50 μm were used as two electrodes of P-TENG. A polytetrafluoroethylene (PTFE) film was attached to ",
+          "sha256": "46a2bf9327e9e21f9d0b3dae608d89c153e5fa1475b41098ac37706524e2c265",
+          "coverage": 0.71
+        }
+      ],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "HOLD"
+    },
+    {
+      "key": "PZ8B59K4",
+      "rebuild_status": "ok",
+      "old_blocks": 164,
+      "new_blocks": 164,
+      "old_structured_chars": 34793,
+      "new_structured_chars": 34793,
+      "old_normalized_chars": 31675,
+      "new_normalized_chars": 31521,
+      "old_fulltext_sha256": "58340bd761b51538be6b18f9d13409ec15079df5eb3e87512e4e3fd2d4930dbd",
+      "new_fulltext_sha256": "9577fe3ee861dfe7b417577b86d53757bec7c7cb2b97728b789791331ac1338d",
+      "old_structured_sha256": "8ad90c14409aae5b669fe0f89f77dd42074b7d341ec93130eea45564def64a49",
+      "new_structured_sha256": "8ad90c14409aae5b669fe0f89f77dd42074b7d341ec93130eea45564def64a49",
+      "retained": 154,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "QJ8Y59LG",
+      "rebuild_status": "ok",
+      "old_blocks": 319,
+      "new_blocks": 319,
+      "old_structured_chars": 104221,
+      "new_structured_chars": 104221,
+      "old_normalized_chars": 76042,
+      "new_normalized_chars": 72705,
+      "old_fulltext_sha256": "068bd138371edda78305681d05cbd277c13c0790fcaba8b374a5a33f4c838bd5",
+      "new_fulltext_sha256": "23e144892565107e98d4b4e1b54d2288c071b7b42984424dae4bb132376a0827",
+      "old_structured_sha256": "551dd306db699418152bb9ab47ce12c7674cb8e42e0c6a3b588fc384ef83b905",
+      "new_structured_sha256": "551dd306db699418152bb9ab47ce12c7674cb8e42e0c6a3b588fc384ef83b905",
+      "retained": 305,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "QPT4IGLD",
+      "rebuild_status": "ok",
+      "old_blocks": 335,
+      "new_blocks": 336,
+      "old_structured_chars": 67885,
+      "new_structured_chars": 67884,
+      "old_normalized_chars": 57674,
+      "new_normalized_chars": 57674,
+      "old_fulltext_sha256": "f67982406eeccbb7bd5acbae91adab7a25507b5da9bb8b0e25429069c8573651",
+      "new_fulltext_sha256": "3df1e3d65b47e84fe3888d4e73dea034b9407a84cb18df076e2398b96defa359",
+      "old_structured_sha256": "74c30ea2daa3fe4e977389b8e0f7f2f645831761308603e896da889720ce9878",
+      "new_structured_sha256": "6e62dd175bc6994b44846cc9231b6837091bcd3bc9bc3eb7f6d54eb26554f47b",
+      "retained": 260,
+      "moved": 0,
+      "changed": 1,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 1,
+      "true_loss": [
+        {
+          "kind": "changed",
+          "page": 18,
+          "block_id": "11",
+          "old_role": "subsection_heading",
+          "new_role": "section_heading",
+          "old_text": "Received: 24 February 2024 / Accepted: 3 July 2024",
+          "new_text": "3 July 2024",
+          "old_sha256": "7ef86774bd16952528e23cff4bf8e47c32af8e97a3a3f0b2ca2b2591382bd429",
+          "new_sha256": "77ef0e8254779991e91c9f1b28bdf8cc85bb79081934caf535329f71b539df54",
+          "coverage": 0.429,
+          "attribution": "metadata_normalization",
+          "moved_to": []
+        }
+      ],
+      "changed_detail": [
+        {
+          "page": 18,
+          "block_id": "11",
+          "old_role": "subsection_heading",
+          "new_role": "section_heading",
+          "old_text": "Received: 24 February 2024 / Accepted: 3 July 2024",
+          "new_text": "3 July 2024",
+          "old_sha256": "7ef86774bd16952528e23cff4bf8e47c32af8e97a3a3f0b2ca2b2591382bd429",
+          "new_sha256": "77ef0e8254779991e91c9f1b28bdf8cc85bb79081934caf535329f71b539df54",
+          "coverage": 0.429,
+          "attribution": "metadata_normalization",
+          "moved_to": []
+        }
+      ],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "HOLD"
+    },
+    {
+      "key": "QU4IAZ7E",
+      "rebuild_status": "ok",
+      "old_blocks": 216,
+      "new_blocks": 216,
+      "old_structured_chars": 48511,
+      "new_structured_chars": 48511,
+      "old_normalized_chars": 42040,
+      "new_normalized_chars": 40799,
+      "old_fulltext_sha256": "1a7caba27873393513ae5f5e7c0ff6c3047d1b5b486c11c684faf7f5e561fc84",
+      "new_fulltext_sha256": "3cfe28e17918944c2d79c129d3e5eec189bee336370b8f95c2b133e4120e5902",
+      "old_structured_sha256": "d5d9cc44b31182773f6395ee995b5161c8693e9495488842c4aad2f6da80fbc0",
+      "new_structured_sha256": "d5d9cc44b31182773f6395ee995b5161c8693e9495488842c4aad2f6da80fbc0",
+      "retained": 183,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [
+        {
+          "text": "requirement for any material intended for drug delivery in the human body [14]. In addition, the material must be biodegradable and capable of releasing the drug only when it reaches the targeted organ or tissue. In PAM hydrogels, the water content plays a central role in controlling the rate and timing of drug release [15]. These hydrogels are not only highly biocompatible but also largely inert, minimizing unwanted interactions with the encapsulated therapeutics. The gelation ratio can be adju",
+          "sha256": "886f8333623f82a93c3b840a33a955d9b2063b4aa84d2d751979485467c6243d",
+          "coverage": 0.717
+        }
+      ],
+      "true_loss_count": 1,
+      "true_loss": [
+        {
+          "kind": "fulltext",
+          "text": "requirement for any material intended for drug delivery in the human body [14]. In addition, the material must be biodegradable and capable of releasing the drug only when it reaches the targeted organ or tissue. In PAM hydrogels, the water content plays a central role in controlling the rate and timing of drug release [15]. These hydrogels are not only highly biocompatible but also largely inert, minimizing unwanted interactions with the encapsulated therapeutics. The gelation ratio can be adju",
+          "sha256": "886f8333623f82a93c3b840a33a955d9b2063b4aa84d2d751979485467c6243d",
+          "coverage": 0.717
+        }
+      ],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "HOLD"
+    },
+    {
+      "key": "R6WJ65K9",
+      "rebuild_status": "ok",
+      "old_blocks": 456,
+      "new_blocks": 456,
+      "old_structured_chars": 159691,
+      "new_structured_chars": 159691,
+      "old_normalized_chars": 124925,
+      "new_normalized_chars": 124913,
+      "old_fulltext_sha256": "ed60becf4e7b113b8b907faaae2cbfceffeae32cf0d41cd2d67d94918dbcbb2a",
+      "new_fulltext_sha256": "2a686514081dcd93ba10b982d9725068739c6fc5fd24160536e8640b02cd93a7",
+      "old_structured_sha256": "499aa948527a98beb94c9d6c12526db10a96940f21f49e3f79f9f192f94e0f98",
+      "new_structured_sha256": "499aa948527a98beb94c9d6c12526db10a96940f21f49e3f79f9f192f94e0f98",
+      "retained": 444,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "SK2PRABH",
+      "rebuild_status": "ok",
+      "old_blocks": 242,
+      "new_blocks": 242,
+      "old_structured_chars": 48057,
+      "new_structured_chars": 48057,
+      "old_normalized_chars": 37339,
+      "new_normalized_chars": 36981,
+      "old_fulltext_sha256": "d45c61a2474cd06f227f81a056e56bc86159119b01826527d8f1989429d7a0f5",
+      "new_fulltext_sha256": "93fa002740830492694eea53fe3cffc3d3c9cba3e8db32c5810d6dbfc3935259",
+      "old_structured_sha256": "af1f079f8a377b863dfbb3a5325be2e839db58e2146e43a78ab7bf009e633b2d",
+      "new_structured_sha256": "af1f079f8a377b863dfbb3a5325be2e839db58e2146e43a78ab7bf009e633b2d",
+      "retained": 236,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "TEMG2785",
+      "rebuild_status": "ok",
+      "old_blocks": 282,
+      "new_blocks": 282,
+      "old_structured_chars": 48050,
+      "new_structured_chars": 48050,
+      "old_normalized_chars": 43018,
+      "new_normalized_chars": 42961,
+      "old_fulltext_sha256": "fea0c4e1ec0ff4a48c6525b7111dcc32ce95fa0cd1958e90df450d9f74a2ff98",
+      "new_fulltext_sha256": "7af28766e7e9382c5d022a1fcf2ed519f688ebbd5419d7a7d92f4cc110652704",
+      "old_structured_sha256": "1015e164773e53d3b3253401c44e1bbd49c0185783d96afdff8e903c2e684485",
+      "new_structured_sha256": "1015e164773e53d3b3253401c44e1bbd49c0185783d96afdff8e903c2e684485",
+      "retained": 236,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "TIEF9DFJ",
+      "rebuild_status": "ok",
+      "old_blocks": 212,
+      "new_blocks": 212,
+      "old_structured_chars": 54421,
+      "new_structured_chars": 54421,
+      "old_normalized_chars": 46802,
+      "new_normalized_chars": 46745,
+      "old_fulltext_sha256": "0fda3d4258a28085b752192724d6febf4cb0385225fb8d8b19c215832cde20dc",
+      "new_fulltext_sha256": "e57137712a82d7a1fc9930e29889144153433410370e7d981e5f48c6783bef6e",
+      "old_structured_sha256": "891c0af182409b03b0b4ac23667f20cbffd593d2bdf792164138078f9b8ebeef",
+      "new_structured_sha256": "891c0af182409b03b0b4ac23667f20cbffd593d2bdf792164138078f9b8ebeef",
+      "retained": 207,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "TJHT3UBI",
+      "rebuild_status": "ok",
+      "old_blocks": 635,
+      "new_blocks": 635,
+      "old_structured_chars": 124000,
+      "new_structured_chars": 124000,
+      "old_normalized_chars": 102399,
+      "new_normalized_chars": 101476,
+      "old_fulltext_sha256": "64b7becc916d20f670716fdd574cc8b896ba56443f956a2ac3e7be01222c9673",
+      "new_fulltext_sha256": "fa380b430c9ff72ebd37f01a706ba6a5392c5b826d36c2fedaa3b197cd43ea81",
+      "old_structured_sha256": "05e46d72852ebd12fc654d3db83487b93d327a955d5e415e98cf150c35fa8299",
+      "new_structured_sha256": "05e46d72852ebd12fc654d3db83487b93d327a955d5e415e98cf150c35fa8299",
+      "retained": 521,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [
+        {
+          "text": "Published on 04 October 2024",
+          "sha256": "6df0f5bd31c741ac51ca499fef8caf142f869e88360540511d8dceeb9d8f81e7",
+          "coverage": 0.4
+        },
+        {
+          "text": "Licensed under CC-BY 4.0",
+          "sha256": "4c21b9ae1d398af3433e5908d96949741267c83a175e5bb0c82555c9b9512eef",
+          "coverage": 0.5
+        },
+        {
+          "text": "Received 4th June 2024 Key learning points",
+          "sha256": "5a30f797f91f7a1b264de8ca42dedf97d1b0fedebaff07491103dc56c8ccd211",
+          "coverage": 0.714
+        }
+      ],
+      "true_loss_count": 3,
+      "true_loss": [
+        {
+          "kind": "fulltext",
+          "text": "Published on 04 October 2024",
+          "sha256": "6df0f5bd31c741ac51ca499fef8caf142f869e88360540511d8dceeb9d8f81e7",
+          "coverage": 0.4
+        },
+        {
+          "kind": "fulltext",
+          "text": "Licensed under CC-BY 4.0",
+          "sha256": "4c21b9ae1d398af3433e5908d96949741267c83a175e5bb0c82555c9b9512eef",
+          "coverage": 0.5
+        },
+        {
+          "kind": "fulltext",
+          "text": "Received 4th June 2024 Key learning points",
+          "sha256": "5a30f797f91f7a1b264de8ca42dedf97d1b0fedebaff07491103dc56c8ccd211",
+          "coverage": 0.714
+        }
+      ],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "HOLD"
+    },
+    {
+      "key": "U3XAT3SD",
+      "rebuild_status": "ok",
+      "old_blocks": 405,
+      "new_blocks": 405,
+      "old_structured_chars": 106593,
+      "new_structured_chars": 106593,
+      "old_normalized_chars": 90750,
+      "new_normalized_chars": 90308,
+      "old_fulltext_sha256": "97bd54e29ee9f2c66c1826a8e929953d4f680bdf5452664f13ed1f66f346b1e3",
+      "new_fulltext_sha256": "b721f3b4bf5715ffdfdc0d1fff4ed847cc4ca39e4bc69bbf9deaec1ca6530b15",
+      "old_structured_sha256": "993a1aadef8001395dc4543bf12139cc5c50b4e249f27717b5ba75d6028f3875",
+      "new_structured_sha256": "993a1aadef8001395dc4543bf12139cc5c50b4e249f27717b5ba75d6028f3875",
+      "retained": 346,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [
+        {
+          "text": "where $\\vec{v}$ is the velocity field,$\\vec{g}$ is the gravitational acceleration,$p' = p - p_0$,$ p$is the pressure,$\\vec{\\nabla}p_0 = \\rho_0\\vec{g}$,$\\mu$is the dynamical viscosity, and $\\alpha$is the thermal diffusivity. We assumed that $\\mu$and $\\alpha$are constants.",
+          "sha256": "c5ad988203201b5d2d77febc103295610c64630e37f9b304c90091858dfc41ef",
+          "coverage": 0.692
+        }
+      ],
+      "true_loss_count": 1,
+      "true_loss": [
+        {
+          "kind": "fulltext",
+          "text": "where $\\vec{v}$ is the velocity field,$\\vec{g}$ is the gravitational acceleration,$p' = p - p_0$,$ p$is the pressure,$\\vec{\\nabla}p_0 = \\rho_0\\vec{g}$,$\\mu$is the dynamical viscosity, and $\\alpha$is the thermal diffusivity. We assumed that $\\mu$and $\\alpha$are constants.",
+          "sha256": "c5ad988203201b5d2d77febc103295610c64630e37f9b304c90091858dfc41ef",
+          "coverage": 0.692
+        }
+      ],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "HOLD"
+    },
+    {
+      "key": "U746UJ7G",
+      "rebuild_status": "ok",
+      "old_blocks": 245,
+      "new_blocks": 245,
+      "old_structured_chars": 51779,
+      "new_structured_chars": 51779,
+      "old_normalized_chars": 36605,
+      "new_normalized_chars": 36461,
+      "old_fulltext_sha256": "21ef0082f054f94a9c406259e2a809ce026be5ce2f4ba5743f04ca2a3f2e3854",
+      "new_fulltext_sha256": "fd7b2389bf6ee4a8cb3334363b7f1fbbad2c460435ede44a115d4130b9cdde2f",
+      "old_structured_sha256": "95b387ab0693e97d6b4f8009784744aaa55a2893a6e4cfbe877a48c0a6c5eb27",
+      "new_structured_sha256": "95b387ab0693e97d6b4f8009784744aaa55a2893a6e4cfbe877a48c0a6c5eb27",
+      "retained": 237,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [
+        {
+          "text": "Author affiliations and article information are listed at the end of this article.",
+          "sha256": "4422f6707bfda848f24985b74899c180cf89364aa62ff83fac20244da2278f5c",
+          "coverage": 0.692
+        }
+      ],
+      "true_loss_count": 1,
+      "true_loss": [
+        {
+          "kind": "fulltext",
+          "text": "Author affiliations and article information are listed at the end of this article.",
+          "sha256": "4422f6707bfda848f24985b74899c180cf89364aa62ff83fac20244da2278f5c",
+          "coverage": 0.692
+        }
+      ],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "HOLD"
+    },
+    {
+      "key": "U7LXVK35",
+      "rebuild_status": "ok",
+      "old_blocks": 328,
+      "new_blocks": 328,
+      "old_structured_chars": 100607,
+      "new_structured_chars": 100607,
+      "old_normalized_chars": 67199,
+      "new_normalized_chars": 66152,
+      "old_fulltext_sha256": "61ebf826da30dbc7963777a671d936125d2fa51d1797082b4af06e2af880dda4",
+      "new_fulltext_sha256": "0a4471cb9e6d1b0528255c882d1adfb2b8977a16cee4b228d87f094389d30fec",
+      "old_structured_sha256": "546765c2be099dfa9fbf2fdf170a516df7be1c063f71b152c40269f2a1055870",
+      "new_structured_sha256": "546765c2be099dfa9fbf2fdf170a516df7be1c063f71b152c40269f2a1055870",
+      "retained": 302,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "UKSL8B3R",
+      "rebuild_status": "ok",
+      "old_blocks": 155,
+      "new_blocks": 155,
+      "old_structured_chars": 53556,
+      "new_structured_chars": 53556,
+      "old_normalized_chars": 37378,
+      "new_normalized_chars": 37019,
+      "old_fulltext_sha256": "8b0e57ebeffd395688e1b0d8d1249bdb5b0dbfca3c59b932549f4a42e3f84bc7",
+      "new_fulltext_sha256": "587accc979aca5f30f753fe6c3b40baf80099d1688a1d40af4c1036d1779aa29",
+      "old_structured_sha256": "fdc8182d42982660732670d883944223149ed8f63ff029b80e655ee5c3482d70",
+      "new_structured_sha256": "fdc8182d42982660732670d883944223149ed8f63ff029b80e655ee5c3482d70",
+      "retained": 137,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "V463BSDR",
+      "rebuild_status": "ok",
+      "old_blocks": 193,
+      "new_blocks": 193,
+      "old_structured_chars": 33679,
+      "new_structured_chars": 33679,
+      "old_normalized_chars": 27948,
+      "new_normalized_chars": 24704,
+      "old_fulltext_sha256": "0855f71ebf6a1bf4fb4b0dbcca766d490435647adf41333e8c01994dd1eda741",
+      "new_fulltext_sha256": "a00f972564a50940f7fd09eb8e445fc9ee3aa94a89086ec51027b3babe188492",
+      "old_structured_sha256": "4e70990b981b609076c1ba3bb308720fe060731d40067aae46f12b169d157cc5",
+      "new_structured_sha256": "4e70990b981b609076c1ba3bb308720fe060731d40067aae46f12b169d157cc5",
+      "retained": 160,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [
+        {
+          "text": "the conversion of hMSCs to the rGO electrodes, we used two immunofluorescent staining markers, CD-44-positive and osteocalcin (OCN)-negative markers, to stain the hMSCs at different periods of time (0, 3, 6, and 9 days) during osteogenesis induction. The progressive decrease in the CD-44 fluorescence intensity and enhanced OCN fluorescence (Figure 3) confirmed the successful osteogenic differentiation on the rGO/ITO electrodes after 9 days of induction. In addition, the hMSCs became more spread ",
+          "sha256": "5708aec38837b423954a4cfc8e79f1b87c4a567485ee860f12248ca9e03cf280",
+          "coverage": 0.756
+        }
+      ],
+      "true_loss_count": 1,
+      "true_loss": [
+        {
+          "kind": "fulltext",
+          "text": "the conversion of hMSCs to the rGO electrodes, we used two immunofluorescent staining markers, CD-44-positive and osteocalcin (OCN)-negative markers, to stain the hMSCs at different periods of time (0, 3, 6, and 9 days) during osteogenesis induction. The progressive decrease in the CD-44 fluorescence intensity and enhanced OCN fluorescence (Figure 3) confirmed the successful osteogenic differentiation on the rGO/ITO electrodes after 9 days of induction. In addition, the hMSCs became more spread ",
+          "sha256": "5708aec38837b423954a4cfc8e79f1b87c4a567485ee860f12248ca9e03cf280",
+          "coverage": 0.756
+        }
+      ],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "HOLD"
+    },
+    {
+      "key": "VK2KPR24",
+      "rebuild_status": "ok",
+      "old_blocks": 470,
+      "new_blocks": 470,
+      "old_structured_chars": 120582,
+      "new_structured_chars": 120582,
+      "old_normalized_chars": 89422,
+      "new_normalized_chars": 89310,
+      "old_fulltext_sha256": "35a4d6af9eab6113d6b7d99b319fb96d8a0b3baffd876615d2b7aa1fec3a8587",
+      "new_fulltext_sha256": "78e0ab99138a8bedbf3fdf1fd12f43fdcfe22fa6437483c507ffb38d12d45b48",
+      "old_structured_sha256": "26886c92c675d06cef96586444c973a2d2f10729b0505c4eb4b56c88a3193031",
+      "new_structured_sha256": "26886c92c675d06cef96586444c973a2d2f10729b0505c4eb4b56c88a3193031",
+      "retained": 425,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "VK2XSGFY",
+      "rebuild_status": "ok",
+      "old_blocks": 217,
+      "new_blocks": 217,
+      "old_structured_chars": 85936,
+      "new_structured_chars": 85936,
+      "old_normalized_chars": 40736,
+      "new_normalized_chars": 35310,
+      "old_fulltext_sha256": "b8b5f49d1b260552d460c02e0618002548a2f86a69931d6ef95c32273cf2c622",
+      "new_fulltext_sha256": "bc69053f64ebe304990a9097200a22365ad71227d424aea20c863798f9069bb5",
+      "old_structured_sha256": "153b429a718fc0a65d6575a8dc32d8f74bceb0c232cd0b6cdce76d3d583c6312",
+      "new_structured_sha256": "153b429a718fc0a65d6575a8dc32d8f74bceb0c232cd0b6cdce76d3d583c6312",
+      "retained": 206,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [
+        {
+          "text": "concomitant procedures, resulting in the publishing of low-quality studies throughout the literature. This creates a dilemma for surgeons in making evidence-based decisions for rotator cuff tear (RCT) management centered on the significance of preoperative risk factors.",
+          "sha256": "9f2185fe8e3e20a0d67a5433356ff29a026cd46e11dcd7973452275145a05be9",
+          "coverage": 0.784
+        },
+        {
+          "text": "> **Table Caption:** Table 3. Continued",
+          "sha256": "335db29808dc4e775f535e156c0e5b1aecbde4f2b563b6c621eae72fd0ccad1f",
+          "coverage": 0.5
+        }
+      ],
+      "true_loss_count": 2,
+      "true_loss": [
+        {
+          "kind": "fulltext",
+          "text": "concomitant procedures, resulting in the publishing of low-quality studies throughout the literature. This creates a dilemma for surgeons in making evidence-based decisions for rotator cuff tear (RCT) management centered on the significance of preoperative risk factors.",
+          "sha256": "9f2185fe8e3e20a0d67a5433356ff29a026cd46e11dcd7973452275145a05be9",
+          "coverage": 0.784
+        },
+        {
+          "kind": "fulltext",
+          "text": "> **Table Caption:** Table 3. Continued",
+          "sha256": "335db29808dc4e775f535e156c0e5b1aecbde4f2b563b6c621eae72fd0ccad1f",
+          "coverage": 0.5
+        }
+      ],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "HOLD"
+    },
+    {
+      "key": "VY8CRKCE",
+      "rebuild_status": "ok",
+      "old_blocks": 1072,
+      "new_blocks": 1072,
+      "old_structured_chars": 338501,
+      "new_structured_chars": 338501,
+      "old_normalized_chars": 299121,
+      "new_normalized_chars": 297687,
+      "old_fulltext_sha256": "9d2ad3dc4722c99863138dad1b0b35d1b665ca9468feaa1937f3bbc0489529b6",
+      "new_fulltext_sha256": "d577d95674a29872238be2894491e32e62aa49bc406b2427229390e623962da2",
+      "old_structured_sha256": "53f25af1df19d583119b2771a6e9f31eaae316a03bdb91338039497ba96e928f",
+      "new_structured_sha256": "53f25af1df19d583119b2771a6e9f31eaae316a03bdb91338039497ba96e928f",
+      "retained": 1008,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "W33NLVJ2",
+      "rebuild_status": "ok",
+      "old_blocks": 327,
+      "new_blocks": 327,
+      "old_structured_chars": 75230,
+      "new_structured_chars": 75230,
+      "old_normalized_chars": 65232,
+      "new_normalized_chars": 63620,
+      "old_fulltext_sha256": "0119d32ebfce4e98212b0fded13b51785f05c59dceb8d6e936c799aa690f2272",
+      "new_fulltext_sha256": "a869c73c5f0099eb9c60379c451c53e807fe21b6c57815cda75bb75bd7437ef4",
+      "old_structured_sha256": "1f7a9d4a5acf666620632d29b9ddcb8f81c972b143294e185cccad86a572865c",
+      "new_structured_sha256": "1f7a9d4a5acf666620632d29b9ddcb8f81c972b143294e185cccad86a572865c",
+      "retained": 268,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "WJJZAD3G",
+      "rebuild_status": "ok",
+      "old_blocks": 387,
+      "new_blocks": 387,
+      "old_structured_chars": 100856,
+      "new_structured_chars": 100856,
+      "old_normalized_chars": 92505,
+      "new_normalized_chars": 92468,
+      "old_fulltext_sha256": "6cdc5a32c3af894ab81c74d2a7d8fb59e3605aec0ad8669b82d523807deb0502",
+      "new_fulltext_sha256": "249d061c30ff4bc94bcf5f8be3e585af8f1e115a5367c8a8e2ae58e72d8f7d9e",
+      "old_structured_sha256": "d8f168cd34a86d7973f756554ab5cf6038841d630ea5725c7fd17885766ac10f",
+      "new_structured_sha256": "d8f168cd34a86d7973f756554ab5cf6038841d630ea5725c7fd17885766ac10f",
+      "retained": 351,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "WML2NNFE",
+      "rebuild_status": "ok",
+      "old_blocks": 215,
+      "new_blocks": 215,
+      "old_structured_chars": 53079,
+      "new_structured_chars": 53079,
+      "old_normalized_chars": 47302,
+      "new_normalized_chars": 46717,
+      "old_fulltext_sha256": "734a4edb5938cbe82671beecd12fad70503179ad922de8fec4fae4137b11d3cd",
+      "new_fulltext_sha256": "bde4c61c2bcbb0adb26b6c7d606f19ef2b838d97cc5dbee689fd89bb66ef6d11",
+      "old_structured_sha256": "8a3805986951b6888c6e3c35b152a3e894052e272e128c37d8356684d948e6c8",
+      "new_structured_sha256": "8a3805986951b6888c6e3c35b152a3e894052e272e128c37d8356684d948e6c8",
+      "retained": 165,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "XD2BPCMG",
+      "rebuild_status": "ok",
+      "old_blocks": 559,
+      "new_blocks": 559,
+      "old_structured_chars": 133601,
+      "new_structured_chars": 133601,
+      "old_normalized_chars": 116667,
+      "new_normalized_chars": 108412,
+      "old_fulltext_sha256": "531c2b065e8f20937bd5dc0817a10e8bb6773ab153ffc1d3101ff15f4ecad445",
+      "new_fulltext_sha256": "46ddf18a353ba3f2d688369f29f22a294b4a71f2b90420a04f295da62dd1ff9d",
+      "old_structured_sha256": "4f2a4ed85c48866a988b2268a698b0d930d77d82f355d1045140e24367727b25",
+      "new_structured_sha256": "4f2a4ed85c48866a988b2268a698b0d930d77d82f355d1045140e24367727b25",
+      "retained": 496,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "XG8R37M7",
+      "rebuild_status": "ok",
+      "old_blocks": 567,
+      "new_blocks": 567,
+      "old_structured_chars": 183587,
+      "new_structured_chars": 183587,
+      "old_normalized_chars": 171300,
+      "new_normalized_chars": 170911,
+      "old_fulltext_sha256": "fc392e088bbc85cfe5e51e35ddf304b3f1f7404f8fb07de662d3f866e08060f6",
+      "new_fulltext_sha256": "8a959a188a137dc1f2a8b5877f3bbccbe6d05120c28224590ae2f38faa6ce96b",
+      "old_structured_sha256": "3118204b7c0f5ba463721d188ce99ffcfc3303e156b75e74eb80026d5eea21a2",
+      "new_structured_sha256": "3118204b7c0f5ba463721d188ce99ffcfc3303e156b75e74eb80026d5eea21a2",
+      "retained": 532,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [
+        {
+          "text": "TOPICAL REVIEW • OPEN ACCESS",
+          "sha256": "830821e26b95cc0883d5517b863f7367e89f6823359ccb4b1004237f13dc07f5",
+          "coverage": 0.5
+        },
+        {
+          "text": "RECEIVED 20 January 2022",
+          "sha256": "86c34071ca9cd717b42d6ec625063377bc3138f1faff2f43ffa097019bd5da62",
+          "coverage": 0.5
+        },
+        {
+          "text": "REVISED 27 June 2022",
+          "sha256": "556f04718706c407b0fba69c6a78080040dfb8ec551648bb78ddce17a930fd46",
+          "coverage": 0.5
+        },
+        {
+          "text": "PUBLISHED 8 November 2022",
+          "sha256": "debe683a48f6e60bf469f7560c2567258391db27de37e89bec6aa96e756e74c2",
+          "coverage": 0.667
+        },
+        {
+          "text": "Any further distribution of this work must maintain attribution to the author(s) and the title of the work, journal citation and DOI. TOPICAL REVIEW",
+          "sha256": "5174c23fa1954f5253d74b7a64b3472abcf7cf83e48fb4df07ef529627aaa017",
+          "coverage": 0.75
+        },
+        {
+          "text": "E-mail: aldo.boccaccini@ww.uni-erlangen.de",
+          "sha256": "7b76525dab35441ebfe31fd199da9abdb7637ad5a37c210b317739af06ba8f5a",
+          "coverage": 0.571
+        }
+      ],
+      "true_loss_count": 6,
+      "true_loss": [
+        {
+          "kind": "fulltext",
+          "text": "TOPICAL REVIEW • OPEN ACCESS",
+          "sha256": "830821e26b95cc0883d5517b863f7367e89f6823359ccb4b1004237f13dc07f5",
+          "coverage": 0.5
+        },
+        {
+          "kind": "fulltext",
+          "text": "RECEIVED 20 January 2022",
+          "sha256": "86c34071ca9cd717b42d6ec625063377bc3138f1faff2f43ffa097019bd5da62",
+          "coverage": 0.5
+        },
+        {
+          "kind": "fulltext",
+          "text": "REVISED 27 June 2022",
+          "sha256": "556f04718706c407b0fba69c6a78080040dfb8ec551648bb78ddce17a930fd46",
+          "coverage": 0.5
+        },
+        {
+          "kind": "fulltext",
+          "text": "PUBLISHED 8 November 2022",
+          "sha256": "debe683a48f6e60bf469f7560c2567258391db27de37e89bec6aa96e756e74c2",
+          "coverage": 0.667
+        },
+        {
+          "kind": "fulltext",
+          "text": "Any further distribution of this work must maintain attribution to the author(s) and the title of the work, journal citation and DOI. TOPICAL REVIEW",
+          "sha256": "5174c23fa1954f5253d74b7a64b3472abcf7cf83e48fb4df07ef529627aaa017",
+          "coverage": 0.75
+        },
+        {
+          "kind": "fulltext",
+          "text": "E-mail: aldo.boccaccini@ww.uni-erlangen.de",
+          "sha256": "7b76525dab35441ebfe31fd199da9abdb7637ad5a37c210b317739af06ba8f5a",
+          "coverage": 0.571
+        }
+      ],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "HOLD"
+    },
+    {
+      "key": "XGT9Z257",
+      "rebuild_status": "ok",
+      "old_blocks": 572,
+      "new_blocks": 572,
+      "old_structured_chars": 142005,
+      "new_structured_chars": 142005,
+      "old_normalized_chars": 94203,
+      "new_normalized_chars": 93973,
+      "old_fulltext_sha256": "177fb042cfff1d21a949993edba897d57e7134623617620fa5f4ed242bc0c359",
+      "new_fulltext_sha256": "a846994d281ef09597bf6b36916fd88d78f5a42265ceb98b4cec2c8d557217e3",
+      "old_structured_sha256": "90dbd8b771057d7e9c0f2f7432b1cde64ad7303d4d52377d16e8ce262f4e9600",
+      "new_structured_sha256": "90dbd8b771057d7e9c0f2f7432b1cde64ad7303d4d52377d16e8ce262f4e9600",
+      "retained": 450,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [
+        {
+          "text": "<!-- page 10 --> d 病历",
+          "sha256": "7757b1b6654bf4d1afc5036a584ef8429d15b9dd187d66cf80dc08f6fbc6fc6c",
+          "coverage": 0.667
+        },
+        {
+          "text": "主题：古工题钱海12小时，再满加重2小时",
+          "sha256": "906f7638d15ea56bcea840d2ae9114c43bbc835c0c4078eed83c89248bfaf2f7",
+          "coverage": 0.0
+        },
+        {
+          "text": "现病灾：患者口小时前无明显诱因下定发石上搅地痛，无病封痛，无恶心，呕吐或发热等其他症状。5小时前前往出院急诊就诊，打腹部B超检查，结果未显示明显异常。外院给予解痉及护肾药物治疗，治疗后疼痛无明显缓解。2小时前患者腹痛加重，遂予我院急诊就诊。自发病以来，神清，精神可，累纳差，大小微无躁，偏重无明显变化。",
+          "sha256": "aeaf8305f3ea872a35b7fee37f66f11c2b466d1dd4d2a26fcd59720827fa111a",
+          "coverage": 0.0
+        },
+        {
+          "text": "既往史：患者一般健康状况良好，有高血压病史2年，口服抗氯地平5mg QD，控制高可。无心脏病，肝病等慢性疾病，无吸烟、饮酒、药物史，无油病史。",
+          "sha256": "6554fc19519fdca06264e389d226a0d278e8b1cfc8c369338035e1302bec7261",
+          "coverage": 0.0
+        },
+        {
+          "text": "136℃P: 测试分 表：18元/分 HP: 120/54mmHg.",
+          "sha256": "43e750b88c01e86f9ce2659e777f5f703feac3695110e6fdfa9108e3104fc618",
+          "coverage": 0.0
+        },
+        {
+          "text": "心常清晰，律节，未闻及杂音；肺部呼吸音清晰，无干涩性啰音，腹部柔软，无深痛，无独虚，弱弱无红汤，Akooko无红斑病。",
+          "sha256": "1a40bd3369cdefb077db1909dac4005f388fe18089216c4c7421309471250e0c",
+          "coverage": 0.0
+        },
+        {
+          "text": "1. 玻璃透色《急性胆囊炎7 急性胆囊结石7》",
+          "sha256": "6cfd39f3a381138b8128969b33acaba183cedd758c890eaed1e24c221837cc33",
+          "coverage": 0.0
+        },
+        {
+          "text": "2. 高血压",
+          "sha256": "4c3c8a5aef9acca78075049dea587502a3336cfd5370822470a31e6073031923",
+          "coverage": 0.0
+        },
+        {
+          "text": "Chief complaint: Right upper quadrant dull pain for 12 h, worsening in the last 2 h Present illness: ...He initially sought care at an external emergency department 8 h ago, where an abdominal ultrasound revealed no significant abnormalities. Despite receiving spasmolytic and gastric protective medications, his symptoms did not improve...",
+          "sha256": "e629511ad36ad73ef6be99be91603da9bfadb27258d01cdbda2a31d91cfd8d32",
+          "coverage": 0.667
+        },
+        {
+          "text": "Physical exam: temperature 36 °C, BP 128/84 mm Hg, HR 80, RR 18.",
+          "sha256": "2873c819c869abf4ed63e35bee7a5a2f30ac89d715b17aea77e55474bf33e881",
+          "coverage": 0.615
+        },
+        {
+          "text": "Troponin: 0.030 $\\mu$g l $^{-1}$, CRP: 9.92 mg l $^{-1}$",
+          "sha256": "40e53666bf4f20b89a5ea013532d69ee6680a215a3f93cd28ca10845daf05ca3",
+          "coverage": 0.333
+        },
+        {
+          "text": "1. Abdominal pain, etiology to be determined (Possible acute cholecystitis?",
+          "sha256": "c793ad7ceecd003ab9803e344820656ea725f218447c7e1cfce1d1448f6ff77e",
+          "coverage": 0.778
+        },
+        {
+          "text": "Acute cholelithiasis? 2. Hypertension",
+          "sha256": "2107236231c79ef26056b80b086f3fb99afd11df42626107756b35968e181fc0",
+          "coverage": 0.667
+        },
+        {
+          "text": "<!-- page 21 --> Female,80",
+          "sha256": "812d23265a0da70da368287dc78a58c28388eedbcef187a74587027fe35e3154",
+          "coverage": 0.75
+        },
+        {
+          "text": "ECG: First-degree atrioventricular (AV) block",
+          "sha256": "49c381923e7ef9913ffb9b41e014809828ec6f46eb0af508db5a3dd7529eb54f",
+          "coverage": 0.333
+        },
+        {
+          "text": "Laboratory testing: D-dimers:2880 ng/mL, Troponin:0.0054 ug/L",
+          "sha256": "8c07d18b3fdc77500decb531acd88b245b3103e73e9bdde1bf0c4cd89638b4b6",
+          "coverage": 0.222
+        },
+        {
+          "text": "Initial Suspicion: Lumbar disc protrusion? Kidney stone? male,59",
+          "sha256": "ecac40fc13ab586a68faf434b984d3eab64b50754efa703ca296613c075292b5",
+          "coverage": 0.444
+        },
+        {
+          "text": "Laboratory testing: D-dimers: 2230 ug/L, Troponin: 0.012 ng/mL",
+          "sha256": "001457032720945824f8684e612e58978125e7944e9841c66ba28291ce5d082c",
+          "coverage": 0.222
+        },
+        {
+          "text": "Initial Suspicion: Acute gastroenteritis? Acute cholecystitis?",
+          "sha256": "a179040e4c178323cbd53925dbecad0acd5002321265c11159d7bec6e9f2412a",
+          "coverage": 0.667
+        },
+        {
+          "text": "Initial Suspicion: Pneumonia? Female,72 History:",
+          "sha256": "81d51c68b7b99d010ee13f1be486ef6dcc698d3473aa4baa335c241e68bf0e39",
+          "coverage": 0.667
+        },
+        {
+          "text": "Laboratory testing: D-dimers: 18070.00 ug/L, Troponin: 0.016 ng/mL",
+          "sha256": "ce0fab907f3053500670e2e9fbbf44dcc0558cd456a9037b0f5767bfde8298a7",
+          "coverage": 0.2
+        }
+      ],
+      "true_loss_count": 21,
+      "true_loss": [
+        {
+          "kind": "fulltext",
+          "text": "<!-- page 10 --> d 病历",
+          "sha256": "7757b1b6654bf4d1afc5036a584ef8429d15b9dd187d66cf80dc08f6fbc6fc6c",
+          "coverage": 0.667
+        },
+        {
+          "kind": "fulltext",
+          "text": "主题：古工题钱海12小时，再满加重2小时",
+          "sha256": "906f7638d15ea56bcea840d2ae9114c43bbc835c0c4078eed83c89248bfaf2f7",
+          "coverage": 0.0
+        },
+        {
+          "kind": "fulltext",
+          "text": "现病灾：患者口小时前无明显诱因下定发石上搅地痛，无病封痛，无恶心，呕吐或发热等其他症状。5小时前前往出院急诊就诊，打腹部B超检查，结果未显示明显异常。外院给予解痉及护肾药物治疗，治疗后疼痛无明显缓解。2小时前患者腹痛加重，遂予我院急诊就诊。自发病以来，神清，精神可，累纳差，大小微无躁，偏重无明显变化。",
+          "sha256": "aeaf8305f3ea872a35b7fee37f66f11c2b466d1dd4d2a26fcd59720827fa111a",
+          "coverage": 0.0
+        },
+        {
+          "kind": "fulltext",
+          "text": "既往史：患者一般健康状况良好，有高血压病史2年，口服抗氯地平5mg QD，控制高可。无心脏病，肝病等慢性疾病，无吸烟、饮酒、药物史，无油病史。",
+          "sha256": "6554fc19519fdca06264e389d226a0d278e8b1cfc8c369338035e1302bec7261",
+          "coverage": 0.0
+        },
+        {
+          "kind": "fulltext",
+          "text": "136℃P: 测试分 表：18元/分 HP: 120/54mmHg.",
+          "sha256": "43e750b88c01e86f9ce2659e777f5f703feac3695110e6fdfa9108e3104fc618",
+          "coverage": 0.0
+        },
+        {
+          "kind": "fulltext",
+          "text": "心常清晰，律节，未闻及杂音；肺部呼吸音清晰，无干涩性啰音，腹部柔软，无深痛，无独虚，弱弱无红汤，Akooko无红斑病。",
+          "sha256": "1a40bd3369cdefb077db1909dac4005f388fe18089216c4c7421309471250e0c",
+          "coverage": 0.0
+        },
+        {
+          "kind": "fulltext",
+          "text": "1. 玻璃透色《急性胆囊炎7 急性胆囊结石7》",
+          "sha256": "6cfd39f3a381138b8128969b33acaba183cedd758c890eaed1e24c221837cc33",
+          "coverage": 0.0
+        },
+        {
+          "kind": "fulltext",
+          "text": "2. 高血压",
+          "sha256": "4c3c8a5aef9acca78075049dea587502a3336cfd5370822470a31e6073031923",
+          "coverage": 0.0
+        },
+        {
+          "kind": "fulltext",
+          "text": "Chief complaint: Right upper quadrant dull pain for 12 h, worsening in the last 2 h Present illness: ...He initially sought care at an external emergency department 8 h ago, where an abdominal ultrasound revealed no significant abnormalities. Despite receiving spasmolytic and gastric protective medications, his symptoms did not improve...",
+          "sha256": "e629511ad36ad73ef6be99be91603da9bfadb27258d01cdbda2a31d91cfd8d32",
+          "coverage": 0.667
+        },
+        {
+          "kind": "fulltext",
+          "text": "Physical exam: temperature 36 °C, BP 128/84 mm Hg, HR 80, RR 18.",
+          "sha256": "2873c819c869abf4ed63e35bee7a5a2f30ac89d715b17aea77e55474bf33e881",
+          "coverage": 0.615
+        },
+        {
+          "kind": "fulltext",
+          "text": "Troponin: 0.030 $\\mu$g l $^{-1}$, CRP: 9.92 mg l $^{-1}$",
+          "sha256": "40e53666bf4f20b89a5ea013532d69ee6680a215a3f93cd28ca10845daf05ca3",
+          "coverage": 0.333
+        },
+        {
+          "kind": "fulltext",
+          "text": "1. Abdominal pain, etiology to be determined (Possible acute cholecystitis?",
+          "sha256": "c793ad7ceecd003ab9803e344820656ea725f218447c7e1cfce1d1448f6ff77e",
+          "coverage": 0.778
+        },
+        {
+          "kind": "fulltext",
+          "text": "Acute cholelithiasis? 2. Hypertension",
+          "sha256": "2107236231c79ef26056b80b086f3fb99afd11df42626107756b35968e181fc0",
+          "coverage": 0.667
+        },
+        {
+          "kind": "fulltext",
+          "text": "<!-- page 21 --> Female,80",
+          "sha256": "812d23265a0da70da368287dc78a58c28388eedbcef187a74587027fe35e3154",
+          "coverage": 0.75
+        },
+        {
+          "kind": "fulltext",
+          "text": "ECG: First-degree atrioventricular (AV) block",
+          "sha256": "49c381923e7ef9913ffb9b41e014809828ec6f46eb0af508db5a3dd7529eb54f",
+          "coverage": 0.333
+        },
+        {
+          "kind": "fulltext",
+          "text": "Laboratory testing: D-dimers:2880 ng/mL, Troponin:0.0054 ug/L",
+          "sha256": "8c07d18b3fdc77500decb531acd88b245b3103e73e9bdde1bf0c4cd89638b4b6",
+          "coverage": 0.222
+        },
+        {
+          "kind": "fulltext",
+          "text": "Initial Suspicion: Lumbar disc protrusion? Kidney stone? male,59",
+          "sha256": "ecac40fc13ab586a68faf434b984d3eab64b50754efa703ca296613c075292b5",
+          "coverage": 0.444
+        },
+        {
+          "kind": "fulltext",
+          "text": "Laboratory testing: D-dimers: 2230 ug/L, Troponin: 0.012 ng/mL",
+          "sha256": "001457032720945824f8684e612e58978125e7944e9841c66ba28291ce5d082c",
+          "coverage": 0.222
+        },
+        {
+          "kind": "fulltext",
+          "text": "Initial Suspicion: Acute gastroenteritis? Acute cholecystitis?",
+          "sha256": "a179040e4c178323cbd53925dbecad0acd5002321265c11159d7bec6e9f2412a",
+          "coverage": 0.667
+        },
+        {
+          "kind": "fulltext",
+          "text": "Initial Suspicion: Pneumonia? Female,72 History:",
+          "sha256": "81d51c68b7b99d010ee13f1be486ef6dcc698d3473aa4baa335c241e68bf0e39",
+          "coverage": 0.667
+        },
+        {
+          "kind": "fulltext",
+          "text": "Laboratory testing: D-dimers: 18070.00 ug/L, Troponin: 0.016 ng/mL",
+          "sha256": "ce0fab907f3053500670e2e9fbbf44dcc0558cd456a9037b0f5767bfde8298a7",
+          "coverage": 0.2
+        }
+      ],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "HOLD"
+    },
+    {
+      "key": "XIR7ZJ6F",
+      "rebuild_status": "ok",
+      "old_blocks": 300,
+      "new_blocks": 300,
+      "old_structured_chars": 98453,
+      "new_structured_chars": 98453,
+      "old_normalized_chars": 83955,
+      "new_normalized_chars": 83842,
+      "old_fulltext_sha256": "27ba244d0738a25848343db025b9b8c3a3ed51f5019a42c89b28b2346012daf9",
+      "new_fulltext_sha256": "7a193a732a6070097fa8386f701740913e266721bf7a00302f17d2f067a2b473",
+      "old_structured_sha256": "42424d1eb9d8d651eb70128bd8f2d753ee67cb5924b61b4eff7f611c05c76ceb",
+      "new_structured_sha256": "42424d1eb9d8d651eb70128bd8f2d753ee67cb5924b61b4eff7f611c05c76ceb",
+      "retained": 268,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "XRBP5H8X",
+      "rebuild_status": "ok",
+      "old_blocks": 135,
+      "new_blocks": 135,
+      "old_structured_chars": 31862,
+      "new_structured_chars": 31862,
+      "old_normalized_chars": 28375,
+      "new_normalized_chars": 27933,
+      "old_fulltext_sha256": "f8a454d118140eed9be4465ed7dd65da108453c47ff9e4dc9bb2fad1e4010b66",
+      "new_fulltext_sha256": "09e213270c74f32b4ec9520edd051a6fa0a545372ce64816ad5ca53cba6fcbaa",
+      "old_structured_sha256": "6a4a114e260ab355e2fa936c2291c0723cdf21f11c13633d6ff99c232329163d",
+      "new_structured_sha256": "6a4a114e260ab355e2fa936c2291c0723cdf21f11c13633d6ff99c232329163d",
+      "retained": 126,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "XUTJVXNN",
+      "rebuild_status": "ok",
+      "old_blocks": 220,
+      "new_blocks": 220,
+      "old_structured_chars": 61536,
+      "new_structured_chars": 61536,
+      "old_normalized_chars": 56857,
+      "new_normalized_chars": 56682,
+      "old_fulltext_sha256": "7a92b34eded9022e19fd20ee960f3b853d8a00ffbb0b1934f7f0562bedbb6c20",
+      "new_fulltext_sha256": "6514b0b3fe3b6e4f0430dfc9ca76f9df5fef67429e063482ce2bd94a4062ddc3",
+      "old_structured_sha256": "b804388d7f9d69ac85d1efe3af2ad435fe49172bd01fd7c18ead387cdda47801",
+      "new_structured_sha256": "b804388d7f9d69ac85d1efe3af2ad435fe49172bd01fd7c18ead387cdda47801",
+      "retained": 178,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "XVGX9U4V",
+      "rebuild_status": "ok",
+      "old_blocks": 655,
+      "new_blocks": 655,
+      "old_structured_chars": 128203,
+      "new_structured_chars": 128203,
+      "old_normalized_chars": 115328,
+      "new_normalized_chars": 115295,
+      "old_fulltext_sha256": "438ed5185d637733d92ee4f44df7ab0144a123c41926e3d87223b5526d7952fa",
+      "new_fulltext_sha256": "988bbc3e8141faca7adabe24d7d0a36200c1bb93d740df1ea67b21cad7b2f279",
+      "old_structured_sha256": "6571f74b134360f745e07e1d11eaa275dc54e082f2012163f4557a57153708c0",
+      "new_structured_sha256": "6571f74b134360f745e07e1d11eaa275dc54e082f2012163f4557a57153708c0",
+      "retained": 594,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [],
+      "true_loss_count": 0,
+      "true_loss": [],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "PASS"
+    },
+    {
+      "key": "YSBJVWTA",
+      "rebuild_status": "ok",
+      "old_blocks": 552,
+      "new_blocks": 552,
+      "old_structured_chars": 147140,
+      "new_structured_chars": 147140,
+      "old_normalized_chars": 129308,
+      "new_normalized_chars": 122603,
+      "old_fulltext_sha256": "af8fd207329d20fe163ed5e8ad6b77c55157b4b21fb555167359a66e2d5f5298",
+      "new_fulltext_sha256": "9cb3b8da08194768b8c4b30156e73c84a26b1a1ed1bd9b110962f47be02fa654",
+      "old_structured_sha256": "608028db0b0161a57e08224da4804e182762e836ac623bb56ff2e508a998ba45",
+      "new_structured_sha256": "608028db0b0161a57e08224da4804e182762e836ac623bb56ff2e508a998ba45",
+      "retained": 527,
+      "moved": 0,
+      "changed": 0,
+      "removed": 0,
+      "fulltext_loss": [
+        {
+          "text": "Thick, web-like ligament that connects the heel to the front of the foot. This ligament acts as a shock absorber and supports the arch of the foot, facilitating walking.",
+          "sha256": "bc540a54cf44041091a9c20d5574f265fdbe83cc54d0f0b993f9a1937ac4bdbc",
+          "coverage": 0.724
+        },
+        {
+          "text": "Greater trochanter The attachment site for five muscles: the gluteus medius, gluteus minimus, piriformis, obturator externus and obturator internus. Achilles tendon",
+          "sha256": "65a8fef3cdbc5a873fd3c250a03cbba6afaec6a0635ebe33e116fe5ecdb46336",
+          "coverage": 0.476
+        },
+        {
+          "text": "A strong fibrous cord that connects the muscles in the back of the calf to the calcaneus bone.",
+          "sha256": "8205dfc48f59d6492abab00e0b47be26ff7699337adbaafe99c2216534c20916",
+          "coverage": 0.765
+        },
+        {
+          "text": "Patellar tendon The tendon running inferiorly from the patella bone to the tibial tuberosity.",
+          "sha256": "57fc65a98060027d78981d3f32328529b8961dd6deb5f895ebfb2489ba0c423b",
+          "coverage": 0.714
+        }
+      ],
+      "true_loss_count": 4,
+      "true_loss": [
+        {
+          "kind": "fulltext",
+          "text": "Thick, web-like ligament that connects the heel to the front of the foot. This ligament acts as a shock absorber and supports the arch of the foot, facilitating walking.",
+          "sha256": "bc540a54cf44041091a9c20d5574f265fdbe83cc54d0f0b993f9a1937ac4bdbc",
+          "coverage": 0.724
+        },
+        {
+          "kind": "fulltext",
+          "text": "Greater trochanter The attachment site for five muscles: the gluteus medius, gluteus minimus, piriformis, obturator externus and obturator internus. Achilles tendon",
+          "sha256": "65a8fef3cdbc5a873fd3c250a03cbba6afaec6a0635ebe33e116fe5ecdb46336",
+          "coverage": 0.476
+        },
+        {
+          "kind": "fulltext",
+          "text": "A strong fibrous cord that connects the muscles in the back of the calf to the calcaneus bone.",
+          "sha256": "8205dfc48f59d6492abab00e0b47be26ff7699337adbaafe99c2216534c20916",
+          "coverage": 0.765
+        },
+        {
+          "kind": "fulltext",
+          "text": "Patellar tendon The tendon running inferiorly from the patella bone to the tibial tuberosity.",
+          "sha256": "57fc65a98060027d78981d3f32328529b8961dd6deb5f895ebfb2489ba0c423b",
+          "coverage": 0.714
+        }
+      ],
+      "changed_detail": [],
+      "removed_detail": [],
+      "moved_detail": [],
+      "verdict": "HOLD"
+    }
+  ]
+}

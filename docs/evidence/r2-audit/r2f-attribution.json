@@ -1,0 +1,1079 @@
+{
+  "schema": "paperforge.r2f.attribution.v1",
+  "results": [
+    {
+      "key": "XGT9Z257",
+      "rebuild_status": "ok",
+      "items": [
+        {
+          "text": "<!-- page 10 --> d 病历",
+          "coverage_in_new_fulltext": 0.667,
+          "old_roles": [
+            "figure_inner_text",
+            "subsection_heading"
+          ],
+          "old_hits": [
+            {
+              "page": 5,
+              "block_id": 2,
+              "role": "figure_inner_text",
+              "text": "a"
+            },
+            {
+              "page": 5,
+              "block_id": 15,
+              "role": "figure_inner_text",
+              "text": "d"
+            },
+            {
+              "page": 6,
+              "block_id": 2,
+              "role": "figure_inner_text",
+              "text": "a"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 0.333,
+            "page": 30,
+            "block_id": 0,
+            "role": "body_paragraph",
+            "text": "In the multi-center validation cohorts, we used the same filtering strategy as for the external validation cohorts 1-7 to obtain valid aortic CTA cases. The arterial phase series were used as the gold standard for diagnosing AAS, while the non-contrast phase series were used for model validation. Ex"
+          },
+          "attribution": "page_marker_noise"
+        },
+        {
+          "text": "主题：古工题钱海12小时，再满加重2小时",
+          "coverage_in_new_fulltext": 0.0,
+          "old_roles": [
+            "body_paragraph"
+          ],
+          "old_hits": [
+            {
+              "page": 10,
+              "block_id": 11,
+              "role": "body_paragraph",
+              "text": "主题：古工题钱海12小时，再满加重2小时"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 10,
+            "block_id": 11,
+            "role": "figure_inner_text",
+            "text": "主题：古工题钱海12小时，再满加重2小时"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "现病灾：患者口小时前无明显诱因下定发石上搅地痛，无病封痛，无恶心，呕吐或发热等其他症状。5小时前前往出院急诊就诊，打腹部B超检查，结果未显示明显异常。外院给予解痉及护肾药物治疗，治疗后疼痛无明显缓解。2小时前患者腹痛加重，遂予我院急诊就诊。自发病以来，神清，精神可，累纳差，大小微无躁，偏重无明显变化。",
+          "coverage_in_new_fulltext": 0.0,
+          "old_roles": [
+            "body_paragraph",
+            "noise"
+          ],
+          "old_hits": [
+            {
+              "page": 10,
+              "block_id": 12,
+              "role": "body_paragraph",
+              "text": "现病灾：患者口小时前无明显诱因下定发石上搅地痛，无病封痛，无恶心，呕吐或发热等其他症状。5小时前前往出院急诊就诊，打腹部B超检查，结果未显示明显异常。外院给予解痉及护肾药物治疗，治疗后疼痛无明显缓解。2小时前患者腹痛加重，遂予我院急诊就诊。自发病以来，神清，精神可，累纳差，大小微无躁，偏重无明显变化。"
+            },
+            {
+              "page": 32,
+              "block_id": 3,
+              "role": "noise",
+              "text": "5"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 10,
+            "block_id": 12,
+            "role": "figure_inner_text",
+            "text": "现病灾：患者口小时前无明显诱因下定发石上搅地痛，无病封痛，无恶心，呕吐或发热等其他症状。5小时前前往出院急诊就诊，打腹部B超检查，结果未显示明显异常。外院给予解痉及护肾药物治疗，治疗后疼痛无明显缓解。2小时前患者腹痛加重，遂予我院急诊就诊。自发病以来，神清，精神可，累纳差，大小微无躁，偏重无明显变化。"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "既往史：患者一般健康状况良好，有高血压病史2年，口服抗氯地平5mg QD，控制高可。无心脏病，肝病等慢性疾病，无吸烟、饮酒、药物史，无油病史。",
+          "coverage_in_new_fulltext": 0.0,
+          "old_roles": [
+            "body_paragraph",
+            "noise"
+          ],
+          "old_hits": [
+            {
+              "page": 10,
+              "block_id": 13,
+              "role": "body_paragraph",
+              "text": "既往史：患者一般健康状况良好，有高血压病史2年，口服抗氯地平5mg QD，控制高可。无心脏病，肝病等慢性疾病，无吸烟、饮酒、药物史，无油病史。"
+            },
+            {
+              "page": 32,
+              "block_id": 3,
+              "role": "noise",
+              "text": "5"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 10,
+            "block_id": 13,
+            "role": "figure_inner_text",
+            "text": "既往史：患者一般健康状况良好，有高血压病史2年，口服抗氯地平5mg QD，控制高可。无心脏病，肝病等慢性疾病，无吸烟、饮酒、药物史，无油病史。"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "136℃P: 测试分 表：18元/分 HP: 120/54mmHg.",
+          "coverage_in_new_fulltext": 0.0,
+          "old_roles": [
+            "body_paragraph",
+            "noise"
+          ],
+          "old_hits": [
+            {
+              "page": 10,
+              "block_id": 14,
+              "role": "body_paragraph",
+              "text": "136℃P: 测试分 表：18元/分 HP: 120/54mmHg."
+            },
+            {
+              "page": 30,
+              "block_id": 6,
+              "role": "noise",
+              "text": "3"
+            },
+            {
+              "page": 31,
+              "block_id": 19,
+              "role": "noise",
+              "text": "4"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 10,
+            "block_id": 14,
+            "role": "figure_inner_text",
+            "text": "136℃P: 测试分 表：18元/分 HP: 120/54mmHg."
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "心常清晰，律节，未闻及杂音；肺部呼吸音清晰，无干涩性啰音，腹部柔软，无深痛，无独虚，弱弱无红汤，Akooko无红斑病。",
+          "coverage_in_new_fulltext": 0.0,
+          "old_roles": [
+            "body_paragraph"
+          ],
+          "old_hits": [
+            {
+              "page": 10,
+              "block_id": 15,
+              "role": "body_paragraph",
+              "text": "心常清晰，律节，未闻及杂音；肺部呼吸音清晰，无干涩性啰音，腹部柔软，无深痛，无独虚，弱弱无红汤，Akooko无红斑病。"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 10,
+            "block_id": 15,
+            "role": "figure_inner_text",
+            "text": "心常清晰，律节，未闻及杂音；肺部呼吸音清晰，无干涩性啰音，腹部柔软，无深痛，无独虚，弱弱无红汤，Akooko无红斑病。"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "1. 玻璃透色《急性胆囊炎7 急性胆囊结石7》",
+          "coverage_in_new_fulltext": 0.0,
+          "old_roles": [
+            "body_paragraph"
+          ],
+          "old_hits": [
+            {
+              "page": 10,
+              "block_id": 17,
+              "role": "body_paragraph",
+              "text": "1. 玻璃透色《急性胆囊炎7 急性胆囊结石7》"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 10,
+            "block_id": 17,
+            "role": "figure_inner_text",
+            "text": "1. 玻璃透色《急性胆囊炎7 急性胆囊结石7》"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "2. 高血压",
+          "coverage_in_new_fulltext": 0.0,
+          "old_roles": [
+            "body_paragraph"
+          ],
+          "old_hits": [
+            {
+              "page": 10,
+              "block_id": 18,
+              "role": "body_paragraph",
+              "text": "2. 高血压"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 10,
+            "block_id": 18,
+            "role": "figure_inner_text",
+            "text": "2. 高血压"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "Chief complaint: Right upper quadrant dull pain for 12 h, worsening in the last 2 h Present illness: ...He initially sought care at an external emergency department 8 h ago, where an abdominal ultrasound revealed no significant abnormalities. Despite receiving spasmolytic and gastric protective medications, his symptoms did not improve...",
+          "coverage_in_new_fulltext": 0.667,
+          "old_roles": [
+            "body_paragraph",
+            "figure_inner_text"
+          ],
+          "old_hits": [
+            {
+              "page": 5,
+              "block_id": 2,
+              "role": "figure_inner_text",
+              "text": "a"
+            },
+            {
+              "page": 5,
+              "block_id": 4,
+              "role": "figure_inner_text",
+              "text": "b"
+            },
+            {
+              "page": 5,
+              "block_id": 6,
+              "role": "figure_inner_text",
+              "text": "C"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 10,
+            "block_id": 24,
+            "role": "figure_inner_text",
+            "text": "Chief complaint: Right upper quadrant dull pain for 12 h, worsening in the last 2 h Present illness: ...He initially sought care at an external emergency department 8 h ago, where an abdominal ultrasound revealed no significant abnormalities. Despite receiving spasmolytic and gastric protective medi"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "Physical exam: temperature 36 °C, BP 128/84 mm Hg, HR 80, RR 18.",
+          "coverage_in_new_fulltext": 0.615,
+          "old_roles": [
+            "body_paragraph",
+            "figure_inner_text",
+            "noise"
+          ],
+          "old_hits": [
+            {
+              "page": 5,
+              "block_id": 2,
+              "role": "figure_inner_text",
+              "text": "a"
+            },
+            {
+              "page": 5,
+              "block_id": 6,
+              "role": "figure_inner_text",
+              "text": "C"
+            },
+            {
+              "page": 6,
+              "block_id": 2,
+              "role": "figure_inner_text",
+              "text": "a"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 10,
+            "block_id": 27,
+            "role": "figure_inner_text",
+            "text": "Physical exam: temperature 36 °C, BP 128/84 mm Hg, HR 80, RR 18."
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "Troponin: 0.030 $\\mu$g l $^{-1}$, CRP: 9.92 mg l $^{-1}$",
+          "coverage_in_new_fulltext": 0.333,
+          "old_roles": [
+            "figure_inner_text",
+            "noise"
+          ],
+          "old_hits": [
+            {
+              "page": 5,
+              "block_id": 6,
+              "role": "figure_inner_text",
+              "text": "C"
+            },
+            {
+              "page": 6,
+              "block_id": 6,
+              "role": "figure_inner_text",
+              "text": "C"
+            },
+            {
+              "page": 7,
+              "block_id": 7,
+              "role": "figure_inner_text",
+              "text": "C"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 10,
+            "block_id": 29,
+            "role": "figure_inner_text",
+            "text": "Troponin: 0.030 $ \\mu $g l $ ^{-1} $, CRP: 9.92 mg l $ ^{-1} $"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "1. Abdominal pain, etiology to be determined (Possible acute cholecystitis?",
+          "coverage_in_new_fulltext": 0.778,
+          "old_roles": [
+            "body_paragraph",
+            "figure_inner_text"
+          ],
+          "old_hits": [
+            {
+              "page": 5,
+              "block_id": 2,
+              "role": "figure_inner_text",
+              "text": "a"
+            },
+            {
+              "page": 5,
+              "block_id": 4,
+              "role": "figure_inner_text",
+              "text": "b"
+            },
+            {
+              "page": 5,
+              "block_id": 15,
+              "role": "figure_inner_text",
+              "text": "d"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 10,
+            "block_id": 31,
+            "role": "figure_inner_text",
+            "text": "1. Abdominal pain, etiology to be determined (Possible acute cholecystitis?"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "Acute cholelithiasis? 2. Hypertension",
+          "coverage_in_new_fulltext": 0.667,
+          "old_roles": [
+            "body_paragraph",
+            "figure_inner_text",
+            "section_heading"
+          ],
+          "old_hits": [
+            {
+              "page": 5,
+              "block_id": 2,
+              "role": "figure_inner_text",
+              "text": "a"
+            },
+            {
+              "page": 6,
+              "block_id": 2,
+              "role": "figure_inner_text",
+              "text": "a"
+            },
+            {
+              "page": 7,
+              "block_id": 2,
+              "role": "figure_inner_text",
+              "text": "a"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 0.667,
+            "page": 10,
+            "block_id": 32,
+            "role": "figure_inner_text",
+            "text": "Acute cholelithiasis?"
+          },
+          "attribution": "moved_to_figure_inner_text"
+        },
+        {
+          "text": "<!-- page 21 --> Female,80",
+          "coverage_in_new_fulltext": 0.75,
+          "old_roles": [
+            "figure_inner_text",
+            "sub_subsection_heading"
+          ],
+          "old_hits": [
+            {
+              "page": 5,
+              "block_id": 2,
+              "role": "figure_inner_text",
+              "text": "a"
+            },
+            {
+              "page": 6,
+              "block_id": 2,
+              "role": "figure_inner_text",
+              "text": "a"
+            },
+            {
+              "page": 7,
+              "block_id": 2,
+              "role": "figure_inner_text",
+              "text": "a"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 0.5,
+            "page": 21,
+            "block_id": 4,
+            "role": "figure_inner_text",
+            "text": "Female,80"
+          },
+          "attribution": "page_marker_noise"
+        },
+        {
+          "text": "ECG: First-degree atrioventricular (AV) block",
+          "coverage_in_new_fulltext": 0.333,
+          "old_roles": [
+            "body_paragraph",
+            "figure_inner_text"
+          ],
+          "old_hits": [
+            {
+              "page": 5,
+              "block_id": 2,
+              "role": "figure_inner_text",
+              "text": "a"
+            },
+            {
+              "page": 5,
+              "block_id": 4,
+              "role": "figure_inner_text",
+              "text": "b"
+            },
+            {
+              "page": 5,
+              "block_id": 6,
+              "role": "figure_inner_text",
+              "text": "C"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 21,
+            "block_id": 7,
+            "role": "figure_inner_text",
+            "text": "ECG: First-degree atrioventricular (AV) block"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "Laboratory testing: D-dimers:2880 ng/mL, Troponin:0.0054 ug/L",
+          "coverage_in_new_fulltext": 0.222,
+          "old_roles": [
+            "body_paragraph",
+            "figure_inner_text",
+            "noise"
+          ],
+          "old_hits": [
+            {
+              "page": 5,
+              "block_id": 2,
+              "role": "figure_inner_text",
+              "text": "a"
+            },
+            {
+              "page": 5,
+              "block_id": 4,
+              "role": "figure_inner_text",
+              "text": "b"
+            },
+            {
+              "page": 5,
+              "block_id": 15,
+              "role": "figure_inner_text",
+              "text": "d"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 21,
+            "block_id": 9,
+            "role": "figure_inner_text",
+            "text": "Laboratory testing: D-dimers:2880 ng/mL, Troponin:0.0054 ug/L"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "Initial Suspicion: Lumbar disc protrusion? Kidney stone? male,59",
+          "coverage_in_new_fulltext": 0.444,
+          "old_roles": [
+            "body_paragraph",
+            "figure_inner_text",
+            "noise",
+            "sub_subsection_heading"
+          ],
+          "old_hits": [
+            {
+              "page": 5,
+              "block_id": 2,
+              "role": "figure_inner_text",
+              "text": "a"
+            },
+            {
+              "page": 5,
+              "block_id": 4,
+              "role": "figure_inner_text",
+              "text": "b"
+            },
+            {
+              "page": 5,
+              "block_id": 15,
+              "role": "figure_inner_text",
+              "text": "d"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 0.778,
+            "page": 21,
+            "block_id": 10,
+            "role": "figure_inner_text",
+            "text": "Initial Suspicion: Lumbar disc protrusion? Kidney stone?"
+          },
+          "attribution": "moved_to_figure_inner_text"
+        },
+        {
+          "text": "Laboratory testing: D-dimers: 2230 ug/L, Troponin: 0.012 ng/mL",
+          "coverage_in_new_fulltext": 0.222,
+          "old_roles": [
+            "body_paragraph",
+            "figure_inner_text",
+            "noise"
+          ],
+          "old_hits": [
+            {
+              "page": 5,
+              "block_id": 2,
+              "role": "figure_inner_text",
+              "text": "a"
+            },
+            {
+              "page": 5,
+              "block_id": 4,
+              "role": "figure_inner_text",
+              "text": "b"
+            },
+            {
+              "page": 5,
+              "block_id": 15,
+              "role": "figure_inner_text",
+              "text": "d"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 21,
+            "block_id": 36,
+            "role": "figure_inner_text",
+            "text": "Laboratory testing: D-dimers: 2230 ug/L, Troponin: 0.012 ng/mL"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "Initial Suspicion: Acute gastroenteritis? Acute cholecystitis?",
+          "coverage_in_new_fulltext": 0.667,
+          "old_roles": [
+            "body_paragraph",
+            "figure_inner_text"
+          ],
+          "old_hits": [
+            {
+              "page": 5,
+              "block_id": 2,
+              "role": "figure_inner_text",
+              "text": "a"
+            },
+            {
+              "page": 6,
+              "block_id": 2,
+              "role": "figure_inner_text",
+              "text": "a"
+            },
+            {
+              "page": 7,
+              "block_id": 2,
+              "role": "figure_inner_text",
+              "text": "a"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 21,
+            "block_id": 38,
+            "role": "figure_inner_text",
+            "text": "Initial Suspicion: Acute gastroenteritis? Acute cholecystitis?"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "Initial Suspicion: Pneumonia? Female,72 History:",
+          "coverage_in_new_fulltext": 0.667,
+          "old_roles": [
+            "body_paragraph",
+            "figure_inner_text",
+            "sub_subsection_heading"
+          ],
+          "old_hits": [
+            {
+              "page": 5,
+              "block_id": 2,
+              "role": "figure_inner_text",
+              "text": "a"
+            },
+            {
+              "page": 6,
+              "block_id": 2,
+              "role": "figure_inner_text",
+              "text": "a"
+            },
+            {
+              "page": 7,
+              "block_id": 2,
+              "role": "figure_inner_text",
+              "text": "a"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 0.5,
+            "page": 21,
+            "block_id": 39,
+            "role": "figure_inner_text",
+            "text": "Initial Suspicion: Pneumonia?"
+          },
+          "attribution": "moved_to_figure_inner_text"
+        },
+        {
+          "text": "Laboratory testing: D-dimers: 18070.00 ug/L, Troponin: 0.016 ng/mL",
+          "coverage_in_new_fulltext": 0.2,
+          "old_roles": [
+            "body_paragraph",
+            "figure_inner_text"
+          ],
+          "old_hits": [
+            {
+              "page": 5,
+              "block_id": 2,
+              "role": "figure_inner_text",
+              "text": "a"
+            },
+            {
+              "page": 5,
+              "block_id": 4,
+              "role": "figure_inner_text",
+              "text": "b"
+            },
+            {
+              "page": 5,
+              "block_id": 15,
+              "role": "figure_inner_text",
+              "text": "d"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 21,
+            "block_id": 66,
+            "role": "figure_inner_text",
+            "text": "Laboratory testing: D-dimers: 18070.00 ug/L, Troponin: 0.016 ng/mL"
+          },
+          "attribution": "moved_to_block"
+        }
+      ]
+    },
+    {
+      "key": "P9D6GZ9M",
+      "rebuild_status": "ok",
+      "items": [
+        {
+          "text": "because of the importance of avoiding radiation hazard. For this reason it is seldom possible to take more than one view of each joint. The gradings for each joint in this study are, therefore, based on a single x ray view, as follows:",
+          "coverage_in_new_fulltext": 0.78,
+          "old_roles": [
+            "body_paragraph"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 2,
+              "role": "body_paragraph",
+              "text": "because of the importance of avoiding radiation hazard. For this reason it is seldom possible to take more than one view of each joint. The gradings for each joint in this study are, therefore, based "
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 2,
+            "role": "non_body_insert",
+            "text": "because of the importance of avoiding radiation hazard. For this reason it is seldom possible to take more than one view of each joint. The gradings for each joint in this study are, therefore, based on a single x ray view, as follows:"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "Hands - Postero-anterior",
+          "coverage_in_new_fulltext": 0.333,
+          "old_roles": [
+            "body_paragraph"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 3,
+              "role": "body_paragraph",
+              "text": "Hands - Postero-anterior"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 3,
+            "role": "non_body_insert",
+            "text": "Hands - Postero-anterior"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "Cervical spine - Lateral",
+          "coverage_in_new_fulltext": 0.667,
+          "old_roles": [
+            "body_paragraph"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 4,
+              "role": "body_paragraph",
+              "text": "Cervical spine - Lateral"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 4,
+            "role": "non_body_insert",
+            "text": "Cervical spine - Lateral"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "Lumbar spine - Lateral",
+          "coverage_in_new_fulltext": 0.667,
+          "old_roles": [
+            "body_paragraph"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 5,
+              "role": "body_paragraph",
+              "text": "Lumbar spine - Lateral"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 5,
+            "role": "non_body_insert",
+            "text": "Lumbar spine - Lateral"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "Hips - Antero-posterior",
+          "coverage_in_new_fulltext": 0.333,
+          "old_roles": [
+            "body_paragraph"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 6,
+              "role": "body_paragraph",
+              "text": "Hips - Antero-posterior"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 6,
+            "role": "non_body_insert",
+            "text": "Hips - Antero-posterior"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "Knees - - Antero-posterior",
+          "coverage_in_new_fulltext": 0.333,
+          "old_roles": [
+            "body_paragraph"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 7,
+              "role": "body_paragraph",
+              "text": "Knees - - Antero-posterior"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 7,
+            "role": "non_body_insert",
+            "text": "Knees - - Antero-posterior"
+          },
+          "attribution": "moved_to_block"
+        }
+      ]
+    },
+    {
+      "key": "XG8R37M7",
+      "rebuild_status": "ok",
+      "items": [
+        {
+          "text": "TOPICAL REVIEW • OPEN ACCESS",
+          "coverage_in_new_fulltext": 0.5,
+          "old_roles": [
+            "body_paragraph",
+            "figure_inner_text",
+            "footnote"
+          ],
+          "old_hits": [
+            {
+              "page": 1,
+              "block_id": 2,
+              "role": "body_paragraph",
+              "text": "TOPICAL REVIEW • OPEN ACCESS"
+            },
+            {
+              "page": 2,
+              "block_id": 5,
+              "role": "footnote",
+              "text": "OPEN ACCESS"
+            },
+            {
+              "page": 15,
+              "block_id": 7,
+              "role": "figure_inner_text",
+              "text": "C"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 1,
+            "block_id": 2,
+            "role": "non_body_insert",
+            "text": "TOPICAL REVIEW • OPEN ACCESS"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "RECEIVED 20 January 2022",
+          "coverage_in_new_fulltext": 0.5,
+          "old_roles": [
+            "body_paragraph",
+            "figure_inner_text",
+            "noise"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 6,
+              "role": "body_paragraph",
+              "text": "RECEIVED 20 January 2022"
+            },
+            {
+              "page": 3,
+              "block_id": 9,
+              "role": "noise",
+              "text": "2"
+            },
+            {
+              "page": 15,
+              "block_id": 3,
+              "role": "figure_inner_text",
+              "text": "a"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 6,
+            "role": "non_body_insert",
+            "text": "RECEIVED 20 January 2022"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "REVISED 27 June 2022",
+          "coverage_in_new_fulltext": 0.5,
+          "old_roles": [
+            "body_paragraph",
+            "noise"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 7,
+              "role": "body_paragraph",
+              "text": "REVISED 27 June 2022"
+            },
+            {
+              "page": 3,
+              "block_id": 9,
+              "role": "noise",
+              "text": "2"
+            },
+            {
+              "page": 8,
+              "block_id": 11,
+              "role": "noise",
+              "text": "7"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 7,
+            "role": "non_body_insert",
+            "text": "REVISED 27 June 2022"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "PUBLISHED 8 November 2022",
+          "coverage_in_new_fulltext": 0.667,
+          "old_roles": [
+            "body_paragraph",
+            "figure_inner_text",
+            "noise"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 10,
+              "role": "body_paragraph",
+              "text": "PUBLISHED 8 November 2022"
+            },
+            {
+              "page": 3,
+              "block_id": 9,
+              "role": "noise",
+              "text": "2"
+            },
+            {
+              "page": 9,
+              "block_id": 12,
+              "role": "noise",
+              "text": "8"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 10,
+            "role": "non_body_insert",
+            "text": "PUBLISHED 8 November 2022"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "Any further distribution of this work must maintain attribution to the author(s) and the title of the work, journal citation and DOI. TOPICAL REVIEW",
+          "coverage_in_new_fulltext": 0.75,
+          "old_roles": [
+            "body_paragraph",
+            "figure_inner_text"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 12,
+              "role": "body_paragraph",
+              "text": "Any further distribution of this work must maintain attribution to the author(s) and the title of the work, journal citation and DOI. TOPICAL REVIEW"
+            },
+            {
+              "page": 15,
+              "block_id": 3,
+              "role": "figure_inner_text",
+              "text": "a"
+            },
+            {
+              "page": 15,
+              "block_id": 5,
+              "role": "figure_inner_text",
+              "text": "b"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 12,
+            "role": "non_body_insert",
+            "text": "Any further distribution of this work must maintain attribution to the author(s) and the title of the work, journal citation and DOI. TOPICAL REVIEW"
+          },
+          "attribution": "moved_to_block"
+        },
+        {
+          "text": "E-mail: aldo.boccaccini@ww.uni-erlangen.de",
+          "coverage_in_new_fulltext": 0.571,
+          "old_roles": [
+            "body_paragraph",
+            "figure_inner_text"
+          ],
+          "old_hits": [
+            {
+              "page": 2,
+              "block_id": 21,
+              "role": "body_paragraph",
+              "text": "E-mail: aldo.boccaccini@ww.uni-erlangen.de"
+            },
+            {
+              "page": 15,
+              "block_id": 3,
+              "role": "figure_inner_text",
+              "text": "a"
+            },
+            {
+              "page": 15,
+              "block_id": 5,
+              "role": "figure_inner_text",
+              "text": "b"
+            }
+          ],
+          "best_new_block": {
+            "coverage": 1.0,
+            "page": 2,
+            "block_id": 21,
+            "role": "non_body_insert",
+            "text": "E-mail: aldo.boccaccini@ww.uni-erlangen.de"
+          },
+          "attribution": "moved_to_block"
+        }
+      ]
+    }
+  ]
+}

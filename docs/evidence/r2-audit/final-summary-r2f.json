@@ -1,0 +1,121 @@
+{
+  "schema": "paperforge.r2f.final.v1",
+  "r2e": {
+    "audited": 91,
+    "pass": 53,
+    "hold": 38
+  },
+  "r2f": {
+    "resolved": [
+      "P9D6GZ9M",
+      "XG8R37M7",
+      "XGT9Z257"
+    ],
+    "remaining_hold": [
+      "5GYTWRPT",
+      "5PQ7DI4W",
+      "64IUPLY7",
+      "6A8A9TWD",
+      "7S5ZEVSK",
+      "7W9QLVMF",
+      "7ZZN6PUW",
+      "8M2YFJAX",
+      "C3KHPMQ9",
+      "C7WCW4NX",
+      "CHILQ4KJ",
+      "CPQ47TBV",
+      "CQG5WH2Y",
+      "DLW898UK",
+      "DS2FR5FU",
+      "FVZ3YE7P",
+      "H497AGMU",
+      "HIU4F3V4",
+      "HN4758MP",
+      "IH6K34R9",
+      "L623PH9P",
+      "NYWJL2T9",
+      "P36H92AX",
+      "P9ZYVAXB",
+      "PP76T2EY",
+      "PV3T4FWR",
+      "PX9XJURS",
+      "QPT4IGLD",
+      "QU4IAZ7E",
+      "TJHT3UBI",
+      "U3XAT3SD",
+      "U746UJ7G",
+      "V463BSDR",
+      "VK2XSGFY",
+      "YSBJVWTA"
+    ],
+    "resolved_count": 3,
+    "remaining_count": 35
+  },
+  "combined": {
+    "unaffected_pass": 702,
+    "r2e_pass": 53,
+    "r2f_resolved": 3,
+    "pass": 758,
+    "hold": 35
+  },
+  "migration_eligibility": {
+    "status_counts": {
+      "HOLD": 47,
+      "M2_REVIEW_REQUIRED": 7,
+      "READY": 754,
+      "REQUIRES_APPROVAL": 109,
+      "TEXT_FIDELITY_HOLD": 35
+    },
+    "text_fidelity_hold": [
+      "5GYTWRPT",
+      "5PQ7DI4W",
+      "64IUPLY7",
+      "6A8A9TWD",
+      "7S5ZEVSK",
+      "7W9QLVMF",
+      "7ZZN6PUW",
+      "8M2YFJAX",
+      "C3KHPMQ9",
+      "C7WCW4NX",
+      "CHILQ4KJ",
+      "CPQ47TBV",
+      "CQG5WH2Y",
+      "DLW898UK",
+      "DS2FR5FU",
+      "FVZ3YE7P",
+      "H497AGMU",
+      "HIU4F3V4",
+      "HN4758MP",
+      "IH6K34R9",
+      "L623PH9P",
+      "NYWJL2T9",
+      "P36H92AX",
+      "P9ZYVAXB",
+      "PP76T2EY",
+      "PV3T4FWR",
+      "PX9XJURS",
+      "QPT4IGLD",
+      "QU4IAZ7E",
+      "TJHT3UBI",
+      "U3XAT3SD",
+      "U746UJ7G",
+      "V463BSDR",
+      "VK2XSGFY",
+      "YSBJVWTA"
+    ]
+  },
+  "r2f_attribution": {
+    "XGT9Z257": [
+      "moved_to_block",
+      "moved_to_figure_inner_text",
+      "page_marker_noise"
+    ],
+    "P9D6GZ9M": [
+      "moved_to_block"
+    ],
+    "XG8R37M7": [
+      "moved_to_block"
+    ]
+  },
+  "note": "R2f resolves three fulltext-only HOLD papers by attribution; 35 remain HOLD. R1 READY is 754 after overlay."
+}

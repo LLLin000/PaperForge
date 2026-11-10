@@ -1,0 +1,30 @@
+{
+  "schema": "paperforge.r2.audit_final.v1",
+  "source_sha": "41e51222aeab75514536837a8f3664f85fd49359",
+  "selected_ready": 793,
+  "rebuilt": 793,
+  "pass": 793,
+  "fail": 0,
+  "plan_mismatch_count": 0,
+  "waived_errors": {
+    "historical_text_decrease": 85,
+    "structured_text_decrease": 5,
+    "historical_structured_chars_decrease": 5
+  },
+  "optional_unreadable": {
+    "chart-type-map.json": 2,
+    "figure-map.json": 4
+  },
+  "warnings": {
+    "legacy_corrupt_asset_replaced": 1
+  },
+  "source_integrity": {
+    "unchanged": true,
+    "chunks": 40
+  },
+  "idempotence": {
+    "passed_chunks": 40,
+    "chunks": 40
+  },
+  "failures": []
+}
