@@ -1,0 +1,94 @@
+{
+  "set": "r3",
+  "generated": "2026-11-11",
+  "cases": [
+    {
+      "key": "24YKLTHQ",
+      "classification": "real_delivery_defect",
+      "figure_count": 6,
+      "missing_manifest_assets": ["figure_002"],
+      "evidence": {
+        "result_json": "docs/evidence/r3/result.json",
+        "baseline_json": "docs/evidence/r3/24YKLTHQ/baseline.json",
+        "figure_inventory": "D:/L/OB/Literature-hub/System/PaperForge/ocr/24YKLTHQ/structure/figure_inventory.json",
+        "render_audit": "docs/evidence/r3/render_audit.json (DEGRADED)",
+        "page_images": 13,
+        "assets_on_disk": ["figure_001","figure_003","figure_004","figure_005","figure_006"],
+        "reserved_figure": "figure_reserved_005 (Figure 2, cross_page_reservation, 0 assets)",
+        "render_absent": "render/figures/figure_002.md",
+        "render_present_reserved": "render/figures/figure_reserved_005.md",
+        "detail": "Manifest expects figure_002 asset but Figure 2 is a cross-page reservation with no matched asset blocks; no crop or figure_002.md render. Asset genuinely absent."
+      }
+    },
+    {
+      "key": "AUUNHWSN",
+      "classification": "real_delivery_defect",
+      "figure_count": 4,
+      "missing_manifest_assets": ["figure_figure_p004_b2"],
+      "evidence": {
+        "result_json": "docs/evidence/r3/result.json",
+        "baseline_json": "docs/evidence/r3/AUUNHWSN/baseline.json",
+        "figure_inventory": "D:/L/OB/Literature-hub/System/PaperForge/ocr/AUUNHWSN/structure/figure_inventory.json",
+        "render_audit": "docs/evidence/r3/render_audit.json (DEGRADED)",
+        "page_images": 7,
+        "reserved_figure": "figure_reserved_003 (cross_page_reservation, 0 assets)",
+        "detail": "Manifest expects figure_figure_p004_b2 corresponding to reserved cross-page figure; no asset crop or standard render id exists. Asset genuinely absent."
+      }
+    },
+    {
+      "key": "NJWU2G4V",
+      "classification": "real_delivery_defect",
+      "figure_count": 6,
+      "missing_manifest_assets": ["figure_004"],
+      "evidence": {
+        "result_json": "docs/evidence/r3/result.json",
+        "baseline_json": "docs/evidence/r3/NJWU2G4V/baseline.json",
+        "figure_inventory": "D:/L/OB/Literature-hub/System/PaperForge/ocr/NJWU2G4V/structure/figure_inventory.json",
+        "render_audit": "docs/evidence/r3/render_audit.json (DEGRADED)",
+        "page_images": 22,
+        "reserved_figure": "figure_reserved_006 (cross_page_reservation, 0 assets)",
+        "render_absent": "render/figures/figure_004.md",
+        "detail": "Manifest expects figure_004 asset but Figure 4 is a cross-page reservation with no matched asset blocks; no crop or figure_004.md render. Asset genuinely absent."
+      }
+    },
+    {
+      "key": "NLKKXD5Z",
+      "classification": "real_delivery_defect",
+      "figure_count": 2,
+      "missing_manifest_assets": ["figure_001"],
+      "evidence": {
+        "result_json": "docs/evidence/r3/result.json",
+        "baseline_json": "docs/evidence/r3/NLKKXD5Z/baseline.json",
+        "figure_inventory": "D:/L/OB/Literature-hub/System/PaperForge/ocr/NLKKXD5Z/structure/figure_inventory.json",
+        "render_audit": "docs/evidence/r3/render_audit.json (DEGRADED)",
+        "page_images": 14,
+        "reserved_figure": "figure_reserved_001 (cross_page_reservation, 0 assets, Figure 1)",
+        "render_absent": "render/figures/figure_001.md",
+        "render_present_reserved": "render/figures/figure_reserved_001.md",
+        "detail": "Manifest expects figure_001 asset but Figure 1 is a cross-page reservation with no matched asset blocks; no crop or figure_001.md render. Asset genuinely absent."
+      }
+    },
+    {
+      "key": "2ZBAK9VY",
+      "classification": "supplemental_pdf_mismatch",
+      "figure_count": null,
+      "missing_manifest_assets": [],
+      "evidence": {
+        "result_json": "docs/evidence/r3/result.json (IndexError: page 8 not in document; source PDF has 8 pages; inventory references page 9)",
+        "render_audit": "docs/evidence/r3/render_audit.json (CLEAN)",
+        "source_metadata": "D:/L/OB/Literature-hub/System/PaperForge/ocr/2ZBAK9VY/raw/source_metadata.json",
+        "meta_json": "D:/L/OB/Literature-hub/System/PaperForge/ocr/2ZBAK9VY/meta.json (page_count 15)",
+        "source_pdf": "Supplemental Online Content.pdf (15 pages)",
+        "page_images": 15,
+        "detail": "Pipeline OCR'd the 15-page supplemental PDF; inventory references pages 6-9 which exist there. figure_quality_eval crashed because it rendered overlays from an 8-page PDF, not the supplemental source. Page 9 is valid in supplemental PDF; inventory not stale."
+      }
+    }
+  ],
+  "summary": {
+    "real_delivery_defect": 4,
+    "supplemental_pdf_mismatch": 1,
+    "tooling_artifact": 0,
+    "stale_inventory": 0,
+    "UNKNOWN": 0
+  }
+}

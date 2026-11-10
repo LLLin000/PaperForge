@@ -7,9 +7,9 @@
 
 ## Tools executed (isolated temp vault; real vault read-only)
 - Rebuild: `paperforge.worker.ocr_rebuild._rebuild_one_paper` on isolated copies (combined temp vault; meta.source_pdf resolved to source vault PDFs; bootstrap_config).
-- `scripts/dev/figure_quality_eval.py` → `docs/evidence/r3/result.json`, per-key `baseline.json`, `labels.jsonl`, `page_*.jpg`, crop images.
-- `scripts/dev/visual_detection_benchmark.py --overlays --dpi 120` → `docs/evidence/r3/visual-benchmark/benchmark.json`, `pages/*.png`, `overlays/*.png`.
-- `paperforge.render_audit.audit_papers` → `docs/evidence/r3/render_audit.json`.
+- `scripts/dev/figure_quality_eval.py` -> `docs/evidence/r3/result.json`, per-key `baseline.json`, `labels.jsonl`, `page_*.jpg`, crop images.
+- `scripts/dev/visual_detection_benchmark.py --overlays --dpi 120` -> `docs/evidence/r3/visual-benchmark/benchmark.json`, `pages/*.png`, `overlays/*.png`.
+- `paperforge.render_audit.audit_papers` -> `docs/evidence/r3/render_audit.json`.
 
 ## Structural results
 - figure_quality_eval: 19/24 passed; 5 failed (4 missing manifest assets: 24YKLTHQ, AUUNHWSN, NJWU2G4V, NLKKXD5Z; 1 tooling crash: 2ZBAK9VY page 8 not in document).
@@ -31,3 +31,8 @@
 - Whether captions/legends are correctly associated and rendered in final markdown (delivery) must be checked by human.
 - Papers flagged structurally/degraded need priority review.
 - No claim of visual acceptance is made from automated metrics.
+
+## R3 failure triage
+- See `docs/evidence/r3/failure-triage.json` for per-key classification.
+- 24YKLTHQ, AUUNHWSN, NJWU2G4V, NLKKXD5Z: real_delivery_defect - manifest asset genuinely absent because corresponding figure is a cross-page reservation with zero matched asset blocks; no crop or standard render markdown produced.
+- 2ZBAK9VY: supplemental_pdf_mismatch - figure_quality_eval used an 8-page PDF while pipeline OCR'd the 15-page supplemental PDF; page 9 is valid in supplemental source, so inventory is not stale.
