@@ -18,6 +18,7 @@ sys.path.insert(0, str(REPO))
 
 import paperforge.worker.ocr_rebuild as rebuild_mod  # noqa: E402
 from paperforge.config import bootstrap_config  # noqa: E402
+from paperforge.pdf_resolver import resolve_source_pdf  # noqa: E402
 from paperforge.worker.ocr_objects import _recover_materialization_journal  # noqa: E402
 
 
@@ -120,9 +121,20 @@ def stage_vault(source_vault, workdir, keys):
         dst_paper = assert_isolated(ocr_root / key, workdir)
         if src_paper.exists():
             assert_source_links(src_paper, source_vault)
-            shutil.copytree(src_paper, dst_paper)
+            shutil.copytree(
+                src_paper,
+                dst_paper,
+                ignore=shutil.ignore_patterns("backups", "versions"),
+            )
         else:
             dst_paper.mkdir(parents=True)
+        meta_path = dst_paper / "meta.json"
+        if meta_path.is_file():
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            pdf = resolve_source_pdf(source_vault, meta.get("source_pdf"))
+            if pdf is not None:
+                meta["source_pdf"] = str(pdf)
+                meta_path.write_text(json.dumps(meta, ensure_ascii=False), encoding="utf-8")
         _reject_source_links(dst_paper)
     bootstrap_config(vault)
     config_text = (vault / "paperforge.json").read_text(encoding="utf-8")
