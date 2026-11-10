@@ -11,6 +11,7 @@
     "8M2YFJAX",
     "C3KHPMQ9",
     "C7WCW4NX",
+    "CHILQ4KJ",
     "CPQ47TBV",
     "CQG5WH2Y",
     "DLW898UK",
@@ -39,9 +40,7 @@
     "XGT9Z257",
     "YSBJVWTA"
   ],
-  "remaining_hold": [
-    "CHILQ4KJ"
-  ],
+  "remaining_hold": [],
   "evidence": "docs/evidence/r2-audit/r2f-attribution.json",
-  "note": "All fulltext-only HOLD papers are attributed; IH6K34R9 is a legitimate heading merge; 8M2YFJAX/CPQ47TBV/QPT4IGLD are false-positive splits with both fragments retained. CHILQ4KJ remains HOLD due semantic heading truncation in _split_merged_heading_blocks."
+  "note": "All 38 R2e HOLD papers are resolved. CHILQ4KJ cleared after the heading splitter fix and isolated revalidation; 9 heading-impact papers re-audited with 0 text changes."
 }

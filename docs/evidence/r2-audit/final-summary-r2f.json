@@ -1,5 +1,5 @@
 {
-  "schema": "paperforge.r2f.final.v2",
+  "schema": "paperforge.r2f.final.v3",
   "r2e": {
     "audited": 91,
     "pass": 53,
@@ -17,6 +17,7 @@
       "8M2YFJAX",
       "C3KHPMQ9",
       "C7WCW4NX",
+      "CHILQ4KJ",
       "CPQ47TBV",
       "CQG5WH2Y",
       "DLW898UK",
@@ -45,147 +46,30 @@
       "XGT9Z257",
       "YSBJVWTA"
     ],
-    "remaining_hold": [
-      "CHILQ4KJ"
-    ],
-    "resolved_count": 37,
-    "remaining_count": 1,
-    "fulltext_attributed": {
-      "5GYTWRPT": [
-        "moved_to_block"
-      ],
-      "5PQ7DI4W": [
-        "table_caption_markdown"
-      ],
-      "64IUPLY7": [
-        "moved_to_block"
-      ],
-      "6A8A9TWD": [
-        "suffix_moved"
-      ],
-      "7S5ZEVSK": [
-        "moved_to_block"
-      ],
-      "7W9QLVMF": [
-        "moved_to_block"
-      ],
-      "7ZZN6PUW": [
-        "moved_to_block"
-      ],
-      "C3KHPMQ9": [
-        "moved_to_block"
-      ],
-      "C7WCW4NX": [
-        "moved_to_block"
-      ],
-      "CQG5WH2Y": [
-        "moved_to_block",
-        "non_body_old"
-      ],
-      "DLW898UK": [
-        "moved_to_block"
-      ],
-      "DS2FR5FU": [
-        "table_caption_markdown"
-      ],
-      "FVZ3YE7P": [
-        "moved_to_block"
-      ],
-      "H497AGMU": [
-        "moved_to_block"
-      ],
-      "HIU4F3V4": [
-        "moved_to_block"
-      ],
-      "HN4758MP": [
-        "moved_to_block"
-      ],
-      "L623PH9P": [
-        "moved_to_block"
-      ],
-      "NYWJL2T9": [
-        "moved_to_block"
-      ],
-      "P36H92AX": [
-        "moved_to_block"
-      ],
-      "P9ZYVAXB": [
-        "moved_to_block"
-      ],
-      "PP76T2EY": [
-        "moved_to_block"
-      ],
-      "PV3T4FWR": [
-        "moved_to_block"
-      ],
-      "PX9XJURS": [
-        "moved_to_block"
-      ],
-      "QU4IAZ7E": [
-        "moved_to_block"
-      ],
-      "TJHT3UBI": [
-        "moved_to_block",
-        "suffix_moved"
-      ],
-      "U3XAT3SD": [
-        "moved_to_block"
-      ],
-      "U746UJ7G": [
-        "moved_to_block"
-      ],
-      "V463BSDR": [
-        "moved_to_block"
-      ],
-      "VK2XSGFY": [
-        "moved_to_block",
-        "table_caption_markdown"
-      ],
-      "YSBJVWTA": [
-        "moved_to_block"
-      ]
-    },
-    "block_findings": {
-      "CHILQ4KJ": {
-        "classification": "heading_truncation",
-        "clearable": false
-      },
-      "IH6K34R9": {
-        "classification": "heading_merge",
-        "clearable": true
-      },
-      "8M2YFJAX": {
-        "classification": "heading_merge",
-        "clearable": true
-      },
-      "CPQ47TBV": {
-        "classification": "heading_merge",
-        "clearable": true
-      },
-      "QPT4IGLD": {
-        "classification": "heading_merge",
-        "clearable": true
-      }
+    "remaining_hold": [],
+    "resolved_count": 38,
+    "remaining_count": 0,
+    "heading_fix_impact": {
+      "audited": 9,
+      "pass": 9,
+      "hold": 0
     }
   },
   "combined": {
     "unaffected_pass": 702,
     "r2e_pass": 53,
-    "r2f_resolved": 37,
-    "pass": 792,
-    "hold": 1
+    "r2f_resolved": 38,
+    "pass": 793,
+    "hold": 0
   },
   "migration_eligibility": {
     "status_counts": {
       "HOLD": 47,
       "M2_REVIEW_REQUIRED": 7,
-      "READY": 787,
-      "REQUIRES_APPROVAL": 110,
-      "TEXT_FIDELITY_HOLD": 1
+      "READY": 788,
+      "REQUIRES_APPROVAL": 110
     },
-    "text_fidelity_hold": [
-      "CHILQ4KJ"
-    ]
+    "text_fidelity_hold": []
   },
-  "note": "Only CHILQ4KJ remains TEXT_FIDELITY_HOLD. Its headings are semantically truncated by _split_merged_heading_blocks; fix producer before clearing."
+  "note": "Text fidelity gate is clean for the R2d READY set. Production migration remains NO-GO pending R3."
 }

@@ -3528,7 +3528,11 @@ def _split_merged_heading_blocks(blocks: list[dict], role_profiles: dict | None 
     becomes two blocks: section_heading + subsection_heading.
     """
     import re
-    heading_num = re.compile(r"\b(\d+(?:\.\d+)*\.?\s+[A-Z])")
+    # First heading must be anchored at the start of the block text.
+    first_heading = re.compile(r"^\s*\d+(?:\.\d+)*\.?\s+[A-Z]")
+    # A merged second heading must be a dotted numeric heading (>=2 components),
+    # not an arbitrary number followed by a capital word.
+    second_heading = re.compile(r"\b\d+\.\d+(?:\.\d+)*\.?\s+[A-Z]")
 
     result = []
     for block in blocks:
@@ -3543,18 +3547,13 @@ def _split_merged_heading_blocks(blocks: list[dict], role_profiles: dict | None 
             result.append(block)
             continue
 
-        matches = heading_num.findall(text)
-        if len(matches) < 2:
-            result.append(block)
-            continue
-
-        # Find the second heading start position
-        first_match = heading_num.search(text)
+        # First heading must be anchored at start
+        first_match = first_heading.search(text)
         if not first_match:
             result.append(block)
             continue
         after_first = first_match.end()
-        second_match = heading_num.search(text, after_first)
+        second_match = second_heading.search(text, after_first)
         if not second_match:
             result.append(block)
             continue

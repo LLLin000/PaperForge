@@ -1,0 +1,13 @@
+{
+  "paper": "CHILQ4KJ",
+  "block": "p6 b12",
+  "producer": "paperforge/worker/ocr_document.py::_split_merged_heading_blocks",
+  "old_text": "3.4. Modulation of Piezo 1-Mediated  $ Ca^{2+} $ Influx into SCP-",
+  "old_sha256": "774d693b6b990facf11a95ab6219a4acdfeef0a442fac3884f3ffc656b538a07",
+  "new_text": "3.4. Modulation of Piezo 1-Mediated  $ Ca^{2+} $ Influx into SCP-1 Cells by Small Chemicals",
+  "new_sha256": "4d258fe0f47740d69d041ad8502feacc37e8e3fa22daf56f16e960f91bead1a5",
+  "rebuild_vault": "isolated temp vault (see .tmpvault.txt; not committed)",
+  "rebuild_result": "ok",
+  "test_command": "python -m pytest tests/test_ocr_document.py -q",
+  "test_result": "171 passed in 0.75s (4 new focused tests included)"
+}

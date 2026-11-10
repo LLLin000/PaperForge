@@ -2,23 +2,24 @@
 
 ## Decision
 
-**R2f text-fidelity gate: 792 PASS / 1 HOLD.** Historical R2d (793/793 pass)
+**R2f text-fidelity gate: 793 PASS / 0 HOLD.** Historical R2d (793/793 pass)
 is preserved, but it used an over-broad `format_only` rule and key+class
 waivers. R2e/R2f replace both:
 
-- 91 affected papers re-audited: **53 PASS / 38 HOLD**.
-- R2f resolves 30 fulltext-only papers by paragraph attribution: moved blocks,
-  figure inner text, table-caption Markdown, or page-marker noise.
-- Four block-change papers are cleared as formatting: `IH6K34R9` is a
-  legitimate heading merge; `8M2YFJAX`, `CPQ47TBV`, `QPT4IGLD` are
-  false-positive splits with both fragments retained.
-- **Only `CHILQ4KJ` remains HOLD.** Its headings are semantically truncated by
-  `_split_merged_heading_blocks` (`ocr_document.py:3524`); the producer regex
-  must be fixed before it can be cleared.
+- 91 affected papers re-audited: 53 PASS / 38 HOLD.
+- 30 fulltext-only papers resolved by paragraph attribution: moved blocks,
+  figure inner text, table-caption Markdown, page-marker noise.
+- 4 block-change papers cleared as formatting: `IH6K34R9` legitimate merge;
+  `8M2YFJAX`/`CPQ47TBV`/`QPT4IGLD` false-positive metadata splits with both
+  fragments retained.
+- `CHILQ4KJ` cleared after fixing `_split_merged_heading_blocks`
+  (`ocr_document.py:3524`): first heading anchored, second heading requires a
+  dotted numeric heading. The 9 affected heading papers were re-audited with
+  0 text changes; `CHILQ4KJ` revalidates with 0 errors.
 - Waivers are hash-bound and fail-closed: all four SHA-256 fields, `verdict`,
   `evidence`, and `block_changes` are required; an empty shell is rejected.
-- Combined revised gate: **792 PASS / 1 HOLD**. Migration eligibility overlay:
-  **787 READY**, 1 `TEXT_FIDELITY_HOLD` (`CHILQ4KJ`).
+- Combined text gate: **793 PASS / 0 HOLD**. Migration eligibility overlay:
+  **788 READY**, 0 `TEXT_FIDELITY_HOLD`.
 - R2a JSON diagnostic fix, R2b block audit, R2c asset audit, Plan parity, source
   integrity and idempotence remain valid.
 
@@ -126,20 +127,22 @@ Evidence: `docs/evidence/r2-audit/content-r2e.json`,
 `docs/evidence/r2-audit/waivers-r2e.json`,
 `docs/evidence/r2-audit/final-summary-r2e.json`.
 
-## R2f — HOLD attribution
+## R2f — HOLD attribution and heading fix
 
 - 30 fulltext-only papers: every suspected paragraph attributed to
   `moved_to_block`, `moved_to_figure_inner_text`, `table_caption_markdown`,
   `suffix_moved`, `non_body_old`, or `page_marker_noise`; 0 unresolved.
-- 5 block-change papers: all changes trace to
-  `_split_merged_heading_blocks` (`paperforge/worker/ocr_document.py:3524`),
-  whose `heading_num` regex treats mid-text numbers/dates as headings.
-  `CHILQ4KJ` loses semantic heading text and stays HOLD. `IH6K34R9` is a
-  legitimate merge. `8M2YFJAX`/`CPQ47TBV`/`QPT4IGLD` split metadata but retain
-  both fragments, so they are formatting-only.
+- 5 block-change papers: all trace to
+  `_split_merged_heading_blocks` (`paperforge/worker/ocr_document.py:3524`).
+  The regex treated mid-text quantities/dates as headings. Fixed to require an
+  anchored first heading and a dotted second heading.
+- 4 block-change papers cleared as formatting; `CHILQ4KJ` cleared after the
+  fix and isolated revalidation.
+- Heading-impact audit: 9 papers whose splitter behavior changed; all 9 PASS,
+  0 changed blocks, 0 fulltext loss.
 - Evidence: `r2f-attribution.json`, `r2f-attribution-remaining.json`,
-  `r2f-block-analysis.json`, `r2f-resolution.json`,
-  `final-summary-r2f.json`.
+  `r2f-block-analysis.json`, `r2f-heading-fix.json`,
+  `r2f-heading-impact.json`, `r2f-resolution.json`, `final-summary-r2f.json`.
 
 ## Residual risks
 

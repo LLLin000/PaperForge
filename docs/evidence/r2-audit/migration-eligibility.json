@@ -311,7 +311,7 @@
     "CB9XNMSW": "READY",
     "CEGHBEQ5": "READY",
     "CGGYTEEQ": "READY",
-    "CHILQ4KJ": "TEXT_FIDELITY_HOLD",
+    "CHILQ4KJ": "READY",
     "CIBQ2KHS": "READY",
     "CJAR727H": "READY",
     "CKU5UHFW": "HOLD",
@@ -959,12 +959,9 @@
   "status_counts": {
     "HOLD": 47,
     "M2_REVIEW_REQUIRED": 7,
-    "READY": 787,
-    "REQUIRES_APPROVAL": 110,
-    "TEXT_FIDELITY_HOLD": 1
+    "READY": 788,
+    "REQUIRES_APPROVAL": 110
   },
-  "text_fidelity_hold": [
-    "CHILQ4KJ"
-  ],
+  "text_fidelity_hold": [],
   "note": "TEXT_FIDELITY_HOLD overrides READY; do not migrate these papers until R2f clears them."
 }
