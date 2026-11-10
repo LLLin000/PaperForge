@@ -1,0 +1,2273 @@
+{
+  "first": {
+    "key": "4KMPSDBU",
+    "identity": {
+      "old": {
+        "entries": 8,
+        "unique_ids": 8,
+        "duplicate_extra": 0
+      },
+      "new": {
+        "entries": 8,
+        "unique_ids": 8,
+        "duplicate_extra": 0
+      },
+      "mapping": {
+        "figure_001": "figure_001",
+        "figure_002": "figure_002",
+        "figure_003": "figure_003",
+        "figure_004": "figure_004",
+        "figure_005": "figure_005",
+        "figure_007": "figure_007",
+        "figure_008": "figure_008",
+        "figure_reserved_007": "figure_006"
+      },
+      "renamed": [
+        [
+          "figure_reserved_007",
+          "figure_006"
+        ]
+      ],
+      "unmapped_old_ids": [],
+      "claims_changed": [
+        {
+          "old_id": "figure_007",
+          "old_assets": [
+            "2"
+          ],
+          "new_id": "figure_007",
+          "new_assets": []
+        },
+        {
+          "old_id": "figure_reserved_007",
+          "old_assets": [],
+          "new_id": "figure_006",
+          "new_assets": [
+            "2"
+          ]
+        }
+      ]
+    },
+    "delivery": {
+      "manifest_delivery": {
+        "figure_ids": [
+          "figure_001",
+          "figure_002",
+          "figure_003",
+          "figure_004",
+          "figure_005",
+          "figure_006",
+          "figure_007",
+          "figure_008"
+        ],
+        "missing_assets": [],
+        "missing_renders": []
+      },
+      "old_render_files": 19,
+      "new_render_files": 34,
+      "render_added": [
+        "assets/figures/figure_006.jpg",
+        "assets/orphans/orphan_001.jpg",
+        "assets/orphans/orphan_002.jpg",
+        "assets/orphans/orphan_003.jpg",
+        "assets/orphans/orphan_004.jpg",
+        "assets/orphans/orphan_005.jpg",
+        "assets/orphans/orphan_006.jpg",
+        "assets/orphans/orphan_007.jpg",
+        "render/figures/figure_006.md",
+        "render/figures/orphan_001.md",
+        "render/figures/orphan_002.md",
+        "render/figures/orphan_003.md",
+        "render/figures/orphan_004.md",
+        "render/figures/orphan_005.md",
+        "render/figures/orphan_006.md",
+        "render/figures/orphan_007.md"
+      ],
+      "render_removed": [
+        "render/figures/figure_reserved_007.md"
+      ],
+      "embeds": 10,
+      "embeds_retargeted": 1,
+      "embeds_missing_new_id": []
+    },
+    "tables": {
+      "old_tables": 2,
+      "new_tables": 2,
+      "claim_changes": []
+    },
+    "content": {
+      "old_rows": 303,
+      "new_rows": 303,
+      "role_removed": {},
+      "role_added": {},
+      "old_body_chars": 46124,
+      "new_body_chars": 46124,
+      "old_text_chars": 84158,
+      "new_text_chars": 84158,
+      "old_fulltext_chars": 79062
+    },
+    "new_manifest": {
+      "figures": 8,
+      "tables": 2,
+      "orphans": 7
+    },
+    "new_orphans": 0,
+    "plan": {
+      "schema": "paperforge.migration_plan.v1",
+      "key": "4KMPSDBU",
+      "execution_model": "rebuild+verify: operations are expected artifact effects, not shell mv",
+      "status": "READY",
+      "objects": [
+        {
+          "kind": "figure",
+          "old_id": "figure_001",
+          "new_id": "figure_001",
+          "candidates": [
+            "figure_001"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 4,
+              "legend_block_id": "2",
+              "text": "Fig. 1 Nanomaterials composition, synthesis techniques, and structural properties used in tissue engineering applications",
+              "asset_blocks": [
+                {
+                  "block_id": 1,
+                  "page": 4,
+                  "bbox": [
+                    103,
+                    106,
+                    1086,
+                    691
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "assets/figures/figure_001.jpg",
+            "render/figures/figure_001.md"
+          ],
+          "status": "planned"
+        },
+        {
+          "kind": "figure",
+          "old_id": "figure_002",
+          "new_id": "figure_002",
+          "candidates": [
+            "figure_002"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 6,
+              "legend_block_id": "2",
+              "text": "Fig. 2 Classification of nanoparticles in TE, highlighting synthesis methods, functionalization techniques, and biomedical applications [42]",
+              "asset_blocks": [
+                {
+                  "block_id": 1,
+                  "page": 6,
+                  "bbox": [
+                    105,
+                    114,
+                    1086,
+                    846
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "assets/figures/figure_002.jpg",
+            "render/figures/figure_002.md"
+          ],
+          "status": "planned"
+        },
+        {
+          "kind": "figure",
+          "old_id": "figure_003",
+          "new_id": "figure_003",
+          "candidates": [
+            "figure_003"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 7,
+              "legend_block_id": "2",
+              "text": "Fig. 3 Effect of nanomaterial incorporation on cell proliferation and differentiation across different TE",
+              "asset_blocks": [
+                {
+                  "block_id": 1,
+                  "page": 7,
+                  "bbox": [
+                    103,
+                    108,
+                    1085,
+                    665
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "assets/figures/figure_003.jpg",
+            "render/figures/figure_003.md"
+          ],
+          "status": "planned"
+        },
+        {
+          "kind": "figure",
+          "old_id": "figure_004",
+          "new_id": "figure_004",
+          "candidates": [
+            "figure_004"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 7,
+              "legend_block_id": "4",
+              "text": "Fig. 4 Bone TE strategies using nanomaterial-based scaffolds for enhanced osteointegration and mechanical properties [50]",
+              "asset_blocks": [
+                {
+                  "block_id": 3,
+                  "page": 7,
+                  "bbox": [
+                    102,
+                    778,
+                    1085,
+                    1386
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "assets/figures/figure_004.jpg",
+            "render/figures/figure_004.md"
+          ],
+          "status": "planned"
+        },
+        {
+          "kind": "figure",
+          "old_id": "figure_005",
+          "new_id": "figure_005",
+          "candidates": [
+            "figure_005"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 8,
+              "legend_block_id": "8",
+              "text": "Fig. 5 Cartilage TE process, illustrating scaffold fabrication, nanomaterial integration, and chondrocyte differentiation [54]",
+              "asset_blocks": [
+                {
+                  "block_id": 9,
+                  "page": 8,
+                  "bbox": [
+                    361,
+                    1012,
+                    1091,
+                    1425
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "assets/figures/figure_005.jpg",
+            "render/figures/figure_005.md"
+          ],
+          "status": "planned"
+        },
+        {
+          "kind": "figure",
+          "old_id": "figure_007",
+          "new_id": "figure_007",
+          "candidates": [
+            "figure_007"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 9,
+              "legend_block_id": "3",
+              "text": "Fig. 7 A brief illustration of the significant structures of the human nervous system and its main parts: a brain and blood-brain barrier, b spinal cord cross-section, and c peripheral nerve [62]",
+              "asset_blocks": [
+                {
+                  "block_id": 2,
+                  "page": 9,
+                  "bbox": [
+                    100,
+                    102,
+                    1090,
+                    1232
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "assets/figures/figure_007.jpg",
+            "render/figures/figure_007.md"
+          ],
+          "status": "planned"
+        },
+        {
+          "kind": "figure",
+          "old_id": "figure_008",
+          "new_id": "figure_008",
+          "candidates": [
+            "figure_008"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 10,
+              "legend_block_id": "9",
+              "text": "Fig. 8 Scaffold-based approach for vascular TE, demonstrating endothelialization and nanomaterial-enhanced angiogenesis [65]",
+              "asset_blocks": [
+                {
+                  "block_id": 10,
+                  "page": 10,
+                  "bbox": [
+                    358,
+                    932,
+                    1091,
+                    1434
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "assets/figures/figure_008.jpg",
+            "render/figures/figure_008.md"
+          ],
+          "status": "planned"
+        },
+        {
+          "kind": "figure",
+          "old_id": "figure_reserved_007",
+          "new_id": "figure_006",
+          "candidates": [
+            "figure_006"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 9,
+              "legend_block_id": "1",
+              "text": "Fig. 6 Developmental phases of skin TE, focusing on nanomaterial-based scaffolds for wound healing and regeneration [58]",
+              "asset_blocks": []
+            }
+          ],
+          "old_files": [
+            "render/figures/figure_reserved_007.md"
+          ],
+          "status": "planned"
+        }
+      ],
+      "operations": [
+        {
+          "op": "materialize_objects",
+          "kind": "paper",
+          "object_uid": "",
+          "old_path": "",
+          "new_path": "",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "rebuild writes objects before inventory/fulltext",
+          "depends_on": [],
+          "op_id": "materialize-objects"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_001",
+          "old_id": "figure_001",
+          "old_path": "assets/figures/figure_001.jpg",
+          "new_path": "assets/figures/figure_001.jpg",
+          "old_sha256": "6c99cbc498b373bfa967577eca02c7ba02306976926b86dfc96308d9220e35ef",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_001",
+          "old_id": "figure_001",
+          "old_path": "render/figures/figure_001.md",
+          "new_path": "render/figures/figure_001.md",
+          "old_sha256": "10e36126f224f7548a5198359eade252af83f65d6b9b93538d5dd964b9af3667",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_002",
+          "old_id": "figure_002",
+          "old_path": "assets/figures/figure_002.jpg",
+          "new_path": "assets/figures/figure_002.jpg",
+          "old_sha256": "4be089d36f0738344ebd369121b01ae2af959123f9f27d7790f090d3b92c79c7",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_002",
+          "old_id": "figure_002",
+          "old_path": "render/figures/figure_002.md",
+          "new_path": "render/figures/figure_002.md",
+          "old_sha256": "e37f71c3b40ac6afa68f63b4e706cab9c0eb220ca4e33586ee188ae8a3852ca5",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_003",
+          "old_id": "figure_003",
+          "old_path": "assets/figures/figure_003.jpg",
+          "new_path": "assets/figures/figure_003.jpg",
+          "old_sha256": "395f6b09a299c2fa71071981ef416a6b8337b5780ce7d5d7dfe34c0aeaa8a0ad",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_003",
+          "old_id": "figure_003",
+          "old_path": "render/figures/figure_003.md",
+          "new_path": "render/figures/figure_003.md",
+          "old_sha256": "563b17f16a496aa6e46a76df83c2f8d023da77c8bc7121f0d1a87eed92261a72",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_004",
+          "old_id": "figure_004",
+          "old_path": "assets/figures/figure_004.jpg",
+          "new_path": "assets/figures/figure_004.jpg",
+          "old_sha256": "24bb99798c4828cb2a54eae2514971c5e38444f84416ef92da6b90bd12822f71",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_004",
+          "old_id": "figure_004",
+          "old_path": "render/figures/figure_004.md",
+          "new_path": "render/figures/figure_004.md",
+          "old_sha256": "3b9bf5b0b5c96cc60ec90415872fc3bbeb9f1e745da7c81f597961c143c7e11a",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_005",
+          "old_id": "figure_005",
+          "old_path": "assets/figures/figure_005.jpg",
+          "new_path": "assets/figures/figure_005.jpg",
+          "old_sha256": "9438c534adf7f608df4103248bc0fe0a8b476c52b987733f83b0cab67dd5fb4e",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_005",
+          "old_id": "figure_005",
+          "old_path": "render/figures/figure_005.md",
+          "new_path": "render/figures/figure_005.md",
+          "old_sha256": "12ee423f8f2e4905b38ac38a8c25532d5cc366d70bc041b5cfc42cb2e0a0675f",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_007",
+          "old_id": "figure_007",
+          "old_path": "assets/figures/figure_007.jpg",
+          "new_path": "assets/figures/figure_007.jpg",
+          "old_sha256": "ac8ae1c7d909890cc1d47a892154063a5f29172714ede497a5ff6a2b00bb935c",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_007",
+          "old_id": "figure_007",
+          "old_path": "render/figures/figure_007.md",
+          "new_path": "render/figures/figure_007.md",
+          "old_sha256": "a81debb2536106159c2f665ac33b1a9dbe820fbe2ef34c67e158b2acb8240f70",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_008",
+          "old_id": "figure_008",
+          "old_path": "assets/figures/figure_008.jpg",
+          "new_path": "assets/figures/figure_008.jpg",
+          "old_sha256": "2057d226b8f89e846f2fdc382159041f49c7258a9acd8b4c8509dffcaa1a3bb4",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_008",
+          "old_id": "figure_008",
+          "old_path": "render/figures/figure_008.md",
+          "new_path": "render/figures/figure_008.md",
+          "old_sha256": "d014686b4d8dfdaa76e5cf63635533453b9404daea445764d1ab8b0d99aa2bfe",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "rename",
+          "kind": "figure",
+          "object_uid": "figure_006",
+          "old_id": "figure_reserved_007",
+          "old_path": "render/figures/figure_reserved_007.md",
+          "new_path": "render/figures/figure_006.md",
+          "old_sha256": "183ab6e7b8409f7bedd0e174fb85d877fa31c26aca299d0e247beef572d17893",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "table",
+          "object_uid": "table_001",
+          "old_id": "table_001",
+          "old_path": "assets/tables/table_001.jpg",
+          "new_path": "assets/tables/table_001.jpg",
+          "old_sha256": "4f5dd998332df3347934eee08635b3d8d8f701add798e5c2cb914e17eac734fe",
+          "status": "planned",
+          "reason": "table identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "table",
+          "object_uid": "table_001",
+          "old_id": "table_001",
+          "old_path": "render/tables/table_001.md",
+          "new_path": "render/tables/table_001.md",
+          "old_sha256": "3c5676fce541ee761b09165595f84711ca9156414238865d14e90b8448e87c53",
+          "status": "planned",
+          "reason": "table identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "table",
+          "object_uid": "table_002",
+          "old_id": "table_002",
+          "old_path": "assets/tables/table_002.jpg",
+          "new_path": "assets/tables/table_002.jpg",
+          "old_sha256": "b6e2103865fdcd08618e26a69391f2900713d6a23168eb7132d6a7d5ab00958b",
+          "status": "planned",
+          "reason": "table identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "table",
+          "object_uid": "table_002",
+          "old_id": "table_002",
+          "old_path": "render/tables/table_002.md",
+          "new_path": "render/tables/table_002.md",
+          "old_sha256": "8f849883dd4fa1e2bab8ba07b882836900ec9512bb2b829d090c0c0470c6cfa3",
+          "status": "planned",
+          "reason": "table identity mapping"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "figure_006",
+          "old_path": "",
+          "new_path": "assets/figures/figure_006.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_001",
+          "old_path": "",
+          "new_path": "render/figures/orphan_001.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_001",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_001.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_002",
+          "old_path": "",
+          "new_path": "render/figures/orphan_002.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_002",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_002.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_003",
+          "old_path": "",
+          "new_path": "render/figures/orphan_003.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_003",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_003.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_004",
+          "old_path": "",
+          "new_path": "render/figures/orphan_004.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_004",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_004.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_005",
+          "old_path": "",
+          "new_path": "render/figures/orphan_005.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_005",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_005.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_006",
+          "old_path": "",
+          "new_path": "render/figures/orphan_006.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_006",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_006.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_007",
+          "old_path": "",
+          "new_path": "render/figures/orphan_007.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_007",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_007.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_001",
+          "old_path": "render/figures/figure_001.md",
+          "new_path": "render/figures/figure_001.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            103
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "table_001",
+          "old_path": "render/tables/table_001.md",
+          "new_path": "render/tables/table_001.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            117
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "table_002",
+          "old_path": "render/tables/table_002.md",
+          "new_path": "render/tables/table_002.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            127
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_002",
+          "old_path": "render/figures/figure_002.md",
+          "new_path": "render/figures/figure_002.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            129
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_004",
+          "old_path": "render/figures/figure_004.md",
+          "new_path": "render/figures/figure_004.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            133
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_003",
+          "old_path": "render/figures/figure_003.md",
+          "new_path": "render/figures/figure_003.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            135
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_005",
+          "old_path": "render/figures/figure_005.md",
+          "new_path": "render/figures/figure_005.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            153
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_007",
+          "old_path": "render/figures/figure_007.md",
+          "new_path": "render/figures/figure_007.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            159
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_006",
+          "old_path": "render/figures/figure_reserved_007.md",
+          "new_path": "render/figures/figure_006.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            161
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_008",
+          "old_path": "render/figures/figure_008.md",
+          "new_path": "render/figures/figure_008.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            179
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "rewrite",
+          "kind": "inventory",
+          "object_uid": "",
+          "old_path": "structure/blocks.structured.jsonl",
+          "new_path": "structure/blocks.structured.jsonl",
+          "old_sha256": "5b30928c728dd2b465d53ce342d23642460a514995382e99ae7706e0f5b16b27",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "inventory",
+          "object_uid": "",
+          "old_path": "structure/figure_inventory.json",
+          "new_path": "structure/figure_inventory.json",
+          "old_sha256": "d541cec29f9865c0cff66c86d1f25e9973cd16571b38f4dcf790d6af2fca3770",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "inventory",
+          "object_uid": "",
+          "old_path": "structure/table_inventory.json",
+          "new_path": "structure/table_inventory.json",
+          "old_sha256": "00543d13fe32c1954d7a6799968483c54dc48404f1ef25a121f02143507f6906",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "inventory",
+          "object_uid": "",
+          "old_path": "structure/document_structure.json",
+          "new_path": "structure/document_structure.json",
+          "old_sha256": "ee7267a1b06478ad6c93238b25150a1268aee69cad0f55cdb79977b093f951c1",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "fulltext",
+          "object_uid": "",
+          "old_path": "fulltext.md",
+          "new_path": "fulltext.md",
+          "old_sha256": "fb493f83a6727b4f390dd696215738ea234634747a01d02ae10a64d263edbb00",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "fulltext",
+          "object_uid": "",
+          "old_path": "render/fulltext.md",
+          "new_path": "render/fulltext.md",
+          "old_sha256": "a82966c658b657fc9bc165bc55a94fdee662bdb743d6aaec18904348655ac004",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        }
+      ],
+      "embeds": [
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_001.md",
+          "object_id": "figure_001",
+          "line": 103,
+          "candidates": [
+            "figure_001"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_001.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "tables",
+          "target": "render/tables/table_001.md",
+          "object_id": "table_001",
+          "line": 117,
+          "candidates": [
+            "table_001"
+          ],
+          "status": "planned",
+          "new_target": "render/tables/table_001.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "tables",
+          "target": "render/tables/table_002.md",
+          "object_id": "table_002",
+          "line": 127,
+          "candidates": [
+            "table_002"
+          ],
+          "status": "planned",
+          "new_target": "render/tables/table_002.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_002.md",
+          "object_id": "figure_002",
+          "line": 129,
+          "candidates": [
+            "figure_002"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_002.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_004.md",
+          "object_id": "figure_004",
+          "line": 133,
+          "candidates": [
+            "figure_004"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_004.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_003.md",
+          "object_id": "figure_003",
+          "line": 135,
+          "candidates": [
+            "figure_003"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_003.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_005.md",
+          "object_id": "figure_005",
+          "line": 153,
+          "candidates": [
+            "figure_005"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_005.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_007.md",
+          "object_id": "figure_007",
+          "line": 159,
+          "candidates": [
+            "figure_007"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_007.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_reserved_007.md",
+          "object_id": "figure_reserved_007",
+          "line": 161,
+          "candidates": [
+            "figure_006"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_006.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_008.md",
+          "object_id": "figure_008",
+          "line": 179,
+          "candidates": [
+            "figure_008"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_008.md",
+          "reason": "mapped"
+        }
+      ],
+      "holds": [],
+      "collisions": [],
+      "dangling": [],
+      "backup": {
+        "root": "backups/4KMPSDBU/",
+        "files": [
+          {
+            "path": "fulltext.md",
+            "sha256": "fb493f83a6727b4f390dd696215738ea234634747a01d02ae10a64d263edbb00",
+            "bytes": 79100
+          },
+          {
+            "path": "render/figures/figure_reserved_007.md",
+            "sha256": "183ab6e7b8409f7bedd0e174fb85d877fa31c26aca299d0e247beef572d17893",
+            "bytes": 168
+          },
+          {
+            "path": "render/fulltext.md",
+            "sha256": "a82966c658b657fc9bc165bc55a94fdee662bdb743d6aaec18904348655ac004",
+            "bytes": 79617
+          },
+          {
+            "path": "structure/blocks.structured.jsonl",
+            "sha256": "5b30928c728dd2b465d53ce342d23642460a514995382e99ae7706e0f5b16b27",
+            "bytes": 982540
+          },
+          {
+            "path": "structure/document_structure.json",
+            "sha256": "ee7267a1b06478ad6c93238b25150a1268aee69cad0f55cdb79977b093f951c1",
+            "bytes": 603257
+          },
+          {
+            "path": "structure/figure_inventory.json",
+            "sha256": "d541cec29f9865c0cff66c86d1f25e9973cd16571b38f4dcf790d6af2fca3770",
+            "bytes": 41292
+          },
+          {
+            "path": "structure/table_inventory.json",
+            "sha256": "00543d13fe32c1954d7a6799968483c54dc48404f1ef25a121f02143507f6906",
+            "bytes": 8485
+          }
+        ],
+        "note": "copy every listed file before writing; restore verifies sha256"
+      },
+      "rollback": {
+        "method": "restore the backup tree, then verify every sha256",
+        "atomicity": "filesystem effects are not atomic with SQLite; journal each step"
+      }
+    }
+  },
+  "second": {
+    "key": "4KMPSDBU",
+    "identity": {
+      "old": {
+        "entries": 8,
+        "unique_ids": 8,
+        "duplicate_extra": 0
+      },
+      "new": {
+        "entries": 8,
+        "unique_ids": 8,
+        "duplicate_extra": 0
+      },
+      "mapping": {
+        "figure_001": "figure_001",
+        "figure_002": "figure_002",
+        "figure_003": "figure_003",
+        "figure_004": "figure_004",
+        "figure_005": "figure_005",
+        "figure_007": "figure_007",
+        "figure_008": "figure_008",
+        "figure_reserved_007": "figure_006"
+      },
+      "renamed": [
+        [
+          "figure_reserved_007",
+          "figure_006"
+        ]
+      ],
+      "unmapped_old_ids": [],
+      "claims_changed": [
+        {
+          "old_id": "figure_007",
+          "old_assets": [
+            "2"
+          ],
+          "new_id": "figure_007",
+          "new_assets": []
+        },
+        {
+          "old_id": "figure_reserved_007",
+          "old_assets": [],
+          "new_id": "figure_006",
+          "new_assets": [
+            "2"
+          ]
+        }
+      ]
+    },
+    "delivery": {
+      "manifest_delivery": {
+        "figure_ids": [
+          "figure_001",
+          "figure_002",
+          "figure_003",
+          "figure_004",
+          "figure_005",
+          "figure_006",
+          "figure_007",
+          "figure_008"
+        ],
+        "missing_assets": [],
+        "missing_renders": []
+      },
+      "old_render_files": 19,
+      "new_render_files": 34,
+      "render_added": [
+        "assets/figures/figure_006.jpg",
+        "assets/orphans/orphan_001.jpg",
+        "assets/orphans/orphan_002.jpg",
+        "assets/orphans/orphan_003.jpg",
+        "assets/orphans/orphan_004.jpg",
+        "assets/orphans/orphan_005.jpg",
+        "assets/orphans/orphan_006.jpg",
+        "assets/orphans/orphan_007.jpg",
+        "render/figures/figure_006.md",
+        "render/figures/orphan_001.md",
+        "render/figures/orphan_002.md",
+        "render/figures/orphan_003.md",
+        "render/figures/orphan_004.md",
+        "render/figures/orphan_005.md",
+        "render/figures/orphan_006.md",
+        "render/figures/orphan_007.md"
+      ],
+      "render_removed": [
+        "render/figures/figure_reserved_007.md"
+      ],
+      "embeds": 10,
+      "embeds_retargeted": 1,
+      "embeds_missing_new_id": []
+    },
+    "tables": {
+      "old_tables": 2,
+      "new_tables": 2,
+      "claim_changes": []
+    },
+    "content": {
+      "old_rows": 303,
+      "new_rows": 303,
+      "role_removed": {},
+      "role_added": {},
+      "old_body_chars": 46124,
+      "new_body_chars": 46124,
+      "old_text_chars": 84158,
+      "new_text_chars": 84158,
+      "old_fulltext_chars": 79062
+    },
+    "new_manifest": {
+      "figures": 8,
+      "tables": 2,
+      "orphans": 7
+    },
+    "new_orphans": 0,
+    "plan": {
+      "schema": "paperforge.migration_plan.v1",
+      "key": "4KMPSDBU",
+      "execution_model": "rebuild+verify: operations are expected artifact effects, not shell mv",
+      "status": "READY",
+      "objects": [
+        {
+          "kind": "figure",
+          "old_id": "figure_001",
+          "new_id": "figure_001",
+          "candidates": [
+            "figure_001"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 4,
+              "legend_block_id": "2",
+              "text": "Fig. 1 Nanomaterials composition, synthesis techniques, and structural properties used in tissue engineering applications",
+              "asset_blocks": [
+                {
+                  "block_id": 1,
+                  "page": 4,
+                  "bbox": [
+                    103,
+                    106,
+                    1086,
+                    691
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "assets/figures/figure_001.jpg",
+            "render/figures/figure_001.md"
+          ],
+          "status": "planned"
+        },
+        {
+          "kind": "figure",
+          "old_id": "figure_002",
+          "new_id": "figure_002",
+          "candidates": [
+            "figure_002"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 6,
+              "legend_block_id": "2",
+              "text": "Fig. 2 Classification of nanoparticles in TE, highlighting synthesis methods, functionalization techniques, and biomedical applications [42]",
+              "asset_blocks": [
+                {
+                  "block_id": 1,
+                  "page": 6,
+                  "bbox": [
+                    105,
+                    114,
+                    1086,
+                    846
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "assets/figures/figure_002.jpg",
+            "render/figures/figure_002.md"
+          ],
+          "status": "planned"
+        },
+        {
+          "kind": "figure",
+          "old_id": "figure_003",
+          "new_id": "figure_003",
+          "candidates": [
+            "figure_003"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 7,
+              "legend_block_id": "2",
+              "text": "Fig. 3 Effect of nanomaterial incorporation on cell proliferation and differentiation across different TE",
+              "asset_blocks": [
+                {
+                  "block_id": 1,
+                  "page": 7,
+                  "bbox": [
+                    103,
+                    108,
+                    1085,
+                    665
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "assets/figures/figure_003.jpg",
+            "render/figures/figure_003.md"
+          ],
+          "status": "planned"
+        },
+        {
+          "kind": "figure",
+          "old_id": "figure_004",
+          "new_id": "figure_004",
+          "candidates": [
+            "figure_004"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 7,
+              "legend_block_id": "4",
+              "text": "Fig. 4 Bone TE strategies using nanomaterial-based scaffolds for enhanced osteointegration and mechanical properties [50]",
+              "asset_blocks": [
+                {
+                  "block_id": 3,
+                  "page": 7,
+                  "bbox": [
+                    102,
+                    778,
+                    1085,
+                    1386
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "assets/figures/figure_004.jpg",
+            "render/figures/figure_004.md"
+          ],
+          "status": "planned"
+        },
+        {
+          "kind": "figure",
+          "old_id": "figure_005",
+          "new_id": "figure_005",
+          "candidates": [
+            "figure_005"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 8,
+              "legend_block_id": "8",
+              "text": "Fig. 5 Cartilage TE process, illustrating scaffold fabrication, nanomaterial integration, and chondrocyte differentiation [54]",
+              "asset_blocks": [
+                {
+                  "block_id": 9,
+                  "page": 8,
+                  "bbox": [
+                    361,
+                    1012,
+                    1091,
+                    1425
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "assets/figures/figure_005.jpg",
+            "render/figures/figure_005.md"
+          ],
+          "status": "planned"
+        },
+        {
+          "kind": "figure",
+          "old_id": "figure_007",
+          "new_id": "figure_007",
+          "candidates": [
+            "figure_007"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 9,
+              "legend_block_id": "3",
+              "text": "Fig. 7 A brief illustration of the significant structures of the human nervous system and its main parts: a brain and blood-brain barrier, b spinal cord cross-section, and c peripheral nerve [62]",
+              "asset_blocks": [
+                {
+                  "block_id": 2,
+                  "page": 9,
+                  "bbox": [
+                    100,
+                    102,
+                    1090,
+                    1232
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "assets/figures/figure_007.jpg",
+            "render/figures/figure_007.md"
+          ],
+          "status": "planned"
+        },
+        {
+          "kind": "figure",
+          "old_id": "figure_008",
+          "new_id": "figure_008",
+          "candidates": [
+            "figure_008"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 10,
+              "legend_block_id": "9",
+              "text": "Fig. 8 Scaffold-based approach for vascular TE, demonstrating endothelialization and nanomaterial-enhanced angiogenesis [65]",
+              "asset_blocks": [
+                {
+                  "block_id": 10,
+                  "page": 10,
+                  "bbox": [
+                    358,
+                    932,
+                    1091,
+                    1434
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "assets/figures/figure_008.jpg",
+            "render/figures/figure_008.md"
+          ],
+          "status": "planned"
+        },
+        {
+          "kind": "figure",
+          "old_id": "figure_reserved_007",
+          "new_id": "figure_006",
+          "candidates": [
+            "figure_006"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 9,
+              "legend_block_id": "1",
+              "text": "Fig. 6 Developmental phases of skin TE, focusing on nanomaterial-based scaffolds for wound healing and regeneration [58]",
+              "asset_blocks": []
+            }
+          ],
+          "old_files": [
+            "render/figures/figure_reserved_007.md"
+          ],
+          "status": "planned"
+        }
+      ],
+      "operations": [
+        {
+          "op": "materialize_objects",
+          "kind": "paper",
+          "object_uid": "",
+          "old_path": "",
+          "new_path": "",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "rebuild writes objects before inventory/fulltext",
+          "depends_on": [],
+          "op_id": "materialize-objects"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_001",
+          "old_id": "figure_001",
+          "old_path": "assets/figures/figure_001.jpg",
+          "new_path": "assets/figures/figure_001.jpg",
+          "old_sha256": "6c99cbc498b373bfa967577eca02c7ba02306976926b86dfc96308d9220e35ef",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_001",
+          "old_id": "figure_001",
+          "old_path": "render/figures/figure_001.md",
+          "new_path": "render/figures/figure_001.md",
+          "old_sha256": "10e36126f224f7548a5198359eade252af83f65d6b9b93538d5dd964b9af3667",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_002",
+          "old_id": "figure_002",
+          "old_path": "assets/figures/figure_002.jpg",
+          "new_path": "assets/figures/figure_002.jpg",
+          "old_sha256": "4be089d36f0738344ebd369121b01ae2af959123f9f27d7790f090d3b92c79c7",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_002",
+          "old_id": "figure_002",
+          "old_path": "render/figures/figure_002.md",
+          "new_path": "render/figures/figure_002.md",
+          "old_sha256": "e37f71c3b40ac6afa68f63b4e706cab9c0eb220ca4e33586ee188ae8a3852ca5",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_003",
+          "old_id": "figure_003",
+          "old_path": "assets/figures/figure_003.jpg",
+          "new_path": "assets/figures/figure_003.jpg",
+          "old_sha256": "395f6b09a299c2fa71071981ef416a6b8337b5780ce7d5d7dfe34c0aeaa8a0ad",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_003",
+          "old_id": "figure_003",
+          "old_path": "render/figures/figure_003.md",
+          "new_path": "render/figures/figure_003.md",
+          "old_sha256": "563b17f16a496aa6e46a76df83c2f8d023da77c8bc7121f0d1a87eed92261a72",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_004",
+          "old_id": "figure_004",
+          "old_path": "assets/figures/figure_004.jpg",
+          "new_path": "assets/figures/figure_004.jpg",
+          "old_sha256": "24bb99798c4828cb2a54eae2514971c5e38444f84416ef92da6b90bd12822f71",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_004",
+          "old_id": "figure_004",
+          "old_path": "render/figures/figure_004.md",
+          "new_path": "render/figures/figure_004.md",
+          "old_sha256": "3b9bf5b0b5c96cc60ec90415872fc3bbeb9f1e745da7c81f597961c143c7e11a",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_005",
+          "old_id": "figure_005",
+          "old_path": "assets/figures/figure_005.jpg",
+          "new_path": "assets/figures/figure_005.jpg",
+          "old_sha256": "9438c534adf7f608df4103248bc0fe0a8b476c52b987733f83b0cab67dd5fb4e",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_005",
+          "old_id": "figure_005",
+          "old_path": "render/figures/figure_005.md",
+          "new_path": "render/figures/figure_005.md",
+          "old_sha256": "12ee423f8f2e4905b38ac38a8c25532d5cc366d70bc041b5cfc42cb2e0a0675f",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_007",
+          "old_id": "figure_007",
+          "old_path": "assets/figures/figure_007.jpg",
+          "new_path": "assets/figures/figure_007.jpg",
+          "old_sha256": "ac8ae1c7d909890cc1d47a892154063a5f29172714ede497a5ff6a2b00bb935c",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_007",
+          "old_id": "figure_007",
+          "old_path": "render/figures/figure_007.md",
+          "new_path": "render/figures/figure_007.md",
+          "old_sha256": "a81debb2536106159c2f665ac33b1a9dbe820fbe2ef34c67e158b2acb8240f70",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_008",
+          "old_id": "figure_008",
+          "old_path": "assets/figures/figure_008.jpg",
+          "new_path": "assets/figures/figure_008.jpg",
+          "old_sha256": "2057d226b8f89e846f2fdc382159041f49c7258a9acd8b4c8509dffcaa1a3bb4",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_008",
+          "old_id": "figure_008",
+          "old_path": "render/figures/figure_008.md",
+          "new_path": "render/figures/figure_008.md",
+          "old_sha256": "d014686b4d8dfdaa76e5cf63635533453b9404daea445764d1ab8b0d99aa2bfe",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "rename",
+          "kind": "figure",
+          "object_uid": "figure_006",
+          "old_id": "figure_reserved_007",
+          "old_path": "render/figures/figure_reserved_007.md",
+          "new_path": "render/figures/figure_006.md",
+          "old_sha256": "183ab6e7b8409f7bedd0e174fb85d877fa31c26aca299d0e247beef572d17893",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "table",
+          "object_uid": "table_001",
+          "old_id": "table_001",
+          "old_path": "assets/tables/table_001.jpg",
+          "new_path": "assets/tables/table_001.jpg",
+          "old_sha256": "4f5dd998332df3347934eee08635b3d8d8f701add798e5c2cb914e17eac734fe",
+          "status": "planned",
+          "reason": "table identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "table",
+          "object_uid": "table_001",
+          "old_id": "table_001",
+          "old_path": "render/tables/table_001.md",
+          "new_path": "render/tables/table_001.md",
+          "old_sha256": "3c5676fce541ee761b09165595f84711ca9156414238865d14e90b8448e87c53",
+          "status": "planned",
+          "reason": "table identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "table",
+          "object_uid": "table_002",
+          "old_id": "table_002",
+          "old_path": "assets/tables/table_002.jpg",
+          "new_path": "assets/tables/table_002.jpg",
+          "old_sha256": "b6e2103865fdcd08618e26a69391f2900713d6a23168eb7132d6a7d5ab00958b",
+          "status": "planned",
+          "reason": "table identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "table",
+          "object_uid": "table_002",
+          "old_id": "table_002",
+          "old_path": "render/tables/table_002.md",
+          "new_path": "render/tables/table_002.md",
+          "old_sha256": "8f849883dd4fa1e2bab8ba07b882836900ec9512bb2b829d090c0c0470c6cfa3",
+          "status": "planned",
+          "reason": "table identity mapping"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "figure_006",
+          "old_path": "",
+          "new_path": "assets/figures/figure_006.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_001",
+          "old_path": "",
+          "new_path": "render/figures/orphan_001.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_001",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_001.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_002",
+          "old_path": "",
+          "new_path": "render/figures/orphan_002.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_002",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_002.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_003",
+          "old_path": "",
+          "new_path": "render/figures/orphan_003.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_003",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_003.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_004",
+          "old_path": "",
+          "new_path": "render/figures/orphan_004.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_004",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_004.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_005",
+          "old_path": "",
+          "new_path": "render/figures/orphan_005.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_005",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_005.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_006",
+          "old_path": "",
+          "new_path": "render/figures/orphan_006.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_006",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_006.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "orphan_007",
+          "old_path": "",
+          "new_path": "render/figures/orphan_007.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_007",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_007.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_001",
+          "old_path": "render/figures/figure_001.md",
+          "new_path": "render/figures/figure_001.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            103
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "table_001",
+          "old_path": "render/tables/table_001.md",
+          "new_path": "render/tables/table_001.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            117
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "table_002",
+          "old_path": "render/tables/table_002.md",
+          "new_path": "render/tables/table_002.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            127
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_002",
+          "old_path": "render/figures/figure_002.md",
+          "new_path": "render/figures/figure_002.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            129
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_004",
+          "old_path": "render/figures/figure_004.md",
+          "new_path": "render/figures/figure_004.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            133
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_003",
+          "old_path": "render/figures/figure_003.md",
+          "new_path": "render/figures/figure_003.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            135
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_005",
+          "old_path": "render/figures/figure_005.md",
+          "new_path": "render/figures/figure_005.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            153
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_007",
+          "old_path": "render/figures/figure_007.md",
+          "new_path": "render/figures/figure_007.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            159
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_006",
+          "old_path": "render/figures/figure_reserved_007.md",
+          "new_path": "render/figures/figure_006.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            161
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_008",
+          "old_path": "render/figures/figure_008.md",
+          "new_path": "render/figures/figure_008.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            179
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "rewrite",
+          "kind": "inventory",
+          "object_uid": "",
+          "old_path": "structure/blocks.structured.jsonl",
+          "new_path": "structure/blocks.structured.jsonl",
+          "old_sha256": "5b30928c728dd2b465d53ce342d23642460a514995382e99ae7706e0f5b16b27",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "inventory",
+          "object_uid": "",
+          "old_path": "structure/figure_inventory.json",
+          "new_path": "structure/figure_inventory.json",
+          "old_sha256": "d541cec29f9865c0cff66c86d1f25e9973cd16571b38f4dcf790d6af2fca3770",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "inventory",
+          "object_uid": "",
+          "old_path": "structure/table_inventory.json",
+          "new_path": "structure/table_inventory.json",
+          "old_sha256": "00543d13fe32c1954d7a6799968483c54dc48404f1ef25a121f02143507f6906",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "inventory",
+          "object_uid": "",
+          "old_path": "structure/document_structure.json",
+          "new_path": "structure/document_structure.json",
+          "old_sha256": "ee7267a1b06478ad6c93238b25150a1268aee69cad0f55cdb79977b093f951c1",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "fulltext",
+          "object_uid": "",
+          "old_path": "fulltext.md",
+          "new_path": "fulltext.md",
+          "old_sha256": "fb493f83a6727b4f390dd696215738ea234634747a01d02ae10a64d263edbb00",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "fulltext",
+          "object_uid": "",
+          "old_path": "render/fulltext.md",
+          "new_path": "render/fulltext.md",
+          "old_sha256": "a82966c658b657fc9bc165bc55a94fdee662bdb743d6aaec18904348655ac004",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        }
+      ],
+      "embeds": [
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_001.md",
+          "object_id": "figure_001",
+          "line": 103,
+          "candidates": [
+            "figure_001"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_001.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "tables",
+          "target": "render/tables/table_001.md",
+          "object_id": "table_001",
+          "line": 117,
+          "candidates": [
+            "table_001"
+          ],
+          "status": "planned",
+          "new_target": "render/tables/table_001.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "tables",
+          "target": "render/tables/table_002.md",
+          "object_id": "table_002",
+          "line": 127,
+          "candidates": [
+            "table_002"
+          ],
+          "status": "planned",
+          "new_target": "render/tables/table_002.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_002.md",
+          "object_id": "figure_002",
+          "line": 129,
+          "candidates": [
+            "figure_002"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_002.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_004.md",
+          "object_id": "figure_004",
+          "line": 133,
+          "candidates": [
+            "figure_004"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_004.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_003.md",
+          "object_id": "figure_003",
+          "line": 135,
+          "candidates": [
+            "figure_003"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_003.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_005.md",
+          "object_id": "figure_005",
+          "line": 153,
+          "candidates": [
+            "figure_005"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_005.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_007.md",
+          "object_id": "figure_007",
+          "line": 159,
+          "candidates": [
+            "figure_007"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_007.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_reserved_007.md",
+          "object_id": "figure_reserved_007",
+          "line": 161,
+          "candidates": [
+            "figure_006"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_006.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_008.md",
+          "object_id": "figure_008",
+          "line": 179,
+          "candidates": [
+            "figure_008"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_008.md",
+          "reason": "mapped"
+        }
+      ],
+      "holds": [],
+      "collisions": [],
+      "dangling": [],
+      "backup": {
+        "root": "backups/4KMPSDBU/",
+        "files": [
+          {
+            "path": "fulltext.md",
+            "sha256": "fb493f83a6727b4f390dd696215738ea234634747a01d02ae10a64d263edbb00",
+            "bytes": 79100
+          },
+          {
+            "path": "render/figures/figure_reserved_007.md",
+            "sha256": "183ab6e7b8409f7bedd0e174fb85d877fa31c26aca299d0e247beef572d17893",
+            "bytes": 168
+          },
+          {
+            "path": "render/fulltext.md",
+            "sha256": "a82966c658b657fc9bc165bc55a94fdee662bdb743d6aaec18904348655ac004",
+            "bytes": 79617
+          },
+          {
+            "path": "structure/blocks.structured.jsonl",
+            "sha256": "5b30928c728dd2b465d53ce342d23642460a514995382e99ae7706e0f5b16b27",
+            "bytes": 982540
+          },
+          {
+            "path": "structure/document_structure.json",
+            "sha256": "ee7267a1b06478ad6c93238b25150a1268aee69cad0f55cdb79977b093f951c1",
+            "bytes": 603257
+          },
+          {
+            "path": "structure/figure_inventory.json",
+            "sha256": "d541cec29f9865c0cff66c86d1f25e9973cd16571b38f4dcf790d6af2fca3770",
+            "bytes": 41292
+          },
+          {
+            "path": "structure/table_inventory.json",
+            "sha256": "00543d13fe32c1954d7a6799968483c54dc48404f1ef25a121f02143507f6906",
+            "bytes": 8485
+          }
+        ],
+        "note": "copy every listed file before writing; restore verifies sha256"
+      },
+      "rollback": {
+        "method": "restore the backup tree, then verify every sha256",
+        "atomicity": "filesystem effects are not atomic with SQLite; journal each step"
+      }
+    }
+  },
+  "plan_mismatch": false
+}

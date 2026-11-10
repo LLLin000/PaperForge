@@ -1,0 +1,1499 @@
+{
+  "first": {
+    "key": "6A8A9TWD",
+    "identity": {
+      "old": {
+        "entries": 5,
+        "unique_ids": 4,
+        "duplicate_extra": 1
+      },
+      "new": {
+        "entries": 4,
+        "unique_ids": 4,
+        "duplicate_extra": 0
+      },
+      "mapping": {
+        "figure_reserved_004": "figure_figure_p002_b3",
+        "figure_s002": "figure_s002",
+        "figure_s003": "figure_s003",
+        "figure_s004": "figure_s004"
+      },
+      "renamed": [
+        [
+          "figure_reserved_004",
+          "figure_figure_p002_b3"
+        ]
+      ],
+      "unmapped_old_ids": [],
+      "claims_changed": [
+        {
+          "old_id": "figure_s002",
+          "old_assets": [
+            "2"
+          ],
+          "new_id": "figure_s002",
+          "new_assets": [
+            "10",
+            "2"
+          ]
+        }
+      ]
+    },
+    "delivery": {
+      "manifest_delivery": {
+        "figure_ids": [
+          "figure_figure_p002_b3",
+          "figure_s002",
+          "figure_s003",
+          "figure_s004"
+        ],
+        "missing_assets": [],
+        "missing_renders": []
+      },
+      "old_render_files": 27,
+      "new_render_files": 28,
+      "render_added": [
+        "assets/figures/figure_figure_p002_b3.jpg",
+        "render/figures/figure_figure_p002_b3.md"
+      ],
+      "render_removed": [
+        "render/figures/figure_reserved_004.md"
+      ],
+      "embeds": 3,
+      "embeds_retargeted": 0,
+      "embeds_missing_new_id": []
+    },
+    "tables": {
+      "old_tables": 0,
+      "new_tables": 0,
+      "claim_changes": []
+    },
+    "content": {
+      "old_rows": 151,
+      "new_rows": 151,
+      "role_removed": {
+        "body_paragraph": 4,
+        "figure_caption_candidate": 4,
+        "subsection_heading": 1
+      },
+      "role_added": {
+        "figure_caption": 4,
+        "figure_inner_text": 5
+      },
+      "old_body_chars": 19700,
+      "new_body_chars": 18686,
+      "old_text_chars": 37085,
+      "new_text_chars": 37085,
+      "old_fulltext_chars": 31864
+    },
+    "new_manifest": {
+      "figures": 4,
+      "tables": 0,
+      "orphans": 10
+    },
+    "new_orphans": 1,
+    "plan": {
+      "schema": "paperforge.migration_plan.v1",
+      "key": "6A8A9TWD",
+      "execution_model": "rebuild+verify: operations are expected artifact effects, not shell mv",
+      "status": "READY",
+      "objects": [
+        {
+          "kind": "figure",
+          "old_id": "figure_reserved_004",
+          "new_id": "figure_figure_p002_b3",
+          "candidates": [
+            "figure_figure_p002_b3"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 2,
+              "legend_block_id": "3",
+              "text": "Illustrations depicting the mortise-tenon joint structure used in ancient Chinese architecture.",
+              "asset_blocks": []
+            }
+          ],
+          "old_files": [
+            "render/figures/figure_reserved_004.md"
+          ],
+          "status": "planned"
+        },
+        {
+          "kind": "figure",
+          "old_id": "figure_s002",
+          "new_id": "figure_s002",
+          "candidates": [
+            "figure_s002"
+          ],
+          "entries": 2,
+          "anchors": [
+            {
+              "page": 2,
+              "legend_block_id": "11",
+              "text": "Figs. 2A, 2-B, and 2-C Schematic diagrams illustrating the arthroscopic inlay Bristow procedure. Fig. 2-A Coracoid plug preparation. Fig. 2-B Appearance of the trough in the glenoid. Fig. 2-C Coracoid plug fixation into the trough in the glenoid.",
+              "asset_blocks": [
+                {
+                  "block_id": 10,
+                  "page": 2,
+                  "bbox": [
+                    81,
+                    992,
+                    1108,
+                    1387
+                  ]
+                }
+              ]
+            },
+            {
+              "page": 2,
+              "legend_block_id": "11",
+              "text": "Figs. 2A, 2-B, and 2-C Schematic diagrams illustrating the arthroscopic inlay Bristow procedure. Fig. 2-A Coracoid plug preparation. Fig. 2-B Appearance of the trough in the glenoid. Fig. 2-C Coracoid plug fixation into the trough in the glenoid.",
+              "asset_blocks": [
+                {
+                  "block_id": 2,
+                  "page": 2,
+                  "bbox": [
+                    262,
+                    180,
+                    922,
+                    647
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "assets/figures/figure_s002.jpg",
+            "render/figures/figure_s002.md"
+          ],
+          "status": "planned"
+        },
+        {
+          "kind": "figure",
+          "old_id": "figure_s003",
+          "new_id": "figure_s003",
+          "candidates": [
+            "figure_s003"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 4,
+              "legend_block_id": "5",
+              "text": "Figs. 3-A through 3-F Representative 3D CT images of coracoid block positioning and healing after arthroscopic inlay Bristow procedure fixed with a screw.\nFigs. 3-A and 3-B Axial view (Fig. 3-A) and en face view (Fig. 3-B) demonstrating perfect coracoid positioning (below the equator) and healing 6 months postoperatively.\nFigs. 3-C and 3-D Axial view (Fig. 3-C) and en face view (Fig. 3-D) demonstrating perfect coracoid positioning and healing 12 months postoperatively.\nFigs. 3-E and 3-F Axial view (Fig. 3-E) and en face view (Fig. 3-F) demonstrating perfect coracoid positioning and remodeling 40 months postoperatively.",
+              "asset_blocks": [
+                {
+                  "block_id": 3,
+                  "page": 4,
+                  "bbox": [
+                    88,
+                    183,
+                    1108,
+                    819
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "assets/figures/figure_s003.jpg",
+            "render/figures/figure_s003.md"
+          ],
+          "status": "planned"
+        },
+        {
+          "kind": "figure",
+          "old_id": "figure_s004",
+          "new_id": "figure_s004",
+          "candidates": [
+            "figure_s004"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 4,
+              "legend_block_id": "11",
+              "text": "Figs. 4-A, 4-B, and 4-C Representative on face view of 3D-CT images showing osteolysis of coracoid grafts at the time of the latest follow-up. Fig. 4-A Grade 0: the cone of the screw head is buried in the coracoid bone graft. Fig. 4-B Grade 1: only the screw head is exposed outside the coracoid bone graft, and the whole screw shaft is inside the bone. Fig. 4-C Grade 2: part of the screw shaft is exposed outside the coracoid graft, and some bone remains on the glenoid neck.",
+              "asset_blocks": [
+                {
+                  "block_id": 8,
+                  "page": 4,
+                  "bbox": [
+                    87,
+                    1087,
+                    411,
+                    1374
+                  ]
+                },
+                {
+                  "block_id": 9,
+                  "page": 4,
+                  "bbox": [
+                    432,
+                    1087,
+                    756,
+                    1374
+                  ]
+                },
+                {
+                  "block_id": 10,
+                  "page": 4,
+                  "bbox": [
+                    780,
+                    1087,
+                    1108,
+                    1373
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "assets/figures/figure_s004.jpg",
+            "render/figures/figure_s004.md"
+          ],
+          "status": "planned"
+        }
+      ],
+      "operations": [
+        {
+          "op": "materialize_objects",
+          "kind": "paper",
+          "object_uid": "",
+          "old_path": "",
+          "new_path": "",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "rebuild writes objects before inventory/fulltext",
+          "depends_on": [],
+          "op_id": "materialize-objects"
+        },
+        {
+          "op": "rename",
+          "kind": "figure",
+          "object_uid": "figure_figure_p002_b3",
+          "old_id": "figure_reserved_004",
+          "old_path": "render/figures/figure_reserved_004.md",
+          "new_path": "render/figures/figure_figure_p002_b3.md",
+          "old_sha256": "c9da38c2d681ed253687315fd6bb0e30727197f109c7503f947860f0e1c1a60c",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_s002",
+          "old_id": "figure_s002",
+          "old_path": "assets/figures/figure_s002.jpg",
+          "new_path": "assets/figures/figure_s002.jpg",
+          "old_sha256": "7381b7d4d4d770ae855738534d5bd1be9c26b3dd57fc6d4d2e0e56c14b54956e",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_s002",
+          "old_id": "figure_s002",
+          "old_path": "render/figures/figure_s002.md",
+          "new_path": "render/figures/figure_s002.md",
+          "old_sha256": "bdae5d9953ec82eb9dc9b8dc6e74339acd04e4f72742dfd2f1da56a590e9a295",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_s003",
+          "old_id": "figure_s003",
+          "old_path": "assets/figures/figure_s003.jpg",
+          "new_path": "assets/figures/figure_s003.jpg",
+          "old_sha256": "ec98017803839d8c2c2e3946c51a3ca6be71ee0a6193b03b32c978e2a8262986",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_s003",
+          "old_id": "figure_s003",
+          "old_path": "render/figures/figure_s003.md",
+          "new_path": "render/figures/figure_s003.md",
+          "old_sha256": "e1794eca37c61af800463e7a3aa7b5abb2624a663f289a4e757a76af2a682cc8",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_s004",
+          "old_id": "figure_s004",
+          "old_path": "assets/figures/figure_s004.jpg",
+          "new_path": "assets/figures/figure_s004.jpg",
+          "old_sha256": "41802b18056e59e6b2b56a8046d9bdc45691b1c9b98e1cbed5e283df2122617f",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_s004",
+          "old_id": "figure_s004",
+          "old_path": "render/figures/figure_s004.md",
+          "new_path": "render/figures/figure_s004.md",
+          "old_sha256": "b7a1e54d5e8f8e47bdf962581e90b34589179d9b13a81b130e348493f787621e",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_001",
+          "old_path": "assets/orphans/orphan_001.jpg",
+          "new_path": "assets/orphans/orphan_001.jpg",
+          "old_sha256": "ee4b7d37304a4aeeab7571faebd0c4214c374502692312cec602b7c9c50c9c60",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_001",
+          "old_path": "render/figures/orphan_001.md",
+          "new_path": "render/figures/orphan_001.md",
+          "old_sha256": "b6cf97c391df029c760e84cfcf04186b2adbb42e74eb6c5bb5c3551a7cbadf0e",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_002",
+          "old_path": "assets/orphans/orphan_002.jpg",
+          "new_path": "assets/orphans/orphan_002.jpg",
+          "old_sha256": "7381b7d4d4d770ae855738534d5bd1be9c26b3dd57fc6d4d2e0e56c14b54956e",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_002",
+          "old_path": "render/figures/orphan_002.md",
+          "new_path": "render/figures/orphan_002.md",
+          "old_sha256": "a7adcf0fd296191b619a08ae83d350c014c46b0ad95ed70ce52db93242a3c643",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_003",
+          "old_path": "assets/orphans/orphan_003.jpg",
+          "new_path": "assets/orphans/orphan_003.jpg",
+          "old_sha256": "77acc81d70a8d2d225afaf954a1eafa85126f61ecb95c97e8ad95be88f15f63a",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_003",
+          "old_path": "render/figures/orphan_003.md",
+          "new_path": "render/figures/orphan_003.md",
+          "old_sha256": "0937f86e518350960a83fba67778549892e69172e77ce4519d72c06e9f537fe1",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_004",
+          "old_path": "assets/orphans/orphan_004.jpg",
+          "new_path": "assets/orphans/orphan_004.jpg",
+          "old_sha256": "e7ba5300f1cbf6adf91ceca644ed476edf5625322b354da5b1c119e976bfccda",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_004",
+          "old_path": "render/figures/orphan_004.md",
+          "new_path": "render/figures/orphan_004.md",
+          "old_sha256": "3683f284de8c1ef93cf192484006122bbe37f09168cad46661102abf31d419a3",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_005",
+          "old_path": "assets/orphans/orphan_005.jpg",
+          "new_path": "assets/orphans/orphan_005.jpg",
+          "old_sha256": "ec98017803839d8c2c2e3946c51a3ca6be71ee0a6193b03b32c978e2a8262986",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_005",
+          "old_path": "render/figures/orphan_005.md",
+          "new_path": "render/figures/orphan_005.md",
+          "old_sha256": "04ec29124e51a740ac01407c7b71dbddeebdbd3f103cbca151acd17849c0bcad",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_006",
+          "old_path": "assets/orphans/orphan_006.jpg",
+          "new_path": "assets/orphans/orphan_006.jpg",
+          "old_sha256": "c24fb120afb5e54fe0b8c1916874628c11a43f46a443f26a69f7f981c67e978a",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_006",
+          "old_path": "render/figures/orphan_006.md",
+          "new_path": "render/figures/orphan_006.md",
+          "old_sha256": "9dfdaa6170856ac659e8b58d82b01841c95354a3cd9e19ed2468dfcd21cd2708",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_007",
+          "old_path": "assets/orphans/orphan_007.jpg",
+          "new_path": "assets/orphans/orphan_007.jpg",
+          "old_sha256": "08d9e036ab5b805fa2690af567ec5434a04be21be9d77a743f196f8098fea900",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_007",
+          "old_path": "render/figures/orphan_007.md",
+          "new_path": "render/figures/orphan_007.md",
+          "old_sha256": "8d3f8deda73dddbbd3b807f0a17114c6ad0805d1e4e44e42c2558025443094a2",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_008",
+          "old_path": "assets/orphans/orphan_008.jpg",
+          "new_path": "assets/orphans/orphan_008.jpg",
+          "old_sha256": "813e71e6efc6ebdfbcad16266f572cd76002b8d93ff61850734cef2ee240210a",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_008",
+          "old_path": "render/figures/orphan_008.md",
+          "new_path": "render/figures/orphan_008.md",
+          "old_sha256": "8cbd8f9caf83ca8f55ea0984572e978046e451c774895b6099cd8ccfec90caad",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_009",
+          "old_path": "assets/orphans/orphan_009.jpg",
+          "new_path": "assets/orphans/orphan_009.jpg",
+          "old_sha256": "6f65f504a952530ff7507bacf92ec15ea32b7ba9706591e691a58040c65b95de",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_009",
+          "old_path": "render/figures/orphan_009.md",
+          "new_path": "render/figures/orphan_009.md",
+          "old_sha256": "14aaef3f3de24f08a2bfea3d062386774d3728cb59b71e19cd9a092c7d8146ff",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_010",
+          "old_path": "assets/orphans/orphan_010.jpg",
+          "new_path": "assets/orphans/orphan_010.jpg",
+          "old_sha256": "ee4b7d37304a4aeeab7571faebd0c4214c374502692312cec602b7c9c50c9c60",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_010",
+          "old_path": "render/figures/orphan_010.md",
+          "new_path": "render/figures/orphan_010.md",
+          "old_sha256": "c1640de2a5c539758ecb34e213a0b1d7a0ad256a32b934ded385382b418ed455",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "figure_figure_p002_b3",
+          "old_path": "",
+          "new_path": "assets/figures/figure_figure_p002_b3.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_s002",
+          "old_path": "render/figures/figure_s002.md",
+          "new_path": "render/figures/figure_s002.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            37
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_s004",
+          "old_path": "render/figures/figure_s004.md",
+          "new_path": "render/figures/figure_s004.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            69
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_s003",
+          "old_path": "render/figures/figure_s003.md",
+          "new_path": "render/figures/figure_s003.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            71
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "rewrite",
+          "kind": "inventory",
+          "object_uid": "",
+          "old_path": "structure/blocks.structured.jsonl",
+          "new_path": "structure/blocks.structured.jsonl",
+          "old_sha256": "b72293b34e5ccd2dd942189349250f0a45d5973861ea13679a62975dd93ee506",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "inventory",
+          "object_uid": "",
+          "old_path": "structure/figure_inventory.json",
+          "new_path": "structure/figure_inventory.json",
+          "old_sha256": "1e6ce4cce71e1bd97978cc305df2bfe51976bcd3914fb919cf59f05a002e1883",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "inventory",
+          "object_uid": "",
+          "old_path": "structure/table_inventory.json",
+          "new_path": "structure/table_inventory.json",
+          "old_sha256": "740f4f3686cd78946c3f8722a77070c93906cafb2e55e074607219f8bdd7ac06",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "fulltext",
+          "object_uid": "",
+          "old_path": "fulltext.md",
+          "new_path": "fulltext.md",
+          "old_sha256": "07612a7eda638056f720f653bf0a4dacbf5d0585ac2c02944544a6350f6a481a",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "fulltext",
+          "object_uid": "",
+          "old_path": "render/fulltext.md",
+          "new_path": "render/fulltext.md",
+          "old_sha256": "d66ed72bfd54b43e93ebc9e880571705bcfe2eb3395f1d534633eace3ea13c28",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        }
+      ],
+      "embeds": [
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_s002.md",
+          "object_id": "figure_s002",
+          "line": 37,
+          "candidates": [
+            "figure_s002"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_s002.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_s004.md",
+          "object_id": "figure_s004",
+          "line": 69,
+          "candidates": [
+            "figure_s004"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_s004.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_s003.md",
+          "object_id": "figure_s003",
+          "line": 71,
+          "candidates": [
+            "figure_s003"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_s003.md",
+          "reason": "mapped"
+        }
+      ],
+      "holds": [],
+      "collisions": [],
+      "dangling": [],
+      "backup": {
+        "root": "backups/6A8A9TWD/",
+        "files": [
+          {
+            "path": "fulltext.md",
+            "sha256": "07612a7eda638056f720f653bf0a4dacbf5d0585ac2c02944544a6350f6a481a",
+            "bytes": 31877
+          },
+          {
+            "path": "render/figures/figure_reserved_004.md",
+            "sha256": "c9da38c2d681ed253687315fd6bb0e30727197f109c7503f947860f0e1c1a60c",
+            "bytes": 143
+          },
+          {
+            "path": "render/fulltext.md",
+            "sha256": "d66ed72bfd54b43e93ebc9e880571705bcfe2eb3395f1d534633eace3ea13c28",
+            "bytes": 32121
+          },
+          {
+            "path": "structure/blocks.structured.jsonl",
+            "sha256": "b72293b34e5ccd2dd942189349250f0a45d5973861ea13679a62975dd93ee506",
+            "bytes": 336602
+          },
+          {
+            "path": "structure/figure_inventory.json",
+            "sha256": "1e6ce4cce71e1bd97978cc305df2bfe51976bcd3914fb919cf59f05a002e1883",
+            "bytes": 45828
+          },
+          {
+            "path": "structure/table_inventory.json",
+            "sha256": "740f4f3686cd78946c3f8722a77070c93906cafb2e55e074607219f8bdd7ac06",
+            "bytes": 32868
+          }
+        ],
+        "note": "copy every listed file before writing; restore verifies sha256"
+      },
+      "rollback": {
+        "method": "restore the backup tree, then verify every sha256",
+        "atomicity": "filesystem effects are not atomic with SQLite; journal each step"
+      }
+    }
+  },
+  "second": {
+    "key": "6A8A9TWD",
+    "identity": {
+      "old": {
+        "entries": 5,
+        "unique_ids": 4,
+        "duplicate_extra": 1
+      },
+      "new": {
+        "entries": 4,
+        "unique_ids": 4,
+        "duplicate_extra": 0
+      },
+      "mapping": {
+        "figure_reserved_004": "figure_figure_p002_b3",
+        "figure_s002": "figure_s002",
+        "figure_s003": "figure_s003",
+        "figure_s004": "figure_s004"
+      },
+      "renamed": [
+        [
+          "figure_reserved_004",
+          "figure_figure_p002_b3"
+        ]
+      ],
+      "unmapped_old_ids": [],
+      "claims_changed": [
+        {
+          "old_id": "figure_s002",
+          "old_assets": [
+            "2"
+          ],
+          "new_id": "figure_s002",
+          "new_assets": [
+            "10",
+            "2"
+          ]
+        }
+      ]
+    },
+    "delivery": {
+      "manifest_delivery": {
+        "figure_ids": [
+          "figure_figure_p002_b3",
+          "figure_s002",
+          "figure_s003",
+          "figure_s004"
+        ],
+        "missing_assets": [],
+        "missing_renders": []
+      },
+      "old_render_files": 27,
+      "new_render_files": 28,
+      "render_added": [
+        "assets/figures/figure_figure_p002_b3.jpg",
+        "render/figures/figure_figure_p002_b3.md"
+      ],
+      "render_removed": [
+        "render/figures/figure_reserved_004.md"
+      ],
+      "embeds": 3,
+      "embeds_retargeted": 0,
+      "embeds_missing_new_id": []
+    },
+    "tables": {
+      "old_tables": 0,
+      "new_tables": 0,
+      "claim_changes": []
+    },
+    "content": {
+      "old_rows": 151,
+      "new_rows": 151,
+      "role_removed": {
+        "body_paragraph": 4,
+        "figure_caption_candidate": 4,
+        "subsection_heading": 1
+      },
+      "role_added": {
+        "figure_caption": 4,
+        "figure_inner_text": 5
+      },
+      "old_body_chars": 19700,
+      "new_body_chars": 18686,
+      "old_text_chars": 37085,
+      "new_text_chars": 37085,
+      "old_fulltext_chars": 31864
+    },
+    "new_manifest": {
+      "figures": 4,
+      "tables": 0,
+      "orphans": 10
+    },
+    "new_orphans": 1,
+    "plan": {
+      "schema": "paperforge.migration_plan.v1",
+      "key": "6A8A9TWD",
+      "execution_model": "rebuild+verify: operations are expected artifact effects, not shell mv",
+      "status": "READY",
+      "objects": [
+        {
+          "kind": "figure",
+          "old_id": "figure_reserved_004",
+          "new_id": "figure_figure_p002_b3",
+          "candidates": [
+            "figure_figure_p002_b3"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 2,
+              "legend_block_id": "3",
+              "text": "Illustrations depicting the mortise-tenon joint structure used in ancient Chinese architecture.",
+              "asset_blocks": []
+            }
+          ],
+          "old_files": [
+            "render/figures/figure_reserved_004.md"
+          ],
+          "status": "planned"
+        },
+        {
+          "kind": "figure",
+          "old_id": "figure_s002",
+          "new_id": "figure_s002",
+          "candidates": [
+            "figure_s002"
+          ],
+          "entries": 2,
+          "anchors": [
+            {
+              "page": 2,
+              "legend_block_id": "11",
+              "text": "Figs. 2A, 2-B, and 2-C Schematic diagrams illustrating the arthroscopic inlay Bristow procedure. Fig. 2-A Coracoid plug preparation. Fig. 2-B Appearance of the trough in the glenoid. Fig. 2-C Coracoid plug fixation into the trough in the glenoid.",
+              "asset_blocks": [
+                {
+                  "block_id": 10,
+                  "page": 2,
+                  "bbox": [
+                    81,
+                    992,
+                    1108,
+                    1387
+                  ]
+                }
+              ]
+            },
+            {
+              "page": 2,
+              "legend_block_id": "11",
+              "text": "Figs. 2A, 2-B, and 2-C Schematic diagrams illustrating the arthroscopic inlay Bristow procedure. Fig. 2-A Coracoid plug preparation. Fig. 2-B Appearance of the trough in the glenoid. Fig. 2-C Coracoid plug fixation into the trough in the glenoid.",
+              "asset_blocks": [
+                {
+                  "block_id": 2,
+                  "page": 2,
+                  "bbox": [
+                    262,
+                    180,
+                    922,
+                    647
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "assets/figures/figure_s002.jpg",
+            "render/figures/figure_s002.md"
+          ],
+          "status": "planned"
+        },
+        {
+          "kind": "figure",
+          "old_id": "figure_s003",
+          "new_id": "figure_s003",
+          "candidates": [
+            "figure_s003"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 4,
+              "legend_block_id": "5",
+              "text": "Figs. 3-A through 3-F Representative 3D CT images of coracoid block positioning and healing after arthroscopic inlay Bristow procedure fixed with a screw.\nFigs. 3-A and 3-B Axial view (Fig. 3-A) and en face view (Fig. 3-B) demonstrating perfect coracoid positioning (below the equator) and healing 6 months postoperatively.\nFigs. 3-C and 3-D Axial view (Fig. 3-C) and en face view (Fig. 3-D) demonstrating perfect coracoid positioning and healing 12 months postoperatively.\nFigs. 3-E and 3-F Axial view (Fig. 3-E) and en face view (Fig. 3-F) demonstrating perfect coracoid positioning and remodeling 40 months postoperatively.",
+              "asset_blocks": [
+                {
+                  "block_id": 3,
+                  "page": 4,
+                  "bbox": [
+                    88,
+                    183,
+                    1108,
+                    819
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "assets/figures/figure_s003.jpg",
+            "render/figures/figure_s003.md"
+          ],
+          "status": "planned"
+        },
+        {
+          "kind": "figure",
+          "old_id": "figure_s004",
+          "new_id": "figure_s004",
+          "candidates": [
+            "figure_s004"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 4,
+              "legend_block_id": "11",
+              "text": "Figs. 4-A, 4-B, and 4-C Representative on face view of 3D-CT images showing osteolysis of coracoid grafts at the time of the latest follow-up. Fig. 4-A Grade 0: the cone of the screw head is buried in the coracoid bone graft. Fig. 4-B Grade 1: only the screw head is exposed outside the coracoid bone graft, and the whole screw shaft is inside the bone. Fig. 4-C Grade 2: part of the screw shaft is exposed outside the coracoid graft, and some bone remains on the glenoid neck.",
+              "asset_blocks": [
+                {
+                  "block_id": 8,
+                  "page": 4,
+                  "bbox": [
+                    87,
+                    1087,
+                    411,
+                    1374
+                  ]
+                },
+                {
+                  "block_id": 9,
+                  "page": 4,
+                  "bbox": [
+                    432,
+                    1087,
+                    756,
+                    1374
+                  ]
+                },
+                {
+                  "block_id": 10,
+                  "page": 4,
+                  "bbox": [
+                    780,
+                    1087,
+                    1108,
+                    1373
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "assets/figures/figure_s004.jpg",
+            "render/figures/figure_s004.md"
+          ],
+          "status": "planned"
+        }
+      ],
+      "operations": [
+        {
+          "op": "materialize_objects",
+          "kind": "paper",
+          "object_uid": "",
+          "old_path": "",
+          "new_path": "",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "rebuild writes objects before inventory/fulltext",
+          "depends_on": [],
+          "op_id": "materialize-objects"
+        },
+        {
+          "op": "rename",
+          "kind": "figure",
+          "object_uid": "figure_figure_p002_b3",
+          "old_id": "figure_reserved_004",
+          "old_path": "render/figures/figure_reserved_004.md",
+          "new_path": "render/figures/figure_figure_p002_b3.md",
+          "old_sha256": "c9da38c2d681ed253687315fd6bb0e30727197f109c7503f947860f0e1c1a60c",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_s002",
+          "old_id": "figure_s002",
+          "old_path": "assets/figures/figure_s002.jpg",
+          "new_path": "assets/figures/figure_s002.jpg",
+          "old_sha256": "7381b7d4d4d770ae855738534d5bd1be9c26b3dd57fc6d4d2e0e56c14b54956e",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_s002",
+          "old_id": "figure_s002",
+          "old_path": "render/figures/figure_s002.md",
+          "new_path": "render/figures/figure_s002.md",
+          "old_sha256": "bdae5d9953ec82eb9dc9b8dc6e74339acd04e4f72742dfd2f1da56a590e9a295",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_s003",
+          "old_id": "figure_s003",
+          "old_path": "assets/figures/figure_s003.jpg",
+          "new_path": "assets/figures/figure_s003.jpg",
+          "old_sha256": "ec98017803839d8c2c2e3946c51a3ca6be71ee0a6193b03b32c978e2a8262986",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_s003",
+          "old_id": "figure_s003",
+          "old_path": "render/figures/figure_s003.md",
+          "new_path": "render/figures/figure_s003.md",
+          "old_sha256": "e1794eca37c61af800463e7a3aa7b5abb2624a663f289a4e757a76af2a682cc8",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_s004",
+          "old_id": "figure_s004",
+          "old_path": "assets/figures/figure_s004.jpg",
+          "new_path": "assets/figures/figure_s004.jpg",
+          "old_sha256": "41802b18056e59e6b2b56a8046d9bdc45691b1c9b98e1cbed5e283df2122617f",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_s004",
+          "old_id": "figure_s004",
+          "old_path": "render/figures/figure_s004.md",
+          "new_path": "render/figures/figure_s004.md",
+          "old_sha256": "b7a1e54d5e8f8e47bdf962581e90b34589179d9b13a81b130e348493f787621e",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_001",
+          "old_path": "assets/orphans/orphan_001.jpg",
+          "new_path": "assets/orphans/orphan_001.jpg",
+          "old_sha256": "ee4b7d37304a4aeeab7571faebd0c4214c374502692312cec602b7c9c50c9c60",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_001",
+          "old_path": "render/figures/orphan_001.md",
+          "new_path": "render/figures/orphan_001.md",
+          "old_sha256": "b6cf97c391df029c760e84cfcf04186b2adbb42e74eb6c5bb5c3551a7cbadf0e",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_002",
+          "old_path": "assets/orphans/orphan_002.jpg",
+          "new_path": "assets/orphans/orphan_002.jpg",
+          "old_sha256": "7381b7d4d4d770ae855738534d5bd1be9c26b3dd57fc6d4d2e0e56c14b54956e",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_002",
+          "old_path": "render/figures/orphan_002.md",
+          "new_path": "render/figures/orphan_002.md",
+          "old_sha256": "a7adcf0fd296191b619a08ae83d350c014c46b0ad95ed70ce52db93242a3c643",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_003",
+          "old_path": "assets/orphans/orphan_003.jpg",
+          "new_path": "assets/orphans/orphan_003.jpg",
+          "old_sha256": "77acc81d70a8d2d225afaf954a1eafa85126f61ecb95c97e8ad95be88f15f63a",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_003",
+          "old_path": "render/figures/orphan_003.md",
+          "new_path": "render/figures/orphan_003.md",
+          "old_sha256": "0937f86e518350960a83fba67778549892e69172e77ce4519d72c06e9f537fe1",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_004",
+          "old_path": "assets/orphans/orphan_004.jpg",
+          "new_path": "assets/orphans/orphan_004.jpg",
+          "old_sha256": "e7ba5300f1cbf6adf91ceca644ed476edf5625322b354da5b1c119e976bfccda",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_004",
+          "old_path": "render/figures/orphan_004.md",
+          "new_path": "render/figures/orphan_004.md",
+          "old_sha256": "3683f284de8c1ef93cf192484006122bbe37f09168cad46661102abf31d419a3",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_005",
+          "old_path": "assets/orphans/orphan_005.jpg",
+          "new_path": "assets/orphans/orphan_005.jpg",
+          "old_sha256": "ec98017803839d8c2c2e3946c51a3ca6be71ee0a6193b03b32c978e2a8262986",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_005",
+          "old_path": "render/figures/orphan_005.md",
+          "new_path": "render/figures/orphan_005.md",
+          "old_sha256": "04ec29124e51a740ac01407c7b71dbddeebdbd3f103cbca151acd17849c0bcad",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_006",
+          "old_path": "assets/orphans/orphan_006.jpg",
+          "new_path": "assets/orphans/orphan_006.jpg",
+          "old_sha256": "c24fb120afb5e54fe0b8c1916874628c11a43f46a443f26a69f7f981c67e978a",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_006",
+          "old_path": "render/figures/orphan_006.md",
+          "new_path": "render/figures/orphan_006.md",
+          "old_sha256": "9dfdaa6170856ac659e8b58d82b01841c95354a3cd9e19ed2468dfcd21cd2708",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_007",
+          "old_path": "assets/orphans/orphan_007.jpg",
+          "new_path": "assets/orphans/orphan_007.jpg",
+          "old_sha256": "08d9e036ab5b805fa2690af567ec5434a04be21be9d77a743f196f8098fea900",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_007",
+          "old_path": "render/figures/orphan_007.md",
+          "new_path": "render/figures/orphan_007.md",
+          "old_sha256": "8d3f8deda73dddbbd3b807f0a17114c6ad0805d1e4e44e42c2558025443094a2",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_008",
+          "old_path": "assets/orphans/orphan_008.jpg",
+          "new_path": "assets/orphans/orphan_008.jpg",
+          "old_sha256": "813e71e6efc6ebdfbcad16266f572cd76002b8d93ff61850734cef2ee240210a",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_008",
+          "old_path": "render/figures/orphan_008.md",
+          "new_path": "render/figures/orphan_008.md",
+          "old_sha256": "8cbd8f9caf83ca8f55ea0984572e978046e451c774895b6099cd8ccfec90caad",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_009",
+          "old_path": "assets/orphans/orphan_009.jpg",
+          "new_path": "assets/orphans/orphan_009.jpg",
+          "old_sha256": "6f65f504a952530ff7507bacf92ec15ea32b7ba9706591e691a58040c65b95de",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_009",
+          "old_path": "render/figures/orphan_009.md",
+          "new_path": "render/figures/orphan_009.md",
+          "old_sha256": "14aaef3f3de24f08a2bfea3d062386774d3728cb59b71e19cd9a092c7d8146ff",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_010",
+          "old_path": "assets/orphans/orphan_010.jpg",
+          "new_path": "assets/orphans/orphan_010.jpg",
+          "old_sha256": "ee4b7d37304a4aeeab7571faebd0c4214c374502692312cec602b7c9c50c9c60",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_010",
+          "old_path": "render/figures/orphan_010.md",
+          "new_path": "render/figures/orphan_010.md",
+          "old_sha256": "c1640de2a5c539758ecb34e213a0b1d7a0ad256a32b934ded385382b418ed455",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "figure_figure_p002_b3",
+          "old_path": "",
+          "new_path": "assets/figures/figure_figure_p002_b3.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_s002",
+          "old_path": "render/figures/figure_s002.md",
+          "new_path": "render/figures/figure_s002.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            37
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_s004",
+          "old_path": "render/figures/figure_s004.md",
+          "new_path": "render/figures/figure_s004.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            69
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_s003",
+          "old_path": "render/figures/figure_s003.md",
+          "new_path": "render/figures/figure_s003.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            71
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "rewrite",
+          "kind": "inventory",
+          "object_uid": "",
+          "old_path": "structure/blocks.structured.jsonl",
+          "new_path": "structure/blocks.structured.jsonl",
+          "old_sha256": "b72293b34e5ccd2dd942189349250f0a45d5973861ea13679a62975dd93ee506",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "inventory",
+          "object_uid": "",
+          "old_path": "structure/figure_inventory.json",
+          "new_path": "structure/figure_inventory.json",
+          "old_sha256": "1e6ce4cce71e1bd97978cc305df2bfe51976bcd3914fb919cf59f05a002e1883",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "inventory",
+          "object_uid": "",
+          "old_path": "structure/table_inventory.json",
+          "new_path": "structure/table_inventory.json",
+          "old_sha256": "740f4f3686cd78946c3f8722a77070c93906cafb2e55e074607219f8bdd7ac06",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "fulltext",
+          "object_uid": "",
+          "old_path": "fulltext.md",
+          "new_path": "fulltext.md",
+          "old_sha256": "07612a7eda638056f720f653bf0a4dacbf5d0585ac2c02944544a6350f6a481a",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "fulltext",
+          "object_uid": "",
+          "old_path": "render/fulltext.md",
+          "new_path": "render/fulltext.md",
+          "old_sha256": "d66ed72bfd54b43e93ebc9e880571705bcfe2eb3395f1d534633eace3ea13c28",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        }
+      ],
+      "embeds": [
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_s002.md",
+          "object_id": "figure_s002",
+          "line": 37,
+          "candidates": [
+            "figure_s002"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_s002.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_s004.md",
+          "object_id": "figure_s004",
+          "line": 69,
+          "candidates": [
+            "figure_s004"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_s004.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_s003.md",
+          "object_id": "figure_s003",
+          "line": 71,
+          "candidates": [
+            "figure_s003"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_s003.md",
+          "reason": "mapped"
+        }
+      ],
+      "holds": [],
+      "collisions": [],
+      "dangling": [],
+      "backup": {
+        "root": "backups/6A8A9TWD/",
+        "files": [
+          {
+            "path": "fulltext.md",
+            "sha256": "07612a7eda638056f720f653bf0a4dacbf5d0585ac2c02944544a6350f6a481a",
+            "bytes": 31877
+          },
+          {
+            "path": "render/figures/figure_reserved_004.md",
+            "sha256": "c9da38c2d681ed253687315fd6bb0e30727197f109c7503f947860f0e1c1a60c",
+            "bytes": 143
+          },
+          {
+            "path": "render/fulltext.md",
+            "sha256": "d66ed72bfd54b43e93ebc9e880571705bcfe2eb3395f1d534633eace3ea13c28",
+            "bytes": 32121
+          },
+          {
+            "path": "structure/blocks.structured.jsonl",
+            "sha256": "b72293b34e5ccd2dd942189349250f0a45d5973861ea13679a62975dd93ee506",
+            "bytes": 336602
+          },
+          {
+            "path": "structure/figure_inventory.json",
+            "sha256": "1e6ce4cce71e1bd97978cc305df2bfe51976bcd3914fb919cf59f05a002e1883",
+            "bytes": 45828
+          },
+          {
+            "path": "structure/table_inventory.json",
+            "sha256": "740f4f3686cd78946c3f8722a77070c93906cafb2e55e074607219f8bdd7ac06",
+            "bytes": 32868
+          }
+        ],
+        "note": "copy every listed file before writing; restore verifies sha256"
+      },
+      "rollback": {
+        "method": "restore the backup tree, then verify every sha256",
+        "atomicity": "filesystem effects are not atomic with SQLite; journal each step"
+      }
+    }
+  },
+  "plan_mismatch": false
+}

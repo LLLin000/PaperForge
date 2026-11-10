@@ -1,0 +1,2263 @@
+{
+  "first": {
+    "key": "G5QGQ9PB",
+    "identity": {
+      "old": {
+        "entries": 5,
+        "unique_ids": 5,
+        "duplicate_extra": 0
+      },
+      "new": {
+        "entries": 5,
+        "unique_ids": 5,
+        "duplicate_extra": 0
+      },
+      "mapping": {
+        "figure_001": "figure_001",
+        "figure_002": "figure_002",
+        "figure_003": "figure_003",
+        "figure_004": "figure_004",
+        "figure_005": "figure_005"
+      },
+      "renamed": [],
+      "unmapped_old_ids": [],
+      "claims_changed": []
+    },
+    "delivery": {
+      "manifest_delivery": {
+        "figure_ids": [
+          "figure_001",
+          "figure_002",
+          "figure_003",
+          "figure_004",
+          "figure_005"
+        ],
+        "missing_assets": [],
+        "missing_renders": []
+      },
+      "old_render_files": 21,
+      "new_render_files": 42,
+      "render_added": [
+        "assets/figures/figure_001.jpg",
+        "assets/figures/figure_002.jpg",
+        "assets/figures/figure_003.jpg",
+        "assets/figures/figure_004.jpg",
+        "assets/figures/figure_005.jpg",
+        "assets/orphans/orphan_001.jpg",
+        "assets/orphans/orphan_002.jpg",
+        "assets/orphans/orphan_003.jpg",
+        "assets/orphans/orphan_004.jpg",
+        "assets/orphans/orphan_005.jpg",
+        "assets/orphans/orphan_006.jpg",
+        "assets/orphans/orphan_007.jpg",
+        "assets/orphans/orphan_008.jpg",
+        "assets/orphans/orphan_009.jpg",
+        "assets/orphans/orphan_010.jpg",
+        "assets/orphans/orphan_011.jpg",
+        "assets/orphans/orphan_012.jpg",
+        "assets/tables/table_001.jpg",
+        "assets/tables/table_002.jpg",
+        "assets/tables/table_003.jpg",
+        "assets/tables/table_004.jpg"
+      ],
+      "render_removed": [],
+      "embeds": 9,
+      "embeds_retargeted": 0,
+      "embeds_missing_new_id": []
+    },
+    "tables": {
+      "old_tables": 4,
+      "new_tables": 4,
+      "claim_changes": [
+        {
+          "page": 5,
+          "caption": "2",
+          "old": "9",
+          "new": "3"
+        }
+      ]
+    },
+    "content": {
+      "old_rows": 188,
+      "new_rows": 188,
+      "role_removed": {
+        "unknown_structural": 2,
+        "figure_inner_text": 2
+      },
+      "role_added": {
+        "non_body_insert": 2,
+        "body_paragraph": 2
+      },
+      "old_body_chars": 22902,
+      "new_body_chars": 23819,
+      "old_text_chars": 45040,
+      "new_text_chars": 45040,
+      "old_fulltext_chars": 33631
+    },
+    "new_manifest": {
+      "figures": 5,
+      "tables": 4,
+      "orphans": 12
+    },
+    "new_orphans": 1,
+    "plan": {
+      "schema": "paperforge.migration_plan.v1",
+      "key": "G5QGQ9PB",
+      "execution_model": "rebuild+verify: operations are expected artifact effects, not shell mv",
+      "status": "READY",
+      "objects": [
+        {
+          "kind": "figure",
+          "old_id": "figure_001",
+          "new_id": "figure_001",
+          "candidates": [
+            "figure_001"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 2,
+              "legend_block_id": "14",
+              "text": "Fig. 1 Calculate the distal clavicle–acromion coronal angle ( $ \\alpha $) and acromion coronal angle ( $ \\beta $) on a standardized true anteroposterior radiograph",
+              "asset_blocks": [
+                {
+                  "block_id": 13,
+                  "page": 2,
+                  "bbox": [
+                    625,
+                    904,
+                    1061,
+                    1385
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "render/figures/figure_001.md"
+          ],
+          "status": "planned"
+        },
+        {
+          "kind": "figure",
+          "old_id": "figure_002",
+          "new_id": "figure_002",
+          "candidates": [
+            "figure_002"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 3,
+              "legend_block_id": "10",
+              "text": "Fig. 2 Case 1: A 30-year-old man with left distal clavicle fracture treated with clavicular hook plate. a Preoperative radiography indicated Neer type I fracture of the distal clavicle. b distal clavicle–acromion coronal angle ( $ \\alpha $) and acromion coronal angle ( $ \\beta $) on X-ray films of uninjured side. c Intraoperative fluoroscopy showed the endpiece of plate uplifted (black arrow). d Postoperative X-ray demonstrated accepted fracture reduction.",
+              "asset_blocks": [
+                {
+                  "block_id": 9,
+                  "page": 3,
+                  "bbox": [
+                    110,
+                    857,
+                    1073,
+                    1389
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "render/figures/figure_002.md"
+          ],
+          "status": "planned"
+        },
+        {
+          "kind": "figure",
+          "old_id": "figure_003",
+          "new_id": "figure_003",
+          "candidates": [
+            "figure_003"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 5,
+              "legend_block_id": "10",
+              "text": "Fig. 3 a–g Cases 1 ~ 4, 6, and 8 ~ 9: Preoperative sagittal T2-weighted magnetic resonance (MR) imaging reveals the interruption of supraspinatus tendon continuity (white arrows)",
+              "asset_blocks": [
+                {
+                  "block_id": 9,
+                  "page": 5,
+                  "bbox": [
+                    255,
+                    723,
+                    940,
+                    1400
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "render/figures/figure_003.md"
+          ],
+          "status": "planned"
+        },
+        {
+          "kind": "figure",
+          "old_id": "figure_004",
+          "new_id": "figure_004",
+          "candidates": [
+            "figure_004"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 6,
+              "legend_block_id": "3",
+              "text": "Fig. 4 Graphic presentation of impingement and RCL rates correlated with  $ \\alpha $ and  $ \\beta $ angles",
+              "asset_blocks": [
+                {
+                  "block_id": 2,
+                  "page": 6,
+                  "bbox": [
+                    305,
+                    181,
+                    892,
+                    468
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "render/figures/figure_004.md"
+          ],
+          "status": "planned"
+        },
+        {
+          "kind": "figure",
+          "old_id": "figure_005",
+          "new_id": "figure_005",
+          "candidates": [
+            "figure_005"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 7,
+              "legend_block_id": "20",
+              "text": "Fig. 5 a–c The situation of dynamically simulating the changes of contact position between the hook plate and large lateral acromion angle. a Take 45° α angle for example and length of hook as one unit of moment arm (MA). b The change of contact position (red dot) and fracture shift when pressing hook plate (15 mm and 90°). c The change of MA when using different hook specifications. d The contact position (red dot) and MA between the 110°-hook plate and normal lateral acromion angle",
+              "asset_blocks": [
+                {
+                  "block_id": 10,
+                  "page": 7,
+                  "bbox": [
+                    249,
+                    787,
+                    568,
+                    953
+                  ]
+                },
+                {
+                  "block_id": 12,
+                  "page": 7,
+                  "bbox": [
+                    609,
+                    782,
+                    934,
+                    952
+                  ]
+                },
+                {
+                  "block_id": 13,
+                  "page": 7,
+                  "bbox": [
+                    644,
+                    943,
+                    932,
+                    1026
+                  ]
+                },
+                {
+                  "block_id": 15,
+                  "page": 7,
+                  "bbox": [
+                    252,
+                    1019,
+                    576,
+                    1157
+                  ]
+                },
+                {
+                  "block_id": 17,
+                  "page": 7,
+                  "bbox": [
+                    285,
+                    1146,
+                    573,
+                    1254
+                  ]
+                },
+                {
+                  "block_id": 18,
+                  "page": 7,
+                  "bbox": [
+                    640,
+                    1115,
+                    937,
+                    1218
+                  ]
+                },
+                {
+                  "block_id": 19,
+                  "page": 7,
+                  "bbox": [
+                    287,
+                    1285,
+                    574,
+                    1364
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "render/figures/figure_005.md"
+          ],
+          "status": "planned"
+        }
+      ],
+      "operations": [
+        {
+          "op": "materialize_objects",
+          "kind": "paper",
+          "object_uid": "",
+          "old_path": "",
+          "new_path": "",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "rebuild writes objects before inventory/fulltext",
+          "depends_on": [],
+          "op_id": "materialize-objects"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_001",
+          "old_id": "figure_001",
+          "old_path": "render/figures/figure_001.md",
+          "new_path": "render/figures/figure_001.md",
+          "old_sha256": "e46175b662aea60e8a283e712ff89987f7b4601522ed650a628e24460f06e554",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_002",
+          "old_id": "figure_002",
+          "old_path": "render/figures/figure_002.md",
+          "new_path": "render/figures/figure_002.md",
+          "old_sha256": "38e4f1981c28d8a885523ca5abb374d2e714b3beeb21c64f818076d9bb0dfb75",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_003",
+          "old_id": "figure_003",
+          "old_path": "render/figures/figure_003.md",
+          "new_path": "render/figures/figure_003.md",
+          "old_sha256": "8596959a66ed980f34aa2565b522643270e3f7cc7583ba526fda46e8b5802407",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_004",
+          "old_id": "figure_004",
+          "old_path": "render/figures/figure_004.md",
+          "new_path": "render/figures/figure_004.md",
+          "old_sha256": "808006af7fff3a8b2510f63981ee9247683258693867cd2ba4551374795980f5",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_005",
+          "old_id": "figure_005",
+          "old_path": "render/figures/figure_005.md",
+          "new_path": "render/figures/figure_005.md",
+          "old_sha256": "02c079765c113469cfa685e94cf32b70cac6a685fecc364ff3bfbacec7b8c90f",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "table",
+          "object_uid": "table_001",
+          "old_id": "table_001",
+          "old_path": "render/tables/table_001.md",
+          "new_path": "render/tables/table_001.md",
+          "old_sha256": "a0a21172fa3316db90340f6cd6a65eb56b36208254fd23c58ee98242e2e0b064",
+          "status": "planned",
+          "reason": "table identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "table",
+          "object_uid": "table_002",
+          "old_id": "table_002",
+          "old_path": "render/tables/table_002.md",
+          "new_path": "render/tables/table_002.md",
+          "old_sha256": "d4dea5cd68fd037622bb29ba908a411e7971b8798ff20bffed505db7e811c801",
+          "status": "planned",
+          "reason": "table identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "table",
+          "object_uid": "table_003",
+          "old_id": "table_003",
+          "old_path": "render/tables/table_003.md",
+          "new_path": "render/tables/table_003.md",
+          "old_sha256": "dd7b03713f239076834adf021397d7c7958959b347777fa18983d5e57de68232",
+          "status": "planned",
+          "reason": "table identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "table",
+          "object_uid": "table_004",
+          "old_id": "table_004",
+          "old_path": "render/tables/table_004.md",
+          "new_path": "render/tables/table_004.md",
+          "old_sha256": "4afe8507334345e91d88097c778d177fc44e1416c98c272d7522417ea9350d41",
+          "status": "planned",
+          "reason": "table identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_001",
+          "old_path": "render/figures/orphan_001.md",
+          "new_path": "render/figures/orphan_001.md",
+          "old_sha256": "a1c91261a4e4b6bd26a26cb6fa2379bbf39f334dc798b1b8faf37f65ff59977f",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_002",
+          "old_path": "render/figures/orphan_002.md",
+          "new_path": "render/figures/orphan_002.md",
+          "old_sha256": "301ac8443ed9c5f69bbd221b684e0cf60325689df479ca86944bd281bd457acf",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_003",
+          "old_path": "render/figures/orphan_003.md",
+          "new_path": "render/figures/orphan_003.md",
+          "old_sha256": "0937f86e518350960a83fba67778549892e69172e77ce4519d72c06e9f537fe1",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_004",
+          "old_path": "render/figures/orphan_004.md",
+          "new_path": "render/figures/orphan_004.md",
+          "old_sha256": "d6840c5f4379184dce18e0568ad4aa8477009cbed38fa78732979a14bfa9dadd",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_005",
+          "old_path": "render/figures/orphan_005.md",
+          "new_path": "render/figures/orphan_005.md",
+          "old_sha256": "422aa93977afd7409d1a44f96926b5b6d3d496a2095495edc232a58a9d46971e",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_006",
+          "old_path": "render/figures/orphan_006.md",
+          "new_path": "render/figures/orphan_006.md",
+          "old_sha256": "f1b0c02557c6b42e279a2b5807af392fcff430cb9c33ad0130bc402ff6ffa0ee",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_007",
+          "old_path": "render/figures/orphan_007.md",
+          "new_path": "render/figures/orphan_007.md",
+          "old_sha256": "6e2b2d9683e39d5fdb7b925a0c7efa3567211f088103d769b1a5330bd217cd57",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_008",
+          "old_path": "render/figures/orphan_008.md",
+          "new_path": "render/figures/orphan_008.md",
+          "old_sha256": "4d3b7b43eeeec00f8cbbc114d1d5e63821cc59caf8d2e29113e210282b446323",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_009",
+          "old_path": "render/figures/orphan_009.md",
+          "new_path": "render/figures/orphan_009.md",
+          "old_sha256": "14f8a2342a89dc6292a8d7e86dabe628d481051d79ffb9946fafac16c2dd7d8b",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_010",
+          "old_path": "render/figures/orphan_010.md",
+          "new_path": "render/figures/orphan_010.md",
+          "old_sha256": "c1640de2a5c539758ecb34e213a0b1d7a0ad256a32b934ded385382b418ed455",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_011",
+          "old_path": "render/figures/orphan_011.md",
+          "new_path": "render/figures/orphan_011.md",
+          "old_sha256": "592139001c9dbe21af8c78368eec58827a09611a87cdbe086ec0d355d193cc9c",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_012",
+          "old_path": "render/figures/orphan_012.md",
+          "new_path": "render/figures/orphan_012.md",
+          "old_sha256": "63651c1213d379cfc09d6f7b4f76f0e02d940bb99e3ec236d90c387818cb8b75",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "figure_001",
+          "old_path": "",
+          "new_path": "assets/figures/figure_001.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "figure_002",
+          "old_path": "",
+          "new_path": "assets/figures/figure_002.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "figure_003",
+          "old_path": "",
+          "new_path": "assets/figures/figure_003.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "figure_004",
+          "old_path": "",
+          "new_path": "assets/figures/figure_004.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "figure_005",
+          "old_path": "",
+          "new_path": "assets/figures/figure_005.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_001",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_001.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_002",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_002.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_003",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_003.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_004",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_004.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_005",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_005.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_006",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_006.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_007",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_007.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_008",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_008.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_009",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_009.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_010",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_010.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_011",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_011.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_012",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_012.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "table",
+          "object_uid": "table_001",
+          "old_path": "",
+          "new_path": "assets/tables/table_001.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "table",
+          "object_uid": "table_002",
+          "old_path": "",
+          "new_path": "assets/tables/table_002.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "table",
+          "object_uid": "table_003",
+          "old_path": "",
+          "new_path": "assets/tables/table_003.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "table",
+          "object_uid": "table_004",
+          "old_path": "",
+          "new_path": "assets/tables/table_004.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_001",
+          "old_path": "render/figures/figure_001.md",
+          "new_path": "render/figures/figure_001.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            38
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_002",
+          "old_path": "render/figures/figure_002.md",
+          "new_path": "render/figures/figure_002.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            54
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "table_001",
+          "old_path": "render/tables/table_001.md",
+          "new_path": "render/tables/table_001.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            76
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "table_002",
+          "old_path": "render/tables/table_002.md",
+          "new_path": "render/tables/table_002.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            84
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_003",
+          "old_path": "render/figures/figure_003.md",
+          "new_path": "render/figures/figure_003.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            86
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "table_003",
+          "old_path": "render/tables/table_003.md",
+          "new_path": "render/tables/table_003.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            102
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_004",
+          "old_path": "render/figures/figure_004.md",
+          "new_path": "render/figures/figure_004.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            104
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_005",
+          "old_path": "render/figures/figure_005.md",
+          "new_path": "render/figures/figure_005.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            114
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "table_004",
+          "old_path": "render/tables/table_004.md",
+          "new_path": "render/tables/table_004.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            128
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "rewrite",
+          "kind": "inventory",
+          "object_uid": "",
+          "old_path": "structure/blocks.structured.jsonl",
+          "new_path": "structure/blocks.structured.jsonl",
+          "old_sha256": "80bfafb798a4e71022f875c0b6a1f5a7a022583d48b2c2b3feec867e56ab7947",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "inventory",
+          "object_uid": "",
+          "old_path": "structure/figure_inventory.json",
+          "new_path": "structure/figure_inventory.json",
+          "old_sha256": "29149dd2bf21d7a904d0982259376239815fe331298e757c4a85d8c2cbb4b51d",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "inventory",
+          "object_uid": "",
+          "old_path": "structure/table_inventory.json",
+          "new_path": "structure/table_inventory.json",
+          "old_sha256": "89af6d75137029819cc0bba8d8b4d407015c3cf82ebf6a1f861fd9bdb642e2fd",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "inventory",
+          "object_uid": "",
+          "old_path": "structure/document_structure.json",
+          "new_path": "structure/document_structure.json",
+          "old_sha256": "c84935995ae73773c436877c19a8af584f6a7b2a637b6409913917ddd9ef8bc9",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "fulltext",
+          "object_uid": "",
+          "old_path": "fulltext.md",
+          "new_path": "fulltext.md",
+          "old_sha256": "bc22da4cc1eb6621e449e622b2239b4e2441831720ffc2468bde078ca24e9953",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "fulltext",
+          "object_uid": "",
+          "old_path": "render/fulltext.md",
+          "new_path": "render/fulltext.md",
+          "old_sha256": "f0fc57dc8affa9f9a0c32b59ee0b0ea513f5464e5cbe1bfa2b85c461d062d50a",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        }
+      ],
+      "embeds": [
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_001.md",
+          "object_id": "figure_001",
+          "line": 38,
+          "candidates": [
+            "figure_001"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_001.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_002.md",
+          "object_id": "figure_002",
+          "line": 54,
+          "candidates": [
+            "figure_002"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_002.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "tables",
+          "target": "render/tables/table_001.md",
+          "object_id": "table_001",
+          "line": 76,
+          "candidates": [
+            "table_001"
+          ],
+          "status": "planned",
+          "new_target": "render/tables/table_001.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "tables",
+          "target": "render/tables/table_002.md",
+          "object_id": "table_002",
+          "line": 84,
+          "candidates": [
+            "table_002"
+          ],
+          "status": "planned",
+          "new_target": "render/tables/table_002.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_003.md",
+          "object_id": "figure_003",
+          "line": 86,
+          "candidates": [
+            "figure_003"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_003.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "tables",
+          "target": "render/tables/table_003.md",
+          "object_id": "table_003",
+          "line": 102,
+          "candidates": [
+            "table_003"
+          ],
+          "status": "planned",
+          "new_target": "render/tables/table_003.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_004.md",
+          "object_id": "figure_004",
+          "line": 104,
+          "candidates": [
+            "figure_004"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_004.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_005.md",
+          "object_id": "figure_005",
+          "line": 114,
+          "candidates": [
+            "figure_005"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_005.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "tables",
+          "target": "render/tables/table_004.md",
+          "object_id": "table_004",
+          "line": 128,
+          "candidates": [
+            "table_004"
+          ],
+          "status": "planned",
+          "new_target": "render/tables/table_004.md",
+          "reason": "mapped"
+        }
+      ],
+      "holds": [],
+      "collisions": [],
+      "dangling": [],
+      "backup": {
+        "root": "backups/G5QGQ9PB/",
+        "files": [
+          {
+            "path": "fulltext.md",
+            "sha256": "bc22da4cc1eb6621e449e622b2239b4e2441831720ffc2468bde078ca24e9953",
+            "bytes": 33726
+          },
+          {
+            "path": "render/fulltext.md",
+            "sha256": "f0fc57dc8affa9f9a0c32b59ee0b0ea513f5464e5cbe1bfa2b85c461d062d50a",
+            "bytes": 33984
+          },
+          {
+            "path": "structure/blocks.structured.jsonl",
+            "sha256": "80bfafb798a4e71022f875c0b6a1f5a7a022583d48b2c2b3feec867e56ab7947",
+            "bytes": 417168
+          },
+          {
+            "path": "structure/document_structure.json",
+            "sha256": "c84935995ae73773c436877c19a8af584f6a7b2a637b6409913917ddd9ef8bc9",
+            "bytes": 354698
+          },
+          {
+            "path": "structure/figure_inventory.json",
+            "sha256": "29149dd2bf21d7a904d0982259376239815fe331298e757c4a85d8c2cbb4b51d",
+            "bytes": 29526
+          },
+          {
+            "path": "structure/table_inventory.json",
+            "sha256": "89af6d75137029819cc0bba8d8b4d407015c3cf82ebf6a1f861fd9bdb642e2fd",
+            "bytes": 46264
+          }
+        ],
+        "note": "copy every listed file before writing; restore verifies sha256"
+      },
+      "rollback": {
+        "method": "restore the backup tree, then verify every sha256",
+        "atomicity": "filesystem effects are not atomic with SQLite; journal each step"
+      }
+    }
+  },
+  "second": {
+    "key": "G5QGQ9PB",
+    "identity": {
+      "old": {
+        "entries": 5,
+        "unique_ids": 5,
+        "duplicate_extra": 0
+      },
+      "new": {
+        "entries": 5,
+        "unique_ids": 5,
+        "duplicate_extra": 0
+      },
+      "mapping": {
+        "figure_001": "figure_001",
+        "figure_002": "figure_002",
+        "figure_003": "figure_003",
+        "figure_004": "figure_004",
+        "figure_005": "figure_005"
+      },
+      "renamed": [],
+      "unmapped_old_ids": [],
+      "claims_changed": []
+    },
+    "delivery": {
+      "manifest_delivery": {
+        "figure_ids": [
+          "figure_001",
+          "figure_002",
+          "figure_003",
+          "figure_004",
+          "figure_005"
+        ],
+        "missing_assets": [],
+        "missing_renders": []
+      },
+      "old_render_files": 21,
+      "new_render_files": 42,
+      "render_added": [
+        "assets/figures/figure_001.jpg",
+        "assets/figures/figure_002.jpg",
+        "assets/figures/figure_003.jpg",
+        "assets/figures/figure_004.jpg",
+        "assets/figures/figure_005.jpg",
+        "assets/orphans/orphan_001.jpg",
+        "assets/orphans/orphan_002.jpg",
+        "assets/orphans/orphan_003.jpg",
+        "assets/orphans/orphan_004.jpg",
+        "assets/orphans/orphan_005.jpg",
+        "assets/orphans/orphan_006.jpg",
+        "assets/orphans/orphan_007.jpg",
+        "assets/orphans/orphan_008.jpg",
+        "assets/orphans/orphan_009.jpg",
+        "assets/orphans/orphan_010.jpg",
+        "assets/orphans/orphan_011.jpg",
+        "assets/orphans/orphan_012.jpg",
+        "assets/tables/table_001.jpg",
+        "assets/tables/table_002.jpg",
+        "assets/tables/table_003.jpg",
+        "assets/tables/table_004.jpg"
+      ],
+      "render_removed": [],
+      "embeds": 9,
+      "embeds_retargeted": 0,
+      "embeds_missing_new_id": []
+    },
+    "tables": {
+      "old_tables": 4,
+      "new_tables": 4,
+      "claim_changes": [
+        {
+          "page": 5,
+          "caption": "2",
+          "old": "9",
+          "new": "3"
+        }
+      ]
+    },
+    "content": {
+      "old_rows": 188,
+      "new_rows": 188,
+      "role_removed": {
+        "unknown_structural": 2,
+        "figure_inner_text": 2
+      },
+      "role_added": {
+        "non_body_insert": 2,
+        "body_paragraph": 2
+      },
+      "old_body_chars": 22902,
+      "new_body_chars": 23819,
+      "old_text_chars": 45040,
+      "new_text_chars": 45040,
+      "old_fulltext_chars": 33631
+    },
+    "new_manifest": {
+      "figures": 5,
+      "tables": 4,
+      "orphans": 12
+    },
+    "new_orphans": 1,
+    "plan": {
+      "schema": "paperforge.migration_plan.v1",
+      "key": "G5QGQ9PB",
+      "execution_model": "rebuild+verify: operations are expected artifact effects, not shell mv",
+      "status": "READY",
+      "objects": [
+        {
+          "kind": "figure",
+          "old_id": "figure_001",
+          "new_id": "figure_001",
+          "candidates": [
+            "figure_001"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 2,
+              "legend_block_id": "14",
+              "text": "Fig. 1 Calculate the distal clavicle–acromion coronal angle ( $ \\alpha $) and acromion coronal angle ( $ \\beta $) on a standardized true anteroposterior radiograph",
+              "asset_blocks": [
+                {
+                  "block_id": 13,
+                  "page": 2,
+                  "bbox": [
+                    625,
+                    904,
+                    1061,
+                    1385
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "render/figures/figure_001.md"
+          ],
+          "status": "planned"
+        },
+        {
+          "kind": "figure",
+          "old_id": "figure_002",
+          "new_id": "figure_002",
+          "candidates": [
+            "figure_002"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 3,
+              "legend_block_id": "10",
+              "text": "Fig. 2 Case 1: A 30-year-old man with left distal clavicle fracture treated with clavicular hook plate. a Preoperative radiography indicated Neer type I fracture of the distal clavicle. b distal clavicle–acromion coronal angle ( $ \\alpha $) and acromion coronal angle ( $ \\beta $) on X-ray films of uninjured side. c Intraoperative fluoroscopy showed the endpiece of plate uplifted (black arrow). d Postoperative X-ray demonstrated accepted fracture reduction.",
+              "asset_blocks": [
+                {
+                  "block_id": 9,
+                  "page": 3,
+                  "bbox": [
+                    110,
+                    857,
+                    1073,
+                    1389
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "render/figures/figure_002.md"
+          ],
+          "status": "planned"
+        },
+        {
+          "kind": "figure",
+          "old_id": "figure_003",
+          "new_id": "figure_003",
+          "candidates": [
+            "figure_003"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 5,
+              "legend_block_id": "10",
+              "text": "Fig. 3 a–g Cases 1 ~ 4, 6, and 8 ~ 9: Preoperative sagittal T2-weighted magnetic resonance (MR) imaging reveals the interruption of supraspinatus tendon continuity (white arrows)",
+              "asset_blocks": [
+                {
+                  "block_id": 9,
+                  "page": 5,
+                  "bbox": [
+                    255,
+                    723,
+                    940,
+                    1400
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "render/figures/figure_003.md"
+          ],
+          "status": "planned"
+        },
+        {
+          "kind": "figure",
+          "old_id": "figure_004",
+          "new_id": "figure_004",
+          "candidates": [
+            "figure_004"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 6,
+              "legend_block_id": "3",
+              "text": "Fig. 4 Graphic presentation of impingement and RCL rates correlated with  $ \\alpha $ and  $ \\beta $ angles",
+              "asset_blocks": [
+                {
+                  "block_id": 2,
+                  "page": 6,
+                  "bbox": [
+                    305,
+                    181,
+                    892,
+                    468
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "render/figures/figure_004.md"
+          ],
+          "status": "planned"
+        },
+        {
+          "kind": "figure",
+          "old_id": "figure_005",
+          "new_id": "figure_005",
+          "candidates": [
+            "figure_005"
+          ],
+          "entries": 1,
+          "anchors": [
+            {
+              "page": 7,
+              "legend_block_id": "20",
+              "text": "Fig. 5 a–c The situation of dynamically simulating the changes of contact position between the hook plate and large lateral acromion angle. a Take 45° α angle for example and length of hook as one unit of moment arm (MA). b The change of contact position (red dot) and fracture shift when pressing hook plate (15 mm and 90°). c The change of MA when using different hook specifications. d The contact position (red dot) and MA between the 110°-hook plate and normal lateral acromion angle",
+              "asset_blocks": [
+                {
+                  "block_id": 10,
+                  "page": 7,
+                  "bbox": [
+                    249,
+                    787,
+                    568,
+                    953
+                  ]
+                },
+                {
+                  "block_id": 12,
+                  "page": 7,
+                  "bbox": [
+                    609,
+                    782,
+                    934,
+                    952
+                  ]
+                },
+                {
+                  "block_id": 13,
+                  "page": 7,
+                  "bbox": [
+                    644,
+                    943,
+                    932,
+                    1026
+                  ]
+                },
+                {
+                  "block_id": 15,
+                  "page": 7,
+                  "bbox": [
+                    252,
+                    1019,
+                    576,
+                    1157
+                  ]
+                },
+                {
+                  "block_id": 17,
+                  "page": 7,
+                  "bbox": [
+                    285,
+                    1146,
+                    573,
+                    1254
+                  ]
+                },
+                {
+                  "block_id": 18,
+                  "page": 7,
+                  "bbox": [
+                    640,
+                    1115,
+                    937,
+                    1218
+                  ]
+                },
+                {
+                  "block_id": 19,
+                  "page": 7,
+                  "bbox": [
+                    287,
+                    1285,
+                    574,
+                    1364
+                  ]
+                }
+              ]
+            }
+          ],
+          "old_files": [
+            "render/figures/figure_005.md"
+          ],
+          "status": "planned"
+        }
+      ],
+      "operations": [
+        {
+          "op": "materialize_objects",
+          "kind": "paper",
+          "object_uid": "",
+          "old_path": "",
+          "new_path": "",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "rebuild writes objects before inventory/fulltext",
+          "depends_on": [],
+          "op_id": "materialize-objects"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_001",
+          "old_id": "figure_001",
+          "old_path": "render/figures/figure_001.md",
+          "new_path": "render/figures/figure_001.md",
+          "old_sha256": "e46175b662aea60e8a283e712ff89987f7b4601522ed650a628e24460f06e554",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_002",
+          "old_id": "figure_002",
+          "old_path": "render/figures/figure_002.md",
+          "new_path": "render/figures/figure_002.md",
+          "old_sha256": "38e4f1981c28d8a885523ca5abb374d2e714b3beeb21c64f818076d9bb0dfb75",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_003",
+          "old_id": "figure_003",
+          "old_path": "render/figures/figure_003.md",
+          "new_path": "render/figures/figure_003.md",
+          "old_sha256": "8596959a66ed980f34aa2565b522643270e3f7cc7583ba526fda46e8b5802407",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_004",
+          "old_id": "figure_004",
+          "old_path": "render/figures/figure_004.md",
+          "new_path": "render/figures/figure_004.md",
+          "old_sha256": "808006af7fff3a8b2510f63981ee9247683258693867cd2ba4551374795980f5",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "figure",
+          "object_uid": "figure_005",
+          "old_id": "figure_005",
+          "old_path": "render/figures/figure_005.md",
+          "new_path": "render/figures/figure_005.md",
+          "old_sha256": "02c079765c113469cfa685e94cf32b70cac6a685fecc364ff3bfbacec7b8c90f",
+          "status": "planned",
+          "reason": "identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "table",
+          "object_uid": "table_001",
+          "old_id": "table_001",
+          "old_path": "render/tables/table_001.md",
+          "new_path": "render/tables/table_001.md",
+          "old_sha256": "a0a21172fa3316db90340f6cd6a65eb56b36208254fd23c58ee98242e2e0b064",
+          "status": "planned",
+          "reason": "table identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "table",
+          "object_uid": "table_002",
+          "old_id": "table_002",
+          "old_path": "render/tables/table_002.md",
+          "new_path": "render/tables/table_002.md",
+          "old_sha256": "d4dea5cd68fd037622bb29ba908a411e7971b8798ff20bffed505db7e811c801",
+          "status": "planned",
+          "reason": "table identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "table",
+          "object_uid": "table_003",
+          "old_id": "table_003",
+          "old_path": "render/tables/table_003.md",
+          "new_path": "render/tables/table_003.md",
+          "old_sha256": "dd7b03713f239076834adf021397d7c7958959b347777fa18983d5e57de68232",
+          "status": "planned",
+          "reason": "table identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "table",
+          "object_uid": "table_004",
+          "old_id": "table_004",
+          "old_path": "render/tables/table_004.md",
+          "new_path": "render/tables/table_004.md",
+          "old_sha256": "4afe8507334345e91d88097c778d177fc44e1416c98c272d7522417ea9350d41",
+          "status": "planned",
+          "reason": "table identity mapping"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_001",
+          "old_path": "render/figures/orphan_001.md",
+          "new_path": "render/figures/orphan_001.md",
+          "old_sha256": "a1c91261a4e4b6bd26a26cb6fa2379bbf39f334dc798b1b8faf37f65ff59977f",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_002",
+          "old_path": "render/figures/orphan_002.md",
+          "new_path": "render/figures/orphan_002.md",
+          "old_sha256": "301ac8443ed9c5f69bbd221b684e0cf60325689df479ca86944bd281bd457acf",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_003",
+          "old_path": "render/figures/orphan_003.md",
+          "new_path": "render/figures/orphan_003.md",
+          "old_sha256": "0937f86e518350960a83fba67778549892e69172e77ce4519d72c06e9f537fe1",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_004",
+          "old_path": "render/figures/orphan_004.md",
+          "new_path": "render/figures/orphan_004.md",
+          "old_sha256": "d6840c5f4379184dce18e0568ad4aa8477009cbed38fa78732979a14bfa9dadd",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_005",
+          "old_path": "render/figures/orphan_005.md",
+          "new_path": "render/figures/orphan_005.md",
+          "old_sha256": "422aa93977afd7409d1a44f96926b5b6d3d496a2095495edc232a58a9d46971e",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_006",
+          "old_path": "render/figures/orphan_006.md",
+          "new_path": "render/figures/orphan_006.md",
+          "old_sha256": "f1b0c02557c6b42e279a2b5807af392fcff430cb9c33ad0130bc402ff6ffa0ee",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_007",
+          "old_path": "render/figures/orphan_007.md",
+          "new_path": "render/figures/orphan_007.md",
+          "old_sha256": "6e2b2d9683e39d5fdb7b925a0c7efa3567211f088103d769b1a5330bd217cd57",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_008",
+          "old_path": "render/figures/orphan_008.md",
+          "new_path": "render/figures/orphan_008.md",
+          "old_sha256": "4d3b7b43eeeec00f8cbbc114d1d5e63821cc59caf8d2e29113e210282b446323",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_009",
+          "old_path": "render/figures/orphan_009.md",
+          "new_path": "render/figures/orphan_009.md",
+          "old_sha256": "14f8a2342a89dc6292a8d7e86dabe628d481051d79ffb9946fafac16c2dd7d8b",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_010",
+          "old_path": "render/figures/orphan_010.md",
+          "new_path": "render/figures/orphan_010.md",
+          "old_sha256": "c1640de2a5c539758ecb34e213a0b1d7a0ad256a32b934ded385382b418ed455",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_011",
+          "old_path": "render/figures/orphan_011.md",
+          "new_path": "render/figures/orphan_011.md",
+          "old_sha256": "592139001c9dbe21af8c78368eec58827a09611a87cdbe086ec0d355d193cc9c",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "keep",
+          "kind": "orphan",
+          "object_uid": "orphan_012",
+          "old_path": "render/figures/orphan_012.md",
+          "new_path": "render/figures/orphan_012.md",
+          "old_sha256": "63651c1213d379cfc09d6f7b4f76f0e02d940bb99e3ec236d90c387818cb8b75",
+          "status": "planned",
+          "reason": "orphan kept"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "figure_001",
+          "old_path": "",
+          "new_path": "assets/figures/figure_001.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "figure_002",
+          "old_path": "",
+          "new_path": "assets/figures/figure_002.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "figure_003",
+          "old_path": "",
+          "new_path": "assets/figures/figure_003.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "figure_004",
+          "old_path": "",
+          "new_path": "assets/figures/figure_004.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "figure",
+          "object_uid": "figure_005",
+          "old_path": "",
+          "new_path": "assets/figures/figure_005.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_001",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_001.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_002",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_002.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_003",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_003.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_004",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_004.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_005",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_005.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_006",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_006.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_007",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_007.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_008",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_008.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_009",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_009.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_010",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_010.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_011",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_011.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "orphan",
+          "object_uid": "orphan_012",
+          "old_path": "",
+          "new_path": "assets/orphans/orphan_012.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "table",
+          "object_uid": "table_001",
+          "old_path": "",
+          "new_path": "assets/tables/table_001.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "table",
+          "object_uid": "table_002",
+          "old_path": "",
+          "new_path": "assets/tables/table_002.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "table",
+          "object_uid": "table_003",
+          "old_path": "",
+          "new_path": "assets/tables/table_003.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "create",
+          "kind": "table",
+          "object_uid": "table_004",
+          "old_path": "",
+          "new_path": "assets/tables/table_004.jpg",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "new object"
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_001",
+          "old_path": "render/figures/figure_001.md",
+          "new_path": "render/figures/figure_001.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            38
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_002",
+          "old_path": "render/figures/figure_002.md",
+          "new_path": "render/figures/figure_002.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            54
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "table_001",
+          "old_path": "render/tables/table_001.md",
+          "new_path": "render/tables/table_001.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            76
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "table_002",
+          "old_path": "render/tables/table_002.md",
+          "new_path": "render/tables/table_002.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            84
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_003",
+          "old_path": "render/figures/figure_003.md",
+          "new_path": "render/figures/figure_003.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            86
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "table_003",
+          "old_path": "render/tables/table_003.md",
+          "new_path": "render/tables/table_003.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            102
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_004",
+          "old_path": "render/figures/figure_004.md",
+          "new_path": "render/figures/figure_004.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            104
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "figure_005",
+          "old_path": "render/figures/figure_005.md",
+          "new_path": "render/figures/figure_005.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            114
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "retarget",
+          "kind": "embed",
+          "object_uid": "table_004",
+          "old_path": "render/tables/table_004.md",
+          "new_path": "render/tables/table_004.md",
+          "old_sha256": "",
+          "status": "planned",
+          "reason": "embed retarget",
+          "lines": [
+            128
+          ],
+          "occurrences": 1
+        },
+        {
+          "op": "rewrite",
+          "kind": "inventory",
+          "object_uid": "",
+          "old_path": "structure/blocks.structured.jsonl",
+          "new_path": "structure/blocks.structured.jsonl",
+          "old_sha256": "80bfafb798a4e71022f875c0b6a1f5a7a022583d48b2c2b3feec867e56ab7947",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "inventory",
+          "object_uid": "",
+          "old_path": "structure/figure_inventory.json",
+          "new_path": "structure/figure_inventory.json",
+          "old_sha256": "29149dd2bf21d7a904d0982259376239815fe331298e757c4a85d8c2cbb4b51d",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "inventory",
+          "object_uid": "",
+          "old_path": "structure/table_inventory.json",
+          "new_path": "structure/table_inventory.json",
+          "old_sha256": "89af6d75137029819cc0bba8d8b4d407015c3cf82ebf6a1f861fd9bdb642e2fd",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "inventory",
+          "object_uid": "",
+          "old_path": "structure/document_structure.json",
+          "new_path": "structure/document_structure.json",
+          "old_sha256": "c84935995ae73773c436877c19a8af584f6a7b2a637b6409913917ddd9ef8bc9",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "fulltext",
+          "object_uid": "",
+          "old_path": "fulltext.md",
+          "new_path": "fulltext.md",
+          "old_sha256": "bc22da4cc1eb6621e449e622b2239b4e2441831720ffc2468bde078ca24e9953",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        },
+        {
+          "op": "rewrite",
+          "kind": "fulltext",
+          "object_uid": "",
+          "old_path": "render/fulltext.md",
+          "new_path": "render/fulltext.md",
+          "old_sha256": "f0fc57dc8affa9f9a0c32b59ee0b0ea513f5464e5cbe1bfa2b85c461d062d50a",
+          "status": "planned",
+          "reason": "pipeline rewrite with retargeted embeds",
+          "depends_on": [
+            "materialize-objects"
+          ]
+        }
+      ],
+      "embeds": [
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_001.md",
+          "object_id": "figure_001",
+          "line": 38,
+          "candidates": [
+            "figure_001"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_001.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_002.md",
+          "object_id": "figure_002",
+          "line": 54,
+          "candidates": [
+            "figure_002"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_002.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "tables",
+          "target": "render/tables/table_001.md",
+          "object_id": "table_001",
+          "line": 76,
+          "candidates": [
+            "table_001"
+          ],
+          "status": "planned",
+          "new_target": "render/tables/table_001.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "tables",
+          "target": "render/tables/table_002.md",
+          "object_id": "table_002",
+          "line": 84,
+          "candidates": [
+            "table_002"
+          ],
+          "status": "planned",
+          "new_target": "render/tables/table_002.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_003.md",
+          "object_id": "figure_003",
+          "line": 86,
+          "candidates": [
+            "figure_003"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_003.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "tables",
+          "target": "render/tables/table_003.md",
+          "object_id": "table_003",
+          "line": 102,
+          "candidates": [
+            "table_003"
+          ],
+          "status": "planned",
+          "new_target": "render/tables/table_003.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_004.md",
+          "object_id": "figure_004",
+          "line": 104,
+          "candidates": [
+            "figure_004"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_004.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "figures",
+          "target": "render/figures/figure_005.md",
+          "object_id": "figure_005",
+          "line": 114,
+          "candidates": [
+            "figure_005"
+          ],
+          "status": "planned",
+          "new_target": "render/figures/figure_005.md",
+          "reason": "mapped"
+        },
+        {
+          "kind": "tables",
+          "target": "render/tables/table_004.md",
+          "object_id": "table_004",
+          "line": 128,
+          "candidates": [
+            "table_004"
+          ],
+          "status": "planned",
+          "new_target": "render/tables/table_004.md",
+          "reason": "mapped"
+        }
+      ],
+      "holds": [],
+      "collisions": [],
+      "dangling": [],
+      "backup": {
+        "root": "backups/G5QGQ9PB/",
+        "files": [
+          {
+            "path": "fulltext.md",
+            "sha256": "bc22da4cc1eb6621e449e622b2239b4e2441831720ffc2468bde078ca24e9953",
+            "bytes": 33726
+          },
+          {
+            "path": "render/fulltext.md",
+            "sha256": "f0fc57dc8affa9f9a0c32b59ee0b0ea513f5464e5cbe1bfa2b85c461d062d50a",
+            "bytes": 33984
+          },
+          {
+            "path": "structure/blocks.structured.jsonl",
+            "sha256": "80bfafb798a4e71022f875c0b6a1f5a7a022583d48b2c2b3feec867e56ab7947",
+            "bytes": 417168
+          },
+          {
+            "path": "structure/document_structure.json",
+            "sha256": "c84935995ae73773c436877c19a8af584f6a7b2a637b6409913917ddd9ef8bc9",
+            "bytes": 354698
+          },
+          {
+            "path": "structure/figure_inventory.json",
+            "sha256": "29149dd2bf21d7a904d0982259376239815fe331298e757c4a85d8c2cbb4b51d",
+            "bytes": 29526
+          },
+          {
+            "path": "structure/table_inventory.json",
+            "sha256": "89af6d75137029819cc0bba8d8b4d407015c3cf82ebf6a1f861fd9bdb642e2fd",
+            "bytes": 46264
+          }
+        ],
+        "note": "copy every listed file before writing; restore verifies sha256"
+      },
+      "rollback": {
+        "method": "restore the backup tree, then verify every sha256",
+        "atomicity": "filesystem effects are not atomic with SQLite; journal each step"
+      }
+    }
+  },
+  "plan_mismatch": false
+}
