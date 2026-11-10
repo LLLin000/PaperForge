@@ -5676,3 +5676,45 @@ def test_is_in_same_reference_column_cross_column() -> None:
     single_block = {"bbox": [50, 200, 1150, 250], "page_width": pw}
     assert _is_in_same_reference_column(single_block, single_ref, pw) is True,         "Full-width blocks on single-column page should return True"
     assert _is_in_same_reference_column(left_block, None, pw) is True,         "None ref heading should return True (conservative)"
+
+
+def test_split_merged_heading_blocks_chilq4kj_does_not_split() -> None:
+    from paperforge.worker.ocr_document import _split_merged_heading_blocks
+
+    text = "3.4. Modulation of Piezo 1-Mediated  $ Ca^{2+} $ Influx into SCP-1 Cells by Small Chemicals"
+    block = {"role": "subsection_heading", "render_default": True, "text": text, "block_content": text}
+    out = _split_merged_heading_blocks([block])
+    assert len(out) == 1
+    assert out[0]["text"] == text
+
+
+def test_split_merged_heading_blocks_metadata_date_does_not_split() -> None:
+    from paperforge.worker.ocr_document import _split_merged_heading_blocks
+
+    text = "Received 13 February; accepted 15 May 2006."
+    block = {"role": "section_heading", "render_default": True, "text": text, "block_content": text}
+    out = _split_merged_heading_blocks([block])
+    assert len(out) == 1
+    assert out[0]["text"] == text
+
+
+def test_split_merged_heading_blocks_composite_splits() -> None:
+    from paperforge.worker.ocr_document import _split_merged_heading_blocks
+
+    text = "3. Composite biomaterials 3.1. The materials nexus"
+    block = {"role": "section_heading", "render_default": True, "text": text, "block_content": text}
+    out = _split_merged_heading_blocks([block])
+    assert len(out) == 2
+    assert out[0]["text"] == "3. Composite biomaterials"
+    assert out[1]["text"] == "3.1. The materials nexus"
+
+
+def test_split_merged_heading_blocks_subsection_splits() -> None:
+    from paperforge.worker.ocr_document import _split_merged_heading_blocks
+
+    text = "2.2. Foo 2.2.1. Bar"
+    block = {"role": "subsection_heading", "render_default": True, "text": text, "block_content": text}
+    out = _split_merged_heading_blocks([block])
+    assert len(out) == 2
+    assert out[0]["text"] == "2.2. Foo"
+    assert out[1]["text"] == "2.2.1. Bar"
