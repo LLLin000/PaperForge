@@ -1,0 +1,27 @@
+{
+  "keys": [
+    "3QYCST4E",
+    "28JLIHLS",
+    "6A8A9TWD",
+    "23T2B8ZX",
+    "24YKLTHQ",
+    "4KMPSDBU",
+    "49NUE2G7",
+    "53B47JM8",
+    "64AWS4SU",
+    "G5QGQ9PB"
+  ],
+  "plan_mismatch_count": 0,
+  "papers": {
+    "3QYCST4E": false,
+    "28JLIHLS": false,
+    "6A8A9TWD": false,
+    "23T2B8ZX": false,
+    "24YKLTHQ": false,
+    "4KMPSDBU": false,
+    "49NUE2G7": false,
+    "53B47JM8": false,
+    "64AWS4SU": false,
+    "G5QGQ9PB": false
+  }
+}

@@ -645,15 +645,13 @@ def _write_materialization_provenance(render_root: Path, records: list[dict[str,
             "reason": reason_counts,
         },
     }
-    try:
+    with contextlib.suppress(OSError):
+        # Provenance is additive; preserve the existing render behavior if
+        # the diagnostic sidecar cannot be written.
         (render_root / "materialization.provenance.json").write_text(
             json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8",
         )
-    except OSError:
-        # Provenance is additive; preserve the existing render behavior if
-        # the diagnostic sidecar cannot be written.
-        pass
 
 
 
@@ -671,6 +669,46 @@ class MaterializationCommitError(MaterializationError):
 
 _MANAGED_ASSET_DIRS = ("figures", "tables", "orphans")
 _MANAGED_RENDER_DIRS = ("figures", "tables")
+ 
+_MANAGED_ASSET_EXTS = frozenset({".jpg", ".jpeg", ".png", ".webp"})
+_MANAGED_RENDER_EXTS = frozenset({".md"})
+ 
+def _managed_extensions_for_target(target: Path) -> frozenset[str]:
+     parts = {p.lower() for p in target.parts}
+     if "assets" in parts:
+         return _MANAGED_ASSET_EXTS
+     if "render" in parts:
+         return _MANAGED_RENDER_EXTS
+     return frozenset()
+ 
+ 
+def _preserve_unmanaged(target: Path, staged: Path, managed_exts: frozenset[str] | None) -> None:
+    """Copy unmanaged files from target into staged before the swap.
+
+    Managed files (by extension) are left behind so stale ones disappear.
+    Unsafe entries (symlinks, collisions) raise instead of being deleted.
+    """
+    import shutil
+
+    if managed_exts is None:
+        return
+    if not target.exists():
+        return
+    if not target.is_dir():
+        raise MaterializationCommitError(f"materialization target is not a directory: {target}")
+    for path in sorted(target.rglob("*")):
+        if path.is_symlink():
+            raise MaterializationCommitError(f"unsafe unmanaged path (symlink): {path}")
+        if not path.is_file():
+            continue
+        if path.suffix.lower() in managed_exts:
+            continue
+        relative = path.relative_to(target)
+        destination = staged / relative
+        if destination.exists():
+            raise MaterializationCommitError(f"unmanaged path collides with staged artifact: {destination}")
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(path, destination)
 
 
 def _journal_path(paper_root: Path) -> Path:
@@ -758,10 +796,17 @@ def _commit_staged_objects(
     try:
         pairs = list(staged_targets)
         if provenance is not None:
-            pairs.append(provenance)
-        for index, (target, staged) in enumerate(pairs):
+            pairs.append((provenance[0], provenance[1], None))
+        for index, item in enumerate(pairs):
+            if len(item) == 3:
+                target, staged, managed_exts = item
+            else:
+                target, staged = item
+                managed_exts = _managed_extensions_for_target(target)
             backup = backup_root / (str(index) if index < len(staged_targets) else "provenance")
             target.parent.mkdir(parents=True, exist_ok=True)
+            if target.exists() and target.is_dir() and managed_exts is not None:
+                _preserve_unmanaged(target, staged, managed_exts)
             if target.exists():
                 target.rename(backup)
             moved.append((target, backup))
@@ -770,7 +815,7 @@ def _commit_staged_objects(
             staged.rename(target)
         payload["status"] = "committed"
         _write_json_atomic(journal, payload)
-    except Exception as exc:  # noqa: BLE001 — roll back every swap
+    except Exception as exc:  # noqa: BLE001 - roll back every swap
         for target, backup in reversed(moved):
             try:
                 if target.exists():
